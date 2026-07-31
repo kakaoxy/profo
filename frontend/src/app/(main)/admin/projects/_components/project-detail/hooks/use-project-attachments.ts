@@ -3,6 +3,7 @@
 import { useMemo, useCallback, useState } from "react";
 import { toast } from "sonner";
 import type { AttachmentInfo, AttachmentHandlers } from "../types";
+import { mapLegacyAttachmentCategory } from "../constants";
 
 interface UseProjectAttachmentsOptions {
   signingMaterials: unknown;
@@ -32,7 +33,7 @@ export function useProjectAttachments({
           return {
             filename: url.split("/").pop() || "unknown",
             url,
-            category: "other",
+            category: mapLegacyAttachmentCategory("other"),
             fileType,
           };
         }
@@ -40,7 +41,7 @@ export function useProjectAttachments({
         return {
           filename: att.filename || "unknown",
           url: att.url,
-          category: att.category || "other",
+          category: mapLegacyAttachmentCategory(att.category || "other"),
           fileType: att.fileType || "other",
           size: att.size,
         };

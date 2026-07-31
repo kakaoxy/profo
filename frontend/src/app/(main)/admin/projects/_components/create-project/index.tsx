@@ -24,7 +24,6 @@ import { useCreateProject } from "./use-create-project";
 import { BasicInfoTab } from "./tabs/basic-info-tab";
 import { AgencyAgreementTab } from "./tabs/agency-agreement-tab";
 import { OwnerTab } from "./tabs/owner-tab";
-import { AttachmentsTab } from "./tabs/attachments-tab";
 
 import { Project } from "../../types";
 
@@ -82,7 +81,7 @@ export function CreateProjectDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[750px] p-0 gap-0 overflow-hidden h-[85vh] flex flex-col rounded-cards border-dove/40">
+      <DialogContent className="sm:max-w-187.5 p-0 gap-0 overflow-hidden h-[85vh] flex flex-col rounded-cards border-dove/40">
         {/* --- Header --- */}
         <DialogHeader className="px-7 py-5 border-b border-dove/30 bg-pure-white shrink-0">
           <div className="flex items-center justify-between">
@@ -152,11 +151,10 @@ export function CreateProjectDialog({
               >
                 {/* Tabs 导航 — Steep: pill-style tabs on Fog canvas */}
                 <div className="px-7 pt-5 shrink-0">
-                <TabsList className="grid w-full grid-cols-4 gap-1 bg-pure-white rounded-inputs p-1 border border-dove/30 h-10">
+                <TabsList className="grid w-full grid-cols-3 gap-1 bg-pure-white rounded-inputs p-1 border border-dove/30 h-10">
                     <TabsTrigger value="basic" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">基础信息</TabsTrigger>
                     <TabsTrigger value="agency" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">代理协议</TabsTrigger>
                     <TabsTrigger value="owner" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">业主信息</TabsTrigger>
-                    <TabsTrigger value="attachments" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">附件上传</TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -175,10 +173,6 @@ export function CreateProjectDialog({
                       {/* onSave(草稿手动保存)仅新建模式传入；编辑模式传入会把当前项目数据写入草稿，
                           下次新建时被恢复逻辑读回，造成跨项目数据残留（含业主手机号/身份证等敏感信息） */}
                       <OwnerTab form={form} onSave={!isEditMode ? saveDraft : undefined} />
-                    </TabsContent>
-
-                    <TabsContent value="attachments" className="m-0">
-                      <AttachmentsTab form={form} project={project} isEditMode={isEditMode} />
                     </TabsContent>
                   </div>
                 </ScrollArea>

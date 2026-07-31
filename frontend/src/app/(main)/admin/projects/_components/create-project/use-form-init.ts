@@ -5,7 +5,7 @@ import { UseFormReturn, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formSchema, FormValues } from "./schema";
 import { Project } from "../../types";
-import { parseLayout, convertAttachments, fromDateStr } from "./utils";
+import { parseLayout, fromDateStr } from "./utils";
 
 interface UseFormInitProps {
   form: UseFormReturn<FormValues>;
@@ -82,7 +82,6 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         commission_start_date: fromDateStr(project.commission_start_date),
         commission_end_date: fromDateStr(project.commission_end_date),
         other_agreements: project.other_agreements || "",
-        attachments: convertAttachments(project.signing_materials),
       });
     }
   }, [open, isEditMode, project, form]);
@@ -170,7 +169,6 @@ export function getDefaultValues(
     commission_start_date: fromDateStr(project?.commission_start_date),
     commission_end_date: fromDateStr(project?.commission_end_date),
     other_agreements: project?.other_agreements || "",
-    attachments: convertAttachments(project?.signing_materials),
   };
 }
 

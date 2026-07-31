@@ -22,6 +22,16 @@ const documentIdSchema = z.string().min(1, "文档 ID 不能为空");
 const documentCreateSchema = z.object({
   document_name: z.string().min(1, "文档名称不能为空"),
   display_order: z.number().int().nullable().optional(),
+  category: z
+    .enum([
+      "contract_agreement",
+      "property_rights",
+      "identity_account",
+      "finance_tax",
+      "handover",
+      "other",
+    ])
+    .default("other"),
 });
 
 // 更新文书 - 与 DocumentUpdate (api-types:3364) 对齐

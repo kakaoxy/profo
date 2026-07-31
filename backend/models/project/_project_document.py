@@ -21,6 +21,7 @@ class ProjectDocument(BaseModel):
     )
     archive_date: Mapped[str | None] = mapped_column(String(10), nullable=True, comment="归档日期 YYYY-MM-DD")
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="显示顺序")
+    category: Mapped[str] = mapped_column(String(50), nullable=False, default="other", comment="文书分类")
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     __table_args__ = (Index("idx_document_status", "signoff_status"),)

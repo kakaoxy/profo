@@ -4090,6 +4090,12 @@ export interface components {
              * @description 显示顺序（默认追加末尾）
              */
             display_order?: number | null;
+            /**
+             * Category
+             * @description 文书分类
+             * @default other
+             */
+            category: string;
         };
         /**
          * DocumentInitializeResponse
@@ -4137,6 +4143,11 @@ export interface components {
              * @description 显示顺序
              */
             display_order: number;
+            /**
+             * Category
+             * @description 文书分类
+             */
+            category: string;
             /**
              * Created At
              * Format: date-time

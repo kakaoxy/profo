@@ -88,20 +88,6 @@ export const useCreateProject = ({
         commission_start_date: toDateStr(values.commission_start_date),
         commission_end_date: toDateStr(values.commission_end_date),
         other_agreements: values.other_agreements || null,
-        // 编辑模式：附件已通过 DocumentsAttachmentsTab 即时持久化，不再随表单提交覆盖
-        ...(isEditMode
-          ? {}
-          : {
-              signing_materials: values.attachments?.length
-                ? values.attachments.map((att) => ({
-                    filename: att.filename,
-                    url: att.url,
-                    category: att.category,
-                    fileType: att.fileType,
-                    size: att.size,
-                  }))
-                : null,
-            }),
         owners: values.owners?.map((o) => ({
           id: o.id || undefined,
           owner_name: o.owner_name || null,

@@ -16,36 +16,6 @@ const optionalNumber = z
     return isNaN(num) ? undefined : num;
   });
 
-// 附件分类枚举
-const attachmentCategoryEnum = z.enum([
-  "signing_contract",
-  "property_certificate",
-  "property_survey",
-  "owner_id_card",
-  "owner_bank_card",
-  "renovation_contract",
-  "handover_document",
-  "receipt",
-  "cooperation_confirmation",
-  "store_investment_agreement",
-  "value_added_service",
-  "other",
-]);
-
-// 附件验证 schema
-const attachmentSchema = z.object({
-  id: z.string(),
-  filename: z.string(),
-  url: z.string(),
-  category: attachmentCategoryEnum,
-  fileType: z.enum(["excel", "image", "pdf", "word", "video"]),
-  size: z.number(),
-  uploadedAt: z.string(),
-});
-
-export type AttachmentCategory = z.infer<typeof attachmentCategoryEnum>;
-export type AttachmentType = z.infer<typeof attachmentSchema>["fileType"];
-
 // 户型房间数验证（正整数）
 const roomNumberSchema = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
@@ -165,9 +135,6 @@ export const formSchema = z
 
     // 备注
     notes: z.string().optional(),
-
-    // 附件列表
-    attachments: z.array(attachmentSchema).optional(),
   })
   .refine(
     (data) => data.owners && data.owners.length >= 1,
