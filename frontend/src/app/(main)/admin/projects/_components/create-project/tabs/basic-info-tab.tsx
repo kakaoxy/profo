@@ -123,19 +123,22 @@ export function BasicInfoTab({ form }: TabProps) {
           name="community_name"
           render={({ field }) => (
             <FormItem className="space-y-1.5">
-              <CommunitySelect
-                value={field.value}
-                onChange={(community) => {
-                  field.onChange(community.name);
-                  form.setValue("community_id", community.id || undefined);
-                  form.setValue("district", community.district || "");
-                  form.setValue("original_community_district", community.district || "");
-                  setCommunityDistrict(community.district);
-                  form.setValue("business_circle", community.businessCircle || "");
-                  form.setValue("original_community_business_circle", community.businessCircle || "");
-                  setCommunityBusinessCircle(community.businessCircle);
-                }}
-              />
+              {/* CommunitySelect 内部已自带 label，此处不再加 FormLabel 以避免重复 */}
+              <FormControl>
+                <CommunitySelect
+                  value={field.value}
+                  onChange={(community) => {
+                    field.onChange(community.name);
+                    form.setValue("community_id", community.id || undefined);
+                    form.setValue("district", community.district || "");
+                    form.setValue("original_community_district", community.district || "");
+                    setCommunityDistrict(community.district);
+                    form.setValue("business_circle", community.businessCircle || "");
+                    form.setValue("original_community_business_circle", community.businessCircle || "");
+                    setCommunityBusinessCircle(community.businessCircle);
+                  }}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

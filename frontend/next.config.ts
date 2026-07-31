@@ -8,8 +8,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: import.meta.dirname, // 明确指定项目根目录，避免 lockfile 警告
   },
+  // [修复] /api/* 通过 rewrites 代理走 middleware/proxy 层，默认 10MB 会截断大文件上传
+  // 与后端 settings.max_upload_size (500MB) 对齐，真正尺寸边界由后端逐路由控制
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "recharts"],
+    proxyClientMaxBodySize: "500mb",
     serverActions: {
       bodySizeLimit: "10mb",
       // allowedOrigins 是「额外」允许的 origin（Next.js 自动允许同源 Host）
