@@ -27,7 +27,7 @@ export function FloorPlanUpload({
   images,
   onChange,
   maxImages = 6,
-  maxFileSize = 10,
+  maxFileSize = 100,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 

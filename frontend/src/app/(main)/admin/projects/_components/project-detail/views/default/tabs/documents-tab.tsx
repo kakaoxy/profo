@@ -359,10 +359,10 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
                 "grid items-center gap-3 rounded-md border px-4 py-3 transition-colors",
                 isDirty ? "border-ink/40 bg-fog/30" : "hover:bg-accent/50",
                 showUpload
-                  ? "[grid-template-columns:24px_minmax(120px,1fr)_auto_160px_auto_32px]"
+                  ? "grid-cols-[24px_minmax(120px,1fr)_auto_160px_auto_32px]"
                   : isArchived
-                    ? "[grid-template-columns:24px_minmax(120px,1fr)_auto_160px_32px]"
-                    : "[grid-template-columns:24px_minmax(120px,1fr)_auto_120px_32px]",
+                    ? "grid-cols-[24px_minmax(120px,1fr)_auto_160px_32px]"
+                    : "grid-cols-[24px_minmax(120px,1fr)_auto_120px_32px]",
               )}
             >
               {/* 序号 */}
@@ -453,7 +453,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
               value={uploadCategory}
               onValueChange={(v) => setUploadCategory(v as AttachmentCategory)}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-50">
                 <SelectValue placeholder="选择附件分类" />
               </SelectTrigger>
               <SelectContent>
@@ -475,7 +475,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
             }}
             onUploadComplete={handleUploadComplete}
             title="点击或拖拽文件到此处上传"
-            description="支持多文件上传，Excel、图片、PDF、Word、视频格式，文档/图片最大 10MB，视频最大 500MB"
+            description="支持多文件上传，Excel、图片、PDF、Word、视频格式，文档/图片最大 100MB，视频最大 500MB"
           />
         </DialogContent>
       </Dialog>

@@ -137,7 +137,7 @@ export function PhotoManager({
                 isUploading={isUploading}
                 disabled={isUploading}
                 title="点击或拖拽图片到此处上传"
-                description="支持 JPG, PNG, GIF, WebP 格式，单文件最大 10MB"
+                description="支持 JPG, PNG, GIF, WebP 格式，单文件最大 100MB"
                 accept=".jpg,.jpeg,.png,.gif,.webp"
                 multiple
                 onUpload={uploadFiles}
@@ -152,7 +152,7 @@ export function PhotoManager({
                   {uploadingFiles.map((file) => (
                     <div key={file.filename} className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="truncate max-w-[200px]">{file.filename}</span>
+                        <span className="truncate max-w-50">{file.filename}</span>
                         <span>{file.progress}%</span>
                       </div>
                       <Progress value={file.progress} className="h-1" />

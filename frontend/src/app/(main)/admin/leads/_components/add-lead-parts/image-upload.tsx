@@ -34,7 +34,7 @@ export const ImageUpload: React.FC<Props> = ({
   images, 
   onChange,
   maxImages = 10,
-  maxFileSize = 10, // 默认 10MB
+  maxFileSize = 100, // 默认 100MB
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -6,7 +6,7 @@ import { useUpload, compressImage } from "@/components/common/upload";
 import { addRenovationPhotoAction } from "../../../../../actions/renovation";
 import { UploadingPhoto } from "./photo-grid";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB（图片/文档统一限额）
 
 interface UseRenovationUploadProps {
   projectId: string;
