@@ -199,6 +199,15 @@ export interface AuthConfig {
    * ],
    */
   providers?: OAuthProvider[];
+  /**
+   * 是否将解析后的 config 注册为模块级单例。默认 true。
+   *
+   * 当同一进程存在多个 Auth() 实例（如 C 端 auth.ts + admin admin-auth.ts）时，
+   * 后加载的实例会覆盖单例。admin 实例应设为 false，避免覆盖 C 端 config——
+   * C 端 Server Action（loginAction/fetchSessionAction）通过 getGlobalAuthConfig()
+   * 读取单例，若被 admin 覆盖会调错端点。
+   */
+  registerGlobal?: boolean;
 }
 
 // ─── Resolved Config (internal) ──────────────────────────────────────────────
