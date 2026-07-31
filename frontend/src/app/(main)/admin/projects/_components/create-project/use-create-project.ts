@@ -170,11 +170,29 @@ export const useCreateProject = ({
     clearDraft,
     saveDraft,
     onSubmit: form.handleSubmit(onSubmit, (errors) => {
-      const snapshot = JSON.parse(JSON.stringify(errors));
-      if (Object.keys(snapshot).length === 0) {
+      // 提取可序列化的错误摘要（JSON.stringify 会丢弃 undefined 和 DOM 元素 ref）
+      const errorList: Record<string, { type?: string; message?: string }> = {};
+      const rawErrors = errors as Record<string, unknown>;
+      for (const key in rawErrors) {
+        const err = rawErrors[key];
+        if (err && typeof err === "object" && !Array.isArray(err)) {
+          const fieldErr = err as { type?: string; message?: string };
+          errorList[key] = { type: fieldErr.type, message: fieldErr.message };
+        } else {
+          errorList[key] = { message: String(err) };
+        }
+      }
+      const errorKeys = Object.keys(errorList);
+      if (errorKeys.length === 0) {
         logger.error("[CreateProject] Form validation failed but no specific field errors found");
+        toast.error("表单验证失败，请检查必填字段");
       } else {
-        logger.error("[CreateProject] Form validation errors:", snapshot);
+        logger.error("[CreateProject] Form validation errors:", errorList);
+        const messages = errorKeys
+          .map((k) => errorList[k].message)
+          .filter(Boolean)
+          .join("；");
+        toast.error(messages || "表单验证失败，请检查必填字段");
       }
     }),
     isEditMode,

@@ -2,7 +2,7 @@
 
 import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
-import { UseFormReturn, Controller } from "react-hook-form";
+import { UseFormReturn } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS, BUSINESS_FORM_OPTIONS } from "../schema";
 import { CommunitySelect } from "@/components/common/community-select";
 import { getSalesUsersSimpleAction, getCurrentUserAction } from "../../../actions/sales";
@@ -118,23 +118,26 @@ export function BasicInfoTab({ form }: TabProps) {
       {/* 第一行：小区 / 行政区 / 商圈（行政区与商圈较窄，小区占更大比例） */}
       <div className="grid grid-cols-[2fr_1fr_1fr] gap-4">
         {/* 小区名称 - 使用小区选择组件 */}
-        <Controller
+        <FormField
           control={control}
           name="community_name"
           render={({ field }) => (
-            <CommunitySelect
-              value={field.value}
-              onChange={(community) => {
-                field.onChange(community.name);
-                form.setValue("community_id", community.id || undefined);
-                form.setValue("district", community.district || "");
-                form.setValue("original_community_district", community.district || "");
-                setCommunityDistrict(community.district);
-                form.setValue("business_circle", community.businessCircle || "");
-                form.setValue("original_community_business_circle", community.businessCircle || "");
-                setCommunityBusinessCircle(community.businessCircle);
-              }}
-            />
+            <FormItem className="space-y-1.5">
+              <CommunitySelect
+                value={field.value}
+                onChange={(community) => {
+                  field.onChange(community.name);
+                  form.setValue("community_id", community.id || undefined);
+                  form.setValue("district", community.district || "");
+                  form.setValue("original_community_district", community.district || "");
+                  setCommunityDistrict(community.district);
+                  form.setValue("business_circle", community.businessCircle || "");
+                  form.setValue("original_community_business_circle", community.businessCircle || "");
+                  setCommunityBusinessCircle(community.businessCircle);
+                }}
+              />
+              <FormMessage />
+            </FormItem>
           )}
         />
 
