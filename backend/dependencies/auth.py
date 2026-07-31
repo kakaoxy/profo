@@ -305,6 +305,37 @@ def require_permission(code: str) -> Callable[..., User]:
     return permission_checker
 
 
+def require_any_permission(codes: list[str]) -> Callable[..., User]:
+    """多权限 OR 校验依赖工厂.
+
+    用户拥有 ``codes`` 中任意一个权限即放行。
+
+    Args:
+        codes: 需要的权限代码列表（满足其一即可）
+
+    Returns:
+        依赖函数，用于检查用户权限
+
+    Raises:
+        PermissionDeniedError: 403 Forbidden - 用户无任一指定权限
+
+    """
+
+    def permission_checker(
+        user: CurrentActiveUserDep,
+        db: DbSessionDep,
+    ) -> User:
+        from services.system.permission import permission_service  # noqa: PLC0415
+
+        perms = permission_service.get_user_permission_codes(db, user)
+        if not (set(codes) & perms):
+            msg = f"权限不足：缺少以下任一权限 {', '.join(codes)}"
+            raise PermissionDeniedError(msg)
+        return user
+
+    return permission_checker
+
+
 # 预定义的权限依赖类型（按需扩展，Task 9 将逐步替换 CurrentAdminUserDep）
 # user 模块
 UserReadPermDep = Annotated[User, Depends(require_permission("user:read"))]
@@ -336,6 +367,8 @@ ProjectSalesManageTeamPermDep = Annotated[User, Depends(require_permission("proj
 LeadReadPermDep = Annotated[User, Depends(require_permission("lead:read"))]
 LeadWritePermDep = Annotated[User, Depends(require_permission("lead:write"))]
 LeadExportPermDep = Annotated[User, Depends(require_permission("lead:export"))]
+# 上传接口双权限通道：property:upload（房源批量上传）OR lead:upload_photo（线索录入上传）
+LeadUploadPhotoPermDep = Annotated[User, Depends(require_any_permission(["property:upload", "lead:upload_photo"]))]
 # ledger 模块
 LedgerReadPermDep = Annotated[User, Depends(require_permission("ledger:read"))]
 LedgerWritePermDep = Annotated[User, Depends(require_permission("ledger:write"))]

@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from db import get_db
-from dependencies.auth import PropertyUploadPermDep
+from dependencies.auth import LeadUploadPhotoPermDep
 from services.system.exceptions import FileProcessingError, ValidationError
 from settings import settings
 from utils.common import RateLimits, limiter
@@ -139,7 +139,7 @@ def save_upload_file(
 @limiter.limit(RateLimits.FILE_UPLOAD)
 def upload_file(
     request: Request,
-    _current_user: PropertyUploadPermDep,
+    _current_user: LeadUploadPhotoPermDep,
     file: Annotated[UploadFile, File()],
     _db: Annotated[Session, Depends(get_db)],
 ) -> FileUploadResponse:

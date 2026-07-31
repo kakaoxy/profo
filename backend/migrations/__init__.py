@@ -237,6 +237,14 @@ _PERMISSIONS_SEED: list[dict] = [
         "sort_order": 40,
         "description": "C 端提交线索",
     },
+    {
+        "code": "lead:upload_photo",
+        "name": "上传线索图片",
+        "module": "lead",
+        "category": "api",
+        "sort_order": 50,
+        "description": "在线索录入流程中上传实拍图片（与 property:upload 解耦）",
+    },
     # 项目管理模块
     {
         "code": "project:read",
@@ -403,6 +411,7 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "lead:read",
         "lead:write",
         "lead:export",
+        "lead:upload_photo",
         "project:read",
         "project:write",
         # project 业务身份子权限码（user/customer 不分配，由业务身份豁免）
@@ -426,6 +435,8 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         # 如需开放请通过 UI 手动分配，迁移脚本不会自动补回）
         "property:read",
         "lead:read",
+        "lead:write",
+        "lead:upload_photo",
         "ledger:read",
         "investment:read",
         "l4_marketing:read",
