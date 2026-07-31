@@ -70,7 +70,11 @@ export function Auth(config: AuthConfig) {
   // because "use server" exports cannot be closures) continue to work for
   // the C端 auth instance. Instance-bound helpers below prefer the captured
   // `resolved` config and never read from the singleton.
-  setGlobalAuthConfig(resolved);
+  //
+  // admin 实例传 registerGlobal:false 跳过注册，避免覆盖 C 端单例。
+  if (config.registerGlobal !== false) {
+    setGlobalAuthConfig(resolved);
+  }
 
   return {
     // ── Server-side session helpers ────────────────────────────────────────

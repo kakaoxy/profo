@@ -218,4 +218,7 @@ export const adminAuth = Auth({
     home: "/admin",
   },
   debug: process.env.NODE_ENV === "development",
+  // 不覆盖 C 端 auth.ts 注册的全局单例。admin 代码通过 adminAuth.adapter.*
+  // + setTokenCookies(tokens, adminAuth.config) 直接调用，不依赖单例。
+  registerGlobal: false,
 });
