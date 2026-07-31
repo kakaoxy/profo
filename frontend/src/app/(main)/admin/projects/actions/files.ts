@@ -57,7 +57,7 @@ export async function uploadFileAction(formData: FormData) {
         return { success: false, message: "登录已过期，请重新登录" };
       }
       if (res.status === 413) {
-        return { success: false, message: "文件大小超过服务器限制 (10MB)" };
+        return { success: false, message: "文件大小超过服务器限制（图片/文档 100MB，视频 500MB）" };
       }
 
       const errorText = await res.text();

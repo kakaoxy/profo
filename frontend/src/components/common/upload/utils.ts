@@ -217,7 +217,7 @@ export function validateFile(
     allowedTypes?: string[];
   }
 ): string | null {
-  const { maxSize = 10 * 1024 * 1024, allowedTypes = [] } = options;
+  const { maxSize = 100 * 1024 * 1024, allowedTypes = [] } = options;
 
   // 文件大小验证
   if (file.size > maxSize) {

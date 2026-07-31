@@ -56,7 +56,7 @@ export interface UploadProgress {
 export interface UploadOptions {
   /** 上传接口URL (默认: /api/v1/files/upload) */
   url?: string;
-  /** 最大文件大小 (字节, 默认10MB) */
+  /** 最大文件大小 (字节, 默认100MB) */
   maxSize?: number;
   /** 允许的文件类型 (MIME类型数组, 默认图片类型) */
   allowedTypes?: string[];
@@ -146,5 +146,5 @@ export const DEFAULT_ALLOWED_FILE_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
 
-/** 默认文件大小限制: 10MB */
+/** 默认文件大小限制: 100MB */
 export { MAX_IMAGE_SIZE as DEFAULT_MAX_FILE_SIZE } from "@/lib/constants";

@@ -45,7 +45,7 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
           onValueChange={(v) => setSelectedCategory(v as AttachmentCategory)}
           disabled={disabled}
         >
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-50">
             <SelectValue placeholder="选择附件分类" />
           </SelectTrigger>
           <SelectContent>
@@ -85,7 +85,7 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
           onUploadComplete(attachment);
         }}
         title="点击或拖拽文件到此处上传"
-        description="支持多文件上传，Excel、图片、PDF、Word、视频格式，文档/图片最大 10MB，视频最大 500MB"
+        description="支持多文件上传，Excel、图片、PDF、Word、视频格式，文档/图片最大 100MB，视频最大 500MB"
       />
     </div>
   );

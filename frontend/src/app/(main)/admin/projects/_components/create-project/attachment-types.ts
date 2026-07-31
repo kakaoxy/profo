@@ -69,18 +69,18 @@ export const ALLOWED_MIME_TYPES = Object.values(ALLOWED_FILE_TYPES).flatMap(
 );
 
 // 各文件类型大小上限（字节）
-// 文档/图片/PDF/Word/Excel：10MB；视频：500MB（与后端 settings.max_upload_size 对齐）
-// M6 修复：按业务面拆分限额，避免视频被 10MB 误拦或文档被 500MB 放过
+// 文档/图片/PDF/Word/Excel：100MB；视频：500MB（与后端 settings.max_upload_size 对齐）
+// M6 修复：按业务面拆分限额，避免视频被 100MB 误拦或文档被 500MB 放过
 export const MAX_FILE_SIZE_BY_TYPE: Record<FileType, number> = {
-  excel: 10 * 1024 * 1024,
-  image: 10 * 1024 * 1024,
-  pdf: 10 * 1024 * 1024,
-  word: 10 * 1024 * 1024,
+  excel: 100 * 1024 * 1024,
+  image: 100 * 1024 * 1024,
+  pdf: 100 * 1024 * 1024,
+  word: 100 * 1024 * 1024,
   video: 500 * 1024 * 1024,
 };
 
-// 默认大小上限：10MB（文档类，向后兼容现有引用）
-export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// 默认大小上限：100MB（文档类，向后兼容现有引用）
+export const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 // 附件接口
 export interface Attachment {
@@ -108,7 +108,7 @@ export function getFileType(filename: string): FileType | null {
 
 /**
  * 根据文件名返回对应类型的大小上限（字节）
- * 用于按业务面拆分限额：文档/图片 10MB，视频 500MB
+ * 用于按业务面拆分限额：文档/图片 100MB，视频 500MB
  */
 export function getMaxFileSizeForFile(filename: string): number {
   const fileType = getFileType(filename);
