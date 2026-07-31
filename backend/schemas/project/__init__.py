@@ -91,6 +91,7 @@ from .renovation import (
     RenovationPhotoResponse,
     RenovationPhotoUpload,
     RenovationResponse,
+    RenovationStageDateUpdate,
     RenovationUpdate,
 )
 
@@ -198,6 +199,7 @@ __all__ = [
     "RenovationPhotoUpload",
     "RenovationResponse",
     # Renovation
+    "RenovationStageDateUpdate",
     "RenovationUpdate",
     "SaleBase",
     "SaleCreate",

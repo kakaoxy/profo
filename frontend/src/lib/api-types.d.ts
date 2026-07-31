@@ -493,6 +493,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/renovation/stages/{stage}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Renovation Stage Date
+         * @description 修改/清空已完成阶段的完成时间（仅管理员）.
+         *
+         *     速率限制：100次/小时.
+         *     业务身份双通道注入 current_user，admin 角色校验由 Service 层强制执行。
+         */
+        patch: operations["update_renovation_stage_date_api_v1_projects__project_id__renovation_stages__stage__patch"];
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/renovation/photos": {
         parameters: {
             query?: never;
@@ -9286,6 +9309,17 @@ export interface components {
          */
         RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "交付" | "已完成";
         /**
+         * RenovationStageDateUpdate
+         * @description 修改/清空已完成阶段的完成时间（仅管理员）.
+         */
+        RenovationStageDateUpdate: {
+            /**
+             * Stage Completed At
+             * @description 新的阶段完成时间；传 None 表示清空回退未完成
+             */
+            stage_completed_at?: string | null;
+        };
+        /**
          * RenovationUpdate
          * @description 更新改造阶段请求模型.
          */
@@ -11405,6 +11439,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RenovationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_renovation_stage_date_api_v1_projects__project_id__renovation_stages__stage__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 改造阶段 */
+                stage: components["schemas"]["RenovationStage"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenovationStageDateUpdate"];
             };
         };
         responses: {

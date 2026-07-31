@@ -12,10 +12,11 @@ from typing import Any
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from models import Project, ProjectRenovation, RenovationPhoto
-from models.common import ProjectStatus
+from constants.role_codes import RoleCode
+from models import Project, ProjectRenovation, RenovationPhoto, User
+from models.common import ProjectStatus, RenovationStage
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
-from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
+from services.system.exceptions import BusinessLogicError, PermissionDeniedError, ResourceNotFoundError
 
 # 允许更新的装修字段白名单（防止设置 id/is_deleted 等敏感字段）
 _RENOVATION_ALLOWED_FIELDS = {
@@ -137,6 +138,75 @@ class RenovationService:
         if renovation_data.stage_completed_at and stage_to_record and stage_to_record.value == "已完成":
             renovation.actual_end_date = renovation_data.stage_completed_at
 
+        renovation.updated_at = datetime.now(timezone.utc)
+
+        self.db.commit()
+        self.db.refresh(project)
+        return project
+
+    def update_stage_date(
+        self,
+        project_id: str,
+        stage: RenovationStage,
+        stage_completed_at: datetime | None,
+        current_user: User,
+    ) -> Project:
+        """修改/清空已完成阶段的完成时间（仅管理员）.
+
+        权限校验由 Router 层注入 + 本层双重校验 admin 角色。
+        不流转 project.renovation_stage 主阶段，仅修改 stage_completed_dates。
+
+        Args:
+            project_id: 项目ID
+            stage: 要修改的阶段
+            stage_completed_at: 新完成时间；None 表示清空回退未完成
+            current_user: 当前登录用户（必须为 admin）
+
+        Raises:
+            PermissionDeniedError: 非管理员
+            ResourceNotFoundError: 项目不存在
+            BusinessLogicError: 项目状态不允许（非 renovating/selling/sold）
+
+        """
+        # 显式 admin 校验（Fail Loud）
+        if not current_user.role or current_user.role.code != RoleCode.ADMIN.value:
+            msg = "仅管理员可修改已完成阶段的时间"
+            raise PermissionDeniedError(msg)
+
+        project = self._get_project(project_id)
+
+        allowed_statuses = [
+            ProjectStatus.RENOVATING.value,
+            ProjectStatus.SELLING.value,
+            ProjectStatus.SOLD.value,
+        ]
+        if project.status not in allowed_statuses:
+            msg = "当前状态不允许修改改造进度"
+            raise BusinessLogicError(msg)
+
+        renovation = self._get_or_create_renovation(project_id)
+
+        dates = {} if not renovation.stage_completed_dates else dict(renovation.stage_completed_dates)
+
+        if stage_completed_at is None:
+            # 清空回退
+            dates.pop(stage.value, None)
+            # 联动清理实际开工/竣工时间
+            if stage.value == "拆除":
+                renovation.actual_start_date = None
+            elif stage.value == "已完成":
+                renovation.actual_end_date = None
+        else:
+            # 修改日期
+            dates[stage.value] = stage_completed_at.strftime("%Y-%m-%d")
+            # 联动：拆除/已完成 的实际时间同步更新
+            if stage.value == "拆除":
+                renovation.actual_start_date = stage_completed_at
+            elif stage.value == "已完成":
+                renovation.actual_end_date = stage_completed_at
+
+        renovation.stage_completed_dates = dates or None
+        flag_modified(renovation, "stage_completed_dates")
         renovation.updated_at = datetime.now(timezone.utc)
 
         self.db.commit()
