@@ -73,13 +73,13 @@ export function LeadsToolbar({
             </TabsTrigger>
             <TabsTrigger
               value="pending_assessment"
-              className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+              className="text-xs px-3 data-[state=active]:bg-status-pending/10 data-[state=active]:text-status-pending"
             >
               待评估
             </TabsTrigger>
             <TabsTrigger
               value="pending_visit"
-              className="text-xs px-3 data-[state=active]:bg-status-pending/10 data-[state=active]:text-status-pending"
+              className="text-xs px-3 data-[state=active]:bg-status-visit/10 data-[state=active]:text-status-visit"
             >
               待看房
             </TabsTrigger>

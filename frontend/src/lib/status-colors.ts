@@ -12,6 +12,7 @@ import { LeadStatus } from "@/app/(main)/admin/leads/types";
 /** 通用状态类型 */
 export type StatusType =
   | "pending"        // 待评估
+  | "visit"          // 待看房
   | "signing"        // 已签约
   | "renovating"     // 装修中
   | "selling"        // 在售
@@ -36,6 +37,10 @@ export const STATUS_CONFIG: Record<StatusType, StatusConfig> = {
   pending: {
     label: "待评估",
     cssVar: "--status-pending",
+  },
+  visit: {
+    label: "待看房",
+    cssVar: "--status-visit",
   },
   signing: {
     label: "已签约",
@@ -62,7 +67,7 @@ export const STATUS_CONFIG: Record<StatusType, StatusConfig> = {
 /** 线索状态映射：将 LeadStatus 映射到通用 StatusType */
 export const LEAD_STATUS_MAPPING: Record<LeadStatus, StatusType> = {
   [LeadStatus.PENDING_ASSESSMENT]: "pending",
-  [LeadStatus.PENDING_VISIT]: "pending",
+  [LeadStatus.PENDING_VISIT]: "visit",
   [LeadStatus.VISITED]: "selling",
   [LeadStatus.SIGNED]: "signing",
   [LeadStatus.REJECTED]: "rejected",
@@ -100,6 +105,7 @@ export const defaultStatusClass = "bg-muted text-muted-foreground";
 
 const STATUS_CLASS_MAP: Record<StatusType, string> = {
   pending: "bg-status-pending text-white hover:opacity-90",
+  visit: "bg-status-visit text-white hover:opacity-90",
   signing: "bg-status-signing text-white hover:opacity-90",
   renovating: "bg-status-renovating text-white hover:opacity-90",
   selling: "bg-status-selling text-white hover:opacity-90",
@@ -109,6 +115,7 @@ const STATUS_CLASS_MAP: Record<StatusType, string> = {
 
 const STATUS_BADGE_CLASS_MAP: Record<StatusType, string> = {
   pending: "bg-status-pending/10 text-status-pending border-status-pending/20",
+  visit: "bg-status-visit/10 text-status-visit border-status-visit/20",
   signing: "bg-status-signing/10 text-status-signing border-status-signing/20",
   renovating: "bg-status-renovating/10 text-status-renovating border-status-renovating/20",
   selling: "bg-status-selling/10 text-status-selling border-status-selling/20",
@@ -122,7 +129,8 @@ const STATUS_BADGE_CLASS_MAP: Record<StatusType, string> = {
  * @see globals.css Status Colors - Light Mode
  */
 const SSR_STATUS_COLORS: Record<StatusType, string> = {
-  pending: "#f59e0b",
+  pending: "#d946ef",
+  visit: "#0891b2",
   signing: "#005daa",
   renovating: "#f97316",
   selling: "#10b981",
@@ -162,6 +170,7 @@ export function getStatusColor(status: StatusType): string {
 export function getAllStatusColors(): Record<StatusType, string> {
   return {
     pending: getStatusColor("pending"),
+    visit: getStatusColor("visit"),
     signing: getStatusColor("signing"),
     renovating: getStatusColor("renovating"),
     selling: getStatusColor("selling"),
@@ -186,7 +195,7 @@ export function getLeadStatusClassName(status: LeadStatus): string {
 export function getLeadStatusBadgeClass(status: LeadStatus | string): string {
   const stringStatusMap: Record<string, StatusType> = {
     pending_assessment: "pending",
-    pending_visit: "pending",
+    pending_visit: "visit",
     visited: "selling",
     signed: "signing",
     rejected: "rejected",
@@ -247,7 +256,7 @@ export function getStatusStyleConfig(status: string): { label: string; className
     },
     pending_visit: {
       label: "待看房",
-      className: STATUS_BADGE_CLASS_MAP.pending,
+      className: STATUS_BADGE_CLASS_MAP.visit,
     },
     visited: {
       label: "已看房",
