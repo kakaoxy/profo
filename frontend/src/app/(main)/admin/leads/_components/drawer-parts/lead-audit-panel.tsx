@@ -299,11 +299,11 @@ const PendingVisitPanel: React.FC<PendingVisitPanelProps> = ({
 }) => (
   <div className="space-y-4">
     <CurrentEvalPriceSection lead={lead} onEvalAdjusted={onEvalAdjusted} />
-    <div className="bg-status-pending/10 border border-amber-100 p-4 rounded-xl flex gap-3">
-      <AlertTriangle className="h-5 w-5 text-status-pending shrink-0" />
+    <div className="bg-status-visit/10 border border-cyan-100 p-4 rounded-xl flex gap-3">
+      <AlertTriangle className="h-5 w-5 text-status-visit shrink-0" />
       <div className="space-y-1">
-        <p className="text-xs font-bold text-amber-800">当前阶段：实勘核验</p>
-        <p className="text-[11px] text-amber-700 leading-relaxed">
+        <p className="text-xs font-bold text-cyan-800">当前阶段：实勘核验</p>
+        <p className="text-[11px] text-cyan-700 leading-relaxed">
           请协调实勘人员在 48
           小时内完成上门，重点核实房屋漏水、结构改动及物业欠费情况。
         </p>

@@ -54,6 +54,7 @@
 
   /* Status Colors */
   --color-status-pending: var(--status-pending);
+  --color-status-visit: var(--status-visit);
   --color-status-signing: var(--status-signing);
   --color-status-renovating: var(--status-renovating);
   --color-status-selling: var(--status-selling);
@@ -160,7 +161,8 @@
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
   /* Status Colors - Light Mode */
-  --status-pending: #f59e0b;
+  --status-pending: #d946ef;
+  --status-visit: #0891b2;
   --status-signing: #005daa;
   --status-renovating: #f97316;
   --status-selling: #10b981;
@@ -229,7 +231,8 @@
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
 
   /* Status Colors - Dark Mode */
-  --status-pending: #fbbf24;
+  --status-pending: #e879f9;
+  --status-visit: #22d3ee;
   --status-signing: #3b82f6;
   --status-renovating: #fb923c;
   --status-selling: #34d399;
