@@ -95,6 +95,10 @@ const LEGACY_CATEGORY_MAP: Record<string, DocumentCategory> = {
 };
 
 export function mapLegacyAttachmentCategory(category: string): string {
+  // 已是新分类的直接透传，避免上传后保存的 contract_agreement 等被误归类为 other
+  if (DOCUMENT_CATEGORIES.some((c) => c.value === category)) {
+    return category;
+  }
   return LEGACY_CATEGORY_MAP[category] ?? "other";
 }
 
