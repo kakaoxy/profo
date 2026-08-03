@@ -33,9 +33,10 @@ import { ImageUpload } from "@/components/common/image-upload";
 import type { ImageItem } from "@/components/common/image-upload";
 import { RecordDialog } from "@/components/finance/record-dialog";
 import { SettlementDialog } from "./settlement-dialog";
+import { LedgerDetailStats } from "./ledger-detail-stats";
 import { LedgerDetailTableFilter, type FilterTab } from "./ledger-detail-table-filter";
 import { LedgerDetailTableHeader } from "./ledger-detail-table-header";
-import { LedgerDetailTableRow } from "./ledger-detail-table-row";
+import { LedgerDetailTableRow, type LedgerRecord } from "./ledger-detail-table-row";
 import { deleteRecord, exportProjectLedger, updateRecordAction } from "../../actions";
 import type { components } from "@/lib/api-types";
 
@@ -51,15 +52,13 @@ interface LedgerDetailTableProps {
 
 /**
  * 资金账本表格筛选状态 hook
- * 用 useReducer 集中管理 filter/search/分类筛选状态，避免组件内大量散落的 useState
- * 后续可进一步拆分 delete/supplement 等状态为独立 hook
+ * 用 useReducer 集中管理 filter/search/科目/凭证筛选状态
  */
 type LedgerFilterState = {
   filter: FilterTab;
   searchInput: string;
   debouncedSearch: string;
-  categoryFilter: string;
-  counterpartyTypeFilter: string;
+  subjectFilter: string;
   voucherFilter: string;
 };
 
@@ -67,16 +66,14 @@ type LedgerFilterAction =
   | { type: "SET_FILTER"; payload: FilterTab }
   | { type: "SET_SEARCH_INPUT"; payload: string }
   | { type: "SET_DEBOUNCED_SEARCH"; payload: string }
-  | { type: "SET_CATEGORY_FILTER"; payload: string }
-  | { type: "SET_COUNTERPARTY_TYPE_FILTER"; payload: string }
+  | { type: "SET_SUBJECT_FILTER"; payload: string }
   | { type: "SET_VOUCHER_FILTER"; payload: string };
 
 const initialLedgerFilterState: LedgerFilterState = {
   filter: "all",
   searchInput: "",
   debouncedSearch: "",
-  categoryFilter: "all",
-  counterpartyTypeFilter: "all",
+  subjectFilter: "all",
   voucherFilter: "all",
 };
 
@@ -91,10 +88,8 @@ function ledgerFilterReducer(
       return { ...state, searchInput: action.payload };
     case "SET_DEBOUNCED_SEARCH":
       return { ...state, debouncedSearch: action.payload };
-    case "SET_CATEGORY_FILTER":
-      return { ...state, categoryFilter: action.payload };
-    case "SET_COUNTERPARTY_TYPE_FILTER":
-      return { ...state, counterpartyTypeFilter: action.payload };
+    case "SET_SUBJECT_FILTER":
+      return { ...state, subjectFilter: action.payload };
     case "SET_VOUCHER_FILTER":
       return { ...state, voucherFilter: action.payload };
     default:
@@ -102,13 +97,13 @@ function ledgerFilterReducer(
   }
 }
 
-function useLedgerFilters(data: CashFlowRecordResponse[]) {
+function useLedgerFilters(data: LedgerRecord[]) {
   const [state, dispatch] = React.useReducer(
     ledgerFilterReducer,
     initialLedgerFilterState,
   );
 
-  // 交易方搜索 300ms 防抖
+  // 搜索 300ms 防抖
   React.useEffect(() => {
     const timer = setTimeout(() => {
       dispatch({ type: "SET_DEBOUNCED_SEARCH", payload: state.searchInput });
@@ -116,76 +111,62 @@ function useLedgerFilters(data: CashFlowRecordResponse[]) {
     return () => clearTimeout(timer);
   }, [state.searchInput]);
 
-  // 分类选项来自 data 去重
-  const categoryOptions = React.useMemo(() => {
-    const set = new Set<string>();
-    data.forEach((item) => {
-      if (item.category) set.add(item.category);
-    });
-    return Array.from(set);
-  }, [data]);
-
   const filteredData = React.useMemo(() => {
     const keyword = state.debouncedSearch.trim().toLowerCase();
     return data.filter((item) => {
-      // 1. Tabs（all/income/expense）
-      if (state.filter !== "all" && item.type !== state.filter) return false;
-      // 2. 交易方模糊搜索（大小写不敏感）
+      // 1. Tabs（all/in/out）：按 outflow>0 / inflow>0 过滤
+      const out = Number(item.outflow) || 0;
+      const infl = Number(item.inflow) || 0;
+      if (state.filter === "in" && !(infl > 0)) return false;
+      if (state.filter === "out" && !(out > 0)) return false;
+      // 2. 摘要/付款方/收款方 模糊搜索
       if (keyword) {
-        const cp = (item.counterparty ?? "").toLowerCase();
-        if (!cp.includes(keyword)) return false;
+        const hay = [
+          item.description ?? "",
+          item.remark ?? "",
+          item.payer ?? "",
+          item.payee ?? "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(keyword)) return false;
       }
-      // 3. 分类精确匹配
-      if (state.categoryFilter !== "all" && item.category !== state.categoryFilter)
-        return false;
-      // 4. 支付方类型筛选
+      // 3. 科目分类筛选（按 subject_id 匹配）
       if (
-        state.counterpartyTypeFilter !== "all" &&
-        (item as { counterparty_type?: string }).counterparty_type !==
-          state.counterpartyTypeFilter
+        state.subjectFilter !== "all" &&
+        (item.subject_id ?? item.subject?.id ?? "") !== state.subjectFilter
       )
         return false;
-      // 5. 凭证状态筛选
+      // 4. 凭证状态筛选
       const hasVoucher = !!(item.receipt_urls && item.receipt_urls.length > 0);
       if (state.voucherFilter === "with" && !hasVoucher) return false;
       if (state.voucherFilter === "without" && hasVoucher) return false;
       return true;
     });
-  }, [
-    data,
-    state.filter,
-    state.debouncedSearch,
-    state.categoryFilter,
-    state.counterpartyTypeFilter,
-    state.voucherFilter,
-  ]);
+  }, [data, state.filter, state.debouncedSearch, state.subjectFilter, state.voucherFilter]);
 
-  // 筛选汇总：笔数与代数和（收入为正、支出为负）
+  // 筛选汇总：笔数 + 净现金流（流入 − 流出）
   const summary = React.useMemo(() => {
-    const total = filteredData.reduce((sum, item) => {
-      const amt = Number(item.amount) || 0;
-      return sum + (item.type === "income" ? amt : -amt);
-    }, 0);
-    return { count: filteredData.length, total };
+    let net = 0;
+    for (const item of filteredData) {
+      net += (Number(item.inflow) || 0) - (Number(item.outflow) || 0);
+    }
+    return { count: filteredData.length, net };
   }, [filteredData]);
 
   return {
     filter: state.filter,
     searchInput: state.searchInput,
-    categoryFilter: state.categoryFilter,
-    counterpartyTypeFilter: state.counterpartyTypeFilter,
+    subjectFilter: state.subjectFilter,
     voucherFilter: state.voucherFilter,
-    categoryOptions,
     filteredData,
     summary,
     setFilter: (val: FilterTab) =>
       dispatch({ type: "SET_FILTER", payload: val }),
     setSearchInput: (val: string) =>
       dispatch({ type: "SET_SEARCH_INPUT", payload: val }),
-    setCategoryFilter: (val: string) =>
-      dispatch({ type: "SET_CATEGORY_FILTER", payload: val }),
-    setCounterpartyTypeFilter: (val: string) =>
-      dispatch({ type: "SET_COUNTERPARTY_TYPE_FILTER", payload: val }),
+    setSubjectFilter: (val: string) =>
+      dispatch({ type: "SET_SUBJECT_FILTER", payload: val }),
     setVoucherFilter: (val: string) =>
       dispatch({ type: "SET_VOUCHER_FILTER", payload: val }),
   };
@@ -198,30 +179,28 @@ export function LedgerDetailTable({
   settlementStatus,
 }: LedgerDetailTableProps) {
   const router = useRouter();
+  const records = data as unknown as LedgerRecord[];
   const {
     filter,
     searchInput,
-    categoryFilter,
-    counterpartyTypeFilter,
+    subjectFilter,
     voucherFilter,
-    categoryOptions,
     filteredData,
     summary,
     setFilter,
     setSearchInput,
-    setCategoryFilter,
-    setCounterpartyTypeFilter,
+    setSubjectFilter,
     setVoucherFilter,
-  } = useLedgerFilters(data);
+  } = useLedgerFilters(records);
   const [deleteTarget, setDeleteTarget] =
-    React.useState<CashFlowRecordResponse | null>(null);
+    React.useState<LedgerRecord | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
   const [showSettlementDialog, setShowSettlementDialog] =
     React.useState(false);
   const [supplementTarget, setSupplementTarget] =
-    React.useState<CashFlowRecordResponse | null>(null);
+    React.useState<LedgerRecord | null>(null);
   const [supplementUrls, setSupplementUrls] = React.useState<string[]>([]);
   const [isSupplementing, setIsSupplementing] = React.useState(false);
   const [supplementUploadKey, setSupplementUploadKey] = React.useState(0);
@@ -272,7 +251,7 @@ export function LedgerDetailTable({
     }
   };
 
-  const openSupplementDialog = (record: CashFlowRecordResponse) => {
+  const openSupplementDialog = (record: LedgerRecord) => {
     setSupplementTarget(record);
     setSupplementUrls([]);
     setSupplementUploadKey((k) => k + 1);
@@ -310,21 +289,33 @@ export function LedgerDetailTable({
     }
   };
 
+  // 删除弹窗金额文案（流出 − / 流入 +）
+  const deleteAmountText = deleteTarget
+    ? (Number(deleteTarget.outflow) || 0) > 0
+      ? `−¥${Number(deleteTarget.outflow).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        })}`
+      : `+¥${Number(deleteTarget.inflow).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        })}`
+    : "";
+
   return (
     <div className="space-y-4">
-      {/* Tabs 筛选 + 搜索 + 分类筛选 + 操作按钮 */}
+      {/* 顶部统计卡（流入/流出/净现金流/进损益流出） */}
+      <LedgerDetailStats data={records} />
+
+      {/* Tabs 筛选 + 搜索 + 科目筛选 + 操作按钮 */}
       <LedgerDetailTableFilter
         filter={filter}
         onFilterChange={setFilter}
         searchInput={searchInput}
         onSearchInputChange={setSearchInput}
-        categoryFilter={categoryFilter}
-        onCategoryFilterChange={setCategoryFilter}
-        categoryOptions={categoryOptions}
-        counterpartyTypeFilter={counterpartyTypeFilter}
-        onCounterpartyTypeFilterChange={setCounterpartyTypeFilter}
+        subjectFilter={subjectFilter}
+        onSubjectFilterChange={setSubjectFilter}
         voucherFilter={voucherFilter}
         onVoucherFilterChange={setVoucherFilter}
+        businessForm={businessForm}
         isExporting={isExporting}
         onExport={handleExport}
         isSettled={isSettled}
@@ -338,7 +329,7 @@ export function LedgerDetailTable({
         className="bg-muted/30 rounded-lg px-3 py-2 text-xs text-muted-foreground tabular-nums"
         aria-live="polite"
       >
-        共 {summary.count} 笔 · 合计 {formatCNY(summary.total)}
+        共 {summary.count} 笔 · 净现金流 {formatCNY(summary.net)}
       </div>
 
       {/* 已结算编辑锁警示条 */}
@@ -354,12 +345,13 @@ export function LedgerDetailTable({
         <Table className="table-fixed w-full">
           <colgroup>
             <col className="w-[10%]" />
-            <col className="w-[8%]" />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
+            <col className="w-[22%]" />
+            <col className="w-[16%]" />
+            <col className="w-[9%]" />
+            <col className="w-[9%]" />
             <col className="w-[11%]" />
-            <col className="w-[26%]" />
+            <col className="w-[11%]" />
+            <col className="w-[6%]" />
             <col className="w-[6%]" />
           </colgroup>
           <LedgerDetailTableHeader />
@@ -367,7 +359,7 @@ export function LedgerDetailTable({
             {filteredData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="h-24 text-center text-xs text-muted-foreground"
                 >
                   暂无记录
@@ -402,10 +394,8 @@ export function LedgerDetailTable({
               此操作将软删除该流水记录，删除后不可恢复。
               {deleteTarget ? (
                 <span className="block mt-2 text-xs">
-                  分类：{deleteTarget.category} · 金额：¥
-                  {Number(deleteTarget.amount).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
+                  摘要：{deleteTarget.description || deleteTarget.remark || "-"} · 金额：
+                  {deleteAmountText}
                 </span>
               ) : null}
             </AlertDialogDescription>
@@ -459,10 +449,14 @@ export function LedgerDetailTable({
           <div className="grid gap-3 py-2 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
             {supplementTarget && (
               <p className="text-xs text-muted-foreground">
-                记录：{supplementTarget.counterparty ?? "-"} · ¥
-                {Number(supplementTarget.amount).toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}
+                记录：{supplementTarget.description || supplementTarget.remark || "-"} ·{" "}
+                {(Number(supplementTarget.outflow) || 0) > 0
+                  ? `−¥${Number(supplementTarget.outflow).toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                    })}`
+                  : `+¥${Number(supplementTarget.inflow).toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                    })}`}
               </p>
             )}
             <ImageUpload

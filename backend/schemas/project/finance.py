@@ -11,7 +11,15 @@ from decimal import Decimal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator
 
-from models.common import CashFlowCategory, CashFlowType, CounterpartyType, FinanceActionType, SettlementStatus
+from models.common import (
+    CashFlowCategory,
+    CashFlowType,
+    CounterpartyType,
+    FinanceActionType,
+    SettlementStatus,
+    SubjectLevel,
+    SubjectStage,
+)
 
 # ========== 现金流记录 (来自 project_finance.py) ==========
 
@@ -46,6 +54,13 @@ class CashFlowRecordResponse(BaseModel):
     counterparty: str | None = Field(None, description="交易方")
     counterparty_type: CounterpartyType | None = Field(None, description="支付方类型")
     receipt_urls: list[str] = Field(default_factory=list, description="票据图片URL列表")
+    # Task 5 新增字段
+    subject_id: str | None = Field(None, description="科目ID(关联 finance_subjects.id)")
+    outflow: Decimal = Field(default=Decimal(0), description="流出金额(元)")
+    inflow: Decimal = Field(default=Decimal(0), description="流入金额(元)")
+    payer: str | None = Field(None, description="付款方")
+    payee: str | None = Field(None, description="收款方")
+    subject: "FinanceSubjectResponse | None" = Field(None, description="科目信息(联表填充)")
     created_at: datetime
     updated_at: datetime
 
@@ -85,7 +100,7 @@ class CashFlowRecordResponse(BaseModel):
         """兼容旧字段 receipt_url（返回 receipt_urls 首项，空则 None）."""
         return self.receipt_urls[0] if self.receipt_urls else None
 
-    @field_serializer("amount")
+    @field_serializer("amount", "outflow", "inflow")
     def serialize_decimal(self, v: Decimal) -> float:
         return float(v)
 
@@ -208,27 +223,69 @@ class FinanceListResponse(BaseModel):
 
 
 class LedgerRecordCreate(BaseModel):
-    """资金账本创建流水请求（含 project_id，不通过 URL path 传递）."""
+    """资金账本创建流水请求（含 project_id，不通过 URL path 传递）.
+
+    新字段（主字段，Task 5）：
+    - subject_id: 科目ID（必填，关联 finance_subjects.id）
+    - outflow/inflow: 流出/流入金额（互斥，不能同时 > 0；Service 层校验）
+    - payer/payee: 付款方/收款方
+
+    兼容字段（旧客户端可选，新字段优先；Service 层会用新字段回填这些旧字段）：
+    - type/category/amount/counterparty: 由 inflow/outflow/payer 推导
+    """
 
     project_id: str = Field(description="项目ID")
-    type: CashFlowType
-    category: CashFlowCategory
-    amount: Decimal = Field(description="金额(元)")
     date: datetime = Field(description="发生日期")
     description: str | None = Field(None, description="备注")
-    related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
-    counterparty: str = Field(..., description="交易方(必填)")
-    counterparty_type: CounterpartyType | None = Field(None, description="支付方类型: company/individual")
     receipt_urls: list[str] | None = Field(None, description="票据图片URL列表")
+    counterparty_type: CounterpartyType | None = Field(None, description="支付方类型: company/individual")
+
+    # 新字段（主字段）
+    subject_id: str = Field(..., description="科目ID(必填，关联 finance_subjects.id)")
+    outflow: Decimal = Field(default=Decimal(0), description="流出金额(元)")
+    inflow: Decimal = Field(default=Decimal(0), description="流入金额(元)")
+    payer: str | None = Field(None, max_length=100, description="付款方")
+    payee: str | None = Field(None, max_length=100, description="收款方")
+
+    # 兼容字段（旧客户端可选，新字段优先）
+    type: CashFlowType | None = Field(None, description="兼容字段: 流水类型(由 inflow/outflow 推导)")
+    category: CashFlowCategory | None = Field(None, description="兼容字段: 费用类别(新字段体系下由 subject 替代)")
+    amount: Decimal | None = Field(None, description="兼容字段: 金额(由 outflow/inflow 推导)")
+    related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
+    counterparty: str | None = Field(None, description="兼容字段: 交易方(由 payer 推导)")
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class LedgerRecordUpdate(BaseModel):
-    """资金账本流水更新请求（仅允许补充凭证和支付方类型）."""
+    """资金账本流水更新请求（支持新字段与兼容字段的部分更新）.
 
+    - 新字段：subject_id/outflow/inflow/payer/payee
+    - 兼容字段：type/category/amount/counterparty（由新字段推导回填）
+    - 通用字段：receipt_urls(追加)/counterparty_type/description/date
+    - 如更新 outflow/inflow，Service 层会重新校验互斥性并回填 type/amount
+    """
+
+    # 新字段
+    subject_id: str | None = Field(None, description="科目ID")
+    outflow: Decimal | None = Field(None, description="流出金额(元)")
+    inflow: Decimal | None = Field(None, description="流入金额(元)")
+    payer: str | None = Field(None, max_length=100, description="付款方")
+    payee: str | None = Field(None, max_length=100, description="收款方")
+
+    # 兼容字段
+    type: CashFlowType | None = Field(None, description="兼容字段: 流水类型")
+    category: CashFlowCategory | None = Field(None, description="兼容字段: 费用类别")
+    amount: Decimal | None = Field(None, description="兼容字段: 金额")
+    counterparty: str | None = Field(None, description="兼容字段: 交易方")
+    related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
+
+    # 通用字段
     receipt_urls: list[str] | None = Field(None, description="票据图片URL列表（追加）")
     counterparty_type: CounterpartyType | None = Field(None, description="支付方类型: company/individual")
+    description: str | None = Field(None, description="备注")
+    date: datetime | None = Field(None, description="发生日期")
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -368,3 +425,76 @@ class ReceivablePayableResponse(BaseModel):
 
     items: list[ReceivablePayableItem]
     model_config = ConfigDict(from_attributes=True)
+
+# ========== 科目管理 (FinanceSubject) ==========
+
+
+class FinanceSubjectCreate(BaseModel):
+    """创建科目请求.
+
+    level 取值 1-7（SubjectLevel 枚举），stage 取值 signing/renovation/holding/listing/sold
+    （SubjectStage 枚举）。system 字段由 Service 层强制为 False（用户自定义）。
+    """
+
+    name: str = Field(..., max_length=50, description="科目名称(唯一)")
+    level: SubjectLevel = Field(..., description="成本层级1-7")
+    pnl: bool = Field(..., description="是否进损益")
+    modes: list[str] = Field(..., description="适用业务模式: ['agent']/['acquire']/两者")
+    stage: SubjectStage = Field(..., description="业务阶段")
+    note: str | None = Field(None, max_length=200, description="备注")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FinanceSubjectUpdate(BaseModel):
+    """更新科目请求.
+
+    所有字段可选；system/is_deleted 不可通过本接口更新（system 为系统预置标记，
+    is_deleted 由删除接口管理）。系统预置科目(system=True)的 name/level 不可修改。
+    """
+
+    name: str | None = Field(None, max_length=50, description="科目名称(唯一)")
+    level: SubjectLevel | None = Field(None, description="成本层级1-7")
+    pnl: bool | None = Field(None, description="是否进损益")
+    modes: list[str] | None = Field(None, description="适用业务模式")
+    stage: SubjectStage | None = Field(None, description="业务阶段")
+    note: str | None = Field(None, max_length=200, description="备注")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FinanceSubjectResponse(BaseModel):
+    """科目响应."""
+
+    id: str = Field(description="科目ID")
+    name: str = Field(description="科目名称")
+    level: SubjectLevel = Field(description="成本层级1-7")
+    pnl: bool = Field(description="是否进损益")
+    modes: list[str] = Field(description="适用业务模式")
+    stage: SubjectStage = Field(description="业务阶段")
+    note: str | None = Field(None, description="备注")
+    system: bool = Field(description="系统预置true/自定义false")
+    is_deleted: bool = Field(description="逻辑删除标记")
+    created_at: datetime = Field(description="创建时间")
+    updated_at: datetime = Field(description="更新时间")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FinanceSubjectFilter(BaseModel):
+    """科目筛选条件."""
+
+    mode: str | None = Field(None, description="按业务模式筛选(agent/acquire)")
+    stage: SubjectStage | None = Field(None, description="按业务阶段筛选")
+    level: SubjectLevel | None = Field(None, description="按成本层级筛选")
+    system: bool | None = Field(None, description="按系统预置/自定义筛选")
+    is_deleted: bool = Field(False, description="是否包含已删除(默认仅未删除)")
+    search: str | None = Field(None, max_length=50, description="模糊搜索科目名称")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+
+# 前向引用 rebuild：CashFlowRecordResponse.subject 引用了下方定义的 FinanceSubjectResponse。
+# Pydantic v2 在所有类定义完成后需 rebuild 才能正确解析前向引用。
+CashFlowRecordResponse.model_rebuild()

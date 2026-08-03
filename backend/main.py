@@ -30,7 +30,7 @@ from error_handlers import (
     validation_exception_handler,
 )
 from routers.common import files_router, push_router, upload_router
-from routers.finance import ledger_router
+from routers.finance import ledger_router, subjects_router
 from routers.investment import investment_router
 from routers.leads import leads_router
 from routers.market import communities_router, properties_router
@@ -38,7 +38,6 @@ from routers.marketing import import_router as marketing_import_router
 from routers.marketing import projects_router as marketing_projects_router
 from routers.monitor import monitor_router
 from routers.projects import core_router
-from routers.projects.cashflow import router as cashflow_router
 from routers.public import (
     public_auth_router,
     public_communities_router,
@@ -149,7 +148,6 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_tags=[
         {"name": "projects", "description": "项目管理 - 签约、装修、销售全流程"},
-        {"name": "cashflow", "description": "现金流管理"},
         {"name": "documents", "description": "文书签收管理"},
         {"name": "renovation", "description": "装修阶段管理"},
         {"name": "sales", "description": "销售记录管理"},
@@ -162,6 +160,7 @@ app = FastAPI(
         {"name": "l4-marketing-import", "description": "L4 市场营销 - 数据导入"},
         {"name": "investment", "description": "财务管理 - 跟投管理"},
         {"name": "finance-ledger", "description": "财务管理 - 资金账本"},
+        {"name": "finance-subjects", "description": "财务管理 - 科目管理"},
         {"name": "auth", "description": "认证授权 - 登录、令牌、API Key"},
         {"name": "users", "description": "用户管理"},
         {"name": "roles", "description": "角色管理"},
@@ -278,11 +277,11 @@ app.include_router(properties_router, prefix=API_V1_PREFIX)
 app.include_router(communities_router, prefix=API_V1_PREFIX)
 app.include_router(leads_router, prefix=API_V1_PREFIX)
 app.include_router(core_router, prefix=API_V1_PREFIX)
-app.include_router(cashflow_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_projects_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_import_router, prefix=API_V1_PREFIX)
 app.include_router(investment_router, prefix=API_V1_PREFIX)
 app.include_router(ledger_router, prefix=API_V1_PREFIX)
+app.include_router(subjects_router, prefix=API_V1_PREFIX)
 app.include_router(auth_router, prefix=API_V1_PREFIX)
 app.include_router(users_router, prefix=API_V1_PREFIX)
 app.include_router(roles_router, prefix=API_V1_PREFIX)

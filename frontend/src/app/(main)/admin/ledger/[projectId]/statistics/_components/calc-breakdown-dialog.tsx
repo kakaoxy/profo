@@ -21,11 +21,11 @@ interface CalcBreakdownDialogProps {
   children: React.ReactNode;
 }
 
-/** 业务形态标签映射：null/undefined → 代理美化(默认) */
+/** 业务形态标签映射：null/undefined → 代理美化 */
 function getBusinessFormLabel(businessForm: string | null | undefined): string {
   if (businessForm === "agent") return "代理美化";
   if (businessForm === "wholesale") return "收购美化";
-  return "代理美化(默认)";
+  return "代理美化";
 }
 
 /** 按 result_type 格式化区段结果 */
@@ -58,9 +58,9 @@ export function CalcBreakdownDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
-          <DialogTitle>资金汇总计算明细</DialogTitle>
+          <DialogTitle>五层法计算明细</DialogTitle>
         </DialogHeader>
         <div className="flex items-center">
           <Badge variant="secondary">

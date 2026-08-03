@@ -2,7 +2,7 @@
 
 import { Paperclip, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { safeFormatDate } from "@/lib/formatters";
+import { safeFormatDate, formatCNY } from "@/lib/formatters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,14 +15,50 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { components } from "@/lib/api-types";
+import { LayerPill } from "./layer-pill";
 
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
 
+/**
+ * 科目信息（嵌套于流水响应）。
+ * ⚠️ api-types.d.ts 尚未重新生成，本地定义对齐后端 FinanceSubjectResponse。
+ * 待 pnpm gen-api 后切换为 components["schemas"]["FinanceSubjectResponse"]。
+ */
+export interface FinanceSubject {
+  id: string;
+  name: string;
+  level: string;
+  pnl: boolean;
+  modes: string[];
+  stage: string;
+  note: string | null;
+  system: boolean;
+}
+
+/**
+ * 资金账本流水记录（Task 5 新字段扩展）。
+ * ⚠️ api-types.d.ts 尚未包含 subject_id/outflow/inflow/payer/payee/subject，
+ * 在 CashFlowRecordResponse 基础上本地扩展。待 pnpm gen-api 后移除。
+ */
+export type LedgerRecord = CashFlowRecordResponse & {
+  subject_id?: string | null;
+  outflow?: number | null;
+  inflow?: number | null;
+  payer?: string | null;
+  payee?: string | null;
+  subject?: FinanceSubject | null;
+};
+
 interface LedgerDetailTableRowProps {
-  record: CashFlowRecordResponse;
+  record: LedgerRecord;
   isSettled: boolean;
-  onDelete: (record: CashFlowRecordResponse) => void;
-  onSupplementVoucher: (record: CashFlowRecordResponse) => void;
+  onDelete: (record: LedgerRecord) => void;
+  onSupplementVoucher: (record: LedgerRecord) => void;
+}
+
+function toNumber(v: number | null | undefined): number {
+  const n = Number(v);
+  return isNaN(n) ? 0 : n;
 }
 
 export function LedgerDetailTableRow({
@@ -32,59 +68,83 @@ export function LedgerDetailTableRow({
   onSupplementVoucher,
 }: LedgerDetailTableRowProps) {
   const hasVoucher = !!(record.receipt_urls && record.receipt_urls.length > 0);
+  const outflow = toNumber(record.outflow);
+  const inflow = toNumber(record.inflow);
+  const subject = record.subject;
+  const summary = record.description || record.remark || "-";
+
   return (
     <TableRow key={record.id} className="group text-xs hover:bg-muted">
+      {/* 日期 */}
       <TableCell className="px-4 py-3">
-        <span className="font-medium text-foreground">
-          {record.date
-            ? safeFormatDate(record.date, "yyyy-MM-dd")
-            : "-"}
+        <span className="font-medium text-foreground tabular-nums">
+          {record.date ? safeFormatDate(record.date, "yyyy-MM-dd") : "-"}
         </span>
       </TableCell>
-      <TableCell className="px-4 py-3 text-center">
-        <Badge
-          variant="outline"
-          className={cn(
-            "font-normal",
-            record.type === "income"
-              ? "border-error/30 text-red-700 bg-error-container/30"
-              : "border-emerald-200 text-emerald-700 bg-success-container/30",
-          )}
-        >
-          {record.type === "income" ? "收入" : "支出"}
-        </Badge>
-      </TableCell>
-      <TableCell className="px-4 py-3">
-        <span
-          className="text-muted-foreground truncate block"
-          title={record.counterparty ?? ""}
-        >
-          {record.counterparty || "-"}
-        </span>
-      </TableCell>
+      {/* 摘要 */}
       <TableCell className="px-4 py-3">
         <span
           className="text-foreground truncate block"
-          title={record.category ?? ""}
+          title={summary}
         >
-          {record.category || "-"}
+          {summary}
         </span>
       </TableCell>
-      <TableCell className="px-4 py-3 text-right">
+      {/* 科目分类（名称 + LayerPill） */}
+      <TableCell className="px-4 py-3">
+        {subject ? (
+          <div className="flex flex-col gap-1">
+            <span
+              className="font-medium text-foreground truncate text-xs"
+              title={subject.name}
+            >
+              {subject.name}
+            </span>
+            <LayerPill level={subject.level} />
+          </div>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        )}
+      </TableCell>
+      {/* 付款方 */}
+      <TableCell className="px-4 py-3">
         <span
-          className={cn(
-            "font-mono font-medium text-sm tabular-nums",
-            record.type === "income"
-              ? "text-error"
-              : "text-success",
-          )}
+          className="text-muted-foreground truncate block"
+          title={record.payer ?? ""}
         >
-          {record.type === "income" ? "+" : "-"}
-          {Number(record.amount).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          })}
+          {record.payer || "-"}
         </span>
       </TableCell>
+      {/* 收款方 */}
+      <TableCell className="px-4 py-3">
+        <span
+          className="text-muted-foreground truncate block"
+          title={record.payee ?? ""}
+        >
+          {record.payee || "-"}
+        </span>
+      </TableCell>
+      {/* 流出 */}
+      <TableCell className="px-4 py-3 text-right">
+        {outflow > 0 ? (
+          <span className="font-mono font-medium text-sm tabular-nums text-error">
+            −{formatCNY(outflow)}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      {/* 流入 */}
+      <TableCell className="px-4 py-3 text-right">
+        {inflow > 0 ? (
+          <span className="font-mono font-medium text-sm tabular-nums text-success">
+            +{formatCNY(inflow)}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      {/* 凭证 */}
       <TableCell className="px-4 py-3 text-center">
         {hasVoucher ? (
           <div className="flex items-center justify-center gap-1 flex-wrap">
@@ -129,14 +189,7 @@ export function LedgerDetailTableRow({
           </Badge>
         )}
       </TableCell>
-      <TableCell className="px-4 py-3">
-        <div
-          className="truncate text-muted-foreground"
-          title={record.description ?? ""}
-        >
-          {record.description || "-"}
-        </div>
-      </TableCell>
+      {/* 操作 */}
       <TableCell className="px-4 py-3 text-center">
         <div className="flex items-center justify-center gap-0.5">
           <Button
@@ -150,7 +203,7 @@ export function LedgerDetailTableRow({
             )}
             onClick={() => onSupplementVoucher(record)}
             disabled={isSettled}
-            aria-label={`补充凭证 ${record.category} 记录`}
+            aria-label="补充凭证"
             title="补充凭证"
           >
             <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
@@ -166,7 +219,7 @@ export function LedgerDetailTableRow({
             )}
             onClick={() => onDelete(record)}
             disabled={isSettled}
-            aria-label={`删除 ${record.category} 记录`}
+            aria-label="删除记录"
           >
             <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
           </Button>

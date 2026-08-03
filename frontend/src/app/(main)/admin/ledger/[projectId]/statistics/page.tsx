@@ -5,13 +5,8 @@ import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
 import { StatisticsHero } from "./_components/statistics-hero";
-import { ProjectBaseCard } from "./_components/project-base-card";
-import { InvestmentCard } from "./_components/investment-card";
-import { RenovationCard } from "./_components/renovation-card";
-import { CommissionCard } from "./_components/commission-card";
-import { DepositCard } from "./_components/deposit-card";
-import { MarketingCard } from "./_components/marketing-card";
-import { OperationCard } from "./_components/operation-card";
+import { ProfitLadder } from "./_components/profit-ladder";
+import { StageCashflowTimeline } from "./_components/stage-cashflow-timeline";
 
 type ProjectLedgerStatisticsResponse =
   components["schemas"]["ProjectLedgerStatisticsResponse"];
@@ -51,54 +46,22 @@ export default async function LedgerStatisticsPage({ params }: PageProps) {
         </Link>
       </div>
 
-      {/* Hero + KPI */}
+      {/* Hero + 8 KPI */}
       <section className="py-12">
         <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-          <StatisticsHero
-            summary={stats.summary}
-            calcBreakdown={stats.calc_breakdown}
-          />
+          <StatisticsHero kpi={stats.kpi} />
         </div>
       </section>
 
-      {/* Row 1: 项目基础信息 + 投资情况 (白底) */}
-      <section className="bg-white py-12">
-        <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-5">
-              <ProjectBaseCard data={stats.project_base} />
-            </div>
-            <div className="lg:col-span-7">
-              <InvestmentCard data={stats.investment} />
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 利润三层结构 + 计算明细入口 */}
+      <ProfitLadder
+        fiveLayer={stats.five_layer}
+        breakdown={stats.breakdown}
+        businessForm={stats.breakdown.business_form}
+      />
 
-      {/* Row 2: 装修预算 + 渠道佣金 (灰底) */}
-      <section className="bg-[#f7f7f8] py-12">
-        <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8">
-              <RenovationCard data={stats.renovation} />
-            </div>
-            <div className="lg:col-span-4">
-              <CommissionCard data={stats.commission} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Row 3: 履约保证金 + 营销推广费 + 运营成本 (白底) */}
-      <section className="bg-white py-12">
-        <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <DepositCard data={stats.deposit} />
-            <MarketingCard data={stats.marketing} />
-            <OperationCard data={stats.operation} />
-          </div>
-        </div>
-      </section>
+      {/* 全周期阶段现金流量表 */}
+      <StageCashflowTimeline stageFlows={stats.stage_flows} />
     </div>
   );
 }
