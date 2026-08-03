@@ -1,111 +1,114 @@
 @echo off
-REM 递归防护：start cmd /k 启动的新进程会继承 DEV_START_GUARD，
-REM 若因命令串解析异常意外重新进入 dev-start.bat，立即拦截并退出。
+REM �ݹ������start cmd /k �������½��̻�̳� DEV_START_GUARD��
+REM ������������쳣�������½��� dev-start.bat���������ز��˳���
 if defined DEV_START_GUARD (
-  echo [错误] dev-start.bat 检测到递归调用，已阻止。
-  echo    可能原因：start cmd /k 的命令串被密码中的特殊字符破坏。
+  echo [����] dev-start.bat ��⵽�ݹ���ã�����ֹ��
+  echo    ����ԭ��start cmd /k ������������е������ַ��ƻ���
   exit /b 1
 )
 setlocal enabledelayedexpansion
 set "DEV_START_GUARD=1"
-chcp 65001 > nul
+chcp 936 > nul
 
 REM ====================================================================
-REM Profo 开发环境一键启停脚本 (Windows 版)
+REM Profo ��������һ����ͣ�ű� (Windows ��)
 REM
-REM 架构：Docker 跑 PostgreSQL + 本地 uvicorn --reload + 本地 next dev
-REM 前后端代码改动自动热重载，无需 docker rebuild。
+REM �ܹ���Docker �� PostgreSQL + ���� uvicorn --reload + ���� next dev
+REM ǰ��˴���Ķ��Զ������أ����� docker rebuild��
 REM
-REM 与 start.bat 的区别：
-REM   start.bat         生产部署，四服务全部容器化，改代码需 rebuild
-REM   dev-start.bat     本地开发，仅 db 容器化，前后端本机直跑热重载
+REM �� start.bat ������
+REM   start.bat         ���������ķ���ȫ�����������Ĵ����� rebuild
+REM   dev-start.bat     ���ؿ������� db ��������ǰ��˱���ֱ��������
 REM
-REM 用法:
-REM   dev-start.bat            启动全部（db + backend + frontend）
-REM   dev-start.bat up         同上
-REM   dev-start.bat db         只启动数据库（前后端自己开终端跑）
-REM   dev-start.bat stop       停止数据库容器
-REM   dev-start.bat status     查看容器与端口状态
-REM   dev-start.bat logs       查看数据库日志
-REM   dev-start.bat down       停止并删除容器（保留数据卷）
+REM �÷�:
+REM   dev-start.bat            ����ȫ����db + backend + frontend��
+REM   dev-start.bat up         ͬ��
+REM   dev-start.bat db         ֻ�������ݿ⣨ǰ����Լ����ն��ܣ�
+REM   dev-start.bat stop       ֹͣ���ݿ�����
+REM   dev-start.bat status     �鿴������˿�״̬
+REM   dev-start.bat logs       �鿴���ݿ���־
+REM   dev-start.bat down       ֹͣ��ɾ���������������ݾ���
 REM ====================================================================
 
 cd /d "%~dp0"
 
 set "DEV_COMPOSE=docker compose -f docker-compose.yml -f docker-compose.dev.yml"
 
-REM 检查根目录 .env
+REM ����Ŀ¼ .env
 if not exist ".env" (
-  echo [错误] 未检测到根目录 .env
-  echo    请先执行: copy .env.docker.example .env 并填入 POSTGRES_* 等凭据
+  echo [����] δ��⵽��Ŀ¼ .env
+  echo    ����ִ��: copy .env.docker.example .env ������ POSTGRES_* ��ƾ��
   exit /b 1
 )
 
-REM 从 .env 读取 POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+REM �� .env ��ȡ POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
 set "POSTGRES_USER="
 set "POSTGRES_PASSWORD="
 set "POSTGRES_DB="
+set "REDIS_PASSWORD="
 for /f "usebackq tokens=1,* delims==" %%a in (".env") do (
   set "key=%%a"
   set "val=%%b"
   if /i "!key!"=="POSTGRES_USER" set "POSTGRES_USER=!val!"
   if /i "!key!"=="POSTGRES_PASSWORD" set "POSTGRES_PASSWORD=!val!"
   if /i "!key!"=="POSTGRES_DB" set "POSTGRES_DB=!val!"
+  if /i "!key!"=="REDIS_PASSWORD" set "REDIS_PASSWORD=!val!"
 )
 
 if "!POSTGRES_USER!"=="" (
-  echo [错误] .env 中未找到 POSTGRES_USER
+  echo [����] .env ��δ�ҵ� POSTGRES_USER
   exit /b 1
 )
 if "!POSTGRES_PASSWORD!"=="" (
-  echo [错误] .env 中未找到 POSTGRES_PASSWORD
+  echo [����] .env ��δ�ҵ� POSTGRES_PASSWORD
   exit /b 1
 )
 if "!POSTGRES_DB!"=="" (
-  echo [错误] .env 中未找到 POSTGRES_DB
+  echo [����] .env ��δ�ҵ� POSTGRES_DB
   exit /b 1
 )
 
-REM 开发环境覆盖：backend 直连本地映射的 Docker db
+REM �����������ǣ�backend ֱ������ӳ��� Docker db
 set "DATABASE_URL=postgresql+psycopg://!POSTGRES_USER!:!POSTGRES_PASSWORD!@127.0.0.1:5432/!POSTGRES_DB!"
+set "REDIS_URL=redis://:!REDIS_PASSWORD!@127.0.0.1:6379/0"
 set "DEBUG=true"
 
-REM 检查 backend\.venv
+REM ��� backend\.venv
 if not exist "backend\.venv\Scripts\uvicorn.exe" (
   if not exist "backend\.venv\Scripts\uvicorn" (
-    echo [错误] backend\.venv 不存在或缺少 uvicorn
-    echo    请执行: cd backend ^&^& uv sync
+    echo [����] backend\.venv �����ڻ�ȱ�� uvicorn
+    echo    ��ִ��: cd backend ^&^& uv sync
     exit /b 1
   )
 )
 
-REM 检查 frontend\node_modules
+REM ��� frontend\node_modules
 if not exist "frontend\node_modules" (
-  echo [警告] frontend\node_modules 不存在，执行 pnpm install...
+  echo [����] frontend\node_modules �����ڣ�ִ�� pnpm install...
   pushd frontend
   call pnpm install
   popd
 )
 
-REM 创建 backend\static\uploads 软链 → ..\..\uploads
-REM 让本地 dev 模式与 Docker 容器共享同一份上传文件
-REM Windows 需要管理员权限或开发者模式创建软链，故用 junction 替代
+REM ���� backend\static\uploads ���� �� ..\..\uploads
+REM �ñ��� dev ģʽ�� Docker ��������ͬһ���ϴ��ļ�
+REM Windows ��Ҫ����ԱȨ�޻򿪷���ģʽ�������������� junction ���
 if not exist "backend\static" mkdir "backend\static"
 if exist "backend\static\uploads" (
-  REM 检查是否已是 junction/软链
+  REM ����Ƿ����� junction/����
   dir /al "backend\static\uploads" 2>nul | findstr "JUNCTION\|SYMLINK" > nul
   if errorlevel 1 (
-    echo [警告] backend\static\uploads 是真实目录而非 junction
-    echo    如需共享 Docker uploads，请先删除该目录: rmdir /s /q backend\static\uploads
-    echo    当前 dev 模式将使用独立的本地 uploads，与 Docker 不互通
+    echo [����] backend\static\uploads ����ʵĿ¼���� junction
+    echo    ���蹲�� Docker uploads������ɾ����Ŀ¼: rmdir /s /q backend\static\uploads
+    echo    ��ǰ dev ģʽ��ʹ�ö����ı��� uploads���� Docker ����ͨ
   )
 ) else (
   mklink /J "backend\static\uploads" "%~dp0uploads" > nul 2>&1
   if errorlevel 1 (
-    echo [警告] 创建 junction 失败，backend\static\uploads 将使用独立目录
-    echo    如需共享，请手动执行: mklink /J backend\static\uploads ..\..\uploads
+    echo [����] ���� junction ʧ�ܣ�backend\static\uploads ��ʹ�ö���Ŀ¼
+    echo    ���蹲�������ֶ�ִ��: mklink /J backend\static\uploads ..\..\uploads
   ) else (
-    echo [成功] 已创建 junction backend\static\uploads -^> ..\..\uploads（共享 uploads 目录）
+    echo [�ɹ�] �Ѵ��� junction backend\static\uploads -^> ..\..\uploads������ uploads Ŀ¼��
   )
 )
 
@@ -123,64 +126,64 @@ if /i "%CMD%"=="down" goto :down
 goto :usage
 
 :start_db
-echo 启动 PostgreSQL (Docker)...
-%DEV_COMPOSE% up -d db
+echo ���� PostgreSQL (Docker)...
+%DEV_COMPOSE% up -d db redis
 if errorlevel 1 (
-  echo [错误] 启动数据库失败
+  echo [����] �������ݿ�ʧ��
   exit /b 1
 )
-echo [成功] 数据库已启动: postgresql+psycopg://!POSTGRES_USER!:***@127.0.0.1:5432/!POSTGRES_DB!
+echo [�ɹ�] ���ݿ�������: postgresql+psycopg://!POSTGRES_USER!:***@127.0.0.1:5432/!POSTGRES_DB!
 goto :eof
 
 :up
 call :start_db
 echo.
-echo 启动后端 (uvicorn --reload) 与前端 (next dev)...
+echo ������� (uvicorn --reload) ��ǰ�� (next dev)...
 echo   Backend:  http://localhost:8000
 echo   Frontend: http://localhost:3000
-echo   (关闭本窗口会停止前后端，数据库保留运行)
+echo   (�رձ����ڻ�ֹͣǰ��ˣ����ݿⱣ������)
 echo.
 
-REM 在新窗口启动 backend（便于查看日志，关闭窗口即停止）
-REM DATABASE_URL / DEBUG 已在 setlocal 块中设置，start 创建的新进程会继承，
-REM 无需在命令串里再次 set，避免密码含 &/!/^ 等特殊字符时破坏 cmd /k 解析。
+REM ���´������� backend�����ڲ鿴��־���رմ��ڼ�ֹͣ��
+REM DATABASE_URL / DEBUG ���� setlocal �������ã�start �������½��̻�̳У�
+REM ������������ٴ� set���������뺬 &/!/^ �������ַ�ʱ�ƻ� cmd /k ������
 pushd backend
 start "Profo Backend" cmd /k ".venv\Scripts\uvicorn.exe main:app --reload --host 0.0.0.0 --port 8000"
 popd
 
-REM 在新窗口启动 frontend
+REM ���´������� frontend
 pushd frontend
 start "Profo Frontend" cmd /k "pnpm dev"
 popd
 
-echo [成功] 前后端已在新窗口启动
+echo [�ɹ�] ǰ��������´�������
 echo.
-echo 停止数据库: dev-start.bat stop
+echo ֹͣ���ݿ�: dev-start.bat stop
 goto :end
 
 :db
 call :start_db
 echo.
-echo 数据库已启动，请在两个终端分别运行：
+echo ���ݿ������������������ն˷ֱ����У�
 echo   cd backend ^&^& .venv\Scripts\uvicorn.exe main:app --reload --port 8000
 echo   cd frontend ^&^& pnpm dev
 echo.
-echo 或直接执行: dev-start.bat  (一键启动全部)
+echo ��ֱ��ִ��: dev-start.bat  (һ������ȫ��)
 goto :end
 
 :stop
-echo 停止数据库容器...
+echo ֹͣ���ݿ�����...
 %DEV_COMPOSE% stop db
 if errorlevel 1 goto :docker_error
-echo [成功] 已停止（本地前后端进程请关闭对应窗口）
+echo [�ɹ�] ��ֹͣ������ǰ��˽�����رն�Ӧ���ڣ�
 goto :end
 
 :status
 %DEV_COMPOSE% ps
 echo.
-echo 本地端口占用:
+echo ���ض˿�ռ��:
 netstat -ano | findstr ":8000 :3000" | findstr "LISTENING" 2>nul
-if errorlevel 1 echo   8000/3000 端口空闲
+if errorlevel 1 echo   8000/3000 �˿ڿ���
 goto :end
 
 :logs
@@ -188,25 +191,25 @@ goto :end
 goto :end
 
 :down
-echo 停止并删除容器（保留数据卷）...
+echo ֹͣ��ɾ���������������ݾ���...
 %DEV_COMPOSE% down
 if errorlevel 1 goto :docker_error
-echo [成功] 容器已删除，pgdata volume 保留
+echo [�ɹ�] ������ɾ����pgdata volume ����
 goto :end
 
 :usage
-echo 用法: %0 {up^|db^|stop^|status^|logs^|down}
+echo �÷�: %0 {up^|db^|stop^|status^|logs^|down}
 echo.
-echo   up       启动全部（db + backend + frontend）— 默认
-echo   db       只启动数据库
-echo   stop     停止数据库容器
-echo   status   查看容器与端口状态
-echo   logs     查看数据库日志
-echo   down     停止并删除容器（保留数据卷）
+echo   up       ����ȫ����db + backend + frontend���� Ĭ��
+echo   db       ֻ�������ݿ�
+echo   stop     ֹͣ���ݿ�����
+echo   status   �鿴������˿�״̬
+echo   logs     �鿴���ݿ���־
+echo   down     ֹͣ��ɾ���������������ݾ���
 exit /b 1
 
 :docker_error
-echo [错误] docker compose 命令执行失败
+echo [����] docker compose ����ִ��ʧ��
 exit /b 1
 
 :end

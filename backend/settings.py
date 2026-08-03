@@ -186,23 +186,16 @@ class Settings(BaseSettings):
     class Config:
         """Pydantic Settings 配置类."""
 
-        env_file = ".env"
+        env_file = ("../.env", ".env")
         env_file_encoding = "utf-8"
+        # 根目录 .env 同时供 docker-compose 使用（含 POSTGRES_USER 等 backend 不需要的字段），允许额外字段
+        extra = "ignore"
 
 
 # 全局配置实例
 try:
     settings = Settings()
 except Exception as e:  # noqa: BLE001
-    # 解析 Pydantic ValidationError 提取缺失字段
-    if hasattr(e, "errors"):
-        missing = [err["loc"][0] for err in e.errors() if err["type"] == "missing"]
-        if missing:
-            for field in missing:
-                env_name = str(field).upper()
-        else:
-            pass
-    else:
-        pass
-
+    # Fail Loud: 打印配置错误后再退出，避免静默失败导致排障困难
+    print(f"[FATAL] 配置加载失败: {e}", file=sys.stderr)
     sys.exit(1)
