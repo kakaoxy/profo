@@ -1,5 +1,13 @@
 @echo off
+REM 递归防护：start cmd /k 启动的新进程会继承 DEV_START_GUARD，
+REM 若因命令串解析异常意外重新进入 dev-start.bat，立即拦截并退出。
+if defined DEV_START_GUARD (
+  echo [错误] dev-start.bat 检测到递归调用，已阻止。
+  echo    可能原因：start cmd /k 的命令串被密码中的特殊字符破坏。
+  exit /b 1
+)
 setlocal enabledelayedexpansion
+set "DEV_START_GUARD=1"
 chcp 65001 > nul
 
 REM ====================================================================
@@ -134,8 +142,10 @@ echo   (关闭本窗口会停止前后端，数据库保留运行)
 echo.
 
 REM 在新窗口启动 backend（便于查看日志，关闭窗口即停止）
+REM DATABASE_URL / DEBUG 已在 setlocal 块中设置，start 创建的新进程会继承，
+REM 无需在命令串里再次 set，避免密码含 &/!/^ 等特殊字符时破坏 cmd /k 解析。
 pushd backend
-start "Profo Backend" cmd /k "set DATABASE_URL=!DATABASE_URL! && set DEBUG=true && .venv\Scripts\uvicorn.exe main:app --reload --host 0.0.0.0 --port 8000"
+start "Profo Backend" cmd /k ".venv\Scripts\uvicorn.exe main:app --reload --host 0.0.0.0 --port 8000"
 popd
 
 REM 在新窗口启动 frontend
@@ -201,3 +211,4 @@ exit /b 1
 
 :end
 endlocal
+exit /b 0
