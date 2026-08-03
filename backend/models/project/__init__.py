@@ -8,7 +8,7 @@ from . import project as _project_relationships  # noqa: F401
 from ._project_base import Project
 from ._project_contract import ProjectContract
 from ._project_document import ProjectDocument
-from ._project_finance import FinanceRecord, FinanceRecordLog
+from ._project_finance import FinanceRecord, FinanceRecordLog, FinanceSubject
 from ._project_followup import ProjectEvaluation, ProjectFollowUp
 from ._project_interaction import ProjectInteraction
 from ._project_owner import ProjectOwner
@@ -19,6 +19,7 @@ from ._project_status_log import ProjectStatusLog
 __all__ = [
     "FinanceRecord",
     "FinanceRecordLog",
+    "FinanceSubject",
     "Project",
     "ProjectContract",
     "ProjectDocument",

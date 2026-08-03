@@ -1,36 +1,38 @@
 import type { components } from "@/lib/api-types";
 import { cn } from "@/lib/utils";
-import { formatCurrency, formatNumber, formatPercent } from "./format";
-import { CalcBreakdownDialog } from "./calc-breakdown-dialog";
+import { formatCurrency, formatNumber } from "./format";
 
-type SummaryStats = components["schemas"]["LedgerStatisticsSummary"];
-type CalcBreakdown = components["schemas"]["LedgerStatisticsCalcBreakdown"];
+type Kpi = components["schemas"]["LedgerStatisticsKPI"];
 
 interface StatisticsHeroProps {
-  summary: SummaryStats;
-  calcBreakdown: CalcBreakdown;
+  kpi: Kpi;
 }
 
 /**
  * 资金账本 Hero 区
- * - 居中标题 (Signifier 44px) + 副标题
- * - 8 个 KPI 卡片，2 行 × 4 列
- * - Row1: 总支出/前期投入/毛利/净利 (Apricot Wash 渐变)
- * - Row2: 项目收入/资金占用时间/投资回报率/年化回报率 (白底)
+ * - 居中标题 + 副标题 + 流水笔数 chip
+ * - 8 张 KPI 卡(2 行 × 4 列)
+ * - Row1: 项目收入/毛利/净利/总支出进损益(Apricot Wash 渐变)
+ * - Row2: 现金流入/现金流出/净现金流/流水笔数(白底)
  */
-export function StatisticsHero({ summary, calcBreakdown }: StatisticsHeroProps) {
+export function StatisticsHero({ kpi }: StatisticsHeroProps) {
+  const netCashSign = kpi.net_cashflow >= 0 ? "+" : "−";
+
   return (
     <div className="text-center">
       {/* 标题 */}
-      <div className="mb-12 animate-in" style={{ animationDelay: "0.1s" }}>
-        <h1
-          className="font-display text-[44px] leading-[1.1] tracking-[-0.66px] mb-4 text-ink text-balance"
-        >
+      <div className="mb-10 animate-in" style={{ animationDelay: "0.1s" }}>
+        <h1 className="font-display text-[44px] leading-[1.1] tracking-[-0.66px] mb-4 text-ink text-balance">
           项目资金账本
         </h1>
         <p className="text-[18px] leading-[1.35] text-ash">
-          财务数据实时追踪与统计分析
+          全周期资金追踪 · 数据从交易流水实时计算
         </p>
+        <div className="mt-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-apricot-wash/60 text-rust text-sm">
+            📊 {formatNumber(kpi.record_count)} 笔流水
+          </span>
+        </div>
       </div>
 
       {/* Row 1: Apricot Wash 渐变 KPI */}
@@ -39,26 +41,26 @@ export function StatisticsHero({ summary, calcBreakdown }: StatisticsHeroProps) 
         style={{ animationDelay: "0.15s" }}
       >
         <KpiCard
-          label="项目总支出"
-          value={formatCurrency(summary.total_expense)}
+          label="项目收入"
+          value={formatCurrency(kpi.project_income)}
           variant="warm"
           accent="rust"
         />
         <KpiCard
-          label="项目前期投入"
-          value={formatCurrency(summary.initial_investment)}
-          variant="warm"
-          accent="rust"
-        />
-        <KpiCard
-          label="项目毛利"
-          value={formatCurrency(summary.gross_profit)}
+          label="毛利"
+          value={formatCurrency(kpi.gross_profit)}
           variant="warm"
           accent="ink"
         />
         <KpiCard
-          label="项目净利"
-          value={formatCurrency(summary.net_profit)}
+          label="净利"
+          value={formatCurrency(kpi.net_profit)}
+          variant="warm"
+          accent="rust"
+        />
+        <KpiCard
+          label="总支出(进损益)"
+          value={formatCurrency(kpi.total_pnl_outflow)}
           variant="warm"
           accent="ink"
         />
@@ -70,40 +72,37 @@ export function StatisticsHero({ summary, calcBreakdown }: StatisticsHeroProps) 
         style={{ animationDelay: "0.2s" }}
       >
         <KpiCard
-          label="项目收入"
-          value={formatCurrency(summary.project_income)}
+          label="现金流入"
+          value={`+${formatCurrency(kpi.cash_inflow)}`}
+          variant="plain"
+          accent="in"
+        />
+        <KpiCard
+          label="现金流出"
+          value={`−${formatCurrency(kpi.cash_outflow)}`}
+          variant="plain"
+          accent="out"
+        />
+        <KpiCard
+          label="净现金流"
+          value={`${netCashSign}${formatCurrency(Math.abs(kpi.net_cashflow))}`}
           variant="plain"
           accent="rust"
         />
         <KpiCard
-          label="资金占用时间"
-          value={formatNumber(summary.occupy_days)}
-          suffix="天"
+          label="流水笔数"
+          value={formatNumber(kpi.record_count)}
+          suffix="笔"
           variant="plain"
           accent="ink"
         />
-        <KpiCard
-          label="投资回报率"
-          value={formatPercent(summary.roi)}
-          variant="plain"
-          accent="ink"
-        />
-        <CalcBreakdownDialog breakdown={calcBreakdown}>
-          <KpiCard
-            label="年化回报率"
-            value={formatPercent(summary.annual_roi)}
-            variant="plain"
-            accent="ink"
-            className="cursor-pointer"
-          />
-        </CalcBreakdownDialog>
       </div>
     </div>
   );
 }
 
 type KpiVariant = "warm" | "plain";
-type KpiAccent = "ink" | "rust";
+type KpiAccent = "ink" | "rust" | "in" | "out";
 
 interface KpiCardProps {
   label: string;
@@ -126,7 +125,12 @@ function KpiCard({
     variant === "warm"
       ? "linear-gradient(135deg, #fbe1d1 0%, rgba(251, 225, 209, 0.5) 100%)"
       : "#ffffff";
-  const valueColor = accent === "rust" ? "#5d2a1a" : "#17191c";
+  const valueColor: Record<KpiAccent, string> = {
+    ink: "#17191c",
+    rust: "#5d2a1a",
+    in: "#1f7a4d",
+    out: "#b03a1a",
+  };
 
   return (
     <div
@@ -138,8 +142,8 @@ function KpiCard({
     >
       <p className="text-[14px] mb-2 text-graphite leading-[1.5]">{label}</p>
       <p
-        className="text-[32px] leading-[1.1] tabular-nums"
-        style={{ color: valueColor }}
+        className="text-[32px] leading-[1.1] tabular-nums tracking-[-0.3px]"
+        style={{ color: valueColor[accent] }}
       >
         {value}
         {suffix ? (

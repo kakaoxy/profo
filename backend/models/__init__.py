@@ -23,6 +23,8 @@ from .common import (
     RecordType,
     RenovationStage,
     SettlementStatus,
+    SubjectLevel,
+    SubjectStage,
 )
 
 # 投资管理（跟投管理）模块
@@ -49,6 +51,7 @@ from .marketing import (
 from .project import (
     FinanceRecord,
     FinanceRecordLog,
+    FinanceSubject,
     Project,
     ProjectContract,
     ProjectDocument,
@@ -106,6 +109,7 @@ __all__ = [
     "FinanceActionType",
     "FinanceRecord",
     "FinanceRecordLog",
+    "FinanceSubject",
     "FollowUpMethod",
     "ImportTaskStatus",
     "Investment",
@@ -153,6 +157,8 @@ __all__ = [
     "ReturnAdjustment",
     "Role",
     "SettlementStatus",
+    "SubjectLevel",
+    "SubjectStage",
     "User",
     "UserRole",
     # 微信 OAuth
