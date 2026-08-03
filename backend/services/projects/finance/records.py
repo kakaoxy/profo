@@ -472,6 +472,15 @@ class _RecordMixin:
         )
         self.db.add(log)
 
+        # flush 让 sync 聚合查询能看到更新后的记录；sync 失败则整体回滚（Fail Loud）
+        # update_record 会修改 amount/type/outflow/inflow 等财务字段，必须与
+        # create_record/delete_record/delete_record_by_id 一样同步刷新项目缓存
+        self.db.flush()
+        try:
+            self._sync_financial_cache(project_id)
+        except Exception:
+            logger.exception("Failed to sync project financials")
+            raise
         self.db.commit()
         self.db.refresh(record)
 

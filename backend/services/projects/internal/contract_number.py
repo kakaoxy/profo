@@ -1,7 +1,7 @@
 """合同编号生成器模块.
 
 负责生成唯一的合同编号，采用「预占式」生成保证并发安全。
-格式: SH + 4位自增序号 + - + 后缀，如 SH0028-SG (代理美化) / SH0028-DL (收购美化)
+格式: SH + 4位自增序号 + - + 后缀，如 SH0028-SG (收购美化) / SH0028-DL (代理美化)
 序号从 28 开始，SG 与 DL 共享同一序号空间。
 
 并发安全设计：
@@ -25,9 +25,11 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 # 业务形式 -> 合同编号后缀映射
+# SG = 收购(Shou Gou) 首字母，对应 wholesale(收购美化)
+# DL = 代理(Dai Li) 首字母，对应 agent(代理美化)
 _BUSINESS_FORM_SUFFIX: dict[str, str] = {
-    "agent": "SG",
-    "wholesale": "DL",
+    "agent": "DL",
+    "wholesale": "SG",
 }
 
 # 序号起始值（无历史合同时从此值开始）
@@ -67,8 +69,8 @@ class ContractNumberGenerator:
         """生成下一个合同编号（预占式，并发安全）.
 
         格式: SH + 4位自增序号 + - + 后缀
-        - agent(代理美化) -> SG，如 SH0028-SG
-        - wholesale(收购美化) -> DL，如 SH0028-DL
+        - agent(代理美化) -> DL，如 SH0028-DL
+        - wholesale(收购美化) -> SG，如 SH0028-SG
         序号在两种后缀间共享，从 28 开始递增。
 
         生成后立即 INSERT 一条 contract_status="reserved" 的占位记录，
