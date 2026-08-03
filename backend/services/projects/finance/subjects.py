@@ -6,6 +6,7 @@
 - 错误通过 ServiceException 子类抛出，由路由层异常处理器统一转换
 """
 
+import json
 import logging
 from datetime import datetime, timezone
 
@@ -29,7 +30,7 @@ class _SubjectMixin:
     def list_subjects(self, filter_data: FinanceSubjectFilter) -> list[FinanceSubjectResponse]:
         """查询科目列表（支持 mode/stage/level/system/is_deleted/search 筛选）.
 
-        mode 筛选使用 PostgreSQL JSON 包含查询：modes @> :mode（JSON 数组包含指定元素）。
+        mode 筛选使用 PostgreSQL JSON 包含查询：modes::jsonb @> :mode（JSON 数组包含指定元素）。
         """
         query = self.db.query(FinanceSubject)
 
@@ -45,9 +46,12 @@ class _SubjectMixin:
         if filter_data.level is not None:
             query = query.filter(FinanceSubject.level == filter_data.level.value)
 
-        # mode 筛选：JSON 数组包含查询（PostgreSQL modes @> :mode）
+        # mode 筛选：JSON 数组包含查询。
+        # modes 列为 JSON 类型，@> 操作符仅 JSONB 支持，需两侧强转 jsonb。
         if filter_data.mode is not None:
-            query = query.filter(text("modes @> CAST(:mode AS JSON)").bindparams(mode=f'["{filter_data.mode}"]'))
+            query = query.filter(
+                text("modes::jsonb @> CAST(:mode AS JSONB)").bindparams(mode=json.dumps([filter_data.mode]))
+            )
 
         # search 模糊搜索科目名称
         if filter_data.search is not None:
