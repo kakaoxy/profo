@@ -1,4 +1,4 @@
-// src/app/(main)/projects/[projectId]/cashflow/_components/header-stats.tsx
+// src/app/(main)/admin/ledger/[projectId]/_components/header-stats.tsx
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CashFlowStats } from "../types";
+import { CashFlowStats } from "./types";
 
 export interface ProjectInfo {
   contract_no: string | null;

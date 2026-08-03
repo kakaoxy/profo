@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2, Check } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -27,78 +26,9 @@ import {
 import { ImageUpload } from "@/components/common/image-upload";
 import type { ImageItem } from "@/components/common/image-upload";
 import { ReceivablePayableTable } from "@/components/finance/receivable-payable-table";
+import { SubjectSelectPanel } from "@/app/(main)/admin/ledger/_components/subject-select-panel";
 
 import { createRecord } from "@/app/(main)/admin/ledger/actions";
-import type { components } from "@/lib/api-types";
-
-type TransactionType = "income" | "expense";
-type BusinessType = "general" | "agent" | "wholesale";
-type StageGroup = { stage: string; items: string[] };
-type LedgerRecordCreate = components["schemas"]["LedgerRecordCreate"];
-
-// ==========================================
-// 资金账本分类数据（三级结构：收支 → 业务类型 → 阶段 → 分类）
-// ⚠️ 未覆盖:后端目前无分类元数据接口,此表与后端 CashFlowCategory 枚举
-// (backend/models/common/base.py)手工同步。待后端提供 /categories 接口后迁移。
-// ==========================================
-
-const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGroup[]>> = {
-  expense: {
-    general: [
-      { stage: "签约", items: ["渠道佣金"] },
-      { stage: "装修", items: ["硬装", "软装", "定制柜", "窗户", "墙面", "其他装修"] },
-      { stage: "在售", items: ["营销费垫付"] },
-      { stage: "已售", items: ["营销推广费", "运营费", "财税成本", "项目激励", "跟投本金退还", "投资人利润分配"] },
-      { stage: "其他", items: ["项目备用金", "其他支出"] },
-    ],
-    agent: [
-      { stage: "签约", items: ["履约保证金"] },
-      { stage: "已售", items: ["税费及佣金差额", "代付佣金"] },
-    ],
-    wholesale: [
-      { stage: "签约", items: ["购房款-定金", "购房款-首付", "购房款-税费", "名额费", "持有月供"] },
-      { stage: "已售", items: ["卖房税费", "卖房佣金"] },
-    ],
-  },
-  income: {
-    general: [
-      { stage: "在售", items: ["项目跟投款"] },
-      { stage: "已售", items: ["营销推广费抵扣"] },
-      { stage: "其他", items: ["其他费用", "备用金回收"] },
-    ],
-    agent: [
-      { stage: "已售", items: ["保证金回收", "增值服务费", "业主佣金"] },
-    ],
-    wholesale: [
-      { stage: "已售", items: ["房价款"] },
-    ],
-  },
-};
-
-/**
- * 前端显示名 → 后端枚举值映射表。
- * 仅列出名称不一致的项；名称一致的无需映射。
- * ⚠️ 未覆盖:与 LEDGER_CATEGORY_DATA 同步,待后端提供分类接口后一并迁移。
- */
-const CATEGORY_DISPLAY_TO_ENUM: Record<string, string> = {
-  "持有月供": "持有成本-月供",
-  "购房款-税费": "房屋税费",
-  "其他费用": "其他收入",
-  "房价款": "售房款",
-};
-
-const BUSINESS_TYPE_OPTIONS: { value: BusinessType; label: string }[] = [
-  { value: "general", label: "通用" },
-  { value: "agent", label: "代理" },
-  { value: "wholesale", label: "收购" },
-];
-
-/** 根据 businessForm 推断默认业务类型 */
-function getDefaultBusinessType(businessForm?: "agent" | "wholesale" | null): BusinessType {
-  if (businessForm === "agent") return "agent";
-  if (businessForm === "wholesale") return "wholesale";
-  return "general";
-}
 
 interface RecordDialogProps {
   projectId: string;
@@ -118,16 +48,16 @@ export function RecordDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReceivablePayable, setShowReceivablePayable] = useState(false);
 
-  // 表单状态
-  const [type, setType] = useState<TransactionType>("expense");
-  const [businessType, setBusinessType] = useState<BusinessType>("general");
+  // 表单状态（Task 8 重构：subject_id + outflow/inflow + payer/payee）
+  const [subjectId, setSubjectId] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
-  const [counterparty, setCounterparty] = useState("");
-  const [counterpartyType, setCounterpartyType] = useState<string>("company");
+  const [outflow, setOutflow] = useState("");
+  const [inflow, setInflow] = useState("");
+  const [payer, setPayer] = useState("");
+  const [payee, setPayee] = useState("");
   const [receiptUrls, setReceiptUrls] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 用于强制重置 ImageUpload 内部状态（每次打开弹窗递增）
   const [uploadKey, setUploadKey] = useState(0);
@@ -135,19 +65,19 @@ export function RecordDialog({
   // 打开弹窗时重置所有状态
   useEffect(() => {
     if (isOpen) {
-      setType("expense");
-      setBusinessType(getDefaultBusinessType(businessForm));
+      setSubjectId("");
       setDate(new Date());
-      setAmount("");
-      setCategory("");
-      setCounterparty("");
-      setCounterpartyType("company");
+      setOutflow("");
+      setInflow("");
+      setPayer("");
+      setPayee("");
       setReceiptUrls([]);
       setNotes("");
+      setErrors({});
       setUploadKey((k) => k + 1);
       setShowReceivablePayable(false);
     }
-  }, [isOpen, businessForm]);
+  }, [isOpen]);
 
   const handleReceiptChange = useCallback((items: ImageItem[]) => {
     const urls = items
@@ -156,27 +86,51 @@ export function RecordDialog({
     setReceiptUrls(urls);
   }, []);
 
+  // type 从 outflow/inflow 推导（供 ReceivablePayableTable 联动使用）
+  // outflow > 0 → expense, inflow > 0 → income, 默认 expense
+  const derivedType: "expense" | "income" = useMemo(() => {
+    const out = Number(outflow) || 0;
+    const infl = Number(inflow) || 0;
+    if (infl > 0 && out <= 0) return "income";
+    return "expense";
+  }, [outflow, inflow]);
+
+  function validate(): boolean {
+    const e: Record<string, string> = {};
+    if (!date) e.date = "请选择日期";
+    if (!subjectId) e.subjectId = "请选择科目分类";
+
+    const out = Number(outflow) || 0;
+    const infl = Number(inflow) || 0;
+    if (out <= 0 && infl <= 0) {
+      e.amount = "流出/流入至少填一项且大于0";
+    }
+    if (out > 0 && infl > 0) {
+      e.amount = "流出与流入不可同时填写";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
   const handleSubmit = async () => {
-    if (!date || !amount || !category || !counterparty.trim() || !counterpartyType) {
-      toast.error("请完善必填信息 (金额、日期、分类、交易方、支付方类型)");
+    if (!validate()) {
+      toast.error("请完善必填信息");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // 提交时将前端显示名映射为后端枚举值
-      const enumCategory = CATEGORY_DISPLAY_TO_ENUM[category] ?? category;
       const payload = {
         project_id: projectId,
-        type,
-        category: enumCategory as LedgerRecordCreate["category"],
-        amount: Number(amount),
-        date: format(date, "yyyy-MM-dd"),
-        counterparty: counterparty.trim(),
-        counterparty_type: counterpartyType,
-        receipt_urls: receiptUrls.length > 0 ? receiptUrls : null,
+        subject_id: subjectId,
+        outflow: Number(outflow) || 0,
+        inflow: Number(inflow) || 0,
+        payer: payer.trim() || null,
+        payee: payee.trim() || null,
+        date: format(date!, "yyyy-MM-dd"),
         description: notes.trim() || null,
-      } as LedgerRecordCreate;
+        receipt_urls: receiptUrls.length > 0 ? receiptUrls : null,
+      };
 
       const res = await createRecord(payload);
 
@@ -194,214 +148,124 @@ export function RecordDialog({
     }
   };
 
-  const stageGroups = LEDGER_CATEGORY_DATA[type][businessType] ?? [];
-
-  // 表单内容抽到变量中，单栏/双栏布局复用，避免字段 JSX 重复
+  // 表单内容（单栏/双栏布局复用，避免字段 JSX 重复）
   const formContent = (
     <div className="grid gap-5 py-2 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
-      {/* 1. 收支切换 Tabs */}
-      <Tabs
-        value={type}
-        onValueChange={(v) => {
-          setType(v as TransactionType);
-          setCategory("");
-        }}
-        className="w-full"
-      >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger
-            value="expense"
-            className="data-[state=active]:bg-success-container data-[state=active]:text-success"
-          >
-            支出
-          </TabsTrigger>
-          <TabsTrigger
-            value="income"
-            className="data-[state=active]:bg-error-container data-[state=active]:text-error"
-          >
-            收入
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* 2. 交易方（必填，移至顶部） */}
+      {/* 1. 科目分类（必填，下拉面板，按业务模式自动过滤） */}
       <div className="grid gap-2">
         <Label className="text-xs text-muted-foreground">
-          交易方 <span className="text-destructive">*</span>
+          科目分类 <span className="text-destructive">*</span>
+          <span className="ml-1 text-dove font-normal">
+            · 已按业务模式自动过滤
+          </span>
         </Label>
-        <Input
-          value={counterparty}
-          onChange={(e) => setCounterparty(e.target.value)}
-          placeholder="例如：张三/某某公司…"
-          name="counterparty"
-          autoComplete="off"
-          required
+        <SubjectSelectPanel
+          value={subjectId}
+          onChange={setSubjectId}
+          businessForm={businessForm}
+          error={errors.subjectId}
         />
       </div>
 
-      {/* 2.1 支付方类型（公司/个人） */}
-      <div className="grid gap-2">
-        <Label className="text-xs text-muted-foreground">
-          支付方类型 <span className="text-destructive">*</span>
-        </Label>
-        <div className="flex gap-2">
-          {([
-            { value: "company", label: "公司" },
-            { value: "individual", label: "个人" },
-          ] as const).map((opt) => {
-            const isSelected = counterpartyType === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setCounterpartyType(opt.value)}
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-full text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200",
-                  !isSelected &&
-                    "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
-                  isSelected &&
-                    type === "expense" &&
-                    "bg-success border-emerald-600 text-white shadow-sm",
-                  isSelected &&
-                    type === "income" &&
-                    "bg-error border-red-600 text-white shadow-sm",
-                )}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. 金额 + 发生日期 */}
+      {/* 2. 流出/流入双字段（互斥：一个 > 0 时另一个必须 = 0） */}
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <Label className="text-xs text-muted-foreground">金额 (元)</Label>
+          <Label className="text-xs text-muted-foreground">流出金额 (元)</Label>
+          <div className="flex items-stretch rounded-lg border border-border overflow-hidden bg-card focus-within:border-ink focus-within:ring-1 focus-within:ring-ink/20 transition-[border-color,box-shadow]">
+            <span className="flex items-center px-3 bg-fog text-graphite text-sm font-semibold border-r border-border">
+              ¥
+            </span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={outflow}
+              onChange={(e) => setOutflow(e.target.value)}
+              autoComplete="off"
+              className="border-0 rounded-none focus-visible:ring-0 font-mono tabular-nums text-error"
+            />
+          </div>
+        </div>
+        <div className="grid gap-2">
+          <Label className="text-xs text-muted-foreground">流入金额 (元)</Label>
+          <div className="flex items-stretch rounded-lg border border-border overflow-hidden bg-card focus-within:border-ink focus-within:ring-1 focus-within:ring-ink/20 transition-[border-color,box-shadow]">
+            <span className="flex items-center px-3 bg-fog text-graphite text-sm font-semibold border-r border-border">
+              ¥
+            </span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={inflow}
+              onChange={(e) => setInflow(e.target.value)}
+              autoComplete="off"
+              className="border-0 rounded-none focus-visible:ring-0 font-mono tabular-nums text-success"
+            />
+          </div>
+        </div>
+      </div>
+      {errors.amount && (
+        <span className="text-[11px] text-destructive -mt-3">{errors.amount}</span>
+      )}
+
+      {/* 3. 付款方 / 收款方 */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label className="text-xs text-muted-foreground">付款方</Label>
           <Input
-            type="number"
-            inputMode="decimal"
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            name="amount"
+            value={payer}
+            onChange={(e) => setPayer(e.target.value)}
+            placeholder="股东A / 公司 / 银行"
             autoComplete="off"
-            className={cn(
-              "font-mono focus-visible:ring-1 text-lg font-semibold tabular-nums",
-              type === "income"
-                ? "text-error focus-visible:ring-error placeholder:text-error/30"
-                : "text-success focus-visible:ring-success placeholder:text-success/30",
-            )}
           />
         </div>
-
         <div className="grid gap-2">
-          <Label className="text-xs text-muted-foreground">发生日期</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full pl-3 text-left font-normal",
-                  !date && "text-muted-foreground",
-                )}
-              >
-                {date ? format(date, "yyyy-MM-dd") : <span>选日期</span>}
-                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <Label className="text-xs text-muted-foreground">收款方</Label>
+          <Input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="房东 / 银行 / 装修队"
+            autoComplete="off"
+          />
         </div>
       </div>
 
-      {/* 4. 业务类型（通用/代理/收购，胶囊按钮组） */}
-      <div className="grid gap-2">
-        <Label className="text-xs text-muted-foreground">业务类型</Label>
-        <div className="flex gap-2">
-          {BUSINESS_TYPE_OPTIONS.map((opt) => {
-            const isSelected = businessType === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  setBusinessType(opt.value);
-                  setCategory("");
-                }}
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-full text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200",
-                  !isSelected &&
-                    "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
-                  isSelected &&
-                    type === "expense" &&
-                    "bg-success border-emerald-600 text-white shadow-sm",
-                  isSelected &&
-                    type === "income" &&
-                    "bg-error border-red-600 text-white shadow-sm",
-                )}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 5. 分类（按阶段分组渲染） */}
+      {/* 4. 发生日期 */}
       <div className="grid gap-2">
         <Label className="text-xs text-muted-foreground">
-          分类 <span className="text-destructive">*</span>
+          发生日期 <span className="text-destructive">*</span>
         </Label>
-        <div className="grid gap-3">
-          {stageGroups.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">该业务类型下暂无分类配置</p>
-          ) : (
-            stageGroups.map((group) => (
-              <div key={group.stage} className="grid gap-1.5">
-                <span className="text-[11px] text-muted-foreground/70 font-medium">
-                  {group.stage}
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {group.items.map((c) => {
-                    const isSelected = category === c;
-                    return (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setCategory(c)}
-                        className={cn(
-                          "px-2.5 py-1 rounded-md text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200 flex items-center gap-1",
-                          !isSelected &&
-                            "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
-                          isSelected &&
-                            type === "expense" &&
-                            "bg-success border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
-                          isSelected &&
-                            type === "income" &&
-                            "bg-error border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1",
-                        )}
-                      >
-                        {isSelected && <Check className="h-3 w-3" />}
-                        {c}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full pl-3 text-left font-normal",
+                !date && "text-muted-foreground",
+                errors.date && "border-destructive",
+              )}
+            >
+              {date ? format(date, "yyyy-MM-dd") : <span>选日期</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+        {errors.date && <span className="text-[11px] text-destructive">{errors.date}</span>}
       </div>
 
-      {/* 6. 票据上传（支持多张） */}
+      {/* 5. 票据上传（支持多张，最多 9 张） */}
       <div className="grid gap-2">
         <Label className="text-xs text-muted-foreground">
           票据（最多 9 张）
@@ -416,7 +280,7 @@ export function RecordDialog({
         />
       </div>
 
-      {/* 7. 备注 */}
+      {/* 6. 备注 */}
       <div className="grid gap-2">
         <Label className="text-xs text-muted-foreground">备注说明</Label>
         <Textarea
@@ -424,7 +288,6 @@ export function RecordDialog({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="例如：支付首期款…"
           className="h-20 resize-none"
-          name="notes"
           autoComplete="off"
         />
       </div>
@@ -469,7 +332,7 @@ export function RecordDialog({
             <div className="w-[480px] shrink-0 border-r border-dove/30 pr-6 overflow-hidden">
               <ReceivablePayableTable
                 projectId={projectId}
-                transactionType={type}
+                transactionType={derivedType}
                 businessForm={businessForm}
               />
             </div>

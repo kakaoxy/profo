@@ -182,10 +182,7 @@ export const columns: ColumnDef<Project>[] = [
       return (
         <div className="hidden lg:block text-right">
           <Link
-            href={`?cashflow_id=${
-              row.original.id
-            }&community_name=${encodeURIComponent(row.original.community_name || "")}&address=${encodeURIComponent(row.original.address || "")}`}
-            scroll={false}
+            href={`/admin/ledger/${row.original.id}`}
             onClick={(e) => e.stopPropagation()}
             className={`font-bold cursor-pointer hover:opacity-70 hover:underline decoration-2 underline-offset-4 transition-all tabular-nums ${colorClass}`}
           >

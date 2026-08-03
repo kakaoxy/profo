@@ -1,5 +1,6 @@
 "use client";
 
+import useSWR from "swr";
 import { Loader2, Download, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
+import {
+  fetchSubjects,
+  type SubjectItem,
+} from "@/app/(main)/admin/ledger/actions";
 
-export type FilterTab = "all" | "income" | "expense";
+export type FilterTab = "all" | "in" | "out";
 
 type SettlementStatus = components["schemas"]["SettlementStatus"];
 
@@ -24,13 +29,11 @@ interface LedgerDetailTableFilterProps {
   onFilterChange: (value: FilterTab) => void;
   searchInput: string;
   onSearchInputChange: (value: string) => void;
-  categoryFilter: string;
-  onCategoryFilterChange: (value: string) => void;
-  categoryOptions: string[];
-  counterpartyTypeFilter: string;
-  onCounterpartyTypeFilterChange: (value: string) => void;
+  subjectFilter: string;
+  onSubjectFilterChange: (value: string) => void;
   voucherFilter: string;
   onVoucherFilterChange: (value: string) => void;
+  businessForm?: "agent" | "wholesale" | null;
   isExporting: boolean;
   onExport: () => void;
   isSettled: boolean;
@@ -44,13 +47,11 @@ export function LedgerDetailTableFilter({
   onFilterChange,
   searchInput,
   onSearchInputChange,
-  categoryFilter,
-  onCategoryFilterChange,
-  categoryOptions,
-  counterpartyTypeFilter,
-  onCounterpartyTypeFilterChange,
+  subjectFilter,
+  onSubjectFilterChange,
   voucherFilter,
   onVoucherFilterChange,
+  businessForm,
   isExporting,
   onExport,
   isSettled,
@@ -58,6 +59,23 @@ export function LedgerDetailTableFilter({
   onAddRecord,
   onSettlement,
 }: LedgerDetailTableFilterProps) {
+  // 按项目业务模式过滤科目（wholesale → acquire）
+  const mode =
+    businessForm === "agent"
+      ? "agent"
+      : businessForm === "wholesale"
+        ? "acquire"
+        : undefined;
+  const { data: subjects } = useSWR(
+    mode ? `subjects-filter-${mode}` : "subjects-filter-all",
+    async () => {
+      const res = await fetchSubjects(mode);
+      if (res.success) return res.data;
+      return [];
+    },
+  );
+  const subjectOptions: SubjectItem[] = subjects ?? [];
+
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <Tabs
@@ -70,68 +88,46 @@ export function LedgerDetailTableFilter({
             全部
           </TabsTrigger>
           <TabsTrigger
-            value="income"
-            className="text-xs h-7 text-error data-[state=active]:text-error"
-          >
-            收入
-          </TabsTrigger>
-          <TabsTrigger
-            value="expense"
+            value="in"
             className="text-xs h-7 text-success data-[state=active]:text-success"
           >
-            支出
+            仅流入
+          </TabsTrigger>
+          <TabsTrigger
+            value="out"
+            className="text-xs h-7 text-error data-[state=active]:text-error"
+          >
+            仅流出
           </TabsTrigger>
         </TabsList>
       </Tabs>
       <div className="flex w-full sm:w-auto items-center gap-2 flex-wrap">
         <Input
-          placeholder="搜索交易方…"
+          placeholder="搜索摘要/付款方/收款方…"
           value={searchInput}
           onChange={(e) => onSearchInputChange(e.target.value)}
           className="h-9 w-full sm:w-56 bg-card border-border"
-          aria-label="搜索交易方"
-          name="counterparty-search"
+          aria-label="搜索流水"
+          name="ledger-search"
           autoComplete="off"
         />
-        <Select
-          value={categoryFilter}
-          onValueChange={onCategoryFilterChange}
-        >
+        <Select value={subjectFilter} onValueChange={onSubjectFilterChange}>
           <SelectTrigger
-            className="h-9 w-[140px] bg-card border-border"
-            aria-label="筛选分类"
+            className="h-9 w-[160px] bg-card border-border"
+            aria-label="筛选科目分类"
           >
-            <SelectValue placeholder="全部分类" />
+            <SelectValue placeholder="全部科目" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">全部分类</SelectItem>
-            {categoryOptions.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
+            <SelectItem value="all">全部科目</SelectItem>
+            {subjectOptions.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select
-          value={counterpartyTypeFilter}
-          onValueChange={onCounterpartyTypeFilterChange}
-        >
-          <SelectTrigger
-            className="h-9 w-[120px] bg-card border-border"
-            aria-label="筛选支付方类型"
-          >
-            <SelectValue placeholder="支付方类型" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">支付方类型</SelectItem>
-            <SelectItem value="company">公司</SelectItem>
-            <SelectItem value="individual">个人</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={voucherFilter}
-          onValueChange={onVoucherFilterChange}
-        >
+        <Select value={voucherFilter} onValueChange={onVoucherFilterChange}>
           <SelectTrigger
             className="h-9 w-[120px] bg-card border-border"
             aria-label="筛选凭证状态"

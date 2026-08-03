@@ -1,4 +1,4 @@
-// src/app/(main)/projects/[projectId]/cashflow/_components/chart-renderer.tsx
+// src/app/(main)/admin/ledger/[projectId]/_components/chart-renderer.tsx
 "use client";
 
 import {

@@ -1,4 +1,5 @@
-// src/app/(main)/projects/[projectId]/cashflow/types.ts
+// src/app/(main)/admin/ledger/[projectId]/_components/types.ts
+// 资金账本前端视图类型
 
 import type { components } from "@/lib/api-types";
 

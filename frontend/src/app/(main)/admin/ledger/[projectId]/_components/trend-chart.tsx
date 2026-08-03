@@ -1,4 +1,4 @@
-// src/app/(main)/projects/[projectId]/cashflow/_components/trend-chart.tsx
+// src/app/(main)/admin/ledger/[projectId]/_components/trend-chart.tsx
 "use client";
 
 import { useMemo } from "react";
@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { safeFormatDate } from "@/lib/formatters";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CashFlowRecord } from "../types";
+import { CashFlowRecord } from "./types";
 import { getChartColors } from "@/lib/chart-colors";
 import type { ChartDataPoint } from "./chart-renderer";
 

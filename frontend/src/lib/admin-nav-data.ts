@@ -85,6 +85,7 @@ export const navMain: NavItem[] = [
     items: [
       { title: "跟投管理", url: "/admin/investments", permission: PERMISSION_CODES.INVESTMENT_READ },
       { title: "资金账本", url: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },
+      { title: "科目管理", url: "/admin/ledger/subjects", permission: PERMISSION_CODES.LEDGER_READ },
     ],
   },
   {

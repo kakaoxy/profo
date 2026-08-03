@@ -177,10 +177,80 @@ export async function exportProjectLedger(
 }
 
 /**
+ * 科目数据项（对应后端 FinanceSubjectResponse）
+ * ⚠️ 待 pnpm gen-api 后切换回 components["schemas"]["FinanceSubjectResponse"]
+ */
+export interface SubjectItem {
+  id: string;
+  name: string;
+  level: string; // "1"-"7"
+  pnl: boolean;
+  modes: string[];
+  stage: string;
+  note: string | null;
+  system: boolean;
+}
+
+/**
+ * 获取科目列表（Server Action）
+ *
+ * @param mode 业务模式筛选: "agent" | "acquire" | undefined(全部)
+ */
+export async function fetchSubjects(
+  mode?: "agent" | "acquire",
+): Promise<ActionResult<SubjectItem[]>> {
+  try {
+    const token = await getAccessTokenFromCookie();
+    // 鉴权守卫：token 缺失时直接拒绝
+    if (!token) {
+      return { success: false, message: "未登录或会话已过期，请重新登录" };
+    }
+    const url = new URL(getApiUrl("/api/v1/admin/subjects"));
+    if (mode) {
+      url.searchParams.set("mode", mode);
+    }
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const msg = `获取科目列表失败 (HTTP ${res.status})`;
+      return { success: false, message: msg };
+    }
+    const data = (await res.json()) as SubjectItem[];
+    return { success: true, data };
+  } catch (e) {
+    logger.error("获取科目列表异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+// ⚠️ 待 pnpm gen-api 后切换回 components["schemas"]["LedgerRecordCreate"]
+// 当前 api-types.d.ts 尚未包含 subject_id/outflow/inflow/payer/payee（Task 5 后端字段）
+export type LedgerRecordCreateInput = {
+  project_id: string;
+  date: string;
+  description?: string | null;
+  receipt_urls?: string[] | null;
+  counterparty_type?: "company" | "individual" | null;
+  // 新字段（主字段）
+  subject_id: string;
+  outflow: number;
+  inflow: number;
+  payer?: string | null;
+  payee?: string | null;
+  // 兼容字段
+  type?: "income" | "expense" | null;
+  category?: string | null;
+  amount?: number | string | null;
+  related_stage?: string | null;
+  counterparty?: string | null;
+};
+
+/**
  * 创建资金账本流水（成功后 revalidatePath 刷新列表）
  */
 export async function createRecord(
-  data: LedgerRecordCreate,
+  data: LedgerRecordCreateInput,
 ): Promise<ActionResult<CashFlowRecordResponse>> {
   const parsed = createRecordSchema.safeParse(data);
   if (!parsed.success) {
@@ -192,7 +262,8 @@ export async function createRecord(
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST("/api/v1/admin/ledger", {
-      body: data,
+      // ⚠️ as unknown as: api-types.d.ts 尚未包含新字段，待 gen-api 后移除
+      body: data as unknown as LedgerRecordCreate,
     });
 
     if (error) {
@@ -201,8 +272,6 @@ export async function createRecord(
     }
 
     revalidatePath("/admin/ledger");
-    // 同步刷新项目资金账本页（共享弹窗替换旧 cashflow 弹窗后需保证两处页面都刷新）
-    revalidatePath(`/admin/projects/${data.project_id}/cashflow`);
     revalidatePath(`/admin/ledger/${data.project_id}`);
     return {
       success: true,

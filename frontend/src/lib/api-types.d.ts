@@ -6037,6 +6037,64 @@ export interface components {
             sections: components["schemas"]["LedgerStatisticsCalcSection"][];
         };
         /**
+         * LedgerStatisticsFiveLayer
+         * @description 五层法统计(权责发生制·损益视角).
+         */
+        LedgerStatisticsFiveLayer: {
+            /** Income */
+            income: number;
+            /** Direct Cost */
+            direct_cost: number;
+            /** Gross */
+            gross: number;
+            /** Opex */
+            opex: number;
+            /** Finance Cost */
+            finance_cost: number;
+            /** Net */
+            net: number;
+        };
+        /**
+         * LedgerStatisticsKPI
+         * @description 统计页面 8 项 KPI.
+         */
+        LedgerStatisticsKPI: {
+            /** Project Income */
+            project_income: number;
+            /** Gross Profit */
+            gross_profit: number;
+            /** Net Profit */
+            net_profit: number;
+            /** Total Pnl Outflow */
+            total_pnl_outflow: number;
+            /** Cash Inflow */
+            cash_inflow: number;
+            /** Cash Outflow */
+            cash_outflow: number;
+            /** Net Cashflow */
+            net_cashflow: number;
+            /** Record Count */
+            record_count: number;
+        };
+        /**
+         * LedgerStatisticsStageFlow
+         * @description 阶段现金流(收付实现制·现金流视角).
+         */
+        LedgerStatisticsStageFlow: {
+            /** Stage */
+            stage: string;
+            /** Stage Label */
+            stage_label: string;
+            /** Inflow */
+            inflow: number;
+            /** Outflow */
+            outflow: number;
+            /** Net */
+            net: number;
+            /** Count */
+            count: number;
+        };
+        /**
          * LedgerStatisticsCalcItem
          * @description 计算明细项.
          */
@@ -7200,18 +7258,13 @@ export interface components {
         };
         /**
          * ProjectLedgerStatisticsResponse
-         * @description 资金账本统计页面聚合响应（8 分组）.
+         * @description 资金账本统计页面聚合响应(五层法 + 阶段现金流).
          */
         ProjectLedgerStatisticsResponse: {
-            project_base: components["schemas"]["LedgerStatisticsProjectBase"];
-            investment: components["schemas"]["LedgerStatisticsInvestment"];
-            renovation: components["schemas"]["LedgerStatisticsRenovation"];
-            deposit: components["schemas"]["LedgerStatisticsDeposit"];
-            commission: components["schemas"]["LedgerStatisticsCommission"];
-            marketing: components["schemas"]["LedgerStatisticsMarketing"];
-            operation: components["schemas"]["LedgerStatisticsOperation"];
-            summary: components["schemas"]["LedgerStatisticsSummary"];
-            calc_breakdown: components["schemas"]["LedgerStatisticsCalcBreakdown"];
+            five_layer: components["schemas"]["LedgerStatisticsFiveLayer"];
+            stage_flows: components["schemas"]["LedgerStatisticsStageFlow"][];
+            kpi: components["schemas"]["LedgerStatisticsKPI"];
+            breakdown: components["schemas"]["LedgerStatisticsCalcBreakdown"];
         };
         /**
          * ProjectReportResponse

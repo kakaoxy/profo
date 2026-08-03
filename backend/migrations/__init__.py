@@ -17,6 +17,8 @@
 - rename_return_adjustment_columns: 将 return_adjustments 表回报率字段重命名为分配比例字段（清空旧数据）
 - add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（资金账本）
 - create_finance_record_logs_table: 幂等创建资金账本操作日志表（finance_record_logs）
+- create_finance_subjects_table: 幂等创建科目管理表 finance_subjects 并初始化系统预置科目
+  （替代 CashFlowCategory 硬编码枚举，支持用户自定义科目 CRUD）
 - add_finance_record_receipt_urls_column: 为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填
   （多票据支持）
 - add_cashflow_category_enum_values: 同步 PostgreSQL cashflowcategory enum 与 Python 枚举（幂等）
@@ -51,6 +53,7 @@
 
 """
 
+import json
 import logging
 
 from sqlalchemy import inspect, text
@@ -338,6 +341,23 @@ _PERMISSIONS_SEED: list[dict] = [
         "sort_order": 30,
         "description": "项目财务结算操作",
     },
+    # 科目管理模块
+    {
+        "code": "subject:read",
+        "name": "查看科目",
+        "module": "subject",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看科目列表与详情",
+    },
+    {
+        "code": "subject:write",
+        "name": "编辑科目",
+        "module": "subject",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新增/编辑/删除科目",
+    },
     # 投资管理模块
     {
         "code": "investment:read",
@@ -432,6 +452,8 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "ledger:read",
         "ledger:write",
         "ledger:settle",
+        "subject:read",
+        "subject:write",
         "investment:read",
         "investment:write",
         "investment:copy",
@@ -458,6 +480,56 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "lead:submit",
     ],
 }
+
+# 系统预置科目种子数据（37 条 S01-S37）。
+# 数据来源：docs/designs/profocw-record-demo/三模块.html 的 INITIAL_SUBJECTS 常量。
+# 字段：id/name/level/pnl/modes/stage/note；由 create_finance_subjects_table 幂等插入（按 name 去重）。
+_INITIAL_SUBJECTS: list[dict] = [
+    # ①取得成本（仅收购）
+    {"id": "S01", "name": "购房定金", "level": "1", "pnl": True, "modes": ["acquire"], "stage": "signing", "note": "收购专有 · 计入售房差额"},
+    {"id": "S02", "name": "购房首付", "level": "1", "pnl": True, "modes": ["acquire"], "stage": "signing", "note": "收购专有 · 计入售房差额"},
+    {"id": "S03", "name": "购房尾款", "level": "1", "pnl": True, "modes": ["acquire"], "stage": "signing", "note": "收购专有 · 计入售房差额"},
+    {"id": "S04", "name": "购房贷款差额", "level": "1", "pnl": True, "modes": ["acquire"], "stage": "signing", "note": "收购专有 · 贷款不足补差额"},
+    {"id": "S05", "name": "交易税费(买入)", "level": "1", "pnl": True, "modes": ["acquire"], "stage": "signing", "note": "收购专有 · 过户买方税费"},
+    {"id": "S06", "name": "购房名额使用费", "level": "1", "pnl": True, "modes": ["acquire"], "stage": "signing", "note": "收购专有 · 代持人名额费"},
+    {"id": "S07", "name": "月供利息", "level": "1", "pnl": True, "modes": ["acquire"], "stage": "holding", "note": "已含于售房差额 · 月供拆分"},
+    # ②直接改造成本
+    {"id": "S08", "name": "设计费", "level": "2", "pnl": True, "modes": ["agent", "acquire"], "stage": "renovation", "note": "扣减毛利"},
+    {"id": "S09", "name": "装修款", "level": "2", "pnl": True, "modes": ["agent", "acquire"], "stage": "renovation", "note": "扣减毛利"},
+    {"id": "S10", "name": "软装采购", "level": "2", "pnl": True, "modes": ["agent", "acquire"], "stage": "renovation", "note": "可选 · 按实际"},
+    # ③交易费用
+    {"id": "S11", "name": "收房佣金", "level": "3", "pnl": True, "modes": ["agent"], "stage": "signing", "note": "代理 · 毛利层扣减"},
+    {"id": "S12", "name": "购房佣金", "level": "3", "pnl": True, "modes": ["acquire"], "stage": "signing", "note": "收购 · 毛利层扣减"},
+    {"id": "S13", "name": "售房佣金", "level": "3", "pnl": True, "modes": ["acquire"], "stage": "sold", "note": "收购 · 毛利层扣减"},
+    {"id": "S14", "name": "营销推广费", "level": "3", "pnl": True, "modes": ["agent", "acquire"], "stage": "listing", "note": "代理=卖出价×0.5% · 含推广支出"},
+    {"id": "S15", "name": "销售额外激励", "level": "3", "pnl": True, "modes": ["agent", "acquire"], "stage": "listing", "note": "如iPhone奖励 · 独立于营销推广费"},
+    {"id": "S16", "name": "营销支出其他", "level": "3", "pnl": True, "modes": ["agent", "acquire"], "stage": "listing", "note": "如纱窗/除甲醛 · 独立于营销推广费"},
+    {"id": "S17", "name": "运营服务费", "level": "3", "pnl": True, "modes": ["agent", "acquire"], "stage": "sold", "note": "代理=卖出价×1%"},
+    {"id": "S18", "name": "卖房佣金差额", "level": "3", "pnl": True, "modes": ["agent"], "stage": "sold", "note": "仅代理 · 差价×1% · 佣金差额(非税费)"},
+    {"id": "S19", "name": "差额税费", "level": "3", "pnl": True, "modes": ["agent"], "stage": "sold", "note": "仅代理 · 差价×1%+个税"},
+    {"id": "S20", "name": "交易税费(卖出)", "level": "3", "pnl": True, "modes": ["acquire"], "stage": "sold", "note": "仅收购 · 卖方全额税费"},
+    # ④资金成本
+    {"id": "S21", "name": "项目分润", "level": "4", "pnl": True, "modes": ["agent", "acquire"], "stage": "sold", "note": "付融资方利润 · 扣减净利润"},
+    # ⑤现金流专属
+    {"id": "S22", "name": "月供本金", "level": "5", "pnl": False, "modes": ["acquire"], "stage": "holding", "note": "资产负债项 · 不进损益 · 月供拆分"},
+    {"id": "S23", "name": "贷款发放", "level": "5", "pnl": False, "modes": ["acquire"], "stage": "signing", "note": "银行放款 · 资产负债项 · 流入"},
+    {"id": "S24", "name": "卖房还贷", "level": "5", "pnl": False, "modes": ["acquire"], "stage": "sold", "note": "仅情况二 · 投资款垫付 · 不进损益"},
+    {"id": "S25", "name": "投资款收入", "level": "5", "pnl": False, "modes": ["agent", "acquire"], "stage": "signing", "note": "股东本金往来 · 不进损益"},
+    {"id": "S26", "name": "投资款还本", "level": "5", "pnl": False, "modes": ["agent", "acquire"], "stage": "sold", "note": "归还股东本金 · 不进损益"},
+    # ⑥收入项
+    {"id": "S27", "name": "增值服务费", "level": "6", "pnl": True, "modes": ["agent"], "stage": "sold", "note": "代理核心收入 = 卖出价−业主底价"},
+    {"id": "S28", "name": "售房差额", "level": "6", "pnl": True, "modes": ["acquire"], "stage": "sold", "note": "收购核心收入 = 卖出价−(取得成本+月供利息)"},
+    {"id": "S29", "name": "收卖房定金", "level": "6", "pnl": True, "modes": ["acquire"], "stage": "sold", "note": "三项合计=卖出价"},
+    {"id": "S30", "name": "收卖房首付", "level": "6", "pnl": True, "modes": ["acquire"], "stage": "sold", "note": "三项合计=卖出价"},
+    {"id": "S31", "name": "收卖房尾款", "level": "6", "pnl": True, "modes": ["acquire"], "stage": "sold", "note": "三项合计=卖出价"},
+    {"id": "S32", "name": "他项收入", "level": "6", "pnl": True, "modes": ["agent", "acquire"], "stage": "sold", "note": "非主业收入"},
+    {"id": "S33", "name": "结算差额", "level": "6", "pnl": True, "modes": ["agent", "acquire"], "stage": "sold", "note": "兜底平账"},
+    # ⑦配对项
+    {"id": "S34", "name": "履约保证金", "level": "7", "pnl": False, "modes": ["agent"], "stage": "signing", "note": "配对\"业主保证金回退\" · 净额归零"},
+    {"id": "S35", "name": "业主保证金回退", "level": "7", "pnl": False, "modes": ["agent"], "stage": "sold", "note": "配对\"履约保证金\" · 净额归零"},
+    {"id": "S36", "name": "暂支款(垫付)", "level": "7", "pnl": False, "modes": ["agent", "acquire"], "stage": "renovation", "note": "配对\"暂支款核销\" · 净额归零"},
+    {"id": "S37", "name": "暂支款核销", "level": "7", "pnl": False, "modes": ["agent", "acquire"], "stage": "listing", "note": "配对\"暂支款(垫付)\" · 净额归零"},
+]
 
 
 def _column_exists(engine: Engine, table: str, column: str) -> bool:
@@ -804,6 +876,137 @@ def create_finance_record_logs_table(engine: Engine) -> None:
 
     logger.info("迁移：创建资金账本操作日志表 %s", FinanceRecordLog.__table__.name)
     Base.metadata.create_all(bind=engine, tables=[FinanceRecordLog.__table__], checkfirst=True)
+
+
+def create_finance_subjects_table(engine: Engine) -> None:
+    """幂等创建科目管理表 finance_subjects 并初始化系统预置科目.
+
+    1. 幂等创建表（CREATE TABLE IF NOT EXISTS 语义，checkfirst=True）
+    2. 幂等创建索引 idx_subject_stage（按 stage 查询）
+    3. 幂等初始化系统预置科目（INSERT ... ON CONFLICT (name) DO NOTHING）
+
+    替代原 CashFlowCategory 硬编码枚举，支持用户自定义科目 CRUD。
+    system=True 的记录为系统预置，is_deleted=False。
+
+    种子数据见 _INITIAL_SUBJECTS（37 条 S01-S37，按 name 幂等插入）。
+    """
+    from models import Base  # noqa: PLC0415
+    from models.project import FinanceSubject  # noqa: PLC0415
+
+    # 1. 幂等创建表
+    inspector = inspect(engine)
+    if FinanceSubject.__table__.name not in inspector.get_table_names():
+        logger.info("迁移：创建科目管理表 %s", FinanceSubject.__table__.name)
+        Base.metadata.create_all(bind=engine, tables=[FinanceSubject.__table__], checkfirst=True)
+
+    # 2. 幂等创建索引（表已存在但索引缺失时补建）
+    if not _index_exists(engine, "idx_subject_stage"):
+        logger.info("迁移：创建 idx_subject_stage 索引")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_subject_stage ON finance_subjects (stage)"))
+
+    # 3. 幂等初始化系统预置科目（按 name 去重）
+    if not _INITIAL_SUBJECTS:
+        return
+
+    inserted = 0
+    with engine.begin() as conn:
+        for subj in _INITIAL_SUBJECTS:
+            result = conn.execute(
+                text(
+                    "INSERT INTO finance_subjects "
+                    "(id, name, level, pnl, modes, stage, note, system, is_deleted, created_at, updated_at) "
+                    "VALUES (:id, :name, :level, :pnl, CAST(:modes AS JSON), :stage, :note, "
+                    "TRUE, FALSE, NOW(), NOW()) "
+                    "ON CONFLICT (name) DO NOTHING"
+                ),
+                {
+                    "id": subj["id"],
+                    "name": subj["name"],
+                    "level": subj["level"],
+                    "pnl": subj["pnl"],
+                    "modes": json.dumps(subj["modes"], ensure_ascii=False),
+                    "stage": subj["stage"],
+                    "note": subj.get("note"),
+                },
+            )
+            inserted += result.rowcount
+    if inserted:
+        logger.info("迁移：初始化 %d 条系统预置科目", inserted)
+
+
+
+def add_finance_record_subject_columns(engine: Engine) -> None:
+    """为 finance_records 表添加科目/收支/收付款方 5 列并回填历史数据（资金账本，幂等）.
+
+    新增列：
+    - subject_id: 科目ID（VARCHAR(36)，逻辑外键→finance_subjects.id）
+    - outflow: 流出金额（NUMERIC(15,2) NOT NULL DEFAULT 0）
+    - inflow: 流入金额（NUMERIC(15,2) NOT NULL DEFAULT 0）
+    - payer: 付款方（VARCHAR(100)）
+    - payee: 收款方（VARCHAR(100)）
+
+    历史数据回填（仅处理对应字段为 NULL/0 的行，幂等）：
+    - outflow/inflow 按 type 拆分 amount（expense→outflow, income→inflow）
+    - payer 从 counterparty 回填（payee 留空，仅处理 payer IS NULL 的行）
+    - subject_id 通过 category::text JOIN finance_subjects.name 匹配
+      （category 是 PostgreSQL enum，需 CAST 为 text 才能与 name VARCHAR 比较）
+
+    索引：idx_finance_subject_id ON finance_records(subject_id)
+
+    幂等：通过 _column_exists 检查跳过 ALTER；回填仅处理 NULL/0 行；索引 IF NOT EXISTS。
+    使用硬编码 DDL 字符串避免 f-string 拼接列名（AGENTS.md §11）。
+    """
+    # 1. 幂等添加列（列名+类型硬编码元组，DDL 不支持绑定参数）
+    for column_name, column_type_sql in (
+        ("subject_id", "VARCHAR(36)"),
+        ("outflow", "NUMERIC(15,2) NOT NULL DEFAULT 0"),
+        ("inflow", "NUMERIC(15,2) NOT NULL DEFAULT 0"),
+        ("payer", "VARCHAR(100)"),
+        ("payee", "VARCHAR(100)"),
+    ):
+        if _column_exists(engine, "finance_records", column_name):
+            continue
+        logger.info("迁移：为 finance_records 表添加 %s 列", column_name)
+        ddl = "ALTER TABLE finance_records ADD COLUMN " + column_name + " " + column_type_sql
+        with engine.begin() as conn:
+            conn.execute(text(ddl))
+
+    # 2. 历史数据回填（幂等：仅处理未填充行）
+    with engine.begin() as conn:
+        # 2.1 outflow/inflow 按 type 拆分 amount（仅处理同时为 0 且 amount>0 的行）
+        conn.execute(
+            text(
+                "UPDATE finance_records "
+                "SET outflow = CASE WHEN type='expense' THEN amount ELSE 0 END, "
+                "    inflow = CASE WHEN type='income' THEN amount ELSE 0 END "
+                "WHERE outflow=0 AND inflow=0 AND amount>0"
+            )
+        )
+        # 2.2 payer 从 counterparty 回填（payee 留空，仅处理 payer IS NULL 的行）
+        conn.execute(
+            text(
+                "UPDATE finance_records SET payer = counterparty "
+                "WHERE payer IS NULL AND counterparty IS NOT NULL"
+            )
+        )
+        # 2.3 subject_id 通过 category::text JOIN finance_subjects.name 匹配回填
+        #     category 是 PostgreSQL enum，需 CAST 为 text 才能与 name(VARCHAR) 比较
+        conn.execute(
+            text(
+                "UPDATE finance_records fr SET subject_id = fs.id "
+                "FROM finance_subjects fs "
+                "WHERE fr.subject_id IS NULL "
+                "  AND fs.name = fr.category::text "
+                "  AND fs.is_deleted = false"
+            )
+        )
+
+    # 3. 幂等创建索引 idx_finance_subject_id ON finance_records(subject_id)
+    if not _index_exists(engine, "idx_finance_subject_id"):
+        logger.info("迁移：创建 idx_finance_subject_id 索引")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_finance_subject_id ON finance_records (subject_id)"))
 
 
 def add_finance_record_receipt_urls_column(engine: Engine) -> None:
@@ -1696,6 +1899,8 @@ def _run_all_migrations(engine: Engine) -> None:
         rename_return_adjustment_columns(engine)
         add_finance_record_counterparty_columns(engine)
         create_finance_record_logs_table(engine)
+        create_finance_subjects_table(engine)
+        add_finance_record_subject_columns(engine)
         add_finance_record_receipt_urls_column(engine)
         add_cashflow_category_enum_values(engine)
         add_project_finance_settlement_columns(engine)

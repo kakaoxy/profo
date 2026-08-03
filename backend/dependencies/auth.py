@@ -372,6 +372,9 @@ LeadUploadPhotoPermDep = Annotated[User, Depends(require_any_permission(["proper
 LedgerReadPermDep = Annotated[User, Depends(require_permission("ledger:read"))]
 LedgerWritePermDep = Annotated[User, Depends(require_permission("ledger:write"))]
 LedgerSettlePermDep = Annotated[User, Depends(require_permission("ledger:settle"))]
+# subject 模块（科目管理）
+SubjectReadPermDep = Annotated[User, Depends(require_permission("subject:read"))]
+SubjectWritePermDep = Annotated[User, Depends(require_permission("subject:write"))]
 # investment 模块
 InvestmentReadPermDep = Annotated[User, Depends(require_permission("investment:read"))]
 InvestmentWritePermDep = Annotated[User, Depends(require_permission("investment:write"))]
@@ -614,6 +617,8 @@ __all__ = [
     "LedgerReadPermDep",
     "LedgerSettlePermDep",
     "LedgerWritePermDep",
+    "SubjectReadPermDep",
+    "SubjectWritePermDep",
     "OperationLogReadPermDep",
     "PermissionManagePermDep",
     "PermissionReadPermDep",
