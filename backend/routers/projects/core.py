@@ -59,8 +59,8 @@ def get_next_contract_no(
     """获取下一个合同编号.
 
     格式: SH + 4位自增序号 + - + 后缀
-    - agent(代理美化) -> SG，如 SH0028-SG
-    - wholesale(收购美化) -> DL，如 SH0028-DL
+    - agent(代理美化) -> DL，如 SH0028-DL
+    - wholesale(收购美化) -> SG，如 SH0028-SG
     后端生成保证唯一性，避免前端竞态条件。
     business_form 非 agent/wholesale 时返回 400。
     """

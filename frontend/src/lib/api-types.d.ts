@@ -734,8 +734,8 @@ export interface paths {
          * @description 获取下一个合同编号.
          *
          *     格式: SH + 4位自增序号 + - + 后缀
-         *     - agent(代理美化) -> SG，如 SH0028-SG
-         *     - wholesale(收购美化) -> DL，如 SH0028-DL
+         *     - agent(代理美化) -> DL，如 SH0028-DL
+         *     - wholesale(收购美化) -> SG，如 SH0028-SG
          *     后端生成保证唯一性，避免前端竞态条件。
          *     business_form 非 agent/wholesale 时返回 400。
          */
@@ -971,54 +971,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/cashflow": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Project Cashflow
-         * @description 获取项目现金流明细和汇总.
-         *
-         *     使用 ProjectReadPermDep 基于权限码校验（需 project:read）.
-         */
-        get: operations["get_project_cashflow_api_v1_projects__project_id__cashflow_get"];
-        put?: never;
-        /**
-         * Create Cashflow Record
-         * @description 创建现金流记录.
-         */
-        post: operations["create_cashflow_record_api_v1_projects__project_id__cashflow_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/cashflow/{record_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Cashflow Record
-         * @description 删除现金流记录.
-         *
-         *     速率限制：20次/小时.
-         */
-        delete: operations["delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1587,7 +1539,7 @@ export interface paths {
          * 获取项目资金账本统计
          * @description 获取项目资金账本统计页面聚合数据.
          *
-         *     一次性返回 8 分组：项目基础信息 / 投资 / 装修 / 保证金 / 佣金 / 营销 / 运营 / 资金汇总.
+         *     按五层法 + 阶段现金流重算：five_layer / stage_flows / kpi / breakdown.
          */
         get: operations["get_project_statistics_api_v1_admin_ledger__project_id__statistics_get"];
         put?: never;
@@ -1728,6 +1680,60 @@ export interface paths {
          * @description 补充上传记账凭证或更新支付方类型.
          */
         patch: operations["update_ledger_record_api_v1_admin_ledger__record_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取科目列表
+         * @description 查询科目列表（支持 mode/stage/level/system/is_deleted/search 筛选）.
+         */
+        get: operations["list_subjects_api_v1_admin_subjects_get"];
+        put?: never;
+        /**
+         * 创建科目
+         * @description 创建用户自定义科目（system 强制为 False）.
+         *
+         *     速率限制：100次/小时.
+         */
+        post: operations["create_subject_api_v1_admin_subjects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subjects/{subject_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 删除科目
+         * @description 软删除科目（系统预置科目不可删除）.
+         *
+         *     速率限制：20次/小时.
+         */
+        delete: operations["delete_subject_api_v1_admin_subjects__subject_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * 更新科目
+         * @description 更新科目（系统预置科目的 name/level 不可修改）.
+         *
+         *     速率限制：100次/小时.
+         */
+        patch: operations["update_subject_api_v1_admin_subjects__subject_id__patch"];
         trace?: never;
     };
     "/api/v1/auth/token": {
@@ -3437,34 +3443,6 @@ export interface components {
          */
         CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "收购款" | "渠道佣金" | "工程装修费" | "硬装" | "软装" | "定制柜" | "窗户" | "墙面" | "其他装修" | "营销推广费" | "运营服务费" | "跟投本金退还" | "投资人利润分配" | "购房本金" | "房屋税费" | "名额费" | "持有成本-月供" | "其他税费" | "项目备用金" | "营销费垫付" | "财税成本" | "项目激励" | "代付佣金" | "税费及佣金差额" | "购房款-定金" | "购房款-首付" | "卖房佣金" | "卖房税费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款" | "保证金回收" | "增值服务费" | "项目跟投款" | "备用金回收" | "营销推广费抵扣" | "业主佣金";
         /**
-         * CashFlowRecordCreate
-         * @description 创建现金流.
-         */
-        CashFlowRecordCreate: {
-            type: components["schemas"]["CashFlowType"];
-            category: components["schemas"]["CashFlowCategory"];
-            /** Amount */
-            amount: number | string;
-            /**
-             * Date
-             * Format: date-time
-             */
-            date: string;
-            /** Description */
-            description?: string | null;
-            /** Related Stage */
-            related_stage?: string | null;
-            /**
-             * Counterparty
-             * @description 交易方(必填)
-             */
-            counterparty: string;
-            /** @description 支付方类型: company/individual */
-            counterparty_type?: components["schemas"]["CounterpartyType"] | null;
-            /** Receipt Urls */
-            receipt_urls?: string[] | null;
-        };
-        /**
          * CashFlowRecordResponse
          * @description 现金流记录响应 - 适配新的FinanceRecord表.
          */
@@ -3505,6 +3483,33 @@ export interface components {
              * @description 票据图片URL列表
              */
             receipt_urls?: string[];
+            /**
+             * Subject Id
+             * @description 科目ID(关联 finance_subjects.id)
+             */
+            subject_id?: string | null;
+            /**
+             * Outflow
+             * @description 流出金额(元)
+             */
+            outflow?: number;
+            /**
+             * Inflow
+             * @description 流入金额(元)
+             */
+            inflow?: number;
+            /**
+             * Payer
+             * @description 付款方
+             */
+            payer?: string | null;
+            /**
+             * Payee
+             * @description 收款方
+             */
+            payee?: string | null;
+            /** @description 科目信息(联表填充) */
+            subject?: components["schemas"]["FinanceSubjectResponse"] | null;
             /**
              * Created At
              * Format: date-time
@@ -4314,6 +4319,129 @@ export interface components {
              * @description 结算说明
              */
             finance_settled_note?: string | null;
+        };
+        /**
+         * FinanceSubjectCreate
+         * @description 创建科目请求.
+         *
+         *     level 取值 1-7（SubjectLevel 枚举），stage 取值 signing/renovation/holding/listing/sold
+         *     （SubjectStage 枚举）。system 字段由 Service 层强制为 False（用户自定义）。
+         */
+        FinanceSubjectCreate: {
+            /**
+             * Name
+             * @description 科目名称(唯一)
+             */
+            name: string;
+            /** @description 成本层级1-7 */
+            level: components["schemas"]["SubjectLevel"];
+            /**
+             * Pnl
+             * @description 是否进损益
+             */
+            pnl: boolean;
+            /**
+             * Modes
+             * @description 适用业务模式: ['agent']/['acquire']/两者
+             */
+            modes: string[];
+            /** @description 业务阶段 */
+            stage: components["schemas"]["SubjectStage"];
+            /**
+             * Note
+             * @description 备注
+             */
+            note?: string | null;
+        };
+        /**
+         * FinanceSubjectResponse
+         * @description 科目响应.
+         */
+        FinanceSubjectResponse: {
+            /**
+             * Id
+             * @description 科目ID
+             */
+            id: string;
+            /**
+             * Name
+             * @description 科目名称
+             */
+            name: string;
+            /** @description 成本层级1-7 */
+            level: components["schemas"]["SubjectLevel"];
+            /**
+             * Pnl
+             * @description 是否进损益
+             */
+            pnl: boolean;
+            /**
+             * Modes
+             * @description 适用业务模式
+             */
+            modes: string[];
+            /** @description 业务阶段 */
+            stage: components["schemas"]["SubjectStage"];
+            /**
+             * Note
+             * @description 备注
+             */
+            note?: string | null;
+            /**
+             * System
+             * @description 系统预置true/自定义false
+             */
+            system: boolean;
+            /**
+             * Is Deleted
+             * @description 逻辑删除标记
+             */
+            is_deleted: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
+         * FinanceSubjectUpdate
+         * @description 更新科目请求.
+         *
+         *     所有字段可选；system/is_deleted 不可通过本接口更新（system 为系统预置标记，
+         *     is_deleted 由删除接口管理）。系统预置科目(system=True)的 name/level 不可修改。
+         */
+        FinanceSubjectUpdate: {
+            /**
+             * Name
+             * @description 科目名称(唯一)
+             */
+            name?: string | null;
+            /** @description 成本层级1-7 */
+            level?: components["schemas"]["SubjectLevel"] | null;
+            /**
+             * Pnl
+             * @description 是否进损益
+             */
+            pnl?: boolean | null;
+            /**
+             * Modes
+             * @description 适用业务模式
+             */
+            modes?: string[] | null;
+            /** @description 业务阶段 */
+            stage?: components["schemas"]["SubjectStage"] | null;
+            /**
+             * Note
+             * @description 备注
+             */
+            note?: string | null;
         };
         /**
          * FinanceUnsettleRequest
@@ -5970,6 +6098,14 @@ export interface components {
         /**
          * LedgerRecordCreate
          * @description 资金账本创建流水请求（含 project_id，不通过 URL path 传递）.
+         *
+         *     新字段（主字段，Task 5）：
+         *     - subject_id: 科目ID（必填，关联 finance_subjects.id）
+         *     - outflow/inflow: 流出/流入金额（互斥，不能同时 > 0；Service 层校验）
+         *     - payer/payee: 付款方/收款方
+         *
+         *     兼容字段（旧客户端可选，新字段优先；Service 层会用新字段回填这些旧字段）：
+         *     - type/category/amount/counterparty: 由 inflow/outflow/payer 推导
          */
         LedgerRecordCreate: {
             /**
@@ -5977,13 +6113,6 @@ export interface components {
              * @description 项目ID
              */
             project_id: string;
-            type: components["schemas"]["CashFlowType"];
-            category: components["schemas"]["CashFlowCategory"];
-            /**
-             * Amount
-             * @description 金额(元)
-             */
-            amount: number | string;
             /**
              * Date
              * Format: date-time
@@ -5996,28 +6125,113 @@ export interface components {
              */
             description?: string | null;
             /**
+             * Receipt Urls
+             * @description 票据图片URL列表
+             */
+            receipt_urls?: string[] | null;
+            /** @description 支付方类型: company/individual */
+            counterparty_type?: components["schemas"]["CounterpartyType"] | null;
+            /**
+             * Subject Id
+             * @description 科目ID(必填，关联 finance_subjects.id)
+             */
+            subject_id: string;
+            /**
+             * Outflow
+             * @description 流出金额(元)
+             * @default 0
+             */
+            outflow: number | string;
+            /**
+             * Inflow
+             * @description 流入金额(元)
+             * @default 0
+             */
+            inflow: number | string;
+            /**
+             * Payer
+             * @description 付款方
+             */
+            payer?: string | null;
+            /**
+             * Payee
+             * @description 收款方
+             */
+            payee?: string | null;
+            /** @description 兼容字段: 流水类型(由 inflow/outflow 推导) */
+            type?: components["schemas"]["CashFlowType"] | null;
+            /** @description 兼容字段: 费用类别(新字段体系下由 subject 替代) */
+            category?: components["schemas"]["CashFlowCategory"] | null;
+            /**
+             * Amount
+             * @description 兼容字段: 金额(由 outflow/inflow 推导)
+             */
+            amount?: number | string | null;
+            /**
              * Related Stage
              * @description 关联阶段(兼容字段)
              */
             related_stage?: string | null;
             /**
              * Counterparty
-             * @description 交易方(必填)
+             * @description 兼容字段: 交易方(由 payer 推导)
              */
-            counterparty: string;
-            /** @description 支付方类型: company/individual */
-            counterparty_type?: components["schemas"]["CounterpartyType"] | null;
-            /**
-             * Receipt Urls
-             * @description 票据图片URL列表
-             */
-            receipt_urls?: string[] | null;
+            counterparty?: string | null;
         };
         /**
          * LedgerRecordUpdate
-         * @description 资金账本流水更新请求（仅允许补充凭证和支付方类型）.
+         * @description 资金账本流水更新请求（支持新字段与兼容字段的部分更新）.
+         *
+         *     - 新字段：subject_id/outflow/inflow/payer/payee
+         *     - 兼容字段：type/category/amount/counterparty（由新字段推导回填）
+         *     - 通用字段：receipt_urls(追加)/counterparty_type/description/date
+         *     - 如更新 outflow/inflow，Service 层会重新校验互斥性并回填 type/amount
          */
         LedgerRecordUpdate: {
+            /**
+             * Subject Id
+             * @description 科目ID
+             */
+            subject_id?: string | null;
+            /**
+             * Outflow
+             * @description 流出金额(元)
+             */
+            outflow?: number | string | null;
+            /**
+             * Inflow
+             * @description 流入金额(元)
+             */
+            inflow?: number | string | null;
+            /**
+             * Payer
+             * @description 付款方
+             */
+            payer?: string | null;
+            /**
+             * Payee
+             * @description 收款方
+             */
+            payee?: string | null;
+            /** @description 兼容字段: 流水类型 */
+            type?: components["schemas"]["CashFlowType"] | null;
+            /** @description 兼容字段: 费用类别 */
+            category?: components["schemas"]["CashFlowCategory"] | null;
+            /**
+             * Amount
+             * @description 兼容字段: 金额
+             */
+            amount?: number | string | null;
+            /**
+             * Counterparty
+             * @description 兼容字段: 交易方
+             */
+            counterparty?: string | null;
+            /**
+             * Related Stage
+             * @description 关联阶段(兼容字段)
+             */
+            related_stage?: string | null;
             /**
              * Receipt Urls
              * @description 票据图片URL列表（追加）
@@ -6025,74 +6239,26 @@ export interface components {
             receipt_urls?: string[] | null;
             /** @description 支付方类型: company/individual */
             counterparty_type?: components["schemas"]["CounterpartyType"] | null;
+            /**
+             * Description
+             * @description 备注
+             */
+            description?: string | null;
+            /**
+             * Date
+             * @description 发生日期
+             */
+            date?: string | null;
         };
         /**
          * LedgerStatisticsCalcBreakdown
-         * @description 资金汇总计算明细.
+         * @description 五层法计算明细.
          */
         LedgerStatisticsCalcBreakdown: {
             /** Business Form */
             business_form?: string | null;
             /** Sections */
             sections: components["schemas"]["LedgerStatisticsCalcSection"][];
-        };
-        /**
-         * LedgerStatisticsFiveLayer
-         * @description 五层法统计(权责发生制·损益视角).
-         */
-        LedgerStatisticsFiveLayer: {
-            /** Income */
-            income: number;
-            /** Direct Cost */
-            direct_cost: number;
-            /** Gross */
-            gross: number;
-            /** Opex */
-            opex: number;
-            /** Finance Cost */
-            finance_cost: number;
-            /** Net */
-            net: number;
-        };
-        /**
-         * LedgerStatisticsKPI
-         * @description 统计页面 8 项 KPI.
-         */
-        LedgerStatisticsKPI: {
-            /** Project Income */
-            project_income: number;
-            /** Gross Profit */
-            gross_profit: number;
-            /** Net Profit */
-            net_profit: number;
-            /** Total Pnl Outflow */
-            total_pnl_outflow: number;
-            /** Cash Inflow */
-            cash_inflow: number;
-            /** Cash Outflow */
-            cash_outflow: number;
-            /** Net Cashflow */
-            net_cashflow: number;
-            /** Record Count */
-            record_count: number;
-        };
-        /**
-         * LedgerStatisticsStageFlow
-         * @description 阶段现金流(收付实现制·现金流视角).
-         */
-        LedgerStatisticsStageFlow: {
-            /** Stage */
-            stage: string;
-            /** Stage Label */
-            stage_label: string;
-            /** Inflow */
-            inflow: number;
-            /** Outflow */
-            outflow: number;
-            /** Net */
-            net: number;
-            /** Count */
-            count: number;
         };
         /**
          * LedgerStatisticsCalcItem
@@ -6128,180 +6294,68 @@ export interface components {
             result_type: string;
         };
         /**
-         * LedgerStatisticsCommission
-         * @description 统计页面 - 渠道佣金及税费.
+         * LedgerStatisticsFiveLayer
+         * @description 五层法统计(权责发生制·损益视角).
          */
-        LedgerStatisticsCommission: {
-            /** Channel Commission */
-            channel_commission?: number | null;
-            /** Agent Commission */
-            agent_commission?: number | null;
-            /** Owner Commission */
-            owner_commission?: number | null;
-            /** Tax Diff */
-            tax_diff?: number | null;
-            /** Total */
-            total?: number | null;
+        LedgerStatisticsFiveLayer: {
+            /** Income */
+            income?: number;
+            /** Direct Cost */
+            direct_cost?: number;
+            /** Gross */
+            gross?: number;
+            /** Opex */
+            opex?: number;
+            /** Finance Cost */
+            finance_cost?: number;
+            /** Net */
+            net?: number;
         };
         /**
-         * LedgerStatisticsDeposit
-         * @description 统计页面 - 履约保证金.
+         * LedgerStatisticsKPI
+         * @description 统计页面 8 项 KPI.
          */
-        LedgerStatisticsDeposit: {
-            /** Amount */
-            amount?: number | null;
-            /** Pay Date */
-            pay_date?: string | null;
-            /** Recovery */
-            recovery?: number | null;
-            /** Receive Date */
-            receive_date?: string | null;
-            /** Is Refunded */
-            is_refunded?: string | null;
-            /** Diff */
-            diff?: number | null;
-        };
-        /**
-         * LedgerStatisticsInvestment
-         * @description 统计页面 - 投资情况.
-         */
-        LedgerStatisticsInvestment: {
-            /** Investors */
-            investors?: components["schemas"]["LedgerStatisticsInvestor"][];
-            /** Total Investment */
-            total_investment?: number | null;
-            /** Total Paid */
-            total_paid?: number | null;
-            /** Total Unpaid */
-            total_unpaid?: number | null;
-            /**
-             * Pay Progress
-             * @default 0
-             */
-            pay_progress: number;
-        };
-        /**
-         * LedgerStatisticsInvestor
-         * @description 统计页面 - 跟投人项.
-         */
-        LedgerStatisticsInvestor: {
-            /** Name */
-            name?: string | null;
-            /** Share Ratio */
-            share_ratio?: number | null;
-            /** Invest Amount */
-            invest_amount?: number | null;
-            /** Paid Amount */
-            paid_amount?: number | null;
-        };
-        /**
-         * LedgerStatisticsMarketing
-         * @description 统计页面 - 营销推广费.
-         */
-        LedgerStatisticsMarketing: {
-            /** Marketing Fee */
-            marketing_fee?: number | null;
-            /** Advance */
-            advance?: number | null;
-            /** Deduction */
-            deduction?: number | null;
-            /** Total */
-            total?: number | null;
-        };
-        /**
-         * LedgerStatisticsOperation
-         * @description 统计页面 - 运营成本.
-         */
-        LedgerStatisticsOperation: {
-            /** Operation Fee */
-            operation_fee?: number | null;
-            /** Maintenance Reserve */
-            maintenance_reserve?: number | null;
-            /** Tax Cost */
-            tax_cost?: number | null;
-            /** Total */
-            total?: number | null;
-        };
-        /**
-         * LedgerStatisticsProjectBase
-         * @description 统计页面 - 项目基础信息.
-         */
-        LedgerStatisticsProjectBase: {
-            /** Community Name */
-            community_name?: string | null;
-            /** Address */
-            address?: string | null;
-            /** Area */
-            area?: number | null;
-            /** Status */
-            status?: string | null;
-            /** Delivery Date */
-            delivery_date?: string | null;
-            /** Deal Date */
-            deal_date?: string | null;
-            /**
-             * Project Days
-             * @default 0
-             */
-            project_days: number;
-        };
-        /**
-         * LedgerStatisticsRenovation
-         * @description 统计页面 - 装修预算.
-         */
-        LedgerStatisticsRenovation: {
-            /** Company */
-            company?: string | null;
-            /** Total Fee */
-            total_fee?: number | null;
-            /** Hard Amount */
-            hard_amount?: number | null;
-            /** Hard Unit Price */
-            hard_unit_price?: number | null;
-            /** Custom Cabinet */
-            custom_cabinet?: number | null;
-            /** Window */
-            window?: number | null;
-            /** Wall Treatment */
-            wall_treatment?: number | null;
-            /** Other Decoration */
-            other_decoration?: number | null;
-            /**
-             * Days
-             * @default 0
-             */
-            days: number;
-        };
-        /**
-         * LedgerStatisticsSummary
-         * @description 统计页面 - 资金汇总 KPI.
-         */
-        LedgerStatisticsSummary: {
-            /** Total Expense */
-            total_expense?: number | null;
-            /** Initial Investment */
-            initial_investment?: number | null;
-            /** Gross Profit */
-            gross_profit?: number | null;
-            /** Net Profit */
-            net_profit?: number | null;
-            /**
-             * Occupy Days
-             * @default 0
-             */
-            occupy_days: number;
-            /**
-             * Roi
-             * @default 0
-             */
-            roi: number;
-            /**
-             * Annual Roi
-             * @default 0
-             */
-            annual_roi: number;
+        LedgerStatisticsKPI: {
             /** Project Income */
-            project_income?: number | null;
+            project_income?: number;
+            /** Gross Profit */
+            gross_profit?: number;
+            /** Net Profit */
+            net_profit?: number;
+            /** Total Pnl Outflow */
+            total_pnl_outflow?: number;
+            /** Cash Inflow */
+            cash_inflow?: number;
+            /** Cash Outflow */
+            cash_outflow?: number;
+            /** Net Cashflow */
+            net_cashflow?: number;
+            /**
+             * Record Count
+             * @default 0
+             */
+            record_count: number;
+        };
+        /**
+         * LedgerStatisticsStageFlow
+         * @description 阶段现金流(收付实现制·现金流视角).
+         */
+        LedgerStatisticsStageFlow: {
+            /** Stage */
+            stage: string;
+            /** Stage Label */
+            stage_label: string;
+            /** Inflow */
+            inflow?: number;
+            /** Outflow */
+            outflow?: number;
+            /** Net */
+            net?: number;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
         };
         /**
          * LedgerStatsResponse
@@ -7262,6 +7316,7 @@ export interface components {
          */
         ProjectLedgerStatisticsResponse: {
             five_layer: components["schemas"]["LedgerStatisticsFiveLayer"];
+            /** Stage Flows */
             stage_flows: components["schemas"]["LedgerStatisticsStageFlow"][];
             kpi: components["schemas"]["LedgerStatisticsKPI"];
             breakdown: components["schemas"]["LedgerStatisticsCalcBreakdown"];
@@ -9929,6 +9984,18 @@ export interface components {
             remark?: string | null;
         };
         /**
+         * SubjectLevel
+         * @description 科目成本层级枚举（①取得成本 ~ ⑦配对项）.
+         * @enum {string}
+         */
+        SubjectLevel: "1" | "2" | "3" | "4" | "5" | "6" | "7";
+        /**
+         * SubjectStage
+         * @description 科目业务阶段枚举.
+         * @enum {string}
+         */
+        SubjectStage: "signing" | "renovation" | "holding" | "listing" | "sold";
+        /**
          * TokenResponse
          * @description 令牌响应模型.
          */
@@ -12383,106 +12450,6 @@ export interface operations {
             };
         };
     };
-    get_project_cashflow_api_v1_projects__project_id__cashflow_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CashFlowResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_cashflow_record_api_v1_projects__project_id__cashflow_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CashFlowRecordCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CashFlowRecordResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-                /** @description 记录ID */
-                record_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_marketing_projects_api_v1_admin_l4_marketing_projects_get: {
         parameters: {
             query?: {
@@ -13884,6 +13851,147 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CashFlowRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_subjects_api_v1_admin_subjects_get: {
+        parameters: {
+            query?: {
+                /** @description 按业务模式筛选(agent/acquire) */
+                mode?: string | null;
+                /** @description 按业务阶段筛选 */
+                stage?: components["schemas"]["SubjectStage"] | null;
+                /** @description 按成本层级筛选 */
+                level?: components["schemas"]["SubjectLevel"] | null;
+                /** @description 按系统预置/自定义筛选 */
+                system?: boolean | null;
+                /** @description 是否包含已删除(默认仅未删除) */
+                is_deleted?: boolean;
+                /** @description 模糊搜索科目名称 */
+                search?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSubjectResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_subject_api_v1_admin_subjects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinanceSubjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSubjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_subject_api_v1_admin_subjects__subject_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 科目ID */
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_subject_api_v1_admin_subjects__subject_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 科目ID */
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinanceSubjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSubjectResponse"];
                 };
             };
             /** @description Validation Error */

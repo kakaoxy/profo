@@ -67,8 +67,8 @@ class ProjectCoreService:
         """生成下一个合同编号（线程安全）.
 
         格式: SH + 4位自增序号 + - + 后缀
-        - agent(代理美化) -> SG，如 SH0028-SG
-        - wholesale(收购美化) -> DL，如 SH0028-DL
+        - agent(代理美化) -> DL，如 SH0028-DL
+        - wholesale(收购美化) -> SG，如 SH0028-SG
 
         Args:
             business_form: 业务形式，agent 或 wholesale
