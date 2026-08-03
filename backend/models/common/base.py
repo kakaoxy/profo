@@ -228,6 +228,28 @@ class FinanceActionType(str, enum.Enum):
     UPDATE = "update"
 
 
+class SubjectLevel(str, enum.Enum):
+    """科目成本层级枚举（①取得成本 ~ ⑦配对项）."""
+
+    ACQUISITION = "1"  # ①取得成本
+    DIRECT_RENOVATION = "2"  # ②直接改造成本
+    TRANSACTION = "3"  # ③交易费用
+    CAPITAL = "4"  # ④资金成本
+    CASHFLOW = "5"  # ⑤现金流专属
+    INCOME = "6"  # ⑥收入项
+    PAIRING = "7"  # ⑦配对项
+
+
+class SubjectStage(str, enum.Enum):
+    """科目业务阶段枚举."""
+
+    SIGNING = "signing"  # 签约
+    RENOVATION = "renovation"  # 装修
+    HOLDING = "holding"  # 持有期
+    LISTING = "listing"  # 在售
+    SOLD = "sold"  # 已售
+
+
 class BaseModel(Base):
     """基础模型，包含公共字段."""
 

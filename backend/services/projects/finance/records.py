@@ -2,10 +2,11 @@
 
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any
 
-from models import FinanceRecord, FinanceRecordLog, Project
-from models.common import BusinessForm, CashFlowCategory, FinanceActionType
+from models import FinanceRecord, FinanceRecordLog, FinanceSubject, Project
+from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType
 from schemas.project.finance import (
     CashFlowRecordCreate,
     CashFlowSummary,
@@ -17,11 +18,78 @@ from services.system.exceptions import ResourceNotFoundError, ServiceException, 
 logger = logging.getLogger(__name__)
 
 
+def _business_form_to_mode(business_form: BusinessForm | None) -> str | None:
+    """业务形式 → 科目 modes 匹配值.
+
+    FinanceSubject.modes 使用 'agent'/'acquire'（与 Bookkeeping.md 一致），
+    而 BusinessForm 枚举值为 'agent'/'wholesale'，需做映射：
+    - BusinessForm.AGENT → "agent"
+    - BusinessForm.WHOLESALE → "acquire"
+    """
+    if business_form == BusinessForm.AGENT:
+        return "agent"
+    if business_form == BusinessForm.WHOLESALE:
+        return "acquire"
+    return None
+
+
 class _RecordMixin:
     """现金流记录 CRUD 方法."""
 
+    def _derive_category_from_subject(
+        self,
+        subject: FinanceSubject,
+        flow_type: CashFlowType,
+    ) -> CashFlowCategory:
+        """从科目名称推导兼容的 CashFlowCategory.
+
+        迁移脚本按 category::text ↔ finance_subjects.name 匹配回填 subject_id，
+        因此新写入记录应保持同样映射：subject.name 命中 CashFlowCategory.value 即用之；
+        若命中项与 flow_type 不兼容（如收入科目配支出方向），兜底 OTHER_INCOME/OTHER_EXPENSE。
+        """
+        for cat in CashFlowCategory:
+            if cat.value == subject.name:
+                try:
+                    self._validate_category(flow_type, cat)
+                except ValidationError:
+                    break  # 命中但不兼容，走兜底
+                return cat
+        if flow_type == CashFlowType.INCOME:
+            return CashFlowCategory.OTHER_INCOME
+        return CashFlowCategory.OTHER_EXPENSE
+
+    def _validate_subject_for_project(
+        self,
+        subject: FinanceSubject,
+        project: Project,
+    ) -> None:
+        """校验科目适用于当前项目业务模式（modes 包含映射后的 mode）."""
+        if project.business_form is None:
+            return  # 历史项目无业务模式，不拦截
+        required_mode = _business_form_to_mode(project.business_form)
+        if required_mode is not None and required_mode not in (subject.modes or []):
+            msg = f"科目不适用于当前项目业务模式（需包含 {required_mode}）"
+            raise ValidationError(msg)
+
+    @staticmethod
+    def _validate_outflow_inflow(outflow: Decimal, inflow: Decimal) -> None:
+        """校验 outflow/inflow 互斥：不能同时 > 0；至少一项 > 0."""
+        if outflow > 0 and inflow > 0:
+            msg = "流出与流入不可同时大于0"
+            raise ValidationError(msg)
+        if outflow <= 0 and inflow <= 0:
+            msg = "流出/流入至少填一项且大于0"
+            raise ValidationError(msg)
+
     def create_record(self, project_id: str, record_data: LedgerRecordCreate, operator_id: str) -> FinanceRecord:
-        """创建现金流记录."""
+        """创建现金流记录.
+
+        Task 5 调整：
+        - 校验 subject_id 存在 + 未删除 + modes 含项目业务模式
+        - 校验 outflow/inflow 互斥（同时 > 0 报错；均 ≤ 0 报错）
+        - 从新字段推导旧字段（type/amount/counterparty/category）以兼容旧查询
+        - 操作日志 detail 记录新字段
+        """
         logger.info("Creating cashflow record for project %s", project_id)
 
         # 验证项目存在且状态有效
@@ -34,43 +102,68 @@ class _RecordMixin:
         # 编辑锁：已结算项目不可新增记录
         self._assert_finance_editable(project)
 
-        # 验证现金流类型和分类匹配
-        try:
-            self._validate_category(record_data.type, record_data.category)
-        except ValidationError:
-            logger.exception("Cashflow category validation failed")
-            raise
+        # Task 5: 校验 subject_id 存在 + 未删除
+        subject = (
+            self.db.query(FinanceSubject)
+            .filter(
+                FinanceSubject.id == record_data.subject_id,
+                FinanceSubject.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if subject is None:
+            msg = "科目不存在或已删除"
+            raise ValidationError(msg)
 
-        # 业务形式驱动的现金流科目校验：
-        # - 收购款(PURCHASE_PRICE)仅适用于收购美化(WHOLESALE)项目
-        # - 中介佣金(AGENCY_COMMISSION)仅适用于代理美化(AGENT)项目
-        # - business_form 为 None 的历史项目不拦截（兼容）
-        if project.business_form is not None:
-            if (
-                record_data.category == CashFlowCategory.PURCHASE_PRICE
-                and project.business_form != BusinessForm.WHOLESALE
-            ):
-                msg = "收购款科目仅适用于收购美化项目"
-                raise ValidationError(msg)
-            if (
-                record_data.category == CashFlowCategory.AGENCY_COMMISSION
-                and project.business_form == BusinessForm.WHOLESALE
-            ):
-                msg = "中介佣金仅适用于代理美化项目"
-                raise ValidationError(msg)
+        # Task 5: 校验科目适用于当前项目业务模式
+        self._validate_subject_for_project(subject, project)
 
-        # 创建新的 FinanceRecord
+        # Task 5: 校验 outflow/inflow 互斥 + 至少一项 > 0
+        outflow = record_data.outflow if record_data.outflow is not None else Decimal(0)
+        inflow = record_data.inflow if record_data.inflow is not None else Decimal(0)
+        self._validate_outflow_inflow(outflow, inflow)
+
+        # Task 5: 从新字段推导旧字段（兼容旧查询）
+        flow_type = CashFlowType.INCOME if inflow > 0 else CashFlowType.EXPENSE
+        amount = inflow if inflow > 0 else outflow
+        # counterparty 优先 payer（兼容旧查询）
+        counterparty = record_data.payer or record_data.counterparty
+
+        # Task 5: 推导 category（model 中 category NOT NULL）
+        # - 用户显式提供 category → 使用之并校验 type/category 匹配
+        # - 否则尝试 subject.name ↔ CashFlowCategory.value 匹配；兜底 OTHER_*
+        if record_data.category is not None:
+            category = record_data.category
+            self._validate_category(flow_type, category)
+        else:
+            category = self._derive_category_from_subject(subject, flow_type)
+
+        # 兼容校验：若用户显式提供 type，检查与推导结果一致
+        if record_data.type is not None and record_data.type != flow_type:
+            msg = (
+                f"type 与 inflow/outflow 推导不一致："
+                f"provided={record_data.type.value}, expected={flow_type.value}"
+            )
+            raise ValidationError(msg)
+
+        # 创建 FinanceRecord（新字段 + 回填旧字段）
         now = datetime.now(timezone.utc)
         record = FinanceRecord(
             project_id=project_id,
-            type=record_data.type.value,
-            category=record_data.category.value,
-            amount=record_data.amount,
+            type=flow_type.value,
+            category=category.value,
+            amount=amount,
             record_date=record_data.date,
             remark=record_data.description,
-            counterparty=record_data.counterparty,
+            counterparty=counterparty,
             counterparty_type=record_data.counterparty_type,
             receipt_urls=record_data.receipt_urls,
+            # Task 5 新字段
+            subject_id=record_data.subject_id,
+            outflow=outflow,
+            inflow=inflow,
+            payer=record_data.payer,
+            payee=record_data.payee,
             created_at=now,
             updated_at=now,
         )
@@ -82,11 +175,18 @@ class _RecordMixin:
             project_id=project_id,
             action_type=FinanceActionType.CREATE,
             detail={
-                "category": record_data.category.value,
-                "amount": str(record_data.amount),
-                "type": record_data.type.value,
-                "counterparty": record_data.counterparty,
+                "category": category.value,
+                "amount": str(amount),
+                "type": flow_type.value,
+                "counterparty": counterparty,
                 "date": record_data.date.isoformat() if record_data.date else None,
+                # Task 5 新字段
+                "subject_id": record_data.subject_id,
+                "subject_name": subject.name,
+                "outflow": str(outflow),
+                "inflow": str(inflow),
+                "payer": record_data.payer,
+                "payee": record_data.payee,
             },
             operator=operator_id,
         )
@@ -233,10 +333,12 @@ class _RecordMixin:
         payload: LedgerRecordUpdate,
         operator_id: str,
     ) -> FinanceRecord:
-        """资金账本：按记录ID更新流水（补充凭证/支付方类型）.
+        """资金账本：按记录ID更新流水（支持 Task 5 新字段 + 兼容字段 + 通用字段）.
 
-        - 补充凭证：追加到现有 receipt_urls，去重保序
-        - 更新支付方类型：直接覆盖 counterparty_type
+        - 新字段：subject_id/outflow/inflow/payer/payee
+        - 兼容字段：type/category/amount/counterparty（由新字段推导回填，显式提供则校验一致性）
+        - 通用字段：receipt_urls(追加)/counterparty_type/description/date
+        - 如更新 outflow/inflow，重新校验互斥性并回填 type/amount
         - 已结算项目不可修改（与 create/delete 一致的编辑锁）
         """
         logger.info("Updating finance record %s", record_id)
@@ -267,17 +369,97 @@ class _RecordMixin:
 
         detail: dict[str, Any] = {}
 
-        # 补充凭证：追加到现有 receipt_urls，去重保序
+        # Task 5: 处理 subject_id 更新（校验存在 + 业务模式匹配）
+        if payload.subject_id is not None and payload.subject_id != record.subject_id:
+            subject = (
+                self.db.query(FinanceSubject)
+                .filter(
+                    FinanceSubject.id == payload.subject_id,
+                    FinanceSubject.is_deleted.is_(False),
+                )
+                .first()
+            )
+            if subject is None:
+                msg = "科目不存在或已删除"
+                raise ValidationError(msg)
+            self._validate_subject_for_project(subject, project)
+            record.subject_id = payload.subject_id
+            detail["subject_id"] = payload.subject_id
+            detail["subject_name"] = subject.name
+
+        # Task 5: 处理 outflow/inflow 更新（互斥重校 + 回填 type/amount）
+        new_outflow = payload.outflow if payload.outflow is not None else (record.outflow or Decimal(0))
+        new_inflow = payload.inflow if payload.inflow is not None else (record.inflow or Decimal(0))
+        # 互斥校验（基于合并后的新值）
+        self._validate_outflow_inflow(new_outflow, new_inflow)
+        # 推导 type/amount
+        new_type = CashFlowType.INCOME if new_inflow > 0 else CashFlowType.EXPENSE
+        new_amount = new_inflow if new_inflow > 0 else new_outflow
+        if payload.outflow is not None:
+            record.outflow = payload.outflow
+            detail["outflow"] = str(payload.outflow)
+        if payload.inflow is not None:
+            record.inflow = payload.inflow
+            detail["inflow"] = str(payload.inflow)
+        if record.type != new_type.value:
+            record.type = new_type.value
+            detail["type"] = new_type.value
+        if record.amount != new_amount:
+            record.amount = new_amount
+            detail["amount"] = str(new_amount)
+
+        # Task 5: 处理 payer/payee 更新（payer 同步回填 counterparty）
+        if payload.payer is not None:
+            record.payer = payload.payer
+            detail["payer"] = payload.payer
+            # 回填 counterparty（保持与 create 一致：payer 优先）
+            if record.counterparty != payload.payer:
+                record.counterparty = payload.payer
+                detail["counterparty"] = payload.payer
+        if payload.payee is not None:
+            record.payee = payload.payee
+            detail["payee"] = payload.payee
+
+        # Task 5: 兼容字段一致性校验（type/amount 由新字段推导，显式提供则校验）
+        if payload.type is not None and payload.type != new_type:
+            msg = (
+                f"type 与 inflow/outflow 推导不一致："
+                f"provided={payload.type.value}, expected={new_type.value}"
+            )
+            raise ValidationError(msg)
+        if payload.category is not None:
+            self._validate_category(new_type, payload.category)
+            if record.category != payload.category.value:
+                record.category = payload.category.value
+                detail["category"] = payload.category.value
+        if payload.amount is not None and payload.amount != new_amount:
+            msg = (
+                f"amount 与 inflow/outflow 推导不一致："
+                f"provided={payload.amount}, expected={new_amount}"
+            )
+            raise ValidationError(msg)
+        if payload.counterparty is not None and payload.counterparty != record.counterparty:
+            record.counterparty = payload.counterparty
+            detail["counterparty"] = payload.counterparty
+        # related_stage 兼容字段（model 无对应列，仅记录到日志）
+        if payload.related_stage is not None:
+            detail["related_stage"] = payload.related_stage
+
+        # 通用字段：补充凭证（追加去重）/ 支付方类型 / 备注 / 日期
         if payload.receipt_urls is not None:
             existing = record.receipt_urls or []
             merged = list(dict.fromkeys(existing + payload.receipt_urls))
             record.receipt_urls = merged
             detail["receipt_urls"] = merged
-
-        # 更新支付方类型
         if payload.counterparty_type is not None:
             record.counterparty_type = payload.counterparty_type
             detail["counterparty_type"] = payload.counterparty_type
+        if payload.description is not None:
+            record.remark = payload.description
+            detail["remark"] = payload.description
+        if payload.date is not None:
+            record.record_date = payload.date
+            detail["record_date"] = payload.date.isoformat()
 
         record.updated_at = datetime.now(timezone.utc)
 

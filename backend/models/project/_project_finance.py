@@ -39,6 +39,12 @@ class FinanceRecord(BaseModel):
     )
     receipt_urls: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, comment="票据图片URL列表")
 
+    subject_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="科目ID(逻辑外键→finance_subjects.id)")
+    outflow: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=0, comment="流出金额(元)")
+    inflow: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=0, comment="流入金额(元)")
+    payer: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="付款方")
+    payee: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="收款方")
+
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     __table_args__ = (
@@ -70,3 +76,33 @@ class FinanceRecordLog(BaseModel):
         Index("idx_finance_log_project", "project_id"),
         Index("idx_finance_log_created", "created_at"),
     )
+
+
+class FinanceSubject(BaseModel):
+    """科目管理表 - 资金账本科目（系统预置 + 用户自定义）.
+
+    替代原 CashFlowCategory 硬编码枚举，支持用户自定义科目 CRUD。
+    name 唯一约束确保科目名称不重复；system=True 为系统预置科目，不可删除。
+    id/created_at/updated_at 继承自 BaseModel，与 FinanceRecord 一致。
+    """
+
+    __tablename__ = "finance_subjects"
+
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, comment="科目名称(唯一)")
+    level: Mapped[str] = mapped_column(
+        String(1),
+        nullable=False,
+        comment="成本层级1-7: ①取得成本/②直接改造成本/③交易费用/④资金成本/⑤现金流专属/⑥收入项/⑦配对项",
+    )
+    pnl: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, comment="是否进损益")
+    modes: Mapped[list[str]] = mapped_column(JSON, nullable=False, comment="适用业务模式: ['agent']/['acquire']/两者")
+    stage: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        comment="业务阶段: signing/renovation/holding/listing/sold",
+    )
+    note: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="备注")
+    system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, comment="系统预置true/自定义false")
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+
+    __table_args__ = (Index("idx_subject_stage", "stage"),)

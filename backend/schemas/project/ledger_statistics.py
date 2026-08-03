@@ -1,170 +1,74 @@
 """资金账本统计页面 Schema.
 
-包含统计页面 8 分组聚合响应及其子模型（从 finance.py 拆分，降低单文件行数）。
-这些模型仅依赖 Pydantic 与标准库类型，无跨 schema 引用。
+按五层法 + 阶段现金流重算，替代原 8 分组聚合。
+五层法(权责发生制): 收入层(⑥) → 毛利层(①②) → 净利层(③④)；
+level=5 现金流专属 / level=7 配对项 不进损益，仅计入现金流 KPI。
+各层金额 = 该层 (inflow - outflow) 合计，成本类为负、收入类为正，
+故 gross = income + direct_cost、net = gross + opex + finance_cost 自洽。
 """
 
-from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 
-class LedgerStatisticsProjectBase(BaseModel):
-    """统计页面 - 项目基础信息."""
+class LedgerStatisticsFiveLayer(BaseModel):
+    """五层法统计(权责发生制·损益视角)."""
 
-    community_name: str | None = None
-    address: str | None = None
-    area: Decimal | None = Decimal(0)
-    status: str | None = None
-    delivery_date: datetime | None = None
-    deal_date: datetime | None = None
-    project_days: int = 0
+    income: Decimal = Decimal(0)
+    direct_cost: Decimal = Decimal(0)
+    gross: Decimal = Decimal(0)
+    opex: Decimal = Decimal(0)
+    finance_cost: Decimal = Decimal(0)
+    net: Decimal = Decimal(0)
 
-    @field_serializer("area")
-    def _serialize_area(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class LedgerStatisticsInvestor(BaseModel):
-    """统计页面 - 跟投人项."""
-
-    name: str | None = None
-    share_ratio: Decimal | None = Decimal(0)
-    invest_amount: Decimal | None = Decimal(0)
-    paid_amount: Decimal | None = Decimal(0)
-
-    @field_serializer("share_ratio", "invest_amount", "paid_amount")
-    def _serialize_decimal(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
+    @field_serializer("income", "direct_cost", "gross", "opex", "finance_cost", "net")
+    def _serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class LedgerStatisticsInvestment(BaseModel):
-    """统计页面 - 投资情况."""
+class LedgerStatisticsStageFlow(BaseModel):
+    """阶段现金流(收付实现制·现金流视角)."""
 
-    investors: list[LedgerStatisticsInvestor] = Field(default_factory=list)
-    total_investment: Decimal | None = Decimal(0)
-    total_paid: Decimal | None = Decimal(0)
-    total_unpaid: Decimal | None = Decimal(0)
-    pay_progress: float = 0.0
+    stage: str
+    stage_label: str
+    inflow: Decimal = Decimal(0)
+    outflow: Decimal = Decimal(0)
+    net: Decimal = Decimal(0)
+    count: int = 0
 
-    @field_serializer("total_investment", "total_paid", "total_unpaid")
-    def _serialize_decimal(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
+    @field_serializer("inflow", "outflow", "net")
+    def _serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class LedgerStatisticsRenovation(BaseModel):
-    """统计页面 - 装修预算."""
+class LedgerStatisticsKPI(BaseModel):
+    """统计页面 8 项 KPI."""
 
-    company: str | None = None
-    total_fee: Decimal | None = Decimal(0)
-    hard_amount: Decimal | None = Decimal(0)
-    hard_unit_price: Decimal | None = Decimal(0)
-    custom_cabinet: Decimal | None = Decimal(0)
-    window: Decimal | None = Decimal(0)
-    wall_treatment: Decimal | None = Decimal(0)
-    other_decoration: Decimal | None = Decimal(0)
-    days: int = 0
+    project_income: Decimal = Decimal(0)
+    gross_profit: Decimal = Decimal(0)
+    net_profit: Decimal = Decimal(0)
+    total_pnl_outflow: Decimal = Decimal(0)
+    cash_inflow: Decimal = Decimal(0)
+    cash_outflow: Decimal = Decimal(0)
+    net_cashflow: Decimal = Decimal(0)
+    record_count: int = 0
 
     @field_serializer(
-        "total_fee",
-        "hard_amount",
-        "hard_unit_price",
-        "custom_cabinet",
-        "window",
-        "wall_treatment",
-        "other_decoration",
+        "project_income",
+        "gross_profit",
+        "net_profit",
+        "total_pnl_outflow",
+        "cash_inflow",
+        "cash_outflow",
+        "net_cashflow",
     )
-    def _serialize_decimal(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class LedgerStatisticsDeposit(BaseModel):
-    """统计页面 - 履约保证金."""
-
-    amount: Decimal | None = Decimal(0)
-    pay_date: datetime | None = None
-    recovery: Decimal | None = Decimal(0)
-    receive_date: datetime | None = None
-    is_refunded: str | None = None
-    diff: Decimal | None = Decimal(0)
-
-    @field_serializer("amount", "recovery", "diff")
-    def _serialize_decimal(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class LedgerStatisticsCommission(BaseModel):
-    """统计页面 - 渠道佣金及税费."""
-
-    channel_commission: Decimal | None = Decimal(0)
-    agent_commission: Decimal | None = Decimal(0)
-    owner_commission: Decimal | None = Decimal(0)
-    tax_diff: Decimal | None = Decimal(0)
-    total: Decimal | None = Decimal(0)
-
-    @field_serializer("channel_commission", "agent_commission", "owner_commission", "tax_diff", "total")
-    def _serialize_decimal(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class LedgerStatisticsMarketing(BaseModel):
-    """统计页面 - 营销推广费."""
-
-    marketing_fee: Decimal | None = Decimal(0)
-    advance: Decimal | None = Decimal(0)
-    deduction: Decimal | None = Decimal(0)
-    total: Decimal | None = Decimal(0)
-
-    @field_serializer("marketing_fee", "advance", "deduction", "total")
-    def _serialize_decimal(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class LedgerStatisticsOperation(BaseModel):
-    """统计页面 - 运营成本."""
-
-    operation_fee: Decimal | None = Decimal(0)
-    maintenance_reserve: Decimal | None = Decimal(0)
-    tax_cost: Decimal | None = Decimal(0)
-    total: Decimal | None = Decimal(0)
-
-    @field_serializer("operation_fee", "maintenance_reserve", "tax_cost", "total")
-    def _serialize_decimal(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class LedgerStatisticsSummary(BaseModel):
-    """统计页面 - 资金汇总 KPI."""
-
-    total_expense: Decimal | None = Decimal(0)
-    initial_investment: Decimal | None = Decimal(0)
-    gross_profit: Decimal | None = Decimal(0)
-    net_profit: Decimal | None = Decimal(0)
-    occupy_days: int = 0
-    roi: float = 0.0
-    annual_roi: float = 0.0
-    project_income: Decimal | None = Decimal(0)
-
-    @field_serializer("total_expense", "initial_investment", "gross_profit", "net_profit", "project_income")
-    def _serialize_decimal(self, v: Decimal | None) -> float | None:
-        return float(v) if v is not None else None
+    def _serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -191,7 +95,7 @@ class LedgerStatisticsCalcSection(BaseModel):
 
 
 class LedgerStatisticsCalcBreakdown(BaseModel):
-    """资金汇总计算明细."""
+    """五层法计算明细."""
 
     business_form: str | None = None
     sections: list[LedgerStatisticsCalcSection]
@@ -199,16 +103,11 @@ class LedgerStatisticsCalcBreakdown(BaseModel):
 
 
 class ProjectLedgerStatisticsResponse(BaseModel):
-    """资金账本统计页面聚合响应（8 分组）."""
+    """资金账本统计页面聚合响应(五层法 + 阶段现金流)."""
 
-    project_base: LedgerStatisticsProjectBase
-    investment: LedgerStatisticsInvestment
-    renovation: LedgerStatisticsRenovation
-    deposit: LedgerStatisticsDeposit
-    commission: LedgerStatisticsCommission
-    marketing: LedgerStatisticsMarketing
-    operation: LedgerStatisticsOperation
-    summary: LedgerStatisticsSummary
-    calc_breakdown: LedgerStatisticsCalcBreakdown
+    five_layer: LedgerStatisticsFiveLayer
+    stage_flows: list[LedgerStatisticsStageFlow]
+    kpi: LedgerStatisticsKPI
+    breakdown: LedgerStatisticsCalcBreakdown
 
     model_config = ConfigDict(from_attributes=True)

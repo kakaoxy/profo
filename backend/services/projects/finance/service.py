@@ -8,6 +8,7 @@
 - _StatisticsMixin: 统计页面聚合
 - _SettlementMixin: 结算/反结算/操作日志
 - _ReceivablePayableMixin: 应收应付参考表聚合
+- _SubjectMixin: 科目管理 CRUD（FinanceSubject）
 """
 
 from .base import _FinanceServiceBase
@@ -16,6 +17,7 @@ from .receivable_payable import _ReceivablePayableMixin
 from .records import _RecordMixin
 from .settlement import _SettlementMixin
 from .statistics import _StatisticsMixin
+from .subjects import _SubjectMixin
 from .summary import _SummaryMixin
 
 
@@ -27,6 +29,7 @@ class FinanceService(
     _StatisticsMixin,
     _SettlementMixin,
     _ReceivablePayableMixin,
+    _SubjectMixin,
 ):
     """项目财务服务（Facade 聚合各 Mixin）."""
 

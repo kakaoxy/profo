@@ -4,7 +4,6 @@ import { ProjectStats } from "./_components/project-stats";
 import { ProjectView } from "./_components/project-view";
 import { ProjectPagination } from "./_components/project-pagination";
 import { Project } from "./types";
-import { CashFlowSheet } from "./[projectId]/cashflow/_components/cashflow-sheet";
 import { MonitorSheet } from "./_components/monitor/monitor-sheet";
 import type { paths, components } from "@/lib/api-types";
 import { toNumber } from "@/lib/number-utils";
@@ -15,7 +14,6 @@ interface PageProps {
     page?: string;
     page_size?: string;
     community_name?: string;
-    cashflow_id?: string;
     business_form?: string;
   }>;
 }
@@ -143,7 +141,6 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
         </div>
 
         <Suspense fallback={null}>
-          <CashFlowSheet />
           <MonitorSheet />
         </Suspense>
       </div>

@@ -25,6 +25,8 @@ from .base import (
     RecordType,
     RenovationStage,
     SettlementStatus,
+    SubjectLevel,
+    SubjectStage,
 )
 
 __all__ = [
@@ -49,4 +51,6 @@ __all__ = [
     "RecordType",
     "RenovationStage",
     "SettlementStatus",
+    "SubjectLevel",
+    "SubjectStage",
 ]

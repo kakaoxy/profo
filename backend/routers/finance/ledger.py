@@ -159,7 +159,7 @@ def get_project_statistics(
 ) -> ProjectLedgerStatisticsResponse:
     """获取项目资金账本统计页面聚合数据.
 
-    一次性返回 8 分组：项目基础信息 / 投资 / 装修 / 保证金 / 佣金 / 营销 / 运营 / 资金汇总.
+    按五层法 + 阶段现金流重算：five_layer / stage_flows / kpi / breakdown.
     """
     return service.get_statistics(project_id)
 

@@ -1,13 +1,13 @@
-"""资金账本统计 calc_breakdown 构造器（纯函数，无副作用）.
+"""资金账本统计 breakdown 构造器(纯函数，无副作用).
 
-从 get_statistics 中提取，复用已计算的科目金额与中间结果，不发起额外查询。
+按五层法构建计算明细：收入层 → 毛利层 → 净利层 + 现金流专属 + 配对项。
+每层列出该层包含的科目明细(科目名 + 净额)。
 """
 
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 
-from models.common import BusinessForm, CashFlowCategory
+from models.common import BusinessForm
 from schemas.project.ledger_statistics import (
     LedgerStatisticsCalcBreakdown,
     LedgerStatisticsCalcItem,
@@ -16,272 +16,124 @@ from schemas.project.ledger_statistics import (
 
 
 @dataclass
+class SubjectDetail:
+    """科目明细(用于 breakdown 分组)."""
+
+    name: str
+    level: str
+    net: Decimal
+
+
+@dataclass
 class CalcBreakdownContext:
     """build_calc_breakdown 所需的全部已计算值."""
 
     business_form: BusinessForm | None
-    is_wholesale: bool
-    # Common amounts
-    channel_commission_exp: Decimal
-    engineering_renovation_exp: Decimal
-    hard_decoration_exp: Decimal
-    soft_decoration_exp: Decimal
-    custom_cabinet_exp: Decimal
-    window_decoration_exp: Decimal
-    wall_decoration_exp: Decimal
-    other_decoration_exp: Decimal
-    marketing_advance_exp: Decimal
-    marketing_promotion_deduction_inc: Decimal
-    project_incentive_exp: Decimal
-    marketing_promotion_exp: Decimal
-    operation_fee_exp: Decimal
-    finance_tax_cost_exp: Decimal
-    other_expense_exp: Decimal
-    # AGENT-specific
-    performance_bond_exp: Decimal
-    tax_commission_diff_exp: Decimal
-    paid_commission_exp: Decimal
-    owner_commission_inc: Decimal
-    # WHOLESALE-specific
-    purchase_deposit_exp: Decimal
-    purchase_downpayment_exp: Decimal
-    property_tax_exp: Decimal
-    quota_fee_exp: Decimal
-    holding_cost_monthly_exp: Decimal
-    selling_commission_exp: Decimal
-    selling_tax_exp: Decimal
-    # Computed values
-    project_income: Decimal
-    initial_investment: Decimal
-    total_expense: Decimal
-    gross_profit: Decimal
-    net_profit: Decimal
-    occupy_days: int
-    roi: float
-    annual_roi: float
-    # Dates
-    planned_date: date | None
-    sold_date: date | None
+    income: Decimal
+    direct_cost: Decimal
+    gross: Decimal
+    opex: Decimal
+    finance_cost: Decimal
+    net: Decimal
+    subject_details: list[SubjectDetail]
 
 
 def build_calc_breakdown(ctx: CalcBreakdownContext) -> LedgerStatisticsCalcBreakdown:
-    """构建 calc_breakdown（复用已计算的科目金额与中间结果，不发起额外查询）."""
+    """构建五层法计算明细."""
 
-    # --- calc_breakdown（复用已计算的科目金额与中间结果，不发起额外查询）---
-    def _amt(label: str, sign: str, amount: Decimal | float) -> LedgerStatisticsCalcItem:
-        """构建金额类明细项."""
-        return LedgerStatisticsCalcItem(label=label, sign=sign, amount=float(amount))
+    def _item(label: str, amount: Decimal) -> LedgerStatisticsCalcItem:
+        return LedgerStatisticsCalcItem(label=label, sign="", amount=float(amount))
 
-    delivery_date_str = ctx.planned_date.isoformat() if ctx.planned_date else "无"
-    deal_date_str = ctx.sold_date.isoformat() if ctx.sold_date else "无"
+    # 按 level 分组科目明细
+    by_level: dict[str, list[SubjectDetail]] = {}
+    for sd in ctx.subject_details:
+        by_level.setdefault(sd.level, []).append(sd)
 
-    if ctx.is_wholesale:
-        s1_items = [
-            _amt(CashFlowCategory.PURCHASE_DEPOSIT.value, "", ctx.purchase_deposit_exp),
-            _amt(CashFlowCategory.PURCHASE_DOWNPAYMENT.value, "+", ctx.purchase_downpayment_exp),
-            _amt(CashFlowCategory.PROPERTY_TAX.value, "+", ctx.property_tax_exp),
-            _amt(CashFlowCategory.QUOTA_FEE.value, "+", ctx.quota_fee_exp),
-            _amt(CashFlowCategory.HOLDING_COST_MONTHLY.value, "+", ctx.holding_cost_monthly_exp),
-            _amt(CashFlowCategory.CHANNEL_COMMISSION.value, "+", ctx.channel_commission_exp),
-            _amt(CashFlowCategory.HARD_DECORATION.value, "+", ctx.hard_decoration_exp),
-            _amt(CashFlowCategory.SOFT_DECORATION.value, "+", ctx.soft_decoration_exp),
-            _amt(CashFlowCategory.CUSTOM_CABINET_DECORATION.value, "+", ctx.custom_cabinet_exp),
-            _amt(CashFlowCategory.WINDOW_DECORATION.value, "+", ctx.window_decoration_exp),
-            _amt(CashFlowCategory.WALL_DECORATION.value, "+", ctx.wall_decoration_exp),
-            _amt(CashFlowCategory.OTHER_DECORATION.value, "+", ctx.other_decoration_exp),
-            *(
-                [_amt(CashFlowCategory.ENGINEERING_RENOVATION.value + "(历史)", "+", ctx.engineering_renovation_exp)]
-                if ctx.engineering_renovation_exp > 0
-                else []
-            ),
-            _amt(CashFlowCategory.MARKETING_ADVANCE.value, "+", ctx.marketing_advance_exp),
-            _amt(CashFlowCategory.MARKETING_PROMOTION_DEDUCTION.value, "-", ctx.marketing_promotion_deduction_inc),
-            _amt(CashFlowCategory.SELLING_COMMISSION.value, "+", ctx.selling_commission_exp),
-            _amt(CashFlowCategory.SELLING_TAX.value, "+", ctx.selling_tax_exp),
-            _amt(CashFlowCategory.PROJECT_INCENTIVE.value, "+", ctx.project_incentive_exp),
-            _amt(CashFlowCategory.MARKETING_PROMOTION.value, "+", ctx.marketing_promotion_exp),
-            _amt(CashFlowCategory.OPERATION_FEE.value, "+", ctx.operation_fee_exp),
-            _amt(CashFlowCategory.FINANCE_TAX_COST.value, "+", ctx.finance_tax_cost_exp),
-            _amt(CashFlowCategory.OTHER_EXPENSE.value, "+", ctx.other_expense_exp),
-        ]
-        s2_items = [
-            _amt(CashFlowCategory.PURCHASE_DEPOSIT.value, "", ctx.purchase_deposit_exp),
-            _amt(CashFlowCategory.PURCHASE_DOWNPAYMENT.value, "+", ctx.purchase_downpayment_exp),
-            _amt(CashFlowCategory.PROPERTY_TAX.value, "+", ctx.property_tax_exp),
-            _amt(CashFlowCategory.QUOTA_FEE.value, "+", ctx.quota_fee_exp),
-            _amt(CashFlowCategory.HOLDING_COST_MONTHLY.value, "+", ctx.holding_cost_monthly_exp),
-            _amt(CashFlowCategory.CHANNEL_COMMISSION.value, "+", ctx.channel_commission_exp),
-            _amt(CashFlowCategory.HARD_DECORATION.value, "+", ctx.hard_decoration_exp),
-            _amt(CashFlowCategory.SOFT_DECORATION.value, "+", ctx.soft_decoration_exp),
-            _amt(CashFlowCategory.CUSTOM_CABINET_DECORATION.value, "+", ctx.custom_cabinet_exp),
-            _amt(CashFlowCategory.WINDOW_DECORATION.value, "+", ctx.window_decoration_exp),
-            _amt(CashFlowCategory.WALL_DECORATION.value, "+", ctx.wall_decoration_exp),
-            _amt(CashFlowCategory.OTHER_DECORATION.value, "+", ctx.other_decoration_exp),
-            *(
-                [_amt(CashFlowCategory.ENGINEERING_RENOVATION.value + "(历史)", "+", ctx.engineering_renovation_exp)]
-                if ctx.engineering_renovation_exp > 0
-                else []
-            ),
-            _amt(CashFlowCategory.MARKETING_ADVANCE.value, "+", ctx.marketing_advance_exp),
-        ]
-        s3_label = CashFlowCategory.SALE_PRICE.value
-        s4_items = [
-            _amt(s3_label, "", ctx.project_income),
-            _amt("项目前期投入", "-", ctx.initial_investment),
-            _amt(CashFlowCategory.SELLING_COMMISSION.value, "-", ctx.selling_commission_exp),
-            _amt(CashFlowCategory.SELLING_TAX.value, "-", ctx.selling_tax_exp),
-            _amt(CashFlowCategory.PROJECT_INCENTIVE.value, "-", ctx.project_incentive_exp),
-            _amt(CashFlowCategory.OTHER_EXPENSE.value, "-", ctx.other_expense_exp),
-        ]
-        s1_formula = (
-            "购房款-定金 + 购房款-首付 + 房屋税费 + 名额费 + 持有成本-月供 + "
-            "渠道佣金 + 硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修 + 营销费垫付 - 营销推广费抵扣 + "
-            "卖房佣金 + 卖房税费 + 项目激励 + 营销推广费 + 运营费 + 财税成本 + 其他支出"
+    def _level_items(levels: list[str]) -> list[LedgerStatisticsCalcItem]:
+        items: list[LedgerStatisticsCalcItem] = []
+        for lv in levels:
+            for sd in by_level.get(lv, []):
+                items.append(_item(sd.name, sd.net))
+        return items
+
+    def _section(
+        title: str,
+        formula: str,
+        items: list[LedgerStatisticsCalcItem],
+        result: Decimal,
+    ) -> LedgerStatisticsCalcSection:
+        return LedgerStatisticsCalcSection(
+            title=title,
+            formula=formula,
+            items=items,
+            result=float(result),
+            result_type="currency",
         )
-        s2_formula = (
-            "购房款-定金 + 购房款-首付 + 房屋税费 + 名额费 + 持有成本-月供 + 渠道佣金 + "
-            "硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修 + 营销费垫付"
-        )
-        s4_formula = "售房款 - 项目前期投入 - 卖房佣金 - 卖房税费 - 项目激励 - 其他支出"
-    else:
-        s1_items = [
-            _amt(CashFlowCategory.CHANNEL_COMMISSION.value, "", ctx.channel_commission_exp),
-            _amt(CashFlowCategory.HARD_DECORATION.value, "+", ctx.hard_decoration_exp),
-            _amt(CashFlowCategory.SOFT_DECORATION.value, "+", ctx.soft_decoration_exp),
-            _amt(CashFlowCategory.CUSTOM_CABINET_DECORATION.value, "+", ctx.custom_cabinet_exp),
-            _amt(CashFlowCategory.WINDOW_DECORATION.value, "+", ctx.window_decoration_exp),
-            _amt(CashFlowCategory.WALL_DECORATION.value, "+", ctx.wall_decoration_exp),
-            _amt(CashFlowCategory.OTHER_DECORATION.value, "+", ctx.other_decoration_exp),
-            *(
-                [_amt(CashFlowCategory.ENGINEERING_RENOVATION.value + "(历史)", "+", ctx.engineering_renovation_exp)]
-                if ctx.engineering_renovation_exp > 0
-                else []
-            ),
-            _amt(CashFlowCategory.TAX_COMMISSION_DIFF.value, "+", ctx.tax_commission_diff_exp),
-            _amt(CashFlowCategory.PAID_COMMISSION.value, "+", ctx.paid_commission_exp),
-            _amt(CashFlowCategory.OWNER_COMMISSION.value, "-", ctx.owner_commission_inc),
-            _amt(CashFlowCategory.MARKETING_ADVANCE.value, "+", ctx.marketing_advance_exp),
-            _amt(CashFlowCategory.MARKETING_PROMOTION_DEDUCTION.value, "-", ctx.marketing_promotion_deduction_inc),
-            _amt(CashFlowCategory.PROJECT_INCENTIVE.value, "+", ctx.project_incentive_exp),
-            _amt(CashFlowCategory.MARKETING_PROMOTION.value, "+", ctx.marketing_promotion_exp),
-            _amt(CashFlowCategory.OPERATION_FEE.value, "+", ctx.operation_fee_exp),
-            _amt(CashFlowCategory.FINANCE_TAX_COST.value, "+", ctx.finance_tax_cost_exp),
-            _amt(CashFlowCategory.OTHER_EXPENSE.value, "+", ctx.other_expense_exp),
-        ]
-        s2_items = [
-            _amt(CashFlowCategory.PERFORMANCE_BOND.value, "", ctx.performance_bond_exp),
-            _amt(CashFlowCategory.CHANNEL_COMMISSION.value, "+", ctx.channel_commission_exp),
-            _amt(CashFlowCategory.HARD_DECORATION.value, "+", ctx.hard_decoration_exp),
-            _amt(CashFlowCategory.SOFT_DECORATION.value, "+", ctx.soft_decoration_exp),
-            _amt(CashFlowCategory.CUSTOM_CABINET_DECORATION.value, "+", ctx.custom_cabinet_exp),
-            _amt(CashFlowCategory.WINDOW_DECORATION.value, "+", ctx.window_decoration_exp),
-            _amt(CashFlowCategory.WALL_DECORATION.value, "+", ctx.wall_decoration_exp),
-            _amt(CashFlowCategory.OTHER_DECORATION.value, "+", ctx.other_decoration_exp),
-            *(
-                [_amt(CashFlowCategory.ENGINEERING_RENOVATION.value + "(历史)", "+", ctx.engineering_renovation_exp)]
-                if ctx.engineering_renovation_exp > 0
-                else []
-            ),
-            _amt(CashFlowCategory.MARKETING_ADVANCE.value, "+", ctx.marketing_advance_exp),
-        ]
-        s3_label = CashFlowCategory.VALUE_ADDED_SERVICE.value
-        s4_items = [
-            _amt(s3_label, "", ctx.project_income),
-            _amt("项目前期投入", "-", ctx.initial_investment),
-            _amt(CashFlowCategory.TAX_COMMISSION_DIFF.value, "-", ctx.tax_commission_diff_exp),
-            _amt(CashFlowCategory.PAID_COMMISSION.value, "-", ctx.paid_commission_exp),
-            _amt(CashFlowCategory.OWNER_COMMISSION.value, "+", ctx.owner_commission_inc),
-            _amt(CashFlowCategory.PROJECT_INCENTIVE.value, "-", ctx.project_incentive_exp),
-            _amt(CashFlowCategory.OTHER_EXPENSE.value, "-", ctx.other_expense_exp),
-        ]
-        s1_formula = (
-            "渠道佣金 + 硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修 + 税费及佣金差额 + 代付佣金 - 业主佣金 + "
-            "营销费垫付 - 营销推广费抵扣 + 项目激励 + 营销推广费 + 运营费 + 财税成本 + 其他支出"
-        )
-        s2_formula = "履约保证金 + 渠道佣金 + 硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修 + 营销费垫付"
-        s4_formula = "增值服务费 - 项目前期投入 - 税费及佣金差额 - 代付佣金 + 业主佣金 - 项目激励 - 其他支出"
 
-    # 通用 S5-S8
-    s5_items = [
-        _amt("项目毛利", "", ctx.gross_profit),
-        _amt(CashFlowCategory.MARKETING_PROMOTION.value, "-", ctx.marketing_promotion_exp),
-        _amt(CashFlowCategory.OPERATION_FEE.value, "-", ctx.operation_fee_exp),
-        _amt(CashFlowCategory.FINANCE_TAX_COST.value, "-", ctx.finance_tax_cost_exp),
-    ]
-    s6_items = [
-        LedgerStatisticsCalcItem(label="成交时间", sign="", text=deal_date_str),
-        LedgerStatisticsCalcItem(label="交房时间", sign="-", text=delivery_date_str),
-    ]
-    s7_items = [
-        _amt("项目净利", "", ctx.net_profit),
-        _amt("项目前期投入", "/", ctx.initial_investment),
-    ]
-    s8_items = [
-        _amt("投资回报率", "", ctx.roi),
-        _amt("资金占用时间", "/", ctx.occupy_days),
-        _amt("常数", "*", 365),
+    sections: list[LedgerStatisticsCalcSection] = [
+        _section(
+            "收入层(⑥收入项)",
+            "level=6 的 (inflow - outflow) 合计",
+            _level_items(["6"]),
+            ctx.income,
+        ),
+        _section(
+            "直接成本层(①取得成本+②直接改造成本)",
+            "level∈{1,2} 的 (inflow - outflow) 合计",
+            _level_items(["1", "2"]),
+            ctx.direct_cost,
+        ),
+        _section(
+            "毛利层",
+            "收入层 + 直接成本层",
+            [_item("收入层", ctx.income), _item("直接成本层", ctx.direct_cost)],
+            ctx.gross,
+        ),
+        _section(
+            "运营费用层(③交易费用)",
+            "level=3 的 (inflow - outflow) 合计",
+            _level_items(["3"]),
+            ctx.opex,
+        ),
+        _section(
+            "融资成本层(④资金成本)",
+            "level=4 的 (inflow - outflow) 合计",
+            _level_items(["4"]),
+            ctx.finance_cost,
+        ),
+        _section(
+            "净利层",
+            "毛利层 + 运营费用层 + 融资成本层",
+            [_item("毛利层", ctx.gross), _item("运营费用层", ctx.opex), _item("融资成本层", ctx.finance_cost)],
+            ctx.net,
+        ),
     ]
 
-    calc_sections = [
-        LedgerStatisticsCalcSection(
-            title="项目总支出",
-            formula=s1_formula,
-            items=s1_items,
-            result=float(ctx.total_expense),
-            result_type="currency",
-        ),
-        LedgerStatisticsCalcSection(
-            title="项目前期投入",
-            formula=s2_formula,
-            items=s2_items,
-            result=float(ctx.initial_investment),
-            result_type="currency",
-        ),
-        LedgerStatisticsCalcSection(
-            title="项目收入",
-            formula=s3_label,
-            items=[_amt(s3_label, "", ctx.project_income)],
-            result=float(ctx.project_income),
-            result_type="currency",
-        ),
-        LedgerStatisticsCalcSection(
-            title="项目毛利",
-            formula=s4_formula,
-            items=s4_items,
-            result=float(ctx.gross_profit),
-            result_type="currency",
-        ),
-        LedgerStatisticsCalcSection(
-            title="项目净利",
-            formula="项目毛利 - 营销推广费 - 运营费 - 财税成本",
-            items=s5_items,
-            result=float(ctx.net_profit),
-            result_type="currency",
-        ),
-        LedgerStatisticsCalcSection(
-            title="资金占用时间",
-            formula="成交时间 - 交房时间",
-            items=s6_items,
-            result=float(ctx.occupy_days),
-            result_type="days",
-        ),
-        LedgerStatisticsCalcSection(
-            title="投资回报率",
-            formula="项目净利 / 项目前期投入 × 100",
-            items=s7_items,
-            result=ctx.roi,
-            result_type="percent",
-        ),
-        LedgerStatisticsCalcSection(
-            title="年化回报率",
-            formula="投资回报率 / 资金占用时间 × 365",
-            items=s8_items,
-            result=ctx.annual_roi,
-            result_type="percent",
-        ),
-    ]
+    # 现金流专属(level=5，不进损益)
+    level5 = by_level.get("5")
+    if level5:
+        sections.append(
+            _section(
+                "现金流专属(⑤·不进损益)",
+                "level=5 的 (inflow - outflow) 合计",
+                _level_items(["5"]),
+                sum((sd.net for sd in level5), Decimal(0)),
+            ),
+        )
+
+    # 配对项(level=7，净额归零)
+    level7 = by_level.get("7")
+    if level7:
+        sections.append(
+            _section(
+                "配对项(⑦·净额归零)",
+                "level=7 的 (inflow - outflow) 合计",
+                _level_items(["7"]),
+                sum((sd.net for sd in level7), Decimal(0)),
+            ),
+        )
 
     return LedgerStatisticsCalcBreakdown(
         business_form=ctx.business_form.value if ctx.business_form else None,
-        sections=calc_sections,
+        sections=sections,
     )
