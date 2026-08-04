@@ -32,7 +32,7 @@ def add_thumbnail_url_to_photos(engine: Engine) -> None:
     存储压缩后缩略图 URL，供列表展示加速使用。
     使用硬编码 DDL 字符串避免 f-string 拼接表名（AGENTS.md §11）。
     """
-    from sqlalchemy import text  # noqa: PLC0415
+    from sqlalchemy import text
 
     for table_name in ("renovation_photos", "property_media"):
         if _column_exists(engine, table_name, "thumbnail_url"):
@@ -53,7 +53,7 @@ def add_renovation_extra_amount_columns(engine: Engine) -> None:
     - 幂等：通过 _column_exists 检查跳过已存在列。
     - 使用硬编码 DDL 字符串避免 f-string 拼接列名（AGENTS.md §11）。
     """
-    from sqlalchemy import text  # noqa: PLC0415
+    from sqlalchemy import text
 
     # 1) custom_cabinet_amount / window_amount：直接加列
     # 列名与类型来自硬编码元组,无注入风险;DDL 不支持绑定参数
@@ -90,7 +90,7 @@ def drop_other_decoration_amount_column(engine: Engine) -> None:
     原 other_decoration_amount 列冗余，需移除避免脏数据。
     数据按用户决策丢弃。
     """
-    from sqlalchemy import text  # noqa: PLC0415
+    from sqlalchemy import text
 
     if not _column_exists(engine, "project_renovations", "other_decoration_amount"):
         return
@@ -105,7 +105,7 @@ def drop_soft_actual_cost_column(engine: Engine) -> None:
     前端已移除"软装实际"录入项，后端模型/Schema/Service 白名单同步移除，
     DB 列也需移除以避免脏数据风险。
     """
-    from sqlalchemy import text  # noqa: PLC0415
+    from sqlalchemy import text
 
     if not _column_exists(engine, "project_renovations", "soft_actual_cost"):
         return
@@ -116,7 +116,7 @@ def drop_soft_actual_cost_column(engine: Engine) -> None:
 
 def add_contact_person_id_column(engine: Engine) -> None:
     """为 project_renovations 表添加 contact_person_id 列（幂等）."""
-    from sqlalchemy import text  # noqa: PLC0415
+    from sqlalchemy import text
 
     if _column_exists(engine, "project_renovations", "contact_person_id"):
         return

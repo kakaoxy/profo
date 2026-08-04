@@ -47,7 +47,7 @@ class CSVParser:
         for encoding in encodings:
             try:
                 return content.decode(encoding)
-            except UnicodeDecodeError:  # noqa: PERF203
+            except UnicodeDecodeError:
                 continue
 
         logger.warning("无法确定文件编码，使用 utf-8 并忽略错误字符")
@@ -82,7 +82,7 @@ class CSVParser:
             sniffer = csv.Sniffer()
             if sniffer.has_header(sample):
                 return sniffer.sniff(sample, delimiters=",;\t").delimiter
-        except Exception:  # noqa: BLE001, S110
+        except Exception:
             pass
         return ","
 
@@ -123,6 +123,6 @@ class CSVParser:
                 iso_str = f"{year}-{month}-{day}"
                 datetime.fromisoformat(iso_str)
                 return iso_str
-        except Exception:  # noqa: BLE001, S110
+        except Exception:
             pass
         return date_string

@@ -70,7 +70,7 @@ async def save_failed_record_safely(
                         failure_type=failure_type,
                         data_source=data_source,
                     )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning("保存失败记录时出错: %s", e)
 
 
@@ -110,7 +110,7 @@ async def validation_exception_handler(
             body = await request.body()
             if body:
                 safe_body = safe_log_request_body(body)
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.debug("无法解析请求体", exc_info=True)
 
     if safe_body:

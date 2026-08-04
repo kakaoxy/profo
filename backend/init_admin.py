@@ -29,7 +29,7 @@ def init_admin_user() -> bool:
 
         if result.get("error"):
             return False
-    except Exception:  # noqa: BLE001
+    except Exception:
         traceback.print_exc()
         return False
     else:

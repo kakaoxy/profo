@@ -604,7 +604,7 @@ class UserService:
         仅返回后台角色用户（admin/operator/user），排除 C 端 customer 角色，
         角色集合与 AuthService.BACKEND_ROLE_CODES 对齐。
         """
-        from sqlalchemy import or_  # noqa: PLC0415
+        from sqlalchemy import or_
 
         query = (
             db.query(User.id, User.nickname, User.username)

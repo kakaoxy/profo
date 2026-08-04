@@ -61,7 +61,7 @@ def _get_test_database_url() -> str:
             return raw
         rest = suffix[qidx:] if qidx != -1 else ""
         # 不抛异常直接改写，避免 CI 中误配置导致测试无法运行；但记录警告
-        import logging  # noqa: PLC0415
+        import logging
 
         logging.getLogger(__name__).warning(
             "测试 DATABASE_URL 指向非测试库 %r，已强制改写为 %r",
@@ -114,7 +114,7 @@ def _disable_rate_limiter() -> Generator[None, None, None]:
     限流是基础设施关注点，单测验证业务逻辑而非限流行为。
     生产环境降级由 in_memory_fallback_enabled 保障。
     """
-    from utils.common import limiter  # noqa: PLC0415
+    from utils.common import limiter
 
     limiter.enabled = False
     yield
@@ -136,7 +136,7 @@ def test_engine() -> Generator[Engine, None, None]:
     Base.metadata.create_all(bind=engine)
 
     # 运行启动迁移，补齐 create_all 无法为已存在表添加的新列（幂等）
-    from migrations import run_startup_migrations  # noqa: PLC0415
+    from migrations import run_startup_migrations
 
     run_startup_migrations(engine)
 
@@ -179,7 +179,7 @@ def _seed_permissions(session: Session, roles: list[Role]) -> None:
     幂等：先查询已存在的权限点与角色权限关联，避免唯一约束冲突
     （savepoint 隔离失效时前序测试的种子数据可能未被回滚）。
     """
-    from migrations import _PERMISSIONS_SEED, _ROLE_PERMISSIONS_SEED  # noqa: PLC0415
+    from migrations import _PERMISSIONS_SEED, _ROLE_PERMISSIONS_SEED
 
     role_by_code = {r.code: r for r in roles}
     perm_by_code: dict[str, Permission] = {}
@@ -306,7 +306,7 @@ def seeded_db(db_session: Session) -> dict[str, Any]:
 @pytest.fixture
 def admin_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
     """已认证的管理员 httpx 客户端."""
-    from main import app  # noqa: PLC0415
+    from main import app
 
     session = seeded_db["session"]
     admin_user = seeded_db["users"]["admin"]
@@ -325,7 +325,7 @@ def admin_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]
 @pytest.fixture
 def user_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
     """已认证的普通用户 httpx 客户端."""
-    from main import app  # noqa: PLC0415
+    from main import app
 
     session = seeded_db["session"]
     normal_user = seeded_db["users"]["normal"]

@@ -103,13 +103,14 @@ class _SummaryMixin:
             )
 
             logger.info("Cashflow summary calculated for project %s", project_id)
-            return summary  # noqa: TRY300
         except (ResourceNotFoundError, ServiceException):
             raise
         except Exception as e:
             logger.exception("Error calculating cashflow summary for project %s", project_id)
             msg = "计算现金流汇总失败"
             raise ServiceException(msg) from e
+        else:
+            return summary
 
     def get_report(self, project_id: uuid.UUID) -> dict[str, Any]:
         """获取项目财务报告."""

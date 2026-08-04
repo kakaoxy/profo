@@ -78,6 +78,27 @@ ignore = [
     "TC001",
     "TC002",
     "TC003",
+    # CPY001: ruff 0.16 新增 flake8-copyright 规则，要求文件顶部版权声明
+    # 项目从未要求版权声明，全量补充 254 个文件无业务价值
+    "CPY001",
+    # PLR0917: 位置参数过多（PLR0913 的细分）
+    # 与已 ignore 的 PLR0913 同理：FastAPI 端点 / 查询服务天然多参数
+    "PLR0917",
+    # 以下规则为 ruff 0.16 升级后从 noqa 收敛为全局 ignore（项目固有模式）:
+    # ANN401: Pydantic field_validator 与 JSON 序列化/反序列化必须用 Any（类型系统固有限制）
+    "ANN401",
+    # PLC0415: 延迟导入避免循环依赖 / 延迟加载重模块（oss2/settings），项目大量使用此模式
+    "PLC0415",
+    # A002: 业务术语 filter/range/id 遮蔽内置函数，重命名会降低可读性（ReportsFilter 简写为 filter）
+    "A002",
+    # PLW0603: 单例模式用 global 持有缓存实例（Redis/OSS/Fernet），Python 单例的常见实现
+    "PLW0603",
+    # PLR0911: 返回语句过多，与已 ignore 的 PLR0912(分支)/PLR0915(语句)同类，统计聚合/校验方法天然多返回
+    "PLR0911",
+    # BLE001: 全局错误处理/反序列化/线程池任务需要捕获 Exception，项目在 API 边界统一处理
+    "BLE001",
+    # T201: settings 加载失败时 logger 尚未初始化，必须用 print 输出到 stderr（Fail Loud 原则）
+    "T201",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -89,8 +110,15 @@ ignore = [
 "routers/reports/**/*.py" = ["FAST001", "FAST003"]
 # 迁移脚本: 循环变量转换、复杂度
 "scripts/*.py" = ["PLW2901"]
+# 迁移脚本: 使用字符串构建 SQL（表名/列名为常量，无用户输入，无注入风险）
+"migrations/*.py" = ["S608"]
 # 统计聚合方法: try-except 在循环内（跳过坏文件）
 "services/projects/finance/ledger.py" = ["PERF203"]
+# 文件解析器: 循环内 try-except 尝试多种编码/格式（解析逻辑必需）
+"services/market/batch_importer.py" = ["PERF203"]
+"services/market/csv_parser.py" = ["PERF203", "S110"]
+"services/market/json_batch_importer.py" = ["PERF203"]
+"services/utils/date_parser.py" = ["PERF203"]
 
 [tool.ruff.format]
 quote-style = "double"

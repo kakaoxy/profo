@@ -107,7 +107,7 @@ ValidCompareIdsDep = Annotated[list[str], Depends(valid_compare_ids)]
 
 
 def get_reports_filter(
-    range: Annotated[RangeOption, Query(description="时间范围：4w/8w=周；6m/12m/24m=月")] = RangeOption.W4,  # noqa: A002
+    range: Annotated[RangeOption, Query(description="时间范围：4w/8w=周；6m/12m/24m=月")] = RangeOption.W4,
     sources: Annotated[str | None, Query(description="逗号分隔的数据来源（链家/贝壳/网签）")] = None,
     business_circles: Annotated[str | None, Query(description="逗号分隔的商圈名称列表（多关键词模糊匹配）")] = None,
     community_name: Annotated[str | None, Query(description="小区名称模糊搜索")] = None,

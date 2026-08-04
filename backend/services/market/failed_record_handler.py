@@ -31,7 +31,7 @@ class FailedRecordHandler:
                 failure_type="csv_validation_error",
                 data_source=row.get("数据源"),
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("保存失败记录时出错: %s", error)
 
     def generate_failed_csv(

@@ -108,7 +108,7 @@ class AuthService:
 
         phone_hash_value: str | None = None
         if phone:
-            from utils.crypto import hash_phone  # noqa: PLC0415
+            from utils.crypto import hash_phone
 
             phone_hash_value = hash_phone(phone)
             existing_phone = db.query(User).filter(User.phone_hash == phone_hash_value).first()

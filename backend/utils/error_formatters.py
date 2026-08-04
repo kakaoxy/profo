@@ -164,7 +164,7 @@ def _is_unique_violation(exc: SQLAlchemyError) -> bool:
     return _get_pgcode(exc) == "23505"
 
 
-def _format_unique_violation_message(error_str: str) -> str:  # noqa: PLR0911
+def _format_unique_violation_message(error_str: str) -> str:
     """根据约束/表名生成唯一约束冲突的中文信息.
 
     Args:
@@ -205,7 +205,7 @@ def _format_unique_violation_message(error_str: str) -> str:  # noqa: PLR0911
     return "数据重复，违反唯一性约束"
 
 
-def format_database_error(error: SQLAlchemyError) -> str:  # noqa: PLR0911
+def format_database_error(error: SQLAlchemyError) -> str:
     """格式化数据库错误为中文友好信息.
 
     通过 PostgreSQL sqlstate（``pgcode``）判断错误类型。

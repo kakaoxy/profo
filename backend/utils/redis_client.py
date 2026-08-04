@@ -50,7 +50,7 @@ def get_redis_client() -> Redis:
     连接失败后进入冷却期（_COOLDOWN_SECONDS），期间直接抛出缓存的异常，
     避免 Redis 不可达时每次调用都等待 socket_connect_timeout（5s）。
     """
-    global _redis_client, _last_failure_time, _last_failure_exc  # noqa: PLW0603
+    global _redis_client, _last_failure_time, _last_failure_exc
     if _redis_client is not None:
         return _redis_client
 

@@ -147,7 +147,7 @@ class ProjectService:
     ) -> ProjectResponse:
         """更新装修阶段."""
         project = self._renovation_service.update_stage(project_id, renovation_data)
-        from .internal import ProjectResponseBuilder  # noqa: PLC0415
+        from .internal import ProjectResponseBuilder
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
 
@@ -161,7 +161,7 @@ class ProjectService:
     ) -> ProjectResponse:
         """修改/清空已完成阶段的完成时间（仅管理员）."""
         project = self._renovation_service.update_stage_date(project_id, stage, stage_completed_at)
-        from .internal import ProjectResponseBuilder  # noqa: PLC0415
+        from .internal import ProjectResponseBuilder
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
 

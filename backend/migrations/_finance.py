@@ -28,8 +28,8 @@ def create_investment_tables(engine: Engine) -> None:
     checkfirst=True 确保表/索引已存在时跳过，避免破坏已有数据。
     新建表（非加列），CREATE TABLE IF NOT EXISTS 语义。
     """
-    from models import Base  # noqa: PLC0415
-    from models.investment import (  # noqa: PLC0415
+    from models import Base
+    from models.investment import (
         Investment,
         InvestmentLog,
         Investor,
@@ -86,7 +86,7 @@ def add_finance_record_counterparty_columns(engine: Engine) -> None:
     - 幂等：通过 _column_exists 检查跳过已存在列。
     - 使用硬编码 DDL 字符串避免 f-string 拼接列名（AGENTS.md §11）。
     """
-    from sqlalchemy import text  # noqa: PLC0415
+    from sqlalchemy import text
 
     # 列名与类型来自硬编码元组,无注入风险;DDL 不支持绑定参数
     for column_name, column_type_sql in (
@@ -108,8 +108,8 @@ def create_finance_record_logs_table(engine: Engine) -> None:
     checkfirst=True 确保表/索引已存在时跳过，避免破坏已有数据。
     新建表（非加列），CREATE TABLE IF NOT EXISTS 语义。
     """
-    from models import Base  # noqa: PLC0415
-    from models.project import FinanceRecordLog  # noqa: PLC0415
+    from models import Base
+    from models.project import FinanceRecordLog
 
     inspector = inspect(engine)
     if FinanceRecordLog.__table__.name in inspector.get_table_names():
@@ -131,8 +131,8 @@ def create_finance_subjects_table(engine: Engine) -> None:
 
     种子数据见 _INITIAL_SUBJECTS（37 条 S01-S37，按 name 幂等插入）。
     """
-    from models import Base  # noqa: PLC0415
-    from models.project import FinanceSubject  # noqa: PLC0415
+    from models import Base
+    from models.project import FinanceSubject
 
     # 1. 幂等创建表
     inspector = inspect(engine)
@@ -303,7 +303,7 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
     - 幂等：通过 _column_exists 检查跳过 ALTER；回填仅处理 receipt_urls IS NULL 的行
     - 使用 SQLAlchemy Core update() 确保 PostgreSQL 正确序列化 JSON
     """
-    from sqlalchemy import JSON, Column, MetaData, String, Table, select, update  # noqa: PLC0415
+    from sqlalchemy import JSON, Column, MetaData, String, Table, select, update
 
     if not _column_exists(engine, "finance_records", "receipt_urls"):
         logger.info("迁移：为 finance_records 表添加 receipt_urls JSON 列")
@@ -317,7 +317,7 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
     # 用 Core API 构造 update，让 SQLAlchemy 按列类型(JSON)正确绑定参数
     # 检测 id 列实际 PG 类型：已迁移为 uuid 时用 Uuid，仍为 varchar 时用 String
     # （避免 uuid > varchar 运算符不存在错误）
-    from sqlalchemy import inspect as sa_inspect  # noqa: PLC0415
+    from sqlalchemy import inspect as sa_inspect
 
     _insp = sa_inspect(engine)
     _id_col_info = next(c for c in _insp.get_columns("finance_records") if c["name"] == "id")
@@ -379,7 +379,7 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
     if engine.dialect.name != "postgresql":
         return
 
-    from models.common import CashFlowCategory  # noqa: PLC0415
+    from models.common import CashFlowCategory
 
     # 先检查 enum type 是否存在（避免 ::regtype CAST 对不存在的类型报错）
     with engine.connect() as conn:
@@ -447,7 +447,7 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
     # 2. 同步 PostgreSQL financeactiontype enum（新增 settle/unsettle）
     #    SQLEnum(FinanceActionType) 不指定 name，PG type 名为枚举类名小写：financeactiontype
     if engine.dialect.name == "postgresql":
-        from models.common import FinanceActionType  # noqa: PLC0415
+        from models.common import FinanceActionType
 
         # 先检查 enum type 是否存在（避免 ::regtype CAST 对不存在的类型报错）
         with engine.connect() as conn:

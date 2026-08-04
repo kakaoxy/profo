@@ -63,12 +63,12 @@ class PropertyImporter:
             try:
                 result = self._process_import_transaction(data, db, user_id)
                 nested.commit()
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 nested.rollback()
                 return self._handle_import_error(e, data)
             else:
                 return result
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return self._handle_import_error(e, data)
 
     def _process_import_transaction(self, data: PropertyIngestionModel, db: Session, user_id: str = "") -> ImportResult:
@@ -401,6 +401,6 @@ class PropertyImporter:
                 db.bulk_save_objects(media_records)
                 logger.info("保存房源 %s 的图片链接: %s 张", data.source_property_id, len(media_records))
 
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             # 图片保存失败不影响主流程，记录警告即可
             logger.warning("保存房源 %s 图片链接失败: %s", data.source_property_id, e)

@@ -408,7 +408,7 @@ class ProjectResponseBuilder:
         if current_user is None:
             return False
         # lazy import 规避 dependencies.auth → services → services.projects.internal.builder 循环依赖
-        from dependencies.auth import has_permission  # noqa: PLC0415
+        from dependencies.auth import has_permission
 
         if current_user.role and current_user.role.code == RoleCode.ADMIN.value:
             return True
@@ -435,7 +435,7 @@ class ProjectResponseBuilder:
         if current_user is None:
             return False
         # lazy import 规避 dependencies.auth → services → services.projects.internal.builder 循环依赖
-        from dependencies.auth import has_permission  # noqa: PLC0415
+        from dependencies.auth import has_permission
 
         if current_user.role and current_user.role.code == RoleCode.ADMIN.value:
             return True

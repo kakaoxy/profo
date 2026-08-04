@@ -16,9 +16,9 @@ class _ExporterMixin:
         settlement_status: SettlementStatus | None = None,
     ) -> bytes:
         """导出全量跟投列表为 .xlsx（openpyxl）。文件名 跟投列表_YYYYMMDD.xlsx."""
-        import io  # noqa: PLC0415
+        import io
 
-        from openpyxl import Workbook  # noqa: PLC0415
+        from openpyxl import Workbook
 
         items, _ = self.list_investments(
             search=search,

@@ -108,7 +108,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     logger.info("Starting Profo Real Estate Data Center...")
 
     try:
-        from utils.jwt_validator import check_jwt_configuration  # noqa: PLC0415
+        from utils.jwt_validator import check_jwt_configuration
 
         check_jwt_configuration()
         logger.info("JWT配置验证通过")
@@ -122,7 +122,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     init_db()
 
     # 执行启动时数据迁移（新增列、加密已存明文手机号等），幂等
-    from migrations import run_startup_migrations  # noqa: PLC0415
+    from migrations import run_startup_migrations
 
     run_startup_migrations(engine)
 

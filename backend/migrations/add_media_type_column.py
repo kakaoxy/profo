@@ -32,7 +32,7 @@ def add_media_type_to_renovation_photos(engine: Engine) -> None:
     - 幂等：列已存在且为所需类型则跳过列添加；回填始终执行（仅纠正误标行）。
     """
     # 延迟导入避免循环依赖：migrations/__init__.py 在 _column_exists 定义前导入本模块
-    from migrations import _column_exists  # noqa: PLC0415
+    from migrations import _column_exists
 
     inspector = inspect(engine)
     if "renovation_photos" not in inspector.get_table_names():

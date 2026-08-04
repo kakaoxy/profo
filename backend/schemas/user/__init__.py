@@ -167,7 +167,7 @@ class RoleResponse(BaseRole):
 
     @field_validator("permission_codes", mode="before")
     @classmethod
-    def _normalize_permission_codes(cls, v: Any) -> Any:  # noqa: ANN401
+    def _normalize_permission_codes(cls, v: Any) -> Any:
         """NULL/None 转为空列表，避免非 Optional 字段触发 500."""
         return v if v is not None else []
 
@@ -202,19 +202,19 @@ class UserResponse(BaseUser):
 
     @field_validator("additional_roles", mode="before")
     @classmethod
-    def _normalize_additional_roles(cls, v: Any) -> Any:  # noqa: ANN401
+    def _normalize_additional_roles(cls, v: Any) -> Any:
         """NULL/None 转为空列表，避免非 Optional 字段触发 500."""
         return v if v is not None else []
 
     @field_validator("permissions", mode="before")
     @classmethod
-    def _normalize_permissions(cls, v: Any) -> Any:  # noqa: ANN401
+    def _normalize_permissions(cls, v: Any) -> Any:
         """NULL/None 转为空列表，避免非 Optional 字段触发 500."""
         return v if v is not None else []
 
     @field_validator("leads_count", mode="before")
     @classmethod
-    def _normalize_leads_count(cls, v: Any) -> Any:  # noqa: ANN401
+    def _normalize_leads_count(cls, v: Any) -> Any:
         """NULL/None 转为 0，避免非 Optional 字段触发 500."""
         return v if v is not None else 0
 

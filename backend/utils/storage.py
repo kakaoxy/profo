@@ -93,7 +93,7 @@ class OSSStorage:
 
     def __init__(self) -> None:
         """初始化 OSS Bucket 客户端."""
-        import oss2  # noqa: PLC0415
+        import oss2
 
         auth = oss2.Auth(settings.oss_access_key_id, settings.oss_access_key_secret)
         self._bucket = oss2.Bucket(auth, settings.oss_endpoint, settings.oss_bucket_name)
@@ -127,7 +127,7 @@ def get_storage_backend() -> StorageBackend:
     根据 settings.storage_backend 返回对应实现，模块级缓存。
     多 worker 下每个 worker 进程独立持有实例。
     """
-    global _storage_backend  # noqa: PLW0603
+    global _storage_backend
     if _storage_backend is not None:
         return _storage_backend
 

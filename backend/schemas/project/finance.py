@@ -498,7 +498,7 @@ class FinanceSubjectFilter(BaseModel):
     stage: SubjectStage | None = Field(None, description="按业务阶段筛选")
     level: SubjectLevel | None = Field(None, description="按成本层级筛选")
     system: bool | None = Field(None, description="按系统预置/自定义筛选")
-    is_deleted: bool = Field(False, description="是否包含已删除(默认仅未删除)")  # noqa: FBT003
+    is_deleted: bool = Field(default=False, description="是否包含已删除(默认仅未删除)")
     search: str | None = Field(None, max_length=50, description="模糊搜索科目名称")
 
     model_config = ConfigDict(from_attributes=True)

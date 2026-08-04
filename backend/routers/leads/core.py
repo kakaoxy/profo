@@ -12,6 +12,7 @@ from dependencies.auth import (
 )
 from dependencies.common import PaginationDep
 from models.common import LeadStatus
+from models.lead import Lead
 from schemas.lead import (
     LeadCreate,
     LeadFunnelResponse,
@@ -29,7 +30,7 @@ router = APIRouter()
 _MAX_IMAGE_LENGTH = 500
 
 
-def _lead_to_list_item(lead) -> LeadListItem:  # noqa: ANN001
+def _lead_to_list_item(lead: Lead) -> LeadListItem:
     """将 Lead ORM 对象转换为 LeadListItem."""
     safe_images = [img for img in (lead.images or []) if isinstance(img, str) and len(img) < _MAX_IMAGE_LENGTH]
 

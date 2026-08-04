@@ -287,9 +287,9 @@ def migrate_all_datetime_columns_to_timestamptz(engine: Engine) -> None:
     if engine.dialect.name != "postgresql":
         return
 
-    from sqlalchemy import DateTime  # noqa: PLC0415
+    from sqlalchemy import DateTime
 
-    from models import Base  # noqa: PLC0415
+    from models import Base
 
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
@@ -375,11 +375,11 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
     if engine.dialect.name != "postgresql":
         return
 
-    import time  # noqa: PLC0415
+    import time
 
-    from sqlalchemy import Uuid  # noqa: PLC0415
+    from sqlalchemy import Uuid
 
-    from models import Base  # noqa: PLC0415
+    from models import Base
 
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
@@ -422,7 +422,7 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
         with engine.connect() as conn:
             bad_count_row = conn.execute(
                 text(
-                    f"SELECT count(*) FROM {table_name} "  # noqa: S608
+                    f"SELECT count(*) FROM {table_name} "
                     f"WHERE {column_name} IS NOT NULL "
                     f"AND {column_name}::text !~* :regex",
                 ),
@@ -434,7 +434,7 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
             # 收集前 5 个样例值供人工排查
             sample_rows = conn.execute(
                 text(
-                    f"SELECT {column_name} FROM {table_name} "  # noqa: S608
+                    f"SELECT {column_name} FROM {table_name} "
                     f"WHERE {column_name} IS NOT NULL "
                     f"AND {column_name}::text !~* :regex LIMIT 5",
                 ),

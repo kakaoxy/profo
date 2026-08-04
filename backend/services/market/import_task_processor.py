@@ -248,7 +248,7 @@ class ImportTaskProcessor:
         except ValidationError as e:
             error_msg = format_validation_error(e)
             return {"data": None, "error": error_msg}
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             error_msg = f"数据验证异常: {e!s}"
             return {"data": None, "error": error_msg}
         else:
@@ -262,7 +262,7 @@ class ImportTaskProcessor:
         """导入单行数据."""
         try:
             result = self.importer.import_property(validated_data, db)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return {"success": False, "error": f"导入异常: {e!s}"}
         else:
             return {"success": result.success, "error": result.error}
@@ -336,7 +336,7 @@ _processor: ImportTaskProcessor | None = None
 
 def get_task_processor() -> ImportTaskProcessor:
     """获取任务处理器实例（单例）."""
-    global _processor  # noqa: PLW0603
+    global _processor
     if _processor is None:
         _processor = ImportTaskProcessor()
     return _processor

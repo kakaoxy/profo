@@ -24,7 +24,7 @@ def init_database() -> bool | None:
     """初始化数据库 - 创建所有表."""
     try:
         Base.metadata.create_all(bind=engine)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return False
     else:
         return True

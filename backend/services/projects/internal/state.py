@@ -132,8 +132,8 @@ class ProjectStateManager:
             status_update: 状态更新数据
 
         """
-        from models import ProjectSale  # noqa: PLC0415
-        from services.utils import parse_date_string  # noqa: PLC0415
+        from models import ProjectSale
+        from services.utils import parse_date_string
 
         if new_status == ProjectStatus.SELLING.value:
             sale = (

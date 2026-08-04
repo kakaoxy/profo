@@ -75,7 +75,7 @@ def is_sensitive_field(field_name: str) -> bool:
     return any(sensitive in field_lower for sensitive in SENSITIVE_FIELDS)
 
 
-def mask_value(value: Any) -> str:  # noqa: ANN401
+def mask_value(value: Any) -> str:
     """脱敏字段值.
 
     Args:
@@ -100,7 +100,7 @@ def mask_value(value: Any) -> str:  # noqa: ANN401
     return "***"
 
 
-def mask_sensitive_data(data: Any, parent_key: str = "") -> Any:  # noqa: ANN401
+def mask_sensitive_data(data: Any, parent_key: str = "") -> Any:
     """递归脱敏敏感数据.
 
     Args:

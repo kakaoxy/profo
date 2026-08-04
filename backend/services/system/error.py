@@ -64,13 +64,15 @@ def save_failed_record(
         db.commit()
 
         logger.info("失败记录已保存: %s - %.50s", failure_type, error_message)
-        return True  # noqa: TRY300
 
     except Exception:
         logger.exception("保存失败记录时出错")
         if db:
             db.rollback()
         return False
+
+    else:
+        return True
 
     finally:
         if db:
