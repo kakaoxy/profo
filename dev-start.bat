@@ -34,6 +34,11 @@ cd /d "%~dp0"
 
 set "DEV_COMPOSE=docker compose -f docker-compose.yml -f docker-compose.dev.yml"
 
+REM 绕过 HTTP 代理（Clash/V2Ray 等）对本地请求的拦截
+REM 代理软件会设置 HTTP_PROXY，导致 fetch 127.0.0.1:8000 走代理 -> 502
+set "NO_PROXY=127.0.0.1,localhost,0.0.0.0"
+set "no_proxy=127.0.0.1,localhost,0.0.0.0"
+
 REM 检查根目录 .env
 if not exist ".env" (
   echo [错误] 未检测到根目录 .env
@@ -67,13 +72,18 @@ if not defined POSTGRES_DB (
   echo [错误] .env 中未找到 POSTGRES_DB
   exit /b 1
 )
+if not defined REDIS_PASSWORD (
+  echo [错误] .env 中未找到 REDIS_PASSWORD
+  echo    请运行 init-env.ps1 或 init-env.bat 生成凭据
+  exit /b 1
+)
 
 REM 本地启动时，backend 直连映射出来的 Docker db
 set "DATABASE_URL=postgresql+psycopg://%POSTGRES_USER%:%POSTGRES_PASSWORD%@127.0.0.1:5432/%POSTGRES_DB%"
 set "REDIS_URL=redis://:%REDIS_PASSWORD%@127.0.0.1:6379/0"
 set "DEBUG=true"
 REM 将拼装结果导出到外层作用域（endlocal 会清除内层变量）
-endlocal & set "DATABASE_URL=%DATABASE_URL%" & set "REDIS_URL=%REDIS_URL%" & set "DEBUG=%DEBUG%" & set "POSTGRES_USER=%POSTGRES_USER%" & set "POSTGRES_DB=%POSTGRES_DB%"
+endlocal & set "DATABASE_URL=%DATABASE_URL%" & set "REDIS_URL=%REDIS_URL%" & set "DEBUG=%DEBUG%" & set "POSTGRES_USER=%POSTGRES_USER%" & set "POSTGRES_DB=%POSTGRES_DB%" & set "NO_PROXY=%NO_PROXY%" & set "no_proxy=%no_proxy%"
 
 REM 检查 backend\.venv
 if not exist "backend\.venv\Scripts\uvicorn.exe" (
@@ -127,8 +137,39 @@ if /i "%CMD%"=="logs" goto :logs
 if /i "%CMD%"=="down" goto :down
 goto :usage
 
+REM ====================================================================
+REM 检查 Docker 守护进程是否运行
+REM ====================================================================
+:check_docker
+docker info >nul 2>&1
+if errorlevel 1 (
+  echo [错误] Docker 守护进程未运行
+  echo    请启动 Docker Desktop 后重试
+  echo    或检查 Docker 是否正确安装
+  exit /b 1
+)
+goto :eof
+
+REM ====================================================================
+REM 端口预检：检查指定端口是否被占用
+REM 参数: %1=端口号 %2=服务名称
+REM ====================================================================
+:check_port
+set "PORT_NUM=%~1"
+set "PORT_NAME=%~2"
+netstat -ano | findstr "LISTENING" | findstr ":%PORT_NUM% " >nul 2>&1
+if not errorlevel 1 (
+  echo [错误] 端口 %PORT_NUM% ^(%PORT_NAME%^) 已被占用
+  echo    请先终止占用该端口的进程，或检查是否已有服务在运行
+  netstat -ano | findstr "LISTENING" | findstr ":%PORT_NUM% "
+  exit /b 1
+)
+exit /b 0
+
 :start_db
-echo 启动 PostgreSQL (Docker)...
+call :check_docker
+if errorlevel 1 exit /b 1
+echo 启动 PostgreSQL ^& Redis (Docker)...
 %DEV_COMPOSE% up -d db redis
 if errorlevel 1 (
   echo [错误] 启动数据库失败
@@ -138,7 +179,16 @@ echo [成功] 数据库已启动: postgresql+psycopg://%POSTGRES_USER%:***@127.0
 goto :eof
 
 :up
+REM 端口预检（db 端口 5432/6379 由 Docker 管理，无需检查）
+call :check_port 8000 "backend"
+if errorlevel 1 exit /b 1
+call :check_port 3000 "frontend"
+if errorlevel 1 exit /b 1
 call :start_db
+if errorlevel 1 (
+  echo [错误] 数据库启动失败，前后端未启动
+  exit /b 1
+)
 echo.
 echo 启动后端 (uvicorn --reload) 与前端 (next dev)...
 echo   Backend:  http://localhost:8000
@@ -165,6 +215,7 @@ goto :end
 
 :db
 call :start_db
+if errorlevel 1 exit /b 1
 echo.
 echo 数据库已启动，请在各自终端分别运行：
 echo   cd backend ^&^& .venv\Scripts\uvicorn.exe main:app --reload --port 8000
