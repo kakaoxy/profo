@@ -1,4 +1,5 @@
 import type { components } from "@/lib/api-types";
+import { cn } from "@/lib/utils";
 import { formatCurrency } from "./format";
 import { CalcBreakdownDialog } from "./calc-breakdown-dialog";
 
@@ -34,11 +35,13 @@ export function ProfitLadder({
   businessForm,
 }: ProfitLadderProps) {
   const l1 = getL1Content(businessForm);
+  // F1: LedgerStatisticsFiveLayer 字段均为 optional，解构时给默认值 0 避免透传 undefined
+  const { income = 0, gross = 0, net = 0 } = fiveLayer;
   // 进度条相对值：以 income 为基准 100%，其他按比例
   const maxAbs = Math.max(
-    Math.abs(fiveLayer.income),
-    Math.abs(fiveLayer.gross),
-    Math.abs(fiveLayer.net),
+    Math.abs(income),
+    Math.abs(gross),
+    Math.abs(net),
     1,
   );
   const pct = (v: number): string =>
@@ -74,8 +77,8 @@ export function ProfitLadder({
             stepLabel="收入层"
             title={l1.title}
             formula={l1.formula}
-            value={fiveLayer.income}
-            progress={pct(fiveLayer.income)}
+            value={income}
+            progress={pct(income)}
             variant="l1"
           />
           <LadderCard
@@ -83,8 +86,8 @@ export function ProfitLadder({
             stepLabel="毛利层"
             title="收入 − 直接成本"
             formula="= 收入 − (取得成本 + 改造成本 + 佣金)"
-            value={fiveLayer.gross}
-            progress={pct(fiveLayer.gross)}
+            value={gross}
+            progress={pct(gross)}
             variant="l2"
           />
           <LadderCard
@@ -92,8 +95,8 @@ export function ProfitLadder({
             stepLabel="净利层"
             title="毛利 − 运营费用 − 融资成本"
             formula="= 毛利 − 运营费用 − 项目分润"
-            value={fiveLayer.net}
-            progress={pct(fiveLayer.net)}
+            value={net}
+            progress={pct(net)}
             variant="l3"
           />
         </div>
@@ -123,32 +126,33 @@ function LadderCard({
   progress,
   variant,
 }: LadderCardProps) {
-  const topBarColor: Record<LadderVariant, string> = {
-    l1: "linear-gradient(90deg,#fbe1d1,#f5b896)",
-    l2: "linear-gradient(90deg,#f5b896,#d97757)",
-    l3: "linear-gradient(90deg,#d97757,#5d2a1a)",
+  // 暖色三层渐进：apricot-wash → rust，中间档用 rust 的不透明度近似原 #f5b896/#d97757
+  const topBarClass: Record<LadderVariant, string> = {
+    l1: "bg-gradient-to-r from-apricot-wash to-rust/30",
+    l2: "bg-gradient-to-r from-rust/30 to-rust/60",
+    l3: "bg-gradient-to-r from-rust/60 to-rust",
   };
-  const progressColor: Record<LadderVariant, string> = {
-    l1: "#f5b896",
-    l2: "#d97757",
-    l3: "#5d2a1a",
+  const progressClass: Record<LadderVariant, string> = {
+    l1: "bg-rust/30",
+    l2: "bg-rust/60",
+    l3: "bg-rust",
   };
-  const valueColor = variant === "l3" ? "#5d2a1a" : "#17191c";
+  const valueColorClass = variant === "l3" ? "text-rust" : "text-ink";
 
   return (
     <div className="relative overflow-hidden bg-white rounded-[18px] p-5 pt-6 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_8px_16px_-4px]">
       <div
-        className="absolute top-0 left-0 right-0 h-1"
-        style={{ background: topBarColor[variant] }}
+        className={cn(
+          "absolute top-0 left-0 right-0 h-1",
+          topBarClass[variant],
+        )}
       />
       <div className="inline-flex items-center gap-1.5 text-xs text-graphite mb-1.5">
         <span
-          className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-xs font-semibold"
-          style={{
-            background:
-              "linear-gradient(135deg,#fbe1d1 0%,rgba(251,225,209,.5) 100%)",
-            color: "#5d2a1a",
-          }}
+          className={cn(
+            "inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-xs font-semibold",
+            "bg-gradient-to-br from-apricot-wash to-apricot-wash/50 text-rust",
+          )}
         >
           {step}
         </span>
@@ -159,15 +163,20 @@ function LadderCard({
         {formula}
       </p>
       <p
-        className="text-2xl tabular-nums tracking-[-0.3px]"
-        style={{ color: valueColor }}
+        className={cn(
+          "text-2xl tabular-nums tracking-[-0.3px]",
+          valueColorClass,
+        )}
       >
         {formatCurrency(value)}
       </p>
       <div className="mt-3 h-1.5 bg-apricot-wash/30 rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: progress, background: progressColor[variant] }}
+          className={cn(
+            "h-full rounded-full transition-all duration-500",
+            progressClass[variant],
+          )}
+          style={{ width: progress }}
         />
       </div>
     </div>

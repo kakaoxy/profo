@@ -80,10 +80,10 @@ export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    <ModeTicks modes={s.modes} />
+                    <ModeTicks modes={s.modes as SubjectMode[]} />
                   </td>
                   <td className="px-3 py-2 text-xs">
-                    {stageLabel(s.modes[0], s.stage)}
+                    {stageLabel(s.modes[0] as SubjectMode, s.stage)}
                   </td>
                   <td className="px-3 py-2 text-xs text-graphite">
                     {s.note ?? "—"}

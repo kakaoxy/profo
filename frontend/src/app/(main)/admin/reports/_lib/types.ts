@@ -5,6 +5,8 @@
  * 该文件为纯类型模块，无运行时副作用，可被 Server/Client Component 共同导入。
  */
 
+import type { components } from "@/lib/api-types";
+
 // ─── 基础数据 ────────────────────────────────────────────────────────────────────
 
 /** 房源记录（property_current schema 投影） */
@@ -130,37 +132,11 @@ export interface DistributionBucket {
 
 // ─── 对比 ─────────────────────────────────────────────────────────────────────────
 
-/** 对比汇总行：行=指标，列=商圈（与 business_circles 对齐） */
-export interface ComparisonSummaryRow {
-  metric: string;
-  values: (number | null)[];
-}
-
-/** 多商圈对比趋势点：周期 + 各商圈值 */
-export interface ComparisonTrendPoint {
-  period: string;
-  [bc: string]: number | null | string;
-}
-
-/** 多商圈对比数据 */
-export interface ComparisonData {
-  business_circles: string[];
-  summary: ComparisonSummaryRow[];
-  /** 成交量趋势：每个周期一行，键为商圈名 */
-  volume_trend: ComparisonTrendPoint[];
-  /** 均价趋势：每个周期一行，键为商圈名 */
-  price_trend: ComparisonTrendPoint[];
-  /** 楼层结构（成交占比） */
-  floor_structure: { business_circle: string; low: number; mid: number; high: number }[];
-  /** 户型结构（成交占比） */
-  room_structure: {
-    business_circle: string;
-    r1: number;
-    r2: number;
-    r3: number;
-    r4plus: number;
-  }[];
-}
+// F1: 直接引用生成类型，避免手写 DTO 与后端 schema 漂移；
+// ComparisonTrendPoint 索引签名为 `[key: string]: unknown`，消费方需做 typeof 窄化。
+export type ComparisonSummaryRow = components["schemas"]["ComparisonSummaryRow"];
+export type ComparisonTrendPoint = components["schemas"]["ComparisonTrendPoint"];
+export type ComparisonData = components["schemas"]["ComparisonData"];
 
 // ─── 筛选 ─────────────────────────────────────────────────────────────────────────
 

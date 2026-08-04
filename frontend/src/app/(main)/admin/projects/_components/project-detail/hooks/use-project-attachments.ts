@@ -35,6 +35,7 @@ export function useProjectAttachments({
             url,
             category: mapLegacyAttachmentCategory("other"),
             fileType,
+            size: 0,
           };
         }
         const att = item as AttachmentInfo;
@@ -43,7 +44,7 @@ export function useProjectAttachments({
           url: att.url,
           category: mapLegacyAttachmentCategory(att.category || "other"),
           fileType: att.fileType || "other",
-          size: att.size,
+          size: att.size ?? 0,
         };
       });
     }

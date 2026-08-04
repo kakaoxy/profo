@@ -196,7 +196,8 @@ export function usePerformanceMonitor(
 
       // 获取内存使用
       if ("memory" in performance) {
-        const memory = (performance as unknown as { memory?: PerformanceMemory }).memory;
+        // F1: Chromium-only API，用交集类型单重断言（Performance 的子类型）替代双重断言
+        const memory = (performance as Performance & { memory?: PerformanceMemory }).memory;
         if (memory) {
           const usedMB = Math.round(memory.usedJSHeapSize / 1048576);
           metricsRef.current.memory = usedMB;

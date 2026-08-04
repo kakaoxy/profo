@@ -1,7 +1,7 @@
 """通用Schema
 
 包含历史记录、失败记录、楼层解析等通用模型.
-"""  # noqa: D400, D415
+"""
 
 from pydantic import BaseModel
 

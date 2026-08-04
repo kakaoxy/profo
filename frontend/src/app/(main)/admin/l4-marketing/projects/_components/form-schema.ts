@@ -203,33 +203,36 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
 
 // 将API响应转换为表单值
 // 注意：后端现在直接返回数组格式，无需再进行 split 转换
-export function projectToFormValues(project: Record<string, unknown>): FormValues {
+// F1: 参数类型用 object（接受任意接口类型），内部统一断言为 Record<string, unknown>，
+//     避免调用方对具体接口类型做 `as unknown as Record<string, unknown>` 双重断言
+export function projectToFormValues(project: object): FormValues {
+  const p = project as Record<string, unknown>;
   // 将 community_id 转换为字符串（支持数字和字符串类型）
-  const communityId = project.community_id !== undefined && project.community_id !== null
-    ? String(project.community_id)
+  const communityId = p.community_id !== undefined && p.community_id !== null
+    ? String(p.community_id)
     : "";
 
   return {
     community_id: communityId,
-    community_name: (project.community_name as string) || undefined,
-    layout: (project.layout as string) || "",
-    orientation: (project.orientation as string) || "",
-    floor_info: (project.floor_info as string) || "",
-    area: typeof project.area === "string" ? parseFloat(project.area) : (project.area as number) || 0,
-    total_price: typeof project.total_price === "string" ? parseFloat(project.total_price) : (project.total_price as number) || 0,
-    unit_price: typeof project.unit_price === "string" ? parseFloat(project.unit_price) : (project.unit_price as number) || undefined,
-    title: (project.title as string) || "",
+    community_name: (p.community_name as string) || undefined,
+    layout: (p.layout as string) || "",
+    orientation: (p.orientation as string) || "",
+    floor_info: (p.floor_info as string) || "",
+    area: typeof p.area === "string" ? parseFloat(p.area) : (p.area as number) || 0,
+    total_price: typeof p.total_price === "string" ? parseFloat(p.total_price) : (p.total_price as number) || 0,
+    unit_price: typeof p.unit_price === "string" ? parseFloat(p.unit_price) : (p.unit_price as number) || undefined,
+    title: (p.title as string) || "",
     // 后端直接返回数组，直接使用
-    images: Array.isArray(project.images) ? project.images as string[] : [],
-    sort_order: (project.sort_order as number) || 0,
+    images: Array.isArray(p.images) ? p.images as string[] : [],
+    sort_order: (p.sort_order as number) || 0,
     // 后端直接返回数组，直接使用
-    tags: Array.isArray(project.tags) ? project.tags as string[] : [],
-    decoration_style: (project.decoration_style as string) || undefined,
-    stage_completed_dates: (project.stage_completed_dates as Record<string, string>) || undefined,
-    publish_status: (project.publish_status as "草稿" | "发布") || "草稿",
-    project_status: (project.project_status as "在途" | "在售" | "已售") || "在途",
-    consultant_id: (project.consultant_id as string) || undefined,
-    project_id: (project.project_id as string) || undefined,
+    tags: Array.isArray(p.tags) ? p.tags as string[] : [],
+    decoration_style: (p.decoration_style as string) || undefined,
+    stage_completed_dates: (p.stage_completed_dates as Record<string, string>) || undefined,
+    publish_status: (p.publish_status as "草稿" | "发布") || "草稿",
+    project_status: (p.project_status as "在途" | "在售" | "已售") || "在途",
+    consultant_id: (p.consultant_id as string) || undefined,
+    project_id: (p.project_id as string) || undefined,
   };
 }
 
@@ -258,30 +261,31 @@ function mapL3StatusToL4(status?: string): "在途" | "在售" | "已售" {
 
 // 将导入数据转换为表单值
 // 注意：后端现在直接返回数组格式，无需再进行 split 转换
-export function importDataToFormValues(data: Record<string, unknown>): Partial<FormValues> {
+export function importDataToFormValues(data: object): Partial<FormValues> {
+  const d = data as Record<string, unknown>;
   // project_id 保持字符串类型（后端返回的是UUID字符串）
-  const projectId = (data.project_id as string) || undefined;
+  const projectId = (d.project_id as string) || undefined;
 
   // 将 community_id 转换为字符串（支持数字和字符串类型）
-  const communityId = data.community_id !== undefined && data.community_id !== null
-    ? String(data.community_id)
+  const communityId = d.community_id !== undefined && d.community_id !== null
+    ? String(d.community_id)
     : "";
 
   return {
     project_id: projectId,
     community_id: communityId,
-    community_name: (data.community_name as string) || "",
-    layout: (data.layout as string) || "",
-    orientation: (data.orientation as string) || "",
-    floor_info: (data.floor_info as string) || "",
-    area: typeof data.area === "string" ? parseFloat(data.area) : (data.area as number) || 0,
-    total_price: typeof data.total_price === "string" ? parseFloat(data.total_price) : (data.total_price as number) || 0,
-    unit_price: typeof data.unit_price === "string" ? parseFloat(data.unit_price) : (data.unit_price as number) || undefined,
-    title: (data.title as string) || "",
+    community_name: (d.community_name as string) || "",
+    layout: (d.layout as string) || "",
+    orientation: (d.orientation as string) || "",
+    floor_info: (d.floor_info as string) || "",
+    area: typeof d.area === "string" ? parseFloat(d.area) : (d.area as number) || 0,
+    total_price: typeof d.total_price === "string" ? parseFloat(d.total_price) : (d.total_price as number) || 0,
+    unit_price: typeof d.unit_price === "string" ? parseFloat(d.unit_price) : (d.unit_price as number) || undefined,
+    title: (d.title as string) || "",
     // 后端直接返回数组，直接使用
-    tags: Array.isArray(data.tags) ? data.tags as string[] : [],
-    decoration_style: (data.decoration_style as string) || "",
-    stage_completed_dates: (data.stage_completed_dates as Record<string, string>) || undefined,
-    project_status: mapL3StatusToL4(data.status as string),
+    tags: Array.isArray(d.tags) ? d.tags as string[] : [],
+    decoration_style: (d.decoration_style as string) || "",
+    stage_completed_dates: (d.stage_completed_dates as Record<string, string>) || undefined,
+    project_status: mapL3StatusToL4(d.status as string),
   };
 }

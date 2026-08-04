@@ -1,7 +1,7 @@
 """上传和导入相关Schema
 
 包含CSV上传、JSON推送、导入结果等模型.
-"""  # noqa: D400, D415
+"""
 
 from datetime import datetime
 

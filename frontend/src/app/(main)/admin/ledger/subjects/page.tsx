@@ -25,11 +25,11 @@ export default async function SubjectManagePage() {
     return true;
   });
 
-  const errorMsg =
-    !agentRes.success || !acquireRes.success
-      ? agentRes.success
-        ? acquireRes.message
-        : agentRes.message
+  // F1: 显式检查各自的 success 分支，让 TS 正确窄化 ActionResult 联合类型
+  const errorMsg = !agentRes.success
+    ? agentRes.message
+    : !acquireRes.success
+      ? acquireRes.message
       : null;
 
   return (

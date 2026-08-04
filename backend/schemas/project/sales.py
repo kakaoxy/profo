@@ -6,7 +6,7 @@
 3. 成交确认 (ProjectCompleteRequest)
 4. 规范化销售表 (SaleCreate, SaleUpdate, SaleResponse)
 5. 互动记录 (InteractionCreate, InteractionUpdate, InteractionResponse).
-"""  # noqa: D400, D415
+"""
 
 from datetime import datetime
 from decimal import Decimal

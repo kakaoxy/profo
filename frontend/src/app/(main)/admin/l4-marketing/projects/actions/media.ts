@@ -315,10 +315,8 @@ export async function batchUpdateMediaSortOrderAction(
   }
   try {
     const client = await fetchClient();
-    // 使用类型断言绕过 OpenAPI 类型检查
-    const { data, error } = await (client as unknown as {
-      PUT: (path: string, options: { params: { path: { project_id: number } }; body: unknown }) => Promise<{ data: unknown; error: unknown }>;
-    }).PUT(
+    // F1: 直接使用生成的 client.PUT 类型（api-types 已包含此端点），无需断言
+    const { data, error } = await client.PUT(
       "/api/v1/admin/l4-marketing/projects/{project_id}/media/sort-order",
       {
         params: { path: { project_id: projectId } },
