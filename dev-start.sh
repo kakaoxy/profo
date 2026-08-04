@@ -74,6 +74,11 @@ export JWT_SECRET_KEY ENCRYPTION_KEY WECHAT_APPID WECHAT_SECRET
 export NO_PROXY="127.0.0.1,localhost,0.0.0.0"
 export no_proxy="127.0.0.1,localhost,0.0.0.0"
 
+# 开发环境覆盖：UPLOAD_DIR 指向本地 backend/static/uploads
+# .env 中的 /app/static/uploads 是 Docker 容器路径，本地启动会因 macOS 根目录只读 (SIP) 失败
+# backend/static/uploads 已通过软链指向 ../../uploads，与 Docker 共享同一份上传文件
+export UPLOAD_DIR="${ROOT_DIR}/backend/static/uploads"
+
 # 检查 backend/.venv
 if [ ! -x backend/.venv/bin/uvicorn ]; then
   echo "❌ backend/.venv 不存在或缺少 uvicorn"
