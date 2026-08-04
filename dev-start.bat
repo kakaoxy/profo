@@ -82,8 +82,13 @@ REM 本地启动时，backend 直连映射出来的 Docker db
 set "DATABASE_URL=postgresql+psycopg://%POSTGRES_USER%:%POSTGRES_PASSWORD%@127.0.0.1:5432/%POSTGRES_DB%"
 set "REDIS_URL=redis://:%REDIS_PASSWORD%@127.0.0.1:6379/0"
 set "DEBUG=true"
+REM 覆盖 .env 中的 UPLOAD_DIR=/app/static/uploads（Docker 容器内路径）
+REM Windows 下 Python Path("/app/...") 解析为当前驱动器根（如 D:\app\static\uploads），
+REM 与 FastAPI 静态挂载根 backend/static 不一致，会导致上传成功但预览 404。
+REM 本地 dev 显式指向 backend/static/uploads 的绝对路径，与 main.py 静态挂载根一致。
+set "UPLOAD_DIR=%~dp0backend\static\uploads"
 REM 将拼装结果导出到外层作用域（endlocal 会清除内层变量）
-endlocal & set "DATABASE_URL=%DATABASE_URL%" & set "REDIS_URL=%REDIS_URL%" & set "DEBUG=%DEBUG%" & set "POSTGRES_USER=%POSTGRES_USER%" & set "POSTGRES_DB=%POSTGRES_DB%" & set "NO_PROXY=%NO_PROXY%" & set "no_proxy=%no_proxy%"
+endlocal & set "DATABASE_URL=%DATABASE_URL%" & set "REDIS_URL=%REDIS_URL%" & set "DEBUG=%DEBUG%" & set "UPLOAD_DIR=%UPLOAD_DIR%" & set "POSTGRES_USER=%POSTGRES_USER%" & set "POSTGRES_DB=%POSTGRES_DB%" & set "NO_PROXY=%NO_PROXY%" & set "no_proxy=%no_proxy%"
 
 REM 检查 backend\.venv
 if not exist "backend\.venv\Scripts\uvicorn.exe" (
