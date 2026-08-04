@@ -4,5 +4,4 @@
 export * from "./attachment";
 export * from "./renovation";
 export * from "./sales";
-export * from "./finance";
 export * from "./project";

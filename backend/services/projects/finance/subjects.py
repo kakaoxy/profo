@@ -30,7 +30,9 @@ class _SubjectMixin:
     def list_subjects(self, filter_data: FinanceSubjectFilter) -> list[FinanceSubjectResponse]:
         """查询科目列表（支持 mode/stage/level/system/is_deleted/search 筛选）.
 
-        mode 筛选使用 PostgreSQL JSON 包含查询：modes::jsonb @> :mode（JSON 数组包含指定元素）。
+        mode 筛选使用 PostgreSQL JSONB 包含查询：modes @> CAST(:mode AS JSONB)。
+        modes 列经 migrate_finance_subjects_modes_to_jsonb 迁移为 JSONB 类型，
+        配合 idx_subject_modes_gin (jsonb_path_ops) 索引加速 @> 查询。
         """
         query = self.db.query(FinanceSubject)
 
@@ -46,12 +48,9 @@ class _SubjectMixin:
         if filter_data.level is not None:
             query = query.filter(FinanceSubject.level == filter_data.level.value)
 
-        # mode 筛选：JSON 数组包含查询。
-        # modes 列为 JSON 类型，@> 操作符仅 JSONB 支持，需两侧强转 jsonb。
+        # mode 筛选：JSONB 数组包含查询（modes 列已是 jsonb，无需 ::jsonb 转换）
         if filter_data.mode is not None:
-            query = query.filter(
-                text("modes::jsonb @> CAST(:mode AS JSONB)").bindparams(mode=json.dumps([filter_data.mode]))
-            )
+            query = query.filter(text("modes @> CAST(:mode AS JSONB)").bindparams(mode=json.dumps([filter_data.mode])))
 
         # search 模糊搜索科目名称
         if filter_data.search is not None:

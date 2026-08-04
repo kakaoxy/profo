@@ -1,7 +1,7 @@
 """L4 市场营销层 Pydantic Schema
 
 符合项目指南的 API 契约规范.
-"""  # noqa: D400, D415
+"""
 
 from models.marketing.l4_marketing import (
     L4MediaType,

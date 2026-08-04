@@ -85,23 +85,24 @@ def get_owner_bank_card(
     仅 admin 角色可调用（银行卡号为敏感财务数据）。
     service 层会校验 owner 所属 project 未被软删除；
     审计日志（OperationLog）在路由层记录，不记录银行卡号本身。
+
+    返回 200 + ``{"bank_card_number": null}`` 表示业主存在但未登记银行卡号；
+    业主不存在时 service 同样返回 None，前端按 null 处理即可（避免将"无卡"误报为 404）。
     """
     bank_card_number = service.get_owner_bank_card_number(
         str(owner_id),
         operator_id=str(current_user.id),
     )
-    if bank_card_number is None:
-        msg = "业主不存在"
-        raise ResourceNotFoundError(msg)
-    # 敏感数据访问审计日志：仅记录访问行为，不写入银行卡号本身
-    operation_log_service.log_action(
-        db,
-        user_id=str(current_user.id),
-        action="sensitive_data_access",
-        resource_type="owner_bank_card",
-        resource_id=str(owner_id),
-        request=request,
-    )
+    # 仅当实际返回了卡号（敏感数据访问成功）时写审计日志
+    if bank_card_number is not None:
+        operation_log_service.log_action(
+            db,
+            user_id=str(current_user.id),
+            action="sensitive_data_access",
+            resource_type="owner_bank_card",
+            resource_id=str(owner_id),
+            request=request,
+        )
     return {"bank_card_number": bank_card_number}
 
 
@@ -197,85 +198,13 @@ def export_projects(
 ) -> StreamingResponse:
     """导出项目数据为 CSV 文件.
 
-    支持按状态和小区名称筛选，导出所有匹配记录（无分页限制）
+    支持按状态和小区名称筛选，导出所有匹配记录（service 层分页遍历，遵守 max_page_size）
     速率限制：10次/小时
     """
-    result = service.get_projects(
+    headers, rows = service.build_projects_export(
         status_filter=status,
         community_name=community_name,
-        page=1,
-        page_size=10000,
     )
-
-    items = result["items"]
-
-    headers = [
-        "项目ID",
-        "项目名称",
-        "项目状态",
-        "小区名称",
-        "物业地址",
-        "面积(m²)",
-        "户型",
-        "朝向",
-        "合同编号",
-        "签约价格(万)",
-        "签约日期",
-        "合同周期(天)",
-        "顺延期(天)",
-        "顺延期租金(元/月)",
-        "税费承担类型",
-        "税费承担说明",
-        "计划交房日期",
-        "业主姓名",
-        "业主电话",
-        "挂牌价(万)",
-        "上架日期",
-        "成交价(万)",
-        "成交日期",
-        "总收入(元)",
-        "总支出(元)",
-        "净现金流(元)",
-        "ROI(%)",
-        "创建时间",
-        "更新时间",
-    ]
-
-    rows = []
-    for project in items:
-        row = [
-            project.id,
-            project.name or "",
-            project.status,
-            project.community_name or "",
-            project.address or "",
-            str(project.area) if project.area else "",
-            project.layout or "",
-            project.orientation or "",
-            project.contract_no or "",
-            str(project.signing_price) if project.signing_price else "",
-            project.signing_date or "",
-            str(project.signing_period) if project.signing_period else "",
-            str(project.extension_period) if project.extension_period else "",
-            str(project.extension_rent) if project.extension_rent else "",
-            project.cost_assumption_type or "",
-            project.cost_assumption_other or "",
-            project.planned_handover_date or "",
-            project.owner_name or "",
-            project.owner_phone or "",
-            str(project.list_price) if project.list_price else "",
-            project.listing_date or "",
-            str(project.sold_price) if project.sold_price else "",
-            project.sold_date or "",
-            str(project.total_income) if project.total_income else "0",
-            str(project.total_expense) if project.total_expense else "0",
-            str(project.net_cash_flow) if project.net_cash_flow else "0",
-            str(project.roi) if project.roi else "0",
-            project.created_at.strftime("%Y-%m-%d %H:%M:%S") if project.created_at else "",
-            project.updated_at.strftime("%Y-%m-%d %H:%M:%S") if project.updated_at else "",
-        ]
-        rows.append(row)
-
     return generate_csv_response(headers, rows, "projects_export")
 
 

@@ -94,9 +94,8 @@ export default async function ComparePage({ searchParams }: PageProps) {
     throw new Error("Failed to fetch comparison data");
   }
 
-  // API schema 的 ComparisonTrendPoint 索引签名为 `[key: string]: unknown`，
-  // 而本地类型为 `[bc: string]: number | null | string`，需经过 unknown 桥接转换。
-  const data = rawData as unknown as ComparisonData;
+  // F1: ComparisonData 已是生成类型别名，与 client.GET 返回类型一致，无需断言
+  const data: ComparisonData = rawData;
 
   return (
     <div className="min-h-screen bg-muted">

@@ -5,7 +5,7 @@
 2. 装修照片上传/响应 (RenovationPhotoUpload, RenovationPhotoResponse)
 3. 装修合同信息 (RenovationContractUpdate, RenovationContractResponse)
 4. 规范化装修表 (RenovationCreate, RenovationUpdate, RenovationResponse).
-"""  # noqa: D400, D415
+"""
 
 from datetime import datetime
 from decimal import Decimal

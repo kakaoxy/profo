@@ -147,5 +147,5 @@ function getDefaultValues(
     };
   }
 
-  return projectToFormValues(project as unknown as Record<string, unknown>);
+  return projectToFormValues(project);
 }

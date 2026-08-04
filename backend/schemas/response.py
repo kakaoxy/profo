@@ -2,7 +2,7 @@
 
 遵循 AGENTS.md 规范：成功响应直接返回 Pydantic 模型，不使用 code/msg/data 包装器；
 错误响应统一 {"code":≠0, "message":"..."} 格式（code 取 HTTP 状态码）.
-"""  # noqa: D400, D415
+"""
 
 from typing import Generic, TypeVar
 

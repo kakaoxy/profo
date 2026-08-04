@@ -1,4 +1,5 @@
 import type { components } from "@/lib/api-types";
+import { cn } from "@/lib/utils";
 import { formatCurrency, formatNumber } from "./format";
 
 type StageFlow = components["schemas"]["LedgerStatisticsStageFlow"];
@@ -15,7 +16,7 @@ export function StageCashflowTimeline({
   const colCount = Math.max(stages.length, 1);
 
   return (
-    <section className="bg-[#f7f7f8] py-12">
+    <section className="bg-fog py-12">
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <p className="text-xs tracking-[0.2em] text-graphite mb-2">
@@ -33,15 +34,9 @@ export function StageCashflowTimeline({
           className="grid gap-0 relative"
           style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
         >
-          {/* 贯穿连接线：在所有 marker 后方 */}
+          {/* 贯穿连接线：在所有 marker 后方（apricot-wash → rust 渐进） */}
           {colCount > 1 && (
-            <div
-              className="hidden md:block absolute top-[14px] left-[8%] right-[8%] h-[2px] z-0"
-              style={{
-                background:
-                  "linear-gradient(90deg,#fbe1d1 0%,#fbe1d1 33%,#d97757 33%,#d97757 66%,#5d2a1a 66%,#5d2a1a 100%)",
-              }}
-            />
+            <div className="hidden md:block absolute top-[14px] left-[8%] right-[8%] h-[2px] z-0 bg-gradient-to-r from-apricot-wash to-rust" />
           )}
 
           {stages.map((s, i) => {
@@ -68,32 +63,26 @@ export function StageCashflowTimeline({
                     <div className="space-y-2 text-sm">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-graphite">流入</span>
-                        <span
-                          className="tabular-nums"
-                          style={{ color: "#1f7a4d" }}
-                        >
+                        <span className="tabular-nums text-success">
                           +{formatCurrency(s.inflow)}
                         </span>
                       </div>
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-graphite">流出</span>
-                        <span
-                          className="tabular-nums"
-                          style={{ color: "#b03a1a" }}
-                        >
+                        <span className="tabular-nums text-error">
                           −{formatCurrency(s.outflow)}
                         </span>
                       </div>
                       <div className="border-t border-border/60 pt-2 mt-2 flex items-baseline justify-between gap-2">
                         <span className="text-graphite">阶段净额</span>
                         <span
-                          className="tabular-nums font-medium"
-                          style={{
-                            color: s.net >= 0 ? "#1f7a4d" : "#b03a1a",
-                          }}
+                          className={cn(
+                            "tabular-nums font-medium",
+                            (s.net ?? 0) >= 0 ? "text-success" : "text-error",
+                          )}
                         >
-                          {s.net >= 0 ? "+" : "−"}
-                          {formatCurrency(Math.abs(s.net))}
+                          {(s.net ?? 0) >= 0 ? "+" : "−"}
+                          {formatCurrency(Math.abs(s.net ?? 0))}
                         </span>
                       </div>
                       <div className="flex items-baseline justify-between gap-2">
@@ -121,24 +110,18 @@ export function StageCashflowTimeline({
         {/* 图例 */}
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-graphite">
           <span className="inline-flex items-center gap-1.5">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ background: "#1f7a4d" }}
-            />
+            <span className="w-2 h-2 rounded-full bg-success" />
             流入(收入/配对回退/融资流入)
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ background: "#b03a1a" }}
-            />
+            <span className="w-2 h-2 rounded-full bg-error" />
             流出(支出/税费)
           </span>
         </div>
 
         <div className="mt-4 text-xs text-ash leading-relaxed bg-apricot-wash/30 rounded-xl p-3">
           <strong>💡 数据说明：</strong>
-          本看板数据由"交易流水 + 科目字典"的层级映射实时计算得出，
+          本看板数据由“交易流水 + 科目字典”的层级映射实时计算得出，
           与权责发生制损益口径一致。切换项目或新增流水后此处会同步刷新。
         </div>
       </div>

@@ -58,6 +58,9 @@ ignore = [
     "RUF003",
     "D203",
     "D213",
+    # 中文 docstring 首行以"。"结尾，D400/D415 只识别 ASCII [.!?]，全局忽略
+    "D400",
+    "D415",
     # 以下规则与项目风格冲突，全局忽略
     "D102",   # 公开方法缺 docstring（field_serializer 等无需注释）
     "D104",   # 公开包缺 docstring

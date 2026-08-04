@@ -1,26 +1,9 @@
+import type { components } from "@/lib/api-types";
 import { Project } from "../../types";
 
-/**
- * 附件信息接口
- */
-export interface AttachmentInfo {
-  filename: string;
-  url: string;
-  category: string;
-  fileType: string;
-  size?: number;
-}
-
-/**
- * 签约材料附件对象（与后端 SigningMaterial 对应）
- */
-export interface SigningMaterial {
-  filename: string;
-  url: string;
-  category: string;
-  fileType: string;
-  size?: number;
-}
+// F1: 直接引用生成类型，避免与 api-types.d.ts 中的 SigningMaterial 重复定义
+export type AttachmentInfo = components["schemas"]["SigningMaterial"];
+export type SigningMaterial = components["schemas"]["SigningMaterial"];
 
 /**
  * ProjectDetailSheet 组件属性

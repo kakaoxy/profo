@@ -197,5 +197,5 @@ try:
     settings = Settings()
 except Exception as e:  # noqa: BLE001
     # Fail Loud: 打印配置错误后再退出，避免静默失败导致排障困难
-    print(f"[FATAL] 配置加载失败: {e}", file=sys.stderr)
+    print(f"[FATAL] 配置加载失败: {e}", file=sys.stderr)  # noqa: T201
     sys.exit(1)

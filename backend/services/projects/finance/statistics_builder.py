@@ -53,7 +53,7 @@ def build_calc_breakdown(ctx: CalcBreakdownContext) -> LedgerStatisticsCalcBreak
         items: list[LedgerStatisticsCalcItem] = []
         for lv in levels:
             for sd in by_level.get(lv, []):
-                items.append(_item(sd.name, sd.net))
+                items.append(_item(sd.name, sd.net))  # noqa: PERF401
         return items
 
     def _section(

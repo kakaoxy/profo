@@ -1,7 +1,7 @@
 """小区相关Schema
 
 包含小区响应、列表、合并等模型.
-"""  # noqa: D400, D415
+"""
 
 from datetime import datetime
 

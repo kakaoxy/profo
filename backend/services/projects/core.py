@@ -7,7 +7,7 @@
 """
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -200,6 +200,99 @@ class ProjectCoreService:
             "page": result["page"],
             "page_size": result["page_size"],
         }
+
+    # 项目导出 CSV 表头（顺序与 build_projects_export rows 对齐）
+    _EXPORT_HEADERS: ClassVar[list[str]] = [
+        "项目ID",
+        "项目名称",
+        "项目状态",
+        "小区名称",
+        "物业地址",
+        "面积(m²)",
+        "户型",
+        "朝向",
+        "合同编号",
+        "签约价格(万)",
+        "签约日期",
+        "合同周期(天)",
+        "顺延期(天)",
+        "顺延期租金(元/月)",
+        "税费承担类型",
+        "税费承担说明",
+        "计划交房日期",
+        "业主姓名",
+        "业主电话",
+        "挂牌价(万)",
+        "上架日期",
+        "成交价(万)",
+        "成交日期",
+        "总收入(元)",
+        "总支出(元)",
+        "净现金流(元)",
+        "ROI(%)",
+        "创建时间",
+        "更新时间",
+    ]
+
+    def build_projects_export(
+        self,
+        status_filter: str | None = None,
+        community_name: str | None = None,
+    ) -> tuple[list[str], list[list[str]]]:
+        """构建项目导出 CSV（headers + rows）.
+
+        分页遍历所有匹配项目（page_size=settings.max_page_size，遵守上限），
+        避免单次 page_size=10000 配合 joinedload 瞬时占满内存。
+        """
+        rows: list[list[str]] = []
+        page = 1
+        page_size = settings.max_page_size
+        while True:
+            result = self.get_projects(
+                status_filter=status_filter,
+                community_name=community_name,
+                page=page,
+                page_size=page_size,
+            )
+            for project in result["items"]:
+                rows.append(  # noqa: PERF401
+                    [
+                        project.id,
+                        project.name or "",
+                        project.status,
+                        project.community_name or "",
+                        project.address or "",
+                        str(project.area) if project.area else "",
+                        project.layout or "",
+                        project.orientation or "",
+                        project.contract_no or "",
+                        str(project.signing_price) if project.signing_price else "",
+                        project.signing_date or "",
+                        str(project.signing_period) if project.signing_period else "",
+                        str(project.extension_period) if project.extension_period else "",
+                        str(project.extension_rent) if project.extension_rent else "",
+                        project.cost_assumption_type or "",
+                        project.cost_assumption_other or "",
+                        project.planned_handover_date or "",
+                        project.owner_name or "",
+                        project.owner_phone or "",
+                        str(project.list_price) if project.list_price else "",
+                        project.listing_date or "",
+                        str(project.sold_price) if project.sold_price else "",
+                        project.sold_date or "",
+                        str(project.total_income) if project.total_income else "0",
+                        str(project.total_expense) if project.total_expense else "0",
+                        str(project.net_cash_flow) if project.net_cash_flow else "0",
+                        str(project.roi) if project.roi else "0",
+                        project.created_at.strftime("%Y-%m-%d %H:%M:%S") if project.created_at else "",
+                        project.updated_at.strftime("%Y-%m-%d %H:%M:%S") if project.updated_at else "",
+                    ]
+                )
+            # 已遍历完所有页
+            if page * page_size >= result["total"]:
+                break
+            page += 1
+        return self._EXPORT_HEADERS, rows
 
     def get_my_responsible_projects(
         self,

@@ -82,7 +82,7 @@ export function useProjectImport({
     if (!importData) return;
 
     // 转换数据并填充表单
-    const formValues = importDataToFormValues(importData as unknown as Record<string, unknown>);
+    const formValues = importDataToFormValues(importData);
 
     // 批量设置表单值
     Object.entries(formValues).forEach(([key, value]) => {

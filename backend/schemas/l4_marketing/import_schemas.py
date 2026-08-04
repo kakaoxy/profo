@@ -1,7 +1,7 @@
 """L4 项目导入相关 Pydantic Schema
 
 用于从L3项目导入数据创建营销房源.
-"""  # noqa: D400, D415
+"""
 
 from decimal import Decimal
 
