@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from schemas.response import PaginatedResponse
 
@@ -11,7 +11,7 @@ from schemas.response import PaginatedResponse
 class OperationLogResponse(BaseModel):
     """操作审计日志响应模型."""
 
-    id: str = Field(description="日志ID")
+    id: UUID4 = Field(description="日志ID")
     user_id: str | None = Field(None, description="操作者用户ID(逻辑外键)")
     action: str = Field(description="操作类型：create/update/delete/sensitive_data_access等")
     resource_type: str = Field(description="资源类型：user/role/permission/project等")

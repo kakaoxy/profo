@@ -122,8 +122,8 @@ class ContractNumberGenerator:
                 # 测试环境（Session 绑定到 Connection）下用 session 执行，受外层事务/SAVEPOINT 控制。
                 now = datetime.now(timezone.utc)
                 insert_stmt = insert(ProjectContract.__table__).values(
-                    id=str(uuid.uuid4()),
-                    project_id=str(uuid.uuid4()),  # 临时 project_id，creator 时更新
+                    id=uuid.uuid4(),
+                    project_id=uuid.uuid4(),  # 临时 project_id，creator 时更新
                     contract_no=new_contract_no,
                     contract_status="reserved",  # 占位状态，creator 时改为正式状态
                     is_deleted=False,

@@ -6,6 +6,7 @@
 项目基础信息在 projects 表，签约/业主/销售等信息在关联的子表中。
 """
 
+import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -116,7 +117,7 @@ class ProjectCoreService:
 
     def get_project(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         *,
         include_all: bool = False,
         current_user: "User | None" = None,
@@ -136,7 +137,7 @@ class ProjectCoreService:
         project = self.query_service.get_by_id(project_id, include_all=include_all)
         return ProjectResponse.model_validate(self.response_builder.build(project, current_user=current_user))
 
-    def exists(self, project_id: str) -> bool:
+    def exists(self, project_id: uuid.UUID) -> bool:
         """检查项目是否存在.
 
         Args:
@@ -321,7 +322,7 @@ class ProjectCoreService:
             for p in projects
         ]
 
-    def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse:
+    def update_project(self, project_id: uuid.UUID, update_data: ProjectUpdate) -> ProjectResponse:
         """更新项目信息.
 
         Args:
@@ -344,7 +345,7 @@ class ProjectCoreService:
         project = self.query_service.get_by_id(project_id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
-    def delete_project(self, project_id: str) -> None:
+    def delete_project(self, project_id: uuid.UUID) -> None:
         """删除项目 (软删除).
 
         同时软删除关联的合同记录，释放合同编号供复用。
@@ -377,7 +378,7 @@ class ProjectCoreService:
 
         self.db.commit()
 
-    def update_status(self, project_id: str, status_update: ProjectStatusUpdate) -> ProjectResponse:
+    def update_status(self, project_id: uuid.UUID, status_update: ProjectStatusUpdate) -> ProjectResponse:
         """更新项目状态.
 
         Args:

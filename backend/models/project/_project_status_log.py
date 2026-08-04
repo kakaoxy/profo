@@ -1,8 +1,9 @@
 """项目状态流转日志模型."""
 
+import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, String, Text
+from sqlalchemy import DateTime, Index, String, Text, Uuid
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,7 +15,7 @@ class ProjectStatusLog(BaseModel):
 
     __tablename__ = "project_status_logs"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="项目ID(逻辑外键)")
 
     old_status: Mapped[ProjectStatus] = mapped_column(
         SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x], create_constraint=True),

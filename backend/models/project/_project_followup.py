@@ -1,9 +1,10 @@
 """项目跟进和评估模型."""
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Index, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, Index, Numeric, String, Text, Uuid
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,7 +16,7 @@ class ProjectFollowUp(BaseModel):
 
     __tablename__ = "project_follow_ups"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="项目ID(逻辑外键)")
 
     # DB列名 method（由 Task 23 rename 迁移统一），Python 属性名暂保留 follow_up_type
     follow_up_type: Mapped[FollowUpMethod] = mapped_column(
@@ -42,7 +43,7 @@ class ProjectEvaluation(BaseModel):
 
     __tablename__ = "project_evaluations"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="项目ID(逻辑外键)")
 
     evaluation_type: Mapped[str] = mapped_column(String(20), nullable=False, comment="评估类型")
     evaluation_price: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="评估价格(万)")

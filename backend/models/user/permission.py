@@ -13,6 +13,7 @@ from sqlalchemy import (
     Integer,
     String,
     Table,
+    Uuid,
     func,
 )
 from sqlalchemy import Enum as SQLEnum
@@ -73,7 +74,9 @@ role_permissions = Table(
     "role_permissions",
     Base.metadata,
     Column("role_id", String(36), primary_key=True, comment="角色ID(逻辑外键)"),
-    Column("permission_id", String(36), primary_key=True, comment="权限ID(逻辑外键)"),
+    # permission_id 跟随 Permission.id(BaseModel.id) 使用原生 Uuid，避免 JOIN 时
+    # character varying = uuid 类型不匹配（启动迁移会幂等 ALTER 为 uuid 类型）
+    Column("permission_id", Uuid, primary_key=True, comment="权限ID(逻辑外键)"),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
     Index("ix_role_permissions_permission_id", "permission_id"),
 )

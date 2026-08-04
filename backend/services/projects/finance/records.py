@@ -1,6 +1,7 @@
 """现金流记录 CRUD."""
 
 import logging
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -79,7 +80,7 @@ class _RecordMixin:
             msg = "流出/流入至少填一项且大于0"
             raise ValidationError(msg)
 
-    def create_record(self, project_id: str, record_data: LedgerRecordCreate, operator_id: str) -> FinanceRecord:
+    def create_record(self, project_id: uuid.UUID, record_data: LedgerRecordCreate, operator_id: str) -> FinanceRecord:
         """创建现金流记录.
 
         Task 5 调整：
@@ -200,7 +201,7 @@ class _RecordMixin:
         logger.info("Cashflow record created successfully: %s", record.id)
         return record
 
-    def get_records(self, project_id: str) -> list[FinanceRecord]:
+    def get_records(self, project_id: uuid.UUID) -> list[FinanceRecord]:
         """获取项目现金流记录."""
         logger.info("Getting cashflow records for project %s", project_id)
         try:

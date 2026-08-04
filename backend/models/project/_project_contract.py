@@ -1,5 +1,6 @@
 """签约合同模型."""
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Uuid,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -24,7 +26,7 @@ class ProjectContract(BaseModel):
 
     __tablename__ = "project_contracts"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, comment="项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, unique=True, comment="项目ID(逻辑外键)")
 
     contract_no: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="合同编号")
     signing_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="签约价格(万)")

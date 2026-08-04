@@ -11,6 +11,7 @@
 目前保留此类是为了让现有的 Router 代码无需修改即可运行。
 """
 
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -68,7 +69,7 @@ class ProjectService:
 
     def get_project(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         *,
         current_user: User,
         include_all: bool = False,
@@ -99,15 +100,15 @@ class ProjectService:
             monitor_sort=monitor_sort,
         )
 
-    def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse:
+    def update_project(self, project_id: uuid.UUID, update_data: ProjectUpdate) -> ProjectResponse:
         """更新项目."""
         return self._core_service.update_project(project_id, update_data)
 
-    def delete_project(self, project_id: str) -> None:
+    def delete_project(self, project_id: uuid.UUID) -> None:
         """删除项目."""
         return self._core_service.delete_project(project_id)
 
-    def update_status(self, project_id: str, status_update: ProjectStatusUpdate) -> ProjectResponse:
+    def update_status(self, project_id: uuid.UUID, status_update: ProjectStatusUpdate) -> ProjectResponse:
         """更新项目状态."""
         return self._core_service.update_status(project_id, status_update)
 
@@ -139,7 +140,7 @@ class ProjectService:
 
     def update_renovation_stage(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         renovation_data: RenovationUpdate,
         *,
         current_user: User,
@@ -152,7 +153,7 @@ class ProjectService:
 
     def update_renovation_stage_date(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         stage: RenovationStage,
         stage_completed_at: datetime | None,
         *,
@@ -164,7 +165,7 @@ class ProjectService:
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
 
-    def get_renovation_info(self, project_id: str, *, current_user: User) -> ProjectResponse | None:
+    def get_renovation_info(self, project_id: uuid.UUID, *, current_user: User) -> ProjectResponse | None:
         """获取装修信息."""
         renovation = self._renovation_service.get_info(project_id)
         if not renovation:
@@ -172,7 +173,7 @@ class ProjectService:
         return self._core_service.get_project(project_id, current_user=current_user, include_all=False)
 
     def update_renovation_info(
-        self, project_id: str, renovation_data: dict[str, Any], *, current_user: User
+        self, project_id: uuid.UUID, renovation_data: dict[str, Any], *, current_user: User
     ) -> ProjectResponse:
         """更新装修信息."""
         self._renovation_service.update_info(project_id, renovation_data)
@@ -180,7 +181,7 @@ class ProjectService:
 
     def add_renovation_photo(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         stage: str,
         url: str,
         filename: str | None = None,
@@ -199,21 +200,21 @@ class ProjectService:
             media_type,
         )
 
-    def get_renovation_photos(self, project_id: str, stage: str | None = None) -> list[RenovationPhoto]:
+    def get_renovation_photos(self, project_id: uuid.UUID, stage: str | None = None) -> list[RenovationPhoto]:
         """获取装修照片."""
         return self._renovation_service.get_photos(project_id, stage)
 
-    def delete_renovation_photo(self, project_id: str, photo_id: str) -> None:
+    def delete_renovation_photo(self, project_id: uuid.UUID, photo_id: str) -> None:
         """删除装修照片."""
         return self._renovation_service.delete_photo(project_id, photo_id)
 
-    def get_renovation_contract(self, project_id: str) -> ProjectRenovation:
+    def get_renovation_contract(self, project_id: uuid.UUID) -> ProjectRenovation:
         """获取装修合同."""
         return self._renovation_service.get_contract(project_id)
 
     def update_renovation_contract(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         contract_data: RenovationContractUpdate,
     ) -> ProjectRenovation:
         """更新装修合同."""
@@ -222,41 +223,41 @@ class ProjectService:
     # ========== SalesService 方法委托 ==========
 
     def update_sales_roles(
-        self, project_id: str, roles_data: SalesRolesUpdate, *, current_user: User
+        self, project_id: uuid.UUID, roles_data: SalesRolesUpdate, *, current_user: User
     ) -> ProjectResponse:
         """更新销售角色."""
         return self._sales_service.update_roles(project_id, roles_data, current_user=current_user)
 
     def create_sales_record(
-        self, project_id: str, record_data: SalesRecordCreate, *, current_user: User
+        self, project_id: uuid.UUID, record_data: SalesRecordCreate, *, current_user: User
     ) -> ProjectInteraction:
         """创建销售记录."""
         return self._sales_service.create_record(project_id, record_data, current_user)
 
     def get_sales_records(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         record_type: str | None = None,
     ) -> list[dict[str, Any]]:
         """获取销售记录."""
         return self._sales_service.get_records(project_id, record_type)
 
-    def delete_sales_record(self, project_id: str, record_id: str) -> None:
+    def delete_sales_record(self, project_id: uuid.UUID, record_id: str) -> None:
         """删除销售记录."""
         return self._sales_service.delete_record(project_id, record_id)
 
     def complete_project(
-        self, project_id: str, complete_data: ProjectCompleteRequest, *, current_user: User
+        self, project_id: uuid.UUID, complete_data: ProjectCompleteRequest, *, current_user: User
     ) -> ProjectResponse:
         """完成项目（标记已售）."""
         return self._sales_service.complete_project(project_id, complete_data, current_user=current_user)
 
     # ========== FinanceService 方法委托 ==========
 
-    def sync_project_financials(self, project_id: str) -> None:
+    def sync_project_financials(self, project_id: uuid.UUID) -> None:
         """同步项目财务数据."""
         return self._finance_service.sync_financials(project_id)
 
-    def get_project_report(self, project_id: str) -> dict[str, Any]:
+    def get_project_report(self, project_id: uuid.UUID) -> dict[str, Any]:
         """获取项目财务报告."""
         return self._finance_service.get_report(project_id)

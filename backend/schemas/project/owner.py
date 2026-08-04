@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field
 
 
 class OwnerBase(BaseModel):
@@ -22,7 +22,7 @@ class OwnerBase(BaseModel):
 class OwnerCreate(OwnerBase):
     """创建业主请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class OwnerUpdate(BaseModel):
@@ -42,8 +42,8 @@ class OwnerUpdate(BaseModel):
 class OwnerResponse(OwnerBase):
     """业主响应."""
 
-    id: str = Field(description="业主ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="业主ID")
+    project_id: UUID4 = Field(description="项目ID")
     is_deleted: bool = Field(default=False, description="逻辑删除标记")
     created_at: datetime
     updated_at: datetime

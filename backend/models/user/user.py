@@ -1,5 +1,6 @@
 """用户和角色相关模型."""
 
+import uuid
 from datetime import datetime
 
 from sqlalchemy import (
@@ -50,6 +51,9 @@ class Role(BaseModel):
 
     __tablename__ = "roles"
 
+    # 覆盖 BaseModel.id：角色使用语义化字符串 ID（如 'admin-role'），非 UUID
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+
     # 基本信息
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, comment="角色名称")
     code: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, comment="角色代码")
@@ -80,6 +84,9 @@ class User(BaseModel):
     """用户模型."""
 
     __tablename__ = "users"
+
+    # 覆盖 BaseModel.id：兼容种子用户 'admin-user'（语义化）与常规用户（UUID 字符串）
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 
     # 基本信息
     username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, comment="用户名")

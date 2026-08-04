@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from schemas.response import PaginatedResponse
 
@@ -40,7 +40,7 @@ class PermissionUpdate(BaseModel):
 class PermissionResponse(PermissionBase):
     """权限响应模型."""
 
-    id: str = Field(description="权限ID")
+    id: UUID4 = Field(description="权限ID")
     is_system: bool = Field(description="是否系统内置权限点")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")

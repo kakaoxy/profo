@@ -4,6 +4,7 @@
 周边竞品雷达逻辑已拆分至 neighborhood.py（NeighborhoodRadarService）。
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import Float, func
@@ -319,7 +320,7 @@ class MonitorService:
 
     def generate_ai_strategy(
         self,
-        _project_id: str,
+        _project_id: uuid.UUID,
         _context: str,
     ) -> AIStrategyResponse:
         """生成AI策略建议（Mock实现）."""

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 # --- Market Sentiment ---
 
@@ -72,7 +72,7 @@ class AddCompetitorRequest(BaseModel):
 class AIStrategyRequest(BaseModel):
     """AI策略请求."""
 
-    project_id: str
+    project_id: UUID4
     user_context: str
 
 

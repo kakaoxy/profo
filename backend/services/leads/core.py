@@ -60,7 +60,7 @@ class LeadService:
         # 这样 created_at 等字段为 None 时不会覆盖 ORM 列级 default
         db_lead = Lead(
             **lead_data.model_dump(exclude_unset=True),
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             creator_id=creator_id,
         )
         self.db.add(db_lead)

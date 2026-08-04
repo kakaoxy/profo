@@ -193,7 +193,7 @@ def migrate_permission_system(engine: Engine) -> None:
                 {"rid": role_id},
             ).fetchall()
             for row in rows:
-                existing_pairs.add((role_id, row[0]))
+                existing_pairs.add((str(role_id), str(row[0])))
 
         # 3.4 插入缺失关联
         inserted_links = 0
@@ -205,7 +205,7 @@ def migrate_permission_system(engine: Engine) -> None:
                 perm_id = perm_id_by_code.get(perm_code)
                 if not perm_id:
                     continue
-                if (role_id, perm_id) in existing_pairs:
+                if (str(role_id), str(perm_id)) in existing_pairs:
                     continue
                 conn.execute(
                     text("INSERT INTO role_permissions (role_id, permission_id) VALUES (:rid, :pid)"),
@@ -294,7 +294,7 @@ def migrate_project_business_permission(engine: Engine) -> None:
                 {"rid": role_id},
             ).fetchall()
             for row in rows:
-                existing_pairs.add((role_id, row[0]))
+                existing_pairs.add((str(role_id), str(row[0])))
 
         inserted_links = 0
         for role_code in role_codes_to_update:
@@ -305,7 +305,7 @@ def migrate_project_business_permission(engine: Engine) -> None:
                 perm_id = perm_id_by_code.get(perm_code)
                 if not perm_id:
                     continue
-                if (role_id, perm_id) in existing_pairs:
+                if (str(role_id), str(perm_id)) in existing_pairs:
                     continue
                 conn.execute(
                     text("INSERT INTO role_permissions (role_id, permission_id) VALUES (:rid, :pid)"),

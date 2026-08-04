@@ -59,14 +59,14 @@ class RenovationService:
         """
         self.db = db
 
-    def _get_project(self, project_id: str) -> Project:
+    def _get_project(self, project_id: uuid.UUID) -> Project:
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             msg = "项目不存在"
             raise ResourceNotFoundError(msg)
         return project
 
-    def _get_or_create_renovation(self, project_id: str) -> ProjectRenovation:
+    def _get_or_create_renovation(self, project_id: uuid.UUID) -> ProjectRenovation:
         """获取或创建装修记录."""
         renovation = (
             self.db.query(ProjectRenovation)
@@ -79,7 +79,7 @@ class RenovationService:
 
         if not renovation:
             renovation = ProjectRenovation(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 is_deleted=False,
                 created_at=datetime.now(timezone.utc),
@@ -112,7 +112,7 @@ class RenovationService:
                 last_completed = stage
         return last_completed.value
 
-    def update_stage(self, project_id: str, renovation_data: RenovationUpdate) -> Project:
+    def update_stage(self, project_id: uuid.UUID, renovation_data: RenovationUpdate) -> Project:
         """更新改造阶段.
 
         权限校验由 Router 层 ProjectRenovationCompleteStagePermDep 注入，
@@ -171,7 +171,7 @@ class RenovationService:
 
     def update_stage_date(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         stage: RenovationStage,
         stage_completed_at: datetime | None,
     ) -> Project:
@@ -239,7 +239,7 @@ class RenovationService:
         self.db.refresh(project)
         return project
 
-    def get_info(self, project_id: str) -> ProjectRenovation | None:
+    def get_info(self, project_id: uuid.UUID) -> ProjectRenovation | None:
         """获取装修信息."""
         return (
             self.db.query(ProjectRenovation)
@@ -250,7 +250,7 @@ class RenovationService:
             .first()
         )
 
-    def update_info(self, project_id: str, renovation_data: dict[str, Any]) -> ProjectRenovation:
+    def update_info(self, project_id: uuid.UUID, renovation_data: dict[str, Any]) -> ProjectRenovation:
         """更新装修信息."""
         project = self._get_project(project_id)
 
@@ -279,7 +279,7 @@ class RenovationService:
 
     def add_photo(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         stage: str,
         url: str,
         filename: str | None = None,
@@ -328,7 +328,7 @@ class RenovationService:
         self.db.refresh(photo)
         return photo
 
-    def get_photos(self, project_id: str, stage: str | None = None) -> list[RenovationPhoto]:
+    def get_photos(self, project_id: uuid.UUID, stage: str | None = None) -> list[RenovationPhoto]:
         """获取改造阶段照片."""
         query = self.db.query(RenovationPhoto).filter(
             RenovationPhoto.project_id == project_id,
@@ -338,7 +338,7 @@ class RenovationService:
             query = query.filter(RenovationPhoto.stage == stage)
         return query.order_by(RenovationPhoto.created_at.desc()).all()
 
-    def delete_photo(self, project_id: str, photo_id: str) -> None:
+    def delete_photo(self, project_id: uuid.UUID, photo_id: str) -> None:
         """删除改造阶段照片 (软删除).
 
         权限校验由 Router 层 ProjectRenovationUploadPhotoPermDep 注入。
@@ -359,14 +359,14 @@ class RenovationService:
         photo.is_deleted = True
         self.db.commit()
 
-    def get_contract(self, project_id: str) -> ProjectRenovation:
+    def get_contract(self, project_id: uuid.UUID) -> ProjectRenovation:
         """获取装修合同信息."""
         self._get_project(project_id)
         return self._get_or_create_renovation(project_id)
 
     def update_contract(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         contract_data: RenovationContractUpdate,
     ) -> ProjectRenovation:
         """更新装修合同信息."""

@@ -4,6 +4,8 @@
 通过L3 ProjectCoreService 查询，不直接操作L3 Model.
 """
 
+import uuid
+
 from sqlalchemy.orm import Session
 
 from schemas.l4_marketing.import_schemas import L3ProjectBriefResponse
@@ -75,7 +77,7 @@ class MarketingQueryService:
 
     def get_l3_project_for_import(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
     ) -> L3ProjectBriefResponse:
         """获取用于导入的L3项目详情.
 
@@ -102,7 +104,7 @@ class MarketingQueryService:
             status=project.status,
         )
 
-    def check_project_exists(self, project_id: str) -> bool:
+    def check_project_exists(self, project_id: uuid.UUID) -> bool:
         """检查项目是否存在.
 
         Args:

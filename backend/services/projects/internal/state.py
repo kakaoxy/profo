@@ -3,6 +3,7 @@
 负责项目状态流转的验证和处理.
 """
 
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
@@ -115,7 +116,7 @@ class ProjectStateManager:
 
     def _handle_sale_status_change(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         new_status: str,
         status_update: ProjectStatusUpdate,
     ) -> None:

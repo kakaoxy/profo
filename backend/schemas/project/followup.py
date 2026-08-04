@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from models.common import FollowUpMethod
 
@@ -21,7 +21,7 @@ class FollowUpBase(BaseModel):
 class FollowUpCreate(FollowUpBase):
     """创建跟进记录请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class FollowUpUpdate(BaseModel):
@@ -36,8 +36,8 @@ class FollowUpUpdate(BaseModel):
 class FollowUpResponse(FollowUpBase):
     """跟进记录响应."""
 
-    id: str = Field(description="跟进记录ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="跟进记录ID")
+    project_id: UUID4 = Field(description="项目ID")
     created_at: datetime
     updated_at: datetime
 

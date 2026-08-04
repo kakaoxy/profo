@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field
 
 from models.common import (
     InvestmentActionType,
@@ -24,7 +24,7 @@ from models.common import (
 class InvestmentCreate(BaseModel):
     """创建跟投记录请求."""
 
-    project_id: str = Field(description="关联项目ID")
+    project_id: UUID4 = Field(description="关联项目ID")
     total_investment: Decimal = Field(gt=0, description="投资总额(元)")
     total_return: Decimal | None = Field(None, description="收益总额(元)")
     remark: str | None = Field(None, description="备注")
@@ -90,13 +90,13 @@ class SubInvestorUpdate(BaseModel):
 class InvestorResponse(BaseModel):
     """投资方响应（含嵌套子投资人）."""
 
-    id: str = Field(description="投资方ID")
-    investment_id: str = Field(description="关联跟投记录ID")
+    id: UUID4 = Field(description="投资方ID")
+    investment_id: UUID4 = Field(description="关联跟投记录ID")
     name: str = Field(description="投资方名称")
     type: InvestorType = Field(description="投资方类型")
     share_ratio: Decimal = Field(description="占比(母:占项目比例; 子:内部占比)")
     invest_amount: Decimal = Field(description="投资金额(元)")
-    parent_id: str | None = Field(None, description="母投资方ID")
+    parent_id: UUID4 | None = Field(None, description="母投资方ID")
     sort_order: int | None = Field(None, description="排序序号")
     remark: str | None = Field(None, description="备注")
     sub_investors: list[InvestorResponse] = Field(default_factory=list, description="子投资人列表")
@@ -152,9 +152,9 @@ class ReturnAdjustmentBatchRequest(BaseModel):
 class ReturnAdjustmentResponse(BaseModel):
     """分配比例调整记录响应."""
 
-    id: str = Field(description="调整记录ID")
-    investment_id: str = Field(description="关联跟投记录ID")
-    investor_id: str = Field(description="关联投资方ID")
+    id: UUID4 = Field(description="调整记录ID")
+    investment_id: UUID4 = Field(description="关联跟投记录ID")
+    investor_id: UUID4 = Field(description="关联投资方ID")
     default_distribution_ratio: Decimal = Field(description="默认分配比例(%)=投资占比")
     adjusted_distribution_ratio: Decimal = Field(description="调整后分配比例(%)")
     adjusted_amount: Decimal = Field(description="调整后收益金额(元)")
@@ -188,7 +188,7 @@ class UnsettleRequest(BaseModel):
 class CopyInvestmentRequest(BaseModel):
     """复制跟投配置到目标项目请求."""
 
-    target_project_id: str = Field(description="目标项目ID")
+    target_project_id: UUID4 = Field(description="目标项目ID")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -202,8 +202,8 @@ class InvestmentLogResponse(BaseModel):
     operator_id / operator_name 为冗余字段，由 Service 层联表 User 填充。
     """
 
-    id: str = Field(description="日志ID")
-    investment_id: str = Field(description="关联跟投记录ID")
+    id: UUID4 = Field(description="日志ID")
+    investment_id: UUID4 = Field(description="关联跟投记录ID")
     action_type: InvestmentActionType = Field(description="操作类型")
     detail: dict = Field(default_factory=dict, description="操作详情(JSON)")
     operator_id: str = Field(
@@ -222,8 +222,8 @@ class InvestmentLogResponse(BaseModel):
 class InvestmentResponse(BaseModel):
     """跟投记录完整响应（详情页）."""
 
-    id: str = Field(description="跟投记录ID")
-    project_id: str = Field(description="关联项目ID")
+    id: UUID4 = Field(description="跟投记录ID")
+    project_id: UUID4 = Field(description="关联项目ID")
     project_code: str = Field(description="项目编号(冗余)")
     project_name: str = Field(description="项目名称(冗余)")
     total_investment: Decimal = Field(description="投资总额(元)")
@@ -245,8 +245,8 @@ class InvestmentResponse(BaseModel):
 class InvestmentListItemResponse(BaseModel):
     """跟投记录列表项响应（精简版）."""
 
-    id: str = Field(description="跟投记录ID")
-    project_id: str = Field(description="关联项目ID")
+    id: UUID4 = Field(description="跟投记录ID")
+    project_id: UUID4 = Field(description="关联项目ID")
     project_code: str = Field(description="项目编号(冗余)")
     project_name: str = Field(description="项目名称(冗余)")
     project_address: str | None = Field(None, description="物业地址(来自关联Project)")

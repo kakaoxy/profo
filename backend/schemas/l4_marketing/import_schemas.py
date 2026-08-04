@@ -5,7 +5,7 @@
 
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from models.common import ProjectStatus, RenovationStage
 from models.marketing.l4_marketing import PhotoCategory
@@ -74,7 +74,7 @@ class L3ProjectImportResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     # 关联信息
-    project_id: str = Field(description="L3项目ID")
+    project_id: UUID4 = Field(description="L3项目ID")
 
     # 小区信息
     community_id: str | None = Field(default=None, description="小区ID（UUID字符串）")

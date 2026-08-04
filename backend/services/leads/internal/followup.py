@@ -62,7 +62,7 @@ class LeadFollowUpService:
             raise ResourceNotFoundError(msg)
 
         db_follow = LeadFollowUp(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             lead_id=lead_id,
             method=method,
             content=content,

@@ -1,5 +1,6 @@
 """装修信息模型."""
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 
@@ -11,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Uuid,
 )
 from sqlalchemy import (
     Enum as SQLEnum,
@@ -25,7 +27,7 @@ class ProjectRenovation(BaseModel):
 
     __tablename__ = "project_renovations"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, comment="项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, unique=True, comment="项目ID(逻辑外键)")
 
     renovation_company: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="合作装修公司")
 
@@ -116,8 +118,8 @@ class RenovationPhoto(BaseModel):
 
     __tablename__ = "renovation_photos"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
-    renovation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="装修记录ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="项目ID(逻辑外键)")
+    renovation_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True, comment="装修记录ID(逻辑外键)")
 
     stage: Mapped[RenovationStage] = mapped_column(
         SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x], create_constraint=True),

@@ -1,6 +1,7 @@
 """财务服务基础设施：db 会话 + 共享校验/缓存方法."""
 
 import logging
+import uuid
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -26,7 +27,7 @@ class _FinanceServiceBase:
         """
         self.db = db
 
-    def sync_financials(self, project_id: str) -> None:
+    def sync_financials(self, project_id: uuid.UUID) -> None:
         """同步计算项目的财务数据，并更新到 Project 表的缓存字段中（独立事务）.
 
         供 facade.sync_project_financials 等外部调用方使用，自带 commit。
@@ -36,7 +37,7 @@ class _FinanceServiceBase:
         self._sync_financial_cache(project_id)
         self.db.commit()
 
-    def _sync_financial_cache(self, project_id: str) -> None:
+    def _sync_financial_cache(self, project_id: uuid.UUID) -> None:
         """聚合流水计算缓存字段并写入 session（不 commit，由调用方负责事务）.
 
         失败时抛出异常，调用方未 commit 则整体回滚。

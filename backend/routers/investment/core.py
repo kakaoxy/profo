@@ -13,6 +13,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
+from pydantic import UUID4
 
 from dependencies.auth import (
     CurrentInternalUserDep,
@@ -172,7 +173,7 @@ def get_investment(
     summary="按项目ID获取跟投详情",
 )
 def get_investment_by_project(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _InvestmentServiceDep,
     _current_user: InvestmentReadPermDep,
 ) -> InvestmentResponse:

@@ -102,7 +102,7 @@ class LeadEvalService:
             raise ResourceNotFoundError(msg)
 
         rec = LeadEvalHistory(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             lead_id=lead_id,
             eval_price=eval_price,
             remark=remark,

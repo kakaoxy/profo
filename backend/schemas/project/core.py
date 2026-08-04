@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
+from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 from models.common import BusinessForm, ProjectStatus, RenovationStage, SettlementStatus
 from schemas.project.contract import SigningMaterial
@@ -206,7 +206,7 @@ class ProjectResponse(BaseModel):
     业务日期字段使用字符串类型 (YYYY-MM-DD) 避免时区问题.
     """
 
-    id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="项目ID")
     name: str | None = Field(None, description="项目名称")
     status: ProjectStatus = Field(description="项目状态")
     created_at: datetime

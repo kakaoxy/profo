@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Request
+from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -27,7 +28,7 @@ _get_db_dep = Depends(get_db)
 def list_documents(
     db: Annotated[Session, _get_db_dep],
     _current_user: ProjectReadPermDep,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
 ) -> list[DocumentResponse]:
     """获取项目文书签收列表.
 
@@ -45,7 +46,7 @@ def create_document(
     payload: DocumentCreate,
     db: Annotated[Session, _get_db_dep],
     _current_user: CurrentInternalUserDep,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
 ) -> DocumentResponse:
     """新增文书."""
     documents_service.assert_project_exists(db, project_id)
@@ -60,7 +61,7 @@ def update_document(
     payload: DocumentUpdate,
     db: Annotated[Session, _get_db_dep],
     _current_user: CurrentInternalUserDep,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     document_id: Annotated[str, Path(description="文书ID")],
 ) -> DocumentResponse:
     """更新文书签收状态/归档日期/名称."""
@@ -76,7 +77,7 @@ def update_document(
 def delete_document(
     db: Annotated[Session, _get_db_dep],
     _current_user: CurrentInternalUserDep,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     document_id: Annotated[str, Path(description="文书ID")],
 ) -> None:
     """删除文书（逻辑删除）."""
@@ -93,7 +94,7 @@ def initialize_documents(
     request: Request,
     db: Annotated[Session, _get_db_dep],
     _current_user: CurrentInternalUserDep,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
 ) -> DocumentInitializeResponse:
     """初始化默认文书清单（幂等）。business_form=None 抛 400."""
     project = documents_service.assert_project_exists(db, project_id)

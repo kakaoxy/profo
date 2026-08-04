@@ -1,5 +1,6 @@
 """认证相关依赖注入函数."""
 
+import uuid
 from collections.abc import Callable
 from typing import Annotated
 
@@ -395,7 +396,7 @@ OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_
 
 def _check_business_identity(
     db: Session,
-    project_id: str,
+    project_id: uuid.UUID,
     code: str,
     user_id: str,
 ) -> bool:
@@ -479,7 +480,7 @@ def require_project_business_permission(
         # 2. 业务身份校验：admin/operator 已通过权限码放行，此处为业务身份兜底。
         #    不限制角色——任意角色（含自定义角色）用户被指派为项目业务负责人即放行。
         project_id = request.path_params.get(project_id_param)
-        if project_id and _check_business_identity(db, str(project_id), code, str(current_user.id)):
+        if project_id and _check_business_identity(db, uuid.UUID(project_id), code, str(current_user.id)):
             return current_user
 
         # 3. 都不通过 → 403
@@ -501,7 +502,7 @@ ProjectSalesAddRecordPermDep = Annotated[
 ]
 
 
-def _check_any_business_identity(db: Session, project_id: str, user_id: str) -> bool:
+def _check_any_business_identity(db: Session, project_id: uuid.UUID, user_id: str) -> bool:
     """业务身份校验：当前用户是否为该项目的装修对接负责人或销售团队成员.
 
     与 `_check_business_identity` 区别：本函数不区分具体权限码前缀，任一业务身份匹配
@@ -585,7 +586,7 @@ def require_project_read_or_business_permission(
 
         # 2. 业务身份校验：被指派为该项目任意业务负责人即放行
         project_id = request.path_params.get(project_id_param)
-        if project_id and _check_any_business_identity(db, str(project_id), str(current_user.id)):
+        if project_id and _check_any_business_identity(db, uuid.UUID(project_id), str(current_user.id)):
             return current_user
 
         # 3. 都不通过 → 403

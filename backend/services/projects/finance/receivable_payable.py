@@ -1,5 +1,6 @@
 """应收应付参考表聚合方法."""
 
+import uuid
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -384,7 +385,7 @@ RECEIVABLE_PAYABLE_METADATA: list[dict[str, object]] = [
 class _ReceivablePayableMixin:
     """应收应付参考表聚合方法."""
 
-    def get_receivable_payable(self, project_id: str) -> ReceivablePayableResponse:
+    def get_receivable_payable(self, project_id: uuid.UUID) -> ReceivablePayableResponse:
         """获取项目应收应付参考表数据（预期金额 vs 实际金额对比）.
 
         预期金额按业务规则计算（签约价/成交价/装修合同/跟投款/固定值），

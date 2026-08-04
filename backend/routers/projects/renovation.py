@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
+from pydantic import UUID4
 
 from dependencies.auth import (
     CurrentAdminUserDep,
@@ -29,7 +30,7 @@ router = APIRouter()
 @limiter.limit(RateLimits.RENOVATION_UPDATE)
 def update_renovation_stage(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     renovation_data: RenovationUpdate,
     service: ProjectServiceDep,
     current_user: ProjectRenovationCompleteStagePermDep,
@@ -45,7 +46,7 @@ def update_renovation_stage(
 @limiter.limit(RateLimits.RENOVATION_UPDATE)
 def update_renovation_stage_date(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     stage: Annotated[RenovationStage, Path(description="改造阶段")],
     payload: RenovationStageDateUpdate,
     service: ProjectServiceDep,
@@ -68,7 +69,7 @@ def update_renovation_stage_date(
 @limiter.limit(RateLimits.RENOVATION_UPDATE)
 def upload_renovation_photo(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     stage: Annotated[str, Query(max_length=100, description="改造阶段")],
     url: Annotated[str, Query(max_length=2000, description="图片URL", pattern=r"^(https?://|/)[^\s]+$")],
     service: ProjectServiceDep,
@@ -94,7 +95,7 @@ def upload_renovation_photo(
 
 @router.get("/{project_id}/renovation/photos")
 def get_renovation_photos(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: ProjectServiceDep,
     _current_user: ProjectReadOrBusinessPermDep,
     stage: Annotated[str | None, Query(max_length=100, description="改造阶段筛选")] = None,
@@ -113,7 +114,7 @@ def get_renovation_photos(
 @limiter.limit(RateLimits.RENOVATION_DELETE)
 def delete_renovation_photo(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     photo_id: Annotated[str, Path(description="照片ID")],
     service: ProjectServiceDep,
     _current_user: ProjectRenovationUploadPhotoPermDep,
@@ -127,7 +128,7 @@ def delete_renovation_photo(
 
 @router.get("/{project_id}/renovation/contract")
 def get_renovation_contract(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: ProjectServiceDep,
     _current_user: ProjectReadOrBusinessPermDep,
 ) -> RenovationContractResponse:
@@ -142,7 +143,7 @@ def get_renovation_contract(
 @limiter.limit(RateLimits.RENOVATION_UPDATE)
 def update_renovation_contract(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     contract_data: RenovationContractUpdate,
     service: ProjectServiceDep,
     current_user: ProjectSalesManageTeamPermDep,

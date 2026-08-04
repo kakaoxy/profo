@@ -3,6 +3,8 @@
 负责项目数据的查询和加载.
 """
 
+import uuid
+
 from sqlalchemy import case, func, text
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
@@ -33,7 +35,7 @@ class ProjectQueryService:
         """
         self.db = db
 
-    def get_by_id(self, project_id: str, *, include_all: bool = False) -> Project:
+    def get_by_id(self, project_id: uuid.UUID, *, include_all: bool = False) -> Project:
         """根据ID获取项目详情.
 
         根据include_all参数决定加载策略：
@@ -91,7 +93,7 @@ class ProjectQueryService:
 
         return project
 
-    def exists(self, project_id: str) -> bool:
+    def exists(self, project_id: uuid.UUID) -> bool:
         """检查项目是否存在.
 
         Args:

@@ -11,7 +11,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field
 
 from models.common import RecordType
 from schemas.user import UserBriefResponse
@@ -64,8 +64,8 @@ class SalesRecordCreate(BaseModel):
 class SalesRecordResponse(BaseModel):
     """销售记录响应 - 兼容 ProjectInteraction 模型字段映射."""
 
-    id: str
-    project_id: str
+    id: UUID4
+    project_id: UUID4
     record_type: RecordType
     customer_name: str | None = Field(None, validation_alias=AliasChoices("customer_name", "interaction_target"))
     customer_phone: str | None = None
@@ -129,7 +129,7 @@ class SaleBase(BaseModel):
 class SaleCreate(SaleBase):
     """创建销售记录请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class SaleUpdate(BaseModel):
@@ -148,8 +148,8 @@ class SaleUpdate(BaseModel):
 class SaleResponse(SaleBase):
     """销售记录响应."""
 
-    id: str = Field(description="销售ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="销售ID")
+    project_id: UUID4 = Field(description="项目ID")
     is_deleted: bool = Field(default=False, description="逻辑删除标记")
     created_at: datetime
     updated_at: datetime
@@ -203,7 +203,7 @@ class InteractionBase(BaseModel):
 class InteractionCreate(InteractionBase):
     """创建互动记录请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class InteractionUpdate(BaseModel):
@@ -219,8 +219,8 @@ class InteractionUpdate(BaseModel):
 class InteractionResponse(InteractionBase):
     """互动记录响应."""
 
-    id: str = Field(description="互动记录ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="互动记录ID")
+    project_id: UUID4 = Field(description="项目ID")
     price: Decimal | None = Field(None, description="出价金额(万)")
     created_at: datetime
     updated_at: datetime
