@@ -83,14 +83,14 @@ export const navMain: NavItem[] = [
     url: "/admin/ledger",
     icon: Wallet,
     items: [
-      { title: "跟投管理", url: "/admin/investments", permission: PERMISSION_CODES.INVESTMENT_READ },
       { title: "资金账本", url: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },
+      { title: "跟投管理", url: "/admin/investments", permission: PERMISSION_CODES.INVESTMENT_READ },
       { title: "科目管理", url: "/admin/ledger/subjects", permission: PERMISSION_CODES.LEDGER_READ },
     ],
   },
   {
     title: "用户管理",
-    url: "#",
+    url: "/admin/users",
     icon: Users,
     roles: [ROLE_CODES.ADMIN],
     permission: PERMISSION_CODES.USER_READ,

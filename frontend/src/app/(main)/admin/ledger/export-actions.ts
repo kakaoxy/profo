@@ -58,6 +58,10 @@ export async function exportProjectLedger(
   projectId: string,
 ): Promise<ActionResult<ArrayBuffer>> {
   try {
+    // 防御性校验：projectId 必须为 UUID，避免路径注入/SSRF
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)) {
+      return { success: false, message: "无效的项目ID" };
+    }
     const token = await getAccessTokenFromCookie();
     // 鉴权守卫：token 缺失时直接拒绝，避免发送无 Authorization 头的请求
     if (!token) {
