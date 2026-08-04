@@ -1,13 +1,14 @@
 # ---- Stage 1: deps ----
-FROM node:20-alpine AS deps
-RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+FROM node:22-alpine AS deps
+RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+# pnpm >=10 从 pnpm-workspace.yaml 读取 overrides/allowBuilds 等配置，必须一并拷贝
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # ---- Stage 2: builder ----
-FROM node:20-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+FROM node:22-alpine AS builder
+RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -25,7 +26,7 @@ ENV PRODUCTION_DOMAIN=${PRODUCTION_DOMAIN}
 RUN pnpm build
 
 # ---- Stage 3: runner ----
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
