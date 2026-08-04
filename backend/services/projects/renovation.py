@@ -330,6 +330,7 @@ class RenovationService:
 
     def get_photos(self, project_id: uuid.UUID, stage: str | None = None) -> list[RenovationPhoto]:
         """获取改造阶段照片."""
+        self._get_project(project_id)
         query = self.db.query(RenovationPhoto).filter(
             RenovationPhoto.project_id == project_id,
             RenovationPhoto.is_deleted.is_(False),

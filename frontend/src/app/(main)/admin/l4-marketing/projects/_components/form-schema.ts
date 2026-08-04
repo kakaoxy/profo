@@ -37,10 +37,10 @@ export const formSchema = z.object({
   project_status: projectStatusSchema,
 
   // 关联 - consultant_id 为 UUID 字符串，对应 User 表的 id 字段
-  consultant_id: z.string().trim().min(1).max(36).optional(),
+  consultant_id: z.string().uuid().optional(),
 
   // 关联L3项目ID（软引用）- 后端期望字符串类型(UUID)
-  project_id: z.string().trim().min(1).max(36).nullable().optional(),
+  project_id: z.string().uuid().nullable().optional(),
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -73,9 +73,9 @@ export const createSchema = z.object({
   project_status: projectStatusSchema.default("在途"),
 
   // 关联字段 - project_id 为字符串类型(UUID)
-  project_id: z.string().trim().min(1).max(36).nullable().optional(),
+  project_id: z.string().uuid().nullable().optional(),
   // consultant_id 为 UUID 字符串，对应 User 表的 id 字段
-  consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
+  consultant_id: z.string().uuid().nullable().optional(),
 });
 
 // 更新表单 Schema - 与后端 L4MarketingProjectUpdate 保持一致
@@ -97,9 +97,9 @@ export const updateSchema = z.object({
   publish_status: publishStatusSchema.optional(),
   project_status: projectStatusSchema.optional(),
   // 关联字段 - project_id 为字符串类型(UUID)
-  project_id: z.string().trim().min(1).max(36).nullable().optional(),
+  project_id: z.string().uuid().nullable().optional(),
   // consultant_id 为 UUID 字符串，对应 User 表的 id 字段
-  consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
+  consultant_id: z.string().uuid().nullable().optional(),
 });
 
 export type CreateValues = z.infer<typeof createSchema>;
