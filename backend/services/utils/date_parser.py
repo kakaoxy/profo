@@ -36,7 +36,7 @@ def parse_date_string(date_value: str | datetime | date | None) -> datetime | No
         for fmt in formats:
             try:
                 return datetime.strptime(date_value.strip(), fmt).replace(tzinfo=timezone.utc)
-            except ValueError:  # noqa: PERF203
+            except ValueError:
                 continue
 
         # 如果都失败了，尝试 ISO 格式

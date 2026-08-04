@@ -24,7 +24,7 @@ class PermissionService:
     def list_permissions(
         self,
         db: Session,
-        filter: PermissionFilter | None = None,  # noqa: A002
+        filter: PermissionFilter | None = None,
         page: int = 1,
         page_size: int | None = None,
     ) -> tuple[int, list[Permission]]:
@@ -181,7 +181,7 @@ class PermissionService:
         # 自提权防护：操作者不能修改自身所属角色的权限集
         # 路由直连调用时传入 operator_id；RoleService.update_role 已在顶部校验，传 None 跳过
         if operator_id is not None:
-            from .role import _assert_operator_not_in_role  # noqa: PLC0415
+            from .role import _assert_operator_not_in_role
 
             _assert_operator_not_in_role(db, operator_id, role_id)
 

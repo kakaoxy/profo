@@ -93,7 +93,7 @@ class ContractNumberGenerator:
             msg = f"无效的 business_form: {business_form}，仅支持 agent/wholesale"
             raise ValueError(msg)
 
-        from models import ProjectContract  # noqa: PLC0415
+        from models import ProjectContract
 
         # 单进程内串行化，减少 IntegrityError 重试
         with _generate_lock:

@@ -14,7 +14,7 @@ def add_project_document_category(engine: Engine) -> None:
     幂等：列已存在则完全跳过（无 ALTER、无 UPDATE）。
     """
     # 延迟导入避免循环依赖：migrations/__init__.py 在 _column_exists 定义前导入本模块
-    from migrations import _column_exists  # noqa: PLC0415
+    from migrations import _column_exists
 
     inspector = inspect(engine)
     if "project_documents" not in inspector.get_table_names():

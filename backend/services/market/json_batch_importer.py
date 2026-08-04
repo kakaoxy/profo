@@ -70,7 +70,7 @@ class JSONBatchImporter:
                             raise ValueError(msg)
                     success += 1
 
-                except ValidationError as e:  # noqa: PERF203
+                except ValidationError as e:
                     failed += 1
                     error_msg = self._format_validation_error(e)
                     errors.append(

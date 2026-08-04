@@ -39,7 +39,7 @@ class Settings(BaseSettings):
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v: Any) -> Any:  # noqa: ANN401
+    def parse_cors_origins(cls, v: Any) -> Any:
         """解析逗号分隔的 CORS 来源字符串为列表."""
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
@@ -52,7 +52,7 @@ class Settings(BaseSettings):
 
     @field_validator("trusted_proxies", mode="before")
     @classmethod
-    def parse_trusted_proxies(cls, v: Any) -> Any:  # noqa: ANN401
+    def parse_trusted_proxies(cls, v: Any) -> Any:
         """解析逗号分隔的可信代理列表为列表.
 
         空字符串/空列表会清空默认值，导致 forwarded_allow_ips="" 时 uvicorn
@@ -68,10 +68,10 @@ class Settings(BaseSettings):
 
     @field_validator("allowed_extensions", "allowed_mime_types", mode="before")
     @classmethod
-    def parse_set_from_json(cls, v: Any) -> Any:  # noqa: ANN401
+    def parse_set_from_json(cls, v: Any) -> Any:
         """解析 JSON 格式的列表/集合环境变量."""
         if isinstance(v, str):
-            import json  # noqa: PLC0415
+            import json
 
             try:
                 # 尝试解析 JSON 数组
@@ -215,7 +215,7 @@ class Settings(BaseSettings):
 # 全局配置实例
 try:
     settings = Settings()
-except Exception as e:  # noqa: BLE001
+except Exception as e:
     # Fail Loud: 打印配置错误后再退出，避免静默失败导致排障困难
-    print(f"[FATAL] 配置加载失败: {e}", file=sys.stderr)  # noqa: T201
+    print(f"[FATAL] 配置加载失败: {e}", file=sys.stderr)
     sys.exit(1)

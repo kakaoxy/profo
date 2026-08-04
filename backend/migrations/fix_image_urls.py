@@ -93,7 +93,7 @@ def run_fix_image_urls(engine: Engine) -> None:
         for col in ("file_url", "thumbnail_url"):
             rows = conn.execute(
                 text(
-                    f"SELECT id, {col} FROM l4_marketing_media WHERE {col} LIKE 'http://%'",  # noqa: S608
+                    f"SELECT id, {col} FROM l4_marketing_media WHERE {col} LIKE 'http://%'",
                 ),
             ).fetchall()
             for row in rows:

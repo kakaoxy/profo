@@ -51,7 +51,7 @@ def _normalize_date(date_string: str) -> str:
     try:
         dt = dateparser.parse(date_string, fuzzy=True)
         return dt.strftime("%Y-%m-%d")
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.warning("日期解析失败，保留原值: %s", date_string)
         return date_string
 
@@ -75,7 +75,7 @@ class CSVBatchImporter:
         for encoding in encodings:
             try:
                 decoded = content.decode(encoding)
-            except UnicodeDecodeError:  # noqa: PERF203
+            except UnicodeDecodeError:
                 continue
             else:
                 logger.info("文件解码成功，使用编码: %s", encoding)
@@ -218,7 +218,7 @@ class CSVBatchImporter:
                                         "error": result.error,
                                     },
                                 )
-                        except Exception as e:  # noqa: PERF203
+                        except Exception as e:
                             batch_failed_count += 1
                             error_msg = f"导入异常: {e!s}"
                             batch_failed_records.append(
@@ -263,7 +263,7 @@ class CSVBatchImporter:
                         )
                         try:
                             self._save_failed_record(original_row, error_msg, db)
-                        except Exception:  # noqa: BLE001
+                        except Exception:
                             logger.warning("保存失败记录时出错: %s", error_msg)
 
             failed_file_url = None
@@ -347,8 +347,8 @@ class CSVBatchImporter:
                         out_row[k] = record["data"].get(k, "")
                     writer.writerow(out_row)
 
-            return f"/api/v1/upload/download/{filename}"  # noqa: TRY300
-
         except Exception:
             logger.exception("生成失败 CSV 出错")
             return None
+        else:
+            return f"/api/v1/upload/download/{filename}"

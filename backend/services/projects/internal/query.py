@@ -245,7 +245,7 @@ class ProjectQueryService:
             项目列表（已预加载 builder 所需关联）
 
         """
-        from models import ProjectRenovation, ProjectSale  # noqa: PLC0415
+        from models import ProjectRenovation, ProjectSale
 
         # 通过 UNION 合并两类业务身份对应的项目 ID（去重），再回查 Project
         # 使用 distinct() 防止一个项目同时命中装修 + 销售身份时返回重复行

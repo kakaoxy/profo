@@ -22,7 +22,7 @@ _BCRYPT_MAX_BYTES = 72
 password_hash = PasswordHash((Argon2Hasher(), BcryptHasher()))
 
 
-def validate_password_strength(password: str) -> tuple[bool, str]:  # noqa: PLR0911
+def validate_password_strength(password: str) -> tuple[bool, str]:
     """验证密码强度.
 
     密码策略:

@@ -41,7 +41,7 @@ class EncryptedString(TypeDecorator):
         if self.plaintext_length is not None and len(value) > self.plaintext_length:
             msg = f"明文长度 {len(value)} 超过限制 {self.plaintext_length}"
             raise ValueError(msg)
-        from utils.crypto import encrypt  # noqa: PLC0415
+        from utils.crypto import encrypt
 
         return encrypt(value)
 
@@ -49,6 +49,6 @@ class EncryptedString(TypeDecorator):
         """从数据库读取时解密."""
         if value is None or value == "":
             return None
-        from utils.crypto import decrypt  # noqa: PLC0415
+        from utils.crypto import decrypt
 
         return decrypt(value)

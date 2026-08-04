@@ -255,40 +255,40 @@ class ProjectCoreService:
                 page=page,
                 page_size=page_size,
             )
-            for project in result["items"]:
-                rows.append(  # noqa: PERF401
-                    [
-                        project.id,
-                        project.name or "",
-                        project.status,
-                        project.community_name or "",
-                        project.address or "",
-                        str(project.area) if project.area else "",
-                        project.layout or "",
-                        project.orientation or "",
-                        project.contract_no or "",
-                        str(project.signing_price) if project.signing_price else "",
-                        project.signing_date or "",
-                        str(project.signing_period) if project.signing_period else "",
-                        str(project.extension_period) if project.extension_period else "",
-                        str(project.extension_rent) if project.extension_rent else "",
-                        project.cost_assumption_type or "",
-                        project.cost_assumption_other or "",
-                        project.planned_handover_date or "",
-                        project.owner_name or "",
-                        project.owner_phone or "",
-                        str(project.list_price) if project.list_price else "",
-                        project.listing_date or "",
-                        str(project.sold_price) if project.sold_price else "",
-                        project.sold_date or "",
-                        str(project.total_income) if project.total_income else "0",
-                        str(project.total_expense) if project.total_expense else "0",
-                        str(project.net_cash_flow) if project.net_cash_flow else "0",
-                        str(project.roi) if project.roi else "0",
-                        project.created_at.strftime("%Y-%m-%d %H:%M:%S") if project.created_at else "",
-                        project.updated_at.strftime("%Y-%m-%d %H:%M:%S") if project.updated_at else "",
-                    ]
-                )
+            rows.extend(
+                [
+                    project.id,
+                    project.name or "",
+                    project.status,
+                    project.community_name or "",
+                    project.address or "",
+                    str(project.area) if project.area else "",
+                    project.layout or "",
+                    project.orientation or "",
+                    project.contract_no or "",
+                    str(project.signing_price) if project.signing_price else "",
+                    project.signing_date or "",
+                    str(project.signing_period) if project.signing_period else "",
+                    str(project.extension_period) if project.extension_period else "",
+                    str(project.extension_rent) if project.extension_rent else "",
+                    project.cost_assumption_type or "",
+                    project.cost_assumption_other or "",
+                    project.planned_handover_date or "",
+                    project.owner_name or "",
+                    project.owner_phone or "",
+                    str(project.list_price) if project.list_price else "",
+                    project.listing_date or "",
+                    str(project.sold_price) if project.sold_price else "",
+                    project.sold_date or "",
+                    str(project.total_income) if project.total_income else "0",
+                    str(project.total_expense) if project.total_expense else "0",
+                    str(project.net_cash_flow) if project.net_cash_flow else "0",
+                    str(project.roi) if project.roi else "0",
+                    project.created_at.strftime("%Y-%m-%d %H:%M:%S") if project.created_at else "",
+                    project.updated_at.strftime("%Y-%m-%d %H:%M:%S") if project.updated_at else "",
+                ]
+                for project in result["items"]
+            )
             # 已遍历完所有页
             if page * page_size >= result["total"]:
                 break

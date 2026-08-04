@@ -42,7 +42,7 @@ _UNCATEGORIZED = "未分类"
 
 
 def build_reports_filter(
-    range: str = "4w",  # noqa: A002
+    range: str = "4w",
     sources: str | None = None,
     business_circles: str | None = None,
     community_name: str | None = None,
@@ -78,7 +78,7 @@ def build_reports_filter(
 
 def apply_reports_filter(
     query: Select,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     *,
     include_time_window: bool = True,
     auto_join_community: bool = True,

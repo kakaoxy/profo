@@ -30,7 +30,7 @@ _RECEIPT_DOWNLOAD_TIMEOUT = 30.0
 _RECEIPT_MAX_BYTES = 50 * 1024 * 1024
 
 
-def _fetch_receipt_bytes(url: str, upload_dir: Path) -> bytes | None:  # noqa: PLR0911
+def _fetch_receipt_bytes(url: str, upload_dir: Path) -> bytes | None:
     """获取票据文件内容.
 
     - OSS URL (以 http 开头): 通过 HTTP 下载（CDN/公开 Bucket 直连）
@@ -366,7 +366,7 @@ class _LedgerMixin:
 
         列：项目编号、小区、地址、项目状态、总收入、总支出、净现金流、ROI(%)、记录数
         """
-        from openpyxl import Workbook  # noqa: PLC0415
+        from openpyxl import Workbook
 
         items = self._list_all_projects_with_stats(
             search=search,

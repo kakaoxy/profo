@@ -57,7 +57,7 @@ _ROOMS_PLUS_THRESHOLD = 4
 
 def compute_price_buckets(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     community_id: str | None = None,
     reference_date: datetime | None = None,
 ) -> list[PriceBucket]:
@@ -207,7 +207,7 @@ def _build_equal_width_bounds(
 
 def _query_buckets_by_bounds(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     bounds: list[tuple[int | None, int | None, str]],
     community_id: str | None = None,
     reference_date: datetime | None = None,
@@ -459,7 +459,7 @@ def compute_floor_breakdown(
     return _finalize_breakdown(groups)
 
 
-def _compute_unit_price(record: Any) -> float | None:  # noqa: ANN401
+def _compute_unit_price(record: Any) -> float | None:
     """计算单条记录的 unit_price = sold_price_wan * 10000 / build_area.
 
     Args:
@@ -483,7 +483,7 @@ def _compute_unit_price(record: Any) -> float | None:  # noqa: ANN401
     return price_value * _WAN_TO_YUAN / area_value
 
 
-def _get_field(record: Any, field: str) -> Any:  # noqa: ANN401
+def _get_field(record: Any, field: str) -> Any:
     """从 dict 或 ORM 对象获取字段值.
 
     Args:

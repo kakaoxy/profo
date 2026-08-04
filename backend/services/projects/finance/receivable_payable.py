@@ -471,7 +471,7 @@ class _ReceivablePayableMixin:
         return ReceivablePayableResponse(items=items)
 
     @staticmethod
-    def _calc_expected_amount(  # noqa: PLR0911
+    def _calc_expected_amount(
         calc_type: str,
         calc_param: object,
         signing_price: Decimal | None,

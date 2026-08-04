@@ -21,7 +21,7 @@ def validate_jwt_secret_key() -> bool:
 
     """
     # 延迟导入，避免在模块加载时就实例化settings
-    from settings import settings  # noqa: PLC0415
+    from settings import settings
 
     secret_key = settings.jwt_secret_key
 
@@ -62,7 +62,7 @@ def validate_jwt_secret_key() -> bool:
 def check_jwt_configuration() -> None:
     """检查JWT配置并在启动时提供有用的提示."""
     # 延迟导入，避免在模块加载时就实例化settings
-    from settings import settings  # noqa: PLC0415
+    from settings import settings
 
     logger.info("检查JWT密钥配置...")
 

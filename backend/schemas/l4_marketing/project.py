@@ -116,11 +116,11 @@ class L4MarketingProjectUpdate(BaseModel):
         if isinstance(v, str):
             try:
                 parsed = json.loads(v)
-                if isinstance(parsed, list):
-                    return [str(item) for item in parsed]
-                return [parsed]  # noqa: TRY300
             except json.JSONDecodeError:
                 return []
+            if isinstance(parsed, list):
+                return [str(item) for item in parsed]
+            return [parsed]
         return []
 
 
@@ -174,7 +174,7 @@ class L4MarketingProjectResponse(BaseModel):
 
     @field_validator("images", "tags", mode="before")
     @classmethod
-    def validate_json_array(cls, v: Any) -> list[str]:  # noqa: ANN401
+    def validate_json_array(cls, v: Any) -> list[str]:
         """验证JSON数组格式字段，将None转换为空列表."""
         if v is None:
             return []
@@ -183,16 +183,16 @@ class L4MarketingProjectResponse(BaseModel):
         if isinstance(v, str):
             try:
                 parsed = json.loads(v)
-                if isinstance(parsed, list):
-                    return parsed
-                return [parsed]  # noqa: TRY300
             except json.JSONDecodeError:
                 return []
+            if isinstance(parsed, list):
+                return parsed
+            return [parsed]
         return []
 
     @field_validator("stage_completed_dates", mode="before")
     @classmethod
-    def validate_stage_completed_dates(cls, v: Any) -> dict[str, str] | None:  # noqa: ANN401
+    def validate_stage_completed_dates(cls, v: Any) -> dict[str, str] | None:
         """验证阶段完成日期字段，兼容 JSON 字符串/None."""
         if v is None:
             return None
@@ -208,7 +208,7 @@ class L4MarketingProjectResponse(BaseModel):
 
     @field_validator("community_id", "consultant_id", mode="before")
     @classmethod
-    def validate_id_fields(cls, v: Any) -> str | None:  # noqa: ANN401
+    def validate_id_fields(cls, v: Any) -> str | None:
         """验证ID字段，支持int和str类型，统一转换为str.
 
         注意: project_id 已移除 — UUID4 类型原生支持 str 输入解析，

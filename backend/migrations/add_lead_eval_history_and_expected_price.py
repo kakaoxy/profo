@@ -24,9 +24,9 @@ def add_lead_eval_history_and_expected_price(engine: Engine) -> None:
       create_all 会一并创建表与索引，checkfirst=True 保证幂等
     """
     # 延迟导入避免循环依赖：migrations/__init__.py 在 _column_exists 定义前导入本模块
-    from migrations import _column_exists  # noqa: PLC0415
-    from models import Base  # noqa: PLC0415
-    from models.lead.lead import LeadEvalHistory  # noqa: PLC0415
+    from migrations import _column_exists
+    from models import Base
+    from models.lead.lead import LeadEvalHistory
 
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())

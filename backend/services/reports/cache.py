@@ -82,7 +82,7 @@ class _PydanticEncoder(json.JSONEncoder):
     反序列化时通过 ``_PYDANTIC_REGISTRY`` 恢复为对应模型实例.
     """
 
-    def default(self, o: Any) -> Any:  # noqa: ANN401
+    def default(self, o: Any) -> Any:
         if isinstance(o, BaseModel):
             return {
                 _PYDANTIC_MARKER: o.__class__.__name__,
@@ -91,7 +91,7 @@ class _PydanticEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-def _pydantic_object_hook(obj: dict[str, Any]) -> Any:  # noqa: ANN401
+def _pydantic_object_hook(obj: dict[str, Any]) -> Any:
     """JSON object_hook: 检测带 ``__pydantic__`` 标记的 dict 并恢复为对应模型实例.
 
     仅当 dict 恰好包含 ``__pydantic__`` 与 ``data`` 两个键时触发,
@@ -105,7 +105,7 @@ def _pydantic_object_hook(obj: dict[str, Any]) -> Any:  # noqa: ANN401
     return obj
 
 
-def _dumps(value: Any) -> bytes:  # noqa: ANN401
+def _dumps(value: Any) -> bytes:
     """将缓存值序列化为 JSON bytes.
 
     Pydantic 模型实例会被包装为 ``{"__pydantic__": "ClassName", "data": {...}}``
@@ -114,7 +114,7 @@ def _dumps(value: Any) -> bytes:  # noqa: ANN401
     return json.dumps(value, cls=_PydanticEncoder, ensure_ascii=False).encode("utf-8")
 
 
-def _loads(data: bytes) -> Any:  # noqa: ANN401
+def _loads(data: bytes) -> Any:
     """从 JSON bytes 反序列化缓存值, 恢复嵌套的 Pydantic 模型实例."""
     return json.loads(data, object_hook=_pydantic_object_hook)
 
@@ -152,7 +152,7 @@ def cached_report(ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> Callable[[Callable
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> T:  # noqa: ANN401
+        def wrapper(*args: Any, **kwargs: Any) -> T:
             # 获取 Redis 客户端：连接失败时降级为直接计算
             # （避免在 threadpool 中 sys.exit 导致 worker 静默死亡）
             try:
@@ -175,7 +175,7 @@ def cached_report(ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> Callable[[Callable
                 if cached is not None:
                     try:
                         return _loads(cached)
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         # 捕获所有反序列化异常（JSONDecodeError/ValidationError/
                         # KeyError 等），删除损坏 key 并回退重算.
                         # 同时兼容历史 pickle 缓存: 切换到 JSON 后首次读取
@@ -242,7 +242,7 @@ def _make_cache_key(args: tuple, kwargs: dict) -> tuple:
     return tuple(key_parts)
 
 
-def _serialize_arg(arg: Any) -> Any:  # noqa: ANN401, PLR0911
+def _serialize_arg(arg: Any) -> Any:
     """将单个参数序列化为可哈希的 key 组件.
 
     Args:

@@ -287,7 +287,7 @@ def _apply_optional_community(query: Select, community_id: str | None) -> Select
     return query
 
 
-def _base_filter_no_status(filter: ReportsFilter) -> ReportsFilter:  # noqa: A002
+def _base_filter_no_status(filter: ReportsFilter) -> ReportsFilter:
     """克隆 filter 并清除 status, 供 KPI/Trend 等多状态聚合使用.
 
     KPI 4 卡片各自统计 sold_count(成交)/on_sale_count(在售), 不受用户 filter.status 影响.
@@ -295,7 +295,7 @@ def _base_filter_no_status(filter: ReportsFilter) -> ReportsFilter:  # noqa: A00
     return filter.model_copy(update={"status": None})
 
 
-def _base_filter_for_comparison(filter: ReportsFilter) -> ReportsFilter:  # noqa: A002
+def _base_filter_for_comparison(filter: ReportsFilter) -> ReportsFilter:
     """克隆 filter 并清除 business_circles, 供多商圈对比使用.
 
     对比接口在 SQL 内通过 `Community.business_circle IN (...)` 限定多个商圈,
@@ -343,7 +343,7 @@ def _get_data_reference_date(
 
 def _get_kpi_data_impl(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     community_id: str | None = None,
     reference_date: datetime | None = None,
 ) -> KpiData:
@@ -423,7 +423,7 @@ def _get_kpi_data_impl(
 
 
 @cached_report()
-def get_kpi_data(db: Session, filter: ReportsFilter) -> KpiData:  # noqa: A002
+def get_kpi_data(db: Session, filter: ReportsFilter) -> KpiData:
     """KPI 4 卡片聚合: sold_count / avg_price_wan / avg_unit_price / on_sale_count.
 
     - 本期/上期同等时间窗口对比
@@ -447,7 +447,7 @@ def get_kpi_data(db: Session, filter: ReportsFilter) -> KpiData:  # noqa: A002
 
 def _compute_trend_dim_breakdown(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     trend_dim: str,
     range_start: datetime,
     now: datetime,
@@ -592,7 +592,7 @@ def _compute_trend_dim_breakdown(
 
 def _get_trend_data_impl(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     trend_dim: str = "overall",
     community_id: str | None = None,
     reference_date: datetime | None = None,
@@ -700,7 +700,7 @@ def _get_trend_data_impl(
 @cached_report()
 def get_trend_data(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     trend_dim: str = "overall",
 ) -> list[TrendDataPoint]:
     """成交趋势.
@@ -727,7 +727,7 @@ def get_trend_data(
 
 def _get_price_distribution_impl(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     community_id: str | None = None,
     reference_date: datetime | None = None,
 ) -> dict:
@@ -749,7 +749,7 @@ def _get_price_distribution_impl(
 
 
 @cached_report()
-def get_price_distribution(db: Session, filter: ReportsFilter) -> dict:  # noqa: A002
+def get_price_distribution(db: Session, filter: ReportsFilter) -> dict:
     """价格分布. 调用 bucketing.compute_price_buckets 或 build_fallback_buckets.
 
     Args:
@@ -776,7 +776,7 @@ def _build_area_expr() -> ColumnElement:
 
 def _get_rooms_distribution_impl(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     community_id: str | None = None,
     reference_date: datetime | None = None,
 ) -> dict:
@@ -842,7 +842,7 @@ def _get_rooms_distribution_impl(
 
 
 @cached_report()
-def get_rooms_distribution(db: Session, filter: ReportsFilter, community_id: str | None = None) -> dict:  # noqa: A002
+def get_rooms_distribution(db: Session, filter: ReportsFilter, community_id: str | None = None) -> dict:
     """户型分布. 按 rooms 分组, >=4 室合并为 "4室+".
 
     Args:
@@ -862,7 +862,7 @@ def get_rooms_distribution(db: Session, filter: ReportsFilter, community_id: str
 
 def _get_floor_distribution_impl(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     community_id: str | None = None,
     reference_date: datetime | None = None,
 ) -> dict:
@@ -923,7 +923,7 @@ def _get_floor_distribution_impl(
 
 
 @cached_report()
-def get_floor_distribution(db: Session, filter: ReportsFilter, community_id: str | None = None) -> dict:  # noqa: A002
+def get_floor_distribution(db: Session, filter: ReportsFilter, community_id: str | None = None) -> dict:
     """楼层分布. 按 floor_level 分组.
 
     Args:
@@ -976,7 +976,7 @@ def _build_bc_match_predicate(business_circles: list[str]) -> ColumnElement:
 @cached_report()
 def get_business_district_rows(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     sort_by: str = "sold_count",
     sort_order: str = "desc",
     page: int = 1,
@@ -1153,7 +1153,7 @@ def get_business_district_rows(
 @cached_report()
 def get_community_rows(
     db: Session,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     min_sold_count: int = 3,
 ) -> dict:
     """小区明细列表. 基于 filter.range + reference_date 动态时间窗口.
@@ -1290,7 +1290,7 @@ def get_community_rows(
 def get_community_detail(
     db: Session,
     community: Community,
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
     trend_dim: str = "overall",
 ) -> dict:
     """小区成交分析详情.
@@ -1357,7 +1357,7 @@ def get_community_detail(
 def get_comparison_data(
     db: Session,
     business_circles: list[str],
-    filter: ReportsFilter,  # noqa: A002
+    filter: ReportsFilter,
 ) -> ComparisonData:
     """多商圈对比. 2-5 个商圈.
 

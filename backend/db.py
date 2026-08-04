@@ -63,7 +63,7 @@ def init_db() -> None:
 
     注意: 这个函数应该在应用启动时调用一次
     """
-    from models import Base  # noqa: PLC0415
+    from models import Base
 
     Base.metadata.create_all(bind=engine)
 
@@ -75,7 +75,7 @@ def drop_all_tables() -> None:
 
     仅用于开发和测试环境
     """
-    from models import Base  # noqa: PLC0415
+    from models import Base
 
     Base.metadata.drop_all(bind=engine)
     logger.warning("⚠️  所有表已删除")

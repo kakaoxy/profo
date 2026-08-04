@@ -22,8 +22,8 @@ def create_wechat_oauth_tables(engine: Engine) -> None:
     checkfirst=True 确保表/索引已存在时跳过。
     创建后清理上次运行残留的过期 state/code 记录。
     """
-    from models import Base  # noqa: PLC0415
-    from models.system import WeChatOAuthState, WeChatTempCode  # noqa: PLC0415
+    from models import Base
+    from models.system import WeChatOAuthState, WeChatTempCode
 
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
@@ -54,8 +54,8 @@ def create_user_roles_table(engine: Engine) -> None:
     表结构由 backend.models.user.user.UserRole 定义，user_id / role_id 均为逻辑外键
     （与 User.role_id 一致，不由数据库 FK 约束强制）。
     """
-    from models import Base  # noqa: PLC0415
-    from models.user import UserRole  # noqa: PLC0415
+    from models import Base
+    from models.user import UserRole
 
     inspector = inspect(engine)
     if "user_roles" in inspector.get_table_names():
@@ -89,13 +89,13 @@ def migrate_permission_system(engine: Engine) -> None:
        为 4 个内置角色分配正确的新权限集，覆盖了所有现有角色。旧 Role.permissions
        JSON 字段保留（向后兼容），但不再使用。
     """
-    import uuid  # noqa: PLC0415
+    import uuid
 
-    from sqlalchemy import bindparam  # noqa: PLC0415
+    from sqlalchemy import bindparam
 
-    from models import Base  # noqa: PLC0415
-    from models.system import OperationLog  # noqa: PLC0415
-    from models.user import Permission, role_permissions  # noqa: PLC0415
+    from models import Base
+    from models.system import OperationLog
+    from models.user import Permission, role_permissions
 
     # 1. 幂等创建三张表
     inspector = inspect(engine)
@@ -110,7 +110,7 @@ def migrate_permission_system(engine: Engine) -> None:
 
     # 1.1 同步 permissioncategory enum 类型（PG enum 类型创建后不会随 Python enum 自动扩展）
     if engine.dialect.name == "postgresql":
-        from models.user.permission import PermissionCategory  # noqa: PLC0415
+        from models.user.permission import PermissionCategory
 
         with engine.connect() as conn:
             type_exists = conn.execute(text("SELECT 1 FROM pg_type WHERE typname = 'permissioncategory'")).scalar()
@@ -227,9 +227,9 @@ def migrate_project_business_permission(engine: Engine) -> None:
 
     幂等性：所有步骤通过 _table_exists/_index_exists/已存在 code 检查跳过。
     """
-    import uuid  # noqa: PLC0415
+    import uuid
 
-    from sqlalchemy import bindparam  # noqa: PLC0415
+    from sqlalchemy import bindparam
 
     # 1. 插入新权限点（跳过已存在的 code）
     new_perm_codes = [

@@ -180,7 +180,7 @@ class ImportTaskService:
                 try:
                     fp.unlink()
                     logger.info("任务文件已清理: %s", task.file_path)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     logger.warning("清理任务文件失败: %s", task.file_path)
 
 
@@ -189,7 +189,7 @@ _import_task_service: ImportTaskService | None = None
 
 def get_import_task_service() -> ImportTaskService:
     """获取导入任务服务实例（单例）."""
-    global _import_task_service  # noqa: PLW0603
+    global _import_task_service
     if _import_task_service is None:
         _import_task_service = ImportTaskService()
     return _import_task_service

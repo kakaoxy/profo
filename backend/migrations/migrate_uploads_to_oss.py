@@ -235,7 +235,7 @@ def _rewrite_simple_url_fields(engine: Engine, oss_base: str) -> int:
                 # table/col 来自硬编码元组，无注入风险；oss_prefix 用绑定参数
                 result = conn.execute(
                     text(
-                        f"UPDATE {table} SET {col} = REPLACE({col}, '/static/uploads/', :oss_prefix) "  # noqa: S608
+                        f"UPDATE {table} SET {col} = REPLACE({col}, '/static/uploads/', :oss_prefix) "
                         f"WHERE {col} LIKE '/static/uploads/%'",
                     ),
                     {"oss_prefix": f"{oss_base}/"},
@@ -270,10 +270,7 @@ def _rewrite_json_array_field(engine: Engine, table: str, column: str, oss_base:
     with engine.begin() as conn:
         # table/column 来自硬编码元组，无注入风险
         rows = conn.execute(
-            text(
-                f"SELECT id, {column} FROM {table} "  # noqa: S608
-                f"WHERE CAST({column} AS text) LIKE :pat"
-            ),
+            text(f"SELECT id, {column} FROM {table} WHERE CAST({column} AS text) LIKE :pat"),
             {"pat": "%/static/uploads/%"},
         ).fetchall()
 
@@ -287,9 +284,7 @@ def _rewrite_json_array_field(engine: Engine, table: str, column: str, oss_base:
                 continue
             # 序列化为 JSON 文本后 CAST 为 json 类型（PG 隐式 text -> json）
             conn.execute(
-                text(
-                    f"UPDATE {table} SET {column} = CAST(:value AS json) WHERE id = :id"  # noqa: S608
-                ),
+                text(f"UPDATE {table} SET {column} = CAST(:value AS json) WHERE id = :id"),
                 {"value": json.dumps(fixed), "id": row[0]},
             )
             rewritten += 1
@@ -317,10 +312,10 @@ def _rewrite_db_urls(engine: Engine, oss_base: str) -> tuple[int, int]:
 def _get_redis_client_safe() -> Redis | None:
     """获取 Redis 客户端，失败返回 None（迁移本身幂等，Redis 故障时正常执行）."""
     try:
-        from utils.redis_client import get_redis_client  # noqa: PLC0415
+        from utils.redis_client import get_redis_client
 
         return get_redis_client()
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.debug("Redis 不可用，无法读写迁移标记，继续执行")
         return None
 
@@ -360,14 +355,14 @@ def migrate_uploads_to_oss(engine: Engine) -> None:
         try:
             if redis_client is not None:
                 redis_client.set(_DB_REWRITE_DONE_KEY, "1")
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("迁移：无法写入 Redis DB 改写标记，下次启动将重新检查")
 
     # 文件上传未完成 → 醒目提示运行带外脚本（不阻塞启动）
     if redis_client is not None:
         try:
             file_uploaded = redis_client.get(_FILE_UPLOAD_DONE_KEY)
-        except Exception:  # noqa: BLE001
+        except Exception:
             file_uploaded = None
         if not file_uploaded:
             logger.warning(
@@ -401,7 +396,7 @@ def upload_local_files_to_oss() -> tuple[int, int]:
             if redis_client.get(_FILE_UPLOAD_DONE_KEY):
                 logger.info("跳过文件上传：已完成（Redis 标记存在）")
                 return 0, 0
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.debug("无法读取文件上传标记，继续执行")
 
     uploaded, skipped = _upload_local_files()
@@ -409,7 +404,7 @@ def upload_local_files_to_oss() -> tuple[int, int]:
     try:
         if redis_client is not None:
             redis_client.set(_FILE_UPLOAD_DONE_KEY, "1")
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.warning("迁移：无法写入 Redis 文件上传标记，下次运行将重新检查")
 
     return uploaded, skipped
@@ -441,7 +436,7 @@ def run_out_of_band_migration(engine: Engine) -> None:
     try:
         if redis_client is not None:
             redis_client.set(_DB_REWRITE_DONE_KEY, "1")
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.warning("迁移：无法写入 Redis DB 改写标记")
 
     logger.info(

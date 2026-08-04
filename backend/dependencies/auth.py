@@ -61,7 +61,7 @@ async def _authenticate_by_api_key(db: DbSessionDep, api_key: str) -> User:
     try:
         # 使用run_in_threadpool调用同步的数据库操作
         user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
-    except Exception:  # noqa: BLE001
+    except Exception:
         msg = "API Key 无效"
         raise AuthenticationError(msg) from None
     # 角色二次校验：仅允许后台内部角色
@@ -271,7 +271,7 @@ def has_permission(user: User, code: str, db: Session) -> bool:
         True 表示拥有权限，False 表示无权限
 
     """
-    from services.system.permission import permission_service  # noqa: PLC0415
+    from services.system.permission import permission_service
 
     perms = permission_service.get_user_permission_codes(db, user)
     return code in perms
@@ -327,7 +327,7 @@ def require_any_permission(codes: list[str]) -> Callable[..., User]:
         db: DbSessionDep,
     ) -> User:
         # 一次性获取权限集合，避免对每个 code 重复查库（N+1）
-        from services.system.permission import permission_service  # noqa: PLC0415
+        from services.system.permission import permission_service
 
         perms = permission_service.get_user_permission_codes(db, user)
         if not (set(codes) & perms):
@@ -413,7 +413,7 @@ def _check_business_identity(
 
     """
     # lazy import 规避 dependencies.auth → models.project → models 循环依赖
-    from models import ProjectRenovation, ProjectSale  # noqa: PLC0415
+    from models import ProjectRenovation, ProjectSale
 
     if code.startswith("project:renovation:"):
         renovation = (
@@ -471,7 +471,7 @@ def require_project_business_permission(
     ) -> User:
         # 1. 权限码校验：子权限码 或 project:write 任一通过即放行
         #    一次性获取权限集合，避免重复查库
-        from services.system.permission import permission_service  # noqa: PLC0415
+        from services.system.permission import permission_service
 
         perms = permission_service.get_user_permission_codes(db, current_user)
         if code in perms or "project:write" in perms:
@@ -518,7 +518,7 @@ def _check_any_business_identity(db: Session, project_id: uuid.UUID, user_id: st
 
     """
     # lazy import 规避 dependencies.auth → models.project → models 循环依赖
-    from models import ProjectRenovation, ProjectSale  # noqa: PLC0415
+    from models import ProjectRenovation, ProjectSale
 
     renovation = (
         db.query(ProjectRenovation)
@@ -578,7 +578,7 @@ def require_project_read_or_business_permission(
     ) -> User:
         # 1. 权限码校验：project:read 或 project:write 任一通过即放行
         #    一次性获取权限集合，避免重复查库
-        from services.system.permission import permission_service  # noqa: PLC0415
+        from services.system.permission import permission_service
 
         perms = permission_service.get_user_permission_codes(db, current_user)
         if "project:read" in perms or "project:write" in perms:
@@ -601,7 +601,7 @@ def require_project_read_or_business_permission(
 ProjectReadOrBusinessPermDep = Annotated[User, Depends(require_project_read_or_business_permission("project_id"))]
 
 
-__all__ = [  # noqa: RUF022
+__all__ = [
     "ApiKeyAuthDep",
     "CurrentActiveUserDep",
     "CurrentAdminUserDep",
@@ -622,8 +622,6 @@ __all__ = [  # noqa: RUF022
     "LedgerReadPermDep",
     "LedgerSettlePermDep",
     "LedgerWritePermDep",
-    "SubjectReadPermDep",
-    "SubjectWritePermDep",
     "OperationLogReadPermDep",
     "PermissionManagePermDep",
     "PermissionReadPermDep",
@@ -643,6 +641,8 @@ __all__ = [  # noqa: RUF022
     "RoleDeletePermDep",
     "RoleReadPermDep",
     "RoleUpdatePermDep",
+    "SubjectReadPermDep",
+    "SubjectWritePermDep",
     "UserCreatePermDep",
     "UserDeletePermDep",
     "UserReadPermDep",
