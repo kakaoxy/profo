@@ -47,34 +47,34 @@ def _is_trusted_proxy(host: str) -> bool:
 def _get_client_ip(request: Request) -> str:
     """获取客户端真实 IP.
 
-    仅当直接连接来自可信代理时才读取 X-Forwarded-For，
-    防止攻击者伪造 XFF 头绕过速率限制。
-    Docker bridge 网络下需通过 TRUSTED_PROXIES 环境变量配置代理网段，
-    否则所有请求将共享代理 IP 对应的限流桶。
-
     XFF 解析采用「从右向左跳过可信代理」策略：
     - 最右侧 IP 由最近一跳可信代理写入（不可被客户端伪造）
     - 持续向左跳过可信代理，第一个非可信 IP 即真实客户端
     - 这避免了「取最左侧 IP」时被攻击者在 XFF 头塞入伪造 IP 绕过限流
       （nginx 默认使用 $proxy_add_x_forwarded_for 会追加而非覆盖客户端 XFF）
+
+    无论 request.client.host 是否为可信代理，只要 XFF 存在就执行解析：
+    Docker 生产环境 uvicorn --forwarded-allow-ips "*" 会用 XFF 最左侧值覆盖
+    request.client.host，此时基于 client_host 的 gate 校验失效；右向左解析
+    可抵御最左侧伪造。部署保证 backend 仅绑定 127.0.0.1（nginx 独占可达），
+    XFF 必经 nginx，故无需再以 client_host 作为信任前置.
     """
     client_host = request.client.host if request.client else "unknown"
-    if _is_trusted_proxy(client_host):
-        xff = request.headers.get("X-Forwarded-For")
-        if xff:
-            # 过滤空条目（如 ", 1.2.3.4" 这种异常输入）
-            ips = [ip.strip() for ip in xff.split(",") if ip.strip()]
-            if ips:
-                # 从右向左跳过可信代理，第一个非可信 IP 即真实客户端
-                for ip in reversed(ips):
-                    if not _is_trusted_proxy(ip):
-                        return ip
-                # XFF 全为可信代理 — 回退到直连 host
-                # 本地开发或单层代理场景下常见（Next.js dev server 转发请求时 XFF
-                # 中只有本地回环 IP），并非真正异常，降级为 DEBUG 避免刷屏。
-                # 真正的 XFF 污染攻击会通过其他机制（限流异常等）发现。
-                logger.debug("XFF all trusted proxies, fallback to client_host: %s", client_host)
-                return client_host
+    xff = request.headers.get("X-Forwarded-For")
+    if xff:
+        # 过滤空条目（如 ", 1.2.3.4" 这种异常输入）
+        ips = [ip.strip() for ip in xff.split(",") if ip.strip()]
+        if ips:
+            # 从右向左跳过可信代理，第一个非可信 IP 即真实客户端
+            for ip in reversed(ips):
+                if not _is_trusted_proxy(ip):
+                    return ip
+            # XFF 全为可信代理 — 回退到直连 host
+            # 本地开发或单层代理场景下常见（Next.js dev server 转发请求时 XFF
+            # 中只有本地回环 IP），并非真正异常，降级为 DEBUG 避免刷屏。
+            # 真正的 XFF 污染攻击会通过其他机制（限流异常等）发现。
+            logger.debug("XFF all trusted proxies, fallback to client_host: %s", client_host)
+            return client_host
     return client_host
 
 

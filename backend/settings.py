@@ -191,6 +191,18 @@ class Settings(BaseSettings):
                 raise ValueError(msg)
         return self
 
+    @model_validator(mode="after")
+    def validate_trusted_proxies_not_empty(self) -> "Settings":
+        """确保 trusted_proxies 非空，防止 forwarded_allow_ips 空值时 uvicorn 信任所有代理.
+
+        parse_trusted_proxies 的 before 校验仅覆盖逗号分隔字符串场景；
+        JSON 数组 "[]" 或编程式传入 [] 会绕过该校验，故追加 after 兜底.
+        """
+        if not self.trusted_proxies:
+            msg = "trusted_proxies 不能为空，请配置至少一个可信代理 IP/CIDR"
+            raise ValueError(msg)
+        return self
+
     class Config:
         """Pydantic Settings 配置类."""
 

@@ -40,8 +40,8 @@ class OperationLogService:
         审计日志写入失败不阻塞主流程（捕获异常并记录 error 日志）。
 
         IP 提取复用 ``utils.common._get_client_ip``，与限流器一致：
-        仅当直连来自可信代理时才读取 X-Forwarded-For，避免 Docker 网关 IP
-        污染审计追溯。
+        XFF 存在时一律从右向左跳过可信代理解析真实客户端 IP，
+        避免 XFF 最左侧伪造污染审计追溯。
 
         Args:
             db: 数据库会话
