@@ -48,4 +48,7 @@ EXPOSE 8000
 # 部署时可通过 docker-compose environment 或 .env 覆盖，无需重建镜像
 ENV WEB_CONCURRENCY=2
 
-CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --proxy-headers: 读取 X-Forwarded-For/Proto（nginx 反代必需）
+# --forwarded-allow-ips "*": 信任所有上游（Docker 网络隔离下仅 nginx 容器可达，安全）
+#   覆盖 uvicorn 默认的 127.0.0.1，使 trusted_proxies 配置在生产生效
+CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

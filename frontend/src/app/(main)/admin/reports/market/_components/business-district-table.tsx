@@ -130,7 +130,7 @@ export function BusinessDistrictTable({
     ],
   );
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table 返回非可记忆函数，React Compiler 会跳过该组件记忆化
+  // TanStack Table 返回非可记忆函数，React Compiler 会跳过该组件记忆化
   const table = useReactTable({
     data: initialItems,
     columns,

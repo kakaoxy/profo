@@ -53,9 +53,17 @@ class Settings(BaseSettings):
     @field_validator("trusted_proxies", mode="before")
     @classmethod
     def parse_trusted_proxies(cls, v: Any) -> Any:  # noqa: ANN401
-        """解析逗号分隔的可信代理列表为列表."""
+        """解析逗号分隔的可信代理列表为列表.
+
+        空字符串/空列表会清空默认值，导致 forwarded_allow_ips="" 时 uvicorn
+        信任所有代理（IP 伪造风险）。此处对空值显式报错，强制用户配置。
+        """
         if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",") if i.strip()]
+            result = [i.strip() for i in v.split(",") if i.strip()]
+            if not result:
+                msg = "trusted_proxies 不能为空，请配置至少一个可信代理 IP/CIDR"
+                raise ValueError(msg)
+            return result
         return v
 
     @field_validator("allowed_extensions", "allowed_mime_types", mode="before")

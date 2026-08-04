@@ -65,7 +65,6 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
   };
 
   // useReactTable 返回函数无法被 React Compiler 安全 memoize，需显式禁用规则
-  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
