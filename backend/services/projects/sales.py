@@ -147,6 +147,7 @@ class SalesService:
 
     def get_records(self, project_id: uuid.UUID, record_type: str | None = None) -> list[dict[str, Any]]:
         """获取销售记录列表（互动记录）."""
+        self._get_project(project_id)
         query = (
             self.db.query(ProjectInteraction)
             .filter(
