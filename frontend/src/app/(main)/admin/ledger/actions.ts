@@ -2,8 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { fetchClient } from "@/lib/api-server";
-import { getAccessTokenFromCookie } from "@/lib/token-refresh-server";
-import { getApiUrl } from "@/lib/config";
 import { extractApiData } from "@/lib/api-helpers";
 import { logger } from "@/lib/logger";
 import type { components, paths } from "@/lib/api-types";
@@ -33,11 +31,6 @@ export interface LedgerListParams {
   project_status?: string;
   page?: number;
   page_size?: number;
-}
-
-export interface LedgerExportParams {
-  search?: string;
-  project_status?: string;
 }
 
 export type ActionResult<T> =
@@ -107,150 +100,10 @@ export async function fetchLedgerStats(): Promise<ActionResult<LedgerStatsRespon
 }
 
 /**
- * 导出资金账本 Excel（返回 ArrayBuffer，客户端转 Blob 下载）
- */
-export async function exportLedger(
-  params: LedgerExportParams = {},
-): Promise<ActionResult<ArrayBuffer>> {
-  try {
-    const token = await getAccessTokenFromCookie();
-    // 鉴权守卫：token 缺失时直接拒绝，避免发送无 Authorization 头的请求
-    if (!token) {
-      return { success: false, message: "未登录或会话已过期，请重新登录" };
-    }
-    const url = new URL(getApiUrl("/api/v1/admin/ledger/export"));
-    if (params.search && params.search.trim()) {
-      url.searchParams.set("search", params.search.trim());
-    }
-    if (params.project_status && params.project_status !== "all") {
-      url.searchParams.set("project_status", params.project_status);
-    }
-
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!res.ok) {
-      const msg = `导出失败 (HTTP ${res.status})`;
-      return { success: false, message: msg };
-    }
-
-    const buffer = await res.arrayBuffer();
-    return { success: true, data: buffer };
-  } catch (e) {
-    logger.error("导出资金账本异常:", e);
-    return { success: false, message: "网络错误，请稍后重试" };
-  }
-}
-
-/**
- * 导出单项目资金账本为 zip（含流水 CSV + 票据图片，返回 ArrayBuffer）
- */
-export async function exportProjectLedger(
-  projectId: string,
-): Promise<ActionResult<ArrayBuffer>> {
-  try {
-    const token = await getAccessTokenFromCookie();
-    // 鉴权守卫：token 缺失时直接拒绝，避免发送无 Authorization 头的请求
-    if (!token) {
-      return { success: false, message: "未登录或会话已过期，请重新登录" };
-    }
-    const url = new URL(
-      getApiUrl(`/api/v1/admin/ledger/${projectId}/export`),
-    );
-
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!res.ok) {
-      const msg = `导出失败 (HTTP ${res.status})`;
-      return { success: false, message: msg };
-    }
-
-    const buffer = await res.arrayBuffer();
-    return { success: true, data: buffer };
-  } catch (e) {
-    logger.error("导出项目资金账本异常:", e);
-    return { success: false, message: "网络错误，请稍后重试" };
-  }
-}
-
-/**
- * 科目数据项（对应后端 FinanceSubjectResponse）
- * ⚠️ 待 pnpm gen-api 后切换回 components["schemas"]["FinanceSubjectResponse"]
- */
-export interface SubjectItem {
-  id: string;
-  name: string;
-  level: string; // "1"-"7"
-  pnl: boolean;
-  modes: string[];
-  stage: string;
-  note: string | null;
-  system: boolean;
-}
-
-/**
- * 获取科目列表（Server Action）
- *
- * @param mode 业务模式筛选: "agent" | "acquire" | undefined(全部)
- */
-export async function fetchSubjects(
-  mode?: "agent" | "acquire",
-): Promise<ActionResult<SubjectItem[]>> {
-  try {
-    const token = await getAccessTokenFromCookie();
-    // 鉴权守卫：token 缺失时直接拒绝
-    if (!token) {
-      return { success: false, message: "未登录或会话已过期，请重新登录" };
-    }
-    const url = new URL(getApiUrl("/api/v1/admin/subjects"));
-    if (mode) {
-      url.searchParams.set("mode", mode);
-    }
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      const msg = `获取科目列表失败 (HTTP ${res.status})`;
-      return { success: false, message: msg };
-    }
-    const data = (await res.json()) as SubjectItem[];
-    return { success: true, data };
-  } catch (e) {
-    logger.error("获取科目列表异常:", e);
-    return { success: false, message: "网络错误，请稍后重试" };
-  }
-}
-
-// ⚠️ 待 pnpm gen-api 后切换回 components["schemas"]["LedgerRecordCreate"]
-// 当前 api-types.d.ts 尚未包含 subject_id/outflow/inflow/payer/payee（Task 5 后端字段）
-export type LedgerRecordCreateInput = {
-  project_id: string;
-  date: string;
-  description?: string | null;
-  receipt_urls?: string[] | null;
-  counterparty_type?: "company" | "individual" | null;
-  // 新字段（主字段）
-  subject_id: string;
-  outflow: number;
-  inflow: number;
-  payer?: string | null;
-  payee?: string | null;
-  // 兼容字段
-  type?: "income" | "expense" | null;
-  category?: string | null;
-  amount?: number | string | null;
-  related_stage?: string | null;
-  counterparty?: string | null;
-};
-
-/**
  * 创建资金账本流水（成功后 revalidatePath 刷新列表）
  */
 export async function createRecord(
-  data: LedgerRecordCreateInput,
+  data: LedgerRecordCreate,
 ): Promise<ActionResult<CashFlowRecordResponse>> {
   const parsed = createRecordSchema.safeParse(data);
   if (!parsed.success) {
@@ -262,8 +115,7 @@ export async function createRecord(
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST("/api/v1/admin/ledger", {
-      // ⚠️ as unknown as: api-types.d.ts 尚未包含新字段，待 gen-api 后移除
-      body: data as unknown as LedgerRecordCreate,
+      body: data,
     });
 
     if (error) {

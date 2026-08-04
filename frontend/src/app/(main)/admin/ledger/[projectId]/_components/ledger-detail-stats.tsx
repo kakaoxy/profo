@@ -1,18 +1,14 @@
-"use client";
-
 import { TrendingUp, TrendingDown, Wallet, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { formatCNY } from "@/lib/formatters";
-import type { LedgerRecord } from "./ledger-detail-table-row";
+import { toNumber } from "@/lib/number-utils";
+import type { components } from "@/lib/api-types";
+
+type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
 
 interface LedgerDetailStatsProps {
-  data: LedgerRecord[];
-}
-
-function toNumber(v: number | null | undefined): number {
-  const n = Number(v);
-  return isNaN(n) ? 0 : n;
+  data: CashFlowRecordResponse[];
 }
 
 /**
@@ -24,8 +20,8 @@ export function LedgerDetailStats({ data }: LedgerDetailStatsProps) {
   let outflow = 0;
   let pnlOut = 0;
   for (const r of data) {
-    const infl = toNumber(r.inflow);
-    const out = toNumber(r.outflow);
+    const infl = toNumber(r.inflow) ?? 0;
+    const out = toNumber(r.outflow) ?? 0;
     inflow += infl;
     outflow += out;
     if (r.subject?.pnl && out > 0) pnlOut += out;

@@ -1,13 +1,11 @@
 import { z } from "zod";
+import type { components } from "@/lib/api-types";
 
 /**
  * 科目管理共享类型 / Zod 校验 / UI 常量
  *
  * 对齐后端 schemas/project/finance.py::FinanceSubjectResponse 与
  * models/common/base.py::SubjectLevel / SubjectStage 枚举。
- *
- * ⚠️未覆盖：api-types.d.ts 尚未生成 /admin/subjects 路径（后端已就绪但未跑 pnpm gen-api），
- * 故在此本地定义类型。待 gen-api 后可切换为 components["schemas"]["FinanceSubjectResponse"]。
  */
 
 /** 业务模式 */
@@ -25,19 +23,7 @@ export type SubjectStage =
 export type SubjectLevel = "1" | "2" | "3" | "4" | "5" | "6" | "7";
 
 /** 科目响应（对齐后端 FinanceSubjectResponse） */
-export interface Subject {
-  id: string;
-  name: string;
-  level: SubjectLevel;
-  pnl: boolean;
-  modes: SubjectMode[];
-  stage: SubjectStage;
-  note: string | null;
-  system: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export type Subject = components["schemas"]["FinanceSubjectResponse"];
 
 /** 创建载荷（对齐后端 FinanceSubjectCreate，system 由后端强制 false） */
 export interface SubjectCreateInput {
@@ -112,7 +98,7 @@ export const LEVEL_PILL_CLASS: Record<SubjectLevel, string> = {
   "1": "bg-red-100 text-red-700 border-red-200",
   "2": "bg-amber-100 text-amber-700 border-amber-200",
   "3": "bg-blue-100 text-blue-700 border-blue-200",
-  "4": "bg-yellow-200 text-yellow-800 border-yellow-300",
+  "4": "bg-orange-100 text-orange-700 border-orange-200",
   "5": "bg-sky-100 text-sky-700 border-sky-200",
   "6": "bg-green-100 text-green-700 border-green-200",
   "7": "bg-purple-100 text-purple-700 border-purple-200",

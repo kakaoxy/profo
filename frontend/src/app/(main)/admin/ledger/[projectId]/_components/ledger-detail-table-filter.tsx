@@ -18,7 +18,7 @@ import type { components } from "@/lib/api-types";
 import {
   fetchSubjects,
   type SubjectItem,
-} from "@/app/(main)/admin/ledger/actions";
+} from "@/app/(main)/admin/ledger/subject-actions";
 
 export type FilterTab = "all" | "in" | "out";
 

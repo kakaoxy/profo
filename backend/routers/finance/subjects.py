@@ -70,9 +70,9 @@ def list_subjects(
     status_code=status.HTTP_201_CREATED,
     summary="创建科目",
 )
-@limiter.limit(RateLimits.PROJECT_CREATE)
+@limiter.limit(RateLimits.SUBJECT_WRITE)
 def create_subject(
-    request: Request,  # noqa: ARG001
+    request: Request,
     data: FinanceSubjectCreate,
     service: _FinanceServiceDep,
     _current_user: SubjectWritePermDep,
@@ -88,9 +88,9 @@ def create_subject(
     "/{subject_id}",
     summary="更新科目",
 )
-@limiter.limit(RateLimits.PROJECT_CREATE)
+@limiter.limit(RateLimits.SUBJECT_WRITE)
 def update_subject(
-    request: Request,  # noqa: ARG001
+    request: Request,
     subject_id: Annotated[str, Path(description="科目ID")],
     data: FinanceSubjectUpdate,
     service: _FinanceServiceDep,
@@ -108,9 +108,9 @@ def update_subject(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除科目",
 )
-@limiter.limit(RateLimits.CASHFLOW_DELETE)
+@limiter.limit(RateLimits.SUBJECT_DELETE)
 def delete_subject(
-    request: Request,  # noqa: ARG001
+    request: Request,
     subject_id: Annotated[str, Path(description="科目ID")],
     service: _FinanceServiceDep,
     _current_user: SubjectWritePermDep,

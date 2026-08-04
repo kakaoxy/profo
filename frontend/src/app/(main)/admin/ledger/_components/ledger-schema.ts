@@ -8,8 +8,6 @@ import { z } from "zod";
  * - api-types.ts::FinanceSettlementChangeRequest / FinanceUnsettleRequest
  *
  * Task 8 重构：subject_id（必填）+ outflow/inflow（互斥）+ payer/payee
- * ⚠️ api-types.d.ts 尚未重新生成，LedgerRecordCreate 类型暂未包含新字段，
- * 待 pnpm gen-api 后切换回 components["schemas"]["LedgerRecordCreate"]。
  *
  * 从 ledger/actions.ts 抽离以遵守单文件 <=500 行约束（参考 leads/_components/lead-schema.ts）。
  */

@@ -4,7 +4,7 @@ import logging
 import re
 import sys
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from pathlib import Path
@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from redis.exceptions import RedisError
 from slowapi.errors import RateLimitExceeded
@@ -77,7 +77,7 @@ def _sanitize_request_id(raw: str | None) -> str:
 
 
 class RequestIDFilter(logging.Filter):
-    """将当前请求 ID 注入日志记录，便于跨 worker 排障（L1 修复）。"""  # noqa: D400, D415
+    """将当前请求 ID 注入日志记录，便于跨 worker 排障（L1 修复）。"""
 
     def filter(self, record: logging.LogRecord) -> bool:
         if not hasattr(record, "request_id"):
@@ -208,13 +208,16 @@ app.add_middleware(SlowAPIMiddleware)
 
 
 @app.middleware("http")
-async def request_id_middleware(request: Request, call_next):  # noqa: ANN001, ANN201
+async def request_id_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     """请求 ID 中间件：为每个请求注入唯一 ID，用于跨 worker 日志关联（L1 修复）。
 
     优先读取上游（nginx/CDN）传入的 X-Request-ID，未提供时生成 UUID。
     对客户端传入的 ID 做白名单校验（字母数字与连字符，长度 1-64），非法时重新生成，
     防止换行/控制字符污染日志。响应头回写 X-Request-ID，便于前端/客户端关联。
-    """  # noqa: D400, D415
+    """
     rid = _sanitize_request_id(request.headers.get("X-Request-ID"))
     token = request_id_var.set(rid)
     try:
@@ -226,13 +229,16 @@ async def request_id_middleware(request: Request, call_next):  # noqa: ANN001, A
 
 
 @app.middleware("http")
-async def csrf_protect(request: Request, call_next):  # noqa: ANN001, ANN201
+async def csrf_protect(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     """CSRF 防护：纯 Cookie 认证的非安全方法请求必须携带 X-Requested-With 头。
 
     Server Actions / API Key 请求使用 Authorization / X-API-Key 头认证，
     不依赖 Cookie，不受此中间件影响。浏览器跨站表单无法设置自定义头，
     因此 X-Requested-With 可有效区分 legitimate 请求与 CSRF 攻击。
-    """  # noqa: D400, D415
+    """
     safe_methods = {"GET", "HEAD", "OPTIONS"}
     if request.method in safe_methods:
         return await call_next(request)
@@ -316,5 +322,5 @@ if __name__ == "__main__":
         port=8000,
         reload=settings.debug,
         proxy_headers=True,
-        forwarded_allow_ips="127.0.0.1",
+        forwarded_allow_ips=",".join(settings.trusted_proxies),
     )

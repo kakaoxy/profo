@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from models.system import OperationLog
 from settings import settings
+from utils.common import _get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,9 @@ class OperationLogService:
 
         审计日志写入失败不阻塞主流程（捕获异常并记录 error 日志）。
 
-        TODO: 当前 IP 提取使用 ``request.client.host`` 简单方案，后续可升级为
-            读取 ``X-Forwarded-For`` 并过滤可信代理（参考 ``utils.common._get_client_ip``）。
+        IP 提取复用 ``utils.common._get_client_ip``，与限流器一致：
+        仅当直连来自可信代理时才读取 X-Forwarded-For，避免 Docker 网关 IP
+        污染审计追溯。
 
         Args:
             db: 数据库会话
@@ -59,7 +61,7 @@ class OperationLogService:
         ip = None
         user_agent = None
         if request:
-            ip = request.client.host if request.client else None
+            ip = _get_client_ip(request)
             user_agent = request.headers.get("user-agent", "")
             # 截断 user_agent 避免超过数据库字段长度限制
             if user_agent and len(user_agent) > USER_AGENT_MAX_LENGTH:

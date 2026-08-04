@@ -36,8 +36,9 @@ import { SettlementDialog } from "./settlement-dialog";
 import { LedgerDetailStats } from "./ledger-detail-stats";
 import { LedgerDetailTableFilter, type FilterTab } from "./ledger-detail-table-filter";
 import { LedgerDetailTableHeader } from "./ledger-detail-table-header";
-import { LedgerDetailTableRow, type LedgerRecord } from "./ledger-detail-table-row";
-import { deleteRecord, exportProjectLedger, updateRecordAction } from "../../actions";
+import { LedgerDetailTableRow } from "./ledger-detail-table-row";
+import { deleteRecord, updateRecordAction } from "../../actions";
+import { exportProjectLedger } from "../../export-actions";
 import type { components } from "@/lib/api-types";
 
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
@@ -97,7 +98,7 @@ function ledgerFilterReducer(
   }
 }
 
-function useLedgerFilters(data: LedgerRecord[]) {
+function useLedgerFilters(data: CashFlowRecordResponse[]) {
   const [state, dispatch] = React.useReducer(
     ledgerFilterReducer,
     initialLedgerFilterState,
@@ -179,7 +180,7 @@ export function LedgerDetailTable({
   settlementStatus,
 }: LedgerDetailTableProps) {
   const router = useRouter();
-  const records = data as unknown as LedgerRecord[];
+  const records = data;
   const {
     filter,
     searchInput,
@@ -193,14 +194,14 @@ export function LedgerDetailTable({
     setVoucherFilter,
   } = useLedgerFilters(records);
   const [deleteTarget, setDeleteTarget] =
-    React.useState<LedgerRecord | null>(null);
+    React.useState<CashFlowRecordResponse | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
   const [showSettlementDialog, setShowSettlementDialog] =
     React.useState(false);
   const [supplementTarget, setSupplementTarget] =
-    React.useState<LedgerRecord | null>(null);
+    React.useState<CashFlowRecordResponse | null>(null);
   const [supplementUrls, setSupplementUrls] = React.useState<string[]>([]);
   const [isSupplementing, setIsSupplementing] = React.useState(false);
   const [supplementUploadKey, setSupplementUploadKey] = React.useState(0);
@@ -251,7 +252,7 @@ export function LedgerDetailTable({
     }
   };
 
-  const openSupplementDialog = (record: LedgerRecord) => {
+  const openSupplementDialog = (record: CashFlowRecordResponse) => {
     setSupplementTarget(record);
     setSupplementUrls([]);
     setSupplementUploadKey((k) => k + 1);

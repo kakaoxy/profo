@@ -18,10 +18,6 @@ export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; message: string };
 
-// ⚠️未覆盖：api-types.d.ts 尚未生成 /admin/subjects 路径（后端已就绪但未跑 pnpm gen-api）。
-// 此处沿用 actions.ts::exportLedger 的 raw fetch + auth header 模式，类型在 subject-schema.ts 本地定义。
-// 待后端启动执行 pnpm gen-api 后，可切换为 openapi-fetch 类型化调用。
-
 async function authHeader(): Promise<string | null> {
   const token = await getAccessTokenFromCookie();
   return token ? `Bearer ${token}` : null;

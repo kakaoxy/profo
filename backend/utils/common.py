@@ -138,6 +138,11 @@ class RateLimits:
     # ==================== 现金流模块 ====================
     CASHFLOW_DELETE = "200/hour"
 
+    # ==================== 科目管理模块 ====================
+    # 科目为财务配置表，写操作低频；删除需更严格限流防误操作
+    SUBJECT_WRITE = "100/hour"
+    SUBJECT_DELETE = "20/hour"
+
     # ==================== 营销管理模块 ====================
     MARKETING_CREATE = "1000/hour"
     MARKETING_UPDATE = "1000/hour"

@@ -4,7 +4,6 @@ import { extractApiData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
 import { HeaderStats } from "./_components/header-stats";
 import { TrendChart } from "./_components/trend-chart";
-import type { CashFlowRecord, CashFlowStats } from "./_components/types";
 import { LedgerDetailHeader } from "./_components/ledger-detail-header";
 import { LedgerDetailTable } from "./_components/ledger-detail-table";
 import { LogsCard } from "./_components/logs-card";
@@ -68,8 +67,8 @@ export default async function LedgerDetailPage({ params }: PageProps) {
     : null;
 
   // 复用 HeaderStats / TrendChart：API 类型与组件 props 结构兼容
-  const stats = ledgerData.summary as CashFlowStats;
-  const records = ledgerData.records as unknown as CashFlowRecord[];
+  // F1: CashFlowStats 已是 CashFlowSummary 别名，无需断言
+  const stats = ledgerData.summary;
 
   return (
     <div className="min-h-screen bg-[#f7f7f8]">
@@ -93,7 +92,7 @@ export default async function LedgerDetailPage({ params }: PageProps) {
 
         {/* 资金流向趋势 */}
         <section>
-          <TrendChart data={records} />
+          <TrendChart data={ledgerData.records} />
         </section>
 
         {/* 操作日志 */}

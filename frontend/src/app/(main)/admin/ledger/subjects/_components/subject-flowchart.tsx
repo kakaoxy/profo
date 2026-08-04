@@ -4,6 +4,16 @@ import { useMemo, useState } from "react";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
   LEVEL_LABELS,
@@ -37,6 +47,7 @@ export function SubjectFlowchart({
   const [editSubj, setEditSubj] = useState<Subject | null>(null);
   const [defaultStage, setDefaultStage] = useState<SubjectStage | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<Subject | null>(null);
 
   const subjects = modeView === "agent" ? agentSubjects : acquireSubjects;
   const stages = STAGE_META[modeView];
@@ -68,22 +79,23 @@ export function SubjectFlowchart({
     setEditOpen(true);
   }
 
-  async function handleDelete(s: Subject): Promise<void> {
+  function handleDelete(s: Subject): void {
     if (s.system) {
       toast.error("系统预置科目不可删除");
       return;
     }
-    if (
-      !window.confirm(
-        `确认删除科目「${s.name}」？已关联流水的科目删除后流水将显示"科目已删除"。`,
-      )
-    )
-      return;
+    setConfirmTarget(s);
+  }
+
+  async function confirmDelete(): Promise<void> {
+    const s = confirmTarget;
+    if (!s) return;
     setDeletingId(s.id);
     try {
       const res = await deleteSubject(s.id);
       if (res.success) {
         toast.success("已删除科目");
+        setConfirmTarget(null);
       } else {
         toast.error(res.message);
       }
@@ -201,6 +213,43 @@ export function SubjectFlowchart({
         defaultStage={defaultStage}
         defaultMode={modeView}
       />
+
+      <AlertDialog
+        open={!!confirmTarget}
+        onOpenChange={(open) => {
+          if (!open && deletingId === null) setConfirmTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              确认删除科目「{confirmTarget?.name}」？
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              已关联流水的科目删除后流水将显示“科目已删除”。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingId !== null}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deletingId !== null}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingId !== null ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  删除中…
+                </>
+              ) : (
+                "确认删除"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

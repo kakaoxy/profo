@@ -6,9 +6,11 @@ import dynamic from "next/dynamic";
 import { safeFormatDate } from "@/lib/formatters";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CashFlowRecord } from "./types";
+import type { components } from "@/lib/api-types";
 import { getChartColors } from "@/lib/chart-colors";
 import type { ChartDataPoint } from "./chart-renderer";
+
+type CashFlowRecord = components["schemas"]["CashFlowRecordResponse"];
 
 // 单一动态导入：将所有 recharts 组件打包到同一 chunk，客户端按需加载（ssr: false）
 const ChartRenderer = dynamic(() => import("./chart-renderer"), {

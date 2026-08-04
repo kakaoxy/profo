@@ -90,7 +90,8 @@ export function SubjectEditDialog({
       name: subject?.name ?? "",
       level: subject?.level ?? "3",
       pnl: subject?.pnl ?? true,
-      modes: subject?.modes ?? [defaultMode ?? "agent"],
+      // FinanceSubjectResponse.modes 为 string[]，表单需 SubjectMode[]，后端保证值为 agent/acquire
+      modes: (subject?.modes as SubjectMode[]) ?? [defaultMode ?? "agent"],
       stage: subject?.stage ?? defaultStage ?? "signing",
       note: subject?.note ?? "",
     });

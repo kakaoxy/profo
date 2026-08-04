@@ -15,50 +15,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { components } from "@/lib/api-types";
+import { toNumber } from "@/lib/number-utils";
 import { LayerPill } from "./layer-pill";
 
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
 
-/**
- * 科目信息（嵌套于流水响应）。
- * ⚠️ api-types.d.ts 尚未重新生成，本地定义对齐后端 FinanceSubjectResponse。
- * 待 pnpm gen-api 后切换为 components["schemas"]["FinanceSubjectResponse"]。
- */
-export interface FinanceSubject {
-  id: string;
-  name: string;
-  level: string;
-  pnl: boolean;
-  modes: string[];
-  stage: string;
-  note: string | null;
-  system: boolean;
-}
-
-/**
- * 资金账本流水记录（Task 5 新字段扩展）。
- * ⚠️ api-types.d.ts 尚未包含 subject_id/outflow/inflow/payer/payee/subject，
- * 在 CashFlowRecordResponse 基础上本地扩展。待 pnpm gen-api 后移除。
- */
-export type LedgerRecord = CashFlowRecordResponse & {
-  subject_id?: string | null;
-  outflow?: number | null;
-  inflow?: number | null;
-  payer?: string | null;
-  payee?: string | null;
-  subject?: FinanceSubject | null;
-};
-
 interface LedgerDetailTableRowProps {
-  record: LedgerRecord;
+  record: CashFlowRecordResponse;
   isSettled: boolean;
-  onDelete: (record: LedgerRecord) => void;
-  onSupplementVoucher: (record: LedgerRecord) => void;
-}
-
-function toNumber(v: number | null | undefined): number {
-  const n = Number(v);
-  return isNaN(n) ? 0 : n;
+  onDelete: (record: CashFlowRecordResponse) => void;
+  onSupplementVoucher: (record: CashFlowRecordResponse) => void;
 }
 
 export function LedgerDetailTableRow({
@@ -68,8 +34,8 @@ export function LedgerDetailTableRow({
   onSupplementVoucher,
 }: LedgerDetailTableRowProps) {
   const hasVoucher = !!(record.receipt_urls && record.receipt_urls.length > 0);
-  const outflow = toNumber(record.outflow);
-  const inflow = toNumber(record.inflow);
+  const outflow = toNumber(record.outflow) ?? 0;
+  const inflow = toNumber(record.inflow) ?? 0;
   const subject = record.subject;
   const summary = record.description || record.remark || "-";
 

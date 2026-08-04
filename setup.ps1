@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Profo 项目初始化脚本（Windows / PowerShell 版）
 
@@ -280,11 +280,17 @@ Write-Step "4/4 初始化管理员"
 function New-TempPassword {
   $alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#`$%^&*"
   $sb = New-Object Text.StringBuilder
+  # 使用 .NET RNG + 拒绝采样消除取模概率偏差（兼容 Windows PowerShell 5.1 / .NET Framework）
   $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
-  $bytes = New-Object byte[] 1
+  $bytes = New-Object byte[] 4
+  $max = [uint32]::MaxValue
+  $limit = [uint32]($max - ($max % $alpha.Length))
   for ($i = 0; $i -lt 16; $i++) {
-    $rng.GetBytes($bytes)
-    $idx = $bytes[0] % $alpha.Length
+    do {
+      $rng.GetBytes($bytes)
+      $val = [BitConverter]::ToUInt32($bytes, 0)
+    } while ($val -ge $limit)
+    $idx = [int]($val % $alpha.Length)
     [void]$sb.Append($alpha[$idx])
   }
   $pw = $sb.ToString()

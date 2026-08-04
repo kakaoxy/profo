@@ -325,7 +325,11 @@ def require_any_permission(codes: list[str]) -> Callable[..., User]:
         user: CurrentActiveUserDep,
         db: DbSessionDep,
     ) -> User:
-        if not any(has_permission(user, code, db) for code in codes):
+        # 一次性获取权限集合，避免对每个 code 重复查库（N+1）
+        from services.system.permission import permission_service  # noqa: PLC0415
+
+        perms = permission_service.get_user_permission_codes(db, user)
+        if not (set(codes) & perms):
             msg = f"权限不足：缺少以下任一权限 {', '.join(codes)}"
             raise PermissionDeniedError(msg)
         return user
@@ -596,7 +600,7 @@ def require_project_read_or_business_permission(
 ProjectReadOrBusinessPermDep = Annotated[User, Depends(require_project_read_or_business_permission("project_id"))]
 
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     "ApiKeyAuthDep",
     "CurrentActiveUserDep",
     "CurrentAdminUserDep",
