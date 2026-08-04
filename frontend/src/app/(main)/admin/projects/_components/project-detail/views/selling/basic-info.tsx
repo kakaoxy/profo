@@ -64,25 +64,25 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
       <div className="flex flex-col md:flex-row">
         
         {/* 左侧：核心价格区 (35% 宽度) - 高亮背景 */}
-        <div className="w-full md:w-[35%] bg-linear-to-br from-error/5 to-status-pending/5 p-6 flex flex-col justify-center border-b md:border-b-0 md:border-r border-border relative overflow-hidden group">
+        <div className="w-full md:w-[35%] bg-linear-to-br from-money-positive/5 to-status-pending/5 p-6 flex flex-col justify-center border-b md:border-b-0 md:border-r border-border relative overflow-hidden group">
           {/* 背景装饰印花 */}
-          <Coins className="absolute -right-4 -bottom-4 w-24 h-24 text-error/10 rotate-12 group-hover:rotate-0 transition-transform duration-500" />
-          
+          <Coins className="absolute -right-4 -bottom-4 w-24 h-24 text-money-positive/10 rotate-12 group-hover:rotate-0 transition-transform duration-500" />
+
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
-              <span className="bg-error/10 text-error text-[10px] px-2 py-0.5 rounded-full font-bold">
+              <span className="bg-money-positive/10 text-money-positive text-[10px] px-2 py-0.5 rounded-full font-bold">
                 挂牌价
               </span>
               <span className="text-xs text-muted-foreground">
                 {unitPrice > 0 ? `单价 ${unitPrice.toLocaleString()} 元/m²` : ""}
               </span>
             </div>
-            
+
             <div className="flex items-baseline gap-1.5 overflow-hidden">
-              <span className="text-4xl lg:text-5xl font-extrabold text-error tracking-tight">
+              <span className="text-4xl lg:text-5xl font-extrabold text-money-positive tracking-tight">
                 {project.list_price || "-"}
               </span>
-              <span className="text-lg text-error font-medium">万</span>
+              <span className="text-lg text-money-positive font-medium">万</span>
             </div>
 
             {/* 涨跌幅模拟占位 (未来可接真实数据) */}

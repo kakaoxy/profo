@@ -24,9 +24,9 @@ interface LedgerTableProps {
 function NetCashFlowCell({ value }: { value: number }) {
   const colorClass =
     value > 0
-      ? "text-red-600 dark:text-red-400"
+      ? "text-money-positive"
       : value < 0
-        ? "text-emerald-600 dark:text-emerald-400"
+        ? "text-money-negative"
         : "text-muted-foreground";
   return (
     <span className={`font-mono text-sm font-medium tabular-nums ${colorClass}`}>
@@ -38,9 +38,9 @@ function NetCashFlowCell({ value }: { value: number }) {
 function RoiCell({ ratio }: { ratio: number }) {
   const colorClass =
     ratio > 0
-      ? "text-red-600 dark:text-red-400"
+      ? "text-money-positive"
       : ratio < 0
-        ? "text-emerald-600 dark:text-emerald-400"
+        ? "text-money-negative"
         : "text-muted-foreground";
   return (
     <span className={`font-mono text-sm font-semibold tabular-nums ${colorClass}`}>

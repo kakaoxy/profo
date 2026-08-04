@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/popover";
 import { ImageUpload } from "@/components/common/image-upload";
 import type { ImageItem } from "@/components/common/image-upload";
-import { ReceivablePayableTable } from "@/components/finance/receivable-payable-table";
+// ⚠️ 应收应付模块暂停：恢复时取消下方注释
+// import { ReceivablePayableTable } from "@/components/finance/receivable-payable-table";
 import { SubjectSelectPanel } from "@/app/(main)/admin/ledger/_components/subject-select-panel";
 
 import { createRecord } from "@/app/(main)/admin/ledger/actions";
@@ -47,7 +48,8 @@ export function RecordDialog({
   businessForm,
 }: RecordDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showReceivablePayable, setShowReceivablePayable] = useState(false);
+  // ⚠️ 应收应付模块暂停：恢复时取消下方注释
+  // const [showReceivablePayable, setShowReceivablePayable] = useState(false);
 
   // 表单状态（Task 8 重构：subject_id + outflow/inflow + payer/payee）
   const [subjectId, setSubjectId] = useState("");
@@ -76,7 +78,7 @@ export function RecordDialog({
       setNotes("");
       setErrors({});
       setUploadKey((k) => k + 1);
-      setShowReceivablePayable(false);
+      // setShowReceivablePayable(false); // ⚠️ 应收应付模块暂停
     }
   }, [isOpen]);
 
@@ -87,14 +89,15 @@ export function RecordDialog({
     setReceiptUrls(urls);
   }, []);
 
-  // type 从 outflow/inflow 推导（供 ReceivablePayableTable 联动使用）
-  // outflow > 0 → expense, inflow > 0 → income, 默认 expense
-  const derivedType: "expense" | "income" = useMemo(() => {
-    const out = Number(outflow) || 0;
-    const infl = Number(inflow) || 0;
-    if (infl > 0 && out <= 0) return "income";
-    return "expense";
-  }, [outflow, inflow]);
+  // ⚠️ 应收应付模块暂停：恢复时取消下方注释（derivedType 供 ReceivablePayableTable 联动）
+  // // type 从 outflow/inflow 推导（供 ReceivablePayableTable 联动使用）
+  // // outflow > 0 → expense, inflow > 0 → income, 默认 expense
+  // const derivedType: "expense" | "income" = useMemo(() => {
+  //   const out = Number(outflow) || 0;
+  //   const infl = Number(inflow) || 0;
+  //   if (infl > 0 && out <= 0) return "income";
+  //   return "expense";
+  // }, [outflow, inflow]);
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -184,10 +187,13 @@ export function RecordDialog({
         />
       </div>
 
-      {/* 2. 流出/流入双字段（互斥：一个 > 0 时另一个必须 = 0） */}
+      {/* 2. 流出/流入双字段（互斥：一个 > 0 时另一个必须 = 0）
+          颜色规则（中国习惯）：流出绿色、流入红色 */}
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <Label className="text-xs text-muted-foreground">流出金额 (元)</Label>
+          <Label className="text-xs text-muted-foreground">
+            <span className="text-money-negative font-medium">流出金额</span> (元)
+          </Label>
           <div className="flex items-stretch rounded-lg border border-border overflow-hidden bg-card focus-within:border-ink focus-within:ring-1 focus-within:ring-ink/20 transition-[border-color,box-shadow]">
             <span className="flex items-center px-3 bg-fog text-graphite text-sm font-semibold border-r border-border">
               ¥
@@ -201,12 +207,14 @@ export function RecordDialog({
               value={outflow}
               onChange={(e) => setOutflow(e.target.value)}
               autoComplete="off"
-              className="border-0 rounded-none focus-visible:ring-0 font-mono tabular-nums text-error"
+              className="border-0 rounded-none focus-visible:ring-0 font-mono tabular-nums text-money-negative"
             />
           </div>
         </div>
         <div className="grid gap-2">
-          <Label className="text-xs text-muted-foreground">流入金额 (元)</Label>
+          <Label className="text-xs text-muted-foreground">
+            <span className="text-money-positive font-medium">流入金额</span> (元)
+          </Label>
           <div className="flex items-stretch rounded-lg border border-border overflow-hidden bg-card focus-within:border-ink focus-within:ring-1 focus-within:ring-ink/20 transition-[border-color,box-shadow]">
             <span className="flex items-center px-3 bg-fog text-graphite text-sm font-semibold border-r border-border">
               ¥
@@ -220,7 +228,7 @@ export function RecordDialog({
               value={inflow}
               onChange={(e) => setInflow(e.target.value)}
               autoComplete="off"
-              className="border-0 rounded-none focus-visible:ring-0 font-mono tabular-nums text-success"
+              className="border-0 rounded-none focus-visible:ring-0 font-mono tabular-nums text-money-positive"
             />
           </div>
         </div>
@@ -318,76 +326,29 @@ export function RecordDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent
-        className={cn(
-          "sm:max-w-[450px] rounded-[20px]",
-          showReceivablePayable && "sm:max-w-[1000px]",
-        )}
-      >
+      {/* ⚠️ 应收应付模块暂停开放：因科目调整导致数据不准，待后续迭代完成再恢复
+          保留 showReceivablePayable state、derivedType、ReceivablePayableTable import 以便恢复 */}
+      <DialogContent className="sm:max-w-[450px] rounded-[20px]">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-[17px] font-medium tracking-[-0.009em] text-ink">
-              记一笔
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              type="button"
-              onClick={() => setShowReceivablePayable((v) => !v)}
-              className={cn(
-                "rounded-full text-[13px] font-medium tracking-[-0.009em] text-ink",
-                showReceivablePayable ? "bg-fog" : "hover:bg-fog",
-              )}
-            >
-              应收应付
-            </Button>
-          </div>
+          <DialogTitle className="text-[17px] font-medium tracking-[-0.009em] text-ink">
+            记一笔
+          </DialogTitle>
         </DialogHeader>
 
-        {showReceivablePayable ? (
-          <div className="flex gap-6">
-            <div className="w-[480px] shrink-0 border-r border-dove/30 pr-6 overflow-hidden">
-              <ReceivablePayableTable
-                projectId={projectId}
-                transactionType={derivedType}
-                businessForm={businessForm}
-              />
-            </div>
-            <div className="w-[450px] shrink-0">
-              {formContent}
-              <DialogFooter>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="w-full bg-ink text-white shadow-sm transition-[background-color,transform] hover:bg-ink/90 active:scale-[0.98] rounded-full"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "确认记账"
-                  )}
-                </Button>
-              </DialogFooter>
-            </div>
-          </div>
-        ) : (
-          <>
-            {formContent}
-            <DialogFooter>
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full bg-ink text-white shadow-sm transition-[background-color,transform] hover:bg-ink/90 active:scale-[0.98] rounded-full"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "确认记账"
-                )}
-              </Button>
-            </DialogFooter>
-          </>
-        )}
+        {formContent}
+        <DialogFooter>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full bg-ink text-white shadow-sm transition-[background-color,transform] hover:bg-ink/90 active:scale-[0.98] rounded-full"
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "确认记账"
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -47,15 +47,6 @@ export function LedgerDetailTableRow({
           {record.date ? safeFormatDate(record.date, "yyyy-MM-dd") : "-"}
         </span>
       </TableCell>
-      {/* 摘要 */}
-      <TableCell className="px-4 py-3">
-        <span
-          className="text-foreground truncate block"
-          title={summary}
-        >
-          {summary}
-        </span>
-      </TableCell>
       {/* 科目分类（名称 + LayerPill） */}
       <TableCell className="px-4 py-3">
         {subject ? (
@@ -90,20 +81,20 @@ export function LedgerDetailTableRow({
           {record.payee || "-"}
         </span>
       </TableCell>
-      {/* 流出 */}
+      {/* 流出（绿色，中国习惯） */}
       <TableCell className="px-4 py-3 text-right">
         {outflow > 0 ? (
-          <span className="font-mono font-medium text-sm tabular-nums text-error">
+          <span className="font-mono font-medium text-sm tabular-nums text-money-negative">
             −{formatCNY(outflow)}
           </span>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
-      {/* 流入 */}
+      {/* 流入（红色，中国习惯） */}
       <TableCell className="px-4 py-3 text-right">
         {inflow > 0 ? (
-          <span className="font-mono font-medium text-sm tabular-nums text-success">
+          <span className="font-mono font-medium text-sm tabular-nums text-money-positive">
             +{formatCNY(inflow)}
           </span>
         ) : (
@@ -154,6 +145,15 @@ export function LedgerDetailTableRow({
             缺凭证
           </Badge>
         )}
+      </TableCell>
+      {/* 摘要（移至凭证和操作之间） */}
+      <TableCell className="px-4 py-3">
+        <span
+          className="text-foreground truncate block"
+          title={summary}
+        >
+          {summary}
+        </span>
       </TableCell>
       {/* 操作 */}
       <TableCell className="px-4 py-3 text-center">

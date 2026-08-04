@@ -77,18 +77,18 @@ export function HeroMetrics({ project }: { project: Project }) {
       {/* 卡片 1：净利润 */}
       <Card className="bg-error-container/50 border-error/30 shadow-sm transition-all hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-red-800">
+          <CardTitle className="text-sm font-medium text-money-positive">
             净利润 (Net Profit)
           </CardTitle>
-          <Wallet className="h-4 w-4 text-error" />
+          <Wallet className="h-4 w-4 text-money-positive" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-extrabold text-error tracking-tight font-mono">
+          <div className={`text-2xl font-extrabold tracking-tight font-mono ${netProfit >= 0 ? "text-money-positive" : "text-money-negative"}`}>
             {netProfit > 0 ? "+" : ""}
             {(netProfit / 10000).toFixed(2)}{" "}
             <span className="text-sm font-bold">万</span>
           </div>
-          <p className="text-xs text-red-700/60 mt-1">
+          <p className="text-xs text-money-positive/60 mt-1">
             真实净现金流
           </p>
         </CardContent>

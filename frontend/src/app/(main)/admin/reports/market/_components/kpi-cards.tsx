@@ -64,9 +64,9 @@ const CARDS: readonly CardConfig[] = [
 function qoqColorClass(direction: QoqDirection): string {
   switch (direction) {
     case "up":
-      return "text-red-600 dark:text-red-400";
+      return "text-money-positive";
     case "down":
-      return "text-emerald-600 dark:text-emerald-400";
+      return "text-money-negative";
     default:
       return "text-muted-foreground";
   }

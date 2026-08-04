@@ -89,13 +89,13 @@ export function LedgerDetailTableFilter({
           </TabsTrigger>
           <TabsTrigger
             value="in"
-            className="text-xs h-7 text-success data-[state=active]:text-success"
+            className="text-xs h-7 text-money-positive data-[state=active]:text-money-positive"
           >
             仅流入
           </TabsTrigger>
           <TabsTrigger
             value="out"
-            className="text-xs h-7 text-error data-[state=active]:text-error"
+            className="text-xs h-7 text-money-negative data-[state=active]:text-money-negative"
           >
             仅流出
           </TabsTrigger>

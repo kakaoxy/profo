@@ -63,13 +63,13 @@ export function StageCashflowTimeline({
                     <div className="space-y-2 text-sm">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-graphite">流入</span>
-                        <span className="tabular-nums text-success">
+                        <span className="tabular-nums text-money-positive">
                           +{formatCurrency(s.inflow)}
                         </span>
                       </div>
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-graphite">流出</span>
-                        <span className="tabular-nums text-error">
+                        <span className="tabular-nums text-money-negative">
                           −{formatCurrency(s.outflow)}
                         </span>
                       </div>
@@ -78,7 +78,7 @@ export function StageCashflowTimeline({
                         <span
                           className={cn(
                             "tabular-nums font-medium",
-                            (s.net ?? 0) >= 0 ? "text-success" : "text-error",
+                            (s.net ?? 0) >= 0 ? "text-money-positive" : "text-money-negative",
                           )}
                         >
                           {(s.net ?? 0) >= 0 ? "+" : "−"}
@@ -110,11 +110,11 @@ export function StageCashflowTimeline({
         {/* 图例 */}
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-graphite">
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-success" />
+            <span className="w-2 h-2 rounded-full bg-money-positive" />
             流入(收入/配对回退/融资流入)
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-error" />
+            <span className="w-2 h-2 rounded-full bg-money-negative" />
             流出(支出/税费)
           </span>
         </div>
