@@ -345,9 +345,37 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
     - 幂等：通过 ``information_schema.columns.data_type`` 判断，已是 ``uuid`` 则跳过
     - 非 PG 后端（开发/测试 SQLite 等）直接跳过（SQLite 无独立 uuid 类型）
     - 表名/列名来自可信模型元数据；DDL 不支持绑定参数故字符串拼接
+
+    预检行为:
+        在执行 ALTER 之前，对所有待迁移列（模型层为 Uuid 但 PG 实际类型非 uuid）扫描
+        存量值。若任一列存在非 UUID 字符串（空串、非标准格式、legacy 整数 ID 等），
+        本函数 **不自动清理**，而是 fail-loud（raise RuntimeError）输出结构化报告，
+        由人工清理后再重启。NULL 值（在可空列上）视为合法（``NULL::uuid`` 转换安全）。
+
+    失败处置流程:
+        1. 启动日志中查找 ``RuntimeError: UUID 迁移预检失败`` 报告
+        2. 根据报告中的表名/列名/样例值，定位存量数据来源（legacy 系统、手工录入等）
+        3. 编写清洗 SQL 修正或删除非法值::
+
+               UPDATE <table> SET <col> = NULL
+               WHERE <col> IS NOT NULL
+               AND <col>::text !~* '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
+
+        4. 重新启动应用，确认预检通过并完成迁移
+
+    回滚指南:
+        如需从 uuid 类型回退到 varchar(36)（不推荐，仅在紧急情况下使用）::
+
+            ALTER TABLE <table> ALTER COLUMN <col> TYPE varchar(36) USING <col>::text;
+
+        回退后还需将模型层 ``Mapped[uuid.UUID]`` 改回
+        ``Mapped[str] = mapped_column(String(36), ...)`` 并移除本迁移函数的调用，
+        否则下次启动会再次迁移为 uuid。
     """
     if engine.dialect.name != "postgresql":
         return
+
+    import time  # noqa: PLC0415
 
     from sqlalchemy import Uuid  # noqa: PLC0415
 
@@ -356,7 +384,9 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
 
-    migrated = 0
+    # 收集待迁移列：模型层为 Uuid 且 PG 表存在且实际类型非 uuid
+    pending: list[tuple[str, str]] = []
+    skipped = 0
     for table_name, table in Base.metadata.tables.items():
         if table_name not in existing_tables:
             continue
@@ -374,17 +404,82 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
             if row is None:
                 continue
             if row[0] == "uuid":
+                skipped += 1
                 continue
-            logger.info("迁移：%s.%s → uuid（当前类型 %s）", table_name, column.name, row[0])
-            # 表名/列名来自可信模型元数据；DDL 不支持绑定参数
-            alter_sql = (
-                "ALTER TABLE " + table_name + " "
-                "ALTER COLUMN " + column.name + " TYPE uuid "
-                "USING " + column.name + "::uuid"
+            pending.append((table_name, column.name))
+
+    if not pending:
+        logger.info("迁移：uuid 列无需处理 skipped=%d migrated=0 total=0", skipped)
+        return
+
+    # 预检：扫描所有待迁移列的存量值，发现非 UUID 字符串则 fail-loud
+    # 标准 UUID 格式：8-4-4-4-12 hex（大小写不敏感，兼容历史大写存量）
+    # NULL 通过 IS NOT NULL 排除，可空列的 NULL 视为合法（NULL::uuid 转换安全）
+    uuid_regex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    violations: list[str] = []
+    for table_name, column_name in pending:
+        # 表名/列名来自可信模型元数据；regex 通过绑定参数传递避免注入
+        with engine.connect() as conn:
+            bad_count_row = conn.execute(
+                text(
+                    f"SELECT count(*) FROM {table_name} "  # noqa: S608
+                    f"WHERE {column_name} IS NOT NULL "
+                    f"AND {column_name}::text !~* :regex",
+                ),
+                {"regex": uuid_regex},
+            ).first()
+            bad_count = bad_count_row[0] if bad_count_row else 0
+            if bad_count == 0:
+                continue
+            # 收集前 5 个样例值供人工排查
+            sample_rows = conn.execute(
+                text(
+                    f"SELECT {column_name} FROM {table_name} "  # noqa: S608
+                    f"WHERE {column_name} IS NOT NULL "
+                    f"AND {column_name}::text !~* :regex LIMIT 5",
+                ),
+                {"regex": uuid_regex},
+            ).all()
+            samples = [str(r[0]) for r in sample_rows]
+            violations.append(
+                f"  - {table_name}.{column_name}: {bad_count} 行非法值，样例: {samples}",
             )
+
+    if violations:
+        msg = (
+            "UUID 迁移预检失败：以下列存在非 UUID 字符串存量值，"
+            "无法安全 ALTER COLUMN ... TYPE uuid USING col::uuid。\n"
+            "请人工清理后再重启应用（详见本函数 docstring 的「失败处置流程」）：\n" + "\n".join(violations),
+        )
+        raise RuntimeError(msg)
+
+    logger.info("迁移：uuid 预检通过，%d 列待迁移（skipped=%d）", len(pending), skipped)
+
+    # 执行 ALTER（既有逻辑）
+    start = time.perf_counter()
+    migrated = 0
+    failed = 0
+    for table_name, column_name in pending:
+        logger.info("迁移：%s.%s → uuid", table_name, column_name)
+        # 表名/列名来自可信模型元数据；DDL 不支持绑定参数
+        alter_sql = (
+            "ALTER TABLE " + table_name + " ALTER COLUMN " + column_name + " TYPE uuid USING " + column_name + "::uuid"
+        )
+        try:
             with engine.begin() as conn:
                 conn.execute(text(alter_sql))
             migrated += 1
+        except Exception:
+            failed += 1
+            logger.exception("迁移：%s.%s → uuid 失败", table_name, column_name)
+            raise
 
-    if migrated:
-        logger.info("迁移：共 %d 个列转为 uuid", migrated)
+    elapsed_ms = int((time.perf_counter() - start) * 1000)
+    logger.info(
+        "迁移：uuid 完成 migrated=%d skipped=%d failed=%d total=%d elapsed_ms=%d",
+        migrated,
+        skipped,
+        failed,
+        len(pending),
+        elapsed_ms,
+    )
