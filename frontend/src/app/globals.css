@@ -52,6 +52,10 @@
   --color-error-container: var(--error-container);
   --shadow-card: var(--shadow-card);
 
+  /* Money semantic colors — 红正绿负（中国习惯） */
+  --color-money-positive: var(--money-positive);
+  --color-money-negative: var(--money-negative);
+
   /* Status Colors */
   --color-status-pending: var(--status-pending);
   --color-status-visit: var(--status-visit);
@@ -160,6 +164,10 @@
   --primary-container: #e6f0f7;
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
+  /* Money semantic colors - Light Mode (中国习惯: 红=正向, 绿=负向) */
+  --money-positive: #ef4444;   /* 红 = 流入/盈利/上涨 */
+  --money-negative: #10b981;   /* 绿 = 流出/亏损/下跌 */
+
   /* Status Colors - Light Mode */
   --status-pending: #d946ef;
   --status-visit: #0891b2;
@@ -229,6 +237,10 @@
   --error-container: oklch(0.279 0.041 260.031);
   --primary-container: oklch(0.2 0.03 260.031);
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+
+  /* Money semantic colors - Dark Mode */
+  --money-positive: #f87171;
+  --money-negative: #34d399;
 
   /* Status Colors - Dark Mode */
   --status-pending: #e879f9;

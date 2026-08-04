@@ -28,34 +28,35 @@ export function LedgerDetailStats({ data }: LedgerDetailStatsProps) {
   }
   const net = inflow - outflow;
 
+  // 颜色规则（中国习惯）：流入红、流出绿；净现金流净额为流入口径 → 正数红、负数绿
   const cards = [
     {
       label: "流入合计",
       value: `+${formatCNY(inflow)}`,
       icon: TrendingUp,
       iconBg: "bg-emerald-500",
-      valueClass: "text-success",
+      valueClass: "text-money-positive",
     },
     {
       label: "流出合计",
       value: `−${formatCNY(outflow)}`,
       icon: TrendingDown,
       iconBg: "bg-amber-500",
-      valueClass: "text-error",
+      valueClass: "text-money-negative",
     },
     {
       label: "净现金流",
       value: `${net >= 0 ? "+" : "−"}${formatCNY(Math.abs(net))}`,
       icon: Wallet,
       iconBg: "bg-blue-500",
-      valueClass: net >= 0 ? "text-success" : "text-error",
+      valueClass: net >= 0 ? "text-money-positive" : "text-money-negative",
     },
     {
       label: "进损益流出",
       value: formatCNY(pnlOut),
       icon: Receipt,
       iconBg: "bg-red-500",
-      valueClass: "text-error",
+      valueClass: "text-money-negative",
     },
   ];
 

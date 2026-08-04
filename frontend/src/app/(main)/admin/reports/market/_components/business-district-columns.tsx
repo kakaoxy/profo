@@ -80,9 +80,9 @@ function QoqCell({ value }: { value: number | null }) {
   const { text, direction } = formatQoq(value);
   const colorClass =
     direction === "up"
-      ? "text-red-600 dark:text-red-400"
+      ? "text-money-positive"
       : direction === "down"
-        ? "text-emerald-600 dark:text-emerald-400"
+        ? "text-money-negative"
         : "text-muted-foreground";
   const Icon =
     direction === "up"

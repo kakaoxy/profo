@@ -127,11 +127,12 @@ function KpiCard({
     variant === "warm"
       ? "bg-gradient-to-br from-apricot-wash to-apricot-wash/50"
       : "bg-white";
+  // 中国习惯：in（流入）红、out（流出）绿
   const valueColorClass: Record<KpiAccent, string> = {
     ink: "text-ink",
     rust: "text-rust",
-    in: "text-success",
-    out: "text-error",
+    in: "text-money-positive",
+    out: "text-money-negative",
   };
 
   return (

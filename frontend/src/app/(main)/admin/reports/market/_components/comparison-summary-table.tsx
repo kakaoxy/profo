@@ -34,8 +34,8 @@ interface ComparisonSummaryTableProps {
 }
 
 const QOQ_COLOR: Record<QoqDirection, string> = {
-  up: "text-red-600 dark:text-red-400",
-  down: "text-emerald-600 dark:text-emerald-400",
+  up: "text-money-positive",
+  down: "text-money-negative",
   flat: "text-muted-foreground",
   unknown: "text-muted-foreground",
 };

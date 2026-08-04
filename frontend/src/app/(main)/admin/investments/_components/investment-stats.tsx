@@ -22,9 +22,9 @@ export function InvestmentStats({ stats }: InvestmentStatsProps) {
   const avgRatio = stats.avg_return_ratio ?? 0;
   const ratioColorClass =
     avgRatio > 0
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-money-positive"
       : avgRatio < 0
-        ? "text-red-600 dark:text-red-400"
+        ? "text-money-negative"
         : "text-muted-foreground";
 
   const cards: CardConfig[] = [

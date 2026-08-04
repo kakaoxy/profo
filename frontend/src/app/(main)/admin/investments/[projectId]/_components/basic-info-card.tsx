@@ -52,7 +52,7 @@ export function BasicInfoCard({ investment }: { investment: InvestmentResponse }
             <span
               className={cn(
                 "font-mono text-base font-semibold tabular-nums",
-                totalReturn > 0 && "text-emerald-600 dark:text-emerald-400",
+                totalReturn > 0 && "text-money-positive",
               )}
             >
               {investment.total_return ? formatCNY(investment.total_return) : "-"}

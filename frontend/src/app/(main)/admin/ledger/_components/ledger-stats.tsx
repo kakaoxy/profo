@@ -28,9 +28,9 @@ export function LedgerStats({ stats }: LedgerStatsProps) {
   const netCashFlow = stats.net_cash_flow ?? 0;
   const netColorClass =
     netCashFlow > 0
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-money-positive"
       : netCashFlow < 0
-        ? "text-red-600 dark:text-red-400"
+        ? "text-money-negative"
         : "text-muted-foreground";
 
   const cards: CardConfig[] = [

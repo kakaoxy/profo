@@ -126,7 +126,7 @@ export function ActivityList({
               className={cn(
                 "flex items-center justify-between p-3 rounded-lg border bg-card transition-all",
                 isMax
-                  ? "border-error/20 shadow-sm ring-1 ring-error/10"
+                  ? "border-money-positive/20 shadow-sm ring-1 ring-money-positive/10"
                   : "border-border"
               )}
             >
@@ -135,13 +135,13 @@ export function ActivityList({
                   className={cn(
                     "text-sm font-bold",
                     isMax
-                      ? "text-error flex items-center gap-1"
+                      ? "text-money-positive flex items-center gap-1"
                       : "text-foreground"
                   )}
                 >
                   ¥{item.price}万{" "}
                   {isMax && (
-                    <span className="text-[10px] bg-error/10 text-error px-1 rounded font-normal">
+                    <span className="text-[10px] bg-money-positive/10 text-money-positive px-1 rounded font-normal">
                       最高
                     </span>
                   )}

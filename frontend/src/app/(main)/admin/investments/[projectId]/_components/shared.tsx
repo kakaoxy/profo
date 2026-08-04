@@ -28,10 +28,10 @@ export function toNum(v: string | number | null | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
-/** 回报率配色：正绿 / 负红 / 零灰 */
+/** 回报率配色：正红 / 负绿 / 零灰（中国习惯） */
 export function ratioColorClass(ratio: number): string {
-  if (ratio > 0) return "text-emerald-600 dark:text-emerald-400";
-  if (ratio < 0) return "text-red-600 dark:text-red-400";
+  if (ratio > 0) return "text-money-positive";
+  if (ratio < 0) return "text-money-negative";
   return "text-muted-foreground";
 }
 
