@@ -16,7 +16,9 @@ interface StatisticsHeroProps {
  * - Row2: 现金流入/现金流出/净现金流/流水笔数(白底)
  */
 export function StatisticsHero({ kpi }: StatisticsHeroProps) {
-  const netCashSign = kpi.net_cashflow >= 0 ? "+" : "−";
+  // F1: LedgerStatisticsKPI.net_cashflow 为 optional，用 ?? 0 兜底
+  const netCashflow = kpi.net_cashflow ?? 0;
+  const netCashSign = netCashflow >= 0 ? "+" : "−";
 
   return (
     <div className="text-center">
@@ -85,7 +87,7 @@ export function StatisticsHero({ kpi }: StatisticsHeroProps) {
         />
         <KpiCard
           label="净现金流"
-          value={`${netCashSign}${formatCurrency(Math.abs(kpi.net_cashflow))}`}
+          value={`${netCashSign}${formatCurrency(Math.abs(netCashflow))}`}
           variant="plain"
           accent="rust"
         />
@@ -121,29 +123,31 @@ function KpiCard({
   accent,
   className,
 }: KpiCardProps) {
-  const cardBg =
+  const cardBgClass =
     variant === "warm"
-      ? "linear-gradient(135deg, #fbe1d1 0%, rgba(251, 225, 209, 0.5) 100%)"
-      : "#ffffff";
-  const valueColor: Record<KpiAccent, string> = {
-    ink: "#17191c",
-    rust: "#5d2a1a",
-    in: "#1f7a4d",
-    out: "#b03a1a",
+      ? "bg-gradient-to-br from-apricot-wash to-apricot-wash/50"
+      : "bg-white";
+  const valueColorClass: Record<KpiAccent, string> = {
+    ink: "text-ink",
+    rust: "text-rust",
+    in: "text-success",
+    out: "text-error",
   };
 
   return (
     <div
       className={cn(
         "text-center px-5 py-7 rounded-[20px] shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_12px_16px_-4px] transition-transform duration-300 hover:-translate-y-1",
+        cardBgClass,
         className,
       )}
-      style={{ background: cardBg }}
     >
       <p className="text-[14px] mb-2 text-graphite leading-[1.5]">{label}</p>
       <p
-        className="text-[32px] leading-[1.1] tabular-nums tracking-[-0.3px]"
-        style={{ color: valueColor[accent] }}
+        className={cn(
+          "text-[32px] leading-[1.1] tabular-nums tracking-[-0.3px]",
+          valueColorClass[accent],
+        )}
       >
         {value}
         {suffix ? (

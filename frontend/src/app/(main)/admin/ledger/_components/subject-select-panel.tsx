@@ -5,43 +5,9 @@ import useSWR from "swr";
 import { Search, Check, ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { fetchSubjects, type SubjectItem } from "@/app/(main)/admin/ledger/actions";
-
-// 层级标签映射（与后端 SubjectLevel enum 对齐：①取得成本 ~ ⑦配对项）
-const LEVEL_LABELS: Record<string, string> = {
-  "1": "①取得成本",
-  "2": "②直接改造成本",
-  "3": "③交易费用",
-  "4": "④资金成本",
-  "5": "⑤现金流专属",
-  "6": "⑥收入项",
-  "7": "⑦配对项",
-};
-
-// 层级 pill 颜色映射（与设计文档 layer-pill 视觉一致）
-const LEVEL_PILL_CLASS: Record<string, string> = {
-  "1": "bg-red-100 text-red-700 border-red-200",
-  "2": "bg-amber-100 text-amber-700 border-amber-200",
-  "3": "bg-blue-100 text-blue-700 border-blue-200",
-  "4": "bg-yellow-100 text-yellow-800 border-yellow-200",
-  "5": "bg-sky-100 text-sky-700 border-sky-200",
-  "6": "bg-green-100 text-green-700 border-green-200",
-  "7": "bg-purple-100 text-purple-700 border-purple-200",
-};
-
-function LayerPill({ level }: { level: string }) {
-  const cls = LEVEL_PILL_CLASS[level] ?? "bg-muted text-muted-foreground border-border";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap",
-        cls,
-      )}
-    >
-      {LEVEL_LABELS[level] ?? `L${level}`}
-    </span>
-  );
-}
+import { fetchSubjects, type SubjectItem } from "@/app/(main)/admin/ledger/subject-actions";
+import { LayerPill } from "@/app/(main)/admin/ledger/[projectId]/_components/layer-pill";
+import { LEVEL_LABELS, type SubjectLevel } from "@/app/(main)/admin/ledger/subjects/_components/subject-schema";
 
 interface SubjectSelectPanelProps {
   value: string;
@@ -93,7 +59,7 @@ export function SubjectSelectPanel({
 
   // 按 level 分组（保持 1-7 顺序）
   const grouped = useMemo(() => {
-    const map = new Map<string, SubjectItem[]>();
+    const map = new Map<SubjectLevel, SubjectItem[]>();
     for (const s of filtered) {
       if (!map.has(s.level)) map.set(s.level, []);
       map.get(s.level)!.push(s);
@@ -120,17 +86,17 @@ export function SubjectSelectPanel({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  // 打开时重置搜索
-  useEffect(() => {
-    if (open) setQuery("");
-  }, [open]);
-
   return (
     <div className="relative">
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() =>
+          setOpen((o) => {
+            if (!o) setQuery("");
+            return !o;
+          })
+        }
         className={cn(
           "flex w-full items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2 text-left transition-[border-color,box-shadow] duration-200",
           open ? "border-ink ring-1 ring-ink/20" : "border-border hover:border-dove",

@@ -28,7 +28,7 @@ vi.mock("@/lib/auth/client", () => ({
 async function fillAndSubmitForm() {
   const user = userEvent.setup();
   await user.type(screen.getByPlaceholderText(/请输入用户名/), "admin");
-  await user.type(screen.getByPlaceholderText(/请输入密码/), "Fdd123..");
+  await user.type(screen.getByPlaceholderText(/请输入密码/), process.env.TEST_ADMIN_PASSWORD ?? "Fdd123..");
   await user.click(screen.getByRole("button", { name: /登录/ }));
 }
 

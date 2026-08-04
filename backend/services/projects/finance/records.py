@@ -8,8 +8,6 @@ from typing import Any
 from models import FinanceRecord, FinanceRecordLog, FinanceSubject, Project
 from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType
 from schemas.project.finance import (
-    CashFlowRecordCreate,
-    CashFlowSummary,
     LedgerRecordCreate,
     LedgerRecordUpdate,
 )
@@ -140,10 +138,7 @@ class _RecordMixin:
 
         # 兼容校验：若用户显式提供 type，检查与推导结果一致
         if record_data.type is not None and record_data.type != flow_type:
-            msg = (
-                f"type 与 inflow/outflow 推导不一致："
-                f"provided={record_data.type.value}, expected={flow_type.value}"
-            )
+            msg = f"type 与 inflow/outflow 推导不一致：provided={record_data.type.value}, expected={flow_type.value}"
             raise ValidationError(msg)
 
         # 创建 FinanceRecord（新字段 + 回填旧字段）
@@ -225,47 +220,6 @@ class _RecordMixin:
         else:
             logger.info("Found %d cashflow records for project %s", len(records), project_id)
             return records
-
-    def delete_record(self, record_id: str, project_id: str) -> None:
-        """删除现金流记录."""
-        logger.info("Deleting cashflow record %s for project %s", record_id, project_id)
-
-        # 编辑锁：已结算项目不可删除记录（与 delete_record_by_id 一致，防止 cashflow 路由绕过结算锁）
-        # 项目不存在或已软删除 -> 404，避免 `if project:` 在软删除场景跳过结算锁（regression from 933a37c）
-        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
-        if not project:
-            logger.error("Project not found or soft-deleted: %s", project_id)
-            msg = "项目不存在"
-            raise ResourceNotFoundError(msg)
-        self._assert_finance_editable(project)
-
-        record = (
-            self.db.query(FinanceRecord)
-            .filter(
-                FinanceRecord.id == record_id,
-                FinanceRecord.project_id == project_id,
-                FinanceRecord.is_deleted.is_(False),
-            )
-            .first()
-        )
-
-        if not record:
-            logger.error("Cashflow record not found: %s for project %s", record_id, project_id)
-            msg = "现金流记录不存在"
-            raise ResourceNotFoundError(msg)
-
-        record.is_deleted = True
-        record.updated_at = datetime.now(timezone.utc)
-        # flush 让 sync 聚合查询排除已软删记录；sync 失败则整体回滚（Fail Loud）
-        self.db.flush()
-        try:
-            self._sync_financial_cache(project_id)
-        except Exception:
-            logger.exception("Failed to sync project financials")
-            raise
-        self.db.commit()
-
-        logger.info("Cashflow record deleted successfully: %s", record_id)
 
     def delete_record_by_id(self, record_id: str, operator_id: str) -> None:
         """资金账本：按记录ID软删除流水（无需 project_id）.
@@ -422,10 +376,7 @@ class _RecordMixin:
 
         # Task 5: 兼容字段一致性校验（type/amount 由新字段推导，显式提供则校验）
         if payload.type is not None and payload.type != new_type:
-            msg = (
-                f"type 与 inflow/outflow 推导不一致："
-                f"provided={payload.type.value}, expected={new_type.value}"
-            )
+            msg = f"type 与 inflow/outflow 推导不一致：provided={payload.type.value}, expected={new_type.value}"
             raise ValidationError(msg)
         if payload.category is not None:
             self._validate_category(new_type, payload.category)
@@ -433,10 +384,7 @@ class _RecordMixin:
                 record.category = payload.category.value
                 detail["category"] = payload.category.value
         if payload.amount is not None and payload.amount != new_amount:
-            msg = (
-                f"amount 与 inflow/outflow 推导不一致："
-                f"provided={payload.amount}, expected={new_amount}"
-            )
+            msg = f"amount 与 inflow/outflow 推导不一致：provided={payload.amount}, expected={new_amount}"
             raise ValidationError(msg)
         if payload.counterparty is not None and payload.counterparty != record.counterparty:
             record.counterparty = payload.counterparty
@@ -486,25 +434,3 @@ class _RecordMixin:
 
         logger.info("Finance record updated successfully: %s", record_id)
         return record
-
-    # 别名方法 - 与路由兼容
-    def get_cashflow_records(self, project_id: str) -> list[FinanceRecord]:
-        """获取项目现金流记录（路由兼容别名）."""
-        return self.get_records(project_id)
-
-    def get_cashflow_summary(self, project_id: str) -> CashFlowSummary:
-        """获取现金流汇总（路由兼容别名）."""
-        return self.get_summary(project_id)
-
-    def create_cashflow_record(
-        self,
-        project_id: str,
-        record_data: CashFlowRecordCreate,
-        operator_id: str,
-    ) -> FinanceRecord:
-        """创建现金流记录（路由兼容别名）."""
-        return self.create_record(project_id, record_data, operator_id)
-
-    def delete_cashflow_record(self, record_id: str, project_id: str) -> None:
-        """删除现金流记录（路由兼容别名）."""
-        return self.delete_record(record_id, project_id)

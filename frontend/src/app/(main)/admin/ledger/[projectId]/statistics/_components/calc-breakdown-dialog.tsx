@@ -70,7 +70,7 @@ export function CalcBreakdownDialog({
         <div className="max-h-[70vh] overflow-y-auto">
           {breakdown.sections.map((section, index) => (
             <section
-              key={index}
+              key={section.title}
               className={
                 index > 0 ? "mt-4 pt-4 border-t border-border" : undefined
               }
@@ -80,12 +80,12 @@ export function CalcBreakdownDialog({
                 {section.formula}
               </p>
               <ul className="mt-2 space-y-1">
-                {section.items.map((item, itemIndex) => {
+                {section.items.map((item) => {
                   const value = formatItemValue(item);
                   if (value == null) return null;
                   return (
                     <li
-                      key={itemIndex}
+                      key={item.label}
                       className="flex items-baseline justify-between gap-3 text-sm"
                     >
                       <span className="text-graphite">

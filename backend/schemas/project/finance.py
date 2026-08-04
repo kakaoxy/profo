@@ -29,7 +29,7 @@ class CashFlowRecordCreate(BaseModel):
 
     type: CashFlowType
     category: CashFlowCategory
-    amount: Decimal
+    amount: Decimal = Field(gt=0, description="金额(元)")
     date: datetime
     description: str | None = None
     related_stage: str | None = None
@@ -178,7 +178,7 @@ class FinanceBase(BaseModel):
 
     type: CashFlowType = Field(description="流水类型：income/expense")
     category: CashFlowCategory = Field(description="费用类别")
-    amount: Decimal = Field(description="金额(元)")
+    amount: Decimal = Field(gt=0, description="金额(元)")
     record_date: datetime = Field(description="发生日期")
     operator_id: str | None = Field(None, description="经办人ID")
     remark: str | None = Field(None, description="备注")
@@ -242,8 +242,8 @@ class LedgerRecordCreate(BaseModel):
 
     # 新字段（主字段）
     subject_id: str = Field(..., description="科目ID(必填，关联 finance_subjects.id)")
-    outflow: Decimal = Field(default=Decimal(0), description="流出金额(元)")
-    inflow: Decimal = Field(default=Decimal(0), description="流入金额(元)")
+    outflow: Decimal = Field(default=Decimal(0), ge=0, description="流出金额(元)")
+    inflow: Decimal = Field(default=Decimal(0), ge=0, description="流入金额(元)")
     payer: str | None = Field(None, max_length=100, description="付款方")
     payee: str | None = Field(None, max_length=100, description="收款方")
 
@@ -252,7 +252,7 @@ class LedgerRecordCreate(BaseModel):
     category: CashFlowCategory | None = Field(None, description="兼容字段: 费用类别(新字段体系下由 subject 替代)")
     amount: Decimal | None = Field(None, description="兼容字段: 金额(由 outflow/inflow 推导)")
     related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
-    counterparty: str | None = Field(None, description="兼容字段: 交易方(由 payer 推导)")
+    counterparty: str | None = Field(None, max_length=100, description="兼容字段: 交易方(由 payer 推导)")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -268,8 +268,8 @@ class LedgerRecordUpdate(BaseModel):
 
     # 新字段
     subject_id: str | None = Field(None, description="科目ID")
-    outflow: Decimal | None = Field(None, description="流出金额(元)")
-    inflow: Decimal | None = Field(None, description="流入金额(元)")
+    outflow: Decimal | None = Field(None, ge=0, description="流出金额(元)")
+    inflow: Decimal | None = Field(None, ge=0, description="流入金额(元)")
     payer: str | None = Field(None, max_length=100, description="付款方")
     payee: str | None = Field(None, max_length=100, description="收款方")
 
@@ -277,7 +277,7 @@ class LedgerRecordUpdate(BaseModel):
     type: CashFlowType | None = Field(None, description="兼容字段: 流水类型")
     category: CashFlowCategory | None = Field(None, description="兼容字段: 费用类别")
     amount: Decimal | None = Field(None, description="兼容字段: 金额")
-    counterparty: str | None = Field(None, description="兼容字段: 交易方")
+    counterparty: str | None = Field(None, max_length=100, description="兼容字段: 交易方")
     related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
 
     # 通用字段
@@ -426,6 +426,7 @@ class ReceivablePayableResponse(BaseModel):
     items: list[ReceivablePayableItem]
     model_config = ConfigDict(from_attributes=True)
 
+
 # ========== 科目管理 (FinanceSubject) ==========
 
 
@@ -488,11 +489,10 @@ class FinanceSubjectFilter(BaseModel):
     stage: SubjectStage | None = Field(None, description="按业务阶段筛选")
     level: SubjectLevel | None = Field(None, description="按成本层级筛选")
     system: bool | None = Field(None, description="按系统预置/自定义筛选")
-    is_deleted: bool = Field(False, description="是否包含已删除(默认仅未删除)")
+    is_deleted: bool = Field(False, description="是否包含已删除(默认仅未删除)")  # noqa: FBT003
     search: str | None = Field(None, max_length=50, description="模糊搜索科目名称")
 
     model_config = ConfigDict(from_attributes=True)
-
 
 
 # 前向引用 rebuild：CashFlowRecordResponse.subject 引用了下方定义的 FinanceSubjectResponse。

@@ -15,7 +15,6 @@ from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from dependencies.auth import (
-    CurrentInternalUserDep,
     DbSessionDep,
     LedgerReadPermDep,
     LedgerSettlePermDep,
@@ -291,7 +290,7 @@ def delete_ledger_record(
     request: Request,
     record_id: Annotated[str, Path(description="流水记录ID")],
     service: _FinanceServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LedgerWritePermDep,
 ) -> None:
     """软删除资金账本流水记录.
 

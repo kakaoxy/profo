@@ -29,6 +29,7 @@ import { ReceivablePayableTable } from "@/components/finance/receivable-payable-
 import { SubjectSelectPanel } from "@/app/(main)/admin/ledger/_components/subject-select-panel";
 
 import { createRecord } from "@/app/(main)/admin/ledger/actions";
+import { createRecordSchema } from "@/app/(main)/admin/ledger/_components/ledger-schema";
 
 interface RecordDialogProps {
   projectId: string;
@@ -105,8 +106,24 @@ export function RecordDialog({
     if (out <= 0 && infl <= 0) {
       e.amount = "流出/流入至少填一项且大于0";
     }
-    if (out > 0 && infl > 0) {
-      e.amount = "流出与流入不可同时填写";
+    // outflow/inflow 互斥校验复用 createRecordSchema.refine（见 ledger-schema.ts），避免重复
+    const parsed = createRecordSchema.safeParse({
+      project_id: projectId,
+      subject_id: subjectId,
+      date: date ? format(date, "yyyy-MM-dd") : "",
+      outflow: out,
+      inflow: infl,
+      payer: payer.trim() || null,
+      payee: payee.trim() || null,
+      description: notes.trim() || null,
+      receipt_urls: receiptUrls.length > 0 ? receiptUrls : null,
+    });
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        if (issue.path[0] === "outflow" && !e.amount) {
+          e.amount = issue.message;
+        }
+      }
     }
     setErrors(e);
     return Object.keys(e).length === 0;

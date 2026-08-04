@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
 import { LedgerTable } from "./ledger-table";
-import { exportLedger } from "../actions";
+import { exportLedger } from "../export-actions";
 
 type LedgerProjectListItem = components["schemas"]["LedgerProjectListItem"];
 

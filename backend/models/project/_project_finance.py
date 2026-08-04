@@ -5,7 +5,8 @@ from decimal import Decimal
 
 from sqlalchemy import JSON, Boolean, DateTime, Index, Numeric, String, Text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import BaseModel, CashFlowCategory, CashFlowType, CounterpartyType, FinanceActionType
 
@@ -39,13 +40,23 @@ class FinanceRecord(BaseModel):
     )
     receipt_urls: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, comment="票据图片URL列表")
 
-    subject_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="科目ID(逻辑外键→finance_subjects.id)")
+    subject_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, comment="科目ID(逻辑外键→finance_subjects.id)"
+    )
     outflow: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=0, comment="流出金额(元)")
     inflow: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=0, comment="流入金额(元)")
     payer: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="付款方")
     payee: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="收款方")
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+
+    # 逻辑外键关联（无数据库 FK 约束，由 Service 层维护）
+    # lazy="joined" 确保响应序列化时 subject 字段被填充（CashFlowRecordResponse.subject）
+    subject: Mapped["FinanceSubject | None"] = relationship(
+        primaryjoin="FinanceRecord.subject_id == FinanceSubject.id",
+        foreign_keys="FinanceRecord.subject_id",
+        lazy="joined",
+    )
 
     __table_args__ = (
         Index("idx_finance_project_date", "project_id", "record_date"),
@@ -95,7 +106,12 @@ class FinanceSubject(BaseModel):
         comment="成本层级1-7: ①取得成本/②直接改造成本/③交易费用/④资金成本/⑤现金流专属/⑥收入项/⑦配对项",
     )
     pnl: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, comment="是否进损益")
-    modes: Mapped[list[str]] = mapped_column(JSON, nullable=False, comment="适用业务模式: ['agent']/['acquire']/两者")
+    # P2-11: PostgreSQL 使用 JSONB（支持 @> 包含查询与 GIN 索引），SQLite 测试回退到 JSON
+    modes: Mapped[list[str]] = mapped_column(
+        JSONB().with_variant(JSON, "sqlite"),
+        nullable=False,
+        comment="适用业务模式: ['agent']/['acquire']/两者",
+    )
     stage: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
