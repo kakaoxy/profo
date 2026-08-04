@@ -64,7 +64,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
     });
   };
 
-  // useReactTable 返回函数无法被 React Compiler 安全 memoize，需显式禁用规则
+  // useReactTable 返回非可记忆函数，该规则已在 eslint.config.mjs 全局关闭
   const table = useReactTable({
     data,
     columns,

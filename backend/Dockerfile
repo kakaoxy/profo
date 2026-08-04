@@ -49,6 +49,9 @@ EXPOSE 8000
 ENV WEB_CONCURRENCY=2
 
 # --proxy-headers: 读取 X-Forwarded-For/Proto（nginx 反代必需）
-# --forwarded-allow-ips "*": 信任所有上游（Docker 网络隔离下仅 nginx 容器可达，安全）
-#   覆盖 uvicorn 默认的 127.0.0.1，使 trusted_proxies 配置在生产生效
+# --forwarded-allow-ips "*": 信任所有上游 TCP 对端（Docker bridge IP 动态分配，
+#   uvicorn 不支持 CIDR，无法精确限定 nginx 网关 IP）。
+#   XFF 伪造防御由 _get_client_ip 右向左解析承担（backend 仅绑定 127.0.0.1，
+#   nginx 独占可达）。生产 nginx 建议配置 proxy_set_header X-Forwarded-For $remote_addr;
+#   （覆盖而非追加）以从源头消除 XFF 伪造。
 CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
