@@ -1,5 +1,6 @@
 """跟投记录 CRUD / 列表 / 统计 / 详情 / 复制."""
 
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -140,7 +141,7 @@ class _RecordMixin:
             return None
         return self._to_response(inv)
 
-    def get_investment_by_project(self, project_id: str) -> InvestmentResponse | None:
+    def get_investment_by_project(self, project_id: uuid.UUID) -> InvestmentResponse | None:
         """按项目ID查询跟投记录（每个项目最多一条）."""
         inv = (
             self.db.query(Investment)

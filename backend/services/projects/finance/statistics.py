@@ -6,6 +6,7 @@
 """
 
 import logging
+import uuid
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -45,7 +46,7 @@ _STAGE_LABELS: dict[str, str] = {
 class _StatisticsMixin:
     """资金账本统计页面聚合方法."""
 
-    def get_statistics(self, project_id: str) -> ProjectLedgerStatisticsResponse:
+    def get_statistics(self, project_id: uuid.UUID) -> ProjectLedgerStatisticsResponse:
         """资金账本统计页面：按五层法 + 阶段现金流聚合.
 
         1. 获取项目业务模式，确定阶段列表(agent 4阶段 / acquire 5阶段)。

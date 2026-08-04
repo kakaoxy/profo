@@ -127,25 +127,25 @@ class PublicProjectService:
 
         return items, total
 
-    def get_project_detail(self, project_id: int) -> L4MarketingProject | None:
+    def get_project_detail(self, marketing_project_id: int) -> L4MarketingProject | None:
         """获取项目详情."""
         return (
             self.db.query(L4MarketingProject)
             .filter(
                 and_(
-                    L4MarketingProject.id == project_id,
+                    L4MarketingProject.id == marketing_project_id,
                     L4MarketingProject.is_deleted.is_(False),
                 ),
             )
             .first()
         )
 
-    def get_project_media(self, project_id: int) -> list[L4MarketingMedia]:
+    def get_project_media(self, marketing_project_id: int) -> list[L4MarketingMedia]:
         """获取项目媒体列表."""
         return (
             self.db.query(L4MarketingMedia)
             .filter(
-                L4MarketingMedia.marketing_project_id == project_id,
+                L4MarketingMedia.marketing_project_id == marketing_project_id,
                 L4MarketingMedia.is_deleted.is_(False),
             )
             .order_by(L4MarketingMedia.sort_order)

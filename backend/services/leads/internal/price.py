@@ -77,7 +77,7 @@ class LeadPriceService:
 
         # 创建价格记录
         rec = LeadPriceHistory(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             lead_id=lead_id,
             price=price,
             remark=remark,
@@ -114,7 +114,7 @@ class LeadPriceService:
             return None
 
         rec = LeadPriceHistory(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             lead_id=lead_id,
             price=price,
             remark="Initial Creation",

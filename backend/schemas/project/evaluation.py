@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 
 class EvaluationBase(BaseModel):
@@ -21,7 +21,7 @@ class EvaluationBase(BaseModel):
 class EvaluationCreate(EvaluationBase):
     """创建评估记录请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class EvaluationUpdate(BaseModel):
@@ -37,8 +37,8 @@ class EvaluationUpdate(BaseModel):
 class EvaluationResponse(EvaluationBase):
     """评估记录响应."""
 
-    id: str = Field(description="评估记录ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="评估记录ID")
+    project_id: UUID4 = Field(description="项目ID")
     created_at: datetime
     updated_at: datetime
 

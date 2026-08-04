@@ -1,9 +1,10 @@
 """销售交易模型."""
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Index, Numeric, String
+from sqlalchemy import Boolean, DateTime, Index, Numeric, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel
@@ -14,7 +15,7 @@ class ProjectSale(BaseModel):
 
     __tablename__ = "project_sales"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, comment="项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, unique=True, comment="项目ID(逻辑外键)")
 
     listing_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="上架日期")
     list_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="挂牌价(万)")

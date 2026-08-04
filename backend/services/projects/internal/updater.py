@@ -157,7 +157,7 @@ class ProjectUpdater:
 
     def _update_contract_fields(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         update_dict: dict[str, Any],
     ) -> None:
         """更新合同相关字段."""
@@ -208,7 +208,7 @@ class ProjectUpdater:
                 setattr(contract, field, value)
         else:
             contract = ProjectContract(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 is_deleted=False,
                 created_at=datetime.now(timezone.utc),
@@ -219,7 +219,7 @@ class ProjectUpdater:
 
     def _update_owner_fields(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         update_dict: dict[str, Any],
     ) -> None:
         """更新业主相关字段."""
@@ -246,7 +246,7 @@ class ProjectUpdater:
                 setattr(owner, field, value)
         else:
             owner = ProjectOwner(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 relation_type="业主",
                 is_deleted=False,
@@ -258,7 +258,7 @@ class ProjectUpdater:
 
     def _update_sale_fields(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         update_dict: dict[str, Any],
     ) -> None:
         """更新销售相关字段."""
@@ -288,7 +288,7 @@ class ProjectUpdater:
                 setattr(sale, field, value)
         else:
             sale = ProjectSale(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 transaction_status="在售",
                 is_deleted=False,

@@ -41,7 +41,7 @@ class SalesService:
         self.query_service = ProjectQueryService(db)
         self.response_builder = ProjectResponseBuilder(db)
 
-    def _get_project(self, project_id: str) -> Project:
+    def _get_project(self, project_id: uuid.UUID) -> Project:
         """内部辅助：获取项目实例."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
@@ -69,7 +69,9 @@ class SalesService:
                 msg = f"无效的用户ID: {user_id} (字段: {field_name})"
                 raise ValidationError(msg)
 
-    def update_roles(self, project_id: str, roles_data: SalesRolesUpdate, *, current_user: User) -> ProjectResponse:
+    def update_roles(
+        self, project_id: uuid.UUID, roles_data: SalesRolesUpdate, *, current_user: User
+    ) -> ProjectResponse:
         """更新销售角色 (渠道、讲房、谈判)."""
         project = self._get_project(project_id)
 
@@ -84,7 +86,7 @@ class SalesService:
 
         if not sale:
             sale = ProjectSale(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 transaction_status="在售",
                 is_deleted=False,
@@ -111,7 +113,9 @@ class SalesService:
         project = self.query_service.get_by_id(project_id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project, current_user=current_user))
 
-    def create_record(self, project_id: str, record_data: SalesRecordCreate, current_user: User) -> ProjectInteraction:
+    def create_record(
+        self, project_id: uuid.UUID, record_data: SalesRecordCreate, current_user: User
+    ) -> ProjectInteraction:
         """创建销售记录（互动记录）.
 
         权限校验由 Router 层 ProjectSalesAddRecordPermDep 注入。
@@ -125,7 +129,7 @@ class SalesService:
 
         # 创建互动记录（修复 operator_id=None bug，从 current_user.id 注入）
         record = ProjectInteraction(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             project_id=project_id,
             record_type=record_data.record_type.value,
             interaction_target=record_data.customer_name,
@@ -141,7 +145,7 @@ class SalesService:
         self.db.refresh(record)
         return record
 
-    def get_records(self, project_id: str, record_type: str | None = None) -> list[dict[str, Any]]:
+    def get_records(self, project_id: uuid.UUID, record_type: str | None = None) -> list[dict[str, Any]]:
         """获取销售记录列表（互动记录）."""
         query = (
             self.db.query(ProjectInteraction)
@@ -178,7 +182,7 @@ class SalesService:
             for r in records
         ]
 
-    def delete_record(self, project_id: str, record_id: str) -> None:
+    def delete_record(self, project_id: uuid.UUID, record_id: str) -> None:
         """删除销售记录（互动记录）.
 
         权限校验由 Router 层 ProjectSalesAddRecordPermDep 注入。
@@ -203,7 +207,7 @@ class SalesService:
         self.db.commit()
 
     def complete_project(
-        self, project_id: str, complete_data: ProjectCompleteRequest, *, current_user: User
+        self, project_id: uuid.UUID, complete_data: ProjectCompleteRequest, *, current_user: User
     ) -> ProjectResponse:
         """确认成交 (标记为已售)."""
         project = self._get_project(project_id)
@@ -234,7 +238,7 @@ class SalesService:
         else:
             # 创建新的销售记录
             sale = ProjectSale(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 sold_price=complete_data.sold_price,
                 sold_date=complete_data.sold_date,

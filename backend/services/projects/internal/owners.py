@@ -29,7 +29,7 @@ _OWNER_FIELDS: tuple[str, ...] = (
 
 def sync_owners(
     db: Session,
-    project_id: str,
+    project_id: uuid.UUID,
     payload_owners: list[OwnerInlineCreate | OwnerInlineUpdate] | None,
 ) -> None:
     """同步项目业主列表（diff 逻辑）.
@@ -76,7 +76,7 @@ def sync_owners(
                 owner.updated_at = now
         else:
             new_owner = ProjectOwner(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 owner_name=item.owner_name,
                 owner_phone=item.owner_phone,
@@ -97,7 +97,7 @@ def sync_owners(
             owner.updated_at = now
 
 
-def list_owners(db: Session, project_id: str) -> list[ProjectOwner]:
+def list_owners(db: Session, project_id: uuid.UUID) -> list[ProjectOwner]:
     """列出项目下未删除的业主，按 created_at 升序.
 
     Args:

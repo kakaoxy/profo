@@ -9,7 +9,16 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator
+from pydantic import (
+    UUID4,
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_serializer,
+    field_validator,
+)
 
 from models.common import (
     CashFlowCategory,
@@ -43,8 +52,8 @@ class CashFlowRecordCreate(BaseModel):
 class CashFlowRecordResponse(BaseModel):
     """现金流记录响应 - 适配新的FinanceRecord表."""
 
-    id: str
-    project_id: str
+    id: UUID4
+    project_id: UUID4
     type: CashFlowType
     category: CashFlowCategory
     amount: Decimal
@@ -135,7 +144,7 @@ class CashFlowResponse(BaseModel):
 class ProjectReportResponse(BaseModel):
     """财务报表 - 适配新的规范化表结构."""
 
-    project_id: str
+    project_id: UUID4
     project_name: str | None = None
     community_name: str | None = None
     status: str
@@ -189,7 +198,7 @@ class FinanceBase(BaseModel):
 class FinanceCreate(FinanceBase):
     """创建财务记录请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class FinanceUpdate(BaseModel):
@@ -206,8 +215,8 @@ class FinanceUpdate(BaseModel):
 class FinanceResponse(FinanceBase):
     """财务记录响应."""
 
-    id: str = Field(description="财务记录ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="财务记录ID")
+    project_id: UUID4 = Field(description="项目ID")
     created_at: datetime
     updated_at: datetime
 
@@ -234,7 +243,7 @@ class LedgerRecordCreate(BaseModel):
     - type/category/amount/counterparty: 由 inflow/outflow/payer 推导
     """
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
     date: datetime = Field(description="发生日期")
     description: str | None = Field(None, description="备注")
     receipt_urls: list[str] | None = Field(None, description="票据图片URL列表")
@@ -292,7 +301,7 @@ class LedgerRecordUpdate(BaseModel):
 class LedgerProjectListItem(BaseModel):
     """资金账本项目列表项（含聚合统计）."""
 
-    project_id: str
+    project_id: UUID4
     project_code: str | None = None
     project_name: str | None = None
     project_address: str | None = None
@@ -344,8 +353,8 @@ class FinanceLogResponse(BaseModel):
     operator_id / operator_name 为冗余字段，由 Service 层联表 User 填充。
     """
 
-    id: str = Field(description="日志ID")
-    project_id: str = Field(description="关联项目ID")
+    id: UUID4 = Field(description="日志ID")
+    project_id: UUID4 = Field(description="关联项目ID")
     action_type: FinanceActionType = Field(description="操作类型")
     detail: dict = Field(default_factory=dict, description="操作详情(JSON)")
     operator_id: str = Field(

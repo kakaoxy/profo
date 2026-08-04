@@ -1,6 +1,7 @@
 """结算 / 反结算 / 操作日志."""
 
 import logging
+import uuid
 
 from models import FinanceRecordLog, Project, User
 from models.common import FinanceActionType, SettlementStatus
@@ -22,7 +23,7 @@ class _SettlementMixin:
 
     def settle_finance(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         data: FinanceSettlementChangeRequest,
         operator_id: str,
     ) -> FinanceSettlementResponse:
@@ -56,7 +57,7 @@ class _SettlementMixin:
 
     def unsettle_finance(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         data: FinanceUnsettleRequest,
         operator_id: str,
     ) -> FinanceSettlementResponse:
@@ -85,7 +86,7 @@ class _SettlementMixin:
         logger.info("项目 %s 资金账本已反结算", project_id)
         return self._build_settlement_response(project)
 
-    def list_logs(self, project_id: str) -> list[FinanceLogResponse]:
+    def list_logs(self, project_id: uuid.UUID) -> list[FinanceLogResponse]:
         """获取项目资金账本操作日志（按 created_at 降序）.
 
         联表 User 批量填充 operator_name（参考 InvestmentService._build_logs_response）。

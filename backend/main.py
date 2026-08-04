@@ -144,7 +144,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="轻量级、本地化、高性能的房产数据仓库系统",
+    description="""轻量级、本地化、高性能的房产数据仓库系统
+
+## CSRF 防护说明
+
+纯 Cookie 认证的写请求（POST/PUT/PATCH/DELETE）必须携带 `X-Requested-With` 请求头，
+否则返回 403。使用 `Authorization`（Bearer Token / Server Actions）或 `X-API-Key` 头认证的请求不受此限制。
+
+此设计利用浏览器跨站表单无法设置自定义请求头的特性，有效防御 CSRF 攻击。
+""",
     lifespan=lifespan,
     openapi_tags=[
         {"name": "projects", "description": "项目管理 - 签约、装修、销售全流程"},

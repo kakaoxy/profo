@@ -4,6 +4,7 @@
 关联使用逻辑外键，级联由 Service 层处理。
 """
 
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -16,6 +17,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Uuid,
 )
 from sqlalchemy import (
     Enum as SQLEnum,
@@ -39,7 +41,7 @@ class Investment(BaseModel):
 
     __tablename__ = "investments"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="关联项目ID(逻辑外键)")
     project_code: Mapped[str] = mapped_column(String(100), nullable=False, comment="项目编号(冗余)")
     project_name: Mapped[str] = mapped_column(String(700), nullable=False, comment="项目名称(冗余)")
 
@@ -101,7 +103,7 @@ class Investor(BaseModel):
 
     __tablename__ = "investors"
 
-    investment_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联跟投记录ID(逻辑外键)")
+    investment_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="关联跟投记录ID(逻辑外键)")
     name: Mapped[str] = mapped_column(String(200), nullable=False, comment="投资方名称")
     type: Mapped[InvestorType] = mapped_column(
         SQLEnum(InvestorType, values_callable=lambda x: [e.value for e in x]),
@@ -114,7 +116,7 @@ class Investor(BaseModel):
         comment="占比(母:占项目比例; 子:内部占比)",
     )
     invest_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="投资金额(元)")
-    parent_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="母投资方ID(自关联)")
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True, comment="母投资方ID(自关联)")
     sort_order: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="排序序号")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")
 
@@ -157,8 +159,8 @@ class ReturnAdjustment(BaseModel):
 
     __tablename__ = "return_adjustments"
 
-    investment_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联跟投记录ID(逻辑外键)")
-    investor_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联投资方ID(逻辑外键)")
+    investment_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="关联跟投记录ID(逻辑外键)")
+    investor_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="关联投资方ID(逻辑外键)")
     default_distribution_ratio: Mapped[Decimal] = mapped_column(
         Numeric(5, 2),
         nullable=False,
@@ -195,7 +197,7 @@ class InvestmentLog(BaseModel):
 
     __tablename__ = "investment_logs"
 
-    investment_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联跟投记录ID(逻辑外键)")
+    investment_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="关联跟投记录ID(逻辑外键)")
     action_type: Mapped[InvestmentActionType] = mapped_column(
         SQLEnum(InvestmentActionType, values_callable=lambda x: [e.value for e in x]),
         nullable=False,

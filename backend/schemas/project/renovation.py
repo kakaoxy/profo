@@ -10,7 +10,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from models.common import MediaKind, RenovationStage
 
@@ -46,9 +46,9 @@ class RenovationPhotoUpload(BaseModel):
 class RenovationPhotoResponse(BaseModel):
     """照片响应."""
 
-    id: str
-    project_id: str
-    renovation_id: str | None = None
+    id: UUID4
+    project_id: UUID4
+    renovation_id: UUID4 | None = None
     stage: str
     url: str
     filename: str | None = None
@@ -122,8 +122,8 @@ class RenovationContractUpdate(BaseModel):
 class RenovationContractResponse(BaseModel):
     """装修合同信息响应模型."""
 
-    id: str
-    project_id: str
+    id: UUID4
+    project_id: UUID4
     renovation_company: str | None = None
     contact_person_id: str | None = None
     contract_start_date: datetime | None = None
@@ -199,7 +199,7 @@ class RenovationBase(BaseModel):
 class RenovationCreate(RenovationBase):
     """创建装修记录请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class RenovationInfoUpdate(BaseModel):
@@ -234,8 +234,8 @@ class RenovationInfoUpdate(BaseModel):
 class RenovationResponse(RenovationBase):
     """装修记录响应."""
 
-    id: str = Field(description="装修记录ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="装修记录ID")
+    project_id: UUID4 = Field(description="项目ID")
     is_deleted: bool = Field(default=False, description="逻辑删除标记")
     created_at: datetime
     updated_at: datetime

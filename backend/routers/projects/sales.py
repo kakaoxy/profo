@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
+from pydantic import UUID4
 
 from dependencies.auth import (
     ProjectReadOrBusinessPermDep,
@@ -26,7 +27,7 @@ router = APIRouter()
 @limiter.limit(RateLimits.SALES_UPDATE)
 def update_sales_roles(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     roles_data: SalesRolesUpdate,
     service: ProjectServiceDep,
     current_user: ProjectSalesManageTeamPermDep,
@@ -42,7 +43,7 @@ def update_sales_roles(
 @limiter.limit(RateLimits.SALES_UPDATE)
 def create_viewing_record(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
     current_user: ProjectSalesAddRecordPermDep,
@@ -55,7 +56,7 @@ def create_viewing_record(
 @limiter.limit(RateLimits.SALES_UPDATE)
 def create_offer_record(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
     current_user: ProjectSalesAddRecordPermDep,
@@ -68,7 +69,7 @@ def create_offer_record(
 @limiter.limit(RateLimits.SALES_UPDATE)
 def create_negotiation_record(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
     current_user: ProjectSalesAddRecordPermDep,
@@ -79,7 +80,7 @@ def create_negotiation_record(
 
 @router.get("/{project_id}/selling/records")
 def get_sales_records(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: ProjectServiceDep,
     _current_user: ProjectReadOrBusinessPermDep,
     record_type: Annotated[str | None, Query(max_length=100, description="记录类型筛选")] = None,
@@ -98,7 +99,7 @@ def get_sales_records(
 @limiter.limit(RateLimits.SALES_DELETE)
 def delete_sales_record(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     record_id: Annotated[str, Path(description="记录ID")],
     service: ProjectServiceDep,
     _current_user: ProjectSalesAddRecordPermDep,

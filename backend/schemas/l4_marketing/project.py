@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import UUID4, BaseModel, ConfigDict, Field, field_validator
 
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 
@@ -47,11 +47,9 @@ class L4MarketingProjectBase(BaseModel):
     )
 
     # 关联
-    project_id: str | None = Field(
+    project_id: UUID4 | None = Field(
         None,
-        min_length=1,
-        max_length=36,
-        description="关联L3项目ID(软引用)，可为空，UUID字符串",
+        description="关联L3项目ID(软引用)，可为空",
     )
     consultant_id: str | None = Field(
         None,
@@ -99,7 +97,7 @@ class L4MarketingProjectUpdate(BaseModel):
     project_status: MarketingProjectStatus | None = Field(default=None, description="项目状态: 在途/在售/已售")
 
     # 关联
-    project_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联L3项目ID(软引用)")
+    project_id: UUID4 | None = Field(default=None, description="关联L3项目ID(软引用)")
     consultant_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联顾问ID(软引用)")
 
     @field_validator("images", "tags", mode="before")
@@ -163,7 +161,7 @@ class L4MarketingProjectResponse(BaseModel):
     project_status: MarketingProjectStatus
 
     # 关联
-    project_id: str | None = None
+    project_id: UUID4 | None = None
     consultant_id: str | None = None
 
     # 系统字段
@@ -208,10 +206,14 @@ class L4MarketingProjectResponse(BaseModel):
                 return None
         return None
 
-    @field_validator("community_id", "project_id", "consultant_id", mode="before")
+    @field_validator("community_id", "consultant_id", mode="before")
     @classmethod
     def validate_id_fields(cls, v: Any) -> str | None:  # noqa: ANN401
-        """验证ID字段，支持int和str类型，统一转换为str."""
+        """验证ID字段，支持int和str类型，统一转换为str.
+
+        注意: project_id 已移除 — UUID4 类型原生支持 str 输入解析，
+        int 输入属于非法值（L3 项目 ID 为 UUID 字符串），由 Pydantic 直接拒绝。
+        """
         if v is None:
             return None
         if isinstance(v, int):

@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 
 class SigningMaterial(BaseModel):
@@ -42,7 +42,7 @@ class ContractBase(BaseModel):
 class ContractCreate(ContractBase):
     """创建合同请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class ContractUpdate(BaseModel):
@@ -65,8 +65,8 @@ class ContractUpdate(BaseModel):
 class ContractResponse(ContractBase):
     """合同响应."""
 
-    id: str = Field(description="合同ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="合同ID")
+    project_id: UUID4 = Field(description="项目ID")
     is_deleted: bool = Field(default=False, description="逻辑删除标记")
     created_at: datetime
     updated_at: datetime

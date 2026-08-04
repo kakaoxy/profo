@@ -8,6 +8,7 @@
 - service.InvestmentService: 多继承聚合
 """
 
+import uuid
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
@@ -283,7 +284,7 @@ class _InvestmentServiceBase:
             for sub in parent.sub_investors:
                 sub.invest_amount = self._calc_sub_amount(parent.invest_amount, sub.share_ratio)
 
-    def _get_project_or_404(self, project_id: str) -> Project:
+    def _get_project_or_404(self, project_id: uuid.UUID) -> Project:
         """获取项目，不存在或已软删抛 404."""
         proj = (
             self.db.query(Project)

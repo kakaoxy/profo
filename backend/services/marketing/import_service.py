@@ -4,6 +4,7 @@
 """
 
 import re
+import uuid
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -36,7 +37,7 @@ class MarketingImportService:
 
     def import_from_l3_project(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
     ) -> L3ProjectImportResponse | None:
         """从L3项目导入数据.
 
@@ -159,7 +160,7 @@ class MarketingImportService:
             parts.append(project.orientation)
         return " ".join(parts) if parts else "未命名房源"
 
-    def _get_available_media(self, project_id: str) -> list[ImportableMediaResponse]:
+    def _get_available_media(self, project_id: uuid.UUID) -> list[ImportableMediaResponse]:
         """获取项目可导入的媒体资源."""
         photos: list[RenovationPhoto] = (
             self.db.query(RenovationPhoto)

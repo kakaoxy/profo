@@ -1,9 +1,10 @@
 """财务流水模型."""
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, DateTime, Index, Numeric, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Index, Numeric, String, Text, Uuid
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -16,7 +17,7 @@ class FinanceRecord(BaseModel):
 
     __tablename__ = "finance_records"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="项目ID(逻辑外键)")
 
     type: Mapped[CashFlowType] = mapped_column(
         SQLEnum(CashFlowType, values_callable=lambda x: [e.value for e in x], create_constraint=True),
@@ -74,7 +75,7 @@ class FinanceRecordLog(BaseModel):
 
     __tablename__ = "finance_record_logs"
 
-    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联项目ID(逻辑外键)")
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment="关联项目ID(逻辑外键)")
     action_type: Mapped[FinanceActionType] = mapped_column(
         SQLEnum(FinanceActionType, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
@@ -98,6 +99,9 @@ class FinanceSubject(BaseModel):
     """
 
     __tablename__ = "finance_subjects"
+
+    # 覆盖 BaseModel.id：系统预置科目使用语义化字符串 ID（如 'S01'），非 UUID
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, comment="科目名称(唯一)")
     level: Mapped[str] = mapped_column(

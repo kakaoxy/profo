@@ -1,6 +1,6 @@
 """L4 市场营销层查询参数和响应 Schema."""
 
-from pydantic import BaseModel, Field
+from pydantic import UUID4, BaseModel, Field
 
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from schemas.response import PaginatedResponse
@@ -19,7 +19,7 @@ class L4MarketingProjectQuery(BaseModel):
     publish_status: PublishStatus | None = None
     project_status: MarketingProjectStatus | None = None
     consultant_id: str | None = None
-    project_id: str | None = None
+    project_id: UUID4 | None = None
     decoration_style: str | None = None
 
 

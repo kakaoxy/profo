@@ -13,6 +13,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
+from pydantic import UUID4
 
 from dependencies.auth import (
     DbSessionDep,
@@ -137,7 +138,7 @@ def export_ledger(
     summary="获取项目资金账本详情",
 )
 def get_ledger_detail(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> CashFlowResponse:
@@ -152,7 +153,7 @@ def get_ledger_detail(
     summary="获取项目资金账本统计",
 )
 def get_project_statistics(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> ProjectLedgerStatisticsResponse:
@@ -168,7 +169,7 @@ def get_project_statistics(
     summary="获取项目应收应付参考表",
 )
 def get_receivable_payable(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> ReceivablePayableResponse:
@@ -181,7 +182,7 @@ def get_receivable_payable(
     summary="获取项目资金账本操作日志",
 )
 def list_project_logs(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> list[FinanceLogResponse]:
@@ -196,7 +197,7 @@ def list_project_logs(
 @limiter.limit(RateLimits.INVESTMENT_EXPORT)
 def export_project_ledger(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> StreamingResponse:
@@ -226,7 +227,7 @@ def export_project_ledger(
 @limiter.limit(RateLimits.INVESTMENT_SETTLE)
 def settle_project_finance(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     data: FinanceSettlementChangeRequest,
     service: _FinanceServiceDep,
     current_user: LedgerSettlePermDep,
@@ -245,7 +246,7 @@ def settle_project_finance(
 @limiter.limit(RateLimits.INVESTMENT_SETTLE)
 def unsettle_project_finance(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     data: FinanceUnsettleRequest,
     service: _FinanceServiceDep,
     current_user: LedgerSettlePermDep,

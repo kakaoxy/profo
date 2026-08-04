@@ -44,6 +44,8 @@
   DateTime 列迁移为 timestamptz（时区一致性修复，幂等）
 - migrate_all_datetime_columns_to_timestamptz: 遍历所有模型 DateTime 列，将 PG 中仍为
   timestamp without time zone 的列统一迁移为 timestamptz（通用时区修复，幂等）
+- migrate_uuid_columns_to_native_uuid: 遍历所有模型 Uuid 列（BaseModel.id 与 project_id
+  逻辑外键），将 PG 中仍为 varchar 的列统一迁移为原生 uuid（USING col::uuid，幂等）
 - migrate_encrypted_columns_to_text: 将 EncryptedString 列从 character varying 迁移为 text
   （Fernet 密文远超声明长度，PG 严格强制 VARCHAR 长度会报错，幂等）
 - widen_url_columns_to_text: 将 URL 列从 VARCHAR(500) 迁移为 text
@@ -113,6 +115,7 @@ from migrations._type_migrations import (
     migrate_project_date_columns_to_date,
     migrate_record_date_to_timestamptz,
     migrate_user_datetime_columns_to_timestamptz,
+    migrate_uuid_columns_to_native_uuid,
     widen_url_columns_to_text,
 )
 from migrations._user_security import (
@@ -204,6 +207,7 @@ def _run_all_migrations(engine: Engine) -> None:
         migrate_encrypted_columns_to_text(engine)
         widen_url_columns_to_text(engine)
         migrate_all_datetime_columns_to_timestamptz(engine)
+        migrate_uuid_columns_to_native_uuid(engine)
         create_wechat_oauth_tables(engine)
         create_user_roles_table(engine)
         migrate_installation_stage_to_delivery(engine)

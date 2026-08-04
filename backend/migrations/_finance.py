@@ -315,20 +315,26 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
         return
 
     # 用 Core API 构造 update，让 SQLAlchemy 按列类型(JSON)正确绑定参数
+    # 检测 id 列实际 PG 类型：已迁移为 uuid 时用 Uuid，仍为 varchar 时用 String
+    # （避免 uuid > varchar 运算符不存在错误）
+    from sqlalchemy import inspect as sa_inspect  # noqa: PLC0415
+
+    _insp = sa_inspect(engine)
+    _id_col_info = next(c for c in _insp.get_columns("finance_records") if c["name"] == "id")
     metadata = MetaData()
     finance_records_tbl = Table(
         "finance_records",
         metadata,
-        Column("id", String(36), primary_key=True),
+        Column("id", _id_col_info["type"], primary_key=True),
         Column("receipt_url", String(500)),
         Column("receipt_urls", JSON),
     )
 
     updated = 0
-    last_id = ""
+    last_id = None
     while True:
         with engine.begin() as conn:
-            rows = conn.execute(
+            stmt = (
                 select(
                     finance_records_tbl.c.id,
                     finance_records_tbl.c.receipt_url,
@@ -336,11 +342,13 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
                 .where(
                     finance_records_tbl.c.receipt_url.is_not(None),
                     finance_records_tbl.c.receipt_urls.is_(None),
-                    finance_records_tbl.c.id > last_id,
                 )
                 .order_by(finance_records_tbl.c.id)
-                .limit(_MIGRATION_BATCH_SIZE),
-            ).fetchall()
+                .limit(_MIGRATION_BATCH_SIZE)
+            )
+            if last_id is not None:
+                stmt = stmt.where(finance_records_tbl.c.id > last_id)
+            rows = conn.execute(stmt).fetchall()
             if not rows:
                 break
 

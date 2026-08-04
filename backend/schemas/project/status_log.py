@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from models.common import ProjectStatus
 from schemas.response import PaginatedResponse
@@ -24,7 +24,7 @@ class StatusLogBase(BaseModel):
 class StatusLogCreate(StatusLogBase):
     """创建状态日志请求."""
 
-    project_id: str = Field(description="项目ID")
+    project_id: UUID4 = Field(description="项目ID")
 
 
 class StatusLogUpdate(BaseModel):
@@ -41,8 +41,8 @@ class StatusLogUpdate(BaseModel):
 class StatusLogResponse(StatusLogBase):
     """状态日志响应."""
 
-    id: str = Field(description="日志ID")
-    project_id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="日志ID")
+    project_id: UUID4 = Field(description="项目ID")
     created_at: datetime
     updated_at: datetime
 

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
+from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 from schemas.response import PaginatedResponse
 
@@ -274,7 +274,7 @@ class ApiKeyCreateResponse(BaseModel):
 class ApiKeyInfoResponse(BaseModel):
     """API Key 信息响应模型."""
 
-    id: str = Field(description="Key ID")
+    id: UUID4 = Field(description="Key ID")
     prefix: str = Field(description="Key 前缀")
     status: str = Field(description="Key 状态")
     created_at: datetime = Field(description="创建时间")

@@ -763,6 +763,9 @@ export interface paths {
          *     仅 admin 角色可调用（银行卡号为敏感财务数据）。
          *     service 层会校验 owner 所属 project 未被软删除；
          *     审计日志（OperationLog）在路由层记录，不记录银行卡号本身。
+         *
+         *     返回 200 + ``{"bank_card_number": null}`` 表示业主存在但未登记银行卡号；
+         *     业主不存在时 service 同样返回 None，前端按 null 处理即可（避免将"无卡"误报为 404）。
          */
         get: operations["get_owner_bank_card_api_v1_projects_owners__owner_id__bank_card_get"];
         put?: never;
@@ -862,7 +865,7 @@ export interface paths {
          * Export Projects
          * @description 导出项目数据为 CSV 文件.
          *
-         *     支持按状态和小区名称筛选，导出所有匹配记录（无分页限制）
+         *     支持按状态和小区名称筛选，导出所有匹配记录（service 层分页遍历，遵守 max_page_size）
          *     速率限制：10次/小时
          */
         get: operations["export_projects_api_v1_projects_export_get"];
@@ -2830,7 +2833,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/projects/{project_id}": {
+    "/api/v1/public/projects/{marketing_project_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2841,7 +2844,7 @@ export interface paths {
          * 获取房源详情
          * @description 获取指定房源的详细信息，无需登录
          */
-        get: operations["get_project_detail_api_v1_public_projects__project_id__get"];
+        get: operations["get_project_detail_api_v1_public_projects__marketing_project_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2850,7 +2853,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/projects/{project_id}/consultant": {
+    "/api/v1/public/projects/{marketing_project_id}/consultant": {
         parameters: {
             query?: never;
             header?: never;
@@ -2861,7 +2864,7 @@ export interface paths {
          * 获取顾问联系方式
          * @description 获取指定房源的顾问联系方式，无需登录
          */
-        get: operations["get_consultant_contact_api_v1_public_projects__project_id__consultant_get"];
+        get: operations["get_consultant_contact_api_v1_public_projects__marketing_project_id__consultant_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3199,7 +3202,10 @@ export interface components {
          * @description AI策略请求.
          */
         AIStrategyRequest: {
-            /** Project Id */
+            /**
+             * Project Id
+             * Format: uuid4
+             */
             project_id: string;
             /** User Context */
             user_context: string;
@@ -3449,7 +3455,10 @@ export interface components {
         CashFlowRecordResponse: {
             /** Id */
             id: string;
-            /** Project Id */
+            /**
+             * Project Id
+             * Format: uuid4
+             */
             project_id: string;
             type: components["schemas"]["CashFlowType"];
             category: components["schemas"]["CashFlowCategory"];
@@ -4020,6 +4029,7 @@ export interface components {
         CopyInvestmentRequest: {
             /**
              * Target Project Id
+             * Format: uuid4
              * @description 目标项目ID
              */
             target_project_id: string;
@@ -4128,6 +4138,7 @@ export interface components {
             id: string;
             /**
              * Project Id
+             * Format: uuid4
              * @description 项目ID
              */
             project_id: string;
@@ -4256,6 +4267,7 @@ export interface components {
             id: string;
             /**
              * Project Id
+             * Format: uuid4
              * @description 关联项目ID
              */
             project_id: string;
@@ -4665,6 +4677,7 @@ export interface components {
         InvestmentCreate: {
             /**
              * Project Id
+             * Format: uuid4
              * @description 关联项目ID
              */
             project_id: string;
@@ -4696,6 +4709,7 @@ export interface components {
             id: string;
             /**
              * Project Id
+             * Format: uuid4
              * @description 关联项目ID
              */
             project_id: string;
@@ -4820,6 +4834,7 @@ export interface components {
             id: string;
             /**
              * Project Id
+             * Format: uuid4
              * @description 关联项目ID
              */
             project_id: string;
@@ -5142,6 +5157,7 @@ export interface components {
         L3ProjectImportResponse: {
             /**
              * Project Id
+             * Format: uuid4
              * @description L3项目ID
              */
             project_id: string;
@@ -5482,7 +5498,7 @@ export interface components {
             project_status: components["schemas"]["MarketingProjectStatus"];
             /**
              * Project Id
-             * @description 关联L3项目ID(软引用)，可为空，UUID字符串
+             * @description 关联L3项目ID(软引用)，可为空
              */
             project_id?: string | null;
             /**
@@ -6074,7 +6090,10 @@ export interface components {
          * @description 资金账本项目列表项（含聚合统计）.
          */
         LedgerProjectListItem: {
-            /** Project Id */
+            /**
+             * Project Id
+             * Format: uuid4
+             */
             project_id: string;
             /** Project Code */
             project_code?: string | null;
@@ -6110,6 +6129,7 @@ export interface components {
         LedgerRecordCreate: {
             /**
              * Project Id
+             * Format: uuid4
              * @description 项目ID
              */
             project_id: string;
@@ -6713,6 +6733,7 @@ export interface components {
             id: string;
             /**
              * Project Id
+             * Format: uuid4
              * @description 项目ID
              */
             project_id: string;
@@ -7326,7 +7347,10 @@ export interface components {
          * @description 财务报表 - 适配新的规范化表结构.
          */
         ProjectReportResponse: {
-            /** Project Id */
+            /**
+             * Project Id
+             * Format: uuid4
+             */
             project_id: string;
             /** Project Name */
             project_name?: string | null;
@@ -7370,6 +7394,7 @@ export interface components {
         ProjectResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 项目ID
              */
             id: string;
@@ -9173,7 +9198,10 @@ export interface components {
         RenovationContractResponse: {
             /** Id */
             id: string;
-            /** Project Id */
+            /**
+             * Project Id
+             * Format: uuid4
+             */
             project_id: string;
             /** Renovation Company */
             renovation_company?: string | null;
@@ -9406,7 +9434,10 @@ export interface components {
         RenovationPhotoResponse: {
             /** Id */
             id: string;
-            /** Project Id */
+            /**
+             * Project Id
+             * Format: uuid4
+             */
             project_id: string;
             /** Renovation Id */
             renovation_id?: string | null;
@@ -9844,7 +9875,10 @@ export interface components {
         SalesRecordResponse: {
             /** Id */
             id: string;
-            /** Project Id */
+            /**
+             * Project Id
+             * Format: uuid4
+             */
             project_id: string;
             record_type: components["schemas"]["RecordType"];
             /** Customer Name */
@@ -16180,12 +16214,12 @@ export interface operations {
             };
         };
     };
-    get_project_detail_api_v1_public_projects__project_id__get: {
+    get_project_detail_api_v1_public_projects__marketing_project_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                project_id: number;
+                marketing_project_id: number;
             };
             cookie?: never;
         };
@@ -16211,12 +16245,12 @@ export interface operations {
             };
         };
     };
-    get_consultant_contact_api_v1_public_projects__project_id__consultant_get: {
+    get_consultant_contact_api_v1_public_projects__marketing_project_id__consultant_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                project_id: number;
+                marketing_project_id: number;
             };
             cookie?: never;
         };

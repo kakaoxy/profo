@@ -217,7 +217,7 @@ class CommunityQueryService:
             return CommunityQueryService.build_response_from_community(existing)
 
         new_community = Community(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             name=body.name.strip(),
             district=body.district,
             business_circle=body.business_circle,

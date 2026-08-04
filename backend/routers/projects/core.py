@@ -210,7 +210,7 @@ def export_projects(
 
 @router.get("/{project_id}")
 def get_project(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: ProjectServiceDep,
     current_user: ProjectReadOrBusinessPermDep,
     *,
@@ -235,7 +235,7 @@ def get_project(
 @limiter.limit(RateLimits.PROJECT_UPDATE)
 def update_project(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     update_data: ProjectUpdate,
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
@@ -255,7 +255,7 @@ def update_project(
 @limiter.limit(RateLimits.PROJECT_DELETE)
 def delete_project(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
 ) -> None:
@@ -270,7 +270,7 @@ def delete_project(
 @limiter.limit(RateLimits.PROJECT_STATUS_UPDATE)
 def update_project_status(
     request: Request,
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     status_update: ProjectStatusUpdate,
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
@@ -288,7 +288,7 @@ def update_project_status(
 
 @router.post("/{project_id}/complete", status_code=status.HTTP_201_CREATED)
 def complete_project(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     complete_data: ProjectCompleteRequest,
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
@@ -303,7 +303,7 @@ def complete_project(
 
 @router.get("/{project_id}/report")
 def get_project_report(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: ProjectServiceDep,
     _current_user: ProjectReadOrBusinessPermDep,
 ) -> ProjectReportResponse:

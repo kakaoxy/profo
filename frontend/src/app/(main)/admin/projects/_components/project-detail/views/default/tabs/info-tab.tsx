@@ -430,7 +430,7 @@ export function InfoTab({ project }: InfoTabProps) {
           label="成交价"
           value={
             project.sold_price ? (
-              <span className="text-success font-bold font-mono">
+              <span className="text-money-positive font-bold font-mono">
                 {formatPrice(project.sold_price)}
               </span>
             ) : undefined
@@ -444,8 +444,8 @@ export function InfoTab({ project }: InfoTabProps) {
                 className={cn(
                   "font-bold font-mono",
                   (project.net_cash_flow ?? 0) >= 0
-                    ? "text-success"
-                    : "text-error"
+                    ? "text-money-positive"
+                    : "text-money-negative"
                 )}
               >
                 {formatPrice((project.net_cash_flow || 0) / 10000)}

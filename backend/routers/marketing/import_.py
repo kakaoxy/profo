@@ -6,6 +6,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query
+from pydantic import UUID4
 
 from dependencies.auth import DbSessionDep, require_roles
 from dependencies.common import PaginationDep
@@ -75,7 +76,7 @@ def list_available_projects(
     summary="获取L3项目详情",
 )
 def get_l3_project_detail(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     service: Annotated[L4MarketingQueryService, Depends(get_query_service)],
 ) -> L3ProjectBriefResponse:
     """获取单个L3项目详情.
@@ -91,7 +92,7 @@ def get_l3_project_detail(
     summary="从L3项目导入数据",
 )
 def import_from_l3_project(
-    project_id: Annotated[str, Path(description="项目ID")],
+    project_id: Annotated[UUID4, Path(description="项目ID")],
     query_service: Annotated[L4MarketingQueryService, Depends(get_query_service)],
     import_service: Annotated[L4MarketingImportService, Depends(get_import_service)],
 ) -> L3ProjectImportResponse:

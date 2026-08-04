@@ -53,7 +53,7 @@ class ProjectCreator:
             创建成功的项目模型实例
 
         """
-        project_id = str(uuid.uuid4())
+        project_id = uuid.uuid4()
         now = datetime.now(timezone.utc)
 
         # 1. 创建项目基础记录
@@ -82,7 +82,7 @@ class ProjectCreator:
 
     def _create_base_project(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         project_data: ProjectCreate,
         now: datetime,
     ) -> Project:
@@ -114,7 +114,7 @@ class ProjectCreator:
 
     def _create_contract_record(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         project_data: ProjectCreate,
         now: datetime,
     ) -> None:
@@ -161,7 +161,7 @@ class ProjectCreator:
             return
 
         contract = ProjectContract(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             project_id=project_id,
             contract_no=project_data.contract_no,
             signing_price=project_data.signing_price,
@@ -183,7 +183,7 @@ class ProjectCreator:
 
     def _create_owner_record(
         self,
-        project_id: str,
+        project_id: uuid.UUID,
         project_data: ProjectCreate,
         now: datetime,
     ) -> None:
@@ -196,7 +196,7 @@ class ProjectCreator:
             ],
         ):
             owner = ProjectOwner(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 owner_name=project_data.owner_name,
                 owner_phone=project_data.owner_phone,

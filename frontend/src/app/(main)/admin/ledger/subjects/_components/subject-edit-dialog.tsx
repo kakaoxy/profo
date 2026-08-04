@@ -281,7 +281,10 @@ export function SubjectEditDialog({
                     <FormLabel>
                       业务阶段 <span className="text-rust">*</span>
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />

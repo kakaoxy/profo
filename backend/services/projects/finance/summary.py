@@ -1,6 +1,7 @@
 """现金流汇总与财务报告."""
 
 import logging
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 class _SummaryMixin:
     """现金流汇总与财务报告方法."""
 
-    def get_summary(self, project_id: str) -> CashFlowSummary:
+    def get_summary(self, project_id: uuid.UUID) -> CashFlowSummary:
         """获取现金流汇总."""
         logger.info("Getting cashflow summary for project %s", project_id)
 
@@ -110,7 +111,7 @@ class _SummaryMixin:
             msg = "计算现金流汇总失败"
             raise ServiceException(msg) from e
 
-    def get_report(self, project_id: str) -> dict[str, Any]:
+    def get_report(self, project_id: uuid.UUID) -> dict[str, Any]:
         """获取项目财务报告."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:

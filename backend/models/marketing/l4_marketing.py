@@ -3,6 +3,7 @@
 对应 mini_projects 小程序项目管理.
 """
 
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
@@ -16,6 +17,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Uuid,
 )
 from sqlalchemy import (
     Enum as SQLEnum,
@@ -63,7 +65,7 @@ class L4MarketingProject(BaseModel):
     __tablename__ = "l4_marketing_projects"
 
     # 主键 - 整数类型，自增
-    # 注意：继承的BaseModel使用String(36) UUID，我们需要覆盖它
+    # 注意：继承的 BaseModel 主键为 Uuid（uuid.UUID），L4 营销项目使用自增 int 主键，需覆盖
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="营销项目ID")
 
     # 小区ID - UUID字符串类型，非空，逻辑外键
@@ -115,8 +117,8 @@ class L4MarketingProject(BaseModel):
     )
 
     # 软引用关联
-    project_id: Mapped[str | None] = mapped_column(
-        String(36),
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid,
         nullable=True,
         comment="关联L3项目ID(软引用)，可为空表示独立项目",
     )

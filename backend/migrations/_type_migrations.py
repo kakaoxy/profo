@@ -327,3 +327,64 @@ def migrate_all_datetime_columns_to_timestamptz(engine: Engine) -> None:
 
     if migrated:
         logger.info("迁移：共 %d 个 DateTime 列转为 timestamptz", migrated)
+
+
+def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
+    """将所有模型 Uuid 列在 PostgreSQL 中统一迁移为原生 uuid 类型.
+
+    合规性修复：BaseModel.id 及 project_id 逻辑外键列原为 String(36)（PG varchar），
+    模型层已改为 SQLAlchemy ``Uuid``（``Mapped[uuid.UUID]``）。此迁移同步已存在的
+    PG 表列类型为原生 uuid，获得 DB 层格式强制（拒绝非 UUID 字符串）与存储优化。
+
+    覆盖：projects.id、users.id 等所有 BaseModel 派生表主键，以及 project_contracts/
+    project_documents/... 等表的 project_id 列。不继承 BaseModel 的表（community/lead/
+    import_task 等显式 String(36) 主键）因模型仍为 String 不受影响。
+
+    - PostgreSQL: ``ALTER COLUMN ... TYPE uuid USING <col>::uuid``（既有值均为
+      ``str(uuid.uuid4())`` 生成的标准 UUID4 字符串，``::uuid`` 转换安全）
+    - 幂等：通过 ``information_schema.columns.data_type`` 判断，已是 ``uuid`` 则跳过
+    - 非 PG 后端（开发/测试 SQLite 等）直接跳过（SQLite 无独立 uuid 类型）
+    - 表名/列名来自可信模型元数据；DDL 不支持绑定参数故字符串拼接
+    """
+    if engine.dialect.name != "postgresql":
+        return
+
+    from sqlalchemy import Uuid  # noqa: PLC0415
+
+    from models import Base  # noqa: PLC0415
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+
+    migrated = 0
+    for table_name, table in Base.metadata.tables.items():
+        if table_name not in existing_tables:
+            continue
+        for column in table.columns:
+            if not isinstance(column.type, Uuid):
+                continue
+            with engine.connect() as conn:
+                row = conn.execute(
+                    text(
+                        "SELECT data_type FROM information_schema.columns "
+                        "WHERE table_name = :table AND column_name = :col",
+                    ),
+                    {"table": table_name, "col": column.name},
+                ).first()
+            if row is None:
+                continue
+            if row[0] == "uuid":
+                continue
+            logger.info("迁移：%s.%s → uuid（当前类型 %s）", table_name, column.name, row[0])
+            # 表名/列名来自可信模型元数据；DDL 不支持绑定参数
+            alter_sql = (
+                "ALTER TABLE " + table_name + " "
+                "ALTER COLUMN " + column.name + " TYPE uuid "
+                "USING " + column.name + "::uuid"
+            )
+            with engine.begin() as conn:
+                conn.execute(text(alter_sql))
+            migrated += 1
+
+    if migrated:
+        logger.info("迁移：共 %d 个列转为 uuid", migrated)

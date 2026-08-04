@@ -3,6 +3,7 @@
 import csv
 import io
 import logging
+import uuid
 import zipfile
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -418,7 +419,7 @@ class _LedgerMixin:
         wb.save(buffer)
         return buffer.getvalue()
 
-    def export_project_records_zip(self, project_id: str) -> tuple[str, bytes]:
+    def export_project_records_zip(self, project_id: uuid.UUID) -> tuple[str, bytes]:
         """资金账本：导出单项目流水为 zip（含 CSV + 票据图片）.
 
         票据文件可能存储在本地（local 模式）或 OSS（oss 模式）：

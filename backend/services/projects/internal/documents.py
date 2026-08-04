@@ -16,7 +16,7 @@ from schemas.project.document import DocumentCreate, DocumentUpdate
 from services.system.exceptions import ResourceNotFoundError
 
 
-def assert_project_exists(db: Session, project_id: str) -> Project:
+def assert_project_exists(db: Session, project_id: uuid.UUID) -> Project:
     """校验项目存在且未软删除，不存在抛 404.
 
     Args:
@@ -37,7 +37,7 @@ def assert_project_exists(db: Session, project_id: str) -> Project:
     return project
 
 
-def list_documents(db: Session, project_id: str) -> list[ProjectDocument]:
+def list_documents(db: Session, project_id: uuid.UUID) -> list[ProjectDocument]:
     """列出项目下未删除的文书，按 display_order 升序.
 
     Args:
@@ -59,7 +59,7 @@ def list_documents(db: Session, project_id: str) -> list[ProjectDocument]:
     )
 
 
-def create_document(db: Session, project_id: str, payload: DocumentCreate) -> ProjectDocument:
+def create_document(db: Session, project_id: uuid.UUID, payload: DocumentCreate) -> ProjectDocument:
     """新增文书。display_order 默认追加末尾（当前 max +1）。.
 
     Args:
@@ -86,7 +86,7 @@ def create_document(db: Session, project_id: str, payload: DocumentCreate) -> Pr
         )
         display_order = (max_order[0] + 1) if max_order else 1
     doc = ProjectDocument(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         project_id=project_id,
         document_name=payload.document_name,
         signoff_status=DocumentSignoffStatus.UNSIGNED.value,
@@ -105,7 +105,7 @@ def create_document(db: Session, project_id: str, payload: DocumentCreate) -> Pr
 
 def update_document(
     db: Session,
-    project_id: str,
+    project_id: uuid.UUID,
     document_id: str,
     payload: DocumentUpdate,
 ) -> ProjectDocument | None:
@@ -155,7 +155,7 @@ def update_document(
     return doc
 
 
-def delete_document(db: Session, project_id: str, document_id: str) -> bool:
+def delete_document(db: Session, project_id: uuid.UUID, document_id: str) -> bool:
     """逻辑删除文书。返回是否找到并删除。.
 
     Args:
@@ -184,7 +184,7 @@ def delete_document(db: Session, project_id: str, document_id: str) -> bool:
     return True
 
 
-def initialize_documents(db: Session, project_id: str, business_form: BusinessForm | None) -> int:
+def initialize_documents(db: Session, project_id: uuid.UUID, business_form: BusinessForm | None) -> int:
     """幂等初始化文书清单。返回新增数量。business_form=None 抛 ValueError。.
 
     查已有 document_name 集合（未删除），仅 insert 缺失项。
@@ -226,7 +226,7 @@ def initialize_documents(db: Session, project_id: str, business_form: BusinessFo
             continue
         new_docs.append(
             ProjectDocument(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 project_id=project_id,
                 document_name=tpl.document_name,
                 signoff_status=DocumentSignoffStatus.UNSIGNED.value,
@@ -247,7 +247,7 @@ def initialize_documents(db: Session, project_id: str, business_form: BusinessFo
 
 def sync_documents_on_business_form_change(
     db: Session,
-    project_id: str,
+    project_id: uuid.UUID,
     old_form: BusinessForm | None,
     new_form: BusinessForm | None,
 ) -> None:

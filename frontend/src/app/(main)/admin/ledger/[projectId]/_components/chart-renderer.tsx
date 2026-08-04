@@ -37,8 +37,9 @@ function ChartRenderer({
   colorIncome,
   colorExpense,
 }: ChartRendererProps) {
+  // 固定数值高度避免依赖父容器 clientHeight 测量，防止 dynamic 加载切换瞬间测得 0 触发 recharts 宽高 -1 警告
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height={250}>
       <BarChart
         data={chartData}
         margin={{ top: 5, right: 20, left: 0, bottom: 5 }}

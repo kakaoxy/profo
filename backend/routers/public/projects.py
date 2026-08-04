@@ -143,25 +143,25 @@ def get_sold_projects(
 
 
 @router.get(
-    "/projects/{project_id}",
+    "/projects/{marketing_project_id}",
     summary="获取房源详情",
     description="获取指定房源的详细信息，无需登录",
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_project_detail(
     request: Request,
-    project_id: int,
+    marketing_project_id: int,
     db: DbSessionDep,
 ) -> PublicProjectDetail:
     """获取指定房源的详细信息."""
     svc = PublicProjectService(db)
-    project = svc.get_project_detail(project_id)
+    project = svc.get_project_detail(marketing_project_id)
 
     if not project:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
 
-    media_list = svc.get_project_media(project_id)
+    media_list = svc.get_project_media(marketing_project_id)
 
     media_items = [
         PublicMediaItem(
@@ -232,19 +232,19 @@ def get_project_detail(
 
 
 @router.get(
-    "/projects/{project_id}/consultant",
+    "/projects/{marketing_project_id}/consultant",
     summary="获取顾问联系方式",
     description="获取指定房源的顾问联系方式，无需登录",
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_consultant_contact(
     request: Request,
-    project_id: int,
+    marketing_project_id: int,
     db: DbSessionDep,
 ) -> PublicConsultantContact:
     """获取指定房源的顾问联系方式."""
     svc = PublicProjectService(db)
-    project = svc.get_project_detail(project_id)
+    project = svc.get_project_detail(marketing_project_id)
 
     if not project:
         msg = "项目不存在"
