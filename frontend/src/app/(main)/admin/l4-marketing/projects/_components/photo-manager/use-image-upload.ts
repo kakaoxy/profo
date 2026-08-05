@@ -104,7 +104,8 @@ export function useImageUpload({
     allowedTypes: ALLOWED_MEDIA_TYPES,
     multiple: true,
     validateFile: validateMediaFile,
-    beforeUpload: (file) => compressImage(file),
+    beforeUpload: (file) =>
+      file.type.startsWith("video/") ? file : compressImage(file),
     onProgress: ({ file, progress }) => {
       // 同步到组件的 uploadingFiles 状态（用于UI展示）
       setUploadingFiles((prev) =>

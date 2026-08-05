@@ -85,15 +85,19 @@ function convertImportableToL4Media(media: ImportableMedia[]): L4MarketingMedia[
 
 /**
  * 计算照片是否有变更（编辑模式检测）
- * 数量变化或存在临时ID（负数或大于特定值的ID表示新上传）即视为有变更
+ * 数量变化、存在临时ID（负数或大于特定值的ID表示新上传）或 sort_order 变化（拖拽重排）即视为有变更
  */
 function computeHasPhotoChanges(
   mode: "create" | "edit",
   photos: L4MarketingMedia[],
-  initialCount: number
+  initialPhotos: L4MarketingMedia[]
 ): boolean {
   if (mode !== "edit") return false;
-  if (photos.length !== initialCount) return true;
+  if (photos.length !== initialPhotos.length) return true;
+  // 检测拖拽重排：比较每个照片的 sort_order 是否与初始一致
+  const initialSort = new Map(initialPhotos.map((p) => [p.id, p.sort_order]));
+  const hasSortChange = photos.some((p) => initialSort.get(p.id) !== p.sort_order);
+  if (hasSortChange) return true;
   return photos.some((p) => {
     const id = Number(p.id);
     return id < 0 || id > 1000000000000;
@@ -102,12 +106,12 @@ function computeHasPhotoChanges(
 
 export function EditMode({ mode, project, photos, actions, defaultConsultantId }: EditModeProps) {
   const [localPhotos, setLocalPhotos] = React.useState<L4MarketingMedia[]>(photos);
-  // 保存初始照片数量用于比较（惰性初始化，组件生命周期内不变）
-  const [initialPhotoCount] = React.useState(photos.length);
+  // 保存初始照片用于比较（惰性初始化，组件生命周期内不变）
+  const [initialPhotos] = React.useState(photos);
   // 派生状态：跟踪照片是否有变更（用于编辑模式检测）
   const hasPhotoChanges = React.useMemo(
-    () => computeHasPhotoChanges(mode, localPhotos, initialPhotoCount),
-    [mode, localPhotos, initialPhotoCount]
+    () => computeHasPhotoChanges(mode, localPhotos, initialPhotos),
+    [mode, localPhotos, initialPhotos]
   );
 
   // 创建模式下，从 localPhotos 构建 mediaFiles
