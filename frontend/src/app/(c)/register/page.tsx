@@ -67,14 +67,14 @@ export default function CRegisterPage() {
         {/* Branding Content */}
         <div className="relative z-10 max-w-lg text-left">
           <div className="mb-8">
-            <span className="text-ink text-[40px] leading-[48px] font-medium tracking-[-0.009em]">
+            <span className="text-ink text-[40px] leading-12 font-medium tracking-[-0.009em]">
               {cLocale.common.brand.company}
             </span>
           </div>
           <h1 className="font-display text-[44px] leading-[1.1] text-ink mb-4">
             {cLocale.register.heroTitle}
           </h1>
-          <p className="text-[18px] leading-[28px] text-ash">
+          <p className="text-[18px] leading-7 text-ash">
             {cLocale.register.heroDesc}
           </p>
 
@@ -82,19 +82,19 @@ export default function CRegisterPage() {
           <div className="mt-16 grid grid-cols-2 gap-4">
             <div className="p-5 bg-white rounded-cards shadow-steep-sm">
               <Verified className="text-rust mb-2" size={24} />
-              <div className="text-[14px] leading-[20px] font-medium text-ink">
+              <div className="text-[14px] leading-5 font-medium text-ink">
                 {cLocale.register.featureAuthoritativeTitle}
               </div>
-              <div className="text-[14px] leading-[20px] text-graphite mt-1">
+              <div className="text-[14px] leading-5 text-graphite mt-1">
                 {cLocale.register.featureAuthoritativeDesc}
               </div>
             </div>
             <div className="p-5 bg-white rounded-cards shadow-steep-sm">
               <BarChart3 className="text-rust mb-2" size={24} />
-              <div className="text-[14px] leading-[20px] font-medium text-ink">
+              <div className="text-[14px] leading-5 font-medium text-ink">
                 {cLocale.register.featureSmartValuationTitle}
               </div>
-              <div className="text-[14px] leading-[20px] text-graphite mt-1">
+              <div className="text-[14px] leading-5 text-graphite mt-1">
                 {cLocale.register.featureSmartValuationDesc}
               </div>
             </div>
@@ -104,18 +104,18 @@ export default function CRegisterPage() {
 
       {/* Right Panel - Form Area */}
       <div className="flex-1 flex flex-col justify-center items-center p-4 pt-16 md:p-6 md:pt-6 bg-fog md:bg-white">
-        <div className="w-full max-w-[440px]">
+        <div className="w-full max-w-110">
           {/* Header */}
           <div className="mb-8 text-center md:text-left">
             <div className="md:hidden mb-4">
-              <span className="text-ink text-[28px] leading-[34px] font-medium tracking-[-0.009em]">
+              <span className="text-ink text-[28px] leading-8.5 font-medium tracking-[-0.009em]">
                 {cLocale.common.brand.company}
               </span>
             </div>
-            <h2 className="text-[28px] leading-[34px] font-medium text-ink mb-2">
+            <h2 className="text-[28px] leading-8.5 font-medium text-ink mb-2">
               {cLocale.register.formTitle}
             </h2>
-            <p className="text-[16px] leading-[24px] text-ash">
+            <p className="text-[16px] leading-6 text-ash">
               {cLocale.register.formSubtitle}
             </p>
           </div>
@@ -126,7 +126,7 @@ export default function CRegisterPage() {
             {state && !state.success && state.error && (
               <div
                 role="alert"
-                className="p-3 bg-error-container border border-(--error)/30 rounded-inputs text-error text-sm"
+                className="p-3 bg-error-container border border-error/30 rounded-inputs text-error text-sm"
               >
                 {extractErrorMessage(state.error, cLocale.register.submitFailed)}
               </div>
@@ -289,11 +289,11 @@ export default function CRegisterPage() {
         <div className="mt-auto pt-8 flex flex-wrap justify-center gap-4">
           <Link
             href="#"
-            className="text-[12px] leading-[16px] font-medium text-graphite hover:text-ink uppercase"
+            className="text-[12px] leading-4 font-medium text-graphite hover:text-ink uppercase"
           >
             {cLocale.register.aboutUs}
           </Link>
-          <span className="text-[12px] leading-[16px] font-medium text-graphite opacity-40 uppercase">
+          <span className="text-[12px] leading-4 font-medium text-graphite opacity-40 uppercase">
             {cLocale.common.brand.copyright}
           </span>
         </div>

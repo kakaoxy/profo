@@ -72,7 +72,6 @@ def create_lead(
         orientation=body.orientation,
         remarks=body.remarks,
         expected_price=body.expected_price,
-        total_price=body.expected_price,
         images=body.images,
     )
 
