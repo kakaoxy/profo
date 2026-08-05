@@ -4,7 +4,7 @@ import { memo } from "react";
 import { L4MarketingMedia, PHOTO_CATEGORY_CONFIG } from "../../types";
 import { getOptimizedImageUrl } from "../detail/utils";
 import { Badge } from "@/components/ui/badge";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Play } from "lucide-react";
 import { RENOVATION_STAGES } from "../../types";
 
 interface PhotoDragOverlayProps {
@@ -41,7 +41,11 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
       <div
         className="w-16 h-16 rounded-md bg-muted border shrink-0 relative overflow-hidden"
       >
-        {optimizedUrl ? (
+        {photo.media_type === "video" ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted">
+            <Play className="h-5 w-5 text-primary" fill="currentColor" />
+          </div>
+        ) : optimizedUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={optimizedUrl}

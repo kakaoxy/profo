@@ -168,9 +168,9 @@ export function DualPhotoManager({
               <UploadArea
                 isUploading={isUploading}
                 disabled={isUploading}
-                title="点击或拖拽图片到此处上传"
-                description={`支持 JPG, PNG, GIF, WebP 格式，单文件最大 100MB，单次最多 ${MAX_UPLOAD_FILES} 张`}
-                accept=".jpg,.jpeg,.png,.gif,.webp"
+                title="点击或拖拽图片或视频到此处上传"
+                description={`支持 JPG, PNG, GIF, WebP 图片及 MP4, MOV, WebM 视频，图片最大 100MB，视频最大 500MB，单次最多 ${MAX_UPLOAD_FILES} 个文件`}
+                accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm"
                 multiple
                 onUpload={uploadFiles}
               />
