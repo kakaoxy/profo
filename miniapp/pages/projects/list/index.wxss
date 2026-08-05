@@ -1,0 +1,157 @@
+.page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding-bottom: 32rpx;
+}
+
+/* tab 栏 */
+.tabs {
+  display: flex;
+  background-color: #ffffff;
+  border-bottom: 1rpx solid #eeeeee;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  color: #666666;
+  position: relative;
+}
+
+.tab--active {
+  color: #1677ff;
+  font-weight: 600;
+}
+
+.tab--active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 64rpx;
+  height: 6rpx;
+  background-color: #1677ff;
+  border-radius: 3rpx;
+}
+
+/* 列表 */
+.list {
+  padding: 24rpx;
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  margin-bottom: 24rpx;
+  overflow: hidden;
+}
+
+.card__cover {
+  width: 100%;
+  height: 320rpx;
+  display: block;
+  background-color: #f0f0f0;
+}
+
+.card__body {
+  padding: 24rpx;
+}
+
+.card__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #222222;
+  line-height: 1.4;
+  margin-bottom: 12rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__info {
+  font-size: 26rpx;
+  color: #888888;
+  margin-bottom: 16rpx;
+}
+
+.card__price {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 16rpx;
+}
+
+.card__total {
+  font-size: 36rpx;
+  color: #ff4d4f;
+  font-weight: 700;
+  margin-right: 16rpx;
+}
+
+.card__unit {
+  font-size: 24rpx;
+  color: #999999;
+  margin-right: 16rpx;
+}
+
+.card__area {
+  font-size: 26rpx;
+  color: #555555;
+}
+
+.card__tags {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 22rpx;
+  color: #1677ff;
+  background-color: #e6f0ff;
+  border-radius: 6rpx;
+  padding: 4rpx 12rpx;
+  margin-right: 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.card__sold {
+  font-size: 24rpx;
+  color: #52c41a;
+}
+
+/* 通用状态（加载/空/错误） */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 32rpx;
+}
+
+.state__text {
+  font-size: 28rpx;
+  color: #999999;
+  margin-bottom: 24rpx;
+}
+
+.state__btn {
+  font-size: 28rpx;
+  color: #ffffff;
+  background-color: #1677ff;
+  border-radius: 8rpx;
+  padding: 16rpx 48rpx;
+}
+
+/* 底部加载更多 */
+.footer {
+  padding: 32rpx 0;
+  text-align: center;
+}
+
+.footer__text {
+  font-size: 26rpx;
+  color: #999999;
+}

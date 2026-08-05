@@ -1,0 +1,80 @@
+<view class="page">
+  <!-- tab 栏 -->
+  <view class="tabs">
+    <view
+      class="tab {{tab === 'on_sale' ? 'tab--active' : ''}}"
+      bindtap="onTabChange"
+      data-tab="on_sale"
+    >在售</view>
+    <view
+      class="tab {{tab === 'sold' ? 'tab--active' : ''}}"
+      bindtap="onTabChange"
+      data-tab="sold"
+    >已成交</view>
+  </view>
+
+  <!-- 错误态 -->
+  <view class="state" wx:if="{{error}}">
+    <view class="state__text">加载失败，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 首次加载态 -->
+  <view class="state" wx:if="{{!error && loading && items.length === 0}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <!-- 列表区 -->
+  <block wx:if="{{!error}}">
+    <view class="list">
+      <view
+        class="card"
+        wx:for="{{items}}"
+        wx:key="id"
+        bindtap="onItemTap"
+        data-id="{{item.id}}"
+      >
+        <image
+          class="card__cover"
+          src="{{item.cover_thumbnail_url || item.cover_image}}"
+          mode="aspectFill"
+        />
+        <view class="card__body">
+          <view class="card__title">{{item.title}}</view>
+          <view class="card__info">
+            <text>{{item.community_name}}</text>
+            <text wx:if="{{tab === 'on_sale'}}"> · {{item.layout}} · {{item.orientation}} · {{item.floor_info}}</text>
+            <text wx:else> · {{item.layout}}</text>
+          </view>
+          <view class="card__price">
+            <text class="card__total">{{item.total_price}}万</text>
+            <text class="card__unit">{{item.unit_price}}万/㎡</text>
+            <text class="card__area">{{item.area}}㎡</text>
+          </view>
+          <!-- 在售标签 -->
+          <view class="card__tags" wx:if="{{tab === 'on_sale'}}">
+            <text
+              class="tag"
+              wx:for="{{item.tags}}"
+              wx:for-item="tag"
+              wx:key="*this"
+            >{{tag}}</text>
+          </view>
+          <!-- 已成交天数 -->
+          <view class="card__sold" wx:if="{{tab === 'sold' && item.sold_days}}">{{item.sold_days}}天成交</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空态 -->
+    <view class="state" wx:if="{{!loading && items.length === 0}}">
+      <view class="state__text">暂无房源</view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="footer" wx:if="{{items.length > 0}}">
+      <view class="footer__text" wx:if="{{loadingMore}}">加载中...</view>
+      <view class="footer__text" wx:elif="{{noMore}}">没有更多了</view>
+    </view>
+  </block>
+</view>
