@@ -36,8 +36,8 @@ export const formSchema = z.object({
   publish_status: publishStatusSchema,
   project_status: projectStatusSchema,
 
-  // 关联 - consultant_id 为 User 表 id 软引用（可为 UUID 或固定串如 admin-user），与后端 str(1-36) 对齐
-  consultant_id: z.string().trim().min(1).max(36).optional(),
+  // 关联 - consultant_id 为 User 表 id 软引用（可为 UUID 或固定串如 admin-user），与后端 str(1-36) nullable 对齐
+  consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
 
   // 关联L3项目ID（软引用）- 后端期望字符串类型(UUID)
   project_id: z.string().uuid().nullable().optional(),

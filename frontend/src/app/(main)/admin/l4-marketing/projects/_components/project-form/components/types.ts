@@ -54,9 +54,9 @@ export interface OrientationSelectProps {
  */
 export interface ConsultantSelectProps {
   /** 当前选中的顾问ID */
-  value: string | undefined;
+  value: string | null | undefined;
   /** 变更回调 */
-  onChange: (value: string | undefined) => void;
+  onChange: (value: string | null | undefined) => void;
 }
 
 /**
