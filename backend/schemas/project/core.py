@@ -93,7 +93,7 @@ class ProjectCreate(BaseModel):
     notes: str | None = Field(None, description="备注（映射到 owner_info）")
     owners: list[OwnerInlineCreate] | None = Field(None, description="业主列表（内联创建）")
 
-    list_price: Decimal | None = Field(None, description="挂牌价(万)")
+    list_price: Decimal | None = Field(None, ge=0, description="挂牌价(万)")
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
 
     commission_start_date: date | None = Field(None, description="委托开始日期 (YYYY-MM-DD 格式)")
@@ -183,9 +183,9 @@ class ProjectUpdate(BaseModel):
     notes: str | None = Field(None)
     owners: list[OwnerInlineUpdate] | None = Field(None, description="业主列表（内联同步）")
 
-    list_price: Decimal | None = Field(None)
+    list_price: Decimal | None = Field(None, ge=0)
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
-    sold_price: Decimal | None = Field(None, description="成交价(万)")
+    sold_price: Decimal | None = Field(None, gt=0, description="成交价(万)")
     sold_date: str | None = Field(None, description="成交日期 (YYYY-MM-DD 格式)")
 
     commission_start_date: date | None = Field(
