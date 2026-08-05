@@ -1,0 +1,132 @@
+<view class="page">
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 404 态 -->
+  <view wx:elif="{{notFound}}" class="state">
+    <text>项目不存在</text>
+  </view>
+
+  <!-- 错误态 -->
+  <view wx:elif="{{error}}" class="state">
+    <text class="state-text">加载失败，请稍后重试</text>
+    <button class="retry-btn" size="mini" bindtap="onRetry">重试</button>
+  </view>
+
+  <!-- 详情态 -->
+  <block wx:elif="{{detail}}">
+    <!-- 图片轮播 -->
+    <swiper
+      wx:if="{{detail.images && detail.images.length}}"
+      class="swiper"
+      indicator-dots
+      autoplay
+      circular
+    >
+      <swiper-item
+        wx:for="{{detail.images}}"
+        wx:key="*this"
+        data-url="{{item}}"
+        bindtap="onImageTap"
+      >
+        <image class="swiper-image" src="{{item}}" mode="aspectFill" />
+      </swiper-item>
+    </swiper>
+    <view wx:else class="image-placeholder">
+      <text>暂无图片</text>
+    </view>
+
+    <!-- 标题区 -->
+    <view class="section">
+      <view class="title">{{detail.title}}</view>
+      <view wx:if="{{detail.tags && detail.tags.length}}" class="tags">
+        <text
+          wx:for="{{detail.tags}}"
+          wx:for-item="tag"
+          wx:key="*this"
+          class="tag"
+          >{{tag}}</text
+        >
+      </view>
+    </view>
+
+    <!-- 价格区 -->
+    <view class="section price-section">
+      <view class="total-price"
+        >{{detail.total_price}} <text class="price-unit">万元</text></view
+      >
+      <view class="unit-price">单价 {{detail.unit_price}} 万元/m²</view>
+    </view>
+
+    <!-- 基础信息 -->
+    <view class="section">
+      <view class="info-row">
+        <text class="label">小区</text>
+        <text class="value">{{detail.community_name || '-'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">户型</text>
+        <text class="value">{{detail.layout}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">朝向</text>
+        <text class="value">{{detail.orientation}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">楼层</text>
+        <text class="value">{{detail.floor_info}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">面积</text>
+        <text class="value">{{detail.area}} m²</text>
+      </view>
+      <view class="info-row">
+        <text class="label">装修风格</text>
+        <text class="value">{{detail.decoration_style || '-'}}</text>
+      </view>
+    </view>
+
+    <!-- 装修阶段 -->
+    <view
+      wx:if="{{detail.renovation_stages && detail.renovation_stages.length}}"
+      class="section"
+    >
+      <view class="section-title">装修阶段</view>
+      <view
+        wx:for="{{detail.renovation_stages}}"
+        wx:for-item="stage"
+        wx:key="stage"
+        class="stage-card"
+      >
+        <view class="stage-row">
+          <text class="stage-name">{{stage.stage}}</text>
+          <text class="stage-photos">{{stage.photo_count}} 张照片</text>
+        </view>
+        <view wx:if="{{stage.completed_date}}" class="stage-date"
+          >完成日期：{{stage.completed_date}}</view
+        >
+      </view>
+    </view>
+
+    <!-- 顾问区 -->
+    <view wx:if="{{detail.consultant}}" class="section">
+      <view class="section-title">专属顾问</view>
+      <view class="info-row">
+        <text class="label">昵称</text>
+        <text class="value">{{detail.consultant.nickname || '-'}}</text>
+      </view>
+      <view wx:if="{{detail.consultant.phone}}" class="info-row">
+        <text class="label">手机号</text>
+        <text class="value">{{detail.consultant.phone}}</text>
+      </view>
+    </view>
+
+    <!-- 描述 -->
+    <view wx:if="{{detail.description}}" class="section">
+      <view class="section-title">房源描述</view>
+      <view class="description">{{detail.description}}</view>
+    </view>
+  </block>
+</view>
