@@ -36,6 +36,8 @@
 - add_finance_record_receipt_urls_column: 为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填
   （多票据支持）
 - add_cashflow_category_enum_values: 同步 PostgreSQL cashflowcategory enum 与 Python 枚举（幂等）
+- migrate_add_ended_status: 同步 PostgreSQL projectstatus enum 与 Python ProjectStatus 枚举
+  （新增 ENDED="ended" 值），并重建 project_status_logs 表 stale CHECK 约束（幂等）
 - migrate_record_date_to_timestamptz: 将 finance_records.record_date 列类型从 timestamp
   迁移为 timestamptz（时区一致性修复，幂等）
 - migrate_project_date_columns_to_date: 将 projects 表 commission_start_date/commission_end_date/
@@ -132,6 +134,7 @@ from migrations.add_media_type_column import add_media_type_to_renovation_photos
 from migrations.add_project_document_category import add_project_document_category
 from migrations.cleanup_reserved_contracts import cleanup_reserved_contracts
 from migrations.fix_image_urls import run_fix_image_urls
+from migrations.migrate_add_ended_status import migrate_add_ended_status
 from migrations.migrate_installation_stage import migrate_installation_stage_to_delivery
 from migrations.migrate_uploads_to_oss import migrate_uploads_to_oss
 from migrations.rebuild_contract_no_index import rebuild_contract_no_index
@@ -201,6 +204,7 @@ def _run_all_migrations(engine: Engine) -> None:
         add_finance_record_receipt_urls_column(engine)
         add_cashflow_category_enum_values(engine)
         add_project_finance_settlement_columns(engine)
+        migrate_add_ended_status(engine)
         migrate_record_date_to_timestamptz(engine)
         migrate_project_date_columns_to_date(engine)
         migrate_user_datetime_columns_to_timestamptz(engine)

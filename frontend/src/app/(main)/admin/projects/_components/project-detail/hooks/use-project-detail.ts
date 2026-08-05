@@ -107,6 +107,21 @@ export function useProjectDetail({
     refreshProjectData(targetMode === "sold");
   }, [isOpen, project?.id, project?.status, viewMode, refreshProjectData]);
 
+  // 初始加载后，项目状态变化时自动切换视图（如 selling → ended、selling → sold）
+  // 仅依赖 project.status，不干扰用户手动切换 viewMode 的操作
+  useEffect(() => {
+    if (!isOpen || !project?.id) return;
+    if (!initialLoadRef.current) return;
+
+    const index = STAGE_CONFIG.findIndex((s) =>
+      (s.aliases as readonly string[]).includes(project.status),
+    );
+    if (index === -1) return;
+    const targetMode = STAGE_CONFIG[index].key;
+
+    setViewMode((prev) => (prev !== targetMode ? targetMode : prev));
+  }, [project?.status, project?.id, isOpen]);
+
   const currentStatusIndex = STAGE_CONFIG.findIndex((s) =>
     (s.aliases as readonly string[]).includes(project?.status || ""),
   );

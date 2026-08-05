@@ -97,6 +97,7 @@
   --color-status-selling: var(--status-selling);
   --color-status-sold: var(--status-sold);
   --color-status-rejected: var(--status-rejected);
+  --color-status-ended: var(--status-ended);
 
   /* Chart Colors */
   --color-chart-positive: var(--chart-positive);
@@ -209,6 +210,7 @@
   --status-selling: #10b981;
   --status-sold: #64748b;
   --status-rejected: #94a3b8;
+  --status-ended: #78716c;
 
   /* Chart Colors - Light Mode */
   --chart-positive: #ef4444;
@@ -283,6 +285,7 @@
   --status-selling: #34d399;
   --status-sold: #94a3b8;
   --status-rejected: #64748b;
+  --status-ended: #a8a29e;
 
   /* Chart Colors - Dark Mode */
   --chart-positive: #f87171;

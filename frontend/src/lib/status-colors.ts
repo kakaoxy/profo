@@ -17,13 +17,14 @@ export type StatusType =
   | "renovating"     // 装修中
   | "selling"        // 在售
   | "sold"           // 已成交/已售
-  | "rejected";      // 已驳回
+  | "rejected"       // 已驳回
+  | "ended";         // 已下架
 
 /** 线索专用状态 */
 export type LeadStatusType = LeadStatus;
 
 /** 项目专用状态 */
-export type ProjectStatusType = "signing" | "renovating" | "selling" | "sold";
+export type ProjectStatusType = "signing" | "renovating" | "selling" | "sold" | "ended";
 
 /** 状态配置项 */
 export interface StatusConfig {
@@ -62,6 +63,10 @@ export const STATUS_CONFIG: Record<StatusType, StatusConfig> = {
     label: "已驳回",
     cssVar: "--status-rejected",
   },
+  ended: {
+    label: "已下架",
+    cssVar: "--status-ended",
+  },
 };
 
 /** 线索状态映射：将 LeadStatus 映射到通用 StatusType */
@@ -80,6 +85,7 @@ export const PROJECT_STATUS_MAPPING: Record<string, StatusType> = {
   renovating: "renovating",
   selling: "selling",
   sold: "sold",
+  ended: "ended",
   // 中文键名（与后端返回的 project.status 对应）
   签约: "signing",
   签约中: "signing",
@@ -91,6 +97,7 @@ export const PROJECT_STATUS_MAPPING: Record<string, StatusType> = {
   已售: "sold",
   成交: "sold",
   已结束: "sold",
+  已下架: "ended",
   // L4 营销项目状态映射
   在途: "signing",
   // 房源过期状态
@@ -111,6 +118,7 @@ const STATUS_CLASS_MAP: Record<StatusType, string> = {
   selling: "bg-status-selling text-white hover:opacity-90",
   sold: "bg-status-sold text-white hover:opacity-90",
   rejected: "bg-status-rejected text-white hover:opacity-90",
+  ended: "bg-status-ended text-white hover:opacity-90",
 };
 
 const STATUS_BADGE_CLASS_MAP: Record<StatusType, string> = {
@@ -121,6 +129,7 @@ const STATUS_BADGE_CLASS_MAP: Record<StatusType, string> = {
   selling: "bg-status-selling/10 text-status-selling border-status-selling/20",
   sold: "bg-status-sold/10 text-status-sold border-status-sold/20",
   rejected: "bg-status-rejected/10 text-status-rejected border-status-rejected/20",
+  ended: "bg-status-ended/10 text-status-ended border-status-ended/20",
 };
 
 /**
@@ -136,6 +145,7 @@ const SSR_STATUS_COLORS: Record<StatusType, string> = {
   selling: "#10b981",
   sold: "#64748b",
   rejected: "#94a3b8",
+  ended: "#78716c",
 };
 
 /**
@@ -176,6 +186,7 @@ export function getAllStatusColors(): Record<StatusType, string> {
     selling: getStatusColor("selling"),
     sold: getStatusColor("sold"),
     rejected: getStatusColor("rejected"),
+    ended: getStatusColor("ended"),
   };
 }
 
@@ -239,6 +250,7 @@ export function getProjectStatusBorderClass(status: string): string {
     renovating: "border-l-status-renovating",
     selling: "border-l-status-selling",
     sold: "border-l-status-sold",
+    ended: "border-l-status-ended",
   };
 
   return borderClassMap[mapped as ProjectStatusType] || "";

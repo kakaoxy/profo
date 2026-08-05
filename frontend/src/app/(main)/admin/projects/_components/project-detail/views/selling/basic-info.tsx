@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import { useCurrentDate } from "@/hooks/use-current-date";
 import { Card } from "@/components/ui/card";
 import { format, addDays, differenceInDays } from "date-fns";
 import { Project } from "../../../../types";
+import { getRenovationContractAction } from "../../../../actions/renovation";
+import { ActualEndDateDialog } from "./actual-end-date-dialog";
 import {
   Clock,
   Share2,
@@ -12,16 +14,59 @@ import {
   Coins,
   TrendingUp,
   CalendarDays,
-  Hourglass
+  CalendarCheck,
+  Hourglass,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SellingBasicInfoProps {
   project: Project;
+  onRefresh?: () => void;
 }
 
-export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
+export function SellingBasicInfo({ project, onRefresh }: SellingBasicInfoProps) {
   const today = useCurrentDate();
+
+  // 实际竣工时间来自装修合同接口（项目详情响应未携带 actual_end_date）
+  const [actualEndDate, setActualEndDate] = useState<string | undefined>(
+    undefined,
+  );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadContract() {
+      try {
+        const result = await getRenovationContractAction(project.id);
+        if (cancelled) return;
+        if (result.success && result.data) {
+          const data = result.data as Record<string, unknown>;
+          setActualEndDate(data.actual_end_date as string | undefined);
+        }
+      } catch {
+        // 静默失败，不阻塞在售视图展示
+      }
+    }
+    loadContract();
+    return () => {
+      cancelled = true;
+    };
+  }, [project.id]);
+
+  const handleEditSuccess = useCallback(async () => {
+    // 重新拉取合同数据以刷新本地展示，并通知父组件刷新项目数据
+    try {
+      const result = await getRenovationContractAction(project.id);
+      if (result.success && result.data) {
+        const data = result.data as Record<string, unknown>;
+        setActualEndDate(data.actual_end_date as string | undefined);
+      }
+    } catch {
+      // ignore
+    }
+    onRefresh?.();
+  }, [project.id, onRefresh]);
 
   // 1. 计算倒计时
   // 公式：交房日期 + 签约周期(天) + 延长期(天) - 今天
@@ -60,6 +105,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
 
 
   return (
+    <>
     <Card className="shadow-sm border-border mb-6 bg-card overflow-hidden">
       <div className="flex flex-col md:flex-row">
         
@@ -149,10 +195,42 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
                   {project.listing_date ? format(new Date(project.listing_date), "yyyy-MM-dd") : "-"}
                </div>
             </div>
+
+            {/* 实际竣工 */}
+            <div className="space-y-1">
+               <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CalendarCheck className="w-3.5 h-3.5" />
+                  <span>实际竣工</span>
+               </div>
+               <div className="flex items-center gap-1.5 text-base font-semibold text-foreground">
+                  <span>
+                    {actualEndDate
+                      ? format(new Date(actualEndDate), "yyyy-MM-dd")
+                      : "-"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsDialogOpen(true)}
+                    className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="编辑实际竣工时间"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+               </div>
+            </div>
           </div>
 
         </div>
       </div>
     </Card>
+
+      <ActualEndDateDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        projectId={project.id}
+        currentActualEndDate={actualEndDate}
+        onSuccess={handleEditSuccess}
+      />
+    </>
   );
 }

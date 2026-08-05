@@ -185,6 +185,8 @@ class ProjectUpdate(BaseModel):
 
     list_price: Decimal | None = Field(None)
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
+    sold_price: Decimal | None = Field(None, description="成交价(万)")
+    sold_date: str | None = Field(None, description="成交日期 (YYYY-MM-DD 格式)")
 
     commission_start_date: date | None = Field(
         None,

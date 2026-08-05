@@ -24,7 +24,6 @@ import {
   OtherFeesSection,
   type UserOption,
 } from "./contract-sections";
-import { PaymentNodesSection } from "./payment-nodes";
 import { CostSummarySection } from "./cost-summary";
 
 interface RenovationContractFormProps {
@@ -59,14 +58,6 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
       actual_start_date: undefined,
       actual_end_date: undefined,
       hard_contract_amount: undefined,
-      payment_node_1: "",
-      payment_ratio_1: undefined,
-      payment_node_2: "",
-      payment_ratio_2: undefined,
-      payment_node_3: "",
-      payment_ratio_3: undefined,
-      payment_node_4: "",
-      payment_ratio_4: undefined,
       soft_budget: undefined,
       soft_detail_attachment: "",
       custom_cabinet_amount: undefined,
@@ -124,14 +115,6 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
               ? new Date(data.actual_end_date as string)
               : undefined,
             hard_contract_amount: toNumber(data.hard_contract_amount),
-            payment_node_1: (data.payment_node_1 as string) || "",
-            payment_ratio_1: toNumber(data.payment_ratio_1),
-            payment_node_2: (data.payment_node_2 as string) || "",
-            payment_ratio_2: toNumber(data.payment_ratio_2),
-            payment_node_3: (data.payment_node_3 as string) || "",
-            payment_ratio_3: toNumber(data.payment_ratio_3),
-            payment_node_4: (data.payment_node_4 as string) || "",
-            payment_ratio_4: toNumber(data.payment_ratio_4),
             soft_budget: toNumber(data.soft_budget),
             soft_detail_attachment: (data.soft_detail_attachment as string) || "",
             custom_cabinet_amount: toNumber(data.custom_cabinet_amount),
@@ -284,7 +267,6 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
         />
         <TimeSection values={values} setValue={setValue} isEditing={isEditing} />
         <DecorationCostSection values={values} setValue={setValue} isEditing={isEditing} />
-        <PaymentNodesSection values={values} setValue={setValue} isEditing={isEditing} />
         <OtherFeesSection values={values} setValue={setValue} isEditing={isEditing} />
         <CostSummarySection values={values} area={area} />
       </CardContent>
