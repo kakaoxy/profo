@@ -26,7 +26,6 @@ import { deleteProjectAction } from "../../../../actions/core";
 interface EndedViewProps {
   project: Project;
   onClose: () => void;
-  onRefresh?: () => void;
 }
 
 export function EndedView({ project, onClose }: EndedViewProps) {

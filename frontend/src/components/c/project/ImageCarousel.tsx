@@ -55,6 +55,10 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
   const isVideo = currentImage.type === "video";
   const imgUrl = isVideo ? "" : getThumbnailUrl(currentImage?.thumbnailUrl, currentImage?.url);
   const videoUrl = isVideo ? getFileUrl(currentImage.url) : "";
+  // 视频首帧加载前用缩略图作海报，避免黑屏
+  const videoPoster = isVideo
+    ? getFileUrl(currentImage?.thumbnailUrl ?? "")
+    : "";
 
   return (
     <div
@@ -67,6 +71,7 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
       {isVideo && videoUrl ? (
         <video
           src={videoUrl}
+          poster={videoPoster || undefined}
           controls
           playsInline
           preload="metadata"

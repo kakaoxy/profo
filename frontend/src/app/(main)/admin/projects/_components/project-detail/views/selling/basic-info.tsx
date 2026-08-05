@@ -34,39 +34,26 @@ export function SellingBasicInfo({ project, onRefresh }: SellingBasicInfoProps) 
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadContract() {
-      try {
-        const result = await getRenovationContractAction(project.id);
-        if (cancelled) return;
-        if (result.success && result.data) {
-          const data = result.data as Record<string, unknown>;
-          setActualEndDate(data.actual_end_date as string | undefined);
-        }
-      } catch {
-        // 静默失败，不阻塞在售视图展示
-      }
-    }
-    loadContract();
-    return () => {
-      cancelled = true;
-    };
-  }, [project.id]);
-
-  const handleEditSuccess = useCallback(async () => {
-    // 重新拉取合同数据以刷新本地展示，并通知父组件刷新项目数据
+  const loadContract = useCallback(async () => {
     try {
       const result = await getRenovationContractAction(project.id);
       if (result.success && result.data) {
-        const data = result.data as Record<string, unknown>;
-        setActualEndDate(data.actual_end_date as string | undefined);
+        setActualEndDate(result.data.actual_end_date ?? undefined);
       }
     } catch {
-      // ignore
+      // 静默失败，不阻塞在售视图展示
     }
+  }, [project.id]);
+
+  useEffect(() => {
+    void loadContract();
+  }, [loadContract]);
+
+  const handleEditSuccess = useCallback(async () => {
+    // 重新拉取合同数据以刷新本地展示，并通知父组件刷新项目数据
+    await loadContract();
     onRefresh?.();
-  }, [project.id, onRefresh]);
+  }, [loadContract, onRefresh]);
 
   // 1. 计算倒计时
   // 公式：交房日期 + 签约周期(天) + 延长期(天) - 今天
