@@ -63,7 +63,7 @@ class ProjectStateManager:
             ProjectStatus.SELLING.value,
             ProjectStatus.ENDED.value,
         ):
-            msg = "只有在售状态才能切换到已下架状态"
+            msg = "只有在售或已下架状态才能切换到已下架状态"
             raise ValidationError(msg)
 
         # 已下架为终态：仅允许流转到已删除
