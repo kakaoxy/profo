@@ -63,12 +63,16 @@ def create_lead(
     """C端用户提交卖房估价线索."""
     lead_data = LeadCreate(
         community_name=body.community_name,
+        community_id=body.community_id,
+        district=body.district,
+        business_area=body.business_area,
         layout=body.layout,
         area=body.area,
         floor_info=body.floor_info,
         orientation=body.orientation,
         remarks=body.remarks,
         expected_price=body.expected_price,
+        total_price=body.expected_price,
         images=body.images,
     )
 

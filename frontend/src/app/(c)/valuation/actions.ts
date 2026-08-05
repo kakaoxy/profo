@@ -18,10 +18,10 @@ const createLeadSchema = z.object({
   business_area: z.string().nullable().optional(),
   layout: z.string().nullable().optional(),
   area: z.number().positive("面积必须为正数").nullable().optional(),
-  floor_info: z.string().nullable().optional(),
+  floor_info: z.string().min(1, cLocale.valuationAction.floorRequired),
   orientation: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
-  expected_price: z.number().positive("心理预期价必须为正数").nullable().optional(),
+  expected_price: z.number({ message: cLocale.valuationAction.expectedPriceRequired }).positive(cLocale.valuationAction.expectedPriceRequired),
   images: z.array(z.string().refine(isValidUrl, { message: "无效的图片 URL" })).max(6).default([]),
 });
 

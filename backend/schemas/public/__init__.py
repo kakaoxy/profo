@@ -283,12 +283,15 @@ class PublicLeadCreate(BaseModel):
     """C端线索创建请求."""
 
     community_name: str = Field(min_length=1, max_length=200, description="小区名称")
+    community_id: str | None = Field(None, max_length=36, description="关联小区ID")
+    district: str | None = Field(None, max_length=50, description="行政区")
+    business_area: str | None = Field(None, max_length=50, description="商圈")
     layout: str | None = Field(None, description="户型")
     area: float | None = Field(None, description="面积(m²)")
-    floor_info: str | None = Field(None, description="楼层信息")
+    floor_info: str = Field(min_length=1, max_length=50, description="楼层信息")
     orientation: str | None = Field(None, description="朝向")
     remarks: str | None = Field(None, description="备注")
-    expected_price: float | None = Field(None, gt=0, description="业主心理预期价(万)")
+    expected_price: float = Field(gt=0, description="业主心理预期价(万)")
     images: list[str] = Field(default_factory=list, max_length=6, description="户型图URL列表")
 
     @field_validator("images")
