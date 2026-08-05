@@ -6,7 +6,7 @@ import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, GripVertical, Loader2 } from "lucide-react";
+import { Trash2, GripVertical, Loader2, Play } from "lucide-react";
 import { useElementVisibility, useSimpleImageLoader } from "../hooks";
 import { getOptimizedImageUrl } from "../utils";
 import type { ImageLoadStatus } from "../hooks";
@@ -18,6 +18,8 @@ export interface PhotoItemData {
   description?: string | null;
   category?: string;
   stage?: string | null;
+  /** 媒体类型：video 时以视频占位符渲染 */
+  mediaType?: "image" | "video";
 }
 
 // 分类配置接口
@@ -98,15 +100,18 @@ export const BasePhotoItem = memo(function BasePhotoItem({
   const { ref: imageContainerRef, isVisible } = useElementVisibility<HTMLDivElement>();
 
   // 使用优化的图片 URL
-  const optimizedUrl = getOptimizedImageUrl(photo.url, {
-    width: imageSize,
-    height: imageSize,
-    quality: 80,
-  });
+  const isVideo = photo.mediaType === "video";
+  const optimizedUrl = isVideo
+    ? ""
+    : getOptimizedImageUrl(photo.url, {
+        width: imageSize,
+        height: imageSize,
+        quality: 80,
+      });
 
   // 图片加载状态
   const { status: imageStatus } = useSimpleImageLoader(
-    isVisible ? optimizedUrl : null
+    isVisible && !isVideo ? optimizedUrl : null
   );
 
   // 处理删除
@@ -148,40 +153,45 @@ export const BasePhotoItem = memo(function BasePhotoItem({
         className="rounded-md bg-muted border shrink-0 relative overflow-hidden"
         style={{ width: imageSize, height: imageSize }}
       >
-        {isVisible && (
-          <>
-            {/* 加载状态 */}
-            {imageStatus === "loading" && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              </div>
-            )}
+        {isVisible &&
+          (isVideo ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted">
+              <Play className="h-5 w-5 text-primary" fill="currentColor" />
+            </div>
+          ) : (
+            <>
+              {/* 加载状态 */}
+              {imageStatus === "loading" && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
 
-            {/* 实际图片 */}
-            {optimizedUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={optimizedUrl}
-                alt={photo.description || `照片 #${photo.id}`}
-                className={cn(
-                  "w-full h-full object-cover transition-opacity duration-300",
-                  imageStatus === "loaded" ? "opacity-100" : "opacity-0"
-                )}
-                loading="lazy"
-                decoding="async"
-                width={imageSize}
-                height={imageSize}
-              />
-            )}
+              {/* 实际图片 */}
+              {optimizedUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={optimizedUrl}
+                  alt={photo.description || `照片 #${photo.id}`}
+                  className={cn(
+                    "w-full h-full object-cover transition-opacity duration-300",
+                    imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+                  )}
+                  loading="lazy"
+                  decoding="async"
+                  width={imageSize}
+                  height={imageSize}
+                />
+              )}
 
-            {/* 错误状态 */}
-            {imageStatus === "error" && (
-              <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-                加载失败
-              </div>
-            )}
-          </>
-        )}
+              {/* 错误状态 */}
+              {imageStatus === "error" && (
+                <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+                  加载失败
+                </div>
+              )}
+            </>
+          ))}
 
         {/* 占位符 - 未进入视口时显示 */}
         {!isVisible && <div className="absolute inset-0 bg-muted" />}

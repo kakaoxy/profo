@@ -91,16 +91,21 @@ export default function ProjectDetailPage() {
 
   const status = STATUS_MAP[data.project_status] ?? STATUS_MAP["已售"];
 
-  const marketingImages = (data.media ?? [])
-    .filter((m) => m.media_type === "image" && m.photo_category === "marketing" && m.file_url)
+  // 营销媒体（图片 + 视频）合并进轮播
+  const marketingMedia = (data.media ?? [])
+    .filter((m) => m.photo_category === "marketing" && m.file_url)
     .sort((a, b) => a.sort_order - b.sort_order)
-    .map((m) => ({ url: m.file_url, thumbnailUrl: m.thumbnail_url }));
+    .map((m) => ({
+      url: m.file_url,
+      thumbnailUrl: m.thumbnail_url,
+      type: (m.media_type === "video" ? "video" : "image") as "image" | "video",
+    }));
 
   const carouselImages =
-    marketingImages.length > 0
-      ? marketingImages
+    marketingMedia.length > 0
+      ? marketingMedia
       : (data.images && data.images.length > 0
-        ? data.images.map((url: string) => ({ url, thumbnailUrl: null as string | null }))
+        ? data.images.map((url: string) => ({ url, thumbnailUrl: null as string | null, type: "image" as const }))
         : []);
 
   return (

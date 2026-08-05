@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
-import { getThumbnailUrl } from "@/lib/config";
+import { getThumbnailUrl, getFileUrl } from "@/lib/config";
 import { isValidUrl } from "@/lib/validators";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -11,6 +11,8 @@ const isDev = process.env.NODE_ENV === "development";
 interface CarouselImage {
   url: string;
   thumbnailUrl?: string | null;
+  /** 媒体类型：video 时渲染 <video> 播放器 */
+  type?: "image" | "video";
 }
 
 interface ImageCarouselProps {
@@ -50,7 +52,9 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
 
   // 优先使用缩略图（800px WebP，约100-200KB），避免加载3MB+原图
   const currentImage = images[current];
-  const imgUrl = getThumbnailUrl(currentImage?.thumbnailUrl, currentImage?.url);
+  const isVideo = currentImage.type === "video";
+  const imgUrl = isVideo ? "" : getThumbnailUrl(currentImage?.thumbnailUrl, currentImage?.url);
+  const videoUrl = isVideo ? getFileUrl(currentImage.url) : "";
 
   return (
     <div
@@ -60,7 +64,16 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
       aria-roledescription="carousel"
       aria-label="房源图片轮播"
     >
-      {isValidUrl(imgUrl) ? (
+      {isVideo && videoUrl ? (
+        <video
+          src={videoUrl}
+          controls
+          playsInline
+          preload="metadata"
+          className="w-full h-full object-contain bg-black"
+          aria-label={`视频 ${current + 1}`}
+        />
+      ) : isValidUrl(imgUrl) ? (
         isDev ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

@@ -11,10 +11,36 @@ import { useUpload, compressImage } from "@/components/common/upload";
 import { createL4MarketingMediaAction } from "../../actions";
 import {
   ALLOWED_IMAGE_TYPES,
+  ALLOWED_VIDEO_TYPES,
   MAX_IMAGE_SIZE,
   MAX_UPLOAD_FILES,
+  MAX_VIDEO_SIZE,
 } from "@/lib/constants";
-import type { L4MarketingMedia, PhotoCategory } from "../../types";
+import { formatFileSize } from "@/lib/formatters";
+import type { L4MarketingMedia, MediaType, PhotoCategory } from "../../types";
+
+/** 允许的媒体类型（图片 + 视频） */
+const ALLOWED_MEDIA_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
+
+/** 按文件类型校验大小：图片 100MB，视频 500MB */
+function validateMediaFile(file: File): string | null {
+  const isVideo = file.type.startsWith("video/");
+  if (isVideo && file.size > MAX_VIDEO_SIZE) {
+    return `视频文件过大，最大支持 ${formatFileSize(MAX_VIDEO_SIZE)}`;
+  }
+  if (!isVideo && file.size > MAX_IMAGE_SIZE) {
+    return `图片文件过大，最大支持 ${formatFileSize(MAX_IMAGE_SIZE)}`;
+  }
+  if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
+    return "不支持的文件格式";
+  }
+  return null;
+}
+
+/** 根据文件类型推断媒体类型 */
+function inferMediaType(file: File): MediaType {
+  return file.type.startsWith("video/") ? "video" : "image";
+}
 
 export interface UploadProgress {
   filename: string;
@@ -74,9 +100,10 @@ export function useImageUpload({
   }, [photos]);
 
   const { isUploading, uploadSingle } = useUpload({
-    maxSize: MAX_IMAGE_SIZE,
-    allowedTypes: ALLOWED_IMAGE_TYPES,
+    maxSize: MAX_VIDEO_SIZE,
+    allowedTypes: ALLOWED_MEDIA_TYPES,
     multiple: true,
+    validateFile: validateMediaFile,
     beforeUpload: (file) => compressImage(file),
     onProgress: ({ file, progress }) => {
       // 同步到组件的 uploadingFiles 状态（用于UI展示）
@@ -87,11 +114,11 @@ export function useImageUpload({
   });
 
   const makeTempMedia = useCallback(
-    (fileUrl: string, sortOrder: number): L4MarketingMedia => {
+    (file: File, fileUrl: string, sortOrder: number): L4MarketingMedia => {
       return {
         id: Date.now() + Math.random(),
         file_url: fileUrl,
-        media_type: "image",
+        media_type: inferMediaType(file),
         photo_category: uploadCategory,
         renovation_stage:
           uploadCategory === "renovation" ? uploadStage : null,
@@ -111,7 +138,7 @@ export function useImageUpload({
 
       if (fileArray.length > MAX_UPLOAD_FILES) {
         toast.error(
-          `一次最多上传 ${MAX_UPLOAD_FILES} 张图片，当前选择了 ${fileArray.length} 张`,
+          `一次最多上传 ${MAX_UPLOAD_FILES} 个文件，当前选择了 ${fileArray.length} 个`,
         );
         return;
       }
@@ -160,17 +187,17 @@ export function useImageUpload({
 
         if (!projectId) {
           // 创建模式：直接生成临时媒体记录，等提交时一并保存
-          const newPhotos = succeeded.map(({ response, index }) =>
-            makeTempMedia(response.url, baseSortOrderRef.current + index),
+          const newPhotos = succeeded.map(({ file, response, index }) =>
+            makeTempMedia(file, response.url, baseSortOrderRef.current + index),
           );
           onPhotosChangeRef.current([...currentPhotos, ...newPhotos]);
         } else {
           // 编辑模式：并行调用后端接口创建媒体记录
           const responses = await Promise.all(
-            succeeded.map(({ response, index }) =>
+            succeeded.map(({ file, response, index }) =>
               createL4MarketingMediaAction(projectId, {
                 file_url: response.url,
-                media_type: "image",
+                media_type: inferMediaType(file),
                 photo_category: uploadCategory,
                 renovation_stage:
                   uploadCategory === "renovation" ? uploadStage : null,

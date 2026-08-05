@@ -63,6 +63,7 @@ export const OptimizedPhotoItem = memo(function OptimizedPhotoItem({
     description: photo.description,
     category: photo.photo_category,
     stage: photo.renovation_stage,
+    mediaType: photo.media_type,
   };
 
   // 处理删除
