@@ -99,7 +99,7 @@ export function ValuationForm() {
           {state && !state.success && state.error && (
             <div
               role="alert"
-              className="p-3 bg-error-container border border-(--error)/30 rounded-inputs text-error text-sm"
+              className="p-3 bg-error-container border border-error/30 rounded-inputs text-error text-sm"
             >
               {state.error}
             </div>
@@ -164,12 +164,13 @@ export function ValuationForm() {
                 </select>
               </FormItem>
 
-              <FormItem label="楼层/总高" className="col-span-2 sm:col-span-1">
+              <FormItem label="楼层/总高" required className="col-span-2 sm:col-span-1">
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
                     <input
                       inputMode="numeric"
                       placeholder="1"
+                      required
                       className="w-full h-12 px-3 rounded-inputs border border-dove/30 bg-white text-base font-medium text-ink text-center outline-none focus:border-rust transition-colors"
                       value={formData.currentFloor}
                       onChange={(e) => updateField("currentFloor", e.target.value)}
@@ -181,6 +182,7 @@ export function ValuationForm() {
                     <input
                       inputMode="numeric"
                       placeholder="6"
+                      required
                       className="w-full h-12 px-3 rounded-inputs border border-dove/30 bg-white text-base font-medium text-ink text-center outline-none focus:border-rust transition-colors"
                       value={formData.totalFloor}
                       onChange={(e) => updateField("totalFloor", e.target.value)}
@@ -196,12 +198,13 @@ export function ValuationForm() {
           <FloorPlanUpload images={formData.images} onChange={setImages} />
           <input type="hidden" name="images" value={JSON.stringify(formData.images)} />
 
-          <FormItem label={cLocale.valuation.expectedPriceLabel}>
+          <FormItem label={cLocale.valuation.expectedPriceLabel} required>
             <input
               type="number"
               inputMode="decimal"
               step="0.1"
               name="expected_price"
+              required
               className="w-full h-12 px-4 rounded-inputs border border-dove/30 bg-white text-base font-medium text-ink placeholder:text-graphite outline-none focus:border-rust transition-colors"
               value={formData.expectedPrice}
               onChange={(e) => updateField("expectedPrice", e.target.value)}

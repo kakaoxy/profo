@@ -488,6 +488,8 @@ export const cLocale = {
 
   valuationAction: {
     communityRequired: "小区名称不能为空",
+    floorRequired: "楼层和总高不能为空",
+    expectedPriceRequired: "心理预期价不能为空",
     submitFailed: "提交失败",
     phoneRequired: "手机号不能为空",
     phoneInvalid: "手机号格式不正确",
