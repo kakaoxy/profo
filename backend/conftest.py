@@ -11,11 +11,15 @@
 import contextlib
 import os
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any
 
 # 防御性 setdefault：.env 未配置 REDIS_URL 时兜底（与 JWT_SECRET_KEY 等一致）
 # 必须在 from settings import settings 之前执行，否则 Settings() 导入期即 sys.exit(1)
 os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/0")
+# 兜底：根目录 .env 的 UPLOAD_DIR 指向容器路径 /app/static/uploads，本地测试无法创建。
+# 环境变量优先级高于 .env 文件，这里 setdefault 为本地 backend 目录，避免 main.py 启动时 mkdir 失败。
+os.environ.setdefault("UPLOAD_DIR", str(Path(__file__).resolve().parent / "static" / "uploads"))
 
 import pytest
 from fastapi.testclient import TestClient
