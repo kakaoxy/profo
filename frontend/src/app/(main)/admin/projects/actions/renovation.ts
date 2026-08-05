@@ -4,7 +4,11 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
+import type { components } from "@/lib/api-types";
 import { z } from "zod";
+
+/** 装修合同响应（使用 pnpm gen-api 生成的类型，避免手写/强转） */
+type RenovationContractResponse = components["schemas"]["RenovationContractResponse"];
 
 const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
 const photoIdSchema = z.string().min(1, "照片 ID 不能为空");
@@ -323,7 +327,7 @@ export async function getRenovationContractAction(projectId: string) {
       return { success: false, message: extractErrorMessage(error, "获取装修合同信息失败") };
     }
 
-    const contract = extractApiData<Record<string, unknown>>(data);
+    const contract = extractApiData<RenovationContractResponse>(data);
     return { success: true, data: contract };
   } catch (e) {
     logger.error("获取装修合同信息异常:", e);
@@ -370,7 +374,7 @@ export async function updateRenovationContractAction(
       return { success: false, message: extractErrorMessage(error, "更新装修合同信息失败") };
     }
 
-    const contract = extractApiData<Record<string, unknown>>(data);
+    const contract = extractApiData<RenovationContractResponse>(data);
     revalidatePath("/admin/projects");
     return { success: true, data: contract, message: "装修合同信息已更新" };
   } catch (e) {

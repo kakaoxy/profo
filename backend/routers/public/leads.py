@@ -5,7 +5,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Path, Request, status
 
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
@@ -147,7 +147,7 @@ def get_my_leads(
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_lead_detail(
     request: Request,
-    lead_id: str,
+    lead_id: Annotated[str, Path(description="线索ID")],
     current_user: CurrentCustomerUserDep,
     service: LeadServiceDep,
 ) -> PublicLeadDetail:

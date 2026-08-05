@@ -100,7 +100,6 @@ export function ProjectDetailSheet({
             <EndedView
               project={project}
               onClose={onClose}
-              onRefresh={refreshProjectData}
             />
           ) : (
             <>
