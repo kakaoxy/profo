@@ -2,9 +2,11 @@
 FROM node:22-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 WORKDIR /app
-# pnpm >=10 从 pnpm-workspace.yaml 读取 overrides/allowBuilds 等配置，必须一并拷贝
+# pnpm >=11 从 pnpm-workspace.yaml 读取 onlyBuiltDependencies 等配置，必须一并拷贝
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+# --ignore-scripts: Docker 构建无需 native 构建脚本（esbuild/sharp/unrs-resolver），
+# Next.js 自带 esbuild 二进制，sharp 仅运行时需要（standalone 输出不包含）
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # ---- Stage 2: builder ----
 FROM node:22-alpine AS builder
