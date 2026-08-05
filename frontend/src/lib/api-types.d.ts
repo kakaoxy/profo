@@ -3263,6 +3263,7 @@ export interface components {
         ApiKeyInfoResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description Key ID
              */
             id: string;
@@ -3453,7 +3454,10 @@ export interface components {
          * @description 现金流记录响应 - 适配新的FinanceRecord表.
          */
         CashFlowRecordResponse: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid4
+             */
             id: string;
             /**
              * Project Id
@@ -4133,6 +4137,7 @@ export interface components {
         DocumentResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 文书ID
              */
             id: string;
@@ -4262,6 +4267,7 @@ export interface components {
         FinanceLogResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 日志ID
              */
             id: string;
@@ -4635,6 +4641,7 @@ export interface components {
         ImportableMediaResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 媒体ID
              */
             id: string;
@@ -4704,6 +4711,7 @@ export interface components {
         InvestmentListItemResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 跟投记录ID
              */
             id: string;
@@ -4788,11 +4796,13 @@ export interface components {
         InvestmentLogResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 日志ID
              */
             id: string;
             /**
              * Investment Id
+             * Format: uuid4
              * @description 关联跟投记录ID
              */
             investment_id: string;
@@ -4829,6 +4839,7 @@ export interface components {
         InvestmentResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 跟投记录ID
              */
             id: string;
@@ -4995,11 +5006,13 @@ export interface components {
         InvestorResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 投资方ID
              */
             id: string;
             /**
              * Investment Id
+             * Format: uuid4
              * @description 关联跟投记录ID
              */
             investment_id: string;
@@ -5114,6 +5127,7 @@ export interface components {
         L3ProjectBriefResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 项目ID
              */
             id: string;
@@ -5163,7 +5177,7 @@ export interface components {
             project_id: string;
             /**
              * Community Id
-             * @description 小区ID（UUID字符串）
+             * @description 小区ID
              */
             community_id?: string | null;
             /**
@@ -6538,6 +6552,7 @@ export interface components {
         OperationLogResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 日志ID
              */
             id: string;
@@ -6728,6 +6743,7 @@ export interface components {
             owner_info?: string | null;
             /**
              * Id
+             * Format: uuid4
              * @description 业主ID
              */
             id: string;
@@ -7007,6 +7023,7 @@ export interface components {
             description?: string | null;
             /**
              * Id
+             * Format: uuid4
              * @description 权限ID
              */
             id: string;
@@ -7620,7 +7637,7 @@ export interface components {
          * @description 项目主状态枚举.
          * @enum {string}
          */
-        ProjectStatus: "signing" | "renovating" | "selling" | "sold" | "deleted";
+        ProjectStatus: "signing" | "renovating" | "selling" | "sold" | "ended" | "deleted";
         /**
          * ProjectStatusUpdate
          * @description 项目状态更新请求.
@@ -7735,6 +7752,16 @@ export interface components {
              * @description 上架日期 (YYYY-MM-DD 格式)
              */
             listing_date?: string | null;
+            /**
+             * Sold Price
+             * @description 成交价(万)
+             */
+            sold_price?: number | string | null;
+            /**
+             * Sold Date
+             * @description 成交日期 (YYYY-MM-DD 格式)
+             */
+            sold_date?: string | null;
             /**
              * Commission Start Date
              * @description 委托开始日期 (YYYY-MM-DD 格式)
@@ -9196,7 +9223,10 @@ export interface components {
          * @description 装修合同信息响应模型.
          */
         RenovationContractResponse: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid4
+             */
             id: string;
             /**
              * Project Id
@@ -9432,7 +9462,10 @@ export interface components {
          * @description 照片响应.
          */
         RenovationPhotoResponse: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid4
+             */
             id: string;
             /**
              * Project Id
@@ -9532,16 +9565,19 @@ export interface components {
         ReturnAdjustmentResponse: {
             /**
              * Id
+             * Format: uuid4
              * @description 调整记录ID
              */
             id: string;
             /**
              * Investment Id
+             * Format: uuid4
              * @description 关联跟投记录ID
              */
             investment_id: string;
             /**
              * Investor Id
+             * Format: uuid4
              * @description 关联投资方ID
              */
             investor_id: string;
@@ -9873,7 +9909,10 @@ export interface components {
          * @description 销售记录响应 - 兼容 ProjectInteraction 模型字段映射.
          */
         SalesRecordResponse: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid4
+             */
             id: string;
             /**
              * Project Id

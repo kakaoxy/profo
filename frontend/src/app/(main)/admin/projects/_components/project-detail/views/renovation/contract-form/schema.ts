@@ -18,16 +18,6 @@ export const renovationContractSchema = z.object({
   // 硬装费用
   hard_contract_amount: z.number().optional(),
 
-  // 支付节点
-  payment_node_1: z.string().max(100).optional(),
-  payment_ratio_1: z.number().min(0).max(100).optional(),
-  payment_node_2: z.string().max(100).optional(),
-  payment_ratio_2: z.number().min(0).max(100).optional(),
-  payment_node_3: z.string().max(100).optional(),
-  payment_ratio_3: z.number().min(0).max(100).optional(),
-  payment_node_4: z.string().max(100).optional(),
-  payment_ratio_4: z.number().min(0).max(100).optional(),
-
   // 软装费用
   soft_budget: z.number().optional(),
   soft_detail_attachment: z.string().max(500).optional(),

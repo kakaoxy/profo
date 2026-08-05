@@ -114,6 +114,10 @@ class ProjectUpdater:
             "owner_phone",
             "owner_id_card",
             "owner_info",
+            "sold_price",
+            "sold_date",
+            "list_price",
+            "listing_date",
         }
         return {k: v for k, v in update_dict.items() if k in allowed_fields}
 

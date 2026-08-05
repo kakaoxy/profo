@@ -103,13 +103,19 @@ const createProjectSchema = z.object({
 });
 
 // 更新项目 - 全部 optional（PATCH 语义），owners 改用 OwnerInlineUpdate
+// 注意：sold_price/sold_date 仅在 ProjectUpdate（而非 ProjectCreate）中存在，
+// 后端已售状态允许通过 _filter_allowed_fields 修改这两个字段，故在此独立声明。
 const updateProjectSchema = createProjectSchema
   .partial()
-  .extend({ owners: z.array(ownerInlineUpdateSchema).nullable().optional() });
+  .extend({
+    owners: z.array(ownerInlineUpdateSchema).nullable().optional(),
+    sold_price: nullableNumber.optional(),
+    sold_date: z.string().nullable().optional(),
+  });
 
-// 项目状态枚举 - 对齐后端 ProjectStatus: signing/renovating/selling/sold/deleted
+// 项目状态枚举 - 对齐后端 ProjectStatus: signing/renovating/selling/sold/ended/deleted
 const projectStatusSchema = z.enum(
-  ["signing", "renovating", "selling", "sold", "deleted"],
+  ["signing", "renovating", "selling", "sold", "ended", "deleted"],
   "项目状态不合法",
 );
 

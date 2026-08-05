@@ -166,6 +166,7 @@ export const STAGE_CONFIG = [
   },
   { key: "selling", label: "在售阶段", aliases: ["selling", "sales", "在售"] },
   { key: "sold", label: "已售阶段", aliases: ["sold", "done", "已售"] },
+  { key: "ended", label: "已下架", aliases: ["ended", "已下架"] },
 ] as const;
 
 export type RenovationStageKey = (typeof RENOVATION_STAGES)[number]["key"];

@@ -13,6 +13,7 @@ interface SoldViewProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   currentProjectStageIndex: number;
+  onRefresh?: () => void;
 }
 
 export function SoldView({
@@ -20,6 +21,7 @@ export function SoldView({
   viewMode,
   setViewMode,
   currentProjectStageIndex,
+  onRefresh,
 }: SoldViewProps) {
   return (
     <div className="h-full flex flex-col bg-muted/30">
@@ -29,6 +31,7 @@ export function SoldView({
         viewMode={viewMode}
         setViewMode={setViewMode}
         currentProjectStageIndex={currentProjectStageIndex}
+        onRefresh={onRefresh}
       />
 
       {/* 2. 内容区域 (使用原生滚动确保稳定性) */}

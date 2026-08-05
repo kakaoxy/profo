@@ -97,14 +97,6 @@ export interface ProjectRenovation {
   actual_start_date?: string;
   actual_end_date?: string;
   hard_contract_amount?: number;
-  payment_node_1?: string;
-  payment_ratio_1?: number;
-  payment_node_2?: string;
-  payment_ratio_2?: number;
-  payment_node_3?: string;
-  payment_ratio_3?: number;
-  payment_node_4?: string;
-  payment_ratio_4?: number;
   soft_budget?: number;
   soft_detail_attachment?: string;
   design_fee?: number;

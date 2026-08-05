@@ -39,7 +39,8 @@ class ProjectStateManager:
 
         状态流转规则：
         - 已售状态只能从"在售"状态进入（或已在已售状态）
-        - 其他状态流转无特殊限制
+        - 已下架状态只能从"在售"状态进入（或已在已下架状态）
+        - 已下架为终态，仅允许流转到已删除
 
         Args:
             current_status: 当前项目状态
@@ -49,12 +50,28 @@ class ProjectStateManager:
             ValidationError: 状态流转不合法时抛出400错误
 
         """
-        # 特殊规则：只限制除了在售状态外，其他状态不能切换到已售状态
+        # 已售状态：只能从在售或已售进入
         if new_status == ProjectStatus.SOLD.value and current_status not in (
             ProjectStatus.SELLING.value,
             ProjectStatus.SOLD.value,
         ):
             msg = "只有在售或已售状态才能切换到已售状态"
+            raise ValidationError(msg)
+
+        # 已下架状态：只能从在售或已下架进入
+        if new_status == ProjectStatus.ENDED.value and current_status not in (
+            ProjectStatus.SELLING.value,
+            ProjectStatus.ENDED.value,
+        ):
+            msg = "只有在售状态才能切换到已下架状态"
+            raise ValidationError(msg)
+
+        # 已下架为终态：仅允许流转到已删除
+        if current_status == ProjectStatus.ENDED.value and new_status not in (
+            ProjectStatus.ENDED.value,
+            ProjectStatus.DELETED.value,
+        ):
+            msg = "已下架状态不可恢复为其他业务状态"
             raise ValidationError(msg)
 
     def update_status(

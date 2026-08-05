@@ -20,6 +20,7 @@ import { RenovationView } from "./views/renovation";
 import { DefaultView } from "./views/default";
 import { SellingView } from "./views/selling";
 import { SoldView } from "./views/sold";
+import { EndedView } from "./views/ended";
 
 import { useProjectDetail } from "./hooks/use-project-detail";
 import { useProjectAttachments } from "./hooks/use-project-attachments";
@@ -67,6 +68,7 @@ export function ProjectDetailSheet({
 
   const handlers = createHandlers(setPreviewImage);
   const isSoldMode = viewMode === "sold";
+  const isEndedMode = viewMode === "ended";
   // viewKey 仅基于 project.id，避免 updated_at 变化导致子视图无谓 remount
   // （remount 会销毁内部 state，如 ListingKPIs 的 now 状态，导致本周统计归零）
   const viewKey = project.id;
@@ -92,6 +94,13 @@ export function ProjectDetailSheet({
               viewMode={viewMode}
               setViewMode={handleViewModeChange}
               currentProjectStageIndex={currentProjectStageIndex}
+              onRefresh={refreshProjectData}
+            />
+          ) : isEndedMode ? (
+            <EndedView
+              project={project}
+              onClose={onClose}
+              onRefresh={refreshProjectData}
             />
           ) : (
             <>

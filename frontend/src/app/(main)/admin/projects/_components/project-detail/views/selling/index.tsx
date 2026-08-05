@@ -1,12 +1,28 @@
 "use client";
 
+import { useState } from "react";
+import { PowerOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Project } from "../../../../types";
+import { updateProjectStatusAction } from "../../../../actions/client";
 import { ListingKPIs } from "./kpi";
 import { SellingBasicInfo } from "./basic-info";
 import { SalesTeamPanel } from "./team-panel";
 import { ActivityTabs } from "./activity-tabs";
 import { DealDialog } from "./deal-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SellingViewProps {
   project: Project;
@@ -15,10 +31,29 @@ interface SellingViewProps {
 }
 
 export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewProps) {
+  const [isEnding, setIsEnding] = useState(false);
+
+  const handleEndProject = async () => {
+    setIsEnding(true);
+    try {
+      const res = await updateProjectStatusAction(project.id, "ended");
+      if (res.success) {
+        toast.success("项目已结束");
+        onRefresh?.();
+      } else {
+        toast.error(res.message || "操作失败");
+      }
+    } catch {
+      toast.error("操作失败");
+    } finally {
+      setIsEnding(false);
+    }
+  };
+
   return (
     <div className="relative pb-24 animate-in fade-in slide-in-from-right-4 duration-300">
       {/* 0. 基础信息概览 */}
-      <SellingBasicInfo project={project} />
+      <SellingBasicInfo project={project} onRefresh={onRefresh} />
 
       {/* 1. 顶部 KPI 看板 */}
       <ListingKPIs project={project} />
@@ -41,9 +76,47 @@ export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewPr
           </Badge>
         </div>
 
-        <div className="w-[180px]">
-          {/* 覆盖默认按钮样式为翠绿色 */}
-          <div className="[&_button]:bg-success [&_button]:hover:brightness-95 [&_button]:text-white">
+        <div className="flex items-center gap-2">
+          {/* 结束项目 */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+              >
+                <PowerOff className="mr-2 h-4 w-4" />
+                结束项目
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>确认结束项目？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  结束后项目将进入已下架状态，不可恢复为在售。此操作适用于委托到期未售出的房屋。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleEndProject();
+                  }}
+                  disabled={isEnding}
+                  className="bg-orange-600 hover:bg-orange-700 focus:ring-orange-500"
+                >
+                  {isEnding ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  确认结束
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* 确认成交 - 覆盖默认按钮样式为翠绿色 */}
+          <div className="w-[180px] [&_button]:bg-success [&_button]:hover:brightness-95 [&_button]:text-white">
             <DealDialog project={project} onSuccess={onDealSuccess} />
           </div>
         </div>

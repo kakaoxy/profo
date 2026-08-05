@@ -121,6 +121,12 @@ export function ProjectView({ data, total }: ProjectViewProps) {
                 >
                   已售
                 </TabsTrigger>
+                <TabsTrigger
+                  value="ended"
+                  className="text-xs px-3 data-[state=active]:bg-stone-100 data-[state=active]:text-stone-700"
+                >
+                  已下架
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 

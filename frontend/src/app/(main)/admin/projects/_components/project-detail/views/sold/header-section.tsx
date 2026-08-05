@@ -1,7 +1,9 @@
 "use client";
 
-import { MapPin, ChevronDown, Check, Lock } from "lucide-react";
+import { useState } from "react";
+import { MapPin, ChevronDown, Check, Lock, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Project } from "../../../../types";
 import { STAGE_CONFIG, ViewMode } from "../../constants";
 import { getProjectStatusClassName } from "@/lib/status-colors";
+import { EditSalesInfoDialog } from "./edit-sales-info-dialog";
 
 // [修改] 扩展 Props 接口，接收视图控制参数
 interface SoldHeaderProps {
@@ -21,6 +24,7 @@ interface SoldHeaderProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   currentProjectStageIndex: number;
+  onRefresh?: () => void;
 }
 
 export function SoldHeader({
@@ -28,7 +32,9 @@ export function SoldHeader({
   viewMode,
   setViewMode,
   currentProjectStageIndex,
+  onRefresh,
 }: SoldHeaderProps) {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const unitPrice =
     project.sold_price && project.area
       ? (project.sold_price * 10000) / project.area
@@ -114,8 +120,8 @@ export function SoldHeader({
           </div>
         </div>
 
-        {/* 右侧：结案状态 (保持不变) */}
-        <div className="flex flex-col items-end gap-1">
+        {/* 右侧：结案状态 + 修改销售信息入口 */}
+        <div className="flex flex-col items-end gap-2">
           <Badge className="bg-error hover:bg-red-700 text-base px-3 py-1 shadow-sm">
             🎉 已售罄 (Sold)
           </Badge>
@@ -123,8 +129,24 @@ export function SoldHeader({
             成交日期:{" "}
             {(project.sold_at || project.sold_date)?.split("T")[0] || "-"}
           </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setEditDialogOpen(true)}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            修改销售信息
+          </Button>
         </div>
       </div>
+
+      <EditSalesInfoDialog
+        project={project}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={onRefresh}
+      />
     </div>
   );
 }
