@@ -92,7 +92,7 @@ function LoginForm() {
   return (
     <div className="md:p-0 md:min-h-dvh md:flex md:items-center md:justify-center relative">
       {/* Main Card */}
-      <main className="w-full max-w-md mx-auto md:max-w-5xl bg-white rounded-cards overflow-hidden shadow-steep flex flex-col md:flex-row md:min-h-[600px]">
+      <main className="w-full max-w-md mx-auto md:max-w-5xl bg-white rounded-cards overflow-hidden shadow-steep flex flex-col md:flex-row md:min-h-150">
         {/* Left Panel - Brand (Desktop Only) */}
         <section className="relative hidden md:flex md:w-1/2 bg-white overflow-hidden">
           {/* Warm radial glow (per DESIGN.md hero only) */}
@@ -109,20 +109,20 @@ function LoginForm() {
               <h1 className="font-display text-[44px] text-ink mb-3">
                 {cLocale.common.brand.company}
               </h1>
-              <p className="text-[18px] leading-[28px] text-ash max-w-sm">
+              <p className="text-[18px] leading-7 text-ash max-w-sm">
                 {cLocale.login.brandDesc}
               </p>
             </div>
             <div className="flex gap-4 text-graphite">
               <div className="flex items-center gap-2">
                 <Verified size={20} />
-                <span className="text-[12px] leading-[16px] font-medium uppercase tracking-wider">
+                <span className="text-[12px] leading-4 font-medium uppercase tracking-wider">
                   {cLocale.login.badgeInstitutional}
                 </span>
               </div>
               <div className="flex items-center gap-2 border-l border-dove/30 pl-4">
                 <ShieldCheck size={20} />
-                <span className="text-[12px] leading-[16px] font-medium uppercase tracking-wider">
+                <span className="text-[12px] leading-4 font-medium uppercase tracking-wider">
                   {cLocale.login.badgeSecure}
                 </span>
               </div>
@@ -134,27 +134,34 @@ function LoginForm() {
         <section className="flex-1 p-6 md:p-12 flex flex-col justify-center bg-white">
           {/* Mobile Brand Logo */}
           <div className="md:hidden mb-8 text-center">
-            <span className="text-[28px] leading-[34px] font-medium text-ink">
+            <span className="text-[28px] leading-8.5 font-medium text-ink">
               {cLocale.common.brand.company}
             </span>
           </div>
 
           {/* Header */}
           <header className="mb-8">
-            <h2 className="text-[28px] leading-[34px] font-medium text-ink mb-2">
+            <h2 className="text-[28px] leading-8.5 font-medium text-ink mb-2">
               {cLocale.login.welcomeTitle}
             </h2>
-            <p className="text-[16px] leading-[24px] text-ash">
+            <p className="text-[16px] leading-6 text-ash">
               {cLocale.login.welcomeSubtitle}
             </p>
           </header>
 
-          <form noValidate onSubmit={handleSubmit} className="space-y-4">
+          {/* method="post"：防止客户端 JS 未水合完成时退化为原生 GET 提交，
+              导致凭证泄漏到 URL（/login?username=...&password=...）且静默刷新无提示 */}
+          <form
+            noValidate
+            method="post"
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
             {/* Server Error */}
             {errorMessage && (
               <div
                 role="alert"
-                className="p-3 bg-error-container border border-(--error)/30 rounded-inputs text-error text-sm"
+                className="p-3 bg-error-container border border-error/30 rounded-inputs text-error text-sm"
               >
                 {errorMessage}
               </div>
@@ -163,7 +170,7 @@ function LoginForm() {
             {/* Username Input */}
             <div className="space-y-2">
               <label
-                className="text-[14px] leading-[20px] text-ash"
+                className="text-[14px] leading-5 text-ash"
                 htmlFor="username"
               >
                 {cLocale.login.usernameLabel}
@@ -176,7 +183,7 @@ function LoginForm() {
                   placeholder={cLocale.login.usernamePlaceholder}
                   required
                   aria-invalid={!!validationErrors.username}
-                  className={`peer w-full pl-10 pr-4 py-3 bg-white border rounded-inputs focus:outline-none transition-all text-[16px] leading-[24px] text-ink placeholder:text-graphite ${validationErrors.username ? "border-c-error focus:border-c-error" : "border-dove/30 focus:border-rust"}`}
+                  className={`peer w-full pl-10 pr-4 py-3 bg-white border rounded-inputs focus:outline-none transition-all text-[16px] leading-6 text-ink placeholder:text-graphite ${validationErrors.username ? "border-c-error focus:border-c-error" : "border-dove/30 focus:border-rust"}`}
                   onChange={() =>
                     setValidationErrors((prev) => ({
                       ...prev,
@@ -197,7 +204,7 @@ function LoginForm() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label
-                  className="text-[14px] leading-[20px] text-ash"
+                  className="text-[14px] leading-5 text-ash"
                   htmlFor="password"
                 >
                   {cLocale.login.passwordLabel}
@@ -211,7 +218,7 @@ function LoginForm() {
                   placeholder={cLocale.login.passwordPlaceholder}
                   required
                   aria-invalid={!!validationErrors.password}
-                  className={`peer w-full pl-10 pr-12 py-3 bg-white border rounded-inputs focus:outline-none transition-all text-[16px] leading-[24px] text-ink placeholder:text-graphite ${validationErrors.password ? "border-c-error focus:border-c-error" : "border-dove/30 focus:border-rust"}`}
+                  className={`peer w-full pl-10 pr-12 py-3 bg-white border rounded-inputs focus:outline-none transition-all text-[16px] leading-6 text-ink placeholder:text-graphite ${validationErrors.password ? "border-c-error focus:border-c-error" : "border-dove/30 focus:border-rust"}`}
                   onChange={() =>
                     setValidationErrors((prev) => ({
                       ...prev,
@@ -245,7 +252,7 @@ function LoginForm() {
                 type="checkbox"
               />
               <label
-                className="text-[14px] leading-[20px] text-ash select-none"
+                className="text-[14px] leading-5 text-ash select-none"
                 htmlFor="remember"
               >
                 {cLocale.login.remember}
@@ -277,7 +284,7 @@ function LoginForm() {
 
           {/* Footer */}
           <footer className="mt-8 border-t border-dove/30 pt-4 text-center">
-            <p className="text-[14px] leading-[20px] text-ash">
+            <p className="text-[14px] leading-5 text-ash">
               {cLocale.login.noAccount}{" "}
               <Link
                 className="text-[15px] font-medium text-ink hover:underline ml-1"

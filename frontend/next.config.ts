@@ -1,9 +1,21 @@
 import type { NextConfig } from "next";
 
+// 允许通过局域网 IP 访问 dev server。
+// Next.js 16 默认阻止非 localhost 源的 dev 资源/HMR（vercel/next.js#91507），
+// 否则手机经局域网 IP 访问时页面无法水合、客户端交互失效、表单退化为原生提交。
+// 用 env 覆盖以便 DHCP 变化时无需改代码；多个以英文逗号分隔。
+const allowedDevOrigins = (
+  process.env.ALLOWED_DEV_ORIGINS || "192.168.110.104"
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
   reactCompiler: true,
+  allowedDevOrigins,
   // Host 头校验由 nginx 反向代理层负责（Next.js 16 NextConfig 无 allowedHosts 字段）
   turbopack: {
     root: import.meta.dirname, // 明确指定项目根目录，避免 lockfile 警告
@@ -22,6 +34,8 @@ const nextConfig: NextConfig = {
       allowedOrigins: [
         "localhost:3000",
         "127.0.0.1:3000",
+        // 局域网 IP 访问时 Server Actions 也需要同源放行
+        ...allowedDevOrigins.map((o) => `${o}:3000`),
         ...(process.env.PRODUCTION_DOMAIN ? [process.env.PRODUCTION_DOMAIN] : []),
       ],
     },
