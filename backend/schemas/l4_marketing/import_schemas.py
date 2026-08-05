@@ -20,7 +20,7 @@ class L3ProjectBriefResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str = Field(description="项目ID")
+    id: UUID4 = Field(description="项目ID")
     name: str = Field(description="项目名称")
     community_name: str = Field(description="小区名称")
     address: str = Field(description="物业地址")
@@ -54,7 +54,7 @@ class ImportableMediaResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str = Field(description="媒体ID")
+    id: UUID4 = Field(description="媒体ID")
     file_url: str = Field(description="文件URL")
     thumbnail_url: str | None = Field(default=None, description="缩略图URL")
     photo_category: PhotoCategory = Field(description="照片分类")
@@ -77,7 +77,7 @@ class L3ProjectImportResponse(BaseModel):
     project_id: UUID4 = Field(description="L3项目ID")
 
     # 小区信息
-    community_id: str | None = Field(default=None, description="小区ID（UUID字符串）")
+    community_id: UUID4 | None = Field(default=None, description="小区ID")
     community_name: str = Field(description="小区名称")
 
     # 户型信息

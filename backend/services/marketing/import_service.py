@@ -118,8 +118,8 @@ class MarketingImportService:
             available_media=available_media,
         )
 
-    def _get_community_id(self, community_name: str | None) -> str | None:
-        """根据小区名称获取小区ID（UUID字符串）."""
+    def _get_community_id(self, community_name: str | None) -> uuid.UUID | None:
+        """根据小区名称获取小区ID."""
         if not community_name:
             return None
         community: Community | None = (
