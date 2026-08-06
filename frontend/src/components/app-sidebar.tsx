@@ -129,7 +129,7 @@ export function AppSidebar({ user }: { user: User | null }) {
       "/admin/properties",
       "/admin/leads",
       "/admin/projects",
-      "/admin/l4-marketing",
+      "/admin/marketing",
       "/admin/investments",
       "/admin/ledger",
       "/admin/users",
