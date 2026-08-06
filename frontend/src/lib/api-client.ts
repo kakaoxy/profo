@@ -59,6 +59,9 @@ const authMiddleware: Middleware = {
         const isAdminRoute = window.location.pathname.startsWith("/admin");
         const loginPath = isAdminRoute ? "/admin/login" : "/login";
         if (!window.location.pathname.includes("/login")) {
+          // 会话过期需整页跳转登录页以重置前端状态；此处为 fetch 拦截器而非组件内路由，
+          // useRouter()/redirect() 均不适用，故整页跳转（规则不适用）。
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.href = `${loginPath}?redirect=${encodeURIComponent(
             window.location.pathname
           )}`;
