@@ -7,13 +7,20 @@ import { L4MarketingProject, MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CON
 import { getFileUrl } from "@/lib/config";
 import { isValidUrl } from "@/lib/validators";
 import { formatPrice, formatUnitPrice, formatArea, safeFormatDate } from "@/lib/formatters";
-import { getProjectStatusClassName } from "@/lib/status-colors";
 import { ActionCell } from "./_components/action-cell";
 
 // 判断是否为开发环境
 const isDev = process.env.NODE_ENV === "development";
 
-// 使用 types.ts 中定义的状态配置，className 通过 getProjectStatusClassName 统一获取
+// Steep 单色项目状态徽章映射
+const statusClassNameMap: Record<string, string> = {
+  "已售": "bg-dove/20 text-dove",
+  "在售": "bg-ink text-white",
+  "在途": "bg-fog text-ash",
+  default: "bg-fog text-ash",
+};
+
+// 使用 types.ts 中定义的状态配置，className 通过 Steep 单色映射统一获取
 const statusConfig: Record<string, { label: string }> = {
   "在途": {
     label: MARKETING_PROJECT_STATUS_CONFIG["在途"].label,
@@ -29,11 +36,11 @@ const statusConfig: Record<string, { label: string }> = {
 const publishStatusConfig: Record<string, { label: string; className: string }> = {
   "草稿": {
     label: PUBLISH_STATUS_CONFIG["草稿"].label,
-    className: "bg-status-pending text-white hover:bg-status-pending/90",
+    className: "bg-fog text-ash",
   },
   "发布": {
     label: PUBLISH_STATUS_CONFIG["发布"].label,
-    className: "bg-status-selling text-white hover:bg-status-selling/90",
+    className: "bg-rust text-white",
   },
 };
 
@@ -57,12 +64,12 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
       const status = project.project_status || "在途";
       const config = statusConfig[status] || { label: status };
-      const statusClassName = getProjectStatusClassName(status);
+      const statusClassName = statusClassNameMap[status] ?? statusClassNameMap["default"];
 
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
           {imageUrl && isValidUrl(imageUrl) ? (
-            <div className="relative w-20 h-14 rounded-lg shrink-0 border border-border overflow-hidden">
+            <div className="relative w-20 h-14 rounded-[var(--radius-images)] shrink-0 border border-border overflow-hidden">
               {isDev ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -81,12 +88,12 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               )}
             </div>
           ) : (
-            <div className="w-20 h-14 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0 border border-border">
+            <div className="w-20 h-14 rounded-[var(--radius-images)] bg-fog flex items-center justify-center text-xs text-graphite shrink-0 border border-border">
               无图
             </div>
           )}
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-foreground text-[15px] truncate max-w-[200px] md:max-w-xs">
+            <span className="font-medium text-ink text-sm truncate max-w-[200px] md:max-w-xs">
               {project.title || "未命名项目"}
             </span>
             <div className="flex items-center gap-2 mt-1">
@@ -155,10 +162,10 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
     ),
     cell: ({ row }) => (
       <div className="hidden sm:block text-right pr-4">
-        <div className="font-semibold text-foreground tabular-nums">
+        <div className="font-medium text-ink tabular-nums">
           {formatPrice(row.original.total_price)}
         </div>
-        <div className="text-xs text-muted-foreground tabular-nums">
+        <div className="text-xs text-graphite tabular-nums">
           {formatUnitPrice(row.original.unit_price)}
         </div>
       </div>
@@ -175,13 +182,13 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
     cell: ({ row }) => {
       const status = row.original.project_status || "在途";
       const config = statusConfig[status] || { label: status };
-      const statusClassName = getProjectStatusClassName(status);
+      const statusClassName = statusClassNameMap[status] ?? statusClassNameMap["default"];
 
       return (
         <div className="hidden md:block">
           <Badge
             variant="secondary"
-            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${statusClassName}`}
+            className={`px-3 py-1 text-xs font-medium rounded-lg border-none shadow-none ${statusClassName}`}
           >
             {config.label}
           </Badge>
@@ -199,14 +206,14 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       const publishStatus = row.original.publish_status || "草稿";
       const config = publishStatusConfig[publishStatus] || {
         label: publishStatus,
-        className: "bg-muted text-muted-foreground",
+        className: "bg-fog text-ash",
       };
 
       return (
         <div className="hidden lg:block">
           <Badge
             variant="secondary"
-            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${config.className}`}
+            className={`px-3 py-1 text-xs font-medium rounded-lg border-none shadow-none ${config.className}`}
           >
             {config.label}
           </Badge>

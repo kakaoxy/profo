@@ -21,12 +21,12 @@ interface StatusCardProps {
 }
 
 function StatusCard({ label, badge, color }: StatusCardProps) {
-  const bgClass = color === "green" ? "bg-success-container" : "bg-muted";
-  const borderClass = color === "green" ? "border-success/20" : "border-border";
+  const bgClass = color === "green" ? "bg-apricot-wash" : "bg-fog";
+  const borderClass = "border-dove/40";
 
   return (
     <div className={`rounded-lg p-4 ${bgClass} border ${borderClass}`}>
-      <div className="text-xs text-muted-foreground mb-2">{label}</div>
+      <div className="text-xs text-graphite mb-2">{label}</div>
       <div>{badge}</div>
     </div>
   );
@@ -41,8 +41,8 @@ interface ConfigItemProps {
 function ConfigItem({ label, value }: ConfigItemProps) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground">{value}</span>
+      <span className="text-xs text-graphite">{label}</span>
+      <span className="text-sm font-medium text-ink">{value}</span>
     </div>
   );
 }
@@ -90,8 +90,8 @@ export const BasicConfigSection = memo(function BasicConfigSection({
   return (
     <div className="space-y-4">
       {/* 房源状态区域 */}
-      <div className="bg-card rounded-lg border border-border p-4">
-        <h3 className="text-sm font-medium text-foreground mb-3">房源状态</h3>
+      <div className="bg-white rounded-cards shadow-steep-sm p-6">
+        <h3 className="text-xs font-medium text-ink mb-3">房源状态</h3>
         <div className="grid grid-cols-2 gap-4">
           {/* 项目进度 */}
           <StatusCard
@@ -100,7 +100,7 @@ export const BasicConfigSection = memo(function BasicConfigSection({
             badge={
               <Badge
                 variant="secondary"
-                className={`${statusConfig.className} text-xs font-semibold border-0 px-2.5 py-1`}
+                className={`${project.project_status === "在售" ? "bg-ink text-white" : "bg-fog text-ash"} text-xs font-medium border-0 px-2.5 py-1`}
               >
                 {statusConfig.label}
               </Badge>
@@ -113,7 +113,7 @@ export const BasicConfigSection = memo(function BasicConfigSection({
             badge={
               <Badge
                 variant="secondary"
-                className={`${publishConfig.className} text-xs font-semibold border-0 px-2.5 py-1`}
+                className={`${project.publish_status === "发布" ? "bg-rust text-white" : "bg-fog text-ash"} text-xs font-medium border-0 px-2.5 py-1`}
               >
                 {publishConfig.label}
               </Badge>
@@ -125,8 +125,8 @@ export const BasicConfigSection = memo(function BasicConfigSection({
       </div>
 
       {/* 管理配置区域 */}
-      <div className="bg-card rounded-lg border border-border p-4">
-        <h3 className="text-sm font-medium text-foreground mb-3">管理配置</h3>
+      <div className="bg-white rounded-cards shadow-steep-sm p-6">
+        <h3 className="text-xs font-medium text-ink mb-3">管理配置</h3>
         <div className="grid grid-cols-4 gap-4">
           <ConfigItem
             label="排序权重"
@@ -139,7 +139,7 @@ export const BasicConfigSection = memo(function BasicConfigSection({
                 <span className="text-muted-foreground">加载中...</span>
               ) : consultant ? (
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
+                  <User className="h-4 w-4 text-graphite" />
                   <span>{consultant.nickname || consultant.username}</span>
                 </div>
               ) : project.consultant_id ? (
