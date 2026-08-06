@@ -71,7 +71,7 @@ function MonitorSectionSkeleton() {
       <div className="flex flex-col sm:flex-row gap-4 sm:overflow-x-auto pb-4 pt-2 sm:custom-scrollbar min-w-0">
         <ProjectCardListSkeleton />
         {/* 添加项目卡片占位 */}
-        <div className="w-full sm:w-[280px] sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center min-h-[400px]">
+        <div className="w-full sm:w-70 sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center min-h-100">
           <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5">
             <Plus className="w-8 h-8" aria-hidden="true" />
           </div>
@@ -119,14 +119,14 @@ function MonitorSection() {
 
         <CreateProjectDialog
           trigger={
-            <div className="w-full sm:w-[280px] sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-card hover:border-primary/40 transition-[background-color,border-color] min-h-[400px]">
+            <div className="w-full sm:w-70 sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-card hover:border-primary/40 transition-[background-color,border-color] min-h-100">
               <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5 group-hover:bg-primary group-hover:text-white transition-colors shadow-sm">
                 <Plus className="w-8 h-8" aria-hidden="true" />
               </div>
               <p className="text-lg font-bold text-muted-foreground group-hover:text-primary transition-colors">
                 添加新项目
               </p>
-              <p className="text-xs text-muted-foreground mt-2 max-w-[140px]">
+              <p className="text-xs text-muted-foreground mt-2 max-w-35">
                 快速录入房源或新建开发项目
               </p>
             </div>

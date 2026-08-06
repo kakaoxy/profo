@@ -53,7 +53,7 @@ export const cLocale = {
       loginRequired: "请先登录",
     },
     contact: {
-      hotlinePlaceholder: "咨询热线：即将开通，暂请通过页面表单留言",
+      hotlinePlaceholder: "咨询热线：19921362013",
     },
   },
 

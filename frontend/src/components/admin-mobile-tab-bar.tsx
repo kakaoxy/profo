@@ -52,7 +52,7 @@ export function AdminMobileTabBar() {
       <nav
         className="fixed bottom-0 inset-x-0 z-50 h-16 border-t border-border bg-card/95 backdrop-blur-xl md:hidden pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="mx-auto flex h-full max-w-[600px] items-center justify-around px-2">
+        <div className="mx-auto flex h-full max-w-150 items-center justify-around px-2">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             const active = isActive(tab.href);
@@ -61,7 +61,7 @@ export function AdminMobileTabBar() {
                 key={tab.href}
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className="flex flex-col items-center justify-center gap-1 min-w-[56px] py-1"
+                className="flex flex-col items-center justify-center gap-1 min-w-14 py-1"
               >
                 <Icon
                   className={`h-5 w-5 ${active ? "text-primary" : "text-muted-foreground"}`}
@@ -80,7 +80,7 @@ export function AdminMobileTabBar() {
             type="button"
             onClick={() => setMoreOpen(true)}
             aria-label="更多菜单"
-            className="flex flex-col items-center justify-center gap-1 min-w-[56px] py-1"
+            className="flex flex-col items-center justify-center gap-1 min-w-14 py-1"
           >
             <MoreHorizontal
               className={`h-5 w-5 ${moreOpen ? "text-primary" : "text-muted-foreground"}`}

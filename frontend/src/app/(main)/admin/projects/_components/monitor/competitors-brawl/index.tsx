@@ -80,7 +80,7 @@ export function CompetitorsBrawl({
           onSearchChange={setSearch}
         />
 
-        <Card className="border-border shadow-sm bg-card min-h-[300px]">
+        <Card className="border-border shadow-sm bg-card min-h-75">
           {showSpinner ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />

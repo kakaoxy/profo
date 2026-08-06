@@ -5,7 +5,7 @@ import { cLocale } from "@/lib/i18n/c-locale";
 export function SiteFooter() {
   return (
     <footer className="bg-ink px-6 py-16 md:py-20">
-      <div className="mx-auto max-w-[1200px]">
+      <div className="mx-auto max-w-300">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
@@ -89,7 +89,7 @@ export function SiteFooter() {
             <ul className="space-y-2.5">
               <li className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white/40" />
-                <span className="text-sm text-white/60">上海市浦东新区</span>
+                <span className="text-sm text-white/60">上海市浦东新区金桥路939号宏南投资大厦1706</span>
               </li>
               <li className="flex items-start gap-2">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-white/40" />
@@ -97,7 +97,7 @@ export function SiteFooter() {
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 shrink-0 text-white/40" />
-                <span className="text-sm text-white/60">contact@profo.com</span>
+                <span className="text-sm text-white/60">kakaoxy@hotmail.com</span>
               </li>
             </ul>
           </div>

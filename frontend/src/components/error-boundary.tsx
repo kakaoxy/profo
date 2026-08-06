@@ -83,7 +83,7 @@ interface ErrorFallbackProps {
 
 function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
   return (
-    <div className="min-h-[400px] flex items-center justify-center p-6">
+    <div className="min-h-100 flex items-center justify-center p-6">
       <div className="max-w-md w-full bg-card rounded-xl shadow-lg border border-border p-8 text-center">
         <div className="w-16 h-16 bg-error-container rounded-full flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="w-8 h-8 text-error" />
