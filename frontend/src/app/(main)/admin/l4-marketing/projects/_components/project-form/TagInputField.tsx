@@ -31,16 +31,16 @@ export function TagInputField({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)]/30 bg-card p-3">
+    <div className="flex flex-wrap items-center gap-2 rounded-inputs border border-dove/40 bg-white p-3">
       {value.map((tag) => (
         <span
           key={tag}
-          className="bg-[var(--success)] text-[var(--success)] text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5"
+          className="bg-fog text-ink text-[10px] font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-dove/30"
         >
           {tag}
           <button
             type="button"
-            className="inline-flex size-4 items-center justify-center rounded-full hover:bg-[var(--success)]/20 transition-colors"
+            className="inline-flex size-4 items-center justify-center rounded-full hover:bg-ink/10 transition-colors"
             onClick={() => handleRemoveTag(tag)}
             aria-label={`移除标签 ${tag}`}
           >
@@ -49,14 +49,14 @@ export function TagInputField({
         </span>
       ))}
       <input
-        className="h-8 flex-1 min-w-[140px] bg-transparent px-1 text-sm outline-none placeholder:text-[var(--muted-foreground)]/60 text-[var(--foreground)]"
+        className="h-8 flex-1 min-w-35 bg-transparent px-1 text-sm outline-none placeholder:text-ash/70 text-ink"
         placeholder={value.length === 0 ? placeholder : ""}
         value={tagInput}
         onChange={(e) => setTagInput(e.target.value)}
         onKeyDown={handleAddTag}
       />
       {value.length === 0 ? (
-        <span className="text-[10px] text-[var(--muted-foreground)]/60 bg-[var(--primary)] px-2 py-1 rounded border border-dashed border-[var(--border)]/50 cursor-pointer hover:bg-[var(--primary)] transition-colors">
+        <span className="text-[10px] text-graphite bg-fog px-2 py-1 rounded border border-dashed border-dove cursor-pointer hover:bg-white transition-colors">
           + 添加标签
         </span>
       ) : null}

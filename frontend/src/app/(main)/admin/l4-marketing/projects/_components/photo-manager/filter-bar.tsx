@@ -26,10 +26,10 @@ export function FilterBar({
   onToggleAll,
 }: FilterBarProps) {
   return (
-    <div className="px-6 py-4 space-y-4 border-b border-border">
+    <div className="px-6 py-4 space-y-4 border-b border-dove/40">
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite w-4 h-4" />
           <Input
             placeholder="搜索ID或描述..."
             value={searchQuery}
@@ -51,7 +51,7 @@ export function FilterBar({
             size="sm"
             className={cn(
               "gap-1 whitespace-nowrap shrink-0",
-              activeStage === option.value && "bg-primary",
+              activeStage === option.value && "bg-rust",
             )}
             onClick={() => onStageChange(option.value)}
           >

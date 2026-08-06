@@ -27,23 +27,23 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
 
   return (
     <div 
-      className="flex items-center gap-3 rounded-lg border-2 border-primary bg-card p-3 shadow-xl ring-2 ring-primary/20"
+      className="flex items-center gap-3 rounded-lg border-2 border-rust bg-card p-3 shadow-xl ring-2 ring-rust/20"
       style={{
         // 使用 GPU 加速
         transform: "translateZ(0)",
         willChange: "transform",
       }}
     >
-      <div className="cursor-grabbing p-1 bg-primary/10 rounded">
-        <GripVertical className="h-4 w-4 text-primary" />
+      <div className="cursor-grabbing p-1 bg-rust/10 rounded">
+        <GripVertical className="h-4 w-4 text-rust" />
       </div>
 
       <div
-        className="w-16 h-16 rounded-md bg-muted border shrink-0 relative overflow-hidden"
+        className="w-16 h-16 rounded-md bg-fog border shrink-0 relative overflow-hidden"
       >
         {photo.media_type === "video" ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted">
-            <Play className="h-5 w-5 text-primary" fill="currentColor" />
+          <div className="absolute inset-0 flex items-center justify-center bg-fog">
+            <Play className="h-5 w-5 text-rust" fill="currentColor" />
           </div>
         ) : optimizedUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -70,11 +70,11 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
       </div>
 
       <div className="flex-1 min-w-0 overflow-hidden">
-        <p className="text-xs font-medium text-[var(--foreground)] truncate">
+        <p className="text-xs font-medium text-ink truncate">
           照片 #{photo.id}
         </p>
         {photo.photo_category === "renovation" && stageLabel ? (
-          <p className="text-xs text-[var(--muted-foreground)] truncate">{stageLabel}</p>
+          <p className="text-xs text-graphite truncate">{stageLabel}</p>
         ) : null}
       </div>
     </div>

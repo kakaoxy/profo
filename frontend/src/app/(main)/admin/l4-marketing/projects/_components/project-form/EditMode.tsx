@@ -20,11 +20,11 @@ import type { ImportableMedia } from "../project-selector/types";
 
 function PhotoManagerSkeleton() {
   return (
-    <div className="bg-primary/5 rounded-2xl p-8 animate-pulse">
-      <div className="h-6 w-32 bg-muted rounded mb-6" />
+    <div className="bg-fog rounded-3xl p-8 animate-pulse">
+      <div className="h-6 w-32 bg-dove/30 rounded mb-6" />
       <div className="space-y-4">
-        <div className="h-10 bg-muted rounded" />
-        <div className="h-32 bg-muted rounded" />
+        <div className="h-10 bg-dove/30 rounded" />
+        <div className="h-32 bg-dove/30 rounded" />
       </div>
     </div>
   );
@@ -217,28 +217,28 @@ export function EditMode({ mode, project, photos, actions, defaultConsultantId }
           </div>
 
           {/* Fixed Bottom Actions */}
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-xl px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-8 z-50">
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-xl px-6 py-4 rounded-3xl shadow-steep flex items-center gap-6 z-50">
             <div className="flex flex-col">
-              <span className="text-muted-foreground text-[10px] uppercase font-medium tracking-wider">当前状态</span>
+              <span className="text-graphite text-[10px] uppercase font-medium tracking-wider">当前状态</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                <span className="text-white text-sm font-medium">
+                <span className="text-ink text-sm font-medium">
                   {mode === "create" ? "正在创建新项目" : `正在编辑: 房源 #${project?.id}`}
                 </span>
               </div>
             </div>
-            <div className="h-8 w-px bg-card/10"></div>
-            <div className="flex gap-4">
+            <div className="h-8 w-px bg-dove/40"></div>
+            <div className="flex gap-2">
               <Link
                 href="/admin/l4-marketing/projects"
-                className="text-muted-foreground text-sm hover:text-white transition-colors px-3 py-2"
+                className="text-graphite text-sm hover:text-ink transition-colors px-3 py-2"
               >
                 取消
               </Link>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-primary hover:bg-primary/90 text-white text-sm font-medium px-6 py-2 rounded-lg transition-all"
+                className="bg-ink hover:bg-ink/90 text-white text-sm font-medium px-6 py-2 rounded-full transition-all"
               >
                 {submitButtonText}
               </Button>

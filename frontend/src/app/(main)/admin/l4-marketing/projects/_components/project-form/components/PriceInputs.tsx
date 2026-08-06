@@ -83,19 +83,19 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+      <label className="block text-xs font-medium text-graphite uppercase tracking-wider">
         总价 (万元) <span className="text-error">*</span>
       </label>
       <div className="relative">
         <input
           inputMode="decimal"
-          className="w-full h-14 px-4 border border-border/50 rounded-xl bg-card text-2xl font-black outline-none focus:ring-2 focus:ring-primary/20 text-primary"
+          className="w-full h-14 px-4 border border-dove/60 rounded-inputs bg-white text-2xl font-medium text-ink outline-none focus:ring-2 focus:ring-rust/20 focus:border-rust/60"
           value={inputValue}
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder="0"
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">万</span>
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-ash">万</span>
       </div>
     </div>
   );
@@ -115,18 +115,18 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
 export function UnitPriceDisplay({ value }: UnitPriceDisplayProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+      <label className="block text-xs font-medium text-graphite uppercase tracking-wider">
         单价 (万元/㎡)
       </label>
       <div className="relative">
         <input
           inputMode="decimal"
-          className="w-full h-14 px-4 border border-border/50 rounded-xl bg-muted text-xl font-bold outline-none text-foreground"
+          className="w-full h-14 px-4 border border-dove/60 rounded-inputs bg-fog text-xl font-medium text-ink outline-none"
           value={value}
           readOnly
           placeholder="自动计算"
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-status-pending bg-status-pending/30 px-2 py-0.5 rounded">
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-rust bg-apricot-wash px-2 py-0.5 rounded-full">
           自动
         </span>
       </div>

@@ -39,8 +39,8 @@ export const columns: ColumnDef<Project>[] = [
       const status = row.original.status || DEFAULT_STATUS;
 
       return (
-        <div className="flex flex-col py-1 min-w-[140px]">
-          <span className="font-bold text-foreground text-[15px] truncate max-w-[200px] md:max-w-xs">
+        <div className="flex flex-col py-1 min-w-35">
+          <span className="font-bold text-foreground text-[15px] truncate max-w-50 md:max-w-xs">
             {row.original.name}
           </span>
 
@@ -65,7 +65,7 @@ export const columns: ColumnDef<Project>[] = [
       <div className="hidden lg:block text-muted-foreground font-medium">小区</div>
     ),
     cell: ({ row }) => (
-      <span className="hidden lg:block text-sm text-foreground font-medium truncate max-w-[120px]">
+      <span className="hidden lg:block text-sm text-foreground font-medium truncate max-w-30">
         {row.original.community_name || "-"}
       </span>
     ),

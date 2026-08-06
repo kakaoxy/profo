@@ -64,10 +64,10 @@ interface BasicInfoSectionProps {
 
 function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
   return (
-    <section className="bg-primary/5 rounded-2xl p-8">
-      <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
-        基础信息 (Basic Info)
+    <section className="bg-card rounded-3xl shadow-steep-sm p-6">
+      <h3 className="flex items-center gap-2 mb-6">
+        <span className="w-1 h-4 rounded-full bg-rust"></span>
+        <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">基础信息 <span className="ml-1 font-normal normal-case text-ash">Basic Info</span></span>
       </h3>
       <div className="space-y-6">
         {/* 第一行：小区名称和房源标题 */}
@@ -96,8 +96,8 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
             name="title"
             render={({ field }) => (
               <FormItem className="space-y-2">
-                <FormLabel className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
-                  房源标题 <span className="text-[var(--error)]">*</span>
+                <FormLabel className="block text-xs font-medium text-graphite uppercase tracking-wider">
+                  房源标题 <span className="text-error">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -105,7 +105,7 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
                     {...field}
                     value={String(field.value ?? "")}
                     onChange={(e) => field.onChange(e.target.value)}
-                    className="w-full h-12 px-4 border border-[var(--border)]/50 rounded-xl bg-card text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                    className="w-full h-12 px-4 border border-dove/60 rounded-inputs bg-white text-sm font-medium text-ink outline-none focus:ring-2 focus:ring-rust/20 focus:border-rust/60"
                   />
                 </FormControl>
                 <FormMessage />
@@ -148,10 +148,10 @@ interface LayoutSpecsSectionProps {
 
 function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
   return (
-    <section className="bg-primary/5 rounded-2xl p-8">
-      <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
-        户型与规格 (Layout & Specs)
+    <section className="bg-card rounded-3xl shadow-steep-sm p-6">
+      <h3 className="flex items-center gap-2 mb-6">
+        <span className="w-1 h-4 rounded-full bg-rust"></span>
+        <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">户型与规格 <span className="ml-1 font-normal normal-case text-ash">Layout &amp; Specs</span></span>
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
@@ -175,8 +175,8 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
           name="area"
           render={({ field }) => (
             <FormItem className="space-y-2">
-              <FormLabel className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
-                面积 (㎡) <span className="text-[var(--error)]">*</span>
+              <FormLabel className="block text-xs font-medium text-graphite uppercase tracking-wider">
+                面积 (㎡) <span className="text-error">*</span>
               </FormLabel>
               <FormControl>
                 <AreaInput
@@ -254,11 +254,11 @@ function PricingSection({ control }: PricingSectionProps) {
   }, [totalPrice, area]);
 
   return (
-    <section className="bg-primary/5 rounded-2xl p-8">
+    <section className="bg-card rounded-3xl shadow-steep-sm p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <span className="w-1.5 h-6 bg-primary rounded-full"></span>
-          价格设置 (Pricing)
+        <h3 className="flex items-center gap-2">
+          <span className="w-1 h-4 rounded-full bg-rust"></span>
+          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">价格设置 <span className="ml-1 font-normal normal-case text-ash">Pricing</span></span>
         </h3>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -234,7 +234,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
           </form>
           {tab === "internal" && (
             <Select value={roleFilter} onValueChange={handleRoleChange}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-35">
                 <SelectValue placeholder="所有角色" />
               </SelectTrigger>
               <SelectContent>
@@ -250,7 +250,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
             </Select>
           )}
           <Select value={statusFilter} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-30">
               <SelectValue placeholder="所有状态" />
             </SelectTrigger>
             <SelectContent>

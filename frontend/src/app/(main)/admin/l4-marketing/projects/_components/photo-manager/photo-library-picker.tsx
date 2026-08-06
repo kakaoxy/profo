@@ -115,19 +115,19 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="sm:max-w-none max-w-[95vw] w-[1400px] h-[85vh] flex flex-col p-0 gap-0"
+        className="sm:max-w-none max-w-[95vw] w-350 h-[85vh] flex flex-col p-0 gap-0"
         style={{
           animation: "none",
           transition: "none",
         }}
       >
-        <DialogHeader className="p-6 pb-4 border-b border-border">
+        <DialogHeader className="p-6 pb-4 border-b border-dove/40">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-xl font-bold">
                 从照片库选择
               </DialogTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-graphite mt-1">
                 选择照片添加到当前项目
               </p>
             </div>
@@ -152,7 +152,7 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
           onTogglePhoto={togglePhoto}
         />
 
-        <DialogFooter className="p-6 pt-4 border-t border-border">
+        <DialogFooter className="p-6 pt-4 border-t border-dove/40">
           <PickerFooter
             selectedCount={selectedIds.size}
             submitting={submitting}

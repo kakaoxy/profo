@@ -25,15 +25,15 @@ export function DroppableStage({ id, children, isEmpty, isActive }: DroppableSta
       className={cn(
         "space-y-2 rounded border-2 border-dashed transition-all",
         // 基础样式
-        "min-h-[80px] p-3",
+        "min-h-20 p-3",
         // 空状态样式
         isEmpty && "flex items-center justify-center",
-        // 默认状态 - 使用状态色语义 token
-        !isOver && "border-status-selling/30 bg-status-selling/10",
+        // 默认状态 - 使用 rust 统一高亮
+        !isOver && "border-rust/30 bg-rust/10",
         // Hover 状态
-        isOver && "border-status-selling bg-status-selling/20 ring-2 ring-status-selling/20",
+        isOver && "border-rust bg-rust/20 ring-2 ring-rust/20",
         // 拖拽激活时的样式
-        isActive && "border-status-selling/50 bg-status-selling/15"
+        isActive && "border-rust/50 bg-rust/15"
       )}
     >
       {children}
