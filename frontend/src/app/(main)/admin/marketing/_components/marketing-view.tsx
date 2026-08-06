@@ -160,15 +160,15 @@ export function MarketingView({ data, total }: MarketingViewProps) {
         }
         filterTabs={
           <>
-            <div className="flex p-1 bg-muted rounded-lg">
+            <div className="flex p-1 bg-fog rounded-cards">
               {LAYOUT_TABS.map((tab) => (
                 <button
                   key={tab.value}
                   onClick={() => handleLayoutChange(tab.value)}
                   className={`py-1.5 px-3 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
                     layoutFilter === tab.value
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-ink text-white shadow-steep-sm"
+                      : "text-graphite hover:text-ink"
                   }`}
                 >
                   {tab.label}
@@ -181,12 +181,12 @@ export function MarketingView({ data, total }: MarketingViewProps) {
               onValueChange={handlePublishTabChange}
               className="w-full sm:w-auto"
             >
-              <TabsList className="h-10 bg-muted p-1 rounded-lg">
+              <TabsList className="h-10 bg-fog p-1 rounded-cards">
                 {PUBLISH_TABS.map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                    className="text-xs px-3 data-[state=active]:bg-ink data-[state=active]:text-white"
                   >
                     {tab.label}
                   </TabsTrigger>
@@ -199,20 +199,12 @@ export function MarketingView({ data, total }: MarketingViewProps) {
               onValueChange={handleProjectStatusTabChange}
               className="w-full sm:w-auto"
             >
-              <TabsList className="h-10 bg-muted p-1 rounded-lg">
+              <TabsList className="h-10 bg-fog p-1 rounded-cards">
                 {PROJECT_STATUS_TABS.map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className={`text-xs px-3 ${
-                      tab.value === "在途"
-                        ? "data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                        : tab.value === "在售"
-                        ? "data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
-                        : tab.value === "已售"
-                        ? "data-[state=active]:bg-muted data-[state=active]:text-foreground"
-                        : ""
-                    }`}
+                    className="text-xs px-3 data-[state=active]:bg-ink data-[state=active]:text-white"
                   >
                     {tab.label}
                   </TabsTrigger>
@@ -225,7 +217,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
           <>
             <Button
               variant="outline"
-              className="flex-1 lg:flex-none bg-card border-border text-foreground hover:bg-muted"
+              className="flex-1 lg:flex-none bg-white text-ink border-dove hover:bg-fog"
               onClick={() => toast.success("正在生成报表...")}
             >
               <Download className="mr-2 h-4 w-4" />
@@ -235,7 +227,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
             <div className="flex-1 lg:flex-none">
               <Link
                 href="/admin/marketing/new"
-                className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                className="inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-ink text-white hover:bg-ink/90 h-10 px-4 py-2"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 新建房源
@@ -246,7 +238,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
         totalCount={total}
         filteredCount={filteredData.length}
       >
-        <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+        <div className="bg-white rounded-cards shadow-steep overflow-hidden">
           <div className="overflow-x-auto">
             <DataTable
               columns={columns}

@@ -62,7 +62,7 @@ function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-card rounded-lg border border-border p-4">
+        <div key={i} className="bg-white rounded-cards shadow-steep-sm p-4">
           <Skeleton className="h-4 w-16 mb-2" />
           <Skeleton className="h-8 w-12" />
         </div>
@@ -89,7 +89,7 @@ function ContentSkeleton() {
       </div>
 
       {/* Table Skeleton */}
-      <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+      <div className="bg-white rounded-cards shadow-steep overflow-hidden">
         <div className="p-4">
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 py-4 border-b border-border last:border-0">
@@ -178,14 +178,14 @@ export default async function MarketingProjectsPage({
   const params = await searchParams;
 
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen bg-fog">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         {/* Header - 立即渲染 */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="font-display text-3xl text-ink">
             营销项目管理
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ash">
             管理房源营销信息，发布和编辑房源展示内容。
           </p>
         </div>

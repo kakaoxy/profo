@@ -119,12 +119,12 @@ export const PhotosSection = memo(function PhotosSection({
   }, []);
 
   return (
-    <div className="bg-card rounded-lg border border-border">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+    <div className="bg-white rounded-cards shadow-steep-sm">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-dove/40">
         <div className="flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">媒体资源</span>
-          <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground">
+          <ImageIcon className="w-4 h-4 text-graphite" />
+          <span className="text-xs font-medium text-graphite">媒体资源</span>
+          <Badge variant="secondary" className="text-[10px] bg-fog text-ash">
             共 {photos.length} 张
           </Badge>
         </div>
@@ -133,13 +133,13 @@ export const PhotosSection = memo(function PhotosSection({
       <div className="p-4 space-y-4">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload">手动上传</TabsTrigger>
-            <TabsTrigger value="sync">同步照片</TabsTrigger>
+            <TabsTrigger value="upload" className="data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">手动上传</TabsTrigger>
+            <TabsTrigger value="sync" className="data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">同步照片</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload" className="space-y-4 mt-4">
             <div className="space-y-3">
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-xs font-medium text-graphite">
                 选择照片类别
               </div>
               <PhotoCategorySelector
@@ -151,7 +151,7 @@ export const PhotosSection = memo(function PhotosSection({
               {uploadCategory === "renovation" && (
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-6 lg:col-span-4">
-                    <div className="text-xs font-medium text-muted-foreground mb-1">
+                    <div className="text-xs font-medium text-graphite mb-1">
                       装修阶段
                     </div>
                     <Select
@@ -206,7 +206,7 @@ export const PhotosSection = memo(function PhotosSection({
 
           <TabsContent value="sync" className="space-y-4 mt-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-xs font-medium text-graphite">
                 从其他项目同步照片
               </div>
               <Button
@@ -214,7 +214,7 @@ export const PhotosSection = memo(function PhotosSection({
                 variant="outline"
                 size="sm"
                 onClick={handleOpenPicker}
-                className="bg-card border-border hover:bg-muted"
+                className="bg-white text-ink border-dove hover:bg-fog"
               >
                 <FolderOpen className="h-4 w-4 mr-1" />
                 从照片库选择
@@ -225,7 +225,7 @@ export const PhotosSection = memo(function PhotosSection({
 
         {photos.length > 0 && (
           <DndProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t border-border">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t border-dove/40">
               <MarketingPhotoList
                 photos={marketingPhotos}
                 photoIds={marketingPhotoIds}

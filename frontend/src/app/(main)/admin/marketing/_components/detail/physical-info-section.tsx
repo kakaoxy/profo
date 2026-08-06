@@ -28,12 +28,12 @@ function InfoItem({ label, value, icon, highlight }: InfoItemProps) {
   if (value === undefined || value === null || value === "") return null;
   
   return (
-    <div className="flex items-center justify-between py-2 min-h-[36px]">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+    <div className="flex items-center justify-between py-2 min-h-9">
+      <div className="flex items-center gap-2 text-xs text-graphite font-medium">
         {icon}
         <span>{label}</span>
       </div>
-      <div className={`text-sm font-medium text-foreground ${highlight ? "font-bold text-foreground" : ""}`}>
+      <div className={`text-sm font-medium text-ink ${highlight ? "text-rust" : ""}`}>
         {value}
       </div>
     </div>
@@ -47,17 +47,17 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
   const hasAnyData = project.area || project.layout || project.orientation || project.floor_info || project.total_price;
 
   return (
-    <Card className="bg-card border-border shadow-sm">
-      <CardHeader className="!pb-3 px-5 border-b border-border">
-        <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5">
-          <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+    <Card className="bg-white rounded-cards shadow-steep-sm">
+      <CardHeader className="pb-3! px-5 border-b border-dove/40">
+        <CardTitle className="text-xs font-medium text-ink flex items-center gap-1.5">
+          <Building2 className="w-3.5 h-3.5 text-graphite" />
           物理信息
-          <Badge variant="secondary" className="ml-2 text-[10px] bg-muted text-muted-foreground">
+          <Badge variant="secondary" className="ml-2 text-[10px] bg-fog text-ash">
             只读
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-5 !pt-3 !pb-4">
+      <CardContent className="px-5 pt-3! pb-4!">
         {hasAnyData ? (
           <div className="space-y-1">
             {/* 关联主项目ID */}
@@ -65,7 +65,7 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
               <InfoItem 
                 label="关联主项目ID" 
                 value={
-                  <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
+                  <span className="font-mono text-xs bg-fog px-2 py-0.5 rounded">
                     {project.project_id}
                   </span>
                 }
@@ -78,7 +78,7 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
               <InfoItem 
                 label="小区ID" 
                 value={
-                  <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
+                  <span className="font-mono text-xs bg-fog px-2 py-0.5 rounded">
                     {project.community_id}
                   </span>
                 }
@@ -120,7 +120,7 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
               label="总价" 
               value={
                 project.total_price ? (
-                  <span className="text-error font-bold">
+                  <span className="text-rust font-medium">
                     ¥{project.total_price.toLocaleString()}万
                   </span>
                 ) : "-"

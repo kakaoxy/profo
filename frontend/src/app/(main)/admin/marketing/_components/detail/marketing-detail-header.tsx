@@ -17,7 +17,7 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
   onClose,
 }: MarketingDetailHeaderProps) {
   return (
-    <div className="px-6 py-4 border-b border-border bg-card sticky top-0 z-10">
+    <div className="px-6 py-4 border-b border-dove/40 bg-white sticky top-0 z-10">
       <div className="flex items-center justify-between gap-4">
         {/* 左侧：返回按钮和标题 */}
         <div className="flex items-center gap-3">
@@ -31,15 +31,15 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
           </Button>
 
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-foreground leading-tight">
+            <h1 className="font-display text-lg text-ink leading-tight">
               {project.title || "未命名项目"}
             </h1>
             {project.community_name ? (
-              <span className="text-muted-foreground text-sm">
+              <span className="text-xs text-graphite">
                 · {project.community_name}
               </span>
             ) : null}
-            <span className="text-muted-foreground text-sm">
+            <span className="text-xs text-graphite">
               (ID:{project.id})
             </span>
           </div>
@@ -56,7 +56,7 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
             <Button
               variant="outline"
               size="sm"
-              className="h-8"
+              className="h-8 bg-white text-ink border-dove hover:bg-fog"
             >
               <Pencil className="mr-1.5 h-3.5 w-3.5" />
               编辑房源
@@ -73,7 +73,7 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
             <Button
               variant="outline"
               size="sm"
-              className="h-8"
+              className="h-8 bg-white text-ink border-dove hover:bg-fog"
             >
               <Eye className="mr-1.5 h-3.5 w-3.5" />
               预览

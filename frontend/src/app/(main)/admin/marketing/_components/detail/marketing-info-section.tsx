@@ -47,8 +47,8 @@ function InfoRow({ label, value, highlight }: InfoRowProps) {
 
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm font-medium text-foreground ${highlight ? "font-bold text-foreground" : ""}`}>
+      <span className="text-xs text-graphite">{label}</span>
+      <span className={`text-sm font-medium text-ink ${highlight ? "text-rust" : ""}`}>
         {value}
       </span>
     </div>
@@ -57,7 +57,7 @@ function InfoRow({ label, value, highlight }: InfoRowProps) {
 
 // 分隔线组件
 function Divider() {
-  return <div className="border-t border-border my-2" />;
+  return <div className="border-t border-dove/40 my-2" />;
 }
 
 // 使用 memo 避免不必要的重渲染
@@ -80,7 +80,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
           <Badge
             key={tag}
             variant="secondary"
-            className="bg-muted text-muted-foreground text-xs font-medium px-2 py-0.5 border-0"
+            className="bg-fog text-ash text-xs font-medium px-2 py-0.5 border-0"
           >
             {tag}
           </Badge>
@@ -90,10 +90,11 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
   }, [project.tags]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
+    <div className="bg-white rounded-cards shadow-steep-sm p-6">
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
       {/* 左侧：营销主图 */}
       <div className="relative">
-        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-muted border border-border relative">
+        <div className="aspect-4/3 rounded-images overflow-hidden bg-fog relative">
           {mainImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -109,7 +110,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
           )}
         </div>
         <div className="absolute bottom-2 left-2">
-          <Badge className="bg-black/60 text-white text-xs border-0">
+          <Badge className="bg-ink/70 text-white text-xs border-0">
             营销主图
           </Badge>
         </div>
@@ -157,7 +158,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
         />
         {tagsContent && (
           <div className="flex items-start justify-between py-2">
-            <span className="text-sm text-muted-foreground pt-0.5">标签</span>
+            <span className="text-xs text-graphite pt-0.5">标签</span>
             <div className="text-right max-w-[70%]">{tagsContent}</div>
           </div>
         )}
@@ -169,6 +170,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
           label="创建时间"
           value={safeParseDate(project.created_at)?.toLocaleDateString("zh-CN") ?? "-"}
         />
+      </div>
       </div>
     </div>
   );

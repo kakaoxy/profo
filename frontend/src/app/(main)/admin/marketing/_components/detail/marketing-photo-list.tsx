@@ -70,7 +70,7 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
           ref={setNodeRef}
           id={CONTAINER_MARKETING}
           className={cn(
-            "space-y-2 min-h-[80px] max-h-[300px] overflow-y-auto p-2 rounded-lg border transition-all",
+            "space-y-2 min-h-20 max-h-75 overflow-y-auto p-2 rounded-lg border transition-all",
             // 默认样式
             "bg-muted border-border",
             // 拖拽悬停时的样式
