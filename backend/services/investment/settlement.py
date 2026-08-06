@@ -1,5 +1,6 @@
 """结算 / 反结算 / 收益分配比例调整."""
 
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -57,7 +58,12 @@ class _SettlementMixin:
         )
         investor_map = {i.id: i for i in investors}
 
-        adjustments_map = {a.investor_id: a for a in data.adjustments}
+        # ReturnAdjustmentItem.investor_id 为 str，需归一化为 UUID 再与 investor_map 比对
+        try:
+            adjustments_map = {uuid.UUID(a.investor_id): a for a in data.adjustments}
+        except ValueError as err:
+            msg = "调整项投资方ID格式非法"
+            raise ValidationError(msg) from err
         if set(adjustments_map.keys()) != set(investor_map.keys()):
             msg = "调整项与投资方列表不一致"
             raise ValidationError(msg)

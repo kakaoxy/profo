@@ -38,6 +38,21 @@ def _quantize(value: Decimal) -> Decimal:
     return value.quantize(_TWO_PLACES, rounding=ROUND_HALF_UP)
 
 
+def _json_safe(value: Any) -> Any:
+    """将 detail 中的 UUID 对象递归转为字符串，保证 JSON 列可序列化.
+
+    detail 写入 PostgreSQL JSON 列，若含 UUID 对象（如 project_id）会触发
+    TypeError: Object of type UUID is not JSON serializable。
+    """
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, uuid.UUID):
+        return str(value)
+    return value
+
+
 class _InvestmentServiceBase:
     """投资管理服务基类：持有 db 会话，提供共享校验/响应构建方法."""
 
@@ -89,7 +104,7 @@ class _InvestmentServiceBase:
         log = InvestmentLog(
             investment_id=investment_id,
             action_type=action_type,
-            detail=detail,
+            detail=_json_safe(detail),
             operator=operator_id,
         )
         self.db.add(log)
