@@ -94,7 +94,7 @@ export async function getL4MarketingProjectsAction(
   projectStatus?: string,
   consultantId?: string,
   communityId?: string,
-): Promise<ActionResult<{ items: unknown[]; total: number; page: number; page_size: number }>> {
+): Promise<ActionResult<{ items: L4MarketingProject[]; total: number; page: number; page_size: number }>> {
   try {
     const client = await fetchClient();
     const { data, error } = await client.GET(

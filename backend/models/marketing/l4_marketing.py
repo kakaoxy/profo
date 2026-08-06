@@ -151,7 +151,8 @@ class L4MarketingProject(BaseModel):
         "L4MarketingMedia",
         back_populates="marketing_project",
         primaryjoin="L4MarketingProject.id == foreign(L4MarketingMedia.marketing_project_id)",
-        lazy="dynamic",
+        # selectin 预加载避免列表/详情序列化时逐条查询媒体（消除 N+1）
+        lazy="selectin",
     )
 
     __table_args__ = (
