@@ -20,7 +20,7 @@ interface InfoCardProps {
 export function InfoCard({ title, icon, children, className, gridColumns }: InfoCardProps) {
   return (
     <Card className={cn("border-border shadow-sm py-0 gap-0", className)}>
-      <CardHeader className="border-b border-border py-3 px-4 !pb-3">
+      <CardHeader className="border-b border-border py-3 px-4 pb-3!">
         <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
           {icon}
           {title}

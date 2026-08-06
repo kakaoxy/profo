@@ -209,7 +209,7 @@ export function UploadZone() {
       {/* 拖拽上传区域 */}
       <div
         className={cn(
-          "relative border-2 border-dashed rounded-xl p-10 transition-all duration-200 ease-in-out flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[300px]",
+          "relative border-2 border-dashed rounded-xl p-10 transition-all duration-200 ease-in-out flex flex-col items-center justify-center gap-4 cursor-pointer min-h-75",
           isDragging
             ? "border-primary bg-primary/5 scale-[1.01]"
             : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted",

@@ -328,7 +328,7 @@ export function RecordDialog({
     >
       {/* ⚠️ 应收应付模块暂停开放：因科目调整导致数据不准，待后续迭代完成再恢复
           保留 showReceivablePayable state、derivedType、ReceivablePayableTable import 以便恢复 */}
-      <DialogContent className="sm:max-w-[450px] rounded-[20px]">
+      <DialogContent className="sm:max-w-112.5 rounded-[20px]">
         <DialogHeader>
           <DialogTitle className="text-[17px] font-medium tracking-[-0.009em] text-ink">
             记一笔

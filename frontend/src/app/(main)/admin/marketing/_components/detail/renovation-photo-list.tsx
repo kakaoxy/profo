@@ -74,7 +74,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
       </div>
 
       <div 
-        className="space-y-3 min-h-[80px] max-h-[300px] overflow-y-auto p-2 bg-muted rounded-lg border border-border"
+        className="space-y-3 min-h-20 max-h-75 overflow-y-auto p-2 bg-muted rounded-lg border border-border"
         style={{
           // 优化滚动性能
           willChange: "scroll-position",
@@ -138,7 +138,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
                   >
                     <div
                       id={containerId}
-                      className="space-y-2 min-h-[40px] p-1 rounded border border-dashed border-border hover:border-emerald-400 transition-colors"
+                      className="space-y-2 min-h-10 p-1 rounded border border-dashed border-border hover:border-emerald-400 transition-colors"
                     >
                       {renderStagePhotos(stagePhotos)}
                     </div>

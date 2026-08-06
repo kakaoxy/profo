@@ -70,7 +70,7 @@ export default function AboutPage() {
   return (
     <>
       {/* ========== 移动端布局 ========== */}
-      <div className="mx-auto max-w-[600px] px-4 pt-8 pb-8 md:hidden">
+      <div className="mx-auto max-w-150 px-4 pt-8 pb-8 md:hidden">
         <div className="space-y-6">
           <HeroCard label={cLocale.about.mobile.heroLabel} title={cLocale.about.mobile.heroTitle}>
             <p className="mt-4 text-sm text-ash tracking-[-0.009em]">
@@ -115,7 +115,7 @@ export default function AboutPage() {
               {cLocale.about.processSteps.map((step, index) => (
                 <div key={step.num} className="relative flex gap-4 pb-6 last:pb-0">
                   {index < cLocale.about.processSteps.length - 1 && (
-                    <div className="absolute left-[15px] top-9 h-full w-px bg-dove/30" />
+                    <div className="absolute left-3.75 top-9 h-full w-px bg-dove/30" />
                   )}
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-apricot-wash text-sm font-medium text-rust">
                     {step.num}
@@ -181,7 +181,7 @@ export default function AboutPage() {
       {/* ========== PC端布局 ========== */}
       <div className="hidden md:block">
         {/* Hero Section */}
-        <section className="relative flex min-h-[60vh] md:min-h-[640px] w-full items-center overflow-hidden bg-white py-20 md:py-24">
+        <section className="relative flex min-h-[60vh] md:min-h-160 w-full items-center overflow-hidden bg-white py-20 md:py-24">
           <div
             className="pointer-events-none absolute inset-0"
             style={{
@@ -207,7 +207,7 @@ export default function AboutPage() {
               />
             )}
           </div>
-          <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6">
+          <div className="relative z-10 mx-auto w-full max-w-300 px-6">
             <div className="max-w-2xl">
               <h1 className="mb-4 font-display text-[44px] leading-[1.1] text-ink">
                 {cLocale.about.pc.heroTitleLine1}
@@ -237,7 +237,7 @@ export default function AboutPage() {
 
         {/* Pain Points Section */}
         <section className="bg-fog py-20">
-          <div className="mx-auto max-w-[1200px] px-6">
+          <div className="mx-auto max-w-300 px-6">
             <div className="mb-16 text-center">
               <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
                 {cLocale.about.pc.painPointsEyebrow}
@@ -274,7 +274,7 @@ export default function AboutPage() {
 
         {/* Process Section */}
         <section id="process" className="bg-white py-20">
-          <div className="mx-auto max-w-[1200px] px-6">
+          <div className="mx-auto max-w-300 px-6">
             <div className="mb-16 flex flex-col items-end justify-between gap-4 md:flex-row">
               <div className="max-w-xl">
                 <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
@@ -310,7 +310,7 @@ export default function AboutPage() {
 
         {/* Service Features Section */}
         <section className="bg-fog py-20">
-          <div className="mx-auto max-w-[1200px] px-6">
+          <div className="mx-auto max-w-300 px-6">
             <div className="mb-16 text-center">
               <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
                 {cLocale.about.pc.servicesEyebrow}
@@ -337,7 +337,7 @@ export default function AboutPage() {
 
         {/* Social Proof Section */}
         <section className="bg-white py-20">
-          <div className="mx-auto max-w-[1200px] px-6">
+          <div className="mx-auto max-w-300 px-6">
             <div className="flex flex-col items-center gap-12 rounded-cards border border-dove/30 bg-white p-8 shadow-steep md:flex-row md:p-16">
               <div className="flex-1">
                 <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
@@ -418,7 +418,7 @@ export default function AboutPage() {
 
         {/* CTA Section */}
         <section className="relative overflow-hidden bg-fog py-20">
-          <div className="relative z-10 mx-auto max-w-[1200px] px-6 text-center">
+          <div className="relative z-10 mx-auto max-w-300 px-6 text-center">
             <h2 className="mb-4 font-display text-[44px] leading-[1.1] text-ink">
               {cLocale.about.pc.ctaTitle}
             </h2>
@@ -446,7 +446,7 @@ export default function AboutPage() {
 
       {/* 算账模块 */}
       <section className="bg-white py-12 md:py-20">
-        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
+        <div className="mx-auto max-w-300 px-4 md:px-6">
           <div className="mb-8 text-center">
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.calculation.eyebrow}
@@ -495,7 +495,7 @@ export default function AboutPage() {
 
       {/* FAQ（每条用 details 折叠，移动端默认收起，减少滚动疲劳） */}
       <section id="faq" className="bg-fog py-12 md:py-20">
-        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
+        <div className="mx-auto max-w-300 px-4 md:px-6">
           <div className="mb-8 text-center">
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.faqEyebrow}
@@ -530,7 +530,7 @@ export default function AboutPage() {
 
       {/* 三方对比 */}
       <section className="bg-white py-12 md:py-20">
-        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
+        <div className="mx-auto max-w-300 px-4 md:px-6">
           <div className="mb-8 text-center">
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.comparison.eyebrow}
@@ -572,7 +572,7 @@ export default function AboutPage() {
 
       {/* 适合房子 */}
       <section className="bg-fog py-12 md:py-20">
-        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
+        <div className="mx-auto max-w-300 px-4 md:px-6">
           <div className="mb-8 text-center">
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.suitable.eyebrow}
@@ -599,7 +599,7 @@ export default function AboutPage() {
 
       {/* 真实成交案例精选 */}
       <section className="bg-white py-12 md:py-20">
-        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
+        <div className="mx-auto max-w-300 px-4 md:px-6">
           <div className="mb-8 text-center">
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.casesEyebrow}

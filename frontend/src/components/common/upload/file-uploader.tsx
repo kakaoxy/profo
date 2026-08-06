@@ -167,7 +167,7 @@ export function FileUploader({
           {uploadingFiles.map((file) => (
             <div key={file.id} className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="truncate max-w-[200px]">{file.filename}</span>
+                <span className="truncate max-w-50">{file.filename}</span>
                 <span>{file.progress}%</span>
               </div>
               <Progress value={file.progress} className="h-1" />
