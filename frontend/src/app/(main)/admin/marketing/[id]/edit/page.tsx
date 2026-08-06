@@ -130,7 +130,7 @@ export default async function ProjectEditPage({
                 取消
               </Button>
             </Link>
-            <Link href={`/admin/marketing/${project.id}/preview`}>
+            <Link href={`/projects/${project.id}`} target="_blank">
               <Button variant="outline">
                 <Eye className="mr-2 h-4 w-4" />
                 预览
