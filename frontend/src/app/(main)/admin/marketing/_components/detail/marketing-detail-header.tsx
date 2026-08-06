@@ -64,7 +64,7 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
           </Link>
 
           <Link
-            href={`/admin/marketing/${project.id}/preview`}
+            href={`/projects/${project.id}`}
             target="_blank"
             onClick={(e) => {
               e.stopPropagation();
