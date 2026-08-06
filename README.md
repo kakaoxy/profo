@@ -696,12 +696,12 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 | | `/admin/communities/{id}` | GET/PUT/DELETE | 小区 CRUD |
 | | `/admin/communities/merge` | POST | 小区合并 |
 | | `/admin/dictionaries` | GET | 小区字典 |
-| **营销 L4** | `/admin/l4-marketing/projects` | GET/POST | 营销项目 |
-| | `/admin/l4-marketing/projects/{id}` | GET/PUT/DELETE | 营销项目 CRUD |
-| | `/admin/l4-marketing/projects/{id}/media` | GET/POST | 媒体管理 |
-| | `/admin/l4-marketing/projects/{id}/media/sort-order` | PATCH | 媒体排序 |
-| | `/admin/l4-marketing/available-projects` | GET | 可导入的 L3 项目 |
-| | `/admin/l4-marketing/projects/import-from-l3/{project_id}` | POST | 从 L3 项目导入 |
+| **营销 L4** | `/admin/marketing/projects` | GET/POST | 营销项目 |
+| | `/admin/marketing/projects/{id}` | GET/PUT/DELETE | 营销项目 CRUD |
+| | `/admin/marketing/projects/{id}/media` | GET/POST | 媒体管理 |
+| | `/admin/marketing/projects/{id}/media/sort-order` | PATCH | 媒体排序 |
+| | `/admin/marketing/available-projects` | GET | 可导入的 L3 项目 |
+| | `/admin/marketing/projects/import-from-l3/{project_id}` | POST | 从 L3 项目导入 |
 | **监控** | `/monitor/communities/{id}/{sentiment,trends,radar,competitors,market-stats}` | GET | 监控数据 |
 | | `/monitor/communities/{id}/competitors/{competitor_id}` | POST/DELETE | 竞品管理 |
 | | `/monitor/ai-strategy` | GET | AI 策略 |
@@ -1260,7 +1260,7 @@ ProFo/
 │   │   │   │   │   ├── ledger/          # 资金账本（项目列表 + 流水明细 + 统计 + 结算）
 │   │   │   │   │   ├── projects/        # 项目管理（[id] 含 cashflow / renovation / selling + monitor / create-project / project-detail）
 │   │   │   │   │   ├── leads/           # 线索管理（含监控仪表盘 + 抽屉详情 + 跟进）
-│   │   │   │   │   └── l4-marketing/    # 营销 CMS（照片 DnD + 预览 + 编辑）
+│   │   │   │   │   └── marketing/        # 营销 CMS（照片 DnD + 预览 + 编辑）
 │   │   │   │   └── layout.tsx     # 鉴权布局
 │   │   │   ├── (c)/               # C 端公开路由组
 │   │   │   │   ├── projects/      # 房源浏览

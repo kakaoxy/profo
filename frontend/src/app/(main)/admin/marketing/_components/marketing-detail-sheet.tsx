@@ -1,0 +1,166 @@
+"use client";
+
+import { logger } from "@/lib/logger";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { toast } from "sonner";
+
+import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/admin/marketing/types";
+import {
+  getL4MarketingProjectAction,
+  getL4MarketingMediaAction,
+} from "../actions";
+
+import { MarketingDetailHeader } from "./detail/marketing-detail-header";
+import { MarketingInfoSection } from "./detail/marketing-info-section";
+import { BasicConfigSection } from "./detail/basic-config-section";
+import { PhotosSection } from "./detail/photos-section";
+
+interface MarketingDetailSheetProps {
+  project: L4MarketingProject | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onRefresh?: () => void;
+}
+
+// 请求缓存，用于防止重复请求相同项目的数据
+const requestCache = new Map<number, Promise<{ project: L4MarketingProject | null; photos: L4MarketingMedia[] }>>();
+
+// 使用 memo 避免不必要的重渲染
+export const MarketingDetailSheet = memo(function MarketingDetailSheet({
+  project: initialProject,
+  isOpen,
+  onClose,
+}: MarketingDetailSheetProps) {
+  const isFetchingRef = useRef(false);
+  const fetchedProjectIdRef = useRef<number | null>(null);
+
+  const [project, setProject] = useState<L4MarketingProject | null>(initialProject);
+  const [photos, setPhotos] = useState<L4MarketingMedia[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 当 initialProject 变化时同步 project state
+  // 使用 render 期间调整 state 模式（React 官方推荐），避免 effect 额外渲染提交
+  // 参考：https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  // 注意：不在 render 中修改 ref（违反 React 规则）。
+  // loadDetailData 的 `fetchedProjectIdRef.current === projectId` 检查已能正确识别
+  // 不同项目 ID，无需在 render 中重置 ref。
+  const [prevInitialProjectId, setPrevInitialProjectId] = useState<number | undefined>(
+    initialProject?.id
+  );
+  if (initialProject?.id !== prevInitialProjectId) {
+    setPrevInitialProjectId(initialProject?.id);
+    setProject(initialProject);
+  }
+
+  // 加载详情数据（带请求去重）
+  const loadDetailData = useCallback(async (projectId: number) => {
+    if (isFetchingRef.current) return;
+    if (fetchedProjectIdRef.current === projectId && photos.length > 0) return;
+
+    isFetchingRef.current = true;
+    setIsLoading(true);
+
+    try {
+      let requestPromise = requestCache.get(projectId);
+
+      if (!requestPromise) {
+        requestPromise = (async () => {
+          const [projectRes, photosRes] = await Promise.all([
+            getL4MarketingProjectAction(projectId),
+            getL4MarketingMediaAction(projectId, 1, 100),
+          ]);
+
+          const projectData = projectRes.success && projectRes.data
+            ? (projectRes.data as L4MarketingProject)
+            : null;
+          const photosData = photosRes.success && photosRes.data
+            ? ((photosRes.data.items as L4MarketingMedia[]) || [])
+            : [];
+
+          return { project: projectData, photos: photosData };
+        })();
+
+        requestCache.set(projectId, requestPromise);
+
+        requestPromise.finally(() => {
+          requestCache.delete(projectId);
+        });
+      }
+
+      const { project: projectData, photos: photosData } = await requestPromise;
+
+      if (projectData) {
+        setProject(projectData);
+      }
+      setPhotos(photosData);
+      fetchedProjectIdRef.current = projectId;
+    } catch (error) {
+      logger.error("Failed to load detail data:", error);
+      toast.error("加载详情数据失败");
+    } finally {
+      setIsLoading(false);
+      isFetchingRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 当模态框打开时加载数据
+  useEffect(() => {
+    if (isOpen && project?.id) {
+      loadDetailData(project.id);
+    }
+  }, [isOpen, project?.id, loadDetailData]);
+
+  // 重置状态当模态框关闭时
+  useEffect(() => {
+    if (!isOpen) {
+      setPhotos([]);
+      fetchedProjectIdRef.current = null;
+    }
+  }, [isOpen]);
+
+  if (!project) return null;
+
+  return (
+    <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent className="w-full sm:max-w-3xl flex flex-col p-0 transition-all duration-300">
+        <SheetTitle className="sr-only">营销项目详情 - {project.title}</SheetTitle>
+        <SheetDescription className="sr-only">
+          查看和管理营销项目 {project.title} 的详细信息
+        </SheetDescription>
+
+        {/* Header */}
+        <MarketingDetailHeader project={project} onClose={onClose} />
+
+        {/* Content */}
+        <div
+          className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide"
+          style={{ scrollbarGutter: "stable" }}
+        >
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* 1. 房源信息 - 左右布局（主图+信息） */}
+              <MarketingInfoSection project={project} photos={photos} />
+
+              {/* 2. 房源状态 + 管理配置 */}
+              <BasicConfigSection project={project} />
+
+              {/* 3. 媒体资源 */}
+              <PhotosSection project={project} photos={photos} />
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+});

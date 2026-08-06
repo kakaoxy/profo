@@ -74,7 +74,7 @@ export const navMain: NavItem[] = [
   },
   {
     title: "房源营销",
-    url: "/admin/l4-marketing/projects",
+    url: "/admin/marketing",
     icon: Smartphone,
     permission: PERMISSION_CODES.L4_MARKETING_READ,
   },

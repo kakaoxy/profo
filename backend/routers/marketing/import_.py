@@ -24,8 +24,8 @@ from services.marketing import (
 from services.system.exceptions import ResourceNotFoundError, ServiceException
 
 router = APIRouter(
-    prefix="/admin/l4-marketing",
-    tags=["l4-marketing-import"],
+    prefix="/admin/marketing",
+    tags=["marketing-import"],
     dependencies=[Depends(require_roles(["admin", "operator"]))],
 )
 

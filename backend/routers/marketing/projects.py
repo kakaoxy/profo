@@ -35,8 +35,8 @@ from services.system.exceptions import ResourceNotFoundError
 from utils.common import RateLimits, limiter
 
 router = APIRouter(
-    prefix="/admin/l4-marketing",
-    tags=["l4-marketing"],
+    prefix="/admin/marketing",
+    tags=["marketing"],
 )
 
 

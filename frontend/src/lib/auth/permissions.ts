@@ -111,7 +111,7 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   // 房源批量上传 → 需 property:upload 权限
   { prefix: "/admin/properties/upload", permission: PERMISSION_CODES.PROPERTY_UPLOAD },
   // L4 市场营销 → 需 l4_marketing:read 权限
-  { prefix: "/admin/l4-marketing", permission: PERMISSION_CODES.L4_MARKETING_READ },
+  { prefix: "/admin/marketing", permission: PERMISSION_CODES.L4_MARKETING_READ },
   // 跟投管理 → 需 investment:read 权限
   { prefix: "/admin/investments", permission: PERMISSION_CODES.INVESTMENT_READ },
   // 房源管理 → 需 property:read 权限
