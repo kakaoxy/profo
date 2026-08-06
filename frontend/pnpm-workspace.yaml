@@ -1,8 +1,10 @@
 packages:
   - '.'
-onlyBuiltDependencies:
-  - esbuild
-  - sharp
-  - unrs-resolver
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
 overrides:
   postcss: 8.5.25
+  # 修复 dev 工具链 @redocly/openapi-core 依赖的 js-yaml 高危漏洞（GHSA-52cp-r559-cp3m），强制 >=4.3.0
+  js-yaml: ^4.3.0
