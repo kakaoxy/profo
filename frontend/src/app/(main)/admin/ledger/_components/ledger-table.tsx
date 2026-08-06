@@ -108,12 +108,12 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
         <div className="text-muted-foreground font-medium">小区 / 地址</div>
       ),
       cell: ({ row }) => (
-        <div className="flex flex-col py-1 min-w-[140px]">
-          <span className="font-medium text-sm text-foreground truncate max-w-[220px]">
+        <div className="flex flex-col py-1 min-w-35">
+          <span className="font-medium text-sm text-foreground truncate max-w-55">
             {row.original.project_name || "-"}
           </span>
           {row.original.project_address ? (
-            <span className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">
+            <span className="text-xs text-muted-foreground mt-0.5 truncate max-w-55">
               {row.original.project_address}
             </span>
           ) : null}

@@ -119,10 +119,10 @@ export function DualPhotoManager({
 
   return (
     <>
-      <section className="bg-primary/5 rounded-2xl p-8">
-        <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-          <span className="w-1.5 h-6 bg-primary rounded-full"></span>
-          照片管理 (Photos)
+      <section className="bg-card rounded-3xl shadow-steep-sm p-6">
+        <h3 className="flex items-center gap-2 mb-4">
+          <span className="w-1 h-4 rounded-full bg-rust"></span>
+          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">照片管理 <span className="ml-1 font-normal normal-case text-ash">Photos</span></span>
         </h3>
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
@@ -133,7 +133,7 @@ export function DualPhotoManager({
 
             <TabsContent value="upload" className="space-y-4 mt-4">
               <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">选择照片类别</div>
+                <div className="text-xs font-medium text-graphite">选择照片类别</div>
                 <PhotoCategorySelector
                   value={uploadCategory}
                   onChange={setUploadCategory}
@@ -143,13 +143,13 @@ export function DualPhotoManager({
                 {uploadCategory === "renovation" ? (
                   <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-6 lg:col-span-4">
-                      <div className="text-xs font-medium text-muted-foreground mb-1">装修阶段</div>
+                      <div className="text-xs font-medium text-graphite mb-1">装修阶段</div>
                       <Select
                         value={uploadStage}
                         onValueChange={setUploadStage}
                         disabled={isUploading}
                       >
-                        <SelectTrigger className="bg-card border-(--border)/50">
+                        <SelectTrigger className="bg-card border-dove/40">
                           <SelectValue placeholder="选择阶段" />
                         </SelectTrigger>
                         <SelectContent>
@@ -177,7 +177,7 @@ export function DualPhotoManager({
 
               {uploadingFiles.length > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-graphite">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     正在上传 {uploadingFiles.length} 个文件...
                   </div>
@@ -198,7 +198,7 @@ export function DualPhotoManager({
                   <div className="text-sm font-medium text-error">
                     以下 {failedUploads.length} 个文件上传失败
                   </div>
-                  <ul className="text-xs text-muted-foreground space-y-1">
+                  <ul className="text-xs text-graphite space-y-1">
                     {failedUploads.map((file, index) => (
                       <li key={index} className="truncate">{file.filename}</li>
                     ))}
@@ -233,13 +233,13 @@ export function DualPhotoManager({
 
             <TabsContent value="sync" className="space-y-4 mt-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-medium text-muted-foreground">从其他项目同步照片</div>
+                <div className="text-xs font-medium text-graphite">从其他项目同步照片</div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setPickerOpen(true)}
-                  className="bg-card border-(--border)/50 hover:bg-primary"
+                  className="bg-card border-dove/40 hover:bg-rust"
                 >
                   <FolderOpen className="h-4 w-4 mr-1" />
                   从照片库选择
@@ -254,7 +254,7 @@ export function DualPhotoManager({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-(--border)/20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-dove/20">
               <MarketingPhotoList
                 photos={marketingPhotos}
                 photoIds={marketingPhotoIds}
@@ -280,7 +280,7 @@ export function DualPhotoManager({
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="h-6 w-6 animate-spin text-graphite" />
             </div>
           }
         >

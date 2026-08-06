@@ -106,14 +106,14 @@ export const PHOTO_CATEGORY_CONFIG: Record<
 > = {
   marketing: {
     label: "营销照片",
-    color: "var(--primary)",
-    bgColor: "hsl(var(--primary) / 0.1)",
+    color: "#5d2a1a",
+    bgColor: "rgba(93, 42, 26, 0.1)",
     description: "用于房源展示的营销图片",
   },
   renovation: {
     label: "改造照片",
-    color: "var(--status-renovating)",
-    bgColor: "hsl(var(--status-renovating) / 0.1)",
+    color: "#5d2a1a",
+    bgColor: "rgba(93, 42, 26, 0.1)",
     description: "记录装修改造过程的照片",
   },
 };

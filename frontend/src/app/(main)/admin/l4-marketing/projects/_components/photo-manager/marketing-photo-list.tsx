@@ -30,10 +30,10 @@ export function MarketingPhotoList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-primary">
+        <h4 className="text-sm font-semibold text-rust">
           营销照片 ({photos.length})
         </h4>
-        <span className="text-xs text-muted-foreground">可拖拽到右侧</span>
+        <span className="text-xs text-graphite">可拖拽到右侧</span>
       </div>
 
       <div
@@ -41,18 +41,18 @@ export function MarketingPhotoList({
         id={CONTAINER_MARKETING}
         data-droppable="true"
         className={cn(
-          "rounded border-2 border-dashed transition-all min-h-[100px] p-3",
+          "rounded border-2 border-dashed transition-all min-h-25 p-3",
           isOver
-            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-            : "border-primary/30 bg-primary/5"
+            ? "border-rust bg-rust/5 ring-2 ring-rust/20"
+            : "border-rust/30 bg-rust/5"
         )}
       >
         <SortableContext items={photoIds} strategy={verticalListSortingStrategy}>
           {photos.length === 0 ? (
             <div className="flex items-center justify-center h-full py-8">
-              <div className="text-center text-muted-foreground text-sm pointer-events-none">
+              <div className="text-center text-graphite text-sm pointer-events-none">
                 暂无营销照片
-                <p className="text-xs mt-1 text-muted-foreground/60">
+                <p className="text-xs mt-1 text-graphite/60">
                   可将改造照片拖拽到此处
                 </p>
               </div>

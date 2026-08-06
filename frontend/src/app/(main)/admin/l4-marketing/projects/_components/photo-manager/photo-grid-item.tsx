@@ -22,35 +22,35 @@ export function PhotoGridItem({ photo, isSelected, isExisting, onToggle }: Photo
       className={cn(
         'relative p-2 rounded-xl border-2 cursor-pointer transition-all',
         isSelected
-          ? 'border-primary bg-primary/5'
-          : 'border-border hover:border-primary/50',
+          ? 'border-rust bg-rust/5'
+          : 'border-dove/40 hover:border-rust/50',
         isExisting && 'opacity-50'
       )}
       onClick={() => !isExisting && onToggle()}
     >
       {isSelected ? (
-        <div className="absolute top-3 right-3 z-10 bg-primary text-white rounded-full p-0.5">
+        <div className="absolute top-3 right-3 z-10 bg-rust text-white rounded-full p-0.5">
           <Check className="w-3 h-3" />
         </div>
       ) : null}
       {!isSelected && !isExisting ? (
-        <div className="absolute top-3 right-3 z-10 w-5 h-5 border-2 border-border bg-card/80 rounded-full" />
+        <div className="absolute top-3 right-3 z-10 w-5 h-5 border-2 border-dove/40 bg-card/80 rounded-full" />
       ) : null}
       {isExisting ? (
-        <div className="absolute top-3 right-3 z-10 bg-status-selling text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+        <div className="absolute top-3 right-3 z-10 bg-rust text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
           已添加
         </div>
       ) : null}
       <div
-        className="w-full aspect-square rounded-lg bg-center mb-2 overflow-hidden relative bg-muted"
+        className="w-full aspect-square rounded-lg bg-center mb-2 overflow-hidden relative bg-fog"
       >
         {imageStatus === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-dove/40 border-t-rust rounded-full animate-spin" />
           </div>
         )}
         {imageStatus === "error" && (
-          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-graphite">
             加载失败
           </div>
         )}
@@ -70,7 +70,7 @@ export function PhotoGridItem({ photo, isSelected, isExisting, onToggle }: Photo
         <p className="text-xs font-bold truncate">
           ID: #{photo.id}
         </p>
-        <p className="text-[10px] text-muted-foreground truncate">
+        <p className="text-[10px] text-graphite truncate">
           {photo.description || photo.stage}
         </p>
       </div>

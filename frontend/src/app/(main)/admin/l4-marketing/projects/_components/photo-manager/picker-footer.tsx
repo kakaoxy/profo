@@ -17,7 +17,7 @@ export function PickerFooter({ selectedCount, submitting, onCancel, onSubmit }: 
         <p className="font-bold">
           已选择 {selectedCount} 张照片
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-graphite">
           照片将同步至当前小程序项目
         </p>
       </div>

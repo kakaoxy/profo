@@ -85,7 +85,7 @@ export function FloorInput({ value, onChange }: FloorInputProps) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+      <label className="block text-xs font-medium text-graphite uppercase tracking-wider">
         楼层信息 <span className="text-error">*</span>
       </label>
       <div className="flex items-center gap-2">
@@ -93,25 +93,25 @@ export function FloorInput({ value, onChange }: FloorInputProps) {
         <div className="relative flex-1">
           <input
             inputMode="numeric"
-            className="w-full h-11 px-3 border border-(--border)/50 rounded-xl bg-card text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+            className="w-full h-11 px-3 border border-dove/60 rounded-inputs bg-white text-sm font-medium text-center text-ink outline-none focus:ring-2 focus:ring-rust/20 focus:border-rust/60"
             value={current}
             onChange={(e) => handleChange("current", e.target.value)}
             placeholder="当前"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">层</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ash">层</span>
         </div>
         {/* 分隔符 */}
-        <span className="text-muted-foreground font-bold">/</span>
+        <span className="text-ash font-medium">/</span>
         {/* 总楼层 */}
         <div className="relative flex-1">
           <input
             inputMode="numeric"
-            className="w-full h-11 px-3 border border-(--border)/50 rounded-xl bg-card text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+            className="w-full h-11 px-3 border border-dove/60 rounded-inputs bg-white text-sm font-medium text-center text-ink outline-none focus:ring-2 focus:ring-rust/20 focus:border-rust/60"
             value={total}
             onChange={(e) => handleChange("total", e.target.value)}
             placeholder="总"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">层</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ash">层</span>
         </div>
       </div>
     </div>
