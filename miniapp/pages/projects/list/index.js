@@ -102,20 +102,17 @@ Page({
           data: { page, page_size: pageSize },
         });
       } else {
+        // 装修中 tab 由后端按 project_status=在途 筛选，保证分页计数精确
         response = await request({
           url: "/public/projects",
-          data: { page, page_size: pageSize },
+          data:
+            tab === "renovating"
+              ? { page, page_size: pageSize, project_status: "在途" }
+              : { page, page_size: pageSize },
         });
       }
-      let rawItems = response.items;
-      let total = response.total;
-      if (tab === "renovating") {
-        // ⚠️ TODO 后端暂无 project_status 筛选参数，客户端按在途过滤；分页场景下结果不精确，待后端补筛选参数
-        // ⚠️ TODO 此 tab 分页不精确：客户端过滤会破坏分页计数，total 用过滤后长度
-        const filtered = rawItems.filter((it) => it.project_status === "在途");
-        rawItems = filtered;
-        total = filtered.length;
-      }
+      const rawItems = response.items;
+      const total = response.total;
       const newItems = rawItems.map((it) => this.toDisplay(it, tab));
       const merged = reset ? newItems : [...this.data.items, ...newItems];
       this.setData({
