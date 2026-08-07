@@ -1,66 +1,126 @@
 // pages/projects/detail/index.js
+import { request } from "../../../utils/request";
+
+/** 设计稿仅展示 6 个改造阶段（不含「已完成」）. */
+const ALL_STAGES = ["拆除", "设计", "水电", "木瓦", "油漆", "交付"];
+
+/** 判断是否为 HTTP 非 2xx 错误. */
+function isHttpResponseError(err) {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "statusCode" in err &&
+    typeof err.statusCode === "number"
+  );
+}
+
+/** 取 MM-DD. */
+function formatDate(dateStr) {
+  return dateStr.slice(5);
+}
+
+/** 将后端改造阶段映射为 6 项展示数据. */
+function buildStages(apiStages) {
+  // ⚠️ TODO: API 暂无阶段首图，renovation-img 用渐变占位，待后端补阶段图片字段
+  return ALL_STAGES.map((stageName) => {
+    const matched = apiStages?.find((s) => s.stage === stageName);
+    let meta = "待开始";
+    if (matched) {
+      if (matched.completed_date) {
+        meta = `${matched.photo_count} 张 · 完成于 ${formatDate(
+          matched.completed_date
+        )}`;
+      } else if (matched.photo_count > 0) {
+        meta = "进行中";
+      } else {
+        meta = "待开始";
+      }
+    }
+    return { stage: stageName, meta };
+  });
+}
+
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    id: null,
+    detail: null,
+    stages: [],
+    loading: false,
+    error: false,
+    notFound: false,
   },
-
-  /**
-   * 生命周期函数--监听页面加载
-   */
   onLoad(options) {
-
+    const rawId = options.id;
+    if (!rawId) {
+      this.setData({ notFound: true });
+      return;
+    }
+    const id = Number(rawId);
+    if (!Number.isFinite(id)) {
+      this.setData({ notFound: true });
+      return;
+    }
+    this.setData({ id });
+    this.loadDetail(id);
   },
-
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
+  async loadDetail(id) {
+    this.setData({
+      loading: true,
+      error: false,
+      notFound: false,
+      detail: null,
+    });
+    try {
+      const detail = await request({
+        url: `/public/projects/${id}`,
+      });
+      const stages = buildStages(detail.renovation_stages);
+      this.setData({ detail, stages, loading: false });
+    } catch (err) {
+      this.setData({ loading: false });
+      if (isHttpResponseError(err) && err.statusCode === 404) {
+        this.setData({ notFound: true });
+        return;
+      }
+      this.setData({ error: true });
+      wx.showToast({ title: "加载失败，请重试", icon: "none" });
+    }
   },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow() {
-
+  onImageTap(e) {
+    const images = this.data.detail?.images ?? [];
+    if (images.length === 0) {
+      return;
+    }
+    const current = e.currentTarget.dataset.url;
+    wx.previewImage({
+      urls: images,
+      current: current ?? images[0],
+    });
   },
-
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
+  onCallPhone() {
+    const phone = this.data.detail?.consultant?.phone;
+    if (phone) {
+      wx.makePhoneCall({ phoneNumber: phone }).catch(() => {});
+    } else {
+      wx.showToast({ title: "暂无联系电话", icon: "none" });
+    }
   },
-
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
+  onAddWechat() {
+    // ⚠️ TODO: 待配置真实微信号
+    wx.setClipboardData({ data: "微信号待配置" });
+    wx.showToast({ title: "微信号已复制", icon: "none" });
   },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
+  onRetry() {
+    const id = this.data.id;
+    if (id === null) {
+      return;
+    }
+    this.loadDetail(id);
   },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
   onShareAppMessage() {
-
-  }
-})
+    return {
+      title: this.data.detail?.title || "美房宝房源",
+      path: `/pages/projects/detail/index?id=${this.data.id}`,
+    };
+  },
+});

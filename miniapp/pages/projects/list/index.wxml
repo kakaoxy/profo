@@ -1,17 +1,40 @@
 <view class="page">
-  <!-- tab 栏 -->
-  <view class="tabs">
-    <view
-      class="tab {{tab === 'on_sale' ? 'tab--active' : ''}}"
-      bindtap="onTabChange"
-      data-tab="on_sale"
-    >在售</view>
-    <view
-      class="tab {{tab === 'sold' ? 'tab--active' : ''}}"
-      bindtap="onTabChange"
-      data-tab="sold"
-    >已成交</view>
+  <!-- 顶部品牌区 -->
+  <view class="list-hero">
+    <view class="list-hero-title">所见即所得，每套皆标杆</view>
+    <view class="list-hero-desc">在售、装修、已售房源全程实景展示，拒绝"照骗"。美房宝全程翻新，真金白银为品质背书。成交数据公开可查，让每一分钱都花得明明白白。</view>
+    <view class="list-hero-tags">
+      <view class="chip chip-apricot">精装实景交付</view>
+      <view class="chip chip-sky">改造全程溯源</view>
+      <view class="chip chip-fog">成交价真实可验</view>
+    </view>
   </view>
+
+  <!-- 搜索入口 -->
+  <view class="search-box" bindtap="onSearchTap">
+    <text class="search-box__icon">🔍</text>
+    <text class="search-box__text">搜索小区、商圈</text>
+  </view>
+
+  <!-- 状态 tab -->
+  <view class="status-tabs">
+    <view class="status-tab {{tab === 'all' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="all">所有房源</view>
+    <view class="status-tab {{tab === 'on_sale' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="on_sale">在售房源</view>
+    <view class="status-tab {{tab === 'renovating' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="renovating">装修中</view>
+    <view class="status-tab {{tab === 'sold' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="sold">过往案例</view>
+  </view>
+
+  <!-- 筛选条 -->
+  <view class="filter-bar">
+    <view class="filter-pill" bindtap="onFilterTap">价格 ▾</view>
+    <view class="filter-pill" bindtap="onFilterTap">户型 ▾</view>
+    <view class="filter-pill" bindtap="onFilterTap">面积 ▾</view>
+    <view class="filter-pill" bindtap="onFilterTap">楼层 ▾</view>
+    <view class="filter-pill" bindtap="onFilterTap">筛选</view>
+  </view>
+
+  <!-- 计数行 -->
+  <view class="count-row">共 {{total}} 套房源</view>
 
   <!-- 错误态 -->
   <view class="state" wx:if="{{error}}">
@@ -26,43 +49,33 @@
 
   <!-- 列表区 -->
   <block wx:if="{{!error}}">
-    <view class="list">
-      <view
-        class="card"
-        wx:for="{{items}}"
-        wx:key="id"
-        bindtap="onItemTap"
-        data-id="{{item.id}}"
-      >
+    <view
+      class="list-card"
+      wx:for="{{items}}"
+      wx:key="id"
+      bindtap="onItemTap"
+      data-id="{{item.id}}"
+    >
+      <view class="list-thumb">
         <image
-          class="card__cover"
+          wx:if="{{item.cover_thumbnail_url || item.cover_image}}"
           src="{{item.cover_thumbnail_url || item.cover_image}}"
           mode="aspectFill"
         />
-        <view class="card__body">
-          <view class="card__title">{{item.title}}</view>
-          <view class="card__info">
-            <text>{{item.community_name}}</text>
-            <text wx:if="{{tab === 'on_sale'}}"> · {{item.layout}} · {{item.orientation}} · {{item.floor_info}}</text>
-            <text wx:else> · {{item.layout}}</text>
-          </view>
-          <view class="card__price">
-            <text class="card__total">{{item.total_price}}万</text>
-            <text class="card__unit">{{item.unit_price}}万/㎡</text>
-            <text class="card__area">{{item.area}}㎡</text>
-          </view>
-          <!-- 在售标签 -->
-          <view class="card__tags" wx:if="{{tab === 'on_sale'}}">
-            <text
-              class="tag"
-              wx:for="{{item.tags}}"
-              wx:for-item="tag"
-              wx:key="*this"
-            >{{tag}}</text>
-          </view>
-          <!-- 已成交天数 -->
-          <view class="card__sold" wx:if="{{tab === 'sold' && item.sold_days}}">{{item.sold_days}}天成交</view>
+        <view class="list-badge {{item.badgeClass}}" wx:if="{{item.badgeText}}">{{item.badgeText}}</view>
+      </view>
+      <view class="list-content">
+        <view class="list-title">{{item.title}}</view>
+        <view class="list-desc">{{item.desc}}</view>
+        <view class="list-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+          <view
+            class="chip chip-fog"
+            wx:for="{{item.tags}}"
+            wx:for-item="tag"
+            wx:key="*this"
+          >{{tag}}</view>
         </view>
+        <view class="list-price">¥ {{item.total_price}} 万</view>
       </view>
     </view>
 
@@ -71,10 +84,13 @@
       <view class="state__text">暂无房源</view>
     </view>
 
-    <!-- 加载更多 -->
+    <!-- 底部加载更多 -->
     <view class="footer" wx:if="{{items.length > 0}}">
       <view class="footer__text" wx:if="{{loadingMore}}">加载中...</view>
       <view class="footer__text" wx:elif="{{noMore}}">没有更多了</view>
     </view>
   </block>
+
+  <!-- 底部留白避让 tabBar -->
+  <view style="height: 200rpx;"></view>
 </view>

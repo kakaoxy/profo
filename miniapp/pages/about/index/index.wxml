@@ -1,0 +1,134 @@
+<view class="page">
+  <!-- 1. home-hero -->
+  <view class="home-hero">
+    <view class="hero-title">卖房不想再投钱，<view class="hero-title-br">还想拿一个好价格？</view></view>
+    <view class="hero-sub">美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。一种零成本、零风险的卖房方案。</view>
+    <button class="btn-primary" bindtap="onGoValuation">免费在线预审</button>
+  </view>
+
+  <!-- 2. 痛点 -->
+  <view class="section-header">
+    <h3>这些痛点，您是否也遇到过？</h3>
+  </view>
+  <view class="pain-card">
+    <view class="pain-title">我装修旧了，不想再投钱</view>
+    <view class="pain-desc">房子旧、卖相差，自己掏钱重新装修要花十几万，还不一定卖得掉。</view>
+  </view>
+  <view class="pain-card">
+    <view class="pain-title">我怕自己装修，卖不掉血亏</view>
+    <view class="pain-desc">钱投进去，房子卖不掉，钱就压在装修上，进退两难。</view>
+  </view>
+  <view class="pain-card">
+    <view class="pain-title">中介只挂牌，不管产品力</view>
+    <view class="pain-desc">挂了牌就不管，房子卖相、推广、成交推进全靠自己操心。</view>
+  </view>
+
+  <!-- 3. 全流程托管 · 三部曲 -->
+  <view class="section-header">
+    <h3>全流程托管 · 三部曲</h3>
+  </view>
+  <view class="step-card">
+    <view class="step-num">01</view>
+    <view class="step-body">
+      <view class="step-title">上门评估，商定目标售价</view>
+      <view class="step-desc">免费上门看房，结合周边真实成交数据，商定写进合同的约定价格。</view>
+    </view>
+  </view>
+  <view class="step-card">
+    <view class="step-num">02</view>
+    <view class="step-body">
+      <view class="step-title">公司全额垫资装修，65天</view>
+      <view class="step-desc">出钱翻新提升产品力，业主零现金投入，全程省心。</view>
+    </view>
+  </view>
+  <view class="step-card">
+    <view class="step-num">03</view>
+    <view class="step-body">
+      <view class="step-title">公司全权卖房</view>
+      <view class="step-desc">卖到约定价业主拿钱；卖不到，装修免费送您。</view>
+    </view>
+  </view>
+
+  <!-- 4. 服务保障 -->
+  <view class="section-header">
+    <h3>服务保障</h3>
+  </view>
+  <view class="guard-list">
+    <view class="guard-item">
+      <view class="guard-title">零现金投入</view>
+      <view class="guard-desc">装修公司全额垫资，业主一分不掏。</view>
+    </view>
+    <view class="guard-item">
+      <view class="guard-title">利益绑定</view>
+      <view class="guard-desc">卖超归公司，激励公司把房子卖出好价。</view>
+    </view>
+    <view class="guard-item">
+      <view class="guard-title">全流程省心</view>
+      <view class="guard-desc">看房、装修、谈价、成交全程托管。</view>
+    </view>
+    <view class="guard-item">
+      <view class="guard-title">风险上限清晰</view>
+      <view class="guard-desc">最差 = 免费得一套装修，0 现金损失。</view>
+    </view>
+    <view class="guard-item">
+      <view class="guard-title">数据透明</view>
+      <view class="guard-desc">基于周边真实成交，不压价。</view>
+    </view>
+    <view class="guard-item">
+      <view class="guard-title">装修方案需业主确认</view>
+      <view class="guard-desc">动工前方案充分沟通，业主确认后再执行。</view>
+    </view>
+  </view>
+
+  <!-- 5. 算一笔账 -->
+  <view class="section-header">
+    <h3>算一笔账</h3>
+  </view>
+  <view class="calc-card">
+    <view class="calc-head">
+      <view class="calc-head-title">假设：约定价 380 万 · 装修成本 15 万</view>
+    </view>
+    <view class="calc-row">
+      <view class="calc-label">市场给力 · 成交 430 万</view>
+    </view>
+    <view class="calc-row">
+      <view class="calc-label">业主拿 380 万</view>
+      <view class="calc-value pos">公司 +35 万</view>
+    </view>
+    <view class="calc-row">
+      <view class="calc-label">市场一般 · 成交 395 万</view>
+    </view>
+    <view class="calc-row">
+      <view class="calc-label">业主拿 380 万</view>
+      <view class="calc-value">公司刚回本</view>
+    </view>
+    <view class="calc-row">
+      <view class="calc-label">市场不好 · 未售出</view>
+    </view>
+    <view class="calc-row">
+      <view class="calc-label">业主免费得一套装修</view>
+      <view class="calc-value neg">公司 -15 万</view>
+    </view>
+    <view class="calc-note">业主最差的结果 = 免费得一套装修，0 现金损失</view>
+  </view>
+
+  <!-- 6. 常见疑问 -->
+  <view class="section-header">
+    <h3>常见疑问</h3>
+  </view>
+  <view class="faq-list">
+    <view class="faq-item" wx:for="{{faqList}}" wx:key="index">
+      <view class="faq-q" bindtap="onToggleFaq" data-index="{{index}}">
+        <text>{{item.q}}</text>
+        <text class="faq-chevron">{{item.open ? '▴' : '▾'}}</text>
+      </view>
+      <view class="faq-a" wx:if="{{item.open}}">{{item.a}}</view>
+    </view>
+  </view>
+
+  <!-- 7. 风险提示 -->
+  <view class="risk-note">* 美房宝不承诺保底收购。合同约定的是「未售出则装修免费赠送」，而非「公司按约定价格收购你的房产」。</view>
+
+  <!-- 8. 底部留白 -->
+  <view style="height: 200rpx;"></view>
+</view>

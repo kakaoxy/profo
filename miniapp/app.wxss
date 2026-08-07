@@ -1,8 +1,114 @@
-/* 全局样式 */
+/* 全局样式 · Steep 设计系统 */
 page {
-  background-color: #f5f5f5;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica,
-    Segoe UI, Arial, Roboto, sans-serif;
-  color: #333333;
+  --ink: #17191c;
+  --pure-white: #ffffff;
+  --fog: #f7f7f8;
+  --ash: #4c4c4c;
+  --graphite: #777b86;
+  --dove: #a3a6af;
+  --slate: #8b8c8d;
+  --rust: #5d2a1a;
+  --apricot-wash: #fbe1d1;
+  --sky-wash: #d3e3fc;
+  --mint: #d1f2e8;
+  --shadow-sm: 0 8rpx 32rpx rgba(23, 25, 28, 0.06);
+
+  background-color: var(--fog);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
   font-size: 28rpx;
+  line-height: 1.4;
+}
+
+/* chip 标签 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 24rpx;
+  border-radius: 9999rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+.chip-apricot { background: var(--apricot-wash); color: var(--rust); }
+.chip-sky { background: var(--sky-wash); color: #2a5ca0; }
+.chip-fog { background: var(--fog); color: var(--graphite); }
+
+/* 按钮 */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 96rpx;
+  padding: 0 56rpx;
+  background: var(--ink);
+  color: #ffffff;
+  border-radius: 9999rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  border: none;
+  line-height: 1;
+}
+.btn-primary::after { border: none; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 96rpx;
+  padding: 0 48rpx;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 9999rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  border: none;
+  line-height: 1;
+}
+.btn-secondary::after { border: none; }
+
+/* 卡片 */
+.card {
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 40rpx;
+}
+
+/* 区块标题 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40rpx;
+  margin: 56rpx 0 28rpx;
+}
+.section-header h3 {
+  font-size: 36rpx;
+  font-weight: 500;
+  margin: 0;
+}
+.section-header .link {
+  font-size: 26rpx;
+  color: var(--rust);
+  font-weight: 500;
+}
+
+/* 表单 */
+.form-label {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--ash);
+  margin-bottom: 16rpx;
+  display: block;
+}
+.input {
+  width: 100%;
+  height: 104rpx;
+  padding: 0 32rpx;
+  border: 2rpx solid var(--dove);
+  border-radius: 32rpx;
+  font-size: 30rpx;
+  background: var(--pure-white);
+  color: var(--ink);
+  box-sizing: border-box;
 }

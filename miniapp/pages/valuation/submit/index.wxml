@@ -1,0 +1,75 @@
+<view class="page">
+  <!-- 头部 -->
+  <view class="form-head">
+    <text class="chip chip-apricot">免费预审</text>
+    <view class="form-title">在线预审，先看你的房子有没有溢价空间</view>
+    <view class="form-sub">线上提交房源信息，我们先做初步预审。合适的会联系你安排上门看房，结合周边真实成交数据，再商定写进合同的约定价格。不签约不收费。</view>
+  </view>
+
+  <!-- 手机号提示 -->
+  <view class="phone-banner">完善手机号，加速评估速度</view>
+
+  <!-- 表单 -->
+  <view class="form-page">
+    <!-- 小区名称 -->
+    <view class="form-group">
+      <text class="form-label">小区名称</text>
+      <input class="input" placeholder="请输入小区名称" value="{{form.community_name}}" bindinput="onInput" data-field="community_name"/>
+    </view>
+
+    <!-- 房源户型 -->
+    <view class="form-group">
+      <text class="form-label">房源户型</text>
+      <input class="input" placeholder="如：三室两厅" value="{{form.layout}}" bindinput="onInput" data-field="layout"/>
+    </view>
+
+    <!-- 面积 -->
+    <view class="form-group">
+      <text class="form-label">面积（㎡）</text>
+      <input class="input" placeholder="请输入建筑面积" type="digit" value="{{form.area}}" bindinput="onInput" data-field="area"/>
+    </view>
+
+    <!-- 朝向 -->
+    <view class="form-group">
+      <text class="form-label">朝向</text>
+      <input class="input" placeholder="南 / 北 / 东 / 西 / 南北 / 东西" value="{{form.orientation}}" bindinput="onInput" data-field="orientation"/>
+    </view>
+
+    <!-- 楼层 / 总高 -->
+    <view class="form-group">
+      <text class="form-label">楼层 / 总高</text>
+      <view class="form-row">
+        <input class="input" placeholder="当前楼层" type="digit" value="{{form.floor}}" bindinput="onInput" data-field="floor"/>
+        <input class="input" placeholder="总高" type="digit" value="{{form.total_floor}}" bindinput="onInput" data-field="total_floor"/>
+      </view>
+    </view>
+
+    <!-- 户型图上传 -->
+    <view class="form-group">
+      <text class="form-label">户型图上传</text>
+      <view class="photo-grid">
+        <image class="photo-thumb" wx:for="{{form.images}}" wx:key="*this" src="{{item}}" mode="aspectFill"/>
+        <view class="photo-upload" bindtap="onChooseImage">
+          <text class="photo-upload__icon">📷</text>
+          <text>添加图片</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 心理预期价 -->
+    <view class="form-group">
+      <text class="form-label">心理预期价（万）</text>
+      <input class="input" placeholder="可选填" type="digit" value="{{form.expected_price}}" bindinput="onInput" data-field="expected_price"/>
+    </view>
+
+    <!-- 补充信息 -->
+    <view class="form-group">
+      <text class="form-label">补充信息</text>
+      <input class="input" placeholder="装修情况、看房时间等备注" value="{{form.remarks}}" bindinput="onInput" data-field="remarks"/>
+    </view>
+
+    <!-- 提交 -->
+    <button class="btn-primary submit-btn" bindtap="onSubmit">提交预审</button>
+    <view class="risk-note">信息仅用于预审与上门看房安排，不外泄、不电话骚扰</view>
+  </view>
+</view>
