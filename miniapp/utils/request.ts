@@ -10,7 +10,7 @@ import { BASE_URL } from "./config";
 export interface RequestOptions {
   url: string;
   method?: "GET" | "POST";
-  data?: Record<string, unknown>;
+  data?: object;
   header?: Record<string, string>;
 }
 

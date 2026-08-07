@@ -1,5 +1,5 @@
 import type { components } from "../../../types/api-types";
-import { request } from "../../../utils/request";
+import { request, type HttpResponseError } from "../../../utils/request";
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";
 
@@ -54,7 +54,7 @@ Page<PageData, PageCustom>({
     return wx.getStorageSync("access_token") as string;
   },
 
-  onInput(e) {
+  onInput(e: WechatMiniprogram.Input) {
     const field = e.currentTarget.dataset.field as keyof ValuationForm | undefined;
     if (!field) {
       return;
@@ -117,6 +117,16 @@ Page<PageData, PageCustom>({
         name: "file",
         header: { Authorization: `Bearer ${token}` },
         success: (res) => {
+          // wx.uploadFile 的 success 不区分 2xx/4xx/5xx，需手动校验状态码，
+          // 否则 401/500 的错误响应会被当 JSON 解析失败，丢失状态码信息
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            const error: HttpResponseError = {
+              statusCode: res.statusCode,
+              body: res.data,
+            };
+            reject(error);
+            return;
+          }
           try {
             // 后端 FileUploadResponse 返回 { url, filename, thumbnail_url }
             const data = JSON.parse(res.data) as { url?: string };
@@ -189,7 +199,7 @@ Page<PageData, PageCustom>({
       await request<PublicLeadResponse>({
         url: "/public/leads",
         method: "POST",
-        data: body as unknown as Record<string, unknown>,
+        data: body,
         header: { Authorization: `Bearer ${token}` },
       });
       wx.showToast({ title: "提交成功", icon: "success" });
