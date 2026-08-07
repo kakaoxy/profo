@@ -48,7 +48,7 @@
     <view class="form-group">
       <text class="form-label">户型图上传</text>
       <view class="photo-grid">
-        <image class="photo-thumb" wx:for="{{form.images}}" wx:key="*this" src="{{item}}" mode="aspectFill"/>
+        <image class="photo-thumb" wx:for="{{displayImages}}" wx:key="*this" src="{{item}}" mode="aspectFill"/>
         <view class="photo-upload" bindtap="onChooseImage">
           <text class="photo-upload__icon">📷</text>
           <text>添加图片</text>

@@ -1,5 +1,6 @@
 // pages/projects/detail/index.js
 import { request } from "../../../utils/request";
+import { resolveAssetUrl } from "../../../utils/url";
 
 /** 设计稿仅展示 6 个改造阶段（不含「已完成」）. */
 const ALL_STAGES = ["拆除", "设计", "水电", "木瓦", "油漆", "交付"];
@@ -45,6 +46,7 @@ Page({
     id: null,
     detail: null,
     stages: [],
+    gallery: [],
     loading: false,
     error: false,
     notFound: false,
@@ -74,8 +76,24 @@ Page({
       const detail = await request({
         url: `/public/projects/${id}`,
       });
-      const stages = buildStages(detail.renovation_stages);
-      this.setData({ detail, stages, loading: false });
+      // 后端文件 URL 为相对路径 /static/uploads/xxx.jpg，需拼接 origin 供 <image>/<video> 加载
+      const resolvedDetail = {
+        ...detail,
+        images: (detail.images ?? []).map((img) => resolveAssetUrl(img)),
+      };
+      const stages = buildStages(resolvedDetail.renovation_stages);
+      // 图集优先用 media（含图片与视频），按类型渲染；无 media 时回退 images
+      const media = detail.media ?? [];
+      const gallery =
+        media.length > 0
+          ? media
+              .map((m) => ({
+                type: m.media_type === "video" ? "video" : "image",
+                url: resolveAssetUrl(m.file_url),
+              }))
+              .filter((g) => g.url)
+          : (resolvedDetail.images ?? []).map((url) => ({ type: "image", url }));
+      this.setData({ detail: resolvedDetail, stages, gallery, loading: false });
     } catch (err) {
       this.setData({ loading: false });
       if (isHttpResponseError(err) && err.statusCode === 404) {
@@ -87,7 +105,9 @@ Page({
     }
   },
   onImageTap(e) {
-    const images = this.data.detail?.images ?? [];
+    const images = (this.data.gallery ?? [])
+      .filter((g) => g.type === "image")
+      .map((g) => g.url);
     if (images.length === 0) {
       return;
     }

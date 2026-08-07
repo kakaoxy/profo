@@ -31,6 +31,10 @@
   display: block;
 }
 
+.gallery video.gallery-img {
+  background: #000;
+}
+
 .gallery-placeholder {
   background: var(--fog);
   display: flex;
