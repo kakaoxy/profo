@@ -3,10 +3,10 @@
 职责: 处理C端公开项目相关的数据库查询.
 """
 
-from sqlalchemy import and_, case, desc, func
+from sqlalchemy import Integer, and_, case, cast, desc, func, or_
 from sqlalchemy.orm import Session
 
-from models import L4MarketingMedia, L4MarketingProject, User
+from models import Community, L4MarketingMedia, L4MarketingProject, User
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from settings import settings
 from utils.formatters import escape_like
@@ -50,18 +50,25 @@ class PublicProjectService:
     def get_published_projects(
         self,
         project_status: str | None = None,
-        community_name: str | None = None,
+        keyword: str | None = None,
         layout: str | None = None,
         min_price: float | None = None,
         max_price: float | None = None,
         min_area: float | None = None,
         max_area: float | None = None,
+        min_floor: int | None = None,
+        max_floor: int | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
         page: int = 1,
         page_size: int | None = None,
     ) -> tuple[list[L4MarketingProject], int]:
-        """获取已发布的房源列表."""
+        """获取已发布的房源列表.
+
+        keyword 同时模糊匹配小区名(community_name)与商圈(Community.business_circle)，
+        需 LEFT JOIN Community 表；layout 改为前缀 LIKE 匹配，使「三室」命中「三室两厅」等。
+        floor_info 为 "15/28层" 字符串，楼层筛选时用 split_part 提取 / 前数字并 CAST 为整数比较。
+        """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = self.db.query(L4MarketingProject).filter(
             L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
@@ -70,10 +77,18 @@ class PublicProjectService:
 
         if project_status:
             query = query.filter(L4MarketingProject.project_status == project_status)
-        if community_name:
-            query = query.filter(L4MarketingProject.community_name.like(f"%{escape_like(community_name)}%"))
+        if keyword:
+            kw = f"%{escape_like(keyword)}%"
+            # JOIN Community 后按 OR 匹配小区名或商圈；JOIN 会过滤掉无 Community 记录的项目，
+            # 故先 OR community_name 自身模糊匹配，保证无 Community 关联也能命中小区名
+            query = query.outerjoin(Community, Community.id == L4MarketingProject.community_id).filter(
+                or_(
+                    L4MarketingProject.community_name.like(kw),
+                    Community.business_circle.like(kw),
+                )
+            )
         if layout:
-            query = query.filter(L4MarketingProject.layout == layout)
+            query = query.filter(L4MarketingProject.layout.like(f"{escape_like(layout)}%"))
         if min_price is not None:
             query = query.filter(L4MarketingProject.total_price >= min_price)
         if max_price is not None:
@@ -82,6 +97,14 @@ class PublicProjectService:
             query = query.filter(L4MarketingProject.area >= min_area)
         if max_area is not None:
             query = query.filter(L4MarketingProject.area <= max_area)
+        if min_floor is not None or max_floor is not None:
+            # floor_info 格式如 "2/共6层" 或 "15/28层"，仅对以「数字/」开头的记录筛选，避免 CAST 异常
+            query = query.filter(L4MarketingProject.floor_info.regexp_match(r"^\d+/"))
+            floor_num = cast(func.split_part(L4MarketingProject.floor_info, "/", 1), Integer)
+            if min_floor is not None:
+                query = query.filter(floor_num >= min_floor)
+            if max_floor is not None:
+                query = query.filter(floor_num <= max_floor)
 
         total = query.count()
 
@@ -102,7 +125,9 @@ class PublicProjectService:
 
     def get_sold_projects(
         self,
-        community_name: str | None = None,
+        keyword: str | None = None,
+        min_floor: int | None = None,
+        max_floor: int | None = None,
         page: int = 1,
         page_size: int | None = None,
     ) -> tuple[list[L4MarketingProject], int]:
@@ -114,8 +139,21 @@ class PublicProjectService:
             L4MarketingProject.is_deleted.is_(False),
         )
 
-        if community_name:
-            query = query.filter(L4MarketingProject.community_name.like(f"%{escape_like(community_name)}%"))
+        if keyword:
+            kw = f"%{escape_like(keyword)}%"
+            query = query.outerjoin(Community, Community.id == L4MarketingProject.community_id).filter(
+                or_(
+                    L4MarketingProject.community_name.like(kw),
+                    Community.business_circle.like(kw),
+                )
+            )
+        if min_floor is not None or max_floor is not None:
+            query = query.filter(L4MarketingProject.floor_info.regexp_match(r"^\d+/"))
+            floor_num = cast(func.split_part(L4MarketingProject.floor_info, "/", 1), Integer)
+            if min_floor is not None:
+                query = query.filter(floor_num >= min_floor)
+            if max_floor is not None:
+                query = query.filter(floor_num <= max_floor)
 
         total = query.count()
         items = (

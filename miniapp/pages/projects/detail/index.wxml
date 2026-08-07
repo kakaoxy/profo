@@ -92,49 +92,37 @@
         </view>
       </view>
 
-      <!-- 小区信息 -->
-      <view class="detail-section">
-        <view class="section-title">小区信息</view>
-        <view class="community-card">
-          <view class="community-name">📍{{detail.community_name || '—'}}</view>
-          <view class="community-rows">
-            <!-- ⚠️TODO 待后端补小区详情字段：所在位置/建成年代/绿化率/配套 -->
-            <view class="community-row">
-              <text class="k">所在位置</text>
-              <text class="v">—</text>
-            </view>
-            <view class="community-row">
-              <text class="k">建成年代</text>
-              <text class="v">—</text>
-            </view>
-            <view class="community-row">
-              <text class="k">绿化率</text>
-              <text class="v">—</text>
-            </view>
-            <view class="community-row">
-              <text class="k">配套</text>
-              <text class="v">—</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
       <!-- 改造过程 -->
-      <view class="detail-section">
+      <view wx:if="{{hasRenovationPhotos}}" class="detail-section">
         <view class="section-title">改造过程</view>
         <view class="renovation-hort">
           <view
             wx:for="{{stages}}"
             wx:for-item="stage"
             wx:key="stage"
-            class="renovation-card"
+            class="renovation-card {{stage.clickable ? 'renovation-card--clickable' : ''}}"
+            hover-class="{{stage.clickable ? 'renovation-card--hover' : ''}}"
+            hover-stay-time="100"
+            data-stage="{{stage.stage}}"
+            bindtap="onStageTap"
           >
-            <!-- ⚠️TODO API 暂无阶段首图，renovation-img 用渐变占位，待后端补阶段图片字段 -->
             <view class="renovation-img">
+              <image
+                wx:if="{{stage.cover}}"
+                class="renovation-cover"
+                src="{{stage.cover}}"
+                mode="aspectFill"
+              />
+              <view wx:else class="renovation-placeholder"></view>
               <view class="badge">{{stage.stage}}</view>
+              <view wx:if="{{stage.photoCount > 0}}" class="photo-count">{{stage.photoCount}}</view>
             </view>
             <view class="renovation-name">{{stage.stage}}</view>
-            <view class="renovation-meta">{{stage.meta}}</view>
+            <view class="renovation-meta">
+              <block wx:if="{{stage.status === 'completed'}}">完成于 {{stage.completedDate}}</block>
+              <block wx:elif="{{stage.status === 'in_progress'}}">进行中 · {{stage.photoCount}}张</block>
+              <block wx:else>待开始</block>
+            </view>
           </view>
         </view>
       </view>
@@ -153,6 +141,29 @@
     <view class="detail-footer">
       <button class="btn-secondary footer-btn" bindtap="onAddWechat">添加微信</button>
       <button class="btn-primary footer-btn" bindtap="onCallPhone">电话联系</button>
+    </view>
+
+    <!-- 阶段照片轮播弹层 -->
+    <view wx:if="{{stageViewer.visible}}" class="stage-viewer" catchtap="onViewerClose">
+      <view class="stage-viewer-inner" catchtap="">
+        <view class="stage-viewer-header">
+          <text class="stage-viewer-title">{{stageViewer.stage}} · {{stageViewer.current + 1}}/{{stageViewer.photos.length}}</text>
+          <view class="stage-viewer-close" bindtap="onViewerClose">×</view>
+        </view>
+        <swiper
+          class="stage-viewer-swiper"
+          current="{{stageViewer.current}}"
+          bindchange="onViewerChange"
+          indicator-dots
+          indicator-active-color="#ffffff"
+          indicator-color="rgba(255,255,255,0.5)"
+          circular
+        >
+          <swiper-item wx:for="{{stageViewer.photos}}" wx:key="*this">
+            <image class="stage-viewer-img" src="{{item}}" mode="aspectFit" />
+          </swiper-item>
+        </swiper>
+      </view>
     </view>
   </block>
 </view>

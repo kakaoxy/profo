@@ -1,5 +1,5 @@
 {
-  "appid": "wxa163a634e06fe1ea",
+  "appid": "wxbba3db4c25495e43",
   "projectname": "profo-miniapp",
   "setting": {
     "es6": true,
@@ -36,5 +36,6 @@
     "ignore": [],
     "include": []
   },
-  "editorSetting": {}
+  "editorSetting": {},
+  "isGameTourist": false
 }

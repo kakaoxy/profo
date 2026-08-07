@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query, Request
 
 from dependencies.auth import DbSessionDep
 from dependencies.common import PaginationDep
+from models.common import RenovationStage
 from schemas.public import (
     PublicConsultantContact,
     PublicConsultantInfo,
@@ -47,12 +48,14 @@ def get_projects(
     svc = PublicProjectService(db)
     items, total = svc.get_published_projects(
         project_status=filters.project_status,
-        community_name=filters.community_name,
+        keyword=filters.keyword,
         layout=filters.layout,
         min_price=filters.min_price,
         max_price=filters.max_price,
         min_area=filters.min_area,
         max_area=filters.max_area,
+        min_floor=filters.min_floor,
+        max_floor=filters.max_floor,
         sort_by=filters.sort_by,
         sort_order=filters.sort_order,
         page=pagination.page,
@@ -99,12 +102,16 @@ def get_sold_projects(
     request: Request,
     db: DbSessionDep,
     pagination: PaginationDep,
-    community_name: Annotated[str | None, Query(max_length=100, description="小区名称筛选")] = None,
+    keyword: Annotated[str | None, Query(max_length=100, description="搜索关键词(小区名或商圈)")] = None,
+    min_floor: Annotated[int | None, Query(ge=1, description="最小所在楼层")] = None,
+    max_floor: Annotated[int | None, Query(ge=1, description="最大所在楼层")] = None,
 ) -> PublicSoldProjectListResponse:
     """获取已成交的房源案例列表."""
     svc = PublicProjectService(db)
     items, total = svc.get_sold_projects(
-        community_name=community_name,
+        keyword=keyword,
+        min_floor=min_floor,
+        max_floor=max_floor,
         page=pagination.page,
         page_size=pagination.page_size,
     )
@@ -178,21 +185,30 @@ def get_project_detail(
     ]
 
     renovation_media = [m for m in media_items if m.photo_category == "renovation" and m.renovation_stage]
-    stage_groups: dict[str, int] = {}
+    stage_groups: dict[RenovationStage, int] = {}
     for m in renovation_media:
         stage = m.renovation_stage
         if stage not in stage_groups:
             stage_groups[stage] = 0
         stage_groups[stage] += 1
-    # 阶段完成日期 - 方案A：仅展示有照片的阶段，完成时间依附阶段展示
+    # 阶段完成日期 - 合并「有照片」与「有完成日期」的阶段，
+    # 确保即使某阶段已标记完成但未上传照片，C端仍能展示其完成时间
     stage_dates = project.stage_completed_dates or {}
+    merged_stages: dict[RenovationStage, int] = dict(stage_groups)
+    for stage_value in stage_dates:
+        try:
+            stage_enum = RenovationStage(stage_value)
+        except ValueError:
+            continue
+        if stage_enum not in merged_stages:
+            merged_stages[stage_enum] = 0
     renovation_stages = [
         PublicRenovationStage(
             stage=stage,
             photo_count=count,
             completed_date=stage_dates.get(stage.value),
         )
-        for stage, count in stage_groups.items()
+        for stage, count in merged_stages.items()
     ]
 
     consultant_info = None

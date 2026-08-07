@@ -114,38 +114,6 @@
   margin-bottom: 24rpx;
 }
 
-.community-card {
-  background: var(--fog);
-  border-radius: 36rpx;
-  padding: 32rpx;
-}
-
-.community-name {
-  font-size: 32rpx;
-  font-weight: 500;
-  margin-bottom: 24rpx;
-}
-
-.community-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-}
-
-.community-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 26rpx;
-}
-
-.community-row .k {
-  color: var(--graphite);
-}
-
-.community-row .v {
-  font-weight: 500;
-}
-
 .renovation-hort {
   display: flex;
   gap: 24rpx;
@@ -164,12 +132,35 @@
   display: inline-block;
 }
 
+.renovation-card--clickable {
+  cursor: pointer;
+}
+
+.renovation-card--hover {
+  opacity: 0.85;
+}
+
 .renovation-img {
   position: relative;
   width: 256rpx;
   height: 256rpx;
   margin-bottom: 16rpx;
   border-radius: 32rpx;
+  overflow: hidden;
+  background: var(--fog);
+}
+
+.renovation-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.renovation-placeholder {
+  position: absolute;
+  inset: 0;
   background: linear-gradient(135deg, #e8e4df 0%, #d4cfc8 100%);
 }
 
@@ -183,6 +174,23 @@
   font-size: 22rpx;
   font-weight: 500;
   color: var(--rust);
+  z-index: 2;
+}
+
+.renovation-img .photo-count {
+  position: absolute;
+  top: 12rpx;
+  right: 12rpx;
+  min-width: 36rpx;
+  height: 36rpx;
+  padding: 0 12rpx;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9999rpx;
+  font-size: 22rpx;
+  color: #fff;
+  text-align: center;
+  line-height: 36rpx;
+  z-index: 2;
 }
 
 .renovation-name {
@@ -222,4 +230,54 @@
 
 .footer-btn.btn-secondary {
   border: 2rpx solid var(--dove);
+}
+
+/* 阶段照片轮播弹层 */
+.stage-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage-viewer-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.stage-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 60rpx 40rpx 24rpx;
+}
+
+.stage-viewer-title {
+  font-size: 28rpx;
+  color: #fff;
+}
+
+.stage-viewer-close {
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  font-size: 40rpx;
+  color: #fff;
+}
+
+.stage-viewer-swiper {
+  flex: 1;
+  width: 100%;
+}
+
+.stage-viewer-img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
