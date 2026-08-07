@@ -1,0 +1,179 @@
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+}
+
+/* 1. hero */
+.home-hero {
+  position: relative;
+  padding: 56rpx 40rpx 64rpx;
+  background: var(--pure-white);
+  overflow: hidden;
+}
+.home-hero::after {
+  content: "";
+  position: absolute;
+  top: -120rpx;
+  right: -120rpx;
+  width: 480rpx;
+  height: 480rpx;
+  background: radial-gradient(circle, rgba(251, 225, 209, 0.7) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-title {
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 64rpx;
+  line-height: 1.1;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 20rpx;
+}
+.hero-sub {
+  font-size: 28rpx;
+  color: var(--ash);
+  margin-bottom: 36rpx;
+  line-height: 1.5;
+  position: relative;
+  z-index: 2;
+}
+.home-hero .btn-primary {
+  position: relative;
+  z-index: 2;
+}
+
+/* 2. 痛点 / 3. 三部曲 / 5. 算一笔账 共享卡片样式 */
+.pain-card,
+.step-card,
+.calc-card {
+  background: var(--pure-white);
+  border-radius: 40rpx;
+  padding: 32rpx;
+  margin: 0 40rpx 20rpx;
+  box-shadow: var(--shadow-sm);
+}
+
+.pain-title,
+.step-title,
+.calc-head-title,
+.guard-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  margin-bottom: 8rpx;
+}
+
+.pain-desc,
+.step-desc,
+.guard-desc {
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+
+/* 3. 三部曲 */
+.step-card {
+  display: flex;
+  gap: 28rpx;
+}
+.step-num {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 24rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.step-body {
+  flex: 1;
+}
+
+/* 4. 服务保障 */
+.guard-list {
+  padding: 0 40rpx;
+}
+.guard-item {
+  background: var(--pure-white);
+  border-radius: 32rpx;
+  padding: 28rpx 32rpx;
+  margin-bottom: 20rpx;
+  box-shadow: var(--shadow-sm);
+}
+
+/* 5. 算一笔账 */
+.calc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 26rpx;
+  padding: 14rpx 0;
+}
+.calc-row + .calc-row {
+  border-top: 2rpx solid rgba(163, 166, 175, 0.2);
+}
+.calc-label {
+  color: var(--graphite);
+}
+.calc-value {
+  font-weight: 500;
+}
+.calc-value.pos {
+  color: #1e6b4f;
+}
+.calc-value.neg {
+  color: var(--rust);
+}
+.calc-note {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  background: var(--apricot-wash);
+  border-radius: 28rpx;
+  font-size: 26rpx;
+  color: var(--rust);
+  font-weight: 500;
+}
+
+/* 6. 常见疑问 */
+.faq-list {
+  padding: 0 40rpx;
+}
+.faq-item {
+  background: var(--pure-white);
+  border-radius: 32rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.faq-q {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+.faq-chevron {
+  color: var(--dove);
+  font-size: 28rpx;
+}
+.faq-a {
+  padding: 0 32rpx 32rpx;
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+
+/* 7. 风险提示 */
+.risk-note {
+  margin: 32rpx 40rpx 0;
+  font-size: 24rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}

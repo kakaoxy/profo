@@ -1,14 +1,30 @@
 {
   "pages": [
-    "pages/index/index",
     "pages/projects/list/index",
-    "pages/projects/detail/index"
+    "pages/projects/detail/index",
+    "pages/valuation/submit/index",
+    "pages/about/index/index",
+    "pages/profile/index/index"
   ],
   "window": {
-    "navigationBarTitleText": "Profo",
+    "navigationBarTitleText": "美房宝",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f5f5f5"
+    "backgroundColor": "#f7f7f8",
+    "backgroundColorTop": "#f7f7f8",
+    "backgroundColorBottom": "#f7f7f8"
+  },
+  "tabBar": {
+    "color": "#777b86",
+    "selectedColor": "#17191c",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/projects/list/index", "text": "房源" },
+      { "pagePath": "pages/about/index/index", "text": "服务" },
+      { "pagePath": "pages/valuation/submit/index", "text": "估价" },
+      { "pagePath": "pages/profile/index/index", "text": "我的" }
+    ]
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

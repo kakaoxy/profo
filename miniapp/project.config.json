@@ -16,7 +16,9 @@
     "minifyWXML": true,
     "localPlugins": false,
     "disableUseStrict": false,
-    "useCompilerPlugins": ["typescript"],
+    "useCompilerPlugins": [
+      "typescript"
+    ],
     "condition": false,
     "swc": false,
     "disableSWC": true,
@@ -27,7 +29,7 @@
     }
   },
   "compileType": "miniprogram",
-  "libVersion": "latest",
+  "libVersion": "3.16.2",
   "miniprogramRoot": "./",
   "simulatorPluginLibVersion": {},
   "packOptions": {
