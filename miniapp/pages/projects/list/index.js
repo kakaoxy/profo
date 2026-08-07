@@ -1,4 +1,5 @@
 import { request } from "../../../utils/request";
+import { resolveAssetUrl } from "../../../utils/url";
 
 /** 每页数量. */
 const PAGE_SIZE = 10;
@@ -42,8 +43,8 @@ Page({
         title: item.title,
         desc: community + " · " + layout,
         total_price: item.total_price,
-        cover_thumbnail_url: item.cover_thumbnail_url,
-        cover_image: item.cover_image,
+        cover_thumbnail_url: resolveAssetUrl(item.cover_thumbnail_url),
+        cover_image: resolveAssetUrl(item.cover_image),
         tags: [],
         badgeText: "过往案例",
         badgeClass: "badge-fog",
@@ -78,8 +79,8 @@ Page({
       title: item.title,
       desc,
       total_price: item.total_price,
-      cover_thumbnail_url: item.cover_thumbnail_url,
-      cover_image: item.cover_image,
+      cover_thumbnail_url: resolveAssetUrl(item.cover_thumbnail_url),
+      cover_image: resolveAssetUrl(item.cover_image),
       tags: item.tags,
       badgeText,
       badgeClass,

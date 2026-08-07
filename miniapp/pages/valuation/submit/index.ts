@@ -1,6 +1,7 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
 import { BASE_URL } from "../../../utils/config";
+import { resolveAssetUrl } from "../../../utils/url";
 
 type PublicLeadCreate = components["schemas"]["PublicLeadCreate"];
 type PublicLeadResponse = components["schemas"]["PublicLeadResponse"];
@@ -19,6 +20,8 @@ interface ValuationForm {
 
 interface PageData {
   form: ValuationForm;
+  /** 已上传图片的完整 URL（供 wxml <image> 加载，与 form.images 同步）. */
+  displayImages: string[];
   submitting: boolean;
 }
 
@@ -43,6 +46,7 @@ Page<PageData, PageCustom>({
       remarks: "",
       images: [],
     },
+    displayImages: [],
     submitting: false,
   },
 
@@ -89,8 +93,11 @@ Page<PageData, PageCustom>({
       for (const file of res.tempFiles) {
         try {
           const url = await this.uploadImage(file.tempFilePath);
+          // form.images 存相对路径（与后端存储一致，提交时用）；displayImages 存完整 URL 供 <image> 加载
+          const newImages = [...this.data.form.images, url];
           this.setData({
-            "form.images": [...this.data.form.images, url],
+            "form.images": newImages,
+            displayImages: newImages.map((u) => resolveAssetUrl(u)),
           });
         } catch {
           wx.showToast({ title: "上传失败", icon: "none" });
@@ -111,9 +118,9 @@ Page<PageData, PageCustom>({
         header: { Authorization: `Bearer ${token}` },
         success: (res) => {
           try {
-            // ⚠️ 实际字段名以响应为准，先按 file_url 取，若 undefined 尝试 url
-            const data = JSON.parse(res.data) as { file_url?: string; url?: string };
-            const url = data.file_url || data.url;
+            // 后端 FileUploadResponse 返回 { url, filename, thumbnail_url }
+            const data = JSON.parse(res.data) as { url?: string };
+            const url = data.url;
             if (url) {
               resolve(url);
             } else {

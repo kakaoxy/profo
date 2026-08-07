@@ -28,3 +28,12 @@ function getEnvVersion(): EnvVersion {
 }
 
 export const BASE_URL = ENV_BASE_URL[getEnvVersion()];
+
+/**
+ * 后端 origin（无 /api/v1 前缀），用于拼接静态资源 URL.
+ *
+ * 后端 StaticFiles 挂载在根路径 /static，不挂载在 API_V1_PREFIX 下，
+ * 因此 /static/uploads/xxx.jpg 必须用 origin 而非 BASE_URL 拼接，
+ * 否则会得到错误的 /api/v1/static/... 路径.
+ */
+export const BASE_ORIGIN = BASE_URL.replace(/\/api\/v1$/, "");

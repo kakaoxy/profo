@@ -1,5 +1,6 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
+import { resolveAssetUrl } from "../../../utils/url";
 
 /** 在售房源列表项. */
 type OnSaleItem = components["schemas"]["PublicProjectListItem"];
@@ -95,8 +96,8 @@ Page<PageData, PageCustom>({
         title: item.title,
         desc: `${community} · ${layout}`,
         total_price: item.total_price,
-        cover_thumbnail_url: item.cover_thumbnail_url,
-        cover_image: item.cover_image,
+        cover_thumbnail_url: resolveAssetUrl(item.cover_thumbnail_url),
+        cover_image: resolveAssetUrl(item.cover_image),
         tags: [],
         badgeText: "过往案例",
         badgeClass: "badge-fog",
@@ -132,8 +133,8 @@ Page<PageData, PageCustom>({
       title: onSale.title,
       desc,
       total_price: onSale.total_price,
-      cover_thumbnail_url: onSale.cover_thumbnail_url,
-      cover_image: onSale.cover_image,
+      cover_thumbnail_url: resolveAssetUrl(onSale.cover_thumbnail_url),
+      cover_image: resolveAssetUrl(onSale.cover_image),
       tags: onSale.tags,
       badgeText,
       badgeClass,
