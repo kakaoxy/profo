@@ -14,12 +14,12 @@
   <view class="search-box {{searchActive ? 'search-box--active' : ''}}">
     <block wx:if="{{!searchActive}}">
       <view class="search-box__placeholder" bindtap="onSearchTap">
-        <text class="search-box__icon">🔍</text>
+        <view class="search-box__icon"></view>
         <text class="search-box__text">{{keyword || '搜索小区、商圈'}}</text>
       </view>
     </block>
     <block wx:else>
-      <text class="search-box__icon">🔍</text>
+      <view class="search-box__icon"></view>
       <input
         class="search-box__input"
         type="text"
@@ -176,7 +176,11 @@
             wx:key="*this"
           >{{tag}}</view>
         </view>
-        <view class="list-price">¥ {{item.total_price}} 万</view>
+        <view class="list-price">
+          <text class="list-price__sym">¥</text>
+          <text class="list-price__num">{{item.total_price}}</text>
+          <text class="list-price__unit">万</text>
+        </view>
       </view>
     </view>
 
@@ -188,10 +192,10 @@
     <!-- 底部加载更多 -->
     <view class="footer" wx:if="{{items.length > 0}}">
       <view class="footer__text" wx:if="{{loadingMore}}">加载中...</view>
-      <view class="footer__text" wx:elif="{{noMore}}">没有更多了</view>
+      <view class="footer__end" wx:elif="{{noMore}}">没有更多了</view>
     </view>
   </block>
 
   <!-- 底部留白避让 tabBar -->
-  <view style="height: 200rpx;"></view>
+  <view class="tabbar-safe-area"></view>
 </view>
