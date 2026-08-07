@@ -16197,12 +16197,14 @@ export interface operations {
                 /** @description 每页数量 */
                 page_size?: number;
                 project_status?: components["schemas"]["MarketingProjectStatus"] | null;
-                community_name?: string | null;
+                keyword?: string | null;
                 layout?: string | null;
                 min_price?: number | null;
                 max_price?: number | null;
                 min_area?: number | null;
                 max_area?: number | null;
+                min_floor?: number | null;
+                max_floor?: number | null;
                 sort_by?: string;
                 sort_order?: string;
             };
@@ -16235,8 +16237,12 @@ export interface operations {
     get_sold_projects_api_v1_public_projects_sold_get: {
         parameters: {
             query?: {
-                /** @description 小区名称筛选 */
-                community_name?: string | null;
+                /** @description 搜索关键词(小区名或商圈) */
+                keyword?: string | null;
+                /** @description 最小所在楼层 */
+                min_floor?: number | null;
+                /** @description 最大所在楼层 */
+                max_floor?: number | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */

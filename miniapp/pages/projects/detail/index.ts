@@ -3,6 +3,8 @@ import { request, type HttpResponseError } from "../../../utils/request";
 import { resolveAssetUrl } from "../../../utils/url";
 
 type PublicProjectDetail = components["schemas"]["PublicProjectDetail"];
+type PublicMediaItem = components["schemas"]["PublicMediaItem"];
+type PublicRenovationStage = components["schemas"]["PublicRenovationStage"];
 type RenovationStageName =
   | "拆除"
   | "设计"
@@ -12,10 +14,29 @@ type RenovationStageName =
   | "交付"
   | "已完成";
 
-type DisplayStage = { stage: RenovationStageName; meta: string };
+type StageStatus = "completed" | "in_progress" | "pending";
+
+/** 改造阶段展示数据：完成时间 + 该阶段照片（用于点击轮播）. */
+type DisplayStage = {
+  stage: RenovationStageName;
+  status: StageStatus;
+  completedDate: string | null;
+  photoCount: number;
+  cover: string | null;
+  photos: string[];
+  clickable: boolean;
+};
 
 /** 图集项：图片或视频，供 swiper 渲染. */
 type GalleryItem = { type: "image" | "video"; url: string };
+
+/** 阶段照片轮播弹层状态. */
+type StageViewer = {
+  visible: boolean;
+  stage: string;
+  photos: string[];
+  current: number;
+};
 
 /** 设计稿仅展示 6 个改造阶段（不含「已完成」）. */
 const ALL_STAGES: RenovationStageName[] = [
@@ -32,6 +53,8 @@ interface PageData {
   detail: PublicProjectDetail | null;
   stages: DisplayStage[];
   gallery: GalleryItem[];
+  stageViewer: StageViewer;
+  hasRenovationPhotos: boolean;
   loading: boolean;
   error: boolean;
   notFound: boolean;
@@ -43,6 +66,19 @@ type Custom = {
     e: WechatMiniprogram.BaseEvent<
       WechatMiniprogram.IAnyObject,
       { url?: string }
+    >
+  ): void;
+  onStageTap(
+    e: WechatMiniprogram.BaseEvent<
+      WechatMiniprogram.IAnyObject,
+      { stage?: string }
+    >
+  ): void;
+  onViewerClose(): void;
+  onViewerChange(
+    e: WechatMiniprogram.SwiperChange<
+      WechatMiniprogram.IAnyObject,
+      WechatMiniprogram.IAnyObject
     >
   ): void;
   onCallPhone(): void;
@@ -60,31 +96,47 @@ function isHttpResponseError(err: unknown): err is HttpResponseError {
   );
 }
 
-/** 取 MM-DD. */
-function formatDate(dateStr: string): string {
-  return dateStr.slice(5);
-}
-
-/** 将后端改造阶段映射为 6 项展示数据. */
+/** 将后端改造阶段与媒体分组映射为 6 项展示数据（含完成时间与照片）. */
 function buildStages(
-  apiStages?: components["schemas"]["PublicRenovationStage"][]
+  media: PublicMediaItem[],
+  apiStages?: PublicRenovationStage[]
 ): DisplayStage[] {
-  // ⚠️ TODO: API 暂无阶段首图，renovation-img 用渐变占位，待后端补阶段图片字段
+  // 按 renovation_stage 分组 renovation 类目的图片，并 resolve 为完整 URL
+  const photosByStage = new Map<string, string[]>();
+  for (const m of media) {
+    if (m.photo_category !== "renovation" || !m.renovation_stage) {
+      continue;
+    }
+    const stageName = m.renovation_stage as string;
+    const url = resolveAssetUrl(m.file_url);
+    if (!url) {
+      continue;
+    }
+    const list = photosByStage.get(stageName) ?? [];
+    list.push(url);
+    photosByStage.set(stageName, list);
+  }
+
   return ALL_STAGES.map((stageName) => {
     const matched = apiStages?.find((s) => s.stage === stageName);
-    let meta = "待开始";
-    if (matched) {
-      if (matched.completed_date) {
-        meta = `${matched.photo_count} 张 · 完成于 ${formatDate(
-          matched.completed_date
-        )}`;
-      } else if (matched.photo_count > 0) {
-        meta = "进行中";
-      } else {
-        meta = "待开始";
-      }
+    const completedDate = matched?.completed_date ?? null;
+    const photos = photosByStage.get(stageName) ?? [];
+    const photoCount = matched?.photo_count ?? photos.length;
+    let status: StageStatus = "pending";
+    if (completedDate) {
+      status = "completed";
+    } else if (photos.length > 0) {
+      status = "in_progress";
     }
-    return { stage: stageName, meta };
+    return {
+      stage: stageName,
+      status,
+      completedDate,
+      photoCount,
+      cover: photos[0] ?? null,
+      photos,
+      clickable: photos.length > 0,
+    };
   });
 }
 
@@ -94,6 +146,8 @@ Page<PageData, Custom>({
     detail: null,
     stages: [],
     gallery: [],
+    stageViewer: { visible: false, stage: "", photos: [], current: 0 },
+    hasRenovationPhotos: false,
     loading: false,
     error: false,
     notFound: false,
@@ -128,9 +182,10 @@ Page<PageData, Custom>({
         ...detail,
         images: (detail.images ?? []).map((img) => resolveAssetUrl(img)),
       };
-      const stages = buildStages(resolvedDetail.renovation_stages);
       // 图集优先用 media（含图片与视频），按类型渲染；无 media 时回退 images
       const media = detail.media ?? [];
+      const stages = buildStages(media, resolvedDetail.renovation_stages);
+      const hasRenovationPhotos = stages.some((s) => s.photos.length > 0);
       const gallery: GalleryItem[] =
         media.length > 0
           ? media
@@ -140,7 +195,7 @@ Page<PageData, Custom>({
               }))
               .filter((g) => g.url)
           : (resolvedDetail.images ?? []).map((url) => ({ type: "image" as const, url }));
-      this.setData({ detail: resolvedDetail, stages, gallery, loading: false });
+      this.setData({ detail: resolvedDetail, stages, gallery, hasRenovationPhotos, loading: false });
     } catch (err) {
       this.setData({ loading: false });
       if (isHttpResponseError(err) && err.statusCode === 404) {
@@ -168,6 +223,44 @@ Page<PageData, Custom>({
       urls: images,
       current: current ?? images[0],
     });
+  },
+  onStageTap(
+    e: WechatMiniprogram.BaseEvent<
+      WechatMiniprogram.IAnyObject,
+      { stage?: string }
+    >
+  ): void {
+    const stageName = e.currentTarget.dataset.stage;
+    if (!stageName) {
+      return;
+    }
+    const target = this.data.stages.find((s) => s.stage === stageName);
+    if (!target || !target.clickable || target.photos.length === 0) {
+      // 无照片的阶段不可查看轮播
+      wx.showToast({ title: "该阶段暂无照片", icon: "none" });
+      return;
+    }
+    this.setData({
+      stageViewer: {
+        visible: true,
+        stage: stageName,
+        photos: target.photos,
+        current: 0,
+      },
+    });
+  },
+  onViewerClose(): void {
+    this.setData({
+      stageViewer: { visible: false, stage: "", photos: [], current: 0 },
+    });
+  },
+  onViewerChange(
+    e: WechatMiniprogram.SwiperChange<
+      WechatMiniprogram.IAnyObject,
+      WechatMiniprogram.IAnyObject
+    >
+  ): void {
+    this.setData({ "stageViewer.current": e.detail.current });
   },
   onCallPhone(): void {
     const phone = this.data.detail?.consultant?.phone;
