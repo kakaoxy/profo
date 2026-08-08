@@ -20,32 +20,49 @@ class PublicProjectService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def resolve_cover_images(self, item: L4MarketingProject) -> tuple[str | None, str | None]:
-        """解析项目封面图片和缩略图 URL.
+    def resolve_cover_images_batch(self, items: list[L4MarketingProject]) -> dict[int, tuple[str | None, str | None]]:
+        """批量解析项目封面图片和缩略图 URL.
+
+        images 非空的项目直接用首张 URL 推导缩略图；images 为空的项目统一
+        一次 in_(ids) 查询媒体表，取每个项目 sort_order 最小的 image 记录。
+        语义与逐条解析一致，避免循环内逐条查询造成 N+1。
 
         Returns:
-            (cover_image, cover_thumbnail_url)
+            {item.id: (cover_image, cover_thumbnail_url)}
 
         """
-        images = item.images or []
-        cover_image = images[0] if images else None
-        if cover_image:
-            # JSON 数组中的 URL 无存储缩略图，按命名规则推导
-            return cover_image, derive_thumbnail_url(cover_image)
-        # 回退到媒体表，使用已存储的 thumbnail_url
-        first_media = (
+        result: dict[int, tuple[str | None, str | None]] = {}
+        fallback_ids: list[int] = []
+        for item in items:
+            images = item.images or []
+            cover_image = images[0] if images else None
+            if cover_image:
+                # JSON 数组中的 URL 无存储缩略图，按命名规则推导
+                result[item.id] = (cover_image, derive_thumbnail_url(cover_image))
+            else:
+                fallback_ids.append(item.id)
+                result[item.id] = (None, None)
+
+        if not fallback_ids:
+            return result
+
+        # 一次 in_(ids) 查询拉取媒体表，回退到已存储的 thumbnail_url
+        media_rows = (
             self.db.query(L4MarketingMedia)
             .filter(
-                L4MarketingMedia.marketing_project_id == item.id,
+                L4MarketingMedia.marketing_project_id.in_(fallback_ids),
                 L4MarketingMedia.is_deleted.is_(False),
                 L4MarketingMedia.media_type == "image",
             )
-            .order_by(L4MarketingMedia.sort_order)
-            .first()
+            .order_by(L4MarketingMedia.marketing_project_id, L4MarketingMedia.sort_order)
+            .all()
         )
-        if first_media:
-            return first_media.file_url, first_media.thumbnail_url
-        return None, None
+        for media in media_rows:
+            # 已按 sort_order 升序，每个项目仅取第一条（首图），后续重复跳过
+            if result[media.marketing_project_id][0] is None:
+                result[media.marketing_project_id] = (media.file_url, media.thumbnail_url)
+
+        return result
 
     def _apply_keyword_floor_filters(
         self,

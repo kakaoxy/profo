@@ -1,138 +1,142 @@
 <view class="page">
   <!-- 顶部品牌区 -->
-  <view class="list-hero">
-    <view class="list-hero-title">所见即所得，每套皆标杆</view>
-    <view class="list-hero-desc">在售、装修、已售房源全程实景展示，拒绝"照骗"。美房宝全程翻新，真金白银为品质背书。成交数据公开可查，让每一分钱都花得明明白白。</view>
-    <view class="list-hero-tags">
-      <view class="chip chip-apricot">精装实景交付</view>
-      <view class="chip chip-sky">改造全程溯源</view>
-      <view class="chip chip-fog">成交价真实可验</view>
+  <view class="hero">
+    <view class="hero-title">发现理想居所</view>
+    <view class="hero-desc">实景交付、改造溯源、成交价真实可验，每一套都是品质标杆。</view>
+    <view class="hero-tags">
+      <view class="tag tag-primary">精装实景交付</view>
+      <view class="tag tag-muted">成交价真实可验</view>
     </view>
   </view>
 
-  <!-- 搜索入口：未激活态（占位条）/ 激活态（输入框 + 确定/取消） -->
-  <view class="search-box {{searchActive ? 'search-box--active' : ''}}">
-    <block wx:if="{{!searchActive}}">
-      <view class="search-box__placeholder" bindtap="onSearchTap">
-        <view class="search-box__icon"></view>
-        <text class="search-box__text">{{keyword || '搜索小区、商圈'}}</text>
-      </view>
-    </block>
-    <block wx:else>
-      <view class="search-box__icon"></view>
-      <input
-        class="search-box__input"
-        type="text"
-        placeholder="搜索小区、商圈"
-        value="{{searchValue}}"
-        focus="{{searchActive}}"
-        confirm-type="search"
-        bindinput="onSearchInput"
-        bindconfirm="onSearchConfirm"
-      />
-      <view wx:if="{{searchValue}}" class="search-box__clear" bindtap="onSearchClear">×</view>
-      <view class="search-box__btn" bindtap="onSearchConfirm">搜索</view>
-      <view class="search-box__cancel" bindtap="onSearchCancel">取消</view>
-    </block>
-  </view>
-
-  <!-- 状态 tab -->
-  <view class="status-tabs">
-    <view class="status-tab {{tab === 'all' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="all">所有房源</view>
-    <view class="status-tab {{tab === 'on_sale' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="on_sale">在售房源</view>
-    <view class="status-tab {{tab === 'renovating' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="renovating">装修中</view>
-    <view class="status-tab {{tab === 'sold' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="sold">过往案例</view>
-  </view>
-
-  <!-- 筛选条 + 下拉面板容器 -->
-  <view class="filter-wrap">
-    <view class="filter-bar">
-      <view
-        class="filter-pill {{activeFilter === 'price' ? 'filter-pill--active' : ''}} {{priceKey ? 'filter-pill--selected' : ''}}"
-        bindtap="onFilterPillTap"
-        data-key="price"
-      >{{priceLabel}} ▾</view>
-      <view
-        class="filter-pill {{activeFilter === 'layout' ? 'filter-pill--active' : ''}} {{layoutKey ? 'filter-pill--selected' : ''}}"
-        bindtap="onFilterPillTap"
-        data-key="layout"
-      >{{layoutLabel}} ▾</view>
-      <view
-        class="filter-pill {{activeFilter === 'area' ? 'filter-pill--active' : ''}} {{areaKey ? 'filter-pill--selected' : ''}}"
-        bindtap="onFilterPillTap"
-        data-key="area"
-      >{{areaLabel}} ▾</view>
-      <view
-        class="filter-pill {{activeFilter === 'floor' ? 'filter-pill--active' : ''}} {{(floorMin || floorMax) ? 'filter-pill--selected' : ''}}"
-        bindtap="onFilterPillTap"
-        data-key="floor"
-      >{{floorLabel}} ▾</view>
-    </view>
-
-    <!-- 下拉面板：价格 -->
-    <view wx:if="{{activeFilter === 'price'}}" class="filter-panel">
-      <view
-        class="filter-option {{priceKey === item.key ? 'filter-option--selected' : ''}}"
-        wx:for="{{priceOptions}}"
-        wx:key="key"
-        data-filter="price"
-        data-key="{{item.key}}"
-        bindtap="onFilterOptionTap"
-      >{{item.label}}</view>
-    </view>
-
-    <!-- 下拉面板：户型 -->
-    <view wx:if="{{activeFilter === 'layout'}}" class="filter-panel">
-      <view
-        class="filter-option {{layoutKey === item.key ? 'filter-option--selected' : ''}}"
-        wx:for="{{layoutOptions}}"
-        wx:key="key"
-        data-filter="layout"
-        data-key="{{item.key}}"
-        bindtap="onFilterOptionTap"
-      >{{item.label}}</view>
-    </view>
-
-    <!-- 下拉面板：面积 -->
-    <view wx:if="{{activeFilter === 'area'}}" class="filter-panel">
-      <view
-        class="filter-option {{areaKey === item.key ? 'filter-option--selected' : ''}}"
-        wx:for="{{areaOptions}}"
-        wx:key="key"
-        data-filter="area"
-        data-key="{{item.key}}"
-        bindtap="onFilterOptionTap"
-      >{{item.label}}</view>
-    </view>
-
-    <!-- 下拉面板：楼层（min/max 数值输入） -->
-    <view wx:if="{{activeFilter === 'floor'}}" class="filter-panel filter-panel--floor">
-      <view class="floor-input-row">
+  <!-- 吸顶控件区：搜索 + 状态 tab + 属性筛选 -->
+  <view class="sticky-controls">
+    <!-- 搜索栏：轻量、不抢视觉 -->
+    <view class="search-row">
+      <view class="search-input-wrap">
+        <view class="search-icon"></view>
         <input
-          class="floor-input"
-          type="number"
-          placeholder="最低楼层"
-          value="{{floorMin}}"
-          bindinput="onFloorMinInput"
-        />
-        <text class="floor-sep">—</text>
-        <input
-          class="floor-input"
-          type="number"
-          placeholder="最高楼层"
-          value="{{floorMax}}"
-          bindinput="onFloorMaxInput"
+          class="search-input"
+          type="text"
+          placeholder="搜索小区、商圈"
+          value="{{searchValue}}"
+          confirm-type="search"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
         />
       </view>
-      <view class="floor-actions">
-        <view class="floor-btn floor-btn--ghost" bindtap="onFloorReset">重置</view>
-        <view class="floor-btn floor-btn--primary" bindtap="onFloorConfirm">确定</view>
-      </view>
     </view>
 
-    <!-- 下拉遮罩（点击关闭当前下拉） -->
-    <view wx:if="{{activeFilter}}" class="filter-mask" bindtap="onFilterMaskTap"></view>
+    <!-- 状态 tab：纯文字 + 下划线 -->
+    <view class="status-tabs">
+      <view class="status-tab {{tab === 'all' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="all">全部</view>
+      <view class="status-tab {{tab === 'on_sale' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="on_sale">在售房源</view>
+      <view class="status-tab {{tab === 'renovating' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="renovating">装修中</view>
+      <view class="status-tab {{tab === 'sold' ? 'status-tab--active' : ''}}" bindtap="onStatusTabChange" data-tab="sold">过往案例</view>
+    </view>
+
+    <!-- 属性筛选：极简文字 chips -->
+    <view class="filter-wrap">
+      <view class="filter-chips">
+        <view
+          class="filter-chip {{activeFilter === 'price' ? 'filter-chip--active' : ''}} {{priceKey ? 'filter-chip--selected' : ''}}"
+          bindtap="onFilterPillTap"
+          data-key="price"
+        >
+          <text>{{priceLabel}}</text>
+          <view class="chevron"></view>
+        </view>
+        <view
+          class="filter-chip {{activeFilter === 'layout' ? 'filter-chip--active' : ''}} {{layoutKey ? 'filter-chip--selected' : ''}}"
+          bindtap="onFilterPillTap"
+          data-key="layout"
+        >
+          <text>{{layoutLabel}}</text>
+          <view class="chevron"></view>
+        </view>
+        <view
+          class="filter-chip {{activeFilter === 'area' ? 'filter-chip--active' : ''}} {{areaKey ? 'filter-chip--selected' : ''}}"
+          bindtap="onFilterPillTap"
+          data-key="area"
+        >
+          <text>{{areaLabel}}</text>
+          <view class="chevron"></view>
+        </view>
+        <view
+          class="filter-chip {{activeFilter === 'floor' ? 'filter-chip--active' : ''}} {{(floorMin || floorMax) ? 'filter-chip--selected' : ''}}"
+          bindtap="onFilterPillTap"
+          data-key="floor"
+        >
+          <text>{{floorLabel}}</text>
+          <view class="chevron"></view>
+        </view>
+      </view>
+
+      <!-- 下拉面板：价格 -->
+      <view wx:if="{{activeFilter === 'price'}}" class="filter-panel">
+        <view
+          class="filter-option {{priceKey === item.key ? 'filter-option--selected' : ''}}"
+          wx:for="{{priceOptions}}"
+          wx:key="key"
+          data-filter="price"
+          data-key="{{item.key}}"
+          bindtap="onFilterOptionTap"
+        >{{item.label}}</view>
+      </view>
+
+      <!-- 下拉面板：户型 -->
+      <view wx:if="{{activeFilter === 'layout'}}" class="filter-panel">
+        <view
+          class="filter-option {{layoutKey === item.key ? 'filter-option--selected' : ''}}"
+          wx:for="{{layoutOptions}}"
+          wx:key="key"
+          data-filter="layout"
+          data-key="{{item.key}}"
+          bindtap="onFilterOptionTap"
+        >{{item.label}}</view>
+      </view>
+
+      <!-- 下拉面板：面积 -->
+      <view wx:if="{{activeFilter === 'area'}}" class="filter-panel">
+        <view
+          class="filter-option {{areaKey === item.key ? 'filter-option--selected' : ''}}"
+          wx:for="{{areaOptions}}"
+          wx:key="key"
+          data-filter="area"
+          data-key="{{item.key}}"
+          bindtap="onFilterOptionTap"
+        >{{item.label}}</view>
+      </view>
+
+      <!-- 下拉面板：楼层（min/max 数值输入） -->
+      <view wx:if="{{activeFilter === 'floor'}}" class="filter-panel filter-panel--floor">
+        <view class="floor-input-row">
+          <input
+            class="floor-input"
+            type="number"
+            placeholder="最低楼层"
+            value="{{floorMin}}"
+            bindinput="onFloorMinInput"
+          />
+          <text class="floor-sep">—</text>
+          <input
+            class="floor-input"
+            type="number"
+            placeholder="最高楼层"
+            value="{{floorMax}}"
+            bindinput="onFloorMaxInput"
+          />
+        </view>
+        <view class="floor-actions">
+          <view class="floor-btn floor-btn--ghost" bindtap="onFloorReset">重置</view>
+          <view class="floor-btn floor-btn--primary" bindtap="onFloorConfirm">确定</view>
+        </view>
+      </view>
+    </view>
   </view>
+
+  <!-- 下拉遮罩（点击关闭当前下拉） -->
+  <view wx:if="{{activeFilter}}" class="filter-mask" bindtap="onFilterMaskTap"></view>
 
   <!-- 计数行 -->
   <view class="count-row">共 {{total}} 套房源</view>
@@ -166,20 +170,25 @@
         <view class="list-badge {{item.badgeClass}}" wx:if="{{item.badgeText}}">{{item.badgeText}}</view>
       </view>
       <view class="list-content">
-        <view class="list-title">{{item.title}}</view>
-        <view class="list-desc">{{item.desc}}</view>
-        <view class="list-tags" wx:if="{{item.tags && item.tags.length > 0}}">
-          <view
-            class="chip chip-fog"
-            wx:for="{{item.tags}}"
-            wx:for-item="tag"
-            wx:key="*this"
-          >{{tag}}</view>
+        <view class="list-header">
+          <view class="list-title">{{item.title}}</view>
+          <view class="list-area">{{item.area}}</view>
         </view>
-        <view class="list-price">
-          <text class="list-price__sym">¥</text>
-          <text class="list-price__num">{{item.total_price}}</text>
-          <text class="list-price__unit">万</text>
+        <view class="list-desc">{{item.desc}}</view>
+        <view class="list-footer">
+          <view class="list-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+            <view
+              class="tag tag-muted"
+              wx:for="{{item.tags}}"
+              wx:for-item="tag"
+              wx:key="*this"
+            >{{tag}}</view>
+          </view>
+          <view class="list-price">
+            <text class="list-price__sym">¥</text>
+            <text class="list-price__num">{{item.total_price}}</text>
+            <text class="list-price__unit">万</text>
+          </view>
         </view>
       </view>
     </view>
