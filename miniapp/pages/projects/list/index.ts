@@ -328,6 +328,8 @@ Page<PageData, PageCustom>({
     } catch {
       if (reset) {
         this.setData({ error: true, items: [] });
+      } else {
+        wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
     } finally {
       this.setData({ loading: false, loadingMore: false });
@@ -458,8 +460,8 @@ Page<PageData, PageCustom>({
     this.loadList(true);
   },
   onItemTap(e: WechatMiniprogram.BaseEvent) {
-    const id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: "/pages/projects/detail/index?id=" + id });
+    const id = e.currentTarget.dataset.id as number;
+    wx.navigateTo({ url: `/pages/projects/detail/index?id=${id}` });
   },
   onRetry() {
     this.loadList(true);
