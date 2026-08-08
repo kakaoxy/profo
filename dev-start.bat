@@ -1,53 +1,52 @@
 @echo off
-REM 递归调用保护：start cmd /k 创建的新进程会继承 DEV_START_GUARD。
-REM 当串行调用异常时，新进程的 dev-start.bat 检测到该变量后立即退出。
+REM Recursion guard: start cmd /k creates a new process that inherits DEV_START_GUARD.
+REM When serial calls go wrong, the new process detects this var and exits immediately.
 if defined DEV_START_GUARD (
-  echo [错误] dev-start.bat 检测到递归调用，已终止。
-  echo    可能原因：start cmd /k 在串行调用中出现的二次调度。
+  echo [ERROR] dev-start.bat detected recursive call, aborted.
+  echo    Possible cause: start cmd /k triggered a second dispatch in serial calls.
   exit /b 1
 )
 setlocal enabledelayedexpansion
 set "DEV_START_GUARD=1"
-chcp 65001 > nul
 
 REM ====================================================================
-REM Profo 本地开发一键启停脚本 (Windows 版)
+REM Profo local dev start/stop script (Windows)
 REM
-REM 架构：Docker 的 PostgreSQL + 后端 uvicorn --reload + 前端 next dev
-REM 前后端代码改动自动重载，无需 docker rebuild。
+REM Architecture: Docker PostgreSQL + backend uvicorn --reload + frontend next dev
+REM Frontend/backend auto-reload on code changes, no docker rebuild needed.
 REM
-REM 与 start.bat 的区别：
-REM   start.bat         生产环境部署，全部重建，本地代码改动需 rebuild
-REM   dev-start.bat     本地开发仅起 db 容器，前后端本地直接运行。
+REM Difference from start.bat:
+REM   start.bat         production deploy, full rebuild, code changes need rebuild
+REM   dev-start.bat     dev mode, only starts db container, backend/frontend run locally.
 REM
-REM 用法:
-REM   dev-start.bat            启动全部（db + backend + frontend）
-REM   dev-start.bat up         同上
-REM   dev-start.bat db         只启动数据库（前后端自行终端运行）
-REM   dev-start.bat stop       停止数据库容器
-REM   dev-start.bat status     查看容器与端口状态
-REM   dev-start.bat logs       查看数据库日志
-REM   dev-start.bat down       停止并删除容器（保留数据卷）
+REM Usage:
+REM   dev-start.bat            start all (db + backend + frontend)
+REM   dev-start.bat up         same as above
+REM   dev-start.bat db         start database only (run backend/frontend in your own terminals)
+REM   dev-start.bat stop       stop database container
+REM   dev-start.bat status     show container and port status
+REM   dev-start.bat logs       show database logs
+REM   dev-start.bat down       stop and remove containers (keep data volumes)
 REM ====================================================================
 
 cd /d "%~dp0"
 
 set "DEV_COMPOSE=docker compose -f docker-compose.yml -f docker-compose.dev.yml"
 
-REM 绕过 HTTP 代理（Clash/V2Ray 等）对本地请求的拦截
-REM 代理软件会设置 HTTP_PROXY，导致 fetch 127.0.0.1:8000 走代理 -> 502
+REM Bypass HTTP proxy (Clash/V2Ray etc.) intercepting local requests
+REM Proxy software sets HTTP_PROXY, causing fetch 127.0.0.1:8000 to go through proxy -> 502
 set "NO_PROXY=127.0.0.1,localhost,0.0.0.0"
 set "no_proxy=127.0.0.1,localhost,0.0.0.0"
 
-REM 检查根目录 .env
+REM Check root .env
 if not exist ".env" (
-  echo [错误] 未检测到根目录 .env
-  echo    请先执行: copy .env.docker.example .env 并填入 POSTGRES_* 凭据
+  echo [ERROR] Root .env not found
+  echo    Run first: copy .env.docker.example .env and fill in POSTGRES_* credentials
   exit /b 1
 )
 
-REM 从 .env 读取 POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
-REM 关闭延迟展开，避免密码中的 !/&/^ 等特殊字符被破坏
+REM Read POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB from .env
+REM Disable delayed expansion to avoid corrupting special chars (!/&/^) in passwords
 setlocal disabledelayedexpansion
 set "POSTGRES_USER="
 set "POSTGRES_PASSWORD="
@@ -61,71 +60,72 @@ for /f "usebackq tokens=1,* delims==" %%a in (".env") do (
 )
 
 if not defined POSTGRES_USER (
-  echo [错误] .env 中未找到 POSTGRES_USER
+  echo [ERROR] POSTGRES_USER not found in .env
   exit /b 1
 )
 if not defined POSTGRES_PASSWORD (
-  echo [错误] .env 中未找到 POSTGRES_PASSWORD
+  echo [ERROR] POSTGRES_PASSWORD not found in .env
   exit /b 1
 )
 if not defined POSTGRES_DB (
-  echo [错误] .env 中未找到 POSTGRES_DB
+  echo [ERROR] POSTGRES_DB not found in .env
   exit /b 1
 )
 if not defined REDIS_PASSWORD (
-  echo [错误] .env 中未找到 REDIS_PASSWORD
-  echo    请运行 init-env.ps1 或 init-env.bat 生成凭据
+  echo [ERROR] REDIS_PASSWORD not found in .env
+  echo    Run init-env.ps1 or init-env.bat to generate credentials
   exit /b 1
 )
 
-REM 本地启动时，backend 直连映射出来的 Docker db
+REM Local mode: backend connects directly to the Docker-exposed db
 set "DATABASE_URL=postgresql+psycopg://%POSTGRES_USER%:%POSTGRES_PASSWORD%@127.0.0.1:5432/%POSTGRES_DB%"
 set "REDIS_URL=redis://:%REDIS_PASSWORD%@127.0.0.1:6379/0"
 set "DEBUG=true"
-REM 覆盖 .env 中的 UPLOAD_DIR=/app/static/uploads（Docker 容器内路径）
-REM Windows 下 Python Path("/app/...") 解析为当前驱动器根（如 D:\app\static\uploads），
-REM 与 FastAPI 静态挂载根 backend/static 不一致，会导致上传成功但预览 404。
-REM 本地 dev 显式指向 backend/static/uploads 的绝对路径，与 main.py 静态挂载根一致。
+REM Override UPLOAD_DIR=/app/static/uploads (Docker in-container path) from .env
+REM On Windows, Python Path("/app/...") resolves to current drive root (e.g. D:\app\static\uploads),
+REM which mismatches the FastAPI static mount root backend/static, causing upload ok but preview 404.
+REM Local dev explicitly points to the absolute path of backend/static/uploads,
+REM matching main.py static mount root.
 set "UPLOAD_DIR=%~dp0backend\static\uploads"
-REM 将拼装结果导出到外层作用域（endlocal 会清除内层变量）
+REM Export assembled results to outer scope (endlocal clears inner-scope vars)
 endlocal & set "DATABASE_URL=%DATABASE_URL%" & set "REDIS_URL=%REDIS_URL%" & set "DEBUG=%DEBUG%" & set "UPLOAD_DIR=%UPLOAD_DIR%" & set "POSTGRES_USER=%POSTGRES_USER%" & set "POSTGRES_DB=%POSTGRES_DB%" & set "NO_PROXY=%NO_PROXY%" & set "no_proxy=%no_proxy%"
 
-REM 检查 backend\.venv
+REM Check backend\.venv
 if not exist "backend\.venv\Scripts\uvicorn.exe" (
   if not exist "backend\.venv\Scripts\uvicorn" (
-    echo [错误] backend\.venv 不存在或缺少 uvicorn
-    echo    请执行: cd backend ^&^& uv sync
+    echo [ERROR] backend\.venv missing or uvicorn not found
+    echo    Run: cd backend ^&^& uv sync
     exit /b 1
   )
 )
 
-REM 检查 frontend\node_modules
+REM Check frontend\node_modules
 if not exist "frontend\node_modules" (
-  echo [错误] frontend\node_modules 不存在，执行 pnpm install...
+  echo [ERROR] frontend\node_modules not found, running pnpm install...
   pushd frontend
   call pnpm install
   popd
 )
 
-REM 创建 backend\static\uploads 链接 -> ..\..\uploads
-REM 本地 dev 模式与 Docker 共享同一份上传文件
-REM Windows 需要管理员权限或开发者模式才能创建 junction 链接
+REM Create backend\static\uploads link -> ..\..\uploads
+REM Local dev mode shares the same upload files with Docker
+REM Windows requires admin or developer mode to create junction links
 if not exist "backend\static" mkdir "backend\static"
 if exist "backend\static\uploads" (
-  REM 检查是否已是 junction/链接
+  REM Check if it is already a junction/symlink
   dir /al "backend\static\uploads" 2>nul | findstr "JUNCTION\|SYMLINK" > nul
   if errorlevel 1 (
-    echo [警告] backend\static\uploads 是实目录而非 junction
-    echo    如需共享 Docker uploads，请删除该目录: rmdir /s /q backend\static\uploads
-    echo    当前 dev 模式使用独立的本地 uploads，与 Docker 不互通
+    echo [WARN] backend\static\uploads is a real directory, not a junction
+    echo    To share Docker uploads, delete it: rmdir /s /q backend\static\uploads
+    echo    Current dev mode uses a separate local uploads dir, not shared with Docker
   )
 ) else (
   mklink /J "backend\static\uploads" "%~dp0uploads" > nul 2>&1
   if errorlevel 1 (
-    echo [警告] 创建 junction 失败，backend\static\uploads 使用独立目录
-    echo    如需共享请手动执行: mklink /J backend\static\uploads ..\..\uploads
+    echo [WARN] Failed to create junction, backend\static\uploads uses a standalone dir
+    echo    To share, run manually: mklink /J backend\static\uploads ..\..\uploads
   ) else (
-    echo [成功] 已创建 junction backend\static\uploads -^> ..\..\uploads（共享 uploads 目录）
+    echo [OK] Junction created backend\static\uploads -^> ..\..\uploads (shared uploads dir)
   )
 )
 
@@ -143,29 +143,29 @@ if /i "%CMD%"=="down" goto :down
 goto :usage
 
 REM ====================================================================
-REM 检查 Docker 守护进程是否运行
+REM Check if Docker daemon is running
 REM ====================================================================
 :check_docker
 docker info >nul 2>&1
 if errorlevel 1 (
-  echo [错误] Docker 守护进程未运行
-  echo    请启动 Docker Desktop 后重试
-  echo    或检查 Docker 是否正确安装
+  echo [ERROR] Docker daemon is not running
+  echo    Please start Docker Desktop and retry
+  echo    Or check if Docker is installed correctly
   exit /b 1
 )
 goto :eof
 
 REM ====================================================================
-REM 端口预检：检查指定端口是否被占用
-REM 参数: %1=端口号 %2=服务名称
+REM Port precheck: check if a given port is in use
+REM Args: %1=port number %2=service name
 REM ====================================================================
 :check_port
 set "PORT_NUM=%~1"
 set "PORT_NAME=%~2"
 netstat -ano | findstr "LISTENING" | findstr ":%PORT_NUM% " >nul 2>&1
 if not errorlevel 1 (
-  echo [错误] 端口 %PORT_NUM% ^(%PORT_NAME%^) 已被占用
-  echo    请先终止占用该端口的进程，或检查是否已有服务在运行
+  echo [ERROR] Port %PORT_NUM% ^(%PORT_NAME%^) is already in use
+  echo    Please terminate the process occupying this port, or check if a service is running
   netstat -ano | findstr "LISTENING" | findstr ":%PORT_NUM% "
   exit /b 1
 )
@@ -174,74 +174,75 @@ exit /b 0
 :start_db
 call :check_docker
 if errorlevel 1 exit /b 1
-echo 启动 PostgreSQL ^& Redis (Docker)...
+echo Starting PostgreSQL ^& Redis (Docker)...
 %DEV_COMPOSE% up -d db redis
 if errorlevel 1 (
-  echo [错误] 启动数据库失败
+  echo [ERROR] Failed to start database
   exit /b 1
 )
-echo [成功] 数据库已启动: postgresql+psycopg://%POSTGRES_USER%:***@127.0.0.1:5432/%POSTGRES_DB%
+echo [OK] Database started: postgresql+psycopg://%POSTGRES_USER%:***@127.0.0.1:5432/%POSTGRES_DB%
 goto :eof
 
 :up
-REM 端口预检（db 端口 5432/6379 由 Docker 管理，无需检查）
+REM Port precheck (db ports 5432/6379 managed by Docker, no need to check)
 call :check_port 8000 "backend"
 if errorlevel 1 exit /b 1
 call :check_port 3000 "frontend"
 if errorlevel 1 exit /b 1
 call :start_db
 if errorlevel 1 (
-  echo [错误] 数据库启动失败，前后端未启动
+  echo [ERROR] Database start failed, backend/frontend not started
   exit /b 1
 )
 echo.
-echo 启动后端 (uvicorn --reload) 与前端 (next dev)...
+echo Starting backend (uvicorn --reload) and frontend (next dev)...
 echo   Backend:  http://localhost:8000
 echo   Frontend: http://localhost:3000
-echo   (关闭本窗口可停止前后端，数据库保留运行)
+echo   (Close this window to stop backend/frontend, database keeps running)
 echo.
 
-REM 新窗口启动 backend，便于查看日志，关闭窗口即停止。
-REM DATABASE_URL / DEBUG 经 setlocal 作用域，start 会创建新进程继承，
-REM 避免在命令行再次 set，否则当密码含 &/!/^ 等特殊字符时破坏 cmd /k 解析。
+REM Start backend in a new window for log viewing; close window to stop.
+REM DATABASE_URL / DEBUG go through setlocal scope; start creates a new process that inherits them,
+REM avoiding re-setting on the command line, which would break cmd /k parsing when
+REM passwords contain special chars like &/!/^.
 pushd backend
 start "Profo Backend" cmd /k ".venv\Scripts\uvicorn.exe main:app --reload --host 0.0.0.0 --port 8000"
 popd
 
-REM 新窗口启动 frontend
+REM Start frontend in a new window
 pushd frontend
 start "Profo Frontend" cmd /k "pnpm dev"
 popd
 
-echo [成功] 前后端已在新窗口启动
+echo [OK] Backend and frontend started in new windows
 echo.
-echo 停止数据库: dev-start.bat stop
+echo Stop database: dev-start.bat stop
 goto :end
 
 :db
 call :start_db
 if errorlevel 1 exit /b 1
 echo.
-echo 数据库已启动，请在各自终端分别运行：
+echo Database started, run in separate terminals:
 echo   cd backend ^&^& .venv\Scripts\uvicorn.exe main:app --reload --port 8000
 echo   cd frontend ^&^& pnpm dev
 echo.
-echo 或直接执行: dev-start.bat  (一键启动全部)
+echo Or run: dev-start.bat  (start all at once)
 goto :end
 
 :stop
-echo 停止数据库容器...
+echo Stopping database container...
 %DEV_COMPOSE% stop db
 if errorlevel 1 goto :docker_error
-echo [成功] 已停止。前后端进程请关闭对应窗口。
+echo [OK] Stopped. Close the corresponding windows for backend/frontend.
 goto :end
 
 :status
 %DEV_COMPOSE% ps
 echo.
-echo 本地端口占用:
+echo Local port usage:
 netstat -ano | findstr ":8000 :3000" | findstr "LISTENING" 2>nul
-if errorlevel 1 echo   8000/3000 端口空闲
+if errorlevel 1 echo   Ports 8000/3000 are free
 goto :end
 
 :logs
@@ -249,25 +250,25 @@ goto :end
 goto :end
 
 :down
-echo 停止并删除容器（保留数据卷）...
+echo Stopping and removing containers (keeping data volumes)...
 %DEV_COMPOSE% down
 if errorlevel 1 goto :docker_error
-echo [成功] 容器已删除（pgdata volume 保留）
+echo [OK] Containers removed (pgdata volume kept)
 goto :end
 
 :usage
-echo 用法: %0 {up^|db^|stop^|status^|logs^|down}
+echo Usage: %0 {up^|db^|stop^|status^|logs^|down}
 echo.
-echo   up       启动全部（db + backend + frontend），默认
-echo   db       只启动数据库
-echo   stop     停止数据库容器
-echo   status   查看容器与端口状态
-echo   logs     查看数据库日志
-echo   down     停止并删除容器（保留数据卷）
+echo   up       start all (db + backend + frontend), default
+echo   db       start database only
+echo   stop     stop database container
+echo   status   show container and port status
+echo   logs     show database logs
+echo   down     stop and remove containers (keep data volumes)
 exit /b 1
 
 :docker_error
-echo [错误] docker compose 命令执行失败
+echo [ERROR] docker compose command failed
 exit /b 1
 
 :end

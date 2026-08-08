@@ -3,7 +3,7 @@
   <view class="home-hero">
     <view class="hero-title">卖房不想再投钱，<view class="hero-title-br">还想拿一个好价格？</view></view>
     <view class="hero-sub">美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。一种零成本、零风险的卖房方案。</view>
-    <button class="btn-primary" bindtap="onGoValuation">免费在线预审</button>
+    <button class="btn-primary" bindtap="onGoValuation">免费在线估价</button>
   </view>
 
   <!-- 2. 痛点 -->
