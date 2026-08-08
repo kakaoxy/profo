@@ -14,6 +14,7 @@ interface DisplayItem {
   id: number;
   title: string;
   desc: string;
+  area: string;
   total_price: number;
   cover_thumbnail_url?: string | null;
   cover_image?: string | null;
@@ -93,7 +94,6 @@ interface PageData {
   floorMin: string;
   floorMax: string;
   // UI 状态
-  searchActive: boolean;
   searchValue: string;
   activeFilter: FilterKey;
   // pill 标签
@@ -113,11 +113,8 @@ interface PageCustom {
   toDisplay(item: OnSaleItem | SoldItem, tab: Tab): DisplayItem;
   buildQueryParams(): Record<string, string | number>;
   onStatusTabChange(e: WechatMiniprogram.BaseEvent): void;
-  onSearchTap(): void;
   onSearchInput(e: WechatMiniprogram.Input): void;
   onSearchConfirm(): void;
-  onSearchClear(): void;
-  onSearchCancel(): void;
   onFilterPillTap(e: WechatMiniprogram.BaseEvent): void;
   onFilterMaskTap(): void;
   onFilterOptionTap(e: WechatMiniprogram.BaseEvent): void;
@@ -153,7 +150,6 @@ Page<PageData, PageCustom>({
     layoutKey: "",
     floorMin: "",
     floorMax: "",
-    searchActive: false,
     searchValue: "",
     activeFilter: "",
     priceLabel: "价格",
@@ -186,7 +182,6 @@ Page<PageData, PageCustom>({
       layoutKey: "",
       floorMin: "",
       floorMax: "",
-      searchActive: false,
       searchValue: "",
       activeFilter: "",
       priceLabel: "价格",
@@ -204,6 +199,7 @@ Page<PageData, PageCustom>({
         id: item.id,
         title: item.title,
         desc: `${community} · ${layout}`,
+        area: `${item.area}㎡`,
         total_price: item.total_price,
         cover_thumbnail_url: resolveAssetUrl(item.cover_thumbnail_url),
         cover_image: resolveAssetUrl(item.cover_image),
@@ -241,6 +237,7 @@ Page<PageData, PageCustom>({
       id: onSale.id,
       title: onSale.title,
       desc,
+      area: `${onSale.area}㎡`,
       total_price: onSale.total_price,
       cover_thumbnail_url: resolveAssetUrl(onSale.cover_thumbnail_url),
       cover_image: resolveAssetUrl(onSale.cover_image),
@@ -347,22 +344,13 @@ Page<PageData, PageCustom>({
     this.loadList(false);
   },
   // ===== 搜索框 =====
-  onSearchTap() {
-    this.setData({ searchActive: true, searchValue: this.data.keyword });
-  },
   onSearchInput(e: WechatMiniprogram.Input) {
     this.setData({ searchValue: e.detail.value });
   },
   onSearchConfirm() {
     const kw = this.data.searchValue.trim();
-    this.setData({ keyword: kw, searchActive: false, items: [], page: 1, total: 0, noMore: false });
+    this.setData({ keyword: kw, items: [], page: 1, total: 0, noMore: false });
     this.loadList(true);
-  },
-  onSearchClear() {
-    this.setData({ searchValue: "" });
-  },
-  onSearchCancel() {
-    this.setData({ searchActive: false, searchValue: this.data.keyword });
   },
   // ===== 筛选 pill =====
   onFilterPillTap(e: WechatMiniprogram.BaseEvent) {

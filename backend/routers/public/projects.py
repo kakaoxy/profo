@@ -62,9 +62,10 @@ def get_projects(
         page_size=pagination.page_size,
     )
 
+    cover_map = svc.resolve_cover_images_batch(items)
     result_items = []
     for item in items:
-        cover_image, cover_thumbnail_url = svc.resolve_cover_images(item)
+        cover_image, cover_thumbnail_url = cover_map[item.id]
         result_items.append(
             PublicProjectListItem(
                 id=item.id,
@@ -116,9 +117,10 @@ def get_sold_projects(
         page_size=pagination.page_size,
     )
 
+    cover_map = svc.resolve_cover_images_batch(items)
     result_items = []
     for item in items:
-        cover_image, cover_thumbnail_url = svc.resolve_cover_images(item)
+        cover_image, cover_thumbnail_url = cover_map[item.id]
 
         sold_days = None
         if item.updated_at and item.created_at:
