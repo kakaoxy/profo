@@ -1,9 +1,9 @@
 <view class="page">
   <!-- 头部 -->
   <view class="form-head">
-    <text class="chip chip-apricot">免费预审</text>
-    <view class="form-title">在线预审，先看你的房子有没有溢价空间</view>
-    <view class="form-sub">线上提交房源信息，我们先做初步预审。合适的会联系你安排上门看房，结合周边真实成交数据，再商定写进合同的约定价格。不签约不收费。</view>
+    <text class="chip chip-apricot">免费估价</text>
+    <view class="form-title">在线估价，先看你的房子有没有溢价空间</view>
+    <view class="form-sub">线上提交房源信息，我们先做初步估价。合适的会联系你安排上门看房，结合周边真实成交数据，再商定写进合同的约定价格。不签约不收费。</view>
   </view>
 
   <!-- 手机号提示 -->
@@ -69,7 +69,7 @@
     </view>
 
     <!-- 提交 -->
-    <button class="btn-primary submit-btn" bindtap="onSubmit">提交预审</button>
-    <view class="risk-note">信息仅用于预审与上门看房安排，不外泄、不电话骚扰</view>
+    <button class="btn-primary submit-btn" bindtap="onSubmit">提交估价</button>
+    <view class="risk-note">信息仅用于估价与上门看房安排，不外泄、不电话骚扰</view>
   </view>
 </view>

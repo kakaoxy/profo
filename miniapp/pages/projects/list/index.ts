@@ -258,6 +258,8 @@ Page<PageData, PageCustom>({
     const tab = this.data.tab;
     if (tab === "renovating") {
       params.project_status = "在途";
+    } else if (tab === "on_sale") {
+      params.project_status = "在售";
     }
     if (this.data.keyword) {
       params.keyword = this.data.keyword;
