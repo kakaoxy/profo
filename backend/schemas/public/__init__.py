@@ -22,8 +22,8 @@ class PublicProjectFilter(BaseModel):
     max_price: float | None = Field(None, description="最高总价(万)")
     min_area: float | None = Field(None, description="最小面积(m²)")
     max_area: float | None = Field(None, description="最大面积(m²)")
-    min_floor: int | None = Field(None, description="最小所在楼层")
-    max_floor: int | None = Field(None, description="最大所在楼层")
+    min_floor: int | None = Field(None, ge=1, description="最小所在楼层")
+    max_floor: int | None = Field(None, ge=1, description="最大所在楼层")
     sort_by: str = Field("created_at", description="排序字段")
     sort_order: str = Field("desc", description="排序方向 asc/desc")
 

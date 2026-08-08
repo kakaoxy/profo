@@ -4,7 +4,7 @@
 """
 
 from sqlalchemy import Integer, and_, case, cast, desc, func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from models import Community, L4MarketingMedia, L4MarketingProject, User
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
@@ -47,6 +47,39 @@ class PublicProjectService:
             return first_media.file_url, first_media.thumbnail_url
         return None, None
 
+    def _apply_keyword_floor_filters(
+        self,
+        query: Query[L4MarketingProject],
+        keyword: str | None,
+        min_floor: int | None,
+        max_floor: int | None,
+    ) -> Query[L4MarketingProject]:
+        """应用关键词与楼层筛选（get_published_projects 与 get_sold_projects 共用）.
+
+        keyword 同时模糊匹配小区名(community_name)与商圈(Community.business_circle)，
+        需 LEFT JOIN Community 表；floor_info 为 "15/28层" 字符串，楼层筛选时用
+        split_part 提取 / 前数字并 CAST 为整数比较。
+        """
+        if keyword:
+            kw = f"%{escape_like(keyword)}%"
+            # JOIN Community 后按 OR 匹配小区名或商圈；JOIN 会过滤掉无 Community 记录的项目，
+            # 故先 OR community_name 自身模糊匹配，保证无 Community 关联也能命中小区名
+            query = query.outerjoin(Community, Community.id == L4MarketingProject.community_id).filter(
+                or_(
+                    L4MarketingProject.community_name.like(kw),
+                    Community.business_circle.like(kw),
+                )
+            )
+        if min_floor is not None or max_floor is not None:
+            # floor_info 格式如 "2/共6层" 或 "15/28层"，仅对以「数字/」开头的记录筛选，避免 CAST 异常
+            query = query.filter(L4MarketingProject.floor_info.regexp_match(r"^\d+/"))
+            floor_num = cast(func.split_part(L4MarketingProject.floor_info, "/", 1), Integer)
+            if min_floor is not None:
+                query = query.filter(floor_num >= min_floor)
+            if max_floor is not None:
+                query = query.filter(floor_num <= max_floor)
+        return query
+
     def get_published_projects(
         self,
         project_status: str | None = None,
@@ -65,9 +98,8 @@ class PublicProjectService:
     ) -> tuple[list[L4MarketingProject], int]:
         """获取已发布的房源列表.
 
-        keyword 同时模糊匹配小区名(community_name)与商圈(Community.business_circle)，
-        需 LEFT JOIN Community 表；layout 改为前缀 LIKE 匹配，使「三室」命中「三室两厅」等。
-        floor_info 为 "15/28层" 字符串，楼层筛选时用 split_part 提取 / 前数字并 CAST 为整数比较。
+        layout 改为前缀 LIKE 匹配，使「三室」命中「三室两厅」等。
+        keyword 与 floor 筛选见 _apply_keyword_floor_filters。
         """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = self.db.query(L4MarketingProject).filter(
@@ -77,16 +109,7 @@ class PublicProjectService:
 
         if project_status:
             query = query.filter(L4MarketingProject.project_status == project_status)
-        if keyword:
-            kw = f"%{escape_like(keyword)}%"
-            # JOIN Community 后按 OR 匹配小区名或商圈；JOIN 会过滤掉无 Community 记录的项目，
-            # 故先 OR community_name 自身模糊匹配，保证无 Community 关联也能命中小区名
-            query = query.outerjoin(Community, Community.id == L4MarketingProject.community_id).filter(
-                or_(
-                    L4MarketingProject.community_name.like(kw),
-                    Community.business_circle.like(kw),
-                )
-            )
+        query = self._apply_keyword_floor_filters(query, keyword, min_floor, max_floor)
         if layout:
             query = query.filter(L4MarketingProject.layout.like(f"{escape_like(layout)}%"))
         if min_price is not None:
@@ -97,14 +120,6 @@ class PublicProjectService:
             query = query.filter(L4MarketingProject.area >= min_area)
         if max_area is not None:
             query = query.filter(L4MarketingProject.area <= max_area)
-        if min_floor is not None or max_floor is not None:
-            # floor_info 格式如 "2/共6层" 或 "15/28层"，仅对以「数字/」开头的记录筛选，避免 CAST 异常
-            query = query.filter(L4MarketingProject.floor_info.regexp_match(r"^\d+/"))
-            floor_num = cast(func.split_part(L4MarketingProject.floor_info, "/", 1), Integer)
-            if min_floor is not None:
-                query = query.filter(floor_num >= min_floor)
-            if max_floor is not None:
-                query = query.filter(floor_num <= max_floor)
 
         total = query.count()
 
@@ -139,21 +154,7 @@ class PublicProjectService:
             L4MarketingProject.is_deleted.is_(False),
         )
 
-        if keyword:
-            kw = f"%{escape_like(keyword)}%"
-            query = query.outerjoin(Community, Community.id == L4MarketingProject.community_id).filter(
-                or_(
-                    L4MarketingProject.community_name.like(kw),
-                    Community.business_circle.like(kw),
-                )
-            )
-        if min_floor is not None or max_floor is not None:
-            query = query.filter(L4MarketingProject.floor_info.regexp_match(r"^\d+/"))
-            floor_num = cast(func.split_part(L4MarketingProject.floor_info, "/", 1), Integer)
-            if min_floor is not None:
-                query = query.filter(floor_num >= min_floor)
-            if max_floor is not None:
-                query = query.filter(floor_num <= max_floor)
+        query = self._apply_keyword_floor_filters(query, keyword, min_floor, max_floor)
 
         total = query.count()
         items = (
