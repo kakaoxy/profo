@@ -34,6 +34,32 @@ export function getCRefreshToken(): string {
 }
 
 /**
+ * 将 base64url 字符串解码为 binary string（每字符代表一个字节）.
+ *
+ * 不依赖 atob —— 微信小程序运行时（JSCore/V8 基础库）不提供全局 atob/btoa，
+ * 且 JWT payload 为 base64url 且通常无 `=` padding。这里手写解码：
+ * base64url → base64（还原 +/，忽略 padding），再按 6bit→8bit 还原字节。
+ */
+function base64UrlToBinary(b64: string): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let binary = "";
+  let buffer = 0;
+  let bits = 0;
+  for (const ch of b64) {
+    if (ch === "=") break;
+    const val = chars.indexOf(ch);
+    if (val === -1) continue;
+    buffer = (buffer << 6) | val;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      binary += String.fromCharCode((buffer >> bits) & 0xff);
+    }
+  }
+  return binary;
+}
+
+/**
  * 解析 JWT payload 中的 aud（"c"=C端，"admin"=后台）；解析失败返回空串.
  *
  * 用于在端内区分令牌用途：C 端令牌可访问 /public/*，后台令牌不可，
@@ -45,10 +71,9 @@ export function getTokenAud(token: string): string {
     if (!payload) {
       return "";
     }
-    const b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    // atob 返回 binary string（每字符代表一个字节），逐字节 percent-encode 后
+    // 返回 binary string（每字符代表一个字节），逐字节 percent-encode 后
     // 交 decodeURIComponent 做 UTF-8 解码；替代已废弃的 escape()，不依赖 TextDecoder
-    const binary = atob(b64);
+    const binary = base64UrlToBinary(payload);
     const jsonStr = decodeURIComponent(
       Array.from(binary)
         .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))

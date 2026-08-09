@@ -63,6 +63,9 @@
         <view class="chevron">›</view>
       </view>
     </view>
+    <!-- 触底加载 / 没有更多 -->
+    <view class="list-footer" wx:if="{{loadingMore}}">加载中...</view>
+    <view class="list-footer" wx:elif="{{!hasMore && items.length > 0}}">没有更多了</view>
   </block>
 
   <!-- 底部留白 -->

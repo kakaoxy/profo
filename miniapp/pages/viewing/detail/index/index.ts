@@ -9,6 +9,7 @@ import type { components } from "../../../../types/api-types";
 import { request } from "../../../../utils/request";
 import { getAccessToken } from "../../../../utils/token";
 import { pad2 } from "../../../../utils/format";
+import { parseSalesRecords } from "../../../../utils/sales-records";
 
 type SalesRecordResponse = components["schemas"]["SalesRecordResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
@@ -175,8 +176,7 @@ Page<PageData, PageCustom>({
   },
 
   parseRecords(project: ProjectResponse): SalesRecordResponse[] {
-    const records = project.sales_records ?? [];
-    return records as SalesRecordResponse[];
+    return parseSalesRecords(project.sales_records);
   },
 
   sortByDateDesc(list: SalesRecordResponse[]): SalesRecordResponse[] {

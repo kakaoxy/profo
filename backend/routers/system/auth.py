@@ -50,9 +50,17 @@ def _create_miniapp_tokens(db: Session, user: User) -> dict:
     使其能访问后台内部接口（如带看记录 /projects/*）；纯 C 端 customer 用户
     签发 C 端令牌（aud=c, role=customer）。profile 页依据令牌 aud 双通道识别
     身份并差异化展示（admin 令牌 → 手机号在后台维护）。
+    与后台登录一致执行强制改密，防止 must_change_password 账号绕过首次改密闸门。
     """
     if AuthService.has_backend_identity(user):
-        return AuthService.create_tokens_for_user(db, user)
+        result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
+        if result["require_password_change"]:
+            msg = "首次登录必须修改密码"
+            raise BusinessLogicError(
+                msg,
+                headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
+            )
+        return result
     return AuthService.create_tokens_for_user(
         db,
         user,

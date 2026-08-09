@@ -1,3 +1,8 @@
+/**
+ * 本页为「估价提交」表单控制器，含小区搜索回填、户型三段、图片上传、手机号绑定、
+ * 提交与 401/权限分流等多类交互，逻辑彼此耦合（如上传与提交共用令牌刷新/权限判断）。
+ * 拆分会导致跨文件共享大量表单状态与守卫，降低可读性，故保持单文件（>500 行）。
+ */
 import type { components } from "../../../types/api-types";
 import { request, refreshCAccessToken, type HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
@@ -75,6 +80,8 @@ interface PageData {
   /** 已上传图片的完整 URL（供 wxml <image> 加载，与 form.images 同步）. */
   displayImages: string[];
   submitting: boolean;
+  /** 提交成功至跳转完成前的导航守卫：置真后禁止再次提交，防止跳转延迟窗口内重复线索. */
+  navigating: boolean;
   // 户型三段
   layoutRoom: string;
   layoutHall: string;
@@ -111,6 +118,7 @@ interface PageCustom {
   onGoLogin(): void;
   onSubmit(): void;
   afterSubmitSuccess(): void;
+  handleUnauthorized(): void;
 }
 
 Page<PageData, PageCustom>({
@@ -131,6 +139,7 @@ Page<PageData, PageCustom>({
     },
     displayImages: [],
     submitting: false,
+    navigating: false,
     layoutRoom: "",
     layoutHall: "",
     layoutToilet: "",
@@ -217,7 +226,11 @@ Page<PageData, PageCustom>({
     });
   },
 
-  /** 搜索无匹配时以当前关键词作为小区名提交（community_id 留空），district/business_area 保持当前值. */
+  /**
+   * 搜索无匹配时以当前关键词作为小区名提交（community_id 留空）.
+   * 同步清空 district/business_area：走 usequery 路径的小区没有行政区/商圈数据，
+   * 若不清理，先前选过的小区会遗留旧行政区/商圈并随单提交（见代码审查 🟡-2）.
+   */
   onCommunityUseQuery(e: WechatMiniprogram.CustomEvent) {
     const query = (e.detail as { query: string }).query.trim();
     if (!query) {
@@ -226,6 +239,8 @@ Page<PageData, PageCustom>({
     this.setData({
       "form.community_name": query,
       "form.community_id": "",
+      "form.district": "",
+      "form.business_area": "",
     });
   },
 
@@ -402,11 +417,31 @@ Page<PageData, PageCustom>({
       this.setData({ hasPhone: true, editingPhone: false, phoneInput: "" });
       wx.showToast({ title: "绑定成功", icon: "success" });
     } catch (err) {
-      // 透出后端业务信息（如「手机号已被其他账号绑定」），无则兜底通用提示
+      // 401：令牌失效/受众不匹配，走统一登录引导（与 onSubmit 一致）；
+      // 其余错误透出后端业务信息（如「手机号已被其他账号绑定」），无则兜底通用提示
+      const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+      if (statusCode === 401) {
+        this.handleUnauthorized();
+        return;
+      }
       const msg = (err as { body?: { message?: string } } | undefined)?.body?.message;
       wx.showToast({ title: msg || "保存失败，请重试", icon: "none" });
     } finally {
       this.setData({ submittingPhone: false });
+    }
+  },
+
+  /**
+   * 统一 401 处理（/public/* 因令牌失效或 aud 不匹配返回 401）：
+   * - 仍持有 admin 令牌（内部员工，仅缺 c_access_token）→ 属有效登录态但无 C 端估价权限，
+   *   提示「无估价权限」，而非误弹登录；
+   * - 无 admin 令牌（纯 C 端用户，令牌已失效）→ 引导重新登录.
+   */
+  handleUnauthorized() {
+    if (this.getToken()) {
+      wx.showToast({ title: "当前账号无估价权限", icon: "none" });
+    } else {
+      this.requireLogin();
     }
   },
 
@@ -436,7 +471,9 @@ Page<PageData, PageCustom>({
   },
 
   async onSubmit() {
-    if (this.data.submitting) {
+    // submitting / navigating 双守卫：提交中或提交成功至跳转完成前均禁止再次触发，
+    // 防止跳转延迟窗口内重复提交产生重复线索（见代码审查 🟡-1）
+    if (this.data.submitting || this.data.navigating) {
       return;
     }
     const token = this.getToken() || getCAccessToken();
@@ -503,6 +540,9 @@ Page<PageData, PageCustom>({
         // 不传 header，request.ts 按 /public/* 自动注入 C 端令牌
       });
       wx.showToast({ title: "提交成功", icon: "success" });
+      // 提交成功即置 navigating 守卫：此后 400ms 跳转延迟窗口内无法再次提交；
+      // submitting 的释放推迟到 afterSubmitSuccess 跳转完成回调，杜绝窗口内重复触发.
+      this.setData({ navigating: true });
       // 极短延迟让成功提示可见即跳转，避免用户感知到明显跳转延迟
       setTimeout(() => {
         this.afterSubmitSuccess();
@@ -510,12 +550,13 @@ Page<PageData, PageCustom>({
     } catch (err) {
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       if (statusCode === 401) {
-        // 令牌过期或受众不匹配，引导重新登录
-        this.requireLogin();
+        // 令牌过期或受众不匹配：内部员工（仅持 admin 令牌）无 C 端估价权限，
+        // 普通用户令牌失效引导重新登录
+        this.handleUnauthorized();
       } else {
         wx.showToast({ title: "提交失败，请重试", icon: "none" });
       }
-    } finally {
+      // 失败路径未触发跳转，立即释放提交态（navigating 未置位）
       this.setData({ submitting: false });
     }
   },
@@ -530,10 +571,14 @@ Page<PageData, PageCustom>({
   afterSubmitSuccess() {
     const pages = getCurrentPages();
     const prev = pages.length > 1 ? pages[pages.length - 2] : null;
+    // 跳转完成后释放 submitting / navigating（本页即将销毁，释放仅作状态收尾）
+    const release = () => {
+      this.setData({ submitting: false, navigating: false });
+    };
     if (prev && prev.route === "pages/valuation/list/index") {
-      wx.navigateBack();
+      wx.navigateBack({ complete: release });
     } else {
-      wx.redirectTo({ url: "/pages/valuation/list/index" });
+      wx.redirectTo({ url: "/pages/valuation/list/index", complete: release });
     }
   },
 });

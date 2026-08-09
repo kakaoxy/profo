@@ -1,5 +1,5 @@
 import { BASE_URL } from "./config";
-import { getAccessToken, getCAccessToken, getCRefreshToken } from "./token";
+import { getAccessToken, getCAccessToken, getCRefreshToken, getRefreshToken } from "./token";
 
 /**
  * 请求参数.
@@ -45,6 +45,71 @@ interface TokenRefreshResponse {
 let refreshCPromise: Promise<string | null> | null = null;
 
 /**
+ * 正在进行的后台 access_token 刷新 Promise（并发复用，语义同 refreshCAccessToken）.
+ */
+let refreshPromise: Promise<string | null> | null = null;
+
+/**
+ * 刷新后台 access_token：用 refresh_token 调 /auth/refresh（aud=admin）.
+ *
+ * - 成功：更新 storage 中的 access_token / refresh_token（轮换），返回新 access_token；
+ * - 失败（refresh_token 过期/无效）：清除失效的后台令牌，返回 null；
+ * - 网络异常：不清除令牌，返回 null；
+ * - 并发：复用 refreshPromise，避免多次刷新触发轮换冲突.
+ *
+ * 与 refreshCAccessToken 对称，保证后台接口（如 /projects、/projects/my-responsible）
+ * 过期后也能自动续期，而非强制用户重新登录。
+ */
+export function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    return Promise.resolve(null);
+  }
+  const promise = new Promise<string | null>((resolve) => {
+    wx.request({
+      url: `${BASE_URL}/auth/refresh`,
+      method: "POST",
+      data: { refresh_token: refreshToken },
+      header: { "Content-Type": "application/json" },
+      timeout: 15000,
+      success: (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          const data = res.data as TokenRefreshResponse | undefined;
+          if (data?.access_token) {
+            wx.setStorageSync("access_token", data.access_token);
+            if (data.refresh_token) {
+              wx.setStorageSync("refresh_token", data.refresh_token);
+            }
+            resolve(data.access_token);
+            return;
+          }
+        }
+        // 刷新失败（refresh_token 过期/无效），清除失效的后台令牌
+        wx.removeStorageSync("access_token");
+        wx.removeStorageSync("refresh_token");
+        resolve(null);
+      },
+      fail: () => {
+        // 网络异常，不清除令牌（可能临时网络问题，下次请求可再试）
+        resolve(null);
+      },
+    });
+  });
+  refreshPromise = promise;
+  // 刷新完成后清空引用（无论成功失败），允许后续再次刷新
+  const clearRef = () => {
+    if (refreshPromise === promise) {
+      refreshPromise = null;
+    }
+  };
+  promise.then(clearRef, clearRef);
+  return promise;
+}
+
+/**
  * 刷新 C 端 access_token：用 c_refresh_token 调 /public/auth/refresh.
  *
  * - 成功：更新 storage 中的 c_access_token / c_refresh_token（轮换），返回新 access_token；
@@ -70,6 +135,7 @@ export function refreshCAccessToken(): Promise<string | null> {
       method: "POST",
       data: { refresh_token: cRefreshToken },
       header: { "Content-Type": "application/json" },
+      timeout: 15000,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           const data = res.data as TokenRefreshResponse | undefined;
@@ -108,8 +174,8 @@ export function refreshCAccessToken(): Promise<string | null> {
 /**
  * 封装 wx.request，返回 Promise<T>.
  * - 自动注入 Authorization（/public/* 优先用 c_access_token，其他用 access_token）；
- * - /public/* 请求 401 时自动刷新 c_access_token 并重试一次（access_token 30 分钟过期，
- *   需靠 refresh_token 续期，避免用户频繁重新登录）；
+ * - 401 时按接口受众自动刷新对应端令牌并重试一次（/public/* → C 端，其余 → 后台），
+ *   避免 access_token 过期后频繁强制用户重新登录；
  * - 调用方显式传入 header.Authorization 时优先保留；
  * - HTTP 非 2xx reject { statusCode, body }；网络异常 reject { errMsg }.
  */
@@ -155,15 +221,19 @@ function doRequest<T>(
       method,
       data,
       header: requestHeader,
+      timeout: 15000,
       success: (res) => {
         const statusCode = res.statusCode;
         if (statusCode >= 200 && statusCode < 300) {
           resolve(res.data as T);
           return;
         }
-        // /public/* 401 且未跳过鉴权且未重试过：c_access_token 可能过期，刷新后重试一次
-        if (statusCode === 401 && url.startsWith("/public/") && !skipAuth && !retried) {
-          refreshCAccessToken().then((newToken) => {
+        // 401 且未跳过鉴权且未重试过：access_token 可能过期，按接口受众刷新对应端令牌后重试一次。
+        // - /public/* → 刷新 C 端令牌（refreshCAccessToken）
+        // - 其余后台接口 → 刷新后台令牌（refreshAccessToken）
+        if (statusCode === 401 && !skipAuth && !retried) {
+          const refresh = url.startsWith("/public/") ? refreshCAccessToken : refreshAccessToken;
+          refresh().then((newToken) => {
             if (newToken) {
               requestHeader.Authorization = `Bearer ${newToken}`;
               doRequest<T>(url, method, data, requestHeader, skipAuth, true)

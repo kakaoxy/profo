@@ -21,7 +21,11 @@ from schemas.public import (
 )
 from services.system import permission_service
 from services.system.auth import AuthService
-from services.system.exceptions import AuthenticationError, PermissionDeniedError
+from services.system.exceptions import (
+    AuthenticationError,
+    BusinessLogicError,
+    PermissionDeniedError,
+)
 from utils.auth import AUDIENCE_C
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
@@ -165,7 +169,15 @@ def login_for_access_token(
             role_claim=RoleCode.CUSTOMER.value,
         )
     else:
-        token_data = AuthService.create_tokens_for_user(db, user)
+        # 纯内部用户经公开端点签发后台令牌；与后台登录一致执行强制改密，
+        # 防止 must_change_password 账号（如初始 admin）绕过「首次登录必须改密」安全闸门。
+        token_data = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
+        if token_data["require_password_change"]:
+            msg = "首次登录必须修改密码"
+            raise BusinessLogicError(
+                msg,
+                headers={"X-Must-Change-Password": "true", "X-Temp-Token": token_data["temp_token"]},
+            )
 
     return PublicLoginResponse(
         access_token=token_data["access_token"],

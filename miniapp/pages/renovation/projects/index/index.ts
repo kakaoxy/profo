@@ -32,6 +32,10 @@ interface DisplayItem extends BaseDisplayItem {
 interface PageData {
   state: ProjectListState;
   items: DisplayItem[];
+  page: number;
+  total: number;
+  hasMore: boolean;
+  loadingMore: boolean;
 }
 
 /** 页面自定义方法. */
@@ -40,7 +44,7 @@ interface PageCustom {
   clearToken(): void;
   loadList(): void;
   loadResponsible(token: string): void;
-  applyItems(projects: ProjectResponse[]): void;
+  applyItems(projects: ProjectResponse[], mode: "replace" | "append"): void;
   onItemTap(e: WechatMiniprogram.BaseEvent): void;
   onRetry(): void;
   onGoLogin(): void;

@@ -69,8 +69,11 @@ class RenovationService:
     def _get_or_create_renovation(self, project_id: uuid.UUID) -> ProjectRenovation:
         """获取或创建装修记录.
 
-        使用 with_for_update 加行级锁，防止并发更新 stage_completed_dates
-        时发生 last-write-wins 数据丢失。
+        并发安全策略：
+        - 已存在记录：with_for_update 行级锁，防止并发 update_stage 时
+          stage_completed_dates 被覆盖（last-write-wins）；
+        - 创建路径：首次查询无行可锁、无互斥，正确性依赖 flush 撞唯一约束后的
+          IntegrityError 回退 + FOR UPDATE 重查（阻塞至竞争事务提交后返回该行）。
         """
         from sqlalchemy.exc import IntegrityError
 
@@ -109,7 +112,7 @@ class RenovationService:
                 )
                 if not renovation:
                     msg = "装修记录创建失败"
-                    raise BusinessLogicError(msg)
+                    raise BusinessLogicError(msg) from None
 
         return renovation
 

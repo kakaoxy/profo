@@ -101,3 +101,11 @@
   font-size: 28rpx;
   font-weight: 500;
 }
+
+/* ===== 触底加载提示 ===== */
+.list-footer {
+  padding: 24rpx 0 8rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--graphite);
+}

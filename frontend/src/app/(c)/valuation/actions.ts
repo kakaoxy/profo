@@ -21,7 +21,7 @@ const createLeadSchema = z.object({
   floor_info: z.string().min(1, cLocale.valuationAction.floorRequired),
   orientation: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
-  expected_price: z.number({ message: cLocale.valuationAction.expectedPriceRequired }).positive(cLocale.valuationAction.expectedPriceRequired),
+  expected_price: z.number().positive(cLocale.valuationAction.expectedPriceRequired).nullable().optional(),
   images: z.array(z.string().refine(isValidUrl, { message: "无效的图片 URL" })).max(6).default([]),
 });
 

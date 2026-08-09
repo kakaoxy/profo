@@ -118,6 +118,9 @@ Page<PageData, PageCustom>({
   },
 
   applyDetail(detail: LeadDetail) {
+    // 跟进记录：后端 /public/leads/{id} 一次返回全部 follow_ups，无分页参数（C 端场景，
+    // 单条线索跟进量有限，可接受全量拉取，不做过度设计）。前端按 FOLLOWUP_PAGE_SIZE
+    // 切片逐批展示（allFollowups 全量缓存，followups 展示切片，onLoadMoreFollowups 追加）.
     const allFollowups = (detail.follow_ups ?? []).map((f: Followup) => ({
       method: followupMethodLabel(f.method),
       content: f.content,

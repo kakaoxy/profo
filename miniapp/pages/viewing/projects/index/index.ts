@@ -14,6 +14,7 @@ import {
   type BaseDisplayItem,
   type ProjectListState,
 } from "../../../../utils/project-list-page";
+import { parseSalesRecords } from "../../../../utils/sales-records";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type RecordType = components["schemas"]["RecordType"];
@@ -41,6 +42,10 @@ interface DisplayItem extends BaseDisplayItem {
 interface PageData {
   state: ProjectListState;
   items: DisplayItem[];
+  page: number;
+  total: number;
+  hasMore: boolean;
+  loadingMore: boolean;
 }
 
 /** 页面自定义方法. */
@@ -49,7 +54,7 @@ interface PageCustom {
   clearToken(): void;
   loadList(): void;
   loadResponsible(token: string): void;
-  applyItems(projects: ProjectResponse[]): void;
+  applyItems(projects: ProjectResponse[], mode: "replace" | "append"): void;
   onItemTap(e: WechatMiniprogram.BaseEvent): void;
   onRetry(): void;
   onGoLogin(): void;
@@ -57,9 +62,8 @@ interface PageCustom {
 
 /** 按记录类型统计项目销售记录数. */
 function countByType(project: ProjectResponse, type: RecordType): number {
-  const records = project.sales_records ?? [];
-  return records.filter(
-    (r) => (r as { record_type?: string }).record_type === type,
+  return parseSalesRecords(project.sales_records).filter(
+    (r) => r.record_type === type,
   ).length;
 }
 

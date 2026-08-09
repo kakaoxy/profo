@@ -8236,9 +8236,9 @@ export interface components {
             remarks?: string | null;
             /**
              * Expected Price
-             * @description 业主心理预期价(万)
+             * @description 业主心理预期价(万)，选填
              */
-            expected_price: number;
+            expected_price?: number | null;
             /**
              * Images
              * @description 户型图URL列表

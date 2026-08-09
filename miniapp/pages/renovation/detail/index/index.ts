@@ -129,9 +129,12 @@ Page<PageData, PageCustom>({
     }
     this.setData({ state: "loading" });
     try {
-      const project = await this.loadProject(token);
+      // 项目详情与照片无数据依赖，并行拉取消除请求瀑布
+      const [project, photos] = await Promise.all([
+        this.loadProject(token),
+        this.loadPhotos(token),
+      ]);
       this.applyProject(project);
-      const photos = await this.loadPhotos(token);
       this.applyPhotos(photos);
     } catch (err) {
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
@@ -430,7 +433,18 @@ Page<PageData, PageCustom>({
     if (!stageObj) {
       return;
     }
-    this.doCompleteStage(stage, stageObj.completeDate || todayStr());
+    const label = toStageLabel(stage as RenovationStage);
+    // 完成阶段为不可逆的状态流转，先二次确认再执行（与 onDeletePhoto 交互一致）
+    wx.showModal({
+      title: "完成阶段",
+      content: `确定完成「${label}」阶段吗？`,
+      confirmColor: "#5d2a1a",
+      success: (res) => {
+        if (res.confirm) {
+          this.doCompleteStage(stage, stageObj.completeDate || todayStr());
+        }
+      },
+    });
   },
 
   doCompleteStage(stage: string, date: string) {
