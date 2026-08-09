@@ -48,6 +48,8 @@ export interface ProjectListPageConfig<TItem extends BaseDisplayItem> {
 
 /** this 上下文：工厂方法 + 框架注入的 setData + 分页字段. */
 interface ProjectListPageThis<TItem extends BaseDisplayItem> {
+  /** 防止 onShow 与触底/重试并发触发重复全量请求的实例级锁（各页面实例独立）. */
+  inFlight: boolean;
   /** 跨页累计的原始项目（按 id 去重），用于追加后统一排序转换. */
   _rawItems: ProjectResponse[];
   data: {
@@ -76,9 +78,6 @@ interface ProjectListPageThis<TItem extends BaseDisplayItem> {
   onReachBottom(): void;
 }
 
-/** 防止 onShow 与触底/重试并发触发时出现重复的全量请求. */
-let inFlight = false;
-
 /**
  * 创建「我负责的项目」列表页配置（viewing/renovation 共用）.
  *
@@ -90,6 +89,8 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
   config: ProjectListPageConfig<TItem>,
 ) {
   return {
+    inFlight: false,
+
     _rawItems: [] as ProjectResponse[],
 
     data: {
@@ -118,10 +119,10 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
     },
 
     async loadList(this: ProjectListPageThis<TItem>) {
-      if (inFlight) {
+      if (this.inFlight) {
         return;
       }
-      inFlight = true;
+      this.inFlight = true;
       try {
         const token = this.getToken();
         if (!token) {
@@ -163,7 +164,7 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
           }
         }
       } finally {
-        inFlight = false;
+        this.inFlight = false;
       }
     },
 

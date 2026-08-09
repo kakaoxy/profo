@@ -47,6 +47,41 @@ function getListingDaysText(listingDate) {
   return "挂牌" + days + "天";
 }
 
+/** 仅当值为 string 时返回，否则 undefined（兜底非法/缺失字段）. */
+function str(v) {
+  return typeof v === "string" ? v : undefined;
+}
+
+/**
+ * 将松类型 sales_records 收窄/兜底为完整记录.
+ * 对齐 TS 版 parseSalesRecords（utils/sales-records.ts，无对应 .js，故内联）：
+ * 非数组视为空、跳过非对象项、缺失 record_type 按 "viewing" 兜底、price 统一转字符串.
+ */
+function parseSalesRecords(records) {
+  if (!Array.isArray(records)) {
+    return [];
+  }
+  return records
+    .filter((r) => r && typeof r === "object")
+    .map((r) => ({
+      id: str(r.id) ?? "",
+      project_id: str(r.project_id) ?? "",
+      record_type: str(r.record_type) ?? "viewing",
+      customer_name: str(r.customer_name),
+      customer_phone: str(r.customer_phone),
+      customer_info: r.customer_info ?? undefined,
+      record_date: str(r.record_date) ?? "",
+      record_time: str(r.record_time),
+      price: str(r.price) ?? (r.price != null ? String(r.price) : undefined),
+      notes: str(r.notes),
+      feedback: str(r.feedback),
+      result: str(r.result),
+      related_agent: str(r.related_agent),
+      created_at: str(r.created_at) ?? "",
+      operator: r.operator ?? undefined,
+    }));
+}
+
 Page({
   projectId: "",
 
@@ -100,8 +135,7 @@ Page({
   },
 
   parseRecords(project) {
-    const records = project.sales_records || [];
-    return records;
+    return parseSalesRecords(project.sales_records);
   },
 
   sortByDateDesc(list) {
