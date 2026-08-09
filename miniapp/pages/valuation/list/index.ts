@@ -154,8 +154,10 @@ Page<PageData, PageCustom>({
     this.loadList(false);
   },
 
-  onPullDownRefresh() {
-    this.loadList(true);
+  async onPullDownRefresh() {
+    // loadList 异步，需等其结束（含无 token 提前返回 / catch）后再停止下拉刷新，
+    // 否则刷新动画会在请求完成前提前消失
+    await this.loadList(true);
     wx.stopPullDownRefresh();
   },
 
