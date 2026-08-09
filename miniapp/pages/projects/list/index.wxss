@@ -25,8 +25,8 @@ page {
   padding: 80rpx 40rpx 48rpx;
 }
 .hero-title {
-  font-family: "Fraunces", "Signifier", "GT Sectra", "Source Serif Pro",
-    Georgia, "Songti SC", "STSong", serif;
+  font-family: "Source Serif Pro", "Fraunces", "Noto Serif SC",
+    "Source Han Serif SC", "Songti SC", Georgia, serif;
   font-size: 62rpx;
   font-weight: 400;
   line-height: 1.15;

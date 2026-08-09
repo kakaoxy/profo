@@ -15,7 +15,7 @@ page {
 
   background-color: var(--fog);
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, Roboto, "Noto Sans SC", "Source Han Sans SC", sans-serif;
   font-size: 28rpx;
   line-height: 1.4;
 }
