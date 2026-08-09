@@ -135,9 +135,10 @@ check_port() {
 }
 
 start_db() {
-  echo "启动 PostgreSQL (Docker)..."
-  $DEV_COMPOSE up -d db
+  echo "启动 PostgreSQL + Redis (Docker)..."
+  $DEV_COMPOSE up -d db redis
   echo "✅ 数据库已启动: postgresql+psycopg://${POSTGRES_USER}:***@127.0.0.1:5432/${POSTGRES_DB}"
+  echo "✅ Redis 已启动: redis://127.0.0.1:6379/0"
 }
 
 case "$CMD" in
