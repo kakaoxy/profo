@@ -203,8 +203,12 @@ class AuthService:
             msg = "用户名或密码错误"
             raise AuthenticationError(msg)
 
+        # 微信用户密码为 openid 占位哈希（见 wechat.login_or_register_wechat_user），
+        # openid 属半公开标识，禁止此类账号走密码登录通道，防止占位哈希被离线爆破（纵深防御）。
+        # 仍执行 verify_password 以维持与「用户存在但密码错误」一致的响应耗时，避免用户枚举。
+        is_wechat_only_user = user.wechat_openid is not None
         verified, updated_hash = verify_password(password, user.password)
-        if not verified:
+        if not verified or is_wechat_only_user:
             msg = "用户名或密码错误"
             raise AuthenticationError(msg)
 

@@ -15,8 +15,6 @@ from constants.role_codes import RoleCode
 from models.common import CashFlowType, ProjectStatus
 from utils.mask import mask_bank_card
 
-from . import owners
-
 if TYPE_CHECKING:
     from models import Project, User
 
@@ -183,10 +181,14 @@ class ProjectResponseBuilder:
     def _build_owners_list(self, project: "Project") -> dict[str, Any]:
         """构建业主列表（含银行卡号脱敏）.
 
-        通过 owners.list_owners 查询项目下未删除业主，
-        对 bank_card_number 调用 mask_bank_card 脱敏后返回。
+        复用预加载的 project.owners 关系（selectinload，见 query.get_by_status/
+        get_by_id），过滤软删除记录，消除 owners.list_owners 的额外查询。
+        按 created_at 升序保持与原 list_owners 一致的展示顺序。
         """
-        owner_list = owners.list_owners(self.db, project.id)
+        owner_list = sorted(
+            (o for o in project.owners if not o.is_deleted),
+            key=lambda o: o.created_at,
+        )
         return {
             "owners": [
                 {

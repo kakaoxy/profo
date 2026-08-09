@@ -7,7 +7,7 @@
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
-import { getTokenAud } from "../../../utils/token";
+import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { formatDate, statusBadgeStyle } from "../../../utils/valuation-display";
 
 type LeadItem = components["schemas"]["PublicLeadListItem"];
@@ -69,12 +69,14 @@ Page<PageData, PageCustom>({
   },
 
   getToken() {
-    return wx.getStorageSync("access_token") as string;
+    return getAccessToken();
   },
 
   clearToken() {
     wx.removeStorageSync("access_token");
     wx.removeStorageSync("refresh_token");
+    wx.removeStorageSync("c_access_token");
+    wx.removeStorageSync("c_refresh_token");
   },
 
   toDisplay(item: LeadItem): DisplayItem {
@@ -94,8 +96,9 @@ Page<PageData, PageCustom>({
   },
 
   onShow() {
-    const token = this.getToken();
-    if (!token) {
+    const cToken = getCAccessToken();
+    const adminToken = this.getToken();
+    if (!cToken && !adminToken) {
       this.setData({ needLogin: true, loading: false, loadingMore: false });
       return;
     }
@@ -110,8 +113,9 @@ Page<PageData, PageCustom>({
   },
 
   async loadList(reset = false, silent = false) {
-    const token = this.getToken();
-    if (!token) {
+    const cToken = getCAccessToken();
+    const adminToken = this.getToken();
+    if (!cToken && !adminToken) {
       this.setData({ needLogin: true, loading: false, loadingMore: false });
       return;
     }
@@ -133,7 +137,7 @@ Page<PageData, PageCustom>({
       const data = await request<components["schemas"]["PublicLeadListResponse"]>({
         url: "/public/leads/mine",
         data: { page, page_size: this.data.pageSize },
-        header: { Authorization: `Bearer ${token}` },
+        // 不传 header，request.ts 按 /public/* 自动注入 c_access_token
       });
       const newItems = data.items.map((it) => this.toDisplay(it));
       const merged = reset ? newItems : [...this.data.items, ...newItems];
@@ -145,11 +149,11 @@ Page<PageData, PageCustom>({
       });
     } catch (err) {
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
-      // 401（令牌失效/受众不匹配，admin 令牌访问 C 端接口通常为此码）或 403（权限不足，防御性处理）：
-      // admin 令牌（内部员工，无 C 端身份）→ 展示内部限定态而非清空有效登录态；
-      // 其余（C 端令牌失效）→ 清 token 并切「登录已失效」态。
+      // /public/leads/mine 要求 C 端令牌（aud=c）；401（受众不匹配/令牌失效）或 403（无 C 端身份）时：
+      // - 有 admin 令牌但 C 端令牌缺失/失效（内部员工）→ 展示内部限定态，保留有效后台登录态；
+      // - 无 admin 令牌（纯 C 端用户，令牌失效）→ 清 token 并切「登录已失效」态。
       if (statusCode === 401 || statusCode === 403) {
-        if (getTokenAud(token) === "admin") {
+        if (adminToken) {
           this.setData({ internalOnly: true, items: [], total: 0 });
         } else {
           this.clearToken();

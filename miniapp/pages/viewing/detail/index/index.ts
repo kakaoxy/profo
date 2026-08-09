@@ -7,6 +7,8 @@
  */
 import type { components } from "../../../../types/api-types";
 import { request } from "../../../../utils/request";
+import { getAccessToken } from "../../../../utils/token";
+import { pad2 } from "../../../../utils/format";
 
 type SalesRecordResponse = components["schemas"]["SalesRecordResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
@@ -109,11 +111,6 @@ interface PageCustom {
   onGoBack(): void;
 }
 
-/** 两位补零. */
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
 /** 挂牌天数文案：无/非法上架日期返回「未挂牌」，否则「挂牌N天」. */
 function getListingDaysText(listingDate: string | null | undefined): string {
   if (!listingDate) {
@@ -154,7 +151,7 @@ Page<PageData, PageCustom>({
   },
 
   getToken() {
-    return wx.getStorageSync("access_token") as string;
+    return getAccessToken();
   },
 
   clearToken() {

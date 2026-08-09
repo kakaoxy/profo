@@ -101,7 +101,7 @@ class PublicLoginResponse(BaseModel):
 class PublicRefreshTokenRequest(BaseModel):
     """C端刷新令牌请求."""
 
-    refresh_token: str = Field(description="刷新令牌")
+    refresh_token: str = Field(max_length=2048, description="刷新令牌")
 
 
 class PublicLogoutResponse(BaseModel):
@@ -289,7 +289,7 @@ class PublicLeadCreate(BaseModel):
     district: str | None = Field(None, max_length=50, description="行政区")
     business_area: str | None = Field(None, max_length=50, description="商圈")
     layout: str | None = Field(None, description="户型")
-    area: float | None = Field(None, description="面积(m²)")
+    area: float | None = Field(None, gt=0, description="面积(m²)")
     floor_info: str = Field(min_length=1, max_length=50, description="楼层信息")
     orientation: str | None = Field(None, description="朝向")
     remarks: str | None = Field(None, description="备注")

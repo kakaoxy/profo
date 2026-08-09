@@ -1,5 +1,6 @@
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request, refreshCAccessToken, type HttpResponseError } from "../../../utils/request";
+import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";
 
@@ -11,10 +12,11 @@ type PublicPhoneCreate = components["schemas"]["PublicPhoneCreate"];
 type PublicPhoneResponse = components["schemas"]["PublicPhoneResponse"];
 
 /**
- * ⚠️ 未覆盖：
- * - 内部员工持有 admin 令牌时 GET /public/auth/me 返回 401，手机号维护回退 /auth/me 判定（canEditPhone=false）；
- *   admin 令牌同样无法 POST /public/leads（需 C 端 aud=c 令牌），内部员工端内无法提交估价.
- * - access_token 过期未接 refresh_token 自动续期，需重新登录.
+ * 权限说明：
+ * - /public/* 接口要求 C 端令牌（aud=c）；内部员工持 admin 令牌时由 test-login 同时获取
+ *   C 端令牌（c_access_token），request.ts 按 URL 自动选择令牌，/public/* 调用无需手动指定.
+ * - c_access_token 过期时由 request.ts / uploadImage 自动用 c_refresh_token 刷新，无需重新登录
+ *   （c_refresh_token 7 天有效期内）；两令牌均失效才需重新登录.
  */
 const ORIENTATION_OPTIONS = ["南", "北", "东", "西", "南北", "东西"];
 
@@ -22,6 +24,36 @@ const ORIENTATION_OPTIONS = ["南", "北", "东", "西", "南北", "东西"];
  * 户型图上传上限（对齐 Web 与后端 PublicLeadCreate.images max_length=6）.
  */
 const MAX_IMAGES = 6;
+
+/** 面积合理上限（m²），防恶意超大数值（见代码审查 🟡-5，后端 gt=0 为准）. */
+const MAX_AREA = 100000;
+/** 预期价合理上限（万），防恶意超大数值. */
+const MAX_EXPECTED_PRICE = 10000000;
+
+/** wx.uploadFile 单次上传结果. */
+interface UploadResult {
+  statusCode: number;
+  data: string;
+}
+
+/**
+ * 调用 /public/files/upload 上传单张图片.
+ *
+ * wx.uploadFile 不经过 request.ts，无法享受自动注入与 401 刷新，需手动传 token；
+ * 401 处理由 uploadImage 调用 refreshCAccessToken 后重试完成.
+ */
+function doUploadFile(filePath: string, token: string): Promise<UploadResult> {
+  return new Promise<UploadResult>((resolve, reject) => {
+    wx.uploadFile({
+      url: `${BASE_URL}/public/files/upload`,
+      filePath,
+      name: "file",
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => resolve({ statusCode: res.statusCode, data: res.data }),
+      fail: (err) => reject(err),
+    });
+  });
+}
 
 interface ValuationForm {
   community_name: string;
@@ -116,37 +148,36 @@ Page<PageData, PageCustom>({
   },
 
   getToken() {
-    return wx.getStorageSync("access_token") as string;
+    return getAccessToken();
   },
 
   /**
-   * 加载登录态：优先 C 端 /public/auth/me，401 回退后台 /auth/me（内部员工）.
+   * 加载登录态：优先用 C 端令牌调 /public/auth/me（canEditPhone=true），
+   * C 端令牌不存在或失效时回退 admin 令牌调 /auth/me（canEditPhone=false）.
    * 仅提取手机号相关状态（loggedIn / hasPhone / canEditPhone）.
    */
   async loadLogin() {
-    const token = this.getToken();
-    if (!token) {
+    const cToken = getCAccessToken();
+    const adminToken = this.getToken();
+    if (!cToken && !adminToken) {
       this.setData({ loggedIn: false, hasPhone: false, canEditPhone: false });
       return;
     }
-    const authHeader = { Authorization: `Bearer ${token}` };
-    try {
-      const pub = await request<PublicUserInfo>({
-        url: "/public/auth/me",
-        header: authHeader,
-      });
-      this.setData({ loggedIn: true, canEditPhone: true, hasPhone: !!pub.phone });
-      return;
-    } catch {
-      // 非 C 端令牌（内部员工 admin 令牌）→ 回退后台 /me
+    // 优先用 C 端令牌调 /public/auth/me（canEditPhone=true）；
+    // 不传 header，request.ts 自动注入 c_access_token 并在过期时自动刷新
+    if (cToken) {
+      try {
+        const pub = await request<PublicUserInfo>({ url: "/public/auth/me" });
+        this.setData({ loggedIn: true, canEditPhone: true, hasPhone: !!pub.phone });
+        return;
+      } catch {
+        // C 端令牌失效（refresh_token 也过期），回退 admin 令牌
+      }
     }
+    // admin 令牌调 /auth/me
     try {
-      const admin = await request<UserResponse>({
-        url: "/auth/me",
-        header: authHeader,
-      });
+      const admin = await request<UserResponse>({ url: "/auth/me" });
       this.setData({ loggedIn: true, canEditPhone: false, hasPhone: !!admin.phone });
-      return;
     } catch {
       this.setData({ loggedIn: false, hasPhone: false, canEditPhone: false });
     }
@@ -238,8 +269,9 @@ Page<PageData, PageCustom>({
   },
 
   async onChooseImage() {
+    const cToken = getCAccessToken();
     const token = this.getToken();
-    if (!token) {
+    if (!cToken && !token) {
       wx.showToast({ title: "请先登录", icon: "none" });
       return;
     }
@@ -296,43 +328,27 @@ Page<PageData, PageCustom>({
     });
   },
 
-  uploadImage(filePath: string): Promise<string> {
-    const token = this.getToken();
-    return new Promise<string>((resolve, reject) => {
-      wx.uploadFile({
-        url: `${BASE_URL}/public/files/upload`,
-        filePath,
-        name: "file",
-        header: { Authorization: `Bearer ${token}` },
-        success: (res) => {
-          // wx.uploadFile 的 success 不区分 2xx/4xx/5xx，需手动校验状态码，
-          // 否则 401/500 的错误响应会被当 JSON 解析失败，丢失状态码信息
-          if (res.statusCode < 200 || res.statusCode >= 300) {
-            const error: HttpResponseError = {
-              statusCode: res.statusCode,
-              body: res.data,
-            };
-            reject(error);
-            return;
-          }
-          try {
-            // 后端 FileUploadResponse 返回 { url, filename, thumbnail_url }
-            const data = JSON.parse(res.data) as { url?: string };
-            const url = data.url;
-            if (url) {
-              resolve(url);
-            } else {
-              reject(new Error("upload response missing url"));
-            }
-          } catch (err) {
-            reject(err);
-          }
-        },
-        fail: (err) => {
-          reject(err);
-        },
-      });
-    });
+  async uploadImage(filePath: string): Promise<string> {
+    // /public/files/upload 需 C 端令牌（aud=c）；优先 c_access_token，回退 access_token
+    const token = getCAccessToken() || this.getToken();
+    let res = await doUploadFile(filePath, token);
+    // 401 时 c_access_token 可能过期，刷新后重试一次（refresh_token 也失效则放弃，抛 401）
+    if (res.statusCode === 401) {
+      const newToken = await refreshCAccessToken();
+      if (newToken) {
+        res = await doUploadFile(filePath, newToken);
+      }
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      const error: HttpResponseError = { statusCode: res.statusCode, body: res.data };
+      throw error;
+    }
+    // 后端 FileUploadResponse 返回 { url, filename, thumbnail_url }
+    const data = JSON.parse(res.data) as { url?: string };
+    if (!data.url) {
+      throw new Error("upload response missing url");
+    }
+    return data.url;
   },
 
   onPhoneTap() {
@@ -364,7 +380,7 @@ Page<PageData, PageCustom>({
     if (this.data.submittingPhone) {
       return;
     }
-    const token = this.getToken();
+    const token = this.getToken() || getCAccessToken();
     if (!token) {
       this.onGoLogin();
       return;
@@ -381,7 +397,7 @@ Page<PageData, PageCustom>({
         url: "/public/users/phone",
         method: "POST",
         data: body,
-        header: { Authorization: `Bearer ${token}` },
+        // 不传 header，request.ts 按 /public/* 自动注入 C 端令牌
       });
       this.setData({ hasPhone: true, editingPhone: false, phoneInput: "" });
       wx.showToast({ title: "绑定成功", icon: "success" });
@@ -423,7 +439,7 @@ Page<PageData, PageCustom>({
     if (this.data.submitting) {
       return;
     }
-    const token = this.getToken();
+    const token = this.getToken() || getCAccessToken();
     if (!token) {
       this.requireLogin();
       return;
@@ -452,17 +468,29 @@ Page<PageData, PageCustom>({
       return;
     }
 
+    // 数值范围校验：area/expected_price 需 > 0 且在合理上限内（见代码审查 🟡-5，后端 gt=0 为准）
+    const areaNum = area ? Number(area) : undefined;
+    const priceNum = expected_price ? Number(expected_price) : undefined;
+    if (areaNum !== undefined && (Number.isNaN(areaNum) || areaNum <= 0 || areaNum > MAX_AREA)) {
+      wx.showToast({ title: "请输入有效的面积", icon: "none" });
+      return;
+    }
+    if (priceNum !== undefined && (Number.isNaN(priceNum) || priceNum <= 0 || priceNum > MAX_EXPECTED_PRICE)) {
+      wx.showToast({ title: "请输入有效的预期价", icon: "none" });
+      return;
+    }
+
     const body: PublicLeadCreate = {
       community_name,
       community_id: community_id || undefined,
       district: district || undefined,
       business_area: business_area || undefined,
       layout: layout || undefined,
-      area: area ? Number(area) : undefined,
+      area: areaNum,
       floor_info: `${floor}/${total_floor}`,
       orientation: orientation || undefined,
       remarks: remarks || undefined,
-      expected_price: expected_price ? Number(expected_price) : undefined,
+      expected_price: priceNum,
       images: images.length ? images : undefined,
     };
 
@@ -472,15 +500,21 @@ Page<PageData, PageCustom>({
         url: "/public/leads",
         method: "POST",
         data: body,
-        header: { Authorization: `Bearer ${token}` },
+        // 不传 header，request.ts 按 /public/* 自动注入 C 端令牌
       });
       wx.showToast({ title: "提交成功", icon: "success" });
       // 极短延迟让成功提示可见即跳转，避免用户感知到明显跳转延迟
       setTimeout(() => {
         this.afterSubmitSuccess();
       }, 400);
-    } catch {
-      wx.showToast({ title: "提交失败，请重试", icon: "none" });
+    } catch (err) {
+      const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+      if (statusCode === 401) {
+        // 令牌过期或受众不匹配，引导重新登录
+        this.requireLogin();
+      } else {
+        wx.showToast({ title: "提交失败，请重试", icon: "none" });
+      }
     } finally {
       this.setData({ submitting: false });
     }

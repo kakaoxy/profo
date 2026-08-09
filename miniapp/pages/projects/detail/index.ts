@@ -176,6 +176,7 @@ Page<PageData, Custom>({
     try {
       const detail = await request<PublicProjectDetail>({
         url: `/public/projects/${id}`,
+        skipAuth: true,
       });
       // 后端文件 URL 为相对路径 /static/uploads/xxx.jpg，需拼接 origin 供 <image>/<video> 加载
       const resolvedDetail: PublicProjectDetail = {

@@ -2,6 +2,7 @@
  * 装修进度详情页 常量、纯函数与展示类型（拆分自 index.ts 以控制单文件行数 < 500）.
  */
 import type { components } from "../../../../types/api-types";
+import { pad2 } from "../../../../utils/format";
 
 export type RenovationPhotoResponse = components["schemas"]["RenovationPhotoResponse"];
 export type RenovationStage = components["schemas"]["RenovationStage"];
@@ -45,11 +46,6 @@ export interface DisplayStage {
   completeDate: string;
   photos: DisplayPhoto[];
   uploading: UploadingItem[];
-}
-
-/** 两位补零. */
-export function pad2(n: number): string {
-  return String(n).padStart(2, "0");
 }
 
 /** 今日日期 YYYY-MM-DD（阶段完成 picker 默认值）. */

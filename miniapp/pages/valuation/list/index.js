@@ -1,17 +1,9 @@
-/**
- * 「我的评估」列表页.
- *
- * 具备 C 端身份的内部员工（后端按其 customer 身份签发 aud=c 令牌）可正常访问 C 端
- * /public/leads/mine 查看自己的评估；仅当请求返回 401（admin 令牌受众不匹配）或 403
- * （无 C 端身份）时，才展示内部限定态，而非误判为「登录已失效」清空有效登录态。
- */
-var request = require("../../../utils/request").request;
-var getTokenAud = require("../../../utils/token").getTokenAud;
-var display = require("../../../utils/valuation-display");
-var formatDate = display.formatDate;
-var statusBadgeStyle = display.statusBadgeStyle;
+// 与 index.ts 逻辑完全一致（去掉类型注解），改动需同步两侧
+import { request } from "../../../utils/request";
+import { getAccessToken, getCAccessToken } from "../../../utils/token";
+import { formatDate, statusBadgeStyle } from "../../../utils/valuation-display";
 
-var PAGE_SIZE = 10;
+const PAGE_SIZE = 10;
 
 Page({
   data: {
@@ -23,30 +15,32 @@ Page({
     loadingMore: false,
     error: false,
     noMore: false,
-    // 未登录（无 access_token）
+    // 未登录（无 access_token 且无 c_access_token）
     needLogin: false,
-    // 无 C 端身份（admin 令牌受众不匹配 / 403）时展示内部限定态，而非登录失效
+    // 有 admin 令牌但 C 端令牌缺失/失效（内部员工）时展示内部限定态，而非登录失效
     internalOnly: false,
   },
 
   getToken() {
-    return wx.getStorageSync("access_token");
+    return getAccessToken();
   },
 
   clearToken() {
     wx.removeStorageSync("access_token");
     wx.removeStorageSync("refresh_token");
+    wx.removeStorageSync("c_access_token");
+    wx.removeStorageSync("c_refresh_token");
   },
 
   toDisplay(item) {
-    var layout = item.layout || "";
-    var area = item.area != null ? item.area + "㎡" : "";
-    var desc = [layout, area].filter(Boolean).join(" · ");
-    var badge = statusBadgeStyle(item.status_color);
+    const layout = item.layout || "";
+    const area = item.area != null ? `${item.area}㎡` : "";
+    const desc = [layout, area].filter(Boolean).join(" · ");
+    const badge = statusBadgeStyle(item.status_color);
     return {
       id: item.id,
       community_name: item.community_name,
-      desc: desc,
+      desc,
       date: formatDate(item.created_at),
       badgeText: item.status_display,
       badgeColor: badge.color,
@@ -55,8 +49,9 @@ Page({
   },
 
   onShow() {
-    var token = this.getToken();
-    if (!token) {
+    const cToken = getCAccessToken();
+    const adminToken = this.getToken();
+    if (!cToken && !adminToken) {
       this.setData({ needLogin: true, loading: false, loadingMore: false });
       return;
     }
@@ -70,56 +65,48 @@ Page({
     }
   },
 
-  async loadList(reset, silent) {
-    reset = reset || false;
-    silent = silent || false;
-    var token = this.getToken();
-    if (!token) {
+  async loadList(reset = false, silent = false) {
+    const cToken = getCAccessToken();
+    const adminToken = this.getToken();
+    if (!cToken && !adminToken) {
       this.setData({ needLogin: true, loading: false, loadingMore: false });
       return;
     }
     if (reset) {
       // silent 时不置 loading（保留当前列表，避免骨架屏闪烁）
-      var patch = {
+      this.setData({
         error: false,
         noMore: false,
         needLogin: false,
         internalOnly: false,
-      };
-      if (!silent) {
-        patch.loading = true;
-      }
-      this.setData(patch);
+        ...(silent ? {} : { loading: true }),
+      });
     } else {
       this.setData({ loadingMore: true });
     }
     try {
       // reset 时强制 page=1
-      var page = reset ? 1 : this.data.page;
-      var data = await request({
+      const page = reset ? 1 : this.data.page;
+      const data = await request({
         url: "/public/leads/mine",
-        data: { page: page, page_size: this.data.pageSize },
-        header: { Authorization: "Bearer " + token },
+        data: { page, page_size: this.data.pageSize },
+        // 不传 header，request.ts 按 /public/* 自动注入 c_access_token
       });
-      var newItems = data.items.map(
-        function (it) {
-          return this.toDisplay(it);
-        }.bind(this)
-      );
-      var merged = reset ? newItems : this.data.items.concat(newItems);
+      const newItems = data.items.map((it) => this.toDisplay(it));
+      const merged = reset ? newItems : [...this.data.items, ...newItems];
       this.setData({
         items: merged,
         total: data.total,
-        page: page,
+        page,
         noMore: merged.length >= data.total,
       });
     } catch (err) {
-      var statusCode = err && err.statusCode;
-      // 401（令牌失效/受众不匹配，admin 令牌访问 C 端接口通常为此码）或 403（权限不足，防御性处理）：
-      // admin 令牌（内部员工，无 C 端身份）→ 展示内部限定态而非清空有效登录态；
-      // 其余（C 端令牌失效）→ 清 token 并切「登录已失效」态。
+      const statusCode = err && err.statusCode;
+      // /public/leads/mine 要求 C 端令牌（aud=c）；401（受众不匹配/令牌失效）或 403（无 C 端身份）时：
+      // - 有 admin 令牌但 C 端令牌缺失/失效（内部员工）→ 展示内部限定态，保留有效后台登录态；
+      // - 无 admin 令牌（纯 C 端用户，令牌失效）→ 清 token 并切「登录已失效」态。
       if (statusCode === 401 || statusCode === 403) {
-        if (getTokenAud(token) === "admin") {
+        if (adminToken) {
           this.setData({ internalOnly: true, items: [], total: 0 });
         } else {
           this.clearToken();
@@ -158,8 +145,8 @@ Page({
   },
 
   onItemTap(e) {
-    var id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: "/pages/valuation/detail/index?id=" + id });
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/valuation/detail/index?id=${id}` });
   },
 
   onGoLogin() {

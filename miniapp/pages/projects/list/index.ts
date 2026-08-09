@@ -303,11 +303,13 @@ Page<PageData, PageCustom>({
         response = await request<{ items: SoldItem[]; total: number; page: number; page_size: number }>({
           url: "/public/projects/sold",
           data,
+          skipAuth: true,
         });
       } else {
         response = await request<{ items: OnSaleItem[]; total: number; page: number; page_size: number }>({
           url: "/public/projects",
           data,
+          skipAuth: true,
         });
       }
       const rawItems: OnSaleItem[] | SoldItem[] = response.items;

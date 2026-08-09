@@ -9,6 +9,7 @@
  */
 import type { components } from "../../../../types/api-types";
 import { request } from "../../../../utils/request";
+import { getAccessToken } from "../../../../utils/token";
 import { resolveAssetUrl } from "../../../../utils/url";
 import { BASE_URL } from "../../../../utils/config";
 import {
@@ -44,6 +45,7 @@ interface PageData {
 /** 页面自定义方法. */
 interface PageCustom {
   projectId: string;
+  pendingUploads: number;
   getToken(): string;
   clearToken(): void;
   loadAll(): void;
@@ -73,6 +75,7 @@ interface PageCustom {
 
 Page<PageData, PageCustom>({
   projectId: "",
+  pendingUploads: 0,
 
   data: {
     state: "loading",
@@ -87,7 +90,7 @@ Page<PageData, PageCustom>({
   },
 
   getToken() {
-    return wx.getStorageSync("access_token") as string;
+    return getAccessToken();
   },
 
   clearToken() {
@@ -294,9 +297,20 @@ Page<PageData, PageCustom>({
       this.setData({ state: "needLogin" });
       return;
     }
+    // 计数器合并刷新：多张并发上传时仅在全部完成后 loadAll 一次，避免 N 次并发全量刷新
+    // 导致后完成的响应覆盖先完成的结果（见代码审查 🟡-6）
+    this.pendingUploads += 1;
+    const finishUpload = () => {
+      this.pendingUploads -= 1;
+      if (this.pendingUploads <= 0) {
+        this.pendingUploads = 0;
+        this.loadAll();
+      }
+    };
     const fail = () => {
       this.markUploadFailed(stage, key);
       wx.showToast({ title: "上传失败", icon: "none" });
+      finishUpload();
     };
     const uploadTask = wx.uploadFile({
       url: `${BASE_URL}/files/upload`,
@@ -316,7 +330,7 @@ Page<PageData, PageCustom>({
             header: { Authorization: `Bearer ${token}` },
           });
           this.removeUploadingPlaceholder(stage, key);
-          this.loadAll();
+          finishUpload();
         } catch {
           fail();
         }

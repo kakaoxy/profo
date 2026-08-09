@@ -1,5 +1,5 @@
 import { request } from "../../../utils/request";
-import { getTokenAud } from "../../../utils/token";
+import { getCRefreshToken, getTokenAud } from "../../../utils/token";
 
 /**
  * customer 角色基础权限：仅含这些权限视为普通用户；permissions 含其他业务权限 → 内部员工.
@@ -56,10 +56,6 @@ Page({
     return wx.getStorageSync("access_token");
   },
 
-  getRefreshToken() {
-    return wx.getStorageSync("refresh_token");
-  },
-
   onShow() {
     // TabBar 页从登录页 switchTab 返回时 onLoad 不会重跑，需在每次显示时刷新登录态
     this.loadUser();
@@ -87,6 +83,8 @@ Page({
   clearTokensAndReset() {
     wx.removeStorageSync("access_token");
     wx.removeStorageSync("refresh_token");
+    wx.removeStorageSync("c_access_token");
+    wx.removeStorageSync("c_refresh_token");
     this.resetToGuest();
   },
 
@@ -199,22 +197,24 @@ Page({
       return;
     }
     this.setData({ loggingOut: true });
-    const token = this.getToken();
-    const refreshToken = this.getRefreshToken();
-    if (token && refreshToken) {
+    // 撤销 C 端令牌（/public/auth/logout 需 aud=c 令牌，request.ts 自动注入 c_access_token）
+    const cRefreshToken = getCRefreshToken();
+    if (cRefreshToken) {
       try {
         await request({
           url: "/public/auth/logout",
           method: "POST",
-          data: { refresh_token: refreshToken },
-          header: { Authorization: "Bearer " + token },
+          data: { refresh_token: cRefreshToken },
+          // 不传 header，request.ts 按 /public/* 自动注入 C 端令牌
         });
       } catch (err) {
-        // 服务端撤销失败（如内部用户为 admin 令牌）忽略，本地照常登出
+        // 服务端撤销失败忽略，本地照常登出
       }
     }
     wx.removeStorageSync("access_token");
     wx.removeStorageSync("refresh_token");
+    wx.removeStorageSync("c_access_token");
+    wx.removeStorageSync("c_refresh_token");
     this.resetToGuest();
     this.setData({ loggingOut: false });
     wx.showToast({ title: "已退出登录", icon: "none" });
@@ -265,7 +265,7 @@ Page({
         url: "/public/users/phone",
         method: "POST",
         data: { phone: value },
-        header: { Authorization: "Bearer " + token },
+        // 不传 header，request.ts 按 /public/* 自动注入 c_access_token
       });
       // 后端返回脱敏手机号；兜底本地脱敏
       const masked = (res && res.phone) || maskPhone(value);

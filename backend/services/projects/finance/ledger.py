@@ -201,6 +201,8 @@ class _LedgerMixin:
         if project_status is not None:
             query = query.filter(Project.status == project_status)
 
+        # 性能：count 与分页为两次独立 SQL（账本数据量可控，暂保留）。
+        # 大数据量场景可改用 COUNT(*) OVER() 窗口函数合并为单次查询。
         total: int = query.count()
         offset = (page - 1) * page_size
         rows = query.order_by(Project.created_at.desc()).offset(offset).limit(page_size).all()

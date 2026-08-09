@@ -112,7 +112,7 @@ class TokenResponse(BaseModel):
 class RefreshTokenRequest(BaseModel):
     """刷新令牌请求模型."""
 
-    refresh_token: str = Field(description="刷新令牌")
+    refresh_token: str = Field(max_length=2048, description="刷新令牌")
 
 
 class LogoutResponse(BaseModel):
@@ -124,7 +124,7 @@ class LogoutResponse(BaseModel):
 class WechatLoginRequest(BaseModel):
     """微信登录请求模型."""
 
-    code: str = Field(description="微信授权码")
+    code: str = Field(max_length=256, description="微信授权码")
 
 
 class WechatAuthUrlResponse(BaseModel):
@@ -136,7 +136,7 @@ class WechatAuthUrlResponse(BaseModel):
 class ExchangeTokenRequest(BaseModel):
     """临时授权码兑换 Token 请求模型."""
 
-    code: str = Field(description="一次性授权码")
+    code: str = Field(max_length=64, description="一次性授权码")
 
 
 # =======================================

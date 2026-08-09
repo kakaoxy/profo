@@ -3,10 +3,17 @@
  *
  * 仅内部员工（admin 令牌）可访问：调用 GET /projects/my-responsible 拉取
  * 当前用户负责的项目列表，点击某项目进入单项目销售记录详情页。
- * 401（令牌失效）→ 清空令牌切「登录已失效」；403（无权限）→ 展示无权限态不清令牌。
+ * 401（令牌失效）→ 清空令牌切「登录已失效」；403（无权限）→ 展示无权限态不清令牌.
+ *
+ * 页面逻辑由 createProjectListPage 工厂统一处理（主/回退双通道 + 排序 + 状态机），
+ * 本文件仅提供 status 过滤、详情路由与展示项转换三个差异点。
  */
 import type { components } from "../../../../types/api-types";
-import { request } from "../../../../utils/request";
+import {
+  createProjectListPage,
+  type BaseDisplayItem,
+  type ProjectListState,
+} from "../../../../utils/project-list-page";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type RecordType = components["schemas"]["RecordType"];
@@ -22,9 +29,7 @@ const STATUS_DISPLAY: Record<string, { label: string; color: string }> = {
 };
 
 /** 列表项展示用统一结构. */
-interface DisplayItem {
-  id: string;
-  name: string;
+interface DisplayItem extends BaseDisplayItem {
   statusText: string;
   statusColor: string;
   viewingCount: number;
@@ -34,7 +39,7 @@ interface DisplayItem {
 
 /** 页面 data. */
 interface PageData {
-  state: "loading" | "error" | "needLogin" | "noPermission" | "empty" | "items";
+  state: ProjectListState;
   items: DisplayItem[];
 }
 
@@ -43,127 +48,38 @@ interface PageCustom {
   getToken(): string;
   clearToken(): void;
   loadList(): void;
-  loadResponsibleSelling(token: string): void;
+  loadResponsible(token: string): void;
   applyItems(projects: ProjectResponse[]): void;
-  countByType(project: ProjectResponse, type: RecordType): number;
-  toDisplay(project: ProjectResponse): DisplayItem;
   onItemTap(e: WechatMiniprogram.BaseEvent): void;
   onRetry(): void;
   onGoLogin(): void;
 }
 
-Page<PageData, PageCustom>({
-  data: {
-    state: "loading",
-    items: [],
-  },
+/** 按记录类型统计项目销售记录数. */
+function countByType(project: ProjectResponse, type: RecordType): number {
+  const records = project.sales_records ?? [];
+  return records.filter(
+    (r) => (r as { record_type?: string }).record_type === type,
+  ).length;
+}
 
-  getToken() {
-    return wx.getStorageSync("access_token") as string;
-  },
-
-  clearToken() {
-    wx.removeStorageSync("access_token");
-    wx.removeStorageSync("refresh_token");
-  },
-
-  countByType(project: ProjectResponse, type: RecordType): number {
-    const records = project.sales_records ?? [];
-    return records.filter((r) => (r as { record_type?: string }).record_type === type).length;
-  },
-
-  toDisplay(project: ProjectResponse): DisplayItem {
-    const status = project.status ?? "signing";
-    const statusCfg = STATUS_DISPLAY[status] ?? { label: status, color: "#a3a6af" };
-    return {
-      id: project.id,
-      name: project.community_name ?? project.name ?? "未命名项目",
-      statusText: statusCfg.label,
-      statusColor: statusCfg.color,
-      viewingCount: this.countByType(project, "viewing"),
-      offerCount: this.countByType(project, "offer"),
-      negotiationCount: this.countByType(project, "negotiation"),
-    };
-  },
-
-  onShow() {
-    this.loadList();
-  },
-
-  async loadList() {
-    const token = this.getToken();
-    if (!token) {
-      this.setData({ state: "needLogin", items: [] });
-      return;
-    }
-    this.setData({ state: "loading", items: [] });
-    try {
-      // 主通道：持 project:read（admin/operator）拉取全部在售项目（含互动记录用于计数）
-      const data = await request<{ items: ProjectResponse[] }>({
-        url: "/projects?status=selling&include_interactions=true&page=1&page_size=200",
-        header: { Authorization: `Bearer ${token}` },
-      });
-      this.applyItems(data.items ?? []);
-    } catch (err) {
-      const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
-      if (statusCode === 401) {
-        this.clearToken();
-        this.setData({ state: "needLogin", items: [] });
-      } else if (statusCode === 403) {
-        // 无 project:read 权限，回退业务身份负责的在售项目
-        this.loadResponsibleSelling(token);
-      } else {
-        this.setData({ state: "error", items: [] });
-      }
-    }
-  },
-
-  async loadResponsibleSelling(token: string) {
-    try {
-      const data = await request<ProjectResponse[]>({
-        url: "/projects/my-responsible",
-        header: { Authorization: `Bearer ${token}` },
-      });
-      this.applyItems((data ?? []).filter((p) => p.status === "selling"));
-    } catch (err) {
-      const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
-      if (statusCode === 401) {
-        this.clearToken();
-        this.setData({ state: "needLogin", items: [] });
-      } else if (statusCode === 403) {
-        this.setData({ state: "noPermission", items: [] });
-      } else {
-        this.setData({ state: "error", items: [] });
-      }
-    }
-  },
-
-  applyItems(projects: ProjectResponse[]) {
-    const items = projects
-      .sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      )
-      .map((p) => this.toDisplay(p));
-    this.setData({
-      state: items.length > 0 ? "items" : "empty",
-      items,
-    });
-  },
-
-  onItemTap(e: WechatMiniprogram.BaseEvent) {
-    const id = e.currentTarget.dataset.id as string;
-    const name = e.currentTarget.dataset.name as string;
-    wx.navigateTo({
-      url: `/pages/viewing/detail/index/index?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`,
-    });
-  },
-
-  onRetry() {
-    this.loadList();
-  },
-
-  onGoLogin() {
-    wx.navigateBack({ delta: 1 });
-  },
-});
+Page<PageData, PageCustom>(
+  createProjectListPage<DisplayItem>({
+    status: "selling",
+    detailRoute: "/pages/viewing/detail/index/index",
+    toDisplay(project) {
+      const status = project.status ?? "signing";
+      const statusCfg =
+        STATUS_DISPLAY[status] ?? { label: status, color: "#a3a6af" };
+      return {
+        id: project.id,
+        name: project.community_name ?? project.name ?? "未命名项目",
+        statusText: statusCfg.label,
+        statusColor: statusCfg.color,
+        viewingCount: countByType(project, "viewing"),
+        offerCount: countByType(project, "offer"),
+        negotiationCount: countByType(project, "negotiation"),
+      };
+    },
+  }),
+);

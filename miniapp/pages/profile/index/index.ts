@@ -1,6 +1,6 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
-import { getTokenAud } from "../../../utils/token";
+import { getAccessToken, getCRefreshToken, getTokenAud } from "../../../utils/token";
 
 type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type UserResponse = components["schemas"]["UserResponse"];
@@ -58,7 +58,6 @@ interface PageData {
 
 interface PageCustom {
   getToken(): string;
-  getRefreshToken(): string;
   loadUser(): void;
   resetToGuest(): void;
   clearTokensAndReset(): void;
@@ -111,11 +110,7 @@ Page<PageData, PageCustom>({
   },
 
   getToken() {
-    return wx.getStorageSync("access_token") as string;
-  },
-
-  getRefreshToken() {
-    return wx.getStorageSync("refresh_token") as string;
+    return getAccessToken();
   },
 
   onShow() {
@@ -145,6 +140,8 @@ Page<PageData, PageCustom>({
   clearTokensAndReset() {
     wx.removeStorageSync("access_token");
     wx.removeStorageSync("refresh_token");
+    wx.removeStorageSync("c_access_token");
+    wx.removeStorageSync("c_refresh_token");
     this.resetToGuest();
   },
 
@@ -257,23 +254,25 @@ Page<PageData, PageCustom>({
       return;
     }
     this.setData({ loggingOut: true });
-    const token = this.getToken();
-    const refreshToken = this.getRefreshToken();
-    if (token && refreshToken) {
+    // 撤销 C 端令牌（/public/auth/logout 需 aud=c 令牌，request.ts 自动注入 c_access_token）
+    const cRefreshToken = getCRefreshToken();
+    if (cRefreshToken) {
       try {
-        const body: PublicRefreshTokenRequest = { refresh_token: refreshToken };
+        const body: PublicRefreshTokenRequest = { refresh_token: cRefreshToken };
         await request<PublicLogoutResponse>({
           url: "/public/auth/logout",
           method: "POST",
           data: body,
-          header: { Authorization: `Bearer ${token}` },
+          // 不传 header，request.ts 按 /public/* 自动注入 C 端令牌
         });
       } catch {
-        // 服务端撤销失败（如内部用户为 admin 令牌）忽略，本地照常登出
+        // 服务端撤销失败忽略，本地照常登出
       }
     }
     wx.removeStorageSync("access_token");
     wx.removeStorageSync("refresh_token");
+    wx.removeStorageSync("c_access_token");
+    wx.removeStorageSync("c_refresh_token");
     this.resetToGuest();
     this.setData({ loggingOut: false });
     wx.showToast({ title: "已退出登录", icon: "none" });
@@ -325,7 +324,7 @@ Page<PageData, PageCustom>({
         url: "/public/users/phone",
         method: "POST",
         data: body,
-        header: { Authorization: `Bearer ${token}` },
+        // 不传 header，request.ts 按 /public/* 自动注入 c_access_token
       });
       // 后端返回脱敏手机号；兜底本地脱敏
       const masked = res.phone || maskPhone(value);

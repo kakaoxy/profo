@@ -175,6 +175,8 @@ class ProjectQueryService:
             options.append(joinedload(Project.contract))
         query = query.options(*options)
 
+        # 性能：count 与分页为两次独立 SQL（项目数据量可控，暂保留）。
+        # 大数据量场景可改用 COUNT(*) OVER() 窗口函数合并为单次查询。
         total = query.count()
 
         if monitor_sort:

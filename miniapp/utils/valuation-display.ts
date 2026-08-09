@@ -4,6 +4,8 @@
  * 全部为无副作用纯函数，供列表页与详情页复用，并用 vitest 单测覆盖.
  */
 
+import { pad2 } from "./format";
+
 /** 跟进方式中文映射表（未知 code 原样返回） */
 const FOLLOWUP_METHOD_LABELS: Record<string, string> = {
   phone: "电话",
@@ -11,11 +13,6 @@ const FOLLOWUP_METHOD_LABELS: Record<string, string> = {
   face: "面谈",
   visit: "带看",
 };
-
-/** 两位补零 */
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
-}
 
 /** 将 #RGB / #RRGGBB 解析为 rgba 字符串；非 hex 色值原样返回. */
 function toRgba(color: string, alpha: number): string {

@@ -1,13 +1,12 @@
 /**
  * 「评估详情」页.
  *
- * ⚠️ 未覆盖：后端多角色用户微信登录仅签发 admin 令牌，无法访问 /public/leads/{id}（需 C 端
- * aud=c 令牌）；内部员工本轮在端内无法查看该页，页面按 aud 识别并展示内部限定态，
- * 而非误判为「登录已失效」清空登录态。
+ * 内部员工持双令牌（admin + c_access_token）时可正常访问 C 端 /public/leads/{id}；
+ * 仅当无 C 端令牌（纯 admin 用户）或令牌均失效时，展示内部限定态或登录失效态.
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
-import { getTokenAud } from "../../../utils/token";
+import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import {
   followupMethodLabel,
@@ -97,22 +96,22 @@ Page<PageData, PageCustom>({
   },
 
   getToken() {
-    return wx.getStorageSync("access_token") as string;
+    return getAccessToken();
   },
 
   clearToken() {
     wx.removeStorageSync("access_token");
     wx.removeStorageSync("refresh_token");
+    wx.removeStorageSync("c_access_token");
+    wx.removeStorageSync("c_refresh_token");
   },
 
   onLoad(query: Record<string, string | undefined>) {
     this.setData({ leadId: query.id ?? "" });
-    if (!this.getToken()) {
+    const cToken = getCAccessToken();
+    const adminToken = this.getToken();
+    if (!cToken && !adminToken) {
       this.setData({ needLogin: true, loading: false });
-      return;
-    }
-    if (getTokenAud(this.getToken()) === "admin") {
-      this.setData({ internalOnly: true, loading: false });
       return;
     }
     this.loadDetail();
@@ -149,30 +148,31 @@ Page<PageData, PageCustom>({
   },
 
   async loadDetail() {
-    const token = this.getToken();
-    if (!token) {
+    const cToken = getCAccessToken();
+    const adminToken = this.getToken();
+    if (!cToken && !adminToken) {
       this.setData({ needLogin: true, loading: false });
-      return;
-    }
-    if (getTokenAud(token) === "admin") {
-      this.setData({ internalOnly: true, loading: false });
       return;
     }
     this.setData({ loading: true, error: false, forbidden: false, notFound: false, internalOnly: false });
     try {
-      // ⚠️ admin 令牌访问本接口会命中 401/403，内部员工无法在端内查看
+      // 不传 header，request.ts 按 /public/* 自动注入 c_access_token 并在过期时自动刷新
       const detail = await request<LeadDetail>({
         url: `/public/leads/${this.data.leadId}`,
-        header: { Authorization: `Bearer ${token}` },
       });
       this.applyDetail(detail);
     } catch (err) {
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
-      if (statusCode === 401) {
-        this.clearToken();
-        this.setData({ needLogin: true });
-      } else if (statusCode === 403) {
-        this.setData({ forbidden: true });
+      // /public/leads/{id} 要求 C 端令牌（aud=c）；401/403 时：
+      // - 有 admin 令牌但 C 端令牌缺失/失效（内部员工）→ 展示内部限定态，保留有效后台登录态；
+      // - 无 admin 令牌（纯 C 端用户，令牌失效）→ 清 token 并切「登录已失效」态.
+      if (statusCode === 401 || statusCode === 403) {
+        if (adminToken) {
+          this.setData({ internalOnly: true });
+        } else {
+          this.clearToken();
+          this.setData({ needLogin: true });
+        }
       } else if (statusCode === 404) {
         this.setData({ notFound: true });
       } else {

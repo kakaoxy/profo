@@ -9,8 +9,12 @@
  * 签发 C 端令牌。登录成功后把 access_token / refresh_token 写入 storage（与 profile 页
  * 读取的 key 一致），再跳转 `pages/profile/index/index`（TabBar 页）验证后链路。
  * profile 页依据令牌 aud 双通道识别身份并差异化展示内容。
+ *
+ * 双令牌：内部员工登录后同时获取 admin 令牌（access_token，访问 /projects/* 等后台接口）
+ * 与 C 端令牌（c_access_token，访问 /public/* 接口）；C 端用户两者相同。
  */
 const { request } = require("../../../utils/request");
+const { getTokenAud } = require("../../../utils/token");
 
 /** 用户名格式：4-30 位字母/数字/下划线. */
 const USERNAME_RE = /^[a-zA-Z0-9_]{4,30}$/;
@@ -18,7 +22,7 @@ const USERNAME_RE = /^[a-zA-Z0-9_]{4,30}$/;
 const PASSWORD_RE = /^.{8,}$/;
 
 /**
- * 调用后端登录接口获取令牌（OAuth2 表单登录）.
+ * 调用后端登录接口获取主令牌（OAuth2 表单登录）.
  * 优先后台登录 POST /auth/token：内部员工（具备后台身份）获得 admin 令牌，
  * 可访问后台带看记录等内部接口（/projects/*）；纯 C 端 customer 账号后台登录
  * 返回 403「无权登录后台」，此时回退 C 端登录 POST /public/auth/token 签发 C 端令牌.
@@ -45,6 +49,28 @@ async function realLogin(username, password) {
       });
     }
     throw err;
+  }
+}
+
+/**
+ * 获取 C 端令牌（aud=c）：内部员工持 admin 令牌时需额外获取 C 端令牌用于 /public/* 接口.
+ * 纯 admin 用户（无 customer 身份）后端会签发 admin 令牌而非 C 端令牌，此时返回 null.
+ */
+async function fetchCToken(username, password) {
+  const form =
+    "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password);
+  const formHeader = { "content-type": "application/x-www-form-urlencoded" };
+  try {
+    const res = await request({
+      url: "/public/auth/token",
+      method: "POST",
+      header: formHeader,
+      data: form,
+    });
+    // 仅当签发的令牌确实为 C 端（aud=c）时才返回；纯 admin 用户会拿到 admin 令牌
+    return getTokenAud(res.access_token) === "c" ? res : null;
+  } catch (err) {
+    return null;
   }
 }
 
@@ -119,10 +145,27 @@ Page({
     }
     this.setData({ submitting: true, result: null });
     try {
-      const res = await realLogin(this.data.username.trim(), this.data.password);
+      const username = this.data.username.trim();
+      const res = await realLogin(username, this.data.password);
       // 与 profile 页读取的 key 保持一致，供后续页面直接使用
       wx.setStorageSync("access_token", res.access_token);
       wx.setStorageSync("refresh_token", res.refresh_token);
+      // 双令牌：若主令牌为 admin，额外获取 C 端令牌用于 /public/* 接口；
+      // C 端用户主令牌即 C 端令牌，同时写入 c_access_token
+      if (getTokenAud(res.access_token) === "admin") {
+        const cRes = await fetchCToken(username, this.data.password);
+        if (cRes) {
+          wx.setStorageSync("c_access_token", cRes.access_token);
+          wx.setStorageSync("c_refresh_token", cRes.refresh_token);
+        } else {
+          // 纯 admin 用户（无 customer 身份）：清除可能残留的 C 端令牌
+          wx.removeStorageSync("c_access_token");
+          wx.removeStorageSync("c_refresh_token");
+        }
+      } else {
+        wx.setStorageSync("c_access_token", res.access_token);
+        wx.setStorageSync("c_refresh_token", res.refresh_token);
+      }
       wx.showToast({ title: "登录成功", icon: "success" });
       if (this.data.from === "valuation") {
         // 由估价提交页拦截而来：navigateBack 返回估价页，其页面实例仍在导航栈中，

@@ -26,10 +26,11 @@ const data: {
   dropdownOpen: false,
 };
 
-/** 组件实例上的非渲染态属性（防抖定时器 + 请求序号）. */
+/** 组件实例上的非渲染态属性（防抖定时器 + 请求序号 + 连续失败计数）. */
 interface ComponentCustomProperties {
   searchTimer: number | null;
   searchSeq: number;
+  consecutiveFailures: number;
 }
 
 /** 组件对外属性定义（提取为 const 便于泛型传参）. */
@@ -86,6 +87,7 @@ Component<typeof data, typeof properties, Methods, ComponentCustomProperties>({
     attached() {
       this.searchTimer = null;
       this.searchSeq = 0;
+      this.consecutiveFailures = 0;
     },
     // 组件销毁时清理定时器，防止内存泄漏/野回调
     detached() {
@@ -153,20 +155,28 @@ Component<typeof data, typeof properties, Methods, ComponentCustomProperties>({
     },
 
     doSearch(keyword: string, currentSeq: number) {
-      // 公开接口，无需鉴权；request GET 默认不携带 Authorization
+      // 公开接口，skipAuth 避免向其发送用户令牌
       request<PublicCommunitySearchItem[]>({
         url: "/public/communities/search",
         data: { q: keyword, limit: SEARCH_LIMIT },
+        skipAuth: true,
       })
         .then((results) => {
           if (currentSeq !== this.searchSeq) {
             return; // 过期响应，忽略
           }
+          this.consecutiveFailures = 0;
           this.setData({ results, searching: false });
         })
         .catch(() => {
-          if (currentSeq === this.searchSeq) {
-            this.setData({ results: [], searching: false });
+          if (currentSeq !== this.searchSeq) {
+            return; // 过期响应，忽略
+          }
+          this.setData({ results: [], searching: false });
+          // 连续失败时提示用户，避免搜索异常完全静默（见代码审查 🔵-5）
+          this.consecutiveFailures += 1;
+          if (this.consecutiveFailures >= 2) {
+            wx.showToast({ title: "搜索失败，请稍后重试", icon: "none" });
           }
         });
     },
