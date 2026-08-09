@@ -248,8 +248,8 @@
 
 /* 补充信息 textarea */
 .textarea {
-  height: auto;
-  min-height: 180rpx;
+  /* 真机上原生 textarea 会忽略 height:auto 回退到超大默认高度，须显式指定高度 */
+  height: 200rpx;
   padding: 24rpx 32rpx;
   line-height: 1.5;
 }
