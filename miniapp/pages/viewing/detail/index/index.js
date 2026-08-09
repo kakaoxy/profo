@@ -72,7 +72,7 @@ function parseSalesRecords(records) {
       customer_info: r.customer_info ?? undefined,
       record_date: str(r.record_date) ?? "",
       record_time: str(r.record_time),
-      price: str(r.price) ?? (r.price != null ? String(r.price) : undefined),
+      price: r.price != null ? String(r.price) : undefined,
       notes: str(r.notes),
       feedback: str(r.feedback),
       result: str(r.result),
