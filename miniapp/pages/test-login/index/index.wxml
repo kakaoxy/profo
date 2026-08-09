@@ -3,7 +3,7 @@
   <view class="brand">
     <view class="brand-icon">房</view>
     <view class="brand-title">美房宝</view>
-    <view class="brand-sub">账号密码登录</view>
+    <view class="brand-sub">不辜负每一套房</view>
   </view>
 
   <!-- 登录表单 -->
@@ -33,7 +33,7 @@
 
     <button class="btn-primary login-btn" disabled="{{submitting}}" bindtap="onSubmit">{{submitting ? '登录中…' : '登  录'}}</button>
 
-    <view class="hint">账号登录</view>
+    <view class="hint">账号登录，访问fangmengchina.com可注册账号</view>
   </view>
 
   <!-- 登录失败提示（成功时自动跳转 profile，不展示结果卡片） -->
