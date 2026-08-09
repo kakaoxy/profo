@@ -9,26 +9,49 @@ const DEBOUNCE_DELAY = 300;
 const SEARCH_LIMIT = 20;
 
 /**
- * 组件内部数据.
- * - query / results / searching / dropdownOpen：用于视图渲染；
- * - searchTimer / searchSeq：非渲染用的防抖与请求序号，放在 data 中随实例隔离，
- *   保证同一页面多个组件实例互不干扰（避免模块级共享变量串扰）。
+ * 组件内部数据（仅渲染态）.
+ * query / results / searching / dropdownOpen 用于视图渲染；
+ * 防抖定时器与请求序号为非渲染态，挂到组件实例属性上（见 ComponentCustomProperties），
+ * 随实例隔离互不干扰，避免模块级共享变量串扰。
  */
 const data: {
   query: string;
   results: PublicCommunitySearchItem[];
   searching: boolean;
   dropdownOpen: boolean;
-  searchTimer: number | null;
-  searchSeq: number;
 } = {
   query: "",
   results: [],
   searching: false,
   dropdownOpen: false,
-  searchTimer: null,
-  searchSeq: 0,
 };
+
+/** 组件实例上的非渲染态属性（防抖定时器 + 请求序号）. */
+interface ComponentCustomProperties {
+  searchTimer: number | null;
+  searchSeq: number;
+}
+
+/** 组件对外属性定义（提取为 const 便于泛型传参）. */
+const properties = {
+  /** 外部回填/回显的小区名（受控值，如编辑场景回填）；用户输入时由 `change` 事件回传 */
+  value: { type: String, value: "" },
+  /** 输入框占位文案 */
+  placeholder: { type: String, value: "请输入小区名称搜索" },
+  /** 是否禁用输入与搜索（清空按钮同时隐藏） */
+  disabled: { type: Boolean, value: false },
+};
+
+/** 组件方法签名（用于 Component 泛型第 3 参数，使 this 含自定义属性）. */
+interface Methods {
+  [key: string]: Function;
+  onInput(e: WechatMiniprogram.Input): void;
+  onSelect(e: WechatMiniprogram.BaseEvent): void;
+  onClear(): void;
+  onUseQuery(): void;
+  clearTimer(): void;
+  doSearch(keyword: string, currentSeq: number): void;
+}
 
 /**
  * 可复用小区搜索组件.
@@ -48,15 +71,8 @@ const data: {
  * 组件内部自行管理 query / results / dropdown 等展示态，父级只需消费事件将结果写入业务表单，
  * 降低耦合并便于在项目其他位置（如估价、项目录入等）直接复用。
  */
-Component({
-  properties: {
-    /** 外部回填/回显的小区名（受控值，如编辑场景回填）；用户输入时由 `change` 事件回传 */
-    value: { type: String, value: "" },
-    /** 输入框占位文案 */
-    placeholder: { type: String, value: "请输入小区名称搜索" },
-    /** 是否禁用输入与搜索（清空按钮同时隐藏） */
-    disabled: { type: Boolean, value: false },
-  },
+Component<typeof data, typeof properties, Methods, ComponentCustomProperties>({
+  properties,
   data,
   observers: {
     // 外部回填时同步输入框文本；仅当值变化时同步，避免与用户输入互相覆盖
@@ -68,8 +84,8 @@ Component({
   },
   lifetimes: {
     attached() {
-      this.data.searchTimer = null;
-      this.data.searchSeq = 0;
+      this.searchTimer = null;
+      this.searchSeq = 0;
     },
     // 组件销毁时清理定时器，防止内存泄漏/野回调
     detached() {
@@ -89,10 +105,10 @@ Component({
         return;
       }
       this.setData({ searching: true, dropdownOpen: true });
-      this.data.searchSeq += 1;
-      const currentSeq = this.data.searchSeq;
-      this.data.searchTimer = setTimeout(() => {
-        this.data.searchTimer = null;
+      this.searchSeq += 1;
+      const currentSeq = this.searchSeq;
+      this.searchTimer = setTimeout(() => {
+        this.searchTimer = null;
         this.doSearch(keyword, currentSeq);
       }, DEBOUNCE_DELAY);
       this.triggerEvent("change", { value: raw });
@@ -130,9 +146,9 @@ Component({
     },
 
     clearTimer() {
-      if (this.data.searchTimer !== null) {
-        clearTimeout(this.data.searchTimer);
-        this.data.searchTimer = null;
+      if (this.searchTimer !== null) {
+        clearTimeout(this.searchTimer);
+        this.searchTimer = null;
       }
     },
 
@@ -143,13 +159,13 @@ Component({
         data: { q: keyword, limit: SEARCH_LIMIT },
       })
         .then((results) => {
-          if (currentSeq !== this.data.searchSeq) {
+          if (currentSeq !== this.searchSeq) {
             return; // 过期响应，忽略
           }
           this.setData({ results, searching: false });
         })
         .catch(() => {
-          if (currentSeq === this.data.searchSeq) {
+          if (currentSeq === this.searchSeq) {
             this.setData({ results: [], searching: false });
           }
         });

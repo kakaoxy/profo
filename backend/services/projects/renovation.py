@@ -67,27 +67,49 @@ class RenovationService:
         return project
 
     def _get_or_create_renovation(self, project_id: uuid.UUID) -> ProjectRenovation:
-        """获取或创建装修记录."""
+        """获取或创建装修记录.
+
+        使用 with_for_update 加行级锁，防止并发更新 stage_completed_dates
+        时发生 last-write-wins 数据丢失。
+        """
+        from sqlalchemy.exc import IntegrityError
+
         renovation = (
             self.db.query(ProjectRenovation)
             .filter(
                 ProjectRenovation.project_id == project_id,
                 ProjectRenovation.is_deleted.is_(False),
             )
+            .with_for_update()
             .first()
         )
 
         if not renovation:
-            renovation = ProjectRenovation(
-                id=uuid.uuid4(),
-                project_id=project_id,
-                is_deleted=False,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
-            )
-            self.db.add(renovation)
-            self.db.commit()
-            self.db.refresh(renovation)
+            try:
+                renovation = ProjectRenovation(
+                    id=uuid.uuid4(),
+                    project_id=project_id,
+                    is_deleted=False,
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
+                )
+                self.db.add(renovation)
+                self.db.flush()
+            except IntegrityError:
+                # 并发创建：另一个事务已插入，回退到查询（带锁）
+                self.db.rollback()
+                renovation = (
+                    self.db.query(ProjectRenovation)
+                    .filter(
+                        ProjectRenovation.project_id == project_id,
+                        ProjectRenovation.is_deleted.is_(False),
+                    )
+                    .with_for_update()
+                    .first()
+                )
+                if not renovation:
+                    msg = "装修记录创建失败"
+                    raise BusinessLogicError(msg)
 
         return renovation
 

@@ -11,7 +11,15 @@ export function getTokenAud(token: string): string {
       return "";
     }
     const b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const data = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    // atob 返回 binary string（每字符代表一个字节），逐字节 percent-encode 后
+    // 交 decodeURIComponent 做 UTF-8 解码；替代已废弃的 escape()，不依赖 TextDecoder
+    const binary = atob(b64);
+    const jsonStr = decodeURIComponent(
+      Array.from(binary)
+        .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+        .join(""),
+    );
+    const data = JSON.parse(jsonStr);
     return typeof data.aud === "string" ? data.aud : "";
   } catch {
     return "";

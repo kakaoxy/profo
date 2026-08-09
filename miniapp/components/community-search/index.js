@@ -6,22 +6,24 @@ const DEBOUNCE_DELAY = 300;
 // 单次搜索返回条数上限（对齐后端接口 limit 参数）
 const SEARCH_LIMIT = 20;
 
-// 组件内部数据；searchTimer/searchSeq 为防抖与请求序号，随实例隔离互不干扰
+// 组件内部数据（仅渲染态）；防抖定时器与请求序号为非渲染态，挂到组件实例属性上，
+// 随实例隔离互不干扰，避免模块级共享变量串扰
 const data = {
   query: "",
   results: [],
   searching: false,
   dropdownOpen: false,
-  searchTimer: null,
-  searchSeq: 0,
+};
+
+// 组件对外属性定义（提取为 const 便于泛型传参）
+const properties = {
+  value: { type: String, value: "" },
+  placeholder: { type: String, value: "请输入小区名称搜索" },
+  disabled: { type: Boolean, value: false },
 };
 
 Component({
-  properties: {
-    value: { type: String, value: "" },
-    placeholder: { type: String, value: "请输入小区名称搜索" },
-    disabled: { type: Boolean, value: false },
-  },
+  properties,
 
   data,
 
@@ -36,8 +38,8 @@ Component({
 
   lifetimes: {
     attached() {
-      this.data.searchTimer = null;
-      this.data.searchSeq = 0;
+      this.searchTimer = null;
+      this.searchSeq = 0;
     },
     // 组件销毁时清理定时器，防止内存泄漏/野回调
     detached() {
@@ -58,10 +60,10 @@ Component({
         return;
       }
       this.setData({ searching: true, dropdownOpen: true });
-      this.data.searchSeq += 1;
-      const currentSeq = this.data.searchSeq;
-      this.data.searchTimer = setTimeout(() => {
-        this.data.searchTimer = null;
+      this.searchSeq += 1;
+      const currentSeq = this.searchSeq;
+      this.searchTimer = setTimeout(() => {
+        this.searchTimer = null;
         this.doSearch(keyword, currentSeq);
       }, DEBOUNCE_DELAY);
       this.triggerEvent("change", { value: raw });
@@ -99,9 +101,9 @@ Component({
     },
 
     clearTimer() {
-      if (this.data.searchTimer !== null) {
-        clearTimeout(this.data.searchTimer);
-        this.data.searchTimer = null;
+      if (this.searchTimer !== null) {
+        clearTimeout(this.searchTimer);
+        this.searchTimer = null;
       }
     },
 
@@ -112,13 +114,13 @@ Component({
         data: { q: keyword, limit: SEARCH_LIMIT },
       })
         .then((results) => {
-          if (currentSeq !== this.data.searchSeq) {
+          if (currentSeq !== this.searchSeq) {
             return; // 过期响应，忽略
           }
           this.setData({ results, searching: false });
         })
         .catch(() => {
-          if (currentSeq === this.data.searchSeq) {
+          if (currentSeq === this.searchSeq) {
             this.setData({ results: [], searching: false });
           }
         });
