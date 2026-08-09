@@ -2,10 +2,12 @@
  * 「评估详情」页.
  *
  * ⚠️ 未覆盖：后端多角色用户微信登录仅签发 admin 令牌，无法访问 /public/leads/{id}（需 C 端
- * aud=c 令牌）；内部员工本轮在端内无法查看该页，401 时按「登录已失效」处理。
+ * aud=c 令牌）；内部员工本轮在端内无法查看该页，页面按 aud 识别并展示内部限定态，
+ * 而非误判为「登录已失效」清空登录态。
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
+import { getTokenAud } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import {
   followupMethodLabel,
@@ -34,6 +36,8 @@ interface PageData {
   needLogin: boolean;
   forbidden: boolean;
   notFound: boolean;
+  /** 内部员工（admin 令牌）无法访问 C 端接口，展示内部限定态而非登录失效. */
+  internalOnly: boolean;
   // 房源信息
   community_name: string;
   layout: string;
@@ -75,6 +79,7 @@ Page<PageData, PageCustom>({
     needLogin: false,
     forbidden: false,
     notFound: false,
+    internalOnly: false,
     community_name: "",
     layout: "",
     area: "",
@@ -104,6 +109,10 @@ Page<PageData, PageCustom>({
     this.setData({ leadId: query.id ?? "" });
     if (!this.getToken()) {
       this.setData({ needLogin: true, loading: false });
+      return;
+    }
+    if (getTokenAud(this.getToken()) === "admin") {
+      this.setData({ internalOnly: true, loading: false });
       return;
     }
     this.loadDetail();
@@ -145,7 +154,11 @@ Page<PageData, PageCustom>({
       this.setData({ needLogin: true, loading: false });
       return;
     }
-    this.setData({ loading: true, error: false, forbidden: false, notFound: false });
+    if (getTokenAud(token) === "admin") {
+      this.setData({ internalOnly: true, loading: false });
+      return;
+    }
+    this.setData({ loading: true, error: false, forbidden: false, notFound: false, internalOnly: false });
     try {
       // ⚠️ admin 令牌访问本接口会命中 401/403，内部员工无法在端内查看
       const detail = await request<LeadDetail>({

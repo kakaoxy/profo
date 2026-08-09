@@ -11,6 +11,11 @@
     <view class="state__btn" bindtap="onGoLogin">去登录</view>
   </view>
 
+  <!-- 内部员工限定态 -->
+  <view class="state" wx:elif="{{internalOnly}}">
+    <view class="state__text">内部员工暂无法在端内查看评估详情</view>
+  </view>
+
   <!-- 无权查看 -->
   <view class="state" wx:elif="{{forbidden}}">
     <view class="state__text">无权查看该评估</view>

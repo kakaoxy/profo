@@ -1,4 +1,5 @@
 import { request } from "../../../utils/request";
+import { getTokenAud } from "../../../utils/token";
 
 /**
  * customer 角色基础权限：仅含这些权限视为普通用户；permissions 含其他业务权限 → 内部员工.
@@ -83,6 +84,12 @@ Page({
     });
   },
 
+  clearTokensAndReset() {
+    wx.removeStorageSync("access_token");
+    wx.removeStorageSync("refresh_token");
+    this.resetToGuest();
+  },
+
   applyPublicUser(user) {
     const isInternal = isInternalUser(user.permissions || []);
     const nickname = user.nickname || user.username;
@@ -127,32 +134,58 @@ Page({
       return;
     }
     const authHeader = { Authorization: "Bearer " + token };
+    const aud = getTokenAud(token);
 
-    // 优先 C 端身份（纯 customer；多角色用户若持有 c 令牌也能命中）
+    // 依据 JWT aud 直接命中对应 /me：避免对内部令牌发 /public/auth/me 产生 401 噪音；
+    // aud 无法解析时回退原双通道判定兜底
+    if (aud === "c") {
+      const ok = await this.loadPublicUser(authHeader);
+      if (!ok) {
+        this.clearTokensAndReset();
+      }
+      return;
+    }
+    if (aud === "admin") {
+      const ok = await this.loadAdminUser(authHeader);
+      if (!ok) {
+        this.clearTokensAndReset();
+      }
+      return;
+    }
+    // aud 未知（异常令牌）→ 沿用双通道兜底
+    let ok = await this.loadPublicUser(authHeader);
+    if (!ok) {
+      ok = await this.loadAdminUser(authHeader);
+    }
+    if (!ok) {
+      // ⚠️ TODO access_token 过期时未接 refresh_token 自动续期；当前靠重新微信登录
+      this.clearTokensAndReset();
+    }
+  },
+
+  async loadPublicUser(authHeader) {
     try {
       const pub = await request({
         url: "/public/auth/me",
         header: authHeader,
       });
       this.applyPublicUser(pub);
-      return;
+      return true;
     } catch (err) {
-      // 非 C 端令牌（内部员工微信登录签发 admin 令牌）→ 回退后台 /me
+      return false;
     }
+  },
 
+  async loadAdminUser(authHeader) {
     try {
       const admin = await request({
         url: "/auth/me",
         header: authHeader,
       });
       this.applyAdminUser(admin);
-      return;
+      return true;
     } catch (err) {
-      // 令牌无效 → 清空并回到未登录
-      // ⚠️ TODO access_token 过期时未接 refresh_token 自动续期；当前靠重新微信登录
-      wx.removeStorageSync("access_token");
-      wx.removeStorageSync("refresh_token");
-      this.resetToGuest();
+      return false;
     }
   },
 

@@ -1,6 +1,6 @@
 <view class="page">
   <!-- 计数行 -->
-  <view class="count-row" wx:if="{{!needLogin && !error && items.length > 0}}">共 {{total}} 条评估</view>
+  <view class="count-row" wx:if="{{!needLogin && !internalOnly && !error && items.length > 0}}">共 {{total}} 条评估</view>
 
   <!-- 未登录态 -->
   <view class="state" wx:if="{{needLogin}}">
@@ -9,19 +9,24 @@
     <view class="state__btn" bindtap="onGoLogin">去登录</view>
   </view>
 
+  <!-- 内部员工限定态 -->
+  <view class="state" wx:if="{{!needLogin && internalOnly}}">
+    <view class="state__text">内部员工暂无法在端内查看我的评估</view>
+  </view>
+
   <!-- 错误态 -->
-  <view class="state" wx:if="{{!needLogin && error}}">
+  <view class="state" wx:if="{{!needLogin && !internalOnly && error}}">
     <view class="state__text">加载失败，请重试</view>
     <view class="state__btn" bindtap="onRetry">重试</view>
   </view>
 
   <!-- 首次加载态 -->
-  <view class="state" wx:if="{{!needLogin && !error && loading && items.length === 0}}">
+  <view class="state" wx:if="{{!needLogin && !internalOnly && !error && loading && items.length === 0}}">
     <view class="state__text">加载中...</view>
   </view>
 
   <!-- 列表区 -->
-  <block wx:if="{{!needLogin && !error}}">
+  <block wx:if="{{!needLogin && !internalOnly && !error}}">
     <view
       class="list-card"
       wx:for="{{items}}"

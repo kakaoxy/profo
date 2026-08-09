@@ -2,9 +2,11 @@
  * 「评估详情」页.
  *
  * ⚠️ 未覆盖：后端多角色用户微信登录仅签发 admin 令牌，无法访问 /public/leads/{id}（需 C 端
- * aud=c 令牌）；内部员工本轮在端内无法查看该页，401 时按「登录已失效」处理。
+ * aud=c 令牌）；内部员工本轮在端内无法查看该页，页面按 aud 识别并展示内部限定态，
+ * 而非误判为「登录已失效」清空登录态。
  */
 var request = require("../../../utils/request").request;
+var getTokenAud = require("../../../utils/token").getTokenAud;
 var resolveAssetUrl = require("../../../utils/url").resolveAssetUrl;
 var display = require("../../../utils/valuation-display");
 var followupMethodLabel = display.followupMethodLabel;
@@ -22,6 +24,8 @@ Page({
     needLogin: false,
     forbidden: false,
     notFound: false,
+    // 内部员工（admin 令牌）无法访问 C 端接口，展示内部限定态而非登录失效
+    internalOnly: false,
     // 房源信息
     community_name: "",
     layout: "",
@@ -55,6 +59,10 @@ Page({
     this.setData({ leadId: (query && query.id) || "" });
     if (!this.getToken()) {
       this.setData({ needLogin: true, loading: false });
+      return;
+    }
+    if (getTokenAud(this.getToken()) === "admin") {
+      this.setData({ internalOnly: true, loading: false });
       return;
     }
     this.loadDetail();
@@ -100,7 +108,11 @@ Page({
       this.setData({ needLogin: true, loading: false });
       return;
     }
-    this.setData({ loading: true, error: false, forbidden: false, notFound: false });
+    if (getTokenAud(token) === "admin") {
+      this.setData({ internalOnly: true, loading: false });
+      return;
+    }
+    this.setData({ loading: true, error: false, forbidden: false, notFound: false, internalOnly: false });
     try {
       // ⚠️ admin 令牌访问本接口会命中 401/403，内部员工无法在端内查看
       var detail = await request({

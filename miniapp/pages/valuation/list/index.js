@@ -1,10 +1,12 @@
 /**
  * 「我的评估」列表页.
  *
- * ⚠️ 未覆盖：后端多角色用户微信登录仅签发 admin 令牌，无法访问 /public/leads/*（需 C 端
- * aud=c 令牌）；内部员工本轮在端内无法查看「我的评估」，列表接口返回 401 时按「登录已失效」处理。
+ * 具备 C 端身份的内部员工（后端按其 customer 身份签发 aud=c 令牌）可正常访问 C 端
+ * /public/leads/mine 查看自己的评估；仅当请求返回 401（admin 令牌受众不匹配）或 403
+ * （无 C 端身份）时，才展示内部限定态，而非误判为「登录已失效」清空有效登录态。
  */
 var request = require("../../../utils/request").request;
+var getTokenAud = require("../../../utils/token").getTokenAud;
 var display = require("../../../utils/valuation-display");
 var formatDate = display.formatDate;
 var statusBadgeStyle = display.statusBadgeStyle;
@@ -23,6 +25,8 @@ Page({
     noMore: false,
     // 未登录（无 access_token）
     needLogin: false,
+    // 无 C 端身份（admin 令牌受众不匹配 / 403）时展示内部限定态，而非登录失效
+    internalOnly: false,
   },
 
   getToken() {
@@ -76,7 +80,12 @@ Page({
     }
     if (reset) {
       // silent 时不置 loading（保留当前列表，避免骨架屏闪烁）
-      var patch = { error: false, noMore: false, needLogin: false };
+      var patch = {
+        error: false,
+        noMore: false,
+        needLogin: false,
+        internalOnly: false,
+      };
       if (!silent) {
         patch.loading = true;
       }
@@ -105,11 +114,17 @@ Page({
         noMore: merged.length >= data.total,
       });
     } catch (err) {
-      // 401：令牌失效，清 token 并切「登录已失效」态
+      // 401：令牌失效或受众不匹配，区分处理——
+      // 返回 401 且为 admin 令牌（内部员工，无 C 端身份）→ 展示内部限定态而非清空有效登录态；
+      // 其余（C 端令牌失效）→ 清 token 并切「登录已失效」态。
       var statusCode = err && err.statusCode;
       if (statusCode === 401) {
-        this.clearToken();
-        this.setData({ needLogin: true, items: [], total: 0 });
+        if (getTokenAud(token) === "admin") {
+          this.setData({ internalOnly: true, items: [], total: 0 });
+        } else {
+          this.clearToken();
+          this.setData({ needLogin: true, items: [], total: 0 });
+        }
       } else if (reset) {
         // silent 时保留旧数据，避免返回刷新失败时误清列表
         if (!silent) {
@@ -152,7 +167,8 @@ Page({
   },
 
   onGoValuation() {
-    wx.navigateTo({ url: "/pages/valuation/submit/index" });
+    // submit 页为 tabBar 页，必须用 switchTab 跳转（navigateTo 会报错）
+    wx.switchTab({ url: "/pages/valuation/submit/index" });
   },
 
   onRetry() {
