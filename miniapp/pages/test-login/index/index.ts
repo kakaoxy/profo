@@ -4,11 +4,11 @@
  * 用途：后端微信登录功能完成前，用于系统测试后台账号密码真实登录流程，
  * 并衔接 profile 页（我的）的后链路测试（内部员工身份 / 手机号展示 / 退出登录）。
  *
- * 登录接口：POST /public/auth/token（OAuth2 表单登录，支持普通用户与内部用户）.
- * 登录成功后把 access_token / refresh_token 写入 storage（与 profile 页读取的 key 一致），
- * 再跳转 `pages/profile/index/index`（TabBar 页）验证后链路。
- * 后端按身份签发令牌：customer 身份 → C 端令牌；纯内部用户 → 后台令牌，
- * profile 页据此双通道识别身份并差异化展示内容。
+ * 登录接口：先 POST /auth/token（后台登录，内部员工获 admin 令牌，可访问带看记录等
+ * 后台接口 /projects/*）；纯 customer 账号后台登录返回 403 时回退 POST /public/auth/token
+ * 签发 C 端令牌。登录成功后把 access_token / refresh_token 写入 storage（与 profile 页
+ * 读取的 key 一致），再跳转 `pages/profile/index/index`（TabBar 页）验证后链路。
+ * profile 页依据令牌 aud 双通道识别身份并差异化展示内容。
  *
  * 依赖：仅本目录 + app.json pages 中对应条目 + utils/request + types/api-types.d.ts。
  * 移除：删除本目录并去掉 app.json 中 `pages/test-login/index` 条目即可，无残留依赖。
@@ -54,17 +54,34 @@ interface PageCustom {
 export {};
 
 /**
- * 调用后端登录接口 POST /public/auth/token（OAuth2 表单登录）.
- * 支持普通 customer 账号，以及 admin/operator 等内部账号：
- * 后端按身份签发对应端令牌，profile 页据此差异化展示。
+ * 调用后端登录接口获取令牌（OAuth2 表单登录）.
+ * 优先后台登录 POST /auth/token：内部员工（具备后台身份）获得 admin 令牌，
+ * 可访问后台带看记录等内部接口（/projects/*）；纯 C 端 customer 账号后台登录
+ * 返回 403「无权登录后台」，此时回退 C 端登录 POST /public/auth/token 签发 C 端令牌.
  */
-function realLogin(username: string, password: string): Promise<PublicLoginResponse> {
-  return request<PublicLoginResponse>({
-    url: "/public/auth/token",
-    method: "POST",
-    header: { "content-type": "application/x-www-form-urlencoded" },
-    data: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
-  });
+async function realLogin(username: string, password: string): Promise<PublicLoginResponse> {
+  const form = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+  const formHeader = { "content-type": "application/x-www-form-urlencoded" };
+  try {
+    return await request<PublicLoginResponse>({
+      url: "/auth/token",
+      method: "POST",
+      header: formHeader,
+      data: form,
+    });
+  } catch (err) {
+    const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+    // 403 = 无后台身份（纯 customer）→ 回退 C 端登录
+    if (statusCode === 403) {
+      return await request<PublicLoginResponse>({
+        url: "/public/auth/token",
+        method: "POST",
+        header: formHeader,
+        data: form,
+      });
+    }
+    throw err;
+  }
 }
 
 /** 从 request 抛出的错误中提取可读信息. */

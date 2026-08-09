@@ -18,9 +18,9 @@ type PublicLogoutResponse = components["schemas"]["PublicLogoutResponse"];
  */
 const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 
-/** 内部入口四项（二级页面本轮不建，点击统一「功能待开放」）. */
+/** 内部入口四项（viewing 已落地，其余二级页面本轮不建，点击统一「功能待开放」）. */
 const INTERNAL_ENTRIES = [
-  { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带" },
+  { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
   { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装" },
   { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账" },
   { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房" },
@@ -31,6 +31,8 @@ interface InternalEntry {
   title: string;
   sub: string;
   icon: string;
+  /** 已落地页面的路由；无 route 的条目点击走「功能待开放」. */
+  route?: string;
 }
 
 interface PageData {
@@ -71,7 +73,7 @@ interface PageCustom {
   onPhoneCancel(): void;
   onPhoneConfirm(): void;
   onValuationTap(): void;
-  onMenuTap(): void;
+  onMenuTap(e: WechatMiniprogram.BaseEvent): void;
 }
 
 /** 是否内部员工：permissions 含 customer 基础权限之外的代码. */
@@ -353,8 +355,13 @@ Page<PageData, PageCustom>({
     wx.navigateTo({ url: "/pages/valuation/list/index" });
   },
 
-  onMenuTap() {
-    // 二级页面（我的估价 / 内部入口）本轮不建页，统一待开放
+  onMenuTap(e: WechatMiniprogram.BaseEvent) {
+    // 已落地条目（route 存在）跳转对应页；未落地（装修/记账/房源查询）统一待开放
+    const route = e.currentTarget.dataset.route as string | undefined;
+    if (route) {
+      wx.navigateTo({ url: route });
+      return;
+    }
     wx.showToast({ title: "功能待开放", icon: "none" });
   },
 });

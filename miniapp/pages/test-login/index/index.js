@@ -4,9 +4,11 @@
  * 用途：后端微信登录功能完成前，用于系统测试后台账号密码真实登录流程，
  * 并衔接 profile 页（我的）的后链路测试（内部员工身份 / 手机号展示 / 退出登录）。
  *
- * 登录接口：POST /public/auth/token（C 端 OAuth2 表单登录，支持普通用户与多角色内部账号）.
- * 登录成功后把 access_token / refresh_token 写入 storage（与 profile 页读取的 key 一致），
- * 再跳转 `pages/profile/index/index`（TabBar 页）验证后链路。
+ * 登录接口：先 POST /auth/token（后台登录，内部员工获 admin 令牌，可访问带看记录等
+ * 后台接口 /projects/*）；纯 customer 账号后台登录返回 403 时回退 POST /public/auth/token
+ * 签发 C 端令牌。登录成功后把 access_token / refresh_token 写入 storage（与 profile 页
+ * 读取的 key 一致），再跳转 `pages/profile/index/index`（TabBar 页）验证后链路。
+ * profile 页依据令牌 aud 双通道识别身份并差异化展示内容。
  */
 const { request } = require("../../../utils/request");
 
@@ -16,18 +18,34 @@ const USERNAME_RE = /^[a-zA-Z0-9_]{4,30}$/;
 const PASSWORD_RE = /^.{8,}$/;
 
 /**
- * 调用后端 C 端登录接口 POST /public/auth/token（OAuth2 表单登录）.
- * 支持普通 customer 账号，以及 admin/operator + customer 附加角色的多角色内部账号
- * （C 端令牌 + 权限识别内部身份，可命中 profile 页手机号完善与内部入口）.
+ * 调用后端登录接口获取令牌（OAuth2 表单登录）.
+ * 优先后台登录 POST /auth/token：内部员工（具备后台身份）获得 admin 令牌，
+ * 可访问后台带看记录等内部接口（/projects/*）；纯 C 端 customer 账号后台登录
+ * 返回 403「无权登录后台」，此时回退 C 端登录 POST /public/auth/token 签发 C 端令牌.
  */
-function realLogin(username, password) {
-  return request({
-    url: "/public/auth/token",
-    method: "POST",
-    header: { "content-type": "application/x-www-form-urlencoded" },
-    data:
-      "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password),
-  });
+async function realLogin(username, password) {
+  const form =
+    "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password);
+  const formHeader = { "content-type": "application/x-www-form-urlencoded" };
+  try {
+    return await request({
+      url: "/auth/token",
+      method: "POST",
+      header: formHeader,
+      data: form,
+    });
+  } catch (err) {
+    // 403 = 无后台身份（纯 customer）→ 回退 C 端登录
+    if (err && err.statusCode === 403) {
+      return await request({
+        url: "/public/auth/token",
+        method: "POST",
+        header: formHeader,
+        data: form,
+      });
+    }
+    throw err;
+  }
 }
 
 /** 从 request 抛出的错误中提取可读信息. */

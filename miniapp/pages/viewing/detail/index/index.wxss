@@ -1,0 +1,324 @@
+/* 单项目销售记录详情页 · warm 风格（对齐 profile 页） */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+}
+
+/* ===== 顶部标题栏 ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 40rpx 8rpx;
+}
+.topbar-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+/* ===== KPI 四宫格 ===== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+  margin: 24rpx 40rpx;
+}
+.kpi-cell {
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 24rpx;
+  padding: 20rpx 8rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  box-shadow: var(--shadow-sm);
+}
+.kpi-label {
+  font-size: 22rpx;
+  color: var(--graphite);
+}
+.kpi-value {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* ===== Tab 行 + 新增按钮 ===== */
+.tab-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 0 40rpx 24rpx;
+}
+.tabs {
+  flex: 1;
+  display: flex;
+  background: var(--fog);
+  border: 2rpx solid #ece7de;
+  border-radius: 999rpx;
+  padding: 6rpx;
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--graphite);
+  padding: 14rpx 0;
+  border-radius: 999rpx;
+  white-space: nowrap;
+}
+.tab--active {
+  background: var(--rust);
+  color: var(--pure-white);
+  font-weight: 500;
+}
+.add-btn {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: var(--rust);
+  color: var(--pure-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.add-placeholder {
+  width: 72rpx;
+  height: 72rpx;
+  flex-shrink: 0;
+}
+
+/* ===== 记录列表 ===== */
+.record-list {
+  margin: 0 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.record-card {
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 32rpx;
+  padding: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  box-shadow: var(--shadow-sm);
+}
+.record-card--max {
+  border-color: var(--rust);
+  background: var(--apricot-wash);
+}
+.record-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.record-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.record-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.record-price {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--ink);
+}
+.record-price--max {
+  color: var(--rust);
+}
+.max-badge {
+  margin-left: 12rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  background: var(--rust);
+  color: var(--pure-white);
+  font-size: 20rpx;
+  font-weight: 500;
+}
+.record-date {
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.record-notes {
+  margin-top: 8rpx;
+  padding: 16rpx;
+  border-radius: 16rpx;
+  background: var(--fog);
+  border: 2rpx solid #ece7de;
+  font-size: 24rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+.delete-btn {
+  flex-shrink: 0;
+  padding: 8rpx 24rpx;
+  border-radius: 999rpx;
+  background: var(--fog);
+  border: 2rpx solid #ece7de;
+  color: var(--ash);
+  font-size: 24rpx;
+}
+.empty {
+  margin: 40rpx;
+  padding: 80rpx 0;
+  border: 2rpx dashed #ece7de;
+  border-radius: 32rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 120rpx 40rpx;
+}
+.state__title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 20rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+/* ===== 底部表单 ===== */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 25, 28, 0.4);
+  z-index: 100;
+}
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--pure-white);
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 32rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  z-index: 101;
+}
+.sheet-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+.form-item {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+}
+.form-label {
+  width: 200rpx;
+  flex-shrink: 0;
+  font-size: 28rpx;
+  color: var(--graphite);
+}
+.form-input {
+  flex: 1;
+  height: 88rpx;
+  line-height: 80rpx;
+  min-height: 88rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--dove);
+  border-radius: 16rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: var(--ink);
+  background: var(--fog);
+}
+.form-value {
+  flex: 1;
+  min-height: 88rpx;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--dove);
+  border-radius: 16rpx;
+  background: var(--fog);
+  font-size: 28rpx;
+  line-height: 84rpx;
+  color: var(--ink);
+}
+.form-textarea {
+  flex: 1;
+  width: auto;
+  min-height: 160rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--dove);
+  border-radius: 16rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  color: var(--ink);
+  background: var(--fog);
+}
+.sheet-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 12rpx;
+}
+.sheet-btn {
+  flex: 1;
+  margin: 0;
+  height: 88rpx;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+.sheet-btn::after {
+  border: none;
+}
+.sheet-btn--cancel {
+  background: var(--fog);
+  color: var(--graphite);
+  border: 2rpx solid #ece7de;
+}
+.sheet-btn--confirm {
+  background: var(--ink);
+  color: var(--pure-white);
+}
+.sheet-btn--confirm[disabled] {
+  opacity: 0.6;
+  color: var(--pure-white);
+}

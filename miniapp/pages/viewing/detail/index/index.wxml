@@ -1,0 +1,190 @@
+<view class="page">
+  <!-- 未登录 / 令牌失效 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请重新登录后查看销售记录</view>
+    <view class="state__btn" bindtap="onGoBack">返回</view>
+  </view>
+
+  <!-- 无权限查看 -->
+  <view class="state" wx:elif="{{state === 'noPermission'}}">
+    <view class="state__title">无权限查看</view>
+    <view class="state__text">当前账号无权查看该项目销售记录</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <!-- 就绪状态 -->
+  <block wx:elif="{{state === 'ready'}}">
+    <!-- 顶部标题栏（返回沿用小程序原生导航返回，不再重复自绘返回按钮） -->
+    <view class="topbar">
+      <view class="topbar-title">{{projectName}}</view>
+    </view>
+
+    <!-- KPI 四宫格 -->
+    <view class="kpi-grid">
+      <view class="kpi-cell">
+        <view class="kpi-label">挂牌</view>
+        <view class="kpi-value">{{listingDaysText}}</view>
+      </view>
+      <view class="kpi-cell">
+        <view class="kpi-label">带看</view>
+        <view class="kpi-value">{{viewingCount}}</view>
+      </view>
+      <view class="kpi-cell">
+        <view class="kpi-label">出价</view>
+        <view class="kpi-value">{{offerCount}}</view>
+      </view>
+      <view class="kpi-cell">
+        <view class="kpi-label">面谈</view>
+        <view class="kpi-value">{{negotiationCount}}</view>
+      </view>
+    </view>
+
+    <!-- Tab 行 + 新增按钮 -->
+    <view class="tab-row">
+      <view class="tabs">
+        <view
+          class="tab {{activeTab === 'viewing' ? 'tab--active' : ''}}"
+          bindtap="onTabTap"
+          data-tab="viewing"
+        >带看记录</view>
+        <view
+          class="tab {{activeTab === 'offer' ? 'tab--active' : ''}}"
+          bindtap="onTabTap"
+          data-tab="offer"
+        >出价记录</view>
+        <view
+          class="tab {{activeTab === 'negotiation' ? 'tab--active' : ''}}"
+          bindtap="onTabTap"
+          data-tab="negotiation"
+        >面谈记录</view>
+      </view>
+      <view class="add-btn" wx:if="{{canAdd}}" bindtap="onAddTap">＋</view>
+      <view class="add-placeholder" wx:else></view>
+    </view>
+
+    <!-- 带看记录列表 -->
+    <block wx:if="{{activeTab === 'viewing'}}">
+      <view class="record-list" wx:if="{{viewings.length > 0}}">
+        <view class="record-card" wx:for="{{viewings}}" wx:key="id">
+          <view class="record-main">
+            <view class="record-title">{{item.name}}</view>
+            <view class="record-date">{{item.date}}</view>
+          </view>
+          <view class="delete-btn {{deleting ? 'delete-btn--disabled' : ''}}" catchtap="onDelete" data-id="{{item.id}}">{{deleting ? '删除中…' : '删除'}}</view>
+        </view>
+      </view>
+      <view class="empty" wx:else>暂无带看记录</view>
+    </block>
+
+    <!-- 出价记录列表 -->
+    <block wx:if="{{activeTab === 'offer'}}">
+      <view class="record-list" wx:if="{{offers.length > 0}}">
+        <view
+          class="record-card {{item.isMax ? 'record-card--max' : ''}}"
+          wx:for="{{offers}}"
+          wx:key="id"
+        >
+          <view class="record-main">
+            <view class="record-price {{item.isMax ? 'record-price--max' : ''}}">
+              ¥{{item.price}}万
+              <text wx:if="{{item.isMax}}" class="max-badge">最高</text>
+            </view>
+            <view class="record-date">{{item.name}} · {{item.date}}</view>
+          </view>
+          <view class="delete-btn" catchtap="onDelete" data-id="{{item.id}}">删除</view>
+        </view>
+      </view>
+      <view class="empty" wx:else>暂无出价记录</view>
+    </block>
+
+    <!-- 面谈记录列表 -->
+    <block wx:if="{{activeTab === 'negotiation'}}">
+      <view class="record-list" wx:if="{{negotiations.length > 0}}">
+        <view class="record-card record-card--multiline" wx:for="{{negotiations}}" wx:key="id">
+          <view class="record-main">
+            <view class="record-row">
+              <view class="record-title">{{item.name}}</view>
+              <view class="record-date">{{item.date}}</view>
+            </view>
+            <view class="record-notes" wx:if="{{item.notes}}">{{item.notes}}</view>
+          </view>
+          <view class="delete-btn" catchtap="onDelete" data-id="{{item.id}}">删除</view>
+        </view>
+      </view>
+      <view class="empty" wx:else>暂无面谈记录</view>
+    </block>
+  </block>
+
+  <!-- 底部留白 -->
+  <view wx:if="{{state === 'ready'}}" style="height: 120rpx;"></view>
+
+  <!-- 新增记录底部表单 -->
+  <block wx:if="{{formOpen}}">
+    <view class="mask" bindtap="onFormCancel"></view>
+    <view class="sheet">
+      <view class="sheet-title">{{formTitle}}</view>
+
+      <view class="form-item">
+        <view class="form-label">日期</view>
+        <picker mode="date" value="{{formDate}}" bindchange="onDateChange">
+          <view class="form-value form-value--picker">{{formDate}}</view>
+        </picker>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">{{personLabel}}</view>
+        <input
+          class="form-input"
+          value="{{formPerson}}"
+          placeholder="请输入姓名或机构名"
+          bindinput="onPersonInput"
+        />
+      </view>
+
+      <view class="form-item" wx:if="{{activeTab === 'offer'}}">
+        <view class="form-label">出价金额(万元)</view>
+        <input
+          class="form-input"
+          type="digit"
+          value="{{formPrice}}"
+          placeholder="0.00"
+          bindinput="onPriceInput"
+        />
+      </view>
+
+      <view class="form-item" wx:if="{{activeTab === 'negotiation'}}">
+        <view class="form-label">沟通纪要</view>
+        <textarea
+          class="form-textarea"
+          value="{{formNotes}}"
+          placeholder="记录核心谈判点..."
+          bindinput="onNotesInput"
+        ></textarea>
+      </view>
+
+      <view class="sheet-actions">
+        <button class="sheet-btn sheet-btn--cancel" bindtap="onFormCancel">取消</button>
+        <button
+          class="sheet-btn sheet-btn--confirm"
+          disabled="{{submitting}}"
+          bindtap="onFormConfirm"
+        >{{submitting ? '提交中…' : '确认添加'}}</button>
+      </view>
+    </view>
+  </block>
+
+  <!-- 底部留白 -->
+  <view style="height: 120rpx;"></view>
+</view>

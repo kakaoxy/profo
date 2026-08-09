@@ -130,12 +130,12 @@ export default function ProjectDetailPage() {
         </button>
       </nav>
 
-      <section className="mx-auto w-full max-w-[1200px] px-4">
+      <section className="mx-auto w-full max-w-300 px-4">
         <ImageCarousel images={carouselImages} />
       </section>
 
       {/* Hero info block — Signifier heading per DESIGN.md */}
-      <div className="mx-auto max-w-[1200px] px-4 pt-6 space-y-2">
+      <div className="mx-auto max-w-300 px-4 pt-6 space-y-2">
         <span
           className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}
         >
@@ -150,7 +150,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Property specs — white cards on fog canvas per DESIGN.md */}
-      <section className="mx-auto max-w-[1200px] px-4 pt-6">
+      <section className="mx-auto max-w-300 px-4 pt-6">
         <PropertyGrid
           totalPrice={data.total_price}
           unitPrice={data.unit_price}
@@ -163,7 +163,7 @@ export default function ProjectDetailPage() {
       </section>
 
       {/* Renovation timeline section */}
-      <section className="mx-auto max-w-[1200px] px-4 pt-8">
+      <section className="mx-auto max-w-300 px-4 pt-8">
         <RenovationTimeline
           stages={data.renovation_stages ?? []}
           media={data.media ?? []}
