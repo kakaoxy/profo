@@ -1,0 +1,50 @@
+<view class="page">
+  <!-- 品牌区 -->
+  <view class="brand">
+    <view class="brand-icon">房</view>
+    <view class="brand-title">美房宝</view>
+    <view class="brand-sub">账号密码登录 · 测试页</view>
+  </view>
+
+  <!-- 登录表单 -->
+  <view class="form-card">
+    <view class="field">
+      <view class="form-label">用户名</view>
+      <input
+        class="input {{usernameError ? 'input-error' : ''}}"
+        placeholder="请输入用户名"
+        value="{{username}}"
+        bindinput="onUsernameInput"
+      />
+      <view wx:if="{{usernameError}}" class="field-error">{{usernameError}}</view>
+    </view>
+
+    <view class="field">
+      <view class="form-label">密码</view>
+      <input
+        class="input {{passwordError ? 'input-error' : ''}}"
+        password
+        placeholder="请输入密码"
+        value="{{password}}"
+        bindinput="onPasswordInput"
+      />
+      <view wx:if="{{passwordError}}" class="field-error">{{passwordError}}</view>
+    </view>
+
+    <button class="btn-primary login-btn" disabled="{{submitting}}" bindtap="onSubmit">{{submitting ? '登录中…' : '登  录'}}</button>
+
+    <view class="hint">C 端账号登录（测试：admin / Fdd123..，需具备 customer 身份）</view>
+  </view>
+
+  <!-- 登录失败提示（成功时自动跳转 profile，不展示结果卡片） -->
+  <view wx:if="{{result && result.type === 'failure'}}" class="result-card failure">
+    <view class="result-header">
+      <view class="result-dot"></view>
+      <text>登录失败</text>
+    </view>
+    <view class="result-body">
+      <view class="result-row"><text class="k">错误</text><text class="v">{{result.message}}</text></view>
+    </view>
+    <view class="result-foot">真实接口已调用；后端微信登录完成后可移除本测试页。</view>
+  </view>
+</view>

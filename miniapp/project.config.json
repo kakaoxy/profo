@@ -37,5 +37,6 @@
     "include": []
   },
   "editorSetting": {},
-  "isGameTourist": false
+  "isGameTourist": false,
+  "testRoot": "minitest/"
 }

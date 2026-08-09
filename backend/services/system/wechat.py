@@ -145,7 +145,7 @@ class WeChatAuthService:
             "code": code,
             "grant_type": "authorization_code",
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(trust_env=False) as client:
             response = await client.get(settings.wechat_token_url, params=params)
             data = response.json()
 
@@ -162,7 +162,7 @@ class WeChatAuthService:
             "openid": openid,
             "lang": "zh_CN",
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(trust_env=False) as client:
             response = await client.get(settings.wechat_userinfo_url, params=params)
             data = response.json()
 
@@ -180,7 +180,7 @@ class WeChatAuthService:
             "js_code": code,
             "grant_type": "authorization_code",
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(trust_env=False) as client:
             try:
                 response = await client.get(settings.wechat_jscode2session_url, params=params)
                 response.raise_for_status()

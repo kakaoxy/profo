@@ -1,6 +1,96 @@
 <view class="page">
-  <view class="placeholder">
-    <view class="placeholder-title">个人中心建设中</view>
-    <view class="placeholder-sub">敬请期待</view>
+  <!-- 用户基础信息卡 -->
+  <view class="user-card">
+    <view class="user-row">
+      <view class="avatar">{{avatarChar}}</view>
+      <view class="user-main">
+        <view class="user-name">
+          <text>{{nickname}}</text>
+          <text wx:if="{{loggedIn}}" class="role-badge {{isInternal ? 'role-badge--staff' : ''}}">{{roleBadgeText}}</text>
+        </view>
+        <view class="user-username">@{{username}}</view>
+      </view>
+    </view>
+
+    <!-- 未登录：跳转登录页（微信登录后端未完成，先跳 test-login 测试页） -->
+    <button
+      wx:if="{{!loggedIn && !loading}}"
+      class="btn-primary login-btn"
+      bindtap="onGoLogin"
+    >登录</button>
+
+    <!-- 已登录：资料字段 -->
+    <view wx:else class="user-fields">
+      <view class="field-row">
+        <view class="field-label">手机号</view>
+        <!-- 非编辑态：已绑定脱敏展示；未绑定且 C 端可编辑 → 点击进入完善 -->
+        <view wx:if="{{!editingPhone}}" class="phone-field" bindtap="onPhoneTap">
+          <text class="phone-value {{hasPhone ? 'has-phone' : 'empty'}}">{{phoneDisplay}}</text>
+          <text wx:if="{{!hasPhone && canEditPhone}}" class="phone-action">›</text>
+        </view>
+        <!-- 编辑态：输入 + 保存/取消 -->
+        <view wx:else class="phone-edit">
+          <input
+            class="phone-input"
+            type="number"
+            maxlength="11"
+            value="{{phoneInput}}"
+            placeholder="请输入11位手机号"
+            focus="{{phoneFocus}}"
+            bindinput="onPhoneInput"
+          />
+          <view class="phone-edit-actions">
+            <button class="phone-btn phone-btn--cancel" bindtap="onPhoneCancel">取消</button>
+            <button class="phone-btn phone-btn--save" disabled="{{submittingPhone}}" bindtap="onPhoneConfirm">{{submittingPhone ? '保存中…' : '保存'}}</button>
+          </view>
+        </view>
+      </view>
+      <view class="field-row">
+        <view class="field-label">权限身份</view>
+        <view class="field-value">{{roleLabel}}</view>
+      </view>
+    </view>
   </view>
+
+  <!-- 我的服务 -->
+  <view class="menu-group-title">我的服务</view>
+  <view class="menu-list">
+    <view class="menu-item" bindtap="onMenuTap">
+      <view class="menu-left">
+        <view class="menu-icon">估</view>
+        <text>我的估价</text>
+      </view>
+      <view class="menu-right"><text class="chevron">›</text></view>
+    </view>
+  </view>
+
+  <!-- 内部入口（仅内部用户可见） -->
+  <block wx:if="{{isInternal}}">
+    <view class="menu-group-title">内部入口 · 仅内部用户可见</view>
+    <view class="menu-list">
+      <view class="menu-item" wx:for="{{internalEntries}}" wx:key="key" bindtap="onMenuTap">
+        <view class="menu-left">
+          <view class="menu-icon">{{item.icon}}</view>
+          <view>
+            <view class="menu-item-title">{{item.title}}</view>
+            <view class="menu-sub">{{item.sub}}</view>
+          </view>
+        </view>
+        <view class="menu-right"><text class="chevron">›</text></view>
+      </view>
+    </view>
+    <view class="internal-flag">内部入口由后台身份权限控制显隐，非内部用户不可见。</view>
+  </block>
+
+  <!-- 退出登录 -->
+  <view wx:if="{{loggedIn}}" class="logout-wrap">
+    <button
+      class="btn-secondary logout-btn"
+      disabled="{{loggingOut}}"
+      bindtap="onLogout"
+    >{{loggingOut ? '退出中…' : '退出登录'}}</button>
+  </view>
+
+  <!-- 底部留白，避让原生 TabBar -->
+  <view style="height: 240rpx;"></view>
 </view>

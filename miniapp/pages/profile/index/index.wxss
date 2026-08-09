@@ -1,24 +1,256 @@
+/* 「我的」页 · warm 风格（对齐房源列表页） */
 .page {
   min-height: 100vh;
-  background-color: var(--fog);
+  background: var(--fog);
 }
 
-.placeholder {
-  padding: 240rpx 48rpx;
+/* 卡片浅暖描边（Steep 无 warm border，本地定义） */
+.user-card,
+.menu-list {
+  border: 2rpx solid #ece7de;
+}
+
+/* ===== 用户信息卡 ===== */
+.user-card {
+  margin: 24rpx 40rpx 0;
+  background: var(--pure-white);
+  border-radius: 40rpx;
+  padding: 40rpx 36rpx;
+  box-shadow: var(--shadow-sm);
+}
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+}
+.avatar {
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--fog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44rpx;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.user-main {
+  flex: 1;
+  min-width: 0;
+}
+.user-name {
+  font-size: 40rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  background: var(--fog);
+  color: var(--graphite);
+  white-space: nowrap;
+}
+.role-badge--staff {
+  background: var(--ink);
+  color: var(--pure-white);
+}
+.user-username {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+
+/* 去登录（定宽水平居中；display:flex 承接 .btn-primary 的 flex 内联对齐） */
+.login-btn {
+  display: flex;
+  width: 400rpx;
+  margin: 32rpx auto 0;
+}
+
+/* 资料字段 */
+.user-fields {
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 2rpx solid #ece7de;
   display: flex;
   flex-direction: column;
+  gap: 20rpx;
+}
+.field-row {
+  display: flex;
   align-items: center;
-  text-align: center;
-}
-
-.placeholder-title {
-  font-size: 36rpx;
-  font-weight: 500;
-  color: var(--ink);
-  margin-bottom: 16rpx;
-}
-
-.placeholder-sub {
   font-size: 28rpx;
+}
+.field-label {
+  width: 144rpx;
   color: var(--graphite);
+  flex-shrink: 0;
+}
+.field-value {
+  color: var(--ink);
+}
+.phone-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48rpx;
+}
+.phone-value.has-phone {
+  color: var(--ink);
+}
+.phone-value.empty {
+  color: var(--graphite);
+  font-weight: 500;
+}
+.phone-action {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: var(--fog);
+  color: var(--graphite);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.phone-edit {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.phone-edit .phone-input {
+  width: 100%;
+  height: 88rpx;
+  line-height: 80rpx; /* height - 上下边框(2rpx*2)，使数字在内容区垂直居中 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--dove);
+  border-radius: 16rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: var(--ink);
+  background: var(--fog);
+}
+.phone-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16rpx;
+}
+.phone-btn {
+  margin: 0;
+  padding: 8rpx 28rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  border-radius: 999rpx;
+}
+.phone-btn::after {
+  border: none;
+}
+.phone-btn--cancel {
+  background: var(--fog);
+  color: var(--graphite);
+  border: 2rpx solid #ece7de;
+}
+.phone-btn--save {
+  background: var(--ink);
+  color: var(--pure-white);
+}
+.phone-btn--save[disabled] {
+  opacity: 0.6;
+  color: var(--pure-white);
+}
+
+/* ===== 菜单分组 ===== */
+.menu-group-title {
+  font-size: 24rpx;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--graphite);
+  margin: 40rpx 48rpx 16rpx;
+}
+.menu-list {
+  margin: 0 40rpx;
+  background: var(--pure-white);
+  border-radius: 40rpx;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 24rpx;
+  border-bottom: 2rpx solid #ece7de;
+}
+.menu-item:last-child {
+  border-bottom: none;
+}
+.menu-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  color: var(--ink);
+}
+.menu-icon {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 20rpx;
+  background: var(--fog);
+  color: var(--graphite);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.menu-item-title {
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.menu-sub {
+  font-size: 24rpx;
+  color: var(--graphite);
+  margin-top: 4rpx;
+}
+.menu-right {
+  display: flex;
+  align-items: center;
+  color: var(--graphite);
+}
+.chevron {
+  font-size: 40rpx;
+  line-height: 1;
+  color: var(--dove);
+}
+.internal-flag {
+  margin: 20rpx 48rpx 0;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+
+/* ===== 退出登录 ===== */
+.logout-wrap {
+  margin: 40rpx 40rpx 0;
+}
+.logout-btn {
+  display: flex;
+  width: 400rpx;
+  margin: 0 auto;
+  border: 2rpx solid #ece7de;
+  background: var(--pure-white);
+  color: var(--ash);
 }

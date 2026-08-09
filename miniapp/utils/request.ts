@@ -10,7 +10,7 @@ import { BASE_URL } from "./config";
 export interface RequestOptions {
   url: string;
   method?: "GET" | "POST";
-  data?: object;
+  data?: object | string;
   header?: Record<string, string>;
 }
 
@@ -35,12 +35,9 @@ export function request<T>(options: RequestOptions): Promise<T> {
   const { url, method = "GET", data, header } = options;
 
   const requestHeader: Record<string, string> = { ...header };
-  if (method !== "GET") {
-    // 写请求可在调用方按需注入 Authorization（如登录态）；GET 不携带.
-    if (header?.Authorization) {
-      requestHeader.Authorization = header.Authorization;
-    }
-  } else {
+  // GET 默认不携带 Authorization；仅当调用方显式传入 header.Authorization 时保留，
+  // 用于 /public/auth/me 这类需要鉴权的 GET 请求；写请求按调用方显式注入处理.
+  if (!requestHeader.Authorization) {
     delete requestHeader.Authorization;
   }
 

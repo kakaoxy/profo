@@ -10,8 +10,11 @@ from fastapi import APIRouter, Body, Depends, Query, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
+from constants.role_codes import RoleCode
 from dependencies.auth import CurrentActiveUserDep, CurrentInternalUserDep, DbSessionDep
+from models import User
 from schemas.user import (
     ApiKeyCreateResponse,
     ApiKeyInfoResponse,
@@ -31,13 +34,46 @@ from services.system.exceptions import (
     PermissionDeniedError,
 )
 from settings import settings
-from utils.auth import AUDIENCE_ADMIN
+from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C
 from utils.common import RateLimits, limiter
 from utils.security_logger import log_auth_event
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _has_customer_identity(user: User) -> bool:
+    """判断用户是否具备 C 端 customer 身份（主角色或附加角色含 customer）.
+
+    Args:
+        user: 用户对象（需有 role 与 roles 关系）
+
+    Returns:
+        True 表示具备 C 端身份，可签发 C 端令牌
+
+    """
+    if user.role and user.role.code == RoleCode.CUSTOMER.value:
+        return True
+    return any(r.code == RoleCode.CUSTOMER.value for r in (user.roles or []))
+
+
+def _create_miniapp_tokens(db: Session, user: User) -> dict:
+    """小程序登录签发令牌.
+
+    与 C 端账号密码登录一致：具备 customer 身份（含多角色 admin+customer）
+    的账号签发 C 端令牌（aud=c, role=customer），使其在小程序以 C 端身份使用
+    （可完善手机号、仍按权限识别内部身份）；纯后台账号（无 customer 身份）
+    按主角色推断受众，保持可登录小程序使用内部入口。
+    """
+    if _has_customer_identity(user):
+        return AuthService.create_tokens_for_user(
+            db,
+            user,
+            audience=AUDIENCE_C,
+            role_claim=RoleCode.CUSTOMER.value,
+        )
+    return AuthService.create_tokens_for_user(db, user)
 
 
 @router.post(
@@ -353,7 +389,7 @@ async def wechat_app_login(
         session_key=session_key,
     )
 
-    return await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
+    return await run_in_threadpool(_create_miniapp_tokens, db, user)
 
 
 @router.get(

@@ -47,6 +47,21 @@ page {
   gap: 16rpx;
   margin-top: 40rpx;
 }
+/* 品牌区标签：改为「透明底 + 描边」的徽章样式，弱化实心按钮感，
+   与可点击按钮（实心填充）形成明确区分，避免被误认为可操作按钮。 */
+.hero-tags .tag {
+  background: transparent;
+  border: 2rpx solid var(--warm-border);
+  font-weight: 400;
+}
+.hero-tags .tag-primary {
+  color: var(--warm-fg);
+  border-color: var(--warm-fg);
+}
+.hero-tags .tag-muted {
+  color: var(--warm-muted-fg);
+  border-color: var(--warm-border);
+}
 
 /* ===== 通用标签 ===== */
 .tag {

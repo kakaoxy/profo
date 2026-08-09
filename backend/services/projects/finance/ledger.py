@@ -67,7 +67,10 @@ def _fetch_receipt_bytes(url: str, upload_dir: Path) -> bytes | None:
             logger.warning("拒绝下载非白名单 hostname 票据文件: %s", url)
             return None
         try:
-            with httpx.stream("GET", url, timeout=_RECEIPT_DOWNLOAD_TIMEOUT, follow_redirects=True) as resp:
+            with (
+                httpx.Client(trust_env=False) as client,
+                client.stream("GET", url, timeout=_RECEIPT_DOWNLOAD_TIMEOUT, follow_redirects=True) as resp,
+            ):
                 resp.raise_for_status()
                 # 校验重定向后最终 URL 的 hostname 仍在白名单内
                 final_host = urlparse(str(resp.url)).hostname

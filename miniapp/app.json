@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/projects/list/index",
+    "pages/test-login/index/index",
     "pages/projects/detail/index",
     "pages/valuation/submit/index",
     "pages/about/index/index",
@@ -20,10 +21,30 @@
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
-      { "pagePath": "pages/projects/list/index", "text": "房源" },
-      { "pagePath": "pages/about/index/index", "text": "服务" },
-      { "pagePath": "pages/valuation/submit/index", "text": "估价" },
-      { "pagePath": "pages/profile/index/index", "text": "我的" }
+      {
+        "pagePath": "pages/projects/list/index",
+        "text": "房源",
+        "iconPath": "assets/tabbar/search.png",
+        "selectedIconPath": "assets/tabbar/search-active.png"
+      },
+      {
+        "pagePath": "pages/about/index/index",
+        "text": "服务",
+        "iconPath": "assets/tabbar/house.png",
+        "selectedIconPath": "assets/tabbar/house-active.png"
+      },
+      {
+        "pagePath": "pages/valuation/submit/index",
+        "text": "估价",
+        "iconPath": "assets/tabbar/chart.png",
+        "selectedIconPath": "assets/tabbar/chart-active.png"
+      },
+      {
+        "pagePath": "pages/profile/index/index",
+        "text": "我的",
+        "iconPath": "assets/tabbar/user.png",
+        "selectedIconPath": "assets/tabbar/user-active.png"
+      }
     ]
   },
   "style": "v2",
