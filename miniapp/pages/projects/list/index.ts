@@ -116,7 +116,6 @@ interface PageCustom {
   onSearchInput(e: WechatMiniprogram.Input): void;
   onSearchConfirm(): void;
   onFilterPillTap(e: WechatMiniprogram.BaseEvent): void;
-  onFilterMaskTap(): void;
   onFilterOptionTap(e: WechatMiniprogram.BaseEvent): void;
   onFloorMinInput(e: WechatMiniprogram.Input): void;
   onFloorMaxInput(e: WechatMiniprogram.Input): void;
@@ -357,9 +356,6 @@ Page<PageData, PageCustom>({
     const key = e.currentTarget.dataset.key as FilterKey;
     // 再次点击同一 pill 收起
     this.setData({ activeFilter: this.data.activeFilter === key ? "" : key });
-  },
-  onFilterMaskTap() {
-    this.setData({ activeFilter: "" });
   },
   /** 价格/户型/面积 选项点击：单选即生效. */
   onFilterOptionTap(e: WechatMiniprogram.BaseEvent) {

@@ -135,9 +135,6 @@
     </view>
   </view>
 
-  <!-- 下拉遮罩（点击关闭当前下拉） -->
-  <view wx:if="{{activeFilter}}" class="filter-mask" bindtap="onFilterMaskTap"></view>
-
   <!-- 计数行 -->
   <view class="count-row">共 {{total}} 套房源</view>
 

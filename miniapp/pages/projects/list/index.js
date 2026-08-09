@@ -266,9 +266,6 @@ Page({
     // 再次点击同一 pill 收起
     this.setData({ activeFilter: this.data.activeFilter === key ? "" : key });
   },
-  onFilterMaskTap() {
-    this.setData({ activeFilter: "" });
-  },
   /** 价格/户型/面积 选项点击：单选即生效. */
   onFilterOptionTap(e) {
     const { filter, key } = e.currentTarget.dataset;
