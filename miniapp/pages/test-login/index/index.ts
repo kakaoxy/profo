@@ -33,6 +33,8 @@ interface LoginFailure {
 type LoginResult = LoginFailure;
 
 interface PageData {
+  /** 来源标记：=valuation 时登录成功后 navigateBack 返回估价页（保留已填表单）；否则 switchTab 到 profile. */
+  from: string;
   username: string;
   password: string;
   usernameError: string;
@@ -87,12 +89,17 @@ function errMessage(err: unknown): string {
 
 Page<PageData, PageCustom>({
   data: {
+    from: "",
     username: "",
     password: "",
     usernameError: "",
     passwordError: "",
     submitting: false,
     result: null,
+  },
+
+  onLoad(options: { from?: string }) {
+    this.setData({ from: options.from || "" });
   },
 
   onUsernameInput(e: WechatMiniprogram.Input) {
@@ -135,9 +142,17 @@ Page<PageData, PageCustom>({
       // 与 profile 页读取的 key 保持一致，供后续页面直接使用
       wx.setStorageSync("access_token", res.access_token);
       wx.setStorageSync("refresh_token", res.refresh_token);
-      // 登录成功自动跳转 profile（TabBar 页），不再展示测试信息
       wx.showToast({ title: "登录成功", icon: "success" });
-      wx.switchTab({ url: "/pages/profile/index/index" });
+      if (this.data.from === "valuation") {
+        // 由估价提交页拦截而来：navigateBack 返回估价页，其页面实例仍在导航栈中，
+        // 已填写的表单数据（含已上传图片）完整保留，不发生数据丢失
+        setTimeout(() => {
+          wx.navigateBack();
+        }, 400);
+      } else {
+        // 其他入口（如 profile）：登录成功跳转 profile（TabBar 页）
+        wx.switchTab({ url: "/pages/profile/index/index" });
+      }
     } catch (err) {
       this.setData({ result: { type: "failure", message: errMessage(err) } });
     } finally {

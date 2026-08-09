@@ -75,6 +75,7 @@ interface PageCustom {
   onPhoneInput(e: WechatMiniprogram.Input): void;
   onPhoneCancel(): void;
   onPhoneConfirm(): void;
+  requireLogin(): void;
   onGoLogin(): void;
   onSubmit(): void;
   afterSubmitSuccess(): void;
@@ -393,9 +394,29 @@ Page<PageData, PageCustom>({
     }
   },
 
+  /**
+   * 未登录拦截：弹「需要登录」提示，确认后跳转登录页.
+   * 登录成功后回到本页（from=valuation 使登录页 navigateBack 返回），已填表单因本页存活于
+   * 导航栈而完整保留，不发生数据丢失.
+   */
+  requireLogin() {
+    wx.showModal({
+      title: "需要登录",
+      content: "登录后才能提交估价，是否前往登录？",
+      confirmText: "去登录",
+      cancelText: "取消",
+      success: (res) => {
+        if (res.confirm) {
+          this.onGoLogin();
+        }
+      },
+    });
+  },
+
   onGoLogin() {
-    // 后端微信登录未完成，先跳账号密码测试登录页（test-login）
-    wx.navigateTo({ url: "/pages/test-login/index/index" });
+    // 后端微信登录未完成，先跳账号密码测试登录页（test-login）；
+    // from=valuation 让登录成功后可 navigateBack 返回本页并保留已填表单
+    wx.navigateTo({ url: "/pages/test-login/index/index?from=valuation" });
   },
 
   async onSubmit() {
@@ -404,7 +425,7 @@ Page<PageData, PageCustom>({
     }
     const token = this.getToken();
     if (!token) {
-      wx.showToast({ title: "请先登录", icon: "none" });
+      this.requireLogin();
       return;
     }
     const {
