@@ -1,0 +1,61 @@
+<view class="page">
+  <!-- 计数行 -->
+  <view class="count-row" wx:if="{{!needLogin && !error && items.length > 0}}">共 {{total}} 条评估</view>
+
+  <!-- 未登录态 -->
+  <view class="state" wx:if="{{needLogin}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请先登录后查看我的评估</view>
+    <view class="state__btn" bindtap="onGoLogin">去登录</view>
+  </view>
+
+  <!-- 错误态 -->
+  <view class="state" wx:if="{{!needLogin && error}}">
+    <view class="state__text">加载失败，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 首次加载态 -->
+  <view class="state" wx:if="{{!needLogin && !error && loading && items.length === 0}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <!-- 列表区 -->
+  <block wx:if="{{!needLogin && !error}}">
+    <view
+      class="list-card"
+      wx:for="{{items}}"
+      wx:key="id"
+      bindtap="onItemTap"
+      data-id="{{item.id}}"
+    >
+      <view class="list-header">
+        <view class="list-title">{{item.community_name}}</view>
+        <view
+          class="badge"
+          style="color: {{item.badgeColor}}; background: {{item.badgeBackground}};"
+        >{{item.badgeText}}</view>
+      </view>
+      <view class="list-desc">{{item.desc}}</view>
+      <view class="list-footer">
+        <view class="list-date">{{item.date}}</view>
+        <view class="chevron">›</view>
+      </view>
+    </view>
+
+    <!-- 空态：已登录且无记录 -->
+    <view class="state" wx:if="{{!loading && items.length === 0 && total === 0}}">
+      <view class="state__text">暂无评估记录</view>
+      <view class="state__btn" bindtap="onGoValuation">去估价</view>
+    </view>
+
+    <!-- 底部加载更多 -->
+    <view class="footer" wx:if="{{items.length > 0}}">
+      <view class="footer__text" wx:if="{{loadingMore}}">加载中...</view>
+      <view class="footer__end" wx:elif="{{noMore}}">没有更多了</view>
+    </view>
+  </block>
+
+  <!-- 底部留白，避让原生 TabBar -->
+  <view style="height: 240rpx;"></view>
+</view>

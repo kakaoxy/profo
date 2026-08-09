@@ -3,7 +3,7 @@
   <view class="brand">
     <view class="brand-icon">房</view>
     <view class="brand-title">美房宝</view>
-    <view class="brand-sub">账号密码登录 · 测试页</view>
+    <view class="brand-sub">账号密码登录</view>
   </view>
 
   <!-- 登录表单 -->
@@ -45,6 +45,6 @@
     <view class="result-body">
       <view class="result-row"><text class="k">错误</text><text class="v">{{result.message}}</text></view>
     </view>
-    <view class="result-foot">真实接口已调用；后端微信登录完成后可移除本测试页。</view>
+    <view class="result-foot"></view>
   </view>
 </view>

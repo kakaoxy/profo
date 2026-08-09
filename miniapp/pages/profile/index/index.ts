@@ -66,6 +66,7 @@ interface PageCustom {
   onPhoneInput(e: WechatMiniprogram.Input): void;
   onPhoneCancel(): void;
   onPhoneConfirm(): void;
+  onValuationTap(): void;
   onMenuTap(): void;
 }
 
@@ -305,6 +306,15 @@ Page<PageData, PageCustom>({
     } finally {
       this.setData({ submittingPhone: false });
     }
+  },
+
+  onValuationTap() {
+    // 我的估价：未登录跳登录页；已登录进入「我的评估」列表
+    if (!this.data.loggedIn) {
+      this.onGoLogin();
+      return;
+    }
+    wx.navigateTo({ url: "/pages/valuation/list/index" });
   },
 
   onMenuTap() {

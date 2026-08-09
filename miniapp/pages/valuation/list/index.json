@@ -1,0 +1,6 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "我的评估",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#faf7f2"
+}

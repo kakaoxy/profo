@@ -4,6 +4,8 @@
     "pages/test-login/index/index",
     "pages/projects/detail/index",
     "pages/valuation/submit/index",
+    "pages/valuation/list/index",
+    "pages/valuation/detail/index",
     "pages/about/index/index",
     "pages/profile/index/index"
   ],

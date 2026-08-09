@@ -55,7 +55,7 @@
   <!-- 我的服务 -->
   <view class="menu-group-title">我的服务</view>
   <view class="menu-list">
-    <view class="menu-item" bindtap="onMenuTap">
+    <view class="menu-item" bindtap="onValuationTap">
       <view class="menu-left">
         <view class="menu-icon">估</view>
         <text>我的估价</text>

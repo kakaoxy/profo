@@ -253,6 +253,15 @@ Page({
     }
   },
 
+  onValuationTap() {
+    // 我的估价：未登录跳登录页；已登录进入「我的评估」列表
+    if (!this.data.loggedIn) {
+      this.onGoLogin();
+      return;
+    }
+    wx.navigateTo({ url: "/pages/valuation/list/index" });
+  },
+
   onMenuTap() {
     // 二级页面（我的估价 / 内部入口）本轮不建页，统一待开放
     wx.showToast({ title: "功能待开放", icon: "none" });
