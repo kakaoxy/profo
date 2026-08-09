@@ -150,7 +150,8 @@ class ProjectQueryService:
         if business_form:
             query = query.filter(Project.business_form == business_form)
 
-        # 预加载关联数据（列表页所需：contract/owners/sale/project_manager/renovation_photos/finance_records）
+        # 预加载关联数据（列表页所需：contract/owners/sale/project_manager/
+        # renovation/renovation_photos/finance_records）
         options: list = [
             selectinload(Project.owners),
             joinedload(Project.sale),
@@ -158,6 +159,8 @@ class ProjectQueryService:
             selectinload(Project.renovation_photos),
             selectinload(Project.finance_records),
         ]
+        # renovation 用于列表页展示"总体进度%"（builder 始终构建 stage_dates）
+        options.append(joinedload(Project.renovation))
         if include_interactions:
             # 工作台重点监控卡片需展示项目动态(带看/出价)，预加载互动记录避免 N+1
             # 同时预加载 operator 关系以构建销售记录操作人嵌套对象

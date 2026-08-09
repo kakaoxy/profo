@@ -8,6 +8,8 @@
     "pages/valuation/detail/index",
     "pages/viewing/projects/index/index",
     "pages/viewing/detail/index/index",
+    "pages/renovation/projects/index/index",
+    "pages/renovation/detail/index/index",
     "pages/about/index/index",
     "pages/profile/index/index"
   ],

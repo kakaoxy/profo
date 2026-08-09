@@ -1,0 +1,101 @@
+<view class="page">
+  <!-- 未登录 / 令牌失效 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请重新登录后查看装修进度</view>
+    <view class="state__btn" bindtap="onGoBack">返回</view>
+  </view>
+
+  <!-- 无权限查看 -->
+  <view class="state" wx:elif="{{state === 'noPermission'}}">
+    <view class="state__title">无权限查看</view>
+    <view class="state__text">当前账号无权查看该项目装修进度</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <!-- 就绪状态 -->
+  <block wx:elif="{{state === 'ready'}}">
+    <!-- 顶部标题栏 -->
+    <view class="topbar">
+      <view class="topbar-title">{{projectName}}</view>
+    </view>
+
+    <!-- KPI 两宫格 -->
+    <view class="kpi-grid">
+      <view class="kpi-cell">
+        <view class="kpi-label">当前阶段</view>
+        <view class="kpi-value">{{currentStageText}}</view>
+      </view>
+      <view class="kpi-cell">
+        <view class="kpi-label">总体进度</view>
+        <view class="kpi-value">{{progressText}}</view>
+      </view>
+    </view>
+
+    <!-- 阶段时间线 -->
+    <view class="stage-list">
+      <view class="stage-card" wx:for="{{stages}}" wx:key="value">
+        <!-- 折叠头（点击切换展开） -->
+        <view class="stage-head" bindtap="onToggleStage" data-stage="{{item.value}}">
+          <view class="stage-icon {{item.isCompleted ? 'stage-icon--done' : (item.isCurrent ? 'stage-icon--current' : 'stage-icon--future')}}">
+            <text wx:if="{{item.isCompleted}}">✓</text>
+            <text wx:elif="{{item.isCurrent}}">●</text>
+            <text wx:else>○</text>
+          </view>
+          <view class="stage-name">{{item.label}}</view>
+          <view class="stage-date" wx:if="{{item.finishDate}}">{{item.finishDate}} 完成</view>
+          <view class="stage-count" wx:if="{{item.photos.length > 0}}">{{item.photos.length}} 张</view>
+          <view class="chevron {{expandedStage === item.value ? 'chevron--open' : ''}}">›</view>
+        </view>
+
+        <!-- 展开内容 -->
+        <view class="stage-body" wx:if="{{expandedStage === item.value}}">
+          <!-- 照片网格（含上传中占位与上传按钮） -->
+          <view class="photo-grid">
+            <view class="photo-item" wx:for="{{item.photos}}" wx:for-item="photo" wx:key="id" catchtap="onPreviewPhoto" data-stage="{{item.value}}" data-url="{{photo.url}}">
+              <image class="photo-img" src="{{photo.url}}" mode="aspectFill" />
+              <view class="photo-remove" wx:if="{{canEdit}}" catchtap="onDeletePhoto" data-id="{{photo.id}}">×</view>
+            </view>
+            <view class="photo-item photo-item--uploading" wx:for="{{item.uploading}}" wx:for-item="up" wx:key="key">
+              <image wx:if="{{!up.failed}}" class="photo-img" src="{{up.localPath}}" mode="aspectFill" />
+              <view class="upload-mask" wx:if="{{!up.failed}}">{{up.percent}}%</view>
+              <view wx:if="{{up.failed}}" class="upload-failed" catchtap="onRetryUpload" data-stage="{{item.value}}" data-key="{{up.key}}" data-path="{{up.localPath}}">
+                <view class="upload-failed-text">上传失败</view>
+                <view class="upload-failed-retry">重试</view>
+              </view>
+            </view>
+            <view class="photo-item photo-item--add" wx:if="{{canEdit}}" catchtap="onChoosePhoto" data-stage="{{item.value}}">＋</view>
+          </view>
+          <view class="photo-empty" wx:if="{{item.photos.length === 0 && item.uploading.length === 0 && !canEdit}}">暂无施工照片</view>
+
+          <!-- 完成阶段（canEdit 且未完成） -->
+          <view class="complete-row" wx:if="{{canEdit && !item.isCompleted}}">
+            <picker mode="date" value="{{item.completeDate}}" data-stage="{{item.value}}" bindchange="onDateChange">
+              <view class="complete-date">{{item.completeDate}}</view>
+            </picker>
+            <button
+              class="complete-btn {{submittingStage === item.value ? 'complete-btn--disabled' : ''}}"
+              disabled="{{submittingStage === item.value}}"
+              data-stage="{{item.value}}"
+              catchtap="onCompleteStage"
+            >{{submittingStage === item.value ? '提交中…' : '完成阶段'}}</button>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 底部留白 -->
+  <view wx:if="{{state === 'ready'}}" style="height: 120rpx;"></view>
+</view>

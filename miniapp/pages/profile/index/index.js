@@ -10,10 +10,10 @@ import { getTokenAud } from "../../../utils/token";
  */
 const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 
-/** 内部入口四项（viewing 已落地，其余二级页面本轮不建，点击统一「功能待开放」）. */
+/** 内部入口四项（viewing/renovation 已落地，其余二级页面本轮不建，点击统一「功能待开放」）. */
 const INTERNAL_ENTRIES = [
   { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
-  { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装" },
+  { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装", route: "/pages/renovation/projects/index/index" },
   { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账" },
   { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房" },
 ];

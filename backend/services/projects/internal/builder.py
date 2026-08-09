@@ -81,11 +81,12 @@ class ProjectResponseBuilder:
         # joinedload 预加载，无额外查询开销。
         response.update(self._build_renovation_info(project, current_user=current_user))
 
-        if not slim:
+        if not slim or include_interactions:
             response.update(self._build_interactions(project))
-            response.update(self._build_stage_dates(project))
-        elif include_interactions:
-            response.update(self._build_interactions(project))
+
+        # 阶段完成日期（装修进度）始终构建：列表页（slim=True）需展示"总体进度%"。
+        # project.renovation 已 joinedload 预加载，无额外查询开销。
+        response.update(self._build_stage_dates(project))
 
         response.update(self._build_renovation_photos(project))
 

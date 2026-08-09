@@ -1,0 +1,103 @@
+/* 「装修记录」列表页 · warm 风格（对齐 profile 页） */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  padding-bottom: 40rpx;
+}
+
+.list-title {
+  font-size: 24rpx;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--graphite);
+  margin: 32rpx 48rpx 16rpx;
+}
+
+/* ===== 项目卡片 ===== */
+.project-card {
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  padding: 32rpx 32rpx 28rpx;
+  box-shadow: var(--shadow-sm);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.card-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+.status-badge {
+  flex-shrink: 0;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.card-progress {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid #ece7de;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.progress-item {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+.progress-label {
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.progress-value {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.chevron {
+  font-size: 40rpx;
+  line-height: 1;
+  color: var(--dove);
+  margin-left: 8rpx;
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 120rpx 40rpx;
+}
+.state__title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 20rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}
