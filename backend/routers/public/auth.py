@@ -117,11 +117,11 @@ def register(
 
 @router.post(
     "/token",
-    summary="C端用户登录",
-    description="C端用户使用用户名密码登录，返回JWT令牌",
+    summary="C端登录",
+    description="使用用户名密码登录，返回JWT令牌；支持 C 端用户与内部用户（按身份签发对应端令牌）",
     responses={
         401: {"description": "用户名或密码错误"},
-        403: {"description": "非C端用户或账号被禁用"},
+        403: {"description": "账号被禁用"},
         429: {"description": "请求过于频繁"},
     },
 )
@@ -131,14 +131,11 @@ def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DbSessionDep,
 ) -> PublicLoginResponse:
-    """C端用户登录，验证用户名密码后返回JWT令牌."""
+    """登录，验证用户名密码后返回JWT令牌；按用户身份签发对应端令牌."""
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     try:
         user = AuthService.authenticate_user(db, form_data.username, form_data.password)
-        if not has_customer_identity(user):
-            msg = "此接口仅限C端用户登录"
-            raise PermissionDeniedError(msg)
     except (AuthenticationError, PermissionDeniedError) as e:
         log_auth_event(
             "login_failure",
@@ -155,14 +152,20 @@ def login_for_access_token(
         user_agent=user_agent,
     )
 
-    # C 端登录固定签发 aud=c, role=customer 的令牌：
-    # 即使主角色为 admin 但具备 customer 附加角色，C 端身份下 role claim 固定为 customer
-    token_data = AuthService.create_tokens_for_user(
-        db,
-        user,
-        audience=AUDIENCE_C,
-        role_claim=RoleCode.CUSTOMER.value,
-    )
+    # 按用户身份识别并签发对应端令牌，供前端差异化展示：
+    # - 具备 customer 身份（主角色或附加角色）→ 签发 C 端令牌（aud=c, role=customer），
+    #   即使主角色为 admin，C 端身份下 role claim 也固定为 customer；
+    # - 纯内部用户（无 customer 身份）→ 签发后台令牌（aud=admin），
+    #   前端据此通过 C 端 /me 或后台 /me 双通道识别内部身份。
+    if has_customer_identity(user):
+        token_data = AuthService.create_tokens_for_user(
+            db,
+            user,
+            audience=AUDIENCE_C,
+            role_claim=RoleCode.CUSTOMER.value,
+        )
+    else:
+        token_data = AuthService.create_tokens_for_user(db, user)
 
     return PublicLoginResponse(
         access_token=token_data["access_token"],

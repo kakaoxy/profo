@@ -4,9 +4,11 @@
  * 用途：后端微信登录功能完成前，用于系统测试后台账号密码真实登录流程，
  * 并衔接 profile 页（我的）的后链路测试（内部员工身份 / 手机号展示 / 退出登录）。
  *
- * 登录接口：POST /public/auth/token（C 端 OAuth2 表单登录，支持普通用户与多角色内部账号）.
+ * 登录接口：POST /public/auth/token（OAuth2 表单登录，支持普通用户与内部用户）.
  * 登录成功后把 access_token / refresh_token 写入 storage（与 profile 页读取的 key 一致），
  * 再跳转 `pages/profile/index/index`（TabBar 页）验证后链路。
+ * 后端按身份签发令牌：customer 身份 → C 端令牌；纯内部用户 → 后台令牌，
+ * profile 页据此双通道识别身份并差异化展示内容。
  *
  * 依赖：仅本目录 + app.json pages 中对应条目 + utils/request + types/api-types.d.ts。
  * 移除：删除本目录并去掉 app.json 中 `pages/test-login/index` 条目即可，无残留依赖。
@@ -50,9 +52,9 @@ interface PageCustom {
 export {};
 
 /**
- * 调用后端 C 端登录接口 POST /public/auth/token（OAuth2 表单登录）.
- * 支持普通 customer 账号，以及 admin/operator + customer 附加角色的多角色内部账号
- * （C 端令牌 + 权限识别内部身份，可命中 profile 页手机号完善与内部入口）.
+ * 调用后端登录接口 POST /public/auth/token（OAuth2 表单登录）.
+ * 支持普通 customer 账号，以及 admin/operator 等内部账号：
+ * 后端按身份签发对应端令牌，profile 页据此差异化展示。
  */
 function realLogin(username: string, password: string): Promise<PublicLoginResponse> {
   return request<PublicLoginResponse>({

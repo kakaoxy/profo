@@ -147,8 +147,8 @@ Page<PageData, PageCustom>({
       username: user.username,
       avatarChar: nickname.slice(0, 1) || "我",
       isInternal,
-      roleBadgeText: isInternal ? "内部员工" : "普通用户",
-      roleLabel: isInternal ? "内部用户 · 已认证" : "普通用户 · 已认证",
+      roleBadgeText: isInternal ? "内部员工" : "C端用户",
+      roleLabel: isInternal ? "内部用户" : "C端用户",
       phoneDisplay: phone || "完善手机号",
       hasPhone: !!phone,
     });

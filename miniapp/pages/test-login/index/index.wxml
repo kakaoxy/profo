@@ -33,7 +33,7 @@
 
     <button class="btn-primary login-btn" disabled="{{submitting}}" bindtap="onSubmit">{{submitting ? '登录中…' : '登  录'}}</button>
 
-    <view class="hint">C 端账号登录（测试：admin / Fdd123..，需具备 customer 身份）</view>
+    <view class="hint">账号登录</view>
   </view>
 
   <!-- 登录失败提示（成功时自动跳转 profile，不展示结果卡片） -->
