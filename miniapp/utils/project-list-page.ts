@@ -69,6 +69,10 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
     clearToken() {
       wx.removeStorageSync("access_token");
       wx.removeStorageSync("refresh_token");
+      // 内部员工持双令牌（admin + c_access_token），401 时同步清 C 端令牌，
+      // 避免 valuation/list 等 C 端页面残留登录态造成 UI 状态不一致
+      wx.removeStorageSync("c_access_token");
+      wx.removeStorageSync("c_refresh_token");
     },
 
     onShow(this: ProjectListPageThis<TItem>) {
