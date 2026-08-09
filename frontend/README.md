@@ -18,7 +18,17 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 字体使用说明
+
+本项目通过 [`next/font/local`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) 加载两个**开源**字体（本地文件，无需访问 Google Fonts CDN），并在根布局全局生效：
+
+| 字体 | 本地文件 | 许可 | 设计系统角色（CSS 变量） |
+|------|----------|------|--------------------------|
+| [Inter](https://rsms.me/inter/) | `src/app/fonts/inter.woff2` | SIL OFL 1.1 | 正文/UI 工作马 → `--font-sohne`（替代商业字体 Söhne） |
+| [Source Serif 4](https://github.com/adobe-fonts/source-serif) | `src/app/fonts/source-serif-4.woff2` | SIL OFL 1.1 | 展示衬线（hero/大标题） → `--font-signifier`（替代商业字体 Signifier） |
+
+- 两字体均不含 CJK 字形，中文由系统字体栈回退（iOS 苹方 PingFang SC / Android Noto Sans CJK），跨平台兼容。
+- 更多细节见 `docs/frontend-字体审查报告.md`。
 
 ## Learn More
 
