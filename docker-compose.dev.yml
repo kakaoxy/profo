@@ -14,9 +14,3 @@ services:
   redis:
     ports:
       - "6379:6379"
-    # 开发环境覆盖：本机 uvicorn 通过 127.0.0.1:6379 直连（backend/.env 的 REDIS_URL 无密码），
-    # 因此关闭 requirepass。生产镜像（start.sh）不加载本文件，仍启用密码认证。
-    command:
-      - sh
-      - -c
-      - 'redis-server --maxmemory 24m --maxmemory-policy volatile-lru'

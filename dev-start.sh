@@ -69,6 +69,19 @@ for _field in JWT_SECRET_KEY ENCRYPTION_KEY WECHAT_APPID WECHAT_SECRET; do
 done
 export JWT_SECRET_KEY ENCRYPTION_KEY WECHAT_APPID WECHAT_SECRET
 
+# 从 .env 提取 REDIS_PASSWORD，构造本地可用的 REDIS_URL
+# .env 中的 redis://...@redis:6379/0 是 Docker 容器间地址，本地启动 host=redis 不可解析
+# 密码含 # @ 等特殊字符，必须 percent-encode：否则 # 被 urlparse 当作 fragment 起始符，
+# host 被错误截断（redis-py from_url 会对编码后的密码 unquote 回原始值，匹配 --requirepass）
+REDIS_PASSWORD="$(read_env_var REDIS_PASSWORD)"
+if [ -z "$REDIS_PASSWORD" ]; then
+  echo "❌ .env 中未找到 REDIS_PASSWORD"
+  echo "   请检查 .env 配置"
+  exit 1
+fi
+REDIS_PASSWORD_ENC="$(python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$REDIS_PASSWORD")"
+export REDIS_URL="redis://:${REDIS_PASSWORD_ENC}@127.0.0.1:6379/0"
+
 # 绕过 HTTP 代理（Clash/V2Ray 等）对本地请求的拦截
 # 代理软件会设置 HTTP_PROXY，导致 fetch 127.0.0.1:8000 走代理 → 502
 export NO_PROXY="127.0.0.1,localhost,0.0.0.0"
@@ -135,10 +148,10 @@ check_port() {
 }
 
 start_db() {
-  echo "启动 PostgreSQL + Redis (Docker)..."
+  echo "启动 PostgreSQL 与 Redis (Docker)..."
   $DEV_COMPOSE up -d db redis
   echo "✅ 数据库已启动: postgresql+psycopg://${POSTGRES_USER}:***@127.0.0.1:5432/${POSTGRES_DB}"
-  echo "✅ Redis 已启动: redis://127.0.0.1:6379/0"
+  echo "✅ Redis 已启动: redis://***@127.0.0.1:6379/0"
 }
 
 case "$CMD" in
@@ -171,15 +184,16 @@ case "$CMD" in
   db)
     start_db
     echo ""
-    echo "数据库已启动，请在两个终端分别运行："
+    echo "数据库与 Redis 已启动，请在两个终端分别运行："
     echo "  cd backend && .venv/bin/uvicorn main:app --reload --port 8000"
     echo "  cd frontend && pnpm dev"
     echo ""
-    echo "或直接执行: ./dev-start.sh  (一键启动全部)"
+    echo "注意: 手动启动 backend 时需自行 export REDIS_URL（参考脚本顶部逻辑），"
+    echo "      或直接执行: ./dev-start.sh  (一键启动全部，自动注入环境变量)"
     ;;
   stop)
-    echo "停止数据库容器..."
-    $DEV_COMPOSE stop db
+    echo "停止数据库与 Redis 容器..."
+    $DEV_COMPOSE stop db redis
     echo "✅ 已停止（本地前后端进程请用 Ctrl+C 终止）"
     ;;
   status|ps)
