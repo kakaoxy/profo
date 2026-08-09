@@ -50,26 +50,37 @@ Page({
     };
   },
 
-  onLoad() {
-    this.loadList(true);
-  },
-
   onShow() {
-    // 从登录页返回时 token 可能已补齐，重新检测；仅在处于未登录空态时加载
-    if (this.data.needLogin && this.getToken()) {
-      this.loadList(true);
+    var token = this.getToken();
+    if (!token) {
+      this.setData({ needLogin: true, loading: false, loadingMore: false });
+      return;
+    }
+    if (this.data.items.length === 0) {
+      // 首次进入 / 空态：骨架屏加载
+      this.loadList(true, false);
+    } else {
+      // 已有数据：静默刷新（保留当前列表，避免骨架屏闪烁）。
+      // 用于从「估价提交」页 navigateBack 返回时，能展示刚提交的最新估价。
+      this.loadList(true, true);
     }
   },
 
-  async loadList(reset) {
+  async loadList(reset, silent) {
     reset = reset || false;
+    silent = silent || false;
     var token = this.getToken();
     if (!token) {
       this.setData({ needLogin: true, loading: false, loadingMore: false });
       return;
     }
     if (reset) {
-      this.setData({ loading: true, error: false, noMore: false, needLogin: false });
+      // silent 时不置 loading（保留当前列表，避免骨架屏闪烁）
+      var patch = { error: false, noMore: false, needLogin: false };
+      if (!silent) {
+        patch.loading = true;
+      }
+      this.setData(patch);
     } else {
       this.setData({ loadingMore: true });
     }
@@ -100,7 +111,10 @@ Page({
         this.clearToken();
         this.setData({ needLogin: true, items: [], total: 0 });
       } else if (reset) {
-        this.setData({ error: true, items: [] });
+        // silent 时保留旧数据，避免返回刷新失败时误清列表
+        if (!silent) {
+          this.setData({ error: true, items: [] });
+        }
       } else {
         wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
@@ -123,8 +137,8 @@ Page({
 
   async onPullDownRefresh() {
     // loadList 异步，需等其结束（含无 token 提前返回 / catch）后再停止下拉刷新，
-    // 否则刷新动画会在请求完成前提前消失
-    await this.loadList(true);
+    // 否则刷新动画会在请求完成前提前消失；silent 避免与下拉动画叠加骨架屏闪烁
+    await this.loadList(true, true);
     wx.stopPullDownRefresh();
   },
 

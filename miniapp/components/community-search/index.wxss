@@ -1,0 +1,111 @@
+/* 小区搜索组件样式（自包含，不依赖页面样式；设计 token 来自 app.wxss 的 CSS 变量） */
+.community-search__wrap {
+  position: relative;
+}
+
+.community-search__input-wrap {
+  position: relative;
+}
+
+.community-search__input {
+  width: 100%;
+  height: 104rpx;
+  padding: 0 88rpx 0 32rpx;
+  border: 2rpx solid var(--dove);
+  border-radius: 32rpx;
+  font-size: 30rpx;
+  background: var(--pure-white);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+.community-search__input[disabled] {
+  color: var(--graphite);
+  background: var(--fog);
+}
+
+.community-search__clear {
+  position: absolute;
+  right: 20rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--fog);
+  color: var(--graphite);
+  font-size: 32rpx;
+}
+
+.community-search__dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 112rpx;
+  z-index: 20;
+  background: var(--pure-white);
+  border-radius: 32rpx;
+  box-shadow: var(--shadow-sm);
+  max-height: 480rpx;
+  overflow-y: auto;
+}
+
+.community-search__loading {
+  padding: 40rpx;
+  text-align: center;
+  color: var(--graphite);
+  font-size: 26rpx;
+}
+
+.community-search__list {
+  padding: 8rpx;
+}
+
+.community-search__item {
+  padding: 24rpx;
+  border-radius: 24rpx;
+}
+
+.community-search__item:active {
+  background: var(--fog);
+}
+
+.community-search__item-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.community-search__item-meta {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+
+.community-search__empty {
+  padding: 8rpx;
+}
+
+.community-search__hint {
+  padding: 40rpx;
+  text-align: center;
+  color: var(--graphite);
+  font-size: 26rpx;
+}
+
+.community-search__use-query {
+  padding: 24rpx;
+  margin: 8rpx;
+  border-radius: 24rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 28rpx;
+  font-weight: 500;
+  text-align: center;
+}
+
+.community-search__use-query:active {
+  opacity: 0.8;
+}

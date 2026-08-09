@@ -6,21 +6,61 @@
     <view class="form-sub">线上提交房源信息，我们先做初步估价。合适的会联系你安排上门看房，结合周边真实成交数据，再商定写进合同的约定价格。不签约不收费。</view>
   </view>
 
-  <!-- 手机号提示 -->
-  <view class="phone-banner">完善手机号，加速评估速度</view>
+  <!-- 手机号完善 banner（未绑定手机号时展示；未登录时点击引导登录） -->
+  <view wx:if="{{!hasPhone}}" class="phone-banner">
+    <block wx:if="{{!editingPhone}}">
+      <text class="phone-banner__text">完善手机号，加速评估速度</text>
+      <text class="phone-banner__action" bindtap="onPhoneTap">完善手机号 ›</text>
+    </block>
+    <block wx:else>
+      <view class="phone-form">
+        <input
+          class="phone-input"
+          type="number"
+          maxlength="11"
+          value="{{phoneInput}}"
+          placeholder="请输入11位手机号"
+          bindinput="onPhoneInput"
+        />
+        <view class="phone-actions">
+          <button class="phone-btn phone-btn--cancel" bindtap="onPhoneCancel">取消</button>
+          <button class="phone-btn phone-btn--save" disabled="{{submittingPhone}}" bindtap="onPhoneConfirm">{{submittingPhone ? '保存中…' : '保存'}}</button>
+        </view>
+      </view>
+    </block>
+  </view>
 
   <!-- 表单 -->
   <view class="form-page">
-    <!-- 小区名称 -->
+    <!-- 小区名称（复用 community-search 组件，输入即搜索） -->
     <view class="form-group">
       <text class="form-label">小区名称</text>
-      <input class="input" placeholder="请输入小区名称" value="{{form.community_name}}" bindinput="onInput" data-field="community_name"/>
+      <community-search
+        placeholder="请输入小区名称搜索"
+        bind:change="onCommunityChange"
+        bind:select="onCommunitySelect"
+        bind:clear="onCommunityClear"
+        bind:usequery="onCommunityUseQuery"
+      />
     </view>
 
-    <!-- 房源户型 -->
+    <!-- 房源户型（室 / 厅 / 卫） -->
     <view class="form-group">
       <text class="form-label">房源户型</text>
-      <input class="input" placeholder="如：三室两厅" value="{{form.layout}}" bindinput="onInput" data-field="layout"/>
+      <view class="layout-row">
+        <view class="layout-seg">
+          <input class="layout-input" type="number" placeholder="0" value="{{layoutRoom}}" data-field="room" bindinput="onLayoutInput"/>
+          <text class="layout-suffix">室</text>
+        </view>
+        <view class="layout-seg">
+          <input class="layout-input" type="number" placeholder="0" value="{{layoutHall}}" data-field="hall" bindinput="onLayoutInput"/>
+          <text class="layout-suffix">厅</text>
+        </view>
+        <view class="layout-seg">
+          <input class="layout-input" type="number" placeholder="0" value="{{layoutToilet}}" data-field="toilet" bindinput="onLayoutInput"/>
+          <text class="layout-suffix">卫</text>
+        </view>
+      </view>
     </view>
 
     <!-- 面积 -->
@@ -29,10 +69,18 @@
       <input class="input" placeholder="请输入建筑面积" type="digit" value="{{form.area}}" bindinput="onInput" data-field="area"/>
     </view>
 
-    <!-- 朝向 -->
+    <!-- 朝向（直接选择） -->
     <view class="form-group">
       <text class="form-label">朝向</text>
-      <input class="input" placeholder="南 / 北 / 东 / 西 / 南北 / 东西" value="{{form.orientation}}" bindinput="onInput" data-field="orientation"/>
+      <view class="orientation-row">
+        <view
+          wx:for="{{orientationOptions}}"
+          wx:key="*this"
+          class="orientation-option {{form.orientation === item ? 'orientation-option--active' : ''}}"
+          data-value="{{item}}"
+          bindtap="onOrientationTap"
+        >{{item}}</view>
+      </view>
     </view>
 
     <!-- 楼层 / 总高 -->
@@ -46,9 +94,15 @@
 
     <!-- 户型图上传 -->
     <view class="form-group">
-      <text class="form-label">户型图上传</text>
+      <view class="photo-head">
+        <text class="form-label">户型图上传</text>
+        <text class="photo-count">{{form.images.length}}/6</text>
+      </view>
       <view class="photo-grid">
-        <image class="photo-thumb" wx:for="{{displayImages}}" wx:key="*this" src="{{item}}" mode="aspectFill"/>
+        <view class="photo-thumb-wrap" wx:for="{{displayImages}}" wx:key="*this">
+          <image class="photo-thumb" src="{{item}}" mode="aspectFill"/>
+          <view class="photo-remove" data-index="{{index}}" bindtap="onRemoveImage">×</view>
+        </view>
         <view class="photo-upload" bindtap="onChooseImage">
           <text class="photo-upload__icon">📷</text>
           <text>添加图片</text>
@@ -65,11 +119,13 @@
     <!-- 补充信息 -->
     <view class="form-group">
       <text class="form-label">补充信息</text>
-      <input class="input" placeholder="装修情况、看房时间等备注" value="{{form.remarks}}" bindinput="onInput" data-field="remarks"/>
+      <textarea class="input textarea" placeholder="装修情况、看房时间等备注" value="{{form.remarks}}" bindinput="onInput" data-field="remarks"/>
     </view>
 
     <!-- 提交 -->
-    <button class="btn-primary submit-btn" bindtap="onSubmit">提交估价</button>
+    <view class="submit-wrap">
+      <button class="btn-primary submit-btn" disabled="{{submitting}}" bindtap="onSubmit">{{submitting ? '提交中...' : '提交估价'}}</button>
+    </view>
     <view class="risk-note">信息仅用于估价与上门看房安排，不外泄、不电话骚扰</view>
   </view>
 </view>

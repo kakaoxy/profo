@@ -1,0 +1,158 @@
+import type { components } from "../../types/api-types";
+import { request } from "../../utils/request";
+
+type PublicCommunitySearchItem = components["schemas"]["PublicCommunitySearchItem"];
+
+/** 输入防抖间隔（ms），防抖期间不发起网络请求 */
+const DEBOUNCE_DELAY = 300;
+/** 单次搜索返回条数上限（对齐后端接口 limit 参数） */
+const SEARCH_LIMIT = 20;
+
+/**
+ * 组件内部数据.
+ * - query / results / searching / dropdownOpen：用于视图渲染；
+ * - searchTimer / searchSeq：非渲染用的防抖与请求序号，放在 data 中随实例隔离，
+ *   保证同一页面多个组件实例互不干扰（避免模块级共享变量串扰）。
+ */
+const data: {
+  query: string;
+  results: PublicCommunitySearchItem[];
+  searching: boolean;
+  dropdownOpen: boolean;
+  searchTimer: number | null;
+  searchSeq: number;
+} = {
+  query: "",
+  results: [],
+  searching: false,
+  dropdownOpen: false,
+  searchTimer: null,
+  searchSeq: 0,
+};
+
+/**
+ * 可复用小区搜索组件.
+ *
+ * 功能：
+ * - 输入即搜索：对输入做 300ms 防抖，调用公开接口 `/public/communities/search`；
+ * - 结果候选浮层：展示匹配的小区（名称 + 区域/商圈），点击选中；
+ * - 无匹配时支持以当前关键词作为小区名提交；
+ * - 支持清空按钮、禁用态、外部受控回填（value）。
+ *
+ * 事件回调（通过 triggerEvent 抛出，供父级绑定 `bind:xxx` 接收）：
+ * - `change`：输入文本变化，detail = `{ value }`；
+ * - `select`：选中某个小区，detail = `{ id, name, district, business_circle }`；
+ * - `clear`：点击清空，无 detail；
+ * - `usequery`：使用当前关键词提交，detail = `{ query }`。
+ *
+ * 组件内部自行管理 query / results / dropdown 等展示态，父级只需消费事件将结果写入业务表单，
+ * 降低耦合并便于在项目其他位置（如估价、项目录入等）直接复用。
+ */
+Component({
+  properties: {
+    /** 外部回填/回显的小区名（受控值，如编辑场景回填）；用户输入时由 `change` 事件回传 */
+    value: { type: String, value: "" },
+    /** 输入框占位文案 */
+    placeholder: { type: String, value: "请输入小区名称搜索" },
+    /** 是否禁用输入与搜索（清空按钮同时隐藏） */
+    disabled: { type: Boolean, value: false },
+  },
+  data,
+  observers: {
+    // 外部回填时同步输入框文本；仅当值变化时同步，避免与用户输入互相覆盖
+    value(newVal: string) {
+      if (newVal !== this.data.query) {
+        this.setData({ query: newVal });
+      }
+    },
+  },
+  lifetimes: {
+    attached() {
+      this.data.searchTimer = null;
+      this.data.searchSeq = 0;
+    },
+    // 组件销毁时清理定时器，防止内存泄漏/野回调
+    detached() {
+      this.clearTimer();
+    },
+  },
+  methods: {
+    onInput(e: WechatMiniprogram.Input) {
+      const raw = e.detail.value;
+      const keyword = raw.trim();
+      this.setData({ query: raw });
+      this.clearTimer();
+      if (!keyword) {
+        // 空关键词：收起浮层并清空结果
+        this.setData({ results: [], searching: false, dropdownOpen: false });
+        this.triggerEvent("change", { value: raw });
+        return;
+      }
+      this.setData({ searching: true, dropdownOpen: true });
+      this.data.searchSeq += 1;
+      const currentSeq = this.data.searchSeq;
+      this.data.searchTimer = setTimeout(() => {
+        this.data.searchTimer = null;
+        this.doSearch(keyword, currentSeq);
+      }, DEBOUNCE_DELAY);
+      this.triggerEvent("change", { value: raw });
+    },
+
+    onSelect(e: WechatMiniprogram.BaseEvent) {
+      const ds = e.currentTarget.dataset;
+      const id = ds.id as string;
+      const name = ds.name as string;
+      const district = (ds.district as string) || "";
+      const businessCircle = (ds.businessCircle as string) || "";
+      // 选中后回填输入框、收起浮层，并把完整小区信息抛给父级
+      this.setData({ query: name, results: [], searching: false, dropdownOpen: false });
+      this.triggerEvent("select", {
+        id,
+        name,
+        district,
+        business_circle: businessCircle,
+      });
+    },
+
+    onClear() {
+      this.clearTimer();
+      this.setData({ query: "", results: [], searching: false, dropdownOpen: false });
+      this.triggerEvent("clear");
+    },
+
+    onUseQuery() {
+      const query = this.data.query.trim();
+      if (!query) {
+        return;
+      }
+      this.setData({ results: [], searching: false, dropdownOpen: false });
+      this.triggerEvent("usequery", { query });
+    },
+
+    clearTimer() {
+      if (this.data.searchTimer !== null) {
+        clearTimeout(this.data.searchTimer);
+        this.data.searchTimer = null;
+      }
+    },
+
+    doSearch(keyword: string, currentSeq: number) {
+      // 公开接口，无需鉴权；request GET 默认不携带 Authorization
+      request<PublicCommunitySearchItem[]>({
+        url: "/public/communities/search",
+        data: { q: keyword, limit: SEARCH_LIMIT },
+      })
+        .then((results) => {
+          if (currentSeq !== this.data.searchSeq) {
+            return; // 过期响应，忽略
+          }
+          this.setData({ results, searching: false });
+        })
+        .catch(() => {
+          if (currentSeq === this.data.searchSeq) {
+            this.setData({ results: [], searching: false });
+          }
+        });
+    },
+  },
+});

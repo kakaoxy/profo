@@ -1,0 +1,43 @@
+<view class="community-search">
+  <view class="community-search__wrap">
+    <view class="community-search__input-wrap">
+      <input
+        class="community-search__input"
+        placeholder="{{placeholder}}"
+        value="{{query}}"
+        disabled="{{disabled}}"
+        bindinput="onInput"
+      />
+      <view wx:if="{{query && !disabled}}" class="community-search__clear" bindtap="onClear">×</view>
+    </view>
+
+    <!-- 候选浮层 -->
+    <view wx:if="{{dropdownOpen && !disabled}}" class="community-search__dropdown">
+      <view wx:if="{{searching}}" class="community-search__loading">搜索中...</view>
+      <block wx:else>
+        <!-- 匹配结果 -->
+        <view wx:if="{{results.length > 0}}" class="community-search__list">
+          <view
+            class="community-search__item"
+            wx:for="{{results}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            data-name="{{item.name}}"
+            data-district="{{item.district}}"
+            data-business-circle="{{item.business_circle}}"
+            bindtap="onSelect"
+          >
+            <view class="community-search__item-name">{{item.name}}</view>
+            <view class="community-search__item-meta">{{item.district}}{{item.business_circle ? ' · ' + item.business_circle : ''}}</view>
+          </view>
+        </view>
+        <!-- 无匹配：使用当前关键词提交 -->
+        <view wx:elif="{{query}}" class="community-search__empty">
+          <view class="community-search__use-query" bindtap="onUseQuery">使用 "{{query}}" 提交</view>
+        </view>
+        <!-- 空关键词提示 -->
+        <view wx:else class="community-search__hint">请输入关键词查找小区</view>
+      </block>
+    </view>
+  </view>
+</view>

@@ -293,7 +293,7 @@ class PublicLeadCreate(BaseModel):
     floor_info: str = Field(min_length=1, max_length=50, description="楼层信息")
     orientation: str | None = Field(None, description="朝向")
     remarks: str | None = Field(None, description="备注")
-    expected_price: float = Field(gt=0, description="业主心理预期价(万)")
+    expected_price: float | None = Field(None, gt=0, description="业主心理预期价(万)，选填")
     images: list[str] = Field(default_factory=list, max_length=6, description="户型图URL列表")
 
     @field_validator("images")

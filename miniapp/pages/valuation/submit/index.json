@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "community-search": "/components/community-search/index"
+  },
   "navigationBarTitleText": "在线预审"
 }

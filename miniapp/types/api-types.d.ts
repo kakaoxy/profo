@@ -2679,8 +2679,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * C端用户登录
-         * @description C端用户使用用户名密码登录，返回JWT令牌
+         * C端登录
+         * @description 使用用户名密码登录，返回JWT令牌；支持 C 端用户与内部用户（按身份签发对应端令牌）
          */
         post: operations["login_for_access_token_api_v1_public_auth_token_post"];
         delete?: never;
@@ -8236,9 +8236,9 @@ export interface components {
             remarks?: string | null;
             /**
              * Expected Price
-             * @description 业主心理预期价(万)
+             * @description 业主心理预期价(万)，选填
              */
-            expected_price: number;
+            expected_price?: number | null;
             /**
              * Images
              * @description 户型图URL列表
@@ -15930,7 +15930,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description 非C端用户或账号被禁用 */
+            /** @description 账号被禁用 */
             403: {
                 headers: {
                     [name: string]: unknown;
