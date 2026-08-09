@@ -144,11 +144,11 @@ Page<PageData, PageCustom>({
         noMore: merged.length >= data.total,
       });
     } catch (err) {
-      // 401：令牌失效或受众不匹配，区分处理——
-      // 返回 401 且为 admin 令牌（内部员工，无 C 端身份）→ 展示内部限定态而非清空有效登录态；
-      // 其余（C 端令牌失效）→ 清 token 并切「登录已失效」态。
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
-      if (statusCode === 401) {
+      // 401（令牌失效/受众不匹配，admin 令牌访问 C 端接口通常为此码）或 403（权限不足，防御性处理）：
+      // admin 令牌（内部员工，无 C 端身份）→ 展示内部限定态而非清空有效登录态；
+      // 其余（C 端令牌失效）→ 清 token 并切「登录已失效」态。
+      if (statusCode === 401 || statusCode === 403) {
         if (getTokenAud(token) === "admin") {
           this.setData({ internalOnly: true, items: [], total: 0 });
         } else {
