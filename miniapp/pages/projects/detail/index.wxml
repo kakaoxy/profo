@@ -17,6 +17,9 @@
 
   <!-- 详情态 -->
   <block wx:elif="{{detail}}">
+    <!-- 右上角分享按钮 -->
+    <button class="share-btn" open-type="share" aria-label="分享">分享</button>
+
     <!-- 图集（图片 + 视频） -->
     <swiper
       wx:if="{{gallery.length}}"

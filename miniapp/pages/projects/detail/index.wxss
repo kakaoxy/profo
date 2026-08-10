@@ -1,6 +1,32 @@
 .page {
+  position: relative;
   min-height: 100vh;
   background: var(--fog);
+}
+
+/* 右上角分享按钮 */
+.share-btn {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.share-btn::after {
+  border: none;
 }
 
 .state {

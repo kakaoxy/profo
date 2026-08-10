@@ -7,7 +7,7 @@ from sqlalchemy import Integer, and_, case, cast, desc, func, or_
 from sqlalchemy.orm import Query, Session
 
 from models import Community, L4MarketingMedia, L4MarketingProject, User
-from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
+from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory, PublishStatus
 from settings import settings
 from utils.formatters import escape_like
 from utils.image_processing import derive_thumbnail_url
@@ -23,44 +23,51 @@ class PublicProjectService:
     def resolve_cover_images_batch(self, items: list[L4MarketingProject]) -> dict[int, tuple[str | None, str | None]]:
         """批量解析项目封面图片和缩略图 URL.
 
-        images 非空的项目直接用首张 URL 推导缩略图；images 为空的项目统一
-        一次 in_(ids) 查询媒体表，取每个项目 sort_order 最小的 image 记录。
-        语义与逐条解析一致，避免循环内逐条查询造成 N+1。
+        封面图选择规则：优先营销照片（photo_category == 'marketing'）中
+        sort_order 最小的一张；仅当无营销照片时才回退到改造照片（renovation）。
+        分类信息只存在于 L4MarketingMedia 表（images JSON 数组为扁平 URL 列表，
+        无法区分营销/改造），故统一按 in_(ids) 批量查询媒体表一次（避免 N+1），
+        再按项目分组挑选。无任何媒体记录的项目回退到 images 数组首张。
 
         Returns:
             {item.id: (cover_image, cover_thumbnail_url)}
 
         """
-        result: dict[int, tuple[str | None, str | None]] = {}
-        fallback_ids: list[int] = []
-        for item in items:
-            images = item.images or []
-            cover_image = images[0] if images else None
-            if cover_image:
-                # JSON 数组中的 URL 无存储缩略图，按命名规则推导
-                result[item.id] = (cover_image, derive_thumbnail_url(cover_image))
-            else:
-                fallback_ids.append(item.id)
-                result[item.id] = (None, None)
-
-        if not fallback_ids:
+        result: dict[int, tuple[str | None, str | None]] = {item.id: (None, None) for item in items}
+        if not result:
             return result
 
-        # 一次 in_(ids) 查询拉取媒体表，回退到已存储的 thumbnail_url
         media_rows = (
             self.db.query(L4MarketingMedia)
             .filter(
-                L4MarketingMedia.marketing_project_id.in_(fallback_ids),
+                L4MarketingMedia.marketing_project_id.in_(list(result)),
                 L4MarketingMedia.is_deleted.is_(False),
                 L4MarketingMedia.media_type == "image",
             )
-            .order_by(L4MarketingMedia.marketing_project_id, L4MarketingMedia.sort_order)
+            .order_by(
+                L4MarketingMedia.marketing_project_id,
+                L4MarketingMedia.sort_order,
+                L4MarketingMedia.id,
+            )
             .all()
         )
+
+        grouped: dict[int, list[L4MarketingMedia]] = {}
         for media in media_rows:
-            # 已按 sort_order 升序，每个项目仅取第一条（首图），后续重复跳过
-            if result[media.marketing_project_id][0] is None:
-                result[media.marketing_project_id] = (media.file_url, media.thumbnail_url)
+            grouped.setdefault(media.marketing_project_id, []).append(media)
+
+        for project_id, rows in grouped.items():
+            # 营销照片优先，无营销照片则回退到该房源首张（改造照片）
+            marketing = next((m for m in rows if m.photo_category == PhotoCategory.MARKETING), None)
+            chosen = marketing if marketing is not None else rows[0]
+            result[project_id] = (chosen.file_url, chosen.thumbnail_url)
+
+        # 无媒体记录的项目回退到 images JSON 数组首张，按命名规则推导缩略图
+        for item in items:
+            if result[item.id][0] is None:
+                images = item.images or []
+                if images:
+                    result[item.id] = (images[0], derive_thumbnail_url(images[0]))
 
         return result
 
