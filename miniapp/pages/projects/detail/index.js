@@ -207,9 +207,26 @@ Page({
     this.loadDetail(id);
   },
   onShareAppMessage() {
-    return {
+    // 封面取图集首图（已为完整地址），无图则省略
+    const cover = this.data.gallery.find((g) => g.type === "image")?.url;
+    const share = {
       title: this.data.detail?.title || "美房宝房源",
       path: `/pages/projects/detail/index?id=${this.data.id}`,
     };
+    if (cover) {
+      share.imageUrl = cover;
+    }
+    return share;
+  },
+  onShareTimeline() {
+    const cover = this.data.gallery.find((g) => g.type === "image")?.url;
+    const share = {
+      title: this.data.detail?.title || "美房宝房源",
+      query: `id=${this.data.id}`,
+    };
+    if (cover) {
+      share.imageUrl = cover;
+    }
+    return share;
   },
 });

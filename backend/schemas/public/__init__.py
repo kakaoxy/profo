@@ -228,10 +228,14 @@ class PublicProjectDetail(BaseModel):
 
 
 class PublicConsultantContact(BaseModel):
-    """C端顾问联系方式."""
+    """C端顾问联系方式.
 
-    phone: str = Field(description="手机号(脱敏)")
-    wechat_number: str = Field(description="微信号")
+    该端点专供 C 端客户直接联系顾问（拨打/复制），返回真实手机号，
+    不做脱敏；名称中的「脱敏」仅适用于列表/详情里的 PublicConsultantInfo。
+    """
+
+    phone: str = Field(description="顾问手机号(真实，供客户拨打联系)")
+    wechat_number: str = Field(description="微信号(当前复用顾问手机号)")
     nickname: str = Field(description="昵称")
 
 
