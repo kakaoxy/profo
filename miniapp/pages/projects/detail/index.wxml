@@ -35,6 +35,7 @@
           class="gallery-img"
           src="{{item.url}}"
           mode="aspectFill"
+          data-url="{{item.url}}"
           bindtap="onMediaTap"
         />
         <block wx:else>
@@ -43,10 +44,18 @@
             class="gallery-img"
             src="{{item.poster}}"
             mode="aspectFill"
+            data-url="{{item.url}}"
             bindtap="onMediaTap"
           />
-          <view wx:else class="gallery-img gallery-video-placeholder" bindtap="onMediaTap"></view>
-          <view class="play-btn"><view class="play-triangle"></view></view>
+          <view
+            wx:else
+            class="gallery-img gallery-video-placeholder"
+            data-url="{{item.url}}"
+            bindtap="onMediaTap"
+          ></view>
+          <view class="play-btn" data-url="{{item.url}}" bindtap="onMediaTap">
+            <view class="play-triangle"></view>
+          </view>
         </block>
       </swiper-item>
     </swiper>
