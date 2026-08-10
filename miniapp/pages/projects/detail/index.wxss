@@ -4,25 +4,27 @@
   background: var(--fog);
 }
 
-/* 右上角分享按钮 */
+/* 右上角分享按钮：用 line-height=text-height 居中，避免 flex 在 button 上失效导致椭圆 */
 .share-btn {
   position: absolute;
   top: 24rpx;
   right: 24rpx;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-sizing: border-box;
   width: 88rpx;
   height: 88rpx;
+  min-width: 88rpx;
+  max-width: 88rpx;
   margin: 0;
   padding: 0;
   border: none;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.4);
   color: #fff;
-  font-size: 26rpx;
-  line-height: 1;
+  font-size: 24rpx;
+  line-height: 88rpx;
+  text-align: center;
+  overflow: hidden;
 }
 
 .share-btn::after {
