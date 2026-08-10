@@ -190,19 +190,19 @@ export const cLocale = {
       eyebrow: "Transparent Pricing",
       title: "算一笔实在账",
       subtitle:
-        "假设约定价 380 万、装修成本 15 万，看看三种市场情况下的结果",
+        "假设约定价 300 万、装修成本 20 万，看看三种市场情况下的结果",
       cases: [
         {
           scenario: "市场给力",
-          soldPrice: "430万",
-          ownerGets: "380万",
-          company: "+35万",
+          soldPrice: "330万",
+          ownerGets: "300万",
+          company: "+30万",
           note: "业主拿约定价，超出归公司",
         },
         {
           scenario: "市场一般",
-          soldPrice: "395万",
-          ownerGets: "380万",
+          soldPrice: "320万",
+          ownerGets: "300万",
           company: "刚回本",
           note: "业主拿约定价，公司不亏不赚",
         },
