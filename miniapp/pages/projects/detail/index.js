@@ -81,6 +81,8 @@ Page({
       return;
     }
     this.setData({ id });
+    // 启用右上角菜单的「分享给朋友」与「分享到朋友圈」，使 onShareTimeline 可触发
+    wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
     this.loadDetail(id);
   },
   async loadDetail(id) {
