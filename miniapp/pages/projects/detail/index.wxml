@@ -35,15 +35,19 @@
           class="gallery-img"
           src="{{item.url}}"
           mode="aspectFill"
-          bindtap="onImageTap"
+          bindtap="onMediaTap"
         />
-        <video
-          wx:else
-          class="gallery-img"
-          src="{{item.url}}"
-          controls
-          object-fit="cover"
-        />
+        <block wx:else>
+          <image
+            wx:if="{{item.poster}}"
+            class="gallery-img"
+            src="{{item.poster}}"
+            mode="aspectFill"
+            bindtap="onMediaTap"
+          />
+          <view wx:else class="gallery-img gallery-video-placeholder" bindtap="onMediaTap"></view>
+          <view class="play-btn"><view class="play-triangle"></view></view>
+        </block>
       </swiper-item>
     </swiper>
     <view wx:else class="gallery gallery-placeholder">

@@ -28,8 +28,8 @@ type DisplayStage = {
   clickable: boolean;
 };
 
-/** 图集项：图片或视频，供 swiper 渲染. */
-type GalleryItem = { type: "image" | "video"; url: string };
+/** 图集项：图片或视频，供 swiper 渲染. poster 为视频封面(来自 thumbnail_url)，图片为空串. */
+type GalleryItem = { type: "image" | "video"; url: string; poster: string };
 
 /** 阶段照片轮播弹层状态. */
 type StageViewer = {
@@ -64,7 +64,7 @@ interface PageData {
 
 type Custom = {
   loadDetail(id: number): Promise<void>;
-  onImageTap(
+  onMediaTap(
     e: WechatMiniprogram.BaseEvent<
       WechatMiniprogram.IAnyObject,
       { url?: string }
@@ -197,18 +197,27 @@ Page<PageData, Custom>({
         images: (detail.images ?? []).map((img) => resolveAssetUrl(img)),
       };
       // 图集优先用 media（含图片与视频），按类型渲染；无 media 时回退 images
+      // 视频项用 thumbnail_url 作封面（后端目前不生成视频缩略图，poster 常为空串→前端黑色占位兜底）
       const media = detail.media ?? [];
       const stages = buildStages(media, resolvedDetail.renovation_stages);
       const hasRenovationPhotos = stages.some((s) => s.photos.length > 0);
       const gallery: GalleryItem[] =
         media.length > 0
           ? media
-              .map((m) => ({
-                type: (m.media_type === "video" ? "video" : "image") as "image" | "video",
-                url: resolveAssetUrl(m.file_url),
-              }))
+              .map((m) => {
+                const type = (m.media_type === "video" ? "video" : "image") as "image" | "video";
+                return {
+                  type,
+                  url: resolveAssetUrl(m.file_url),
+                  poster: type === "video" ? resolveAssetUrl(m.thumbnail_url) : "",
+                };
+              })
               .filter((g) => g.url)
-          : (resolvedDetail.images ?? []).map((url) => ({ type: "image" as const, url }));
+          : (resolvedDetail.images ?? []).map((url) => ({
+              type: "image" as const,
+              url,
+              poster: "",
+            }));
       this.setData({ detail: resolvedDetail, contact, stages, gallery, hasRenovationPhotos, loading: false });
     } catch (err) {
       this.setData({ loading: false });
@@ -220,22 +229,25 @@ Page<PageData, Custom>({
       wx.showToast({ title: "加载失败，请重试", icon: "none" });
     }
   },
-  onImageTap(
+  onMediaTap(
     e: WechatMiniprogram.BaseEvent<
       WechatMiniprogram.IAnyObject,
       { url?: string }
     >
   ): void {
-    const images = (this.data.gallery ?? [])
-      .filter((g) => g.type === "image")
-      .map((g) => g.url);
-    if (images.length === 0) {
+    const gallery = this.data.gallery ?? [];
+    if (gallery.length === 0) {
       return;
     }
-    const current = e.currentTarget.dataset.url;
-    wx.previewImage({
-      urls: images,
-      current: current ?? images[0],
+    // wx.previewMedia 的 current 为索引(number)，需根据点按的 url 定位
+    const url = e.currentTarget.dataset.url;
+    let current = gallery.findIndex((g) => g.url === url);
+    if (current < 0) {
+      current = 0;
+    }
+    wx.previewMedia({
+      sources: gallery.map((g) => ({ url: g.url, type: g.type })),
+      current,
     });
   },
   onStageTap(

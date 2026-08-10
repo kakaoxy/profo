@@ -110,18 +110,23 @@ Page({
         images: (detail.images ?? []).map((img) => resolveAssetUrl(img)),
       };
       // 图集优先用 media（含图片与视频），按类型渲染；无 media 时回退 images
+      // 视频项用 thumbnail_url 作封面（后端目前不生成视频缩略图，poster 常为空串→前端黑色占位兜底）
       const media = detail.media ?? [];
       const stages = buildStages(media, resolvedDetail.renovation_stages);
       const hasRenovationPhotos = stages.some((s) => s.photos.length > 0);
       const gallery =
         media.length > 0
           ? media
-              .map((m) => ({
-                type: m.media_type === "video" ? "video" : "image",
-                url: resolveAssetUrl(m.file_url),
-              }))
+              .map((m) => {
+                const type = m.media_type === "video" ? "video" : "image";
+                return {
+                  type,
+                  url: resolveAssetUrl(m.file_url),
+                  poster: type === "video" ? resolveAssetUrl(m.thumbnail_url) : "",
+                };
+              })
               .filter((g) => g.url)
-          : (resolvedDetail.images ?? []).map((url) => ({ type: "image", url }));
+          : (resolvedDetail.images ?? []).map((url) => ({ type: "image", url, poster: "" }));
       this.setData({ detail: resolvedDetail, contact, stages, gallery, hasRenovationPhotos, loading: false });
     } catch (err) {
       this.setData({ loading: false });
@@ -133,17 +138,20 @@ Page({
       wx.showToast({ title: "加载失败，请重试", icon: "none" });
     }
   },
-  onImageTap(e) {
-    const images = (this.data.gallery ?? [])
-      .filter((g) => g.type === "image")
-      .map((g) => g.url);
-    if (images.length === 0) {
+  onMediaTap(e) {
+    const gallery = this.data.gallery ?? [];
+    if (gallery.length === 0) {
       return;
     }
-    const current = e.currentTarget.dataset.url;
-    wx.previewImage({
-      urls: images,
-      current: current ?? images[0],
+    // wx.previewMedia 的 current 为索引(number)，需根据点按的 url 定位
+    const url = e.currentTarget.dataset.url;
+    let current = gallery.findIndex((g) => g.url === url);
+    if (current < 0) {
+      current = 0;
+    }
+    wx.previewMedia({
+      sources: gallery.map((g) => ({ url: g.url, type: g.type })),
+      current,
     });
   },
   onStageTap(e) {
