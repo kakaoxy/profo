@@ -86,28 +86,28 @@
   </view>
   <view class="calc-card">
     <view class="calc-head">
-      <view class="calc-head-title">假设：约定价 380 万 · 装修成本 15 万</view>
+      <view class="calc-head-title">假设：约定价 300 万 · 装修成本 20 万</view>
     </view>
     <view class="calc-row">
-      <view class="calc-label">市场给力 · 成交 430 万</view>
+      <view class="calc-title">市场给力 · 成交 330 万</view>
     </view>
     <view class="calc-row">
-      <view class="calc-label">业主拿 380 万</view>
-      <view class="calc-value pos">公司 +35 万</view>
+      <view class="calc-label">业主拿 300 万</view>
+      <view class="calc-value pos">公司 +30 万</view>
     </view>
     <view class="calc-row">
-      <view class="calc-label">市场一般 · 成交 395 万</view>
+      <view class="calc-title">市场一般 · 成交 320 万</view>
     </view>
     <view class="calc-row">
-      <view class="calc-label">业主拿 380 万</view>
+      <view class="calc-label">业主拿 300 万</view>
       <view class="calc-value">公司刚回本</view>
     </view>
     <view class="calc-row">
-      <view class="calc-label">市场不好 · 未售出</view>
+      <view class="calc-title">市场不好 · 未售出</view>
     </view>
     <view class="calc-row">
       <view class="calc-label">业主免费得一套装修</view>
-      <view class="calc-value neg">公司 -15 万</view>
+      <view class="calc-value neg">公司 -20 万</view>
     </view>
     <view class="calc-note">业主最差的结果 = 免费得一套装修，0 现金损失</view>
   </view>

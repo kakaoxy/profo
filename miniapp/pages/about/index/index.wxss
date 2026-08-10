@@ -61,6 +61,12 @@
   margin-bottom: 8rpx;
 }
 
+.calc-title {
+  font-size: 26rpx;
+  font-weight: 500;
+  margin-bottom: 8rpx;
+}
+
 .pain-desc,
 .step-desc,
 .guard-desc {
@@ -125,10 +131,10 @@
   font-weight: 500;
 }
 .calc-value.pos {
-  color: #1e6b4f;
+  color: #f90000b1;
 }
 .calc-value.neg {
-  color: var(--rust);
+  color: #0ea365d4;
 }
 .calc-note {
   margin-top: 24rpx;

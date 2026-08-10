@@ -5,6 +5,7 @@ import { resolveAssetUrl } from "../../../utils/url";
 type PublicProjectDetail = components["schemas"]["PublicProjectDetail"];
 type PublicMediaItem = components["schemas"]["PublicMediaItem"];
 type PublicRenovationStage = components["schemas"]["PublicRenovationStage"];
+type PublicConsultantContact = components["schemas"]["PublicConsultantContact"];
 type RenovationStageName =
   | "拆除"
   | "设计"
@@ -51,6 +52,7 @@ const ALL_STAGES: RenovationStageName[] = [
 interface PageData {
   id: number | null;
   detail: PublicProjectDetail | null;
+  contact: PublicConsultantContact | null;
   stages: DisplayStage[];
   gallery: GalleryItem[];
   stageViewer: StageViewer;
@@ -144,6 +146,7 @@ Page<PageData, Custom>({
   data: {
     id: null,
     detail: null,
+    contact: null,
     stages: [],
     gallery: [],
     stageViewer: { visible: false, stage: "", photos: [], current: 0 },
@@ -174,10 +177,17 @@ Page<PageData, Custom>({
       detail: null,
     });
     try {
-      const detail = await request<PublicProjectDetail>({
-        url: `/public/projects/${id}`,
-        skipAuth: true,
-      });
+      // 详情与顾问联系方式并行拉取，避免请求瀑布
+      const [detail, contact] = await Promise.all([
+        request<PublicProjectDetail>({
+          url: `/public/projects/${id}`,
+          skipAuth: true,
+        }),
+        request<PublicConsultantContact>({
+          url: `/public/projects/${id}/consultant`,
+          skipAuth: true,
+        }),
+      ]);
       // 后端文件 URL 为相对路径 /static/uploads/xxx.jpg，需拼接 origin 供 <image>/<video> 加载
       const resolvedDetail: PublicProjectDetail = {
         ...detail,
@@ -196,7 +206,7 @@ Page<PageData, Custom>({
               }))
               .filter((g) => g.url)
           : (resolvedDetail.images ?? []).map((url) => ({ type: "image" as const, url }));
-      this.setData({ detail: resolvedDetail, stages, gallery, hasRenovationPhotos, loading: false });
+      this.setData({ detail: resolvedDetail, contact, stages, gallery, hasRenovationPhotos, loading: false });
     } catch (err) {
       this.setData({ loading: false });
       if (isHttpResponseError(err) && err.statusCode === 404) {
@@ -264,7 +274,7 @@ Page<PageData, Custom>({
     this.setData({ "stageViewer.current": e.detail.current });
   },
   onCallPhone(): void {
-    const phone = this.data.detail?.consultant?.phone;
+    const phone = this.data.contact?.phone;
     if (phone) {
       wx.makePhoneCall({ phoneNumber: phone }).catch(() => {});
     } else {
@@ -272,8 +282,12 @@ Page<PageData, Custom>({
     }
   },
   onAddWechat(): void {
-    // ⚠️ TODO: 待配置真实微信号
-    wx.setClipboardData({ data: "微信号待配置" });
+    const wechat = this.data.contact?.wechat_number;
+    if (!wechat) {
+      wx.showToast({ title: "暂无微信号", icon: "none" });
+      return;
+    }
+    wx.setClipboardData({ data: wechat });
     wx.showToast({ title: "微信号已复制", icon: "none" });
   },
   onRetry(): void {

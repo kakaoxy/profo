@@ -15,29 +15,44 @@ function isHttpResponseError(err) {
   );
 }
 
-/** 取 MM-DD. */
-function formatDate(dateStr) {
-  return dateStr.slice(5);
-}
+/** 将后端改造阶段与媒体分组映射为 6 项展示数据（含完成时间与照片）. */
+function buildStages(media, apiStages) {
+  // 按 renovation_stage 分组 renovation 类目的图片，并 resolve 为完整 URL
+  const photosByStage = new Map();
+  for (const m of media || []) {
+    if (m.photo_category !== "renovation" || !m.renovation_stage) {
+      continue;
+    }
+    const stageName = m.renovation_stage;
+    const url = resolveAssetUrl(m.file_url);
+    if (!url) {
+      continue;
+    }
+    const list = photosByStage.get(stageName) || [];
+    list.push(url);
+    photosByStage.set(stageName, list);
+  }
 
-/** 将后端改造阶段映射为 6 项展示数据. */
-function buildStages(apiStages) {
-  // ⚠️ TODO: API 暂无阶段首图，renovation-img 用渐变占位，待后端补阶段图片字段
   return ALL_STAGES.map((stageName) => {
     const matched = apiStages?.find((s) => s.stage === stageName);
-    let meta = "待开始";
-    if (matched) {
-      if (matched.completed_date) {
-        meta = `${matched.photo_count} 张 · 完成于 ${formatDate(
-          matched.completed_date
-        )}`;
-      } else if (matched.photo_count > 0) {
-        meta = "进行中";
-      } else {
-        meta = "待开始";
-      }
+    const completedDate = matched?.completed_date ?? null;
+    const photos = photosByStage.get(stageName) || [];
+    const photoCount = matched?.photo_count ?? photos.length;
+    let status = "pending";
+    if (completedDate) {
+      status = "completed";
+    } else if (photos.length > 0) {
+      status = "in_progress";
     }
-    return { stage: stageName, meta };
+    return {
+      stage: stageName,
+      status,
+      completedDate,
+      photoCount,
+      cover: photos[0] ?? null,
+      photos,
+      clickable: photos.length > 0,
+    };
   });
 }
 
@@ -45,8 +60,11 @@ Page({
   data: {
     id: null,
     detail: null,
+    contact: null,
     stages: [],
     gallery: [],
+    stageViewer: { visible: false, stage: "", photos: [], current: 0 },
+    hasRenovationPhotos: false,
     loading: false,
     error: false,
     notFound: false,
@@ -73,17 +91,26 @@ Page({
       detail: null,
     });
     try {
-      const detail = await request({
-        url: `/public/projects/${id}`,
-      });
+      // 详情与顾问联系方式并行拉取，避免请求瀑布
+      const [detail, contact] = await Promise.all([
+        request({
+          url: `/public/projects/${id}`,
+          skipAuth: true,
+        }),
+        request({
+          url: `/public/projects/${id}/consultant`,
+          skipAuth: true,
+        }),
+      ]);
       // 后端文件 URL 为相对路径 /static/uploads/xxx.jpg，需拼接 origin 供 <image>/<video> 加载
       const resolvedDetail = {
         ...detail,
         images: (detail.images ?? []).map((img) => resolveAssetUrl(img)),
       };
-      const stages = buildStages(resolvedDetail.renovation_stages);
       // 图集优先用 media（含图片与视频），按类型渲染；无 media 时回退 images
       const media = detail.media ?? [];
+      const stages = buildStages(media, resolvedDetail.renovation_stages);
+      const hasRenovationPhotos = stages.some((s) => s.photos.length > 0);
       const gallery =
         media.length > 0
           ? media
@@ -93,7 +120,7 @@ Page({
               }))
               .filter((g) => g.url)
           : (resolvedDetail.images ?? []).map((url) => ({ type: "image", url }));
-      this.setData({ detail: resolvedDetail, stages, gallery, loading: false });
+      this.setData({ detail: resolvedDetail, contact, stages, gallery, hasRenovationPhotos, loading: false });
     } catch (err) {
       this.setData({ loading: false });
       if (isHttpResponseError(err) && err.statusCode === 404) {
@@ -117,8 +144,36 @@ Page({
       current: current ?? images[0],
     });
   },
+  onStageTap(e) {
+    const stageName = e.currentTarget.dataset.stage;
+    if (!stageName) {
+      return;
+    }
+    const target = this.data.stages.find((s) => s.stage === stageName);
+    if (!target || !target.clickable || target.photos.length === 0) {
+      // 无照片的阶段不可查看轮播
+      wx.showToast({ title: "该阶段暂无照片", icon: "none" });
+      return;
+    }
+    this.setData({
+      stageViewer: {
+        visible: true,
+        stage: stageName,
+        photos: target.photos,
+        current: 0,
+      },
+    });
+  },
+  onViewerClose() {
+    this.setData({
+      stageViewer: { visible: false, stage: "", photos: [], current: 0 },
+    });
+  },
+  onViewerChange(e) {
+    this.setData({ "stageViewer.current": e.detail.current });
+  },
   onCallPhone() {
-    const phone = this.data.detail?.consultant?.phone;
+    const phone = this.data.contact?.phone;
     if (phone) {
       wx.makePhoneCall({ phoneNumber: phone }).catch(() => {});
     } else {
@@ -126,8 +181,12 @@ Page({
     }
   },
   onAddWechat() {
-    // ⚠️ TODO: 待配置真实微信号
-    wx.setClipboardData({ data: "微信号待配置" });
+    const wechat = this.data.contact?.wechat_number;
+    if (!wechat) {
+      wx.showToast({ title: "暂无微信号", icon: "none" });
+      return;
+    }
+    wx.setClipboardData({ data: wechat });
     wx.showToast({ title: "微信号已复制", icon: "none" });
   },
   onRetry() {

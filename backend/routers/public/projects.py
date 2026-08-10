@@ -271,9 +271,12 @@ def get_consultant_contact(
     if project.consultant_id:
         consultant = svc.get_consultant(project.consultant_id)
         if consultant:
+            # 联系方式端点供拨打/复制使用，返回真实手机号；
+            # 顾问未单独配置微信号，微信复用其手机号（业务上多同号）
+            phone = consultant.phone or ""
             return PublicConsultantContact(
-                phone=mask_phone(consultant.phone) or "",
-                wechat_number=getattr(consultant, "wechat_number", None) or "",
+                phone=phone,
+                wechat_number=phone,
                 nickname=consultant.nickname or "",
             )
 
