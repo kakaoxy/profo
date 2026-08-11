@@ -41,6 +41,10 @@ const properties = {
   placeholder: { type: String, value: "请输入小区名称搜索" },
   /** 是否禁用输入与搜索（清空按钮同时隐藏） */
   disabled: { type: Boolean, value: false },
+  /** 搜索接口路径：默认 C 端公开接口；房源查询等内部页传入 admin 接口（如 /properties/communities/search） */
+  searchUrl: { type: String, value: "/public/communities/search" },
+  /** 是否跳过自动鉴权：公开接口为 true（不发送令牌）；内部 admin 接口传 false（自动注入 admin 令牌） */
+  skipAuth: { type: Boolean, value: true },
 };
 
 /** 组件方法签名（用于 Component 泛型第 3 参数，使 this 含自定义属性）. */
@@ -155,11 +159,12 @@ Component<typeof data, typeof properties, Methods, ComponentCustomProperties>({
     },
 
     doSearch(keyword: string, currentSeq: number) {
-      // 公开接口，skipAuth 避免向其发送用户令牌
+      // 使用参数化搜索接口（默认 C 端公开接口；内部页可传 admin 接口），
+      // skipAuth 按调用方属性决定是否发送用户令牌
       request<PublicCommunitySearchItem[]>({
-        url: "/public/communities/search",
+        url: this.properties.searchUrl,
         data: { q: keyword, limit: SEARCH_LIMIT },
-        skipAuth: true,
+        skipAuth: this.properties.skipAuth,
       })
         .then((results) => {
           if (currentSeq !== this.searchSeq) {

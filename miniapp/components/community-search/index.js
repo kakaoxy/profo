@@ -20,6 +20,10 @@ const properties = {
   value: { type: String, value: "" },
   placeholder: { type: String, value: "请输入小区名称搜索" },
   disabled: { type: Boolean, value: false },
+  // 搜索接口路径：默认 C 端公开接口；房源查询等内部页传入 admin 接口（如 /properties/communities/search）
+  searchUrl: { type: String, value: "/public/communities/search" },
+  // 是否跳过自动鉴权：公开接口为 true（不发送令牌）；内部 admin 接口传 false（自动注入 admin 令牌）
+  skipAuth: { type: Boolean, value: true },
 };
 
 Component({
@@ -108,10 +112,12 @@ Component({
     },
 
     doSearch(keyword, currentSeq) {
-      // 公开接口，无需鉴权；request GET 默认不携带 Authorization
+      // 使用参数化搜索接口（默认 C 端公开接口；内部页可传 admin 接口），
+      // skipAuth 按调用方属性决定是否发送用户令牌
       request({
-        url: "/public/communities/search",
+        url: this.properties.searchUrl,
         data: { q: keyword, limit: SEARCH_LIMIT },
+        skipAuth: this.properties.skipAuth,
       })
         .then((results) => {
           if (currentSeq !== this.searchSeq) {

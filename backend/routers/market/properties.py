@@ -59,6 +59,7 @@ def get_properties(
     service: PropertyServiceDep,
     pagination: PaginationDep,
     status: Annotated[str | None, Query(max_length=100, description="房源状态: 在售 | 成交")] = None,
+    keyword: Annotated[str | None, Query(max_length=100, description="关键词：同时模糊匹配小区名与商圈")] = None,
     community_name: Annotated[str | None, Query(max_length=100, description="小区名称（模糊搜索）")] = None,
     community_ids: Annotated[
         str | None, Query(max_length=500, description="小区ID，逗号分隔，例如: uuid1,uuid2")
@@ -97,6 +98,7 @@ def get_properties(
     return service.query_properties(
         db=db,
         status=status,
+        keyword=keyword,
         community_name=community_name,
         community_ids=community_ids_list,
         districts=districts_list,

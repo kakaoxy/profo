@@ -1,0 +1,226 @@
+<view class="page">
+  <!-- 面板展开时的遮罩 -->
+  <view wx:if="{{activeFilter}}" class="filter-mask" bindtap="onMaskTap"></view>
+
+  <!-- Sticky 控件区 -->
+  <view class="sticky-controls">
+    <!-- 搜索（小区、商圈关键词） -->
+    <view class="search-row">
+      <view class="search-input-wrap">
+        <view class="search-icon"></view>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="搜索小区、商圈"
+          value="{{searchValue}}"
+          confirm-type="search"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
+        />
+      </view>
+    </view>
+
+    <!-- 状态 tab -->
+    <view class="status-tabs">
+      <view
+        class="status-tab {{tab === 'all' ? 'status-tab--active' : ''}}"
+        data-tab="all"
+        bindtap="onStatusTabChange"
+      >全部<text wx:if="{{tab === 'all'}}" class="status-tab__count">{{total}}</text></view>
+      <view
+        class="status-tab {{tab === 'on_sale' ? 'status-tab--active' : ''}}"
+        data-tab="on_sale"
+        bindtap="onStatusTabChange"
+      >在售<text wx:if="{{tab === 'on_sale'}}" class="status-tab__count">{{total}}</text></view>
+      <view
+        class="status-tab {{tab === 'sold' ? 'status-tab--active' : ''}}"
+        data-tab="sold"
+        bindtap="onStatusTabChange"
+      >成交<text wx:if="{{tab === 'sold'}}" class="status-tab__count">{{total}}</text></view>
+    </view>
+
+    <!-- 筛选 chip 行 -->
+    <view class="filter-wrap">
+      <view class="filter-chips">
+        <!-- 户型 -->
+        <view
+          class="filter-chip {{activeFilter === 'rooms' ? 'filter-chip--active' : (rooms.length > 0 || roomsGte ? 'filter-chip--selected' : '')}}"
+          data-key="rooms"
+          bindtap="onFilterChipTap"
+        >
+          <text class="chip-label">{{roomLabel}}</text>
+          <view class="chevron-down"></view>
+        </view>
+        <!-- 楼层 -->
+        <view
+          class="filter-chip {{activeFilter === 'floor' ? 'filter-chip--active' : (floorLevels.length > 0 ? 'filter-chip--selected' : '')}}"
+          data-key="floor"
+          bindtap="onFilterChipTap"
+        >
+          <text class="chip-label">{{floorLabel}}</text>
+          <view class="chevron-down"></view>
+        </view>
+        <!-- 排序 -->
+        <view
+          class="filter-chip {{activeFilter === 'sort' ? 'filter-chip--active' : (sortChosen ? 'filter-chip--selected' : '')}}"
+          data-key="sort"
+          bindtap="onFilterChipTap"
+        >
+          <text class="chip-label">{{sortLabel}}</text>
+          <view class="chevron-down"></view>
+        </view>
+      </view>
+
+      <!-- 户型面板 -->
+      <view wx:if="{{activeFilter === 'rooms'}}" class="filter-panel">
+        <view class="filter-panel__title">户型（室）· 可多选</view>
+        <view class="option-grid">
+          <view
+            class="option-btn {{item.selected ? 'option-btn--selected' : ''}}"
+            wx:for="{{roomViews}}"
+            wx:key="value"
+            data-value="{{item.value}}"
+            bindtap="onRoomOptionTap"
+          >{{item.label}}</view>
+        </view>
+        <view class="panel-actions">
+          <view class="panel-btn panel-btn--ghost" bindtap="onPanelReset">重置</view>
+          <view class="panel-btn panel-btn--primary" bindtap="onPanelConfirm">确定</view>
+        </view>
+      </view>
+
+      <!-- 楼层面板 -->
+      <view wx:if="{{activeFilter === 'floor'}}" class="filter-panel">
+        <view class="filter-panel__title">楼层 · 可多选</view>
+        <view class="option-grid">
+          <view
+            class="option-btn {{item.selected ? 'option-btn--selected' : ''}}"
+            wx:for="{{floorViews}}"
+            wx:key="value"
+            data-value="{{item.value}}"
+            bindtap="onFloorOptionTap"
+          >{{item.label}}</view>
+        </view>
+        <view class="panel-actions">
+          <view class="panel-btn panel-btn--ghost" bindtap="onPanelReset">重置</view>
+          <view class="panel-btn panel-btn--primary" bindtap="onPanelConfirm">确定</view>
+        </view>
+      </view>
+
+      <!-- 排序面板（右对齐浮层） -->
+      <view wx:if="{{activeFilter === 'sort'}}" class="sort-panel">
+        <view
+          class="sort-item {{item.key === sortBy ? 'sort-item--selected' : ''}}"
+          wx:for="{{sortOptions}}"
+          wx:key="key"
+          data-key="{{item.key}}"
+          bindtap="onSortItemTap"
+        >
+          <text>{{item.label}}</text>
+          <view class="sort-arrow {{item.key === sortBy ? (sortOrder === 'asc' ? 'sort-arrow--asc' : 'sort-arrow--desc') : ''}}"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- count 行（加载中显示骨架） -->
+  <view class="count-row">
+    <block wx:if="{{loading}}">
+      <view class="skeleton-block count-row__skeleton"></view>
+    </block>
+    <block wx:else>
+      共 <text class="count-row__num">{{total}}</text> 套房源
+    </block>
+  </view>
+
+  <!-- 列表主体 -->
+  <view class="list-area">
+    <!-- 首次加载骨架 -->
+    <block wx:if="{{loading}}">
+      <view class="skeleton-card" wx:for="{{[1, 2, 3, 4]}}" wx:key="*this">
+        <view class="skeleton-block skeleton-card__thumb"></view>
+        <view class="skeleton-card__body">
+          <view class="skeleton-block skeleton-card__line w-70"></view>
+          <view class="skeleton-block skeleton-card__line w-90"></view>
+          <view class="skeleton-block skeleton-card__line w-50 h-20"></view>
+          <view class="skeleton-block skeleton-card__line w-40"></view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 登录失效态 -->
+    <view wx:elif="{{authState === 'unauthorized'}}" class="state-screen">
+      <view class="state-icon">!</view>
+      <view class="state-title">登录已失效</view>
+      <view class="state-text">登录状态已过期，请返回「我的」页重新登录</view>
+      <view class="state-btn" bindtap="onGoBack">返回</view>
+    </view>
+
+    <!-- 无权限态 -->
+    <view wx:elif="{{authState === 'forbidden'}}" class="state-screen">
+      <view class="state-icon">!</view>
+      <view class="state-title">无访问权限</view>
+      <view class="state-text">当前账号无权查看房源查询，请联系管理员</view>
+      <view class="state-btn" bindtap="onGoBack">返回</view>
+    </view>
+
+    <!-- 错误态 -->
+    <view wx:elif="{{error}}" class="state-screen">
+      <view class="state-icon">!</view>
+      <view class="state-title">加载失败</view>
+      <view class="state-text">网络异常或服务暂不可用，请稍后重试</view>
+      <view class="state-btn" bindtap="onRetry">重试</view>
+    </view>
+
+    <!-- 空态 -->
+    <view wx:elif="{{items.length === 0}}" class="state-screen">
+      <view class="state-icon">?</view>
+      <view class="state-title">未找到匹配房源</view>
+      <view class="state-text">当前筛选条件下没有房源，试试调整筛选或更换关键词</view>
+      <view class="state-btn" bindtap="onClearFilters">清除筛选</view>
+    </view>
+
+    <!-- 房源卡片 -->
+    <block wx:else>
+      <view class="prop-card" wx:for="{{items}}" wx:key="id">
+        <view class="prop-thumb">
+          <image
+            wx:if="{{item.thumb}}"
+            class="prop-thumb__img"
+            src="{{item.thumb}}"
+            mode="aspectFill"
+          />
+          <view wx:else class="prop-thumb__placeholder"></view>
+        </view>
+        <view class="prop-body">
+          <view class="prop-row1">
+            <view class="prop-name">{{item.communityName}}</view>
+            <view class="prop-status {{item.statusClass}}">{{item.statusText}}</view>
+          </view>
+          <view class="prop-meta">{{item.meta}}</view>
+          <view class="prop-price">
+            <text class="prop-price__sym">¥</text>
+            <text class="prop-price__num">{{item.totalPrice}}</text>
+            <text class="prop-price__unit">万</text>
+            <text class="prop-price__unit-price">{{item.unitPriceText}}</text>
+          </view>
+          <view class="prop-loc">{{item.loc}}</view>
+        </view>
+      </view>
+
+      <!-- 底部加载/无更多 -->
+      <view class="list-footer">
+        <block wx:if="{{loadingMore}}">
+          <view class="spinner"></view>
+          <view class="list-footer__text">加载中...</view>
+        </block>
+        <block wx:elif="{{noMore && items.length > 0}}">
+          <view class="list-footer__end">没有更多了</view>
+        </block>
+      </view>
+    </block>
+  </view>
+
+  <!-- 底部安全区 -->
+  <view class="bottom-safe-area"></view>
+</view>

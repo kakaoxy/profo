@@ -26,6 +26,7 @@ class PropertyQueryService:
         self,
         db: Session,
         status: str | None = None,
+        keyword: str | None = None,
         community_name: str | None = None,
         community_ids: list[str] | None = None,
         districts: list[str] | None = None,
@@ -48,6 +49,7 @@ class PropertyQueryService:
         Args:
             db: 数据库会话
             status: 房源状态 ("在售" | "成交" | None)
+            keyword: 关键词（同时模糊匹配小区名与商圈）
             community_name: 小区名称（模糊搜索）
             community_ids: 小区ID列表（精确匹配）
             districts: 行政区列表
@@ -89,6 +91,7 @@ class PropertyQueryService:
         query = apply_filters(
             query,
             status=status,
+            keyword=keyword,
             community_name=community_name,
             community_ids=community_ids,
             districts=districts,

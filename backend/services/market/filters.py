@@ -20,6 +20,7 @@ PROPERTY_EXPIRATION_DAYS = 30
 def apply_filters(
     query: Query,
     status: str | None = None,
+    keyword: str | None = None,
     community_name: str | None = None,
     community_ids: list[str] | None = None,
     districts: list[str] | None = None,
@@ -38,6 +39,7 @@ def apply_filters(
     Args:
         query: SQLAlchemy 查询对象
         status: 房源状态
+        keyword: 关键词（同时模糊匹配小区名与商圈）
         community_name: 小区名称
         community_ids: 小区ID列表（精确匹配，优先于 community_name）
         districts: 行政区
@@ -75,6 +77,16 @@ def apply_filters(
                 query = query.filter(PropertyCurrent.status == PropertyStatus.SOLD)
         else:
             logger.warning("未知状态筛选值: %s，有效值为: %s", status, valid_statuses)
+
+    # 关键词搜索：同时模糊匹配小区名与商圈
+    if keyword:
+        kw = f"%{escape_like(keyword)}%"
+        query = query.filter(
+            or_(
+                Community.name.like(kw, escape="\\"),
+                Community.business_circle.like(kw, escape="\\"),
+            ),
+        )
 
     # 小区名称模糊搜索
     if community_name:

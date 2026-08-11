@@ -11,7 +11,8 @@
     "pages/renovation/projects/index/index",
     "pages/renovation/detail/index/index",
     "pages/about/index/index",
-    "pages/profile/index/index"
+    "pages/profile/index/index",
+    "pages/properties/list/index"
   ],
   "window": {
     "navigationBarTitleText": "美房宝",
