@@ -183,3 +183,54 @@
   color: var(--graphite);
   line-height: 1.6;
 }
+
+/* 8. 分享 CTA */
+.bottom-share {
+  margin: 48rpx 28rpx 0;
+  background: var(--pure-white);
+  border-radius: 40rpx;
+  padding: 36rpx 32rpx;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+}
+.bs-copy {
+  font-size: 28rpx;
+  color: var(--ink);
+  font-weight: 600;
+  text-align: center;
+}
+.share-pill {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  height: 88rpx;
+  border-radius: 9999rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 29rpx;
+  font-weight: 600;
+  border: none;
+  line-height: 1;
+  box-sizing: border-box;
+  padding: 0 44rpx;
+}
+.share-pill::after {
+  border: none;
+}
+.share-pill:active {
+  transform: scale(0.97);
+}
+.share-pill-icon {
+  width: 36rpx;
+  height: 36rpx;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%3E%3Cpath%20d='M12%203v11'%20stroke='%235d2a1a'%20stroke-width='2'%20stroke-linecap='round'/%3E%3Cpath%20d='M8%207l4-4%204%204'%20stroke='%235d2a1a'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Cpath%20d='M5%2012v6a2%202%200%20002%202h10a2%202%200%20002-2v-6'%20stroke='%235d2a1a'%20stroke-width='2'%20stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+}

@@ -9,8 +9,11 @@ interface PageData {
 }
 
 interface PageCustom {
+  onLoad(): void;
   onGoValuation(): void;
   onToggleFaq(e: WechatMiniprogram.BaseEvent): void;
+  onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
+  onShareTimeline(): WechatMiniprogram.Page.ICustomTimelineContent;
 }
 
 Page<PageData, PageCustom>({
@@ -38,6 +41,9 @@ Page<PageData, PageCustom>({
       },
     ],
   },
+  onLoad() {
+    wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
+  },
   onGoValuation() {
     wx.switchTab({ url: "/pages/valuation/submit/index" });
   },
@@ -46,5 +52,19 @@ Page<PageData, PageCustom>({
     this.setData({
       ["faqList[" + index + "].open"]: !this.data.faqList[index].open,
     });
+  },
+  onShareAppMessage() {
+    return {
+      title: "零现金焕新，全流程托管，点击了解您的房价",
+      path: "/pages/valuation/submit/index",
+      imageUrl: "/assets/share.jpg",
+    };
+  },
+  onShareTimeline() {
+    return {
+      title: "零现金焕新，全流程托管，点击了解您的房价",
+      query: "",
+      imageUrl: "/assets/share.jpg",
+    };
   },
 });

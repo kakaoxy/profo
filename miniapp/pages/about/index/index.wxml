@@ -129,6 +129,15 @@
   <!-- 7. 风险提示 -->
   <view class="risk-note">* 美房宝不承诺保底收购。合同约定的是「未售出则装修免费赠送」，而非「公司按约定价格收购你的房产」。</view>
 
-  <!-- 8. 底部留白 -->
+  <!-- 8. 分享 CTA -->
+  <view class="bottom-share">
+    <view class="bs-copy">觉得有用？分享给需要的朋友</view>
+    <button class="share-pill" open-type="share">
+      <view class="share-pill-icon"></view>
+      <text>分享给朋友</text>
+    </button>
+  </view>
+
+  <!-- 9. 底部留白 -->
   <view style="height: 200rpx;"></view>
 </view>
