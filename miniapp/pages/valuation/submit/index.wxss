@@ -8,6 +8,42 @@
   padding: 16rpx 40rpx 32rpx;
 }
 
+/* 头部行：免费估价 chip + 计数 banner 同行排列 */
+.head-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin: 8rpx 0 16rpx;
+}
+
+/* 强化 chip 独立性：加边框 + 不允许压缩 */
+.chip--bordered {
+  border: 2rpx solid var(--rust);
+  flex-shrink: 0;
+}
+
+/* 累计估价报告计数 banner：作为同行轻量子项 */
+.lead-count-banner {
+  flex: 1;
+  min-width: 0;
+  padding: 10rpx 24rpx;
+  background: var(--apricot-wash);
+  border-radius: 9999rpx;
+  color: var(--rust);
+  font-size: 24rpx;
+  line-height: 1.4;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lead-count-banner__num {
+  font-weight: 600;
+  font-size: 28rpx;
+  margin-right: 4rpx;
+}
+
 .form-title {
   font-size: 44rpx;
   font-weight: 600;

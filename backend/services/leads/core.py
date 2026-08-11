@@ -3,10 +3,12 @@
 负责线索的创建、更新、删除，组合查询和关联服务.
 """
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from redis.exceptions import RedisError
 from sqlalchemy.orm import Session
 
 from models import User
@@ -15,8 +17,15 @@ from models.lead import Lead
 from schemas.lead import LeadCreate, LeadUpdate
 from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
 from settings import settings
+from utils.redis_client import get_redis_client
 
 from .internal import LeadEvalService, LeadFollowUpService, LeadPriceService, LeadQueryService, compute_unit_price
+
+logger = logging.getLogger(__name__)
+
+# C端公开计数缓存：营销数字允许短时延迟，60s TTL 平衡新鲜度与 DB 压力
+_LEAD_COUNT_CACHE_KEY = "public:leads:count:total"
+_LEAD_COUNT_CACHE_TTL = 60
 
 
 class LeadService:
@@ -283,3 +292,31 @@ class LeadService:
 
         """
         return self.query_service.get_status_stats()
+
+    def count_total(self) -> int:
+        """未删除线索总数（与 admin /leads 同口径）.
+
+        使用 Redis 短缓存（60s TTL）降低公开接口对 DB 的压力；
+        Redis 不可用时降级为直接查询，缓存仅为优化手段不应导致业务 500.
+        """
+        try:
+            redis_client = get_redis_client()
+        except RedisError:
+            logger.warning("Redis 不可用，跳过线索计数缓存")
+            return self.query_service.count_total()
+
+        try:
+            cached = redis_client.get(_LEAD_COUNT_CACHE_KEY)
+            if cached is not None:
+                return int(cached)
+        except RedisError:
+            logger.warning("线索计数缓存读取失败，降级直接查询", exc_info=True)
+
+        total = self.query_service.count_total()
+
+        try:
+            redis_client.set(_LEAD_COUNT_CACHE_KEY, total, ex=_LEAD_COUNT_CACHE_TTL)
+        except RedisError:
+            logger.warning("线索计数缓存写入失败，跳过缓存", exc_info=True)
+
+        return total

@@ -376,6 +376,12 @@ class PublicLeadListResponse(BaseModel):
     page_size: int = Field(description="每页数量")
 
 
+class PublicLeadCountResponse(BaseModel):
+    """C端线索总数响应."""
+
+    total: int = Field(description="未删除线索总条数")
+
+
 class PublicFollowupItem(BaseModel):
     """C端跟进记录项."""
 
@@ -419,6 +425,7 @@ __all__ = [
     "PublicConsultantContact",
     "PublicConsultantInfo",
     "PublicFollowupItem",
+    "PublicLeadCountResponse",
     "PublicLeadCreate",
     "PublicLeadDetail",
     "PublicLeadListItem",

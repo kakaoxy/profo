@@ -3005,6 +3005,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/leads/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取线索总数
+         * @description C端公开接口，返回未删除线索总条数，无需登录
+         */
+        get: operations["get_lead_count_api_v1_public_leads_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/leads/{lead_id}": {
         parameters: {
             query?: never;
@@ -8361,6 +8381,17 @@ export interface components {
              * @description 跟进时间
              */
             followed_at: string;
+        };
+        /**
+         * PublicLeadCountResponse
+         * @description C端线索总数响应.
+         */
+        PublicLeadCountResponse: {
+            /**
+             * Total
+             * @description 未删除线索总条数
+             */
+            total: number;
         };
         /**
          * PublicLeadCreate
@@ -16785,6 +16816,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_count_api_v1_public_leads_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLeadCountResponse"];
                 };
             };
         };

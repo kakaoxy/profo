@@ -15,6 +15,7 @@ type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type UserResponse = components["schemas"]["UserResponse"];
 type PublicPhoneCreate = components["schemas"]["PublicPhoneCreate"];
 type PublicPhoneResponse = components["schemas"]["PublicPhoneResponse"];
+type PublicLeadCountResponse = components["schemas"]["PublicLeadCountResponse"];
 
 /**
  * 权限说明：
@@ -34,6 +35,14 @@ const MAX_IMAGES = 6;
 const MAX_AREA = 100000;
 /** 预期价合理上限（万），防恶意超大数值. */
 const MAX_EXPECTED_PRICE = 10000000;
+
+/** 千位分隔符格式化（NaN/负数兜底返回 "0"）. */
+function formatThousands(n: number): string {
+  if (!Number.isFinite(n) || n < 0) {
+    return "0";
+  }
+  return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 
 /** wx.uploadFile 单次上传结果. */
 interface UploadResult {
@@ -95,6 +104,11 @@ interface PageData {
   phoneInput: string;
   editingPhone: boolean;
   submittingPhone: boolean;
+  // 估价报告计数 banner
+  leadCountTotal: number;
+  leadCountDisplay: string;
+  leadCountLoading: boolean;
+  leadCountVisible: boolean;
 }
 
 interface PageCustom {
@@ -110,6 +124,10 @@ interface PageCustom {
   onRemoveImage(e: WechatMiniprogram.BaseEvent): void;
   uploadImage(filePath: string): Promise<string>;
   loadLogin(): void;
+  loadLeadCount(): void;
+  animateLeadCount(target: number): void;
+  clearLeadCountTimer(): void;
+  leadCountTimer: ReturnType<typeof setInterval> | null;
   onPhoneTap(): void;
   onPhoneInput(e: WechatMiniprogram.Input): void;
   onPhoneCancel(): void;
@@ -150,11 +168,26 @@ Page<PageData, PageCustom>({
     phoneInput: "",
     editingPhone: false,
     submittingPhone: false,
+    leadCountTotal: 0,
+    leadCountDisplay: "0",
+    leadCountLoading: false,
+    leadCountVisible: true,
   },
 
   onShow() {
     this.loadLogin();
+    this.loadLeadCount();
   },
+
+  onHide() {
+    this.clearLeadCountTimer();
+  },
+
+  onUnload() {
+    this.clearLeadCountTimer();
+  },
+
+  leadCountTimer: null,
 
   getToken() {
     return getAccessToken();
@@ -189,6 +222,67 @@ Page<PageData, PageCustom>({
       this.setData({ loggedIn: true, canEditPhone: false, hasPhone: !!admin.phone });
     } catch {
       this.setData({ loggedIn: false, hasPhone: false, canEditPhone: false });
+    }
+  },
+
+  /**
+   * 拉取累计线索总数（公开接口，skipAuth）。
+   * 成功后从 0 缓动到目标值；失败静默隐藏 banner，不阻断表单。
+   */
+  async loadLeadCount() {
+    // 重置：显示加载态，清旧动画
+    this.clearLeadCountTimer();
+    this.setData({
+      leadCountVisible: true,
+      leadCountLoading: true,
+      leadCountTotal: 0,
+      leadCountDisplay: "0",
+    });
+    try {
+      const res = await request<PublicLeadCountResponse>({
+        url: "/public/leads/count",
+        skipAuth: true,
+      });
+      const total = Math.max(0, Math.floor(res.total || 0));
+      this.setData({ leadCountTotal: total, leadCountLoading: false });
+      this.animateLeadCount(total);
+    } catch {
+      // 营销元素，失败静默隐藏，不弹错误
+      this.setData({ leadCountVisible: false, leadCountLoading: false });
+    }
+  },
+
+  /**
+   * 从 0 缓动到 target（约 1.2s，ease-out）。
+   * target<=0 时直接显示 "0" 不跑动画。
+   */
+  animateLeadCount(target: number) {
+    this.clearLeadCountTimer();
+    if (target <= 0) {
+      this.setData({ leadCountDisplay: "0" });
+      return;
+    }
+    const duration = 1200;
+    const start = Date.now();
+    this.leadCountTimer = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const t = Math.min(1, elapsed / duration);
+      // ease-out: progress = 1 - (1-t)^2
+      const progress = 1 - (1 - t) * (1 - t);
+      const current = Math.floor(target * progress);
+      this.setData({ leadCountDisplay: formatThousands(current) });
+      if (t >= 1) {
+        // 终值用精确 target，避免浮点取整误差
+        this.setData({ leadCountDisplay: formatThousands(target) });
+        this.clearLeadCountTimer();
+      }
+    }, 16);
+  },
+
+  clearLeadCountTimer() {
+    if (this.leadCountTimer) {
+      clearInterval(this.leadCountTimer);
+      this.leadCountTimer = null;
     }
   },
 

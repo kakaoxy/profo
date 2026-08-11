@@ -12,6 +12,7 @@ from dependencies.common import PaginationDep
 from schemas.lead import LeadCreate
 from schemas.public import (
     PublicFollowupItem,
+    PublicLeadCountResponse,
     PublicLeadCreate,
     PublicLeadDetail,
     PublicLeadListItem,
@@ -140,6 +141,20 @@ def get_my_leads(
         page=result["page"],
         page_size=result["page_size"],
     )
+
+
+@router.get(
+    "/count",
+    summary="获取线索总数",
+    description="C端公开接口，返回未删除线索总条数，无需登录",
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_lead_count(
+    request: Request,
+    service: LeadServiceDep,
+) -> PublicLeadCountResponse:
+    """获取未删除线索总条数（无需登录）."""
+    return PublicLeadCountResponse(total=service.count_total())
 
 
 @router.get(

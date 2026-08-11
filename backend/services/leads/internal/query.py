@@ -202,3 +202,7 @@ class LeadQueryService:
         for status, count in rows:
             counts[status.value] = count
         return counts
+
+    def count_total(self) -> int:
+        """统计未删除线索总数（与 admin /leads 的 total 同口径）."""
+        return self.db.query(Lead).filter(Lead.is_deleted.is_(False)).count()
