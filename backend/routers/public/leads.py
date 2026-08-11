@@ -71,6 +71,9 @@ def create_lead(
         floor_info=body.floor_info,
         orientation=body.orientation,
         remarks=body.remarks,
+        # 业主心理预期价即初始报价：写入 total_price 使 admin 总价列展示，
+        # service.create_lead 据此生成 Initial Creation 价格历史；expected_price 保留为原始心理预期
+        total_price=body.expected_price,
         expected_price=body.expected_price,
         images=body.images,
     )

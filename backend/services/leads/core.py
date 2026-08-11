@@ -16,7 +16,7 @@ from schemas.lead import LeadCreate, LeadUpdate
 from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
 from settings import settings
 
-from .internal import LeadEvalService, LeadFollowUpService, LeadPriceService, LeadQueryService
+from .internal import LeadEvalService, LeadFollowUpService, LeadPriceService, LeadQueryService, compute_unit_price
 
 
 class LeadService:
@@ -63,6 +63,9 @@ class LeadService:
             id=uuid.uuid4(),
             creator_id=creator_id,
         )
+        # 单价未显式提供时按 总价/面积 自动计算（C 端 /public/leads 不传单价）
+        if db_lead.unit_price is None:
+            db_lead.unit_price = compute_unit_price(db_lead.total_price, db_lead.area)
         self.db.add(db_lead)
 
         # 如果有总价，自动记录初始价格历史
@@ -186,6 +189,12 @@ class LeadService:
         old_status = lead.status
         for field, value in update_dict.items():
             setattr(lead, field, value)
+
+        # total_price 或 area 变更时重算单价（仅当本次未显式提供 unit_price）
+        if ("total_price" in update_dict or "area" in update_dict) and "unit_price" not in update_dict:
+            new_unit = compute_unit_price(lead.total_price, lead.area)
+            if new_unit is not None:
+                lead.unit_price = new_unit
 
         # 评估决策流转：状态变更为 PENDING_VISIT/REJECTED 时，记录审核时间与审核人
         # 仅在状态实际变化时写入，避免重复更新字段时覆盖审计记录

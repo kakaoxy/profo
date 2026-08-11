@@ -68,6 +68,12 @@
 - migrate_uploads_to_oss: 启动期仅改写 DB URL 为 OSS URL（仅 storage_backend=oss 时执行，幂等：
   已是 OSS URL 的记录跳过）；本地文件上传由带外脚本 `python -m migrations.migrate_uploads_to_oss`
   执行（upload_local_files_to_oss），切换到 OSS 后对外提供服务前运行一次
+- backfill_lead_total_price_from_expected: 回填 leads.total_price = expected_price
+  （仅 total_price IS NULL AND expected_price IS NOT NULL 的行，幂等），修复历史 C 端提交线索
+  在 admin 总价列显示为空的问题；不回填 lead_price_history 审计数据
+- backfill_lead_unit_price: 回填 leads.unit_price = ROUND(total_price / area, 2)
+  （仅 unit_price IS NULL AND total_price/area 有效且 area > 0 的行，幂等），修复历史线索
+  在 admin 单价列显示为空的问题；后续由 service 层自动维护
 
 """
 
@@ -132,6 +138,8 @@ from migrations.add_counterparty_type import add_counterparty_type_to_finance_re
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
 from migrations.add_project_document_category import add_project_document_category
+from migrations.backfill_lead_total_price_from_expected import backfill_lead_total_price_from_expected
+from migrations.backfill_lead_unit_price import backfill_lead_unit_price
 from migrations.cleanup_reserved_contracts import cleanup_reserved_contracts
 from migrations.fix_image_urls import run_fix_image_urls
 from migrations.migrate_add_ended_status import migrate_add_ended_status
@@ -225,6 +233,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_reports_indexes(engine)
         add_lead_eval_history_and_expected_price(engine)
         add_project_document_category(engine)
+        backfill_lead_total_price_from_expected(engine)
+        backfill_lead_unit_price(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

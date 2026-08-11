@@ -4,12 +4,42 @@
 """
 
 import uuid
+from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from models.lead import Lead, LeadPriceHistory
 from services.system.exceptions import ResourceNotFoundError
+
+
+def compute_unit_price(
+    total_price: float | Decimal | None,
+    area: float | Decimal | None,
+) -> Decimal | None:
+    """计算单价 = 总价 / 面积（万/㎡），保留 2 位小数.
+
+    两者均 > 0 时返回 Decimal，否则 None（避免除零与无意义结果）.
+    使用 Decimal(repr(float)) 规避 float 直接转 Decimal 的精度问题.
+
+    Args:
+        total_price: 总价（万），可为 float/Decimal/None
+        area: 面积（㎡），可为 float/Decimal/None
+
+    Returns:
+        单价（万/㎡，2 位小数）或 None
+
+    """
+    if total_price is None or area is None:
+        return None
+    try:
+        tp = Decimal(repr(float(total_price)))
+        ar = Decimal(repr(float(area)))
+    except (TypeError, ValueError):
+        return None
+    if tp <= 0 or ar <= 0:
+        return None
+    return (tp / ar).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class LeadPriceService:
@@ -87,6 +117,10 @@ class LeadPriceService:
 
         # 更新当前价格
         lead.total_price = price
+        # 总价变更后重算单价（面积不变，仅当面积有效时）
+        new_unit = compute_unit_price(lead.total_price, lead.area)
+        if new_unit is not None:
+            lead.unit_price = new_unit
         self.db.add(lead)
 
         self.db.commit()
