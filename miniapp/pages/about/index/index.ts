@@ -56,7 +56,7 @@ Page<PageData, PageCustom>({
   onShareAppMessage() {
     return {
       title: "零现金焕新，全流程托管，点击了解您的房价",
-      path: "/pages/valuation/submit/index",
+      path: "/pages/about/index/index",
       imageUrl: "/assets/share.jpg",
     };
   },

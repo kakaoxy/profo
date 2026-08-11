@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 # 下载超时（秒）
 _DOWNLOAD_TIMEOUT = 10.0
 
+# 最大重定向跳数（每跳都会重新校验 SSRF 安全）
+_MAX_REDIRECTS = 5
+
 # 下载大小上限（字节）：10MB
 _MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
@@ -104,6 +107,39 @@ def _is_url_safe(url: str) -> bool:
     return bool(hostname) and hostname != "localhost" and not _is_private_ip(hostname)
 
 
+def _fetch_image(client: httpx.Client, url: str) -> httpx.Response:
+    """发起 GET 请求并逐跳校验重定向目标.
+
+    默认 ``follow_redirects=True`` 只校验初始 URL，重定向目标（Location）未经过
+    安全校验，可能被重定向到内网/回环地址（SSRF）。这里手动跟随重定向，
+    每一跳都调用 ``_is_url_safe`` 重新校验，超限抛 ``ValueError``。
+
+    Args:
+        client: 已配置超时/请求头的 httpx 客户端
+        url: 初始 URL
+
+    Returns:
+        最终（非重定向）响应
+
+    Raises:
+        ValueError: 重定向目标不安全或跳数超限
+
+    """
+    current = url
+    for _ in range(_MAX_REDIRECTS + 1):
+        resp = client.get(current)
+        if not (resp.is_redirect or resp.is_permanent_redirect):
+            return resp
+        location = resp.headers.get("location")
+        next_url = httpx.URL(location).join(current) if location else None
+        if next_url is None or not _is_url_safe(str(next_url)):
+            msg = f"非法重定向目标: {location}"
+            raise ValueError(msg)
+        current = str(next_url)
+    msg = f"重定向次数超过上限: {_MAX_REDIRECTS}"
+    raise ValueError(msg)
+
+
 def _guess_extension(url: str, content_type: str | None) -> str:
     """从 Content-Type 或 URL 路径推断图片扩展名，默认 ``.jpg``."""
     if content_type:
@@ -149,11 +185,12 @@ def download_external_image(url: str) -> str | None:
     try:
         with httpx.Client(
             timeout=_DOWNLOAD_TIMEOUT,
-            follow_redirects=True,
+            # 手动跟随重定向并逐跳校验 SSRF，见 _fetch_image
+            follow_redirects=False,
             trust_env=False,
             headers=_REQUEST_HEADERS,
         ) as client:
-            resp = client.get(download_url)
+            resp = _fetch_image(client, download_url)
             resp.raise_for_status()
 
             content = resp.content

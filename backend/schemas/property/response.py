@@ -82,18 +82,10 @@ def _get_picture_links(
     image_types = {"interior", "exterior", "floor_plan", "other"}
 
     if preloaded_media:
-        return [
-            clean_url(media.url)
-            for media in preloaded_media
-            if media.media_type.value in image_types
-        ]
+        return [clean_url(media.url) for media in preloaded_media if media.media_type.value in image_types]
 
     if hasattr(property_obj, "property_media") and property_obj.property_media:
-        return [
-            clean_url(media.url)
-            for media in property_obj.property_media
-            if media.media_type.value in image_types
-        ]
+        return [clean_url(media.url) for media in property_obj.property_media if media.media_type.value in image_types]
 
     return []
 
