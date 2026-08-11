@@ -104,9 +104,9 @@ class OSSStorage:
         设置 Content-Disposition: inline 覆盖阿里云 2022 年后新建 public-read
         Bucket 的默认 attachment 行为，确保微信小程序 <image> 可内联显示。
         """
-        import oss2
-
-        headers = {oss2.headers.OSS_CONTENT_DISP: "inline"}
+        # Content-Disposition 是标准 HTTP header，oss2.headers 模块未提供常量，
+        # 直接用字符串字面量
+        headers = {"Content-Disposition": "inline"}
         self._bucket.put_object_from_file(key, str(local_path), headers=headers)
         return f"{settings.oss_public_base_url}/{key}"
 

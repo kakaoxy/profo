@@ -71,13 +71,15 @@ def backfill_oss_content_disposition(engine: Engine) -> None:  # noqa: ARG001
         # copy_object 同源同目标复制，仅更新 metadata
         # 必须设置 x-oss-metadata-directive: Replaced 才能覆盖元数据
         # 同时保留 Content-Type（Replaced 会清除未指定的元数据）
+        # Content-Disposition / Content-Type 是标准 HTTP header，oss2.headers
+        # 模块未提供对应常量，直接用字符串字面量
         content_type = meta.headers.get("Content-Type", "")
         headers: dict[str, str] = {
-            oss2.headers.OSS_CONTENT_DISP: "inline",
+            "Content-Disposition": "inline",
             oss2.headers.OSS_METADATA_DIRECTIVE: "Replaced",
         }
         if content_type:
-            headers[oss2.headers.OSS_CONTENT_TYPE] = content_type
+            headers["Content-Type"] = content_type
 
         bucket.copy_object(settings.oss_bucket_name, obj.key, obj.key, headers=headers)
         updated += 1
