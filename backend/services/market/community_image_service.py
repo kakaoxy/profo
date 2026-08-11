@@ -281,9 +281,14 @@ class CommunityImageService:
             if existing_by_source is not None:
                 existing_by_source.url = url
                 existing_by_source.updated_at = datetime.now(timezone.utc)
+                # 使用 savepoint 保护：flush 失败时仅回滚 savepoint，
+                # 不污染外层事务（importer / 脚本批处理仍可正常提交其余记录）
+                nested = db.begin_nested()
                 try:
                     db.flush()
+                    nested.commit()
                 except SQLAlchemyError:
+                    nested.rollback()
                     logger.exception(
                         "更新户型图 URL 失败: community_id=%s, source_property_id=%s",
                         community_id,
