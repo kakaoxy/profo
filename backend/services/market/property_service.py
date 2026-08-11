@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from models import Community, PropertyCurrent
 from schemas import CommunitySearchResponse, PropertyDetailResponse
 from services.system.exceptions import ResourceNotFoundError
+from utils.floor_plan import clean_url
 from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,9 @@ class PropertyService:
         detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, property_obj.community)
 
         detail.picture_links = [
-            media.url for media in sorted(property_obj.property_media, key=lambda m: m.sort_order) if media.url
+            clean_url(media.url)
+            for media in sorted(property_obj.property_media, key=lambda m: m.sort_order)
+            if media.url
         ]
 
         return detail

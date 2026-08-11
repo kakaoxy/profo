@@ -9,19 +9,42 @@
  */
 
 /**
+ * 清洗 URL 字符串：去除首尾空格和可能包裹的反引号/引号.
+ *
+ * 数据库脏数据可能包含 Markdown 反引号或引号包裹的 URL，如
+ * `` `https://example.com/img.jpg` `` 或 `"https://..."`，
+ * 导致正则校验失败。此函数去除最多两层成对包裹字符。
+ */
+export function cleanUrl(str: string): string {
+  let s = str.trim();
+  for (let i = 0; i < 2; i++) {
+    if (
+      s.length >= 2 &&
+      ((s.startsWith("`") && s.endsWith("`")) ||
+        (s.startsWith("'") && s.endsWith("'")) ||
+        (s.startsWith('"') && s.endsWith('"')))
+    ) {
+      s = s.slice(1, -1).trim();
+    } else {
+      break;
+    }
+  }
+  return s;
+}
+
+/**
  * 校验字符串是否为合法的绝对 URL（http/https）或相对路径.
  * 过滤数据库中的脏数据如 "q_80" 等非 URL 字符串.
+ *
+ * 注意：微信小程序运行环境不支持 URL 构造函数（new URL() 会抛
+ * "URL is not a constructor"），因此使用正则表达式校验。
  */
 export function isValidUrl(str: string): boolean {
-  if (str.startsWith("/")) {
+  const cleaned = cleanUrl(str);
+  if (cleaned.startsWith("/")) {
     return true; // 相对路径视为有效
   }
-  try {
-    const url = new URL(str);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
+  return /^https?:\/\/[^\s]+/i.test(cleaned);
 }
 
 /**
@@ -34,8 +57,8 @@ export function getFloorPlan(
   dataSource: string | null | undefined,
   links: string[] | null | undefined,
 ): string | null {
-  // 过滤脏数据（如 "q_80"），只保留合法 URL
-  const validLinks = links?.filter(isValidUrl);
+  // 过滤脏数据（如 "q_80"），只保留合法 URL；同时清洗首尾反引号/引号/空格
+  const validLinks = links?.map(cleanUrl).filter(isValidUrl);
   if (!validLinks || validLinks.length === 0) {
     return null;
   }

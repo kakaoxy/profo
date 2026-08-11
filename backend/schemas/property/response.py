@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict
 
 from schemas.response import PaginatedResponse
+from utils.floor_plan import clean_url
 
 if TYPE_CHECKING:
     from models.property.community import Community
@@ -77,14 +78,22 @@ def _get_picture_links(
     property_obj: "PropertyCurrent",
     preloaded_media: list | None = None,
 ) -> list[str]:
-    """获取图片链接."""
+    """获取图片链接，并清洗首尾反引号/引号/空格."""
     image_types = {"interior", "exterior", "floor_plan", "other"}
 
     if preloaded_media:
-        return [media.url for media in preloaded_media if media.media_type.value in image_types]
+        return [
+            clean_url(media.url)
+            for media in preloaded_media
+            if media.media_type.value in image_types
+        ]
 
     if hasattr(property_obj, "property_media") and property_obj.property_media:
-        return [media.url for media in property_obj.property_media if media.media_type.value in image_types]
+        return [
+            clean_url(media.url)
+            for media in property_obj.property_media
+            if media.media_type.value in image_types
+        ]
 
     return []
 

@@ -18,6 +18,33 @@ _5I5J_DATA_SOURCE = "我爱我家"
 # 贝壳分支 fallback：hdic-frame 未命中时取第 3 张（索引 2）
 _BEIKE_FALLBACK_INDEX = 2
 _BEIKE_FALLBACK_MIN_LENGTH = 3
+# 成对包裹字符，clean_url 最多去除两层
+_WRAP_CHARS = ("`", "'", '"')
+# 成对包裹字符的最小长度（字符本身 + 至少一个内容字符）
+_MIN_WRAP_PAIR_LEN = 2
+
+
+def clean_url(value: str | None) -> str:
+    r"""清洗 URL 字符串：去除首尾空格和可能包裹的反引号/引号.
+
+    与前端 ``cleanUrl`` 等价。数据库脏数据可能包含 Markdown 反引号或引号
+    包裹的 URL（如 ``\`https://example.com/img.jpg\```），导致
+    ``urlparse`` 解析失败。此函数去除最多两层成对包裹字符。
+
+    Args:
+        value: 原始 URL 字符串（可为 None）
+
+    Returns:
+        清洗后的 URL 字符串（不包含首尾空格和包裹引号）
+
+    """
+    s = (value or "").strip()
+    for _ in range(2):
+        if len(s) >= _MIN_WRAP_PAIR_LEN and s[0] in _WRAP_CHARS and s[-1] == s[0]:
+            s = s[1:-1].strip()
+        else:
+            break
+    return s
 
 
 def is_valid_url(value: str) -> bool:
@@ -28,6 +55,8 @@ def is_valid_url(value: str) -> bool:
     - 合法的 http/https URL 视为有效
     - 其他（如 ``"q_80"``、空串、``javascript:``）视为无效
 
+    内部先调用 ``clean_url`` 去除首尾反引号/引号/空格，兼容脏数据。
+
     Args:
         value: 待校验的字符串
 
@@ -37,10 +66,11 @@ def is_valid_url(value: str) -> bool:
     """
     if not isinstance(value, str) or not value:
         return False
-    if value.startswith("/"):
+    cleaned = clean_url(value)
+    if cleaned.startswith("/"):
         return True
     try:
-        parsed = urlparse(value)
+        parsed = urlparse(cleaned)
     except ValueError:
         return False
     return parsed.scheme in ("http", "https") and bool(parsed.netloc)
@@ -86,8 +116,8 @@ def get_floor_plan(
     if not links:
         return None
 
-    # 1. 预过滤：清洗非法字符串（与前端 isValidUrl 等价）
-    valid_links = [link for link in links if is_valid_url(link)]
+    # 1. 预过滤：清洗首尾反引号/引号/空格，再过滤非法字符串（与前端 isValidUrl 等价）
+    valid_links = [clean_url(link) for link in links if is_valid_url(link)]
     if not valid_links:
         return None
 

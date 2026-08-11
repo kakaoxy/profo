@@ -77,10 +77,6 @@
 - create_community_images_table: 幂等创建 community_images 表 + 索引
   + 部分唯一索引 uq_community_image_url (community_id, url) WHERE is_deleted=false，
   允许同小区已删除记录被重新插入（小区户型图库管理）
-- backfill_oss_content_disposition: 回填 OSS properties/ 前缀对象的 Content-Disposition: inline
-  （仅 storage_backend=oss 时执行，幂等：head_object 检查已为 inline 的跳过），
-  覆盖阿里云 2022 年后新建 public-read Bucket 默认 attachment 行为，
-  确保微信小程序 <image> 可内联显示
 
 """
 
@@ -148,7 +144,6 @@ from migrations.add_media_type_column import add_media_type_to_renovation_photos
 from migrations.add_project_document_category import add_project_document_category
 from migrations.backfill_lead_total_price_from_expected import backfill_lead_total_price_from_expected
 from migrations.backfill_lead_unit_price import backfill_lead_unit_price
-from migrations.backfill_oss_content_disposition import backfill_oss_content_disposition
 from migrations.cleanup_reserved_contracts import cleanup_reserved_contracts
 from migrations.fix_image_urls import run_fix_image_urls
 from migrations.migrate_add_ended_status import migrate_add_ended_status
@@ -247,7 +242,6 @@ def _run_all_migrations(engine: Engine) -> None:
         create_community_images_table(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
-        backfill_oss_content_disposition(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

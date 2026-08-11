@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from models.common.base import PropertyStatus
+from utils.floor_plan import clean_url
 
 
 class PropertyFilter(BaseModel):
@@ -127,13 +128,13 @@ class PropertyIngestionModel(BaseModel):
     @field_validator("image_urls", mode="before")
     @classmethod
     def validate_image_urls(cls, v: str | list[str] | None) -> list[str] | None:
-        """验证图片URL列表."""
+        """验证图片URL列表，去除首尾空格和可能包裹的反引号/引号."""
         if v is None:
             return v
         if isinstance(v, str):
-            return [url.strip() for url in v.split(",") if url.strip()]
+            return [clean_url(url) for url in v.split(",") if url.strip()]
         if isinstance(v, list):
-            return [url.strip() for url in v if url and url.strip()]
+            return [clean_url(url) for url in v if url and url.strip()]
         return v
 
     @model_validator(mode="after")
