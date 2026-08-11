@@ -20,7 +20,8 @@ def compute_unit_price(
     """计算单价 = 总价 / 面积（万/㎡），保留 2 位小数.
 
     两者均 > 0 时返回 Decimal，否则 None（避免除零与无意义结果）.
-    使用 Decimal(repr(float)) 规避 float 直接转 Decimal 的精度问题.
+    float 输入用 Decimal(repr()) 规避 float 直接转 Decimal 的精度问题；
+    Decimal 输入直接构造，避免不必要的 float 中转造成精度损失.
 
     Args:
         total_price: 总价（万），可为 float/Decimal/None
@@ -33,8 +34,8 @@ def compute_unit_price(
     if total_price is None or area is None:
         return None
     try:
-        tp = Decimal(repr(float(total_price)))
-        ar = Decimal(repr(float(area)))
+        tp = Decimal(repr(total_price)) if isinstance(total_price, float) else Decimal(total_price)
+        ar = Decimal(repr(area)) if isinstance(area, float) else Decimal(area)
     except (TypeError, ValueError):
         return None
     if tp <= 0 or ar <= 0:
