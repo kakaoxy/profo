@@ -66,8 +66,8 @@ export function getFloorPlan(
   if (source === "贝壳") {
     // 优先级：hdic-frame -> 第3张 -> 第1张（JS 数组越界访问返回 undefined，逻辑安全）
     imageUrl = hdicFrameImage || validLinks[2] || validLinks[0];
-    // 添加 CDN 裁剪参数
-    if (imageUrl && !imageUrl.includes("!m_fill")) {
+    // 添加 CDN 裁剪参数（仅外站 http 图片需要；本地 /static/ 路径追加会导致文件名带参数 404）
+    if (imageUrl && !imageUrl.includes("!m_fill") && imageUrl.startsWith("http")) {
       imageUrl += "!m_fill,w_1000,h_750,l_bk,f_jpg,ls_50";
     }
   } else if (source === "我爱我家") {
