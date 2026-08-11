@@ -101,11 +101,13 @@ class OSSStorage:
     def upload_file(self, local_path: Path, key: str) -> str:
         """上传文件到 OSS，返回公网/CDN URL.
 
-        注意：阿里云对 2022 年后新建的 public-read Bucket 强制返回
-        Content-Disposition: attachment，导致浏览器下载而非内联显示。
-        后续绑定 CDN/自定义域名后可解决此问题。
+        设置 Content-Disposition: inline 覆盖阿里云 2022 年后新建 public-read
+        Bucket 的默认 attachment 行为，确保微信小程序 <image> 可内联显示。
         """
-        self._bucket.put_object_from_file(key, str(local_path))
+        import oss2
+
+        headers = {oss2.headers.OSS_CONTENT_DISP: "inline"}
+        self._bucket.put_object_from_file(key, str(local_path), headers=headers)
         return f"{settings.oss_public_base_url}/{key}"
 
     def file_exists(self, key: str) -> bool:

@@ -65,8 +65,9 @@ export const getFloorPlan = (
     // 注意：JS数组越界访问返回 undefined，不会报错，逻辑是安全的
     imageUrl = hdicFrameImage || validLinks[2] || validLinks[0];
 
-    // 添加 CDN 裁剪参数（仅外站 http 图片需要；本地 /static/ 路径追加会导致文件名带参数 404）
-    if (imageUrl && !imageUrl.includes("!m_fill") && imageUrl.startsWith("http")) {
+    // 仅链家 CDN（ljcdn.com）需要追加裁剪指令；OSS / 本地路径追加会导致对象 key
+    // 包含参数而 404。与后端 _apply_cdn_params 逻辑对齐。
+    if (imageUrl && !imageUrl.includes("!m_fill") && imageUrl.includes("ljcdn.com")) {
       imageUrl += "!m_fill,w_1000,h_750,l_bk,f_jpg,ls_50";
     }
   } else if (source === "我爱我家") {
