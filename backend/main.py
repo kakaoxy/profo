@@ -33,7 +33,7 @@ from routers.common import files_router, push_router, upload_router
 from routers.finance import ledger_router, subjects_router
 from routers.investment import investment_router
 from routers.leads import leads_router
-from routers.market import communities_router, properties_router
+from routers.market import communities_router, community_images_router, properties_router
 from routers.marketing import import_router as marketing_import_router
 from routers.marketing import projects_router as marketing_projects_router
 from routers.monitor import monitor_router
@@ -289,6 +289,7 @@ API_V1_PREFIX = f"{settings.api_prefix}/v1"
 
 app.include_router(properties_router, prefix=API_V1_PREFIX)
 app.include_router(communities_router, prefix=API_V1_PREFIX)
+app.include_router(community_images_router, prefix=API_V1_PREFIX)
 app.include_router(leads_router, prefix=API_V1_PREFIX)
 app.include_router(core_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_projects_router, prefix=API_V1_PREFIX)

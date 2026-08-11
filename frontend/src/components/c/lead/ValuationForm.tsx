@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useState, useMemo } from "react";
-import { Smartphone, Ruler } from "lucide-react";
+import { useActionState, useEffect, useState, useMemo, useCallback } from "react";
+import { Smartphone, Ruler, Images } from "lucide-react";
 import { toast } from "sonner";
 import { CommunitySelect } from "@/components/common/community-select";
 import { LayoutInputs } from "@/components/common/layout-inputs";
 import { FloorPlanUpload } from "@/components/c/lead/floor-plan-upload";
-import { createLeadAction, completePhoneAction, searchCCommunitiesAction } from "@/app/(c)/valuation/actions";
+import { CommunityImagePicker, type PickerImageItem } from "@/app/(main)/admin/leads/_components/community-image-picker";
+import { createLeadAction, completePhoneAction, searchCCommunitiesAction, listCCommunityImagesAction } from "@/app/(c)/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
 import { useSession, useAuth } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
@@ -91,6 +92,24 @@ export function ValuationForm() {
       images: typeof images === "function" ? images(prev.images) : images,
     }));
   };
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const existingUrlSet = useMemo(() => new Set(formData.images), [formData.images]);
+
+  const fetchCommunityImages = useCallback(async (): Promise<PickerImageItem[]> => {
+    if (!formData.communityId) return [];
+    return listCCommunityImagesAction(formData.communityId);
+  }, [formData.communityId]);
+
+  const handlePickerSelect = useCallback((urls: string[]) => {
+    if (urls.length === 0) return;
+    setFormData((prev) => {
+      const merged = new Set(prev.images);
+      for (const u of urls) merged.add(u);
+      return { ...prev, images: Array.from(merged) };
+    });
+    toast.success(`已添加 ${urls.length} 张户型图`);
+  }, []);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -198,6 +217,22 @@ export function ValuationForm() {
           <FloorPlanUpload images={formData.images} onChange={setImages} />
           <input type="hidden" name="images" value={JSON.stringify(formData.images)} />
 
+          {/* 从小区户型图库选择 */}
+          <button
+            type="button"
+            disabled={!formData.communityId}
+            onClick={() => setPickerOpen(true)}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 h-12 rounded-inputs border border-dove/30 bg-white text-sm font-medium transition-colors",
+              formData.communityId
+                ? "text-ink hover:border-rust"
+                : "text-graphite cursor-not-allowed opacity-60",
+            )}
+          >
+            <Images className="h-4 w-4" />
+            {formData.communityId ? "从小区户型图库选择" : "请先选择小区后可从户型图库选择"}
+          </button>
+
           <FormItem label={cLocale.valuation.expectedPriceLabel} required>
             <input
               type="number"
@@ -293,6 +328,15 @@ export function ValuationForm() {
       >
         {isPending ? cLocale.valuation.submitting : cLocale.valuation.submit}
       </button>
+
+      {/* 户型图库选择器 */}
+      <CommunityImagePicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        fetchImages={fetchCommunityImages}
+        existingUrls={existingUrlSet}
+        onSelect={handlePickerSelect}
+      />
     </div>
   );
 }

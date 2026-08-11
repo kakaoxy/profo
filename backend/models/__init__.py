@@ -70,6 +70,8 @@ from .property import (
     Community,
     CommunityAlias,
     CommunityCompetitor,
+    CommunityImage,
+    CommunityImageSource,
     PropertyCurrent,
     PropertyHistory,
     PropertyMedia,
@@ -104,6 +106,8 @@ __all__ = [
     "Community",
     "CommunityAlias",
     "CommunityCompetitor",
+    "CommunityImage",
+    "CommunityImageSource",
     # 系统
     "FailedRecord",
     "FinanceActionType",

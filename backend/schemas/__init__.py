@@ -31,6 +31,14 @@ from .community import (
     CommunitySearchResponse,
 )
 
+# 4.1 Community Images (小区户型图库)
+from .community_image import (
+    CommunityImageCreate,
+    CommunityImageListResponse,
+    CommunityImageResponse,
+    CommunityImageUpdate,
+)
+
 # 10. L4 Marketing
 from .l4_marketing import (
     ImportableMediaResponse,
@@ -150,6 +158,10 @@ __all__ = [
     "CashFlowRecordResponse",
     "CashFlowResponse",
     "CashFlowSummary",
+    "CommunityImageCreate",
+    "CommunityImageListResponse",
+    "CommunityImageResponse",
+    "CommunityImageUpdate",
     "CommunityListResponse",
     "CommunityMergeRequest",
     "CommunityMergeResponse",

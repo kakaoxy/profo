@@ -4,6 +4,7 @@
 """
 
 from .community import Community, CommunityAlias, CommunityCompetitor
+from .community_image import CommunityImage, CommunityImageSource
 from .media import PropertyMedia
 from .property import PropertyCurrent, PropertyHistory
 
@@ -11,6 +12,8 @@ __all__ = [
     "Community",
     "CommunityAlias",
     "CommunityCompetitor",
+    "CommunityImage",
+    "CommunityImageSource",
     "PropertyCurrent",
     "PropertyHistory",
     "PropertyMedia",

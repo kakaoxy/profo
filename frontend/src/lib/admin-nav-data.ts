@@ -50,6 +50,7 @@ export const navMain: NavItem[] = [
     permission: PERMISSION_CODES.PROPERTY_READ,
     items: [
       { title: "房源列表", url: "/admin/properties", permission: PERMISSION_CODES.PROPERTY_READ },
+      { title: "小区户型图库", url: "/admin/communities/images", permission: PERMISSION_CODES.PROPERTY_READ },
       { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_UPLOAD },
       { title: "数据治理", url: "/admin/properties/governance", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_GOVERNANCE },
     ],

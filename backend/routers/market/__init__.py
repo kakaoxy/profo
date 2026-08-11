@@ -4,9 +4,11 @@
 """
 
 from .communities import router as communities_router
+from .community_images import router as community_images_router
 from .properties import router as properties_router
 
 __all__ = [
     "communities_router",
+    "community_images_router",
     "properties_router",
 ]

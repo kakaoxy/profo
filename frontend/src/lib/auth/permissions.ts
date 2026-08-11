@@ -108,6 +108,8 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
 }> = [
   // 房源数据治理 → 需 property:governance 权限
   { prefix: "/admin/properties/governance", permission: PERMISSION_CODES.PROPERTY_GOVERNANCE },
+  // 小区户型图库 → 需 property:read 权限
+  { prefix: "/admin/communities/images", permission: PERMISSION_CODES.PROPERTY_READ },
   // 房源批量上传 → 需 property:upload 权限
   { prefix: "/admin/properties/upload", permission: PERMISSION_CODES.PROPERTY_UPLOAD },
   // L4 市场营销 → 需 l4_marketing:read 权限

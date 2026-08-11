@@ -62,19 +62,26 @@ class PropertyService:
         return detail
 
     def search_communities(self, db: Session, q: str) -> list[CommunitySearchResponse]:
-        """按名称搜索小区.
+        """按小区名或商圈搜索小区.
+
+        ``q`` 参数同时模糊匹配 ``Community.name`` 与 ``Community.business_circle``，
+        支撑户型图库页面的小区搜索框（小区数量多，需按小区名或商圈关键词检索）。
 
         Args:
             db: 数据库会话
-            q: 搜索关键词
+            q: 搜索关键词（小区名或商圈）
 
         Returns:
-            list[CommunitySearchResponse]: 匹配的小区列表
+            list[CommunitySearchResponse]: 匹配的小区列表（上限 20 条）
 
         """
+        keyword = f"%{escape_like(q).lower()}%"
         results = (
             db.query(Community)
-            .filter(func.lower(Community.name).like(f"%{escape_like(q).lower()}%", escape="\\"))
+            .filter(
+                func.lower(Community.name).like(keyword, escape="\\")
+                | func.lower(Community.business_circle).like(keyword, escape="\\"),
+            )
             .limit(20)
             .all()
         )

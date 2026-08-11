@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Lead, LeadStatus } from '../types';
 import { Button } from '@/components/ui/button';
-import { X, Ruler, MapPin } from 'lucide-react';
+import { X, Ruler, MapPin, Images } from 'lucide-react';
 import { CommunitySelect } from '@/components/common/community-select';
 import { LayoutInputs } from '@/components/common/layout-inputs';
 import { FloorInput } from '@/components/common';
 import { ImageUpload } from './add-lead-parts/image-upload';
+import { CommunityImagePicker, type PickerImageItem } from './community-image-picker';
+import { listCommunityImagesForLeadAction } from '@/app/(main)/admin/communities/images/actions/upload-image';
 
 interface Props {
   isOpen: boolean;
@@ -37,6 +39,25 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
     remarks: '',
   });
   const [images, setImages] = useState<string[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const existingUrlSet = useMemo(() => new Set(images), [images]);
+
+  const fetchCommunityImages = useCallback(async (): Promise<PickerImageItem[]> => {
+    if (!formData.communityId) return [];
+    const res = await listCommunityImagesForLeadAction(formData.communityId);
+    if (res.success) return res.data.items;
+    return [];
+  }, [formData.communityId]);
+
+  const handlePickerSelect = useCallback((urls: string[]) => {
+    if (urls.length === 0) return;
+    setImages((prev) => {
+      const merged = new Set(prev);
+      for (const u of urls) merged.add(u);
+      return Array.from(merged);
+    });
+  }, []);
 
   // Initialize form when lead changes
   React.useEffect(() => {
@@ -200,6 +221,17 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
 
           <ImageUpload images={images} onChange={setImages} />
 
+          {/* 从小区户型图库选择 */}
+          <button
+            type="button"
+            disabled={!formData.communityId}
+            onClick={() => setPickerOpen(true)}
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-border bg-background text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/40"
+          >
+            <Images className="h-4 w-4" />
+            {formData.communityId ? '从小区户型图库选择' : '请先选择小区后可从户型图库选择'}
+          </button>
+
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">补充信息</label>
             <textarea 
@@ -218,6 +250,15 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
           </Button>
         </div>
       </div>
+
+      {/* 户型图库选择器 */}
+      <CommunityImagePicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        fetchImages={fetchCommunityImages}
+        existingUrls={existingUrlSet}
+        onSelect={handlePickerSelect}
+      />
     </div>
   );
 };

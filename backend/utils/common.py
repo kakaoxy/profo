@@ -165,6 +165,9 @@ class RateLimits:
     COMMUNITY_MERGE = "20/hour"
     COMMUNITY_CREATE = "1000/hour"
     COMMUNITY_UPDATE = "1000/hour"
+    # 小区户型图库：上传复用 FILE_UPLOAD，删除/编辑低频
+    COMMUNITY_IMAGE_UPDATE = "1000/hour"
+    COMMUNITY_IMAGE_DELETE = "200/hour"
 
     # ==================== 监控模块 ====================
     MONITOR_DELETE = "200/hour"

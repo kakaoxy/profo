@@ -74,6 +74,9 @@
 - backfill_lead_unit_price: 回填 leads.unit_price = ROUND(total_price / area, 2)
   （仅 unit_price IS NULL AND total_price/area 有效且 area > 0 的行，幂等），修复历史线索
   在 admin 单价列显示为空的问题；后续由 service 层自动维护
+- create_community_images_table: 幂等创建 community_images 表 + 索引
+  + 部分唯一索引 uq_community_image_url (community_id, url) WHERE is_deleted=false，
+  允许同小区已删除记录被重新插入（小区户型图库管理）
 
 """
 
@@ -83,6 +86,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 # 子模块迁移函数
+from migrations._community_images import create_community_images_table
 from migrations._finance import (
     add_cashflow_category_enum_values,
     add_finance_record_counterparty_columns,
@@ -235,6 +239,7 @@ def _run_all_migrations(engine: Engine) -> None:
         add_project_document_category(engine)
         backfill_lead_total_price_from_expected(engine)
         backfill_lead_unit_price(engine)
+        create_community_images_table(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

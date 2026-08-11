@@ -21,8 +21,11 @@ from models import (
     PropertyStatus,
 )
 from schemas import ImportResult, PropertyIngestionModel
+from services.market.community_image_service import CommunityImageService
 from services.system import save_failed_record
 from utils.error_formatters import format_database_error
+from utils.floor_plan import get_floor_plan
+from utils.image_download import download_external_image
 
 from .parser import FloorParser
 
@@ -220,7 +223,7 @@ class PropertyImporter:
         change_type = self._determine_change_type(existing, data)
         self._create_history_snapshot(existing, change_type, db)
         self._map_data_to_property(existing, data, community_id, user_id)
-        self._save_property_media(data, db)
+        self._save_property_media(data, db, community_id)
 
     def _handle_creation(
         self,
@@ -239,7 +242,7 @@ class PropertyImporter:
         self._map_data_to_property(new_property, data, community_id, user_id)
         db.add(new_property)
         db.flush()  # 确保获取ID，方便后续日志或返回
-        self._save_property_media(data, db)
+        self._save_property_media(data, db, community_id)
         return new_property
 
     def _map_data_to_property(
@@ -353,53 +356,89 @@ class PropertyImporter:
             error=error_msg,
         )
 
-    def _save_property_media(self, data: PropertyIngestionModel, db: Session) -> None:
-        """保存房源图片链接到 property_media 表."""
+    def _save_property_media(
+        self,
+        data: PropertyIngestionModel,
+        db: Session,
+        community_id: str,
+    ) -> None:
+        """保存户型图到 ``property_media`` 表并归类到 ``community_images``.
+
+        链路设计（BREAKING）：整个 ``property_media`` 表只保存户型图，其他类型图片
+        不下载、不保存。流程：
+        1. 用 ``get_floor_plan(data.data_source, data.image_urls)`` 从图片列表选出户型图 URL
+        2. 选不到户型图（返回 None）时不保存任何记录
+        3. 外站图片（http/https）下载到本地存储，失败时回退原 URL（仍保存到 property_media）
+        4. 下载/保存成功后调用 ``CommunityImageService.classify_to_community`` 归类到
+           ``community_images``（``source=scraped``）
+        5. 归类失败不影响主流程（log warning，继续），不回滚 property_media 已保存的记录
+
+        Args:
+            data: 房源导入数据
+            db: 数据库会话
+            community_id: 房源关联小区ID（可空，空时跳过归类）
+
+        """
         if not data.image_urls:
             logger.debug("房源 %s 没有图片链接，跳过媒体资源保存", data.source_property_id)
             return
 
         try:
-            # 删除该房源现有的所有图片记录（确保更新时不会重复）
+            # 1. 选出户型图 URL（与前端 getFloorPlan 完全等价）
+            floor_plan_url = get_floor_plan(data.data_source, data.image_urls)
+            if not floor_plan_url:
+                logger.info(
+                    "房源 %s 未识别到户型图，不保存任何图片到 property_media",
+                    data.source_property_id,
+                )
+                return
+
+            # 2. 删除该房源现有的所有图片记录（确保更新时不会重复）
             db.query(PropertyMedia).filter(
                 PropertyMedia.data_source == data.data_source,
                 PropertyMedia.source_property_id == data.source_property_id,
             ).delete()
 
-            # 对URL进行去重处理，保持原始顺序
-            seen_urls = set()
-            unique_urls = []
-            for url in data.image_urls:
-                if url and url.strip():  # 确保URL不为空
-                    url_stripped = url.strip()
-                    if url_stripped not in seen_urls:
-                        seen_urls.add(url_stripped)
-                        unique_urls.append(url_stripped)
+            # 3. 外站图片下载到本地存储，失败时回退原 URL
+            stored_url = floor_plan_url
+            if floor_plan_url.startswith(("http://", "https://")):
+                downloaded = download_external_image(floor_plan_url)
+                if downloaded:
+                    stored_url = downloaded
+                # 下载失败保留原外站 URL（admin 端可加载外站 URL）
 
-            if len(unique_urls) < len(data.image_urls):
-                logger.debug(
-                    "房源 %s 发现重复图片链接，已去重: %s -> %s",
-                    data.source_property_id,
-                    len(data.image_urls),
-                    len(unique_urls),
-                )
+            media_record = PropertyMedia(
+                data_source=data.data_source,
+                source_property_id=data.source_property_id,
+                media_type=MediaType.OTHER,  # 统一作为"其他"类型，前端自行选择展示
+                url=stored_url,
+                sort_order=0,
+                created_at=datetime.now(timezone.utc),
+            )
+            db.add(media_record)
+            db.flush()
+            logger.info(
+                "保存房源 %s 的户型图: %s -> %s",
+                data.source_property_id,
+                floor_plan_url,
+                stored_url,
+            )
 
-            # 批量插入新的图片记录
-            media_records = []
-            for index, url in enumerate(unique_urls):
-                media_record = PropertyMedia(
-                    data_source=data.data_source,
+            # 4. 归类到 community_images（community_id 为空时由 Service 跳过）
+            try:
+                CommunityImageService.classify_to_community(
+                    db=db,
+                    community_id=community_id,
+                    url=stored_url,
                     source_property_id=data.source_property_id,
-                    media_type=MediaType.OTHER,  # 统一作为"其他"类型，前端自行选择展示
-                    url=url,
-                    sort_order=index,  # 按去重后的顺序排序
-                    created_at=datetime.now(timezone.utc),
                 )
-                media_records.append(media_record)
-
-            if media_records:
-                db.bulk_save_objects(media_records)
-                logger.info("保存房源 %s 的图片链接: %s 张", data.source_property_id, len(media_records))
+            except Exception as classify_err:
+                # 归类失败不影响主流程，log warning 继续，不回滚 property_media 已保存的记录
+                logger.warning(
+                    "房源 %s 户型图归类到 community_images 失败: %s",
+                    data.source_property_id,
+                    classify_err,
+                )
 
         except Exception as e:
             # 图片保存失败不影响主流程，记录警告即可

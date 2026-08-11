@@ -57,6 +57,7 @@ export const apiPaths = {
   },
   cCommunities: {
     search: "/api/v1/public/communities/search",
+    images: "/api/v1/public/communities",
   },
   cLeads: {
     create: "/api/v1/public/leads",

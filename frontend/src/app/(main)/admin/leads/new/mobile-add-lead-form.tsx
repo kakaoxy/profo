@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Ruler } from "lucide-react";
+import { ArrowLeft, MapPin, Ruler, Images } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { CommunitySelect } from "@/components/common/community-select";
 import { LayoutInputs } from "@/components/common/layout-inputs";
 import { FloorInput } from "@/components/common";
 import { ImageUpload } from "../_components/add-lead-parts/image-upload";
+import { CommunityImagePicker, type PickerImageItem } from "../_components/community-image-picker";
+import { listCommunityImagesForLeadAction } from "@/app/(main)/admin/communities/images/actions/upload-image";
 
 const ORIENTATION_OPTIONS = ["南", "北", "东", "西", "南北", "东西"];
 
@@ -48,6 +50,29 @@ export function MobileAddLeadForm() {
     remarks: "",
   });
   const [images, setImages] = useState<string[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const existingUrlSet = useMemo(() => new Set(images), [images]);
+
+  const fetchCommunityImages = useCallback(async (): Promise<PickerImageItem[]> => {
+    if (!formData.communityId) return [];
+    const res = await listCommunityImagesForLeadAction(formData.communityId);
+    if (res.success) return res.data.items;
+    return [];
+  }, [formData.communityId]);
+
+  const handlePickerSelect = useCallback(
+    (urls: string[]) => {
+      if (urls.length === 0) return;
+      setImages((prev) => {
+        const merged = new Set(prev);
+        for (const u of urls) merged.add(u);
+        return Array.from(merged);
+      });
+      toast.success(`已添加 ${urls.length} 张户型图`);
+    },
+    [],
+  );
 
   const calculatedUnitPrice = useMemo(() => {
     const a = parseFloat(formData.area);
@@ -252,6 +277,23 @@ export function MobileAddLeadForm() {
         {/* 5. 房源实拍（ImageUpload 自带 label） */}
         <ImageUpload images={images} onChange={setImages} />
 
+        {/* 5.1 从小区户型图库选择 */}
+        <div className="flex flex-col gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!formData.communityId}
+            onClick={() => setPickerOpen(true)}
+            className="h-10 justify-start text-sm"
+          >
+            <Images className="h-4 w-4 mr-2" />
+            {formData.communityId
+              ? "从小区户型图库选择"
+              : "请先选择小区后可从户型图库选择"}
+          </Button>
+        </div>
+
         {/* 6. 补充信息 */}
         <div className="flex flex-col gap-1.5">
           <FieldLabel>补充信息</FieldLabel>
@@ -278,6 +320,15 @@ export function MobileAddLeadForm() {
           </Button>
         </footer>
       </form>
+
+      {/* 户型图库选择器 */}
+      <CommunityImagePicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        fetchImages={fetchCommunityImages}
+        existingUrls={existingUrlSet}
+        onSelect={handlePickerSelect}
+      />
     </div>
   );
 }

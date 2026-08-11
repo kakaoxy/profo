@@ -1,6 +1,7 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
 import { getFloorPlan } from "../../../utils/floor-plan";
+import { resolveAssetUrl } from "../../../utils/url";
 
 type PropertyResponse = components["schemas"]["PropertyResponse"];
 type PaginatedPropertyResponse = components["schemas"]["PaginatedPropertyResponse"];
@@ -255,7 +256,7 @@ Page<PageData, PageCustom>({
       totalPrice: p.total_price,
       unitPriceText: `${formatThousand(p.unit_price)}元/㎡`,
       loc: locParts.join(" · "),
-      thumb: getFloorPlan(p.data_source, p.picture_links) || "",
+      thumb: resolveAssetUrl(getFloorPlan(p.data_source, p.picture_links)),
     };
   },
 

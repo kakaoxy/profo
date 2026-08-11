@@ -226,6 +226,56 @@ export interface paths {
         patch: operations["update_community_api_v1_admin_communities__community_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/communities/{community_id}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Community Images
+         * @description 按小区查询户型图列表.
+         */
+        get: operations["list_community_images_api_v1_admin_communities__community_id__images_get"];
+        put?: never;
+        /**
+         * Upload Community Image
+         * @description 上传户型图到指定小区.
+         *
+         *     速率限制：复用 FILE_UPLOAD（2000/hour）
+         */
+        post: operations["upload_community_image_api_v1_admin_communities__community_id__images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/community-images/{image_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Community Image
+         * @description 软删除户型图.
+         */
+        delete: operations["delete_community_image_api_v1_admin_community_images__image_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Community Image
+         * @description 更新户型图描述/排序（PATCH 语义）.
+         */
+        patch: operations["update_community_image_api_v1_admin_community_images__image_id__patch"];
+        trace?: never;
+    };
     "/api/v1/leads": {
         parameters: {
             query?: never;
@@ -301,6 +351,28 @@ export interface paths {
          *     速率限制：20次/小时.
          */
         delete: operations["delete_lead_api_v1_leads__lead_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}/community-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Lead Community Images
+         * @description 获取线索关联小区的户型图列表.
+         *
+         *     供前端创建/编辑线索时从户型图库选择户型图。
+         */
+        get: operations["get_lead_community_images_api_v1_leads__lead_id__community_images_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2679,8 +2751,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * C端用户登录
-         * @description C端用户使用用户名密码登录，返回JWT令牌
+         * C端登录
+         * @description 使用用户名密码登录，返回JWT令牌；支持 C 端用户与内部用户（按身份签发对应端令牌）
          */
         post: operations["login_for_access_token_api_v1_public_auth_token_post"];
         delete?: never;
@@ -2985,6 +3057,26 @@ export interface paths {
          * @description 根据关键词搜索小区，无需登录
          */
         get: operations["search_communities_api_v1_public_communities_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/communities/{community_id}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询小区户型图
+         * @description 返回指定小区的户型图列表，无需登录，供 C端估价表单选择户型图
+         */
+        get: operations["list_community_images_api_v1_public_communities__community_id__images_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3350,6 +3442,14 @@ export interface components {
              */
             client_secret?: string | null;
         };
+        /** Body_upload_community_image_api_v1_admin_communities__community_id__images_post */
+        Body_upload_community_image_api_v1_admin_communities__community_id__images_post: {
+            /**
+             * File
+             * @description 户型图文件
+             */
+            file: string;
+        };
         /** Body_upload_file_api_v1_files_upload_post */
         Body_upload_file_api_v1_files_upload_post: {
             /** File */
@@ -3662,6 +3762,81 @@ export interface components {
              * @description 主力户型（近 12 月成交占比最高）
              */
             main_layout?: string | null;
+        };
+        /**
+         * CommunityImageListResponse
+         * @description 户型图列表响应.
+         */
+        CommunityImageListResponse: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["CommunityImageResponse"][];
+        };
+        /**
+         * CommunityImageResponse
+         * @description 户型图响应模型.
+         */
+        CommunityImageResponse: {
+            /**
+             * Description
+             * @description 描述
+             */
+            description?: string | null;
+            /**
+             * Sort Order
+             * @description 排序
+             * @default 0
+             */
+            sort_order: number;
+            /** Id */
+            id: number;
+            /** Community Id */
+            community_id: string;
+            /** Url */
+            url: string;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            source: components["schemas"]["CommunityImageSource"];
+            /** Source Property Id */
+            source_property_id?: string | null;
+            /**
+             * Is Deleted
+             * @default false
+             */
+            is_deleted: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CommunityImageSource
+         * @description 小区户型图来源枚举.
+         * @enum {string}
+         */
+        CommunityImageSource: "scraped" | "uploaded";
+        /**
+         * CommunityImageUpdate
+         * @description 更新户型图请求（PATCH 语义，仅更新提供的字段）.
+         */
+        CommunityImageUpdate: {
+            /**
+             * Description
+             * @description 描述
+             */
+            description?: string | null;
+            /**
+             * Sort Order
+             * @description 排序
+             */
+            sort_order?: number | null;
         };
         /**
          * CommunityMarketStatsResponse
@@ -8126,16 +8301,19 @@ export interface components {
         /**
          * PublicConsultantContact
          * @description C端顾问联系方式.
+         *
+         *     该端点专供 C 端客户直接联系顾问（拨打/复制），返回真实手机号，
+         *     不做脱敏；名称中的「脱敏」仅适用于列表/详情里的 PublicConsultantInfo。
          */
         PublicConsultantContact: {
             /**
              * Phone
-             * @description 手机号(脱敏)
+             * @description 顾问手机号(真实，供客户拨打联系)
              */
             phone: string;
             /**
              * Wechat Number
-             * @description 微信号
+             * @description 微信号(当前复用顾问手机号)
              */
             wechat_number: string;
             /**
@@ -10640,6 +10818,8 @@ export interface operations {
             query?: {
                 /** @description 房源状态: 在售 | 成交 */
                 status?: string | null;
+                /** @description 关键词：同时模糊匹配小区名与商圈 */
+                keyword?: string | null;
                 /** @description 小区名称（模糊搜索） */
                 community_name?: string | null;
                 /** @description 小区ID，逗号分隔，例如: uuid1,uuid2 */
@@ -10972,6 +11152,148 @@ export interface operations {
             };
         };
     };
+    list_community_images_api_v1_admin_communities__community_id__images_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityImageListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_community_image_api_v1_admin_communities__community_id__images_post: {
+        parameters: {
+            query?: {
+                /** @description 描述 */
+                description?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_community_image_api_v1_admin_communities__community_id__images_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityImageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_community_image_api_v1_admin_community_images__image_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 户型图ID */
+                image_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_community_image_api_v1_admin_community_images__image_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 户型图ID */
+                image_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityImageUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityImageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_leads_api_v1_leads_get: {
         parameters: {
             query?: {
@@ -11192,6 +11514,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_community_images_api_v1_leads__lead_id__community_images_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityImageListResponse"];
+                };
             };
             /** @description Not found */
             404: {
@@ -15930,7 +16296,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description 非C端用户或账号被禁用 */
+            /** @description 账号被禁用 */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16197,12 +16563,14 @@ export interface operations {
                 /** @description 每页数量 */
                 page_size?: number;
                 project_status?: components["schemas"]["MarketingProjectStatus"] | null;
-                community_name?: string | null;
+                keyword?: string | null;
                 layout?: string | null;
                 min_price?: number | null;
                 max_price?: number | null;
                 min_area?: number | null;
                 max_area?: number | null;
+                min_floor?: number | null;
+                max_floor?: number | null;
                 sort_by?: string;
                 sort_order?: string;
             };
@@ -16235,8 +16603,12 @@ export interface operations {
     get_sold_projects_api_v1_public_projects_sold_get: {
         parameters: {
             query?: {
-                /** @description 小区名称筛选 */
-                community_name?: string | null;
+                /** @description 搜索关键词(小区名或商圈) */
+                keyword?: string | null;
+                /** @description 最小所在楼层 */
+                min_floor?: number | null;
+                /** @description 最大所在楼层 */
+                max_floor?: number | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -16503,6 +16875,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicCommunitySearchItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_community_images_api_v1_public_communities__community_id__images_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityImageListResponse"];
                 };
             };
             /** @description Validation Error */

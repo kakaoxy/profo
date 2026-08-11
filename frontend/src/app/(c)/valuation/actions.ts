@@ -43,6 +43,26 @@ export async function searchCCommunitiesAction(query: string): Promise<Community
   }
 }
 
+export async function listCCommunityImagesAction(
+  communityId: string,
+): Promise<{ id: number | string; url: string; thumbnail_url?: string | null; description?: string | null }[]> {
+  try {
+    const response = await fetch(
+      getApiUrl(`${apiPaths.cCommunities.images}/${communityId}/images?page_size=100`)
+    );
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.items ?? []).map((item: { id: number; url: string; thumbnail_url: string | null; description: string | null }) => ({
+      id: item.id,
+      url: item.url,
+      thumbnail_url: item.thumbnail_url,
+      description: item.description,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function createLeadAction(_: ActionResult<{ id: string }>, formData: FormData): Promise<ActionResult<{ id: string }>> {
   const raw = {
     community_id: (formData.get("community_id") as string) || null,

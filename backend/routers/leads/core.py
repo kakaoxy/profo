@@ -13,6 +13,7 @@ from dependencies.auth import (
 from dependencies.common import PaginationDep
 from models.common import LeadStatus
 from models.lead import Lead
+from schemas.community_image import CommunityImageListResponse
 from schemas.lead import (
     LeadCreate,
     LeadFunnelResponse,
@@ -23,6 +24,8 @@ from schemas.lead import (
     PaginatedLeadListResponse,
 )
 from services.leads import LeadService
+from services.market.community_image_service import CommunityImageService
+from services.system.exceptions import ResourceNotFoundError
 from utils.common import RateLimits, limiter
 
 router = APIRouter()
@@ -137,6 +140,35 @@ def get_lead(
     """获取单个线索详情."""
     service = LeadService(db)
     return service.get_lead_or_404(lead_id)
+
+
+@router.get("/{lead_id}/community-images")
+def get_lead_community_images(
+    db: DbSessionDep,
+    _current_user: LeadReadPermDep,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    pagination: PaginationDep,
+) -> CommunityImageListResponse:
+    """获取线索关联小区的户型图列表.
+
+    供前端创建/编辑线索时从户型图库选择户型图。
+    """
+    lead_service = LeadService(db)
+    lead = lead_service.get_lead(lead_id)
+    if lead is None:
+        msg = "线索不存在"
+        raise ResourceNotFoundError(msg)
+
+    # community_id 为空时返回空列表（前端提示"请先选择小区"）
+    if not lead.community_id:
+        return CommunityImageListResponse(total=0, items=[])
+
+    return CommunityImageService.list_by_community(
+        db=db,
+        community_id=lead.community_id,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.put("/{lead_id}")

@@ -8,6 +8,7 @@
 """
 
 from .batch_importer import CSVBatchImporter
+from .community_image_service import CommunityImageService, get_community_image_service
 from .community_service import (
     CommunityQueryService,
     get_community_service,
@@ -30,28 +31,22 @@ from .sorting import apply_sorting
 
 __all__ = [
     "CSVBatchImporter",
-    # CSV解析和失败记录处理
     "CSVParser",
-    # 合并服务
+    "CommunityImageService",
     "CommunityMerger",
-    # 小区服务
     "CommunityQueryService",
     "FailedRecordHandler",
     "FloorInfo",
-    # 解析工具
     "FloorParser",
     "ImportTaskProcessor",
-    # 异步导入任务服务
     "ImportTaskService",
     "MergeResult",
-    # 导入服务
     "PropertyImporter",
-    # 查询服务
     "PropertyQueryService",
     "PropertyService",
-    # 筛选排序工具
     "apply_filters",
     "apply_sorting",
+    "get_community_image_service",
     "get_community_service",
     "get_import_task_service",
     "get_property_query_service",
