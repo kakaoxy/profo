@@ -20,7 +20,7 @@ from utils.formatters import mask_phone
 class UserProfileService:
     """用户资料与手机号服务（C 端）."""
 
-    def check_phone_taken_by_other(self, db: Session, phone: str, exclude_user_id: int) -> User | None:
+    def check_phone_taken_by_other(self, db: Session, phone: str, exclude_user_id: str) -> User | None:
         """检查手机号是否已被其他用户绑定，返回占用的用户（无则 None）.
 
         Args:
