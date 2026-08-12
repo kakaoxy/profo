@@ -23,26 +23,10 @@
     <view wx:else class="user-fields">
       <view class="field-row">
         <view class="field-label">手机号</view>
-        <!-- 非编辑态：已绑定脱敏展示；未绑定且 C 端可编辑 → 点击进入完善 -->
-        <view wx:if="{{!editingPhone}}" class="phone-field" bindtap="onPhoneTap">
+        <!-- 未绑定展示「完善手机号」点击触发微信授权弹窗；已绑定脱敏展示不可编辑 -->
+        <view class="phone-field" bindtap="onPhoneTap">
           <text class="phone-value {{hasPhone ? 'has-phone' : 'empty'}}">{{phoneDisplay}}</text>
           <text wx:if="{{!hasPhone && canEditPhone}}" class="phone-action">›</text>
-        </view>
-        <!-- 编辑态：输入 + 保存/取消 -->
-        <view wx:else class="phone-edit">
-          <input
-            class="phone-input"
-            type="number"
-            maxlength="11"
-            value="{{phoneInput}}"
-            placeholder="请输入11位手机号"
-            focus="{{phoneFocus}}"
-            bindinput="onPhoneInput"
-          />
-          <view class="phone-edit-actions">
-            <button class="phone-btn phone-btn--cancel" bindtap="onPhoneCancel">取消</button>
-            <button class="phone-btn phone-btn--save" disabled="{{submittingPhone}}" bindtap="onPhoneConfirm">{{submittingPhone ? '保存中…' : '保存'}}</button>
-          </view>
         </view>
       </view>
       <view class="field-row">

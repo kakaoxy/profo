@@ -12,8 +12,6 @@ import {
 
 type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type UserResponse = components["schemas"]["UserResponse"];
-type PublicPhoneCreate = components["schemas"]["PublicPhoneCreate"];
-type PublicPhoneResponse = components["schemas"]["PublicPhoneResponse"];
 type PublicRefreshTokenRequest = components["schemas"]["PublicRefreshTokenRequest"];
 type PublicLogoutResponse = components["schemas"]["PublicLogoutResponse"];
 
@@ -57,10 +55,6 @@ interface PageData {
   roleLabel: string;
   phoneDisplay: string;
   hasPhone: boolean;
-  editingPhone: boolean;
-  phoneInput: string;
-  phoneFocus: boolean;
-  submittingPhone: boolean;
   internalEntries: InternalEntry[];
   /** 当前是否为临时账号（c_user_temporary=true），决定是否展示「绑定已有账号」入口. */
   isTemporary: boolean;
@@ -78,9 +72,6 @@ interface PageCustom {
   onGoLogin(): void;
   onLogout(): void;
   onPhoneTap(): void;
-  onPhoneInput(e: WechatMiniprogram.Input): void;
-  onPhoneCancel(): void;
-  onPhoneConfirm(): void;
   onValuationTap(): void;
   onMenuTap(e: WechatMiniprogram.BaseEvent): void;
   onPhoneModalSkip(): void;
@@ -122,10 +113,6 @@ Page<PageData, PageCustom>({
     roleLabel: "未登录",
     phoneDisplay: "完善手机号",
     hasPhone: false,
-    editingPhone: false,
-    phoneInput: "",
-    phoneFocus: false,
-    submittingPhone: false,
     internalEntries: INTERNAL_ENTRIES,
     isTemporary: false,
   },
@@ -160,9 +147,6 @@ Page<PageData, PageCustom>({
       roleLabel: "未登录",
       phoneDisplay: "完善手机号",
       hasPhone: false,
-      editingPhone: false,
-      phoneInput: "",
-      phoneFocus: false,
       isTemporary: false,
     });
   },
@@ -326,60 +310,10 @@ Page<PageData, PageCustom>({
     if (this.data.hasPhone) {
       return;
     }
-    this.setData({ editingPhone: true, phoneInput: "", phoneFocus: true });
-  },
-
-  onPhoneInput(e: WechatMiniprogram.Input) {
-    this.setData({ phoneInput: e.detail.value });
-  },
-
-  onPhoneCancel() {
-    this.setData({ editingPhone: false, phoneInput: "", phoneFocus: false });
-  },
-
-  async onPhoneConfirm() {
-    if (this.data.submittingPhone) {
-      return;
-    }
-    const token = this.getToken();
-    if (!token) {
-      this.onGoLogin();
-      return;
-    }
-    const value = this.data.phoneInput.trim();
-    if (!/^1[3-9]\d{9}$/.test(value)) {
-      wx.showToast({ title: "请输入正确的11位手机号", icon: "none" });
-      return;
-    }
-    this.setData({ submittingPhone: true });
-    try {
-      const body: PublicPhoneCreate = { phone: value };
-      const res = await request<PublicPhoneResponse>({
-        url: "/public/users/phone",
-        method: "POST",
-        data: body,
-        // 不传 header，request.ts 按 /public/* 自动注入 c_access_token
-      });
-      // 后端返回脱敏手机号；兜底本地脱敏
-      const masked = res.phone || maskPhone(value);
-      this.setData({
-        phoneDisplay: masked,
-        hasPhone: true,
-        editingPhone: false,
-        phoneInput: "",
-        phoneFocus: false,
-      });
-      // 后端 set_initial_phone 已置 is_temporary=False；同步清除本地临时账号标识
-      // 并标记已弹过手机号引导，避免后续进入 profile 重复弹窗（与 onPhoneModalBound 对齐）
-      setCTemporary(false);
-      setPhonePrompted(true);
-      wx.showToast({ title: "绑定成功", icon: "success" });
-    } catch (err) {
-      // 透出后端业务信息（如「手机号已被其他账号绑定」），无则兜底通用提示
-      const msg = (err as { body?: { message?: string } } | undefined)?.body?.message;
-      wx.showToast({ title: msg || "保存失败，请重试", icon: "none" });
-    } finally {
-      this.setData({ submittingPhone: false });
+    // 主动触发微信授权弹窗（与 onShow 自动弹窗复用同一组件实例）
+    const modal = this.selectComponent("#phoneModal") as unknown as PhoneBindModalInstance | null;
+    if (modal && typeof modal.show === "function") {
+      modal.show();
     }
   },
 

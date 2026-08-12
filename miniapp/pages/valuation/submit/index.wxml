@@ -13,28 +13,10 @@
     <view class="form-sub">线上提交房源信息，我们先做初步估价。合适的会联系你安排上门看房，结合周边真实成交数据，再商定写进合同的约定价格。不签约不收费。</view>
   </view>
 
-  <!-- 手机号完善 banner（未绑定手机号时展示；未登录时点击引导登录） -->
+  <!-- 手机号完善 banner（未绑定手机号时展示；点击触发微信授权弹窗） -->
   <view wx:if="{{!hasPhone}}" class="phone-banner">
-    <block wx:if="{{!editingPhone}}">
-      <text class="phone-banner__text">完善手机号，加速评估速度</text>
-      <text class="phone-banner__action" bindtap="onPhoneTap">完善手机号 ›</text>
-    </block>
-    <block wx:else>
-      <view class="phone-form">
-        <input
-          class="phone-input"
-          type="number"
-          maxlength="11"
-          value="{{phoneInput}}"
-          placeholder="请输入11位手机号"
-          bindinput="onPhoneInput"
-        />
-        <view class="phone-actions">
-          <button class="phone-btn phone-btn--cancel" bindtap="onPhoneCancel">取消</button>
-          <button class="phone-btn phone-btn--save" disabled="{{submittingPhone}}" bindtap="onPhoneConfirm">{{submittingPhone ? '保存中…' : '保存'}}</button>
-        </view>
-      </view>
-    </block>
+    <text class="phone-banner__text">完善手机号，加速评估速度</text>
+    <text class="phone-banner__action" bindtap="onPhoneTap">完善手机号 ›</text>
   </view>
 
   <!-- 表单 -->
@@ -136,3 +118,10 @@
     <view class="risk-note">信息仅用于估价与上门看房安排，不外泄、不电话骚扰</view>
   </view>
 </view>
+
+<!-- 手机号绑定授权弹窗：点击「完善手机号」时主动触发 -->
+<phone-bind-modal
+  id="phoneModal"
+  bind:bound="onPhoneModalBound"
+  bind:gobindaccount="onPhoneModalGoBindAccount"
+/>

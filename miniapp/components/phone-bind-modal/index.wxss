@@ -84,3 +84,17 @@
 .btn-skip::after {
   border: none;
 }
+
+/* 备选入口：弱化的次要链接，区别于主操作按钮 */
+.modal-alt {
+  margin-top: 32rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+  text-decoration: underline;
+}
+
+.modal-alt:active {
+  opacity: 0.6;
+}

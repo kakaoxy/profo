@@ -14,8 +14,6 @@ type PublicLeadCreate = components["schemas"]["PublicLeadCreate"];
 type PublicLeadResponse = components["schemas"]["PublicLeadResponse"];
 type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type UserResponse = components["schemas"]["UserResponse"];
-type PublicPhoneCreate = components["schemas"]["PublicPhoneCreate"];
-type PublicPhoneResponse = components["schemas"]["PublicPhoneResponse"];
 type PublicLeadCountResponse = components["schemas"]["PublicLeadCountResponse"];
 
 /**
@@ -94,9 +92,6 @@ interface PageData {
   loggedIn: boolean;
   hasPhone: boolean;
   canEditPhone: boolean;
-  phoneInput: string;
-  editingPhone: boolean;
-  submittingPhone: boolean;
   // 估价报告计数 banner
   leadCountTotal: number;
   leadCountDisplay: string;
@@ -122,14 +117,19 @@ interface PageCustom {
   clearLeadCountTimer(): void;
   leadCountTimer: ReturnType<typeof setInterval> | null;
   onPhoneTap(): void;
-  onPhoneInput(e: WechatMiniprogram.Input): void;
-  onPhoneCancel(): void;
-  onPhoneConfirm(): void;
+  onPhoneModalBound(): void;
+  onPhoneModalGoBindAccount(): void;
   requireLogin(): void;
   onGoLogin(): void;
   onSubmit(): void;
   afterSubmitSuccess(): void;
   handleUnauthorized(): void;
+}
+
+/** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
+interface PhoneBindModalInstance {
+  show(): void;
+  hide(): void;
 }
 
 Page<PageData, PageCustom>({
@@ -158,9 +158,6 @@ Page<PageData, PageCustom>({
     loggedIn: false,
     hasPhone: false,
     canEditPhone: false,
-    phoneInput: "",
-    editingPhone: false,
-    submittingPhone: false,
     leadCountTotal: 0,
     leadCountDisplay: "0",
     leadCountLoading: false,
@@ -467,55 +464,22 @@ Page<PageData, PageCustom>({
     if (this.data.hasPhone) {
       return;
     }
-    this.setData({ editingPhone: true, phoneInput: "" });
+    // 主动触发微信授权弹窗
+    const modal = this.selectComponent("#phoneModal") as unknown as PhoneBindModalInstance | null;
+    if (modal && typeof modal.show === "function") {
+      modal.show();
+    }
   },
 
-  onPhoneInput(e: WechatMiniprogram.Input) {
-    this.setData({ phoneInput: e.detail.value });
+  /** 微信授权绑定成功：刷新 hasPhone 状态. */
+  onPhoneModalBound() {
+    this.setData({ hasPhone: true });
+    wx.showToast({ title: "手机号绑定成功", icon: "success" });
   },
 
-  onPhoneCancel() {
-    this.setData({ editingPhone: false, phoneInput: "" });
-  },
-
-  async onPhoneConfirm() {
-    if (this.data.submittingPhone) {
-      return;
-    }
-    const token = this.getToken() || getCAccessToken();
-    if (!token) {
-      this.onGoLogin();
-      return;
-    }
-    const value = this.data.phoneInput.trim();
-    if (!/^1[3-9]\d{9}$/.test(value)) {
-      wx.showToast({ title: "请输入正确的11位手机号", icon: "none" });
-      return;
-    }
-    this.setData({ submittingPhone: true });
-    try {
-      const body: PublicPhoneCreate = { phone: value };
-      await request<PublicPhoneResponse>({
-        url: "/public/users/phone",
-        method: "POST",
-        data: body,
-        // 不传 header，request.ts 按 /public/* 自动注入 C 端令牌
-      });
-      this.setData({ hasPhone: true, editingPhone: false, phoneInput: "" });
-      wx.showToast({ title: "绑定成功", icon: "success" });
-    } catch (err) {
-      // 401：令牌失效/受众不匹配，走统一登录引导（与 onSubmit 一致）；
-      // 其余错误透出后端业务信息（如「手机号已被其他账号绑定」），无则兜底通用提示
-      const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
-      if (statusCode === 401) {
-        this.handleUnauthorized();
-        return;
-      }
-      const msg = (err as { body?: { message?: string } } | undefined)?.body?.message;
-      wx.showToast({ title: msg || "保存失败，请重试", icon: "none" });
-    } finally {
-      this.setData({ submittingPhone: false });
-    }
+  /** 用户在合并确认视图选「前往绑定已有账号」：跳转 bind-account 页. */
+  onPhoneModalGoBindAccount() {
+    wx.navigateTo({ url: "/pages/bind-account/index/index" });
   },
 
   /**

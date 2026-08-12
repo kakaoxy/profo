@@ -1,6 +1,7 @@
 {
   "usingComponents": {
-    "community-search": "/components/community-search/index"
+    "community-search": "/components/community-search/index",
+    "phone-bind-modal": "/components/phone-bind-modal/index"
   },
   "navigationBarTitleText": "在线预审"
 }

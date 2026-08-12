@@ -8,6 +8,8 @@
         <button open-type="getPhoneNumber" bindgetphonenumber="onPhoneAuth" loading="{{loading}}" type="primary">立即绑定</button>
         <button bindtap="onSkip" class="btn-skip">暂不绑定</button>
       </view>
+      <!-- 备选入口：内部员工可直接走账号合并流程，避免先绑手机号后失去入口 -->
+      <view class="modal-alt" bindtap="onGoBindAccount">我是内部员工，去绑定已有账号</view>
     </block>
     <!-- 合并确认 -->
     <block wx:if="{{mode === 'merge_confirm'}}">
