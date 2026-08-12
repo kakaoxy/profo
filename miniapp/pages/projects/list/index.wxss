@@ -43,9 +43,10 @@ page {
 }
 .hero-tags {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
+  flex-wrap: nowrap;
+  gap: 12rpx;
   margin-top: 40rpx;
+  overflow: hidden;
 }
 /* 品牌区标签：改为「透明底 + 描边」的徽章样式，弱化实心按钮感，
    与可点击按钮（实心填充）形成明确区分，避免被误认为可操作按钮。 */
@@ -53,6 +54,7 @@ page {
   background: transparent;
   border: 2rpx solid var(--warm-border);
   font-weight: 400;
+  flex-shrink: 0;
 }
 .hero-tags .tag-primary {
   color: var(--warm-fg);
@@ -62,10 +64,16 @@ page {
   color: var(--warm-muted-fg);
   border-color: var(--warm-border);
 }
-/* 累计服务人数标签：透明底 + accent 色描边，与前两个标签同风格但略突出 */
+/* 累计服务人数标签：透明底 + accent 色描边，与前两个标签同风格但略突出；
+   可压缩，数字过长时尾部省略，保证前两个标签完整可读 */
 .hero-tags .tag-served {
   color: var(--warm-fg);
   border-color: var(--warm-accent);
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .tag-served__num {
   font-weight: 600;
