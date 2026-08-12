@@ -18,6 +18,7 @@ from schemas.public import (
     PublicProfileUpdate,
     PublicUserInfo,
     PublicUserProfileResponse,
+    WechatProfileUpdateRequest,
 )
 from schemas.user import MergeAccountRequest, PhoneWechatBindRequest
 from services.system.auth import AuthService
@@ -64,6 +65,44 @@ def update_profile(
     """C端用户修改昵称."""
     updated_user = user_service.update_nickname(db, current_user, body.nickname)
 
+    return PublicUserProfileResponse(
+        id=updated_user.id,
+        username=updated_user.username,
+        nickname=updated_user.nickname,
+        phone=mask_phone(updated_user.phone),
+        avatar=updated_user.avatar,
+        status=updated_user.status,
+        created_at=updated_user.created_at,
+        updated_at=updated_user.updated_at,
+    )
+
+
+@router.put(
+    "/wechat-profile",
+    summary="微信用户完善资料",
+    description="微信小程序用户主动授权更新头像和/或昵称；nickname 提供时派生 username，遇冲突自动追加随机后缀",
+)
+@limiter.limit(RateLimits.PUBLIC_PROFILE_UPDATE)
+def update_wechat_profile(
+    request: Request,
+    body: WechatProfileUpdateRequest,
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> PublicUserProfileResponse:
+    """微信用户完善资料（头像和/或昵称）.
+
+    仅限 C 端 customer 角色调用（CurrentCustomerUserDep 强制校验）。
+    nickname 与 avatar_url 至少一个非空（Schema 层强制）：
+    - 仅 nickname：派生 username 并更新 nickname（用于昵称独立授权）
+    - 仅 avatar_url：仅更新 avatar（用于头像独立授权）
+    - 同时传：两者都更新
+    """
+    updated_user = user_service.update_wechat_profile(
+        db,
+        current_user,
+        nickname=body.nickname,
+        avatar_url=body.avatar_url,
+    )
     return PublicUserProfileResponse(
         id=updated_user.id,
         username=updated_user.username,

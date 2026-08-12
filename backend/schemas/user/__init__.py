@@ -14,7 +14,8 @@ from schemas.response import PaginatedResponse
 class BaseUser(BaseModel):
     """用户基础模型."""
 
-    username: str = Field(min_length=3, max_length=100, description="用户名")
+    # 响应模型不应施加输入校验约束，min_length 仅在 UserCreate 上强制
+    username: str = Field(max_length=100, description="用户名")
     nickname: str | None = Field(None, max_length=100, description="昵称")
     phone: str | None = Field(None, max_length=20, description="完整手机号(仅后台可见，C端使用脱敏)")
     avatar: str | None = Field(None, max_length=500, description="头像")
@@ -37,6 +38,7 @@ class BaseRole(BaseModel):
 class UserCreate(BaseUser):
     """用户创建模型."""
 
+    username: str = Field(min_length=3, max_length=100, description="用户名")
     password: str = Field(min_length=8, max_length=255, description="密码")
     role_id: str = Field(description="角色ID")
     additional_role_ids: list[str] = Field(

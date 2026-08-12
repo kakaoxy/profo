@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from models.common import FollowUpMethod, RenovationStage
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
@@ -122,6 +122,37 @@ class PublicProfileUpdate(BaseModel):
     """C端个人信息更新请求."""
 
     nickname: str = Field(min_length=1, max_length=100, description="昵称")
+
+
+class WechatProfileUpdateRequest(BaseModel):
+    """微信小程序用户完善资料请求（头像和/或昵称）.
+
+    用户通过 <button open-type="chooseAvatar"> 与 <input type="nickname">
+    主动授权后调用。nickname 与 avatar_url 均为可选，但至少一个非空：
+    - 仅传 nickname：派生 username 并更新 nickname（用于昵称独立授权）
+    - 仅传 avatar_url：仅更新 avatar（用于头像独立授权）
+    - 同时传：两者都更新
+
+    username 由后端根据 nickname 派生，不暴露给前端。
+    """
+
+    nickname: str | None = Field(
+        None, min_length=1, max_length=100, description="微信昵称（可选，与 avatar_url 至少一个非空）"
+    )
+    avatar_url: str | None = Field(
+        None,
+        min_length=1,
+        max_length=500,
+        description="已上传到 /public/files/upload 的图片访问 URL（可选，与 nickname 至少一个非空）",
+    )
+
+    @model_validator(mode="after")
+    def _at_least_one_field(self) -> "WechatProfileUpdateRequest":
+        """至少一个字段非空，否则 422."""
+        if not self.nickname and not self.avatar_url:
+            msg = "nickname 与 avatar_url 至少一个非空"
+            raise ValueError(msg)
+        return self
 
 
 class PublicUserProfileResponse(PublicUserInfo):
@@ -459,4 +490,5 @@ __all__ = [
     "PublicSoldProjectListResponse",
     "PublicUserInfo",
     "PublicUserProfileResponse",
+    "WechatProfileUpdateRequest",
 ]

@@ -4,6 +4,8 @@
 """
 
 import logging
+import secrets
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import Request
@@ -572,6 +574,58 @@ class UserService:
         db.commit()
         db.refresh(user)
         return user
+
+    def update_wechat_profile(
+        self,
+        db: Session,
+        current_user: User,
+        nickname: str | None = None,
+        avatar_url: str | None = None,
+    ) -> User:
+        """微信小程序用户完善资料：更新 nickname 和/或 avatar，并按需派生 username.
+
+        - nickname 提供时：派生 username（=nickname，若已被其他用户占用则追加 6 位随机 hex 后缀），更新 nickname
+        - avatar_url 提供时：仅更新 avatar
+        - 二者至少一个非空（由 Schema 层 model_validator 强制）
+        - 保留原 wechat_openid/wechat_unionid/is_temporary 等字段不变
+        - 不影响后续手机号绑定/账号合并流程
+
+        Args:
+            db: 数据库会话
+            current_user: 当前用户对象
+            nickname: 微信昵称（可选）
+            avatar_url: 已上传到 /public/files/upload 的图片访问 URL（可选）
+
+        Returns:
+            User: 更新后的用户对象
+
+        """
+        if nickname is not None:
+            # username 派生：若与当前用户自身 username 相同则无需变更
+            target_username = nickname
+            if target_username != current_user.username:
+                existing = (
+                    db.query(User)
+                    .filter(
+                        User.username == target_username,
+                        User.id != current_user.id,
+                    )
+                    .first()
+                )
+                if existing:
+                    target_username = f"{nickname}_{secrets.token_hex(3)}"
+
+                current_user.username = target_username
+
+            current_user.nickname = nickname
+
+        if avatar_url is not None:
+            current_user.avatar = avatar_url
+
+        current_user.last_login_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(current_user)
+        return current_user
 
     def update_phone(self, db: Session, user: User, phone: str) -> User:
         """更新用户手机号.

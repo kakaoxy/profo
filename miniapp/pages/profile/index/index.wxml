@@ -2,11 +2,44 @@
   <!-- 用户基础信息卡 -->
   <view class="user-card">
     <view class="user-row">
-      <view class="avatar">{{avatarChar}}</view>
+      <!-- 头像：已上传展示 image；未上传且 C 端用户用 view 显示字符 + 透明 button 覆盖捕获 chooseAvatar；
+           其他情况占位字符 view。
+           用透明 button 覆盖而非直接 button 显示字符，避免 button 默认 line-height/loading 图标撑大尺寸导致椭圆 -->
+      <image wx:if="{{avatarUrl}}" class="avatar" src="{{avatarUrl}}" mode="aspectFill" />
+      <view wx:elif="{{canEditPhone}}" class="avatar avatar-editable">
+        <text wx:if="{{!avatarUploading}}">{{avatarChar}}</text>
+        <text wx:else class="avatar-loading">···</text>
+        <button
+          class="avatar-overlay"
+          open-type="chooseAvatar"
+          bindchooseavatar="onChooseAvatar"
+        ></button>
+      </view>
+      <view wx:else class="avatar">{{avatarChar}}</view>
+
       <view class="user-main">
         <view class="user-name">
-          <text>{{nickname}}</text>
-          <text wx:if="{{loggedIn}}" class="role-badge {{isInternal ? 'role-badge--staff' : ''}}">{{roleBadgeText}}</text>
+          <!-- 昵称编辑态：input type=nickname，onblur 自动保存.
+               非受控（不绑定 value）：避免「使用微信昵称」按钮填充后受控 value 把显示值重置回空 -->
+          <input
+            wx:if="{{nicknameEditing}}"
+            class="nickname-input"
+            type="nickname"
+            placeholder="点此输入昵称"
+            bindinput="onNicknameInput"
+            bindblur="onNicknameBlur"
+            focus="{{nicknameEditing}}"
+          />
+          <!-- 非编辑态：昵称 + 角色徽章 + 刷新按钮（昵称=占位且可编辑时才显示刷新） -->
+          <block wx:else>
+            <text>{{nickname}}</text>
+            <text wx:if="{{loggedIn}}" class="role-badge {{isInternal ? 'role-badge--staff' : ''}}">{{roleBadgeText}}</text>
+            <view
+              wx:if="{{canEditPhone && nickname === '微信用户'}}"
+              class="nickname-refresh"
+              bindtap="onNicknameRefreshTap"
+            >↻</view>
+          </block>
         </view>
         <view class="user-username">@{{username}}</view>
       </view>

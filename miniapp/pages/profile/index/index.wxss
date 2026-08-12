@@ -36,6 +36,36 @@
   font-weight: 500;
   flex-shrink: 0;
 }
+
+/* 头像可编辑态：view 显示字符 + 透明 button 绝对定位覆盖捕获 chooseAvatar.
+   避免直接用 button 显示字符，因 button 默认 line-height/loading 图标会撑大尺寸导致椭圆 */
+.avatar-editable {
+  position: relative;
+}
+
+.avatar-editable .avatar-loading {
+  font-size: 44rpx;
+  letter-spacing: 4rpx;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  z-index: 1;
+}
+
+.avatar-overlay::after {
+  border: none;
+}
+
 .user-main {
   flex: 1;
   min-width: 0;
@@ -47,6 +77,40 @@
   align-items: center;
   gap: 12rpx;
 }
+
+/* 昵称编辑态 input */
+.nickname-input {
+  flex: 1;
+  min-width: 0;
+  height: 64rpx;
+  padding: 0 16rpx;
+  border: 2rpx solid var(--mist);
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  color: var(--ink);
+  background: var(--pure-white);
+}
+
+/* 昵称刷新按钮：用户未修改昵称时显示 */
+.nickname-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: var(--mist);
+  color: var(--graphite);
+  font-size: 28rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.nickname-refresh:active {
+  background: var(--rust);
+  color: var(--pure-white);
+}
+
 .role-badge {
   display: inline-flex;
   align-items: center;

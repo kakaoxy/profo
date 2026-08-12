@@ -1,7 +1,10 @@
 import type { components } from "../../../types/api-types";
-import { request } from "../../../utils/request";
+import { BASE_URL } from "../../../utils/config";
+import { updateWechatProfile } from "../../../utils/profile";
+import { refreshCAccessToken, request, type HttpResponseError } from "../../../utils/request";
 import {
   getAccessToken,
+  getCAccessToken,
   getCTemporary,
   getCRefreshToken,
   getTokenAud,
@@ -9,6 +12,7 @@ import {
   setCTemporary,
   setPhonePrompted,
 } from "../../../utils/token";
+import { resolveAssetUrl } from "../../../utils/url";
 
 type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type UserResponse = components["schemas"]["UserResponse"];
@@ -48,13 +52,23 @@ interface PageData {
   nickname: string;
   username: string;
   avatarChar: string;
+  /** 已上传到服务器的用户头像 URL（来自 user.avatar），空表示未设置头像. */
+  avatarUrl: string;
   isInternal: boolean;
-  /** 是否为 C 端（customer）身份，决定手机号是否可在此维护. */
+  /** 是否为 C 端（customer）身份，决定手机号/微信资料是否可在此维护. */
   canEditPhone: boolean;
   roleBadgeText: string;
   roleLabel: string;
   phoneDisplay: string;
   hasPhone: boolean;
+  /** 昵称是否处于 input 编辑态（用户点刷新按钮后切换）. */
+  nicknameEditing: boolean;
+  /** 昵称 input 当前值. */
+  nicknameInput: string;
+  /** 头像上传中标志，控制 button loading 与避免重复触发. */
+  avatarUploading: boolean;
+  /** 昵称保存中标志，避免 onblur 重复触发保存. */
+  nicknameSaving: boolean;
   internalEntries: InternalEntry[];
 }
 
@@ -75,12 +89,69 @@ interface PageCustom {
   onPhoneModalSkip(): void;
   onPhoneModalBound(): void;
   onPhoneModalGoBindAccount(): void;
+  /** chooseAvatar 回调：拿到临时图片路径后立即上传到后端并调端点更新 avatar，独立完成. */
+  onChooseAvatar(e: WechatMiniprogram.CustomEvent): void;
+  /** 用户点击昵称旁刷新按钮：切换到 input 编辑态，等待用户输入或选「使用微信昵称」. */
+  onNicknameRefreshTap(): void;
+  /** 昵称 input 输入同步 + 启动防抖自动保存. */
+  onNicknameInput(e: WechatMiniprogram.Input): void;
+  /** 昵称 input blur：清防抖并兜底保存. */
+  onNicknameBlur(e: WechatMiniprogram.Input): void;
+  /** 调端点保存 nickname（防抖与 onblur 共用）. */
+  saveNickname(nickname: string): void;
+  /** 上传头像临时文件到 /public/files/upload，401 时刷新 C 端令牌后重试一次. */
+  uploadAvatar(filePath: string): Promise<string>;
+  /** 重置微信资料编辑相关字段到初始值. */
+  resetWechatEditState(): void;
 }
 
 /** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
 interface PhoneBindModalInstance {
   show(): void;
   hide(): void;
+}
+
+/** wx.uploadFile 单次上传结果. */
+interface UploadResult {
+  statusCode: number;
+  data: string;
+}
+
+/** 后端 FileUploadResponse（仅取必要字段）. */
+interface FileUploadResponse {
+  url: string;
+  filename: string;
+  thumbnail_url?: string | null;
+}
+
+/**
+ * 昵称自动保存防抖计时器（模块级，profile 页单例）.
+ *
+ * 用户点「使用微信昵称」按钮后 input 保持焦点，onblur 不会触发；
+ * 改为 bindinput 触发后延迟 500ms 自动保存，期间用户继续输入则重新计时。
+ */
+let nicknameDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 昵称自动保存防抖延迟（毫秒）. */
+const NICKNAME_DEBOUNCE_MS = 500;
+
+/**
+ * 调用 /public/files/upload 上传单张图片.
+ *
+ * wx.uploadFile 不经过 request.ts，无法享受自动注入与 401 刷新，需手动传 token；
+ * 401 处理由 uploadAvatar 调用 refreshCAccessToken 后重试完成.
+ */
+function doUploadFile(filePath: string, token: string): Promise<UploadResult> {
+  return new Promise<UploadResult>((resolve, reject) => {
+    wx.uploadFile({
+      url: `${BASE_URL}/public/files/upload`,
+      filePath,
+      name: "file",
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => resolve({ statusCode: res.statusCode, data: res.data }),
+      fail: (err) => reject(err),
+    });
+  });
 }
 
 /** 是否内部员工：permissions 含 customer 基础权限之外的代码. */
@@ -104,12 +175,17 @@ Page<PageData, PageCustom>({
     nickname: "未登录用户",
     username: "",
     avatarChar: "我",
+    avatarUrl: "",
     isInternal: false,
     canEditPhone: false,
     roleBadgeText: "",
     roleLabel: "未登录",
     phoneDisplay: "完善手机号",
     hasPhone: false,
+    nicknameEditing: false,
+    nicknameInput: "",
+    avatarUploading: false,
+    nicknameSaving: false,
     internalEntries: INTERNAL_ENTRIES,
   },
 
@@ -138,12 +214,24 @@ Page<PageData, PageCustom>({
       nickname: "未登录用户",
       username: "",
       avatarChar: "我",
+      avatarUrl: "",
       isInternal: false,
       canEditPhone: false,
       roleBadgeText: "",
       roleLabel: "未登录",
       phoneDisplay: "完善手机号",
       hasPhone: false,
+    });
+    this.resetWechatEditState();
+  },
+
+  /** 重置微信资料编辑相关字段，避免下次进入编辑态时残留旧数据. */
+  resetWechatEditState() {
+    this.setData({
+      nicknameEditing: false,
+      nicknameInput: "",
+      avatarUploading: false,
+      nicknameSaving: false,
     });
   },
 
@@ -166,12 +254,14 @@ Page<PageData, PageCustom>({
       nickname,
       username: user.username,
       avatarChar: nickname.slice(0, 1) || "我",
+      avatarUrl: resolveAssetUrl(user.avatar),
       isInternal,
       roleBadgeText: isInternal ? "内部员工" : "C端用户",
       roleLabel: isInternal ? "内部用户" : "C端用户",
       phoneDisplay: phone || "完善手机号",
       hasPhone: !!phone,
     });
+    this.resetWechatEditState();
   },
 
   applyAdminUser(user: UserResponse) {
@@ -184,6 +274,7 @@ Page<PageData, PageCustom>({
       nickname,
       username: user.username,
       avatarChar: nickname.slice(0, 1) || "我",
+      avatarUrl: resolveAssetUrl(user.avatar),
       isInternal: true,
       roleBadgeText: "内部员工",
       roleLabel: "内部员工 · 已认证",
@@ -343,5 +434,139 @@ Page<PageData, PageCustom>({
   /** 用户在合并确认视图选「前往绑定已有账号」：跳转 bind-account 页（Task 8 实现）. */
   onPhoneModalGoBindAccount() {
     wx.navigateTo({ url: "/pages/bind-account/index/index" });
+  },
+
+  /**
+   * chooseAvatar 回调（由头像位置 button[open-type=chooseAvatar] 触发）.
+   * 拿到临时图片路径后立即上传到后端 /public/files/upload，然后调端点只更新 avatar_url。
+   * 整个流程独立完成，无需用户二次确认。
+   */
+  onChooseAvatar(e: WechatMiniprogram.CustomEvent) {
+    const detail = e.detail as { avatarUrl?: string };
+    if (!detail.avatarUrl) {
+      wx.showToast({ title: "获取头像失败", icon: "none" });
+      return;
+    }
+    if (this.data.avatarUploading) {
+      return;
+    }
+    this.setData({ avatarUploading: true });
+    this.uploadAvatar(detail.avatarUrl)
+      .then((serverUrl) => updateWechatProfile({ avatar_url: serverUrl }))
+      .then(() => {
+        this.setData({ avatarUploading: false });
+        wx.showToast({ title: "头像已更新", icon: "success" });
+        this.loadUser();
+      })
+      .catch((err: unknown) => {
+        this.setData({ avatarUploading: false });
+        const msg = (err as HttpResponseError)?.body ? "保存失败，请重试" : "网络错误，请重试";
+        wx.showToast({ title: msg, icon: "none" });
+      });
+  },
+
+  /** 用户点击昵称旁的「↻」刷新按钮：切换到 input 编辑态等待用户输入或选「使用微信昵称」. */
+  onNicknameRefreshTap() {
+    if (this.data.nicknameSaving) {
+      return;
+    }
+    this.setData({
+      nicknameEditing: true,
+      nicknameInput: "",
+    });
+  },
+
+  /**
+   * 昵称 input 输入：同步到 data，并启动 500ms 防抖自动保存.
+   * 用户点「使用微信昵称」按钮后 input 保持焦点、onblur 不触发，故改由 bindinput 防抖触发保存。
+   * 期间用户继续输入则重新计时，避免输入到一半就保存。
+   */
+  onNicknameInput(e: WechatMiniprogram.Input) {
+    const value = e.detail.value || "";
+    this.setData({ nicknameInput: value });
+    if (nicknameDebounceTimer) {
+      clearTimeout(nicknameDebounceTimer);
+    }
+    const trimmed = value.trim();
+    if (!trimmed || this.data.nicknameSaving) {
+      return;
+    }
+    nicknameDebounceTimer = setTimeout(() => {
+      nicknameDebounceTimer = null;
+      this.saveNickname(trimmed);
+    }, NICKNAME_DEBOUNCE_MS);
+  },
+
+  /**
+   * 昵称 input blur：清防抖计时器，若当前有值且未在保存中则立即兜底保存.
+   * 防抖场景下 onblur 一般不触发（input 保持焦点），此处仅作兜底。
+   */
+  onNicknameBlur(e: WechatMiniprogram.Input) {
+    if (nicknameDebounceTimer) {
+      clearTimeout(nicknameDebounceTimer);
+      nicknameDebounceTimer = null;
+    }
+    const nickname = (e.detail.value || "").trim();
+    if (!nickname) {
+      this.setData({ nicknameEditing: false, nicknameInput: "" });
+      return;
+    }
+    if (this.data.nicknameSaving) {
+      return;
+    }
+    this.saveNickname(nickname);
+  },
+
+  /**
+   * 调端点保存 nickname，成功后切回文本态并刷新用户信息.
+   * 失败保留编辑态，用户可重试点刷新按钮重试。
+   */
+  saveNickname(nickname: string) {
+    if (this.data.nicknameSaving) {
+      return;
+    }
+    this.setData({ nicknameSaving: true });
+    updateWechatProfile({ nickname })
+      .then(() => {
+        this.setData({
+          nicknameSaving: false,
+          nicknameEditing: false,
+          nicknameInput: "",
+        });
+        wx.showToast({ title: "昵称已更新", icon: "success" });
+        this.loadUser();
+      })
+      .catch((err: unknown) => {
+        this.setData({ nicknameSaving: false, nicknameEditing: false, nicknameInput: "" });
+        const msg = (err as HttpResponseError)?.body ? "保存失败，请重试" : "网络错误，请重试";
+        wx.showToast({ title: msg, icon: "none" });
+      });
+  },
+
+  /**
+   * 上传头像临时文件到 /public/files/upload，401 时刷新 C 端令牌后重试一次.
+   * 返回后端 FileUploadResponse.url（如 /static/uploads/20260812_abc.jpg）。
+   */
+  async uploadAvatar(filePath: string): Promise<string> {
+    const token = getCAccessToken();
+    if (!token) {
+      throw new Error("UNAUTHORIZED");
+    }
+    let res = await doUploadFile(filePath, token);
+    if (res.statusCode === 401) {
+      const newToken = await refreshCAccessToken();
+      if (newToken) {
+        res = await doUploadFile(filePath, newToken);
+      }
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      const error: HttpResponseError = { statusCode: res.statusCode, body: res.data };
+      throw error;
+    }
+    const parsed = JSON.parse(res.data) as FileUploadResponse;
+    if (!parsed.url) {
+      throw new Error("upload response missing url");
+    }
+    return parsed.url;
   },
 });
