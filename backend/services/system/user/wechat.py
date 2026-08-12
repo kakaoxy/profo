@@ -371,6 +371,10 @@ class UserWechatService:
 
         # 刷新 target_user 以读取最新 token_version
         db.refresh(target_user)
+        # wechat_bound 是 _attach_wechat_bound 动态设置的属性，非 ORM 映射列，
+        # db.refresh() 不会重算它。解绑后必须显式置 False，避免内存对象状态不一致
+        # （若后续代码使用该对象序列化为 UserResponse 会展示错误的绑定状态）。
+        target_user.wechat_bound = False
 
         # 8. 审计日志
         log_auth_event("wechat_unbound", user_id=target_user.id)
