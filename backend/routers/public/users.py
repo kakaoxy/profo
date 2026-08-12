@@ -29,7 +29,7 @@ from services.system.exceptions import (
     PhoneTakenByMainAccountError,
     TargetHasWechatError,
 )
-from services.system.user import user_service
+from services.system.user import user_profile_service, user_wechat_service
 from utils.auth import AUDIENCE_C
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
@@ -63,7 +63,7 @@ def update_profile(
     db: DbSessionDep,
 ) -> PublicUserProfileResponse:
     """C端用户修改昵称."""
-    updated_user = user_service.update_nickname(db, current_user, body.nickname)
+    updated_user = user_profile_service.update_nickname(db, current_user, body.nickname)
 
     return PublicUserProfileResponse(
         id=updated_user.id,
@@ -97,11 +97,12 @@ def update_wechat_profile(
     - 仅 avatar_url：仅更新 avatar（用于头像独立授权）
     - 同时传：两者都更新
     """
-    updated_user = user_service.update_wechat_profile(
+    updated_user = user_wechat_service.update_wechat_profile(
         db,
         current_user,
         nickname=body.nickname,
         avatar_url=body.avatar_url,
+        request=request,
     )
     return PublicUserProfileResponse(
         id=updated_user.id,
@@ -139,7 +140,7 @@ def set_initial_phone(
     让前端 request.ts 能按 body 解析业务码（非 2xx 会被 reject）。
     """
     try:
-        updated_user = user_service.set_initial_phone(db, current_user, body.phone)
+        updated_user = user_profile_service.set_initial_phone(db, current_user, body.phone)
     except PhoneTakenByMainAccountError as e:
         return JSONResponse(
             status_code=200,
@@ -165,7 +166,7 @@ def update_phone(
     db: DbSessionDep,
 ) -> PublicPhoneResponse:
     """C端用户修改手机号，需密码确认身份."""
-    updated_user = user_service.update_phone_with_verification(
+    updated_user = user_profile_service.update_phone_with_verification(
         db,
         current_user,
         body.phone,
@@ -247,7 +248,7 @@ async def merge_account(
 
     # 4. 调 merge_accounts 迁移业务数据
     try:
-        await run_in_threadpool(user_service.merge_accounts, db, current_user, target_user)
+        await run_in_threadpool(user_wechat_service.merge_accounts, db, current_user, target_user)
     except TargetHasWechatError:
         return JSONResponse(
             status_code=409,
@@ -328,7 +329,7 @@ async def bind_phone_via_wechat(
     """
     try:
         result = await run_in_threadpool(
-            user_service.bind_phone_via_wechat,
+            user_profile_service.bind_phone_via_wechat,
             db,
             current_user,
             payload.code,

@@ -14,7 +14,16 @@ from .init_service import SystemInitService, init_service
 from .operation_log import OperationLogService, operation_log_service
 from .permission import PermissionService, permission_service
 from .role import RoleService, role_service
-from .user import UserService, user_service
+from .user import (
+    UserLifecycleService,
+    UserProfileService,
+    UserService,
+    UserWechatService,
+    user_lifecycle_service,
+    user_profile_service,
+    user_service,
+    user_wechat_service,
+)
 from .wechat import WeChatAuthService
 
 __all__ = [
@@ -24,12 +33,18 @@ __all__ = [
     "PermissionService",
     "RoleService",
     "SystemInitService",
+    "UserLifecycleService",
+    "UserProfileService",
     "UserService",
+    "UserWechatService",
     "WeChatAuthService",
     "init_service",
     "operation_log_service",
     "permission_service",
     "role_service",
     "save_failed_record",
+    "user_lifecycle_service",
+    "user_profile_service",
     "user_service",
+    "user_wechat_service",
 ]

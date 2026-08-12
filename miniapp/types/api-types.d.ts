@@ -2170,6 +2170,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/{user_id}/unbind-wechat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unbind Wechat
+         * @description 解绑用户微信账号.
+         *
+         *     支持两种绑定场景：
+         *     - 直接绑定：清空目标用户自身的 wechat_* 字段
+         *     - 间接绑定（经合并临时账号）：清空指向目标用户的临时账号的 wechat_* 字段
+         *
+         *     解绑后立即失效目标用户现有令牌（token_version 递增 + RefreshToken 撤销），
+         *     并写入审计日志。
+         *
+         *     速率限制：20次/小时.
+         */
+        post: operations["unbind_wechat_api_v1_users__user_id__unbind_wechat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/change-password": {
         parameters: {
             query?: never;
@@ -2834,6 +2863,26 @@ export interface paths {
          * @description C端用户修改自己的昵称
          */
         put: operations["update_profile_api_v1_public_users_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/users/wechat-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 微信用户完善资料
+         * @description 微信小程序用户主动授权更新头像和/或昵称；nickname 提供时派生 username，遇冲突自动追加随机后缀
+         */
+        put: operations["update_wechat_profile_api_v1_public_users_wechat_profile_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -10721,6 +10770,12 @@ export interface components {
              * @default 0
              */
             leads_count: number;
+            /**
+             * Wechat Bound
+             * @description 是否已绑定微信（含直接绑定与经合并临时账号的间接绑定）
+             * @default false
+             */
+            wechat_bound: boolean;
         };
         /**
          * UserSimpleListResponse
@@ -10852,6 +10907,30 @@ export interface components {
              * @description 微信授权码
              */
             code: string;
+        };
+        /**
+         * WechatProfileUpdateRequest
+         * @description 微信小程序用户完善资料请求（头像和/或昵称）.
+         *
+         *     用户通过 <button open-type="chooseAvatar"> 与 <input type="nickname">
+         *     主动授权后调用。nickname 与 avatar_url 均为可选，但至少一个非空：
+         *     - 仅传 nickname：派生 username 并更新 nickname（用于昵称独立授权）
+         *     - 仅传 avatar_url：仅更新 avatar（用于头像独立授权）
+         *     - 同时传：两者都更新
+         *
+         *     username 由后端根据 nickname 派生，不暴露给前端。
+         */
+        WechatProfileUpdateRequest: {
+            /**
+             * Nickname
+             * @description 微信昵称（可选，与 avatar_url 至少一个非空）
+             */
+            nickname?: string | null;
+            /**
+             * Avatar Url
+             * @description 已上传到 /public/files/upload 的图片访问 URL（可选，与 nickname 至少一个非空）
+             */
+            avatar_url?: string | null;
         };
         /**
          * CommunityListResponse
@@ -15392,6 +15471,39 @@ export interface operations {
             };
         };
     };
+    unbind_wechat_api_v1_users__user_id__unbind_wechat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     change_password_api_v1_users_change_password_post: {
         parameters: {
             query?: never;
@@ -16617,6 +16729,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PublicProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUserProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_wechat_profile_api_v1_public_users_wechat_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WechatProfileUpdateRequest"];
             };
         };
         responses: {

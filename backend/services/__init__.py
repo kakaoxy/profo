@@ -64,10 +64,16 @@ from .projects import (
 from .system import (
     AuthService,
     RoleService,
+    UserLifecycleService,
+    UserProfileService,
     UserService,
+    UserWechatService,
     role_service,
     save_failed_record,
+    user_lifecycle_service,
+    user_profile_service,
     user_service,
+    user_wechat_service,
 )
 
 __all__ = [
@@ -105,9 +111,15 @@ __all__ = [
     "RenovationService",
     "RoleService",
     "SalesService",
+    "UserLifecycleService",
+    "UserProfileService",
     "UserService",
+    "UserWechatService",
     "get_property_query_service",
     "role_service",
     "save_failed_record",
+    "user_lifecycle_service",
+    "user_profile_service",
     "user_service",
+    "user_wechat_service",
 ]

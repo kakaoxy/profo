@@ -30,7 +30,7 @@ from schemas.user import (
     UserSimpleListResponse,
     UserUpdate,
 )
-from services.system import user_service
+from services.system import user_lifecycle_service, user_service, user_wechat_service
 from services.system.exceptions import ResourceNotFoundError, ServiceException, WeChatNotBoundError
 from services.system.init_service import init_service
 from utils.common import RateLimits, limiter
@@ -182,7 +182,7 @@ def reset_user_password(
 
     速率限制：5次/小时（防止密码重置滥用）.
     """
-    return user_service.reset_password(
+    return user_lifecycle_service.reset_password(
         db,
         user_id,
         password_data,
@@ -211,7 +211,7 @@ def unbind_wechat(
     速率限制：20次/小时.
     """
     try:
-        return user_service.unbind_wechat(
+        return user_wechat_service.unbind_wechat(
             db,
             user_id,
             operator_id=str(current_user.id),
@@ -237,7 +237,7 @@ def delete_user(
 
     速率限制：20次/小时.
     """
-    user_service.delete_user(db, user_id, current_user.id, request=request)
+    user_lifecycle_service.delete_user(db, user_id, current_user.id, request=request)
 
 
 @router.post("/change-password")
@@ -252,7 +252,7 @@ def change_password(
 
     速率限制：3次/分钟（防止暴力破解密码）.
     """
-    return user_service.change_password(db, current_user, password_data)
+    return user_lifecycle_service.change_password(db, current_user, password_data)
 
 
 @router.post("/init-data")

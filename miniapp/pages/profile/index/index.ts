@@ -18,6 +18,7 @@ type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type UserResponse = components["schemas"]["UserResponse"];
 type PublicRefreshTokenRequest = components["schemas"]["PublicRefreshTokenRequest"];
 type PublicLogoutResponse = components["schemas"]["PublicLogoutResponse"];
+type FileUploadResponse = components["schemas"]["FileUploadResponse"];
 
 /**
  * customer 角色基础权限：仅含这些权限视为普通用户；permissions 含其他业务权限 → 内部员工.
@@ -115,13 +116,6 @@ interface PhoneBindModalInstance {
 interface UploadResult {
   statusCode: number;
   data: string;
-}
-
-/** 后端 FileUploadResponse（仅取必要字段）. */
-interface FileUploadResponse {
-  url: string;
-  filename: string;
-  thumbnail_url?: string | null;
 }
 
 /**
@@ -227,6 +221,11 @@ Page<PageData, PageCustom>({
 
   /** 重置微信资料编辑相关字段，避免下次进入编辑态时残留旧数据. */
   resetWechatEditState() {
+    // 清防抖计时器：避免编辑态被重置后旧计时器仍触发意外保存
+    if (nicknameDebounceTimer) {
+      clearTimeout(nicknameDebounceTimer);
+      nicknameDebounceTimer = null;
+    }
     this.setData({
       nicknameEditing: false,
       nicknameInput: "",
