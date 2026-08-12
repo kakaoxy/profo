@@ -3,7 +3,7 @@
     <!-- 引导绑定 -->
     <block wx:if="{{mode === 'guide'}}">
       <view class="modal-title">绑定手机号</view>
-      <view class="modal-desc">绑定手机号后可享受更多服务（订单查询、积分等）</view>
+      <view class="modal-desc">绑定手机号后可加速评估流程</view>
       <view class="modal-actions">
         <button open-type="getPhoneNumber" bindgetphonenumber="onPhoneAuth" loading="{{loading}}" type="primary">立即绑定</button>
         <button bindtap="onSkip" class="btn-skip">暂不绑定</button>

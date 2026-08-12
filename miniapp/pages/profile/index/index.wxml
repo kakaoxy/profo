@@ -48,23 +48,6 @@
     </view>
   </view>
 
-  <!-- 账号管理：临时账号可绑定已有主账号（合并业务数据） -->
-  <block wx:if="{{isTemporary}}">
-    <view class="menu-group-title">账号</view>
-    <view class="menu-list">
-      <view class="menu-item" bindtap="onGoBindAccount">
-        <view class="menu-left">
-          <view class="menu-icon">绑</view>
-          <view>
-            <view class="menu-item-title">绑定已有账号</view>
-            <view class="menu-sub">合并临时账号到主账号</view>
-          </view>
-        </view>
-        <view class="menu-right"><text class="chevron">›</text></view>
-      </view>
-    </view>
-  </block>
-
   <!-- 内部入口（仅内部用户可见） -->
   <block wx:if="{{isInternal}}">
     <view class="menu-group-title">内部入口 · 仅内部用户可见</view>

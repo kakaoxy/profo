@@ -56,8 +56,6 @@ interface PageData {
   phoneDisplay: string;
   hasPhone: boolean;
   internalEntries: InternalEntry[];
-  /** 当前是否为临时账号（c_user_temporary=true），决定是否展示「绑定已有账号」入口. */
-  isTemporary: boolean;
 }
 
 interface PageCustom {
@@ -77,7 +75,6 @@ interface PageCustom {
   onPhoneModalSkip(): void;
   onPhoneModalBound(): void;
   onPhoneModalGoBindAccount(): void;
-  onGoBindAccount(): void;
 }
 
 /** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
@@ -114,7 +111,6 @@ Page<PageData, PageCustom>({
     phoneDisplay: "完善手机号",
     hasPhone: false,
     internalEntries: INTERNAL_ENTRIES,
-    isTemporary: false,
   },
 
   getToken() {
@@ -125,7 +121,8 @@ Page<PageData, PageCustom>({
     // TabBar 页从登录页 switchTab 返回时 onLoad 不会重跑，需在每次显示时刷新登录态
     this.loadUser();
     // 临时账号用户未弹过手机号引导时自动触发弹窗；
-    // 用户选「暂不绑定」后置 c_phone_prompted=true，后续不再自动弹（除非用户主动点击入口）
+    // 用户选「暂不绑定」后置 c_phone_prompted=true，后续不再自动弹；
+    // 用户主动点击「完善手机号」可再次触发（onPhoneTap → modal.show）
     if (getCTemporary() && !getPhonePrompted()) {
       const modal = this.selectComponent("#phoneModal") as unknown as PhoneBindModalInstance | null;
       if (modal && typeof modal.show === "function") {
@@ -147,7 +144,6 @@ Page<PageData, PageCustom>({
       roleLabel: "未登录",
       phoneDisplay: "完善手机号",
       hasPhone: false,
-      isTemporary: false,
     });
   },
 
@@ -175,9 +171,6 @@ Page<PageData, PageCustom>({
       roleLabel: isInternal ? "内部用户" : "C端用户",
       phoneDisplay: phone || "完善手机号",
       hasPhone: !!phone,
-      // 临时账号标识由 storage 维持（wechat-auth.ts 写入）；
-      // PublicUserInfo 暂未带 is_temporary 字段，从 storage 读取以驱动「绑定已有账号」入口显隐
-      isTemporary: getCTemporary(),
     });
   },
 
@@ -196,8 +189,6 @@ Page<PageData, PageCustom>({
       roleLabel: "内部员工 · 已认证",
       phoneDisplay: phone ? maskPhone(phone) : "—",
       hasPhone: !!phone,
-      // admin 令牌非临时账号（内部员工直接登录），强制置 false 避免残留 storage 标识误显入口
-      isTemporary: false,
     });
   },
 
@@ -351,11 +342,6 @@ Page<PageData, PageCustom>({
 
   /** 用户在合并确认视图选「前往绑定已有账号」：跳转 bind-account 页（Task 8 实现）. */
   onPhoneModalGoBindAccount() {
-    wx.navigateTo({ url: "/pages/bind-account/index/index" });
-  },
-
-  /** 「账号」菜单「绑定已有账号」入口：跳转 bind-account 页（仅 isTemporary=true 时展示）. */
-  onGoBindAccount() {
     wx.navigateTo({ url: "/pages/bind-account/index/index" });
   },
 });
