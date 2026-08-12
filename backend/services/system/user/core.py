@@ -7,7 +7,7 @@ import logging
 from typing import Any
 
 from fastapi import Request
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -454,8 +454,6 @@ class UserService:
         仅返回后台角色用户（admin/operator/user），排除 C 端 customer 角色，
         角色集合与 AuthService.BACKEND_ROLE_CODES 对齐。
         """
-        from sqlalchemy import or_
-
         query = (
             db.query(User.id, User.nickname, User.username)
             .join(Role, Role.id == User.role_id)

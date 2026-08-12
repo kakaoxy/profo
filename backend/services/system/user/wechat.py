@@ -365,17 +365,12 @@ class UserWechatService:
 
             # 7. 提交事务
             db.commit()
-        except WeChatNotBoundError:
-            db.rollback()
-            raise
         except Exception:
             db.rollback()
             raise
 
         # 刷新 target_user 以读取最新 token_version
         db.refresh(target_user)
-        # 重新填充 wechat_bound（解绑后应为 False）
-        target_user.wechat_bound = False
 
         # 8. 审计日志
         log_auth_event("wechat_unbound", user_id=target_user.id)

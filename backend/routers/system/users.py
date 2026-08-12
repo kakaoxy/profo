@@ -252,7 +252,7 @@ def change_password(
 
     速率限制：3次/分钟（防止暴力破解密码）.
     """
-    return user_lifecycle_service.change_password(db, current_user, password_data)
+    return user_lifecycle_service.change_password(db, current_user, password_data, request=request)
 
 
 @router.post("/init-data")

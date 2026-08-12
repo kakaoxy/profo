@@ -92,8 +92,18 @@ class UserLifecycleService:
         )
         return {"message": "用户删除成功"}
 
-    def change_password(self, db: Session, current_user: User, password_data: PasswordChange) -> dict[str, str]:
-        """修改密码."""
+    def change_password(
+        self,
+        db: Session,
+        current_user: User,
+        password_data: PasswordChange,
+        *,
+        request: Request | None = None,
+    ) -> dict[str, str]:
+        """修改密码.
+
+        与 reset_password/delete_user 一致，写入审计日志（不记录密码本身）。
+        """
         if not verify_password(password_data.current_password, current_user.password)[0]:
             msg = "当前密码错误"
             raise ValidationError(msg)
@@ -107,6 +117,16 @@ class UserLifecycleService:
         db.commit()
         # 修改密码后撤销旧 Token，强制使用新密码重新登录
         AuthService.invalidate_user_tokens(db, current_user)
+
+        # 审计日志（操作者即用户自身，不记录密码本身）
+        operation_log_service.log_action(
+            db,
+            user_id=current_user.id,
+            action="change_password",
+            resource_type="user",
+            resource_id=str(current_user.id),
+            request=request,
+        )
         return {"message": "密码修改成功"}
 
 

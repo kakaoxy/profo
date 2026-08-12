@@ -12,6 +12,7 @@ from services.system.exceptions import (
     PhoneTakenByMainAccountError,
     ValidationError,
 )
+from services.system.wechat import WeChatAuthService
 from utils.auth import verify_password
 from utils.crypto import hash_phone
 from utils.formatters import mask_phone
@@ -172,9 +173,6 @@ class UserProfileService:
             BusinessLogicError: 手机号已被其他临时账号占用
 
         """
-        # 延迟导入避免循环依赖（wechat.py 不依赖 user 子包，但保持防御性）
-        from services.system.wechat import WeChatAuthService
-
         phone_info = WeChatAuthService.fetch_wechat_phone_number(wx_code)
         phone = phone_info.get("phoneNumber")
         if not phone:
