@@ -107,6 +107,19 @@ class User(BaseModel):
     wechat_unionid: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, comment="微信UnionID")
     wechat_session_key: Mapped[str | None] = mapped_column(EncryptedString(500), nullable=True, comment="微信会话密钥")
 
+    # 临时账号与合并（微信登录新用户首次创建为临时账号，绑定主账号后合并）
+    is_temporary: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="是否临时账号（微信登录新用户）",
+    )
+    merged_to_user_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="临时账号合并到的目标主账号ID",
+    )
+
     # 角色关联（逻辑外键，级联由Service处理）
     role_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="角色ID(逻辑外键)")
 
@@ -154,6 +167,10 @@ class User(BaseModel):
         # 迁移（migrations.py）以 idx_users_phone_hash 命名创建，此处不再重复声明。
         # 微信信息查询索引
         Index("idx_user_wechat", "wechat_openid", "wechat_unionid"),
+        # 临时账号查询索引（微信登录新用户筛选/合并扫描）
+        Index("idx_user_temporary", "is_temporary"),
+        # 合并重定向索引（_resolve_merged_target 按 merged_to_user_id 查询目标主账号）
+        Index("idx_user_merged_to", "merged_to_user_id"),
     )
 
     def __repr__(self) -> str:

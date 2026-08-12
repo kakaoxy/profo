@@ -1,0 +1,86 @@
+/* 手机号绑定弹窗样式（自包含，依赖 app.wxss 的 CSS 变量） */
+
+.modal-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(23, 25, 28, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-content {
+  width: 600rpx;
+  background: var(--pure-white);
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+}
+
+.modal-desc {
+  margin-top: 20rpx;
+  font-size: 28rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.modal-actions {
+  margin-top: 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+/* primary 按钮：微信原生 button[type=primary] 配色与本设计系统差异较大，
+   覆盖为深色 ink 主色，保持视觉一致 */
+.modal-actions button[type="primary"] {
+  background: var(--ink);
+  color: var(--pure-white);
+  border-radius: 9999rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0 48rpx;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-actions button[type="primary"]::after {
+  border: none;
+}
+
+.modal-actions button[type="primary"][loading]::before {
+  margin-right: 12rpx;
+}
+
+.btn-skip {
+  background: transparent;
+  color: var(--graphite);
+  border-radius: 9999rpx;
+  font-size: 28rpx;
+  line-height: 1;
+  padding: 0 48rpx;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-skip::after {
+  border: none;
+}

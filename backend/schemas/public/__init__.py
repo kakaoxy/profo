@@ -89,13 +89,21 @@ class PublicRegisterResponse(BaseModel):
 
 
 class PublicLoginResponse(BaseModel):
-    """C端登录响应."""
+    """C端登录响应.
+
+    内部员工合并账号后需同时持有 admin 与 C 端令牌：
+    - admin 令牌存于 access_token/refresh_token（供后台接口使用）
+    - C 端令牌存于 c_access_token/c_refresh_token（供 /public/* 接口使用）
+    外部用户仅签发 C 端令牌（存于 access_token/refresh_token），c_* 字段为 None。
+    """
 
     access_token: str = Field(description="访问令牌")
     refresh_token: str = Field(description="刷新令牌")
     token_type: str = Field(default="bearer", description="令牌类型")
     expires_in: int = Field(description="访问令牌过期时间(秒)")
     user: PublicUserInfo | None = Field(None, description="用户信息")
+    c_access_token: str | None = Field(None, description="C端访问令牌（仅内部员工合并后返回）")
+    c_refresh_token: str | None = Field(None, description="C端刷新令牌（仅内部员工合并后返回）")
 
 
 class PublicRefreshTokenRequest(BaseModel):

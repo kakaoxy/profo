@@ -1,0 +1,23 @@
+<view class="page">
+  <!-- 品牌区 -->
+  <view class="brand">
+    <view class="brand-icon">房</view>
+    <view class="brand-title">美房宝</view>
+    <view class="brand-sub">不辜负每一套房</view>
+  </view>
+
+  <!-- 登录卡片 -->
+  <view class="form-card">
+    <button class="btn-primary wechat-btn" disabled="{{loading}}" bindtap="onWechatLogin">微信一键登录</button>
+    <button class="btn-secondary password-btn" bindtap="onPasswordLogin">账号密码登录</button>
+
+    <!-- 协议勾选区 -->
+    <view class="agreement" bindtap="onToggleAgree">
+      <checkbox checked="{{agreed}}" color="#17191c" />
+      <text class="agreement-text">我已阅读并同意 </text>
+      <navigator class="agreement-link" url="/pages/agreement/user/index/index">《用户协议》</navigator>
+      <text class="agreement-text">和</text>
+      <navigator class="agreement-link" url="/pages/agreement/privacy/index/index">《隐私政策》</navigator>
+    </view>
+  </view>
+</view>

@@ -2865,6 +2865,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/users/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 合并临时账号到主账号
+         * @description 将当前临时账号合并到目标主账号，迁移业务数据并签发主账号令牌
+         */
+        post: operations["merge_account_api_v1_public_users_merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/users/phone/wechat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 微信手机号授权绑定
+         * @description 用 wx.getPhoneNumber 的 code 换取手机号并绑定；若手机号已被主账号占用返回业务码 40901
+         */
+        post: operations["bind_phone_via_wechat_api_v1_public_users_phone_wechat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/projects": {
         parameters: {
             query?: never;
@@ -6662,6 +6702,44 @@ export interface components {
             sort_order: number;
         };
         /**
+         * MergeAccountRequest
+         * @description 临时账号合并到主账号请求（触发动作类）.
+         *
+         *     支持两种凭证：
+         *     - internal: 内部员工工号 + 密码
+         *     - phone: 手机号 + 短信验证码
+         *
+         *     按 type 校验对应字段必填关系。
+         */
+        MergeAccountRequest: {
+            /**
+             * Type
+             * @description 凭证类型：internal=工号+密码，phone=手机号+短信验证码
+             * @enum {string}
+             */
+            type: "internal" | "phone";
+            /**
+             * Username
+             * @description 内部员工工号（type=internal 时必填）
+             */
+            username?: string | null;
+            /**
+             * Password
+             * @description 内部员工密码（type=internal 时必填）
+             */
+            password?: string | null;
+            /**
+             * Phone
+             * @description 手机号（type=phone 时必填）
+             */
+            phone?: string | null;
+            /**
+             * Sms Code
+             * @description 短信验证码（type=phone 时必填）
+             */
+            sms_code?: string | null;
+        };
+        /**
          * NeighborhoodRadarItem
          * @description 周边竞品雷达单项数据.
          */
@@ -7270,6 +7348,17 @@ export interface components {
              * @description 权限描述
              */
             description?: string | null;
+        };
+        /**
+         * PhoneWechatBindRequest
+         * @description 微信手机号授权绑定请求（wx.getPhoneNumber 回调 code）.
+         */
+        PhoneWechatBindRequest: {
+            /**
+             * Code
+             * @description wx.getPhoneNumber 回调的 code
+             */
+            code: string;
         };
         /**
          * PhotoCategory
@@ -8735,6 +8824,11 @@ export interface components {
         /**
          * PublicLoginResponse
          * @description C端登录响应.
+         *
+         *     内部员工合并账号后需同时持有 admin 与 C 端令牌：
+         *     - admin 令牌存于 access_token/refresh_token（供后台接口使用）
+         *     - C 端令牌存于 c_access_token/c_refresh_token（供 /public/* 接口使用）
+         *     外部用户仅签发 C 端令牌（存于 access_token/refresh_token），c_* 字段为 None。
          */
         PublicLoginResponse: {
             /**
@@ -8760,6 +8854,16 @@ export interface components {
             expires_in: number;
             /** @description 用户信息 */
             user?: components["schemas"]["PublicUserInfo"] | null;
+            /**
+             * C Access Token
+             * @description C端访问令牌（仅内部员工合并后返回）
+             */
+            c_access_token?: string | null;
+            /**
+             * C Refresh Token
+             * @description C端刷新令牌（仅内部员工合并后返回）
+             */
+            c_refresh_token?: string | null;
         };
         /**
          * PublicLogoutResponse
@@ -16566,13 +16670,100 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description 绑定成功或手机号已被主账号占用（业务码 40901） */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPhoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_account_api_v1_public_users_merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLoginResponse"];
+                };
+            };
+            /** @description 非临时账号或目标账号不符合合并条件 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 凭证错误 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 目标账号已绑定其他微信 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_phone_via_wechat_api_v1_public_users_phone_wechat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhoneWechatBindRequest"];
+            };
+        };
+        responses: {
+            /** @description 绑定成功或手机号已被主账号占用（业务码 40901） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

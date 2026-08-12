@@ -111,14 +111,58 @@ class BusinessLogicError(ServiceException):
     用于表示请求语义正确但违反业务规则的场景（如状态流转不合法）。
     400 类错误应使用 ValidationError，404 用 ResourceNotFoundError，
     不要通过本异常传 status_code 绕过分类。
+
+    code 字段为可选的业务码，供路由层在响应体中携带（如 40901/40902），
+    不设置时为 None。
     """
 
-    def __init__(self, message: str, *, headers: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: int | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         """初始化业务逻辑错误.
 
         Args:
             message: 错误消息
+            code: 业务码（可选，供路由层在响应体中携带）
             headers: 额外的HTTP响应头
 
         """
         super().__init__(message, status_code=422, headers=headers)
+        self.code = code
+
+
+class PhoneTakenByMainAccountError(BusinessLogicError):
+    """手机号已被主账号占用（业务码 40901，HTTP 409）.
+
+    临时账号绑定手机号时，若手机号已被其他 is_temporary=False 的主账号占用，
+    抛出本异常。路由层捕获后返回 MergeConflictResponse（40901），
+    前端展示合并确认视图。target_user_hint 含 nickname/phone_masked。
+    """
+
+    def __init__(self, target_user_hint: dict[str, str]) -> None:
+        """初始化手机号被主账号占用错误.
+
+        Args:
+            target_user_hint: 目标主账号提示信息，含 nickname/phone_masked
+
+        """
+        super().__init__("PHONE_TAKEN_BY_MAIN_ACCOUNT", code=40901)
+        self.status_code = 409
+        self.target_user_hint = target_user_hint
+
+
+class TargetHasWechatError(BusinessLogicError):
+    """目标账号已绑定其他微信（业务码 40902，HTTP 409）.
+
+    账号合并时，若目标主账号已绑定其他微信 openid，抛出本异常。
+    路由层捕获后返回 TargetHasWechatResponse（40902）。
+    """
+
+    def __init__(self) -> None:
+        """初始化目标账号已绑其他微信错误."""
+        super().__init__("TARGET_ACCOUNT_HAS_OTHER_WECHAT", code=40902)
+        self.status_code = 409

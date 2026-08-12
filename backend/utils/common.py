@@ -188,6 +188,8 @@ class RateLimits:
     PUBLIC_PROFILE_READ = "60/minute"
     PUBLIC_PHONE_UPDATE = "10/hour"
     PUBLIC_PHONE_CREATE = "10/hour"
+    PUBLIC_PHONE_WECHAT = "10/hour"
+    PUBLIC_USER_MERGE = "10/hour"
     PUBLIC_PROJECT_LIST = "60/minute"
     PUBLIC_LEAD_CREATE = "10/hour"
     PUBLIC_LEAD_LIST = "60/minute"

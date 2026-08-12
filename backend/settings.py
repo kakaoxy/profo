@@ -173,6 +173,10 @@ class Settings(BaseSettings):
     wechat_token_url: str = "https://api.weixin.qq.com/sns/oauth2/access_token"  # noqa: S105
     wechat_userinfo_url: str = "https://api.weixin.qq.com/sns/userinfo"
     wechat_jscode2session_url: str = "https://api.weixin.qq.com/sns/jscode2session"
+    # 小程序全局 access_token（cgi-bin/token，用于服务端调用 getPhoneNumber 等接口）
+    wechat_miniapp_token_url: str = "https://api.weixin.qq.com/cgi-bin/token"  # noqa: S105
+    # 小程序手机号授权接口（wx.getPhoneNumber 的 code 换取手机号）
+    wechat_phone_url: str = "https://api.weixin.qq.com/wxa/business/getuserphonenumber"
 
     @model_validator(mode="after")
     def validate_oss_config(self) -> "Settings":

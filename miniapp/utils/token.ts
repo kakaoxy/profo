@@ -34,6 +34,47 @@ export function getCRefreshToken(): string {
 }
 
 /**
+ * 读取 c_user_temporary 标识（C 端临时账号）.
+ *
+ * 微信登录后端可能签发临时账号令牌（is_temporary=true），需引导用户绑定手机号或合并
+ * 已有账号。标识以字符串 "true"/"false" 存储，读取时严格匹配 "true" 返回布尔值.
+ */
+export function getCTemporary(): boolean {
+  return wx.getStorageSync("c_user_temporary") === "true";
+}
+
+/** 写入 c_user_temporary 标识；true 存 "true"，false 存 "false". */
+export function setCTemporary(value: boolean): void {
+  wx.setStorageSync("c_user_temporary", value ? "true" : "false");
+}
+
+/**
+ * 读取 c_phone_prompted 标识（是否已弹过手机号绑定引导）.
+ *
+ * 用于避免临时账号用户每次进入 profile 页都重复弹窗：用户选「暂不绑定」后置 true，
+ * 后续不再自动触发（除非用户主动点击绑定入口）.
+ */
+export function getPhonePrompted(): boolean {
+  return wx.getStorageSync("c_phone_prompted") === "true";
+}
+
+/** 写入 c_phone_prompted 标识. */
+export function setPhonePrompted(value: boolean): void {
+  wx.setStorageSync("c_phone_prompted", value ? "true" : "false");
+}
+
+/**
+ * 清空 C 端用户状态标识（c_user_temporary 与 c_phone_prompted）.
+ *
+ * 登出或账号合并成功后调用，避免残留的临时账号标识影响后续登录态判断.
+ * 注意：仅清空状态标识，不清空令牌（令牌清空由登出流程单独处理）.
+ */
+export function clearCUserState(): void {
+  wx.removeStorageSync("c_user_temporary");
+  wx.removeStorageSync("c_phone_prompted");
+}
+
+/**
  * 将 base64url 字符串解码为 binary string（每字符代表一个字节）.
  *
  * 不依赖 atob —— 微信小程序运行时（JSCore/V8 基础库）不提供全局 atob/btoa，

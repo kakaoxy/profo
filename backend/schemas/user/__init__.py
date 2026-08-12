@@ -1,9 +1,9 @@
 """用户和认证相关的Pydantic模型."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field, field_validator
+from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from schemas.response import PaginatedResponse
 
@@ -107,6 +107,7 @@ class TokenResponse(BaseModel):
     token_type: str = Field(description="令牌类型")
     expires_in: int = Field(description="访问令牌过期时间(秒)")
     user: "UserResponse" = Field(description="用户信息")
+    is_temporary: bool = Field(default=False, description="是否临时账号（微信登录新用户未绑定手机号）")
 
 
 class RefreshTokenRequest(BaseModel):
@@ -137,6 +138,55 @@ class ExchangeTokenRequest(BaseModel):
     """临时授权码兑换 Token 请求模型."""
 
     code: str = Field(max_length=64, description="一次性授权码")
+
+
+class MergeAccountRequest(BaseModel):
+    """临时账号合并到主账号请求（触发动作类）.
+
+    支持两种凭证：
+    - internal: 内部员工工号 + 密码
+    - phone: 手机号 + 短信验证码
+
+    按 type 校验对应字段必填关系。
+    """
+
+    type: Literal["internal", "phone"] = Field(description="凭证类型：internal=工号+密码，phone=手机号+短信验证码")
+    username: str | None = Field(default=None, max_length=64, description="内部员工工号（type=internal 时必填）")
+    password: str | None = Field(default=None, max_length=128, description="内部员工密码（type=internal 时必填）")
+    phone: str | None = Field(default=None, max_length=20, description="手机号（type=phone 时必填）")
+    sms_code: str | None = Field(default=None, max_length=8, description="短信验证码（type=phone 时必填）")
+
+    @model_validator(mode="after")
+    def _check_credentials_by_type(self) -> "MergeAccountRequest":
+        """按 type 校验对应凭证字段必填."""
+        if self.type == "internal" and (not self.username or not self.password):
+            msg = "type=internal 时 username 与 password 必填"
+            raise ValueError(msg)
+        if self.type == "phone" and (not self.phone or not self.sms_code):
+            msg = "type=phone 时 phone 与 sms_code 必填"
+            raise ValueError(msg)
+        return self
+
+
+class PhoneWechatBindRequest(BaseModel):
+    """微信手机号授权绑定请求（wx.getPhoneNumber 回调 code）."""
+
+    code: str = Field(max_length=256, description="wx.getPhoneNumber 回调的 code")
+
+
+class MergeConflictResponse(BaseModel):
+    """合并冲突响应（业务码 40901：手机号已被主账号占用）."""
+
+    code: int = Field(default=40901, description="业务码：手机号已被主账号占用")
+    message: str = Field(default="PHONE_TAKEN_BY_MAIN_ACCOUNT")
+    target_user_hint: dict[str, str] = Field(description="目标主账号提示信息，含 nickname/phone_masked")
+
+
+class TargetHasWechatResponse(BaseModel):
+    """目标账号已绑其他微信响应（业务码 40902）."""
+
+    code: int = Field(default=40902, description="业务码：目标账号已绑定其他微信")
+    message: str = Field(default="TARGET_ACCOUNT_HAS_OTHER_WECHAT")
 
 
 # =======================================
@@ -293,14 +343,18 @@ __all__ = [
     "ExchangeTokenRequest",
     "LoginRequest",
     "LogoutResponse",
+    "MergeAccountRequest",
+    "MergeConflictResponse",
     "PasswordChange",
     "PasswordResetRequest",
+    "PhoneWechatBindRequest",
     "RefreshTokenRequest",
     "RoleBrief",
     "RoleCreate",
     "RoleListResponse",
     "RoleResponse",
     "RoleUpdate",
+    "TargetHasWechatResponse",
     "TokenResponse",
     "UserBriefResponse",
     "UserCreate",

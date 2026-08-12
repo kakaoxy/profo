@@ -20,6 +20,8 @@
 - add_phone_hash_column: 为 users 表添加 phone_hash 列与唯一索引（H-006）
 - encrypt_existing_phones: 将已存的明文手机号加密为 Fernet 密文（H-006）
 - populate_phone_hash: 为已存用户回填 phone_hash（H-006）
+- add_user_temporary_fields: 为 users 表添加 is_temporary / merged_to_user_id 列与
+  idx_user_temporary 索引（微信登录合并增强，临时账号与合并目标记录）
 - add_stage_completed_dates_column: 为 l4_marketing_projects 表添加 stage_completed_dates 列
 - add_thumbnail_url_to_photos: 为 renovation_photos 与 property_media 表添加 thumbnail_url 列
 - add_renovation_extra_amount_columns: 为 project_renovations 表添加定制柜/窗户/电器金额列
@@ -133,6 +135,7 @@ from migrations._type_migrations import (
 from migrations._user_security import (
     add_phone_hash_column,
     add_token_version_column,
+    add_user_temporary_fields,
     encrypt_existing_phones,
     populate_phone_hash,
 )
@@ -199,6 +202,7 @@ def _run_all_migrations(engine: Engine) -> None:
         add_phone_hash_column(engine)
         encrypt_existing_phones(engine)
         populate_phone_hash(engine)
+        add_user_temporary_fields(engine)
         add_stage_completed_dates_column(engine)
         add_thumbnail_url_to_photos(engine)
         add_renovation_extra_amount_columns(engine)

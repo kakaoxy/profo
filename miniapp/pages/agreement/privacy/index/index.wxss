@@ -1,0 +1,14 @@
+/* 隐私政策页排版 */
+.agreement-page {
+  min-height: 100vh;
+  padding: 32rpx 40rpx 80rpx;
+  background: var(--pure-white);
+  box-sizing: border-box;
+}
+
+/* rich-text 内容区：字号、行高、颜色由 rich-text 继承给内部节点 */
+.agreement-content {
+  font-size: 28rpx;
+  line-height: 1.75;
+  color: var(--ink);
+}

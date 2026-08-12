@@ -3,6 +3,7 @@
 处理用户管理的业务逻辑.
 """
 
+import logging
 from typing import Any
 
 from fastapi import Request
@@ -11,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from constants.role_codes import RoleCode
-from models import Lead, Role, User, UserRole
+from models import Lead, PropertyCurrent, Role, User, UserRole
 from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserUpdate
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
@@ -19,8 +20,18 @@ from utils.crypto import hash_phone
 from utils.formatters import escape_like, mask_phone
 
 from .auth import AuthService
-from .exceptions import AuthenticationError, ConflictError, ResourceNotFoundError, ValidationError
+from .exceptions import (
+    AuthenticationError,
+    BusinessLogicError,
+    ConflictError,
+    PhoneTakenByMainAccountError,
+    ResourceNotFoundError,
+    TargetHasWechatError,
+    ValidationError,
+)
 from .operation_log import operation_log_service
+
+logger = logging.getLogger(__name__)
 
 # 允许更新的用户字段白名单（防止设置 password/wechat_*/id 等敏感字段）
 _USER_ALLOWED_FIELDS = {"nickname", "phone", "avatar", "role_id", "status"}
@@ -574,6 +585,14 @@ class UserService:
         已绑定手机号的用户需走 update_phone_with_verification 流程，
         避免绕过密码验证覆盖已有手机号。
 
+        手机号占用检测分支：
+        - 被其他 is_temporary=False 的主账号占用 → 抛 PhoneTakenByMainAccountError
+          （路由层捕获后返回 40901 合并冲突响应，前端展示合并确认视图）
+        - 被其他 is_temporary=True 的临时账号占用 → 抛 BusinessLogicError
+          （提示用户联系客服，不自动合并两个临时账号）
+
+        绑定成功后：若 user.is_temporary=True 则置 False（临时账号转正）。
+
         Args:
             db: 数据库会话
             user: 当前用户对象
@@ -583,15 +602,37 @@ class UserService:
             User: 更新后的用户对象
 
         Raises:
-            ValidationError: 用户已绑定手机号 或 手机号已被其他账号绑定
+            ValidationError: 用户已绑定手机号
+            PhoneTakenByMainAccountError: 手机号已被主账号占用（40901）
+            BusinessLogicError: 手机号已被其他临时账号占用
 
         """
         if user.phone:
             msg = "已绑定手机号，修改请使用密码验证"
             raise ValidationError(msg)
 
-        self.check_phone_taken_by_other(db, phone, user.id)
-        return self.update_phone(db, user, phone)
+        phone_hash_value = hash_phone(phone)
+        existing = db.query(User).filter(User.phone_hash == phone_hash_value, User.id != user.id).first()
+        if existing:
+            if not existing.is_temporary:
+                # 手机号已被主账号占用 → 触发合并流程
+                raise PhoneTakenByMainAccountError(
+                    target_user_hint={
+                        "nickname": existing.nickname or existing.username,
+                        "phone_masked": mask_phone(existing.phone) or "",
+                    },
+                )
+            # 手机号已被其他临时账号占用 → 不自动合并，提示联系客服
+            msg = "该手机号已被其他临时账号占用，请联系客服"
+            raise BusinessLogicError(msg)
+
+        user.phone = phone
+        user.phone_hash = phone_hash_value
+        if user.is_temporary:
+            user.is_temporary = False
+        db.commit()
+        db.refresh(user)
+        return user
 
     def list_users_simple(
         self,
@@ -625,6 +666,132 @@ class UserService:
 
         users = query.all()
         return [{"id": u.id, "nickname": u.nickname, "username": u.username} for u in users]
+
+    @staticmethod
+    def merge_accounts(db: Session, temp_user: User, target_user: User) -> None:
+        """将临时账号合并到目标主账号（事务内执行）.
+
+        操作步骤：
+        1. 校验目标账号未绑定其他微信（否则抛 TargetHasWechatError, 40902）
+        2. 迁移业务数据（按 user_id/creator_id/owner_id 批量 UPDATE）
+        3. 临时账号 is_temporary=False，status='merged'，
+           merged_to_user_id=target_user.id
+        4. 失效临时账号已签发令牌（token_version+1，撤销 refresh_token 跟踪记录）
+        5. 失败回滚
+
+        ⚠️ wechat 字段保留在临时账号上，不转移至目标账号：
+        authenticate_user 对 wechat_openid is not None 的用户拒绝密码登录
+        （防占位哈希爆破）。若转移 openid 到目标账号，内部员工合并后将无法
+        走密码登录后台。微信登录通过 login_or_register_wechat_user 中的
+        merged 重定向（follow merged_to_user_id）解析到目标账号。
+
+        ⚠️ 令牌失效：合并后临时账号 status='merged'，但 authenticate_by_token
+        不校验 status，必须显式递增 token_version 才能让旧 JWT 立即失效，
+        防止临时账号令牌被截获后继续访问 /public/* 接口。
+
+        业务数据迁移覆盖的表：
+        - leads（creator_id）：C 端用户提交的估价线索
+        - property_current（owner_id）：C 端用户推送的房源
+
+        ⚠️ 未覆盖 viewing_records/renovation_records/user_favorites：
+        这些表在当前代码库中不存在（spec 假设的表名）。
+        若未来新增此类表且含 user_id 外键，需在此方法补充迁移逻辑。
+
+        ⚠️ 冲突处理：leads/property_current 无 (user_id, 业务列) 唯一约束，
+        不会产生迁移冲突；若未来新增含唯一约束的表，需先查后跳过并日志记录冲突 ID。
+
+        Args:
+            db: 数据库会话
+            temp_user: 临时账号（is_temporary=True）
+            target_user: 目标主账号
+
+        Raises:
+            TargetHasWechatError: 目标账号已绑定其他微信（40902）
+
+        """
+        # 校验目标账号未绑定其他微信
+        if target_user.wechat_openid is not None and target_user.wechat_openid != temp_user.wechat_openid:
+            raise TargetHasWechatError
+
+        try:
+            # 1. 迁移 leads（creator_id）
+            migrated_leads = (
+                db.query(Lead)
+                .filter(Lead.creator_id == temp_user.id)
+                .update({Lead.creator_id: target_user.id}, synchronize_session=False)
+            )
+            if migrated_leads:
+                logger.info("合并账号 %s → %s：迁移 %d 条 leads", temp_user.id, target_user.id, migrated_leads)
+
+            # 2. 迁移 property_current（owner_id）
+            migrated_props = (
+                db.query(PropertyCurrent)
+                .filter(PropertyCurrent.owner_id == temp_user.id)
+                .update({PropertyCurrent.owner_id: target_user.id}, synchronize_session=False)
+            )
+            if migrated_props:
+                logger.info(
+                    "合并账号 %s → %s：迁移 %d 条 property_current",
+                    temp_user.id,
+                    target_user.id,
+                    migrated_props,
+                )
+
+            # 3. 临时账号标记已合并（wechat 字段保留在临时账号上，供微信登录重定向）
+            temp_user.is_temporary = False
+            temp_user.status = "merged"
+            temp_user.merged_to_user_id = target_user.id
+
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+
+        # 4. 失效临时账号已签发令牌（合并后旧 JWT 不可再用）
+        # invalidate_user_tokens 内部会 db.commit()，放在 merge 事务提交之后避免互相干扰
+        AuthService.invalidate_user_tokens(db, temp_user)
+        logger.info(
+            "账号合并完成：%s → %s（leads=%d, property_current=%d）",
+            temp_user.id,
+            target_user.id,
+            migrated_leads,
+            migrated_props,
+        )
+
+    @staticmethod
+    def bind_phone_via_wechat(db: Session, user: User, wx_code: str) -> dict[str, bool]:
+        """用 wx.getPhoneNumber 的 code 换取手机号并绑定.
+
+        1. 调用微信 getPhoneNumber API 换取手机号
+        2. 复用 set_initial_phone 的绑定/合并检测逻辑
+        3. 返回 {"success": True}；若手机号被主账号占用则抛 PhoneTakenByMainAccountError
+           （由路由层捕获后返回 40901 合并冲突响应）
+
+        Args:
+            db: 数据库会话
+            user: 当前用户对象
+            wx_code: wx.getPhoneNumber 回调的 code
+
+        Returns:
+            {"success": True} 绑定成功
+
+        Raises:
+            ValidationError: 微信接口返回错误 或 用户已绑定手机号
+            PhoneTakenByMainAccountError: 手机号已被主账号占用（40901）
+            BusinessLogicError: 手机号已被其他临时账号占用
+
+        """
+        # 延迟导入避免循环依赖（wechat.py 不依赖 user.py，但保持防御性）
+        from .wechat import WeChatAuthService
+
+        phone_info = WeChatAuthService.fetch_wechat_phone_number(wx_code)
+        phone = phone_info.get("phoneNumber")
+        if not phone:
+            msg = "微信手机号授权未返回手机号"
+            raise ValidationError(msg)
+
+        user_service.set_initial_phone(db, user, str(phone))
+        return {"success": True}
 
 
 # 全局服务实例

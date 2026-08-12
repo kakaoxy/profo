@@ -1,7 +1,8 @@
 """用户安全相关迁移.
 
-包含 users 表的 token_version / phone_hash 列添加、明文手机号加密与 phone_hash 回填。
-对应迁移清单 H-002 / H-006。
+包含 users 表的 token_version / phone_hash 列添加、明文手机号加密与 phone_hash 回填，
+以及微信登录合并所需的临时账号字段（is_temporary / merged_to_user_id）。
+对应迁移清单 H-002 / H-006 / 微信登录合并增强。
 """
 
 import logging
@@ -145,3 +146,32 @@ def populate_phone_hash(engine: Engine) -> None:
         logger.info("迁移：回填了 %d 条 phone_hash", updated)
     if failed:
         logger.warning("迁移：回填 phone_hash 时 %d 条记录失败，请检查日志", failed)
+
+
+def add_user_temporary_fields(engine: Engine) -> None:
+    """为 users 表添加临时账号字段 is_temporary / merged_to_user_id 及索引（幂等）.
+
+    微信登录合并增强：新用户首次微信登录创建为临时账号（is_temporary=True），
+    绑定主账号后通过 merged_to_user_id 记录合并目标，并迁移业务数据。
+    """
+    if not _column_exists(engine, "users", "is_temporary"):
+        logger.info("迁移：为 users 表添加 is_temporary 列")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_temporary BOOLEAN NOT NULL DEFAULT FALSE"))
+
+    if not _column_exists(engine, "users", "merged_to_user_id"):
+        logger.info("迁移：为 users 表添加 merged_to_user_id 列")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN merged_to_user_id VARCHAR(36)"))
+
+    if not _index_exists(engine, "idx_user_temporary"):
+        logger.info("迁移：创建 idx_user_temporary 索引")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_temporary ON users(is_temporary)"))
+
+    if not _index_exists(engine, "idx_user_merged_to"):
+        # merged_to_user_id 用于微信登录合并重定向查询（_resolve_merged_target），
+        # 临时账号命中后跟随该字段解析目标主账号，加索引避免全表扫描
+        logger.info("迁移：创建 idx_user_merged_to 索引")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_merged_to ON users(merged_to_user_id)"))

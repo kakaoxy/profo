@@ -60,13 +60,16 @@ def _create_miniapp_tokens(db: Session, user: User) -> dict:
                 msg,
                 headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
             )
+        result["is_temporary"] = bool(user.is_temporary)
         return result
-    return AuthService.create_tokens_for_user(
+    result = AuthService.create_tokens_for_user(
         db,
         user,
         audience=AUDIENCE_C,
         role_claim=RoleCode.CUSTOMER.value,
     )
+    result["is_temporary"] = bool(user.is_temporary)
+    return result
 
 
 @router.post(

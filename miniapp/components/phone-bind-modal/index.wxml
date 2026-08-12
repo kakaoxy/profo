@@ -1,0 +1,27 @@
+<view class="modal-mask" wx:if="{{visible}}">
+  <view class="modal-content">
+    <!-- 引导绑定 -->
+    <block wx:if="{{mode === 'guide'}}">
+      <view class="modal-title">绑定手机号</view>
+      <view class="modal-desc">绑定手机号后可享受更多服务（订单查询、积分等）</view>
+      <view class="modal-actions">
+        <button open-type="getPhoneNumber" bindgetphonenumber="onPhoneAuth" loading="{{loading}}" type="primary">立即绑定</button>
+        <button bindtap="onSkip" class="btn-skip">暂不绑定</button>
+      </view>
+    </block>
+    <!-- 合并确认 -->
+    <block wx:if="{{mode === 'merge_confirm'}}">
+      <view class="modal-title">检测到已有账号</view>
+      <view class="modal-desc">您的手机号已注册账号（昵称：{{targetHint.nickname}}，手机号：{{targetHint.phone_masked}}），是否将微信与该账号合并？</view>
+      <view class="modal-actions">
+        <button bindtap="onGoBindAccount" type="primary">前往绑定已有账号</button>
+        <button bindtap="onCancelMerge" class="btn-skip">取消</button>
+      </view>
+    </block>
+    <!-- 绑定成功 -->
+    <block wx:if="{{mode === 'success'}}">
+      <view class="modal-title">绑定成功</view>
+      <view class="modal-desc">您的手机号已成功绑定</view>
+    </block>
+  </view>
+</view>

@@ -1,0 +1,94 @@
+<view class="page">
+  <!-- 标题区 -->
+  <view class="header">
+    <view class="header-title">绑定已有账号</view>
+    <view class="header-sub">将当前微信临时账号合并到主账号，合并后业务数据自动迁移</view>
+  </view>
+
+  <!-- Tab 切换 -->
+  <view class="tabs">
+    <view
+      class="tab {{activeTab === 'internal' ? 'tab--active' : ''}}"
+      data-tab="internal"
+      bindtap="onSwitchTab"
+    >内部员工</view>
+    <view
+      class="tab {{activeTab === 'phone' ? 'tab--active' : ''}}"
+      data-tab="phone"
+      bindtap="onSwitchTab"
+    >外部用户</view>
+  </view>
+
+  <!-- 内部员工表单 -->
+  <view wx:if="{{activeTab === 'internal'}}" class="form-card">
+    <view class="field">
+      <view class="form-label">工号</view>
+      <input
+        class="input"
+        placeholder="请输入员工工号"
+        value="{{username}}"
+        data-field="username"
+        bindinput="onInput"
+      />
+    </view>
+    <view class="field">
+      <view class="form-label">密码</view>
+      <input
+        class="input"
+        password
+        placeholder="请输入密码"
+        value="{{password}}"
+        data-field="password"
+        bindinput="onInput"
+      />
+    </view>
+    <button
+      class="btn-primary submit-btn"
+      disabled="{{loading}}"
+      bindtap="onBind"
+    >{{loading ? '绑定中…' : '确认绑定'}}</button>
+    <view class="hint">输入主账号工号与密码，合并后将以主账号身份登录</view>
+  </view>
+
+  <!-- 外部用户表单 -->
+  <view wx:else class="form-card">
+    <!-- 即将上线提示：后端 SMS 分支未实现 -->
+    <view class="coming-soon">
+      <view class="coming-soon-tag">即将上线</view>
+      <view class="coming-soon-text">手机号合并功能正在开发中，当前请使用「内部员工」工号登录</view>
+    </view>
+    <view class="field">
+      <view class="form-label">手机号</view>
+      <input
+        class="input"
+        type="number"
+        maxlength="11"
+        placeholder="请输入11位手机号"
+        value="{{phone}}"
+        data-field="phone"
+        bindinput="onInput"
+      />
+    </view>
+    <view class="field">
+      <view class="form-label">短信验证码</view>
+      <view class="sms-row">
+        <input
+          class="input sms-input"
+          type="number"
+          maxlength="6"
+          placeholder="请输入验证码"
+          value="{{smsCode}}"
+          data-field="smsCode"
+          bindinput="onInput"
+        />
+        <button class="sms-btn" bindtap="onSendSms">获取验证码</button>
+      </view>
+    </view>
+    <button
+      class="btn-primary submit-btn submit-btn--disabled"
+      disabled="{{true}}"
+      bindtap="onBind"
+    >暂不可用</button>
+    <view class="hint">后端短信验证流程未上线，提交按钮置灰；如需合并请切换至「内部员工」</view>
+  </view>
+</view>

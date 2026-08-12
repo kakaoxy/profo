@@ -1,6 +1,14 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
-import { getAccessToken, getCRefreshToken, getTokenAud } from "../../../utils/token";
+import {
+  getAccessToken,
+  getCTemporary,
+  getCRefreshToken,
+  getTokenAud,
+  getPhonePrompted,
+  setCTemporary,
+  setPhonePrompted,
+} from "../../../utils/token";
 
 type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type UserResponse = components["schemas"]["UserResponse"];
@@ -54,6 +62,8 @@ interface PageData {
   phoneFocus: boolean;
   submittingPhone: boolean;
   internalEntries: InternalEntry[];
+  /** 当前是否为临时账号（c_user_temporary=true），决定是否展示「绑定已有账号」入口. */
+  isTemporary: boolean;
 }
 
 interface PageCustom {
@@ -73,6 +83,16 @@ interface PageCustom {
   onPhoneConfirm(): void;
   onValuationTap(): void;
   onMenuTap(e: WechatMiniprogram.BaseEvent): void;
+  onPhoneModalSkip(): void;
+  onPhoneModalBound(): void;
+  onPhoneModalGoBindAccount(): void;
+  onGoBindAccount(): void;
+}
+
+/** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
+interface PhoneBindModalInstance {
+  show(): void;
+  hide(): void;
 }
 
 /** 是否内部员工：permissions 含 customer 基础权限之外的代码. */
@@ -107,6 +127,7 @@ Page<PageData, PageCustom>({
     phoneFocus: false,
     submittingPhone: false,
     internalEntries: INTERNAL_ENTRIES,
+    isTemporary: false,
   },
 
   getToken() {
@@ -116,6 +137,14 @@ Page<PageData, PageCustom>({
   onShow() {
     // TabBar 页从登录页 switchTab 返回时 onLoad 不会重跑，需在每次显示时刷新登录态
     this.loadUser();
+    // 临时账号用户未弹过手机号引导时自动触发弹窗；
+    // 用户选「暂不绑定」后置 c_phone_prompted=true，后续不再自动弹（除非用户主动点击入口）
+    if (getCTemporary() && !getPhonePrompted()) {
+      const modal = this.selectComponent("#phoneModal") as unknown as PhoneBindModalInstance | null;
+      if (modal && typeof modal.show === "function") {
+        modal.show();
+      }
+    }
   },
 
   resetToGuest() {
@@ -134,6 +163,7 @@ Page<PageData, PageCustom>({
       editingPhone: false,
       phoneInput: "",
       phoneFocus: false,
+      isTemporary: false,
     });
   },
 
@@ -161,6 +191,9 @@ Page<PageData, PageCustom>({
       roleLabel: isInternal ? "内部用户" : "C端用户",
       phoneDisplay: phone || "完善手机号",
       hasPhone: !!phone,
+      // 临时账号标识由 storage 维持（wechat-auth.ts 写入）；
+      // PublicUserInfo 暂未带 is_temporary 字段，从 storage 读取以驱动「绑定已有账号」入口显隐
+      isTemporary: getCTemporary(),
     });
   },
 
@@ -179,6 +212,8 @@ Page<PageData, PageCustom>({
       roleLabel: "内部员工 · 已认证",
       phoneDisplay: phone ? maskPhone(phone) : "—",
       hasPhone: !!phone,
+      // admin 令牌非临时账号（内部员工直接登录），强制置 false 避免残留 storage 标识误显入口
+      isTemporary: false,
     });
   },
 
@@ -245,8 +280,7 @@ Page<PageData, PageCustom>({
   },
 
   onGoLogin() {
-    // 后端微信登录未完成，先跳账号密码测试登录页（test-login）
-    wx.navigateTo({ url: "/pages/test-login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index" });
   },
 
   async onLogout() {
@@ -362,5 +396,28 @@ Page<PageData, PageCustom>({
       return;
     }
     wx.showToast({ title: "功能待开放", icon: "none" });
+  },
+
+  /** 用户在手机号绑定弹窗选「暂不绑定」：标记已弹过，后续不再自动触发. */
+  onPhoneModalSkip() {
+    setPhonePrompted(true);
+  },
+
+  /** 手机号绑定成功：清临时账号标识、标记已弹过、刷新用户信息、toast 提示. */
+  onPhoneModalBound() {
+    setCTemporary(false);
+    setPhonePrompted(true);
+    this.loadUser();
+    wx.showToast({ title: "手机号绑定成功", icon: "success" });
+  },
+
+  /** 用户在合并确认视图选「前往绑定已有账号」：跳转 bind-account 页（Task 8 实现）. */
+  onPhoneModalGoBindAccount() {
+    wx.navigateTo({ url: "/pages/bind-account/index/index" });
+  },
+
+  /** 「账号」菜单「绑定已有账号」入口：跳转 bind-account 页（仅 isTemporary=true 时展示）. */
+  onGoBindAccount() {
+    wx.navigateTo({ url: "/pages/bind-account/index/index" });
   },
 });
