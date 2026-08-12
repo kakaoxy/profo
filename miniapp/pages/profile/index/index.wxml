@@ -25,6 +25,7 @@
             wx:if="{{nicknameEditing}}"
             class="nickname-input"
             type="nickname"
+            maxlength="100"
             placeholder="点此输入昵称"
             bindinput="onNicknameInput"
             bindblur="onNicknameBlur"
