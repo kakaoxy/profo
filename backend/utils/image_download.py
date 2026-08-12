@@ -131,7 +131,11 @@ def _fetch_image(client: httpx.Client, url: str) -> httpx.Response:
         if not (resp.is_redirect or resp.is_permanent_redirect):
             return resp
         location = resp.headers.get("location")
-        next_url = httpx.URL(location).join(current) if location else None
+        # 注意参数顺序：URL(base).join(ref) 将 ref 解析到 base 上；
+        # 误写为 URL(location).join(current) 会在 current 为绝对 URL 时
+        # 恒等于 current（RFC 3986: ref 含 scheme 时直接返回 ref），
+        # 导致重定向目标永远等于原始 URL，重定向无法被跟随。
+        next_url = httpx.URL(current).join(location) if location else None
         if next_url is None or not _is_url_safe(str(next_url)):
             msg = f"非法重定向目标: {location}"
             raise ValueError(msg)
