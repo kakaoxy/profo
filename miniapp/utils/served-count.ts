@@ -9,17 +9,15 @@ import { formatThousands } from "./format";
 /** 平台统计（取 total_sold 作为累计服务人数）. */
 type PublicPlatformStats = components["schemas"]["PublicPlatformStats"];
 
-/** 使用本模块功能的页面实例所需具备的字段与方法. */
+/** 使用本模块功能的页面实例所需具备的字段. */
 export interface ServedCountContext {
   servedCountTimer: ReturnType<typeof setInterval> | null;
   setData(data: Record<string, unknown>): void;
-  clearServedCountTimer(): void;
-  animateServedCount(target: number): void;
 }
 
 /** 拉取平台统计 total_sold（公开接口，skipAuth），成功后从 0 缓动. */
 export async function loadServedCount(ctx: ServedCountContext): Promise<void> {
-  ctx.clearServedCountTimer();
+  clearServedCountTimer(ctx);
   ctx.setData({
     servedCountVisible: true,
     servedCountLoading: true,
@@ -33,7 +31,7 @@ export async function loadServedCount(ctx: ServedCountContext): Promise<void> {
     });
     const total = Math.max(0, Math.floor(res.total_sold || 0));
     ctx.setData({ servedCountTotal: total, servedCountLoading: false });
-    ctx.animateServedCount(total);
+    animateServedCount(ctx, total);
   } catch {
     ctx.setData({ servedCountVisible: false, servedCountLoading: false });
   }
@@ -41,7 +39,7 @@ export async function loadServedCount(ctx: ServedCountContext): Promise<void> {
 
 /** 从 0 缓动到 target（约 1.2s ease-out）. */
 export function animateServedCount(ctx: ServedCountContext, target: number): void {
-  ctx.clearServedCountTimer();
+  clearServedCountTimer(ctx);
   if (target <= 0) {
     ctx.setData({ servedCountDisplay: "0" });
     return;
@@ -56,7 +54,7 @@ export function animateServedCount(ctx: ServedCountContext, target: number): voi
     ctx.setData({ servedCountDisplay: formatThousands(current) });
     if (t >= 1) {
       ctx.setData({ servedCountDisplay: formatThousands(target) });
-      ctx.clearServedCountTimer();
+      clearServedCountTimer(ctx);
     }
   }, 16);
 }
