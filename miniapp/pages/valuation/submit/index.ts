@@ -8,6 +8,7 @@ import { request, refreshCAccessToken, type HttpResponseError } from "../../../u
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";
+import { formatThousands } from "../../../utils/format";
 
 type PublicLeadCreate = components["schemas"]["PublicLeadCreate"];
 type PublicLeadResponse = components["schemas"]["PublicLeadResponse"];
@@ -35,14 +36,6 @@ const MAX_IMAGES = 6;
 const MAX_AREA = 100000;
 /** 预期价合理上限（万），防恶意超大数值. */
 const MAX_EXPECTED_PRICE = 10000000;
-
-/** 千位分隔符格式化（NaN/负数兜底返回 "0"）. */
-function formatThousands(n: number): string {
-  if (!Number.isFinite(n) || n < 0) {
-    return "0";
-  }
-  return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
 
 /** wx.uploadFile 单次上传结果. */
 interface UploadResult {
