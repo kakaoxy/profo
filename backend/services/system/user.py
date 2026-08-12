@@ -541,23 +541,20 @@ class UserService:
         AuthService.invalidate_user_tokens(db, current_user)
         return {"message": "密码修改成功"}
 
-    def check_phone_taken_by_other(self, db: Session, phone: str, exclude_user_id: int) -> None:
-        """检查手机号是否已被其他用户绑定.
+    def check_phone_taken_by_other(self, db: Session, phone: str, exclude_user_id: int) -> User | None:
+        """检查手机号是否已被其他用户绑定，返回占用的用户（无则 None）.
 
         Args:
             db: 数据库会话
             phone: 手机号
             exclude_user_id: 排除的用户ID
 
-        Raises:
-            ValidationError: 手机号已被其他账号绑定
+        Returns:
+            User | None: 占用该手机号的其他用户；无占用则返回 None
 
         """
         phone_hash_value = hash_phone(phone)
-        existing = db.query(User).filter(User.phone_hash == phone_hash_value, User.id != exclude_user_id).first()
-        if existing:
-            msg = "手机号已被其他账号绑定"
-            raise ValidationError(msg)
+        return db.query(User).filter(User.phone_hash == phone_hash_value, User.id != exclude_user_id).first()
 
     def update_nickname(self, db: Session, user: User, nickname: str) -> User:
         """更新用户昵称.
@@ -615,7 +612,9 @@ class UserService:
             msg = "密码错误"
             raise AuthenticationError(msg)
 
-        self.check_phone_taken_by_other(db, phone, user.id)
+        if self.check_phone_taken_by_other(db, phone, user.id):
+            msg = "手机号已被其他账号绑定"
+            raise ValidationError(msg)
         return self.update_phone(db, user, phone)
 
     def set_initial_phone(self, db: Session, user: User, phone: str) -> User:
@@ -650,8 +649,7 @@ class UserService:
             msg = "已绑定手机号，修改请使用密码验证"
             raise ValidationError(msg)
 
-        phone_hash_value = hash_phone(phone)
-        existing = db.query(User).filter(User.phone_hash == phone_hash_value, User.id != user.id).first()
+        existing = self.check_phone_taken_by_other(db, phone, user.id)
         if existing:
             if not existing.is_temporary:
                 # 手机号已被主账号占用 → 触发合并流程
@@ -666,7 +664,7 @@ class UserService:
             raise BusinessLogicError(msg)
 
         user.phone = phone
-        user.phone_hash = phone_hash_value
+        user.phone_hash = hash_phone(phone)
         if user.is_temporary:
             user.is_temporary = False
         db.commit()
@@ -842,8 +840,9 @@ class UserService:
         支持两种绑定场景的清理：
         - 直接绑定：target_user.wechat_openid IS NOT NULL → 清空 target_user 的 wechat_* 字段
         - 间接绑定（经合并临时账号）：存在 temp_carrier.merged_to_user_id == target_user.id
-          AND wechat_openid IS NOT NULL → 清空 temp_carrier 的 wechat_* 字段
-          （temp_carrier 的 merged_to_user_id 与 status='merged' 保持不变，仅清空 wechat 字段）
+          AND wechat_openid IS NOT NULL → 清空所有满足条件的 temp_carrier 的 wechat_* 字段
+          （temp_carrier 的 merged_to_user_id 与 status='merged' 保持不变，仅清空 wechat 字段；
+          遍历所有匹配记录以处理同一目标账号被多个临时账号间接绑定的场景）
 
         无论清理发生在哪条记录，都递增 target_user.token_version 并撤销其 RefreshToken，
         失效目标账号现有令牌。
@@ -877,21 +876,22 @@ class UserService:
         # 审计快照：在解绑前记录
         before_snapshot = _user_snapshot(target_user)
 
-        cleanup_target: User | None = None
+        cleanup_targets: list[User] = []
         try:
             # 2. 行级锁 target_user，串行化并发解绑请求。
             #    populate_existing() 强制从 DB 重读最新状态（防 identity map 复用旧值）。
             db.query(User).filter(User.id == target_user.id).with_for_update().populate_existing().first()
 
-            # 3. 反向查找间接绑定的临时账号（merged_to_user_id 指向 target_user 且仍持有 wechat_openid）
-            temp_carrier = (
+            # 3. 反向查找所有间接绑定的临时账号（merged_to_user_id 指向 target_user 且仍持有 wechat_openid）
+            #    使用 .all() 遍历全部匹配记录，避免同一目标账号被多个临时账号间接绑定时遗漏清理
+            temp_carriers = (
                 db.query(User)
                 .filter(
                     User.merged_to_user_id == target_user.id,
                     User.wechat_openid.isnot(None),
                 )
                 .with_for_update()
-                .first()
+                .all()
             )
 
             # 4. 决定清理目标
@@ -900,13 +900,14 @@ class UserService:
                 target_user.wechat_openid = None
                 target_user.wechat_unionid = None
                 target_user.wechat_session_key = None
-                cleanup_target = target_user
-            elif temp_carrier is not None:
-                # 间接绑定：清空 temp_carrier 的 wechat 字段（merged_to_user_id 与 status 不变）
-                temp_carrier.wechat_openid = None
-                temp_carrier.wechat_unionid = None
-                temp_carrier.wechat_session_key = None
-                cleanup_target = temp_carrier
+                cleanup_targets = [target_user]
+            elif temp_carriers:
+                # 间接绑定：清空所有 temp_carrier 的 wechat 字段（merged_to_user_id 与 status 不变）
+                for carrier in temp_carriers:
+                    carrier.wechat_openid = None
+                    carrier.wechat_unionid = None
+                    carrier.wechat_session_key = None
+                cleanup_targets = temp_carriers
             else:
                 # 锁获取后重新检查：并发事务已先完成解绑，当前事务放弃
                 raise WeChatNotBoundError
@@ -952,7 +953,7 @@ class UserService:
         logger.info(
             "微信解绑完成：target=%s, cleanup_on=%s, token_version %d → %d",
             target_user.id,
-            cleanup_target.id,
+            [c.id for c in cleanup_targets],
             original_ver,
             target_user.token_version,
         )
