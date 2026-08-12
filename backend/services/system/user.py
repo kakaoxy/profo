@@ -12,15 +12,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from constants.role_codes import RoleCode
-from models import Lead, PropertyCurrent, Role, User, UserRole
+from models import Lead, PropertyCurrent, RefreshToken, Role, User, UserRole
 from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserUpdate
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
 from utils.crypto import hash_phone
 from utils.formatters import escape_like, mask_phone
+from utils.security_logger import log_auth_event
 
 from .auth import AuthService
 from .exceptions import (
+    AccountAlreadyMergedError,
     AuthenticationError,
     BusinessLogicError,
     ConflictError,
@@ -28,6 +30,7 @@ from .exceptions import (
     ResourceNotFoundError,
     TargetHasWechatError,
     ValidationError,
+    WeChatNotBoundError,
 )
 from .operation_log import operation_log_service
 
@@ -133,6 +136,9 @@ class UserService:
             user.leads_count = int(leads_count or 0)
             users.append(user)
 
+        # 批量填充 wechat_bound，避免 N+1（单条 SQL 查询所有间接绑定的目标用户ID）
+        self._attach_wechat_bound(db, users)
+
         return total, users
 
     def attach_leads_count(self, db: Session, user: User) -> User:
@@ -147,18 +153,47 @@ class UserService:
         user.leads_count = int(leads_count)
         return user
 
+    def _attach_wechat_bound(self, db: Session, users: list[User]) -> None:
+        """批量计算并 setattr user.wechat_bound，避免 N+1.
+
+        wechat_bound 计算规则：
+        - user.wechat_openid IS NOT NULL → True（直接绑定）
+        - 否则若存在任一 User.merged_to_user_id == user.id AND wechat_openid IS NOT NULL → True（间接绑定）
+        - 否则 False
+
+        实现单条 SQL 查询所有间接绑定的目标用户ID集合，O(1) 查表填充每个 user。
+        """
+        if not users:
+            return
+        user_ids = [u.id for u in users]
+        # 单条查询：所有作为 merged_to_user_id 目标、且其临时账号仍持有 wechat_openid 的用户ID
+        indirect_bound_ids = {
+            row[0]
+            for row in db.query(User.merged_to_user_id)
+            .filter(
+                User.merged_to_user_id.in_(user_ids),
+                User.wechat_openid.isnot(None),
+            )
+            .distinct()
+            .all()
+        }
+        for user in users:
+            user.wechat_bound = (user.wechat_openid is not None) or (user.id in indirect_bound_ids)
+
     def get_user_by_id(self, db: Session, user_id: str) -> User | None:
         """根据ID获取用户.
 
         单独查询该用户的 leads_count 并 setattr 到返回的 User 实例上，
-        供 UserResponse.from_attributes 拾取。
+        供 UserResponse.from_attributes 拾取。同时填充 wechat_bound。
         """
         user = (
             db.query(User).options(joinedload(User.role), selectinload(User.roles)).filter(User.id == user_id).first()
         )
         if user is None:
             return None
-        return self.attach_leads_count(db, user)
+        self.attach_leads_count(db, user)
+        self._attach_wechat_bound(db, [user])
+        return user
 
     def _build_additional_user_roles(
         self,
@@ -298,6 +333,8 @@ class UserService:
         )
         # 新用户无线索，显式置 0 保持响应一致性
         db_user.leads_count = 0
+        # 新用户无微信绑定，显式置 False 保持响应一致性
+        db_user.wechat_bound = False
         return db_user
 
     def update_user(
@@ -409,8 +446,10 @@ class UserService:
             after=_user_snapshot(user),
             request=request,
         )
-        # 补齐 leads_count，保持与 get_user_by_id 响应一致
-        return self.attach_leads_count(db, user)
+        # 补齐 leads_count 与 wechat_bound，保持与 get_user_by_id 响应一致
+        self.attach_leads_count(db, user)
+        self._attach_wechat_bound(db, [user])
+        return user
 
     def reset_password(
         self,
@@ -672,6 +711,11 @@ class UserService:
         """将临时账号合并到目标主账号（事务内执行）.
 
         操作步骤：
+        0. 行级锁 temp_user + target_user（SELECT ... FOR UPDATE）防并发合并：
+           两个并发合并请求（同一 temp_user → 不同 target）会在锁上串行化，
+           后到事务重新读取 temp_user.status 后发现已 'merged' → 抛
+           AccountAlreadyMergedError（40903），避免「数据迁到 A、
+           merged_to_user_id 指向 B」的不一致。
         1. 校验目标账号未绑定其他微信（否则抛 TargetHasWechatError, 40902）
         2. 迁移业务数据（按 user_id/creator_id/owner_id 批量 UPDATE）
         3. 临时账号 is_temporary=False，status='merged'，
@@ -688,6 +732,8 @@ class UserService:
         ⚠️ 令牌失效：合并后临时账号 status='merged'，但 authenticate_by_token
         不校验 status，必须显式递增 token_version 才能让旧 JWT 立即失效，
         防止临时账号令牌被截获后继续访问 /public/* 接口。
+        此处将 token_version 递增与 refresh_token 撤销并入合并事务，与数据迁移
+        原子提交，避免「合并已提交但令牌失效失败」导致旧 JWT 残留的窗口。
 
         业务数据迁移覆盖的表：
         - leads（creator_id）：C 端用户提交的估价线索
@@ -707,12 +753,27 @@ class UserService:
 
         Raises:
             TargetHasWechatError: 目标账号已绑定其他微信（40902）
+            AccountAlreadyMergedError: 临时账号已被并发合并（40903）
 
         """
+        # 0. 行级锁 temp_user + target_user，串行化同一 temp_user 的并发合并请求。
+        #    populate_existing() 强制从 DB 重读最新状态（默认 identity map 会复用
+        #    内存中已加载的 temp_user 实例，不反映并发事务的提交）。
+        db.query(User).filter(User.id == temp_user.id).with_for_update().populate_existing().first()
+        db.query(User).filter(User.id == target_user.id).with_for_update().populate_existing().first()
+
+        # 锁获取后重新检查：若并发事务已将 temp_user 合并，则当前事务必须放弃，
+        # 避免覆盖 merged_to_user_id 造成「数据在 A、重定向指向 B」的不一致。
+        if temp_user.status == "merged":
+            logger.warning("临时账号 %s 已被并发合并，当前合并请求放弃", temp_user.id)
+            raise AccountAlreadyMergedError
+
         # 校验目标账号未绑定其他微信
         if target_user.wechat_openid is not None and target_user.wechat_openid != temp_user.wechat_openid:
             raise TargetHasWechatError
 
+        migrated_leads = 0
+        migrated_props = 0
         try:
             # 1. 迁移 leads（creator_id）
             migrated_leads = (
@@ -742,14 +803,24 @@ class UserService:
             temp_user.status = "merged"
             temp_user.merged_to_user_id = target_user.id
 
+            # 4. 失效临时账号已签发令牌（旧 JWT 不可再用）：
+            #    原子递增 token_version + 撤销未过期 refresh_token，与数据迁移同一事务提交，
+            #    避免「合并已提交但令牌失效失败」导致旧 JWT 残留的窗口。
+            db.query(User).filter(User.id == temp_user.id).update(
+                {User.token_version: User.token_version + 1}, synchronize_session=False
+            )
+            db.query(RefreshToken).filter(
+                RefreshToken.user_id == temp_user.id,
+                RefreshToken.revoked.is_(False),
+            ).update({RefreshToken.revoked: True})
+
             db.commit()
         except Exception:
             db.rollback()
             raise
 
-        # 4. 失效临时账号已签发令牌（合并后旧 JWT 不可再用）
-        # invalidate_user_tokens 内部会 db.commit()，放在 merge 事务提交之后避免互相干扰
-        AuthService.invalidate_user_tokens(db, temp_user)
+        # 令牌失效审计（仅记录，事务已提交；reason 由合并场景语义隐含）
+        log_auth_event("token_invalidated", user_id=temp_user.id)
         logger.info(
             "账号合并完成：%s → %s（leads=%d, property_current=%d）",
             temp_user.id,
@@ -757,6 +828,136 @@ class UserService:
             migrated_leads,
             migrated_props,
         )
+
+    def unbind_wechat(
+        self,
+        db: Session,
+        user_id: str,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> dict[str, str]:
+        """解绑用户微信账号（事务内执行）.
+
+        支持两种绑定场景的清理：
+        - 直接绑定：target_user.wechat_openid IS NOT NULL → 清空 target_user 的 wechat_* 字段
+        - 间接绑定（经合并临时账号）：存在 temp_carrier.merged_to_user_id == target_user.id
+          AND wechat_openid IS NOT NULL → 清空 temp_carrier 的 wechat_* 字段
+          （temp_carrier 的 merged_to_user_id 与 status='merged' 保持不变，仅清空 wechat 字段）
+
+        无论清理发生在哪条记录，都递增 target_user.token_version 并撤销其 RefreshToken，
+        失效目标账号现有令牌。
+
+        并发串行化：行级锁 target_user（SELECT ... FOR UPDATE），后到事务获取锁后
+        重新检查发现 wechat 字段已清空且无 temp_carrier → 抛 WeChatNotBoundError，
+        不重复执行清理。
+
+        Args:
+            db: 数据库会话
+            user_id: 目标用户ID
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
+
+        Returns:
+            {"message": "微信账号已解绑"}
+
+        Raises:
+            ResourceNotFoundError: 用户不存在
+            WeChatNotBoundError: 目标账号未绑定微信（40904）
+
+        """
+        # 1. 加载 target_user（校验存在性）
+        target_user = self.get_user_by_id(db, user_id)
+        if target_user is None:
+            msg = "用户不存在"
+            raise ResourceNotFoundError(msg)
+
+        original_ver = target_user.token_version
+
+        # 审计快照：在解绑前记录
+        before_snapshot = _user_snapshot(target_user)
+
+        cleanup_target: User | None = None
+        try:
+            # 2. 行级锁 target_user，串行化并发解绑请求。
+            #    populate_existing() 强制从 DB 重读最新状态（防 identity map 复用旧值）。
+            db.query(User).filter(User.id == target_user.id).with_for_update().populate_existing().first()
+
+            # 3. 反向查找间接绑定的临时账号（merged_to_user_id 指向 target_user 且仍持有 wechat_openid）
+            temp_carrier = (
+                db.query(User)
+                .filter(
+                    User.merged_to_user_id == target_user.id,
+                    User.wechat_openid.isnot(None),
+                )
+                .with_for_update()
+                .first()
+            )
+
+            # 4. 决定清理目标
+            if target_user.wechat_openid is not None:
+                # 直接绑定：清空 target_user 的 wechat 字段
+                target_user.wechat_openid = None
+                target_user.wechat_unionid = None
+                target_user.wechat_session_key = None
+                cleanup_target = target_user
+            elif temp_carrier is not None:
+                # 间接绑定：清空 temp_carrier 的 wechat 字段（merged_to_user_id 与 status 不变）
+                temp_carrier.wechat_openid = None
+                temp_carrier.wechat_unionid = None
+                temp_carrier.wechat_session_key = None
+                cleanup_target = temp_carrier
+            else:
+                # 锁获取后重新检查：并发事务已先完成解绑，当前事务放弃
+                raise WeChatNotBoundError
+
+            # 5. 原子递增 target_user.token_version（防并发 read-modify-write 竞态）
+            db.query(User).filter(User.id == target_user.id).update(
+                {User.token_version: User.token_version + 1}, synchronize_session=False
+            )
+
+            # 6. 撤销 target_user 的未撤销 RefreshToken
+            db.query(RefreshToken).filter(
+                RefreshToken.user_id == target_user.id,
+                RefreshToken.revoked.is_(False),
+            ).update({RefreshToken.revoked: True})
+
+            # 7. 提交事务
+            db.commit()
+        except WeChatNotBoundError:
+            db.rollback()
+            raise
+        except Exception:
+            db.rollback()
+            raise
+
+        # 刷新 target_user 以读取最新 token_version
+        db.refresh(target_user)
+        # 重新填充 wechat_bound（解绑后应为 False）
+        target_user.wechat_bound = False
+
+        # 8. 审计日志
+        log_auth_event("wechat_unbound", user_id=target_user.id)
+        operation_log_service.log_action(
+            db,
+            user_id=operator_id,
+            action="unbind_wechat",
+            resource_type="user",
+            resource_id=str(target_user.id),
+            before=before_snapshot,
+            after=_user_snapshot(target_user),
+            request=request,
+        )
+
+        logger.info(
+            "微信解绑完成：target=%s, cleanup_on=%s, token_version %d → %d",
+            target_user.id,
+            cleanup_target.id,
+            original_ver,
+            target_user.token_version,
+        )
+
+        return {"message": "微信账号已解绑"}
 
     @staticmethod
     def bind_phone_via_wechat(db: Session, user: User, wx_code: str) -> dict[str, bool]:

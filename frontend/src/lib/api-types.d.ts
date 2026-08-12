@@ -2170,6 +2170,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/{user_id}/unbind-wechat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unbind Wechat
+         * @description 解绑用户微信账号.
+         *
+         *     支持两种绑定场景：
+         *     - 直接绑定：清空目标用户自身的 wechat_* 字段
+         *     - 间接绑定（经合并临时账号）：清空指向目标用户的临时账号的 wechat_* 字段
+         *
+         *     解绑后立即失效目标用户现有令牌（token_version 递增 + RefreshToken 撤销），
+         *     并写入审计日志。
+         *
+         *     速率限制：20次/小时.
+         */
+        post: operations["unbind_wechat_api_v1_users__user_id__unbind_wechat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/change-password": {
         parameters: {
             query?: never;
@@ -10423,6 +10452,22 @@ export interface components {
             expires_in: number;
             /** @description 用户信息 */
             user: components["schemas"]["UserResponse"];
+            /**
+             * Is Temporary
+             * @description 是否临时账号（微信登录新用户未绑定手机号）
+             * @default false
+             */
+            is_temporary: boolean;
+            /**
+             * C Access Token
+             * @description C端访问令牌（仅内部员工微信登录后返回，供 /public/* 接口使用）
+             */
+            c_access_token?: string | null;
+            /**
+             * C Refresh Token
+             * @description C端刷新令牌（仅内部员工微信登录后返回，供 /public/* 接口使用）
+             */
+            c_refresh_token?: string | null;
         };
         /**
          * TrendData
@@ -10705,6 +10750,12 @@ export interface components {
              * @default 0
              */
             leads_count: number;
+            /**
+             * Wechat Bound
+             * @description 是否已绑定微信（含直接绑定与经合并临时账号的间接绑定）
+             * @default false
+             */
+            wechat_bound: boolean;
         };
         /**
          * UserSimpleListResponse
@@ -15353,6 +15404,39 @@ export interface operations {
                 "application/json": components["schemas"]["PasswordResetRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unbind_wechat_api_v1_users__user_id__unbind_wechat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

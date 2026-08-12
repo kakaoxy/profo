@@ -369,6 +369,10 @@ Page<PageData, PageCustom>({
         phoneInput: "",
         phoneFocus: false,
       });
+      // 后端 set_initial_phone 已置 is_temporary=False；同步清除本地临时账号标识
+      // 并标记已弹过手机号引导，避免后续进入 profile 重复弹窗（与 onPhoneModalBound 对齐）
+      setCTemporary(false);
+      setPhonePrompted(true);
       wx.showToast({ title: "绑定成功", icon: "success" });
     } catch (err) {
       // 透出后端业务信息（如「手机号已被其他账号绑定」），无则兜底通用提示

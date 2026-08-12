@@ -51,6 +51,12 @@ def _create_miniapp_tokens(db: Session, user: User) -> dict:
     签发 C 端令牌（aud=c, role=customer）。profile 页依据令牌 aud 双通道识别
     身份并差异化展示（admin 令牌 → 手机号在后台维护）。
     与后台登录一致执行强制改密，防止 must_change_password 账号绕过首次改密闸门。
+
+    内部员工额外签发 C 端令牌（c_access_token/c_refresh_token）：内部员工经
+    微信登录后同样需要访问 /public/* 接口（如估价线索提交），仅持 admin 令牌
+    会因 aud 不匹配导致 401。此处与 merge_account 端点保持一致，双端令牌一并
+    签发。纯 C 端用户主令牌即 C 端令牌，c_* 字段为 None（前端写入时回退到
+    access_token，行为与原有「同令牌写双槽」一致）。
     """
     if AuthService.has_backend_identity(user):
         result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
@@ -60,7 +66,17 @@ def _create_miniapp_tokens(db: Session, user: User) -> dict:
                 msg,
                 headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
             )
+        # 内部员工额外签发 C 端令牌（update_login_time=False 避免重复更新登录时间）
+        c_result = AuthService.create_tokens_for_user(
+            db,
+            user,
+            audience=AUDIENCE_C,
+            role_claim=RoleCode.CUSTOMER.value,
+            update_login_time=False,
+        )
         result["is_temporary"] = bool(user.is_temporary)
+        result["c_access_token"] = c_result["access_token"]
+        result["c_refresh_token"] = c_result["refresh_token"]
         return result
     result = AuthService.create_tokens_for_user(
         db,

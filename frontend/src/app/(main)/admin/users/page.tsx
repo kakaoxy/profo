@@ -19,7 +19,9 @@ export default async function UsersPage(props: {
   // page 由前端客户端分页处理（slice currentItems），后端一次性拉取全量
   const username = searchParams.username || undefined;
   const role_id = searchParams.role_id || undefined;
-  const status = searchParams.status || undefined;
+  // status === "all" 表示显式查看全部（含已删除）→ 传 undefined 不加过滤
+  // status 缺省时默认传 "active" 隐藏已删除用户（与 /users/simple 端点语义一致）
+  const status = searchParams.status === "all" ? undefined : (searchParams.status || "active");
   const sort = searchParams.sort || undefined;
   const dir = searchParams.dir || undefined;
 

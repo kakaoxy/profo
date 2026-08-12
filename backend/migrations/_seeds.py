@@ -51,6 +51,14 @@ _PERMISSIONS_SEED: list[dict] = [
         "sort_order": 50,
         "description": "重置用户密码",
     },
+    {
+        "code": "user:unbind_wechat",
+        "name": "解绑微信",
+        "module": "user",
+        "category": "api",
+        "sort_order": 60,
+        "description": "解绑用户微信账号（含直接绑定与经合并临时账号的间接绑定）",
+    },
     # 角色管理模块
     {
         "code": "role:read",

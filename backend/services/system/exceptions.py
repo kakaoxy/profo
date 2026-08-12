@@ -136,11 +136,13 @@ class BusinessLogicError(ServiceException):
 
 
 class PhoneTakenByMainAccountError(BusinessLogicError):
-    """手机号已被主账号占用（业务码 40901，HTTP 409）.
+    """手机号已被主账号占用（业务码 40901）.
 
     临时账号绑定手机号时，若手机号已被其他 is_temporary=False 的主账号占用，
-    抛出本异常。路由层捕获后返回 MergeConflictResponse（40901），
-    前端展示合并确认视图。target_user_hint 含 nickname/phone_masked。
+    抛出本异常。路由层捕获后返回 HTTP 200 + body.code=40901（配合前端按 body
+    解析业务码），前端展示合并确认视图。target_user_hint 含 nickname/phone_masked。
+    status_code 表示该业务冲突的语义 HTTP 状态（409），测试据此校验；
+    实际响应传输状态码由路由层决定（/phone 为 200）。
     """
 
     def __init__(self, target_user_hint: dict[str, str]) -> None:
@@ -156,13 +158,43 @@ class PhoneTakenByMainAccountError(BusinessLogicError):
 
 
 class TargetHasWechatError(BusinessLogicError):
-    """目标账号已绑定其他微信（业务码 40902，HTTP 409）.
+    """目标账号已绑定其他微信（业务码 40902）.
 
     账号合并时，若目标主账号已绑定其他微信 openid，抛出本异常。
-    路由层捕获后返回 TargetHasWechatResponse（40902）。
+    路由层捕获后返回 HTTP 409 + body.code=40902。
     """
 
     def __init__(self) -> None:
         """初始化目标账号已绑其他微信错误."""
         super().__init__("TARGET_ACCOUNT_HAS_OTHER_WECHAT", code=40902)
+        self.status_code = 409
+
+
+class AccountAlreadyMergedError(BusinessLogicError):
+    """临时账号已被并发合并（业务码 40903）.
+
+    merge_accounts 通过 SELECT ... FOR UPDATE 串行化同一 temp_user 的并发合并
+    请求。后到事务获取锁后重新读取 temp_user.status，若已为 'merged'，说明
+    并发事务先完成了合并，当前事务必须放弃以避免「数据迁到 A、merged_to_user_id
+    指向 B」的不一致。路由层捕获后返回 HTTP 409 + body.code=40903。
+    """
+
+    def __init__(self) -> None:
+        """初始化账号已被并发合并错误."""
+        super().__init__("ACCOUNT_ALREADY_MERGED", code=40903)
+        self.status_code = 409
+
+
+class WeChatNotBoundError(BusinessLogicError):
+    """账号未绑定微信（业务码 40904）.
+
+    unbind_wechat 在目标账号既无直接 wechat_openid 又无经合并临时账号的间接绑定时
+    抛出。路由层捕获后返回 HTTP 409 + body.code=40904。
+    并发解绑串行化：后到事务获取行级锁后重新检查发现 wechat 字段已被清空，
+    同样抛出本异常，不重复执行清理。
+    """
+
+    def __init__(self) -> None:
+        """初始化账号未绑定微信错误."""
+        super().__init__("WECHAT_NOT_BOUND", code=40904)
         self.status_code = 409

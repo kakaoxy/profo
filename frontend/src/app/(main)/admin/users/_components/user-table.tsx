@@ -27,6 +27,7 @@ import {
   KeyRound,
   ChevronUp,
   ChevronDown,
+  MessageCircle,
 } from "lucide-react";
 import { safeFormatDate } from "@/lib/formatters";
 import { toast } from "sonner";
@@ -54,6 +55,7 @@ interface UserTableProps {
   onSort: (field: string) => void;
   onEdit: (user: UserResponse) => void;
   onResetPassword: (user: UserResponse) => void;
+  onUnbindWechat: (user: UserResponse) => void;
 }
 
 // 主角色 code → .users-role-* 变体 class
@@ -70,6 +72,7 @@ export function UserTable({
   onSort,
   onEdit,
   onResetPassword,
+  onUnbindWechat,
 }: UserTableProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -135,7 +138,7 @@ export function UserTable({
               <TableHead>状态</TableHead>
               <TableHead>手机号</TableHead>
               {renderSortableHead("最后登录", "last_login_at")}
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-12.5"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -154,9 +157,20 @@ export function UserTable({
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {user.nickname || user.username}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-sm">
+                            {user.nickname || user.username}
+                          </span>
+                          {user.wechat_bound && (
+                            <span
+                              className="inline-flex items-center gap-0.5 rounded border border-green-200 bg-green-50 px-1 py-0.5 text-[10px] text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-400"
+                              title="已绑定微信"
+                            >
+                              <MessageCircle className="h-2.5 w-2.5" />
+                              微信
+                            </span>
+                          )}
+                        </div>
                         <span className="text-xs text-muted-foreground">
                           {user.username}
                         </span>
@@ -223,6 +237,16 @@ export function UserTable({
                             <KeyRound className="mr-2 h-4 w-4" />
                             重置密码
                           </DropdownMenuItem>
+                        </HasPermission>
+                        <HasPermission code={PERMISSION_CODES.USER_UNBIND_WECHAT}>
+                          {user.wechat_bound && (
+                            <DropdownMenuItem
+                              onClick={() => onUnbindWechat(user)}
+                            >
+                              <MessageCircle className="mr-2 h-4 w-4" />
+                              解绑微信
+                            </DropdownMenuItem>
+                          )}
                         </HasPermission>
                         <HasPermission code={PERMISSION_CODES.USER_DELETE}>
                           <DropdownMenuSeparator />

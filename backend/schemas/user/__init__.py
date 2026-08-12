@@ -108,6 +108,14 @@ class TokenResponse(BaseModel):
     expires_in: int = Field(description="访问令牌过期时间(秒)")
     user: "UserResponse" = Field(description="用户信息")
     is_temporary: bool = Field(default=False, description="是否临时账号（微信登录新用户未绑定手机号）")
+    c_access_token: str | None = Field(
+        default=None,
+        description="C端访问令牌（仅内部员工微信登录后返回，供 /public/* 接口使用）",
+    )
+    c_refresh_token: str | None = Field(
+        default=None,
+        description="C端刷新令牌（仅内部员工微信登录后返回，供 /public/* 接口使用）",
+    )
 
 
 class RefreshTokenRequest(BaseModel):
@@ -174,21 +182,6 @@ class PhoneWechatBindRequest(BaseModel):
     code: str = Field(max_length=256, description="wx.getPhoneNumber 回调的 code")
 
 
-class MergeConflictResponse(BaseModel):
-    """合并冲突响应（业务码 40901：手机号已被主账号占用）."""
-
-    code: int = Field(default=40901, description="业务码：手机号已被主账号占用")
-    message: str = Field(default="PHONE_TAKEN_BY_MAIN_ACCOUNT")
-    target_user_hint: dict[str, str] = Field(description="目标主账号提示信息，含 nickname/phone_masked")
-
-
-class TargetHasWechatResponse(BaseModel):
-    """目标账号已绑其他微信响应（业务码 40902）."""
-
-    code: int = Field(default=40902, description="业务码：目标账号已绑定其他微信")
-    message: str = Field(default="TARGET_ACCOUNT_HAS_OTHER_WECHAT")
-
-
 # =======================================
 # 响应模型
 # =======================================
@@ -249,6 +242,11 @@ class UserResponse(BaseUser):
     )
     # 用户作为 Lead.creator_id 提交的线索总数，由 user_service 聚合填充
     leads_count: int = Field(default=0, description="用户作为 Lead.creator_id 提交的线索总数")
+    # 是否已绑定微信（含直接绑定与经合并临时账号的间接绑定），由 user_service._attach_wechat_bound 填充
+    wechat_bound: bool = Field(
+        default=False,
+        description="是否已绑定微信（含直接绑定与经合并临时账号的间接绑定）",
+    )
 
     @field_validator("additional_roles", mode="before")
     @classmethod
@@ -267,6 +265,12 @@ class UserResponse(BaseUser):
     def _normalize_leads_count(cls, v: Any) -> Any:
         """NULL/None 转为 0，避免非 Optional 字段触发 500."""
         return v if v is not None else 0
+
+    @field_validator("wechat_bound", mode="before")
+    @classmethod
+    def _normalize_wechat_bound(cls, v: Any) -> Any:
+        """NULL/None 转为 False，避免非 Optional 字段触发 500."""
+        return v if v is not None else False
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
@@ -344,7 +348,6 @@ __all__ = [
     "LoginRequest",
     "LogoutResponse",
     "MergeAccountRequest",
-    "MergeConflictResponse",
     "PasswordChange",
     "PasswordResetRequest",
     "PhoneWechatBindRequest",
@@ -354,7 +357,6 @@ __all__ = [
     "RoleListResponse",
     "RoleResponse",
     "RoleUpdate",
-    "TargetHasWechatResponse",
     "TokenResponse",
     "UserBriefResponse",
     "UserCreate",

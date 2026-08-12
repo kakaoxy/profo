@@ -17,6 +17,8 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import httpx
+from redis.exceptions import RedisError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models import Role, User
@@ -30,10 +32,13 @@ logger = logging.getLogger(__name__)
 
 _STATE_TTL_SECONDS = 600  # 10 分钟
 _CODE_TTL_SECONDS = 60
+# 小程序全局 access_token 缓存 TTL：微信默认 7200s 过期，留出余量（-300s）避免用到过期 token
+_MINIAPP_TOKEN_CACHE_TTL = 6900
 
 # Redis key 前缀，避免与其他模块的 key 冲突
 _STATE_KEY_PREFIX = "wechat:state:"
 _TEMPCODE_KEY_PREFIX = "wechat:tempcode:"
+_MINIAPP_TOKEN_KEY = "wechat:miniapp_access_token"  # noqa: S105 - Redis key，非密码
 
 
 class WeChatAuthService:
@@ -308,7 +313,18 @@ class WeChatAuthService:
                 is_temporary=True,
             )
             db.add(user)
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError:
+                # 并发首次登录：同一 openid/unionid 的唯一约束冲突（如双击微信登录按钮、
+                # 或 Web OAuth 与小程序对同一新用户同时登录）。回滚后按 openid 重新查询，
+                # 若并发请求已创建该用户则直接复用，避免未处理异常导致登录接口 500。
+                db.rollback()
+                existing = db.query(User).filter(User.wechat_openid == openid).first()
+                if existing is not None:
+                    return existing
+                msg = "微信登录冲突，请重试"
+                raise ValidationError(msg) from None
             db.refresh(user)
         else:
             # 更新现有信息
@@ -333,8 +349,8 @@ class WeChatAuthService:
         调用 cgi-bin/token 接口获取小程序服务端 access_token，
         用于调用 getPhoneNumber 等服务端接口。
 
-        ⚠️ 未做缓存优化：微信对该接口有调用频率限制（建议缓存并复用），
-        生产环境应加 Redis 缓存（过期时间略短于 expires_in）。
+        微信对该接口有调用频率限制，故用 Redis 缓存并复用（TTL 略短于 expires_in）；
+        Redis 不可用时降级为直接调用微信接口，保证功能不受影响。
 
         Returns:
             access_token 字符串
@@ -343,6 +359,17 @@ class WeChatAuthService:
             ValidationError: 微信接口返回错误
 
         """
+        # 命中缓存直接返回，避免每次绑定手机号都请求微信 token 接口
+        try:
+            redis_client = get_redis_client()
+            cached = redis_client.get(_MINIAPP_TOKEN_KEY)
+            if cached:
+                return cached.decode("utf-8")
+        except RedisError:
+            # Redis 不可达：降级直接获取，不影响微信绑定功能
+            logger.warning("读取微信 access_token 缓存失败，降级直接获取", exc_info=True)
+            redis_client = None
+
         params = {
             "grant_type": "client_credential",
             "appid": settings.wechat_appid,
@@ -359,7 +386,15 @@ class WeChatAuthService:
             logger.error("获取小程序 access_token 失败：errmsg=%s, errcode=%s", data.get("errmsg"), data.get("errcode"))
             msg = "微信服务暂不可用，请稍后重试"
             raise ValidationError(msg)
-        return str(data["access_token"])
+
+        token = str(data["access_token"])
+        # 写入缓存（Redis 不可用时忽略，不影响功能）
+        if redis_client is not None:
+            try:
+                redis_client.set(_MINIAPP_TOKEN_KEY, token.encode("utf-8"), ex=_MINIAPP_TOKEN_CACHE_TTL)
+            except RedisError:
+                logger.warning("写入微信 access_token 缓存失败，忽略", exc_info=True)
+        return token
 
     @staticmethod
     def fetch_wechat_phone_number(code: str) -> dict[str, object]:

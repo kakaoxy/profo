@@ -6,6 +6,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
+from fastapi.responses import JSONResponse
 
 from dependencies.auth import (
     CurrentActiveUserDep,
@@ -16,6 +17,7 @@ from dependencies.auth import (
     UserDeletePermDep,
     UserReadPermDep,
     UserResetPasswordPermDep,
+    UserUnbindWechatPermDep,
     UserUpdatePermDep,
 )
 from dependencies.common import PaginationDep
@@ -29,7 +31,7 @@ from schemas.user import (
     UserUpdate,
 )
 from services.system import user_service
-from services.system.exceptions import ResourceNotFoundError, ServiceException
+from services.system.exceptions import ResourceNotFoundError, ServiceException, WeChatNotBoundError
 from services.system.init_service import init_service
 from utils.common import RateLimits, limiter
 
@@ -187,6 +189,40 @@ def reset_user_password(
         operator_id=str(current_user.id),
         request=request,
     )
+
+
+@router.post("/{user_id}/unbind-wechat")
+@limiter.limit(RateLimits.USER_UNBIND_WECHAT)
+def unbind_wechat(
+    request: Request,
+    user_id: str,
+    db: DbSessionDep,
+    current_user: UserUnbindWechatPermDep,
+) -> dict:
+    """解绑用户微信账号.
+
+    支持两种绑定场景：
+    - 直接绑定：清空目标用户自身的 wechat_* 字段
+    - 间接绑定（经合并临时账号）：清空指向目标用户的临时账号的 wechat_* 字段
+
+    解绑后立即失效目标用户现有令牌（token_version 递增 + RefreshToken 撤销），
+    并写入审计日志。
+
+    速率限制：20次/小时.
+    """
+    try:
+        return user_service.unbind_wechat(
+            db,
+            user_id,
+            operator_id=str(current_user.id),
+            request=request,
+        )
+    except WeChatNotBoundError:
+        # 业务码 40904：目标账号未绑定微信（含并发解绑串行化后到事务放弃的场景）
+        return JSONResponse(
+            status_code=409,
+            content={"code": 40904, "message": "WECHAT_NOT_BOUND"},
+        )
 
 
 @router.delete("/{user_id}", status_code=204)

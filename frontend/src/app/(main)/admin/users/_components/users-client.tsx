@@ -28,6 +28,7 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { UserTable } from "./user-table";
 import { UserDialog } from "./user-dialog";
 import { ResetPasswordDialog } from "./reset-password-dialog";
+import { UnbindWechatDialog } from "./unbind-wechat-dialog";
 import { UsersStatCards } from "./users-stat-cards";
 import type { UserListResponse, UserResponse, RoleResponse } from "../actions/index";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -53,6 +54,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [unbindWechatOpen, setUnbindWechatOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
 
   // Search/filter state
@@ -63,7 +65,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
     searchParams.get("role_id") || "all",
   );
   const [statusFilter, setStatusFilter] = useState(
-    searchParams.get("status") || "all",
+    searchParams.get("status") || "active",
   );
 
   // Sort state
@@ -118,7 +120,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
     setTab(newTab);
     setSearchQuery("");
     setRoleFilter("all");
-    setStatusFilter("all");
+    setStatusFilter("active");
     updateParams({
       tab: newTab,
       username: null,
@@ -147,13 +149,13 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
-    updateParams({ status: value === "all" ? null : value });
+    updateParams({ status: value });
   };
 
   const handleClearFilters = () => {
     setSearchQuery("");
     setRoleFilter("all");
-    setStatusFilter("all");
+    setStatusFilter("active");
     updateParams({
       username: null,
       nickname: null,
@@ -175,6 +177,11 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
   const handleResetPassword = (user: UserResponse) => {
     setEditingUser(user);
     setResetDialogOpen(true);
+  };
+
+  const handleUnbindWechat = (user: UserResponse) => {
+    setEditingUser(user);
+    setUnbindWechatOpen(true);
   };
 
   return (
@@ -284,6 +291,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
         onSort={handleSort}
         onEdit={handleEdit}
         onResetPassword={handleResetPassword}
+        onUnbindWechat={handleUnbindWechat}
       />
 
       <Pagination
@@ -309,6 +317,15 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
         open={resetDialogOpen}
         onOpenChange={(open) => {
           setResetDialogOpen(open);
+          if (!open) setEditingUser(null);
+        }}
+        user={editingUser}
+      />
+
+      <UnbindWechatDialog
+        open={unbindWechatOpen}
+        onOpenChange={(open) => {
+          setUnbindWechatOpen(open);
           if (!open) setEditingUser(null);
         }}
         user={editingUser}

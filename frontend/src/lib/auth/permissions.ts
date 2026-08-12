@@ -33,6 +33,7 @@ export const PERMISSION_CODES = {
   USER_UPDATE: "user:update",
   USER_DELETE: "user:delete",
   USER_RESET_PASSWORD: "user:reset_password",
+  USER_UNBIND_WECHAT: "user:unbind_wechat",
   // 角色管理
   ROLE_READ: "role:read",
   ROLE_CREATE: "role:create",

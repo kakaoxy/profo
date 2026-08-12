@@ -113,6 +113,7 @@ class RateLimits:
     USER_DELETE = "100/hour"
     USER_RESET_PASSWORD = "5/hour"  # noqa: S105
     USER_CHANGE_PASSWORD = "3/minute"  # noqa: S105
+    USER_UNBIND_WECHAT = "20/hour"
     USER_INIT_DATA = "3/hour"
 
     # ==================== 角色管理模块 ====================

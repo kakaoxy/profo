@@ -22,6 +22,7 @@ from schemas.public import (
 from schemas.user import MergeAccountRequest, PhoneWechatBindRequest
 from services.system.auth import AuthService
 from services.system.exceptions import (
+    AccountAlreadyMergedError,
     AuthenticationError,
     PermissionDeniedError,
     PhoneTakenByMainAccountError,
@@ -212,6 +213,12 @@ async def merge_account(
         return JSONResponse(
             status_code=409,
             content={"code": 40902, "message": "TARGET_ACCOUNT_HAS_OTHER_WECHAT"},
+        )
+    except AccountAlreadyMergedError:
+        # 并发合并：另一事务已先完成合并，当前请求放弃以避免数据/重定向不一致
+        return JSONResponse(
+            status_code=409,
+            content={"code": 40903, "message": "ACCOUNT_ALREADY_MERGED"},
         )
 
     # 5. 签发主账号令牌

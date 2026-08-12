@@ -10423,6 +10423,22 @@ export interface components {
             expires_in: number;
             /** @description 用户信息 */
             user: components["schemas"]["UserResponse"];
+            /**
+             * Is Temporary
+             * @description 是否临时账号（微信登录新用户未绑定手机号）
+             * @default false
+             */
+            is_temporary: boolean;
+            /**
+             * C Access Token
+             * @description C端访问令牌（仅内部员工微信登录后返回，供 /public/* 接口使用）
+             */
+            c_access_token?: string | null;
+            /**
+             * C Refresh Token
+             * @description C端刷新令牌（仅内部员工微信登录后返回，供 /public/* 接口使用）
+             */
+            c_refresh_token?: string | null;
         };
         /**
          * TrendData

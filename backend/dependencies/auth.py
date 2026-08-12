@@ -345,6 +345,7 @@ UserCreatePermDep = Annotated[User, Depends(require_permission("user:create"))]
 UserUpdatePermDep = Annotated[User, Depends(require_permission("user:update"))]
 UserDeletePermDep = Annotated[User, Depends(require_permission("user:delete"))]
 UserResetPasswordPermDep = Annotated[User, Depends(require_permission("user:reset_password"))]
+UserUnbindWechatPermDep = Annotated[User, Depends(require_permission("user:unbind_wechat"))]
 # role 模块
 RoleReadPermDep = Annotated[User, Depends(require_permission("role:read"))]
 RoleUpdatePermDep = Annotated[User, Depends(require_permission("role:update"))]
@@ -647,6 +648,7 @@ __all__ = [
     "UserDeletePermDep",
     "UserReadPermDep",
     "UserResetPasswordPermDep",
+    "UserUnbindWechatPermDep",
     "UserUpdatePermDep",
     # 依赖函数
     "get_current_active_user",

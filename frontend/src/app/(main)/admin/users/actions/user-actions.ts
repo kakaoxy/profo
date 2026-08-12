@@ -261,3 +261,42 @@ export async function resetUserPasswordAction(userId: string, data: PasswordRese
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
+
+export async function unbindUserWechatAction(userId: string) {
+  const idParsed = userIdSchema.safeParse(userId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "用户参数不合法",
+    };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.USER_UNBIND_WECHAT);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
+  try {
+    const client = await fetchClient();
+    const { error } = await client.POST("/api/v1/users/{user_id}/unbind-wechat", {
+      params: { path: { user_id: userId } },
+    });
+
+    if (error) {
+      // 业务码 40904：未绑定微信（含并发解绑场景），刷新列表以同步并发解绑状态
+      const errorCode = (error as { code?: number }).code;
+      if (errorCode === 40904) {
+        revalidatePath("/admin/users");
+        return { success: false, message: "该账号未绑定微信", code: 40904 };
+      }
+      const errorMsg = (error as { message?: string }).message || "解绑微信失败";
+      return { success: false, message: errorMsg };
+    }
+
+    revalidatePath("/admin/users");
+    return { success: true, message: "微信账号已解绑" };
+  } catch (error) {
+    logger.error("Unbind wechat exception:", error);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}

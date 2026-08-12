@@ -147,8 +147,45 @@ check_port() {
   return 0
 }
 
+# 预检 Docker 服务端口（5432/6379）：
+# - 自动清理非 compose 管理的孤儿容器（无 com.docker.compose.project 标签，常见于手动 docker run --name profo-redis 残留）
+# - 若被 compose 管理的容器占用（如上次未正常 stop），提示用户手动处理
+# 返回 0=端口已就绪，1=被 compose 容器占用需用户处理
+cleanup_orphan_port() {
+  local port="$1"
+  local service="$2"
+  # 匹配 docker ps 的 Ports 列格式：0.0.0.0:6379->6379/tcp 或 [::]:6379->6379/tcp
+  local names
+  names=$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep ":${port}->" | awk '{print $1}' || true)
+
+  [ -z "$names" ] && return 0
+
+  local has_compose=0
+  while IFS= read -r name; do
+    [ -z "$name" ] && continue
+    local project
+    project=$(docker inspect "$name" --format '{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null || echo "")
+    if [ -z "$project" ]; then
+      echo "⚠️  孤儿容器 '$name'（非 compose 管理）占用 $port ($service) 端口，自动清理..."
+      docker rm -f "$name" >/dev/null 2>&1 && echo "✅ 已清理 $name"
+    else
+      has_compose=1
+    fi
+  done <<< "$names"
+
+  if [ "$has_compose" -eq 1 ]; then
+    echo "❌ 端口 $port ($service) 被 compose 管理的容器占用"
+    echo "   请先停止: ./dev-start.sh stop"
+    return 1
+  fi
+  return 0
+}
+
 start_db() {
   echo "启动 PostgreSQL 与 Redis (Docker)..."
+  # 预检 Docker 服务端口：清理孤儿容器，避免端口冲突导致首次启动失败
+  cleanup_orphan_port 5432 "db" || return 1
+  cleanup_orphan_port 6379 "redis" || return 1
   $DEV_COMPOSE up -d db redis
   echo "✅ 数据库已启动: postgresql+psycopg://${POSTGRES_USER}:***@127.0.0.1:5432/${POSTGRES_DB}"
   echo "✅ Redis 已启动: redis://***@127.0.0.1:6379/0"
@@ -159,7 +196,7 @@ case "$CMD" in
     # 端口预检（db 端口 5432 由 Docker 管理，无需检查）
     check_port 8000 "backend" || exit 1
     check_port 3000 "frontend" || exit 1
-    start_db
+    start_db || exit 1
     echo ""
     echo "启动后端 (uvicorn --reload) 与前端 (next dev)..."
     echo "  Backend:  http://localhost:8000"
@@ -182,7 +219,7 @@ case "$CMD" in
     wait
     ;;
   db)
-    start_db
+    start_db || exit 1
     echo ""
     echo "数据库与 Redis 已启动，请在两个终端分别运行："
     echo "  cd backend && .venv/bin/uvicorn main:app --reload --port 8000"
