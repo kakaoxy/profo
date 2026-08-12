@@ -41,6 +41,38 @@
   z-index: 2;
 }
 
+/* hero CTA 行：标签 + 按钮水平排列 */
+.hero-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  position: relative;
+  z-index: 2;
+  flex-wrap: wrap;
+}
+
+/* 累计服务家庭数标签：与 .btn-primary 同高(96rpx)同形状(胶囊)，
+   浅底辅助色与主按钮(深色实心)形成主辅层级 */
+.served-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 96rpx;
+  padding: 0 40rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  border-radius: 9999rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  line-height: 1;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.served-tag__num {
+  font-weight: 600;
+  margin: 0 2rpx;
+}
+
 /* 2. 痛点 / 3. 三部曲 / 5. 算一笔账 共享卡片样式 */
 .pain-card,
 .step-card,

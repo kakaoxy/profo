@@ -6,6 +6,11 @@
     <view class="hero-tags">
       <view class="tag tag-primary">精装实景交付</view>
       <view class="tag tag-muted">成交价真实可验</view>
+      <!-- 累计服务人数标签 -->
+      <view class="tag tag-served" wx:if="{{servedCountVisible}}">
+        <block wx:if="{{servedCountLoading}}">累计服务···组家庭</block>
+        <block wx:else>累计服务<text class="tag-served__num">{{servedCountDisplay}}</text>组家庭</block>
+      </view>
     </view>
   </view>
 

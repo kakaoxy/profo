@@ -3,7 +3,15 @@
   <view class="home-hero">
     <view class="hero-title">卖房不想再投钱，<view class="hero-title-br">还想拿一个好价格？</view></view>
     <view class="hero-sub">美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。一种零成本、零风险的卖房方案。</view>
-    <button class="btn-primary" bindtap="onGoValuation">免费在线估价</button>
+    <view class="hero-cta-row">
+      <!-- 累计服务家庭数标签（与按钮同高同形状，辅助信息） -->
+      <button class="btn-primary" bindtap="onGoValuation">免费在线估价</button>
+      <view class="served-tag" wx:if="{{servedCountVisible}}">
+        <block wx:if="{{servedCountLoading}}">累计服务···组家庭</block>
+        <block wx:else>累计服务<text class="served-tag__num">{{servedCountDisplay}}</text>组家庭</block>
+      </view>
+      
+    </view>
   </view>
 
   <!-- 2. 痛点 -->

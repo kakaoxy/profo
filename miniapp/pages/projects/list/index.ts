@@ -6,6 +6,14 @@ import { resolveAssetUrl } from "../../../utils/url";
 type OnSaleItem = components["schemas"]["PublicProjectListItem"];
 /** 已成交房源列表项. */
 type SoldItem = components["schemas"]["PublicSoldProjectItem"];
+/** 平台统计（取 total_sold 作为累计服务人数）. */
+type PublicPlatformStats = components["schemas"]["PublicPlatformStats"];
+
+/** 千位分隔符格式化（NaN/负数兜底返回 "0"）. */
+function formatThousands(n: number): string {
+  if (!Number.isFinite(n) || n < 0) return "0";
+  return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 /** 状态 tab. */
 type Tab = "all" | "on_sale" | "renovating" | "sold";
 
@@ -105,6 +113,11 @@ interface PageData {
   priceOptions: RangeOption[];
   areaOptions: RangeOption[];
   layoutOptions: RangeOption[];
+  // 累计服务人数标签
+  servedCountTotal: number;
+  servedCountDisplay: string;
+  servedCountLoading: boolean;
+  servedCountVisible: boolean;
 }
 
 /** 页面自定义方法. */
@@ -124,6 +137,10 @@ interface PageCustom {
   resetAllFilters(): void;
   onItemTap(e: WechatMiniprogram.BaseEvent): void;
   onRetry(): void;
+  loadServedCount(): void;
+  animateServedCount(target: number): void;
+  clearServedCountTimer(): void;
+  servedCountTimer: ReturnType<typeof setInterval> | null;
 }
 
 /** 根据 key 查 RangeOption label. */
@@ -158,9 +175,18 @@ Page<PageData, PageCustom>({
     priceOptions: PRICE_OPTIONS,
     areaOptions: AREA_OPTIONS,
     layoutOptions: LAYOUT_OPTIONS,
+    servedCountTotal: 0,
+    servedCountDisplay: "0",
+    servedCountLoading: false,
+    servedCountVisible: true,
   },
+  servedCountTimer: null,
   onLoad() {
     this.loadList(true);
+    this.loadServedCount();
+  },
+  onUnload() {
+    this.clearServedCountTimer();
   },
   onStatusTabChange(e: WechatMiniprogram.BaseEvent) {
     const tab = e.currentTarget.dataset.tab as Tab;
@@ -451,5 +477,53 @@ Page<PageData, PageCustom>({
   },
   onRetry() {
     this.loadList(true);
+  },
+  /** 拉取平台统计 total_sold（公开接口，skipAuth），成功后从 0 缓动. */
+  async loadServedCount() {
+    this.clearServedCountTimer();
+    this.setData({
+      servedCountVisible: true,
+      servedCountLoading: true,
+      servedCountTotal: 0,
+      servedCountDisplay: "0",
+    });
+    try {
+      const res = await request<PublicPlatformStats>({
+        url: "/public/stats/platform",
+        skipAuth: true,
+      });
+      const total = Math.max(0, Math.floor(res.total_sold || 0));
+      this.setData({ servedCountTotal: total, servedCountLoading: false });
+      this.animateServedCount(total);
+    } catch {
+      this.setData({ servedCountVisible: false, servedCountLoading: false });
+    }
+  },
+  /** 从 0 缓动到 target（约 1.2s ease-out）. */
+  animateServedCount(target: number) {
+    this.clearServedCountTimer();
+    if (target <= 0) {
+      this.setData({ servedCountDisplay: "0" });
+      return;
+    }
+    const duration = 1200;
+    const start = Date.now();
+    this.servedCountTimer = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const t = Math.min(1, elapsed / duration);
+      const progress = 1 - (1 - t) * (1 - t);
+      const current = Math.floor(target * progress);
+      this.setData({ servedCountDisplay: formatThousands(current) });
+      if (t >= 1) {
+        this.setData({ servedCountDisplay: formatThousands(target) });
+        this.clearServedCountTimer();
+      }
+    }, 16);
+  },
+  clearServedCountTimer() {
+    if (this.servedCountTimer) {
+      clearInterval(this.servedCountTimer);
+      this.servedCountTimer = null;
+    }
   },
 });

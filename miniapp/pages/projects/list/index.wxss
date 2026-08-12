@@ -62,6 +62,15 @@ page {
   color: var(--warm-muted-fg);
   border-color: var(--warm-border);
 }
+/* 累计服务人数标签：透明底 + accent 色描边，与前两个标签同风格但略突出 */
+.hero-tags .tag-served {
+  color: var(--warm-fg);
+  border-color: var(--warm-accent);
+}
+.tag-served__num {
+  font-weight: 600;
+  margin: 0 2rpx;
+}
 
 /* ===== 通用标签 ===== */
 .tag {
