@@ -45,9 +45,14 @@ class RecruitAttributionService:
             source=data.source,
         )
         self.db.add(visit)
-        self.db.commit()
-        self.db.refresh(visit)
-        return visit
+        try:
+            self.db.commit()
+            self.db.refresh(visit)
+        except Exception:
+            self.db.rollback()
+            raise
+        else:
+            return visit
 
     def update_visit(self, visit_id: str, data: RecruitVisitUpdate, *, user_id: str) -> RecruitVisit:
         """上报离开，后端复核 is_deep_view（stayed_ms>=3000 与前端判定取或）.
@@ -68,9 +73,14 @@ class RecruitAttributionService:
         visit.is_deep_view = data.is_deep_view or server_deep
         visit.clicked_auth = data.clicked_auth
 
-        self.db.commit()
-        self.db.refresh(visit)
-        return visit
+        try:
+            self.db.commit()
+            self.db.refresh(visit)
+        except Exception:
+            self.db.rollback()
+            raise
+        else:
+            return visit
 
     def submit_lead(
         self,
@@ -106,8 +116,12 @@ class RecruitAttributionService:
             status=RecruitLeadStatus.NEW,
         )
         self.db.add(lead)
-        self.db.commit()
-        self.db.refresh(lead)
+        try:
+            self.db.commit()
+            self.db.refresh(lead)
+        except Exception:
+            self.db.rollback()
+            raise
         self._mark_visit_authed(visit_id, user_id=user_id)
         return lead, True
 
@@ -124,4 +138,8 @@ class RecruitAttributionService:
         )
         if visit is not None:
             visit.authed = True
-            self.db.commit()
+            try:
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+                raise
