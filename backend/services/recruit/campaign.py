@@ -4,9 +4,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models.property import Community
-from models.recruit import RecruitCampaign, RecruitCampaignStatus
+from models.recruit import RecruitCampaign, RecruitCampaignStatus, RecruitLead
 from schemas.recruit import RecruitCampaignCreate, RecruitCampaignUpdate
-from services.system.exceptions import ResourceNotFoundError, ValidationError
+from services.system.exceptions import ConflictError, ResourceNotFoundError, ValidationError
 
 
 class RecruitCampaignService:
@@ -57,6 +57,22 @@ class RecruitCampaignService:
         self.db.commit()
         self.db.refresh(campaign)
         return campaign
+
+    def delete(self, campaign_id: str) -> None:
+        """删除活动.
+
+        若活动下存在关联线索，则禁止删除（避免破坏归因历史），抛 ConflictError，
+        建议改用「停用」操作保留历史数据。
+        """
+        campaign = self.get_or_404(campaign_id)
+        has_leads = (
+            self.db.query(RecruitLead.id).filter(RecruitLead.campaign_id == campaign_id).limit(1).first() is not None
+        )
+        if has_leads:
+            msg = "该活动下存在关联线索，无法删除，请改用停用操作"
+            raise ConflictError(msg)
+        self.db.delete(campaign)
+        self.db.commit()
 
     def list_business_areas(self) -> list[tuple[str, int]]:
         """聚合小区表 distinct business_circle（按出现频次降序，过滤空值）."""

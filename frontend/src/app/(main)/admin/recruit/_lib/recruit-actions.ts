@@ -123,6 +123,30 @@ export async function toggleCampaignStatusAction(
   }
 }
 
+/** 删除招募活动（存在关联线索时后端拒绝，引导改用停用）. */
+export async function deleteCampaignAction(
+  campaignId: string,
+): Promise<ActionResult<void>> {
+  const perm = await requirePermission(PERMISSION_CODES.RECRUIT_WRITE);
+  if (!perm.ok) return { success: false, error: perm.message };
+
+  try {
+    const client = await fetchClient();
+    const { error } = await client.DELETE(
+      "/api/v1/admin/recruit/campaigns/{campaign_id}",
+      { params: { path: { campaign_id: campaignId } } },
+    );
+    if (error) {
+      return { success: false, error: extractErrorMessage(error) };
+    }
+    revalidatePath(CAMPAIGNS_PATH);
+    return { success: true, data: undefined };
+  } catch (e) {
+    logger.error("deleteCampaignAction error:", e);
+    return { success: false, error: parseNetworkError(e) };
+  }
+}
+
 // ─── 线索状态流转 ──────────────────────────────────────────────────────────────
 
 /** 线索跟进状态流转。 */

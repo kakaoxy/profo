@@ -56,6 +56,20 @@ def update_campaign(
     return RecruitCampaignResponse.model_validate(campaign)
 
 
+@router.delete(
+    "/campaigns/{campaign_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除招募活动",
+)
+def delete_campaign(
+    campaign_id: Annotated[str, Path(description="活动ID")],
+    db: DbSessionDep,
+    _current_user: RecruitWritePermDep,
+) -> None:
+    """删除招募活动（存在关联线索时禁止删除，请改用停用）."""
+    RecruitCampaignService(db).delete(campaign_id)
+
+
 @router.get(
     "/campaigns",
     summary="招募活动列表",

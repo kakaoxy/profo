@@ -1,10 +1,24 @@
 "use client";
 
+import * as React from "react";
 import Image from "next/image";
 import { ImageIcon, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { safeFormatDate } from "@/lib/formatters";
+import { ActionResult, extractErrorMessage } from "@/lib/action-result";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { RECRUIT_BADGE_CLASS } from "../../types";
 import type { RecruitCampaign } from "../../types";
 
@@ -13,6 +27,7 @@ interface CampaignsTableProps {
   onEdit: (campaign: RecruitCampaign) => void;
   onToggleStatus: (campaign: RecruitCampaign) => void;
   onQr: (campaign: RecruitCampaign) => void;
+  onDelete: (campaign: RecruitCampaign) => Promise<ActionResult<void>>;
   /** 正在切换状态的行 ID（null 表示无操作进行中） */
   togglingId: string | null;
 }
@@ -37,6 +52,7 @@ export function CampaignsTable({
   onEdit,
   onToggleStatus,
   onQr,
+  onDelete,
   togglingId,
 }: CampaignsTableProps) {
   return (
@@ -45,8 +61,8 @@ export function CampaignsTable({
         <thead>
           <tr className="text-left text-[13px] font-medium text-graphite whitespace-nowrap">
             <th className="px-5 py-3 border-b border-fog w-10">#</th>
-            <th className="px-5 py-3 border-b border-fog">活动名称</th>
-            <th className="px-5 py-3 border-b border-fog">分享标题</th>
+            <th className="pl-5 pr-3 py-3 border-b border-fog">活动名称</th>
+            <th className="pl-3 pr-5 py-3 border-b border-fog">分享标题</th>
             <th className="px-5 py-3 border-b border-fog">分享配图（5:4）</th>
             <th className="px-5 py-3 border-b border-fog">状态</th>
             <th className="px-5 py-3 border-b border-fog">创建时间</th>
@@ -66,7 +82,7 @@ export function CampaignsTable({
                 <td className="px-5 py-3.5 border-b border-fog align-middle text-[12.5px] text-graphite">
                   {index + 1}
                 </td>
-                <td className="px-5 py-3.5 border-b border-fog align-middle">
+                <td className="pl-5 pr-3 py-3.5 border-b border-fog align-middle">
                   <div className="font-medium text-ink whitespace-nowrap">
                     {campaign.name || "-"}
                   </div>
@@ -74,7 +90,7 @@ export function CampaignsTable({
                     ID: {campaign.id}
                   </div>
                 </td>
-                <td className="px-5 py-3.5 border-b border-fog align-middle">
+                <td className="pl-3 pr-5 py-3.5 border-b border-fog align-middle">
                   <div className="font-medium text-ink">{campaign.title || "-"}</div>
                 </td>
                 <td className="px-5 py-3.5 border-b border-fog align-middle">
@@ -107,7 +123,7 @@ export function CampaignsTable({
                   </span>
                 </td>
                 <td className="px-5 py-3.5 border-b border-fog align-middle text-[12.5px] text-graphite whitespace-nowrap">
-                  {safeFormatDate(campaign.created_at, "yyyy-MM-dd HH:mm")}
+                  {safeFormatDate(campaign.created_at, "yyyy-MM-dd")}
                 </td>
                 <td className="px-5 py-3.5 border-b border-fog align-middle">
                   <div className="flex items-center justify-end gap-3">
@@ -142,6 +158,12 @@ export function CampaignsTable({
                         {enabled ? "停用" : "启用"}
                       </button>
                     </HasPermission>
+                    <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
+                      <DeleteCampaignButton
+                        campaignName={campaign.name}
+                        onDelete={() => onDelete(campaign)}
+                      />
+                    </HasPermission>
                   </div>
                 </td>
               </tr>
@@ -150,5 +172,68 @@ export function CampaignsTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** 行内「删除」操作：文本按钮 + 二次确认弹窗（与表格其他文本操作样式一致）. */
+function DeleteCampaignButton({
+  campaignName,
+  onDelete,
+}: {
+  campaignName: string;
+  onDelete: () => Promise<ActionResult<void>>;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await onDelete();
+      if (res.success) {
+        toast.success("删除成功");
+        setOpen(false);
+      } else {
+        toast.error(res.error);
+      }
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <button
+          type="button"
+          className="text-[14px] font-medium text-rust px-0.5 hover:opacity-60 transition-opacity"
+        >
+          删除
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除「{campaignName}」？</AlertDialogTitle>
+          <AlertDialogDescription>
+            删除后不可恢复。若活动下已有关联线索，将无法删除，请改用停用操作。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              handleDelete();
+            }}
+            disabled={deleting}
+            className="bg-rust hover:bg-red-700"
+          >
+            {deleting ? "删除中..." : "确认删除"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

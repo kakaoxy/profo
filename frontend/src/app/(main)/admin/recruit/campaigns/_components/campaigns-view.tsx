@@ -15,6 +15,7 @@ import {
   createCampaignAction,
   updateCampaignAction,
   toggleCampaignStatusAction,
+  deleteCampaignAction,
   type CampaignFormData as ActionCampaignFormData,
 } from "../../_lib/recruit-actions";
 import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
@@ -153,6 +154,11 @@ export function CampaignsView({ campaigns, stats }: CampaignsViewProps) {
     toast(`「${campaign.name}」小程序码二期接入`);
   };
 
+  // 删除活动（存在关联线索时后端拒绝，引导改用停用）
+  const handleDelete = async (campaign: RecruitCampaign) => {
+    return deleteCampaignAction(campaign.id);
+  };
+
   // 导出（占位：二期接入真实导出接口）
   const handleExport = () => {
     toast("导出活动列表二期接入");
@@ -220,6 +226,7 @@ export function CampaignsView({ campaigns, stats }: CampaignsViewProps) {
                 onEdit={openEditDialog}
                 onToggleStatus={handleToggleStatus}
                 onQr={handleQr}
+                onDelete={handleDelete}
                 togglingId={togglingId}
               />
               <DesignPagination

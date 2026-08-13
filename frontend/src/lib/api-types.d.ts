@@ -3332,7 +3332,11 @@ export interface paths {
          */
         put: operations["update_campaign_api_v1_admin_recruit_campaigns__campaign_id__put"];
         post?: never;
-        delete?: never;
+        /**
+         * 删除招募活动
+         * @description 删除招募活动（存在关联线索时禁止删除，请改用停用）.
+         */
+        delete: operations["delete_campaign_api_v1_admin_recruit_campaigns__campaign_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -18099,6 +18103,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecruitCampaignResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_campaign_api_v1_admin_recruit_campaigns__campaign_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 活动ID */
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
