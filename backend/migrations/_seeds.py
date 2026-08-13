@@ -341,6 +341,23 @@ _PERMISSIONS_SEED: list[dict] = [
         "sort_order": 20,
         "description": "新增/编辑营销项目",
     },
+    # 招募管理模块（区域伙伴招募计划；Recruit* 接口属二期，本期仅注册权限点）
+    {
+        "code": "recruit:read",
+        "name": "查看招募",
+        "module": "recruit",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看招募活动配置、线索列表与漏斗看板",
+    },
+    {
+        "code": "recruit:write",
+        "name": "编辑招募",
+        "module": "recruit",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新建/编辑/启停招募活动，线索跟进状态流转",
+    },
     # 审计日志模块
     {
         "code": "operation_log:read",
@@ -400,6 +417,9 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "investment:copy",
         "l4_marketing:read",
         "l4_marketing:write",
+        # 招募管理（区域伙伴招募计划，一期前端已就绪）
+        "recruit:read",
+        "recruit:write",
         # 运营可管理 API Key
         "api_key:manage",
     ],

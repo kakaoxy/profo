@@ -4,6 +4,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   LucideIcon,
+  Megaphone,
   PhoneIncoming,
   ScrollText,
   Settings,
@@ -78,6 +79,17 @@ export const navMain: NavItem[] = [
     url: "/admin/marketing",
     icon: Smartphone,
     permission: PERMISSION_CODES.L4_MARKETING_READ,
+  },
+  {
+    title: "招募管理",
+    url: "/admin/recruit/campaigns",
+    icon: Megaphone,
+    permission: PERMISSION_CODES.RECRUIT_READ,
+    items: [
+      { title: "活动配置", url: "/admin/recruit/campaigns", permission: PERMISSION_CODES.RECRUIT_READ },
+      { title: "线索列表", url: "/admin/recruit/leads", permission: PERMISSION_CODES.RECRUIT_READ },
+      { title: "漏斗看板", url: "/admin/recruit/funnel", permission: PERMISSION_CODES.RECRUIT_READ },
+    ],
   },
   {
     title: "财务管理",

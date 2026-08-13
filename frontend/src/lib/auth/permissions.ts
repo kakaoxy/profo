@@ -74,6 +74,9 @@ export const PERMISSION_CODES = {
   // L4 市场营销
   L4_MARKETING_READ: "l4_marketing:read",
   L4_MARKETING_WRITE: "l4_marketing:write",
+  // 招募管理（区域伙伴招募计划）
+  RECRUIT_READ: "recruit:read",
+  RECRUIT_WRITE: "recruit:write",
   // 审计日志
   OPERATION_LOG_READ: "operation_log:read",
   // API Key
@@ -131,6 +134,8 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   { prefix: "/admin/leads/new", permission: PERMISSION_CODES.LEAD_WRITE, exact: true },
   // 数据报表 → 需 property:read 权限
   { prefix: "/admin/reports", permission: PERMISSION_CODES.PROPERTY_READ },
+  // 招募管理（活动配置/线索列表/漏斗看板）→ 需 recruit:read 权限
+  { prefix: "/admin/recruit", permission: PERMISSION_CODES.RECRUIT_READ },
   // 资金账本 → 需 ledger:read 权限
   { prefix: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },
   // 线索中心 → 需 lead:read 权限
