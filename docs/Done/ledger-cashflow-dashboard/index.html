@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>项目资金账本 · 全周期现金流量表 · Demo</title>
+<style>
+  :root {
+    /* 与现有 statistics 页面一致的 Apricot Wash 暖色系 */
+    --ink: #17191c;
+    --rust: #5d2a1a;
+    --graphite: #56585c;
+    --ash: #8a8d91;
+    --line: #ececee;
+    --bg-soft: #f7f7f8;
+    --warm-grad: linear-gradient(135deg, #fbe1d1 0%, rgba(251, 225, 209, 0.5) 100%);
+    --shadow-card: 0 0 0 1px rgba(4,23,43,0.04), 0 12px 16px -4px rgba(0,0,0,0.06);
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(4,23,43,0.04);
+    /* 流向语义色（暖色系下） */
+    --in: #1f7a4d;     /* 流入 - 沉稳绿 */
+    --in-soft: #e7f3ec;
+    --out: #b03a1a;    /* 流出 - rust 暖红 */
+    --out-soft: #fbe7df;
+    --pair: #2d6a9a;   /* 配对核销 - 蓝 */
+    --pair-soft: #e6eef5;
+    --finance: #8a5a16; /* 融资 - 棕金 */
+    --finance-soft: #f7eddb;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
+    background: var(--bg-soft);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  .font-display {
+    font-family: "Signifier", "PingFang SC", "Source Han Serif SC", "Songti SC", serif;
+    font-feature-settings: "tnum" on, "lnum" on;
+  }
+
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ====== 顶部导航 ====== */
+  .nav {
+    padding-top: 32px;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--graphite);
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--ink); }
+
+  /* ====== 业务模式切换 ====== */
+  .mode-switch {
+    display: inline-flex;
+    background: #fff;
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: var(--shadow-soft);
+  }
+  .mode-btn {
+    border: none;
+    background: transparent;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ash);
+    cursor: pointer;
+    border-radius: 999px;
+    transition: all 0.25s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mode-btn.active.agent { background: linear-gradient(135deg, #fef0e3, #fbe1d1); color: var(--rust); }
+  .mode-btn.active.wholesale { background: linear-gradient(135deg, #efeaf8, #e0d4f7); color: #4a2d8a; }
+  .mode-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .agent .mode-dot { background: var(--rust); }
+  .wholesale .mode-dot { background: #6d28d9; }
+
+  /* ====== Hero ====== */
+  .hero {
+    padding: 56px 0 48px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 44px;
+    line-height: 1.1;
+    letter-spacing: -0.66px;
+    margin: 0 0 16px;
+    color: var(--ink);
+  }
+  .hero .sub {
+    font-size: 18px;
+    color: var(--ash);
+    margin: 0;
+  }
+  .hero-meta {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--graphite);
+  }
+  .meta-chip {
+    background: #fff;
+    padding: 4px 10px;
+    border-radius: 999px;
+    box-shadow: var(--shadow-soft);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ====== KPI 网格 ====== */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .kpi-card {
+    text-align: center;
+    padding: 28px 20px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.3s;
+    background: #fff;
+  }
+  .kpi-card.warm { background: var(--warm-grad); }
+  .kpi-card:hover { transform: translateY(-4px); }
+  .kpi-label {
+    font-size: 14px;
+    color: var(--graphite);
+    margin: 0 0 8px;
+  }
+  .kpi-value {
+    font-size: 32px;
+    line-height: 1.1;
+    color: var(--ink);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-value.accent-rust { color: var(--rust); }
+  .kpi-suffix { font-size: 14px; margin-left: 4px; color: var(--ash); }
+
+  /* ====== Section 通用 ====== */
+  .section {
+    padding: 56px 0;
+  }
+  .section-white { background: #fff; }
+  .section-soft { background: var(--bg-soft); }
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ash);
+    letter-spacing: 1px;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+  }
+  .section-heading {
+    font-size: 24px;
+    color: var(--ink);
+    margin: 0 0 28px;
+    letter-spacing: -0.36px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-heading .badge {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--warm-grad);
+    color: var(--rust);
+    font-weight: 500;
+  }
+
+  /* ====== 利润三层结构 ====== */
+  .profit-ladder {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .ladder-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+  }
+  .ladder-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+  }
+  .ladder-card.l1::before { background: linear-gradient(90deg, #fbe1d1, #f5b896); }
+  .ladder-card.l2::before { background: linear-gradient(90deg, #f5b896, #d97757); }
+  .ladder-card.l3::before { background: linear-gradient(90deg, #d97757, #5d2a1a); }
+  .ladder-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ash);
+    margin-bottom: 6px;
+  }
+  .ladder-step .num {
+    width: 22px; height: 22px;
+    background: var(--warm-grad);
+    color: var(--rust);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .ladder-title {
+    font-size: 17px;
+    color: var(--ink);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+  .ladder-formula {
+    font-size: 12px;
+    color: var(--graphite);
+    margin: 0 0 16px;
+    line-height: 1.7;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .ladder-value {
+    font-size: 28px;
+    color: var(--ink);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.4px;
+  }
+  .ladder-card.l3 .ladder-value { color: var(--rust); }
+
+  .ladder-breakdown {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: var(--shadow-card);
+  }
+  .breakdown-title {
+    font-size: 13px;
+    color: var(--ash);
+    margin: 0 0 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .breakdown-table th,
+  .breakdown-table td {
+    text-align: left;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .breakdown-table th {
+    font-weight: 500;
+    color: var(--ash);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .breakdown-table td.amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .breakdown-table td.amount.in { color: var(--in); }
+  .breakdown-table td.amount.out { color: var(--out); }
+  .breakdown-table tr.total td {
+    font-weight: 600;
+    border-bottom: none;
+    padding-top: 14px;
+    font-size: 14px;
+  }
+  .breakdown-table tr.total td.amount { font-size: 16px; }
+
+  /* ====== 全周期阶段时间轴 ====== */
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 8px;
+    position: relative;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    top: 28px;
+    left: 8%;
+    right: 8%;
+    height: 2px;
+    background: linear-gradient(90deg,
+      #fbe1d1 0%, #fbe1d1 33%,
+      #d97757 33%, #d97757 66%,
+      #5d2a1a 66%, #5d2a1a 100%);
+    z-index: 0;
+  }
+  .stage {
+    position: relative;
+    z-index: 1;
+    padding: 0 12px;
+  }
+  .stage-marker {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 4px var(--bg-soft), var(--shadow-card);
+    font-size: 22px;
+  }
+  .stage-1 .stage-marker { color: var(--rust); }
+  .stage-2 .stage-marker { color: #b86b3e; }
+  .stage-3 .stage-marker { color: #6b4e2a; }
+  .stage-4 .stage-marker { background: var(--rust); color: #fff; }
+
+  .stage-name {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 4px;
+  }
+  .stage-sub {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ash);
+    margin: 0 0 20px;
+  }
+
+  .stage-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px 16px;
+    box-shadow: var(--shadow-card);
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+  }
+  .flow-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 13px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .flow-row:last-of-type { border-bottom: none; }
+  .flow-row .label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--graphite);
+  }
+  .flow-row .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .flow-row.in .dot { background: var(--in); }
+  .flow-row.out .dot { background: var(--out); }
+  .flow-row.pair .dot { background: var(--pair); }
+  .flow-row.finance .dot { background: var(--finance); }
+  .flow-row .amount {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    font-size: 12.5px;
+  }
+  .flow-row.in .amount { color: var(--in); }
+  .flow-row.out .amount { color: var(--out); }
+  .flow-row.pair .amount { color: var(--pair); }
+  .flow-row.finance .amount { color: var(--finance); }
+
+  .stage-summary {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1.5px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+  }
+  .stage-summary .lbl { color: var(--ash); }
+  .stage-summary .val {
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .stage-summary .val.pos { color: var(--in); }
+  .stage-summary .val.neg { color: var(--out); }
+
+  /* ====== 图例 ====== */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 32px;
+    padding: 16px 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    font-size: 12px;
+    color: var(--graphite);
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-dot.in { background: var(--in); }
+  .legend-dot.out { background: var(--out); }
+  .legend-dot.pair { background: var(--pair); }
+  .legend-dot.finance { background: var(--finance); }
+
+  /* ====== 底部说明 ====== */
+  .footer-note {
+    margin-top: 48px;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, #fffaf3, #fdf3e7);
+    border-radius: 16px;
+    border-left: 3px solid #d97757;
+    font-size: 13px;
+    color: var(--graphite);
+    line-height: 1.7;
+  }
+  .footer-note strong { color: var(--rust); }
+
+  /* ====== 响应式 ====== */
+  @media (max-width: 960px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .profit-ladder { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; gap: 24px; }
+    .timeline::before { display: none; }
+    .stage-card { min-height: auto; }
+  }
+  @media (max-width: 600px) {
+    .container { padding: 0 16px; }
+    .hero h1 { font-size: 32px; }
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+
+  /* 动画 */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeUp 0.5s ease-out both; }
+  .delay-1 { animation-delay: 0.05s; }
+  .delay-2 { animation-delay: 0.1s; }
+  .delay-3 { animation-delay: 0.15s; }
+  .delay-4 { animation-delay: 0.2s; }
+
+  /* 切换过渡 */
+  .mode-content { transition: opacity 0.25s; }
+  .mode-content.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="container nav">
+  <a class="back-link" href="#">
+    ← 返回流水明细
+  </a>
+</div>
+
+<!-- Hero + 业务模式切换 -->
+<section class="hero">
+  <div class="container">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:24px;">
+      <div class="mode-switch" role="tablist" aria-label="业务模式切换">
+        <button class="mode-btn agent active" data-mode="agent" role="tab" aria-selected="true">
+          <span class="mode-dot"></span> 代理美化
+        </button>
+        <button class="mode-btn wholesale" data-mode="wholesale" role="tab" aria-selected="false">
+          <span class="mode-dot"></span> 收购美化
+        </button>
+      </div>
+    </div>
+
+    <h1 class="font-display fade-in delay-1">项目资金账本</h1>
+    <p class="sub fade-in delay-2">全周期现金流量表 · 财务数据实时追踪与统计分析</p>
+
+    <div class="hero-meta fade-in delay-3">
+      <span class="meta-chip" id="meta-project">📌 浦东 · 仁恒河滨城</span>
+      <span class="meta-chip" id="meta-stage">📍 阶段：已售</span>
+      <span class="meta-chip" id="meta-period">⏱ 资金占用 240 天</span>
+    </div>
+
+    <!-- KPI 网格 -->
+    <div class="kpi-grid fade-in delay-4" id="kpi-grid">
+      <!-- Row 1: Apricot Wash 渐变 KPI -->
+      <div class="kpi-card warm">
+        <p class="kpi-label">项目总支出</p>
+        <p class="kpi-value accent-rust tabular-nums" id="kpi-total-expense">¥72.26万</p>
+      </div>
+      <div class="kpi-card warm">
+        <p class="kpi-label">项目前期投入</p>
+        <p class="kpi-value accent-rust tabular-nums" id="kpi-initial">¥59.50万</p>
+      </div>
+      <div class="kpi-card warm">
+        <p class="kpi-label">项目毛利</p>
+        <p class="kpi-value tabular-nums" id="kpi-gross">¥34.00万</p>
+      </div>
+      <div class="kpi-card warm">
+        <p class="kpi-label">项目净利</p>
+        <p class="kpi-value tabular-nums" id="kpi-net">¥12.74万</p>
+      </div>
+
+      <!-- Row 2: 白底 KPI -->
+      <div class="kpi-card">
+        <p class="kpi-label">项目收入</p>
+        <p class="kpi-value accent-rust tabular-nums" id="kpi-income">¥80.00万</p>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">资金占用时间</p>
+        <p class="kpi-value tabular-nums"><span id="kpi-days">240</span><span class="kpi-suffix">天</span></p>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">投资回报率</p>
+        <p class="kpi-value tabular-nums" id="kpi-roi">21.41%</p>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">年化回报率</p>
+        <p class="kpi-value tabular-nums" id="kpi-annual">32.56%</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 1: 利润三层结构 -->
+<section class="section section-white">
+  <div class="container">
+    <p class="section-title">PROFIT STRUCTURE</p>
+    <h2 class="section-heading">
+      利润三层结构
+      <span class="badge">权责发生制</span>
+    </h2>
+
+    <div class="profit-ladder">
+      <div class="ladder-card l1">
+        <div class="ladder-step"><span class="num">1</span> 收入层</div>
+        <h3 class="ladder-title" id="ladder1-title">增值服务费</h3>
+        <p class="ladder-formula" id="ladder1-formula">= 卖出价 − 业主底价<br>= 380万 − 300万</p>
+        <p class="ladder-value tabular-nums" id="ladder1-value">¥80.00万</p>
+      </div>
+      <div class="ladder-card l2">
+        <div class="ladder-step"><span class="num">2</span> 毛利层</div>
+        <h3 class="ladder-title">收入 − 直接成本</h3>
+        <p class="ladder-formula" id="ladder2-formula">= 收入 − 收房佣金 − 装修类<br>= 80 − 3 − 43</p>
+        <p class="ladder-value tabular-nums" id="ladder2-value">¥34.00万</p>
+      </div>
+      <div class="ladder-card l3">
+        <div class="ladder-step"><span class="num">3</span> 净利层</div>
+        <h3 class="ladder-title">毛利 − 运营费用 − 融资成本</h3>
+        <p class="ladder-formula" id="ladder3-formula">= 34 − 15.80 − 5.46</p>
+        <p class="ladder-value tabular-nums" id="ladder3-value">¥12.74万</p>
+      </div>
+    </div>
+
+    <div class="ladder-breakdown">
+      <p class="breakdown-title">利润计算明细 · 与 HTML 财务逻辑一致</p>
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th>层级</th>
+            <th>科目</th>
+            <th>计算公式</th>
+            <th class="amount">金额</th>
+          </tr>
+        </thead>
+        <tbody id="breakdown-body">
+          <!-- JS 动态填充 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: 全周期阶段现金流时间轴 -->
+<section class="section section-soft">
+  <div class="container">
+    <p class="section-title">PROJECT LIFECYCLE CASHFLOW</p>
+    <h2 class="section-heading">
+      全周期阶段现金流量表
+      <span class="badge">4 阶段</span>
+    </h2>
+
+    <div class="timeline" id="timeline">
+      <!-- JS 动态填充 -->
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot in"></span>流入（收入 / 配对回退 / 融资流入）</div>
+      <div class="legend-item"><span class="legend-dot out"></span>流出（支出 / 税费）</div>
+      <div class="legend-item"><span class="legend-dot pair"></span>配对核销（净额归零，不进损益）</div>
+      <div class="legend-item"><span class="legend-dot finance"></span>融资往来（本金往来不进损益）</div>
+    </div>
+
+    <div class="footer-note">
+      <strong>💡 设计说明：</strong>
+      本看板按项目全周期现金流呈现，与 <code>docs/profocw.html</code> 财务逻辑一致。
+      <br>① 收入层在已售阶段实现（增值服务费 / 售房差额），毛利层扣减佣金与装修，净利层扣减运营费用、融资成本与差额税费。
+      <br>② <strong>履约保证金 ⇄ 业主保证金回退</strong>、<strong>暂支款 ⇄ 暂支款核销</strong> 为配对核销项，净额归零，不进损益。
+      <br>③ <strong>投资款本金</strong>为资产负债往来，不进损益；仅 <strong>项目分润</strong> 作为融资成本扣减。
+      <br>④ 收购美化中，<strong>月供利息</strong>作为取得成本内化于"售房差额"公式；首付资金机会成本在跟投逻辑中计算，不在项目中体现。
+    </div>
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   Mock 数据：基于 docs/business-specification.md 业务场景
+   ============================================================ */
+
+const fmt = (n) => {
+  // 万元单位，保留 2 位小数
+  if (Math.abs(n) >= 10000) {
+    return `¥${(n / 10000).toFixed(2)}万`;
+  }
+  return `¥${n.toFixed(2)}`;
+};
+const fmtPct = (n) => `${(n * 100).toFixed(2)}%`;
+
+// 代理美化示例：业主底价 300 万，卖出 380 万
+const agentData = {
+  meta: {
+    project: "浦东 · 仁恒河滨城",
+    stage: "已售",
+    days: 240,
+    bizLabel: "代理美化",
+  },
+  kpi: {
+    totalExpense: 722600,    // 72.26万 - 全周期支出
+    initial: 595000,         // 59.50万 - 前期投入（保证金5 + 佣金3 + 装修43 + 营销8.5）
+    gross: 340000,           // 34.00万 - 毛利
+    net: 127400,             // 12.74万 - 净利
+    income: 800000,          // 80.00万 - 增值服务费
+    days: 240,
+    roi: 0.2141,             // 21.41%
+    annual: 0.3256,          // 32.56%
+  },
+  ladder: {
+    l1: { title: "增值服务费", formula: "= 卖出价 − 业主底价<br>= 380万 − 300万", value: 800000 },
+    l2: { formula: "= 收入 − 收房佣金 − 装修类<br>= 80 − 3 − 43", value: 340000 },
+    l3: { formula: "= 34 − 15.80 − 5.46", value: 127400 },
+  },
+  breakdown: [
+    { layer: "① 收入", item: "增值服务费", formula: "卖出价 − 业主底价 = 380 − 300", amount: 800000, type: "in" },
+    { layer: "② 毛利扣减", item: "收房佣金", formula: "签约渠道佣金（含线索+签约成本）", amount: -30000, type: "out" },
+    { layer: "② 毛利扣减", item: "装修类", formula: "设计费 8 + 装修款 25 + 软装采购 10", amount: -430000, type: "out" },
+    { layer: "毛利", item: "毛利 = 收入 − 直接成本", formula: "80 − 3 − 43", amount: 340000, type: "in", isTotal: true },
+    { layer: "③ 运营费用", item: "营销类", formula: "推广 4.5 + 销售额外激励 2.5 + 营销其他 1.5", amount: -85000, type: "out" },
+    { layer: "③ 运营费用", item: "营销推广费", formula: "卖出价 × 0.5% = 380 × 0.5%", amount: -19000, type: "out" },
+    { layer: "③ 运营费用", item: "运营服务费", formula: "卖出价 × 1% = 380 × 1%", amount: -38000, type: "out" },
+    { layer: "③ 运营费用", item: "差额税费", formula: "卖房佣金差额 差价×1% + 个税 差价×1% = 0.8 + 0.8", amount: -16000, type: "out" },
+    { layer: "③ 融资成本", item: "项目分润", formula: "融资方利润分成（净利 30%）", amount: -54600, type: "finance" },
+    { layer: "净利润", item: "净利 = 毛利 − 运营费用 − 融资成本", formula: "34 − 15.80 − 5.46", amount: 127400, type: "in", isTotal: true },
+  ],
+  stages: [
+    {
+      key: "signing", icon: "✍️", name: "签约", sub: "阶段一 · 资金注入",
+      flows: [
+        { type: "finance", label: "项目投资款收入", amount: 3500000 },
+        { type: "out", label: "履约保证金", amount: -50000, note: "可退" },
+        { type: "out", label: "收房佣金", amount: -30000, note: "含线索+签约" },
+      ],
+    },
+    {
+      key: "renovation", icon: "🔨", name: "装修", sub: "阶段二 · 改造投入",
+      flows: [
+        { type: "out", label: "设计费", amount: -80000 },
+        { type: "out", label: "装修款", amount: -250000 },
+        { type: "out", label: "软装采购", amount: -100000 },
+        { type: "pair", label: "暂支款（垫付）", amount: -200000, note: "⇄ 核销" },
+      ],
+    },
+    {
+      key: "listing", icon: "🏷️", name: "在售", sub: "阶段三 · 营销推广",
+      flows: [
+        { type: "out", label: "推广费用", amount: -45000 },
+        { type: "out", label: "销售额外激励", amount: -25000 },
+        { type: "out", label: "营销支出（其他）", amount: -15000 },
+        { type: "pair", label: "暂支款核销", amount: 200000, note: "⇄ 收回" },
+      ],
+    },
+    {
+      key: "sold", icon: "✅", name: "已售", sub: "阶段四 · 收入实现",
+      flows: [
+        { type: "in", label: "增值服务费 ★", amount: 800000, note: "380 − 300" },
+        { type: "out", label: "运营服务费", amount: -38000, note: "380 × 1%" },
+        { type: "out", label: "营销推广费", amount: -19000, note: "380 × 0.5%" },
+        { type: "out", label: "卖房佣金差额", amount: -8000, note: "差价 × 1%" },
+        { type: "out", label: "个税", amount: -8000, note: "差价 × 1%" },
+        { type: "pair", label: "业主保证金回退", amount: 50000, note: "⇄ 退回" },
+        { type: "finance", label: "投资款支出（还本）", amount: -3500000 },
+        { type: "finance", label: "项目分润", amount: -54600 },
+      ],
+    },
+  ],
+};
+
+// 收购美化示例：买进 500 万，卖出 650 万
+const wholesaleData = {
+  meta: {
+    project: "徐汇 · 尚海湾豪庭",
+    stage: "已售",
+    days: 360,
+    bizLabel: "收购美化",
+  },
+  kpi: {
+    totalExpense: 2967500,  // 296.75万 - 全周期支出（含购房自有资金+运营+融资）
+    initial: 2720000,        // 272万 - 前期投入（购房自有支出+装修+营销）
+    gross: 400000,           // 40万 - 毛利
+    net: 82500,              // 8.25万 - 净利
+    income: 900000,          // 90万 - 售房差额
+    days: 360,
+    roi: 0.0303,             // 3.03%
+    annual: 0.0461,          // 4.61%
+  },
+  ladder: {
+    l1: { title: "售房差额", formula: "= 卖出价 − 买进总成本<br>= 650 − (500 + 月供利息 40 + 税费 15 + 名额费 5)", value: 900000 },
+    l2: { formula: "= 收入 − 购房佣金 − 售房佣金 − 装修类<br>= 90 − 5 − 5 − 40", value: 400000 },
+    l3: { formula: "= 40 − 19.75 − 12.00", value: 82500 },
+  },
+  breakdown: [
+    { layer: "① 收入", item: "售房差额", formula: "卖出价 − 买进总成本（含月供利息）", amount: 900000, type: "in" },
+    { layer: "② 毛利扣减", item: "购房佣金", formula: "购房渠道佣金", amount: -50000, type: "out" },
+    { layer: "② 毛利扣减", item: "售房佣金", formula: "差额部分售房佣金", amount: -50000, type: "out" },
+    { layer: "② 毛利扣减", item: "装修类", formula: "设计费 10 + 装修款 30", amount: -400000, type: "out" },
+    { layer: "毛利", item: "毛利 = 收入 − 直接成本", formula: "90 − 5 − 5 − 40", amount: 400000, type: "in", isTotal: true },
+    { layer: "③ 运营费用", item: "营销类", formula: "推广 4 + 销售额外激励 2 + 营销其他 1", amount: -70000, type: "out" },
+    { layer: "③ 运营费用", item: "营销推广费", formula: "卖出价 × 0.5% = 650 × 0.5%", amount: -32500, type: "out" },
+    { layer: "③ 运营费用", item: "运营服务费", formula: "卖出价 × 1% = 650 × 1%", amount: -65000, type: "out" },
+    { layer: "③ 运营费用", item: "差额税费", formula: "公司承担卖方税费（代持个人=代理中的业主）", amount: -30000, type: "out" },
+    { layer: "③ 融资成本", item: "项目分润", formula: "融资方利润分成", amount: -120000, type: "finance" },
+    { layer: "净利润", item: "净利 = 毛利 − 运营费用 − 融资成本", formula: "40 − 19.75 − 12.00", amount: 82500, type: "in", isTotal: true },
+  ],
+  stages: [
+    {
+      key: "signing", icon: "🏦", name: "签约/买入", sub: "阶段一 · 产权登记至个人",
+      flows: [
+        { type: "finance", label: "项目投资款收入", amount: 5000000 },
+        { type: "out", label: "购房定金", amount: -200000 },
+        { type: "out", label: "购房首付", amount: -1500000 },
+        { type: "out", label: "购房尾款", amount: -300000 },
+        { type: "out", label: "购房贷款差额", amount: 0, note: "已含于贷款" },
+        { type: "out", label: "购房交易税费", amount: -150000 },
+        { type: "out", label: "购房名额使用费", amount: -50000 },
+        { type: "out", label: "购房佣金", amount: -50000 },
+      ],
+    },
+    {
+      key: "holding", icon: "📆", name: "持有期", sub: "阶段二 · 按揭持有",
+      flows: [
+        { type: "out", label: "月供利息", amount: -400000, note: "已含于差额" },
+      ],
+    },
+    {
+      key: "renovation", icon: "🔨", name: "装修", sub: "阶段三 · 改造投入",
+      flows: [
+        { type: "out", label: "设计费", amount: -100000 },
+        { type: "out", label: "装修款", amount: -300000 },
+        { type: "pair", label: "暂支款（垫付）", amount: -100000, note: "⇄ 核销" },
+      ],
+    },
+    {
+      key: "sold", icon: "✅", name: "已售", sub: "阶段四 · 差额回收",
+      flows: [
+        { type: "in", label: "售房差额 ★", amount: 900000, note: "650 − 560" },
+        { type: "out", label: "差额税费", amount: -30000, note: "含卖方税费" },
+        { type: "out", label: "营销推广费", amount: -32500, note: "650 × 0.5%" },
+        { type: "out", label: "运营服务费", amount: -65000, note: "650 × 1%" },
+        { type: "pair", label: "暂支款核销", amount: 100000, note: "⇄ 收回" },
+        { type: "finance", label: "投资款支出（还本）", amount: -5000000 },
+        { type: "finance", label: "项目分润", amount: -120000 },
+      ],
+    },
+  ],
+};
+
+/* ============================================================
+   渲染逻辑
+   ============================================================ */
+
+function renderKPI(data) {
+  const set = (id, val) => { document.getElementById(id).textContent = val; };
+  set("kpi-total-expense", fmt(data.kpi.totalExpense));
+  set("kpi-initial", fmt(data.kpi.initial));
+  set("kpi-gross", fmt(data.kpi.gross));
+  set("kpi-net", fmt(data.kpi.net));
+  set("kpi-income", fmt(data.kpi.income));
+  set("kpi-days", data.kpi.days);
+  set("kpi-roi", fmtPct(data.kpi.roi));
+  set("kpi-annual", fmtPct(data.kpi.annual));
+
+  // meta
+  document.getElementById("meta-project").innerHTML = `📌 ${data.meta.project}`;
+  document.getElementById("meta-stage").innerHTML = `📍 阶段：${data.meta.stage}`;
+  document.getElementById("meta-period").innerHTML = `⏱ 资金占用 ${data.meta.days} 天`;
+}
+
+function renderLadder(data) {
+  document.getElementById("ladder1-title").textContent = data.ladder.l1.title;
+  document.getElementById("ladder1-formula").innerHTML = data.ladder.l1.formula;
+  document.getElementById("ladder1-value").textContent = fmt(data.ladder.l1.value);
+  document.getElementById("ladder2-formula").innerHTML = data.ladder.l2.formula;
+  document.getElementById("ladder2-value").textContent = fmt(data.ladder.l2.value);
+  document.getElementById("ladder3-formula").innerHTML = data.ladder.l3.formula;
+  document.getElementById("ladder3-value").textContent = fmt(data.ladder.l3.value);
+}
+
+function renderBreakdown(data) {
+  const tbody = document.getElementById("breakdown-body");
+  tbody.innerHTML = data.breakdown.map(row => {
+    const cls = row.isTotal ? "total" : "";
+    const amtCls = row.type === "in" ? "in" : (row.type === "finance" ? "out" : "out");
+    const sign = row.amount >= 0 ? "+" : "−";
+    const abs = Math.abs(row.amount);
+    return `
+      <tr class="${cls}">
+        <td style="color:var(--ash);font-size:12px;">${row.layer}</td>
+        <td>${row.item}</td>
+        <td style="color:var(--graphite);font-size:12px;font-family:ui-monospace,monospace;">${row.formula}</td>
+        <td class="amount ${amtCls}">${sign} ${fmt(abs)}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderTimeline(data) {
+  const tl = document.getElementById("timeline");
+  const stagesHtml = data.stages.map((stage, idx) => {
+    const flowsHtml = stage.flows
+      .filter(f => f.amount !== 0)
+      .map(f => {
+        const sign = f.amount >= 0 ? "+" : "−";
+        const abs = Math.abs(f.amount);
+        return `
+          <div class="flow-row ${f.type}">
+            <div class="label">
+              <span class="dot"></span>
+              <span>${f.label}</span>
+              ${f.note ? `<span style="font-size:11px;color:var(--ash);margin-left:4px;">${f.note}</span>` : ""}
+            </div>
+            <div class="amount">${sign} ${fmt(abs)}</div>
+          </div>
+        `;
+      }).join("");
+
+    // 阶段净额
+    const net = stage.flows.reduce((sum, f) => sum + (f.amount || 0), 0);
+    const netCls = net >= 0 ? "pos" : "neg";
+    const netSign = net >= 0 ? "+" : "−";
+    const stageCls = `stage-${idx + 1}`;
+
+    return `
+      <div class="stage ${stageCls}">
+        <div class="stage-marker">${stage.icon}</div>
+        <p class="stage-name">${stage.name}</p>
+        <p class="stage-sub">${stage.sub}</p>
+        <div class="stage-card">
+          ${flowsHtml || '<div style="color:var(--ash);font-size:12px;text-align:center;padding:20px 0;">无现金流</div>'}
+          <div class="stage-summary">
+            <span class="lbl">阶段净额</span>
+            <span class="val ${netCls}">${netSign} ${fmt(Math.abs(net))}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+  tl.innerHTML = stagesHtml;
+}
+
+function renderAll(data) {
+  renderKPI(data);
+  renderLadder(data);
+  renderBreakdown(data);
+  renderTimeline(data);
+}
+
+// 初始化：默认代理美化
+let currentMode = "agent";
+renderAll(agentData);
+
+// 业务模式切换
+document.querySelectorAll(".mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const mode = btn.dataset.mode;
+    if (mode === currentMode) return;
+
+    document.querySelectorAll(".mode-btn").forEach(b => {
+      b.classList.remove("active");
+      b.setAttribute("aria-selected", "false");
+    });
+    btn.classList.add("active");
+    btn.setAttribute("aria-selected", "true");
+
+    currentMode = mode;
+    const data = mode === "agent" ? agentData : wholesaleData;
+
+    // 淡出 → 渲染 → 淡入
+    const grid = document.getElementById("kpi-grid");
+    grid.style.opacity = "0.4";
+    setTimeout(() => {
+      renderAll(data);
+      grid.style.opacity = "1";
+    }, 150);
+  });
+});
+</script>
+
+</body>
+</html>

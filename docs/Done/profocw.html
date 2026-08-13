@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房产投资业务 - 现金流逻辑可视化</title>
+    <style>
+        :root {
+            --bg: #f6f8fb;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.07), 0 2px 6px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.10), 0 4px 14px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.06);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --agent: #3b82f6;
+            --agent-light: #eff6ff;
+            --agent-dark: #1d4ed8;
+            --agent-gradient: linear-gradient(135deg, #3b82f6, #6366f1);
+            --acquire: #8b5cf6;
+            --acquire-light: #f5f3ff;
+            --acquire-dark: #6d28d9;
+            --acquire-gradient: linear-gradient(135deg, #8b5cf6, #a855f7);
+            --income: #10b981;
+            --income-light: #ecfdf5;
+            --income-dark: #059669;
+            --expense: #ef4444;
+            --expense-light: #fef2f2;
+            --expense-dark: #dc2626;
+            --finance: #f59e0b;
+            --finance-light: #fffbeb;
+            --finance-dark: #d97706;
+            --neutral: #6b7280;
+            --neutral-light: #f9fafb;
+            --warning: #f97316;
+            --warning-light: #fff7ed;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header */
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(8px);
+        }
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            gap: 20px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 18px;
+            color: #1e293b;
+            white-space: nowrap;
+        }
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .header-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .header-tag {
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .tag-agent {
+            background: var(--agent-light);
+            color: var(--agent-dark);
+        }
+        .tag-acquire {
+            background: var(--acquire-light);
+            color: var(--acquire-dark);
+        }
+        .tag-finance {
+            background: var(--finance-light);
+            color: var(--finance-dark);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 28px 24px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .section-title .emoji {
+            font-size: 24px;
+        }
+        .section-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        /* Card Base */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+        .card-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            background: #fafbfc;
+        }
+        .card-body {
+            padding: 20px 22px;
+        }
+        .card-body.no-padding {
+            padding: 0;
+        }
+
+        /* Badge / Pill */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+            line-height: 1.3;
+        }
+        .pill-income {
+            background: var(--income-light);
+            color: var(--income-dark);
+            border: 1px solid #a7f3d0;
+        }
+        .pill-expense {
+            background: var(--expense-light);
+            color: var(--expense-dark);
+            border: 1px solid #fecaca;
+        }
+        .pill-finance {
+            background: var(--finance-light);
+            color: var(--finance-dark);
+            border: 1px solid #fde68a;
+        }
+        .pill-pair {
+            background: #f0f9ff;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+        }
+        .pill-neutral {
+            background: var(--neutral-light);
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* ============ COMPARISON CARDS ============ */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .biz-card {
+            border-radius: var(--radius-lg);
+            border: 1.5px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.25s;
+            background: #fff;
+        }
+        .biz-card:hover {
+            box-shadow: var(--shadow-xl);
+            transform: translateY(-1px);
+        }
+        .biz-card-header {
+            padding: 16px 20px;
+            font-weight: 700;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            letter-spacing: 0.03em;
+        }
+        .biz-card-header.agent {
+            background: var(--agent-gradient);
+        }
+        .biz-card-header.acquire {
+            background: var(--acquire-gradient);
+        }
+        .biz-card-body {
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .biz-formula {
+            background: #f8fafc;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 13.5px;
+            line-height: 1.7;
+            border: 1px dashed #cbd5e1;
+            font-family: 'SF Mono', 'JetBrains Mono', 'Consolas', 'PingFang SC', monospace;
+            letter-spacing: 0.01em;
+        }
+        .biz-formula .label {
+            font-weight: 700;
+            color: #0f172a;
+            display: block;
+            margin-bottom: 6px;
+            font-family: inherit;
+            letter-spacing: 0.02em;
+        }
+        .biz-formula .eq {
+            color: #334155;
+        }
+        .biz-formula .highlight-income {
+            color: var(--income-dark);
+            font-weight: 700;
+        }
+        .biz-formula .highlight-cost {
+            color: var(--expense-dark);
+            font-weight: 600;
+        }
+        .biz-key-points {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+            color: #475569;
+        }
+        .biz-key-points .kp {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.5;
+        }
+        .biz-key-points .kp .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 7px;
+        }
+        .dot.agent-dot {
+            background: var(--agent);
+        }
+        .dot.acquire-dot {
+            background: var(--acquire);
+        }
+
+        /* ============ FLOWCHART ============ */
+        .flowchart {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            overflow-x: auto;
+            padding: 10px 0 16px;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+        @media (max-width: 1000px) {
+            .flowchart {
+                flex-direction: column;
+                gap: 0;
+                overflow-x: visible;
+            }
+            .flow-connector {
+                flex-direction: column !important;
+                min-width: auto !important;
+                padding: 0 0 0 28px !important;
+                gap: 6px !important;
+            }
+            .flow-connector .connector-line {
+                width: 2px !important;
+                height: 20px !important;
+                min-height: 20px !important;
+            }
+            .flow-connector .connector-arrow {
+                transform: rotate(90deg) !important;
+                font-size: 10px !important;
+            }
+        }
+        .flow-node {
+            flex: 0 0 auto;
+            min-width: 175px;
+            max-width: 220px;
+            background: #fff;
+            border-radius: var(--radius);
+            border: 1.5px solid #e2e8f0;
+            padding: 16px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s;
+            position: relative;
+        }
+        .flow-node:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            z-index: 2;
+        }
+        .flow-node.phase-agent {
+            border-top: 4px solid var(--agent);
+        }
+        .flow-node.phase-acquire {
+            border-top: 4px solid var(--acquire);
+        }
+        .flow-node.phase-finance {
+            border-top: 4px solid var(--finance);
+            background: #fffdf7;
+        }
+        .flow-node.phase-end {
+            border-top: 4px solid #6b7280;
+            background: #fafafa;
+        }
+        .flow-node-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #0f172a;
+            text-align: center;
+            letter-spacing: 0.02em;
+        }
+        .flow-node-subtitle {
+            font-size: 10px;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: -6px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+        .flow-items {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 11.5px;
+        }
+        .flow-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            line-height: 1.3;
+            font-weight: 500;
+        }
+        .flow-item.income-item {
+            background: #f0fdf6;
+            color: #065f46;
+        }
+        .flow-item.expense-item {
+            background: #fef5f5;
+            color: #991b1b;
+        }
+        .flow-item.pair-item {
+            background: #f0f9ff;
+            color: #075985;
+            border: 1px dashed #bae6fd;
+            border-radius: 4px;
+        }
+        .flow-item.finance-item {
+            background: #fffdf0;
+            color: #92400e;
+        }
+        .flow-item-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .flow-item-dot.income-dot {
+            background: #10b981;
+        }
+        .flow-item-dot.expense-dot {
+            background: #ef4444;
+        }
+        .flow-item-dot.pair-dot {
+            background: #0ea5e9;
+        }
+        .flow-item-dot.finance-dot {
+            background: #f59e0b;
+        }
+
+        /* Connector between flow nodes */
+        .flow-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            min-width: 28px;
+            padding: 0 2px;
+            color: #cbd5e1;
+            font-size: 16px;
+            font-weight: 700;
+            user-select: none;
+        }
+        .flow-connector .connector-line {
+            width: 16px;
+            height: 2px;
+            background: #d1d5db;
+            border-radius: 1px;
+        }
+        .flow-connector .connector-arrow {
+            color: #9ca3af;
+            font-size: 12px;
+            margin-left: -2px;
+        }
+
+        /* ============ TABLES ============ */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 700px;
+        }
+        table thead th {
+            background: #f8fafc;
+            padding: 11px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+        }
+        table tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        table tbody tr {
+            transition: background 0.15s;
+        }
+        table tbody tr:hover {
+            background: #fafdfe;
+        }
+        table tbody tr.row-income {
+            border-left: 3px solid var(--income);
+        }
+        table tbody tr.row-expense {
+            border-left: 3px solid var(--expense);
+        }
+        table tbody tr.row-finance-in {
+            border-left: 3px solid var(--finance);
+        }
+        table tbody tr.row-finance-out {
+            border-left: 3px solid #f97316;
+        }
+        table tbody tr.row-pair {
+            border-left: 3px solid #0ea5e9;
+        }
+        table tbody tr.row-subtotal {
+            background: #fafbfc;
+            font-weight: 700;
+            border-top: 1.5px solid #cbd5e1;
+        }
+        .td-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        .td-tag.agent-tag {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+        .td-tag.acquire-tag {
+            background: #f5f3ff;
+            color: #6d28d9;
+        }
+
+        /* ============ FORMULA HIGHLIGHT BOX ============ */
+        .formula-highlight {
+            background: linear-gradient(135deg, #fefce8, #fffbeb);
+            border: 1.5px solid #fde68a;
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            font-family: 'SF Mono', 'JetBrains Mono', 'Consolas', 'PingFang SC', monospace;
+            font-size: 14px;
+            line-height: 1.9;
+            letter-spacing: 0.02em;
+            color: #422006;
+        }
+        .formula-highlight .big-eq {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .formula-highlight .inc {
+            color: #059669;
+            font-weight: 700;
+        }
+        .formula-highlight .exp {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .formula-highlight .fn {
+            color: #d97706;
+            font-weight: 600;
+        }
+
+        /* ============ LEGEND ============ */
+        .legend-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #475569;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        .legend-dot.l-income {
+            background: #10b981;
+        }
+        .legend-dot.l-expense {
+            background: #ef4444;
+        }
+        .legend-dot.l-finance {
+            background: #f59e0b;
+        }
+        .legend-dot.l-pair {
+            background: #0ea5e9;
+            border: 1px dashed #7dd3fc;
+            background: #e0f2fe;
+        }
+
+        /* ============ UTILITY ============ */
+        .text-center {
+            text-align: center;
+        }
+        .text-sm {
+            font-size: 12px;
+        }
+        .text-xs {
+            font-size: 10px;
+        }
+        .mt-2 {
+            margin-top: 8px;
+        }
+        .mt-3 {
+            margin-top: 12px;
+        }
+        .mt-4 {
+            margin-top: 16px;
+        }
+        .gap-3 {
+            gap: 12px;
+        }
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border-light);
+            margin: 8px 0;
+        }
+
+        /* Print */
+        @media print {
+            body {
+                background: #fff;
+            }
+            .card {
+                box-shadow: none;
+                break-inside: avoid;
+                border: 1px solid #ddd;
+            }
+            .flowchart {
+                overflow-x: visible;
+                flex-wrap: wrap;
+            }
+            .header {
+                position: static;
+                box-shadow: none;
+            }
+        }
+
+        /* Smooth scrollbar for flowchart */
+        .flowchart::-webkit-scrollbar {
+            height: 6px;
+        }
+        .flowchart::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .flowchart::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+        .flowchart::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== HEADER ==================== -->
+    <div class="header">
+        <div class="header-inner">
+            <div class="logo-area">
+                <div class="logo-icon">🏠</div>
+                <span>房产投资 · 现金流逻辑看板</span>
+            </div>
+            <div class="header-tags">
+                <span class="header-tag tag-agent">代理业务</span>
+                <span class="header-tag tag-acquire">收购业务</span>
+                <span class="header-tag tag-finance">融资模式</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN CONTAINER ==================== -->
+    <div class="container">
+
+        <!-- ===== 图例 ===== -->
+        <div class="legend-row" style="padding:0 4px;">
+            <span style="font-weight:600;font-size:13px;color:#475569;">图例：</span>
+            <span class="legend-item"><span class="legend-dot l-income"></span> 收入/流入</span>
+            <span class="legend-item"><span class="legend-dot l-expense"></span> 支出/流出</span>
+            <span class="legend-item"><span class="legend-dot l-finance"></span> 融资相关</span>
+            <span class="legend-item"><span class="legend-dot l-pair"></span> 配对核销（保证金/暂支款）</span>
+        </div>
+
+        <!-- ==================== SECTION 1: 业务模式对比 ==================== -->
+        <div>
+            <div class="section-title"><span class="emoji">📊</span> 两种业务模式 · 核心对比</div>
+            <div class="section-subtitle">代理赚取差价分成，收购赚取买卖差额——两种模式现金流结构完全不同</div>
+        </div>
+        <div class="comparison-grid">
+            <!-- 代理业务卡片 -->
+            <div class="biz-card">
+                <div class="biz-card-header agent">
+                    <span>🔵</span> 代理业务（差价分成模式）
+                </div>
+                <div class="biz-card-body">
+                    <div class="biz-formula">
+                        <span class="label">📐 核心逻辑</span>
+                        <span class="eq">公司与业主约定<span style="font-weight:700;">底价</span> → 公司投入装修/营销 → 卖出后业主收款 → 业主将<span class="highlight-income">高出底价的部分（差价）</span>支付给公司</span>
+                    </div>
+                    <div class="biz-key-points">
+                        <div class="kp"><span class="dot agent-dot"></span><strong>公司不触碰房屋全款</strong>——买方资金由业主收取</div>
+                        <div class="kp"><span class="dot agent-dot"></span><strong>① 收入 = 增值服务费</strong>（记账与合同的正式科目名）= 卖出价 − 业主底价</div>
+                        <div class="kp"><span class="dot agent-dot"></span>公司承担：装修费、营销费、运营服务费、差额税费（含差价×1%售房佣金+个税）</div>
+                        <div class="kp"><span class="dot agent-dot"></span>产权不发生转移，始终在业主名下</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 收购业务卡片 -->
+            <div class="biz-card">
+                <div class="biz-card-header acquire">
+                    <span>🟣</span> 收购业务（买卖差额模式）
+                </div>
+                <div class="biz-card-body">
+                    <div class="biz-formula">
+                        <span class="label">📐 核心逻辑</span>
+                        <span class="eq">公司让<span style="font-weight:700;">个人代为买进房产</span>（产权登记在代买人名下）→ 与个人签署代理美化协议做合规耦合 → 持有期还月供 → 翻新后卖出 → <span class="highlight-income">售房差额</span> = 卖出价 − 买进总成本（佣金在毛利层扣减）</span>
+                    </div>
+                    <div class="biz-key-points">
+                        <div class="kp"><span class="dot acquire-dot"></span><strong>产权登记在代买人（个人）名下</strong>——公司不直接持有产权，通过内部代理美化协议约束</div>
+                        <div class="kp"><span class="dot acquire-dot"></span><strong>① 收入 = 售房差额</strong>——卖出价 − 买入总成本（含原始贷款、月供利息）</div>
+                        <div class="kp"><span class="dot acquire-dot"></span><strong>② 毛利</strong> = 售房差额 − 购房佣金 − 售房佣金 − 装修类（佣金统一在毛利层扣减）</div>
+                        <div class="kp"><span class="dot acquire-dot"></span>月供利息含于"售房差额"公式；项目分润归为融资成本；投资款本金往来不进损益</div>
+                        <div class="kp"><span class="dot acquire-dot"></span>公司承担代理中本应由业主承担的<strong>卖方税费</strong>（代持个人可看作代理中的业主）</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SECTION 2: 代理业务流程图 ==================== -->
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size:20px;">🔵</span> 代理业务 · 全周期现金流流程图
+                <span class="pill pill-neutral" style="margin-left:auto;">5个阶段 + 融资</span>
+            </div>
+            <div class="card-body" style="padding:16px 14px;">
+                <div class="flowchart">
+                    <!-- 节点1: 签约 -->
+                    <div class="flow-node phase-agent">
+                        <div class="flow-node-title">📝 签约</div>
+                        <div class="flow-node-subtitle">阶段一</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>履约保证金</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>收房佣金</div>
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>项目投资款收入 ⬇</div>
+                        </div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点2: 装修 -->
+                    <div class="flow-node phase-agent">
+                        <div class="flow-node-title">🔨 装修</div>
+                        <div class="flow-node-subtitle">阶段二</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>设计费</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>装修款</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>软装采购</div>
+                            <div class="flow-item pair-item"><span class="flow-item-dot pair-dot"></span>暂支款（垫付）⇄</div>
+                        </div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点3: 在售 -->
+                    <div class="flow-node phase-agent">
+                        <div class="flow-node-title">🏷️ 在售</div>
+                        <div class="flow-node-subtitle">阶段三</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>推广费用</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>销售额外激励</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>营销支出（其他）</div>
+                        </div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点4: 已售 -->
+                    <div class="flow-node phase-agent" style="border-top-color:#10b981;border-top-width:4px;">
+                        <div class="flow-node-title" style="color:#059669;">✅ 已售</div>
+                        <div class="flow-node-subtitle">阶段四 · 收入实现</div>
+                        <div class="flow-items">
+                            <div class="flow-item income-item" style="font-weight:700;"><span class="flow-item-dot income-dot"></span>增值服务费 ★</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>差额税费（含售房佣金）</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>营销推广费</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>运营服务费</div>
+                            <div class="flow-item pair-item"><span class="flow-item-dot pair-dot"></span>业主保证金回退 ⇄</div>
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>投资款支出（还本）</div>
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>项目分润</div>
+                        </div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点5: 终结 -->
+                    <div class="flow-node phase-end">
+                        <div class="flow-node-title">🔚 项目终结</div>
+                        <div class="flow-node-subtitle">兜底平账</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>结算差额</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:11px;color:#64748b;padding:0 4px;">
+                    <span>★ 增值服务费 = 卖出价 − 业主底价（记账与合同的正式科目名）</span>
+                    <span style="margin-left:8px;">⇄ 表示配对核销项</span>
+                    <span style="margin-left:8px;">⬇ 融资流入/流出</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SECTION 3: 收购业务流程图 ==================== -->
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size:20px;">🟣</span> 收购业务 · 业务流程详解（买入 → 持有 → 卖出两种情况）
+                <span class="pill pill-neutral" style="margin-left:auto;">卖房两种情况 · 项目需标记类型</span>
+            </div>
+            <div class="card-body" style="padding:14px;">
+                <!-- 买入阶段 -->
+                <div style="margin-bottom:12px;">
+                    <div style="font-size:13px;font-weight:700;color:#6d28d9;margin-bottom:6px;">🏦 买入阶段（产权登记至代持个人）</div>
+                    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:11px;">
+                        <div style="padding:8px;background:#faf5ff;border:1px solid #ddd6fe;border-radius:6px;"><strong>① 签定金合同</strong><br><span style="color:#dc2626;">流出 购房定金</span></div>
+                        <div style="padding:8px;background:#faf5ff;border:1px solid #ddd6fe;border-radius:6px;"><strong>② 签网签合同</strong><br><span style="color:#dc2626;">流出 购房首付</span><br>办理贷款</div>
+                        <div style="padding:8px;background:#faf5ff;border:1px solid #ddd6fe;border-radius:6px;"><strong>③ 贷款不足</strong><br><span style="color:#dc2626;">流出 购房贷款差额</span></div>
+                        <div style="padding:8px;background:#faf5ff;border:1px solid #ddd6fe;border-radius:6px;"><strong>④ 过户</strong><br><span style="color:#dc2626;">流出 交易税费 + 名额费</span></div>
+                        <div style="padding:8px;background:#faf5ff;border:1px solid #ddd6fe;border-radius:6px;"><strong>⑤ 银行放款交房</strong><br><span style="color:#059669;">流入 贷款发放</span><br><span style="color:#dc2626;">流出 购房尾款</span></div>
+                    </div>
+                </div>
+                <!-- 持有阶段 -->
+                <div style="margin-bottom:12px;">
+                    <div style="font-size:13px;font-weight:700;color:#f97316;margin-bottom:6px;">📆 持有阶段（按月支付月供，拆分本金/利息）</div>
+                    <div style="padding:8px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;font-size:11px;">
+                        月供 = <strong>月供本金</strong>（现金流出，资产负债项，不进损益）+ <strong>月供利息</strong>（现金流出，融资成本，已含于差额公式）
+                    </div>
+                </div>
+                <!-- 卖出两种情况 -->
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#059669;margin-bottom:6px;">✅ 卖出阶段（两种情况，利润相同 / 现金流时序不同）</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <!-- 情况一 -->
+                        <div style="padding:10px;background:#ecfdf5;border:1.5px solid #10b981;border-radius:8px;">
+                            <div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:6px;">情况一：不需还贷（买家首付还贷 / 带押过户）</div>
+                            <div style="font-size:11px;line-height:1.8;">
+                                ① 签定金 → <span style="color:#059669;">流入 收卖房定金</span><br>
+                                ② 签网签 → <span style="color:#059669;">流入 收卖房首付</span><br>
+                                ③ 过户 → <span style="color:#dc2626;">流出 差额税费</span><br>
+                                ④ 收尾款 → <span style="color:#059669;">流入 收卖房尾款</span>
+                            </div>
+                            <div style="font-size:10px;color:#64748b;margin-top:6px;padding-top:6px;border-top:1px dashed #a7f3d0;">资金压力小，无还贷流出</div>
+                        </div>
+                        <!-- 情况二 -->
+                        <div style="padding:10px;background:#fef2f2;border:1.5px solid #ef4444;border-radius:8px;">
+                            <div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:6px;">情况二：需还贷（首付不够 / 资金监管 / 不支持带押过户）</div>
+                            <div style="font-size:11px;line-height:1.8;">
+                                ① 签网签 → <span style="color:#059669;">流入 收卖房首付</span>（或监管）<br>
+                                ② 投资款垫付 → <span style="color:#0ea5e9;">流入 项目投资款收入</span><br>
+                                ③ 还贷扣款 → <span style="color:#dc2626;font-weight:700;">流出 卖房还贷（大额）</span><br>
+                                ④ 领结清证明 + 抵押注销资料<br>
+                                ⑤ 买家按揭审批<br>
+                                ⑥ 过户 → 领证 → 交房 → <span style="color:#dc2626;">流出 差额税费</span><br>
+                                ⑦ 收尾款 → <span style="color:#059669;">流入 收卖房尾款</span>；<span style="color:#0ea5e9;">流出 投资款还本</span>（归还垫付）
+                            </div>
+                            <div style="font-size:10px;color:#dc2626;margin-top:6px;padding-top:6px;border-top:1px dashed #fecaca;">资金压力大，需投资款垫付还贷资金</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size:20px;">🟣</span> 收购业务 · 全周期现金流流程图
+                <span class="pill pill-neutral" style="margin-left:auto;">6个阶段 + 融资 + 持有期月供（含本金/利息拆分）</span>
+            </div>
+            <div class="card-body" style="padding:16px 14px;">
+                <div class="flowchart">
+                    <!-- 节点1: 签约/买入 -->
+                    <div class="flow-node phase-acquire">
+                        <div class="flow-node-title">🏦 签约/买入</div>
+                        <div class="flow-node-subtitle">阶段一 · 产权登记至个人</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>购房定金</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>购房首付</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>购房尾款</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>购房贷款差额</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>购房交易税费</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>购房名额使用费</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>购房佣金</div>
+                            <div class="flow-item income-item"><span class="flow-item-dot income-dot"></span>贷款发放流入（资产负债项）</div>
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>项目投资款收入 ⬇</div>
+                        </div>
+                        <div style="font-size:9px;color:#94a3b8;text-align:center;margin-top:4px;">※ 购房定金等6项计入"售房差额"；购房佣金在毛利层扣减；贷款发放为资产负债项不进损益</div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点2: 持有期 -->
+                    <div class="flow-node phase-acquire" style="border-top-color:#f97316;">
+                        <div class="flow-node-title">📆 持有期</div>
+                        <div class="flow-node-subtitle">阶段二 · 按揭持有（月供拆分）</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>月供本金（现金流科目·资产负债项）</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>月供利息（已含于差额）</div>
+                        </div>
+                        <div style="font-size:9px;color:#94a3b8;text-align:center;margin-top:4px;">※ 月供发生时拆分记录两笔；月供本金不进损益，但属实际现金流出</div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点3: 装修 -->
+                    <div class="flow-node phase-acquire">
+                        <div class="flow-node-title">🔨 装修</div>
+                        <div class="flow-node-subtitle">阶段三</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>设计费</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>装修款</div>
+                            <div class="flow-item pair-item"><span class="flow-item-dot pair-dot"></span>暂支款（垫付）⇄</div>
+                        </div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点4: 在售 -->
+                    <div class="flow-node phase-acquire">
+                        <div class="flow-node-title">🏷️ 在售</div>
+                        <div class="flow-node-subtitle">阶段四</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>推广费用</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>销售额外激励</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>营销支出（其他）</div>
+                        </div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点5: 已售 -->
+                    <div class="flow-node phase-acquire" style="border-top-color:#10b981;border-top-width:4px;">
+                        <div class="flow-node-title" style="color:#059669;">✅ 已售</div>
+                        <div class="flow-node-subtitle">阶段五 · 差额回收（含卖房两种情况）</div>
+                        <div class="flow-items">
+                            <div class="flow-item income-item" style="font-weight:700;"><span class="flow-item-dot income-dot"></span>售房差额 ★（损益口径）</div>
+                            <div class="flow-item income-item"><span class="flow-item-dot income-dot"></span>收卖房定金（现金流）</div>
+                            <div class="flow-item income-item"><span class="flow-item-dot income-dot"></span>收卖房首付（现金流）</div>
+                            <div class="flow-item income-item"><span class="flow-item-dot income-dot"></span>收卖房尾款（现金流）</div>
+                            <div class="flow-item expense-item" style="background:#fef2f2;"><span class="flow-item-dot expense-dot"></span>卖房还贷（仅情况二·资产负债项）</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>差额税费（含卖方税费）</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>营销推广费</div>
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>运营服务费</div>
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>投资款支出（还本·含垫付归还）</div>
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>项目分润</div>
+                        </div>
+                        <div style="font-size:9px;color:#94a3b8;text-align:center;margin-top:4px;">※ 三项收款合计=卖出价，已含于差额公式不重复计入；卖房还贷资金来源为投资款垫付</div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <!-- 节点6: 终结 -->
+                    <div class="flow-node phase-end">
+                        <div class="flow-node-title">🔚 项目终结</div>
+                        <div class="flow-node-subtitle">兜底平账</div>
+                        <div class="flow-items">
+                            <div class="flow-item expense-item"><span class="flow-item-dot expense-dot"></span>结算差额</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:11px;color:#64748b;padding:0 4px;">
+                    <span>★ 售房差额 = 卖出价 −（购房定金+首付+贷款+贷款差额+交易税费+尾款+名额费+月供利息）</span>
+                    <span style="margin-left:8px;">※ 购房佣金/售房佣金在毛利层扣减；月供利息已含于差额公式；月供本金/卖房还贷为现金流科目不进损益</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SECTION 4: 关键公式 ==================== -->
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size:20px;">📐</span> 关键公式 · 利润计算逻辑
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                    <!-- 代理公式 -->
+                    <div class="formula-highlight" style="background:linear-gradient(135deg,#eff6ff,#f0f9ff);border-color:#93c5fd;">
+                        <div class="big-eq" style="color:#1d4ed8;">🔵 代理业务</div>
+                        <div style="margin-top:10px;">
+                            <strong>① 收入</strong>：<span class="inc">增值服务费</span> = 卖出价 − 业主底价
+                        </div>
+                        <div style="margin-top:4px;font-size:12px;color:#64748b;">（记账与合同的正式科目名，业主收到全款后支付给公司）</div>
+                        <hr style="border-color:#bfdbfe;margin:10px 0;">
+                        <div>
+                            <strong>② 毛利</strong> = 收入 − 直接成本
+                        </div>
+                        <div style="font-size:12px;line-height:2;">
+                            <span class="inc">+ 增值服务费</span><br>
+                            <span class="exp">− 收房佣金（含线索获取+签约成本）− 装修类（设计/装修/软装）</span>
+                        </div>
+                        <hr style="border-color:#bfdbfe;margin:10px 0;">
+                        <div>
+                            <strong>③ 净利润</strong> = 毛利 − 运营费用 − 融资成本 ± 其他
+                        </div>
+                        <div style="font-size:12px;line-height:2;">
+                            <span class="exp">− 营销类（推广/额外激励/其他）</span><br>
+                            <span class="exp">− 营销推广费 = 卖出价 × 0.5%</span><br>
+                            <span class="exp">− 运营服务费 = 卖出价 × 1%</span><br>
+                            <span class="exp">− 差额税费 = 卖房佣金差额 + 个税</span><br>
+                            <span style="color:#64748b;font-size:11px;padding-left:12px;">• 卖房佣金差额 = (卖出价 − 业主底价) × 1%</span><br>
+                            <span style="color:#64748b;font-size:11px;padding-left:12px;">• 个税 = (卖出价 − 业主底价) × 税率（非继承1%/继承20%，仅房东有个税时产生，公司承担差额部分）</span><br>
+                            <span class="fn">− 融资成本（项目分润）</span><br>
+                            <span style="color:#6b7280;">+ 他项收入 − 结算差额</span><br>
+                            <span style="color:#6b7280;">注：投资款本金（收入/还本）为资产负债往来，不进损益；保证金、暂支款配对净额=0</span>
+                        </div>
+                    </div>
+                    <!-- 收购公式 -->
+                    <div class="formula-highlight" style="background:linear-gradient(135deg,#f5f3ff,#faf5ff);border-color:#c4b5fd;">
+                        <div class="big-eq" style="color:#6d28d9;">🟣 收购业务（损益口径）</div>
+                        <div style="margin-top:10px;">
+                            <strong>① 收入</strong>：<span class="inc">售房差额</span> = 卖出价 − <span style="font-size:11px;">（购房定金+首付+贷款+贷款差额+交易税费+尾款+名额费+<strong>月供利息</strong>）</span>
+                        </div>
+                        <div style="margin-top:4px;font-size:12px;color:#64748b;">（"贷款"为原始总额，月供本金不另列支；月供利息作为取得成本已含于差额公式；购房佣金/售房佣金移至毛利层扣减）</div>
+                        <hr style="border-color:#ddd6fe;margin:10px 0;">
+                        <div>
+                            <strong>② 毛利</strong> = 收入 − 直接成本
+                        </div>
+                        <div style="font-size:12px;line-height:2;">
+                            <span class="inc">+ 售房差额</span><br>
+                            <span class="exp">− 购房佣金 − 售房佣金 − 装修类（设计/装修）</span>
+                        </div>
+                        <hr style="border-color:#ddd6fe;margin:10px 0;">
+                        <div>
+                            <strong>③ 净利润</strong> = 毛利 − 运营费用 − 融资成本 ± 其他
+                        </div>
+                        <div style="font-size:12px;line-height:2;">
+                            <span class="exp">− 营销类（推广/额外激励/其他）− 营销推广费 − 运营服务费 − 差额税费</span><br>
+                            <span style="color:#64748b;font-size:11px;padding-left:12px;">• 差额税费含公司承担的卖方税费（代理中本应由业主承担）</span><br>
+                            <span class="fn">− 融资成本（项目分润）</span><br>
+                            <span style="color:#6b7280;">+ 他项收入 − 结算差额</span><br>
+                            <span style="color:#6b7280;">注：投资款本金（收入/还本）、贷款发放/偿还、月供本金、卖房还贷均为资产负债往来，不进损益；暂支款配对净额=0</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="grid-template-columns:1fr;display:block;margin-top:16px;padding:12px 16px;background:#fefce8;border-radius:8px;border:1px solid #fde68a;font-size:12px;color:#92400e;">
+                    <strong>💡 利润三层结构（权责发生制·损益口径）：</strong>① <strong>收入</strong> = 增值服务费/售房差额（取得成本已内化）；② <strong>毛利</strong> = 收入 − 直接成本（佣金 + 装修类，收购含购房佣金+售房佣金）；③ <strong>净利润</strong> = 毛利 − 运营费用（营销/推广/运营/税费）− 融资成本（分润/利息）± 其他。融资本金往来（投资款收入/还本）不进损益；代理"差额税费"已含售房佣金差额（差价×1%+个税）。
+                </div>
+                <div style="margin-top:12px;padding:12px 16px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;font-size:12px;color:#1e40af;">
+                    <strong>💧 现金流口径（收付实现制·资金追踪）：</strong>追踪项目全周期现金进出，与损益口径并行。现金流入 = 贷款发放 + 项目投资款收入（含情况二还贷垫付）+ 收卖房定金/首付/尾款；现金流出 = 6项取得成本 + 购房佣金 + <strong>月供本金</strong> + 月供利息 + <strong>卖房还贷</strong>（仅情况二，投资款垫付）+ 装修/营销/运营/税费 + 投资款还本 + 项目分润。<strong>净利润 ≠ 净现金流</strong>，差异项为贷款往来、月供本金、卖房还贷、投资款往来、卖房收款时序（详见 SECTION 6.5）。
+                </div>
+            </div>
+        </div>
+        @media (max-width:768px) {
+            .formula-highlight .big-eq {
+                font-size: 14px;
+            }
+            .formula-highlight {
+                font-size: 12px;
+                padding: 14px 16px;
+            }
+        }
+
+        <!-- ==================== SECTION 5: 完整科目清单 ==================== -->
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size:20px;">📋</span> 完整科目清单 · 两种业务并排对比
+                <span class="pill pill-neutral" style="margin-left:auto;">含现金流科目（月供本金/卖房还贷/收款节点）</span>
+            </div>
+            <div class="card-body no-padding">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>节点</th>
+                                <th>收支</th>
+                                <th>口径</th>
+                                <th>代理业务科目</th>
+                                <th>收购业务科目</th>
+                                <th>备注</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="row-expense">
+                                <td>签约</td>
+                                <td><span class="pill pill-expense">支出</span></td>
+                                <td>损益</td>
+                                <td>履约保证金</td>
+                                <td>—</td>
+                                <td>代理：可退，与"业主保证金回退"配对</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>签约</td>
+                                <td><span class="pill pill-expense">支出</span></td>
+                                <td>损益</td>
+                                <td>收房佣金</td>
+                                <td>购房佣金</td>
+                                <td>两者同逻辑：获取房源时渠道佣金（收房佣金含线索获取+签约成本），均在毛利层扣减</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>签约/买入</td>
+                                <td><span class="pill pill-expense">支出</span></td>
+                                <td>损益</td>
+                                <td>—</td>
+                                <td>购房定金 / 首付 / 尾款 / 贷款差额 / 交易税费 / 名额使用费</td>
+                                <td>收购：6项取得成本，均计入"售房差额"扣减项；产权登记在代买人（个人）名下</td>
+                            </tr>
+                            <tr class="row-income">
+                                <td>买入</td>
+                                <td><span class="pill pill-income">流入</span></td>
+                                <td>现金流</td>
+                                <td>—</td>
+                                <td>贷款发放流入</td>
+                                <td>收购：银行放款，资产负债项（资产↑+负债↑），不进损益</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>持有期</td>
+                                <td><span class="pill pill-expense">支出</span></td>
+                                <td>损益</td>
+                                <td>—</td>
+                                <td>月供利息（已含于差额）</td>
+                                <td>收购：月供利息作为取得成本已含于"售房差额"公式</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>持有期</td>
+                                <td><span class="pill pill-expense">流出</span></td>
+                                <td>现金流</td>
+                                <td>—</td>
+                                <td>月供本金</td>
+                                <td>收购：贷款本金偿还，资产负债项不进损益；月供发生时与利息拆分两笔记录</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>装修</td>
+                                <td><span class="pill pill-expense">支出</span></td>
+                                <td>损益</td>
+                                <td>设计费 / 装修款 / 软装采购</td>
+                                <td>设计费 / 装修款</td>
+                                <td>收购无软装采购（按实际可增）</td>
+                            </tr>
+                            <tr class="row-pair">
+                                <td>装修</td>
+                                <td><span class="pill pill-pair">垫付⇄核销</span></td>
+                                <td>配对</td>
+                                <td>暂支款（垫付）</td>
+                                <td>暂支款（垫付）</td>
+                                <td>临时垫款，结算前收回</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>在售</td>
+                                <td><span class="pill pill-expense">支出</span></td>
+                                <td>损益</td>
+                                <td>推广费用 / 销售额外激励 / 营销支出</td>
+                                <td>推广费用 / 销售额外激励 / 营销支出</td>
+                                <td>单项目营销费用，不跨项目</td>
+                            </tr>
+                            <tr class="row-finance-in">
+                                <td>签约/卖房</td>
+                                <td><span class="pill pill-finance">融资流入</span></td>
+                                <td>现金流</td>
+                                <td>项目投资款收入</td>
+                                <td>项目投资款收入（含情况二还贷垫付）</td>
+                                <td>融资方投入本金（按笔记录来源：公司自有 / 外部资金）；情况二卖房时追加注入用于垫付还贷</td>
+                            </tr>
+                            <tr class="row-income">
+                                <td><strong>已售</strong></td>
+                                <td><span class="pill pill-income">收入 ★</span></td>
+                                <td>损益</td>
+                                <td><strong>增值服务费</strong></td>
+                                <td><strong>售房差额</strong></td>
+                                <td>各自的核心收入来源（增值服务费为记账与合同的正式科目名）</td>
+                            </tr>
+                            <tr class="row-income">
+                                <td>已售</td>
+                                <td><span class="pill pill-income">流入</span></td>
+                                <td>现金流</td>
+                                <td>—</td>
+                                <td>收卖房定金 / 收卖房首付 / 收卖房尾款</td>
+                                <td>收购：卖出价分节点收取；三项合计=卖出价，已含于差额公式不重复计入；情况二可能为首付监管</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>已售</td>
+                                <td><span class="pill pill-expense">流出</span></td>
+                                <td>现金流</td>
+                                <td>—</td>
+                                <td>卖房还贷（仅情况二）</td>
+                                <td>收购：提前还清剩余贷款，资产负债项不进损益；资金来源为投资款垫付，卖房收款后归还</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>已售</td>
+                                <td><span class="pill pill-expense">支出</span></td>
+                                <td>损益</td>
+                                <td>差额税费（含卖房佣金差额） / 营销推广费 / 运营服务费</td>
+                                <td>差额税费（含卖方税费） / 营销推广费 / 运营服务费</td>
+                                <td>代理：营销推广费=卖出价×0.5%，运营服务费=卖出价×1%，卖房佣金差额=差价×1%，个税=差价×税率（非继承1%/继承20%）；收购：公司承担卖方税费（代持个人=代理中的业主）</td>
+                            </tr>
+                            <tr class="row-pair">
+                                <td>已售</td>
+                                <td><span class="pill pill-pair">退回⇄</span></td>
+                                <td>配对</td>
+                                <td>业主保证金回退</td>
+                                <td>—</td>
+                                <td>代理：退还履约保证金，净额归零</td>
+                            </tr>
+                            <tr class="row-finance-out">
+                                <td>已售</td>
+                                <td><span class="pill pill-finance">融资流出</span></td>
+                                <td>现金流</td>
+                                <td>项目投资款支出（还本）</td>
+                                <td>项目投资款支出（还本·含垫付归还）</td>
+                                <td>归还融资本金；收购情况二含归还卖房垫付投资款</td>
+                            </tr>
+                            <tr class="row-finance-out">
+                                <td>已售</td>
+                                <td><span class="pill pill-finance">融资流出</span></td>
+                                <td>损益</td>
+                                <td>项目分润</td>
+                                <td>项目分润</td>
+                                <td>付给融资方利润</td>
+                            </tr>
+                            <tr class="row-income">
+                                <td>其他</td>
+                                <td><span class="pill pill-income">收入</span></td>
+                                <td>损益</td>
+                                <td>他项收入</td>
+                                <td>他项收入</td>
+                                <td>非主业收入</td>
+                            </tr>
+                            <tr class="row-pair">
+                                <td>其他</td>
+                                <td><span class="pill pill-pair">核销⇄</span></td>
+                                <td>配对</td>
+                                <td>暂支款核销（收回）</td>
+                                <td>暂支款核销（收回）</td>
+                                <td>冲抵暂支款支出</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>项目终结</td>
+                                <td><span class="pill pill-expense">支出</span></td>
+                                <td>损益</td>
+                                <td>结算差额</td>
+                                <td>结算差额</td>
+                                <td>极端兜底平账，只出不进</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SECTION 6: 报表模板预览 ==================== -->
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size:20px;">📑</span> 项目全周期现金流量表 · 模板预览
+                <span class="pill pill-neutral" style="margin-left:auto;">按单个项目统计</span>
+            </div>
+            <div class="card-body no-padding">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>类别</th>
+                                <th>科目</th>
+                                <th>代理业务</th>
+                                <th>收购业务</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="row-income">
+                                <td>1</td>
+                                <td><strong>一、收入</strong></td>
+                                <td>增值服务费 / 售房差额</td>
+                                <td style="color:#059669;font-weight:700;">+ 增值服务费</td>
+                                <td style="color:#059669;font-weight:700;">+ 售房差额</td>
+                                <td>核心收入（增值服务费为记账与合同的正式科目名）</td>
+                            </tr>
+                            <tr class="row-income">
+                                <td>2</td>
+                                <td></td>
+                                <td>他项收入 + 暂支款核销</td>
+                                <td style="color:#059669;">+ 其他</td>
+                                <td style="color:#059669;">+ 其他</td>
+                                <td>非主业+垫款收回</td>
+                            </tr>
+                            <tr class="row-subtotal">
+                                <td colspan="3"><strong>收入合计</strong></td>
+                                <td><strong>Σ 收入</strong></td>
+                                <td><strong>Σ 收入</strong></td>
+                                <td></td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>3</td>
+                                <td><strong>二、直接成本（减项）</strong></td>
+                                <td>收房佣金 / 购房佣金 / 售房佣金</td>
+                                <td style="color:#dc2626;">− 收房佣金</td>
+                                <td style="color:#dc2626;">− 购房佣金 − 售房佣金</td>
+                                <td>佣金统一在毛利层扣减</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>4</td>
+                                <td></td>
+                                <td>装修类（设计/装修/软装）</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td>直接改造成本</td>
+                            </tr>
+                            <tr class="row-subtotal">
+                                <td colspan="3"><strong>📌 毛利 = 收入 − 直接成本</strong></td>
+                                <td><strong>= 毛利</strong></td>
+                                <td><strong>= 毛利</strong></td>
+                                <td>第一层利润</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>5</td>
+                                <td><strong>三、运营费用（减项）</strong></td>
+                                <td>营销类（推广/额外激励/其他）</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td></td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>6</td>
+                                <td></td>
+                                <td>营销推广费 = 卖出价 × 0.5%</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td></td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>7</td>
+                                <td></td>
+                                <td>运营服务费 = 卖出价 × 1%</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td></td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>8</td>
+                                <td></td>
+                                <td>差额税费（含卖房佣金差额）</td>
+                                <td style="color:#dc2626;">− 差价×1%+个税</td>
+                                <td style="color:#dc2626;">− 卖方税费</td>
+                                <td>代理：卖房佣金差额=差价×1%，个税=差价×税率（非继承1%/继承20%，仅房东有个税时产生）；收购：公司承担卖方税费（代持个人=代理中的业主）</td>
+                            </tr>
+                            <tr class="row-finance-out">
+                                <td>9</td>
+                                <td><strong>四、融资成本（减项）</strong></td>
+                                <td>项目分润</td>
+                                <td style="color:#dc2626;">− 分润</td>
+                                <td style="color:#dc2626;">− 分润</td>
+                                <td>投资款本金往来不进损益；首付资金机会成本在跟投逻辑中计算，不在项目中体现</td>
+                            </tr>
+                            <tr class="row-pair">
+                                <td>10</td>
+                                <td><strong>五、配对净额</strong></td>
+                                <td>保证金净额 + 暂支款净额</td>
+                                <td style="color:#0ea5e9;">→ 0</td>
+                                <td style="color:#0ea5e9;">→ 0</td>
+                                <td>配对核销，净额归零，不进损益</td>
+                            </tr>
+                            <tr class="row-expense">
+                                <td>11</td>
+                                <td><strong>六、兜底</strong></td>
+                                <td>结算差额</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td style="color:#dc2626;">− 支出</td>
+                                <td>极端情况平账</td>
+                            </tr>
+                            <tr style="background:#ecfdf5;font-weight:700;">
+                                <td colspan="3"><strong>📌 项目净利润（权责发生制）</strong></td>
+                                <td><strong>= 毛利 − 运营费用 − 融资成本 ± 其他</strong></td>
+                                <td style="color:#059669;"><strong>= 毛利 − 运营费用 − 融资成本 ± 其他</strong></td>
+                                <td>融资本金往来不计入；全周期最终利润</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SECTION 6.5: 双口径体系（损益表 + 现金流量表） ==================== -->
+        <div class="card" style="border-left:4px solid #0ea5e9;">
+            <div class="card-header">
+                <span style="font-size:20px;">⚖️</span> 双口径体系 · 损益表 + 现金流量表（并行）
+                <span class="pill pill-neutral" style="margin-left:auto;">净利润 ≠ 净现金流 · 两表独立编制</span>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <!-- 损益口径 -->
+                    <div style="padding:14px;background:#fefce8;border:1.5px solid #fde68a;border-radius:10px;">
+                        <div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:8px;">📊 损益口径（利润表）</div>
+                        <div style="font-size:11px;color:#64748b;margin-bottom:10px;">目的：核算项目利润｜遵循：权责发生制</div>
+                        <div style="font-size:12px;line-height:1.9;">
+                            <strong>① 收入</strong>：售房差额 = 卖出价 − (取得成本6项 + 贷款 + 月供利息)<br>
+                            <strong>② 毛利</strong> = 收入 − 购房佣金 − 售房佣金 − 装修类<br>
+                            <strong>③ 净利润</strong> = 毛利 − 运营费用 − 融资成本 ± 其他
+                        </div>
+                        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #fde68a;font-size:11px;color:#92400e;">
+                            <strong>不进损益项</strong>：贷款发放/偿还、月供本金、卖房还贷、投资款本金往来、卖房收款节点、保证金/暂支款配对
+                        </div>
+                    </div>
+                    <!-- 现金流口径 -->
+                    <div style="padding:14px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;">
+                        <div style="font-size:14px;font-weight:700;color:#1e40af;margin-bottom:8px;">💧 现金流口径（现金流量表）</div>
+                        <div style="font-size:11px;color:#64748b;margin-bottom:10px;">目的：追踪资金进出｜遵循：收付实现制</div>
+                        <div style="font-size:12px;line-height:1.9;">
+                            <strong style="color:#059669;">流入</strong>：贷款发放 + 投资款收入（含垫付）+ 收卖房定金/首付/尾款<br>
+                            <strong style="color:#dc2626;">流出</strong>：6项取得成本 + 购房佣金 + 月供本金 + 月供利息 + 卖房还贷（仅情况二）+ 装修/营销/运营/税费 + 投资款还本 + 项目分润
+                        </div>
+                        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #bfdbfe;font-size:11px;color:#1e40af;">
+                            <strong>关键差异项</strong>：贷款往来、月供本金、卖房还贷、投资款往来、卖房收款时序
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top:12px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;color:#166534;">
+                    <strong>📌 两表关系</strong>：净利润（损益表）<strong>≠</strong> 净现金流（现金流量表）。差异来源于资产负债项的现金往来（贷款、投资款、垫付款）以及卖房收款的时序分布。两表独立编制，互不干扰，共同完整描述项目财务状况。
+                </div>
+                <div style="margin-top:10px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:12px;color:#991b1b;">
+                    <strong>⚠️ 情况二（需还贷）资金闭环</strong>：投资款垫付（流入）→ 卖房还贷（流出）→ 收卖房尾款（流入）→ 归还垫付投资款（流出）。利润与情况一相同，但现金流时序复杂，需投资款垫付还贷资金。
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SECTION 7: 融资流程 ==================== -->
+        <div class="card" style="border-left:4px solid #f59e0b;">
+            <div class="card-header">
+                <span style="font-size:20px;">💰</span> 融资流程（两种业务通用）
+                <span class="pill pill-finance" style="margin-left:auto;">项目投资款 · 按笔记录来源</span>
+            </div>
+            <div class="card-body">
+                <div class="flowchart" style="justify-content:center;">
+                    <div class="flow-node phase-finance" style="min-width:160px;max-width:200px;">
+                        <div class="flow-node-title">⬇ 签约阶段</div>
+                        <div class="flow-node-subtitle">融资流入</div>
+                        <div class="flow-items">
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>项目投资款收入</div>
+                            <div class="flow-item" style="background:#fef3c7;color:#92400e;font-size:10px;">来源：[公司自有 | 外部资金]</div>
+                        </div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <div class="flow-node" style="min-width:130px;max-width:160px;background:#fffdf7;border:1.5px dashed #fcd34d;">
+                        <div class="flow-node-title" style="color:#92400e;">🏗️ 资金使用</div>
+                        <div class="flow-node-subtitle">装修/营销等</div>
+                        <div class="flow-items">
+                            <div class="flow-item" style="background:#fffdf0;color:#92400e;justify-content:center;">支撑项目运营</div>
+                        </div>
+                    </div>
+                    <div class="flow-connector"><span class="connector-line"></span><span class="connector-arrow">▶</span></div>
+                    <div class="flow-node phase-finance" style="min-width:160px;max-width:200px;">
+                        <div class="flow-node-title">⬆ 已售阶段</div>
+                        <div class="flow-node-subtitle">融资流出</div>
+                        <div class="flow-items">
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>投资款支出（还本）</div>
+                            <div class="flow-item finance-item"><span class="flow-item-dot finance-dot"></span>项目分润</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align:center;margin-top:12px;font-size:12px;color:#64748b;">
+                    融资方在"签约"阶段注入资金 → 项目方用于装修/营销 → 售出后项目方归还本金 + 支付分润
+                </div>
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:12px;color:#92400e;">
+                    <strong>📋 资金来源记录：</strong>每笔投资款需记录来源标签（<strong>公司自有资金池 / 外部资金合作方</strong>），报表层面合并为"项目投资款"统一展示，不拆分为独立科目。账目按项目独立记录。
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SECTION 8: 关键要点总结 ==================== -->
+        <div class="card" style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);">
+            <div class="card-header">
+                <span style="font-size:20px;">✅</span> 关键要点总结
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>🔵 代理收入</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">增值服务费 = 卖出价 − 业主底价<br>（记账与合同的正式科目名）</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>🟣 收购收入</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">售房差额 = 卖出价 − 买进总成本（含原始贷款、月供利息）<br>购房佣金/售房佣金在毛利层扣减；产权登记在代买人名下</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>📊 利润三层</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">① 收入 = 增值服务费/售房差额<br>② 毛利 = 收入 − 佣金 − 装修类<br>③ 净利润 = 毛利 − 运营费用 − 融资成本 ± 其他</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>📆 贷款与利息处理</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">月供 = 本金 + 利息<br>月供利息已含于售房差额公式（损益口径）<br>月供本金为现金流科目（资产负债项，不进损益，单独记录）<br>首付资金机会成本在跟投逻辑中计算；投资款本金往来不进损益</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>🏠 卖房两种情况</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">情况一（不需还贷）：收定金→收首付→过户→收尾款<br>情况二（需还贷）：收首付→投资款垫付→卖房还贷→过户→收尾款→归还垫付<br>利润相同，现金流时序不同；项目需标记类型</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>💧 现金流新增科目</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">月供本金（持有期·资产负债项）<br>卖房还贷（已售·仅情况二·投资款垫付）<br>收卖房定金/首付/尾款（已售·分节点收款）<br>贷款发放流入（买入·资产负债项）</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>💰 税费承担</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">代理：公司承担差额部分税费（卖房佣金差额+个税）<br>收购：公司承担卖方税费（代持个人=代理中的业主）<br>个税：差价×税率（非继承1%/继承20%，仅房东有个税时）</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>⇄ 配对核销</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">履约保证金 ⇄ 业主保证金回退<br>暂支款 ⇄ 暂支款核销<br>净额均应为零</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>💰 融资模式</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">两种业务通用，按笔记录来源（公司自有 / 外部资金）<br>签约阶段流入 → 已售阶段流出（本金+分润）<br>本金往来不进损益，仅分润作为融资成本扣减<br>情况二卖房时追加投资款垫付还贷资金</p>
+                    </div>
+                    <div style="padding:14px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;">
+                        <strong>⚖️ 双口径体系</strong>
+                        <p style="font-size:13px;color:#475569;margin-top:4px;">损益表（权责发生制）：算利润<br>现金流量表（收付实现制）：算资金流<br>净利润 ≠ 净现金流<br>两表独立编制，互不干扰</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align:center;padding:8px;font-size:11px;color:#94a3b8;">
+            房产投资业务 · 现金流逻辑可视化看板 | 按项目全周期统计 · 权责发生制（利润口径）
+        </div>
+
+    </div>
+</body>
+</html>

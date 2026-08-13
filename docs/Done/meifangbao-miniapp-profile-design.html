@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>美房宝小程序 · 「我的」页面高保真设计稿</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@400;600&family=Inter:wght@400;450;480;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* 暖色令牌（对齐 miniapp/pages/projects/list 设计风格） */
+      --warm-bg: hsl(40, 16%, 98%);
+      --warm-card: #ffffff;
+      --warm-fg: hsl(37.5, 15.69%, 20%);
+      --warm-muted-fg: hsl(36, 19.84%, 49.41%);
+      --warm-muted: hsl(44, 26.32%, 88.82%);
+      --warm-accent: hsl(40, 24.09%, 73.14%);
+      --warm-border: hsl(43.33, 23.08%, 84.71%);
+      --shadow-subtle: rgba(60, 50, 40, 0.06) 0px 0px 0px 1px, rgba(60, 50, 40, 0.10) 0px 20px 30px -12px, rgba(60, 50, 40, 0.08) 0px 8px 12px -6px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 48px 24px 120px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
+      background: hsl(40, 14%, 94%);
+      color: var(--warm-fg);
+      line-height: 1.5;
+      letter-spacing: -0.009em;
+    }
+
+    header {
+      max-width: 1200px;
+      margin: 0 auto 40px;
+    }
+
+    h1 {
+      font-family: "Source Serif Pro", "Fraunces", "Noto Serif SC", "Songti SC", Georgia, serif;
+      font-size: 42px;
+      font-weight: 400;
+      line-height: 1.12;
+      letter-spacing: -0.6px;
+      margin: 0 0 14px;
+      color: var(--warm-fg);
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--warm-muted-fg);
+      max-width: 760px;
+      line-height: 1.6;
+    }
+
+    .meta {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 24px;
+      font-size: 13px;
+      color: var(--warm-muted-fg);
+    }
+
+    .section {
+      max-width: 1200px;
+      margin: 0 auto 64px;
+    }
+
+    .section-title {
+      font-family: "Source Serif Pro", "Noto Serif SC", "Songti SC", Georgia, serif;
+      font-size: 26px;
+      font-weight: 400;
+      margin: 0 0 8px;
+      letter-spacing: -0.23px;
+    }
+
+    .section-desc {
+      font-size: 14px;
+      color: var(--warm-muted-fg);
+      margin-bottom: 24px;
+    }
+
+    .screen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 48px;
+      align-items: start;
+    }
+
+    .screen-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .screen-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--warm-muted-fg);
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+
+    .phone {
+      width: 375px;
+      height: 812px;
+      background: var(--warm-bg);
+      border-radius: 48px;
+      box-shadow: var(--shadow-subtle);
+      overflow: hidden;
+      position: relative;
+      border: 10px solid var(--warm-fg);
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 26px;
+      background: var(--warm-fg);
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      z-index: 100;
+    }
+
+    .status-bar {
+      height: 40px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--warm-fg);
+      position: relative;
+      z-index: 90;
+    }
+
+    .status-right {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .screen-body {
+      width: 100%;
+      height: 648px;
+      overflow-y: auto;
+      position: relative;
+      background: var(--warm-bg);
+      padding-bottom: 20px;
+    }
+
+    .screen-body::-webkit-scrollbar { display: none; }
+
+    .wechat-nav {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: hsla(40, 16%, 98%, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 0.5px solid var(--warm-border);
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--warm-fg);
+      z-index: 80;
+    }
+
+    .nav-back {
+      position: absolute;
+      left: 12px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--warm-fg);
+    }
+
+    .home-indicator {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 134px;
+      height: 5px;
+      background: var(--warm-fg);
+      border-radius: 100px;
+      z-index: 100;
+      opacity: 0.85;
+    }
+
+    .tab-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 84px;
+      padding-bottom: 20px;
+      background: hsla(40, 16%, 98%, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 0.5px solid var(--warm-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 90;
+    }
+
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--warm-muted-fg);
+    }
+
+    .tab-item.active {
+      color: var(--warm-fg);
+      font-weight: 500;
+    }
+
+    .tab-icon {
+      width: 22px;
+      height: 22px;
+      color: currentColor;
+    }
+
+    /* ===== 「我的」页面内容 ===== */
+    .page-pad {
+      padding: 24px 20px 20px;
+    }
+
+    /* 用户基础信息卡 */
+    .user-card {
+      background: var(--warm-card);
+      border: 1px solid var(--warm-border);
+      border-radius: 28px;
+      padding: 26px 24px;
+      box-shadow: 0 6px 24px rgba(60, 50, 40, 0.05);
+    }
+
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--warm-fg);
+      color: var(--warm-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 500;
+      font-family: "Source Serif Pro", "Noto Serif SC", serif;
+      flex-shrink: 0;
+    }
+
+    .user-main { flex: 1; min-width: 0; }
+
+    .user-name {
+      font-family: "Source Serif Pro", "Noto Serif SC", "Songti SC", serif;
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--warm-muted);
+      color: var(--warm-muted-fg);
+      white-space: nowrap;
+    }
+    .role-badge--staff {
+      background: var(--warm-fg);
+      color: var(--warm-bg);
+    }
+
+    .user-username {
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--warm-muted-fg);
+    }
+
+    .user-fields {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--warm-border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .field-row {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+    }
+    .field-label {
+      width: 72px;
+      color: var(--warm-muted-fg);
+      flex-shrink: 0;
+    }
+    .field-value {
+      color: var(--warm-fg);
+    }
+
+    /* 手机号：可编辑字段（未填 → 完善手机号 → 点击输入 → 更新） */
+    .phone-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: default;
+      min-height: 24px;
+    }
+    .phone-value.has-phone {
+      color: var(--warm-fg);
+    }
+    .phone-value.empty {
+      color: var(--warm-muted-fg);
+      font-weight: 500;
+    }
+    .phone-input {
+      flex: 1;
+      border: 1px solid var(--warm-border);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 14px;
+      color: var(--warm-fg);
+      background: var(--warm-bg);
+      outline: none;
+      min-width: 0;
+    }
+    .phone-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--warm-muted);
+      color: var(--warm-muted-fg);
+      font-size: 12px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    /* 菜单分组 */
+    .menu-group-title {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--warm-muted-fg);
+      margin: 24px 8px 10px;
+    }
+
+    .menu-list {
+      background: var(--warm-card);
+      border: 1px solid var(--warm-border);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(60, 50, 40, 0.04);
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--warm-border);
+      cursor: default;
+    }
+    .menu-item:last-child { border-bottom: none; }
+
+    .menu-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 16px;
+      color: var(--warm-fg);
+      font-weight: 500;
+    }
+
+    .menu-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: var(--warm-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--warm-muted-fg);
+      flex-shrink: 0;
+    }
+    .menu-icon svg { width: 18px; height: 18px; }
+
+    .menu-sub {
+      font-size: 12px;
+      color: var(--warm-muted-fg);
+      margin-top: 2px;
+    }
+
+    .menu-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--warm-muted-fg);
+    }
+    .route-hint {
+      font-size: 11px;
+      color: var(--warm-accent);
+      opacity: 0.85;
+      max-width: 150px;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .chevron {
+      font-size: 20px;
+      line-height: 1;
+      color: var(--warm-muted-fg);
+    }
+
+    .internal-flag {
+      margin: 14px 8px 0;
+      font-size: 12px;
+      color: var(--warm-muted-fg);
+    }
+
+    .foot-note {
+      margin: 22px 8px 0;
+      font-size: 12px;
+      color: var(--warm-muted-fg);
+      line-height: 1.7;
+    }
+
+    /* ===== 文档说明区 ===== */
+    .route-table {
+      width: 100%;
+      max-width: 1200px;
+      border-collapse: collapse;
+      background: var(--warm-card);
+      border: 1px solid var(--warm-border);
+      border-radius: 20px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .route-table th, .route-table td {
+      text-align: left;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--warm-border);
+      vertical-align: top;
+    }
+    .route-table th {
+      background: var(--warm-muted);
+      color: var(--warm-muted-fg);
+      font-weight: 500;
+      font-size: 13px;
+    }
+    .route-table tr:last-child th, .route-table tr:last-child td { border-bottom: none; }
+    .route-table code {
+      font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      color: var(--warm-muted-fg);
+      background: var(--warm-muted);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .notes {
+      background: var(--warm-muted);
+      border: 1px solid var(--warm-border);
+      border-radius: 20px;
+      padding: 20px 24px;
+      font-size: 14px;
+      color: var(--warm-fg);
+      line-height: 1.8;
+    }
+    .notes b { font-weight: 600; }
+    .notes ul { margin: 8px 0 0; padding-left: 20px; }
+    .notes li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>我的 · 个人中心设计稿</h1>
+  <div class="subtitle">
+    美房宝小程序「我的」页面（pages/profile）高保真设计稿。视觉延续 C 端暖色编辑风格（暖米画布、深棕前景、米色描边、大圆角卡片），与房源列表页保持一致。
+  </div>
+  <div class="meta">
+    <span>页面：pages/profile/index</span>
+    <span>身份：普通用户 / 内部员工</span>
+    <span>底部 Tab：房源 / 服务 / 估价 / 我的</span>
+  </div>
+</header>
+
+<section class="section">
+  <h2 class="section-title">页面结构 · 三部分功能</h2>
+  <div class="section-desc">
+    1 用户基础信息（昵称 / 用户名 / 手机号 / 权限身份） · 2 功能菜单（我的估价 / 内部入口） · 3 内部入口（仅内部用户显示：带看记录 / 装修记录 / 项目记账 / 房源查询）。
+  </div>
+  <div class="screen-grid">
+
+    <!-- 版本一：普通用户 -->
+    <div class="screen-wrap">
+      <div class="screen-label">版本一 · 普通用户（非内部，无内部入口）</div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="status-right"><span>5G</span><span>100%</span></div></div>
+        <div class="wechat-nav">
+          <div class="nav-back">‹</div>
+          我的
+        </div>
+        <div class="screen-body">
+          <div class="page-pad">
+
+            <!-- 用户基础信息 -->
+            <div class="user-card">
+              <div class="user-row">
+                <div class="avatar">陈</div>
+                <div class="user-main">
+                  <div class="user-name">陈先生 <span class="role-badge">普通用户</span></div>
+                  <div class="user-username">@chenxs</div>
+                </div>
+              </div>
+              <div class="user-fields">
+                <div class="field-row"><div class="field-label">手机号</div>
+                  <div class="phone-field" data-masked="" data-empty-label="完善手机号">
+                    <span class="phone-value"></span>
+                    <input class="phone-input" type="tel" placeholder="请输入手机号" maxlength="11" />
+                    <span class="phone-action">›</span>
+                  </div>
+                </div>
+                <div class="field-row"><div class="field-label">权限身份</div><div class="field-value">普通用户 · 已认证</div></div>
+              </div>
+            </div>
+
+            <!-- 功能菜单：我的估价 -->
+            <div class="menu-group-title">我的服务</div>
+            <div class="menu-list">
+              <div class="menu-item">
+                <div class="menu-left">
+                  <div class="menu-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+                  </div>
+                  我的估价
+                </div>
+                <div class="menu-right"><span class="chevron">›</span></div>
+              </div>
+            </div>
+
+            <div style="height: 60px;"></div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>房源</span></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>服务</span></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17l6-6 4 4 8-8"/></svg><span>估价</span></div>
+          <div class="tab-item active"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>我的</span></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+    <!-- 版本二：内部用户 -->
+    <div class="screen-wrap">
+      <div class="screen-label">版本二 · 内部员工（含内部入口 4 项）</div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="status-right"><span>5G</span><span>100%</span></div></div>
+        <div class="wechat-nav">
+          <div class="nav-back">‹</div>
+          我的
+        </div>
+        <div class="screen-body">
+          <div class="page-pad">
+
+            <!-- 用户基础信息 -->
+            <div class="user-card">
+              <div class="user-row">
+                <div class="avatar">李</div>
+                <div class="user-main">
+                  <div class="user-name">李顾问 <span class="role-badge role-badge--staff">内部员工</span></div>
+                  <div class="user-username">@liguwen</div>
+                </div>
+              </div>
+              <div class="user-fields">
+                <div class="field-row"><div class="field-label">手机号</div>
+                  <div class="phone-field" data-masked="139****2345" data-empty-label="完善手机号">
+                    <span class="phone-value"></span>
+                    <input class="phone-input" type="tel" placeholder="请输入手机号" maxlength="11" />
+                    <span class="phone-action">›</span>
+                  </div>
+                </div>
+                <div class="field-row"><div class="field-label">权限身份</div><div class="field-value">置业顾问 · 内部</div></div>
+              </div>
+            </div>
+
+            <!-- 功能菜单：我的估价 -->
+            <div class="menu-group-title">我的服务</div>
+            <div class="menu-list">
+              <div class="menu-item">
+                <div class="menu-left">
+                  <div class="menu-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+                  </div>
+                  我的估价
+                </div>
+                <div class="menu-right"><span class="chevron">›</span></div>
+              </div>
+            </div>
+
+            <!-- 内部入口（仅内部用户） -->
+            <div class="menu-group-title">内部入口 · 仅内部用户可见</div>
+            <div class="menu-list">
+              <div class="menu-item">
+                <div class="menu-left">
+                  <div class="menu-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                  </div>
+                  <div>
+                    <div>带看记录</div>
+                    <div class="menu-sub">带看 / 谈价 / 面谈</div>
+                  </div>
+                </div>
+                <div class="menu-right"><span class="chevron">›</span></div>
+              </div>
+              <div class="menu-item">
+                <div class="menu-left">
+                  <div class="menu-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M6 20V9l6-5 6 5v11"/><path d="M9 20v-6h6v6"/></svg>
+                  </div>
+                  <div>
+                    <div>装修记录</div>
+                    <div class="menu-sub">改造 / 施工进度</div>
+                  </div>
+                </div>
+                <div class="menu-right"><span class="chevron">›</span></div>
+              </div>
+              <div class="menu-item">
+                <div class="menu-left">
+                  <div class="menu-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 15h4"/></svg>
+                  </div>
+                  <div>
+                    <div>项目记账</div>
+                    <div class="menu-sub">收支 / 台账</div>
+                  </div>
+                </div>
+                <div class="menu-right"><span class="chevron">›</span></div>
+              </div>
+              <div class="menu-item">
+                <div class="menu-left">
+                  <div class="menu-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h7"/></svg>
+                  </div>
+                  <div>
+                    <div>房源查询</div>
+                    <div class="menu-sub">交易中心月度签约房源</div>
+                  </div>
+                </div>
+                <div class="menu-right"><span class="chevron">›</span></div>
+              </div>
+            </div>
+
+            <div class="internal-flag">内部入口由后台身份权限控制显隐，非内部用户不可见。</div>
+
+            <div style="height: 60px;"></div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>房源</span></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>服务</span></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17l6-6 4 4 8-8"/></svg><span>估价</span></div>
+          <div class="tab-item active"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>我的</span></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">内部入口 · 路由映射</h2>
+  <div class="section-desc">内部入口各菜单项对应的后台（admin）业务页面路由，供开发对齐。</div>
+  <table class="route-table">
+    <thead>
+      <tr><th style="width:120px;">菜单</th><th>目标后台路由</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>带看记录</td>
+        <td><code>admin/projects/9b5310c0-168a-4fb9-8225-65725ccb50fe/selling</code></td>
+        <td>带看 / 谈价 / 面谈 记录页</td>
+      </tr>
+      <tr>
+        <td>装修记录</td>
+        <td><code>admin/projects/75428e9b-1fcb-4eb8-b0c7-306fa3a60067/renovation</code></td>
+        <td>改造 / 施工进度记录页</td>
+      </tr>
+      <tr>
+        <td>项目记账</td>
+        <td><code>admin/ledger/3646252d-f302-4f77-96b8-54c2b00aae67</code></td>
+        <td>项目收支台账页</td>
+      </tr>
+      <tr>
+        <td>房源查询</td>
+        <td><code>admin/properties</code></td>
+        <td>交易中心每月签约房源明细查询</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="section">
+  <h2 class="section-title">交互要点与下一步</h2>
+  <div class="notes">
+    <ul>
+      <li><b>条件显隐：</b>「内部入口」分组仅当用户权限身份为内部员工时渲染；普通用户只显示「我的估价」。</li>
+      <li><b>身份来源：</b>由后台扫码绑定微信后下发权限身份，前端据此控制内部入口可见性。</li>
+      <li><b>用户基础信息：</b>昵称 / 用户名 / 手机号（脱敏）/ 权限身份。</li>
+      <li><b>手机号完善：</b>未填写手机号的用户，手机号位置显示「完善手机号」；点击后切换为输入框，填写（≥5 位）确认后脱敏更新展示（如 138****5678）。</li>
+      <li><b>下一步建议：</b>本稿为高保真设计稿，可作为 <code>miniapp/pages/profile/index</code> 真实页面实现的视觉基准（wxml / wxss / ts）。</li>
+    </ul>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll('.phone-field').forEach(function (el) {
+    var masked = el.getAttribute('data-masked') || '';
+    var emptyLabel = el.getAttribute('data-empty-label') || '完善手机号';
+    var valueEl = el.querySelector('.phone-value');
+    var inputEl = el.querySelector('.phone-input');
+    function mask(p) {
+      return p && p.length === 11 ? p.slice(0, 3) + '****' + p.slice(7) : p;
+    }
+    function render() {
+      if (masked) {
+        valueEl.textContent = masked;
+        valueEl.className = 'phone-value has-phone';
+      } else {
+        valueEl.textContent = emptyLabel;
+        valueEl.className = 'phone-value empty';
+      }
+      valueEl.style.display = '';
+      inputEl.style.display = 'none';
+    }
+    el.addEventListener('click', function () {
+      valueEl.style.display = 'none';
+      inputEl.style.display = 'block';
+      inputEl.focus();
+    });
+    function commit() {
+      var v = inputEl.value.trim();
+      if (v && v.length >= 5) {
+        masked = mask(v);
+        inputEl.value = '';
+      }
+      render();
+    }
+    inputEl.addEventListener('blur', commit);
+    inputEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        commit();
+        inputEl.blur();
+      }
+    });
+    render();
+  });
+</script>
+
+</body>
+</html>

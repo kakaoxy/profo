@@ -1,0 +1,2637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>小区户型图库管理模块 · 高保真设计稿</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Inter:wght@400;430;450;480;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       Steep Design Tokens — 与项目 DESIGN.md 完全对齐
+       ============================================================ */
+    :root {
+      /* Colors */
+      --color-ink: #17191c;
+      --color-pure-white: #ffffff;
+      --color-fog: #f7f7f8;
+      --color-ash: #4c4c4c;
+      --color-graphite: #777b86;
+      --color-dove: #a3a6af;
+      --color-slate: #8b8c8d;
+      --color-obsidian: #000000;
+      --color-rust: #5d2a1a;
+      --color-apricot-wash: #fbe1d1;
+      --color-sky-wash: #d3e3fc;
+
+      /* Typography — Font Families */
+      --font-signifier: 'Source Serif 4', 'Source Serif Pro', 'Tiempos Headline', Georgia, 'Songti SC', serif;
+      --font-sohne: 'Inter', 'Sohne', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+      /* Typography — Scale */
+      --text-caption: 14px;
+      --leading-caption: 1.5;
+      --tracking-caption: -0.13px;
+      --text-body: 16px;
+      --leading-body: 1.38;
+      --tracking-body: -0.14px;
+      --text-body-lg: 18px;
+      --leading-body-lg: 1.35;
+      --tracking-body-lg: -0.16px;
+      --text-subheading: 22px;
+      --leading-subheading: 1.25;
+      --tracking-subheading: -0.2px;
+      --text-heading-sm: 26px;
+      --leading-heading-sm: 1.18;
+      --tracking-heading-sm: -0.23px;
+      --text-heading: 44px;
+      --leading-heading: 1.1;
+      --tracking-heading: -0.66px;
+
+      /* Spacing */
+      --spacing-4: 4px;
+      --spacing-8: 8px;
+      --spacing-12: 12px;
+      --spacing-16: 16px;
+      --spacing-20: 20px;
+      --spacing-24: 24px;
+      --spacing-28: 28px;
+      --spacing-32: 32px;
+      --spacing-40: 40px;
+      --spacing-64: 64px;
+      --spacing-80: 80px;
+
+      /* Border Radius */
+      --radius-images: 12px;
+      --radius-2xl: 16px;
+      --radius-cards: 24px;
+      --radius-buttons: 9999px;
+
+      /* Shadows — 三层堆叠：1px ink-tinted border + 20px/25px drop + 8px/10px micro drop */
+      --shadow-subtle: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.10) 0px 20px 25px -5px, rgba(0, 0, 0, 0.10) 0px 8px 10px -6px;
+      --shadow-card: rgba(4, 23, 43, 0.04) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 12px 24px -8px;
+      --shadow-dropdown: rgba(4, 23, 43, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.12) 0px 16px 32px -8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 56px 24px 120px;
+      font-family: var(--font-sohne);
+      font-size: var(--text-body);
+      line-height: var(--leading-body);
+      letter-spacing: var(--tracking-body);
+      background: var(--color-fog);
+      color: var(--color-ink);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ============================================================
+       文档头部 / 元信息
+       ============================================================ */
+    .doc-header {
+      max-width: 1280px;
+      margin: 0 auto 64px;
+    }
+    .doc-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--color-apricot-wash);
+      color: var(--color-rust);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: var(--radius-buttons);
+      margin-bottom: 20px;
+    }
+    .doc-eyebrow::before {
+      content: "";
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--color-rust);
+    }
+    h1.doc-title {
+      font-family: var(--font-signifier);
+      font-weight: 400;
+      font-size: 44px;
+      line-height: 1.1;
+      letter-spacing: -0.66px;
+      margin: 0 0 16px;
+      color: var(--color-ink);
+    }
+    .doc-subtitle {
+      font-size: 18px;
+      line-height: 1.5;
+      color: var(--color-ash);
+      max-width: 760px;
+      margin: 0 0 28px;
+    }
+    .doc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 24px;
+      font-size: 13px;
+      color: var(--color-graphite);
+    }
+    .doc-meta code {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      color: var(--color-ink);
+      background: var(--color-pure-white);
+      border: 1px solid var(--color-dove);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .doc-meta strong { color: var(--color-ink); font-weight: 500; }
+
+    /* ============================================================
+       Section 容器
+       ============================================================ */
+    .section {
+      max-width: 1280px;
+      margin: 0 auto 80px;
+    }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--color-dove);
+    }
+    .section-title {
+      font-family: var(--font-signifier);
+      font-weight: 400;
+      font-size: 26px;
+      line-height: 1.18;
+      letter-spacing: -0.23px;
+      color: var(--color-ink);
+      margin: 0;
+    }
+    .section-tag {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-graphite);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .section-desc {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--color-ash);
+      max-width: 720px;
+      margin: 0 0 32px;
+    }
+
+    /* ============================================================
+       Mock 屏幕外壳 — 模拟 (main) 布局
+       ============================================================ */
+    .screen-frame {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      background: var(--color-pure-white);
+      border-radius: var(--radius-cards);
+      box-shadow: var(--shadow-subtle);
+      overflow: hidden;
+      min-height: 720px;
+    }
+
+    /* 模拟侧边栏 */
+    .mock-sidebar {
+      background: var(--color-fog);
+      padding: 24px 16px;
+      border-right: 1px solid var(--color-dove);
+      font-family: var(--font-sohne);
+    }
+    .mock-sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px 24px;
+      border-bottom: 1px solid var(--color-dove);
+      margin-bottom: 16px;
+    }
+    .mock-sidebar-logo-mark {
+      width: 28px; height: 28px;
+      background: var(--color-ink);
+      color: var(--color-pure-white);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-signifier);
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .mock-sidebar-logo-text {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--color-ink);
+    }
+    .mock-nav-group { margin-bottom: 20px; }
+    .mock-nav-group-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--color-graphite);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0 8px 8px;
+    }
+    .mock-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 450;
+      color: var(--color-ink);
+      cursor: default;
+      margin-bottom: 2px;
+    }
+    .mock-nav-item.is-active {
+      background: var(--color-pure-white);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .mock-nav-item.is-sub {
+      padding-left: 32px;
+      font-size: 13px;
+      color: var(--color-ash);
+    }
+    .mock-nav-item.is-sub.is-active {
+      color: var(--color-ink);
+      background: var(--color-apricot-wash);
+    }
+    .mock-nav-icon {
+      width: 16px; height: 16px;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    /* 模拟主体区 */
+    .mock-main {
+      background: var(--color-fog);
+      padding: 32px 40px 40px;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .mock-main-narrow { padding: 24px 28px 32px; }
+
+    /* ============================================================
+       页面级元素
+       ============================================================ */
+    .page-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .page-head-text h2 {
+      font-family: var(--font-signifier);
+      font-weight: 400;
+      font-size: 32px;
+      line-height: 1.15;
+      letter-spacing: -0.4px;
+      margin: 0 0 6px;
+      color: var(--color-ink);
+    }
+    .page-head-text p {
+      font-size: 14px;
+      color: var(--color-ash);
+      margin: 0;
+    }
+
+    /* Pill CTA — Ink 填充，唯一主按钮 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-buttons);
+      font-family: var(--font-sohne);
+      font-size: 14px;
+      font-weight: 450;
+      letter-spacing: -0.009em;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--color-ink);
+      color: var(--color-pure-white);
+    }
+    .btn-primary:hover { background: #2a2d31; }
+    .btn-primary:disabled {
+      background: var(--color-dove);
+      color: var(--color-pure-white);
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: var(--color-pure-white);
+      color: var(--color-ink);
+      border: 1px solid var(--color-dove);
+    }
+    .btn-secondary:hover { background: var(--color-fog); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--color-ink);
+      padding: 10px 14px;
+    }
+    .btn-ghost:hover { background: var(--color-fog); }
+    .btn-danger {
+      background: var(--color-pure-white);
+      color: var(--color-rust);
+      border: 1px solid var(--color-rust);
+    }
+    .btn-danger:hover { background: var(--color-apricot-wash); }
+    .btn-icon {
+      width: 36px; height: 36px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 50%;
+    }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .btn svg { width: 16px; height: 16px; stroke-width: 1.75; }
+
+    /* ============================================================
+       工具栏 / 筛选条
+       ============================================================ */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .community-search {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--color-pure-white);
+      border: 1px solid var(--color-dove);
+      border-radius: var(--radius-2xl);
+      padding: 10px 14px 10px 14px;
+      min-width: 320px;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .community-search:focus-within {
+      border-color: var(--color-ink);
+      box-shadow: 0 0 0 3px rgba(23, 25, 28, 0.06);
+    }
+    .community-search-icon {
+      width: 16px; height: 16px;
+      stroke: var(--color-graphite);
+      stroke-width: 1.75;
+      fill: none;
+      flex-shrink: 0;
+    }
+    .community-search-input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: var(--font-sohne);
+      font-size: 14px;
+      font-weight: 450;
+      color: var(--color-ink);
+      padding: 0;
+    }
+    .community-search-input::placeholder {
+      color: var(--color-graphite);
+      font-weight: 400;
+    }
+    .community-search-meta {
+      font-size: 11px;
+      color: var(--color-graphite);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .community-search-clear {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: none;
+      background: var(--color-fog);
+      color: var(--color-graphite);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.18s;
+    }
+    .community-search-clear:hover { background: var(--color-dove); color: var(--color-ink); }
+    .community-search-clear svg { width: 10px; height: 10px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+
+    /* 搜索结果下拉 */
+    .community-search-results {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: var(--color-pure-white);
+      border-radius: var(--radius-2xl);
+      box-shadow: var(--shadow-dropdown);
+      max-height: 360px;
+      overflow-y: auto;
+      z-index: 20;
+      display: none;
+    }
+    .community-search-results.is-open { display: block; }
+    .community-search-result-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.18s;
+      border-bottom: 1px solid var(--color-fog);
+    }
+    .community-search-result-item:last-child { border-bottom: none; }
+    .community-search-result-item:hover { background: var(--color-fog); }
+    .community-search-result-name {
+      font-size: 14px;
+      font-weight: 450;
+      color: var(--color-ink);
+      margin: 0 0 2px;
+    }
+    .community-search-result-meta {
+      font-size: 11px;
+      color: var(--color-graphite);
+    }
+    .community-search-result-empty {
+      padding: 24px 14px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--color-graphite);
+    }
+
+    /* 来源筛选 Tabs */
+    .source-tabs {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--color-pure-white);
+      border: 1px solid var(--color-dove);
+      border-radius: var(--radius-2xl);
+      padding: 4px;
+    }
+    .source-tab {
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 450;
+      color: var(--color-graphite);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .source-tab.is-active {
+      background: var(--color-ink);
+      color: var(--color-pure-white);
+    }
+    .source-tab-count {
+      margin-left: 6px;
+      font-size: 11px;
+      opacity: 0.7;
+    }
+
+    .toolbar-spacer { flex: 1; }
+
+    .count-badge {
+      font-size: 13px;
+      color: var(--color-graphite);
+    }
+    .count-badge strong {
+      color: var(--color-ink);
+      font-weight: 500;
+    }
+
+    /* ============================================================
+       图片网格
+       ============================================================ */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .image-card {
+      position: relative;
+      background: var(--color-pure-white);
+      border-radius: var(--radius-cards);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .image-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-subtle);
+    }
+    .image-card-thumb {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      background: var(--color-fog);
+      overflow: hidden;
+    }
+    .image-card-thumb img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .image-card-thumb::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .image-card:hover .image-card-thumb::after { opacity: 1; }
+
+    .source-tag {
+      position: absolute;
+      top: 10px; left: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-buttons);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(8px);
+    }
+    .source-tag-scraped {
+      background: rgba(251, 225, 209, 0.92);
+      color: var(--color-rust);
+    }
+    .source-tag-uploaded {
+      background: rgba(211, 227, 252, 0.92);
+      color: #2c4a8a;
+    }
+    .source-tag::before {
+      content: "";
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .image-card-actions {
+      position: absolute;
+      top: 10px; right: 10px;
+      display: flex;
+      gap: 6px;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: all 0.18s;
+    }
+    .image-card:hover .image-card-actions {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .image-action-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .image-action-btn:hover { background: var(--color-pure-white); }
+    .image-action-btn svg {
+      width: 14px; height: 14px;
+      stroke: var(--color-ink);
+      stroke-width: 1.75;
+      fill: none;
+    }
+    .image-action-btn.is-danger svg { stroke: var(--color-rust); }
+
+    .image-card-body {
+      padding: 12px 14px 14px;
+    }
+    .image-card-desc {
+      font-size: 13px;
+      font-weight: 450;
+      color: var(--color-ink);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 36px;
+    }
+    .image-card-desc.is-empty {
+      color: var(--color-dove);
+      font-style: italic;
+      font-weight: 400;
+    }
+    .image-card-meta {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--color-graphite);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .image-card-meta svg {
+      width: 11px; height: 11px;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      fill: none;
+    }
+    .image-card-meta-divider {
+      width: 3px; height: 3px;
+      border-radius: 50%;
+      background: var(--color-dove);
+    }
+
+    /* ============================================================
+       空状态
+       ============================================================ */
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 80px 24px;
+      text-align: center;
+      background: var(--color-pure-white);
+      border-radius: var(--radius-cards);
+      border: 1px dashed var(--color-dove);
+    }
+    .empty-state-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto 16px;
+      stroke: var(--color-dove);
+      stroke-width: 1.5;
+      fill: none;
+    }
+    .empty-state h4 {
+      font-family: var(--font-signifier);
+      font-weight: 400;
+      font-size: 22px;
+      line-height: 1.25;
+      letter-spacing: -0.2px;
+      color: var(--color-ink);
+      margin: 0 0 8px;
+    }
+    .empty-state p {
+      font-size: 14px;
+      color: var(--color-ash);
+      margin: 0 0 20px;
+      max-width: 360px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ============================================================
+       分页
+       ============================================================ */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 32px;
+    }
+    .pagination-btn {
+      min-width: 36px; height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--color-dove);
+      background: var(--color-pure-white);
+      color: var(--color-ink);
+      font-size: 13px;
+      font-weight: 450;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s;
+    }
+    .pagination-btn:hover { background: var(--color-fog); }
+    .pagination-btn.is-active {
+      background: var(--color-ink);
+      color: var(--color-pure-white);
+      border-color: var(--color-ink);
+    }
+    .pagination-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .pagination-btn svg {
+      width: 14px; height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    /* ============================================================
+       Dialog / Modal
+       ============================================================ */
+    .dialog-overlay {
+      position: relative;
+      background: rgba(23, 25, 28, 0.45);
+      backdrop-filter: blur(4px);
+      padding: 40px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 720px;
+    }
+    .dialog {
+      background: var(--color-pure-white);
+      border-radius: var(--radius-cards);
+      box-shadow: var(--shadow-subtle);
+      width: 100%;
+      max-width: 560px;
+      max-height: calc(100vh - 80px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .dialog-wide { max-width: 960px; }
+    .dialog-header {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--color-dove);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .dialog-title {
+      font-family: var(--font-signifier);
+      font-weight: 400;
+      font-size: 22px;
+      line-height: 1.25;
+      letter-spacing: -0.2px;
+      color: var(--color-ink);
+      margin: 0 0 4px;
+    }
+    .dialog-subtitle {
+      font-size: 13px;
+      color: var(--color-ash);
+      margin: 0;
+    }
+    .dialog-close {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--color-fog);
+      color: var(--color-graphite);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.18s;
+    }
+    .dialog-close:hover {
+      background: var(--color-dove);
+      color: var(--color-ink);
+    }
+    .dialog-close svg {
+      width: 14px; height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+    .dialog-body {
+      padding: 24px 28px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .dialog-footer {
+      padding: 16px 28px 20px;
+      border-top: 1px solid var(--color-dove);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--color-fog);
+    }
+    .dialog-footer-info {
+      font-size: 13px;
+      color: var(--color-graphite);
+    }
+    .dialog-footer-info strong {
+      color: var(--color-ink);
+      font-weight: 500;
+    }
+    .dialog-footer-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ============================================================
+       上传区域
+       ============================================================ */
+    .upload-dropzone {
+      border: 2px dashed var(--color-dove);
+      border-radius: var(--radius-2xl);
+      padding: 48px 24px;
+      text-align: center;
+      background: var(--color-fog);
+      transition: all 0.2s;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .upload-dropzone:hover {
+      border-color: var(--color-ink);
+      background: var(--color-apricot-wash);
+    }
+    .upload-dropzone-icon {
+      width: 40px; height: 40px;
+      margin: 0 auto 12px;
+      stroke: var(--color-graphite);
+      stroke-width: 1.5;
+      fill: none;
+    }
+    .upload-dropzone-text {
+      font-size: 15px;
+      font-weight: 450;
+      color: var(--color-ink);
+      margin: 0 0 4px;
+    }
+    .upload-dropzone-hint {
+      font-size: 12px;
+      color: var(--color-graphite);
+      margin: 0;
+    }
+    .upload-dropzone-link {
+      color: var(--color-ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .upload-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .upload-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--color-fog);
+      border-radius: 12px;
+    }
+    .upload-item-thumb {
+      width: 48px; height: 48px;
+      border-radius: 8px;
+      background: var(--color-dove);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .upload-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .upload-item-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .upload-item-name {
+      font-size: 13px;
+      font-weight: 450;
+      color: var(--color-ink);
+      margin: 0 0 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .upload-item-meta {
+      font-size: 11px;
+      color: var(--color-graphite);
+    }
+    .upload-progress {
+      height: 4px;
+      background: var(--color-dove);
+      border-radius: var(--radius-buttons);
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .upload-progress-bar {
+      height: 100%;
+      background: var(--color-ink);
+      border-radius: inherit;
+      transition: width 0.3s;
+    }
+    .upload-progress-bar.is-error { background: var(--color-rust); }
+    .upload-item-status {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--color-graphite);
+    }
+    .upload-item-status.is-success { color: #2c7a3d; }
+    .upload-item-status.is-error { color: var(--color-rust); }
+    .upload-item-remove {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--color-graphite);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .upload-item-remove:hover { background: var(--color-dove); color: var(--color-ink); }
+    .upload-item-remove svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+    /* 描述输入 */
+    .field-group { margin-bottom: 16px; }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 450;
+      color: var(--color-ink);
+      margin-bottom: 6px;
+    }
+    .field-label-optional {
+      font-size: 11px;
+      color: var(--color-graphite);
+      font-weight: 400;
+      margin-left: 6px;
+    }
+    .field-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--color-pure-white);
+      border: 1px solid var(--color-dove);
+      border-radius: 12px;
+      font-family: var(--font-sohne);
+      font-size: 14px;
+      color: var(--color-ink);
+      transition: border-color 0.18s;
+    }
+    .field-input:focus {
+      outline: none;
+      border-color: var(--color-ink);
+    }
+    .field-textarea {
+      min-height: 72px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .field-hint {
+      font-size: 11px;
+      color: var(--color-graphite);
+      margin-top: 4px;
+    }
+
+    /* ============================================================
+       预览 Dialog — 双栏布局
+       ============================================================ */
+    .preview-dialog {
+      max-width: 1080px;
+      padding: 0;
+    }
+    .preview-content {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      min-height: 560px;
+      max-height: calc(100vh - 160px);
+    }
+    .preview-image-area {
+      background: var(--color-ink);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .preview-image-area img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .preview-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--color-pure-white);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s;
+    }
+    .preview-nav:hover { background: rgba(255, 255, 255, 0.2); }
+    .preview-nav-prev { left: 16px; }
+    .preview-nav-next { right: 16px; }
+    .preview-nav svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+    .preview-counter {
+      position: absolute;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 14px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      color: var(--color-pure-white);
+      font-size: 12px;
+      font-weight: 450;
+      border-radius: var(--radius-buttons);
+      letter-spacing: 0.04em;
+    }
+
+    .preview-info-area {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .preview-info-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-buttons);
+      font-size: 11px;
+      font-weight: 500;
+      align-self: flex-start;
+      margin-bottom: 16px;
+    }
+    .preview-info-source.scraped {
+      background: var(--color-apricot-wash);
+      color: var(--color-rust);
+    }
+    .preview-info-source.uploaded {
+      background: var(--color-sky-wash);
+      color: #2c4a8a;
+    }
+    .preview-info-source::before {
+      content: "";
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .preview-info-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 0;
+      border-top: 1px solid var(--color-dove);
+      border-bottom: 1px solid var(--color-dove);
+      margin-bottom: 20px;
+    }
+    .preview-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .preview-info-row-label {
+      color: var(--color-graphite);
+    }
+    .preview-info-row-value {
+      color: var(--color-ink);
+      font-weight: 450;
+      text-align: right;
+    }
+    .preview-info-row-value a {
+      color: var(--color-ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .preview-actions {
+      margin-top: auto;
+      padding-top: 20px;
+      display: flex;
+      gap: 8px;
+      flex-direction: column;
+    }
+
+    /* 删除确认内联提示 */
+    .delete-confirm {
+      background: var(--color-apricot-wash);
+      border: 1px solid var(--color-rust);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .delete-confirm-text {
+      font-size: 13px;
+      color: var(--color-rust);
+      margin: 0 0 10px;
+      line-height: 1.45;
+    }
+    .delete-confirm-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .btn-danger-solid {
+      background: var(--color-rust);
+      color: var(--color-pure-white);
+    }
+    .btn-danger-solid:hover { background: #4a2114; }
+
+    /* ============================================================
+       线索图片选择器
+       ============================================================ */
+    .picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .picker-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: var(--radius-images);
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.18s;
+    }
+    .picker-item:hover {
+      transform: translateY(-1px);
+    }
+    .picker-item.is-selected {
+      border-color: var(--color-ink);
+      box-shadow: 0 0 0 2px var(--color-pure-white), 0 0 0 4px var(--color-ink);
+    }
+    .picker-item img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .picker-item-overlay {
+      position: absolute; inset: 0;
+      background: rgba(23, 25, 28, 0);
+      transition: background 0.18s;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 8px;
+    }
+    .picker-item:hover .picker-item-overlay {
+      background: rgba(23, 25, 28, 0.15);
+    }
+    .picker-item.is-selected .picker-item-overlay {
+      background: rgba(23, 25, 28, 0.35);
+    }
+    .picker-checkbox {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(4px);
+      border: 1.5px solid var(--color-dove);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s;
+    }
+    .picker-item.is-selected .picker-checkbox {
+      background: var(--color-ink);
+      border-color: var(--color-ink);
+    }
+    .picker-checkbox svg {
+      width: 12px; height: 12px;
+      stroke: var(--color-pure-white);
+      stroke-width: 3;
+      fill: none;
+      opacity: 0;
+      transition: opacity 0.18s;
+    }
+    .picker-item.is-selected .picker-checkbox svg { opacity: 1; }
+
+    .picker-source-mini {
+      position: absolute;
+      bottom: 6px; left: 6px;
+      padding: 2px 6px;
+      border-radius: var(--radius-buttons);
+      font-size: 9px;
+      font-weight: 500;
+      backdrop-filter: blur(4px);
+    }
+    .picker-source-mini.scraped {
+      background: rgba(251, 225, 209, 0.92);
+      color: var(--color-rust);
+    }
+    .picker-source-mini.uploaded {
+      background: rgba(211, 227, 252, 0.92);
+      color: #2c4a8a;
+    }
+
+    .picker-empty {
+      grid-column: 1 / -1;
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--color-graphite);
+      font-size: 13px;
+    }
+
+    /* 已选户型图预览条 */
+    .picker-selected-strip {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      background: var(--color-fog);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+    .picker-selected-thumb {
+      position: relative;
+      width: 56px; height: 56px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .picker-selected-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .picker-selected-remove {
+      position: absolute;
+      top: -4px; right: -4px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--color-ink);
+      color: var(--color-pure-white);
+      border: 2px solid var(--color-pure-white);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .picker-selected-remove svg { width: 8px; height: 8px; stroke: currentColor; stroke-width: 3; fill: none; }
+
+    /* ============================================================
+       按钮禁用提示
+       ============================================================ */
+    .disabled-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-graphite);
+      padding: 8px 12px;
+      background: var(--color-fog);
+      border-radius: 10px;
+      border: 1px dashed var(--color-dove);
+    }
+    .disabled-hint svg {
+      width: 13px; height: 13px;
+      stroke: var(--color-graphite);
+      stroke-width: 1.75;
+      fill: none;
+    }
+
+    /* ============================================================
+       Design Tokens 演示
+       ============================================================ */
+    .tokens-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .token-card {
+      background: var(--color-pure-white);
+      border-radius: var(--radius-cards);
+      box-shadow: var(--shadow-card);
+      padding: 20px;
+    }
+    .token-card-title {
+      font-family: var(--font-signifier);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.15px;
+      margin: 0 0 12px;
+      color: var(--color-ink);
+    }
+    .swatch-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .swatch {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      border: 1px solid var(--color-dove);
+      flex-shrink: 0;
+    }
+    .swatch-name { color: var(--color-ink); font-weight: 450; }
+    .swatch-value {
+      color: var(--color-graphite);
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      margin-left: auto;
+    }
+
+    .type-sample {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--color-dove);
+    }
+    .type-sample:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .type-sample-label {
+      font-size: 11px;
+      color: var(--color-graphite);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .type-sample-signifier {
+      font-family: var(--font-signifier);
+      font-weight: 400;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: -0.4px;
+      color: var(--color-ink);
+    }
+    .type-sample-sohne {
+      font-family: var(--font-sohne);
+      font-weight: 450;
+      font-size: 15px;
+      color: var(--color-ink);
+    }
+    .type-sample-caption {
+      font-family: var(--font-sohne);
+      font-weight: 400;
+      font-size: 13px;
+      color: var(--color-graphite);
+    }
+
+    /* ============================================================
+       状态规范说明卡
+       ============================================================ */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .spec-card {
+      background: var(--color-pure-white);
+      border-radius: var(--radius-cards);
+      box-shadow: var(--shadow-card);
+      padding: 24px;
+    }
+    .spec-card-icon {
+      width: 32px; height: 32px;
+      border-radius: 10px;
+      background: var(--color-apricot-wash);
+      color: var(--color-rust);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+    }
+    .spec-card-icon svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.75; fill: none; }
+    .spec-card-title {
+      font-family: var(--font-signifier);
+      font-weight: 400;
+      font-size: 18px;
+      letter-spacing: -0.15px;
+      margin: 0 0 8px;
+      color: var(--color-ink);
+    }
+    .spec-card-list {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      font-size: 13px;
+      color: var(--color-ash);
+      line-height: 1.6;
+    }
+    .spec-card-list li {
+      padding-left: 16px;
+      position: relative;
+      margin-bottom: 4px;
+    }
+    .spec-card-list li::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 9px;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--color-graphite);
+    }
+    .spec-card-list code {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      color: var(--color-ink);
+      background: var(--color-fog);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* ============================================================
+       屏幕标签
+       ============================================================ */
+    .screen-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-graphite);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .screen-label-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--color-ink);
+      color: var(--color-pure-white);
+      font-family: var(--font-signifier);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .screen-label-route {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      color: var(--color-ink);
+      background: var(--color-pure-white);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--color-dove);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    /* 响应式 — 在窄屏下侧栏隐藏 */
+    @media (max-width: 768px) {
+      body { padding: 32px 16px 80px; }
+      .screen-frame { grid-template-columns: 1fr; min-height: auto; }
+      .mock-sidebar { display: none; }
+      .mock-main { padding: 24px 20px; }
+      .page-head { flex-direction: column; align-items: stretch; }
+      .preview-content { grid-template-columns: 1fr; }
+      .preview-image-area { min-height: 320px; }
+      h1.doc-title { font-size: 32px; }
+    }
+
+    /* SVG icon default */
+    svg { display: inline-block; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       文档头部
+       ============================================================ -->
+  <header class="doc-header">
+    <span class="doc-eyebrow">Spec · add-community-image-library</span>
+    <h1 class="doc-title">小区户型图库管理模块<br/>高保真设计稿</h1>
+    <p class="doc-subtitle">
+      为 admin 端新增小区维度<strong>户型图</strong>库，整条链路只处理户型图（其他图片不下载、不保存）。推送房源时用与 admin/properties 相同的 <code>getFloorPlan</code> 逻辑自动选出户型图并归类，运营可手动上传管理，创建线索时按小区选择户型图。设计严格遵循 Steep 设计系统：编辑式 serif 标题（Signifier）+ 工作型 sans 正文（Sohne），单色 Ink 主色 + Apricot/Sky Wash 数据色，24px 卡片圆角 + pill 形主按钮。
+    </p>
+    <div class="doc-meta">
+      <span><strong>路由：</strong> <code>/admin/communities/images</code></span>
+      <span><strong>权限：</strong> <code>property:read</code> / <code>property:write</code></span>
+      <span><strong>户型图识别：</strong> <code>backend/utils/floor_plan.py</code>（移植自前端 <code>getFloorPlan</code>）</span>
+      <span><strong>关联 Spec：</strong> <code>harden-image-pipeline</code> · <code>add-image-thumbnail</code> · <code>build-miniapp-properties-list</code></span>
+      <span><strong>设计系统：</strong> Steep（参见 <code>DESIGN.md</code>）</span>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       Section 1 · 户型图库列表页
+       ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="section-title">01 · 户型图库列表页</h3>
+      <span class="section-tag">Primary Screen</span>
+    </div>
+    <p class="section-desc">
+      页面左侧沿用全局侧边栏，右侧主体区由「页面标题 + 上传 CTA」「小区搜索框 + 来源筛选 + 计数」工具栏与「户型图网格 + 分页」三段构成。小区搜索为输入框模式（非下拉），支持小区名与商圈关键词模糊匹配，复用 <code>CommunitySelect</code> 组件。每张户型图卡片悬浮显示预览/编辑/删除操作，左上角来源标签区分抓取（Apricot Wash）/ 上传（Sky Wash）。整个页面只展示户型图，不展示室内图/外观图。
+    </p>
+
+    <div class="screen-label">
+      <span class="screen-label-number">1</span>
+      <span>默认状态 · 选中小区 + 户型图网格</span>
+      <span class="screen-label-route">GET /admin/communities/images</span>
+    </div>
+
+    <div class="screen-frame">
+      <!-- 侧边栏 mock -->
+      <aside class="mock-sidebar">
+        <div class="mock-sidebar-logo">
+          <div class="mock-sidebar-logo-mark">P</div>
+          <span class="mock-sidebar-logo-text">Profo</span>
+        </div>
+        <div class="mock-nav-group">
+          <div class="mock-nav-group-label">工作台</div>
+          <div class="mock-nav-item">
+            <svg class="mock-nav-icon" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+            概览
+          </div>
+        </div>
+        <div class="mock-nav-group">
+          <div class="mock-nav-group-label">房源管理</div>
+          <div class="mock-nav-item">
+            <svg class="mock-nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            房源列表
+          </div>
+          <div class="mock-nav-item is-sub is-active">
+            <svg class="mock-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+            小区户型图库
+          </div>
+          <div class="mock-nav-item is-sub">
+            <svg class="mock-nav-icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+            小区治理
+          </div>
+        </div>
+        <div class="mock-nav-group">
+          <div class="mock-nav-group-label">线索</div>
+          <div class="mock-nav-item">
+            <svg class="mock-nav-icon" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            线索列表
+          </div>
+        </div>
+      </aside>
+
+      <!-- 主体区 -->
+      <main class="mock-main">
+        <!-- 页头 -->
+        <div class="page-head">
+          <div class="page-head-text">
+            <h2>小区户型图库</h2>
+            <p>按小区浏览、上传、管理户型图，创建线索时可从户型图库选择。</p>
+          </div>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
+            上传户型图
+          </button>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <!-- 小区搜索框 -->
+          <div class="community-search">
+            <svg class="community-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input class="community-search-input" placeholder="输入小区名或商圈搜索…" value="龙湖·天街壹号" />
+            <span class="community-search-meta">朝阳区 · 三里屯</span>
+            <button class="community-search-clear" title="清除"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <!-- 搜索结果下拉（示意，实际由 JS 控制显隐） -->
+            <div class="community-search-results">
+              <div class="community-search-result-item">
+                <p class="community-search-result-name">龙湖·天街壹号</p>
+                <p class="community-search-result-meta">朝阳区 · 三里屯</p>
+              </div>
+              <div class="community-search-result-item">
+                <p class="community-search-result-name">龙湖·天街贰号</p>
+                <p class="community-search-result-meta">朝阳区 · 三里屯</p>
+              </div>
+              <div class="community-search-result-item">
+                <p class="community-search-result-name">三里屯 SOHO</p>
+                <p class="community-search-result-meta">朝阳区 · 三里屯</p>
+              </div>
+              <div class="community-search-result-item">
+                <p class="community-search-result-name">三里屯首开</p>
+                <p class="community-search-result-meta">朝阳区 · 三里屯</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 来源筛选 -->
+          <div class="source-tabs">
+            <div class="source-tab is-active">全部<span class="source-tab-count">42</span></div>
+            <div class="source-tab">抓取<span class="source-tab-count">31</span></div>
+            <div class="source-tab">上传<span class="source-tab-count">11</span></div>
+          </div>
+
+          <div class="toolbar-spacer"></div>
+
+          <div class="count-badge">共 <strong>42</strong> 张 · 第 <strong>1/3</strong> 页</div>
+        </div>
+
+        <!-- 图片网格 -->
+        <div class="image-grid">
+          <!-- Card 1 -->
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-img-01/440/330" alt="户型图" />
+              <span class="source-tag source-tag-scraped">抓取</span>
+              <div class="image-card-actions">
+                <button class="image-action-btn" title="预览大图">
+                  <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="image-action-btn" title="编辑描述">
+                  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                </button>
+                <button class="image-action-btn is-danger" title="删除">
+                  <svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">89㎡ 三室两厅一卫 · 标准层户型图</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-09</span>
+                <span class="image-card-meta-divider"></span>
+                <span>来自 BJ20260809-01</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-img-02/440/330" alt="户型图" />
+              <span class="source-tag source-tag-scraped">抓取</span>
+              <div class="image-card-actions">
+                <button class="image-action-btn" title="预览"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="image-action-btn" title="编辑"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="image-action-btn is-danger" title="删除"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">72㎡ 两室两厅一卫 · 南向户型</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-09</span>
+                <span class="image-card-meta-divider"></span>
+                <span>来自 BJ20260809-01</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3 - 上传来源 -->
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-img-03/440/330" alt="户型图" />
+              <span class="source-tag source-tag-uploaded">上传</span>
+              <div class="image-card-actions">
+                <button class="image-action-btn" title="预览"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="image-action-btn" title="编辑"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="image-action-btn is-danger" title="删除"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">120㎡ 四室两厅两卫 · 复式户型图</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-10</span>
+                <span class="image-card-meta-divider"></span>
+                <span>运营上传</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4 - 无描述 -->
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-img-04/440/330" alt="户型图" />
+              <span class="source-tag source-tag-scraped">抓取</span>
+              <div class="image-card-actions">
+                <button class="image-action-btn" title="预览"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="image-action-btn" title="编辑"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="image-action-btn is-danger" title="删除"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc is-empty">暂无描述，点击编辑添加</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-08</span>
+                <span class="image-card-meta-divider"></span>
+                <span>来自 BJ20260808-14</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-img-05/440/330" alt="户型图" />
+              <span class="source-tag source-tag-uploaded">上传</span>
+              <div class="image-card-actions">
+                <button class="image-action-btn" title="预览"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="image-action-btn" title="编辑"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="image-action-btn is-danger" title="删除"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">65㎡ 一室一厅一卫 · 公寓户型</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-10</span>
+                <span class="image-card-meta-divider"></span>
+                <span>运营上传</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-img-06/440/330" alt="户型图" />
+              <span class="source-tag source-tag-scraped">抓取</span>
+              <div class="image-card-actions">
+                <button class="image-action-btn" title="预览"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="image-action-btn" title="编辑"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="image-action-btn is-danger" title="删除"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">98㎡ 三室两厅两卫 · 改善户型</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-09</span>
+                <span class="image-card-meta-divider"></span>
+                <span>来自 BJ20260809-01</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 7 -->
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-img-07/440/330" alt="户型图" />
+              <span class="source-tag source-tag-scraped">抓取</span>
+              <div class="image-card-actions">
+                <button class="image-action-btn" title="预览"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="image-action-btn" title="编辑"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="image-action-btn is-danger" title="删除"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">110㎡ 三室两厅两卫 · 边户户型</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-09</span>
+                <span class="image-card-meta-divider"></span>
+                <span>来自 BJ20260809-01</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 8 -->
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-img-08/440/330" alt="户型图" />
+              <span class="source-tag source-tag-uploaded">上传</span>
+              <div class="image-card-actions">
+                <button class="image-action-btn" title="预览"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="image-action-btn" title="编辑"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="image-action-btn is-danger" title="删除"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">85㎡ 两室两厅一卫 · 紧凑户型</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-10</span>
+                <span class="image-card-meta-divider"></span>
+                <span>运营上传</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination">
+          <button class="pagination-btn" disabled><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button class="pagination-btn is-active">1</button>
+          <button class="pagination-btn">2</button>
+          <button class="pagination-btn">3</button>
+          <button class="pagination-btn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Section 2 · 空状态
+       ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="section-title">02 · 空状态与无权限状态</h3>
+      <span class="section-tag">Edge States</span>
+    </div>
+    <p class="section-desc">
+      当未选择小区、所选小区无图片、或用户无写权限时，主区域以弱化卡片承载空状态。无 <code>property:write</code> 权限时隐藏上传/删除/编辑按钮，列表保持只读。
+    </p>
+
+    <div class="screen-label">
+      <span class="screen-label-number">2</span>
+      <span>未选择小区 · 空状态</span>
+    </div>
+
+    <div class="screen-frame">
+      <aside class="mock-sidebar">
+        <div class="mock-sidebar-logo">
+          <div class="mock-sidebar-logo-mark">P</div>
+          <span class="mock-sidebar-logo-text">Profo</span>
+        </div>
+        <div class="mock-nav-group">
+          <div class="mock-nav-group-label">房源管理</div>
+          <div class="mock-nav-item is-sub is-active">小区户型图库</div>
+        </div>
+      </aside>
+      <main class="mock-main">
+        <div class="page-head">
+          <div class="page-head-text">
+            <h2>小区户型图库</h2>
+            <p>按小区浏览、上传、管理户型图，创建线索时可从户型图库选择。</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="community-search">
+            <svg class="community-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input class="community-search-input" placeholder="输入小区名或商圈搜索…" value="" />
+            <span class="community-search-meta">支持名称与商圈模糊匹配</span>
+          </div>
+        </div>
+
+        <div class="image-grid">
+          <div class="empty-state">
+            <svg class="empty-state-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+            <h4>搜索小区以查看户型图</h4>
+            <p>在上方输入框输入小区名或商圈关键词，选中后即可浏览该小区所有户型图，并按来源筛选。</p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 无写权限状态 -->
+    <div class="screen-label" style="margin-top: 48px;">
+      <span class="screen-label-number">2b</span>
+      <span>无 <code>property:write</code> 权限 · 只读</span>
+    </div>
+
+    <div class="screen-frame">
+      <aside class="mock-sidebar">
+        <div class="mock-sidebar-logo">
+          <div class="mock-sidebar-logo-mark">P</div>
+          <span class="mock-sidebar-logo-text">Profo</span>
+        </div>
+      </aside>
+      <main class="mock-main">
+        <div class="page-head">
+          <div class="page-head-text">
+            <h2>小区户型图库</h2>
+            <p>当前角色为只读，仅支持浏览户型图。</p>
+          </div>
+          <span class="disabled-hint">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            需 property:write 权限方可上传户型图
+          </span>
+        </div>
+
+        <div class="toolbar">
+          <div class="community-search">
+            <svg class="community-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input class="community-search-input" placeholder="输入小区名或商圈搜索…" value="龙湖·天街壹号" readonly />
+            <span class="community-search-meta">朝阳区 · 三里屯</span>
+          </div>
+          <div class="source-tabs">
+            <div class="source-tab is-active">全部<span class="source-tab-count">42</span></div>
+            <div class="source-tab">抓取<span class="source-tab-count">31</span></div>
+            <div class="source-tab">上传<span class="source-tab-count">11</span></div>
+          </div>
+        </div>
+
+        <div class="image-grid">
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-readonly-01/440/330" alt="户型图" />
+              <span class="source-tag source-tag-scraped">抓取</span>
+              <!-- 无写权限：不显示操作按钮 -->
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">89㎡ 三室两厅一卫 · 标准层户型图</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-09</span>
+              </div>
+            </div>
+          </div>
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-readonly-02/440/330" alt="户型图" />
+              <span class="source-tag source-tag-uploaded">上传</span>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">72㎡ 两室两厅一卫 · 南向户型</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-10</span>
+              </div>
+            </div>
+          </div>
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-readonly-03/440/330" alt="户型图" />
+              <span class="source-tag source-tag-scraped">抓取</span>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">110㎡ 三室两厅两卫 · 边户户型图</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-09</span>
+              </div>
+            </div>
+          </div>
+          <div class="image-card">
+            <div class="image-card-thumb">
+              <img src="https://picsum.photos/seed/community-readonly-04/440/330" alt="户型图" />
+              <span class="source-tag source-tag-scraped">抓取</span>
+            </div>
+            <div class="image-card-body">
+              <p class="image-card-desc">65㎡ 一室一厅一卫 · 公寓户型</p>
+              <div class="image-card-meta">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>2026-08-08</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Section 3 · 上传 Dialog
+       ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="section-title">03 · 上传户型图 Dialog</h3>
+      <span class="section-tag">Create Flow</span>
+    </div>
+    <p class="section-desc">
+      点击「上传户型图」按钮触发 Dialog。支持拖拽 / 点击选择多张户型图，逐张上传并显示进度，全部完成后自动刷新网格。可统一填写描述（可空）。Dialog 标题展示当前目标小区，避免误传到错误小区。
+    </p>
+
+    <div class="screen-label">
+      <span class="screen-label-number">3</span>
+      <span>上传中 · 多文件进度状态</span>
+      <span class="screen-label-route">POST /admin/communities/{community_id}/images</span>
+    </div>
+
+    <div class="dialog-overlay">
+      <div class="dialog">
+        <div class="dialog-header">
+          <div>
+            <h3 class="dialog-title">上传户型图到小区</h3>
+            <p class="dialog-subtitle">目标小区：<strong style="color: var(--color-ink); font-weight: 500;">龙湖·天街壹号</strong> · 朝阳区三里屯</p>
+          </div>
+          <button class="dialog-close" title="关闭">
+            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="dialog-body">
+          <!-- 拖拽区 -->
+          <div class="upload-dropzone">
+            <svg class="upload-dropzone-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            <p class="upload-dropzone-text">拖拽户型图到这里，或 <span class="upload-dropzone-link">点击选择</span></p>
+            <p class="upload-dropzone-hint">支持 JPG / PNG / WebP · 单张最大 10MB · 可多选</p>
+          </div>
+
+          <!-- 上传列表 -->
+          <div class="upload-list">
+            <div class="upload-item">
+              <div class="upload-item-thumb">
+                <img src="https://picsum.photos/seed/upload-01/96/96" alt="" />
+              </div>
+              <div class="upload-item-body">
+                <p class="upload-item-name">IMG_20260810_001.jpg</p>
+                <div class="upload-item-meta">2.4 MB</div>
+                <div class="upload-progress"><div class="upload-progress-bar" style="width: 100%;"></div></div>
+              </div>
+              <span class="upload-item-status is-success">已完成</span>
+              <button class="upload-item-remove"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+
+            <div class="upload-item">
+              <div class="upload-item-thumb">
+                <img src="https://picsum.photos/seed/upload-02/96/96" alt="" />
+              </div>
+              <div class="upload-item-body">
+                <p class="upload-item-name">IMG_20260810_002.jpg</p>
+                <div class="upload-item-meta">3.1 MB · 上传中…</div>
+                <div class="upload-progress"><div class="upload-progress-bar" style="width: 68%;"></div></div>
+              </div>
+              <span class="upload-item-status">68%</span>
+              <button class="upload-item-remove"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+
+            <div class="upload-item">
+              <div class="upload-item-thumb">
+                <img src="https://picsum.photos/seed/upload-03/96/96" alt="" />
+              </div>
+              <div class="upload-item-body">
+                <p class="upload-item-name">IMG_20260810_003.jpg</p>
+                <div class="upload-item-meta" style="color: var(--color-rust);">超过 10MB 限制</div>
+                <div class="upload-progress"><div class="upload-progress-bar is-error" style="width: 100%;"></div></div>
+              </div>
+              <span class="upload-item-status is-error">失败</span>
+              <button class="upload-item-remove"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+
+            <div class="upload-item">
+              <div class="upload-item-thumb">
+                <img src="https://picsum.photos/seed/upload-04/96/96" alt="" />
+              </div>
+              <div class="upload-item-body">
+                <p class="upload-item-name">IMG_20260810_004.jpg</p>
+                <div class="upload-item-meta">1.8 MB · 等待上传</div>
+              </div>
+              <span class="upload-item-status">等待中</span>
+              <button class="upload-item-remove"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+          </div>
+
+          <!-- 统一描述 -->
+          <div class="field-group" style="margin-top: 20px;">
+            <label class="field-label">
+              统一描述
+              <span class="field-label-optional">可选 · 将应用到所有本次上传的户型图</span>
+            </label>
+            <textarea class="field-input field-textarea" placeholder="例如：89㎡ 三室两厅一卫 · 标准层户型图"></textarea>
+            <p class="field-hint">留空则户型图描述为空，可后续在户型图卡片中编辑单张描述。</p>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <div class="dialog-footer-info">
+            已完成 <strong>1</strong> / 4 张 · 失败 <strong style="color: var(--color-rust);">1</strong> 张
+          </div>
+          <div class="dialog-footer-actions">
+            <button class="btn btn-ghost">取消</button>
+            <button class="btn btn-primary" disabled>全部上传</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Section 4 · 预览/编辑 Dialog
+       ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="section-title">04 · 户型图预览与编辑 Dialog</h3>
+      <span class="section-tag">Detail / Edit</span>
+    </div>
+    <p class="section-desc">
+      点击户型图卡片预览按钮触发。左侧 Ink 暗色背景承载大图，提供左右翻页与计数；右侧白底承载来源标签、元信息（创建时间、来源房源、尺寸）与描述编辑、删除入口。删除采用内联二次确认，避免 alert/confirm。
+    </p>
+
+    <div class="screen-label">
+      <span class="screen-label-number">4</span>
+      <span>预览状态 · 描述编辑入口</span>
+      <span class="screen-label-route">PATCH /admin/community-images/{id}</span>
+    </div>
+
+    <div class="dialog-overlay">
+      <div class="dialog preview-dialog">
+        <div class="dialog-header">
+          <div>
+            <h3 class="dialog-title">户型图详情</h3>
+            <p class="dialog-subtitle">龙湖·天街壹号 · 89㎡ 三室两厅一卫</p>
+          </div>
+          <button class="dialog-close" title="关闭">
+            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="preview-content">
+          <!-- 左侧大图 -->
+          <div class="preview-image-area">
+            <img src="https://picsum.photos/seed/community-img-01/1200/900" alt="户型图" />
+            <button class="preview-nav preview-nav-prev" title="上一张"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="preview-nav preview-nav-next" title="下一张"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+            <div class="preview-counter">3 / 42</div>
+          </div>
+
+          <!-- 右侧信息 -->
+          <div class="preview-info-area">
+            <span class="preview-info-source scraped">抓取</span>
+
+            <div class="preview-info-meta">
+              <div class="preview-info-row">
+                <span class="preview-info-row-label">创建时间</span>
+                <span class="preview-info-row-value">2026-08-09 14:23</span>
+              </div>
+              <div class="preview-info-row">
+                <span class="preview-info-row-label">来源房源</span>
+                <span class="preview-info-row-value"><a href="#">BJ20260809-01</a></span>
+              </div>
+              <div class="preview-info-row">
+                <span class="preview-info-row-label">尺寸</span>
+                <span class="preview-info-row-value">1920 × 1440</span>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label">描述</label>
+              <textarea class="field-input field-textarea">89㎡ 三室两厅一卫 · 标准层户型图，南北通透，动静分区</textarea>
+            </div>
+
+            <div class="preview-actions">
+              <button class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>
+                保存描述
+              </button>
+              <button class="btn btn-danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                删除户型图
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 删除确认状态 -->
+    <div class="screen-label" style="margin-top: 48px;">
+      <span class="screen-label-number">4b</span>
+      <span>删除二次确认 · 内联</span>
+    </div>
+
+    <div class="dialog-overlay" style="min-height: auto; padding: 0;">
+      <div style="background: var(--color-pure-white); border-radius: var(--radius-cards); box-shadow: var(--shadow-card); padding: 24px; max-width: 420px; width: 100%;">
+        <div class="delete-confirm" style="margin-bottom: 0;">
+          <p class="delete-confirm-text">删除后户型图将从该小区户型图库移除（软删除），关联的线索 <code style="background: rgba(255,255,255,0.5); padding: 1px 6px; border-radius: 4px;">images</code> 字段中的 URL 不会被清除。此操作可由管理员恢复。</p>
+          <div class="delete-confirm-actions">
+            <button class="btn btn-ghost btn-sm">取消</button>
+            <button class="btn btn-danger-solid btn-sm">确认删除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Section 5 · 线索户型图选择器
+       ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="section-title">05 · 线索创建表单 · 小区户型图选择器</h3>
+      <span class="section-tag">Integration</span>
+    </div>
+    <p class="section-desc">
+      在线索创建表单的 <code>images</code> 字段旁增加「从小区户型图库选择」按钮。未选小区时按钮禁用并提示。打开后弹出户型图选择器，支持多选，确认后将选中户型图 URL <strong>追加</strong>到 <code>images</code> 字段（不覆盖已有项）。
+    </p>
+
+    <div class="screen-label">
+      <span class="screen-label-number">5</span>
+      <span>选择器打开 · 已选 3 张</span>
+      <span class="screen-label-route">GET /admin/communities/{community_id}/images</span>
+    </div>
+
+    <div class="dialog-overlay">
+      <div class="dialog dialog-wide">
+        <div class="dialog-header">
+          <div>
+            <h3 class="dialog-title">从小区户型图库选择</h3>
+            <p class="dialog-subtitle">当前小区：<strong style="color: var(--color-ink); font-weight: 500;">龙湖·天街壹号</strong> · 共 42 张可选</p>
+          </div>
+          <button class="dialog-close" title="关闭">
+            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="dialog-body">
+          <!-- 已选预览条 -->
+          <div class="picker-selected-strip">
+            <div class="picker-selected-thumb">
+              <img src="https://picsum.photos/seed/community-img-01/120/120" alt="" />
+              <button class="picker-selected-remove"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+            <div class="picker-selected-thumb">
+              <img src="https://picsum.photos/seed/community-img-03/120/120" alt="" />
+              <button class="picker-selected-remove"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+            <div class="picker-selected-thumb">
+              <img src="https://picsum.photos/seed/community-img-05/120/120" alt="" />
+              <button class="picker-selected-remove"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+          </div>
+
+          <!-- 选择器网格 -->
+          <div class="picker-grid">
+            <div class="picker-item is-selected">
+              <img src="https://picsum.photos/seed/community-img-01/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini scraped">抓取</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-02/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini scraped">抓取</span>
+            </div>
+            <div class="picker-item is-selected">
+              <img src="https://picsum.photos/seed/community-img-03/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini uploaded">上传</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-04/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini scraped">抓取</span>
+            </div>
+            <div class="picker-item is-selected">
+              <img src="https://picsum.photos/seed/community-img-05/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini uploaded">上传</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-06/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini scraped">抓取</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-07/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini scraped">抓取</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-08/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini uploaded">上传</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-09/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini scraped">抓取</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-10/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini scraped">抓取</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-11/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini uploaded">上传</span>
+            </div>
+            <div class="picker-item">
+              <img src="https://picsum.photos/seed/community-img-12/300/300" alt="" />
+              <div class="picker-item-overlay"><div class="picker-checkbox"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+              <span class="picker-source-mini scraped">抓取</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <div class="dialog-footer-info">
+            已选 <strong>3</strong> 张 · 将追加到线索户型图字段（不覆盖已有 <strong>2</strong> 张）
+          </div>
+          <div class="dialog-footer-actions">
+            <button class="btn btn-ghost">取消</button>
+            <button class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>
+              确认追加
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 未选小区状态 -->
+    <div class="screen-label" style="margin-top: 48px;">
+      <span class="screen-label-number">5b</span>
+      <span>未选小区 · 按钮禁用</span>
+    </div>
+
+    <div style="background: var(--color-pure-white); border-radius: var(--radius-cards); box-shadow: var(--shadow-card); padding: 24px; max-width: 520px;">
+      <label class="field-label">房源户型图 <span class="field-label-optional">可选 · 来自小区户型图库或手动填写 URL</span></label>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="btn btn-secondary" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+          从小区户型图库选择
+        </button>
+        <span class="disabled-hint">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+          请先选择小区
+        </span>
+      </div>
+      <p class="field-hint">选定小区后，可从该小区户型图库中批量选择已有户型图追加到此处。</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Section 6 · Design Tokens
+       ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="section-title">06 · 设计 Tokens</h3>
+      <span class="section-tag">Steep System</span>
+    </div>
+    <p class="section-desc">
+      本模块完全复用项目 <code>DESIGN.md</code> 中定义的 Steep 设计系统，未引入新色板或字体。颜色语义与已有 admin 页面（marketing、properties）保持一致。
+    </p>
+
+    <div class="tokens-grid">
+      <!-- 颜色 -->
+      <div class="token-card">
+        <h4 class="token-card-title">Colors</h4>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-ink);"></div>
+          <span class="swatch-name">Ink</span>
+          <span class="swatch-value">#17191c</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-fog);"></div>
+          <span class="swatch-name">Fog</span>
+          <span class="swatch-value">#f7f7f8</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-ash);"></div>
+          <span class="swatch-name">Ash</span>
+          <span class="swatch-value">#4c4c4c</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-graphite);"></div>
+          <span class="swatch-name">Graphite</span>
+          <span class="swatch-value">#777b86</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-dove);"></div>
+          <span class="swatch-name">Dove</span>
+          <span class="swatch-value">#a3a6af</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-rust);"></div>
+          <span class="swatch-name">Rust</span>
+          <span class="swatch-value">#5d2a1a</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-apricot-wash);"></div>
+          <span class="swatch-name">Apricot Wash</span>
+          <span class="swatch-value">#fbe1d1</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-sky-wash);"></div>
+          <span class="swatch-name">Sky Wash</span>
+          <span class="swatch-value">#d3e3fc</span>
+        </div>
+      </div>
+
+      <!-- 字体 -->
+      <div class="token-card">
+        <h4 class="token-card-title">Typography</h4>
+        <div class="type-sample">
+          <div class="type-sample-label">Signifier · Display</div>
+          <div class="type-sample-signifier">小区户型图库</div>
+        </div>
+        <div class="type-sample">
+          <div class="type-sample-label">Sohne · Heading</div>
+          <div style="font-family: var(--font-sohne); font-weight: 500; font-size: 18px; color: var(--color-ink);">户型图详情</div>
+        </div>
+        <div class="type-sample">
+          <div class="type-sample-label">Sohne · Body 450</div>
+          <div class="type-sample-sohne">89㎡ 三室两厅一卫 · 标准层户型图</div>
+        </div>
+        <div class="type-sample">
+          <div class="type-sample-label">Sohne · Caption</div>
+          <div class="type-sample-caption">2026-08-09 · 来自 BJ20260809-01</div>
+        </div>
+      </div>
+
+      <!-- 形状与间距 -->
+      <div class="token-card">
+        <h4 class="token-card-title">Shape &amp; Spacing</h4>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-ink); border-radius: 9999px; width: 36px; height: 20px;"></div>
+          <span class="swatch-name">Buttons</span>
+          <span class="swatch-value">9999px (pill)</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-pure-white); border: 1px solid var(--color-dove); border-radius: 24px; width: 36px; height: 24px;"></div>
+          <span class="swatch-name">Cards</span>
+          <span class="swatch-value">24px</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-apricot-wash); border-radius: 12px; width: 36px; height: 24px;"></div>
+          <span class="swatch-name">Images</span>
+          <span class="swatch-value">12px</span>
+        </div>
+        <div class="swatch-row">
+          <div class="swatch" style="background: var(--color-fog); border: 1px solid var(--color-dove); border-radius: 16px; width: 36px; height: 24px;"></div>
+          <span class="swatch-name">Inputs</span>
+          <span class="swatch-value">16px</span>
+        </div>
+        <div style="margin-top: 16px; font-size: 12px; color: var(--color-graphite); line-height: 1.6;">
+          <strong style="color: var(--color-ink);">基础单位：</strong> 4px<br/>
+          <strong style="color: var(--color-ink);">网格间距：</strong> 16px<br/>
+          <strong style="color: var(--color-ink);">段间距：</strong> 80px<br/>
+          <strong style="color: var(--color-ink);">卡片内边距：</strong> 20-24px
+        </div>
+      </div>
+
+      <!-- 阴影 -->
+      <div class="token-card">
+        <h4 class="token-card-title">Elevation</h4>
+        <div style="display: flex; gap: 16px; margin-top: 8px;">
+          <div style="text-align: center;">
+            <div style="background: var(--color-pure-white); border-radius: 12px; width: 64px; height: 64px; box-shadow: var(--shadow-card);"></div>
+            <div style="font-size: 11px; color: var(--color-graphite); margin-top: 8px;">Card</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="background: var(--color-pure-white); border-radius: 12px; width: 64px; height: 64px; box-shadow: var(--shadow-subtle);"></div>
+            <div style="font-size: 11px; color: var(--color-graphite); margin-top: 8px;">Floating</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="background: var(--color-pure-white); border-radius: 12px; width: 64px; height: 64px; box-shadow: var(--shadow-dropdown);"></div>
+            <div style="font-size: 11px; color: var(--color-graphite); margin-top: 8px;">Dropdown</div>
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-size: 11px; color: var(--color-graphite); font-family: ui-monospace, Menlo, monospace; line-height: 1.6;">
+          三层堆叠：<br/>
+          1px ink-tinted border<br/>
+          + 20px/25px drop<br/>
+          + 8px/10px micro drop
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Section 7 · 交互与状态规范
+       ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="section-title">07 · 交互与状态规范</h3>
+      <span class="section-tag">Spec</span>
+    </div>
+    <p class="section-desc">
+      以下规范在实现时须严格遵循，与 spec.md 中的 Scenario 一一对应。
+    </p>
+
+    <div class="spec-grid">
+      <div class="spec-card">
+        <div class="spec-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+        </div>
+        <h4 class="spec-card-title">权限控制</h4>
+        <ul class="spec-card-list">
+          <li>读权限 <code>property:read</code>：可访问列表页、查看户型图、打开预览</li>
+          <li>写权限 <code>property:write</code>：上传、编辑描述、软删除</li>
+          <li>无写权限时：<strong>隐藏</strong>上传按钮与卡片悬浮操作（预览保留）</li>
+          <li>侧栏菜单按 <code>property:read</code> 过滤显示</li>
+          <li>API 403 时前端 toast 提示「无权限」</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <div class="spec-card-icon">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </div>
+        <h4 class="spec-card-title">小区搜索</h4>
+        <ul class="spec-card-list">
+          <li><strong>搜索式</strong>而非下拉（小区数量多）</li>
+          <li>单一输入框，关键词同时匹配<strong>小区名</strong>与<strong>商圈</strong></li>
+          <li>复用 <code>CommunitySelect</code> 组件，<code>onSearch</code> 传入自定义查询</li>
+          <li>后端 <code>GET /properties/communities/search</code> 扩展 <code>business_circle</code> 参数</li>
+          <li>前端 <code>searchCommunitiesAction</code> 把关键词同时传 <code>q</code> 与 <code>business_circle</code></li>
+          <li>结果项显示小区名 + 行政区 · 商圈</li>
+          <li> debounce 300ms，无结果时显示空提示</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <div class="spec-card-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+        </div>
+        <h4 class="spec-card-title">户型图卡片</h4>
+        <ul class="spec-card-list">
+          <li>缩略图回退：<code>thumbnail_url</code> 为空时使用 <code>url</code></li>
+          <li>来源标签：<code>scraped</code> 用 Apricot Wash，<code>uploaded</code> 用 Sky Wash</li>
+          <li>描述为空时显示斜体占位「暂无描述，点击编辑添加」</li>
+          <li>悬浮显示预览/编辑/删除三个圆形操作按钮</li>
+          <li>卡片整体可点击，触发预览 Dialog</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <div class="spec-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        </div>
+        <h4 class="spec-card-title">上传流程</h4>
+        <ul class="spec-card-list">
+          <li>支持拖拽与点击选择，多选</li>
+          <li>逐张上传，每张独立显示进度条</li>
+          <li>失败项保留并标红，可单独移除后重试</li>
+          <li>全部完成（含失败）后刷新户型图网格</li>
+          <li>统一描述可空，留空则单张描述为空</li>
+          <li>上传中「全部上传」按钮禁用</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <div class="spec-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h4 class="spec-card-title">预览 Dialog</h4>
+        <ul class="spec-card-list">
+          <li>左右翻页：键盘 ← / → 同步支持</li>
+          <li>描述编辑后点击「保存描述」单独提交 <code>PATCH</code></li>
+          <li>删除采用<strong>内联二次确认</strong>，禁用 <code>alert/confirm</code></li>
+          <li>软删除后户型图从网格消失，可由管理员恢复</li>
+          <li>来源房源 ID 可点击跳转至房源详情</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <div class="spec-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <h4 class="spec-card-title">线索选择器</h4>
+        <ul class="spec-card-list">
+          <li>未选小区时按钮禁用 + 提示「请先选择小区」</li>
+          <li>多选交互：点击切换选中状态，边框 + 勾选</li>
+          <li>已选户型图在底部 strip 显示，可单独移除</li>
+          <li>确认时<strong>追加</strong>到 <code>images</code> 字段，不覆盖已有</li>
+          <li>已在线索 <code>images</code> 中的户型图在选择器中标记「已添加」</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <div class="spec-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </div>
+        <h4 class="spec-card-title">响应式</h4>
+        <ul class="spec-card-list">
+          <li>桌面 <code>≥1024px</code>：网格 4 列，侧边栏常驻</li>
+          <li>平板 <code>768-1023px</code>：网格 3 列，侧边栏可折叠</li>
+          <li>移动 <code>&lt;768px</code>：网格 2 列，侧边栏隐藏（移动 Tab Bar）</li>
+          <li>预览 Dialog 在移动端切换为单栏（大图在上、信息在下）</li>
+          <li>移动端工具栏元素垂直堆叠</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Section 8 · 数据流与 API 映射
+       ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="section-title">08 · 数据流与 API 映射</h3>
+      <span class="section-tag">Integration</span>
+    </div>
+    <p class="section-desc">
+      每个界面元素与后端 API 端点的对应关系，方便实现时对照。所有 admin 端点使用 cookie 鉴权 + <code>X-Requested-With</code> 头部。
+    </p>
+
+    <div style="background: var(--color-pure-white); border-radius: var(--radius-cards); box-shadow: var(--shadow-card); overflow: hidden;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <thead>
+          <tr style="background: var(--color-fog); border-bottom: 1px solid var(--color-dove);">
+            <th style="padding: 14px 20px; text-align: left; font-weight: 500; color: var(--color-ink);">界面</th>
+            <th style="padding: 14px 20px; text-align: left; font-weight: 500; color: var(--color-ink);">操作</th>
+            <th style="padding: 14px 20px; text-align: left; font-weight: 500; color: var(--color-ink);">HTTP</th>
+            <th style="padding: 14px 20px; text-align: left; font-weight: 500; color: var(--color-ink);">端点</th>
+            <th style="padding: 14px 20px; text-align: left; font-weight: 500; color: var(--color-ink);">权限</th>
+          </tr>
+        </thead>
+        <tbody style="font-family: var(--font-sohne);">
+          <tr style="border-bottom: 1px solid var(--color-dove);">
+            <td style="padding: 12px 20px; color: var(--color-ash);">列表页</td>
+            <td style="padding: 12px 20px;">按小区查询户型图</td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #2c7a3d; background: rgba(44,122,61,0.08); padding: 2px 8px; border-radius: 4px;">GET</code></td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--color-ink);">/admin/communities/{community_id}/images</code></td>
+            <td style="padding: 12px 20px;"><code style="font-size: 11px; color: var(--color-graphite);">property:read</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--color-dove);">
+            <td style="padding: 12px 20px; color: var(--color-ash);">上传 Dialog</td>
+            <td style="padding: 12px 20px;">上传户型图（multipart）</td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--color-rust); background: var(--color-apricot-wash); padding: 2px 8px; border-radius: 4px;">POST</code></td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--color-ink);">/admin/communities/{community_id}/images</code></td>
+            <td style="padding: 12px 20px;"><code style="font-size: 11px; color: var(--color-graphite);">property:write</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--color-dove);">
+            <td style="padding: 12px 20px; color: var(--color-ash);">预览 Dialog</td>
+            <td style="padding: 12px 20px;">更新描述</td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #6b4ba0; background: rgba(107,75,160,0.10); padding: 2px 8px; border-radius: 4px;">PATCH</code></td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--color-ink);">/admin/community-images/{id}</code></td>
+            <td style="padding: 12px 20px;"><code style="font-size: 11px; color: var(--color-graphite);">property:write</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--color-dove);">
+            <td style="padding: 12px 20px; color: var(--color-ash);">预览 Dialog</td>
+            <td style="padding: 12px 20px;">软删除户型图</td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--color-rust); background: var(--color-apricot-wash); padding: 2px 8px; border-radius: 4px;">DELETE</code></td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--color-ink);">/admin/community-images/{id}</code></td>
+            <td style="padding: 12px 20px;"><code style="font-size: 11px; color: var(--color-graphite);">property:write</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--color-dove);">
+            <td style="padding: 12px 20px; color: var(--color-ash);">线索选择器</td>
+            <td style="padding: 12px 20px;">查询线索关联小区户型图</td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #2c7a3d; background: rgba(44,122,61,0.08); padding: 2px 8px; border-radius: 4px;">GET</code></td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--color-ink);">/leads/{lead_id}/community-images</code></td>
+            <td style="padding: 12px 20px;"><code style="font-size: 11px; color: var(--color-graphite);">lead:read</code></td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 20px; color: var(--color-ash);">线索选择器（创建时）</td>
+            <td style="padding: 12px 20px;">无 lead_id 时回退到 admin 端点</td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #2c7a3d; background: rgba(44,122,61,0.08); padding: 2px 8px; border-radius: 4px;">GET</code></td>
+            <td style="padding: 12px 20px;"><code style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--color-ink);">/admin/communities/{community_id}/images</code></td>
+            <td style="padding: 12px 20px;"><code style="font-size: 11px; color: var(--color-graphite);">property:read</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</body>
+</html>
