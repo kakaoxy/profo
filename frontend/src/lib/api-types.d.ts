@@ -2870,6 +2870,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/users/wechat-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 微信用户完善资料
+         * @description 微信小程序用户主动授权更新头像和/或昵称；nickname 提供时派生 username，遇冲突自动追加随机后缀
+         */
+        put: operations["update_wechat_profile_api_v1_public_users_wechat_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/users/phone": {
         parameters: {
             query?: never;
@@ -3166,6 +3186,210 @@ export interface paths {
          * @description 返回指定小区的户型图列表，无需登录，供 C端估价表单选择户型图
          */
         get: operations["list_community_images_api_v1_public_communities__community_id__images_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/recruit/campaigns/{campaign_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 招募活动详情
+         * @description 返回分享标题/配图/详情模板内容，游客可访问；活动停用或不存在返回统一错误
+         */
+        get: operations["get_campaign_api_v1_public_recruit_campaigns__campaign_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/recruit/business-areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 主营商圈选项
+         * @description 聚合小区表 distinct business_circle（按出现频次降序）
+         */
+        get: operations["get_business_areas_api_v1_public_recruit_business_areas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/recruit/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 创建访问记录
+         * @description PV +1，UV 按 openid_hash 去重
+         */
+        post: operations["create_visit_api_v1_public_recruit_visits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/recruit/visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 上报离开
+         * @description 上报停留时长/深度浏览/点击授权，后端复核 is_deep_view
+         */
+        put: operations["update_visit_api_v1_public_recruit_visits__visit_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/recruit/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 提交留资（核心）
+         * @description 微信一键授权解密手机号 → 归因引擎落库 → 返回 {lead_id, is_new}
+         */
+        post: operations["submit_lead_api_v1_public_recruit_leads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/recruit/campaigns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 招募活动列表
+         * @description 招募活动列表.
+         */
+        get: operations["list_campaigns_api_v1_admin_recruit_campaigns_get"];
+        put?: never;
+        /**
+         * 新建招募活动
+         * @description 新建招募活动.
+         */
+        post: operations["create_campaign_api_v1_admin_recruit_campaigns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/recruit/campaigns/{campaign_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 编辑招募活动
+         * @description 编辑招募活动.
+         */
+        put: operations["update_campaign_api_v1_admin_recruit_campaigns__campaign_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/recruit/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 招募线索列表
+         * @description 分页 + 员工/状态/来源/主营商圈筛选，手机号脱敏
+         */
+        get: operations["list_leads_api_v1_admin_recruit_leads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/recruit/leads/{lead_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 招募线索跟进状态流转
+         * @description 跟进状态流转.
+         */
+        put: operations["update_lead_status_api_v1_admin_recruit_leads__lead_id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/recruit/leads/funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 招募 6 级漏斗统计
+         * @description 分享次数 → PV/UV → 深度浏览 → 点击授权 → 授权成功 → 有效新客
+         */
+        get: operations["get_funnel_api_v1_admin_recruit_leads_funnel_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9565,6 +9789,342 @@ export interface components {
          */
         RecordType: "viewing" | "offer" | "negotiation";
         /**
+         * RecruitBusinessAreaItem
+         * @description 主营商圈选项.
+         */
+        RecruitBusinessAreaItem: {
+            /**
+             * Name
+             * @description 商圈名称
+             */
+            name: string;
+            /**
+             * Count
+             * @description 出现频次
+             */
+            count: number;
+        };
+        /**
+         * RecruitCampaignCreate
+         * @description 创建招募活动请求.
+         */
+        RecruitCampaignCreate: {
+            /**
+             * Name
+             * @description 活动名称
+             */
+            name: string;
+            /**
+             * Title
+             * @description 分享卡片标题
+             */
+            title: string;
+            /**
+             * Image Url
+             * @description 分享配图 URL（5:4）
+             */
+            image_url?: string | null;
+            /**
+             * Content
+             * @description 详情页内容（权益/要求/福利）
+             */
+            content?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Poster Bg Url
+             * @description 海报背景图 URL（二期预留）
+             */
+            poster_bg_url?: string | null;
+            /**
+             * @description 启用状态
+             * @default enabled
+             */
+            status: components["schemas"]["RecruitCampaignStatus"];
+        };
+        /**
+         * RecruitCampaignDetailResponse
+         * @description 招募活动详情响应（C 端游客可见，不含内部字段）.
+         */
+        RecruitCampaignDetailResponse: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Image Url */
+            image_url: string | null;
+            /** Content */
+            content: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * RecruitCampaignResponse
+         * @description 招募活动响应（后台）.
+         */
+        RecruitCampaignResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+            /** Image Url */
+            image_url: string | null;
+            /** Content */
+            content: {
+                [key: string]: unknown;
+            } | null;
+            /** Poster Bg Url */
+            poster_bg_url: string | null;
+            status: components["schemas"]["RecruitCampaignStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * RecruitCampaignStatus
+         * @description 招募活动启用状态枚举.
+         * @enum {string}
+         */
+        RecruitCampaignStatus: "enabled" | "disabled";
+        /**
+         * RecruitCampaignUpdate
+         * @description 更新招募活动请求（全部可选）.
+         */
+        RecruitCampaignUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Image Url */
+            image_url?: string | null;
+            /** Content */
+            content?: {
+                [key: string]: unknown;
+            } | null;
+            /** Poster Bg Url */
+            poster_bg_url?: string | null;
+            status?: components["schemas"]["RecruitCampaignStatus"] | null;
+        };
+        /**
+         * RecruitFunnelResponse
+         * @description 招募 6 级漏斗统计响应.
+         */
+        RecruitFunnelResponse: {
+            /**
+             * Share Count
+             * @description 分享次数
+             */
+            share_count: number;
+            /**
+             * Pv
+             * @description 打开次数 PV
+             */
+            pv: number;
+            /**
+             * Uv
+             * @description 打开人数 UV（openid 去重）
+             */
+            uv: number;
+            /**
+             * Deep View
+             * @description 深度浏览人数
+             */
+            deep_view: number;
+            /**
+             * Clicked Auth
+             * @description 点击授权人数
+             */
+            clicked_auth: number;
+            /**
+             * Authed
+             * @description 授权成功数（原始留资）
+             */
+            authed: number;
+            /**
+             * Valid Leads
+             * @description 有效新客数（北极星指标）
+             */
+            valid_leads: number;
+        };
+        /**
+         * RecruitLeadCreate
+         * @description C 端提交留资请求（核心）.
+         */
+        RecruitLeadCreate: {
+            /**
+             * Code
+             * @description 微信 getPhoneNumber 授权 code
+             */
+            code: string;
+            /**
+             * Campaign Id
+             * @description 活动ID
+             */
+            campaign_id?: string | null;
+            /**
+             * Main Business Area
+             * @description 主营商圈（必填）
+             */
+            main_business_area: string;
+            /**
+             * Referrer
+             * @description 来源员工ID
+             */
+            referrer?: string | null;
+            /**
+             * @description 来源渠道
+             * @default card
+             */
+            source: components["schemas"]["RecruitLeadSource"];
+            /**
+             * Visit Id
+             * @description 关联访问记录ID
+             */
+            visit_id?: string | null;
+        };
+        /**
+         * RecruitLeadListItem
+         * @description 后台线索列表项（手机号脱敏，手动构造）.
+         */
+        RecruitLeadListItem: {
+            /** Id */
+            id: string;
+            /** Phone Masked */
+            phone_masked: string | null;
+            /** Main Business Area */
+            main_business_area: string;
+            /** Campaign Id */
+            campaign_id: string | null;
+            source: components["schemas"]["RecruitLeadSource"];
+            /** Referrer Employee Id */
+            referrer_employee_id: string | null;
+            /** Referrer Name */
+            referrer_name: string | null;
+            status: components["schemas"]["RecruitLeadStatus"];
+            /** Is Internal */
+            is_internal: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * RecruitLeadListResponse
+         * @description 后台线索列表分页响应.
+         */
+        RecruitLeadListResponse: {
+            /** Items */
+            items: components["schemas"]["RecruitLeadListItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * RecruitLeadSource
+         * @description 招募线索/访问来源渠道枚举.
+         * @enum {string}
+         */
+        RecruitLeadSource: "card" | "poster";
+        /**
+         * RecruitLeadStatus
+         * @description 招募线索跟进状态枚举.
+         * @enum {string}
+         */
+        RecruitLeadStatus: "new" | "contacted" | "high_intent" | "converted" | "eliminated";
+        /**
+         * RecruitLeadStatusUpdate
+         * @description 跟进状态流转请求.
+         */
+        RecruitLeadStatusUpdate: {
+            /** @description 目标状态 */
+            status: components["schemas"]["RecruitLeadStatus"];
+            /**
+             * Is Internal
+             * @description 是否内部员工（人工标记，可选）
+             */
+            is_internal?: boolean | null;
+        };
+        /**
+         * RecruitLeadSubmitResponse
+         * @description 留资提交响应.
+         */
+        RecruitLeadSubmitResponse: {
+            /** Lead Id */
+            lead_id: string;
+            /** Is New */
+            is_new: boolean;
+        };
+        /**
+         * RecruitVisitCreate
+         * @description 创建访问记录请求.
+         */
+        RecruitVisitCreate: {
+            /**
+             * Campaign Id
+             * @description 活动ID
+             */
+            campaign_id?: string | null;
+            /**
+             * Referrer
+             * @description 来源员工ID
+             */
+            referrer?: string | null;
+            /**
+             * @description 进入渠道
+             * @default card
+             */
+            source: components["schemas"]["RecruitLeadSource"];
+        };
+        /**
+         * RecruitVisitResponse
+         * @description 创建访问记录响应.
+         */
+        RecruitVisitResponse: {
+            /** Id */
+            id: string;
+        };
+        /**
+         * RecruitVisitUpdate
+         * @description 上报离开请求.
+         */
+        RecruitVisitUpdate: {
+            /**
+             * Stayed Ms
+             * @description 停留毫秒
+             */
+            stayed_ms?: number | null;
+            /**
+             * Is Deep View
+             * @description 是否深度浏览（stayed_ms>=3000）
+             * @default false
+             */
+            is_deep_view: boolean;
+            /**
+             * Clicked Auth
+             * @description 是否点击报名且通过校验
+             * @default false
+             */
+            clicked_auth: boolean;
+        };
+        /**
          * RefreshTokenRequest
          * @description 刷新令牌请求模型.
          */
@@ -10887,6 +11447,30 @@ export interface components {
              * @description 微信授权码
              */
             code: string;
+        };
+        /**
+         * WechatProfileUpdateRequest
+         * @description 微信小程序用户完善资料请求（头像和/或昵称）.
+         *
+         *     用户通过 <button open-type="chooseAvatar"> 与 <input type="nickname">
+         *     主动授权后调用。nickname 与 avatar_url 均为可选，但至少一个非空：
+         *     - 仅传 nickname：派生 username 并更新 nickname（用于昵称独立授权）
+         *     - 仅传 avatar_url：仅更新 avatar（用于头像独立授权）
+         *     - 同时传：两者都更新
+         *
+         *     username 由后端根据 nickname 派生，不暴露给前端。
+         */
+        WechatProfileUpdateRequest: {
+            /**
+             * Nickname
+             * @description 微信昵称（可选，与 avatar_url 至少一个非空）
+             */
+            nickname?: string | null;
+            /**
+             * Avatar Url
+             * @description 已上传到 /public/files/upload 的图片访问 URL（可选，与 nickname 至少一个非空）
+             */
+            avatar_url?: string | null;
         };
         /**
          * CommunityListResponse
@@ -16708,6 +17292,39 @@ export interface operations {
             };
         };
     };
+    update_wechat_profile_api_v1_public_users_wechat_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WechatProfileUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUserProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_phone_api_v1_public_users_phone_put: {
         parameters: {
             query?: never;
@@ -17238,6 +17855,373 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunityImageListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_campaign_api_v1_public_recruit_campaigns__campaign_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 活动ID */
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitCampaignDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_business_areas_api_v1_public_recruit_business_areas_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitBusinessAreaItem"][];
+                };
+            };
+        };
+    };
+    create_visit_api_v1_public_recruit_visits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecruitVisitCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitVisitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_visit_api_v1_public_recruit_visits__visit_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 访问记录ID */
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecruitVisitUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitVisitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_lead_api_v1_public_recruit_leads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecruitLeadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitLeadSubmitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_campaigns_api_v1_admin_recruit_campaigns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitCampaignResponse"][];
+                };
+            };
+        };
+    };
+    create_campaign_api_v1_admin_recruit_campaigns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecruitCampaignCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitCampaignResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_campaign_api_v1_admin_recruit_campaigns__campaign_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 活动ID */
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecruitCampaignUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitCampaignResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_leads_api_v1_admin_recruit_leads_get: {
+        parameters: {
+            query?: {
+                /** @description 归属员工ID */
+                employee_id?: string | null;
+                /** @description 跟进状态 */
+                status?: components["schemas"]["RecruitLeadStatus"] | null;
+                /** @description 来源渠道 */
+                source?: components["schemas"]["RecruitLeadSource"] | null;
+                /** @description 主营商圈（精确匹配） */
+                business_area?: string | null;
+                /** @description 活动ID */
+                campaign_id?: string | null;
+                /** @description 留资开始日期（YYYY-MM-DD，含） */
+                start_date?: string | null;
+                /** @description 留资结束日期（YYYY-MM-DD，含） */
+                end_date?: string | null;
+                /** @description 主营商圈关键词搜索（模糊匹配） */
+                search?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitLeadListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lead_status_api_v1_admin_recruit_leads__lead_id__status_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecruitLeadStatusUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitLeadListItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_funnel_api_v1_admin_recruit_leads_funnel_get: {
+        parameters: {
+            query?: {
+                /** @description 活动ID */
+                campaign_id?: string | null;
+                /** @description 员工维度下钻 */
+                employee_id?: string | null;
+                /** @description 开始日期 */
+                start_date?: string | null;
+                /** @description 结束日期 */
+                end_date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitFunnelResponse"];
                 };
             };
             /** @description Validation Error */

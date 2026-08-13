@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { format, subDays } from "date-fns";
+import { useRouter } from "next/navigation";
+import { useQueryStates, parseAsString } from "nuqs";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 
-import { fetchMockFunnel } from "../../_lib/mock-recruit";
 import type {
   RecruitCampaign,
   RecruitEmployee,
@@ -22,16 +20,6 @@ import type {
 } from "../../types";
 import { FunnelStats } from "./funnel-stats";
 import { FunnelEmployees, type EmployeeFunnelRow } from "./funnel-employees";
-
-// TODO(二期): 替换为真实接口
-// GET /api/v1/admin/recruit/leads/funnel?start_date=&end_date=&campaign_id=&employee_id=
-
-interface FunnelViewProps {
-  /** 员工维度选项（全部 + 各员工），来自 mock，二期替换为接口返回 */
-  employees: RecruitEmployee[];
-  /** 活动维度选项（全部 + 各活动），来自 mock，二期替换为接口返回 */
-  campaigns: RecruitCampaign[];
-}
 
 /** Select 中「全部」的占位值（Radix Select 不允许空字符串 value，故用 "all"） */
 const ALL = "all";
@@ -44,92 +32,96 @@ const RANGE_OPTIONS = [
   { value: "custom", label: "自定义区间" },
 ] as const;
 
-type RangeValue = (typeof RANGE_OPTIONS)[number]["value"];
-
-/** 将 Date 格式化为 YYYY-MM-DD */
-function toDateStr(d: Date): string {
-  return format(d, "yyyy-MM-dd");
+export interface FunnelViewProps {
+  /** 员工维度选项 */
+  employees: RecruitEmployee[];
+  /** 活动维度选项 */
+  campaigns: RecruitCampaign[];
+  /** 整体漏斗数据（服务端获取） */
+  funnel: RecruitFunnelData | null;
+  /** 员工维度漏斗行（服务端获取，已按选中员工过滤） */
+  employeeRows: EmployeeFunnelRow[];
+  /** 当前选中的活动 ID（空 = 全部） */
+  campaignId: string;
+  /** 当前选中的员工 ID（空 = 全部） */
+  employeeId: string;
+  /** 当前时间区间 */
+  range: string;
+  /** 自定义区间开始日期 */
+  customStart: string;
+  /** 自定义区间结束日期 */
+  customEnd: string;
+  /** 日期区间展示文本 */
+  dateRange: string;
 }
 
 /**
  * 漏斗看板（对齐设计稿 F3）：
  * 页头右侧查询条件（活动 / 员工 / 时间区间 / 刷新），
- * 数据区为转化漏斗主卡 + 员工维度拉新贡献表；
- * 查询条件变化时自动重新拉取漏斗数据（含员工维度并行下钻）。
+ * 数据区为转化漏斗主卡 + 员工维度拉新贡献表。
+ * 筛选条件变化通过 nuqs 更新 URL，触发 Server Component 重新取数。
  */
-export function FunnelView({ employees, campaigns }: FunnelViewProps) {
-  const [campaignId, setCampaignId] = useState<string>(ALL);
-  const [employeeId, setEmployeeId] = useState<string>(ALL);
-  const [range, setRange] = useState<RangeValue>("30");
-  // 自定义区间的起止日期（仅 range === "custom" 时生效）
-  const [customStart, setCustomStart] = useState<string>(() =>
-    toDateStr(subDays(new Date(), 29)),
-  );
-  const [customEnd, setCustomEnd] = useState<string>(() => toDateStr(new Date()));
-  const [refreshKey, setRefreshKey] = useState(0);
+export function FunnelView({
+  employees,
+  campaigns,
+  funnel,
+  employeeRows,
+  campaignId,
+  employeeId,
+  range,
+  customStart,
+  customEnd,
+  dateRange,
+}: FunnelViewProps) {
+  const router = useRouter();
 
-  const [funnel, setFunnel] = useState<RecruitFunnelData | null>(null);
-  const [employeeRows, setEmployeeRows] = useState<EmployeeFunnelRow[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  // 记录上一次区间是否非法，避免无效输入期间重复 toast
-  const invalidRangeRef = useRef<boolean>(false);
+  // URL 状态（nuqs 管理，无 shallow → 触发服务端取数）
+  const [, setQuery] = useQueryStates({
+    campaign: parseAsString.withDefault(""),
+    employee: parseAsString.withDefault(""),
+    range: parseAsString.withDefault("30"),
+    start_date: parseAsString.withDefault(""),
+    end_date: parseAsString.withDefault(""),
+  });
 
-  const rangeLabel = range === "custom" ? "自定义区间" : `近 ${range} 天`;
+  const rangeLabel =
+    range === "custom" ? "自定义区间" : `近 ${range} 天`;
 
-  // 生效日期区间：快捷区间由今天往前推 N-1 天，自定义区间直接取输入值
-  const { startDate, endDate } =
-    range === "custom"
-      ? { startDate: customStart, endDate: customEnd }
-      : {
-          startDate: toDateStr(subDays(new Date(), Number(range) - 1)),
-          endDate: toDateStr(new Date()),
-        };
-
-  useEffect(() => {
-    // 区间校验：开始日期晚于结束日期时提示并阻止查询
-    if (startDate && endDate && startDate > endDate) {
-      if (!invalidRangeRef.current) {
-        toast.error("开始日期不能晚于结束日期");
-      }
-      invalidRangeRef.current = true;
-      return;
+  // 日期区间校验：自定义区间开始日期晚于结束日期时阻止更新
+  const validateCustomRange = (start: string, end: string): boolean => {
+    if (start && end && start > end) {
+      toast.error("开始日期不能晚于结束日期");
+      return false;
     }
-    invalidRangeRef.current = false;
+    return true;
+  };
 
-    let cancelled = false;
-    setLoading(true);
-    const queryBase = {
-      start_date: startDate,
-      end_date: endDate,
-      campaign_id: campaignId === ALL ? null : campaignId,
-    };
-    // 并行拉取整体漏斗 + 各员工漏斗（员工维度下钻数据）
-    Promise.all([
-      fetchMockFunnel({
-        ...queryBase,
-        employee_id: employeeId === ALL ? null : employeeId,
-      }),
-      ...employees.map((emp) =>
-        fetchMockFunnel({ ...queryBase, employee_id: emp.id }),
-      ),
-    ]).then(([overall, ...perEmp]) => {
-      if (cancelled) return;
-      setFunnel(overall);
-      setEmployeeRows(
-        employees.map((emp, i) => ({ employee: emp, data: perEmp[i] })),
-      );
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [startDate, endDate, campaignId, employeeId, refreshKey, employees]);
+  const handleCampaignChange = (val: string) => {
+    setQuery({ campaign: val === ALL ? "" : val });
+  };
 
-  // 员工维度表展示行：指定员工时仅展示该员工
-  const displayedRows =
-    employeeId === ALL
-      ? employeeRows
-      : employeeRows.filter((r) => r.employee.id === employeeId);
+  const handleEmployeeChange = (val: string) => {
+    setQuery({ employee: val === ALL ? "" : val });
+  };
+
+  const handleRangeChange = (val: string) => {
+    setQuery({ range: val });
+  };
+
+  const handleCustomStartChange = (val: string) => {
+    if (!validateCustomRange(val, customEnd)) return;
+    setQuery({ start_date: val });
+  };
+
+  const handleCustomEndChange = (val: string) => {
+    if (!validateCustomRange(customStart, val)) return;
+    setQuery({ end_date: val });
+  };
+
+  const handleRefresh = () => {
+    router.refresh();
+    toast.success("漏斗数据已刷新");
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -145,7 +137,10 @@ export function FunnelView({ employees, campaigns }: FunnelViewProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Select value={campaignId} onValueChange={setCampaignId}>
+          <Select
+            value={campaignId || ALL}
+            onValueChange={handleCampaignChange}
+          >
             <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-33">
               <SelectValue placeholder="全部活动" />
             </SelectTrigger>
@@ -159,7 +154,10 @@ export function FunnelView({ employees, campaigns }: FunnelViewProps) {
             </SelectContent>
           </Select>
 
-          <Select value={employeeId} onValueChange={setEmployeeId}>
+          <Select
+            value={employeeId || ALL}
+            onValueChange={handleEmployeeChange}
+          >
             <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-33">
               <SelectValue placeholder="全部员工" />
             </SelectTrigger>
@@ -175,7 +173,7 @@ export function FunnelView({ employees, campaigns }: FunnelViewProps) {
 
           <Select
             value={range}
-            onValueChange={(val) => setRange(val as RangeValue)}
+            onValueChange={handleRangeChange}
           >
             <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-28">
               <SelectValue placeholder="近 30 天" />
@@ -194,7 +192,7 @@ export function FunnelView({ employees, campaigns }: FunnelViewProps) {
               <Input
                 type="date"
                 value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
+                onChange={(e) => handleCustomStartChange(e.target.value)}
                 className="h-9.5 rounded-inputs border-dove bg-white text-[14px] w-37.5 focus-visible:ring-ink/30"
                 aria-label="开始日期"
               />
@@ -202,7 +200,7 @@ export function FunnelView({ employees, campaigns }: FunnelViewProps) {
               <Input
                 type="date"
                 value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
+                onChange={(e) => handleCustomEndChange(e.target.value)}
                 className="h-9.5 rounded-inputs border-dove bg-white text-[14px] w-37.5 focus-visible:ring-ink/30"
                 aria-label="结束日期"
               />
@@ -212,39 +210,26 @@ export function FunnelView({ employees, campaigns }: FunnelViewProps) {
           <button
             type="button"
             className="text-[14px] font-medium text-ink px-0.5 hover:opacity-60 transition-opacity"
-            onClick={() => {
-              setRefreshKey((k) => k + 1);
-              toast.success("漏斗数据已刷新");
-            }}
+            onClick={handleRefresh}
           >
             刷新
           </button>
         </div>
       </div>
 
-      {/* 数据区：加载中显示骨架，加载完成渲染漏斗主卡 + 员工维度表 */}
-      {loading || funnel === null ? (
-        <div
-          className="flex flex-col gap-6"
-          aria-busy="true"
-          aria-label="漏斗数据加载中"
-        >
-          <div className="bg-white rounded-cards shadow-steep p-6">
-            <Skeleton className="h-5 w-48 mb-4" />
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-10.5 rounded-[14px] mb-3" />
-            ))}
-          </div>
-          <Skeleton className="h-64 rounded-cards" />
+      {/* 数据区：漏斗为 null 时显示空态，否则渲染漏斗主卡 + 员工维度表 */}
+      {funnel === null ? (
+        <div className="bg-white rounded-cards shadow-steep p-12 text-center text-[14px] text-slate">
+          暂无漏斗数据
         </div>
       ) : (
         <>
           <FunnelStats
             data={funnel}
             rangeLabel={rangeLabel}
-            dateRange={`${startDate} ~ ${endDate}`}
+            dateRange={dateRange}
           />
-          <FunnelEmployees rows={displayedRows} />
+          <FunnelEmployees rows={employeeRows} />
         </>
       )}
     </div>

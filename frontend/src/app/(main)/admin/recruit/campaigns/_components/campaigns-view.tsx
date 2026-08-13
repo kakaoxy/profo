@@ -11,6 +11,12 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import type { RecruitCampaign } from "../../types";
 import { CampaignsTable } from "./campaigns-table";
 import type { CampaignFormData } from "./campaign-form-dialog";
+import {
+  createCampaignAction,
+  updateCampaignAction,
+  toggleCampaignStatusAction,
+  type CampaignFormData as ActionCampaignFormData,
+} from "../../_lib/recruit-actions";
 import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
 import { DesignPagination } from "../../_components/design-pagination";
 
@@ -35,23 +41,23 @@ export interface CampaignStats {
 }
 
 interface CampaignsViewProps {
-  /** 服务端（mock）读取的活动列表 */
-  initialCampaigns: RecruitCampaign[];
+  /** 服务端获取的活动列表（revalidatePath 后自动刷新） */
+  campaigns: RecruitCampaign[];
   /** 页面头部 KPI 概览统计 */
   stats: CampaignStats;
 }
 
 /**
- * 活动配置列表视图（第一期）：全部增删改查均为本地状态模拟，
- * 二期替换为真实接口（各操作处已标注 TODO 注释）。
+ * 活动配置列表视图：增删改通过 Server Actions 调用后端接口，
+ * 成功后 revalidatePath 刷新列表数据（props 由 Server Component 重新传入）。
  * 布局与视觉对齐设计稿（Steep）：页头 + KPI 概览 + 活动列表卡。
  */
-export function CampaignsView({ initialCampaigns, stats }: CampaignsViewProps) {
-  const [campaigns, setCampaigns] =
-    React.useState<RecruitCampaign[]>(initialCampaigns);
+export function CampaignsView({ campaigns, stats }: CampaignsViewProps) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingCampaign, setEditingCampaign] =
     React.useState<RecruitCampaign | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [togglingId, setTogglingId] = React.useState<string | null>(null);
 
   // KPI 概览（与列表状态联动：停用/启用后「进行中」实时变化）
   const kpiItems: RecruitKpiItem[] = React.useMemo(() => {
@@ -85,50 +91,61 @@ export function CampaignsView({ initialCampaigns, stats }: CampaignsViewProps) {
   }, [campaigns, stats]);
 
   // 新建活动
-  const handleCreate = (data: CampaignFormData) => {
-    // TODO(二期): 替换为真实接口 POST /api/v1/admin/recruit/campaigns
-    const now = new Date().toISOString();
-    const newCampaign: RecruitCampaign = {
-      id: crypto.randomUUID(),
-      name: data.name,
-      title: data.title,
-      image_url: data.image_url,
-      status: data.status,
-      created_at: now,
-      updated_at: now,
-    };
-    setCampaigns((prev) => [newCampaign, ...prev]);
-    toast.success("活动创建成功");
-    setDialogOpen(false);
+  const handleCreate = async (data: CampaignFormData) => {
+    setSubmitting(true);
+    try {
+      const result = await createCampaignAction(data as ActionCampaignFormData);
+      if (result.success) {
+        toast.success("活动创建成功");
+        setDialogOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // 编辑活动
-  const handleEdit = (campaign: RecruitCampaign, data: CampaignFormData) => {
-    // TODO(二期): 替换为真实接口 PUT /api/v1/admin/recruit/campaigns/{id}
-    setCampaigns((prev) =>
-      prev.map((c) =>
-        c.id === campaign.id
-          ? { ...c, ...data, updated_at: new Date().toISOString() }
-          : c,
-      ),
-    );
-    toast.success("活动更新成功");
-    setDialogOpen(false);
+  const handleEdit = async (campaign: RecruitCampaign, data: CampaignFormData) => {
+    setSubmitting(true);
+    try {
+      const result = await updateCampaignAction(
+        campaign.id,
+        data as ActionCampaignFormData,
+      );
+      if (result.success) {
+        toast.success("活动更新成功");
+        setDialogOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // 启用 / 停用（设计稿行内「停用/启用」文本操作）
-  const handleToggleStatus = (campaign: RecruitCampaign) => {
-    // TODO(二期): 替换为真实接口 PATCH /api/v1/admin/recruit/campaigns/{id}/status
+  const handleToggleStatus = async (campaign: RecruitCampaign) => {
     const nextStatus: RecruitCampaign["status"] =
       campaign.status === "enabled" ? "disabled" : "enabled";
-    setCampaigns((prev) =>
-      prev.map((c) =>
-        c.id === campaign.id
-          ? { ...c, status: nextStatus, updated_at: new Date().toISOString() }
-          : c,
-      ),
-    );
-    toast.success(nextStatus === "enabled" ? "活动已启用" : "活动已停用");
+    setTogglingId(campaign.id);
+    try {
+      const result = await toggleCampaignStatusAction(campaign.id, nextStatus);
+      if (result.success) {
+        toast.success(nextStatus === "enabled" ? "活动已启用" : "活动已停用");
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   // 小程序码（占位：二期生成海报/小程序码）
@@ -203,6 +220,7 @@ export function CampaignsView({ initialCampaigns, stats }: CampaignsViewProps) {
                 onEdit={openEditDialog}
                 onToggleStatus={handleToggleStatus}
                 onQr={handleQr}
+                togglingId={togglingId}
               />
               <DesignPagination
                 info={`共 ${campaigns.length} 条记录`}
@@ -225,6 +243,7 @@ export function CampaignsView({ initialCampaigns, stats }: CampaignsViewProps) {
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           campaign={editingCampaign}
+          submitting={submitting}
           onSubmit={
             editingCampaign
               ? (data) => handleEdit(editingCampaign, data)

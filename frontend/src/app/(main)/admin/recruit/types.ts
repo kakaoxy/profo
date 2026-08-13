@@ -1,96 +1,36 @@
 /**
- * 招募管理（区域伙伴招募计划）本地类型定义。
+ * 招募管理（区域伙伴招募计划）UI 类型与常量。
  *
- * 该文件为纯类型/常量模块，无运行时副作用、无 'use client' 指令，
- * 可被 Server Component 与 Client Component 共同导入。
- * 字段名对齐《区域伙伴招募计划》9.3 数据模型，镜像二期后端 Recruit* 接口的
- * Pydantic 结构（后端就绪后由 gen-api 生成的类型替换，但字段名保持一致）。
+ * 实体类型由 `pnpm gen-api` 生成（@/lib/api-types），此处仅做语义别名
+ * 与 UI 常量（中文标签 / Badge 配色 / 漏斗步骤）集中管理。
+ * 无运行时副作用、无 'use client' 指令，可被 Server / Client Component 共同导入。
  */
 
-// ─── 枚举 ──────────────────────────────────────────────────────────────────────
+import type { components } from "@/lib/api-types";
 
-/** 招募活动状态 */
-export type RecruitCampaignStatus = "enabled" | "disabled";
+// ─── 枚举别名（对齐后端 Pydantic 枚举） ──────────────────────────────────────
 
-/** 线索跟进状态（预留第八节字段，二期支持流转） */
-export type RecruitLeadStatus = "new" | "contacted" | "high_intent" | "converted" | "eliminated";
+export type RecruitCampaignStatus = components["schemas"]["RecruitCampaignStatus"];
+export type RecruitLeadStatus = components["schemas"]["RecruitLeadStatus"];
+export type RecruitSource = components["schemas"]["RecruitLeadSource"];
 
-/** 线索来源渠道（后台不区分统计，仅留痕） */
-export type RecruitSource = "card" | "poster";
+// ─── 实体别名（对齐后端 Response Schema） ────────────────────────────────────
 
-// ─── 实体 ──────────────────────────────────────────────────────────────────────
+/** 招募活动（后台响应投影） */
+export type RecruitCampaign = components["schemas"]["RecruitCampaignResponse"];
 
-/** 招募活动（recruit_campaigns 表投影） */
-export interface RecruitCampaign {
-  id: string;
-  /** 活动名称 */
-  name: string;
-  /** 分享卡片标题（运营配置，员工不可自定义） */
-  title: string;
-  /** 分享配图 URL（微信官方规范 5:4，建议 500×400） */
-  image_url: string | null;
-  status: RecruitCampaignStatus;
-  /** ISO 字符串 */
-  created_at: string;
-  updated_at: string;
-}
+/** 招募客户线索（后台列表项，手机号已脱敏） */
+export type RecruitLead = components["schemas"]["RecruitLeadListItem"];
 
-/** 招募客户线索（recruit_leads 表投影） */
-export interface RecruitLead {
-  id: string;
-  /** 已脱敏手机号，如 "138****1234" */
-  phone_masked: string;
-  /** 主营商圈（必填） */
-  main_business_area: string;
-  campaign_id: string;
-  source: RecruitSource;
-  /** 归属员工 ID（首次留资写入，此后永不更新） */
-  referrer_employee_id: string | null;
-  /** 归属员工姓名（由 mock 层填充；后端二期返回员工姓名冗余字段） */
-  referrer_employee_name: string | null;
-  status: RecruitLeadStatus;
-  /** 是否内部员工误点（人工/自动标记） */
-  is_internal: boolean;
-  /** ISO 字符串；首次留资时间 = created_at */
-  created_at: string;
-}
+/** 6 级核心业务漏斗数据 */
+export type RecruitFunnelData = components["schemas"]["RecruitFunnelResponse"];
 
-/** 员工（分享归属/业绩核算维度） */
+// ─── 员工（UI 投影，由 UserSimpleResponse 映射） ──────────────────────────────
+
+/** 员工（分享归属/业绩核算维度，由 GET /api/v1/users/simple 映射） */
 export interface RecruitEmployee {
   id: string;
   name: string;
-}
-
-// ─── 漏斗 ──────────────────────────────────────────────────────────────────────
-
-/** 6 级核心业务漏斗数据（对应第五节模型） */
-export interface RecruitFunnelData {
-  /** 分享次数 */
-  shared: number;
-  /** 打开次数 */
-  pv: number;
-  /** 打开人数 */
-  uv: number;
-  /** 深度浏览（停留 ≥3s） */
-  deep_view: number;
-  /** 点击授权 */
-  clicked_auth: number;
-  /** 授权成功（原始留资） */
-  authed: number;
-  /** 有效新客（北极星指标） */
-  valid_new: number;
-}
-
-/** 漏斗统计查询参数 */
-export interface RecruitFunnelQuery {
-  /** YYYY-MM-DD */
-  start_date: string;
-  /** YYYY-MM-DD */
-  end_date: string;
-  /** null 表示全部活动 */
-  campaign_id: string | null;
-  /** null 表示全部员工 */
-  employee_id: string | null;
 }
 
 // ─── 中文标签常量（供页面复用） ───────────────────────────────────────────────
@@ -128,22 +68,13 @@ export const RECRUIT_BADGE_CLASS = {
   muted: "text-slate ring-1 ring-inset ring-fog",
 } as const;
 
-/** 主营商圈选项（镜像后端 GET /api/v1/public/recruit/business-areas 的聚合结果） */
-export const RECRUIT_BUSINESS_AREAS: string[] = [
-  "城东CBD",
-  "城西高新区",
-  "城南滨江",
-  "城北大学城",
-  "老城中心",
-];
-
 /** 漏斗看板各级指标（自上而下依次展示，数值单调不增） */
 export const RECRUIT_FUNNEL_STEPS: ReadonlyArray<{ key: keyof RecruitFunnelData; label: string }> = [
-  { key: "shared", label: "分享次数" },
+  { key: "share_count", label: "分享次数" },
   { key: "pv", label: "打开次数(PV)" },
   { key: "uv", label: "打开人数(UV)" },
   { key: "deep_view", label: "深度浏览" },
   { key: "clicked_auth", label: "点击授权" },
   { key: "authed", label: "授权成功(原始留资)" },
-  { key: "valid_new", label: "有效新客(北极星)" },
+  { key: "valid_leads", label: "有效新客(北极星)" },
 ];

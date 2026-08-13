@@ -198,3 +198,8 @@ class RateLimits:
     PUBLIC_COMMUNITY_SEARCH = "60/minute"
     PUBLIC_REGISTER = "10/hour"
     PUBLIC_LOGOUT = "60/minute"
+
+    # ==================== 招募计划 C 端接口 ====================
+    # 访问埋点：C 端进入/离开高频，限流放宽；留资提交涉及微信解密，收敛频次
+    RECRUIT_VISIT = "120/minute"
+    RECRUIT_LEAD_SUBMIT = "10/hour"

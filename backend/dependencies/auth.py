@@ -388,6 +388,9 @@ InvestmentCopyPermDep = Annotated[User, Depends(require_permission("investment:c
 # l4_marketing 模块
 L4MarketingReadPermDep = Annotated[User, Depends(require_permission("l4_marketing:read"))]
 L4MarketingWritePermDep = Annotated[User, Depends(require_permission("l4_marketing:write"))]
+# recruit 模块（区域伙伴招募计划）
+RecruitReadPermDep = Annotated[User, Depends(require_permission("recruit:read"))]
+RecruitWritePermDep = Annotated[User, Depends(require_permission("recruit:write"))]
 # operation_log 模块
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
 
@@ -636,6 +639,8 @@ __all__ = [
     "PropertyReadPermDep",
     "PropertyUploadPermDep",
     "PropertyWritePermDep",
+    "RecruitReadPermDep",
+    "RecruitWritePermDep",
     "ReportsReadPermDep",
     "RoleAssignPermissionsPermDep",
     "RoleCreatePermDep",

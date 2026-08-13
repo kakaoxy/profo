@@ -113,6 +113,7 @@ from migrations._permission_system import (
     migrate_permission_system,
     migrate_project_business_permission,
 )
+from migrations._recruit import create_recruit_tables
 from migrations._schema_columns import (
     add_contact_person_id_column,
     add_renovation_extra_amount_columns,
@@ -244,6 +245,7 @@ def _run_all_migrations(engine: Engine) -> None:
         backfill_lead_total_price_from_expected(engine)
         backfill_lead_unit_price(engine)
         create_community_images_table(engine)
+        create_recruit_tables(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

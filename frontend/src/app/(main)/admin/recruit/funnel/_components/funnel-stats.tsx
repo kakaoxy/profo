@@ -3,7 +3,7 @@
 import type { RecruitFunnelData } from "../../types";
 
 interface FunnelStatsProps {
-  /** 6 级漏斗数据（一期 mock，二期真实接口返回） */
+  /** 6 级漏斗数据（后端接口返回） */
   data: RecruitFunnelData;
   /** 区间文案，如「近 30 天」/「自定义区间」 */
   rangeLabel: string;
@@ -37,15 +37,15 @@ function formatRate(numerator: number, denominator: number): string {
  * 下方 6 级漏斗条：左侧标签（中文 + EN）、中间渐窄条形（数值内嵌）、右侧数值 + 转化率。
  */
 export function FunnelStats({ data, rangeLabel, dateRange }: FunnelStatsProps) {
-  const { shared, pv, uv, deep_view, clicked_auth, authed, valid_new } = data;
+  const { share_count, pv, uv, deep_view, clicked_auth, authed, valid_leads } = data;
 
   const stages: FunnelStage[] = [
     {
-      key: "shared",
+      key: "share_count",
       label: "分享次数",
       en: "Share Events",
-      barValue: shared,
-      display: shared.toLocaleString(),
+      barValue: share_count,
+      display: share_count.toLocaleString(),
       rateLabel: "— 基准",
       barColor: "bg-ink",
     },
@@ -55,7 +55,7 @@ export function FunnelStats({ data, rangeLabel, dateRange }: FunnelStatsProps) {
       en: "Open PV / UV",
       barValue: pv,
       display: `${pv.toLocaleString()} / ${uv.toLocaleString()}`,
-      rateLabel: `打开率 ${formatRate(pv, shared)}`,
+      rateLabel: `打开率 ${formatRate(pv, share_count)}`,
       barColor: "bg-[#3a3d42]",
     },
     {
@@ -86,21 +86,21 @@ export function FunnelStats({ data, rangeLabel, dateRange }: FunnelStatsProps) {
       barColor: "bg-slate",
     },
     {
-      key: "valid_new",
+      key: "valid_leads",
       label: "有效新客",
       en: "Valid New",
-      barValue: valid_new,
-      display: valid_new.toLocaleString(),
-      rateLabel: `有效占比 ${formatRate(valid_new, authed)}`,
+      barValue: valid_leads,
+      display: valid_leads.toLocaleString(),
+      rateLabel: `有效占比 ${formatRate(valid_leads, authed)}`,
       barColor: "bg-rust",
     },
   ];
 
   // 条形宽度基准：以首级（分享次数）为 100%，全 0 时兜底为 1
-  const maxBarValue = Math.max(shared, 1);
+  const maxBarValue = Math.max(share_count, 1);
 
   // 图例：整体转化率 = 有效新客 ÷ 分享次数；授权转化率 = 留资 ÷ 点击授权
-  const overallRate = formatRate(valid_new, shared);
+  const overallRate = formatRate(valid_leads, share_count);
   const authRate = formatRate(authed, clicked_auth);
 
   return (

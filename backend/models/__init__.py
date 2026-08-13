@@ -77,6 +77,18 @@ from .property import (
     PropertyMedia,
 )
 
+# 区域伙伴招募计划模块
+from .recruit import (
+    RecruitCampaign,
+    RecruitCampaignStatus,
+    RecruitLead,
+    RecruitLeadSource,
+    RecruitLeadStatus,
+    RecruitShareEvent,
+    RecruitShareType,
+    RecruitVisit,
+)
+
 # 系统模块
 from .system import FailedRecord, OperationLog, PropertyImportTask, WeChatOAuthState, WeChatTempCode
 
@@ -154,6 +166,15 @@ __all__ = [
     "PropertyStatus",
     "PublishStatus",
     "RecordType",
+    # 区域伙伴招募计划
+    "RecruitCampaign",
+    "RecruitCampaignStatus",
+    "RecruitLead",
+    "RecruitLeadSource",
+    "RecruitLeadStatus",
+    "RecruitShareEvent",
+    "RecruitShareType",
+    "RecruitVisit",
     # 用户
     "RefreshToken",
     "RenovationPhoto",

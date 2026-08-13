@@ -17,6 +17,7 @@ import type {
   RecruitCampaign,
   RecruitCampaignStatus,
 } from "../../types";
+import { uploadCampaignImageAction } from "../../_lib/recruit-actions";
 
 /** 表单提交数据（不含 id / created_at / updated_at，由父组件在本地状态中补全） */
 export interface CampaignFormData {
@@ -31,6 +32,8 @@ interface CampaignFormDialogProps {
   onOpenChange: (open: boolean) => void;
   /** 编辑模式传入待编辑活动，新建模式为 null */
   campaign: RecruitCampaign | null;
+  /** 提交中状态（由父组件控制，禁用按钮防止重复提交） */
+  submitting?: boolean;
   onSubmit: (data: CampaignFormData) => void;
 }
 
@@ -39,16 +42,16 @@ const ASPECT_RATIO = 5 / 4;
 const ASPECT_TOLERANCE = 0.02;
 
 /**
- * 活动新建 / 编辑共用表单弹窗（第一期），视觉对齐设计稿：
+ * 活动新建 / 编辑共用表单弹窗，视觉对齐设计稿：
  * 头部标题 + 关闭，2 列表单（名称/标题/配图），底部「发布后立即启用」
  * 开关条与「保存并发布」按钮。
- * 配图仅前端校验 5:4 比例并生成本地预览，无真实上传；
- * TODO(二期): 替换为真实上传接口，返回 CDN URL。
+ * 配图前端校验 5:4 比例后上传至后端 /files/upload，返回 CDN URL。
  */
 export function CampaignFormDialog({
   open,
   onOpenChange,
   campaign,
+  submitting = false,
   onSubmit,
 }: CampaignFormDialogProps) {
   const [name, setName] = React.useState("");
@@ -58,17 +61,6 @@ export function CampaignFormDialog({
     React.useState<RecruitCampaignStatus>("enabled");
   const [checkingImage, setCheckingImage] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  // 当前本地预览的 object URL（仅记录本会话创建的 blob: URL，用于及时回收）
-  const objectUrlRef = React.useRef<string | null>(null);
-
-  // 组件卸载（弹窗关闭）时回收未保存的本地预览 URL，避免内存泄漏
-  React.useEffect(() => {
-    return () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-      }
-    };
-  }, []);
 
   // 打开弹窗 / 切换编辑对象时重置表单
   React.useEffect(() => {
@@ -82,30 +74,43 @@ export function CampaignFormDialog({
   }, [open, campaign]);
 
   /**
-   * 选择配图：用 Image 对象读取图片真实宽高，校验 5:4 比例；
-   * 校验通过后用 objectURL 生成本地预览并存入表单 image_url。
-   * TODO(二期): 替换为真实上传接口，返回 CDN URL
+   * 选择配图：用 Image 对象读取图片真实宽高校验 5:4 比例；
+   * 校验通过后上传至后端，返回 CDN URL 存入表单 image_url。
    */
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     // 清空 input，允许重复选择同一文件
     e.target.value = "";
     if (!file) return;
 
+    // 先用 objectURL 读取宽高做 5:4 校验
     const objectUrl = URL.createObjectURL(file);
-    // 用原生 img 元素（避免 next/image 组件遮蔽全局 Image 构造函数）读取图片真实宽高
     const img = document.createElement("img");
-    img.onload = () => {
+    img.onload = async () => {
       const ratio = img.naturalWidth / img.naturalHeight;
+      URL.revokeObjectURL(objectUrl);
+
       if (Math.abs(ratio - ASPECT_RATIO) > ASPECT_TOLERANCE) {
         toast.error("分享配图需为 5:4 比例");
-        URL.revokeObjectURL(objectUrl);
-      } else {
-        objectUrlRef.current = objectUrl;
-        setImageUrl(objectUrl);
-        toast.success("配图校验通过，已生成本地预览");
+        setCheckingImage(false);
+        return;
       }
-      setCheckingImage(false);
+
+      // 校验通过，上传至后端
+      setCheckingImage(true);
+      try {
+        const result = await uploadCampaignImageAction(file);
+        if (!result.success) {
+          toast.error(result.error);
+          return;
+        }
+        setImageUrl(result.data.url);
+        toast.success("配图校验通过，已上传");
+      } catch {
+        toast.error("图片上传失败，请重新选择");
+      } finally {
+        setCheckingImage(false);
+      }
     };
     img.onerror = () => {
       toast.error("图片读取失败，请重新选择");
@@ -137,16 +142,13 @@ export function CampaignFormDialog({
     });
   };
 
-  // 移除配图：立即回收本地预览 URL
+  // 移除配图
   const handleRemoveImage = () => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
     setImageUrl(null);
   };
 
   const hasImage = imageUrl !== null && imageUrl.trim() !== "";
+  const busy = checkingImage || submitting;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -200,7 +202,7 @@ export function CampaignFormDialog({
             </div>
           </div>
 
-          {/* 分享配图（前端校验 5:4） */}
+          {/* 分享配图（前端校验 5:4 + 后端上传） */}
           <div className="flex flex-col gap-2">
             <label className="text-[14px] font-medium text-ink">
               分享配图<span className="text-rust ml-0.5">*</span>
@@ -228,7 +230,7 @@ export function CampaignFormDialog({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={checkingImage}
+                  disabled={busy}
                   className="inline-flex items-center justify-center gap-1.5 h-7.5 px-4 rounded-full bg-ink text-white text-[14px] font-medium hover:bg-black transition-colors disabled:opacity-50 shrink-0 self-start"
                 >
                   {checkingImage ? (
@@ -242,7 +244,7 @@ export function CampaignFormDialog({
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    disabled={checkingImage}
+                    disabled={busy}
                     className="inline-flex items-center gap-1 text-[13px] font-medium text-slate hover:text-rust transition-colors disabled:opacity-50 self-start"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -261,7 +263,7 @@ export function CampaignFormDialog({
               accept="image/*"
               className="hidden"
               onChange={handleImageSelect}
-              disabled={checkingImage}
+              disabled={busy}
             />
           </div>
 
@@ -295,7 +297,7 @@ export function CampaignFormDialog({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            disabled={checkingImage}
+            disabled={busy}
             className="text-[14px] font-medium text-ink px-0.5 hover:opacity-60 transition-opacity disabled:opacity-50"
           >
             取消
@@ -303,9 +305,10 @@ export function CampaignFormDialog({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={checkingImage}
+            disabled={busy}
             className="inline-flex items-center justify-center gap-1.5 h-9 px-5 rounded-full bg-ink text-white text-[15px] font-medium hover:bg-black transition-colors disabled:opacity-50"
           >
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             保存并发布
           </button>
         </DialogFooter>

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Loader2 } from "lucide-react";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { safeFormatDate } from "@/lib/formatters";
@@ -13,6 +13,8 @@ interface CampaignsTableProps {
   onEdit: (campaign: RecruitCampaign) => void;
   onToggleStatus: (campaign: RecruitCampaign) => void;
   onQr: (campaign: RecruitCampaign) => void;
+  /** 正在切换状态的行 ID（null 表示无操作进行中） */
+  togglingId: string | null;
 }
 
 /** 是否为本地预览图（blob URL / 本地开发地址），绕过 Next.js 图片优化（同 leads 图片处理约定） */
@@ -35,6 +37,7 @@ export function CampaignsTable({
   onEdit,
   onToggleStatus,
   onQr,
+  togglingId,
 }: CampaignsTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -127,11 +130,15 @@ export function CampaignsTable({
                     <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
                       <button
                         type="button"
-                        className={`text-[14px] font-medium px-0.5 transition-opacity hover:opacity-60 ${
+                        disabled={togglingId === campaign.id}
+                        className={`text-[14px] font-medium px-0.5 transition-opacity hover:opacity-60 disabled:opacity-50 inline-flex items-center gap-1 ${
                           enabled ? "text-rust" : "text-ink"
                         }`}
                         onClick={() => onToggleStatus(campaign)}
                       >
+                        {togglingId === campaign.id && (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        )}
                         {enabled ? "停用" : "启用"}
                       </button>
                     </HasPermission>

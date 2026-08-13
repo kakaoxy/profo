@@ -46,6 +46,7 @@ from routers.public import (
     public_projects_router,
     public_users_router,
 )
+from routers.recruit import admin_recruit_router, public_recruit_router
 from routers.reports import reports_router
 from routers.system import (
     auth_router,
@@ -184,6 +185,8 @@ app = FastAPI(
         {"name": "public-leads", "description": "C端公开 - 卖房估价"},
         {"name": "public-communities", "description": "C端公开 - 小区搜索"},
         {"name": "public-files", "description": "C端公开 - 文件上传"},
+        {"name": "public-recruit", "description": "C端公开 - 区域伙伴招募计划"},
+        {"name": "recruit", "description": "招募管理 - 区域伙伴招募计划"},
         {"name": "reports-market", "description": "数据报表 - 商圈分析"},
         {"name": "reports-communities", "description": "数据报表 - 小区分析"},
     ],
@@ -312,6 +315,8 @@ app.include_router(public_projects_router, prefix=API_V1_PREFIX)
 app.include_router(public_leads_router, prefix=API_V1_PREFIX)
 app.include_router(public_files_router, prefix=API_V1_PREFIX)
 app.include_router(public_communities_router, prefix=API_V1_PREFIX)
+app.include_router(public_recruit_router, prefix=API_V1_PREFIX)
+app.include_router(admin_recruit_router, prefix=API_V1_PREFIX)
 app.include_router(reports_router, prefix=API_V1_PREFIX)
 
 app.add_exception_handler(ServiceException, service_exception_handler)

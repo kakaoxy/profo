@@ -67,10 +67,10 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
           </thead>
           <tbody>
             {rows.map((row) => {
-              const { shared, pv, deep_view, clicked_auth, authed, valid_new } =
+              const { share_count, pv, deep_view, clicked_auth, authed, valid_leads } =
                 row.data;
               const conversion =
-                shared > 0 ? (valid_new / shared) * 100 : 0;
+                share_count > 0 ? (valid_leads / share_count) * 100 : 0;
               const highlight = conversion >= CONVERSION_HIGHLIGHT * 100;
               return (
                 <tr
@@ -88,7 +88,7 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
                     </div>
                   </td>
                   <td className="px-5 py-3.5 border-b border-fog align-middle tabular-nums">
-                    {shared}
+                    {share_count}
                   </td>
                   <td className="px-5 py-3.5 border-b border-fog align-middle tabular-nums">
                     {pv}
@@ -104,7 +104,7 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
                   </td>
                   <td className="px-5 py-3.5 border-b border-fog align-middle">
                     <b className="font-medium text-ink tabular-nums">
-                      {valid_new}
+                      {valid_leads}
                     </b>
                   </td>
                   <td className="px-5 py-3.5 border-b border-fog align-middle">
