@@ -7,6 +7,7 @@
 import uuid
 from datetime import datetime, timezone
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models import User
@@ -119,11 +120,21 @@ class RecruitAttributionService:
         try:
             self.db.commit()
             self.db.refresh(lead)
+        except IntegrityError:
+            # 并发场景：另一事务已插入相同 phone_hash，回滚后重查已有记录
+            # 保证「首次留资归属生效，重复留资永不覆盖」语义
+            self.db.rollback()
+            existing = self.db.query(RecruitLead).filter(RecruitLead.phone_hash == phone_hash).first()
+            if existing is not None:
+                self._mark_visit_authed(visit_id, user_id=user_id)
+                return existing, False
+            raise
         except Exception:
             self.db.rollback()
             raise
-        self._mark_visit_authed(visit_id, user_id=user_id)
-        return lead, True
+        else:
+            self._mark_visit_authed(visit_id, user_id=user_id)
+            return lead, True
 
     def _mark_visit_authed(self, visit_id: str | None, *, user_id: str) -> None:
         """留资成功后标记对应访问记录 authed=true.

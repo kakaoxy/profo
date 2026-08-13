@@ -147,7 +147,8 @@ class RecruitLead(Base):
     )
 
     __table_args__ = (
-        Index("idx_recruit_lead_phone_hash", "phone_hash"),
+        # phone_hash 唯一索引：并发留资时由 DB 强制去重，配合 service 层 IntegrityError 重查
+        Index("idx_recruit_lead_phone_hash", "phone_hash", unique=True),
         Index("idx_recruit_lead_referrer", "referrer_employee_id"),
         Index("idx_recruit_lead_status", "status"),
     )
