@@ -19,6 +19,7 @@ type UserResponse = components["schemas"]["UserResponse"];
 type PublicRefreshTokenRequest = components["schemas"]["PublicRefreshTokenRequest"];
 type PublicLogoutResponse = components["schemas"]["PublicLogoutResponse"];
 type FileUploadResponse = components["schemas"]["FileUploadResponse"];
+type RecruitCampaignResponse = components["schemas"]["RecruitCampaignResponse"];
 
 /**
  * customer 角色基础权限：仅含这些权限视为普通用户；permissions 含其他业务权限 → 内部员工.
@@ -29,11 +30,12 @@ type FileUploadResponse = components["schemas"]["FileUploadResponse"];
  */
 const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 
-/** 内部入口四项（viewing/renovation 已落地，其余二级页面本轮不建，点击统一「功能待开放」）. */
+/** 内部入口（viewing/renovation/properties 已落地；recruit 走 onRecruitTap 拉活动跳转；ledger 待开放）. */
 const INTERNAL_ENTRIES = [
   { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房", route: "/pages/properties/list/index" },
   { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
   { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装", route: "/pages/renovation/projects/index/index" },
+  { key: "recruit", title: "招募计划", sub: "分享拉新 / 线索归因", icon: "招" },
   { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账" },
 ];
 
@@ -86,6 +88,7 @@ interface PageCustom {
   onLogout(): void;
   onPhoneTap(): void;
   onValuationTap(): void;
+  onRecruitTap(): void;
   onMenuTap(e: WechatMiniprogram.BaseEvent): void;
   onPhoneModalSkip(): void;
   onPhoneModalBound(): void;
@@ -407,8 +410,48 @@ Page<PageData, PageCustom>({
     wx.navigateTo({ url: "/pages/valuation/list/index" });
   },
 
+  /**
+   * 招募计划入口：拉取首个启用活动跳转招募详情页.
+   * 需后台 recruit:read 权限（/admin/recruit/campaigns）；无活动或无权限 toast 提示不跳转.
+   */
+  async onRecruitTap() {
+    if (!this.data.loggedIn) {
+      this.onGoLogin();
+      return;
+    }
+    if (!getAccessToken()) {
+      // C 端用户（仅有 c_access_token）无后台令牌，无法访问 /admin/recruit/*
+      wx.showToast({ title: "暂无权限查看招募活动", icon: "none" });
+      return;
+    }
+    try {
+      const campaigns = await request<RecruitCampaignResponse[]>({
+        url: "/admin/recruit/campaigns",
+      });
+      const enabled = campaigns.find((c) => c.status === "enabled");
+      if (!enabled) {
+        wx.showToast({ title: "暂无可分享的招募活动", icon: "none" });
+        return;
+      }
+      wx.navigateTo({ url: `/pages/recruit/detail/index?campaign_id=${enabled.id}` });
+    } catch (err) {
+      const statusCode = (err as HttpResponseError)?.statusCode;
+      if (statusCode === 403) {
+        wx.showToast({ title: "暂无权限查看招募活动", icon: "none" });
+      } else {
+        wx.showToast({ title: "加载失败，请重试", icon: "none" });
+      }
+    }
+  },
+
   onMenuTap(e: WechatMiniprogram.BaseEvent) {
-    // 已落地条目（route 存在）跳转对应页；未落地（装修/记账/房源查询）统一待开放
+    const key = e.currentTarget.dataset.key as string | undefined;
+    // 招募计划：拉取启用活动后跳转招募详情页（需动态 campaign_id，不走静态 route）
+    if (key === "recruit") {
+      this.onRecruitTap();
+      return;
+    }
+    // 已落地条目（route 存在）跳转对应页；未落地（记账）统一待开放
     const route = e.currentTarget.dataset.route as string | undefined;
     if (route) {
       wx.navigateTo({ url: route });

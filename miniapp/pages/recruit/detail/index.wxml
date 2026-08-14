@@ -1,0 +1,225 @@
+<view class="page">
+  <!-- 员工角标（仅内部员工且未读 > 0 展示） -->
+  <view wx:if="{{!loading && !error && !notFound && isEmployee && badgeCount > 0}}" class="badge-bar">
+    <view class="chip chip-apricot">您有 {{badgeCount}} 条新线索待跟进</view>
+  </view>
+
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <!-- 错误态 -->
+  <view wx:elif="{{error}}" class="state-box">
+    <view class="state-text">加载失败，请检查网络</view>
+    <button class="btn-secondary state-btn" bindtap="onRetry">重试</button>
+  </view>
+
+  <!-- 活动不存在 / 停用 -->
+  <view wx:elif="{{notFound}}" class="state-box">
+    <view class="state-text">活动不存在或已停止报名</view>
+  </view>
+
+  <!-- 正常内容 -->
+  <block wx:else>
+    <!-- 成功态视图 -->
+    <view wx:if="{{submitted}}" class="success-view">
+      <!-- 双层徽标：Apricot 外圆 + Rust 内圆 + Apricot 对勾 -->
+      <view class="success-badge-outer">
+        <view class="success-badge-inner">
+          <text class="success-check">✓</text>
+        </view>
+      </view>
+      <view class="success-title">报名成功</view>
+      <view class="success-sub">
+        专属顾问将在 <text class="success-sub-bold">24 小时内</text> 电话联系你，
+        请保持手机畅通。
+      </view>
+
+      <!-- 报名信息回执卡 -->
+      <view class="receipt-card">
+        <view class="receipt-header">报名信息</view>
+        <view class="receipt-row">
+          <text class="receipt-label">所在商圈</text>
+          <text class="receipt-value">{{mainBusinessArea}}</text>
+        </view>
+        <view class="receipt-divider"></view>
+        <view class="receipt-row">
+          <text class="receipt-label">提交时间</text>
+          <text class="receipt-value receipt-value--num">{{submitTime}}</text>
+        </view>
+        <view class="receipt-divider"></view>
+        <view class="receipt-row">
+          <text class="receipt-label">报名编号</text>
+          <text class="receipt-value receipt-value--num receipt-value--mono">{{leadId}}</text>
+        </view>
+      </view>
+
+      <button class="btn-cta btn-cta--secondary" bindtap="onBackHome">返 回 首 页</button>
+      <view class="success-link" bindtap="onViewFlow">查看合作流程 →</view>
+    </view>
+
+    <!-- 正常态落地页（7 段式） -->
+    <view wx:else>
+      <!-- 1. Hero -->
+      <view class="hero">
+        <view class="hero-inner">
+          <view class="hero-title">{{landing.hero.title}}</view>
+          <view class="hero-lead">{{landing.hero.lead}}</view>
+          <view class="hero-tags">
+            <block wx:for="{{landing.hero.tags}}" wx:key="*this">
+              <text class="hero-tag">{{item}}</text>
+              <text wx:if="{{index < landing.hero.tags.length - 1}}" class="hero-tag-sep">·</text>
+            </block>
+          </view>
+          <view class="hero-closer">
+            <text>{{landing.hero.closerPrefix}}</text>
+            <text class="hero-closer-bold">{{landing.hero.closerBold}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 2. 数据展示卡（浮起压在 Hero 下方，数字从 0 滚动到 target） -->
+      <view class="stats-card">
+        <view wx:for="{{landing.stats}}" wx:key="label" class="stat">
+          <view class="stat-num">
+            <text wx:if="{{item.yen}}" class="stat-yen">{{item.yen}}</text>
+            <text class="stat-value">{{statValues[index]}}</text>
+            <text wx:if="{{item.suffix}}" class="stat-suffix">{{item.suffix}}</text>
+            <text wx:if="{{item.unit}}" class="stat-unit">{{item.unit}}</text>
+          </view>
+          <view class="stat-label">{{item.label}}</view>
+        </view>
+      </view>
+
+      <!-- 3. 痛点共鸣区 -->
+      <view class="gap-section pain-section">
+        <view class="sec-title">{{landing.painTitle}}</view>
+        <view class="sec-sub">{{landing.painSub}}</view>
+        <view class="pain-list">
+          <view
+            wx:for="{{landing.pains}}"
+            wx:key="q"
+            class="pain-card {{item.warm ? 'pain-card--warm' : ''}}"
+          >
+            <view class="pain-q">
+              <view class="pain-q-ico">?</view>
+              <view class="pain-q-text">{{item.q}}</view>
+            </view>
+            <view class="pain-divider"></view>
+            <view class="pain-a">
+              <text>{{item.aBefore}}</text>
+              <text class="pain-a-bold">{{item.aBold}}</text>
+              <text>{{item.aAfter}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 4. 优势 4 卡（band-fog） -->
+      <view class="gap-section why-section band-fog">
+        <view class="sec-title">{{landing.whyTitle}}</view>
+        <view class="sec-sub">{{landing.whySub}}</view>
+        <view class="why-grid">
+          <view wx:for="{{landing.whys}}" wx:key="num" class="why-card">
+            <view class="why-num">{{item.num}}</view>
+            <view class="why-title">{{item.title}}</view>
+            <view class="why-desc">{{item.desc}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 5. 合作流程（锚点 #flow-section） -->
+      <view class="gap-section flow-section" id="flow-section">
+        <view class="sec-title">{{landing.flowTitle}}</view>
+        <view class="sec-sub">{{landing.flowSub}}</view>
+        <view class="flow">
+          <view
+            wx:for="{{landing.flow}}"
+            wx:key="name"
+            class="flow-step {{index === landing.flow.length - 1 ? 'flow-step--last' : ''}}"
+          >
+            <view class="flow-node {{index === landing.flow.length - 1 ? 'flow-node--last' : ''}}">{{index + 1}}</view>
+            <view class="flow-body">
+              <view class="flow-name">{{item.name}}</view>
+              <view class="flow-desc">{{item.desc}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 6. 评价卡（band-fog） -->
+      <view class="gap-section review-section band-fog">
+        <view class="sec-title">{{landing.reviewTitle}}</view>
+        <view class="sec-sub">{{landing.reviewSub}}</view>
+        <view class="review-list">
+          <view wx:for="{{landing.reviews}}" wx:key="name" class="review-card">
+            <view class="review-stars">
+              <text wx:for="{{[1,2,3,4,5]}}" wx:for-item="s" wx:key="*this" class="review-star">★</text>
+            </view>
+            <view class="review-text">{{item.text}}</view>
+            <view class="review-author">
+              <view class="review-avatar">{{item.avatar}}</view>
+              <view class="review-meta">
+                <view class="review-name">{{item.name}}</view>
+                <view class="review-role">{{item.role}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 7. 报名区 -->
+      <view class="gap-section apply-section">
+        <view class="sec-title sec-title--apply">立即报名</view>
+        <view class="form-card">
+          <view class="form-field">
+            <view class="form-label">所在商圈<text class="req">*</text></view>
+            <input
+              class="form-input {{mainBusinessArea ? 'form-input--filled' : ''}}"
+              placeholder="请输入您覆盖的商圈"
+              placeholder-class="form-input-placeholder"
+              maxlength="50"
+              value="{{mainBusinessArea}}"
+              bindinput="onAreaInput"
+            />
+          </view>
+
+          <view class="agree-row" bindtap="onToggleAgree">
+            <view class="agree-check {{agreed ? 'agree-check--checked' : ''}}">
+              <text wx:if="{{agreed}}" class="agree-check-icon">✓</text>
+            </view>
+            <view class="agree-text">
+              <text>我已阅读并同意</text>
+              <text class="agree-link" catchtap="onAgreementTap">《隐私协议》</text>
+            </view>
+          </view>
+
+          <!-- 报名按钮：双 button 切换结构保留；视觉置灰由 formValid 派生，disabled 仅由 submitting||submitted 控制 -->
+          <button
+            wx:if="{{!authReady}}"
+            class="btn-cta {{formValid ? '' : 'btn-cta--disabled'}}"
+            bindtap="onApplyTap"
+            disabled="{{submitting || submitted}}"
+          >立 即 报 名</button>
+          <button
+            wx:else
+            class="btn-cta {{formValid ? '' : 'btn-cta--disabled'}}"
+            open-type="getPhoneNumber"
+            bindgetphonenumber="onPhoneAuth"
+            disabled="{{submitting || submitted}}"
+          >立 即 报 名</button>
+        </view>
+      </view>
+
+      <!-- 员工分享提示 -->
+      <view wx:if="{{isEmployee}}" class="share-tip">
+        <view class="share-tip-title">分享给您的客户</view>
+        <view class="share-tip-sub">点击右上角「···」选择「转发给朋友」或「分享到朋友圈」</view>
+      </view>
+
+      <!-- 底部安全区留白 -->
+      <view class="safe-bottom"></view>
+    </view>
+  </block>
+</view>

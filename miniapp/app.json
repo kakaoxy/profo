@@ -16,7 +16,8 @@
     "pages/properties/list/index",
     "pages/agreement/user/index/index",
     "pages/agreement/privacy/index/index",
-    "pages/bind-account/index/index"
+    "pages/bind-account/index/index",
+    "pages/recruit/detail/index"
   ],
   "window": {
     "navigationBarTitleText": "美房宝",
@@ -60,5 +61,5 @@
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
-  "__usePrivacyCheck__": false
+  "__usePrivacyCheck__": true
 }

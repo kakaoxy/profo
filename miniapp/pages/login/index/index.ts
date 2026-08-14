@@ -9,8 +9,8 @@
  * return，不发起登录请求。配合 app.json 的 __usePrivacyCheck__ 触发微信原生
  * 隐私授权弹窗。
  *
- * 来源参数 from：=valuation 时登录成功 navigateBack 返回估价页（保留已填表单）；
- * 其他入口登录成功 switchTab 到 profile。
+ * 来源参数 from：=valuation/=recruit 时登录成功 navigateBack 返回对应来源页
+ * （保留已填表单）；其他入口登录成功 switchTab 到 profile。
  */
 
 import { wechatLogin } from "../../../utils/wechat-auth";
@@ -55,7 +55,8 @@ Page<PageData, PageCustom>({
         this.setData({ loading: false });
         if (res.success) {
           // 登录成功
-          if (this.data.from === "valuation") {
+          if (this.data.from === "valuation" || this.data.from === "recruit") {
+            // 从估价/招募页进入登录：navigateBack 返回来源页，保留已填表单
             wx.navigateBack();
           } else {
             wx.switchTab({ url: "/pages/profile/index/index" });

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>区域伙伴招募小程序 · 落地页高保真设计稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@400;600&family=Noto+Serif+SC:wght@400;500;600&family=Inter:wght@400;450;480;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ===== Steep 设计规范（DESIGN.md）===== */
+  :root{
+    /* Colors */
+    --ink:#17191c; --white:#ffffff; --fog:#f7f7f8; --ash:#4c4c4c; --graphite:#777b86;
+    --dove:#a3a6af; --slate:#8b8c8d; --obsidian:#000000; --rust:#5d2a1a;
+    --apricot:#fbe1d1; --sky:#d3e3fc;
+    /* Radius */
+    --r-cards:24px; --r-images:12px; --r-inputs:16px; --r-pill:9999px; --r-inner:16px;
+    /* Shadow */
+    --shadow-card:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.1) 0 20px 25px -5px, rgba(0,0,0,.1) 0 8px 10px -6px;
+    --shadow-sm:rgba(4,23,43,.04) 0 0 0 1px, rgba(0,0,0,.06) 0 4px 8px -2px;
+    --shadow-float:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.08) 0 12px 24px -8px, rgba(0,0,0,.06) 0 4px 8px -4px;
+    /* Fonts */
+    --font-serif:'Source Serif Pro','Noto Serif SC','Songti SC',Georgia,serif;
+    --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei','Segoe UI',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  body{
+    font-family:var(--font-sans);
+    background:#ececed;
+    color:var(--ink);
+    font-size:15px;
+    line-height:1.5;
+    letter-spacing:-0.009em;
+    padding:56px 32px 120px;
+  }
+
+  /* ===== 文档头部 ===== */
+  .doc-head{max-width:1320px;margin:0 auto 56px}
+  .doc-eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:13px;font-weight:500;color:var(--rust);
+    background:var(--apricot);padding:5px 14px;border-radius:var(--r-pill);
+    letter-spacing:.3px;margin-bottom:18px;
+  }
+  .doc-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--rust)}
+  .doc-title{
+    font-family:var(--font-serif);
+    font-size:42px;font-weight:400;line-height:1.1;letter-spacing:-0.6px;
+    color:var(--ink);margin-bottom:14px;
+  }
+  .doc-sub{
+    font-size:16px;color:var(--ash);max-width:760px;line-height:1.65;
+  }
+  .doc-meta{
+    margin-top:22px;display:flex;flex-wrap:wrap;gap:10px 28px;font-size:13px;color:var(--graphite);
+  }
+  .doc-meta b{color:var(--ink);font-weight:500}
+  .doc-meta code{
+    font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:12px;
+    color:var(--ink);background:var(--fog);padding:2px 8px;border-radius:6px;
+  }
+
+  /* 设计规范速查条 */
+  .spec-bar{
+    max-width:1320px;margin:0 auto 48px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--dove);border-radius:var(--r-inner);overflow:hidden;
+    box-shadow:var(--shadow-sm);
+  }
+  .spec-cell{background:var(--white);padding:16px 18px}
+  .spec-cell .k{font-size:12px;color:var(--graphite);letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px}
+  .spec-cell .v{font-size:14px;color:var(--ink);font-weight:480;display:flex;align-items:center;gap:8px}
+  .swatch{width:14px;height:14px;border-radius:4px;flex-shrink:0;border:1px solid rgba(0,0,0,.06)}
+
+  /* ===== 模块标题 ===== */
+  .section{max-width:1320px;margin:0 auto 72px}
+  .section-head{display:flex;align-items:baseline;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+  .section-num{
+    font-family:var(--font-serif);font-size:15px;color:var(--rust);
+    font-weight:400;letter-spacing:.5px;
+  }
+  .section-title{
+    font-family:var(--font-serif);font-size:26px;font-weight:400;
+    letter-spacing:-0.23px;color:var(--ink);
+  }
+  .section-desc{font-size:14px;color:var(--graphite);margin-left:auto;max-width:420px;line-height:1.55}
+
+  /* ===== 屏幕栅格 ===== */
+  .screen-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(375px,1fr));
+    gap:48px;align-items:start;
+  }
+  .screen-wrap{display:flex;flex-direction:column;align-items:flex-start}
+  .screen-label{
+    font-size:13px;font-weight:500;color:var(--graphite);
+    margin-bottom:14px;padding-left:6px;display:flex;align-items:center;gap:8px;
+  }
+  .screen-label b{color:var(--ink);font-weight:600}
+  .screen-label .tag{
+    font-size:11px;font-weight:500;padding:2px 8px;border-radius:var(--r-pill);
+    background:var(--fog);color:var(--graphite);letter-spacing:.2px;
+  }
+  .screen-label .tag.warm{background:var(--apricot);color:var(--rust)}
+  .screen-label .tag.cool{background:var(--sky);color:var(--ink)}
+
+  /* ===== 手机框 ===== */
+  .phone{
+    width:375px;height:812px;background:var(--white);
+    border-radius:48px;box-shadow:var(--shadow-card);
+    overflow:hidden;position:relative;
+    border:11px solid #1a1a1c;
+  }
+  .phone::before{
+    content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:120px;height:28px;background:#1a1a1c;
+    border-bottom-left-radius:18px;border-bottom-right-radius:18px;z-index:100;
+  }
+  .status-bar{
+    height:44px;width:100%;display:flex;align-items:center;justify-content:space-between;
+    padding:0 28px 0 32px;font-size:15px;font-weight:600;color:var(--ink);
+    position:relative;z-index:90;
+  }
+  .status-time{font-variant-numeric:tabular-nums;letter-spacing:-0.3px}
+  .status-right{display:flex;gap:6px;align-items:center}
+  .status-right svg{display:block}
+  .screen-body{
+    width:100%;height:757px;overflow-y:auto;position:relative;background:var(--white);
+  }
+  .screen-body::-webkit-scrollbar{display:none}
+
+  /* 小程序原生导航栏 */
+  .native-nav{
+    height:44px;display:flex;align-items:center;justify-content:center;
+    position:sticky;top:0;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    font-size:16px;font-weight:500;color:var(--ink);z-index:80;
+    border-bottom:1px solid rgba(227,229,232,.6);
+  }
+  .native-nav__capsule{
+    position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    width:87px;height:32px;border-radius:var(--r-pill);
+    border:1px solid rgba(0,0,0,.08);background:rgba(0,0,0,.04);
+    display:flex;align-items:center;justify-content:space-around;
+  }
+  .native-nav__capsule span{flex:1;text-align:center;color:var(--ink);font-size:16px;line-height:1}
+  .native-nav__capsule span:first-child{border-right:1px solid rgba(0,0,0,.08)}
+  .native-nav__capsule svg{width:16px;height:16px}
+
+  .home-indicator{
+    position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    width:134px;height:5px;background:var(--ink);border-radius:100px;z-index:100;opacity:.9;
+  }
+
+  /* ========================================= */
+  /* ===== 模块样式（小程序内容区）===== */
+  /* ========================================= */
+
+  .pad{padding:0 20px}
+  .gap-section{padding-top:40px;padding-bottom:40px}
+  .band-fog{background:var(--fog)}
+
+  /* —— Hero —— */
+  .hero{
+    position:relative;padding:36px 20px 32px;overflow:hidden;
+    background:var(--white);
+  }
+  .hero::before{
+    content:"";position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+    width:480px;height:480px;border-radius:50%;
+    background:radial-gradient(circle, rgba(251,225,209,.85) 0%, rgba(251,225,209,.4) 35%, rgba(251,225,209,0) 70%);
+    pointer-events:none;z-index:0;
+  }
+  .hero-inner{position:relative;z-index:1}
+  .hero-title{
+    font-family:var(--font-serif);font-weight:400;
+    font-size:40px;line-height:1.08;letter-spacing:-0.6px;
+    color:var(--ink);text-align:center;margin-bottom:22px;
+  }
+  .hero-lead{
+    font-size:15px;line-height:1.7;color:var(--ash);
+    text-align:center;letter-spacing:-0.009em;margin-bottom:18px;
+  }
+  .hero-tags{
+    display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:10px;
+  }
+  .hero-tag{
+    display:inline-flex;align-items:center;
+    background:var(--apricot);color:var(--rust);
+    font-size:14px;font-weight:500;padding:6px 14px;border-radius:var(--r-pill);
+    letter-spacing:-0.009em;
+  }
+  .hero-tag-sep{font-size:13px;color:var(--graphite);align-self:center;font-weight:400}
+  .hero-closer{
+    text-align:center;font-size:15px;color:var(--ink);font-weight:480;
+    letter-spacing:-0.009em;margin-top:4px;
+  }
+  .hero-closer b{font-family:var(--font-serif);font-weight:600;font-style:italic;color:var(--rust)}
+
+  /* —— 数据展示卡 —— */
+  .stats-card{
+    margin:0 20px;background:var(--white);border-radius:var(--r-cards);
+    box-shadow:var(--shadow-card);padding:24px 20px;
+    display:grid;grid-template-columns:repeat(3,1fr);
+    position:relative;top:-18px;z-index:2;
+  }
+  .stat{text-align:center;position:relative}
+  .stat:not(:last-child)::after{
+    content:"";position:absolute;right:0;top:50%;transform:translateY(-50%);
+    width:1px;height:32px;background:var(--fog);
+  }
+  .stat-num{
+    font-size:26px;font-weight:480;color:var(--ink);
+    font-variant-numeric:tabular-nums;letter-spacing:-0.5px;line-height:1;
+  }
+  .stat-num .unit{font-size:15px;font-weight:450;color:var(--ink);margin-left:1px}
+  .stat-num .yen{font-size:18px;font-weight:450;margin-right:1px}
+  .stat-label{font-size:12px;color:var(--graphite);margin-top:8px;letter-spacing:-0.009em}
+
+  /* —— section 标题（屏内）—— */
+  .sec-title{
+    font-family:var(--font-serif);font-size:24px;font-weight:400;
+    letter-spacing:-0.4px;color:var(--ink);text-align:center;
+    margin-bottom:6px;
+  }
+  .sec-sub{
+    font-size:13px;color:var(--graphite);text-align:center;
+    letter-spacing:-0.009em;margin-bottom:22px;
+  }
+
+  /* —— 痛点卡 —— */
+  .pain-list{padding:0 20px;display:flex;flex-direction:column;gap:12px}
+  .pain-card{
+    background:var(--white);border-radius:var(--r-cards);
+    box-shadow:var(--shadow-sm);padding:20px 20px 18px;
+    position:relative;overflow:hidden;
+  }
+  .pain-card.warm{background:var(--apricot);box-shadow:none}
+  .pain-q{
+    display:flex;align-items:flex-start;gap:10px;
+    font-size:16px;font-weight:480;color:var(--ink);
+    letter-spacing:-0.009em;line-height:1.4;
+  }
+  .pain-q .ico{
+    flex-shrink:0;width:22px;height:22px;border-radius:var(--r-pill);
+    background:var(--ink);color:var(--white);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:500;font-family:var(--font-serif);
+    margin-top:1px;
+  }
+  .pain-card.warm .pain-q .ico{background:var(--rust);color:var(--apricot)}
+  .pain-divider{
+    height:1px;background:rgba(23,25,28,.08);margin:14px 0 12px;
+  }
+  .pain-card.warm .pain-divider{background:rgba(93,42,26,.18)}
+  .pain-a{
+    font-size:14px;color:var(--ash);line-height:1.6;letter-spacing:-0.009em;
+    padding-left:32px;
+  }
+  .pain-a b{color:var(--ink);font-weight:480}
+  .pain-card.warm .pain-a{color:#7a3b22}
+  .pain-card.warm .pain-a b{color:var(--rust)}
+
+  /* —— 优势 4 卡 —— */
+  .why-grid{
+    padding:0 20px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  }
+  .why-card{
+    background:var(--white);border-radius:var(--r-cards);
+    box-shadow:var(--shadow-sm);padding:18px 16px;
+    display:flex;flex-direction:column;gap:6px;
+    min-height:96px;justify-content:center;
+  }
+  .why-num{
+    font-family:var(--font-serif);font-size:13px;color:var(--rust);
+    font-weight:400;letter-spacing:.4px;
+  }
+  .why-title{font-size:16px;font-weight:500;color:var(--ink);letter-spacing:-0.009em;line-height:1.3}
+  .why-desc{font-size:12px;color:var(--graphite);line-height:1.5;letter-spacing:-0.009em}
+
+  /* —— 合作流程 —— */
+  .flow{
+    padding:0 20px;display:flex;flex-direction:column;gap:0;
+  }
+  .flow-step{
+    display:flex;align-items:flex-start;gap:14px;position:relative;
+    padding-bottom:18px;
+  }
+  .flow-step:not(:last-child)::before{
+    content:"";position:absolute;left:15px;top:34px;bottom:-2px;
+    width:2px;background:var(--fog);
+  }
+  .flow-node{
+    flex-shrink:0;width:32px;height:32px;border-radius:var(--r-pill);
+    background:var(--ink);color:var(--white);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-serif);font-size:14px;font-weight:500;
+    position:relative;z-index:1;
+  }
+  .flow-step:last-child .flow-node{background:var(--rust)}
+  .flow-body{flex:1;padding-top:3px}
+  .flow-name{font-size:15px;font-weight:500;color:var(--ink);letter-spacing:-0.009em;line-height:1.3}
+  .flow-desc{font-size:13px;color:var(--graphite);margin-top:4px;line-height:1.5;letter-spacing:-0.009em}
+
+  /* —— 评价卡 —— */
+  .review-list{padding:0 20px;display:flex;flex-direction:column;gap:14px}
+  .review-card{
+    background:var(--sky);border-radius:var(--r-cards);
+    padding:22px 20px 20px;position:relative;
+  }
+  .review-stars{
+    display:flex;gap:3px;margin-bottom:12px;
+  }
+  .review-stars svg{width:14px;height:14px;color:var(--rust)}
+  .review-text{
+    font-size:15px;line-height:1.65;color:var(--ink);
+    letter-spacing:-0.009em;font-weight:430;
+  }
+  .review-text::before{content:"\201C";font-family:var(--font-serif);font-size:22px;color:var(--rust);margin-right:2px;line-height:0;vertical-align:-2px}
+  .review-text::after{content:"\201D";font-family:var(--font-serif);font-size:22px;color:var(--rust);margin-left:2px;line-height:0;vertical-align:-2px}
+  .review-author{
+    margin-top:14px;display:flex;align-items:center;gap:10px;
+    padding-top:14px;border-top:1px solid rgba(23,25,28,.08);
+  }
+  .review-avatar{
+    width:32px;height:32px;border-radius:var(--r-pill);
+    background:var(--white);display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-serif);font-size:13px;font-weight:500;color:var(--ink);
+    flex-shrink:0;
+  }
+  .review-meta{flex:1;min-width:0}
+  .review-name{font-size:14px;font-weight:500;color:var(--ink);letter-spacing:-0.009em}
+  .review-role{font-size:12px;color:#4a5a78;margin-top:2px;letter-spacing:-0.009em}
+
+  /* —— 报名表单 —— */
+  .form-card{
+    margin:0 20px;background:var(--white);border-radius:var(--r-cards);
+    box-shadow:var(--shadow-card);padding:20px;
+  }
+  .form-field{margin-bottom:16px}
+  .form-label{
+    display:block;font-size:14px;font-weight:500;color:var(--ink);
+    margin-bottom:8px;letter-spacing:-0.009em;
+  }
+  .form-label .req{color:var(--rust);margin-left:2px}
+  .form-input{
+    width:100%;height:48px;border:1px solid var(--dove);
+    border-radius:var(--r-inputs);padding:0 16px;
+    font-size:15px;color:var(--ink);background:var(--white);
+    font-family:inherit;letter-spacing:-0.009em;transition:border .15s;
+  }
+  .form-input:focus{border-color:var(--ink);outline:none}
+  .form-input::placeholder{color:var(--dove)}
+  .form-input.filled{color:var(--ink)}
+
+  .agree-row{
+    display:flex;align-items:flex-start;gap:10px;margin:0 0 16px;
+    font-size:13px;color:var(--graphite);line-height:1.5;letter-spacing:-0.009em;
+  }
+  .agree-check{
+    flex-shrink:0;width:16px;height:16px;margin-top:1px;
+    border:1.5px solid var(--dove);border-radius:4px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:all .15s;background:var(--white);
+  }
+  .agree-check.checked{background:var(--ink);border-color:var(--ink)}
+  .agree-check.checked svg{display:block}
+  .agree-check svg{display:none;width:11px;height:11px;color:var(--white)}
+  .agree-row a{color:var(--rust);text-decoration:none;font-weight:450}
+  .agree-row a:hover{text-decoration:underline}
+
+  .btn-cta{
+    width:100%;height:52px;border-radius:var(--r-pill);
+    background:var(--ink);color:var(--white);
+    font-size:16px;font-weight:480;letter-spacing:.4em;text-indent:.4em;
+    border:none;cursor:pointer;transition:all .15s;
+    display:flex;align-items:center;justify-content:center;
+    font-family:inherit;
+  }
+  .btn-cta:hover{background:var(--obsidian);transform:translateY(-1px);box-shadow:0 8px 20px rgba(23,25,28,.2)}
+  .btn-cta:disabled{
+    background:var(--dove);color:var(--white);cursor:not-allowed;transform:none;box-shadow:none;
+  }
+
+  /* 底部安全区 */
+  .safe-bottom{height:32px;background:var(--white)}
+
+  /* —— 交互态说明卡 —— */
+  .state-note{
+    margin-top:14px;padding:14px 16px;background:var(--fog);
+    border-radius:var(--r-inner);font-size:12.5px;color:var(--ash);
+    line-height:1.6;letter-spacing:-0.009em;border-left:3px solid var(--rust);
+  }
+  .state-note b{color:var(--ink);font-weight:500}
+  .state-note code{
+    font-family:'SF Mono',ui-monospace,monospace;font-size:11.5px;
+    background:var(--white);padding:1px 6px;border-radius:4px;color:var(--ink);
+  }
+
+  /* ===== 设计说明区 ===== */
+  .notes{
+    max-width:1320px;margin:80px auto 0;
+    background:var(--white);border-radius:var(--r-cards);
+    box-shadow:var(--shadow-sm);padding:32px 36px;
+  }
+  .notes h3{
+    font-family:var(--font-serif);font-size:22px;font-weight:400;
+    letter-spacing:-0.2px;margin-bottom:18px;color:var(--ink);
+  }
+  .notes-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px 40px}
+  .note-item h4{
+    font-size:14px;font-weight:500;color:var(--ink);margin-bottom:6px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .note-item h4::before{
+    content:"";width:6px;height:6px;border-radius:50%;background:var(--rust);
+  }
+  .note-item p{font-size:13px;color:var(--graphite);line-height:1.65;letter-spacing:-0.009em;padding-left:14px}
+  .note-item code{
+    font-family:'SF Mono',ui-monospace,monospace;font-size:12px;
+    color:var(--ink);background:var(--fog);padding:1px 6px;border-radius:4px;
+  }
+
+  @media (max-width:760px){
+    body{padding:32px 16px 80px}
+    .spec-bar{grid-template-columns:repeat(2,1fr)}
+    .notes-grid{grid-template-columns:1fr}
+    .doc-title{font-size:32px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== 文档头部 ========== -->
+<div class="doc-head">
+  <span class="doc-eyebrow">MINIAPP · 区域伙伴招募</span>
+  <h1 class="doc-title">招募落地页 · 高保真设计稿</h1>
+  <p class="doc-sub">面向房产经纪人的区域伙伴招募小程序落地页，承担"信任建立 → 痛点共鸣 → 价值传递 → 留资报名"的完整转化链路。视觉严格遵循 Steep 设计规范：Signifier 衬线做标题发声、Sohne 做正文工作、单一 Ink 主按钮承担转化、Apricot Wash 暖色标签做"神仙客户"强调、Sky Wash 评价卡承载口碑。</p>
+  <div class="doc-meta">
+    <span>规范：<b>DESIGN.md · Steep</b></span>
+    <span>画板：<code>375 × 812 px</code></span>
+    <span>主屏：<code>1 屏</code> · 状态：<code>3 态</code></span>
+    <span>模块数：<b>7</b></span>
+  </div>
+</div>
+
+<!-- ========== 设计规范速查 ========== -->
+<div class="spec-bar">
+  <div class="spec-cell">
+    <div class="k">主色 · Ink</div>
+    <div class="v"><span class="swatch" style="background:#17191c"></span>#17191c · 文字 / CTA</div>
+  </div>
+  <div class="spec-cell">
+    <div class="k">暖色 · Apricot + Rust</div>
+    <div class="v"><span class="swatch" style="background:#fbe1d1"></span>#fbe1d1 · 标签底纹</div>
+  </div>
+  <div class="spec-cell">
+    <div class="k">冷色 · Sky Wash</div>
+    <div class="v"><span class="swatch" style="background:#d3e3fc"></span>#d3e3fc · 评价卡</div>
+  </div>
+  <div class="spec-cell">
+    <div class="k">圆角 · 卡片 / 输入</div>
+    <div class="v">24px · 16px · 按钮 9999px</div>
+  </div>
+</div>
+
+<!-- ========== 主屏：默认态 ========== -->
+<div class="section">
+  <div class="section-head">
+    <span class="section-num">01 / 03</span>
+    <h2 class="section-title">主屏 · 默认态</h2>
+    <p class="section-desc">首屏完整链路：Hero 信任建立 → 数据背书 → 痛点共鸣 → 优势 → 流程 → 口碑 → 报名。全页可纵向滚动，主 CTA 唯一。</p>
+  </div>
+
+  <div class="screen-grid">
+    <div class="screen-wrap">
+      <div class="screen-label"><b>① 默认态</b><span class="tag">首屏完整</span></div>
+      <div class="phone">
+        <!-- 状态栏 -->
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-right">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="6" rx="0.5"/><rect x="9" y="3" width="3" height="8" rx="0.5"/><rect x="13.5" y="0" width="3" height="11" rx="0.5"/></svg>
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2c1.9 0 3.6.7 4.9 1.9l1.4-1.4C12.2 1.1 9.9.2 7.5.2S2.8 1.1 1.2 2.7l1.4 1.4C3.9 2.9 5.6 2.2 7.5 2.2zm0 3.5c1 0 1.9.4 2.5 1l1.4-1.4c-1-1-2.4-1.6-3.9-1.6s-2.9.6-3.9 1.6l1.4 1.4c.6-.6 1.5-1 2.5-1zm0 3.5l2.1 2.1 2.1-2.1c-.5-.5-1.3-.9-2.1-.9s-1.6.4-2.1.9z"/></svg>
+            <svg width="27" height="12" viewBox="0 0 27 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="3" stroke="currentColor" stroke-opacity="0.4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="currentColor" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+
+        <!-- 屏幕主体 -->
+        <div class="screen-body">
+          <!-- 小程序原生导航栏 -->
+          <div class="native-nav">
+            区域伙伴招募
+            <div class="native-nav__capsule">
+              <span>···</span>
+              <span>○</span>
+            </div>
+          </div>
+
+          <!-- 1. Hero -->
+          <div class="hero">
+            <div class="hero-inner">
+              <h1 class="hero-title">你缺客户吗？</h1>
+              <p class="hero-lead">我们就是那个——</p>
+              <div class="hero-tags">
+                <span class="hero-tag">不约时间</span>
+                <span class="hero-tag-sep">·</span>
+                <span class="hero-tag">不磨价格</span>
+                <span class="hero-tag-sep">·</span>
+                <span class="hero-tag">不玩消失</span>
+              </div>
+              <p class="hero-closer">的<b>"神仙客户"</b></p>
+            </div>
+          </div>
+
+          <!-- 2. 数据展示卡（浮起压在 hero 下方）-->
+          <div class="stats-card">
+            <div class="stat">
+              <div class="stat-num">128<span class="unit">人</span></div>
+              <div class="stat-label">已合作经纪人</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">36<span class="unit">个</span></div>
+              <div class="stat-label">覆盖商圈</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num"><span class="yen">¥</span>67W<span class="unit">+</span></div>
+              <div class="stat-label">累计佣金</div>
+            </div>
+          </div>
+
+          <!-- 3. 痛点 -->
+          <div class="gap-section">
+            <h2 class="sec-title">我们懂你的每一个痛点</h2>
+            <p class="sec-sub">你说，我们就到</p>
+            <div class="pain-list">
+              <div class="pain-card">
+                <div class="pain-q"><span class="ico">?</span><span>客户聊半天约不出来？</span></div>
+                <div class="pain-divider"></div>
+                <p class="pain-a">随时看房，<b>业主有空我们就到</b>，全城覆盖，快速响应。</p>
+              </div>
+              <div class="pain-card warm">
+                <div class="pain-q"><span class="ico">?</span><span>客户看半天不出价？</span></div>
+                <div class="pain-divider"></div>
+                <p class="pain-a"><b>最快 2 小时出价</b>，绝不拖延，书面报价单，透明可查。</p>
+              </div>
+              <div class="pain-card">
+                <div class="pain-q"><span class="ico">?</span><span>客户看中了，跟业主约不上时间？</span></div>
+                <div class="pain-divider"></div>
+                <p class="pain-a">我们随时配合面谈，<b>你说几点就几点</b>，7×12 小时在线响应。</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. 为什么选我们 -->
+          <div class="band-fog gap-section">
+            <h2 class="sec-title">为什么选择跟我们合作？</h2>
+            <p class="sec-sub">四个硬核承诺</p>
+            <div class="why-grid">
+              <div class="why-card">
+                <div class="why-num">01</div>
+                <div class="why-title">1% 佣金秒结</div>
+                <div class="why-desc">交房即到账，不拖不欠</div>
+              </div>
+              <div class="why-card">
+                <div class="why-num">02</div>
+                <div class="why-title">快速响应</div>
+                <div class="why-desc">7×12 小时在线</div>
+              </div>
+              <div class="why-card">
+                <div class="why-num">03</div>
+                <div class="why-title">快出价不反复</div>
+                <div class="why-desc">书面报价透明可查</div>
+              </div>
+              <div class="why-card">
+                <div class="why-num">04</div>
+                <div class="why-title">装修代卖</div>
+                <div class="why-desc">一站式赋能房源</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. 合作流程 -->
+          <div class="gap-section">
+            <h2 class="sec-title">合作流程</h2>
+            <p class="sec-sub">五步成交，闭环清晰</p>
+            <div class="flow">
+              <div class="flow-step">
+                <div class="flow-node">1</div>
+                <div class="flow-body">
+                  <div class="flow-name">推荐房源</div>
+                  <div class="flow-desc">分享你手头匹配的客户房源</div>
+                </div>
+              </div>
+              <div class="flow-step">
+                <div class="flow-node">2</div>
+                <div class="flow-body">
+                  <div class="flow-name">实地看房</div>
+                  <div class="flow-desc">业主配合，随时带看</div>
+                </div>
+              </div>
+              <div class="flow-step">
+                <div class="flow-node">3</div>
+                <div class="flow-body">
+                  <div class="flow-name">快速报价</div>
+                  <div class="flow-desc">2 小时内书面出价，不反复</div>
+                </div>
+              </div>
+              <div class="flow-step">
+                <div class="flow-node">4</div>
+                <div class="flow-body">
+                  <div class="flow-name">签约收房</div>
+                  <div class="flow-desc">流程规范，权属清晰</div>
+                </div>
+              </div>
+              <div class="flow-step">
+                <div class="flow-node">5</div>
+                <div class="flow-body">
+                  <div class="flow-name">佣金到账</div>
+                  <div class="flow-desc">1% 秒结，交房即付</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. 评价 -->
+          <div class="band-fog gap-section">
+            <h2 class="sec-title">合作伙伴怎么说？</h2>
+            <p class="sec-sub">真实经纪人口碑</p>
+            <div class="review-list">
+              <div class="review-card">
+                <div class="review-stars">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                </div>
+                <p class="review-text">不跳单，结佣快，装得好，卖得快</p>
+                <div class="review-author">
+                  <div class="review-avatar">洪</div>
+                  <div class="review-meta">
+                    <div class="review-name">洪店长</div>
+                    <div class="review-role">浦东金杨 · 资深店长</div>
+                  </div>
+                </div>
+              </div>
+              <div class="review-card">
+                <div class="review-stars">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.5l7.1-.6z"/></svg>
+                </div>
+                <p class="review-text">以前最怕客户约了不看，看了不谈，谈了不买，跟你们合作省心太多了！</p>
+                <div class="review-author">
+                  <div class="review-avatar">李</div>
+                  <div class="review-meta">
+                    <div class="review-name">李店长</div>
+                    <div class="review-role">宝山张庙 · 资深经纪人</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7. 报名表单 -->
+          <div class="gap-section">
+            <h2 class="sec-title" style="margin-bottom:16px;">立即报名</h2>
+            <div class="form-card">
+              <div class="form-field">
+                <label class="form-label">所在商圈<span class="req">*</span></label>
+                <input class="form-input" type="text" placeholder="请输入您覆盖的商圈" />
+              </div>
+              <div class="agree-row">
+                <div class="agree-check">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span>我已阅读并同意 <a>《隐私协议》</a></span>
+              </div>
+              <button class="btn-cta">立 即 报 名</button>
+            </div>
+            <div class="safe-bottom"></div>
+          </div>
+
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="state-note">
+        <b>默认态说明：</b>主 CTA「立即报名」处于 <code>disabled</code> 态——商圈未填 + 协议未勾选时按钮置灰（<code>#a3a6af</code>），符合 Steep「单按钮全屏唯一」与「无效状态显式」原则。表单保持最简：仅商圈 + 协议两项。
+      </div>
+    </div>
+
+    <!-- ========== 状态 2：填写中 ========== -->
+    <div class="screen-wrap">
+      <div class="screen-label"><b>② 填写中</b><span class="tag warm">交互态</span></div>
+      <div class="phone">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-right">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="6" rx="0.5"/><rect x="9" y="3" width="3" height="8" rx="0.5"/><rect x="13.5" y="0" width="3" height="11" rx="0.5"/></svg>
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2c1.9 0 3.6.7 4.9 1.9l1.4-1.4C12.2 1.1 9.9.2 7.5.2S2.8 1.1 1.2 2.7l1.4 1.4C3.9 2.9 5.6 2.2 7.5 2.2zm0 3.5c1 0 1.9.4 2.5 1l1.4-1.4c-1-1-2.4-1.6-3.9-1.6s-2.9.6-3.9 1.6l1.4 1.4c.6-.6 1.5-1 2.5-1zm0 3.5l2.1 2.1 2.1-2.1c-.5-.5-1.3-.9-2.1-.9s-1.6.4-2.1.9z"/></svg>
+            <svg width="27" height="12" viewBox="0 0 27 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="3" stroke="currentColor" stroke-opacity="0.4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="currentColor" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="screen-body">
+          <div class="native-nav">
+            区域伙伴招募
+            <div class="native-nav__capsule"><span>···</span><span>○</span></div>
+          </div>
+
+          <!-- 滚动到表单区域 -->
+          <div style="height:380px;background:var(--fog);"></div>
+
+          <div class="gap-section" style="padding-top:32px;">
+            <h2 class="sec-title" style="margin-bottom:16px;">立即报名</h2>
+            <div class="form-card">
+              <div class="form-field">
+                <label class="form-label">所在商圈<span class="req">*</span></label>
+                <input class="form-input filled" type="text" value="福田 CBD · 中心区" />
+              </div>
+              <div class="agree-row">
+                <div class="agree-check checked">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span>我已阅读并同意 <a>《隐私协议》</a></span>
+              </div>
+              <button class="btn-cta">立 即 报 名</button>
+            </div>
+            <div class="safe-bottom"></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="state-note">
+        <b>填写态说明：</b>商圈已填（输入框 <code>color:ink</code>）+ 协议已勾选（Ink 实心方块 + 白色对勾），主 CTA 激活为 Ink 实色，可点击提交。表单保持最简两项，无冗余快捷项。
+      </div>
+    </div>
+
+    <!-- ========== 状态 3：提交成功 ========== -->
+    <div class="screen-wrap">
+      <div class="screen-label"><b>③ 提交成功</b><span class="tag cool">结果态</span></div>
+      <div class="phone">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-right">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="6" rx="0.5"/><rect x="9" y="3" width="3" height="8" rx="0.5"/><rect x="13.5" y="0" width="3" height="11" rx="0.5"/></svg>
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2c1.9 0 3.6.7 4.9 1.9l1.4-1.4C12.2 1.1 9.9.2 7.5.2S2.8 1.1 1.2 2.7l1.4 1.4C3.9 2.9 5.6 2.2 7.5 2.2zm0 3.5c1 0 1.9.4 2.5 1l1.4-1.4c-1-1-2.4-1.6-3.9-1.6s-2.9.6-3.9 1.6l1.4 1.4c.6-.6 1.5-1 2.5-1zm0 3.5l2.1 2.1 2.1-2.1c-.5-.5-1.3-.9-2.1-.9s-1.6.4-2.1.9z"/></svg>
+            <svg width="27" height="12" viewBox="0 0 27 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="3" stroke="currentColor" stroke-opacity="0.4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="currentColor" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="screen-body" style="background:var(--white)">
+          <div class="native-nav">
+            区域伙伴招募
+            <div class="native-nav__capsule"><span>···</span><span>○</span></div>
+          </div>
+
+          <!-- 成功页 -->
+          <div style="padding:80px 32px 0;text-align:center;">
+            <!-- 成功徽标 -->
+            <div style="width:88px;height:88px;margin:0 auto 28px;border-radius:9999px;background:var(--apricot);display:flex;align-items:center;justify-content:center;position:relative;">
+              <div style="width:64px;height:64px;border-radius:9999px;background:var(--rust);display:flex;align-items:center;justify-content:center;">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fbe1d1" stroke-width="2.5"><path d="M5 12l5 5 9-11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <h2 style="font-family:var(--font-serif);font-size:26px;font-weight:400;letter-spacing:-0.4px;color:var(--ink);margin-bottom:12px;">报名成功</h2>
+            <p style="font-size:15px;color:var(--ash);line-height:1.6;letter-spacing:-0.009em;margin-bottom:32px;">
+              专属顾问将在 <b style="color:var(--ink);font-weight:480;">24 小时内</b> 电话联系你，<br/>请保持手机畅通。
+            </p>
+
+            <!-- 报名信息回执 -->
+            <div style="background:var(--fog);border-radius:var(--r-cards);padding:20px;text-align:left;margin-bottom:32px;">
+              <div style="font-size:13px;color:var(--graphite);font-weight:500;letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px;">报名信息</div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
+                <span style="color:var(--graphite);">所在商圈</span>
+                <span style="color:var(--ink);font-weight:480;">福田 CBD · 中心区</span>
+              </div>
+              <div style="height:1px;background:rgba(23,25,28,.06);margin:4px 0;"></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
+                <span style="color:var(--graphite);">提交时间</span>
+                <span style="color:var(--ink);font-weight:480;font-variant-numeric:tabular-nums;">2026-08-14 12:02</span>
+              </div>
+              <div style="height:1px;background:rgba(23,25,28,.06);margin:4px 0;"></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
+                <span style="color:var(--graphite);">报名编号</span>
+                <span style="color:var(--ink);font-weight:480;font-variant-numeric:tabular-nums;font-family:'SF Mono',ui-monospace,monospace;font-size:13px;">RP2026081401</span>
+              </div>
+            </div>
+
+            <button class="btn-cta" style="background:var(--white);color:var(--ink);border:1.5px solid var(--ink);letter-spacing:.2em;text-indent:.2em;">返 回 首 页</button>
+            <div style="margin-top:16px;">
+              <a style="font-size:14px;color:var(--graphite);text-decoration:none;letter-spacing:-0.009em;">查看合作流程 →</a>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="state-note">
+        <b>成功态说明：</b>采用 Apricot + Rust 双层圆环徽标做"暖色奖励"，符合 Steep「暖色仅用于 hero / 强调」约束。回执卡用 Fog 底色 + 24px 圆角，信息以「标签左 + 值右」对齐，数值用 tabular-nums 保证整齐。次按钮反白处理（白底 Ink 描边），保持「单主按钮」铁律。
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== 设计说明 ========== -->
+<div class="notes">
+  <h3>设计决策与规范落地</h3>
+  <div class="notes-grid">
+    <div class="note-item">
+      <h4>字体发声权 · Signifier 独占标题</h4>
+      <p>所有 section 标题与 Hero 主标用 <code>Source Serif Pro / Noto Serif SC</code> 衬线（Signifier 替代），正文与 UI 一律 Sohne（Inter 替代）。Signifier 永不低于 24px，守住"编辑感发声"的规范底线。</p>
+    </div>
+    <div class="note-item">
+      <h4>单主按钮 · Ink 唯一填充</h4>
+      <p>全页仅 1 个 Ink 填充主 CTA「立即报名」，次操作用白底描边或文字链。成功页的「返回首页」做反白处理，避免出现两个实色按钮争夺注意力。</p>
+    </div>
+    <div class="note-item">
+      <h4>橙色标签 · Apricot Wash 替代饱和橙</h4>
+      <p>用户原文「橙色标签底纹」按 Steep「禁饱和色」铁律，落地为 <code>Apricot Wash #fbe1d1</code> 底 + <code>Rust #5d2a1a</code> 字。Hero 三个标签与痛点暖卡同源，形成暖色脉络。</p>
+    </div>
+    <div class="note-item">
+      <h4>评价卡 · Sky Wash 冷色平衡</h4>
+      <p>两条评价用 <code>Sky Wash #d3e3fc</code> 底色，与暖色痛点卡形成冷暖节奏。五星评分用 Rust 描边，引号用 Signifier 衬线放大——口碑区的"编辑感"由此而来。</p>
+    </div>
+    <div class="note-item">
+      <h4>圆角系统 · 24 / 16 / 9999 三档</h4>
+      <p>所有内容卡 24px、输入框 16px、按钮与标签 9999px 胶囊。流程节点用 32px 圆形序号，头像 9999px。无任何低于 12px 的锐角，保持"陶瓷片"质感。</p>
+    </div>
+    <div class="note-item">
+      <h4>阴影三段栈 · 卡片浮起语言</h4>
+      <p>数据卡、表单卡用 <code>--shadow-card</code>（1px ink 边 + 20px/25px 主投影 + 8px/10px 微投影）三段栈浮起；痛点小卡降级为 <code>--shadow-sm</code> 单段投影，形成主次层级。</p>
+    </div>
+    <div class="note-item">
+      <h4>Hero 径向光晕 · 仅此一处</h4>
+      <p>顶部 Apricot 径向渐变光晕严格限定在 Hero 区，product UI 区域保持纯白 / Fog 背景。成功页徽标用 Apricot 实色圆而非渐变，守住"暖色光晕不外溢"规范。</p>
+    </div>
+    <div class="note-item">
+      <h4>留资最简 · 仅商圈 + 协议</h4>
+      <p>表单只保留「所在商圈」+「隐私协议」两项，符合"配置化表单尽量精简"的项目约定。手机号走既有 <code>phone-bind-modal</code> 组件授权，不在本页重复采集。</p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

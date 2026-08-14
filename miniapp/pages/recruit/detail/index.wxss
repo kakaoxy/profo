@@ -1,0 +1,669 @@
+/* 招募详情页 · Steep 设计系统（7 段式营销落地页） */
+
+/* ===== 局部变量（不修改 app.wxss） ===== */
+.page {
+  --shadow-card: 0 0 0 2rpx rgba(4, 23, 43, 0.05),
+    0 40rpx 50rpx -10rpx rgba(0, 0, 0, 0.1),
+    0 16rpx 20rpx -12rpx rgba(0, 0, 0, 0.1);
+  --font-serif: "Songti SC", Georgia, serif;
+  min-height: 100vh;
+  background: var(--fog);
+}
+
+/* ===== 通用区段 ===== */
+.gap-section {
+  padding: 80rpx 0;
+}
+.band-fog {
+  background: var(--fog);
+}
+.sec-title {
+  font-family: var(--font-serif);
+  font-size: 48rpx;
+  font-weight: 400;
+  letter-spacing: -0.8rpx;
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: 12rpx;
+}
+.sec-sub {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+  margin-bottom: 44rpx;
+}
+.sec-title--apply {
+  margin-bottom: 32rpx;
+}
+
+/* ===== 状态态（加载/错误/不存在） ===== */
+.state-box {
+  padding: 120rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32rpx;
+}
+.state-text {
+  font-size: 28rpx;
+  color: var(--graphite);
+}
+.state-btn {
+  display: flex;
+  width: 240rpx;
+  border: 2rpx solid var(--dove);
+  background: var(--pure-white);
+  color: var(--ash);
+}
+
+/* ===== 员工角标 ===== */
+.badge-bar {
+  padding: 24rpx 40rpx 0;
+}
+
+/* ===== 1. Hero ===== */
+.hero {
+  position: relative;
+  padding: 72rpx 40rpx 64rpx;
+  overflow: hidden;
+  background: var(--pure-white);
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -240rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 960rpx;
+  height: 960rpx;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(251, 225, 209, 0.85) 0%,
+    rgba(251, 225, 209, 0.4) 35%,
+    rgba(251, 225, 209, 0) 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-inner {
+  position: relative;
+  z-index: 1;
+}
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: 80rpx;
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -1.2rpx;
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: 44rpx;
+}
+.hero-lead {
+  font-size: 30rpx;
+  line-height: 1.7;
+  color: var(--ash);
+  text-align: center;
+  margin-bottom: 36rpx;
+}
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 28rpx;
+  font-weight: 500;
+  padding: 12rpx 28rpx;
+  border-radius: 9999rpx;
+}
+.hero-tag-sep {
+  font-size: 26rpx;
+  color: var(--graphite);
+  align-self: center;
+}
+.hero-closer {
+  text-align: center;
+  font-size: 30rpx;
+  color: var(--ink);
+  font-weight: 480;
+  margin-top: 8rpx;
+}
+.hero-closer-bold {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--rust);
+}
+
+/* ===== 2. 数据展示卡 ===== */
+.stats-card {
+  margin: 0 40rpx;
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  box-shadow: var(--shadow-card);
+  padding: 48rpx 40rpx;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  position: relative;
+  top: -36rpx;
+  z-index: 2;
+}
+.stat {
+  text-align: center;
+  position: relative;
+}
+.stat:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rpx;
+  height: 64rpx;
+  background: var(--fog);
+}
+.stat-num {
+  font-size: 52rpx;
+  font-weight: 480;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1rpx;
+  line-height: 1;
+}
+.stat-yen {
+  font-size: 36rpx;
+  font-weight: 450;
+  margin-right: 2rpx;
+}
+.stat-unit,
+.stat-suffix {
+  font-size: 30rpx;
+  font-weight: 450;
+  margin-left: 2rpx;
+}
+.stat-label {
+  font-size: 24rpx;
+  color: var(--graphite);
+  margin-top: 16rpx;
+}
+
+/* ===== 3. 痛点 ===== */
+.pain-list {
+  padding: 0 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.pain-card {
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 40rpx 40rpx 36rpx;
+  position: relative;
+  overflow: hidden;
+}
+.pain-card--warm {
+  background: var(--apricot-wash);
+  box-shadow: none;
+}
+.pain-q {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  font-size: 32rpx;
+  font-weight: 480;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.pain-q-ico {
+  flex-shrink: 0;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 500;
+  font-family: var(--font-serif);
+}
+.pain-card--warm .pain-q-ico {
+  background: var(--rust);
+  color: var(--apricot-wash);
+}
+.pain-divider {
+  height: 2rpx;
+  background: rgba(23, 25, 28, 0.08);
+  margin: 28rpx 0 24rpx;
+}
+.pain-card--warm .pain-divider {
+  background: rgba(93, 42, 26, 0.18);
+}
+.pain-a {
+  font-size: 28rpx;
+  color: var(--ash);
+  line-height: 1.6;
+  padding-left: 64rpx;
+}
+.pain-a-bold {
+  color: var(--ink);
+  font-weight: 480;
+}
+.pain-card--warm .pain-a {
+  color: #7a3b22;
+}
+.pain-card--warm .pain-a-bold {
+  color: var(--rust);
+}
+
+/* ===== 4. 优势 4 卡 ===== */
+.why-grid {
+  padding: 0 40rpx;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+.why-card {
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 36rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  min-height: 192rpx;
+  justify-content: center;
+}
+.why-num {
+  font-family: var(--font-serif);
+  font-size: 26rpx;
+  color: var(--rust);
+  font-weight: 400;
+}
+.why-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.why-desc {
+  font-size: 24rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+}
+
+/* ===== 5. 合作流程 ===== */
+.flow {
+  padding: 0 40rpx;
+  display: flex;
+  flex-direction: column;
+}
+.flow-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 28rpx;
+  position: relative;
+  padding-bottom: 36rpx;
+}
+.flow-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 30rpx;
+  top: 68rpx;
+  bottom: -4rpx;
+  width: 4rpx;
+  background: var(--fog);
+}
+.flow-node {
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 28rpx;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+.flow-node--last {
+  background: var(--rust);
+}
+.flow-body {
+  flex: 1;
+  padding-top: 6rpx;
+}
+.flow-name {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.flow-desc {
+  font-size: 26rpx;
+  color: var(--graphite);
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+/* ===== 6. 评价卡 ===== */
+.review-list {
+  padding: 0 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+.review-card {
+  background: var(--sky-wash);
+  border-radius: 48rpx;
+  padding: 44rpx 40rpx 40rpx;
+}
+.review-stars {
+  display: flex;
+  gap: 6rpx;
+  margin-bottom: 24rpx;
+}
+.review-star {
+  font-size: 28rpx;
+  color: var(--rust);
+  line-height: 1;
+}
+.review-text {
+  font-size: 30rpx;
+  line-height: 1.65;
+  color: var(--ink);
+  font-weight: 430;
+}
+.review-text::before {
+  content: "\201C";
+  font-family: var(--font-serif);
+  font-size: 44rpx;
+  color: var(--rust);
+  margin-right: 4rpx;
+  line-height: 0;
+  vertical-align: -4rpx;
+}
+.review-text::after {
+  content: "\201D";
+  font-family: var(--font-serif);
+  font-size: 44rpx;
+  color: var(--rust);
+  margin-left: 4rpx;
+  line-height: 0;
+  vertical-align: -4rpx;
+}
+.review-author {
+  margin-top: 28rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding-top: 28rpx;
+  border-top: 2rpx solid rgba(23, 25, 28, 0.08);
+}
+.review-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 9999rpx;
+  background: var(--pure-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.review-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.review-role {
+  font-size: 24rpx;
+  color: var(--graphite);
+  margin-top: 4rpx;
+}
+
+/* ===== 7. 报名表单 ===== */
+.form-card {
+  margin: 0 40rpx;
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  box-shadow: var(--shadow-card);
+  padding: 40rpx;
+}
+.form-field {
+  margin-bottom: 32rpx;
+}
+.form-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 16rpx;
+}
+.req {
+  color: var(--rust);
+  margin-left: 4rpx;
+}
+.form-input {
+  width: 100%;
+  height: 96rpx;
+  border: 2rpx solid var(--dove);
+  border-radius: 32rpx;
+  padding: 0 32rpx;
+  font-size: 30rpx;
+  color: var(--ink);
+  background: var(--pure-white);
+  box-sizing: border-box;
+}
+.form-input--filled {
+  color: var(--ink);
+}
+.form-input-placeholder {
+  color: var(--dove);
+}
+.agree-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  margin: 0 0 32rpx;
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+}
+.agree-check {
+  flex-shrink: 0;
+  width: 32rpx;
+  height: 32rpx;
+  margin-top: 2rpx;
+  border: 3rpx solid var(--dove);
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pure-white);
+}
+.agree-check--checked {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.agree-check-icon {
+  color: var(--pure-white);
+  font-size: 22rpx;
+  font-weight: bold;
+}
+.agree-text {
+  flex: 1;
+}
+.agree-link {
+  color: var(--rust);
+  font-weight: 450;
+}
+
+/* ===== 按钮 ===== */
+.btn-cta {
+  width: 100%;
+  height: 104rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 32rpx;
+  font-weight: 480;
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+.btn-cta::after {
+  border: none;
+}
+.btn-cta--disabled {
+  background: var(--dove);
+  color: var(--pure-white);
+}
+.btn-cta--secondary {
+  background: var(--pure-white);
+  color: var(--ink);
+  border: 3rpx solid var(--ink);
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+}
+
+/* ===== 成功态 ===== */
+.success-view {
+  padding: 160rpx 64rpx 0;
+  text-align: center;
+  background: var(--pure-white);
+  min-height: 100vh;
+}
+.success-badge-outer {
+  width: 176rpx;
+  height: 176rpx;
+  margin: 0 auto 56rpx;
+  border-radius: 9999rpx;
+  background: var(--apricot-wash);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.success-badge-inner {
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: 9999rpx;
+  background: var(--rust);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.success-check {
+  color: var(--apricot-wash);
+  font-size: 60rpx;
+  font-weight: bold;
+}
+.success-title {
+  font-family: var(--font-serif);
+  font-size: 52rpx;
+  font-weight: 400;
+  letter-spacing: -0.8rpx;
+  color: var(--ink);
+  margin-bottom: 24rpx;
+}
+.success-sub {
+  font-size: 30rpx;
+  color: var(--ash);
+  line-height: 1.6;
+  margin-bottom: 64rpx;
+}
+.success-sub-bold {
+  color: var(--ink);
+  font-weight: 480;
+}
+.receipt-card {
+  background: var(--fog);
+  border-radius: 48rpx;
+  padding: 40rpx;
+  text-align: left;
+  margin-bottom: 64rpx;
+}
+.receipt-header {
+  font-size: 26rpx;
+  color: var(--graphite);
+  font-weight: 500;
+  letter-spacing: 0.6rpx;
+  text-transform: uppercase;
+  margin-bottom: 28rpx;
+}
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+}
+.receipt-label {
+  color: var(--graphite);
+}
+.receipt-value {
+  color: var(--ink);
+  font-weight: 480;
+}
+.receipt-value--num {
+  font-variant-numeric: tabular-nums;
+}
+.receipt-value--mono {
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+  font-size: 26rpx;
+}
+.receipt-divider {
+  height: 2rpx;
+  background: rgba(23, 25, 28, 0.06);
+  margin: 8rpx 0;
+}
+.success-link {
+  margin-top: 32rpx;
+  font-size: 28rpx;
+  color: var(--graphite);
+}
+
+/* ===== 员工分享提示 ===== */
+.share-tip {
+  margin: 24rpx 40rpx 0;
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  padding: 32rpx 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+.share-tip-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 12rpx;
+}
+.share-tip-sub {
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+
+/* ===== 底部安全区 ===== */
+.safe-bottom {
+  height: 64rpx;
+}
