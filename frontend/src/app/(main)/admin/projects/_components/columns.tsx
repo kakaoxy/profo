@@ -34,7 +34,7 @@ function getBusinessFormLabel(form: string | null | undefined): string | null {
 export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "name",
-    header: "项目名称 / ID",
+    header: "项目名称 / 合同编号",
     cell: ({ row }) => {
       const status = row.original.status || DEFAULT_STATUS;
 
@@ -46,7 +46,7 @@ export const columns: ColumnDef<Project>[] = [
 
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[11px] text-muted-foreground font-mono tracking-tight">
-              ID: {row.original.id.slice(0, 8)}
+              合同编号: {row.original.contract_no || "-"}
             </span>
             <Badge
               variant="secondary"

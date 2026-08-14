@@ -60,7 +60,7 @@ def sync_owners(
         )
         .all()
     )
-    existing_map: dict[str, ProjectOwner] = {o.id: o for o in existing_owners}
+    existing_map: dict[str, ProjectOwner] = {str(o.id): o for o in existing_owners}
 
     payload_ids: set[str] = set()
     for item in payload_owners:

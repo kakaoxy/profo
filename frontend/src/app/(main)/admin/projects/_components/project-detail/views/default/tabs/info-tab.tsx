@@ -165,6 +165,70 @@ function BankCardItem({
 }
 
 /**
+ * 敏感字段展示项 - 默认脱敏，点击眼睛切换显隐，支持复制完整值.
+ * 复用响应内明文（电话/身份证），与银行卡按需解密接口不同。
+ */
+function RevealableField({
+  label,
+  value,
+  keepStart = 3,
+  keepEnd = 4,
+  className,
+}: {
+  label: string;
+  value?: string | null;
+  keepStart?: number;
+  keepEnd?: number;
+  className?: string;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  if (!value) return null;
+
+  const masked = maskString(value, keepStart, keepEnd) ?? value;
+  const display = revealed ? value : masked;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      toast.success("已复制到剪贴板");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("复制失败");
+    }
+  };
+
+  return (
+    <div className={cn("flex items-center justify-between gap-2 py-0.5 min-h-[24px]", className)}>
+      <span className="text-xs text-muted-foreground font-medium shrink-0 mr-4">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className="text-sm font-medium text-foreground font-mono">{display}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-4 w-4 text-muted-foreground hover:text-foreground p-0 shrink-0"
+          onClick={() => setRevealed((r) => !r)}
+          title={revealed ? "隐藏" : "显示完整信息"}
+        >
+          {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-4 w-4 text-muted-foreground hover:text-foreground p-0 shrink-0"
+          onClick={handleCopy}
+          title="复制完整信息"
+        >
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * 信息 Tab - 展示项目详细信息
  * 按照创建表单的结构组织：基础信息、代理协议、业主信息
  */
@@ -356,21 +420,11 @@ export function InfoTab({ project }: InfoTabProps) {
 
               <InfoItem label="业主姓名" value={owner.owner_name} />
 
-              {/* 联系电话 - 脱敏显示，支持复制完整数据 */}
-              <InfoItem
-                label="联系电话"
-                value={maskString(owner.owner_phone)}
-                copyable
-                copyValue={owner.owner_phone ?? undefined}
-              />
+              {/* 联系电话 - 默认脱敏，点击眼睛切换显隐，支持复制 */}
+              <RevealableField label="联系电话" value={owner.owner_phone} />
 
-              {/* 身份证号 - 脱敏显示，支持复制完整数据 */}
-              <InfoItem
-                label="身份证号"
-                value={maskString(owner.owner_id_card)}
-                copyable
-                copyValue={owner.owner_id_card ?? undefined}
-              />
+              {/* 身份证号 - 默认脱敏，点击眼睛切换显隐，支持复制 */}
+              <RevealableField label="身份证号" value={owner.owner_id_card} />
 
               {/* 开户行 - 仅有值时显示 */}
               <InfoItem label="开户行" value={owner.bank_name} />
@@ -387,20 +441,13 @@ export function InfoTab({ project }: InfoTabProps) {
           <>
             <InfoItem label="业主姓名" value={project.owner_name} />
 
-            {/* 业主联系方式 - 脱敏显示，支持复制完整数据 */}
-            <InfoItem
-              label="业主联系方式"
-              value={maskString(project.owner_phone)}
-              copyable
-              copyValue={project.owner_phone}
-            />
+            {/* 业主联系方式 - 默认脱敏，点击眼睛切换显隐，支持复制 */}
+            <RevealableField label="业主联系方式" value={project.owner_phone} />
 
-            {/* 业主身份证 - 脱敏显示，支持复制完整数据 */}
-            <InfoItem
+            {/* 业主身份证 - 默认脱敏，点击眼睛切换显隐，支持复制 */}
+            <RevealableField
               label="业主身份证"
-              value={maskString(project.owner_id_card)}
-              copyable
-              copyValue={project.owner_id_card}
+              value={project.owner_id_card}
               className="sm:col-span-2"
             />
           </>

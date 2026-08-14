@@ -52,7 +52,8 @@ export function ProjectView({ data, total }: ProjectViewProps) {
       const searchMatch =
         !searchLower ||
         project.community_name?.toLowerCase().includes(searchLower) ||
-        project.name.toLowerCase().includes(searchLower);
+        project.name.toLowerCase().includes(searchLower) ||
+        project.contract_no?.toLowerCase().includes(searchLower);
 
       return searchMatch;
     });
@@ -83,7 +84,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="搜索小区名称..."
+            placeholder="搜索小区名称/合同编号..."
           />
         }
         filterTabs={
