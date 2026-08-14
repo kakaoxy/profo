@@ -1,29 +1,34 @@
 """区域伙伴招募计划迁移.
 
-幂等创建招募计划 4 张表与索引：
+幂等创建招募计划 4 张表与索引 + ``recruit_qr_scenes`` 表：
 - ``recruit_campaigns`` / ``recruit_leads`` / ``recruit_visits`` / ``recruit_share_events``
+- ``recruit_qr_scenes``（小程序码短码映射表）
 
 通过 SQLAlchemy Core API（``Base.metadata.create_all`` + ``checkfirst=True``）实现
 ``CREATE TABLE IF NOT EXISTS`` 语义，索引由模型 ``__table_args__`` 声明后随建表自动创建。
 
 另：``recruit_leads.phone_hash`` 必须为唯一索引以在 DB 层强制「重复留资永不覆盖」
-归因语义（并发留资去重）。``create_all`` 仅在表不存在时生效，已建表部署需显式重建索引。
+归因语义（并发留资去重）。``create_all`` 仅在表不存在时生效，已建表部署需显式重建索引；
+``recruit_qr_scenes`` 的短码/复用唯一索引同理，已建表部署需显式补建。
 """
 
 import logging
 
-from sqlalchemy import inspect, text
+from sqlalchemy import Index, text
 from sqlalchemy.engine import Engine
+
+from ._helpers import _index_exists
 
 logger = logging.getLogger(__name__)
 
 
 def create_recruit_tables(engine: Engine) -> None:
-    """幂等创建招募计划 4 张表与索引."""
+    """幂等创建招募计划 4 张表与索引 + recruit_qr_scenes 表."""
     from models import Base
     from models.recruit import (
         RecruitCampaign,
         RecruitLead,
+        RecruitQRScene,
         RecruitShareEvent,
         RecruitVisit,
     )
@@ -33,9 +38,12 @@ def create_recruit_tables(engine: Engine) -> None:
         RecruitLead.__table__,
         RecruitVisit.__table__,
         RecruitShareEvent.__table__,
+        RecruitQRScene.__table__,
     ]
 
-    inspector = inspect(engine)
+    from sqlalchemy import inspect as sa_inspect
+
+    inspector = sa_inspect(engine)
     existing = set(inspector.get_table_names())
     missing = [t for t in tables if t.name not in existing]
 
@@ -45,6 +53,42 @@ def create_recruit_tables(engine: Engine) -> None:
 
     # 确保 phone_hash 唯一索引（处理修复前已建表但索引为非唯一的部署）
     _ensure_phone_hash_unique(engine)
+    # 补建 qr_scenes 唯一索引（处理表已存在但索引缺失的部署）
+    _ensure_qr_scene_indexes(engine)
+
+
+def _get_table_names(engine: Engine) -> list[str]:
+    """获取当前数据库所有表名."""
+    from sqlalchemy import inspect as sa_inspect
+
+    inspector = sa_inspect(engine)
+    return inspector.get_table_names()
+
+
+def _ensure_qr_scene_indexes(engine: Engine) -> None:
+    """幂等补建 ``recruit_qr_scenes`` 唯一索引.
+
+    ``create_all`` 仅在表不存在时随建表创建索引；表已存在的部署（如本地调试库）
+    需显式补建。使用 SQLAlchemy ``Index.create(checkfirst=True)`` 实现幂等。
+    """
+    from models.recruit import RecruitQRScene
+
+    # _index_exists 依赖 pg_indexes，仅 PostgreSQL 需要显式补建（SQLite 测试库随建表创建）
+    if engine.dialect.name != "postgresql":
+        return
+    if "recruit_qr_scenes" not in _get_table_names(engine):
+        return
+
+    table = RecruitQRScene.__table__
+    indexes = [
+        Index("idx_recruit_qr_code", table.c.code, unique=True),
+        Index("idx_recruit_qr_campaign_employee", table.c.campaign_id, table.c.employee_id, unique=True),
+    ]
+    for idx in indexes:
+        if _index_exists(engine, idx.name):
+            continue
+        logger.info("迁移：补建 recruit_qr_scenes 索引 %s", idx.name)
+        idx.create(engine, checkfirst=True)
 
 
 def _ensure_phone_hash_unique(engine: Engine) -> None:
@@ -56,17 +100,18 @@ def _ensure_phone_hash_unique(engine: Engine) -> None:
     """
     if engine.dialect.name != "postgresql":
         return
-    inspector = inspect(engine)
-    if "recruit_leads" not in inspector.get_table_names():
+    if "recruit_leads" not in _get_table_names(engine):
         return
 
-    with engine.connect() as conn:
-        row = conn.execute(
-            text("SELECT indexdef FROM pg_indexes WHERE indexname = 'idx_recruit_lead_phone_hash'"),
-        ).first()
+    if _index_exists(engine, "idx_recruit_lead_phone_hash"):
+        # 检查是否已是唯一索引
+        with engine.connect() as conn:
+            row = conn.execute(
+                text("SELECT indexdef FROM pg_indexes WHERE indexname = 'idx_recruit_lead_phone_hash'"),
+            ).first()
 
-    if row is not None and "UNIQUE" in row[0]:
-        return  # 已是唯一索引，无需处理
+        if row is not None and "UNIQUE" in row[0]:
+            return  # 已是唯一索引，无需处理
 
     # 清理重复 phone_hash 行（保留 created_at 最早的记录，归因语义：首次留资生效），
     # 避免建唯一索引时因重复值失败；id 作为 created_at 相同时的稳定 tiebreaker

@@ -3,6 +3,7 @@
 前缀 ``/admin/recruit``，读端点受 ``recruit:read``、写端点受 ``recruit:write`` 权限控制。
 """
 
+import logging
 from datetime import date
 from typing import Annotated
 
@@ -18,10 +19,15 @@ from schemas.recruit import (
     RecruitFunnelResponse,
     RecruitLeadListItem,
     RecruitLeadListResponse,
+    RecruitLeadPhoneResponse,
     RecruitLeadStatusUpdate,
+    RecruitQRCodeGenerateRequest,
+    RecruitQRCodeResponse,
 )
-from services.recruit import RecruitCampaignService, RecruitFunnelService, RecruitLeadService
+from services.recruit import RecruitCampaignService, RecruitFunnelService, RecruitLeadService, RecruitQRCodeService
 from utils.formatters import mask_phone
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/recruit", tags=["recruit"])
 
@@ -189,3 +195,40 @@ def get_funnel(
         end_date=end_date,
     )
     return RecruitFunnelResponse(**data)
+
+
+@router.post(
+    "/campaigns/{campaign_id}/qrcode",
+    summary="生成活动小程序码",
+    description="为活动生成小程序码（含归属员工参数），返回短码与 base64 图片",
+)
+def generate_campaign_qrcode(
+    campaign_id: Annotated[str, Path(description="活动ID")],
+    body: RecruitQRCodeGenerateRequest,
+    db: DbSessionDep,
+    _current_user: RecruitWritePermDep,
+) -> RecruitQRCodeResponse:
+    """生成活动小程序码."""
+    service = RecruitQRCodeService(db)
+    result = service.generate(campaign_id, body.employee_id)
+    return RecruitQRCodeResponse(**result)
+
+
+@router.get(
+    "/leads/{lead_id}/phone",
+    summary="获取线索完整手机号",
+    description="持写权限可查看完整手机号（解密返回），服务端记录访问日志",
+)
+def get_lead_phone(
+    lead_id: Annotated[str, Path(description="线索ID")],
+    db: DbSessionDep,
+    _current_user: RecruitWritePermDep,
+) -> RecruitLeadPhoneResponse:
+    """获取线索完整手机号."""
+    service = RecruitLeadService(db)
+    phone = service.get_phone(lead_id)
+
+    # 记录访问日志（操作人/线索ID/时间）
+    logger.info("查看完整号码：lead_id=%s, operator=%s", lead_id, _current_user.id)
+
+    return RecruitLeadPhoneResponse(phone=phone)

@@ -1,14 +1,28 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import dynamic from "next/dynamic";
-import { Plus, Inbox } from "lucide-react";
+import { Plus, Inbox, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/common";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
-import type { RecruitCampaign } from "../../types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { RecruitCampaign, RecruitEmployee } from "../../types";
 import { CampaignsTable } from "./campaigns-table";
 import type { CampaignFormData } from "./campaign-form-dialog";
 import {
@@ -16,6 +30,7 @@ import {
   updateCampaignAction,
   toggleCampaignStatusAction,
   deleteCampaignAction,
+  generateCampaignQRCodeAction,
   type CampaignFormData as ActionCampaignFormData,
 } from "../../_lib/recruit-actions";
 import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
@@ -46,6 +61,8 @@ interface CampaignsViewProps {
   campaigns: RecruitCampaign[];
   /** 页面头部 KPI 概览统计 */
   stats: CampaignStats;
+  /** 员工列表（小程序码归属员工选择） */
+  employees: RecruitEmployee[];
 }
 
 /**
@@ -53,12 +70,19 @@ interface CampaignsViewProps {
  * 成功后 revalidatePath 刷新列表数据（props 由 Server Component 重新传入）。
  * 布局与视觉对齐设计稿（Steep）：页头 + KPI 概览 + 活动列表卡。
  */
-export function CampaignsView({ campaigns, stats }: CampaignsViewProps) {
+export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProps) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingCampaign, setEditingCampaign] =
     React.useState<RecruitCampaign | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [togglingId, setTogglingId] = React.useState<string | null>(null);
+
+  // 小程序码弹窗状态
+  const [qrDialogOpen, setQrDialogOpen] = React.useState(false);
+  const [qrCampaign, setQrCampaign] = React.useState<RecruitCampaign | null>(null);
+  const [qrEmployeeId, setQrEmployeeId] = React.useState<string>("");
+  const [qrGenerating, setQrGenerating] = React.useState(false);
+  const [qrResult, setQrResult] = React.useState<{ code: string; image_base64: string } | null>(null);
 
   // KPI 概览（与列表状态联动：停用/启用后「进行中」实时变化）
   const kpiItems: RecruitKpiItem[] = React.useMemo(() => {
@@ -149,9 +173,40 @@ export function CampaignsView({ campaigns, stats }: CampaignsViewProps) {
     }
   };
 
-  // 小程序码（占位：二期生成海报/小程序码）
+  // 小程序码
   const handleQr = (campaign: RecruitCampaign) => {
-    toast(`「${campaign.name}」小程序码二期接入`);
+    setQrCampaign(campaign);
+    setQrEmployeeId("");
+    setQrResult(null);
+    setQrDialogOpen(true);
+  };
+
+  const handleGenerateQr = async () => {
+    if (!qrCampaign) return;
+    setQrGenerating(true);
+    try {
+      const result = await generateCampaignQRCodeAction(
+        qrCampaign.id,
+        qrEmployeeId || undefined,
+      );
+      if (result.success) {
+        setQrResult(result.data);
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setQrGenerating(false);
+    }
+  };
+
+  const handleDownloadQr = () => {
+    if (!qrResult) return;
+    const link = document.createElement("a");
+    link.download = `qrcode-${qrResult.code}.png`;
+    link.href = `data:image/png;base64,${qrResult.image_base64}`;
+    link.click();
   };
 
   // 删除活动（存在关联线索时后端拒绝，引导改用停用）
@@ -258,6 +313,93 @@ export function CampaignsView({ campaigns, stats }: CampaignsViewProps) {
           }
         />
       )}
+
+      {/* 小程序码弹窗 */}
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent showCloseButton={false} className="sm:max-w-100 rounded-cards p-0 gap-0 bg-white">
+          <DialogHeader className="flex flex-row items-center justify-between px-6 py-5 border-b border-fog text-left">
+            <DialogTitle className="text-base font-medium text-ink">
+              小程序码 - {qrCampaign?.name ?? ""}
+            </DialogTitle>
+            <button
+              type="button"
+              onClick={() => setQrDialogOpen(false)}
+              className="h-8 w-8 rounded-full flex items-center justify-center text-slate text-[15px] hover:bg-fog hover:text-ink transition-colors"
+              aria-label="关闭"
+            >
+              ✕
+            </button>
+          </DialogHeader>
+
+          <div className="px-6 py-5 space-y-4">
+            {!qrResult ? (
+              <>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[14px] font-medium text-ink">
+                    归属员工（可选）
+                  </label>
+                  <Select
+                    value={qrEmployeeId}
+                    onValueChange={setQrEmployeeId}
+                  >
+                    <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px]">
+                      <SelectValue placeholder="不绑定员工" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">不绑定员工</SelectItem>
+                      {employees.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerateQr}
+                  disabled={qrGenerating}
+                  className="inline-flex items-center justify-center gap-1.5 h-9 px-5 rounded-full bg-ink text-white text-[14px] font-medium hover:bg-black transition-colors disabled:opacity-50 w-full"
+                >
+                  {qrGenerating && <Loader2 className="h-4 w-4 animate-spin" />}
+                  生成小程序码
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative w-48 h-48 rounded-images overflow-hidden border border-fog">
+                  <Image
+                    src={`data:image/png;base64,${qrResult.image_base64}`}
+                    alt="小程序码"
+                    fill
+                    className="object-contain"
+                    sizes="192px"
+                    unoptimized
+                  />
+                </div>
+                <p className="text-[12.5px] text-slate text-center">
+                  短码: {qrResult.code}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleDownloadQr}
+                  className="inline-flex items-center justify-center gap-1.5 h-9 px-5 rounded-full bg-ink text-white text-[14px] font-medium hover:bg-black transition-colors"
+                >
+                  <Download className="h-4 w-4" />
+                  下载小程序码
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQrResult(null)}
+                  className="text-[14px] font-medium text-ink px-0.5 hover:opacity-60 transition-opacity"
+                >
+                  重新生成
+                </button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

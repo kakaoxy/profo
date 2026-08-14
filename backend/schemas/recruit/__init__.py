@@ -5,6 +5,7 @@
 """
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -158,6 +159,51 @@ class RecruitLeadStatusUpdate(BaseModel):
 
 
 # ----------------------
+# Share Event（分享事件，漏斗第 1 级）
+# ----------------------
+class RecruitShareEventCreate(BaseModel):
+    """创建分享事件请求."""
+
+    campaign_id: str | None = Field(default=None, max_length=36, description="活动ID")
+    share_type: Literal["card", "poster"] = Field(description="分享方式：card|poster")
+
+
+class RecruitShareEventResponse(BaseModel):
+    """创建分享事件响应."""
+
+    id: str
+
+
+# ----------------------
+# QR Code（小程序码）
+# ----------------------
+class RecruitQRCodeGenerateRequest(BaseModel):
+    """生成小程序码请求."""
+
+    employee_id: str | None = Field(default=None, max_length=36, description="归属员工ID（可选）")
+
+
+class RecruitQRCodeResponse(BaseModel):
+    """生成小程序码响应."""
+
+    code: str = Field(description="8位短码")
+    image_base64: str = Field(description="小程序码图片 base64")
+
+
+class RecruitQRSceneResponse(BaseModel):
+    """解析短码响应."""
+
+    campaign_id: str = Field(description="活动ID")
+    referrer: str | None = Field(default=None, description="来源员工ID")
+
+
+class RecruitLeadPhoneResponse(BaseModel):
+    """线索完整手机号响应."""
+
+    phone: str = Field(description="完整手机号")
+
+
+# ----------------------
 # Funnel（6 级漏斗统计）
 # ----------------------
 class RecruitFunnelResponse(BaseModel):
@@ -182,8 +228,14 @@ __all__ = [
     "RecruitLeadCreate",
     "RecruitLeadListItem",
     "RecruitLeadListResponse",
+    "RecruitLeadPhoneResponse",
     "RecruitLeadStatusUpdate",
     "RecruitLeadSubmitResponse",
+    "RecruitQRCodeGenerateRequest",
+    "RecruitQRCodeResponse",
+    "RecruitQRSceneResponse",
+    "RecruitShareEventCreate",
+    "RecruitShareEventResponse",
     "RecruitVisitCreate",
     "RecruitVisitResponse",
     "RecruitVisitUpdate",

@@ -3,6 +3,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -52,7 +53,8 @@ class RecruitLeadService:
         创建时间区间（左闭右开）/ 主营商圈关键词模糊搜索。
         手机号加密存储，不支持按手机号搜索。
         """
-        q = self.db.query(RecruitLead, User.nickname).outerjoin(User, User.id == RecruitLead.referrer_employee_id)
+        referrer_label = func.coalesce(User.nickname, User.username)
+        q = self.db.query(RecruitLead, referrer_label).outerjoin(User, User.id == RecruitLead.referrer_employee_id)
 
         if employee_id is not None:
             q = q.filter(RecruitLead.referrer_employee_id == employee_id)
@@ -72,6 +74,25 @@ class RecruitLeadService:
         total = q.count()
         rows = q.order_by(RecruitLead.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
         return {"items": rows, "total": total, "page": page, "page_size": page_size}
+
+    def get_phone(self, lead_id: str) -> str:
+        """获取线索完整手机号（解密），供持写权限端点查看.
+
+        Args:
+            lead_id: 线索ID
+
+        Returns:
+            完整手机号
+
+        Raises:
+            ResourceNotFoundError: 线索不存在
+
+        """
+        lead = self.db.query(RecruitLead).filter(RecruitLead.id == lead_id).first()
+        if lead is None:
+            msg = "招募线索不存在"
+            raise ResourceNotFoundError(msg)
+        return lead.phone
 
     def update_status(self, lead_id: str, data: RecruitLeadStatusUpdate) -> tuple[RecruitLead, str | None]:
         """跟进状态流转（可选人工标记内部员工）.
@@ -93,10 +114,14 @@ class RecruitLeadService:
         self.db.commit()
         self.db.refresh(lead)
 
-        # 查询归属员工昵称，保持与 list 端点响应一致
+        # 查询归属员工昵称（nickname 缺失时回退 username），保持与 list 端点响应一致
         nickname: str | None = None
         if lead.referrer_employee_id:
-            row = self.db.query(User.nickname).filter(User.id == lead.referrer_employee_id).first()
+            row = (
+                self.db.query(func.coalesce(User.nickname, User.username))
+                .filter(User.id == lead.referrer_employee_id)
+                .first()
+            )
             if row is not None:
                 nickname = row[0]
         return lead, nickname

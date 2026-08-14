@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildShareEventPayload,
   buildSharePath,
   buildShareQuery,
   checkRecruitForm,
@@ -153,5 +154,22 @@ describe("RECRUIT_LANDING_CONTENT", () => {
     expect(whyTitle).toBe("为什么选择跟我们合作？");
     expect(flowTitle).toBe("合作流程");
     expect(reviewTitle).toBe("合作伙伴怎么说？");
+  });
+});
+
+describe("buildShareEventPayload", () => {
+  it("生成 card 分享事件体", () => {
+    const payload = buildShareEventPayload("abc", "card");
+    expect(payload).toEqual({ campaign_id: "abc", share_type: "card" });
+  });
+
+  it("生成 poster 分享事件体", () => {
+    const payload = buildShareEventPayload("abc", "poster");
+    expect(payload).toEqual({ campaign_id: "abc", share_type: "poster" });
+  });
+
+  it("无 campaign_id 时 campaign_id 为 undefined", () => {
+    const payload = buildShareEventPayload("", "card");
+    expect(payload.campaign_id).toBeUndefined();
   });
 });

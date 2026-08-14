@@ -31,10 +31,7 @@
         </view>
       </view>
       <view class="success-title">报名成功</view>
-      <view class="success-sub">
-        专属顾问将在 <text class="success-sub-bold">24 小时内</text> 电话联系你，
-        请保持手机畅通。
-      </view>
+      <view class="success-sub">报名成功，我们将尽快联系您</view>
 
       <!-- 报名信息回执卡 -->
       <view class="receipt-card">

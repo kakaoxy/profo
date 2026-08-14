@@ -4,6 +4,12 @@ import { Loader2 } from "lucide-react";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { safeFormatDate } from "@/lib/formatters";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type {
   RecruitLead,
   RecruitLeadStatus,
@@ -18,10 +24,10 @@ import {
 interface LeadsTableProps {
   /** 当前页线索（已由服务端完成筛选与分页） */
   leads: RecruitLead[];
-  /** 状态流转回调（沿状态流前进一级，由 view 调用 Server Action） */
-  onFlow: (leadId: string) => void;
-  /** 详情（占位：二期跳转线索详情） */
-  onDetail: () => void;
+  /** 状态流转回调（选择目标状态，由 view 调用 Server Action） */
+  onFlow: (leadId: string, targetStatus: RecruitLeadStatus) => void;
+  /** 详情回调（打开抽屉） */
+  onDetail: (leadId: string) => void;
   /** 正在流转状态的线索 ID（null 表示无操作进行中） */
   flowingId: string | null;
 }
@@ -45,10 +51,19 @@ const SOURCE_BADGE: Record<RecruitSource, string> = {
 const badgeBase =
   "inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-0.5 rounded-full whitespace-nowrap";
 
+/** 所有可流转的目标状态（5 态） */
+const STATUS_OPTIONS: RecruitLeadStatus[] = [
+  "new",
+  "contacted",
+  "high_intent",
+  "converted",
+  "eliminated",
+];
+
 /**
  * 线索明细表格：对齐设计稿列结构
  * `手机号 / 主营商圈 / 归属员工 / 来源 / 状态 / 留资时间 / 操作`。
- * 操作：流转状态（写权限）+ 详情。
+ * 操作：流转状态（写权限 DropdownMenu）+ 详情。
  */
 export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTableProps) {
   return (
@@ -127,22 +142,37 @@ export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTablePro
                 <td className="px-5 py-3.5 border-b border-fog align-middle">
                   <div className="flex items-center justify-end gap-3">
                     <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
-                      <button
-                        type="button"
-                        disabled={flowingId === lead.id}
-                        className="text-[14px] font-medium text-ink px-0.5 hover:opacity-60 transition-opacity disabled:opacity-50 inline-flex items-center gap-1"
-                        onClick={() => onFlow(lead.id)}
-                      >
-                        {flowingId === lead.id && (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        )}
-                        流转状态
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={flowingId === lead.id}
+                            className="text-[14px] font-medium text-ink px-0.5 hover:opacity-60 transition-opacity disabled:opacity-50 inline-flex items-center gap-1"
+                          >
+                            {flowingId === lead.id && (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            )}
+                            流转状态
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {STATUS_OPTIONS.filter((s) => s !== lead.status).map(
+                            (status) => (
+                              <DropdownMenuItem
+                                key={status}
+                                onClick={() => onFlow(lead.id, status)}
+                              >
+                                {RECRUIT_LEAD_STATUS_LABELS[status]}
+                              </DropdownMenuItem>
+                            ),
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </HasPermission>
                     <button
                       type="button"
                       className="text-[14px] font-medium text-ink px-0.5 hover:opacity-60 transition-opacity"
-                      onClick={onDetail}
+                      onClick={() => onDetail(lead.id)}
                     >
                       详情
                     </button>

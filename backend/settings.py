@@ -177,6 +177,8 @@ class Settings(BaseSettings):
     wechat_miniapp_token_url: str = "https://api.weixin.qq.com/cgi-bin/token"  # noqa: S105
     # 小程序手机号授权接口（wx.getPhoneNumber 的 code 换取手机号）
     wechat_phone_url: str = "https://api.weixin.qq.com/wxa/business/getuserphonenumber"
+    # 小程序码生成接口（getwxacodeunlimit）
+    wechat_miniapp_qrcode_url: str = "https://api.weixin.qq.com/wxa/getwxacodeunlimit"
 
     @model_validator(mode="after")
     def validate_oss_config(self) -> "Settings":

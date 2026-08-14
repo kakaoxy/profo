@@ -203,3 +203,57 @@ export async function uploadCampaignImageAction(
     return { success: false, error: parseNetworkError(e) };
   }
 }
+
+// ─── 小程序码 ──────────────────────────────────────────────────────────────────
+
+/** 生成活动小程序码，返回 {code, image_base64}。 */
+export async function generateCampaignQRCodeAction(
+  campaignId: string,
+  employeeId?: string,
+): Promise<ActionResult<{ code: string; image_base64: string }>> {
+  const perm = await requirePermission(PERMISSION_CODES.RECRUIT_WRITE);
+  if (!perm.ok) return { success: false, error: perm.message };
+
+  try {
+    const client = await fetchClient();
+    const { data: responseData, error } = await client.POST(
+      "/api/v1/admin/recruit/campaigns/{campaign_id}/qrcode",
+      {
+        params: { path: { campaign_id: campaignId } },
+        body: { employee_id: employeeId || undefined },
+      },
+    );
+    if (error || !responseData) {
+      return { success: false, error: extractErrorMessage(error) };
+    }
+    return { success: true, data: responseData };
+  } catch (e) {
+    logger.error("generateCampaignQRCodeAction error:", e);
+    return { success: false, error: parseNetworkError(e) };
+  }
+}
+
+// ─── 线索完整手机号 ────────────────────────────────────────────────────────────
+
+/** 获取线索完整手机号（持写权限）。 */
+export async function getLeadPhoneAction(
+  leadId: string,
+): Promise<ActionResult<string>> {
+  const perm = await requirePermission(PERMISSION_CODES.RECRUIT_WRITE);
+  if (!perm.ok) return { success: false, error: perm.message };
+
+  try {
+    const client = await fetchClient();
+    const { data: responseData, error } = await client.GET(
+      "/api/v1/admin/recruit/leads/{lead_id}/phone",
+      { params: { path: { lead_id: leadId } } },
+    );
+    if (error || !responseData) {
+      return { success: false, error: extractErrorMessage(error) };
+    }
+    return { success: true, data: responseData.phone };
+  } catch (e) {
+    logger.error("getLeadPhoneAction error:", e);
+    return { success: false, error: parseNetworkError(e) };
+  }
+}

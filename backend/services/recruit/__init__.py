@@ -4,10 +4,12 @@ from .attribution import RecruitAttributionService
 from .campaign import RecruitCampaignService
 from .funnel import RecruitFunnelService
 from .lead import RecruitLeadService
+from .qrcode import RecruitQRCodeService
 
 __all__ = [
     "RecruitAttributionService",
     "RecruitCampaignService",
     "RecruitFunnelService",
     "RecruitLeadService",
+    "RecruitQRCodeService",
 ]

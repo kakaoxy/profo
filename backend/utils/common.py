@@ -203,3 +203,5 @@ class RateLimits:
     # 访问埋点：C 端进入/离开高频，限流放宽；留资提交涉及微信解密，收敛频次
     RECRUIT_VISIT = "120/minute"
     RECRUIT_LEAD_SUBMIT = "10/hour"
+    RECRUIT_SHARE = "60/minute"
+    RECRUIT_QR_SCENE = "120/minute"

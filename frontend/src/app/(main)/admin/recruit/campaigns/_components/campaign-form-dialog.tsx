@@ -4,6 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,14 @@ export interface CampaignFormData {
   image_url: string | null;
   status: RecruitCampaignStatus;
 }
+
+/** Zod schema：语义对齐后端 RecruitCampaignCreate */
+const campaignFormSchema = z.object({
+  name: z.string().min(1, "请填写活动名称").max(100),
+  title: z.string().min(1, "请填写分享标题").max(200),
+  image_url: z.string().min(1, "请上传分享配图"),
+  status: z.enum(["enabled", "disabled"]),
+});
 
 interface CampaignFormDialogProps {
   open: boolean;
@@ -122,16 +131,15 @@ export function CampaignFormDialog({
   };
 
   const handleSubmit = () => {
-    if (!name.trim()) {
-      toast.error("请填写活动名称");
-      return;
-    }
-    if (!title.trim()) {
-      toast.error("请填写分享标题");
-      return;
-    }
-    if (!imageUrl || imageUrl.trim() === "") {
-      toast.error("请上传分享配图");
+    const result = campaignFormSchema.safeParse({
+      name: name.trim(),
+      title: title.trim(),
+      image_url: imageUrl,
+      status,
+    });
+    if (!result.success) {
+      const firstError = result.error.issues[0];
+      toast.error(firstError.message);
       return;
     }
     onSubmit({

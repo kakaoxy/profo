@@ -12,12 +12,15 @@ from sqlalchemy.orm import Session
 
 from models import User
 from models.recruit import (
+    RecruitCampaign,
     RecruitLead,
     RecruitLeadSource,
     RecruitLeadStatus,
+    RecruitShareEvent,
+    RecruitShareType,
     RecruitVisit,
 )
-from schemas.recruit import RecruitVisitCreate, RecruitVisitUpdate
+from schemas.recruit import RecruitShareEventCreate, RecruitVisitCreate, RecruitVisitUpdate
 from services.system.exceptions import ResourceNotFoundError
 from utils.crypto import hash_phone
 
@@ -70,8 +73,13 @@ class RecruitAttributionService:
 
         visit.stayed_ms = data.stayed_ms
         visit.exited_at = datetime.now(timezone.utc)
-        server_deep = data.stayed_ms is not None and data.stayed_ms >= _DEEP_VIEW_MIN_MS
-        visit.is_deep_view = data.is_deep_view or server_deep
+        # 服务端复核：以前端 stayed_ms 与后端 elapsed 取"或"
+        elapsed_ms = 0
+        if visit.entered_at is not None and visit.exited_at is not None:
+            elapsed_ms = int((visit.exited_at - visit.entered_at).total_seconds() * 1000)
+        frontend_deep = data.stayed_ms is not None and data.stayed_ms >= _DEEP_VIEW_MIN_MS
+        server_deep = elapsed_ms >= _DEEP_VIEW_MIN_MS
+        visit.is_deep_view = data.is_deep_view or frontend_deep or server_deep
         visit.clicked_auth = data.clicked_auth
 
         try:
@@ -135,6 +143,36 @@ class RecruitAttributionService:
         else:
             self._mark_visit_authed(visit_id, user_id=user_id)
             return lead, True
+
+    def create_share_event(self, user: User, data: RecruitShareEventCreate) -> RecruitShareEvent:
+        """创建分享事件（漏斗第 1 级数据源）.
+
+        Raises:
+            ResourceNotFoundError: 指定活动不存在
+
+        """
+        if data.campaign_id is not None:
+            exists = (
+                self.db.query(RecruitCampaign.id).filter(RecruitCampaign.id == data.campaign_id).first() is not None
+            )
+            if not exists:
+                msg = "招募活动不存在"
+                raise ResourceNotFoundError(msg)
+        event = RecruitShareEvent(
+            id=str(uuid.uuid4()),
+            campaign_id=data.campaign_id,
+            employee_id=user.id,
+            share_type=RecruitShareType.CARD if data.share_type == "card" else RecruitShareType.POSTER,
+        )
+        self.db.add(event)
+        try:
+            self.db.commit()
+            self.db.refresh(event)
+        except Exception:
+            self.db.rollback()
+            raise
+        else:
+            return event
 
     def _mark_visit_authed(self, visit_id: str | None, *, user_id: str) -> None:
         """留资成功后标记对应访问记录 authed=true.

@@ -17,6 +17,7 @@ import { request, type HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import {
+  buildShareEventPayload,
   buildSharePath,
   buildShareQuery,
   checkRecruitForm,
@@ -98,6 +99,8 @@ interface PageCustom {
   ensureLogin(): boolean;
   createVisit(): void;
   reportVisit(): void;
+  reportShareEvent(shareType: "card" | "poster"): void;
+  resolveScene(code: string): Promise<void>;
   loadIdentityAndBadge(): void;
   animateStats(): void;
   clearStatAnim(): void;
@@ -141,7 +144,14 @@ Page<PageData, PageCustom>({
   },
 
   onLoad(options) {
-    const query = parseRecruitQuery(options as Record<string, string | undefined>);
+    const rawOptions = options as Record<string, string | undefined>;
+    // 扫码进入：options.scene 存在且无 campaign_id 时，解析 scene 获取短码
+    if (rawOptions.scene && !rawOptions.campaign_id) {
+      const scene = decodeURIComponent(rawOptions.scene);
+      this.resolveScene(scene);
+      return;
+    }
+    const query = parseRecruitQuery(rawOptions);
     this.setData({
       campaignId: query.campaignId,
       referrer: query.referrer,
@@ -156,9 +166,42 @@ Page<PageData, PageCustom>({
     this.loadCampaign();
     // 内部员工识别 + 未读角标（仅后台令牌存在时尝试）
     this.loadIdentityAndBadge();
-    // 访问埋点：创建访问记录（需登录；未登录跳过，后端 aud=c 校验）
-    if (hasToken && query.campaignId) {
-      this.createVisit();
+  },
+
+  /** 解析 scene 短码（扫码进入），还原 campaignId/referrer/source=poster. */
+  async resolveScene(code: string) {
+    this.setData({ loading: true });
+    // 标记是否已委托 loadCampaign 管理 loading（成功路径不重置，避免与 loadCampaign 的 loading 冲突）
+    let delegated = false;
+    try {
+      const result = await request<{ campaign_id: string; referrer: string | null }>({
+        url: `/public/recruit/qr/${code}`,
+        skipAuth: true,
+      });
+      this.setData({
+        campaignId: result.campaign_id,
+        referrer: result.referrer || "",
+        source: "poster",
+        enterTime: Date.now(),
+      });
+      wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
+      const hasToken = !!getCAccessToken() || !!getAccessToken();
+      this.setData({ loggedIn: hasToken });
+      // 访问埋点：扫码路径 onShow 先于异步解析完成触发（campaignId 尚空），
+      // 此处补建 visit，否则扫码流量 PV/UV/深度浏览漏斗数据全部缺失
+      if (hasToken) {
+        this.createVisit();
+      }
+      this.loadCampaign();
+      delegated = true;
+      this.loadIdentityAndBadge();
+    } catch {
+      this.setData({ notFound: true });
+    } finally {
+      // 仅在未委托 loadCampaign 时（即短码解析失败）重置 loading
+      if (!delegated) {
+        this.setData({ loading: false });
+      }
     }
   },
 
@@ -167,6 +210,10 @@ Page<PageData, PageCustom>({
     const hasToken = !!getCAccessToken() || !!getAccessToken();
     if (hasToken !== this.data.loggedIn) {
       this.setData({ loggedIn: hasToken });
+    }
+    // 访问埋点：每次前台进入创建新 visit（PV +1，后台切回前台计新 PV）
+    if (hasToken && this.data.campaignId) {
+      this.createVisit();
     }
   },
 
@@ -240,13 +287,12 @@ Page<PageData, PageCustom>({
       // 活动加载完成、落地页渲染后触发数据卡滚动动画
       this.animateStats();
     } catch (err) {
-      this.setData({ loading: false });
       const statusCode = (err as HttpResponseError).statusCode;
       if (statusCode === 404) {
-        this.setData({ notFound: true });
+        this.setData({ notFound: true, loading: false });
         return;
       }
-      this.setData({ error: true });
+      this.setData({ error: true, loading: false });
     }
   },
 
@@ -334,7 +380,7 @@ Page<PageData, PageCustom>({
     this.setData({ clickedAuth: true });
     const detail = e.detail as { code?: string; errMsg?: string };
     if (detail.errMsg && !detail.errMsg.includes("ok")) {
-      wx.showToast({ title: "授权失败，无法完成报名", icon: "none" });
+      wx.showToast({ title: "授权失败，无法报名", icon: "none" });
       return;
     }
     if (!detail.code) {
@@ -478,6 +524,8 @@ Page<PageData, PageCustom>({
     if (imageUrl) {
       share.imageUrl = imageUrl;
     }
+    // 上报分享事件（漏斗第 1 级数据源），未登录/失败静默不阻断分享
+    this.reportShareEvent("card");
     return share;
   },
 
@@ -493,6 +541,24 @@ Page<PageData, PageCustom>({
     if (imageUrl) {
       share.imageUrl = imageUrl;
     }
+    // 上报分享事件（漏斗第 1 级数据源），未登录/失败静默不阻断分享
+    this.reportShareEvent("poster");
     return share;
+  },
+
+  /** 上报分享事件，失败静默（不阻断分享流程）. */
+  reportShareEvent(shareType: "card" | "poster") {
+    const { campaignId } = this.data;
+    if (!campaignId) return;
+    // 仅登录态上报（未登录静默跳过，避免匿名刷量）
+    if (!getCAccessToken() && !getAccessToken()) return;
+    const payload = buildShareEventPayload(campaignId, shareType);
+    request<{ id: string }>({
+      url: "/public/recruit/share-events",
+      method: "POST",
+      data: payload,
+    }).catch(() => {
+      // 失败静默，不影响分享
+    });
   },
 });

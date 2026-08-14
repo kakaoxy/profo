@@ -427,3 +427,48 @@ class WeChatAuthService:
             msg = "微信手机号授权失败，请重新获取"
             raise ValidationError(msg)
         return dict(data.get("phone_info", {}))
+
+    @staticmethod
+    def fetch_miniapp_unlimited_qrcode(scene: str, page: str | None = None) -> bytes:
+        """生成小程序码（getwxacodeunlimit）.
+
+        调用 wxa/getwxacodeunlimit 接口，需先获取小程序全局 access_token。
+        scene 参数长度 ≤ 32 字符，page 为小程序页面路径（可选，默认跳转招募详情页）。
+
+        Args:
+            scene: 场景值（≤32 字符，含短码 code）
+            page: 小程序页面路径（可选，不传时默认跳转招募详情页）
+
+        Returns:
+            图片 bytes（直接返回微信接口的二进制响应体）
+
+        Raises:
+            ValidationError: 微信接口返回错误
+
+        """
+        access_token = WeChatAuthService.fetch_wechat_miniapp_access_token()
+        params = {"access_token": access_token}
+        payload: dict[str, object] = {
+            "scene": scene,
+            "check_path": False,
+        }
+        if page:
+            payload["page"] = page
+        with httpx.Client(trust_env=False) as client:
+            try:
+                response = client.post(settings.wechat_miniapp_qrcode_url, params=params, json=payload)
+                response.raise_for_status()
+                content_type = response.headers.get("content-type", "")
+                if "image" in content_type:
+                    # 成功返回图片二进制
+                    return response.content
+                data = response.json()
+            except (httpx.HTTPError, ValueError) as e:
+                # 网络/HTTP 状态错误（httpx.HTTPError）与非 JSON 响应体（json.JSONDecodeError 属 ValueError）
+                # 统一转为业务校验错误，避免以通用 500 冒泡
+                logger.exception("生成小程序码请求异常")
+                msg = "小程序码生成失败，请检查微信配置"
+                raise ValidationError(msg) from e
+            logger.error("生成小程序码失败：errmsg=%s, errcode=%s", data.get("errmsg"), data.get("errcode"))
+            msg = "小程序码生成失败，请检查微信配置"
+            raise ValidationError(msg)

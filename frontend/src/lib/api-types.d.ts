@@ -3294,6 +3294,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/recruit/share-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报分享事件
+         * @description 分享事件写入（漏斗第 1 级数据源），需 aud=c 登录态 + 限流
+         */
+        post: operations["create_share_event_api_v1_public_recruit_share_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/recruit/qr/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 解析小程序码短码
+         * @description 游客可访问，限流；返回活动ID与来源员工ID
+         */
+        get: operations["resolve_qr_code_api_v1_public_recruit_qr__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/recruit/campaigns": {
         parameters: {
             query?: never;
@@ -3394,6 +3434,46 @@ export interface paths {
          * @description 分享次数 → PV/UV → 深度浏览 → 点击授权 → 授权成功 → 有效新客
          */
         get: operations["get_funnel_api_v1_admin_recruit_leads_funnel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/recruit/campaigns/{campaign_id}/qrcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 生成活动小程序码
+         * @description 为活动生成小程序码（含归属员工参数），返回短码与 base64 图片
+         */
+        post: operations["generate_campaign_qrcode_api_v1_admin_recruit_campaigns__campaign_id__qrcode_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/recruit/leads/{lead_id}/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取线索完整手机号
+         * @description 持写权限可查看完整手机号（解密返回），服务端记录访问日志
+         */
+        get: operations["get_lead_phone_api_v1_admin_recruit_leads__lead_id__phone_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10042,6 +10122,17 @@ export interface components {
             page_size: number;
         };
         /**
+         * RecruitLeadPhoneResponse
+         * @description 线索完整手机号响应.
+         */
+        RecruitLeadPhoneResponse: {
+            /**
+             * Phone
+             * @description 完整手机号
+             */
+            phone: string;
+        };
+        /**
          * RecruitLeadSource
          * @description 招募线索/访问来源渠道枚举.
          * @enum {string}
@@ -10075,6 +10166,74 @@ export interface components {
             lead_id: string;
             /** Is New */
             is_new: boolean;
+        };
+        /**
+         * RecruitQRCodeGenerateRequest
+         * @description 生成小程序码请求.
+         */
+        RecruitQRCodeGenerateRequest: {
+            /**
+             * Employee Id
+             * @description 归属员工ID（可选）
+             */
+            employee_id?: string | null;
+        };
+        /**
+         * RecruitQRCodeResponse
+         * @description 生成小程序码响应.
+         */
+        RecruitQRCodeResponse: {
+            /**
+             * Code
+             * @description 8位短码
+             */
+            code: string;
+            /**
+             * Image Base64
+             * @description 小程序码图片 base64
+             */
+            image_base64: string;
+        };
+        /**
+         * RecruitQRSceneResponse
+         * @description 解析短码响应.
+         */
+        RecruitQRSceneResponse: {
+            /**
+             * Campaign Id
+             * @description 活动ID
+             */
+            campaign_id: string;
+            /**
+             * Referrer
+             * @description 来源员工ID
+             */
+            referrer?: string | null;
+        };
+        /**
+         * RecruitShareEventCreate
+         * @description 创建分享事件请求.
+         */
+        RecruitShareEventCreate: {
+            /**
+             * Campaign Id
+             * @description 活动ID
+             */
+            campaign_id?: string | null;
+            /**
+             * Share Type
+             * @description 分享方式：card|poster
+             * @enum {string}
+             */
+            share_type: "card" | "poster";
+        };
+        /**
+         * RecruitShareEventResponse
+         * @description 创建分享事件响应.
+         */
+        RecruitShareEventResponse: {
+            /** Id */
+            id: string;
         };
         /**
          * RecruitVisitCreate
@@ -18026,6 +18185,71 @@ export interface operations {
             };
         };
     };
+    create_share_event_api_v1_public_recruit_share_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecruitShareEventCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitShareEventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_qr_code_api_v1_public_recruit_qr__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8位短码 */
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitQRSceneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_campaigns_api_v1_admin_recruit_campaigns_get: {
         parameters: {
             query?: never;
@@ -18256,6 +18480,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecruitFunnelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_campaign_qrcode_api_v1_admin_recruit_campaigns__campaign_id__qrcode_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 活动ID */
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecruitQRCodeGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitQRCodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_phone_api_v1_admin_recruit_leads__lead_id__phone_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitLeadPhoneResponse"];
                 };
             };
             /** @description Validation Error */

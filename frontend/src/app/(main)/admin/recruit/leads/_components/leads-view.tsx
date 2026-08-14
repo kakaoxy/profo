@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useQueryStates, parseAsString, parseAsInteger } from "nuqs";
 import { useDebouncedCallback } from "use-debounce";
-import { Search } from "lucide-react";
+import { Search, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -13,6 +13,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { safeFormatDate } from "@/lib/formatters";
 import type {
   RecruitCampaign,
   RecruitLead,
@@ -25,7 +34,7 @@ import {
 import { LeadsTable } from "./leads-table";
 import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
 import { DesignPagination } from "../../_components/design-pagination";
-import { updateLeadStatusAction } from "../../_lib/recruit-actions";
+import { updateLeadStatusAction, getLeadPhoneAction } from "../../_lib/recruit-actions";
 import type { RecruitLeadsKpi } from "../../_lib/recruit-data";
 
 export interface LeadsViewProps {
@@ -59,15 +68,6 @@ function toQueryValue(value: string): string {
 function toSelectValue(value: string): string {
   return value === "" ? ALL : value;
 }
-
-/** 线索状态流转顺序（对齐设计稿 spec-note ④：新线索→已联系→意向高→已转化/已淘汰） */
-const STATUS_FLOW: RecruitLeadStatus[] = [
-  "new",
-  "contacted",
-  "high_intent",
-  "converted",
-  "eliminated",
-];
 
 /** 线索状态筛选选项（含"全部"） */
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -166,17 +166,16 @@ export function LeadsView({
     [kpi],
   );
 
-  // 状态流转：沿 STATUS_FLOW 前进一级（Server Action → revalidatePath 刷新）
+  // 状态流转：DropdownMenu 选择目标状态（5 态任选，当前态禁选）
   const [flowingId, setFlowingId] = React.useState<string | null>(null);
-  const handleFlow = async (leadId: string) => {
+  const handleFlow = async (leadId: string, targetStatus: RecruitLeadStatus) => {
     const lead = leads.find((l) => l.id === leadId);
-    if (!lead) return;
-    const next = STATUS_FLOW[(STATUS_FLOW.indexOf(lead.status) + 1) % STATUS_FLOW.length];
+    if (!lead || lead.status === targetStatus) return;
     setFlowingId(leadId);
     try {
-      const result = await updateLeadStatusAction(leadId, next);
+      const result = await updateLeadStatusAction(leadId, targetStatus);
       if (result.success) {
-        toast.success(`状态已流转为「${RECRUIT_LEAD_STATUS_LABELS[next]}」`);
+        toast.success(`状态已流转为「${RECRUIT_LEAD_STATUS_LABELS[targetStatus]}」`);
       } else {
         toast.error(result.error);
       }
@@ -211,9 +210,41 @@ export function LeadsView({
     toast("导出 CSV 二期接入");
   };
 
-  // 详情（占位：二期跳转线索详情页）
-  const handleDetail = () => {
-    toast("线索详情（含跟进记录）二期接入");
+  // 详情抽屉
+  const [detailLeadId, setDetailLeadId] = React.useState<string | null>(null);
+  const [fullPhone, setFullPhone] = React.useState<string | null>(null);
+  const [phoneLoading, setPhoneLoading] = React.useState(false);
+  const handleDetail = (leadId: string) => {
+    setDetailLeadId(leadId);
+    setFullPhone(null);
+  };
+
+  const detailLead = detailLeadId ? leads.find((l) => l.id === detailLeadId) : null;
+
+  const handleViewFullPhone = async () => {
+    if (!detailLeadId) return;
+    setPhoneLoading(true);
+    try {
+      const result = await getLeadPhoneAction(detailLeadId);
+      if (result.success) {
+        setFullPhone(result.data);
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleCopyPhone = () => {
+    if (!fullPhone) return;
+    navigator.clipboard.writeText(fullPhone).then(() => {
+      toast.success("手机号已复制");
+    }).catch(() => {
+      toast.error("复制失败，请手动复制");
+    });
   };
 
   return (
@@ -367,6 +398,99 @@ export function LeadsView({
           onPageChange={(p) => setQuery({ page: p })}
         />
       </div>
+
+      {/* 线索详情抽屉 */}
+      <Sheet open={!!detailLeadId} onOpenChange={(open) => { if (!open) setDetailLeadId(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-md p-6 overflow-y-auto">
+          <SheetTitle className="text-base font-medium text-ink mb-5">
+            线索详情
+          </SheetTitle>
+          <SheetDescription className="sr-only">线索详细信息</SheetDescription>
+
+          {detailLead && (
+            <div className="space-y-5">
+              {/* 手机号 */}
+              <div className="space-y-1.5">
+                <div className="text-[13px] font-medium text-graphite">手机号</div>
+                <div className="text-[14px] font-medium text-ink tabular-nums">
+                  {fullPhone ? (
+                    <span className="flex items-center gap-2">
+                      <span>{fullPhone}</span>
+                      <button
+                        type="button"
+                        onClick={handleCopyPhone}
+                        className="inline-flex items-center gap-1 text-[13px] text-ink hover:opacity-60 transition-opacity"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        复制
+                      </button>
+                    </span>
+                  ) : (
+                    <span>{detailLead.phone_masked ?? "—"}</span>
+                  )}
+                </div>
+                {!fullPhone && (
+                  <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
+                    <button
+                      type="button"
+                      onClick={handleViewFullPhone}
+                      disabled={phoneLoading}
+                      className="inline-flex items-center gap-1 text-[13px] font-medium text-ink hover:opacity-60 transition-opacity disabled:opacity-50"
+                    >
+                      {phoneLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                      查看完整号码
+                    </button>
+                  </HasPermission>
+                )}
+              </div>
+
+              {/* 主营商圈 */}
+              <div className="space-y-1.5">
+                <div className="text-[13px] font-medium text-graphite">主营商圈</div>
+                <div className="text-[14px] text-ink">{detailLead.main_business_area}</div>
+              </div>
+
+              {/* 归属员工 */}
+              <div className="space-y-1.5">
+                <div className="text-[13px] font-medium text-graphite">归属员工</div>
+                <div className="text-[14px] text-ink">{detailLead.referrer_name ?? "—"}</div>
+              </div>
+
+              {/* 来源 */}
+              <div className="space-y-1.5">
+                <div className="text-[13px] font-medium text-graphite">来源</div>
+                <div className="text-[14px] text-ink">
+                  {RECRUIT_SOURCE_LABELS[detailLead.source]}
+                </div>
+              </div>
+
+              {/* 状态 */}
+              <div className="space-y-1.5">
+                <div className="text-[13px] font-medium text-graphite">状态</div>
+                <div className="text-[14px] text-ink">
+                  {RECRUIT_LEAD_STATUS_LABELS[detailLead.status]}
+                </div>
+              </div>
+
+              {/* 留资时间 */}
+              <div className="space-y-1.5">
+                <div className="text-[13px] font-medium text-graphite">留资时间</div>
+                <div className="text-[14px] text-ink tabular-nums">
+                  {safeFormatDate(detailLead.created_at, "yyyy-MM-dd HH:mm")}
+                </div>
+              </div>
+
+              {/* 内部员工标记 */}
+              {detailLead.is_internal && (
+                <div className="space-y-1.5">
+                  <div className="text-[13px] font-medium text-graphite">标记</div>
+                  <div className="text-[14px] text-ink">内部员工</div>
+                </div>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

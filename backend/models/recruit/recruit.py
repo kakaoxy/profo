@@ -214,3 +214,24 @@ class RecruitShareEvent(Base):
         Index("idx_recruit_share_campaign_time", "campaign_id", "shared_at"),
         Index("idx_recruit_share_employee", "employee_id"),
     )
+
+
+class RecruitQRScene(Base):
+    """小程序码短码映射表."""
+
+    __tablename__ = "recruit_qr_scenes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id, comment="UUID")
+    code: Mapped[str] = mapped_column(String(8), nullable=False, comment="8位短码")
+    campaign_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="活动ID(逻辑外键)")
+    employee_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="归属员工ID(逻辑外键)")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, nullable=False, comment="创建时间"
+    )
+
+    __table_args__ = (
+        Index("idx_recruit_qr_code", "code", unique=True),
+        # 唯一复合索引：支撑「同活动×同员工」短码复用查询，并在 DB 层防并发生成重复映射行
+        # （employee_id 可空，PostgreSQL 唯一索引视 NULL 互异，不绑定员工的组合不受限）
+        Index("idx_recruit_qr_campaign_employee", "campaign_id", "employee_id", unique=True),
+    )

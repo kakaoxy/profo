@@ -1,5 +1,5 @@
 import { format, subDays } from "date-fns";
-import { getRecruitCampaigns, getRecruitFunnel } from "../_lib/recruit-data";
+import { getRecruitCampaigns, getRecruitEmployees, getRecruitFunnel } from "../_lib/recruit-data";
 import { CampaignsView, type CampaignStats } from "./_components/campaigns-view";
 
 /** 将 Date 格式化为 YYYY-MM-DD */
@@ -25,7 +25,7 @@ function trendText(cur: number, prev: number): { text: string; tone: "up" | "dow
 export default async function RecruitCampaignsPage() {
   const today = new Date();
   // 消除请求瀑布：活动列表 + 当前/上一周期漏斗统计并行获取
-  const [campaigns, cur, prev] = await Promise.all([
+  const [campaigns, cur, prev, employees] = await Promise.all([
     getRecruitCampaigns(),
     getRecruitFunnel({
       start_date: toDateStr(subDays(today, 29)),
@@ -35,6 +35,7 @@ export default async function RecruitCampaignsPage() {
       start_date: toDateStr(subDays(today, 59)),
       end_date: toDateStr(subDays(today, 30)),
     }),
+    getRecruitEmployees(),
   ]);
 
   const curShared = cur?.share_count ?? 0;
@@ -59,7 +60,7 @@ export default async function RecruitCampaignsPage() {
   return (
     <div className="min-h-screen bg-fog">
       <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <CampaignsView campaigns={campaigns} stats={stats} />
+        <CampaignsView campaigns={campaigns} stats={stats} employees={employees} />
       </div>
     </div>
   );

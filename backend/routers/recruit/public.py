@@ -14,11 +14,14 @@ from schemas.recruit import (
     RecruitCampaignDetailResponse,
     RecruitLeadCreate,
     RecruitLeadSubmitResponse,
+    RecruitQRSceneResponse,
+    RecruitShareEventCreate,
+    RecruitShareEventResponse,
     RecruitVisitCreate,
     RecruitVisitResponse,
     RecruitVisitUpdate,
 )
-from services.recruit import RecruitAttributionService, RecruitCampaignService
+from services.recruit import RecruitAttributionService, RecruitCampaignService, RecruitQRCodeService
 from services.system.exceptions import ValidationError
 from services.system.wechat import WeChatAuthService
 from utils.common import RateLimits, limiter
@@ -127,3 +130,38 @@ async def submit_lead(
         user_id=current_user.id,
     )
     return RecruitLeadSubmitResponse(lead_id=lead.id, is_new=is_new)
+
+
+@router.post(
+    "/share-events",
+    summary="上报分享事件",
+    description="分享事件写入（漏斗第 1 级数据源），需 aud=c 登录态 + 限流",
+)
+@limiter.limit(RateLimits.RECRUIT_SHARE)
+def create_share_event(
+    request: Request,
+    body: RecruitShareEventCreate,
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> RecruitShareEventResponse:
+    """创建分享事件."""
+    service = RecruitAttributionService(db)
+    event = service.create_share_event(current_user, body)
+    return RecruitShareEventResponse(id=event.id)
+
+
+@router.get(
+    "/qr/{code}",
+    summary="解析小程序码短码",
+    description="游客可访问，限流；返回活动ID与来源员工ID",
+)
+@limiter.limit(RateLimits.RECRUIT_QR_SCENE)
+def resolve_qr_code(
+    request: Request,
+    code: Annotated[str, Path(min_length=1, max_length=8, description="8位短码")],
+    db: DbSessionDep,
+) -> RecruitQRSceneResponse:
+    """解析短码."""
+    service = RecruitQRCodeService(db)
+    result = service.resolve(code)
+    return RecruitQRSceneResponse(**result)

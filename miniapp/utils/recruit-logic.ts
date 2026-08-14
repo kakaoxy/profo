@@ -186,6 +186,19 @@ export function parseRecruitQuery(
 }
 
 /**
+ * 构造分享事件上报体.
+ */
+export function buildShareEventPayload(
+  campaignId: string,
+  shareType: "card" | "poster",
+): Record<string, unknown> {
+  return {
+    campaign_id: campaignId || undefined,
+    share_type: shareType,
+  };
+}
+
+/**
  * 深度浏览判定（唯一标准：停留 >= 3000ms）.
  */
 export function isDeepView(stayedMs: number): boolean {

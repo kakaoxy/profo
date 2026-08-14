@@ -66,7 +66,7 @@ export const getRecruitCampaigns = cache(async (): Promise<RecruitCampaign[]> =>
   const { data, error } = await client.GET("/api/v1/admin/recruit/campaigns", {});
   if (error || !data) {
     logger.error("[Recruit] 获取活动列表失败:", error);
-    return [];
+    throw new Error("获取活动列表失败");
   }
   return data;
 });
@@ -95,7 +95,7 @@ export const getRecruitLeads = cache(
     });
     if (error || !data) {
       logger.error("[Recruit] 获取线索列表失败:", error);
-      return { items: [], total: 0, page: query.page ?? 1, page_size: query.page_size ?? 10 };
+      throw new Error("获取线索列表失败");
     }
     return data;
   },
@@ -119,7 +119,7 @@ export const getRecruitFunnel = cache(
     });
     if (error || !data) {
       logger.error("[Recruit] 获取漏斗统计失败:", error);
-      return null;
+      throw new Error("获取漏斗统计失败");
     }
     return data;
   },
@@ -135,7 +135,7 @@ export const getRecruitEmployees = cache(async (): Promise<RecruitEmployee[]> =>
   });
   if (error || !data) {
     logger.error("[Recruit] 获取员工列表失败:", error);
-    return [];
+    throw new Error("获取员工列表失败");
   }
   return data.items.map(mapEmployee);
 });
