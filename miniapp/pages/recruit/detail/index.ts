@@ -183,10 +183,11 @@ Page<PageData, PageCustom>({
   /** 创建访问记录（埋点第 2 级 PV/UV 数据源）. */
   createVisit() {
     const { campaignId, referrer, source } = this.data;
+    // 注意不可 skipAuth：该接口要求 customer 登录态（aud=c），跳过鉴权会 401 且被静默吞掉，
+    // 导致 visitId 永远为空、漏斗 PV/UV/深度浏览/点击授权全链路埋点失效
     request<RecruitVisitResponse>({
       url: "/public/recruit/visits",
       method: "POST",
-      skipAuth: true,
       data: { campaign_id: campaignId, referrer: referrer || undefined, source },
     })
       .then((res) => {
@@ -211,10 +212,10 @@ Page<PageData, PageCustom>({
       is_deep_view: isDeepView(stayedMs),
       clicked_auth: clickedAuth,
     };
+    // 同 createVisit：接口要求 customer 登录态，不可 skipAuth（否则上报恒 401 被静默吞掉）
     request<RecruitVisitResponse>({
       url: `/public/recruit/visits/${visitId}`,
       method: "PUT",
-      skipAuth: true,
       data: body,
     }).catch(() => {
       // 上报失败静默
