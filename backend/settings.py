@@ -179,6 +179,10 @@ class Settings(BaseSettings):
     wechat_phone_url: str = "https://api.weixin.qq.com/wxa/business/getuserphonenumber"
     # 小程序码生成接口（getwxacodeunlimit）
     wechat_miniapp_qrcode_url: str = "https://api.weixin.qq.com/wxa/getwxacodeunlimit"
+    # 小程序订阅消息推送接口（message/subscribe/send）
+    wechat_subscribe_send_url: str = "https://api.weixin.qq.com/cgi-bin/message/subscribe/send"
+    # 招募新线索订阅消息模板 ID（env 可配，空 = 功能关闭）
+    wechat_recruit_lead_template_id: str = ""
 
     @model_validator(mode="after")
     def validate_oss_config(self) -> "Settings":

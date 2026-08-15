@@ -113,7 +113,11 @@ from migrations._permission_system import (
     migrate_permission_system,
     migrate_project_business_permission,
 )
-from migrations._recruit import create_recruit_tables
+from migrations._recruit import (
+    add_poster_bg_url_to_campaigns,
+    create_recruit_tables,
+    ensure_visit_referrer_index,
+)
 from migrations._schema_columns import (
     add_contact_person_id_column,
     add_renovation_extra_amount_columns,
@@ -246,6 +250,9 @@ def _run_all_migrations(engine: Engine) -> None:
         backfill_lead_unit_price(engine)
         create_community_images_table(engine)
         create_recruit_tables(engine)
+        # 招募计划二期：补建 recruit_campaigns.poster_bg_url 列与 recruit_visits.referrer 索引
+        add_poster_bg_url_to_campaigns(engine)
+        ensure_visit_referrer_index(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

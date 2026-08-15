@@ -24,7 +24,6 @@ export interface RecruitLeadsQuery {
   campaign_id?: string;
   status?: RecruitLead["status"];
   source?: RecruitLead["source"];
-  employee_id?: string;
   business_area?: string;
   start_date?: string;
   end_date?: string;
@@ -79,7 +78,6 @@ export const getRecruitLeads = cache(
           campaign_id: query.campaign_id || undefined,
           status: query.status,
           source: query.source,
-          employee_id: query.employee_id || undefined,
           business_area: query.business_area || undefined,
           start_date: query.start_date || undefined,
           end_date: query.end_date || undefined,

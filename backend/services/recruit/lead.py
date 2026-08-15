@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 
 from models import User
-from models.recruit import RecruitLead, RecruitLeadSource, RecruitLeadStatus
+from models.recruit import RecruitLead, RecruitLeadSource, RecruitLeadStatus, RecruitShareEvent, RecruitVisit
 from schemas.recruit import RecruitLeadStatusUpdate
 from services.system.exceptions import ResourceNotFoundError
 
@@ -94,6 +94,44 @@ class RecruitLeadService:
             raise ResourceNotFoundError(msg)
         return lead.phone
 
+    def get_my_lead_phone(self, user: User, lead_id: str) -> tuple[str, RecruitLeadStatus]:
+        """C 端员工查看归属线索的完整手机号（解密）.
+
+        归属强制服务端过滤（``referrer_employee_id == user.id``），不存在或不
+        归属统一抛 404，避免泄露线索存在性（IDOR 防护）。查看即视为已联系：
+        ``new`` 线索自动流转为 ``contacted``（其他状态不动），返回流转后状态
+        供前端就地更新卡片。访问由路由层记录日志。
+
+        Args:
+            user: 当前登录用户（C 端登录态）
+            lead_id: 线索ID
+
+        Returns:
+            (完整手机号, 查看后的跟进状态)
+
+        Raises:
+            ResourceNotFoundError: 线索不存在或不归属当前用户
+
+        """
+        lead = (
+            self.db.query(RecruitLead)
+            .filter(RecruitLead.id == lead_id, RecruitLead.referrer_employee_id == user.id)
+            .first()
+        )
+        if lead is None:
+            msg = "招募线索不存在"
+            raise ResourceNotFoundError(msg)
+
+        if lead.status == RecruitLeadStatus.NEW:
+            lead.status = RecruitLeadStatus.CONTACTED
+            try:
+                self.db.commit()
+                self.db.refresh(lead)
+            except Exception:
+                self.db.rollback()
+                raise
+        return lead.phone, lead.status
+
     def update_status(self, lead_id: str, data: RecruitLeadStatusUpdate) -> tuple[RecruitLead, str | None]:
         """跟进状态流转（可选人工标记内部员工）.
 
@@ -125,3 +163,50 @@ class RecruitLeadService:
             if row is not None:
                 nickname = row[0]
         return lead, nickname
+
+    def list_my_leads(
+        self,
+        user: User,
+        *,
+        page: int,
+        page_size: int,
+        status: RecruitLeadStatus | None = None,
+    ) -> dict[str, Any]:
+        """C 端「我的线索」分页查询（归属强制服务端过滤，created_at 倒序）.
+
+        仅返回 ``referrer_employee_id == user.id`` 的线索，员工维度由
+        服务端从登录态取值，不接受任何前端传入的员工 ID（防越权）。
+        返回结构对齐后台 ``list``：``{items, total, page, page_size}``，
+        手机号脱敏由路由层用 ``mask_phone`` 构造响应（与后台列表口径一致）。
+        """
+        q = self.db.query(RecruitLead).filter(RecruitLead.referrer_employee_id == user.id)
+        if status is not None:
+            q = q.filter(RecruitLead.status == status)
+
+        total = q.count()
+        leads = q.order_by(RecruitLead.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        return {"items": leads, "total": total, "page": page, "page_size": page_size}
+
+    def get_my_share_stats(self, user: User) -> dict[str, int]:
+        """C 端「我的分享统计」：分享次数 / 经我分享 PV / UV / 归属我的线索数.
+
+        口径与漏斗服务一致：share_count 按 ``RecruitShareEvent.employee_id``、
+        pv/uv 按 ``RecruitVisit.referrer_employee_id``（uv 为 distinct openid_hash）、
+        lead_count 按 ``RecruitLead.referrer_employee_id``。
+        """
+        share_count = (
+            self.db.query(func.count(RecruitShareEvent.id)).filter(RecruitShareEvent.employee_id == user.id).scalar()
+            or 0
+        )
+        visit_q = self.db.query(RecruitVisit).filter(RecruitVisit.referrer_employee_id == user.id)
+        pv = visit_q.count()
+        uv = (
+            self.db.query(func.count(func.distinct(RecruitVisit.openid_hash)))
+            .filter(RecruitVisit.referrer_employee_id == user.id)
+            .scalar()
+            or 0
+        )
+        lead_count = (
+            self.db.query(func.count(RecruitLead.id)).filter(RecruitLead.referrer_employee_id == user.id).scalar() or 0
+        )
+        return {"share_count": int(share_count), "pv": int(pv), "uv": int(uv), "lead_count": int(lead_count)}

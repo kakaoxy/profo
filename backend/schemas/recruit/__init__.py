@@ -64,6 +64,8 @@ class RecruitCampaignDetailResponse(BaseModel):
     title: str
     image_url: str | None
     content: dict | None
+    poster_bg_url: str | None = Field(default=None, max_length=500, description="海报背景图 URL")
+    subscribe_template_id: str | None = Field(default=None, description="新线索订阅消息模板ID（未配置为 None）")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -159,6 +161,45 @@ class RecruitLeadStatusUpdate(BaseModel):
 
 
 # ----------------------
+# My Lead / My Share Stats（C 端「我的线索」与分享统计）
+# ----------------------
+class RecruitMyLeadItem(BaseModel):
+    """C 端我的线索列表项（手机号脱敏，手动构造）."""
+
+    id: str
+    phone_masked: str | None
+    main_business_area: str
+    status: RecruitLeadStatus
+    source: RecruitLeadSource
+    created_at: datetime
+
+
+class RecruitMyLeadListResponse(BaseModel):
+    """C 端我的线索分页响应."""
+
+    items: list[RecruitMyLeadItem]
+    total: int
+    page: int
+    page_size: int
+
+
+class RecruitMyLeadPhoneResponse(BaseModel):
+    """C 端我的线索完整手机号响应（查看即视为已联系）."""
+
+    phone: str = Field(description="完整手机号")
+    status: RecruitLeadStatus = Field(description="查看后的跟进状态（new 线索自动流转为 contacted）")
+
+
+class RecruitMyShareStatsResponse(BaseModel):
+    """C 端我的分享统计响应."""
+
+    share_count: int = Field(description="分享次数")
+    pv: int = Field(description="经我分享的打开次数 PV")
+    uv: int = Field(description="经我分享的打开人数 UV（openid 去重）")
+    lead_count: int = Field(description="归属我的线索数")
+
+
+# ----------------------
 # Share Event（分享事件，漏斗第 1 级）
 # ----------------------
 class RecruitShareEventCreate(BaseModel):
@@ -231,6 +272,10 @@ __all__ = [
     "RecruitLeadPhoneResponse",
     "RecruitLeadStatusUpdate",
     "RecruitLeadSubmitResponse",
+    "RecruitMyLeadItem",
+    "RecruitMyLeadListResponse",
+    "RecruitMyLeadPhoneResponse",
+    "RecruitMyShareStatsResponse",
     "RecruitQRCodeGenerateRequest",
     "RecruitQRCodeResponse",
     "RecruitQRSceneResponse",

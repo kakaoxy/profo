@@ -257,3 +257,129 @@ export function buildSharePath(
 ): string {
   return `/pages/recruit/detail/index?${buildShareQuery(campaignId, referrer, source)}`;
 }
+
+// ===== 「我的线索」展示纯逻辑（招募计划二期） =====
+
+/** 线索跟进状态枚举（与后端 RecruitLeadStatus 对齐）. */
+export type RecruitLeadStatus = components["schemas"]["RecruitLeadStatus"];
+
+/** C 端我的线索列表项（openapi 生成类型）. */
+export type RecruitMyLeadItem = components["schemas"]["RecruitMyLeadItem"];
+
+/** 筛选 chip（全部/新线索/已联系/意向高/已转化/已淘汰）. */
+export interface RecruitLeadChip {
+  label: string;
+  /** 请求 status 参数值；空串表示全部. */
+  value: string;
+}
+
+/** 筛选 chips（顺序与文案对照设计稿 mine-page.html）. */
+export const RECRUIT_LEAD_STATUS_CHIPS: RecruitLeadChip[] = [
+  { label: "全部", value: "" },
+  { label: "新线索", value: "new" },
+  { label: "已联系", value: "contacted" },
+  { label: "意向高", value: "high_intent" },
+  { label: "已转化", value: "converted" },
+  { label: "已淘汰", value: "eliminated" },
+];
+
+/** 状态标签文案与样式类（t-new/t-contact/t-high/t-won/t-out）. */
+const LEAD_STATUS_META: Record<RecruitLeadStatus, { text: string; cls: string }> = {
+  new: { text: "新线索", cls: "t-new" },
+  contacted: { text: "已联系", cls: "t-contact" },
+  high_intent: { text: "意向高", cls: "t-high" },
+  converted: { text: "已转化", cls: "t-won" },
+  eliminated: { text: "已淘汰", cls: "t-out" },
+};
+
+/** 来源标签文案与样式类（卡片 s-card / 海报 s-poster）. */
+const LEAD_SOURCE_META: Record<RecruitSource, { text: string; cls: string }> = {
+  card: { text: "卡片", cls: "s-card" },
+  poster: { text: "海报", cls: "s-poster" },
+};
+
+/** 「我的线索」列表项展示结构（wxml 渲染用）. */
+export interface RecruitMyLeadDisplayItem {
+  id: string;
+  /** 脱敏手机号（138****5678）；后端未返回时显示「未提供」. */
+  phone: string;
+  /** 完整手机号（查看后由「联系客户」接口返回填充；空串=未查看）. */
+  phoneFull: string;
+  /** 主营商圈. */
+  area: string;
+  /** 跟进状态原始值（查看号码后端流转 new→contacted 时就地更新用）. */
+  statusValue: RecruitLeadStatus;
+  statusText: string;
+  statusClass: string;
+  sourceText: string;
+  sourceClass: string;
+  /** 留资时间（相对格式：今天 14:32 / 昨天 19:47 / 08-12 16:40）. */
+  timeText: string;
+}
+
+/**
+ * 留资时间相对格式化.
+ * - 当天 → 今天 HH:mm；昨天 → 昨天 HH:mm
+ * - 同年 → MM-DD HH:mm；跨年 → YYYY-MM-DD
+ */
+export function formatLeadTime(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return "";
+  }
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const dayDiff = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+  if (dayDiff === 0) {
+    return `今天 ${hm}`;
+  }
+  if (dayDiff === 1) {
+    return `昨天 ${hm}`;
+  }
+  if (d.getFullYear() === now.getFullYear()) {
+    return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}`;
+  }
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** C 端线索列表项 → 展示结构（脱敏手机号/状态标签/来源标签/相对时间）. */
+export function toMyLeadDisplayItem(
+  item: RecruitMyLeadItem,
+  now: Date = new Date(),
+): RecruitMyLeadDisplayItem {
+  const status = LEAD_STATUS_META[item.status] || { text: item.status, cls: "t-out" };
+  const source = LEAD_SOURCE_META[item.source] || { text: item.source, cls: "s-card" };
+  return {
+    id: item.id,
+    phone: item.phone_masked || "未提供",
+    phoneFull: "",
+    area: item.main_business_area,
+    statusValue: item.status,
+    statusText: status.text,
+    statusClass: status.cls,
+    sourceText: source.text,
+    sourceClass: source.cls,
+    timeText: formatLeadTime(item.created_at, now),
+  };
+}
+
+/**
+ * 查看完整号码后就地更新线索展示项.
+ * 填充完整手机号并按接口返回的最新状态刷新状态标签
+ * （后端语义：new 线索查看号码即流转 contacted）。
+ */
+export function applyLeadPhone(
+  item: RecruitMyLeadDisplayItem,
+  phone: string,
+  status: RecruitLeadStatus,
+): RecruitMyLeadDisplayItem {
+  const meta = LEAD_STATUS_META[status] || { text: status, cls: "t-out" };
+  return {
+    ...item,
+    phoneFull: phone,
+    statusValue: status,
+    statusText: meta.text,
+    statusClass: meta.cls,
+  };
+}

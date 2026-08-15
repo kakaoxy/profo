@@ -22,6 +22,7 @@ export interface CampaignFormData {
   name: string;
   title: string;
   image_url: string | null;
+  poster_bg_url: string | null;
   status: RecruitCampaignStatus;
 }
 
@@ -30,6 +31,7 @@ const campaignFormSchema = z.object({
   name: z.string().min(1, "请填写活动名称").max(100),
   title: z.string().min(1, "请填写分享标题").max(200),
   image_url: z.string().min(1, "请上传分享配图"),
+  poster_bg_url: z.string().max(500).nullable(),
   status: z.enum(["enabled", "disabled"]),
 });
 
@@ -63,9 +65,12 @@ export function CampaignFormDialog({
   const [name, setName] = React.useState("");
   const [title, setTitle] = React.useState("");
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+  const [posterBgUrl, setPosterBgUrl] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<RecruitCampaignStatus>("enabled");
   const [checkingImage, setCheckingImage] = React.useState(false);
+  const [checkingPoster, setCheckingPoster] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const posterFileInputRef = React.useRef<HTMLInputElement>(null);
 
   // 打开弹窗 / 切换编辑对象时重置表单
   React.useEffect(() => {
@@ -73,8 +78,10 @@ export function CampaignFormDialog({
       setName(campaign?.name ?? "");
       setTitle(campaign?.title ?? "");
       setImageUrl(campaign?.image_url || null);
+      setPosterBgUrl(campaign?.poster_bg_url || null);
       setStatus(campaign?.status ?? "enabled");
       setCheckingImage(false);
+      setCheckingPoster(false);
     }
   }, [open, campaign]);
 
@@ -126,11 +133,43 @@ export function CampaignFormDialog({
     img.src = objectUrl;
   };
 
+  /**
+   * 选择海报背景图：仅校验常规图片类型（无 5:4 比例约束），
+   * 上传后返回 CDN URL 存入表单 poster_bg_url。
+   */
+  const handlePosterSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // 清空 input，允许重复选择同一文件
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("仅支持图片文件（PNG/JPG 等）");
+      return;
+    }
+
+    setCheckingPoster(true);
+    try {
+      const result = await uploadCampaignImageAction(file);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      setPosterBgUrl(result.data.url);
+      toast.success("海报背景图已上传");
+    } catch {
+      toast.error("图片上传失败，请重新选择");
+    } finally {
+      setCheckingPoster(false);
+    }
+  };
+
   const handleSubmit = () => {
     const result = campaignFormSchema.safeParse({
       name: name.trim(),
       title: title.trim(),
       image_url: imageUrl,
+      poster_bg_url: posterBgUrl,
       status,
     });
     if (!result.success) {
@@ -142,6 +181,7 @@ export function CampaignFormDialog({
       name: name.trim(),
       title: title.trim(),
       image_url: imageUrl,
+      poster_bg_url: posterBgUrl,
       status,
     });
   };
@@ -151,8 +191,14 @@ export function CampaignFormDialog({
     setImageUrl(null);
   };
 
+  // 移除海报背景图
+  const handleRemovePoster = () => {
+    setPosterBgUrl(null);
+  };
+
   const hasImage = imageUrl !== null && imageUrl.trim() !== "";
-  const busy = checkingImage || submitting;
+  const hasPoster = posterBgUrl !== null && posterBgUrl.trim() !== "";
+  const busy = checkingImage || checkingPoster || submitting;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -267,6 +313,69 @@ export function CampaignFormDialog({
               accept="image/*"
               className="hidden"
               onChange={handleImageSelect}
+              disabled={busy}
+            />
+          </div>
+
+          {/* 海报背景图（无 5:4 比例约束，仅常规图片类型） */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[14px] font-medium text-ink">海报背景图</label>
+            <div className="flex items-center gap-3.5">
+              <div className="relative w-30 h-24 rounded-images bg-fog border border-fog overflow-hidden shrink-0 flex items-center justify-center text-slate text-xs text-center leading-relaxed">
+                {hasPoster ? (
+                  <Image
+                    src={posterBgUrl as string}
+                    alt="海报背景图预览"
+                    fill
+                    className="object-cover"
+                    sizes="120px"
+                    unoptimized
+                  />
+                ) : (
+                  <span>
+                    海报
+                    <br />
+                    背景
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => posterFileInputRef.current?.click()}
+                  disabled={busy}
+                  className="inline-flex items-center justify-center gap-1.5 h-7.5 px-4 rounded-full bg-ink text-white text-[14px] font-medium hover:bg-black transition-colors disabled:opacity-50 shrink-0 self-start"
+                >
+                  {checkingPoster ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-4 w-4" />
+                  )}
+                  上传图片
+                </button>
+                {hasPoster && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePoster}
+                    disabled={busy}
+                    className="inline-flex items-center gap-1 text-[13px] font-medium text-slate hover:text-rust transition-colors disabled:opacity-50 self-start"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    移除图片
+                  </button>
+                )}
+                <span className="text-[12.5px] text-slate">
+                  员工分享海报的背景图，不限定比例，PNG/JPG
+                </span>
+              </div>
+            </div>
+
+            <input
+              ref={posterFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePosterSelect}
               disabled={busy}
             />
           </div>

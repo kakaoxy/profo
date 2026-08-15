@@ -76,7 +76,7 @@ const SOURCE_OPTIONS: Array<{ value: string; label: string }> = [
 ];
 
 /**
- * 线索列表视图：筛选/分页由 URL 驱动（nuqs 管理，无 shallow），
+ * 线索列表视图：筛选/分页由 URL 驱动（nuqs 管理，shallow: false），
  * URL 变化触发 Server Component 重新取数。状态流转通过 Server Action 调后端。
  * 布局对齐设计稿（Steep）：页头 + KPI 概览 + 筛选工具栏 + 线索明细卡。
  */
@@ -90,17 +90,20 @@ export function LeadsView({
   effectiveStart,
   effectiveEnd,
 }: LeadsViewProps) {
-  // 筛选与分页 URL 状态（nuqs 管理，刷新后保持；无 shallow → 触发服务端取数）
-  const [query, setQuery] = useQueryStates({
-    search: parseAsString.withDefault(""),
-    campaign: parseAsString.withDefault(""),
-    status: parseAsString.withDefault(""),
-    source: parseAsString.withDefault(""),
-    start_date: parseAsString.withDefault(""),
-    end_date: parseAsString.withDefault(""),
-    page: parseAsInteger.withDefault(1),
-    page_size: parseAsInteger.withDefault(pageSize),
-  });
+  // 筛选与分页 URL 状态（nuqs 管理，刷新后保持；shallow: false → URL 变化触发路由导航与服务端取数）
+  const [query, setQuery] = useQueryStates(
+    {
+      search: parseAsString.withDefault(""),
+      campaign: parseAsString.withDefault(""),
+      status: parseAsString.withDefault(""),
+      source: parseAsString.withDefault(""),
+      start_date: parseAsString.withDefault(""),
+      end_date: parseAsString.withDefault(""),
+      page: parseAsInteger.withDefault(1),
+      page_size: parseAsInteger.withDefault(pageSize),
+    },
+    { shallow: false },
+  );
 
   // 搜索输入本地状态（防抖 300ms 后写入 URL，避免每次击键触发服务端请求）
   const [searchInput, setSearchInput] = React.useState(query.search);

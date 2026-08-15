@@ -209,14 +209,60 @@
         </view>
       </view>
 
-      <!-- 员工分享提示 -->
+      <!-- 员工分享提示（一期文案不动）+ 员工专属区块（招募计划二期） -->
       <view wx:if="{{isEmployee}}" class="share-tip">
         <view class="share-tip-title">分享给您的客户</view>
         <view class="share-tip-sub">点击右上角「···」选择「转发给朋友」或「分享到朋友圈」</view>
+
+        <view class="staff-divider"></view>
+
+        <!-- 我的线索入口（未读角标 badgeCount） -->
+        <view class="clue-entry" bindtap="onMineTap">
+          <view class="clue-ic">
+            <view class="clue-ic-line"></view>
+            <view class="clue-ic-line clue-ic-line--short"></view>
+            <view class="clue-ic-line"></view>
+          </view>
+          <view class="clue-tt">
+            <view class="clue-tt-row">
+              <text class="clue-tt-title">我的线索</text>
+              <text wx:if="{{badgeCount > 0}}" class="clue-badge">{{badgeCount}}</text>
+            </view>
+            <view class="clue-tt-sub">{{badgeCount > 0 ? badgeCount + ' 条新线索待跟进' : '查看分享带来的客户线索'}}</view>
+          </view>
+          <view class="clue-chev"></view>
+        </view>
+
+        <view class="staff-divider"></view>
+
+        <!-- 分享给客户（订阅授权在 onShareTap 手势内同步发起）/ 生成海报 -->
+        <view class="staff-btn-row">
+          <button class="staff-btn staff-btn--pri" open-type="share" bindtap="onShareTap">分享给客户</button>
+          <button class="staff-btn staff-btn--sec" bindtap="onPosterTap" loading="{{posterLoading}}">生成海报</button>
+        </view>
       </view>
 
       <!-- 底部安全区留白 -->
       <view class="safe-bottom"></view>
     </view>
   </block>
+
+  <!-- 海报预览弹层（招募计划二期）：遮罩点击关闭 -->
+  <view wx:if="{{posterVisible}}" class="poster-overlay" bindtap="onPosterClose">
+    <view class="poster-wrap" catchtap="noop">
+      <image
+        class="poster-img"
+        src="{{posterImagePath}}"
+        mode="aspectFit"
+        show-menu-by-longpress="{{true}}"
+      />
+      <view class="poster-btns">
+        <button class="poster-btn poster-btn--save" catchtap="onPosterSave">保存到相册</button>
+        <button class="poster-btn poster-btn--close" catchtap="onPosterClose">关闭</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 海报绘制画布（常驻隐藏，导出 600×960） -->
+  <canvas type="2d" id="posterCanvas" class="poster-canvas"></canvas>
 </view>

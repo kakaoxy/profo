@@ -188,6 +188,8 @@ class RecruitVisit(Base):
     __table_args__ = (
         Index("idx_recruit_visit_campaign_time", "campaign_id", "entered_at"),
         Index("idx_recruit_visit_openid", "openid_hash"),
+        # C 端「我的分享统计」按来源员工过滤 PV/UV，补 referrer_employee_id 索引避免全表扫描
+        Index("idx_recruit_visit_referrer", "referrer_employee_id"),
     )
 
 

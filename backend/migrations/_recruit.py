@@ -17,7 +17,7 @@ import logging
 from sqlalchemy import Index, text
 from sqlalchemy.engine import Engine
 
-from ._helpers import _index_exists
+from ._helpers import _column_exists, _index_exists
 
 logger = logging.getLogger(__name__)
 
@@ -131,4 +131,41 @@ def _ensure_phone_hash_unique(engine: Engine) -> None:
         conn.execute(text("DROP INDEX IF EXISTS idx_recruit_lead_phone_hash"))
         conn.execute(
             text("CREATE UNIQUE INDEX idx_recruit_lead_phone_hash ON recruit_leads (phone_hash)"),
+        )
+
+
+def add_poster_bg_url_to_campaigns(engine: Engine) -> None:
+    """为 ``recruit_campaigns`` 表补建 ``poster_bg_url`` 列（幂等）.
+
+    ``create_recruit_tables`` 用 ``Base.metadata.create_all(checkfirst=True)``
+    仅在表不存在时随建表创建列；已部署环境（表已存在）不会自动加列，
+    需显式 ``ALTER TABLE ... ADD COLUMN``。二期招募计划新增该字段用于
+    员工分享海报背景图，缺失会导致 model 访问报错。
+    """
+    if "recruit_campaigns" not in _get_table_names(engine):
+        return
+    if _column_exists(engine, "recruit_campaigns", "poster_bg_url"):
+        return
+    logger.info("迁移：为 recruit_campaigns 表添加 poster_bg_url 列")
+    with engine.begin() as conn:
+        # 列名/类型硬编码,无注入风险;DDL 不支持绑定参数
+        conn.execute(text("ALTER TABLE recruit_campaigns ADD COLUMN poster_bg_url VARCHAR(500)"))
+
+
+def ensure_visit_referrer_index(engine: Engine) -> None:
+    """幂等补建 ``recruit_visits.referrer_employee_id`` 索引.
+
+    C 端「我的分享统计」按来源员工过滤 PV/UV（``get_my_share_stats``），
+    缺索引会全表扫描。``create_all`` 仅随建表创建索引，已部署环境需显式补建。
+    """
+    if engine.dialect.name != "postgresql":
+        return
+    if "recruit_visits" not in _get_table_names(engine):
+        return
+    if _index_exists(engine, "idx_recruit_visit_referrer"):
+        return
+    logger.info("迁移：补建 recruit_visits.referrer_employee_id 索引")
+    with engine.begin() as conn:
+        conn.execute(
+            text("CREATE INDEX idx_recruit_visit_referrer ON recruit_visits (referrer_employee_id)"),
         )

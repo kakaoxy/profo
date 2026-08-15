@@ -8,9 +8,15 @@
  * - 成功态：双层徽标 + 报名信息回执卡 + 返回首页 / 查看合作流程
  * - 访问埋点：onShow 创建访问记录 → onHide/onUnload 上报停留时长与深度浏览（>=3s）
  * - 员工侧：识别内部员工，分享 path 携带 referrer（自身 user_id）+ 未读新线索角标
+ * - 员工侧（招募计划二期）：「我的线索」入口（未读角标取数改 /public/recruit/my/leads）、
+ *   生成海报（canvas 竖版 5:8，绘制与布局全部在 utils/recruit-poster.ts）、
+ *   「分享给客户/生成海报」tap 手势内同步发起订阅消息授权（utils/recruit-employee.ts）
  *
  * 归因链路：客户经员工分享链接进入（query 带 referrer）→ 报名时透传 referrer →
  * 后端首次留资写入归属员工。本页不参与归因判定，仅透传身份标识。
+ *
+ * 注：本文件超 500 行——一期定型逻辑（留资/埋点/分享）不可移动；二期新增的
+ * 海报绘制、员工取数、订阅授权已全部外置 utils，页面仅保留最小编排。
  */
 import type { components } from "../../../types/api-types";
 import { request, type HttpResponseError } from "../../../utils/request";
@@ -28,12 +34,12 @@ import {
   type RecruitLandingContent,
   type RecruitSource,
 } from "../../../utils/recruit-logic";
+import { createPosterTempFile, savePosterToAlbum } from "../../../utils/recruit-poster-render";
+import { fetchEmployeeIdentity, requestLeadSubscribe } from "../../../utils/recruit-employee";
 
 type RecruitCampaignDetailResponse = components["schemas"]["RecruitCampaignDetailResponse"];
 type RecruitLeadSubmitResponse = components["schemas"]["RecruitLeadSubmitResponse"];
 type RecruitVisitResponse = components["schemas"]["RecruitVisitResponse"];
-type RecruitLeadListResponse = components["schemas"]["RecruitLeadListResponse"];
-type UserResponse = components["schemas"]["UserResponse"];
 
 /** 留资接口 401：令牌过期或受众不匹配（admin 令牌访问 /public/* 接口）. */
 const HTTP_UNAUTHORIZED = 401;
@@ -81,6 +87,13 @@ interface PageData {
   isEmployee: boolean;
   employeeId: string;
   badgeCount: number;
+  // 海报（招募计划二期）
+  /** 海报预览弹层是否展示. */
+  posterVisible: boolean;
+  /** 海报导出的临时文件路径（弹层预览 + 保存相册共用）. */
+  posterImagePath: string;
+  /** 海报生成中（按钮 loading 防重入）. */
+  posterLoading: boolean;
   // 埋点
   visitId: string;
   enterTime: number;
@@ -103,6 +116,13 @@ interface PageCustom {
   reportShareEvent(shareType: "card" | "poster"): void;
   resolveScene(code: string): Promise<void>;
   loadIdentityAndBadge(): void;
+  onShareTap(): void;
+  onPosterTap(): void;
+  generatePoster(): Promise<void>;
+  onPosterClose(): void;
+  onPosterSave(): void;
+  onMineTap(): void;
+  noop(): void;
   animateStats(): void;
   clearStatAnim(): void;
   onBackHome(): void;
@@ -139,6 +159,9 @@ Page<PageData, PageCustom>({
     isEmployee: false,
     employeeId: "",
     badgeCount: 0,
+    posterVisible: false,
+    posterImagePath: "",
+    posterLoading: false,
     visitId: "",
     enterTime: 0,
     clickedAuth: false,
@@ -218,9 +241,18 @@ Page<PageData, PageCustom>({
     if (hasToken !== this.data.loggedIn) {
       this.setData({ loggedIn: hasToken });
     }
-    // 访问埋点：每次前台进入创建新 visit（PV +1，后台切回前台计新 PV）
+    // 访问埋点：每次前台进入创建新 visit（PV +1，后台切回前台计新 PV）。
+    // 必须同步重置会话状态：enterTime（否则 stayed_ms 沿用首次进入以来的累计
+    // 时长，后续每次 visit 都被误判为深度浏览）、clickedAuth（避免授权点击
+    // 重复记到新 visit）、visitId（新会话不继承旧 visit，防止离开时覆盖上报）
     if (hasToken && this.data.campaignId) {
+      this.setData({ enterTime: Date.now(), clickedAuth: false, visitId: "" });
       this.createVisit();
+    }
+    // 从「我的线索」联系客户等操作返回：静默刷新新线索角标（badgeCount 仅
+    // onLoad 加载一次会滞留旧值，如已联系后仍显示「N 条新线索待跟进」）
+    if (this.data.isEmployee) {
+      this.loadIdentityAndBadge();
     }
   },
 
@@ -455,6 +487,8 @@ Page<PageData, PageCustom>({
   /**
    * 员工身份识别 + 未读新线索角标.
    * 仅后台令牌存在时执行（内部员工）；失败/无权限静默降级，不阻断分享。
+   * 角标取数（二期）：由 /admin/recruit/leads 改为 /public/recruit/my/leads 取 total
+   * （见 utils/recruit-employee.ts，失败静默），其余逻辑不动。
    */
   async loadIdentityAndBadge() {
     const adminToken = getAccessToken();
@@ -462,17 +496,93 @@ Page<PageData, PageCustom>({
       return;
     }
     try {
-      const me = await request<UserResponse>({ url: "/auth/me" });
-      const employeeId = me.id;
-      this.setData({ isEmployee: true, employeeId });
-      // 未读角标：本员工名下 status=new 的线索数
-      const res = await request<RecruitLeadListResponse>({
-        url: `/admin/recruit/leads?employee_id=${employeeId}&status=new&page=1&page_size=1`,
+      const identity = await fetchEmployeeIdentity();
+      this.setData({
+        isEmployee: true,
+        employeeId: identity.employeeId,
+        badgeCount: identity.badgeCount,
       });
-      this.setData({ badgeCount: res.total || 0 });
     } catch {
       // 403（无 recruit:read）/401 等：静默隐藏角标，员工可正常浏览/分享
     }
+  },
+
+  /**
+   * 员工区块「分享给客户」tap：手势内同步发起订阅授权（Task 9，拒绝/失败静默）.
+   * 分享本身由 open-type="share" 调起（onShareAppMessage 逻辑不动）.
+   */
+  onShareTap() {
+    if (this.data.isEmployee) {
+      requestLeadSubscribe(this.data.campaign?.subscribe_template_id);
+    }
+  },
+
+  /**
+   * 员工区块「生成海报」tap：手势内同步发起订阅授权（Task 9），随后生成海报.
+   */
+  onPosterTap() {
+    if (this.data.isEmployee) {
+      requestLeadSubscribe(this.data.campaign?.subscribe_template_id);
+    }
+    if (this.data.posterLoading) {
+      return;
+    }
+    this.generatePoster();
+  },
+
+  /**
+   * 生成海报：取员工专属小程序码 → canvas 绘制（utils/recruit-poster.ts）→
+   * 导出临时文件 → 弹层预览。生成成功上报 poster 分享事件（漏斗第 1 级，复用既有上报）.
+   */
+  async generatePoster() {
+    const { campaignId, campaign } = this.data;
+    if (!campaignId || !campaign || this.data.posterLoading) {
+      return;
+    }
+    this.setData({ posterLoading: true });
+    wx.showLoading({ title: "生成中…", mask: true });
+    try {
+      const posterImagePath = await createPosterTempFile(this, campaignId, campaign);
+      this.setData({ posterImagePath, posterVisible: true, posterLoading: false });
+      wx.hideLoading();
+      this.reportShareEvent("poster");
+    } catch (err) {
+      this.setData({ posterLoading: false });
+      wx.hideLoading();
+      const statusCode = (err as HttpResponseError).statusCode;
+      // qrcode 接口要求 C 端登录态：401（员工仅有 admin 令牌/未登录）单独提示
+      const title =
+        statusCode === HTTP_UNAUTHORIZED ? "生成海报需先微信登录" : "海报生成失败，请重试";
+      wx.showToast({ title, icon: "none" });
+    }
+  },
+
+  /** 海报弹层「保存到相册」：权限拒绝时引导去设置并自动重试（utils/recruit-poster.ts）. */
+  onPosterSave() {
+    const { posterImagePath } = this.data;
+    if (!posterImagePath) {
+      return;
+    }
+    savePosterToAlbum(posterImagePath);
+  },
+
+  /** 关闭海报预览弹层（点遮罩/关闭按钮）. */
+  onPosterClose() {
+    this.setData({ posterVisible: false });
+  },
+
+  /** 员工区块「我的线索」入口：携带当前活动 ID 进入我的线索页. */
+  onMineTap() {
+    const { campaignId } = this.data;
+    const url = campaignId
+      ? `/pages/recruit/mine/index?campaign_id=${encodeURIComponent(campaignId)}`
+      : "/pages/recruit/mine/index";
+    wx.navigateTo({ url });
+  },
+
+  /** 阻止海报弹层内容区冒泡（遮罩点击关闭）. */
+  noop() {
+    // 空实现：仅承接 catchtap
   },
 
   /**

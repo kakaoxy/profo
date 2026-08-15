@@ -29,6 +29,7 @@ export interface CampaignFormData {
   name: string;
   title: string;
   image_url: string | null;
+  poster_bg_url: string | null;
   status: RecruitCampaignStatus;
 }
 
@@ -50,6 +51,7 @@ export async function createCampaignAction(
       name: data.name,
       title: data.title,
       image_url: data.image_url,
+      poster_bg_url: data.poster_bg_url,
       status: data.status,
     };
     const { data: responseData, error } = await client.POST("/api/v1/admin/recruit/campaigns", {
@@ -80,6 +82,7 @@ export async function updateCampaignAction(
       name: data.name,
       title: data.title,
       image_url: data.image_url,
+      poster_bg_url: data.poster_bg_url,
       status: data.status,
     };
     const { data: responseData, error } = await client.PUT(

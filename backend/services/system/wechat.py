@@ -472,3 +472,48 @@ class WeChatAuthService:
             logger.error("生成小程序码失败：errmsg=%s, errcode=%s", data.get("errmsg"), data.get("errcode"))
             msg = "小程序码生成失败，请检查微信配置"
             raise ValidationError(msg)
+
+    @staticmethod
+    def send_subscribe_message(openid: str, template_id: str, data: dict, page: str | None = None) -> None:
+        """发送小程序订阅消息 (Sync - 供 run_in_threadpool 调用).
+
+        调用 cgi-bin/message/subscribe/send 接口，需先获取小程序全局 access_token。
+        miniprogram_state 默认 formal（正式版），跳转页面通过 page 指定（可选）。
+
+        Args:
+            openid: 接收者（员工）的 openid
+            template_id: 订阅消息模板 ID
+            data: 模板内容，格式为 ``{"字段名": {"value": "xxx"}}``
+            page: 点击消息跳转的小程序页面路径（含 query，可选）
+
+        Raises:
+            ValidationError: 微信接口返回错误（细节仅记日志，不回传用户）
+
+        """
+        access_token = WeChatAuthService.fetch_wechat_miniapp_access_token()
+        params = {"access_token": access_token}
+        payload: dict[str, object] = {
+            "touser": openid,
+            "template_id": template_id,
+            "data": data,
+            "miniprogram_state": "formal",
+        }
+        if page:
+            payload["page"] = page
+        with httpx.Client(trust_env=False) as client:
+            try:
+                response = client.post(settings.wechat_subscribe_send_url, params=params, json=payload)
+                response.raise_for_status()
+                result: dict[str, object] = response.json()
+            except (httpx.HTTPError, ValueError) as e:
+                # 网络/HTTP 状态错误与非 JSON 响应体统一转为业务校验错误，
+                # 避免以通用 500 冒泡（与 fetch_miniapp_unlimited_qrcode 一致）
+                logger.exception("发送订阅消息请求异常")
+                msg = "订阅消息发送失败"
+                raise ValidationError(msg) from e
+        if result.get("errcode", 0) != 0:
+            # errmsg 含上游 API 细节（如用户未订阅、模板非法），不能直接回传给用户；
+            # 仅服务端日志记录，对用户返回通用错误消息
+            logger.error("发送订阅消息失败：errmsg=%s, errcode=%s", result.get("errmsg"), result.get("errcode"))
+            msg = "订阅消息发送失败"
+            raise ValidationError(msg)

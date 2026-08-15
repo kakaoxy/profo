@@ -205,3 +205,7 @@ class RateLimits:
     RECRUIT_LEAD_SUBMIT = "10/hour"
     RECRUIT_SHARE = "60/minute"
     RECRUIT_QR_SCENE = "120/minute"
+    # 员工生成小程序码：每次调用微信接口生成图片，收敛频次防刷
+    RECRUIT_QR_GENERATE = "20/hour"
+    # 查看线索完整手机号：隐私敏感数据，收敛频次防遍历爬取
+    RECRUIT_PHONE_VIEW = "30/minute"

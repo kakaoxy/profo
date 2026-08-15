@@ -1,0 +1,97 @@
+<view class="page">
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <!-- 游客 / 空态 -->
+  <view wx:elif="{{empty}}" class="empty">
+    <view class="e-ill">
+      <view class="e-glow"></view>
+      <view class="e-card">
+        <view class="e-row">
+          <view class="e-dot"></view>
+          <view class="e-bar" style="width: 176rpx"></view>
+        </view>
+        <view class="e-row">
+          <view class="e-dot e-dot--2"></view>
+          <view class="e-bar e-bar--2" style="width: 124rpx"></view>
+        </view>
+        <view class="e-row">
+          <view class="e-dot e-dot--3"></view>
+          <view class="e-bar e-bar--3" style="width: 208rpx"></view>
+        </view>
+      </view>
+      <view class="e-badge">+</view>
+    </view>
+    <view class="e-t">分享产生的客户线索将展示在这里</view>
+    <view class="e-s">
+      <view>将招募卡片或海报分享给客户</view>
+      <view>客户留资后自动生成线索</view>
+    </view>
+    <button class="e-btn" bindtap="onGoRecruit">去招募页分享</button>
+  </view>
+
+  <!-- 有数据：统计卡 + 筛选 + 列表 -->
+  <block wx:else>
+    <!-- 统计卡（留资数品牌蓝强调） -->
+    <view class="stats">
+      <view class="stat">
+        <text class="stat-num">{{stats.shareCount}}</text>
+        <text class="stat-label">分享次数</text>
+      </view>
+      <view class="stat">
+        <text class="stat-num">{{stats.pv}}</text>
+        <text class="stat-label">带来打开 PV</text>
+      </view>
+      <view class="stat">
+        <text class="stat-num">{{stats.uv}}</text>
+        <text class="stat-label">独立访客 UV</text>
+      </view>
+      <view class="stat stat--hl">
+        <text class="stat-num">{{stats.leadCount}}</text>
+        <text class="stat-label">留资数</text>
+      </view>
+    </view>
+
+    <!-- 筛选 chips（横向滑动） -->
+    <scroll-view class="chips" scroll-x enhanced show-scrollbar="{{false}}">
+      <view
+        wx:for="{{chips}}"
+        wx:key="value"
+        class="chip-item {{activeStatus === item.value ? 'chip-item--on' : ''}}"
+        data-value="{{item.value}}"
+        bindtap="onChipTap"
+      >{{item.label}}</view>
+    </scroll-view>
+
+    <!-- 线索列表 -->
+    <view class="leads">
+      <view wx:for="{{items}}" wx:key="id" class="lead">
+        <view class="l-top">
+          <text class="l-phone {{item.phoneFull ? 'l-phone--full' : ''}}">{{item.phoneFull || item.phone}}</text>
+          <text class="l-tag {{item.statusClass}}">{{item.statusText}}</text>
+        </view>
+        <view class="l-sub">
+          <text class="l-area">{{item.area}}</text>
+          <text class="l-src {{item.sourceClass}}">{{item.sourceText}}</text>
+          <text class="l-time">{{item.timeText}}</text>
+        </view>
+        <view class="l-foot">
+          <view
+            class="l-contact {{item.phoneFull ? 'l-contact--plain' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="onContactTap"
+          >{{item.phoneFull ? "拨打" : "联系客户"}}</view>
+        </view>
+      </view>
+
+      <view wx:if="{{!loading && items.length === 0}}" class="leads-empty">当前筛选暂无线索</view>
+      <view wx:elif="{{loadingMore}}" class="more">加载中…</view>
+      <view wx:elif="{{!noMore && items.length > 0}}" class="more">上拉加载更多</view>
+      <view wx:elif="{{items.length > 0}}" class="more">没有更多了</view>
+    </view>
+  </block>
+
+  <view class="safe-bottom"></view>
+</view>

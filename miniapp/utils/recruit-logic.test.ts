@@ -4,10 +4,15 @@ import {
   buildSharePath,
   buildShareQuery,
   checkRecruitForm,
+  formatLeadTime,
   isDeepView,
   parseRecruitQuery,
   parseSceneCode,
   RECRUIT_LANDING_CONTENT,
+  RECRUIT_LEAD_STATUS_CHIPS,
+  toMyLeadDisplayItem,
+  applyLeadPhone,
+  type RecruitMyLeadItem,
 } from "./recruit-logic";
 
 describe("parseRecruitQuery", () => {
@@ -191,5 +196,131 @@ describe("parseSceneCode", () => {
   it("无 code 键时返回空串", () => {
     expect(parseSceneCode("ch=print")).toBe("");
     expect(parseSceneCode("")).toBe("");
+  });
+});
+
+describe("RECRUIT_LEAD_STATUS_CHIPS", () => {
+  it("chips 顺序与文案对照设计稿（全部 + 5 个状态）", () => {
+    expect(RECRUIT_LEAD_STATUS_CHIPS).toEqual([
+      { label: "全部", value: "" },
+      { label: "新线索", value: "new" },
+      { label: "已联系", value: "contacted" },
+      { label: "意向高", value: "high_intent" },
+      { label: "已转化", value: "converted" },
+      { label: "已淘汰", value: "eliminated" },
+    ]);
+  });
+});
+
+describe("formatLeadTime", () => {
+  const now = new Date("2026-08-15T20:00:00");
+
+  it("当天显示 今天 HH:mm", () => {
+    expect(formatLeadTime("2026-08-15T14:32:00+08:00", now)).toBe("今天 14:32");
+    expect(formatLeadTime("2026-08-15T00:05:00+08:00", now)).toBe("今天 00:05");
+  });
+
+  it("昨天显示 昨天 HH:mm", () => {
+    expect(formatLeadTime("2026-08-14T19:47:00+08:00", now)).toBe("昨天 19:47");
+  });
+
+  it("同年更早显示 MM-DD HH:mm", () => {
+    expect(formatLeadTime("2026-08-12T16:40:00+08:00", now)).toBe("08-12 16:40");
+    expect(formatLeadTime("2026-01-02T09:00:00+08:00", now)).toBe("01-02 09:00");
+  });
+
+  it("跨年显示 YYYY-MM-DD", () => {
+    expect(formatLeadTime("2025-12-31T23:59:00+08:00", now)).toBe("2025-12-31");
+  });
+
+  it("非法时间返回空串", () => {
+    expect(formatLeadTime("not-a-date", now)).toBe("");
+  });
+});
+
+describe("toMyLeadDisplayItem", () => {
+  const now = new Date("2026-08-15T20:00:00");
+
+  const item: RecruitMyLeadItem = {
+    id: "lead-1",
+    phone_masked: "138****5678",
+    main_business_area: "朝阳区 · 望京商圈",
+    status: "new",
+    source: "poster",
+    created_at: "2026-08-15T14:32:00+08:00",
+  };
+
+  it("映射状态/来源标签与相对时间", () => {
+    expect(toMyLeadDisplayItem(item, now)).toEqual({
+      id: "lead-1",
+      phone: "138****5678",
+      phoneFull: "",
+      area: "朝阳区 · 望京商圈",
+      statusValue: "new",
+      statusText: "新线索",
+      statusClass: "t-new",
+      sourceText: "海报",
+      sourceClass: "s-poster",
+      timeText: "今天 14:32",
+    });
+  });
+
+  it("五种状态标签文案与样式类齐全", () => {
+    const cases: Array<[RecruitMyLeadItem["status"], string, string]> = [
+      ["new", "新线索", "t-new"],
+      ["contacted", "已联系", "t-contact"],
+      ["high_intent", "意向高", "t-high"],
+      ["converted", "已转化", "t-won"],
+      ["eliminated", "已淘汰", "t-out"],
+    ];
+    for (const [status, text, cls] of cases) {
+      const display = toMyLeadDisplayItem({ ...item, status }, now);
+      expect(display.statusText).toBe(text);
+      expect(display.statusClass).toBe(cls);
+    }
+  });
+
+  it("card 来源显示卡片标签", () => {
+    const display = toMyLeadDisplayItem({ ...item, source: "card" }, now);
+    expect(display.sourceText).toBe("卡片");
+    expect(display.sourceClass).toBe("s-card");
+  });
+
+  it("phone_masked 为空时显示未提供", () => {
+    const display = toMyLeadDisplayItem({ ...item, phone_masked: null }, now);
+    expect(display.phone).toBe("未提供");
+  });
+});
+
+describe("applyLeadPhone", () => {
+  const now = new Date("2026-08-15T20:00:00");
+
+  const base: RecruitMyLeadItem = {
+    id: "lead-1",
+    phone_masked: "138****5678",
+    main_business_area: "朝阳区 · 望京商圈",
+    status: "new",
+    source: "card",
+    created_at: "2026-08-15T14:32:00+08:00",
+  };
+
+  it("填充完整号码并按接口状态刷新标签（new→contacted）", () => {
+    const display = toMyLeadDisplayItem(base, now);
+    const updated = applyLeadPhone(display, "13800005678", "contacted");
+    expect(updated.phoneFull).toBe("13800005678");
+    expect(updated.statusValue).toBe("contacted");
+    expect(updated.statusText).toBe("已联系");
+    expect(updated.statusClass).toBe("t-contact");
+    // 原对象不可变：脱敏号与其余字段保留
+    expect(display.phoneFull).toBe("");
+    expect(updated.phone).toBe("138****5678");
+    expect(updated.area).toBe("朝阳区 · 望京商圈");
+  });
+
+  it("非 new 状态按返回值原样展示", () => {
+    const display = toMyLeadDisplayItem({ ...base, status: "converted" }, now);
+    const updated = applyLeadPhone(display, "13800005678", "converted");
+    expect(updated.statusText).toBe("已转化");
+    expect(updated.statusClass).toBe("t-won");
   });
 });

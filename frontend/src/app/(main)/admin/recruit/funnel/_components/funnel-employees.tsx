@@ -24,21 +24,14 @@ const CONVERSION_HIGHLIGHT = 0.07;
 /**
  * 员工维度 · 拉新贡献表（对齐设计稿 F3 下钻表）：
  * 员工 / 分享次数 / 打开(PV) / 深度浏览 / 点击授权 / 留资数 / 有效新客 / 转化率。
- * 行可点击（二期下钻该员工完整漏斗与线索明细）。
  */
 export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
-  const handleRowClick = (row: EmployeeFunnelRow) => {
-    toast(`下钻「${row.employee.name}」近 30 天漏斗与线索明细（二期接入）`);
-  };
-
   return (
     <div className="bg-white rounded-cards shadow-steep overflow-hidden">
       <div className="flex items-center justify-between px-6 py-5 border-b border-fog">
         <div>
           <div className="text-[15px] font-medium text-ink">员工维度 · 拉新贡献</div>
-          <div className="mt-0.5 text-[13px] text-graphite">
-            点击员工行可下钻至该员工的完整漏斗与线索明细
-          </div>
+          <div className="mt-0.5 text-[13px] text-graphite">各员工分享拉新贡献统计</div>
         </div>
         <button
           type="button"
@@ -71,9 +64,7 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
               return (
                 <tr
                   key={row.employee.id}
-                  className="hover:bg-fog transition-colors cursor-pointer"
-                  onClick={() => handleRowClick(row)}
-                  title="点击下钻该员工漏斗与线索明细"
+                  className="hover:bg-fog transition-colors"
                 >
                   <td className="px-5 py-3.5 border-b border-fog align-middle">
                     <div className="font-medium text-ink whitespace-nowrap">

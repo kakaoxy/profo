@@ -6,6 +6,9 @@
     0 40rpx 50rpx -10rpx rgba(0, 0, 0, 0.1),
     0 16rpx 20rpx -12rpx rgba(0, 0, 0, 0.1);
   --font-serif: "Songti SC", Georgia, serif;
+  /* 员工区块/海报弹层品牌色（招募计划二期设计稿） */
+  --brand: #2563eb;
+  --brand-weak: #eef4ff;
   min-height: 100vh;
   background: var(--fog);
 }
@@ -666,4 +669,170 @@
 /* ===== 底部安全区 ===== */
 .safe-bottom {
   height: 64rpx;
+}
+
+/* ===== 员工专属区块（招募计划二期，对照 poster-flow.html 步骤1） ===== */
+.staff-divider {
+  height: 2rpx;
+  background: var(--fog);
+  margin: 24rpx 0 20rpx;
+}
+.clue-entry {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 8rpx 0 4rpx;
+}
+.clue-ic {
+  flex-shrink: 0;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  background: var(--brand-weak);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+.clue-ic-line {
+  width: 30rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--brand);
+}
+.clue-ic-line--short {
+  width: 20rpx;
+}
+.clue-tt {
+  flex: 1;
+  min-width: 0;
+}
+.clue-tt-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.clue-tt-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.clue-badge {
+  font-size: 20rpx;
+  font-weight: 600;
+  background: #f56c6c;
+  color: #ffffff;
+  border-radius: 9999rpx;
+  padding: 2rpx 12rpx;
+}
+.clue-tt-sub {
+  font-size: 22rpx;
+  color: var(--graphite);
+  margin-top: 6rpx;
+}
+.clue-chev {
+  flex-shrink: 0;
+  width: 16rpx;
+  height: 16rpx;
+  border-right: 4rpx solid #c3c7cf;
+  border-top: 4rpx solid #c3c7cf;
+  transform: rotate(45deg);
+}
+.staff-btn-row {
+  display: flex;
+  gap: 20rpx;
+  padding-top: 20rpx;
+}
+.staff-btn {
+  flex: 1;
+  height: 88rpx;
+  border: none;
+  border-radius: 9999rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+}
+.staff-btn::after {
+  border: none;
+}
+.staff-btn--pri {
+  background: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 12rpx 28rpx rgba(37, 99, 235, 0.25);
+}
+.staff-btn--sec {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--brand);
+}
+
+/* ===== 海报预览弹层（招募计划二期，对照 poster-flow.html 步骤2/3） ===== */
+.poster-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(17, 19, 23, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poster-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32rpx;
+}
+.poster-img {
+  width: 544rpx;
+  height: 870rpx;
+  border-radius: 32rpx;
+  box-shadow: 0 36rpx 80rpx rgba(0, 0, 0, 0.35);
+  background: #1e3fae;
+}
+.poster-btns {
+  display: flex;
+  gap: 20rpx;
+  width: 544rpx;
+}
+.poster-btn {
+  height: 92rpx;
+  border: none;
+  border-radius: 9999rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+}
+.poster-btn::after {
+  border: none;
+}
+.poster-btn--save {
+  flex: 1;
+  background: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 16rpx 36rpx rgba(0, 0, 0, 0.3);
+}
+.poster-btn--close {
+  width: 192rpx;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-weight: 400;
+}
+/* 海报绘制画布：常驻移出屏幕（节点必须存在才能绘制/导出） */
+.poster-canvas {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 300px;
+  height: 480px;
+  pointer-events: none;
 }

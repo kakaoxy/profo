@@ -1,0 +1,328 @@
+/* 我的线索页（招募计划二期，对照设计稿 mine-page.html） */
+
+.page {
+  --brand: #2563eb;
+  --brand-weak: #eef4ff;
+  --ink: #17191c;
+  --ink-2: #777b86;
+  --ink-3: #a5a9b3;
+  --line: #f2f3f5;
+  min-height: 100vh;
+  background: #f7f7f8;
+}
+
+/* ===== 加载态 ===== */
+.state-box {
+  padding: 120rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.state-text {
+  font-size: 28rpx;
+  color: var(--ink-2);
+}
+
+/* ===== 统计卡 ===== */
+.stats {
+  margin: 24rpx 32rpx 0;
+  background: #ffffff;
+  border-radius: 28rpx;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 28rpx 0;
+}
+.stat {
+  text-align: center;
+}
+.stat + .stat {
+  border-left: 2rpx solid var(--line);
+}
+.stat-num {
+  display: block;
+  font-size: 38rpx;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.stat-label {
+  display: block;
+  font-size: 20rpx;
+  color: var(--ink-2);
+  margin-top: 8rpx;
+  line-height: 1.4;
+  padding: 0 4rpx;
+}
+.stat--hl .stat-num {
+  color: var(--brand);
+}
+
+/* ===== 筛选 chips ===== */
+.chips {
+  white-space: nowrap;
+  padding: 28rpx 32rpx 8rpx;
+  box-sizing: border-box;
+  width: 100%;
+}
+.chip-item {
+  display: inline-flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: var(--ink-2);
+  background: #ffffff;
+  border-radius: 9999rpx;
+  padding: 12rpx 26rpx;
+  margin-right: 16rpx;
+}
+.chip-item--on {
+  background: var(--brand-weak);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* ===== 线索列表 ===== */
+.leads {
+  padding: 20rpx 32rpx 0;
+}
+.lead {
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 24rpx 28rpx;
+  margin-bottom: 20rpx;
+}
+.l-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.l-phone {
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 0.6rpx;
+  color: var(--ink);
+}
+.l-tag {
+  flex-shrink: 0;
+  font-size: 21rpx;
+  font-weight: 600;
+  padding: 4rpx 16rpx;
+  border-radius: 12rpx;
+}
+.t-new {
+  background: #eef4ff;
+  color: #2563eb;
+}
+.t-contact {
+  background: #fff6e6;
+  color: #b45309;
+}
+.t-high {
+  background: #f1edff;
+  color: #6d28d9;
+}
+.t-won {
+  background: #e8f7ee;
+  color: #15803d;
+}
+.t-out {
+  background: #f2f3f5;
+  color: #777b86;
+}
+.l-sub {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+.l-area {
+  font-size: 24rpx;
+  color: var(--ink-2);
+}
+.l-src {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  padding: 3rpx 12rpx;
+  border-radius: 8rpx;
+}
+.s-card {
+  background: #f2f3f5;
+  color: var(--ink-2);
+}
+.s-poster {
+  background: rgba(37, 99, 235, 0.09);
+  color: var(--brand);
+}
+.l-time {
+  margin-left: auto;
+  font-size: 22rpx;
+  color: var(--ink-3);
+}
+/* 完整号码（已查看）：品牌蓝示区分脱敏态 */
+.l-phone--full {
+  color: var(--brand);
+}
+/* ===== 联系客户操作区 ===== */
+.l-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid var(--line);
+}
+.l-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180rpx;
+  height: 60rpx;
+  padding: 0 28rpx;
+  border-radius: 9999rpx;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 600;
+  box-shadow: 0 10rpx 24rpx rgba(37, 99, 235, 0.22);
+}
+/* 已查看号码：轻量次级样式，仅触发拨打 */
+.l-contact--plain {
+  background: var(--brand-weak);
+  color: var(--brand);
+  box-shadow: none;
+}
+.leads-empty {
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--ink-2);
+  padding: 80rpx 0;
+}
+.more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx 0 20rpx;
+  font-size: 24rpx;
+  color: var(--ink-3);
+}
+
+/* ===== 游客 / 空态 ===== */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 200rpx 80rpx 0;
+  text-align: center;
+}
+.e-ill {
+  position: relative;
+  width: 380rpx;
+  height: 304rpx;
+}
+.e-glow {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 340rpx;
+  height: 340rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.14) 0%, rgba(37, 99, 235, 0) 68%);
+}
+.e-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 296rpx;
+  height: 192rpx;
+  background: #ffffff;
+  border-radius: 32rpx;
+  box-shadow: 0 20rpx 52rpx rgba(23, 25, 28, 0.08);
+  padding: 36rpx 40rpx 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.e-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.e-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background: #eef4ff;
+  flex-shrink: 0;
+}
+.e-dot--2 {
+  background: #f1edff;
+}
+.e-dot--3 {
+  background: #e8f7ee;
+}
+.e-bar {
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: #eef0f4;
+}
+.e-bar--2 {
+  background: #f1f2f6;
+}
+.e-bar--3 {
+  background: #e9ebf1;
+}
+.e-badge {
+  position: absolute;
+  right: 16rpx;
+  bottom: 8rpx;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 40rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12rpx 28rpx rgba(37, 99, 235, 0.35);
+}
+.e-t {
+  margin-top: 48rpx;
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.e-s {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+.e-btn {
+  margin-top: 52rpx;
+  width: 400rpx;
+  height: 88rpx;
+  border: none;
+  border-radius: 9999rpx;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  box-shadow: 0 16rpx 36rpx rgba(37, 99, 235, 0.28);
+}
+.e-btn::after {
+  border: none;
+}
+
+/* ===== 底部安全区 ===== */
+.safe-bottom {
+  height: 64rpx;
+}

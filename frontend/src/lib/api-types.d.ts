@@ -3314,6 +3314,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/recruit/campaigns/{campaign_id}/qrcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 生成员工专属小程序码
+         * @description 员工登录态生成带自己归属参数的活动小程序码，同一（活动,员工）复用短码，返回短码与 base64 图片
+         */
+        get: operations["generate_my_campaign_qrcode_api_v1_public_recruit_campaigns__campaign_id__qrcode_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/recruit/my/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的线索
+         * @description 归属当前员工的招募线索（手机号脱敏），分页 + 可选跟进状态筛选；归属强制服务端过滤
+         */
+        get: operations["list_my_leads_api_v1_public_recruit_my_leads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/recruit/my/share-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的分享统计
+         * @description 分享次数 / 经我分享的打开 PV/UV / 归属我的线索数
+         */
+        get: operations["get_my_share_stats_api_v1_public_recruit_my_share_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/recruit/qr/{code}": {
         parameters: {
             query?: never;
@@ -9941,6 +10001,16 @@ export interface components {
             content: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Poster Bg Url
+             * @description 海报背景图 URL
+             */
+            poster_bg_url?: string | null;
+            /**
+             * Subscribe Template Id
+             * @description 新线索订阅消息模板ID（未配置为 None）
+             */
+            subscribe_template_id?: string | null;
         };
         /**
          * RecruitCampaignResponse
@@ -10166,6 +10236,65 @@ export interface components {
             lead_id: string;
             /** Is New */
             is_new: boolean;
+        };
+        /**
+         * RecruitMyLeadItem
+         * @description C 端我的线索列表项（手机号脱敏，手动构造）.
+         */
+        RecruitMyLeadItem: {
+            /** Id */
+            id: string;
+            /** Phone Masked */
+            phone_masked: string | null;
+            /** Main Business Area */
+            main_business_area: string;
+            status: components["schemas"]["RecruitLeadStatus"];
+            source: components["schemas"]["RecruitLeadSource"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * RecruitMyLeadListResponse
+         * @description C 端我的线索分页响应.
+         */
+        RecruitMyLeadListResponse: {
+            /** Items */
+            items: components["schemas"]["RecruitMyLeadItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * RecruitMyShareStatsResponse
+         * @description C 端我的分享统计响应.
+         */
+        RecruitMyShareStatsResponse: {
+            /**
+             * Share Count
+             * @description 分享次数
+             */
+            share_count: number;
+            /**
+             * Pv
+             * @description 经我分享的打开次数 PV
+             */
+            pv: number;
+            /**
+             * Uv
+             * @description 经我分享的打开人数 UV（openid 去重）
+             */
+            uv: number;
+            /**
+             * Lead Count
+             * @description 归属我的线索数
+             */
+            lead_count: number;
         };
         /**
          * RecruitQRCodeGenerateRequest
@@ -18214,6 +18343,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_my_campaign_qrcode_api_v1_public_recruit_campaigns__campaign_id__qrcode_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 活动ID */
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitQRCodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_leads_api_v1_public_recruit_my_leads_get: {
+        parameters: {
+            query?: {
+                /** @description 跟进状态（可选） */
+                status?: components["schemas"]["RecruitLeadStatus"] | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitMyLeadListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_share_stats_api_v1_public_recruit_my_share_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitMyShareStatsResponse"];
                 };
             };
         };
