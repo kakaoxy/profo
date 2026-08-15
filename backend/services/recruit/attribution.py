@@ -131,6 +131,8 @@ class RecruitAttributionService:
         if existing is not None:
             self._backfill_referrer(existing, referrer)
             self._mark_visit_authed(visit_id, user_id=user_id)
+            # visit 缺失/不归属时 _mark_visit_authed 不提交，此处显式提交保证归属补充落库
+            self.db.commit()
             return existing, False
 
         lead = RecruitLead(
@@ -155,6 +157,8 @@ class RecruitAttributionService:
             if existing is not None:
                 self._backfill_referrer(existing, referrer)
                 self._mark_visit_authed(visit_id, user_id=user_id)
+                # 同正常分支：显式提交保证归属补充落库（visit 缺失/不归属时 _mark_visit_authed 不提交）
+                self.db.commit()
                 return existing, False
             raise
         except Exception:
@@ -202,9 +206,10 @@ class RecruitAttributionService:
         且本次留资携带归属员工时，补充写入归属，使员工「我的线索」
         列表与分享统计能正确计入该线索。已有归属时不动。
 
-        注意：仅做字段赋值，不提交事务。由外层调用链中的 ``commit()``
-        （如 ``_mark_visit_authed`` 或 ``submit_lead`` 的 ``commit()``）
-        统一 flush 本变更，确保与外层事务边界一致。
+        注意：仅做字段赋值，不提交事务。由 ``submit_lead`` 在两条
+        「已有线索」分支中于 ``_mark_visit_authed`` 之后显式 ``commit()``
+        统一持久化——visit 缺失/不归属时 ``_mark_visit_authed`` 不提交，
+        若此处不补提交，会话关闭时本变更将被回滚导致归属补充静默丢失。
 
         """
         if lead.referrer_employee_id is not None or not referrer:
