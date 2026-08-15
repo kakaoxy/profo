@@ -5,15 +5,8 @@ import { cn } from "@/lib/utils";
 import { safeFormatDate, formatCNY } from "@/lib/formatters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { TableCell, TableRow } from "@/components/ui/table";
 import type { components } from "@/lib/api-types";
 import { toNumber } from "@/lib/number-utils";
 import { LayerPill } from "./layer-pill";
@@ -51,10 +44,7 @@ export function LedgerDetailTableRow({
       <TableCell className="px-4 py-3">
         {subject ? (
           <div className="flex flex-col gap-1">
-            <span
-              className="font-medium text-foreground truncate text-xs"
-              title={subject.name}
-            >
+            <span className="font-medium text-foreground truncate text-xs" title={subject.name}>
               {subject.name}
             </span>
             <LayerPill level={subject.level} />
@@ -65,19 +55,13 @@ export function LedgerDetailTableRow({
       </TableCell>
       {/* 付款方 */}
       <TableCell className="px-4 py-3">
-        <span
-          className="text-muted-foreground truncate block"
-          title={record.payer ?? ""}
-        >
+        <span className="text-muted-foreground truncate block" title={record.payer ?? ""}>
           {record.payer || "-"}
         </span>
       </TableCell>
       {/* 收款方 */}
       <TableCell className="px-4 py-3">
-        <span
-          className="text-muted-foreground truncate block"
-          title={record.payee ?? ""}
-        >
+        <span className="text-muted-foreground truncate block" title={record.payee ?? ""}>
           {record.payee || "-"}
         </span>
       </TableCell>
@@ -148,10 +132,7 @@ export function LedgerDetailTableRow({
       </TableCell>
       {/* 摘要（移至凭证和操作之间） */}
       <TableCell className="px-4 py-3">
-        <span
-          className="text-foreground truncate block"
-          title={summary}
-        >
+        <span className="text-foreground truncate block" title={summary}>
           {summary}
         </span>
       </TableCell>

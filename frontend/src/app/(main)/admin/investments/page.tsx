@@ -8,9 +8,7 @@ type InvestmentListResponse = components["schemas"]["InvestmentListResponse"];
 type InvestmentStatsResponse = components["schemas"]["InvestmentStatsResponse"];
 type InvestmentListItem = components["schemas"]["InvestmentListItemResponse"];
 
-type ListQuery = NonNullable<
-  paths["/api/v1/admin/investments"]["get"]["parameters"]["query"]
->;
+type ListQuery = NonNullable<paths["/api/v1/admin/investments"]["get"]["parameters"]["query"]>;
 
 interface PageProps {
   searchParams: Promise<{
@@ -40,8 +38,7 @@ export default async function InvestmentsPage({ searchParams }: PageProps) {
     query.project_status = params.project_status as ListQuery["project_status"];
   }
   if (params.settlement_status && params.settlement_status !== "all") {
-    query.settlement_status =
-      params.settlement_status as ListQuery["settlement_status"];
+    query.settlement_status = params.settlement_status as ListQuery["settlement_status"];
   }
 
   const client = await fetchClient();
@@ -57,22 +54,19 @@ export default async function InvestmentsPage({ searchParams }: PageProps) {
   const items: InvestmentListItem[] = listData?.items ?? [];
   const total = listData?.total ?? 0;
 
-  const stats =
-    (statsRes.data as InvestmentStatsResponse | null) ?? {
-      total_projects: 0,
-      total_investment: "0",
-      total_return: "0",
-      avg_return_ratio: 0,
-      unsettled_count: 0,
-    };
+  const stats = (statsRes.data as InvestmentStatsResponse | null) ?? {
+    total_projects: 0,
+    total_investment: "0",
+    total_return: "0",
+    avg_return_ratio: 0,
+    unsettled_count: 0,
+  };
 
   return (
     <div className="min-h-screen bg-muted">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            跟投管理
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">跟投管理</h1>
           <p className="text-sm text-muted-foreground">
             管理和追踪所有项目的投资方信息，从录入到结算全流程
           </p>

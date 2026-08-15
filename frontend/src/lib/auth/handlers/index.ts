@@ -14,10 +14,7 @@ import { NextResponse } from "next/server";
  * @returns A Next.js `GET` route handler function.
  */
 export function createOAuthHandler() {
-  return async function GET(
-    _request: NextRequest,
-    _ctx: unknown,
-  ): Promise<NextResponse> {
+  return async function GET(_request: NextRequest, _ctx: unknown): Promise<NextResponse> {
     void _request;
     void _ctx;
     throw new Error(

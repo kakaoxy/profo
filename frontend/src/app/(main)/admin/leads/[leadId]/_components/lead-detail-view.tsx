@@ -21,17 +21,13 @@ interface LeadDetailViewProps {
 export function LeadDetailView({ lead, initialFollowUps }: LeadDetailViewProps) {
   const router = useRouter();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [followUps, setFollowUps] =
-    useState<FollowUp[]>(initialFollowUps);
+  const [followUps, setFollowUps] = useState<FollowUp[]>(initialFollowUps);
 
   const statusConfig = getStatusStyleConfig(lead.status);
 
   // 统一过滤图片 URL（仅允许 http/https 与相对路径），保证 gallery 与 lightbox 索引一致
   const safeImages = useMemo(
-    () =>
-      (lead.images || []).filter(
-        (src) => typeof src === "string" && isValidUrl(src),
-      ),
+    () => (lead.images || []).filter((src) => typeof src === "string" && isValidUrl(src)),
     [lead.images],
   );
 
@@ -59,16 +55,10 @@ export function LeadDetailView({ lead, initialFollowUps }: LeadDetailViewProps) 
 
       {/* 主体内容 */}
       <main className="max-w-2xl mx-auto w-full px-3 py-4 space-y-4">
-        <LeadImageGallery
-          images={safeImages}
-          onImageClick={(i) => setLightboxIndex(i)}
-        />
+        <LeadImageGallery images={safeImages} onImageClick={(i) => setLightboxIndex(i)} />
         <LeadBasicInfo lead={lead} />
         <LeadTrajectoryTimeline lead={lead} followUps={followUps} />
-        <LeadFollowUpForm
-          leadId={lead.id}
-          onFollowUpsChange={setFollowUps}
-        />
+        <LeadFollowUpForm leadId={lead.id} onFollowUpsChange={setFollowUps} />
       </main>
 
       {/* Lightbox */}

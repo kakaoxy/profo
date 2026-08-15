@@ -11,10 +11,7 @@ import { ProjectData } from "../../projects/_components/monitor/types";
 // [性能优化] 使用动态导入延迟加载重型 Monitor 组件
 // 这些组件只有在用户打开 Dashboard 时才会加载
 const HeroSection = dynamic(
-  () =>
-    import("../../projects/_components/monitor/hero-section").then(
-      (mod) => mod.HeroSection,
-    ),
+  () => import("../../projects/_components/monitor/hero-section").then((mod) => mod.HeroSection),
   { loading: () => <ComponentSkeleton height="200px" /> },
 );
 
@@ -51,20 +48,14 @@ const CompetitorsBrawl = dynamic(
 );
 
 const AIStrategy = dynamic(
-  () =>
-    import("../../projects/_components/monitor/ai-strategy").then(
-      (mod) => mod.AIStrategy,
-    ),
+  () => import("../../projects/_components/monitor/ai-strategy").then((mod) => mod.AIStrategy),
   { loading: () => <ComponentSkeleton height="300px" /> },
 );
 
 // Loading skeleton for dynamic components
 function ComponentSkeleton({ height }: { height: string }) {
   return (
-    <div
-      className="flex items-center justify-center bg-muted"
-      style={{ minHeight: height }}
-    >
+    <div className="flex items-center justify-center bg-muted" style={{ minHeight: height }}>
       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
     </div>
   );
@@ -92,11 +83,10 @@ function EmptyState({ communityName }: { communityName: string }) {
       <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
         <MapPinOff className="h-8 w-8 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-2">
-        未找到小区数据
-      </h3>
+      <h3 className="text-lg font-semibold text-foreground mb-2">未找到小区数据</h3>
       <p className="text-sm text-muted-foreground max-w-md">
-        系统未能找到 &quot;{communityName}&quot; 的市场数据。<br />
+        系统未能找到 &quot;{communityName}&quot; 的市场数据。
+        <br />
         该线索未关联有效小区，或小区数据尚未录入系统。
       </p>
     </div>
@@ -147,10 +137,7 @@ function DashboardCards({ lead }: { lead: Lead }) {
           </CardWrapper>
 
           <CardWrapper>
-            <TrendPositioning
-              communityId={communityId}
-              myOverridePrice={myOverridePrice}
-            />
+            <TrendPositioning communityId={communityId} myOverridePrice={myOverridePrice} />
           </CardWrapper>
 
           <CardWrapper>
@@ -176,21 +163,13 @@ export const MonitoringDashboard: React.FC<DashboardProps> = ({ lead }) => {
 };
 
 // 全屏模式:使用 fixed 定位覆盖整屏，z-index 高于 Sheet(50)以确保置顶
-export const MonitoringFullscreen: React.FC<MonitoringFullscreenProps> = ({
-  lead,
-  onExit,
-}) => {
+export const MonitoringFullscreen: React.FC<MonitoringFullscreenProps> = ({ lead, onExit }) => {
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in fade-in zoom-in-95 duration-300">
       {/* Header */}
       <header className="h-14 border-b bg-card flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onExit}
-            aria-label="返回"
-          >
+          <Button variant="ghost" size="icon" onClick={onExit} aria-label="返回">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="h-6 w-px bg-border" />
@@ -211,10 +190,12 @@ export const MonitoringFullscreen: React.FC<MonitoringFullscreenProps> = ({
             <Activity className="h-3 w-3 mr-1" /> 实时数据同步中
           </Badge>
           <Button variant="outline" size="sm" className="h-8">
-            <Share2 className="h-3.5 w-3.5 mr-1.5" />导出报告
+            <Share2 className="h-3.5 w-3.5 mr-1.5" />
+            导出报告
           </Button>
           <Button variant="outline" size="sm" onClick={onExit}>
-            <Minimize2 className="h-3.5 w-3.5 mr-1.5" />退出全屏
+            <Minimize2 className="h-3.5 w-3.5 mr-1.5" />
+            退出全屏
           </Button>
         </div>
       </header>

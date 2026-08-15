@@ -66,20 +66,14 @@ export function TrendPositioning({
           title="趋势研判 (价格与成交量预测)"
           subtitle="Trend & Positioning"
         />
-        <div className="px-6 text-center py-10 text-muted-foreground text-sm">
-          暂无走势数据
-        </div>
+        <div className="px-6 text-center py-10 text-muted-foreground text-sm">暂无走势数据</div>
       </section>
     );
   }
 
   return (
     <section className="mt-8 pb-10">
-      <SectionHeader
-        index="3"
-        title="趋势研判 (价格与成交量预测)"
-        subtitle="Trend & Positioning"
-      />
+      <SectionHeader index="3" title="趋势研判 (价格与成交量预测)" subtitle="Trend & Positioning" />
 
       <div className="px-4 sm:px-6">
         <Card className="p-6 border-border shadow-sm bg-card">
@@ -91,11 +85,7 @@ export function TrendPositioning({
               title="市场趋势"
               content="价格剪刀差正在扩大，挂牌价虚高"
             />
-            <InsightCard
-              iconColor="blue"
-              title="成交量能"
-              content="成交量维持低位，抛售压力均衡"
-            />
+            <InsightCard iconColor="blue" title="成交量能" content="成交量维持低位，抛售压力均衡" />
             <InsightCard
               iconColor="red"
               title="风险偏离"

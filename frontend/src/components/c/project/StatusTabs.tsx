@@ -3,7 +3,7 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TABS = [
-  { value: "",     label: "所有房源" },
+  { value: "", label: "所有房源" },
   { value: "在售", label: "在售房源" },
   { value: "在途", label: "装修中" },
   { value: "已售", label: "过往案例" },

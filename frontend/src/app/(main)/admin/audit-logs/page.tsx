@@ -26,12 +26,8 @@ export default async function AuditLogsPage(props: {
   const action = searchParams.action || undefined;
   const resource_type = searchParams.resource_type || undefined;
   // 时间范围：input[type=date] 产生 yyyy-MM-dd，转为 ISO datetime 传给后端
-  const start_time = searchParams.start_time
-    ? `${searchParams.start_time}T00:00:00`
-    : undefined;
-  const end_time = searchParams.end_time
-    ? `${searchParams.end_time}T23:59:59`
-    : undefined;
+  const start_time = searchParams.start_time ? `${searchParams.start_time}T00:00:00` : undefined;
+  const end_time = searchParams.end_time ? `${searchParams.end_time}T23:59:59` : undefined;
 
   const result = await getOperationLogsAction({
     page,
@@ -44,9 +40,7 @@ export default async function AuditLogsPage(props: {
   });
 
   if (!result.success) {
-    return (
-      <div className="p-4 text-error">获取审计日志失败: {result.message}</div>
-    );
+    return <div className="p-4 text-error">获取审计日志失败: {result.message}</div>;
   }
 
   return (
@@ -67,7 +61,13 @@ export default async function AuditLogsPage(props: {
       >
         <AuditLogsClient
           initialData={result.data}
-          filters={{ user_id, action, resource_type, start_time: searchParams.start_time, end_time: searchParams.end_time }}
+          filters={{
+            user_id,
+            action,
+            resource_type,
+            start_time: searchParams.start_time,
+            end_time: searchParams.end_time,
+          }}
         />
       </Suspense>
     </div>

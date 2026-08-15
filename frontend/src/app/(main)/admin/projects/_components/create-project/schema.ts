@@ -110,7 +110,9 @@ export const formSchema = z
     signing_period: optionalNumber,
     extension_period: optionalNumber,
     extension_rent: optionalNumber,
-    cost_assumption_type: z.enum(["meifangbao", "owner", "respective", "other"]).default("respective"),
+    cost_assumption_type: z
+      .enum(["meifangbao", "owner", "respective", "other"])
+      .default("respective"),
     cost_assumption_other: z.string().max(50).optional(),
     planned_handover_date: z.date().nullable().optional(),
     // 委托期限日期范围
@@ -119,27 +121,25 @@ export const formSchema = z
     other_agreements: z.string().optional(),
 
     // 业主信息（多业主，至少 1 位）
-    owners: z
-      .array(ownerItemSchema)
-      .default([
-        {
-          owner_name: "",
-          owner_phone: "",
-          owner_id_card: "",
-          bank_name: "",
-          bank_card_number: "",
-          relation_type: "业主",
-          owner_info: "",
-        },
-      ]),
+    owners: z.array(ownerItemSchema).default([
+      {
+        owner_name: "",
+        owner_phone: "",
+        owner_id_card: "",
+        bank_name: "",
+        bank_card_number: "",
+        relation_type: "业主",
+        owner_info: "",
+      },
+    ]),
 
     // 备注
     notes: z.string().optional(),
   })
-  .refine(
-    (data) => data.owners && data.owners.length >= 1,
-    { message: "至少需要一位业主", path: ["owners"] }
-  );
+  .refine((data) => data.owners && data.owners.length >= 1, {
+    message: "至少需要一位业主",
+    path: ["owners"],
+  });
 // 移除户型必填验证 - layout 是可选字段，允许用户不填户型
 
 // 这个类型现在被强制用于 useForm 泛型

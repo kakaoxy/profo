@@ -5,11 +5,7 @@ import {
   getCompetitorsBrawlInitAction,
   getCompetitorsBrawlPageAction,
 } from "../../../actions/monitor-lib/brawl";
-import type {
-  BrawlCounts,
-  BrawlItem,
-  BrawlPageParams,
-} from "../../../actions/monitor-lib/types";
+import type { BrawlCounts, BrawlItem, BrawlPageParams } from "../../../actions/monitor-lib/types";
 import type { SortConfig } from "./types";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -47,9 +43,7 @@ interface UseCompetitorsReturn {
 }
 
 /** 将前端状态筛选映射为后端 status 参数. */
-function buildStatusParam(
-  statusFilters: ("on_sale" | "sold")[],
-): "在售" | "成交" | undefined {
+function buildStatusParam(statusFilters: ("on_sale" | "sold")[]): "在售" | "成交" | undefined {
   const hasOnSale = statusFilters.includes("on_sale");
   const hasSold = statusFilters.includes("sold");
   if (hasOnSale && hasSold) return undefined; // 两者都选 → 不过滤（含过期）
@@ -77,9 +71,7 @@ function buildRoomsParam(layoutFilters: string[]): string | undefined {
 }
 
 /** 将前端排序配置映射为后端 sort_by/sort_order 参数. */
-function buildSortParam(
-  sortConfig: SortConfig,
-): { sort_by: string; sort_order: "asc" | "desc" } {
+function buildSortParam(sortConfig: SortConfig): { sort_by: string; sort_order: "asc" | "desc" } {
   if (sortConfig.key && sortConfig.direction) {
     const sort_by = sortConfig.key === "total" ? "total_price" : "unit_price";
     return { sort_by, sort_order: sortConfig.direction };
@@ -102,9 +94,7 @@ export function useCompetitors({
   const [total, setTotal] = useState(0);
 
   // 筛选状态
-  const [statusFilters, setStatusFilters] = useState<("on_sale" | "sold")[]>([
-    "on_sale",
-  ]);
+  const [statusFilters, setStatusFilters] = useState<("on_sale" | "sold")[]>(["on_sale"]);
   const [layoutFilters, setLayoutFilters] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -149,9 +139,7 @@ export function useCompetitors({
       }
 
       setInitLoading(true);
-      const scope = projectId
-        ? { projectId }
-        : { communityId: communityId! };
+      const scope = projectId ? { projectId } : { communityId: communityId! };
       const res = await getCompetitorsBrawlInitAction(scope);
       if (cancelled) return;
       if (res.success) {
@@ -220,21 +208,10 @@ export function useCompetitors({
     return () => {
       cancelled = true;
     };
-  }, [
-    communityIds,
-    page,
-    pageSize,
-    statusFilters,
-    layoutFilters,
-    debouncedSearch,
-    sortConfig,
-  ]);
+  }, [communityIds, page, pageSize, statusFilters, layoutFilters, debouncedSearch, sortConfig]);
 
   // --- 派生值 ---
-  const totalPages = useMemo(
-    () => Math.ceil(total / pageSize) || 1,
-    [total, pageSize],
-  );
+  const totalPages = useMemo(() => Math.ceil(total / pageSize) || 1, [total, pageSize]);
 
   const displayItems = useMemo(() => {
     // 第1页且筛选含在售时，前置"本项目"对照条目
@@ -258,9 +235,7 @@ export function useCompetitors({
 
   const toggleLayout = useCallback((layout: string) => {
     setLayoutFilters((prev) =>
-      prev.includes(layout)
-        ? prev.filter((l) => l !== layout)
-        : [...prev, layout],
+      prev.includes(layout) ? prev.filter((l) => l !== layout) : [...prev, layout],
     );
     setPage(1);
   }, []);
@@ -274,8 +249,7 @@ export function useCompetitors({
     setSortConfig((current) => {
       if (current.key === key) {
         if (current.direction === "asc") return { key, direction: "desc" };
-        if (current.direction === "desc")
-          return { key: null, direction: null };
+        if (current.direction === "desc") return { key: null, direction: null };
         return { key, direction: "asc" };
       }
       return { key, direction: "asc" };

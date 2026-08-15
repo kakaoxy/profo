@@ -40,15 +40,15 @@ export default function CProfilePage() {
     }
   }, [userInfo.nickname]);
 
-  const [profileState, profileAction, isProfilePending] = useActionState(
-    updateProfileAction,
-    { success: false, error: "" } as ActionResult<{ nickname: string }>
-  );
+  const [profileState, profileAction, isProfilePending] = useActionState(updateProfileAction, {
+    success: false,
+    error: "",
+  } as ActionResult<{ nickname: string }>);
 
-  const [phoneState, phoneAction, isPhonePending] = useActionState(
-    updatePhoneAction,
-    { success: false, error: "" } as ActionResult<{ phone: string }>
-  );
+  const [phoneState, phoneAction, isPhonePending] = useActionState(updatePhoneAction, {
+    success: false,
+    error: "",
+  } as ActionResult<{ phone: string }>);
 
   useEffect(() => {
     if (profileState.success && profileState.data) {
@@ -77,9 +77,7 @@ export default function CProfilePage() {
       : userInfo.nickname || cLocale.common.user.defaultName;
 
   const displayPhone =
-    phoneState.success && phoneState.data?.phone
-      ? phoneState.data.phone
-      : userInfo.phone || "";
+    phoneState.success && phoneState.data?.phone ? phoneState.data.phone : userInfo.phone || "";
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 md:px-6 space-y-6">
@@ -90,9 +88,7 @@ export default function CProfilePage() {
       <section className="rounded-cards bg-white p-5 md:p-6 shadow-steep">
         <form action={profileAction} className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-ink">
-              {cLocale.profile.nicknameLabel}
-            </label>
+            <label className="text-sm font-medium text-ink">{cLocale.profile.nicknameLabel}</label>
             <button
               type="submit"
               disabled={isProfilePending}
@@ -140,9 +136,7 @@ export default function CProfilePage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{cLocale.profile.dialogTitle}</DialogTitle>
-            <DialogDescription>
-              {cLocale.profile.dialogDesc}
-            </DialogDescription>
+            <DialogDescription>{cLocale.profile.dialogDesc}</DialogDescription>
           </DialogHeader>
           <form action={phoneAction} className="space-y-4">
             {phoneState && !phoneState.success && phoneState.error && (

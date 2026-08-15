@@ -2,12 +2,7 @@
 
 import Image from "next/image";
 import { X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogClose,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { getThumbnailUrl } from "@/lib/config";
 import type { ImageItem } from "./types";
 
@@ -20,8 +15,8 @@ interface ImagePreviewProps {
 
 export function ImagePreview({ item, imageUrl, open, onOpenChange }: ImagePreviewProps) {
   // 优先使用缩略图，避免加载原图导致卡顿
-  const displayUrl = imageUrl ||
-    getThumbnailUrl(item?.response?.thumbnail_url, item?.response?.url || item?.url);
+  const displayUrl =
+    imageUrl || getThumbnailUrl(item?.response?.thumbnail_url, item?.response?.url || item?.url);
 
   if (!displayUrl) return null;
 

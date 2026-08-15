@@ -20,7 +20,7 @@ const ADMIN_DOMAINS = (process.env.ADMIN_DOMAINS || "admin.fangmengchina.com")
 
 function isProtectedCPath(pathname: string): boolean {
   return PROTECTED_C_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/"),
   );
 }
 

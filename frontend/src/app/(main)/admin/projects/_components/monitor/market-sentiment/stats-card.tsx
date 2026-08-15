@@ -30,9 +30,7 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             {title}
           </p>
-          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
-            {subtitle}
-          </p>
+          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{subtitle}</p>
         </div>
         <div
           className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${trendColor}`}
@@ -44,15 +42,9 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
       <div className="space-y-3 grow">
         {stats.map((item, idx) => {
           const count = isDeal ? item.deals_count : item.current_count;
-          const avgPrice = isDeal
-            ? item.deal_avg_price
-            : item.current_avg_price;
+          const avgPrice = isDeal ? item.deal_avg_price : item.current_avg_price;
           const colorClass =
-            idx === 0
-              ? "bg-primary"
-              : idx === 1
-                ? "bg-primary/60"
-                : "bg-muted-foreground/30";
+            idx === 0 ? "bg-primary" : idx === 1 ? "bg-primary/60" : "bg-muted-foreground/30";
 
           return (
             <div key={`${dataKey}-${item.type}`}>
@@ -63,19 +55,13 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
                     <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                       {FLOOR_TYPE_MAP[item.type] || item.type}
                       <span className="text-border">|</span>
-                      <span className="text-primary font-bold">
-                        {count} 套
-                      </span>
+                      <span className="text-primary font-bold">{count} 套</span>
                     </p>
-                    <p className="text-base font-black text-foreground">
-                      {avgPrice.toFixed(0)} 万
-                    </p>
+                    <p className="text-base font-black text-foreground">{avgPrice.toFixed(0)} 万</p>
                   </div>
                 </div>
               </div>
-              {idx < stats.length - 1 && (
-                <div className="h-px bg-border/50" />
-              )}
+              {idx < stats.length - 1 && <div className="h-px bg-border/50" />}
             </div>
           );
         })}

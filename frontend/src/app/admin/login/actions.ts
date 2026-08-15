@@ -4,11 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { adminAuth, AdminPasswordChangeRequiredError } from "@/admin-auth";
-import {
-  clearTokenCookies,
-  getTokensFromCookies,
-  setTokenCookies,
-} from "@/lib/auth/core";
+import { clearTokenCookies, getTokensFromCookies, setTokenCookies } from "@/lib/auth/core";
 import { TokenPairSchema } from "@/lib/auth/types";
 import { sanitizeCallbackUrl } from "@/lib/auth/utils/sanitize-callback-url";
 import { apiPaths, getApiUrl } from "@/lib/config";
@@ -31,14 +27,13 @@ const changePasswordSchema = z.object({
 export type LoginState = {
   error?: string;
   mustChangePassword?: boolean; // 新增：是否强制修改密码
-  username?: string;            // 新增：回传用户名以便修改密码使用
-  tempToken?: string;           // 新增：如果有临时Token
+  username?: string; // 新增：回传用户名以便修改密码使用
+  tempToken?: string; // 新增：如果有临时Token
 } | null;
 
 // changePasswordAction 专用返回类型：成功/失败为判别联合，强制调用方用 success 字段判断
 export type ChangePasswordState =
-  | { success: true }
-  | { success: false; error: string; mustChangePassword: true; username: string };
+  { success: true } | { success: false; error: string; mustChangePassword: true; username: string };
 
 /**
  * Admin 登录 Server Action。
@@ -99,7 +94,10 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
 }
 
 // --- 新增：修改初始密码 Action ---
-export async function changePasswordAction(prevState: ChangePasswordState | null, formData: FormData): Promise<ChangePasswordState> {
+export async function changePasswordAction(
+  prevState: ChangePasswordState | null,
+  formData: FormData,
+): Promise<ChangePasswordState> {
   const username = (formData.get("username") as string) ?? "";
   const currentPassword = formData.get("current_password") as string;
   const newPassword = formData.get("new_password") as string;
@@ -125,19 +123,19 @@ export async function changePasswordAction(prevState: ChangePasswordState | null
     // 使用 loginAction 从响应头获取的 tempToken 作为 Bearer 认证
     let token = tempToken;
     if (!token) {
-        const cookieStore = await cookies();
-        token = cookieStore.get("access_token")?.value || "";
+      const cookieStore = await cookies();
+      token = cookieStore.get("access_token")?.value || "";
     }
 
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
         current_password: currentPassword,
-        new_password: newPassword
+        new_password: newPassword,
       }),
     });
 
@@ -147,7 +145,7 @@ export async function changePasswordAction(prevState: ChangePasswordState | null
         success: false,
         error: errorData.message || "修改密码失败",
         mustChangePassword: true, // 保持在修改密码界面
-        username
+        username,
       };
     }
 

@@ -3,12 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Building2,
-  PhoneIncoming,
-  MoreHorizontal,
-} from "lucide-react";
+import { LayoutDashboard, Building2, PhoneIncoming, MoreHorizontal } from "lucide-react";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { usePermission } from "@/hooks/use-permission";
 import { AdminMobileMenuSheet } from "@/app/(main)/_components/admin-mobile-menu-sheet";
@@ -37,10 +32,7 @@ export function AdminMobileTabBar() {
 
   // tabs 是模块级常量，依赖 hasPermission 稳定后即可 memoize
   const visibleTabs = useMemo(
-    () =>
-      tabs.filter(
-        (t) => !("permission" in t) || hasPermission(t.permission),
-      ),
+    () => tabs.filter((t) => !("permission" in t) || hasPermission(t.permission)),
     [hasPermission],
   );
 
@@ -49,9 +41,7 @@ export function AdminMobileTabBar() {
 
   return (
     <>
-      <nav
-        className="fixed bottom-0 inset-x-0 z-50 h-16 border-t border-border bg-card/95 backdrop-blur-xl md:hidden pb-[env(safe-area-inset-bottom)]"
-      >
+      <nav className="fixed bottom-0 inset-x-0 z-50 h-16 border-t border-border bg-card/95 backdrop-blur-xl md:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto flex h-full max-w-150 items-center justify-around px-2">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;

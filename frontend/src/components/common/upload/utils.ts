@@ -60,10 +60,7 @@ function getOutputFormat(fileName: string): { mime: string; ext: string } | null
  * @param options 压缩选项
  * @returns 压缩后的 File（保持原扩展名）；若无需压缩则返回原文件
  */
-export async function compressImage(
-  file: File,
-  options: CompressOptions = {},
-): Promise<File> {
+export async function compressImage(file: File, options: CompressOptions = {}): Promise<File> {
   const {
     maxDimension = 1920,
     quality = 0.8,
@@ -98,11 +95,7 @@ export async function compressImage(
 
   try {
     const img = await loadImage(file);
-    const { width, height } = calculateDimensions(
-      img.width,
-      img.height,
-      maxDimension,
-    );
+    const { width, height } = calculateDimensions(img.width, img.height, maxDimension);
 
     const canvas = document.createElement("canvas");
     canvas.width = width;
@@ -182,18 +175,16 @@ function calculateDimensions(
 let _webpSupported: boolean | null = null;
 function supportsWebP(): boolean {
   if (_webpSupported !== null) return _webpSupported;
-  _webpSupported = typeof document !== "undefined"
-    && document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp");
+  _webpSupported =
+    typeof document !== "undefined" &&
+    document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp");
   return _webpSupported;
 }
 
 /**
  * 检查文件类型是否被允许
  */
-export function isAllowedFileType(
-  file: File,
-  allowedTypes: string[]
-): boolean {
+export function isAllowedFileType(file: File, allowedTypes: string[]): boolean {
   if (allowedTypes.length === 0) return true;
 
   return allowedTypes.some((type) => {
@@ -215,7 +206,7 @@ export function validateFile(
   options: {
     maxSize?: number;
     allowedTypes?: string[];
-  }
+  },
 ): string | null {
   const { maxSize = 100 * 1024 * 1024, allowedTypes = [] } = options;
 
@@ -242,25 +233,18 @@ export function parseUploadResponse(response: Record<string, unknown>): UploadRe
   const data = response.data as Record<string, unknown> | undefined;
 
   // 尝试从不同格式的响应中提取 URL
-  const url =
-    data?.url ||
-    response.url ||
-    response.file_url ||
-    response.path ||
-    data?.file_url;
+  const url = data?.url || response.url || response.file_url || response.path || data?.file_url;
 
-  if (!url || typeof url !== 'string') return null;
+  if (!url || typeof url !== "string") return null;
 
   // 尝试从不同格式的响应中提取缩略图 URL
   const thumbnail_url =
-    data?.thumbnail_url ||
-    response.thumbnail_url ||
-    data?.thumbnailUrl ||
-    response.thumbnailUrl;
+    data?.thumbnail_url || response.thumbnail_url || data?.thumbnailUrl || response.thumbnailUrl;
 
   // 确保 URL 是完整的
   const fullUrl = getFileUrl(url);
-  const fullThumbnailUrl = typeof thumbnail_url === 'string' ? getFileUrl(thumbnail_url) : undefined;
+  const fullThumbnailUrl =
+    typeof thumbnail_url === "string" ? getFileUrl(thumbnail_url) : undefined;
 
   return {
     url: fullUrl,
@@ -275,10 +259,7 @@ export function parseUploadResponse(response: Record<string, unknown>): UploadRe
 /**
  * 处理上传错误
  */
-export function handleUploadError(
-  xhr: XMLHttpRequest,
-  filename: string
-): void {
+export function handleUploadError(xhr: XMLHttpRequest, filename: string): void {
   if (xhr.status === 401) {
     toast.error(`${filename}: 上传失败`, {
       description: "登录已过期，请刷新页面后重试",

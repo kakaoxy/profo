@@ -32,15 +32,10 @@ export default async function GovernancePage(props: GovernancePageProps) {
 
   if (error || !data) {
     logger.error("连接后端失败:", error);
-    return (
-      <div className="p-8 text-center text-error">
-        加载数据失败，请检查网络或权限。
-      </div>
-    );
+    return <div className="p-8 text-center text-error">加载数据失败，请检查网络或权限。</div>;
   }
 
-  const { items, total } =
-    extractPaginatedData<components["schemas"]["CommunityResponse"]>(data);
+  const { items, total } = extractPaginatedData<components["schemas"]["CommunityResponse"]>(data);
 
   // RSC 序列化精简：仅保留前端实际使用的字段，剔除 city_id / avg_price_wan
   // 规则: server-serialization（最小化传给客户端组件的数据）
@@ -49,21 +44,14 @@ export default async function GovernancePage(props: GovernancePageProps) {
   return (
     <div className="container h-full flex flex-col gap-4 sm:gap-6 p-4 sm:p-8 m-x-8">
       <div className="flex flex-col gap-1 sm:gap-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          数据治理
-        </h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">数据治理</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           合并重复的小区名称，清洗脏数据。合并操作将迁移关联的房源数据，操作不可撤销。
         </p>
       </div>
 
       {/* 核心治理视图 */}
-      <GovernanceView
-        data={minimalItems}
-        total={total || 0}
-        page={page}
-        pageSize={pageSize}
-      />
+      <GovernanceView data={minimalItems} total={total || 0} page={page} pageSize={pageSize} />
     </div>
   );
 }

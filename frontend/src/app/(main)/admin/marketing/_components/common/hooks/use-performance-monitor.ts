@@ -50,7 +50,7 @@ export interface PerformanceMonitorOptions {
 // 性能监控 Hook
 export function usePerformanceMonitor(
   componentName: string,
-  options: PerformanceMonitorOptions = {}
+  options: PerformanceMonitorOptions = {},
 ) {
   const {
     enableFPS = true,
@@ -93,7 +93,7 @@ export function usePerformanceMonitor(
           : "color: var(--status-selling);";
         logger.devDebug(
           `%c[Performance] ${componentName} - ${name}: ${value.toFixed(2)}${unit}`,
-          style
+          style,
         );
       }
 
@@ -104,7 +104,7 @@ export function usePerformanceMonitor(
         }
       }
     },
-    [] // 无依赖，使用 ref 获取最新值
+    [], // 无依赖，使用 ref 获取最新值
   );
 
   // FPS 监控
@@ -113,9 +113,7 @@ export function usePerformanceMonitor(
     fpsRef.current.frames++;
 
     if (now - fpsRef.current.lastTime >= fpsSampleInterval) {
-      const fps = Math.round(
-        (fpsRef.current.frames * 1000) / (now - fpsRef.current.lastTime)
-      );
+      const fps = Math.round((fpsRef.current.frames * 1000) / (now - fpsRef.current.lastTime));
       fpsRef.current = { frames: 0, lastTime: now };
 
       metricsRef.current.fps = fps;
@@ -124,9 +122,7 @@ export function usePerformanceMonitor(
       // 低帧率警告
       const { thresholds, componentName } = configRef.current;
       if (fps < (thresholds.fps || 30)) {
-        logger.warn(
-          `[Performance] ${componentName} - Low FPS detected: ${fps}`
-        );
+        logger.warn(`[Performance] ${componentName} - Low FPS detected: ${fps}`);
       }
 
       setMetrics((prev) => ({ ...prev, fps }));
@@ -144,7 +140,7 @@ export function usePerformanceMonitor(
     // 等待页面完全加载
     const measureLoadPerformance = () => {
       const navigation = performance.getEntriesByType(
-        "navigation"
+        "navigation",
       )[0] as PerformanceNavigationTiming;
 
       if (navigation) {
@@ -204,7 +200,7 @@ export function usePerformanceMonitor(
           if (configRef.current.logToConsole) {
             logger.devDebug(
               `%c[Performance] ${configRef.current.componentName} - Memory: ${usedMB}MB`,
-              "color: #3b82f6;"
+              "color: #3b82f6;",
             );
           }
         }
@@ -244,13 +240,13 @@ export function usePerformanceMonitor(
 
       if (duration > 16) {
         logger.warn(
-          `[Performance] ${configRef.current.componentName} - Slow render: ${duration.toFixed(2)}ms`
+          `[Performance] ${configRef.current.componentName} - Slow render: ${duration.toFixed(2)}ms`,
         );
       }
 
       return result as ReturnType<T>;
     },
-    []
+    [],
   );
 
   return {
@@ -277,9 +273,7 @@ export function useImagePerformanceMonitor(imageId: string) {
     setStatus("loaded");
 
     if (process.env.NODE_ENV === "development" && duration > 500) {
-      logger.warn(
-        `[Performance] Image ${imageId} loaded slowly: ${duration.toFixed(2)}ms`
-      );
+      logger.warn(`[Performance] Image ${imageId} loaded slowly: ${duration.toFixed(2)}ms`);
     }
   }, [imageId]);
 
@@ -313,7 +307,7 @@ export function useVirtualListMonitor(listName: string) {
 
     if (process.env.NODE_ENV === "development" && duration > 8) {
       logger.warn(
-        `[Performance] ${listNameRef.current} - Slow item render ${itemId}: ${duration.toFixed(2)}ms`
+        `[Performance] ${listNameRef.current} - Slow item render ${itemId}: ${duration.toFixed(2)}ms`,
       );
     }
   }, []);
@@ -326,7 +320,7 @@ export function useVirtualListMonitor(listName: string) {
         Array.from(itemRenderTimesRef.current.values()).reduce((a, b) => a + b, 0) /
         itemRenderTimesRef.current.size;
       logger.devDebug(
-        `[Performance] ${listNameRef.current} - Render #${renderCountRef.current}, Avg item time: ${avgRenderTime.toFixed(2)}ms`
+        `[Performance] ${listNameRef.current} - Render #${renderCountRef.current}, Avg item time: ${avgRenderTime.toFixed(2)}ms`,
       );
     }
   }, []);

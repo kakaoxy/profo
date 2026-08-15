@@ -38,9 +38,7 @@ const SECTION_DEFS: { type: "expense" | "income"; title: string }[] = [
 ];
 
 /** SWR fetcher：调用 Server Action 并解包 ActionResult */
-async function fetcher(
-  projectId: string,
-): Promise<ReceivablePayableResponse> {
+async function fetcher(projectId: string): Promise<ReceivablePayableResponse> {
   const res = await fetchReceivablePayable(projectId);
   if (res.success) {
     return res.data;
@@ -70,9 +68,7 @@ function groupByStage(
 }
 
 /** 差额状态 → badge 样式（色彩 + 背景） */
-function getDifferenceBadge(
-  diff: number | null | undefined,
-): { label: string; className: string } {
+function getDifferenceBadge(diff: number | null | undefined): { label: string; className: string } {
   if (diff == null) {
     return {
       label: "无预期",
@@ -109,16 +105,11 @@ function isCalculationLogicFaded(logic: string): boolean {
  * 注意：先替换 0.005 再替换 0.01，避免短串误匹配。
  */
 function formatCalculationLogic(logic: string): string {
-  return logic
-    .replaceAll("0.005", "0.5%")
-    .replaceAll("0.01", "1%");
+  return logic.replaceAll("0.005", "0.5%").replaceAll("0.01", "1%");
 }
 
 /** 格式化金额，null 返回 "—" */
-function formatAmount(
-  value: number | null | undefined,
-  treatNullAsZero = false,
-): string {
+function formatAmount(value: number | null | undefined, treatNullAsZero = false): string {
   if (value == null) {
     return treatNullAsZero ? formatCurrency(0) : "—";
   }
@@ -150,9 +141,7 @@ export function ReceivablePayableTable({
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 py-10">
-        <p className="text-sm text-graphite">
-          {error.message || "加载应收应付数据失败"}
-        </p>
+        <p className="text-sm text-graphite">{error.message || "加载应收应付数据失败"}</p>
         <Button
           variant="outline"
           size="sm"
@@ -177,9 +166,7 @@ export function ReceivablePayableTable({
   if (businessForm === "wholesale") allowedBusinessTypes.add("wholesale");
 
   const sectionItems = items.filter(
-    (i) =>
-      i.type === section.type &&
-      allowedBusinessTypes.has(i.business_type),
+    (i) => i.type === section.type && allowedBusinessTypes.has(i.business_type),
   );
   const groups = groupByStage(sectionItems);
   const totalCount = sectionItems.length;
@@ -188,9 +175,7 @@ export function ReceivablePayableTable({
     <div className="flex max-h-[calc(80vh-120px)] flex-col overflow-hidden">
       {/* 分区标题 + 计数 */}
       <div className="mb-3 flex shrink-0 items-baseline justify-between">
-        <h3 className="text-[15px] font-medium tracking-[-0.009em] text-ink">
-          {section.title}
-        </h3>
+        <h3 className="text-[15px] font-medium tracking-[-0.009em] text-ink">{section.title}</h3>
         <span className="text-[11px] font-medium uppercase tracking-[0.5px] text-graphite">
           {totalCount} 项
         </span>
@@ -203,21 +188,13 @@ export function ReceivablePayableTable({
           <div className="flex flex-col gap-4">
             {groups.map((group) => {
               const visual = STAGE_VISUALS[group.stage] ?? STAGE_VISUALS.其他;
-              const groupTotal = group.items.reduce(
-                (sum, i) => sum + (i.actual_amount ?? 0),
-                0,
-              );
+              const groupTotal = group.items.reduce((sum, i) => sum + (i.actual_amount ?? 0), 0);
               return (
                 <section key={`${section.type}-${group.stage}`}>
                   {/* Stage 分组标题：色点 + 名称 + 小计 */}
                   <div className="mb-2 flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          visual.dot,
-                        )}
-                      />
+                      <span className={cn("h-1.5 w-1.5 rounded-full", visual.dot)} />
                       <h4 className="text-[11px] font-medium uppercase tracking-[0.5px] text-ink">
                         {group.stage}
                       </h4>
@@ -230,15 +207,11 @@ export function ReceivablePayableTable({
                   {/* 项目卡片列表 */}
                   <div className="flex flex-col gap-1.5">
                     {group.items.map((item) => {
-                      const logicFaded = isCalculationLogicFaded(
-                        item.calculation_logic,
-                      );
+                      const logicFaded = isCalculationLogicFaded(item.calculation_logic);
                       const badge = getDifferenceBadge(item.difference);
                       const expected = item.expected_amount;
                       const actual = item.actual_amount;
-                      const logicText = formatCalculationLogic(
-                        item.calculation_logic,
-                      );
+                      const logicText = formatCalculationLogic(item.calculation_logic);
                       return (
                         <div
                           key={`${section.type}-${group.stage}-${item.category}`}
@@ -262,13 +235,9 @@ export function ReceivablePayableTable({
                           {/* 第二行：预期 · 实际 · 差额 badge */}
                           <div className="mt-1.5 flex items-center justify-between gap-2">
                             <div className="flex items-baseline gap-1.5 font-mono text-[12px] tabular-nums">
-                              <span className="text-graphite">
-                                {formatAmount(expected)}
-                              </span>
+                              <span className="text-graphite">{formatAmount(expected)}</span>
                               <span className="text-dove">/</span>
-                              <span className="text-ink">
-                                {formatAmount(actual, true)}
-                              </span>
+                              <span className="text-ink">{formatAmount(actual, true)}</span>
                             </div>
                             <span
                               className={cn(

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Building2,
-  Calendar,
-  HardHat,
-  Receipt,
-} from "lucide-react";
+import { Building2, Calendar, HardHat, Receipt } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -45,9 +40,7 @@ export function CompanySection({
   isLoadingUsers: boolean;
 }) {
   const selectedUser = users.find((u) => u.id === values.contact_person_id);
-  const contactPersonName = selectedUser
-    ? selectedUser.nickname || selectedUser.username
-    : "-";
+  const contactPersonName = selectedUser ? selectedUser.nickname || selectedUser.username : "-";
 
   return (
     <div className="space-y-2">

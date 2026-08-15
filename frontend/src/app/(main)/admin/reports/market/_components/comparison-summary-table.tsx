@@ -6,12 +6,7 @@
  */
 import type { ReactElement } from "react";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -84,9 +79,7 @@ function renderMetricValue(metric: string, value: number | null): ReactElement {
   }
 }
 
-export function ComparisonSummaryTable({
-  data,
-}: ComparisonSummaryTableProps): ReactElement {
+export function ComparisonSummaryTable({ data }: ComparisonSummaryTableProps): ReactElement {
   const { business_circles, summary } = data;
   return (
     <Card>

@@ -10,11 +10,7 @@ interface LeadImageLightboxProps {
   onClose: () => void;
 }
 
-export function LeadImageLightbox({
-  images,
-  initialIndex,
-  onClose,
-}: LeadImageLightboxProps) {
+export function LeadImageLightbox({ images, initialIndex, onClose }: LeadImageLightboxProps) {
   const [index, setIndex] = useState(initialIndex);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
@@ -43,8 +39,7 @@ export function LeadImageLightbox({
   }, [images.length, onClose]);
 
   const goPrev = () => setIndex((prev) => Math.max(0, prev - 1));
-  const goNext = () =>
-    setIndex((prev) => Math.min(images.length - 1, prev + 1));
+  const goNext = () => setIndex((prev) => Math.min(images.length - 1, prev + 1));
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0]?.clientX ?? null);

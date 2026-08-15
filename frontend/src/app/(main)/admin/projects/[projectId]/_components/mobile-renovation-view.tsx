@@ -26,21 +26,14 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
 import { RENOVATION_STAGES } from "../../_components/project-detail/constants";
 import { getThumbnailUrl } from "../../_components/project-detail/utils";
 import { useRenovationUpload } from "../../_components/project-detail/views/renovation/components/use-renovation-upload";
 import { getRenovationPhotosAction } from "../../actions/client";
-import {
-  updateRenovationStageAction,
-  deleteRenovationPhotoAction,
-} from "../../actions/renovation";
+import { updateRenovationStageAction, deleteRenovationPhotoAction } from "../../actions/renovation";
 import type { RenovationPhoto } from "../../types";
 
 // 后端 ProjectResponse 已附带 renovation.can_edit_renovation 业务身份标志，
@@ -157,11 +150,7 @@ function MobileStageCard({
     try {
       const date = parseISO(stageFinishDate);
       if (isValid(date)) {
-        return (
-          <span className="text-[12px] text-success font-mono">
-            {format(date, "MM-dd")}
-          </span>
-        );
+        return <span className="text-[12px] text-success font-mono">{format(date, "MM-dd")}</span>;
       }
     } catch {
       return null;
@@ -263,14 +252,9 @@ function MobileStageCard({
                     <>
                       <Loader2 className="h-5 w-5 animate-spin text-white" />
                       <div className="w-full px-2">
-                        <Progress
-                          value={item.progress}
-                          className="h-1.5 w-full bg-white/30"
-                        />
+                        <Progress value={item.progress} className="h-1.5 w-full bg-white/30" />
                       </div>
-                      <span className="text-[10px] text-white font-medium">
-                        {item.progress}%
-                      </span>
+                      <span className="text-[10px] text-white font-medium">{item.progress}%</span>
                     </>
                   )}
                 </div>
@@ -334,9 +318,7 @@ function MobileStageCard({
               onClick={handleSubmit}
               disabled={isSubmittingStage}
             >
-              {isSubmittingStage && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isSubmittingStage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               完成阶段
             </Button>
           </div>
@@ -355,9 +337,7 @@ function MobileStageCard({
       {/* 卡片头部 */}
       <button
         onClick={() => onToggle()}
-        className={cn(
-          "flex items-center gap-3 w-full text-left cursor-pointer",
-        )}
+        className={cn("flex items-center gap-3 w-full text-left cursor-pointer")}
       >
         {isCompleted ? (
           <CheckCircle2 className="h-6 w-6 text-status-selling fill-status-selling/10 shrink-0" />
@@ -369,9 +349,7 @@ function MobileStageCard({
         <span
           className={cn(
             "transition-colors flex-1",
-            isCurrent
-              ? "font-bold text-foreground"
-              : "font-medium text-muted-foreground",
+            isCurrent ? "font-bold text-foreground" : "font-medium text-muted-foreground",
           )}
         >
           {stage.label}
@@ -391,9 +369,7 @@ function MobileStageCard({
       </button>
 
       {/* 卡片内容 */}
-      {isExpanded && (
-        <div className="mt-4">{renderExpandedContent()}</div>
-      )}
+      {isExpanded && <div className="mt-4">{renderExpandedContent()}</div>}
       {!isExpanded && isCompleted && renderCollapsedThumbnails()}
     </div>
   );
@@ -403,10 +379,7 @@ function MobileStageCard({
 // MobileRenovationView — 主组件
 // ---------------------------------------------------------------------------
 
-export function MobileRenovationView({
-  projectId,
-  project,
-}: MobileRenovationViewProps) {
+export function MobileRenovationView({ projectId, project }: MobileRenovationViewProps) {
   const router = useRouter();
   const { hasAnyPermission } = usePermission();
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
@@ -421,10 +394,8 @@ export function MobileRenovationView({
     PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
     PERMISSION_CODES.PROJECT_WRITE,
   ]);
-  const canEditRenovation =
-    canEditByPermission || project.renovation?.can_edit_renovation === true;
-  const canComplete =
-    canCompleteByPermission || project.renovation?.can_edit_renovation === true;
+  const canEditRenovation = canEditByPermission || project.renovation?.can_edit_renovation === true;
+  const canComplete = canCompleteByPermission || project.renovation?.can_edit_renovation === true;
 
   // 计算当前阶段索引（仅用于 UI 视觉区分，不再用于禁用操作）
   const currentIndex = useMemo(() => {
@@ -435,18 +406,14 @@ export function MobileRenovationView({
     ) {
       return RENOVATION_STAGES.length;
     }
-    const idx = RENOVATION_STAGES.findIndex(
-      (s) => s.value === project.renovation_stage,
-    );
+    const idx = RENOVATION_STAGES.findIndex((s) => s.value === project.renovation_stage);
     return idx === -1 ? 0 : idx;
   }, [project.renovation_stage, project.status]);
 
   // 默认展开第一个未完成阶段（全完成时展开最后一个阶段）
   const defaultExpandedKey = useMemo(() => {
     const stageDates = project.renovationStageDates ?? {};
-    const firstUnfinished = RENOVATION_STAGES.find(
-      (s) => !stageDates[s.value],
-    );
+    const firstUnfinished = RENOVATION_STAGES.find((s) => !stageDates[s.value]);
     return (firstUnfinished ?? RENOVATION_STAGES[RENOVATION_STAGES.length - 1]).key;
   }, [project.renovationStageDates]);
   const [expandedStage, setExpandedStage] = useState<string>(defaultExpandedKey);
@@ -481,15 +448,11 @@ export function MobileRenovationView({
   const communityName = project.community_name || project.name || "未知项目";
 
   const currentStageLabel =
-    currentIndex < RENOVATION_STAGES.length
-      ? RENOVATION_STAGES[currentIndex].label
-      : "已完成";
+    currentIndex < RENOVATION_STAGES.length ? RENOVATION_STAGES[currentIndex].label : "已完成";
 
   const progressValue = useMemo(() => {
     const stageDates = project.renovationStageDates ?? {};
-    const completedCount = RENOVATION_STAGES.filter(
-      (s) => !!stageDates[s.value],
-    ).length;
+    const completedCount = RENOVATION_STAGES.filter((s) => !!stageDates[s.value]).length;
     return Math.round((completedCount / RENOVATION_STAGES.length) * 100);
   }, [project.renovationStageDates]);
 
@@ -504,9 +467,7 @@ export function MobileRenovationView({
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <span className="text-base font-semibold truncate flex-1">
-            {communityName}
-          </span>
+          <span className="text-base font-semibold truncate flex-1">{communityName}</span>
         </div>
       </div>
 
@@ -514,23 +475,15 @@ export function MobileRenovationView({
       <div className="grid grid-cols-2 gap-3 p-4">
         <Card className="shadow-sm">
           <CardContent className="p-4 flex flex-col gap-2">
-            <span className="text-xs text-muted-foreground font-medium">
-              当前阶段
-            </span>
-            <div className="text-xl font-bold text-foreground">
-              {currentStageLabel}
-            </div>
+            <span className="text-xs text-muted-foreground font-medium">当前阶段</span>
+            <div className="text-xl font-bold text-foreground">{currentStageLabel}</div>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
           <CardContent className="p-4 flex flex-col gap-2">
-            <span className="text-xs text-muted-foreground font-medium">
-              总体进度
-            </span>
+            <span className="text-xs text-muted-foreground font-medium">总体进度</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-bold text-foreground">
-                {progressValue}
-              </span>
+              <span className="text-xl font-bold text-foreground">{progressValue}</span>
               <span className="text-sm text-muted-foreground">%</span>
             </div>
             <Progress
@@ -551,8 +504,7 @@ export function MobileRenovationView({
         ) : (
           RENOVATION_STAGES.map((stage, index) => {
             const stagePhotos = photosByStage[stage.value] || [];
-            const stageFinishDate =
-              project.renovationStageDates?.[stage.value];
+            const stageFinishDate = project.renovationStageDates?.[stage.value];
             const isExpanded = expandedStage === stage.key;
             return (
               <MobileStageCard
@@ -566,11 +518,7 @@ export function MobileRenovationView({
                 canEditRenovation={canEditRenovation}
                 canComplete={canComplete}
                 stageFinishDate={stageFinishDate}
-                onToggle={() =>
-                  setExpandedStage((prev) =>
-                    prev === stage.key ? "" : stage.key,
-                  )
-                }
+                onToggle={() => setExpandedStage((prev) => (prev === stage.key ? "" : stage.key))}
                 onRefresh={refreshPhotos}
               />
             );

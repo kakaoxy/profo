@@ -61,9 +61,7 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "community_name",
-    header: () => (
-      <div className="hidden lg:block text-muted-foreground font-medium">小区</div>
-    ),
+    header: () => <div className="hidden lg:block text-muted-foreground font-medium">小区</div>,
     cell: ({ row }) => (
       <span className="hidden lg:block text-sm text-foreground font-medium truncate max-w-30">
         {row.original.community_name || "-"}
@@ -73,9 +71,7 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "status",
     header: () => (
-      <div className="hidden md:block pl-2 text-muted-foreground font-medium">
-        状态
-      </div>
+      <div className="hidden md:block pl-2 text-muted-foreground font-medium">状态</div>
     ),
     cell: ({ row }) => {
       const status = row.original.status || DEFAULT_STATUS;
@@ -151,9 +147,7 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "manager",
-    header: () => (
-      <div className="hidden xl:block text-muted-foreground font-medium">负责人</div>
-    ),
+    header: () => <div className="hidden xl:block text-muted-foreground font-medium">负责人</div>,
     cell: ({ row }) => {
       const manager = row.original.project_manager;
       const displayName = manager?.nickname || manager?.username || "-";
@@ -169,9 +163,7 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "net_cash_flow",
     header: () => (
-      <div className="hidden lg:block text-right text-muted-foreground font-medium">
-        现金流
-      </div>
+      <div className="hidden lg:block text-right text-muted-foreground font-medium">现金流</div>
     ),
     cell: ({ row }) => {
       const val = row.original.net_cash_flow || 0;

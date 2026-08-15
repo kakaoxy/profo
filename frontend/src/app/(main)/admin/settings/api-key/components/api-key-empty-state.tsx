@@ -13,9 +13,7 @@ export function ApiKeyEmptyState({ onGenerate }: ApiKeyEmptyStateProps) {
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4">
         <KeyRound className="h-8 w-8 text-muted-foreground dark:text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-2">
-        暂无 API Key
-      </h3>
+      <h3 className="text-lg font-semibold text-foreground mb-2">暂无 API Key</h3>
       <p className="text-sm text-muted-foreground max-w-sm mb-6">
         生成 API Key 后，您可以通过程序化方式访问系统接口，实现与其他系统的集成
       </p>

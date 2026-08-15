@@ -17,30 +17,33 @@ interface LazyPhotoPlaceholderProps {
   onVisible: () => void;
 }
 
-const LazyPhotoPlaceholder = memo(function LazyPhotoPlaceholder({ onVisible }: LazyPhotoPlaceholderProps) {
-  const ref = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
+const LazyPhotoPlaceholder = memo(function LazyPhotoPlaceholder({
+  onVisible,
+}: LazyPhotoPlaceholderProps) {
+  const ref = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            onVisible();
-            observer.disconnect();
-          }
-        });
-      },
-      { rootMargin: "100px" }
-    );
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              onVisible();
+              observer.disconnect();
+            }
+          });
+        },
+        { rootMargin: "100px" },
+      );
 
-    observer.observe(node);
+      observer.observe(node);
 
-    return () => observer.disconnect();
-  }, [onVisible]);
-
-  return (
-    <div ref={ref} className="absolute inset-0 bg-card animate-pulse" />
+      return () => observer.disconnect();
+    },
+    [onVisible],
   );
+
+  return <div ref={ref} className="absolute inset-0 bg-card animate-pulse" />;
 });
 
 export const LazyPhoto = memo(function LazyPhoto({ photo }: LazyPhotoProps) {
@@ -62,7 +65,7 @@ export const LazyPhoto = memo(function LazyPhoto({ photo }: LazyPhotoProps) {
             unoptimized
             className={cn(
               "object-contain transition-opacity duration-300",
-              isLoaded ? "opacity-100" : "opacity-0"
+              isLoaded ? "opacity-100" : "opacity-0",
             )}
             onLoad={() => setIsLoaded(true)}
           />

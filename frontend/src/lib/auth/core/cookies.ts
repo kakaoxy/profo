@@ -25,23 +25,17 @@ export async function setTokenCookies(
     secure: config.cookieOptions.secure,
     sameSite: config.cookieOptions.sameSite,
     path: config.cookieOptions.path,
-    ...(config.cookieOptions.domain
-      ? { domain: config.cookieOptions.domain }
-      : {}),
+    ...(config.cookieOptions.domain ? { domain: config.cookieOptions.domain } : {}),
   };
 
   cookieStore.set(config.cookieNames.accessToken, tokens.accessToken, {
     ...baseOptions,
-    ...(accessExpiry && !accessExpiry.isExpired
-      ? { maxAge: accessExpiry.maxAgeSeconds }
-      : {}),
+    ...(accessExpiry && !accessExpiry.isExpired ? { maxAge: accessExpiry.maxAgeSeconds } : {}),
   });
 
   cookieStore.set(config.cookieNames.refreshToken, tokens.refreshToken, {
     ...baseOptions,
-    ...(refreshExpiry && !refreshExpiry.isExpired
-      ? { maxAge: refreshExpiry.maxAgeSeconds }
-      : {}),
+    ...(refreshExpiry && !refreshExpiry.isExpired ? { maxAge: refreshExpiry.maxAgeSeconds } : {}),
   });
 }
 
@@ -51,9 +45,7 @@ export async function setTokenCookies(
  * @param config - The resolved auth configuration.
  * @returns The token pair, or `null` if either token cookie is absent.
  */
-export async function getTokensFromCookies(
-  config: ResolvedAuthConfig,
-): Promise<TokenPair | null> {
+export async function getTokensFromCookies(config: ResolvedAuthConfig): Promise<TokenPair | null> {
   const cookieStore = await cookies();
 
   const accessToken = cookieStore.get(config.cookieNames.accessToken)?.value;
@@ -68,9 +60,7 @@ export async function getTokensFromCookies(
  *
  * @param config - The resolved auth configuration.
  */
-export async function clearTokenCookies(
-  config: ResolvedAuthConfig,
-): Promise<void> {
+export async function clearTokenCookies(config: ResolvedAuthConfig): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(config.cookieNames.accessToken);
   cookieStore.delete(config.cookieNames.refreshToken);
@@ -96,9 +86,7 @@ export async function updateAccessTokenCookie(
     secure: config.cookieOptions.secure,
     sameSite: config.cookieOptions.sameSite,
     path: config.cookieOptions.path,
-    ...(config.cookieOptions.domain
-      ? { domain: config.cookieOptions.domain }
-      : {}),
+    ...(config.cookieOptions.domain ? { domain: config.cookieOptions.domain } : {}),
     ...(expiry && !expiry.isExpired ? { maxAge: expiry.maxAgeSeconds } : {}),
   });
 }

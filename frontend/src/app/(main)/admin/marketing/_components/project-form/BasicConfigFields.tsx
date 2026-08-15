@@ -1,13 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import type { FormValues } from "../form-schema";
 import { TagInputField } from "./TagInputField";
 
@@ -21,7 +15,9 @@ export function BasicConfigFields() {
       <section className="bg-card rounded-3xl shadow-steep-sm p-6">
         <h3 className="flex items-center gap-2 mb-6">
           <span className="w-1 h-4 rounded-full bg-rust"></span>
-          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">发布设置 <span className="ml-1 font-normal normal-case text-ash">Settings</span></span>
+          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">
+            发布设置 <span className="ml-1 font-normal normal-case text-ash">Settings</span>
+          </span>
         </h3>
         <div className="space-y-8">
           {/* Toggle: Draft/Publish */}
@@ -109,7 +105,9 @@ export function BasicConfigFields() {
             render={({ field }) => (
               <FormItem className="space-y-3 pt-4 border-t border-dove/30">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-medium text-graphite uppercase tracking-wider">排序权重</label>
+                  <label className="text-xs font-medium text-graphite uppercase tracking-wider">
+                    排序权重
+                  </label>
                   <span className="text-ink font-medium">{field.value ?? 50}</span>
                 </div>
                 <FormControl>
@@ -133,7 +131,10 @@ export function BasicConfigFields() {
       <section className="bg-card rounded-3xl shadow-steep-sm p-6">
         <h3 className="flex items-center gap-2 mb-6">
           <span className="w-1 h-4 rounded-full bg-rust"></span>
-          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">标签与风格 <span className="ml-1 font-normal normal-case text-ash">Tags &amp; Styles</span></span>
+          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">
+            标签与风格{" "}
+            <span className="ml-1 font-normal normal-case text-ash">Tags &amp; Styles</span>
+          </span>
         </h3>
         <div className="space-y-6">
           {/* Tags */}
@@ -144,9 +145,7 @@ export function BasicConfigFields() {
               <FormItem className="space-y-2">
                 <FormLabel className="block text-xs font-medium text-graphite uppercase tracking-wider">
                   房源标签
-                  <span className="text-xs text-ash/70 ml-2">
-                    ({tags.length}/20)
-                  </span>
+                  <span className="text-xs text-ash/70 ml-2">({tags.length}/20)</span>
                 </FormLabel>
                 <FormControl>
                   <TagInputField
@@ -188,7 +187,9 @@ export function BasicConfigFields() {
                           onChange={() => field.onChange(style)}
                           className="hidden"
                         />
-                        <span className={`text-xs font-medium ${isSelected ? "text-rust" : "text-ink"}`}>
+                        <span
+                          className={`text-xs font-medium ${isSelected ? "text-rust" : "text-ink"}`}
+                        >
                           {style}
                         </span>
                       </label>

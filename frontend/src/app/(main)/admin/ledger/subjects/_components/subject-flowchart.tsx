@@ -38,10 +38,7 @@ interface SubjectFlowchartProps {
  * - 按阶段分列展示科目卡片（层级 pill + 名称 + 进损益标签 + 编辑/删除）
  * - 参照设计文档 flowchart 布局：阶段标记圆圈 + 连接线 + 阶段卡片列
  */
-export function SubjectFlowchart({
-  agentSubjects,
-  acquireSubjects,
-}: SubjectFlowchartProps) {
+export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlowchartProps) {
   const [modeView, setModeView] = useState<SubjectMode>("agent");
   const [editOpen, setEditOpen] = useState(false);
   const [editSubj, setEditSubj] = useState<Subject | null>(null);
@@ -109,9 +106,7 @@ export function SubjectFlowchart({
   return (
     <section className="rounded-2xl bg-card p-5 shadow-sm">
       <header className="mb-4 flex flex-wrap items-center gap-3">
-        <h2 className="text-base font-semibold text-foreground">
-          业务流阶段流程图
-        </h2>
+        <h2 className="text-base font-semibold text-foreground">业务流阶段流程图</h2>
         <span className="rounded-md border border-rust/20 bg-apricot-wash/60 px-2 py-0.5 text-xs font-medium text-rust">
           {counts.total} 个科目
         </span>
@@ -170,12 +165,8 @@ export function SubjectFlowchart({
                   <div className="mx-auto mb-3 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-card text-xl shadow-sm ring-4 ring-fog">
                     <span>{st.icon}</span>
                   </div>
-                  <p className="text-center text-sm font-semibold text-foreground">
-                    {st.name}
-                  </p>
-                  <p className="mb-3 text-center text-[11px] text-muted-foreground">
-                    {st.sub}
-                  </p>
+                  <p className="text-center text-sm font-semibold text-foreground">{st.name}</p>
+                  <p className="mb-3 text-center text-[11px] text-muted-foreground">{st.sub}</p>
                   <div className="flex min-h-[140px] flex-col gap-1.5 rounded-xl border bg-card p-2">
                     {list.length === 0 && (
                       <div className="py-5 text-center text-[11px] italic text-muted-foreground">
@@ -222,17 +213,13 @@ export function SubjectFlowchart({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              确认删除科目「{confirmTarget?.name}」？
-            </AlertDialogTitle>
+            <AlertDialogTitle>确认删除科目「{confirmTarget?.name}」？</AlertDialogTitle>
             <AlertDialogDescription>
               已关联流水的科目删除后流水将显示“科目已删除”。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingId !== null}>
-              取消
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={deletingId !== null}>取消</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={deletingId !== null}
@@ -273,9 +260,7 @@ function SubjectRow({
         <span className="flex items-center gap-1 font-medium text-graphite">
           <span className="truncate">{subject.name}</span>
           {subject.system && (
-            <span className="rounded bg-sky-wash/50 px-1 text-[9px] text-graphite">
-              系统
-            </span>
+            <span className="rounded bg-sky-wash/50 px-1 text-[9px] text-graphite">系统</span>
           )}
         </span>
         <span className="text-[10px] text-muted-foreground">

@@ -14,10 +14,7 @@ interface MarketDataSectionProps {
 }
 
 /** 计算数据截止日展示文本：距今 > 7 天时返回"数据截至 X月X日"，否则返回 null。 */
-function formatDataAsOfText(
-  dataAsOf: string | null | undefined,
-  now: number,
-): string | null {
+function formatDataAsOfText(dataAsOf: string | null | undefined, now: number): string | null {
   if (!dataAsOf) return null;
   const asOfDate = new Date(dataAsOf);
   const ts = asOfDate.getTime();
@@ -36,9 +33,7 @@ export function MarketDataSection({
   const [now] = useState(() => Date.now());
 
   // 数据截止日：仅当非加载态、有数据且距今 > 7 天时展示
-  const dataAsOfText = !isLoading
-    ? formatDataAsOfText(marketData?.data_as_of, now)
-    : null;
+  const dataAsOfText = !isLoading ? formatDataAsOfText(marketData?.data_as_of, now) : null;
 
   // 标题行：左标题 + 右数据截止日（同一行，不增加卡片高度）
   const titleRow = (
@@ -46,9 +41,7 @@ export function MarketDataSection({
       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
         市场数据
       </span>
-      {dataAsOfText && (
-        <span className="text-[10px] text-muted-foreground">{dataAsOfText}</span>
-      )}
+      {dataAsOfText && <span className="text-[10px] text-muted-foreground">{dataAsOfText}</span>}
     </div>
   );
 
@@ -96,9 +89,7 @@ export function MarketDataSection({
         </div>
         <div className="space-y-0.5 text-right">
           <p className="text-[10px] text-muted-foreground">成交均价</p>
-          <p className="text-sm font-bold tabular-nums">
-            {isLoading ? "-" : avgPriceWan}
-          </p>
+          <p className="text-sm font-bold tabular-nums">{isLoading ? "-" : avgPriceWan}</p>
         </div>
         <div className="space-y-0.5">
           <p className="text-[10px] text-muted-foreground">30日成交</p>
@@ -113,8 +104,8 @@ export function MarketDataSection({
               isPriceUp === true
                 ? "text-primary"
                 : isPriceUp === false
-                ? "text-error"
-                : "text-muted-foreground"
+                  ? "text-error"
+                  : "text-muted-foreground"
             }`}
           >
             {isPriceUp === true ? (

@@ -35,11 +35,7 @@ interface UnsettleDialogProps {
   investment: InvestmentResponse;
 }
 
-export function UnsettleDialog({
-  open,
-  onOpenChange,
-  investment,
-}: UnsettleDialogProps) {
+export function UnsettleDialog({ open, onOpenChange, investment }: UnsettleDialogProps) {
   const router = useRouter();
   const [reason, setReason] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
@@ -122,11 +118,7 @@ export function UnsettleDialog({
         </div>
 
         <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>
           <Button

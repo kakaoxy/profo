@@ -31,15 +31,14 @@ interface ProjectViewProps {
 
 export function ProjectView({ data, total }: ProjectViewProps) {
   // 1. status / business_form 通过 URL 同步由服务端筛选；searchQuery 仅作用于当前页数据
-  const [{ status: activeTab, business_form: businessForm }, setQuery] =
-    useQueryStates(
-      {
-        status: parseAsString.withDefault("all"),
-        page: parseAsInteger.withDefault(1),
-        business_form: parseAsString.withDefault("all"),
-      },
-      { shallow: false }
-    );
+  const [{ status: activeTab, business_form: businessForm }, setQuery] = useQueryStates(
+    {
+      status: parseAsString.withDefault("all"),
+      page: parseAsInteger.withDefault(1),
+      business_form: parseAsString.withDefault("all"),
+    },
+    { shallow: false },
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -134,9 +133,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
             {/* 业务形式筛选 */}
             <Select
               value={businessForm}
-              onValueChange={(val) =>
-                setQuery({ business_form: val, page: 1 })
-              }
+              onValueChange={(val) => setQuery({ business_form: val, page: 1 })}
             >
               <SelectTrigger className="h-10 w-[140px] bg-muted border-0 rounded-lg">
                 <SelectValue placeholder="业务形式" />

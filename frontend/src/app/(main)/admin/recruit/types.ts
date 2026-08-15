@@ -69,12 +69,13 @@ export const RECRUIT_BADGE_CLASS = {
 } as const;
 
 /** 漏斗看板各级指标（自上而下依次展示，数值单调不增） */
-export const RECRUIT_FUNNEL_STEPS: ReadonlyArray<{ key: keyof RecruitFunnelData; label: string }> = [
-  { key: "share_count", label: "分享次数" },
-  { key: "pv", label: "打开次数(PV)" },
-  { key: "uv", label: "打开人数(UV)" },
-  { key: "deep_view", label: "深度浏览" },
-  { key: "clicked_auth", label: "点击授权" },
-  { key: "authed", label: "授权成功(原始留资)" },
-  { key: "valid_leads", label: "有效新客(北极星)" },
-];
+export const RECRUIT_FUNNEL_STEPS: ReadonlyArray<{ key: keyof RecruitFunnelData; label: string }> =
+  [
+    { key: "share_count", label: "分享次数" },
+    { key: "pv", label: "打开次数(PV)" },
+    { key: "uv", label: "打开人数(UV)" },
+    { key: "deep_view", label: "深度浏览" },
+    { key: "clicked_auth", label: "点击授权" },
+    { key: "authed", label: "授权成功(原始留资)" },
+    { key: "valid_leads", label: "有效新客(北极星)" },
+  ];

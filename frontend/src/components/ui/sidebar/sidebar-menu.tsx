@@ -1,22 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useSidebar } from "./sidebar-context"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSidebar } from "./sidebar-context";
 import type {
   SidebarMenuButtonProps,
   SidebarMenuActionProps,
   SidebarMenuSkeletonProps,
   SidebarMenuSubButtonProps,
-} from "./types"
+} from "./types";
 
 export function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
   return (
@@ -26,7 +22,7 @@ export function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">)
       className={cn("flex w-full min-w-0 flex-col gap-1", className)}
       {...props}
     />
-  )
+  );
 }
 
 export function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
@@ -37,7 +33,7 @@ export function SidebarMenuItem({ className, ...props }: React.ComponentProps<"l
       className={cn("group/menu-item relative", className)}
       {...props}
     />
-  )
+  );
 }
 
 const sidebarMenuButtonVariants = cva(
@@ -59,8 +55,8 @@ const sidebarMenuButtonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 export function SidebarMenuButton({
   asChild = false,
@@ -71,8 +67,8 @@ export function SidebarMenuButton({
   className,
   ...props
 }: SidebarMenuButtonProps & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const Comp = asChild ? Slot : "button"
-  const { isMobile, state } = useSidebar()
+  const Comp = asChild ? Slot : "button";
+  const { isMobile, state } = useSidebar();
 
   const button = (
     <Comp
@@ -83,16 +79,16 @@ export function SidebarMenuButton({
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       {...props}
     />
-  )
+  );
 
   if (!tooltip) {
-    return button
+    return button;
   }
 
   if (typeof tooltip === "string") {
     tooltip = {
       children: tooltip,
-    }
+    };
   }
 
   return (
@@ -105,7 +101,7 @@ export function SidebarMenuButton({
         {...tooltip}
       />
     </Tooltip>
-  )
+  );
 }
 
 export function SidebarMenuAction({
@@ -114,7 +110,7 @@ export function SidebarMenuAction({
   showOnHover = false,
   ...props
 }: SidebarMenuActionProps) {
-  const Comp = asChild ? Slot : "button"
+  const Comp = asChild ? Slot : "button";
 
   return (
     <Comp
@@ -129,11 +125,11 @@ export function SidebarMenuAction({
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&
           "peer-data-[active=true]/menu-button:text-sidebar-accent-foreground group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 md:opacity-0",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 export function SidebarMenuBadge({ className, ...props }: React.ComponentProps<"div">) {
@@ -148,11 +144,11 @@ export function SidebarMenuBadge({ className, ...props }: React.ComponentProps<"
         "peer-data-[size=default]/menu-button:top-1.5",
         "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 export function SidebarMenuSkeleton({
@@ -160,11 +156,11 @@ export function SidebarMenuSkeleton({
   showIcon = false,
   ...props
 }: SidebarMenuSkeletonProps) {
-  const [width, setWidth] = React.useState("70%")
+  const [width, setWidth] = React.useState("70%");
 
   React.useEffect(() => {
-    setWidth(`${Math.floor(Math.random() * 40) + 50}%`)
-  }, [])
+    setWidth(`${Math.floor(Math.random() * 40) + 50}%`);
+  }, []);
 
   return (
     <div
@@ -173,12 +169,7 @@ export function SidebarMenuSkeleton({
       className={cn("flex h-8 items-center gap-2 rounded-md px-2", className)}
       {...props}
     >
-      {showIcon && (
-        <Skeleton
-          className="size-4 rounded-md"
-          data-sidebar="menu-skeleton-icon"
-        />
-      )}
+      {showIcon && <Skeleton className="size-4 rounded-md" data-sidebar="menu-skeleton-icon" />}
       <Skeleton
         className="h-4 max-w-(--skeleton-width) flex-1"
         data-sidebar="menu-skeleton-text"
@@ -189,7 +180,7 @@ export function SidebarMenuSkeleton({
         }
       />
     </div>
-  )
+  );
 }
 
 export function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
@@ -200,11 +191,11 @@ export function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul
       className={cn(
         "border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5",
         "group-data-[collapsible=icon]:hidden",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 export function SidebarMenuSubItem({ className, ...props }: React.ComponentProps<"li">) {
@@ -215,7 +206,7 @@ export function SidebarMenuSubItem({ className, ...props }: React.ComponentProps
       className={cn("group/menu-sub-item relative", className)}
       {...props}
     />
-  )
+  );
 }
 
 export function SidebarMenuSubButton({
@@ -225,7 +216,7 @@ export function SidebarMenuSubButton({
   className,
   ...props
 }: SidebarMenuSubButtonProps) {
-  const Comp = asChild ? Slot : "a"
+  const Comp = asChild ? Slot : "a";
 
   return (
     <Comp
@@ -239,9 +230,9 @@ export function SidebarMenuSubButton({
         size === "sm" && "text-xs",
         size === "md" && "text-sm",
         "group-data-[collapsible=icon]:hidden",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }

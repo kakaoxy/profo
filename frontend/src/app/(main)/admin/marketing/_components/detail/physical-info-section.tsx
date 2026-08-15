@@ -3,15 +3,15 @@
 import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Building2, 
-  LayoutGrid, 
-  Compass, 
-  Ruler, 
+import {
+  Building2,
+  LayoutGrid,
+  Compass,
+  Ruler,
   Coins,
   TrendingUp,
   Hash,
-  Link2
+  Link2,
 } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
 import type { PhysicalInfoSectionProps } from "./types";
@@ -26,25 +26,28 @@ interface InfoItemProps {
 
 function InfoItem({ label, value, icon, highlight }: InfoItemProps) {
   if (value === undefined || value === null || value === "") return null;
-  
+
   return (
     <div className="flex items-center justify-between py-2 min-h-9">
       <div className="flex items-center gap-2 text-xs text-graphite font-medium">
         {icon}
         <span>{label}</span>
       </div>
-      <div className={`text-sm font-medium text-ink ${highlight ? "text-rust" : ""}`}>
-        {value}
-      </div>
+      <div className={`text-sm font-medium text-ink ${highlight ? "text-rust" : ""}`}>{value}</div>
     </div>
   );
 }
 
 // 使用 memo 避免不必要的重渲染
-export const PhysicalInfoSection = memo(function PhysicalInfoSection({ 
-  project 
+export const PhysicalInfoSection = memo(function PhysicalInfoSection({
+  project,
 }: PhysicalInfoSectionProps) {
-  const hasAnyData = project.area || project.layout || project.orientation || project.floor_info || project.total_price;
+  const hasAnyData =
+    project.area ||
+    project.layout ||
+    project.orientation ||
+    project.floor_info ||
+    project.total_price;
 
   return (
     <Card className="bg-white rounded-cards shadow-steep-sm">
@@ -62,8 +65,8 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
           <div className="space-y-1">
             {/* 关联主项目ID */}
             {project.project_id && (
-              <InfoItem 
-                label="关联主项目ID" 
+              <InfoItem
+                label="关联主项目ID"
                 value={
                   <span className="font-mono text-xs bg-fog px-2 py-0.5 rounded">
                     {project.project_id}
@@ -75,8 +78,8 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
 
             {/* 小区ID */}
             {project.community_id && (
-              <InfoItem 
-                label="小区ID" 
+              <InfoItem
+                label="小区ID"
                 value={
                   <span className="font-mono text-xs bg-fog px-2 py-0.5 rounded">
                     {project.community_id}
@@ -87,51 +90,53 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
             )}
 
             {/* 建筑面积 */}
-            <InfoItem 
-              label="建筑面积" 
+            <InfoItem
+              label="建筑面积"
               value={formatArea(project.area)}
               icon={<Ruler className="w-3.5 h-3.5" />}
               highlight
             />
 
             {/* 户型 */}
-            <InfoItem 
-              label="户型" 
+            <InfoItem
+              label="户型"
               value={project.layout}
               icon={<LayoutGrid className="w-3.5 h-3.5" />}
             />
 
             {/* 朝向 */}
-            <InfoItem 
-              label="朝向" 
+            <InfoItem
+              label="朝向"
               value={project.orientation}
               icon={<Compass className="w-3.5 h-3.5" />}
             />
 
             {/* 楼层信息 */}
-            <InfoItem 
-              label="楼层信息" 
+            <InfoItem
+              label="楼层信息"
               value={project.floor_info}
               icon={<Building2 className="w-3.5 h-3.5" />}
             />
 
             {/* 总价 */}
-            <InfoItem 
-              label="总价" 
+            <InfoItem
+              label="总价"
               value={
                 project.total_price ? (
                   <span className="text-rust font-medium">
                     ¥{project.total_price.toLocaleString()}万
                   </span>
-                ) : "-"
+                ) : (
+                  "-"
+                )
               }
               icon={<Coins className="w-3.5 h-3.5" />}
               highlight
             />
 
             {/* 单价 */}
-            <InfoItem 
-              label="单价" 
+            <InfoItem
+              label="单价"
               value={formatUnitPrice(project.unit_price)}
               icon={<TrendingUp className="w-3.5 h-3.5" />}
             />

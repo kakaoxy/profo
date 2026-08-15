@@ -62,15 +62,12 @@ function LoginPageContent() {
   const callbackUrl = searchParams.get("redirect") || "";
 
   // 登录表单状态
-  const [loginState, loginFormAction, isLoginPending] = useActionState(
-    loginAction,
-    null
-  );
+  const [loginState, loginFormAction, isLoginPending] = useActionState(loginAction, null);
 
   // 修改密码表单状态
   const [changeState, changeFormAction, isChangePending] = useActionState(
     changePasswordAction,
-    null
+    null,
   );
 
   // 监听修改密码成功的情况
@@ -86,12 +83,9 @@ function LoginPageContent() {
 
   // 判断当前显示哪个模式
   // changePasswordAction 所有失败分支均带 mustChangePassword: true
-  const isChangePasswordMode =
-    loginState?.mustChangePassword || changeState?.success === false;
+  const isChangePasswordMode = loginState?.mustChangePassword || changeState?.success === false;
   const currentUsername =
-    loginState?.username ||
-    (changeState?.success === false ? changeState.username : "") ||
-    "";
+    loginState?.username || (changeState?.success === false ? changeState.username : "") || "";
   const tempToken = loginState?.tempToken || "";
 
   return (
@@ -101,12 +95,8 @@ function LoginPageContent() {
         {isChangePasswordMode ? (
           <>
             <CardHeader>
-              <CardTitle className="text-xl text-status-renovating">
-                需修改初始密码
-              </CardTitle>
-              <CardDescription>
-                为了账号安全，首次登录请设置新密码。
-              </CardDescription>
+              <CardTitle className="text-xl text-status-renovating">需修改初始密码</CardTitle>
+              <CardDescription>为了账号安全，首次登录请设置新密码。</CardDescription>
             </CardHeader>
             <form action={changeFormAction}>
               <CardContent className="grid gap-4">
@@ -116,12 +106,7 @@ function LoginPageContent() {
 
                 <div className="grid gap-2">
                   <Label htmlFor="current_password">当前密码 (初始密码)</Label>
-                  <Input
-                    id="current_password"
-                    name="current_password"
-                    type="password"
-                    required
-                  />
+                  <Input id="current_password" name="current_password" type="password" required />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="new_password">新密码</Label>
@@ -134,17 +119,11 @@ function LoginPageContent() {
                   />
                 </div>
                 {changeState?.success === false && (
-                  <div className="text-sm text-error font-medium">
-                    {changeState.error}
-                  </div>
+                  <div className="text-sm text-error font-medium">{changeState.error}</div>
                 )}
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                <Button
-                  className="w-full"
-                  type="submit"
-                  disabled={isChangePending}
-                >
+                <Button className="w-full" type="submit" disabled={isChangePending}>
                   {isChangePending ? "提交中..." : "确认修改"}
                 </Button>
                 <Button
@@ -198,7 +177,9 @@ function LoginPageContent() {
                     placeholder="请输入用户名"
                     required
                     aria-invalid={!!validationErrors.username}
-                    className={validationErrors.username ? "border-error focus-visible:ring-error" : ""}
+                    className={
+                      validationErrors.username ? "border-error focus-visible:ring-error" : ""
+                    }
                     onChange={() =>
                       setValidationErrors((prev) => ({
                         ...prev,
@@ -221,7 +202,9 @@ function LoginPageContent() {
                     placeholder="请输入密码"
                     required
                     aria-invalid={!!validationErrors.password}
-                    className={validationErrors.password ? "border-error focus-visible:ring-error" : ""}
+                    className={
+                      validationErrors.password ? "border-error focus-visible:ring-error" : ""
+                    }
                     onChange={() =>
                       setValidationErrors((prev) => ({
                         ...prev,
@@ -236,17 +219,11 @@ function LoginPageContent() {
                   )}
                 </div>
                 {loginState?.error && (
-                  <div className="text-sm text-error font-medium">
-                    {loginState.error}
-                  </div>
+                  <div className="text-sm text-error font-medium">{loginState.error}</div>
                 )}
               </CardContent>
               <CardFooter className="mt-4">
-                <Button
-                  className="w-full"
-                  type="submit"
-                  disabled={isLoginPending}
-                >
+                <Button className="w-full" type="submit" disabled={isLoginPending}>
                   {isLoginPending ? "登录中..." : "立即登录"}
                 </Button>
               </CardFooter>

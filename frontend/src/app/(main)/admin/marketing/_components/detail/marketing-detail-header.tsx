@@ -2,12 +2,7 @@
 
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowLeft,
-  Pencil,
-  Eye,
-  MoreVertical,
-} from "lucide-react";
+import { ArrowLeft, Pencil, Eye, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import type { MarketingDetailHeaderProps } from "./types";
 
@@ -21,12 +16,7 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
       <div className="flex items-center justify-between gap-4">
         {/* 左侧：返回按钮和标题 */}
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="shrink-0 -ml-2 h-8 w-8"
-          >
+          <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 -ml-2 h-8 w-8">
             <ArrowLeft className="h-4 w-4" />
           </Button>
 
@@ -35,13 +25,9 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
               {project.title || "未命名项目"}
             </h1>
             {project.community_name ? (
-              <span className="text-xs text-graphite">
-                · {project.community_name}
-              </span>
+              <span className="text-xs text-graphite">· {project.community_name}</span>
             ) : null}
-            <span className="text-xs text-graphite">
-              (ID:{project.id})
-            </span>
+            <span className="text-xs text-graphite">(ID:{project.id})</span>
           </div>
         </div>
 
@@ -80,11 +66,7 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
             </Button>
           </Link>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreVertical className="h-4 w-4" />
           </Button>
         </div>

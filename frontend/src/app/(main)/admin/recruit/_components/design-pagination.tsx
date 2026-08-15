@@ -28,12 +28,7 @@ function generateItems(page: number, totalPages: number): (number | string)[] {
  * 设计稿分页脚：左「pg-info」+ 右「pg-btns」。
  * 32px 方形按钮、10px 圆角；激活态 Ink 底白字，禁用态 35% 透明度。
  */
-export function DesignPagination({
-  info,
-  page,
-  totalPages,
-  onPageChange,
-}: DesignPaginationProps) {
+export function DesignPagination({ info, page, totalPages, onPageChange }: DesignPaginationProps) {
   const items = generateItems(page, totalPages);
 
   return (

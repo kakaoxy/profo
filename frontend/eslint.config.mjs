@@ -1,10 +1,12 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import prettierConfig from "eslint-config-prettier";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  prettierConfig, // 关闭与 Prettier 冲突的 ESLint 格式化规则
   {
     rules: {
       // next 16.2.11 引入的 React Compiler 优化规则，存量代码触发多处 error。

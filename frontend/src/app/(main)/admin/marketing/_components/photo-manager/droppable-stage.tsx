@@ -33,7 +33,7 @@ export function DroppableStage({ id, children, isEmpty, isActive }: DroppableSta
         // Hover 状态
         isOver && "border-rust bg-rust/20 ring-2 ring-rust/20",
         // 拖拽激活时的样式
-        isActive && "border-rust/50 bg-rust/15"
+        isActive && "border-rust/50 bg-rust/15",
       )}
     >
       {children}

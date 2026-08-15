@@ -37,12 +37,8 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
             <ClipboardCheck className="w-5 h-5 text-primary" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">
-              近期线索跟进
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              实时追踪线索动态与转化进度
-            </p>
+            <h2 className="text-lg font-bold text-foreground">近期线索跟进</h2>
+            <p className="text-xs text-muted-foreground">实时追踪线索动态与转化进度</p>
           </div>
         </div>
         <Link
@@ -60,17 +56,39 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
           </caption>
           <thead className="bg-muted">
             <tr className="text-[10px] text-muted-foreground uppercase tracking-widest border-y border-border">
-              <th scope="col" className="pl-0 pr-2 py-3 font-black">小区</th>
-              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">户型</th>
-              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">面积</th>
-              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">楼层</th>
-              <th scope="col" className="px-2 py-3 font-black">总价</th>
-              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">单价</th>
-              <th scope="col" className="px-2 py-3 font-black">评估价</th>
-              <th scope="col" className="px-2 py-3 font-black">状态</th>
-              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">区域</th>
-              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">录入人</th>
-              <th scope="col" className="pl-2 pr-0 py-3 font-black text-right">更新时间</th>
+              <th scope="col" className="pl-0 pr-2 py-3 font-black">
+                小区
+              </th>
+              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">
+                户型
+              </th>
+              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">
+                面积
+              </th>
+              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">
+                楼层
+              </th>
+              <th scope="col" className="px-2 py-3 font-black">
+                总价
+              </th>
+              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">
+                单价
+              </th>
+              <th scope="col" className="px-2 py-3 font-black">
+                评估价
+              </th>
+              <th scope="col" className="px-2 py-3 font-black">
+                状态
+              </th>
+              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">
+                区域
+              </th>
+              <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">
+                录入人
+              </th>
+              <th scope="col" className="pl-2 pr-0 py-3 font-black text-right">
+                更新时间
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -82,9 +100,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                       <ClipboardList className="w-8 h-8 opacity-50" aria-hidden="true" />
                     </div>
                     <p className="text-sm font-medium">暂无线索数据</p>
-                    <p className="text-xs mt-1 opacity-70">
-                      当前没有符合条件的线索记录
-                    </p>
+                    <p className="text-xs mt-1 opacity-70">当前没有符合条件的线索记录</p>
                   </div>
                 </td>
               </tr>
@@ -92,68 +108,71 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
               leads.map((lead) => {
                 const config = getStatusStyleConfig(lead.status);
                 return (
-                <tr
-                  key={lead.id}
-                  className="hover:bg-muted transition-colors group cursor-pointer"
-                  onClick={() => handleRowClick(lead.id)}
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleRowClick(lead.id);
-                    }
-                  }}
-                >
-                  <td className="pl-0 pr-2 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-primary/5 text-primary flex items-center justify-center font-black text-[10px] border border-primary/10 shrink-0">
-                        <span aria-hidden="true">{lead.community?.[0] ?? "?"}</span>
+                  <tr
+                    key={lead.id}
+                    className="hover:bg-muted transition-colors group cursor-pointer"
+                    onClick={() => handleRowClick(lead.id)}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleRowClick(lead.id);
+                      }
+                    }}
+                  >
+                    <td className="pl-0 pr-2 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-primary/5 text-primary flex items-center justify-center font-black text-[10px] border border-primary/10 shrink-0">
+                          <span aria-hidden="true">{lead.community?.[0] ?? "?"}</span>
+                        </div>
+                        <span className="text-foreground font-semibold text-sm truncate max-w-[100px]">
+                          {lead.community}
+                        </span>
                       </div>
-                      <span className="text-foreground font-semibold text-sm truncate max-w-[100px]">
-                        {lead.community}
+                    </td>
+                    <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell">
+                      {lead.unitType}
+                    </td>
+                    <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell tabular-nums">
+                      {formatAreaSqm(lead.area)}
+                    </td>
+                    <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell">
+                      {lead.floor}
+                    </td>
+                    <td className="px-2 py-4 text-sm font-black text-primary tabular-nums">
+                      {formatPriceWan(lead.totalPrice)}
+                    </td>
+                    <td className="px-2 py-4 text-xs font-semibold text-muted-foreground hidden md:table-cell tabular-nums">
+                      {formatUnitPriceWan(lead.unitPrice)}
+                    </td>
+                    <td className="px-2 py-4 text-sm font-medium text-foreground tabular-nums">
+                      {formatPriceWan(lead.evalPrice)}
+                    </td>
+                    <td className="px-2 py-4">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${config.className}`}
+                      >
+                        {config.label}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell">
-                    {lead.unitType}
-                  </td>
-                  <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell tabular-nums">
-                    {formatAreaSqm(lead.area)}
-                  </td>
-                  <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell">
-                    {lead.floor}
-                  </td>
-                  <td className="px-2 py-4 text-sm font-black text-primary tabular-nums">
-                    {formatPriceWan(lead.totalPrice)}
-                  </td>
-                  <td className="px-2 py-4 text-xs font-semibold text-muted-foreground hidden md:table-cell tabular-nums">
-                    {formatUnitPriceWan(lead.unitPrice)}
-                  </td>
-                  <td className="px-2 py-4 text-sm font-medium text-foreground tabular-nums">
-                    {formatPriceWan(lead.evalPrice)}
-                  </td>
-                  <td className="px-2 py-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${config.className}`}
-                    >
-                      {config.label}
-                    </span>
-                  </td>
-                  <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell">
-                    {lead.region}
-                  </td>
-                  <td className="px-2 py-4 hidden md:table-cell">
-                    <div className="flex items-center gap-2">
-                      <UserCircle2 className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true" />
-                      <span className="text-sm font-medium text-muted-foreground truncate">
-                        {lead.creator}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="pl-2 pr-0 py-4 text-xs text-muted-foreground text-right font-medium italic whitespace-nowrap tabular-nums">
-                    {formatDashboardDateTime(lead.updatedAt)}
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell">
+                      {lead.region}
+                    </td>
+                    <td className="px-2 py-4 hidden md:table-cell">
+                      <div className="flex items-center gap-2">
+                        <UserCircle2
+                          className="w-4 h-4 text-muted-foreground shrink-0"
+                          aria-hidden="true"
+                        />
+                        <span className="text-sm font-medium text-muted-foreground truncate">
+                          {lead.creator}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="pl-2 pr-0 py-4 text-xs text-muted-foreground text-right font-medium italic whitespace-nowrap tabular-nums">
+                      {formatDashboardDateTime(lead.updatedAt)}
+                    </td>
+                  </tr>
                 );
               })
             )}

@@ -38,9 +38,7 @@ function isApiResponse<T>(response: unknown): response is ApiResponse<T> {
 /**
  * 类型守卫：检查是否为旧版 ApiResponse 结构
  */
-function isApiResponseLegacy<T>(
-  response: unknown
-): response is ApiResponseLegacy<T> {
+function isApiResponseLegacy<T>(response: unknown): response is ApiResponseLegacy<T> {
   return (
     response !== null &&
     typeof response === "object" &&
@@ -53,9 +51,7 @@ function isApiResponseLegacy<T>(
 /**
  * 类型守卫：检查是否为 data 包装结构
  */
-function isDataWrapper<T>(
-  response: unknown
-): response is { data: T } {
+function isDataWrapper<T>(response: unknown): response is { data: T } {
   return (
     response !== null &&
     typeof response === "object" &&
@@ -95,10 +91,7 @@ export function extractApiData<T>(response: { data?: T } | T | unknown): T {
  */
 export function extractPaginatedData<T>(
   response:
-    | { data?: { items: T[]; total: number } }
-    | { items: T[]; total: number }
-    | T[]
-    | unknown
+    { data?: { items: T[]; total: number } } | { items: T[]; total: number } | T[] | unknown,
 ): { items: T[]; total?: number; page?: number; page_size?: number } {
   // 1. 如果是数组，直接返回
   if (Array.isArray(response)) {
@@ -113,12 +106,7 @@ export function extractPaginatedData<T>(
     return { items: data };
   }
 
-  if (
-    data &&
-    typeof data === "object" &&
-    "items" in data &&
-    Array.isArray(data.items)
-  ) {
+  if (data && typeof data === "object" && "items" in data && Array.isArray(data.items)) {
     const paginatedData = data as PaginatedResponse<T>;
     return {
       items: paginatedData.items,

@@ -7,18 +7,8 @@ import { Control, Path } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FormValues } from "./schema";
 
 interface DatePickerProps {
@@ -44,7 +34,7 @@ export function DatePickerField({ control, name, label }: DatePickerProps) {
                   variant={"outline"}
                   className={cn(
                     "w-full pl-3 text-left font-normal rounded-inputs h-10 border-dove/50 bg-pure-white text-[14px] hover:bg-fog/50 focus-visible:border-ink/30 focus-visible:ring-ink/10",
-                    !field.value && "text-dove"
+                    !field.value && "text-dove",
                   )}
                 >
                   {field.value instanceof Date && isValid(field.value) ? (
@@ -59,7 +49,9 @@ export function DatePickerField({ control, name, label }: DatePickerProps) {
             <PopoverContent className="w-auto p-0 rounded-cards border-dove/40" align="start">
               <Calendar
                 mode="single"
-                selected={field.value instanceof Date && isValid(field.value) ? field.value : undefined}
+                selected={
+                  field.value instanceof Date && isValid(field.value) ? field.value : undefined
+                }
                 onSelect={(date) => field.onChange(date ?? undefined)}
                 disabled={(date) => date < new Date("1900-01-01")}
                 initialFocus

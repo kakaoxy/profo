@@ -21,8 +21,6 @@ import { UploadArea } from "@/components/common/image-upload";
 import { useImageUpload } from "../../_components/photo-manager";
 import { Progress } from "@/components/ui/progress";
 
-
-
 interface PhotoManagerProps {
   l3ProjectId?: string | null;
   photos: L4MarketingMedia[];
@@ -31,11 +29,7 @@ interface PhotoManagerProps {
 
 type UploadTab = "sync" | "upload";
 
-export function PhotoManager({
-  l3ProjectId,
-  photos,
-  onPhotosChange,
-}: PhotoManagerProps) {
+export function PhotoManager({ l3ProjectId, photos, onPhotosChange }: PhotoManagerProps) {
   const [activeTab, setActiveTab] = useState<UploadTab>("upload");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadStage, setUploadStage] = useState("拆除");
@@ -48,21 +42,24 @@ export function PhotoManager({
     onPhotosChange,
   });
 
-  const handleDeletePhoto = useCallback(async (photoId: number) => {
-    if (!confirm("确定删除这张照片吗？")) return;
-    try {
-      const projectId = l3ProjectId ? parseInt(l3ProjectId) : 0;
-      const result = await deleteL4MarketingMediaAction(photoId, projectId);
-      if (result.success) {
-        onPhotosChange(photos.filter((p) => p.id !== photoId));
-        toast.success("照片已删除");
-      } else {
-        toast.error(result.error || "删除照片失败");
+  const handleDeletePhoto = useCallback(
+    async (photoId: number) => {
+      if (!confirm("确定删除这张照片吗？")) return;
+      try {
+        const projectId = l3ProjectId ? parseInt(l3ProjectId) : 0;
+        const result = await deleteL4MarketingMediaAction(photoId, projectId);
+        if (result.success) {
+          onPhotosChange(photos.filter((p) => p.id !== photoId));
+          toast.success("照片已删除");
+        } else {
+          toast.error(result.error || "删除照片失败");
+        }
+      } catch {
+        toast.error("删除照片失败");
       }
-    } catch {
-      toast.error("删除照片失败");
-    }
-  }, [photos, onPhotosChange, l3ProjectId]);
+    },
+    [photos, onPhotosChange, l3ProjectId],
+  );
 
   const handleResetOrder = useCallback(() => {
     const reordered = [...photos].sort((a, b) => {
@@ -82,12 +79,7 @@ export function PhotoManager({
           <div className="flex items-center justify-between gap-3">
             <CardTitle className="text-sm">照片管理</CardTitle>
             {photos.length > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleResetOrder}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={handleResetOrder}>
                 <ArrowUpDown className="h-4 w-4 mr-1" />
                 重置排序
               </Button>
@@ -95,10 +87,7 @@ export function PhotoManager({
           </div>
         </CardHeader>
         <CardContent className="py-6 space-y-4">
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as UploadTab)}
-          >
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="upload">手动上传</TabsTrigger>
               <TabsTrigger value="sync">同步照片</TabsTrigger>
@@ -111,14 +100,8 @@ export function PhotoManager({
 
               <div className="grid grid-cols-12 gap-3">
                 <div className="col-span-6 lg:col-span-4">
-                  <div className="text-xs font-medium text-muted-foreground mb-1">
-                    阶段
-                  </div>
-                  <Select
-                    value={uploadStage}
-                    onValueChange={setUploadStage}
-                    disabled={isUploading}
-                  >
+                  <div className="text-xs font-medium text-muted-foreground mb-1">阶段</div>
+                  <Select value={uploadStage} onValueChange={setUploadStage} disabled={isUploading}>
                     <SelectTrigger>
                       <SelectValue placeholder="选择阶段" />
                     </SelectTrigger>
@@ -176,9 +159,7 @@ export function PhotoManager({
 
             <TabsContent value="sync" className="space-y-4 mt-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  从其他项目同步照片
-                </div>
+                <div className="text-xs font-medium text-muted-foreground">从其他项目同步照片</div>
                 <Button
                   type="button"
                   variant="outline"

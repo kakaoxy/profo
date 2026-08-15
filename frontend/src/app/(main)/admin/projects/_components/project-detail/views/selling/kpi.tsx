@@ -2,15 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Eye,
-  Gavel,
-  MessageSquare,
-  TrendingUp,
-  TrendingDown,
-  Tag,
-  Calendar
-} from "lucide-react";
+import { Eye, Gavel, MessageSquare, TrendingUp, TrendingDown, Tag, Calendar } from "lucide-react";
 import {
   startOfWeek,
   endOfWeek,
@@ -66,9 +58,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       if (!isValid(date)) return;
       if (isWithinInterval(date, { start: thisWeekStart, end: thisWeekEnd })) {
         thisWeekViewingsCount++;
-      } else if (
-        isWithinInterval(date, { start: lastWeekStart, end: lastWeekEnd })
-      ) {
+      } else if (isWithinInterval(date, { start: lastWeekStart, end: lastWeekEnd })) {
         lastWeekViewingsCount++;
       }
     });
@@ -84,9 +74,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       }
     } else {
       growthRate = Math.round(
-        ((thisWeekViewingsCount - lastWeekViewingsCount) /
-          lastWeekViewingsCount) *
-          100
+        ((thisWeekViewingsCount - lastWeekViewingsCount) / lastWeekViewingsCount) * 100,
       );
     }
     isGrowthPositive = growthRate >= 0;
@@ -101,10 +89,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       }
     });
 
-    const maxBid =
-      offers.length > 0
-        ? Math.max(...offers.map((o) => Number(o.price) || 0))
-        : 0;
+    const maxBid = offers.length > 0 ? Math.max(...offers.map((o) => Number(o.price) || 0)) : 0;
 
     // 5. Talks Calculation
     let thisWeekTalksCount = 0;
@@ -118,8 +103,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
 
     // Get latest talk date
     const sortedTalks = [...talks].sort(
-      (a, b) =>
-        new Date(b.record_date).getTime() - new Date(a.record_date).getTime()
+      (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime(),
     );
     const latestTalk = sortedTalks[0];
     let latestTalkText = "暂无";
@@ -161,13 +145,9 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       <Card className="shadow-sm border-primary/20 bg-primary/5">
         <CardContent className="p-4 relative">
           <Eye className="absolute top-4 right-4 h-4 w-4 text-primary opacity-50" />
-          <div className="text-xs text-primary font-medium">
-            本周带看
-          </div>
+          <div className="text-xs text-primary font-medium">本周带看</div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">
-              {stats.viewings.count}
-            </span>
+            <span className="text-2xl font-bold text-foreground">{stats.viewings.count}</span>
             <span className="text-xs text-muted-foreground">组</span>
           </div>
           <div
@@ -175,7 +155,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
               "mt-1 flex items-center text-[10px] font-medium",
               stats.viewings.isInfinite || stats.viewings.isPositive
                 ? "text-success"
-                : "text-error"
+                : "text-error",
             )}
           >
             {stats.viewings.isInfinite ? (
@@ -201,21 +181,14 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       <Card className="shadow-sm border-border bg-muted/50">
         <CardContent className="p-4 relative">
           <Tag className="absolute top-4 right-4 h-4 w-4 text-muted-foreground opacity-50" />
-          <div className="text-xs text-muted-foreground font-medium">
-            本周出价
-          </div>
+          <div className="text-xs text-muted-foreground font-medium">本周出价</div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">
-              {stats.bids.count}
-            </span>
+            <span className="text-2xl font-bold text-foreground">{stats.bids.count}</span>
             <span className="text-xs text-muted-foreground">笔</span>
           </div>
           <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
             <Gavel className="h-3 w-3" />
-            最高:{" "}
-            <span className="font-bold text-foreground">
-              ¥{stats.bids.max}万
-            </span>
+            最高: <span className="font-bold text-foreground">¥{stats.bids.max}万</span>
           </div>
         </CardContent>
       </Card>
@@ -224,18 +197,19 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       <Card className="shadow-sm border-status-pending/20 bg-status-pending/10">
         <CardContent className="p-4 relative">
           <Calendar className="absolute top-4 right-4 h-4 w-4 text-status-pending opacity-50" />
-          <div className="text-xs text-status-renovating font-medium">
-            本周面谈
-          </div>
+          <div className="text-xs text-status-renovating font-medium">本周面谈</div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">
-              {stats.talks.count}
-            </span>
+            <span className="text-2xl font-bold text-foreground">{stats.talks.count}</span>
             <span className="text-xs text-muted-foreground">场</span>
           </div>
           <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
-             <MessageSquare className="h-3 w-3" />
-            最新: {stats.talks.latest === "暂无" ? <span className="text-muted-foreground">暂无</span> : stats.talks.latest}
+            <MessageSquare className="h-3 w-3" />
+            最新:{" "}
+            {stats.talks.latest === "暂无" ? (
+              <span className="text-muted-foreground">暂无</span>
+            ) : (
+              stats.talks.latest
+            )}
           </div>
         </CardContent>
       </Card>

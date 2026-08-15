@@ -13,11 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCNY, formatPercent } from "@/lib/formatters";
-import {
-  type InvestmentResponse,
-  InvestorTypeIcon,
-  toNum,
-} from "./shared";
+import { type InvestmentResponse, InvestorTypeIcon, toNum } from "./shared";
 
 /** 收益分配卡：按投资占比或已调整分配比例展示各方收益金额 */
 export function ProfitDistributionCard({
@@ -37,9 +33,7 @@ export function ProfitDistributionCard({
 
   const hasNoInvestors = investors.length === 0;
   const hasNoReturn =
-    investment.total_return === null ||
-    investment.total_return === undefined ||
-    totalReturn === 0;
+    investment.total_return === null || investment.total_return === undefined || totalReturn === 0;
 
   // 已保存的分配比例调整：investor_id → adjusted_distribution_ratio
   const adjustmentMap = new Map<string, number>();

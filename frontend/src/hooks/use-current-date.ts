@@ -13,9 +13,5 @@ function getClientDate(): Date {
 
 /** 获取客户端当前日期，SSR 时返回 null，避免 hydration 不匹配 */
 export function useCurrentDate(): Date | null {
-  return useSyncExternalStore(
-    emptySubscribe,
-    getClientDate,
-    () => null,
-  );
+  return useSyncExternalStore(emptySubscribe, getClientDate, () => null);
 }

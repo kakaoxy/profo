@@ -19,16 +19,10 @@ interface HasPermissionProps {
  *
  * 依赖 `usePermission` Hook（Task 12），由其负责权限数据获取与缓存。
  */
-export function HasPermission({
-  code,
-  fallback = null,
-  children,
-}: HasPermissionProps) {
+export function HasPermission({ code, fallback = null, children }: HasPermissionProps) {
   const { hasPermission, hasAnyPermission } = usePermission();
 
-  const passed = Array.isArray(code)
-    ? hasAnyPermission(code)
-    : hasPermission(code);
+  const passed = Array.isArray(code) ? hasAnyPermission(code) : hasPermission(code);
 
   return passed ? <>{children}</> : <>{fallback}</>;
 }

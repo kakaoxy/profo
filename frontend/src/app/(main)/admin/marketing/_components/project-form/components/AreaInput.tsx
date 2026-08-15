@@ -57,9 +57,8 @@ export function AreaInput({ value, onChange }: AreaInputProps) {
 
     // 限制最多两位小数
     const formattedParts = val.split(".");
-    const formattedVal = formattedParts.length > 1
-      ? `${formattedParts[0]}.${formattedParts[1].slice(0, 2)}`
-      : val;
+    const formattedVal =
+      formattedParts.length > 1 ? `${formattedParts[0]}.${formattedParts[1].slice(0, 2)}` : val;
 
     // 更新内部状态（字符串）
     setInputValue(formattedVal);

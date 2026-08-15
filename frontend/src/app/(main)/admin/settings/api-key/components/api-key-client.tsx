@@ -48,9 +48,7 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
         <div className="rounded-xl border border-status-pending/30 bg-status-pending/10 p-4 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-status-pending shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-status-pending">
-              请立即复制您的 API Key
-            </p>
+            <p className="text-sm font-medium text-status-pending">请立即复制您的 API Key</p>
             <p className="text-sm text-status-pending/80 mt-1">
               这是唯一一次显示完整 Key 的机会，关闭后将无法再次查看。请妥善保管。
             </p>
@@ -96,10 +94,7 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
             </p>
           </div>
         </div>
-        <ApiKeyCard
-          apiKeyInfo={apiKeyInfo}
-          onDelete={() => setShowDeleteDialog(true)}
-        />
+        <ApiKeyCard apiKeyInfo={apiKeyInfo} onDelete={() => setShowDeleteDialog(true)} />
       </div>
 
       <GenerateDialog

@@ -49,7 +49,7 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
 
   const handleDelete = async () => {
     if (!deletingId) return;
-    
+
     setIsDeleting(true);
     try {
       const result = await deleteRoleAction(deletingId);
@@ -87,7 +87,10 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
               <TableRow key={role.id}>
                 <TableCell className="font-medium">{role.name}</TableCell>
                 <TableCell className="hidden sm:table-cell">{role.code}</TableCell>
-                <TableCell className="hidden lg:table-cell max-w-[200px] truncate" title={role.description || ""}>
+                <TableCell
+                  className="hidden lg:table-cell max-w-[200px] truncate"
+                  title={role.description || ""}
+                >
                   {role.description || "-"}
                 </TableCell>
                 <TableCell>
@@ -158,7 +161,11 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {isDeleting ? "删除中..." : "删除"}
             </AlertDialogAction>
           </AlertDialogFooter>

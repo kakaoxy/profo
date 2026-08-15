@@ -21,10 +21,7 @@ import { updateCommunityAction } from "@/app/(main)/admin/leads/actions/update-c
 import type { CommunityMinified } from "./pick-community-fields";
 
 const editSchema = z.object({
-  name: z
-    .string()
-    .min(1, "小区名称不能为空")
-    .max(200, "小区名称最多 200 字符"),
+  name: z.string().min(1, "小区名称不能为空").max(200, "小区名称最多 200 字符"),
   district: z.string().max(100, "行政区最多 100 字符"),
   business_circle: z.string().max(100, "商圈最多 100 字符"),
 });
@@ -34,17 +31,12 @@ interface EditCommunityDialogProps {
   onSuccess?: () => void;
 }
 
-export function EditCommunityDialog({
-  community,
-  onSuccess,
-}: EditCommunityDialogProps) {
+export function EditCommunityDialog({ community, onSuccess }: EditCommunityDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState(community.name);
   const [district, setDistrict] = useState(community.district ?? "");
-  const [businessCircle, setBusinessCircle] = useState(
-    community.business_circle ?? ""
-  );
+  const [businessCircle, setBusinessCircle] = useState(community.business_circle ?? "");
   const [isActive, setIsActive] = useState(community.is_active);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,9 +83,7 @@ export function EditCommunityDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>编辑小区</DialogTitle>
-          <DialogDescription>
-            修改小区基础信息。行政区/商圈留空将清空对应字段。
-          </DialogDescription>
+          <DialogDescription>修改小区基础信息。行政区/商圈留空将清空对应字段。</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4 py-2">
@@ -112,10 +102,7 @@ export function EditCommunityDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label
-                htmlFor="edit-community-district"
-                className="text-sm font-medium"
-              >
+              <Label htmlFor="edit-community-district" className="text-sm font-medium">
                 行政区
               </Label>
               <Input
@@ -126,10 +113,7 @@ export function EditCommunityDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label
-                htmlFor="edit-community-business-circle"
-                className="text-sm font-medium"
-              >
+              <Label htmlFor="edit-community-business-circle" className="text-sm font-medium">
                 商圈
               </Label>
               <Input
@@ -147,10 +131,7 @@ export function EditCommunityDialog({
               checked={isActive}
               onCheckedChange={setIsActive}
             />
-            <Label
-              htmlFor="edit-community-is-active"
-              className="text-sm font-medium"
-            >
+            <Label htmlFor="edit-community-is-active" className="text-sm font-medium">
               启用（关闭后将软删除该小区）
             </Label>
           </div>

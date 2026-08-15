@@ -13,11 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import type {
-  RecruitCampaign,
-  RecruitEmployee,
-  RecruitFunnelData,
-} from "../../types";
+import type { RecruitCampaign, RecruitEmployee, RecruitFunnelData } from "../../types";
 import { FunnelStats } from "./funnel-stats";
 import { FunnelEmployees, type EmployeeFunnelRow } from "./funnel-employees";
 
@@ -84,8 +80,7 @@ export function FunnelView({
     end_date: parseAsString.withDefault(""),
   });
 
-  const rangeLabel =
-    range === "custom" ? "自定义区间" : `近 ${range} 天`;
+  const rangeLabel = range === "custom" ? "自定义区间" : `近 ${range} 天`;
 
   // 日期区间校验：自定义区间开始日期晚于结束日期时阻止更新
   const validateCustomRange = (start: string, end: string): boolean => {
@@ -128,19 +123,14 @@ export function FunnelView({
       {/* 页头：标题 + 描述 + 查询工具栏 */}
       <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
         <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink">
-            招募漏斗
-          </h1>
+          <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink">招募漏斗</h1>
           <p className="mt-1.5 text-[15px] text-graphite">
             6 级核心漏斗：分享 → 打开 → 深度浏览(≥3s) → 点击授权 → 授权成功 → 有效新客
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Select
-            value={campaignId || ALL}
-            onValueChange={handleCampaignChange}
-          >
+          <Select value={campaignId || ALL} onValueChange={handleCampaignChange}>
             <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-33">
               <SelectValue placeholder="全部活动" />
             </SelectTrigger>
@@ -154,10 +144,7 @@ export function FunnelView({
             </SelectContent>
           </Select>
 
-          <Select
-            value={employeeId || ALL}
-            onValueChange={handleEmployeeChange}
-          >
+          <Select value={employeeId || ALL} onValueChange={handleEmployeeChange}>
             <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-33">
               <SelectValue placeholder="全部员工" />
             </SelectTrigger>
@@ -171,10 +158,7 @@ export function FunnelView({
             </SelectContent>
           </Select>
 
-          <Select
-            value={range}
-            onValueChange={handleRangeChange}
-          >
+          <Select value={range} onValueChange={handleRangeChange}>
             <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-28">
               <SelectValue placeholder="近 30 天" />
             </SelectTrigger>
@@ -224,11 +208,7 @@ export function FunnelView({
         </div>
       ) : (
         <>
-          <FunnelStats
-            data={funnel}
-            rangeLabel={rangeLabel}
-            dateRange={dateRange}
-          />
+          <FunnelStats data={funnel} rangeLabel={rangeLabel} dateRange={dateRange} />
           <FunnelEmployees rows={employeeRows} />
         </>
       )}

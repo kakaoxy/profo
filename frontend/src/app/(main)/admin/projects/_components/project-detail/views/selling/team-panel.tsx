@@ -128,11 +128,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
               onValueChange={(value) => {
                 const newValue = value === "__empty__" ? null : value;
                 setChannelManagerId(newValue);
-                handleSave(
-                  "channel_manager_id",
-                  newValue,
-                  project.channel_manager_id || null,
-                );
+                handleSave("channel_manager_id", newValue, project.channel_manager_id || null);
               }}
               disabled={isLoadingUsers}
             >
@@ -170,11 +166,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
               onValueChange={(value) => {
                 const newValue = value === "__empty__" ? null : value;
                 setPropertyAgentId(newValue);
-                handleSave(
-                  "property_agent_id",
-                  newValue,
-                  project.property_agent_id || null,
-                );
+                handleSave("property_agent_id", newValue, project.property_agent_id || null);
               }}
               disabled={isLoadingUsers}
             >
@@ -201,10 +193,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
           <HasPermission
             code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
             fallback={
-              <ReadOnlyMember
-                value={getUserDisplayName(negotiatorId)}
-                isLoading={isLoadingUsers}
-              />
+              <ReadOnlyMember value={getUserDisplayName(negotiatorId)} isLoading={isLoadingUsers} />
             }
           >
             <Select
@@ -212,11 +201,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
               onValueChange={(value) => {
                 const newValue = value === "__empty__" ? null : value;
                 setNegotiatorId(newValue);
-                handleSave(
-                  "negotiator_id",
-                  newValue,
-                  project.negotiator_id || null,
-                );
+                handleSave("negotiator_id", newValue, project.negotiator_id || null);
               }}
               disabled={isLoadingUsers}
             >
@@ -241,13 +226,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   );
 }
 
-function ReadOnlyMember({
-  value,
-  isLoading,
-}: {
-  value: string;
-  isLoading: boolean;
-}) {
+function ReadOnlyMember({ value, isLoading }: { value: string; isLoading: boolean }) {
   return (
     <div className="h-8 flex items-center px-3 text-sm bg-card border border-border rounded-md w-full">
       {isLoading ? "加载中..." : value || "未设置"}

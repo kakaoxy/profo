@@ -28,8 +28,7 @@ export async function fetchSubjects(
     });
 
     if (error) {
-      const msg =
-        (error as { message?: string }).message || "获取科目列表失败";
+      const msg = (error as { message?: string }).message || "获取科目列表失败";
       return { success: false, message: msg };
     }
 

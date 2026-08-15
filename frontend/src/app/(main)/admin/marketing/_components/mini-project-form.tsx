@@ -3,10 +3,7 @@
 import * as React from "react";
 import { ViewMode } from "./view/ViewMode";
 import { EditMode } from "./project-form/EditMode";
-import {
-  createL4MarketingProjectAction,
-  updateL4MarketingProjectAction,
-} from "../actions";
+import { createL4MarketingProjectAction, updateL4MarketingProjectAction } from "../actions";
 import type { MiniProjectFormProps, MiniProjectFormActions } from "./form-types";
 
 // Default actions
@@ -25,12 +22,7 @@ export function MiniProjectForm({
   const resolvedActions = actions ?? defaultActions;
 
   if (mode === "view") {
-    return (
-      <ViewMode
-        project={initialProject}
-        photos={initialPhotos}
-      />
-    );
+    return <ViewMode project={initialProject} photos={initialPhotos} />;
   }
 
   return (

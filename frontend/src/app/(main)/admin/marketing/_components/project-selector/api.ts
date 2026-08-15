@@ -76,7 +76,7 @@ function transformProjectData(rawData: Record<string, unknown>): L3ProjectBrief 
  * 获取可关联的L3项目列表
  */
 export async function fetchAvailableProjects(
-  params: ProjectQueryParams
+  params: ProjectQueryParams,
 ): Promise<L3ProjectListResponse> {
   const result = await getAvailableL3ProjectsAction(params);
 
@@ -89,7 +89,12 @@ export async function fetchAvailableProjects(
   }
 
   // 转换后端返回的数据格式（处理类型不匹配问题）
-  const rawData = result.data as { items: Array<Record<string, unknown>>; total: number; page: number; page_size: number };
+  const rawData = result.data as {
+    items: Array<Record<string, unknown>>;
+    total: number;
+    page: number;
+    page_size: number;
+  };
   const transformedData = {
     items: rawData.items.map(transformProjectData),
     total: Number(rawData.total || 0),
@@ -110,9 +115,7 @@ export async function fetchAvailableProjects(
 /**
  * 从L3项目导入数据
  */
-export async function fetchImportData(
-  projectId: string
-): Promise<ImportPreviewData> {
+export async function fetchImportData(projectId: string): Promise<ImportPreviewData> {
   const result = await importFromL3ProjectAction(projectId);
 
   if (!result.success) {
@@ -174,7 +177,7 @@ export async function fetchImportData(
 export async function searchProjects(
   keyword: string,
   page: number = 1,
-  pageSize: number = 20
+  pageSize: number = 20,
 ): Promise<L3ProjectListResponse> {
   return fetchAvailableProjects({
     community_name: keyword,
@@ -186,9 +189,7 @@ export async function searchProjects(
 /**
  * 获取项目详情（用于预览）
  */
-export async function fetchProjectDetail(
-  projectId: string
-): Promise<L3ProjectBrief> {
+export async function fetchProjectDetail(projectId: string): Promise<L3ProjectBrief> {
   const result = await getL3ProjectDetailAction(projectId);
 
   if (!result.success) {

@@ -31,7 +31,10 @@ interface UsePhotoLibraryReturn {
   checkPerformance: (openTime: number) => void;
 }
 
-export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): UsePhotoLibraryReturn {
+export function usePhotoLibrary({
+  l3ProjectId,
+  open,
+}: UsePhotoLibraryProps): UsePhotoLibraryReturn {
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -47,7 +50,7 @@ export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): Us
   const checkPerformance = useCallback((openTime: number) => {
     if (openTime > PERFORMANCE_CONFIG.warningThreshold) {
       logger.warn(
-        `[PhotoLibraryPicker] 弹窗打开时间过长: ${openTime.toFixed(2)}ms, 目标: ${PERFORMANCE_CONFIG.targetOpenTime}ms`
+        `[PhotoLibraryPicker] 弹窗打开时间过长: ${openTime.toFixed(2)}ms, 目标: ${PERFORMANCE_CONFIG.targetOpenTime}ms`,
       );
     }
   }, []);

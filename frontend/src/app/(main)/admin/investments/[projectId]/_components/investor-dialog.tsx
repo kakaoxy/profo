@@ -102,9 +102,7 @@ export function InvestorDialog({
     if (open) {
       setName(investor?.name ?? "");
       setType(investor?.type ?? "enterprise");
-      setShareRatioInput(
-        investor?.share_ratio != null ? String(investor.share_ratio) : "",
-      );
+      setShareRatioInput(investor?.share_ratio != null ? String(investor.share_ratio) : "");
       setRemark(investor?.remark ?? "");
       setSubs(
         (investor?.sub_investors ?? []).map((s) => ({
@@ -119,28 +117,20 @@ export function InvestorDialog({
 
   const ratioNum = parseFloat(shareRatioInput) || 0;
   const investorAmount = (totalInvestment * ratioNum) / 100;
-  const subRatioSum = subs.reduce(
-    (s, sub) => s + (Number(sub.share_ratio) || 0),
-    0,
-  );
+  const subRatioSum = subs.reduce((s, sub) => s + (Number(sub.share_ratio) || 0), 0);
   const hasSubs = subs.length > 0;
 
   const handleAddSub = (): void => {
     setSubs((prev) => [...prev, { name: "", share_ratio: 0, remark: "" }]);
   };
 
-  const handleSubChange = (
-    idx: number,
-    field: keyof LocalSubInvestor,
-    value: string,
-  ): void => {
+  const handleSubChange = (idx: number, field: keyof LocalSubInvestor, value: string): void => {
     setSubs((prev) =>
       prev.map((s, i) =>
         i === idx
           ? {
               ...s,
-              [field]:
-                field === "share_ratio" ? (parseFloat(value) || 0) : value,
+              [field]: field === "share_ratio" ? parseFloat(value) || 0 : value,
             }
           : s,
       ),
@@ -207,9 +197,7 @@ export function InvestorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] grid-rows-[auto_auto_1fr_auto] gap-0 overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle>
-            {investor ? "编辑投资方" : "添加投资方"}
-          </DialogTitle>
+          <DialogTitle>{investor ? "编辑投资方" : "添加投资方"}</DialogTitle>
           <DialogDescription className="text-xs">
             投资金额 = 投资总额 × 比例（自动计算）；子投资人实际金额 = 母投资方金额 × 内部占比
           </DialogDescription>
@@ -223,10 +211,7 @@ export function InvestorDialog({
                 <Label>
                   类型 <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={type}
-                  onValueChange={(v) => setType(v as InvestorType)}
-                >
+                <Select value={type} onValueChange={(v) => setType(v as InvestorType)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -254,9 +239,7 @@ export function InvestorDialog({
                   onChange={(e) => setName(e.target.value)}
                   aria-invalid={!!errors.name}
                 />
-                {errors.name && (
-                  <p className="text-xs text-red-500">{errors.name}</p>
-                )}
+                {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
               </div>
             </div>
 
@@ -277,13 +260,9 @@ export function InvestorDialog({
                     onChange={(e) => setShareRatioInput(e.target.value)}
                     aria-invalid={!!errors.shareRatio}
                   />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    %
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">%</span>
                 </div>
-                {errors.shareRatio && (
-                  <p className="text-xs text-red-500">{errors.shareRatio}</p>
-                )}
+                {errors.shareRatio && <p className="text-xs text-red-500">{errors.shareRatio}</p>}
               </div>
               <div className="space-y-2">
                 <Label>投资金额(自动)</Label>
@@ -319,17 +298,13 @@ export function InvestorDialog({
                   添加子投资人
                 </Button>
               </div>
-              {errors.subs && (
-                <p className="text-xs text-red-500">{errors.subs}</p>
-              )}
+              {errors.subs && <p className="text-xs text-red-500">{errors.subs}</p>}
               {hasSubs ? (
                 <div className="rounded-md border border-border overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead className="text-muted-foreground font-medium">
-                          姓名
-                        </TableHead>
+                        <TableHead className="text-muted-foreground font-medium">姓名</TableHead>
                         <TableHead className="text-muted-foreground font-medium w-32">
                           内部占比(%)
                         </TableHead>
@@ -343,18 +318,14 @@ export function InvestorDialog({
                     </TableHeader>
                     <TableBody>
                       {subs.map((sub, idx) => {
-                        const subAmount =
-                          (investorAmount * (Number(sub.share_ratio) || 0)) /
-                          100;
+                        const subAmount = (investorAmount * (Number(sub.share_ratio) || 0)) / 100;
                         return (
                           <TableRow key={idx}>
                             <TableCell>
                               <Input
                                 placeholder="姓名"
                                 value={sub.name}
-                                onChange={(e) =>
-                                  handleSubChange(idx, "name", e.target.value)
-                                }
+                                onChange={(e) => handleSubChange(idx, "name", e.target.value)}
                                 className="h-8"
                               />
                             </TableCell>
@@ -366,11 +337,7 @@ export function InvestorDialog({
                                 max="100"
                                 value={String(sub.share_ratio)}
                                 onChange={(e) =>
-                                  handleSubChange(
-                                    idx,
-                                    "share_ratio",
-                                    e.target.value,
-                                  )
+                                  handleSubChange(idx, "share_ratio", e.target.value)
                                 }
                                 className="h-8 font-mono tabular-nums"
                               />
@@ -394,15 +361,11 @@ export function InvestorDialog({
                         );
                       })}
                       <TableRow className="border-t border-dashed hover:bg-transparent">
-                        <TableCell className="italic text-muted-foreground text-sm">
-                          小计
-                        </TableCell>
+                        <TableCell className="italic text-muted-foreground text-sm">小计</TableCell>
                         <TableCell
                           className={cn(
                             "font-mono tabular-nums text-sm",
-                            hasSubs &&
-                              Math.abs(subRatioSum - 100) > RATIO_EPS &&
-                              "text-red-500",
+                            hasSubs && Math.abs(subRatioSum - 100) > RATIO_EPS && "text-red-500",
                           )}
                         >
                           {subRatioSum.toFixed(2)}%
@@ -425,10 +388,7 @@ export function InvestorDialog({
         </ScrollArea>
 
         <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
           <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">

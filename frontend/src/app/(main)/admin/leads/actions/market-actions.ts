@@ -20,8 +20,7 @@ export interface MarketSentiment {
 export async function getMarketSentimentAction(
   communityId: string,
 ): Promise<MarketSentiment | null> {
-  const result =
-    await getProjectMarketSentimentByCommunityAction(communityId);
+  const result = await getProjectMarketSentimentByCommunityAction(communityId);
   if (!result.success || !result.data) return null;
 
   const floorStats = (result.data.floor_stats || []).map((s) => ({
@@ -32,14 +31,8 @@ export async function getMarketSentimentAction(
     currentAvgPrice: s.current_avg_price || 0,
   }));
 
-  const totalListingCount = floorStats.reduce(
-    (sum, s) => sum + s.currentCount,
-    0,
-  );
-  const totalDealsCount = floorStats.reduce(
-    (sum, s) => sum + s.dealsCount,
-    0,
-  );
+  const totalListingCount = floorStats.reduce((sum, s) => sum + s.currentCount, 0);
+  const totalDealsCount = floorStats.reduce((sum, s) => sum + s.dealsCount, 0);
 
   return {
     floorStats,

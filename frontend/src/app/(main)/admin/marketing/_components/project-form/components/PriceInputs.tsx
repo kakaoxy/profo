@@ -55,9 +55,8 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
 
     // 限制最多两位小数
     const formattedParts = val.split(".");
-    const formattedVal = formattedParts.length > 1
-      ? `${formattedParts[0]}.${formattedParts[1].slice(0, 2)}`
-      : val;
+    const formattedVal =
+      formattedParts.length > 1 ? `${formattedParts[0]}.${formattedParts[1].slice(0, 2)}` : val;
 
     // 更新内部状态（字符串）
     setInputValue(formattedVal);
@@ -95,7 +94,9 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
           onBlur={handleBlur}
           placeholder="0"
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-ash">万</span>
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-ash">
+          万
+        </span>
       </div>
     </div>
   );

@@ -22,9 +22,7 @@ export function AlertCard({ count }: AlertCardProps) {
         >
           {count}
         </p>
-        <p className="text-xs font-medium text-muted-foreground mt-1 truncate">
-          待评估事项
-        </p>
+        <p className="text-xs font-medium text-muted-foreground mt-1 truncate">待评估事项</p>
         <p className="text-[10px] text-error font-bold mt-1 bg-error/10 px-1.5 py-0.5 rounded inline-block">
           评估预警
         </p>

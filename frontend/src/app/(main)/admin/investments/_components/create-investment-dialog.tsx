@@ -23,11 +23,7 @@ import {
   getProjectBriefById,
   type ProjectBrief,
 } from "../actions";
-import {
-  getProjectStatusBadgeClass,
-  getStatusLabel,
-  DEFAULT_STATUS,
-} from "@/lib/status-colors";
+import { getProjectStatusBadgeClass, getStatusLabel, DEFAULT_STATUS } from "@/lib/status-colors";
 
 interface CreateInvestmentDialogProps {
   open: boolean;
@@ -173,15 +169,9 @@ export function CreateInvestmentDialog({
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground space-y-0.5">
-                        {selected.project_code && (
-                          <div>编号: {selected.project_code}</div>
-                        )}
-                        {selected.community_name && (
-                          <div>小区: {selected.community_name}</div>
-                        )}
-                        {selected.address && (
-                          <div>地址: {selected.address}</div>
-                        )}
+                        {selected.project_code && <div>编号: {selected.project_code}</div>}
+                        {selected.community_name && <div>小区: {selected.community_name}</div>}
+                        {selected.address && <div>地址: {selected.address}</div>}
                       </div>
                     </div>
                     <Button
@@ -278,9 +268,7 @@ export function CreateInvestmentDialog({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                两位小数，单位：元
-              </p>
+              <p className="text-xs text-muted-foreground">两位小数，单位：元</p>
             </div>
 
             {/* 备注 */}
@@ -297,11 +285,7 @@ export function CreateInvestmentDialog({
         </ScrollArea>
 
         <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>
           <Button

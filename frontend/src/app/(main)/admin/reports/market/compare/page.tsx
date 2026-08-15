@@ -11,11 +11,7 @@ import { ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { fetchClient } from "@/lib/api-server";
 import { logger } from "@/lib/logger";
-import type {
-  ComparisonData,
-  Granularity,
-  RangeOption,
-} from "../../_lib/types";
+import type { ComparisonData, Granularity, RangeOption } from "../../_lib/types";
 import { ComparisonSummaryTable } from "../_components/comparison-summary-table";
 import { ComparisonChart } from "../_components/comparison-chart";
 
@@ -61,18 +57,13 @@ export default async function ComparePage({ searchParams }: PageProps) {
               <ArrowLeft className="size-4" />
               退出对比
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              多商圈对比分析
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">多商圈对比分析</h1>
           </div>
           <Alert>
             <AlertTitle>需要至少 2 个商圈</AlertTitle>
             <AlertDescription>
               请先在商圈总览添加至少 2 个商圈，再进入对比分析。
-              <Link
-                href="/admin/reports/market"
-                className="ml-1 underline underline-offset-2"
-              >
+              <Link href="/admin/reports/market" className="ml-1 underline underline-offset-2">
                 返回商圈总览
               </Link>
             </AlertDescription>
@@ -83,12 +74,9 @@ export default async function ComparePage({ searchParams }: PageProps) {
   }
 
   const client = await fetchClient();
-  const { data: rawData, error } = await client.GET(
-    "/api/v1/reports/market/compare",
-    {
-      params: { query: { ids: ids.join(","), range } },
-    },
-  );
+  const { data: rawData, error } = await client.GET("/api/v1/reports/market/compare", {
+    params: { query: { ids: ids.join(","), range } },
+  });
   if (error || !rawData) {
     logger.error("Failed to fetch comparison data", { error, ids });
     throw new Error("Failed to fetch comparison data");

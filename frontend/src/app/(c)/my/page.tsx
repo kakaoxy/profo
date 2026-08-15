@@ -31,7 +31,7 @@ export default function CMyPage() {
 
   const { data, error, isLoading, mutate } = useSWR<LeadListResponse>(
     "/api/v1/public/leads/mine",
-    fetcher
+    fetcher,
   );
 
   useEffect(() => {
@@ -81,20 +81,14 @@ export default function CMyPage() {
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton
-                key={i}
-                className="h-24 rounded-cards"
-              />
+              <Skeleton key={i} className="h-24 rounded-cards" />
             ))}
           </div>
         ) : error ? (
           <ErrorState onRetry={() => mutate()} />
         ) : !data?.items.length ? (
           <div className="space-y-6">
-            <EmptyState
-              title={cLocale.my.empty.title}
-              description={cLocale.my.empty.description}
-            />
+            <EmptyState title={cLocale.my.empty.title} description={cLocale.my.empty.description} />
             <div className="text-center">
               <Link
                 href="/valuation"

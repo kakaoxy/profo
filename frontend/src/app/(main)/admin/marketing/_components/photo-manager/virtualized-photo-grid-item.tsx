@@ -33,19 +33,15 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
   const thumbnailUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
 
   // 使用共享的图片加载 Hook
-  const { status: imageStatus } = useSimpleImageLoader(
-    isInViewport ? thumbnailUrl : null
-  );
+  const { status: imageStatus } = useSimpleImageLoader(isInViewport ? thumbnailUrl : null);
 
   return (
     <div
       ref={elementRef}
       className={cn(
         "relative p-2 rounded-xl border-2 cursor-pointer transition-all",
-        isSelected
-          ? "border-rust bg-rust/5"
-          : "border-dove/40 hover:border-rust/50",
-        isExisting && "opacity-50"
+        isSelected ? "border-rust bg-rust/5" : "border-dove/40 hover:border-rust/50",
+        isExisting && "opacity-50",
       )}
       style={style}
       onClick={() => !isExisting && onToggle()}
@@ -70,9 +66,7 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
       ) : null}
 
       {/* 图片容器 */}
-      <div
-        className="w-full aspect-square rounded-lg bg-center mb-2 overflow-hidden relative bg-fog"
-      >
+      <div className="w-full aspect-square rounded-lg bg-center mb-2 overflow-hidden relative bg-fog">
         {/* 占位符/加载状态 - 未进入视口或正在加载 */}
         {(!isInViewport || imageStatus === "loading") && (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -97,7 +91,7 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
             decoding="async"
             className={cn(
               "w-full h-full object-cover transition-opacity duration-200",
-              imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+              imageStatus === "loaded" ? "opacity-100" : "opacity-0",
             )}
             style={{
               willChange: "opacity",
@@ -108,12 +102,8 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
 
       {/* 信息区域 */}
       <div className="px-1">
-        <p className="text-xs font-bold truncate">
-          ID: #{photo.id}
-        </p>
-        <p className="text-[10px] text-graphite truncate">
-          {photo.description || photo.stage}
-        </p>
+        <p className="text-xs font-bold truncate">ID: #{photo.id}</p>
+        <p className="text-[10px] text-graphite truncate">{photo.description || photo.stage}</p>
       </div>
     </div>
   );

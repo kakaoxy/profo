@@ -54,9 +54,7 @@ export async function exportLedger(
  *
  * 注：导出端点返回二进制流，openapi-fetch 不便处理 Blob，故保留裸 fetch。
  */
-export async function exportProjectLedger(
-  projectId: string,
-): Promise<ActionResult<ArrayBuffer>> {
+export async function exportProjectLedger(projectId: string): Promise<ActionResult<ArrayBuffer>> {
   try {
     // 防御性校验：projectId 必须为 UUID，避免路径注入/SSRF
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)) {
@@ -67,9 +65,7 @@ export async function exportProjectLedger(
     if (!token) {
       return { success: false, message: "未登录或会话已过期，请重新登录" };
     }
-    const url = new URL(
-      getApiUrl(`/api/v1/admin/ledger/${projectId}/export`),
-    );
+    const url = new URL(getApiUrl(`/api/v1/admin/ledger/${projectId}/export`));
 
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },

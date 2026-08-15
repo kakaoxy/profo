@@ -10,18 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 import { createSalesRecordAction } from "../../actions/sales";
@@ -100,9 +90,7 @@ export function MobileRecordForm({
         onClose();
       } else {
         const errorMsg =
-          typeof res.message === "string"
-            ? res.message
-            : "提交失败：数据格式校验错误";
+          typeof res.message === "string" ? res.message : "提交失败：数据格式校验错误";
         toast.error(errorMsg);
       }
     } catch {
@@ -119,22 +107,15 @@ export function MobileRecordForm({
         if (!open) onClose();
       }}
     >
-      <SheetContent
-        side="bottom"
-        className="flex max-h-[85vh] flex-col gap-0 rounded-t-2xl p-0"
-      >
+      <SheetContent side="bottom" className="flex max-h-[85vh] flex-col gap-0 rounded-t-2xl p-0">
         <SheetHeader className="border-b border-border px-4 py-3">
-          <SheetTitle className="text-base">
-            新增{TYPE_LABEL[recordType]}记录
-          </SheetTitle>
+          <SheetTitle className="text-base">新增{TYPE_LABEL[recordType]}记录</SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
           {/* 1. 日期 */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">
-              日期
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">日期</span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -145,11 +126,7 @@ export function MobileRecordForm({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? (
-                    format(date, "yyyy-MM-dd", { locale: zhCN })
-                  ) : (
-                    <span>选择日期</span>
-                  )}
+                  {date ? format(date, "yyyy-MM-dd", { locale: zhCN }) : <span>选择日期</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -180,9 +157,7 @@ export function MobileRecordForm({
           {/* 3. 出价金额 (仅出价) */}
           {recordType === "offer" && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">
-                出价金额 (万元)
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">出价金额 (万元)</span>
               <Input
                 type="number"
                 value={price}
@@ -196,9 +171,7 @@ export function MobileRecordForm({
           {/* 4. 沟通纪要 (仅面谈) */}
           {recordType === "negotiation" && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">
-                沟通纪要
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">沟通纪要</span>
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}

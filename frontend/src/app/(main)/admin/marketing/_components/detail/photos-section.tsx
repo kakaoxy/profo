@@ -28,21 +28,19 @@ import { RenovationPhotoList } from "./renovation-photo-list";
 import { usePhotoSorting } from "./use-photo-sorting";
 
 // 动态导入拖拽相关组件
-const DndProvider = dynamic(
-  () => import("./dnd-provider").then((mod) => mod.DndProvider),
-  { ssr: false }
-);
-const DragOverlay = dynamic(
-  () => import("@dnd-kit/core").then((mod) => mod.DragOverlay),
-  { ssr: false }
-);
+const DndProvider = dynamic(() => import("./dnd-provider").then((mod) => mod.DndProvider), {
+  ssr: false,
+});
+const DragOverlay = dynamic(() => import("@dnd-kit/core").then((mod) => mod.DragOverlay), {
+  ssr: false,
+});
 const PhotoDragOverlay = dynamic(
   () => import("../photo-manager/photo-drag-overlay").then((mod) => mod.PhotoDragOverlay),
-  { ssr: false }
+  { ssr: false },
 );
 const PhotoLibraryPicker = dynamic(
   () => import("../photo-manager/photo-library-picker").then((mod) => mod.PhotoLibraryPicker),
-  { ssr: false }
+  { ssr: false },
 );
 
 type UploadTab = "sync" | "upload";
@@ -86,24 +84,19 @@ export const PhotosSection = memo(function PhotosSection({
     photosRef.current = photos;
   }, [photos]);
 
-  const existingPhotoUrls = useMemo(
-    () => new Set(photos.map((p) => p.file_url)),
-    [photos]
-  );
+  const existingPhotoUrls = useMemo(() => new Set(photos.map((p) => p.file_url)), [photos]);
 
   // 适配器：将完整列表转换为新增照片数组
   const handlePhotosChange = useCallback(
     (allPhotos: typeof photos) => {
       const currentPhotos = photosRef.current;
       // 找出新添加的照片（在当前列表中不存在的）
-      const addedPhotos = allPhotos.filter(
-        (p) => !currentPhotos.some((cp) => cp.id === p.id)
-      );
+      const addedPhotos = allPhotos.filter((p) => !currentPhotos.some((cp) => cp.id === p.id));
       if (addedPhotos.length > 0) {
         handlePhotosAdded(addedPhotos);
       }
     },
-    [handlePhotosAdded]
+    [handlePhotosAdded],
   );
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
@@ -133,15 +126,23 @@ export const PhotosSection = memo(function PhotosSection({
       <div className="p-4 space-y-4">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload" className="data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">手动上传</TabsTrigger>
-            <TabsTrigger value="sync" className="data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">同步照片</TabsTrigger>
+            <TabsTrigger
+              value="upload"
+              className="data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none"
+            >
+              手动上传
+            </TabsTrigger>
+            <TabsTrigger
+              value="sync"
+              className="data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none"
+            >
+              同步照片
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload" className="space-y-4 mt-4">
             <div className="space-y-3">
-              <div className="text-xs font-medium text-graphite">
-                选择照片类别
-              </div>
+              <div className="text-xs font-medium text-graphite">选择照片类别</div>
               <PhotoCategorySelector
                 value={uploadCategory}
                 onChange={setUploadCategory}
@@ -151,9 +152,7 @@ export const PhotosSection = memo(function PhotosSection({
               {uploadCategory === "renovation" && (
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-6 lg:col-span-4">
-                    <div className="text-xs font-medium text-graphite mb-1">
-                      装修阶段
-                    </div>
+                    <div className="text-xs font-medium text-graphite mb-1">装修阶段</div>
                     <Select
                       value={uploadStage}
                       onValueChange={setUploadStage}
@@ -206,9 +205,7 @@ export const PhotosSection = memo(function PhotosSection({
 
           <TabsContent value="sync" className="space-y-4 mt-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-xs font-medium text-graphite">
-                从其他项目同步照片
-              </div>
+              <div className="text-xs font-medium text-graphite">从其他项目同步照片</div>
               <Button
                 type="button"
                 variant="outline"

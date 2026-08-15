@@ -18,11 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { Project } from "../../../../types";
 import { updateProjectAction } from "../../../../actions/core";
@@ -61,13 +57,7 @@ export function EditSalesInfoDialog({
       setListPrice(project.list_price ? String(project.list_price) : "");
       setListingDate(parseDate(project.listing_date));
     }
-  }, [
-    open,
-    project.sold_price,
-    project.sold_date,
-    project.list_price,
-    project.listing_date,
-  ]);
+  }, [open, project.sold_price, project.sold_date, project.list_price, project.listing_date]);
 
   const handleConfirm = async () => {
     if (!soldPrice || Number(soldPrice) <= 0) {
@@ -119,10 +109,7 @@ export function EditSalesInfoDialog({
         <div className="grid gap-4 py-2">
           {/* 成交价 */}
           <div className="grid gap-2">
-            <Label
-              htmlFor="edit-sold-price"
-              className="text-xs font-medium text-muted-foreground"
-            >
+            <Label htmlFor="edit-sold-price" className="text-xs font-medium text-muted-foreground">
               成交价 (万元)
             </Label>
             <div className="relative">
@@ -134,18 +121,13 @@ export function EditSalesInfoDialog({
                 onChange={(e) => setSoldPrice(e.target.value)}
                 className="pr-8"
               />
-              <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">
-                万
-              </span>
+              <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">万</span>
             </div>
           </div>
 
           {/* 成交日期 */}
           <div className="grid gap-2">
-            <Label
-              htmlFor="edit-sold-date"
-              className="text-xs font-medium text-muted-foreground"
-            >
+            <Label htmlFor="edit-sold-date" className="text-xs font-medium text-muted-foreground">
               成交日期
             </Label>
             <Popover>
@@ -159,30 +141,18 @@ export function EditSalesInfoDialog({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {soldDate ? (
-                    format(soldDate, "yyyy年MM月dd日")
-                  ) : (
-                    <span>选择日期</span>
-                  )}
+                  {soldDate ? format(soldDate, "yyyy年MM月dd日") : <span>选择日期</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={soldDate}
-                  onSelect={setSoldDate}
-                  initialFocus
-                />
+                <Calendar mode="single" selected={soldDate} onSelect={setSoldDate} initialFocus />
               </PopoverContent>
             </Popover>
           </div>
 
           {/* 挂牌价 */}
           <div className="grid gap-2">
-            <Label
-              htmlFor="edit-list-price"
-              className="text-xs font-medium text-muted-foreground"
-            >
+            <Label htmlFor="edit-list-price" className="text-xs font-medium text-muted-foreground">
               挂牌价 (万元)
             </Label>
             <div className="relative">
@@ -194,9 +164,7 @@ export function EditSalesInfoDialog({
                 onChange={(e) => setListPrice(e.target.value)}
                 className="pr-8"
               />
-              <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">
-                万
-              </span>
+              <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">万</span>
             </div>
           </div>
 
@@ -219,11 +187,7 @@ export function EditSalesInfoDialog({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {listingDate ? (
-                    format(listingDate, "yyyy年MM月dd日")
-                  ) : (
-                    <span>选择日期</span>
-                  )}
+                  {listingDate ? format(listingDate, "yyyy年MM月dd日") : <span>选择日期</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -239,20 +203,11 @@ export function EditSalesInfoDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             取消
           </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={isSaving || !soldPrice || !soldDate}
-          >
-            {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
+          <Button onClick={handleConfirm} disabled={isSaving || !soldPrice || !soldDate}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             保存
           </Button>
         </DialogFooter>

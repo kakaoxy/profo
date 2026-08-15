@@ -5,11 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Check, ChevronsUpDown, Building2, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { searchCommunitiesAction, createCommunityAction } from "@/app/(main)/admin/leads/actions";
 import type { CreateCommunityResult } from "@/app/(main)/admin/leads/actions";
 import { toast } from "sonner";
@@ -38,7 +34,11 @@ export interface CommunitySelectProps {
   variant?: "default" | "marketing";
   allowCreate?: boolean;
   onSearch?: (query: string) => Promise<Community[]>;
-  onCreate?: (data: { name: string; district?: string | null; business_circle?: string | null }) => Promise<CreateCommunityResult>;
+  onCreate?: (data: {
+    name: string;
+    district?: string | null;
+    business_circle?: string | null;
+  }) => Promise<CreateCommunityResult>;
 }
 
 /**
@@ -104,9 +104,7 @@ export function CommunitySelect({
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const data = onSearch
-          ? await onSearch(query)
-          : await searchCommunitiesAction(query);
+        const data = onSearch ? await onSearch(query) : await searchCommunitiesAction(query);
         setResults(data);
       } catch (err) {
         logger.error("搜索小区失败:", err);
@@ -234,7 +232,13 @@ export function CommunitySelect({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className={s.popover} align="start" sideOffset={8} avoidCollisions={true} collisionPadding={16}>
+        <PopoverContent
+          className={s.popover}
+          align="start"
+          sideOffset={8}
+          avoidCollisions={true}
+          collisionPadding={16}
+        >
           {/* 搜索输入框 */}
           <div className={cn("p-2 border-b", variant === "marketing" && "border-(--border)/20")}>
             <input
@@ -283,10 +287,7 @@ export function CommunitySelect({
               results.map((community) => (
                 <button
                   key={community.id}
-                  className={cn(
-                    s.resultItem,
-                    value === community.name && s.resultItemActive
-                  )}
+                  className={cn(s.resultItem, value === community.name && s.resultItemActive)}
                   onClick={() => handleSelect(community)}
                 >
                   <div className="flex flex-col gap-0.5">

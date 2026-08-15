@@ -20,7 +20,9 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
       </div>
       <div className="flex-1 min-w-0">
         <span className="text-[12px] uppercase tracking-[0.5px] text-graphite">{label}</span>
-        <p className="mt-0.5 text-[15px] font-medium tracking-[-0.009em] text-ink truncate">{value}</p>
+        <p className="mt-0.5 text-[15px] font-medium tracking-[-0.009em] text-ink truncate">
+          {value}
+        </p>
       </div>
     </div>
   );

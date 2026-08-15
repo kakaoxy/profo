@@ -65,11 +65,7 @@ const batchUpdateSortSchema = z.object({
 /**
  * 获取媒体列表
  */
-export async function getL4MarketingMediaAction(
-  projectId: number,
-  page = 1,
-  page_size = 100,
-) {
+export async function getL4MarketingMediaAction(projectId: number, page = 1, page_size = 100) {
   try {
     const client = await fetchClient();
     const { data, error } = await client.GET(
@@ -174,13 +170,10 @@ export async function updateL4MarketingMediaAction(
   }
   try {
     const client = await fetchClient();
-    const { data, error } = await client.PUT(
-      "/api/v1/admin/marketing/media/{media_id}",
-      {
-        params: { path: { media_id: mediaId } },
-        body,
-      },
-    );
+    const { data, error } = await client.PUT("/api/v1/admin/marketing/media/{media_id}", {
+      params: { path: { media_id: mediaId } },
+      body,
+    });
 
     if (error) {
       logger.error("Failed to update L4 marketing media:", error);
@@ -220,12 +213,9 @@ export async function deleteL4MarketingMediaAction(mediaId: number, projectId: n
   }
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE(
-      "/api/v1/admin/marketing/media/{media_id}",
-      {
-        params: { path: { media_id: mediaId } },
-      },
-    );
+    const { error } = await client.DELETE("/api/v1/admin/marketing/media/{media_id}", {
+      params: { path: { media_id: mediaId } },
+    });
 
     if (error) {
       logger.error("Failed to delete L4 marketing media:", error);
@@ -248,10 +238,7 @@ export async function deleteL4MarketingMediaAction(mediaId: number, projectId: n
 /**
  * 批量添加照片
  */
-export async function batchAddL4PhotosAction(
-  projectId: number,
-  photoIds: string[],
-) {
+export async function batchAddL4PhotosAction(projectId: number, photoIds: string[]) {
   const parsed = batchAddPhotosSchema.safeParse({ projectId, photoIds });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
@@ -272,8 +259,8 @@ export async function batchAddL4PhotosAction(
         origin_media_id: photoId,
         renovation_stage: null,
         sort_order: i,
-      })
-    )
+      }),
+    ),
   );
 
   for (const [i, result] of responses.entries()) {
@@ -303,7 +290,7 @@ export async function batchAddL4PhotosAction(
  */
 export async function batchUpdateMediaSortOrderAction(
   projectId: number,
-  sortUpdates: { media_id: number; sort_order: number }[]
+  sortUpdates: { media_id: number; sort_order: number }[],
 ) {
   const parsed = batchUpdateSortSchema.safeParse({ projectId, sortUpdates });
   if (!parsed.success) {

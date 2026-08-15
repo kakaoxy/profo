@@ -16,9 +16,7 @@ interface UserAvatarProps {
 
 export function UserAvatar({ name, size = "md" }: UserAvatarProps) {
   const initial = (name || "?").charAt(0).toUpperCase();
-  const bgIndex = name
-    ? name.charCodeAt(0) % PASTEL_BGS.length
-    : 0;
+  const bgIndex = name ? name.charCodeAt(0) % PASTEL_BGS.length : 0;
   return (
     <div
       className={`flex items-center justify-center rounded-full ${PASTEL_BGS[bgIndex]} text-ink font-medium shrink-0 ${sizeMap[size]}`}

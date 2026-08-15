@@ -85,15 +85,12 @@ export function PropertyDetailSheet() {
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
       <SheetContent className="w-full sm:w-[600px] p-0 flex flex-col gap-0 bg-background">
-        
         {/* 头部：标题与状态 */}
         <SheetHeader className="p-6 bg-card border-b shrink-0">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline">{data?.data_source || "数据源"}</Badge>
             {data?.status && (
-              <Badge className={getProjectStatusBadgeClass(data.status)}>
-                {data.status}
-              </Badge>
+              <Badge className={getProjectStatusBadgeClass(data.status)}>{data.status}</Badge>
             )}
             <span className="text-xs text-muted-foreground ml-auto">ID: {propertyId}</span>
           </div>
@@ -102,14 +99,13 @@ export function PropertyDetailSheet() {
           </SheetTitle>
           <SheetDescription>
             {/* 修复：删除了不存在的 address 字段 */}
-            {data?.district} {data?.business_circle ? `· ${data.business_circle}` : ""} 
+            {data?.district} {data?.business_circle ? `· ${data.business_circle}` : ""}
           </SheetDescription>
         </SheetHeader>
 
         {/* 内容区域：可滚动 */}
         <ScrollArea className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-8">
-            
             {isLoading && (
               <div className="flex h-40 items-center justify-center text-muted-foreground">
                 <Loader2 className="w-8 h-8 animate-spin" />
@@ -117,9 +113,7 @@ export function PropertyDetailSheet() {
             )}
 
             {errorMsg && (
-              <div className="p-4 bg-error-container text-error rounded-md text-sm">
-                {errorMsg}
-              </div>
+              <div className="p-4 bg-error-container text-error rounded-md text-sm">{errorMsg}</div>
             )}
 
             {data && !isLoading && (
@@ -128,55 +122,62 @@ export function PropertyDetailSheet() {
                 <div className="grid grid-cols-3 gap-4 bg-card p-4 rounded-lg border shadow-sm">
                   <div className="text-center border-r">
                     <div className="text-xs text-muted-foreground mb-1">
-                        {data.status === "成交" ? "成交总价" : "挂牌总价"}
+                      {data.status === "成交" ? "成交总价" : "挂牌总价"}
                     </div>
                     {/* 修复：使用 listed_price_wan 或 sold_price_wan */}
                     <div className="text-xl font-bold text-error">
-                      {displayPrice} <span className="text-xs font-normal text-muted-foreground">万</span>
+                      {displayPrice}{" "}
+                      <span className="text-xs font-normal text-muted-foreground">万</span>
                     </div>
                   </div>
                   <div className="text-center border-r">
                     <div className="text-xs text-muted-foreground mb-1">单价</div>
-                    <div className="text-lg font-semibold">{data.unit_price} <span className="text-xs font-normal text-muted-foreground"></span></div>
+                    <div className="text-lg font-semibold">
+                      {data.unit_price}{" "}
+                      <span className="text-xs font-normal text-muted-foreground"></span>
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-muted-foreground mb-1">建筑面积</div>
-                    <div className="text-lg font-semibold">{data.build_area} <span className="text-xs font-normal text-muted-foreground">㎡</span></div>
+                    <div className="text-lg font-semibold">
+                      {data.build_area}{" "}
+                      <span className="text-xs font-normal text-muted-foreground">㎡</span>
+                    </div>
                   </div>
                 </div>
 
-                 {/* 4. 图片预览 (如果有链接) */}
-                 {/* 安全：与 columns.tsx / property-card-list.tsx 对齐，过滤非 http/https 的脏数据 */}
-                 {(() => {
-                   const validLinks = (data.picture_links ?? []).filter(isValidUrl).slice(0, 6);
-                   if (validLinks.length === 0) return null;
-                   return (
-                     <div>
-                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
-                          <Layers className="w-4 h-4" /> 图片预览
-                        </h3>
-                        <div className="grid grid-cols-3 gap-2">
-                          {validLinks.map((link, idx) => (
-                             // 使用 next/image 与 columns.tsx 对齐；unoptimized 保留外链原 URL
-                             <div
-                                key={idx}
-                                className="relative w-full aspect-4/3 rounded border bg-muted overflow-hidden"
-                             >
-                                <Image
-                                   src={link}
-                                   alt={`图${idx}`}
-                                   fill
-                                   sizes="(max-width: 600px) 50vw, 200px"
-                                   className="object-cover"
-                                   referrerPolicy="no-referrer"
-                                   unoptimized
-                                />
-                             </div>
-                          ))}
-                        </div>
-                     </div>
-                   );
-                 })()}
+                {/* 4. 图片预览 (如果有链接) */}
+                {/* 安全：与 columns.tsx / property-card-list.tsx 对齐，过滤非 http/https 的脏数据 */}
+                {(() => {
+                  const validLinks = (data.picture_links ?? []).filter(isValidUrl).slice(0, 6);
+                  if (validLinks.length === 0) return null;
+                  return (
+                    <div>
+                      <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
+                        <Layers className="w-4 h-4" /> 图片预览
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {validLinks.map((link, idx) => (
+                          // 使用 next/image 与 columns.tsx 对齐；unoptimized 保留外链原 URL
+                          <div
+                            key={idx}
+                            className="relative w-full aspect-4/3 rounded border bg-muted overflow-hidden"
+                          >
+                            <Image
+                              src={link}
+                              alt={`图${idx}`}
+                              fill
+                              sizes="(max-width: 600px) 50vw, 200px"
+                              className="object-cover"
+                              referrerPolicy="no-referrer"
+                              unoptimized
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* 2. 基础信息 */}
                 <div>
@@ -201,16 +202,20 @@ export function PropertyDetailSheet() {
                     <Tag className="w-4 h-4" /> 交易属性
                   </h3>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-8 bg-card p-4 rounded-lg border">
-                    <Field label="挂牌时间" value={data.listed_date?.split("T")[0]} icon={Calendar} />
+                    <Field
+                      label="挂牌时间"
+                      value={data.listed_date?.split("T")[0]}
+                      icon={Calendar}
+                    />
                     <Field label="上次交易" value={data.last_transaction?.split("T")[0]} />
-                    <Field label="持有年限" value={data.ownership_years ? `满${data.ownership_years}年` : ""} />
+                    <Field
+                      label="持有年限"
+                      value={data.ownership_years ? `满${data.ownership_years}年` : ""}
+                    />
                     <Field label="交易权属" value={data.ownership_type} />
                     <Field label="挂牌备注" value={data.listing_remarks} full />
                   </div>
                 </div>
-
-                
-
               </>
             )}
           </div>

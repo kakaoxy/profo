@@ -26,14 +26,10 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
       {/* 签约价 */}
       <Card>
         <CardContent className="p-4">
-          <p className="text-xs text-muted-foreground font-medium mb-1">
-            签约总价
-          </p>
+          <p className="text-xs text-muted-foreground font-medium mb-1">签约总价</p>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-bold font-mono tracking-tight">
-              {project.signing_price
-                ? project.signing_price.toLocaleString()
-                : "-"}
+              {project.signing_price ? project.signing_price.toLocaleString() : "-"}
             </span>
             <span className="text-xs text-muted-foreground">万</span>
           </div>
@@ -43,13 +39,11 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
       {/* 现金流 */}
       <Card>
         <CardContent className="p-4">
-          <p className="text-xs text-muted-foreground font-medium mb-1">
-            净现金流
-          </p>
+          <p className="text-xs text-muted-foreground font-medium mb-1">净现金流</p>
           <div
             className={cn(
               "flex items-baseline gap-1",
-              isProfitable ? "text-money-positive" : "text-money-negative"
+              isProfitable ? "text-money-positive" : "text-money-negative",
             )}
           >
             <span className="text-2xl font-bold font-mono tracking-tight">
@@ -65,45 +59,31 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
       {/* 距交房 */}
       <Card>
         <CardContent className="p-4">
-          <p className="text-xs text-muted-foreground font-medium mb-1">
-            距交房
-          </p>
+          <p className="text-xs text-muted-foreground font-medium mb-1">距交房</p>
           <div className="flex items-baseline gap-1">
             <span
               className={cn(
                 "text-2xl font-bold font-mono tracking-tight",
-                daysUntilHandover !== null &&
-                  daysUntilHandover < 0 &&
-                  "text-error",
-                daysUntilHandover !== null &&
-                  daysUntilHandover >= 0 &&
-                  daysUntilHandover <= 7
+                daysUntilHandover !== null && daysUntilHandover < 0 && "text-error",
+                daysUntilHandover !== null && daysUntilHandover >= 0 && daysUntilHandover <= 7
                   ? "text-status-renovating"
-                  : "text-foreground"
+                  : "text-foreground",
               )}
             >
               {daysUntilHandover !== null ? Math.abs(daysUntilHandover) : "-"}
             </span>
             <span className="text-xs text-muted-foreground">
-              {daysUntilHandover !== null
-                ? daysUntilHandover >= 0
-                  ? "天"
-                  : "天 (已超时)"
-                : ""}
+              {daysUntilHandover !== null ? (daysUntilHandover >= 0 ? "天" : "天 (已超时)") : ""}
             </span>
           </div>
         </CardContent>
       </Card>
 
       {/* 当前状态 - 只有这个卡片有背景色区分 */}
-      <Card
-        className={cn("border-l-4", borderClass)}
-      >
+      <Card className={cn("border-l-4", borderClass)}>
         <CardContent className="p-4 flex flex-col justify-center h-full">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground font-medium">
-              当前阶段
-            </span>
+            <span className="text-xs text-muted-foreground font-medium">当前阶段</span>
             <Calendar className="h-4 w-4 text-muted-foreground opacity-50" />
           </div>
           <div className="mt-1">

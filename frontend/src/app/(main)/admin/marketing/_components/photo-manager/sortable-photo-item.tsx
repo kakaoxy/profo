@@ -23,14 +23,7 @@ export const SortablePhotoItem = memo(function SortablePhotoItem({
   index,
   onDelete,
 }: SortablePhotoItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: photo.id,
     data: {
       photo,
@@ -52,9 +45,10 @@ export const SortablePhotoItem = memo(function SortablePhotoItem({
   };
 
   // 获取阶段标签
-  const stageLabel = photo.photo_category === "renovation"
-    ? RENOVATION_STAGES.find((s) => s.value === photo.renovation_stage)?.label
-    : undefined;
+  const stageLabel =
+    photo.photo_category === "renovation"
+      ? RENOVATION_STAGES.find((s) => s.value === photo.renovation_stage)?.label
+      : undefined;
 
   // 转换照片数据格式
   const photoData: PhotoItemData = {
@@ -67,9 +61,12 @@ export const SortablePhotoItem = memo(function SortablePhotoItem({
   };
 
   // 处理删除
-  const handleDelete = useCallback((photoId: number | string) => {
-    onDelete(Number(photoId));
-  }, [onDelete]);
+  const handleDelete = useCallback(
+    (photoId: number | string) => {
+      onDelete(Number(photoId));
+    },
+    [onDelete],
+  );
 
   return (
     <BasePhotoItem

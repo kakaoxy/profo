@@ -92,17 +92,11 @@ function PropertyCardItemImpl({ property }: PropertyCardItemProps) {
         {/* 第三行：价格 + 单价 */}
         <div className="flex items-baseline">
           <span className="text-error font-bold text-sm">{total_price}万</span>
-          <span className="text-[10px] text-muted-foreground ml-2">
-            {unit_price} 元/㎡
-          </span>
+          <span className="text-[10px] text-muted-foreground ml-2">{unit_price} 元/㎡</span>
         </div>
 
         {/* 第四行：时间 MM/DD */}
-        {formattedDate && (
-          <div className="text-[10px] text-muted-foreground">
-            {formattedDate}
-          </div>
-        )}
+        {formattedDate && <div className="text-[10px] text-muted-foreground">{formattedDate}</div>}
       </div>
     </div>
   );

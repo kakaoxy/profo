@@ -40,7 +40,7 @@ export default function LeadDetailPage() {
 
   const { data, error, isLoading, mutate } = useSWR<LeadDetail>(
     id ? `/api/v1/public/leads/${id}` : null,
-    fetcher
+    fetcher,
   );
 
   if (isLoading) {
@@ -123,10 +123,7 @@ export default function LeadDetailPage() {
           </div>
         )}
 
-        <SystemEstimateCard
-          evalPrice={data.eval_price ?? null}
-          createdAt={formattedDate}
-        />
+        <SystemEstimateCard evalPrice={data.eval_price ?? null} createdAt={formattedDate} />
 
         <FollowUpList followUps={data.follow_ups ?? []} />
       </div>

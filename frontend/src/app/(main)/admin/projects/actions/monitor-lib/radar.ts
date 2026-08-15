@@ -46,9 +46,7 @@ export async function getNeighborhoodRadarAction(projectId: string) {
   }
 }
 
-export async function getNeighborhoodRadarByCommunityAction(
-  communityId: string,
-) {
+export async function getNeighborhoodRadarByCommunityAction(communityId: string) {
   try {
     const client = await fetchClient();
     const { data: radarData, error: radarError } = await client.GET(

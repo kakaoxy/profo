@@ -17,15 +17,16 @@ export function StageDatesFields() {
   const { control } = useFormContext<FormValues>();
 
   // 移除"已完成"冗余阶段，仅保留实际改造阶段
-  const STAGES = RENOVATION_STAGES.filter(
-    (s) => s.value !== "已完成"
-  );
+  const STAGES = RENOVATION_STAGES.filter((s) => s.value !== "已完成");
 
   return (
     <section className="bg-card rounded-3xl shadow-steep-sm p-6">
       <h3 className="flex items-center gap-2 mb-2">
         <span className="w-1 h-4 rounded-full bg-rust"></span>
-        <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">改造阶段完成时间 <span className="ml-1 font-normal normal-case text-ash">Stage Dates</span></span>
+        <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">
+          改造阶段完成时间{" "}
+          <span className="ml-1 font-normal normal-case text-ash">Stage Dates</span>
+        </span>
       </h3>
       <p className="text-xs text-ash mb-6">
         各改造阶段的完成日期，将展示在 C 端改造时间线。可留空。
@@ -49,10 +50,7 @@ export function StageDatesFields() {
               {STAGES.map((stage, index) => {
                 const hasDate = !!dates[stage.value];
                 return (
-                  <div
-                    key={stage.value}
-                    className="relative flex-1 min-w-35"
-                  >
+                  <div key={stage.value} className="relative flex-1 min-w-35">
                     {/* 节点圆点 + 连接线 */}
                     <div className="flex items-center">
                       <span
@@ -62,10 +60,7 @@ export function StageDatesFields() {
                         }`}
                       />
                       {index < STAGES.length - 1 && (
-                        <span
-                          aria-hidden="true"
-                          className="h-0.5 w-full bg-dove/40"
-                        />
+                        <span aria-hidden="true" className="h-0.5 w-full bg-dove/40" />
                       )}
                     </div>
                     <div className="mt-3 space-y-2">

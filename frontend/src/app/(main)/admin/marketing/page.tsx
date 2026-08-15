@@ -19,11 +19,7 @@ interface ApiError {
 
 /** 类型守卫：检查是否为 ApiError */
 function isApiError(error: unknown): error is ApiError {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    ("status" in error || "message" in error)
-  );
+  return typeof error === "object" && error !== null && ("status" in error || "message" in error);
 }
 
 /** 获取错误状态码 */
@@ -33,10 +29,7 @@ function getErrorStatusCode(error: unknown): number | undefined {
   return typeof status === "number" ? status : undefined;
 }
 
-function getSearchParam(
-  value: string | string[] | undefined,
-  fallback = "",
-): string {
+function getSearchParam(value: string | string[] | undefined, fallback = ""): string {
   if (Array.isArray(value)) return value[0] ?? fallback;
   return value ?? fallback;
 }
@@ -48,9 +41,7 @@ function ErrorState({ message, statusCode }: { message: string; statusCode?: num
       <div className="text-center">
         <div className="text-sm font-semibold text-error">{message}</div>
         {statusCode ? (
-          <div className="mt-2 text-xs text-muted-foreground">
-            状态码: {statusCode}
-          </div>
+          <div className="mt-2 text-xs text-muted-foreground">状态码: {statusCode}</div>
         ) : null}
       </div>
     </div>
@@ -92,7 +83,10 @@ function ContentSkeleton() {
       <div className="bg-white rounded-cards shadow-steep overflow-hidden">
         <div className="p-4">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 py-4 border-b border-border last:border-0">
+            <div
+              key={i}
+              className="flex items-center gap-4 py-4 border-b border-border last:border-0"
+            >
               <Skeleton className="h-12 w-12 rounded-lg" />
               <div className="flex-1">
                 <Skeleton className="h-4 w-48 mb-2" />
@@ -182,21 +176,19 @@ export default async function MarketingProjectsPage({
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         {/* Header - 立即渲染 */}
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl text-ink">
-            营销项目管理
-          </h1>
-          <p className="text-sm text-ash">
-            管理房源营销信息，发布和编辑房源展示内容。
-          </p>
+          <h1 className="font-display text-3xl text-ink">营销项目管理</h1>
+          <p className="text-sm text-ash">管理房源营销信息，发布和编辑房源展示内容。</p>
         </div>
 
         {/* Stats and Content - 使用 Suspense 渐进加载 */}
-        <Suspense fallback={
-          <>
-            <StatsSkeleton />
-            <ContentSkeleton />
-          </>
-        }>
+        <Suspense
+          fallback={
+            <>
+              <StatsSkeleton />
+              <ContentSkeleton />
+            </>
+          }
+        >
           <ProjectsDataFetcher searchParams={params} />
         </Suspense>
       </div>

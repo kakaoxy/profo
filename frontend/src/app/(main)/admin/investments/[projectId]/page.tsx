@@ -15,10 +15,9 @@ export default async function InvestmentDetailPage({ params }: PageProps) {
   const { projectId } = await params;
 
   const client = await fetchClient();
-  const { data, error } = await client.GET(
-    "/api/v1/admin/investments/by-project/{project_id}",
-    { params: { path: { project_id: projectId } } },
-  );
+  const { data, error } = await client.GET("/api/v1/admin/investments/by-project/{project_id}", {
+    params: { path: { project_id: projectId } },
+  });
 
   // 跟投记录不存在 → 跳转列表页并弹出新增弹框（预选该项目）
   if (error || !data) {

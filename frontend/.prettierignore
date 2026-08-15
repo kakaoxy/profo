@@ -1,0 +1,21 @@
+# 构建产物
+.next/
+out/
+build/
+coverage/
+
+# 依赖
+node_modules/
+pnpm-lock.yaml
+
+# 自动生成的类型（pnpm gen-api 产物）
+src/lib/api-types.d.ts
+
+# 测试覆盖率报告（v8 coverage，含巨型 JSON）
+cov.json
+
+# 配置/资源
+*.woff2
+*.ico
+*.png
+public/

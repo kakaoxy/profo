@@ -2,7 +2,11 @@
 
 import { useState, useCallback, useMemo, Suspense, lazy } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { L4MarketingMedia, PhotoCategory, RENOVATION_STAGES } from "@/app/(main)/admin/marketing/types";
+import {
+  L4MarketingMedia,
+  PhotoCategory,
+  RENOVATION_STAGES,
+} from "@/app/(main)/admin/marketing/types";
 import { customCollisionDetection } from "./collision-detection";
 import { PhotoDragOverlay } from "./photo-drag-overlay";
 import { PhotoCategorySelector } from "./photo-category-selector";
@@ -11,7 +15,13 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UploadArea } from "@/components/common/image-upload";
 import { useImageUpload } from "./use-image-upload";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { FolderOpen, Loader2, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +31,9 @@ import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
 import { useProjectId } from "./use-project-id";
 
-const PhotoLibraryPicker = lazy(() => import("./photo-library-picker").then(mod => ({ default: mod.PhotoLibraryPicker })));
+const PhotoLibraryPicker = lazy(() =>
+  import("./photo-library-picker").then((mod) => ({ default: mod.PhotoLibraryPicker })),
+);
 
 interface DualPhotoManagerProps {
   l3ProjectId?: string | null;
@@ -45,36 +57,33 @@ export function DualPhotoManager({
 
   const { effectiveProjectId } = useProjectId({ l4ProjectId, l3ProjectId });
 
-  const {
-    uploadingFiles,
-    isUploading,
-    uploadFiles,
-    failedUploads,
-    retryFailed,
-    clearFailed,
-  } = useImageUpload({
-    // 优先使用 l4ProjectId（L4营销项目ID），如果不存在则使用 l3ProjectId
-    projectId: effectiveProjectId,
-    uploadCategory,
-    uploadStage,
-    photos,
-    onPhotosChange,
-  });
+  const { uploadingFiles, isUploading, uploadFiles, failedUploads, retryFailed, clearFailed } =
+    useImageUpload({
+      // 优先使用 l4ProjectId（L4营销项目ID），如果不存在则使用 l3ProjectId
+      projectId: effectiveProjectId,
+      uploadCategory,
+      uploadStage,
+      photos,
+      onPhotosChange,
+    });
 
   const marketingPhotos = useMemo(
-    () => photos.filter((p) => p.photo_category === "marketing").sort((a, b) => a.sort_order - b.sort_order),
-    [photos]
+    () =>
+      photos
+        .filter((p) => p.photo_category === "marketing")
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [photos],
   );
 
   const renovationPhotos = useMemo(
-    () => photos.filter((p) => p.photo_category === "renovation").sort((a, b) => a.sort_order - b.sort_order),
-    [photos]
+    () =>
+      photos
+        .filter((p) => p.photo_category === "renovation")
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [photos],
   );
 
-  const existingPhotoUrls = useMemo(
-    () => new Set(photos.map((p) => p.file_url)),
-    [photos]
-  );
+  const existingPhotoUrls = useMemo(() => new Set(photos.map((p) => p.file_url)), [photos]);
 
   const {
     activeId,
@@ -93,36 +102,41 @@ export function DualPhotoManager({
     renovationPhotos,
   });
 
-  const handleDeletePhoto = useCallback(async (photoId: number) => {
-    if (!confirm("确定删除这张照片吗？")) return;
+  const handleDeletePhoto = useCallback(
+    async (photoId: number) => {
+      if (!confirm("确定删除这张照片吗？")) return;
 
-    // 如果没有项目ID（创建模式），直接更新本地状态
-    const deleteProjectId = effectiveProjectId ?? 0;
-    if (!deleteProjectId) {
-      onPhotosChange(photos.filter((p) => p.id !== photoId));
-      toast.success("照片已删除");
-      return;
-    }
-
-    try {
-      const result = await deleteL4MarketingMediaAction(photoId, deleteProjectId);
-      if (result.success) {
+      // 如果没有项目ID（创建模式），直接更新本地状态
+      const deleteProjectId = effectiveProjectId ?? 0;
+      if (!deleteProjectId) {
         onPhotosChange(photos.filter((p) => p.id !== photoId));
         toast.success("照片已删除");
-      } else {
-        toast.error(result.error || "删除照片失败");
+        return;
       }
-    } catch {
-      toast.error("删除照片失败");
-    }
-  }, [photos, onPhotosChange, effectiveProjectId]);
+
+      try {
+        const result = await deleteL4MarketingMediaAction(photoId, deleteProjectId);
+        if (result.success) {
+          onPhotosChange(photos.filter((p) => p.id !== photoId));
+          toast.success("照片已删除");
+        } else {
+          toast.error(result.error || "删除照片失败");
+        }
+      } catch {
+        toast.error("删除照片失败");
+      }
+    },
+    [photos, onPhotosChange, effectiveProjectId],
+  );
 
   return (
     <>
       <section className="bg-card rounded-3xl shadow-steep-sm p-6">
         <h3 className="flex items-center gap-2 mb-4">
           <span className="w-1 h-4 rounded-full bg-rust"></span>
-          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">照片管理 <span className="ml-1 font-normal normal-case text-ash">Photos</span></span>
+          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">
+            照片管理 <span className="ml-1 font-normal normal-case text-ash">Photos</span>
+          </span>
         </h3>
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
@@ -200,7 +214,9 @@ export function DualPhotoManager({
                   </div>
                   <ul className="text-xs text-graphite space-y-1">
                     {failedUploads.map((file, index) => (
-                      <li key={index} className="truncate">{file.filename}</li>
+                      <li key={index} className="truncate">
+                        {file.filename}
+                      </li>
                     ))}
                   </ul>
                   <div className="flex items-center gap-2">

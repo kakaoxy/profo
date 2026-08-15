@@ -17,9 +17,7 @@ interface SubjectDictionaryTableProps {
  * Server Component，使用原生 <details> 实现折叠，按 level 排序展示。
  */
 export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps) {
-  const sorted = subjects
-    .slice()
-    .sort((a, b) => a.level.localeCompare(b.level));
+  const sorted = subjects.slice().sort((a, b) => a.level.localeCompare(b.level));
 
   return (
     <details className="group">
@@ -47,9 +45,7 @@ export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps
                   key={s.id}
                   className="border-b transition-colors last:border-0 hover:bg-apricot-wash/20"
                 >
-                  <td className="px-3 py-2 text-[11px] text-muted-foreground">
-                    {s.id}
-                  </td>
+                  <td className="px-3 py-2 text-[11px] text-muted-foreground">{s.id}</td>
                   <td className="px-3 py-2 font-medium">
                     {s.name}
                     {!s.system && (
@@ -85,17 +81,12 @@ export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps
                   <td className="px-3 py-2 text-xs">
                     {stageLabel(s.modes[0] as SubjectMode, s.stage)}
                   </td>
-                  <td className="px-3 py-2 text-xs text-graphite">
-                    {s.note ?? "—"}
-                  </td>
+                  <td className="px-3 py-2 text-xs text-graphite">{s.note ?? "—"}</td>
                 </tr>
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-3 py-8 text-center text-muted-foreground"
-                  >
+                  <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
                     暂无科目
                   </td>
                 </tr>
@@ -114,9 +105,7 @@ function ModeTicks({ modes }: { modes: SubjectMode[] }) {
       <span
         className={cn(
           "rounded px-1.5 py-0.5 text-[10px]",
-          modes.includes("agent")
-            ? "bg-apricot-wash text-rust"
-            : "bg-fog text-dove",
+          modes.includes("agent") ? "bg-apricot-wash text-rust" : "bg-fog text-dove",
         )}
       >
         代理
@@ -124,9 +113,7 @@ function ModeTicks({ modes }: { modes: SubjectMode[] }) {
       <span
         className={cn(
           "rounded px-1.5 py-0.5 text-[10px]",
-          modes.includes("acquire")
-            ? "bg-purple-100 text-purple-700"
-            : "bg-fog text-dove",
+          modes.includes("acquire") ? "bg-purple-100 text-purple-700" : "bg-fog text-dove",
         )}
       >
         收购

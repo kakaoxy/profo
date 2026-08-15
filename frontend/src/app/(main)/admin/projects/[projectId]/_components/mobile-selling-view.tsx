@@ -14,10 +14,7 @@ import { usePermission } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { deleteSalesRecordAction } from "../../actions/sales";
-import {
-  validateSalesRecords,
-  type ApiSalesRecord,
-} from "../../../_components/project-card-types";
+import { validateSalesRecords, type ApiSalesRecord } from "../../../_components/project-card-types";
 import { getListingDaysText } from "../../../_components/project-card-utils";
 import { MobileRecordForm } from "./mobile-record-form";
 
@@ -38,10 +35,7 @@ const TAB_LABEL: Record<TabType, string> = {
   negotiation: "面谈",
 };
 
-export function MobileSellingView({
-  projectId,
-  project,
-}: MobileSellingViewProps) {
+export function MobileSellingView({ projectId, project }: MobileSellingViewProps) {
   const router = useRouter();
   const { hasAnyPermission } = usePermission();
   const [activeTab, setActiveTab] = useState<TabType>("viewing");
@@ -51,21 +45,14 @@ export function MobileSellingView({
     PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
     PERMISSION_CODES.PROJECT_WRITE,
   ]);
-  const canEditSales =
-    canAddByPermission || project.sale?.can_edit_sales === true;
+  const canEditSales = canAddByPermission || project.sale?.can_edit_sales === true;
 
   const records = useMemo(
     () => validateSalesRecords(project.sales_records),
     [project.sales_records],
   );
-  const viewings = useMemo(
-    () => records.filter((r) => r.record_type === "viewing"),
-    [records],
-  );
-  const offers = useMemo(
-    () => records.filter((r) => r.record_type === "offer"),
-    [records],
-  );
+  const viewings = useMemo(() => records.filter((r) => r.record_type === "viewing"), [records]);
+  const offers = useMemo(() => records.filter((r) => r.record_type === "offer"), [records]);
   const negotiations = useMemo(
     () => records.filter((r) => r.record_type === "negotiation"),
     [records],
@@ -81,8 +68,7 @@ export function MobileSellingView({
         toast.success("删除成功");
         router.refresh();
       } else {
-        const errorMsg =
-          typeof res.message === "string" ? res.message : "删除失败";
+        const errorMsg = typeof res.message === "string" ? res.message : "删除失败";
         toast.error(errorMsg);
       }
     } catch {
@@ -194,9 +180,7 @@ function KpiCell({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card px-1 py-2 text-center">
       <span className="text-[10px] text-muted-foreground">{label}</span>
-      <span className="mt-0.5 text-sm font-semibold text-foreground">
-        {value}
-      </span>
+      <span className="mt-0.5 text-sm font-semibold text-foreground">{value}</span>
     </div>
   );
 }
@@ -205,8 +189,7 @@ function KpiCell({ label, value }: { label: string; value: string }) {
 
 function sortByDateDesc(list: ApiSalesRecord[]): ApiSalesRecord[] {
   return [...list].sort(
-    (a, b) =>
-      new Date(b.record_date).getTime() - new Date(a.record_date).getTime(),
+    (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime(),
   );
 }
 
@@ -261,18 +244,10 @@ function ViewingList({
   );
 }
 
-function OfferList({
-  data,
-  onDelete,
-}: {
-  data: ApiSalesRecord[];
-  onDelete: (id: string) => void;
-}) {
+function OfferList({ data, onDelete }: { data: ApiSalesRecord[]; onDelete: (id: string) => void }) {
   if (data.length === 0) return <EmptyState type="offer" />;
   const sorted = sortByDateDesc(data);
-  const prices = sorted
-    .map((r) => Number(r.price))
-    .filter((p) => !isNaN(p));
+  const prices = sorted.map((r) => Number(r.price)).filter((p) => !isNaN(p));
   const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
 
   return (
@@ -289,12 +264,7 @@ function OfferList({
             )}
           >
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span
-                className={cn(
-                  "text-sm font-bold",
-                  isMax ? "text-error" : "text-foreground",
-                )}
-              >
+              <span className={cn("text-sm font-bold", isMax ? "text-error" : "text-foreground")}>
                 ¥{item.price ?? "-"}万
                 {isMax && (
                   <span className="ml-1 rounded bg-error/10 px-1 text-[10px] font-normal text-error">

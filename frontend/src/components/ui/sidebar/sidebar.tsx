@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Sheet,
@@ -6,11 +6,11 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
-import { SIDEBAR_WIDTH_MOBILE } from "./constants"
-import { useSidebar } from "./sidebar-context"
-import type { SidebarProps } from "./types"
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { SIDEBAR_WIDTH_MOBILE } from "./constants";
+import { useSidebar } from "./sidebar-context";
+import type { SidebarProps } from "./types";
 
 export function Sidebar({
   side = "left",
@@ -20,7 +20,7 @@ export function Sidebar({
   children,
   ...props
 }: SidebarProps) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -28,13 +28,13 @@ export function Sidebar({
         data-slot="sidebar"
         className={cn(
           "bg-sidebar text-sidebar-foreground flex h-full w-(--sidebar-width) flex-col",
-          className
+          className,
         )}
         {...props}
       >
         {children}
       </div>
-    )
+    );
   }
 
   if (isMobile) {
@@ -59,7 +59,7 @@ export function Sidebar({
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
-    )
+    );
   }
 
   return (
@@ -79,7 +79,7 @@ export function Sidebar({
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
             ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
         )}
       />
       <div
@@ -92,7 +92,7 @@ export function Sidebar({
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
-          className
+          className,
         )}
         {...props}
       >
@@ -105,5 +105,5 @@ export function Sidebar({
         </div>
       </div>
     </div>
-  )
+  );
 }

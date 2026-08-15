@@ -16,9 +16,7 @@ export function VisualJourney({ project }: { project: Project }) {
   const stageDates = project.renovationStageDates || {};
 
   const groupedPhotos = RENOVATION_STAGES.map((stage) => {
-    const stagePhotos = photos.filter(
-      (p) => p.stage === stage.value || p.stage === stage.key
-    );
+    const stagePhotos = photos.filter((p) => p.stage === stage.value || p.stage === stage.key);
     const date = stageDates[stage.value];
     return {
       ...stage,
@@ -57,7 +55,8 @@ export function VisualJourney({ project }: { project: Project }) {
                     <div className="flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-card" />
                       <span className="text-sm font-bold text-muted-foreground">
-                        {idx + 1}. {stage.value}{stage.label.includes("阶段") ? "" : "阶段"}
+                        {idx + 1}. {stage.value}
+                        {stage.label.includes("阶段") ? "" : "阶段"}
                       </span>
                     </div>
                     <p className="text-[11px] font-mono text-muted-foreground pl-3">

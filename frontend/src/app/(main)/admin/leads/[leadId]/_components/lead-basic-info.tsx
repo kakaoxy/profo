@@ -19,8 +19,7 @@ export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
     },
     {
       label: "心理预期价",
-      value:
-        lead.expectedPrice != null ? formatPriceWan(lead.expectedPrice) : "-",
+      value: lead.expectedPrice != null ? formatPriceWan(lead.expectedPrice) : "-",
     },
     { label: "面积", value: `${lead.area}㎡` },
     { label: "户型", value: lead.layout || "-" },
@@ -28,10 +27,7 @@ export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
     { label: "朝向", value: lead.orientation || "-" },
     {
       label: "区域",
-      value:
-        lead.district || lead.businessArea
-          ? `${lead.district} - ${lead.businessArea}`
-          : "-",
+      value: lead.district || lead.businessArea ? `${lead.district} - ${lead.businessArea}` : "-",
     },
     { label: "录入人", value: lead.creatorName || "-" },
     { label: "单价", value: formatUnitPriceWan(lead.unitPrice) },

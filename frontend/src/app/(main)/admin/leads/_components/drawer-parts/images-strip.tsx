@@ -13,10 +13,7 @@ interface ImagesStripProps {
 
 const MAX_COUNT = 6;
 
-export const ImagesStrip: React.FC<ImagesStripProps> = ({
-  images,
-  onImagesChange,
-}) => {
+export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange }) => {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canAdd = !!onImagesChange && images.length < MAX_COUNT;
@@ -68,9 +65,7 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({
             影像库
           </span>
           <span className="text-muted-foreground/40">·</span>
-          <span className="text-[10px] text-muted-foreground truncate">
-            户型图 / 实勘 / 产证
-          </span>
+          <span className="text-[10px] text-muted-foreground truncate">户型图 / 实勘 / 产证</span>
         </div>
         <span className="text-[10px] text-muted-foreground font-bold shrink-0 ml-2">
           {images.length} / {MAX_COUNT}
@@ -151,11 +146,7 @@ interface ImageLightboxProps {
   onClose: () => void;
 }
 
-const ImageLightbox: React.FC<ImageLightboxProps> = ({
-  images,
-  startIndex,
-  onClose,
-}) => {
+const ImageLightbox: React.FC<ImageLightboxProps> = ({ images, startIndex, onClose }) => {
   const [idx, setIdx] = useState(startIndex);
   const total = images.length;
 

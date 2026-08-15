@@ -3,27 +3,25 @@
 import * as React from "react";
 import { Building2, MapPin, Maximize, LayoutGrid, Compass, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getStatusLabel, getProjectStatusBadgeClass, PROJECT_STATUS_MAPPING } from "@/lib/status-colors";
+import {
+  getStatusLabel,
+  getProjectStatusBadgeClass,
+  PROJECT_STATUS_MAPPING,
+} from "@/lib/status-colors";
 import type { ProjectListItemProps } from "./types";
 
 /**
  * 项目列表项组件
  * 展示单个L3项目的关键信息
  */
-export function ProjectListItem({
-  project,
-  selected,
-  onClick,
-}: ProjectListItemProps) {
+export function ProjectListItem({ project, selected, onClick }: ProjectListItemProps) {
   return (
     <div
       onClick={onClick}
       className={cn(
         "relative p-4 rounded-lg border cursor-pointer transition-all duration-200",
         "hover:shadow-md hover:border-primary/30",
-        selected
-          ? "border-primary bg-primary/5 shadow-sm"
-          : "border-border bg-card"
+        selected ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-card",
       )}
       role="button"
       tabIndex={0}
@@ -42,9 +40,7 @@ export function ProjectListItem({
       )}
 
       {/* 项目名称 */}
-      <h4 className="font-semibold text-foreground mb-2 pr-8 line-clamp-1">
-        {project.name}
-      </h4>
+      <h4 className="font-semibold text-foreground mb-2 pr-8 line-clamp-1">{project.name}</h4>
 
       {/* 小区和地址 */}
       <div className="space-y-1.5 mb-3">
@@ -95,10 +91,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-        className
-      )}
+      className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium", className)}
     >
       {label}
     </span>

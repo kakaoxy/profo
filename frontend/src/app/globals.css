@@ -9,7 +9,9 @@
    TODO: 升级 tw-animate-css 或迁移到 tailwindcss-animate 后移除。 */
 
 @utility animate-out {
-  animation: exit var(--tw-animation-duration, var(--tw-duration, 0.15s)) var(--tw-ease, ease) var(--tw-animation-delay, 0s) var(--tw-animation-iteration-count, 1) var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
+  animation: exit var(--tw-animation-duration, var(--tw-duration, 0.15s)) var(--tw-ease, ease)
+    var(--tw-animation-delay, 0s) var(--tw-animation-iteration-count, 1)
+    var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
 }
 
 @utility fade-out-0 {
@@ -130,7 +132,9 @@
 
   /* Steep Design System — Typography */
   --font-signifier: var(--font-source-serif), ui-serif, Georgia, Cambria, "Times New Roman", serif;
-  --font-sohne: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sohne:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
 
   /* Steep Design System — Radii */
   --radius-cards: 24px;
@@ -138,20 +142,22 @@
   --radius-inputs: 16px;
 
   /* Steep Design System — Signature card shadow (three-layer stack) */
-  --shadow-steep: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+  --shadow-steep:
+    rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px,
+    rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
   --shadow-steep-sm: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 8px 10px -6px;
 
   /* C-side tokens remapped to Steep palette */
-  --color-c-trust-blue: #17191c;        /* Ink — primary action & text */
-  --color-c-action-gold: #5d2a1a;       /* Rust — signature accent */
-  --color-c-status-onsale: #5d2a1a;     /* Rust */
-  --color-c-status-upcoming: #777b86;   /* Graphite */
-  --color-c-status-sold: #a3a6af;       /* Dove */
-  --color-c-surface: #f7f7f8;           /* Fog */
-  --color-c-border-subtle: #e5e7eb;     /* light hairline */
+  --color-c-trust-blue: #17191c; /* Ink — primary action & text */
+  --color-c-action-gold: #5d2a1a; /* Rust — signature accent */
+  --color-c-status-onsale: #5d2a1a; /* Rust */
+  --color-c-status-upcoming: #777b86; /* Graphite */
+  --color-c-status-sold: #a3a6af; /* Dove */
+  --color-c-surface: #f7f7f8; /* Fog */
+  --color-c-border-subtle: #e5e7eb; /* light hairline */
   --color-c-error: #ba1a1a;
-  --color-c-text-primary: #17191c;      /* Ink */
-  --color-c-text-secondary: #4c4c4c;    /* Ash */
+  --color-c-text-primary: #17191c; /* Ink */
+  --color-c-text-secondary: #4c4c4c; /* Ash */
 }
 
 :root {
@@ -199,8 +205,8 @@
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
   /* Money semantic colors - Light Mode (中国习惯: 红=正向, 绿=负向) */
-  --money-positive: #ef4444;   /* 红 = 流入/盈利/上涨 */
-  --money-negative: #10b981;   /* 绿 = 流出/亏损/下跌 */
+  --money-positive: #ef4444; /* 红 = 流入/盈利/上涨 */
+  --money-negative: #10b981; /* 绿 = 流出/亏损/下跌 */
 
   /* Status Colors - Light Mode */
   --status-pending: #d946ef;
@@ -383,4 +389,3 @@
     scroll-behavior: auto !important;
   }
 }
-

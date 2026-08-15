@@ -44,23 +44,15 @@ const KpiCard: React.FC<KpiCardProps> = ({
     >
       {value}
     </span>
-    <span
-      className={cn(
-        "text-[10px] font-bold text-muted-foreground",
-        metaClassName,
-      )}
-    >
-      {meta}
-    </span>
+    <span className={cn("text-[10px] font-bold text-muted-foreground", metaClassName)}>{meta}</span>
   </div>
 );
 
 export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
   const hasEval = lead.evalPrice != null;
   const deltaValue = hasEval ? lead.evalPrice! - lead.totalPrice : null;
-  const deltaPctNum = hasEval && lead.totalPrice > 0
-    ? (lead.evalPrice! / lead.totalPrice - 1) * 100
-    : null;
+  const deltaPctNum =
+    hasEval && lead.totalPrice > 0 ? (lead.evalPrice! / lead.totalPrice - 1) * 100 : null;
   const deltaPctStr = deltaPctNum != null ? deltaPctNum.toFixed(1) : null;
 
   // 评估价卡片 meta：差值与百分比（正数 + 号，正数 success / 负数 error）
@@ -68,11 +60,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
     hasEval && deltaValue != null && deltaPctStr != null ? (
       <span
         className={cn(
-          deltaValue > 0
-            ? "text-success"
-            : deltaValue < 0
-              ? "text-error"
-              : "text-muted-foreground",
+          deltaValue > 0 ? "text-success" : deltaValue < 0 ? "text-error" : "text-muted-foreground",
         )}
       >
         {deltaValue > 0 ? "+" : ""}
@@ -107,9 +95,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
         value={
           <>
             ¥{lead.totalPrice}
-            <span className="text-xs font-bold text-muted-foreground ml-1">
-              万
-            </span>
+            <span className="text-xs font-bold text-muted-foreground ml-1">万</span>
           </>
         }
         meta={`¥${lead.unitPrice.toFixed(2)} 万/㎡`}
@@ -124,9 +110,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
           hasEval ? (
             <>
               ¥{lead.evalPrice}
-              <span className="text-xs font-bold text-muted-foreground ml-1">
-                万
-              </span>
+              <span className="text-xs font-bold text-muted-foreground ml-1">万</span>
             </>
           ) : (
             "待评估"
@@ -142,9 +126,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
         value={
           <>
             {lead.area}
-            <span className="text-xs font-bold text-muted-foreground ml-1">
-              ㎡
-            </span>
+            <span className="text-xs font-bold text-muted-foreground ml-1">㎡</span>
           </>
         }
         meta={`¥${lead.unitPrice.toFixed(2)} 万/㎡`}

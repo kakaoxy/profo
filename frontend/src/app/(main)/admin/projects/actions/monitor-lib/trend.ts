@@ -18,7 +18,7 @@ export async function getTrendPositioningAction(projectId: string) {
     }
 
     const { community_id, list_price, signing_price, area } = projectResult.data;
-    
+
     // 计算我的单价 (优先使用挂牌价，其次使用签约价)
     let myPrice = 0;
     const price = list_price || signing_price;
@@ -38,7 +38,7 @@ export async function getTrendPositioningAction(projectId: string) {
       "/api/v1/monitor/communities/{community_id}/trends",
       {
         params: { path: { community_id: community_id } },
-      }
+      },
     );
 
     if (trendError || !trendData) {
@@ -60,7 +60,7 @@ export async function getTrendPositioningByCommunityAction(communityId: string, 
       "/api/v1/monitor/communities/{community_id}/trends",
       {
         params: { path: { community_id: communityId } },
-      }
+      },
     );
 
     if (trendError || !trendData) {

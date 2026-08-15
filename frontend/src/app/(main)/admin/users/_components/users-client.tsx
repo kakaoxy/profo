@@ -1,14 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Plus,
-  Search,
-  Users,
-  UserCircle,
-  Shield,
-  X,
-} from "lucide-react";
+import { Plus, Search, Users, UserCircle, Shield, X } from "lucide-react";
 
 import "./users-redesign.css";
 
@@ -61,12 +54,8 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("username") || searchParams.get("nickname") || "",
   );
-  const [roleFilter, setRoleFilter] = useState(
-    searchParams.get("role_id") || "all",
-  );
-  const [statusFilter, setStatusFilter] = useState(
-    searchParams.get("status") || "active",
-  );
+  const [roleFilter, setRoleFilter] = useState(searchParams.get("role_id") || "all");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "active");
 
   // Sort state
   const [sort, setSort] = useState<{ field: string; dir: "asc" | "desc" }>({
@@ -95,12 +84,8 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
 
   // Data splitting (client-side). initialData is the full list from the API;
   // frontend splits by role.code. Fine for current data volumes.
-  const internalItems = initialData.items.filter(
-    (u) => u.role?.code !== "customer",
-  );
-  const customerItems = initialData.items.filter(
-    (u) => u.role?.code === "customer",
-  );
+  const internalItems = initialData.items.filter((u) => u.role?.code !== "customer");
+  const customerItems = initialData.items.filter((u) => u.role?.code === "customer");
   const internalTotal = internalItems.length;
   const customerTotal = customerItems.length;
   const currentItems = tab === "internal" ? internalItems : customerItems;
@@ -131,8 +116,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
   };
 
   const handleSort = (field: string) => {
-    const newDir =
-      sort.field === field ? (sort.dir === "asc" ? "desc" : "asc") : "desc";
+    const newDir = sort.field === field ? (sort.dir === "asc" ? "desc" : "asc") : "desc";
     setSort({ field, dir: newDir });
     updateParams({ sort: field, dir: newDir });
   };
@@ -187,10 +171,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
   return (
     <div className="users-redesign space-y-4">
       {/* Stat Cards */}
-      <UsersStatCards
-        internalItems={internalItems}
-        customerItems={customerItems}
-      />
+      <UsersStatCards internalItems={internalItems} customerItems={customerItems} />
 
       {/* Tab Bar */}
       <div className="users-tabs-bar">
@@ -210,8 +191,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
             data-tab="customer"
             onClick={() => handleTabChange("customer")}
           >
-            <UserCircle className="h-3.5 w-3.5 mr-1.5" />
-            C 端用户
+            <UserCircle className="h-3.5 w-3.5 mr-1.5" />C 端用户
             <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
               {customerTotal}
             </span>
@@ -230,11 +210,7 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
             <Search className="users-search-icon h-3.5 w-3.5" />
             <Input
               className="users-search-input"
-              placeholder={
-                tab === "internal"
-                  ? "搜索用户名 / 昵称 / 手机号"
-                  : "搜索昵称 / 手机号"
-              }
+              placeholder={tab === "internal" ? "搜索用户名 / 昵称 / 手机号" : "搜索昵称 / 手机号"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

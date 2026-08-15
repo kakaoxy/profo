@@ -26,21 +26,14 @@ export function PropertyGrid({
     { label: "面积", value: `${area}㎡`, isPrice: false },
     { label: "朝向", value: orientation, isPrice: false },
     { label: "楼层", value: floorInfo, isPrice: false },
-    ...(decorationStyle
-      ? [{ label: "装修", value: decorationStyle, isPrice: false }]
-      : []),
+    ...(decorationStyle ? [{ label: "装修", value: decorationStyle, isPrice: false }] : []),
   ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {cells.map((cell) => (
-        <div
-          key={cell.label}
-          className="bg-white p-5 rounded-cards shadow-steep-sm"
-        >
-          <p className="text-[14px] text-graphite leading-caption tracking-caption">
-            {cell.label}
-          </p>
+        <div key={cell.label} className="bg-white p-5 rounded-cards shadow-steep-sm">
+          <p className="text-[14px] text-graphite leading-caption tracking-caption">{cell.label}</p>
           <p
             className={`mt-1 font-medium text-ink min-w-0 truncate tabular-nums ${
               cell.isPrice ? "text-[18px]" : "text-[16px]"

@@ -4,11 +4,7 @@ import { memo } from "react";
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
-import {
-  getStatusConfig,
-  getPublishStatusConfig,
-  formatDate,
-} from "./utils";
+import { getStatusConfig, getPublishStatusConfig, formatDate } from "./utils";
 import { getUserByIdAction } from "@/app/(main)/admin/users/actions";
 import type { BasicConfigSectionProps } from "./types";
 import type { UserResponse } from "@/app/(main)/admin/users/actions";
@@ -57,16 +53,14 @@ function useConsultant(consultantId: string | null | undefined) {
         return result.data as UserResponse;
       }
       // 处理错误情况 - 使用类型守卫获取错误消息
-      const errorMessage = !result.success
-        ? result.message
-        : "获取顾问信息失败";
+      const errorMessage = !result.success ? result.message : "获取顾问信息失败";
       throw new Error(errorMessage);
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: 60000, // 1分钟内去重
-    }
+    },
   );
 
   return {
@@ -119,8 +113,6 @@ export const BasicConfigSection = memo(function BasicConfigSection({
               </Badge>
             }
           />
-
-
         </div>
       </div>
 
@@ -128,10 +120,7 @@ export const BasicConfigSection = memo(function BasicConfigSection({
       <div className="bg-white rounded-cards shadow-steep-sm p-6">
         <h3 className="text-xs font-medium text-ink mb-3">管理配置</h3>
         <div className="grid grid-cols-4 gap-4">
-          <ConfigItem
-            label="排序权重"
-            value={project.sort_order ?? 0}
-          />
+          <ConfigItem label="排序权重" value={project.sort_order ?? 0} />
           <ConfigItem
             label="关联顾问"
             value={
@@ -149,14 +138,8 @@ export const BasicConfigSection = memo(function BasicConfigSection({
               )
             }
           />
-          <ConfigItem
-            label="关联L3项目ID"
-            value={project.project_id ?? "-"}
-          />
-          <ConfigItem
-            label="最后更新"
-            value={formatDate(project.updated_at)}
-          />
+          <ConfigItem label="关联L3项目ID" value={project.project_id ?? "-"} />
+          <ConfigItem label="最后更新" value={formatDate(project.updated_at)} />
         </div>
       </div>
     </div>

@@ -18,12 +18,12 @@ type PageProps = {
 export default async function PropertiesPage(props: PageProps) {
   // 2. 关键修复：先 await 解析 searchParams
   const searchParams = await props.searchParams;
-  
+
   // 3. 使用 nuqs 解析缓存
   const query = searchParamsCache.parse(searchParams);
 
   const client = await fetchClient();
-  
+
   // 4. 发起请求
   const { data, error } = await client.GET("/api/v1/properties", {
     params: {
@@ -31,7 +31,7 @@ export default async function PropertiesPage(props: PageProps) {
         page: query.page,
         page_size: query.page_size,
         // 如果是空字符串，转为 undefined，这样 openapi-fetch 就不会发送这个参数
-        community_name: query.q || undefined, 
+        community_name: query.q || undefined,
         status: query.status || undefined,
         rooms: query.rooms || undefined,
         rooms_gte: query.rooms_gte || undefined,
@@ -44,8 +44,8 @@ export default async function PropertiesPage(props: PageProps) {
         business_circles: query.business_circles || undefined,
         sort_by: query.sort_by,
         sort_order: query.sort_order as "asc" | "desc", // 类型断言
-      }
-    }
+      },
+    },
   });
 
   if (error) {
@@ -57,12 +57,12 @@ export default async function PropertiesPage(props: PageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b bg-background gap-2">
         <h1 className="text-lg sm:text-xl font-bold tracking-tight">房源列表</h1>
         <div className="flex items-center gap-2">
-           {/* 移动端筛选按钮 */}
-           <div className="md:hidden">
-             <PropertyFilterSheet />
-           </div>
-           <span className="text-xs sm:text-sm text-muted-foreground">共 {data?.total || 0} 条</span>
-           <ExportButton />
+          {/* 移动端筛选按钮 */}
+          <div className="md:hidden">
+            <PropertyFilterSheet />
+          </div>
+          <span className="text-xs sm:text-sm text-muted-foreground">共 {data?.total || 0} 条</span>
+          <ExportButton />
         </div>
       </div>
 
@@ -74,18 +74,18 @@ export default async function PropertiesPage(props: PageProps) {
 
         {/* 右侧表格区域 */}
         <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col min-w-0">
-           <div className="flex-1 overflow-y-auto overflow-x-auto scrollbar-hide border rounded-md bg-card shadow-sm hidden md:block">
-              <DataTable columns={columns} data={data?.items || []} />
-           </div>
-           {/* 移动端筛选 Chip 工具条 */}
-           <PropertyFilterChips />
-           {/* 移动端卡片列表 */}
-           <div className="flex-1 overflow-y-auto md:hidden">
-              <PropertyCardList properties={data?.items || []} />
-           </div>
-           <div className="mt-2 relative z-50 bg-card md:pb-2">
-             <PropertyPagination total={data?.total || 0}  />
-           </div>
+          <div className="flex-1 overflow-y-auto overflow-x-auto scrollbar-hide border rounded-md bg-card shadow-sm hidden md:block">
+            <DataTable columns={columns} data={data?.items || []} />
+          </div>
+          {/* 移动端筛选 Chip 工具条 */}
+          <PropertyFilterChips />
+          {/* 移动端卡片列表 */}
+          <div className="flex-1 overflow-y-auto md:hidden">
+            <PropertyCardList properties={data?.items || []} />
+          </div>
+          <div className="mt-2 relative z-50 bg-card md:pb-2">
+            <PropertyPagination total={data?.total || 0} />
+          </div>
         </div>
       </div>
       <PropertyDetailSheet />

@@ -56,10 +56,7 @@ export function DataTable<TData, TValue>({
                 <TableHead key={header.id}>
                   {header.isPlaceholder
                     ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               );
             })}
@@ -94,9 +91,7 @@ export function DataTable<TData, TValue>({
   );
 
   return container ? (
-    <div className={cn("rounded-md border", containerClassName)}>
-      {tableContent}
-    </div>
+    <div className={cn("rounded-md border", containerClassName)}>{tableContent}</div>
   ) : (
     <div className={containerClassName}>{tableContent}</div>
   );

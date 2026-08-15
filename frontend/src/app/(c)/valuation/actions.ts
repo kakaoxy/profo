@@ -21,18 +21,28 @@ const createLeadSchema = z.object({
   floor_info: z.string().min(1, cLocale.valuationAction.floorRequired),
   orientation: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
-  expected_price: z.number().positive(cLocale.valuationAction.expectedPriceRequired).nullable().optional(),
-  images: z.array(z.string().refine(isValidUrl, { message: "无效的图片 URL" })).max(6).default([]),
+  expected_price: z
+    .number()
+    .positive(cLocale.valuationAction.expectedPriceRequired)
+    .nullable()
+    .optional(),
+  images: z
+    .array(z.string().refine(isValidUrl, { message: "无效的图片 URL" }))
+    .max(6)
+    .default([]),
 });
 
 const completePhoneSchema = z.object({
-  phone: z.string().min(1, cLocale.valuationAction.phoneRequired).regex(/^1[3-9]\d{9}$/, cLocale.valuationAction.phoneInvalid),
+  phone: z
+    .string()
+    .min(1, cLocale.valuationAction.phoneRequired)
+    .regex(/^1[3-9]\d{9}$/, cLocale.valuationAction.phoneInvalid),
 });
 
 export async function searchCCommunitiesAction(query: string): Promise<Community[]> {
   try {
     const response = await fetch(
-      getApiUrl(`${apiPaths.cCommunities.search}?q=${encodeURIComponent(query)}`)
+      getApiUrl(`${apiPaths.cCommunities.search}?q=${encodeURIComponent(query)}`),
     );
     if (!response.ok) return [];
     const data = await response.json();
@@ -45,25 +55,37 @@ export async function searchCCommunitiesAction(query: string): Promise<Community
 
 export async function listCCommunityImagesAction(
   communityId: string,
-): Promise<{ id: number | string; url: string; thumbnail_url?: string | null; description?: string | null }[]> {
+): Promise<
+  { id: number | string; url: string; thumbnail_url?: string | null; description?: string | null }[]
+> {
   try {
     const response = await fetch(
-      getApiUrl(`${apiPaths.cCommunities.images}/${communityId}/images?page_size=100`)
+      getApiUrl(`${apiPaths.cCommunities.images}/${communityId}/images?page_size=100`),
     );
     if (!response.ok) return [];
     const data = await response.json();
-    return (data.items ?? []).map((item: { id: number; url: string; thumbnail_url: string | null; description: string | null }) => ({
-      id: item.id,
-      url: item.url,
-      thumbnail_url: item.thumbnail_url,
-      description: item.description,
-    }));
+    return (data.items ?? []).map(
+      (item: {
+        id: number;
+        url: string;
+        thumbnail_url: string | null;
+        description: string | null;
+      }) => ({
+        id: item.id,
+        url: item.url,
+        thumbnail_url: item.thumbnail_url,
+        description: item.description,
+      }),
+    );
   } catch {
     return [];
   }
 }
 
-export async function createLeadAction(_: ActionResult<{ id: string }>, formData: FormData): Promise<ActionResult<{ id: string }>> {
+export async function createLeadAction(
+  _: ActionResult<{ id: string }>,
+  formData: FormData,
+): Promise<ActionResult<{ id: string }>> {
   const raw = {
     community_id: (formData.get("community_id") as string) || null,
     community_name: formData.get("community_name") as string,
@@ -74,11 +96,15 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
     floor_info: (formData.get("floor_info") as string) || null,
     orientation: (formData.get("orientation") as string) || null,
     remarks: (formData.get("remarks") as string) || null,
-    expected_price: formData.get("expected_price") ? parseFloat(formData.get("expected_price") as string) : null,
+    expected_price: formData.get("expected_price")
+      ? parseFloat(formData.get("expected_price") as string)
+      : null,
     images: (() => {
       try {
         const parsed = JSON.parse((formData.get("images") as string) || "[]");
-        return Array.isArray(parsed) ? parsed.filter((u): u is string => typeof u === "string") : [];
+        return Array.isArray(parsed)
+          ? parsed.filter((u): u is string => typeof u === "string")
+          : [];
       } catch {
         return [];
       }
@@ -112,7 +138,10 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
   }
 }
 
-export async function completePhoneAction(_: ActionResult<{ phone: string }>, formData: FormData): Promise<ActionResult<{ phone: string }>> {
+export async function completePhoneAction(
+  _: ActionResult<{ phone: string }>,
+  formData: FormData,
+): Promise<ActionResult<{ phone: string }>> {
   const raw = { phone: (formData.get("phone") as string) || "" };
   const parsed = completePhoneSchema.safeParse(raw);
   if (!parsed.success) return createErrorResult(parsed.error.issues[0].message);

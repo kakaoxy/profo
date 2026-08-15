@@ -28,7 +28,7 @@ export interface TransformedSalesRecord {
 
 export function validateAndTransformSalesRecords(
   data: unknown,
-  projectId: string
+  projectId: string,
 ): TransformedSalesRecord[] | undefined {
   if (!data || !Array.isArray(data)) return undefined;
 
@@ -44,7 +44,12 @@ export function validateAndTransformSalesRecords(
     if (typeof record.record_date !== "string") continue;
 
     const recordType = record.record_type;
-    if (recordType !== "viewing" && recordType !== "offer" && recordType !== "negotiation" && recordType !== "sold") {
+    if (
+      recordType !== "viewing" &&
+      recordType !== "offer" &&
+      recordType !== "negotiation" &&
+      recordType !== "sold"
+    ) {
       continue;
     }
 
@@ -79,9 +84,17 @@ export function validateSalesRecords(data: unknown): ApiSalesRecord[] {
     result.push({
       id: record.id,
       record_type: record.record_type,
-      price: typeof record.price === "string" || typeof record.price === "number" || record.price === null ? record.price : undefined,
+      price:
+        typeof record.price === "string" ||
+        typeof record.price === "number" ||
+        record.price === null
+          ? record.price
+          : undefined,
       record_date: record.record_date,
-      customer_name: typeof record.customer_name === "string" || record.customer_name === null ? record.customer_name : undefined,
+      customer_name:
+        typeof record.customer_name === "string" || record.customer_name === null
+          ? record.customer_name
+          : undefined,
       notes: typeof record.notes === "string" || record.notes === null ? record.notes : undefined,
     });
   }

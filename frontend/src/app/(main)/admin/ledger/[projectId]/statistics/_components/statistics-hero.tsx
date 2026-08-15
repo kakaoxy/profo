@@ -54,12 +54,7 @@ export function StatisticsHero({ kpi }: StatisticsHeroProps) {
           variant="warm"
           accent="ink"
         />
-        <KpiCard
-          label="净利"
-          value={formatCurrency(kpi.net_profit)}
-          variant="warm"
-          accent="rust"
-        />
+        <KpiCard label="净利" value={formatCurrency(kpi.net_profit)} variant="warm" accent="rust" />
         <KpiCard
           label="总支出(进损益)"
           value={formatCurrency(kpi.total_pnl_outflow)}
@@ -115,18 +110,9 @@ interface KpiCardProps {
   className?: string;
 }
 
-function KpiCard({
-  label,
-  value,
-  suffix,
-  variant,
-  accent,
-  className,
-}: KpiCardProps) {
+function KpiCard({ label, value, suffix, variant, accent, className }: KpiCardProps) {
   const cardBgClass =
-    variant === "warm"
-      ? "bg-gradient-to-br from-apricot-wash to-apricot-wash/50"
-      : "bg-white";
+    variant === "warm" ? "bg-gradient-to-br from-apricot-wash to-apricot-wash/50" : "bg-white";
   // 中国习惯：in（流入）红、out（流出）绿
   const valueColorClass: Record<KpiAccent, string> = {
     ink: "text-ink",
@@ -151,9 +137,7 @@ function KpiCard({
         )}
       >
         {value}
-        {suffix ? (
-          <span className="text-[16px] ml-1 text-ash">{suffix}</span>
-        ) : null}
+        {suffix ? <span className="text-[16px] ml-1 text-ash">{suffix}</span> : null}
       </p>
     </div>
   );

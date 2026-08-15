@@ -143,8 +143,7 @@ export function UserTable({
           </TableHeader>
           <TableBody>
             {data.map((user) => {
-              const roleBadgeClass =
-                ROLE_BADGE_CLASS[user.role?.code] || "users-role-user";
+              const roleBadgeClass = ROLE_BADGE_CLASS[user.role?.code] || "users-role-user";
               return (
                 <TableRow key={user.id}>
                   <TableCell>
@@ -152,8 +151,7 @@ export function UserTable({
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user.avatar || ""} />
                         <AvatarFallback>
-                          {user.nickname?.slice(0, 1) ||
-                            user.username.slice(0, 1)}
+                          {user.nickname?.slice(0, 1) || user.username.slice(0, 1)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">
@@ -171,9 +169,7 @@ export function UserTable({
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {user.username}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{user.username}</span>
                       </div>
                     </div>
                   </TableCell>
@@ -202,9 +198,7 @@ export function UserTable({
                         {user.leads_count}
                       </Link>
                     ) : (
-                      <span className="users-leads-count zero">
-                        {user.leads_count}
-                      </span>
+                      <span className="users-leads-count zero">{user.leads_count}</span>
                     )}
                   </TableCell>
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
@@ -228,21 +222,15 @@ export function UserTable({
                             编辑用户
                           </DropdownMenuItem>
                         </HasPermission>
-                        <HasPermission
-                          code={PERMISSION_CODES.USER_RESET_PASSWORD}
-                        >
-                          <DropdownMenuItem
-                            onClick={() => onResetPassword(user)}
-                          >
+                        <HasPermission code={PERMISSION_CODES.USER_RESET_PASSWORD}>
+                          <DropdownMenuItem onClick={() => onResetPassword(user)}>
                             <KeyRound className="mr-2 h-4 w-4" />
                             重置密码
                           </DropdownMenuItem>
                         </HasPermission>
                         <HasPermission code={PERMISSION_CODES.USER_UNBIND_WECHAT}>
                           {user.wechat_bound && (
-                            <DropdownMenuItem
-                              onClick={() => onUnbindWechat(user)}
-                            >
+                            <DropdownMenuItem onClick={() => onUnbindWechat(user)}>
                               <MessageCircle className="mr-2 h-4 w-4" />
                               解绑微信
                             </DropdownMenuItem>
@@ -269,16 +257,11 @@ export function UserTable({
         </Table>
       </div>
 
-      <AlertDialog
-        open={!!deletingId}
-        onOpenChange={(open) => !open && setDeletingId(null)}
-      >
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除用户?</AlertDialogTitle>
-            <AlertDialogDescription>
-              此操作无法撤销。删除后用户将无法登录。
-            </AlertDialogDescription>
+            <AlertDialogDescription>此操作无法撤销。删除后用户将无法登录。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>

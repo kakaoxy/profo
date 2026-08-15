@@ -35,7 +35,10 @@ interface UsePhotoSortingReturn {
   handlePhotosAdded: (addedPhotos: L4MarketingMedia[]) => void;
 }
 
-export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingProps): UsePhotoSortingReturn {
+export function usePhotoSorting({
+  projectId,
+  initialPhotos,
+}: UsePhotoSortingProps): UsePhotoSortingReturn {
   const [photos, setPhotos] = useState<L4MarketingMedia[]>(initialPhotos);
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -44,7 +47,7 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
       photos
         .filter((p) => p.photo_category === "marketing")
         .sort((a, b) => a.sort_order - b.sort_order),
-    [photos]
+    [photos],
   );
 
   const renovationPhotos = useMemo(
@@ -52,7 +55,7 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
       photos
         .filter((p) => p.photo_category === "renovation")
         .sort((a, b) => a.sort_order - b.sort_order),
-    [photos]
+    [photos],
   );
 
   const renovationPhotosByStage = useMemo(() => {
@@ -67,14 +70,14 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
 
   const marketingPhotoIds = useMemo(
     () => marketingPhotos.map((p) => Number(p.id)),
-    [marketingPhotos]
+    [marketingPhotos],
   );
 
   const getRenovationStageIds = useCallback(
     (stage: string) => {
       return (renovationPhotosByStage[stage] || []).map((p) => Number(p.id));
     },
-    [renovationPhotosByStage]
+    [renovationPhotosByStage],
   );
 
   const activePhoto = useMemo(() => {
@@ -101,7 +104,7 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
 
       return CONTAINER_MARKETING;
     },
-    [getContainerId]
+    [getContainerId],
   );
 
   const handleSameContainerSort = useCallback(
@@ -109,9 +112,7 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
       const isMarketing = activePhoto.photo_category === "marketing";
       const currentList = isMarketing
         ? marketingPhotos
-        : renovationPhotos.filter(
-            (p) => p.renovation_stage === activePhoto.renovation_stage
-          );
+        : renovationPhotos.filter((p) => p.renovation_stage === activePhoto.renovation_stage);
 
       const oldIndex = currentList.findIndex((p) => p.id === activePhoto.id);
       const newIndex = currentList.findIndex((p) => p.id === overId);
@@ -126,12 +127,10 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
       const endIndex = Math.max(oldIndex, newIndex);
 
       // 只生成受影响范围内的照片更新数据
-      const sortUpdates = reordered
-        .slice(startIndex, endIndex + 1)
-        .map((p, idx) => ({
-          media_id: Number(p.id),
-          sort_order: startIndex + idx,
-        }));
+      const sortUpdates = reordered.slice(startIndex, endIndex + 1).map((p, idx) => ({
+        media_id: Number(p.id),
+        sort_order: startIndex + idx,
+      }));
 
       const updateMap = new Map(reordered.map((u) => [u.id, u]));
       const newPhotos = photos.map((p) => updateMap.get(p.id) ?? p);
@@ -146,7 +145,7 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
         setPhotos((prev) => prev.map((p) => originalMap.get(p.id) ?? p));
       }
     },
-    [marketingPhotos, renovationPhotos, photos, projectId]
+    [marketingPhotos, renovationPhotos, photos, projectId],
   );
 
   const handleCrossContainerMove = useCallback(
@@ -169,9 +168,7 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
       const newSortOrder = targetList.length;
       updatedPhoto.sort_order = newSortOrder;
 
-      const newPhotos = photos.map((p) =>
-        p.id === updatedPhoto.id ? updatedPhoto : p
-      );
+      const newPhotos = photos.map((p) => (p.id === updatedPhoto.id ? updatedPhoto : p));
       setPhotos(newPhotos);
 
       const updateResult = await updateL4MarketingMediaAction(
@@ -181,25 +178,23 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
           photo_category: updatedPhoto.photo_category,
           renovation_stage: updatedPhoto.renovation_stage,
           sort_order: newSortOrder,
-        }
+        },
       );
 
       if (updateResult.success && updateResult.data) {
         // 使用API返回的完整数据更新本地状态，确保数据一致性
         const updatedPhotoFromAPI = updateResult.data as L4MarketingMedia;
         const newPhotosWithAPIUpdate = photos.map((p) =>
-          p.id === updatedPhotoFromAPI.id ? updatedPhotoFromAPI : p
+          p.id === updatedPhotoFromAPI.id ? updatedPhotoFromAPI : p,
         );
         setPhotos(newPhotosWithAPIUpdate);
-        toast.success(
-          `已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`
-        );
+        toast.success(`已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`);
       } else {
         toast.error("移动失败");
         setPhotos(photos);
       }
     },
-    [marketingPhotos, renovationPhotos, photos, projectId]
+    [marketingPhotos, renovationPhotos, photos, projectId],
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -229,7 +224,13 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
         await handleCrossContainerMove(activePhoto, overContainer);
       }
     },
-    [photos, getContainerId, getContainerIdFromOverId, handleSameContainerSort, handleCrossContainerMove]
+    [
+      photos,
+      getContainerId,
+      getContainerIdFromOverId,
+      handleSameContainerSort,
+      handleCrossContainerMove,
+    ],
   );
 
   const handleDeletePhoto = useCallback(
@@ -248,16 +249,13 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
         toast.error("删除照片失败");
       }
     },
-    [photos, projectId]
+    [photos, projectId],
   );
 
-  const handlePhotosAdded = useCallback(
-    (addedPhotos: L4MarketingMedia[]) => {
-      setPhotos((prev) => [...prev, ...addedPhotos]);
-      toast.success(`成功添加 ${addedPhotos.length} 张照片`);
-    },
-    []
-  );
+  const handlePhotosAdded = useCallback((addedPhotos: L4MarketingMedia[]) => {
+    setPhotos((prev) => [...prev, ...addedPhotos]);
+    toast.success(`成功添加 ${addedPhotos.length} 张照片`);
+  }, []);
 
   return {
     photos,

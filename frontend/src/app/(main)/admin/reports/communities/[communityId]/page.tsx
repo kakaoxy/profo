@@ -240,25 +240,16 @@ export default async function CommunityDetailPage({
 
   // 字典数据降级处理
   const dataSources = dataSourcesRes.data?.items ?? [];
-  const lastUpdated =
-    lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
+  const lastUpdated = lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
 
   return (
     <div className="min-h-screen bg-muted">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
-        <TopFilterBar
-          hideLocationSelector
-          dataSources={dataSources}
-          lastUpdated={lastUpdated}
-        />
+        <TopFilterBar hideLocationSelector dataSources={dataSources} lastUpdated={lastUpdated} />
         <SubFilterBar />
 
         {/* KPI 卡片 */}
-        <KpiCards
-          data={detail.kpi}
-          variant="community"
-          mainLayout={detail.main_layout}
-        />
+        <KpiCards data={detail.kpi} variant="community" mainLayout={detail.main_layout} />
 
         {/* 样本量提示 + 成交趋势图 */}
         <section className="flex flex-col gap-3">
@@ -268,11 +259,7 @@ export default async function CommunityDetailPage({
               <AlertDescription>样本量不足，仅供参考</AlertDescription>
             </Alert>
           )}
-          <TrendChart
-            data={detail.trend}
-            granularity={granularity}
-            dimension={trend_dim}
-          />
+          <TrendChart data={detail.trend} granularity={granularity} dimension={trend_dim} />
         </section>
 
         {/* 分布图：价格 / 户型 / 楼层 */}

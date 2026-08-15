@@ -4,11 +4,7 @@ import { Calendar as CalendarIcon, Loader2, Pencil, Trash2, X, Check } from "luc
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ActionBarProps {
   isCompleted: boolean;
@@ -68,11 +64,7 @@ export function ActionBar({
                 className="h-8 min-w-[130px] justify-start text-left font-normal bg-card border-border hover:bg-muted"
               >
                 <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                {selectedDate ? (
-                  format(selectedDate, "yyyy/MM/dd")
-                ) : (
-                  <span>选择验收日期</span>
-                )}
+                {selectedDate ? format(selectedDate, "yyyy/MM/dd") : <span>选择验收日期</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">

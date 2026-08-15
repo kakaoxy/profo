@@ -4,11 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { DocumentsTab } from "./documents-tab";
 import { AttachmentsTab } from "./attachments-tab";
-import type {
-  Project,
-  AttachmentInfo,
-  AttachmentHandlers,
-} from "../../../../../types";
+import type { Project, AttachmentInfo, AttachmentHandlers } from "../../../../../types";
 
 interface DocumentsAttachmentsTabProps {
   project: Project;
@@ -55,8 +51,7 @@ export function DocumentsAttachmentsTab({
       <DocumentsTab
         project={project}
         onUploadAttachment={
-          onUploadAttachment ??
-          (onUpdateAttachments ? handleUploadAttachment : undefined)
+          onUploadAttachment ?? (onUpdateAttachments ? handleUploadAttachment : undefined)
         }
       />
       <Separator />

@@ -17,7 +17,7 @@ const DEFAULT_OPTIONS: ErrorHandlerOptions = {
 export function handleError(
   error: unknown,
   context: string,
-  options: ErrorHandlerOptions = {}
+  options: ErrorHandlerOptions = {},
 ): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -41,7 +41,7 @@ export function handleSuccess(message: string, description?: string): void {
 export function withErrorHandling<T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   context: string,
-  options?: ErrorHandlerOptions
+  options?: ErrorHandlerOptions,
 ): T {
   return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
     try {

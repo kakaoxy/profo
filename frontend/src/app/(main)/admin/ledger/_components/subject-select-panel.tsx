@@ -7,7 +7,10 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { fetchSubjects, type SubjectItem } from "@/app/(main)/admin/ledger/subject-actions";
 import { LayerPill } from "@/app/(main)/admin/ledger/[projectId]/_components/layer-pill";
-import { LEVEL_LABELS, type SubjectLevel } from "@/app/(main)/admin/ledger/subjects/_components/subject-schema";
+import {
+  LEVEL_LABELS,
+  type SubjectLevel,
+} from "@/app/(main)/admin/ledger/subjects/_components/subject-schema";
 
 interface SubjectSelectPanelProps {
   value: string;
@@ -30,11 +33,7 @@ export function SubjectSelectPanel({
   // businessForm: "agent" | "wholesale" | null -> 后端 mode: "agent" | "acquire" | undefined
   // wholesale 对应后端 acquire 模式
   const mode =
-    businessForm === "agent"
-      ? "agent"
-      : businessForm === "wholesale"
-        ? "acquire"
-        : undefined;
+    businessForm === "agent" ? "agent" : businessForm === "wholesale" ? "acquire" : undefined;
 
   const { data: subjects, isLoading } = useSWR(
     mode ? `subjects-${mode}` : "subjects-all",
@@ -51,9 +50,7 @@ export function SubjectSelectPanel({
     const q = query.trim().toLowerCase();
     if (!q) return subjects;
     return subjects.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        (s.note ?? "").toLowerCase().includes(q),
+      (s) => s.name.toLowerCase().includes(q) || (s.note ?? "").toLowerCase().includes(q),
     );
   }, [subjects, query]);
 
@@ -107,9 +104,7 @@ export function SubjectSelectPanel({
           {selectedSubject ? (
             <>
               <LayerPill level={selectedSubject.level} />
-              <span className="font-medium text-sm text-ink truncate">
-                {selectedSubject.name}
-              </span>
+              <span className="font-medium text-sm text-ink truncate">{selectedSubject.name}</span>
             </>
           ) : (
             <span className="text-sm text-dove">请选择科目...</span>
@@ -172,15 +167,11 @@ export function SubjectSelectPanel({
                       )}
                     >
                       <LayerPill level={s.level} />
-                      <span className="flex-1 text-sm font-medium text-ink truncate">
-                        {s.name}
-                      </span>
+                      <span className="flex-1 text-sm font-medium text-ink truncate">{s.name}</span>
                       <span
                         className={cn(
                           "text-[10px] px-1.5 py-0.5 rounded shrink-0",
-                          s.pnl
-                            ? "bg-success-container text-success"
-                            : "bg-fog text-dove",
+                          s.pnl ? "bg-success-container text-success" : "bg-fog text-dove",
                         )}
                       >
                         {s.pnl ? "进损益" : "不进损益"}

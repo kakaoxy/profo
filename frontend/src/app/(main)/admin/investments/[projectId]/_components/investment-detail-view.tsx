@@ -82,28 +82,21 @@ import {
 import { type LocalInvestor, type LocalSubInvestor } from "./investor-dialog";
 
 // 动态导入弹窗组件（ssr: false，仅在客户端加载；条件渲染保证关闭时卸载）
-const InvestorDialog = dynamic(
-  () => import("./investor-dialog").then((m) => m.InvestorDialog),
-  { ssr: false },
-);
+const InvestorDialog = dynamic(() => import("./investor-dialog").then((m) => m.InvestorDialog), {
+  ssr: false,
+});
 const DistributionRatioDialog = dynamic(
-  () =>
-    import("./distribution-ratio-dialog").then(
-      (m) => m.DistributionRatioDialog,
-    ),
+  () => import("./distribution-ratio-dialog").then((m) => m.DistributionRatioDialog),
   { ssr: false },
 );
-const SettleDialog = dynamic(
-  () => import("./settle-dialog").then((m) => m.SettleDialog),
-  { ssr: false },
-);
-const UnsettleDialog = dynamic(
-  () => import("./unsettle-dialog").then((m) => m.UnsettleDialog),
-  { ssr: false },
-);
+const SettleDialog = dynamic(() => import("./settle-dialog").then((m) => m.SettleDialog), {
+  ssr: false,
+});
+const UnsettleDialog = dynamic(() => import("./unsettle-dialog").then((m) => m.UnsettleDialog), {
+  ssr: false,
+});
 const CopyInvestmentDialog = dynamic(
-  () =>
-    import("./copy-investment-dialog").then((m) => m.CopyInvestmentDialog),
+  () => import("./copy-investment-dialog").then((m) => m.CopyInvestmentDialog),
   { ssr: false },
 );
 // 抽取的子组件
@@ -210,18 +203,10 @@ function InvestmentEditView({ investment }: DetailViewProps) {
   const router = useRouter();
 
   // 基础信息编辑态
-  const [totalInvestment, setTotalInvestment] = useState(
-    toNum(investment.total_investment),
-  );
-  const [totalInput, setTotalInput] = useState(
-    String(toNum(investment.total_investment)),
-  );
-  const [totalReturn, setTotalReturn] = useState(
-    toNum(investment.total_return),
-  );
-  const [totalReturnInput, setTotalReturnInput] = useState(
-    String(toNum(investment.total_return)),
-  );
+  const [totalInvestment, setTotalInvestment] = useState(toNum(investment.total_investment));
+  const [totalInput, setTotalInput] = useState(String(toNum(investment.total_investment)));
+  const [totalReturn, setTotalReturn] = useState(toNum(investment.total_return));
+  const [totalReturnInput, setTotalReturnInput] = useState(String(toNum(investment.total_return)));
   const [remark] = useState(investment.remark ?? "");
 
   // 投资方编辑态
@@ -242,9 +227,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
   const [showTotalConfirm, setShowTotalConfirm] = useState(false);
   const [pendingTotal, setPendingTotal] = useState(0);
   const [investorDialogOpen, setInvestorDialogOpen] = useState(false);
-  const [editingInvestor, setEditingInvestor] = useState<LocalInvestor | null>(
-    null,
-  );
+  const [editingInvestor, setEditingInvestor] = useState<LocalInvestor | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -255,8 +238,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
     (s, inv) => s + (inv.sub_investors.length > 0 ? inv.sub_investors.length : 1),
     0,
   );
-  const returnRatio =
-    totalInvestment > 0 ? (totalReturn / totalInvestment) * 100 : null;
+  const returnRatio = totalInvestment > 0 ? (totalReturn / totalInvestment) * 100 : null;
   const ratioOver = totalRatio > 100 + RATIO_EPS;
 
   // 投资总额失焦：值变化则弹联动确认
@@ -289,9 +271,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
 
   // 投资比例内联编辑
   const handleRatioChange = (idx: number, n: number): void => {
-    setInvestors((prev) =>
-      prev.map((inv, i) => (i === idx ? { ...inv, share_ratio: n } : inv)),
-    );
+    setInvestors((prev) => prev.map((inv, i) => (i === idx ? { ...inv, share_ratio: n } : inv)));
   };
 
   // 投资方弹窗
@@ -307,9 +287,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
   };
   const handleSaveInvestor = (inv: LocalInvestor): void => {
     setInvestors((prev) =>
-      editingIndex !== null
-        ? prev.map((x, i) => (i === editingIndex ? inv : x))
-        : [...prev, inv],
+      editingIndex !== null ? prev.map((x, i) => (i === editingIndex ? inv : x)) : [...prev, inv],
     );
     setInvestorDialogOpen(false);
     setEditingInvestor(null);
@@ -332,9 +310,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
           i === deleteTarget.investorIdx
             ? {
                 ...inv,
-                sub_investors: inv.sub_investors.filter(
-                  (_, j) => j !== deleteTarget.subIdx,
-                ),
+                sub_investors: inv.sub_investors.filter((_, j) => j !== deleteTarget.subIdx),
               }
             : inv,
         ),
@@ -362,10 +338,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
     }
     for (const inv of investors) {
       if (inv.sub_investors.length > 0) {
-        const subSum = inv.sub_investors.reduce(
-          (s, sub) => s + sub.share_ratio,
-          0,
-        );
+        const subSum = inv.sub_investors.reduce((s, sub) => s + sub.share_ratio, 0);
         if (Math.abs(subSum - 100) > RATIO_EPS) {
           return `投资方「${inv.name}」子投资人内部占比合计需 = 100（当前 ${subSum.toFixed(2)}%）`;
         }
@@ -416,15 +389,14 @@ function InvestmentEditView({ investment }: DetailViewProps) {
 
       // 2. 更新已存在投资方（按"降幅优先"排序，避免中间态合计 > 100%）
       //    先 map 配对 {inv, orig}，再 filter/sort，避免重复 Map 查找
-      const originalById = new Map(
-        (investment.investors ?? []).map((inv) => [inv.id, inv]),
-      );
+      const originalById = new Map((investment.investors ?? []).map((inv) => [inv.id, inv]));
       const toUpdate = investors
         .map((inv) => ({ inv, orig: inv.id ? originalById.get(inv.id) : undefined }))
         .filter(({ inv, orig }) => orig !== undefined && investorChanged(inv, orig))
         .sort(
           (a, b) =>
-            a.inv.share_ratio - toNum(a.orig!.share_ratio) -
+            a.inv.share_ratio -
+            toNum(a.orig!.share_ratio) -
             (b.inv.share_ratio - toNum(b.orig!.share_ratio)),
         )
         .map(({ inv }) => inv);
@@ -495,17 +467,11 @@ function InvestmentEditView({ investment }: DetailViewProps) {
 
   // 弹窗参数（useMemo 避免每次渲染重复计算）
   const dialogExistingNames = useMemo(
-    () =>
-      investors
-        .filter((_, i) => i !== editingIndex)
-        .map((inv) => inv.name.trim()),
+    () => investors.filter((_, i) => i !== editingIndex).map((inv) => inv.name.trim()),
     [investors, editingIndex],
   );
   const dialogOtherRatioSum = useMemo(
-    () =>
-      investors
-        .filter((_, i) => i !== editingIndex)
-        .reduce((s, inv) => s + inv.share_ratio, 0),
+    () => investors.filter((_, i) => i !== editingIndex).reduce((s, inv) => s + inv.share_ratio, 0),
     [investors, editingIndex],
   );
 
@@ -529,8 +495,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
               返回跟投列表
             </Link>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              💰 跟投详情 — {investment.project_code || "-"}{" "}
-              {investment.project_name || ""}
+              💰 跟投详情 — {investment.project_code || "-"} {investment.project_name || ""}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -572,9 +537,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
             <InfoCell label="项目编号">
-              <span className="font-mono text-xs">
-                {investment.project_code || "-"}
-              </span>
+              <span className="font-mono text-xs">{investment.project_code || "-"}</span>
             </InfoCell>
             <InfoCell label="小区">{investment.project_name || "-"}</InfoCell>
             <InfoCell label="物业地址">-</InfoCell>
@@ -745,9 +708,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
                     <TableCell className="font-mono tabular-nums font-bold text-right">
                       {formatCNY(totalInvestment)}
                     </TableCell>
-                    <TableCell className="text-center font-bold">
-                      {totalInvestorCount}人
-                    </TableCell>
+                    <TableCell className="text-center font-bold">{totalInvestorCount}人</TableCell>
                     <TableCell />
                   </TableRow>
                 </TableBody>
@@ -757,9 +718,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
           {ratioOver && (
             <div className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 px-4 py-2.5 text-sm text-red-600 dark:text-red-400">
               <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>
-                投资比例合计 {formatPercent(totalRatio)} 超过 100%，请调整后保存
-              </span>
+              <span>投资比例合计 {formatPercent(totalRatio)} 超过 100%，请调整后保存</span>
             </div>
           )}
         </CardContent>
@@ -784,9 +743,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认取消编辑？</AlertDialogTitle>
-            <AlertDialogDescription>
-              未保存的修改将丢失。
-            </AlertDialogDescription>
+            <AlertDialogDescription>未保存的修改将丢失。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>继续编辑</AlertDialogCancel>
@@ -813,9 +770,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-muted-foreground font-medium">
-                    投资方
-                  </TableHead>
+                  <TableHead className="text-muted-foreground font-medium">投资方</TableHead>
                   <TableHead className="text-right text-muted-foreground font-medium">
                     原金额
                   </TableHead>
@@ -856,10 +811,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
             <Button variant="outline" onClick={handleTotalCancel}>
               取消
             </Button>
-            <Button
-              onClick={handleTotalConfirm}
-              className="bg-primary hover:bg-primary/90"
-            >
+            <Button onClick={handleTotalConfirm} className="bg-primary hover:bg-primary/90">
               确认变更
             </Button>
           </DialogFooter>
@@ -867,10 +819,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
       </Dialog>
 
       {/* 删除确认 */}
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-      >
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除？</AlertDialogTitle>
@@ -911,9 +860,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
 export function InvestmentDetailView({ investment }: DetailViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isEditing =
-    searchParams.get("edit") === "1" &&
-    investment.settlement_status !== "settled";
+  const isEditing = searchParams.get("edit") === "1" && investment.settlement_status !== "settled";
 
   // Phase 5 弹窗状态
   const [showReturnDialog, setShowReturnDialog] = useState(false);
@@ -996,10 +943,7 @@ export function InvestmentDetailView({ investment }: DetailViewProps) {
       )}
 
       {/* 删除跟投记录确认（SubTask 5.4.1） */}
-      <AlertDialog
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-      >
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除跟投记录？</AlertDialogTitle>

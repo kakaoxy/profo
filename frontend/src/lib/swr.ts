@@ -1,7 +1,8 @@
 import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
 
 function getRefreshEndpoint(): string {
-  const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const isAdminRoute =
+    typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   return isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
 }
 

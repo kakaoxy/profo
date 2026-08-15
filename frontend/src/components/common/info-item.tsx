@@ -28,7 +28,7 @@ export function InfoItem({
   className,
   highlight,
 }: InfoItemProps) {
-  const variant = muted ? "muted" : variantProp ?? "default";
+  const variant = muted ? "muted" : (variantProp ?? "default");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -60,7 +60,7 @@ export function InfoItem({
 
   const valueClassName = cn(
     variant === "muted" && "text-muted-foreground",
-    highlight && "font-bold font-mono"
+    highlight && "font-bold font-mono",
   );
 
   if (icon) {
@@ -84,9 +84,7 @@ export function InfoItem({
     <div className={cn("flex items-center justify-between gap-2 py-0.5 min-h-6", className)}>
       <span className="text-xs text-muted-foreground font-medium shrink-0 mr-4">{label}</span>
       <div className="flex items-center gap-2">
-        <span className={cn("text-sm font-medium text-foreground", valueClassName)}>
-          {value}
-        </span>
+        <span className={cn("text-sm font-medium text-foreground", valueClassName)}>{value}</span>
         {copyButton}
       </div>
     </div>

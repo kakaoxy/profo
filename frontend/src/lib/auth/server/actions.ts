@@ -3,17 +3,8 @@
 import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import {
-  clearTokenCookies,
-  getTokensFromCookies,
-  isTokenValid,
-  setTokenCookies,
-} from "../core";
-import type {
-  ActionResult,
-  LoginActionOptions,
-  SessionActionData,
-} from "../types";
+import { clearTokenCookies, getTokensFromCookies, isTokenValid, setTokenCookies } from "../core";
+import type { ActionResult, LoginActionOptions, SessionActionData } from "../types";
 import { TokenPairSchema } from "../types";
 import { getGlobalAuthConfig, debugLog } from "../config";
 import { sanitizeCallbackUrl } from "../utils/sanitize-callback-url";
@@ -46,9 +37,7 @@ function isNextRedirectError(error: unknown): boolean {
     error !== null &&
     "digest" in error &&
     typeof (error as Record<string, unknown>).digest === "string" &&
-    ((error as Record<string, unknown>).digest as string).startsWith(
-      "NEXT_REDIRECT",
-    )
+    ((error as Record<string, unknown>).digest as string).startsWith("NEXT_REDIRECT")
   );
 }
 
@@ -71,9 +60,7 @@ export { sanitizeCallbackUrl };
  *
  * Used internally by AuthProvider on mount and on tab focus via fetchSession.
  */
-export async function fetchSessionAction(): Promise<
-  ActionResult<SessionActionData | null>
-> {
+export async function fetchSessionAction(): Promise<ActionResult<SessionActionData | null>> {
   debugLog("fetchSessionAction: called");
 
   try {
@@ -91,9 +78,7 @@ export async function fetchSessionAction(): Promise<
       debugLog("fetchSessionAction: access token invalid — attempting refresh");
 
       if (!isTokenValid(refreshToken)) {
-        debugLog(
-          "fetchSessionAction: refresh token also invalid — clearing cookies",
-        );
+        debugLog("fetchSessionAction: refresh token also invalid — clearing cookies");
         await clearTokenCookies(config);
         return { success: true, data: null };
       }
@@ -106,15 +91,9 @@ export async function fetchSessionAction(): Promise<
         refreshToken = validated.refreshToken;
         debugLog("fetchSessionAction: token refresh successful");
       } catch (refreshError) {
-        debugLog(
-          "fetchSessionAction: token refresh failed — clearing cookies",
-          {
-            error:
-              refreshError instanceof Error
-                ? refreshError.message
-                : String(refreshError),
-          },
-        );
+        debugLog("fetchSessionAction: token refresh failed — clearing cookies", {
+          error: refreshError instanceof Error ? refreshError.message : String(refreshError),
+        });
         await clearTokenCookies(config);
         return { success: true, data: null };
       }
@@ -259,15 +238,9 @@ export async function logoutAction(
         debugLog("logoutAction: adapter.logout() completed");
       } catch (adapterError) {
         // Non-fatal — cookies will still be cleared regardless
-        debugLog(
-          "logoutAction: adapter.logout() threw — cookies will still be cleared",
-          {
-            error:
-              adapterError instanceof Error
-                ? adapterError.message
-                : String(adapterError),
-          },
-        );
+        debugLog("logoutAction: adapter.logout() threw — cookies will still be cleared", {
+          error: adapterError instanceof Error ? adapterError.message : String(adapterError),
+        });
         logger.error(
           "[next-jwt-auth] logoutAction: adapter.logout() threw. Cookies will still be cleared.",
           adapterError,

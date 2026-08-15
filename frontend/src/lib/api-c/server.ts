@@ -1,11 +1,7 @@
 import { cookies } from "next/headers";
 import { getApiUrl } from "../config";
 import { auth } from "@/auth";
-import {
-  getTokensFromCookies,
-  setTokenCookies,
-  isTokenValid,
-} from "@/lib/auth/core";
+import { getTokensFromCookies, setTokenCookies, isTokenValid } from "@/lib/auth/core";
 import type { TokenPair } from "@/lib/auth";
 
 /**
@@ -29,9 +25,7 @@ async function getValidCToken(): Promise<string | null> {
   }
 
   try {
-    const refreshed: TokenPair = await config.adapter.refreshToken(
-      tokens.refreshToken,
-    );
+    const refreshed: TokenPair = await config.adapter.refreshToken(tokens.refreshToken);
     await setTokenCookies(refreshed, config);
     return refreshed.accessToken;
   } catch {
@@ -45,10 +39,7 @@ async function getValidCToken(): Promise<string | null> {
  * - 收到 401 时再刷新一次 token 并重试
  * - 刷新失败则返回 401 响应，由调用方判断是否提示"请登录"
  */
-export async function cServerActionFetch(
-  path: string,
-  init: RequestInit = {},
-): Promise<Response> {
+export async function cServerActionFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await getValidCToken();
 
   const existingHeaders: Record<string, string> = {};

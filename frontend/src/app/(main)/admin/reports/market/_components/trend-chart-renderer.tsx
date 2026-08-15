@@ -14,11 +14,7 @@ import {
 } from "recharts";
 import { useChartColors } from "@/lib/chart-colors";
 import { computeYAxisDomain } from "../../_lib/chart-utils";
-import {
-  formatCount,
-  formatPeriod,
-  formatUnitPriceYuan,
-} from "../../_lib/formatters";
+import { formatCount, formatPeriod, formatUnitPriceYuan } from "../../_lib/formatters";
 import type { Granularity, TrendDataPoint } from "../../_lib/types";
 
 /** 维度下钻折线色板（与单条主折线颜色区分） */
@@ -91,10 +87,7 @@ export default function TrendChartRenderer({
   const hasBreakdown = dimension !== "overall" && dimKeys.length > 0;
 
   // 左 Y 轴（成交量）domain：[min*0.8, max*1.05]，含 0 值时退化为 0 基线
-  const leftDomain = useMemo(
-    () => computeYAxisDomain(data.map((d) => d.volume)),
-    [data],
-  );
+  const leftDomain = useMemo(() => computeYAxisDomain(data.map((d) => d.volume)), [data]);
 
   // 右 Y 轴（单价）domain：
   // - 综合维度：基于 avg_unit_price
@@ -118,11 +111,7 @@ export default function TrendChartRenderer({
   return (
     <ResponsiveContainer width="100%" height={300}>
       <ComposedChart data={flatData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid
-          strokeDasharray="3 3"
-          vertical={false}
-          stroke={colors.gridSubtle}
-        />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridSubtle} />
         <XAxis
           dataKey="period"
           tickFormatter={(p: string) => formatPeriod(p, granularity)}
@@ -170,11 +159,7 @@ export default function TrendChartRenderer({
             const nameStr = String(name);
             if (value === null || value === undefined) return ["-", nameStr];
             const num =
-              typeof value === "number"
-                ? value
-                : typeof value === "string"
-                  ? parseFloat(value)
-                  : 0;
+              typeof value === "number" ? value : typeof value === "string" ? parseFloat(value) : 0;
             const validNum = Number.isNaN(num) ? 0 : num;
             if (nameStr === "成交套数") return [formatCount(validNum), nameStr];
             return [formatUnitPriceYuan(validNum), nameStr];

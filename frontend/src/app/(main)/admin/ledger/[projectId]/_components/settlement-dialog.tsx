@@ -40,12 +40,7 @@ function todayISO(): string {
  * - mode="settle"：日期（必填） + 说明（选填）
  * - mode="unsettle"：警示条 + 原因（必填）
  */
-export function SettlementDialog({
-  open,
-  onOpenChange,
-  projectId,
-  mode,
-}: SettlementDialogProps) {
+export function SettlementDialog({ open, onOpenChange, projectId, mode }: SettlementDialogProps) {
   const router = useRouter();
   const [settledDate, setSettledDate] = React.useState(todayISO());
   const [settledNote, setSettledNote] = React.useState("");
@@ -97,9 +92,7 @@ export function SettlementDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] grid-rows-[auto_auto_1fr_auto] gap-0 overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle>
-            {isSettle ? "结算资金账本" : "反结算资金账本"}
-          </DialogTitle>
+          <DialogTitle>{isSettle ? "结算资金账本" : "反结算资金账本"}</DialogTitle>
           <DialogDescription className="text-xs">
             {isSettle
               ? "结算后资金账本将变为只读，如需修改请先反结算"
@@ -145,9 +138,7 @@ export function SettlementDialog({
                 onChange={(e) => setSettledDate(e.target.value)}
                 aria-invalid={!dateValid}
               />
-              {!dateValid && (
-                <p className="text-xs text-rust">请选择有效的日期</p>
-              )}
+              {!dateValid && <p className="text-xs text-rust">请选择有效的日期</p>}
             </div>
           )}
 
@@ -185,11 +176,7 @@ export function SettlementDialog({
         </div>
 
         <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>
           <Button

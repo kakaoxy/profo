@@ -10,10 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DOCUMENT_CATEGORIES,
-  type DocumentCategory,
-} from "../../../constants";
+import { DOCUMENT_CATEGORIES, type DocumentCategory } from "../../../constants";
 
 interface DocumentCreateFormProps {
   name: string;
@@ -47,10 +44,7 @@ export function DocumentCreateForm({
           autoFocus
           className="flex-1"
         />
-        <Select
-          value={category}
-          onValueChange={(v) => onCategoryChange(v as DocumentCategory)}
-        >
+        <Select value={category} onValueChange={(v) => onCategoryChange(v as DocumentCategory)}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="选择分类" />
           </SelectTrigger>

@@ -22,9 +22,7 @@ import { parseApiError, parseNetworkError } from "@/lib/error-utils";
 type CommunityImageResponse = components["schemas"]["CommunityImageResponse"];
 type CommunityImageListResponse = components["schemas"]["CommunityImageListResponse"];
 
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; message: string };
+export type ActionResult<T> = { success: true; data: T } | { success: false; message: string };
 
 /**
  * 按小区查询户型图列表.
@@ -38,15 +36,12 @@ export async function listCommunityImagesAction(
   if (!perm.ok) return { success: false, message: perm.message };
 
   const client = await fetchClient();
-  const { data, error } = await client.GET(
-    "/api/v1/admin/communities/{community_id}/images",
-    {
-      params: {
-        path: { community_id: communityId },
-        query: { page, page_size: pageSize },
-      },
+  const { data, error } = await client.GET("/api/v1/admin/communities/{community_id}/images", {
+    params: {
+      path: { community_id: communityId },
+      query: { page, page_size: pageSize },
     },
-  );
+  });
   if (error || !data) {
     return { success: false, message: parseApiError(error).message };
   }
@@ -74,16 +69,13 @@ export async function uploadCommunityImageAction(
 
     // openapi-fetch 对 multipart 的 body 类型生成 { file: string }，
     // 运行时传 FormData 即可，用 as never 绕过类型检查
-    const { data, error } = await client.POST(
-      "/api/v1/admin/communities/{community_id}/images",
-      {
-        params: {
-          path: { community_id: communityId },
-          query: { description: description ?? undefined },
-        },
-        body: formData as never,
+    const { data, error } = await client.POST("/api/v1/admin/communities/{community_id}/images", {
+      params: {
+        path: { community_id: communityId },
+        query: { description: description ?? undefined },
       },
-    );
+      body: formData as never,
+    });
     if (error || !data) {
       return { success: false, message: parseApiError(error).message };
     }
@@ -105,13 +97,10 @@ export async function updateCommunityImageAction(
   if (!perm.ok) return { success: false, message: perm.message };
 
   const client = await fetchClient();
-  const { data, error } = await client.PATCH(
-    "/api/v1/admin/community-images/{image_id}",
-    {
-      params: { path: { image_id: imageId } },
-      body,
-    },
-  );
+  const { data, error } = await client.PATCH("/api/v1/admin/community-images/{image_id}", {
+    params: { path: { image_id: imageId } },
+    body,
+  });
   if (error || !data) {
     return { success: false, message: parseApiError(error).message };
   }
@@ -121,19 +110,14 @@ export async function updateCommunityImageAction(
 /**
  * 软删除户型图.
  */
-export async function deleteCommunityImageAction(
-  imageId: number,
-): Promise<ActionResult<null>> {
+export async function deleteCommunityImageAction(imageId: number): Promise<ActionResult<null>> {
   const perm = await requirePermission(PERMISSION_CODES.PROPERTY_WRITE);
   if (!perm.ok) return { success: false, message: perm.message };
 
   const client = await fetchClient();
-  const { error, response } = await client.DELETE(
-    "/api/v1/admin/community-images/{image_id}",
-    {
-      params: { path: { image_id: imageId } },
-    },
-  );
+  const { error, response } = await client.DELETE("/api/v1/admin/community-images/{image_id}", {
+    params: { path: { image_id: imageId } },
+  });
   if (error || !response?.ok) {
     return { success: false, message: parseApiError(error).message };
   }

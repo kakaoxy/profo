@@ -6,15 +6,15 @@ import { X } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useMounted } from "@/hooks/use-mounted";
 
-const HeroSection = dynamic(
-  () => import("./hero-section").then((m) => m.HeroSection),
-  { ssr: false, loading: () => <div className="p-6 h-56 bg-card" /> },
-);
+const HeroSection = dynamic(() => import("./hero-section").then((m) => m.HeroSection), {
+  ssr: false,
+  loading: () => <div className="p-6 h-56 bg-card" />,
+});
 
-const MarketSentiment = dynamic(
-  () => import("./market-sentiment").then((m) => m.MarketSentiment),
-  { ssr: false, loading: () => <div className="p-6 h-72 bg-card" /> },
-);
+const MarketSentiment = dynamic(() => import("./market-sentiment").then((m) => m.MarketSentiment), {
+  ssr: false,
+  loading: () => <div className="p-6 h-72 bg-card" />,
+});
 
 const NeighborhoodRadar = dynamic(
   () => import("./neighborhood-radar").then((m) => m.NeighborhoodRadar),
@@ -31,10 +31,10 @@ const CompetitorsBrawl = dynamic(
   { ssr: false, loading: () => <div className="p-6 h-96 bg-card" /> },
 );
 
-const AIStrategy = dynamic(
-  () => import("./ai-strategy").then((m) => m.AIStrategy),
-  { ssr: false, loading: () => <div className="p-6 h-80 bg-card" /> },
-);
+const AIStrategy = dynamic(() => import("./ai-strategy").then((m) => m.AIStrategy), {
+  ssr: false,
+  loading: () => <div className="p-6 h-80 bg-card" />,
+});
 
 // 新增：一个简单的包装组件，专门解决“糊在一起”的问题
 // 它负责提供白色背景、边框和阴影，不改变内部布局
@@ -79,13 +79,9 @@ export function MonitorSheet() {
               <span className="text-sm font-bold">M</span>
             </div>
             <div>
-              <SheetTitle className="text-xl font-bold text-foreground">
-                项目房价监控
-              </SheetTitle>
+              <SheetTitle className="text-xl font-bold text-foreground">项目房价监控</SheetTitle>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm font-medium text-muted-foreground">
-                  {projectName}
-                </span>
+                <span className="text-sm font-medium text-muted-foreground">{projectName}</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 <span className="text-[10px] font-bold text-success uppercase tracking-widest">
                   Live Monitoring

@@ -53,11 +53,7 @@ export const useCreateProject = ({
     setLoading(true);
 
     try {
-      const layoutString = buildLayout(
-        values.rooms,
-        values.halls,
-        values.bathrooms
-      );
+      const layoutString = buildLayout(values.rooms, values.halls, values.bathrooms);
 
       const basePayload = {
         community_id: values.community_id || null,
@@ -83,21 +79,23 @@ export const useCreateProject = ({
         extension_period: values.extension_period ?? null,
         extension_rent: values.extension_rent ?? null,
         cost_assumption_type: values.cost_assumption_type,
-        cost_assumption_other: values.cost_assumption_type === "other" ? values.cost_assumption_other || null : null,
+        cost_assumption_other:
+          values.cost_assumption_type === "other" ? values.cost_assumption_other || null : null,
         planned_handover_date: toDateStr(values.planned_handover_date),
         commission_start_date: toDateStr(values.commission_start_date),
         commission_end_date: toDateStr(values.commission_end_date),
         other_agreements: values.other_agreements || null,
-        owners: values.owners?.map((o) => ({
-          id: o.id || undefined,
-          owner_name: o.owner_name || null,
-          owner_phone: o.owner_phone || null,
-          owner_id_card: o.owner_id_card || null,
-          bank_name: o.bank_name || null,
-          bank_card_number: o.bank_card_number || null,
-          relation_type: o.relation_type || "业主",
-          owner_info: o.owner_info || null,
-        })) ?? null,
+        owners:
+          values.owners?.map((o) => ({
+            id: o.id || undefined,
+            owner_name: o.owner_name || null,
+            owner_phone: o.owner_phone || null,
+            owner_id_card: o.owner_id_card || null,
+            bank_name: o.bank_name || null,
+            bank_card_number: o.bank_card_number || null,
+            relation_type: o.relation_type || "业主",
+            owner_info: o.owner_info || null,
+          })) ?? null,
         owner_info: values.notes || null,
       };
 
@@ -138,7 +136,9 @@ export const useCreateProject = ({
         if (communityId && Object.keys(communityPatch).length > 0) {
           const communityRes = await updateCommunityAction(communityId, communityPatch);
           if (!communityRes.success) {
-            toast.error("小区信息更新失败" + (communityRes.message ? `：${communityRes.message}` : ""));
+            toast.error(
+              "小区信息更新失败" + (communityRes.message ? `：${communityRes.message}` : ""),
+            );
           }
         }
 

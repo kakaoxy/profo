@@ -61,9 +61,7 @@ export function ImageUploadDialog({
   };
 
   const updateDescription = (index: number, description: string) => {
-    setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, description } : item)),
-    );
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, description } : item)));
   };
 
   const handleUpload = async () => {
@@ -76,9 +74,7 @@ export function ImageUploadDialog({
 
     for (const item of pending) {
       const index = items.indexOf(item);
-      setItems((prev) =>
-        prev.map((it, i) => (i === index ? { ...it, status: "uploading" } : it)),
-      );
+      setItems((prev) => prev.map((it, i) => (i === index ? { ...it, status: "uploading" } : it)));
 
       const res = await uploadCommunityImageAction(
         communityId,
@@ -88,9 +84,7 @@ export function ImageUploadDialog({
 
       if (res.success) {
         successCount++;
-        setItems((prev) =>
-          prev.map((it, i) => (i === index ? { ...it, status: "done" } : it)),
-        );
+        setItems((prev) => prev.map((it, i) => (i === index ? { ...it, status: "done" } : it)));
       } else {
         errorCount++;
         setItems((prev) =>
@@ -200,11 +194,7 @@ export function ImageUploadDialog({
         </div>
 
         <DialogFooter className="p-4 border-t">
-          <Button
-            variant="outline"
-            onClick={() => handleClose(false)}
-            disabled={uploading}
-          >
+          <Button variant="outline" onClick={() => handleClose(false)} disabled={uploading}>
             取消
           </Button>
           <Button

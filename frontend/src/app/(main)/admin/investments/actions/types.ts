@@ -8,8 +8,7 @@ export type InvestmentUpdate = components["schemas"]["InvestmentUpdate"];
 export type InvestorCreate = components["schemas"]["InvestorCreate"];
 export type InvestorUpdate = components["schemas"]["InvestorUpdate"];
 export type InvestorResponse = components["schemas"]["InvestorResponse"];
-export type ReturnAdjustmentBatchRequest =
-  components["schemas"]["ReturnAdjustmentBatchRequest"];
+export type ReturnAdjustmentBatchRequest = components["schemas"]["ReturnAdjustmentBatchRequest"];
 export type ReturnAdjustmentItem = components["schemas"]["ReturnAdjustmentItem"];
 export type ReturnAdjustmentResponse = components["schemas"]["ReturnAdjustmentResponse"];
 export type SettlementChangeRequest = components["schemas"]["SettlementChangeRequest"];
@@ -42,15 +41,10 @@ export interface ExportParams {
 // - name 收紧为 string(后端可空,前端以 ?? "" 兜底)
 // - status 放宽为 string | null(后端为 ProjectStatus 枚举)
 // - project_code 映射自后端 contract_no(前端字段名)
-export type ProjectBrief = Pick<
-  ProjectResponse,
-  "id" | "community_name" | "address"
-> & {
+export type ProjectBrief = Pick<ProjectResponse, "id" | "community_name" | "address"> & {
   name: string;
   status?: string | null;
   project_code?: string | null;
 };
 
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; message: string };
+export type ActionResult<T> = { success: true; data: T } | { success: false; message: string };

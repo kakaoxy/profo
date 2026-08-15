@@ -62,14 +62,15 @@ export function SimpleInputField({
               className={steepInput}
               {...field}
               value={
-                typeof field.value === "string" ||
-                typeof field.value === "number"
+                typeof field.value === "string" || typeof field.value === "number"
                   ? field.value
                   : ""
               }
             />
           </FormControl>
-          {description && <FormDescription className="text-graphite">{description}</FormDescription>}
+          {description && (
+            <FormDescription className="text-graphite">{description}</FormDescription>
+          )}
           <FormMessage />
         </FormItem>
       )}
@@ -101,8 +102,7 @@ export function SimpleTextareaField({
               className="rounded-inputs resize-none min-h-[80px] border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10 text-[14px]"
               {...field}
               value={
-                typeof field.value === "string" ||
-                typeof field.value === "number"
+                typeof field.value === "string" || typeof field.value === "number"
                   ? field.value
                   : ""
               }

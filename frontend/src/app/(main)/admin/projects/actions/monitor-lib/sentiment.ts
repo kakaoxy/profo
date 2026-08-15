@@ -21,14 +21,14 @@ export async function getMarketSentimentAction(projectId: string) {
     if (!communityId) {
       return { success: false, message: "项目未关联小区" };
     }
- 
+
     // 2. 调用情绪 API (使用 openapi-fetch client)
     const client = await fetchClient();
     const { data: sentimentData, error: sentimentError } = await client.GET(
       "/api/v1/monitor/communities/{community_id}/sentiment",
       {
         params: { path: { community_id: communityId } },
-      }
+      },
     );
 
     if (sentimentError || !sentimentData) {
@@ -50,7 +50,7 @@ export async function getMarketSentimentByCommunityAction(communityId: string) {
       "/api/v1/monitor/communities/{community_id}/sentiment",
       {
         params: { path: { community_id: communityId } },
-      }
+      },
     );
 
     if (sentimentError || !sentimentData) {

@@ -19,18 +19,17 @@ import {
 import { cLocale } from "@/lib/i18n/c-locale";
 
 export default function CRegisterPage() {
-  const [state, formAction, isPending] = useActionState(
-    registerAction,
-    { success: false, error: "" } as ActionResult<{ user: unknown }>
-  );
+  const [state, formAction, isPending] = useActionState(registerAction, {
+    success: false,
+    error: "",
+  } as ActionResult<{ user: unknown }>);
   const [confirmError, setConfirmError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   function handleConfirmChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
     const password =
-      (e.target.form?.elements.namedItem("password") as HTMLInputElement)
-        ?.value ?? "";
+      (e.target.form?.elements.namedItem("password") as HTMLInputElement)?.value ?? "";
     if (value && value !== password) {
       setConfirmError(cLocale.register.passwordMismatch);
     } else {
@@ -40,11 +39,8 @@ export default function CRegisterPage() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     const form = e.currentTarget;
-    const password = (form.elements.namedItem("password") as HTMLInputElement)
-      .value;
-    const confirmPassword = (
-      form.elements.namedItem("confirmPassword") as HTMLInputElement
-    ).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+    const confirmPassword = (form.elements.namedItem("confirmPassword") as HTMLInputElement).value;
     if (password !== confirmPassword) {
       e.preventDefault();
       setConfirmError(cLocale.register.passwordMismatch);
@@ -74,9 +70,7 @@ export default function CRegisterPage() {
           <h1 className="font-display text-[44px] leading-[1.1] text-ink mb-4">
             {cLocale.register.heroTitle}
           </h1>
-          <p className="text-[18px] leading-7 text-ash">
-            {cLocale.register.heroDesc}
-          </p>
+          <p className="text-[18px] leading-7 text-ash">{cLocale.register.heroDesc}</p>
 
           {/* Feature Cards */}
           <div className="mt-16 grid grid-cols-2 gap-4">
@@ -115,9 +109,7 @@ export default function CRegisterPage() {
             <h2 className="text-[28px] leading-8.5 font-medium text-ink mb-2">
               {cLocale.register.formTitle}
             </h2>
-            <p className="text-[16px] leading-6 text-ash">
-              {cLocale.register.formSubtitle}
-            </p>
+            <p className="text-[16px] leading-6 text-ash">{cLocale.register.formSubtitle}</p>
           </div>
 
           {/* Form */}
@@ -138,7 +130,10 @@ export default function CRegisterPage() {
                 {cLocale.register.usernameLabel}
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
+                <User
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite"
+                  size={20}
+                />
                 <input
                   id="username"
                   type="text"
@@ -159,7 +154,10 @@ export default function CRegisterPage() {
                 {cLocale.register.nicknameLabel}
               </label>
               <div className="relative">
-                <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
+                <UserRound
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite"
+                  size={20}
+                />
                 <input
                   id="nickname"
                   type="text"
@@ -177,7 +175,10 @@ export default function CRegisterPage() {
                 {cLocale.register.phoneLabel}
               </label>
               <div className="relative">
-                <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
+                <Smartphone
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite"
+                  size={20}
+                />
                 <input
                   id="phone"
                   type="tel"
@@ -195,7 +196,10 @@ export default function CRegisterPage() {
                 {cLocale.register.passwordLabel}
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite"
+                  size={20}
+                />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -221,7 +225,10 @@ export default function CRegisterPage() {
                 {cLocale.register.confirmPasswordLabel}
               </label>
               <div className="relative">
-                <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
+                <ShieldCheck
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite"
+                  size={20}
+                />
                 <input
                   id="confirmPassword"
                   type="password"
@@ -233,9 +240,7 @@ export default function CRegisterPage() {
                   className={`w-full pl-10 pr-4 py-3 rounded-inputs border bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite ${confirmError ? "border-c-error" : "border-dove/30"}`}
                 />
               </div>
-              {confirmError && (
-                <p className="text-c-error text-sm">{confirmError}</p>
-              )}
+              {confirmError && <p className="text-c-error text-sm">{confirmError}</p>}
             </div>
 
             {/* Terms Checkbox */}
@@ -246,10 +251,7 @@ export default function CRegisterPage() {
                 type="checkbox"
                 className="mt-1 w-4 h-4 text-ink border-dove/30 rounded focus:ring-0"
               />
-              <label
-                className="text-sm text-ash leading-tight"
-                htmlFor="terms"
-              >
+              <label className="text-sm text-ash leading-tight" htmlFor="terms">
                 {cLocale.register.termsPrefix}{" "}
                 <Link href="#" className="text-rust font-medium hover:underline">
                   {cLocale.register.termsText}
@@ -275,10 +277,7 @@ export default function CRegisterPage() {
           <div className="mt-8 text-center">
             <p className="text-[16px] text-ash">
               {cLocale.register.hasAccount}{" "}
-              <Link
-                href="/login"
-                className="text-ink font-medium hover:underline transition-all"
-              >
+              <Link href="/login" className="text-ink font-medium hover:underline transition-all">
                 {cLocale.register.loginLink}
               </Link>
             </p>

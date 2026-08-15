@@ -21,7 +21,7 @@ export default async function UsersPage(props: {
   const role_id = searchParams.role_id || undefined;
   // status === "all" 表示显式查看全部（含已删除）→ 传 undefined 不加过滤
   // status 缺省时默认传 "active" 隐藏已删除用户（与 /users/simple 端点语义一致）
-  const status = searchParams.status === "all" ? undefined : (searchParams.status || "active");
+  const status = searchParams.status === "all" ? undefined : searchParams.status || "active";
   const sort = searchParams.sort || undefined;
   const dir = searchParams.dir || undefined;
 
@@ -36,7 +36,7 @@ export default async function UsersPage(props: {
       sort,
       dir,
     }),
-    getRolesAction({ page_size: 100 }) // Fetch all roles for selection
+    getRolesAction({ page_size: 100 }), // Fetch all roles for selection
   ]);
 
   if (!usersResult.success || !usersResult.data) {
@@ -60,9 +60,18 @@ export default async function UsersPage(props: {
           管理后台团队成员与 C 端客户账号，查看每位用户的线索提交活跃度
         </p>
       </div>
-      
-      <Suspense fallback={<div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-        <UsersClient initialData={usersResult.data} roles={(rolesResult.data as RoleListResponse).items} />
+
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        }
+      >
+        <UsersClient
+          initialData={usersResult.data}
+          roles={(rolesResult.data as RoleListResponse).items}
+        />
       </Suspense>
     </div>
   );

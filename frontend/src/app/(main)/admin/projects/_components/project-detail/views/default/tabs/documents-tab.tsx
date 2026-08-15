@@ -4,12 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Plus, FileText, RotateCcw, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,15 +19,8 @@ import { toast } from "sonner";
 import { FileUploader as CommonFileUploader, compressImage } from "@/components/common/upload";
 import type { UploadResponse } from "@/components/common/upload";
 import type { Project, AttachmentInfo } from "../../../../../types";
-import {
-  ALLOWED_MIME_TYPES,
-  attachmentValidateFile,
-  getFileType,
-} from "../../../attachment-types";
-import {
-  CATEGORY_LABELS,
-  type DocumentCategory,
-} from "../../../constants";
+import { ALLOWED_MIME_TYPES, attachmentValidateFile, getFileType } from "../../../attachment-types";
+import { CATEGORY_LABELS, type DocumentCategory } from "../../../constants";
 import {
   getProjectDocumentsAction,
   createProjectDocumentAction,
@@ -99,8 +87,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
     const draft = drafts[d.id];
     if (!draft) return false;
     return (
-      draft.signoff_status !== d.signoff_status ||
-      draft.archive_date !== (d.archive_date || "")
+      draft.signoff_status !== d.signoff_status || draft.archive_date !== (d.archive_date || "")
     );
   });
 
@@ -136,8 +123,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
       const draft = drafts[d.id];
       return (
         draft &&
-        (draft.signoff_status !== d.signoff_status ||
-          draft.archive_date !== (d.archive_date || ""))
+        (draft.signoff_status !== d.signoff_status || draft.archive_date !== (d.archive_date || ""))
       );
     });
     if (dirty.length === 0) {
@@ -229,9 +215,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
   };
 
   if (loading) {
-    return (
-      <div className="text-center py-16 text-muted-foreground">加载中...</div>
-    );
+    return <div className="text-center py-16 text-muted-foreground">加载中...</div>;
   }
 
   // 空状态
@@ -278,12 +262,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
           <Plus className="mr-1 h-4 w-4" />
           新增文书
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          onClick={handleSave}
-          disabled={!hasDirty || saving}
-        >
+        <Button type="button" size="sm" onClick={handleSave} disabled={!hasDirty || saving}>
           <Save className="mr-1 h-4 w-4" />
           {saving ? "保存中..." : "保存"}
         </Button>
@@ -370,8 +349,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
               allowedTypes: ALLOWED_MIME_TYPES,
               multiple: true,
               validateFile: attachmentValidateFile,
-              beforeUpload: (file) =>
-                file.type.startsWith("image/") ? compressImage(file) : file,
+              beforeUpload: (file) => (file.type.startsWith("image/") ? compressImage(file) : file),
             }}
             onUploadComplete={handleUploadComplete}
             title="点击或拖拽文件到此处上传"
@@ -390,9 +368,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除「{deleteTarget?.document_name}」？</AlertDialogTitle>
-            <AlertDialogDescription>
-              此操作将删除该文书，删除后不可恢复。
-            </AlertDialogDescription>
+            <AlertDialogDescription>此操作将删除该文书，删除后不可恢复。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>取消</AlertDialogCancel>

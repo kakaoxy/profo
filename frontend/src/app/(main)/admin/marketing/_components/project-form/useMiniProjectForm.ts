@@ -8,7 +8,13 @@ import { useRouter } from "next/navigation";
 import type { L4MarketingProject } from "../../types";
 import type { L4MarketingProjectCreate, L4MarketingProjectUpdate } from "../../types";
 import type { MiniProjectFormActions } from "../form-types";
-import { formSchema, formValuesToCreateRequest, formValuesToUpdateRequest, projectToFormValues, type MediaFile } from "../form-schema";
+import {
+  formSchema,
+  formValuesToCreateRequest,
+  formValuesToUpdateRequest,
+  projectToFormValues,
+  type MediaFile,
+} from "../form-schema";
 import type * as z from "zod";
 
 type FormValues = z.infer<typeof formSchema>;
@@ -22,7 +28,14 @@ interface UseMiniProjectFormProps {
   defaultConsultantId?: string;
 }
 
-export function useMiniProjectForm({ mode, project, actions, mediaFiles, hasPhotoChanges, defaultConsultantId }: UseMiniProjectFormProps) {
+export function useMiniProjectForm({
+  mode,
+  project,
+  actions,
+  mediaFiles,
+  hasPhotoChanges,
+  defaultConsultantId,
+}: UseMiniProjectFormProps) {
   const router = useRouter();
 
   const form = useForm<FormValues>({
@@ -41,7 +54,10 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles, hasPhot
       if (mode === "create") {
         logger.devDebug("[Create] Form values:", values);
         logger.devDebug("[Create] Media files:", mediaFiles);
-        const createBody = formValuesToCreateRequest(values, mediaFiles) as L4MarketingProjectCreate;
+        const createBody = formValuesToCreateRequest(
+          values,
+          mediaFiles,
+        ) as L4MarketingProjectCreate;
         logger.devDebug("[Create] Request body:", createBody);
 
         const result = await actions.createL4MarketingProject(createBody);
@@ -50,7 +66,7 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles, hasPhot
           router.push("/admin/marketing");
           return;
         }
-        toast.error(result.success ? "创建失败：返回数据不完整" : (result.error || "创建失败"));
+        toast.error(result.success ? "创建失败：返回数据不完整" : result.error || "创建失败");
         return;
       }
 

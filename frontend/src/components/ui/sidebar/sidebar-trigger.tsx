@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { PanelLeftIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { useSidebar } from "./sidebar-context"
+import { PanelLeftIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useSidebar } from "./sidebar-context";
 
 export function SidebarTrigger({
   className,
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar } = useSidebar();
 
   return (
     <Button
@@ -20,13 +20,13 @@ export function SidebarTrigger({
       size="icon"
       className={cn("size-7", className)}
       onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
+        onClick?.(event);
+        toggleSidebar();
       }}
       {...props}
     >
       <PanelLeftIcon />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
-  )
+  );
 }

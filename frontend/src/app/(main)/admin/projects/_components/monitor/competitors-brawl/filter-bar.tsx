@@ -28,9 +28,7 @@ export function FilterBar({
     <div className="flex flex-wrap items-center gap-4 bg-card p-3 rounded-xl border border-border shadow-sm">
       <div className="flex items-center gap-2 pr-4 border-r border-border">
         <Filter size={16} className="text-muted-foreground" />
-        <span className="text-xs font-bold text-muted-foreground uppercase">
-          筛选项目
-        </span>
+        <span className="text-xs font-bold text-muted-foreground uppercase">筛选项目</span>
       </div>
 
       <div className="flex gap-2">

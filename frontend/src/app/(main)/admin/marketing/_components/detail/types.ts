@@ -28,4 +28,3 @@ export interface PhotosSectionProps {
   project: L4MarketingProject;
   photos: L4MarketingMedia[];
 }
-

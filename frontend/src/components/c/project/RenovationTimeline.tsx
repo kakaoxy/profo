@@ -68,9 +68,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
       </div>
 
       {!expanded && (
-        <div
-          className="flex gap-4 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden"
-        >
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden">
           {stages.map((stage) => {
             const stageMedia = mediaByStage.get(stage.stage) ?? [];
             const firstImage = stageMedia.length > 0 ? stageMedia[0] : null;
@@ -106,9 +104,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-medium text-ink truncate">
-                  {stage.stage}
-                </p>
+                <p className="text-sm font-medium text-ink truncate">{stage.stage}</p>
                 <p className="text-xs text-graphite tabular-nums">
                   {cLocale.projects.photoCount(stage.photo_count)}
                 </p>
@@ -130,13 +126,9 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
 
             return (
               <div key={stage.stage}>
-                {index > 0 && (
-                  <div className="border-t border-dove/30 my-4" />
-                )}
+                {index > 0 && <div className="border-t border-dove/30 my-4" />}
                 <div className="mb-3">
-                  <h3 className="text-sm font-medium text-ink">
-                    {stage.stage}
-                  </h3>
+                  <h3 className="text-sm font-medium text-ink">{stage.stage}</h3>
                   <p className="text-xs text-graphite tabular-nums">
                     {cLocale.projects.photoCount(stage.photo_count)}
                   </p>
@@ -149,39 +141,36 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                 {stageMedia.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {stageMedia.map((item) => {
-                      const imageUrl = getThumbnailUrl(
-                        item.thumbnail_url,
-                        item.file_url
-                      );
+                      const imageUrl = getThumbnailUrl(item.thumbnail_url, item.file_url);
                       return (
                         <div
                           key={item.id}
                           className="relative aspect-square rounded-images overflow-hidden bg-fog"
                         >
-                        {isValidUrl(imageUrl) ? (
-                          isDev ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={imageUrl}
-                              alt={item.description ?? stage.stage}
-                              width={200}
-                              height={200}
-                              className="w-full h-full object-cover"
-                            />
+                          {isValidUrl(imageUrl) ? (
+                            isDev ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={imageUrl}
+                                alt={item.description ?? stage.stage}
+                                width={200}
+                                height={200}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Image
+                                src={imageUrl}
+                                alt={item.description ?? stage.stage}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 50vw, 33vw"
+                              />
+                            )
                           ) : (
-                            <Image
-                              src={imageUrl}
-                              alt={item.description ?? stage.stage}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 50vw, 33vw"
-                            />
-                          )
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ImageIcon className="h-5 w-5 text-graphite" aria-hidden="true" />
-                          </div>
-                        )}
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="h-5 w-5 text-graphite" aria-hidden="true" />
+                            </div>
+                          )}
                         </div>
                       );
                     })}

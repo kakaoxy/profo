@@ -3,16 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ChevronRight,
-  LogOut,
-  MoreHorizontal,
-} from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { ChevronRight, LogOut, MoreHorizontal } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -37,11 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { logoutAction } from "@/app/admin/login/actions";
 import { usePermission } from "@/hooks/use-permission";
 import { navMain, NavItem } from "@/lib/admin-nav-data";
@@ -75,9 +63,10 @@ const MenuButton = React.forwardRef<
       isActive={isActive}
       className={`
         rounded-lg px-3 py-2.5 transition-all duration-200
-        ${isActive
-          ? "bg-muted text-foreground font-medium shadow-sm"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        ${
+          isActive
+            ? "bg-muted text-foreground font-medium shadow-sm"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }
       `}
       {...props}
@@ -139,8 +128,8 @@ export function AppSidebar({ user }: { user: User | null }) {
     ];
 
     // 检查当前路径是否匹配需要折叠的页面（首页除外）
-    const shouldCollapse = pathname !== "/admin" &&
-      autoCollapsePaths.some(path => pathname.startsWith(path));
+    const shouldCollapse =
+      pathname !== "/admin" && autoCollapsePaths.some((path) => pathname.startsWith(path));
 
     if (shouldCollapse && !isMobile) {
       setOpen(false);
@@ -157,13 +146,12 @@ export function AppSidebar({ user }: { user: User | null }) {
     .filter((item) => !item.items || item.items.length > 0);
 
   return (
-    <Sidebar
-      collapsible="icon"
-      className="border-r-0 bg-card/80 backdrop-blur-xl"
-    >
+    <Sidebar collapsible="icon" className="border-r-0 bg-card/80 backdrop-blur-xl">
       {/* Apple-style Header */}
       <SidebarHeader className="border-b border-border">
-        <div className={`flex items-center py-3 ${state === "collapsed" ? "justify-center px-0" : "px-3"}`}>
+        <div
+          className={`flex items-center py-3 ${state === "collapsed" ? "justify-center px-0" : "px-3"}`}
+        >
           {state === "expanded" ? (
             <div className="flex items-center gap-2.5 transition-all">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-sm">
@@ -187,8 +175,7 @@ export function AppSidebar({ user }: { user: User | null }) {
             {visibleNav.map((item) => {
               const hasSubmenu = item.items && item.items.length > 0;
               const isActive =
-                pathname === item.url ||
-                item.items?.some((sub) => pathname.startsWith(sub.url));
+                pathname === item.url || item.items?.some((sub) => pathname.startsWith(sub.url));
 
               if (state === "collapsed") {
                 if (hasSubmenu) {
@@ -199,11 +186,21 @@ export function AppSidebar({ user }: { user: User | null }) {
                         <HoverCardTrigger asChild>
                           {hasDirectUrl ? (
                             <Link href={item.url} className="w-full">
-                              <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                              <MenuButton
+                                item={item}
+                                isActive={isActive}
+                                state={state}
+                                hasSubmenu={hasSubmenu}
+                              />
                             </Link>
                           ) : (
                             <div>
-                              <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                              <MenuButton
+                                item={item}
+                                isActive={isActive}
+                                state={state}
+                                hasSubmenu={hasSubmenu}
+                              />
                             </div>
                           )}
                         </HoverCardTrigger>
@@ -222,9 +219,10 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 href={sub.url}
                                 className={`
                                   block px-3 py-2.5 text-sm rounded-lg transition-all duration-150
-                                  ${pathname === sub.url
-                                    ? "bg-muted font-medium text-foreground"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  ${
+                                    pathname === sub.url
+                                      ? "bg-muted font-medium text-foreground"
+                                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                   }
                                 `}
                               >
@@ -240,7 +238,12 @@ export function AppSidebar({ user }: { user: User | null }) {
 
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                    <MenuButton
+                      item={item}
+                      isActive={isActive}
+                      state={state}
+                      hasSubmenu={hasSubmenu}
+                    />
                   </SidebarMenuItem>
                 );
               }
@@ -255,7 +258,12 @@ export function AppSidebar({ user }: { user: User | null }) {
                       <HoverCard openDelay={150} closeDelay={250}>
                         <HoverCardTrigger asChild>
                           <Link href={item.url} className="w-full">
-                            <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                            <MenuButton
+                              item={item}
+                              isActive={isActive}
+                              state={state}
+                              hasSubmenu={hasSubmenu}
+                            />
                           </Link>
                         </HoverCardTrigger>
                         <HoverCardContent
@@ -274,9 +282,10 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 href={sub.url}
                                 className={`
                                   block px-3 py-2.5 text-sm rounded-lg transition-all duration-150
-                                  ${pathname === sub.url
-                                    ? "bg-muted font-medium text-foreground"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  ${
+                                    pathname === sub.url
+                                      ? "bg-muted font-medium text-foreground"
+                                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                   }
                                 `}
                               >
@@ -300,7 +309,12 @@ export function AppSidebar({ user }: { user: User | null }) {
                   >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
-                        <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                        <MenuButton
+                          item={item}
+                          isActive={isActive}
+                          state={state}
+                          hasSubmenu={hasSubmenu}
+                        />
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub className="ml-5 mt-1 border-l border-border pl-3 space-y-1">
@@ -311,9 +325,10 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 isActive={pathname === subItem.url}
                                 className={`
                                   rounded-md px-3 py-2 text-sm transition-all duration-150
-                                  ${pathname === subItem.url
-                                    ? "bg-muted text-foreground font-medium"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  ${
+                                    pathname === subItem.url
+                                      ? "bg-muted text-foreground font-medium"
+                                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                   }
                                 `}
                               >
@@ -332,7 +347,12 @@ export function AppSidebar({ user }: { user: User | null }) {
 
               return (
                 <SidebarMenuItem key={item.title}>
-                  <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                  <MenuButton
+                    item={item}
+                    isActive={isActive}
+                    state={state}
+                    hasSubmenu={hasSubmenu}
+                  />
                 </SidebarMenuItem>
               );
             })}
@@ -341,9 +361,13 @@ export function AppSidebar({ user }: { user: User | null }) {
       </SidebarContent>
 
       {/* Apple-style Footer */}
-      <SidebarFooter className={`border-t border-border ${state === "collapsed" ? "px-0 py-2" : "p-2"}`}>
+      <SidebarFooter
+        className={`border-t border-border ${state === "collapsed" ? "px-0 py-2" : "p-2"}`}
+      >
         {/* 折叠/展开按钮 */}
-        <div className={`pb-2 mb-2 border-b border-border flex ${state === "collapsed" ? "justify-center" : "justify-end"}`}>
+        <div
+          className={`pb-2 mb-2 border-b border-border flex ${state === "collapsed" ? "justify-center" : "justify-end"}`}
+        >
           <SidebarTrigger className="text-muted-foreground hover:text-foreground h-8 w-8 rounded-lg hover:bg-muted transition-colors" />
         </div>
         {/* 用户头像 */}
@@ -355,10 +379,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                 className={`flex items-center rounded-xl py-2 hover:bg-muted transition-all duration-200 ${state === "collapsed" ? "justify-center w-8 h-8 mx-auto" : "w-full px-3 gap-3"}`}
               >
                 <Avatar className="h-8 w-8 rounded-full ring-2 ring-border shrink-0">
-                  <AvatarImage
-                    src={user?.avatar || ""}
-                    alt={user?.username}
-                  />
+                  <AvatarImage src={user?.avatar || ""} alt={user?.username} />
                   <AvatarFallback className="rounded-full bg-linear-to-br from-muted to-muted/80 text-foreground text-xs font-medium">
                     {user?.username?.slice(0, 2).toUpperCase() || "AD"}
                   </AvatarFallback>
@@ -385,7 +406,9 @@ export function AppSidebar({ user }: { user: User | null }) {
               sideOffset={8}
             >
               <div className="px-2.5 py-2 border-b border-border mb-1">
-                <p className="text-[13px] font-medium text-foreground">{user?.nickname || user?.username}</p>
+                <p className="text-[13px] font-medium text-foreground">
+                  {user?.nickname || user?.username}
+                </p>
                 <p className="text-[11px] text-muted-foreground">{user?.role?.name || "管理员"}</p>
               </div>
               <DropdownMenuSeparator className="hidden" />

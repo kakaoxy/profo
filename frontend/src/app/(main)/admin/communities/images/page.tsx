@@ -44,25 +44,22 @@ export default function CommunityImagesPage() {
   const { hasPermission } = usePermission();
   const canWrite = hasPermission(PERMISSION_CODES.PROPERTY_WRITE);
 
-  const loadImages = useCallback(
-    async (communityId: string, pageNum: number, append: boolean) => {
-      if (pageNum === 1) setLoading(true);
-      else setLoadingMore(true);
+  const loadImages = useCallback(async (communityId: string, pageNum: number, append: boolean) => {
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
 
-      const res = await listCommunityImagesAction(communityId, pageNum, PAGE_SIZE);
-      if (res.success) {
-        setImages((prev) => (append ? [...prev, ...res.data.items] : res.data.items));
-        setTotal(res.data.total);
-        setPage(pageNum);
-      } else {
-        toast.error(res.message);
-      }
+    const res = await listCommunityImagesAction(communityId, pageNum, PAGE_SIZE);
+    if (res.success) {
+      setImages((prev) => (append ? [...prev, ...res.data.items] : res.data.items));
+      setTotal(res.data.total);
+      setPage(pageNum);
+    } else {
+      toast.error(res.message);
+    }
 
-      if (pageNum === 1) setLoading(false);
-      else setLoadingMore(false);
-    },
-    [],
-  );
+    if (pageNum === 1) setLoading(false);
+    else setLoadingMore(false);
+  }, []);
 
   const handleCommunityChange = (community: Community) => {
     if (!community.id) {
@@ -88,15 +85,10 @@ export default function CommunityImagesPage() {
     }
   };
 
-  const handleEdit = async (
-    imageId: number,
-    description: string,
-  ): Promise<boolean> => {
+  const handleEdit = async (imageId: number, description: string): Promise<boolean> => {
     const res = await updateCommunityImageAction(imageId, { description });
     if (res.success) {
-      setImages((prev) =>
-        prev.map((img) => (img.id === imageId ? res.data : img)),
-      );
+      setImages((prev) => prev.map((img) => (img.id === imageId ? res.data : img)));
       toast.success("更新成功");
       return true;
     }
@@ -129,11 +121,7 @@ export default function CommunityImagesPage() {
             />
           </div>
           {canWrite && selectedCommunity && (
-            <Button
-              size="sm"
-              onClick={() => setUploadOpen(true)}
-              className="h-12 shrink-0"
-            >
+            <Button size="sm" onClick={() => setUploadOpen(true)} className="h-12 shrink-0">
               <Plus className="h-4 w-4 mr-1" />
               上传户型图
             </Button>
@@ -159,14 +147,8 @@ export default function CommunityImagesPage() {
             />
             {images.length < total && (
               <div className="flex justify-center pt-4">
-                <Button
-                  variant="outline"
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                >
-                  {loadingMore
-                    ? "加载中..."
-                    : `加载更多 (剩余 ${total - images.length} 张)`}
+                <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? "加载中..." : `加载更多 (剩余 ${total - images.length} 张)`}
                 </Button>
               </div>
             )}

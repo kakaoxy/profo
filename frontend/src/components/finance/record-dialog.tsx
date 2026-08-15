@@ -18,11 +18,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ImageUpload } from "@/components/common/image-upload";
 import type { ImageItem } from "@/components/common/image-upload";
 // ⚠️ 应收应付模块暂停：恢复时取消下方注释
@@ -83,9 +79,7 @@ export function RecordDialog({
   }, [isOpen]);
 
   const handleReceiptChange = useCallback((items: ImageItem[]) => {
-    const urls = items
-      .filter((i) => i.status === "success" && i.url)
-      .map((i) => i.url as string);
+    const urls = items.filter((i) => i.status === "success" && i.url).map((i) => i.url as string);
     setReceiptUrls(urls);
   }, []);
 
@@ -175,9 +169,7 @@ export function RecordDialog({
       <div className="grid gap-2">
         <Label className="text-xs text-muted-foreground">
           科目分类 <span className="text-destructive">*</span>
-          <span className="ml-1 text-dove font-normal">
-            · 已按业务模式自动过滤
-          </span>
+          <span className="ml-1 text-dove font-normal">· 已按业务模式自动过滤</span>
         </Label>
         <SubjectSelectPanel
           value={subjectId}
@@ -233,9 +225,7 @@ export function RecordDialog({
           </div>
         </div>
       </div>
-      {errors.amount && (
-        <span className="text-[11px] text-destructive -mt-3">{errors.amount}</span>
-      )}
+      {errors.amount && <span className="text-[11px] text-destructive -mt-3">{errors.amount}</span>}
 
       {/* 3. 付款方 / 收款方 */}
       <div className="grid grid-cols-2 gap-4">
@@ -279,12 +269,7 @@ export function RecordDialog({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-            />
+            <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
           </PopoverContent>
         </Popover>
         {errors.date && <span className="text-[11px] text-destructive">{errors.date}</span>}
@@ -292,9 +277,7 @@ export function RecordDialog({
 
       {/* 5. 票据上传（支持多张，最多 9 张） */}
       <div className="grid gap-2">
-        <Label className="text-xs text-muted-foreground">
-          票据（最多 9 张）
-        </Label>
+        <Label className="text-xs text-muted-foreground">票据（最多 9 张）</Label>
         <ImageUpload
           key={uploadKey}
           maxCount={9}
@@ -342,11 +325,7 @@ export function RecordDialog({
             disabled={isSubmitting}
             className="w-full bg-ink text-white shadow-sm transition-[background-color,transform] hover:bg-ink/90 active:scale-[0.98] rounded-full"
           >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "确认记账"
-            )}
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "确认记账"}
           </Button>
         </DialogFooter>
       </DialogContent>

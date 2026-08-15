@@ -2,13 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useQueryState, parseAsString } from "nuqs";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -55,10 +49,7 @@ interface TrendChartProps {
 }
 
 export function TrendChart({ data, granularity, dimension }: TrendChartProps) {
-  const [trendView, setTrendView] = useQueryState(
-    "trend_view",
-    parseAsString.withDefault("chart"),
-  );
+  const [trendView, setTrendView] = useQueryState("trend_view", parseAsString.withDefault("chart"));
   // 维度切换：shallow: false 触发 Server Component 重新拉取 trend 数据
   const [, setTrendDim] = useQueryState(
     "trend_dim",
@@ -113,11 +104,7 @@ export function TrendChart({ data, granularity, dimension }: TrendChartProps) {
       </CardHeader>
       <CardContent>
         {trendView === "chart" ? (
-          <TrendChartRenderer
-            data={data}
-            granularity={granularity}
-            dimension={dimension}
-          />
+          <TrendChartRenderer data={data} granularity={granularity} dimension={dimension} />
         ) : (
           <Table>
             <TableHeader>
@@ -136,12 +123,8 @@ export function TrendChart({ data, granularity, dimension }: TrendChartProps) {
                 const priceQoq = formatQoq(point.price_qoq);
                 return (
                   <TableRow key={point.period}>
-                    <TableCell>
-                      {formatPeriod(point.period, granularity)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCount(point.volume)}
-                    </TableCell>
+                    <TableCell>{formatPeriod(point.period, granularity)}</TableCell>
+                    <TableCell className="text-right">{formatCount(point.volume)}</TableCell>
                     <TableCell className="text-right">{volumeQoq.text}</TableCell>
                     <TableCell className="text-right">
                       {formatAvgPriceWan(point.avg_price_wan)}

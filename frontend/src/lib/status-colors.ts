@@ -11,14 +11,14 @@ import { LeadStatus } from "@/app/(main)/admin/leads/types";
 
 /** 通用状态类型 */
 export type StatusType =
-  | "pending"        // 待评估
-  | "visit"          // 待看房
-  | "signing"        // 已签约
-  | "renovating"     // 装修中
-  | "selling"        // 在售
-  | "sold"           // 已成交/已售
-  | "rejected"       // 已驳回
-  | "ended";         // 已下架
+  | "pending" // 待评估
+  | "visit" // 待看房
+  | "signing" // 已签约
+  | "renovating" // 装修中
+  | "selling" // 在售
+  | "sold" // 已成交/已售
+  | "rejected" // 已驳回
+  | "ended"; // 已下架
 
 /** 线索专用状态 */
 export type LeadStatusType = LeadStatus;
@@ -212,9 +212,10 @@ export function getLeadStatusBadgeClass(status: LeadStatus | string): string {
     rejected: "rejected",
   };
 
-  const mapped = typeof status === "string" && status in stringStatusMap
-    ? stringStatusMap[status]
-    : LEAD_STATUS_MAPPING[status as LeadStatus];
+  const mapped =
+    typeof status === "string" && status in stringStatusMap
+      ? stringStatusMap[status]
+      : LEAD_STATUS_MAPPING[status as LeadStatus];
 
   return STATUS_BADGE_CLASS_MAP[mapped] || "bg-muted text-muted-foreground";
 }

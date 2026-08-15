@@ -6,10 +6,8 @@ import type { components } from "@/lib/api-types";
 
 export type L4MarketingProject = components["schemas"]["L4MarketingProjectResponse"];
 
-export type L4MarketingProjectCreate =
-  components["schemas"]["L4MarketingProjectCreate"];
-export type L4MarketingProjectUpdate =
-  components["schemas"]["L4MarketingProjectUpdate"];
+export type L4MarketingProjectCreate = components["schemas"]["L4MarketingProjectCreate"];
+export type L4MarketingProjectUpdate = components["schemas"]["L4MarketingProjectUpdate"];
 export type L4MarketingProjectListResponse =
   components["schemas"]["L4MarketingProjectListResponse"];
 
@@ -24,12 +22,9 @@ export type L4MarketingMedia = L4MarketingMediaResponse & {
   photo_category: PhotoCategory;
 };
 
-export type L4MarketingMediaCreate =
-  components["schemas"]["L4MarketingMediaCreate"];
-export type L4MarketingMediaUpdate =
-  components["schemas"]["L4MarketingMediaUpdate"];
-export type L4MarketingMediaListResponse =
-  components["schemas"]["L4MarketingMediaListResponse"];
+export type L4MarketingMediaCreate = components["schemas"]["L4MarketingMediaCreate"];
+export type L4MarketingMediaUpdate = components["schemas"]["L4MarketingMediaUpdate"];
+export type L4MarketingMediaListResponse = components["schemas"]["L4MarketingMediaListResponse"];
 
 // ============================================================================
 // Project Status
@@ -133,14 +128,7 @@ export const MEDIA_TYPE = {
 // Renovation Stages
 // ============================================================================
 
-export type RenovationStage =
-  | "拆除"
-  | "设计"
-  | "水电"
-  | "木瓦"
-  | "油漆"
-  | "交付"
-  | "已完成";
+export type RenovationStage = "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "交付" | "已完成";
 
 export const RENOVATION_STAGES: { value: RenovationStage; label: string }[] = [
   { value: "拆除", label: "拆除阶段" },

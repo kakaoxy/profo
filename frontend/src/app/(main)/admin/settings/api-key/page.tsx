@@ -15,9 +15,7 @@ export default async function ApiKeyPage() {
         </div>
         <div>
           <h2 className="text-2xl font-bold tracking-tight">API Key 管理</h2>
-          <p className="text-sm text-muted-foreground">
-            管理您的 API Key，用于程序化的接口访问
-          </p>
+          <p className="text-sm text-muted-foreground">管理您的 API Key，用于程序化的接口访问</p>
         </div>
       </div>
 
@@ -29,14 +27,12 @@ export default async function ApiKeyPage() {
           </div>
         }
       >
-        <ApiKeyClient initialData={result.success ? result.data ?? null : null} />
+        <ApiKeyClient initialData={result.success ? (result.data ?? null) : null} />
       </Suspense>
 
       {/* Usage Guide */}
       <div className="rounded-xl border border-border bg-muted/50 p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-3">
-          使用说明
-        </h3>
+        <h3 className="text-sm font-semibold text-foreground mb-3">使用说明</h3>
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-start gap-2">
             <span>•</span>
@@ -48,7 +44,13 @@ export default async function ApiKeyPage() {
           </li>
           <li className="flex items-start gap-2">
             <span>•</span>
-            <span>在请求头中添加 <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">X-API-Key: your-api-key</code> 进行认证</span>
+            <span>
+              在请求头中添加{" "}
+              <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">
+                X-API-Key: your-api-key
+              </code>{" "}
+              进行认证
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span>•</span>

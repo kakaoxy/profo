@@ -30,19 +30,21 @@ type PermissionFail = { ok: false; message: string };
  *   - 成功：`{ permissions: string[], status: 200 }`
  *   - 失败：`{ permissions: [], status: number | undefined }`
  */
-const getCurrentUserPermissions = cache(async (): Promise<{
-  permissions: string[];
-  status: number | undefined;
-}> => {
-  const client = await fetchClient();
-  const { data, error, response } = await client.GET("/api/v1/auth/me");
+const getCurrentUserPermissions = cache(
+  async (): Promise<{
+    permissions: string[];
+    status: number | undefined;
+  }> => {
+    const client = await fetchClient();
+    const { data, error, response } = await client.GET("/api/v1/auth/me");
 
-  if (error || !data) {
-    return { permissions: [], status: response?.status };
-  }
+    if (error || !data) {
+      return { permissions: [], status: response?.status };
+    }
 
-  return { permissions: data.permissions ?? [], status: 200 };
-});
+    return { permissions: data.permissions ?? [], status: 200 };
+  },
+);
 
 /**
  * 单权限校验：当前用户必须持有指定权限码才放行。
@@ -52,9 +54,7 @@ const getCurrentUserPermissions = cache(async (): Promise<{
  *   - `{ ok: true }` 权限通过
  *   - `{ ok: false, message }` 权限不足、未登录或获取权限异常
  */
-export async function requirePermission(
-  code: string,
-): Promise<PermissionOk | PermissionFail> {
+export async function requirePermission(code: string): Promise<PermissionOk | PermissionFail> {
   try {
     const { permissions, status } = await getCurrentUserPermissions();
 

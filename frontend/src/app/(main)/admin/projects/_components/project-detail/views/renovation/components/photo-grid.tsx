@@ -6,12 +6,7 @@ import { UploadCloud, Loader2, Trash2, Eye, ImageIcon, Download } from "lucide-r
 import { RenovationPhoto } from "../../../../../types";
 import { getThumbnailUrl, getFileUrl } from "../../../utils";
 import { Progress } from "@/components/ui/progress";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 
 import {
   AlertDialog,
@@ -62,25 +57,25 @@ const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }
   return (
     <Dialog>
       <div className="aspect-square relative group rounded-md overflow-hidden bg-muted border border-border">
-          {isValidUrl(displayUrl) ? (
-            <Image
-              src={displayUrl}
-              alt={photo.filename || "Renovation Photo"}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
-              loading="lazy"
-              unoptimized
-              onLoad={() => setImageLoaded(true)}
-              className={cn(
-                "object-cover hover:scale-105 transition-all duration-500 cursor-pointer",
-                imageLoaded ? "opacity-100" : "opacity-0"
-              )}
-            />
-          ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              <ImageIcon className="h-5 w-5 text-muted-foreground" />
-            </div>
-          )}
+        {isValidUrl(displayUrl) ? (
+          <Image
+            src={displayUrl}
+            alt={photo.filename || "Renovation Photo"}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
+            loading="lazy"
+            unoptimized
+            onLoad={() => setImageLoaded(true)}
+            className={cn(
+              "object-cover hover:scale-105 transition-all duration-500 cursor-pointer",
+              imageLoaded ? "opacity-100" : "opacity-0",
+            )}
+          />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )}
         {!imageLoaded && isValidUrl(displayUrl) && (
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
@@ -109,12 +104,10 @@ const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Are you sure you want to delete this photo?
-                  </AlertDialogTitle>
+                  <AlertDialogTitle>Are you sure you want to delete this photo?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action will delete the photo record. If physical
-                    deletion is configured, the file will also be removed.
+                    This action will delete the photo record. If physical deletion is configured,
+                    the file will also be removed.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -176,9 +169,7 @@ PhotoItem.displayName = "PhotoItem";
 // [优化] 使用 memo 缓存上传中照片项组件
 const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPhoto }) {
   return (
-    <div
-      className="aspect-square relative rounded-md overflow-hidden bg-muted border border-border"
-    >
+    <div className="aspect-square relative rounded-md overflow-hidden bg-muted border border-border">
       {/* Local Preview Image */}
       <Image
         src={item.previewUrl}
@@ -199,10 +190,7 @@ const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPho
           <>
             <Loader2 className="h-6 w-6 animate-spin text-white drop-shadow-md" />
             <div className="w-full px-2">
-              <Progress
-                value={item.progress}
-                className="h-1.5 w-full bg-card/40"
-              />
+              <Progress value={item.progress} className="h-1.5 w-full bg-card/40" />
             </div>
             <span className="text-[10px] text-white font-medium drop-shadow-md">
               {item.progress}%
@@ -277,9 +265,7 @@ export function PhotoGrid({
             ) : (
               <UploadCloud className="h-6 w-6" />
             )}
-            <span className="text-xs font-medium">
-              {isLoading ? "Processing" : "上传照片"}
-            </span>
+            <span className="text-xs font-medium">{isLoading ? "Processing" : "上传照片"}</span>
           </label>
         )}
       </div>

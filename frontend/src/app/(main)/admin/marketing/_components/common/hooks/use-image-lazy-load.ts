@@ -36,18 +36,12 @@ export interface ImageLoadResult {
  */
 export function useImageLazyLoad(
   src: string | undefined | null,
-  options: LazyLoadOptions = {}
+  options: LazyLoadOptions = {},
 ): ImageLoadResult {
-  const {
-    rootMargin = "100px",
-    threshold = 0.1,
-    timeout = 10000,
-  } = options;
+  const { rootMargin = "100px", threshold = 0.1, timeout = 10000 } = options;
 
   // 根据 src 计算初始状态，避免在 effect 中同步 setState
-  const [status, setStatus] = useState<ImageLoadStatus>(() =>
-    src ? "idle" : "idle"
-  );
+  const [status, setStatus] = useState<ImageLoadStatus>(() => (src ? "idle" : "idle"));
   const [loadTime, setLoadTime] = useState<number>(0);
   const [isVisible, setIsVisible] = useState<boolean>(false);
 
@@ -101,7 +95,7 @@ export function useImageLazyLoad(
       {
         rootMargin,
         threshold,
-      }
+      },
     );
 
     observerRef.current.observe(elementRef.current);
@@ -181,7 +175,7 @@ export function useImageLazyLoad(
  * 返回 ref 和 isVisible 状态
  */
 export function useElementVisibility<T extends HTMLElement>(
-  options: Omit<LazyLoadOptions, "timeout"> = {}
+  options: Omit<LazyLoadOptions, "timeout"> = {},
 ): { ref: React.RefObject<T | null>; isVisible: boolean } {
   const { rootMargin = "100px", threshold = 0.1 } = options;
   const ref = useRef<T>(null);
@@ -201,7 +195,7 @@ export function useElementVisibility<T extends HTMLElement>(
       {
         rootMargin,
         threshold,
-      }
+      },
     );
 
     observer.observe(element);
@@ -218,11 +212,9 @@ export function useElementVisibility<T extends HTMLElement>(
  */
 export function useSimpleImageLoader(
   src: string | undefined | null,
-  timeout: number = 10000
+  timeout: number = 10000,
 ): Omit<ImageLoadResult, "isVisible"> {
-  const [status, setStatus] = useState<ImageLoadStatus>(() =>
-    src ? "idle" : "idle"
-  );
+  const [status, setStatus] = useState<ImageLoadStatus>(() => (src ? "idle" : "idle"));
   const [loadTime, setLoadTime] = useState<number>(0);
   const isCompleteRef = useRef(false);
 

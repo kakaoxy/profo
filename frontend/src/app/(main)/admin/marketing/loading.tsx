@@ -37,7 +37,10 @@ export default function MarketingProjectsLoading() {
         <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
           <div className="p-4">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 py-4 border-b border-border last:border-0">
+              <div
+                key={i}
+                className="flex items-center gap-4 py-4 border-b border-border last:border-0"
+              >
                 <Skeleton className="h-12 w-12 rounded-lg" />
                 <div className="flex-1">
                   <Skeleton className="h-4 w-48 mb-2" />

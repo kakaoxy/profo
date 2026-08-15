@@ -60,12 +60,8 @@ export function EndedView({ project, onClose }: EndedViewProps) {
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                {project.name}
-              </h1>
-              <Badge className={getProjectStatusClassName(project.status)}>
-                已下架
-              </Badge>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">{project.name}</h1>
+              <Badge className={getProjectStatusClassName(project.status)}>已下架</Badge>
             </div>
             {project.community_name && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -87,9 +83,7 @@ export function EndedView({ project, onClose }: EndedViewProps) {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
-                <AlertDialogDescription>
-                  此操作将把项目标记为删除状态。
-                </AlertDialogDescription>
+                <AlertDialogDescription>此操作将把项目标记为删除状态。</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>取消</AlertDialogCancel>
@@ -101,9 +95,7 @@ export function EndedView({ project, onClose }: EndedViewProps) {
                   disabled={isDeleting}
                   className="bg-error hover:bg-red-700 focus:ring-red-600"
                 >
-                  {isDeleting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
+                  {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   确认删除
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -118,41 +110,17 @@ export function EndedView({ project, onClose }: EndedViewProps) {
           {/* 基础信息卡片 */}
           <InfoSection title="基础信息" icon={<MapPin className="h-4 w-4" />}>
             <InfoItem label="小区名称" value={project.community_name} />
-            <InfoItem
-              label="建筑面积"
-              value={project.area ? `${project.area} ㎡` : undefined}
-            />
-            <InfoItem
-              label="详细地址"
-              value={project.address}
-              className="sm:col-span-2"
-            />
-            <InfoItem
-              label="挂牌价"
-              value={formatPrice(project.list_price)}
-              highlight
-            />
-            <InfoItem
-              label="签约价"
-              value={formatPrice(project.signing_price)}
-            />
+            <InfoItem label="建筑面积" value={project.area ? `${project.area} ㎡` : undefined} />
+            <InfoItem label="详细地址" value={project.address} className="sm:col-span-2" />
+            <InfoItem label="挂牌价" value={formatPrice(project.list_price)} highlight />
+            <InfoItem label="签约价" value={formatPrice(project.signing_price)} />
           </InfoSection>
 
           {/* 关键日期卡片 */}
           <InfoSection title="关键日期" icon={<MapPin className="h-4 w-4" />}>
-            <InfoItem
-              label="挂牌日期"
-              value={formatDate(project.listing_date)}
-            />
-            <InfoItem
-              label="签约日期"
-              value={formatDate(project.signing_date)}
-            />
-            <InfoItem
-              label="委托期限"
-              value={commissionRange}
-              className="sm:col-span-2"
-            />
+            <InfoItem label="挂牌日期" value={formatDate(project.listing_date)} />
+            <InfoItem label="签约日期" value={formatDate(project.signing_date)} />
+            <InfoItem label="委托期限" value={commissionRange} className="sm:col-span-2" />
           </InfoSection>
 
           {/* 下架说明 */}

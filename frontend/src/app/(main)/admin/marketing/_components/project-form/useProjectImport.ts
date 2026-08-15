@@ -57,25 +57,22 @@ export function useProjectImport({
   }, []);
 
   // 选择项目
-  const handleSelectProject = React.useCallback(
-    async (project: L3ProjectBrief) => {
-      setSelectedProject(project);
-      setShowSelector(false);
-      setIsImporting(true);
+  const handleSelectProject = React.useCallback(async (project: L3ProjectBrief) => {
+    setSelectedProject(project);
+    setShowSelector(false);
+    setIsImporting(true);
 
-      try {
-        const data = await fetchImportData(project.id);
-        setImportData(data);
-        setShowPreview(true);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "导入数据失败");
-        setSelectedProject(null);
-      } finally {
-        setIsImporting(false);
-      }
-    },
-    []
-  );
+    try {
+      const data = await fetchImportData(project.id);
+      setImportData(data);
+      setShowPreview(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "导入数据失败");
+      setSelectedProject(null);
+    } finally {
+      setIsImporting(false);
+    }
+  }, []);
 
   // 确认导入
   const handleConfirmImport = React.useCallback(() => {

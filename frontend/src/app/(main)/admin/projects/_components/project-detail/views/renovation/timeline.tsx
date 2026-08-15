@@ -12,10 +12,7 @@ interface RenovationTimelineProps {
   onRefresh?: () => void;
 }
 
-export function RenovationTimeline({
-  project,
-  onRefresh,
-}: RenovationTimelineProps) {
+export function RenovationTimeline({ project, onRefresh }: RenovationTimelineProps) {
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
 
   // 2. 获取照片数据的方法
@@ -42,9 +39,7 @@ export function RenovationTimeline({
 
     // 填充
     photos.forEach((p) => {
-      const stageConfig = RENOVATION_STAGES.find(
-        (s) => s.value === p.stage || s.key === p.stage
-      );
+      const stageConfig = RENOVATION_STAGES.find((s) => s.value === p.stage || s.key === p.stage);
       if (stageConfig) {
         map[stageConfig.key].push(p);
       }
@@ -58,7 +53,7 @@ export function RenovationTimeline({
       return RENOVATION_STAGES.length;
     }
     const idx = RENOVATION_STAGES.findIndex(
-      (s) => s.value === project.renovation_stage || s.key === project.renovation_stage
+      (s) => s.value === project.renovation_stage || s.key === project.renovation_stage,
     );
     return idx === -1 ? 0 : idx;
   }, [project.renovation_stage, project.status]);

@@ -28,14 +28,16 @@ export default function ContactPage() {
     ? `/api/v1/public/projects/sold?community_name=${encodeURIComponent(debouncedSearch)}`
     : "/api/v1/public/projects/sold";
 
-  const { data: soldData, isLoading: soldLoading, error: soldError, mutate: mutateSold } = useSWR<SoldListResponse>(
-    soldUrl,
-    publicFetcher
-  );
+  const {
+    data: soldData,
+    isLoading: soldLoading,
+    error: soldError,
+    mutate: mutateSold,
+  } = useSWR<SoldListResponse>(soldUrl, publicFetcher);
 
   const { data: statsData, isLoading: statsLoading } = useSWR<PlatformStats>(
     "/api/v1/public/stats/platform",
-    publicFetcher
+    publicFetcher,
   );
 
   return (
@@ -87,10 +89,7 @@ export default function ContactPage() {
         {soldLoading ? (
           <div className="grid grid-cols-1 gap-5">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-cards bg-white p-6 shadow-steep-sm"
-              >
+              <div key={i} className="rounded-cards bg-white p-6 shadow-steep-sm">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <Skeleton className="h-5 w-10 rounded-full" />
@@ -179,9 +178,7 @@ export default function ContactPage() {
           <h3 className="mt-4 text-2xl font-medium text-ink tracking-[-0.009em]">
             {cLocale.contact.actionTitle}
           </h3>
-          <p className="mt-2 text-sm text-ash tracking-[-0.009em]">
-            {cLocale.contact.actionDesc}
-          </p>
+          <p className="mt-2 text-sm text-ash tracking-[-0.009em]">{cLocale.contact.actionDesc}</p>
           <Link
             href="/valuation"
             className="mt-6 inline-flex items-center gap-2 text-[15px] font-medium text-ink tracking-[-0.009em] hover:underline"

@@ -1,13 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormValues } from "../schema";
@@ -47,17 +41,11 @@ export function ShareConfigSection() {
                 <div
                   className="w-12 h-12 rounded-md bg-muted border bg-cover bg-center shrink-0"
                   style={{
-                    backgroundImage: field.value
-                      ? `url(${getFileUrl(field.value)})`
-                      : "none",
+                    backgroundImage: field.value ? `url(${getFileUrl(field.value)})` : "none",
                   }}
                 />
                 <FormControl>
-                  <Input
-                    className="hidden"
-                    {...field}
-                    value={field.value || ""}
-                  />
+                  <Input className="hidden" {...field} value={field.value || ""} />
                 </FormControl>
                 <Button
                   type="button"

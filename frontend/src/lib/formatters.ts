@@ -13,7 +13,7 @@ import { zhCN } from "date-fns/locale";
 export function safeFormatDate(
   dateStr: string | null | undefined,
   fmt: string,
-  fallback = "-"
+  fallback = "-",
 ): string {
   if (!dateStr) return fallback;
   try {
@@ -42,9 +42,7 @@ export function formatPrice(value: string | number | undefined | null): string {
  * @param value - 单价值（字符串或数字），单位：万元/㎡
  * @returns 格式化后的单价字符串，如 "¥3.84万/㎡"
  */
-export function formatUnitPrice(
-  value: string | number | undefined | null,
-): string {
+export function formatUnitPrice(value: string | number | undefined | null): string {
   if (value === undefined || value === null || value === "") return "-";
   const numValue = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(numValue) || numValue === 0) return "-";
@@ -69,10 +67,7 @@ export function formatArea(value: string | number | undefined | null): string {
  * @param suffix - 后缀单位
  * @returns 格式化后的数字字符串
  */
-export function formatNumber(
-  value: string | number | undefined | null,
-  suffix = "",
-): string {
+export function formatNumber(value: string | number | undefined | null, suffix = ""): string {
   if (value === undefined || value === null) return "-";
   const numValue = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(numValue)) return "-";
@@ -85,10 +80,7 @@ export function formatNumber(
  * @param fallback - 无效时的回退值
  * @returns 相对时间字符串，如 "约1小时前"
  */
-export function formatRelativeTime(
-  date: Date | string | null | undefined,
-  fallback = "-",
-): string {
+export function formatRelativeTime(date: Date | string | null | undefined, fallback = "-"): string {
   if (!date) return fallback;
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return fallback;
@@ -172,9 +164,7 @@ export function formatPriceWan(value: number | null): string {
 
 /** 工作台：单价 "3.8万/㎡" */
 export function formatUnitPriceWan(value: number | null): string {
-  return value !== null
-    ? `${dashboardDecimalFormatter.format(value)}万/㎡`
-    : "-";
+  return value !== null ? `${dashboardDecimalFormatter.format(value)}万/㎡` : "-";
 }
 
 /** 工作台：日期时间 "1月5日 14:30" */

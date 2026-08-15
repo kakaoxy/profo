@@ -83,16 +83,14 @@ export async function updateSalesRolesAction(
       apiData.negotiator = data.negotiator_id;
     }
 
-    const { error, response } = await client.PUT(
-      "/api/v1/projects/{project_id}/selling/roles",
-      {
-        params: { path: { project_id: projectId } },
-        body: apiData,
-      },
-    );
+    const { error, response } = await client.PUT("/api/v1/projects/{project_id}/selling/roles", {
+      params: { path: { project_id: projectId } },
+      body: apiData,
+    });
 
     if (error) {
-      const errorMsg = (error as { message?: string }).message || `更新销售角色失败 (${response.status})`;
+      const errorMsg =
+        (error as { message?: string }).message || `更新销售角色失败 (${response.status})`;
       return { success: false, message: errorMsg };
     }
 
@@ -118,7 +116,8 @@ export async function getSalesUsersSimpleAction(): Promise<{
     const { data, error, response } = await client.GET("/api/v1/users/simple");
 
     if (error) {
-      const errorMsg = (error as { message?: string }).message || `获取用户列表失败 (${response.status})`;
+      const errorMsg =
+        (error as { message?: string }).message || `获取用户列表失败 (${response.status})`;
       return { success: false, message: errorMsg };
     }
 
@@ -147,7 +146,9 @@ export async function getCurrentUserAction(): Promise<{
 
     if (error) {
       const status = (response as Response | undefined)?.status;
-      const errorMsg = (error as { message?: string }).message || `获取当前用户失败${status ? ` (${status})` : ""}`;
+      const errorMsg =
+        (error as { message?: string }).message ||
+        `获取当前用户失败${status ? ` (${status})` : ""}`;
       return { success: false, message: errorMsg };
     }
 
@@ -168,7 +169,6 @@ export async function getCurrentUserAction(): Promise<{
     return { success: false, message: "网络错误" };
   }
 }
-
 
 /**
  * 创建销售记录 (带看/出价/面谈)
@@ -193,8 +193,7 @@ export async function createSalesRecordAction(payload: {
     const client = await fetchClient();
 
     // 1. 类型映射：前端 "offer" -> 后端 "offer"
-    const backendRecordType =
-      payload.recordType === "offer" ? "offer" : payload.recordType;
+    const backendRecordType = payload.recordType === "offer" ? "offer" : payload.recordType;
 
     // 2. 构造请求 Body
     const requestBody = {
@@ -211,29 +210,20 @@ export async function createSalesRecordAction(payload: {
 
     // 3. 动态分发请求
     if (payload.recordType === "viewing") {
-      result = await client.POST(
-        "/api/v1/projects/{project_id}/selling/viewings",
-        {
-          params: { path: { project_id: payload.projectId } },
-          body: requestBody,
-        },
-      );
+      result = await client.POST("/api/v1/projects/{project_id}/selling/viewings", {
+        params: { path: { project_id: payload.projectId } },
+        body: requestBody,
+      });
     } else if (payload.recordType === "offer") {
-      result = await client.POST(
-        "/api/v1/projects/{project_id}/selling/offers",
-        {
-          params: { path: { project_id: payload.projectId } },
-          body: requestBody,
-        },
-      );
+      result = await client.POST("/api/v1/projects/{project_id}/selling/offers", {
+        params: { path: { project_id: payload.projectId } },
+        body: requestBody,
+      });
     } else if (payload.recordType === "negotiation") {
-      result = await client.POST(
-        "/api/v1/projects/{project_id}/selling/negotiations",
-        {
-          params: { path: { project_id: payload.projectId } },
-          body: requestBody,
-        },
-      );
+      result = await client.POST("/api/v1/projects/{project_id}/selling/negotiations", {
+        params: { path: { project_id: payload.projectId } },
+        body: requestBody,
+      });
     } else {
       return { success: false, message: "未知的记录类型" };
     }
@@ -256,10 +246,7 @@ export async function createSalesRecordAction(payload: {
 /**
  * 删除销售记录
  */
-export async function deleteSalesRecordAction(
-  projectId: string,
-  recordId: string,
-) {
+export async function deleteSalesRecordAction(projectId: string, recordId: string) {
   const idParsed = projectIdSchema.safeParse(projectId);
   if (!idParsed.success) {
     return {
@@ -326,18 +313,15 @@ export async function completeProjectAction(
   // 权限校验由后端 CurrentInternalUserDep 执行（仅 admin/operator）。
   try {
     const client = await fetchClient();
-    const { data, error } = await client.POST(
-      "/api/v1/projects/{project_id}/complete",
-      {
-        params: {
-          path: { project_id: projectId },
-        },
-        body: {
-          sold_price: payload.soldPrice,
-          sold_date: payload.soldDate,
-        },
+    const { data, error } = await client.POST("/api/v1/projects/{project_id}/complete", {
+      params: {
+        path: { project_id: projectId },
       },
-    );
+      body: {
+        sold_price: payload.soldPrice,
+        sold_date: payload.soldDate,
+      },
+    });
 
     if (error) {
       logger.error("成交操作失败:", error);

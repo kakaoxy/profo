@@ -9,12 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/common";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -38,8 +33,7 @@ import { DesignPagination } from "../../_components/design-pagination";
 
 // 动态导入弹窗组件（ssr: false，仅在客户端加载）
 const CampaignFormDialog = dynamic(
-  () =>
-    import("./campaign-form-dialog").then((m) => m.CampaignFormDialog),
+  () => import("./campaign-form-dialog").then((m) => m.CampaignFormDialog),
   { ssr: false },
 );
 
@@ -72,8 +66,7 @@ interface CampaignsViewProps {
  */
 export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProps) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [editingCampaign, setEditingCampaign] =
-    React.useState<RecruitCampaign | null>(null);
+  const [editingCampaign, setEditingCampaign] = React.useState<RecruitCampaign | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [togglingId, setTogglingId] = React.useState<string | null>(null);
 
@@ -82,7 +75,9 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
   const [qrCampaign, setQrCampaign] = React.useState<RecruitCampaign | null>(null);
   const [qrEmployeeId, setQrEmployeeId] = React.useState<string>("");
   const [qrGenerating, setQrGenerating] = React.useState(false);
-  const [qrResult, setQrResult] = React.useState<{ code: string; image_base64: string } | null>(null);
+  const [qrResult, setQrResult] = React.useState<{ code: string; image_base64: string } | null>(
+    null,
+  );
 
   // KPI 概览（与列表状态联动：停用/启用后「进行中」实时变化）
   const kpiItems: RecruitKpiItem[] = React.useMemo(() => {
@@ -137,10 +132,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
   const handleEdit = async (campaign: RecruitCampaign, data: CampaignFormData) => {
     setSubmitting(true);
     try {
-      const result = await updateCampaignAction(
-        campaign.id,
-        data as ActionCampaignFormData,
-      );
+      const result = await updateCampaignAction(campaign.id, data as ActionCampaignFormData);
       if (result.success) {
         toast.success("活动更新成功");
         setDialogOpen(false);
@@ -185,10 +177,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
     if (!qrCampaign) return;
     setQrGenerating(true);
     try {
-      const result = await generateCampaignQRCodeAction(
-        qrCampaign.id,
-        qrEmployeeId || undefined,
-      );
+      const result = await generateCampaignQRCodeAction(qrCampaign.id, qrEmployeeId || undefined);
       if (result.success) {
         setQrResult(result.data);
       } else {
@@ -235,9 +224,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
         {/* 页头：标题 + 描述 + 新建按钮 */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
           <div>
-            <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink">
-              招募活动
-            </h1>
+            <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink">招募活动</h1>
             <p className="mt-1.5 text-[15px] text-graphite">
               配置分享素材，员工分享时统一采用此配置，不可自定义
             </p>
@@ -261,9 +248,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
           <div className="flex items-center justify-between px-6 py-5 border-b border-fog">
             <div>
               <div className="text-[15px] font-medium text-ink">活动列表</div>
-              <div className="mt-0.5 text-[13px] text-graphite">
-                共 {campaigns.length} 个活动
-              </div>
+              <div className="mt-0.5 text-[13px] text-graphite">共 {campaigns.length} 个活动</div>
             </div>
             <button
               type="button"
@@ -284,11 +269,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
                 onDelete={handleDelete}
                 togglingId={togglingId}
               />
-              <DesignPagination
-                info={`共 ${campaigns.length} 条记录`}
-                page={1}
-                totalPages={1}
-              />
+              <DesignPagination info={`共 ${campaigns.length} 条记录`} page={1} totalPages={1} />
             </>
           ) : (
             <EmptyState
@@ -306,17 +287,16 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
           onOpenChange={setDialogOpen}
           campaign={editingCampaign}
           submitting={submitting}
-          onSubmit={
-            editingCampaign
-              ? (data) => handleEdit(editingCampaign, data)
-              : handleCreate
-          }
+          onSubmit={editingCampaign ? (data) => handleEdit(editingCampaign, data) : handleCreate}
         />
       )}
 
       {/* 小程序码弹窗 */}
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
-        <DialogContent showCloseButton={false} className="sm:max-w-100 rounded-cards p-0 gap-0 bg-white">
+        <DialogContent
+          showCloseButton={false}
+          className="sm:max-w-100 rounded-cards p-0 gap-0 bg-white"
+        >
           <DialogHeader className="flex flex-row items-center justify-between px-6 py-5 border-b border-fog text-left">
             <DialogTitle className="text-base font-medium text-ink">
               小程序码 - {qrCampaign?.name ?? ""}
@@ -335,13 +315,8 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
             {!qrResult ? (
               <>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[14px] font-medium text-ink">
-                    归属员工（可选）
-                  </label>
-                  <Select
-                    value={qrEmployeeId}
-                    onValueChange={setQrEmployeeId}
-                  >
+                  <label className="text-[14px] font-medium text-ink">归属员工（可选）</label>
+                  <Select value={qrEmployeeId} onValueChange={setQrEmployeeId}>
                     <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px]">
                       <SelectValue placeholder="不绑定员工" />
                     </SelectTrigger>
@@ -377,9 +352,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
                     unoptimized
                   />
                 </div>
-                <p className="text-[12.5px] text-slate text-center">
-                  短码: {qrResult.code}
-                </p>
+                <p className="text-[12.5px] text-slate text-center">短码: {qrResult.code}</p>
                 <button
                   type="button"
                   onClick={handleDownloadQr}

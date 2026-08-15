@@ -20,8 +20,7 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
 
   const maxValue = Math.max(...stages.map((s) => s.value), 1);
 
-  const getPercent = (value: number) =>
-    total > 0 ? Math.round((value / total) * 100) : 0;
+  const getPercent = (value: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
 
   const conversionRate = formatConversionRate(total, signed);
 
@@ -81,9 +80,7 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
             签约: <span className="font-bold text-primary tabular-nums">{signed}</span>
           </span>
         </div>
-        <span className="text-xs font-bold text-foreground">
-          转化率: {conversionRate}
-        </span>
+        <span className="text-xs font-bold text-foreground">转化率: {conversionRate}</span>
       </div>
     </div>
   );

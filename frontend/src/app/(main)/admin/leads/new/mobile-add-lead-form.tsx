@@ -61,18 +61,15 @@ export function MobileAddLeadForm() {
     return [];
   }, [formData.communityId]);
 
-  const handlePickerSelect = useCallback(
-    (urls: string[]) => {
-      if (urls.length === 0) return;
-      setImages((prev) => {
-        const merged = new Set(prev);
-        for (const u of urls) merged.add(u);
-        return Array.from(merged);
-      });
-      toast.success(`已添加 ${urls.length} 张户型图`);
-    },
-    [],
-  );
+  const handlePickerSelect = useCallback((urls: string[]) => {
+    if (urls.length === 0) return;
+    setImages((prev) => {
+      const merged = new Set(prev);
+      for (const u of urls) merged.add(u);
+      return Array.from(merged);
+    });
+    toast.success(`已添加 ${urls.length} 张户型图`);
+  }, []);
 
   const calculatedUnitPrice = useMemo(() => {
     const a = parseFloat(formData.area);
@@ -133,180 +130,159 @@ export function MobileAddLeadForm() {
       </header>
 
       {/* Form wraps body + footer so submit button works natively */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex-1 flex flex-col overflow-hidden"
-      >
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-5 no-scrollbar">
-        {/* 1. 房源名称（CommunitySelect 自带 label） */}
-        <div data-testid="field-community-name">
-          <CommunitySelect
-            value={formData.communityName}
-            label="房源名称"
-            onChange={(community) =>
-              setFormData((prev) => ({
-                ...prev,
-                communityId: community.id,
-                communityName: community.name,
-                district: community.district || prev.district,
-                businessArea: community.businessCircle || prev.businessArea,
-              }))
-            }
-          />
-        </div>
-
-        {/* 2. 所在区域 */}
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>所在区域</FieldLabel>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="例如: 静安区"
-              className="h-12 pl-10 text-base"
-              value={formData.district}
-              onChange={(e) =>
-                setFormData({ ...formData, district: e.target.value })
-              }
-            />
-          </div>
-        </div>
-
-        {/* 3. 核心商圈 */}
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>核心商圈</FieldLabel>
-          <Input
-            placeholder="例如: 彭浦"
-            className="h-12 text-base"
-            value={formData.businessArea}
-            onChange={(e) =>
-              setFormData({ ...formData, businessArea: e.target.value })
-            }
-          />
-        </div>
-
-        {/* 4. 物理指标与价格（分组卡片） */}
-        <div className="bg-muted/50 rounded-2xl border border-border p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Ruler className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-              物理指标与价格
-            </span>
-          </div>
-
-          {/* 房源户型 */}
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel>房源户型</FieldLabel>
-            <LayoutInputs
-              value={formData.layout}
-              onChange={(l) =>
-                setFormData((prev) => ({ ...prev, layout: l }))
+          {/* 1. 房源名称（CommunitySelect 自带 label） */}
+          <div data-testid="field-community-name">
+            <CommunitySelect
+              value={formData.communityName}
+              label="房源名称"
+              onChange={(community) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  communityId: community.id,
+                  communityName: community.name,
+                  district: community.district || prev.district,
+                  businessArea: community.businessCircle || prev.businessArea,
+                }))
               }
             />
           </div>
 
-          {/* 面积 */}
-          <div className="flex flex-col gap-1.5" data-testid="field-area">
-            <FieldLabel required>面积 (㎡)</FieldLabel>
-            <Input
-              type="number"
-              step="0.1"
-              inputMode="decimal"
-              placeholder="例如: 89.5"
-              className="h-12 text-base font-bold"
-              value={formData.area}
-              onChange={(e) =>
-                setFormData({ ...formData, area: e.target.value })
-              }
-            />
-          </div>
-
-          {/* 朝向 */}
+          {/* 2. 所在区域 */}
           <div className="flex flex-col gap-1.5">
-            <FieldLabel>朝向</FieldLabel>
-            <select
-              className="h-12 w-full px-4 rounded-xl bg-background border border-input text-base font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
-              value={formData.orientation}
-              onChange={(e) =>
-                setFormData({ ...formData, orientation: e.target.value })
-              }
-            >
-              {ORIENTATION_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 楼层/总高 */}
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel>楼层/总高</FieldLabel>
-            <FloorInput
-              value={formData.floorInfo}
-              onChange={(floorInfo) =>
-                setFormData({ ...formData, floorInfo })
-              }
-            />
-          </div>
-
-          {/* 用户报价 */}
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel required>用户报价 (万)</FieldLabel>
-            <Input
-              type="number"
-              inputMode="decimal"
-              placeholder="例如: 600"
-              className="h-12 text-base font-black text-primary border-primary/20"
-              value={formData.totalPrice}
-              onChange={(e) =>
-                setFormData({ ...formData, totalPrice: e.target.value })
-              }
-            />
-          </div>
-
-          {/* 计算单价（只读） */}
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel>计算单价</FieldLabel>
-            <div className="h-12 flex items-center px-4 bg-background rounded-xl text-sm font-bold text-muted-foreground">
-              {calculatedUnitPrice} 万/㎡
+            <FieldLabel>所在区域</FieldLabel>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="例如: 静安区"
+                className="h-12 pl-10 text-base"
+                value={formData.district}
+                onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+              />
             </div>
           </div>
-        </div>
 
-        {/* 5. 房源实拍（ImageUpload 自带 label） */}
-        <ImageUpload images={images} onChange={setImages} />
+          {/* 3. 核心商圈 */}
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel>核心商圈</FieldLabel>
+            <Input
+              placeholder="例如: 彭浦"
+              className="h-12 text-base"
+              value={formData.businessArea}
+              onChange={(e) => setFormData({ ...formData, businessArea: e.target.value })}
+            />
+          </div>
 
-        {/* 5.1 从小区户型图库选择 */}
-        <div className="flex flex-col gap-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!formData.communityId}
-            onClick={() => setPickerOpen(true)}
-            className="h-10 justify-start text-sm"
-          >
-            <Images className="h-4 w-4 mr-2" />
-            {formData.communityId
-              ? "从小区户型图库选择"
-              : "请先选择小区后可从户型图库选择"}
-          </Button>
-        </div>
+          {/* 4. 物理指标与价格（分组卡片） */}
+          <div className="bg-muted/50 rounded-2xl border border-border p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Ruler className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">
+                物理指标与价格
+              </span>
+            </div>
 
-        {/* 6. 补充信息 */}
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>补充信息</FieldLabel>
-          <Textarea
-            rows={4}
-            placeholder="输入房源核心优势、业主动机等..."
-            className="min-h-24 text-base focus-visible:ring-primary/20"
-            value={formData.remarks}
-            onChange={(e) =>
-              setFormData({ ...formData, remarks: e.target.value })
-            }
-          />
-        </div>
+            {/* 房源户型 */}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>房源户型</FieldLabel>
+              <LayoutInputs
+                value={formData.layout}
+                onChange={(l) => setFormData((prev) => ({ ...prev, layout: l }))}
+              />
+            </div>
+
+            {/* 面积 */}
+            <div className="flex flex-col gap-1.5" data-testid="field-area">
+              <FieldLabel required>面积 (㎡)</FieldLabel>
+              <Input
+                type="number"
+                step="0.1"
+                inputMode="decimal"
+                placeholder="例如: 89.5"
+                className="h-12 text-base font-bold"
+                value={formData.area}
+                onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+              />
+            </div>
+
+            {/* 朝向 */}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>朝向</FieldLabel>
+              <select
+                className="h-12 w-full px-4 rounded-xl bg-background border border-input text-base font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                value={formData.orientation}
+                onChange={(e) => setFormData({ ...formData, orientation: e.target.value })}
+              >
+                {ORIENTATION_OPTIONS.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 楼层/总高 */}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>楼层/总高</FieldLabel>
+              <FloorInput
+                value={formData.floorInfo}
+                onChange={(floorInfo) => setFormData({ ...formData, floorInfo })}
+              />
+            </div>
+
+            {/* 用户报价 */}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel required>用户报价 (万)</FieldLabel>
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="例如: 600"
+                className="h-12 text-base font-black text-primary border-primary/20"
+                value={formData.totalPrice}
+                onChange={(e) => setFormData({ ...formData, totalPrice: e.target.value })}
+              />
+            </div>
+
+            {/* 计算单价（只读） */}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>计算单价</FieldLabel>
+              <div className="h-12 flex items-center px-4 bg-background rounded-xl text-sm font-bold text-muted-foreground">
+                {calculatedUnitPrice} 万/㎡
+              </div>
+            </div>
+          </div>
+
+          {/* 5. 房源实拍（ImageUpload 自带 label） */}
+          <ImageUpload images={images} onChange={setImages} />
+
+          {/* 5.1 从小区户型图库选择 */}
+          <div className="flex flex-col gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!formData.communityId}
+              onClick={() => setPickerOpen(true)}
+              className="h-10 justify-start text-sm"
+            >
+              <Images className="h-4 w-4 mr-2" />
+              {formData.communityId ? "从小区户型图库选择" : "请先选择小区后可从户型图库选择"}
+            </Button>
+          </div>
+
+          {/* 6. 补充信息 */}
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel>补充信息</FieldLabel>
+            <Textarea
+              rows={4}
+              placeholder="输入房源核心优势、业主动机等..."
+              className="min-h-24 text-base focus-visible:ring-primary/20"
+              value={formData.remarks}
+              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+            />
+          </div>
         </div>
 
         {/* Footer (shrink-0，自然贴底，浮动在 Tab Bar 上方) */}

@@ -1,9 +1,5 @@
 import { format, subDays } from "date-fns";
-import {
-  getRecruitEmployees,
-  getRecruitCampaigns,
-  getRecruitFunnel,
-} from "../_lib/recruit-data";
+import { getRecruitEmployees, getRecruitCampaigns, getRecruitFunnel } from "../_lib/recruit-data";
 import { FunnelView, type FunnelViewProps } from "./_components/funnel-view";
 
 /** 将 Date 格式化为 YYYY-MM-DD */
@@ -33,8 +29,7 @@ const VALID_RANGES = ["7", "30", "90", "custom"];
 export default async function RecruitFunnelPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
-  const range =
-    params.range && VALID_RANGES.includes(params.range) ? params.range : "30";
+  const range = params.range && VALID_RANGES.includes(params.range) ? params.range : "30";
   const today = new Date();
 
   // 生效日期区间
@@ -53,18 +48,13 @@ export default async function RecruitFunnelPage({ searchParams }: PageProps) {
   const employeeId = params.employee || undefined;
 
   // 并行获取员工列表 + 活动列表
-  const [employees, campaigns] = await Promise.all([
-    getRecruitEmployees(),
-    getRecruitCampaigns(),
-  ]);
+  const [employees, campaigns] = await Promise.all([getRecruitEmployees(), getRecruitCampaigns()]);
 
   // 整体漏斗 + 各员工漏斗（并行下钻）
   const funnelQuery = { campaign_id: campaignId, start_date: startDate, end_date: endDate };
   const [overallFunnel, ...perEmployeeFunnels] = await Promise.all([
     getRecruitFunnel({ ...funnelQuery, employee_id: employeeId }),
-    ...employees.map((emp) =>
-      getRecruitFunnel({ ...funnelQuery, employee_id: emp.id }),
-    ),
+    ...employees.map((emp) => getRecruitFunnel({ ...funnelQuery, employee_id: emp.id })),
   ]);
 
   // 组装员工维度行（指定员工时仅展示该员工；null 漏斗数据用零值兜底）

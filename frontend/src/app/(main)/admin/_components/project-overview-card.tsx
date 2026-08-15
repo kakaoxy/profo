@@ -32,19 +32,25 @@ export function ProjectOverviewCard({
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-border">
         <div className="text-center px-2 lg:px-3 min-w-0">
-          <p className="text-2xl lg:text-3xl font-black text-primary tabular-nums">{signingCount}</p>
+          <p className="text-2xl lg:text-3xl font-black text-primary tabular-nums">
+            {signingCount}
+          </p>
           <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold truncate">
             已签约
           </p>
         </div>
         <div className="text-center px-2 lg:px-3 min-w-0">
-          <p className="text-2xl lg:text-3xl font-black text-on-surface tabular-nums">{renovatingCount}</p>
+          <p className="text-2xl lg:text-3xl font-black text-on-surface tabular-nums">
+            {renovatingCount}
+          </p>
           <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold truncate">
             装修中
           </p>
         </div>
         <div className="text-center px-2 lg:px-3 min-w-0">
-          <p className="text-2xl lg:text-3xl font-black text-on-surface tabular-nums">{sellingCount}</p>
+          <p className="text-2xl lg:text-3xl font-black text-on-surface tabular-nums">
+            {sellingCount}
+          </p>
           <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold truncate">
             在售中
           </p>

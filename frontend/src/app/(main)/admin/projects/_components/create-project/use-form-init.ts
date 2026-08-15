@@ -76,7 +76,8 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         signing_period: project.signing_period,
         extension_period: project.extension_period,
         extension_rent: project.extension_rent,
-        cost_assumption_type: (project.cost_assumption_type as FormValues["cost_assumption_type"]) || "respective",
+        cost_assumption_type:
+          (project.cost_assumption_type as FormValues["cost_assumption_type"]) || "respective",
         cost_assumption_other: project.cost_assumption_other || "",
         planned_handover_date: fromDateStr(project.planned_handover_date),
         commission_start_date: fromDateStr(project.commission_start_date),
@@ -90,10 +91,7 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
 /**
  * 获取表单默认值的工厂函数
  */
-export function getDefaultValues(
-  project?: Project,
-  isEditMode: boolean = false
-): FormValues {
+export function getDefaultValues(project?: Project, isEditMode: boolean = false): FormValues {
   const layoutData = parseLayout(project?.layout);
 
   return {
@@ -163,7 +161,8 @@ export function getDefaultValues(
     signing_period: project?.signing_period,
     extension_period: project?.extension_period,
     extension_rent: project?.extension_rent,
-    cost_assumption_type: (project?.cost_assumption_type as FormValues["cost_assumption_type"]) || "respective",
+    cost_assumption_type:
+      (project?.cost_assumption_type as FormValues["cost_assumption_type"]) || "respective",
     cost_assumption_other: project?.cost_assumption_other || "",
     planned_handover_date: fromDateStr(project?.planned_handover_date),
     commission_start_date: fromDateStr(project?.commission_start_date),

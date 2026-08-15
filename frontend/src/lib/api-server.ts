@@ -67,9 +67,7 @@ async function createServerClient() {
   const fetchWithAutoRefresh: typeof fetch = async (input, init) => {
     const makeRequest = async (bearerToken: string | null) => {
       const requestHeaders =
-        input instanceof Request
-          ? Object.fromEntries(input.headers.entries())
-          : {};
+        input instanceof Request ? Object.fromEntries(input.headers.entries()) : {};
 
       return fetch(input, {
         ...init,

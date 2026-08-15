@@ -18,9 +18,7 @@ vi.mock("@/components/ui/avatar", () => ({
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function makeRecord(
-  overrides: Partial<SalesRecord> = {},
-): SalesRecord {
+function makeRecord(overrides: Partial<SalesRecord> = {}): SalesRecord {
   return {
     id: "r1",
     project_id: "p1",
@@ -56,14 +54,7 @@ describe("ActivityList - OperatorCell 渲染", () => {
       }),
     ];
 
-    render(
-      <ActivityList
-        type="viewing"
-        data={records}
-        onDelete={vi.fn()}
-        canEditSales={false}
-      />,
-    );
+    render(<ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={false} />);
 
     // 表格头 "操作人" 列存在
     expect(screen.getByText("操作人")).toBeInTheDocument();
@@ -85,14 +76,7 @@ describe("ActivityList - OperatorCell 渲染", () => {
       }),
     ];
 
-    render(
-      <ActivityList
-        type="viewing"
-        data={records}
-        onDelete={vi.fn()}
-        canEditSales={false}
-      />,
-    );
+    render(<ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={false} />);
 
     expect(screen.getByText("未知")).toBeInTheDocument();
   });
@@ -108,12 +92,7 @@ describe("ActivityList - OperatorCell 渲染", () => {
     ];
 
     const { container } = render(
-      <ActivityList
-        type="viewing"
-        data={records}
-        onDelete={vi.fn()}
-        canEditSales={false}
-      />,
+      <ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={false} />,
     );
 
     // 表格头 "操作人" 仍渲染（列头）
@@ -136,14 +115,7 @@ describe("ActivityList - OperatorCell 渲染", () => {
       }),
     ];
 
-    render(
-      <ActivityList
-        type="viewing"
-        data={records}
-        onDelete={vi.fn()}
-        canEditSales={false}
-      />,
-    );
+    render(<ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={false} />);
 
     expect(screen.queryByText("张三")).not.toBeInTheDocument();
     expect(screen.queryByText("未知")).not.toBeInTheDocument();
@@ -160,14 +132,7 @@ describe("ActivityList - OperatorCell 渲染", () => {
       }),
     ];
 
-    render(
-      <ActivityList
-        type="offer"
-        data={records}
-        onDelete={vi.fn()}
-        canEditSales={false}
-      />,
-    );
+    render(<ActivityList type="offer" data={records} onDelete={vi.fn()} canEditSales={false} />);
 
     expect(screen.getByText("李四")).toBeInTheDocument();
   });
@@ -183,12 +148,7 @@ describe("ActivityList - OperatorCell 渲染", () => {
     ];
 
     render(
-      <ActivityList
-        type="negotiation"
-        data={records}
-        onDelete={vi.fn()}
-        canEditSales={false}
-      />,
+      <ActivityList type="negotiation" data={records} onDelete={vi.fn()} canEditSales={false} />,
     );
 
     expect(screen.getByText("王五")).toBeInTheDocument();
@@ -205,18 +165,9 @@ describe("ActivityList - canEditSales 控制删除按钮显隐", () => {
   });
 
   it("canEditSales=true 时：viewing 视图渲染删除按钮", () => {
-    const records: SalesRecord[] = [
-      makeRecord({ id: "r1", record_type: "viewing" }),
-    ];
+    const records: SalesRecord[] = [makeRecord({ id: "r1", record_type: "viewing" })];
 
-    render(
-      <ActivityList
-        type="viewing"
-        data={records}
-        onDelete={vi.fn()}
-        canEditSales={true}
-      />,
-    );
+    render(<ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={true} />);
 
     // 删除按钮存在（aria-label="删除" 或通过按钮元素）
     const deleteButtons = screen.getAllByRole("button");
@@ -224,17 +175,10 @@ describe("ActivityList - canEditSales 控制删除按钮显隐", () => {
   });
 
   it("canEditSales=false 时：viewing 视图不渲染删除按钮", () => {
-    const records: SalesRecord[] = [
-      makeRecord({ id: "r1", record_type: "viewing" }),
-    ];
+    const records: SalesRecord[] = [makeRecord({ id: "r1", record_type: "viewing" })];
 
     const { container } = render(
-      <ActivityList
-        type="viewing"
-        data={records}
-        onDelete={vi.fn()}
-        canEditSales={false}
-      />,
+      <ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={false} />,
     );
 
     // 无删除按钮（button 元素为 0）
@@ -242,9 +186,7 @@ describe("ActivityList - canEditSales 控制删除按钮显隐", () => {
   });
 
   it("canEditSales 默认为 false（未传 prop 时不显示删除按钮）", () => {
-    const records: SalesRecord[] = [
-      makeRecord({ id: "r1", record_type: "viewing" }),
-    ];
+    const records: SalesRecord[] = [makeRecord({ id: "r1", record_type: "viewing" })];
 
     render(
       <ActivityList
@@ -259,14 +201,7 @@ describe("ActivityList - canEditSales 控制删除按钮显隐", () => {
   });
 
   it("空数据时：渲染空状态提示", () => {
-    render(
-      <ActivityList
-        type="viewing"
-        data={[]}
-        onDelete={vi.fn()}
-        canEditSales={true}
-      />,
-    );
+    render(<ActivityList type="viewing" data={[]} onDelete={vi.fn()} canEditSales={true} />);
 
     expect(screen.getByText(/暂无带看记录/)).toBeInTheDocument();
   });

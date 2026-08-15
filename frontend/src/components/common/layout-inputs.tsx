@@ -134,8 +134,7 @@ export function LayoutInputs({
   return (
     <div className={cn(s.container, className)}>
       <label className={s.label}>
-        {label}{" "}
-        {showRequired && <span className={s.required}>*</span>}
+        {label} {showRequired && <span className={s.required}>*</span>}
       </label>
       <div className="flex items-center gap-2">
         {/* 室 */}

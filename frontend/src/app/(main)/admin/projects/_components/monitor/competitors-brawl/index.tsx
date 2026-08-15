@@ -31,10 +31,7 @@ function useIsMobile() {
   return isMobile;
 }
 
-export function CompetitorsBrawl({
-  projectId,
-  communityId,
-}: CompetitorsBrawlProps) {
+export function CompetitorsBrawl({ projectId, communityId }: CompetitorsBrawlProps) {
   const isMobile = useIsMobile();
   const {
     counts,
@@ -63,11 +60,7 @@ export function CompetitorsBrawl({
 
   return (
     <section className="mt-8 pb-10">
-      <SectionHeader
-        index="4"
-        title="竞品肉搏战 (明细对比)"
-        subtitle="Direct Competitors Brawl"
-      />
+      <SectionHeader index="4" title="竞品肉搏战 (明细对比)" subtitle="Direct Competitors Brawl" />
 
       <div className="px-6 space-y-4">
         <FilterBar

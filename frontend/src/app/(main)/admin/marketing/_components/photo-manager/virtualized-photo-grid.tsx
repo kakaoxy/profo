@@ -37,10 +37,7 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
   // 计算列数
   const columnCount = useMemo(() => {
     if (containerWidth === 0) return 5;
-    return Math.max(
-      2,
-      Math.floor(containerWidth / (GRID_CONFIG.minColumnWidth + GRID_CONFIG.gap))
-    );
+    return Math.max(2, Math.floor(containerWidth / (GRID_CONFIG.minColumnWidth + GRID_CONFIG.gap)));
   }, [containerWidth]);
 
   // 计算行数（简单计算，无需 useMemo）
@@ -69,7 +66,10 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
 
   // 使用 useMemo 计算可见范围，避免在 effect 中调用 setState
   const visibleRange = useMemo(() => {
-    const startRow = Math.max(0, Math.floor(scrollTop / (GRID_CONFIG.rowHeight + GRID_CONFIG.gap)) - GRID_CONFIG.overscan);
+    const startRow = Math.max(
+      0,
+      Math.floor(scrollTop / (GRID_CONFIG.rowHeight + GRID_CONFIG.gap)) - GRID_CONFIG.overscan,
+    );
     const visibleRowCount = Math.ceil(containerHeight / (GRID_CONFIG.rowHeight + GRID_CONFIG.gap));
     const endRow = Math.min(rowCount, startRow + visibleRowCount + GRID_CONFIG.overscan * 2);
 
@@ -123,12 +123,20 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
             width: containerWidth / columnCount - GRID_CONFIG.gap,
             height: GRID_CONFIG.rowHeight,
           }}
-        />
+        />,
       );
     }
 
     return items;
-  }, [visibleRange, photos, columnCount, selectedIds, existingPhotoUrls, onTogglePhoto, containerWidth]);
+  }, [
+    visibleRange,
+    photos,
+    columnCount,
+    selectedIds,
+    existingPhotoUrls,
+    onTogglePhoto,
+    containerWidth,
+  ]);
 
   if (loading) {
     return (
@@ -143,9 +151,7 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
   if (photos.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto p-6" ref={containerRef}>
-        <div className="flex items-center justify-center h-full text-graphite">
-          暂无照片
-        </div>
+        <div className="flex items-center justify-center h-full text-graphite">暂无照片</div>
       </div>
     );
   }

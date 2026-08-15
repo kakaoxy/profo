@@ -68,15 +68,8 @@ export function LedgerDetailStats({ data }: LedgerDetailStatsProps) {
           <Card key={c.label} className="p-4 bg-card border-border shadow-sm">
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-[11px] font-medium text-muted-foreground truncate">
-                  {c.label}
-                </p>
-                <p
-                  className={cn(
-                    "text-xl font-bold tabular-nums truncate",
-                    c.valueClass,
-                  )}
-                >
+                <p className="text-[11px] font-medium text-muted-foreground truncate">{c.label}</p>
+                <p className={cn("text-xl font-bold tabular-nums truncate", c.valueClass)}>
                   {c.value}
                 </p>
               </div>

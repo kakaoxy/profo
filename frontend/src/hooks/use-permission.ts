@@ -47,20 +47,11 @@ export interface UsePermissionReturn {
  * @returns 权限集合与判断函数
  */
 export function usePermission(): UsePermissionReturn {
-  const { data, isLoading } = useSWR<AuthMePermissionResponse>(
-    AUTH_ME_KEY,
-    fetcher,
-  );
+  const { data, isLoading } = useSWR<AuthMePermissionResponse>(AUTH_ME_KEY, fetcher);
 
-  const permissions = useMemo<string[]>(
-    () => data?.permissions ?? [],
-    [data],
-  );
+  const permissions = useMemo<string[]>(() => data?.permissions ?? [], [data]);
 
-  const roleCode = useMemo<string | null>(
-    () => data?.role?.code ?? null,
-    [data],
-  );
+  const roleCode = useMemo<string | null>(() => data?.role?.code ?? null, [data]);
 
   const hasPermission = useCallback(
     (code: string): boolean => permissions.includes(code),

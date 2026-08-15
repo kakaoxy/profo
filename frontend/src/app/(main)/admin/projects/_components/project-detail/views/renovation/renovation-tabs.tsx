@@ -21,10 +21,7 @@ const tabsConfig = [
   { value: "progress" as TabValue, label: "装修进度", icon: Camera },
 ] as const;
 
-export function RenovationTabs({
-  children,
-  defaultTab = "contract",
-}: RenovationTabsProps) {
+export function RenovationTabs({ children, defaultTab = "contract" }: RenovationTabsProps) {
   const [activeTab, setActiveTab] = useState<TabValue>(defaultTab);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -40,12 +37,12 @@ export function RenovationTabs({
       if (activeTab === "progress" && progressRef.current) {
         sessionStorage.setItem(
           `renovation-progress-scroll-${window.location.pathname}`,
-          String(progressRef.current.scrollTop)
+          String(progressRef.current.scrollTop),
         );
       } else if (activeTab === "contract" && contractRef.current) {
         sessionStorage.setItem(
           `renovation-contract-scroll-${window.location.pathname}`,
-          String(contractRef.current.scrollTop)
+          String(contractRef.current.scrollTop),
         );
       }
 
@@ -60,14 +57,14 @@ export function RenovationTabs({
         requestAnimationFrame(() => {
           if (newTab === "progress" && progressRef.current) {
             const savedScroll = sessionStorage.getItem(
-              `renovation-progress-scroll-${window.location.pathname}`
+              `renovation-progress-scroll-${window.location.pathname}`,
             );
             if (savedScroll) {
               progressRef.current.scrollTop = parseInt(savedScroll, 10);
             }
           } else if (newTab === "contract" && contractRef.current) {
             const savedScroll = sessionStorage.getItem(
-              `renovation-contract-scroll-${window.location.pathname}`
+              `renovation-contract-scroll-${window.location.pathname}`,
             );
             if (savedScroll) {
               contractRef.current.scrollTop = parseInt(savedScroll, 10);
@@ -81,17 +78,13 @@ export function RenovationTabs({
         });
       }, 150);
     },
-    [activeTab]
+    [activeTab],
   );
 
   return (
     <div className="space-y-6">
       {/* 标签页导航 */}
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="w-full"
-      >
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           {tabsConfig.map((tab) => (
             <TabsTrigger
@@ -110,9 +103,7 @@ export function RenovationTabs({
       <div
         className={cn(
           "relative min-h-[400px] transition-all duration-200 ease-out",
-          isTransitioning
-            ? "opacity-0 translate-y-2"
-            : "opacity-100 translate-y-0"
+          isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0",
         )}
       >
         {children({

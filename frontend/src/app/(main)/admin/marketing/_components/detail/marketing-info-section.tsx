@@ -11,7 +11,10 @@ import type { MarketingInfoSectionProps } from "./types";
 import type { L4MarketingMedia, L4MarketingProject } from "@/app/(main)/admin/marketing/types";
 
 // 获取营销主图（MARKETING分类首图，无营销照片时使用改造照片第一张）
-function getMarketingMainImage(project: L4MarketingProject, photos: L4MarketingMedia[]): string | null {
+function getMarketingMainImage(
+  project: L4MarketingProject,
+  photos: L4MarketingMedia[],
+): string | null {
   // 优先从 photos 中找 marketing 分类的第一张
   const marketingPhoto = photos
     .filter((p) => p.photo_category === "marketing")
@@ -65,10 +68,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
   project,
   photos = [],
 }: MarketingInfoSectionProps & { photos?: L4MarketingMedia[] }) {
-  const mainImage = useMemo(
-    () => getMarketingMainImage(project, photos),
-    [project, photos]
-  );
+  const mainImage = useMemo(() => getMarketingMainImage(project, photos), [project, photos]);
 
   // 缓存标签渲染 - 后端直接返回数组
   const tagsContent = useMemo(() => {
@@ -92,85 +92,65 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
   return (
     <div className="bg-white rounded-cards shadow-steep-sm p-6">
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
-      {/* 左侧：营销主图 */}
-      <div className="relative">
-        <div className="aspect-4/3 rounded-images overflow-hidden bg-fog relative">
-          {mainImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={mainImage}
-              alt="营销主图"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-              <ImageOff className="w-12 h-12 mb-2 opacity-50" />
-              <span className="text-sm">暂无主图</span>
+        {/* 左侧：营销主图 */}
+        <div className="relative">
+          <div className="aspect-4/3 rounded-images overflow-hidden bg-fog relative">
+            {mainImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={mainImage}
+                alt="营销主图"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                <ImageOff className="w-12 h-12 mb-2 opacity-50" />
+                <span className="text-sm">暂无主图</span>
+              </div>
+            )}
+          </div>
+          <div className="absolute bottom-2 left-2">
+            <Badge className="bg-ink/70 text-white text-xs border-0">营销主图</Badge>
+          </div>
+        </div>
+
+        {/* 右侧：房源信息 */}
+        <div className="space-y-2">
+          {/* 第一行：总价和单价 */}
+          <InfoRow
+            label="总价"
+            value={project.total_price ? `${project.total_price.toLocaleString()}万` : "-"}
+            highlight
+          />
+          <InfoRow label="单价" value={formatUnitPrice(project.unit_price)} />
+
+          <Divider />
+
+          {/* 第二行：户型、面积、楼层、朝向 */}
+          <InfoRow label="户型" value={project.layout} />
+          <InfoRow label="建筑面积" value={formatArea(project.area)} />
+          <InfoRow label="楼层" value={project.floor_info} />
+          <InfoRow label="朝向" value={project.orientation} />
+
+          <Divider />
+
+          {/* 第三行：装修风格和标签 */}
+          <InfoRow label="装修风格" value={project.decoration_style} />
+          {tagsContent && (
+            <div className="flex items-start justify-between py-2">
+              <span className="text-xs text-graphite pt-0.5">标签</span>
+              <div className="text-right max-w-[70%]">{tagsContent}</div>
             </div>
           )}
+
+          <Divider />
+
+          {/* 第四行：创建时间 */}
+          <InfoRow
+            label="创建时间"
+            value={safeParseDate(project.created_at)?.toLocaleDateString("zh-CN") ?? "-"}
+          />
         </div>
-        <div className="absolute bottom-2 left-2">
-          <Badge className="bg-ink/70 text-white text-xs border-0">
-            营销主图
-          </Badge>
-        </div>
-      </div>
-
-      {/* 右侧：房源信息 */}
-      <div className="space-y-2">
-        {/* 第一行：总价和单价 */}
-        <InfoRow
-          label="总价"
-          value={project.total_price ? `${project.total_price.toLocaleString()}万` : "-"}
-          highlight
-        />
-        <InfoRow
-          label="单价"
-          value={formatUnitPrice(project.unit_price)}
-        />
-
-        <Divider />
-
-        {/* 第二行：户型、面积、楼层、朝向 */}
-        <InfoRow
-          label="户型"
-          value={project.layout}
-        />
-        <InfoRow
-          label="建筑面积"
-          value={formatArea(project.area)}
-        />
-        <InfoRow
-          label="楼层"
-          value={project.floor_info}
-        />
-        <InfoRow
-          label="朝向"
-          value={project.orientation}
-        />
-
-        <Divider />
-
-        {/* 第三行：装修风格和标签 */}
-        <InfoRow
-          label="装修风格"
-          value={project.decoration_style}
-        />
-        {tagsContent && (
-          <div className="flex items-start justify-between py-2">
-            <span className="text-xs text-graphite pt-0.5">标签</span>
-            <div className="text-right max-w-[70%]">{tagsContent}</div>
-          </div>
-        )}
-
-        <Divider />
-
-        {/* 第四行：创建时间 */}
-        <InfoRow
-          label="创建时间"
-          value={safeParseDate(project.created_at)?.toLocaleDateString("zh-CN") ?? "-"}
-        />
-      </div>
       </div>
     </div>
   );

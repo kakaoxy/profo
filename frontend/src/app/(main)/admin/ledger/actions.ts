@@ -5,26 +5,27 @@ import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import { logger } from "@/lib/logger";
 import type { components, paths } from "@/lib/api-types";
-import { createRecordSchema, projectIdSchema, recordIdSchema, settleLedgerSchema, unsettleLedgerSchema, updateRecordSchema } from "./_components/ledger-schema";
+import {
+  createRecordSchema,
+  projectIdSchema,
+  recordIdSchema,
+  settleLedgerSchema,
+  unsettleLedgerSchema,
+  updateRecordSchema,
+} from "./_components/ledger-schema";
 
 type LedgerListResponse = components["schemas"]["LedgerListResponse"];
 type LedgerStatsResponse = components["schemas"]["LedgerStatsResponse"];
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
 type LedgerRecordCreate = components["schemas"]["LedgerRecordCreate"];
 type FinanceLogResponse = components["schemas"]["FinanceLogResponse"];
-type FinanceSettlementChangeRequest =
-  components["schemas"]["FinanceSettlementChangeRequest"];
+type FinanceSettlementChangeRequest = components["schemas"]["FinanceSettlementChangeRequest"];
 type FinanceUnsettleRequest = components["schemas"]["FinanceUnsettleRequest"];
-type FinanceSettlementResponse =
-  components["schemas"]["FinanceSettlementResponse"];
-type ProjectLedgerStatisticsResponse =
-  components["schemas"]["ProjectLedgerStatisticsResponse"];
-type ReceivablePayableResponse =
-  components["schemas"]["ReceivablePayableResponse"];
+type FinanceSettlementResponse = components["schemas"]["FinanceSettlementResponse"];
+type ProjectLedgerStatisticsResponse = components["schemas"]["ProjectLedgerStatisticsResponse"];
+type ReceivablePayableResponse = components["schemas"]["ReceivablePayableResponse"];
 
-type LedgerListQuery = NonNullable<
-  paths["/api/v1/admin/ledger"]["get"]["parameters"]["query"]
->;
+type LedgerListQuery = NonNullable<paths["/api/v1/admin/ledger"]["get"]["parameters"]["query"]>;
 
 export interface LedgerListParams {
   search?: string;
@@ -33,9 +34,7 @@ export interface LedgerListParams {
   page_size?: number;
 }
 
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; message: string };
+export type ActionResult<T> = { success: true; data: T } | { success: false; message: string };
 
 /**
  * 获取资金账本项目列表（Server Action，供客户端组件刷新使用）
@@ -53,8 +52,7 @@ export async function fetchLedgerList(
       query.search = params.search.trim();
     }
     if (params.project_status && params.project_status !== "all") {
-      query.project_status =
-        params.project_status as LedgerListQuery["project_status"];
+      query.project_status = params.project_status as LedgerListQuery["project_status"];
     }
 
     const { data, error } = await client.GET("/api/v1/admin/ledger", {
@@ -154,10 +152,9 @@ export async function deleteRecord(
   }
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE(
-      "/api/v1/admin/ledger/{record_id}",
-      { params: { path: { record_id: recordId } } },
-    );
+    const { error } = await client.DELETE("/api/v1/admin/ledger/{record_id}", {
+      params: { path: { record_id: recordId } },
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "删除流水记录失败";
@@ -204,13 +201,10 @@ export async function updateRecordAction(
   }
   try {
     const client = await fetchClient();
-    const { data: resData, error } = await client.PATCH(
-      "/api/v1/admin/ledger/{record_id}",
-      {
-        params: { path: { record_id: recordId } },
-        body: payload,
-      },
-    );
+    const { data: resData, error } = await client.PATCH("/api/v1/admin/ledger/{record_id}", {
+      params: { path: { record_id: recordId } },
+      body: payload,
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "更新流水记录失败";
@@ -233,15 +227,12 @@ export async function updateRecordAction(
  *
  * @param projectId 项目ID
  */
-export async function fetchLogs(
-  projectId: string,
-): Promise<ActionResult<FinanceLogResponse[]>> {
+export async function fetchLogs(projectId: string): Promise<ActionResult<FinanceLogResponse[]>> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/admin/ledger/{project_id}/logs",
-      { params: { path: { project_id: projectId } } },
-    );
+    const { data, error } = await client.GET("/api/v1/admin/ledger/{project_id}/logs", {
+      params: { path: { project_id: projectId } },
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "获取操作日志失败";
@@ -268,10 +259,9 @@ export async function fetchProjectStatistics(
 ): Promise<ActionResult<ProjectLedgerStatisticsResponse>> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/admin/ledger/{project_id}/statistics",
-      { params: { path: { project_id: projectId } } },
-    );
+    const { data, error } = await client.GET("/api/v1/admin/ledger/{project_id}/statistics", {
+      params: { path: { project_id: projectId } },
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "获取统计数据失败";
@@ -344,10 +334,10 @@ export async function settleProjectLedger(
   }
   try {
     const client = await fetchClient();
-    const { data: resData, error } = await client.POST(
-      "/api/v1/admin/ledger/{project_id}/settle",
-      { params: { path: { project_id: projectId } }, body: data },
-    );
+    const { data: resData, error } = await client.POST("/api/v1/admin/ledger/{project_id}/settle", {
+      params: { path: { project_id: projectId } },
+      body: data,
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "结算失败";

@@ -2,13 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { parseAsString, useQueryState } from "nuqs";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,13 +22,10 @@ import {
 import type { DistributionBucket } from "../../_lib/types";
 
 // 动态加载 recharts 渲染器：ssr: false，确保 recharts 仅在客户端以单一 chunk 加载
-const DistributionRenderer = dynamic(
-  () => import("./distribution-renderer"),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[300px] w-full" />,
-  },
-);
+const DistributionRenderer = dynamic(() => import("./distribution-renderer"), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[300px] w-full" />,
+});
 
 interface DistributionChartProps {
   /** 卡片标题，如 "成交价格分布图" / "户型分布图" / "楼层分布图" */
@@ -54,10 +45,7 @@ export function DistributionChart({
   total,
   viewKey,
 }: DistributionChartProps) {
-  const [view, setView] = useQueryState(
-    viewKey,
-    parseAsString.withDefault("chart"),
-  );
+  const [view, setView] = useQueryState(viewKey, parseAsString.withDefault("chart"));
 
   return (
     <Card>
@@ -100,17 +88,11 @@ export function DistributionChart({
               {buckets.map((bucket) => (
                 <TableRow key={bucket.label}>
                   <TableCell>{bucket.label}</TableCell>
+                  <TableCell className="text-right">{formatCount(bucket.count)}</TableCell>
                   <TableCell className="text-right">
-                    {formatCount(bucket.count)}
+                    {total > 0 ? formatPercent((bucket.count / total) * 100) : "0.0%"}
                   </TableCell>
-                  <TableCell className="text-right">
-                    {total > 0
-                      ? formatPercent((bucket.count / total) * 100)
-                      : "0.0%"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatAreaSqm(bucket.avg_area)}
-                  </TableCell>
+                  <TableCell className="text-right">{formatAreaSqm(bucket.avg_area)}</TableCell>
                   <TableCell className="text-right">
                     {formatUnitPriceYuan(bucket.avg_unit_price)}
                   </TableCell>

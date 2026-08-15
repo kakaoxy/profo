@@ -36,15 +36,12 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
   const { data: suggestions, isLoading } = useSWR<CommunitySuggestion[]>(
     mounted && debouncedQuery.trim()
       ? `/api/v1/public/communities/search?q=${encodeURIComponent(debouncedQuery.trim())}&limit=5`
-      : null
+      : null,
   );
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsDropdownOpen(false);
       }
     }
@@ -60,7 +57,7 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
       debouncedSearch(value);
       setIsDropdownOpen(value.trim().length > 0);
     },
-    [debouncedSetQuery, debouncedSearch]
+    [debouncedSetQuery, debouncedSearch],
   );
 
   const handleSuggestionClick = useCallback(
@@ -71,7 +68,7 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
       onSearchChange(suggestion.name);
       inputRef.current?.focus();
     },
-    [onSearchChange]
+    [onSearchChange],
   );
 
   const handleFocus = useCallback(() => {
@@ -80,8 +77,7 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
     }
   }, [inputValue]);
 
-  const showDropdown =
-    isDropdownOpen && inputValue.trim().length > 0;
+  const showDropdown = isDropdownOpen && inputValue.trim().length > 0;
 
   return (
     <div ref={containerRef} className="relative">
@@ -126,9 +122,7 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
               ))}
             </ul>
           ) : (
-            <div className="px-4 py-3 text-sm text-graphite text-center">
-              未找到相关小区
-            </div>
+            <div className="px-4 py-3 text-sm text-graphite text-center">未找到相关小区</div>
           )}
         </div>
       )}

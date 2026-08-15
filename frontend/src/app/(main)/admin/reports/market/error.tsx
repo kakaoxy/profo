@@ -8,12 +8,7 @@
  */
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -26,17 +21,12 @@ export default function MarketReportsError({ reset }: ErrorProps) {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertCircle
-              className="size-5 text-destructive"
-              aria-hidden="true"
-            />
+            <AlertCircle className="size-5 text-destructive" aria-hidden="true" />
             <span>出错了</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            页面加载失败，请稍后重试
-          </p>
+          <p className="text-sm text-muted-foreground">页面加载失败，请稍后重试</p>
           <Button onClick={reset}>重试</Button>
         </CardContent>
       </Card>

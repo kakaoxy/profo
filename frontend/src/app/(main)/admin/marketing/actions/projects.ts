@@ -44,12 +44,36 @@ const l4ProjectCreateSchema = z.object({
 const l4ProjectUpdateSchema = z.object({
   community_id: z.string().min(1, "请选择小区").nullable().optional(),
   community_name: z.string().trim().max(200, "小区名称最多200个字符").nullable().optional(),
-  layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符").nullable().optional(),
-  orientation: z.string().trim().min(1, "朝向不能为空").max(50, "朝向最多50个字符").nullable().optional(),
-  floor_info: z.string().trim().min(1, "楼层信息不能为空").max(100, "楼层信息最多100个字符").nullable().optional(),
+  layout: z
+    .string()
+    .trim()
+    .min(1, "户型不能为空")
+    .max(100, "户型最多100个字符")
+    .nullable()
+    .optional(),
+  orientation: z
+    .string()
+    .trim()
+    .min(1, "朝向不能为空")
+    .max(50, "朝向最多50个字符")
+    .nullable()
+    .optional(),
+  floor_info: z
+    .string()
+    .trim()
+    .min(1, "楼层信息不能为空")
+    .max(100, "楼层信息最多100个字符")
+    .nullable()
+    .optional(),
   area: z.number().positive("面积必须大于0").nullable().optional(),
   total_price: z.number().positive("总价必须大于0").nullable().optional(),
-  title: z.string().trim().min(1, "标题不能为空").max(255, "标题最多255个字符").nullable().optional(),
+  title: z
+    .string()
+    .trim()
+    .min(1, "标题不能为空")
+    .max(255, "标题最多255个字符")
+    .nullable()
+    .optional(),
   images: z.array(z.string()).nullable().optional(),
   sort_order: z.number().int().min(0, "排序权重不能小于0").nullable().optional(),
   tags: z.array(z.string()).nullable().optional(),
@@ -94,24 +118,23 @@ export async function getL4MarketingProjectsAction(
   projectStatus?: string,
   consultantId?: string,
   communityId?: string,
-): Promise<ActionResult<{ items: L4MarketingProject[]; total: number; page: number; page_size: number }>> {
+): Promise<
+  ActionResult<{ items: L4MarketingProject[]; total: number; page: number; page_size: number }>
+> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/admin/marketing/projects",
-      {
-        params: {
-          query: {
-            page,
-            page_size: pageSize,
-            publish_status: publishStatus,
-            project_status: projectStatus,
-            consultant_id: consultantId,
-            community_id: communityId,
-          },
+    const { data, error } = await client.GET("/api/v1/admin/marketing/projects", {
+      params: {
+        query: {
+          page,
+          page_size: pageSize,
+          publish_status: publishStatus,
+          project_status: projectStatus,
+          consultant_id: consultantId,
+          community_id: communityId,
         },
       },
-    );
+    });
 
     if (error) {
       logger.error("Failed to fetch L4 marketing projects:", error);
@@ -145,12 +168,9 @@ export async function createL4MarketingProjectAction(
   }
   try {
     const client = await fetchClient();
-    const { data, error } = await client.POST(
-      "/api/v1/admin/marketing/projects",
-      {
-        body,
-      },
-    );
+    const { data, error } = await client.POST("/api/v1/admin/marketing/projects", {
+      body,
+    });
 
     if (error) {
       logger.error("Failed to create L4 marketing project:", error);
@@ -172,15 +192,14 @@ export async function createL4MarketingProjectAction(
 /**
  * 获取营销项目详情
  */
-export async function getL4MarketingProjectAction(id: number): Promise<ActionResult<L4MarketingProject>> {
+export async function getL4MarketingProjectAction(
+  id: number,
+): Promise<ActionResult<L4MarketingProject>> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/admin/marketing/projects/{project_id}",
-      {
-        params: { path: { project_id: id } },
-      },
-    );
+    const { data, error } = await client.GET("/api/v1/admin/marketing/projects/{project_id}", {
+      params: { path: { project_id: id } },
+    });
 
     if (error) {
       logger.error("Failed to fetch L4 marketing project:", error);
@@ -219,13 +238,10 @@ export async function updateL4MarketingProjectAction(
   }
   try {
     const client = await fetchClient();
-    const { data, error } = await client.PUT(
-      "/api/v1/admin/marketing/projects/{project_id}",
-      {
-        params: { path: { project_id: id } },
-        body,
-      },
-    );
+    const { data, error } = await client.PUT("/api/v1/admin/marketing/projects/{project_id}", {
+      params: { path: { project_id: id } },
+      body,
+    });
 
     if (error) {
       logger.error("Failed to update L4 marketing project:", error);
@@ -259,12 +275,9 @@ export async function deleteL4MarketingProjectAction(id: number): Promise<Action
   }
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE(
-      "/api/v1/admin/marketing/projects/{project_id}",
-      {
-        params: { path: { project_id: id } },
-      },
-    );
+    const { error } = await client.DELETE("/api/v1/admin/marketing/projects/{project_id}", {
+      params: { path: { project_id: id } },
+    });
 
     if (error) {
       logger.error("Failed to delete L4 marketing project:", error);

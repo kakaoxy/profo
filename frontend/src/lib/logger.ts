@@ -110,7 +110,7 @@ class Logger {
   private processLog(
     level: LogLevel,
     message: string,
-    data?: unknown
+    data?: unknown,
   ): { message: string; data?: unknown } {
     if (!this.config.isDevelopment) {
       // 生产环境：脱敏所有数据
@@ -147,19 +147,16 @@ class Logger {
     let errData: unknown;
     if (typeof message === "string") {
       msg = message;
-      errData = extra.length === 0
-        ? undefined
-        : extra.length === 1
-          ? extra[0]
-          : extra;
+      errData = extra.length === 0 ? undefined : extra.length === 1 ? extra[0] : extra;
     } else {
       msg = "发生错误";
       errData = message;
     }
     // 错误日志中永远不要包含敏感信息
-    const safeError = errData instanceof Error
-      ? { name: errData.name, message: errData.message }
-      : maskSensitiveData(errData);
+    const safeError =
+      errData instanceof Error
+        ? { name: errData.name, message: errData.message }
+        : maskSensitiveData(errData);
     console.error(`[ERROR] ${msg}`, safeError);
   }
 

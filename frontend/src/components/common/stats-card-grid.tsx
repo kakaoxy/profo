@@ -24,12 +24,7 @@ const columnsMap: Record<number, string> = {
 
 export function StatsCardGrid({ items, columns = 4 }: StatsCardGridProps) {
   return (
-    <div
-      className={cn(
-        "grid gap-4 grid-cols-2",
-        columnsMap[columns] || "lg:grid-cols-4"
-      )}
-    >
+    <div className={cn("grid gap-4 grid-cols-2", columnsMap[columns] || "lg:grid-cols-4")}>
       {items.map((item, index) => {
         const Icon = item.icon;
         return (
@@ -41,12 +36,8 @@ export function StatsCardGrid({ items, columns = 4 }: StatsCardGridProps) {
           >
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">
-                  {item.label}
-                </p>
-                <p className="text-2xl font-bold text-foreground tabular-nums">
-                  {item.value}
-                </p>
+                <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+                <p className="text-2xl font-bold text-foreground tabular-nums">{item.value}</p>
               </div>
               <div
                 className={`h-10 w-10 rounded-full flex items-center justify-center ${item.color} text-white`}

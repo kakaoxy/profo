@@ -110,9 +110,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
       });
 
   // 图片加载状态
-  const { status: imageStatus } = useSimpleImageLoader(
-    isVisible && !isVideo ? optimizedUrl : null
-  );
+  const { status: imageStatus } = useSimpleImageLoader(isVisible && !isVideo ? optimizedUrl : null);
 
   // 处理删除
   const handleDelete = useCallback(() => {
@@ -132,7 +130,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
         "flex items-center gap-3 rounded-lg border bg-card p-3",
         "hover:bg-fog transition-colors",
         isDragging && "shadow-lg ring-2 ring-rust opacity-90",
-        className
+        className,
       )}
     >
       {/* 拖拽手柄 */}
@@ -175,7 +173,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
                   alt={photo.description || `照片 #${photo.id}`}
                   className={cn(
                     "w-full h-full object-cover transition-opacity duration-300",
-                    imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+                    imageStatus === "loaded" ? "opacity-100" : "opacity-0",
                   )}
                   loading="lazy"
                   decoding="async"
@@ -214,20 +212,13 @@ export const BasePhotoItem = memo(function BasePhotoItem({
 
       {/* 信息区域 */}
       <div className="flex-1 min-w-0 overflow-hidden" onClick={handleClick}>
-        <p className="text-xs font-medium text-ink truncate">
-          照片 #{photo.id}
-        </p>
-        {stageLabel && (
-          <p className="text-xs text-graphite truncate">{stageLabel}</p>
-        )}
+        <p className="text-xs font-medium text-ink truncate">照片 #{photo.id}</p>
+        {stageLabel && <p className="text-xs text-graphite truncate">{stageLabel}</p>}
       </div>
 
       {/* 序号徽章 */}
       {showIndexBadge && (
-        <Badge
-          variant="outline"
-          className="rounded-md border-dove/40 text-graphite shrink-0"
-        >
+        <Badge variant="outline" className="rounded-md border-dove/40 text-graphite shrink-0">
           #{index + 1}
         </Badge>
       )}

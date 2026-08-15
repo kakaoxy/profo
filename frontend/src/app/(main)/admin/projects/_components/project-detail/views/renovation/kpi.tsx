@@ -41,21 +41,18 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
       return RENOVATION_STAGES.length;
     }
     const idx = RENOVATION_STAGES.findIndex(
-      (s) => s.value === project.renovation_stage || s.key === project.renovation_stage
+      (s) => s.value === project.renovation_stage || s.key === project.renovation_stage,
     );
     return idx === -1 ? 0 : idx;
   })();
 
-  const currentStageLabel = currentIndex < RENOVATION_STAGES.length 
-    ? RENOVATION_STAGES[currentIndex].label 
-    : "已完成";
+  const currentStageLabel =
+    currentIndex < RENOVATION_STAGES.length ? RENOVATION_STAGES[currentIndex].label : "已完成";
 
   // 3. 计算总体进度（按已完成阶段数计算，支持无序完成）
   const progressValue = (() => {
     const stageDates = project.renovationStageDates ?? {};
-    const completedCount = RENOVATION_STAGES.filter(
-      (s) => !!stageDates[s.value],
-    ).length;
+    const completedCount = RENOVATION_STAGES.filter((s) => !!stageDates[s.value]).length;
     return Math.round((completedCount / RENOVATION_STAGES.length) * 100);
   })();
 
@@ -84,15 +81,10 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
       {/* 卡片 1: 交付倒计时 */}
       <Card className="shadow-sm">
         <CardContent className="p-4 flex flex-col justify-between h-full">
-          <span className="text-xs text-muted-foreground font-medium">
-            交付倒计时
-          </span>
+          <span className="text-xs text-muted-foreground font-medium">交付倒计时</span>
           <div>
             <div className={cn("text-2xl font-bold font-mono", daysColor)}>
-              {daysLeft}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                天
-              </span>
+              {daysLeft} <span className="text-xs font-normal text-muted-foreground">天</span>
             </div>
             <div className="text-[10px] text-muted-foreground mt-1">
               截止: {deadlineDate.toLocaleDateString()}
@@ -104,21 +96,15 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
       {/* 卡片 2: 当前阶段 */}
       <Card className="shadow-sm border-orange-100 bg-status-renovating/10/30">
         <CardContent className="p-4 flex flex-col justify-between h-full">
-          <span className="text-xs text-muted-foreground font-medium">
-            当前阶段
-          </span>
+          <span className="text-xs text-muted-foreground font-medium">当前阶段</span>
           <div className="space-y-1">
-            <div className="text-xl font-bold text-foreground">
-              {currentStageLabel}
-            </div>
+            <div className="text-xl font-bold text-foreground">{currentStageLabel}</div>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-status-renovating"></span>
               </span>
-              <span className="text-xs text-status-renovating font-medium">
-                进行中
-              </span>
+              <span className="text-xs text-status-renovating font-medium">进行中</span>
             </div>
           </div>
         </CardContent>
@@ -127,13 +113,9 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
       {/* 卡片 3: 总体进度 */}
       <Card className="shadow-sm">
         <CardContent className="p-4 flex flex-col justify-between h-full">
-          <span className="text-xs text-muted-foreground font-medium">
-            总体进度
-          </span>
+          <span className="text-xs text-muted-foreground font-medium">总体进度</span>
           <div>
-            <div className="text-2xl font-bold text-foreground mb-1">
-              {progressValue}%
-            </div>
+            <div className="text-2xl font-bold text-foreground mb-1">{progressValue}%</div>
             <Progress
               value={progressValue}
               className="h-2 bg-muted"
@@ -146,16 +128,11 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
       {/* 卡片 4: 现场相册 */}
       <Card className="shadow-sm hover:bg-muted cursor-pointer transition-colors group">
         <CardContent className="p-4 flex flex-col justify-between h-full">
-          <span className="text-xs text-muted-foreground font-medium">
-            现场相册
-          </span>
+          <span className="text-xs text-muted-foreground font-medium">现场相册</span>
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold text-foreground">
               {/* 显示计算出来的 photoCount */}
-              {photoCount}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                张
-              </span>
+              {photoCount} <span className="text-xs font-normal text-muted-foreground">张</span>
             </div>
             <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-card group-hover:shadow-sm transition-all">
               <ImageIcon className="h-4 w-4 text-muted-foreground" />

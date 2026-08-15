@@ -34,10 +34,7 @@ export default function CPage() {
             <Skeleton className="h-12 w-full" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="overflow-hidden rounded-cards bg-white shadow-steep-sm"
-                >
+                <div key={i} className="overflow-hidden rounded-cards bg-white shadow-steep-sm">
                   <Skeleton className="aspect-video w-full" />
                   <div className="space-y-3 p-5">
                     <Skeleton className="h-5 w-3/4" />
@@ -58,35 +55,32 @@ export default function CPage() {
 function CPageContent() {
   const [page, setPage] = useQueryState(
     "page",
-    parseAsInteger.withDefault(1).withOptions({ shallow: true })
+    parseAsInteger.withDefault(1).withOptions({ shallow: true }),
   );
   const [status, setStatus] = useQueryState(
     "status",
-    parseAsString.withDefault("").withOptions({ shallow: true })
+    parseAsString.withDefault("").withOptions({ shallow: true }),
   );
   const [search, setSearch] = useQueryState(
     "search",
-    parseAsString.withDefault("").withOptions({ shallow: true })
+    parseAsString.withDefault("").withOptions({ shallow: true }),
   );
   const [minPrice, setMinPrice] = useQueryState(
     "min_price",
-    parseAsString.withOptions({ shallow: true })
+    parseAsString.withOptions({ shallow: true }),
   );
   const [maxPrice, setMaxPrice] = useQueryState(
     "max_price",
-    parseAsString.withOptions({ shallow: true })
+    parseAsString.withOptions({ shallow: true }),
   );
-  const [layout, setLayout] = useQueryState(
-    "layout",
-    parseAsString.withOptions({ shallow: true })
-  );
+  const [layout, setLayout] = useQueryState("layout", parseAsString.withOptions({ shallow: true }));
   const [minArea, setMinArea] = useQueryState(
     "min_area",
-    parseAsString.withOptions({ shallow: true })
+    parseAsString.withOptions({ shallow: true }),
   );
   const [maxArea, setMaxArea] = useQueryState(
     "max_area",
-    parseAsString.withOptions({ shallow: true })
+    parseAsString.withOptions({ shallow: true }),
   );
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -113,18 +107,16 @@ function CPageContent() {
 
   const url = `/api/v1/public/projects?${searchParams.toString()}`;
 
-  const { data, error, isLoading, mutate } = useSWR<ProjectListResponse>(
-    url,
-    publicFetcher,
-    { keepPreviousData: true }
-  );
+  const { data, error, isLoading, mutate } = useSWR<ProjectListResponse>(url, publicFetcher, {
+    keepPreviousData: true,
+  });
 
   const handleStatusChange = useCallback(
     (newStatus: string) => {
       setStatus(newStatus);
       setPage(1);
     },
-    [setStatus, setPage]
+    [setStatus, setPage],
   );
 
   const handleSearchChange = useCallback(
@@ -132,7 +124,7 @@ function CPageContent() {
       setSearch(value);
       setPage(1);
     },
-    [setSearch, setPage]
+    [setSearch, setPage],
   );
 
   const hasActiveFilters = !!(minPrice || maxPrice || layout || minArea || maxArea);
@@ -147,7 +139,7 @@ function CPageContent() {
       setPage(1);
       setIsFilterOpen(false);
     },
-    [setMinPrice, setMaxPrice, setLayout, setMinArea, setMaxArea, setPage]
+    [setMinPrice, setMaxPrice, setLayout, setMinArea, setMaxArea, setPage],
   );
 
   const handleFilterReset = useCallback(() => {
@@ -229,9 +221,7 @@ function CPageContent() {
         {/* Filter panel */}
         <div
           className={`grid transition-all duration-300 ease-in-out ${
-            isFilterOpen
-              ? "grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
+            isFilterOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           }`}
         >
           <div className="overflow-hidden">
@@ -252,11 +242,7 @@ function CPageContent() {
 
         {/* Status tabs + result count */}
         <nav className="mb-8">
-          <StatusTabs
-            value={status}
-            onStatusChange={handleStatusChange}
-            total={data?.total}
-          />
+          <StatusTabs value={status} onStatusChange={handleStatusChange} total={data?.total} />
         </nav>
 
         {/* Project grid */}
@@ -264,10 +250,7 @@ function CPageContent() {
           {isLoading && !data ? (
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="overflow-hidden rounded-cards bg-white shadow-steep-sm"
-                >
+                <div key={i} className="overflow-hidden rounded-cards bg-white shadow-steep-sm">
                   <Skeleton className="aspect-video w-full" />
                   <div className="space-y-3 p-5">
                     <Skeleton className="h-5 w-3/4" />
@@ -313,11 +296,7 @@ function CPageContent() {
                 ))}
               </div>
 
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
+              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
             </>
           )}
         </section>

@@ -35,9 +35,7 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
     <div className="bg-white rounded-cards shadow-steep overflow-hidden">
       <div className="flex items-center justify-between px-6 py-5 border-b border-fog">
         <div>
-          <div className="text-[15px] font-medium text-ink">
-            员工维度 · 拉新贡献
-          </div>
+          <div className="text-[15px] font-medium text-ink">员工维度 · 拉新贡献</div>
           <div className="mt-0.5 text-[13px] text-graphite">
             点击员工行可下钻至该员工的完整漏斗与线索明细
           </div>
@@ -67,10 +65,8 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
           </thead>
           <tbody>
             {rows.map((row) => {
-              const { share_count, pv, deep_view, clicked_auth, authed, valid_leads } =
-                row.data;
-              const conversion =
-                share_count > 0 ? (valid_leads / share_count) * 100 : 0;
+              const { share_count, pv, deep_view, clicked_auth, authed, valid_leads } = row.data;
+              const conversion = share_count > 0 ? (valid_leads / share_count) * 100 : 0;
               const highlight = conversion >= CONVERSION_HIGHLIGHT * 100;
               return (
                 <tr
@@ -83,9 +79,7 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
                     <div className="font-medium text-ink whitespace-nowrap">
                       {row.employee.name}
                     </div>
-                    <div className="mt-0.5 text-[12.5px] text-graphite">
-                      {row.employee.id}
-                    </div>
+                    <div className="mt-0.5 text-[12.5px] text-graphite">{row.employee.id}</div>
                   </td>
                   <td className="px-5 py-3.5 border-b border-fog align-middle tabular-nums">
                     {share_count}
@@ -103,16 +97,12 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
                     {authed}
                   </td>
                   <td className="px-5 py-3.5 border-b border-fog align-middle">
-                    <b className="font-medium text-ink tabular-nums">
-                      {valid_leads}
-                    </b>
+                    <b className="font-medium text-ink tabular-nums">{valid_leads}</b>
                   </td>
                   <td className="px-5 py-3.5 border-b border-fog align-middle">
                     <span
                       className={`${badgeBase} ${
-                        highlight
-                          ? RECRUIT_BADGE_CLASS.apricot
-                          : RECRUIT_BADGE_CLASS.neutral
+                        highlight ? RECRUIT_BADGE_CLASS.apricot : RECRUIT_BADGE_CLASS.neutral
                       }`}
                     >
                       {conversion.toFixed(1)}%
@@ -125,11 +115,7 @@ export function FunnelEmployees({ rows }: FunnelEmployeesProps) {
         </table>
       </div>
 
-      <DesignPagination
-        info={`共 ${rows.length} 名员工参与分享`}
-        page={1}
-        totalPages={1}
-      />
+      <DesignPagination info={`共 ${rows.length} 名员工参与分享`} page={1} totalPages={1} />
     </div>
   );
 }

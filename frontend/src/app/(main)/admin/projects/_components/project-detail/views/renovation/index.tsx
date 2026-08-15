@@ -16,11 +16,7 @@ import { RenovationContractForm } from "./contract-form";
 import { RenovationTabs } from "./renovation-tabs";
 import { StatusTransitionDialog } from "../../status-transition-dialog";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -34,7 +30,9 @@ interface RenovationViewProps {
 export function RenovationView({ project, onRefresh, onListingSuccess }: RenovationViewProps) {
   const [listingDate, setListingDate] = useState<Date | undefined>(undefined);
   const [listPrice, setListPrice] = useState<string>("");
-  useEffect(() => { setListingDate(new Date()); }, []);
+  useEffect(() => {
+    setListingDate(new Date());
+  }, []);
 
   // 定义完工逻辑
   const handleCompletion = async () => {
@@ -44,7 +42,7 @@ export function RenovationView({ project, onRefresh, onListingSuccess }: Renovat
         project.id,
         "selling",
         listingDate?.toISOString(),
-        listPrice ? parseFloat(listPrice) : undefined
+        listPrice ? parseFloat(listPrice) : undefined,
       );
       if (!res.success) throw new Error(res.message);
 
@@ -63,7 +61,7 @@ export function RenovationView({ project, onRefresh, onListingSuccess }: Renovat
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 pb-10">
       <RenovationKPIs project={project} />
-      
+
       {/* 标签页容器 */}
       <RenovationTabs defaultTab="contract">
         {({ activeTab, progressRef, contractRef }) => (
@@ -116,11 +114,15 @@ export function RenovationView({ project, onRefresh, onListingSuccess }: Renovat
                     variant={"outline"}
                     className={cn(
                       "w-full justify-start text-left font-normal h-10",
-                      !listingDate && "text-muted-foreground"
+                      !listingDate && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {listingDate ? format(listingDate, "PPP", { locale: zhCN }) : <span>选择日期</span>}
+                    {listingDate ? (
+                      format(listingDate, "PPP", { locale: zhCN })
+                    ) : (
+                      <span>选择日期</span>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -133,21 +135,19 @@ export function RenovationView({ project, onRefresh, onListingSuccess }: Renovat
                   />
                 </PopoverContent>
               </Popover>
-                <p className="text-[12px] text-muted-foreground">
+              <p className="text-[12px] text-muted-foreground">
                 请选择该项目实际在平台上架销售的日期
               </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">上架价格 (万元)</label>
-              <Input 
+              <Input
                 type="number"
                 placeholder="请输入上架价格"
                 value={listPrice}
                 onChange={(e) => setListPrice(e.target.value)}
               />
-              <p className="text-[12px] text-muted-foreground">
-                请输入挂牌价格，单位：万元
-              </p>
+              <p className="text-[12px] text-muted-foreground">请输入挂牌价格，单位：万元</p>
             </div>
           </div>
         </StatusTransitionDialog>

@@ -16,11 +16,7 @@ const CATEGORIES: { value: PhotoCategory; icon: React.ReactNode }[] = [
   { value: "renovation", icon: <Paintbrush className="h-4 w-4" /> },
 ];
 
-export function PhotoCategorySelector({
-  value,
-  onChange,
-  disabled,
-}: PhotoCategorySelectorProps) {
+export function PhotoCategorySelector({ value, onChange, disabled }: PhotoCategorySelectorProps) {
   return (
     <div className="flex gap-2">
       {CATEGORIES.map((cat) => {
@@ -37,13 +33,9 @@ export function PhotoCategorySelector({
               "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
               isActive && "border-transparent text-white",
               !isActive && "bg-card hover:bg-fog border-dove/40",
-              disabled && "opacity-50 cursor-not-allowed"
+              disabled && "opacity-50 cursor-not-allowed",
             )}
-            style={
-              isActive
-                ? { backgroundColor: config.color }
-                : undefined
-            }
+            style={isActive ? { backgroundColor: config.color } : undefined}
           >
             {cat.icon}
             <span className="text-sm font-medium">{config.label}</span>

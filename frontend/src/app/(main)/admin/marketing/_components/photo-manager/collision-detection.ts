@@ -14,9 +14,7 @@ export const customCollisionDetection: CollisionDetection = (args): Collision[] 
   const firstCollision = getFirstCollision(pointerCollisions);
   if (firstCollision && isContainerId(firstCollision.id)) {
     // 拖到容器空白处：返回最接近的容器
-    const containerCollisions = rectIntersection(args).filter((c) =>
-      isContainerId(c.id)
-    );
+    const containerCollisions = rectIntersection(args).filter((c) => isContainerId(c.id));
     return containerCollisions.length > 0 ? containerCollisions : [firstCollision];
   }
 

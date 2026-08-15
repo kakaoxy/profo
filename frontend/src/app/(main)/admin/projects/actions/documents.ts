@@ -11,8 +11,7 @@ import { requirePermission } from "@/lib/auth/server/require-permission";
 export type DocumentResponse = components["schemas"]["DocumentResponse"];
 export type DocumentCreate = components["schemas"]["DocumentCreate"];
 export type DocumentUpdate = components["schemas"]["DocumentUpdate"];
-export type DocumentInitializeResponse =
-  components["schemas"]["DocumentInitializeResponse"];
+export type DocumentInitializeResponse = components["schemas"]["DocumentInitializeResponse"];
 
 // ===== Zod 校验 schema（与后端 DocumentCreate/DocumentUpdate 语义对齐）=====
 const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
@@ -38,10 +37,7 @@ const documentCreateSchema = z.object({
 // signoff_status 枚举: unsigned/signed/archived
 const documentUpdateSchema = z.object({
   document_name: z.string().nullable().optional(),
-  signoff_status: z
-    .enum(["unsigned", "signed", "archived"])
-    .nullable()
-    .optional(),
+  signoff_status: z.enum(["unsigned", "signed", "archived"]).nullable().optional(),
   archive_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "归档日期格式应为 YYYY-MM-DD")
@@ -52,18 +48,13 @@ const documentUpdateSchema = z.object({
 /**
  * 获取项目文书签收列表
  */
-export async function getProjectDocumentsAction(
-  projectId: string,
-): Promise<DocumentResponse[]> {
+export async function getProjectDocumentsAction(projectId: string): Promise<DocumentResponse[]> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/projects/{project_id}/documents",
-      {
-        params: { path: { project_id: projectId } },
-        cache: "no-store",
-      },
-    );
+    const { data, error } = await client.GET("/api/v1/projects/{project_id}/documents", {
+      params: { path: { project_id: projectId } },
+      cache: "no-store",
+    });
     if (error) {
       throw error;
     }
@@ -95,13 +86,10 @@ export async function createProjectDocumentAction(
   }
   try {
     const client = await fetchClient();
-    const { data, error } = await client.POST(
-      "/api/v1/projects/{project_id}/documents",
-      {
-        params: { path: { project_id: projectId } },
-        body: payload,
-      },
-    );
+    const { data, error } = await client.POST("/api/v1/projects/{project_id}/documents", {
+      params: { path: { project_id: projectId } },
+      body: payload,
+    });
     if (error) {
       throw error;
     }
@@ -176,12 +164,9 @@ export async function deleteProjectDocumentAction(
   }
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE(
-      "/api/v1/projects/{project_id}/documents/{document_id}",
-      {
-        params: { path: { project_id: projectId, document_id: documentId } },
-      },
-    );
+    const { error } = await client.DELETE("/api/v1/projects/{project_id}/documents/{document_id}", {
+      params: { path: { project_id: projectId, document_id: documentId } },
+    });
     if (error) {
       throw error;
     }

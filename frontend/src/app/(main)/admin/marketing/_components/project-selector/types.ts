@@ -56,7 +56,7 @@ export interface ImportableMedia {
   /** 排序 */
   sort_order: number;
   /** 媒体类型 */
-  media_type?: 'image' | 'video';
+  media_type?: "image" | "video";
 }
 
 // ============================================================================

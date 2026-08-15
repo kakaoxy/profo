@@ -11,10 +11,7 @@ interface PropertyHardInfoSectionProps {
   onRefresh: () => void;
 }
 
-export function PropertyHardInfoSection({
-  project,
-  onRefresh,
-}: PropertyHardInfoSectionProps) {
+export function PropertyHardInfoSection({ project, onRefresh }: PropertyHardInfoSectionProps) {
   const items = [
     { label: "小区ID", value: project.community_id || "未设置" },
     { label: "总面积", value: project.area ? `${project.area} m²` : "未设置" },
@@ -45,9 +42,7 @@ export function PropertyHardInfoSection({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {items.map((item) => (
             <div key={item.label} className="space-y-1">
-              <div className="text-xs font-medium text-muted-foreground">
-                {item.label}
-              </div>
+              <div className="text-xs font-medium text-muted-foreground">{item.label}</div>
               <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
                 <span className="truncate">{item.value}</span>
                 <Lock className="h-4 w-4 opacity-50" />

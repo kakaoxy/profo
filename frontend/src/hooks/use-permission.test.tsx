@@ -33,11 +33,7 @@ vi.mock("@/lib/swr", () => ({
  */
 function makeWrapper() {
   return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(
-      SWRConfig,
-      { value: { provider: () => new Map() } },
-      children,
-    );
+    return React.createElement(SWRConfig, { value: { provider: () => new Map() } }, children);
   };
 }
 
@@ -90,13 +86,9 @@ describe("usePermission", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     // 命中一个
-    expect(
-      result.current.hasAnyPermission(["user:delete", "user:read"]),
-    ).toBe(true);
+    expect(result.current.hasAnyPermission(["user:delete", "user:read"])).toBe(true);
     // 全部未命中
-    expect(
-      result.current.hasAnyPermission(["user:delete", "user:update"]),
-    ).toBe(false);
+    expect(result.current.hasAnyPermission(["user:delete", "user:update"])).toBe(false);
     // 空列表视为不满足
     expect(result.current.hasAnyPermission([])).toBe(false);
   });

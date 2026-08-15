@@ -5,7 +5,18 @@ import { cn } from "@/lib/utils";
 import type { OrientationSelectProps } from "./types";
 
 /** 朝向选项列表 */
-const ORIENTATIONS = ["南", "北", "东", "西", "南北", "东西", "东南", "西南", "东北", "西北"] as const;
+const ORIENTATIONS = [
+  "南",
+  "北",
+  "东",
+  "西",
+  "南北",
+  "东西",
+  "东南",
+  "西南",
+  "东北",
+  "西北",
+] as const;
 
 /**
  * 朝向选择组件
@@ -37,7 +48,7 @@ export function OrientationSelect({ value, onChange }: OrientationSelectProps) {
               "h-10 rounded-lg text-sm font-medium transition-all border",
               value === orientation
                 ? "bg-ink text-white border-ink"
-                : "bg-white text-ink border-dove/40 hover:border-rust/60"
+                : "bg-white text-ink border-dove/40 hover:border-rust/60",
             )}
           >
             {orientation}

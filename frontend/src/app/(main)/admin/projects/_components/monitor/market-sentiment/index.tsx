@@ -9,38 +9,26 @@ interface MarketSentimentProps {
   communityId?: string;
 }
 
-export function MarketSentiment({
-  projectId,
-  communityId,
-}: MarketSentimentProps) {
+export function MarketSentiment({ projectId, communityId }: MarketSentimentProps) {
   const { floorStats, inventoryMonths, loading, error } = useSentimentData({
     projectId,
     communityId,
   });
 
   const pressureLabel =
-    inventoryMonths > 6
-      ? "滞销 (买方市场)"
-      : inventoryMonths > 3
-        ? "正常"
-        : "热销 (卖方市场)";
+    inventoryMonths > 6 ? "滞销 (买方市场)" : inventoryMonths > 3 ? "正常" : "热销 (卖方市场)";
   const pressureColor =
     inventoryMonths > 6
       ? "text-rose-600"
       : inventoryMonths > 3
         ? "text-status-pending"
         : "text-success";
-  const pressureIcon =
-    inventoryMonths > 6 ? "🔴" : inventoryMonths > 3 ? "🟡" : "🟢";
+  const pressureIcon = inventoryMonths > 6 ? "🔴" : inventoryMonths > 3 ? "🟡" : "🟢";
 
   if (loading) {
     return (
       <section className="mt-8 pb-10">
-        <SectionHeader
-          index="1"
-          title="宏观风向标 (本小区行情)"
-          subtitle="Market Sentiment"
-        />
+        <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
         <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
             <div
@@ -56,11 +44,7 @@ export function MarketSentiment({
   if (error) {
     return (
       <section className="mt-8 pb-10">
-        <SectionHeader
-          index="1"
-          title="宏观风向标 (本小区行情)"
-          subtitle="Market Sentiment"
-        />
+        <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
         <div className="px-6 text-center py-8">
           <p className="text-sm text-rose-500">{error}</p>
         </div>
@@ -70,19 +54,10 @@ export function MarketSentiment({
 
   return (
     <section className="mt-8 pb-10">
-      <SectionHeader
-        index="1"
-        title="宏观风向标 (本小区行情)"
-        subtitle="Market Sentiment"
-      />
+      <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
 
       <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <StatsCard
-          title="同户型成交统计"
-          subtitle="过去12个月"
-          stats={floorStats}
-          dataKey="deal"
-        />
+        <StatsCard title="同户型成交统计" subtitle="过去12个月" stats={floorStats} dataKey="deal" />
 
         <StatsCard
           title="同户型挂牌统计"
@@ -96,9 +71,7 @@ export function MarketSentiment({
             去化压力 (库存/月销)
           </p>
           <div className="mt-2 flex flex-col justify-center grow pb-6">
-            <p className="text-3xl font-black text-foreground">
-              {inventoryMonths.toFixed(1)} 个月
-            </p>
+            <p className="text-3xl font-black text-foreground">{inventoryMonths.toFixed(1)} 个月</p>
             <p className={`text-sm font-bold ${pressureColor} mt-2`}>
               {pressureIcon} {pressureLabel}
             </p>

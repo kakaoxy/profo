@@ -31,7 +31,7 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
       revalidateOnFocus: false,
       dedupingInterval: 5000,
       errorRetryCount: 3,
-    }
+    },
   );
 
   const projectData = overrideData || data;
@@ -46,12 +46,7 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
       <section className="p-6 bg-card border-b border-border">
         <div className="text-center py-8">
           <p className="text-sm text-destructive">{error.message}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => mutate()}
-            className="mt-2"
-          >
+          <Button variant="outline" size="sm" onClick={() => mutate()} className="mt-2">
             <RefreshCw className="mr-2 h-3 w-3" />
             重试
           </Button>
@@ -65,10 +60,7 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
   const layout = area > 0 ? `${area}㎡` : "面积未设置";
   const signingPrice = projectData?.signing_price ? Number(projectData.signing_price) : 0;
   const listPrice = projectData?.list_price ? Number(projectData.list_price) : signingPrice;
-  const unitPrice =
-    area > 0 && signingPrice > 0
-      ? Math.round((signingPrice * 10000) / area)
-      : 0;
+  const unitPrice = area > 0 && signingPrice > 0 ? Math.round((signingPrice * 10000) / area) : 0;
 
   const timeMonitor = calculateTimeMonitor(
     projectData?.signing_date ?? null,
@@ -117,17 +109,13 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
               </p>
               <div className="flex items-baseline gap-4 mt-0.5">
                 <div>
-                  <span className="text-[10px] text-muted-foreground block">
-                    签约价
-                  </span>
+                  <span className="text-[10px] text-muted-foreground block">签约价</span>
                   <span className="text-lg font-bold text-foreground">
                     ¥{signingPrice.toFixed(0)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-muted-foreground block">
-                    当前挂牌
-                  </span>
+                  <span className="text-[10px] text-muted-foreground block">当前挂牌</span>
                   <span className="text-lg font-bold text-destructive">
                     ¥{listPrice.toFixed(0)}
                   </span>

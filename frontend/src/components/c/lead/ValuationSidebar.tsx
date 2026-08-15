@@ -27,7 +27,7 @@ const fetcher = (url: string) =>
 export function ValuationSidebar() {
   const { data: soldData } = useSWR<SoldListResponse>(
     "/api/v1/public/projects/sold?pageSize=2",
-    fetcher
+    fetcher,
   );
 
   return (
@@ -40,9 +40,7 @@ export function ValuationSidebar() {
       </div>
 
       <div className="rounded-cards bg-white p-6 shadow-steep border border-dove/30">
-        <h3 className="text-lg font-medium text-ink mb-4">
-          {cLocale.valuation.sidebarTitle}
-        </h3>
+        <h3 className="text-lg font-medium text-ink mb-4">{cLocale.valuation.sidebarTitle}</h3>
         <ul className="space-y-3">
           {cLocale.valuation.bullets.map((text) => (
             <li key={text} className="flex items-start gap-3">
@@ -54,9 +52,7 @@ export function ValuationSidebar() {
       </div>
 
       <div className="rounded-cards bg-white p-6 shadow-steep border border-dove/30">
-        <h3 className="text-lg font-medium text-ink mb-4">
-          {cLocale.valuation.recentSoldTitle}
-        </h3>
+        <h3 className="text-lg font-medium text-ink mb-4">{cLocale.valuation.recentSoldTitle}</h3>
         {soldData?.items && soldData.items.length > 0 ? (
           <ul className="space-y-3">
             {soldData.items.map((project) => (
@@ -72,9 +68,7 @@ export function ValuationSidebar() {
                     {project.area}㎡ · {project.layout}
                   </p>
                 </div>
-                <span className="text-sm font-medium text-rust">
-                  {project.total_price}万
-                </span>
+                <span className="text-sm font-medium text-rust">{project.total_price}万</span>
               </li>
             ))}
           </ul>

@@ -21,7 +21,9 @@ export async function getOperationLogsAction(params: {
   resource_type?: string;
   start_time?: string;
   end_time?: string;
-}): Promise<{ success: true; data: OperationLogListResponse } | { success: false; message: string }> {
+}): Promise<
+  { success: true; data: OperationLogListResponse } | { success: false; message: string }
+> {
   try {
     const client = await fetchClient();
     const { data, error } = await client.GET("/api/v1/operation-logs", {

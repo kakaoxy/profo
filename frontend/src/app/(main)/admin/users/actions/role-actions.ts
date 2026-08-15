@@ -15,10 +15,7 @@ export type RoleListResponse = components["schemas"]["RoleListResponse"];
 
 // 与 use-role-form.ts 中的 formSchema 对齐
 const roleCreateSchema = z.object({
-  name: z
-    .string()
-    .min(2, "名称至少2个字符")
-    .max(100, "名称不能超过100个字符"),
+  name: z.string().min(2, "名称至少2个字符").max(100, "名称不能超过100个字符"),
   code: z
     .string()
     .min(2, "代码至少2个字符")
@@ -30,11 +27,7 @@ const roleCreateSchema = z.object({
 });
 
 const roleUpdateSchema = z.object({
-  name: z
-    .string()
-    .min(2, "名称至少2个字符")
-    .max(100, "名称不能超过100个字符")
-    .optional(),
+  name: z.string().min(2, "名称至少2个字符").max(100, "名称不能超过100个字符").optional(),
   code: z
     .string()
     .min(2, "代码至少2个字符")

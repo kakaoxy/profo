@@ -49,20 +49,14 @@ function formatLogContent(
       return `删除子投资人${d.name ? `：${d.name}` : ""}`;
     case "total_investment_change": {
       const ti = d.total_investment as { from?: string; to?: string } | undefined;
-      return `修改投资总额${
-        ti ? `：${formatCNY(ti.from)} → ${formatCNY(ti.to)}` : ""
-      }`;
+      return `修改投资总额${ti ? `：${formatCNY(ti.from)} → ${formatCNY(ti.to)}` : ""}`;
     }
     case "total_return_change": {
       const tr = d.total_return as { from?: string; to?: string } | undefined;
-      return `修改收益总额${
-        tr ? `：${formatCNY(tr.from)} → ${formatCNY(tr.to)}` : ""
-      }`;
+      return `修改收益总额${tr ? `：${formatCNY(tr.from)} → ${formatCNY(tr.to)}` : ""}`;
     }
     case "settle":
-      return `结算跟投记录${
-        d.settled_date ? `，结算日期 ${d.settled_date}` : ""
-      }`;
+      return `结算跟投记录${d.settled_date ? `，结算日期 ${d.settled_date}` : ""}`;
     case "unsettle":
       return `反结算：${d.reason ?? "-"}`;
     default:

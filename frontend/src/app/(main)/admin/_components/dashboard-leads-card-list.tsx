@@ -31,9 +31,7 @@ const LeadCard = memo(function LeadCard({ lead, onClick }: LeadCardProps) {
       }}
       className="active:opacity-70 cursor-pointer transition rounded-lg border border-border bg-card p-3 flex flex-col gap-1"
     >
-      <div className="truncate font-medium text-sm text-foreground">
-        {lead.community}
-      </div>
+      <div className="truncate font-medium text-sm text-foreground">{lead.community}</div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col">
           <span className="text-error font-bold tabular-nums">
@@ -56,9 +54,7 @@ const LeadCard = memo(function LeadCard({ lead, onClick }: LeadCardProps) {
   );
 });
 
-export function DashboardLeadsCardList({
-  leads,
-}: DashboardLeadsCardListProps) {
+export function DashboardLeadsCardList({ leads }: DashboardLeadsCardListProps) {
   const router = useRouter();
 
   const handleClick = useCallback(

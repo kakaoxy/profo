@@ -76,9 +76,7 @@ export function InvestmentStats({ stats }: InvestmentStatsProps) {
           >
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground truncate">
-                  {card.label}
-                </p>
+                <p className="text-xs font-medium text-muted-foreground truncate">{card.label}</p>
                 <div className="flex items-baseline gap-1.5">
                   <p
                     className={`text-xl font-bold text-foreground truncate ${card.valueClass ?? ""}`}
@@ -86,9 +84,7 @@ export function InvestmentStats({ stats }: InvestmentStatsProps) {
                     {card.value}
                   </p>
                   {card.subValue && (
-                    <span className="text-xs text-muted-foreground">
-                      {card.subValue}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{card.subValue}</span>
                   )}
                 </div>
               </div>

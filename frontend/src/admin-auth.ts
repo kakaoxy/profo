@@ -108,8 +108,7 @@ export const adminAuth = Auth({
       if (!response.ok) {
         // 后端返回 HTTP 422 + X-Must-Change-Password: true 表示首次登录需改密
         const mustChangePassword =
-          response.status === 422 &&
-          response.headers.get("X-Must-Change-Password") === "true";
+          response.status === 422 && response.headers.get("X-Must-Change-Password") === "true";
 
         if (mustChangePassword) {
           const tempToken = response.headers.get("X-Temp-Token");

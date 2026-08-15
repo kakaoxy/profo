@@ -23,8 +23,7 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 // 动态导入弹窗组件（ssr: false，仅在客户端加载）
 const CreateInvestmentDialog = dynamic(
-  () =>
-    import("./create-investment-dialog").then((m) => m.CreateInvestmentDialog),
+  () => import("./create-investment-dialog").then((m) => m.CreateInvestmentDialog),
   { ssr: false },
 );
 
@@ -163,9 +162,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
             {/* 项目状态筛选 */}
             <Select
               value={query.project_status}
-              onValueChange={(val) =>
-                setQuery({ project_status: val, page: 1 })
-              }
+              onValueChange={(val) => setQuery({ project_status: val, page: 1 })}
             >
               <SelectTrigger className="h-10 w-[140px] bg-card border-border rounded-lg">
                 <SelectValue placeholder="项目状态" />
@@ -182,9 +179,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
             {/* 跟投状态筛选 */}
             <Select
               value={query.settlement_status}
-              onValueChange={(val) =>
-                setQuery({ settlement_status: val, page: 1 })
-              }
+              onValueChange={(val) => setQuery({ settlement_status: val, page: 1 })}
             >
               <SelectTrigger className="h-10 w-[140px] bg-card border-border rounded-lg">
                 <SelectValue placeholder="跟投状态" />

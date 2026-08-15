@@ -102,8 +102,7 @@ export function SubjectEditDialog({
   // 可选阶段 = 已选模式的阶段并集（保持顺序）
   const availableStages = useMemo(() => {
     const seen = new Set<SubjectStage>();
-    const result: { key: SubjectStage; name: string; sub: string; icon: string }[] =
-      [];
+    const result: { key: SubjectStage; name: string; sub: string; icon: string }[] = [];
     watchedModes.forEach((m) => {
       STAGE_META[m].forEach((s) => {
         if (!seen.has(s.key)) {
@@ -118,10 +117,7 @@ export function SubjectEditDialog({
   // 当前 stage 不在可选列表中时重置为第一个
   useEffect(() => {
     const current = form.getValues("stage");
-    if (
-      availableStages.length > 0 &&
-      !availableStages.some((s) => s.key === current)
-    ) {
+    if (availableStages.length > 0 && !availableStages.some((s) => s.key === current)) {
       form.setValue("stage", availableStages[0].key);
     }
   }, [availableStages, form]);
@@ -139,9 +135,7 @@ export function SubjectEditDialog({
     try {
       const note = (values.note ?? "").trim();
       const payload = { ...values, note: note ? note : null };
-      const res = isEdit
-        ? await updateSubject(subject!.id, payload)
-        : await createSubject(payload);
+      const res = isEdit ? await updateSubject(subject!.id, payload) : await createSubject(payload);
       if (res.success) {
         toast.success(isEdit ? "已保存" : "已新增科目");
         onOpenChange(false);
@@ -170,10 +164,7 @@ export function SubjectEditDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex min-h-0 flex-1 flex-col"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
               {/* 科目名称 */}
               <FormField
@@ -192,11 +183,7 @@ export function SubjectEditDialog({
                         value={field.value ?? ""}
                       />
                     </FormControl>
-                    {systemLocked && (
-                      <FormDescription>
-                        系统预置科目名称不可修改
-                      </FormDescription>
-                    )}
+                    {systemLocked && <FormDescription>系统预置科目名称不可修改</FormDescription>}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -222,20 +209,16 @@ export function SubjectEditDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {(
-                          Object.entries(LEVEL_LABELS) as [SubjectLevel, string][]
-                        ).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>
-                            {v}
-                          </SelectItem>
-                        ))}
+                        {(Object.entries(LEVEL_LABELS) as [SubjectLevel, string][]).map(
+                          ([k, v]) => (
+                            <SelectItem key={k} value={k}>
+                              {v}
+                            </SelectItem>
+                          ),
+                        )}
                       </SelectContent>
                     </Select>
-                    {systemLocked && (
-                      <FormDescription>
-                        系统预置科目层级不可修改
-                      </FormDescription>
-                    )}
+                    {systemLocked && <FormDescription>系统预置科目层级不可修改</FormDescription>}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -264,9 +247,7 @@ export function SubjectEditDialog({
                         收购
                       </ModeChip>
                     </div>
-                    <FormDescription>
-                      至少选择一种，决定该科目在哪种业务流中可见
-                    </FormDescription>
+                    <FormDescription>至少选择一种，决定该科目在哪种业务流中可见</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -281,10 +262,7 @@ export function SubjectEditDialog({
                     <FormLabel>
                       业务阶段 <span className="text-rust">*</span>
                     </FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -298,9 +276,7 @@ export function SubjectEditDialog({
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      该科目主要发生的业务阶段
-                    </FormDescription>
+                    <FormDescription>该科目主要发生的业务阶段</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -315,16 +291,11 @@ export function SubjectEditDialog({
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">是否进损益</FormLabel>
                       <FormDescription>
-                        {field.value
-                          ? "计入利润表，影响毛利/净利"
-                          : "现金流专属，不影响损益"}
+                        {field.value ? "计入利润表，影响毛利/净利" : "现金流专属，不影响损益"}
                       </FormDescription>
                     </div>
                     <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
                   </FormItem>
                 )}

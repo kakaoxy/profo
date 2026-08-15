@@ -7,11 +7,7 @@ import { Lead } from "../types";
 import { ActionResult, extractErrorMessage } from "@/lib/action-result";
 import type { operations } from "@/lib/api-types";
 import { mapBackendToFrontend } from "../lib/utils";
-import {
-  createLeadSchema,
-  updateLeadSchema,
-  leadIdSchema,
-} from "../_components/lead-schema";
+import { createLeadSchema, updateLeadSchema, leadIdSchema } from "../_components/lead-schema";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/server/require-permission";
 
@@ -64,7 +60,7 @@ function toUpdatePayload(data: Partial<Lead>): LeadUpdatePayload {
 }
 
 export async function createLeadAction(
-  data: Omit<Lead, "id" | "createdAt">
+  data: Omit<Lead, "id" | "createdAt">,
 ): Promise<ActionResult<Lead>> {
   const parsed = createLeadSchema.safeParse(data);
   if (!parsed.success) {
@@ -102,7 +98,7 @@ export async function createLeadAction(
 
 export async function updateLeadAction(
   leadId: string,
-  data: Partial<Lead>
+  data: Partial<Lead>,
 ): Promise<ActionResult<Lead>> {
   const idParsed = leadIdSchema.safeParse(leadId);
   if (!idParsed.success) {
@@ -130,13 +126,10 @@ export async function updateLeadAction(
 
     const payload: LeadUpdatePayload = toUpdatePayload(data);
 
-    const { data: responseData, error } = await client.PUT(
-      "/api/v1/leads/{lead_id}",
-      {
-        params: { path: { lead_id: leadId } },
-        body: payload,
-      }
-    );
+    const { data: responseData, error } = await client.PUT("/api/v1/leads/{lead_id}", {
+      params: { path: { lead_id: leadId } },
+      body: payload,
+    });
 
     if (error || !responseData) {
       return { success: false, error: extractErrorMessage(error) };
@@ -150,9 +143,7 @@ export async function updateLeadAction(
   }
 }
 
-export async function deleteLeadAction(
-  leadId: string
-): Promise<ActionResult<void>> {
+export async function deleteLeadAction(leadId: string): Promise<ActionResult<void>> {
   const idParsed = leadIdSchema.safeParse(leadId);
   if (!idParsed.success) {
     return {

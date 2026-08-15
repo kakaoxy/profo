@@ -55,12 +55,8 @@ export function InvestorEditRowGroup({
             <span className="text-sm font-medium text-muted-foreground">%</span>
           </div>
         </TableCell>
-        <TableCell className="font-mono tabular-nums text-right">
-          {formatCNY(amount)}
-        </TableCell>
-        <TableCell className="text-center">
-          {subs.length > 0 ? `${subs.length}人` : "—"}
-        </TableCell>
+        <TableCell className="font-mono tabular-nums text-right">{formatCNY(amount)}</TableCell>
+        <TableCell className="text-center">{subs.length > 0 ? `${subs.length}人` : "—"}</TableCell>
         <TableCell className="text-right">
           <div className="flex items-center justify-end gap-1.5 flex-wrap">
             <Button
@@ -100,13 +96,8 @@ export function InvestorEditRowGroup({
       {subs.map((sub, j) => {
         const subAmount = (amount * sub.share_ratio) / 100;
         return (
-          <TableRow
-            key={`${idx}-${j}`}
-            className="border-l-2 border-accent hover:bg-transparent"
-          >
-            <TableCell className="pl-12 font-normal text-muted-foreground">
-              {sub.name}
-            </TableCell>
+          <TableRow key={`${idx}-${j}`} className="border-l-2 border-accent hover:bg-transparent">
+            <TableCell className="pl-12 font-normal text-muted-foreground">{sub.name}</TableCell>
             <TableCell className="pl-12 font-mono tabular-nums font-normal text-muted-foreground">
               {formatPercent(sub.share_ratio)}
             </TableCell>
@@ -131,9 +122,7 @@ export function InvestorEditRowGroup({
       })}
       {subs.length > 0 && (
         <TableRow className="border-t border-dashed border-border hover:bg-transparent">
-          <TableCell className="pl-12 italic text-muted-foreground text-sm">
-            小计
-          </TableCell>
+          <TableCell className="pl-12 italic text-muted-foreground text-sm">小计</TableCell>
           <TableCell
             className={cn(
               "pl-12 font-mono tabular-nums italic text-muted-foreground text-sm",

@@ -115,9 +115,7 @@ export default async function CommunitiesPage({
               <ArrowLeft className="size-4" />
               返回商圈分析报表
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              小区明细
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">小区明细</h1>
           </div>
           <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
             请从
@@ -147,8 +145,7 @@ export default async function CommunitiesPage({
     floor_levels: floor_levels.length > 0 ? floor_levels.join(",") : undefined,
   };
 
-  const granularity: Granularity =
-    range === "4w" || range === "8w" ? "week" : "month";
+  const granularity: Granularity = range === "4w" || range === "8w" ? "week" : "month";
 
   const client = await fetchClient();
 
@@ -181,7 +178,9 @@ export default async function CommunitiesPage({
     client.GET("/api/v1/reports/communities/", {
       // Level 2 为商圈下钻视图, 用户已显式选择某商圈, 应展示该商圈下所有小区
       // (即使 sold_count=1 也展示), 避免稀疏数据商圈显示空列表
-      params: { query: { ...filterQuery, business_circles: businessCirclesCsv, min_sold_count: 1 } },
+      params: {
+        query: { ...filterQuery, business_circles: businessCirclesCsv, min_sold_count: 1 },
+      },
     }),
     client.GET("/api/v1/reports/market/dictionaries", {
       params: { query: { dict_type: "data_source" } },
@@ -247,24 +246,15 @@ export default async function CommunitiesPage({
 
   // 字典数据降级处理
   const dataSources = dataSourcesRes.data?.items ?? [];
-  const lastUpdated =
-    lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
+  const lastUpdated = lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
 
   return (
     <div className="min-h-screen bg-muted">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
-        <TopFilterBar
-          hideLocationSelector
-          dataSources={dataSources}
-          lastUpdated={lastUpdated}
-        />
+        <TopFilterBar hideLocationSelector dataSources={dataSources} lastUpdated={lastUpdated} />
         <SubFilterBar />
         <KpiCards data={kpiData} />
-        <TrendChart
-          data={trendData}
-          granularity={granularity}
-          dimension={trend_dim}
-        />
+        <TrendChart data={trendData} granularity={granularity} dimension={trend_dim} />
         <DistributionChart
           title="成交价格分布图"
           bucketLabelHeader="价格区间(万)"
@@ -289,10 +279,7 @@ export default async function CommunitiesPage({
             viewKey="floor_view"
           />
         </div>
-        <CommunityTable
-          items={communitiesData.items}
-          total={communitiesData.total}
-        />
+        <CommunityTable items={communitiesData.items} total={communitiesData.total} />
         <ReportsFooter lastUpdated={lastUpdated} />
       </div>
     </div>

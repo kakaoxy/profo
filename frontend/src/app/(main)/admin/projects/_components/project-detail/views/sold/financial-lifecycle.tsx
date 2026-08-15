@@ -34,12 +34,13 @@ export function FinancialLifecycle({ project }: { project: Project }) {
   let occupationDays = 0;
   if (signingDate && isValid(signingDate)) {
     // 如果已售取成交日期，未售取今天
-    const end = (soldDate && isValid(soldDate)) ? soldDate : (today || new Date());
+    const end = soldDate && isValid(soldDate) ? soldDate : today || new Date();
     // 统一逻辑：差值天数，保底 0
     occupationDays = Math.max(0, differenceInDays(end, signingDate));
   }
 
-  const formatNodeDate = (date: Date | null) => (date && isValid(date) ? format(date, "MM/dd") : "--/--");
+  const formatNodeDate = (date: Date | null) =>
+    date && isValid(date) ? format(date, "MM/dd") : "--/--";
 
   const steps = [
     { label: "签约", date: signingDate },
@@ -76,9 +77,7 @@ export function FinancialLifecycle({ project }: { project: Project }) {
               </span>
               <span className="text-sm font-bold text-money-positive">万</span>
             </div>
-            <span className="text-xs text-money-positive/60 mt-1 font-medium">
-              款项已全部结清
-            </span>
+            <span className="text-xs text-money-positive/60 mt-1 font-medium">款项已全部结清</span>
           </div>
 
           {/* Col 3: 累计投入 */}
@@ -98,9 +97,7 @@ export function FinancialLifecycle({ project }: { project: Project }) {
                   <p>含收房、装修、持有成本等全周期支出</p>
                 </TooltipContent>
               </Tooltip>
-              <span className="text-xs text-muted-foreground mt-1">
-                包含所有财务支出明细
-              </span>
+              <span className="text-xs text-muted-foreground mt-1">包含所有财务支出明细</span>
             </div>
           </TooltipProvider>
         </div>
@@ -114,16 +111,19 @@ export function FinancialLifecycle({ project }: { project: Project }) {
             <div className="flex items-center justify-between relative">
               {/* 背景线 */}
               <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 z-0" />
-              
+
               {steps.map((step, idx) => (
-                <div key={idx} className="relative z-10 flex flex-col items-center gap-2 bg-card px-2">
+                <div
+                  key={idx}
+                  className="relative z-10 flex flex-col items-center gap-2 bg-card px-2"
+                >
                   <span className="text-[10px] font-mono font-medium text-muted-foreground">
                     {formatNodeDate(step.date)}
                   </span>
-                  <div className={`h-3 w-3 rounded-full border-2 ${step.date ? 'bg-card border-primary' : 'bg-card border-border'}`} />
-                  <span className="text-xs font-bold text-muted-foreground">
-                    {step.label}
-                  </span>
+                  <div
+                    className={`h-3 w-3 rounded-full border-2 ${step.date ? "bg-card border-primary" : "bg-card border-border"}`}
+                  />
+                  <span className="text-xs font-bold text-muted-foreground">{step.label}</span>
                 </div>
               ))}
             </div>
@@ -133,9 +133,7 @@ export function FinancialLifecycle({ project }: { project: Project }) {
           <div className="flex flex-col items-end border-l border-border pl-8 md:min-w-[140px]">
             <span className="text-xs text-muted-foreground font-medium mb-1">资金占用周期</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-mono font-bold text-foreground">
-                {occupationDays}
-              </span>
+              <span className="text-3xl font-mono font-bold text-foreground">{occupationDays}</span>
               <span className="text-sm font-bold text-muted-foreground">天</span>
             </div>
           </div>

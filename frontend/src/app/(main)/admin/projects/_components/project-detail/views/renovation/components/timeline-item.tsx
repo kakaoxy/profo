@@ -7,11 +7,7 @@ import { CheckCircle2, CircleDot, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isValid } from "date-fns";
 
-import {
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,7 +57,9 @@ export function TimelineItem({
   const { roleCode, hasAnyPermission } = usePermission();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  useEffect(() => { setSelectedDate(new Date()); }, []);
+  useEffect(() => {
+    setSelectedDate(new Date());
+  }, []);
 
   // 已完成阶段修改/清空相关 state（仅 admin）
   const [isEditingDate, setIsEditingDate] = useState(false);
@@ -90,10 +88,8 @@ export function TimelineItem({
     PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
     PERMISSION_CODES.PROJECT_WRITE,
   ]);
-  const canEditRenovation =
-    canEditByPermission || project.renovation?.can_edit_renovation === true;
-  const canComplete =
-    canCompleteByPermission || project.renovation?.can_edit_renovation === true;
+  const canEditRenovation = canEditByPermission || project.renovation?.can_edit_renovation === true;
+  const canComplete = canCompleteByPermission || project.renovation?.can_edit_renovation === true;
 
   // 仅 admin 可修改/清空已完成阶段的时间
   const canEditDate = roleCode === "admin";
@@ -220,7 +216,12 @@ export function TimelineItem({
     try {
       const date = parseISO(stageFinishDateStr);
       if (isValid(date)) {
-        return <span className="text-[12px] text-success font-mono ml-auto"> {format(date, "MM-dd")}</span>;
+        return (
+          <span className="text-[12px] text-success font-mono ml-auto">
+            {" "}
+            {format(date, "MM-dd")}
+          </span>
+        );
       }
     } catch {
       return null;
@@ -239,22 +240,54 @@ export function TimelineItem({
         )}
       </div>
 
-      <AccordionTrigger className={cn("pl-12 py-1 hover:no-underline data-[state=open]:py-1 group")}>
+      <AccordionTrigger
+        className={cn("pl-12 py-1 hover:no-underline data-[state=open]:py-1 group")}
+      >
         <div className="flex items-center gap-3 w-full">
-          <span className={cn("text-lg transition-colors", isCurrent ? "font-bold text-foreground" : "font-medium text-muted-foreground group-hover:text-foreground")}>
+          <span
+            className={cn(
+              "text-lg transition-colors",
+              isCurrent
+                ? "font-bold text-foreground"
+                : "font-medium text-muted-foreground group-hover:text-foreground",
+            )}
+          >
             {stage.label}
           </span>
-          {isCurrent && <Badge variant="secondary" className="bg-status-renovating/10 text-status-renovating hover:bg-status-renovating/10 border-none">进行中</Badge>}
+          {isCurrent && (
+            <Badge
+              variant="secondary"
+              className="bg-status-renovating/10 text-status-renovating hover:bg-status-renovating/10 border-none"
+            >
+              进行中
+            </Badge>
+          )}
           {(photos.length > 0 || uploadQueue.length > 0) && !isCurrent && (
-            <span className="text-xs text-muted-foreground ml-2 bg-muted px-1.5 rounded">{photos.length + uploadQueue.length} 张照片</span>
+            <span className="text-xs text-muted-foreground ml-2 bg-muted px-1.5 rounded">
+              {photos.length + uploadQueue.length} 张照片
+            </span>
           )}
           {renderFinishDate()}
         </div>
       </AccordionTrigger>
 
       <AccordionContent className="pl-12 pt-4 pb-2">
-        <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-card border-status-renovating/30 shadow-sm" : "bg-muted/50 border-border")}>
-          <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isLoading={isSubmittingStage} canEditRenovation={canEditRenovation} onUpload={handleUpload} onDelete={handleDelete} />
+        <div
+          className={cn(
+            "rounded-lg border p-4 space-y-4 transition-all",
+            isCurrent
+              ? "bg-card border-status-renovating/30 shadow-sm"
+              : "bg-muted/50 border-border",
+          )}
+        >
+          <PhotoGrid
+            photos={photos}
+            uploadingPhotos={uploadQueue}
+            isLoading={isSubmittingStage}
+            canEditRenovation={canEditRenovation}
+            onUpload={handleUpload}
+            onDelete={handleDelete}
+          />
           <ActionBar
             isCompleted={isCompleted}
             selectedDate={selectedDate}
@@ -281,7 +314,8 @@ export function TimelineItem({
           <AlertDialogHeader>
             <AlertDialogTitle>确认清空该阶段完成时间？</AlertDialogTitle>
             <AlertDialogDescription>
-              清空后，{stage.label} 将回退为未完成状态。已上传的照片不受影响，可重新选择日期标记完成。
+              清空后，{stage.label}{" "}
+              将回退为未完成状态。已上传的照片不受影响，可重新选择日期标记完成。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

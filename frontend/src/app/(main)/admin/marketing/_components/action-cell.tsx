@@ -19,11 +19,7 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
 
   return (
     <div className="flex items-center gap-1">
-      <Link
-        href={`/projects/${project.id}`}
-        target="_blank"
-        onClick={handleClick}
-      >
+      <Link href={`/projects/${project.id}`} target="_blank" onClick={handleClick}>
         <Button
           variant="ghost"
           size="sm"
@@ -35,10 +31,7 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
         </Button>
       </Link>
 
-      <Link
-        href={`/admin/marketing/${project.id}/edit`}
-        onClick={handleClick}
-      >
+      <Link href={`/admin/marketing/${project.id}/edit`} onClick={handleClick}>
         <Button
           variant="ghost"
           size="sm"

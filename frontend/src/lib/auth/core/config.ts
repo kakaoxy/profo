@@ -31,15 +31,11 @@ const DEFAULT_COOKIE_BASE_NAME = "auth-session";
  * @param cookieOptions - Optional cookie config.
  * @returns Object with `accessToken` and `refreshToken` cookie names.
  */
-function resolveCookieNames(
-  cookieOptions?: CookieOptions,
-): ResolvedCookieNames {
+function resolveCookieNames(cookieOptions?: CookieOptions): ResolvedCookieNames {
   const baseName = cookieOptions?.name ?? DEFAULT_COOKIE_BASE_NAME;
   return {
-    accessToken:
-      cookieOptions?.accessTokenName ?? `${baseName}.access`,
-    refreshToken:
-      cookieOptions?.refreshTokenName ?? `${baseName}.refresh`,
+    accessToken: cookieOptions?.accessTokenName ?? `${baseName}.access`,
+    refreshToken: cookieOptions?.refreshTokenName ?? `${baseName}.refresh`,
   };
 }
 
@@ -61,8 +57,7 @@ export function createAuthConfig(config: AuthConfig): ResolvedAuthConfig {
       domain: config.cookies?.domain ?? DEFAULT_COOKIE_OPTIONS.domain,
     },
     refreshThresholdSeconds:
-      config.refresh?.refreshThresholdSeconds ??
-      DEFAULT_REFRESH_THRESHOLD_SECONDS,
+      config.refresh?.refreshThresholdSeconds ?? DEFAULT_REFRESH_THRESHOLD_SECONDS,
     pages: {
       signIn: config.pages?.signIn ?? DEFAULT_PAGES.signIn,
       home: config.pages?.home ?? DEFAULT_PAGES.home,

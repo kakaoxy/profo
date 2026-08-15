@@ -31,7 +31,7 @@ export const UploadArea = memo(function UploadArea({
       e.preventDefault();
       if (!isUploading && !disabled) setIsDragging(true);
     },
-    [isUploading, disabled]
+    [isUploading, disabled],
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -50,7 +50,7 @@ export const UploadArea = memo(function UploadArea({
         onUpload(Array.from(files));
       }
     },
-    [isUploading, disabled, onUpload]
+    [isUploading, disabled, onUpload],
   );
 
   const handleFileSelect = useCallback(
@@ -60,7 +60,7 @@ export const UploadArea = memo(function UploadArea({
       }
       e.target.value = "";
     },
-    [onUpload]
+    [onUpload],
   );
 
   const handleClick = useCallback(() => {
@@ -83,10 +83,7 @@ export const UploadArea = memo(function UploadArea({
         isDragging && "border-primary bg-primary/5",
         isUploading && "pointer-events-none opacity-60",
         disabled && "cursor-not-allowed opacity-50",
-        !isDragging &&
-          !isUploading &&
-          !disabled &&
-          "hover:border-primary/50 hover:bg-muted/50"
+        !isDragging && !isUploading && !disabled && "hover:border-primary/50 hover:bg-muted/50",
       )}
     >
       <input

@@ -1,10 +1,5 @@
 export { createAuthConfig } from "./config";
-export {
-  decodeJwt,
-  getTokenExpiry,
-  isTokenValid,
-  getSecondsUntilExpiry,
-} from "./jwt";
+export { decodeJwt, getTokenExpiry, isTokenValid, getSecondsUntilExpiry } from "./jwt";
 export type { TokenExpiryInfo } from "./jwt";
 export {
   setTokenCookies,

@@ -33,8 +33,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: (props: Record<string, unknown>) =>
-    React.createElement("img", { ...props }),
+  default: (props: Record<string, unknown>) => React.createElement("img", { ...props }),
 }));
 
 vi.mock("sonner", () => ({
@@ -88,10 +87,8 @@ vi.mock(
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function mockPermissions(permissions: string[]): UsePermissionReturn {
-  const hasPermission = (code: string): boolean =>
-    permissions.includes(code);
-  const hasAnyPermission = (codes: string[]): boolean =>
-    codes.some((c) => permissions.includes(c));
+  const hasPermission = (code: string): boolean => permissions.includes(code);
+  const hasAnyPermission = (codes: string[]): boolean => codes.some((c) => permissions.includes(c));
   return {
     permissions,
     hasPermission,
@@ -130,9 +127,7 @@ interface ProjectLike {
   renovationStageDates?: Record<string, string> | null;
 }
 
-function makeProject(
-  overrides: Partial<ProjectLike> = {},
-): ProjectLike {
+function makeProject(overrides: Partial<ProjectLike> = {}): ProjectLike {
   return {
     id: "p1",
     name: "测试项目",
@@ -192,9 +187,7 @@ describe("MobileRenovationView - 业务身份按钮显隐", () => {
 
     const { MobileRenovationView } = await import("./mobile-renovation-view");
 
-    render(
-      <MobileRenovationView projectId="p1" project={makeProject()} />,
-    );
+    render(<MobileRenovationView projectId="p1" project={makeProject()} />);
 
     // 等待照片加载完成
     await waitFor(() => {
@@ -219,9 +212,7 @@ describe("MobileRenovationView - 业务身份按钮显隐", () => {
 
     const { MobileRenovationView } = await import("./mobile-renovation-view");
 
-    render(
-      <MobileRenovationView projectId="p1" project={makeProject()} />,
-    );
+    render(<MobileRenovationView projectId="p1" project={makeProject()} />);
 
     await waitFor(() => {
       expect(screen.getByText("上传照片")).toBeInTheDocument();

@@ -12,13 +12,7 @@
  */
 import dynamic from "next/dynamic";
 import { useQueryState, parseAsString } from "nuqs";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,26 +23,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  formatAvgPriceWan,
-  formatCount,
-  formatPercent,
-  formatPeriod,
-} from "../../_lib/formatters";
-import type {
-  ComparisonData,
-  ComparisonTrendPoint,
-  Granularity,
-} from "../../_lib/types";
+import { formatAvgPriceWan, formatCount, formatPercent, formatPeriod } from "../../_lib/formatters";
+import type { ComparisonData, ComparisonTrendPoint, Granularity } from "../../_lib/types";
 
 // 动态加载 recharts 渲染器：ssr: false，确保 recharts 仅在客户端以单一 chunk 加载
-const ComparisonChartRenderer = dynamic(
-  () => import("./comparison-chart-renderer"),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[300px] w-full" />,
-  },
-);
+const ComparisonChartRenderer = dynamic(() => import("./comparison-chart-renderer"), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[300px] w-full" />,
+});
 
 type ChartType = "volume" | "price" | "floor" | "room";
 
@@ -74,10 +56,7 @@ interface ComparisonChartProps {
 }
 
 /** 从 ComparisonTrendPoint 提取数值（period 字段过滤掉） */
-function getTrendValue(
-  point: ComparisonTrendPoint,
-  key: string,
-): number | null {
+function getTrendValue(point: ComparisonTrendPoint, key: string): number | null {
   const v = point[key];
   return typeof v === "number" ? v : null;
 }
@@ -89,12 +68,7 @@ interface TrendTableProps {
   format: (v: number | null) => string;
 }
 
-function TrendTable({
-  data,
-  businessCircles,
-  granularity,
-  format,
-}: TrendTableProps) {
+function TrendTable({ data, businessCircles, granularity, format }: TrendTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -123,11 +97,7 @@ function TrendTable({
   );
 }
 
-function FloorTable({
-  data,
-}: {
-  data: ComparisonData["floor_structure"];
-}) {
+function FloorTable({ data }: { data: ComparisonData["floor_structure"] }) {
   return (
     <Table>
       <TableHeader>
@@ -145,16 +115,13 @@ function FloorTable({
             <TableRow key={row.business_circle}>
               <TableCell>{row.business_circle}</TableCell>
               <TableCell className="text-right tabular-nums">
-                {formatCount(row.low)} ·{" "}
-                {formatPercent(total > 0 ? (row.low / total) * 100 : 0)}
+                {formatCount(row.low)} · {formatPercent(total > 0 ? (row.low / total) * 100 : 0)}
               </TableCell>
               <TableCell className="text-right tabular-nums">
-                {formatCount(row.mid)} ·{" "}
-                {formatPercent(total > 0 ? (row.mid / total) * 100 : 0)}
+                {formatCount(row.mid)} · {formatPercent(total > 0 ? (row.mid / total) * 100 : 0)}
               </TableCell>
               <TableCell className="text-right tabular-nums">
-                {formatCount(row.high)} ·{" "}
-                {formatPercent(total > 0 ? (row.high / total) * 100 : 0)}
+                {formatCount(row.high)} · {formatPercent(total > 0 ? (row.high / total) * 100 : 0)}
               </TableCell>
             </TableRow>
           );
@@ -164,11 +131,7 @@ function FloorTable({
   );
 }
 
-function RoomTable({
-  data,
-}: {
-  data: ComparisonData["room_structure"];
-}) {
+function RoomTable({ data }: { data: ComparisonData["room_structure"] }) {
   return (
     <Table>
       <TableHeader>
@@ -187,16 +150,13 @@ function RoomTable({
             <TableRow key={row.business_circle}>
               <TableCell>{row.business_circle}</TableCell>
               <TableCell className="text-right tabular-nums">
-                {formatCount(row.r1)} ·{" "}
-                {formatPercent(total > 0 ? (row.r1 / total) * 100 : 0)}
+                {formatCount(row.r1)} · {formatPercent(total > 0 ? (row.r1 / total) * 100 : 0)}
               </TableCell>
               <TableCell className="text-right tabular-nums">
-                {formatCount(row.r2)} ·{" "}
-                {formatPercent(total > 0 ? (row.r2 / total) * 100 : 0)}
+                {formatCount(row.r2)} · {formatPercent(total > 0 ? (row.r2 / total) * 100 : 0)}
               </TableCell>
               <TableCell className="text-right tabular-nums">
-                {formatCount(row.r3)} ·{" "}
-                {formatPercent(total > 0 ? (row.r3 / total) * 100 : 0)}
+                {formatCount(row.r3)} · {formatPercent(total > 0 ? (row.r3 / total) * 100 : 0)}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatCount(row.r4plus)} ·{" "}
@@ -245,16 +205,9 @@ function TableView({
   return <RoomTable data={data.room_structure} />;
 }
 
-export function ComparisonChart({
-  type,
-  data,
-  granularity,
-}: ComparisonChartProps) {
+export function ComparisonChart({ type, data, granularity }: ComparisonChartProps) {
   const param = VIEW_PARAM[type];
-  const [view, setView] = useQueryState(
-    param,
-    parseAsString.withDefault("chart"),
-  );
+  const [view, setView] = useQueryState(param, parseAsString.withDefault("chart"));
 
   return (
     <Card>
@@ -281,11 +234,7 @@ export function ComparisonChart({
       </CardHeader>
       <CardContent>
         {view === "chart" ? (
-          <ComparisonChartRenderer
-            type={type}
-            data={data}
-            granularity={granularity}
-          />
+          <ComparisonChartRenderer type={type} data={data} granularity={granularity} />
         ) : (
           <TableView type={type} data={data} granularity={granularity} />
         )}

@@ -106,9 +106,7 @@ export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewPr
                   disabled={isEnding}
                   className="bg-orange-600 hover:bg-orange-700 focus:ring-orange-500"
                 >
-                  {isEnding ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
+                  {isEnding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   确认结束
                 </AlertDialogAction>
               </AlertDialogFooter>

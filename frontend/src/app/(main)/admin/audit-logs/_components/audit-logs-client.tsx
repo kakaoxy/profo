@@ -57,7 +57,9 @@ function truncateId(id: string | null | undefined): string {
 }
 
 /** 根据操作类型返回对应 Badge 变体。 */
-function getActionBadgeVariant(action: string): "default" | "secondary" | "destructive" | "outline" {
+function getActionBadgeVariant(
+  action: string,
+): "default" | "secondary" | "destructive" | "outline" {
   switch (action) {
     case "create":
       return "default";
@@ -335,7 +337,9 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
                       <TableCell className="text-sm font-mono" title={log.resource_id ?? undefined}>
                         {truncateId(log.resource_id)}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{log.ip ?? "-"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {log.ip ?? "-"}
+                      </TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"

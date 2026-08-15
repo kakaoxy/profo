@@ -16,23 +16,20 @@ const l3ProjectIdSchema = z.string().min(1, "L3 项目 ID 不能为空");
  * 获取可关联的L3项目列表
  */
 export async function getAvailableL3ProjectsAction(
-  params: ProjectQueryParams
+  params: ProjectQueryParams,
 ): Promise<ActionResult<{ items: unknown[]; total: number }>> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/admin/marketing/available-projects",
-      {
-        params: {
-          query: {
-            page: params.page,
-            page_size: params.page_size,
-            community_name: params.community_name,
-            status: params.status,
-          },
+    const { data, error } = await client.GET("/api/v1/admin/marketing/available-projects", {
+      params: {
+        query: {
+          page: params.page,
+          page_size: params.page_size,
+          community_name: params.community_name,
+          status: params.status,
         },
       },
-    );
+    });
 
     if (error) {
       logger.error("Failed to fetch available L3 projects:", error);

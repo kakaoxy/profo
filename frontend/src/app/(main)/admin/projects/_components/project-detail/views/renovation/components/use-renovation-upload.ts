@@ -51,26 +51,20 @@ export function useRenovationUpload({
         onPhotoUploadedRef.current();
       } else {
         setUploadQueue((prev) =>
-          prev.map((p) =>
-            p.file === file ? { ...p, status: "error" as const, progress: 0 } : p
-          )
+          prev.map((p) => (p.file === file ? { ...p, status: "error" as const, progress: 0 } : p)),
         );
         toast.error(`保存照片记录失败: ${dbRes.message}`);
       }
     },
     onError: (error, file) => {
       setUploadQueue((prev) =>
-        prev.map((p) =>
-          p.file === file ? { ...p, status: "error" as const, progress: 0 } : p
-        )
+        prev.map((p) => (p.file === file ? { ...p, status: "error" as const, progress: 0 } : p)),
       );
       toast.error(error.message || "部分图片上传失败");
     },
     onProgress: (progress) => {
       setUploadQueue((prev) =>
-        prev.map((p) =>
-          p.file === progress.file ? { ...p, progress: progress.progress } : p
-        )
+        prev.map((p) => (p.file === progress.file ? { ...p, progress: progress.progress } : p)),
       );
     },
   });
@@ -128,7 +122,7 @@ export function useRenovationUpload({
       setUploadQueue((prev) => [...prev, ...newUploads]);
       baseUpload(validFiles);
     },
-    [baseUpload]
+    [baseUpload],
   );
 
   return {

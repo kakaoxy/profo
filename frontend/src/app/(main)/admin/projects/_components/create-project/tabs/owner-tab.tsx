@@ -28,7 +28,9 @@ export function OwnerTab({ form, onSave }: OwnerTabProps) {
     <div className="space-y-5">
       {isLocked && (
         <div className="flex items-center justify-between rounded-md border border-success/30 bg-success/5 px-4 py-3">
-          <span className="text-[13px] font-medium text-success">信息已保存，可继续编辑或直接提交项目</span>
+          <span className="text-[13px] font-medium text-success">
+            信息已保存，可继续编辑或直接提交项目
+          </span>
           <Button type="button" variant="outline" size="sm" onClick={() => setIsLocked(false)}>
             <Pencil className="mr-1 h-4 w-4" />
             继续编辑
@@ -49,21 +51,9 @@ export function OwnerTab({ form, onSave }: OwnerTabProps) {
             )}
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <SimpleInputField
-              control={control}
-              name="electricity_account"
-              label="电表户号"
-            />
-            <SimpleInputField
-              control={control}
-              name="water_account"
-              label="水表户号"
-            />
-            <SimpleInputField
-              control={control}
-              name="gas_account"
-              label="煤气户号"
-            />
+            <SimpleInputField control={control} name="electricity_account" label="电表户号" />
+            <SimpleInputField control={control} name="water_account" label="水表户号" />
+            <SimpleInputField control={control} name="gas_account" label="煤气户号" />
           </div>
         </div>
 

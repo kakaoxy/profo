@@ -52,12 +52,7 @@ export function QuickEntryCard({
     <div className="bg-card rounded-xl border border-border shadow-card">
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-lg",
-              iconBgClass,
-            )}
-          >
+          <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", iconBgClass)}>
             <Icon className={cn("h-4 w-4", accentClass)} aria-hidden="true" />
           </span>
           <h2 className="text-sm font-bold text-foreground">{title}</h2>
@@ -79,9 +74,7 @@ export function QuickEntryCard({
       </div>
 
       {visibleProjects.length === 0 ? (
-        <div className="py-8 text-center text-xs text-muted-foreground">
-          {emptyText}
-        </div>
+        <div className="py-8 text-center text-xs text-muted-foreground">{emptyText}</div>
       ) : (
         <div className="flex flex-col">
           {visibleProjects.map((project) => (
@@ -102,20 +95,14 @@ export function QuickEntryCard({
 
 export function RenovationRow(project: ProjectResponse): ReactNode {
   const communityName = project.community_name || "未命名项目";
-  const contractNo = project.contract_no
-    ? `合同号${project.contract_no}`
-    : "无合同号";
-  const stage = RENOVATION_STAGES.find(
-    (s) => s.value === project.renovation_stage,
-  );
+  const contractNo = project.contract_no ? `合同号${project.contract_no}` : "无合同号";
+  const stage = RENOVATION_STAGES.find((s) => s.value === project.renovation_stage);
   const stageLabel = stage ? stage.label : "未知阶段";
 
   return (
     <div className="flex w-full items-center justify-between">
       <div className="min-w-0 flex-1 mr-2">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {communityName}
-        </p>
+        <p className="truncate text-sm font-semibold text-foreground">{communityName}</p>
         <p className="text-[10px] text-muted-foreground">{contractNo}</p>
       </div>
       <Badge
@@ -144,9 +131,7 @@ export function SellingRow(project: ProjectResponse): ReactNode {
   return (
     <div className="flex w-full items-center justify-between">
       <div className="min-w-0 flex-1 mr-2">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {communityName}
-        </p>
+        <p className="truncate text-sm font-semibold text-foreground">{communityName}</p>
         <p className="text-[10px] text-muted-foreground">{listingText}</p>
       </div>
       <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 ml-auto">

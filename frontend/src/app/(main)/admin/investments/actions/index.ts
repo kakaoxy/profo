@@ -1,9 +1,4 @@
-export type {
-  ActionResult,
-  ExportParams,
-  InvestmentListParams,
-  ProjectBrief,
-} from "./types";
+export type { ActionResult, ExportParams, InvestmentListParams, ProjectBrief } from "./types";
 
 export {
   fetchInvestmentList,

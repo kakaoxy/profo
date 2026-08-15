@@ -29,14 +29,10 @@ export function SoldProjectCard({
           <span className="rounded-full bg-c-status-sold/10 px-2.5 py-0.5 text-xs font-medium text-c-status-sold">
             已售
           </span>
-          <h3 className="text-xl font-medium text-ink">
-            {communityName ?? "未知小区"}
-          </h3>
+          <h3 className="text-xl font-medium text-ink">{communityName ?? "未知小区"}</h3>
         </div>
         <div className="flex items-baseline gap-0.5 shrink-0">
-          <span className="text-2xl font-medium text-ink">
-            {totalPrice}
-          </span>
+          <span className="text-2xl font-medium text-ink">{totalPrice}</span>
           <span className="text-sm text-ink">万</span>
         </div>
       </div>
@@ -54,9 +50,7 @@ export function SoldProjectCard({
             </span>
           </>
         )}
-        <span className="text-xs text-graphite">
-          公司垫资装修 · 全权卖房
-        </span>
+        <span className="text-xs text-graphite">公司垫资装修 · 全权卖房</span>
       </div>
     </div>
   );

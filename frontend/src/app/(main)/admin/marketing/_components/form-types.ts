@@ -1,7 +1,10 @@
 "use client";
 
 import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/admin/marketing/types";
-import type { L4MarketingProjectCreate, L4MarketingProjectUpdate } from "@/app/(main)/admin/marketing/types";
+import type {
+  L4MarketingProjectCreate,
+  L4MarketingProjectUpdate,
+} from "@/app/(main)/admin/marketing/types";
 import type { ActionResult } from "@/app/(main)/admin/marketing/actions/projects";
 
 export type MiniProjectFormMode = "create" | "edit" | "view";

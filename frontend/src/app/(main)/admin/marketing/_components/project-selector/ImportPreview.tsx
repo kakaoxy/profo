@@ -1,21 +1,8 @@
 "use client";
 
 import * as React from "react";
-import {
-  Building2,
-  MapPin,
-  Maximize,
-  LayoutGrid,
-  Compass,
-  Wallet,
-  Tag,
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Building2, MapPin, Maximize, LayoutGrid, Compass, Wallet, Tag } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,14 +15,9 @@ import type { ImportPreviewProps } from "./types";
  * 导入预览组件
  * 展示从L3项目导入的数据预览
  */
-export function ImportPreview({
-  data,
-  onConfirm,
-  onCancel,
-  loading = false,
-}: ImportPreviewProps) {
+export function ImportPreview({ data, onConfirm, onCancel, loading = false }: ImportPreviewProps) {
   const [selectedMedia, setSelectedMedia] = React.useState<Set<string>>(
-    new Set(data.available_media.map((m) => m.id))
+    new Set(data.available_media.map((m) => m.id)),
   );
 
   // 切换媒体选择
@@ -125,9 +107,7 @@ export function ImportPreview({
                   icon={<Wallet className="w-4 h-4" />}
                   label="单价"
                   value={
-                    data.unit_price
-                      ? `${Number(data.unit_price).toFixed(2)}万元/m²`
-                      : "未设置"
+                    data.unit_price ? `${Number(data.unit_price).toFixed(2)}万元/m²` : "未设置"
                   }
                   muted={!data.unit_price}
                 />
@@ -142,9 +122,7 @@ export function ImportPreview({
             </Section>
 
             {data.available_media.length > 0 && (
-              <Section
-                title={`媒体资源 (${selectedMedia.size}/${data.available_media.length})`}
-              >
+              <Section title={`媒体资源 (${selectedMedia.size}/${data.available_media.length})`}>
                 <div className="flex items-center gap-2 mb-3">
                   <Checkbox
                     checked={selectedMedia.size === data.available_media.length}

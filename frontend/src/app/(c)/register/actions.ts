@@ -15,13 +15,8 @@ const registerInputSchema = z.object({
     .max(50, "用户名最多 50 字符")
     .regex(/^[a-zA-Z0-9_]+$/, "用户名仅允许字母、数字、下划线"),
   password: passwordSchema,
-  nickname: z
-    .string()
-    .min(1, "请输入昵称")
-    .max(50, "昵称最多 50 字符"),
-  phone: z
-    .string()
-    .regex(/^1[3-9]\d{9}$/, "手机号格式不正确"),
+  nickname: z.string().min(1, "请输入昵称").max(50, "昵称最多 50 字符"),
+  phone: z.string().regex(/^1[3-9]\d{9}$/, "手机号格式不正确"),
 });
 
 interface RegisterTokenResponse {
@@ -55,7 +50,10 @@ export async function registerAction(
     return createErrorResult(parsed.error.issues[0]?.message ?? "注册参数不合法");
   }
 
-  const payload: RegisterPayload = { username: parsed.data.username, password: parsed.data.password };
+  const payload: RegisterPayload = {
+    username: parsed.data.username,
+    password: parsed.data.password,
+  };
   if (parsed.data.nickname) payload.nickname = parsed.data.nickname;
   if (parsed.data.phone) payload.phone = parsed.data.phone;
 

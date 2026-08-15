@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useRef, useCallback } from 'react';
-import Image from 'next/image';
-import { X, Plus, Loader2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { useUpload, DEFAULT_ALLOWED_IMAGE_TYPES, compressImage } from '@/components/common/upload';
+import React, { useRef, useCallback } from "react";
+import Image from "next/image";
+import { X, Plus, Loader2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { useUpload, DEFAULT_ALLOWED_IMAGE_TYPES, compressImage } from "@/components/common/upload";
 
 interface Props {
   images: string[];
@@ -18,20 +18,20 @@ interface Props {
  * Next.js Image 组件对本地开发环境的 URL 需要特殊处理
  */
 const isLocalDevUrl = (url: string): boolean => {
-  return url.includes('127.0.0.1') || url.includes('localhost');
+  return url.includes("127.0.0.1") || url.includes("localhost");
 };
 
 /**
  * 图片上传组件 - 基于通用上传系统重构
- * 
+ *
  * 特性：
  * - 使用通用 useUpload hook 处理上传逻辑
  * - 使用 next/image 进行图片优化
  * - 对本地开发环境使用 unoptimized 避免私有 IP 限制
  * - 支持多图片上传和删除
  */
-export const ImageUpload: React.FC<Props> = ({ 
-  images, 
+export const ImageUpload: React.FC<Props> = ({
+  images,
   onChange,
   maxImages = 10,
   maxFileSize = 100, // 默认 100MB
@@ -55,34 +55,38 @@ export const ImageUpload: React.FC<Props> = ({
   });
 
   // 计算总进度
-  const totalProgress = uploadingFiles.length > 0
-    ? Math.round(uploadingFiles.reduce((sum, f) => sum + f.progress, 0) / uploadingFiles.length)
-    : 0;
+  const totalProgress =
+    uploadingFiles.length > 0
+      ? Math.round(uploadingFiles.reduce((sum, f) => sum + f.progress, 0) / uploadingFiles.length)
+      : 0;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    
+
     const remainingSlots = maxImages - images.length;
     if (remainingSlots <= 0) {
       toast.error(`最多只能上传 ${maxImages} 张图片`);
       return;
     }
-    
+
     const filesToUpload = Array.from(files).slice(0, remainingSlots);
-    
+
     if (filesToUpload.length > 0) {
       await upload(filesToUpload);
       toast.success(`上传完成`);
     }
-    
+
     // 清空 input 以允许重复上传同一文件
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removeImage = useCallback((index: number) => {
-    onChange(images.filter((_, i) => i !== index));
-  }, [images, onChange]);
+  const removeImage = useCallback(
+    (index: number) => {
+      onChange(images.filter((_, i) => i !== index));
+    },
+    [images, onChange],
+  );
 
   const canAddMore = images.length < maxImages;
 
@@ -96,7 +100,7 @@ export const ImageUpload: React.FC<Props> = ({
           {images.length}/{maxImages}
         </span>
       </div>
-      
+
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         {images.map((img, idx) => (
           <div
@@ -108,18 +112,18 @@ export const ImageUpload: React.FC<Props> = ({
               对于本地开发环境 URL 使用 unoptimized 避免私有 IP 限制
               生产环境会自动进行图片优化
             */}
-            <Image 
-              src={img} 
+            <Image
+              src={img}
               alt={`房源图片 ${idx + 1}`}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105" 
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 20vw"
               unoptimized={isLocalDevUrl(img)}
               priority={idx === 0}
             />
-            <button 
-              type="button" 
-              onClick={() => removeImage(idx)} 
+            <button
+              type="button"
+              onClick={() => removeImage(idx)}
               className="absolute top-1 right-1 h-6 w-6 bg-black/60 text-white rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
               aria-label={`删除图片 ${idx + 1}`}
             >
@@ -127,10 +131,10 @@ export const ImageUpload: React.FC<Props> = ({
             </button>
           </div>
         ))}
-        
+
         {canAddMore && (
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => !isUploading && fileInputRef.current?.click()}
             disabled={isUploading}
             className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-all bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -151,7 +155,7 @@ export const ImageUpload: React.FC<Props> = ({
             )}
           </button>
         )}
-        
+
         {!canAddMore && images.length >= maxImages && (
           <div className="aspect-square border-2 border-dashed border-status-pending/30 rounded-xl flex flex-col items-center justify-center text-status-pending bg-status-pending/10/50">
             <AlertCircle className="h-5 w-5 mb-1" />
@@ -159,14 +163,14 @@ export const ImageUpload: React.FC<Props> = ({
           </div>
         )}
       </div>
-      
-      <input 
-        ref={fileInputRef} 
-        type="file" 
+
+      <input
+        ref={fileInputRef}
+        type="file"
         accept={DEFAULT_ALLOWED_IMAGE_TYPES.join(",")}
-        multiple 
-        className="hidden" 
-        onChange={handleImageUpload} 
+        multiple
+        className="hidden"
+        onChange={handleImageUpload}
         disabled={isUploading}
       />
     </div>

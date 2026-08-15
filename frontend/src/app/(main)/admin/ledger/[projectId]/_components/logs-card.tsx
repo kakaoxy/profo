@@ -49,11 +49,15 @@ function formatLogContent(
   switch (actionType) {
     case "create":
       action = "创建记录";
-      summary = [d.category ?? "", d.amount != null ? formatCNY(d.amount) : ""].filter(Boolean).join(" · ");
+      summary = [d.category ?? "", d.amount != null ? formatCNY(d.amount) : ""]
+        .filter(Boolean)
+        .join(" · ");
       break;
     case "delete":
       action = "删除记录";
-      summary = [d.category ?? "", d.amount != null ? formatCNY(d.amount) : ""].filter(Boolean).join(" · ");
+      summary = [d.category ?? "", d.amount != null ? formatCNY(d.amount) : ""]
+        .filter(Boolean)
+        .join(" · ");
       break;
     case "settle":
       action = "结算";
@@ -90,12 +94,8 @@ export function LogsCard({ logs }: LogsCardProps) {
             <Table>
               <TableHeader>
                 <TableRow className="border-dove/40 hover:bg-transparent">
-                  <TableHead className="min-w-[150px] text-graphite font-medium">
-                    时间
-                  </TableHead>
-                  <TableHead className="min-w-[130px] text-graphite font-medium">
-                    操作人
-                  </TableHead>
+                  <TableHead className="min-w-[150px] text-graphite font-medium">时间</TableHead>
+                  <TableHead className="min-w-[130px] text-graphite font-medium">操作人</TableHead>
                   <TableHead className="min-w-[280px] text-graphite font-medium">
                     操作内容
                   </TableHead>

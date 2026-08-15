@@ -1,13 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -73,10 +67,7 @@ export function MarketingInfoSection({
               <FormItem>
                 <FormLabel className="text-sm font-medium">物业风格</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value || undefined}
-                  >
+                  <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="选择风格" />
                     </SelectTrigger>
@@ -102,9 +93,7 @@ export function MarketingInfoSection({
                   <Input
                     type="number"
                     {...field}
-                    onChange={(e) =>
-                      field.onChange(parseInt(e.target.value) || 0)
-                    }
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />

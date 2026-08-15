@@ -27,10 +27,7 @@ export function BottomNavBar({ visible }: BottomNavBarProps) {
     >
       <div className="mx-auto flex h-full max-w-300 items-center justify-around px-2">
         {tabs.map((tab) => {
-          const isActive =
-            tab.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(tab.href);
+          const isActive = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
           const Icon = tab.icon;
           return (
             <Link
@@ -39,18 +36,8 @@ export function BottomNavBar({ visible }: BottomNavBarProps) {
               aria-current={isActive ? "page" : undefined}
               className="flex flex-col items-center justify-center gap-1 min-w-14"
             >
-              <Icon
-                className={`h-5 w-5 ${
-                  isActive ? "text-rust" : "text-graphite"
-                }`}
-              />
-              <span
-                className={`text-xs ${
-                  isActive
-                    ? "font-medium text-ink"
-                    : "text-graphite"
-                }`}
-              >
+              <Icon className={`h-5 w-5 ${isActive ? "text-rust" : "text-graphite"}`} />
+              <span className={`text-xs ${isActive ? "font-medium text-ink" : "text-graphite"}`}>
                 {tab.label}
               </span>
             </Link>

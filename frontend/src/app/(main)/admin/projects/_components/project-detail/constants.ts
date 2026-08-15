@@ -1,10 +1,4 @@
-import {
-  FileSpreadsheet,
-  FileImage,
-  FileText,
-  File,
-  TrendingUp,
-} from "lucide-react";
+import { FileSpreadsheet, FileImage, FileText, File, TrendingUp } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 /**

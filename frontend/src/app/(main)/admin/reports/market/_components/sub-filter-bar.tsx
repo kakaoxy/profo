@@ -87,9 +87,7 @@ export function SubFilterBar(): ReactElement {
 
   const handleToggleFloor = (level: string): void => {
     const has = floorLevels.includes(level);
-    const next = has
-      ? floorLevels.filter((l) => l !== level)
-      : [...floorLevels, level];
+    const next = has ? floorLevels.filter((l) => l !== level) : [...floorLevels, level];
     void setQuery({ floor_levels: buildFloorLevelsUrl(next) });
   };
 
@@ -97,9 +95,7 @@ export function SubFilterBar(): ReactElement {
     <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
       {/* 状态 */}
       <div className="flex items-center gap-2">
-        <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-          状态
-        </Label>
+        <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">状态</Label>
         <ToggleGroup
           type="single"
           value={query.status}
@@ -120,9 +116,7 @@ export function SubFilterBar(): ReactElement {
 
       {/* 户型 */}
       <div className="flex items-center gap-2">
-        <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-          户型
-        </Label>
+        <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">户型</Label>
         <div className="flex gap-1.5">
           {ROOM_OPTIONS.map((opt) => {
             const isActive =
@@ -149,9 +143,7 @@ export function SubFilterBar(): ReactElement {
 
       {/* 楼层 */}
       <div className="flex items-center gap-2">
-        <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-          楼层
-        </Label>
+        <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">楼层</Label>
         <div className="flex gap-1.5">
           {FLOOR_OPTIONS.map((level) => {
             const isActive = floorLevels.includes(level);

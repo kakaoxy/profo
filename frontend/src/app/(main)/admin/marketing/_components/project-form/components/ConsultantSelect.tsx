@@ -5,11 +5,7 @@ import * as React from "react";
 import { Check, ChevronsUpDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getUsersSimpleAction } from "@/app/(main)/admin/users/actions";
 import type { ConsultantSelectProps, UserSimpleResponse } from "./types";
 
@@ -42,7 +38,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
         if (result.success && result.data?.items) {
           setConsultants(result.data.items);
           if (value) {
-            const found = result.data.items.find(c => c.id === value);
+            const found = result.data.items.find((c) => c.id === value);
             if (found) {
               setSelectedConsultantName(found.nickname || found.username);
             }
@@ -65,7 +61,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
   // 更新选中顾问的显示名称
   React.useEffect(() => {
     if (value && consultants.length > 0) {
-      const found = consultants.find(c => c.id === value);
+      const found = consultants.find((c) => c.id === value);
       if (found) {
         setSelectedConsultantName(found.nickname || found.username);
       }
@@ -74,7 +70,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
     }
   }, [value, consultants]);
 
-  const selectedConsultant = consultants.find(c => c.id === value);
+  const selectedConsultant = consultants.find((c) => c.id === value);
 
   return (
     <div className="space-y-2">
@@ -91,8 +87,16 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
           >
             <div className="flex items-center gap-2 truncate">
               <User className="h-4 w-4 text-graphite shrink-0" />
-              <span className={cn("truncate", !selectedConsultantName && !selectedConsultant && "text-ash font-normal")}>
-                {selectedConsultantName || (selectedConsultant ? `${selectedConsultant.nickname || selectedConsultant.username}` : "选择房源顾问...")}
+              <span
+                className={cn(
+                  "truncate",
+                  !selectedConsultantName && !selectedConsultant && "text-ash font-normal",
+                )}
+              >
+                {selectedConsultantName ||
+                  (selectedConsultant
+                    ? `${selectedConsultant.nickname || selectedConsultant.username}`
+                    : "选择房源顾问...")}
               </span>
             </div>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -107,34 +111,31 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
             ) : null}
 
             {!loading && consultants.length === 0 ? (
-              <div className="py-8 text-center text-ash text-xs">
-                暂无顾问数据
-              </div>
+              <div className="py-8 text-center text-ash text-xs">暂无顾问数据</div>
             ) : null}
 
-            {!loading && consultants.map((consultant) => (
-              <button
-                key={consultant.id}
-                className={cn(
-                  "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-fog transition-colors group text-left",
-                  value === consultant.id && "bg-apricot-wash/60 text-rust font-medium"
-                )}
-                onClick={() => {
-                  onChange(consultant.id);
-                  setOpen(false);
-                }}
-              >
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-medium text-ink">
-                    {consultant.nickname || consultant.username}
-                  </span>
-                  <span className="text-[10px] text-ash">
-                    {consultant.username}
-                  </span>
-                </div>
-                {value === consultant.id && <Check className="h-4 w-4" />}
-              </button>
-            ))}
+            {!loading &&
+              consultants.map((consultant) => (
+                <button
+                  key={consultant.id}
+                  className={cn(
+                    "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-fog transition-colors group text-left",
+                    value === consultant.id && "bg-apricot-wash/60 text-rust font-medium",
+                  )}
+                  onClick={() => {
+                    onChange(consultant.id);
+                    setOpen(false);
+                  }}
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-medium text-ink">
+                      {consultant.nickname || consultant.username}
+                    </span>
+                    <span className="text-[10px] text-ash">{consultant.username}</span>
+                  </div>
+                  {value === consultant.id && <Check className="h-4 w-4" />}
+                </button>
+              ))}
 
             {/* 清除选择选项 */}
             {!loading && value ? (

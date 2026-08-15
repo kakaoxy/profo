@@ -13,12 +13,7 @@ import { fetchClient } from "@/lib/api-server";
 import { logger } from "@/lib/logger";
 import { isRedirectError } from "@/lib/auth/server/session";
 import type { components } from "@/lib/api-types";
-import type {
-  RecruitCampaign,
-  RecruitEmployee,
-  RecruitFunnelData,
-  RecruitLead,
-} from "../types";
+import type { RecruitCampaign, RecruitEmployee, RecruitFunnelData, RecruitLead } from "../types";
 
 type RecruitLeadListResponse = components["schemas"]["RecruitLeadListResponse"];
 type UserSimpleResponse = components["schemas"]["UserSimpleResponse"];
@@ -194,13 +189,9 @@ export const getRecruitLeadsKpi = cache(async (): Promise<RecruitLeadsKpi> => {
   }
 
   const todayCount =
-    results[0].status === "fulfilled" && results[0].value.data
-      ? results[0].value.data.total
-      : 0;
+    results[0].status === "fulfilled" && results[0].value.data ? results[0].value.data.total : 0;
   const pending =
-    results[1].status === "fulfilled" && results[1].value.data
-      ? results[1].value.data.total
-      : 0;
+    results[1].status === "fulfilled" && results[1].value.data ? results[1].value.data.total : 0;
 
   let totalLeads = 0;
   let validNew = 0;

@@ -31,24 +31,12 @@ interface ChartRendererProps {
 
 // 图表渲染组件：一次性静态导入所有 recharts 组件，
 // 由父组件通过 next/dynamic({ ssr: false }) 加载，确保 recharts 仅在客户端以单一 chunk 加载
-function ChartRenderer({
-  chartData,
-  colors,
-  colorIncome,
-  colorExpense,
-}: ChartRendererProps) {
+function ChartRenderer({ chartData, colors, colorIncome, colorExpense }: ChartRendererProps) {
   // 固定数值高度避免依赖父容器 clientHeight 测量，防止 dynamic 加载切换瞬间测得 0 触发 recharts 宽高 -1 警告
   return (
     <ResponsiveContainer width="100%" height={250}>
-      <BarChart
-        data={chartData}
-        margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-      >
-        <CartesianGrid
-          strokeDasharray="3 3"
-          vertical={false}
-          stroke={colors.grid}
-        />
+      <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.grid} />
         <XAxis
           dataKey="date"
           tick={{ fontSize: 10, fill: colors.label }}
@@ -73,16 +61,9 @@ function ChartRenderer({
             // ValueType 可能是 string | number | readonly (string | number)[]
             // 我们只处理数值情况
             const numericValue =
-              typeof value === "number"
-                ? value
-                : typeof value === "string"
-                  ? parseFloat(value)
-                  : 0;
+              typeof value === "number" ? value : typeof value === "string" ? parseFloat(value) : 0;
             const val = Number.isNaN(numericValue) ? 0 : numericValue;
-            return [
-              `¥${Math.abs(val).toLocaleString()}`,
-              val > 0 ? "收入" : "支出",
-            ];
+            return [`¥${Math.abs(val).toLocaleString()}`, val > 0 ? "收入" : "支出"];
           }}
         />
         <ReferenceLine y={0} stroke={colors.label} />
@@ -96,9 +77,7 @@ function ChartRenderer({
             fill: colorIncome,
             fontSize: 10,
             formatter: (value) =>
-              typeof value === "number" && value !== 0
-                ? `¥${value.toLocaleString()}`
-                : "", // ← 0 或非数字时返回空字符串，Recharts 会自动隐藏标签
+              typeof value === "number" && value !== 0 ? `¥${value.toLocaleString()}` : "", // ← 0 或非数字时返回空字符串，Recharts 会自动隐藏标签
           }}
         />
 

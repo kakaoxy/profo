@@ -99,9 +99,5 @@ function subscribeChartColors(callback: () => void): () => void {
 }
 
 export function useChartColors(): ChartColors {
-  return useSyncExternalStore(
-    subscribeChartColors,
-    getChartColorsSnapshot,
-    getDefaultChartColors
-  );
+  return useSyncExternalStore(subscribeChartColors, getChartColorsSnapshot, getDefaultChartColors);
 }

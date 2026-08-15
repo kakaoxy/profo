@@ -55,7 +55,7 @@ export const StagePhotoItem = memo(function StagePhotoItem({
                   onLoad={() => setImageLoaded(true)}
                   className={cn(
                     "object-cover transition-all duration-500 group-hover:scale-110",
-                    imageLoaded ? "opacity-100" : "opacity-0 bg-muted"
+                    imageLoaded ? "opacity-100" : "opacity-0 bg-muted",
                   )}
                 />
               ) : (
@@ -77,9 +77,7 @@ export const StagePhotoItem = memo(function StagePhotoItem({
         <DialogContent className="max-w-4xl p-0 bg-black/90 border-0 overflow-hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>{stageLabel} 影像记录</DialogTitle>
-            <DialogDescription>
-              正在查看 {stageLabel} 阶段的照片背景。
-            </DialogDescription>
+            <DialogDescription>正在查看 {stageLabel} 阶段的照片背景。</DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[80vh]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">

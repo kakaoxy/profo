@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  getFileUrl,
-  getOptimizedImageUrl,
-  preloadImage,
-  preloadImages,
-} from "../common/utils";
+import { getFileUrl, getOptimizedImageUrl, preloadImage, preloadImages } from "../common/utils";
 import {
   STATUS_CONFIG,
   PUBLISH_STATUS_CONFIG,

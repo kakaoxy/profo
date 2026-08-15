@@ -14,15 +14,7 @@ const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
 const photoIdSchema = z.string().min(1, "照片 ID 不能为空");
 
 // 装修阶段枚举（与后端 RenovationStage 对齐，消除 as 强转）
-const renovationStageSchema = z.enum([
-  "拆除",
-  "设计",
-  "水电",
-  "木瓦",
-  "油漆",
-  "交付",
-  "已完成",
-]);
+const renovationStageSchema = z.enum(["拆除", "设计", "水电", "木瓦", "油漆", "交付", "已完成"]);
 
 /**
  * 从后端错误响应体提取可读消息，提取失败返回 fallback。
@@ -85,10 +77,7 @@ const updateRenovationContractSchema = z.object({
 /**
  * 删除装修照片
  */
-export async function deleteRenovationPhotoAction(
-  projectId: string,
-  photoId: string,
-) {
+export async function deleteRenovationPhotoAction(projectId: string, photoId: string) {
   const idParsed = projectIdSchema.safeParse(projectId);
   if (!idParsed.success) {
     return {
@@ -140,14 +129,11 @@ export async function deleteRenovationPhotoAction(
 export async function getRenovationPhotosAction(projectId: string) {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/projects/{project_id}/renovation/photos",
-      {
-        params: {
-          path: { project_id: projectId },
-        },
+    const { data, error } = await client.GET("/api/v1/projects/{project_id}/renovation/photos", {
+      params: {
+        path: { project_id: projectId },
       },
-    );
+    });
 
     if (error) {
       return { success: false, message: extractErrorMessage(error, "获取照片失败") };
@@ -184,20 +170,17 @@ export async function addRenovationPhotoAction(payload: {
 
   try {
     const client = await fetchClient();
-    const { error } = await client.POST(
-      "/api/v1/projects/{project_id}/renovation/photos",
-      {
-        params: {
-          path: { project_id: parsed.data.projectId },
-          query: {
-            stage: parsed.data.stage,
-            url: parsed.data.url,
-            thumbnail_url: parsed.data.thumbnail_url,
-            filename: parsed.data.filename,
-          },
+    const { error } = await client.POST("/api/v1/projects/{project_id}/renovation/photos", {
+      params: {
+        path: { project_id: parsed.data.projectId },
+        query: {
+          stage: parsed.data.stage,
+          url: parsed.data.url,
+          thumbnail_url: parsed.data.thumbnail_url,
+          filename: parsed.data.filename,
         },
       },
-    );
+    });
 
     if (error) {
       return { success: false, message: extractErrorMessage(error, "上传照片记录失败") };
@@ -232,17 +215,14 @@ export async function updateRenovationStageAction(payload: {
 
   try {
     const client = await fetchClient();
-    const { error } = await client.PUT(
-      "/api/v1/projects/{project_id}/renovation",
-      {
-        params: { path: { project_id: parsed.data.projectId } },
-        body: {
-          renovation_stage: parsed.data.renovation_stage,
-          completed_stage: parsed.data.completed_stage,
-          stage_completed_at: parsed.data.stage_completed_at,
-        },
+    const { error } = await client.PUT("/api/v1/projects/{project_id}/renovation", {
+      params: { path: { project_id: parsed.data.projectId } },
+      body: {
+        renovation_stage: parsed.data.renovation_stage,
+        completed_stage: parsed.data.completed_stage,
+        stage_completed_at: parsed.data.stage_completed_at,
       },
-    );
+    });
 
     if (error) {
       return { success: false, message: extractErrorMessage(error, "更新阶段失败") };
@@ -316,12 +296,9 @@ export async function updateRenovationStageDateAction(payload: {
 export async function getRenovationContractAction(projectId: string) {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/projects/{project_id}/renovation/contract",
-      {
-        params: { path: { project_id: projectId } },
-      },
-    );
+    const { data, error } = await client.GET("/api/v1/projects/{project_id}/renovation/contract", {
+      params: { path: { project_id: projectId } },
+    });
 
     if (error) {
       return { success: false, message: extractErrorMessage(error, "获取装修合同信息失败") };
@@ -340,7 +317,7 @@ export async function getRenovationContractAction(projectId: string) {
  */
 export async function updateRenovationContractAction(
   projectId: string,
-  payload: z.infer<typeof updateRenovationContractSchema>
+  payload: z.infer<typeof updateRenovationContractSchema>,
 ) {
   const idParsed = projectIdSchema.safeParse(projectId);
   if (!idParsed.success) {
@@ -362,13 +339,10 @@ export async function updateRenovationContractAction(
 
   try {
     const client = await fetchClient();
-    const { data, error } = await client.PUT(
-      "/api/v1/projects/{project_id}/renovation/contract",
-      {
-        params: { path: { project_id: projectId } },
-        body: parsed.data,
-      },
-    );
+    const { data, error } = await client.PUT("/api/v1/projects/{project_id}/renovation/contract", {
+      params: { path: { project_id: projectId } },
+      body: parsed.data,
+    });
 
     if (error) {
       return { success: false, message: extractErrorMessage(error, "更新装修合同信息失败") };

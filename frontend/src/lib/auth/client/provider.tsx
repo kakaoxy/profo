@@ -32,10 +32,7 @@ export interface AuthActions {
     credentials: Record<string, unknown>,
     options?: LoginActionOptions,
   ): Promise<ActionResult<SessionActionData>>;
-  logout(options?: {
-    redirect?: boolean;
-    callbackUrl?: string;
-  }): Promise<ActionResult<null>>;
+  logout(options?: { redirect?: boolean; callbackUrl?: string }): Promise<ActionResult<null>>;
   /** Syncs client session state. Silently rotates tokens if expired before returning. */
   fetchSession(): Promise<ActionResult<SessionActionData | null>>;
   /** Manually update the access token stored in the HTTP-only cookie */
@@ -89,9 +86,7 @@ function buildAuthenticatedState(data: SessionActionData): ClientSession {
  *   - `undefined` means "I didn't check" → client must check.
  *   - `null`      means "I checked and there is no session" → trust the server.
  */
-function buildInitialState(
-  initialSession: ClientSessionData | null | undefined,
-): ClientSession {
+function buildInitialState(initialSession: ClientSessionData | null | undefined): ClientSession {
   if (initialSession === undefined) return LOADING_SESSION;
   if (initialSession === null) return UNAUTHENTICATED;
   return buildAuthenticatedState(initialSession);
@@ -220,9 +215,7 @@ export function AuthProvider({
     [actions],
   );
 
-  const [session, setSession] = useState<ClientSession>(() =>
-    buildInitialState(initialSession),
-  );
+  const [session, setSession] = useState<ClientSession>(() => buildInitialState(initialSession));
 
   const router = useRouter();
 
@@ -287,10 +280,7 @@ export function AuthProvider({
       // Only revalidate when the tab becomes visible and we have an established
       // authenticated session. Skip during loading and for unauthenticated users
       // to avoid unnecessary network requests.
-      if (
-        document.visibilityState !== "visible" ||
-        sessionRef.current.status !== "authenticated"
-      ) {
+      if (document.visibilityState !== "visible" || sessionRef.current.status !== "authenticated") {
         return;
       }
 
@@ -316,8 +306,7 @@ export function AuthProvider({
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [refreshOnFocus, router]);
 
   // ── Auth callbacks ───────────────────────────────────────────────────────────
@@ -375,9 +364,7 @@ export function AuthProvider({
     [session, login, logout, fetchSession, updateSessionToken, hasOAuth],
   );
 
-  return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -432,10 +419,7 @@ export interface UseAuthReturn {
    * // or with a callbackUrl:
    * if (oauthLogin) oauthLogin("github", { callbackUrl: "/dashboard" });
    */
-  oauthLogin?: (
-    providerId: OAuthProviderId,
-    options?: { callbackUrl?: string },
-  ) => void;
+  oauthLogin?: (providerId: OAuthProviderId, options?: { callbackUrl?: string }) => void;
 }
 
 /**
@@ -486,10 +470,7 @@ export function useAuth(): UseAuthReturn {
   // /api/auth/google/login — a stub endpoint that does not exist (404).
   const hasOAuth = ctx.hasOAuth;
 
-  const oauthLogin = (
-    providerId: OAuthProviderId,
-    options?: { callbackUrl?: string },
-  ) => {
+  const oauthLogin = (providerId: OAuthProviderId, options?: { callbackUrl?: string }) => {
     const base = `/api/auth/${providerId}/login`;
     const url = options?.callbackUrl
       ? `${base}?callbackUrl=${encodeURIComponent(options.callbackUrl)}`

@@ -42,10 +42,7 @@ export function ComparisonPool(): ReactElement {
     { shallow: false },
   );
 
-  const compareIds = useMemo(
-    () => parseCompareIds(query.compare_ids),
-    [query.compare_ids],
-  );
+  const compareIds = useMemo(() => parseCompareIds(query.compare_ids), [query.compare_ids]);
 
   const count = compareIds.length;
   const atLimit = count >= MAX_COMPARE;
@@ -63,38 +60,23 @@ export function ComparisonPool(): ReactElement {
   const handleCompare = (): void => {
     if (!canCompare) return;
     const ids = compareIds.join(",");
-    router.push(
-      `/admin/reports/market/compare?ids=${encodeURIComponent(ids)}`,
-    );
+    router.push(`/admin/reports/market/compare?ids=${encodeURIComponent(ids)}`);
   };
 
   if (count === 0) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        点击商圈表格「+ 对比」添加
-      </p>
-    );
+    return <p className="text-xs text-muted-foreground">点击商圈表格「+ 对比」添加</p>;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span className="text-xs text-muted-foreground tabular-nums">
         已选对比: {count} 个
-        {atLimit && (
-          <span className="ml-1 text-amber-600 dark:text-amber-500">
-            （已达上限）
-          </span>
-        )}
+        {atLimit && <span className="ml-1 text-amber-600 dark:text-amber-500">（已达上限）</span>}
       </span>
 
       <div className="flex flex-wrap gap-1.5">
         {compareIds.map((bc) => (
-          <Badge
-            key={bc}
-            variant="secondary"
-            className="gap-1 pr-1"
-            title={bc}
-          >
+          <Badge key={bc} variant="secondary" className="gap-1 pr-1" title={bc}>
             <span>{bc}</span>
             <button
               type="button"

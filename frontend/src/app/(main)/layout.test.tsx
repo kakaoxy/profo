@@ -25,9 +25,7 @@ vi.mock("next/navigation", () => ({
 
 // Mock next/headers — headers() returns Headers with current pathname
 vi.mock("next/headers", () => ({
-  headers: vi.fn(async () =>
-    new Headers({ "x-invoke-path": mockPathnameState.pathname }),
-  ),
+  headers: vi.fn(async () => new Headers({ "x-invoke-path": mockPathnameState.pathname })),
   cookies: vi.fn(async () => ({ get: () => undefined })),
 }));
 

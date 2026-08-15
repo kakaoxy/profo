@@ -26,9 +26,7 @@ export function calculateTimeMonitor(
   const startDate = new Date(signingDate);
   const today = new Date();
   const totalDays = signingPeriod;
-  const consumedDays = Math.floor(
-    (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  const consumedDays = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   const remainingDays = Math.max(0, totalDays - consumedDays);
   const progress = Math.min(100, Math.max(0, (consumedDays / totalDays) * 100));
 

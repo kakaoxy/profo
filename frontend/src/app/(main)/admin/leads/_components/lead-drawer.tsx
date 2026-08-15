@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Lead, LeadStatus, FollowUpMethod, FollowUp } from '../types';
-import { getLeadFollowUpsAction } from '../actions';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { DrawerHeader } from './drawer-parts/drawer-header';
-import { LifecycleStepper } from './drawer-parts/lifecycle-stepper';
-import { TabsNav, TabId } from './drawer-parts/tabs-nav';
-import { InfoTab } from './drawer-parts/info-tab';
-import { MonitoringDashboard, MonitoringFullscreen } from './monitoring-dashboard';
+import React, { useState, useEffect } from "react";
+import { Lead, LeadStatus, FollowUpMethod, FollowUp } from "../types";
+import { getLeadFollowUpsAction } from "../actions";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { DrawerHeader } from "./drawer-parts/drawer-header";
+import { LifecycleStepper } from "./drawer-parts/lifecycle-stepper";
+import { TabsNav, TabId } from "./drawer-parts/tabs-nav";
+import { InfoTab } from "./drawer-parts/info-tab";
+import { MonitoringDashboard, MonitoringFullscreen } from "./monitoring-dashboard";
 
 interface Props {
   lead: Lead | null;
@@ -19,8 +19,15 @@ interface Props {
   onImagesUpdate?: (leadId: string, images: string[]) => void;
 }
 
-export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, onAddFollowUp, onImagesUpdate }) => {
-  const [activeTab, setActiveTab] = useState<TabId>('info');
+export const LeadDrawer: React.FC<Props> = ({
+  lead,
+  isOpen,
+  onClose,
+  onAudit,
+  onAddFollowUp,
+  onImagesUpdate,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabId>("info");
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [isMonitorFullscreen, setIsMonitorFullscreen] = useState(false);
 
@@ -36,12 +43,12 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
   // 切换线索或抽屉重新打开时重置 Tab 与全屏状态
   // 采用 React "Adjusting state when a prop changes" 模式，避免 useEffect 内同步 setState
   // 触发 react-hooks/set-state-in-effect 警告
-  const resetKey = isOpen ? lead?.id ?? null : null;
+  const resetKey = isOpen ? (lead?.id ?? null) : null;
   const [prevResetKey, setPrevResetKey] = useState<string | null | undefined>(undefined);
   if (resetKey !== prevResetKey) {
     setPrevResetKey(resetKey);
     if (isOpen) {
-      setActiveTab('info');
+      setActiveTab("info");
       setIsMonitorFullscreen(false);
     }
   }
@@ -85,18 +92,23 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
           activeTab={activeTab}
           onTabChange={setActiveTab}
           isMonitorFullscreen={isMonitorFullscreen}
-          onToggleFullscreen={() => setIsMonitorFullscreen(v => !v)}
+          onToggleFullscreen={() => setIsMonitorFullscreen((v) => !v)}
         />
 
-        <div key={lead.id} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-muted/30">
-          {activeTab === 'info' ? (
+        <div
+          key={lead.id}
+          className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-muted/30"
+        >
+          {activeTab === "info" ? (
             <InfoTab
               lead={lead}
               onAudit={onAudit}
               followUps={followUps}
               onAddFollowUp={onAddFollowUp}
               onRefreshFollowUps={setFollowUps}
-              onImagesUpdate={onImagesUpdate ? (images) => onImagesUpdate(lead.id, images) : undefined}
+              onImagesUpdate={
+                onImagesUpdate ? (images) => onImagesUpdate(lead.id, images) : undefined
+              }
             />
           ) : (
             <MonitoringDashboard lead={lead} />
@@ -104,7 +116,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
         </div>
 
         {/* 全屏 overlay：仅在 monitor Tab 激活且开启全屏时渲染，作为 Sheet 内部 absolute 层覆盖原内容 */}
-        {isMonitorFullscreen && activeTab === 'monitor' && (
+        {isMonitorFullscreen && activeTab === "monitor" && (
           <MonitoringFullscreen lead={lead} onExit={() => setIsMonitorFullscreen(false)} />
         )}
       </SheetContent>

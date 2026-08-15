@@ -51,15 +51,12 @@ export async function createEvaluationAction(
 
   try {
     const client = await fetchClient();
-    const { data, error } = await client.POST(
-      "/api/v1/leads/{lead_id}/evaluations",
-      {
-        params: { path: { lead_id: leadId } },
-        // 端到端以字符串传输：契约类型为 `number | string`，
-        // 后端 Decimal 直接解析字符串避免 IEEE754 float 精度损失
-        body: { eval_price: String(evalPrice), remark: remark ?? null },
-      },
-    );
+    const { data, error } = await client.POST("/api/v1/leads/{lead_id}/evaluations", {
+      params: { path: { lead_id: leadId } },
+      // 端到端以字符串传输：契约类型为 `number | string`，
+      // 后端 Decimal 直接解析字符串避免 IEEE754 float 精度损失
+      body: { eval_price: String(evalPrice), remark: remark ?? null },
+    });
 
     if (error || !data) {
       return { success: false, error: extractErrorMessage(error) };
@@ -73,9 +70,7 @@ export async function createEvaluationAction(
   }
 }
 
-export async function getEvalHistoriesAction(
-  leadId: string,
-): Promise<ActionResult<EvalHistory[]>> {
+export async function getEvalHistoriesAction(leadId: string): Promise<ActionResult<EvalHistory[]>> {
   const permCheck = await requirePermission(PERMISSION_CODES.LEAD_READ);
   if (!permCheck.ok) {
     return { success: false, error: permCheck.message };
@@ -83,12 +78,9 @@ export async function getEvalHistoriesAction(
 
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/leads/{lead_id}/evaluations",
-      {
-        params: { path: { lead_id: leadId } },
-      },
-    );
+    const { data, error } = await client.GET("/api/v1/leads/{lead_id}/evaluations", {
+      params: { path: { lead_id: leadId } },
+    });
 
     if (error || !data) {
       return { success: false, error: extractErrorMessage(error) };

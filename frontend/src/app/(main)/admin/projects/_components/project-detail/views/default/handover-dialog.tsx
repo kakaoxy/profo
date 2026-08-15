@@ -8,11 +8,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { updateProjectAction, updateProjectStatusAction } from "../../../../actions/core";
 import { Project } from "../../../../types";
@@ -73,7 +69,7 @@ export function HandoverDialog({ project, onSuccess }: HandoverDialogProps) {
               variant={"outline"}
               className={cn(
                 "w-full justify-start text-left font-normal",
-                !date && "text-muted-foreground"
+                !date && "text-muted-foreground",
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
@@ -81,12 +77,7 @@ export function HandoverDialog({ project, onSuccess }: HandoverDialogProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setSelectedDate}
-              initialFocus
-            />
+            <Calendar mode="single" selected={date} onSelect={setSelectedDate} initialFocus />
           </PopoverContent>
         </Popover>
       </div>

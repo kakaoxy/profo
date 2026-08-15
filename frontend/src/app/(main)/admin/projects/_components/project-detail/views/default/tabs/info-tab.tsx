@@ -1,7 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FileText, TrendingUp, User, MapPin, FileCheck, Zap, Eye, EyeOff, Copy, Check, Loader2 } from "lucide-react";
+import {
+  FileText,
+  TrendingUp,
+  User,
+  MapPin,
+  FileCheck,
+  Zap,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -70,13 +82,7 @@ function formatCommissionRange(project: Project): string | undefined {
  * 银行卡号展示项 - 默认脱敏，点击眼睛切换显隐，支持复制完整卡号.
  * 完整卡号通过按需接口获取，不随项目详情下发。
  */
-function BankCardItem({
-  maskedValue,
-  ownerId,
-}: {
-  maskedValue?: string | null;
-  ownerId?: string;
-}) {
+function BankCardItem({ maskedValue, ownerId }: { maskedValue?: string | null; ownerId?: string }) {
   const [revealed, setRevealed] = useState(false);
   const [fullValue, setFullValue] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -263,17 +269,12 @@ export function InfoTab({ project }: InfoTabProps) {
 
   const district =
     project.district ||
-    (fetched && fetched.name === project.community_name
-      ? fetched.district
-      : undefined);
+    (fetched && fetched.name === project.community_name ? fetched.district : undefined);
 
   // 已售项目展示用时天数
-  const isSold =
-    project.status === "sold" || project.status === "已售";
+  const isSold = project.status === "sold" || project.status === "已售";
   const daysOnMarket =
-    isSold && project.days_on_market != null
-      ? `${project.days_on_market} 天`
-      : undefined;
+    isSold && project.days_on_market != null ? `${project.days_on_market} 天` : undefined;
 
   return (
     <div className="space-y-4">
@@ -288,30 +289,17 @@ export function InfoTab({ project }: InfoTabProps) {
         {/* 业务形式 */}
         <InfoItem
           label="业务形式"
-          value={
-            project.business_form
-              ? BUSINESS_FORM_LABEL[project.business_form]
-              : "未设置"
-          }
+          value={project.business_form ? BUSINESS_FORM_LABEL[project.business_form] : "未设置"}
         />
 
         {/* 产证面积 */}
-        <InfoItem
-          label="产证面积"
-          value={project.area ? `${project.area} ㎡` : undefined}
-        />
+        <InfoItem label="产证面积" value={project.area ? `${project.area} ㎡` : undefined} />
 
         {/* 户型 */}
-        <InfoItem
-          label="户型"
-          value={formatLayout(project.layout)}
-        />
+        <InfoItem label="户型" value={formatLayout(project.layout)} />
 
         {/* 朝向 */}
-        <InfoItem
-          label="朝向"
-          value={project.orientation}
-        />
+        <InfoItem label="朝向" value={project.orientation} />
 
         {/* 详细地址 */}
         <InfoItem
@@ -334,52 +322,30 @@ export function InfoTab({ project }: InfoTabProps) {
         />
 
         {/* 签约日期 */}
-        <InfoItem
-          label="签约日期"
-          value={formatDate(project.signing_date)}
-        />
+        <InfoItem label="签约日期" value={formatDate(project.signing_date)} />
 
         {/* 交房日期 */}
-        <InfoItem
-          label="交房日期"
-          value={formatDate(project.planned_handover_date)}
-        />
+        <InfoItem label="交房日期" value={formatDate(project.planned_handover_date)} />
 
         {/* 签约价格 */}
-        <InfoItem
-          label="签约价格"
-          value={formatPrice(project.signing_price)}
-          highlight
-        />
+        <InfoItem label="签约价格" value={formatPrice(project.signing_price)} highlight />
 
         {/* 合同周期 */}
         <InfoItem
           label="合同周期"
-          value={
-            project.signing_period
-              ? `${project.signing_period} 天`
-              : undefined
-          }
+          value={project.signing_period ? `${project.signing_period} 天` : undefined}
         />
 
         {/* 顺延期 */}
         <InfoItem
           label="顺延期"
-          value={
-            project.extension_period
-              ? `${project.extension_period} 天`
-              : undefined
-          }
+          value={project.extension_period ? `${project.extension_period} 天` : undefined}
         />
 
         {/* 顺延期租金 */}
         <InfoItem
           label="顺延期租金"
-          value={
-            project.extension_rent
-              ? `¥ ${project.extension_rent} / 月`
-              : undefined
-          }
+          value={project.extension_rent ? `¥ ${project.extension_rent} / 月` : undefined}
         />
 
         {/* 委托期限 */}
@@ -397,11 +363,7 @@ export function InfoTab({ project }: InfoTabProps) {
         />
 
         {/* 其他约定条款 */}
-        <InfoItem
-          label="其他约定条款"
-          value={project.other_agreements}
-          className="sm:col-span-2"
-        />
+        <InfoItem label="其他约定条款" value={project.other_agreements} className="sm:col-span-2" />
       </InfoSection>
 
       {/* --- 业主信息 --- */}
@@ -456,9 +418,7 @@ export function InfoTab({ project }: InfoTabProps) {
 
       {/* --- 公用事业户号 --- */}
       {/* 仅有值时（任一户号非空）才渲染整个分组 */}
-      {(project.electricity_account ||
-        project.water_account ||
-        project.gas_account) && (
+      {(project.electricity_account || project.water_account || project.gas_account) && (
         <InfoSection title="公用事业户号" icon={<Zap className="h-4 w-4" />}>
           <InfoItem label="电表户号" value={project.electricity_account} />
           <InfoItem label="水表户号" value={project.water_account} />
@@ -468,11 +428,7 @@ export function InfoTab({ project }: InfoTabProps) {
 
       {/* --- 交易数据（保留作为参考） --- */}
       <InfoSection title="交易数据" icon={<TrendingUp className="h-4 w-4" />}>
-        <InfoItem
-          label="挂牌价"
-          value={formatPrice(project.list_price)}
-          highlight
-        />
+        <InfoItem label="挂牌价" value={formatPrice(project.list_price)} highlight />
         <InfoItem
           label="成交价"
           value={
@@ -490,9 +446,7 @@ export function InfoTab({ project }: InfoTabProps) {
               <span
                 className={cn(
                   "font-bold font-mono",
-                  (project.net_cash_flow ?? 0) >= 0
-                    ? "text-money-positive"
-                    : "text-money-negative"
+                  (project.net_cash_flow ?? 0) >= 0 ? "text-money-positive" : "text-money-negative",
                 )}
               >
                 {formatPrice((project.net_cash_flow || 0) / 10000)}
@@ -500,28 +454,16 @@ export function InfoTab({ project }: InfoTabProps) {
             ) : undefined
           }
         />
-        <InfoItem
-          label="成交日期"
-          value={formatDate(project.sold_date)}
-        />
-        <InfoItem
-          label="上架日期"
-          value={formatDate(project.listing_date)}
-        />
+        <InfoItem label="成交日期" value={formatDate(project.sold_date)} />
+        <InfoItem label="上架日期" value={formatDate(project.listing_date)} />
         {/* 用时（仅已售项目且有值时显示） */}
-        {daysOnMarket && (
-          <InfoItem label="用时" value={daysOnMarket} highlight />
-        )}
+        {daysOnMarket && <InfoItem label="用时" value={daysOnMarket} highlight />}
       </InfoSection>
 
       {/* --- 备注 --- 仅有值时显示 */}
       {project.notes && (
         <InfoSection title="备注" icon={<FileText className="h-4 w-4" />}>
-          <InfoItem
-            label="备注"
-            value={project.notes}
-            className="sm:col-span-2"
-          />
+          <InfoItem label="备注" value={project.notes} className="sm:col-span-2" />
         </InfoSection>
       )}
     </div>

@@ -8,13 +8,7 @@ import { CommunitySelect } from "@/components/common/community-select";
 import { getSalesUsersSimpleAction, getCurrentUserAction } from "../../../actions/sales";
 import { FloorInput } from "@/components/common";
 import { toast } from "sonner";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -80,7 +74,9 @@ export function BasicInfoTab({ form }: TabProps) {
 
   // 区分是来自小区的 district（只读）还是用户手输（可编辑）
   const [communityDistrict, setCommunityDistrict] = useState<string | undefined>(undefined);
-  const [communityBusinessCircle, setCommunityBusinessCircle] = useState<string | undefined>(undefined);
+  const [communityBusinessCircle, setCommunityBusinessCircle] = useState<string | undefined>(
+    undefined,
+  );
 
   // 加载用户列表 + 当前登录用户（并行）
   useEffect(() => {
@@ -134,7 +130,10 @@ export function BasicInfoTab({ form }: TabProps) {
                     form.setValue("original_community_district", community.district || "");
                     setCommunityDistrict(community.district);
                     form.setValue("business_circle", community.businessCircle || "");
-                    form.setValue("original_community_business_circle", community.businessCircle || "");
+                    form.setValue(
+                      "original_community_business_circle",
+                      community.businessCircle || "",
+                    );
                     setCommunityBusinessCircle(community.businessCircle);
                   }}
                 />
@@ -155,9 +154,7 @@ export function BasicInfoTab({ form }: TabProps) {
                 <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
                   行政区
                   {!hasCommunityDistrict && (
-                    <span className="text-[12px] text-graphite font-normal ml-1">
-                      （可手输）
-                    </span>
+                    <span className="text-[12px] text-graphite font-normal ml-1">（可手输）</span>
                   )}
                 </FormLabel>
                 <FormControl>
@@ -188,9 +185,7 @@ export function BasicInfoTab({ form }: TabProps) {
                 <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
                   商圈
                   {!hasCommunityBusinessCircleVal && (
-                    <span className="text-[12px] text-graphite font-normal ml-1">
-                      （可手输）
-                    </span>
+                    <span className="text-[12px] text-graphite font-normal ml-1">（可手输）</span>
                   )}
                 </FormLabel>
                 <FormControl>
@@ -266,23 +261,11 @@ export function BasicInfoTab({ form }: TabProps) {
             <span className="text-[12px] text-graphite font-normal ml-1">（至少填写一项）</span>
           </FormLabel>
           <div className="flex items-center gap-2">
-            <RoomNumberField
-              control={control}
-              name="rooms"
-              placeholder="2"
-            />
+            <RoomNumberField control={control} name="rooms" placeholder="2" />
             <span className="text-[13px] text-graphite shrink-0">室</span>
-            <RoomNumberField
-              control={control}
-              name="halls"
-              placeholder="1"
-            />
+            <RoomNumberField control={control} name="halls" placeholder="1" />
             <span className="text-[13px] text-graphite shrink-0">厅</span>
-            <RoomNumberField
-              control={control}
-              name="bathrooms"
-              placeholder="1"
-            />
+            <RoomNumberField control={control} name="bathrooms" placeholder="1" />
             <span className="text-[13px] text-graphite shrink-0">卫</span>
           </div>
         </FormItem>
@@ -296,12 +279,11 @@ export function BasicInfoTab({ form }: TabProps) {
           name="floor_info"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">楼层</FormLabel>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                楼层
+              </FormLabel>
               <FormControl>
-                <FloorInput
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                />
+                <FloorInput value={field.value || ""} onChange={field.onChange} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -314,7 +296,9 @@ export function BasicInfoTab({ form }: TabProps) {
           name="orientation"
           render={({ field }) => (
             <FormItem className="space-y-3">
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">朝向</FormLabel>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                朝向
+              </FormLabel>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
@@ -356,7 +340,9 @@ export function BasicInfoTab({ form }: TabProps) {
           name="business_form"
           render={({ field }) => (
             <FormItem className="space-y-3">
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">业务形式</FormLabel>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                业务形式
+              </FormLabel>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
@@ -395,7 +381,9 @@ export function BasicInfoTab({ form }: TabProps) {
           name="project_manager_id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">项目负责人</FormLabel>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                项目负责人
+              </FormLabel>
               <Select
                 value={field.value || "__empty__"}
                 onValueChange={(value) => {

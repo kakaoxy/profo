@@ -36,7 +36,6 @@ function formatDateOnly(value?: string): string {
   return safeFormatDate(value, "yyyy-MM-dd");
 }
 
-
 export const LeadsTable: React.FC<LeadsTableProps> = ({
   leads,
   onOpenDetail,
@@ -53,7 +52,9 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
           <th className="p-4 hidden sm:table-cell font-medium text-right">总价 / 单价</th>
           <th className="p-4 text-center font-medium">状态</th>
           <th className="p-4 hidden xl:table-cell font-medium">录入人</th>
-          <th className="p-4 hidden xl:table-cell font-medium text-right whitespace-nowrap">评估价</th>
+          <th className="p-4 hidden xl:table-cell font-medium text-right whitespace-nowrap">
+            评估价
+          </th>
           <th className="p-4 hidden xl:table-cell font-medium whitespace-nowrap">创建时间</th>
           <th className="p-4 hidden xl:table-cell font-medium whitespace-nowrap">更新时间</th>
           <th className="p-4 pr-6 text-right font-medium">操作</th>
@@ -69,8 +70,6 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               className="hover:bg-muted transition-colors group cursor-pointer"
               onClick={() => onOpenDetail(lead.id)}
             >
-
-
               {/* 小区 / 房源信息 */}
               <td className="p-4 pl-6 lg:pl-4">
                 <div className="flex items-center gap-3">
@@ -113,9 +112,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               {/* 户型 / 面积 */}
               <td className="p-4 hidden md:table-cell">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">
-                    {lead.layout || "-"}
-                  </span>
+                  <span className="text-sm font-medium text-foreground">{lead.layout || "-"}</span>
                   <span className="text-xs text-muted-foreground">
                     {lead.area > 0 ? `${lead.area}㎡` : "-"} · {lead.floorInfo || "-"}
                   </span>
@@ -140,7 +137,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                   variant="secondary"
                   className={cn(
                     "px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none",
-                    config.className
+                    config.className,
                   )}
                 >
                   {config.label}

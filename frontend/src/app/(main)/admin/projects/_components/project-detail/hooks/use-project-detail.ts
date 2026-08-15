@@ -12,10 +12,7 @@ interface UseProjectDetailOptions {
   isOpen: boolean;
 }
 
-export function useProjectDetail({
-  initialProject,
-  isOpen,
-}: UseProjectDetailOptions) {
+export function useProjectDetail({ initialProject, isOpen }: UseProjectDetailOptions) {
   const router = useRouter();
   const isFetchingRef = useRef(false);
   const initialLoadRef = useRef(false);
@@ -55,10 +52,7 @@ export function useProjectDetail({
   const handleViewModeChange = useCallback(
     (mode: ViewMode) => {
       setViewMode(mode);
-      if (
-        (mode === "signing" && !project?.signing_materials) ||
-        mode === "sold"
-      ) {
+      if ((mode === "signing" && !project?.signing_materials) || mode === "sold") {
         refreshProjectData(true);
       }
     },
@@ -125,8 +119,7 @@ export function useProjectDetail({
   const currentStatusIndex = STAGE_CONFIG.findIndex((s) =>
     (s.aliases as readonly string[]).includes(project?.status || ""),
   );
-  const currentProjectStageIndex =
-    currentStatusIndex === -1 ? 0 : currentStatusIndex;
+  const currentProjectStageIndex = currentStatusIndex === -1 ? 0 : currentStatusIndex;
 
   return {
     project,

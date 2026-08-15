@@ -35,17 +35,13 @@ describe("useProjectAttachments", () => {
   describe("attachments derivation", () => {
     it("从数组型 signingMaterials 派生附件列表", () => {
       const signingMaterials = [A, B];
-      const { result } = renderHook(() =>
-        useProjectAttachments({ signingMaterials }),
-      );
+      const { result } = renderHook(() => useProjectAttachments({ signingMaterials }));
       expect(result.current.attachments).toHaveLength(2);
       expect(result.current.attachments[0].url).toBe(A.url);
     });
 
     it("signingMaterials 为空时返回空数组", () => {
-      const { result } = renderHook(() =>
-        useProjectAttachments({ signingMaterials: null }),
-      );
+      const { result } = renderHook(() => useProjectAttachments({ signingMaterials: null }));
       expect(result.current.attachments).toEqual([]);
     });
   });
@@ -56,17 +52,12 @@ describe("useProjectAttachments", () => {
       // 使用 initialProps 保持 signingMaterials 引用稳定
       // （inline 数组字面量在每次 render 会创建新引用，触发 useEffect 重置 override）
       const { result } = renderHook(
-        ({ signingMaterials }) =>
-          useProjectAttachments({ signingMaterials, onUpdateAttachments }),
+        ({ signingMaterials }) => useProjectAttachments({ signingMaterials, onUpdateAttachments }),
         { initialProps: { signingMaterials: [A, B, C] } },
       );
 
       // 初始：[A, B, C]
-      expect(result.current.attachments.map((a) => a.url)).toEqual([
-        A.url,
-        B.url,
-        C.url,
-      ]);
+      expect(result.current.attachments.map((a) => a.url)).toEqual([A.url, B.url, C.url]);
 
       // 删除 A
       await act(async () => {
@@ -91,8 +82,7 @@ describe("useProjectAttachments", () => {
     it("连续上传 D 和 E 后，onUpdateAttachments 收到 [A, D, E]", async () => {
       const onUpdateAttachments = vi.fn();
       const { result } = renderHook(
-        ({ signingMaterials }) =>
-          useProjectAttachments({ signingMaterials, onUpdateAttachments }),
+        ({ signingMaterials }) => useProjectAttachments({ signingMaterials, onUpdateAttachments }),
         { initialProps: { signingMaterials: [A] } },
       );
 
@@ -111,11 +101,7 @@ describe("useProjectAttachments", () => {
         result.current.onUpload(E);
       });
       expect(onUpdateAttachments).toHaveBeenCalledTimes(2);
-      expect(lastCallUrls(onUpdateAttachments)).toEqual([
-        A.url,
-        D.url,
-        E.url,
-      ]);
+      expect(lastCallUrls(onUpdateAttachments)).toEqual([A.url, D.url, E.url]);
     });
   });
 
@@ -123,8 +109,7 @@ describe("useProjectAttachments", () => {
     it("父组件刷新后 override 重置，attachments 以新 signingMaterials 为准", async () => {
       const onUpdateAttachments = vi.fn();
       const { result, rerender } = renderHook(
-        ({ signingMaterials }) =>
-          useProjectAttachments({ signingMaterials, onUpdateAttachments }),
+        ({ signingMaterials }) => useProjectAttachments({ signingMaterials, onUpdateAttachments }),
         { initialProps: { signingMaterials: [A, B, C] } },
       );
 
@@ -133,19 +118,13 @@ describe("useProjectAttachments", () => {
         const onDelete = result.current.createHandlers(() => {}).onDelete;
         onDelete?.(A.url);
       });
-      expect(result.current.attachments.map((a) => a.url)).toEqual([
-        B.url,
-        C.url,
-      ]);
+      expect(result.current.attachments.map((a) => a.url)).toEqual([B.url, C.url]);
 
       // 父组件刷新：传入新的 signingMaterials 引用（模拟后端返回最新数据 [B, C]）
       rerender({ signingMaterials: [B, C] });
 
       // override 应被重置，attachments 以新 signingMaterials 为准
-      expect(result.current.attachments.map((a) => a.url)).toEqual([
-        B.url,
-        C.url,
-      ]);
+      expect(result.current.attachments.map((a) => a.url)).toEqual([B.url, C.url]);
 
       // 再次删除 B 应基于 [B, C] 而非 stale 数据
       await act(async () => {
@@ -160,8 +139,7 @@ describe("useProjectAttachments", () => {
     it("删除 A 后上传 D，结果为 [B, C, D]", async () => {
       const onUpdateAttachments = vi.fn();
       const { result } = renderHook(
-        ({ signingMaterials }) =>
-          useProjectAttachments({ signingMaterials, onUpdateAttachments }),
+        ({ signingMaterials }) => useProjectAttachments({ signingMaterials, onUpdateAttachments }),
         { initialProps: { signingMaterials: [A, B, C] } },
       );
 
@@ -177,27 +155,19 @@ describe("useProjectAttachments", () => {
         result.current.onUpload(D);
       });
 
-      expect(lastCallUrls(onUpdateAttachments)).toEqual([
-        B.url,
-        C.url,
-        D.url,
-      ]);
+      expect(lastCallUrls(onUpdateAttachments)).toEqual([B.url, C.url, D.url]);
     });
   });
 
   describe("无 onUpdateAttachments 时", () => {
     it("onDelete 为 undefined", () => {
-      const { result } = renderHook(() =>
-        useProjectAttachments({ signingMaterials: [A] }),
-      );
+      const { result } = renderHook(() => useProjectAttachments({ signingMaterials: [A] }));
       const handlers = result.current.createHandlers(() => {});
       expect(handlers.onDelete).toBeUndefined();
     });
 
     it("onUpload 调用时不抛错，不调用 onUpdateAttachments", () => {
-      const { result } = renderHook(() =>
-        useProjectAttachments({ signingMaterials: [A] }),
-      );
+      const { result } = renderHook(() => useProjectAttachments({ signingMaterials: [A] }));
       expect(() => {
         act(() => result.current.onUpload(B));
       }).not.toThrow();

@@ -8,9 +8,7 @@ type LedgerListResponse = components["schemas"]["LedgerListResponse"];
 type LedgerStatsResponse = components["schemas"]["LedgerStatsResponse"];
 type LedgerProjectListItem = components["schemas"]["LedgerProjectListItem"];
 
-type ListQuery = NonNullable<
-  paths["/api/v1/admin/ledger"]["get"]["parameters"]["query"]
->;
+type ListQuery = NonNullable<paths["/api/v1/admin/ledger"]["get"]["parameters"]["query"]>;
 
 interface PageProps {
   searchParams: Promise<{
@@ -52,22 +50,19 @@ export default async function LedgerPage({ searchParams }: PageProps) {
   const items: LedgerProjectListItem[] = listData?.items ?? [];
   const total = listData?.total ?? 0;
 
-  const stats =
-    (statsRes.data as LedgerStatsResponse | null) ?? {
-      total_projects: 0,
-      total_income: 0,
-      total_expense: 0,
-      net_cash_flow: 0,
-      total_records: 0,
-    };
+  const stats = (statsRes.data as LedgerStatsResponse | null) ?? {
+    total_projects: 0,
+    total_income: 0,
+    total_expense: 0,
+    net_cash_flow: 0,
+    total_records: 0,
+  };
 
   return (
     <div className="min-h-screen bg-muted">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            资金账本
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">资金账本</h1>
           <p className="text-sm text-muted-foreground">
             管理和追踪所有项目的资金流水，按项目聚合查看收支与 ROI
           </p>

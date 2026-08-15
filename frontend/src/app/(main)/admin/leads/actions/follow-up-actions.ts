@@ -65,9 +65,7 @@ export async function addFollowUpAction(
   }
 }
 
-export async function getLeadFollowUpsAction(
-  leadId: string,
-): Promise<ActionResult<FollowUp[]>> {
+export async function getLeadFollowUpsAction(leadId: string): Promise<ActionResult<FollowUp[]>> {
   const permCheck = await requirePermission(PERMISSION_CODES.LEAD_READ);
   if (!permCheck.ok) {
     return { success: false, error: permCheck.message };
@@ -75,12 +73,9 @@ export async function getLeadFollowUpsAction(
 
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/leads/{lead_id}/follow-ups",
-      {
-        params: { path: { lead_id: leadId } },
-      },
-    );
+    const { data, error } = await client.GET("/api/v1/leads/{lead_id}/follow-ups", {
+      params: { path: { lead_id: leadId } },
+    });
 
     if (error || !data) {
       logger.error("Get follow-ups error:", error);

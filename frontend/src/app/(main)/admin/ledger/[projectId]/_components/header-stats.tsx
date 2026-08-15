@@ -4,12 +4,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CashFlowStats } from "./types";
 
 export interface ProjectInfo {
@@ -29,9 +24,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
       <span className="text-xs text-graphite shrink-0">{label}</span>
-      <span className="text-sm font-medium text-ink text-right truncate">
-        {value}
-      </span>
+      <span className="text-sm font-medium text-ink text-right truncate">{value}</span>
     </div>
   );
 }
@@ -53,59 +46,41 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
           {/* 左栏 - 项目基础信息（仅 projectInfo 存在时渲染） */}
           {hasProjectInfo && (
             <div className="md:col-span-3 p-6 flex flex-col justify-center space-y-3">
-              <div className="text-sm font-medium text-ink mb-1">
-                项目基础信息
-              </div>
+              <div className="text-sm font-medium text-ink mb-1">项目基础信息</div>
               <InfoRow
                 label="项目编号"
                 value={
                   projectInfo!.contract_no ? (
-                    <span className="font-mono">
-                      {projectInfo!.contract_no}
-                    </span>
+                    <span className="font-mono">{projectInfo!.contract_no}</span>
                   ) : (
                     "-"
                   )
                 }
               />
-              <InfoRow
-                label="小区"
-                value={projectInfo!.community_name || "-"}
-              />
-              <InfoRow
-                label="地址"
-                value={projectInfo!.address || "-"}
-              />
-              <InfoRow
-                label="面积"
-                value={
-                  projectInfo!.area
-                    ? `${projectInfo!.area} m²`
-                    : "-"
-                }
-              />
-              <InfoRow
-                label="楼层"
-                value={projectInfo!.floor_info || "-"}
-              />
+              <InfoRow label="小区" value={projectInfo!.community_name || "-"} />
+              <InfoRow label="地址" value={projectInfo!.address || "-"} />
+              <InfoRow label="面积" value={projectInfo!.area ? `${projectInfo!.area} m²` : "-"} />
+              <InfoRow label="楼层" value={projectInfo!.floor_info || "-"} />
             </div>
           )}
 
           {/* 中栏 - 资金池 */}
-          <div className={cn("p-6 flex flex-col justify-center items-center text-center space-y-6", cashflowColClass)}>
+          <div
+            className={cn(
+              "p-6 flex flex-col justify-center items-center text-center space-y-6",
+              cashflowColClass,
+            )}
+          >
             {/* 净现金流 */}
             <div>
-              <div className="text-sm text-graphite font-medium mb-1">
-                净现金流 (Net Cash Flow)
-              </div>
+              <div className="text-sm text-graphite font-medium mb-1">净现金流 (Net Cash Flow)</div>
               <div
                 className={cn(
                   "text-4xl font-bold font-mono tracking-tight",
-                  stats.net_cash_flow >= 0 ? "text-rust" : "text-ink"
+                  stats.net_cash_flow >= 0 ? "text-rust" : "text-ink",
                 )}
               >
-                {stats.net_cash_flow >= 0 ? "+" : ""}¥
-                {(stats.net_cash_flow / 10000).toFixed(2)} 万
+                {stats.net_cash_flow >= 0 ? "+" : ""}¥{(stats.net_cash_flow / 10000).toFixed(2)} 万
               </div>
             </div>
 
@@ -141,12 +116,7 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
           <div className={cn("p-6 bg-fog flex flex-col justify-center space-y-4", roiColClass)}>
             <div className="flex justify-between items-center">
               <span className="text-sm text-graphite">ROI (投资回报率)</span>
-              <span
-                className={cn(
-                  "text-xl font-bold",
-                  stats.roi >= 0 ? "text-rust" : "text-ink"
-                )}
-              >
+              <span className={cn("text-xl font-bold", stats.roi >= 0 ? "text-rust" : "text-ink")}>
                 {stats.roi.toFixed(2)}%
               </span>
             </div>
@@ -172,9 +142,7 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
 
             <div className="flex justify-between items-center pt-2 border-t border-dove/40">
               <span className="text-xs text-graphite">资金占用天数</span>
-              <span className="text-sm font-medium text-ink">
-                {stats.holding_days} 天
-              </span>
+              <span className="text-sm font-medium text-ink">{stats.holding_days} 天</span>
             </div>
           </div>
         </div>

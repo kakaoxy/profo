@@ -50,12 +50,7 @@ function SortHeader({
   const active = sortBy === column;
   const Icon = !active ? ArrowUpDown : sortOrder === "asc" ? ArrowUp : ArrowDown;
   return (
-    <div
-      className={cn(
-        "flex items-center",
-        align === "right" ? "justify-end" : "justify-start",
-      )}
-    >
+    <div className={cn("flex items-center", align === "right" ? "justify-end" : "justify-start")}>
       <button
         type="button"
         onClick={() => onSortChange(column)}
@@ -65,12 +60,7 @@ function SortHeader({
         )}
       >
         <span>{label}</span>
-        <Icon
-          className={cn(
-            "h-3 w-3",
-            active ? "text-foreground" : "text-muted-foreground/60",
-          )}
-        />
+        <Icon className={cn("h-3 w-3", active ? "text-foreground" : "text-muted-foreground/60")} />
       </button>
     </div>
   );
@@ -84,18 +74,10 @@ function QoqCell({ value }: { value: number | null }) {
       : direction === "down"
         ? "text-money-negative"
         : "text-muted-foreground";
-  const Icon =
-    direction === "up"
-      ? TrendingUp
-      : direction === "down"
-        ? TrendingDown
-        : Minus;
+  const Icon = direction === "up" ? TrendingUp : direction === "down" ? TrendingDown : Minus;
   return (
     <span
-      className={cn(
-        "inline-flex items-center gap-1 font-mono text-sm tabular-nums",
-        colorClass,
-      )}
+      className={cn("inline-flex items-center gap-1 font-mono text-sm tabular-nums", colorClass)}
     >
       <Icon className="h-3 w-3" />
       {text}
@@ -124,12 +106,7 @@ function ActionCell({
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={disabled}
-      onClick={handleClick}
-    >
+    <Button variant="outline" size="sm" disabled={disabled} onClick={handleClick}>
       {!isInCompare && <Plus className="h-3 w-3" />}
       {label}
     </Button>
@@ -146,20 +123,14 @@ export function buildColumns(
       header: () => <span className={TEXT_MUTED}>商圈</span>,
       cell: ({ row }) => {
         const bc = row.original.business_circle;
-        return (
-          <span className="font-medium text-foreground">
-            {bc ? bc : "未分类"}
-          </span>
-        );
+        return <span className="font-medium text-foreground">{bc ? bc : "未分类"}</span>;
       },
     },
     {
       accessorKey: "district",
       header: () => <span className={TEXT_MUTED}>行政区</span>,
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
-          {row.original.district || "-"}
-        </span>
+        <span className="text-sm text-muted-foreground">{row.original.district || "-"}</span>
       ),
     },
     {
@@ -174,11 +145,7 @@ export function buildColumns(
           align="right"
         />
       ),
-      cell: ({ row }) => (
-        <div className={NUMERIC_CELL}>
-          {formatCount(row.original.sold_count)}
-        </div>
-      ),
+      cell: ({ row }) => <div className={NUMERIC_CELL}>{formatCount(row.original.sold_count)}</div>,
     },
     {
       accessorKey: "avg_price_wan",
@@ -193,9 +160,7 @@ export function buildColumns(
         />
       ),
       cell: ({ row }) => (
-        <div className={NUMERIC_CELL}>
-          {formatAvgPriceWan(row.original.avg_price_wan)}
-        </div>
+        <div className={NUMERIC_CELL}>{formatAvgPriceWan(row.original.avg_price_wan)}</div>
       ),
     },
     {
@@ -211,9 +176,7 @@ export function buildColumns(
         />
       ),
       cell: ({ row }) => (
-        <div className={NUMERIC_CELL}>
-          {formatUnitPriceYuan(row.original.avg_unit_price)}
-        </div>
+        <div className={NUMERIC_CELL}>{formatUnitPriceYuan(row.original.avg_unit_price)}</div>
       ),
     },
     {
@@ -229,9 +192,7 @@ export function buildColumns(
         />
       ),
       cell: ({ row }) => (
-        <div className={NUMERIC_CELL}>
-          {formatCount(row.original.on_sale_count)}
-        </div>
+        <div className={NUMERIC_CELL}>{formatCount(row.original.on_sale_count)}</div>
       ),
     },
     {
@@ -247,9 +208,7 @@ export function buildColumns(
         />
       ),
       cell: ({ row }) => (
-        <div className={NUMERIC_CELL}>
-          {formatAbsorptionMonths(row.original.absorption_months)}
-        </div>
+        <div className={NUMERIC_CELL}>{formatAbsorptionMonths(row.original.absorption_months)}</div>
       ),
     },
     {
@@ -297,11 +256,7 @@ export function buildColumns(
       ),
       cell: ({ row }) => (
         <div className="flex justify-center">
-          <ActionCell
-            row={row.original}
-            compareIds={compareIds}
-            onAddToCompare={onAddToCompare}
-          />
+          <ActionCell row={row.original} compareIds={compareIds} onAddToCompare={onAddToCompare} />
         </div>
       ),
     },

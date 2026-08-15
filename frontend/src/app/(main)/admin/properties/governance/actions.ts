@@ -35,15 +35,12 @@ export async function mergeCommunitiesAction(
 
   try {
     const client = await fetchClient();
-    const { data, error } = await client.POST(
-      "/api/v1/admin/communities/merge",
-      {
-        body: {
-          primary_id: primaryId,
-          merge_ids: mergeIds,
-        },
+    const { data, error } = await client.POST("/api/v1/admin/communities/merge", {
+      body: {
+        primary_id: primaryId,
+        merge_ids: mergeIds,
       },
-    );
+    });
 
     if (error) {
       // 修复：使用类型断言代替 any

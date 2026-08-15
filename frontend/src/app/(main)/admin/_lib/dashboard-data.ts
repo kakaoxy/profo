@@ -12,9 +12,7 @@ type ProjectResponse = components["schemas"]["ProjectResponse"];
 type LeadListItem = components["schemas"]["LeadListItem"];
 type LeadStatus = components["schemas"]["LeadStatus"];
 type CommunityMarketStatsResponse = components["schemas"]["CommunityMarketStatsResponse"];
-type ProjectQueryParams = NonNullable<
-  paths["/api/v1/projects"]["get"]["parameters"]["query"]
->;
+type ProjectQueryParams = NonNullable<paths["/api/v1/projects"]["get"]["parameters"]["query"]>;
 
 export interface MarketDataMap {
   [communityId: string]: CommunityMarketStatsResponse | null;
@@ -229,9 +227,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
   }
 
   const funnelData =
-    funnelRes.status === "fulfilled"
-      ? validateFunnelData(funnelRes.value.data)
-      : defaultFunnelData;
+    funnelRes.status === "fulfilled" ? validateFunnelData(funnelRes.value.data) : defaultFunnelData;
   if (funnelRes.status === "rejected") {
     errors.funnel = "获取线索漏斗失败";
     logger.error("[Dashboard] 线索漏斗获取失败:", funnelRes.reason);
@@ -263,7 +259,10 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
     renovationProjects = validateProjectResponseList(renovationProjectsRes.value.data.items);
   } else {
     if (renovationProjectsRes.status === "rejected") {
-      logger.debug("[Dashboard] 装修中项目获取失败，回退到 my-responsible:", renovationProjectsRes.reason);
+      logger.debug(
+        "[Dashboard] 装修中项目获取失败，回退到 my-responsible:",
+        renovationProjectsRes.reason,
+      );
     }
     renovationProjects = myResponsibleProjects.filter((p) => p.status === "renovating");
   }
@@ -273,7 +272,10 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
     sellingProjects = validateProjectResponseList(sellingProjectsRes.value.data.items);
   } else {
     if (sellingProjectsRes.status === "rejected") {
-      logger.debug("[Dashboard] 在售项目获取失败，回退到 my-responsible:", sellingProjectsRes.reason);
+      logger.debug(
+        "[Dashboard] 在售项目获取失败，回退到 my-responsible:",
+        sellingProjectsRes.reason,
+      );
     }
     sellingProjects = myResponsibleProjects.filter((p) => p.status === "selling");
   }
@@ -293,7 +295,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
   const communityIds = projects.map((p) => p.community_id);
   const { data: marketDataMap, errors: marketErrors } = await batchGetMarketData(
     communityIds,
-    client
+    client,
   );
   if (marketErrors.length > 0) {
     errors.marketData = "部分市场数据获取失败";

@@ -41,27 +41,20 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
     (photoId: number) => {
       onDelete(photoId);
     },
-    [onDelete]
+    [onDelete],
   );
 
   // 使用 useMemo 缓存照片列表渲染
   const photoItems = useMemo(() => {
     return photos.map((photo, index) => (
-      <OptimizedPhotoItem
-        key={photo.id}
-        photo={photo}
-        index={index}
-        onDelete={handleDelete}
-      />
+      <OptimizedPhotoItem key={photo.id} photo={photo} index={index} onDelete={handleDelete} />
     ));
   }, [photos, handleDelete]);
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-primary">
-          营销照片 ({photos.length})
-        </h4>
+        <h4 className="text-sm font-semibold text-primary">营销照片 ({photos.length})</h4>
         <span className="text-xs text-muted-foreground">可拖拽排序</span>
       </div>
 
@@ -74,7 +67,7 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
             // 默认样式
             "bg-muted border-border",
             // 拖拽悬停时的样式
-            isOver && "border-primary bg-primary/5 ring-2 ring-primary/20"
+            isOver && "border-primary bg-primary/5 ring-2 ring-primary/20",
           )}
           style={{
             // 优化滚动性能

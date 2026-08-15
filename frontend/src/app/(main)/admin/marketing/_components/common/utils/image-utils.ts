@@ -23,7 +23,7 @@ export function getFileUrl(url: string | undefined | null): string {
 // 可在此统一修改参数格式，无需改动调用方
 export function getOptimizedImageUrl(
   url: string | undefined | null,
-  options?: ImageOptimizationOptions
+  options?: ImageOptimizationOptions,
 ): string {
   const baseUrl = getFileUrl(url);
   if (!baseUrl) return "";
@@ -49,10 +49,7 @@ export function preloadImage(url: string): Promise<void> {
 }
 
 // 批量预加载图片（带并发控制）
-export async function preloadImages(
-  urls: string[],
-  maxConcurrent: number = 3
-): Promise<void> {
+export async function preloadImages(urls: string[], maxConcurrent: number = 3): Promise<void> {
   const queue = [...urls];
   const inProgress = new Set<Promise<void>>();
 

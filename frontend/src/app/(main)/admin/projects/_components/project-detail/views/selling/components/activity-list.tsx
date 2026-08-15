@@ -4,11 +4,7 @@ import { safeFormatDate } from "@/lib/formatters";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SalesRecord, SalesRecordOperator } from "../../../../../types";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -38,27 +34,17 @@ function OperatorCell({ operator }: { operator?: SalesRecordOperator | null }) {
         {operator.avatar ? (
           <AvatarImage src={operator.avatar} alt={operator.nickname ?? ""} />
         ) : null}
-        <AvatarFallback className="text-[10px]">
-          {getInitial(operator.nickname)}
-        </AvatarFallback>
+        <AvatarFallback className="text-[10px]">{getInitial(operator.nickname)}</AvatarFallback>
       </Avatar>
-      <span className="text-xs text-muted-foreground">
-        {operator.nickname ?? "未知"}
-      </span>
+      <span className="text-xs text-muted-foreground">{operator.nickname ?? "未知"}</span>
     </div>
   );
 }
 
-export function ActivityList({
-  type,
-  data,
-  onDelete,
-  canEditSales = false,
-}: ActivityListProps) {
+export function ActivityList({ type, data, onDelete, canEditSales = false }: ActivityListProps) {
   // 按时间倒序排列
   const sortedData = [...data].sort(
-    (a, b) =>
-      new Date(b.record_date).getTime() - new Date(a.record_date).getTime()
+    (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime(),
   );
 
   if (data.length === 0) {
@@ -89,9 +75,7 @@ export function ActivityList({
                 <TableCell className="text-muted-foreground font-mono">
                   {safeFormatDate(item.record_date, "MM-dd HH:mm")}
                 </TableCell>
-                <TableCell className="font-medium text-foreground">
-                  {item.customer_name}
-                </TableCell>
+                <TableCell className="font-medium text-foreground">{item.customer_name}</TableCell>
                 <TableCell>
                   <OperatorCell operator={item.operator} />
                 </TableCell>
@@ -127,16 +111,14 @@ export function ActivityList({
                 "flex items-center justify-between p-3 rounded-lg border bg-card transition-all",
                 isMax
                   ? "border-money-positive/20 shadow-sm ring-1 ring-money-positive/10"
-                  : "border-border"
+                  : "border-border",
               )}
             >
               <div className="flex flex-col">
                 <span
                   className={cn(
                     "text-sm font-bold",
-                    isMax
-                      ? "text-money-positive flex items-center gap-1"
-                      : "text-foreground"
+                    isMax ? "text-money-positive flex items-center gap-1" : "text-foreground",
                   )}
                 >
                   ¥{item.price}万{" "}
@@ -148,9 +130,7 @@ export function ActivityList({
                 </span>
               </div>
               <div className="flex flex-col text-right mr-4 flex-1">
-                <span className="text-xs font-medium text-foreground">
-                  {item.customer_name}
-                </span>
+                <span className="text-xs font-medium text-foreground">{item.customer_name}</span>
                 <span className="text-[10px] text-muted-foreground">
                   {safeFormatDate(item.record_date, "MM-dd HH:mm")}
                 </span>
@@ -196,12 +176,8 @@ export function ActivityList({
                 </button>
               )}
             </div>
-            <div className="text-sm font-bold text-foreground">
-              {item.customer_name}
-            </div>
-            {item.operator && (
-              <OperatorCell operator={item.operator} />
-            )}
+            <div className="text-sm font-bold text-foreground">{item.customer_name}</div>
+            {item.operator && <OperatorCell operator={item.operator} />}
             {item.notes && (
               <div className="text-xs text-muted-foreground bg-muted p-2 rounded mt-1 border border-border">
                 {item.notes}

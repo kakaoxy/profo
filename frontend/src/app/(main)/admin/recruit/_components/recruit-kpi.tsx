@@ -24,10 +24,7 @@ export function RecruitKpiGrid({ items }: { items: RecruitKpiItem[] }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
       {items.map((item) => (
-        <div
-          key={item.label}
-          className="bg-white rounded-cards shadow-steep px-6 py-5"
-        >
+        <div key={item.label} className="bg-white rounded-cards shadow-steep px-6 py-5">
           <div className="flex items-center gap-2 text-[13px] text-graphite">
             <span
               className={cn("h-2 w-2 rounded-full shrink-0", item.dotClass)}

@@ -78,7 +78,7 @@ export function SummaryReport({ project }: SummaryReportProps) {
           size="sm"
           className={cn(
             "h-8 gap-2 font-medium transition-all group",
-            copied ? "border-success text-success bg-success-container" : "hover:border-border"
+            copied ? "border-success text-success bg-success-container" : "hover:border-border",
           )}
           onClick={handleCopy}
         >

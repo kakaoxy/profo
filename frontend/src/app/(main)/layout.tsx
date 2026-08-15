@@ -10,7 +10,7 @@ import { PermissionGuard } from "@/components/permission-guard";
 import { AdminMobileTabBar } from "@/components/admin-mobile-tab-bar";
 
 // 统一设置动态渲染：所有使用 cookies/headers 的子页面都需要
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 async function getUser() {
   try {
@@ -47,11 +47,7 @@ async function getUser() {
   }
 }
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
 
   // 429 限流：渲染限流提示，不重定向到登录页（用户仍处于认证状态）

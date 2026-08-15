@@ -3,21 +3,11 @@
 import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  type ColumnDef,
-} from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -71,9 +61,7 @@ export function BusinessDistrictTable({
     { shallow: false },
   );
 
-  const sortBy = VALID_SORT_KEYS.includes(
-    query.sort_by as (typeof VALID_SORT_KEYS)[number],
-  )
+  const sortBy = VALID_SORT_KEYS.includes(query.sort_by as (typeof VALID_SORT_KEYS)[number])
     ? query.sort_by
     : "sold_count";
   const sortOrder: "asc" | "desc" = query.sort_order === "asc" ? "asc" : "desc";
@@ -82,17 +70,13 @@ export function BusinessDistrictTable({
 
   // URL 中的 compare_ids 为权威来源；prop 作为 SSR 初值兼容
   const effectiveCompareIds = useMemo(
-    () =>
-      query.compare_ids
-        ? parseCompareIds(query.compare_ids)
-        : compareIds,
+    () => (query.compare_ids ? parseCompareIds(query.compare_ids) : compareIds),
     [query.compare_ids, compareIds],
   );
 
   const handleSortChange = useCallback(
     (column: string) => {
-      const nextOrder: "asc" | "desc" =
-        column === sortBy && sortOrder === "asc" ? "desc" : "asc";
+      const nextOrder: "asc" | "desc" = column === sortBy && sortOrder === "asc" ? "desc" : "asc";
       void setQuery({
         sort_by: column,
         sort_order: nextOrder,
@@ -121,13 +105,7 @@ export function BusinessDistrictTable({
         compareIds: effectiveCompareIds,
         onAddToCompare: handleAddToCompare,
       }),
-    [
-      sortBy,
-      sortOrder,
-      handleSortChange,
-      effectiveCompareIds,
-      handleAddToCompare,
-    ],
+    [sortBy, sortOrder, handleSortChange, effectiveCompareIds, handleAddToCompare],
   );
 
   // TanStack Table 返回非可记忆函数，React Compiler 会跳过该组件记忆化
@@ -142,9 +120,7 @@ export function BusinessDistrictTable({
   const handleRowClick = useCallback(
     (row: BusinessDistrictRow) => {
       const bc = row.business_circle || "未分类";
-      router.push(
-        `/admin/reports/communities?business_circles=${encodeURIComponent(bc)}`,
-      );
+      router.push(`/admin/reports/communities?business_circles=${encodeURIComponent(bc)}`);
     },
     [router],
   );
@@ -173,10 +149,7 @@ export function BusinessDistrictTable({
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -192,10 +165,7 @@ export function BusinessDistrictTable({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>

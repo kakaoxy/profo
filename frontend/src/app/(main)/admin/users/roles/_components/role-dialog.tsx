@@ -8,11 +8,7 @@ import { CheckIcon, ChevronDownIcon, Loader2, MinusIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -80,10 +76,11 @@ interface RoleDialogProps {
 export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   const { form, isPending, isEdit, onSubmit } = useRoleForm({ role, open, onOpenChange });
 
-  const { data: permissionGroups, isLoading, error } = useSWR<PermissionModuleGroup[]>(
-    PERMISSION_MODULES_KEY,
-    fetcher,
-  );
+  const {
+    data: permissionGroups,
+    isLoading,
+    error,
+  } = useSWR<PermissionModuleGroup[]>(PERMISSION_MODULES_KEY, fetcher);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -133,7 +130,11 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                 <FormItem>
                   <FormLabel>描述</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="描述角色的职责和权限范围" {...field} value={field.value || ""} />
+                    <Textarea
+                      placeholder="描述角色的职责和权限范围"
+                      {...field}
+                      value={field.value || ""}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -150,9 +151,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                   <FormItem>
                     <div className="mb-2">
                       <FormLabel className="text-base">权限配置</FormLabel>
-                      <FormDescription>
-                        按模块勾选权限点；模块标题复选框可全选/反选
-                      </FormDescription>
+                      <FormDescription>按模块勾选权限点；模块标题复选框可全选/反选</FormDescription>
                     </div>
 
                     <div className="max-h-[40vh] overflow-y-auto rounded-lg border p-1">
@@ -272,11 +271,7 @@ function ModulePermissionGroup({ group, selectedCodes, onChange }: ModulePermiss
   const totalCount = moduleCodes.length;
 
   const triState: boolean | "indeterminate" =
-    selectedCount === 0
-      ? false
-      : selectedCount === totalCount
-        ? true
-        : "indeterminate";
+    selectedCount === 0 ? false : selectedCount === totalCount ? true : "indeterminate";
 
   const handleToggleAll = (next: boolean | "indeterminate") => {
     if (next === true) {

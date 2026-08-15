@@ -52,10 +52,9 @@ export async function createCampaignAction(
       image_url: data.image_url,
       status: data.status,
     };
-    const { data: responseData, error } = await client.POST(
-      "/api/v1/admin/recruit/campaigns",
-      { body: payload },
-    );
+    const { data: responseData, error } = await client.POST("/api/v1/admin/recruit/campaigns", {
+      body: payload,
+    });
     if (error || !responseData) {
       return { success: false, error: extractErrorMessage(error) };
     }
@@ -124,18 +123,15 @@ export async function toggleCampaignStatusAction(
 }
 
 /** 删除招募活动（存在关联线索时后端拒绝，引导改用停用）. */
-export async function deleteCampaignAction(
-  campaignId: string,
-): Promise<ActionResult<void>> {
+export async function deleteCampaignAction(campaignId: string): Promise<ActionResult<void>> {
   const perm = await requirePermission(PERMISSION_CODES.RECRUIT_WRITE);
   if (!perm.ok) return { success: false, error: perm.message };
 
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE(
-      "/api/v1/admin/recruit/campaigns/{campaign_id}",
-      { params: { path: { campaign_id: campaignId } } },
-    );
+    const { error } = await client.DELETE("/api/v1/admin/recruit/campaigns/{campaign_id}", {
+      params: { path: { campaign_id: campaignId } },
+    });
     if (error) {
       return { success: false, error: extractErrorMessage(error) };
     }
@@ -236,9 +232,7 @@ export async function generateCampaignQRCodeAction(
 // ─── 线索完整手机号 ────────────────────────────────────────────────────────────
 
 /** 获取线索完整手机号（持写权限）。 */
-export async function getLeadPhoneAction(
-  leadId: string,
-): Promise<ActionResult<string>> {
+export async function getLeadPhoneAction(leadId: string): Promise<ActionResult<string>> {
   const perm = await requirePermission(PERMISSION_CODES.RECRUIT_WRITE);
   if (!perm.ok) return { success: false, error: perm.message };
 

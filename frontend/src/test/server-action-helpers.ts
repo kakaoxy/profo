@@ -52,8 +52,6 @@ export function createMockCookies(cookieMap?: Record<string, string>) {
     delete: vi.fn((name: string) => {
       store.delete(name);
     }),
-    getAll: vi.fn(() =>
-      Array.from(store.entries()).map(([name, value]) => ({ name, value }))
-    ),
+    getAll: vi.fn(() => Array.from(store.entries()).map(([name, value]) => ({ name, value }))),
   };
 }

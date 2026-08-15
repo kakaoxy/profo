@@ -31,11 +31,7 @@ const LAYOUT_OPTIONS = [
   { value: "5室及以上", label: "5室及以上" },
 ];
 
-export function FilterPanel({
-  onApply,
-  onReset,
-  initialFilters,
-}: FilterPanelProps) {
+export function FilterPanel({ onApply, onReset, initialFilters }: FilterPanelProps) {
   const [minPrice, setMinPrice] = useState(initialFilters.minPrice);
   const [maxPrice, setMaxPrice] = useState(initialFilters.maxPrice);
   const [layout, setLayout] = useState(initialFilters.layout);
@@ -58,9 +54,7 @@ export function FilterPanel({
   return (
     <div className="bg-white rounded-cards shadow-steep p-5 space-y-4">
       <div className="space-y-2">
-        <label className="text-sm font-medium text-ink">
-          价格范围（万）
-        </label>
+        <label className="text-sm font-medium text-ink">价格范围（万）</label>
         <div className="flex items-center gap-2">
           <input
             type="number"
@@ -81,9 +75,7 @@ export function FilterPanel({
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-ink">
-          户型
-        </label>
+        <label className="text-sm font-medium text-ink">户型</label>
         <Select value={layout || undefined} onValueChange={setLayout}>
           <SelectTrigger className="w-full h-10 rounded-inputs border-dove/30 bg-white text-sm text-ink focus-visible:ring-rust/10 focus-visible:border-rust/30">
             <SelectValue placeholder="选择户型" />
@@ -99,9 +91,7 @@ export function FilterPanel({
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-ink">
-          面积范围（m²）
-        </label>
+        <label className="text-sm font-medium text-ink">面积范围（m²）</label>
         <div className="flex items-center gap-2">
           <input
             type="number"

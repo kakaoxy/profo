@@ -16,8 +16,7 @@ interface PageProps {
   }>;
 }
 
-type LeadsQuery =
-  operations["get_leads_api_v1_leads_get"]["parameters"]["query"];
+type LeadsQuery = operations["get_leads_api_v1_leads_get"]["parameters"]["query"];
 type LeadStatsResponse = components["schemas"]["LeadStatsResponse"];
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -40,9 +39,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   }
 
   if (params.statuses) {
-    queryParams.statuses = params.statuses.split(
-      ",",
-    ) as NonNullable<LeadsQuery>["statuses"];
+    queryParams.statuses = params.statuses.split(",") as NonNullable<LeadsQuery>["statuses"];
   }
 
   if (params.district) {
@@ -63,19 +60,16 @@ export default async function LeadsPage({ searchParams }: PageProps) {
 
   const leads: Lead[] = (listRes.data?.items || []).map(mapBackendToFrontend);
   const total = listRes.data?.total ?? 0;
-  const stats: LeadStatsResponse =
-    (statsRes.data as LeadStatsResponse | null) ?? {
-      pending_assessment: 0,
-      pending_visit: 0,
-      visited: 0,
-      signed: 0,
-      rejected: 0,
-    };
+  const stats: LeadStatsResponse = (statsRes.data as LeadStatsResponse | null) ?? {
+    pending_assessment: 0,
+    pending_visit: 0,
+    visited: 0,
+    signed: 0,
+    rejected: 0,
+  };
 
   // 创建人筛选标签展示名：取当前页首条线索的 creator_name（后端已按 creator_id 过滤）
-  const creatorName = params.creator_id
-    ? leads[0]?.creatorName
-    : undefined;
+  const creatorName = params.creator_id ? leads[0]?.creatorName : undefined;
 
   return (
     <div className="min-h-screen bg-background">

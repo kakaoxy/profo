@@ -12,12 +12,7 @@ import type { components } from "@/lib/api-types";
 export type SubjectMode = "agent" | "acquire";
 
 /** 业务阶段（signing/renovation/holding/listing/sold） */
-export type SubjectStage =
-  | "signing"
-  | "renovation"
-  | "holding"
-  | "listing"
-  | "sold";
+export type SubjectStage = "signing" | "renovation" | "holding" | "listing" | "sold";
 
 /** 成本层级 1-7 */
 export type SubjectLevel = "1" | "2" | "3" | "4" | "5" | "6" | "7";
@@ -49,22 +44,8 @@ export interface SubjectUpdateInput {
 export const subjectIdSchema = z.string().min(1, "科目 ID 不能为空");
 
 export const subjectModeSchema = z.enum(["agent", "acquire"]);
-export const subjectStageSchema = z.enum([
-  "signing",
-  "renovation",
-  "holding",
-  "listing",
-  "sold",
-]);
-export const subjectLevelSchema = z.enum([
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-]);
+export const subjectStageSchema = z.enum(["signing", "renovation", "holding", "listing", "sold"]);
+export const subjectLevelSchema = z.enum(["1", "2", "3", "4", "5", "6", "7"]);
 
 export const createSubjectSchema = z.object({
   name: z.string().min(1, "科目名称不能为空").max(50, "科目名称最多 50 字"),

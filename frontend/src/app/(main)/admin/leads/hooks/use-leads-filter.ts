@@ -121,14 +121,11 @@ export function useLeadsFilter(initialLeads: Lead[]) {
   const filteredLeads = useMemo(() => {
     return initialLeads.filter((lead) => {
       const creatorMatch =
-        !filters.creator ||
-        lead.creatorName.toLowerCase().includes(filters.creator.toLowerCase());
+        !filters.creator || lead.creatorName.toLowerCase().includes(filters.creator.toLowerCase());
       const layoutMatch =
-        filters.layouts.length === 0 ||
-        filters.layouts.includes(getLayoutRooms(lead.layout));
+        filters.layouts.length === 0 || filters.layouts.includes(getLayoutRooms(lead.layout));
       const floorMatch =
-        filters.floors.length === 0 ||
-        filters.floors.includes(getFloorCategory(lead.floorInfo));
+        filters.floors.length === 0 || filters.floors.includes(getFloorCategory(lead.floorInfo));
       return creatorMatch && layoutMatch && floorMatch;
     });
   }, [initialLeads, filters]);

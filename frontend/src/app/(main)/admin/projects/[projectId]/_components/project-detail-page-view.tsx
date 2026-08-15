@@ -3,12 +3,7 @@
 import { useCallback, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,16 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowLeft,
-  ChevronDown,
-  Check,
-  Clock,
-  Loader2,
-  Pencil,
-  Trash2,
-  Lock,
-} from "lucide-react";
+import { ArrowLeft, ChevronDown, Check, Clock, Loader2, Pencil, Trash2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
@@ -73,9 +59,7 @@ interface ProjectDetailPageViewProps {
  * （Radix Dialog 原语，在 Sheet 外会抛 useDialogContext 错误），
  * 此处用独立 header 实现相同功能（阶段切换 + 编辑 + 删除）。
  */
-export function ProjectDetailPageView({
-  initialProject,
-}: ProjectDetailPageViewProps) {
+export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewProps) {
   const router = useRouter();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -165,8 +149,7 @@ export function ProjectDetailPageView({
                 onDealSuccess={handleDealSuccess}
               />
             )}
-            {(viewMode === "signing" ||
-              !["renovation", "selling"].includes(viewMode)) && (
+            {(viewMode === "signing" || !["renovation", "selling"].includes(viewMode)) && (
               <DefaultView
                 key={viewKey}
                 project={project}
@@ -282,9 +265,7 @@ function PageHeader({
             <ArrowLeft className="h-4 w-4" />
           </Button>
 
-          <h1 className="text-xl font-bold text-foreground">
-            {project.name}
-          </h1>
+          <h1 className="text-xl font-bold text-foreground">{project.name}</h1>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -315,13 +296,9 @@ function PageHeader({
                     onClick={() => setViewMode(stage.key)}
                     className="flex items-center justify-between"
                   >
-                    <span className={cn(!isAccessible && "opacity-50")}>
-                      {stage.label}
-                    </span>
+                    <span className={cn(!isAccessible && "opacity-50")}>{stage.label}</span>
                     {isCurrentView && <Check className="h-4 w-4 text-primary" />}
-                    {!isAccessible && (
-                      <Lock className="h-3 w-3 text-muted-foreground" />
-                    )}
+                    {!isAccessible && <Lock className="h-3 w-3 text-muted-foreground" />}
                   </DropdownMenuItem>
                 );
               })}
@@ -376,9 +353,7 @@ function PageHeader({
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      此操作将把项目标记为删除状态。
-                    </AlertDialogDescription>
+                    <AlertDialogDescription>此操作将把项目标记为删除状态。</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>取消</AlertDialogCancel>
@@ -390,9 +365,7 @@ function PageHeader({
                       disabled={isDeleting}
                       className="bg-error hover:bg-red-700 focus:ring-red-600"
                     >
-                      {isDeleting ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : null}
+                      {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       确认删除
                     </AlertDialogAction>
                   </AlertDialogFooter>

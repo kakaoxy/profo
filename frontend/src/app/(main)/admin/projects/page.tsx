@@ -18,9 +18,7 @@ interface PageProps {
   }>;
 }
 
-type QueryParams = NonNullable<
-  paths["/api/v1/projects"]["get"]["parameters"]["query"]
->;
+type QueryParams = NonNullable<paths["/api/v1/projects"]["get"]["parameters"]["query"]>;
 
 type ProjectListResponse =
   paths["/api/v1/projects"]["get"]["responses"][200]["content"]["application/json"];
@@ -101,7 +99,10 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
     queryParams.community_name = params.community_name.trim();
   }
 
-  if (params.business_form && (params.business_form === "agent" || params.business_form === "wholesale")) {
+  if (
+    params.business_form &&
+    (params.business_form === "agent" || params.business_form === "wholesale")
+  ) {
     queryParams.business_form = params.business_form;
   }
 
@@ -118,15 +119,18 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
   const projectData: Project[] = listData?.items?.map(mapProjectResponse) ?? [];
   const total = listData?.total ?? 0;
 
-  const stats = (statsRes.data as ProjectStatsResponse | null) ?? { signing: 0, renovating: 0, selling: 0, sold: 0 };
+  const stats = (statsRes.data as ProjectStatsResponse | null) ?? {
+    signing: 0,
+    renovating: 0,
+    selling: 0,
+    sold: 0,
+  };
 
   return (
     <div className="min-h-screen bg-muted">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            项目管理
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">项目管理</h1>
           <p className="text-sm text-muted-foreground">
             全生命周期管理您的房源资产，从签约到售出的每一分钱。
           </p>

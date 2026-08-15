@@ -11,7 +11,10 @@ import type { RoleResponse } from "../../actions/index";
 
 const formSchema = z.object({
   name: z.string().min(2, "名称至少2个字符").max(100, "名称不能超过100个字符"),
-  code: z.string().min(2, "代码至少2个字符").max(50, "代码不能超过50个字符")
+  code: z
+    .string()
+    .min(2, "代码至少2个字符")
+    .max(50, "代码不能超过50个字符")
     .regex(/^[a-zA-Z0-9_]+$/, "代码只能包含字母、数字和下划线"),
   description: z.string().optional(),
   permission_codes: z.array(z.string()).optional(),

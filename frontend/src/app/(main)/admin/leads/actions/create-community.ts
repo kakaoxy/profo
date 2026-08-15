@@ -21,8 +21,7 @@ export interface CreateCommunityResponse {
 }
 
 export type CreateCommunityResult =
-  | { success: true; data: CreateCommunityResponse }
-  | { success: false; message: string };
+  { success: true; data: CreateCommunityResponse } | { success: false; message: string };
 
 const createCommunitySchema = z.object({
   name: z.string().min(1, "小区名称不能为空").max(200, "小区名称最多 200 字符"),
@@ -35,7 +34,7 @@ const createCommunitySchema = z.object({
  * 如果小区已存在，则返回已存在的小区
  */
 export async function createCommunityAction(
-  data: CreateCommunityRequest
+  data: CreateCommunityRequest,
 ): Promise<CreateCommunityResult> {
   const parsed = createCommunitySchema.safeParse(data);
   if (!parsed.success) {
@@ -51,16 +50,12 @@ export async function createCommunityAction(
 
   try {
     const client = await fetchClient();
-    const { data: result, error } = await client.POST(
-      apiPaths.communities.base,
-      {
-        body: data,
-      }
-    );
+    const { data: result, error } = await client.POST(apiPaths.communities.base, {
+      body: data,
+    });
 
     if (error || !result) {
-      const message =
-        (error as { message?: string })?.message ?? "创建小区失败，请稍后重试";
+      const message = (error as { message?: string })?.message ?? "创建小区失败，请稍后重试";
       logger.error("Create community error:", error);
       return { success: false, message };
     }

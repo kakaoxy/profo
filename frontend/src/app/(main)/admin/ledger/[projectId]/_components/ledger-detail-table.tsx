@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { formatCNY } from "@/lib/formatters";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -99,10 +94,7 @@ function ledgerFilterReducer(
 }
 
 function useLedgerFilters(data: CashFlowRecordResponse[]) {
-  const [state, dispatch] = React.useReducer(
-    ledgerFilterReducer,
-    initialLedgerFilterState,
-  );
+  const [state, dispatch] = React.useReducer(ledgerFilterReducer, initialLedgerFilterState);
 
   // 搜索 300ms 防抖
   React.useEffect(() => {
@@ -122,12 +114,7 @@ function useLedgerFilters(data: CashFlowRecordResponse[]) {
       if (state.filter === "out" && !(out > 0)) return false;
       // 2. 摘要/付款方/收款方 模糊搜索
       if (keyword) {
-        const hay = [
-          item.description ?? "",
-          item.remark ?? "",
-          item.payer ?? "",
-          item.payee ?? "",
-        ]
+        const hay = [item.description ?? "", item.remark ?? "", item.payer ?? "", item.payee ?? ""]
           .join(" ")
           .toLowerCase();
         if (!hay.includes(keyword)) return false;
@@ -162,14 +149,10 @@ function useLedgerFilters(data: CashFlowRecordResponse[]) {
     voucherFilter: state.voucherFilter,
     filteredData,
     summary,
-    setFilter: (val: FilterTab) =>
-      dispatch({ type: "SET_FILTER", payload: val }),
-    setSearchInput: (val: string) =>
-      dispatch({ type: "SET_SEARCH_INPUT", payload: val }),
-    setSubjectFilter: (val: string) =>
-      dispatch({ type: "SET_SUBJECT_FILTER", payload: val }),
-    setVoucherFilter: (val: string) =>
-      dispatch({ type: "SET_VOUCHER_FILTER", payload: val }),
+    setFilter: (val: FilterTab) => dispatch({ type: "SET_FILTER", payload: val }),
+    setSearchInput: (val: string) => dispatch({ type: "SET_SEARCH_INPUT", payload: val }),
+    setSubjectFilter: (val: string) => dispatch({ type: "SET_SUBJECT_FILTER", payload: val }),
+    setVoucherFilter: (val: string) => dispatch({ type: "SET_VOUCHER_FILTER", payload: val }),
   };
 }
 
@@ -193,15 +176,14 @@ export function LedgerDetailTable({
     setSubjectFilter,
     setVoucherFilter,
   } = useLedgerFilters(records);
-  const [deleteTarget, setDeleteTarget] =
-    React.useState<CashFlowRecordResponse | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<CashFlowRecordResponse | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
-  const [showSettlementDialog, setShowSettlementDialog] =
-    React.useState(false);
-  const [supplementTarget, setSupplementTarget] =
-    React.useState<CashFlowRecordResponse | null>(null);
+  const [showSettlementDialog, setShowSettlementDialog] = React.useState(false);
+  const [supplementTarget, setSupplementTarget] = React.useState<CashFlowRecordResponse | null>(
+    null,
+  );
   const [supplementUrls, setSupplementUrls] = React.useState<string[]>([]);
   const [isSupplementing, setIsSupplementing] = React.useState(false);
   const [supplementUploadKey, setSupplementUploadKey] = React.useState(0);
@@ -259,9 +241,7 @@ export function LedgerDetailTable({
   };
 
   const handleSupplementChange = React.useCallback((items: ImageItem[]) => {
-    const urls = items
-      .filter((i) => i.status === "success" && i.url)
-      .map((i) => i.url as string);
+    const urls = items.filter((i) => i.status === "success" && i.url).map((i) => i.url as string);
     setSupplementUrls(urls);
   }, []);
 
@@ -359,10 +339,7 @@ export function LedgerDetailTable({
           <TableBody>
             {filteredData.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="h-24 text-center text-xs text-muted-foreground"
-                >
+                <TableCell colSpan={9} className="h-24 text-center text-xs text-muted-foreground">
                   暂无记录
                 </TableCell>
               </TableRow>

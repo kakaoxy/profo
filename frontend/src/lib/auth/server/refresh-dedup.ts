@@ -29,10 +29,7 @@ const CACHE_WINDOW_MS = 2000;
  * @returns The shared Promise — all concurrent callers for the same key
  *          receive the same result (or rejection).
  */
-export function dedupServerRefresh<T>(
-  key: string,
-  refreshFn: () => Promise<T>,
-): Promise<T> {
+export function dedupServerRefresh<T>(key: string, refreshFn: () => Promise<T>): Promise<T> {
   const existing = refreshPromises.get(key);
   if (existing) {
     return existing as Promise<T>;

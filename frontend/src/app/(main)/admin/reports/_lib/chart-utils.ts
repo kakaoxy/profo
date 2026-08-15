@@ -23,8 +23,7 @@ export function computeYAxisDomain(
   const maxRatio = options?.maxRatio ?? 1.05;
 
   const valid = values.filter(
-    (v): v is number =>
-      typeof v === "number" && !Number.isNaN(v) && Number.isFinite(v),
+    (v): v is number => typeof v === "number" && !Number.isNaN(v) && Number.isFinite(v),
   );
 
   if (valid.length === 0) return [0, 1];

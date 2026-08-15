@@ -61,12 +61,8 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
 
   return (
     <section className="mt-8 pb-32">
-      <SectionHeader 
-        index="5" 
-        title="智能决策建议" 
-        subtitle="AI Strategy" 
-      />
-      
+      <SectionHeader index="5" title="智能决策建议" subtitle="AI Strategy" />
+
       <div className="px-4 sm:px-6 space-y-4 sm:space-y-6">
         {/* Input & Action Header */}
         <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden transition-all focus-within:ring-2 ring-primary/10">
@@ -76,15 +72,18 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
               <span className="text-xs font-bold text-foreground">AI 决策研判工作台</span>
             </div>
             {report && (
-              <button 
-                onClick={() => { setReport(null); setInput(''); }}
+              <button
+                onClick={() => {
+                  setReport(null);
+                  setInput("");
+                }}
                 className="text-[10px] font-bold text-muted-foreground hover:text-destructive transition-colors"
               >
                 清空会话
               </button>
             )}
           </div>
-          
+
           <div className="p-4 space-y-4">
             <div className="relative">
               <textarea
@@ -94,19 +93,23 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
                 className="w-full h-24 p-4 bg-muted rounded-xl text-sm text-foreground placeholder:text-muted-foreground border border-border focus:bg-card focus:border-primary/50 outline-none transition-all resize-none"
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                <Button 
+                <Button
                   onClick={handleGenerate}
                   disabled={isGenerating}
                   className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95 disabled:opacity-50 h-auto ${
-                    report ? 'bg-foreground text-background' : 'bg-primary text-primary-foreground shadow-primary/20'
+                    report
+                      ? "bg-foreground text-background"
+                      : "bg-primary text-primary-foreground shadow-primary/20"
                   }`}
                 >
                   {isGenerating ? (
                     <Loader2 className="animate-spin" size={16} />
+                  ) : report ? (
+                    <Sparkles size={16} />
                   ) : (
-                    report ? <Sparkles size={16} /> : <Sparkles size={16} />
+                    <Sparkles size={16} />
                   )}
-                  {isGenerating ? '研判中...' : (report ? '重新研判' : '立即生成专家建议')}
+                  {isGenerating ? "研判中..." : report ? "重新研判" : "立即生成专家建议"}
                 </Button>
               </div>
             </div>
@@ -126,7 +129,7 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
                   AI 定价专家研判报告
                 </h3>
                 <div className="prose prose-sm prose-slate max-w-none prose-headings:text-foreground prose-strong:text-primary">
-                   <ReactMarkdown>{report}</ReactMarkdown>
+                  <ReactMarkdown>{report}</ReactMarkdown>
                 </div>
               </div>
             </div>
@@ -161,7 +164,10 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
                 <p className="text-muted-foreground text-[11px] leading-relaxed mb-6">
                   若不接受调价，建议立即增加 2000 元渠道激励金，以此提升在各平台成交排名优先级。
                 </p>
-                <Button variant="outline" className="w-full py-2.5 bg-card hover:bg-muted text-foreground border border-border rounded-xl text-xs font-bold transition-all h-auto">
+                <Button
+                  variant="outline"
+                  className="w-full py-2.5 bg-card hover:bg-muted text-foreground border border-border rounded-xl text-xs font-bold transition-all h-auto"
+                >
                   开启渠道激励
                 </Button>
               </div>
@@ -174,11 +180,16 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
           <div className="p-20 flex flex-col items-center justify-center border border-border rounded-2xl bg-card/50 space-y-4">
             <div className="relative">
               <div className="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-              <BrainCircuit className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" size={32} />
+              <BrainCircuit
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary"
+                size={32}
+              />
             </div>
             <div className="text-center">
               <p className="text-foreground font-bold">深度研判中...</p>
-              <p className="text-muted-foreground text-xs mt-1">AI 正在调取周边竞品成交曲线并计算持有折旧...</p>
+              <p className="text-muted-foreground text-xs mt-1">
+                AI 正在调取周边竞品成交曲线并计算持有折旧...
+              </p>
             </div>
           </div>
         )}

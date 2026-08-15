@@ -16,7 +16,7 @@ const CommunitySearchResponseSchema = z.array(
     name: z.string(),
     district: z.string().nullable().optional(),
     business_circle: z.string().nullable().optional(),
-  })
+  }),
 );
 
 // ==================== 类型定义 ====================
@@ -24,9 +24,7 @@ const CommunitySearchResponseSchema = z.array(
 /**
  * 小区搜索后端响应（snake_case）
  */
-export type CommunitySearchResponse = z.infer<
-  typeof CommunitySearchResponseSchema
->;
+export type CommunitySearchResponse = z.infer<typeof CommunitySearchResponseSchema>;
 
 /**
  * 小区搜索响应（后端 snake_case → 前端 camelCase）
@@ -46,16 +44,12 @@ export interface CommunitySearchItem {
  * @returns 转换后的前端格式数据
  * @throws 当数据验证失败时抛出错误
  */
-export function transformCommunitySearch(
-  data: unknown
-): CommunitySearchItem[] {
+export function transformCommunitySearch(data: unknown): CommunitySearchItem[] {
   // 1. 验证输入数据
   const validated = CommunitySearchResponseSchema.safeParse(data);
 
   if (!validated.success) {
-    throw new Error(
-      `CommunitySearch 数据验证失败: ${validated.error.message}`
-    );
+    throw new Error(`CommunitySearch 数据验证失败: ${validated.error.message}`);
   }
 
   // 2. 转换数据格式
@@ -72,9 +66,7 @@ export function transformCommunitySearch(
  * @param data - 后端返回的原始数据
  * @returns 转换后的前端格式数据，验证失败返回空数组
  */
-export function transformCommunitySearchSafe(
-  data: unknown
-): CommunitySearchItem[] {
+export function transformCommunitySearchSafe(data: unknown): CommunitySearchItem[] {
   try {
     return transformCommunitySearch(data);
   } catch {

@@ -2,7 +2,10 @@
  * 项目详情相关工具函数
  */
 
-import { getFileUrl as getConfigFileUrl, getThumbnailUrl as getConfigThumbnailUrl } from "@/lib/config";
+import {
+  getFileUrl as getConfigFileUrl,
+  getThumbnailUrl as getConfigThumbnailUrl,
+} from "@/lib/config";
 import { formatPrice } from "@/lib/formatters";
 
 export function formatDate(dateStr?: string | null): string {

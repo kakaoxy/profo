@@ -17,11 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { createSalesRecordAction } from "../../../../../actions/sales";
 
@@ -80,10 +76,7 @@ export function AddRecordDialog({
 
       const res = await createSalesRecordAction({
         projectId: projectId,
-        recordType: recordTypeMap[defaultTab] as
-          | "viewing"
-          | "offer"
-          | "negotiation", // 使用映射后的类型
+        recordType: recordTypeMap[defaultTab] as "viewing" | "offer" | "negotiation", // 使用映射后的类型
         customerName: person,
         recordDate: format(date, "yyyy-MM-dd"),
         price: defaultTab === "offer" ? Number(price) : undefined,
@@ -96,9 +89,7 @@ export function AddRecordDialog({
         onClose();
       } else {
         const errorMsg =
-          typeof res.message === "string"
-            ? res.message
-            : "提交失败：数据格式校验错误";
+          typeof res.message === "string" ? res.message : "提交失败：数据格式校验错误";
         toast.error(errorMsg);
       }
     } catch {
@@ -109,16 +100,17 @@ export function AddRecordDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>
             新增
-            {defaultTab === "viewing"
-              ? "带看"
-              : defaultTab === "offer"
-              ? "出价"
-              : "面谈"}
+            {defaultTab === "viewing" ? "带看" : defaultTab === "offer" ? "出价" : "面谈"}
             记录
           </DialogTitle>
         </DialogHeader>
@@ -133,24 +125,15 @@ export function AddRecordDialog({
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
+                    !date && "text-muted-foreground",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? (
-                    format(date, "yyyy-MM-dd HH:mm")
-                  ) : (
-                    <span>选择时间</span>
-                  )}
+                  {date ? format(date, "yyyy-MM-dd HH:mm") : <span>选择时间</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
+                <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
               </PopoverContent>
             </Popover>
           </div>
@@ -161,8 +144,8 @@ export function AddRecordDialog({
               {defaultTab === "viewing"
                 ? "带看人/机构"
                 : defaultTab === "offer"
-                ? "出价人"
-                : "面谈对象"}
+                  ? "出价人"
+                  : "面谈对象"}
             </span>
             <Input
               value={person}
@@ -175,9 +158,7 @@ export function AddRecordDialog({
           {/* 3. 出价金额 (仅出价) */}
           {defaultTab === "offer" && (
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                出价金额 (万元)
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">出价金额 (万元)</span>
               <Input
                 type="number"
                 value={price}
@@ -191,9 +172,7 @@ export function AddRecordDialog({
           {/* 4. 面谈内容 (仅面谈) */}
           {defaultTab === "negotiation" && (
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                沟通纪要
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">沟通纪要</span>
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}

@@ -24,11 +24,7 @@ import {
   File,
   ImageIcon,
 } from "lucide-react";
-import {
-  CATEGORY_LABELS,
-  FILE_ICON_COLORS,
-  type AttachmentGroupConfig,
-} from "../constants";
+import { CATEGORY_LABELS, FILE_ICON_COLORS, type AttachmentGroupConfig } from "../constants";
 import type { AttachmentInfo, AttachmentHandlers } from "../types";
 import { isValidUrl } from "@/lib/validators";
 
@@ -63,11 +59,7 @@ export function AttachmentGroup({
       </div>
       <div className="space-y-2">
         {attachments.map((att, idx) => (
-          <AttachmentItem
-            key={`${groupKey}-${idx}`}
-            attachment={att}
-            handlers={handlers}
-          />
+          <AttachmentItem key={`${groupKey}-${idx}`} attachment={att} handlers={handlers} />
         ))}
       </div>
     </div>
@@ -77,13 +69,7 @@ export function AttachmentGroup({
 /**
  * 文件图标组件 - 根据文件类型渲染对应图标
  */
-function FileIcon({
-  fileType,
-  className,
-}: {
-  fileType: string;
-  className?: string;
-}) {
+function FileIcon({ fileType, className }: { fileType: string; className?: string }) {
   const iconColor = FILE_ICON_COLORS[fileType] || FILE_ICON_COLORS.default;
   const combinedClassName = `${className || ""} ${iconColor}`.trim();
 
@@ -188,8 +174,7 @@ function AttachmentItem({ attachment, handlers }: AttachmentItemProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle>确认删除</AlertDialogTitle>
                 <AlertDialogDescription>
-                  确定要删除附件 &ldquo;{attachment.filename}&rdquo;
-                  吗？此操作无法撤销。
+                  确定要删除附件 &ldquo;{attachment.filename}&rdquo; 吗？此操作无法撤销。
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

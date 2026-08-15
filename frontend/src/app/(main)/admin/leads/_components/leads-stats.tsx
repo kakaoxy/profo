@@ -1,13 +1,7 @@
 "use client";
 
 import { StatsCardGrid, type StatItem } from "@/components/common";
-import {
-  ClipboardList,
-  CalendarClock,
-  CheckCircle2,
-  XCircle,
-  Eye,
-} from "lucide-react";
+import { ClipboardList, CalendarClock, CheckCircle2, XCircle, Eye } from "lucide-react";
 
 export interface LeadStats {
   pending_assessment: number;

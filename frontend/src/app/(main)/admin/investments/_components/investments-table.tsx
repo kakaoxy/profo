@@ -8,11 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import type { components } from "@/lib/api-types";
 import { formatCNY, formatPercent } from "@/lib/formatters";
-import {
-  getProjectStatusBadgeClass,
-  getStatusLabel,
-  DEFAULT_STATUS,
-} from "@/lib/status-colors";
+import { getProjectStatusBadgeClass, getStatusLabel, DEFAULT_STATUS } from "@/lib/status-colors";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
@@ -42,11 +38,7 @@ function SettlementStatusCell({ status }: { status: string }) {
 
 function ReturnRatioCell({ ratio }: { ratio: number }) {
   const colorClass =
-    ratio > 0
-      ? "text-money-positive"
-      : ratio < 0
-        ? "text-money-negative"
-        : "text-muted-foreground";
+    ratio > 0 ? "text-money-positive" : ratio < 0 ? "text-money-negative" : "text-muted-foreground";
   return (
     <span className={`font-mono text-sm font-semibold tabular-nums ${colorClass}`}>
       {formatPercent(ratio)}
@@ -91,9 +83,7 @@ function buildColumns(): ColumnDef<InvestmentListItem>[] {
   return [
     {
       accessorKey: "project_code",
-      header: () => (
-        <div className="text-muted-foreground font-medium">项目编号</div>
-      ),
+      header: () => <div className="text-muted-foreground font-medium">项目编号</div>,
       cell: ({ row }) => (
         <span className="font-mono text-xs text-muted-foreground">
           {row.original.project_code || "-"}
@@ -102,9 +92,7 @@ function buildColumns(): ColumnDef<InvestmentListItem>[] {
     },
     {
       accessorKey: "project_name",
-      header: () => (
-        <div className="text-muted-foreground font-medium">小区 / 地址</div>
-      ),
+      header: () => <div className="text-muted-foreground font-medium">小区 / 地址</div>,
       cell: ({ row }) => (
         <div className="flex flex-col py-1 min-w-35">
           <span className="font-medium text-sm text-foreground truncate max-w-55">
@@ -120,9 +108,7 @@ function buildColumns(): ColumnDef<InvestmentListItem>[] {
     },
     {
       accessorKey: "project_status",
-      header: () => (
-        <div className="text-muted-foreground font-medium">项目状态</div>
-      ),
+      header: () => <div className="text-muted-foreground font-medium">项目状态</div>,
       cell: ({ row }) => {
         const status = row.original.project_status || DEFAULT_STATUS;
         return (
@@ -137,20 +123,12 @@ function buildColumns(): ColumnDef<InvestmentListItem>[] {
     },
     {
       accessorKey: "settlement_status",
-      header: () => (
-        <div className="text-muted-foreground font-medium">跟投状态</div>
-      ),
-      cell: ({ row }) => (
-        <SettlementStatusCell status={row.original.settlement_status} />
-      ),
+      header: () => <div className="text-muted-foreground font-medium">跟投状态</div>,
+      cell: ({ row }) => <SettlementStatusCell status={row.original.settlement_status} />,
     },
     {
       accessorKey: "total_investment",
-      header: () => (
-        <div className="text-right text-muted-foreground font-medium">
-          投资总额
-        </div>
-      ),
+      header: () => <div className="text-right text-muted-foreground font-medium">投资总额</div>,
       cell: ({ row }) => (
         <div className="text-right">
           <div className="font-mono text-sm font-medium text-foreground tabular-nums">
@@ -164,11 +142,7 @@ function buildColumns(): ColumnDef<InvestmentListItem>[] {
     },
     {
       accessorKey: "total_return",
-      header: () => (
-        <div className="text-right text-muted-foreground font-medium">
-          收益总额
-        </div>
-      ),
+      header: () => <div className="text-right text-muted-foreground font-medium">收益总额</div>,
       cell: ({ row }) => (
         <div className="text-right font-mono text-sm font-medium text-foreground tabular-nums">
           {formatCNY(row.original.total_return)}
@@ -177,11 +151,7 @@ function buildColumns(): ColumnDef<InvestmentListItem>[] {
     },
     {
       accessorKey: "return_ratio",
-      header: () => (
-        <div className="text-right text-muted-foreground font-medium">
-          回报率
-        </div>
-      ),
+      header: () => <div className="text-right text-muted-foreground font-medium">回报率</div>,
       cell: ({ row }) => (
         <div className="text-right">
           <ReturnRatioCell ratio={row.original.return_ratio} />
@@ -190,30 +160,18 @@ function buildColumns(): ColumnDef<InvestmentListItem>[] {
     },
     {
       id: "actions",
-      header: () => (
-        <div className="text-center text-muted-foreground font-medium">
-          操作
-        </div>
-      ),
+      header: () => <div className="text-center text-muted-foreground font-medium">操作</div>,
       cell: ({ row }) => <ActionCell row={row.original} />,
     },
   ];
 }
 
-export function InvestmentsTable({
-  data,
-  onRowClick,
-}: InvestmentsTableProps) {
+export function InvestmentsTable({ data, onRowClick }: InvestmentsTableProps) {
   const columns = buildColumns();
   return (
     <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <DataTable
-          columns={columns}
-          data={data}
-          onRowClick={onRowClick}
-          container={false}
-        />
+        <DataTable columns={columns} data={data} onRowClick={onRowClick} container={false} />
       </div>
     </div>
   );

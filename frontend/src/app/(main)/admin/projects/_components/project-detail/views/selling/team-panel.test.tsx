@@ -5,15 +5,13 @@ import type { UsePermissionReturn } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 // ─── Per-test configurable mocks (hoisted so vi.mock factories can read them) ─
-const {
-  mockUsePermission,
-  mockGetSalesUsersSimpleAction,
-  mockUpdateSalesRolesAction,
-} = vi.hoisted(() => ({
-  mockUsePermission: vi.fn<[], UsePermissionReturn>(),
-  mockGetSalesUsersSimpleAction: vi.fn(),
-  mockUpdateSalesRolesAction: vi.fn(),
-}));
+const { mockUsePermission, mockGetSalesUsersSimpleAction, mockUpdateSalesRolesAction } = vi.hoisted(
+  () => ({
+    mockUsePermission: vi.fn<[], UsePermissionReturn>(),
+    mockGetSalesUsersSimpleAction: vi.fn(),
+    mockUpdateSalesRolesAction: vi.fn(),
+  }),
+);
 
 vi.mock("@/hooks/use-permission", () => ({
   usePermission: () => mockUsePermission(),
@@ -68,10 +66,8 @@ vi.mock("@/app/(main)/admin/projects/actions/sales", () => ({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function mockPermissions(permissions: string[]): UsePermissionReturn {
-  const hasPermission = (code: string): boolean =>
-    permissions.includes(code);
-  const hasAnyPermission = (codes: string[]): boolean =>
-    codes.some((c) => permissions.includes(c));
+  const hasPermission = (code: string): boolean => permissions.includes(code);
+  const hasAnyPermission = (codes: string[]): boolean => codes.some((c) => permissions.includes(c));
   return {
     permissions,
     hasPermission,
@@ -102,9 +98,7 @@ interface ProjectLike {
   negotiator_id?: string;
 }
 
-function makeProject(
-  overrides: Partial<ProjectLike> = {},
-): ProjectLike {
+function makeProject(overrides: Partial<ProjectLike> = {}): ProjectLike {
   return {
     id: "p1",
     name: "测试项目",
@@ -145,7 +139,9 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
     const { SalesTeamPanel } = await import("./team-panel");
 
     render(
-      <SalesTeamPanel project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]} />,
+      <SalesTeamPanel
+        project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]}
+      />,
     );
 
     // 等待用户列表加载完成
@@ -167,7 +163,9 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
     const { SalesTeamPanel } = await import("./team-panel");
 
     render(
-      <SalesTeamPanel project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]} />,
+      <SalesTeamPanel
+        project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]}
+      />,
     );
 
     // 等待 Select trigger 渲染（Radix Select trigger 是 combobox）
@@ -190,7 +188,9 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
     const { SalesTeamPanel } = await import("./team-panel");
 
     render(
-      <SalesTeamPanel project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]} />,
+      <SalesTeamPanel
+        project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]}
+      />,
     );
 
     await waitFor(() => {
@@ -205,11 +205,7 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
     mockUsePermission.mockReturnValue(mockPermissions(USER_PERMISSIONS));
     mockGetSalesUsersSimpleAction.mockResolvedValue({
       success: true,
-      data: [
-        makeUser("u1", "张三"),
-        makeUser("u2", "李四"),
-        makeUser("u3", "王五"),
-      ],
+      data: [makeUser("u1", "张三"), makeUser("u2", "李四"), makeUser("u3", "王五")],
     });
 
     const { SalesTeamPanel } = await import("./team-panel");
@@ -248,7 +244,9 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
     const { SalesTeamPanel } = await import("./team-panel");
 
     render(
-      <SalesTeamPanel project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]} />,
+      <SalesTeamPanel
+        project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]}
+      />,
     );
 
     // 三组均显示 "加载中..."

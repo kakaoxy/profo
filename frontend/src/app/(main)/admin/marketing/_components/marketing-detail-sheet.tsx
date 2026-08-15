@@ -2,19 +2,11 @@
 
 import { logger } from "@/lib/logger";
 import React, { useState, useEffect, useCallback, useRef, memo } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
 import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/admin/marketing/types";
-import {
-  getL4MarketingProjectAction,
-  getL4MarketingMediaAction,
-} from "../actions";
+import { getL4MarketingProjectAction, getL4MarketingMediaAction } from "../actions";
 
 import { MarketingDetailHeader } from "./detail/marketing-detail-header";
 import { MarketingInfoSection } from "./detail/marketing-info-section";
@@ -29,7 +21,10 @@ interface MarketingDetailSheetProps {
 }
 
 // 请求缓存，用于防止重复请求相同项目的数据
-const requestCache = new Map<number, Promise<{ project: L4MarketingProject | null; photos: L4MarketingMedia[] }>>();
+const requestCache = new Map<
+  number,
+  Promise<{ project: L4MarketingProject | null; photos: L4MarketingMedia[] }>
+>();
 
 // 使用 memo 避免不必要的重渲染
 export const MarketingDetailSheet = memo(function MarketingDetailSheet({
@@ -51,7 +46,7 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
   // loadDetailData 的 `fetchedProjectIdRef.current === projectId` 检查已能正确识别
   // 不同项目 ID，无需在 render 中重置 ref。
   const [prevInitialProjectId, setPrevInitialProjectId] = useState<number | undefined>(
-    initialProject?.id
+    initialProject?.id,
   );
   if (initialProject?.id !== prevInitialProjectId) {
     setPrevInitialProjectId(initialProject?.id);
@@ -76,12 +71,12 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
             getL4MarketingMediaAction(projectId, 1, 100),
           ]);
 
-          const projectData = projectRes.success && projectRes.data
-            ? (projectRes.data as L4MarketingProject)
-            : null;
-          const photosData = photosRes.success && photosRes.data
-            ? ((photosRes.data.items as L4MarketingMedia[]) || [])
-            : [];
+          const projectData =
+            projectRes.success && projectRes.data ? (projectRes.data as L4MarketingProject) : null;
+          const photosData =
+            photosRes.success && photosRes.data
+              ? (photosRes.data.items as L4MarketingMedia[]) || []
+              : [];
 
           return { project: projectData, photos: photosData };
         })();
@@ -128,7 +123,12 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
   if (!project) return null;
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <SheetContent className="w-full sm:max-w-3xl flex flex-col p-0 transition-all duration-300">
         <SheetTitle className="sr-only">营销项目详情 - {project.title}</SheetTitle>
         <SheetDescription className="sr-only">

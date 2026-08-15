@@ -17,10 +17,8 @@ vi.mock("@/hooks/use-permission", () => ({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function mockPermissions(permissions: string[]): UsePermissionReturn {
-  const hasPermission = (code: string): boolean =>
-    permissions.includes(code);
-  const hasAnyPermission = (codes: string[]): boolean =>
-    codes.some((c) => permissions.includes(c));
+  const hasPermission = (code: string): boolean => permissions.includes(code);
+  const hasAnyPermission = (codes: string[]): boolean => codes.some((c) => permissions.includes(c));
   return {
     permissions,
     hasPermission,
@@ -132,9 +130,7 @@ describe("HasPermission", () => {
       </HasPermission>,
     );
 
-    expect(
-      screen.queryByText("dangerous-action"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("dangerous-action")).not.toBeInTheDocument();
     // 确保 DOM 中确实没有 button 元素残留
     expect(container.querySelector("button")).toBeNull();
   });

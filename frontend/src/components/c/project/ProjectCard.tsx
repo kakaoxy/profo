@@ -24,15 +24,15 @@ interface ProjectCardProps {
 }
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
-  "在售": {
+  在售: {
     label: "在售",
     className: "bg-c-status-onsale/10 text-c-status-onsale",
   },
-  "在途": {
+  在途: {
     label: "装修中",
     className: "bg-c-status-upcoming/10 text-c-status-upcoming",
   },
-  "已售": {
+  已售: {
     label: "已售",
     className: "bg-c-status-sold/10 text-c-status-sold",
   },
@@ -102,10 +102,7 @@ export function ProjectCard({
           {tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-fog px-2.5 py-0.5 text-xs text-graphite"
-                >
+                <span key={tag} className="rounded-full bg-fog px-2.5 py-0.5 text-xs text-graphite">
                   {tag}
                 </span>
               ))}
@@ -114,9 +111,7 @@ export function ProjectCard({
 
           <div className="mt-auto border-t border-dove/30 pt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-medium text-ink">
-                {totalPrice}
-              </span>
+              <span className="text-xl font-medium text-ink">{totalPrice}</span>
               <span className="text-sm text-graphite">万</span>
             </div>
             <p className="mt-0.5 text-xs text-graphite">{unitPrice}元/㎡</p>

@@ -8,11 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import type { components } from "@/lib/api-types";
 import { formatCNY, formatPercent } from "@/lib/formatters";
-import {
-  getProjectStatusBadgeClass,
-  getStatusLabel,
-  DEFAULT_STATUS,
-} from "@/lib/status-colors";
+import { getProjectStatusBadgeClass, getStatusLabel, DEFAULT_STATUS } from "@/lib/status-colors";
 
 type LedgerProjectListItem = components["schemas"]["LedgerProjectListItem"];
 
@@ -23,11 +19,7 @@ interface LedgerTableProps {
 
 function NetCashFlowCell({ value }: { value: number }) {
   const colorClass =
-    value > 0
-      ? "text-money-positive"
-      : value < 0
-        ? "text-money-negative"
-        : "text-muted-foreground";
+    value > 0 ? "text-money-positive" : value < 0 ? "text-money-negative" : "text-muted-foreground";
   return (
     <span className={`font-mono text-sm font-medium tabular-nums ${colorClass}`}>
       {formatCNY(value)}
@@ -37,11 +29,7 @@ function NetCashFlowCell({ value }: { value: number }) {
 
 function RoiCell({ ratio }: { ratio: number }) {
   const colorClass =
-    ratio > 0
-      ? "text-money-positive"
-      : ratio < 0
-        ? "text-money-negative"
-        : "text-muted-foreground";
+    ratio > 0 ? "text-money-positive" : ratio < 0 ? "text-money-negative" : "text-muted-foreground";
   return (
     <span className={`font-mono text-sm font-semibold tabular-nums ${colorClass}`}>
       {formatPercent(ratio)}
@@ -93,9 +81,7 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
   return [
     {
       accessorKey: "project_code",
-      header: () => (
-        <div className="text-muted-foreground font-medium">项目编号</div>
-      ),
+      header: () => <div className="text-muted-foreground font-medium">项目编号</div>,
       cell: ({ row }) => (
         <span className="font-mono text-xs text-muted-foreground">
           {row.original.project_code || "-"}
@@ -104,9 +90,7 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
     },
     {
       accessorKey: "project_name",
-      header: () => (
-        <div className="text-muted-foreground font-medium">小区 / 地址</div>
-      ),
+      header: () => <div className="text-muted-foreground font-medium">小区 / 地址</div>,
       cell: ({ row }) => (
         <div className="flex flex-col py-1 min-w-35">
           <span className="font-medium text-sm text-foreground truncate max-w-55">
@@ -122,9 +106,7 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
     },
     {
       accessorKey: "project_status",
-      header: () => (
-        <div className="text-muted-foreground font-medium">项目状态</div>
-      ),
+      header: () => <div className="text-muted-foreground font-medium">项目状态</div>,
       cell: ({ row }) => {
         const status = row.original.project_status || DEFAULT_STATUS;
         return (
@@ -139,11 +121,7 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
     },
     {
       accessorKey: "total_income",
-      header: () => (
-        <div className="text-right text-muted-foreground font-medium">
-          总收入
-        </div>
-      ),
+      header: () => <div className="text-right text-muted-foreground font-medium">总收入</div>,
       cell: ({ row }) => (
         <div className="text-right font-mono text-sm font-medium text-foreground tabular-nums">
           {formatCNY(row.original.total_income)}
@@ -152,11 +130,7 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
     },
     {
       accessorKey: "total_expense",
-      header: () => (
-        <div className="text-right text-muted-foreground font-medium">
-          总支出
-        </div>
-      ),
+      header: () => <div className="text-right text-muted-foreground font-medium">总支出</div>,
       cell: ({ row }) => (
         <div className="text-right font-mono text-sm font-medium text-foreground tabular-nums">
           {formatCNY(row.original.total_expense)}
@@ -165,11 +139,7 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
     },
     {
       accessorKey: "net_cash_flow",
-      header: () => (
-        <div className="text-right text-muted-foreground font-medium">
-          净现金流
-        </div>
-      ),
+      header: () => <div className="text-right text-muted-foreground font-medium">净现金流</div>,
       cell: ({ row }) => (
         <div className="text-right">
           <NetCashFlowCell value={row.original.net_cash_flow} />
@@ -178,9 +148,7 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
     },
     {
       accessorKey: "roi",
-      header: () => (
-        <div className="text-right text-muted-foreground font-medium">ROI</div>
-      ),
+      header: () => <div className="text-right text-muted-foreground font-medium">ROI</div>,
       cell: ({ row }) => (
         <div className="text-right">
           <RoiCell ratio={row.original.roi} />
@@ -189,11 +157,7 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
     },
     {
       accessorKey: "record_count",
-      header: () => (
-        <div className="text-center text-muted-foreground font-medium">
-          记录数
-        </div>
-      ),
+      header: () => <div className="text-center text-muted-foreground font-medium">记录数</div>,
       cell: ({ row }) => (
         <div className="text-center font-mono text-sm text-foreground tabular-nums">
           {row.original.record_count}
@@ -202,20 +166,12 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
     },
     {
       id: "investment",
-      header: () => (
-        <div className="text-center text-muted-foreground font-medium">
-          跟投
-        </div>
-      ),
+      header: () => <div className="text-center text-muted-foreground font-medium">跟投</div>,
       cell: ({ row }) => <InvestmentCell row={row.original} />,
     },
     {
       id: "actions",
-      header: () => (
-        <div className="text-center text-muted-foreground font-medium">
-          操作
-        </div>
-      ),
+      header: () => <div className="text-center text-muted-foreground font-medium">操作</div>,
       cell: ({ row }) => <ActionCell row={row.original} />,
     },
   ];
@@ -225,19 +181,11 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
 // 避免每次渲染重建数组与内联 cell/header 函数,从而击穿 DataTable 内部 memo
 const columns = buildColumns();
 
-export function LedgerTable({
-  data,
-  onRowClick,
-}: LedgerTableProps) {
+export function LedgerTable({ data, onRowClick }: LedgerTableProps) {
   return (
     <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <DataTable
-          columns={columns}
-          data={data}
-          onRowClick={onRowClick}
-          container={false}
-        />
+        <DataTable columns={columns} data={data} onRowClick={onRowClick} container={false} />
       </div>
     </div>
   );

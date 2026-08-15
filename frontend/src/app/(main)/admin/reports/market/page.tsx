@@ -118,9 +118,7 @@ function parsePageSize(value: string | undefined): number {
   return n;
 }
 
-export default async function MarketReportsPage({
-  searchParams,
-}: PageProps) {
+export default async function MarketReportsPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   const range = parseRange(asString(params.range));
@@ -152,8 +150,7 @@ export default async function MarketReportsPage({
     floor_levels: floor_levels.length > 0 ? floor_levels.join(",") : undefined,
   };
 
-  const granularity: Granularity =
-    range === "4w" || range === "8w" ? "week" : "month";
+  const granularity: Granularity = range === "4w" || range === "8w" ? "week" : "month";
 
   const client = await fetchClient();
 
@@ -252,24 +249,16 @@ export default async function MarketReportsPage({
 
   // 字典数据降级处理
   const dataSources = dataSourcesRes.data?.items ?? [];
-  const lastUpdated =
-    lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
+  const lastUpdated = lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
 
   return (
     <div className="min-h-screen bg-muted">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
-        <TopFilterBar
-          dataSources={dataSources}
-          lastUpdated={lastUpdated}
-        />
+        <TopFilterBar dataSources={dataSources} lastUpdated={lastUpdated} />
         <SubFilterBar />
         <ComparisonPool />
         <KpiCards data={kpiData} />
-        <TrendChart
-          data={trendData}
-          granularity={granularity}
-          dimension={trend_dim}
-        />
+        <TrendChart data={trendData} granularity={granularity} dimension={trend_dim} />
         <DistributionChart
           title="成交价格分布图"
           bucketLabelHeader="价格区间(万)"

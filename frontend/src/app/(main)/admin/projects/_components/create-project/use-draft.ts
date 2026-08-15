@@ -31,7 +31,7 @@ interface DebouncedFunction<T extends (...args: unknown[]) => void> {
  */
 function debounce<T extends (...args: unknown[]) => void>(
   fn: T,
-  delay: number
+  delay: number,
 ): DebouncedFunction<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -77,9 +77,7 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
             parsed.signing_date = fromDateStr(parsed.signing_date);
           }
           if (parsed.planned_handover_date) {
-            parsed.planned_handover_date = fromDateStr(
-              parsed.planned_handover_date
-            );
+            parsed.planned_handover_date = fromDateStr(parsed.planned_handover_date);
           }
           if (parsed.commission_start_date) {
             parsed.commission_start_date = fromDateStr(parsed.commission_start_date);
@@ -88,7 +86,10 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
             parsed.commission_end_date = fromDateStr(parsed.commission_end_date);
           }
           // 兼容旧 draft：若缺少 owners 但存在历史单业主字段，映射为 owners[0]
-          if ((!parsed.owners || !Array.isArray(parsed.owners)) && (parsed.owner_name || parsed.owner_phone || parsed.owner_id_card)) {
+          if (
+            (!parsed.owners || !Array.isArray(parsed.owners)) &&
+            (parsed.owner_name || parsed.owner_phone || parsed.owner_id_card)
+          ) {
             parsed.owners = [
               {
                 owner_name: parsed.owner_name || "",

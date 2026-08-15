@@ -132,9 +132,7 @@ export function LedgerView({ data, total }: LedgerViewProps) {
           {/* 项目状态筛选 */}
           <Select
             value={query.project_status}
-            onValueChange={(val) =>
-              setQuery({ project_status: val, page: 1 })
-            }
+            onValueChange={(val) => setQuery({ project_status: val, page: 1 })}
           >
             <SelectTrigger className="h-10 w-[140px] bg-card border-border rounded-lg">
               <SelectValue placeholder="项目状态" />

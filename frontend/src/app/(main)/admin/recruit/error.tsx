@@ -31,9 +31,7 @@ export default function RecruitError({
       <p className="text-sm text-graphite text-center max-w-sm">
         招募管理数据暂时不可用，请检查网络连接后重试。
         {error.digest && (
-          <span className="block mt-1 text-xs text-slate">
-            错误编号: {error.digest}
-          </span>
+          <span className="block mt-1 text-xs text-slate">错误编号: {error.digest}</span>
         )}
       </p>
       <button

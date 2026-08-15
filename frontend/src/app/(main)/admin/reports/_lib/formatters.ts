@@ -89,10 +89,4 @@ export function formatPeriod(period: string, granularity: Granularity): string {
 }
 
 // 重新导出通用格式化函数，便于报表组件统一从本模块引入
-export {
-  formatCount,
-  formatPercent,
-  formatPriceWan,
-  formatTrendPercent,
-  formatUnitPriceWan,
-};
+export { formatCount, formatPercent, formatPriceWan, formatTrendPercent, formatUnitPriceWan };

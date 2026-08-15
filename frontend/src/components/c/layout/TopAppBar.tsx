@@ -18,12 +18,7 @@ const NAV_LINKS = [
   { label: "估价", href: "/valuation", activeFor: ["/valuation"] },
 ] as const;
 
-export function TopAppBar({
-  variant,
-  title,
-  onBack,
-  actionIcon,
-}: TopAppBarProps) {
+export function TopAppBar({ variant, title, onBack, actionIcon }: TopAppBarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const session = useSession();
@@ -49,16 +44,14 @@ export function TopAppBar({
           <nav className="flex items-center gap-8">
             {NAV_LINKS.map((link) => {
               const isActive = link.activeFor.some(
-                (p) => pathname === p || pathname.startsWith(`${p}/`)
+                (p) => pathname === p || pathname.startsWith(`${p}/`),
               );
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={`relative py-1 text-[16px] transition-colors ${
-                    isActive
-                      ? "font-medium text-ink"
-                      : "text-graphite hover:text-ink"
+                    isActive ? "font-medium text-ink" : "text-graphite hover:text-ink"
                   }`}
                 >
                   {link.label}
@@ -72,10 +65,7 @@ export function TopAppBar({
 
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
-              <Link
-                href="/my"
-                className="text-[15px] font-medium text-ink hover:underline"
-              >
+              <Link href="/my" className="text-[15px] font-medium text-ink hover:underline">
                 个人中心
               </Link>
             ) : (
@@ -115,12 +105,8 @@ export function TopAppBar({
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <span className="text-base font-medium text-ink">
-                {title ?? ""}
-              </span>
-              <div className="flex h-10 w-10 items-center justify-center">
-                {actionIcon ?? null}
-              </div>
+              <span className="text-base font-medium text-ink">{title ?? ""}</span>
+              <div className="flex h-10 w-10 items-center justify-center">{actionIcon ?? null}</div>
             </>
           )}
         </div>

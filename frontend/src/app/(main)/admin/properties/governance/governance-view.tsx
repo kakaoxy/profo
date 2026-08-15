@@ -2,12 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { getCoreRowModel, useReactTable, flexRender } from "@tanstack/react-table";
 import {
-  getCoreRowModel,
-  useReactTable,
-  flexRender,
-} from "@tanstack/react-table";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,10 +42,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
   // 2. 搜索框状态（初始值为 URL 中的 search 参数）
   const [searchValue, setSearchValue] = useState(searchParams.get("search") || "");
 
-  const columns = useMemo(
-    () => createColumns({ onSuccess: () => router.refresh() }),
-    [router]
-  );
+  const columns = useMemo(() => createColumns({ onSuccess: () => router.refresh() }), [router]);
 
   // 同步 rowSelection 与 selectedMap:用户只能勾选当前显示的行,故被勾选项必在 data 中
   const handleRowSelectionChange = (
@@ -75,7 +75,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
     state: {
       rowSelection,
     },
-    getRowId: (row) => String(row.id), 
+    getRowId: (row) => String(row.id),
   });
 
   // 处理搜索
@@ -117,15 +117,15 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
                 onChange={(event) => setSearchValue(event.target.value)}
                 className="pl-8 w-full sm:w-[300px]"
               />
-              <Button type="submit" variant="secondary" size="sm">搜索</Button>
+              <Button type="submit" variant="secondary" size="sm">
+                搜索
+              </Button>
             </form>
           </div>
 
           {/* 合并按钮 - 传入选中项 */}
           <div className="flex items-center gap-2">
-            <CreateCommunityDialog
-              onSuccess={() => router.refresh()}
-            />
+            <CreateCommunityDialog onSuccess={() => router.refresh()} />
             <MergeDialog
               selectedCommunities={selectedCommunities}
               onSuccess={() => {
@@ -154,10 +154,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}

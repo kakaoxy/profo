@@ -15,27 +15,18 @@ interface PhotoItemProps {
   isSynced?: boolean;
 }
 
-export function PhotoItem({
-  photo,
-  index,
-  onDelete,
-  isSynced = true,
-}: PhotoItemProps) {
+export function PhotoItem({ photo, index, onDelete, isSynced = true }: PhotoItemProps) {
   const stageLabels: Record<string, string> = Object.fromEntries(
     RENOVATION_STAGES.map((s) => [s.value, s.label]),
   );
 
   const stage = photo.renovation_stage || "";
   const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.file_url);
-  const { status: imageStatus } = useSimpleImageLoader(
-    displayUrl || null
-  );
+  const { status: imageStatus } = useSimpleImageLoader(displayUrl || null);
 
   return (
     <div className="flex items-center gap-4 rounded-lg border bg-muted/20 p-3 hover:bg-background transition-colors">
-      <div
-        className="w-12 h-12 rounded-md border shrink-0 relative overflow-hidden bg-muted"
-      >
+      <div className="w-12 h-12 rounded-md border shrink-0 relative overflow-hidden bg-muted">
         {imageStatus === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -48,7 +39,7 @@ export function PhotoItem({
             alt={`照片 #${photo.id}`}
             className={cn(
               "w-full h-full object-cover transition-opacity duration-300",
-              imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+              imageStatus === "loaded" ? "opacity-100" : "opacity-0",
             )}
             loading="lazy"
             decoding="async"
@@ -69,12 +60,8 @@ export function PhotoItem({
         </Badge>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-foreground truncate">
-          照片 #{photo.id}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          阶段: {stageLabels[stage] || stage || "—"}
-        </p>
+        <p className="text-xs font-medium text-foreground truncate">照片 #{photo.id}</p>
+        <p className="text-xs text-muted-foreground">阶段: {stageLabels[stage] || stage || "—"}</p>
       </div>
       <div className="flex items-center gap-3">
         <Badge variant="outline" className="rounded-md">

@@ -3,11 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EditCommunityDialog } from "./edit-community-dialog";
 import type { CommunityMinified } from "./pick-community-fields";
 
@@ -15,9 +11,7 @@ interface CreateColumnsOptions {
   onSuccess: () => void;
 }
 
-export function createColumns(
-  options: CreateColumnsOptions
-): ColumnDef<CommunityMinified>[] {
+export function createColumns(options: CreateColumnsOptions): ColumnDef<CommunityMinified>[] {
   return [
     // 1. 多选框列
     {
@@ -28,9 +22,7 @@ export function createColumns(
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
-          onCheckedChange={(value: boolean) =>
-            table.toggleAllPageRowsSelected(!!value)
-          }
+          onCheckedChange={(value: boolean) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
         />
       ),
@@ -54,16 +46,12 @@ export function createColumns(
     {
       accessorKey: "name",
       header: "小区名称",
-      cell: ({ row }) => (
-        <span className="font-medium">{row.getValue("name")}</span>
-      ),
+      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "total_properties",
       header: "关联房源数",
-      cell: ({ row }) => (
-        <Badge variant="secondary">{row.getValue("total_properties")} 套</Badge>
-      ),
+      cell: ({ row }) => <Badge variant="secondary">{row.getValue("total_properties")} 套</Badge>,
     },
     {
       accessorKey: "district",
@@ -73,9 +61,7 @@ export function createColumns(
     {
       accessorKey: "business_circle",
       header: () => <span className="inline">商圈</span>,
-      cell: ({ row }) => (
-        <span className="inline">{row.getValue("business_circle")}</span>
-      ),
+      cell: ({ row }) => <span className="inline">{row.getValue("business_circle")}</span>,
     },
     {
       accessorKey: "aliases",
@@ -108,9 +94,7 @@ export function createColumns(
                 </TooltipContent>
               </Tooltip>
             ))}
-            {overflowCount > 0 && (
-              <Badge variant="outline">+{overflowCount}</Badge>
-            )}
+            {overflowCount > 0 && <Badge variant="outline">+{overflowCount}</Badge>}
           </div>
         );
       },
@@ -121,19 +105,14 @@ export function createColumns(
       header: () => <span className="inline text-xs">创建时间</span>,
       cell: ({ row }) => {
         const date = new Date(row.getValue("created_at"));
-        return (
-          <span className="inline text-xs">{date.toLocaleDateString("zh-CN")}</span>
-        );
+        return <span className="inline text-xs">{date.toLocaleDateString("zh-CN")}</span>;
       },
     },
     {
       id: "actions",
       header: "操作",
       cell: ({ row }) => (
-        <EditCommunityDialog
-          community={row.original}
-          onSuccess={options.onSuccess}
-        />
+        <EditCommunityDialog community={row.original} onSuccess={options.onSuccess} />
       ),
       enableSorting: false,
       enableHiding: false,

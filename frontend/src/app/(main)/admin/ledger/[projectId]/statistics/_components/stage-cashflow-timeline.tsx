@@ -9,9 +9,7 @@ interface StageCashflowTimelineProps {
 }
 
 /** 阶段现金流量表(收付实现制·现金流视角) */
-export function StageCashflowTimeline({
-  stageFlows,
-}: StageCashflowTimelineProps) {
+export function StageCashflowTimeline({ stageFlows }: StageCashflowTimelineProps) {
   const stages = stageFlows;
   const colCount = Math.max(stages.length, 1);
 
@@ -19,9 +17,7 @@ export function StageCashflowTimeline({
     <section className="bg-fog py-12">
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <p className="text-xs tracking-[0.2em] text-graphite mb-2">
-            PROJECT LIFECYCLE CASHFLOW
-          </p>
+          <p className="text-xs tracking-[0.2em] text-graphite mb-2">PROJECT LIFECYCLE CASHFLOW</p>
           <h2 className="text-2xl font-display text-ink flex items-center gap-3">
             全周期阶段现金流量表
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-apricot-wash text-rust text-xs font-medium">
@@ -48,17 +44,13 @@ export function StageCashflowTimeline({
                   <div className="w-7 h-7 rounded-full bg-white border-2 border-apricot-wash flex items-center justify-center text-xs text-rust font-semibold shadow-sm">
                     {i + 1}
                   </div>
-                  <p className="mt-2 text-sm text-ink font-medium">
-                    {s.stage_label}
-                  </p>
+                  <p className="mt-2 text-sm text-ink font-medium">{s.stage_label}</p>
                 </div>
 
                 {/* 阶段卡片 */}
                 <div className="bg-white rounded-[14px] p-4 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.05)_0px_4px_12px_-2px]">
                   {s.count === 0 && s.inflow === 0 && s.outflow === 0 ? (
-                    <div className="py-6 text-center text-xs text-ash">
-                      无现金流
-                    </div>
+                    <div className="py-6 text-center text-xs text-ash">无现金流</div>
                   ) : (
                     <div className="space-y-2 text-sm">
                       <div className="flex items-baseline justify-between gap-2">
@@ -87,21 +79,14 @@ export function StageCashflowTimeline({
                       </div>
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-graphite">流水笔数</span>
-                        <span className="tabular-nums text-ink">
-                          {formatNumber(s.count)} 笔
-                        </span>
+                        <span className="tabular-nums text-ink">{formatNumber(s.count)} 笔</span>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* 阶段之间分隔标记(响应式下隐藏连接线时使用) */}
-                {!isLast && (
-                  <div
-                    className="md:hidden h-3"
-                    aria-hidden="true"
-                  />
-                )}
+                {!isLast && <div className="md:hidden h-3" aria-hidden="true" />}
               </div>
             );
           })}

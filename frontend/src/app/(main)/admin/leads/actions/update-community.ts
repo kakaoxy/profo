@@ -24,17 +24,9 @@ const communityIdSchema = z.string().min(1, "小区 ID 不能为空");
 
 const updateCommunitySchema = z
   .object({
-    name: z
-      .string()
-      .min(1, "小区名称不能为空")
-      .max(200, "小区名称最多 200 字符")
-      .optional(),
+    name: z.string().min(1, "小区名称不能为空").max(200, "小区名称最多 200 字符").optional(),
     district: z.string().max(100, "行政区最多 100 字符").nullable().optional(),
-    business_circle: z
-      .string()
-      .max(100, "商圈最多 100 字符")
-      .nullable()
-      .optional(),
+    business_circle: z.string().max(100, "商圈最多 100 字符").nullable().optional(),
     avg_price_wan: z.number().min(0, "均价不能为负数").nullable().optional(),
     total_properties: z
       .number()
@@ -52,7 +44,7 @@ const updateCommunitySchema = z
  */
 export async function updateCommunityAction(
   id: string,
-  data: UpdateCommunityRequest
+  data: UpdateCommunityRequest,
 ): Promise<UpdateCommunityResult> {
   const idParsed = communityIdSchema.safeParse(id);
   if (!idParsed.success) {
@@ -77,13 +69,10 @@ export async function updateCommunityAction(
 
   try {
     const client = await fetchClient();
-    const { error } = await client.PATCH(
-      "/api/v1/admin/communities/{community_id}",
-      {
-        params: { path: { community_id: id } },
-        body: data,
-      }
-    );
+    const { error } = await client.PATCH("/api/v1/admin/communities/{community_id}", {
+      params: { path: { community_id: id } },
+      body: data,
+    });
 
     if (error) {
       const errorMsg = (error as { message?: string }).message || "更新小区失败";

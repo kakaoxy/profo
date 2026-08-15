@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { fetchSessionAction, loginAction, logoutAction, updateSessionTokenAction } from "./server/actions";
+import type {
+  fetchSessionAction,
+  loginAction,
+  logoutAction,
+  updateSessionTokenAction,
+} from "./server/actions";
 
 // ─── Core Domain Types ────────────────────────────────────────────────────────
 
@@ -86,7 +91,11 @@ export interface OAuthProvider {
     codeChallenge: string;
     codeChallengeMethod: "S256";
   }): string;
-  exchangeCode(code: string, redirectUri: string, codeVerifier: string): Promise<{ accessToken: string }>;
+  exchangeCode(
+    code: string,
+    redirectUri: string,
+    codeVerifier: string,
+  ): Promise<{ accessToken: string }>;
   getUserInfo(accessToken: string): Promise<OAuthUserInfo>;
 }
 
@@ -226,7 +235,9 @@ export interface ResolvedCookieNames {
 export interface ResolvedAuthConfig {
   adapter: AuthAdapter;
   cookieNames: ResolvedCookieNames;
-  cookieOptions: Required<Omit<CookieOptions, "name" | "domain" | "accessTokenName" | "refreshTokenName">> & {
+  cookieOptions: Required<
+    Omit<CookieOptions, "name" | "domain" | "accessTokenName" | "refreshTokenName">
+  > & {
     domain?: string;
   };
   refreshThresholdSeconds: number;
@@ -278,8 +289,7 @@ export type ClientSession =
 
 /** The standard result shape for all Server Actions in this library. */
 export type ActionResult<TData> =
-  | { success: true; data: TData }
-  | { success: false; error: string };
+  { success: true; data: TData } | { success: false; error: string };
 
 export type SessionActionData = ClientSessionData;
 

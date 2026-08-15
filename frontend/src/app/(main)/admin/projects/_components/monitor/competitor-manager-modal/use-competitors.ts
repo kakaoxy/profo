@@ -77,7 +77,7 @@ export function useCompetitors({
         refresh();
       }
     },
-    [communityId, refresh]
+    [communityId, refresh],
   );
 
   const removeCompetitor = useCallback(
@@ -90,7 +90,7 @@ export function useCompetitors({
       }
       setDeletingId(null);
     },
-    [communityId, refresh]
+    [communityId, refresh],
   );
 
   return {

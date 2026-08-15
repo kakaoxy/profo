@@ -24,11 +24,11 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
 
   const prev = useCallback(
     () => setCurrent((c) => (c > 0 ? c - 1 : images.length - 1)),
-    [images.length]
+    [images.length],
   );
   const next = useCallback(
     () => setCurrent((c) => (c < images.length - 1 ? c + 1 : 0)),
-    [images.length]
+    [images.length],
   );
 
   // Keyboard navigation support
@@ -37,7 +37,7 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
       if (e.key === "ArrowLeft") prev();
       if (e.key === "ArrowRight") next();
     },
-    [prev, next]
+    [prev, next],
   );
 
   if (!images || images.length === 0) {
@@ -56,9 +56,7 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
   const imgUrl = isVideo ? "" : getThumbnailUrl(currentImage?.thumbnailUrl, currentImage?.url);
   const videoUrl = isVideo ? getFileUrl(currentImage.url) : "";
   // 视频首帧加载前用缩略图作海报，避免黑屏
-  const videoPoster = isVideo
-    ? getFileUrl(currentImage?.thumbnailUrl ?? "")
-    : "";
+  const videoPoster = isVideo ? getFileUrl(currentImage?.thumbnailUrl ?? "") : "";
 
   return (
     <div

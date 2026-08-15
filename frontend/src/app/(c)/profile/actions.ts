@@ -9,15 +9,24 @@ import { cLocale } from "@/lib/i18n/c-locale";
 import { passwordSchema } from "@/app/(main)/admin/users/_components/password-schema";
 
 const updateProfileSchema = z.object({
-  nickname: z.string().min(1, cLocale.profileAction.nicknameRequired).max(100, cLocale.profileAction.nicknameMaxLength),
+  nickname: z
+    .string()
+    .min(1, cLocale.profileAction.nicknameRequired)
+    .max(100, cLocale.profileAction.nicknameMaxLength),
 });
 
 const updatePhoneSchema = z.object({
-  phone: z.string().min(1, cLocale.profileAction.phoneRequired).regex(/^1[3-9]\d{9}$/, cLocale.profileAction.phoneInvalid),
+  phone: z
+    .string()
+    .min(1, cLocale.profileAction.phoneRequired)
+    .regex(/^1[3-9]\d{9}$/, cLocale.profileAction.phoneInvalid),
   password: passwordSchema,
 });
 
-export async function updateProfileAction(_: ActionResult<{ nickname: string }>, formData: FormData): Promise<ActionResult<{ nickname: string }>> {
+export async function updateProfileAction(
+  _: ActionResult<{ nickname: string }>,
+  formData: FormData,
+): Promise<ActionResult<{ nickname: string }>> {
   const raw = { nickname: formData.get("nickname") ?? "" };
   const parsed = updateProfileSchema.safeParse(raw);
   if (!parsed.success) return createErrorResult(parsed.error.issues[0].message);
@@ -36,13 +45,19 @@ export async function updateProfileAction(_: ActionResult<{ nickname: string }>,
     }
     // 重新渲染整个 (c) layout 树，触发服务端重新调用 /public/auth/me 刷新 Context
     revalidatePath("/", "layout");
-    return createSuccessResult({ nickname: parsed.data.nickname }, cLocale.profileAction.updateSuccess);
+    return createSuccessResult(
+      { nickname: parsed.data.nickname },
+      cLocale.profileAction.updateSuccess,
+    );
   } catch {
     return createErrorResult(cLocale.common.error.network);
   }
 }
 
-export async function updatePhoneAction(_: ActionResult<{ phone: string }>, formData: FormData): Promise<ActionResult<{ phone: string }>> {
+export async function updatePhoneAction(
+  _: ActionResult<{ phone: string }>,
+  formData: FormData,
+): Promise<ActionResult<{ phone: string }>> {
   const raw = { phone: formData.get("phone") ?? "", password: formData.get("password") ?? "" };
   const parsed = updatePhoneSchema.safeParse(raw);
   if (!parsed.success) return createErrorResult(parsed.error.issues[0].message);

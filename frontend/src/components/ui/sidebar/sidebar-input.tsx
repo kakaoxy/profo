@@ -1,12 +1,9 @@
-"use client"
+"use client";
 
-import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
-export function SidebarInput({
-  className,
-  ...props
-}: React.ComponentProps<typeof Input>) {
+export function SidebarInput({ className, ...props }: React.ComponentProps<typeof Input>) {
   return (
     <Input
       data-slot="sidebar-input"
@@ -14,5 +11,5 @@ export function SidebarInput({
       className={cn("bg-background h-8 w-full shadow-none", className)}
       {...props}
     />
-  )
+  );
 }

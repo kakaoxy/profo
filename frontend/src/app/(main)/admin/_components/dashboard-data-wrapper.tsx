@@ -80,9 +80,6 @@ export async function DashboardLeadsWrapper() {
 export async function DashboardQuickEntryWrapper() {
   const { renovationProjects, sellingProjects } = await getDashboardData();
   return (
-    <QuickEntrySection
-      renovationProjects={renovationProjects}
-      sellingProjects={sellingProjects}
-    />
+    <QuickEntrySection renovationProjects={renovationProjects} sellingProjects={sellingProjects} />
   );
 }

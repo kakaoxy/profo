@@ -22,19 +22,20 @@ export function RenovationPhotoList({
   onDelete,
 }: RenovationPhotoListProps) {
   // 按阶段分组照片
-  const photosByStage = photos.reduce((grouped, photo) => {
-    const stage = photo.renovation_stage || "other";
-    if (!grouped[stage]) grouped[stage] = [];
-    grouped[stage].push(photo);
-    return grouped;
-  }, {} as Record<string, L4MarketingMedia[]>);
+  const photosByStage = photos.reduce(
+    (grouped, photo) => {
+      const stage = photo.renovation_stage || "other";
+      if (!grouped[stage]) grouped[stage] = [];
+      grouped[stage].push(photo);
+      return grouped;
+    },
+    {} as Record<string, L4MarketingMedia[]>,
+  );
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-rust">
-          改造照片 ({photos.length})
-        </h4>
+        <h4 className="text-sm font-semibold text-rust">改造照片 ({photos.length})</h4>
         <span className="text-xs text-graphite">
           {activeId ? "拖拽到目标阶段" : "支持跨阶段拖拽"}
         </span>
@@ -65,9 +66,7 @@ export function RenovationPhotoList({
                       isActive={true}
                     >
                       {stagePhotos.length === 0 ? (
-                        <div className="text-center text-xs text-rust/60">
-                          拖拽到此处
-                        </div>
+                        <div className="text-center text-xs text-rust/60">拖拽到此处</div>
                       ) : null}
                       {stagePhotos.map((photo, index) => (
                         <SortablePhotoItem

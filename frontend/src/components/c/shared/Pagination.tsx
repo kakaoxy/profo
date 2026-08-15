@@ -24,11 +24,7 @@ function getPageRange(current: number, total: number): (number | "...")[] {
   return [1, "...", current - 1, current, current + 1, "...", total];
 }
 
-export function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: PaginationProps) {
+export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   const pages = getPageRange(currentPage, totalPages);
@@ -54,14 +50,12 @@ export function Pagination({
             key={p}
             onClick={() => onPageChange(p)}
             className={`flex h-10 min-w-10 items-center justify-center rounded-full px-2 text-sm font-medium transition-colors ${
-              p === currentPage
-                ? "bg-ink text-white"
-                : "text-graphite hover:bg-fog hover:text-ink"
+              p === currentPage ? "bg-ink text-white" : "text-graphite hover:bg-fog hover:text-ink"
             }`}
           >
             {p}
           </button>
-        )
+        ),
       )}
 
       <button

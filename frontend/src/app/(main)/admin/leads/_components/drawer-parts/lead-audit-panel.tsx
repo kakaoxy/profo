@@ -2,31 +2,17 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Gavel,
-  AlertTriangle,
-  CheckCircle2,
-  FileCheck,
-  Target,
-} from "lucide-react";
+import { Gavel, AlertTriangle, CheckCircle2, FileCheck, Target } from "lucide-react";
 import { Lead, LeadStatus, EvalHistory } from "../../types";
 import { createEvaluationAction } from "../../actions";
 import { EvalHistoryList } from "./eval-history-list";
 
 interface LeadAuditPanelProps {
   lead: Lead;
-  onAudit: (
-    leadId: string,
-    status: LeadStatus,
-    evalPrice?: number,
-    reason?: string
-  ) => void;
+  onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => void;
 }
 
-export const LeadAuditPanel: React.FC<LeadAuditPanelProps> = ({
-  lead,
-  onAudit,
-}) => {
+export const LeadAuditPanel: React.FC<LeadAuditPanelProps> = ({ lead, onAudit }) => {
   const [auditReason, setAuditReason] = useState("");
   const [evalPrice, setEvalPrice] = useState<number | "">("");
   const [evalRefreshKey, setEvalRefreshKey] = useState<number>(0);
@@ -36,8 +22,7 @@ export const LeadAuditPanel: React.FC<LeadAuditPanelProps> = ({
   };
 
   const showEvalHistory =
-    lead.status !== LeadStatus.PENDING_ASSESSMENT &&
-    lead.status !== LeadStatus.REJECTED;
+    lead.status !== LeadStatus.PENDING_ASSESSMENT && lead.status !== LeadStatus.REJECTED;
 
   return (
     <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
@@ -60,26 +45,16 @@ export const LeadAuditPanel: React.FC<LeadAuditPanelProps> = ({
         )}
 
         {lead.status === LeadStatus.PENDING_VISIT && (
-          <PendingVisitPanel
-            lead={lead}
-            onAudit={onAudit}
-            onEvalAdjusted={handleEvalAdjusted}
-          />
+          <PendingVisitPanel lead={lead} onAudit={onAudit} onEvalAdjusted={handleEvalAdjusted} />
         )}
 
         {lead.status === LeadStatus.VISITED && (
-          <VisitedPanel
-            lead={lead}
-            onAudit={onAudit}
-            onEvalAdjusted={handleEvalAdjusted}
-          />
+          <VisitedPanel lead={lead} onAudit={onAudit} onEvalAdjusted={handleEvalAdjusted} />
         )}
 
         {lead.status === LeadStatus.SIGNED && <SignedPanel />}
 
-        {lead.status === LeadStatus.REJECTED && (
-          <RejectedPanel auditReason={lead.auditReason} />
-        )}
+        {lead.status === LeadStatus.REJECTED && <RejectedPanel auditReason={lead.auditReason} />}
 
         {showEvalHistory && (
           <EvalHistoryList
@@ -124,7 +99,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
     const result = await createEvaluationAction(
       lead.id,
       Number(evalPrice),
-      auditReason || undefined
+      auditReason || undefined,
     );
     setSubmitting(false);
     if (!result.success) {
@@ -132,12 +107,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
       return;
     }
     // onAudit 的 evalPrice 参数保留传递（后端 LeadUpdate 已不处理，保持接口兼容）
-    onAudit(
-      lead.id,
-      LeadStatus.PENDING_VISIT,
-      evalPrice || undefined,
-      auditReason
-    );
+    onAudit(lead.id, LeadStatus.PENDING_VISIT, evalPrice || undefined, auditReason);
   };
 
   // 评估不符-驳回：不创建评估记录
@@ -215,7 +185,7 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
     const result = await createEvaluationAction(
       lead.id,
       Number(newEvalPrice),
-      adjustReason || undefined
+      adjustReason || undefined,
     );
     if (result.success) {
       setShowAdjustForm(false);
@@ -233,15 +203,9 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4 text-emerald-600" />
           <span className="text-xs text-muted-foreground">当前评估价</span>
-          <span className="text-sm font-bold text-emerald-700">
-            ¥{lead.evalPrice ?? "-"} 万
-          </span>
+          <span className="text-sm font-bold text-emerald-700">¥{lead.evalPrice ?? "-"} 万</span>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAdjustForm((v) => !v)}
-        >
+        <Button variant="outline" size="sm" onClick={() => setShowAdjustForm((v) => !v)}>
           调整评估价
         </Button>
       </div>
@@ -277,9 +241,7 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
           >
             保存调整
           </Button>
-          {error && (
-            <p className="col-span-2 text-xs text-red-500 mt-2">{error}</p>
-          )}
+          {error && <p className="col-span-2 text-xs text-red-500 mt-2">{error}</p>}
         </div>
       )}
     </div>
@@ -292,11 +254,7 @@ interface PendingVisitPanelProps {
   onEvalAdjusted?: (history: EvalHistory) => void;
 }
 
-const PendingVisitPanel: React.FC<PendingVisitPanelProps> = ({
-  lead,
-  onAudit,
-  onEvalAdjusted,
-}) => (
+const PendingVisitPanel: React.FC<PendingVisitPanelProps> = ({ lead, onAudit, onEvalAdjusted }) => (
   <div className="space-y-4">
     <CurrentEvalPriceSection lead={lead} onEvalAdjusted={onEvalAdjusted} />
     <div className="bg-status-visit/10 border border-cyan-100 p-4 rounded-xl flex gap-3">
@@ -304,8 +262,7 @@ const PendingVisitPanel: React.FC<PendingVisitPanelProps> = ({
       <div className="space-y-1">
         <p className="text-xs font-bold text-cyan-800">当前阶段：实勘核验</p>
         <p className="text-[11px] text-cyan-700 leading-relaxed">
-          请协调实勘人员在 48
-          小时内完成上门，重点核实房屋漏水、结构改动及物业欠费情况。
+          请协调实勘人员在 48 小时内完成上门，重点核实房屋漏水、结构改动及物业欠费情况。
         </p>
       </div>
     </div>
@@ -324,11 +281,7 @@ interface VisitedPanelProps {
   onEvalAdjusted?: (history: EvalHistory) => void;
 }
 
-const VisitedPanel: React.FC<VisitedPanelProps> = ({
-  lead,
-  onAudit,
-  onEvalAdjusted,
-}) => (
+const VisitedPanel: React.FC<VisitedPanelProps> = ({ lead, onAudit, onEvalAdjusted }) => (
   <div className="space-y-4">
     <CurrentEvalPriceSection lead={lead} onEvalAdjusted={onEvalAdjusted} />
     <div className="bg-success-container border border-emerald-100 p-4 rounded-xl flex gap-3">
@@ -355,9 +308,7 @@ const SignedPanel: React.FC = () => (
       <CheckCircle2 className="h-6 w-6" />
     </div>
     <h4 className="font-black text-foreground">恭喜！已完成资产收储</h4>
-    <p className="text-xs text-muted-foreground mt-1">
-      该房源已进入&quot;工程翻新&quot;阶段
-    </p>
+    <p className="text-xs text-muted-foreground mt-1">该房源已进入&quot;工程翻新&quot;阶段</p>
   </div>
 );
 

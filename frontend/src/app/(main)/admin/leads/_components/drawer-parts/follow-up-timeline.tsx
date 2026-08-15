@@ -46,8 +46,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
   // 合并「收房评估 + 跟进记录」按时间倒序，"线索初始录入"恒为最末（创建最早）
   // 评估事件触发条件：存在任意评估信息（评估价/评估意见/审核时间）
   // auditTime 是评估发生的最可靠信号（后端在评估流转时写入）；存量无 audit_time 时回退到 evalPrice/auditReason
-  const hasAssessment =
-    lead.evalPrice != null || !!lead.auditReason || !!lead.auditTime;
+  const hasAssessment = lead.evalPrice != null || !!lead.auditReason || !!lead.auditTime;
   const trailEvents: TrailEvent[] = [];
   if (hasAssessment) {
     const raw = lead.auditTime ?? lead.updatedAt;
@@ -63,9 +62,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
     trailEvents.push({
       key: "audit",
       title: isRejected ? "评估驳回" : "收房评估通过",
-      desc: isRejected
-        ? `评估意见：${lead.auditReason || "未填写具体原因"}`
-        : approvalDesc,
+      desc: isRejected ? `评估意见：${lead.auditReason || "未填写具体原因"}` : approvalDesc,
       time: d ? `${isFallback ? "约 " : ""}${d.toLocaleString()}` : "-",
       sortTime: d?.getTime() ?? 0,
       icon: Gavel,
@@ -132,9 +129,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
               <select
                 className="h-11 px-3 rounded-xl border bg-muted text-xs font-bold outline-none border-border shrink-0"
                 value={followUpMethod}
-                onChange={(e) =>
-                  setFollowUpMethod(e.target.value as FollowUpMethod)
-                }
+                onChange={(e) => setFollowUpMethod(e.target.value as FollowUpMethod)}
               >
                 <option value="phone">电话沟通</option>
                 <option value="wechat">微信联络</option>
@@ -223,9 +218,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
         >
           {title}
         </span>
-        <span className="text-[9px] font-bold text-muted-foreground shrink-0">
-          {time}
-        </span>
+        <span className="text-[9px] font-bold text-muted-foreground shrink-0">{time}</span>
       </div>
       <div className="mt-1.5 p-3 bg-card border border-border rounded-xl shadow-sm text-xs text-muted-foreground leading-relaxed italic group-hover:border-primary/20 transition-colors">
         {desc}

@@ -14,35 +14,20 @@ interface UsersStatCardsProps {
  * 子元素通过 .stat-label/.stat-value/.stat-meta/.stat-meta-value/.stat-icon/.stat-unit
  * 继承对应颜色，避免内联样式。
  */
-export function UsersStatCards({
-  internalItems,
-  customerItems,
-}: UsersStatCardsProps) {
+export function UsersStatCards({ internalItems, customerItems }: UsersStatCardsProps) {
   const internalTotal = internalItems.length;
   const customerTotal = customerItems.length;
-  const internalActive = internalItems.filter(
-    (u) => u.status === "active",
-  ).length;
-  const customerActive = customerItems.filter(
-    (u) => u.status === "active",
-  ).length;
-  const internalLeads = internalItems.reduce(
-    (s, u) => s + (u.leads_count || 0),
-    0,
-  );
-  const customerLeads = customerItems.reduce(
-    (s, u) => s + (u.leads_count || 0),
-    0,
-  );
+  const internalActive = internalItems.filter((u) => u.status === "active").length;
+  const customerActive = customerItems.filter((u) => u.status === "active").length;
+  const internalLeads = internalItems.reduce((s, u) => s + (u.leads_count || 0), 0);
+  const customerLeads = customerItems.reduce((s, u) => s + (u.leads_count || 0), 0);
   const totalLeads = internalLeads + customerLeads;
   const activeSubmitters = [...internalItems, ...customerItems].filter(
     (u) => (u.leads_count || 0) > 0,
   ).length;
   const totalUsers = internalTotal + customerTotal;
-  const avgLeads =
-    totalUsers > 0 ? (totalLeads / totalUsers).toFixed(1) : "0.0";
-  const submitterRatio =
-    totalUsers > 0 ? Math.round((activeSubmitters / totalUsers) * 100) : 0;
+  const avgLeads = totalUsers > 0 ? (totalLeads / totalUsers).toFixed(1) : "0.0";
+  const submitterRatio = totalUsers > 0 ? Math.round((activeSubmitters / totalUsers) * 100) : 0;
 
   return (
     <div className="users-stat-grid">

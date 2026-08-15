@@ -45,8 +45,7 @@ export default async function RecruitCampaignsPage() {
   const prevAuthed = prev?.authed ?? 0;
 
   const conversion = curShared > 0 ? (curValid / curShared) * 100 : 0;
-  const prevConversion =
-    prevShared > 0 ? ((prev?.valid_leads ?? 0) / prevShared) * 100 : 0;
+  const prevConversion = prevShared > 0 ? ((prev?.valid_leads ?? 0) / prevShared) * 100 : 0;
 
   const stats: CampaignStats = {
     shared: curShared,

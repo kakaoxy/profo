@@ -45,7 +45,7 @@ export const ALLOWED_EXTENSIONS = Object.values(ALLOWED_FILE_TYPES)
 
 // 所有允许的 MIME 类型
 export const ALLOWED_MIME_TYPES = Object.values(ALLOWED_FILE_TYPES).flatMap(
-  (type) => type.mimeTypes
+  (type) => type.mimeTypes,
 );
 
 // 各文件类型大小上限（字节）
@@ -118,6 +118,6 @@ export function attachmentValidateFile(file: File): string | null {
 export function isAllowedFile(file: File): boolean {
   const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
   return Object.values(ALLOWED_FILE_TYPES).some((config) =>
-    (config.extensions as readonly string[]).includes(ext)
+    (config.extensions as readonly string[]).includes(ext),
   );
 }

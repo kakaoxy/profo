@@ -101,36 +101,45 @@ export function MarketingView({ data, total }: MarketingViewProps) {
     });
   }, [data, layoutFilterFn, searchFilterFn]);
 
-  const updateUrlParams = useCallback((updates: Record<string, string | undefined>) => {
-    const params = new URLSearchParams(searchParams.toString());
+  const updateUrlParams = useCallback(
+    (updates: Record<string, string | undefined>) => {
+      const params = new URLSearchParams(searchParams.toString());
 
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value === undefined || value === "" || value === "all") {
-        params.delete(key);
-      } else {
-        params.set(key, value);
-      }
-    });
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === undefined || value === "" || value === "all") {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      });
 
-    // 重置到第一页当过滤条件变化时
-    params.set("page", "1");
+      // 重置到第一页当过滤条件变化时
+      params.set("page", "1");
 
-    router.push(`/admin/marketing?${params.toString()}`);
-  }, [searchParams, router]);
+      router.push(`/admin/marketing?${params.toString()}`);
+    },
+    [searchParams, router],
+  );
 
-  const handlePublishTabChange = useCallback((value: string) => {
-    setPublishTab(value);
-    updateUrlParams({
-      publish_status: value === "all" ? undefined : value,
-    });
-  }, [updateUrlParams]);
+  const handlePublishTabChange = useCallback(
+    (value: string) => {
+      setPublishTab(value);
+      updateUrlParams({
+        publish_status: value === "all" ? undefined : value,
+      });
+    },
+    [updateUrlParams],
+  );
 
-  const handleProjectStatusTabChange = useCallback((value: string) => {
-    setProjectStatusTab(value);
-    updateUrlParams({
-      project_status: value === "all" ? undefined : value,
-    });
-  }, [updateUrlParams]);
+  const handleProjectStatusTabChange = useCallback(
+    (value: string) => {
+      setProjectStatusTab(value);
+      updateUrlParams({
+        project_status: value === "all" ? undefined : value,
+      });
+    },
+    [updateUrlParams],
+  );
 
   const handleLayoutChange = useCallback((layout: string) => {
     startTransition(() => {
@@ -240,11 +249,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
       >
         <div className="bg-white rounded-cards shadow-steep overflow-hidden">
           <div className="overflow-x-auto">
-            <DataTable
-              columns={columns}
-              data={filteredData}
-              onRowClick={handleRowClick}
-            />
+            <DataTable columns={columns} data={filteredData} onRowClick={handleRowClick} />
           </div>
         </div>
       </ListView>

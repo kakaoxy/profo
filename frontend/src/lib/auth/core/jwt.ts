@@ -18,10 +18,7 @@ export function decodeJwt(token: string): TokenPayload | null {
     const base64 = payloadSegment
       .replace(/-/g, "+")
       .replace(/_/g, "/")
-      .padEnd(
-        payloadSegment.length + ((4 - (payloadSegment.length % 4)) % 4),
-        "=",
-      );
+      .padEnd(payloadSegment.length + ((4 - (payloadSegment.length % 4)) % 4), "=");
 
     const jsonString = Buffer.from(base64, "base64").toString("utf-8");
     const payload = JSON.parse(jsonString) as unknown;

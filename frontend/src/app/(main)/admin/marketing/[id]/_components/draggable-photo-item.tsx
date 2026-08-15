@@ -16,19 +16,10 @@ interface DraggablePhotoItemProps {
   onDelete: (photoId: number) => void;
 }
 
-export function DraggablePhotoItem({
-  photo,
-  index,
-  onDelete,
-}: DraggablePhotoItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: photo.id });
+export function DraggablePhotoItem({ photo, index, onDelete }: DraggablePhotoItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: photo.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -37,9 +28,7 @@ export function DraggablePhotoItem({
   };
 
   const categoryConfig = PHOTO_CATEGORY_CONFIG[photo.photo_category];
-  const stageLabel = RENOVATION_STAGES.find(
-    (s) => s.value === photo.renovation_stage
-  )?.label;
+  const stageLabel = RENOVATION_STAGES.find((s) => s.value === photo.renovation_stage)?.label;
 
   const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.file_url);
 
@@ -50,7 +39,7 @@ export function DraggablePhotoItem({
       className={cn(
         "flex items-center gap-3 rounded-lg border bg-muted/20 p-3",
         "hover:bg-background transition-colors",
-        isDragging && "shadow-lg ring-2 ring-primary opacity-90"
+        isDragging && "shadow-lg ring-2 ring-primary opacity-90",
       )}
     >
       <button
@@ -80,9 +69,7 @@ export function DraggablePhotoItem({
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-foreground truncate">
-          照片 #{photo.id}
-        </p>
+        <p className="text-xs font-medium text-foreground truncate">照片 #{photo.id}</p>
         {photo.photo_category === "renovation" && stageLabel && (
           <p className="text-xs text-muted-foreground">{stageLabel}</p>
         )}

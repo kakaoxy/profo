@@ -24,7 +24,10 @@ export interface RoomsState {
  */
 export function parseRoomsUrl(value: string): RoomsState {
   if (!value) return { rooms: [], include4plus: false };
-  const parts = value.split(",").map((s) => s.trim()).filter(Boolean);
+  const parts = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const rooms: number[] = [];
   let include4plus = false;
   for (const part of parts) {
@@ -45,9 +48,7 @@ export function parseRoomsUrl(value: string): RoomsState {
  */
 export function buildRoomsUrl(state: RoomsState): string {
   const numericParts = [...state.rooms].sort((a, b) => a - b).map(String);
-  const parts = state.include4plus
-    ? [...numericParts, FOURPLUS_SENTINEL]
-    : numericParts;
+  const parts = state.include4plus ? [...numericParts, FOURPLUS_SENTINEL] : numericParts;
   return parts.join(",");
 }
 

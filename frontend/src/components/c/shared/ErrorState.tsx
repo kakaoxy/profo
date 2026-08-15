@@ -6,7 +6,11 @@ interface ErrorStateProps {
   onRetry?: () => void;
 }
 
-export function ErrorState({ title = "加载失败", description = "请检查网络连接后重试", onRetry }: ErrorStateProps) {
+export function ErrorState({
+  title = "加载失败",
+  description = "请检查网络连接后重试",
+  onRetry,
+}: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-graphite">
       <AlertCircle className="mb-4 h-12 w-12 text-c-error/50" aria-hidden="true" />

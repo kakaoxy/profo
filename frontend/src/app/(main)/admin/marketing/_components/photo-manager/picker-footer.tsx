@@ -14,22 +14,14 @@ export function PickerFooter({ selectedCount, submitting, onCancel, onSubmit }: 
   return (
     <div className="flex items-center justify-between w-full">
       <div>
-        <p className="font-bold">
-          已选择 {selectedCount} 张照片
-        </p>
-        <p className="text-sm text-graphite">
-          照片将同步至当前小程序项目
-        </p>
+        <p className="font-bold">已选择 {selectedCount} 张照片</p>
+        <p className="text-sm text-graphite">照片将同步至当前小程序项目</p>
       </div>
       <div className="flex gap-3">
         <Button variant="outline" onClick={onCancel}>
           取消
         </Button>
-        <Button
-          onClick={onSubmit}
-          disabled={selectedCount === 0 || submitting}
-          className="gap-2"
-        >
+        <Button onClick={onSubmit} disabled={selectedCount === 0 || submitting} className="gap-2">
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           <Plus className="w-4 h-4" />
           确定添加

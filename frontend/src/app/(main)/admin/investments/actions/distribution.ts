@@ -24,9 +24,7 @@ const returnAdjustmentItemSchema = z.object({
   remark: z.string().nullable().optional(),
 });
 
-const adjustmentsSchema = z
-  .array(returnAdjustmentItemSchema)
-  .min(1, "调整项不能为空");
+const adjustmentsSchema = z.array(returnAdjustmentItemSchema).min(1, "调整项不能为空");
 
 /**
  * 批量保存分配比例调整

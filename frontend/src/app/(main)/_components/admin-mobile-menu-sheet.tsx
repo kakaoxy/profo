@@ -74,12 +74,8 @@ export function AdminMobileMenuSheet({ open, onOpenChange }: Props) {
             {visibleItems.map((item) => {
               const Icon = item.icon;
               const isActive =
-                pathname === item.url ||
-                item.items?.some((sub) => pathname.startsWith(sub.url));
-              const href =
-                item.url === "#" && item.items
-                  ? item.items[0].url
-                  : item.url;
+                pathname === item.url || item.items?.some((sub) => pathname.startsWith(sub.url));
+              const href = item.url === "#" && item.items ? item.items[0].url : item.url;
               return (
                 <Link
                   key={item.title}

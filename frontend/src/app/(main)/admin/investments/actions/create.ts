@@ -126,10 +126,10 @@ export async function updateInvestment(
   }
   try {
     const client = await fetchClient();
-    const { data: resData, error } = await client.PUT(
-      "/api/v1/admin/investments/{investment_id}",
-      { params: { path: { investment_id: id } }, body: data },
-    );
+    const { data: resData, error } = await client.PUT("/api/v1/admin/investments/{investment_id}", {
+      params: { path: { investment_id: id } },
+      body: data,
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "更新跟投记录失败";
@@ -152,9 +152,7 @@ export async function updateInvestment(
  * 软删除跟投记录
  * 调用 DELETE /api/v1/admin/investments/{id}。
  */
-export async function deleteInvestment(
-  investmentId: string,
-): Promise<ActionResult<null>> {
+export async function deleteInvestment(investmentId: string): Promise<ActionResult<null>> {
   const idParsed = investmentIdSchema.safeParse(investmentId);
   if (!idParsed.success) {
     return {
@@ -168,10 +166,9 @@ export async function deleteInvestment(
   }
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE(
-      "/api/v1/admin/investments/{investment_id}",
-      { params: { path: { investment_id: investmentId } } },
-    );
+    const { error } = await client.DELETE("/api/v1/admin/investments/{investment_id}", {
+      params: { path: { investment_id: investmentId } },
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "删除跟投记录失败";

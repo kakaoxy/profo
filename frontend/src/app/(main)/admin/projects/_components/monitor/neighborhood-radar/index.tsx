@@ -15,10 +15,7 @@ interface NeighborhoodRadarProps {
   communityId?: string;
 }
 
-export function NeighborhoodRadar({
-  projectId,
-  communityId,
-}: NeighborhoodRadarProps) {
+export function NeighborhoodRadar({ projectId, communityId }: NeighborhoodRadarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { competitors, loading, error, refresh } = useRadarData({
     projectId,
@@ -54,9 +51,7 @@ export function NeighborhoodRadar({
               <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
             </div>
           ) : error ? (
-            <div className="text-center py-12 text-sm text-muted-foreground">
-              {error}
-            </div>
+            <div className="text-center py-12 text-sm text-muted-foreground">{error}</div>
           ) : competitors.length === 0 ? (
             <div className="text-center py-12 text-sm text-muted-foreground">
               暂无竞品数据，请先添加竞品小区

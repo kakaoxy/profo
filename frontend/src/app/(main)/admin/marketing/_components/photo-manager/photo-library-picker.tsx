@@ -43,12 +43,15 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
     open,
   });
 
-  const handleOpenChange = useCallback(async (newOpen: boolean) => {
-    if (!newOpen) {
-      logger.devDebug("[PhotoLibraryPicker] 性能报告:", metrics);
-    }
-    onOpenChange(newOpen);
-  }, [onOpenChange, metrics]);
+  const handleOpenChange = useCallback(
+    async (newOpen: boolean) => {
+      if (!newOpen) {
+        logger.devDebug("[PhotoLibraryPicker] 性能报告:", metrics);
+      }
+      onOpenChange(newOpen);
+    },
+    [onOpenChange, metrics],
+  );
 
   const filteredPhotos = useMemo(() => {
     if (!searchQuery && activeStage === "all") {
@@ -124,12 +127,8 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
         <DialogHeader className="p-6 pb-4 border-b border-dove/40">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-xl font-bold">
-                从照片库选择
-              </DialogTitle>
-              <p className="text-sm text-graphite mt-1">
-                选择照片添加到当前项目
-              </p>
+              <DialogTitle className="text-xl font-bold">从照片库选择</DialogTitle>
+              <p className="text-sm text-graphite mt-1">选择照片添加到当前项目</p>
             </div>
           </div>
         </DialogHeader>

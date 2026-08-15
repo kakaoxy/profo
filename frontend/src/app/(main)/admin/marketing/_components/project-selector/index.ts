@@ -32,9 +32,4 @@ export { InfoItem } from "@/components/common";
 export { MediaItem } from "./MediaItem";
 
 // API导出
-export {
-  fetchAvailableProjects,
-  fetchImportData,
-  searchProjects,
-  fetchProjectDetail,
-} from "./api";
+export { fetchAvailableProjects, fetchImportData, searchProjects, fetchProjectDetail } from "./api";

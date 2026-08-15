@@ -73,5 +73,8 @@ jobs:
       - name: Lint (eslint)
         run: pnpm run lint
 
+      - name: Format check (prettier)
+        run: pnpm run format:check
+
       - name: Dependency audit (pnpm audit)
         run: pnpm audit --audit-level high

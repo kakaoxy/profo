@@ -10,7 +10,9 @@ export default function ValuationPage() {
         <span className="inline-block rounded-full bg-apricot-wash px-3 py-1 text-xs font-medium tracking-[-0.009em] text-rust">
           {cLocale.valuation.badge}
         </span>
-        <h1 className="mt-3 text-xl sm:text-2xl font-medium text-ink tracking-[-0.009em]">{cLocale.valuation.title}</h1>
+        <h1 className="mt-3 text-xl sm:text-2xl font-medium text-ink tracking-[-0.009em]">
+          {cLocale.valuation.title}
+        </h1>
         <p className="mt-1.5 sm:mt-2 text-sm text-ash tracking-[-0.009em]">
           {cLocale.valuation.subtitle}
         </p>
@@ -38,12 +40,8 @@ export default function ValuationPage() {
         <ul className="mt-4 space-y-3">
           {cLocale.valuation.quickFaqs.map((item) => (
             <li key={item.q} className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-ink tracking-[-0.009em]">
-                {item.q}
-              </span>
-              <span className="text-sm text-ash tracking-[-0.009em]">
-                {item.a}
-              </span>
+              <span className="text-sm font-medium text-ink tracking-[-0.009em]">{item.q}</span>
+              <span className="text-sm text-ash tracking-[-0.009em]">{item.a}</span>
             </li>
           ))}
         </ul>
@@ -56,9 +54,7 @@ export default function ValuationPage() {
       </section>
 
       {/* 风险告知微文案（合规需要） */}
-      <p className="mt-6 text-xs text-graphite tracking-[-0.009em]">
-        {cLocale.valuation.riskNote}
-      </p>
+      <p className="mt-6 text-xs text-graphite tracking-[-0.009em]">{cLocale.valuation.riskNote}</p>
     </div>
   );
 }

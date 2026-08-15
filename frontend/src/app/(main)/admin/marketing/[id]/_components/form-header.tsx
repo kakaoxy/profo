@@ -14,24 +14,14 @@ interface FormHeaderProps {
   onGoBack: () => void;
 }
 
-export function FormHeader({
-  project,
-  onSaveDraft,
-  onGoBack,
-}: FormHeaderProps) {
+export function FormHeader({ project, onSaveDraft, onGoBack }: FormHeaderProps) {
   const form = useFormContext<FormValues>();
 
   return (
     <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="w-full max-w-400 mx-auto flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 h-14">
         <div className="flex items-center gap-3 min-w-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onGoBack}
-            aria-label="返回"
-          >
+          <Button type="button" variant="ghost" size="icon" onClick={onGoBack} aria-label="返回">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
@@ -46,19 +36,14 @@ export function FormHeader({
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5">
-            <span className="text-xs font-medium text-muted-foreground">
-              发布
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">发布</span>
             <FormField
               control={form.control}
               name="is_published"
               render={({ field }) => (
                 <FormItem className="flex items-center space-y-0">
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}

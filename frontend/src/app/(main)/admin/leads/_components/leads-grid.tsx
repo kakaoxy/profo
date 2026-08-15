@@ -31,14 +31,7 @@ interface LeadsGridProps {
   onDelete: (id: string) => void;
 }
 
-
-
-export const LeadsGrid: React.FC<LeadsGridProps> = ({
-  leads,
-  onOpenDetail,
-  onEdit,
-  onDelete,
-}) => {
+export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdit, onDelete }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {leads.map((lead) => {
@@ -60,8 +53,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                   className="object-cover transition-transform group-hover:scale-105"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   unoptimized={
-                    lead.images[0]?.includes("127.0.0.1") ||
-                    lead.images[0]?.includes("localhost")
+                    lead.images[0]?.includes("127.0.0.1") || lead.images[0]?.includes("localhost")
                   }
                 />
               ) : (
@@ -75,7 +67,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                 <Badge
                   className={cn(
                     "font-semibold text-xs border-none shadow-sm px-2.5 py-1",
-                    config.className
+                    config.className,
                   )}
                 >
                   {config.label}
@@ -155,9 +147,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                   <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
                     户型
                   </span>
-                  <span className="text-sm font-medium text-foreground">
-                    {lead.layout || "-"}
-                  </span>
+                  <span className="text-sm font-medium text-foreground">{lead.layout || "-"}</span>
                 </div>
                 <div className="bg-muted rounded-md p-2">
                   <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
@@ -180,9 +170,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-muted-foreground">
-                    {lead.floorInfo || "-"}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{lead.floorInfo || "-"}</span>
                   {lead.unitPrice > 0 && (
                     <span className="text-xs text-muted-foreground/60 block tabular-nums">
                       {lead.unitPrice.toFixed(2)}万/㎡

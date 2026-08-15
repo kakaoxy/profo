@@ -1,13 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -36,9 +30,7 @@ export function RightColumn() {
             name="cover_image"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium">
-                  项目封面图
-                </FormLabel>
+                <FormLabel className="text-sm font-medium">项目封面图</FormLabel>
                 <div className="relative group rounded-lg aspect-3/2 border overflow-hidden bg-muted/20">
                   {field.value ? (
                     <div
@@ -67,9 +59,7 @@ export function RightColumn() {
                     </Button>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  建议尺寸：1200×800px
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground">建议尺寸：1200×800px</p>
                 <FormMessage />
               </FormItem>
             )}
@@ -81,9 +71,7 @@ export function RightColumn() {
               name="consultant_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium">
-                    关联顾问
-                  </FormLabel>
+                  <FormLabel className="text-sm font-medium">关联顾问</FormLabel>
                   <Select
                     onValueChange={(val) => field.onChange(val === "none" ? null : Number(val))}
                     defaultValue={field.value ? String(field.value) : "none"}

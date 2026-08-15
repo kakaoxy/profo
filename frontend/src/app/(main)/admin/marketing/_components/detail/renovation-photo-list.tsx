@@ -31,12 +31,15 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
 
   // 按阶段分组照片 - 使用 useMemo 缓存
   const photosByStage = useMemo(() => {
-    return photos.reduce((grouped, photo) => {
-      const stage = photo.renovation_stage || "other";
-      if (!grouped[stage]) grouped[stage] = [];
-      grouped[stage].push(photo);
-      return grouped;
-    }, {} as Record<string, L4MarketingMedia[]>);
+    return photos.reduce(
+      (grouped, photo) => {
+        const stage = photo.renovation_stage || "other";
+        if (!grouped[stage]) grouped[stage] = [];
+        grouped[stage].push(photo);
+        return grouped;
+      },
+      {} as Record<string, L4MarketingMedia[]>,
+    );
   }, [photos]);
 
   // 使用 useCallback 稳定 onDelete 回调
@@ -44,36 +47,29 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
     (photoId: number) => {
       onDelete(photoId);
     },
-    [onDelete]
+    [onDelete],
   );
 
   // 渲染阶段照片列表 - 使用 useMemo 缓存
   const renderStagePhotos = useCallback(
     (stagePhotos: L4MarketingMedia[]) => {
       return stagePhotos.map((photo, index) => (
-        <OptimizedPhotoItem
-          key={photo.id}
-          photo={photo}
-          index={index}
-          onDelete={handleDelete}
-        />
+        <OptimizedPhotoItem key={photo.id} photo={photo} index={index} onDelete={handleDelete} />
       ));
     },
-    [handleDelete]
+    [handleDelete],
   );
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-success">
-          改造照片 ({photos.length})
-        </h4>
+        <h4 className="text-sm font-semibold text-success">改造照片 ({photos.length})</h4>
         <span className="text-xs text-muted-foreground">
           {activeId ? "拖拽到目标阶段" : "支持跨阶段拖拽"}
         </span>
       </div>
 
-      <div 
+      <div
         className="space-y-3 min-h-20 max-h-75 overflow-y-auto p-2 bg-muted rounded-lg border border-border"
         style={{
           // 优化滚动性能
@@ -108,9 +104,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
                       isActive={true}
                     >
                       {stagePhotos.length === 0 ? (
-                        <div className="text-center text-xs text-success/60">
-                          拖拽到此处
-                        </div>
+                        <div className="text-center text-xs text-success/60">拖拽到此处</div>
                       ) : null}
                       {renderStagePhotos(stagePhotos)}
                     </DroppableStage>

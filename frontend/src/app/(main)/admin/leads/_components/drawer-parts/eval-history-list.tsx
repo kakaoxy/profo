@@ -24,9 +24,7 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
   initialHistories,
   refreshKey,
 }) => {
-  const [histories, setHistories] = useState<EvalHistory[]>(
-    initialHistories ?? []
-  );
+  const [histories, setHistories] = useState<EvalHistory[]>(initialHistories ?? []);
 
   useEffect(() => {
     if (!leadId) return;
@@ -51,15 +49,11 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
             评估历史
           </span>
         </div>
-        <span className="text-[10px] text-muted-foreground">
-          {histories.length} 条记录
-        </span>
+        <span className="text-[10px] text-muted-foreground">{histories.length} 条记录</span>
       </div>
       <div className="p-4 space-y-2">
         {histories.length === 0 ? (
-          <div className="text-center py-6 text-xs text-muted-foreground italic">
-            暂无评估历史
-          </div>
+          <div className="text-center py-6 text-xs text-muted-foreground italic">暂无评估历史</div>
         ) : (
           histories.map((h, idx) => (
             <div
@@ -68,22 +62,17 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-foreground">
-                    ¥{h.evalPrice} 万
-                  </span>
+                  <span className="text-sm font-bold text-foreground">¥{h.evalPrice} 万</span>
                   {idx === 0 && (
                     <Badge className="bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">
                       当前
                     </Badge>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {h.remark || "未填写调整说明"}
-                </div>
+                <div className="text-xs text-muted-foreground">{h.remark || "未填写调整说明"}</div>
                 <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-2">
                   <span>
-                    <User className="h-2.5 w-2.5 inline" />{" "}
-                    {h.evaluatorName || "未知"}
+                    <User className="h-2.5 w-2.5 inline" /> {h.evaluatorName || "未知"}
                   </span>
                   <span>·</span>
                   <span>{formatEvalDate(h.evaluatedAt)}</span>

@@ -36,9 +36,7 @@ export default async function SubjectManagePage() {
     <div className="min-h-screen bg-muted">
       <div className="mx-auto flex w-full max-w-400 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            科目管理
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">科目管理</h1>
           <p className="text-sm text-muted-foreground">
             按业务流阶段呈现科目 · 支持增删改查 · 代理/收购双模式切换
           </p>
@@ -59,10 +57,7 @@ export default async function SubjectManagePage() {
           </div>
         )}
 
-        <SubjectFlowchart
-          agentSubjects={agentSubjects}
-          acquireSubjects={acquireSubjects}
-        />
+        <SubjectFlowchart agentSubjects={agentSubjects} acquireSubjects={acquireSubjects} />
 
         <SubjectDictionaryTable subjects={allSubjects} />
       </div>

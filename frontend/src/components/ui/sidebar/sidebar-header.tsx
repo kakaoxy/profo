@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 export function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -10,5 +10,5 @@ export function SidebarHeader({ className, ...props }: React.ComponentProps<"div
       className={cn("flex flex-col gap-2 p-2", className)}
       {...props}
     />
-  )
+  );
 }

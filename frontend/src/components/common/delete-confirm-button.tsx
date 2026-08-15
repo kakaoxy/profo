@@ -23,11 +23,7 @@ export interface DeleteConfirmButtonProps {
   description?: string;
 }
 
-export function DeleteConfirmButton({
-  onDelete,
-  itemName,
-  description,
-}: DeleteConfirmButtonProps) {
+export function DeleteConfirmButton({ onDelete, itemName, description }: DeleteConfirmButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -69,9 +65,7 @@ export function DeleteConfirmButton({
       <AlertDialogContent onClick={handleStopPropagation}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {description || "此操作不可撤销。"}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description || "此操作不可撤销。"}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>取消</AlertDialogCancel>

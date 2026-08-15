@@ -25,25 +25,14 @@ export function CompetitorManagerModal({
 }: CompetitorManagerModalProps) {
   const [isAdding, setIsAdding] = useState(false);
 
-  const {
-    competitors,
-    communityId,
-    loading,
-    deletingId,
-    addCompetitor,
-    removeCompetitor,
-  } = useCompetitors({
-    projectId,
-    communityId: initialCommunityId,
-    isOpen,
-  });
+  const { competitors, communityId, loading, deletingId, addCompetitor, removeCompetitor } =
+    useCompetitors({
+      projectId,
+      communityId: initialCommunityId,
+      isOpen,
+    });
 
-  const {
-    searchQuery,
-    searchResults,
-    isSearching,
-    setSearchQuery,
-  } = useCommunitySearch({
+  const { searchQuery, searchResults, isSearching, setSearchQuery } = useCommunitySearch({
     existingIds: competitors.map((c) => c.community_id),
     currentCommunityId: communityId,
   });
@@ -69,10 +58,7 @@ export function CompetitorManagerModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted">
           <h3 className="font-bold text-foreground">管理竞品小区</h3>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-muted rounded-full transition-colors"
-          >
+          <button onClick={onClose} className="p-1 hover:bg-muted rounded-full transition-colors">
             <X size={18} className="text-muted-foreground" />
           </button>
         </div>

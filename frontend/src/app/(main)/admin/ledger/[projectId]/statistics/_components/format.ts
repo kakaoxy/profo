@@ -6,10 +6,7 @@
  * @param value 数值（可为 null/undefined）
  * @param prefix 货币前缀，默认 "¥"
  */
-export function formatCurrency(
-  value: number | null | undefined,
-  prefix = "¥",
-): string {
+export function formatCurrency(value: number | null | undefined, prefix = "¥"): string {
   if (value == null || isNaN(value)) return `${prefix}0`;
   return prefix + value.toLocaleString("zh-CN");
 }
@@ -28,10 +25,7 @@ export function formatNumber(value: number | null | undefined): string {
  * @param value 百分比数值（如 40.5 表示 40.5%）
  * @param digits 小数位数，默认 1
  */
-export function formatPercent(
-  value: number | null | undefined,
-  digits = 1,
-): string {
+export function formatPercent(value: number | null | undefined, digits = 1): string {
   if (value == null || isNaN(value)) return "0%";
   return `${value.toFixed(digits)}%`;
 }
@@ -41,10 +35,7 @@ export function formatPercent(
  * @param value ISO 日期字符串（可为 null/undefined）
  * @param fallback 空值回退文案，默认 "-"
  */
-export function formatDate(
-  value: string | null | undefined,
-  fallback = "-",
-): string {
+export function formatDate(value: string | null | undefined, fallback = "-"): string {
   if (!value) return fallback;
   return value.slice(0, 10);
 }

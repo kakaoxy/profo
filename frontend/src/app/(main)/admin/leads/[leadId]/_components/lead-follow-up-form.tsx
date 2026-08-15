@@ -9,32 +9,17 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { handleError, handleSuccess } from "@/lib/error-handling";
 
 import { FollowUp, FollowUpMethod } from "../../types";
-import {
-  addFollowUpAction,
-  getLeadFollowUpsAction,
-} from "../../actions/follow-up-actions";
-import {
-  ERROR_MESSAGES,
-  FOLLOW_UP_METHODS,
-  SUCCESS_MESSAGES,
-} from "../../constants/ui-labels";
+import { addFollowUpAction, getLeadFollowUpsAction } from "../../actions/follow-up-actions";
+import { ERROR_MESSAGES, FOLLOW_UP_METHODS, SUCCESS_MESSAGES } from "../../constants/ui-labels";
 
 interface LeadFollowUpFormProps {
   leadId: string;
   onFollowUpsChange: (followUps: FollowUp[]) => void;
 }
 
-const METHOD_OPTIONS: FollowUpMethod[] = [
-  "phone",
-  "wechat",
-  "face",
-  "visit",
-];
+const METHOD_OPTIONS: FollowUpMethod[] = ["phone", "wechat", "face", "visit"];
 
-export function LeadFollowUpForm({
-  leadId,
-  onFollowUpsChange,
-}: LeadFollowUpFormProps) {
+export function LeadFollowUpForm({ leadId, onFollowUpsChange }: LeadFollowUpFormProps) {
   const { hasPermission } = usePermission();
   const canWrite = hasPermission(PERMISSION_CODES.LEAD_WRITE);
 

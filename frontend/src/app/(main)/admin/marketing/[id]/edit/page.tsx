@@ -2,7 +2,11 @@ import React from "react";
 import { fetchClient } from "@/lib/api-server";
 import { z } from "zod";
 import { notFound } from "next/navigation";
-import type { L4MarketingProject, L4MarketingMedia, PhotoCategory } from "@/app/(main)/admin/marketing/types";
+import type {
+  L4MarketingProject,
+  L4MarketingMedia,
+  PhotoCategory,
+} from "@/app/(main)/admin/marketing/types";
 import { MiniProjectForm } from "../../_components/mini-project-form";
 import Link from "next/link";
 import { ArrowLeft, Eye } from "lucide-react";
@@ -52,11 +56,7 @@ function extractStatusCode(error: unknown): number | undefined {
   return undefined;
 }
 
-export default async function ProjectEditPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ProjectEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   // 验证路由参数
@@ -101,8 +101,7 @@ export default async function ProjectEditPage({
 
   // 为 API 返回的数据添加默认的 photo_category 字段
   const apiItems = Array.isArray(photosRes.data?.items) ? photosRes.data.items : [];
-  const photos: L4MarketingMedia[] = apiItems
-    .map(mapToL4MarketingMedia);
+  const photos: L4MarketingMedia[] = apiItems.map(mapToL4MarketingMedia);
 
   return (
     <div className="min-h-screen bg-muted/50">
@@ -116,19 +115,16 @@ export default async function ProjectEditPage({
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                编辑房源信息
-              </h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">编辑房源信息</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                最后更新于 {safeParseDate(project.updated_at)?.toLocaleString('zh-CN') ?? '未知时间'}
+                最后更新于{" "}
+                {safeParseDate(project.updated_at)?.toLocaleString("zh-CN") ?? "未知时间"}
               </p>
             </div>
           </div>
           <div className="flex gap-3">
             <Link href="/admin/marketing">
-              <Button variant="outline">
-                取消
-              </Button>
+              <Button variant="outline">取消</Button>
             </Link>
             <Link href={`/projects/${project.id}`} target="_blank">
               <Button variant="outline">
@@ -140,11 +136,7 @@ export default async function ProjectEditPage({
         </div>
 
         {/* Content */}
-        <MiniProjectForm
-          mode="edit"
-          initialProject={project}
-          initialPhotos={photos}
-        />
+        <MiniProjectForm mode="edit" initialProject={project} initialPhotos={photos} />
       </div>
     </div>
   );

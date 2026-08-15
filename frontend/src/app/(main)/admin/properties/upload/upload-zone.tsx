@@ -33,18 +33,35 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 // 可取消的状态集合：提升到模块级，避免每次渲染重建数组字面量
 // 规则: js-set-map-lookups / js-cache-function-results
 // 导出以便单元测试验证等价性（不改变业务逻辑）
-export const CANCELLABLE_STATUSES: ReadonlySet<string> = new Set([
-  "pending",
-  "processing",
-]);
+export const CANCELLABLE_STATUSES: ReadonlySet<string> = new Set(["pending", "processing"]);
 
 // 状态显示映射
 const statusMap: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  pending: { label: "等待处理", color: "bg-yellow-100 text-yellow-700", icon: <Clock className="h-4 w-4" /> },
-  processing: { label: "处理中", color: "bg-primary/10 text-primary", icon: <Loader2 className="h-4 w-4 animate-spin" /> },
-  completed: { label: "已完成", color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="h-4 w-4" /> },
-  failed: { label: "失败", color: "bg-red-100 text-red-700", icon: <AlertCircle className="h-4 w-4" /> },
-  cancelled: { label: "已取消", color: "bg-muted text-gray-700", icon: <Ban className="h-4 w-4" /> },
+  pending: {
+    label: "等待处理",
+    color: "bg-yellow-100 text-yellow-700",
+    icon: <Clock className="h-4 w-4" />,
+  },
+  processing: {
+    label: "处理中",
+    color: "bg-primary/10 text-primary",
+    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+  },
+  completed: {
+    label: "已完成",
+    color: "bg-green-100 text-green-700",
+    icon: <CheckCircle2 className="h-4 w-4" />,
+  },
+  failed: {
+    label: "失败",
+    color: "bg-red-100 text-red-700",
+    icon: <AlertCircle className="h-4 w-4" />,
+  },
+  cancelled: {
+    label: "已取消",
+    color: "bg-muted text-gray-700",
+    icon: <Ban className="h-4 w-4" />,
+  },
 };
 
 export function UploadZone() {
@@ -86,7 +103,7 @@ export function UploadZone() {
           interval: 2000, // 每 2 秒查询一次
           timeout: 30 * 60 * 1000, // 30 分钟超时
           onCancel: () => cancelRef.current,
-        }
+        },
       );
 
       // 3. 处理最终结果
@@ -119,24 +136,27 @@ export function UploadZone() {
     }
   }, []);
 
-  const validateAndUpload = useCallback((file: File) => {
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("文件格式错误", {
-        description: "请上传 .csv 格式的文件",
-      });
-      return;
-    }
+  const validateAndUpload = useCallback(
+    (file: File) => {
+      if (!file.name.toLowerCase().endsWith(".csv")) {
+        toast.error("文件格式错误", {
+          description: "请上传 .csv 格式的文件",
+        });
+        return;
+      }
 
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error("文件过大", {
-        description: "文件大小不能超过 10MB",
-      });
-      return;
-    }
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error("文件过大", {
+          description: "文件大小不能超过 10MB",
+        });
+        return;
+      }
 
-    setCurrentFile(file);
-    startUpload(file);
-  }, [startUpload]);
+      setCurrentFile(file);
+      startUpload(file);
+    },
+    [startUpload],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -150,22 +170,28 @@ export function UploadZone() {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
 
-    const files = e.dataTransfer.files;
-    if (files?.length && !isUploading) {
-      validateAndUpload(files[0]);
-    }
-  }, [isUploading, validateAndUpload]);
+      const files = e.dataTransfer.files;
+      if (files?.length && !isUploading) {
+        validateAndUpload(files[0]);
+      }
+    },
+    [isUploading, validateAndUpload],
+  );
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) {
-      validateAndUpload(e.target.files[0]);
-    }
-    e.target.value = "";
-  }, [validateAndUpload]);
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files?.length) {
+        validateAndUpload(e.target.files[0]);
+      }
+      e.target.value = "";
+    },
+    [validateAndUpload],
+  );
 
   const handleDownloadTemplate = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -213,7 +239,7 @@ export function UploadZone() {
           isDragging
             ? "border-primary bg-primary/5 scale-[1.01]"
             : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted",
-          (isUploading || isPolling) && "pointer-events-none opacity-60"
+          (isUploading || isPolling) && "pointer-events-none opacity-60",
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -235,7 +261,7 @@ export function UploadZone() {
             </div>
             <div className="space-y-2">
               <p className="text-sm font-medium">{currentFile?.name}</p>
-              
+
               {taskStatus ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-center gap-2">
@@ -244,22 +270,22 @@ export function UploadZone() {
                       <span className="ml-1">{statusMap[taskStatus.status]?.label}</span>
                     </Badge>
                   </div>
-                  
-                  <Progress 
-                    value={taskStatus.progress_percent} 
-                    className="h-2 w-full max-w-xs mx-auto" 
+
+                  <Progress
+                    value={taskStatus.progress_percent}
+                    className="h-2 w-full max-w-xs mx-auto"
                   />
                   <p className="text-xs text-muted-foreground">
                     {taskStatus.total_records > 0 ? (
                       <>
-                        已处理 {taskStatus.processed_records} / {taskStatus.total_records} 条
-                        ({taskStatus.progress_percent}%)
+                        已处理 {taskStatus.processed_records} / {taskStatus.total_records} 条 (
+                        {taskStatus.progress_percent}%)
                       </>
                     ) : (
                       "正在准备数据..."
                     )}
                   </p>
-                  
+
                   {(taskStatus.success_count > 0 || taskStatus.failed_count > 0) && (
                     <p className="text-xs text-muted-foreground">
                       <span className="text-success">成功: {taskStatus.success_count}</span>
@@ -271,11 +297,11 @@ export function UploadZone() {
               ) : (
                 <p className="text-xs text-muted-foreground">正在创建导入任务...</p>
               )}
-              
+
               {canCancel && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleCancel();
@@ -340,18 +366,18 @@ export function UploadZone() {
                     {taskStatus.status === "completed" && taskStatus.failed_count === 0
                       ? "全部导入成功"
                       : taskStatus.status === "completed"
-                      ? "导入完成，存在部分失败"
-                      : taskStatus.status === "failed"
-                      ? "导入失败"
-                      : taskStatus.status === "cancelled"
-                      ? "任务已取消"
-                      : "导入任务"}
+                        ? "导入完成，存在部分失败"
+                        : taskStatus.status === "failed"
+                          ? "导入失败"
+                          : taskStatus.status === "cancelled"
+                            ? "任务已取消"
+                            : "导入任务"}
                   </h4>
                   <Badge className={statusMap[taskStatus.status]?.color}>
                     {statusMap[taskStatus.status]?.label}
                   </Badge>
                 </div>
-                
+
                 <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
                   <span>总记录: {taskStatus.total_records}</span>
                   <span className="text-success">成功: {taskStatus.success_count}</span>
@@ -362,9 +388,7 @@ export function UploadZone() {
                 </div>
 
                 {taskStatus.error_message && (
-                  <p className="text-sm text-error mt-2">
-                    错误: {taskStatus.error_message}
-                  </p>
+                  <p className="text-sm text-error mt-2">错误: {taskStatus.error_message}</p>
                 )}
 
                 {taskStatus.failed_count > 0 && taskStatus.failed_file_url && (
@@ -383,18 +407,15 @@ export function UploadZone() {
                   </div>
                 )}
 
-                {(taskStatus.status === "failed" || taskStatus.status === "cancelled") && currentFile && (
-                  <div className="pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRetry}
-                    >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      重新导入
-                    </Button>
-                  </div>
-                )}
+                {(taskStatus.status === "failed" || taskStatus.status === "cancelled") &&
+                  currentFile && (
+                    <div className="pt-2">
+                      <Button variant="outline" size="sm" onClick={handleRetry}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        重新导入
+                      </Button>
+                    </div>
+                  )}
               </div>
 
               <Button variant="ghost" size="icon" onClick={handleClearResult}>

@@ -4,33 +4,17 @@
  */
 
 /** 视频文件扩展名列表 */
-export const VIDEO_EXTENSIONS = [
-  ".mp4",
-  ".webm",
-  ".ogg",
-  ".mov",
-  ".avi",
-  ".mkv",
-] as const;
+export const VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv"] as const;
 
 /** 图片文件扩展名列表 */
-export const IMAGE_EXTENSIONS = [
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".gif",
-  ".webp",
-  ".bmp",
-] as const;
+export const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"] as const;
 
 /**
  * 检测媒体类型
  * @param url - 文件URL
  * @returns 'image' | 'video' | undefined
  */
-export function detectMediaType(
-  url: string | undefined | null
-): "image" | "video" | undefined {
+export function detectMediaType(url: string | undefined | null): "image" | "video" | undefined {
   if (!url) return undefined;
 
   const lowerUrl = url.toLowerCase();

@@ -36,17 +36,11 @@ export function CompetitorList({
   return (
     <div className="border border-border rounded-lg divide-y divide-border">
       {competitors.map((item) => (
-        <div
-          key={item.community_id}
-          className="px-4 py-3 flex items-center justify-between"
-        >
+        <div key={item.community_id} className="px-4 py-3 flex items-center justify-between">
           <div>
-            <div className="font-medium text-sm text-foreground">
-              {item.community_name}
-            </div>
+            <div className="font-medium text-sm text-foreground">{item.community_name}</div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              在售 {item.on_sale_count} 套 · 均价 ¥
-              {item.avg_price?.toLocaleString() || "-"}/㎡
+              在售 {item.on_sale_count} 套 · 均价 ¥{item.avg_price?.toLocaleString() || "-"}/㎡
             </div>
           </div>
           <Button

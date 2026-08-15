@@ -24,8 +24,7 @@ export function DefaultView({
   onUploadAttachment,
   onHandoverSuccess,
 }: DefaultViewProps) {
-  const showHandoverButton =
-    project.status === "signing" || project.status === "签约";
+  const showHandoverButton = project.status === "signing" || project.status === "签约";
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
       <ProjectSummary project={project} />

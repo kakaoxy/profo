@@ -20,7 +20,7 @@ export type ImportTaskStatusResponse = components["schemas"]["ImportTaskStatusRe
  */
 export const uploadCSV = (
   file: File,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
 ): Promise<UploadResult> => {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
@@ -149,10 +149,10 @@ export const pollTaskStatus = async (
   taskId: string,
   onProgress: (status: ImportTaskStatusResponse) => void,
   options: {
-    interval?: number;      // 轮询间隔（毫秒），默认 2000ms
-    timeout?: number;       // 超时时间（毫秒），默认 10 分钟
+    interval?: number; // 轮询间隔（毫秒），默认 2000ms
+    timeout?: number; // 超时时间（毫秒），默认 10 分钟
     onCancel?: () => boolean; // 取消检查函数，返回 true 则停止轮询
-  } = {}
+  } = {},
 ): Promise<ImportTaskStatusResponse> => {
   const { interval = 2000, timeout = 10 * 60 * 1000, onCancel } = options;
   const startTime = Date.now();
@@ -177,7 +177,11 @@ export const pollTaskStatus = async (
         onProgress(status);
 
         // 检查任务是否完成
-        if (status.status === "completed" || status.status === "failed" || status.status === "cancelled") {
+        if (
+          status.status === "completed" ||
+          status.status === "failed" ||
+          status.status === "cancelled"
+        ) {
           resolve(status);
           return;
         }

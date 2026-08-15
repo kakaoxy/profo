@@ -148,7 +148,10 @@ export function PropertyFiltersAdvanced() {
   const [maxPrice, setMaxPrice] = useQueryState("max_price", { shallow: false });
   const [minArea, setMinArea] = useQueryState("min_area", { shallow: false });
   const [maxArea, setMaxArea] = useQueryState("max_area", { shallow: false });
-  const [districts, setDistricts] = useQueryState("districts", { defaultValue: "", shallow: false });
+  const [districts, setDistricts] = useQueryState("districts", {
+    defaultValue: "",
+    shallow: false,
+  });
 
   return (
     <>

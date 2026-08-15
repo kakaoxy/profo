@@ -21,19 +21,13 @@ export async function POST() {
   if (!tokens?.refreshToken) {
     // 缺少 refresh_token：清掉残留的 access_token cookie，避免半失效状态
     await clearTokenCookies(config);
-    return NextResponse.json(
-      { error: "No refresh token available" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "No refresh token available" }, { status: 401 });
   }
 
   // refresh token 也过期：清 cookies，让客户端走登录流程
   if (!isTokenValid(tokens.refreshToken)) {
     await clearTokenCookies(config);
-    return NextResponse.json(
-      { error: "Refresh token expired" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "Refresh token expired" }, { status: 401 });
   }
 
   try {
@@ -45,8 +39,7 @@ export async function POST() {
   } catch (error) {
     // 刷新失败（后端拒绝等）：清 cookies
     await clearTokenCookies(config);
-    const message =
-      error instanceof Error ? error.message : "Token refresh failed";
+    const message = error instanceof Error ? error.message : "Token refresh failed";
     return NextResponse.json({ error: message }, { status: 401 });
   }
 }

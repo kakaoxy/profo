@@ -10,11 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type {
-  RecruitLead,
-  RecruitLeadStatus,
-  RecruitSource,
-} from "../../types";
+import type { RecruitLead, RecruitLeadStatus, RecruitSource } from "../../types";
 import {
   RECRUIT_BADGE_CLASS,
   RECRUIT_LEAD_STATUS_LABELS,
@@ -83,10 +79,7 @@ export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTablePro
         <tbody>
           {leads.length === 0 ? (
             <tr>
-              <td
-                colSpan={7}
-                className="px-5 py-10 text-center text-[13px] text-slate"
-              >
+              <td colSpan={7} className="px-5 py-10 text-center text-[13px] text-slate">
                 暂无数据
               </td>
             </tr>
@@ -98,19 +91,13 @@ export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTablePro
                     {lead.phone_masked ?? "—"}
                   </div>
                   {lead.is_internal ? (
-                    <div className="mt-0.5 text-[12.5px] text-graphite">
-                      内部员工标记
-                    </div>
+                    <div className="mt-0.5 text-[12.5px] text-graphite">内部员工标记</div>
                   ) : (
-                    <div className="mt-0.5 text-xs text-rust font-medium">
-                      有效新客
-                    </div>
+                    <div className="mt-0.5 text-xs text-rust font-medium">有效新客</div>
                   )}
                 </td>
                 <td className="px-5 py-3.5 border-b border-fog align-middle">
-                  <span
-                    className={`${badgeBase} ${RECRUIT_BADGE_CLASS.neutral}`}
-                  >
+                  <span className={`${badgeBase} ${RECRUIT_BADGE_CLASS.neutral}`}>
                     {lead.main_business_area}
                   </span>
                 </td>
@@ -123,16 +110,12 @@ export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTablePro
                   </div>
                 </td>
                 <td className="px-5 py-3.5 border-b border-fog align-middle">
-                  <span
-                    className={`${badgeBase} ${SOURCE_BADGE[lead.source]}`}
-                  >
+                  <span className={`${badgeBase} ${SOURCE_BADGE[lead.source]}`}>
                     {RECRUIT_SOURCE_LABELS[lead.source]}
                   </span>
                 </td>
                 <td className="px-5 py-3.5 border-b border-fog align-middle">
-                  <span
-                    className={`${badgeBase} ${LEAD_STATUS_BADGE[lead.status]}`}
-                  >
+                  <span className={`${badgeBase} ${LEAD_STATUS_BADGE[lead.status]}`}>
                     {RECRUIT_LEAD_STATUS_LABELS[lead.status]}
                   </span>
                 </td>
@@ -156,16 +139,11 @@ export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTablePro
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {STATUS_OPTIONS.filter((s) => s !== lead.status).map(
-                            (status) => (
-                              <DropdownMenuItem
-                                key={status}
-                                onClick={() => onFlow(lead.id, status)}
-                              >
-                                {RECRUIT_LEAD_STATUS_LABELS[status]}
-                              </DropdownMenuItem>
-                            ),
-                          )}
+                          {STATUS_OPTIONS.filter((s) => s !== lead.status).map((status) => (
+                            <DropdownMenuItem key={status} onClick={() => onFlow(lead.id, status)}>
+                              {RECRUIT_LEAD_STATUS_LABELS[status]}
+                            </DropdownMenuItem>
+                          ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </HasPermission>

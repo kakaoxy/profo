@@ -149,17 +149,12 @@ export function CommunityImagePicker({
         {/* 底部 */}
         <DialogFooter className="p-4 border-t shrink-0">
           <div className="flex items-center justify-between w-full">
-            <span className="text-sm text-muted-foreground">
-              已选 {selected.size} 张
-            </span>
+            <span className="text-sm text-muted-foreground">已选 {selected.size} 张</span>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 取消
               </Button>
-              <Button
-                onClick={handleConfirm}
-                disabled={selected.size === 0}
-              >
+              <Button onClick={handleConfirm} disabled={selected.size === 0}>
                 确认选择
               </Button>
             </div>

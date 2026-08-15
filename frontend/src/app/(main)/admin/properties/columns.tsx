@@ -8,17 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, ImageIcon, ArrowUp, ArrowDown } from "lucide-react";
 import { useQueryState } from "nuqs";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isValidUrl } from "@/lib/validators";
 import { DEFAULT_SORT_BY, DEFAULT_SORT_ORDER } from "./search-params";
 
@@ -48,10 +39,7 @@ export const getFloorPlan = (
     if (!hdicFrameImage && lower.includes("hdic-frame")) {
       hdicFrameImage = link;
     }
-    if (
-      !floorPlanImage &&
-      (lower.includes("floorplan") || lower.includes("layout"))
-    ) {
+    if (!floorPlanImage && (lower.includes("floorplan") || lower.includes("layout"))) {
       floorPlanImage = link;
     }
     if (hdicFrameImage && floorPlanImage) break;
@@ -169,12 +157,7 @@ const FloorPlanPreviewImpl = ({
   }
 
   return (
-    <HoverCard
-      openDelay={200}
-      closeDelay={100}
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <HoverCard openDelay={200} closeDelay={100} open={open} onOpenChange={setOpen}>
       <HoverCardTrigger asChild>
         <div className="relative w-10 h-8 sm:w-12 sm:h-9 rounded overflow-hidden border bg-muted cursor-zoom-in group">
           <Image
@@ -240,10 +223,7 @@ export const columns: ColumnDef<Property>[] = [
     ),
     cell: ({ row }) => {
       // 调用辅助函数获取图片URL
-      const cover = getFloorPlan(
-        row.original.data_source,
-        row.original.picture_links,
-      );
+      const cover = getFloorPlan(row.original.data_source, row.original.picture_links);
 
       // 如果没图，显示占位符 (保持不变)
       if (!cover) {
@@ -255,9 +235,7 @@ export const columns: ColumnDef<Property>[] = [
       }
 
       // 有图，使用 HoverCard 包裹
-      return (
-        <FloorPlanPreview cover={cover} dataSource={row.original.data_source} />
-      );
+      return <FloorPlanPreview cover={cover} dataSource={row.original.data_source} />;
     },
     size: 50,
   },
@@ -278,9 +256,7 @@ export const columns: ColumnDef<Property>[] = [
             <TooltipProvider>
               <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
-                  <div className="font-medium truncate max-w-[7em] cursor-help">
-                    {name}
-                  </div>
+                  <div className="font-medium truncate max-w-[7em] cursor-help">{name}</div>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{name}</p>
@@ -336,9 +312,7 @@ export const columns: ColumnDef<Property>[] = [
     cell: ({ row }) => {
       const val = row.getValue("business_circle") as string;
       return (
-        <span className="inline text-sm text-muted-foreground md:table-cell">
-          {val || "-"}
-        </span>
+        <span className="inline text-sm text-muted-foreground md:table-cell">{val || "-"}</span>
       );
     },
   },
@@ -369,9 +343,7 @@ export const columns: ColumnDef<Property>[] = [
       return (
         <div className="flex flex-col gap-1 py-2 whitespace-nowrap md:table-cell">
           <span className="text-xs leading-tight">{floor}</span>
-          <span className="text-[10px] text-muted-foreground leading-tight">
-            {orientation}
-          </span>
+          <span className="text-[10px] text-muted-foreground leading-tight">{orientation}</span>
         </div>
       );
     },
@@ -385,9 +357,7 @@ export const columns: ColumnDef<Property>[] = [
       </div>
     ),
     cell: ({ row }) => (
-      <div className="block text-xs md:table-cell">
-        {row.getValue("build_area")}㎡
-      </div>
+      <div className="block text-xs md:table-cell">{row.getValue("build_area")}㎡</div>
     ),
   },
   // 10. 价格（原总价列合并单价）
@@ -403,12 +373,8 @@ export const columns: ColumnDef<Property>[] = [
       const unitPrice = row.original.unit_price;
       return (
         <div className="flex flex-col gap-1 py-2 min-w-0">
-          <span className="text-error font-bold text-sm leading-tight">
-            {price}万
-          </span>
-          <span className="text-[10px] text-muted-foreground leading-tight">
-            {unitPrice} 元/㎡
-          </span>
+          <span className="text-error font-bold text-sm leading-tight">{price}万</span>
+          <span className="text-[10px] text-muted-foreground leading-tight">{unitPrice} 元/㎡</span>
         </div>
       );
     },
@@ -434,7 +400,7 @@ export const columns: ColumnDef<Property>[] = [
       // 移动端显示 MM/DD，桌面端显示完整日期
       return (
         <span className="text-xs whitespace-nowrap">
-          <span className="hidden sm:inline">{date.toLocaleDateString('zh-CN')}</span>
+          <span className="hidden sm:inline">{date.toLocaleDateString("zh-CN")}</span>
           <span className="sm:hidden">
             {date.getMonth() + 1}/{date.getDate()}
           </span>

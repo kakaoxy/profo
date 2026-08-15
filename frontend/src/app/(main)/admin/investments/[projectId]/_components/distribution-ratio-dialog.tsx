@@ -127,9 +127,7 @@ export function DistributionRatioDialog({
 
   const handleSubmit = async (): Promise<void> => {
     if (!valid) {
-      toast.error(
-        `分配比例合计 ${ratioSum.toFixed(2)}% 不等于 100%（差额 ${diff.toFixed(2)}%）`,
-      );
+      toast.error(`分配比例合计 ${ratioSum.toFixed(2)}% 不等于 100%（差额 ${diff.toFixed(2)}%）`);
       return;
     }
     setSubmitting(true);
@@ -161,8 +159,8 @@ export function DistributionRatioDialog({
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle>调整分配比例</DialogTitle>
           <DialogDescription className="text-xs">
-            分配比例 = 占收益总额的百分比，默认等于投资占比。
-            调整后各投资方分配比例合计需等于 100%。总收益 {formatCNY(totalReturn)}
+            分配比例 = 占收益总额的百分比，默认等于投资占比。 调整后各投资方分配比例合计需等于
+            100%。总收益 {formatCNY(totalReturn)}
           </DialogDescription>
         </DialogHeader>
 
@@ -197,15 +195,10 @@ export function DistributionRatioDialog({
                     {rows.map((r) => {
                       const overDefault = r.ratioNum > r.defaultRatio;
                       const overHundred = r.ratioNum > 100;
-                      const progressValue = Math.min(
-                        (r.ratioNum / PROGRESS_MAX) * 100,
-                        100,
-                      );
+                      const progressValue = Math.min((r.ratioNum / PROGRESS_MAX) * 100, 100);
                       return (
                         <TableRow key={r.inv.id || `inv-${r.inv.name}`}>
-                          <TableCell className="font-medium">
-                            {r.inv.name}
-                          </TableCell>
+                          <TableCell className="font-medium">{r.inv.name}</TableCell>
                           <TableCell className="font-mono tabular-nums text-right">
                             {formatCNY(r.amount)}
                           </TableCell>
@@ -225,14 +218,10 @@ export function DistributionRatioDialog({
                                   max="100"
                                   placeholder={r.defaultRatio.toFixed(2)}
                                   value={ratios[r.inv.id] ?? ""}
-                                  onChange={(e) =>
-                                    handleRatioChange(r.inv.id, e.target.value)
-                                  }
+                                  onChange={(e) => handleRatioChange(r.inv.id, e.target.value)}
                                   className="h-8 w-28 font-mono tabular-nums"
                                 />
-                                <span className="text-xs text-muted-foreground">
-                                  %
-                                </span>
+                                <span className="text-xs text-muted-foreground">%</span>
                               </div>
                               <Progress
                                 value={progressValue}
@@ -311,11 +300,7 @@ export function DistributionRatioDialog({
         </div>
 
         <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>
           <Button

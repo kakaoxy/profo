@@ -51,10 +51,7 @@ function formatItemValue(item: CalcItem): string | null {
   return null;
 }
 
-export function CalcBreakdownDialog({
-  breakdown,
-  children,
-}: CalcBreakdownDialogProps) {
+export function CalcBreakdownDialog({ breakdown, children }: CalcBreakdownDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -63,17 +60,13 @@ export function CalcBreakdownDialog({
           <DialogTitle>五层法计算明细</DialogTitle>
         </DialogHeader>
         <div className="flex items-center">
-          <Badge variant="secondary">
-            {getBusinessFormLabel(breakdown.business_form)}
-          </Badge>
+          <Badge variant="secondary">{getBusinessFormLabel(breakdown.business_form)}</Badge>
         </div>
         <div className="max-h-[70vh] overflow-y-auto">
           {breakdown.sections.map((section, index) => (
             <section
               key={section.title}
-              className={
-                index > 0 ? "mt-4 pt-4 border-t border-border" : undefined
-              }
+              className={index > 0 ? "mt-4 pt-4 border-t border-border" : undefined}
             >
               <h3 className="font-medium text-sm">{section.title}</h3>
               <p className="text-xs text-muted-foreground leading-relaxed mt-1">
@@ -89,9 +82,7 @@ export function CalcBreakdownDialog({
                       className="flex items-baseline justify-between gap-3 text-sm"
                     >
                       <span className="text-graphite">
-                        {item.sign ? (
-                          <span className="mr-1">{item.sign}</span>
-                        ) : null}
+                        {item.sign ? <span className="mr-1">{item.sign}</span> : null}
                         {item.label}
                       </span>
                       <span className="tabular-nums text-ink">{value}</span>

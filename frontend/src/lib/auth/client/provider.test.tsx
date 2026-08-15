@@ -1,22 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, act, renderHook } from "@testing-library/react";
 import React from "react";
-import type {
-  ClientSessionData,
-  SessionActionData,
-  ActionResult,
-} from "../types";
+import type { ClientSessionData, SessionActionData, ActionResult } from "../types";
 import type { AuthActions } from "./provider";
 import { AuthProvider, useSession, useAuth } from "./provider";
 
 // ─── Per-test configurable mocks (hoisted so vi.mock factories can read them) ─
-const { mockRefresh, mockPush, mockReplace, mockBack } =
-  vi.hoisted(() => ({
-    mockRefresh: vi.fn(),
-    mockPush: vi.fn(),
-    mockReplace: vi.fn(),
-    mockBack: vi.fn(),
-  }));
+const { mockRefresh, mockPush, mockReplace, mockBack } = vi.hoisted(() => ({
+  mockRefresh: vi.fn(),
+  mockPush: vi.fn(),
+  mockReplace: vi.fn(),
+  mockBack: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -67,10 +62,7 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
   let originalVisibilityDescriptor: PropertyDescriptor | undefined;
 
   beforeEach(() => {
-    originalVisibilityDescriptor = Object.getOwnPropertyDescriptor(
-      document,
-      "visibilityState",
-    );
+    originalVisibilityDescriptor = Object.getOwnPropertyDescriptor(document, "visibilityState");
     setVisibilityState("visible");
     mockRefresh.mockClear();
     mockPush.mockClear();
@@ -82,11 +74,7 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
     // Restore the original visibilityState descriptor (or delete the override
     // to fall back to the prototype getter).
     if (originalVisibilityDescriptor) {
-      Object.defineProperty(
-        document,
-        "visibilityState",
-        originalVisibilityDescriptor,
-      );
+      Object.defineProperty(document, "visibilityState", originalVisibilityDescriptor);
     } else {
       // @ts-expect-error -- deleting an instance property to restore prototype getter
       delete document.visibilityState;
@@ -97,12 +85,10 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
   // SubTask 7.1: RED — when focus revalidation succeeds with a still-valid
   // session, router.refresh() must NOT be called (current code always calls it).
   it("does not call router.refresh when focus revalidation succeeds with a valid session", async () => {
-    const fetchSessionMock = vi.fn(
-      async (): Promise<ActionResult<SessionActionData | null>> => ({
-        success: true,
-        data: authenticatedSession,
-      }),
-    );
+    const fetchSessionMock = vi.fn(async (): Promise<ActionResult<SessionActionData | null>> => ({
+      success: true,
+      data: authenticatedSession,
+    }));
     const onSessionExpired = vi.fn();
     const actions = buildMockActions(fetchSessionMock);
 
@@ -116,9 +102,7 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
       </AuthProvider>,
     );
 
-    expect(screen.getByTestId("session-status").textContent).toBe(
-      "authenticated",
-    );
+    expect(screen.getByTestId("session-status").textContent).toBe("authenticated");
 
     await act(async () => {
       document.dispatchEvent(new Event("visibilitychange"));
@@ -131,9 +115,7 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
     expect(fetchSessionMock).toHaveBeenCalledTimes(1);
     expect(mockRefresh).not.toHaveBeenCalled();
     expect(onSessionExpired).not.toHaveBeenCalled();
-    expect(screen.getByTestId("session-status").textContent).toBe(
-      "authenticated",
-    );
+    expect(screen.getByTestId("session-status").textContent).toBe("authenticated");
   });
 
   // SubTask 7.2: characterization test — when focus revalidation finds the
@@ -141,12 +123,10 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
   // router.refresh() and onSessionExpired MUST fire. This passes on the current
   // code and must keep passing after the fix.
   it("calls router.refresh and onSessionExpired when focus revalidation finds session expired", async () => {
-    const fetchSessionMock = vi.fn(
-      async (): Promise<ActionResult<SessionActionData | null>> => ({
-        success: true,
-        data: null,
-      }),
-    );
+    const fetchSessionMock = vi.fn(async (): Promise<ActionResult<SessionActionData | null>> => ({
+      success: true,
+      data: null,
+    }));
     const onSessionExpired = vi.fn();
     const actions = buildMockActions(fetchSessionMock);
 
@@ -160,9 +140,7 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
       </AuthProvider>,
     );
 
-    expect(screen.getByTestId("session-status").textContent).toBe(
-      "authenticated",
-    );
+    expect(screen.getByTestId("session-status").textContent).toBe("authenticated");
 
     await act(async () => {
       document.dispatchEvent(new Event("visibilitychange"));
@@ -173,9 +151,7 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
     expect(fetchSessionMock).toHaveBeenCalledTimes(1);
     expect(onSessionExpired).toHaveBeenCalledTimes(1);
     expect(mockRefresh).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("session-status").textContent).toBe(
-      "unauthenticated",
-    );
+    expect(screen.getByTestId("session-status").textContent).toBe("unauthenticated");
   });
 });
 

@@ -43,19 +43,13 @@ export function LeadsToolbar({
   creatorName,
   onClearCreatorId,
 }: LeadsToolbarProps) {
-  const creatorLabel = creatorName
-    ? `创建人: ${creatorName}`
-    : `创建人: #${creatorId}`;
+  const creatorLabel = creatorName ? `创建人: ${creatorName}` : `创建人: #${creatorId}`;
 
   return (
     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
       {/* Left: Filter Area */}
       <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-start sm:items-center">
-        <SearchBar
-          value={searchQuery}
-          onChange={onSearchChange}
-          placeholder="搜索小区名称..."
-        />
+        <SearchBar value={searchQuery} onChange={onSearchChange} placeholder="搜索小区名称..." />
 
         {/* Status Tabs */}
         <Tabs
@@ -132,7 +126,7 @@ export function LeadsToolbar({
               "flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium transition-all",
               viewMode === "table"
                 ? "bg-card shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
             onClick={() => onViewModeChange("table")}
           >
@@ -144,7 +138,7 @@ export function LeadsToolbar({
               "flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium transition-all",
               viewMode === "grid"
                 ? "bg-card shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
             onClick={() => onViewModeChange("grid")}
           >

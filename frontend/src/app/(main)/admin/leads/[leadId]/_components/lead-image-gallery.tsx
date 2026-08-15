@@ -7,10 +7,7 @@ interface LeadImageGalleryProps {
   onImageClick: (index: number) => void;
 }
 
-export function LeadImageGallery({
-  images,
-  onImageClick,
-}: LeadImageGalleryProps) {
+export function LeadImageGallery({ images, onImageClick }: LeadImageGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 

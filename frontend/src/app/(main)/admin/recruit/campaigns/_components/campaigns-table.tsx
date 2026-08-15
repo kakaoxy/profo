@@ -35,11 +35,7 @@ interface CampaignsTableProps {
 /** 是否为本地预览图（blob URL / 本地开发地址），绕过 Next.js 图片优化（同 leads 图片处理约定） */
 function isLocalPreviewUrl(url: string | null): boolean {
   if (!url) return true;
-  return (
-    url.startsWith("blob:") ||
-    url.includes("127.0.0.1") ||
-    url.includes("localhost")
-  );
+  return url.startsWith("blob:") || url.includes("127.0.0.1") || url.includes("localhost");
 }
 
 /**
@@ -71,14 +67,10 @@ export function CampaignsTable({
         </thead>
         <tbody>
           {campaigns.map((campaign, index) => {
-            const hasImage =
-              campaign.image_url && campaign.image_url.trim() !== "";
+            const hasImage = campaign.image_url && campaign.image_url.trim() !== "";
             const enabled = campaign.status === "enabled";
             return (
-              <tr
-                key={campaign.id}
-                className="hover:bg-fog transition-colors"
-              >
+              <tr key={campaign.id} className="hover:bg-fog transition-colors">
                 <td className="px-5 py-3.5 border-b border-fog align-middle text-[12.5px] text-graphite">
                   {index + 1}
                 </td>
@@ -86,9 +78,7 @@ export function CampaignsTable({
                   <div className="font-medium text-ink whitespace-nowrap">
                     {campaign.name || "-"}
                   </div>
-                  <div className="mt-0.5 text-[12.5px] text-graphite">
-                    ID: {campaign.id}
-                  </div>
+                  <div className="mt-0.5 text-[12.5px] text-graphite">ID: {campaign.id}</div>
                 </td>
                 <td className="pl-3 pr-5 py-3.5 border-b border-fog align-middle">
                   <div className="font-medium text-ink">{campaign.title || "-"}</div>
@@ -114,9 +104,7 @@ export function CampaignsTable({
                 <td className="px-5 py-3.5 border-b border-fog align-middle">
                   <span
                     className={`inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-0.5 rounded-full whitespace-nowrap ${
-                      enabled
-                        ? RECRUIT_BADGE_CLASS.ink
-                        : RECRUIT_BADGE_CLASS.outline
+                      enabled ? RECRUIT_BADGE_CLASS.ink : RECRUIT_BADGE_CLASS.outline
                     }`}
                   >
                     {enabled ? "启用中" : "已停用"}

@@ -10,12 +10,7 @@ import {
   History,
   Layers,
 } from "lucide-react";
-import {
-  Lead,
-  LeadStatus,
-  FollowUp,
-  FollowUpMethod,
-} from "../../types";
+import { Lead, LeadStatus, FollowUp, FollowUpMethod } from "../../types";
 import { safeFormatDate } from "@/lib/formatters";
 import { KpiRow } from "./kpi-row";
 import { OwnerNotesSection } from "./owner-notes-section";
@@ -25,18 +20,9 @@ import { FollowUpTimeline } from "./follow-up-timeline";
 
 interface InfoTabProps {
   lead: Lead;
-  onAudit: (
-    leadId: string,
-    status: LeadStatus,
-    evalPrice?: number,
-    reason?: string,
-  ) => void;
+  onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => void;
   followUps: FollowUp[];
-  onAddFollowUp: (
-    leadId: string,
-    method: FollowUpMethod,
-    content: string,
-  ) => void;
+  onAddFollowUp: (leadId: string, method: FollowUpMethod, content: string) => void;
   onRefreshFollowUps: (updated: FollowUp[]) => void;
   onImagesUpdate?: (images: string[]) => void;
 }
@@ -84,9 +70,7 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
             房屋参数
           </span>
         </div>
-        <span className="text-[10px] text-muted-foreground font-bold">
-          {params.length} 项
-        </span>
+        <span className="text-[10px] text-muted-foreground font-bold">{params.length} 项</span>
       </div>
       <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
         {params.map((p) => (
@@ -95,9 +79,7 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
               <p.icon className="h-3 w-3 shrink-0" />
               {p.label}
             </span>
-            <span className="text-xs font-bold text-foreground truncate">
-              {p.value}
-            </span>
+            <span className="text-xs font-bold text-foreground truncate">{p.value}</span>
           </div>
         ))}
       </div>

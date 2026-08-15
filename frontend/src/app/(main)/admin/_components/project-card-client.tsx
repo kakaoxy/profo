@@ -16,18 +16,14 @@ import type { Project } from "../projects/types/project";
 import { getStatusLabel, getProjectStatusClassName, DEFAULT_STATUS } from "@/lib/status-colors";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
-type CommunityMarketStatsResponse =
-  components["schemas"]["CommunityMarketStatsResponse"];
+type CommunityMarketStatsResponse = components["schemas"]["CommunityMarketStatsResponse"];
 
 interface ProjectCardClientProps {
   project: ProjectResponse;
   marketData: CommunityMarketStatsResponse | null;
 }
 
-export function ProjectCardClient({
-  project,
-  marketData,
-}: ProjectCardClientProps) {
+export function ProjectCardClient({ project, marketData }: ProjectCardClientProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   // 用 state 缓存 projectData，只在打开抽屉时设置。
   // 避免每次渲染重新计算（新引用）导致 useProjectDetail 的 useEffect([initialProject]) 触发，
@@ -95,9 +91,7 @@ export function ProjectCardClient({
               aria-hidden="true"
             />
           </div>
-          <h3 className="text-lg font-semibold text-foreground truncate">
-            {communityName}
-          </h3>
+          <h3 className="text-lg font-semibold text-foreground truncate">{communityName}</h3>
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <MapPin className="w-3 h-3" aria-hidden="true" />
             {address}

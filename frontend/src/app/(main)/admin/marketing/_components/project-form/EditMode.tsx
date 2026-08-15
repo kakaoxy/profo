@@ -30,13 +30,10 @@ function PhotoManagerSkeleton() {
   );
 }
 
-const DualPhotoManager = dynamic(
-  () => import("../photo-manager").then((m) => m.DualPhotoManager),
-  {
-    ssr: false,
-    loading: () => <PhotoManagerSkeleton />,
-  }
-);
+const DualPhotoManager = dynamic(() => import("../photo-manager").then((m) => m.DualPhotoManager), {
+  ssr: false,
+  loading: () => <PhotoManagerSkeleton />,
+});
 
 /**
  * 验证媒体项是否有有效的 file_url
@@ -48,39 +45,35 @@ function hasValidFileUrl<T extends { file_url?: string | null }>(item: T): boole
 
 // 将 L4MarketingMedia 转换为 MediaFile
 function convertToMediaFiles(photos: L4MarketingMedia[]): MediaFile[] {
-  return photos
-    .filter(hasValidFileUrl)
-    .map((photo) => ({
-      file_url: photo.file_url,
-      thumbnail_url: photo.thumbnail_url || undefined,
-      media_type: (photo.media_type as "image" | "video") || "image",
-      photo_category: photo.photo_category,
-      renovation_stage: photo.renovation_stage,
-      description: photo.description || undefined,
-      sort_order: photo.sort_order,
-    }));
+  return photos.filter(hasValidFileUrl).map((photo) => ({
+    file_url: photo.file_url,
+    thumbnail_url: photo.thumbnail_url || undefined,
+    media_type: (photo.media_type as "image" | "video") || "image",
+    photo_category: photo.photo_category,
+    renovation_stage: photo.renovation_stage,
+    description: photo.description || undefined,
+    sort_order: photo.sort_order,
+  }));
 }
 
 // 将 ImportableMedia 转换为 L4MarketingMedia
 function convertImportableToL4Media(media: ImportableMedia[]): L4MarketingMedia[] {
-  return media
-    .filter(hasValidFileUrl)
-    .map((item, index) => ({
-      id: Number(item.id) || -Date.now() - index, // 临时ID，负数表示未保存
-      file_url: item.file_url,
-      thumbnail_url: item.thumbnail_url,
-      media_type: item.media_type || "image",
-      photo_category: ["marketing", "renovation"].includes(item.photo_category)
-        ? (item.photo_category as "marketing" | "renovation")
-        : "marketing",
-      renovation_stage: item.renovation_stage ?? null,
-      description: item.description ?? null,
-      sort_order: item.sort_order ?? index,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      marketing_project_id: 0, // 临时值，创建后会被后端替换
-      is_deleted: false,
-    }));
+  return media.filter(hasValidFileUrl).map((item, index) => ({
+    id: Number(item.id) || -Date.now() - index, // 临时ID，负数表示未保存
+    file_url: item.file_url,
+    thumbnail_url: item.thumbnail_url,
+    media_type: item.media_type || "image",
+    photo_category: ["marketing", "renovation"].includes(item.photo_category)
+      ? (item.photo_category as "marketing" | "renovation")
+      : "marketing",
+    renovation_stage: item.renovation_stage ?? null,
+    description: item.description ?? null,
+    sort_order: item.sort_order ?? index,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    marketing_project_id: 0, // 临时值，创建后会被后端替换
+    is_deleted: false,
+  }));
 }
 
 /**
@@ -90,7 +83,7 @@ function convertImportableToL4Media(media: ImportableMedia[]): L4MarketingMedia[
 function computeHasPhotoChanges(
   mode: "create" | "edit",
   photos: L4MarketingMedia[],
-  initialPhotos: L4MarketingMedia[]
+  initialPhotos: L4MarketingMedia[],
 ): boolean {
   if (mode !== "edit") return false;
   if (photos.length !== initialPhotos.length) return true;
@@ -111,7 +104,7 @@ export function EditMode({ mode, project, photos, actions, defaultConsultantId }
   // 派生状态：跟踪照片是否有变更（用于编辑模式检测）
   const hasPhotoChanges = React.useMemo(
     () => computeHasPhotoChanges(mode, localPhotos, initialPhotos),
-    [mode, localPhotos, initialPhotos]
+    [mode, localPhotos, initialPhotos],
   );
 
   // 创建模式下，从 localPhotos 构建 mediaFiles
@@ -153,16 +146,18 @@ export function EditMode({ mode, project, photos, actions, defaultConsultantId }
   } = useProjectImport({ form, onMediaImport: handleMediaImport });
 
   // 处理照片变化
-  const handlePhotosChange = React.useCallback((
-    update: L4MarketingMedia[] | ((prev: L4MarketingMedia[]) => L4MarketingMedia[]),
-  ) => {
-    setLocalPhotos((prev) => {
-      const newPhotos = typeof update === "function"
-        ? (update as (prev: L4MarketingMedia[]) => L4MarketingMedia[])(prev)
-        : update;
-      return newPhotos;
-    });
-  }, []);
+  const handlePhotosChange = React.useCallback(
+    (update: L4MarketingMedia[] | ((prev: L4MarketingMedia[]) => L4MarketingMedia[])) => {
+      setLocalPhotos((prev) => {
+        const newPhotos =
+          typeof update === "function"
+            ? (update as (prev: L4MarketingMedia[]) => L4MarketingMedia[])(prev)
+            : update;
+        return newPhotos;
+      });
+    },
+    [],
+  );
 
   const submitButtonText = isSubmitting
     ? mode === "create"
@@ -179,10 +174,14 @@ export function EditMode({ mode, project, photos, actions, defaultConsultantId }
           {/* 表单错误提示 */}
           {Object.keys(errors).length > 0 && (
             <div className="bg-error-container border border-error/30 rounded-lg p-4 mb-4">
-              <h4 className="text-red-800 font-medium text-sm mb-2">表单验证失败，请检查以下字段：</h4>
+              <h4 className="text-red-800 font-medium text-sm mb-2">
+                表单验证失败，请检查以下字段：
+              </h4>
               <ul className="list-disc list-inside text-error text-sm space-y-1">
                 {Object.entries(errors).map(([field, error]) => (
-                  <li key={field}>{field}: {String(error?.message ?? "验证失败")}</li>
+                  <li key={field}>
+                    {field}: {String(error?.message ?? "验证失败")}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -219,7 +218,9 @@ export function EditMode({ mode, project, photos, actions, defaultConsultantId }
           {/* Fixed Bottom Actions */}
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-xl px-6 py-4 rounded-3xl shadow-steep flex items-center gap-6 z-50">
             <div className="flex flex-col">
-              <span className="text-graphite text-[10px] uppercase font-medium tracking-wider">当前状态</span>
+              <span className="text-graphite text-[10px] uppercase font-medium tracking-wider">
+                当前状态
+              </span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
                 <span className="text-ink text-sm font-medium">

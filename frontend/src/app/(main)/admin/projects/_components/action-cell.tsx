@@ -104,10 +104,7 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={handleClick}>
             <HasPermission code={PERMISSION_CODES.PROJECT_WRITE}>
-              <DropdownMenuItem
-                onSelect={() => onEdit?.(row.original)}
-                disabled={!onEdit}
-              >
+              <DropdownMenuItem onSelect={() => onEdit?.(row.original)} disabled={!onEdit}>
                 <Pencil className="h-3.5 w-3.5 mr-2" />
                 编辑
               </DropdownMenuItem>
@@ -129,9 +126,7 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
         <AlertDialogContent onClick={handleClick}>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除？</AlertDialogTitle>
-            <AlertDialogDescription>
-              此操作将把项目标记为删除状态。
-            </AlertDialogDescription>
+            <AlertDialogDescription>此操作将把项目标记为删除状态。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>

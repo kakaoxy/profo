@@ -41,10 +41,7 @@ export function parseApiError(error: unknown): { message: string; type: string }
  * @param fallback - 提取失败时的兜底文案
  * @returns 错误消息字符串
  */
-export function extractApiErrorMessage(
-  error: unknown,
-  fallback = "操作失败，请稍后重试"
-): string {
+export function extractApiErrorMessage(error: unknown, fallback = "操作失败，请稍后重试"): string {
   return parseApiError(error).message || fallback;
 }
 

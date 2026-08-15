@@ -32,12 +32,8 @@ function DashboardHeader() {
         <LayoutDashboard className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          工作台
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          欢迎回来，这是您今日的数据概览
-        </p>
+        <h1 className="text-2xl font-bold text-foreground">工作台</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">欢迎回来，这是您今日的数据概览</p>
       </div>
     </div>
   );
@@ -48,9 +44,7 @@ function MonitorSectionSkeleton() {
   return (
     <section className="mb-8 overflow-hidden">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-on-surface dark:text-white">
-          重点监控项目
-        </h2>
+        <h2 className="text-xl font-bold text-on-surface dark:text-white">重点监控项目</h2>
         <div className="flex gap-2">
           <button
             disabled
@@ -75,9 +69,7 @@ function MonitorSectionSkeleton() {
           <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5">
             <Plus className="w-8 h-8" aria-hidden="true" />
           </div>
-          <p className="text-lg font-bold text-muted-foreground">
-            添加新项目
-          </p>
+          <p className="text-lg font-bold text-muted-foreground">添加新项目</p>
         </div>
       </div>
     </section>
@@ -89,7 +81,10 @@ function MonitorSection() {
   return (
     <section className="mb-8 overflow-hidden" aria-labelledby="monitor-section-title">
       <div className="flex items-center justify-between mb-6">
-        <h2 id="monitor-section-title" className="text-xl font-bold text-on-surface dark:text-white">
+        <h2
+          id="monitor-section-title"
+          className="text-xl font-bold text-on-surface dark:text-white"
+        >
           重点监控项目
         </h2>
         <div className="flex gap-2">

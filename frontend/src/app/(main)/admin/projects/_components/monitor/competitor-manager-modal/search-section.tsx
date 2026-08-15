@@ -21,9 +21,7 @@ export function SearchSection({
 }: SearchSectionProps) {
   return (
     <div>
-      <label className="block text-xs font-bold text-muted-foreground mb-1.5">
-        添加竞品小区
-      </label>
+      <label className="block text-xs font-bold text-muted-foreground mb-1.5">添加竞品小区</label>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
@@ -48,9 +46,7 @@ export function SearchSection({
               className="w-full px-3 py-2.5 text-left text-sm hover:bg-primary/5 transition-colors flex justify-between items-center disabled:opacity-50"
             >
               <span className="text-foreground">{item.name}</span>
-              <span className="text-xs text-primary font-medium">
-                + 添加
-              </span>
+              <span className="text-xs text-primary font-medium">+ 添加</span>
             </button>
           ))}
         </div>

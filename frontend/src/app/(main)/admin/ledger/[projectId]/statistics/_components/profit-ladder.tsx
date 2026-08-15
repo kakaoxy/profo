@@ -29,32 +29,20 @@ function getL1Content(businessForm: string | null | undefined): {
   };
 }
 
-export function ProfitLadder({
-  fiveLayer,
-  breakdown,
-  businessForm,
-}: ProfitLadderProps) {
+export function ProfitLadder({ fiveLayer, breakdown, businessForm }: ProfitLadderProps) {
   const l1 = getL1Content(businessForm);
   // F1: LedgerStatisticsFiveLayer 字段均为 optional，解构时给默认值 0 避免透传 undefined
   const { income = 0, gross = 0, net = 0 } = fiveLayer;
   // 进度条相对值：以 income 为基准 100%，其他按比例
-  const maxAbs = Math.max(
-    Math.abs(income),
-    Math.abs(gross),
-    Math.abs(net),
-    1,
-  );
-  const pct = (v: number): string =>
-    `${Math.min(100, Math.max(0, (Math.abs(v) / maxAbs) * 100))}%`;
+  const maxAbs = Math.max(Math.abs(income), Math.abs(gross), Math.abs(net), 1);
+  const pct = (v: number): string => `${Math.min(100, Math.max(0, (Math.abs(v) / maxAbs) * 100))}%`;
 
   return (
     <section className="py-12">
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
           <div>
-            <p className="text-xs tracking-[0.2em] text-graphite mb-2">
-              PROFIT STRUCTURE
-            </p>
+            <p className="text-xs tracking-[0.2em] text-graphite mb-2">PROFIT STRUCTURE</p>
             <h2 className="text-2xl font-display text-ink flex items-center gap-3">
               利润三层结构
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-apricot-wash text-rust text-xs font-medium">
@@ -141,12 +129,7 @@ function LadderCard({
 
   return (
     <div className="relative overflow-hidden bg-white rounded-[18px] p-5 pt-6 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_8px_16px_-4px]">
-      <div
-        className={cn(
-          "absolute top-0 left-0 right-0 h-1",
-          topBarClass[variant],
-        )}
-      />
+      <div className={cn("absolute top-0 left-0 right-0 h-1", topBarClass[variant])} />
       <div className="inline-flex items-center gap-1.5 text-xs text-graphite mb-1.5">
         <span
           className={cn(
@@ -159,23 +142,13 @@ function LadderCard({
         {stepLabel}
       </div>
       <h3 className="text-base text-ink mb-2 font-medium">{title}</h3>
-      <p className="text-[11.5px] text-graphite mb-3 leading-[1.7] font-mono">
-        {formula}
-      </p>
-      <p
-        className={cn(
-          "text-2xl tabular-nums tracking-[-0.3px]",
-          valueColorClass,
-        )}
-      >
+      <p className="text-[11.5px] text-graphite mb-3 leading-[1.7] font-mono">{formula}</p>
+      <p className={cn("text-2xl tabular-nums tracking-[-0.3px]", valueColorClass)}>
         {formatCurrency(value)}
       </p>
       <div className="mt-3 h-1.5 bg-apricot-wash/30 rounded-full overflow-hidden">
         <div
-          className={cn(
-            "h-full rounded-full transition-all duration-500",
-            progressClass[variant],
-          )}
+          className={cn("h-full rounded-full transition-all duration-500", progressClass[variant])}
           style={{ width: progress }}
         />
       </div>

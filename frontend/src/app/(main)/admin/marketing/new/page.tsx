@@ -25,12 +25,8 @@ export default async function ProjectCreatePage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-[26px] font-medium tracking-tight text-ink">
-                创建新房源
-              </h1>
-              <p className="text-sm text-ash mt-1">
-                填写房源基本信息以创建新的营销项目
-              </p>
+              <h1 className="text-[26px] font-medium tracking-tight text-ink">创建新房源</h1>
+              <p className="text-sm text-ash mt-1">填写房源基本信息以创建新的营销项目</p>
             </div>
           </div>
           <Link

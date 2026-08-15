@@ -18,9 +18,7 @@ export function MarketingInfoView({ project }: MarketingInfoViewProps) {
         <DisplayRow
           label="标题"
           value={
-            <span className="text-lg font-semibold text-foreground">
-              {project?.title || "-"}
-            </span>
+            <span className="text-lg font-semibold text-foreground">{project?.title || "-"}</span>
           }
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -42,11 +40,7 @@ export function MarketingInfoView({ project }: MarketingInfoViewProps) {
             Array.isArray(project?.tags) && project.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {project.tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="bg-muted text-muted-foreground"
-                  >
+                  <Badge key={tag} variant="secondary" className="bg-muted text-muted-foreground">
                     {tag}
                   </Badge>
                 ))}

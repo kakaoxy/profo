@@ -11,12 +11,12 @@ interface ProjectStatsSectionProps {
 
 export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) {
   const viewingRecords = useMemo(
-    () => salesRecords.filter(r => r.record_type === "viewing"),
-    [salesRecords]
+    () => salesRecords.filter((r) => r.record_type === "viewing"),
+    [salesRecords],
   );
   const offerRecords = useMemo(
-    () => salesRecords.filter(r => r.record_type === "offer"),
-    [salesRecords]
+    () => salesRecords.filter((r) => r.record_type === "offer"),
+    [salesRecords],
   );
 
   const viewTotal = viewingRecords.length;
@@ -33,9 +33,7 @@ export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) 
           <Eye className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
           <span className="text-sm text-muted-foreground">带看总量</span>
         </div>
-        <span className="text-sm font-bold tabular-nums">
-          {formatCount(viewTotal)} 次
-        </span>
+        <span className="text-sm font-bold tabular-nums">{formatCount(viewTotal)} 次</span>
       </div>
       <div className="flex justify-between items-center">
         <div className="text-xs text-muted-foreground ml-6">本周/上周</div>
@@ -44,8 +42,8 @@ export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) 
             viewTrendIsFlat
               ? "text-muted-foreground"
               : viewTrendIsUp
-              ? "text-tertiary"
-              : "text-error"
+                ? "text-tertiary"
+                : "text-error"
           }`}
         >
           {formatCount(currentWeekViews)} / {formatCount(lastWeekViews)}
@@ -62,9 +60,7 @@ export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) 
           <Wallet className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
           <span className="text-sm text-muted-foreground">收到出价</span>
         </div>
-        <span className="text-sm font-bold tabular-nums">
-          {formatCount(offerCount)} 个
-        </span>
+        <span className="text-sm font-bold tabular-nums">{formatCount(offerCount)} 个</span>
       </div>
 
       <div className="bg-muted p-2 rounded-lg space-y-1 h-12 flex flex-col justify-center">

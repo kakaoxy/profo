@@ -3,13 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Gavel, Eye, History } from "lucide-react";
 
-import {
-  Lead,
-  FollowUp,
-  LeadStatus,
-  FollowUpMethod,
-  EvalHistory,
-} from "../../types";
+import { Lead, FollowUp, LeadStatus, FollowUpMethod, EvalHistory } from "../../types";
 import { safeParseDate } from "@/lib/validators";
 import { safeFormatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -37,14 +31,9 @@ const COMMUNICATION_TITLE_MAP: Record<FollowUpMethod, string> = {
   visit: "阶段：带看实勘",
 };
 
-export function LeadTrajectoryTimeline({
-  lead,
-  followUps,
-}: LeadTrajectoryTimelineProps) {
+export function LeadTrajectoryTimeline({ lead, followUps }: LeadTrajectoryTimelineProps) {
   // 评估历史：挂载时拉取，与 lead.evalHistories（若已传入）合并去重
-  const [evalHistories, setEvalHistories] = useState<EvalHistory[]>(
-    lead.evalHistories ?? [],
-  );
+  const [evalHistories, setEvalHistories] = useState<EvalHistory[]>(lead.evalHistories ?? []);
 
   useEffect(() => {
     if (!lead.id) return;
@@ -87,11 +76,7 @@ export function LeadTrajectoryTimeline({
 
   // 3. 驳回事件（条件：已驳回且有 auditReason，且未在评估历史中体现）
   // 评估历史已覆盖正常的评估价调整，这里仅补充"驳回"语义节点
-  if (
-    lead.status === LeadStatus.REJECTED &&
-    lead.auditReason &&
-    evalHistories.length === 0
-  ) {
+  if (lead.status === LeadStatus.REJECTED && lead.auditReason && evalHistories.length === 0) {
     const raw = lead.auditTime ?? lead.updatedAt;
     const auditDate = safeParseDate(raw);
     const isFallback = !lead.auditTime;
@@ -160,14 +145,7 @@ interface TimelineItemProps {
   user?: string;
 }
 
-function TimelineItem({
-  title,
-  desc,
-  time,
-  icon: Icon,
-  isNewest,
-  user,
-}: TimelineItemProps) {
+function TimelineItem({ title, desc, time, icon: Icon, isNewest, user }: TimelineItemProps) {
   return (
     <div className="relative group">
       <div
@@ -193,9 +171,7 @@ function TimelineItem({
           >
             {title}
           </span>
-          <span className="text-[9px] font-bold text-muted-foreground shrink-0">
-            {time}
-          </span>
+          <span className="text-[9px] font-bold text-muted-foreground shrink-0">{time}</span>
         </div>
         <div className="mt-1.5 p-3 bg-muted/40 border border-border rounded-xl text-xs text-muted-foreground leading-relaxed italic group-hover:border-primary/20 transition-colors">
           {desc}

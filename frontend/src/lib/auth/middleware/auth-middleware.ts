@@ -86,9 +86,7 @@ function writeTokensToResponse(
     secure: config.cookieOptions.secure,
     sameSite: config.cookieOptions.sameSite as "strict" | "lax" | "none",
     path: config.cookieOptions.path,
-    ...(config.cookieOptions.domain
-      ? { domain: config.cookieOptions.domain }
-      : {}),
+    ...(config.cookieOptions.domain ? { domain: config.cookieOptions.domain } : {}),
   };
 
   response.cookies.set(config.cookieNames.accessToken, accessToken, {
@@ -102,10 +100,7 @@ function writeTokensToResponse(
   });
 }
 
-function clearTokensFromResponse(
-  response: NextResponse,
-  config: ResolvedAuthConfig,
-): void {
+function clearTokensFromResponse(response: NextResponse, config: ResolvedAuthConfig): void {
   response.cookies.set(config.cookieNames.accessToken, "", { maxAge: 0 });
   response.cookies.set(config.cookieNames.refreshToken, "", { maxAge: 0 });
 }
@@ -133,28 +128,22 @@ function clearTokensFromResponse(
  * return session.response(NextResponse.next());
  */
 export function createAuthMiddleware(config?: ResolvedAuthConfig) {
-  return async function resolveAuth(
-    request: NextRequest,
-  ): Promise<AuthMiddlewareResult> {
+  return async function resolveAuth(request: NextRequest): Promise<AuthMiddlewareResult> {
     const resolvedConfig = config ?? getGlobalAuthConfig();
     const { pathname } = request.nextUrl;
 
-    let accessToken =
-      request.cookies.get(resolvedConfig.cookieNames.accessToken)?.value ?? null;
+    let accessToken = request.cookies.get(resolvedConfig.cookieNames.accessToken)?.value ?? null;
     const refreshToken =
       request.cookies.get(resolvedConfig.cookieNames.refreshToken)?.value ?? null;
 
-    let refreshedTokens: { accessToken: string; refreshToken: string } | null =
-      null;
+    let refreshedTokens: { accessToken: string; refreshToken: string } | null = null;
 
     if (!accessToken && !refreshToken) {
       debugLog("Middleware: no tokens found", { pathname });
     }
 
     // Refresh if: no access token, expired, or within the refresh threshold
-    const secondsRemaining = accessToken
-      ? getSecondsUntilExpiry(accessToken)
-      : 0;
+    const secondsRemaining = accessToken ? getSecondsUntilExpiry(accessToken) : 0;
     const needsRefresh =
       !accessToken ||
       !isTokenValid(accessToken) ||
@@ -182,13 +171,10 @@ export function createAuthMiddleware(config?: ResolvedAuthConfig) {
         debugLog("Middleware: token refresh successful", { pathname });
       } catch (error) {
         // Refresh failed — proceed with the existing (potentially expired) token state
-        debugLog(
-          "Middleware: token refresh failed — proceeding with existing state",
-          {
-            pathname,
-            error: error instanceof Error ? error.message : String(error),
-          },
-        );
+        debugLog("Middleware: token refresh failed — proceeding with existing state", {
+          pathname,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 

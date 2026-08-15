@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 export {
   Sidebar,
@@ -25,7 +25,7 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
-} from "./sidebar/index"
+} from "./sidebar/index";
 
 export type {
   SidebarContextProps,
@@ -38,4 +38,4 @@ export type {
   SidebarProviderProps,
   SidebarProps,
   SidebarState,
-} from "./sidebar/types"
+} from "./sidebar/types";

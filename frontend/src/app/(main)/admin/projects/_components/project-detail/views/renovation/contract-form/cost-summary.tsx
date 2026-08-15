@@ -41,7 +41,8 @@ export function CostSummarySection({ values, area }: CostSummaryProps) {
   const otherDecoration = designFee + demolitionFee + garbageFee + otherExtraFee;
 
   // 总金额 = 硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修
-  const totalAmount = hardAmount + softAmount + cabinetAmount + windowAmount + wallTreatmentAmount + otherDecoration;
+  const totalAmount =
+    hardAmount + softAmount + cabinetAmount + windowAmount + wallTreatmentAmount + otherDecoration;
 
   // 明细项（顺序：硬装、硬装单价、软装、定制柜、窗户、墙面、其他装修）
   // 总单价已在顶部汇总卡片展示，明细不重复
@@ -75,7 +76,9 @@ export function CostSummarySection({ values, area }: CostSummaryProps) {
         </div>
         <div className="p-3 bg-success/10 rounded border border-green-100">
           <div className="text-[10px] text-muted-foreground mb-0.5">总单价</div>
-          <div className="text-base font-bold text-green-700">{formatUnitPrice(totalAmount, areaNum)}</div>
+          <div className="text-base font-bold text-green-700">
+            {formatUnitPrice(totalAmount, areaNum)}
+          </div>
         </div>
       </div>
 

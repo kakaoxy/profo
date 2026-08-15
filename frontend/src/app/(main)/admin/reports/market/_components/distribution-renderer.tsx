@@ -25,25 +25,16 @@ interface DistributionRendererProps {
  * 通用分布渲染器：由父组件通过 next/dynamic({ ssr: false }) 加载。
  * 柱状图展示各桶套数，顶部 LabelList 显示具体数值。
  */
-export default function DistributionRenderer({
-  buckets,
-}: DistributionRendererProps) {
+export default function DistributionRenderer({ buckets }: DistributionRendererProps) {
   const colors = useChartColors();
 
   // Y 轴 domain：[min*0.8, max*1.05]，含 0 值时退化为 0 基线
-  const yDomain = useMemo(
-    () => computeYAxisDomain(buckets.map((b) => b.count)),
-    [buckets],
-  );
+  const yDomain = useMemo(() => computeYAxisDomain(buckets.map((b) => b.count)), [buckets]);
 
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={buckets} margin={{ top: 20, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid
-          strokeDasharray="3 3"
-          vertical={false}
-          stroke={colors.gridSubtle}
-        />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridSubtle} />
         <XAxis
           dataKey="label"
           axisLine={false}

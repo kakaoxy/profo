@@ -34,8 +34,7 @@ export async function fetchInvestmentList(
       query.search = params.search.trim();
     }
     if (params.project_status && params.project_status !== "all") {
-      query.project_status =
-        params.project_status as InvestmentListQuery["project_status"];
+      query.project_status = params.project_status as InvestmentListQuery["project_status"];
     }
     if (params.settlement_status && params.settlement_status !== "all") {
       query.settlement_status =
@@ -127,9 +126,7 @@ export async function exportInvestments(
  * 搜索项目（用于新增跟投弹窗的项目选择器）
  * 调用 GET /api/v1/projects?community_name=xxx
  */
-export async function searchProjects(
-  keyword: string,
-): Promise<ActionResult<ProjectBrief[]>> {
+export async function searchProjects(keyword: string): Promise<ActionResult<ProjectBrief[]>> {
   try {
     const client = await fetchClient();
     const { data, error } = await client.GET("/api/v1/projects", {
@@ -168,15 +165,12 @@ export async function searchProjects(
  * 获取跟投记录详情（Server Action，供客户端组件刷新使用）
  * 调用 GET /api/v1/admin/investments/{id}，返回 InvestmentResponse（含投资方树 + 操作日志）
  */
-export async function fetchInvestmentDetail(
-  id: string,
-): Promise<ActionResult<InvestmentResponse>> {
+export async function fetchInvestmentDetail(id: string): Promise<ActionResult<InvestmentResponse>> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/admin/investments/{investment_id}",
-      { params: { path: { investment_id: id } } },
-    );
+    const { data, error } = await client.GET("/api/v1/admin/investments/{investment_id}", {
+      params: { path: { investment_id: id } },
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "获取跟投详情失败";
@@ -196,24 +190,19 @@ export async function fetchInvestmentDetail(
 /**
  * 按项目ID获取项目简要信息（用于新增跟投弹窗预选项目）
  */
-export async function getProjectBriefById(
-  projectId: string,
-): Promise<ActionResult<ProjectBrief>> {
+export async function getProjectBriefById(projectId: string): Promise<ActionResult<ProjectBrief>> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/projects/{project_id}",
-      { params: { path: { project_id: projectId } } },
-    );
+    const { data, error } = await client.GET("/api/v1/projects/{project_id}", {
+      params: { path: { project_id: projectId } },
+    });
 
     if (error) {
       const msg = (error as { message?: string }).message || "获取项目信息失败";
       return { success: false, message: msg };
     }
 
-    const p = extractApiData<
-      components["schemas"]["ProjectResponse"]
-    >(data);
+    const p = extractApiData<components["schemas"]["ProjectResponse"]>(data);
     if (!p) {
       return { success: false, message: "项目不存在" };
     }

@@ -13,24 +13,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { safeFormatDate } from "@/lib/formatters";
-import type {
-  RecruitCampaign,
-  RecruitLead,
-  RecruitLeadStatus,
-} from "../../types";
-import {
-  RECRUIT_LEAD_STATUS_LABELS,
-  RECRUIT_SOURCE_LABELS,
-} from "../../types";
+import type { RecruitCampaign, RecruitLead, RecruitLeadStatus } from "../../types";
+import { RECRUIT_LEAD_STATUS_LABELS, RECRUIT_SOURCE_LABELS } from "../../types";
 import { LeadsTable } from "./leads-table";
 import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
 import { DesignPagination } from "../../_components/design-pagination";
@@ -103,18 +91,16 @@ export function LeadsView({
   effectiveEnd,
 }: LeadsViewProps) {
   // 筛选与分页 URL 状态（nuqs 管理，刷新后保持；无 shallow → 触发服务端取数）
-  const [query, setQuery] = useQueryStates(
-    {
-      search: parseAsString.withDefault(""),
-      campaign: parseAsString.withDefault(""),
-      status: parseAsString.withDefault(""),
-      source: parseAsString.withDefault(""),
-      start_date: parseAsString.withDefault(""),
-      end_date: parseAsString.withDefault(""),
-      page: parseAsInteger.withDefault(1),
-      page_size: parseAsInteger.withDefault(pageSize),
-    },
-  );
+  const [query, setQuery] = useQueryStates({
+    search: parseAsString.withDefault(""),
+    campaign: parseAsString.withDefault(""),
+    status: parseAsString.withDefault(""),
+    source: parseAsString.withDefault(""),
+    start_date: parseAsString.withDefault(""),
+    end_date: parseAsString.withDefault(""),
+    page: parseAsInteger.withDefault(1),
+    page_size: parseAsInteger.withDefault(pageSize),
+  });
 
   // 搜索输入本地状态（防抖 300ms 后写入 URL，避免每次击键触发服务端请求）
   const [searchInput, setSearchInput] = React.useState(query.search);
@@ -240,11 +226,14 @@ export function LeadsView({
 
   const handleCopyPhone = () => {
     if (!fullPhone) return;
-    navigator.clipboard.writeText(fullPhone).then(() => {
-      toast.success("手机号已复制");
-    }).catch(() => {
-      toast.error("复制失败，请手动复制");
-    });
+    navigator.clipboard
+      .writeText(fullPhone)
+      .then(() => {
+        toast.success("手机号已复制");
+      })
+      .catch(() => {
+        toast.error("复制失败，请手动复制");
+      });
   };
 
   return (
@@ -252,9 +241,7 @@ export function LeadsView({
       {/* 页头：标题 + 描述 + 导出 */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
         <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink">
-            招募线索
-          </h1>
+          <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink">招募线索</h1>
           <p className="mt-1.5 text-[15px] text-graphite">
             客户经员工分享完成授权留资后自动归入此列表，归属以首次留资为准
           </p>
@@ -288,9 +275,7 @@ export function LeadsView({
 
         <Select
           value={toSelectValue(query.campaign)}
-          onValueChange={(val) =>
-            setQuery({ campaign: toQueryValue(val), page: 1 })
-          }
+          onValueChange={(val) => setQuery({ campaign: toQueryValue(val), page: 1 })}
         >
           <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-33">
             <SelectValue placeholder="全部活动" />
@@ -307,9 +292,7 @@ export function LeadsView({
 
         <Select
           value={toSelectValue(query.status)}
-          onValueChange={(val) =>
-            setQuery({ status: toQueryValue(val), page: 1 })
-          }
+          onValueChange={(val) => setQuery({ status: toQueryValue(val), page: 1 })}
         >
           <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-33">
             <SelectValue placeholder="全部状态" />
@@ -325,9 +308,7 @@ export function LeadsView({
 
         <Select
           value={toSelectValue(query.source)}
-          onValueChange={(val) =>
-            setQuery({ source: toQueryValue(val), page: 1 })
-          }
+          onValueChange={(val) => setQuery({ source: toQueryValue(val), page: 1 })}
         >
           <SelectTrigger className="h-9.5 rounded-inputs border-dove bg-white text-[14px] min-w-33">
             <SelectValue placeholder="全部来源" />
@@ -400,11 +381,14 @@ export function LeadsView({
       </div>
 
       {/* 线索详情抽屉 */}
-      <Sheet open={!!detailLeadId} onOpenChange={(open) => { if (!open) setDetailLeadId(null); }}>
+      <Sheet
+        open={!!detailLeadId}
+        onOpenChange={(open) => {
+          if (!open) setDetailLeadId(null);
+        }}
+      >
         <SheetContent side="right" className="w-full sm:max-w-md p-6 overflow-y-auto">
-          <SheetTitle className="text-base font-medium text-ink mb-5">
-            线索详情
-          </SheetTitle>
+          <SheetTitle className="text-base font-medium text-ink mb-5">线索详情</SheetTitle>
           <SheetDescription className="sr-only">线索详细信息</SheetDescription>
 
           {detailLead && (

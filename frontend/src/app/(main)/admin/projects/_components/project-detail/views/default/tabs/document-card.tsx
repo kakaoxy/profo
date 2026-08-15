@@ -41,8 +41,7 @@ export function DocumentCard({
   onUpload,
 }: DocumentCardProps) {
   const isDirty =
-    draft.signoff_status !== doc.signoff_status ||
-    draft.archive_date !== (doc.archive_date || "");
+    draft.signoff_status !== doc.signoff_status || draft.archive_date !== (doc.archive_date || "");
   const isArchived = draft.signoff_status === "archived";
 
   return (

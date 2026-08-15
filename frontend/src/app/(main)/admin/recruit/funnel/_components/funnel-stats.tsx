@@ -108,9 +108,7 @@ export function FunnelStats({ data, rangeLabel, dateRange }: FunnelStatsProps) {
       {/* 头部：标题 + 日期区间 + 图例 */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-5 border-b border-fog">
         <div>
-          <div className="text-[15px] font-medium text-ink">
-            转化漏斗 · {rangeLabel}
-          </div>
+          <div className="text-[15px] font-medium text-ink">转化漏斗 · {rangeLabel}</div>
           <div className="mt-0.5 text-[13px] text-graphite">{dateRange}</div>
         </div>
         <div className="flex flex-wrap gap-5 text-[13px] text-graphite">
@@ -147,12 +145,8 @@ export function FunnelStats({ data, rangeLabel, dateRange }: FunnelStatsProps) {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[14px] font-medium text-ink tabular-nums">
-                  {stage.display}
-                </div>
-                <div className="text-xs text-slate mt-0.5 font-normal">
-                  {stage.rateLabel}
-                </div>
+                <div className="text-[14px] font-medium text-ink tabular-nums">{stage.display}</div>
+                <div className="text-xs text-slate mt-0.5 font-normal">{stage.rateLabel}</div>
               </div>
             </div>
           );

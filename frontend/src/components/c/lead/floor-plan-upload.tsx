@@ -23,12 +23,7 @@ const isLocalDevUrl = (url: string): boolean =>
 const FLOOR_PLAN_ALLOWED_TYPES = ["image/jpeg", "image/png"];
 const FLOOR_PLAN_ACCEPT = ".jpg,.jpeg,.png";
 
-export function FloorPlanUpload({
-  images,
-  onChange,
-  maxImages = 6,
-  maxFileSize = 100,
-}: Props) {
+export function FloorPlanUpload({ images, onChange, maxImages = 6, maxFileSize = 100 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { isUploading, upload, uploadingFiles } = useUpload({
@@ -76,7 +71,7 @@ export function FloorPlanUpload({
     (index: number) => {
       onChange((prev) => prev.filter((_, i) => i !== index));
     },
-    [onChange]
+    [onChange],
   );
 
   const canAddMore = images.length < maxImages;

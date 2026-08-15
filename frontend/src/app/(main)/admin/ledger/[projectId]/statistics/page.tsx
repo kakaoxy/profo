@@ -8,8 +8,7 @@ import { StatisticsHero } from "./_components/statistics-hero";
 import { ProfitLadder } from "./_components/profit-ladder";
 import { StageCashflowTimeline } from "./_components/stage-cashflow-timeline";
 
-type ProjectLedgerStatisticsResponse =
-  components["schemas"]["ProjectLedgerStatisticsResponse"];
+type ProjectLedgerStatisticsResponse = components["schemas"]["ProjectLedgerStatisticsResponse"];
 
 interface PageProps {
   params: Promise<{ projectId: string }>;
@@ -18,10 +17,9 @@ interface PageProps {
 export default async function LedgerStatisticsPage({ params }: PageProps) {
   // params 与 fetchClient 无依赖,并行化避免串行 await
   const [{ projectId }, client] = await Promise.all([params, fetchClient()]);
-  const statsRes = await client.GET(
-    "/api/v1/admin/ledger/{project_id}/statistics",
-    { params: { path: { project_id: projectId } } },
-  );
+  const statsRes = await client.GET("/api/v1/admin/ledger/{project_id}/statistics", {
+    params: { path: { project_id: projectId } },
+  });
 
   // 统计数据获取失败 → 404
   if (statsRes.error || !statsRes.data) {

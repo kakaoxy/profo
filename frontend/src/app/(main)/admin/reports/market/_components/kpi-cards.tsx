@@ -85,9 +85,7 @@ function QoqIndicator({ card }: { card: KpiCard }): ReactElement {
   const colorClass = qoqColorClass(direction);
   const srText = direction === "up" ? "上涨" : direction === "down" ? "下跌" : "持平";
   return (
-    <p
-      className={`flex items-center gap-1 text-xs font-medium tabular-nums ${colorClass}`}
-    >
+    <p className={`flex items-center gap-1 text-xs font-medium tabular-nums ${colorClass}`}>
       <QoqIcon direction={direction} />
       <span>{text}</span>
       <span className="sr-only">{srText}</span>
@@ -95,11 +93,7 @@ function QoqIndicator({ card }: { card: KpiCard }): ReactElement {
   );
 }
 
-export function KpiCards({
-  data,
-  variant = "market",
-  mainLayout,
-}: KpiCardsProps): ReactElement {
+export function KpiCards({ data, variant = "market", mainLayout }: KpiCardsProps): ReactElement {
   // community 变体下，前 3 张卡片复用，第 4 张切换为「主力户型」
   const cards = variant === "community" ? CARDS.slice(0, 3) : CARDS;
   return (
@@ -112,9 +106,7 @@ export function KpiCards({
             className="p-4 bg-card border-border shadow-sm transition-colors hover:bg-muted/50"
           >
             <CardContent className="px-0 space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground truncate">
-                {cfg.label}
-              </p>
+              <p className="text-xs font-medium text-muted-foreground truncate">{cfg.label}</p>
               <p className="text-xl font-bold text-foreground tabular-nums">
                 {cfg.format(card.value)}
               </p>
@@ -126,9 +118,7 @@ export function KpiCards({
       {variant === "community" && (
         <Card className="p-4 bg-card border-border shadow-sm transition-colors hover:bg-muted/50">
           <CardContent className="px-0 space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground truncate">
-              主力户型
-            </p>
+            <p className="text-xs font-medium text-muted-foreground truncate">主力户型</p>
             <p className="text-xl font-bold text-foreground">{mainLayout ?? "-"}</p>
             <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
               <Minus className="w-3 h-3" aria-hidden="true" />

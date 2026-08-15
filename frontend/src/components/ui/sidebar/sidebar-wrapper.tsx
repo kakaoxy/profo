@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { TooltipProvider } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./constants"
-import { SidebarProvider } from "./sidebar-context"
-import type { SidebarProviderProps } from "./types"
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./constants";
+import { SidebarProvider } from "./sidebar-context";
+import type { SidebarProviderProps } from "./types";
 
 export function SidebarWrapper({
   defaultOpen = true,
@@ -16,11 +16,7 @@ export function SidebarWrapper({
   ...props
 }: SidebarProviderProps) {
   return (
-    <SidebarProvider
-      defaultOpen={defaultOpen}
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <SidebarProvider defaultOpen={defaultOpen} open={open} onOpenChange={onOpenChange}>
       <TooltipProvider delayDuration={0}>
         <div
           data-slot="sidebar-wrapper"
@@ -33,7 +29,7 @@ export function SidebarWrapper({
           }
           className={cn(
             "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full overflow-hidden",
-            className
+            className,
           )}
           {...props}
         >
@@ -41,5 +37,5 @@ export function SidebarWrapper({
         </div>
       </TooltipProvider>
     </SidebarProvider>
-  )
+  );
 }

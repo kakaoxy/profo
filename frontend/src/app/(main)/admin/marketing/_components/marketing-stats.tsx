@@ -1,9 +1,4 @@
-import {
-  FileText,
-  Globe,
-  Eye,
-  CheckCircle,
-} from "lucide-react";
+import { FileText, Globe, Eye, CheckCircle } from "lucide-react";
 
 interface MarketingStatsProps {
   stats: {

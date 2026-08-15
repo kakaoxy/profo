@@ -26,9 +26,7 @@ export default function MarketingProjectsError({ error, reset }: ErrorProps) {
         </div>
 
         {/* Error Title */}
-        <h2 className="text-xl font-semibold text-foreground mb-2">
-          页面加载失败
-        </h2>
+        <h2 className="text-xl font-semibold text-foreground mb-2">页面加载失败</h2>
 
         {/* Error Message */}
         <p className="text-sm text-muted-foreground mb-6">
@@ -37,22 +35,16 @@ export default function MarketingProjectsError({ error, reset }: ErrorProps) {
 
         {/* Error Digest (for debugging) */}
         {error.digest && (
-          <p className="text-xs text-muted-foreground mb-6 font-mono">
-            错误代码: {error.digest}
-          </p>
+          <p className="text-xs text-muted-foreground mb-6 font-mono">错误代码: {error.digest}</p>
         )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button
-            onClick={reset}
-            variant="default"
-            className="bg-primary hover:bg-primary/90"
-          >
+          <Button onClick={reset} variant="default" className="bg-primary hover:bg-primary/90">
             <RefreshCcw className="mr-2 h-4 w-4" />
             重试
           </Button>
-          
+
           <Link href="/admin/marketing">
             <Button variant="outline" className="w-full sm:w-auto">
               <Home className="mr-2 h-4 w-4" />

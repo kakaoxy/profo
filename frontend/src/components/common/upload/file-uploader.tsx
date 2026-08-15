@@ -28,14 +28,7 @@ export function FileUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const {
-    files,
-    isUploading,
-    uploadingFiles,
-    upload,
-    remove,
-    retry,
-  } = useUpload({
+  const { files, isUploading, uploadingFiles, upload, remove, retry } = useUpload({
     ...options,
     onSuccess: (response, file) => {
       options.onSuccess?.(response, file);
@@ -114,13 +107,15 @@ export function FileUploader({
             "flex items-center gap-3 p-2 rounded-md border",
             file.status === "error" && "border-error/20 bg-error/5",
             file.status === "success" && "border-success/20 bg-success/5",
-            file.status === "uploading" && "border-primary/20 bg-primary/5"
+            file.status === "uploading" && "border-primary/20 bg-primary/5",
           )}
         >
-          <div className={cn(
-            "p-1.5 rounded",
-            file.status === "error" ? "bg-error/10 text-error" : "bg-muted"
-          )}>
+          <div
+            className={cn(
+              "p-1.5 rounded",
+              file.status === "error" ? "bg-error/10 text-error" : "bg-muted",
+            )}
+          >
             {file.status === "error" ? (
               <AlertCircle className="h-4 w-4" />
             ) : (
@@ -130,9 +125,7 @@ export function FileUploader({
 
           <div className="flex-1 min-w-0">
             <p className="text-sm truncate">{file.file.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {formatFileSize(file.file.size)}
-            </p>
+            <p className="text-xs text-muted-foreground">{formatFileSize(file.file.size)}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -194,7 +187,7 @@ export function FileUploader({
           isDragging && "border-primary bg-primary/5",
           isUploading && "pointer-events-none opacity-60",
           disabled && "cursor-not-allowed opacity-50",
-          !isDragging && !isUploading && !disabled && "hover:border-primary/50 hover:bg-muted/50"
+          !isDragging && !isUploading && !disabled && "hover:border-primary/50 hover:bg-muted/50",
         )}
       >
         <input
@@ -219,22 +212,18 @@ export function FileUploader({
             <UploadCloud className="h-10 w-10 text-muted-foreground" />
             <div className="text-center">
               <p className="text-sm font-medium">{title}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {getDescription()}
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{getDescription()}</p>
             </div>
           </>
         )}
       </div>
 
       {/* 文件列表 */}
-      {showFileList && files.length > 0 ? (
-        renderFileList ? (
-          renderFileList({ files, onRemove: remove, onRetry: retry })
-        ) : (
-          defaultFileList
-        )
-      ) : null}
+      {showFileList && files.length > 0
+        ? renderFileList
+          ? renderFileList({ files, onRemove: remove, onRetry: retry })
+          : defaultFileList
+        : null}
     </div>
   );
 }

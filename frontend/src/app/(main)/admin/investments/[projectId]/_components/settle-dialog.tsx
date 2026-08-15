@@ -44,11 +44,7 @@ function todayISO(): string {
   return `${y}-${m}-${day}`;
 }
 
-export function SettleDialog({
-  open,
-  onOpenChange,
-  investment,
-}: SettleDialogProps) {
+export function SettleDialog({ open, onOpenChange, investment }: SettleDialogProps) {
   const router = useRouter();
   const [settledNote, setSettledNote] = React.useState("");
   const [settledDate, setSettledDate] = React.useState(todayISO());
@@ -136,9 +132,7 @@ export function SettleDialog({
               onChange={(e) => setSettledDate(e.target.value)}
               aria-invalid={!dateValid}
             />
-            {!dateValid && (
-              <p className="text-xs text-red-500">请选择有效的日期</p>
-            )}
+            {!dateValid && <p className="text-xs text-red-500">请选择有效的日期</p>}
           </div>
 
           {/* 结算说明 */}
@@ -154,11 +148,7 @@ export function SettleDialog({
         </div>
 
         <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>
           <Button

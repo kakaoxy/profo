@@ -4,11 +4,7 @@ import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function LoginLayout({ children }: { children: React.ReactNode }) {
   // 已登录用户访问登录页时直接跳转至工作台
   try {
     const client = await fetchClient();

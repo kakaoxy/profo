@@ -43,8 +43,7 @@ interface UserDialogProps {
   roles: RoleResponse[];
 }
 
-const SECTION_LABEL =
-  "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3";
+const SECTION_LABEL = "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3";
 
 export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps) {
   const { form, isPending, isEdit, onSubmit } = useUserForm({ user, open, onOpenChange, roles });
@@ -65,9 +64,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
             <div className="text-xs font-medium text-muted-foreground">
               {eyebrowText} · {isEdit ? "编辑" : "新建"}
             </div>
-            <SheetTitle className="text-lg">
-              {isEdit ? "编辑用户" : "新建用户"}
-            </SheetTitle>
+            <SheetTitle className="text-lg">{isEdit ? "编辑用户" : "新建用户"}</SheetTitle>
             <SheetDescription>
               {isEdit
                 ? `用户ID: ${user?.id ?? "-"} · 提交线索: ${user?.leads_count ?? 0} 条`
@@ -108,11 +105,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                         <FormItem>
                           <FormLabel>昵称</FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder="显示名称"
-                              {...field}
-                              value={field.value || ""}
-                            />
+                            <Input placeholder="显示名称" {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -169,10 +162,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>主角色</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value || ""}
-                          >
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="选择角色" />
@@ -224,15 +214,10 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
                               <FormLabel className="text-base">启用 C 端身份</FormLabel>
-                              <FormDescription>
-                                开启后该用户可同时登录 C 端平台
-                              </FormDescription>
+                              <FormDescription>开启后该用户可同时登录 C 端平台</FormDescription>
                             </div>
                             <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
+                              <Switch checked={field.value} onCheckedChange={field.onChange} />
                             </FormControl>
                           </FormItem>
                         )}

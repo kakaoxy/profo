@@ -19,15 +19,10 @@ interface UseRadarDataReturn {
   refresh: () => void;
 }
 
-export function useRadarData({
-  projectId,
-  communityId,
-}: UseRadarDataProps): UseRadarDataReturn {
+export function useRadarData({ projectId, communityId }: UseRadarDataProps): UseRadarDataReturn {
   const hasParam = Boolean(projectId || communityId);
   const [isLoading, setIsLoading] = useState(hasParam);
-  const [error, setError] = useState<string | null>(
-    hasParam ? null : "缺少必要参数"
-  );
+  const [error, setError] = useState<string | null>(hasParam ? null : "缺少必要参数");
   const [competitors, setCompetitors] = useState<NeighborhoodRadarItem[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
 

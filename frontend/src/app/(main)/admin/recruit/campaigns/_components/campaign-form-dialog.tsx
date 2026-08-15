@@ -14,10 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import type {
-  RecruitCampaign,
-  RecruitCampaignStatus,
-} from "../../types";
+import type { RecruitCampaign, RecruitCampaignStatus } from "../../types";
 import { uploadCampaignImageAction } from "../../_lib/recruit-actions";
 
 /** 表单提交数据（不含 id / created_at / updated_at，由父组件在本地状态中补全） */
@@ -66,8 +63,7 @@ export function CampaignFormDialog({
   const [name, setName] = React.useState("");
   const [title, setTitle] = React.useState("");
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
-  const [status, setStatus] =
-    React.useState<RecruitCampaignStatus>("enabled");
+  const [status, setStatus] = React.useState<RecruitCampaignStatus>("enabled");
   const [checkingImage, setCheckingImage] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -279,18 +275,12 @@ export function CampaignFormDialog({
           <div className="flex items-center gap-3 bg-fog rounded-inputs px-4 py-3.5">
             <Switch
               checked={status === "enabled"}
-              onCheckedChange={(checked) =>
-                setStatus(checked ? "enabled" : "disabled")
-              }
+              onCheckedChange={(checked) => setStatus(checked ? "enabled" : "disabled")}
               className="data-[state=checked]:bg-ink data-[state=unchecked]:bg-dove"
               aria-label="发布后立即启用"
             />
-            <label className="text-[14px] font-medium text-ink">
-              发布后立即启用
-            </label>
-            <span className="ml-auto text-[12.5px] text-slate">
-              停用后分享链路立即失效
-            </span>
+            <label className="text-[14px] font-medium text-ink">发布后立即启用</label>
+            <span className="ml-auto text-[12.5px] text-slate">停用后分享链路立即失效</span>
           </div>
 
           {/* 只读提示：详情内容一期使用运营默认模板 */}

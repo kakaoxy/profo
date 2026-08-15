@@ -20,7 +20,7 @@ interface RolesClientProps {
 export function RolesClient({ initialData }: RolesClientProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleResponse | null>(null);
-  
+
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -60,7 +60,9 @@ export function RolesClient({ initialData }: RolesClientProps) {
             onChange={(e) => setSearchName(e.target.value)}
             className="w-full sm:w-[200px] lg:w-[300px]"
           />
-          <Button type="submit" variant="secondary" size="sm">搜索</Button>
+          <Button type="submit" variant="secondary" size="sm">
+            搜索
+          </Button>
         </form>
         <HasPermission code={PERMISSION_CODES.ROLE_CREATE}>
           <Button onClick={handleCreate} size="sm">

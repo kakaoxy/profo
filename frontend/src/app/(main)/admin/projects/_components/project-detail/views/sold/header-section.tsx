@@ -36,9 +36,7 @@ export function SoldHeader({
 }: SoldHeaderProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const unitPrice =
-    project.sold_price && project.area
-      ? (project.sold_price * 10000) / project.area
-      : 0;
+    project.sold_price && project.area ? (project.sold_price * 10000) / project.area : 0;
 
   return (
     <div className="w-full bg-gradient-to-r from-red-50/80 via-white to-white border-b px-6 py-5">
@@ -47,9 +45,7 @@ export function SoldHeader({
         <div className="space-y-2">
           {/* [修改] 使用 Flex 布局将 标题 和 切换按钮 并排 */}
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              {project.name}
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">{project.name}</h1>
 
             {/* [新增] 阶段切换下拉菜单 (复用自标准 Header) */}
             <DropdownMenu>
@@ -60,7 +56,7 @@ export function SoldHeader({
                     "h-6 px-3 shadow-sm",
                     // 使用统一配色系统，已包含 text-white
                     getProjectStatusClassName(project.status),
-                    "border-0 hover:opacity-85 hover:shadow-md active:scale-95"
+                    "border-0 hover:opacity-85 hover:shadow-md active:scale-95",
                   )}
                 >
                   {STAGE_CONFIG.find((s) => s.key === viewMode)?.label}
@@ -84,15 +80,9 @@ export function SoldHeader({
                       onClick={() => setViewMode(stage.key)}
                       className="flex items-center justify-between"
                     >
-                      <span className={cn(!isAccessible && "opacity-50")}>
-                        {stage.label}
-                      </span>
-                      {isCurrentView && (
-                        <Check className="h-4 w-4 text-error" />
-                      )}
-                      {!isAccessible && (
-                        <Lock className="h-3 w-3 text-muted-foreground" />
-                      )}
+                      <span className={cn(!isAccessible && "opacity-50")}>{stage.label}</span>
+                      {isCurrentView && <Check className="h-4 w-4 text-error" />}
+                      {!isAccessible && <Lock className="h-3 w-3 text-muted-foreground" />}
                     </DropdownMenuItem>
                   );
                 })}
@@ -111,10 +101,7 @@ export function SoldHeader({
             <Badge variant="secondary" className="bg-muted text-foreground">
               {project.area}m²
             </Badge>
-            <Badge
-              variant="outline"
-              className="border-error/30 text-red-700 font-mono"
-            >
+            <Badge variant="outline" className="border-error/30 text-red-700 font-mono">
               成交单价 ¥{Math.round(unitPrice).toLocaleString()}/m²
             </Badge>
           </div>
@@ -126,8 +113,7 @@ export function SoldHeader({
             🎉 已售罄 (Sold)
           </Badge>
           <span className="text-xs text-muted-foreground font-mono">
-            成交日期:{" "}
-            {(project.sold_at || project.sold_date)?.split("T")[0] || "-"}
+            成交日期: {(project.sold_at || project.sold_date)?.split("T")[0] || "-"}
           </span>
           <Button
             variant="outline"

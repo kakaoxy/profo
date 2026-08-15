@@ -45,15 +45,11 @@ export function RadarTable({ competitors }: RadarTableProps) {
               className={`${item.is_subject ? "bg-primary/5" : "hover:bg-muted"} transition-colors border-none`}
             >
               <TableCell className="py-4 px-4">
-                <span className="text-sm font-bold text-foreground">
-                  {item.community_name}
-                </span>
+                <span className="text-sm font-bold text-foreground">{item.community_name}</span>
               </TableCell>
               <TableCell className="py-4 px-4">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-foreground">
-                    {item.listing_count} 套
-                  </span>
+                  <span className="text-sm font-bold text-foreground">{item.listing_count} 套</span>
                   <span className="text-[10px] text-muted-foreground font-medium">
                     贝壳:{item.listing_beike} | 我爱:
                     {item.listing_iaij}
@@ -67,9 +63,7 @@ export function RadarTable({ competitors }: RadarTableProps) {
               </TableCell>
               <TableCell className="py-4 px-4">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-foreground">
-                    {item.deal_count} 套
-                  </span>
+                  <span className="text-sm font-bold text-foreground">{item.deal_count} 套</span>
                   <span className="text-[10px] text-muted-foreground font-medium">
                     贝壳:{item.deal_beike} | 我爱:{item.deal_iaij}
                   </span>
@@ -80,9 +74,7 @@ export function RadarTable({ competitors }: RadarTableProps) {
                   <span className="text-sm font-bold text-success">
                     ¥ {item.deal_avg_price.toLocaleString()} /㎡
                   </span>
-                  <span
-                    className={`text-[10px] font-bold mt-0.5 ${getSpreadStyle(item)}`}
-                  >
+                  <span className={`text-[10px] font-bold mt-0.5 ${getSpreadStyle(item)}`}>
                     {getSpreadIcon(item)}
                     {item.spread_label}
                   </span>

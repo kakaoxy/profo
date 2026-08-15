@@ -6,8 +6,16 @@ import { toast } from "sonner";
 import { CommunitySelect } from "@/components/common/community-select";
 import { LayoutInputs } from "@/components/common/layout-inputs";
 import { FloorPlanUpload } from "@/components/c/lead/floor-plan-upload";
-import { CommunityImagePicker, type PickerImageItem } from "@/app/(main)/admin/leads/_components/community-image-picker";
-import { createLeadAction, completePhoneAction, searchCCommunitiesAction, listCCommunityImagesAction } from "@/app/(c)/valuation/actions";
+import {
+  CommunityImagePicker,
+  type PickerImageItem,
+} from "@/app/(main)/admin/leads/_components/community-image-picker";
+import {
+  createLeadAction,
+  completePhoneAction,
+  searchCCommunitiesAction,
+  listCCommunityImagesAction,
+} from "@/app/(c)/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
 import { useSession, useAuth } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
@@ -15,7 +23,17 @@ import { cLocale } from "@/lib/i18n/c-locale";
 
 const ORIENTATION_OPTIONS = ["南", "北", "东", "西", "南北", "东西"];
 
-const FormItem = ({ label, children, required, className }: { label: string; children?: React.ReactNode; required?: boolean; className?: string }) => (
+const FormItem = ({
+  label,
+  children,
+  required,
+  className,
+}: {
+  label: string;
+  children?: React.ReactNode;
+  required?: boolean;
+  className?: string;
+}) => (
   <div className={cn("space-y-1.5", className)}>
     <label className="text-[10px] sm:text-xs font-medium text-graphite uppercase tracking-widest ml-1">
       {label} {required && <span className="text-error">*</span>}
@@ -25,15 +43,15 @@ const FormItem = ({ label, children, required, className }: { label: string; chi
 );
 
 export function ValuationForm() {
-  const [state, formAction, isPending] = useActionState(
-    createLeadAction,
-    { success: false, error: "" } as ActionResult<{ id: string }>
-  );
+  const [state, formAction, isPending] = useActionState(createLeadAction, {
+    success: false,
+    error: "",
+  } as ActionResult<{ id: string }>);
 
-  const [phoneState, phoneAction, isPhonePending] = useActionState(
-    completePhoneAction,
-    { success: false, error: "" } as ActionResult<{ phone: string }>
-  );
+  const [phoneState, phoneAction, isPhonePending] = useActionState(completePhoneAction, {
+    success: false,
+    error: "",
+  } as ActionResult<{ phone: string }>);
 
   const session = useSession();
   const { fetchSession } = useAuth();
@@ -154,7 +172,9 @@ export function ValuationForm() {
           <div className="bg-fog p-4 sm:p-6 rounded-cards space-y-4 sm:space-y-6 border border-dove/30">
             <div className="flex items-center gap-2">
               <Ruler className="h-4 w-4 text-graphite" />
-              <span className="text-[10px] sm:text-xs font-medium text-graphite uppercase tracking-widest">物理指标</span>
+              <span className="text-[10px] sm:text-xs font-medium text-graphite uppercase tracking-widest">
+                物理指标
+              </span>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <FormItem label="面积 (㎡)" required>
@@ -178,7 +198,9 @@ export function ValuationForm() {
                   onChange={(e) => updateField("orientation", e.target.value)}
                 >
                   {ORIENTATION_OPTIONS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
                   ))}
                 </select>
               </FormItem>
@@ -194,7 +216,9 @@ export function ValuationForm() {
                       value={formData.currentFloor}
                       onChange={(e) => updateField("currentFloor", e.target.value)}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-graphite pointer-events-none">层</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-graphite pointer-events-none">
+                      层
+                    </span>
                   </div>
                   <span className="text-graphite/50 text-sm">/</span>
                   <div className="relative flex-1">
@@ -206,7 +230,9 @@ export function ValuationForm() {
                       value={formData.totalFloor}
                       onChange={(e) => updateField("totalFloor", e.target.value)}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-graphite pointer-events-none">总</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-graphite pointer-events-none">
+                      总
+                    </span>
                   </div>
                 </div>
               </FormItem>
@@ -248,7 +274,9 @@ export function ValuationForm() {
           </FormItem>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] sm:text-xs font-medium text-graphite uppercase tracking-widest ml-1">补充信息</label>
+            <label className="text-[10px] sm:text-xs font-medium text-graphite uppercase tracking-widest ml-1">
+              补充信息
+            </label>
             <textarea
               name="remarks"
               rows={3}
@@ -304,7 +332,9 @@ export function ValuationForm() {
                   disabled={isPhonePending}
                   className="h-11 px-4 rounded-inputs bg-ink text-white text-sm font-medium active:opacity-80 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isPhonePending ? cLocale.valuation.phoneSubmitting : cLocale.valuation.phoneSubmit}
+                  {isPhonePending
+                    ? cLocale.valuation.phoneSubmitting
+                    : cLocale.valuation.phoneSubmit}
                 </button>
                 <button
                   type="button"

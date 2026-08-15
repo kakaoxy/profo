@@ -18,13 +18,7 @@ interface StatusTransitionDialogProps {
   // 触发按钮配置
   triggerLabel: string;
   triggerIcon?: ReactNode;
-  triggerVariant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
+  triggerVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   triggerClassName?: string;
 
   // 弹窗内容配置
@@ -72,11 +66,10 @@ export function StatusTransitionDialog({
         <Button
           variant={triggerVariant === "default" ? "default" : triggerVariant}
           className={
-            triggerClassName ?? (
-              triggerVariant === "default"
-                ? "w-full bg-primary hover:bg-primary text-primary-foreground gap-2 shadow-sm h-12 text-base"
-                : "w-full gap-2"
-            )
+            triggerClassName ??
+            (triggerVariant === "default"
+              ? "w-full bg-primary hover:bg-primary text-primary-foreground gap-2 shadow-sm h-12 text-base"
+              : "w-full gap-2")
           }
         >
           {triggerIcon}
@@ -89,9 +82,7 @@ export function StatusTransitionDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription asChild>
-            <div className="pt-2 text-sm text-muted-foreground">
-              {description}
-            </div>
+            <div className="pt-2 text-sm text-muted-foreground">{description}</div>
           </DialogDescription>
         </DialogHeader>
 
@@ -99,11 +90,7 @@ export function StatusTransitionDialog({
         {children && <div className="py-4">{children}</div>}
 
         <DialogFooter className="mt-2">
-          <Button
-            variant="outline"
-            onClick={() => setOpen(false)}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
             取消
           </Button>
           <Button

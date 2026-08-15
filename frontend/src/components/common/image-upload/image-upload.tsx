@@ -30,13 +30,7 @@ export function ImageUpload({
   const [previewItem, setPreviewItem] = useState<ImageItem | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  const {
-    items,
-    isUploading,
-    upload,
-    remove,
-    retry,
-  } = useImageUpload({
+  const { items, isUploading, upload, remove, retry } = useImageUpload({
     defaultValue,
     maxCount,
     maxSize,
@@ -59,8 +53,7 @@ export function ImageUpload({
   const acceptStr = allowedTypes.join(",");
 
   const defaultDescription =
-    description ??
-    `支持 JPG, PNG, GIF, WebP，单文件最大 ${Math.round(maxSize / 1024 / 1024)}MB`;
+    description ?? `支持 JPG, PNG, GIF, WebP，单文件最大 ${Math.round(maxSize / 1024 / 1024)}MB`;
 
   const hasMoreSlots = !maxCount || items.length < maxCount;
 
@@ -91,11 +84,7 @@ export function ImageUpload({
         />
       )}
 
-      <ImagePreview
-        item={previewItem}
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-      />
+      <ImagePreview item={previewItem} open={previewOpen} onOpenChange={setPreviewOpen} />
     </div>
   );
 }

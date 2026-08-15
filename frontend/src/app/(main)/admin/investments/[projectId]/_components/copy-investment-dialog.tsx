@@ -23,16 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  copyInvestment,
-  searchProjects,
-  type ProjectBrief,
-} from "../../actions";
-import {
-  getProjectStatusBadgeClass,
-  getStatusLabel,
-  DEFAULT_STATUS,
-} from "@/lib/status-colors";
+import { copyInvestment, searchProjects, type ProjectBrief } from "../../actions";
+import { getProjectStatusBadgeClass, getStatusLabel, DEFAULT_STATUS } from "@/lib/status-colors";
 import type { components } from "@/lib/api-types";
 
 type InvestmentResponse = components["schemas"]["InvestmentResponse"];
@@ -63,9 +55,7 @@ export function CopyInvestmentDialog({
       try {
         const res = await searchProjects(searchQuery);
         if (res.success) {
-          setProjects(
-            res.data.filter((p) => p.id !== investment.project_id),
-          );
+          setProjects(res.data.filter((p) => p.id !== investment.project_id));
         } else {
           setProjects([]);
         }
@@ -150,15 +140,9 @@ export function CopyInvestmentDialog({
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground space-y-0.5">
-                      {selected.project_code && (
-                        <div>编号: {selected.project_code}</div>
-                      )}
-                      {selected.community_name && (
-                        <div>小区: {selected.community_name}</div>
-                      )}
-                      {selected.address && (
-                        <div>地址: {selected.address}</div>
-                      )}
+                      {selected.project_code && <div>编号: {selected.project_code}</div>}
+                      {selected.community_name && <div>小区: {selected.community_name}</div>}
+                      {selected.address && <div>地址: {selected.address}</div>}
                     </div>
                   </div>
                   <Button
@@ -244,11 +228,7 @@ export function CopyInvestmentDialog({
         </ScrollArea>
 
         <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>
           <Button

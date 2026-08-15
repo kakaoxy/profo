@@ -17,11 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { updateRenovationContractAction } from "../../../../actions/renovation";
 
@@ -46,9 +42,7 @@ export function ActualEndDateDialog({
   // 每次打开时用当前值预填
   useEffect(() => {
     if (open) {
-      setSelectedDate(
-        currentActualEndDate ? new Date(currentActualEndDate) : undefined,
-      );
+      setSelectedDate(currentActualEndDate ? new Date(currentActualEndDate) : undefined);
     }
   }, [open, currentActualEndDate]);
 
@@ -83,15 +77,11 @@ export function ActualEndDateDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>编辑实际竣工时间</DialogTitle>
-          <DialogDescription>
-            修改装修实际竣工时间，保存后立即生效。
-          </DialogDescription>
+          <DialogDescription>修改装修实际竣工时间，保存后立即生效。</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-2 py-2">
-          <Label className="text-xs font-medium text-muted-foreground">
-            实际竣工日期
-          </Label>
+          <Label className="text-xs font-medium text-muted-foreground">实际竣工日期</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -102,11 +92,7 @@ export function ActualEndDateDialog({
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? (
-                  format(selectedDate, "yyyy年MM月dd日")
-                ) : (
-                  <span>选择日期</span>
-                )}
+                {selectedDate ? format(selectedDate, "yyyy年MM月dd日") : <span>选择日期</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -121,20 +107,11 @@ export function ActualEndDateDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             取消
           </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={isSaving || !selectedDate}
-          >
-            {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
+          <Button onClick={handleConfirm} disabled={isSaving || !selectedDate}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             保存
           </Button>
         </DialogFooter>

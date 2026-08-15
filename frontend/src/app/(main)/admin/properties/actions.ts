@@ -10,8 +10,8 @@ export async function getPropertyDetailAction(id: number): Promise<PropertyDetai
   // 在服务端发起请求，Cookie 会自动带上
   const { data, error } = await client.GET("/api/v1/properties/{property_id}", {
     params: {
-      path: { property_id: id }
-    }
+      path: { property_id: id },
+    },
   });
 
   if (error) {

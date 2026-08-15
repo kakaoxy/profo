@@ -20,42 +20,35 @@ import { getGlobalAuthConfig, debugLog } from "../config";
  * during page rendering throws in Next.js (only allowed in Server Actions /
  * Route Handlers).
  */
-const resolveSession = cache(
-  async (config: ResolvedAuthConfig): Promise<Session | null> => {
-    const tokens = await getTokensFromCookies(config);
+const resolveSession = cache(async (config: ResolvedAuthConfig): Promise<Session | null> => {
+  const tokens = await getTokensFromCookies(config);
 
-    if (!tokens) {
-      debugLog("resolveSession: no tokens found in cookies");
-      return null;
-    }
+  if (!tokens) {
+    debugLog("resolveSession: no tokens found in cookies");
+    return null;
+  }
 
-    const { accessToken, refreshToken } = tokens;
+  const { accessToken, refreshToken } = tokens;
 
-    // If the access token is invalid here, the middleware either could not refresh
-    // (e.g. refresh token also expired) or is not running on this route.
-    // Either way, treat it as no session — do not attempt to set cookies.
-    if (!isTokenValid(accessToken)) {
-      debugLog(
-        "resolveSession: access token is invalid or expired — treating as no session",
-      );
-      return null;
-    }
+  // If the access token is invalid here, the middleware either could not refresh
+  // (e.g. refresh token also expired) or is not running on this route.
+  // Either way, treat it as no session — do not attempt to set cookies.
+  if (!isTokenValid(accessToken)) {
+    debugLog("resolveSession: access token is invalid or expired — treating as no session");
+    return null;
+  }
 
-    try {
-      const user = await config.adapter.fetchUser(accessToken);
-      debugLog("resolveSession: session resolved", { userId: user.id });
-      return { accessToken, refreshToken, user };
-    } catch (error) {
-      debugLog(
-        "resolveSession: adapter.fetchUser() threw — treating as no session",
-        {
-          error: error instanceof Error ? error.message : String(error),
-        },
-      );
-      return null;
-    }
-  },
-);
+  try {
+    const user = await config.adapter.fetchUser(accessToken);
+    debugLog("resolveSession: session resolved", { userId: user.id });
+    return { accessToken, refreshToken, user };
+  } catch (error) {
+    debugLog("resolveSession: adapter.fetchUser() threw — treating as no session", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+});
 
 /**
  * Returns the current session, or null if the user is not authenticated.
@@ -67,9 +60,7 @@ const resolveSession = cache(
  *   multiple `Auth()` instances coexist (e.g. admin + C端) to avoid the
  *   singleton being overwritten by the most recently loaded instance.
  */
-export async function getSession(
-  config?: ResolvedAuthConfig,
-): Promise<Session | null> {
+export async function getSession(config?: ResolvedAuthConfig): Promise<Session | null> {
   return resolveSession(config ?? getGlobalAuthConfig());
 }
 
@@ -80,9 +71,7 @@ export async function getSession(
  * @param config - Optional resolved auth config (see {@link getSession}).
  * @returns The raw access token string, or `null` if no valid token exists in cookies.
  */
-export async function getAccessToken(
-  config?: ResolvedAuthConfig,
-): Promise<string | null> {
+export async function getAccessToken(config?: ResolvedAuthConfig): Promise<string | null> {
   const resolvedConfig = config ?? getGlobalAuthConfig();
   const tokens = await getTokensFromCookies(resolvedConfig);
   if (!tokens || !isTokenValid(tokens.accessToken)) return null;
@@ -96,9 +85,7 @@ export async function getAccessToken(
  * @param config - Optional resolved auth config (see {@link getSession}).
  * @returns The raw refresh token string, or `null` if the refresh token cookie is absent.
  */
-export async function getRefreshToken(
-  config?: ResolvedAuthConfig,
-): Promise<string | null> {
+export async function getRefreshToken(config?: ResolvedAuthConfig): Promise<string | null> {
   const resolvedConfig = config ?? getGlobalAuthConfig();
   const tokens = await getTokensFromCookies(resolvedConfig);
   return tokens?.refreshToken ?? null;
@@ -109,9 +96,7 @@ export async function getRefreshToken(
  *
  * @param config - Optional resolved auth config (see {@link getSession}).
  */
-export async function getUser(
-  config?: ResolvedAuthConfig,
-): Promise<SessionUser | null> {
+export async function getUser(config?: ResolvedAuthConfig): Promise<SessionUser | null> {
   const session = await resolveSession(config ?? getGlobalAuthConfig());
   return session?.user ?? null;
 }
@@ -147,21 +132,13 @@ export async function requireSession(
     if (includeCallbackUrl) {
       try {
         const headersList = await headers();
-        const currentPath =
-          headersList.get("x-pathname") ??
-          headersList.get("x-invoke-path") ??
-          "";
+        const currentPath = headersList.get("x-pathname") ?? headersList.get("x-invoke-path") ?? "";
         if (currentPath) {
-          debugLog(
-            "requireSession: unauthenticated — redirecting with redirect param",
-            {
-              signIn: resolvedConfig.pages.signIn,
-              redirect: currentPath,
-            },
-          );
-          redirect(
-            `${resolvedConfig.pages.signIn}?redirect=${encodeURIComponent(currentPath)}`,
-          );
+          debugLog("requireSession: unauthenticated — redirecting with redirect param", {
+            signIn: resolvedConfig.pages.signIn,
+            redirect: currentPath,
+          });
+          redirect(`${resolvedConfig.pages.signIn}?redirect=${encodeURIComponent(currentPath)}`);
         }
       } catch (error) {
         if (isRedirectError(error)) throw error;
@@ -192,8 +169,6 @@ export function isRedirectError(error: unknown): boolean {
     error !== null &&
     "digest" in error &&
     typeof (error as Record<string, unknown>).digest === "string" &&
-    ((error as Record<string, unknown>).digest as string).startsWith(
-      "NEXT_REDIRECT",
-    )
+    ((error as Record<string, unknown>).digest as string).startsWith("NEXT_REDIRECT")
   );
 }

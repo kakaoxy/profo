@@ -8,13 +8,7 @@ import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup } from "@/components/ui/radio-group";
 
@@ -139,34 +133,16 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
 
       {/* 签约日期 & 业主交房时间 */}
       <div className="grid grid-cols-2 gap-4">
-        <DatePickerField
-          control={control}
-          name="signing_date"
-          label="签约日期"
-        />
-        <DatePickerField
-          control={control}
-          name="planned_handover_date"
-          label="业主交房时间"
-        />
+        <DatePickerField control={control} name="signing_date" label="签约日期" />
+        <DatePickerField control={control} name="planned_handover_date" label="业主交房时间" />
       </div>
 
       {/* 委托期限日期范围 */}
       <div className="grid grid-cols-2 gap-4">
-        <DatePickerField
-          control={control}
-          name="commission_start_date"
-          label="委托开始日期"
-        />
-        <DatePickerField
-          control={control}
-          name="commission_end_date"
-          label="委托结束日期"
-        />
+        <DatePickerField control={control} name="commission_start_date" label="委托开始日期" />
+        <DatePickerField control={control} name="commission_end_date" label="委托结束日期" />
       </div>
-      {dateError && (
-        <p className="text-[13px] text-error -mt-2">{dateError}</p>
-      )}
+      {dateError && <p className="text-[13px] text-error -mt-2">{dateError}</p>}
 
       {/* 签约价格 & 合同周期 */}
       <div className="grid grid-cols-2 gap-4">
@@ -233,7 +209,9 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
         name="cost_assumption_type"
         render={({ field }) => (
           <FormItem className="space-y-3">
-            <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">税费及佣金承担方</FormLabel>
+            <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+              税费及佣金承担方
+            </FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
@@ -272,7 +250,9 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
           name="cost_assumption_other"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">其他说明</FormLabel>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                其他说明
+              </FormLabel>
               <FormControl>
                 <Input
                   placeholder="请填写具体承担方式"

@@ -5,8 +5,7 @@ import type { paths } from "@/lib/api-types";
 
 type ClientType = ReturnType<typeof import("openapi-fetch").default<paths>>;
 
-type CommunityMarketStatsResponse =
-  components["schemas"]["CommunityMarketStatsResponse"];
+type CommunityMarketStatsResponse = components["schemas"]["CommunityMarketStatsResponse"];
 
 export interface MarketDataMap {
   [communityId: string]: CommunityMarketStatsResponse | null;
@@ -25,14 +24,12 @@ interface MarketDataResult {
  */
 export async function batchGetMarketData(
   communityIds: (string | null | undefined)[],
-  client?: ClientType
+  client?: ClientType,
 ): Promise<MarketDataResult> {
   const apiClient = client || (await fetchClient());
 
   // 去重并过滤掉无效ID
-  const uniqueIds = Array.from(new Set(communityIds)).filter(
-    (id): id is string => !!id
-  );
+  const uniqueIds = Array.from(new Set(communityIds)).filter((id): id is string => !!id);
 
   if (uniqueIds.length === 0) {
     return { data: {}, errors: [] };
@@ -46,10 +43,10 @@ export async function batchGetMarketData(
           params: {
             path: { community_id: communityId },
           },
-        }
+        },
       );
       return { communityId, response };
-    })
+    }),
   );
 
   const data: MarketDataMap = {};

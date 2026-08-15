@@ -2,7 +2,12 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { useUpload, DEFAULT_ALLOWED_IMAGE_TYPES, DEFAULT_MAX_FILE_SIZE, compressImage } from "@/components/common/upload";
+import {
+  useUpload,
+  DEFAULT_ALLOWED_IMAGE_TYPES,
+  DEFAULT_MAX_FILE_SIZE,
+  compressImage,
+} from "@/components/common/upload";
 import type { ImageItem } from "./types";
 
 interface UseImageUploadOptions {
@@ -58,17 +63,10 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     onChangeRef.current?.(items);
   }, [items]);
 
-  const isUploading = useMemo(
-    () => items.some((item) => item.status === "uploading"),
-    [items]
-  );
+  const isUploading = useMemo(() => items.some((item) => item.status === "uploading"), [items]);
 
   const updateItem = useCallback((id: string, patch: Partial<ImageItem>) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, ...patch } : item
-      )
-    );
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }, []);
 
   const { upload: baseUpload, cancelAll: baseCancelAll } = useUpload({
@@ -78,7 +76,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     beforeUpload: (file) => compressImage(file),
     onSuccess: (response, file) => {
       const fileId = itemsRef.current.find(
-        (item) => item.file === file && item.status === "uploading"
+        (item) => item.file === file && item.status === "uploading",
       )?.id;
       if (!fileId) return;
 
@@ -101,7 +99,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     },
     onError: (error, file) => {
       const fileId = itemsRef.current.find(
-        (item) => item.file === file && item.status === "uploading"
+        (item) => item.file === file && item.status === "uploading",
       )?.id;
       if (!fileId) return;
 
@@ -117,7 +115,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     },
     onProgress: (progress) => {
       const fileId = itemsRef.current.find(
-        (item) => item.file === progress.file && item.status === "uploading"
+        (item) => item.file === progress.file && item.status === "uploading",
       )?.id;
       if (fileId) {
         updateItem(fileId, { progress: progress.progress });
@@ -135,8 +133,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         return;
       }
 
-      const filesToUpload =
-        remainingCount !== undefined ? files.slice(0, remainingCount) : files;
+      const filesToUpload = remainingCount !== undefined ? files.slice(0, remainingCount) : files;
 
       if (remainingCount !== undefined && files.length > remainingCount) {
         toast.error(`最多还能上传 ${remainingCount} 张，已截取前 ${remainingCount} 张`);
@@ -158,19 +155,16 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
 
       baseUpload(filesToUpload);
     },
-    [baseUpload, maxCount]
+    [baseUpload, maxCount],
   );
 
-  const remove = useCallback(
-    (id: string) => {
-      const item = itemsRef.current.find((i) => i.id === id);
-      if (item?.objectUrl) {
-        URL.revokeObjectURL(item.objectUrl);
-      }
-      setItems((prev) => prev.filter((i) => i.id !== id));
-    },
-    []
-  );
+  const remove = useCallback((id: string) => {
+    const item = itemsRef.current.find((i) => i.id === id);
+    if (item?.objectUrl) {
+      URL.revokeObjectURL(item.objectUrl);
+    }
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  }, []);
 
   const retry = useCallback(
     (id: string) => {
@@ -185,7 +179,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
 
       upload([item.file]);
     },
-    [upload]
+    [upload],
   );
 
   const cancelAll = useCallback(() => {

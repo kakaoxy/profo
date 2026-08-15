@@ -21,9 +21,7 @@ export const isValidUrl = (str: string): boolean => {
  * 安全地解析日期字符串，返回 Date 或 null
  * 替代裸 new Date()，防止 Invalid Date 向下传播
  */
-export const safeParseDate = (
-  value: string | null | undefined,
-): Date | null => {
+export const safeParseDate = (value: string | null | undefined): Date | null => {
   if (!value) return null;
   const d = new Date(value);
   return isNaN(d.getTime()) ? null : d;

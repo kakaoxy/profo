@@ -31,11 +31,7 @@ export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
     <div className="h-[400px] w-full mt-4">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            vertical={false}
-            stroke={colors.gridSubtle}
-          />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridSubtle} />
           <XAxis
             dataKey="month"
             axisLine={false}

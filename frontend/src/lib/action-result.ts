@@ -1,8 +1,7 @@
 // 统一 Server Action 返回结果类型
 
 export type ActionResult<T> =
-  | { success: true; data: T; message?: string }
-  | { success: false; error: string; code?: string };
+  { success: true; data: T; message?: string } | { success: false; error: string; code?: string };
 
 /**
  * 创建成功的 Action 结果
@@ -22,10 +21,7 @@ export function createErrorResult(error: string, code?: string): ActionResult<ne
  * 从 API 错误响应中提取错误信息
  * 优先读取新格式 {"code":..., "message":"..."}，回退兼容旧格式 {"detail":"..."}
  */
-export function extractErrorMessage(
-  error: unknown,
-  fallbackMessage = "未知错误"
-): string {
+export function extractErrorMessage(error: unknown, fallbackMessage = "未知错误"): string {
   if (error instanceof Error) {
     return error.message;
   }

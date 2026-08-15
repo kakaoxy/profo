@@ -13,20 +13,18 @@ interface PhotoDragOverlayProps {
 
 export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoDragOverlayProps) {
   const categoryConfig = PHOTO_CATEGORY_CONFIG[photo.photo_category];
-  const stageLabel = RENOVATION_STAGES.find(
-    (s) => s.value === photo.renovation_stage
-  )?.label;
+  const stageLabel = RENOVATION_STAGES.find((s) => s.value === photo.renovation_stage)?.label;
 
   // 使用优化的图片 URL（拖拽时使用较小的缩略图）
   const displayUrl = photo.thumbnail_url || photo.file_url;
-  const optimizedUrl = getOptimizedImageUrl(displayUrl, { 
-    width: 64, 
+  const optimizedUrl = getOptimizedImageUrl(displayUrl, {
+    width: 64,
     height: 64,
-    quality: 60 // 拖拽时降低质量以提高性能
+    quality: 60, // 拖拽时降低质量以提高性能
   });
 
   return (
-    <div 
+    <div
       className="flex items-center gap-3 rounded-lg border-2 border-rust bg-card p-3 shadow-xl ring-2 ring-rust/20"
       style={{
         // 使用 GPU 加速
@@ -38,9 +36,7 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
         <GripVertical className="h-4 w-4 text-rust" />
       </div>
 
-      <div
-        className="w-16 h-16 rounded-md bg-fog border shrink-0 relative overflow-hidden"
-      >
+      <div className="w-16 h-16 rounded-md bg-fog border shrink-0 relative overflow-hidden">
         {photo.media_type === "video" ? (
           <div className="absolute inset-0 flex items-center justify-center bg-fog">
             <Play className="h-5 w-5 text-rust" fill="currentColor" />
@@ -70,9 +66,7 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
       </div>
 
       <div className="flex-1 min-w-0 overflow-hidden">
-        <p className="text-xs font-medium text-ink truncate">
-          照片 #{photo.id}
-        </p>
+        <p className="text-xs font-medium text-ink truncate">照片 #{photo.id}</p>
         {photo.photo_category === "renovation" && stageLabel ? (
           <p className="text-xs text-graphite truncate">{stageLabel}</p>
         ) : null}

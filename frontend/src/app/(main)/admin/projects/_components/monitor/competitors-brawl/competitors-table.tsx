@@ -19,11 +19,7 @@ interface CompetitorsTableProps {
   onSort: (key: "total" | "unit") => void;
 }
 
-export function CompetitorsTable({
-  items,
-  sortConfig,
-  onSort,
-}: CompetitorsTableProps) {
+export function CompetitorsTable({ items, sortConfig, onSort }: CompetitorsTableProps) {
   return (
     <div className="overflow-x-auto scrollbar-hide">
       <Table className="min-w-[1000px]">
@@ -74,21 +70,15 @@ export function CompetitorsTable({
               className={`${item.is_current ? "bg-primary/5" : "hover:bg-muted"} transition-colors border-none`}
             >
               <TableCell className="py-4 px-4 font-mono text-xs text-muted-foreground font-bold">
-                {item.id.length > 10
-                  ? `#${item.id.slice(0, 6)}...`
-                  : `#${item.id}`}
+                {item.id.length > 10 ? `#${item.id.slice(0, 6)}...` : `#${item.id}`}
               </TableCell>
               <TableCell className="py-4 px-4 text-xs">
                 <div className="flex flex-col">
-                  <span className="font-bold text-foreground">
-                    {item.community}
-                  </span>
+                  <span className="font-bold text-foreground">{item.community}</span>
                   <span
                     className={`text-[10px] font-bold ${item.status === "on_sale" ? "text-status-pending" : "text-status-selling"}`}
                   >
-                    ●{" "}
-                    {item.display_status ||
-                      (item.status === "on_sale" ? "在售" : "已成交")}
+                    ● {item.display_status || (item.status === "on_sale" ? "在售" : "已成交")}
                   </span>
                 </div>
               </TableCell>

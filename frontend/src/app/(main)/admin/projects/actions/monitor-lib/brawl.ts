@@ -5,10 +5,7 @@ import { fetchClient } from "@/lib/api-server";
 import { components } from "@/lib/api-types";
 import { extractPaginatedData } from "@/lib/api-helpers";
 import { getProjectDetailAction } from "../core";
-import {
-  getCompetitorsAction,
-  getCompetitorsByCommunityAction,
-} from "./competitors";
+import { getCompetitorsAction, getCompetitorsByCommunityAction } from "./competitors";
 import type {
   BrawlInitResult,
   BrawlItem,
@@ -33,14 +30,10 @@ function mapPropertyToBrawlItem(p: PropertyItem): BrawlItem {
     layout: p.layout_display || `${p.rooms}室${p.halls}厅`,
     floor: p.floor_display || p.floor_level || "-",
     area: p.build_area || 0,
-    total:
-      p.total_price ||
-      Math.round(((p.unit_price || 0) * (p.build_area || 0)) / 10000),
+    total: p.total_price || Math.round(((p.unit_price || 0) * (p.build_area || 0)) / 10000),
     unit: p.unit_price || 0,
     date:
-      (isSold
-        ? p.sold_date?.split("T")[0]
-        : p.listed_date?.split("T")[0]) ||
+      (isSold ? p.sold_date?.split("T")[0] : p.listed_date?.split("T")[0]) ||
       p.updated_at?.split("T")[0] ||
       "-",
     source: p.data_source || "未知",
@@ -57,8 +50,7 @@ function buildSelfItem(project: ProjectResponse): BrawlItem | null {
     : project.signing_price
       ? Number(project.signing_price)
       : 0;
-  const unitPrice =
-    area > 0 && listPrice > 0 ? Math.round((listPrice * 10000) / area) : 0;
+  const unitPrice = area > 0 && listPrice > 0 ? Math.round((listPrice * 10000) / area) : 0;
   return {
     id: `Self-${project.id}`,
     community: project.community_name || "本项目",
@@ -117,9 +109,7 @@ async function fetchCounts(
   return { on_sale: onSale?.total ?? 0, sold: sold?.total ?? 0 };
 }
 
-type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; message: string };
+type ActionResult<T> = { success: true; data: T } | { success: false; message: string };
 
 /**
  * 初始化竞品肉搏战：派生竞品小区集合、在售/已售计数、本项目条目.
@@ -148,20 +138,21 @@ export async function getCompetitorsBrawlInitAction(
         competitorsResult.success && competitorsResult.data
           ? competitorsResult.data.map((c) => c.community_id)
           : [];
-      communityIds = Array.from(
-        new Set([project.community_id, ...competitorIds]),
-      ).slice(0, MAX_COMMUNITIES);
+      communityIds = Array.from(new Set([project.community_id, ...competitorIds])).slice(
+        0,
+        MAX_COMMUNITIES,
+      );
       selfItem = buildSelfItem(project);
     } else {
-      const competitorsResult =
-        await getCompetitorsByCommunityAction(scope.communityId);
+      const competitorsResult = await getCompetitorsByCommunityAction(scope.communityId);
       const competitorIds =
         competitorsResult.success && competitorsResult.data
           ? competitorsResult.data.map((c) => c.community_id)
           : [];
-      communityIds = Array.from(
-        new Set([scope.communityId, ...competitorIds]),
-      ).slice(0, MAX_COMMUNITIES);
+      communityIds = Array.from(new Set([scope.communityId, ...competitorIds])).slice(
+        0,
+        MAX_COMMUNITIES,
+      );
     }
 
     const client = await fetchClient();

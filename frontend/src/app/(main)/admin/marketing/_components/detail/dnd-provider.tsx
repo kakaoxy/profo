@@ -16,13 +16,10 @@ interface DndProviderProps extends Omit<DndContextProps, "sensors"> {
   children: React.ReactNode;
 }
 
-export const DndProvider = memo(function DndProvider({
-  children,
-  ...props
-}: DndProviderProps) {
+export const DndProvider = memo(function DndProvider({ children, ...props }: DndProviderProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   return (

@@ -68,12 +68,14 @@ export function useUserForm({ user, open, onOpenChange, roles }: UseUserFormProp
         role_id: user.role_id,
         phone: user.phone || "",
         status: user.status || "active",
-        enable_customer_identity: !!(user.additional_roles?.some((r) => r.code === ROLE_CODES.CUSTOMER)),
+        enable_customer_identity: !!user.additional_roles?.some(
+          (r) => r.code === ROLE_CODES.CUSTOMER,
+        ),
       });
     } else {
       form.reset(defaultFormValues);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, open]);
 
   // 编辑 C 端用户时，若主角色由 customer 切换为内部角色，自动开启"启用 C 端身份"开关，
@@ -86,7 +88,7 @@ export function useUserForm({ user, open, onOpenChange, roles }: UseUserFormProp
     if (selectedRole && selectedRole.code !== ROLE_CODES.CUSTOMER) {
       form.setValue("enable_customer_identity", true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleId, isEdit, wasCustomerUser, roles]);
 
   async function onSubmit(values: FormValues) {
@@ -95,7 +97,8 @@ export function useUserForm({ user, open, onOpenChange, roles }: UseUserFormProp
       // 仅当主角色不是 customer 时，附加 customer 角色才有意义；
       // 主角色为 customer 时后端会拒绝附加，这里通过清空数组避免无效提交
       const customerId = roles.find((r) => r.code === ROLE_CODES.CUSTOMER)?.id;
-      const mainRoleIsCustomer = roles.find((r) => r.id === values.role_id)?.code === ROLE_CODES.CUSTOMER;
+      const mainRoleIsCustomer =
+        roles.find((r) => r.id === values.role_id)?.code === ROLE_CODES.CUSTOMER;
       const additionalRoleIds =
         values.enable_customer_identity && customerId && !mainRoleIsCustomer ? [customerId] : [];
 

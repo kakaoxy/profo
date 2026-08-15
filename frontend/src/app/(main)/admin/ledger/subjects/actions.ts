@@ -14,9 +14,7 @@ import {
   type SubjectUpdateInput,
 } from "./_components/subject-schema";
 
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; message: string };
+export type ActionResult<T> = { success: true; data: T } | { success: false; message: string };
 
 async function authHeader(): Promise<string | null> {
   const token = await getAccessTokenFromCookie();
@@ -28,10 +26,7 @@ function unauthorized<T>(): ActionResult<T> {
 }
 
 /** 从错误响应中提取 message，兼容 {message}/{detail} 两种结构 */
-async function extractErrorMessage(
-  res: Response,
-  fallback: string,
-): Promise<string> {
+async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
   try {
     const body = (await res.json()) as {
       message?: string;
@@ -48,9 +43,7 @@ async function extractErrorMessage(
  *
  * @param mode 按业务模式筛选(agent/acquire)，不传则返回全部
  */
-export async function listSubjects(
-  mode?: SubjectMode,
-): Promise<ActionResult<Subject[]>> {
+export async function listSubjects(mode?: SubjectMode): Promise<ActionResult<Subject[]>> {
   try {
     const auth = await authHeader();
     if (!auth) return unauthorized();
@@ -80,9 +73,7 @@ export async function listSubjects(
 /**
  * 创建科目（system 由后端强制为 false）
  */
-export async function createSubject(
-  data: SubjectCreateInput,
-): Promise<ActionResult<Subject>> {
+export async function createSubject(data: SubjectCreateInput): Promise<ActionResult<Subject>> {
   const parsed = createSubjectSchema.safeParse(data);
   if (!parsed.success) {
     return {

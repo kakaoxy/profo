@@ -14,12 +14,7 @@ import type {
   UploadOptions,
   UseUploadReturn,
 } from "./types";
-import {
-  getUploadUrl,
-  validateFile,
-  parseUploadResponse,
-  generateId,
-} from "./utils";
+import { getUploadUrl, validateFile, parseUploadResponse, generateId } from "./utils";
 import { DEFAULT_MAX_FILE_SIZE, DEFAULT_ALLOWED_IMAGE_TYPES } from "./types";
 
 const DEFAULT_MAX_CONCURRENCY = 3;
@@ -65,17 +60,14 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
     onProgressRef.current = onProgress;
   }, [onProgress]);
 
-  const isUploading = useMemo(
-    () => files.some((f) => f.status === "uploading"),
-    [files]
-  );
+  const isUploading = useMemo(() => files.some((f) => f.status === "uploading"), [files]);
 
   const uploadingFiles: UploadProgress[] = useMemo(
     () =>
       files
         .filter((f) => f.status === "uploading")
         .map((f) => ({ id: f.id, filename: f.file.name, progress: f.progress, file: f.file })),
-    [files]
+    [files],
   );
 
   const dequeueNext = useCallback(() => {
@@ -154,11 +146,14 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
             if (percent === 100 || percent - lastReportedPercent >= 5) {
               lastReportedPercent = percent;
               setFiles((prev) =>
-                prev.map((f) =>
-                  f.id === fileId ? { ...f, progress: percent } : f
-                )
+                prev.map((f) => (f.id === fileId ? { ...f, progress: percent } : f)),
               );
-              onProgressRef.current?.({ id: fileId, filename: processedFile.name, progress: percent, file: processedFile });
+              onProgressRef.current?.({
+                id: fileId,
+                filename: processedFile.name,
+                progress: percent,
+                file: processedFile,
+              });
             }
           }
         };
@@ -177,10 +172,8 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                 const error = new Error("解析响应失败");
                 setFiles((prev) =>
                   prev.map((f) =>
-                    f.id === fileId
-                      ? { ...f, status: "error" as const, error: error.message }
-                      : f
-                  )
+                    f.id === fileId ? { ...f, status: "error" as const, error: error.message } : f,
+                  ),
                 );
                 onErrorRef.current?.(error, processedFile);
                 resolve(null);
@@ -189,23 +182,18 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
               setFiles((prev) =>
                 prev.map((f) =>
-                  f.id === fileId
-                    ? { ...f, status: "success" as const, response }
-                    : f
-                )
+                  f.id === fileId ? { ...f, status: "success" as const, response } : f,
+                ),
               );
               onSuccessRef.current?.(response, processedFile);
               resolve(response);
             } catch (err) {
-              const error =
-                err instanceof Error ? err : new Error("解析响应失败");
+              const error = err instanceof Error ? err : new Error("解析响应失败");
               toast.error(`${processedFile.name}: ${error.message}`);
               setFiles((prev) =>
                 prev.map((f) =>
-                  f.id === fileId
-                    ? { ...f, status: "error" as const, error: error.message }
-                    : f
-                )
+                  f.id === fileId ? { ...f, status: "error" as const, error: error.message } : f,
+                ),
               );
               onErrorRef.current?.(error, processedFile);
               resolve(null);
@@ -226,10 +214,8 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
             toast.error(`${processedFile.name}: ${errorMsg}`);
             setFiles((prev) =>
               prev.map((f) =>
-                f.id === fileId
-                  ? { ...f, status: "error" as const, error: errorMsg }
-                  : f
-              )
+                f.id === fileId ? { ...f, status: "error" as const, error: errorMsg } : f,
+              ),
             );
             onErrorRef.current?.(error, processedFile);
             resolve(null);
@@ -243,10 +229,8 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
           toast.error(`${processedFile.name}: 网络错误`);
           setFiles((prev) =>
             prev.map((f) =>
-              f.id === fileId
-                ? { ...f, status: "error" as const, error: error.message }
-                : f
-            )
+              f.id === fileId ? { ...f, status: "error" as const, error: error.message } : f,
+            ),
           );
           onErrorRef.current?.(error, processedFile);
           resolve(null);
@@ -257,10 +241,8 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
           const error = new Error("上传已取消");
           setFiles((prev) =>
             prev.map((f) =>
-              f.id === fileId
-                ? { ...f, status: "error" as const, error: error.message }
-                : f
-            )
+              f.id === fileId ? { ...f, status: "error" as const, error: error.message } : f,
+            ),
           );
           onErrorRef.current?.(error, processedFile);
           resolve(null);
@@ -269,7 +251,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
         xhr.send(formData);
       });
     },
-    [url, maxSize, allowedTypes, customValidate, beforeUpload, dequeueNext]
+    [url, maxSize, allowedTypes, customValidate, beforeUpload, dequeueNext],
   );
 
   /**
@@ -282,7 +264,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
       // 检查最大数量限制
       if (maxCount) {
         const activeFiles = filesRef.current.filter(
-          (f) => f.status === "uploading" || f.status === "pending"
+          (f) => f.status === "uploading" || f.status === "pending",
         );
         if (activeFiles.length + fileList.length > maxCount) {
           toast.error(`最多只能上传 ${maxCount} 个文件`);
@@ -311,10 +293,9 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
       for (const file of fileList) {
         const startUpload = () => {
-          uploadSingle(file)
-            .then((result) => {
-              onComplete(result !== null);
-            });
+          uploadSingle(file).then((result) => {
+            onComplete(result !== null);
+          });
         };
 
         if (activeCountRef.current < maxConcurrency) {
@@ -324,7 +305,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
         }
       }
     },
-    [uploadSingle, maxCount, maxConcurrency]
+    [uploadSingle, maxCount, maxConcurrency],
   );
 
   /**
@@ -361,7 +342,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
       // 重新上传
       await uploadSingle(fileItem.file);
     },
-    [files, uploadSingle]
+    [files, uploadSingle],
   );
 
   /**

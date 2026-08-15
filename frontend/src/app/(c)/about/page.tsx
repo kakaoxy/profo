@@ -58,11 +58,11 @@ const pcPainPointIcons = [
 export default function AboutPage() {
   const { data: statsData, isLoading } = useSWR<PlatformStats>(
     "/api/v1/public/stats/platform",
-    publicFetcher
+    publicFetcher,
   );
   const { data: soldData } = useSWR<SoldListResponse>(
     "/api/v1/public/projects/sold",
-    publicFetcher
+    publicFetcher,
   );
   const [heroError, setHeroError] = useState(false);
   const [dashboardError, setDashboardError] = useState(false);
@@ -102,15 +102,16 @@ export default function AboutPage() {
               {cLocale.about.serviceFeatures.map((feature) => (
                 <li key={feature} className="flex items-start gap-3">
                   <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" aria-hidden="true" />
-                  <span className="text-sm text-ink tracking-[-0.009em]">
-                    {feature}
-                  </span>
+                  <span className="text-sm text-ink tracking-[-0.009em]">{feature}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <HeroCard label={cLocale.about.mobile.operationLabel} title={cLocale.about.mobile.operationTitle}>
+          <HeroCard
+            label={cLocale.about.mobile.operationLabel}
+            title={cLocale.about.mobile.operationTitle}
+          >
             <div className="mt-6 space-y-0">
               {cLocale.about.processSteps.map((step, index) => (
                 <div key={step.num} className="relative flex gap-4 pb-6 last:pb-0">
@@ -121,12 +122,8 @@ export default function AboutPage() {
                     {step.num}
                   </span>
                   <div>
-                    <p className="font-medium text-ink tracking-[-0.009em]">
-                      {step.title}
-                    </p>
-                    <p className="mt-1 text-sm text-ash tracking-[-0.009em]">
-                      {step.description}
-                    </p>
+                    <p className="font-medium text-ink tracking-[-0.009em]">{step.title}</p>
+                    <p className="mt-1 text-sm text-ash tracking-[-0.009em]">{step.description}</p>
                   </div>
                 </div>
               ))}
@@ -164,7 +161,10 @@ export default function AboutPage() {
             </div>
           </div>
 
-          <HeroCard label={cLocale.about.mobile.valuationLabel} title={cLocale.about.mobile.valuationTitle}>
+          <HeroCard
+            label={cLocale.about.mobile.valuationLabel}
+            title={cLocale.about.mobile.valuationTitle}
+          >
             <p className="mt-3 text-sm text-ash tracking-[-0.009em]">
               {cLocale.about.mobile.valuationDesc}
             </p>
@@ -253,9 +253,7 @@ export default function AboutPage() {
                   className="flex h-60 flex-col justify-between rounded-cards bg-white p-8 shadow-steep-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-steep"
                 >
                   <div>
-                    <span className={`mb-4 block ${point.color}`}>
-                      {pcPainPointIcons[index]}
-                    </span>
+                    <span className={`mb-4 block ${point.color}`}>{pcPainPointIcons[index]}</span>
                     <h3 className="mb-2 text-[20px] leading-[1.4] font-medium text-ink tracking-[-0.009em]">
                       {point.title}
                     </h3>
@@ -407,9 +405,7 @@ export default function AboutPage() {
                       {cLocale.about.pc.reportBadge}
                     </span>
                   </div>
-                  <p className="text-xs text-ash tracking-[-0.009em]">
-                    {cLocale.about.oneLiner}
-                  </p>
+                  <p className="text-xs text-ash tracking-[-0.009em]">{cLocale.about.oneLiner}</p>
                 </div>
               </div>
             </div>

@@ -19,15 +19,15 @@ type ProjectDetail = components["schemas"]["PublicProjectDetail"];
 type ConsultantInfo = components["schemas"]["PublicConsultantContact"];
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
-  "在售": {
+  在售: {
     label: cLocale.common.status.onSale,
     className: "bg-rust/10 text-rust",
   },
-  "在途": {
+  在途: {
     label: cLocale.common.status.inTransit,
     className: "bg-graphite/10 text-graphite",
   },
-  "已售": {
+  已售: {
     label: cLocale.common.status.sold,
     className: "bg-dove/10 text-dove",
   },
@@ -40,12 +40,12 @@ export default function ProjectDetailPage() {
 
   const { data, error, isLoading, mutate } = useSWR<ProjectDetail>(
     id ? `/api/v1/public/projects/${id}` : null,
-    publicFetcher
+    publicFetcher,
   );
 
   const { data: consultant } = useSWR<ConsultantInfo>(
     id ? `/api/v1/public/projects/${id}/consultant` : null,
-    publicFetcher
+    publicFetcher,
   );
 
   const handleShare = useCallback(async () => {
@@ -104,9 +104,13 @@ export default function ProjectDetailPage() {
   const carouselImages =
     marketingMedia.length > 0
       ? marketingMedia
-      : (data.images && data.images.length > 0
-        ? data.images.map((url: string) => ({ url, thumbnailUrl: null as string | null, type: "image" as const }))
-        : []);
+      : data.images && data.images.length > 0
+        ? data.images.map((url: string) => ({
+            url,
+            thumbnailUrl: null as string | null,
+            type: "image" as const,
+          }))
+        : [];
 
   return (
     <div className="pb-24 md:pb-20">
@@ -164,17 +168,11 @@ export default function ProjectDetailPage() {
 
       {/* Renovation timeline section */}
       <section className="mx-auto max-w-300 px-4 pt-8">
-        <RenovationTimeline
-          stages={data.renovation_stages ?? []}
-          media={data.media ?? []}
-        />
+        <RenovationTimeline stages={data.renovation_stages ?? []} media={data.media ?? []} />
       </section>
 
       {consultant && (
-        <ConsultantBar
-          wechatNumber={consultant.wechat_number}
-          phone={consultant.phone}
-        />
+        <ConsultantBar wechatNumber={consultant.wechat_number} phone={consultant.phone} />
       )}
     </div>
   );

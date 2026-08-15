@@ -28,9 +28,7 @@ export function ListView({
             {filterTabs}
           </div>
 
-          {actions && (
-            <div className="flex w-full lg:w-auto gap-3">{actions}</div>
-          )}
+          {actions && <div className="flex w-full lg:w-auto gap-3">{actions}</div>}
         </div>
       )}
 

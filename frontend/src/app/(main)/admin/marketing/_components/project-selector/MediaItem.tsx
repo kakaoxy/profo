@@ -17,9 +17,7 @@ interface MediaItemProps {
  * 媒体项组件
  */
 export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
-  const [loadState, setLoadState] = React.useState<
-    "loading" | "loaded" | "error"
-  >("loading");
+  const [loadState, setLoadState] = React.useState<"loading" | "loaded" | "error">("loading");
   const [imageUrl, setImageUrl] = React.useState<string | undefined>(undefined);
 
   // 处理URL并检测媒体类型
@@ -37,7 +35,7 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
       onClick={onToggle}
       className={cn(
         "relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all",
-        selected ? "border-primary" : "border-transparent"
+        selected ? "border-primary" : "border-transparent",
       )}
     >
       {imageUrl ? (
@@ -48,7 +46,7 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
             alt={media.description || "媒体资源"}
             className={cn(
               "w-full h-full object-cover transition-opacity duration-200",
-              loadState === "loaded" ? "opacity-100" : "opacity-0"
+              loadState === "loaded" ? "opacity-100" : "opacity-0",
             )}
             onLoad={() => setLoadState("loaded")}
             onError={() => setLoadState("error")}
@@ -91,18 +89,8 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
       {/* 选中标记 */}
       {selected && (
         <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-          <svg
-            className="w-3 h-3 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-              d="M5 13l4 4L19 7"
-            />
+          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </div>
       )}

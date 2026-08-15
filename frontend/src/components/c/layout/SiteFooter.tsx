@@ -89,11 +89,15 @@ export function SiteFooter() {
             <ul className="space-y-2.5">
               <li className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white/40" />
-                <span className="text-sm text-white/60">上海市浦东新区金桥路939号宏南投资大厦1706</span>
+                <span className="text-sm text-white/60">
+                  上海市浦东新区金桥路939号宏南投资大厦1706
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-white/40" />
-                <span className="text-sm text-white/60">{cLocale.common.contact.hotlinePlaceholder}</span>
+                <span className="text-sm text-white/60">
+                  {cLocale.common.contact.hotlinePlaceholder}
+                </span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 shrink-0 text-white/40" />
@@ -105,9 +109,7 @@ export function SiteFooter() {
 
         {/* Copyright */}
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-8 md:flex-row">
-          <p className="text-sm text-white/40">
-            {cLocale.common.brand.copyright}
-          </p>
+          <p className="text-sm text-white/40">{cLocale.common.brand.copyright}</p>
           <div className="flex gap-4">
             <Share2 className="h-5 w-5 cursor-pointer text-white/40 transition-colors hover:text-white" />
             <Globe className="h-5 w-5 cursor-pointer text-white/40 transition-colors hover:text-white" />

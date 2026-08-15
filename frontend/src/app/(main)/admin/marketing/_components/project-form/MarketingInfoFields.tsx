@@ -2,13 +2,7 @@
 
 import * as React from "react";
 import { useFormContext, Controller, useWatch } from "react-hook-form";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { FormValues } from "../form-schema";
 
@@ -67,7 +61,9 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
     <section className="bg-card rounded-3xl shadow-steep-sm p-6">
       <h3 className="flex items-center gap-2 mb-6">
         <span className="w-1 h-4 rounded-full bg-rust"></span>
-        <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">基础信息 <span className="ml-1 font-normal normal-case text-ash">Basic Info</span></span>
+        <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">
+          基础信息 <span className="ml-1 font-normal normal-case text-ash">Basic Info</span>
+        </span>
       </h3>
       <div className="space-y-6">
         {/* 第一行：小区名称和房源标题 */}
@@ -79,13 +75,13 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
               <FormItem className="space-y-0">
                 <FormControl>
                   <CommunitySelect
-                  value={field.value || ""}
-                  variant="marketing"
-                  onChange={(community) => {
-                    field.onChange(community.name);
-                    if (community.id) setValue("community_id", community.id);
-                  }}
-                />
+                    value={field.value || ""}
+                    variant="marketing"
+                    onChange={(community) => {
+                      field.onChange(community.name);
+                      if (community.id) setValue("community_id", community.id);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -122,10 +118,7 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormControl>
-                  <ConsultantSelect
-                    value={field.value}
-                    onChange={(id) => field.onChange(id)}
-                  />
+                  <ConsultantSelect value={field.value} onChange={(id) => field.onChange(id)} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -151,7 +144,10 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
     <section className="bg-card rounded-3xl shadow-steep-sm p-6">
       <h3 className="flex items-center gap-2 mb-6">
         <span className="w-1 h-4 rounded-full bg-rust"></span>
-        <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">户型与规格 <span className="ml-1 font-normal normal-case text-ash">Layout &amp; Specs</span></span>
+        <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">
+          户型与规格{" "}
+          <span className="ml-1 font-normal normal-case text-ash">Layout &amp; Specs</span>
+        </span>
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
@@ -160,10 +156,7 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormControl>
-                <LayoutInputs
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val)}
-                />
+                <LayoutInputs value={field.value || ""} onChange={(val) => field.onChange(val)} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -179,10 +172,7 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
                 面积 (㎡) <span className="text-error">*</span>
               </FormLabel>
               <FormControl>
-                <AreaInput
-                  value={field.value}
-                  onChange={field.onChange}
-                />
+                <AreaInput value={field.value} onChange={field.onChange} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -195,10 +185,7 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormControl>
-                <FloorInput
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val)}
-                />
+                <FloorInput value={field.value || ""} onChange={(val) => field.onChange(val)} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -258,7 +245,9 @@ function PricingSection({ control }: PricingSectionProps) {
       <div className="flex justify-between items-center mb-6">
         <h3 className="flex items-center gap-2">
           <span className="w-1 h-4 rounded-full bg-rust"></span>
-          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">价格设置 <span className="ml-1 font-normal normal-case text-ash">Pricing</span></span>
+          <span className="text-[13px] font-medium text-graphite uppercase tracking-[0.08em]">
+            价格设置 <span className="ml-1 font-normal normal-case text-ash">Pricing</span>
+          </span>
         </h3>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -280,5 +269,3 @@ function PricingSection({ control }: PricingSectionProps) {
     </section>
   );
 }
-
-

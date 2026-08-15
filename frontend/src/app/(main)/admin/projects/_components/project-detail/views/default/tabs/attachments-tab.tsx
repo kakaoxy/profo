@@ -17,12 +17,10 @@ export function AttachmentsTab({ attachments, handlers }: AttachmentsTabProps) {
   // 按分类分组附件
   const groupedAttachments = Object.entries(ATTACHMENT_GROUPS).reduce(
     (acc, [key, config]) => {
-      acc[key] = attachments.filter((att) =>
-        config.categories.includes(att.category)
-      );
+      acc[key] = attachments.filter((att) => config.categories.includes(att.category));
       return acc;
     },
-    {} as Record<string, AttachmentInfo[]>
+    {} as Record<string, AttachmentInfo[]>,
   );
 
   if (attachments.length === 0) {

@@ -16,11 +16,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function CLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function CLayout({ children }: { children: React.ReactNode }) {
   // 服务端解析 session：从 cookie 读取 token，必要时调用 /public/auth/me
   const session = await auth.getSession();
 
@@ -29,9 +25,7 @@ export default async function CLayout({
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? headersList.get("x-invoke-path") ?? "";
   const protectedPrefixes = ["/valuation", "/leads", "/my", "/profile"];
-  const isProtected = protectedPrefixes.some(
-    (p) => pathname === p || pathname.startsWith(p + "/")
-  );
+  const isProtected = protectedPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
   if (isProtected && !session) {
     redirect(`/login?redirect=${encodeURIComponent(pathname)}`);
   }

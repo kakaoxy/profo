@@ -13,9 +13,7 @@ interface PhotoGalleryProps {
 export const PhotoGallery = memo(function PhotoGallery({ photos }: PhotoGalleryProps) {
   // 使用 useMemo 缓存排序后的照片列表
   const sortedPhotos = useMemo(() => {
-    return photos
-      .slice()
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return photos.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   }, [photos]);
 
   if (sortedPhotos.length === 0) {
@@ -40,16 +38,10 @@ export const PhotoGallery = memo(function PhotoGallery({ photos }: PhotoGalleryP
               />
             )}
             <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between gap-1">
-              <Badge
-                variant="secondary"
-                className="text-[10px] bg-black/50 text-white border-0"
-              >
+              <Badge variant="secondary" className="text-[10px] bg-black/50 text-white border-0">
                 {(p.renovation_stage || "—").slice(0, 8)}
               </Badge>
-              <Badge
-                variant="secondary"
-                className="text-[10px] bg-black/50 text-white border-0"
-              >
+              <Badge variant="secondary" className="text-[10px] bg-black/50 text-white border-0">
                 #{(p.sort_order ?? 0) + 1}
               </Badge>
             </div>

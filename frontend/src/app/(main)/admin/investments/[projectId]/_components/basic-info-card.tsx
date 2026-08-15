@@ -15,13 +15,10 @@ import {
 export function BasicInfoCard({ investment }: { investment: InvestmentResponse }) {
   const totalInvestment = toNum(investment.total_investment);
   const totalReturn = toNum(investment.total_return);
-  const returnRatio =
-    totalInvestment > 0 ? (totalReturn / totalInvestment) * 100 : null;
+  const returnRatio = totalInvestment > 0 ? (totalReturn / totalInvestment) * 100 : null;
   const investors = investment.investors ?? [];
   const totalInvestorCount = countTotalInvestors(investors);
-  const createdBy = investment.created_by
-    ? investment.created_by.slice(0, 8)
-    : "-";
+  const createdBy = investment.created_by ? investment.created_by.slice(0, 8) : "-";
 
   return (
     <Card>
@@ -34,13 +31,9 @@ export function BasicInfoCard({ investment }: { investment: InvestmentResponse }
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
           <InfoCell label="项目编号">
-            <span className="font-mono text-xs">
-              {investment.project_code || "-"}
-            </span>
+            <span className="font-mono text-xs">{investment.project_code || "-"}</span>
           </InfoCell>
-          <InfoCell label="小区">
-            {investment.project_name || "-"}
-          </InfoCell>
+          <InfoCell label="小区">{investment.project_name || "-"}</InfoCell>
           <InfoCell label="物业地址">-</InfoCell>
           <InfoCell label="项目状态">-</InfoCell>
           <InfoCell label="投资总额">
@@ -72,12 +65,8 @@ export function BasicInfoCard({ investment }: { investment: InvestmentResponse }
               </span>
             )}
           </InfoCell>
-          <InfoCell label="投资方数量">
-            {investors.length} 个
-          </InfoCell>
-          <InfoCell label="投资人总数">
-            {totalInvestorCount} 人
-          </InfoCell>
+          <InfoCell label="投资方数量">{investors.length} 个</InfoCell>
+          <InfoCell label="投资人总数">{totalInvestorCount} 人</InfoCell>
           <InfoCell label="创建人">
             <span className="font-mono text-xs">{createdBy}</span>
           </InfoCell>

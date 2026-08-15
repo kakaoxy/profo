@@ -5,10 +5,7 @@ import type { UsePermissionReturn } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 // ─── Per-test configurable mocks (hoisted so vi.mock factories can read them) ─
-const {
-  mockUsePermission,
-  mockDeleteSalesRecordAction,
-} = vi.hoisted(() => ({
+const { mockUsePermission, mockDeleteSalesRecordAction } = vi.hoisted(() => ({
   mockUsePermission: vi.fn<[], UsePermissionReturn>(),
   mockDeleteSalesRecordAction: vi.fn(),
 }));
@@ -68,17 +65,14 @@ vi.mock("@/app/(main)/admin/projects/actions/sales", () => ({
 
 // Mock MobileRecordForm 以避免触发 createSalesRecordAction 链路
 vi.mock("./mobile-record-form", () => ({
-  MobileRecordForm: () =>
-    React.createElement("div", { "data-testid": "mobile-record-form" }),
+  MobileRecordForm: () => React.createElement("div", { "data-testid": "mobile-record-form" }),
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function mockPermissions(permissions: string[]): UsePermissionReturn {
-  const hasPermission = (code: string): boolean =>
-    permissions.includes(code);
-  const hasAnyPermission = (codes: string[]): boolean =>
-    codes.some((c) => permissions.includes(c));
+  const hasPermission = (code: string): boolean => permissions.includes(code);
+  const hasAnyPermission = (codes: string[]): boolean => codes.some((c) => permissions.includes(c));
   return {
     permissions,
     hasPermission,
@@ -117,9 +111,7 @@ interface ProjectLike {
   listing_date?: string | null;
 }
 
-function makeProject(
-  overrides: Partial<ProjectLike> = {},
-): ProjectLike {
+function makeProject(overrides: Partial<ProjectLike> = {}): ProjectLike {
   return {
     id: "p1",
     name: "测试项目",
@@ -205,10 +197,7 @@ describe("MobileSellingView - 业务身份按钮显隐", () => {
   // ─── user 持有 PROJECT_SALES_ADD_RECORD 子权限码 → 按钮显示 ─────────────────
   it("user 持有 PROJECT_SALES_ADD_RECORD 子权限码：新增记录按钮显示", async () => {
     mockUsePermission.mockReturnValue(
-      mockPermissions([
-        PERMISSION_CODES.PROJECT_READ,
-        PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
-      ]),
+      mockPermissions([PERMISSION_CODES.PROJECT_READ, PERMISSION_CODES.PROJECT_SALES_ADD_RECORD]),
     );
 
     const { MobileSellingView } = await import("./mobile-selling-view");
@@ -229,12 +218,7 @@ describe("MobileSellingView - 业务身份按钮显隐", () => {
 
     const { MobileSellingView } = await import("./mobile-selling-view");
 
-    render(
-      <MobileSellingView
-        projectId="p1"
-        project={makeProject({ status: "sold" })}
-      />,
-    );
+    render(<MobileSellingView projectId="p1" project={makeProject({ status: "sold" })} />);
 
     expect(screen.queryByText("新增带看记录")).not.toBeInTheDocument();
   });

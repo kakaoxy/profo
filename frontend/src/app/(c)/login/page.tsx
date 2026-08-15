@@ -6,16 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/client";
 import { sanitizeCallbackUrl } from "@/lib/auth/utils/sanitize-callback-url";
-import {
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  Verified,
-  ShieldCheck,
-  Loader2,
-} from "lucide-react";
+import { User, Lock, Eye, EyeOff, ArrowRight, Verified, ShieldCheck, Loader2 } from "lucide-react";
 import { cLocale } from "@/lib/i18n/c-locale";
 
 const loginSchema = z.object({
@@ -29,9 +20,8 @@ function LoginForm() {
   // 兼容 redirect 与 callbackUrl 两种参数名（统一为 redirect，callbackUrl 作为回退）
   // sanitizeCallbackUrl 拦截 //evil.com / https://evil.com 等开放重定向攻击，失败回退 /
   const redirect =
-    sanitizeCallbackUrl(
-      searchParams.get("redirect") || searchParams.get("callbackUrl") || "/",
-    ) ?? "/";
+    sanitizeCallbackUrl(searchParams.get("redirect") || searchParams.get("callbackUrl") || "/") ??
+    "/";
 
   const { login } = useAuth();
   const [errorMessage, setErrorMessage] = useState("");
@@ -109,9 +99,7 @@ function LoginForm() {
               <h1 className="font-display text-[44px] text-ink mb-3">
                 {cLocale.common.brand.company}
               </h1>
-              <p className="text-[18px] leading-7 text-ash max-w-sm">
-                {cLocale.login.brandDesc}
-              </p>
+              <p className="text-[18px] leading-7 text-ash max-w-sm">{cLocale.login.brandDesc}</p>
             </div>
             <div className="flex gap-4 text-graphite">
               <div className="flex items-center gap-2">
@@ -144,19 +132,12 @@ function LoginForm() {
             <h2 className="text-[28px] leading-8.5 font-medium text-ink mb-2">
               {cLocale.login.welcomeTitle}
             </h2>
-            <p className="text-[16px] leading-6 text-ash">
-              {cLocale.login.welcomeSubtitle}
-            </p>
+            <p className="text-[16px] leading-6 text-ash">{cLocale.login.welcomeSubtitle}</p>
           </header>
 
           {/* method="post"：防止客户端 JS 未水合完成时退化为原生 GET 提交，
               导致凭证泄漏到 URL（/login?username=...&password=...）且静默刷新无提示 */}
-          <form
-            noValidate
-            method="post"
-            onSubmit={handleSubmit}
-            className="space-y-4"
-          >
+          <form noValidate method="post" onSubmit={handleSubmit} className="space-y-4">
             {/* Server Error */}
             {errorMessage && (
               <div
@@ -169,10 +150,7 @@ function LoginForm() {
 
             {/* Username Input */}
             <div className="space-y-2">
-              <label
-                className="text-[14px] leading-5 text-ash"
-                htmlFor="username"
-              >
+              <label className="text-[14px] leading-5 text-ash" htmlFor="username">
                 {cLocale.login.usernameLabel}
               </label>
               <div className="relative">
@@ -191,22 +169,20 @@ function LoginForm() {
                     }))
                   }
                 />
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite/50 peer-focus:text-ink transition-colors pointer-events-none" size={20} />
+                <User
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite/50 peer-focus:text-ink transition-colors pointer-events-none"
+                  size={20}
+                />
               </div>
               {validationErrors.username && (
-                <div className="text-sm text-c-error font-medium">
-                  {validationErrors.username}
-                </div>
+                <div className="text-sm text-c-error font-medium">{validationErrors.username}</div>
               )}
             </div>
 
             {/* Password Input */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label
-                  className="text-[14px] leading-5 text-ash"
-                  htmlFor="password"
-                >
+                <label className="text-[14px] leading-5 text-ash" htmlFor="password">
                   {cLocale.login.passwordLabel}
                 </label>
               </div>
@@ -226,20 +202,23 @@ function LoginForm() {
                     }))
                   }
                 />
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite/50 peer-focus:text-ink transition-colors pointer-events-none" size={20} />
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite/50 peer-focus:text-ink transition-colors pointer-events-none"
+                  size={20}
+                />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? cLocale.login.hidePassword : cLocale.login.showPassword}
+                  aria-label={
+                    showPassword ? cLocale.login.hidePassword : cLocale.login.showPassword
+                  }
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-graphite/50 hover:text-ink transition-colors"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
               {validationErrors.password && (
-                <div className="text-sm text-c-error font-medium">
-                  {validationErrors.password}
-                </div>
+                <div className="text-sm text-c-error font-medium">{validationErrors.password}</div>
               )}
             </div>
 
@@ -251,10 +230,7 @@ function LoginForm() {
                 name="remember"
                 type="checkbox"
               />
-              <label
-                className="text-[14px] leading-5 text-ash select-none"
-                htmlFor="remember"
-              >
+              <label className="text-[14px] leading-5 text-ash select-none" htmlFor="remember">
                 {cLocale.login.remember}
               </label>
             </div>

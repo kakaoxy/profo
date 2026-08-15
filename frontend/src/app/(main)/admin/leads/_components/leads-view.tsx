@@ -12,11 +12,7 @@ import {
 } from "../actions";
 import { useLeadsFilter, useLeadSelection, useViewMode } from "../hooks";
 import { handleError, handleSuccess } from "@/lib/error-handling";
-import {
-  SUCCESS_MESSAGES,
-  ERROR_MESSAGES,
-  CONFIRM_DIALOG,
-} from "../constants/ui-labels";
+import { SUCCESS_MESSAGES, ERROR_MESSAGES, CONFIRM_DIALOG } from "../constants/ui-labels";
 import { LeadsStats, type LeadStats } from "./leads-stats";
 import { LeadsTable } from "./leads-table";
 import { LeadsGrid } from "./leads-grid";
@@ -24,15 +20,13 @@ import { LeadsToolbar } from "./leads-toolbar";
 import { LeadsPagination } from "./leads-pagination";
 import { ListView } from "@/components/common";
 
-const LeadDrawer = dynamic(
-  () => import("./lead-drawer").then((mod) => mod.LeadDrawer),
-  { ssr: false },
-);
+const LeadDrawer = dynamic(() => import("./lead-drawer").then((mod) => mod.LeadDrawer), {
+  ssr: false,
+});
 
-const AddLeadModal = dynamic(
-  () => import("./add-lead-modal").then((mod) => mod.AddLeadModal),
-  { ssr: false },
-);
+const AddLeadModal = dynamic(() => import("./add-lead-modal").then((mod) => mod.AddLeadModal), {
+  ssr: false,
+});
 
 interface LeadsViewProps {
   initialLeads: Lead[];
@@ -106,7 +100,9 @@ export function LeadsView({
       refreshLeads();
       handleSuccess(SUCCESS_MESSAGES.FOLLOW_UP_ADDED);
     } else {
-      handleError(result.error, "handleAddFollowUp", { fallbackMessage: ERROR_MESSAGES.FOLLOW_UP_FAILED });
+      handleError(result.error, "handleAddFollowUp", {
+        fallbackMessage: ERROR_MESSAGES.FOLLOW_UP_FAILED,
+      });
     }
   };
 
@@ -116,7 +112,9 @@ export function LeadsView({
       refreshLeads();
       handleSuccess(SUCCESS_MESSAGES.LEAD_UPDATED);
     } else {
-      handleError(result.error, "handleImagesUpdate", { fallbackMessage: ERROR_MESSAGES.UPDATE_FAILED });
+      handleError(result.error, "handleImagesUpdate", {
+        fallbackMessage: ERROR_MESSAGES.UPDATE_FAILED,
+      });
     }
   };
 
@@ -128,7 +126,9 @@ export function LeadsView({
         handleSuccess(SUCCESS_MESSAGES.LEAD_UPDATED);
         closeAddModal();
       } else {
-        handleError(result.error, "handleAddLead", { fallbackMessage: ERROR_MESSAGES.UPDATE_FAILED });
+        handleError(result.error, "handleAddLead", {
+          fallbackMessage: ERROR_MESSAGES.UPDATE_FAILED,
+        });
       }
     } else {
       const result = await createLeadAction(newLeadData);
@@ -137,7 +137,9 @@ export function LeadsView({
         handleSuccess(SUCCESS_MESSAGES.LEAD_CREATED);
         closeAddModal();
       } else {
-        handleError(result.error, "handleAddLead", { fallbackMessage: ERROR_MESSAGES.CREATE_FAILED });
+        handleError(result.error, "handleAddLead", {
+          fallbackMessage: ERROR_MESSAGES.CREATE_FAILED,
+        });
       }
     }
   };
@@ -149,7 +151,9 @@ export function LeadsView({
       refreshLeads();
       handleSuccess(SUCCESS_MESSAGES.LEAD_DELETED);
     } else {
-      handleError(result.error, "handleDeleteLead", { fallbackMessage: ERROR_MESSAGES.DELETE_FAILED });
+      handleError(result.error, "handleDeleteLead", {
+        fallbackMessage: ERROR_MESSAGES.DELETE_FAILED,
+      });
     }
   };
 
@@ -158,7 +162,9 @@ export function LeadsView({
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">线索管理</h1>
-          <p className="text-sm text-muted-foreground">管理和跟进房源线索，从初筛到签约的全流程追踪。</p>
+          <p className="text-sm text-muted-foreground">
+            管理和跟进房源线索，从初筛到签约的全流程追踪。
+          </p>
         </div>
 
         <LeadsStats stats={stats} />

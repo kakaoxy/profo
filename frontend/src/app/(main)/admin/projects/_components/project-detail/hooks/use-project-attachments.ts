@@ -24,8 +24,7 @@ export function useProjectAttachments({
           const url = item;
           const ext = url.split(".").pop()?.toLowerCase() || "";
           let fileType: AttachmentInfo["fileType"] = "other";
-          if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext))
-            fileType = "image";
+          if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) fileType = "image";
           else if (["pdf"].includes(ext)) fileType = "pdf";
           else if (["xlsx", "xls", "csv"].includes(ext)) fileType = "excel";
           else if (["doc", "docx"].includes(ext)) fileType = "word";
@@ -54,10 +53,7 @@ export function useProjectAttachments({
       signingMaterials !== null &&
       "attachments" in signingMaterials
     ) {
-      return (
-        (signingMaterials as { attachments?: AttachmentInfo[] }).attachments ||
-        []
-      );
+      return (signingMaterials as { attachments?: AttachmentInfo[] }).attachments || [];
     }
     return [];
   }, [signingMaterials]);

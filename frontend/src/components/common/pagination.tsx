@@ -2,12 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useQueryState, parseAsInteger } from "nuqs";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,7 +80,7 @@ function ControlledPagination({
 }: ControlledPaginationProps) {
   const paginationItems = useMemo(
     () => generatePaginationItems(currentPage, totalPages),
-    [currentPage, totalPages]
+    [currentPage, totalPages],
   );
 
   const handlePageSizeChange = useCallback(
@@ -93,12 +88,17 @@ function ControlledPagination({
       const size = parseInt(value);
       onPageSizeChange?.(size);
     },
-    [onPageSizeChange]
+    [onPageSizeChange],
   );
 
   if (totalPages <= 1 && !showPageSizeSelector) {
     return (
-      <div className={cn("flex items-center justify-between px-6 py-4 border-t border-border bg-muted", className)}>
+      <div
+        className={cn(
+          "flex items-center justify-between px-6 py-4 border-t border-border bg-muted",
+          className,
+        )}
+      >
         <div className="text-xs text-muted-foreground">
           {totalItems > 0 ? (
             <>
@@ -113,7 +113,12 @@ function ControlledPagination({
   }
 
   return (
-    <div className={cn("flex flex-col sm:flex-row items-center justify-between gap-2 px-2 py-2 sm:py-4", className)}>
+    <div
+      className={cn(
+        "flex flex-col sm:flex-row items-center justify-between gap-2 px-2 py-2 sm:py-4",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         {totalItems > 0 ? (
           <>
@@ -172,7 +177,9 @@ function ControlledPagination({
 
           {paginationItems.map((item, index) =>
             item === "..." ? (
-              <span key={`ellipsis-${index}`} className="px-1 text-muted-foreground text-sm">...</span>
+              <span key={`ellipsis-${index}`} className="px-1 text-muted-foreground text-sm">
+                ...
+              </span>
             ) : (
               <Button
                 key={item}
@@ -182,7 +189,7 @@ function ControlledPagination({
               >
                 {item}
               </Button>
-            )
+            ),
           )}
 
           <Button
@@ -223,11 +230,11 @@ function UrlPagination({
 }: UrlPaginationProps) {
   const [page, setPage] = useQueryState(
     pageParamName,
-    parseAsInteger.withDefault(1).withOptions({ shallow: false })
+    parseAsInteger.withDefault(1).withOptions({ shallow: false }),
   );
   const [pageSize, setPageSize] = useQueryState(
     sizeParamName,
-    parseAsInteger.withDefault(defaultPageSize).withOptions({ shallow: false })
+    parseAsInteger.withDefault(defaultPageSize).withOptions({ shallow: false }),
   );
 
   const totalPages = Math.ceil(totalItems / pageSize);
@@ -238,7 +245,7 @@ function UrlPagination({
       setPageSize(size);
       setPage(1);
     },
-    [setPage, setPageSize]
+    [setPage, setPageSize],
   );
 
   const handlePageChange = useCallback(
@@ -247,16 +254,21 @@ function UrlPagination({
         setPage(newPage);
       }
     },
-    [setPage, totalPages]
+    [setPage, totalPages],
   );
 
   const paginationItems = useMemo(
     () => generatePaginationItems(page, totalPages),
-    [page, totalPages]
+    [page, totalPages],
   );
 
   return (
-    <div className={cn("flex flex-col sm:flex-row items-center justify-between gap-2 px-2 py-2 sm:py-4", className)}>
+    <div
+      className={cn(
+        "flex flex-col sm:flex-row items-center justify-between gap-2 px-2 py-2 sm:py-4",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         {totalItems > 0 ? (
           <>
@@ -315,7 +327,9 @@ function UrlPagination({
 
           {paginationItems.map((item, index) =>
             item === "..." ? (
-              <span key={`ellipsis-${index}`} className="px-1 text-muted-foreground text-sm">...</span>
+              <span key={`ellipsis-${index}`} className="px-1 text-muted-foreground text-sm">
+                ...
+              </span>
             ) : (
               <Button
                 key={item}
@@ -325,7 +339,7 @@ function UrlPagination({
               >
                 {item}
               </Button>
-            )
+            ),
           )}
 
           <Button

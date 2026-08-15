@@ -26,12 +26,7 @@ import {
 } from "recharts";
 import { useChartColors } from "@/lib/chart-colors";
 import { computeYAxisDomain } from "../../_lib/chart-utils";
-import {
-  formatAvgPriceWan,
-  formatCount,
-  formatPercent,
-  formatPeriod,
-} from "../../_lib/formatters";
+import { formatAvgPriceWan, formatCount, formatPercent, formatPeriod } from "../../_lib/formatters";
 import type { ComparisonData, Granularity } from "../../_lib/types";
 
 type ChartType = "volume" | "price" | "floor" | "room";
@@ -78,10 +73,7 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-function getStackTotal(
-  payload: Record<string, unknown> | undefined,
-  keys: string[],
-): number {
+function getStackTotal(payload: Record<string, unknown> | undefined, keys: string[]): number {
   if (!payload) return 0;
   return keys.reduce((sum, k) => sum + toNumber(payload[k]), 0);
 }
@@ -104,9 +96,7 @@ export default function ComparisonChartRenderer({
     () =>
       computeYAxisDomain(
         data.volume_trend.flatMap((p) =>
-          data.business_circles.map(
-            (bc) => p[bc] as number | null | undefined,
-          ),
+          data.business_circles.map((bc) => p[bc] as number | null | undefined),
         ),
       ),
     [data],
@@ -115,9 +105,7 @@ export default function ComparisonChartRenderer({
     () =>
       computeYAxisDomain(
         data.price_trend.flatMap((p) =>
-          data.business_circles.map(
-            (bc) => p[bc] as number | null | undefined,
-          ),
+          data.business_circles.map((bc) => p[bc] as number | null | undefined),
         ),
       ),
     [data],
@@ -127,15 +115,8 @@ export default function ComparisonChartRenderer({
   if (type === "volume") {
     return (
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart
-          data={data.volume_trend}
-          margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            vertical={false}
-            stroke={colors.gridSubtle}
-          />
+        <BarChart data={data.volume_trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridSubtle} />
           <XAxis
             dataKey="period"
             tickFormatter={(p: string) => formatPeriod(p, granularity)}
@@ -153,13 +134,8 @@ export default function ComparisonChartRenderer({
           <Tooltip
             cursor={{ fill: colors.gridSubtle }}
             contentStyle={TOOLTIP_STYLE}
-            formatter={(value, name) => [
-              formatCount(toNumber(value)),
-              String(name),
-            ]}
-            labelFormatter={(label) =>
-              formatPeriod(String(label), granularity)
-            }
+            formatter={(value, name) => [formatCount(toNumber(value)), String(name)]}
+            labelFormatter={(label) => formatPeriod(String(label), granularity)}
           />
           <Legend verticalAlign="top" height={36} iconType="circle" />
           {data.business_circles.map((bc, idx) => (
@@ -181,15 +157,8 @@ export default function ComparisonChartRenderer({
   if (type === "price") {
     return (
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart
-          data={data.price_trend}
-          margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            vertical={false}
-            stroke={colors.gridSubtle}
-          />
+        <LineChart data={data.price_trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridSubtle} />
           <XAxis
             dataKey="period"
             tickFormatter={(p: string) => formatPeriod(p, granularity)}
@@ -216,9 +185,7 @@ export default function ComparisonChartRenderer({
               const num = toNumber(value);
               return [formatAvgPriceWan(num === 0 ? null : num), String(name)];
             }}
-            labelFormatter={(label) =>
-              formatPeriod(String(label), granularity)
-            }
+            labelFormatter={(label) => formatPeriod(String(label), granularity)}
           />
           <Legend verticalAlign="top" height={36} iconType="circle" />
           {data.business_circles.map((bc, idx) => (
@@ -248,11 +215,7 @@ export default function ComparisonChartRenderer({
           margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
           stackOffset="expand"
         >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            vertical={false}
-            stroke={colors.gridSubtle}
-          />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridSubtle} />
           <XAxis
             dataKey="business_circle"
             axisLine={false}
@@ -270,9 +233,7 @@ export default function ComparisonChartRenderer({
             cursor={{ fill: colors.gridSubtle }}
             contentStyle={TOOLTIP_STYLE}
             formatter={(value, name, item) => {
-              const payload = (
-                item as { payload?: Record<string, unknown> }
-              )?.payload;
+              const payload = (item as { payload?: Record<string, unknown> })?.payload;
               const total = getStackTotal(payload, keys);
               const num = toNumber(value);
               const pct = total > 0 ? (num / total) * 100 : 0;
@@ -304,11 +265,7 @@ export default function ComparisonChartRenderer({
         margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
         stackOffset="expand"
       >
-        <CartesianGrid
-          strokeDasharray="3 3"
-          vertical={false}
-          stroke={colors.gridSubtle}
-        />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridSubtle} />
         <XAxis
           dataKey="business_circle"
           axisLine={false}
@@ -326,9 +283,7 @@ export default function ComparisonChartRenderer({
           cursor={{ fill: colors.gridSubtle }}
           contentStyle={TOOLTIP_STYLE}
           formatter={(value, name, item) => {
-            const payload = (
-              item as { payload?: Record<string, unknown> }
-            )?.payload;
+            const payload = (item as { payload?: Record<string, unknown> })?.payload;
             const total = getStackTotal(payload, roomKeys);
             const num = toNumber(value);
             const pct = total > 0 ? (num / total) * 100 : 0;

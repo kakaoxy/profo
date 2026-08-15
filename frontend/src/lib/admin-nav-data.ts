@@ -51,9 +51,23 @@ export const navMain: NavItem[] = [
     permission: PERMISSION_CODES.PROPERTY_READ,
     items: [
       { title: "房源列表", url: "/admin/properties", permission: PERMISSION_CODES.PROPERTY_READ },
-      { title: "小区户型图库", url: "/admin/communities/images", permission: PERMISSION_CODES.PROPERTY_READ },
-      { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_UPLOAD },
-      { title: "数据治理", url: "/admin/properties/governance", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_GOVERNANCE },
+      {
+        title: "小区户型图库",
+        url: "/admin/communities/images",
+        permission: PERMISSION_CODES.PROPERTY_READ,
+      },
+      {
+        title: "批量上传",
+        url: "/admin/properties/upload",
+        roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
+        permission: PERMISSION_CODES.PROPERTY_UPLOAD,
+      },
+      {
+        title: "数据治理",
+        url: "/admin/properties/governance",
+        roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
+        permission: PERMISSION_CODES.PROPERTY_GOVERNANCE,
+      },
     ],
   },
   {
@@ -86,9 +100,17 @@ export const navMain: NavItem[] = [
     icon: Megaphone,
     permission: PERMISSION_CODES.RECRUIT_READ,
     items: [
-      { title: "活动配置", url: "/admin/recruit/campaigns", permission: PERMISSION_CODES.RECRUIT_READ },
+      {
+        title: "活动配置",
+        url: "/admin/recruit/campaigns",
+        permission: PERMISSION_CODES.RECRUIT_READ,
+      },
       { title: "线索列表", url: "/admin/recruit/leads", permission: PERMISSION_CODES.RECRUIT_READ },
-      { title: "漏斗看板", url: "/admin/recruit/funnel", permission: PERMISSION_CODES.RECRUIT_READ },
+      {
+        title: "漏斗看板",
+        url: "/admin/recruit/funnel",
+        permission: PERMISSION_CODES.RECRUIT_READ,
+      },
     ],
   },
   {
@@ -97,8 +119,16 @@ export const navMain: NavItem[] = [
     icon: Wallet,
     items: [
       { title: "资金账本", url: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },
-      { title: "跟投管理", url: "/admin/investments", permission: PERMISSION_CODES.INVESTMENT_READ },
-      { title: "科目管理", url: "/admin/ledger/subjects", permission: PERMISSION_CODES.LEDGER_READ },
+      {
+        title: "跟投管理",
+        url: "/admin/investments",
+        permission: PERMISSION_CODES.INVESTMENT_READ,
+      },
+      {
+        title: "科目管理",
+        url: "/admin/ledger/subjects",
+        permission: PERMISSION_CODES.LEDGER_READ,
+      },
     ],
   },
   {
@@ -108,8 +138,18 @@ export const navMain: NavItem[] = [
     roles: [ROLE_CODES.ADMIN],
     permission: PERMISSION_CODES.USER_READ,
     items: [
-      { title: "用户列表", url: "/admin/users", roles: [ROLE_CODES.ADMIN], permission: PERMISSION_CODES.USER_READ },
-      { title: "权限管理", url: "/admin/users/roles", roles: [ROLE_CODES.ADMIN], permission: PERMISSION_CODES.USER_READ },
+      {
+        title: "用户列表",
+        url: "/admin/users",
+        roles: [ROLE_CODES.ADMIN],
+        permission: PERMISSION_CODES.USER_READ,
+      },
+      {
+        title: "权限管理",
+        url: "/admin/users/roles",
+        roles: [ROLE_CODES.ADMIN],
+        permission: PERMISSION_CODES.USER_READ,
+      },
     ],
   },
   {
@@ -125,7 +165,12 @@ export const navMain: NavItem[] = [
     roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
     permission: PERMISSION_CODES.API_KEY_MANAGE,
     items: [
-      { title: "API Key", url: "/admin/settings/api-key", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.API_KEY_MANAGE },
+      {
+        title: "API Key",
+        url: "/admin/settings/api-key",
+        roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
+        permission: PERMISSION_CODES.API_KEY_MANAGE,
+      },
     ],
   },
 ];

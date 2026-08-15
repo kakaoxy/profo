@@ -10,8 +10,7 @@ interface UseLeadSelectionOptions {
 
 export function useLeadSelection({ initialSelectedLeadId, leads }: UseLeadSelectionOptions) {
   const shouldOpenDrawerInitially = Boolean(
-    initialSelectedLeadId &&
-    leads.some((l) => l.id === initialSelectedLeadId),
+    initialSelectedLeadId && leads.some((l) => l.id === initialSelectedLeadId),
   );
 
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(

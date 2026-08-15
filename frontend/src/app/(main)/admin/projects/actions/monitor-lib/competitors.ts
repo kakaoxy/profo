@@ -83,10 +83,9 @@ export async function searchCommunitiesAction(keyword: string) {
     }
 
     const client = await fetchClient();
-    const { data: communitiesData, error } = await client.GET(
-      "/api/v1/admin/communities",
-      { params: { query: { search: keyword.trim(), page_size: 10 } } },
-    );
+    const { data: communitiesData, error } = await client.GET("/api/v1/admin/communities", {
+      params: { query: { search: keyword.trim(), page_size: 10 } },
+    });
 
     if (error) {
       return { success: false, message: "搜索失败" };
@@ -103,10 +102,7 @@ export async function searchCommunitiesAction(keyword: string) {
 /**
  * 添加竞品小区
  */
-export async function addCompetitorAction(
-  communityId: string,
-  competitorId: string,
-) {
+export async function addCompetitorAction(communityId: string, competitorId: string) {
   const idParsed = communityIdSchema.safeParse(communityId);
   if (!idParsed.success) {
     return {
@@ -125,13 +121,10 @@ export async function addCompetitorAction(
 
   try {
     const client = await fetchClient();
-    const { error } = await client.POST(
-      "/api/v1/monitor/communities/{community_id}/competitors",
-      {
-        params: { path: { community_id: communityId } },
-        body: { competitor_community_id: competitorId },
-      },
-    );
+    const { error } = await client.POST("/api/v1/monitor/communities/{community_id}/competitors", {
+      params: { path: { community_id: communityId } },
+      body: { competitor_community_id: competitorId },
+    });
 
     if (error) {
       return { success: false, message: "添加竞品失败" };
@@ -147,10 +140,7 @@ export async function addCompetitorAction(
 /**
  * 删除竞品小区
  */
-export async function removeCompetitorAction(
-  communityId: string,
-  competitorId: string,
-) {
+export async function removeCompetitorAction(communityId: string, competitorId: string) {
   const idParsed = communityIdSchema.safeParse(communityId);
   if (!idParsed.success) {
     return {

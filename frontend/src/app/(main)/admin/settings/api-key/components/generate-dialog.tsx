@@ -59,9 +59,7 @@ export function GenerateDialog({ open, onOpenChange, onSuccess }: GenerateDialog
           <div className="rounded-lg border border-status-pending/30 bg-status-pending/10 p-4 flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-status-pending shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-sm font-medium text-status-pending">
-                重要提示
-              </p>
+              <p className="text-sm font-medium text-status-pending">重要提示</p>
               <ul className="text-sm text-status-pending/80 space-y-1">
                 <li>• 每个用户只能拥有一个有效的 API Key</li>
                 <li>• 新生成的 Key 仅显示一次，请务必立即复制保存</li>
@@ -86,11 +84,7 @@ export function GenerateDialog({ open, onOpenChange, onSuccess }: GenerateDialog
           >
             取消
           </Button>
-          <Button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full sm:w-auto gap-2"
-          >
+          <Button onClick={handleGenerate} disabled={loading} className="w-full sm:w-auto gap-2">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

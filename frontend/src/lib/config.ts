@@ -132,10 +132,7 @@ export function getFileUrl(url: string | undefined | null): string {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     try {
       const parsed = new URL(url);
-      if (
-        knownBackendHostnames.includes(parsed.hostname) ||
-        lanIpPattern.test(parsed.hostname)
-      ) {
+      if (knownBackendHostnames.includes(parsed.hostname) || lanIpPattern.test(parsed.hostname)) {
         return parsed.pathname;
       }
     } catch {

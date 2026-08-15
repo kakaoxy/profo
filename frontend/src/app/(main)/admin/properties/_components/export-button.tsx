@@ -14,9 +14,9 @@ export function ExportButton() {
     const query = searchParams.toString();
     const baseUrl = getClientApiUrl(apiPaths.properties.export);
     const url = `${baseUrl}?${query}`;
-    
+
     // 打开新窗口触发下载
-    window.open(url, '_blank');
+    window.open(url, "_blank");
   };
 
   return (

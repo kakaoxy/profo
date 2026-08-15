@@ -2,11 +2,7 @@
 
 import { logger } from "@/lib/logger";
 import { useState } from "react";
-import {
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,15 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Pencil,
-  Trash2,
-  Clock,
-  Loader2,
-  ChevronDown,
-  Check,
-  Lock,
-} from "lucide-react";
+import { Pencil, Trash2, Clock, Loader2, ChevronDown, Check, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -119,9 +107,7 @@ export function ProjectDetailHeader({
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <SheetTitle className="text-xl font-bold text-foreground">
-              {project.name}
-            </SheetTitle>
+            <SheetTitle className="text-xl font-bold text-foreground">{project.name}</SheetTitle>
 
             {/* 阶段切换下拉菜单 */}
             <DropdownMenu>
@@ -135,7 +121,7 @@ export function ProjectDetailHeader({
                     // 3. 动态颜色（使用统一配色系统，已包含 text-white）
                     getProjectStatusClassName(project.status),
                     // 4. Hover 效果
-                    "border-0 hover:opacity-85 hover:shadow-md active:scale-95"
+                    "border-0 hover:opacity-85 hover:shadow-md active:scale-95",
                   )}
                 >
                   {STAGE_CONFIG.find((s) => s.key === viewMode)?.label}
@@ -159,15 +145,9 @@ export function ProjectDetailHeader({
                       onClick={() => setViewMode(stage.key)}
                       className="flex items-center justify-between"
                     >
-                      <span className={cn(!isAccessible && "opacity-50")}>
-                        {stage.label}
-                      </span>
-                      {isCurrentView && (
-                        <Check className="h-4 w-4 text-primary" />
-                      )}
-                      {!isAccessible && (
-                        <Lock className="h-3 w-3 text-muted-foreground" />
-                      )}
+                      <span className={cn(!isAccessible && "opacity-50")}>{stage.label}</span>
+                      {isCurrentView && <Check className="h-4 w-4 text-primary" />}
+                      {!isAccessible && <Lock className="h-3 w-3 text-muted-foreground" />}
                     </DropdownMenuItem>
                   );
                 })}
@@ -226,9 +206,7 @@ export function ProjectDetailHeader({
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    此操作将把项目标记为删除状态。
-                  </AlertDialogDescription>
+                  <AlertDialogDescription>此操作将把项目标记为删除状态。</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>取消</AlertDialogCancel>
@@ -240,9 +218,7 @@ export function ProjectDetailHeader({
                     disabled={isDeleting}
                     className="bg-error hover:bg-red-700 focus:ring-red-600"
                   >
-                    {isDeleting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     确认删除
                   </AlertDialogAction>
                 </AlertDialogFooter>

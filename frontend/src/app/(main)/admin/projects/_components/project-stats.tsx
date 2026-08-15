@@ -1,10 +1,5 @@
 import { StatsCardGrid, type StatItem } from "@/components/common";
-import {
-  FileSignature,
-  Hammer,
-  TrendingUp,
-  CircleDollarSign,
-} from "lucide-react";
+import { FileSignature, Hammer, TrendingUp, CircleDollarSign } from "lucide-react";
 
 interface StatsProps {
   stats: {

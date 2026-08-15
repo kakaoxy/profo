@@ -24,11 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { RangeOption } from "../../_lib/types";
 
@@ -67,10 +63,11 @@ export function TopFilterBar({
     throttleMs: 500,
     shallow: false,
   });
-  const [businessCircles, setBusinessCircles] = useQueryState(
-    "business_circles",
-    { defaultValue: "", throttleMs: 500, shallow: false },
-  );
+  const [businessCircles, setBusinessCircles] = useQueryState("business_circles", {
+    defaultValue: "",
+    throttleMs: 500,
+    shallow: false,
+  });
   const [range, setRange] = useQueryState("range", {
     defaultValue: "4w",
     shallow: false,
@@ -84,8 +81,7 @@ export function TopFilterBar({
   const sourcesList = sources ? sources.split(",") : [];
 
   // 来源展示文案
-  const sourcesDisplay =
-    sourcesList.length === 0 ? "全部" : sourcesList.join("、");
+  const sourcesDisplay = sourcesList.length === 0 ? "全部" : sourcesList.join("、");
 
   const handleRangeChange = (val: string): void => {
     void setRange(val);
@@ -106,13 +102,9 @@ export function TopFilterBar({
           <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <BarChart3 className="size-5" aria-hidden="true" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            商圈分析报表
-          </h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">商圈分析报表</h1>
         </div>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          最近更新: {lastUpdated}
-        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">最近更新: {lastUpdated}</span>
       </div>
 
       {/* 筛选区：范围 / 来源 / 地区 */}
@@ -133,11 +125,7 @@ export function TopFilterBar({
             className="flex flex-wrap items-center gap-1.5"
           >
             {RANGE_OPTIONS.map((opt) => (
-              <ToggleGroupItem
-                key={opt.value}
-                value={opt.value}
-                className="whitespace-nowrap"
-              >
+              <ToggleGroupItem key={opt.value} value={opt.value} className="whitespace-nowrap">
                 {opt.label}
               </ToggleGroupItem>
             ))}
@@ -151,11 +139,7 @@ export function TopFilterBar({
           </Label>
           <Popover>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-28 justify-between font-normal"
-              >
+              <Button variant="outline" size="sm" className="h-8 w-28 justify-between font-normal">
                 <span className="truncate">{sourcesDisplay}</span>
                 <ChevronDown className="size-3.5 opacity-50" />
               </Button>
@@ -172,10 +156,7 @@ export function TopFilterBar({
                         checked={checked}
                         onCheckedChange={() => handleToggleSource(src)}
                       />
-                      <Label
-                        htmlFor={id}
-                        className="text-sm cursor-pointer"
-                      >
+                      <Label htmlFor={id} className="text-sm cursor-pointer">
                         {src}
                       </Label>
                     </div>

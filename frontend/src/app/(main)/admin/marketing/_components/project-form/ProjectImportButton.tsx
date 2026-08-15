@@ -78,7 +78,7 @@ export function ProjectImportButton({
               </span>
             </div>
             <p className="text-sm text-ash">
-              {selectedProject.community_name} · {selectedProject.layout || "未设置户型"} · {" "}
+              {selectedProject.community_name} · {selectedProject.layout || "未设置户型"} ·{" "}
               {selectedProject.area ? `${selectedProject.area}m²` : "未设置面积"}
             </p>
           </div>

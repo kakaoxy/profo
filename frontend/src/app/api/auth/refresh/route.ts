@@ -34,10 +34,7 @@ export async function POST(request: Request) {
 
   if (!refreshToken) {
     debugLog("[admin refresh route] 无 refresh_token 可用");
-    return NextResponse.json(
-      { error: "No refresh token available" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "No refresh token available" }, { status: 401 });
   }
 
   // Task 8.2: 解析并校验 `next` 参数（仅允许 root-relative 路径）
@@ -88,10 +85,7 @@ export async function POST(request: Request) {
     });
     // 刷新失败：清除 cookies，强制用户重新登录（fail-closed）
     await clearTokenCookies(adminAuth.config);
-    return NextResponse.json(
-      { error: "Token refresh failed" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "Token refresh failed" }, { status: 401 });
   }
 }
 

@@ -2,18 +2,8 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { ProjectDetailHeader } from "./header";
 import { RenovationView } from "./views/renovation";
@@ -75,7 +65,12 @@ export function ProjectDetailSheet({
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Sheet
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
         <SheetContent
           className="w-[calc(100%-1rem)] sm:max-w-3xl flex flex-col p-0 transition-all duration-300"
           onPointerDownOutside={(e) => {
@@ -97,10 +92,7 @@ export function ProjectDetailSheet({
               onRefresh={refreshProjectData}
             />
           ) : isEndedMode ? (
-            <EndedView
-              project={project}
-              onClose={onClose}
-            />
+            <EndedView project={project} onClose={onClose} />
           ) : (
             <>
               <ProjectDetailHeader
@@ -111,9 +103,7 @@ export function ProjectDetailSheet({
                 onClose={onClose}
                 onRefresh={refreshProjectData}
               />
-              <div
-                className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide scrollbar-gutter-stable"
-              >
+              <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide scrollbar-gutter-stable">
                 {viewMode === "renovation" && (
                   <RenovationView
                     key={viewKey}
@@ -130,17 +120,14 @@ export function ProjectDetailSheet({
                     onDealSuccess={handleDealSuccess}
                   />
                 )}
-                {(viewMode === "signing" ||
-                  !["renovation", "selling"].includes(viewMode)) && (
+                {(viewMode === "signing" || !["renovation", "selling"].includes(viewMode)) && (
                   <DefaultView
                     key={viewKey}
                     project={project}
                     attachments={attachments}
                     handlers={handlers}
                     onUpdateAttachments={handleUpdateAttachmentsWithRefresh}
-                    onUploadAttachment={
-                      onUpdateAttachments ? onUpload : undefined
-                    }
+                    onUploadAttachment={onUpdateAttachments ? onUpload : undefined}
                     onHandoverSuccess={handleHandoverSuccess}
                   />
                 )}

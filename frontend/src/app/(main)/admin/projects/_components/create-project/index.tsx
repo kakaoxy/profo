@@ -63,7 +63,7 @@ export function CreateProjectDialog({
   // 使用 useMemo 缓存错误列表，避免每次渲染重新计算
   const errorEntries = useMemo(
     () => Object.entries(form.formState.errors),
-    [form.formState.errors]
+    [form.formState.errors],
   );
 
   const hasErrors = errorEntries.length > 0;
@@ -75,9 +75,9 @@ export function CreateProjectDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-           <Button>
-             <Plus className="mr-2 h-4 w-4" /> 新建项目
-           </Button>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> 新建项目
+          </Button>
         )}
       </DialogTrigger>
 
@@ -132,7 +132,10 @@ export function CreateProjectDialog({
             <form onSubmit={onSubmit} className="h-full flex flex-col">
               {/* 表单错误提示 */}
               {hasErrors && (
-                <Alert variant="destructive" className="mx-7 mt-5 mb-0 shrink-0 rounded-inputs border-dove/40">
+                <Alert
+                  variant="destructive"
+                  className="mx-7 mt-5 mb-0 shrink-0 rounded-inputs border-dove/40"
+                >
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     表单验证失败，请检查以下字段：
@@ -151,10 +154,25 @@ export function CreateProjectDialog({
               >
                 {/* Tabs 导航 — Steep: pill-style tabs on Fog canvas */}
                 <div className="px-7 pt-5 shrink-0">
-                <TabsList className="grid w-full grid-cols-3 gap-1 bg-pure-white rounded-inputs p-1 border border-dove/30 h-10">
-                    <TabsTrigger value="basic" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">基础信息</TabsTrigger>
-                    <TabsTrigger value="agency" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">代理协议</TabsTrigger>
-                    <TabsTrigger value="owner" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">业主信息</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-3 gap-1 bg-pure-white rounded-inputs p-1 border border-dove/30 h-10">
+                    <TabsTrigger
+                      value="basic"
+                      className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90"
+                    >
+                      基础信息
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="agency"
+                      className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90"
+                    >
+                      代理协议
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="owner"
+                      className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90"
+                    >
+                      业主信息
+                    </TabsTrigger>
                   </TabsList>
                 </div>
 

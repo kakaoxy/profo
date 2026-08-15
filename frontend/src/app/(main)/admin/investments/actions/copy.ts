@@ -5,11 +5,7 @@ import { z } from "zod";
 import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import { logger } from "@/lib/logger";
-import type {
-  ActionResult,
-  CopyInvestmentRequest,
-  InvestmentResponse,
-} from "./types";
+import type { ActionResult, CopyInvestmentRequest, InvestmentResponse } from "./types";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/server/require-permission";
 

@@ -21,11 +21,11 @@ export function HeroMetrics({ project }: { project: Project }) {
 
   const rawSoldDate = project.sold_at || project.sold_date;
   const soldDate = rawSoldDate ? parseISO(rawSoldDate) : null;
- 
+
   let occupationDays = 0;
   if (signingDate && isValid(signingDate)) {
     // 如果已售取成交日期，未售取今天
-    const end = (soldDate && isValid(soldDate)) ? soldDate : (today || new Date());
+    const end = soldDate && isValid(soldDate) ? soldDate : today || new Date();
     // 统一逻辑：差值天数，保底 0
     occupationDays = Math.max(0, differenceInDays(end, signingDate));
   }
@@ -55,9 +55,7 @@ export function HeroMetrics({ project }: { project: Project }) {
           {daysOnMarket != null && (
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">成交用时：</span>
-              <span className="font-bold text-foreground tabular-nums">
-                {daysOnMarket} 天
-              </span>
+              <span className="font-bold text-foreground tabular-nums">{daysOnMarket} 天</span>
               <span className="text-xs text-muted-foreground">(上架至成交)</span>
             </div>
           )}
@@ -74,77 +72,72 @@ export function HeroMetrics({ project }: { project: Project }) {
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* 卡片 1：净利润 */}
-      <Card className="bg-error-container/50 border-error/30 shadow-sm transition-all hover:shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-money-positive">
-            净利润 (Net Profit)
-          </CardTitle>
-          <Wallet className="h-4 w-4 text-money-positive" />
-        </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-extrabold tracking-tight font-mono ${netProfit >= 0 ? "text-money-positive" : "text-money-negative"}`}>
-            {netProfit > 0 ? "+" : ""}
-            {(netProfit / 10000).toFixed(2)}{" "}
-            <span className="text-sm font-bold">万</span>
-          </div>
-          <p className="text-xs text-money-positive/60 mt-1">
-            真实净现金流
-          </p>
-        </CardContent>
-      </Card>
+        {/* 卡片 1：净利润 */}
+        <Card className="bg-error-container/50 border-error/30 shadow-sm transition-all hover:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-money-positive">
+              净利润 (Net Profit)
+            </CardTitle>
+            <Wallet className="h-4 w-4 text-money-positive" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-extrabold tracking-tight font-mono ${netProfit >= 0 ? "text-money-positive" : "text-money-negative"}`}
+            >
+              {netProfit > 0 ? "+" : ""}
+              {(netProfit / 10000).toFixed(2)} <span className="text-sm font-bold">万</span>
+            </div>
+            <p className="text-xs text-money-positive/60 mt-1">真实净现金流</p>
+          </CardContent>
+        </Card>
 
-      {/* 卡片 2：投资回报率 */}
-      <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            投资回报率 (ROI)
-          </CardTitle>
-          <TrendingUp className="h-4 w-4 text-status-pending" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-extrabold text-status-pending tracking-tight font-mono">
-            {roi.toFixed(1)}%
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">基于实收实付</p>
-        </CardContent>
-      </Card>
+        {/* 卡片 2：投资回报率 */}
+        <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              投资回报率 (ROI)
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-status-pending" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-extrabold text-status-pending tracking-tight font-mono">
+              {roi.toFixed(1)}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">基于实收实付</p>
+          </CardContent>
+        </Card>
 
-      {/* 卡片 3：年化收益率 */}
-      <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            年化收益率 (Annualized)
-          </CardTitle>
-          <Timer className="h-4 w-4 text-primary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-extrabold text-primary tracking-tight font-mono">
-            {annualizedRoR.toFixed(1)}%
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            预估年化回报
-          </p>
-        </CardContent>
-      </Card>
+        {/* 卡片 3：年化收益率 */}
+        <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              年化收益率 (Annualized)
+            </CardTitle>
+            <Timer className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-extrabold text-primary tracking-tight font-mono">
+              {annualizedRoR.toFixed(1)}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">预估年化回报</p>
+          </CardContent>
+        </Card>
 
-      {/* 卡片 4：资金占用天数 */}
-      <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            资金占用 (Days)
-          </CardTitle>
-          <CalendarDays className="h-4 w-4 text-tertiary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-extrabold text-tertiary tracking-tight font-mono">
-            {occupationDays} <span className="text-sm">天</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            签约至成交周期
-          </p>
-        </CardContent>
-      </Card>
+        {/* 卡片 4：资金占用天数 */}
+        <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              资金占用 (Days)
+            </CardTitle>
+            <CalendarDays className="h-4 w-4 text-tertiary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-extrabold text-tertiary tracking-tight font-mono">
+              {occupationDays} <span className="text-sm">天</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">签约至成交周期</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

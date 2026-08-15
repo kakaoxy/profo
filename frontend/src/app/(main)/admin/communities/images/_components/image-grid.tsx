@@ -168,13 +168,9 @@ export function ImageGrid({
             ) : (
               <>
                 {img.description && (
-                  <p className="text-xs text-foreground line-clamp-1">
-                    {img.description}
-                  </p>
+                  <p className="text-xs text-foreground line-clamp-1">{img.description}</p>
                 )}
-                <p className="text-[10px] text-muted-foreground">
-                  {formatDate(img.created_at)}
-                </p>
+                <p className="text-[10px] text-muted-foreground">{formatDate(img.created_at)}</p>
               </>
             )}
           </div>

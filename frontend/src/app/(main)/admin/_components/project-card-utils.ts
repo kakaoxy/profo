@@ -17,12 +17,12 @@ export function getWeekViewStats(viewingRecords: ApiSalesRecord[]) {
   const lastWeekEnd = new Date(thisWeekStart);
   lastWeekEnd.setMilliseconds(-1);
 
-  const currentWeekViews = viewingRecords.filter(r => {
+  const currentWeekViews = viewingRecords.filter((r) => {
     const d = safeParseDate(r.record_date);
     return d !== null && d >= thisWeekStart;
   }).length;
 
-  const lastWeekViews = viewingRecords.filter(r => {
+  const lastWeekViews = viewingRecords.filter((r) => {
     const d = safeParseDate(r.record_date);
     return d !== null && d >= lastWeekStart && d <= lastWeekEnd;
   }).length;
@@ -34,15 +34,17 @@ export function getOfferStats(offerRecords: ApiSalesRecord[]) {
   const offerCount = offerRecords.length;
 
   const sortedOffers = [...offerRecords].sort(
-    (a, b) => (safeParseDate(b.record_date)?.getTime() ?? 0) - (safeParseDate(a.record_date)?.getTime() ?? 0)
+    (a, b) =>
+      (safeParseDate(b.record_date)?.getTime() ?? 0) -
+      (safeParseDate(a.record_date)?.getTime() ?? 0),
   );
 
   const offerPrices = sortedOffers
-    .map(r => toNumber(r.price))
+    .map((r) => toNumber(r.price))
     .filter((p): p is number => p !== undefined);
 
   const maxOffer = sortedOffers.length > 0 && offerPrices.length > 0 ? Math.max(...offerPrices) : 0;
-  const lastOffer = sortedOffers.length > 0 ? toNumber(sortedOffers[0].price) ?? 0 : 0;
+  const lastOffer = sortedOffers.length > 0 ? (toNumber(sortedOffers[0].price) ?? 0) : 0;
 
   return { offerCount, maxOffer, lastOffer };
 }

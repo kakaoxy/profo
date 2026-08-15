@@ -29,21 +29,13 @@ export function TimeMonitorDisplay({ timeMonitor }: TimeMonitorDisplayProps) {
 
       <div className="flex justify-between items-center gap-4">
         <div className="flex-1 p-2.5 bg-card border border-border rounded-lg shadow-sm">
-          <p className="text-[10px] text-muted-foreground font-bold mb-1">
-            免租期余额
-          </p>
-          <p className="text-sm font-black text-rose-600">
-            {timeMonitor.remaining_days} 天
-          </p>
+          <p className="text-[10px] text-muted-foreground font-bold mb-1">免租期余额</p>
+          <p className="text-sm font-black text-rose-600">{timeMonitor.remaining_days} 天</p>
         </div>
         <div className="flex-2 flex items-center gap-3 bg-rose-50 px-4 py-2 rounded-lg border border-rose-100 min-w-[180px]">
           <div>
-            <p className="text-[10px] text-rose-500 font-bold">
-              延期日损失预计
-            </p>
-            <p className="text-base font-black text-rose-700">
-              ¥ {timeMonitor.daily_loss} / 天
-            </p>
+            <p className="text-[10px] text-rose-500 font-bold">延期日损失预计</p>
+            <p className="text-base font-black text-rose-700">¥ {timeMonitor.daily_loss} / 天</p>
           </div>
           <div className="text-[10px] text-rose-400 font-medium">
             利润侵蚀

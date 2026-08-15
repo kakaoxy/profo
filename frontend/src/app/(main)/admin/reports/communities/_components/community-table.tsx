@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -35,12 +30,7 @@ interface CommunityTableProps {
   currentCommunityId?: string;
 }
 
-type SortKey =
-  | "sold_count"
-  | "avg_price_wan"
-  | "avg_unit_price"
-  | "avg_area"
-  | "price_qoq";
+type SortKey = "sold_count" | "avg_price_wan" | "avg_unit_price" | "avg_area" | "price_qoq";
 
 interface SortState {
   by: SortKey;
@@ -73,10 +63,7 @@ export function CommunityTable({ items, total, currentCommunityId }: CommunityTa
     order: "desc",
   });
 
-  const sortedItems = React.useMemo(
-    () => sortItems(items, sort),
-    [items, sort],
-  );
+  const sortedItems = React.useMemo(() => sortItems(items, sort), [items, sort]);
 
   const toggleSort = (key: SortKey) => {
     setSort((prev) =>
@@ -130,22 +117,14 @@ export function CommunityTable({ items, total, currentCommunityId }: CommunityTa
                   sort={sort}
                   onToggle={toggleSort}
                 />
-                <SortableHead
-                  label="环比"
-                  sortKey="price_qoq"
-                  sort={sort}
-                  onToggle={toggleSort}
-                />
+                <SortableHead label="环比" sortKey="price_qoq" sort={sort} onToggle={toggleSort} />
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedItems.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="h-24 text-center text-muted-foreground"
-                  >
+                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                     暂无小区数据
                   </TableCell>
                 </TableRow>
@@ -157,7 +136,11 @@ export function CommunityTable({ items, total, currentCommunityId }: CommunityTa
                     <TableRow
                       key={row.community_id}
                       onClick={() => navigateToDetail(row)}
-                      className={isCurrent ? "bg-muted/50 cursor-pointer" : "cursor-pointer hover:bg-muted/50"}
+                      className={
+                        isCurrent
+                          ? "bg-muted/50 cursor-pointer"
+                          : "cursor-pointer hover:bg-muted/50"
+                      }
                     >
                       <TableCell className="font-medium text-primary underline-offset-2 hover:underline">
                         {row.community_name}
@@ -166,29 +149,19 @@ export function CommunityTable({ items, total, currentCommunityId }: CommunityTa
                         )}
                       </TableCell>
                       <TableCell>{formatCount(row.sold_count)}</TableCell>
-                      <TableCell>
-                        {formatAvgPriceWan(row.avg_price_wan)}
-                      </TableCell>
-                      <TableCell>
-                        {formatUnitPriceYuan(row.avg_unit_price)}
-                      </TableCell>
+                      <TableCell>{formatAvgPriceWan(row.avg_price_wan)}</TableCell>
+                      <TableCell>{formatUnitPriceYuan(row.avg_unit_price)}</TableCell>
                       <TableCell>{row.main_layout ?? "-"}</TableCell>
                       <TableCell>{row.main_floor ?? "-"}</TableCell>
                       <TableCell>{formatAreaSqm(row.avg_area)}</TableCell>
-                      <TableCell className={QOQ_COLOR[qoq.direction]}>
-                        {qoq.text}
-                      </TableCell>
+                      <TableCell className={QOQ_COLOR[qoq.direction]}>{qoq.text}</TableCell>
                       <TableCell className="text-right">
                         {isCurrent ? (
                           <Button size="sm" variant="outline" disabled>
                             当前
                           </Button>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigateToDetail(row)}
-                          >
+                          <Button size="sm" variant="outline" onClick={() => navigateToDetail(row)}>
                             查看分析
                           </Button>
                         )}
@@ -214,11 +187,7 @@ interface SortableHeadProps {
 
 function SortableHead({ label, sortKey, sort, onToggle }: SortableHeadProps) {
   const isActive = sort.by === sortKey;
-  const Icon = isActive
-    ? sort.order === "asc"
-      ? ArrowUp
-      : ArrowDown
-    : ArrowUpDown;
+  const Icon = isActive ? (sort.order === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
   return (
     <TableHead>
       <Button
@@ -231,9 +200,7 @@ function SortableHead({ label, sortKey, sort, onToggle }: SortableHeadProps) {
         <span>{label}</span>
         <Icon
           className={
-            isActive
-              ? "ml-1 h-3 w-3 text-primary"
-              : "ml-1 h-3 w-3 text-muted-foreground/70"
+            isActive ? "ml-1 h-3 w-3 text-primary" : "ml-1 h-3 w-3 text-muted-foreground/70"
           }
         />
       </Button>

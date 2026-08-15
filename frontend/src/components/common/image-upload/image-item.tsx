@@ -31,7 +31,7 @@ export const ImageItemView = memo(function ImageItemView({
         "relative rounded-md overflow-hidden border shadow-sm group",
         aspectRatio,
         item.status === "error" && "border-error/40 ring-1 ring-error/20",
-        item.status === "uploading" && "border-primary/30"
+        item.status === "uploading" && "border-primary/30",
       )}
     >
       {displayUrl && (
@@ -42,7 +42,7 @@ export const ImageItemView = memo(function ImageItemView({
           className={cn(
             "object-cover transition-transform group-hover:scale-105",
             item.status === "uploading" && "opacity-60 blur-[1px]",
-            item.status === "error" && "opacity-70"
+            item.status === "error" && "opacity-70",
           )}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           unoptimized={!isImageUrl}

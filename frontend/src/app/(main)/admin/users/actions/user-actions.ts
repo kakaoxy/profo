@@ -93,10 +93,7 @@ export async function getUsersAction(params: {
   }
 }
 
-export async function getUsersSimpleAction(params?: {
-  nickname?: string;
-  status?: string;
-}) {
+export async function getUsersSimpleAction(params?: { nickname?: string; status?: string }) {
   try {
     const client = await fetchClient();
     const { data, error } = await client.GET("/api/v1/users/simple", {

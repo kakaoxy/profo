@@ -87,18 +87,14 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
               <Calendar className="h-3 w-3" />
               创建时间
             </label>
-            <p className="text-sm text-foreground">
-              {formatDate(apiKeyInfo.created_at)}
-            </p>
+            <p className="text-sm text-foreground">{formatDate(apiKeyInfo.created_at)}</p>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Activity className="h-3 w-3" />
               最后使用
             </label>
-            <p className="text-sm text-foreground">
-              {formatDate(apiKeyInfo.last_used_at)}
-            </p>
+            <p className="text-sm text-foreground">{formatDate(apiKeyInfo.last_used_at)}</p>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">

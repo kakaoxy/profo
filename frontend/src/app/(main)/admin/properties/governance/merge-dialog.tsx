@@ -54,9 +54,7 @@ export function MergeDialog({ selectedCommunities, onSuccess }: MergeDialogProps
     }
 
     // 获取所有非主小区的 ID
-    const mergeIds = selectedCommunities
-      .filter((c) => c.id !== primaryId)
-      .map((c) => c.id);
+    const mergeIds = selectedCommunities.filter((c) => c.id !== primaryId).map((c) => c.id);
 
     setIsMerging(true);
     try {
@@ -73,7 +71,7 @@ export function MergeDialog({ selectedCommunities, onSuccess }: MergeDialogProps
         toast.error("合并失败", { description: result.message });
       }
     } catch (error) {
-        logger.error(error)
+      logger.error(error);
       toast.error("请求失败");
     } finally {
       setIsMerging(false);
@@ -135,7 +133,8 @@ export function MergeDialog({ selectedCommunities, onSuccess }: MergeDialogProps
                   <span className="font-bold">⚠️ 不可撤销操作</span>
                 </AlertTitle>
                 <AlertDescription>
-                  合并后，预计共有 <span className="font-bold">{totalProperties}</span> 套房源将归属于主小区。
+                  合并后，预计共有 <span className="font-bold">{totalProperties}</span>{" "}
+                  套房源将归属于主小区。
                   <br />
                   被合并的小区记录将被软删除。
                 </AlertDescription>

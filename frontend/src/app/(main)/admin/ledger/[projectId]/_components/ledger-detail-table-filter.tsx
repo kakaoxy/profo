@@ -15,10 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
-import {
-  fetchSubjects,
-  type SubjectItem,
-} from "@/app/(main)/admin/ledger/subject-actions";
+import { fetchSubjects, type SubjectItem } from "@/app/(main)/admin/ledger/subject-actions";
 
 export type FilterTab = "all" | "in" | "out";
 
@@ -61,11 +58,7 @@ export function LedgerDetailTableFilter({
 }: LedgerDetailTableFilterProps) {
   // 按项目业务模式过滤科目（wholesale → acquire）
   const mode =
-    businessForm === "agent"
-      ? "agent"
-      : businessForm === "wholesale"
-        ? "acquire"
-        : undefined;
+    businessForm === "agent" ? "agent" : businessForm === "wholesale" ? "acquire" : undefined;
   const { data: subjects } = useSWR(
     mode ? `subjects-filter-${mode}` : "subjects-filter-all",
     async () => {
@@ -112,10 +105,7 @@ export function LedgerDetailTableFilter({
           autoComplete="off"
         />
         <Select value={subjectFilter} onValueChange={onSubjectFilterChange}>
-          <SelectTrigger
-            className="h-9 w-[160px] bg-card border-border"
-            aria-label="筛选科目分类"
-          >
+          <SelectTrigger className="h-9 w-[160px] bg-card border-border" aria-label="筛选科目分类">
             <SelectValue placeholder="全部科目" />
           </SelectTrigger>
           <SelectContent>
@@ -128,10 +118,7 @@ export function LedgerDetailTableFilter({
           </SelectContent>
         </Select>
         <Select value={voucherFilter} onValueChange={onVoucherFilterChange}>
-          <SelectTrigger
-            className="h-9 w-[120px] bg-card border-border"
-            aria-label="筛选凭证状态"
-          >
+          <SelectTrigger className="h-9 w-[120px] bg-card border-border" aria-label="筛选凭证状态">
             <SelectValue placeholder="凭证状态" />
           </SelectTrigger>
           <SelectContent>
@@ -169,9 +156,7 @@ export function LedgerDetailTableFilter({
             variant="secondary"
             className={cn(
               "gap-1.5 border-transparent px-3 py-1",
-              isSettled
-                ? "bg-apricot-wash text-rust"
-                : "bg-fog text-graphite",
+              isSettled ? "bg-apricot-wash text-rust" : "bg-fog text-graphite",
             )}
           >
             <span

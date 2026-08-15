@@ -6,11 +6,7 @@ import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +31,7 @@ export function DatePickerField({
             variant="outline"
             className={cn(
               "w-full justify-start text-left font-normal h-9 text-sm",
-              !value && "text-muted-foreground"
+              !value && "text-muted-foreground",
             )}
             disabled={disabled}
           >
@@ -44,12 +40,7 @@ export function DatePickerField({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <CalendarComponent
-            mode="single"
-            selected={value}
-            onSelect={onChange}
-            initialFocus
-          />
+          <CalendarComponent mode="single" selected={value} onSelect={onChange} initialFocus />
         </PopoverContent>
       </Popover>
     </div>

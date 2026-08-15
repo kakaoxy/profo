@@ -50,8 +50,7 @@ export function DetailHeader({
             返回跟投列表
           </Link>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            💰 跟投详情 — {investment.project_code || "-"}{" "}
-            {investment.project_name || ""}
+            💰 跟投详情 — {investment.project_code || "-"} {investment.project_name || ""}
           </h1>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -78,22 +77,12 @@ export function DetailHeader({
             )}
           </HasPermission>
           {isSettled ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={onUnsettle}
-            >
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={onUnsettle}>
               <RotateCcw className="h-4 w-4" />
               反结算
             </Button>
           ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={onSettle}
-            >
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={onSettle}>
               <CheckCircle className="h-4 w-4" />
               结算
             </Button>
@@ -123,10 +112,7 @@ export function DetailHeader({
                 </DropdownMenuItem>
               </HasPermission>
               <HasPermission code={PERMISSION_CODES.INVESTMENT_WRITE}>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={onDelete}
-                >
+                <DropdownMenuItem variant="destructive" onClick={onDelete}>
                   <Trash2 className="h-4 w-4" />
                   删除跟投记录
                 </DropdownMenuItem>

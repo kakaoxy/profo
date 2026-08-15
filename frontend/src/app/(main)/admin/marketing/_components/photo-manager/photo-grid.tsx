@@ -12,7 +12,13 @@ interface PhotoGridProps {
   onTogglePhoto: (photoId: number | string) => void;
 }
 
-export function PhotoGrid({ photos, loading, existingPhotoIds, selectedIds, onTogglePhoto }: PhotoGridProps) {
+export function PhotoGrid({
+  photos,
+  loading,
+  existingPhotoIds,
+  selectedIds,
+  onTogglePhoto,
+}: PhotoGridProps) {
   if (loading) {
     return (
       <div className="flex-1 overflow-y-auto p-6">
@@ -26,9 +32,7 @@ export function PhotoGrid({ photos, loading, existingPhotoIds, selectedIds, onTo
   if (photos.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="flex items-center justify-center h-full text-graphite">
-          暂无照片
-        </div>
+        <div className="flex items-center justify-center h-full text-graphite">暂无照片</div>
       </div>
     );
   }

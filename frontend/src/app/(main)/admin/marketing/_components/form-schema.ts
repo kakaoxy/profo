@@ -85,7 +85,12 @@ export const updateSchema = z.object({
   community_name: z.string().trim().max(200, "小区名称最多200个字符").nullable().optional(),
   layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符").optional(),
   orientation: z.string().trim().min(1, "朝向不能为空").max(50, "朝向最多50个字符").optional(),
-  floor_info: z.string().trim().min(1, "楼层信息不能为空").max(100, "楼层信息最多100个字符").optional(),
+  floor_info: z
+    .string()
+    .trim()
+    .min(1, "楼层信息不能为空")
+    .max(100, "楼层信息最多100个字符")
+    .optional(),
   area: z.number().positive("面积必须大于0").optional(),
   total_price: z.number().positive("总价必须大于0").optional(),
   title: z.string().trim().min(1, "标题不能为空").max(255, "标题最多255个字符").optional(),
@@ -120,13 +125,11 @@ export interface MediaFile {
 // 后端已支持数组格式，直接传递数组
 export function formValuesToCreateRequest(
   values: FormValues,
-  mediaFiles?: MediaFile[]
+  mediaFiles?: MediaFile[],
 ): Record<string, unknown> {
   // 计算单价（万元/㎡），与后端计算逻辑保持一致
   // 后端逻辑：unit_price = total_price / area
-  const unitPrice = values.area > 0
-    ? Number((values.total_price / values.area).toFixed(2))
-    : 0;
+  const unitPrice = values.area > 0 ? Number((values.total_price / values.area).toFixed(2)) : 0;
 
   const result: Record<string, unknown> = {
     community_id: values.community_id,
@@ -181,8 +184,10 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.images !== undefined) result.images = values.images;
   if (values.sort_order !== undefined) result.sort_order = values.sort_order;
   if (values.tags !== undefined) result.tags = values.tags;
-  if (values.decoration_style !== undefined) result.decoration_style = values.decoration_style || null;
-  if (values.stage_completed_dates !== undefined) result.stage_completed_dates = values.stage_completed_dates;
+  if (values.decoration_style !== undefined)
+    result.decoration_style = values.decoration_style || null;
+  if (values.stage_completed_dates !== undefined)
+    result.stage_completed_dates = values.stage_completed_dates;
   if (values.publish_status !== undefined) result.publish_status = values.publish_status;
   if (values.project_status !== undefined) result.project_status = values.project_status;
   if (values.consultant_id !== undefined) result.consultant_id = values.consultant_id;
@@ -208,9 +213,8 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
 export function projectToFormValues(project: object): FormValues {
   const p = project as Record<string, unknown>;
   // 将 community_id 转换为字符串（支持数字和字符串类型）
-  const communityId = p.community_id !== undefined && p.community_id !== null
-    ? String(p.community_id)
-    : "";
+  const communityId =
+    p.community_id !== undefined && p.community_id !== null ? String(p.community_id) : "";
 
   return {
     community_id: communityId,
@@ -219,14 +223,20 @@ export function projectToFormValues(project: object): FormValues {
     orientation: (p.orientation as string) || "",
     floor_info: (p.floor_info as string) || "",
     area: typeof p.area === "string" ? parseFloat(p.area) : (p.area as number) || 0,
-    total_price: typeof p.total_price === "string" ? parseFloat(p.total_price) : (p.total_price as number) || 0,
-    unit_price: typeof p.unit_price === "string" ? parseFloat(p.unit_price) : (p.unit_price as number) || undefined,
+    total_price:
+      typeof p.total_price === "string"
+        ? parseFloat(p.total_price)
+        : (p.total_price as number) || 0,
+    unit_price:
+      typeof p.unit_price === "string"
+        ? parseFloat(p.unit_price)
+        : (p.unit_price as number) || undefined,
     title: (p.title as string) || "",
     // 后端直接返回数组，直接使用
-    images: Array.isArray(p.images) ? p.images as string[] : [],
+    images: Array.isArray(p.images) ? (p.images as string[]) : [],
     sort_order: (p.sort_order as number) || 0,
     // 后端直接返回数组，直接使用
-    tags: Array.isArray(p.tags) ? p.tags as string[] : [],
+    tags: Array.isArray(p.tags) ? (p.tags as string[]) : [],
     decoration_style: (p.decoration_style as string) || undefined,
     stage_completed_dates: (p.stage_completed_dates as Record<string, string>) || undefined,
     publish_status: (p.publish_status as "草稿" | "发布") || "草稿",
@@ -267,9 +277,8 @@ export function importDataToFormValues(data: object): Partial<FormValues> {
   const projectId = (d.project_id as string) || undefined;
 
   // 将 community_id 转换为字符串（支持数字和字符串类型）
-  const communityId = d.community_id !== undefined && d.community_id !== null
-    ? String(d.community_id)
-    : "";
+  const communityId =
+    d.community_id !== undefined && d.community_id !== null ? String(d.community_id) : "";
 
   return {
     project_id: projectId,
@@ -279,11 +288,17 @@ export function importDataToFormValues(data: object): Partial<FormValues> {
     orientation: (d.orientation as string) || "",
     floor_info: (d.floor_info as string) || "",
     area: typeof d.area === "string" ? parseFloat(d.area) : (d.area as number) || 0,
-    total_price: typeof d.total_price === "string" ? parseFloat(d.total_price) : (d.total_price as number) || 0,
-    unit_price: typeof d.unit_price === "string" ? parseFloat(d.unit_price) : (d.unit_price as number) || undefined,
+    total_price:
+      typeof d.total_price === "string"
+        ? parseFloat(d.total_price)
+        : (d.total_price as number) || 0,
+    unit_price:
+      typeof d.unit_price === "string"
+        ? parseFloat(d.unit_price)
+        : (d.unit_price as number) || undefined,
     title: (d.title as string) || "",
     // 后端直接返回数组，直接使用
-    tags: Array.isArray(d.tags) ? d.tags as string[] : [],
+    tags: Array.isArray(d.tags) ? (d.tags as string[]) : [],
     decoration_style: (d.decoration_style as string) || "",
     stage_completed_dates: (d.stage_completed_dates as Record<string, string>) || undefined,
     project_status: mapL3StatusToL4(d.status as string),

@@ -31,8 +31,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
     PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
     PERMISSION_CODES.PROJECT_WRITE,
   ]);
-  const canEditSales =
-    canAddByPermission || project.sale?.can_edit_sales === true;
+  const canEditSales = canAddByPermission || project.sale?.can_edit_sales === true;
 
   // 删除逻辑
   const handleDelete = async (id: string) => {
@@ -43,8 +42,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
         toast.success("删除成功");
         if (onRefresh) onRefresh();
       } else {
-        const errorMsg =
-          typeof res.message === "string" ? res.message : "删除失败";
+        const errorMsg = typeof res.message === "string" ? res.message : "删除失败";
         toast.error(errorMsg);
       }
     } catch {
@@ -75,11 +73,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
         )}
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as TabType)}
-        className="w-full"
-      >
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-muted h-9 p-1">
           <TabsTrigger
             value="viewing"

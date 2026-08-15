@@ -26,8 +26,14 @@ export default async function RolesPage(props: {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">权限管理</h2>
       </div>
-      
-      <Suspense fallback={<div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        }
+      >
         <RolesClient initialData={result.data as RoleListResponse} />
       </Suspense>
     </div>

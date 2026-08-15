@@ -14,11 +14,7 @@ interface MarketingPhotoListProps {
   onDelete: (photoId: number) => void;
 }
 
-export function MarketingPhotoList({
-  photos,
-  photoIds,
-  onDelete,
-}: MarketingPhotoListProps) {
+export function MarketingPhotoList({ photos, photoIds, onDelete }: MarketingPhotoListProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: CONTAINER_MARKETING,
     data: {
@@ -30,9 +26,7 @@ export function MarketingPhotoList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-rust">
-          营销照片 ({photos.length})
-        </h4>
+        <h4 className="text-sm font-semibold text-rust">营销照片 ({photos.length})</h4>
         <span className="text-xs text-graphite">可拖拽到右侧</span>
       </div>
 
@@ -42,9 +36,7 @@ export function MarketingPhotoList({
         data-droppable="true"
         className={cn(
           "rounded border-2 border-dashed transition-all min-h-25 p-3",
-          isOver
-            ? "border-rust bg-rust/5 ring-2 ring-rust/20"
-            : "border-rust/30 bg-rust/5"
+          isOver ? "border-rust bg-rust/5 ring-2 ring-rust/20" : "border-rust/30 bg-rust/5",
         )}
       >
         <SortableContext items={photoIds} strategy={verticalListSortingStrategy}>
@@ -52,20 +44,13 @@ export function MarketingPhotoList({
             <div className="flex items-center justify-center h-full py-8">
               <div className="text-center text-graphite text-sm pointer-events-none">
                 暂无营销照片
-                <p className="text-xs mt-1 text-graphite/60">
-                  可将改造照片拖拽到此处
-                </p>
+                <p className="text-xs mt-1 text-graphite/60">可将改造照片拖拽到此处</p>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
               {photos.map((photo, index) => (
-                <SortablePhotoItem
-                  key={photo.id}
-                  photo={photo}
-                  index={index}
-                  onDelete={onDelete}
-                />
+                <SortablePhotoItem key={photo.id} photo={photo} index={index} onDelete={onDelete} />
               ))}
             </div>
           )}

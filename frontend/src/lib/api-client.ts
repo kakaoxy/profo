@@ -5,7 +5,8 @@ import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
 import { storeRequestBody, consumeRequestBody } from "@/lib/request-body-store";
 
 function getRefreshEndpoint(): string {
-  const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const isAdminRoute =
+    typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   return isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
 }
 
@@ -63,7 +64,7 @@ const authMiddleware: Middleware = {
           // useRouter()/redirect() 均不适用，故整页跳转（规则不适用）。
           // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.href = `${loginPath}?redirect=${encodeURIComponent(
-            window.location.pathname
+            window.location.pathname,
           )}`;
         }
       }

@@ -40,10 +40,7 @@ export function useTrendData({
         const res = projectId
           ? await getTrendPositioningAction(projectId)
           : communityId
-            ? await getTrendPositioningByCommunityAction(
-                communityId,
-                myOverridePrice || 0,
-              )
+            ? await getTrendPositioningByCommunityAction(communityId, myOverridePrice || 0)
             : { success: false, message: "缺少参数" };
 
         if (res.success && res.data) {

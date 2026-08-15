@@ -51,9 +51,7 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
             <Trash2 className="h-5 w-5" />
             撤销 API Key
           </DialogTitle>
-          <DialogDescription>
-            此操作将永久撤销您的 API Key，撤销后无法恢复。
-          </DialogDescription>
+          <DialogDescription>此操作将永久撤销您的 API Key，撤销后无法恢复。</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -63,9 +61,7 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
                 <KeyRound className="h-5 w-5 text-error dark:text-error" />
               </div>
               <div>
-                <p className="text-sm font-medium text-red-900 dark:text-red-100">
-                  即将撤销的 Key
-                </p>
+                <p className="text-sm font-medium text-red-900 dark:text-red-100">即将撤销的 Key</p>
                 <code className="text-sm font-mono text-red-700 dark:text-red-300">
                   {apiKeyPrefix}••••••••••••
                 </code>
@@ -76,9 +72,7 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
           <div className="rounded-lg border border-status-pending/30 bg-status-pending/10 p-4 flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-status-pending shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-sm font-medium text-status-pending">
-                警告
-              </p>
+              <p className="text-sm font-medium text-status-pending">警告</p>
               <ul className="text-sm text-status-pending/80 space-y-1">
                 <li>• 撤销后，使用该 Key 的所有 API 请求将立即失败</li>
                 <li>• 如果您正在生产环境使用该 Key，请确保已更新配置</li>

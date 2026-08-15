@@ -56,7 +56,7 @@ export function ResetPasswordDialog({ open, onOpenChange, user }: ResetPasswordD
 
   async function onSubmit(values: z.infer<typeof schema>) {
     if (!user) return;
-    
+
     setIsPending(true);
     try {
       const result = await resetUserPasswordAction(user.id, values);

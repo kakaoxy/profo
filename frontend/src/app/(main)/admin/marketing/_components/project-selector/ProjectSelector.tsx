@@ -17,12 +17,7 @@ const PAGE_SIZE = 20;
  * 项目选择器组件
  * 用于从L3项目中选择关联项目
  */
-export function ProjectSelector({
-  open,
-  onClose,
-  onSelect,
-  selectedId,
-}: ProjectSelectorProps) {
+export function ProjectSelector({ open, onClose, onSelect, selectedId }: ProjectSelectorProps) {
   const [projects, setProjects] = React.useState<L3ProjectBrief[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -42,9 +37,7 @@ export function ProjectSelector({
         });
         // 检查是否已取消
         if (signal?.aborted) return;
-        setProjects((prev) =>
-          currentPage === 1 ? response.items : [...prev, ...response.items]
-        );
+        setProjects((prev) => (currentPage === 1 ? response.items : [...prev, ...response.items]));
         setTotal(response.total);
       } catch (error) {
         if (signal?.aborted) return;
@@ -55,7 +48,7 @@ export function ProjectSelector({
         }
       }
     },
-    []
+    [],
   );
 
   // 初始加载
@@ -166,11 +159,7 @@ export function ProjectSelector({
             )}
 
             {!loading && hasMore && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleLoadMore}
-              >
+              <Button variant="outline" className="w-full" onClick={handleLoadMore}>
                 加载更多 ({projects.length}/{total})
               </Button>
             )}

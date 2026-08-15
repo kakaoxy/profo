@@ -3,7 +3,11 @@
 import { ColumnDef } from "@tanstack/react-table";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { L4MarketingProject, MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "./types";
+import {
+  L4MarketingProject,
+  MARKETING_PROJECT_STATUS_CONFIG,
+  PUBLISH_STATUS_CONFIG,
+} from "./types";
 import { getFileUrl } from "@/lib/config";
 import { isValidUrl } from "@/lib/validators";
 import { formatPrice, formatUnitPrice, formatArea, safeFormatDate } from "@/lib/formatters";
@@ -14,31 +18,31 @@ const isDev = process.env.NODE_ENV === "development";
 
 // Steep 单色项目状态徽章映射
 const statusClassNameMap: Record<string, string> = {
-  "已售": "bg-dove/20 text-dove",
-  "在售": "bg-ink text-white",
-  "在途": "bg-fog text-ash",
+  已售: "bg-dove/20 text-dove",
+  在售: "bg-ink text-white",
+  在途: "bg-fog text-ash",
   default: "bg-fog text-ash",
 };
 
 // 使用 types.ts 中定义的状态配置，className 通过 Steep 单色映射统一获取
 const statusConfig: Record<string, { label: string }> = {
-  "在途": {
+  在途: {
     label: MARKETING_PROJECT_STATUS_CONFIG["在途"].label,
   },
-  "在售": {
+  在售: {
     label: MARKETING_PROJECT_STATUS_CONFIG["在售"].label,
   },
-  "已售": {
+  已售: {
     label: MARKETING_PROJECT_STATUS_CONFIG["已售"].label,
   },
 };
 
 const publishStatusConfig: Record<string, { label: string; className: string }> = {
-  "草稿": {
+  草稿: {
     label: PUBLISH_STATUS_CONFIG["草稿"].label,
     className: "bg-fog text-ash",
   },
-  "发布": {
+  发布: {
     label: PUBLISH_STATUS_CONFIG["发布"].label,
     className: "bg-rust text-white",
   },
@@ -72,19 +76,9 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
             <div className="relative w-20 h-14 rounded-[var(--radius-images)] shrink-0 border border-border overflow-hidden">
               {isDev ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imageUrl}
-                  alt="封面"
-                  className="w-full h-full object-cover"
-                />
+                <img src={imageUrl} alt="封面" className="w-full h-full object-cover" />
               ) : (
-                <Image
-                  src={imageUrl}
-                  alt="封面"
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                />
+                <Image src={imageUrl} alt="封面" fill sizes="80px" className="object-cover" />
               )}
             </div>
           ) : (
@@ -118,9 +112,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "layout",
-    header: () => (
-      <div className="hidden md:block text-muted-foreground font-medium">户型</div>
-    ),
+    header: () => <div className="hidden md:block text-muted-foreground font-medium">户型</div>,
     cell: ({ row }) => (
       <div className="hidden md:block">
         <div className="text-sm font-medium text-foreground">{row.original.layout || "-"}</div>
@@ -131,9 +123,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "orientation",
-    header: () => (
-      <div className="hidden md:block text-muted-foreground font-medium">朝向</div>
-    ),
+    header: () => <div className="hidden md:block text-muted-foreground font-medium">朝向</div>,
     cell: ({ row }) => (
       <span className="hidden md:block text-sm text-foreground">
         {row.original.orientation || "-"}
@@ -143,9 +133,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "floor_info",
-    header: () => (
-      <div className="hidden lg:block text-muted-foreground font-medium">楼层</div>
-    ),
+    header: () => <div className="hidden lg:block text-muted-foreground font-medium">楼层</div>,
     cell: ({ row }) => (
       <span className="hidden lg:block text-sm text-foreground">
         {row.original.floor_info || "-"}
@@ -156,9 +144,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "total_price",
     header: () => (
-      <div className="hidden sm:block text-right pr-4 text-muted-foreground font-medium">
-        总价
-      </div>
+      <div className="hidden sm:block text-right pr-4 text-muted-foreground font-medium">总价</div>
     ),
     cell: ({ row }) => (
       <div className="hidden sm:block text-right pr-4">
@@ -175,9 +161,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "project_status",
     header: () => (
-      <div className="hidden md:block pl-2 text-muted-foreground font-medium">
-        项目状态
-      </div>
+      <div className="hidden md:block pl-2 text-muted-foreground font-medium">项目状态</div>
     ),
     cell: ({ row }) => {
       const status = row.original.project_status || "在途";
@@ -199,9 +183,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "publish_status",
-    header: () => (
-      <div className="hidden lg:block text-muted-foreground font-medium">发布状态</div>
-    ),
+    header: () => <div className="hidden lg:block text-muted-foreground font-medium">发布状态</div>,
     cell: ({ row }) => {
       const publishStatus = row.original.publish_status || "草稿";
       const config = publishStatusConfig[publishStatus] || {
@@ -224,9 +206,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "updated_at",
-    header: () => (
-      <div className="hidden xl:block text-muted-foreground font-medium">更新时间</div>
-    ),
+    header: () => <div className="hidden xl:block text-muted-foreground font-medium">更新时间</div>,
     cell: ({ row }) => {
       const date = row.original.updated_at;
       return (

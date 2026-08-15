@@ -13,10 +13,7 @@ interface QuickEntrySectionProps {
   sellingProjects: ProjectResponse[];
 }
 
-export function QuickEntrySection({
-  renovationProjects,
-  sellingProjects,
-}: QuickEntrySectionProps) {
+export function QuickEntrySection({ renovationProjects, sellingProjects }: QuickEntrySectionProps) {
   const { hasPermission } = usePermission();
   // "查看全部"按钮链接到 /admin/projects?status=...，需 project:read 权限。
   // 普通用户无此权限时不显示按钮，避免点击后被权限守卫重定向。

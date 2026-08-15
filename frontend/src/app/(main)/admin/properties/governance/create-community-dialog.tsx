@@ -25,9 +25,7 @@ interface CreateCommunityDialogProps {
  * 新增小区对话框
  * 提供小区名称、行政区、商圈录入入口（小区库 district 录入入口）
  */
-export function CreateCommunityDialog({
-  onSuccess,
-}: CreateCommunityDialogProps) {
+export function CreateCommunityDialog({ onSuccess }: CreateCommunityDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");

@@ -60,13 +60,7 @@ export function InvestorTypeIcon({ type }: { type: InvestorResponse["type"] }) {
 }
 
 /** 信息单元格：标签 + 值 */
-export function InfoCell({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+export function InfoCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
       <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide">

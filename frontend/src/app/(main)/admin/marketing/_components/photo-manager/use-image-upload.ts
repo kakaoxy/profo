@@ -104,8 +104,7 @@ export function useImageUpload({
     allowedTypes: ALLOWED_MEDIA_TYPES,
     multiple: true,
     validateFile: validateMediaFile,
-    beforeUpload: (file) =>
-      file.type.startsWith("video/") ? file : compressImage(file),
+    beforeUpload: (file) => (file.type.startsWith("video/") ? file : compressImage(file)),
     onProgress: ({ file, progress }) => {
       // 同步到组件的 uploadingFiles 状态（用于UI展示）
       setUploadingFiles((prev) =>
@@ -121,8 +120,7 @@ export function useImageUpload({
         file_url: fileUrl,
         media_type: inferMediaType(file),
         photo_category: uploadCategory,
-        renovation_stage:
-          uploadCategory === "renovation" ? uploadStage : null,
+        renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
         sort_order: sortOrder,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -138,9 +136,7 @@ export function useImageUpload({
       if (fileArray.length === 0) return;
 
       if (fileArray.length > MAX_UPLOAD_FILES) {
-        toast.error(
-          `一次最多上传 ${MAX_UPLOAD_FILES} 个文件，当前选择了 ${fileArray.length} 个`,
-        );
+        toast.error(`一次最多上传 ${MAX_UPLOAD_FILES} 个文件，当前选择了 ${fileArray.length} 个`);
         return;
       }
 
@@ -157,12 +153,9 @@ export function useImageUpload({
       ).length;
 
       try {
-        const results = await Promise.all(
-          fileArray.map((file) => uploadSingle(file)),
-        );
+        const results = await Promise.all(fileArray.map((file) => uploadSingle(file)));
 
-        const succeeded: { file: File; response: { url: string }; index: number }[] =
-          [];
+        const succeeded: { file: File; response: { url: string }; index: number }[] = [];
         const failed: FailedUpload[] = [];
 
         results.forEach((response, idx) => {
@@ -200,8 +193,7 @@ export function useImageUpload({
                 file_url: response.url,
                 media_type: inferMediaType(file),
                 photo_category: uploadCategory,
-                renovation_stage:
-                  uploadCategory === "renovation" ? uploadStage : null,
+                renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
                 sort_order: baseSortOrderRef.current + index,
               }),
             ),
@@ -231,18 +223,14 @@ export function useImageUpload({
           if (failed.length === 0) {
             toast.success(`上传完成：成功 ${successCount} 个文件`);
           } else {
-            toast.error(
-              `上传完成：成功 ${successCount} 个，失败 ${failed.length} 个`,
-            );
+            toast.error(`上传完成：成功 ${successCount} 个，失败 ${failed.length} 个`);
           }
         } else if (failed.length === 0) {
           toast.success(`${fileArray[0].name}: 上传成功`);
         }
       } catch {
         toast.error("上传过程中发生错误");
-        setFailedUploads(
-          fileArray.map((file) => ({ filename: file.name, file })),
-        );
+        setFailedUploads(fileArray.map((file) => ({ filename: file.name, file })));
       } finally {
         setUploadingFiles([]);
       }

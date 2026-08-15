@@ -50,7 +50,9 @@ export function FollowUpList({ followUps }: FollowUpListProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[15px] font-medium tracking-[-0.009em] text-ink">{item.method}</span>
+                <span className="text-[15px] font-medium tracking-[-0.009em] text-ink">
+                  {item.method}
+                </span>
                 <span className="text-[12px] text-graphite">{item.followed_at}</span>
               </div>
               <p className="mt-1 text-[14px] leading-normal text-ash">{item.content}</p>

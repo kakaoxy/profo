@@ -15,11 +15,13 @@ import {
   requireSession,
 } from "./server/session";
 import { withSession, withRequiredSession } from "./server/fetchers";
+import { createAuthMiddleware, matchesPath } from "./middleware/auth-middleware";
 import {
-  createAuthMiddleware,
-  matchesPath,
-} from "./middleware/auth-middleware";
-import { fetchSessionAction, loginAction, logoutAction, updateSessionTokenAction } from "./server/actions";
+  fetchSessionAction,
+  loginAction,
+  logoutAction,
+  updateSessionTokenAction,
+} from "./server/actions";
 import { createOAuthHandler } from "./handlers";
 
 /**
@@ -99,9 +101,8 @@ export function Auth(config: AuthConfig) {
       defaultValue?: TResult,
     ) => withSession<TResult>(callback, defaultValue, resolved),
     /** Run a callback with the session, or redirect to sign-in. */
-    withRequiredSession: <TResult>(
-      callback: Parameters<typeof withRequiredSession<TResult>>[0],
-    ) => withRequiredSession<TResult>(callback, resolved),
+    withRequiredSession: <TResult>(callback: Parameters<typeof withRequiredSession<TResult>>[0]) =>
+      withRequiredSession<TResult>(callback, resolved),
     // ── Middleware ─────────────────────────────────────────────────────────
     /**
      * Returns a middleware resolver function bound to this instance's config.

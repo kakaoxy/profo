@@ -12,10 +12,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { L4MarketingMedia } from "@/app/(main)/admin/marketing/types";
-import {
-  batchUpdateMediaSortOrderAction,
-  updateL4MarketingMediaAction,
-} from "../../actions";
+import { batchUpdateMediaSortOrderAction, updateL4MarketingMediaAction } from "../../actions";
 import { toast } from "sonner";
 
 // 容器ID常量
@@ -51,7 +48,7 @@ export function usePhotoDragAndDrop({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   // 按阶段分组改造照片
@@ -75,7 +72,7 @@ export function usePhotoDragAndDrop({
     (stage: string) => {
       return (renovationPhotosByStage[stage] || []).map((p) => p.id);
     },
-    [renovationPhotosByStage]
+    [renovationPhotosByStage],
   );
 
   // 获取正在拖拽的照片
@@ -107,7 +104,7 @@ export function usePhotoDragAndDrop({
 
       return CONTAINER_MARKETING;
     },
-    [getContainerId]
+    [getContainerId],
   );
 
   // 同一容器内排序
@@ -116,9 +113,7 @@ export function usePhotoDragAndDrop({
       const isMarketing = activePhoto.photo_category === "marketing";
       const currentList = isMarketing
         ? marketingPhotos
-        : renovationPhotos.filter(
-            (p) => p.renovation_stage === activePhoto.renovation_stage
-          );
+        : renovationPhotos.filter((p) => p.renovation_stage === activePhoto.renovation_stage);
 
       const oldIndex = currentList.findIndex((p) => p.id === activePhoto.id);
       const newIndex = currentList.findIndex((p) => p.id === overId);
@@ -152,7 +147,7 @@ export function usePhotoDragAndDrop({
         toast.error("保存排序失败");
       }
     },
-    [marketingPhotos, renovationPhotos, photos, projectId, onPhotosChange]
+    [marketingPhotos, renovationPhotos, photos, projectId, onPhotosChange],
   );
 
   // 跨容器移动
@@ -160,7 +155,7 @@ export function usePhotoDragAndDrop({
     async (
       activePhoto: L4MarketingMedia,
       targetContainer: string,
-      _overId: number | string // eslint-disable-line @typescript-eslint/no-unused-vars
+      _overId: number | string, // eslint-disable-line @typescript-eslint/no-unused-vars
     ) => {
       const isMovingToMarketing = targetContainer === CONTAINER_MARKETING;
       const targetStage = isMovingToMarketing
@@ -183,47 +178,37 @@ export function usePhotoDragAndDrop({
       updatedPhoto.sort_order = newSortOrder;
 
       // 更新本地状态
-      const newPhotos = photos.map((p) =>
-        p.id === updatedPhoto.id ? updatedPhoto : p
-      );
+      const newPhotos = photos.map((p) => (p.id === updatedPhoto.id ? updatedPhoto : p));
       onPhotosChange(newPhotos);
 
       // 如果没有 projectId（创建模式），不调用 API
       if (!projectId) {
-        toast.success(
-          `已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`
-        );
+        toast.success(`已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`);
         return;
       }
 
       // 调用API更新
-      const updateResult = await updateL4MarketingMediaAction(
-        activePhoto.id,
-        projectId || 0,
-        {
-          photo_category: updatedPhoto.photo_category,
-          renovation_stage: updatedPhoto.renovation_stage,
-          sort_order: newSortOrder,
-        }
-      );
+      const updateResult = await updateL4MarketingMediaAction(activePhoto.id, projectId || 0, {
+        photo_category: updatedPhoto.photo_category,
+        renovation_stage: updatedPhoto.renovation_stage,
+        sort_order: newSortOrder,
+      });
 
       if (updateResult.success && updateResult.data) {
         // 使用API返回的完整数据更新本地状态，确保数据一致性
         const updatedPhotoFromAPI = updateResult.data;
         const newPhotosWithAPIUpdate = photos.map((p) =>
-          p.id === updatedPhotoFromAPI.id ? updatedPhotoFromAPI : p
+          p.id === updatedPhotoFromAPI.id ? updatedPhotoFromAPI : p,
         );
         onPhotosChange(newPhotosWithAPIUpdate);
-        toast.success(
-          `已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`
-        );
+        toast.success(`已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`);
       } else {
         toast.error("移动失败");
         // 回滚状态
         onPhotosChange(photos);
       }
     },
-    [marketingPhotos, renovationPhotos, photos, onPhotosChange, projectId]
+    [marketingPhotos, renovationPhotos, photos, onPhotosChange, projectId],
   );
 
   // 拖拽开始
@@ -261,7 +246,14 @@ export function usePhotoDragAndDrop({
       const overContainer = getContainerIdFromOverId(overId.toString(), photos);
 
       if (process.env.NODE_ENV === "development") {
-        logger.devDebug("[DragEnd] activeContainer:", activeContainer, "overContainer:", overContainer, "overId:", overId);
+        logger.devDebug(
+          "[DragEnd] activeContainer:",
+          activeContainer,
+          "overContainer:",
+          overContainer,
+          "overId:",
+          overId,
+        );
       }
 
       // 同一容器内排序
@@ -281,7 +273,13 @@ export function usePhotoDragAndDrop({
         await handleCrossContainerMove(activePhoto, overContainer, overId as number | string);
       }
     },
-    [photos, getContainerId, getContainerIdFromOverId, handleSameContainerSort, handleCrossContainerMove]
+    [
+      photos,
+      getContainerId,
+      getContainerIdFromOverId,
+      handleSameContainerSort,
+      handleCrossContainerMove,
+    ],
   );
 
   return {
