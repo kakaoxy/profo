@@ -6,6 +6,7 @@ import {
   checkRecruitForm,
   isDeepView,
   parseRecruitQuery,
+  parseSceneCode,
   RECRUIT_LANDING_CONTENT,
 } from "./recruit-logic";
 
@@ -171,5 +172,24 @@ describe("buildShareEventPayload", () => {
   it("无 campaign_id 时 campaign_id 为 undefined", () => {
     const payload = buildShareEventPayload("", "card");
     expect(payload.campaign_id).toBeUndefined();
+  });
+});
+
+describe("parseSceneCode", () => {
+  it("从键值对 scene 中提取短码", () => {
+    expect(parseSceneCode("code=ab12cd34")).toBe("ab12cd34");
+  });
+
+  it("从含多个参数的 scene 中提取短码", () => {
+    expect(parseSceneCode("code=ab12cd34&ch=print")).toBe("ab12cd34");
+  });
+
+  it("兼容带路径前缀的 scene 形态", () => {
+    expect(parseSceneCode("pages/recruit/detail/index?code=ab12cd34")).toBe("ab12cd34");
+  });
+
+  it("无 code 键时返回空串", () => {
+    expect(parseSceneCode("ch=print")).toBe("");
+    expect(parseSceneCode("")).toBe("");
   });
 });

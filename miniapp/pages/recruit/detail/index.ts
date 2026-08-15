@@ -23,6 +23,7 @@ import {
   checkRecruitForm,
   isDeepView,
   parseRecruitQuery,
+  parseSceneCode,
   RECRUIT_LANDING_CONTENT,
   type RecruitLandingContent,
   type RecruitSource,
@@ -145,10 +146,16 @@ Page<PageData, PageCustom>({
 
   onLoad(options) {
     const rawOptions = options as Record<string, string | undefined>;
-    // 扫码进入：options.scene 存在且无 campaign_id 时，解析 scene 获取短码
+    // 扫码进入：options.scene 存在且无 campaign_id 时，从 scene（"code=xxx" 键值对）提取短码
     if (rawOptions.scene && !rawOptions.campaign_id) {
       const scene = decodeURIComponent(rawOptions.scene);
-      this.resolveScene(scene);
+      const sceneCode = parseSceneCode(scene);
+      if (!sceneCode) {
+        // scene 无 code 键（非本活动小程序码），不发起无效请求
+        this.setData({ notFound: true });
+        return;
+      }
+      this.resolveScene(sceneCode);
       return;
     }
     const query = parseRecruitQuery(rawOptions);
