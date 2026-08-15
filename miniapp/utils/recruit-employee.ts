@@ -39,20 +39,56 @@ export async function fetchEmployeeIdentity(): Promise<EmployeeIdentity> {
   return { employeeId, badgeCount };
 }
 
+/** 订阅授权结果状态（对齐微信 requestSubscribeMessage 单模板返回值）. */
+export type LeadSubscribeStatus = "accept" | "reject" | "ban" | "filter" | "error";
+
+/** 订阅授权结果回调参数. */
+export interface LeadSubscribeResult {
+  status: LeadSubscribeStatus;
+}
+
 /**
  * 发起「新线索提醒」订阅消息授权.
  * ⚠️ 必须在用户 tap 手势回调内同步调用（不可包 async/await 之后再调），
- * 用户拒绝/接口失败均静默，不阻断分享/海报流程。
+ * 接口失败/用户拒绝均静默，不阻断分享/海报流程.
+ *
+ * 结果反馈（一次性订阅模型，每次「允许」仅可收 1 条消息）：
+ * - accept：toast 正向确认「已开启新线索提醒」
+ * - ban：用户曾勾选「总是拒绝」，弹窗不再出现，引导去设置页开启「订阅消息」
+ * - reject/filter/error：静默
+ *
  * @param templateId 活动详情返回的 subscribe_template_id（空则跳过）
+ * @param onResult 授权结果回调（可选，供调用方按状态更新 UI，如隐藏提示条）
  */
-export function requestLeadSubscribe(templateId: string | null | undefined): void {
+export function requestLeadSubscribe(
+  templateId: string | null | undefined,
+  onResult?: (result: LeadSubscribeResult) => void,
+): void {
   if (!templateId) {
     return;
   }
   wx.requestSubscribeMessage({
     tmplIds: [templateId],
-    complete: () => {
-      // 拒绝/失败静默
+    success: (res) => {
+      const status = (res[templateId] as LeadSubscribeStatus | undefined) ?? "filter";
+      if (status === "accept") {
+        wx.showToast({ title: "已开启新线索提醒", icon: "success" });
+      } else if (status === "ban") {
+        wx.showModal({
+          title: "无法开启提醒",
+          content: "您此前选择了总是拒收订阅消息，请在设置中开启「订阅消息」后重试",
+          confirmText: "去设置",
+          success: (modalRes) => {
+            if (modalRes.confirm) {
+              wx.openSetting({});
+            }
+          },
+        });
+      }
+      onResult?.({ status });
+    },
+    fail: () => {
+      onResult?.({ status: "error" });
     },
   });
 }

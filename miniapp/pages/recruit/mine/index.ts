@@ -21,6 +21,7 @@ import {
   type RecruitLeadChip,
   type RecruitMyLeadDisplayItem,
 } from "../../../utils/recruit-logic";
+import { requestLeadSubscribe } from "../../../utils/recruit-employee";
 
 type RecruitMyLeadListResponse = components["schemas"]["RecruitMyLeadListResponse"];
 type RecruitMyShareStatsResponse = components["schemas"]["RecruitMyShareStatsResponse"];
@@ -55,6 +56,10 @@ interface PageData {
   empty: boolean;
   /** 来源活动 ID（「去招募页分享」回跳用）. */
   campaignId: string;
+  /** 订阅消息模板 ID（从详情页透传，用于展示订阅提示条）. */
+  subscribe_template_id: string;
+  /** 是否展示订阅提醒提示条（仅登录员工且 subscribe_template_id 非空）. */
+  showSubscribePrompt: boolean;
 }
 
 interface PageCustom {
@@ -68,6 +73,7 @@ interface PageCustom {
   onReachBottom(): void;
   onPullDownRefresh(): void;
   onGoRecruit(): void;
+  onSubscribeTap(): void;
   /** 首次加载完成标志（避免 onLoad/onShow 双载）. */
   initialLoaded?: boolean;
 }
@@ -86,11 +92,18 @@ Page<PageData, PageCustom>({
     noMore: false,
     empty: false,
     campaignId: "",
+    subscribe_template_id: "",
+    showSubscribePrompt: false,
   },
 
   onLoad(options) {
     const raw = options as Record<string, string | undefined>;
-    this.setData({ campaignId: raw.campaign_id || "" });
+    const subscribeTemplateId = raw.subscribe_template_id || "";
+    this.setData({
+      campaignId: raw.campaign_id || "",
+      subscribe_template_id: subscribeTemplateId,
+      showSubscribePrompt: !!subscribeTemplateId,
+    });
   },
 
   hasToken() {
@@ -272,5 +285,18 @@ Page<PageData, PageCustom>({
       ? `/pages/recruit/detail/index?campaign_id=${encodeURIComponent(campaignId)}`
       : "/pages/recruit/detail/index";
     wx.navigateTo({ url });
+  },
+
+  /** 开启新线索提醒：tap 手势内发起订阅授权；接受后隐藏提示条（结果反馈见 utils/recruit-employee.ts）. */
+  onSubscribeTap() {
+    const { subscribe_template_id } = this.data;
+    if (!subscribe_template_id) {
+      return;
+    }
+    requestLeadSubscribe(subscribe_template_id, (result) => {
+      if (result.status === "accept") {
+        this.setData({ showSubscribePrompt: false });
+      }
+    });
   },
 });

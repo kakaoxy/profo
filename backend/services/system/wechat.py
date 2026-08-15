@@ -487,7 +487,9 @@ class WeChatAuthService:
             page: 点击消息跳转的小程序页面路径（含 query，可选）
 
         Raises:
-            ValidationError: 微信接口返回错误（细节仅记日志，不回传用户）
+            ValidationError: 微信接口返回错误（细节仅记日志，不回传用户）；
+                43101（用户未订阅/拒收）与 40003（openid 无效）属预期业务态，
+                仅 warning 留痕后正常返回，不抛出
 
         """
         access_token = WeChatAuthService.fetch_wechat_miniapp_access_token()
@@ -514,6 +516,14 @@ class WeChatAuthService:
         if result.get("errcode", 0) != 0:
             # errmsg 含上游 API 细节（如用户未订阅、模板非法），不能直接回传给用户；
             # 仅服务端日志记录，对用户返回通用错误消息
-            logger.error("发送订阅消息失败：errmsg=%s, errcode=%s", result.get("errmsg"), result.get("errcode"))
+            errcode = result.get("errcode")
+            errmsg = result.get("errmsg")
+            if errcode in (43101, 40003):
+                # 43101=用户未订阅/拒收（一次性订阅额度未授权或已用尽），
+                # 40003=openid 无效（如员工已解绑）：均属预期业务态，重试亦无意义，
+                # warning 留痕后正常返回，避免调用方按异常处理产生 ERROR 噪音
+                logger.warning("订阅消息未送达（预期业务态）：errcode=%s, errmsg=%s", errcode, errmsg)
+                return
+            logger.error("发送订阅消息失败：errcode=%s, errmsg=%s", errcode, errmsg)
             msg = "订阅消息发送失败"
             raise ValidationError(msg)

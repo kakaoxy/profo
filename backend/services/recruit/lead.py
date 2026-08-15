@@ -94,6 +94,23 @@ class RecruitLeadService:
             raise ResourceNotFoundError(msg)
         return lead.phone
 
+    def delete(self, lead_id: str) -> None:
+        """删除招募线索（硬删除，无关联表引用）.
+
+        Args:
+            lead_id: 线索ID
+
+        Raises:
+            ResourceNotFoundError: 线索不存在
+
+        """
+        lead = self.db.query(RecruitLead).filter(RecruitLead.id == lead_id).first()
+        if lead is None:
+            msg = "招募线索不存在"
+            raise ResourceNotFoundError(msg)
+        self.db.delete(lead)
+        self.db.commit()
+
     def get_my_lead_phone(self, user: User, lead_id: str) -> tuple[str, RecruitLeadStatus]:
         """C 端员工查看归属线索的完整手机号（解密）.
 

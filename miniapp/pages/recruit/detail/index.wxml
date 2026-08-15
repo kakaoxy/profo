@@ -240,6 +240,7 @@
           <button class="staff-btn staff-btn--pri" open-type="share" bindtap="onShareTap">分享给客户</button>
           <button class="staff-btn staff-btn--sec" bindtap="onPosterTap" loading="{{posterLoading}}">生成海报</button>
         </view>
+        <view wx:if="{{campaign.subscribe_template_id}}" class="staff-sub-tip">客户留资后将微信提醒您，授权弹窗建议勾选「总是保持以上选择」</view>
       </view>
 
       <!-- 底部安全区留白 -->

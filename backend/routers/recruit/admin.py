@@ -232,3 +232,18 @@ def get_lead_phone(
     logger.info("查看完整号码：lead_id=%s, operator=%s", lead_id, _current_user.id)
 
     return RecruitLeadPhoneResponse(phone=phone)
+
+
+@router.delete(
+    "/leads/{lead_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除招募线索",
+)
+def delete_lead(
+    lead_id: Annotated[str, Path(description="线索ID")],
+    db: DbSessionDep,
+    _current_user: RecruitWritePermDep,
+) -> None:
+    """删除招募线索（硬删除，不可恢复）."""
+    RecruitLeadService(db).delete(lead_id)
+    logger.info("删除招募线索：lead_id=%s, operator=%s", lead_id, _current_user.id)

@@ -770,6 +770,13 @@
   background: rgba(37, 99, 235, 0.08);
   color: var(--brand);
 }
+.staff-sub-tip {
+  margin-top: 16rpx;
+  font-size: 21rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+  text-align: center;
+}
 
 /* ===== 海报预览弹层（招募计划二期，对照 poster-flow.html 步骤2/3） ===== */
 .poster-overlay {

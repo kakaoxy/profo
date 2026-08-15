@@ -3354,6 +3354,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/recruit/my/leads/{lead_id}/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查看我的线索完整手机号
+         * @description 归属当前员工的线索返回完整手机号（解密），查看即视为已联系（new 自动流转 contacted）；不存在或不归属统一 404，隐私敏感限流
+         */
+        get: operations["get_my_lead_phone_api_v1_public_recruit_my_leads__lead_id__phone_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/recruit/my/share-stats": {
         parameters: {
             query?: never;
@@ -3537,6 +3557,26 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/recruit/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 删除招募线索
+         * @description 删除招募线索（硬删除，不可恢复）.
+         */
+        delete: operations["delete_lead_api_v1_admin_recruit_leads__lead_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -10269,6 +10309,19 @@ export interface components {
             page: number;
             /** Page Size */
             page_size: number;
+        };
+        /**
+         * RecruitMyLeadPhoneResponse
+         * @description C 端我的线索完整手机号响应（查看即视为已联系）.
+         */
+        RecruitMyLeadPhoneResponse: {
+            /**
+             * Phone
+             * @description 完整手机号
+             */
+            phone: string;
+            /** @description 查看后的跟进状态（new 线索自动流转为 contacted） */
+            status: components["schemas"]["RecruitLeadStatus"];
         };
         /**
          * RecruitMyShareStatsResponse
@@ -18415,6 +18468,38 @@ export interface operations {
             };
         };
     };
+    get_my_lead_phone_api_v1_public_recruit_my_leads__lead_id__phone_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitMyLeadPhoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_share_stats_api_v1_public_recruit_my_share_stats_get: {
         parameters: {
             query?: never;
@@ -18766,6 +18851,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecruitLeadPhoneResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_lead_api_v1_admin_recruit_leads__lead_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

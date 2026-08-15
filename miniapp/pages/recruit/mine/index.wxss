@@ -23,6 +23,49 @@
   color: var(--ink-2);
 }
 
+/* ===== 订阅提醒提示条 ===== */
+.subscribe-prompt {
+  margin: 24rpx 32rpx 0;
+  background: var(--brand-weak);
+  border: 2rpx solid rgba(37, 99, 235, 0.14);
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.sp-text {
+  flex: 1;
+  min-width: 0;
+}
+.sp-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.sp-sub {
+  font-size: 21rpx;
+  color: var(--ink-2);
+  margin-top: 6rpx;
+  line-height: 1.5;
+}
+.sp-btn {
+  flex-shrink: 0;
+  margin: 0;
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 28rpx;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 600;
+  border-radius: 9999rpx;
+}
+.sp-btn::after {
+  border: none;
+}
+
 /* ===== 统计卡 ===== */
 .stats {
   margin: 24rpx 32rpx 0;

@@ -14,15 +14,31 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { safeFormatDate } from "@/lib/formatters";
+import type { ActionResult } from "@/lib/action-result";
 import type { RecruitCampaign, RecruitLead, RecruitLeadStatus } from "../../types";
 import { RECRUIT_LEAD_STATUS_LABELS, RECRUIT_SOURCE_LABELS } from "../../types";
 import { LeadsTable } from "./leads-table";
 import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
 import { DesignPagination } from "../../_components/design-pagination";
-import { updateLeadStatusAction, getLeadPhoneAction } from "../../_lib/recruit-actions";
+import {
+  updateLeadStatusAction,
+  getLeadPhoneAction,
+  deleteLeadAction,
+} from "../../_lib/recruit-actions";
 import type { RecruitLeadsKpi } from "../../_lib/recruit-data";
 
 export interface LeadsViewProps {
@@ -474,10 +490,81 @@ export function LeadsView({
                   <div className="text-[14px] text-ink">内部员工</div>
                 </div>
               )}
+
+              {/* 删除线索（危险操作，二次确认） */}
+              <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
+                <div className="border-t border-fog pt-4">
+                  <DeleteLeadButton leadId={detailLead.id} onDeleted={() => setDetailLeadId(null)} />
+                </div>
+              </HasPermission>
             </div>
           )}
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+/** 抽屉内「删除线索」操作：文本按钮 + 二次确认弹窗（复用活动删除模式）. */
+function DeleteLeadButton({
+  leadId,
+  onDeleted,
+}: {
+  leadId: string;
+  onDeleted: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  const handleDelete = async (): Promise<void> => {
+    setDeleting(true);
+    try {
+      const res: ActionResult<void> = await deleteLeadAction(leadId);
+      if (res.success) {
+        toast.success("删除成功");
+        setOpen(false);
+        onDeleted();
+      } else {
+        toast.error(res.error);
+      }
+    } catch {
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <button
+          type="button"
+          className="text-[14px] font-medium text-rust px-0.5 hover:opacity-60 transition-opacity"
+        >
+          删除线索
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除该线索？</AlertDialogTitle>
+          <AlertDialogDescription>
+            删除后不可恢复，且不会通知归属员工。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              void handleDelete();
+            }}
+            disabled={deleting}
+            className="bg-rust hover:bg-red-700"
+          >
+            {deleting ? "删除中..." : "确认删除"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

@@ -34,6 +34,15 @@
 
   <!-- 有数据：统计卡 + 筛选 + 列表 -->
   <block wx:else>
+    <!-- 订阅提醒提示条（仅登录员工态展示；授权弹窗建议勾选「总是保持以上选择」） -->
+    <view wx:if="{{showSubscribePrompt}}" class="subscribe-prompt">
+      <view class="sp-text">
+        <view class="sp-title">客户报名，微信实时提醒您</view>
+        <view class="sp-sub">授权弹窗建议勾选「总是保持以上选择」，无需重复授权</view>
+      </view>
+      <button class="sp-btn" bindtap="onSubscribeTap">开启提醒</button>
+    </view>
+
     <!-- 统计卡（留资数品牌蓝强调） -->
     <view class="stats">
       <view class="stat">

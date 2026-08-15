@@ -31,6 +31,15 @@ logger = logging.getLogger(__name__)
 
 _DEEP_VIEW_MIN_MS = 3000
 _NOTIFY_PAGE_PATH = "pages/recruit/detail/index"
+# 订阅消息模板（3826 · 报名结果通知）字段键名
+_NOTIFY_FIELD_ACTIVITY = "thing1"  # 活动名称（campaign.name，thing 类型 ≤20 字符）
+_NOTIFY_FIELD_NAME = "name3"  # 报名人（name 类型：仅纯中文/纯英文，禁数字与符号）
+_NOTIFY_FIELD_PHONE = "phone_number4"  # 联系电话（手机号后四位）
+# name3 固定文案：脱敏手机号（如 138****9000）含数字与 *，违反 name 类型触发 47003，
+# 报名人识别改由 phone_number4 的手机号后四位承担
+_NOTIFY_NAME_TEXT = "微信客户"
+# thing 类型字段长度上限（微信 thing.DATA 规则：20 字符内，超长触发 47003）
+_NOTIFY_THING_MAX_LEN = 20
 
 
 class RecruitAttributionService:
@@ -221,11 +230,39 @@ class RecruitAttributionService:
                 self.db.rollback()
                 raise
 
+    def _resolve_employee_openids(self, employee_id: str) -> list[str]:
+        """解析员工可通知的微信 openid 列表.
+
+        优先使用主账号直接绑定的 openid（wechat_openid 非空）；
+        主账号无直接绑定时，通过 merged_to_user_id 反查仍持有 openid 的
+        已合并临时账号（status='merged'），收集其 openid（通常仅 1 个）。
+
+        Returns:
+            可发送 openid 列表；无任何可用的 openid 时返回空列表。
+
+        """
+        employee = self.db.query(User).filter(User.id == employee_id).first()
+        if employee is None:
+            return []
+        if employee.wechat_openid:
+            return [employee.wechat_openid]
+        # 间接绑定：反查已合并临时账号（align 语义对齐 services/system/user/core.py 的 wechat_bound 间接绑定）
+        merged = (
+            self.db.query(User)
+            .filter(
+                User.merged_to_user_id == employee_id,
+                User.status == "merged",
+                User.wechat_openid.isnot(None),
+            )
+            .all()
+        )
+        return [u.wechat_openid for u in merged if u.wechat_openid]
+
     def notify_new_lead(self, lead: RecruitLead) -> None:
         """新线索订阅消息通知（同步阻塞，供路由层 run_in_threadpool 调用）.
 
         仅在首次新线索（is_new=True）创建成功后由留资链路触发；
-        模板未配置 / 无归属员工 / 员工未绑定 openid 时 info 日志留痕并跳过，
+        模板未配置 / 无归属员工 / 员工无可用 openid 时 info 日志留痕并跳过，
         发送或查询出现的任何异常仅 logger 记录，绝不影响留资结果。
         通知内容仅含手机号后四位，不透传完整手机号明文。
         """
@@ -237,15 +274,40 @@ class RecruitAttributionService:
             if not lead.referrer_employee_id:
                 logger.info("线索无归属员工，跳过新线索通知：lead_id=%s", lead.id)
                 return
-            employee = self.db.query(User).filter(User.id == lead.referrer_employee_id).first()
-            if employee is None or not employee.wechat_openid:
-                logger.info("归属员工未绑定微信 openid，跳过新线索通知：lead_id=%s", lead.id)
+
+            openids = self._resolve_employee_openids(lead.referrer_employee_id)
+            if not openids:
+                logger.info(
+                    "归属员工无任何可用的微信 openid，跳过新线索通知：lead_id=%s, employee_id=%s",
+                    lead.id,
+                    lead.referrer_employee_id,
+                )
                 return
 
+            # 查询活动名称
+            campaign_name = ""
+            if lead.campaign_id:
+                campaign = self.db.query(RecruitCampaign).filter(RecruitCampaign.id == lead.campaign_id).first()
+                if campaign:
+                    campaign_name = campaign.name
+
+            # 手机号后四位（phone 为空/异常时降级为空串，避免 [-4:] 越界）
+            raw_phone = lead.phone or ""
+            phone_tail = raw_phone[-4:] if raw_phone else ""
+
+            data = {
+                # 活动名称截断 20 字符（thing 类型上限）；name3 为 name 类型固定文案
+                _NOTIFY_FIELD_ACTIVITY: {"value": (campaign_name or "招募活动")[:_NOTIFY_THING_MAX_LEN]},
+                _NOTIFY_FIELD_NAME: {"value": _NOTIFY_NAME_TEXT},
+                _NOTIFY_FIELD_PHONE: {"value": phone_tail},
+            }
+
             page = f"{_NOTIFY_PAGE_PATH}?campaign_id={lead.campaign_id}" if lead.campaign_id else None
-            # 手机号后四位用于订阅消息文案；phone 为空/异常时降级为空串，避免 [-4:] 越界
-            phone_tail = lead.phone[-4:] if lead.phone else ""
-            data = {"phone4": {"value": phone_tail}}
-            WeChatAuthService.send_subscribe_message(employee.wechat_openid, template_id, data, page=page)
+
+            for openid in openids:
+                try:
+                    WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
+                except Exception:
+                    logger.exception("新线索订阅消息发送失败：lead_id=%s, openid=%s", lead.id, openid)
         except Exception:
             logger.exception("新线索订阅消息发送失败：lead_id=%s", lead.id)

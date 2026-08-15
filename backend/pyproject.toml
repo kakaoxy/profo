@@ -123,6 +123,7 @@ ignore = [
 "services/market/csv_parser.py" = ["PERF203", "S110"]
 "services/market/json_batch_importer.py" = ["PERF203"]
 "services/utils/date_parser.py" = ["PERF203"]
+"services/recruit/attribution.py" = ["PERF203"]
 
 [tool.ruff.format]
 quote-style = "double"

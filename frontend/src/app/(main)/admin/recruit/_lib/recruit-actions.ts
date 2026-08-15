@@ -176,6 +176,29 @@ export async function updateLeadStatusAction(
   }
 }
 
+// ─── 线索删除 ──────────────────────────────────────────────────────────────────
+
+/** 删除招募线索（硬删除，不可恢复）. */
+export async function deleteLeadAction(leadId: string): Promise<ActionResult<void>> {
+  const perm = await requirePermission(PERMISSION_CODES.RECRUIT_WRITE);
+  if (!perm.ok) return { success: false, error: perm.message };
+
+  try {
+    const client = await fetchClient();
+    const { error } = await client.DELETE("/api/v1/admin/recruit/leads/{lead_id}", {
+      params: { path: { lead_id: leadId } },
+    });
+    if (error) {
+      return { success: false, error: extractErrorMessage(error) };
+    }
+    revalidatePath(LEADS_PATH);
+    return { success: true, data: undefined };
+  } catch (e) {
+    logger.error("deleteLeadAction error:", e);
+    return { success: false, error: parseNetworkError(e) };
+  }
+}
+
 // ─── 图片上传 ──────────────────────────────────────────────────────────────────
 
 /** 上传分享配图，返回 CDN URL。 */

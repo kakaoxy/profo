@@ -571,12 +571,24 @@ Page<PageData, PageCustom>({
     this.setData({ posterVisible: false });
   },
 
-  /** 员工区块「我的线索」入口：携带当前活动 ID 进入我的线索页. */
+  /** 员工区块「我的线索」入口：请求订阅授权后携带活动信息进入我的线索页. */
   onMineTap() {
+    if (this.data.isEmployee) {
+      requestLeadSubscribe(this.data.campaign?.subscribe_template_id);
+    }
     const { campaignId } = this.data;
-    const url = campaignId
-      ? `/pages/recruit/mine/index?campaign_id=${encodeURIComponent(campaignId)}`
-      : "/pages/recruit/mine/index";
+    const subscribeTemplateId = this.data.campaign?.subscribe_template_id || "";
+    let url = "/pages/recruit/mine/index";
+    const params: string[] = [];
+    if (campaignId) {
+      params.push(`campaign_id=${encodeURIComponent(campaignId)}`);
+    }
+    if (subscribeTemplateId) {
+      params.push(`subscribe_template_id=${encodeURIComponent(subscribeTemplateId)}`);
+    }
+    if (params.length > 0) {
+      url += "?" + params.join("&");
+    }
     wx.navigateTo({ url });
   },
 
