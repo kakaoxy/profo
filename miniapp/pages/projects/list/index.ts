@@ -1,6 +1,7 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
 import { resolveAssetUrl } from "../../../utils/url";
+import { consumeProjectListPendingTab } from "../../../utils/project-list-tab";
 import { animateServedCount, clearServedCountTimer, loadServedCount } from "../../../utils/served-count";
 
 /** 在售房源列表项. */
@@ -119,7 +120,9 @@ interface PageCustom {
   loadList(reset?: boolean): void;
   toDisplay(item: OnSaleItem | SoldItem, tab: Tab): DisplayItem;
   buildQueryParams(): Record<string, string | number>;
+  onShow(): void;
   onStatusTabChange(e: WechatMiniprogram.BaseEvent): void;
+  switchToTab(tab: Tab): void;
   onSearchInput(e: WechatMiniprogram.Input): void;
   onSearchConfirm(): void;
   onFilterPillTap(e: WechatMiniprogram.BaseEvent): void;
@@ -131,6 +134,7 @@ interface PageCustom {
   resetAllFilters(): void;
   onItemTap(e: WechatMiniprogram.BaseEvent): void;
   onRetry(): void;
+  onServedTagTap(): void;
   loadServedCount(): void;
   animateServedCount(target: number): void;
   clearServedCountTimer(): void;
@@ -179,12 +183,26 @@ Page<PageData, PageCustom>({
     this.loadList(true);
     this.loadServedCount();
   },
+  onShow() {
+    // 消费其它 tabBar 页（服务页等）写入的待切换 tab
+    const pending = consumeProjectListPendingTab();
+    if (pending === "sold") {
+      this.switchToTab("sold");
+    }
+  },
   onUnload() {
     this.clearServedCountTimer();
   },
   onStatusTabChange(e: WechatMiniprogram.BaseEvent) {
     const tab = e.currentTarget.dataset.tab as Tab;
-    if (!tab || tab === this.data.tab) {
+    if (!tab) {
+      return;
+    }
+    this.switchToTab(tab);
+  },
+  /** 切换状态 tab：清空所有筛选 + 关闭搜索/下拉，重新加载. */
+  switchToTab(tab: Tab) {
+    if (tab === this.data.tab) {
       return;
     }
     // 切 tab 清空所有筛选 + 关闭搜索/下拉，避免 sold tab 不支持的筛选残留造成困惑
@@ -471,6 +489,10 @@ Page<PageData, PageCustom>({
   },
   onRetry() {
     this.loadList(true);
+  },
+  /** 累计服务标签点击：本页已在房源列表，直接切到过往案例. */
+  onServedTagTap() {
+    this.switchToTab("sold");
   },
   /** 拉取平台统计 total_sold（公开接口，skipAuth），成功后从 0 缓动. */
   async loadServedCount() {

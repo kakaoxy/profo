@@ -31,6 +31,7 @@ from services.marketing import (
 from services.marketing import (
     MarketingProjectService as L4MarketingProjectService,
 )
+from services.marketing.public import PublicProjectService
 from services.system.exceptions import ResourceNotFoundError
 from utils.common import RateLimits, limiter
 
@@ -59,6 +60,7 @@ _MediaServiceDep = Annotated[L4MarketingMediaService, Depends(get_media_service)
     summary="获取营销项目列表",
 )
 def list_marketing_projects(
+    db: DbSessionDep,
     service: _ProjectServiceDep,
     _current_user: L4MarketingReadPermDep,
     pagination: PaginationDep,
@@ -85,8 +87,18 @@ def list_marketing_projects(
         community_id=community_id,
     )
 
+    # 复用C端封面规则（营销照片首张图片，跳过视频），保证列表标题图与C端一致
+    cover_map = PublicProjectService(db).resolve_cover_images_batch(items)
+    result_items = []
+    for item in items:
+        resp = L4MarketingProjectResponse.model_validate(item)
+        cover_image, cover_thumbnail_url = cover_map[item.id]
+        resp.cover_image = cover_image
+        resp.cover_thumbnail_url = cover_thumbnail_url
+        result_items.append(resp)
+
     return L4MarketingProjectListResponse(
-        items=items,
+        items=result_items,
         total=total,
         page=pagination.page,
         page_size=pagination.page_size,

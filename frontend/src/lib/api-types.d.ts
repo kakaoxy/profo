@@ -6307,6 +6307,16 @@ export interface components {
             updated_at: string;
             /** Media Files */
             media_files?: components["schemas"]["L4MarketingMediaResponse"][];
+            /**
+             * Cover Image
+             * @description 封面图URL（营销照片首张图片，跳过视频）
+             */
+            cover_image?: string | null;
+            /**
+             * Cover Thumbnail Url
+             * @description 封面缩略图URL
+             */
+            cover_thumbnail_url?: string | null;
         };
         /**
          * L4MarketingProjectSummary

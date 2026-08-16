@@ -172,6 +172,10 @@ class L4MarketingProjectResponse(BaseModel):
     # 关联数据
     media_files: list[L4MarketingMediaResponse] = Field(default_factory=list)
 
+    # 封面（列表接口按营销照片规则计算填充，非数据库字段）
+    cover_image: str | None = Field(None, description="封面图URL（营销照片首张图片，跳过视频）")
+    cover_thumbnail_url: str | None = Field(None, description="封面缩略图URL")
+
     @field_validator("images", "tags", mode="before")
     @classmethod
     def validate_json_array(cls, v: Any) -> list[str]:

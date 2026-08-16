@@ -1,3 +1,4 @@
+import { setProjectListPendingTab } from "../../../utils/project-list-tab";
 import { animateServedCount, clearServedCountTimer, loadServedCount } from "../../../utils/served-count";
 
 interface FaqItem {
@@ -20,6 +21,7 @@ interface PageCustom {
   onUnload(): void;
   onGoValuation(): void;
   onToggleFaq(e: WechatMiniprogram.BaseEvent): void;
+  onServedTagTap(): void;
   onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
   onShareTimeline(): WechatMiniprogram.Page.ICustomTimelineContent;
   loadServedCount(): void;
@@ -73,6 +75,11 @@ Page<PageData, PageCustom>({
     this.setData({
       ["faqList[" + index + "].open"]: !this.data.faqList[index].open,
     });
+  },
+  /** 累计服务标签点击：写入待切换 tab 后跳转房源列表（过往案例）. */
+  onServedTagTap() {
+    setProjectListPendingTab("sold");
+    wx.switchTab({ url: "/pages/projects/list/index" });
   },
   onShareAppMessage() {
     return {

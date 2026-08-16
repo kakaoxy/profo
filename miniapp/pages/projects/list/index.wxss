@@ -79,6 +79,15 @@ page {
   font-weight: 600;
   margin: 0 2rpx;
 }
+/* 可点击提示：箭头 + 按下反馈 */
+.tag-served__arrow {
+  margin-left: 6rpx;
+  font-size: 24rpx;
+  color: var(--warm-accent);
+}
+.tag-served--hover {
+  opacity: 0.7;
+}
 
 /* ===== 通用标签 ===== */
 .tag {

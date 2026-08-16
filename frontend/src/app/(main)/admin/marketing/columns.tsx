@@ -55,10 +55,12 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
     cell: ({ row }) => {
       const project = row.original;
 
-      // 优先从 media_files 获取营销图片，如果没有则使用 images 字段
+      // 优先使用后端计算的封面（与C端一致：营销照片首张图片，跳过视频），无则回退 media_files/images
       let imageUrl: string | null = null;
-      if (project.media_files && project.media_files.length > 0) {
-        // 获取第一张营销图片，优先使用 thumbnail_url
+      if (project.cover_image || project.cover_thumbnail_url) {
+        imageUrl = getFileUrl(project.cover_thumbnail_url || project.cover_image);
+      } else if (project.media_files && project.media_files.length > 0) {
+        // 兜底：取第一张媒体，优先使用 thumbnail_url
         const firstMedia = project.media_files[0];
         imageUrl = getFileUrl(firstMedia.thumbnail_url || firstMedia.file_url);
       } else if (Array.isArray(project.images) && project.images.length > 0) {
