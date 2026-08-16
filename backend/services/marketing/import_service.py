@@ -10,6 +10,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from models import Community, Project, ProjectRenovation, RenovationPhoto
+from models.common import RenovationStage
 from schemas.l4_marketing.import_schemas import (
     ImportableMediaResponse,
     L3ProjectImportResponse,
@@ -177,8 +178,8 @@ class MarketingImportService:
                 id=photo.id,
                 file_url=photo.url,
                 thumbnail_url=photo.thumbnail_url or photo.url,
-                photo_category="renovation",
-                renovation_stage=photo.stage,
+                photo_category=("marketing" if photo.stage == RenovationStage.DELIVERY.value else "renovation"),
+                renovation_stage=(None if photo.stage == RenovationStage.DELIVERY.value else photo.stage),
                 description=photo.description,
                 sort_order=idx,
             )

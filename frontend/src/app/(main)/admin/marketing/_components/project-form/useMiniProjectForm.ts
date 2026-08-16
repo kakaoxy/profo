@@ -137,7 +137,7 @@ function getDefaultValues(
       sort_order: 0,
       tags: [],
       decoration_style: "",
-      publish_status: "草稿",
+      publish_status: "发布",
       project_status: "在途",
       consultant_id: defaultConsultantId,
     };

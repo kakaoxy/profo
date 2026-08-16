@@ -115,7 +115,7 @@ class PublicProjectService:
         max_area: float | None = None,
         min_floor: int | None = None,
         max_floor: int | None = None,
-        sort_by: str = "created_at",
+        sort_by: str = "sort_order",
         sort_order: str = "desc",
         page: int = 1,
         page_size: int | None = None,
@@ -148,14 +148,22 @@ class PublicProjectService:
         total = query.count()
 
         allowed_sort_fields = {
+            "sort_order": L4MarketingProject.sort_order,
             "created_at": L4MarketingProject.created_at,
             "total_price": L4MarketingProject.total_price,
             "unit_price": L4MarketingProject.unit_price,
             "area": L4MarketingProject.area,
         }
-        validated_sort_by = validate_sort_field(sort_by, allowed_sort_fields.keys(), "created_at")
-        sort_column = allowed_sort_fields[validated_sort_by]
-        query = query.order_by(sort_column.asc() if sort_order == "asc" else sort_column.desc())
+        validated_sort_by = validate_sort_field(sort_by, allowed_sort_fields.keys(), "sort_order")
+        if validated_sort_by == "sort_order":
+            # 权重排序：与 admin 侧一致，权重越大越靠前，相同权重按创建时间倒序
+            query = query.order_by(
+                desc(L4MarketingProject.sort_order),
+                desc(L4MarketingProject.created_at),
+            )
+        else:
+            sort_column = allowed_sort_fields[validated_sort_by]
+            query = query.order_by(sort_column.asc() if sort_order == "asc" else sort_column.desc())
 
         offset = (page - 1) * effective_page_size
         items = query.offset(offset).limit(effective_page_size).all()
@@ -182,7 +190,10 @@ class PublicProjectService:
 
         total = query.count()
         items = (
-            query.order_by(desc(L4MarketingProject.created_at))
+            query.order_by(
+                desc(L4MarketingProject.sort_order),
+                desc(L4MarketingProject.created_at),
+            )
             .offset((page - 1) * effective_page_size)
             .limit(effective_page_size)
             .all()

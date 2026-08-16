@@ -69,7 +69,7 @@ export const createSchema = z.object({
   stage_completed_dates: z.record(z.string(), z.string()).nullable().optional(),
 
   // 状态字段
-  publish_status: publishStatusSchema.default("草稿"),
+  publish_status: publishStatusSchema.default("发布"),
   project_status: projectStatusSchema.default("在途"),
 
   // 关联字段 - project_id 为字符串类型(UUID)

@@ -24,7 +24,7 @@ class PublicProjectFilter(BaseModel):
     max_area: float | None = Field(None, description="最大面积(m²)")
     min_floor: int | None = Field(None, ge=1, description="最小所在楼层")
     max_floor: int | None = Field(None, ge=1, description="最大所在楼层")
-    sort_by: str = Field("created_at", description="排序字段")
+    sort_by: str = Field("sort_order", description="排序字段(默认权重 sort_order)")
     sort_order: str = Field("desc", description="排序方向 asc/desc")
 
     model_config = ConfigDict(from_attributes=True)

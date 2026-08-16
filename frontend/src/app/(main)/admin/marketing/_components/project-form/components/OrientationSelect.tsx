@@ -4,25 +4,14 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { OrientationSelectProps } from "./types";
 
-/** 朝向选项列表 */
-const ORIENTATIONS = [
-  "南",
-  "北",
-  "东",
-  "西",
-  "南北",
-  "东西",
-  "东南",
-  "西南",
-  "东北",
-  "西北",
-] as const;
+/** 朝向基础选项列表（与 admin/projects 新建项目弹窗保持一致） */
+const BASE_ORIENTATIONS = ["南北", "南", "东", "西", "北"] as const;
 
 /**
  * 朝向选择组件
  *
- * 提供10种标准朝向的网格选择
- * 使用按钮网格布局，支持视觉反馈
+ * 提供5种标准朝向的网格选择（与项目弹窗一致）；
+ * 编辑存量数据时若朝向不在基础选项中则追加显示，避免旧值丢失选中态
  *
  * @example
  * ```tsx
@@ -33,13 +22,17 @@ const ORIENTATIONS = [
  * ```
  */
 export function OrientationSelect({ value, onChange }: OrientationSelectProps) {
+  const orientations =
+    value && !BASE_ORIENTATIONS.includes(value as (typeof BASE_ORIENTATIONS)[number])
+      ? [...BASE_ORIENTATIONS, value]
+      : [...BASE_ORIENTATIONS];
   return (
     <div className="space-y-2">
       <label className="block text-xs font-medium text-graphite uppercase tracking-wider">
         朝向 <span className="text-error">*</span>
       </label>
       <div className="grid grid-cols-5 gap-2">
-        {ORIENTATIONS.map((orientation) => (
+        {orientations.map((orientation) => (
           <button
             key={orientation}
             type="button"
