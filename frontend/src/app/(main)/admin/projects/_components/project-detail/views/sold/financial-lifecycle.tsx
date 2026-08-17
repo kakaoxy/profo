@@ -1,144 +1,120 @@
 "use client";
 
-import { useCurrentDate } from "@/hooks/use-current-date";
-import { differenceInDays, parseISO, isValid, format } from "date-fns";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
+import { Fragment } from "react";
+import { ArrowRight } from "lucide-react";
 import { Project } from "../../../../types";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { safeFormatDate } from "@/lib/formatters";
+
+/** 万文案：去掉多余的 .0 尾数（29.6 保留、38.0 → 38） */
+function formatWan(value: number): string {
+  return value.toFixed(1).replace(/\.0$/, "");
+}
+
+interface FinNode {
+  key: string;
+  label: string;
+  valueText: string | null;
+  dateText: string | null;
+  warm?: boolean;
+}
 
 export function FinancialLifecycle({ project }: { project: Project }) {
-  // [优化] 直接读取缓存字段
-  const totalInvestment = Number(project.total_expense) || 0;
-  const totalIncome = Number(project.total_income) || 0;
+  // ---- 取数：价格为万元，投入为元（total_investment 为后端 total_expense 别名） ----
+  const signingPrice = Number(project.signing_price || 0);
   const listPrice = Number(project.list_price || 0);
   const soldPrice = Number(project.sold_price || 0);
-
-  const today = useCurrentDate();
-
-  // 计算关键日期
-  // 逻辑与 ledger 保持一致：开工取签约日期或创建日期，售出取成交日期或今天
-  const rawStartDate = project.signing_date || project.created_at;
-  const signingDate = rawStartDate ? parseISO(rawStartDate) : null;
-
-  const rawHandoverDate = project.planned_handover_date;
-  const handoverDate = rawHandoverDate ? parseISO(rawHandoverDate) : null;
-
-  // 使用真实上架日期，不再硬编码 +65 天
-  const listingDate = project.listing_date ? parseISO(project.listing_date) : null;
+  const totalInvestment = Number(project.total_investment ?? project.total_expense ?? 0) || 0; // 元
+  const totalIncome = Number(project.total_income) || 0; // 元
 
   const rawSoldDate = project.sold_at || project.sold_date;
-  const soldDate = rawSoldDate ? parseISO(rawSoldDate) : null;
 
-  // 计算资金占用周期
-  let occupationDays = 0;
-  if (signingDate && isValid(signingDate)) {
-    // 如果已售取成交日期，未售取今天
-    const end = soldDate && isValid(soldDate) ? soldDate : today || new Date();
-    // 统一逻辑：差值天数，保底 0
-    occupationDays = Math.max(0, differenceInDays(end, signingDate));
-  }
+  // 装修投入区间：装修开工 → 上架（缺上架则成交），仅起止可得时拼区间
+  const renoStartShort = safeFormatDate(project.renovation_start_date, "MM.dd", "");
+  const renoEndShort = safeFormatDate(project.listing_date || rawSoldDate, "MM.dd", "");
+  const investmentDateText =
+    renoStartShort && renoEndShort ? `${renoStartShort} – ${renoEndShort}` : renoStartShort;
 
-  const formatNodeDate = (date: Date | null) =>
-    date && isValid(date) ? format(date, "MM/dd") : "--/--";
-
-  const steps = [
-    { label: "签约", date: signingDate },
-    { label: "开工", date: handoverDate },
-    { label: "上架", date: listingDate },
-    { label: "售出", date: soldDate },
+  const nodes: FinNode[] = [
+    {
+      key: "signing",
+      label: "签约价",
+      valueText: signingPrice > 0 ? formatWan(signingPrice) : null,
+      dateText: safeFormatDate(project.signing_date, "yyyy.MM.dd", ""),
+    },
+    {
+      key: "investment",
+      label: "装修与持有投入",
+      valueText: totalInvestment > 0 ? `-${formatWan(totalInvestment / 10000)}` : null,
+      dateText: investmentDateText,
+    },
+    {
+      key: "listing",
+      label: "挂牌价",
+      valueText: listPrice > 0 ? formatWan(listPrice) : null,
+      dateText: safeFormatDate(project.listing_date, "yyyy.MM.dd", ""),
+    },
+    {
+      key: "deal",
+      label: "成交价",
+      valueText: soldPrice > 0 ? formatWan(soldPrice) : null,
+      dateText: safeFormatDate(rawSoldDate, "yyyy.MM.dd", ""),
+      warm: true,
+    },
   ];
 
   return (
-    <Card className="mt-6 shadow-sm border-border overflow-hidden">
-      <CardContent className="p-0">
-        {/* 上半部分：资金构成 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border py-6">
-          {/* Col 1: 成交总价 */}
-          <div className="px-8 flex flex-col justify-center">
-            <span className="text-sm text-muted-foreground mb-1">成交总价</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-foreground font-mono">
-                ¥{soldPrice.toFixed(1)}
-              </span>
-              <span className="text-sm font-bold text-foreground">万</span>
-            </div>
-            <span className="text-xs text-muted-foreground mt-1">
-              挂牌 ¥{listPrice.toFixed(1)}万
-            </span>
-          </div>
-
-          {/* Col 2: 累计回款 */}
-          <div className="px-8 flex flex-col justify-center">
-            <span className="text-sm text-muted-foreground mb-1">累计回款 (实收)</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-money-positive font-mono">
-                ¥{(totalIncome / 10000).toFixed(1)}
-              </span>
-              <span className="text-sm font-bold text-money-positive">万</span>
-            </div>
-            <span className="text-xs text-money-positive/60 mt-1 font-medium">款项已全部结清</span>
-          </div>
-
-          {/* Col 3: 累计投入 */}
-          <TooltipProvider>
-            <div className="px-8 flex flex-col justify-center">
-              <span className="text-sm text-muted-foreground mb-1">累计投入 (实付)</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-baseline gap-1 cursor-help">
-                    <span className="text-2xl font-bold text-money-negative font-mono">
-                      ¥{(totalInvestment / 10000).toFixed(1)}
-                    </span>
-                    <span className="text-sm font-bold text-money-negative">万</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>含收房、装修、持有成本等全周期支出</p>
-                </TooltipContent>
-              </Tooltip>
-              <span className="text-xs text-muted-foreground mt-1">包含所有财务支出明细</span>
-            </div>
-          </TooltipProvider>
-        </div>
-
-        <Separator />
-
-        {/* 下半部分：全周期时间轴 */}
-        <div className="flex flex-col md:flex-row items-center justify-between py-8 px-8 gap-8">
-          {/* 可视化组件 (Stepper) */}
-          <div className="flex-1 w-full max-w-2xl relative">
-            <div className="flex items-center justify-between relative">
-              {/* 背景线 */}
-              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 z-0" />
-
-              {steps.map((step, idx) => (
-                <div
-                  key={idx}
-                  className="relative z-10 flex flex-col items-center gap-2 bg-card px-2"
-                >
-                  <span className="text-[10px] font-mono font-medium text-muted-foreground">
-                    {formatNodeDate(step.date)}
-                  </span>
-                  <div
-                    className={`h-3 w-3 rounded-full border-2 ${step.date ? "bg-card border-primary" : "bg-card border-border"}`}
-                  />
-                  <span className="text-xs font-bold text-muted-foreground">{step.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 关键指标 (右侧) */}
-          <div className="flex flex-col items-end border-l border-border pl-8 md:min-w-[140px]">
-            <span className="text-xs text-muted-foreground font-medium mb-1">资金占用周期</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-mono font-bold text-foreground">{occupationDays}</span>
-              <span className="text-sm font-bold text-muted-foreground">天</span>
-            </div>
+    <div className="rounded-cards bg-pure-white p-6 shadow-steep-sm">
+      {/* 卡头：标题 + 账本入口（与副列快捷入口同一路由 /admin/ledger/{id}） */}
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-base font-[500] text-ink">财务生命周期</div>
+          <div className="mt-0.5 text-[13px] font-[430] text-graphite">
+            签约 → 装修投入 → 挂牌 → 成交
           </div>
         </div>
-      </CardContent>
-    </Card>
+        <Link
+          href={`/admin/ledger/${project.id}`}
+          className="shrink-0 text-sm font-[450] text-ink hover:underline underline-offset-4"
+        >
+          查看项目账本 →
+        </Link>
+      </div>
+
+      {/* 横向 4 金额节点（<md 纵向、箭头旋转 90°） */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-stretch md:gap-1">
+        {nodes.map((node, idx) => (
+          <Fragment key={node.key}>
+            <div className="flex-1 px-2 py-1 text-center">
+              <div
+                className={`text-[21px] font-[480] leading-tight tracking-[-0.02em] tabular-nums ${
+                  node.warm ? "text-rust" : "text-ink"
+                }`}
+              >
+                {node.valueText ?? "--"}
+                <span className="ml-0.5 text-[12.5px] font-[430] text-graphite">万</span>
+              </div>
+              <div className="mt-1 text-[12.5px] font-[430] text-graphite">{node.label}</div>
+              {node.dateText && (
+                <div className="mt-0.5 text-xs font-[430] text-dove">{node.dateText}</div>
+              )}
+            </div>
+            {idx < nodes.length - 1 && (
+              <div className="flex items-center justify-center py-0.5 text-dove md:pt-1">
+                <ArrowRight className="h-4 w-4 rotate-90 md:rotate-0" />
+              </div>
+            )}
+          </Fragment>
+        ))}
+      </div>
+
+      {/* 卡底小字：节点外信息（累计回款）不丢数据 */}
+      {totalIncome > 0 && (
+        <div className="mt-4 border-t border-[#f0f0f2] pt-3 text-center text-[12.5px] font-[430] text-graphite">
+          累计回款（实收）{formatWan(totalIncome / 10000)} 万 ·
+          投入含收房、装修、持有成本等全周期支出（详见账本）
+        </div>
+      )}
+    </div>
   );
 }

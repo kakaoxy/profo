@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Accordion } from "@/components/ui/accordion";
 import { Project, RenovationPhoto } from "../../../../types";
 import { RENOVATION_STAGES } from "../../constants";
 import { getRenovationPhotosAction } from "../../../../actions/renovation";
@@ -58,31 +57,17 @@ export function RenovationTimeline({ project, onRefresh }: RenovationTimelinePro
     return idx === -1 ? 0 : idx;
   }, [project.renovation_stage, project.status]);
 
-  // 默认展开第一个未完成阶段（全完成时展开最后一个阶段）
-  const currentStageKey = useMemo(() => {
-    const stageDates = project.renovationStageDates ?? {};
-    const firstUnfinished = RENOVATION_STAGES.find((s) => !stageDates[s.value]);
-    return (firstUnfinished ?? RENOVATION_STAGES[RENOVATION_STAGES.length - 1]).key;
-  }, [project.renovationStageDates]);
-
   return (
-    <div className="relative pl-4 space-y-6 pb-12">
-      {/* 灰色垂直贯穿线 */}
-      <div className="absolute left-[27px] top-4 bottom-10 w-0.5 bg-muted" />
-
-      {/* [关键修复] 
-         1. 移除了 useState 和 useEffect 对 activeItem 的控制。
-         2. 添加 key={currentStageKey}：
-            当 project 更新导致 currentStageKey 变化时，React 会认为这是一个"新"的 Accordion。
-            这会触发组件重置，从而自动应用新的 defaultValue，实现自动展开新阶段的效果。
-      */}
-      <Accordion
-        type="single"
-        collapsible
-        key={currentStageKey}
-        defaultValue={currentStageKey}
-        className="w-full space-y-6"
-      >
+    // V4.4：六阶段全展开纵向时间线（左轨道圆点+连线由 TimelineItem 自渲染）
+    // 白卡容器（rounded-cards/p-6/shadow-steep）+ 卡头标题与副标题（设计稿 .card / .card-head）
+    <div className="rounded-cards bg-pure-white p-6 shadow-steep">
+      <div className="mb-4">
+        <div className="text-[16px] font-[500] text-ink">装修进度时间线</div>
+        <div className="mt-0.5 text-[13px] font-[430] text-graphite">
+          {RENOVATION_STAGES.map((s) => s.value).join(" → ")} · 标记完成需上传阶段照片
+        </div>
+      </div>
+      <div className="pb-4">
         {RENOVATION_STAGES.map((stage, index) => (
           <TimelineItem
             key={stage.key}
@@ -95,7 +80,7 @@ export function RenovationTimeline({ project, onRefresh }: RenovationTimelinePro
             onRefresh={onRefresh}
           />
         ))}
-      </Accordion>
+      </div>
     </div>
   );
 }

@@ -3,8 +3,8 @@
 import { logger } from "@/lib/logger";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Project } from "../../../../types";
 import { getSalesUsersSimpleAction, updateSalesRolesAction } from "../../../../actions/sales";
 import {
@@ -27,13 +27,47 @@ interface UserOption {
   username: string;
 }
 
+type RoleField = "channel_manager_id" | "property_agent_id" | "negotiator_id";
+
+interface RoleConfig {
+  field: RoleField;
+  /** 角色描述（设计稿 person.prole：角色名 · 职责） */
+  roleLabel: string;
+  placeholder: string;
+  avatarBg: string;
+}
+
+// 头像三色轮换：apricot → sky → mint（设计稿 .avatar peach/skyb/mint）
+const ROLE_CONFIGS: RoleConfig[] = [
+  {
+    field: "channel_manager_id",
+    roleLabel: "渠道经理 · 负责分销对接",
+    placeholder: "选择渠道负责人",
+    avatarBg: "bg-apricot-wash",
+  },
+  {
+    field: "property_agent_id",
+    roleLabel: "讲房人 · 负责接待讲解",
+    placeholder: "选择讲房人",
+    avatarBg: "bg-sky-wash",
+  },
+  {
+    field: "negotiator_id",
+    roleLabel: "谈判人 · 负责价格谈判",
+    placeholder: "选择谈判人",
+    avatarBg: "bg-[#ddeddd]",
+  },
+];
+
 export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   const router = useRouter();
 
   // 1. 初始化本地状态 - 使用ID而非文本
-  const [channelManagerId, setChannelManagerId] = useState<string | null>(null);
-  const [propertyAgentId, setPropertyAgentId] = useState<string | null>(null);
-  const [negotiatorId, setNegotiatorId] = useState<string | null>(null);
+  const [roleIds, setRoleIds] = useState<Record<RoleField, string | null>>({
+    channel_manager_id: null,
+    property_agent_id: null,
+    negotiator_id: null,
+  });
 
   // 用户列表
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -59,9 +93,11 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
 
   // 3. 当 project 属性变化时（比如刷新后），同步到本地状态
   useEffect(() => {
-    setChannelManagerId(project.channel_manager_id || null);
-    setPropertyAgentId(project.property_agent_id || null);
-    setNegotiatorId(project.negotiator_id || null);
+    setRoleIds({
+      channel_manager_id: project.channel_manager_id || null,
+      property_agent_id: project.property_agent_id || null,
+      negotiator_id: project.negotiator_id || null,
+    });
   }, [project]);
 
   // 获取用户显示名称
@@ -75,11 +111,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   );
 
   // 通用的保存处理
-  const handleSave = async (
-    field: "channel_manager_id" | "property_agent_id" | "negotiator_id",
-    value: string | null,
-    oldValue?: string | null,
-  ) => {
+  const handleSave = async (field: RoleField, value: string | null, oldValue?: string | null) => {
     if (value === oldValue) return;
 
     const toastId = toast.loading("正在保存...");
@@ -103,133 +135,86 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   };
 
   return (
-    <div className="bg-muted/50 border border-border rounded-lg p-4 mb-6">
-      <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
-        销售团队{" "}
-        <span className="text-[10px] font-normal text-muted-foreground normal-case">
-          (自动保存)
-        </span>
-      </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* 1. 渠道 */}
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">渠道</Label>
-          <HasPermission
-            code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
-            fallback={
-              <ReadOnlyMember
-                value={getUserDisplayName(channelManagerId)}
-                isLoading={isLoadingUsers}
-              />
-            }
-          >
-            <Select
-              value={channelManagerId || "__empty__"}
-              onValueChange={(value) => {
-                const newValue = value === "__empty__" ? null : value;
-                setChannelManagerId(newValue);
-                handleSave("channel_manager_id", newValue, project.channel_manager_id || null);
-              }}
-              disabled={isLoadingUsers}
-            >
-              <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
-                <SelectValue placeholder="选择渠道负责人">
-                  {getUserDisplayName(channelManagerId) || "选择渠道负责人"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__empty__">未选择</SelectItem>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.nickname || user.username}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </HasPermission>
-        </div>
-
-        {/* 2. 讲房 */}
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">讲房</Label>
-          <HasPermission
-            code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
-            fallback={
-              <ReadOnlyMember
-                value={getUserDisplayName(propertyAgentId)}
-                isLoading={isLoadingUsers}
-              />
-            }
-          >
-            <Select
-              value={propertyAgentId || "__empty__"}
-              onValueChange={(value) => {
-                const newValue = value === "__empty__" ? null : value;
-                setPropertyAgentId(newValue);
-                handleSave("property_agent_id", newValue, project.property_agent_id || null);
-              }}
-              disabled={isLoadingUsers}
-            >
-              <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
-                <SelectValue placeholder="选择讲房人">
-                  {getUserDisplayName(propertyAgentId) || "选择讲房人"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__empty__">未选择</SelectItem>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.nickname || user.username}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </HasPermission>
-        </div>
-
-        {/* 3. 谈判 */}
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">谈判</Label>
-          <HasPermission
-            code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
-            fallback={
-              <ReadOnlyMember value={getUserDisplayName(negotiatorId)} isLoading={isLoadingUsers} />
-            }
-          >
-            <Select
-              value={negotiatorId || "__empty__"}
-              onValueChange={(value) => {
-                const newValue = value === "__empty__" ? null : value;
-                setNegotiatorId(newValue);
-                handleSave("negotiator_id", newValue, project.negotiator_id || null);
-              }}
-              disabled={isLoadingUsers}
-            >
-              <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
-                <SelectValue placeholder="选择谈判人">
-                  {getUserDisplayName(negotiatorId) || "选择谈判人"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__empty__">未选择</SelectItem>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.nickname || user.username}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </HasPermission>
-        </div>
+    <div className="mb-5 rounded-cards bg-pure-white p-5 shadow-steep md:p-6">
+      {/* 卡头（设计稿 .card-head：mb-16px） */}
+      <div className="mb-4">
+        <div className="text-base font-[500] text-ink">销售团队</div>
+        <div className="mt-0.5 text-[13px] text-graphite">选择成员后自动保存</div>
       </div>
-    </div>
-  );
-}
 
-function ReadOnlyMember({ value, isLoading }: { value: string; isLoading: boolean }) {
-  return (
-    <div className="h-8 flex items-center px-3 text-sm bg-card border border-border rounded-md w-full">
-      {isLoading ? "加载中..." : value || "未设置"}
+      {/* person 行（设计稿 .person：头像 + 姓名 + 角色描述 + 已保存 pill） */}
+      {ROLE_CONFIGS.map((config) => {
+        const currentId = roleIds[config.field];
+        const displayName = getUserDisplayName(currentId);
+        const oldValue = (project[config.field] as string | null | undefined) || null;
+
+        return (
+          <div
+            key={config.field}
+            className="flex items-center gap-3 border-b border-[#f0f0f2] py-[11px] last:border-b-0"
+          >
+            {/* 38px 圆形头像：三色轮换，字=姓名首字 */}
+            <span
+              className={cn(
+                "flex size-[38px] shrink-0 items-center justify-center rounded-full text-[13px] font-medium text-ink",
+                config.avatarBg,
+              )}
+            >
+              {displayName ? displayName.charAt(0) : "?"}
+            </span>
+
+            <div className="min-w-0 flex-1">
+              {/* 姓名：有权限=行内 Select（选择后自动保存），无权限=只读文本 */}
+              <HasPermission
+                code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
+                fallback={
+                  <span
+                    className={cn(
+                      "text-[14.5px] font-[480]",
+                      displayName ? "text-ink" : "text-graphite",
+                    )}
+                  >
+                    {isLoadingUsers ? "加载中..." : displayName || "未设置"}
+                  </span>
+                }
+              >
+                <Select
+                  value={currentId || "__empty__"}
+                  onValueChange={(value) => {
+                    const newValue = value === "__empty__" ? null : value;
+                    setRoleIds((prev) => ({ ...prev, [config.field]: newValue }));
+                    handleSave(config.field, newValue, oldValue);
+                  }}
+                  disabled={isLoadingUsers}
+                >
+                  <SelectTrigger className="h-auto w-fit gap-1.5 border-0 bg-transparent px-0 py-0.5 text-[14.5px] font-[480] text-ink shadow-none focus-visible:ring-0">
+                    <SelectValue placeholder={config.placeholder}>
+                      {displayName || config.placeholder}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__empty__">未选择</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.nickname || user.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </HasPermission>
+
+              <div className="mt-0.5 text-[13px] text-graphite">{config.roleLabel}</div>
+            </div>
+
+            {/* 已保存 pill：白底灰描边小胶囊，13px（设计稿 .pill.form） */}
+            {currentId && (
+              <span className="inline-flex shrink-0 items-center rounded-full border border-[#e2e2e5] bg-pure-white px-[13px] py-[5px] text-[13px] font-[450] text-graphite">
+                已保存
+              </span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -127,13 +127,11 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen bg-fog">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">项目管理</h1>
-          <p className="text-sm text-muted-foreground">
-            全生命周期管理您的房源资产，从签约到售出的每一分钱。
-          </p>
+          <h1 className="font-display text-3xl text-ink">项目管理</h1>
+          <p className="text-sm text-ash">全生命周期管理您的房源资产，从签约到售出的每一分钱。</p>
         </div>
 
         <ProjectStats stats={stats} />

@@ -27,6 +27,8 @@ interface ActualEndDateDialogProps {
   projectId: string;
   currentActualEndDate?: string | null;
   onSuccess?: () => void;
+  /** 弹窗语义：edit=编辑实际竣工时间（默认）；end=flowbar「结束项目」（仅标题/文案变化，提交逻辑一致） */
+  mode?: "edit" | "end";
 }
 
 export function ActualEndDateDialog({
@@ -35,9 +37,11 @@ export function ActualEndDateDialog({
   projectId,
   currentActualEndDate,
   onSuccess,
+  mode = "edit",
 }: ActualEndDateDialogProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
+  const isEndMode = mode === "end";
 
   // 每次打开时用当前值预填
   useEffect(() => {
@@ -76,8 +80,12 @@ export function ActualEndDateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>编辑实际竣工时间</DialogTitle>
-          <DialogDescription>修改装修实际竣工时间，保存后立即生效。</DialogDescription>
+          <DialogTitle>{isEndMode ? "结束项目" : "编辑实际竣工时间"}</DialogTitle>
+          <DialogDescription>
+            {isEndMode
+              ? "填写实际结束日期后项目将结束销售，不可恢复为在售状态。"
+              : "修改装修实际竣工时间，保存后立即生效。"}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-2 py-2">
@@ -112,7 +120,7 @@ export function ActualEndDateDialog({
           </Button>
           <Button onClick={handleConfirm} disabled={isSaving || !selectedDate}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            保存
+            {isEndMode ? "确认结束项目" : "保存"}
           </Button>
         </DialogFooter>
       </DialogContent>

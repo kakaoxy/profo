@@ -95,8 +95,15 @@ class ProjectUpdater:
         return project
 
     def _filter_allowed_fields(self, update_dict: dict[str, Any]) -> dict[str, Any]:
-        """过滤已售状态下允许修改的字段."""
+        """过滤已售状态下允许修改的字段.
+
+        白名单语义：已售状态锁定合同/交易关键字段（contract_no、signing_*、
+        cost_assumption_*、commission_*、owners 列表等），但项目基础信息
+        （含 project_manager_id 项目负责人）与业主基本信息仍可维护。
+        遗漏字段会被静默丢弃且接口仍返回 200，易造成"保存成功但数据未变"的假象。
+        """
         allowed_fields = {
+            # 项目基础信息（与签约/装修/在售阶段一致，可维护）
             "community_id",
             "community_name",
             "address",
@@ -107,13 +114,16 @@ class ProjectUpdater:
             "electricity_account",
             "water_account",
             "gas_account",
+            "project_manager_id",
             "renovation_stage",
             "notes",
             "tags",
+            # 业主基本信息
             "owner_name",
             "owner_phone",
             "owner_id_card",
             "owner_info",
+            # 销售/交易信息（已售项目需可校正）
             "sold_price",
             "sold_date",
             "list_price",

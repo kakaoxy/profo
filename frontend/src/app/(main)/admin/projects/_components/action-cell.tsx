@@ -72,7 +72,7 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+            className="text-graphite hover:text-ink hover:bg-fog h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
           >
             <LineChart className="h-3.5 w-3.5" />
             <span className="hidden lg:inline text-xs font-medium">监控</span>
@@ -83,7 +83,7 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-success hover:bg-success-container h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+            className="text-graphite hover:text-ink hover:bg-fog h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
           >
             <Wallet className="h-3.5 w-3.5" />
             <span className="hidden lg:inline text-xs font-medium">账本</span>
@@ -95,7 +95,7 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 w-8 p-0 rounded-full"
+              className="text-graphite hover:text-ink hover:bg-fog h-8 w-8 p-0 rounded-full"
               onClick={handleClick}
               aria-label="操作菜单"
             >

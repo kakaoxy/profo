@@ -1,123 +1,59 @@
 "use client";
 
-import { useState } from "react";
-import { PowerOff, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { Project } from "../../../../types";
-import { updateProjectStatusAction } from "../../../../actions/client";
 import { ListingKPIs } from "./kpi";
 import { SellingBasicInfo } from "./basic-info";
 import { SalesTeamPanel } from "./team-panel";
-import { ActivityTabs } from "./activity-tabs";
-import { DealDialog } from "./deal-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ActivityTabs, type ActivityTabKey } from "./activity-tabs";
 
 interface SellingViewProps {
   project: Project;
   onRefresh?: () => void;
+  /** 保留接口兼容（页面层仍在传）：成交 CTA 已收口页面级 DealDialog，视图内不再消费 */
   onDealSuccess?: () => Promise<void>;
+  /** 受控打开「实际结束日期」弹窗（页面级 flowbar「结束项目」接线） */
+  endProjectDialogOpen?: boolean;
+  onEndProjectDialogOpenChange?: (open: boolean) => void;
+  /** 各类型销售记录数变化时上报（页面层分区导航计数徽标） */
+  onActivityCounts?: (counts: { viewing: number; offer: number; negotiation: number }) => void;
+  /** 外部指定激活的销售动态 tab（页面层分区导航联动） */
+  activeActivityTab?: ActivityTabKey;
 }
 
-export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewProps) {
-  const [isEnding, setIsEnding] = useState(false);
-
-  const handleEndProject = async () => {
-    setIsEnding(true);
-    try {
-      const res = await updateProjectStatusAction(project.id, "ended");
-      if (res.success) {
-        toast.success("项目已结束");
-        onRefresh?.();
-      } else {
-        toast.error(res.message || "操作失败");
-      }
-    } catch {
-      toast.error("操作失败");
-    } finally {
-      setIsEnding(false);
-    }
-  };
-
+export function SellingView({
+  project,
+  onRefresh,
+  endProjectDialogOpen,
+  onEndProjectDialogOpenChange,
+  onActivityCounts,
+  activeActivityTab,
+}: SellingViewProps) {
   return (
-    <div className="relative pb-24 animate-in fade-in slide-in-from-right-4 duration-300">
-      {/* 0. 基础信息概览 */}
-      <SellingBasicInfo project={project} onRefresh={onRefresh} />
+    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+      {/* 0. KPI 看板 + 1. 基础信息（锚点：分区导航「销售看板」；设计稿 1429-1462：KPI 行在前、房源基础信息在后） */}
+      <div id="project-section-selling" className="scroll-mt-28 md:scroll-mt-24">
+        <ListingKPIs project={project} />
+        <SellingBasicInfo
+          project={project}
+          onRefresh={onRefresh}
+          endProjectDialogOpen={endProjectDialogOpen}
+          onEndProjectDialogOpenChange={onEndProjectDialogOpenChange}
+        />
+      </div>
 
-      {/* 1. 顶部 KPI 看板 */}
-      <ListingKPIs project={project} />
+      {/* 2. 销售团队录入（锚点：分区导航「销售团队」） */}
+      <div id="project-section-selling-team" className="scroll-mt-28 md:scroll-mt-24">
+        <SalesTeamPanel project={project} />
+      </div>
 
-      {/* 2. 销售团队录入 */}
-      <SalesTeamPanel project={project} />
-
-      {/* 3. 核心记录 Tabs */}
-      <ActivityTabs project={project} onRefresh={onRefresh} />
-
-      {/* 4. 底部固定操作栏 */}
-      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-10 flex items-center justify-between border-t border-border bg-card p-4 md:absolute md:bottom-0 md:rounded-b-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">当前状态</span>
-          <Badge
-            variant="secondary"
-            className="bg-success-container text-emerald-700 hover:bg-emerald-100 border-none"
-          >
-            在售中
-          </Badge>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* 结束项目 */}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-              >
-                <PowerOff className="mr-2 h-4 w-4" />
-                结束项目
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>确认结束项目？</AlertDialogTitle>
-                <AlertDialogDescription>
-                  结束后项目将进入已下架状态，不可恢复为在售。此操作适用于委托到期未售出的房屋。
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleEndProject();
-                  }}
-                  disabled={isEnding}
-                  className="bg-orange-600 hover:bg-orange-700 focus:ring-orange-500"
-                >
-                  {isEnding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  确认结束
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          {/* 确认成交 - 覆盖默认按钮样式为翠绿色 */}
-          <div className="w-[180px] [&_button]:bg-success [&_button]:hover:brightness-95 [&_button]:text-white">
-            <DealDialog project={project} onSuccess={onDealSuccess} />
-          </div>
-        </div>
+      {/* 3. 核心记录 Tabs（锚点：分区导航「带看/出价/面谈」；「结束项目/确认成交」CTA 收口至页面级 flowbar） */}
+      <div id="project-section-selling-activity" className="scroll-mt-28 md:scroll-mt-24">
+        <ActivityTabs
+          project={project}
+          onRefresh={onRefresh}
+          onCountsChange={onActivityCounts}
+          activeTab={activeActivityTab}
+        />
       </div>
     </div>
   );

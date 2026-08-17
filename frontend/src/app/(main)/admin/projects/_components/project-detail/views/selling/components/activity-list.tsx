@@ -1,47 +1,46 @@
 "use client";
 
 import { safeFormatDate } from "@/lib/formatters";
-import { Trash2 } from "lucide-react";
+import { Eye, Loader2, MessageSquare, Tag, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SalesRecord, SalesRecordOperator } from "../../../../../types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { SalesRecord } from "../../../../../types";
 
 interface ActivityListProps {
   type: "viewing" | "offer" | "negotiation";
   data: SalesRecord[];
   onDelete: (id: string) => void;
   canEditSales?: boolean;
+  /** 正在删除的记录 id（删除中该行按钮显示 Loader 并禁用） */
+  deletingId?: string | null;
 }
+
+const TYPE_LABEL: Record<ActivityListProps["type"], string> = {
+  viewing: "带看",
+  offer: "出价",
+  negotiation: "面谈",
+};
+
+const TYPE_ICON: Record<ActivityListProps["type"], typeof Eye> = {
+  viewing: Eye,
+  offer: Tag,
+  negotiation: MessageSquare,
+};
+
+// 头像三色轮换（设计稿 .avatar peach/skyb/mint）
+const AVATAR_BGS = ["bg-apricot-wash", "bg-sky-wash", "bg-[#ddeddd]"] as const;
 
 function getInitial(name?: string | null): string {
   if (!name) return "?";
   return name.charAt(0).toUpperCase();
 }
 
-function OperatorCell({ operator }: { operator?: SalesRecordOperator | null }) {
-  if (!operator) return null;
-  return (
-    <div className="flex items-center gap-1.5">
-      <Avatar className="size-5">
-        {operator.avatar ? (
-          <AvatarImage src={operator.avatar} alt={operator.nickname ?? ""} />
-        ) : null}
-        <AvatarFallback className="text-[10px]">{getInitial(operator.nickname)}</AvatarFallback>
-      </Avatar>
-      <span className="text-xs text-muted-foreground">{operator.nickname ?? "未知"}</span>
-    </div>
-  );
-}
-
-export function ActivityList({ type, data, onDelete, canEditSales = false }: ActivityListProps) {
+export function ActivityList({
+  type,
+  data,
+  onDelete,
+  canEditSales = false,
+  deletingId = null,
+}: ActivityListProps) {
   // 按时间倒序排列
   const sortedData = [...data].sort(
     (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime(),
@@ -49,143 +48,102 @@ export function ActivityList({ type, data, onDelete, canEditSales = false }: Act
 
   if (data.length === 0) {
     return (
-      <div className="text-center text-xs text-muted-foreground py-8 border border-dashed border-border rounded-md bg-muted/50">
-        暂无{type === "viewing" ? "带看" : type === "offer" ? "出价" : "面谈"}
-        记录
+      <div className="rounded-[16px] border border-dashed border-dove/60 bg-transparent py-10 text-center text-[13.5px] font-[430] text-graphite">
+        暂无{TYPE_LABEL[type]}记录
       </div>
     );
   }
 
-  // 1. 带看记录 (表格视图)
-  if (type === "viewing") {
-    return (
-      <div className="rounded-md border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="w-[120px] text-xs">时间</TableHead>
-              <TableHead className="text-xs">带看人/机构</TableHead>
-              <TableHead className="text-xs">操作人</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedData.map((item) => (
-              <TableRow key={item.id} className="text-xs hover:bg-muted">
-                <TableCell className="text-muted-foreground font-mono">
-                  {safeFormatDate(item.record_date, "MM-dd HH:mm")}
-                </TableCell>
-                <TableCell className="font-medium text-foreground">{item.customer_name}</TableCell>
-                <TableCell>
-                  <OperatorCell operator={item.operator} />
-                </TableCell>
-                <TableCell>
-                  {canEditSales && (
-                    <button
-                      onClick={() => onDelete(item.id)}
-                      className="text-muted-foreground hover:text-error transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  }
+  // 最高出价：仅统计有价格的出价记录（全部无价时不误标 0 为最高）
+  const offerPrices = data.map((b) => b.price).filter((p): p is number => p != null);
+  const maxPrice = type === "offer" && offerPrices.length > 0 ? Math.max(...offerPrices) : null;
 
-  // 2. 出价记录 (卡片视图)
-  if (type === "offer") {
-    const maxPrice = Math.max(...data.map((b) => b.price || 0));
-    return (
-      <div className="space-y-2">
-        {sortedData.map((item) => {
-          const isMax = (item.price || 0) === maxPrice;
-          return (
-            <div
-              key={item.id}
+  const TypeIcon = TYPE_ICON[type];
+
+  return (
+    <div>
+      {sortedData.map((item, index) => {
+        const isDeleting = deletingId === item.id;
+        const isMax = type === "offer" && item.price != null && item.price === maxPrice;
+        return (
+          <div
+            key={item.id}
+            className="group flex gap-3.5 border-b border-[#f0f0f2] py-3.5 last:border-b-0"
+          >
+            {/* 相关人头像：34px 底圆，字=姓名首字，无姓名用类型图标 */}
+            <span
               className={cn(
-                "flex items-center justify-between p-3 rounded-lg border bg-card transition-all",
-                isMax
-                  ? "border-money-positive/20 shadow-sm ring-1 ring-money-positive/10"
-                  : "border-border",
+                "mt-0.5 flex size-8.5 shrink-0 items-center justify-center rounded-full text-[12.5px] font-medium text-ink",
+                AVATAR_BGS[index % AVATAR_BGS.length],
               )}
             >
-              <div className="flex flex-col">
-                <span
-                  className={cn(
-                    "text-sm font-bold",
-                    isMax ? "text-money-positive flex items-center gap-1" : "text-foreground",
-                  )}
-                >
-                  ¥{item.price}万{" "}
+              {item.customer_name ? (
+                getInitial(item.customer_name)
+              ) : (
+                <TypeIcon className="size-4" />
+              )}
+            </span>
+
+            <div className="min-w-0 flex-1">
+              {/* 头行：{类型} · {对象姓名} + {时间} · 记录人 {姓名} */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span className="text-[14.5px] font-[480] text-ink">
+                  {TYPE_LABEL[type]}
+                  {item.customer_name ? ` · ${item.customer_name}` : ""}
+                </span>
+                <span className="text-[12.5px] text-graphite">
+                  {safeFormatDate(item.record_date, "MM.dd HH:mm")}
+                  {item.operator ? (
+                    <>
+                      {" · 记录人 "}
+                      <span>{item.operator.nickname ?? "未知"}</span>
+                    </>
+                  ) : null}
+                </span>
+              </div>
+
+              {/* 正文（无则省略） */}
+              {item.notes && (
+                <p className="mt-1 text-[14px] font-[430] leading-[1.55] text-ash">{item.notes}</p>
+              )}
+
+              {/* 结构化字段：按类型取现有数据（渠道/人数/意向等后端无字段，缺省不造数） */}
+              {type === "offer" && item.price != null && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-[12.5px] text-graphite">
+                    出价{" "}
+                    <b className={cn("text-[13.5px] font-[480]", isMax ? "text-rust" : "text-ink")}>
+                      {item.price} 万
+                    </b>
+                  </span>
                   {isMax && (
-                    <span className="text-[10px] bg-money-positive/10 text-money-positive px-1 rounded font-normal">
+                    <span className="inline-flex items-center rounded-full bg-apricot-wash px-2 py-px text-[11px] font-[450] text-rust">
                       最高
                     </span>
                   )}
-                </span>
-              </div>
-              <div className="flex flex-col text-right mr-4 flex-1">
-                <span className="text-xs font-medium text-foreground">{item.customer_name}</span>
-                <span className="text-[10px] text-muted-foreground">
-                  {safeFormatDate(item.record_date, "MM-dd HH:mm")}
-                </span>
-                {item.operator && (
-                  <div className="mt-1 flex justify-end">
-                    <OperatorCell operator={item.operator} />
-                  </div>
-                )}
-              </div>
-              {canEditSales && (
-                <button
-                  onClick={() => onDelete(item.id)}
-                  className="text-muted-foreground hover:text-error p-1"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </div>
               )}
             </div>
-          );
-        })}
-      </div>
-    );
-  }
 
-  // 3. 面谈记录 (时间轴视图)
-  return (
-    <div className="relative pl-4 space-y-6 pb-2 mt-4">
-      <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-muted" />
-      {sortedData.map((item) => (
-        <div key={item.id} className="relative pl-4 group">
-          <div className="absolute left-[-4px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-success bg-card group-hover:bg-success transition-colors z-10" />
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground font-mono">
-                {safeFormatDate(item.record_date, "yyyy/MM/dd HH:mm")}
-              </span>
-              {canEditSales && (
-                <button
-                  onClick={() => onDelete(item.id)}
-                  className="text-muted-foreground hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-            <div className="text-sm font-bold text-foreground">{item.customer_name}</div>
-            {item.operator && <OperatorCell operator={item.operator} />}
-            {item.notes && (
-              <div className="text-xs text-muted-foreground bg-muted p-2 rounded mt-1 border border-border">
-                {item.notes}
-              </div>
+            {/* 删除：hover 显示 + fog 底（设计稿 .icon-btn 28px 8px 圆角），删除中 Loader */}
+            {canEditSales && (
+              <button
+                type="button"
+                onClick={() => onDelete(item.id)}
+                disabled={isDeleting}
+                aria-label="删除"
+                className="mt-0.5 grid size-7 shrink-0 place-items-center self-start rounded-lg text-graphite opacity-0 transition-all hover:bg-fog hover:text-ink group-hover:opacity-100 disabled:opacity-100"
+              >
+                {isDeleting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Trash2 className="size-4" />
+                )}
+              </button>
             )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

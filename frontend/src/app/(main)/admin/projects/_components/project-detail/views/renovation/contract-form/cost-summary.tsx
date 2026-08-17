@@ -1,6 +1,5 @@
 "use client";
 
-import { Calculator } from "lucide-react";
 import { RenovationContractFormValues } from "./schema";
 
 interface CostSummaryProps {
@@ -8,21 +7,31 @@ interface CostSummaryProps {
   area?: number;
 }
 
-// 格式化金额显示（保留两位小数）
-function formatAmount(amount: number | undefined | null): string {
+/**
+ * 金额展示（设计稿 .info-item .v「21.5 万元」）：绝对值（元）→ 万元，
+ * 整数不带小数、非整数保留 1 位小数（0.9 万 / 21.5 万 / 36.7 万）
+ */
+export function formatWanAmount(amount: number | undefined | null): string {
   if (amount === undefined || amount === null || isNaN(amount)) return "-";
-  return `¥${amount.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const wan = amount / 10000;
+  const text = Number.isInteger(wan)
+    ? wan.toLocaleString("zh-CN", { maximumFractionDigits: 0 })
+    : wan.toLocaleString("zh-CN", { maximumFractionDigits: 1 });
+  return `${text} 万元`;
 }
 
-// 格式化单价显示（保留两位小数，单位 元/m²）
-function formatUnitPrice(amount: number | undefined | null, area: number | undefined): string {
+/** 单价展示（设计稿「4,124 元 / ㎡」）：总额 ÷ 面积，四舍五入取整 + 千分位 */
+export function formatUnitPrice(
+  amount: number | undefined | null,
+  area: number | undefined,
+): string {
   if (amount === undefined || amount === null || isNaN(amount)) return "-";
   if (!area || area <= 0) return "-";
   const unitPrice = amount / area;
-  return `${unitPrice.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 元/m²`;
+  return `${Math.round(unitPrice).toLocaleString("zh-CN")} 元 / ㎡`;
 }
 
-// 费用汇总
+// 费用汇总（设计稿 1315-1319：group-title「费用汇总（自动计算 · 只读）」+ 总金额/总单价两行）
 export function CostSummarySection({ values, area }: CostSummaryProps) {
   const areaNum = Number(area) || 0;
 
@@ -44,52 +53,22 @@ export function CostSummarySection({ values, area }: CostSummaryProps) {
   const totalAmount =
     hardAmount + softAmount + cabinetAmount + windowAmount + wallTreatmentAmount + otherDecoration;
 
-  // 明细项（顺序：硬装、硬装单价、软装、定制柜、窗户、墙面、其他装修）
-  // 总单价已在顶部汇总卡片展示，明细不重复
-  const items = [
-    { label: "硬装", value: formatAmount(hardAmount) },
-    { label: "硬装单价", value: formatUnitPrice(hardAmount, areaNum) },
-    { label: "软装", value: formatAmount(softAmount) },
-    { label: "定制柜", value: formatAmount(cabinetAmount) },
-    { label: "窗户", value: formatAmount(windowAmount) },
-    { label: "墙面", value: formatAmount(wallTreatmentAmount) },
-    { label: "其他装修", value: formatAmount(otherDecoration) },
-  ];
-
   return (
-    <div className="space-y-3 pt-3 border-t border-border">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-        <Calculator className="h-3 w-3" />
-        费用汇总
-        {areaNum > 0 && (
-          <span className="ml-1 text-[10px] font-normal text-muted-foreground/70">
-            (面积: {areaNum.toFixed(2)} m²)
-          </span>
-        )}
-      </h4>
-
-      {/* 汇总卡片 - 紧凑布局 */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="p-3 bg-primary/5 rounded border border-primary/20">
-          <div className="text-[10px] text-muted-foreground mb-0.5">总金额</div>
-          <div className="text-base font-bold text-primary">{formatAmount(totalAmount)}</div>
-        </div>
-        <div className="p-3 bg-success/10 rounded border border-green-100">
-          <div className="text-[10px] text-muted-foreground mb-0.5">总单价</div>
-          <div className="text-base font-bold text-green-700">
-            {formatUnitPrice(totalAmount, areaNum)}
-          </div>
-        </div>
+    <div>
+      <div className="flex items-center gap-2 text-[13px] font-[500] uppercase tracking-[0.05em] text-graphite after:h-px after:flex-1 after:bg-[#f0f0f2]">
+        费用汇总（自动计算 · 只读）
       </div>
-
-      {/* 费用明细 - 网格布局 */}
-      <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-[10px]">
-        {items.map((item) => (
-          <div key={item.label} className="flex flex-col py-1 border-b border-border">
-            <span className="text-muted-foreground">{item.label}</span>
-            <span className="font-medium text-foreground">{item.value}</span>
-          </div>
-        ))}
+      <div className="mt-1 grid grid-cols-2 gap-x-8">
+        <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
+          <span className="text-[13px] font-[430] text-graphite">总金额</span>
+          <span className="text-[14.5px] font-[480] text-ink">{formatWanAmount(totalAmount)}</span>
+        </div>
+        <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
+          <span className="text-[13px] font-[430] text-graphite">总单价</span>
+          <span className="text-[14.5px] font-[450] text-ink">
+            {formatUnitPrice(totalAmount, areaNum)}
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -8,3 +8,5 @@ overrides:
   postcss: 8.5.25
   # 修复 dev 工具链 @redocly/openapi-core 依赖的 js-yaml 高危漏洞（GHSA-52cp-r559-cp3m），强制 >=4.3.0
   js-yaml: ^4.3.0
+  # 修复 postcss 传递依赖 nanoid 高危漏洞（GHSA-2v37-7h3g-55p8，<3.3.18 的自定义生成器 size=0 时死循环），强制 ^3.3.18
+  nanoid: ^3.3.18

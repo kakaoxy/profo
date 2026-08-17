@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 
 import { Project, SalesRecord } from "../../../../types";
 import { deleteSalesRecordAction } from "../../../../actions/sales";
@@ -14,17 +13,28 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { ActivityList } from "./components/activity-list";
 import { AddRecordDialog } from "./components/add-record-dialog";
 
+/** 销售动态 tab 标识（页面层分区导航联动用） */
+export type ActivityTabKey = "viewing" | "offer" | "negotiation";
+
 interface ActivityTabsProps {
   project: Project;
   onRefresh?: () => void;
+  /** 各类型记录数变化时上报（供页面层分区导航计数徽标） */
+  onCountsChange?: (counts: { viewing: number; offer: number; negotiation: number }) => void;
+  /** 外部指定激活 tab（如分区导航点击；受控优先，内部点击仍可自由切换） */
+  activeTab?: ActivityTabKey;
 }
 
-type TabType = "viewing" | "offer" | "negotiation";
-
-export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
+export function ActivityTabs({ project, onRefresh, onCountsChange, activeTab }: ActivityTabsProps) {
   const records: SalesRecord[] = project.sales_records || [];
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("viewing");
+  const [internalTab, setInternalTab] = useState<ActivityTabKey>("viewing");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // 外部指定 tab 时切换（覆盖式：外部值变化时同步，内部点击仍自由切换）
+  useEffect(() => {
+    if (activeTab) setInternalTab(activeTab);
+  }, [activeTab]);
 
   const { hasAnyPermission } = usePermission();
   const canAddByPermission = hasAnyPermission([
@@ -33,9 +43,10 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
   ]);
   const canEditSales = canAddByPermission || project.sale?.can_edit_sales === true;
 
-  // 删除逻辑
+  // 删除逻辑：直接删除（无 confirm），删除中禁用重复点击 + Loader 反馈
   const handleDelete = async (id: string) => {
-    if (!confirm("确定删除这条记录吗？")) return;
+    if (deletingId) return;
+    setDeletingId(id);
     try {
       const res = await deleteSalesRecordAction(project.id, id);
       if (res.success) {
@@ -47,78 +58,100 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
       }
     } catch {
       toast.error("删除失败");
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  // 数据过滤 (前端需要同时兼容 "offer" 和后端的 "offer")
+  // 数据过滤
   const viewings = records.filter((r) => r.record_type === "viewing");
   const offers = records.filter((r) => r.record_type === "offer");
   const talks = records.filter((r) => r.record_type === "negotiation");
 
+  // 记录数上报
+  useEffect(() => {
+    onCountsChange?.({
+      viewing: viewings.length,
+      offer: offers.length,
+      negotiation: talks.length,
+    });
+  }, [viewings.length, offers.length, talks.length, onCountsChange]);
+
   return (
-    <div className="space-y-4">
-      {/* 标题栏 */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">销售活动记录</h3>
+    <div className="mb-5 rounded-cards bg-pure-white p-5 shadow-steep md:p-6">
+      {/* 卡头：标题 + 新增记录 textlink（设计稿 .card-head） */}
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-base font-[500] text-ink">销售动态</div>
+          <div className="mt-0.5 text-[13px] text-graphite">带看 / 出价 / 面谈全量记录</div>
+        </div>
         {canEditSales && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 border-emerald-200 text-emerald-700 hover:bg-success-container hover:text-emerald-800"
+          <button
+            type="button"
             onClick={() => setIsDialogOpen(true)}
+            className="inline-flex shrink-0 items-center gap-1 text-sm text-graphite transition-colors hover:text-ink"
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
+            <Plus className="size-3.5" />
             新增记录
-          </Button>
+          </button>
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-muted h-9 p-1">
+      <Tabs
+        value={internalTab}
+        onValueChange={(v) => setInternalTab(v as ActivityTabKey)}
+        className="w-full"
+      >
+        {/* Tabs（设计稿 .tabs：fog 底 14px 圆角、fit-content、激活白底 shadow-float） */}
+        <TabsList className="flex w-fit gap-0.5 rounded-[14px] bg-fog p-1">
           <TabsTrigger
             value="viewing"
-            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
+            className="flex-none rounded-[10px] px-4 py-2 text-sm font-[450] text-graphite transition-all data-[state=active]:bg-pure-white data-[state=active]:text-ink data-[state=active]:shadow-steep-sm"
           >
-            带看记录
+            带看（{viewings.length}）
           </TabsTrigger>
           <TabsTrigger
             value="offer"
-            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
+            className="flex-none rounded-[10px] px-4 py-2 text-sm font-[450] text-graphite transition-all data-[state=active]:bg-pure-white data-[state=active]:text-ink data-[state=active]:shadow-steep-sm"
           >
-            出价记录
+            出价（{offers.length}）
           </TabsTrigger>
           <TabsTrigger
             value="negotiation"
-            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
+            className="flex-none rounded-[10px] px-4 py-2 text-sm font-[450] text-graphite transition-all data-[state=active]:bg-pure-white data-[state=active]:text-ink data-[state=active]:shadow-steep-sm"
           >
-            面谈记录
+            面谈（{talks.length}）
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="viewing" className="mt-4">
+        {/* TabsContent：tabs 下 6px 接记录流（设计稿 1502 margin-bottom:6px） */}
+        <TabsContent value="viewing" className="mt-1.5">
           <ActivityList
             type="viewing"
             data={viewings}
             onDelete={handleDelete}
             canEditSales={canEditSales}
+            deletingId={deletingId}
           />
         </TabsContent>
 
-        <TabsContent value="offer" className="mt-4">
+        <TabsContent value="offer" className="mt-1.5">
           <ActivityList
             type="offer"
             data={offers}
             onDelete={handleDelete}
             canEditSales={canEditSales}
+            deletingId={deletingId}
           />
         </TabsContent>
 
-        <TabsContent value="negotiation" className="mt-4">
+        <TabsContent value="negotiation" className="mt-1.5">
           <ActivityList
             type="negotiation"
             data={talks}
             onDelete={handleDelete}
             canEditSales={canEditSales}
+            deletingId={deletingId}
           />
         </TabsContent>
       </Tabs>
@@ -131,7 +164,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
         onSuccess={() => {
           if (onRefresh) onRefresh();
         }}
-        defaultTab={activeTab}
+        defaultTab={internalTab}
         canEditSales={canEditSales}
       />
     </div>

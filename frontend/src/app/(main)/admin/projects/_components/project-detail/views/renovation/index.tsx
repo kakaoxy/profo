@@ -1,157 +1,87 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Store, Calendar as CalendarIcon } from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
-
-// 确保这里的 types 路径是正确的，通常是 4 层 ../
+import { useEffect, useState } from "react";
+import { logger } from "@/lib/logger";
 import { Project } from "../../../../types";
-// 从 client.ts 导入客户端可用的 Server Action
-import { updateProjectStatusAction } from "../../../../actions/client";
-import { RenovationKPIs } from "./kpi";
+import { getRenovationContractAction } from "../../../../actions/renovation";
+import { RenovationKPIs, type RenovationContractMeta } from "./kpi";
 import { RenovationTimeline } from "./timeline";
 import { RenovationContractForm } from "./contract-form";
-import { RenovationTabs } from "./renovation-tabs";
-import { StatusTransitionDialog } from "../../status-transition-dialog";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+
+export type { RenovationContractMeta };
+
+/**
+ * 装修分区锚点 id（与 page-shell/config.ts PROJECT_SECTION_IDS 保持一致，
+ * 分区导航「装修合同 / 装修进度」锚点滚动定位用）。
+ * 分区导航顺序与渲染顺序一致：装修合同在前、装修进度在后（V4.4 业务指定）。
+ */
+const SECTION_IDS = {
+  contract: "project-section-renovation-contract",
+  progress: "project-section-renovation",
+} as const;
 
 interface RenovationViewProps {
   project: Project;
   onRefresh?: () => void;
+  /** 上架成功回调（页面级 flowbar 的 ListingDialog 受控实例使用；视图内不再渲染触发按钮） */
   onListingSuccess?: () => Promise<void>;
+  /**
+   * 页面级装修合同摘要（V4.3：useTeamMembers 已上提拉取，签约/装修阶段共用）。
+   * 传入后本视图不再自行拉取（避免双份请求）；不传（旧抽屉等场景）则保持内部自拉取。
+   */
+  contractMeta?: RenovationContractMeta;
 }
 
-export function RenovationView({ project, onRefresh, onListingSuccess }: RenovationViewProps) {
-  const [listingDate, setListingDate] = useState<Date | undefined>(undefined);
-  const [listPrice, setListPrice] = useState<string>("");
+export function RenovationView({
+  project,
+  onRefresh,
+  contractMeta: externalMeta,
+}: RenovationViewProps) {
+  // 装修合同摘要（装修公司/对接负责人/实际开工/约定竣工）：
+  // 页面级传入（externalMeta）时直接使用；否则挂载时单次拉取（旧抽屉等场景兜底）
+  const [internalMeta, setInternalMeta] = useState<RenovationContractMeta>({});
+
   useEffect(() => {
-    setListingDate(new Date());
-  }, []);
+    if (externalMeta !== undefined) return; // 页面级已提供，不自拉取
+    let cancelled = false;
+    const loadContractMeta = async () => {
+      try {
+        const result = await getRenovationContractAction(project.id);
+        if (!cancelled && result.success && result.data) {
+          setInternalMeta({
+            companyName: result.data.renovation_company ?? undefined,
+            contactPersonId: result.data.contact_person_id ?? undefined,
+            actualStart: result.data.actual_start_date ?? undefined,
+            expectedEnd: result.data.contract_end_date ?? undefined,
+          });
+        }
+      } catch (error) {
+        logger.error("获取装修合同摘要失败", error);
+      }
+    };
+    loadContractMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, [project.id, externalMeta]);
 
-  // 定义完工逻辑
-  const handleCompletion = async () => {
-    try {
-      // 调用 Action 更新状态为 selling，并传入上架时间
-      const res = await updateProjectStatusAction(
-        project.id,
-        "selling",
-        listingDate?.toISOString(),
-        listPrice ? parseFloat(listPrice) : undefined,
-      );
-      if (!res.success) throw new Error(res.message);
+  const contractMeta = externalMeta ?? internalMeta;
 
-      toast.success("装修已完成，项目已转为在售状态！");
-
-      // 刷新数据并自动跳转到在售阶段
-      if (onListingSuccess) await onListingSuccess();
-    } catch (error: unknown) {
-      // [修复 2] 使用 unknown 替代 any，并进行安全类型检查
-      const msg = error instanceof Error ? error.message : "操作失败";
-      toast.error(msg);
-      throw error;
-    }
-  };
-
+  // V4.4：合同/进度两卡顺序渲染（无 Tabs），分区导航直接锚点滚动；
+  // 展示顺序：装修合同在前 → 装修进度在后（与分区导航顺序一致，用户指定逻辑差异）
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 pb-10">
-      <RenovationKPIs project={project} />
+    <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+      <RenovationKPIs project={project} contractMeta={contractMeta} />
 
-      {/* 标签页容器 */}
-      <RenovationTabs defaultTab="contract">
-        {({ activeTab, progressRef, contractRef }) => (
-          <>
-            {/* 装修进度标签内容 */}
-            {activeTab === "progress" && (
-              <div
-                ref={progressRef}
-                className="space-y-6 overflow-auto max-h-[calc(100vh-300px)] scrollbar-thin"
-              >
-                <RenovationTimeline project={project} onRefresh={onRefresh} />
-              </div>
-            )}
+      {/* 装修合同信息（锚点：分区导航「装修合同」） */}
+      <section id={SECTION_IDS.contract} className="scroll-mt-28 md:scroll-mt-24">
+        <RenovationContractForm projectId={project.id} area={project.area} />
+      </section>
 
-            {/* 合同信息标签内容 */}
-            {activeTab === "contract" && (
-              <div
-                ref={contractRef}
-                className="space-y-6 overflow-auto max-h-[calc(100vh-300px)] scrollbar-thin"
-              >
-                <RenovationContractForm projectId={project.id} area={project.area} />
-              </div>
-            )}
-          </>
-        )}
-      </RenovationTabs>
-
-      <div className="mt-8 pt-6 border-t border-dashed">
-        <StatusTransitionDialog
-          triggerLabel="装修验收完成，上架销售"
-          triggerIcon={<Store className="h-4 w-4" />}
-          title="确认完工并上架？"
-          description={
-            <>
-              此操作表示所有装修阶段已全部结束。
-              <br />
-              项目状态将流转为 <b>&quot;在售 (Selling)&quot;</b>
-              ，并进入销售管理流程。
-            </>
-          }
-          confirmLabel="确认上架"
-          onConfirm={handleCompletion}
-        >
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">上架日期</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-10",
-                      !listingDate && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {listingDate ? (
-                      format(listingDate, "PPP", { locale: zhCN })
-                    ) : (
-                      <span>选择日期</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={listingDate}
-                    onSelect={setListingDate}
-                    initialFocus
-                    locale={zhCN}
-                  />
-                </PopoverContent>
-              </Popover>
-              <p className="text-[12px] text-muted-foreground">
-                请选择该项目实际在平台上架销售的日期
-              </p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">上架价格 (万元)</label>
-              <Input
-                type="number"
-                placeholder="请输入上架价格"
-                value={listPrice}
-                onChange={(e) => setListPrice(e.target.value)}
-              />
-              <p className="text-[12px] text-muted-foreground">请输入挂牌价格，单位：万元</p>
-            </div>
-          </div>
-        </StatusTransitionDialog>
-      </div>
+      {/* 装修进度时间线（锚点：分区导航「装修进度」） */}
+      <section id={SECTION_IDS.progress} className="scroll-mt-28 md:scroll-mt-24">
+        <RenovationTimeline project={project} onRefresh={onRefresh} />
+      </section>
     </div>
   );
 }

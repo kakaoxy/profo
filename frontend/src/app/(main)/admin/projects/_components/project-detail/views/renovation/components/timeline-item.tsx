@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2, CircleDot, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, parseISO, isValid } from "date-fns";
+import { format, parseISO, isValid, differenceInDays } from "date-fns";
+import { useCurrentDate } from "@/hooks/use-current-date";
 
-import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 
 import { PhotoGrid } from "./photo-grid";
 import { ActionBar } from "./action-bar";
@@ -55,6 +53,7 @@ export function TimelineItem({
 }: TimelineItemProps) {
   const router = useRouter();
   const { roleCode, hasAnyPermission } = usePermission();
+  const today = useCurrentDate();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   useEffect(() => {
@@ -78,6 +77,14 @@ export function TimelineItem({
   const stageFinishDateStr = project.renovationStageDates?.[stage.value];
   const isCompleted = !!stageFinishDateStr;
   const isCurrent = !isCompleted && index === currentIndex;
+  const isLast = index === RENOVATION_STAGES.length - 1;
+
+  // 区间起始日期：上一阶段完成日期（首阶段取 renovation_start_date），不可得则单日展示
+  const stageStartDateStr = (() => {
+    const stageDates = project.renovationStageDates ?? {};
+    if (index === 0) return project.renovation_start_date ?? undefined;
+    return stageDates[RENOVATION_STAGES[index - 1].value];
+  })();
 
   // 业务身份校验：权限码 OR 后端计算的业务身份标志
   const canEditByPermission = hasAnyPermission([
@@ -211,75 +218,101 @@ export function TimelineItem({
     }
   };
 
+  // 完成态日期：起止均可得且起始早于完成时显示区间，否则单日
   const renderFinishDate = () => {
     if (!stageFinishDateStr) return null;
     try {
-      const date = parseISO(stageFinishDateStr);
-      if (isValid(date)) {
-        return (
-          <span className="text-[12px] text-success font-mono ml-auto">
-            {" "}
-            {format(date, "MM-dd")}
-          </span>
-        );
+      const end = parseISO(stageFinishDateStr);
+      if (!isValid(end)) return null;
+      const endText = format(end, "MM.dd");
+      if (stageStartDateStr) {
+        const start = parseISO(stageStartDateStr);
+        if (isValid(start) && start.getTime() < end.getTime()) {
+          return (
+            <span className="text-[13px] font-[430] text-graphite">
+              {format(start, "MM.dd")} – {endText}
+            </span>
+          );
+        }
       }
+      return <span className="text-[13px] font-[430] text-graphite">{endText}</span>;
     } catch {
       return null;
     }
   };
 
+  // 进行中阶段：起始日期展示（设计稿 tl-date「09.03 开始」）
+  const renderStartDate = () => {
+    if (!isCurrent || !stageStartDateStr) return null;
+    try {
+      const start = parseISO(stageStartDateStr);
+      if (!isValid(start)) return null;
+      return (
+        <span className="text-[13px] font-[430] text-graphite">{format(start, "MM.dd")} 开始</span>
+      );
+    } catch {
+      return null;
+    }
+  };
+
+  // 进行中阶段已进行天数（设计稿 chip「进行中 · 第 N 天」；起始日期缺失则省略）
+  const stageElapsedDays = (() => {
+    if (!isCurrent || !stageStartDateStr || !today) return null;
+    try {
+      const start = parseISO(stageStartDateStr);
+      if (!isValid(start)) return null;
+      const days = differenceInDays(today, start) + 1;
+      return days >= 1 ? days : null;
+    } catch {
+      return null;
+    }
+  })();
+
   return (
-    <AccordionItem value={stage.key} className="border-none relative">
-      <div className="absolute left-0 top-1 z-10 bg-card p-1">
-        {isCompleted ? (
-          <CheckCircle2 className="h-6 w-6 text-status-selling fill-status-selling/10" />
-        ) : isCurrent ? (
-          <CircleDot className="h-6 w-6 text-status-renovating animate-pulse" />
-        ) : (
-          <Circle className="h-6 w-6 text-muted-foreground/30" />
+    // 设计稿 .tl-item：左右 gap 18px、非末项下边距 26px
+    <div className={cn("flex gap-[18px]", !isLast && "pb-[26px]")}>
+      {/* 左轨道：圆点 + 连线（done=Ink 实心 · now=Rust 点+光环 · todo=灰空心） */}
+      <div className="flex w-[22px] shrink-0 flex-col items-center">
+        <span
+          className={cn(
+            "z-[1] mt-1 h-3.5 w-3.5 shrink-0 rounded-full border-2",
+            isCompleted
+              ? "border-ink bg-ink"
+              : isCurrent
+                ? "border-rust bg-rust shadow-[0_0_0_5px_rgba(93,42,26,0.12)]"
+                : "border-dove bg-pure-white",
+          )}
+        />
+        {!isLast && (
+          <span className={cn("mt-1.5 w-[1.5px] flex-1", isCompleted ? "bg-ink" : "bg-muted")} />
         )}
       </div>
 
-      <AccordionTrigger
-        className={cn("pl-12 py-1 hover:no-underline data-[state=open]:py-1 group")}
-      >
-        <div className="flex items-center gap-3 w-full">
-          <span
-            className={cn(
-              "text-lg transition-colors",
-              isCurrent
-                ? "font-bold text-foreground"
-                : "font-medium text-muted-foreground group-hover:text-foreground",
-            )}
-          >
-            {stage.label}
-          </span>
-          {isCurrent && (
-            <Badge
-              variant="secondary"
-              className="bg-status-renovating/10 text-status-renovating hover:bg-status-renovating/10 border-none"
-            >
-              进行中
-            </Badge>
-          )}
-          {(photos.length > 0 || uploadQueue.length > 0) && !isCurrent && (
-            <span className="text-xs text-muted-foreground ml-2 bg-muted px-1.5 rounded">
-              {photos.length + uploadQueue.length} 张照片
+      {/* 右内容：头部（阶段名 + 状态 chip + 起始/区间日期）→ 照片墙 → 操作区（设计稿无描边盒子） */}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="text-[15.5px] font-[500] text-ink">{stage.label}</span>
+          {isCompleted && (
+            <span className="rounded-full bg-[#e5efe7] px-2.5 py-[2.5px] text-xs font-[450] text-[#3e6b4f]">
+              已完成
             </span>
           )}
+          {isCurrent && (
+            <span className="rounded-full bg-apricot-wash px-2.5 py-[2.5px] text-xs font-[450] text-rust">
+              {stageElapsedDays ? `进行中 · 第 ${stageElapsedDays} 天` : "进行中"}
+            </span>
+          )}
+          {!isCompleted && !isCurrent && (
+            <span className="rounded-full bg-fog px-2.5 py-[2.5px] text-xs font-[450] text-graphite">
+              待开始
+            </span>
+          )}
+          {renderStartDate()}
           {renderFinishDate()}
         </div>
-      </AccordionTrigger>
 
-      <AccordionContent className="pl-12 pt-4 pb-2">
-        <div
-          className={cn(
-            "rounded-lg border p-4 space-y-4 transition-all",
-            isCurrent
-              ? "bg-card border-status-renovating/30 shadow-sm"
-              : "bg-muted/50 border-border",
-          )}
-        >
+        {/* 照片墙 + 操作区（photos mt-12px / actions mt-10px，设计稿 .photos / .tl-actions） */}
+        <div className="mt-3 space-y-2.5">
           <PhotoGrid
             photos={photos}
             uploadingPhotos={uploadQueue}
@@ -307,7 +340,7 @@ export function TimelineItem({
             onClearDate={() => setShowClearConfirm(true)}
           />
         </div>
-      </AccordionContent>
+      </div>
 
       <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
         <AlertDialogContent>
@@ -330,6 +363,6 @@ export function TimelineItem({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AccordionItem>
+    </div>
   );
 }

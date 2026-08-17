@@ -6,10 +6,9 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { createProjectAction, updateProjectAction } from "../../actions/core";
-import { updateCommunityAction } from "../../../leads/actions/update-community";
-import { FormValues, ProjectCreateReq, ProjectUpdateReq } from "./schema";
+import { FormValues, ProjectCreateReq } from "./schema";
 import { Project } from "../../types";
-import { buildLayout, toDateStr } from "./utils";
+import { buildProjectUpdatePayload, syncCommunityDistrict } from "./utils";
 import { useDraft } from "./use-draft";
 import { useFormInit, getDefaultValues, getFormResolver } from "./use-form-init";
 
@@ -53,59 +52,14 @@ export const useCreateProject = ({
     setLoading(true);
 
     try {
-      const layoutString = buildLayout(values.rooms, values.halls, values.bathrooms);
-
-      const basePayload = {
-        community_id: values.community_id || null,
-        community_name: values.community_name,
-        address: values.address,
-        area: values.area ?? null,
-        layout: layoutString || null,
-        orientation: values.orientation || null,
-        floor_info: values.floor_info || null,
-        project_manager_id: values.project_manager_id || null,
-        business_form:
-          values.business_form === "agent" || values.business_form === "wholesale"
-            ? values.business_form
-            : null,
-        electricity_account: values.electricity_account || null,
-        water_account: values.water_account || null,
-        gas_account: values.gas_account || null,
-        notes: values.notes || null,
-        contract_no: values.contract_no,
-        signing_price: values.signing_price ?? null,
-        signing_date: toDateStr(values.signing_date),
-        signing_period: values.signing_period ?? null,
-        extension_period: values.extension_period ?? null,
-        extension_rent: values.extension_rent ?? null,
-        cost_assumption_type: values.cost_assumption_type,
-        cost_assumption_other:
-          values.cost_assumption_type === "other" ? values.cost_assumption_other || null : null,
-        planned_handover_date: toDateStr(values.planned_handover_date),
-        commission_start_date: toDateStr(values.commission_start_date),
-        commission_end_date: toDateStr(values.commission_end_date),
-        other_agreements: values.other_agreements || null,
-        owners:
-          values.owners?.map((o) => ({
-            id: o.id || undefined,
-            owner_name: o.owner_name || null,
-            owner_phone: o.owner_phone || null,
-            owner_id_card: o.owner_id_card || null,
-            bank_name: o.bank_name || null,
-            bank_card_number: o.bank_card_number || null,
-            relation_type: o.relation_type || "业主",
-            owner_info: o.owner_info || null,
-          })) ?? null,
-        owner_info: values.notes || null,
-      };
+      // payload 组装与弹窗/就地编辑共用（create-project/utils.ts::buildProjectUpdatePayload）
+      const payload = buildProjectUpdatePayload(values);
 
       let res;
       if (isEditMode && project) {
-        const payload: ProjectUpdateReq = basePayload as ProjectUpdateReq;
         res = await updateProjectAction(project.id, payload);
       } else {
-        const payload: ProjectCreateReq = basePayload as ProjectCreateReq;
-        res = await createProjectAction(payload);
+        res = await createProjectAction(payload as ProjectCreateReq);
       }
 
       if (res.success) {
@@ -119,27 +73,11 @@ export const useCreateProject = ({
 
         // AC-4.3: 项目保存成功后，若用户手动修改了行政区或商圈，回写到小区对应字段
         // 仅当值非空且与小区原始值不一致时才调用，失败不阻塞项目成功
-        const communityId = values.community_id;
-        const districtValue = values.district?.trim();
-        const originalDistrict = values.original_community_district?.trim();
-        const businessCircleValue = values.business_circle?.trim();
-        const originalBusinessCircle = values.original_community_business_circle?.trim();
-
-        const communityPatch: { district?: string; business_circle?: string } = {};
-        if (districtValue && districtValue !== originalDistrict) {
-          communityPatch.district = districtValue;
-        }
-        if (businessCircleValue && businessCircleValue !== originalBusinessCircle) {
-          communityPatch.business_circle = businessCircleValue;
-        }
-
-        if (communityId && Object.keys(communityPatch).length > 0) {
-          const communityRes = await updateCommunityAction(communityId, communityPatch);
-          if (!communityRes.success) {
-            toast.error(
-              "小区信息更新失败" + (communityRes.message ? `：${communityRes.message}` : ""),
-            );
-          }
+        const communityRes = await syncCommunityDistrict(values);
+        if (!communityRes.success) {
+          toast.error(
+            "小区信息更新失败" + (communityRes.message ? `：${communityRes.message}` : ""),
+          );
         }
 
         if (!isEditMode) {

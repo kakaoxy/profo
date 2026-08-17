@@ -3,21 +3,41 @@
 import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useCurrentDate } from "@/hooks/use-current-date";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Image as ImageIcon } from "lucide-react";
 import { Project } from "../../../../types";
 import { RENOVATION_STAGES } from "../../constants";
-import { differenceInDays, addDays } from "date-fns";
+import { differenceInDays, addDays, format, parseISO, isValid } from "date-fns";
 // 从 client.ts 导入客户端可用的 Server Action
 import { getRenovationPhotosAction } from "../../../../actions/client";
 
-interface RenovationKPIsProps {
-  project: Project;
+/** 装修合同摘要（getRenovationContractAction 提炼，供 KPI 与页面副列共用） */
+export interface RenovationContractMeta {
+  /** 装修公司（renovation_company） */
+  companyName?: string;
+  /** 对接负责人（contact_person_id，内部用户 ID） */
+  contactPersonId?: string;
+  /** 实际开工（actual_start_date） */
+  actualStart?: string;
+  /** 约定竣工/合同截止（contract_end_date） */
+  expectedEnd?: string;
+  /** 实际竣工（actual_end_date；在售副列「关键日期·装修完工」行复用） */
+  actualEnd?: string;
 }
 
-export function RenovationKPIs({ project }: RenovationKPIsProps) {
+interface RenovationKPIsProps {
+  project: Project;
+  /** 装修合同摘要：实际开工日期优先于 project.renovation_start_date */
+  contractMeta?: RenovationContractMeta;
+}
+
+/** 已完成阶段数（总体进度 delta「N / 6 阶段已完成」） */
+function countCompletedStages(project: Project): number {
+  const stageDates = project.renovationStageDates ?? {};
+  return RENOVATION_STAGES.filter((s) => !!stageDates[s.value]).length;
+}
+
+export function RenovationKPIs({ project, contractMeta }: RenovationKPIsProps) {
   // [新增] 用于存储照片总数的状态
   const [photoCount, setPhotoCount] = useState(0);
   const today = useCurrentDate();
@@ -49,12 +69,29 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
   const currentStageLabel =
     currentIndex < RENOVATION_STAGES.length ? RENOVATION_STAGES[currentIndex].label : "已完成";
 
-  // 3. 计算总体进度（按已完成阶段数计算，支持无序完成）
-  const progressValue = (() => {
-    const stageDates = project.renovationStageDates ?? {};
-    const completedCount = RENOVATION_STAGES.filter((s) => !!stageDates[s.value]).length;
-    return Math.round((completedCount / RENOVATION_STAGES.length) * 100);
+  // 当前阶段进度计数（设计稿「水电 3 / 6」；全完成后不展示计数）
+  const stageIndexText =
+    currentIndex < RENOVATION_STAGES.length
+      ? `${currentIndex + 1} / ${RENOVATION_STAGES.length}`
+      : undefined;
+
+  // 2.5 当前阶段卡 delta：开工日期 + 已开工天数（合同实际开工优先，均缺失则省略）
+  const renovationStartDelta = (() => {
+    const startDate = contractMeta?.actualStart ?? project.renovation_start_date;
+    if (!startDate) return null;
+    try {
+      const start = parseISO(startDate);
+      if (!isValid(start)) return null;
+      const days = today ? Math.max(0, differenceInDays(today, start)) : null;
+      return `开工 ${format(start, "yyyy.MM.dd")}${days !== null ? ` · 已 ${days} 天` : ""}`;
+    } catch {
+      return null;
+    }
   })();
+
+  // 3. 计算总体进度（按已完成阶段数计算，支持无序完成）
+  const completedCount = countCompletedStages(project);
+  const progressValue = Math.round((completedCount / RENOVATION_STAGES.length) * 100);
 
   // 4. [关键修改] 异步获取照片总数
   useEffect(() => {
@@ -76,70 +113,74 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
     }
   }, [project.id]);
 
+  // 设计稿 .kpi：label 13px/450，value 30px（当前阶段 26px）/480/字距-0.02em，
+  // delta 12px/450；数值统一正文无衬线字体（Sohne，非 Signifier）
+  const valueClass = "text-[30px] font-[480] leading-[1.15] tracking-[-0.02em]";
+  const deltaClass = "mt-2 text-[12px] font-[450]";
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
-      {/* 卡片 1: 交付倒计时 */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4 flex flex-col justify-between h-full">
-          <span className="text-xs text-muted-foreground font-medium">交付倒计时</span>
-          <div>
-            <div className={cn("text-2xl font-bold font-mono", daysColor)}>
-              {daysLeft} <span className="text-xs font-normal text-muted-foreground">天</span>
-            </div>
-            <div className="text-[10px] text-muted-foreground mt-1">
-              截止: {deadlineDate.toLocaleDateString()}
-            </div>
+    <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      {/* 卡片 1: 交付倒计时 — 天数类 · 冷底（<10 天红色脉冲 · ≤30 天橙色） */}
+      <div className="flex h-full flex-col justify-between rounded-cards bg-sky-wash p-5 shadow-steep">
+        <span className="text-[13px] font-[450] text-ink/55">交付倒计时</span>
+        <div>
+          <div className="mt-1.5 flex items-baseline gap-1">
+            <span className={cn(valueClass, daysColor)}>{daysLeft}</span>
+            <span className="text-sm font-[430] text-graphite">天</span>
           </div>
-        </CardContent>
-      </Card>
+          <div className={cn(deltaClass, "text-ink/55")}>≤30 天橙色 · &lt;10 天红色脉冲</div>
+        </div>
+      </div>
 
-      {/* 卡片 2: 当前阶段 */}
-      <Card className="shadow-sm border-orange-100 bg-status-renovating/10/30">
-        <CardContent className="p-4 flex flex-col justify-between h-full">
-          <span className="text-xs text-muted-foreground font-medium">当前阶段</span>
-          <div className="space-y-1">
-            <div className="text-xl font-bold text-foreground">{currentStageLabel}</div>
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-status-renovating"></span>
-              </span>
-              <span className="text-xs text-status-renovating font-medium">进行中</span>
-            </div>
+      {/* 卡片 2: 当前阶段 — 白卡 · 「水电 3 / 6」 */}
+      <div className="flex h-full flex-col justify-between rounded-cards bg-pure-white p-5 shadow-steep">
+        <span className="text-[13px] font-[450] text-graphite">当前阶段</span>
+        <div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-[26px] font-[480] leading-[1.15] tracking-[-0.02em] text-ink">
+              {currentStageLabel}
+            </span>
+            {stageIndexText && (
+              <span className="text-sm font-[430] text-graphite">{stageIndexText}</span>
+            )}
           </div>
-        </CardContent>
-      </Card>
+          {renovationStartDelta && (
+            <div className={cn(deltaClass, "text-graphite")}>{renovationStartDelta}</div>
+          )}
+        </div>
+      </div>
 
-      {/* 卡片 3: 总体进度 */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4 flex flex-col justify-between h-full">
-          <span className="text-xs text-muted-foreground font-medium">总体进度</span>
-          <div>
-            <div className="text-2xl font-bold text-foreground mb-1">{progressValue}%</div>
-            <Progress
-              value={progressValue}
-              className="h-2 bg-muted"
-              indicatorClassName="bg-status-renovating"
-            />
+      {/* 卡片 3: 总体进度 — 白卡 · 进度条同步（设计稿 delta 注释「进度条同步」） */}
+      <div className="flex h-full flex-col justify-between rounded-cards bg-pure-white p-5 shadow-steep">
+        <span className="text-[13px] font-[450] text-graphite">总体进度</span>
+        <div>
+          <div className="mt-1.5 flex items-baseline gap-0.5">
+            <span className={cn(valueClass, "text-ink")}>{progressValue}</span>
+            <span className="text-sm font-[430] text-graphite">%</span>
           </div>
-        </CardContent>
-      </Card>
+          <Progress
+            value={progressValue}
+            className="mt-2 h-2 bg-muted"
+            indicatorClassName="bg-status-renovating"
+          />
+          <div className={cn(deltaClass, "text-graphite")}>
+            {completedCount} / {RENOVATION_STAGES.length} 阶段已完成
+          </div>
+        </div>
+      </div>
 
-      {/* 卡片 4: 现场相册 */}
-      <Card className="shadow-sm hover:bg-muted cursor-pointer transition-colors group">
-        <CardContent className="p-4 flex flex-col justify-between h-full">
-          <span className="text-xs text-muted-foreground font-medium">现场相册</span>
-          <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold text-foreground">
-              {/* 显示计算出来的 photoCount */}
-              {photoCount} <span className="text-xs font-normal text-muted-foreground">张</span>
-            </div>
-            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-card group-hover:shadow-sm transition-all">
-              <ImageIcon className="h-4 w-4 text-muted-foreground" />
-            </div>
+      {/* 卡片 4: 现场相册 — 白卡 */}
+      <div className="flex h-full flex-col justify-between rounded-cards bg-pure-white p-5 shadow-steep">
+        <span className="text-[13px] font-[450] text-graphite">现场相册</span>
+        <div>
+          <div className="mt-1.5 flex items-baseline gap-1">
+            {/* 显示计算出来的 photoCount */}
+            <span className={cn(valueClass, "text-ink")}>{photoCount}</span>
+            <span className="text-sm font-[430] text-graphite">张</span>
           </div>
-        </CardContent>
-      </Card>
+          <div className={cn(deltaClass, "text-graphite")}>按 6 阶段分组归档</div>
+        </div>
+      </div>
     </div>
   );
 }

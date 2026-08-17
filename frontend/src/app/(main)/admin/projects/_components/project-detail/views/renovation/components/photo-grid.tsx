@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isValidUrl } from "@/lib/validators";
-import { downloadFile, downloadFilesInBatch } from "@/lib/file-utils";
+import { downloadFile } from "@/lib/file-utils";
 
 // [New] Define the structure for a photo currently being uploaded
 export interface UploadingPhoto {
@@ -49,6 +49,10 @@ interface PhotoItemProps {
   onDelete: (photoId: string) => void;
 }
 
+/** 照片瓦片尺寸（设计稿 .ph：92×70 / 圆角 12px / 内侧细描边） */
+const TILE_CLASS =
+  "relative h-[70px] w-[92px] shrink-0 overflow-hidden rounded-[12px] bg-muted shadow-[inset_0_0_0_1px_rgba(23,25,28,0.06)]";
+
 const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }: PhotoItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   // 网格缩略图和大图预览统一使用缩略图（800px WebP），避免加载原图导致卡顿
@@ -56,47 +60,47 @@ const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }
 
   return (
     <Dialog>
-      <div className="aspect-square relative group rounded-md overflow-hidden bg-muted border border-border">
+      <div className={cn(TILE_CLASS, "group")}>
         {isValidUrl(displayUrl) ? (
           <Image
             src={displayUrl}
             alt={photo.filename || "Renovation Photo"}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
+            sizes="92px"
             loading="lazy"
             unoptimized
             onLoad={() => setImageLoaded(true)}
             className={cn(
-              "object-cover hover:scale-105 transition-all duration-500 cursor-pointer",
+              "object-cover transition-all duration-500 hover:scale-105",
               imageLoaded ? "opacity-100" : "opacity-0",
             )}
           />
         ) : (
-          <div className="w-full h-full bg-muted flex items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center bg-muted">
             <ImageIcon className="h-5 w-5 text-muted-foreground" />
           </div>
         )}
         {!imageLoaded && isValidUrl(displayUrl) && (
-          <div className="absolute inset-0 bg-muted animate-pulse" />
+          <div className="absolute inset-0 animate-pulse bg-muted" />
         )}
 
         {/* Hover Mask */}
         <DialogTrigger asChild>
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors cursor-pointer flex items-center justify-center">
-            <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md" />
+          <div className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/0 transition-colors group-hover:bg-black/10">
+            <Eye className="h-6 w-6 text-white opacity-0 drop-shadow-md group-hover:opacity-100" />
           </div>
         </DialogTrigger>
 
         {/* Delete Button */}
         {canEditRenovation && (
           <div
-            className="absolute top-1 right-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute right-1 top-1 z-20 opacity-0 transition-opacity group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button
-                  className="bg-card/90 p-1.5 rounded-full text-error hover:bg-error-container hover:text-error shadow-sm transition-colors"
+                  className="rounded-full bg-card/90 p-1.5 text-error shadow-sm transition-colors hover:bg-error-container hover:text-error"
                   title="Delete Photo"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -126,11 +130,11 @@ const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }
       </div>
 
       {/* Large Preview Modal */}
-      <DialogContent className="max-w-3xl border-none bg-transparent shadow-none p-0">
+      <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
         <DialogTitle className="sr-only">
           Photo Preview - {photo.filename || "Untitled"}
         </DialogTitle>
-        <div className="relative w-full aspect-video">
+        <div className="relative aspect-video w-full">
           {isValidUrl(displayUrl) ? (
             <Image
               src={displayUrl}
@@ -138,11 +142,11 @@ const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }
               fill
               sizes="(max-width: 768px) 100vw, 768px"
               unoptimized
-              className="object-contain rounded-lg shadow-2xl"
+              className="rounded-lg object-contain shadow-2xl"
               priority
             />
           ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center rounded-lg">
+            <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
               <ImageIcon className="h-8 w-8 text-muted-foreground" />
             </div>
           )}
@@ -155,7 +159,7 @@ const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }
               className="bg-card/90 backdrop-blur-sm"
               onClick={() => downloadFile(getFileUrl(photo.url), photo.filename ?? "")}
             >
-              <Download className="h-4 w-4 mr-1.5" />
+              <Download className="mr-1.5 h-4 w-4" />
               下载原图
             </Button>
           </div>
@@ -169,21 +173,21 @@ PhotoItem.displayName = "PhotoItem";
 // [优化] 使用 memo 缓存上传中照片项组件
 const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPhoto }) {
   return (
-    <div className="aspect-square relative rounded-md overflow-hidden bg-muted border border-border">
+    <div className={cn(TILE_CLASS)}>
       {/* Local Preview Image */}
       <Image
         src={item.previewUrl}
         alt="Uploading..."
         fill
-        sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
+        sizes="92px"
         unoptimized
         className="object-cover opacity-60 blur-[1px] transition-all"
       />
 
       {/* Progress Overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 z-10 p-2 gap-2">
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/10 p-2">
         {item.status === "error" ? (
-          <span className="text-xs text-white bg-error/90 px-2 py-1 rounded font-medium">
+          <span className="rounded bg-error/90 px-2 py-1 text-xs font-medium text-white">
             Upload Failed
           </span>
         ) : (
@@ -192,7 +196,7 @@ const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPho
             <div className="w-full px-2">
               <Progress value={item.progress} className="h-1.5 w-full bg-card/40" />
             </div>
-            <span className="text-[10px] text-white font-medium drop-shadow-md">
+            <span className="text-[10px] font-medium text-white drop-shadow-md">
               {item.progress}%
             </span>
           </>
@@ -211,64 +215,45 @@ export function PhotoGrid({
   onUpload,
   onDelete,
 }: PhotoGridProps) {
-  const downloadablePhotos = photos.filter((p) => p.media_type === "image");
-
   return (
-    <div>
-      <div className="flex items-center justify-end mb-2">
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={downloadablePhotos.length === 0}
-          onClick={() =>
-            downloadFilesInBatch(
-              downloadablePhotos.map((p) => ({
-                url: getFileUrl(p.url),
-                filename: p.filename ?? "",
-              })),
-            )
-          }
+    // 设计稿 .photos：flex 横向排列、gap 10px（V4.4 移除「下载本阶段全部」行）
+    <div className="flex flex-wrap gap-2.5">
+      {/* 1. Server Photos - [优化] 使用 memoized 组件 */}
+      {photos.map((photo) => (
+        <PhotoItem
+          key={photo.id}
+          photo={photo}
+          canEditRenovation={canEditRenovation}
+          onDelete={onDelete}
+        />
+      ))}
+
+      {/* 2. Uploading Photos */}
+      {uploadingPhotos.map((item) => (
+        <UploadingItem key={item.id} item={item} />
+      ))}
+
+      {/* 3. Upload Button（设计稿 .ph.add：92×70 虚线块 + 加号图标） */}
+      {canEditRenovation && (
+        <label
+          title="上传照片"
+          className="grid h-[70px] w-[92px] shrink-0 cursor-pointer place-items-center rounded-[12px] border-[1.5px] border-dashed border-dove text-graphite transition-all hover:border-ink hover:text-ink"
         >
-          <Download className="h-4 w-4 mr-1.5" />
-          下载本阶段全部（{downloadablePhotos.length}）
-        </Button>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
-        {/* 1. Server Photos - [优化] 使用 memoized 组件 */}
-        {photos.map((photo) => (
-          <PhotoItem
-            key={photo.id}
-            photo={photo}
-            canEditRenovation={canEditRenovation}
-            onDelete={onDelete}
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={onUpload}
+            disabled={isLoading}
           />
-        ))}
-
-        {/* 2. Uploading Photos */}
-        {uploadingPhotos.map((item) => (
-          <UploadingItem key={item.id} item={item} />
-        ))}
-
-        {/* 3. Upload Button */}
-        {canEditRenovation && (
-          <label className="aspect-square rounded-md border-2 border-dashed border-border bg-card hover:bg-muted hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={onUpload}
-              disabled={isLoading}
-            />
-            {isLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            ) : (
-              <UploadCloud className="h-6 w-6" />
-            )}
-            <span className="text-xs font-medium">{isLoading ? "Processing" : "上传照片"}</span>
-          </label>
-        )}
-      </div>
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <UploadCloud className="h-4 w-4" />
+          )}
+        </label>
+      )}
     </div>
   );
 }

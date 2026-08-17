@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import type { ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,19 +12,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Trash2,
-  Download,
-  Eye,
-  FileSpreadsheet,
-  FileImage,
-  FileText,
-  File,
-  ImageIcon,
-} from "lucide-react";
-import { CATEGORY_LABELS, FILE_ICON_COLORS, type AttachmentGroupConfig } from "../constants";
+import { Trash2, Download, Eye, FileSpreadsheet, FileImage, FileText, File } from "lucide-react";
+import { FILE_ICON_COLORS, type AttachmentGroupConfig } from "../constants";
 import type { AttachmentInfo, AttachmentHandlers } from "../types";
-import { isValidUrl } from "@/lib/validators";
+import { formatFileSize } from "@/lib/formatters";
 
 interface AttachmentGroupProps {
   groupKey: string;
@@ -36,7 +25,8 @@ interface AttachmentGroupProps {
 }
 
 /**
- * 附件组组件 - 按分类渲染附件列表
+ * 附件组组件（V4.2 · 设计稿 1:1）— doc-group 容器：
+ * 图标块 + 标题 + 计数 pill 组头，doc-row 虚线分隔附件行。
  */
 export function AttachmentGroup({
   groupKey,
@@ -49,25 +39,27 @@ export function AttachmentGroup({
   if (attachments.length === 0) return null;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <GroupIcon className="h-4 w-4" />
-        {groupConfig.label}
-        <Badge variant="secondary" className="text-xs">
-          {attachments.length}
-        </Badge>
+    <div className="rounded-[16px] border border-[#efeff1] px-[18px] py-4">
+      {/* 分组头（原型 .doc-group-head）：图标块 + 标题 + 计数 pill */}
+      <div className="mb-1.5 flex items-center gap-2.5">
+        <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[10px] bg-fog text-ash">
+          <GroupIcon className="h-[15px] w-[15px]" />
+        </span>
+        <span className="flex-1 text-[14.5px] font-medium text-ink">{groupConfig.label}</span>
+        <span className="shrink-0 rounded-full bg-fog px-2.5 py-[3px] text-xs font-[430] text-graphite">
+          {attachments.length} 份
+        </span>
       </div>
-      <div className="space-y-2">
-        {attachments.map((att, idx) => (
-          <AttachmentItem key={`${groupKey}-${idx}`} attachment={att} handlers={handlers} />
-        ))}
-      </div>
+
+      {attachments.map((att, idx) => (
+        <AttachmentItem key={`${groupKey}-${idx}`} attachment={att} handlers={handlers} />
+      ))}
     </div>
   );
 }
 
 /**
- * 文件图标组件 - 根据文件类型渲染对应图标
+ * 文件图标组件 - 根据文件类型渲染对应图标（14px 行内小图标，对齐原型 doc-row）
  */
 function FileIcon({ fileType, className }: { fileType: string; className?: string }) {
   const iconColor = FILE_ICON_COLORS[fileType] || FILE_ICON_COLORS.default;
@@ -87,88 +79,72 @@ function FileIcon({ fileType, className }: { fileType: string; className?: strin
   }
 }
 
+/** 图标按钮（原型 .icon-btn）：28px 圆角 8，graphite → hover fog/ink */
+function IconBtn({
+  title,
+  onClick,
+  children,
+}: {
+  title: string;
+  onClick?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg text-graphite transition-all hover:bg-fog hover:text-ink"
+    >
+      {children}
+    </button>
+  );
+}
+
 interface AttachmentItemProps {
   attachment: AttachmentInfo;
   handlers: AttachmentHandlers;
 }
 
 /**
- * 单个附件项组件
+ * 单个附件项（原型 .doc-row）：文件小图标 + 文件名 + 大小 + 预览/下载/删除 icon-btn
  */
 function AttachmentItem({ attachment, handlers }: AttachmentItemProps) {
   const { onPreview, onDownload, onDelete } = handlers;
 
   return (
-    <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-      {/* 缩略图 */}
-      <div className="shrink-0">
-        {attachment.fileType === "image" ? (
-          <div
-            className="h-10 w-10 rounded overflow-hidden border cursor-pointer relative"
-            onClick={() => onPreview(attachment.url, attachment.fileType)}
-          >
-            {isValidUrl(attachment.url) ? (
-              <Image
-                src={attachment.url}
-                alt={attachment.filename}
-                fill
-                sizes="40px"
-                unoptimized
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-muted flex items-center justify-center">
-                <ImageIcon className="h-4 w-4 text-muted-foreground" />
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="h-10 w-10 rounded bg-background border flex items-center justify-center">
-            <FileIcon fileType={attachment.fileType} className="h-5 w-5" />
-          </div>
-        )}
-      </div>
-
-      {/* 文件名 */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm truncate" title={attachment.filename}>
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-dashed border-[#ececef] py-[9px] text-sm last:border-b-0">
+      {/* 文件名（文件类型小图标 + 截断） */}
+      <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+        <FileIcon fileType={attachment.fileType} className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate font-[430] text-ink" title={attachment.filename}>
           {attachment.filename}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {CATEGORY_LABELS[attachment.category] || attachment.category}
-        </p>
-      </div>
+        </span>
+      </span>
+
+      {/* 大小 */}
+      {attachment.size ? (
+        <span className="shrink-0 text-[12.5px] font-[430] text-graphite">
+          {formatFileSize(attachment.size)}
+        </span>
+      ) : null}
 
       {/* 操作 */}
-      <div className="flex items-center gap-1">
+      <span className="flex shrink-0 gap-0.5">
         {(attachment.fileType === "image" || attachment.fileType === "pdf") && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onPreview(attachment.url, attachment.fileType)}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
+          <IconBtn title="预览" onClick={() => onPreview(attachment.url, attachment.fileType)}>
+            <Eye className="h-[14.5px] w-[14.5px]" />
+          </IconBtn>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => onDownload(attachment.url, attachment.filename)}
-        >
-          <Download className="h-4 w-4" />
-        </Button>
+        <IconBtn title="下载" onClick={() => onDownload(attachment.url, attachment.filename)}>
+          <Download className="h-[14.5px] w-[14.5px]" />
+        </IconBtn>
         {onDelete && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <IconBtn title="删除">
+                <Trash2 className="h-[14.5px] w-[14.5px]" />
+              </IconBtn>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -186,7 +162,7 @@ function AttachmentItem({ attachment, handlers }: AttachmentItemProps) {
             </AlertDialogContent>
           </AlertDialog>
         )}
-      </div>
+      </span>
     </div>
   );
 }

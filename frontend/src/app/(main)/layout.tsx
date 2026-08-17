@@ -75,12 +75,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // 用户体验（避免显示空数据页面），被绕过也安全。
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    // overflow-clip 覆盖基类 overflow-hidden：hidden 会创建滚动容器，破坏后代
+    // sticky（详情页副栏等）相对 viewport 吸附；clip 裁剪效果不变且不创建滚动容器
+    <SidebarProvider defaultOpen={false} className="overflow-clip">
       {/* 1. 侧边栏 */}
       <AppSidebar user={user} />
 
       {/* 2. 主体区域 (移除了 Header) */}
-      <SidebarInset className="bg-card min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+      <SidebarInset className="bg-card min-w-0 overflow-clip pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         {/* 移动端顶部导航栏 - 简化为只显示 Logo */}
         <header className="flex md:hidden items-center h-14 px-4 border-b bg-card/80 backdrop-blur-xl sticky top-0 z-40">
           <div className="flex items-center gap-2">

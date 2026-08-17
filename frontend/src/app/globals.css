@@ -322,7 +322,8 @@
   }
   html,
   body {
-    overflow-x: hidden;
+    overflow-x: hidden; /* 不支持 clip 的旧浏览器回退（会破坏后代 sticky，与历史行为一致） */
+    overflow-x: clip; /* clip 不创建滚动容器，避免破坏后代 position: sticky */
   }
 }
 

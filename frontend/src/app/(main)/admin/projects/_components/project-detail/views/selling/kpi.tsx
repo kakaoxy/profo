@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Eye, Gavel, MessageSquare, TrendingUp, TrendingDown, Tag, Calendar } from "lucide-react";
 import {
   startOfWeek,
   endOfWeek,
@@ -12,7 +10,6 @@ import {
   isSameWeek,
   isValid,
 } from "date-fns";
-import { cn } from "@/lib/utils";
 import { Project, SalesRecord } from "../../../../types";
 
 interface ListingKPIsProps {
@@ -114,8 +111,8 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
         if (isSameWeek(date, now, { weekStartsOn: 1 })) {
           latestTalkText = "本周";
         } else {
-          // Format as MM-dd
-          latestTalkText = `${date.getMonth() + 1}月${date.getDate()}日`;
+          // Format as M.dd（设计稿「最新面谈 10.16」）
+          latestTalkText = `${date.getMonth() + 1}.${String(date.getDate()).padStart(2, "0")}`;
         }
       }
     }
@@ -140,79 +137,52 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
   }, [project.sales_records, now]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-      {/* 1. 带看卡片 (蓝色主题 - 活跃) */}
-      <Card className="shadow-sm border-primary/20 bg-primary/5">
-        <CardContent className="p-4 relative">
-          <Eye className="absolute top-4 right-4 h-4 w-4 text-primary opacity-50" />
-          <div className="text-xs text-primary font-medium">本周带看</div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">{stats.viewings.count}</span>
-            <span className="text-xs text-muted-foreground">组</span>
-          </div>
-          <div
-            className={cn(
-              "mt-1 flex items-center text-[10px] font-medium",
-              stats.viewings.isInfinite || stats.viewings.isPositive
-                ? "text-success"
-                : "text-error",
-            )}
-          >
-            {stats.viewings.isInfinite ? (
-              <>
-                <TrendingUp className="h-3 w-3 mr-1" />
-                新增爆发
-              </>
-            ) : (
-              <>
-                {stats.viewings.isPositive ? (
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                )}
-                {stats.viewings.growth}% 较上周
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+    <div className="mb-5 grid grid-cols-1 gap-3 font-sohne sm:grid-cols-3">
+      {/* 1. 带看卡片 — 冷底（设计稿 .kpi.cool：无图标、delta 石墨灰） */}
+      <div className="rounded-cards bg-sky-wash p-5">
+        <div className="text-[13px] font-[450] text-[rgba(23,25,28,0.55)]">本周带看</div>
+        <div className="mt-1.5 flex items-baseline gap-1.5">
+          <span className="font-signifier text-[30px] font-[480] leading-[1.15] tracking-[-0.02em] text-ink">
+            {stats.viewings.count}
+          </span>
+          <span className="text-sm font-[430] text-graphite">组</span>
+        </div>
+        <div className="mt-2 text-xs font-[450] text-[rgba(23,25,28,0.55)]">
+          {stats.viewings.isInfinite
+            ? "新增爆发"
+            : `环比上周 ${stats.viewings.isPositive ? "+" : "-"}${stats.viewings.growth}%`}
+        </div>
+      </div>
 
-      {/* 2. 出价卡片 (浅灰主题 - 中性) */}
-      <Card className="shadow-sm border-border bg-muted/50">
-        <CardContent className="p-4 relative">
-          <Tag className="absolute top-4 right-4 h-4 w-4 text-muted-foreground opacity-50" />
-          <div className="text-xs text-muted-foreground font-medium">本周出价</div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">{stats.bids.count}</span>
-            <span className="text-xs text-muted-foreground">笔</span>
-          </div>
-          <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
-            <Gavel className="h-3 w-3" />
-            最高: <span className="font-bold text-foreground">¥{stats.bids.max}万</span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* 2. 出价卡片 — 白卡（设计稿 .kpi：shadow-card 白卡、无图标） */}
+      <div className="rounded-cards bg-pure-white p-5 shadow-steep">
+        <div className="text-[13px] font-[450] text-graphite">本周出价</div>
+        <div className="mt-1.5 flex items-baseline gap-1.5">
+          <span className="font-signifier text-[30px] font-[480] leading-[1.15] tracking-[-0.02em] text-ink">
+            {stats.bids.count}
+          </span>
+          <span className="text-sm font-[430] text-graphite">笔</span>
+        </div>
+        <div className="mt-2 text-xs font-[450] text-graphite">
+          {stats.bids.max > 0 ? `最高出价 ${stats.bids.max} 万` : "暂无出价"}
+        </div>
+      </div>
 
-      {/* 3. 面谈卡片 (浅黄主题 - 机会) */}
-      <Card className="shadow-sm border-status-pending/20 bg-status-pending/10">
-        <CardContent className="p-4 relative">
-          <Calendar className="absolute top-4 right-4 h-4 w-4 text-status-pending opacity-50" />
-          <div className="text-xs text-status-renovating font-medium">本周面谈</div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">{stats.talks.count}</span>
-            <span className="text-xs text-muted-foreground">场</span>
-          </div>
-          <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
-            <MessageSquare className="h-3 w-3" />
-            最新:{" "}
-            {stats.talks.latest === "暂无" ? (
-              <span className="text-muted-foreground">暂无</span>
-            ) : (
-              stats.talks.latest
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* 3. 面谈卡片 — 暖底（设计稿 .kpi.warm：value Rust、无图标、delta 石墨灰） */}
+      <div className="rounded-cards bg-apricot-wash p-5">
+        <div className="text-[13px] font-[450] text-[rgba(23,25,28,0.55)]">本周面谈</div>
+        <div className="mt-1.5 flex items-baseline gap-1.5">
+          <span className="font-signifier text-[30px] font-[480] leading-[1.15] tracking-[-0.02em] text-rust">
+            {stats.talks.count}
+          </span>
+          <span className="text-sm font-[430] text-graphite">场</span>
+        </div>
+        <div className="mt-2 text-xs font-[450] text-[rgba(23,25,28,0.55)]">
+          {stats.talks.latest === "暂无"
+            ? "暂无面谈记录"
+            : `最新面谈 ${stats.talks.latest} · 沟通纪要已记录`}
+        </div>
+      </div>
     </div>
   );
 }

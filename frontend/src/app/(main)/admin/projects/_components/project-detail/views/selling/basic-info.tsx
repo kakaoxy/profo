@@ -2,35 +2,42 @@
 
 import { useMemo, useEffect, useState, useCallback } from "react";
 import { useCurrentDate } from "@/hooks/use-current-date";
-import { Card } from "@/components/ui/card";
 import { format, addDays, differenceInDays } from "date-fns";
 import { Project } from "../../../../types";
 import { getRenovationContractAction } from "../../../../actions/renovation";
 import { ActualEndDateDialog } from "./actual-end-date-dialog";
-import {
-  Clock,
-  Share2,
-  Ruler,
-  Coins,
-  TrendingUp,
-  CalendarDays,
-  CalendarCheck,
-  Hourglass,
-  Pencil,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-
+import { Pencil } from "lucide-react";
 interface SellingBasicInfoProps {
   project: Project;
   onRefresh?: () => void;
+  /** 受控打开「实际结束日期」弹窗（页面级 flowbar「结束项目」接线；两 prop 均提供时受控） */
+  endProjectDialogOpen?: boolean;
+  onEndProjectDialogOpenChange?: (open: boolean) => void;
 }
 
-export function SellingBasicInfo({ project, onRefresh }: SellingBasicInfoProps) {
+export function SellingBasicInfo({
+  project,
+  onRefresh,
+  endProjectDialogOpen,
+  onEndProjectDialogOpenChange,
+}: SellingBasicInfoProps) {
   const today = useCurrentDate();
 
   // 实际竣工时间来自装修合同接口（项目详情响应未携带 actual_end_date）
   const [actualEndDate, setActualEndDate] = useState<string | undefined>(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // 受控优先：外部提供两 prop 时由外部驱动弹窗开关，否则用内部触发兜底
+  const isDialogControlled =
+    endProjectDialogOpen !== undefined && onEndProjectDialogOpenChange !== undefined;
+  const dialogOpen = isDialogControlled ? endProjectDialogOpen : isDialogOpen;
+  const handleDialogOpenChange = useCallback(
+    (open: boolean) => {
+      if (!isDialogControlled) setIsDialogOpen(open);
+      onEndProjectDialogOpenChange?.(open);
+    },
+    [isDialogControlled, onEndProjectDialogOpenChange],
+  );
 
   const loadContract = useCallback(async () => {
     try {
@@ -89,132 +96,99 @@ export function SellingBasicInfo({ project, onRefresh }: SellingBasicInfoProps) 
 
   return (
     <>
-      <Card className="shadow-sm border-border mb-6 bg-card overflow-hidden">
-        <div className="flex flex-col md:flex-row">
-          {/* 左侧：核心价格区 (35% 宽度) - 高亮背景 */}
-          <div className="w-full md:w-[35%] bg-linear-to-br from-money-positive/5 to-status-pending/5 p-6 flex flex-col justify-center border-b md:border-b-0 md:border-r border-border relative overflow-hidden group">
-            {/* 背景装饰印花 */}
-            <Coins className="absolute -right-4 -bottom-4 w-24 h-24 text-money-positive/10 rotate-12 group-hover:rotate-0 transition-transform duration-500" />
+      <div className="mb-5 rounded-cards bg-pure-white p-6 shadow-steep">
+        {/* 卡头：标题 + 补登实际结束日期 textlink（设计稿 1448-1450，textlink 无图标） */}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="text-base font-[500] text-ink">房源基础信息</div>
+          <button
+            type="button"
+            onClick={() => handleDialogOpenChange(true)}
+            className="text-sm text-graphite transition-colors hover:text-ink"
+          >
+            补登实际结束日期
+          </button>
+        </div>
 
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="bg-money-positive/10 text-money-positive text-[10px] px-2 py-0.5 rounded-full font-bold">
-                  挂牌价
+        {/* info-grid 两列六项（设计稿 .info-grid / .info-item） */}
+        <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
+          {/* 挂牌价：值 480 字重 + 单价次级（设计稿 1453） */}
+          <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
+            <span className="text-[13px] font-[430] text-graphite">挂牌价</span>
+            <span className="text-[14.5px] font-[480] text-ink">
+              {project.list_price ? `${project.list_price} 万元` : "-"}
+              {unitPrice > 0 && (
+                <span className="font-[430] text-graphite">
+                  {" "}
+                  · {unitPrice.toLocaleString()} 元/㎡
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {unitPrice > 0 ? `单价 ${unitPrice.toLocaleString()} 元/m²` : ""}
-                </span>
-              </div>
-
-              <div className="flex items-baseline gap-1.5 overflow-hidden">
-                <span className="text-4xl lg:text-5xl font-extrabold text-money-positive tracking-tight">
-                  {project.list_price || "-"}
-                </span>
-                <span className="text-lg text-money-positive font-medium">万</span>
-              </div>
-
-              {/* 涨跌幅模拟占位 (未来可接真实数据) */}
-              <div className="mt-3 flex items-center text-xs text-muted-foreground">
-                <TrendingUp className="w-3.5 h-3.5 mr-1" />
-                <span className="opacity-80">根据市场波动适时调整</span>
-              </div>
-            </div>
+              )}
+            </span>
           </div>
 
-          {/* 右侧：详细信息区 (65% 宽度) */}
-          <div className="flex-1 p-6">
-            {/* 顶部标题栏 */}
-            <div className="flex items-start justify-between mb-8">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span>小区名称</span>
-                </div>
-                <div className="text-lg font-bold text-foreground leading-tight">
-                  {project.community_name || "未填写小区名称"}
-                </div>
-              </div>
+          {/* 委托倒计时：绿 Pill（设计稿 1454：#e5efe7 bg / #3e6b4f text，无图标） */}
+          <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
+            <span className="text-[13px] font-[430] text-graphite">委托倒计时</span>
+            <span className="text-[14.5px] font-[450] text-ink">
+              {deadlineDate ? (
+                <span className="inline-flex items-center rounded-full bg-[#e5efe7] px-[13px] py-[5px] text-[13px] font-[450] text-[#3e6b4f]">
+                  剩余 {daysLeft} 天 · 截止 {format(deadlineDate, "yyyy.MM.dd")}
+                </span>
+              ) : (
+                "-"
+              )}
+            </span>
+          </div>
 
-              {/* 倒计时 Pill */}
-              <div
-                className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-lg border",
-                  daysLeft < 30
-                    ? "bg-error/10 border-error/20 text-error"
-                    : "bg-success/10 border-success/20 text-success",
-                )}
+          {/* 上架日期（设计稿 1455） */}
+          <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
+            <span className="text-[13px] font-[430] text-graphite">上架日期</span>
+            <span className="text-[14.5px] font-[450] text-ink">
+              {project.listing_date ? format(new Date(project.listing_date), "yyyy.MM.dd") : "-"}
+            </span>
+          </div>
+
+          {/* 实际竣工 + 编辑 mini-link（设计稿 1456-1458） */}
+          <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
+            <span className="text-[13px] font-[430] text-graphite">实际竣工</span>
+            <span className="flex flex-wrap items-center gap-2 text-[14.5px] font-[450] text-ink">
+              {actualEndDate ? format(new Date(actualEndDate), "yyyy.MM.dd") : "-"}
+              <button
+                type="button"
+                onClick={() => handleDialogOpenChange(true)}
+                className="inline-flex items-center gap-1 text-[13px] text-graphite transition-colors hover:text-ink"
               >
-                {daysLeft < 30 ? (
-                  <Hourglass className="w-3.5 h-3.5 animate-pulse" />
-                ) : (
-                  <Clock className="w-3.5 h-3.5" />
-                )}
-                <div className="flex flex-col items-end leading-none">
-                  <span className="text-xs font-bold opacity-90">剩余 {daysLeft} 天</span>
-                  {deadlineDate && (
-                    <span className="text-[10px] transform scale-90 origin-right opacity-70">
-                      截止 {format(deadlineDate, "yy/MM/dd")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+                <Pencil className="size-3" />
+                编辑
+              </button>
+            </span>
+          </div>
 
-            {/* 下方 Grid 信息 */}
-            <div className="grid grid-cols-2 gap-y-6 gap-x-8">
-              {/* 面积 */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Ruler className="w-3.5 h-3.5" />
-                  <span>建筑面积</span>
-                </div>
-                <div className="text-base font-semibold text-foreground">
-                  {project.area ? `${project.area} m²` : "-"}
-                </div>
-              </div>
+          {/* 签约价（设计稿 1459） */}
+          <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
+            <span className="text-[13px] font-[430] text-graphite">签约价</span>
+            <span className="text-[14.5px] font-[450] text-ink">
+              {project.signing_price ? `${project.signing_price} 万元` : "-"}
+            </span>
+          </div>
 
-              {/* 挂牌日期 */}
-              <div className="space-y-1 flex flex-col items-end">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  <span>挂牌日期</span>
-                </div>
-                <div className="text-base font-semibold text-foreground">
-                  {project.listing_date
-                    ? format(new Date(project.listing_date), "yyyy-MM-dd")
-                    : "-"}
-                </div>
-              </div>
-
-              {/* 实际竣工 */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <CalendarCheck className="w-3.5 h-3.5" />
-                  <span>实际竣工</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-base font-semibold text-foreground">
-                  <span>{actualEndDate ? format(new Date(actualEndDate), "yyyy-MM-dd") : "-"}</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsDialogOpen(true)}
-                    className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="编辑实际竣工时间"
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
+          {/* 总投入（设计稿 1460） */}
+          <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
+            <span className="text-[13px] font-[430] text-graphite">总投入</span>
+            <span className="text-[14.5px] font-[450] text-ink">
+              {project.total_investment ? `${project.total_investment} 万元` : "-"}
+            </span>
           </div>
         </div>
-      </Card>
+      </div>
 
       <ActualEndDateDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        open={dialogOpen}
+        onOpenChange={handleDialogOpenChange}
         projectId={project.id}
         currentActualEndDate={actualEndDate}
         onSuccess={handleEditSuccess}
+        // 受控打开（页面级 flowbar「结束项目」）= end 语义；内部补登入口保持 edit
+        mode={isDialogControlled ? "end" : "edit"}
       />
     </>
   );

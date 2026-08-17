@@ -5,17 +5,6 @@ import React from "react";
 import { ActivityList } from "./activity-list";
 import type { SalesRecord } from "@/app/(main)/admin/projects/types";
 
-// ─── Mocks ───────────────────────────────────────────────────────────────────
-
-// Mock @/components/ui/avatar 避免在 jsdom 中加载真实图片
-vi.mock("@/components/ui/avatar", () => ({
-  Avatar: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("div", { "data-testid": "avatar" }, children),
-  AvatarImage: () => null,
-  AvatarFallback: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("span", null, children),
-}));
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeRecord(overrides: Partial<SalesRecord> = {}): SalesRecord {
@@ -56,9 +45,9 @@ describe("ActivityList - OperatorCell 渲染", () => {
 
     render(<ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={false} />);
 
-    // 表格头 "操作人" 列存在
-    expect(screen.getByText("操作人")).toBeInTheDocument();
-    // operator nickname 渲染
+    // record 流头行（类型 · 对象姓名）存在
+    expect(screen.getByText("带看 · 客户A")).toBeInTheDocument();
+    // operator nickname 渲染（记录人片段）
     expect(screen.getByText("张三")).toBeInTheDocument();
   });
 
@@ -95,8 +84,8 @@ describe("ActivityList - OperatorCell 渲染", () => {
       <ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={false} />,
     );
 
-    // 表格头 "操作人" 仍渲染（列头）
-    expect(screen.getByText("操作人")).toBeInTheDocument();
+    // record 流头行仍渲染（记录行本身存在）
+    expect(screen.getByText("带看 · 客户A")).toBeInTheDocument();
     // 但 nickname "张三" 不应出现
     expect(screen.queryByText("张三")).not.toBeInTheDocument();
     // "未知" 也不应出现（因为 operator 为 null 时 OperatorCell 返回 null）
@@ -204,5 +193,75 @@ describe("ActivityList - canEditSales 控制删除按钮显隐", () => {
     render(<ActivityList type="viewing" data={[]} onDelete={vi.fn()} canEditSales={true} />);
 
     expect(screen.getByText(/暂无带看记录/)).toBeInTheDocument();
+  });
+});
+
+describe("ActivityList - offer 最高出价标识", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // ─── 最高出价记录：显示「最高」标签 + rust 高亮 ─────────────────────────────
+  it("最高出价的记录显示「最高」标签，且价格文字 rust 高亮", () => {
+    const records: SalesRecord[] = [
+      makeRecord({ id: "r1", record_type: "offer", price: 100 }),
+      makeRecord({ id: "r2", record_type: "offer", price: 320 }),
+      makeRecord({ id: "r3", record_type: "offer", price: 200 }),
+    ];
+
+    render(<ActivityList type="offer" data={records} onDelete={vi.fn()} canEditSales={false} />);
+
+    // 仅最高出价记录出现「最高」标签（共 1 个）
+    expect(screen.getAllByText("最高")).toHaveLength(1);
+    // 最高价价格文字使用 rust 高亮
+    expect(screen.getByText("320 万").className).toMatch(/text-rust/);
+    // 非最高价保持 ink 常规色
+    expect(screen.getByText("100 万").className).toMatch(/text-ink/);
+    expect(screen.getByText("200 万").className).toMatch(/text-ink/);
+  });
+
+  // ─── 平价的最高出价：多个记录同为最高价时均标注 ────────────────────────────
+  it("多条记录同为最高价时均显示「最高」标签", () => {
+    const records: SalesRecord[] = [
+      makeRecord({ id: "r1", record_type: "offer", price: 250 }),
+      makeRecord({ id: "r2", record_type: "offer", price: 250 }),
+      makeRecord({ id: "r3", record_type: "offer", price: 180 }),
+    ];
+
+    render(<ActivityList type="offer" data={records} onDelete={vi.fn()} canEditSales={false} />);
+
+    expect(screen.getAllByText("最高")).toHaveLength(2);
+  });
+
+  // ─── 所有出价均无价格：不误标「最高」 ──────────────────────────────────────
+  it("所有出价均无价格时不误标「最高」", () => {
+    const records: SalesRecord[] = [
+      makeRecord({ id: "r1", record_type: "offer", price: undefined }),
+      makeRecord({ id: "r2", record_type: "offer", price: undefined }),
+    ];
+
+    render(<ActivityList type="offer" data={records} onDelete={vi.fn()} canEditSales={false} />);
+
+    expect(screen.queryAllByText("最高")).toHaveLength(0);
+  });
+
+  // ─── 非 offer 视图：不渲染「最高」标签 ─────────────────────────────────────
+  it("viewing/negotiation 视图不渲染「最高」标签", () => {
+    const records: SalesRecord[] = [
+      makeRecord({ id: "r1", record_type: "viewing", price: 100 }),
+      makeRecord({ id: "r2", record_type: "negotiation", price: 100 }),
+    ];
+
+    render(<ActivityList type="viewing" data={records} onDelete={vi.fn()} canEditSales={false} />);
+    expect(screen.queryByText("最高")).not.toBeInTheDocument();
+
+    render(
+      <ActivityList type="negotiation" data={records} onDelete={vi.fn()} canEditSales={false} />,
+    );
+    expect(screen.queryByText("最高")).not.toBeInTheDocument();
   });
 });

@@ -6,10 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Building2, Loader2, Save, Edit2, X } from "lucide-react";
+import { Loader2, Save, Edit2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { renovationContractSchema, RenovationContractFormValues } from "./schema";
 import {
@@ -183,24 +182,20 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
 
   if (!isMounted || isLoading) {
     return (
-      <Card className="border-border">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            <span className="text-xs">加载中...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-cards bg-pure-white p-6 shadow-steep">
+        <div className="flex items-center justify-center text-muted-foreground">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <span className="text-xs">加载中...</span>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="border-border">
-        <CardContent className="p-6">
-          <div className="text-center text-error text-xs">{error}</div>
-        </CardContent>
-      </Card>
+      <div className="rounded-cards bg-pure-white p-6 shadow-steep">
+        <div className="text-center text-xs text-error">{error}</div>
+      </div>
     );
   }
 
@@ -208,56 +203,57 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
   const values = watch();
 
   return (
-    <Card className="border-border shadow-sm">
-      <CardHeader className="pb-3 py-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-            <Building2 className="h-3.5 w-3.5 text-primary" />
-            装修合同信息
-          </CardTitle>
-          <div className="flex items-center gap-1.5">
-            {isEditing ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancel}
-                  disabled={isSaving}
-                  className="h-7 text-xs px-2"
-                >
-                  <X className="mr-1 h-3 w-3" />
-                  取消
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={form.handleSubmit(handleSave)}
-                  disabled={isSaving}
-                  className="h-7 text-xs px-2"
-                >
-                  {isSaving ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Save className="mr-1 h-3 w-3" />
-                  )}
-                  保存
-                </Button>
-              </>
-            ) : (
+    // 设计稿 .card：白卡 24px 圆角 + 签名阴影 + 24px 内边距（无边框）
+    <div className="rounded-cards bg-pure-white p-6 shadow-steep">
+      {/* 卡头：标题 16px/500 + 副标题 + 右操作（查看态 textlink 编辑 / 编辑态 btn-sm 取消·保存） */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[16px] font-[500] text-ink">装修合同信息</div>
+          <div className="mt-0.5 text-[13px] font-[430] text-graphite">
+            合同要素与费用构成 · 保存后即时生效
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {isEditing ? (
+            <>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsEditing(true)}
-                className="h-7 text-xs px-2"
+                onClick={handleCancel}
+                disabled={isSaving}
+                className="h-[30px] rounded-full border-[#e2e2e5] bg-pure-white px-[14px] text-[13.5px] font-[450] text-ink hover:border-dove hover:bg-[#fafafa]"
               >
-                <Edit2 className="mr-1 h-3 w-3" />
-                编辑
+                取消
               </Button>
-            )}
-          </div>
+              <Button
+                size="sm"
+                onClick={form.handleSubmit(handleSave)}
+                disabled={isSaving}
+                className="h-[30px] rounded-full border border-ink bg-ink px-[14px] text-[13.5px] font-[450] text-pure-white hover:bg-[#26282c]"
+              >
+                {isSaving ? (
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                ) : (
+                  <Save className="mr-1 h-3 w-3" />
+                )}
+                保存
+              </Button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="inline-flex items-center gap-1.5 bg-none text-[14px] font-[450] text-ink transition-colors hover:underline hover:underline-offset-4"
+            >
+              <Edit2 className="h-[15px] w-[15px]" />
+              编辑
+            </button>
+          )}
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4 py-3">
+      {/* 分区内容（设计稿 .group-title 间距 22px，编辑态保留原表单控件） */}
+      <div className="space-y-[22px]">
         <CompanySection
           values={values}
           setValue={setValue}
@@ -269,7 +265,7 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
         <DecorationCostSection values={values} setValue={setValue} isEditing={isEditing} />
         <OtherFeesSection values={values} setValue={setValue} isEditing={isEditing} />
         <CostSummarySection values={values} area={area} />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
