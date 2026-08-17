@@ -1,0 +1,2220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>项目详情独立页 · 设计稿 V4 — Steep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Source+Serif+4:opsz,wght@8..60,200..900&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   Steep Tokens（与 DESIGN.md 对齐）
+   ============================================================ */
+:root {
+  --ink: #17191c;
+  --white: #ffffff;
+  --fog: #f7f7f8;
+  --ash: #4c4c4c;
+  --graphite: #777b86;
+  --dove: #a3a6af;
+  --slate: #8b8c8d;
+  --rust: #5d2a1a;
+  --apricot: #fbe1d1;
+  --sky: #d3e3fc;
+
+  --serif: "Source Serif 4", Georgia, "Songti SC", serif;   /* Signifier 替代 */
+  --sans: "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; /* Sohne 替代 */
+
+  --r-card: 24px;
+  --r-img: 12px;
+  --r-input: 16px;
+  --r-pill: 9999px;
+
+  --shadow-card: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.1) 0 20px 25px -5px, rgba(0,0,0,.1) 0 8px 10px -6px;
+  --shadow-float: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 10px 16px -6px, rgba(0,0,0,.05) 0 4px 6px -4px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  font-weight: 400;
+  letter-spacing: -0.009em;
+  color: var(--ink);
+  background: var(--fog);
+  font-size: 15px;
+  line-height: 1.5;
+}
+button { font: inherit; letter-spacing: inherit; border: 0; background: none; cursor: pointer; color: inherit; }
+svg { display: block; }
+
+/* ============================================================
+   原型控制条（仅设计稿演示用）
+   ============================================================ */
+.demo-bar {
+  position: sticky; top: 0; z-index: 99;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 20px;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid #ececee;
+}
+.demo-bar .demo-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-right: 8px; }
+.demo-bar .demo-title small { font-weight: 400; color: var(--graphite); margin-left: 8px; }
+.demo-chip {
+  padding: 6px 14px; border-radius: var(--r-pill);
+  font-size: 13px; font-weight: 450; color: var(--ash);
+  border: 1px solid #e7e7ea; background: var(--white);
+  transition: all .18s ease;
+}
+.demo-chip:hover { border-color: var(--dove); color: var(--ink); }
+.demo-chip.on { background: var(--ink); color: var(--white); border-color: var(--ink); }
+
+/* ============================================================
+   应用外壳（模拟 admin shell）
+   ============================================================ */
+.app { display: flex; min-height: calc(100vh - 53px); }
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--fog);
+  border-right: 1px solid #efeff1;
+  padding: 20px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+  position: sticky; top: 53px; height: calc(100vh - 53px); overflow-y: auto;
+}
+.sidebar .logo { font-size: 21px; font-weight: 500; padding: 4px 12px 18px; letter-spacing: -0.01em; }
+.side-label { font-size: 12px; font-weight: 500; color: var(--graphite); text-transform: uppercase; letter-spacing: .06em; padding: 14px 12px 6px; }
+.side-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 12px;
+  font-size: 14px; font-weight: 450; color: var(--ink);
+  text-decoration: none; transition: background .15s;
+}
+.side-item svg { width: 16px; height: 16px; color: var(--graphite); }
+.side-item:hover { background: #ededf0; }
+.side-item.active { background: var(--white); box-shadow: var(--shadow-float); }
+.side-item.active svg { color: var(--ink); }
+
+.content { flex: 1; min-width: 0; }
+.screen { display: none; }
+.screen.active { display: block; animation: fadeUp .35s ease both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.page { max-width: 1200px; margin: 0 auto; padding: 20px 32px 96px; }
+
+/* ============================================================
+   顶部工具行
+   ============================================================ */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 6px 0 18px; }
+.crumb { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--graphite); }
+.crumb a { color: var(--graphite); text-decoration: none; font-weight: 450; }
+.crumb a:hover { color: var(--ink); }
+.crumb .sep { color: var(--dove); }
+.crumb .current { color: var(--ink); font-weight: 480; }
+.back-btn {
+  width: 34px; height: 34px; border-radius: var(--r-pill);
+  display: grid; place-items: center;
+  border: 1px solid #e7e7ea; background: var(--white); color: var(--ash);
+  transition: all .15s;
+}
+.back-btn:hover { color: var(--ink); border-color: var(--dove); transform: translateX(-1px); }
+.topbar-actions { display: flex; align-items: center; gap: 4px; }
+.updated { font-size: 13px; color: var(--graphite); margin-right: 10px; display: inline-flex; align-items: center; gap: 6px; }
+.updated i { width: 6px; height: 6px; border-radius: 50%; background: #7fb58a; display: inline-block; }
+.tlink {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: var(--r-pill);
+  font-size: 14px; font-weight: 450; color: var(--ink);
+  transition: background .15s;
+}
+.tlink:hover { background: #ededf0; }
+.tlink.danger { color: var(--rust); }
+.tlink svg { width: 15px; height: 15px; }
+
+/* ============================================================
+   Hero 区
+   ============================================================ */
+.hero { padding: 8px 0 22px; }
+.stepper { display: flex; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+.step { display: flex; align-items: center; }
+.step.clickable { cursor: pointer; }
+.step-dot {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 12px; font-weight: 500;
+  border: 1.5px solid var(--dove); color: var(--graphite); background: var(--white);
+  transition: all .2s;
+}
+.step.done .step-dot { background: var(--ink); border-color: var(--ink); color: var(--white); }
+.step.now .step-dot { background: var(--rust); border-color: var(--rust); color: var(--white); box-shadow: 0 0 0 5px rgba(93,42,26,.1); }
+.step-link { width: 56px; height: 1.5px; background: #e2e2e5; margin: 0 6px; }
+.step-link.done { background: var(--ink); }
+.step-name { margin-left: 8px; font-size: 13px; font-weight: 450; color: var(--graphite); white-space: nowrap; }
+.step.now .step-name { color: var(--rust); font-weight: 500; }
+.step.done .step-name { color: var(--ink); }
+.step.locked .step-name { color: var(--dove); }
+.hero-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.hero-title { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.hero-title h1 {
+  font-family: var(--serif); font-weight: 400;
+  font-size: 44px; line-height: 1.1; letter-spacing: -0.015em;
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 13px; border-radius: var(--r-pill);
+  font-size: 13px; font-weight: 450;
+}
+.pill.status { background: var(--apricot); color: var(--rust); }
+.pill.status.cool { background: var(--sky); color: #2c4d7f; }
+.pill.status.ink { background: var(--ink); color: var(--white); }
+.pill.form { border: 1px solid #e2e2e5; color: var(--graphite); background: var(--white); }
+.hero-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 12px; font-size: 14px; color: var(--ash); font-weight: 430; }
+.hero-meta .m { display: inline-flex; align-items: center; gap: 6px; }
+.hero-meta svg { width: 14px; height: 14px; color: var(--graphite); }
+.hero-meta .dot { color: var(--dove); }
+.hero-cta { display: flex; align-items: center; gap: 14px; padding-bottom: 6px; }
+.cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 22px; border-radius: var(--r-pill);
+  background: var(--ink); color: var(--white);
+  font-size: 15px; font-weight: 450;
+  box-shadow: 0 8px 16px -8px rgba(23,25,28,.5);
+  transition: transform .15s, box-shadow .15s;
+}
+.cta:hover { transform: translateY(-1px); box-shadow: 0 12px 20px -8px rgba(23,25,28,.55); }
+.cta svg { width: 16px; height: 16px; }
+.textlink { font-size: 15px; font-weight: 450; color: var(--ink); display: inline-flex; align-items: center; gap: 6px; background: none; }
+.textlink:hover { text-decoration: underline; text-underline-offset: 4px; }
+.textlink.rust { color: var(--rust); }
+.textlink svg { width: 15px; height: 15px; }
+
+/* ============================================================
+   Sticky 分区导航
+   ============================================================ */
+.section-nav-wrap { position: sticky; top: 53px; z-index: 40; padding: 6px 0 14px; background: linear-gradient(var(--fog) 82%, transparent); }
+.section-nav {
+  display: inline-flex; gap: 2px; padding: 4px; max-width: 100%; overflow-x: auto;
+  background: var(--white); border-radius: var(--r-pill);
+  box-shadow: var(--shadow-float);
+}
+.section-nav button {
+  padding: 8px 16px; border-radius: var(--r-pill);
+  font-size: 14px; font-weight: 450; color: var(--graphite); white-space: nowrap;
+  transition: all .15s;
+}
+.section-nav button:hover { color: var(--ink); }
+.section-nav button.on { background: var(--ink); color: var(--white); }
+.section-nav button .n { font-size: 12px; color: var(--dove); margin-left: 4px; }
+.section-nav button.on .n { color: rgba(255,255,255,.55); }
+
+/* ============================================================
+   内容网格与卡片
+   ============================================================ */
+.grid { display: grid; grid-template-columns: minmax(0,1fr) 340px; gap: 20px; align-items: start; }
+.col-main { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.col-side { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 120px; }
+.card {
+  background: var(--white); border-radius: var(--r-card);
+  box-shadow: var(--shadow-card); padding: 24px;
+}
+.card.warm { background: var(--apricot); box-shadow: none; }
+.card.cool { background: var(--sky); box-shadow: none; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.card-title { font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.card-title svg { width: 16px; height: 16px; color: var(--graphite); }
+.card-sub { font-size: 13px; color: var(--graphite); margin-top: 2px; font-weight: 430; }
+
+/* KPI 行 */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.kpi { background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 20px; }
+.kpi.warm { background: var(--apricot); box-shadow: none; }
+.kpi.cool { background: var(--sky); box-shadow: none; }
+.kpi .label { font-size: 13px; font-weight: 450; color: var(--graphite); }
+.kpi.warm .label, .kpi.cool .label { color: rgba(23,25,28,.55); }
+.kpi .value { font-size: 30px; font-weight: 480; letter-spacing: -0.02em; margin-top: 6px; line-height: 1.15; }
+.kpi .value small { font-size: 14px; font-weight: 430; color: var(--graphite); margin-left: 2px; }
+.kpi.warm .value { color: var(--rust); }
+.kpi .delta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 450; margin-top: 8px; color: var(--graphite); }
+.kpi.warm .delta, .kpi.cool .delta { color: rgba(23,25,28,.55); }
+
+/* 信息网格 */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+.info-item { padding: 13px 0; border-bottom: 1px solid #f0f0f2; display: flex; flex-direction: column; gap: 3px; }
+.info-item.full { grid-column: 1 / -1; }
+.info-item .k { font-size: 13px; color: var(--graphite); font-weight: 430; }
+.info-item .v { font-size: 14.5px; font-weight: 450; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.info-item .v.muted { color: var(--dove); font-weight: 400; }
+.info-item .v .mini-link { font-size: 13px; color: var(--graphite); display: inline-flex; align-items: center; gap: 4px; }
+.info-item .v .mini-link:hover { color: var(--ink); }
+.info-item .v .mini-link svg { width: 13px; height: 13px; }
+.group-title { font-size: 13px; font-weight: 500; color: var(--graphite); text-transform: uppercase; letter-spacing: .05em; margin: 22px 0 4px; display: flex; align-items: center; gap: 8px; }
+.group-title:first-child { margin-top: 0; }
+.group-title::after { content: ""; flex: 1; height: 1px; background: #f0f0f2; }
+
+/* 人员行 */
+.person { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #f0f0f2; }
+.person:last-child { border-bottom: 0; }
+.avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 13px; font-weight: 500; color: var(--ink);
+  flex-shrink: 0;
+}
+.avatar.peach { background: var(--apricot); }
+.avatar.skyb { background: var(--sky); }
+.avatar.mint { background: #ddeddd; }
+.person .pname { font-size: 14.5px; font-weight: 480; }
+.person .prole { font-size: 13px; color: var(--graphite); margin-top: 1px; }
+.person .spacer { flex: 1; }
+
+/* 文书分组 */
+.doc-group { border: 1px solid #efeff1; border-radius: 16px; padding: 16px 18px; }
+.doc-group + .doc-group { margin-top: 12px; }
+.doc-group-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.doc-group-head .ic { width: 30px; height: 30px; border-radius: 10px; background: var(--fog); display: grid; place-items: center; color: var(--ash); }
+.doc-group-head .ic svg { width: 15px; height: 15px; }
+.doc-group-head .t { font-size: 14.5px; font-weight: 500; flex: 1; }
+.doc-group-head .c { font-size: 12px; color: var(--graphite); background: var(--fog); padding: 3px 10px; border-radius: var(--r-pill); }
+.doc-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px dashed #ececef; font-size: 14px; }
+.doc-row:last-child { border-bottom: 0; }
+.doc-row .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 430; display: flex; align-items: center; gap: 8px; }
+.doc-row .fname svg { width: 14px; height: 14px; color: var(--graphite); flex-shrink: 0; }
+.doc-row .fsize { font-size: 12.5px; color: var(--graphite); }
+.doc-row .facts { display: flex; gap: 2px; }
+.icon-btn { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: var(--graphite); transition: all .15s; }
+.icon-btn:hover { background: var(--fog); color: var(--ink); }
+.icon-btn svg { width: 14.5px; height: 14.5px; }
+.doc-row .signed { font-size: 12px; color: #3e6b4f; background: #e5efe7; padding: 2px 9px; border-radius: var(--r-pill); font-weight: 450; }
+.doc-row .unsigned { font-size: 12px; color: var(--graphite); background: var(--fog); padding: 2px 9px; border-radius: var(--r-pill); font-weight: 450; }
+.upload-tile {
+  margin-top: 10px; border: 1.5px dashed var(--dove); border-radius: 16px;
+  padding: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--graphite); font-size: 14px; font-weight: 450; transition: all .15s; width: 100%;
+}
+.upload-tile:hover { border-color: var(--ink); color: var(--ink); background: #fafafa; }
+.upload-tile svg { width: 16px; height: 16px; }
+
+/* 时间线 */
+.timeline { position: relative; padding-left: 6px; }
+.tl-item { display: flex; gap: 18px; position: relative; padding-bottom: 26px; }
+.tl-item:last-child { padding-bottom: 0; }
+.tl-rail { display: flex; flex-direction: column; align-items: center; width: 22px; flex-shrink: 0; }
+.tl-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--dove); background: var(--white); z-index: 1; margin-top: 4px; }
+.tl-item.done .tl-dot { background: var(--ink); border-color: var(--ink); }
+.tl-item.now .tl-dot { background: var(--rust); border-color: var(--rust); box-shadow: 0 0 0 5px rgba(93,42,26,.12); }
+.tl-line { width: 1.5px; flex: 1; background: #e6e6e9; margin-top: 6px; }
+.tl-item.done .tl-line { background: var(--ink); }
+.tl-body { flex: 1; min-width: 0; }
+.tl-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tl-name { font-size: 15.5px; font-weight: 500; }
+.tl-date { font-size: 13px; color: var(--graphite); }
+.tl-chip { font-size: 12px; font-weight: 450; padding: 2.5px 10px; border-radius: var(--r-pill); }
+.tl-chip.ok { background: #e5efe7; color: #3e6b4f; }
+.tl-chip.doing { background: var(--apricot); color: var(--rust); }
+.tl-chip.todo { background: var(--fog); color: var(--graphite); }
+.tl-desc { font-size: 13.5px; color: var(--ash); margin-top: 5px; font-weight: 430; }
+.tl-actions { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+.btn-sm {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6.5px 14px; border-radius: var(--r-pill);
+  font-size: 13.5px; font-weight: 450;
+  border: 1px solid #e2e2e5; background: var(--white); color: var(--ink);
+  transition: all .15s;
+}
+.btn-sm:hover { border-color: var(--dove); background: #fafafa; }
+.btn-sm.solid { background: var(--ink); color: var(--white); border-color: var(--ink); }
+.btn-sm.solid:hover { background: #26282c; }
+.btn-sm.danger { color: var(--rust); border-color: #e8d5ca; }
+.btn-sm.danger:hover { background: #fdf4ef; border-color: var(--rust); }
+.btn-sm svg { width: 14px; height: 14px; }
+.photos { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.ph {
+  width: 92px; height: 70px; border-radius: var(--r-img); position: relative; overflow: hidden;
+  display: grid; place-items: center; font-size: 11.5px; color: rgba(255,255,255,.85); font-weight: 450;
+}
+.ph::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px rgba(23,25,28,.06); border-radius: var(--r-img); }
+.ph.g1 { background: linear-gradient(135deg, #b9a08c, #8d7460); }
+.ph.g2 { background: linear-gradient(135deg, #a9b4bd, #7d8992); }
+.ph.g3 { background: linear-gradient(135deg, #c4b39d, #97826a); }
+.ph.g4 { background: linear-gradient(135deg, #9fae9a, #74836f); }
+.ph.add { background: none; border: 1.5px dashed var(--dove); color: var(--graphite); }
+.ph.add:hover { border-color: var(--ink); color: var(--ink); }
+.ph.add svg { width: 16px; height: 16px; }
+
+/* 记录流 */
+.record { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f0f0f2; }
+.record:last-child { border-bottom: 0; }
+.record .avatar { width: 34px; height: 34px; font-size: 12.5px; }
+.record .r-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.record .r-name { font-size: 14.5px; font-weight: 480; }
+.record .r-time { font-size: 12.5px; color: var(--graphite); }
+.record .r-body { font-size: 14px; color: var(--ash); margin-top: 4px; font-weight: 430; line-height: 1.55; }
+.record .r-nums { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+.record .r-num { font-size: 12.5px; color: var(--graphite); }
+.record .r-num b { color: var(--ink); font-weight: 480; font-size: 13.5px; }
+.record .r-del { margin-left: auto; opacity: 0; transition: opacity .15s; align-self: flex-start; }
+.record:hover .r-del { opacity: 1; }
+
+/* 副列小组件 */
+.side-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #f0f0f2; font-size: 14px; }
+.side-row:last-child { border-bottom: 0; }
+.side-row .sk { font-size: 13px; color: var(--graphite); width: 76px; flex-shrink: 0; font-weight: 430; }
+.side-row .sv { font-weight: 450; }
+.shortcut {
+  display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-radius: 16px;
+  border: 1px solid #efeff1; background: var(--white); margin-top: 10px;
+  font-size: 14px; font-weight: 450; color: var(--ink); text-decoration: none; transition: all .15s;
+}
+.shortcut:hover { border-color: var(--dove); transform: translateY(-1px); box-shadow: var(--shadow-float); }
+.shortcut .sic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex-shrink: 0; }
+.shortcut .sic svg { width: 16px; height: 16px; }
+.shortcut .sic.a { background: var(--apricot); color: var(--rust); }
+.shortcut .sic.b { background: var(--sky); color: #2c4d7f; }
+.shortcut .sd { flex: 1; }
+.shortcut .sd small { display: block; font-size: 12.5px; color: var(--graphite); font-weight: 430; margin-top: 1px; }
+.shortcut .arr { color: var(--dove); }
+.note-body { font-size: 14px; color: var(--ash); line-height: 1.65; font-weight: 430; }
+
+/* 财务生命周期（已售） */
+.fin-flow { display: flex; align-items: stretch; }
+.fin-node { flex: 1; text-align: center; padding: 4px 8px; }
+.fin-node .fv { font-size: 21px; font-weight: 480; letter-spacing: -0.02em; }
+.fin-node .fv small { font-size: 12.5px; font-weight: 430; color: var(--graphite); }
+.fin-node .fk { font-size: 12.5px; color: var(--graphite); margin-top: 4px; font-weight: 430; }
+.fin-node .fd { font-size: 12px; color: var(--dove); margin-top: 2px; }
+.fin-node.warm .fv { color: var(--rust); }
+.fin-arrow { display: grid; place-items: center; color: var(--dove); padding-top: 4px; }
+.fin-arrow svg { width: 16px; height: 16px; }
+
+/* 对比图（已售视觉旅程） */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.compare .ph { width: 100%; height: 150px; border-radius: 16px; font-size: 13px; }
+.compare .cap { text-align: center; font-size: 13px; color: var(--graphite); margin-top: 8px; font-weight: 430; }
+
+/* 危险区 */
+.danger-zone { border: 1px solid #f0dcd2; background: #fdf9f6; border-radius: var(--r-card); padding: 22px 24px; }
+.danger-zone .card-title { color: var(--rust); }
+
+/* 底部流转条 */
+.flowbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card);
+  padding: 16px 24px; flex-wrap: wrap;
+}
+.flowbar .hint { font-size: 14px; color: var(--ash); font-weight: 430; display: flex; align-items: center; gap: 8px; }
+.flowbar .hint svg { width: 15px; height: 15px; color: var(--graphite); flex-shrink: 0; }
+
+/* Tabs */
+.tabs { display: flex; gap: 2px; padding: 4px; background: var(--fog); border-radius: 14px; width: fit-content; max-width: 100%; overflow-x: auto; }
+.tabs button { padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 450; color: var(--graphite); white-space: nowrap; transition: all .15s; }
+.tabs button.on { background: var(--white); color: var(--ink); box-shadow: var(--shadow-float); }
+
+/* 状态演示 */
+.state-frame { border: 1px solid #e9e9ec; border-radius: var(--r-card); overflow: hidden; background: var(--white); box-shadow: var(--shadow-float); }
+.state-frame .sf-bar { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: 1px solid #f0f0f2; font-size: 13.5px; font-weight: 500; color: var(--ash); background: #fafafb; }
+.state-frame .sf-bar .dotset { display: flex; gap: 5px; margin-right: 6px; }
+.state-frame .sf-bar .dotset i { width: 9px; height: 9px; border-radius: 50%; background: #e3e3e6; }
+.state-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.skel { border-radius: 12px; background: linear-gradient(90deg, #f0f0f2 25%, #e7e7ea 45%, #f0f0f2 65%); background-size: 200% 100%; animation: sk 1.3s infinite; }
+@keyframes sk { to { background-position: -200% 0; } }
+.empty-ill { width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 50%; background: var(--fog); display: grid; place-items: center; color: var(--dove); }
+.empty-ill svg { width: 30px; height: 30px; }
+
+/* 移动端演示 */
+.mobile-wrap { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
+.phone {
+  width: 375px; border-radius: 44px; border: 10px solid var(--ink);
+  background: var(--fog); overflow: hidden; box-shadow: var(--shadow-card); flex-shrink: 0;
+}
+.phone .p-notch { height: 26px; background: var(--ink); border-radius: 0 0 18px 18px; width: 120px; margin: 0 auto; }
+.phone .p-body { padding: 12px 14px 26px; }
+.phone .kpi-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+.phone .kpi { padding: 14px; border-radius: 18px; }
+.phone .kpi .value { font-size: 22px; }
+.phone .grid { grid-template-columns: 1fr; }
+.m-steps { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; }
+.m-step { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-pill); font-size: 12.5px; font-weight: 450; background: var(--white); color: var(--graphite); border: 1px solid #e7e7ea; white-space: nowrap; }
+.m-step.now { background: var(--rust); color: #fff; border-color: var(--rust); }
+.m-step.done { color: var(--ink); }
+.m-cta {
+  position: sticky; bottom: 0; margin: 14px -14px -26px; padding: 12px 14px calc(12px + 8px);
+  background: rgba(255,255,255,.94); backdrop-filter: blur(10px); border-top: 1px solid #efeff1;
+  display: flex; gap: 10px;
+}
+.m-cta .cta { flex: 1; justify-content: center; padding: 12px 16px; font-size: 14.5px; }
+.m-note { max-width: 420px; }
+.m-note h3 { font-size: 17px; font-weight: 500; margin-bottom: 10px; }
+.m-note p { font-size: 14px; color: var(--ash); font-weight: 430; line-height: 1.7; margin-bottom: 8px; }
+
+/* 响应式 */
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: 1fr; }
+  .col-side { position: static; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .state-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .sidebar { display: none; }
+  .page { padding: 14px 16px 80px; }
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .info-grid { grid-template-columns: 1fr; }
+  .hero-title h1 { font-size: 40px; } /* Signifier 最小 40px（DESIGN.md 硬约束） */
+  .compare { grid-template-columns: 1fr; }
+  .fin-flow { flex-direction: column; gap: 12px; }
+  .fin-arrow { justify-content: center; transform: rotate(90deg); }
+}
+
+/* ============================================================
+   V4.1 追加 — Hero 暖光晕 / 弹窗 / Toast / 规范封面
+   ============================================================ */
+.hero { position: relative; }
+.hero::before {
+  content: ""; position: absolute; inset: -40px -80px -30px -80px; z-index: -1;
+  background: radial-gradient(42% 62% at 22% 18%, rgba(251,225,209,.55) 0%, rgba(251,225,209,0) 68%);
+  pointer-events: none;
+}
+
+/* 弹窗 */
+.dlg-mask {
+  position: fixed; inset: 0; z-index: 200; display: none;
+  background: rgba(23,25,28,.32); backdrop-filter: blur(3px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+.dlg-mask.open { display: flex; animation: maskIn .2s ease both; }
+@keyframes maskIn { from { opacity: 0; } to { opacity: 1; } }
+.dlg {
+  width: 100%; max-width: 460px; background: var(--white);
+  border-radius: var(--r-card); box-shadow: var(--shadow-card);
+  padding: 28px; animation: dlgIn .22s cubic-bezier(.2,.9,.3,1.2) both;
+  max-height: 86vh; overflow-y: auto;
+}
+@keyframes dlgIn { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+.dlg-kicker { font-size: 13px; font-weight: 500; color: var(--rust); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.dlg-title { font-size: 26px; line-height: 1.18; letter-spacing: -0.23px; font-weight: 500; }
+.dlg-desc { font-size: 14px; color: var(--ash); font-weight: 430; margin-top: 8px; line-height: 1.6; }
+.dlg-body { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+.dlg-foot { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 22px; }
+.field label { display: block; font-size: 13px; font-weight: 450; color: var(--ash); margin-bottom: 6px; }
+.field input, .field select {
+  width: 100%; height: 44px; padding: 0 15px; font: inherit; font-size: 14.5px;
+  border: 1px solid #e2e2e5; border-radius: var(--r-input); background: var(--white); color: var(--ink);
+  outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.field input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23,25,28,.08); }
+.field .hint { font-size: 12.5px; color: var(--graphite); margin-top: 5px; font-weight: 430; }
+.danger-note {
+  display: flex; gap: 10px; padding: 13px 15px; border-radius: 14px;
+  background: #fdf4ef; border: 1px solid #f0dcd2; font-size: 13.5px; color: var(--rust); font-weight: 430; line-height: 1.55;
+}
+
+/* Toast 演示 */
+.toast {
+  position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px);
+  z-index: 300; display: flex; align-items: center; gap: 9px;
+  background: var(--ink); color: #fff; font-size: 14px; font-weight: 450;
+  padding: 11px 20px; border-radius: var(--r-pill);
+  box-shadow: 0 12px 28px -8px rgba(23,25,28,.5);
+  opacity: 0; pointer-events: none; transition: all .25s cubic-bezier(.2,.9,.3,1.1);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast .tick { width: 17px; height: 17px; border-radius: 50%; background: rgba(255,255,255,.16); display: grid; place-items: center; }
+.toast .tick svg { width: 10px; height: 10px; }
+
+/* 规范封面 */
+.spec-hero { position: relative; padding: 44px 0 34px; }
+.spec-hero::before {
+  content: ""; position: absolute; inset: -30px -140px 0 -140px; z-index: -1;
+  background: radial-gradient(50% 90% at 30% 40%, rgba(251,225,209,.6) 0%, rgba(251,225,209,0) 70%);
+}
+.spec-hero .kicker { font-size: 13px; font-weight: 500; color: var(--rust); letter-spacing: .1em; text-transform: uppercase; }
+.spec-hero h2 { font-family: var(--serif); font-weight: 400; font-size: 64px; line-height: 1.08; letter-spacing: -0.025em; margin-top: 12px; }
+.spec-hero p { font-size: 16.5px; color: var(--ash); margin-top: 14px; max-width: 640px; line-height: 1.65; font-weight: 430; }
+.spec-meta { display: flex; gap: 22px; margin-top: 22px; font-size: 13px; color: var(--graphite); font-weight: 430; flex-wrap: wrap; }
+.spec-meta b { color: var(--ink); font-weight: 480; }
+.token-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.token-chip { border-radius: 16px; overflow: hidden; border: 1px solid #ececef; background: var(--white); }
+.token-chip .sw { height: 52px; }
+.token-chip .nm { font-size: 12px; font-weight: 480; padding: 8px 10px 2px; }
+.token-chip .vl { font-size: 11px; color: var(--graphite); padding: 0 10px 9px; font-weight: 430; }
+.anatomy { display: grid; grid-template-columns: 1fr 320px; gap: 14px; }
+.wire { border: 1.5px dashed var(--dove); border-radius: 14px; background: #fbfbfc; position: relative; }
+.wire > span { position: absolute; left: 12px; top: 9px; font-size: 11.5px; font-weight: 500; color: var(--graphite); letter-spacing: .04em; }
+.matrix { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.matrix th { text-align: left; font-weight: 500; color: var(--graphite); font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; padding: 10px 14px; border-bottom: 1px solid #efeff1; white-space: nowrap; }
+.matrix td { padding: 12px 14px; border-bottom: 1px solid #f4f4f6; color: var(--ash); font-weight: 430; vertical-align: top; line-height: 1.55; }
+.matrix tr:last-child td { border-bottom: 0; }
+.matrix td:first-child { color: var(--ink); font-weight: 480; white-space: nowrap; }
+.flow-demo { display: flex; align-items: stretch; gap: 12px; }
+.flow-step { flex: 1; border: 1.5px dashed var(--dove); border-radius: 16px; background: #fbfbfc; padding: 16px; }
+.flow-step h5 { font-size: 13.5px; font-weight: 500; display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+.flow-step h5 .no { width: 20px; height: 20px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: 11px; }
+.flow-step p { font-size: 12.5px; color: var(--graphite); font-weight: 430; line-height: 1.6; }
+.flow-arr { display: grid; place-items: center; color: var(--dove); }
+.num-serif { font-family: var(--serif); }
+
+/* 文书签收清单三态（V4.2） */
+.doc-state { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: var(--r-pill); font-size: 13px; font-weight: 450; white-space: nowrap; }
+.doc-state.st-unsigned { background: #f0f0f2; color: var(--ash); }
+.doc-state.st-signed { background: var(--sky); color: #2c4a78; }
+.doc-state.st-archived { background: var(--apricot); color: var(--rust); }
+.doc-date { font-size: 13px; color: var(--graphite); font-weight: 430; white-space: nowrap; }
+.attach-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px;
+  border-radius: var(--r-pill); border: 1px solid #e7e7ea; background: var(--white);
+  font-size: 13px; font-weight: 450; color: var(--ash); transition: all .15s;
+}
+.attach-chip:hover { border-color: var(--dove); color: var(--ink); }
+.attach-chip svg { width: 12px; height: 12px; }
+.doc-legend { display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--graphite); font-weight: 430; padding: 2px 0 10px; flex-wrap: wrap; }
+@media (max-width: 1100px) { .token-grid { grid-template-columns: repeat(3, 1fr); } .anatomy { grid-template-columns: 1fr; } .flow-demo { flex-direction: column; } .flow-arr { transform: rotate(90deg); } }
+@media (max-width: 720px) { .spec-hero h2 { font-size: 40px; } .token-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<!-- ==================== 原型演示控制条 ==================== -->
+<div class="demo-bar" id="demoBar">
+  <span class="demo-title">项目详情独立页 · V4<small>Steep · 点击切换阶段视图</small></span>
+  <button class="demo-chip on" data-screen="cover">规范总览</button>
+  <button class="demo-chip" data-screen="signing">签约阶段</button>
+  <button class="demo-chip" data-screen="renovation">装修阶段</button>
+  <button class="demo-chip" data-screen="selling">在售阶段</button>
+  <button class="demo-chip" data-screen="sold">已售阶段</button>
+  <button class="demo-chip" data-screen="ended">已下架</button>
+  <button class="demo-chip" data-screen="states">加载 / 空态 / 错误</button>
+  <button class="demo-chip" data-screen="mobile">移动端适配</button>
+</div>
+
+<div class="app">
+  <!-- ==================== 侧边栏（模拟 admin 外壳） ==================== -->
+  <aside class="sidebar">
+    <div class="logo">Profo</div>
+    <a class="side-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12l9-8 9 8v8a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>
+      工作台
+    </a>
+    <div class="side-label">业务</div>
+    <a class="side-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6"/></svg>
+      项目管理
+    </a>
+    <a class="side-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M2 12h20"/></svg>
+      线索管理
+    </a>
+    <a class="side-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      账本管理
+    </a>
+    <div class="side-label">系统</div>
+    <a class="side-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      成员与角色
+    </a>
+  </aside>
+
+  <main class="content">
+
+  <!-- ============================================================
+       SCREEN 0 — 规范总览封面
+       ============================================================ -->
+  <section class="screen active" id="screen-cover">
+    <div class="page">
+
+      <div class="spec-hero">
+        <div class="kicker">Design Spec · V4</div>
+        <h2>项目详情独立页<br />设计规范总览</h2>
+        <p>以「阶段叙事」组织信息架构：每个项目阶段拥有独立的视图重心与操作动线，Hero 突出核心资产事实，KPI 衬线数字建立编辑感，副栏承载协作与文书上下文。全部视觉语言严格对齐 DESIGN.md 的 Steep 设计系统。</p>
+        <div class="spec-meta">
+          <span>版本 <b>V4.1</b></span>
+          <span>更新 <b>2026.08.17</b></span>
+          <span>设计系统 <b>Steep（DESIGN.md）</b></span>
+          <span>路由 <b>/admin/projects/[projectId]</b></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div>
+          <div class="card-title">设计 Token 映射</div>
+          <div class="card-sub">与 DESIGN.md 一致，无自定义色；数字使用 Source Serif 4（Signifier 替代）</div>
+        </div></div>
+        <div class="token-grid">
+          <div class="token-chip"><div class="sw" style="background:#17191c;"></div><div class="nm">Ink</div><div class="vl">#17191C · 主文字</div></div>
+          <div class="token-chip"><div class="sw" style="background:#ffffff; border-bottom:1px solid #f0f0f2;"></div><div class="nm">White</div><div class="vl">#FFFFFF · 卡片</div></div>
+          <div class="token-chip"><div class="sw" style="background:#f7f7f8;"></div><div class="nm">Fog</div><div class="vl">#F7F7F8 · 页面底</div></div>
+          <div class="token-chip"><div class="sw" style="background:#5d2a1a;"></div><div class="nm">Rust</div><div class="vl">#5D2A1A · 强调/当前阶段</div></div>
+          <div class="token-chip"><div class="sw" style="background:#fbe1d1;"></div><div class="nm">Apricot</div><div class="vl">#FBE1D1 · 暖色辅助</div></div>
+          <div class="token-chip"><div class="sw" style="background:#d3e3fc;"></div><div class="nm">Sky</div><div class="vl">#D3E3FC · 信息辅助</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><div>
+          <div class="card-title">页面布局解剖</div>
+          <div class="card-sub">独立页三段式：顶部导航区 → 主内容双栏 → 阶段操作条；副栏 &gt;1100px 吸附</div>
+        </div></div>
+        <div class="anatomy">
+          <div class="wire" style="height:300px;">
+            <span>PAGE SKELETON</span>
+            <div style="position:absolute; left:14px; right:14px; top:34px; height:34px; border:1.5px dashed #d8d8dc; border-radius:10px; display:flex; align-items:center; padding:0 12px; font-size:12px; color:var(--graphite);">① 顶部工具行 — 返回按钮 · 面包屑 · 页内导航 · 主操作</div>
+            <div style="position:absolute; left:14px; right:14px; top:78px; height:92px; border:1.5px dashed #d8d8dc; border-radius:10px; display:flex; align-items:center; padding:0 12px; font-size:12px; color:var(--graphite);">② Hero — 衬线项目名 · 阶段徽章 · KPI 数字组（含暖光晕）</div>
+            <div style="position:absolute; left:14px; top:182px; width:63%; bottom:60px; border:1.5px dashed #d8d8dc; border-radius:10px; display:flex; align-items:center; padding:0 12px; font-size:12px; color:var(--graphite);">③ 主列 — 阶段时间线 / 分区卡片（文书·照片·跟进·记录）</div>
+            <div style="position:absolute; right:14px; top:182px; width:31%; bottom:60px; border:1.5px dashed #d8d8dc; border-radius:10px; display:flex; align-items:center; padding:0 12px; font-size:12px; color:var(--graphite);">④ 副栏 — 团队 / 日期 / 快捷入口（吸附）</div>
+            <div style="position:absolute; left:14px; right:14px; bottom:12px; height:38px; border:1.5px solid var(--rust); border-radius:10px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; font-size:12px; color:var(--rust);">⑤ 阶段操作条 — 流转提示 + 阶段主操作 CTA</div>
+          </div>
+          <div class="info-grid" style="grid-template-columns:1fr; align-content:start;">
+            <div class="info-item"><span class="k">信息层级</span><span class="v">资产事实（KPI）→ 阶段进度 → 过程记录 → 协作上下文</span></div>
+            <div class="info-item"><span class="k">栅格</span><span class="v">主列 63% / 副栏 31%，间距 20px，最大宽 1200px</span></div>
+            <div class="info-item"><span class="k">圆角体系</span><span class="v">卡片 24px · 图片 12px · 输入 16px · 胶囊 9999px</span></div>
+            <div class="info-item"><span class="k">阴影体系</span><span class="v">shadow-card（主卡片）/ shadow-float（悬浮件）</span></div>
+            <div class="info-item"><span class="k">滚动策略</span><span class="v">页面原生滚动；副栏 sticky；操作条不入吸底</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><div>
+          <div class="card-title">阶段视图矩阵</div>
+          <div class="card-sub">五阶段一以贯之：Hero 与操作条变化，主列内容按阶段重组</div>
+        </div></div>
+        <table class="matrix">
+          <thead><tr><th>阶段</th><th>Hero 重心</th><th>主列内容</th><th>阶段主操作</th></tr></thead>
+          <tbody>
+            <tr><td>签约</td><td>签约总价 / 面积 / 计划交房</td><td>签约要件文书 · 业主信息 · 合同条款 · 跟进记录</td><td>确认交房 → 装修</td></tr>
+            <tr><td>装修</td><td>投入预算 / 工期进度</td><td>六阶段进度 · 施工照片 · 预算明细 · 验收清单</td><td>验收完成 → 上架</td></tr>
+            <tr><td>在售</td><td>挂牌价 / 上架天数 / 带看量</td><td>销售记录 · 渠道协同 · 跟进时间线 · 价格历史</td><td>确认成交 → 已售</td></tr>
+            <tr><td>已售</td><td>成交价 / 周期 / 总回报</td><td>财务生命周期 · 全程影像 · 总结报告</td><td>只读归档</td></tr>
+            <tr><td>已下架</td><td>终态徽章 / 归档时间</td><td>完整只读回溯 · 恢复操作（权限）</td><td>恢复项目</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><div>
+          <div class="card-title">导航流程</div>
+          <div class="card-sub">入口 → 详情 → 阶段流转 → 返回；面包屑全程可回退</div>
+        </div></div>
+        <div class="flow-demo">
+          <div class="flow-step">
+            <h5><span class="no">1</span>项目列表</h5>
+            <p>列表行项目名点击进入详情页；URL 直达与浏览器后退键完整可用。</p>
+          </div>
+          <div class="flow-arr"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+          <div class="flow-step">
+            <h5><span class="no">2</span>详情页 · 阶段视图</h5>
+            <p>进入后自动定位当前阶段；时间线可回看已完成阶段（只读）。</p>
+          </div>
+          <div class="flow-arr"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+          <div class="flow-step">
+            <h5><span class="no">3</span>阶段流转</h5>
+            <p>操作条 CTA → 确认弹窗（填日期/价格）→ toast 反馈 + 自动切换阶段视图。</p>
+          </div>
+          <div class="flow-arr"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+          <div class="flow-step">
+            <h5><span class="no">4</span>返回路径</h5>
+            <p>返回按钮 / 面包屑回列表；键盘 Esc 关闭弹窗；历史栈不产生冗余记录。</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SCREEN 1 — 签约阶段
+       ============================================================ -->
+  <section class="screen" id="screen-signing">
+    <div class="page">
+      <div class="topbar">
+        <div class="crumb">
+          <button class="back-btn" title="返回项目列表">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <a href="#">项目列表</a><span class="sep">/</span><span class="current">翠湖天地 · 张宅</span>
+        </div>
+        <div class="topbar-actions">
+          <span class="updated"><i></i>更新于 5 分钟前</span>
+          <button class="tlink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+            编辑
+          </button>
+          <button class="tlink danger" data-dlg="delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            删除
+          </button>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="stepper">
+          <div class="step now">
+            <span class="step-dot">1</span><span class="step-name">签约</span>
+          </div>
+          <span class="step-link"></span>
+          <div class="step locked">
+            <span class="step-dot"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span>
+            <span class="step-name">装修</span>
+          </div>
+          <span class="step-link"></span>
+          <div class="step locked">
+            <span class="step-dot"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span>
+            <span class="step-name">在售</span>
+          </div>
+          <span class="step-link"></span>
+          <div class="step locked">
+            <span class="step-dot"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span>
+            <span class="step-name">已售</span>
+          </div>
+        </div>
+        <div class="hero-row">
+          <div>
+            <div class="hero-title">
+              <h1>翠湖天地 · 张宅</h1>
+              <span class="pill status">签约阶段</span>
+              <span class="pill form">代理美化</span>
+            </div>
+            <div class="hero-meta">
+              <span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>翠湖天地苑 · 浦东新区 联洋商圈</span>
+              <span class="dot">·</span>
+              <span class="m">89 ㎡</span><span class="dot">·</span>
+              <span class="m">2室1厅 · 南北</span><span class="dot">·</span>
+              <span class="m">合同编号 HT-2026-0812</span>
+            </div>
+          </div>
+          <!-- 单屏唯一实心 CTA 收口于底部阶段操作条（DESIGN.md：one filled button per screen） -->
+        </div>
+      </div>
+
+      <div class="section-nav-wrap">
+        <nav class="section-nav">
+          <button class="on">概览</button>
+          <button>文书与附件<span class="n">12</span></button>
+        </nav>
+      </div>
+
+      <div class="grid">
+        <div class="col-main">
+          <div class="kpi-row">
+            <div class="kpi warm">
+              <div class="label">签约总价</div>
+              <div class="value">318<small>万</small></div>
+              <div class="delta">单价 3.57 万/㎡</div>
+            </div>
+            <div class="kpi">
+              <div class="label">净现金流（预估）</div>
+              <div class="value" style="color:#3d7a4e;">+21.6<small>万</small></div>
+              <div class="delta">正负以色阶标识</div>
+            </div>
+            <div class="kpi cool">
+              <div class="label">距交房</div>
+              <div class="value" style="color:var(--rust);">6<small>天</small></div>
+              <div class="delta">≤ 7 天橙色提醒 · 超期红色</div>
+            </div>
+            <div class="kpi">
+              <div class="label">委托期限</div>
+              <div class="value" style="font-size:24px; padding-top:4px;">6 个月</div>
+              <div class="delta">2026.08.12 – 2027.02.12</div>
+            </div>
+          </div>
+
+          <div class="card" id="sec-info">
+            <div class="card-head">
+              <div>
+                <div class="card-title">项目信息</div>
+                <div class="card-sub">房源、业主与合同要件</div>
+              </div>
+              <button class="textlink" style="font-size:14px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+                编辑
+              </button>
+            </div>
+            <div class="group-title">房源信息</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">小区名称</span><span class="v">翠湖天地苑</span></div>
+              <div class="info-item"><span class="k">行政区 / 商圈</span><span class="v">浦东新区 · 联洋商圈</span></div>
+              <div class="info-item full"><span class="k">详细地址</span><span class="v">浦东新区锦绣路 3001 弄 12 号 602 室</span></div>
+              <div class="info-item"><span class="k">户型 / 朝向</span><span class="v">2室1厅 · 南北通透</span></div>
+              <div class="info-item"><span class="k">楼层信息</span><span class="v">6 / 18 层 · 电梯房</span></div>
+            </div>
+            <div class="group-title">业主信息<span class="pill form" style="margin-left:8px;">共 2 位</span></div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">业主（权利人）</span><span class="v">张伟</span></div>
+              <div class="info-item"><span class="k">共有人（配偶）</span><span class="v">李梅</span></div>
+              <div class="info-item">
+                <span class="k">联系电话</span>
+                <span class="v">138****6677
+                  <button class="mini-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>显示</button>
+                </span>
+              </div>
+              <div class="info-item"><span class="k">身份证号</span><span class="v">3101**********0012
+                <button class="mini-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>显示</button>
+              </span></div>
+              <div class="info-item"><span class="k">开户行</span><span class="v">招商银行 上海联洋支行</span></div>
+              <div class="info-item"><span class="k">收款银行卡</span><span class="v muted">点击「显示」按需解密 · **** 4821</span></div>
+              <div class="info-item full"><span class="k">业主备注</span><span class="v">常驻海外，微信文字沟通为主；书房家具不出售</span></div>
+            </div>
+            <div class="group-title">合同要件</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">合同编号</span><span class="v">HT-2026-0812</span></div>
+              <div class="info-item"><span class="k">签约价</span><span class="v">318 万元</span></div>
+              <div class="info-item"><span class="k">委托期 / 展期</span><span class="v">6 个月 / 可展期 3 个月</span></div>
+              <div class="info-item"><span class="k">展期租金</span><span class="v">1.2 万元 / 月</span></div>
+              <div class="info-item"><span class="k">费用承担</span><span class="v">物业费由公司承担</span></div>
+              <div class="info-item"><span class="k">其他约定</span><span class="v">业主保留书房全套家具</span></div>
+            </div>
+            <div class="group-title">公用事业户号</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">电费户号</span><span class="v">3100-8821-33</span></div>
+              <div class="info-item"><span class="k">水费户号</span><span class="v">PU-2024-118</span></div>
+              <div class="info-item"><span class="k">燃气户号</span><span class="v muted">未登记</span></div>
+            </div>
+          </div>
+
+          <div class="card" id="sec-docs">
+            <div class="card-head">
+              <div>
+                <div class="card-title">文书签收清单</div>
+                <div class="card-sub">6 类要件 · 归档后可挂附件 · 变更后批量保存</div>
+              </div>
+              <div style="display:flex; gap:16px; align-items:center;">
+                <button class="textlink" style="font-size:14px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+                  新增文书
+                </button>
+                <button class="textlink" style="font-size:14px; color:var(--dove); cursor:default;">保存</button>
+              </div>
+            </div>
+            <div class="doc-legend">
+              <span class="doc-state st-unsigned">未签署</span><span>待业主签署</span>
+              <span class="doc-state st-signed">已签署</span><span>待归档登记</span>
+              <span class="doc-state st-archived">已归档</span><span>可上传附件文件</span>
+            </div>
+
+            <div class="doc-group">
+              <div class="doc-group-head">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></span>
+                <span class="t">合同及协议文件</span><span class="c">2 份</span>
+              </div>
+              <div class="doc-row">
+                <span class="fname">独家代理合同</span>
+                <span class="doc-state st-archived">已归档</span>
+                <span class="doc-date">归档于 2026.08.12</span>
+                <span class="facts">
+                  <button class="attach-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>1 个附件 · 补传</button>
+                  <button class="icon-btn" title="删除要件"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+              <div class="doc-row">
+                <span class="fname">补充协议（家具保留条款）</span>
+                <span class="doc-state st-signed">已签署</span>
+                <span class="doc-date">待归档 · 选择归档日期</span>
+                <span class="facts">
+                  <button class="icon-btn" title="删除要件"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+            </div>
+
+            <div class="doc-group">
+              <div class="doc-group-head">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21l9-8 9 8M5 3h14v14"/></svg></span>
+                <span class="t">产权及权属调查文件</span><span class="c">1 份</span>
+              </div>
+              <div class="doc-row">
+                <span class="fname">产权调查报告</span>
+                <span class="doc-state st-archived">已归档</span>
+                <span class="doc-date">归档于 2026.07.30</span>
+                <span class="facts">
+                  <button class="attach-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>1 个附件 · 补传</button>
+                  <button class="icon-btn" title="删除要件"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+            </div>
+
+            <div class="doc-group">
+              <div class="doc-group-head">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></span>
+                <span class="t">身份及账户文件</span><span class="c">2 份</span>
+              </div>
+              <div class="doc-row">
+                <span class="fname">业主身份证复印件</span>
+                <span class="doc-state st-archived">已归档</span>
+                <span class="doc-date">归档于 2026.08.12</span>
+                <span class="facts">
+                  <button class="attach-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>1 个附件 · 补传</button>
+                  <button class="icon-btn" title="删除要件"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+              <div class="doc-row">
+                <span class="fname">银行卡复印件</span>
+                <span class="doc-state st-unsigned">未签署</span>
+                <span class="doc-date">—</span>
+                <span class="facts">
+                  <button class="icon-btn" title="删除要件"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+            </div>
+
+            <div class="doc-group">
+              <div class="doc-group-head">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M17 7H9.5a2.5 2.5 0 000 5h5a2.5 2.5 0 010 5H6"/></svg></span>
+                <span class="t">财务及税费文件</span><span class="c">0 份</span>
+              </div>
+              <div class="doc-row" style="border-style:dashed;">
+                <span class="fname" style="color:var(--graphite);">暂无要件 · 可「新增文书」或初始化默认清单</span>
+                <span class="facts"></span>
+              </div>
+            </div>
+
+            <div class="doc-group">
+              <div class="doc-group-head">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8V6a2 2 0 00-2-2H5a2 2 0 00-2 2v2M3 12h18v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span>
+                <span class="t">房屋交接文件</span><span class="c">0 份</span>
+              </div>
+              <div class="doc-row" style="border-style:dashed;">
+                <span class="fname" style="color:var(--graphite);">交房确认后自动生成「物业交割单」要件</span>
+                <span class="facts"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">附件库</div>
+                <div class="card-sub">按 6 类分组 · 支持 图片压缩上传 / 预览 / 下载 / 删除（100MB·图 500MB·视频）</div>
+              </div>
+              <button class="textlink" style="font-size:14px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                上传附件
+              </button>
+            </div>
+            <div class="doc-group">
+              <div class="doc-group-head">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></span>
+                <span class="t">合同及协议文件</span><span class="c">2 份</span>
+              </div>
+              <div class="doc-row">
+                <span class="fname"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>独家代理合同-张伟-20260812.pdf</span>
+                <span class="fsize">2.4 MB</span>
+                <span class="facts">
+                  <button class="icon-btn" title="预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="icon-btn" title="下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+                  <button class="icon-btn" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+              <div class="doc-row">
+                <span class="fname"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>签字页扫描件.jpg</span>
+                <span class="fsize">1.1 MB</span>
+                <span class="facts">
+                  <button class="icon-btn" title="预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="icon-btn" title="下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+                  <button class="icon-btn" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+            </div>
+            <div class="doc-group">
+              <div class="doc-group-head">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21l9-8 9 8M5 3h14v14"/></svg></span>
+                <span class="t">产权及权属调查文件</span><span class="c">1 份</span>
+              </div>
+              <div class="doc-row">
+                <span class="fname"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>产调报告-翠湖天地-20260730.pdf</span>
+                <span class="fsize">5.1 MB</span>
+                <span class="facts">
+                  <button class="icon-btn" title="预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="icon-btn" title="下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+                  <button class="icon-btn" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+            </div>
+            <div class="doc-group">
+              <div class="doc-group-head">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></span>
+                <span class="t">身份及账户文件</span><span class="c">1 份</span>
+              </div>
+              <div class="doc-row">
+                <span class="fname"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>业主身份证正面.jpg</span>
+                <span class="fsize">1.8 MB</span>
+                <span class="facts">
+                  <button class="icon-btn" title="预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="icon-btn" title="下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+                  <button class="icon-btn" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flowbar">
+            <span class="hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              签约要件齐备后，确认交房即进入装修阶段（需选择实际交房日期）
+            </span>
+            <button class="cta" data-dlg="handover">
+              确认交房，开始装修
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-side">
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5a3.5 3.5 0 010 6.5M19.5 20c0-2.6-1.3-4.5-3.4-5.4"/></svg>
+                团队与成员
+              </div>
+            </div>
+            <div class="person">
+              <span class="avatar peach">李</span>
+              <div><div class="pname">李明远</div><div class="prole">项目经理</div></div>
+              <span class="spacer"></span>
+              <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+            </div>
+            <div class="person">
+              <span class="avatar skyb">张</span>
+              <div><div class="pname">张伟</div><div class="prole">业主 · 产权人</div></div>
+              <span class="spacer"></span>
+              <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg></button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+                关键日期
+              </div>
+            </div>
+            <div class="side-row"><span class="sk">签约日期</span><span class="sv">2026.08.12</span></div>
+            <div class="side-row"><span class="sk">计划交房</span><span class="sv" style="color:var(--rust);">2026.08.20</span></div>
+            <div class="side-row"><span class="sk">委托起始</span><span class="sv">2026.08.12</span></div>
+            <div class="side-row"><span class="sk">委托截止</span><span class="sv">2027.02.12</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head" style="margin-bottom:2px;">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg>
+                快捷入口
+              </div>
+            </div>
+            <a class="shortcut" href="#">
+              <span class="sic a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></span>
+              <span class="sd">项目账本<small>收支流水与利润核算</small></span>
+              <span class="arr">→</span>
+            </a>
+            <a class="shortcut" href="#">
+              <span class="sic b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="sd">房源监控<small>渠道曝光与访客数据</small></span>
+              <span class="arr">→</span>
+            </a>
+          </div>
+
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;"><div class="card-title">备注</div></div>
+            <p class="note-body">业主常驻海外，沟通以微信文字为主；书房家具不出售，交房时需单独列清单确认。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SCREEN 2 — 装修阶段
+       ============================================================ -->
+  <section class="screen" id="screen-renovation">
+    <div class="page">
+      <div class="topbar">
+        <div class="crumb">
+          <button class="back-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <a href="#">项目列表</a><span class="sep">/</span><span class="current">翠湖天地 · 张宅</span>
+        </div>
+        <div class="topbar-actions">
+          <span class="updated"><i></i>更新于 2 小时前</span>
+          <button class="tlink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+            编辑
+          </button>
+          <button class="tlink danger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            删除
+          </button>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="stepper">
+          <div class="step done clickable" data-goto="signing"><span class="step-dot">✓</span><span class="step-name">签约</span></div>
+          <span class="step-link done"></span>
+          <div class="step now"><span class="step-dot">2</span><span class="step-name">装修</span></div>
+          <span class="step-link"></span>
+          <div class="step locked"><span class="step-dot"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span><span class="step-name">在售</span></div>
+          <span class="step-link"></span>
+          <div class="step locked"><span class="step-dot"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span><span class="step-name">已售</span></div>
+        </div>
+        <div class="hero-row">
+          <div>
+            <div class="hero-title">
+              <h1>翠湖天地 · 张宅</h1>
+              <span class="pill status cool">装修阶段 · 水电</span>
+              <span class="pill form">代理美化</span>
+            </div>
+            <div class="hero-meta">
+              <span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>翠湖天地苑 · 浦东新区 联洋商圈</span>
+              <span class="dot">·</span><span class="m">89 ㎡</span><span class="dot">·</span>
+              <span class="m">第 18 天 / 计划工期 45 天</span>
+            </div>
+          </div>
+          <!-- 单屏唯一实心 CTA 收口于底部阶段操作条 -->
+        </div>
+      </div>
+
+      <div class="section-nav-wrap">
+        <nav class="section-nav">
+          <button class="on">装修进度</button>
+          <button>装修合同</button>
+        </nav>
+      </div>
+
+      <div class="grid">
+        <div class="col-main">
+          <div class="kpi-row">
+            <div class="kpi cool">
+              <div class="label">交付倒计时</div>
+              <div class="value" style="color:var(--rust);">21<small>天</small></div>
+              <div class="delta">≤30 天橙色 · &lt;10 天红色脉冲</div>
+            </div>
+            <div class="kpi">
+              <div class="label">当前阶段</div>
+              <div class="value" style="font-size:26px; padding-top:3px;">水电 <small style="font-weight:430;">3 / 6</small></div>
+              <div class="delta">开工 2026.08.22 · 已 18 天</div>
+            </div>
+            <div class="kpi">
+              <div class="label">总体进度</div>
+              <div class="value">33<small>%</small></div>
+              <div class="delta">2 / 6 阶段已完成 · 进度条同步</div>
+            </div>
+            <div class="kpi">
+              <div class="label">现场相册</div>
+              <div class="value">18<small>张</small></div>
+              <div class="delta">按 6 阶段分组归档</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">装修进度时间线</div>
+                <div class="card-sub">拆除 → 设计 → 水电 → 木瓦 → 油漆 → 交付 · 标记完成需上传阶段照片</div>
+              </div>
+            </div>
+            <div class="timeline">
+              <div class="tl-item done">
+                <div class="tl-rail"><span class="tl-dot"></span><span class="tl-line"></span></div>
+                <div class="tl-body">
+                  <div class="tl-head"><span class="tl-name">拆除阶段</span><span class="tl-chip ok">已完成</span><span class="tl-date">08.22 – 08.26</span></div>
+                  <div class="photos">
+                    <span class="ph g1">拆除前</span><span class="ph g2">拆除中</span><span class="ph g3">拆除后</span>
+                  </div>
+                  <div class="tl-actions">
+                    <button class="btn-sm">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+                      修改完成日期
+                    </button>
+                    <button class="btn-sm danger">清空日期</button>
+                  </div>
+                </div>
+              </div>
+              <div class="tl-item done">
+                <div class="tl-rail"><span class="tl-dot"></span><span class="tl-line"></span></div>
+                <div class="tl-body">
+                  <div class="tl-head"><span class="tl-name">设计阶段</span><span class="tl-chip ok">已完成</span><span class="tl-date">08.26 – 09.02</span></div>
+                  <div class="photos">
+                    <span class="ph g4">效果图 A</span><span class="ph g1">效果图 B</span><span class="ph g2">施工图</span>
+                  </div>
+                </div>
+              </div>
+              <div class="tl-item now">
+                <div class="tl-rail"><span class="tl-dot"></span><span class="tl-line"></span></div>
+                <div class="tl-body">
+                  <div class="tl-head"><span class="tl-name">水电阶段</span><span class="tl-chip doing">进行中 · 第 5 天</span><span class="tl-date">09.03 开始</span></div>
+                  <div class="tl-desc">开槽布管完成 60%，下周三线管验收。</div>
+                  <div class="photos">
+                    <span class="ph g2">开槽 01</span><span class="ph g2">布管 02</span>
+                    <button class="ph add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></button>
+                  </div>
+                  <div class="tl-actions">
+                    <span class="doc-date">验收日期选择器（默认今天）</span>
+                    <button class="textlink" style="font-size:14px;">标记该阶段完成 →</button>
+                  </div>
+                </div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-rail"><span class="tl-dot"></span><span class="tl-line"></span></div>
+                <div class="tl-body">
+                  <div class="tl-head"><span class="tl-name">木瓦阶段</span><span class="tl-chip todo">待开始</span></div>
+                  <div class="tl-desc">待水电验收后开放标记。</div>
+                </div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-rail"><span class="tl-dot"></span><span class="tl-line"></span></div>
+                <div class="tl-body">
+                  <div class="tl-head"><span class="tl-name">油漆阶段</span><span class="tl-chip todo">待开始</span></div>
+                </div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-rail"><span class="tl-dot"></span></div>
+                <div class="tl-body">
+                  <div class="tl-head"><span class="tl-name">交付阶段</span><span class="tl-chip todo">待开始</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">装修合同信息</div>
+                <div class="card-sub">合同要素与费用构成 · 保存后即时生效</div>
+              </div>
+              <button class="textlink" style="font-size:14px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+                编辑
+              </button>
+            </div>
+            <div class="group-title">公司信息</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">装修公司</span><span class="v">上海境合装饰工程有限公司</span></div>
+              <div class="info-item"><span class="k">对接负责人</span><span class="v">陈工 · 138****2210
+                <button class="mini-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>显示</button>
+              </span></div>
+            </div>
+            <div class="group-title">时间信息</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">约定进场</span><span class="v">2026.08.22</span></div>
+              <div class="info-item"><span class="k">约定竣工</span><span class="v">2026.10.06</span></div>
+              <div class="info-item"><span class="k">实际开工</span><span class="v">2026.08.22</span></div>
+              <div class="info-item"><span class="k">实际竣工</span><span class="v muted">未竣工</span></div>
+            </div>
+            <div class="group-title">装修费用</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">硬装合同额</span><span class="v">21.5 万元</span></div>
+              <div class="info-item"><span class="k">软装预算</span><span class="v">6.8 万元</span></div>
+              <div class="info-item"><span class="k">定制柜</span><span class="v">3.2 万元</span></div>
+              <div class="info-item"><span class="k">窗户更换</span><span class="v">1.6 万元</span></div>
+              <div class="info-item"><span class="k">墙面处理</span><span class="v">0.9 万元</span></div>
+              <div class="info-item full"><span class="k">软装明细附件</span><span class="v">软装采购清单-20260901.xlsx
+                <button class="mini-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>预览</button>
+              </span></div>
+            </div>
+            <div class="group-title">其他装修</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">设计费</span><span class="v">1.2 万元</span></div>
+              <div class="info-item"><span class="k">拆旧费</span><span class="v">1.8 万元</span></div>
+              <div class="info-item"><span class="k">清运费</span><span class="v">0.4 万元</span></div>
+              <div class="info-item"><span class="k">其他</span><span class="v">0.3 万元</span></div>
+              <div class="info-item full"><span class="k">其他费用原因</span><span class="v">临时电箱增容改造</span></div>
+            </div>
+            <div class="group-title">费用汇总（自动计算 · 只读）</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">总金额</span><span class="v" style="font-weight:480;">36.7 万元</span></div>
+              <div class="info-item"><span class="k">总单价</span><span class="v">4,124 元 / ㎡</span></div>
+            </div>
+          </div>
+
+          <div class="flowbar">
+            <span class="hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              全部 6 个阶段完成后可上架销售（需填写上架日期与挂牌价格）
+            </span>
+            <button class="cta" data-dlg="listing">
+              装修验收完成，上架销售
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-side">
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;"><div class="card-title">团队与成员</div></div>
+            <div class="person">
+              <span class="avatar peach">李</span>
+              <div><div class="pname">李明远</div><div class="prole">项目经理</div></div>
+            </div>
+            <div class="person">
+              <span class="avatar mint">境</span>
+              <div><div class="pname">境合装饰</div><div class="prole">装修公司 · 对接人 陈工</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;"><div class="card-title">关键日期</div></div>
+            <div class="side-row"><span class="sk">签约日期</span><span class="sv">2026.08.12</span></div>
+            <div class="side-row"><span class="sk">实际交房</span><span class="sv">2026.08.20</span></div>
+            <div class="side-row"><span class="sk">装修开工</span><span class="sv">2026.08.22</span></div>
+            <div class="side-row"><span class="sk">预计完工</span><span class="sv" style="color:var(--rust);">2026.10.06</span></div>
+          </div>
+          <div class="card">
+            <div class="card-head" style="margin-bottom:2px;"><div class="card-title">快捷入口</div></div>
+            <a class="shortcut" href="#">
+              <span class="sic a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></span>
+              <span class="sd">项目账本<small>装修支出流水</small></span>
+              <span class="arr">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SCREEN 3 — 在售阶段
+       ============================================================ -->
+  <section class="screen" id="screen-selling">
+    <div class="page">
+      <div class="topbar">
+        <div class="crumb">
+          <button class="back-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <a href="#">项目列表</a><span class="sep">/</span><span class="current">翠湖天地 · 张宅</span>
+        </div>
+        <div class="topbar-actions">
+          <span class="updated"><i></i>更新于 3 分钟前</span>
+          <button class="tlink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+            编辑
+          </button>
+          <button class="tlink danger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            删除
+          </button>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="stepper">
+          <div class="step done clickable" data-goto="signing"><span class="step-dot">✓</span><span class="step-name">签约</span></div>
+          <span class="step-link done"></span>
+          <div class="step done clickable" data-goto="renovation"><span class="step-dot">✓</span><span class="step-name">装修</span></div>
+          <span class="step-link done"></span>
+          <div class="step now"><span class="step-dot">3</span><span class="step-name">在售</span></div>
+          <span class="step-link"></span>
+          <div class="step locked"><span class="step-dot"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span><span class="step-name">已售</span></div>
+        </div>
+        <div class="hero-row">
+          <div>
+            <div class="hero-title">
+              <h1>翠湖天地 · 张宅</h1>
+              <span class="pill status" style="background:#e5efe7; color:#3e6b4f;">在售中</span>
+              <span class="pill form">代理美化</span>
+            </div>
+            <div class="hero-meta">
+              <span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>翠湖天地苑 · 浦东新区 联洋商圈</span>
+              <span class="dot">·</span><span class="m">89 ㎡</span><span class="dot">·</span>
+              <span class="m">上架 12 天</span><span class="dot">·</span>
+              <span class="m">委托剩余 96 天</span>
+            </div>
+          </div>
+          <!-- 单屏唯一实心 CTA 收口于底部阶段操作条 -->
+        </div>
+      </div>
+
+      <div class="section-nav-wrap">
+        <nav class="section-nav">
+          <button class="on">销售看板</button>
+          <button>销售团队</button>
+          <button>带看<span class="n">6</span></button>
+          <button>出价<span class="n">3</span></button>
+          <button>面谈<span class="n">1</span></button>
+        </nav>
+      </div>
+
+      <div class="grid">
+        <div class="col-main">
+          <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);">
+            <div class="kpi cool">
+              <div class="label">本周带看</div>
+              <div class="value">2<small>组</small></div>
+              <div class="delta">环比上周 +100% · 0→N 显示「新增爆发」</div>
+            </div>
+            <div class="kpi">
+              <div class="label">本周出价</div>
+              <div class="value">1<small>笔</small></div>
+              <div class="delta">最高出价 349 万</div>
+            </div>
+            <div class="kpi warm">
+              <div class="label">本周面谈</div>
+              <div class="value">1<small>场</small></div>
+              <div class="delta">最新面谈 10.16 · 沟通纪要已记录</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">房源基础信息</div>
+              <button class="textlink" style="font-size:14px;">补登实际结束日期</button>
+            </div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">挂牌价</span><span class="v" style="font-weight:480;">368 万元 <span style="font-weight:430; color:var(--graphite);">· 41,348 元/㎡</span></span></div>
+              <div class="info-item"><span class="k">委托倒计时</span><span class="v"><span class="pill" style="background:#e5efe7; color:#3e6b4f;">剩余 96 天 · 截止 2027.02.12</span></span></div>
+              <div class="info-item"><span class="k">上架日期</span><span class="v">2026.10.08</span></div>
+              <div class="info-item"><span class="k">实际竣工</span><span class="v">2026.10.06
+                <button class="mini-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>编辑</button>
+              </span></div>
+              <div class="info-item"><span class="k">签约价</span><span class="v">318 万元</span></div>
+              <div class="info-item"><span class="k">总投入</span><span class="v">29.6 万元</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">销售团队</div>
+                <div class="card-sub">选择成员后自动保存</div>
+              </div>
+            </div>
+            <div class="person">
+              <span class="avatar peach">赵</span>
+              <div><div class="pname">赵启航</div><div class="prole">渠道经理 · 负责分销对接</div></div>
+              <span class="spacer"></span>
+              <span class="pill form">已保存</span>
+            </div>
+            <div class="person">
+              <span class="avatar skyb">周</span>
+              <div><div class="pname">周雨彤</div><div class="prole">讲房人 · 负责接待讲解</div></div>
+              <span class="spacer"></span>
+              <span class="pill form">已保存</span>
+            </div>
+            <div class="person">
+              <span class="avatar mint">陈</span>
+              <div><div class="pname">陈默</div><div class="prole">谈判人 · 负责价格谈判</div></div>
+              <span class="spacer"></span>
+              <span class="pill form">已保存</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">销售动态</div>
+                <div class="card-sub">带看 / 出价 / 面谈全量记录</div>
+              </div>
+              <button class="textlink" style="font-size:14px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+                新增记录
+              </button>
+            </div>
+            <div class="tabs" style="margin-bottom:6px;">
+              <button class="on">带看（6）</button><button>出价（3）</button><button>面谈（1）</button>
+            </div>
+            <div class="record">
+              <span class="avatar skyb">吴</span>
+              <div style="flex:1; min-width:0;">
+                <div class="r-head"><span class="r-name">带看 · 吴女士</span><span class="r-time">今天 14:30 · 记录人 周雨彤</span></div>
+                <div class="r-body">链家带看，客户对南向采光满意，顾虑电梯房龄；预算 350 万以内，两周内可定。</div>
+                <div class="r-nums"><span class="r-num">渠道 <b>链家</b></span><span class="r-num">人数 <b>2</b></span><span class="r-num">意向 <b>A 级</b></span></div>
+              </div>
+              <button class="icon-btn r-del" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+            </div>
+            <div class="record">
+              <span class="avatar peach">刘</span>
+              <div style="flex:1; min-width:0;">
+                <div class="r-head"><span class="r-name">带看 · 刘先生</span><span class="r-time">10.15 10:00 · 记录人 周雨彤</span></div>
+                <div class="r-body">中原带看，二次复看，重点看了主卧与厨卫翻新质量，询问交房时家电是否留存。</div>
+                <div class="r-nums"><span class="r-num">渠道 <b>中原地产</b></span><span class="r-num">人数 <b>1</b></span><span class="r-num">意向 <b>B 级</b></span></div>
+              </div>
+              <button class="icon-btn r-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+            </div>
+          </div>
+
+          <div class="flowbar">
+            <span class="hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+              结束项目不可恢复为在售；确认成交需填写成交价与日期
+            </span>
+            <span style="display:flex; gap:14px; align-items:center;">
+              <button class="textlink rust">结束项目</button>
+              <button class="cta" data-dlg="deal">确认成交
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+              </button>
+            </span>
+          </div>
+        </div>
+
+        <div class="col-side">
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;"><div class="card-title">团队与成员</div></div>
+            <div class="person"><span class="avatar peach">李</span><div><div class="pname">李明远</div><div class="prole">项目经理</div></div></div>
+            <div class="person"><span class="avatar skyb">赵</span><div><div class="pname">赵启航</div><div class="prole">渠道经理</div></div></div>
+            <div class="person"><span class="avatar mint">周</span><div><div class="pname">周雨彤</div><div class="prole">讲房人</div></div></div>
+            <div class="person"><span class="avatar peach">陈</span><div><div class="pname">陈默</div><div class="prole">谈判人</div></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;"><div class="card-title">关键日期</div></div>
+            <div class="side-row"><span class="sk">签约日期</span><span class="sv">2026.08.12</span></div>
+            <div class="side-row"><span class="sk">装修完工</span><span class="sv">2026.10.06</span></div>
+            <div class="side-row"><span class="sk">上架日期</span><span class="sv">2026.10.08</span></div>
+            <div class="side-row"><span class="sk">委托截止</span><span class="sv" style="color:var(--rust);">2027.02.12</span></div>
+          </div>
+          <div class="card">
+            <div class="card-head" style="margin-bottom:2px;"><div class="card-title">快捷入口</div></div>
+            <a class="shortcut" href="#">
+              <span class="sic a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></span>
+              <span class="sd">项目账本<small>收支流水与利润核算</small></span><span class="arr">→</span>
+            </a>
+            <a class="shortcut" href="#">
+              <span class="sic b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="sd">房源监控<small>渠道曝光与访客数据</small></span><span class="arr">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SCREEN 4 — 已售阶段
+       ============================================================ -->
+  <section class="screen" id="screen-sold">
+    <div class="page">
+      <div class="topbar">
+        <div class="crumb">
+          <button class="back-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <a href="#">项目列表</a><span class="sep">/</span><span class="current">翠湖天地 · 张宅</span>
+        </div>
+        <div class="topbar-actions">
+          <span class="updated">已成交 · 归档完成</span>
+          <button class="tlink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+            编辑
+          </button>
+          <button class="tlink danger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            删除
+          </button>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="stepper">
+          <div class="step done clickable" data-goto="signing"><span class="step-dot">✓</span><span class="step-name">签约</span></div>
+          <span class="step-link done"></span>
+          <div class="step done clickable" data-goto="renovation"><span class="step-dot">✓</span><span class="step-name">装修</span></div>
+          <span class="step-link done"></span>
+          <div class="step done clickable" data-goto="selling"><span class="step-dot">✓</span><span class="step-name">在售</span></div>
+          <span class="step-link done"></span>
+          <div class="step now"><span class="step-dot">4</span><span class="step-name">已售</span></div>
+        </div>
+        <div class="hero-row">
+          <div>
+            <div class="hero-title">
+              <h1>翠湖天地 · 张宅</h1>
+              <span class="pill status ink">已售出</span>
+              <span class="pill form">代理美化</span>
+            </div>
+            <div class="hero-meta">
+              <span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>翠湖天地苑 · 浦东新区 联洋商圈</span>
+              <span class="dot">·</span><span class="m">89 ㎡</span><span class="dot">·</span>
+              <span class="m">成交周期 34 天</span>
+            </div>
+          </div>
+          <div class="hero-cta">
+            <button class="textlink">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+              修改销售信息
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-nav-wrap">
+        <nav class="section-nav">
+          <button class="on">成交总览</button>
+          <button>财务生命周期</button>
+          <button>视觉旅程</button>
+          <button>总结报告</button>
+        </nav>
+      </div>
+
+      <div class="grid">
+        <div class="col-main">
+          <div class="card warm" style="padding:28px;">
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+              <div>
+                <div style="font-size:13px; color:rgba(23,25,28,.55); font-weight:450;">成交总价</div>
+                <div style="font-family:var(--serif); font-size:44px; line-height:1.1; color:var(--rust); margin-top:6px;">356<small style="font-size:16px; font-family:var(--sans); font-weight:430; color:rgba(23,25,28,.55);"> 万</small></div>
+                <div style="font-size:12.5px; color:rgba(23,25,28,.55); margin-top:6px;">较签约价 +38 万 · 单价 4.00 万/㎡</div>
+              </div>
+              <div>
+                <div style="font-size:13px; color:rgba(23,25,28,.55); font-weight:450;">成交日期</div>
+                <div style="font-size:26px; font-weight:480; margin-top:10px; letter-spacing:-0.02em;">2026.11.11</div>
+                <div style="font-size:12.5px; color:rgba(23,25,28,.55); margin-top:8px;">买家 · 孙先生（链家渠道）</div>
+              </div>
+              <div>
+                <div style="font-size:13px; color:rgba(23,25,28,.55); font-weight:450;">售出天数</div>
+                <div style="font-size:26px; font-weight:480; margin-top:10px; letter-spacing:-0.02em;">34<small style="font-size:14px; font-weight:430; color:rgba(23,25,28,.55);"> 天</small></div>
+                <div style="font-size:12.5px; color:rgba(23,25,28,.55); margin-top:8px;">上架 10.08 → 成交 11.11</div>
+              </div>
+              <div>
+                <div style="font-size:13px; color:rgba(23,25,28,.55); font-weight:450;">净回报率</div>
+                <div style="font-size:26px; font-weight:480; margin-top:10px; letter-spacing:-0.02em;">12.9<small style="font-size:14px; font-weight:430; color:rgba(23,25,28,.55);"> %</small></div>
+                <div style="font-size:12.5px; color:rgba(23,25,28,.55); margin-top:8px;">净利润 8.4 万（详见账本）</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">财务生命周期</div>
+                <div class="card-sub">签约 → 装修投入 → 挂牌 → 成交</div>
+              </div>
+              <button class="textlink" style="font-size:14px;">查看项目账本 →</button>
+            </div>
+            <div class="fin-flow">
+              <div class="fin-node">
+                <div class="fv">318<small> 万</small></div>
+                <div class="fk">签约价</div>
+                <div class="fd">2026.08.12</div>
+              </div>
+              <div class="fin-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+              <div class="fin-node">
+                <div class="fv">-29.6<small> 万</small></div>
+                <div class="fk">装修与持有投入</div>
+                <div class="fd">08.22 – 10.06</div>
+              </div>
+              <div class="fin-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+              <div class="fin-node">
+                <div class="fv">368<small> 万</small></div>
+                <div class="fk">挂牌价</div>
+                <div class="fd">2026.10.08</div>
+              </div>
+              <div class="fin-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+              <div class="fin-node warm">
+                <div class="fv">356<small> 万</small></div>
+                <div class="fk">成交价</div>
+                <div class="fd">2026.11.11</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">视觉旅程</div>
+                <div class="card-sub">装修前后对比 · 完整相册 24 张</div>
+              </div>
+              <button class="btn-sm">查看全部照片</button>
+            </div>
+            <div class="compare">
+              <div>
+                <div class="ph g2" style="height:170px;">客厅 · 装修前</div>
+                <div class="cap">2026.08.20 · 交房当日</div>
+              </div>
+              <div>
+                <div class="ph g4" style="height:170px;">客厅 · 装修后</div>
+                <div class="cap">2026.10.06 · 完工验收</div>
+              </div>
+              <div>
+                <div class="ph g1" style="height:170px;">厨房 · 装修前</div>
+                <div class="cap">2026.08.20 · 交房当日</div>
+              </div>
+              <div>
+                <div class="ph g3" style="height:170px;">厨房 · 装修后</div>
+                <div class="cap">2026.10.06 · 完工验收</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div class="card-title">总结报告</div></div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">项目周期</span><span class="v">91 天（签约 → 成交）</span></div>
+              <div class="info-item"><span class="k">销售周期</span><span class="v">34 天（上架 → 成交）</span></div>
+              <div class="info-item"><span class="k">带看 / 出价</span><span class="v">9 次带看 · 4 次出价</span></div>
+              <div class="info-item"><span class="k">成交渠道</span><span class="v">链家 · 渠道经理 赵启航</span></div>
+              <div class="info-item full"><span class="k">经验备注</span><span class="v">轻硬装重软装策略有效，总价 30 万内翻新实现 38 万溢价；南向采光是主要卖点。</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-side">
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;"><div class="card-title">团队与成员</div></div>
+            <div class="person"><span class="avatar peach">李</span><div><div class="pname">李明远</div><div class="prole">项目经理</div></div></div>
+            <div class="person"><span class="avatar skyb">赵</span><div><div class="pname">赵启航</div><div class="prole">渠道经理</div></div></div>
+            <div class="person"><span class="avatar mint">周</span><div><div class="pname">周雨彤</div><div class="prole">讲房人</div></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head" style="margin-bottom:4px;"><div class="card-title">关键日期</div></div>
+            <div class="side-row"><span class="sk">签约</span><span class="sv">2026.08.12</span></div>
+            <div class="side-row"><span class="sk">交房</span><span class="sv">2026.08.20</span></div>
+            <div class="side-row"><span class="sk">完工</span><span class="sv">2026.10.06</span></div>
+            <div class="side-row"><span class="sk">上架</span><span class="sv">2026.10.08</span></div>
+            <div class="side-row"><span class="sk">成交</span><span class="sv" style="color:var(--rust);">2026.11.11</span></div>
+          </div>
+          <div class="card">
+            <div class="card-head" style="margin-bottom:2px;"><div class="card-title">快捷入口</div></div>
+            <a class="shortcut" href="#">
+              <span class="sic a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></span>
+              <span class="sd">项目账本<small>利润与结算明细</small></span>
+              <span class="arr">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SCREEN 5 — 已下架
+       ============================================================ -->
+  <section class="screen" id="screen-ended">
+    <div class="page">
+      <div class="topbar">
+        <div class="crumb">
+          <button class="back-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <a href="#">项目列表</a><span class="sep">/</span><span class="current">翠湖天地 · 张宅</span>
+        </div>
+        <div class="topbar-actions">
+          <span class="updated">已下架 · 2026.11.02</span>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="stepper">
+          <div class="step done clickable" data-goto="signing"><span class="step-dot">✓</span><span class="step-name">签约</span></div>
+          <span class="step-link done"></span>
+          <div class="step done clickable" data-goto="renovation"><span class="step-dot">✓</span><span class="step-name">装修</span></div>
+          <span class="step-link done"></span>
+          <div class="step done clickable" data-goto="selling"><span class="step-dot">✓</span><span class="step-name">在售</span></div>
+          <span class="step-link done"></span>
+          <div class="step now"><span class="step-dot">!</span><span class="step-name">已下架</span></div>
+        </div>
+        <div class="hero-row">
+          <div>
+            <div class="hero-title">
+              <h1>翠湖天地 · 张宅</h1>
+              <span class="pill status" style="background:#ececee; color:var(--ash);">已下架</span>
+              <span class="pill form">代理美化</span>
+            </div>
+            <div class="hero-meta">
+              <span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>翠湖天地苑 · 浦东新区 联洋商圈</span>
+              <span class="dot">·</span><span class="m">89 ㎡</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="col-main">
+          <div class="card" style="border:1px dashed var(--dove); box-shadow:none; background:#fdfdfd;">
+            <div style="display:flex; gap:14px; align-items:flex-start;">
+              <span style="width:36px; height:36px; border-radius:50%; background:var(--fog); display:grid; place-items:center; color:var(--graphite); flex-shrink:0;">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v4m0 4h.01"/></svg>
+              </span>
+              <div>
+                <div style="font-size:15px; font-weight:500;">该项目已结束销售</div>
+                <p style="font-size:14px; color:var(--ash); margin-top:4px; font-weight:430; line-height:1.6;">适用于委托到期未售出的房屋。项目不可恢复为在售状态，可保留查阅或删除。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div class="card-title">基础信息</div></div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">小区名称</span><span class="v">翠湖天地苑</span></div>
+              <div class="info-item"><span class="k">建筑面积</span><span class="v">89 ㎡</span></div>
+              <div class="info-item full"><span class="k">详细地址</span><span class="v">浦东新区锦绣路 3001 弄 12 号 602 室</span></div>
+              <div class="info-item"><span class="k">挂牌价</span><span class="v">368 万元</span></div>
+              <div class="info-item"><span class="k">签约价</span><span class="v">318 万元</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div class="card-title">关键日期</div></div>
+            <div class="info-grid">
+              <div class="info-item"><span class="k">签约日期</span><span class="v">2026.08.12</span></div>
+              <div class="info-item"><span class="k">挂牌日期</span><span class="v">2026.10.08</span></div>
+              <div class="info-item full"><span class="k">委托期限</span><span class="v">2026.08.12 至 2026.11.02</span></div>
+            </div>
+          </div>
+
+          <div class="danger-zone">
+            <div class="card-head" style="margin-bottom:8px;">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                危险操作
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+              <p style="font-size:14px; color:var(--ash); font-weight:430;">删除后项目进入回收状态，仅管理员可见。</p>
+              <button class="btn-sm" style="border-color:#e5c4b5; color:var(--rust);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                删除项目
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-side">
+          <div class="card">
+            <div class="card-head" style="margin-bottom:2px;"><div class="card-title">快捷入口</div></div>
+            <a class="shortcut" href="#">
+              <span class="sic a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></span>
+              <span class="sd">项目账本<small>历史收支明细</small></span>
+              <span class="arr">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SCREEN 6 — 加载 / 空态 / 错误
+       ============================================================ -->
+  <section class="screen" id="screen-states">
+    <div class="page">
+      <div class="topbar">
+        <div class="crumb">
+          <button class="back-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <a href="#">项目列表</a><span class="sep">/</span><span class="current">交互状态规范</span>
+        </div>
+      </div>
+
+      <div class="state-grid">
+        <div class="state-frame">
+          <div class="sf-bar"><span class="dotset"><i></i><i></i><i></i></span>加载中 · 卡片级骨架屏</div>
+          <div style="padding:18px;">
+            <div class="skel" style="height:20px; width:55%; margin-bottom:6px;"></div>
+            <div class="skel" style="height:13px; width:38%; margin-bottom:18px;"></div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;">
+              <div class="skel" style="height:74px; border-radius:18px;"></div>
+              <div class="skel" style="height:74px; border-radius:18px;"></div>
+              <div class="skel" style="height:74px; border-radius:18px;"></div>
+            </div>
+            <div class="skel" style="height:150px; border-radius:20px;"></div>
+          </div>
+        </div>
+
+        <div class="state-frame">
+          <div class="sf-bar"><span class="dotset"><i></i><i></i><i></i></span>空态 · 引导操作</div>
+          <div style="padding:28px 18px; text-align:center;">
+            <div class="empty-ill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+            </div>
+            <div style="font-size:15px; font-weight:500;">暂无文书</div>
+            <p style="font-size:13.5px; color:var(--graphite); margin-top:6px; font-weight:430;">可一键生成 6 类默认文书清单，或手动上传文件</p>
+            <button class="btn-sm solid" style="margin-top:16px;">初始化默认文书清单</button>
+          </div>
+        </div>
+
+        <div class="state-frame">
+          <div class="sf-bar"><span class="dotset"><i></i><i></i><i></i></span>错误 · 重试引导</div>
+          <div style="padding:28px 18px; text-align:center;">
+            <div class="empty-ill" style="background:#fbe9e4; color:#a4604a;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+            </div>
+            <div style="font-size:15px; font-weight:500;">数据加载失败</div>
+            <p style="font-size:13.5px; color:var(--graphite); margin-top:6px; font-weight:430;">网络异常或服务暂不可用，请稍后重试</p>
+            <button class="btn-sm" style="margin-top:16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.5 9A9 9 0 005.6 5.6L1 10m22 4l-4.6 4.4A9 9 0 013.5 15"/></svg>
+              重新加载
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><div>
+          <div class="card-title">操作反馈规范</div>
+          <div class="card-sub">所有写操作沿用 sonner toast；危险操作二次确认；流转成功进度条前进动画</div>
+        </div></div>
+        <div class="info-grid">
+          <div class="info-item"><span class="k">成功提示</span><span class="v">toast.success · 如「项目已删除」</span></div>
+          <div class="info-item"><span class="k">失败提示</span><span class="v">toast.error · 展示后端 message</span></div>
+          <div class="info-item"><span class="k">危险操作</span><span class="v">AlertDialog 二次确认（删除 / 结束项目 / 确认成交 / 交房 / 上架）</span></div>
+          <div class="info-item"><span class="k">按钮状态</span><span class="v">提交中 Loader 旋转 + disabled，防重复提交</span></div>
+          <div class="info-item"><span class="k">阶段流转</span><span class="v">成功后 toast + stepper 前进动画 + 自动切换阶段视图</span></div>
+          <div class="info-item"><span class="k">权限反馈</span><span class="v">无权限按钮不渲染；后端拦截时 toast 提示</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SCREEN 7 — 移动端适配
+       ============================================================ -->
+  <section class="screen" id="screen-mobile">
+    <div class="page">
+      <div class="topbar">
+        <div class="crumb">
+          <button class="back-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <a href="#">项目列表</a><span class="sep">/</span><span class="current">移动端适配</span>
+        </div>
+      </div>
+
+      <div class="mobile-wrap">
+        <div class="phone">
+          <div class="p-notch"></div>
+          <div class="p-body">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button class="back-btn" style="width:30px; height:30px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <span style="font-size:14px; color:var(--graphite);">项目列表</span>
+              </div>
+              <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+            </div>
+
+            <div style="font-size:24px; font-weight:500; letter-spacing:-0.2px; line-height:1.2; margin-bottom:6px;">翠湖天地 · 张宅</div>
+            <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+              <span class="pill status">签约阶段</span>
+              <span class="pill form">代理美化</span>
+            </div>
+
+            <div class="m-steps">
+              <span class="m-step now">● 签约</span>
+              <span class="m-step">装修</span>
+              <span class="m-step">在售</span>
+              <span class="m-step">已售</span>
+            </div>
+
+            <div class="kpi-row">
+              <div class="kpi warm">
+                <div class="label">签约总价</div>
+                <div class="value">318<small>万</small></div>
+              </div>
+              <div class="kpi">
+                <div class="label">建筑面积</div>
+                <div class="value">89<small>㎡</small></div>
+              </div>
+            </div>
+
+            <div style="height:12px;"></div>
+
+            <div class="card" style="padding:18px;">
+              <div class="card-title" style="margin-bottom:8px;">项目信息</div>
+              <div class="info-grid" style="grid-template-columns:1fr;">
+                <div class="info-item"><span class="k">小区名称</span><span class="v">翠湖天地苑</span></div>
+                <div class="info-item"><span class="k">行政区 / 商圈</span><span class="v">浦东新区 · 联洋商圈</span></div>
+                <div class="info-item"><span class="k">合同编号</span><span class="v">HT-2026-0812</span></div>
+                <div class="info-item"><span class="k">业主</span><span class="v">张伟 · 138****6677</span></div>
+              </div>
+            </div>
+
+            <div class="m-cta">
+              <button class="cta">
+                确认交房，开始装修
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="m-note">
+          <h3>移动端要点（&lt;768px）</h3>
+          <p>· 项目名降为 27px 衬线，阶段进度改为横向滚动胶囊条，当前阶段 Rust 高亮；</p>
+          <p>· KPI 折为 1×2 网格，主副列合并为单列，副列内容（团队 / 日期 / 快捷入口）下沉至页面尾部；</p>
+          <p>· 阶段主操作吸附于底部操作条（含安全区留白），与现有移动端视图的交互模式保持一致；</p>
+          <p>· 文书分组、时间线、记录流全量保留，点击行内图标操作，hover 态转为常显。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<!-- ==================== 关键交互弹窗（原型演示） ==================== -->
+<div class="dlg-mask" id="dlg-handover">
+  <div class="dlg">
+    <div class="dlg-kicker">阶段流转 · Signing → Renovation</div>
+    <div class="dlg-title">确认交房</div>
+    <p class="dlg-desc">交房确认后项目进入装修阶段，签约要件将锁定为只读。请选择实际交房日期。</p>
+    <div class="dlg-body">
+      <div class="field">
+        <label>实际交房日期</label>
+        <input type="date" value="2026-08-20" />
+        <div class="hint">默认取计划交房日，可修改</div>
+      </div>
+      <div class="field">
+        <label>交房备注（可选）</label>
+        <input type="text" placeholder="如：书房家具清单已单独确认" />
+      </div>
+      <div class="danger-note">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        <span>流转后签约阶段内容转为只读归档，如需修改需回退阶段（仅管理员）。</span>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn-sm" data-close>取消</button>
+      <button class="btn-sm solid" data-confirm="已交房，进入装修阶段">确认交房，开始装修</button>
+    </div>
+  </div>
+</div>
+
+<div class="dlg-mask" id="dlg-listing">
+  <div class="dlg">
+    <div class="dlg-kicker">阶段流转 · Renovation → Selling</div>
+    <div class="dlg-title">验收完成，上架销售</div>
+    <p class="dlg-desc">上架后项目进入在售阶段，房源将对渠道可见。请填写上架日期与挂牌价格。</p>
+    <div class="dlg-body">
+      <div class="field">
+        <label>上架日期</label>
+        <input type="date" value="2026-10-08" />
+      </div>
+      <div class="field">
+        <label>挂牌价格（万元）</label>
+        <input type="number" value="358" />
+        <div class="hint">建议区间 350–365 万（基于评估价与装修投入）</div>
+      </div>
+      <div class="field">
+        <label>渠道负责人</label>
+        <input type="text" value="王倩" />
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn-sm" data-close>取消</button>
+      <button class="btn-sm solid" data-confirm="已上架，进入在售阶段">确认上架</button>
+    </div>
+  </div>
+</div>
+
+<div class="dlg-mask" id="dlg-deal">
+  <div class="dlg">
+    <div class="dlg-kicker">阶段流转 · Selling → Sold</div>
+    <div class="dlg-title">确认成交</div>
+    <p class="dlg-desc">成交确认后项目进入已售归档阶段，财务数据将锁定。请填写成交价与日期。</p>
+    <div class="dlg-body">
+      <div class="field">
+        <label>成交价格（万元）</label>
+        <input type="number" value="352" />
+        <div class="hint">较挂牌价 358 万让利 6 万（1.7%）</div>
+      </div>
+      <div class="field">
+        <label>成交日期</label>
+        <input type="date" value="2026-11-11" />
+      </div>
+      <div class="field">
+        <label>成交经纪人</label>
+        <input type="text" value="李成" />
+      </div>
+      <div class="danger-note">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        <span>已售为归档终态，确认后不可恢复为在售。</span>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn-sm" data-close>取消</button>
+      <button class="btn-sm solid" data-confirm="已成交，进入归档">确认成交</button>
+    </div>
+  </div>
+</div>
+
+<div class="dlg-mask" id="dlg-delete">
+  <div class="dlg">
+    <div class="dlg-kicker">危险操作 · Destructive</div>
+    <div class="dlg-title">删除项目</div>
+    <p class="dlg-desc">即将删除项目「翠湖天地 · 张宅」。删除为软删除，仅管理员可在回收站恢复。</p>
+    <div class="dlg-body">
+      <div class="danger-note">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0; margin-top:2px;"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0zM12 9v4m0 4h.01"/></svg>
+        <span>将同时移除该项目的文书、照片、跟进与销售记录的可见性；请输入项目名确认。</span>
+      </div>
+      <div class="field">
+        <label>输入项目名以确认</label>
+        <input type="text" placeholder="翠湖天地 · 张宅" />
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn-sm" data-close>取消</button>
+      <button class="btn-sm solid" style="background:var(--rust);" data-confirm="项目已删除">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast 演示 -->
+<div class="toast" id="toast">
+  <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
+  <span id="toastText">操作成功</span>
+</div>
+
+<script>
+// 原型交互：切换阶段视图 / 步骤点击 / 分区导航 / Tabs 高亮
+(function () {
+  var bar = document.getElementById("demoBar");
+  var chips = bar.querySelectorAll(".demo-chip");
+  var screens = document.querySelectorAll(".screen");
+
+  function activate(key) {
+    chips.forEach(function (c) { c.classList.toggle("on", c.dataset.screen === key); });
+    screens.forEach(function (s) { s.classList.toggle("active", s.id === "screen-" + key); });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  chips.forEach(function (c) {
+    c.addEventListener("click", function () { activate(c.dataset.screen); });
+  });
+
+  // 时间线步骤点击 → 跳转对应阶段视图（演示阶段切换能力）
+  document.querySelectorAll(".step.clickable").forEach(function (el) {
+    el.addEventListener("click", function () {
+      var t = el.dataset.goto;
+      if (t) activate(t);
+    });
+  });
+
+  // 分区导航 / Tabs：组内单选高亮（原型演示）
+  document.querySelectorAll(".section-nav, .tabs").forEach(function (nav) {
+    nav.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        nav.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on");
+      });
+    });
+  });
+
+  // ===== 弹窗 / Toast（V4.1 追加）=====
+  var toast = document.getElementById("toast");
+  var toastText = document.getElementById("toastText");
+  var toastTimer = null;
+
+  function showToast(msg) {
+    toastText.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 2600);
+  }
+
+  var nextByDlg = { handover: "renovation", listing: "selling", deal: "sold", delete: "signing" };
+
+  function closeDlg(mask) {
+    mask.classList.remove("open");
+  }
+
+  document.querySelectorAll("[data-dlg]").forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var mask = document.getElementById("dlg-" + btn.dataset.dlg);
+      if (mask) mask.classList.add("open");
+    });
+  });
+
+  document.querySelectorAll(".dlg-mask").forEach(function (mask) {
+    mask.addEventListener("click", function (e) { if (e.target === mask) closeDlg(mask); });
+    mask.querySelectorAll("[data-close]").forEach(function (b) {
+      b.addEventListener("click", function () { closeDlg(mask); });
+    });
+    mask.querySelectorAll("[data-confirm]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        closeDlg(mask);
+        showToast(b.dataset.confirm);
+        var next = nextByDlg[mask.id.replace("dlg-", "")];
+        if (next && next !== "signing") setTimeout(function () { activate(next); }, 650);
+      });
+    });
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") document.querySelectorAll(".dlg-mask.open").forEach(closeDlg);
+  });
+})();
+</script>
+</body>
+</html>
