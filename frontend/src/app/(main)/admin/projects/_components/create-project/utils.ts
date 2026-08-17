@@ -95,7 +95,6 @@ export function buildProjectUpdatePayload(values: FormValues): ProjectUpdateReq 
         relation_type: o.relation_type || "业主",
         owner_info: o.owner_info || null,
       })) ?? null,
-    owner_info: values.notes || null,
   };
 
   return basePayload as ProjectUpdateReq;
