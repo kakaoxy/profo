@@ -39,15 +39,17 @@ type StageViewer = {
   current: number;
 };
 
-/** 设计稿仅展示 6 个改造阶段（不含「已完成」）. */
-const ALL_STAGES: RenovationStageName[] = [
-  "拆除",
-  "设计",
-  "水电",
-  "木瓦",
-  "油漆",
-  "交付",
-];
+/** 设计稿仅展示 5 个改造阶段（不含「交付」「已完成」）. */
+const ALL_STAGES: RenovationStageName[] = ["拆除", "设计", "水电", "木瓦", "油漆"];
+
+/** 轮播图中改造照片的展示顺序；不在表内的阶段（交付/已完成/未知）排在最后. */
+const GALLERY_STAGE_ORDER: Record<string, number> = {
+  拆除: 0,
+  设计: 1,
+  水电: 2,
+  木瓦: 3,
+  油漆: 4,
+};
 
 interface PageData {
   id: number | null;
@@ -99,7 +101,35 @@ function isHttpResponseError(err: unknown): err is HttpResponseError {
   );
 }
 
-/** 将后端改造阶段与媒体分组映射为 6 项展示数据（含完成时间与照片）. */
+/**
+ * 图集排序：营销照片在前（保持原 sort_order），改造照片按
+ * 拆除→设计→水电→木瓦→油漆 排序，其余阶段（交付/已完成/未知）追加在末尾.
+ * 同组内保持后端原有顺序.
+ */
+function sortGalleryMedia(media: PublicMediaItem[]): PublicMediaItem[] {
+  return media
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const aIsMarketing = a.item.photo_category === "marketing";
+      const bIsMarketing = b.item.photo_category === "marketing";
+      if (aIsMarketing !== bIsMarketing) {
+        return aIsMarketing ? -1 : 1;
+      }
+      if (!aIsMarketing) {
+        const aRank =
+          GALLERY_STAGE_ORDER[a.item.renovation_stage ?? ""] ?? Number.MAX_SAFE_INTEGER;
+        const bRank =
+          GALLERY_STAGE_ORDER[b.item.renovation_stage ?? ""] ?? Number.MAX_SAFE_INTEGER;
+        if (aRank !== bRank) {
+          return aRank - bRank;
+        }
+      }
+      return a.index - b.index;
+    })
+    .map(({ item }) => item);
+}
+
+/** 将后端改造阶段与媒体分组映射为 5 项展示数据（含完成时间与照片）. */
 function buildStages(
   media: PublicMediaItem[],
   apiStages?: PublicRenovationStage[]
@@ -198,7 +228,8 @@ Page<PageData, Custom>({
       };
       // 图集优先用 media（含图片与视频），按类型渲染；无 media 时回退 images
       // 视频项用 thumbnail_url 作封面（后端目前不生成视频缩略图，poster 常为空串→前端黑色占位兜底）
-      const media = detail.media ?? [];
+      // 顺序：营销照片 → 改造照片（拆除/设计/水电/木瓦/油漆）
+      const media = sortGalleryMedia(detail.media ?? []);
       const stages = buildStages(media, resolvedDetail.renovation_stages);
       const hasRenovationPhotos = stages.some((s) => s.photos.length > 0);
       const gallery: GalleryItem[] =

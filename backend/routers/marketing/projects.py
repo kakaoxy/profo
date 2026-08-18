@@ -13,6 +13,7 @@ from dependencies.auth import (
     L4MarketingWritePermDep,
 )
 from dependencies.common import PaginationDep
+from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from schemas.l4_marketing import (
     L4MarketingMediaCreate,
     L4MarketingMediaListResponse,
@@ -64,8 +65,8 @@ def list_marketing_projects(
     service: _ProjectServiceDep,
     _current_user: L4MarketingReadPermDep,
     pagination: PaginationDep,
-    publish_status: Annotated[str | None, Query(max_length=100, description="发布状态: 草稿/发布")] = None,
-    project_status: Annotated[str | None, Query(max_length=100, description="项目状态: 在途/在售/已售")] = None,
+    publish_status: Annotated[PublishStatus | None, Query(description="发布状态: 草稿/发布")] = None,
+    project_status: Annotated[MarketingProjectStatus | None, Query(description="项目状态: 在途/在售/已售")] = None,
     consultant_id: Annotated[str | None, Query(max_length=100, description="顾问ID")] = None,
     community_id: Annotated[str | None, Query(max_length=100, description="小区ID")] = None,
 ) -> L4MarketingProjectListResponse:

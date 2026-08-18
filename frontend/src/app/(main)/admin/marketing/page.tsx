@@ -111,10 +111,10 @@ async function ProjectsDataFetcher({
 }) {
   const page = Number(getSearchParam(searchParams?.page, "1")) || 1;
   const size = Number(getSearchParam(searchParams?.size, "20")) || 20;
-  const publishStatus = getSearchParam(searchParams?.publish_status, "");
-  const projectStatus = getSearchParam(searchParams?.project_status, "");
-  const consultantId = getSearchParam(searchParams?.consultant_id, "");
-  const communityId = getSearchParam(searchParams?.community_id, "");
+  const publishStatus = getSearchParam(searchParams?.publish_status, "") || undefined;
+  const projectStatus = getSearchParam(searchParams?.project_status, "") || undefined;
+  const consultantId = getSearchParam(searchParams?.consultant_id, "") || undefined;
+  const communityId = getSearchParam(searchParams?.community_id, "") || undefined;
 
   const client = await fetchClient();
   const { data, error } = await client.GET("/api/v1/admin/marketing/projects", {
@@ -122,10 +122,10 @@ async function ProjectsDataFetcher({
       query: {
         page,
         page_size: size,
-        publish_status: publishStatus || undefined,
-        project_status: projectStatus || undefined,
-        consultant_id: consultantId || undefined,
-        community_id: communityId || undefined,
+        publish_status: publishStatus as L4MarketingProjectsQuery["publish_status"],
+        project_status: projectStatus as L4MarketingProjectsQuery["project_status"],
+        consultant_id: consultantId,
+        community_id: communityId,
       } satisfies L4MarketingProjectsQuery,
     },
   });

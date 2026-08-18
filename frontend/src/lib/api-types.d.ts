@@ -14033,9 +14033,9 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description 发布状态: 草稿/发布 */
-                publish_status?: string | null;
+                publish_status?: components["schemas"]["PublishStatus"] | null;
                 /** @description 项目状态: 在途/在售/已售 */
-                project_status?: string | null;
+                project_status?: components["schemas"]["MarketingProjectStatus"] | null;
                 /** @description 顾问ID */
                 consultant_id?: string | null;
                 /** @description 小区ID */

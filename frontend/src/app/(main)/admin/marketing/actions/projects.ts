@@ -12,6 +12,12 @@ import type {
 } from "@/app/(main)/admin/marketing/types";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/server/require-permission";
+import type { operations } from "@/lib/api-types";
+
+// 营销项目列表查询参数（与后端 OpenAPI 对齐，状态为中文枚举字面量）
+type L4MarketingProjectsQuery = NonNullable<
+  operations["list_marketing_projects_api_v1_admin_marketing_projects_get"]["parameters"]["query"]
+>;
 
 // ============================================================================
 // Zod schemas - 与 _components/form-schema.ts 的 createSchema/updateSchema 对齐
@@ -114,8 +120,8 @@ export type ActionResult<T = void> = ActionSuccess<T> | ActionError;
 export async function getL4MarketingProjectsAction(
   page = 1,
   pageSize = 20,
-  publishStatus?: string,
-  projectStatus?: string,
+  publishStatus?: L4MarketingProjectsQuery["publish_status"],
+  projectStatus?: L4MarketingProjectsQuery["project_status"],
   consultantId?: string,
   communityId?: string,
 ): Promise<
