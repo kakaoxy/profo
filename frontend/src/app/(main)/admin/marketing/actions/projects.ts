@@ -122,8 +122,8 @@ export async function getL4MarketingProjectsAction(
   pageSize = 20,
   publishStatus?: L4MarketingProjectsQuery["publish_status"],
   projectStatus?: L4MarketingProjectsQuery["project_status"],
-  consultantId?: string,
-  communityId?: string,
+  consultantId?: L4MarketingProjectsQuery["consultant_id"],
+  communityId?: L4MarketingProjectsQuery["community_id"],
 ): Promise<
   ActionResult<{ items: L4MarketingProject[]; total: number; page: number; page_size: number }>
 > {
@@ -136,8 +136,8 @@ export async function getL4MarketingProjectsAction(
           page_size: pageSize,
           publish_status: publishStatus,
           project_status: projectStatus,
-          consultant_id: consultantId,
-          community_id: communityId,
+          consultant_id: consultantId || undefined,
+          community_id: communityId || undefined,
         },
       },
     });
