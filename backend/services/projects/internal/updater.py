@@ -58,9 +58,11 @@ class ProjectUpdater:
         # 记录变更前业务形式，用于后续文书清单同步
         old_business_form = project.business_form
 
-        # 已售状态限制可修改字段
+        # 已售状态限制可修改字段（含业主列表结构：仅允许更新白名单内的业主
+        # 基本信息字段，禁止增删业主——与 _filter_allowed_fields 白名单语义一致）
         if project.status == ProjectStatus.SOLD.value:
             update_dict = self._filter_allowed_fields(update_dict)
+            owners_payload = None
 
         # 更新各模块数据
         self._update_project_fields(project, update_dict)
@@ -237,7 +239,7 @@ class ProjectUpdater:
         update_dict: dict[str, Any],
     ) -> None:
         """更新业主相关字段."""
-        owner_fields = ["owner_name", "owner_phone", "owner_id_card"]
+        owner_fields = ["owner_name", "owner_phone", "owner_id_card", "owner_info"]
         owner_updates = {k: update_dict.pop(k) for k in list(owner_fields) if k in update_dict}
 
         if "notes" in update_dict:
