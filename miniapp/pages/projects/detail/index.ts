@@ -1,6 +1,6 @@
 import type { components } from "../../../types/api-types";
 import { request, type HttpResponseError } from "../../../utils/request";
-import { getAccessToken } from "../../../utils/token";
+import { getAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import { fetchEmployeeId } from "../../../utils/valuation-share";
 
@@ -216,7 +216,10 @@ Page<PageData, Custom>({
       this.setData({ notFound: true });
       return;
     }
-    this.setData({ id, referrer: rawOptions.referrer || "" });
+    // 同步取当前登录员工 ID 作为 employeeId 初值：onShareAppMessage 是同步回调，
+    // 无法 await loadEmployee；先从 access_token 解析 sub 填充，确保进入后立即
+    // 分享仍携带 referrer 归因（loadEmployee 完成后由后端确认值覆盖）
+    this.setData({ id, referrer: rawOptions.referrer || "", employeeId: getUserIdFromAccessToken() });
     // 启用右上角菜单的「分享给朋友」与「分享到朋友圈」，使 onShareTimeline 可触发
     wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
     this.loadDetail(id);

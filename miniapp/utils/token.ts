@@ -101,16 +101,17 @@ function base64UrlToBinary(b64: string): string {
 }
 
 /**
- * 解析 JWT payload 中的 aud（"c"=C端，"admin"=后台）；解析失败返回空串.
+ * 解析 JWT payload 为对象；解析失败返回 null.
  *
- * 用于在端内区分令牌用途：C 端令牌可访问 /public/*，后台令牌不可，
- * 从而避免把「受众不匹配」的 401 误判为「登录失效」而清空有效登录态.
+ * JWT payload 为 base64url 编码（无需密钥即可读取，签名校验由后端负责），
+ * 前端仅用于同步读取 sub/aud 等声明，作为异步接口（/auth/me）返回前的初值，
+ * 避免 onShareAppMessage 等同步回调在身份识别完成前丢失归因。
  */
-export function getTokenAud(token: string): string {
+function parseTokenPayload(token: string): Record<string, unknown> | null {
   try {
     const payload = token.split(".")[1];
     if (!payload) {
-      return "";
+      return null;
     }
     // 返回 binary string（每字符代表一个字节），逐字节 percent-encode 后
     // 交 decodeURIComponent 做 UTF-8 解码；替代已废弃的 escape()，不依赖 TextDecoder
@@ -121,8 +122,45 @@ export function getTokenAud(token: string): string {
         .join(""),
     );
     const data = JSON.parse(jsonStr);
-    return typeof data.aud === "string" ? data.aud : "";
+    return typeof data === "object" && data !== null ? data : null;
   } catch {
+    return null;
+  }
+}
+
+/**
+ * 解析 JWT payload 中的 aud（"c"=C端，"admin"=后台）；解析失败返回空串.
+ *
+ * 用于在端内区分令牌用途：C 端令牌可访问 /public/*，后台令牌不可，
+ * 从而避免把「受众不匹配」的 401 误判为「登录失效」而清空有效登录态.
+ */
+export function getTokenAud(token: string): string {
+  const data = parseTokenPayload(token);
+  if (!data) {
     return "";
   }
+  const aud = data.aud;
+  return typeof aud === "string" ? aud : "";
+}
+
+/**
+ * 同步读取后台 access_token 中的 sub（即 user.id），解析失败返回空串.
+ *
+ * 用途：onShareAppMessage / onShareTimeline 是微信同步回调，无法 await
+ * 异步的 /auth/me 身份识别。在页面 onLoad 阶段用本函数同步取出当前登录
+ * 员工 ID 作为 employeeId 初值，确保「进入页面后立即分享」仍能携带 referrer
+ * 归因（见分享归因竞态修复）。token 过期不影响 payload 解读（仅签名由后端校验），
+ * 异步 loadEmployee 完成后会写入后端确认的最新值覆盖.
+ */
+export function getUserIdFromAccessToken(): string {
+  const token = getAccessToken();
+  if (!token) {
+    return "";
+  }
+  const data = parseTokenPayload(token);
+  if (!data) {
+    return "";
+  }
+  const sub = data.sub;
+  return typeof sub === "string" ? sub : "";
 }

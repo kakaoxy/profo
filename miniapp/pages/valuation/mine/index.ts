@@ -24,6 +24,8 @@ type PublicAcquiredLeadPhoneResponse = components["schemas"]["PublicAcquiredLead
 const PAGE_SIZE = 10;
 /** 未登录/无 C 端身份（401）：展示游客空态，不清登录态、不报错. */
 const HTTP_UNAUTHORIZED = 401;
+/** 无获客权限（403，员工未配置 customer 附加角色）：与 401 同口径空态兜底. */
+const HTTP_FORBIDDEN = 403;
 
 /** 筛选 chip（全部 + 5 个状态，值空串或 LeadStatus 值）. */
 interface AcquiredChip {
@@ -213,8 +215,9 @@ Page<PageData, PageCustom>({
     } catch (err) {
       const statusCode = (err as HttpResponseError).statusCode;
       this.setData({ loading: false, loadingMore: false });
-      if (statusCode === HTTP_UNAUTHORIZED) {
-        // 未登录/无 C 端身份：统一空态兜底（reset 清空当前筛选列表），不清登录态不报错
+      if (statusCode === HTTP_UNAUTHORIZED || statusCode === HTTP_FORBIDDEN) {
+        // 401（未登录/无 C 端身份）或 403（员工未配置 customer 附加角色，无获客权限）：
+        // 统一空态兜底（reset 清空当前筛选列表），不清登录态、不报「加载失败」
         if (reset) {
           this.setData({ items: [], total: 0, noMore: true });
         }
@@ -292,8 +295,8 @@ Page<PageData, PageCustom>({
       this.dial(res.phone);
     } catch (err) {
       const statusCode = (err as HttpResponseError).statusCode;
-      if (statusCode === HTTP_UNAUTHORIZED) {
-        // 401 与列表口径一致：静默（request 已自动尝试刷新）
+      if (statusCode === HTTP_UNAUTHORIZED || statusCode === HTTP_FORBIDDEN) {
+        // 401/403 与列表口径一致：静默（无获客权限，列表已空态兜底）
         return;
       }
       wx.showToast({ title: "获取号码失败，请重试", icon: "none" });

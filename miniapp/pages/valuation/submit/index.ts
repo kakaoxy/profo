@@ -5,7 +5,7 @@
  */
 import type { components } from "../../../types/api-types";
 import { request, refreshCAccessToken, type HttpResponseError } from "../../../utils/request";
-import { getAccessToken, getCAccessToken } from "../../../utils/token";
+import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";
 import { formatThousands } from "../../../utils/format";
@@ -189,7 +189,10 @@ Page<PageData, PageCustom>({
   onLoad(options: Record<string, string | undefined>) {
     // 分享/扫码进入：解析 referrer（分享归属员工 ID），提交时透传后端归因
     const { referrer } = parseValuationQuery(options);
-    this.setData({ referrer });
+    // 同步取当前登录员工 ID 作为 employeeId 初值：onShareAppMessage 是同步回调，
+    // 无法 await loadEmployee；先从 access_token 解析 sub 填充，确保进入后立即
+    // 分享仍携带 referrer 归因（loadEmployee 完成后由后端确认值覆盖）
+    this.setData({ referrer, employeeId: getUserIdFromAccessToken() });
     // 内部员工（admin 令牌存在）：识别身份后展示分享横幅 + 启用分享菜单；
     // 识别失败静默降级（非员工不显示横幅，不影响表单）
     if (getAccessToken()) {

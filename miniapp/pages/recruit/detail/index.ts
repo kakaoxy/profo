@@ -20,7 +20,7 @@
  */
 import type { components } from "../../../types/api-types";
 import { request, type HttpResponseError } from "../../../utils/request";
-import { getAccessToken, getCAccessToken } from "../../../utils/token";
+import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import {
   buildShareEventPayload,
@@ -169,6 +169,10 @@ Page<PageData, PageCustom>({
 
   onLoad(options) {
     const rawOptions = options as Record<string, string | undefined>;
+    // 同步取当前登录员工 ID 作为 employeeId 初值：onShareAppMessage 是同步回调，
+    // 无法 await loadIdentityAndBadge；先从 access_token 解析 sub 填充，确保进入后
+    // 立即分享仍携带 referrer 归因（loadIdentityAndBadge 完成后由后端确认值覆盖）
+    this.setData({ employeeId: getUserIdFromAccessToken() });
     // 扫码进入：options.scene 存在且无 campaign_id 时，从 scene（"code=xxx" 键值对）提取短码
     if (rawOptions.scene && !rawOptions.campaign_id) {
       const scene = decodeURIComponent(rawOptions.scene);
