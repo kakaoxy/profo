@@ -338,6 +338,7 @@ class PublicLeadCreate(BaseModel):
     remarks: str | None = Field(None, description="备注")
     expected_price: float | None = Field(None, gt=0, description="业主心理预期价(万)，选填")
     images: list[str] = Field(default_factory=list, max_length=6, description="户型图URL列表")
+    referrer: str | None = Field(None, max_length=36, description="分享归属员工ID")
 
     @field_validator("images")
     @classmethod
@@ -421,6 +422,50 @@ class PublicLeadCountResponse(BaseModel):
     total: int = Field(description="未删除线索总条数")
 
 
+class PublicAcquiredLeadListItem(BaseModel):
+    """C端员工获客线索列表项."""
+
+    id: str = Field(description="线索ID")
+    community_name: str = Field(description="小区名称")
+    layout: str | None = Field(None, description="户型")
+    area: float | None = Field(None, description="面积(m²)")
+    expected_price: float | None = Field(None, description="业主心理预期价(万)")
+    status: LeadStatusType = Field(description="状态代码")
+    status_display: str = Field(description="状态显示名称")
+    status_color: str = Field(description="状态颜色")
+    source: Literal["customer_share", "employee_entry"] = Field(description="来源：分享归因/员工直接录入")
+    phone_masked: str | None = Field(None, description="客户手机号(脱敏)，仅分享归因且客户有手机号时返回")
+    created_at: datetime = Field(description="创建时间")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PublicAcquiredLeadListResponse(BaseModel):
+    """C端员工获客线索列表响应."""
+
+    items: list[PublicAcquiredLeadListItem] = Field(description="线索列表")
+    total: int = Field(description="总记录数")
+    page: int = Field(description="当前页码")
+    page_size: int = Field(description="每页数量")
+
+
+class PublicAcquiredLeadStatsResponse(BaseModel):
+    """C端员工获客线索状态统计响应."""
+
+    total: int = Field(description="获客线索总数")
+    pending_assessment: int = Field(description="待评估数量")
+    pending_visit: int = Field(description="待看房数量")
+    visited: int = Field(description="已看房数量")
+    signed: int = Field(description="已签约数量")
+    rejected: int = Field(description="已驳回数量")
+
+
+class PublicAcquiredLeadPhoneResponse(BaseModel):
+    """C端员工获客线索客户手机号响应."""
+
+    phone: str | None = Field(None, description="客户真实手机号（直接录入或非分享归因线索为 null）")
+
+
 class PublicFollowupItem(BaseModel):
     """C端跟进记录项."""
 
@@ -460,6 +505,10 @@ class PublicLeadDetail(BaseModel):
 
 __all__ = [
     "LeadStatusType",
+    "PublicAcquiredLeadListItem",
+    "PublicAcquiredLeadListResponse",
+    "PublicAcquiredLeadPhoneResponse",
+    "PublicAcquiredLeadStatsResponse",
     "PublicCommunitySearchItem",
     "PublicConsultantContact",
     "PublicConsultantInfo",

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>我的获客 · 高保真设计稿</title>
+<style>
+  :root {
+    --brand: #2563eb;
+    --brand-weak: #eef4ff;
+    --ink: #17191c;
+    --ink-2: #777b86;
+    --ink-3: #a5a9b3;
+    --line: #f2f3f5;
+    --bg: #f7f7f8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: #e8eaf0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+    gap: 28px;
+  }
+  .page-head { text-align: center; color: #3b4252; }
+  .page-head h1 { font-size: 20px; margin-bottom: 6px; }
+  .page-head p { font-size: 13px; color: #6b7280; }
+
+  .phone {
+    width: 375px;
+    background: var(--bg);
+    border-radius: 40px;
+    box-shadow: 0 24px 60px rgba(23, 25, 28, 0.18);
+    overflow: hidden;
+    border: 8px solid #1c1e26;
+    position: relative;
+  }
+  .phone::before {
+    content: "";
+    position: absolute; top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: 110px; height: 22px;
+    background: #1c1e26; border-radius: 12px; z-index: 50;
+  }
+  .phone-screen { background: var(--bg); min-height: 720px; }
+  .navbar {
+    background: #fff; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600; color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    padding-top: 22px;
+  }
+
+  /* ===== 统计卡 ===== */
+  .stats {
+    margin: 16px 12px 0;
+    background: #fff;
+    border-radius: 16px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 18px 0;
+    box-shadow: 0 4px 16px rgba(23,25,28,0.04);
+  }
+  .stat { text-align: center; }
+  .stat + .stat { border-left: 1px solid var(--line); }
+  .stat-num { display: block; font-size: 22px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stat-label { display: block; font-size: 11px; color: var(--ink-2); margin-top: 6px; }
+  .stat--hl .stat-num { color: var(--brand); }
+
+  /* ===== 筛选 chips ===== */
+  .chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 16px 12px 4px;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: var(--ink-2);
+    background: #fff;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  .chip--on { background: var(--brand-weak); color: var(--brand); font-weight: 600; }
+
+  /* ===== 获客列表 ===== */
+  .leads { padding: 12px 12px 0; }
+  .lead {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(23,25,28,0.04);
+  }
+  .l-top { display: flex; align-items: center; justify-content: space-between; }
+  .l-name { font-size: 16px; font-weight: 600; color: var(--ink); }
+  .l-tag {
+    flex-shrink: 0; font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 8px;
+  }
+  .t-pending { background: #fff6e6; color: #b45309; }
+  .t-visit { background: #eef4ff; color: #2563eb; }
+  .t-visited { background: #e8f7ee; color: #15803d; }
+  .t-signed { background: #f1edff; color: #6d28d9; }
+  .t-rejected { background: #f2f3f5; color: #777b86; }
+  .l-main { margin-top: 10px; display: flex; align-items: baseline; gap: 8px; }
+  .l-layout { font-size: 13px; color: var(--ink-2); }
+  .l-price { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .l-price em { font-style: normal; font-size: 11px; font-weight: 400; color: var(--ink-3); }
+  .l-src { font-size: 10px; padding: 2px 8px; border-radius: 6px; }
+  .s-share { background: rgba(37,99,235,0.09); color: var(--brand); }
+  .s-direct { background: #f2f3f5; color: var(--ink-2); }
+  .l-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .l-phone { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; color: var(--ink); }
+  .l-phone--empty { font-size: 12px; font-weight: 400; color: var(--ink-3); }
+  .l-time { font-size: 11px; color: var(--ink-3); }
+  .l-contact {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 88px; height: 32px; padding: 0 14px;
+    border-radius: 999px; background: var(--brand); color: #fff;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 6px 14px rgba(37,99,235,0.22);
+  }
+  .l-more { text-align: center; font-size: 12px; color: var(--ink-3); padding: 14px 0 8px; }
+
+  /* ===== 空态 ===== */
+  .empty {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 110px 60px 0; text-align: center;
+  }
+  .e-ill { position: relative; width: 190px; height: 152px; }
+  .e-glow {
+    position: absolute; left: 50%; top: 46%;
+    transform: translate(-50%,-50%);
+    width: 170px; height: 170px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(37,99,235,0.14) 0%, rgba(37,99,235,0) 68%);
+  }
+  .e-card {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%,-50%);
+    width: 148px; height: 96px;
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 14px 34px rgba(23,25,28,0.08);
+    padding: 16px 20px 0; box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .e-row { display: flex; align-items: center; gap: 8px; }
+  .e-dot { width: 12px; height: 12px; border-radius: 50%; background: #eef4ff; }
+  .e-bar { height: 8px; border-radius: 4px; background: #eef0f4; }
+  .e-badge {
+    position: absolute; right: 8px; bottom: 4px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--brand); color: #fff; font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 18px rgba(37,99,235,0.35);
+  }
+  .e-t { margin-top: 24px; font-size: 16px; font-weight: 600; color: var(--ink); }
+  .e-s { margin-top: 8px; font-size: 12px; color: var(--ink-2); line-height: 1.7; }
+  .e-btn {
+    margin-top: 26px; width: 200px; height: 44px;
+    border: none; border-radius: 999px;
+    background: var(--brand); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 10px 20px rgba(37,99,235,0.28);
+  }
+
+  .hidden { display: none !important; }
+  .view-tabs { display: flex; justify-content: center; gap: 8px; }
+  .vt-btn {
+    border: 1px solid #d4d8e0; background: #fff; color: var(--ink-2);
+    padding: 6px 14px; border-radius: 999px; font-size: 12px; cursor: pointer;
+  }
+  .vt-btn--on { border-color: var(--brand); background: var(--brand-weak); color: var(--brand); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>估价分享归因 · 高保真设计稿（2/2 我的获客页）</h1>
+    <p>小程序「我的获客」· 统计卡 / 状态筛选 / 获客列表 / 空态（员工视角）</p>
+  </div>
+
+  <div class="view-tabs">
+    <button class="vt-btn vt-btn--on" data-v="data" onclick="switchView('data')">有数据</button>
+    <button class="vt-btn" data-v="empty" onclick="switchView('empty')">空态</button>
+  </div>
+
+  <div class="phone">
+    <div class="phone-screen">
+      <div class="navbar">我的获客</div>
+
+      <!-- 统计卡 -->
+      <div class="stats" id="statsCard">
+        <div class="stat"><span class="stat-num">28</span><span class="stat-label">累计获客</span></div>
+        <div class="stat"><span class="stat-num">12</span><span class="stat-label">待评估</span></div>
+        <div class="stat"><span class="stat-num">7</span><span class="stat-label">待看房</span></div>
+        <div class="stat stat--hl"><span class="stat-num">4</span><span class="stat-label">已签约</span></div>
+      </div>
+
+      <!-- 状态筛选 -->
+      <div class="chips" id="chips">
+        <span class="chip chip--on">全部</span>
+        <span class="chip">待评估</span>
+        <span class="chip">待看房</span>
+        <span class="chip">已看房</span>
+        <span class="chip">已签约</span>
+        <span class="chip">已驳回</span>
+      </div>
+
+      <!-- 获客列表 -->
+      <div class="leads" id="leadsList">
+        <!-- 经分享：有客户手机号 + 联系客户 -->
+        <div class="lead">
+          <div class="l-top">
+            <span class="l-name">新江湾城 · 首府</span>
+            <span class="l-tag t-pending">待评估</span>
+          </div>
+          <div class="l-main">
+            <span class="l-layout">2室1厅 · 89㎡</span>
+            <span class="l-price"><em>预期</em> 850万</span>
+            <span class="l-src s-share">客户分享</span>
+          </div>
+          <div class="l-foot">
+            <div>
+              <span class="l-phone">138****5678</span>
+              <span class="l-time" style="margin-left:10px">今天 14:32</span>
+            </div>
+            <span class="l-contact" onclick="alert('GET /my/acquired/{id}/phone 解密客户手机号 → 调起拨号')">联系客户</span>
+          </div>
+        </div>
+
+        <!-- 经分享：查看后可拨打 -->
+        <div class="lead">
+          <div class="l-top">
+            <span class="l-name">世纪公园 · 天御</span>
+            <span class="l-tag t-visit">待看房</span>
+          </div>
+          <div class="l-main">
+            <span class="l-layout">3室2厅 · 128㎡</span>
+            <span class="l-price"><em>预期</em> 1280万</span>
+            <span class="l-src s-share">客户分享</span>
+          </div>
+          <div class="l-foot">
+            <div>
+              <span class="l-phone" style="color:#2563eb">13911112222</span>
+              <span class="l-time" style="margin-left:10px">昨天 19:47</span>
+            </div>
+            <span class="l-contact" style="background:#eef4ff;color:#2563eb;box-shadow:none" onclick="alert('已查看，直接拨打')">拨打</span>
+          </div>
+        </div>
+
+        <!-- 直接录入：无客户联系方式 -->
+        <div class="lead">
+          <div class="l-top">
+            <span class="l-name">大宁 · 金茂府</span>
+            <span class="l-tag t-visited">已看房</span>
+          </div>
+          <div class="l-main">
+            <span class="l-layout">4室2厅 · 168㎡</span>
+            <span class="l-price"><em>预期</em> 1980万</span>
+            <span class="l-src s-direct">员工录入</span>
+          </div>
+          <div class="l-foot">
+            <span class="l-phone l-phone--empty">未提供联系方式</span>
+            <span class="l-time">08-12 16:40</span>
+          </div>
+        </div>
+
+        <div class="l-more">上拉加载更多</div>
+      </div>
+
+      <!-- 空态 -->
+      <div class="empty hidden" id="emptyState">
+        <div class="e-ill">
+          <div class="e-glow"></div>
+          <div class="e-card">
+            <div class="e-row"><span class="e-dot"></span><span class="e-bar" style="width:88px"></span></div>
+            <div class="e-row"><span class="e-dot" style="background:#f1edff"></span><span class="e-bar" style="width:62px"></span></div>
+            <div class="e-row"><span class="e-dot" style="background:#e8f7ee"></span><span class="e-bar" style="width:104px"></span></div>
+          </div>
+          <span class="e-badge">+</span>
+        </div>
+        <div class="e-t">分享估价页给客户</div>
+        <div class="e-s">客户提交估价后自动生成线索<br/>展示联系方式，方便您跟进联系</div>
+        <button class="e-btn" onclick="window.open('./valuation-share-entry.html','_blank')">去分享估价页</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchView(v) {
+      var list = document.getElementById('leadsList');
+      var empty = document.getElementById('emptyState');
+      var stats = document.getElementById('statsCard');
+      var chips = document.getElementById('chips');
+      if (v === 'data') {
+        empty.classList.add('hidden');
+        list.classList.remove('hidden');
+        stats.classList.remove('hidden');
+        chips.classList.remove('hidden');
+      } else {
+        empty.classList.remove('hidden');
+        list.classList.add('hidden');
+        stats.classList.add('hidden');
+        chips.classList.add('hidden');
+      }
+      document.querySelectorAll('.vt-btn').forEach(function (b) {
+        b.classList.toggle('vt-btn--on', b.dataset.v === v);
+      });
+    }
+  </script>
+</body>
+</html>

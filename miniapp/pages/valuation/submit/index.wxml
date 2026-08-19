@@ -117,6 +117,37 @@
     </view>
     <view class="risk-note">信息仅用于估价与上门看房安排，不外泄、不电话骚扰</view>
   </view>
+
+  <!-- 员工专属区块（仅内部员工展示；样式对齐招募落地页底部区块） -->
+  <view wx:if="{{isEmployee}}" class="share-tip">
+    <view class="share-tip-title">分享估价页给客户</view>
+    <view class="share-tip-sub">客户填写并提交后，线索自动归属您</view>
+
+    <view class="staff-divider"></view>
+
+    <!-- 我的客户入口（进入我的获客页） -->
+    <view class="clue-entry" bindtap="onMineTap">
+      <view class="clue-ic">
+        <view class="clue-ic-line"></view>
+        <view class="clue-ic-line clue-ic-line--short"></view>
+        <view class="clue-ic-line"></view>
+      </view>
+      <view class="clue-tt">
+        <view class="clue-tt-title">我的客户</view>
+        <view class="clue-tt-sub">查看分享带来的客户线索</view>
+      </view>
+      <view class="clue-chev"></view>
+    </view>
+
+    <view class="staff-divider"></view>
+
+    <!-- 分享给客户（open-type=share 调起分享，归因见 onShareAppMessage/onShareTimeline） -->
+    <view class="staff-btn-row">
+      <button class="staff-btn staff-btn--pri" open-type="share">分享给客户</button>
+    </view>
+  </view>
+
+  <view class="safe-bottom"></view>
 </view>
 
 <!-- 手机号绑定授权弹窗：点击「完善手机号」时主动触发 -->

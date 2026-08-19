@@ -9,7 +9,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from migrations._helpers import _column_exists
+from migrations._helpers import _column_exists, _index_exists
 
 logger = logging.getLogger(__name__)
 
@@ -123,3 +123,26 @@ def add_contact_person_id_column(engine: Engine) -> None:
     logger.info("迁移：为 project_renovations 表添加 contact_person_id 列")
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE project_renovations ADD COLUMN contact_person_id VARCHAR(36)"))
+
+
+def add_lead_referrer_column(engine: Engine) -> None:
+    """为 leads 表添加 referrer_id 列（分享归属员工ID）+ 索引（幂等）.
+
+    - referrer_id VARCHAR(36) 可空，逻辑外键指向 users.id
+    - 索引 idx_lead_referrer 加速「员工获客」按 referrer_id 过滤
+    - 幂等：_column_exists / _index_exists 守卫，重复执行跳过；
+      _index_exists 依赖 pg_indexes，因此索引创建仅支持 PostgreSQL
+    - 非 PG 后端（如临时 SQLite）：仅执行通用的 ALTER TABLE 建列，跳过索引
+      （guard 防御，不报错）；生产仅支持 PostgreSQL，该场景不会发生
+    """
+    if not _column_exists(engine, "leads", "referrer_id"):
+        logger.info("迁移：为 leads 表添加 referrer_id 列")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE leads ADD COLUMN referrer_id VARCHAR(36)"))
+
+    if engine.dialect.name != "postgresql":
+        return
+    if not _index_exists(engine, "idx_lead_referrer"):
+        logger.info("迁移：为 leads 表创建 idx_lead_referrer 索引")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX idx_lead_referrer ON leads (referrer_id)"))

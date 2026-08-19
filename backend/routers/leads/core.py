@@ -60,6 +60,8 @@ def _lead_to_list_item(lead: Lead) -> LeadListItem:
         remarks=lead.remarks,
         creator_id=lead.creator_id,
         creator_name=lead.creator.nickname if lead.creator else None,
+        referrer_id=lead.referrer_id,
+        referrer_name=lead.referrer.nickname if lead.referrer else None,
         source_property_id=lead.source_property_id,
         last_follow_up_at=lead.last_follow_up_at,
         created_at=lead.created_at,

@@ -53,24 +53,35 @@ class LeadService:
         self.followup_service = LeadFollowUpService(db)
         self.eval_service = LeadEvalService(db)
 
-    def create_lead(self, lead_data: LeadCreate, creator_id: str, *, creator: User | None = None) -> Lead:
+    def create_lead(
+        self,
+        lead_data: LeadCreate,
+        creator_id: str,
+        *,
+        creator: User | None = None,
+        referrer: str | None = None,
+    ) -> Lead:
         """创建线索.
 
         Args:
             lead_data: 线索创建数据
             creator_id: 创建人ID
             creator: 创建人对象（可选，用于预加载关联避免 N+1 查询）
+            referrer: 分享归属员工ID（可选，C 端经分享提交时透传；
+                服务端校验员工存在且 active，无效静默忽略不阻断提交）
 
         Returns:
             创建成功的线索对象
 
         """
+        referrer_id = self._resolve_referrer_id(referrer)
         # 使用 exclude_unset=True：未显式提供的字段不传入构造，
         # 这样 created_at 等字段为 None 时不会覆盖 ORM 列级 default
         db_lead = Lead(
             **lead_data.model_dump(exclude_unset=True),
             id=uuid.uuid4(),
             creator_id=creator_id,
+            referrer_id=referrer_id,
         )
         # 单价未显式提供时按 总价/面积 自动计算（C 端 /public/leads 不传单价）
         if db_lead.unit_price is None:
@@ -89,6 +100,21 @@ class LeadService:
         if creator is not None:
             db_lead.creator = creator
         return db_lead
+
+    def _resolve_referrer_id(self, referrer: str | None) -> str | None:
+        """解析分享归属员工ID：存在且 active 才生效，否则静默忽略.
+
+        Args:
+            referrer: 分享归属员工ID（原始入参，可为空）
+
+        Returns:
+            校验通过的员工ID；为空或无效（不存在/非 active）时返回 None
+
+        """
+        if not referrer:
+            return None
+        referrer_user = self.db.query(User).filter(User.id == referrer, User.status == "active").first()
+        return referrer_user.id if referrer_user is not None else None
 
     def get_lead(self, lead_id: str) -> Lead | None:
         """获取单个线索详情.
@@ -320,3 +346,68 @@ class LeadService:
             logger.warning("线索计数缓存写入失败，跳过缓存", exc_info=True)
 
         return total
+
+    def get_my_acquired(
+        self,
+        user_id: str,
+        page: int = 1,
+        page_size: int | None = None,
+        status: LeadStatus | None = None,
+    ) -> dict[str, Any]:
+        """获取当前员工获客线索列表（分享归因 + 直接录入）.
+
+        Args:
+            user_id: 当前员工用户ID
+            page: 页码
+            page_size: 每页数量
+            status: 状态筛选（可选）
+
+        Returns:
+            包含线索列表和分页信息的字典
+
+        """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
+        return self.query_service.get_acquired_list(
+            page=page,
+            page_size=effective_page_size,
+            user_id=user_id,
+            status=status,
+        )
+
+    def get_my_acquired_stats(self, user_id: str) -> dict[str, int]:
+        """获取当前员工获客线索各状态数量统计.
+
+        Args:
+            user_id: 当前员工用户ID
+
+        Returns:
+            含 total 与各状态数量的字典
+
+        """
+        return self.query_service.get_acquired_stats(user_id)
+
+    def get_my_acquired_phone(self, user_id: str, lead_id: str) -> str | None:
+        """获取当前员工获客线索的客户手机号.
+
+        仅当线索归属为「分享归因」（referrer_id==user_id）且 creator 绑定手机号时
+        返回解密后的手机号；直接录入（creator_id==user_id）或其他归属线索返回 None。
+        线索不存在或不属于该员工时抛 ResourceNotFoundError。
+
+        Args:
+            user_id: 当前员工用户ID
+            lead_id: 线索ID
+
+        Returns:
+            解密后的客户手机号，无权限时返回 None
+
+        Raises:
+            ResourceNotFoundError: 线索不存在或不属于该员工
+
+        """
+        lead = self.query_service.get_acquired_lead(user_id=user_id, lead_id=lead_id)
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        if lead.referrer_id == user_id and lead.creator is not None and lead.creator.phone:
+            return lead.creator.phone
+        return None

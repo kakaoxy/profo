@@ -3,6 +3,13 @@
 项目未使用 Alembic，对于新增列与已存数据的格式变更，通过本模块在应用启动时
 （init_db 之后）幂等执行。所有迁移必须可重复执行且不破坏已有数据。
 
+数据库支持：本迁移体系（以及整个后端）仅支持 PostgreSQL（生产/开发/测试均使用）。
+索引检查（``_index_exists`` 依赖 ``pg_indexes``）、enum 同步（``ALTER TYPE ...
+ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力；非 PG 后端（如临时
+SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 DDL（索引/枚举/锁）
+被各子模块的 ``engine.dialect.name != "postgresql"`` 守卫跳过，不报错但也
+不会创建对应索引——请勿在非 PostgreSQL 数据库上运行本应用。
+
 本包按职责拆分为多个子模块，``run_startup_migrations`` 统一编排调用：
 - ``_helpers``：通用辅助函数（``_column_exists`` / ``_index_exists`` / ``_pg_quote_literal``）
   与共享常量（批次大小、Fernet 前缀、advisory lock key）
@@ -120,6 +127,7 @@ from migrations._recruit import (
 )
 from migrations._schema_columns import (
     add_contact_person_id_column,
+    add_lead_referrer_column,
     add_renovation_extra_amount_columns,
     add_stage_completed_dates_column,
     add_thumbnail_url_to_photos,
@@ -245,6 +253,7 @@ def _run_all_migrations(engine: Engine) -> None:
         add_permission_foreign_indexes(engine)
         add_reports_indexes(engine)
         add_lead_eval_history_and_expected_price(engine)
+        add_lead_referrer_column(engine)
         add_project_document_category(engine)
         backfill_lead_total_price_from_expected(engine)
         backfill_lead_unit_price(engine)

@@ -76,7 +76,7 @@ interface Methods {
  * 组件内部自行管理 query / results / dropdown 等展示态，父级只需消费事件将结果写入业务表单，
  * 降低耦合并便于在项目其他位置（如估价、项目录入等）直接复用。
  */
-Component<typeof data, typeof properties, Methods, ComponentCustomProperties>({
+Component<typeof data, typeof properties, Methods, [], ComponentCustomProperties>({
   properties,
   data,
   observers: {

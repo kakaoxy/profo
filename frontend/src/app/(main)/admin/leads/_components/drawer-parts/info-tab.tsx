@@ -52,7 +52,7 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
       label: "商圈",
       value: `${lead.district} · ${lead.businessArea}`,
     },
-    { icon: User, label: "录入人", value: lead.creatorName },
+    { icon: User, label: "录入人", value: lead.referrerName || lead.creatorName },
     { icon: Clock, label: "建档时间", value: formatDateTime(lead.createdAt) },
     {
       icon: History,

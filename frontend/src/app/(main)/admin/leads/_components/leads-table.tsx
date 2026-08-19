@@ -147,7 +147,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               {/* 录入人 */}
               <td className="p-4 hidden xl:table-cell">
                 <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                  {lead.creatorName || "-"}
+                  {lead.referrerName || lead.creatorName || "-"}
                 </span>
               </td>
 

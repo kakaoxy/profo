@@ -3114,6 +3114,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/leads/my/acquired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取我的获客列表
+         * @description 获取当前员工获客线索列表（分享归因 + 直接录入），此路由必须在 /{lead_id} 之前定义
+         */
+        get: operations["get_my_acquired_api_v1_public_leads_my_acquired_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/my/acquired/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取我的获客统计
+         * @description 获取当前员工获客线索各状态数量统计（与列表同口径）
+         */
+        get: operations["get_my_acquired_stats_api_v1_public_leads_my_acquired_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/my/acquired/{lead_id}/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取获客线索客户手机号
+         * @description 获取当前员工分享归因线索的客户真实手机号（直接录入或非本人线索返回 null）
+         */
+        get: operations["get_my_acquired_phone_api_v1_public_leads_my_acquired__lead_id__phone_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/leads/{lead_id}": {
         parameters: {
             query?: never;
@@ -6608,6 +6668,10 @@ export interface components {
             creator_id?: string | null;
             /** Creator Name */
             creator_name?: string | null;
+            /** Referrer Id */
+            referrer_id?: string | null;
+            /** Referrer Name */
+            referrer_name?: string | null;
             /** Source Property Id */
             source_property_id?: number | null;
             /** Last Follow Up At */
@@ -6676,6 +6740,10 @@ export interface components {
             creator_id?: string | null;
             /** Creator Name */
             creator_name?: string | null;
+            /** Referrer Id */
+            referrer_id?: string | null;
+            /** Referrer Name */
+            referrer_name?: string | null;
             /** Last Follow Up At */
             last_follow_up_at?: string | null;
             /**
@@ -8829,6 +8897,143 @@ export interface components {
          */
         PropertyStatus: "在售" | "成交";
         /**
+         * PublicAcquiredLeadListItem
+         * @description C端员工获客线索列表项.
+         */
+        PublicAcquiredLeadListItem: {
+            /**
+             * Id
+             * @description 线索ID
+             */
+            id: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area?: number | null;
+            /**
+             * Expected Price
+             * @description 业主心理预期价(万)
+             */
+            expected_price?: number | null;
+            /**
+             * Status
+             * @description 状态代码
+             * @enum {string}
+             */
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            /**
+             * Status Display
+             * @description 状态显示名称
+             */
+            status_display: string;
+            /**
+             * Status Color
+             * @description 状态颜色
+             */
+            status_color: string;
+            /**
+             * Source
+             * @description 来源：分享归因/员工直接录入
+             * @enum {string}
+             */
+            source: "customer_share" | "employee_entry";
+            /**
+             * Phone Masked
+             * @description 客户手机号(脱敏)，仅分享归因且客户有手机号时返回
+             */
+            phone_masked?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+        };
+        /**
+         * PublicAcquiredLeadListResponse
+         * @description C端员工获客线索列表响应.
+         */
+        PublicAcquiredLeadListResponse: {
+            /**
+             * Items
+             * @description 线索列表
+             */
+            items: components["schemas"]["PublicAcquiredLeadListItem"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+        };
+        /**
+         * PublicAcquiredLeadPhoneResponse
+         * @description C端员工获客线索客户手机号响应.
+         */
+        PublicAcquiredLeadPhoneResponse: {
+            /**
+             * Phone
+             * @description 客户真实手机号（直接录入或非分享归因线索为 null）
+             */
+            phone?: string | null;
+        };
+        /**
+         * PublicAcquiredLeadStatsResponse
+         * @description C端员工获客线索状态统计响应.
+         */
+        PublicAcquiredLeadStatsResponse: {
+            /**
+             * Total
+             * @description 获客线索总数
+             */
+            total: number;
+            /**
+             * Pending Assessment
+             * @description 待评估数量
+             */
+            pending_assessment: number;
+            /**
+             * Pending Visit
+             * @description 待看房数量
+             */
+            pending_visit: number;
+            /**
+             * Visited
+             * @description 已看房数量
+             */
+            visited: number;
+            /**
+             * Signed
+             * @description 已签约数量
+             */
+            signed: number;
+            /**
+             * Rejected
+             * @description 已驳回数量
+             */
+            rejected: number;
+        };
+        /**
          * PublicCommunitySearchItem
          * @description C端小区搜索项.
          */
@@ -8989,6 +9194,11 @@ export interface components {
              * @description 户型图URL列表
              */
             images?: string[];
+            /**
+             * Referrer
+             * @description 分享归属员工ID
+             */
+            referrer?: string | null;
         };
         /**
          * PublicLeadDetail
@@ -18083,6 +18293,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicLeadCountResponse"];
+                };
+            };
+        };
+    };
+    get_my_acquired_api_v1_public_leads_my_acquired_get: {
+        parameters: {
+            query?: {
+                /** @description 状态筛选 */
+                status?: components["schemas"]["LeadStatus"] | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicAcquiredLeadListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_acquired_stats_api_v1_public_leads_my_acquired_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicAcquiredLeadStatsResponse"];
+                };
+            };
+        };
+    };
+    get_my_acquired_phone_api_v1_public_leads_my_acquired__lead_id__phone_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicAcquiredLeadPhoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

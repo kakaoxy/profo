@@ -64,7 +64,7 @@ const data: ComponentData = {
   loading: false,
 };
 
-Component<ComponentData, Record<string, never>, ComponentMethods, Record<string, never>>({
+Component<ComponentData, Record<string, never>, ComponentMethods, [], Record<string, never>>({
   options: { multipleSlots: false },
   data,
   methods: {

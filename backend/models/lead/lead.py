@@ -63,6 +63,7 @@ class Lead(Base):
 
     # Linkage
     creator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="创建人ID")
+    referrer_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="分享归属员工ID(逻辑外键)")
     source_property_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="关联房源ID(软引用)")
 
     # 软删除标记
@@ -88,6 +89,7 @@ class Lead(Base):
 
     # Relationships
     creator = relationship("User", foreign_keys=[creator_id], primaryjoin="foreign(Lead.creator_id) == User.id")
+    referrer = relationship("User", foreign_keys=[referrer_id], primaryjoin="foreign(Lead.referrer_id) == User.id")
     auditor = relationship("User", foreign_keys=[auditor_id], primaryjoin="foreign(Lead.auditor_id) == User.id")
     follow_ups = relationship(
         "LeadFollowUp",
@@ -109,6 +111,11 @@ class Lead(Base):
     def creator_name(self) -> str | None:
         """获取创建人名称."""
         return self.creator.nickname if self.creator else None
+
+    @property
+    def referrer_name(self) -> str | None:
+        """获取分享归属员工名称."""
+        return self.referrer.nickname if self.referrer else None
 
     __table_args__ = (
         Index("idx_lead_status", "status"),

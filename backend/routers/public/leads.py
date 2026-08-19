@@ -5,12 +5,17 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Request, status
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
+from models.common import LeadStatus
 from schemas.lead import LeadCreate
 from schemas.public import (
+    PublicAcquiredLeadListItem,
+    PublicAcquiredLeadListResponse,
+    PublicAcquiredLeadPhoneResponse,
+    PublicAcquiredLeadStatsResponse,
     PublicFollowupItem,
     PublicLeadCountResponse,
     PublicLeadCreate,
@@ -21,6 +26,7 @@ from schemas.public import (
 )
 from services.leads.core import LeadService
 from utils.common import RateLimits, limiter
+from utils.formatters import mask_phone
 from utils.image_processing import derive_thumbnail_url
 
 router = APIRouter(prefix="/public/leads", tags=["public-leads"])
@@ -79,7 +85,9 @@ def create_lead(
         images=body.images,
     )
 
-    lead = service.create_lead(lead_data, creator_id=current_user.id)
+    # 分享归因：referrer 透传 Service，由其校验员工存在且 active；
+    # 无效（不存在或非 active）静默忽略（referrer_id=None），不阻断提交
+    lead = service.create_lead(lead_data, creator_id=current_user.id, referrer=body.referrer)
 
     return PublicLeadResponse(
         id=lead.id,
@@ -155,6 +163,102 @@ def get_lead_count(
 ) -> PublicLeadCountResponse:
     """获取未删除线索总条数（无需登录）."""
     return PublicLeadCountResponse(total=service.count_total())
+
+
+@router.get(
+    "/my/acquired",
+    summary="获取我的获客列表",
+    description="获取当前员工获客线索列表（分享归因 + 直接录入），此路由必须在 /{lead_id} 之前定义",
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_my_acquired(
+    request: Request,
+    current_user: CurrentCustomerUserDep,
+    service: LeadServiceDep,
+    pagination: PaginationDep,
+    lead_status: Annotated[LeadStatus | None, Query(alias="status", description="状态筛选")] = None,
+) -> PublicAcquiredLeadListResponse:
+    """获取当前员工获客线索列表（分享归因 + 直接录入）."""
+    result = service.get_my_acquired(
+        user_id=current_user.id,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        status=lead_status,
+    )
+
+    items = []
+    for lead in result["items"]:
+        status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
+        status_display, status_color = _get_status_display(status_code)
+        source = "customer_share" if lead.referrer_id == current_user.id else "employee_entry"
+        phone_masked = None
+        if lead.referrer_id == current_user.id and lead.creator is not None and lead.creator.phone:
+            phone_masked = mask_phone(lead.creator.phone)
+        items.append(
+            PublicAcquiredLeadListItem(
+                id=lead.id,
+                community_name=lead.community_name,
+                layout=lead.layout,
+                area=float(lead.area) if lead.area is not None else None,
+                expected_price=float(lead.expected_price) if lead.expected_price is not None else None,
+                status=status_code,
+                status_display=status_display,
+                status_color=status_color,
+                source=source,
+                phone_masked=phone_masked,
+                created_at=lead.created_at,
+            ),
+        )
+
+    return PublicAcquiredLeadListResponse(
+        items=items,
+        total=result["total"],
+        page=result["page"],
+        page_size=result["page_size"],
+    )
+
+
+@router.get(
+    "/my/acquired/stats",
+    summary="获取我的获客统计",
+    description="获取当前员工获客线索各状态数量统计（与列表同口径）",
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_my_acquired_stats(
+    request: Request,
+    current_user: CurrentCustomerUserDep,
+    service: LeadServiceDep,
+) -> PublicAcquiredLeadStatsResponse:
+    """获取当前员工获客线索状态统计."""
+    stats = service.get_my_acquired_stats(user_id=current_user.id)
+    # 显式映射而非 **stats 展开：Service 返回的 dict 键为 LeadStatus 枚举值集合，
+    # 未来 LeadStatus 新增枚举时，多余键会导致响应构造 500。
+    # 此处逐字段 .get(默认 0)，新枚举计数在 schema 同步扩展前静默忽略，接口保持可用。
+    return PublicAcquiredLeadStatsResponse(
+        total=stats.get("total", 0),
+        pending_assessment=stats.get(LeadStatus.PENDING_ASSESSMENT.value, 0),
+        pending_visit=stats.get(LeadStatus.PENDING_VISIT.value, 0),
+        visited=stats.get(LeadStatus.VISITED.value, 0),
+        signed=stats.get(LeadStatus.SIGNED.value, 0),
+        rejected=stats.get(LeadStatus.REJECTED.value, 0),
+    )
+
+
+@router.get(
+    "/my/acquired/{lead_id}/phone",
+    summary="获取获客线索客户手机号",
+    description="获取当前员工分享归因线索的客户真实手机号（直接录入或非本人线索返回 null）",
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_my_acquired_phone(
+    request: Request,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    current_user: CurrentCustomerUserDep,
+    service: LeadServiceDep,
+) -> PublicAcquiredLeadPhoneResponse:
+    """获取当前员工获客线索的客户手机号."""
+    phone = service.get_my_acquired_phone(user_id=current_user.id, lead_id=lead_id)
+    return PublicAcquiredLeadPhoneResponse(phone=phone)
 
 
 @router.get(

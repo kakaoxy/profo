@@ -158,6 +158,8 @@ class LeadResponse(LeadBase):
 
     creator_id: str | None = None
     creator_name: str | None = None
+    referrer_id: str | None = None
+    referrer_name: str | None = None
 
     last_follow_up_at: datetime | None = None
     created_at: datetime
@@ -206,6 +208,8 @@ class LeadListItem(BaseModel):
     remarks: str | None = None
     creator_id: str | None = None
     creator_name: str | None = None
+    referrer_id: str | None = None
+    referrer_name: str | None = None
     source_property_id: int | None = None
     last_follow_up_at: datetime | None = None
     created_at: datetime

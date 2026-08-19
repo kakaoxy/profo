@@ -9,6 +9,13 @@ import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";
 import { formatThousands } from "../../../utils/format";
+import {
+  buildValuationSharePath,
+  fetchEmployeeId,
+  parseValuationQuery,
+  VALUATION_SHARE_IMAGE,
+  VALUATION_SHARE_TITLE,
+} from "../../../utils/valuation-share";
 
 type PublicLeadCreate = components["schemas"]["PublicLeadCreate"];
 type PublicLeadResponse = components["schemas"]["PublicLeadResponse"];
@@ -97,6 +104,13 @@ interface PageData {
   leadCountDisplay: string;
   leadCountLoading: boolean;
   leadCountVisible: boolean;
+  // 分享归因（Task 6）
+  /** 进入参数携带的分享归属员工 ID（空串=无归属）. */
+  referrer: string;
+  /** 当前登录用户是否为内部员工（admin 令牌识别成功）. */
+  isEmployee: boolean;
+  /** 员工自身 ID（识别成功置值，分享时作为 referrer 归属）. */
+  employeeId: string;
 }
 
 interface PageCustom {
@@ -124,6 +138,11 @@ interface PageCustom {
   onSubmit(): void;
   afterSubmitSuccess(): void;
   handleUnauthorized(): void;
+  onLoad(options: Record<string, string | undefined>): void;
+  loadEmployee(): void;
+  onMineTap(): void;
+  onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
+  onShareTimeline(): WechatMiniprogram.Page.ICustomTimelineContent;
 }
 
 /** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
@@ -162,11 +181,46 @@ Page<PageData, PageCustom>({
     leadCountDisplay: "0",
     leadCountLoading: false,
     leadCountVisible: true,
+    referrer: "",
+    isEmployee: false,
+    employeeId: "",
+  },
+
+  onLoad(options: Record<string, string | undefined>) {
+    // 分享/扫码进入：解析 referrer（分享归属员工 ID），提交时透传后端归因
+    const { referrer } = parseValuationQuery(options);
+    this.setData({ referrer });
+    // 内部员工（admin 令牌存在）：识别身份后展示分享横幅 + 启用分享菜单；
+    // 识别失败静默降级（非员工不显示横幅，不影响表单）
+    if (getAccessToken()) {
+      this.loadEmployee();
+    }
+  },
+
+  /**
+   * 识别当前登录员工（/auth/me）.
+   * 成功置 isEmployee=true/employeeId，并启用分享菜单（右上角分享 + 朋友圈）；
+   * 失败（401/403/网络）静默，不阻断表单与正常分享.
+   */
+  async loadEmployee() {
+    try {
+      const employeeId = await fetchEmployeeId();
+      this.setData({ isEmployee: true, employeeId });
+      wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
+    } catch {
+      // 静默降级：非员工不显示横幅
+    }
   },
 
   onShow() {
     this.loadLogin();
     this.loadLeadCount();
+    // 员工识别补强：tab 页从登录页返回（onLoad 不重跑）时，若已有 admin 令牌
+    // 且尚未识别员工，再次尝试识别以展示分享横幅；识别成功置 isEmployee=true
+    // 后不再重复请求，失败（令牌失效等）静默降级
+    if (getAccessToken() && !this.data.isEmployee) {
+      this.loadEmployee();
+    }
   },
 
   onHide() {
@@ -580,6 +634,8 @@ Page<PageData, PageCustom>({
       remarks: remarks || undefined,
       expected_price: priceNum,
       images: images.length ? images : undefined,
+      // 分享归因：透传进入时的 referrer（分享归属员工 ID），后端首次留资写入归属
+      referrer: this.data.referrer || undefined,
     };
 
     this.setData({ submitting: true });
@@ -631,5 +687,32 @@ Page<PageData, PageCustom>({
     } else {
       wx.redirectTo({ url: "/pages/valuation/list/index", complete: release });
     }
+  },
+
+  /** 员工横幅「我的客户」入口：进入我的获客页（submit 为 tabBar 页，navigateTo 普通页 OK）. */
+  onMineTap() {
+    wx.navigateTo({ url: "/pages/valuation/mine/index" });
+  },
+
+  /** 分享卡片（与 about 服务页一致）；referrer 用自身员工 ID（员工态优先），未识别则透传进入时的 referrer. */
+  onShareAppMessage() {
+    const shareReferrer = this.data.employeeId || this.data.referrer;
+    return {
+      title: VALUATION_SHARE_TITLE,
+      path: buildValuationSharePath(shareReferrer),
+      imageUrl: VALUATION_SHARE_IMAGE,
+    };
+  },
+
+  /** 分享朋友圈：query 用 path 的 query 段（朋友圈分享不支持完整 path）. */
+  onShareTimeline() {
+    const shareReferrer = this.data.employeeId || this.data.referrer;
+    const path = buildValuationSharePath(shareReferrer);
+    const query = path.includes("?") ? path.slice(path.indexOf("?") + 1) : "";
+    return {
+      title: VALUATION_SHARE_TITLE,
+      query,
+      imageUrl: VALUATION_SHARE_IMAGE,
+    };
   },
 });

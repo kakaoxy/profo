@@ -27,6 +27,8 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     businessArea: backendLead.business_area ?? "",
     remarks: backendLead.remarks ?? "",
     creatorName: backendLead.creator_name ?? "未知",
+    referrerId: backendLead.referrer_id ?? undefined,
+    referrerName: backendLead.referrer_name ?? undefined,
     lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
     createdAt: backendLead.created_at ?? "",
   };

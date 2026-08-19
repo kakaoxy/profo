@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>估价分享入口 · 高保真设计稿</title>
+<style>
+  :root {
+    --brand: #2563eb;
+    --brand-deep: #1d4ed8;
+    --brand-weak: #eef4ff;
+    --ink: #17191c;
+    --ink-2: #777b86;
+    --ink-3: #a5a9b3;
+    --line: #f2f3f5;
+    --bg: #f7f7f8;
+    --ok: #15803d;
+    --warn: #b45309;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: #e8eaf0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+    gap: 28px;
+  }
+  .page-head { text-align: center; color: #3b4252; }
+  .page-head h1 { font-size: 20px; margin-bottom: 6px; }
+  .page-head p { font-size: 13px; color: #6b7280; }
+  .stage { display: flex; flex-wrap: wrap; justify-content: center; gap: 32px; }
+
+  /* ===== 手机外框 ===== */
+  .phone {
+    width: 375px;
+    background: var(--bg);
+    border-radius: 40px;
+    box-shadow: 0 24px 60px rgba(23, 25, 28, 0.18);
+    overflow: hidden;
+    border: 8px solid #1c1e26;
+    position: relative;
+  }
+  .phone::before {
+    content: "";
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: 110px; height: 22px;
+    background: #1c1e26;
+    border-radius: 12px;
+    z-index: 50;
+  }
+  .phone-screen { background: var(--bg); min-height: 720px; }
+
+  /* ===== 导航栏 ===== */
+  .navbar {
+    background: #fff;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    padding-top: 22px;
+  }
+  .nav-sub { text-align: center; font-size: 11px; color: var(--ink-3); padding: 6px 0 2px; background: #fff; }
+
+  /* ===== 员工分享横幅 ===== */
+  .share-banner {
+    margin: 16px 12px 0;
+    border-radius: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    color: #fff;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .share-banner::after {
+    content: "";
+    position: absolute;
+    right: -30px; top: -30px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+  }
+  .sb-title { font-size: 17px; font-weight: 700; }
+  .sb-sub { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+  .sb-actions { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 2; }
+  .sb-btn {
+    flex: 1;
+    height: 40px;
+    border-radius: 999px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sb-btn--share { background: #fff; color: var(--brand); }
+  .sb-btn--mine { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.5); }
+
+  /* ===== 估价表单 ===== */
+  .form-card {
+    background: #fff;
+    margin: 14px 12px 0;
+    border-radius: 16px;
+    padding: 4px 16px 16px;
+  }
+  .form-sec { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .form-sec:last-child { border-bottom: none; }
+  .sec-title { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
+  .sec-title small { font-size: 11px; font-weight: 400; color: var(--ink-3); margin-left: 6px; }
+  .fake-input {
+    height: 40px;
+    border-radius: 10px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 14px;
+    color: var(--ink-2);
+    border: 1px solid transparent;
+  }
+  .fake-input--val { color: var(--ink); }
+  .fake-input--hint { color: var(--ink-3); font-size: 12px; }
+  .row { display: flex; gap: 12px; margin-top: 12px; }
+  .row .fake-input { flex: 1; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--bg);
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .chip--on { background: var(--brand-weak); color: var(--brand); font-weight: 600; }
+  .upload-box {
+    width: 74px; height: 74px;
+    border-radius: 12px;
+    background: var(--bg);
+    border: 1px dashed #d4d8e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-3);
+    font-size: 22px;
+  }
+  .upload-box span { font-size: 10px; margin-top: 4px; }
+  .submit-btn {
+    margin-top: 14px;
+    height: 48px;
+    width: 100%;
+    border-radius: 999px;
+    border: none;
+    background: var(--brand);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.25);
+    cursor: pointer;
+  }
+
+  /* ===== 分享卡片（客户收到的卡片） ===== */
+  .share-card {
+    width: 300px;
+    margin: 12px auto 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 16px 40px rgba(23,25,28,0.16);
+  }
+  .sc-img {
+    height: 130px;
+    background: linear-gradient(135deg, #dbeafe, #eef4ff);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sc-badge {
+    position: absolute; left: 12px; top: 12px;
+    background: var(--brand);
+    color: #fff; font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .sc-house {
+    width: 64px; height: 64px;
+    border-radius: 14px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    box-shadow: 0 8px 20px rgba(37,99,235,0.18);
+  }
+  .sc-body { padding: 14px 16px 16px; }
+  .sc-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+  .sc-desc { font-size: 12px; color: var(--ink-2); margin-top: 6px; line-height: 1.6; }
+  .sc-tag-row { display: flex; gap: 6px; margin-top: 10px; }
+  .sc-tag { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: var(--brand-weak); color: var(--brand); }
+  .card-label { text-align: center; font-size: 12px; color: #6b7280; margin-top: 10px; }
+
+  .view-tabs { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
+  .vt-btn {
+    border: 1px solid #d4d8e0;
+    background: #fff;
+    color: var(--ink-2);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .vt-btn--on { border-color: var(--brand); background: var(--brand-weak); color: var(--brand); font-weight: 600; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>估价分享归因 · 高保真设计稿（1/2 估价页员工分享入口）</h1>
+    <p>小程序《估价》tab · 员工视角分享横幅 / 客户视角无横幅 / 分享卡片示意</p>
+  </div>
+
+  <div class="view-tabs">
+    <button class="vt-btn vt-btn--on" data-v="emp" onclick="switchView('emp')">员工视角（显示分享横幅）</button>
+    <button class="vt-btn" data-v="cust" onclick="switchView('cust')">客户视角（无横幅）</button>
+  </div>
+
+  <div class="stage">
+    <!-- 手机 1：估价页 -->
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="navbar">美房宝 · 卖房估价</div>
+        <div class="nav-sub">提交房源信息，专业评估师快速出价</div>
+
+        <!-- 员工分享横幅（仅员工可见） -->
+        <div class="share-banner" id="empBanner">
+          <div class="sb-title">分享估价页给客户</div>
+          <div class="sb-sub">客户填写并提交后，线索自动归属您</div>
+          <div class="sb-actions">
+            <button class="sb-btn sb-btn--share" onclick="alert('调起微信分享（onShareAppMessage）\n路径带 referrer=员工ID&source=card')">分享给客户</button>
+            <button class="sb-btn sb-btn--mine" onclick="window.open('./valuation-mine.html','_blank')">我的客户 ›</button>
+          </div>
+        </div>
+
+        <!-- 估价表单（简化示意） -->
+        <div class="form-card">
+          <div class="form-sec">
+            <div class="sec-title">小区信息</div>
+            <div class="fake-input fake-input--val">🏠 新江湾城 · 首府 <span style="margin-left:auto;color:#a5a9b3;font-size:12px">▾</span></div>
+            <div class="fake-input" style="margin-top:12px">行政区 · 商圈</div>
+          </div>
+          <div class="form-sec">
+            <div class="sec-title">房屋信息</div>
+            <div class="row">
+              <div class="fake-input fake-input--val">2室</div>
+              <div class="fake-input fake-input--val">1厅</div>
+              <div class="fake-input fake-input--val">1卫</div>
+            </div>
+            <div class="row">
+              <div class="fake-input fake-input--hint">面积（㎡）</div>
+              <div class="fake-input fake-input--hint">所在楼层 / 总高</div>
+            </div>
+            <div class="chips" style="margin-top:12px">
+              <span class="chip chip--on">南</span>
+              <span class="chip">北</span>
+              <span class="chip">东</span>
+              <span class="chip">西</span>
+              <span class="chip">南北</span>
+              <span class="chip">东西</span>
+            </div>
+          </div>
+          <div class="form-sec">
+            <div class="sec-title">预期价（万元）<small>选填</small></div>
+            <div class="fake-input fake-input--hint">如 850</div>
+          </div>
+          <div class="form-sec">
+            <div class="sec-title">户型图 <small>最多 6 张</small></div>
+            <div class="upload-box">＋<span>上传图片</span></div>
+          </div>
+          <button class="submit-btn" onclick="alert('POST /public/leads 携带 referrer=员工ID\n后台写入 leads.referrer_id，admin 录入人显示员工')">提交估价</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 手机 2：客户收到的分享卡片 -->
+    <div>
+      <div class="card-label">客户在微信中收到的分享卡片</div>
+      <div class="share-card">
+        <div class="sc-img">
+          <span class="sc-badge">免费估价</span>
+          <div class="sc-house">🏢</div>
+        </div>
+        <div class="sc-body">
+          <div class="sc-title">您的房子值多少钱？一键免费评估</div>
+          <div class="sc-desc">填写房源信息，专业评估师 24h 内快速出价，免费咨询不打扰</div>
+          <div class="sc-tag-row">
+            <span class="sc-tag">点击估价</span>
+            <span class="sc-tag">免费</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-label" style="margin-top:14px">点击卡片 → 打开估价表单页<br/>路径自动携带 referrer（分享员工 ID），提交即归因</div>
+    </div>
+  </div>
+
+  <script>
+    function switchView(v) {
+      var banner = document.getElementById('empBanner');
+      if (v === 'emp') {
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+      document.querySelectorAll('.vt-btn').forEach(function (b) {
+        b.classList.toggle('vt-btn--on', b.dataset.v === v);
+      });
+    }
+  </script>
+</body>
+</html>

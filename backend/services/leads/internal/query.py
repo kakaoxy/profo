@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import ColumnElement, desc, func, or_, select
 from sqlalchemy.orm import Session, joinedload, noload
 
 from models.common import LeadStatus
@@ -46,7 +46,7 @@ class LeadQueryService:
         """
         query = self.db.query(Lead)
         if load_creator:
-            query = query.options(joinedload(Lead.creator))
+            query = query.options(joinedload(Lead.creator), joinedload(Lead.referrer))
         return query.filter(Lead.id == lead_id, Lead.is_deleted.is_(False)).first()
 
     def get_list(
@@ -82,6 +82,7 @@ class LeadQueryService:
             self.db.query(Lead)
             .options(
                 joinedload(Lead.creator),
+                joinedload(Lead.referrer),
                 noload(Lead.auditor),
                 noload(Lead.follow_ups),
                 noload(Lead.price_history),
@@ -206,3 +207,90 @@ class LeadQueryService:
     def count_total(self) -> int:
         """统计未删除线索总数（与 admin /leads 的 total 同口径）."""
         return self.db.query(Lead).filter(Lead.is_deleted.is_(False)).count()
+
+    def _acquired_filter(self, user_id: str) -> ColumnElement[bool]:
+        """员工获客归属过滤：分享归因（referrer_id）或直接录入（creator_id）."""
+        return or_(Lead.referrer_id == user_id, Lead.creator_id == user_id)
+
+    def get_acquired_list(
+        self,
+        page: int,
+        page_size: int,
+        user_id: str,
+        status: LeadStatus | None = None,
+    ) -> dict[str, Any]:
+        """获取员工获客线索列表（分享归因 + 直接录入，分页）.
+
+        Args:
+            page: 页码
+            page_size: 每页数量
+            user_id: 当前员工用户ID
+            status: 状态筛选（可选）
+
+        Returns:
+            包含线索列表和分页信息的字典
+
+        """
+        query = (
+            self.db.query(Lead)
+            .options(
+                joinedload(Lead.creator),
+                joinedload(Lead.referrer),
+                noload(Lead.auditor),
+                noload(Lead.follow_ups),
+                noload(Lead.price_history),
+            )
+            .filter(Lead.is_deleted.is_(False), self._acquired_filter(user_id))
+        )
+        if status is not None:
+            query = query.filter(Lead.status == status)
+
+        total = query.count()
+        items = query.order_by(desc(Lead.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+
+    def get_acquired_stats(self, user_id: str) -> dict[str, int]:
+        """获取员工获客线索各状态数量统计（与列表同口径，单次 GROUP BY）.
+
+        Args:
+            user_id: 当前员工用户ID
+
+        Returns:
+            含 total 与各状态数量的字典，键为 LeadStatus 枚举值
+
+        """
+        rows = self.db.execute(
+            select(Lead.status, func.count())
+            .where(Lead.is_deleted.is_(False), Lead.status.is_not(None), self._acquired_filter(user_id))
+            .group_by(Lead.status),
+        ).all()
+
+        counts = {status.value: 0 for status in LeadStatus}
+        for status, count in rows:
+            counts[status.value] = count
+        counts["total"] = sum(counts.values())
+        return counts
+
+    def get_acquired_lead(self, user_id: str, lead_id: str) -> Lead | None:
+        """按 ID + 归属过滤查询员工获客线索单条.
+
+        Args:
+            user_id: 当前员工用户ID
+            lead_id: 线索ID
+
+        Returns:
+            线索对象，不存在或不属于该员工时返回None
+
+        """
+        return (
+            self.db.query(Lead)
+            .options(joinedload(Lead.creator), joinedload(Lead.referrer))
+            .filter(Lead.id == lead_id, Lead.is_deleted.is_(False), self._acquired_filter(user_id))
+            .first()
+        )

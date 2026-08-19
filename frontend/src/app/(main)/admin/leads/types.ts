@@ -62,6 +62,8 @@ export interface Lead {
   businessArea: string;
   remarks: string;
   creatorName: string;
+  referrerId?: string;
+  referrerName?: string;
   lastFollowUpAt?: string;
   createdAt: string;
 }

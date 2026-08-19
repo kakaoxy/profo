@@ -35,6 +35,7 @@ const INTERNAL_ENTRIES = [
   { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房", route: "/pages/properties/list/index" },
   { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
   { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装", route: "/pages/renovation/projects/index/index" },
+  { key: "valuation-acquired", title: "估价获客", sub: "分享获客 / 线索跟进", icon: "估", route: "/pages/valuation/submit/index" },
   { key: "recruit", title: "招募计划", sub: "分享拉新 / 线索归因", icon: "招" },
   { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账" },
 ];
@@ -449,6 +450,11 @@ Page<PageData, PageCustom>({
     // 招募计划：拉取启用活动后跳转招募详情页（需动态 campaign_id，不走静态 route）
     if (key === "recruit") {
       this.onRecruitTap();
+      return;
+    }
+    // 估价获客：先进估价落地页（估价提交页为 tabBar 页，须 switchTab）
+    if (key === "valuation-acquired") {
+      wx.switchTab({ url: "/pages/valuation/submit/index" });
       return;
     }
     // 已落地条目（route 存在）跳转对应页；未落地（记账）统一待开放
