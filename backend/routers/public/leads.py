@@ -85,8 +85,8 @@ def create_lead(
         images=body.images,
     )
 
-    # 分享归因：referrer 透传 Service，由其校验员工存在且 active；
-    # 无效（不存在或非 active）静默忽略（referrer_id=None），不阻断提交
+    # 分享归因：referrer 透传 Service，由其校验员工存在、active 且有后台身份；
+    # 无效（不存在/非 active/无后台身份）静默忽略（referrer_id=None），不阻断提交
     lead = service.create_lead(lead_data, creator_id=current_user.id, referrer=body.referrer)
 
     return PublicLeadResponse(

@@ -102,19 +102,31 @@ class LeadService:
         return db_lead
 
     def _resolve_referrer_id(self, referrer: str | None) -> str | None:
-        """解析分享归属员工ID：存在且 active 才生效，否则静默忽略.
+        """解析分享归属员工ID：存在、active 且具备后台身份才生效，否则静默忽略.
+
+        与 /public/projects/{id}/consultant 的 referrer 校验口径一致（见
+        PublicProjectService.get_internal_contact_user）：仅内部员工（主角色或
+        附加角色含后台角色）可作为分享归属人，普通 C 端用户 ID 不生效，
+        避免归因数据被非员工 ID 污染.
 
         Args:
             referrer: 分享归属员工ID（原始入参，可为空）
 
         Returns:
-            校验通过的员工ID；为空或无效（不存在/非 active）时返回 None
+            校验通过的员工ID；为空或无效（不存在/非 active/无后台身份）时返回 None
 
         """
         if not referrer:
             return None
         referrer_user = self.db.query(User).filter(User.id == referrer, User.status == "active").first()
-        return referrer_user.id if referrer_user is not None else None
+        if referrer_user is None:
+            return None
+        # 方法内 import 避免与 services.system.auth 的潜在循环依赖
+        from services.system.auth import AuthService
+
+        if not AuthService.has_backend_identity(referrer_user):
+            return None
+        return referrer_user.id
 
     def get_lead(self, lead_id: str) -> Lead | None:
         """获取单个线索详情.
