@@ -10,10 +10,10 @@
 | # | 模块 | 页面/入口 | 对应后台 | 受众 | 后端依赖 | 状态 |
 |---|------|-----------|----------|------|----------|------|
 | 1 | 房源查询 | profile 内部入口 → 新页 `pages/properties/*` | `admin/properties` | 内部员工 | 无（复用现有 `GET /api/v1/properties`） | ✅ 已完成 |
-| 2 | 关于页分享 | `pages/about` | - | 公开（C 端） | 无（仅前端分享配置） | ⬜ 待办 |
+| 2 | 关于页分享 | `pages/about` | - | 公开（C 端） | 无（仅前端分享配置） | ✅ 待办 |
 | 3 | 数据分析 | profile 内部入口 → 新页 `pages/analysis/*` | `admin/reports/market` | 内部员工 | 无（复用现有 `GET /api/v1/reports/market/*`） | ⬜ 待办 |
 | 4 | 小区数据分析 | `pages/valuation/detail`（房源信息与评估价格之间） | `admin/reports/communities` | C 端 | **需新增 C 端公开接口（见 §4 不确定项）** | ⬜ 待办 |
-| 5 | 微信授权登录 | profile 登录按钮 | 后端 `/auth/wechat/login` 已实现 | C 端/内部 | 主要缺口在前端（见 §5 现状核对） | ⬜ 待办 |
+| 5 | 微信授权登录 | profile 登录按钮 | 后端 `/auth/wechat/login` 已实现 | C 端/内部 | 主要缺口在前端（见 §5 现状核对） | ✅ 待办 |
 
 ---
 
