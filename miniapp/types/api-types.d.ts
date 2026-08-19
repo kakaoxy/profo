@@ -3023,7 +3023,7 @@ export interface paths {
         };
         /**
          * 获取顾问联系方式
-         * @description 获取指定房源的顾问联系方式，无需登录
+         * @description 获取指定房源的顾问联系方式，无需登录；可选 referrer 指定内部分享人，命中时返回分享人联系方式
          */
         get: operations["get_consultant_contact_api_v1_public_projects__marketing_project_id__consultant_get"];
         put?: never;
@@ -18161,7 +18161,10 @@ export interface operations {
     };
     get_consultant_contact_api_v1_public_projects__marketing_project_id__consultant_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 分享归属用户ID(内部用户) */
+                referrer?: string | null;
+            };
             header?: never;
             path: {
                 marketing_project_id: number;

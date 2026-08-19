@@ -230,6 +230,22 @@ class PublicProjectService:
         """获取顾问信息."""
         return self.db.query(User).filter(User.id == consultant_id).first()
 
+    def get_internal_contact_user(self, referrer_id: str) -> User | None:
+        """按分享归属 ID 查找可展示联系方式的内部用户.
+
+        仅当 referrer 指向一个 active 且有手机号的后台用户（主角色或附加角色
+        命中 BACKEND_ROLE_CODES）时返回，否则返回 None 由路由回退房源顾问。
+        避免循环依赖：has_backend_identity 在方法内 import。
+        """
+        user = self.db.query(User).filter(User.id == referrer_id).first()
+        if not user or user.status != "active" or not user.phone:
+            return None
+        from services.system.auth import AuthService
+
+        if not AuthService.has_backend_identity(user):
+            return None
+        return user
+
     def get_platform_stats(self) -> tuple[int, int, int]:
         """获取平台统计数据.
 

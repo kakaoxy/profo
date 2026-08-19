@@ -252,13 +252,14 @@ def get_project_detail(
 @router.get(
     "/projects/{marketing_project_id}/consultant",
     summary="获取顾问联系方式",
-    description="获取指定房源的顾问联系方式，无需登录",
+    description="获取指定房源的顾问联系方式，无需登录；可选 referrer 指定内部分享人，命中时返回分享人联系方式",
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_consultant_contact(
     request: Request,
     marketing_project_id: int,
     db: DbSessionDep,
+    referrer: Annotated[str | None, Query(max_length=36, description="分享归属用户ID(内部用户)")] = None,
 ) -> PublicConsultantContact:
     """获取指定房源的顾问联系方式."""
     svc = PublicProjectService(db)
@@ -267,6 +268,18 @@ def get_consultant_contact(
     if not project:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
+
+    # 内部分享人：referrer 为有效内部用户时展示其联系方式（分享人优先于房源顾问）
+    if referrer:
+        sharer = svc.get_internal_contact_user(referrer)
+        if sharer:
+            # 与顾问一致：未单独配置微信号，微信复用其手机号
+            phone = sharer.phone or ""
+            return PublicConsultantContact(
+                phone=phone,
+                wechat_number=phone,
+                nickname=sharer.nickname or "",
+            )
 
     if project.consultant_id:
         consultant = svc.get_consultant(project.consultant_id)

@@ -1,6 +1,8 @@
 import type { components } from "../../../types/api-types";
 import { request, type HttpResponseError } from "../../../utils/request";
+import { getAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
+import { fetchEmployeeId } from "../../../utils/valuation-share";
 
 type PublicProjectDetail = components["schemas"]["PublicProjectDetail"];
 type PublicMediaItem = components["schemas"]["PublicMediaItem"];
@@ -51,6 +53,15 @@ const GALLERY_STAGE_ORDER: Record<string, number> = {
   油漆: 4,
 };
 
+/**
+ * 构建房源分享 path（卡片 path 与朋友圈 query 共用前缀）.
+ * employeeId（内部员工）为空时省略 referrer（游客/客户分享无归属，接收方仍显示房源顾问）.
+ */
+function buildPropertySharePath(id: number, employeeId: string): string {
+  const base = `/pages/projects/detail/index?id=${id}`;
+  return employeeId ? `${base}&referrer=${encodeURIComponent(employeeId)}` : base;
+}
+
 interface PageData {
   id: number | null;
   detail: PublicProjectDetail | null;
@@ -62,10 +73,15 @@ interface PageData {
   loading: boolean;
   error: boolean;
   notFound: boolean;
+  /** 分享归属员工 ID（进入链接携带，透传顾问联系方式接口）. */
+  referrer: string;
+  /** 当前登录内部员工 ID（识别成功置值，分享时作为 referrer 归属）. */
+  employeeId: string;
 }
 
 type Custom = {
   loadDetail(id: number): Promise<void>;
+  loadEmployee(): Promise<void>;
   onMediaTap(
     e: WechatMiniprogram.BaseEvent<
       WechatMiniprogram.IAnyObject,
@@ -185,9 +201,12 @@ Page<PageData, Custom>({
     loading: false,
     error: false,
     notFound: false,
+    referrer: "",
+    employeeId: "",
   },
   onLoad(options) {
-    const rawId = options.id;
+    const rawOptions = options as Record<string, string | undefined>;
+    const rawId = rawOptions.id;
     if (!rawId) {
       this.setData({ notFound: true });
       return;
@@ -197,10 +216,14 @@ Page<PageData, Custom>({
       this.setData({ notFound: true });
       return;
     }
-    this.setData({ id });
+    this.setData({ id, referrer: rawOptions.referrer || "" });
     // 启用右上角菜单的「分享给朋友」与「分享到朋友圈」，使 onShareTimeline 可触发
     wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
     this.loadDetail(id);
+    // 内部员工（admin 令牌存在）：识别身份后分享携带 referrer（分享人归属）
+    if (getAccessToken()) {
+      this.loadEmployee();
+    }
   },
   async loadDetail(id: number): Promise<void> {
     this.setData({
@@ -210,7 +233,8 @@ Page<PageData, Custom>({
       detail: null,
     });
     try {
-      // 详情与顾问联系方式并行拉取，避免请求瀑布
+      // 详情与顾问联系方式并行拉取，避免请求瀑布；
+      // 携带进入时的 referrer（分享归属内部用户），由后端决定返回分享人联系方式
       const [detail, contact] = await Promise.all([
         request<PublicProjectDetail>({
           url: `/public/projects/${id}`,
@@ -218,6 +242,7 @@ Page<PageData, Custom>({
         }),
         request<PublicConsultantContact>({
           url: `/public/projects/${id}/consultant`,
+          data: this.data.referrer ? { referrer: this.data.referrer } : undefined,
           skipAuth: true,
         }),
       ]);
@@ -258,6 +283,19 @@ Page<PageData, Custom>({
       }
       this.setData({ error: true });
       wx.showToast({ title: "加载失败，请重试", icon: "none" });
+    }
+  },
+  /**
+   * 识别当前登录内部员工（/auth/me）.
+   * 成功置 employeeId（分享时作为 referrer 归属）；失败（401/403/网络）静默，
+   * 非内部用户分享不携带 referrer，接收方仍显示房源顾问联系方式.
+   */
+  async loadEmployee(): Promise<void> {
+    try {
+      const employeeId = await fetchEmployeeId();
+      this.setData({ employeeId });
+    } catch {
+      // 静默降级：不阻断分享
     }
   },
   onMediaTap(
@@ -348,7 +386,7 @@ Page<PageData, Custom>({
     const cover = this.data.gallery.find((g) => g.type === "image")?.url;
     const share: WechatMiniprogram.IAnyObject = {
       title: this.data.detail?.title || "美房宝房源",
-      path: `/pages/projects/detail/index?id=${this.data.id}`,
+      path: buildPropertySharePath(this.data.id ?? 0, this.data.employeeId),
     };
     if (cover) {
       share.imageUrl = cover;
@@ -359,7 +397,7 @@ Page<PageData, Custom>({
     const cover = this.data.gallery.find((g) => g.type === "image")?.url;
     const share: WechatMiniprogram.IAnyObject = {
       title: this.data.detail?.title || "美房宝房源",
-      query: `id=${this.data.id}`,
+      query: buildPropertySharePath(this.data.id ?? 0, this.data.employeeId).split("?")[1] || "",
     };
     if (cover) {
       share.imageUrl = cover;
