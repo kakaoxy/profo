@@ -1,7 +1,8 @@
 /**
  * 小程序后端 base URL，按运行环境自动切换.
  *
- * - develop（开发者工具/真机调试）：本地后端
+ * - develop（开发者工具/真机调试）：默认线上域名 fangmengchina.com；
+ *   本地联调时取消注释下方 http://192.168.110.169:8000/api/v1 并注释线上行
  * - trial（体验版）/ release（正式版）：生产域名 fangmengchina.com
  *   - nginx 已配 HTTPS + /api/v1/ 反代（见 profo.backup）
  *   - 需在 mp.weixin.qq.com 后台「服务器域名」白名单加 https://fangmengchina.com
