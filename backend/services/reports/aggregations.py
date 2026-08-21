@@ -1339,7 +1339,8 @@ def get_community_detail(
             "community_id": community.id,
             "community_name": community.name,
             "business_circle": community.business_circle or "",
-            "district": community.district,
+            # district 列可空（导入/创建均允许 NULL），归一化为空串以满足响应模型 str 约束
+            "district": community.district or "",
         },
         "kpi": kpi,
         "trend": trend,
