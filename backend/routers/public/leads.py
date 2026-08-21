@@ -113,7 +113,10 @@ def create_lead(
         total_price=float(lead.total_price) if lead.total_price else None,
         unit_price=float(lead.unit_price) if lead.unit_price else None,
         eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
-        expected_price=_effective_expected_price(lead),
+        # total_price 与 expected_price 在上方同源赋值，直接取 expected_price，
+        # 不走 _effective_expected_price 的 total_price 回退（该回退仅适用于员工录入等
+        # 只写 total_price 的场景），避免重复转换导致口径漂移
+        expected_price=float(lead.expected_price) if lead.expected_price is not None else None,
         status=lead.status.value if hasattr(lead.status, "value") else str(lead.status),
         remarks=lead.remarks,
         images=lead.images or [],
@@ -291,6 +294,7 @@ def get_lead_detail(
     result = service.get_lead_detail(lead_id=lead_id, user_id=current_user.id)
     lead = result["lead"]
     follow_ups = result["follow_ups"]
+    eval_histories = result["eval_histories"]
 
     followup_items = [
         PublicFollowupItem(
@@ -301,6 +305,22 @@ def get_lead_detail(
         )
         for fu in follow_ups
     ]
+
+    # 出评估价产生的意见摘要并入跟进时间线，使 C 端详情/Web 有处查看（method 用合成值 evaluation）
+    eval_items = [
+        PublicFollowupItem(
+            id=f"eval:{e.id}",
+            method="evaluation",
+            content=(f"评估价 {float(e.eval_price)}万" + (f" · {e.remark}" if e.remark else "")),
+            followed_at=e.evaluated_at,
+        )
+        for e in eval_histories
+    ]
+    timeline_items = sorted(
+        [*followup_items, *eval_items],
+        key=lambda item: item.followed_at,
+        reverse=True,
+    )
 
     status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
     status_display, status_color = _get_status_display(status_code)
@@ -322,7 +342,7 @@ def get_lead_detail(
         remarks=lead.remarks,
         images=lead.images or [],
         image_thumbnails=[t for t in (derive_thumbnail_url(u) for u in (lead.images or [])) if t] or None,
-        follow_ups=followup_items,
+        follow_ups=timeline_items,
         created_at=lead.created_at,
         updated_at=lead.updated_at,
     )

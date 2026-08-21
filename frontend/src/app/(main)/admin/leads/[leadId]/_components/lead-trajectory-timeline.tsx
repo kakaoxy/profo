@@ -116,7 +116,7 @@ export function LeadTrajectoryTimeline({ lead, followUps }: LeadTrajectoryTimeli
       <div className="mb-4 flex items-center gap-2">
         <History className="h-4 w-4 text-primary" />
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-          流转轨迹
+          跟进记录
         </span>
       </div>
       <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">

@@ -80,7 +80,7 @@ export const VIEW_MODE_LABELS = {
 export const DRAWER_TABS = {
   INFO: "决策面板",
   IMAGES: (count: number) => `影像库 (${count})`,
-  FOLLOW_UP: "流转轨迹",
+  FOLLOW_UP: "跟进记录",
 } as const;
 
 // 市场动态标签

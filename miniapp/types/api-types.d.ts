@@ -9201,8 +9201,11 @@ export interface components {
              * @description 跟进记录ID
              */
             id: string;
-            /** @description 跟进方式 */
-            method: components["schemas"]["FollowUpMethod"];
+            /**
+             * Method
+             * @description 跟进方式（含合成类型 evaluation=出评估价）
+             */
+            method: string;
             /**
              * Content
              * @description 跟进内容

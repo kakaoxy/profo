@@ -316,10 +316,14 @@ class LeadService:
             raise PermissionDeniedError(msg)
 
         follow_ups = self.followup_service.get_follow_ups(lead_id)
+        # 出评估价产生的意见摘要（LeadEvalHistory.remark）需展示在 C 端跟进记录中，
+        # 由 Router 将 eval_histories 与 follow_ups 合并为统一时间线
+        eval_histories = self.eval_service.get_evaluations(lead_id)
 
         return {
             "lead": lead,
             "follow_ups": follow_ups,
+            "eval_histories": eval_histories,
         }
 
     def get_stats(self) -> dict[str, int]:

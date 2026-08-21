@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from models.common import FollowUpMethod, RenovationStage
+from models.common import RenovationStage
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
 from schemas.reports.market import (
     DistributionResponse,
@@ -476,7 +476,7 @@ class PublicFollowupItem(BaseModel):
     """C端跟进记录项."""
 
     id: str = Field(description="跟进记录ID")
-    method: FollowUpMethod = Field(description="跟进方式")
+    method: str = Field(description="跟进方式（含合成类型 evaluation=出评估价）")
     content: str = Field(description="跟进内容")
     followed_at: datetime = Field(description="跟进时间")
 

@@ -12,6 +12,8 @@ const FOLLOWUP_METHOD_LABELS: Record<string, string> = {
   wechat: "微信",
   face: "面谈",
   visit: "带看",
+  // 出评估价产生的合成跟进项（后端 /public/leads/{id} 将评估意见合并进跟进时间线）
+  evaluation: "评估",
 };
 
 /** 将 #RGB / #RRGGBB 解析为 rgba 字符串；非 hex 色值原样返回. */

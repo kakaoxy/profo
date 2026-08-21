@@ -19,6 +19,15 @@ const METHOD_ICONS: Record<string, React.ReactNode> = {
   video: <Video className="h-4 w-4" aria-hidden="true" />,
 };
 
+// 跟进方式显示名：未知 code 原样返回（含后端合并进跟进时间线的出评估价 evaluation）
+const METHOD_LABELS: Record<string, string> = {
+  evaluation: "评估",
+};
+
+function methodLabel(method: string): string {
+  return METHOD_LABELS[method.toLowerCase()] ?? method;
+}
+
 export function FollowUpList({ followUps }: FollowUpListProps) {
   if (followUps.length === 0) {
     return (
@@ -51,7 +60,7 @@ export function FollowUpList({ followUps }: FollowUpListProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-[15px] font-medium tracking-[-0.009em] text-ink">
-                  {item.method}
+                  {methodLabel(item.method)}
                 </span>
                 <span className="text-[12px] text-graphite">{item.followed_at}</span>
               </div>

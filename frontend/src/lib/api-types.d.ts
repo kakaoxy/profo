@@ -3274,6 +3274,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/communities/{community_id}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 小区成交分析
+         * @description 返回指定小区的成交分析聚合数据（KPI+趋势+价格分布+户型分布+楼层分布+主力户型），需 C端登录且已绑定手机号，未绑定手机号将返回 403
+         */
+        get: operations["get_community_analysis_api_v1_public_communities__community_id__analysis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/recruit/campaigns/{campaign_id}": {
         parameters: {
             query?: never;
@@ -9054,6 +9074,58 @@ export interface components {
             rejected: number;
         };
         /**
+         * PublicCommunityAnalysisResponse
+         * @description C端小区成交分析响应.
+         */
+        PublicCommunityAnalysisResponse: {
+            /** @description 小区基本信息（community_id/community_name/business_circle/district） */
+            community: components["schemas"]["PublicCommunityBrief"];
+            /** @description KPI 卡片聚合 */
+            kpi: components["schemas"]["KpiData"];
+            /**
+             * Trend
+             * @description 成交趋势
+             */
+            trend: components["schemas"]["TrendDataPoint"][];
+            /** @description 价格分布 */
+            price_distribution: components["schemas"]["PriceDistributionResponse"];
+            /** @description 户型分布 */
+            rooms_distribution: components["schemas"]["DistributionResponse"];
+            /** @description 楼层分布 */
+            floor_distribution: components["schemas"]["DistributionResponse"];
+            /**
+             * Main Layout
+             * @description 主力户型（近 12 月成交占比最高）
+             */
+            main_layout?: string | null;
+        };
+        /**
+         * PublicCommunityBrief
+         * @description C端小区分析响应中的小区基本信息.
+         */
+        PublicCommunityBrief: {
+            /**
+             * Community Id
+             * @description 小区ID
+             */
+            community_id: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * Business Circle
+             * @description 商圈
+             */
+            business_circle: string;
+            /**
+             * District
+             * @description 行政区
+             */
+            district: string;
+        };
+        /**
          * PublicCommunitySearchItem
          * @description C端小区搜索项.
          */
@@ -9129,8 +9201,11 @@ export interface components {
              * @description 跟进记录ID
              */
             id: string;
-            /** @description 跟进方式 */
-            method: components["schemas"]["FollowUpMethod"];
+            /**
+             * Method
+             * @description 跟进方式（含合成类型 evaluation=出评估价）
+             */
+            method: string;
             /**
              * Content
              * @description 跟进内容
@@ -18567,6 +18642,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunityImageListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_community_analysis_api_v1_public_communities__community_id__analysis_get: {
+        parameters: {
+            query?: {
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 趋势维度: overall(综合) / rooms(户型) / floor(楼层) / price(价格段) */
+                trend_dim?: components["schemas"]["TrendDimension"];
+            };
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicCommunityAnalysisResponse"];
                 };
             };
             /** @description Validation Error */

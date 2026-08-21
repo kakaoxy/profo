@@ -99,7 +99,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
         <div className="flex items-center gap-1.5 min-w-0">
           <History className="h-3 w-3 text-muted-foreground shrink-0" />
           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            流转轨迹
+            跟进记录
           </span>
           <span className="text-muted-foreground/40">·</span>
           <span className="text-[10px] text-muted-foreground truncate">
