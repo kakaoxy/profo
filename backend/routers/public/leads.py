@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Path, Query, Request, status
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from models.common import LeadStatus
+from models.lead import Lead
 from schemas.lead import LeadCreate
 from schemas.public import (
     PublicAcquiredLeadListItem,
@@ -38,6 +39,19 @@ LEAD_STATUS_DISPLAY_MAP = {
     "visited": ("已看房", "#4CAF50"),
     "signed": ("已签约", "#9C27B0"),
 }
+
+
+def _effective_expected_price(lead: Lead) -> float | None:
+    """业主心理预期价：优先取 expected_price，缺失时回退 total_price.
+
+    与 admin/leads「总价列」口径一致——员工录入等场景仅写入 total_price（用户报价），
+    不填 expected_price，回退后 C 端详情/列表方能正确展示业主预期价.
+    """
+    if lead.expected_price is not None:
+        return float(lead.expected_price)
+    if lead.total_price is not None:
+        return float(lead.total_price)
+    return None
 
 
 def _get_status_display(status_code: str) -> tuple[str, str]:
@@ -99,7 +113,7 @@ def create_lead(
         total_price=float(lead.total_price) if lead.total_price else None,
         unit_price=float(lead.unit_price) if lead.unit_price else None,
         eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
-        expected_price=float(lead.expected_price) if lead.expected_price is not None else None,
+        expected_price=_effective_expected_price(lead),
         status=lead.status.value if hasattr(lead.status, "value") else str(lead.status),
         remarks=lead.remarks,
         images=lead.images or [],
@@ -134,7 +148,7 @@ def get_my_leads(
                 layout=lead.layout,
                 area=float(lead.area) if lead.area else None,
                 total_price=float(lead.total_price) if lead.total_price else None,
-                expected_price=float(lead.expected_price) if lead.expected_price is not None else None,
+                expected_price=_effective_expected_price(lead),
                 status=status_code,
                 status_display=status_display,
                 status_color=status_color,
@@ -200,7 +214,7 @@ def get_my_acquired(
                 community_name=lead.community_name,
                 layout=lead.layout,
                 area=float(lead.area) if lead.area is not None else None,
-                expected_price=float(lead.expected_price) if lead.expected_price is not None else None,
+                expected_price=_effective_expected_price(lead),
                 status=status_code,
                 status_display=status_display,
                 status_color=status_color,
@@ -301,7 +315,7 @@ def get_lead_detail(
         total_price=float(lead.total_price) if lead.total_price else None,
         unit_price=float(lead.unit_price) if lead.unit_price else None,
         eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
-        expected_price=float(lead.expected_price) if lead.expected_price is not None else None,
+        expected_price=_effective_expected_price(lead),
         status=status_code,
         status_display=status_display,
         status_color=status_color,

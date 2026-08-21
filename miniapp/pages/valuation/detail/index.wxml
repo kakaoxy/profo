@@ -62,8 +62,8 @@
           {{hasEvalPrice ? '已评估' : '评估中'}}
         </view>
       </view>
-      <view class="hero__meta" wx:if="{{layout || area || floor_display}}">
-        {{layout}}{{layout ? ' · ' : ''}}{{area}}{{area ? ' · ' : ''}}{{floor_display}}
+      <view class="hero__meta" wx:if="{{hero_meta}}">
+        {{hero_meta}}
       </view>
       <view class="price-block">
         <view class="price-block__caption">评估价格</view>
@@ -75,6 +75,13 @@
         <view class="pending-row" wx:else>
           <view class="pending-dot"></view>
           <text class="pending-text">评估中，请耐心等待</text>
+        </view>
+        <view class="data-guide" wx:if="{{hasEvalPrice}}" bindtap="onTapCommunityAnalysis">
+          <text class="data-guide__hint">该价格基于小区数据分析</text>
+          <view class="data-guide__btn">
+            <text class="data-guide__btn-text">查看数据</text>
+            <view class="data-guide__arrow"></view>
+          </view>
         </view>
       </view>
       <view class="hero__foot">提交于 {{created_at}}</view>
@@ -114,20 +121,7 @@
       </view>
     </view>
 
-    <!-- 4. 小区数据分析入口（绑定手机号后可进入） -->
-    <view class="card entry" wx:if="{{community_name}}" bindtap="onTapCommunityAnalysis">
-      <view class="entry__text">
-        <view class="entry__title">小区数据分析</view>
-        <view class="entry__sub">{{community_name}} · KPI/成交趋势/分布</view>
-      </view>
-      <view class="entry__chart">
-        <view class="entry__line"></view>
-        <view class="entry__dot"></view>
-      </view>
-      <view class="entry__arrow"></view>
-    </view>
-
-    <!-- 5. 跟进记录 -->
+    <!-- 4. 跟进记录 -->
     <view class="card">
       <view class="card__head">
         <view class="card__title">跟进记录</view>

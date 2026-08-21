@@ -55,6 +55,8 @@ interface PageData {
   // 评估价格
   evalPrice: string;
   hasEvalPrice: boolean;
+  /** Hero 元信息行：户型 · 面积 · 楼层/朝向 · 业主预期价（空段跳过）. */
+  hero_meta: string;
   // 跟进记录（全量缓存于 allFollowups，展示用 followups 切片）
   allFollowups: DisplayFollowup[];
   followups: DisplayFollowup[];
@@ -100,6 +102,7 @@ Page<PageData, PageCustom>({
     images: [],
     evalPrice: "",
     hasEvalPrice: false,
+    hero_meta: "",
     allFollowups: [],
     followups: [],
     followupPage: 1,
@@ -139,12 +142,22 @@ Page<PageData, PageCustom>({
       content: f.content,
       at: formatDate(f.followed_at, true),
     }));
+    // Hero 元信息：户型 · 面积 · 楼层/朝向 · 业主预期价（空段跳过）
+    const floorDisplay = [detail.floor_info, detail.orientation].filter(Boolean).join(" · ");
+    const heroMeta = [
+      detail.layout || "",
+      detail.area != null ? `${detail.area}㎡` : "",
+      floorDisplay,
+      detail.expected_price != null ? `心理预期 ${detail.expected_price}万` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
     this.setData({
       loading: false,
       community_name: detail.community_name,
       layout: detail.layout || "",
       area: detail.area != null ? `${detail.area}㎡` : "",
-      floor_display: [detail.floor_info, detail.orientation].filter(Boolean).join(" · "),
+      floor_display: floorDisplay,
       remarks: detail.remarks || "",
       created_at: formatDate(detail.created_at, true),
       // 缩略图优先，兜底原图
@@ -155,6 +168,7 @@ Page<PageData, PageCustom>({
       ).map((u) => resolveAssetUrl(u)),
       evalPrice: detail.eval_price != null ? String(detail.eval_price) : "",
       hasEvalPrice: detail.eval_price != null,
+      hero_meta: heroMeta,
       allFollowups,
       followups: sliceFollowups(allFollowups, 1, FOLLOWUP_PAGE_SIZE),
       followupPage: 1,
