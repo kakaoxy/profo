@@ -46,6 +46,7 @@ def build_reports_filter(
     sources: str | None = None,
     business_circles: str | None = None,
     community_name: str | None = None,
+    district: str | None = None,
     status: str | None = None,
     rooms: str | None = None,
     floor_levels: str | None = None,
@@ -57,6 +58,7 @@ def build_reports_filter(
         sources: 逗号分隔的数据来源（如 "链家,贝壳"）
         business_circles: 逗号分隔的商圈名称列表（多关键词模糊匹配）
         community_name: 小区名称模糊搜索
+        district: 区域（行政区）精确过滤
         status: 房源状态（在售/成交）
         rooms: 逗号分隔的户型（如 "1,2,4plus"）
         floor_levels: 逗号分隔的楼层级别（如 "低,中,高"）
@@ -70,6 +72,7 @@ def build_reports_filter(
         sources=parse_comma_separated_list(sources) or [],
         business_circles=parse_comma_separated_list(business_circles) or [],
         community_name=community_name or None,
+        district=district or None,
         status=status or None,
         rooms=parse_comma_separated_list(rooms) or [],
         floor_levels=parse_comma_separated_list(floor_levels) or [],
@@ -94,6 +97,7 @@ def apply_reports_filter(
     - data_source IN sources（来源多选）
     - Community.business_circles 多关键词 LIKE OR 模糊匹配
     - Community.name LIKE community_name 模糊匹配
+    - Community.district == district 精确过滤
     - Community.is_active == True（当过滤 Community 字段时附加）
     - status == PropertyStatus（状态过滤）
     - rooms IN (...) OR rooms >= 4（户型多选 + 4室+ 合并）
@@ -125,9 +129,14 @@ def apply_reports_filter(
     # 当 auto_join_community=True 时自动 JOIN Community，避免笛卡尔积
     # 使用 join_from 显式指定左表 (PropertyCurrent), 避免在 select() 无显式
     # select_from 时 SQLAlchemy 无法推断 JOIN 左侧 (InvalidRequestError)
-    needs_community_join = auto_join_community and bool(filter.business_circles or filter.community_name)
+    needs_community_join = auto_join_community and bool(
+        filter.business_circles or filter.community_name or filter.district
+    )
     if needs_community_join:
         query = query.join_from(PropertyCurrent, Community, PropertyCurrent.community_id == Community.id)
+        # 软删除过滤：仅在此 JOIN Community 后统一附加一次，
+        # 替代往在各条件分支重复添加 Community.is_active，避免冗余 SQL 条件
+        query = query.where(Community.is_active.is_(True))
 
     # 商圈多关键词模糊匹配（OR LIKE）
     # "未分类" 特殊处理: 与 aggregations._build_bc_expr() 归一化逻辑对齐,
@@ -147,16 +156,19 @@ def apply_reports_filter(
             else:
                 business_circle_conditions.append(Community.business_circle.like(f"%{escape_like(bc)}%", escape="\\"))
         if business_circle_conditions:
-            query = query.where(
-                or_(*business_circle_conditions),
-                Community.is_active.is_(True),
-            )
+            query = query.where(or_(*business_circle_conditions))
 
     # 小区名称模糊匹配
     if filter.community_name:
         query = query.where(
             Community.name.like(f"%{escape_like(filter.community_name)}%", escape="\\"),
-            Community.is_active.is_(True),
+        )
+
+    # 区域（行政区）精确过滤
+    # 非空判断覆盖 None 与空/纯空白串，避免匹配 Community.district == "" / 空白
+    if filter.district and filter.district.strip():
+        query = query.where(
+            Community.district == filter.district,
         )
 
     # 状态过滤（报表只处理"在售"与"成交"，"过期"不在范围内）

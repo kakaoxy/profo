@@ -174,6 +174,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/business-circles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Business Circles
+         * @description 返回按区域过滤的去重商圈字典列表.
+         */
+        get: operations["get_business_circles_api_v1_admin_business_circles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/communities/merge": {
         parameters: {
             query?: never;
@@ -12418,6 +12438,42 @@ export interface operations {
             };
         };
     };
+    get_business_circles_api_v1_admin_business_circles_get: {
+        parameters: {
+            query?: {
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
+                /** @description 商圈名称模糊搜索 */
+                search?: string | null;
+                /** @description 返回数量上限 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     merge_communities_api_v1_admin_communities_merge_post: {
         parameters: {
             query?: never;
@@ -19215,6 +19271,8 @@ export interface operations {
                 business_circles?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */
@@ -19279,6 +19337,8 @@ export interface operations {
                 business_circles?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */
@@ -19350,6 +19410,8 @@ export interface operations {
                 business_circles?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */
@@ -19412,6 +19474,8 @@ export interface operations {
                 business_circles?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */
@@ -19474,6 +19538,8 @@ export interface operations {
                 business_circles?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */
@@ -19544,6 +19610,8 @@ export interface operations {
                 business_circles?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */
@@ -19674,6 +19742,8 @@ export interface operations {
                 business_circles?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */
@@ -19749,6 +19819,8 @@ export interface operations {
                 sources?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */
@@ -19813,6 +19885,8 @@ export interface operations {
                 business_circles?: string | null;
                 /** @description 小区名称模糊搜索 */
                 community_name?: string | null;
+                /** @description 区域（行政区）精确过滤 */
+                district?: string | null;
                 /** @description 房源状态：在售/成交 */
                 status?: string | null;
                 /** @description 逗号分隔的户型（如 1,2,4plus） */

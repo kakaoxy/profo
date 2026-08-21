@@ -5,13 +5,15 @@
 
 > ✅ **状态更新（2026-08-11）**：模块 1「房源查询功能」已**完成并完善**（列表 / 筛选 / 小区搜索 / 商圈搜索 / 分页 / 图片展示），见 [§1](#1-房源查询模块对等-adminproperties) 底部「完成记录」。其余模块（§2 关于页分享、§3 数据分析、§4 小区分析、§5 微信登录）仍为待办。
 
+> ✅ **状态更新（2026-08-21）**：模块 3「数据分析」已**完成**（KPI / 趋势图表 / 价格·户型·楼层分布、商圈区域联动选择器、新增 `GET /admin/business-circles` 接口），见 [§3](#3-数据分析模块对等-adminreportsmarket) 底部「完成记录」。其余模块（§2 关于页分享、§4 小区分析、§5 微信登录）仍为待办。
+
 ## 总览
 
 | # | 模块 | 页面/入口 | 对应后台 | 受众 | 后端依赖 | 状态 |
 |---|------|-----------|----------|------|----------|------|
 | 1 | 房源查询 | profile 内部入口 → 新页 `pages/properties/*` | `admin/properties` | 内部员工 | 无（复用现有 `GET /api/v1/properties`） | ✅ 已完成 |
 | 2 | 关于页分享 | `pages/about` | - | 公开（C 端） | 无（仅前端分享配置） | ✅ 待办 |
-| 3 | 数据分析 | profile 内部入口 → 新页 `pages/analysis/*` | `admin/reports/market` | 内部员工 | 无（复用现有 `GET /api/v1/reports/market/*`） | ⬜ 待办 |
+| 3 | 数据分析 | profile 内部入口 → 新页 `pages/analysis/*` | `admin/reports/market` | 内部员工 | 无（复用现有 `GET /api/v1/reports/market/*`） | ✅ 已完成 |
 | 4 | 小区数据分析 | `pages/valuation/detail`（房源信息与评估价格之间） | `admin/reports/communities` | C 端 | **需新增 C 端公开接口（见 §4 不确定项）** | ⬜ 待办 |
 | 5 | 微信授权登录 | profile 登录按钮 | 后端 `/auth/wechat/login` 已实现 | C 端/内部 | 主要缺口在前端（见 §5 现状核对） | ✅ 待办 |
 
@@ -113,6 +115,14 @@
 4. `pnpm tsc --noEmit` 通过。
 
 **验证**：内部员工 profile → 数据分析 → 选商圈/小区 → 看 KPI/趋势/分布，与后台一致。
+
+**完成记录（2026-08-21）**
+
+- 页面：`pages/analysis/index`（index.ts / index.wxml / index.wxss / constants.ts / views.ts）+ `utils/trend-chart.ts`（canvas 2d 绘制纯函数）。
+- 入口：`pages/profile/index.ts` `INTERNAL_ENTRIES` 新增 `analysis` 条目；`app.json` 注册页面。
+- 筛选：范围（4w/8w/6m/12m/24m）、状态、商圈（区域+商圈多列选择器联动）、小区名搜索（500ms debounce）。
+- API：KPI / 趋势 / 价格分布 / 户型分布 / 楼层分布 五端点 `Promise.all` 并行拉取；商圈选择器用 `GET /admin/dictionaries?dict_type=district` + 新增 `GET /admin/business-circles`（支持 `district` 精确过滤，见 api-market.md §1.3）。
+- 验证：后端新增接口带 `property:read` 鉴权与参数校验，`tests/test_communities.py` 7 例覆盖；小程序 `tsc --noEmit` 通过。
 
 ---
 

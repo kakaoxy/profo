@@ -71,6 +71,19 @@ def get_dictionaries(
         raise ValidationError(str(e)) from e
 
 
+@router.get("/business-circles")
+def get_business_circles(
+    db: DbSessionDep,
+    _current_user: PropertyReadPermDep,
+    service: CommunityServiceDep,
+    district: Annotated[str | None, Query(max_length=100, description="区域（行政区）精确过滤")] = None,
+    search: Annotated[str | None, Query(max_length=100, description="商圈名称模糊搜索")] = None,
+    limit: Annotated[int, Query(ge=1, le=200, description="返回数量上限")] = 200,
+) -> DictionaryResponse:
+    """返回按区域过滤的去重商圈字典列表."""
+    return service.query_business_circles(db=db, district=district, search=search, limit=limit)
+
+
 @router.post("/communities/merge")
 @limiter.limit(RateLimits.COMMUNITY_MERGE)
 def merge_communities(

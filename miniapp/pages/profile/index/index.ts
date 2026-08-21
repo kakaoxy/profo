@@ -33,6 +33,7 @@ const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 /** 内部入口（viewing/renovation/properties 已落地；recruit 走 onRecruitTap 拉活动跳转；ledger 待开放）. */
 const INTERNAL_ENTRIES = [
   { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房", route: "/pages/properties/list/index" },
+  { key: "analysis", title: "数据分析", sub: "商圈/小区市场行情", icon: "析", route: "/pages/analysis/index/index" },
   { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
   { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装", route: "/pages/renovation/projects/index/index" },
   { key: "valuation-acquired", title: "估价获客", sub: "分享获客 / 线索跟进", icon: "估", route: "/pages/valuation/submit/index" },

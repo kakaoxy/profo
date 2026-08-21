@@ -154,6 +154,7 @@ class CommunityQueryService:
         dict_type: str,
         search: str | None = None,
         limit: int = 50,
+        district: str | None = None,
     ) -> DictionaryResponse:
         """返回行政区或商圈的去重列表.
 
@@ -162,6 +163,7 @@ class CommunityQueryService:
             dict_type: 字典类型 ("district" | "business_circle")
             search: 模糊搜索关键词
             limit: 返回数量上限
+            district: 区域（行政区）精确过滤；None/空串时不限制
 
         Returns:
             DictionaryResponse: 字典响应
@@ -183,6 +185,10 @@ class CommunityQueryService:
             target_column != "",
         )
 
+        # 区域精确过滤（对 business_circle 字典生效；district 字典传此参数无意义但无害）
+        if district:
+            query = query.filter(Community.district == district)
+
         if search:
             query = query.filter(target_column.like(f"%{escape_like(search)}%", escape="\\"))
 
@@ -192,6 +198,33 @@ class CommunityQueryService:
         values = [r[0] for r in results if r[0]]
 
         return DictionaryResponse(type=dict_type, items=values)
+
+    @staticmethod
+    def query_business_circles(
+        db: Session,
+        district: str | None = None,
+        search: str | None = None,
+        limit: int = 200,
+    ) -> DictionaryResponse:
+        """按区域返回去重商圈字典列表.
+
+        Args:
+            db: 数据库会话
+            district: 区域（行政区）精确过滤；None/空串时不限制
+            search: 商圈名称模糊搜索
+            limit: 返回数量上限
+
+        Returns:
+            DictionaryResponse: 商圈字典响应 (type="business_circle")
+
+        """
+        return CommunityQueryService.query_dictionaries(
+            db=db,
+            dict_type="business_circle",
+            search=search,
+            limit=limit,
+            district=district,
+        )
 
     @staticmethod
     def create_community(db: Session, body: CommunityCreateRequest) -> CommunityResponse:

@@ -65,6 +65,7 @@ class ReportsFilter(BaseModel):
     sources: list[str] = Field(default_factory=list, description="数据来源多选（链家/贝壳/网签）")
     business_circles: list[str] = Field(default_factory=list, description="商圈多关键词模糊匹配（OR LIKE）")
     community_name: str | None = Field(None, description="小区名称模糊搜索")
+    district: str | None = Field(None, description="区域（行政区）精确过滤")
     status: str | None = Field(None, description="房源状态：在售/成交")
     rooms: list[str] = Field(default_factory=list, description="户型多选（如 '1','2','4plus'）")
     floor_levels: list[str] = Field(default_factory=list, description="楼层多选（低/中/高楼层）")

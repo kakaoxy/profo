@@ -1,0 +1,364 @@
+<view class="page">
+  <!-- 面板遮罩（范围/状态面板展开时） -->
+  <view wx:if="{{activeFilter === 'range' || activeFilter === 'status'}}" class="filter-mask" bindtap="onMaskTap"></view>
+
+  <!-- Sticky 筛选区 -->
+  <view class="sticky-controls">
+    <view class="search-row">
+      <view class="search-input-wrap">
+        <view class="search-icon"></view>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="搜索小区名"
+          value="{{searchValue}}"
+          confirm-type="search"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
+        />
+      </view>
+    </view>
+
+    <view class="filter-wrap">
+      <view class="filter-chips">
+        <!-- 商圈：多列选择器（区域 + 商圈两列联动，单选） -->
+        <picker
+          mode="multiSelector"
+          range="{{pickerColumns}}"
+          value="{{pickerIndex}}"
+          bindcolumnchange="onPickerColumnChange"
+          bindchange="onPickerChange"
+          bindcancel="onPickerCancel"
+          class="chip-picker"
+        >
+          <view class="filter-chip {{businessChipSelected ? 'filter-chip--selected' : ''}}">
+            <text class="chip-label">{{businessChipLabel}}</text>
+            <view class="chevron-down"></view>
+          </view>
+        </picker>
+
+        <!-- 范围 -->
+        <view
+          class="filter-chip {{activeFilter === 'range' ? 'filter-chip--active' : (rangeChosen ? 'filter-chip--selected' : '')}}"
+          data-key="range"
+          bindtap="onFilterChipTap"
+        >
+          <text class="chip-label">{{rangeLabel}}</text>
+          <view class="chevron-down"></view>
+        </view>
+
+        <!-- 状态 -->
+        <view
+          class="filter-chip {{activeFilter === 'status' ? 'filter-chip--active' : (statusChosen ? 'filter-chip--selected' : '')}}"
+          data-key="status"
+          bindtap="onFilterChipTap"
+        >
+          <text class="chip-label">{{statusLabel}}</text>
+          <view class="chevron-down"></view>
+        </view>
+      </view>
+
+      <!-- 范围面板 -->
+      <view wx:if="{{activeFilter === 'range'}}" class="filter-panel">
+        <view class="filter-panel__title">时间范围 · 单选</view>
+        <view class="option-grid">
+          <view
+            class="option-btn {{item.selected ? 'option-btn--selected' : ''}}"
+            wx:for="{{rangeViews}}"
+            wx:key="value"
+            data-value="{{item.value}}"
+            bindtap="onRangeOptionTap"
+          >{{item.label}}</view>
+        </view>
+        <view class="panel-actions">
+          <view class="panel-btn panel-btn--ghost" bindtap="onRangeReset">重置</view>
+          <view class="panel-btn panel-btn--primary" bindtap="onRangeConfirm">确定</view>
+        </view>
+      </view>
+
+      <!-- 状态面板 -->
+      <view wx:if="{{activeFilter === 'status'}}" class="filter-panel">
+        <view class="filter-panel__title">房源状态 · 单选</view>
+        <view class="option-grid">
+          <view
+            class="option-btn {{item.selected ? 'option-btn--selected' : ''}}"
+            wx:for="{{statusViews}}"
+            wx:key="value"
+            data-value="{{item.value}}"
+            bindtap="onStatusOptionTap"
+          >{{item.label}}</view>
+        </view>
+        <view class="panel-actions">
+          <view class="panel-btn panel-btn--ghost" bindtap="onStatusReset">重置</view>
+          <view class="panel-btn panel-btn--primary" bindtap="onStatusConfirm">确定</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 主体 -->
+  <view class="content-area">
+    <!-- 首屏骨架屏 -->
+    <block wx:if="{{loading}}">
+      <view class="kpi-grid">
+        <view class="kpi kpi--skeleton" wx:for="{{[1, 2, 3, 4]}}" wx:key="*this">
+          <view class="skeleton-block skeleton-label"></view>
+          <view class="skeleton-block skeleton-value"></view>
+        </view>
+      </view>
+      <view class="card">
+        <view class="skeleton-block skeleton-title"></view>
+        <view class="skeleton-block skeleton-trend"></view>
+      </view>
+    </block>
+
+    <!-- 登录失效 -->
+    <view wx:elif="{{authState === 'unauthorized'}}" class="state-screen">
+      <view class="state-icon">!</view>
+      <view class="state-title">登录已失效</view>
+      <view class="state-text">登录状态已过期，请返回「我的」页重新登录</view>
+      <view class="state-btn" bindtap="onGoBack">返回</view>
+    </view>
+
+    <!-- 无权限 -->
+    <view wx:elif="{{authState === 'forbidden'}}" class="state-screen">
+      <view class="state-icon">!</view>
+      <view class="state-title">无访问权限</view>
+      <view class="state-text">当前账号无权查看数据分析，请联系管理员</view>
+      <view class="state-btn" bindtap="onGoBack">返回</view>
+    </view>
+
+    <!-- 错误态 -->
+    <view wx:elif="{{error}}" class="state-screen">
+      <view class="state-icon">!</view>
+      <view class="state-title">数据加载失败</view>
+      <view class="state-text">网络似乎开小差了，请稍后重试</view>
+      <view class="state-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <!-- 整体空态 -->
+    <view wx:elif="{{emptyAll}}" class="state-screen">
+      <view class="state-icon">∅</view>
+      <view class="state-title">暂无成交数据</view>
+      <view class="state-text">当前筛选条件下没有成交样本，试试扩大范围或清除筛选</view>
+      <view class="state-btn" bindtap="onClearFilters">清除筛选</view>
+    </view>
+
+    <!-- 正常内容 -->
+    <block wx:else>
+      <!-- KPI 2×2 -->
+      <view class="kpi-grid">
+        <view class="kpi" wx:for="{{kpiViews}}" wx:key="key">
+          <view class="kpi-label">{{item.label}}</view>
+          <view class="kpi-value">{{item.valueText}}<text wx:if="{{item.unit}}" class="kpi-unit">{{item.unit}}</text></view>
+          <view class="kpi-qoq">
+            <text wx:if="{{item.arrow}}" class="kpi-qoq__arrow {{item.qoqClass}}">{{item.arrow}}</text>
+            <text class="kpi-qoq__text {{item.qoqClass}}">{{item.qoqText}}</text>
+            <text wx:if="{{item.showHint}}" class="kpi-qoq__hint">环比</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 成交趋势 -->
+      <view class="card">
+        <view class="card-title">
+          <view class="card-title__text">成交趋势</view>
+          <view class="card-actions">
+            <view class="seg seg--bordered">
+              <view
+                class="seg-item {{item.value === trendDim ? 'seg-item--on' : ''}}"
+                wx:for="{{trendDimOptions}}"
+                wx:key="value"
+                data-value="{{item.value}}"
+                bindtap="onTrendDimChange"
+              >{{item.label}}</view>
+            </view>
+            <view class="seg">
+              <view
+                class="seg-item {{item.value === trendMode ? 'seg-item--on' : ''}}"
+                wx:for="{{modeOptions}}"
+                wx:key="value"
+                data-value="{{item.value}}"
+                bindtap="onTrendModeChange"
+              >{{item.label}}</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 图表模式 -->
+        <block wx:if="{{trendMode === 'chart'}}">
+          <view class="trend-legend">
+            <view class="trend-legend__item" wx:for="{{trendLegend}}" wx:key="label">
+              <view class="trend-legend__dot" style="background:{{item.color}}"></view>
+              <text>{{item.label}}</text>
+            </view>
+          </view>
+          <canvas type="2d" id="trendCanvas" class="trend-canvas"></canvas>
+        </block>
+
+        <!-- 数值模式 -->
+        <block wx:else>
+          <view class="num-table">
+            <view class="num-row num-row--head">
+              <view class="num-cell num-cell--period">周期</view>
+              <view class="num-cell">套数</view>
+              <view class="num-cell">量环比</view>
+              <view class="num-cell">均价(万)</view>
+              <view class="num-cell">价环比</view>
+              <view class="num-cell">单价(元/㎡)</view>
+            </view>
+            <block wx:for="{{trendTableRows}}" wx:key="period" wx:for-item="row">
+              <view class="num-row">
+                <view class="num-cell num-cell--period">{{row.period}}</view>
+                <view class="num-cell">{{row.volumeText}}</view>
+                <view class="num-cell {{row.volumeQoq.cls}}">{{row.volumeQoq.text}}</view>
+                <view class="num-cell">{{row.avgPriceText}}</view>
+                <view class="num-cell {{row.priceQoq.cls}}">{{row.priceQoq.text}}</view>
+                <view class="num-cell">{{row.unitText}}</view>
+              </view>
+              <view class="num-row num-row--dim" wx:for="{{row.dims}}" wx:for-item="dim" wx:key="key">
+                <view class="num-cell num-cell--period">{{dim.key}}</view>
+                <view class="num-cell">{{dim.volumeText}}</view>
+                <view class="num-cell"></view>
+                <view class="num-cell"></view>
+                <view class="num-cell"></view>
+                <view class="num-cell">{{dim.unitText}}</view>
+              </view>
+            </block>
+          </view>
+        </block>
+      </view>
+
+      <!-- 成交价格分布 -->
+      <view class="card">
+        <view class="card-title">
+          <view class="card-title__text">成交价格分布<text class="card-title__sub">共 {{priceTotalText}} 套</text></view>
+          <view class="card-actions">
+            <view class="seg">
+              <view
+                class="seg-item {{item.value === priceMode ? 'seg-item--on' : ''}}"
+                wx:for="{{modeOptions}}"
+                wx:key="value"
+                data-value="{{item.value}}"
+                bindtap="onPriceModeChange"
+              >{{item.label}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{priceEmpty}}" class="card-empty">{{emptyDistText}}</view>
+
+        <block wx:elif="{{priceMode === 'chart'}}">
+          <view class="dist-row" wx:for="{{priceRows}}" wx:key="label">
+            <view class="dist-label">{{item.label}}</view>
+            <view class="dist-bar-track"><view class="dist-bar" style="width:{{item.pct}}%"></view></view>
+            <view class="dist-meta"><text class="dist-count">{{item.countText}}</text> · {{item.pctText}}</view>
+          </view>
+        </block>
+
+        <block wx:else>
+          <view class="num-table">
+            <view class="num-row num-row--head">
+              <view class="num-cell num-cell--period">价格区间</view>
+              <view class="num-cell">套数</view>
+              <view class="num-cell">占比</view>
+              <view class="num-cell">均面积(㎡)</view>
+              <view class="num-cell">均单价(元/㎡)</view>
+            </view>
+            <view class="num-row" wx:for="{{priceRows}}" wx:key="label">
+              <view class="num-cell num-cell--period">{{item.label}}</view>
+              <view class="num-cell">{{item.countText}}</view>
+              <view class="num-cell">{{item.pctText}}</view>
+              <view class="num-cell">{{item.avgAreaText}}</view>
+              <view class="num-cell">{{item.avgUnitText}}</view>
+            </view>
+          </view>
+        </block>
+      </view>
+
+      <!-- 户型 + 楼层分布（一张卡上下两段） -->
+      <view class="card">
+        <view class="card-title">
+          <view class="card-title__text">户型 / 楼层分布</view>
+          <view class="card-actions">
+            <view class="seg">
+              <view
+                class="seg-item {{item.value === roomsFloorMode ? 'seg-item--on' : ''}}"
+                wx:for="{{modeOptions}}"
+                wx:key="value"
+                data-value="{{item.value}}"
+                bindtap="onRoomsFloorModeChange"
+              >{{item.label}}</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 户型段 -->
+        <view class="dist-section">
+          <view class="dist-section__title">户型</view>
+          <view wx:if="{{roomsEmpty}}" class="card-empty">{{emptyDistText}}</view>
+          <block wx:elif="{{roomsFloorMode === 'chart'}}">
+            <view class="dist-row" wx:for="{{roomsRows}}" wx:key="label">
+              <view class="dist-label">{{item.label}}</view>
+              <view class="dist-bar-track"><view class="dist-bar" style="width:{{item.pct}}%"></view></view>
+              <view class="dist-meta"><text class="dist-count">{{item.countText}}</text> · {{item.pctText}}</view>
+            </view>
+          </block>
+          <block wx:else>
+            <view class="num-table">
+              <view class="num-row num-row--head">
+                <view class="num-cell num-cell--period">户型</view>
+                <view class="num-cell">套数</view>
+                <view class="num-cell">占比</view>
+                <view class="num-cell">均面积(㎡)</view>
+                <view class="num-cell">均单价(元/㎡)</view>
+              </view>
+              <view class="num-row" wx:for="{{roomsRows}}" wx:key="label">
+                <view class="num-cell num-cell--period">{{item.label}}</view>
+                <view class="num-cell">{{item.countText}}</view>
+                <view class="num-cell">{{item.pctText}}</view>
+                <view class="num-cell">{{item.avgAreaText}}</view>
+                <view class="num-cell">{{item.avgUnitText}}</view>
+              </view>
+            </view>
+          </block>
+        </view>
+
+        <view class="dist-divider"></view>
+
+        <!-- 楼层段 -->
+        <view class="dist-section">
+          <view class="dist-section__title">楼层</view>
+          <view wx:if="{{floorEmpty}}" class="card-empty">{{emptyDistText}}</view>
+          <block wx:elif="{{roomsFloorMode === 'chart'}}">
+            <view class="dist-row" wx:for="{{floorRows}}" wx:key="label">
+              <view class="dist-label">{{item.label}}</view>
+              <view class="dist-bar-track"><view class="dist-bar" style="width:{{item.pct}}%"></view></view>
+              <view class="dist-meta"><text class="dist-count">{{item.countText}}</text> · {{item.pctText}}</view>
+            </view>
+          </block>
+          <block wx:else>
+            <view class="num-table">
+              <view class="num-row num-row--head">
+                <view class="num-cell num-cell--period">楼层</view>
+                <view class="num-cell">套数</view>
+                <view class="num-cell">占比</view>
+                <view class="num-cell">均面积(㎡)</view>
+                <view class="num-cell">均单价(元/㎡)</view>
+              </view>
+              <view class="num-row" wx:for="{{floorRows}}" wx:key="label">
+                <view class="num-cell num-cell--period">{{item.label}}</view>
+                <view class="num-cell">{{item.countText}}</view>
+                <view class="num-cell">{{item.pctText}}</view>
+                <view class="num-cell">{{item.avgAreaText}}</view>
+                <view class="num-cell">{{item.avgUnitText}}</view>
+              </view>
+            </view>
+          </block>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="bottom-safe-area"></view>
+</view>
