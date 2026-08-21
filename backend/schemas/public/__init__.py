@@ -7,6 +7,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from models.common import FollowUpMethod, RenovationStage
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
+from schemas.reports.market import (
+    DistributionResponse,
+    KpiData,
+    PriceDistributionResponse,
+    TrendDataPoint,
+)
 from utils.auth.password import validate_password_strength
 
 _MAX_IMAGE_URL_LENGTH = 500
@@ -503,12 +509,41 @@ class PublicLeadDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PublicCommunityBrief(BaseModel):
+    """C端小区分析响应中的小区基本信息."""
+
+    community_id: str = Field(description="小区ID")
+    community_name: str = Field(description="小区名称")
+    business_circle: str = Field(description="商圈")
+    district: str = Field(description="行政区")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PublicCommunityAnalysisResponse(BaseModel):
+    """C端小区成交分析响应."""
+
+    community: PublicCommunityBrief = Field(
+        description="小区基本信息（community_id/community_name/business_circle/district）",
+    )
+    kpi: KpiData = Field(description="KPI 卡片聚合")
+    trend: list[TrendDataPoint] = Field(description="成交趋势")
+    price_distribution: PriceDistributionResponse = Field(description="价格分布")
+    rooms_distribution: DistributionResponse = Field(description="户型分布")
+    floor_distribution: DistributionResponse = Field(description="楼层分布")
+    main_layout: str | None = Field(None, description="主力户型（近 12 月成交占比最高）")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 __all__ = [
     "LeadStatusType",
     "PublicAcquiredLeadListItem",
     "PublicAcquiredLeadListResponse",
     "PublicAcquiredLeadPhoneResponse",
     "PublicAcquiredLeadStatsResponse",
+    "PublicCommunityAnalysisResponse",
+    "PublicCommunityBrief",
     "PublicCommunitySearchItem",
     "PublicConsultantContact",
     "PublicConsultantInfo",

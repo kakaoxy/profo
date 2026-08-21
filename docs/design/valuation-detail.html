@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>估价详情 · 高保真设计稿</title>
+<style>
+  /* ===== Steep 设计令牌（DESIGN.md）===== */
+  :root {
+    --ink: #17191c;
+    --pure-white: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky: #d3e3fc;
+    --viz-blue: #4a90e2;
+    --hairline: rgba(163, 166, 175, 0.3);
+    --shadow-card: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --font-display: "Signifier", "Source Serif 4", Georgia, "Songti SC", "Noto Serif SC", serif;
+    --font-body: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: #e9ebef;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+    gap: 24px;
+  }
+
+  /* ===== 页头 ===== */
+  .page-head { text-align: center; color: #3b4252; }
+  .page-head h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.2px; }
+  .page-head p { font-size: 13px; color: #6b7280; margin-top: 6px; }
+  .tokens {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .token { display: flex; align-items: center; gap: 5px; }
+  .token i { display: block; width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(23,25,28,0.08); }
+  .token span { font-size: 10px; color: #6b7280; letter-spacing: 0.02em; }
+
+  /* ===== 状态切换 ===== */
+  .controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .ctrl-group { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .ctrl-label { font-size: 12px; color: #6b7280; margin-right: 2px; }
+  .tab {
+    border: 1px solid #d4d8e0;
+    background: #fff;
+    color: #4c4c4c;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .tab:hover { border-color: #a3a6af; }
+  .tab--on { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 500; }
+
+  /* ===== 手机外框 ===== */
+  .phone {
+    width: 375px;
+    background: var(--fog);
+    border-radius: 40px;
+    box-shadow: 0 24px 60px rgba(23, 25, 28, 0.18);
+    overflow: hidden;
+    border: 8px solid #1c1e26;
+    position: relative;
+  }
+  .phone::before {
+    content: "";
+    position: absolute; top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: 110px; height: 22px;
+    background: #1c1e26; border-radius: 12px; z-index: 50;
+  }
+
+  /* ===== 状态栏 + 导航栏 ===== */
+  .statusbar {
+    height: 44px;
+    background: var(--pure-white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px 0;
+  }
+  .sb-time { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.1px; }
+  .sb-icons { display: flex; align-items: center; gap: 5px; }
+  .sb-icons svg { display: block; }
+
+  .navbar {
+    background: var(--pure-white);
+    height: 44px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .nav-back {
+    position: absolute; left: 12px;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .nav-title {
+    flex: 1;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.14px;
+    color: var(--ink);
+  }
+  .nav-title-pad { width: 94px; }
+  .capsule {
+    position: absolute; right: 8px;
+    width: 86px; height: 32px;
+    border: 1px solid rgba(23, 25, 28, 0.12);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .capsule-side { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .capsule-div { width: 1px; height: 18px; background: rgba(23, 25, 28, 0.1); }
+
+  /* ===== 屏幕内容 ===== */
+  .screen { background: var(--fog); min-height: 640px; padding-bottom: 40px; }
+  .content { padding: 16px 12px 0; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ===== 卡片基座 ===== */
+  .card {
+    background: var(--pure-white);
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: var(--shadow-card);
+  }
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-head h2 { font-size: 15px; font-weight: 500; letter-spacing: -0.13px; color: var(--ink); }
+  .card-note { font-size: 12px; color: var(--graphite); letter-spacing: -0.1px; }
+
+  /* ===== 估价结果 Hero ===== */
+  .hero-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .hero-name { font-size: 17px; font-weight: 500; letter-spacing: -0.16px; color: var(--ink); }
+  .pill {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    letter-spacing: 0.01em;
+  }
+  .pill--warm { background: var(--apricot); color: var(--rust); }
+  .pill--muted { background: var(--fog); color: var(--graphite); }
+  .hero-meta { margin-top: 6px; font-size: 13px; color: var(--graphite); letter-spacing: -0.11px; }
+
+  .price-block {
+    margin-top: 16px;
+    background: var(--apricot);
+    border-radius: 16px;
+    padding: 18px 20px;
+  }
+  .price-caption {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--graphite);
+    letter-spacing: 0.06em;
+  }
+  .price-caption::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 2px;
+    background: var(--rust);
+  }
+  .price-value {
+    margin-top: 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    color: var(--ink);
+    font-family: var(--font-display);
+    line-height: 1.05;
+  }
+  .price-sym { font-size: 22px; letter-spacing: 0; }
+  .price-num { font-size: 48px; letter-spacing: -1.2px; font-variant-numeric: lining-nums; }
+  .price-unit { font-size: 15px; color: var(--ash); font-family: var(--font-body); letter-spacing: -0.13px; }
+  .hero-foot { margin-top: 12px; font-size: 12px; color: var(--graphite); letter-spacing: -0.1px; }
+
+  /* 评估中 */
+  .pending-row { margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+  .pending-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--rust);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  .pending-text { font-size: 16px; color: var(--ink); letter-spacing: -0.14px; }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.7); opacity: 0.35; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ===== 户型图 ===== */
+  .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .plan-cell {
+    border-radius: 12px;
+    background: var(--fog);
+    overflow: hidden;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  .plan-cell:active { opacity: 0.75; }
+  .plan-cell img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
+
+  /* ===== 房源信息 ===== */
+  .spec-list { display: flex; flex-direction: column; gap: 12px; }
+  .spec-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .spec-label { flex-shrink: 0; font-size: 14px; color: var(--graphite); letter-spacing: -0.12px; }
+  .spec-value { font-size: 14px; color: var(--ink); letter-spacing: -0.12px; text-align: right; word-break: break-all; }
+
+  /* ===== 小区数据分析入口 ===== */
+  .entry {
+    background: var(--sky);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+  }
+  .entry:active { filter: brightness(0.96); }
+  .entry-text { flex: 1; min-width: 0; }
+  .entry-title { font-size: 15px; font-weight: 500; color: var(--ink); letter-spacing: -0.13px; }
+  .entry-sub { margin-top: 4px; font-size: 12px; color: #5a6b85; letter-spacing: -0.1px; }
+  .entry-viz { flex-shrink: 0; display: block; }
+  .entry-arrow { flex-shrink: 0; }
+
+  /* ===== 跟进记录 ===== */
+  .followups { display: flex; flex-direction: column; }
+  .followup { padding: 14px 0; border-bottom: 1px solid var(--hairline); }
+  .followup:first-child { padding-top: 0; }
+  .followup:last-child { border-bottom: none; padding-bottom: 0; }
+  .followup-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .followup-method {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ash);
+    background: var(--fog);
+    border-radius: 9999px;
+    padding: 3px 10px;
+    letter-spacing: 0.01em;
+  }
+  .followup-time { font-size: 12px; color: var(--graphite); letter-spacing: -0.1px; }
+  .followup-content {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--ash);
+    letter-spacing: -0.12px;
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+  .link-more {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 450;
+    color: var(--ink);
+    letter-spacing: -0.12px;
+    cursor: pointer;
+    padding: 8px 0;
+    width: 100%;
+  }
+  .link-more:active { opacity: 0.6; }
+  .link-more svg { transition: transform 0.2s ease; }
+  .link-more--open svg { transform: rotate(180deg); }
+
+  /* ===== 通用状态页 ===== */
+  .state-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 130px 48px 0;
+  }
+  .state-icon { margin-bottom: 20px; }
+  .state-title { font-size: 17px; font-weight: 500; color: var(--ink); letter-spacing: -0.15px; }
+  .state-text { margin-top: 8px; font-size: 14px; color: var(--graphite); letter-spacing: -0.12px; line-height: 1.7; }
+  .state-btn {
+    margin-top: 28px;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.13px;
+    color: var(--pure-white);
+    background: var(--ink);
+    border-radius: 9999px;
+    padding: 11px 32px;
+    cursor: pointer;
+  }
+  .state-btn:active { opacity: 0.8; }
+  .spinner {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(163, 166, 175, 0.35);
+    border-top-color: var(--ink);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+
+  /* ===== 设计说明 ===== */
+  .notes {
+    width: 375px;
+    background: var(--pure-white);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 4px 16px rgba(23, 25, 28, 0.05);
+  }
+  .notes h3 { font-size: 13px; font-weight: 500; color: var(--ink); letter-spacing: -0.11px; margin-bottom: 10px; }
+  .notes ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .notes li {
+    font-size: 12px;
+    color: var(--graphite);
+    line-height: 1.7;
+    letter-spacing: -0.1px;
+    padding-left: 12px;
+    position: relative;
+    text-wrap: pretty;
+  }
+  .notes li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 8px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--dove);
+  }
+  .notes b { color: var(--ash); font-weight: 500; }
+</style>
+</head>
+<body>
+
+  <div class="page-head">
+    <h1>估价详情 · 高保真设计稿</h1>
+    <p>miniapp/pages/valuation/detail · Steep 风格（DESIGN.md）· 结论先行的评估档案页</p>
+    <div class="tokens">
+      <div class="token"><i style="background:#17191c"></i><span>Ink</span></div>
+      <div class="token"><i style="background:#f7f7f8"></i><span>Fog</span></div>
+      <div class="token"><i style="background:#a3a6af"></i><span>Dove</span></div>
+      <div class="token"><i style="background:#5d2a1a"></i><span>Rust</span></div>
+      <div class="token"><i style="background:#fbe1d1"></i><span>Apricot</span></div>
+      <div class="token"><i style="background:#d3e3fc"></i><span>Sky</span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">内容状态</span>
+      <button class="tab tab--on" data-v="priced" onclick="switchView('priced')">已出价</button>
+      <button class="tab" data-v="pending" onclick="switchView('pending')">评估中</button>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">边界状态</span>
+      <button class="tab" data-v="loading" onclick="switchView('loading')">加载中</button>
+      <button class="tab" data-v="needLogin" onclick="switchView('needLogin')">登录失效</button>
+      <button class="tab" data-v="internalOnly" onclick="switchView('internalOnly')">内部限定</button>
+      <button class="tab" data-v="forbidden" onclick="switchView('forbidden')">无权查看</button>
+      <button class="tab" data-v="notFound" onclick="switchView('notFound')">记录不存在</button>
+      <button class="tab" data-v="error" onclick="switchView('error')">加载失败</button>
+    </div>
+  </div>
+
+  <div class="phone">
+    <!-- 状态栏 -->
+    <div class="statusbar">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+      </div>
+    </div>
+
+    <!-- 导航栏（小程序原生） -->
+    <div class="navbar">
+      <div class="nav-back" title="返回上一页">
+        <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="nav-title">评估详情</div>
+      <div class="nav-title-pad"></div>
+      <div class="capsule">
+        <div class="capsule-side">
+          <svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg>
+        </div>
+        <span class="capsule-div"></span>
+        <div class="capsule-side">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen">
+
+      <!-- ===== 内容态（已出价 / 评估中 共用主体）===== -->
+      <div class="content" id="content">
+
+        <!-- 1. 估价结果 -->
+        <section class="card">
+          <div class="hero-head">
+            <div class="hero-name">仁恒河滨城</div>
+            <span class="pill pill--warm" id="statusPill">已评估</span>
+          </div>
+          <div class="hero-meta">2室1厅 · 89㎡ · 18/32层 · 南</div>
+
+          <!-- 已出价 -->
+          <div class="price-block" id="heroPriced">
+            <div class="price-caption">评估价格</div>
+            <div class="price-value">
+              <span class="price-sym">¥</span>
+              <span class="price-num">868</span>
+              <span class="price-unit">万</span>
+            </div>
+          </div>
+
+          <!-- 评估中 -->
+          <div class="price-block hidden" id="heroPending">
+            <div class="price-caption">评估价格</div>
+            <div class="pending-row">
+              <span class="pending-dot"></span>
+              <span class="pending-text">评估中，请耐心等待</span>
+            </div>
+          </div>
+
+          <div class="hero-foot" id="heroFoot">评估完成于 2026-08-20 14:32</div>
+        </section>
+
+        <!-- 2. 户型图 -->
+        <section class="card">
+          <div class="card-head">
+            <h2>户型图</h2>
+            <span class="card-note">2 张 · 点击预览</span>
+          </div>
+          <div class="plan-grid">
+            <div class="plan-cell" onclick="alert('wx.previewImage({ current, urls }) — 全屏预览户型图，可左右滑动')">
+              <img src="assets/floor-plan-1.jpg" alt="户型图 · 两居" loading="lazy" />
+            </div>
+            <div class="plan-cell" onclick="alert('wx.previewImage({ current, urls }) — 全屏预览户型图，可左右滑动')">
+              <img src="assets/floor-plan-2.jpg" alt="户型图 · 客厅" loading="lazy" />
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. 房源信息 -->
+        <section class="card">
+          <div class="card-head">
+            <h2>房源信息</h2>
+          </div>
+          <div class="spec-list">
+            <div class="spec-row"><span class="spec-label">小区</span><span class="spec-value">仁恒河滨城</span></div>
+            <div class="spec-row"><span class="spec-label">户型</span><span class="spec-value">2室1厅</span></div>
+            <div class="spec-row"><span class="spec-label">面积</span><span class="spec-value">89㎡</span></div>
+            <div class="spec-row"><span class="spec-label">楼层/朝向</span><span class="spec-value">18/32层 · 南</span></div>
+            <div class="spec-row"><span class="spec-label">留言</span><span class="spec-value">考虑置换，希望尽快出评估结果</span></div>
+            <div class="spec-row"><span class="spec-label">提交时间</span><span class="spec-value">2026-08-09 11:30</span></div>
+          </div>
+        </section>
+
+        <!-- 4. 小区数据分析入口 -->
+        <section class="card entry" onclick="alert('已绑定手机号 → 直接进入「小区数据分析」\n未绑定 → 先弹出手机号绑定授权（phone-bind-modal），绑定成功后自动进入')">
+          <div class="entry-text">
+            <div class="entry-title">小区数据分析</div>
+            <div class="entry-sub">仁恒河滨城 · KPI / 成交趋势 / 分布</div>
+          </div>
+          <svg class="entry-viz" width="44" height="24" viewBox="0 0 44 24" fill="none" aria-hidden="true">
+            <polyline points="1,19 9,15 17,17 25,10 33,13 43,4" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="43" cy="4" r="2.6" fill="#4a90e2"/>
+          </svg>
+          <svg class="entry-arrow" width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+            <path d="M1.5 1.5L6.5 7l-5 5.5" stroke="#777b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </section>
+
+        <!-- 5. 跟进记录 -->
+        <section class="card">
+          <div class="card-head">
+            <h2>跟进记录</h2>
+            <span class="card-note">共 7 条</span>
+          </div>
+          <div class="followups">
+            <div class="followup">
+              <div class="followup-meta"><span class="followup-method">电话</span><span class="followup-time">2026-08-20 14:32</span></div>
+              <div class="followup-content">已电话同步初评结果，客户认可价格区间，约定周末实地看房。</div>
+            </div>
+            <div class="followup">
+              <div class="followup-meta"><span class="followup-method">面谈</span><span class="followup-time">2026-08-18 10:05</span></div>
+              <div class="followup-content">到店面谈，补充装修与车位信息，纳入复评参考。</div>
+            </div>
+            <div class="followup">
+              <div class="followup-meta"><span class="followup-method">带看</span><span class="followup-time">2026-08-15 15:40</span></div>
+              <div class="followup-content">陪看同小区在售两套，客户偏好高区南向，已记录偏好。</div>
+            </div>
+            <div class="followup">
+              <div class="followup-meta"><span class="followup-method">微信</span><span class="followup-time">2026-08-12 09:12</span></div>
+              <div class="followup-content">同步周边最新成交案例，解答税费与贷款问题。</div>
+            </div>
+            <div class="followup">
+              <div class="followup-meta"><span class="followup-method">电话</span><span class="followup-time">2026-08-10 16:20</span></div>
+              <div class="followup-content">确认评估委托范围，提醒准备产权复印件。</div>
+            </div>
+            <div class="followup hidden extra">
+              <div class="followup-meta"><span class="followup-method">微信</span><span class="followup-time">2026-08-09 20:15</span></div>
+              <div class="followup-content">收到户型图与产证照片，资料齐全，转交评估。</div>
+            </div>
+            <div class="followup hidden extra">
+              <div class="followup-meta"><span class="followup-method">电话</span><span class="followup-time">2026-08-09 11:30</span></div>
+              <div class="followup-content">首次联系，介绍评估流程与时效。</div>
+            </div>
+          </div>
+          <button class="link-more" id="moreBtn" onclick="toggleMore()">
+            <span id="moreText">展开剩余 2 条</span>
+            <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="#17191c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </section>
+      </div>
+
+      <!-- ===== 加载中 ===== -->
+      <div class="state-view hidden" id="v-loading">
+        <div class="spinner"></div>
+        <div class="state-text" style="margin-top:18px">加载中...</div>
+      </div>
+
+      <!-- ===== 登录失效 ===== -->
+      <div class="state-view hidden" id="v-needLogin">
+        <div class="state-icon">
+          <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><rect x="7" y="14" width="18" height="12" rx="3.5" stroke="#777b86" stroke-width="1.6"/><path d="M11 14v-3.5a5 5 0 0110 0V14" stroke="#777b86" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="20" r="1.8" fill="#777b86"/></svg>
+        </div>
+        <div class="state-title">登录已失效</div>
+        <div class="state-text">请先登录后查看评估详情</div>
+        <button class="state-btn" onclick="alert('wx.navigateTo → 登录页')">去登录</button>
+      </div>
+
+      <!-- ===== 内部员工限定 ===== -->
+      <div class="state-view hidden" id="v-internalOnly">
+        <div class="state-icon">
+          <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><rect x="4" y="11" width="24" height="14" rx="3.5" stroke="#777b86" stroke-width="1.6"/><path d="M11 11V8.5A3.5 3.5 0 0114.5 5h3A3.5 3.5 0 0121 8.5V11" stroke="#777b86" stroke-width="1.6" stroke-linecap="round"/><path d="M4 16.5h24" stroke="#777b86" stroke-width="1.6"/></svg>
+        </div>
+        <div class="state-text">内部员工暂无法在端内查看评估详情</div>
+      </div>
+
+      <!-- ===== 无权查看 ===== -->
+      <div class="state-view hidden" id="v-forbidden">
+        <div class="state-icon">
+          <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="#777b86" stroke-width="1.6"/><path d="M8.5 23.5l15-15" stroke="#777b86" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="state-text">无权查看该评估</div>
+        <button class="state-btn" onclick="alert('wx.navigateBack()')">返回</button>
+      </div>
+
+      <!-- ===== 记录不存在 ===== -->
+      <div class="state-view hidden" id="v-notFound">
+        <div class="state-icon">
+          <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><path d="M8 4h11l6 6v18H8V4z" stroke="#777b86" stroke-width="1.6" stroke-linejoin="round"/><path d="M19 4v6h6" stroke="#777b86" stroke-width="1.6" stroke-linejoin="round"/><path d="M13 16l6 6M19 16l-6 6" stroke="#777b86" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="state-text">评估记录不存在</div>
+        <button class="state-btn" onclick="alert('wx.navigateBack()')">返回</button>
+      </div>
+
+      <!-- ===== 加载失败 ===== -->
+      <div class="state-view hidden" id="v-error">
+        <div class="state-icon">
+          <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="#777b86" stroke-width="1.6"/><path d="M16 10v7" stroke="#777b86" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="21.5" r="1.4" fill="#777b86"/></svg>
+        </div>
+        <div class="state-text">加载失败，请重试</div>
+        <button class="state-btn" onclick="alert('loadDetail() — 重新拉取 /public/leads/{id}')">重试</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 设计说明 ===== -->
+  <div class="notes">
+    <h3>设计说明 · Steep（DESIGN.md）</h3>
+    <ul>
+      <li><b>结论先行</b>：评估结果（价格）置顶为 Hero——白卡内嵌 Apricot Wash 价格块，数字用衬线 Signifier 体系 48px，暖色仅用于价格与状态。</li>
+      <li><b>单色 chrome</b>：页面为 Fog 画布 + 24px 圆角白卡 + 三层签名阴影；信息层级靠字重（400/500）与 Graphite/Dove 灰阶完成，不引入额外色彩。</li>
+      <li><b>冷暖分工</b>：暖色（Apricot/Rust）只属于「价格」；冷色（Sky Wash + 蓝色迷你折线）只属于「小区数据分析」入口。</li>
+      <li><b>交互</b>：户型图点击 wx.previewImage 全屏预览；小区分析入口先校验手机号绑定（phone-bind-modal）；跟进记录每批 5 条，「展开剩余」为文字链（次级动作不做实心按钮）。</li>
+      <li><b>状态全覆盖</b>：已出价 / 评估中 / 加载中 / 登录失效 / 内部限定 / 无权查看 / 记录不存在 / 加载失败；每屏最多一个 Ink 实心 CTA（状态页按钮）。</li>
+    </ul>
+  </div>
+
+  <script>
+    function switchView(v) {
+      var content = document.getElementById("content");
+      var priced = document.getElementById("heroPriced");
+      var pending = document.getElementById("heroPending");
+      var pill = document.getElementById("statusPill");
+      var foot = document.getElementById("heroFoot");
+      var states = ["loading", "needLogin", "internalOnly", "forbidden", "notFound", "error"];
+      var isState = states.indexOf(v) !== -1;
+
+      content.classList.toggle("hidden", isState);
+      states.forEach(function (s) {
+        document.getElementById("v-" + s).classList.toggle("hidden", s !== v);
+      });
+
+      if (v === "priced") {
+        priced.classList.remove("hidden");
+        pending.classList.add("hidden");
+        pill.textContent = "已评估";
+        pill.className = "pill pill--warm";
+        foot.textContent = "评估完成于 2026-08-20 14:32";
+      } else if (v === "pending") {
+        priced.classList.add("hidden");
+        pending.classList.remove("hidden");
+        pill.textContent = "评估中";
+        pill.className = "pill pill--muted";
+        foot.textContent = "提交于 2026-08-09 11:30";
+      }
+
+      document.querySelectorAll(".tab").forEach(function (t) {
+        t.classList.toggle("tab--on", t.dataset.v === v);
+      });
+    }
+
+    function toggleMore() {
+      var extras = document.querySelectorAll(".followup.extra");
+      var btn = document.getElementById("moreBtn");
+      var text = document.getElementById("moreText");
+      var expanded = !extras[0].classList.contains("hidden");
+      extras.forEach(function (el) {
+        el.classList.toggle("hidden", expanded);
+      });
+      text.textContent = expanded ? "展开剩余 2 条" : "收起";
+      btn.classList.toggle("link-more--open", !expanded);
+    }
+  </script>
+</body>
+</html>

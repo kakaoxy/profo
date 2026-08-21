@@ -1,11 +1,17 @@
 <view class="page">
   <!-- 加载中 -->
   <view class="state" wx:if="{{loading}}">
+    <view class="state__icons">
+      <view class="spinner"></view>
+    </view>
     <view class="state__text">加载中...</view>
   </view>
 
   <!-- 未登录态 -->
   <view class="state" wx:elif="{{needLogin}}">
+    <view class="state__icon">
+      <view class="state__icon-svg">🔒</view>
+    </view>
     <view class="state__title">登录已失效</view>
     <view class="state__text">请先登录后查看评估详情</view>
     <view class="state__btn" bindtap="onGoLogin">去登录</view>
@@ -13,46 +19,76 @@
 
   <!-- 内部员工限定态 -->
   <view class="state" wx:elif="{{internalOnly}}">
+    <view class="state__icon">
+      <view class="state__icon-svg">🏠</view>
+    </view>
     <view class="state__text">内部员工暂无法在端内查看评估详情</view>
   </view>
 
   <!-- 无权查看 -->
   <view class="state" wx:elif="{{forbidden}}">
+    <view class="state__icon">
+      <view class="state__icon-svg">⛔</view>
+    </view>
     <view class="state__text">无权查看该评估</view>
     <view class="state__btn" bindtap="onBack">返回</view>
   </view>
 
   <!-- 记录不存在 -->
   <view class="state" wx:elif="{{notFound}}">
+    <view class="state__icon">
+      <view class="state__icon-svg">📄</view>
+    </view>
     <view class="state__text">评估记录不存在</view>
     <view class="state__btn" bindtap="onBack">返回</view>
   </view>
 
   <!-- 错误态 -->
   <view class="state" wx:elif="{{error}}">
+    <view class="state__icon">
+      <view class="state__icon-svg">!</view>
+    </view>
     <view class="state__text">加载失败，请重试</view>
     <view class="state__btn" bindtap="onRetry">重试</view>
   </view>
 
   <!-- 详情内容 -->
   <block wx:else>
-    <!-- 1. 房源信息 -->
-    <view class="section">
-      <view class="section__title">房源信息</view>
-      <view class="info-row"><text class="info-label">小区</text><text class="info-value">{{community_name}}</text></view>
-      <view class="info-row" wx:if="{{layout}}"><text class="info-label">户型</text><text class="info-value">{{layout}}</text></view>
-      <view class="info-row" wx:if="{{area}}"><text class="info-label">面积</text><text class="info-value">{{area}}</text></view>
-      <view class="info-row" wx:if="{{floor_display}}"><text class="info-label">楼层/朝向</text><text class="info-value">{{floor_display}}</text></view>
-      <view class="info-row" wx:if="{{remarks}}"><text class="info-label">留言</text><text class="info-value">{{remarks}}</text></view>
-      <view class="info-row"><text class="info-label">提交时间</text><text class="info-value">{{created_at}}</text></view>
+    <!-- 1. 评估价格（结论先行） -->
+    <view class="card hero">
+      <view class="hero__head">
+        <view class="hero__name">{{community_name}}</view>
+        <view class="pill {{hasEvalPrice ? 'pill--warm' : 'pill--muted'}}">
+          {{hasEvalPrice ? '已评估' : '评估中'}}
+        </view>
+      </view>
+      <view class="hero__meta" wx:if="{{layout || area || floor_display}}">
+        {{layout}}{{layout ? ' · ' : ''}}{{area}}{{area ? ' · ' : ''}}{{floor_display}}
+      </view>
+      <view class="price-block">
+        <view class="price-block__caption">评估价格</view>
+        <view class="price-row" wx:if="{{hasEvalPrice}}">
+          <text class="price-sym">¥</text>
+          <text class="price-num">{{evalPrice}}</text>
+          <text class="price-unit">万</text>
+        </view>
+        <view class="pending-row" wx:else>
+          <view class="pending-dot"></view>
+          <text class="pending-text">评估中，请耐心等待</text>
+        </view>
+      </view>
+      <view class="hero__foot">提交于 {{created_at}}</view>
     </view>
 
-    <!-- 2. 户型图 -->
-    <view class="section" wx:if="{{images.length > 0}}">
-      <view class="section__title">户型图</view>
-      <view class="image-grid">
+    <!-- 2. 户型图（未提交户型图则不渲染本区块） -->
+    <view class="card" wx:if="{{images.length > 0}}">
+      <view class="card__head">
+        <view class="card__title">户型图</view>
+        <view class="card__note">{{images.length}} 张 · 点击预览</view>
+      </view>
+      <view class="plan-grid">
         <image
-          class="image-cell"
+          class="plan-cell"
           wx:for="{{images}}"
           wx:key="*this"
           src="{{item}}"
@@ -63,35 +99,61 @@
       </view>
     </view>
 
-    <!-- 3. 评估价格 -->
-    <view class="section section--price">
-      <view class="section__title">评估价格</view>
-      <block wx:if="{{hasEvalPrice}}">
-        <view class="price-row">
-          <text class="price-sym">¥</text>
-          <text class="price-num">{{evalPrice}}</text>
-          <text class="price-unit">万</text>
-        </view>
-      </block>
-      <view class="price-pending" wx:else>评估中，请耐心等待</view>
+    <!-- 3. 房源信息 -->
+    <view class="card">
+      <view class="card__head">
+        <view class="card__title">房源信息</view>
+      </view>
+      <view class="spec-list">
+        <view class="spec-row"><text class="spec-label">小区</text><text class="spec-value">{{community_name}}</text></view>
+        <view class="spec-row" wx:if="{{layout}}"><text class="spec-label">户型</text><text class="spec-value">{{layout}}</text></view>
+        <view class="spec-row" wx:if="{{area}}"><text class="spec-label">面积</text><text class="spec-value">{{area}}</text></view>
+        <view class="spec-row" wx:if="{{floor_display}}"><text class="spec-label">楼层/朝向</text><text class="spec-value">{{floor_display}}</text></view>
+        <view class="spec-row" wx:if="{{remarks}}"><text class="spec-label">留言</text><text class="spec-value">{{remarks}}</text></view>
+        <view class="spec-row"><text class="spec-label">提交时间</text><text class="spec-value">{{created_at}}</text></view>
+      </view>
     </view>
 
-    <!-- 4. 跟进记录 -->
-    <view class="section">
-      <view class="section__title">跟进记录</view>
-      <block wx:if="{{followups.length > 0}}">
+    <!-- 4. 小区数据分析入口（绑定手机号后可进入） -->
+    <view class="card entry" wx:if="{{community_name}}" bindtap="onTapCommunityAnalysis">
+      <view class="entry__text">
+        <view class="entry__title">小区数据分析</view>
+        <view class="entry__sub">{{community_name}} · KPI/成交趋势/分布</view>
+      </view>
+      <view class="entry__chart">
+        <view class="entry__line"></view>
+        <view class="entry__dot"></view>
+      </view>
+      <view class="entry__arrow"></view>
+    </view>
+
+    <!-- 5. 跟进记录 -->
+    <view class="card">
+      <view class="card__head">
+        <view class="card__title">跟进记录</view>
+        <view class="card__note" wx:if="{{hasMore}}">共 {{allFollowups.length}} 条</view>
+      </view>
+      <view wx:if="{{followups.length > 0}}">
         <view class="followup" wx:for="{{followups}}" wx:key="method">
           <view class="followup__meta">
-            <text class="followup__method">{{item.method}}</text>
-            <text class="followup__time">{{item.at}}</text>
+            <view class="followup__method">{{item.method}}</view>
+            <view class="followup__time">{{item.at}}</view>
           </view>
           <view class="followup__content">{{item.content}}</view>
         </view>
-        <view class="load-more" wx:if="{{hasMore}}" bindtap="onLoadMoreFollowups">
-          加载更多（剩余 {{remaining}} 条）
+        <view class="link-more" wx:if="{{hasMore}}" bindtap="onLoadMoreFollowups">
+          <text>展开剩余 {{remaining}} 条</text>
+          <view class="link-more__chevron"></view>
         </view>
-      </block>
+      </view>
       <view class="empty" wx:else>暂无跟进记录</view>
     </view>
   </block>
 </view>
+
+<!-- 手机号绑定授权弹窗：小区数据分析入口未绑定手机号时主动触发 -->
+<phone-bind-modal
+  id="phoneModal"
+  bind:bound="onPhoneModalBound"
+  bind:gobindaccount="onPhoneModalGoBindAccount"
+/>

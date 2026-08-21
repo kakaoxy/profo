@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "phone-bind-modal": "/components/phone-bind-modal/index"
+  },
   "navigationBarTitleText": "评估详情"
 }

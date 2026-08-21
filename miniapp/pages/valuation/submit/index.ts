@@ -133,6 +133,7 @@ interface PageCustom {
   onPhoneTap(): void;
   onPhoneModalBound(): void;
   onPhoneModalGoBindAccount(): void;
+  onGoCommunitySample(): void;
   requireLogin(): void;
   onGoLogin(): void;
   onSubmit(): void;
@@ -537,6 +538,11 @@ Page<PageData, PageCustom>({
   /** 用户在合并确认视图选「前往绑定已有账号」：跳转 bind-account 页. */
   onPhoneModalGoBindAccount() {
     wx.navigateTo({ url: "/pages/bind-account/index/index" });
+  },
+
+  /** 小区市场分析示例入口：直接进入示例数据页（不校验登录）. */
+  onGoCommunitySample() {
+    wx.navigateTo({ url: "/pages/community-analysis/index/index?mode=sample" });
   },
 
   /**

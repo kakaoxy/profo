@@ -20,7 +20,8 @@
     "pages/bind-account/index/index",
     "pages/recruit/detail/index",
     "pages/recruit/mine/index",
-    "pages/analysis/index/index"
+    "pages/analysis/index/index",
+    "pages/community-analysis/index/index"
   ],
   "window": {
     "navigationBarTitleText": "美房宝",

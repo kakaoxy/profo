@@ -196,6 +196,7 @@ class RateLimits:
     PUBLIC_LEAD_LIST = "60/minute"
     PUBLIC_FILE_UPLOAD = "300/hour"
     PUBLIC_COMMUNITY_SEARCH = "60/minute"
+    PUBLIC_COMMUNITY_ANALYSIS = "60/minute"
     PUBLIC_REGISTER = "10/hour"
     PUBLIC_LOGOUT = "60/minute"
 

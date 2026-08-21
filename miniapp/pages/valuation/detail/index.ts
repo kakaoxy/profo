@@ -27,6 +27,12 @@ interface DisplayFollowup {
   at: string;
 }
 
+/** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
+interface PhoneBindModalInstance {
+  show(): void;
+  hide(): void;
+}
+
 /** 页面 data. */
 interface PageData {
   leadId: string;
@@ -55,6 +61,8 @@ interface PageData {
   followupPage: number;
   hasMore: boolean;
   remaining: number;
+  /** 待进入小区数据分析的小区名（未绑定手机号时暂存，绑定成功后使用）. */
+  pendingCommunityName: string;
 }
 
 /** 页面自定义方法. */
@@ -65,6 +73,10 @@ interface PageCustom {
   applyDetail(detail: LeadDetail): void;
   onLoadMoreFollowups(): void;
   onPreviewImage(e: WechatMiniprogram.BaseEvent): void;
+  onTapCommunityAnalysis(): void;
+  enterCommunityAnalysis(name: string): void;
+  onPhoneModalBound(): void;
+  onPhoneModalGoBindAccount(): void;
   onGoLogin(): void;
   onBack(): void;
   onRetry(): void;
@@ -93,6 +105,7 @@ Page<PageData, PageCustom>({
     followupPage: 1,
     hasMore: false,
     remaining: 0,
+    pendingCommunityName: "",
   },
 
   getToken() {
@@ -205,6 +218,52 @@ Page<PageData, PageCustom>({
   onPreviewImage(e: WechatMiniprogram.BaseEvent) {
     const current = e.currentTarget.dataset.src as string;
     wx.previewImage({ current, urls: this.data.images });
+  },
+
+  /**
+   * 小区数据分析入口（手机号门槛）：
+   * - 已绑定手机号 → 直接进入分析页；
+   * - 未绑定手机号 → 暂存小区名并弹出 phone-bind-modal，绑定成功后进入；
+   * - 请求失败 → 提示需登录（/public/* 自动注入 C 端令牌，失效时 request.ts 抛错）.
+   */
+  async onTapCommunityAnalysis() {
+    const communityName = this.data.community_name;
+    if (!communityName) {
+      return;
+    }
+    try {
+      const me = await request<components["schemas"]["PublicUserInfo"]>({ url: "/public/auth/me" });
+      if (me.phone) {
+        this.enterCommunityAnalysis(communityName);
+        return;
+      }
+      this.setData({ pendingCommunityName: communityName });
+      const modal = this.selectComponent("#phoneModal") as unknown as PhoneBindModalInstance | null;
+      if (modal && typeof modal.show === "function") {
+        modal.show();
+      }
+    } catch {
+      wx.showToast({ title: "请先登录后查看", icon: "none" });
+    }
+  },
+
+  /** 进入真实模式的小区数据分析页（携带小区名）. */
+  enterCommunityAnalysis(name: string) {
+    wx.navigateTo({
+      url: "/pages/community-analysis/index/index?mode=real&community_name=" + encodeURIComponent(name),
+    });
+  },
+
+  /** 手机号绑定成功：进入先前暂存（或当前）的小区分析. */
+  onPhoneModalBound() {
+    wx.showToast({ title: "手机号绑定成功", icon: "success" });
+    const name = this.data.pendingCommunityName || this.data.community_name;
+    this.enterCommunityAnalysis(name);
+  },
+
+  /** 用户在合并确认视图选「前往绑定已有账号」：跳转 bind-account 页. */
+  onPhoneModalGoBindAccount() {
+    wx.navigateTo({ url: "/pages/bind-account/index/index" });
   },
 
   onGoLogin() {

@@ -84,6 +84,44 @@
   white-space: nowrap;
 }
 
+/* 小区市场分析示例入口（轻量卡，对齐 phone-banner/表单卡片风格） */
+.sample-entry {
+  margin: 0 40rpx 32rpx;
+  padding: 24rpx 28rpx;
+  background: var(--pure-white);
+  border-radius: 28rpx;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.sample-entry:active {
+  background: var(--fog);
+}
+.sample-entry__text {
+  flex: 1;
+  min-width: 0;
+}
+.sample-entry__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sample-entry__sub {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+  line-height: 1.4;
+}
+.sample-entry__arrow {
+  flex-shrink: 0;
+  width: 16rpx;
+  height: 16rpx;
+  border-right: 4rpx solid #c3c7cf;
+  border-top: 4rpx solid #c3c7cf;
+  transform: rotate(45deg);
+}
+
 /* 员工专属区块（仅内部员工展示；样式对齐招募落地页底部区块） */
 .share-tip {
   margin: 24rpx 40rpx 0;

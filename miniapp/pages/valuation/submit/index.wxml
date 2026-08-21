@@ -19,6 +19,15 @@
     <text class="phone-banner__action" bindtap="onPhoneTap">完善手机号 ›</text>
   </view>
 
+  <!-- 小区市场分析示例入口（不校验登录，直接进入示例分析） -->
+  <view class="sample-entry" bindtap="onGoCommunitySample">
+    <view class="sample-entry__text">
+      <view class="sample-entry__title">看看小区市场行情示例</view>
+      <view class="sample-entry__sub">提交估价并绑定手机号，解锁您小区的分析</view>
+    </view>
+    <view class="sample-entry__arrow"></view>
+  </view>
+
   <!-- 表单 -->
   <view class="form-page">
     <!-- 小区名称（复用 community-search 组件，输入即搜索） -->

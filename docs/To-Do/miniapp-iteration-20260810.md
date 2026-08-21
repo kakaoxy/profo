@@ -7,6 +7,8 @@
 
 > ✅ **状态更新（2026-08-21）**：模块 3「数据分析」已**完成**（KPI / 趋势图表 / 价格·户型·楼层分布、商圈区域联动选择器、新增 `GET /admin/business-circles` 接口），见 [§3](#3-数据分析模块对等-adminreportsmarket) 底部「完成记录」。其余模块（§2 关于页分享、§4 小区分析、§5 微信登录）仍为待办。
 
+> ✅ **状态更新（2026-08-21 二次）**：模块 4「小区数据分析」已**完成**（C 端公开端点 `GET /public/communities/{id}/analysis`、独立完整分析页 real/sample 双模式、估价详情页入口+手机号门槛、估价页示例链接、免责声明），见 [§4](#4-小区数据分析模块-pagesvaluationdetail) 底部「完成记录」。其余模块（§2 关于页分享、§5 微信登录）仍为待办。
+
 ## 总览
 
 | # | 模块 | 页面/入口 | 对应后台 | 受众 | 后端依赖 | 状态 |
@@ -14,7 +16,7 @@
 | 1 | 房源查询 | profile 内部入口 → 新页 `pages/properties/*` | `admin/properties` | 内部员工 | 无（复用现有 `GET /api/v1/properties`） | ✅ 已完成 |
 | 2 | 关于页分享 | `pages/about` | - | 公开（C 端） | 无（仅前端分享配置） | ✅ 待办 |
 | 3 | 数据分析 | profile 内部入口 → 新页 `pages/analysis/*` | `admin/reports/market` | 内部员工 | 无（复用现有 `GET /api/v1/reports/market/*`） | ✅ 已完成 |
-| 4 | 小区数据分析 | `pages/valuation/detail`（房源信息与评估价格之间） | `admin/reports/communities` | C 端 | **需新增 C 端公开接口（见 §4 不确定项）** | ⬜ 待办 |
+| 4 | 小区数据分析 | `pages/valuation/detail`（评估价格区后入口）→ 新页 `pages/community-analysis/index` | `admin/reports/communities` | C 端 | 已新增 `GET /public/communities/{id}/analysis` | ✅ 已完成 |
 | 5 | 微信授权登录 | profile 登录按钮 | 后端 `/auth/wechat/login` 已实现 | C 端/内部 | 主要缺口在前端（见 §5 现状核对） | ✅ 待办 |
 
 ---
@@ -152,6 +154,14 @@
 5. `pnpm tsc --noEmit` 通过；后端 `pytest` 覆盖新端点。
 
 **验证**：C 端用户在评估详情页房源信息下方看到小区分析摘要；后端单测通过。
+
+> ✅ **完成记录（2026-08-21）**：本模块已全部落地，且相对原计划 §4 经用户确认做形态升级：
+> - **形态**：独立完整分析页（「数据分析的小区限定版」，非原计划详情页内嵌摘要区块）；估价详情页「评估价格」区后放「小区数据分析」入口卡片。
+> - **后端**：新增 C 端公开端点 `GET /public/communities/{id}/analysis?range=&trend_dim=`（`CurrentCustomerUserDep` + `ValidCommunityIdDep`，限流 `PUBLIC_COMMUNITY_ANALYSIS`，聚合复用 `services/reports/aggregations.get_community_detail`），Schema `PublicCommunityAnalysisResponse` 复用报表子模型。
+> - **页面**：新建 `pages/community-analysis/index`（real/sample 双模式）——real 模式按 `community_name` 经 `/public/communities/search` 解析后拉分析端点（范围/趋势维度/图表数值双模式）；sample 模式渲染 `constants.ts` 静态示例数据 + 「示例」徽标 + 转化 CTA（跳估价页）。
+> - **门槛与转化**：服务端强制手机号门槛——分析端点校验当前用户未绑定手机号时返回 403（`PermissionDeniedError`），前端拦截仅为体验优化；估价详情入口点击先查 `/public/auth/me` 手机号，无手机号弹 `phone-bind-modal`，绑定后直达；估价页新增「小区市场分析示例」链接（未登录可看）；两种模式底部均有一行小字免责声明「数据来源为业主反馈网签数据仅供参考」。
+> - **复用**：通用视图纯函数下沉 `utils/report-views.ts`（analysis 页改 re-export，回归不变）；canvas 复用 `utils/trend-chart.ts`。
+> - **验证**：后端 `test_public_community_analysis.py` 8 例全绿（401/403/404/200/range/trend_dim/422）+ ruff 通过；`pnpm gen-api` 同步类型；小程序 `tsc --noEmit` 零错、vitest 91 全绿。⚠️真机走查待办。
 
 ---
 
