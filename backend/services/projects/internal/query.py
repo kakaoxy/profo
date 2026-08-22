@@ -5,7 +5,7 @@
 
 import uuid
 
-from sqlalchemy import case, func, or_, text
+from sqlalchemy import and_, case, exists, func, or_, text
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from models import Project, ProjectContract, ProjectInteraction
@@ -170,8 +170,9 @@ class ProjectQueryService:
             # 同时预加载 operator 关系以构建销售记录操作人嵌套对象
             options.append(selectinload(Project.interactions).selectinload(ProjectInteraction.operator))
 
-        # 契约表需进主查询的情况：合同编号排序 / 关键词搜索（匹配合同编号）／工作台监控排序
-        join_contract = monitor_sort or contract_sort or bool(keyword)
+        # 契约表需进主查询的情况：合同编号排序 / 工作台监控排序
+        # （keyword 搜索合同编号改用 exists 子查询，不要求 join 进主查询）
+        join_contract = monitor_sort or contract_sort
         if join_contract:
             # 显式 outerjoin contract：以 contains_eager 复用此 join 承担预加载，
             # 避免 joinedload 产生重复 join
@@ -183,10 +184,17 @@ class ProjectQueryService:
 
         if keyword:
             kw = escape_like(keyword.lower())
+            # 合同编号匹配用 exists 子查询而非引用 outerjoin 右表列：
+            # WHERE 中直接过滤右表会把 LEFT JOIN 收紧成隐式 INNER JOIN
             query = query.filter(
                 or_(
                     func.lower(Project.community_name).like(f"%{kw}%", escape="\\"),
-                    func.lower(ProjectContract.contract_no).like(f"%{kw}%", escape="\\"),
+                    exists().where(
+                        and_(
+                            ProjectContract.project_id == Project.id,
+                            func.lower(ProjectContract.contract_no).like(f"%{kw}%", escape="\\"),
+                        )
+                    ),
                 ),
             )
 
