@@ -30,7 +30,7 @@ type RecruitCampaignResponse = components["schemas"]["RecruitCampaignResponse"];
  */
 const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 
-/** 内部入口（viewing/renovation/properties 已落地；recruit 走 onRecruitTap 拉活动跳转；ledger 待开放）. */
+/** 内部入口（viewing/renovation/properties/ledger 已带 route；recruit 走 onRecruitTap 拉活动跳转）. */
 const INTERNAL_ENTRIES = [
   { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房", route: "/pages/properties/list/index" },
   { key: "analysis", title: "数据分析", sub: "商圈/小区市场行情", icon: "析", route: "/pages/analysis/index/index" },
@@ -38,7 +38,7 @@ const INTERNAL_ENTRIES = [
   { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装", route: "/pages/renovation/projects/index/index" },
   { key: "valuation-acquired", title: "估价获客", sub: "分享获客 / 线索跟进", icon: "估", route: "/pages/valuation/submit/index" },
   { key: "recruit", title: "招募计划", sub: "分享拉新 / 线索归因", icon: "招" },
-  { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账" },
+  { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账", route: "/pages/ledger/projects/index/index" },
 ];
 
 interface InternalEntry {
@@ -458,7 +458,7 @@ Page<PageData, PageCustom>({
       wx.switchTab({ url: "/pages/valuation/submit/index" });
       return;
     }
-    // 已落地条目（route 存在）跳转对应页；未落地（记账）统一待开放
+    // 已落地条目（route 存在）跳转对应页；未落地条目统一待开放
     const route = e.currentTarget.dataset.route as string | undefined;
     if (route) {
       wx.navigateTo({ url: route });

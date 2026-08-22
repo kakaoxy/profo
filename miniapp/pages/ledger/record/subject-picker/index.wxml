@@ -1,0 +1,48 @@
+<view class="sheet-mask" wx:if="{{visible}}" bindtap="onMask">
+  <view class="sheet" catchtap="noop">
+    <view class="sheet-handle"></view>
+    <view class="sheet-title">选择科目</view>
+
+    <view class="sheet-search">
+      <view class="sheet-search__icon">🔍</view>
+      <input class="sheet-search__input" placeholder="搜索科目名称" placeholder-class="sheet-search__ph" value="{{keyword}}" bindinput="onSearchInput" />
+    </view>
+
+    <!-- 加载中 -->
+    <view class="sheet-state" wx:if="{{loading}}">
+      <view class="sheet-state__text">加载中...</view>
+    </view>
+
+    <!-- 加载失败 -->
+    <view class="sheet-state" wx:elif="{{error}}">
+      <view class="sheet-state__text">加载失败</view>
+      <view class="sheet-state__btn" bindtap="onRetry">重试</view>
+    </view>
+
+    <!-- 分组列表 -->
+    <scroll-view class="subj-scroll" scroll-y wx:elif="{{groups.length > 0}}">
+      <view class="subj-group" wx:for="{{groups}}" wx:key="level" wx:for-item="g">
+        <view class="subj-grouphead">{{g.headText}}</view>
+        <view
+          class="subj-row {{item.selected ? 'subj-row--active' : ''}}"
+          wx:for="{{g.items}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          data-name="{{item.name}}"
+          data-level="{{item.level}}"
+          bindtap="onSelect"
+        >
+          <view class="lv-badge">L{{item.level}}</view>
+          <view class="subj-name">{{item.name}}</view>
+          <view class="subj-tag {{item.pnlText === '进损益' ? 'subj-tag--profit' : 'subj-tag--flat'}}">{{item.pnlText}}</view>
+          <view class="subj-check" wx:if="{{item.selected}}">✓</view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 无匹配 -->
+    <view class="sheet-state" wx:else>
+      <view class="sheet-state__text">无匹配科目</view>
+    </view>
+  </view>
+</view>

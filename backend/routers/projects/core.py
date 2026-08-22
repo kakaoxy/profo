@@ -135,6 +135,10 @@ def get_projects(
         bool,
         Query(description="工作台重点监控排序（状态优先级 在售→装修→签约→已售 + 创建时间升序）"),
     ] = False,
+    contract_sort: Annotated[
+        bool,
+        Query(description="按合同编号降序（越新越前），供项目记账列表使用"),
+    ] = False,
 ) -> PaginatedResponse[ProjectResponse]:
     """获取项目列表.
 
@@ -146,10 +150,12 @@ def get_projects(
         status_filter=filters.status,
         community_name=filters.community_name,
         business_form=filters.business_form,
+        keyword=filters.keyword,
         page=pagination.page,
         page_size=pagination.page_size,
         include_interactions=include_interactions,
         monitor_sort=monitor_sort,
+        contract_sort=contract_sort,
     )
     return PaginatedResponse(
         items=result["items"],

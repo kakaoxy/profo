@@ -14024,6 +14024,8 @@ export interface operations {
                 include_interactions?: boolean;
                 /** @description 工作台重点监控排序（状态优先级 在售→装修→签约→已售 + 创建时间升序） */
                 monitor_sort?: boolean;
+                /** @description 按合同编号降序（越新越前），供项目记账列表使用 */
+                contract_sort?: boolean;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -14031,6 +14033,7 @@ export interface operations {
                 status?: components["schemas"]["ProjectStatus"] | null;
                 community_name?: string | null;
                 business_form?: components["schemas"]["BusinessForm"] | null;
+                keyword?: string | null;
             };
             header?: never;
             path?: never;

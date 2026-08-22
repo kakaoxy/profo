@@ -105,7 +105,7 @@ export function LedgerDetailTableFilter({
           autoComplete="off"
         />
         <Select value={subjectFilter} onValueChange={onSubjectFilterChange}>
-          <SelectTrigger className="h-9 w-[160px] bg-card border-border" aria-label="筛选科目分类">
+          <SelectTrigger className="h-9 w-40 bg-card border-border" aria-label="筛选科目分类">
             <SelectValue placeholder="全部科目" />
           </SelectTrigger>
           <SelectContent>
@@ -118,7 +118,7 @@ export function LedgerDetailTableFilter({
           </SelectContent>
         </Select>
         <Select value={voucherFilter} onValueChange={onVoucherFilterChange}>
-          <SelectTrigger className="h-9 w-[120px] bg-card border-border" aria-label="筛选凭证状态">
+          <SelectTrigger className="h-9 w-30 bg-card border-border" aria-label="筛选凭证状态">
             <SelectValue placeholder="凭证状态" />
           </SelectTrigger>
           <SelectContent>

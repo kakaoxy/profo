@@ -20,6 +20,7 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
 - ``_finance``：跟投管理表、资金账本、科目管理、enum 同步、项目结算列等迁移
 - ``_type_migrations``：timestamp → timestamptz、VARCHAR → date / text 等列类型合规性修复
 - ``_permission_system``：微信 OAuth 表、user_roles、权限系统三张表与索引
+- ``_search_indexes``：模糊搜索 pg_trgm GIN 索引（O1：前导通配符 LIKE 全表扫描）
 - 其余独立迁移（add_counterparty_type / fix_image_urls / migrate_uploads_to_oss 等）保留为单独模块
 
 迁移清单：
@@ -86,6 +87,9 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
 - create_community_images_table: 幂等创建 community_images 表 + 索引
   + 部分唯一索引 uq_community_image_url (community_id, url) WHERE is_deleted=false，
   允许同小区已删除记录被重新插入（小区户型图库管理）
+- add_trgm_search_indexes: 安装 pg_trgm 并为 leads/communities/investments/
+  projects/project_contracts/users/l4_marketing_projects 的模糊搜索列创建
+  trigram GIN 表达式索引，加速 lower(col) 及普通 LIKE '%kw%' 前导通配符查询（O1，幂等）
 
 """
 
@@ -134,6 +138,7 @@ from migrations._schema_columns import (
     drop_other_decoration_amount_column,
     drop_soft_actual_cost_column,
 )
+from migrations._search_indexes import add_trgm_search_indexes
 from migrations._seeds import _PERMISSIONS_SEED, _ROLE_PERMISSIONS_SEED
 from migrations._seeds_subjects import _INITIAL_SUBJECTS
 from migrations._type_migrations import (
@@ -262,6 +267,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # 招募计划二期：补建 recruit_campaigns.poster_bg_url 列与 recruit_visits.referrer 索引
         add_poster_bg_url_to_campaigns(engine)
         ensure_visit_referrer_index(engine)
+        # O1：模糊搜索 pg_trgm GIN 索引（前导通配符 LIKE 全表扫描修复）
+        add_trgm_search_indexes(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

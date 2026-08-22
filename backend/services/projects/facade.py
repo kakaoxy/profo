@@ -87,6 +87,8 @@ class ProjectService:
         *,
         include_interactions: bool = False,
         monitor_sort: bool = False,
+        keyword: str | None = None,
+        contract_sort: bool = False,
     ) -> dict[str, Any]:
         """获取项目列表."""
         effective_page_size = page_size if page_size is not None else settings.default_page_size
@@ -98,6 +100,8 @@ class ProjectService:
             page_size=effective_page_size,
             include_interactions=include_interactions,
             monitor_sort=monitor_sort,
+            keyword=keyword,
+            contract_sort=contract_sort,
         )
 
     def update_project(self, project_id: uuid.UUID, update_data: ProjectUpdate) -> ProjectResponse:

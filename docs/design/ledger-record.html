@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>小程序 · 项目记账 · 高保真设计稿</title>
+<style>
+  /* ===== Steep 设计令牌（DESIGN.md）===== */
+  :root {
+    --ink: #17191c;
+    --pure-white: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky: #d3e3fc;
+    --hairline: rgba(163, 166, 175, 0.3);
+    --shadow-card: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    /* 金额配色（中国习惯 · 与后台一致）：流出=绿 negative，流入=红 positive */
+    --neg: #0f7a4c;   /* 流出（支出） */
+    --pos: #cf3f3a;   /* 流入（收入） */
+    --amber: #b98a2e; /* 缺凭证弱标签 */
+    --font-body: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: #e9ebef;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+    gap: 28px;
+  }
+
+  /* ===== 页头 ===== */
+  .page-head { text-align: center; color: #3b4252; }
+  .page-head h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.2px; }
+  .page-head p { font-size: 13px; color: #6b7280; margin-top: 6px; }
+  .tokens {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .token { display: flex; align-items: center; gap: 5px; }
+  .token i { display: block; width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(23,25,28,0.08); }
+  .token span { font-size: 10px; color: #6b7280; letter-spacing: 0.02em; }
+
+  /* ===== 画板（每屏一块）===== */
+  .board { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .board-wash { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6b7280; font-weight: 500; letter-spacing: 0.02em; margin-bottom: 4px; }
+  .board-wash::before, .board-wash::after { content: ""; height: 1px; width: 34px; background: #d4d8e0; }
+
+  /* ===== 状态切换 ===== */
+  .controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .ctrl-group { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .ctrl-label { font-size: 12px; color: #6b7280; margin-right: 2px; }
+  .tab {
+    border: 1px solid #d4d8e0;
+    background: #fff;
+    color: #4c4c4c;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .tab:hover { border-color: #a3a6af; }
+  .tab--on { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 500; }
+
+  /* ===== 手机外框 ===== */
+  .phone {
+    width: 375px;
+    background: var(--fog);
+    border-radius: 40px;
+    box-shadow: 0 24px 60px rgba(23, 25, 28, 0.18);
+    overflow: hidden;
+    border: 8px solid #1c1e26;
+    position: relative;
+  }
+  .phone::before {
+    content: "";
+    position: absolute; top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: 110px; height: 22px;
+    background: #1c1e26; border-radius: 12px; z-index: 60;
+  }
+
+  /* ===== 状态栏 + 导航栏 ===== */
+  .statusbar {
+    height: 44px;
+    background: var(--pure-white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px 0;
+  }
+  .sb-time { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.1px; }
+  .sb-icons { display: flex; align-items: center; gap: 5px; }
+  .sb-icons svg { display: block; }
+
+  .navbar {
+    background: var(--pure-white);
+    height: 44px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .nav-back {
+    position: absolute; left: 12px;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .nav-title {
+    flex: 1;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.14px;
+    color: var(--ink);
+  }
+  .nav-title-pad { width: 94px; }
+  .capsule {
+    position: absolute; right: 8px;
+    width: 86px; height: 32px;
+    border: 1px solid rgba(23, 25, 28, 0.12);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .capsule-side { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .capsule-div { width: 1px; height: 18px; background: rgba(23, 25, 28, 0.1); }
+
+  /* ===== 屏幕内容 ===== */
+  .screen { background: var(--fog); min-height: 620px; padding-bottom: 40px; position: relative; }
+  .content { padding: 14px 12px 0; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ===== 卡片基座 ===== */
+  .card {
+    background: var(--pure-white);
+    border-radius: 24px;
+    padding: 18px;
+    box-shadow: var(--shadow-card);
+  }
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .card-head h2 { font-size: 15px; font-weight: 500; letter-spacing: -0.13px; color: var(--ink); }
+  .card-note { font-size: 12px; color: var(--graphite); letter-spacing: -0.1px; }
+
+  /* ===== 通用徽章 ===== */
+  .pill {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    letter-spacing: 0.01em;
+  }
+  .pill--sky { background: rgba(74, 133, 214, 0.18); color: #2a5ca0; }
+  .pill--apricot { background: var(--apricot); color: var(--rust); }
+  .pill--warm { background: rgba(209, 120, 66, 0.18); color: #a05a1f; }
+  .pill--fog { background: var(--fog); color: var(--graphite); }
+  .tag-weak {
+    font-size: 10px;
+    color: var(--ash);
+    background: var(--fog);
+    border-radius: 9999px;
+    padding: 2px 8px;
+    letter-spacing: 0.02em;
+  }
+
+  /* 金额 */
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .money-neg { color: var(--neg); } /* 流出 */
+  .money-pos { color: var(--pos); } /* 流入 */
+
+  .hidden { display: none !important; }
+
+  /* ===== 屏① 项目搜索框 ===== */
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--pure-white);
+    border-radius: 16px;
+    padding: 0 14px;
+    height: 44px;
+    box-shadow: var(--shadow-card);
+  }
+  .search svg { flex-shrink: 0; }
+  .search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: transparent;
+  }
+  .search input::placeholder { color: var(--dove); }
+
+  /* 项目卡片 */
+  .proj { display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+  .proj:active { opacity: 0.8; }
+  .proj-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .proj-name { font-size: 16px; font-weight: 500; color: var(--ink); letter-spacing: -0.14px; }
+  .proj-badges { display: flex; align-items: center; gap: 6px; }
+  .proj-comm { font-size: 13px; color: var(--graphite); letter-spacing: -0.11px; }
+  .proj-meta { font-size: 12px; color: var(--dove); letter-spacing: -0.1px; margin-top: 2px; }
+  .end-tip { text-align: center; font-size: 12px; color: var(--dove); letter-spacing: 0.02em; padding: 4px 0 8px; }
+
+  /* ===== 通用状态页 ===== */
+  .state-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 130px 48px 0;
+  }
+  .state-icon { margin-bottom: 18px; }
+  .state-title { font-size: 17px; font-weight: 500; color: var(--ink); letter-spacing: -0.15px; }
+  .state-text { margin-top: 8px; font-size: 14px; color: var(--graphite); letter-spacing: -0.12px; line-height: 1.7; }
+  .state-btn {
+    margin-top: 26px;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.13px;
+    color: var(--pure-white);
+    background: var(--ink);
+    border-radius: 9999px;
+    padding: 11px 32px;
+    cursor: pointer;
+  }
+  .state-btn:active { opacity: 0.8; }
+
+  /* ===== 屏② 汇总卡 ===== */
+  .summary {
+    background: var(--apricot);
+    border-radius: 24px;
+    padding: 18px;
+    box-shadow: var(--shadow-card);
+  }
+  .summary-cols { display: flex; align-items: flex-start; gap: 8px; }
+  .summary-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .sum-label { font-size: 12px; color: var(--graphite); letter-spacing: -0.1px; }
+  .sum-value { font-size: 16px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.1; word-break: break-all; }
+  .sum-div { width: 1px; align-self: stretch; background: rgba(23, 25, 28, 0.1); }
+  .summary-foot { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(93, 42, 26, 0.12); font-size: 12px; color: var(--rust); letter-spacing: -0.1px; }
+
+  /* 流水明细 */
+  .ledger { display: flex; flex-direction: column; padding: 4px 0; }
+  .rec { padding: 14px 0; border-bottom: 1px solid var(--hairline); cursor: pointer; }
+  .rec:first-child { padding-top: 0; }
+  .rec:last-child { border-bottom: none; padding-bottom: 0; }
+  .rec-row { display: flex; align-items: center; gap: 10px; }
+  .rec-left { flex: 1; min-width: 0; }
+  .rec-date { font-size: 11px; color: var(--dove); letter-spacing: -0.05em; }
+  .rec-subject { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .rec-subject-name { font-size: 14px; font-weight: 500; color: var(--ink); letter-spacing: -0.12px; }
+  .lv-badge {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--fog);
+    color: var(--graphite);
+    border-radius: 6px;
+    padding: 1px 5px;
+    letter-spacing: 0.01em;
+  }
+  .rec-flow { margin-top: 4px; font-size: 12px; color: var(--graphite); letter-spacing: -0.1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec-flow .arrow { color: var(--dove); margin: 0 3px; }
+  .rec-flow .tkt-badge { color: var(--ash); font-weight: 500; }
+  .rec-flag-miss {
+    font-size: 10px; color: var(--amber);
+    background: rgba(185, 138, 46, 0.12);
+    border-radius: 9999px; padding: 2px 8px; letter-spacing: 0.02em;
+  }
+  .rec-right { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+  .rec-amount { font-size: 15px; font-weight: 600; letter-spacing: -0.18px; }
+  .rec-sign { font-size: 11px; color: var(--dove); letter-spacing: 0; }
+  .rec-tkt {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--graphite);
+    background: var(--fog); border-radius: 9999px; padding: 2px 8px; letter-spacing: 0.01em;
+  }
+  .rec-tkt i { width: 6px; height: 6px; border-radius: 2px; background: var(--dove); display: block; }
+
+  /* 底部固定按钮 */
+  .fab {
+    position: absolute;
+    left: 12px; right: 12px; bottom: 18px;
+  }
+  .btn-ink {
+    width: 100%;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--ink);
+    color: var(--pure-white);
+    border: none;
+    border-radius: 9999px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.1px;
+    cursor: pointer;
+  }
+  .btn-ink:active { opacity: 0.85; }
+  .btn-ink:disabled { background: var(--dove); cursor: default; }
+  .btn-ink .btn-spinner {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== 屏③ 表单 ===== */
+  .form { display: flex; flex-direction: column; gap: 18px; padding-bottom: 20px; }
+  .field-label { font-size: 13px; font-weight: 500; color: var(--ash); letter-spacing: -0.1px; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+  .field-label .req { color: var(--pos); font-weight: 600; }
+  .field-hint { margin-top: 7px; font-size: 11px; color: var(--graphite); letter-spacing: -0.05em; }
+  .field-error { margin-top: 7px; font-size: 11px; color: var(--pos); letter-spacing: -0.05em; }
+
+  .ctx-head { display: flex; align-items: center; gap: 10px; padding-bottom: 4px; }
+  .ctx-flag { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 12px; background: var(--sky); }
+  .ctx-main { flex: 1; min-width: 0; }
+  .ctx-name { font-size: 15px; font-weight: 500; color: var(--ink); letter-spacing: -0.13px; }
+  .ctx-comm { font-size: 12px; color: var(--graphite); letter-spacing: -0.1px; margin-top: 2px; }
+  .ctx-switch { flex-shrink: 0; font-size: 12px; color: var(--graphite); background: var(--fog); border: none; border-radius: 9999px; padding: 6px 12px; font-family: inherit; cursor: pointer; }
+  .ctx-switch:active { opacity: 0.7; }
+
+  .picker-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--pure-white);
+    border-radius: 16px; padding: 13px 14px;
+    box-shadow: var(--shadow-card); cursor: pointer;
+  }
+  .picker-row .picker-placeholder { color: var(--dove); font-size: 14px; }
+  .picker-row .picker-val { display: flex; align-items: center; gap: 7px; color: var(--ink); font-size: 14px; }
+
+  .amt-cols { display: flex; gap: 10px; }
+  .amt-col { flex: 1; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .amt-col--out { background: var(--fog); }
+  .amt-col--in { background: var(--fog); }
+  .amt-tag { font-size: 12px; font-weight: 500; }
+  .amt-input { display: flex; align-items: baseline; gap: 3px; font-size: 16px; font-weight: 600; }
+  .amt-input .cur { font-size: 13px; }
+  .amt-input input { border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; font-weight: 600; width: 100%; color: var(--ink); }
+  .amt-input input::placeholder { color: var(--dove); font-weight: 400; }
+  .amt-col--out .amt-tag { color: var(--neg); }
+  .amt-col--out .amt-input { color: var(--neg); }
+  .amt-col--in .amt-tag { color: var(--pos); }
+  .amt-col--in .amt-input { color: var(--pos); }
+
+  .form-row2 { display: flex; gap: 10px; }
+  .form-row2 > div { flex: 1; min-width: 0; }
+  .mini-input { width: 100%; background: var(--pure-white); border-radius: 16px; padding: 13px 14px; font-size: 14px; color: var(--ink); box-shadow: var(--shadow-card); border: none; outline: none; font-family: inherit; }
+  .mini-input::placeholder { color: var(--dove); }
+
+  /* 票据九宫格 */
+  .tkt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .tkt-cell { position: relative; aspect-ratio: 1 / 1; border-radius: 14px; overflow: hidden; }
+  .tkt-cell .ph { width: 100%; height: 100%; }
+  .tkt-add {
+    border: 1.5px dashed var(--dove);
+    border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    color: var(--dove); font-size: 11px; cursor: pointer;
+  }
+  .tkt-add:active { opacity: 0.75; }
+  .tkt-del {
+    position: absolute; top: 4px; right: 4px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(23,25,28,0.55); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; line-height: 1; cursor: pointer;
+  }
+
+  .textarea {
+    width: 100%; min-height: 88px;
+    background: var(--pure-white); border: none; outline: none;
+    border-radius: 16px; padding: 13px 14px;
+    font-family: inherit; font-size: 14px; color: var(--ink); resize: none;
+    box-shadow: var(--shadow-card);
+  }
+  .textarea::placeholder { color: var(--dove); }
+
+  /* ===== 屏④ 科目选择弹层 ===== */
+  .sheet-mask {
+    position: absolute; inset: 0;
+    background: rgba(23, 25, 28, 0.4);
+    display: flex;
+    align-items: flex-end;
+    z-index: 40;
+  }
+  .sheet {
+    width: 100%;
+    background: var(--pure-white);
+    border-radius: 24px 24px 0 0;
+    padding: 18px 14px 26px;
+    display: flex; flex-direction: column; gap: 12px;
+    max-height: 72%;
+  }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--dove); margin: 0 auto; opacity: 0.6; }
+  .sheet-title { text-align: center; font-size: 15px; font-weight: 500; color: var(--ink); letter-spacing: -0.13px; }
+  .sheet-search { display: flex; align-items: center; gap: 8px; background: var(--fog); border-radius: 12px; padding: 0 12px; height: 38px; }
+  .sheet-search input { flex: 1; border: none; outline: none; background: transparent; font-size: 13px; color: var(--ink); font-family: inherit; }
+  .sheet-search input::placeholder { color: var(--dove); }
+  .subj-scroll { display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+  .subj-group { display: flex; flex-direction: column; }
+  .subj-grouphead {
+    position: sticky; top: 0;
+    font-size: 11px; font-weight: 600; color: var(--graphite);
+    letter-spacing: 0.06em;
+    padding: 6px 4px; margin-bottom: 4px;
+    background: var(--pure-white);
+  }
+  .subj-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 6px; border-radius: 10px; cursor: pointer;
+  }
+  .subj-row--active { background: var(--apricot); }
+  .subj-name { flex: 1; font-size: 14px; color: var(--ink); letter-spacing: -0.12px; }
+  .subj-tag { font-size: 10px; font-weight: 500; }
+  .subj-tag--profit { color: var(--neg); }
+  .subj-tag--flat { color: var(--dove); }
+  .subj-check { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); color: #fff; }
+  .subj-empty-note { text-align: center; font-size: 12px; color: var(--dove); padding: 18px 0; }
+
+  /* ===== 屏⑤ 成功态 ===== */
+  .success {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 120px 44px 0;
+  }
+  .success-icon {
+    width: 74px; height: 74px; border-radius: 50%;
+    background: var(--fog);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .success-icon .ring {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--mint, #d1f2e8);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .success-title { font-size: 20px; font-weight: 600; color: var(--ink); letter-spacing: -0.2px; }
+  .success-sub { margin-top: 10px; font-size: 14px; color: var(--graphite); letter-spacing: -0.12px; line-height: 1.7; }
+  .success-flow { margin-top: 18px; font-size: 12px; color: var(--dove); letter-spacing: -0.05em; line-height: 1.7; }
+
+  /* 回到清单示意 */
+  .back-ledger { padding: 14px 12px 0; }
+  .back-newcard {
+    background: var(--sky);
+    box-shadow: none;
+    animation: glow 1.6s ease-in-out infinite;
+  }
+  @keyframes glow { 0%,100% { outline: 2px solid rgba(74,133,214,0); } 50% { outline: 2px solid rgba(74,133,214,0.55); } }
+  .back-note { margin-top: 12px; text-align: center; font-size: 12px; color: var(--graphite); letter-spacing: -0.05em; }
+
+  /* ===== 设计说明 ===== */
+  .notes {
+    width: 375px;
+    background: var(--pure-white);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 4px 16px rgba(23, 25, 28, 0.05);
+  }
+  .notes h3 {
+    font-size: 13px; font-weight: 500; color: var(--ink); letter-spacing: -0.11px;
+    margin-bottom: 8px;
+  }
+  .notes .notes-grp { margin-top: 10px; }
+  .notes .notes-grp:first-of-type { margin-top: 0; }
+  .notes .notes-grp b {
+    display: block;
+    font-size: 11px; font-weight: 600; color: var(--ash);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .notes ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .notes li {
+    font-size: 12px;
+    color: var(--graphite);
+    line-height: 1.7;
+    letter-spacing: -0.1px;
+    padding-left: 12px;
+    position: relative;
+    text-wrap: pretty;
+  }
+  .notes li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 8px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--dove);
+  }
+  .notes code {
+    font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+    font-size: 11px;
+    color: var(--rust);
+    background: var(--apricot);
+    border-radius: 5px;
+    padding: 1px 5px;
+    letter-spacing: -0.02em;
+  }
+  .notes b { color: var(--ash); font-weight: 500; }
+  .notes .money-neg { color: var(--neg); font-weight: 600; }
+  .notes .money-pos { color: var(--pos); font-weight: 600; }
+</style>
+</head>
+<body>
+
+  <div class="page-head">
+    <h1>小程序 · 项目记账 · 高保真设计稿</h1>
+    <p>miniapp · 三页流程：项目列表 → 项目账目清单 → 记一笔 · Steep 风格（DESIGN.md）</p>
+    <div class="tokens">
+      <div class="token"><i style="background:#17191c"></i><span>Ink</span></div>
+      <div class="token"><i style="background:#f7f7f8"></i><span>Fog</span></div>
+      <div class="token"><i style="background:#a3a6af"></i><span>Dove</span></div>
+      <div class="token"><i style="background:#5d2a1a"></i><span>Rust</span></div>
+      <div class="token"><i style="background:#fbe1d1"></i><span>Apricot</span></div>
+      <div class="token"><i style="background:#d3e3fc"></i><span>Sky</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       屏① 项目选择列表页
+  ============================================================= -->
+  <div class="board">
+    <div class="board-wash">屏 ① · 项目选择列表页</div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">状态切换</span>
+        <button class="tab tab--on" data-v="normal" data-b="p1" onclick="switchView('p1','normal')">正常</button>
+        <button class="tab" data-v="empty" data-b="p1" onclick="switchView('p1','empty')">空态</button>
+        <button class="tab" data-v="error" data-b="p1" onclick="switchView('p1','error')">加载失败</button>
+        <button class="tab" data-v="forbidden" data-b="p1" onclick="switchView('p1','forbidden')">无权限(403)</button>
+        <button class="tab" data-v="needLogin" data-b="p1" onclick="switchView('p1','needLogin')">登录失效</button>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="statusbar">
+        <span class="sb-time">9:41</span>
+        <div class="sb-icons">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+        </div>
+      </div>
+
+      <div class="navbar">
+        <div class="nav-back" title="返回" onclick="alert('wx.navigateBack() — 返回首页')">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="nav-title">项目记账</div>
+        <div class="nav-title-pad"></div>
+        <div class="capsule">
+          <div class="capsule-side">
+            <svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg>
+          </div>
+          <span class="capsule-div"></span>
+          <div class="capsule-side">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <!-- 正常态 -->
+        <div class="content" id="p1-content">
+          <div class="search" onclick="alert('wx:confirm 触发重查 — 携带 community_name 重新 GET /projects')">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.6" stroke="#a3a6af" stroke-width="1.6"/><path d="M10.6 10.6L14 14" stroke="#a3a6af" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <input placeholder="搜索小区名称" />
+          </div>
+
+          <section class="card proj" onclick="alert('wx.navigateTo → 传入 projectId → 账目清单页')">
+            <div class="proj-top">
+              <span class="proj-name">央玺国贸</span>
+              <div class="proj-badges">
+                <span class="pill pill--sky">在售</span>
+                <span class="tag-weak">代理</span>
+              </div>
+            </div>
+            <div class="proj-comm">东城国贸家园</div>
+            <div class="proj-meta">120㎡ · 3室2厅 · 东城-国贸</div>
+          </section>
+
+          <section class="card proj" onclick="alert('wx.navigateTo → 传入 projectId → 账目清单页')">
+            <div class="proj-top">
+              <span class="proj-name">澜湾公馆</span>
+              <div class="proj-badges">
+                <span class="pill pill--apricot">装修中</span>
+                <span class="tag-weak">包销</span>
+              </div>
+            </div>
+            <div class="proj-comm">望京澜湾</div>
+            <div class="proj-meta">98㎡ · 2室1厅 · 朝阳-望京</div>
+          </section>
+
+          <section class="card proj" onclick="alert('wx.navigateTo → 传入 projectId → 账目清单页')">
+            <div class="proj-top">
+              <span class="proj-name">云庭上品</span>
+              <div class="proj-badges">
+                <span class="pill pill--warm">在签</span>
+                <span class="tag-weak">代理</span>
+              </div>
+            </div>
+            <div class="proj-comm">金融街云庭</div>
+            <div class="proj-meta">145㎡ · 4室2厅 · 西城-金融街</div>
+          </section>
+
+          <div class="end-tip">已到底</div>
+        </div>
+
+        <!-- 空态 -->
+        <div class="state-view hidden" id="p1-empty">
+          <div class="state-icon">
+            <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><path d="M12 6H5a1 1 0 00-1 1v19a1 1 0 001 1h18a1 1 0 001-1v-7" stroke="#a3a6af" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 13l5-5M21.6 7.9a2 2 0 112.8 2.8L17 18l-4 1 1-4 7.6-7.1z" stroke="#a3a6af" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="state-title">暂无匹配项目</div>
+          <div class="state-text">换个小区名称试试<br/>或确认已为你开通项目台账权限</div>
+        </div>
+
+        <!-- 加载失败 -->
+        <div class="state-view hidden" id="p1-error">
+          <div class="state-icon">
+            <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="#a3a6af" stroke-width="1.6"/><path d="M16 10v7" stroke="#a3a6af" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="21.5" r="1.4" fill="#a3a6af"/></svg>
+          </div>
+          <div class="state-title">加载失败</div>
+          <div class="state-text">网络异常或服务暂不可用</div>
+          <button class="state-btn" onclick="alert('重新 GET /api/v1/projects — 重查列表')">重试</button>
+        </div>
+
+        <!-- 无权限 403 -->
+        <div class="state-view hidden" id="p1-forbidden">
+          <div class="state-icon">
+            <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><rect x="7" y="14" width="18" height="12" rx="3.5" stroke="#a3a6af" stroke-width="1.6"/><path d="M11 14v-3.5a5 5 0 0110 0V14" stroke="#a3a6af" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="20" r="1.8" fill="#a3a6af"/></svg>
+          </div>
+          <div class="state-title">暂无台账权限</div>
+          <div class="state-text">项目记账仅对已开通台账的账号开放<br/>请使用 admin 令牌或联系管理员开通 project:read</div>
+        </div>
+
+        <!-- 登录失效 -->
+        <div class="state-view hidden" id="p1-needLogin">
+          <div class="state-icon">
+            <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><rect x="7" y="14" width="18" height="12" rx="3.5" stroke="#a3a6af" stroke-width="1.6"/><path d="M11 14v-3.5a5 5 0 0110 0V14" stroke="#a3a6af" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="20" r="1.8" fill="#a3a6af"/></svg>
+          </div>
+          <div class="state-title">登录已失效</div>
+          <div class="state-text">会话已过期，请重新登录后再查看</div>
+          <button class="state-btn" onclick="alert('wx.navigateTo → 登录页（静默 wx.login + 换取 token）')">重新登录</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h3>屏① 项目选择列表 · 设计说明</h3>
+      <div class="notes-grp">
+        <b>交互说明</b>
+        <ul>
+          <li>搜索框：<b>触屏键盘 confirm</b> 触发重查，携带 <code>community_name</code> 重新拉取列表。</li>
+          <li>项目卡片给出 <b>状态徽章</b>（在售=蓝 sky / 装修中=apricot / 在签=暖色）+ <b>业务模式弱胶囊</b>（代理/包销，Fog 淡底）。</li>
+          <li>列表底部 <b>「已到底」</b> 分页提示；状态徽章底色用「色板 + 20% 透明度」实现。</li>
+          <li>点击卡片 <code>wx.navigateTo</code> 携带 <code>projectId</code> 进入「账目清单」页。</li>
+        </ul>
+      </div>
+      <div class="notes-grp">
+        <b>API / 权限标注</b>
+        <ul>
+          <li><code>GET /api/v1/projects?community_name=&amp;page=&amp;page_size=</code></li>
+          <li>需 <b>project:read</b> 权限，走 <b>admin 令牌</b>通道；403 落在「暂无台账权限」态。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       屏② 项目账目清单页
+  ============================================================= -->
+  <div class="board">
+    <div class="board-wash">屏 ② · 项目账目清单页</div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">状态切换</span>
+        <button class="tab tab--on" data-v="normal" data-b="p2" onclick="switchView('p2','normal')">有流水</button>
+        <button class="tab" data-v="empty" data-b="p2" onclick="switchView('p2','empty')">空态</button>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="statusbar">
+        <span class="sb-time">9:41</span>
+        <div class="sb-icons">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+        </div>
+      </div>
+
+      <div class="navbar">
+        <div class="nav-back" title="返回" onclick="alert('wx.navigateBack() — 返回项目列表')">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="nav-title">账目清单</div>
+        <div class="nav-title-pad"></div>
+        <div class="capsule">
+          <div class="capsule-side">
+            <svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg>
+          </div>
+          <span class="capsule-div"></span>
+          <div class="capsule-side">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <!-- 有流水 -->
+        <div class="content" id="p2-content">
+          <section class="summary">
+            <div class="summary-cols">
+              <div class="summary-col">
+                <span class="sum-label">总流入</span>
+                <span class="sum-value money-pos tnum">¥1,200,000</span>
+              </div>
+              <div class="sum-div"></div>
+              <div class="summary-col">
+                <span class="sum-label">总流出</span>
+                <span class="sum-value money-neg tnum">¥106,600</span>
+              </div>
+              <div class="sum-div"></div>
+              <div class="summary-col">
+                <span class="sum-label">净现金流</span>
+                <span class="sum-value money-pos tnum">¥1,093,400</span>
+              </div>
+            </div>
+            <div class="summary-foot tnum">ROI 12.5% &nbsp;·&nbsp; 持有 86 天</div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>流水明细</h2>
+              <span class="card-note">共 4 条 · 按日期倒序</span>
+            </div>
+            <div class="ledger">
+
+              <div class="rec" onclick="alert('wx.navigateTo → 流水详情')">
+                <div class="rec-row">
+                  <div class="rec-left">
+                    <div class="rec-date">2026-08-18</div>
+                    <div class="rec-subject"><span class="lv-badge">L1</span><span class="rec-subject-name">房款</span></div>
+                    <div class="rec-flow">购房人 <span class="arrow">→</span> 公司 <span class="tkt-badge">· 付清首期</span></div>
+                  </div>
+                  <div class="rec-right">
+                    <div class="rec-amount money-pos tnum">+1,200,000</div>
+                    <span class="rec-tkt"><i></i>票据 2 张</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rec" onclick="alert('wx.navigateTo → 流水详情')">
+                <div class="rec-row">
+                  <div class="rec-left">
+                    <div class="rec-date">2026-08-15</div>
+                    <div class="rec-subject"><span class="lv-badge">L2</span><span class="rec-subject-name">装修施工款</span></div>
+                    <div class="rec-flow">公司 <span class="arrow">→</span> 装修队 <span class="tkt-badge">· 首期 50%</span></div>
+                  </div>
+                  <div class="rec-right">
+                    <div class="rec-amount money-neg tnum">-85,000</div>
+                    <span class="rec-tkt"><i></i>票据 1 张</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rec" onclick="alert('wx.navigateTo → 流水详情')">
+                <div class="rec-row">
+                  <div class="rec-left">
+                    <div class="rec-date">2026-08-12</div>
+                    <div class="rec-subject"><span class="lv-badge">L3</span><span class="rec-subject-name">中介佣金</span></div>
+                    <div class="rec-flow">公司 <span class="arrow">→</span> 房产中介 <span class="tkt-badge">· 居间服务</span></div>
+                  </div>
+                  <div class="rec-right">
+                    <div class="rec-amount money-neg tnum">-18,000</div>
+                    <span class="rec-tkt"><i></i>票据 1 张</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rec" onclick="alert('wx.navigateTo → 流水详情')">
+                <div class="rec-row">
+                  <div class="rec-left">
+                    <div class="rec-date">2026-08-10</div>
+                    <div class="rec-subject"><span class="lv-badge">L2</span><span class="rec-subject-name">物业费</span></div>
+                    <div class="rec-flow">公司 <span class="arrow">→</span> 物业 <span class="tkt-badge">· 季度</span></div>
+                  </div>
+                  <div class="rec-right">
+                    <div class="rec-amount money-neg tnum">-3,600</div>
+                    <span class="rec-flag-miss">缺凭证</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+        </div>
+
+        <!-- 空态 -->
+        <div class="state-view hidden" id="p2-empty">
+          <div class="state-icon">
+            <svg width="44" height="44" viewBox="0 0 32 32" fill="none"><path d="M8 4h11l6 6v18H8V4z" stroke="#a3a6af" stroke-width="1.6" stroke-linejoin="round"/><path d="M19 4v6h6" stroke="#a3a6af" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 12v7M12.5 15.5h7" stroke="#a3a6af" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <div class="state-title">暂无流水</div>
+          <div class="state-text">记下第一笔收支，项目账目更清晰</div>
+          <button class="state-btn" onclick="alert('wx.navigateTo → 记一笔表单页')">记第一笔</button>
+        </div>
+
+        <div class="fab">
+          <button class="btn-ink" id="p2-fab" onclick="alert('wx.navigateTo → 记一笔 全屏表单页')">
+            记一笔
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h3>屏② 项目账目清单 · 设计说明</h3>
+      <div class="notes-grp">
+        <b>交互说明</b>
+        <ul>
+          <li>汇总卡 <b>apricot 浅底</b>，三列总流入(红)/总流出(绿)/净现金流(正负着色)，数字大字号；辅助行 <code>ROI 12.5% · 持有 86 天</code>。</li>
+          <li>流水按日期<b>倒序</b>；每条含【日期+科目名（L 层级徽章）】【付款方→收款方 + 备注摘要（缺省 —）】【金额 −流出绿 / +流入红 / 缺省 —】。</li>
+          <li>带票据显示 <b>缩略图角标</b>（纯色占位 + 张数）；无票据显示弱标签 <b>「缺凭证」</b>（amber）。</li>
+          <li>底部固定 <b>「记一笔」墨色胶囊大按钮</b>；示例数据覆盖流入/流出/带票据/缺凭证各至少一条。</li>
+        </ul>
+      </div>
+      <div class="notes-grp">
+        <b>API / 权限标注</b>
+        <ul>
+          <li><code>GET /api/v1/admin/ledger/{project_id}</code> → 返回 <code>records[]</code> + <code>summary{total_income,total_expense,net_cash_flow,roi,holding_days}</code></li>
+          <li>需 <b>ledger:read</b> 权限，走 <b>admin 令牌</b>通道。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       屏③ 记一笔全屏表单页
+  ============================================================= -->
+  <div class="board">
+    <div class="board-wash">屏 ③ · 记一笔 全屏表单页</div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">状态切换</span>
+        <button class="tab tab--on" data-v="normal" data-b="p3" onclick="switchForm('default')">默认</button>
+        <button class="tab" data-v="error" data-b="p3" onclick="switchForm('error')">校验错误</button>
+        <button class="tab" data-v="submitting" data-b="p3" onclick="switchForm('submitting')">提交中</button>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="statusbar">
+        <span class="sb-time">9:41</span>
+        <div class="sb-icons">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+        </div>
+      </div>
+
+      <div class="navbar">
+        <div class="nav-back" title="返回" onclick="alert('wx.navigateBack() — 返回账目清单，未保存内容会丢失')">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="nav-title">记一笔</div>
+        <div class="nav-title-pad"></div>
+        <div class="capsule">
+          <div class="capsule-side">
+            <svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg>
+          </div>
+          <span class="capsule-div"></span>
+          <div class="capsule-side">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <!-- 表单体 -->
+        <div class="content">
+          <div class="form">
+
+            <!-- 1. 项目上下文头 -->
+            <div class="ctx-head">
+              <div class="ctx-flag">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M8 4h11l6 6v18H8V4z" stroke="#2a5ca0" stroke-width="2" stroke-linejoin="round"/><path d="M19 4v6h6" stroke="#2a5ca0" stroke-width="2" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="ctx-main">
+                <div class="ctx-name">央玺国贸</div>
+                <div class="ctx-comm">东城国贸家园</div>
+              </div>
+              <button class="ctx-switch" onclick="alert('wx.navigateBack() — 返回上一级项目列表，可选择其他项目')">更换</button>
+            </div>
+
+            <!-- 2. 科目分类 -->
+            <div>
+              <div class="field-label">科目分类<span class="req">*</span></div>
+              <div class="picker-row" onclick="alert('wx.navigateTo / 底部弹层 → 科目选择（见屏④）')">
+                <span class="picker-placeholder" id="subjPlaceholder">请选择科目…</span>
+                <span class="picker-val hidden" id="subjVal"><span class="lv-badge">L2</span> 装修施工款</span>
+                <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1.5 1.5L6.5 7l-5 5.5" stroke="#777b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="field-hint" id="subjHint">已按项目业务模式（代理）自动过滤</div>
+              <div class="field-error hidden" id="subjError">请选择科目分类</div>
+            </div>
+
+            <!-- 3. 金额 -->
+            <div>
+              <div class="amt-cols">
+                <div class="amt-col amt-col--out">
+                  <span class="amt-tag">流出金额（元）</span>
+                  <div class="amt-input"><span class="cur">¥</span><input inputmode="decimal" placeholder="0.00" /></div>
+                </div>
+                <div class="amt-col amt-col--in">
+                  <span class="amt-tag">流入金额（元）</span>
+                  <div class="amt-input"><span class="cur">¥</span><input inputmode="decimal" placeholder="0.00" /></div>
+                </div>
+              </div>
+              <div class="field-hint" id="amtHint">流入 / 流出互斥：一项 &gt; 0 时另一项须为 0，至少填一项</div>
+              <div class="field-error hidden" id="amtError">流入 / 流出至少填一项且大于 0</div>
+            </div>
+
+            <!-- 4. 付款方 / 收款方 -->
+            <div class="form-row2">
+              <div>
+                <div class="field-label">付款方</div>
+                <input class="mini-input" placeholder="股东A / 公司 / 银行" />
+              </div>
+              <div>
+                <div class="field-label">收款方</div>
+                <input class="mini-input" placeholder="房东 / 银行 / 装修队" />
+              </div>
+            </div>
+
+            <!-- 5. 发生日期 -->
+            <div>
+              <div class="field-label">发生日期<span class="req">*</span></div>
+              <div class="picker-row" onclick="alert('wx.picker({ mode: date }) — 选择发生日期，默认今天')">
+                <span style="color:#17191c;font-size:14px" class="tnum">2026-08-22</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="#17191c" stroke-width="1.6"/><path d="M3 9h18M8 3v4M16 3v4" stroke="#17191c" stroke-width="1.6" stroke-linecap="round"/><path d="M7 13h3M7 16.5h3" stroke="#777b86" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </div>
+              <div class="field-error hidden" id="dateError">请选择发生日期</div>
+            </div>
+
+            <!-- 6. 票据上传 -->
+            <div>
+              <div class="field-label">票据（最多 9 张）</div>
+              <div class="tkt-grid">
+                <div class="tkt-cell"><div class="ph" style="background:var(--apricot)"></div><span class="tkt-del" onclick="alert('wx: 长按或点击删除该票据（占位）')">×</span></div>
+                <div class="tkt-cell"><div class="ph" style="background:var(--sky)"></div><span class="tkt-del" onclick="alert('wx: 长按或点击删除该票据（占位）')">×</span></div>
+                <div class="tkt-add" onclick="alert('wx.chooseMedia({ count: 9 }) — 拍照 / 相册选择票据，上传后回填缩略图')">
+                  <span style="font-size:20px;line-height:1">+</span>
+                  <span>上传</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 7. 备注 -->
+            <div>
+              <div class="field-label">备注说明</div>
+              <textarea class="textarea" placeholder="例如：支付首期款…"></textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="fab">
+          <button class="btn-ink" id="submitBtn" onclick="alert('wx: 校验通过 → POST /api/v1/admin/ledger 提交 LedgerRecordCreate')">
+            <span id="submitLabel">确认记账</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h3>屏③ 记一笔 全屏表单 · 设计说明</h3>
+      <div class="notes-grp">
+        <b>交互说明</b>
+        <ul>
+          <li>表单自上而下滚动：项目上下文头（只读 + 更换返回）→ 科目分类 → 流出/流入互斥金额 → 付款方/收款方 → 发生日期 picker → 票据九宫格（1 添加格 + 已传缩略图）→ 备注文本域。</li>
+          <li>金额双列 <b>左绿（流出）/ 右红（流入）</b>，带 ¥ 前缀与 0.00 占位；下方灰字互斥规则说明。</li>
+          <li>底部固定 <b>「确认记账」墨色胶囊大按钮</b>。校验错误态 = 科目与金额行下方红字报错；提交中态 = 按钮变灰 + spinner。</li>
+          <li>票据添加处 <code>wx.chooseMedia</code>，最多 9 张。</li>
+        </ul>
+      </div>
+      <div class="notes-grp">
+        <b>API / 权限标注</b>
+        <ul>
+          <li><code>GET /api/v1/admin/subjects?mode=agent|acquire</code>（需 <b>subject:read</b>，随项目业务模式过滤）</li>
+          <li><code>POST /api/v1/admin/ledger</code> 提交 <code>LedgerRecordCreate</code>（需 <b>ledger:write</b>）</li>
+          <li>票据上传 <code>POST /api/v1/files/upload</code>（需 <b>admin 令牌</b>）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       屏④ 科目选择弹层帧
+  ============================================================= -->
+  <div class="board">
+    <div class="board-wash">屏 ④ · 记一笔 ─ 科目选择（弹层帧）</div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">示例</span>
+        <button class="tab tab--on" data-v="normal" data-b="p4" onclick="switchSheet('normal')">默认</button>
+        <button class="tab" data-v="nomatch" data-b="p4" onclick="switchSheet('nomatch')">搜索无匹配</button>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="statusbar">
+        <span class="sb-time">9:41</span>
+        <div class="sb-icons">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+        </div>
+      </div>
+
+      <div class="navbar">
+        <div class="nav-back" title="返回" onclick="alert('关闭科目选择弹层')">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="nav-title" style="opacity:.35">记一笔</div>
+        <div class="nav-title-pad"></div>
+        <div class="capsule" style="opacity:.35">
+          <div class="capsule-side">
+            <svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg>
+          </div>
+          <span class="capsule-div"></span>
+          <div class="capsule-side">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" style="background:rgba(23,25,28,0.4)">
+        <!-- 简化被压暗的表单背景 -->
+        <div class="sheet-mask">
+          <div class="sheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">选择科目</div>
+
+            <div class="sheet-search">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.6" stroke="#a3a6af" stroke-width="1.6"/><path d="M10.6 10.6L14 14" stroke="#a3a6af" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <input placeholder="搜索科目名称" id="subjSearch" />
+            </div>
+
+            <div class="subj-scroll" id="subjList">
+
+              <!-- L1 -->
+              <div class="subj-group">
+                <div class="subj-grouphead">L1 · 房款结算</div>
+                <div class="subj-row" onclick="alert('选中科目：定位到 L1 房款')">
+                  <span class="lv-badge">L1</span><span class="subj-name">房款</span>
+                  <span class="subj-tag subj-tag--flat">不进损益</span>
+                </div>
+                <div class="subj-row" onclick="alert('选中科目：定位到 L1 定金')">
+                  <span class="lv-badge">L1</span><span class="subj-name">定金</span>
+                  <span class="subj-tag subj-tag--flat">不进损益</span>
+                </div>
+              </div>
+
+              <!-- L2 -->
+              <div class="subj-group">
+                <div class="subj-grouphead">L2 · 工程装修</div>
+                <div class="subj-row subj-row--active" onclick="alert('选中科目：装修施工款（apricot 高亮 + 勾选）')">
+                  <span class="lv-badge">L2</span><span class="subj-name">装修施工款</span>
+                  <span class="subj-tag subj-tag--profit">进损益</span>
+                  <span class="subj-check">
+                    <svg width="11" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 5l3.2 3L11 1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                </div>
+                <div class="subj-row" onclick="alert('选中科目：主材费')">
+                  <span class="lv-badge">L2</span><span class="subj-name">主材费</span>
+                  <span class="subj-tag subj-tag--profit">进损益</span>
+                </div>
+              </div>
+
+              <!-- L2 物业 / L3 费用 -->
+              <div class="subj-group">
+                <div class="subj-grouphead">L2 · 持有费用</div>
+                <div class="subj-row" onclick="alert('选中科目：物业费')">
+                  <span class="lv-badge">L2</span><span class="subj-name">物业费</span>
+                  <span class="subj-tag subj-tag--profit">进损益</span>
+                </div>
+                <div class="subj-row" onclick="alert('选中科目：中介佣金')">
+                  <span class="lv-badge">L3</span><span class="subj-name">中介佣金</span>
+                  <span class="subj-tag subj-tag--flat">不进损益</span>
+                </div>
+                <div class="subj-row" onclick="alert('选中科目：验收尾款')">
+                  <span class="lv-badge">L1</span><span class="subj-name">验收尾款</span>
+                  <span class="subj-tag subj-tag--flat">不进损益</span>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="subj-empty-note hidden" id="subjEmpty">未匹配到科目，换个关键词试试</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h3>屏④ 记一笔 ─ 科目选择 · 设计说明</h3>
+      <div class="notes-grp">
+        <b>交互说明</b>
+        <ul>
+          <li><b>半屏底部弹层</b>：遮罩 <code>rgba(23,25,28,0.4)</code> + 底部圆角面板，叠加于表单页之上。</li>
+          <li>面板内容：标题「选择科目」→ 搜索框 → 科目按 <b>L1–L7 分组</b>（吸顶组头小标签），需展示 ≥2 个层级分组。</li>
+          <li>科目行 = 层级徽章(L2) + 名称 + 右侧标签 <b>「进损益」(绿)/「不进损益」(灰)</b>；选中态 = 勾选 ✓ + <b>apricot 淡底高亮</b>。</li>
+          <li>搜索无匹配展示空匹配小注样例。</li>
+        </ul>
+      </div>
+      <div class="notes-grp">
+        <b>API / 权限标注</b>
+        <ul>
+          <li><code>GET /api/v1/admin/subjects?mode=…</code>（<code>agent</code> 代理 / <code>acquire</code> 包销映射，随项目业务模式过滤；需 <b>subject:read</b>）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       屏⑤ 提交成功帧
+  ============================================================= -->
+  <div class="board">
+    <div class="board-wash">屏 ⑤ · 记一笔 ─ 提交成功帧</div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">状态切换</span>
+        <button class="tab tab--on" data-v="success" data-b="p5" onclick="switchSuccess('success')">提交成功</button>
+        <button class="tab" data-v="back" data-b="p5" onclick="switchSuccess('back')">返回清单示意</button>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="statusbar">
+        <span class="sb-time">9:41</span>
+        <div class="sb-icons">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+        </div>
+      </div>
+
+      <div class="navbar">
+        <div class="nav-back" title="返回" onclick="alert('wx.navigateBack()')">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="nav-title" style="opacity:.35">记一笔</div>
+        <div class="nav-title-pad"></div>
+        <div class="capsule" style="opacity:.35">
+          <div class="capsule-side">
+            <svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg>
+          </div>
+          <span class="capsule-div"></span>
+          <div class="capsule-side">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <!-- 提交成功 -->
+        <div class="success" id="p5-success">
+          <div class="success-icon">
+            <div class="ring">
+              <svg width="26" height="20" viewBox="0 0 26 20" fill="none"><path d="M2 11l7 6L24 2" stroke="#17191c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="success-title">记账成功</div>
+          <div class="success-sub">已计入 央玺国贸 项目收支<br/>已返回账目清单</div>
+          <button class="state-btn" onclick="alert('wx.navigateBack() → 返回账目清单页')">完成</button>
+          <div class="success-flow">提交成功 toast → 返回账目清单页并下拉刷新<br/>新流水出现在列表顶部</div>
+        </div>
+
+        <!-- 返回清单后新流水示意 -->
+        <div class="back-ledger hidden" id="p5-back">
+          <section class="card back-newcard">
+            <div class="rec-row">
+              <div class="rec-left">
+                <div class="rec-date">2026-08-22 · 刚刚</div>
+                <div class="rec-subject"><span class="lv-badge">L2</span><span class="rec-subject-name">装修施工款</span></div>
+                <div class="rec-flow">公司 <span class="arrow">→</span> 装修队 <span class="tkt-badge">· 尾款</span></div>
+              </div>
+              <div class="rec-right">
+                <div class="rec-amount money-neg tnum">-15,000</div>
+                <span class="rec-tkt"><i></i>票据 2 张</span>
+              </div>
+            </div>
+          </section>
+          <p class="back-note">新流水置顶显示 · 下拉刷新后复现（high-light 高亮框示意）</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h3>屏⑤ 记一笔 ─ 提交成功 · 设计说明</h3>
+      <div class="notes-grp">
+        <b>交互说明</b>
+        <ul>
+          <li>成功态：居中<b>圈勾图标</b> + 「记账成功」大标题 + 「已计入 XX 项目收支，已返回账目清单」副文案 + 「完成」按钮。</li>
+          <li>配小字流转说明：<b>提交成功 toast → 返回账目清单页并下拉刷新，新流水出现在列表顶部</b>。</li>
+          <li>「返回清单示意」：新流水以 <b>sky 高亮外框</b> 置顶显示在清单顶部。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 通用视图切换（屏①/屏② 共用：内容块 vs 状态块）
+    var stateKey = { p1: ["empty", "error", "forbidden", "needLogin"], p2: ["empty"] };
+    function switchView(board, v) {
+      var content = document.getElementById(board + "-content");
+      var isState = stateKey[board].indexOf(v) !== -1;
+      content.classList.toggle("hidden", isState);
+      stateKey[board].forEach(function (s) {
+        document.getElementById(board + "-" + s).classList.toggle("hidden", s !== v);
+      });
+      // 屏② 空态隐藏底部「记一笔」FAB
+      var fab = document.getElementById("p2-fab");
+      if (fab) fab.style.display = v === "empty" ? "none" : "";
+      document.querySelectorAll('.tab[data-b="' + board + '"]').forEach(function (t) {
+        t.classList.toggle("tab--on", t.dataset.v === v);
+      });
+    }
+
+    // 屏③ 表单状态
+    var FORM_VIEWS = ["default", "error", "submitting"];
+    function switchForm(v) {
+      var subjErr = document.getElementById("subjError");
+      var subjVal = document.getElementById("subjVal");
+      var subjPlaceholder = document.getElementById("subjPlaceholder");
+      var amtErr = document.getElementById("amtError");
+      var dateErr = document.getElementById("dateError");
+      var hint = document.getElementById("subjHint");
+      var btn = document.getElementById("submitBtn");
+      var label = document.getElementById("submitLabel");
+      var spinner;
+
+      if (v === "default") {
+        subjErr.classList.add("hidden");
+        amtErr.classList.add("hidden");
+        dateErr.classList.add("hidden");
+      } else if (v === "error") {
+        subjPlaceholder.style.display = "none";
+        subjVal.classList.remove("hidden");
+        subjErr.classList.remove("hidden");
+        amtErr.classList.remove("hidden");
+        dateErr.classList.remove("hidden");
+      } else if (v === "submitting") {
+        subjErr.classList.add("hidden");
+        amtErr.classList.add("hidden");
+        dateErr.classList.add("hidden");
+        btn.disabled = true;
+        label.textContent = " " + "提交中…";
+        spinner = document.createElement("span");
+        spinner.className = "btn-spinner";
+        btn.insertBefore(spinner, label);
+      }
+
+      if (v !== "submitting") {
+        btn.disabled = false;
+        label.textContent = "确认记账";
+        var old = btn.querySelector(".btn-spinner");
+        if (old) old.remove();
+      }
+
+      document.querySelectorAll('.tab[data-b="p3"]').forEach(function (t) {
+        t.classList.toggle("tab--on", t.dataset.v === v);
+      });
+    }
+
+    // 屏④ 科目弹层搜索
+    function switchSheet(v) {
+      var isNoMatch = v === "nomatch";
+      document.getElementById("subjList").classList.toggle("hidden", isNoMatch);
+      document.getElementById("subjEmpty").classList.toggle("hidden", !isNoMatch);
+      document.querySelectorAll('[data-b="p4"]').forEach(function (t) {
+        t.classList.toggle("tab--on", t.dataset.v === v);
+      });
+    }
+    // 搜索输入联调（模拟无匹配）
+    document.getElementById("subjSearch").addEventListener("input", function (e) {
+      var kw = (e.target.value || "").trim();
+      var isEmpty = kw !== "";
+      document.getElementById("subjList").classList.toggle("hidden", isEmpty);
+      document.getElementById("subjEmpty").classList.toggle("hidden", !isEmpty);
+      document.querySelectorAll('[data-b="p4"]').forEach(function (t) {
+        t.classList.toggle("tab--on", t.dataset.v === (isEmpty ? "nomatch" : "normal"));
+      });
+    });
+
+    // 屏⑤ 成功态 / 返回示意
+    function switchSuccess(v) {
+      document.getElementById("p5-success").classList.toggle("hidden", v !== "success");
+      document.getElementById("p5-back").classList.toggle("hidden", v !== "back");
+      document.querySelectorAll('[data-b="p5"]').forEach(function (t) {
+        t.classList.toggle("tab--on", t.dataset.v === v);
+      });
+    }
+  </script>
+</body>
+</html>

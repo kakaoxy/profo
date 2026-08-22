@@ -1,0 +1,123 @@
+<view class="page">
+  <view class="content">
+    <!-- 1. 项目上下文头（只读） -->
+    <view class="ctx-head">
+      <view class="ctx-flag">
+        <view class="ctx-flag__icon">账</view>
+      </view>
+      <view class="ctx-main">
+        <view class="ctx-name">{{projectName || '未命名项目'}}</view>
+        <view class="ctx-comm">{{communityName}}</view>
+      </view>
+    </view>
+
+    <!-- 2. 科目分类 -->
+    <view class="field">
+      <view class="field-label">科目分类<text class="req">*</text></view>
+      <view class="picker-row" bindtap="openPicker">
+        <block wx:if="{{subjectId}}">
+          <view class="picker-val">
+            <view class="lv-badge" wx:if="{{subjectLevel}}">L{{subjectLevel}}</view>
+            <text>{{subjectName}}</text>
+          </view>
+        </block>
+        <text class="picker-placeholder" wx:else>请选择科目…</text>
+        <view class="chevron">›</view>
+      </view>
+      <view class="field-hint">已按项目业务模式自动过滤</view>
+      <view class="field-error" wx:if="{{subjectError}}">{{subjectError}}</view>
+    </view>
+
+    <!-- 3. 金额 -->
+    <view class="field">
+      <view class="amt-cols">
+        <view class="amt-col amt-col--out">
+          <view class="amt-tag">流出金额（元）</view>
+          <view class="amt-input">
+            <text class="cur">¥</text>
+            <input type="digit" placeholder="0.00" placeholder-class="amt-ph" value="{{outflow}}" bindinput="onOutflowInput" />
+          </view>
+        </view>
+        <view class="amt-col amt-col--in">
+          <view class="amt-tag">流入金额（元）</view>
+          <view class="amt-input">
+            <text class="cur">¥</text>
+            <input type="digit" placeholder="0.00" placeholder-class="amt-ph" value="{{inflow}}" bindinput="onInflowInput" />
+          </view>
+        </view>
+      </view>
+      <view class="field-hint" wx:if="{{!amountError}}">流入 / 流出互斥：一项 &gt; 0 时另一项须为 0，至少填一项</view>
+      <view class="field-error" wx:else>{{amountError}}</view>
+    </view>
+
+    <!-- 4. 付款方 / 收款方 -->
+    <view class="form-row2">
+      <view class="field">
+        <view class="field-label">付款方</view>
+        <input class="mini-input" placeholder="股东A / 公司 / 银行" placeholder-class="mini-ph" value="{{payer}}" bindinput="onPayerInput" />
+      </view>
+      <view class="field">
+        <view class="field-label">收款方</view>
+        <input class="mini-input" placeholder="房东 / 银行 / 装修队" placeholder-class="mini-ph" value="{{payee}}" bindinput="onPayeeInput" />
+      </view>
+    </view>
+
+    <!-- 5. 发生日期 -->
+    <view class="field">
+      <view class="field-label">发生日期<text class="req">*</text></view>
+      <picker mode="date" value="{{date}}" bindchange="onDateChange">
+        <view class="picker-row">
+          <text class="picker-date tnum">{{date}}</text>
+          <view class="chevron">›</view>
+        </view>
+      </picker>
+      <view class="field-error" wx:if="{{dateError}}">{{dateError}}</view>
+    </view>
+
+    <!-- 6. 票据上传 -->
+    <view class="field">
+      <view class="field-label">票据（最多 9 张）</view>
+      <view class="tkt-grid">
+        <view class="tkt-cell" wx:for="{{receipts}}" wx:key="key">
+          <image class="tkt-img" src="{{item.thumb}}" mode="aspectFill" />
+          <view class="tkt-mask" wx:if="{{item.uploading}}">上传中</view>
+          <view class="tkt-del" data-key="{{item.key}}" bindtap="onRemoveReceipt">×</view>
+        </view>
+        <view class="tkt-add" wx:if="{{canAddReceipt}}" bindtap="onAddReceipt">
+          <text class="tkt-add__plus">+</text>
+          <text>上传</text>
+        </view>
+      </view>
+      <view class="field-hint" wx:if="{{uploadingAll}}">正在上传票据…</view>
+    </view>
+
+    <!-- 7. 备注 -->
+    <view class="field">
+      <view class="field-label">备注说明</view>
+      <textarea
+        class="textarea"
+        placeholder="例如：支付首期款…"
+        placeholder-class="textarea-ph"
+        value="{{remark}}"
+        bindinput="onRemarkInput"
+        maxlength="-1"
+      />
+    </view>
+  </view>
+
+  <!-- 底部固定「确认记账」 -->
+  <view class="fab">
+    <button class="btn-ink" bindtap="onSubmit" loading="{{submitting}}" disabled="{{submitting}}">
+      <text wx:if="{{!submitting}}">确认记账</text>
+    </button>
+  </view>
+
+  <!-- 科目选择弹层 -->
+  <subject-picker
+    visible="{{pickerVisible}}"
+    mode="{{pickerMode}}"
+    selectedId="{{subjectId}}"
+    bindselect="onSubjectSelect"
+    bindclose="onSubjectClose"
+  />
+</view>

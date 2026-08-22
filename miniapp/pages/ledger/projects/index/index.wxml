@@ -1,0 +1,90 @@
+<view class="page">
+  <!-- 登录失效 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">会话已过期，请重新登录后再查看项目记账</view>
+    <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
+  </view>
+
+  <!-- 无权限 -->
+  <view class="state" wx:elif="{{state === 'noPermission'}}">
+    <view class="state__title">暂无台账权限</view>
+    <view class="state__text">项目记账仅对已开通台账的账号开放</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常或服务暂不可用</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <!-- 项目列表 / 空态（含搜索 + 状态筛选） -->
+  <block wx:else>
+    <view class="toolbar">
+      <view class="search">
+        <view class="search__icon">🔍</view>
+        <input
+          class="search__input"
+          placeholder="搜索小区 / 合同编号"
+          placeholder-class="search__ph"
+          confirm-type="search"
+          value="{{keyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
+        />
+      </view>
+      <scroll-view class="filter" scroll-x enable-flex>
+        <view
+          class="filter-chip {{statusFilter === item.value ? 'filter-chip--on' : ''}}"
+          wx:for="{{statusFilters}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="onFilterTap"
+        >{{item.label}}</view>
+      </scroll-view>
+    </view>
+
+    <!-- 空态 -->
+    <view class="state" wx:if="{{state === 'empty'}}">
+      <view class="state__title">暂无匹配项目</view>
+      <view class="state__text">换个关键词或状态试试</view>
+    </view>
+
+    <!-- 项目列表 -->
+    <block wx:elif="{{state === 'items'}}">
+      <view
+        class="project-card"
+        wx:for="{{items}}"
+        wx:key="id"
+        bindtap="onItemTap"
+        data-id="{{item.id}}"
+        data-name="{{item.name}}"
+        data-community="{{item.communityName}}"
+        data-form="{{item.businessForm}}"
+      >
+        <view class="card-top">
+          <view class="card-name">{{item.name}}</view>
+          <view class="card-badges">
+            <view
+              class="status-badge"
+              style="color: {{item.statusColor}}; background: {{item.statusColor}}1A;"
+            >{{item.statusText}}</view>
+            <view class="form-badge" wx:if="{{item.showBusinessForm}}">{{item.businessFormText}}</view>
+          </view>
+        </view>
+        <view class="card-comm">{{item.communityName}}</view>
+      </view>
+
+      <view class="list-footer" wx:if="{{loadingMore}}">加载中...</view>
+      <view class="list-footer" wx:elif="{{!hasMore && items.length > 0}}">已到底</view>
+    </block>
+  </block>
+
+  <view style="height: 120rpx;"></view>
+</view>

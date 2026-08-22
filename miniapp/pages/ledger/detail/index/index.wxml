@@ -1,0 +1,97 @@
+<view class="page">
+  <!-- 登录失效 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">会话已过期，请重新登录后再查看账目</view>
+    <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
+  </view>
+
+  <!-- 无权限 -->
+  <view class="state" wx:elif="{{state === 'noPermission'}}">
+    <view class="state__title">暂无台账权限</view>
+    <view class="state__text">当前账号无权查看该项目账目</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <block wx:else>
+    <!-- 汇总卡 -->
+    <view class="summary" wx:if="{{summary}}">
+      <view class="summary-head">
+        <view class="summary-name">{{projectName || '未命名项目'}}</view>
+        <view class="summary-comm" wx:if="{{communityName}}">{{communityName}}</view>
+      </view>
+      <view class="summary-cols">
+        <view class="summary-col">
+          <view class="sum-label">总流入</view>
+          <view class="sum-value money-pos tnum">{{summary.totalIncome}}</view>
+        </view>
+        <view class="sum-div"></view>
+        <view class="summary-col">
+          <view class="sum-label">总流出</view>
+          <view class="sum-value money-neg tnum">{{summary.totalExpense}}</view>
+        </view>
+        <view class="sum-div"></view>
+        <view class="summary-col">
+          <view class="sum-label">净现金流</view>
+          <view class="sum-value tnum {{summary.netPositive ? 'money-pos' : 'money-neg'}}">{{summary.netFlow}}</view>
+        </view>
+      </view>
+      <view class="summary-foot tnum">ROI {{summary.roiText}} · {{summary.holdingText}}</view>
+    </view>
+
+    <!-- 空态 -->
+    <view class="state" wx:if="{{state === 'empty'}}">
+      <view class="state__title">暂无流水</view>
+      <view class="state__text">记下第一笔收支，项目账目更清晰</view>
+      <view class="state__btn" bindtap="onGoRecord">记第一笔</view>
+    </view>
+
+    <!-- 流水明细 -->
+    <view class="card" wx:if="{{state === 'items'}}">
+      <view class="card-head">
+        <view class="card-title">流水明细</view>
+        <view class="card-note">共 {{recordCount}} 条 · 按日期倒序</view>
+      </view>
+      <view class="ledger">
+        <view class="rec" wx:for="{{records}}" wx:key="id">
+          <view class="rec-row">
+            <view class="rec-left">
+              <view class="rec-date tnum">{{item.dateText}}</view>
+              <view class="rec-subject">
+                <view class="lv-badge" wx:if="{{item.hasSubject}}">L{{item.subjectLevel}}</view>
+                <view class="rec-subject-name">{{item.subjectName}}</view>
+              </view>
+              <view class="rec-flow" wx:if="{{item.showFlow}}">{{item.flowText}}</view>
+            </view>
+            <view class="rec-right">
+              <view class="rec-amount tnum {{item.amountKind === 'out' ? 'money-neg' : (item.amountKind === 'in' ? 'money-pos' : '')}}">{{item.amountText}}</view>
+              <view class="rec-tkt" wx:if="{{item.hasTicket}}">
+                <image class="rec-tkt__thumb" src="{{item.ticketThumb}}" mode="aspectFill" />
+                <text>票据 {{item.ticketCount}} 张</text>
+              </view>
+              <view class="rec-flag-miss" wx:else>缺凭证</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 底部固定「记一笔」（仅在有流水时显示；空态用「记第一笔」引导） -->
+  <view class="fab" wx:if="{{state === 'items'}}">
+    <button class="btn-ink" bindtap="onGoRecord">记一笔</button>
+  </view>
+
+  <view style="height: 160rpx;"></view>
+</view>

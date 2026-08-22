@@ -20,6 +20,7 @@ class ProjectFilter(BaseModel):
     status: ProjectStatus | None = Field(None, description="项目状态筛选")
     community_name: str | None = Field(None, description="小区名称筛选")
     business_form: BusinessForm | None = Field(None, description="业务形式筛选")
+    keyword: str | None = Field(None, max_length=100, description="模糊搜索: 小区名称/合同编号")
 
     model_config = ConfigDict(from_attributes=True)
 

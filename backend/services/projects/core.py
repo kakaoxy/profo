@@ -159,6 +159,8 @@ class ProjectCoreService:
         *,
         include_interactions: bool = False,
         monitor_sort: bool = False,
+        keyword: str | None = None,
+        contract_sort: bool = False,
     ) -> dict[str, Any]:
         """获取项目列表.
 
@@ -172,6 +174,8 @@ class ProjectCoreService:
                 供工作台重点监控卡片展示项目动态(带看/出价)
             monitor_sort: 工作台重点监控排序（状态优先级 + 创建时间升序），
                 需在分页前应用
+            keyword: 模糊搜索关键词（匹配小区名称 或 合同编号）
+            contract_sort: 按合同编号降序（越新越前），供项目记账列表使用
 
         Returns:
             包含项目列表和分页信息的字典
@@ -186,6 +190,8 @@ class ProjectCoreService:
             page_size=effective_page_size,
             include_interactions=include_interactions,
             monitor_sort=monitor_sort,
+            keyword=keyword,
+            contract_sort=contract_sort,
         )
 
         items = [

@@ -1,0 +1,140 @@
+/* ① 项目列表页 · warm 风格（对齐 Steep 令牌） */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  padding-bottom: 40rpx;
+}
+
+/* ===== 顶部工具条：搜索 + 状态筛选 ===== */
+.toolbar {
+  margin: 28rpx 40rpx 8rpx;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: var(--pure-white);
+  border-radius: 32rpx;
+  padding: 0 28rpx;
+  height: 88rpx;
+  box-shadow: var(--shadow-sm);
+}
+.search__icon {
+  font-size: 28rpx;
+  line-height: 1;
+}
+.search__input {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--ink);
+}
+.search__ph {
+  color: var(--dove);
+}
+.filter {
+  margin-top: 20rpx;
+  white-space: nowrap;
+  width: 100%;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 10rpx 28rpx;
+  border-radius: 9999rpx;
+  font-size: 26rpx;
+  color: var(--graphite);
+  background: var(--pure-white);
+  margin-right: 16rpx;
+  box-shadow: var(--shadow-sm);
+}
+.filter-chip--on {
+  color: var(--pure-white);
+  background: var(--ink);
+  font-weight: 500;
+}
+
+/* ===== 项目卡片 ===== */
+.project-card {
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 48rpx;
+  padding: 32rpx 32rpx 28rpx;
+  box-shadow: var(--shadow-sm);
+}
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.card-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+.card-badges {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.status-badge {
+  padding: 4rpx 20rpx;
+  border-radius: 9999rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.form-badge {
+  padding: 4rpx 16rpx;
+  border-radius: 9999rpx;
+  font-size: 22rpx;
+  color: var(--graphite);
+  background: var(--fog);
+  white-space: nowrap;
+}
+.card-comm {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 200rpx 40rpx;
+}
+.state__title {
+  font-size: 34rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 24rpx;
+  padding: 16rpx 56rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+/* ===== 触底加载提示 ===== */
+.list-footer {
+  padding: 24rpx 0 8rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--graphite);
+}

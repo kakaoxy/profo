@@ -5,7 +5,7 @@
 
 import uuid
 
-from sqlalchemy import case, func, text
+from sqlalchemy import case, func, or_, text
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from models import Project, ProjectContract, ProjectInteraction
@@ -117,6 +117,8 @@ class ProjectQueryService:
         *,
         include_interactions: bool = False,
         monitor_sort: bool = False,
+        keyword: str | None = None,
+        contract_sort: bool = False,
     ) -> list[Project]:
         """分页获取项目列表.
 
@@ -131,6 +133,8 @@ class ProjectQueryService:
             include_interactions: 是否包含互动记录（sales_records）
             monitor_sort: 工作台重点监控排序，状态优先级(在售→装修→签约→已售)
                 + 创建时间升序，需在 LIMIT 前应用以保证返回优先级最高的项目
+            keyword: 模糊搜索关键词（匹配小区名称 或 合同编号）
+            contract_sort: 按合同编号降序（越新越前），供项目记账列表使用
 
         Returns:
             包含项目列表和分页信息的字典
@@ -166,14 +170,25 @@ class ProjectQueryService:
             # 同时预加载 operator 关系以构建销售记录操作人嵌套对象
             options.append(selectinload(Project.interactions).selectinload(ProjectInteraction.operator))
 
-        if monitor_sort:
-            # 工作台重点监控：显式 join contract 用于排序，用 contains_eager 复用
-            # 此 join 同时承担预加载，避免 joinedload 产生重复 join
+        # 契约表需进主查询的情况：合同编号排序 / 关键词搜索（匹配合同编号）／工作台监控排序
+        join_contract = monitor_sort or contract_sort or bool(keyword)
+        if join_contract:
+            # 显式 outerjoin contract：以 contains_eager 复用此 join 承担预加载，
+            # 避免 joinedload 产生重复 join
             query = query.outerjoin(ProjectContract, ProjectContract.project_id == Project.id)
             options.append(contains_eager(Project.contract))
         else:
             options.append(joinedload(Project.contract))
         query = query.options(*options)
+
+        if keyword:
+            kw = escape_like(keyword.lower())
+            query = query.filter(
+                or_(
+                    func.lower(Project.community_name).like(f"%{kw}%", escape="\\"),
+                    func.lower(ProjectContract.contract_no).like(f"%{kw}%", escape="\\"),
+                ),
+            )
 
         # 性能：count 与分页为两次独立 SQL（项目数据量可控，暂保留）。
         # 大数据量场景可改用 COUNT(*) OVER() 窗口函数合并为单次查询。
@@ -218,6 +233,9 @@ class ProjectQueryService:
                 expiration_expr.asc().nulls_last(),
                 Project.created_at.asc(),
             )
+        elif contract_sort:
+            # 项目记账列表：按合同编号降序（SH 序号零填充，字典序降序即最新在前），无契约的排末尾
+            order_clause = (ProjectContract.contract_no.desc().nulls_last(),)
         else:
             order_clause = (Project.created_at.desc(),)
 

@@ -21,7 +21,10 @@
     "pages/recruit/detail/index",
     "pages/recruit/mine/index",
     "pages/analysis/index/index",
-    "pages/community-analysis/index/index"
+    "pages/community-analysis/index/index",
+    "pages/ledger/projects/index/index",
+    "pages/ledger/detail/index/index",
+    "pages/ledger/record/index/index"
   ],
   "window": {
     "navigationBarTitleText": "美房宝",

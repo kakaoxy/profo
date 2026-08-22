@@ -72,7 +72,7 @@ export default async function LedgerDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#f7f7f8]">
-      <div className="w-full max-w-[1200px] mx-auto flex flex-col gap-12 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-300 mx-auto flex flex-col gap-12 py-10 px-4 sm:px-6 lg:px-8">
         <LedgerDetailHeader projectId={projectId} />
 
         {/* 汇总卡片（三栏：基础信息 | 现金流 | ROI） */}

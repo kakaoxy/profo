@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "subject-picker": "/pages/ledger/record/subject-picker/index"
+  },
+  "navigationBarTitleText": "记一笔",
+  "backgroundColor": "#f7f7f8"
+}

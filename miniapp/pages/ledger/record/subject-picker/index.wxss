@@ -1,0 +1,155 @@
+/* ④ 科目选择半屏弹层（对齐设计稿④与 Steep 令牌） */
+.sheet-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 25, 28, 0.4);
+  display: flex;
+  align-items: flex-end;
+  z-index: 40;
+}
+.sheet {
+  width: 100%;
+  background: var(--pure-white);
+  border-radius: 48rpx 48rpx 0 0;
+  padding: 24rpx 28rpx 60rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  max-height: 72vh;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+.sheet-handle {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: var(--dove);
+  margin: 0 auto;
+  opacity: 0.6;
+}
+.sheet-title {
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.sheet-search {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: var(--fog);
+  border-radius: 24rpx;
+  padding: 0 24rpx;
+  height: 76rpx;
+  flex-shrink: 0;
+}
+.sheet-search__icon {
+  font-size: 24rpx;
+  line-height: 1;
+}
+.sheet-search__input {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--ink);
+}
+.sheet-search__ph {
+  color: var(--dove);
+}
+
+.lv-badge {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  font-weight: 600;
+  background: var(--fog);
+  color: var(--graphite);
+  border-radius: 12rpx;
+  padding: 2rpx 10rpx;
+}
+
+.subj-scroll {
+  max-height: 48vh;
+  overflow-y: auto;
+}
+.subj-group {
+  display: flex;
+  flex-direction: column;
+}
+.subj-grouphead {
+  position: sticky;
+  top: 0;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--graphite);
+  letter-spacing: 0.06em;
+  padding: 12rpx 8rpx 8rpx;
+  margin-bottom: 4rpx;
+  background: var(--pure-white);
+  z-index: 2;
+}
+.subj-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 22rpx 12rpx;
+  border-radius: 20rpx;
+}
+.subj-row--active {
+  background: var(--apricot-wash);
+}
+.subj-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subj-tag {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  font-weight: 500;
+  padding: 4rpx 12rpx;
+  border-radius: 9999rpx;
+}
+.subj-tag--profit {
+  color: #0f7a4c;
+  background: rgba(15, 122, 76, 0.1);
+}
+.subj-tag--flat {
+  color: var(--dove);
+  background: var(--fog);
+}
+.subj-check {
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.sheet-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  padding: 60rpx 0;
+}
+.sheet-state__text {
+  font-size: 24rpx;
+  color: var(--dove);
+}
+.sheet-state__btn {
+  padding: 12rpx 48rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 26rpx;
+  font-weight: 500;
+}
