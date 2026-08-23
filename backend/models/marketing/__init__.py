@@ -8,6 +8,9 @@ from .l4_marketing import (
     L4MarketingProject,
     MarketingProjectStatus,
     PhotoCategory,
+    ProjectBooking,
+    ProjectShareEvent,
+    ProjectVisit,
     PublishStatus,
 )
 
@@ -16,5 +19,8 @@ __all__ = [
     "L4MarketingProject",
     "MarketingProjectStatus",
     "PhotoCategory",
+    "ProjectBooking",
+    "ProjectShareEvent",
+    "ProjectVisit",
     "PublishStatus",
 ]

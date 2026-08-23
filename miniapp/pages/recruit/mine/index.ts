@@ -2,7 +2,7 @@
  * 区域伙伴招募计划 · 我的分享 / 我的线索页（招募计划二期）.
  *
  * 页面职责：
- * - 统计卡：分享次数 / 带来打开 PV / 独立访客 UV / 留资数（留资数品牌蓝强调）
+ * - 统计卡：昨日/累计两行漏斗 × 分享次数/打开 PV/访客 UV/留资（留资列品牌蓝强调）
  * - 筛选 chips：全部/新线索/已联系/意向高/已转化/已淘汰（切换重置第 1 页）
  * - 线索列表：脱敏手机号/主营商圈/状态标签/来源标签（卡片/海报）/留资时间；
  *   「联系客户」查看完整号码并调起拨号（后端查看即 new→contacted，就地更新卡片）；
@@ -34,12 +34,16 @@ const HTTP_UNAUTHORIZED = 401;
 /** 无获客权限（403，员工未配置 customer 附加角色）：与 401 同口径空态兜底. */
 const HTTP_FORBIDDEN = 403;
 
-/** 分享统计展示结构. */
+/** 分享统计展示结构（累计 + 昨日两行漏斗；空态判定仅用累计字段）. */
 interface ShareStatsDisplay {
   shareCount: number;
   pv: number;
   uv: number;
   leadCount: number;
+  yesterdayShareCount: number;
+  yesterdayPv: number;
+  yesterdayUv: number;
+  yesterdayLeadCount: number;
 }
 
 interface PageData {
@@ -84,7 +88,16 @@ Page<PageData, PageCustom>({
   data: {
     chips: RECRUIT_LEAD_STATUS_CHIPS,
     activeStatus: "",
-    stats: { shareCount: 0, pv: 0, uv: 0, leadCount: 0 },
+    stats: {
+      shareCount: 0,
+      pv: 0,
+      uv: 0,
+      leadCount: 0,
+      yesterdayShareCount: 0,
+      yesterdayPv: 0,
+      yesterdayUv: 0,
+      yesterdayLeadCount: 0,
+    },
     items: [],
     page: 1,
     pageSize: PAGE_SIZE,
@@ -160,6 +173,10 @@ Page<PageData, PageCustom>({
           pv: res.pv || 0,
           uv: res.uv || 0,
           leadCount: res.lead_count || 0,
+          yesterdayShareCount: res.yesterday_share_count || 0,
+          yesterdayPv: res.yesterday_pv || 0,
+          yesterdayUv: res.yesterday_uv || 0,
+          yesterdayLeadCount: res.yesterday_lead_count || 0,
         },
       });
     } catch {

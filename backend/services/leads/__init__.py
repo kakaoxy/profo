@@ -7,10 +7,12 @@
 
 from .core import LeadService
 from .internal import LeadEvalService, LeadFollowUpService, LeadPriceService
+from .share_tracking import ValuationShareTrackingService
 
 __all__ = [
     "LeadEvalService",
     "LeadFollowUpService",
     "LeadPriceService",
     "LeadService",
+    "ValuationShareTrackingService",
 ]

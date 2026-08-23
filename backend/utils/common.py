@@ -194,6 +194,9 @@ class RateLimits:
     PUBLIC_PROJECT_LIST = "60/minute"
     PUBLIC_LEAD_CREATE = "10/hour"
     PUBLIC_LEAD_LIST = "60/minute"
+    # 房源预约：创建与线索提交同量级收敛防刷，列表为高频读取
+    PUBLIC_BOOKING_CREATE = "10/hour"
+    PUBLIC_BOOKING_LIST = "60/minute"
     PUBLIC_FILE_UPLOAD = "300/hour"
     PUBLIC_COMMUNITY_SEARCH = "60/minute"
     PUBLIC_COMMUNITY_ANALYSIS = "60/minute"
@@ -210,3 +213,10 @@ class RateLimits:
     RECRUIT_QR_GENERATE = "20/hour"
     # 查看线索完整手机号：隐私敏感数据，收敛频次防遍历爬取
     RECRUIT_PHONE_VIEW = "30/minute"
+
+    # ==================== 房源/评估分享埋点 C 端接口 ====================
+    # 访问埋点免登录高频，分享事件需登录，量级对齐 RECRUIT_* 同类端点
+    PROJECT_VISIT = "120/minute"
+    PROJECT_SHARE = "60/minute"
+    VALUATION_VISIT = "120/minute"
+    VALUATION_SHARE = "60/minute"

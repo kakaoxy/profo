@@ -36,7 +36,7 @@ from .investment import (
 )
 
 # 线索管理模块
-from .lead import Lead, LeadFollowUp, LeadPriceHistory
+from .lead import Lead, LeadFollowUp, LeadPriceHistory, ValuationShareEvent, ValuationVisit
 
 # L4 市场营销模块
 from .marketing import (
@@ -44,6 +44,9 @@ from .marketing import (
     L4MarketingProject,
     MarketingProjectStatus,
     PhotoCategory,
+    ProjectBooking,
+    ProjectShareEvent,
+    ProjectVisit,
     PublishStatus,
 )
 
@@ -149,6 +152,7 @@ __all__ = [
     "PhotoCategory",
     # 项目
     "Project",
+    "ProjectBooking",
     "ProjectContract",
     "ProjectDocument",
     "ProjectEvaluation",
@@ -157,8 +161,10 @@ __all__ = [
     "ProjectOwner",
     "ProjectRenovation",
     "ProjectSale",
+    "ProjectShareEvent",
     "ProjectStatus",
     "ProjectStatusLog",
+    "ProjectVisit",
     "PropertyCurrent",
     "PropertyHistory",
     "PropertyImportTask",
@@ -186,6 +192,9 @@ __all__ = [
     "SubjectStage",
     "User",
     "UserRole",
+    # 估价页分享埋点
+    "ValuationShareEvent",
+    "ValuationVisit",
     # 微信 OAuth
     "WeChatOAuthState",
     "WeChatTempCode",

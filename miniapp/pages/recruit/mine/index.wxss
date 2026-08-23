@@ -66,14 +66,26 @@
   border: none;
 }
 
-/* ===== 统计卡 ===== */
+/* ===== 统计卡（昨日/累计两行漏斗） ===== */
 .stats {
   margin: 24rpx 32rpx 0;
   background: #ffffff;
   border-radius: 28rpx;
+}
+.stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  padding: 28rpx 0;
+  grid-template-columns: 84rpx repeat(4, 1fr);
+  align-items: center;
+  padding: 24rpx 0;
+}
+.stats-row + .stats-row {
+  border-top: 2rpx solid var(--line);
+}
+/* 行标签（昨日/累计）：紧凑置灰 */
+.stats-tag {
+  text-align: center;
+  font-size: 20rpx;
+  color: var(--ink-3);
 }
 .stat {
   text-align: center;

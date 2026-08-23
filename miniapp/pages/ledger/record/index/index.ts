@@ -323,6 +323,12 @@ Page<PageData, PageCustom>({
     if (this.data.submitting) {
       return;
     }
+    // 票据仍在上传时禁止提交：否则下方 filter(!!r.url) 会把未完成的票据静默丢弃，
+    // 造成「记账成功但凭证丢失」的数据完整性问题
+    if (this.data.uploadingAll) {
+      wx.showToast({ title: "票据上传中，请稍候", icon: "none" });
+      return;
+    }
     if (!this.validate()) {
       return;
     }

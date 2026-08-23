@@ -1,0 +1,101 @@
+<view class="page">
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <!-- 游客 / 空态 -->
+  <view wx:elif="{{empty}}" class="empty">
+    <view class="e-ill">
+      <view class="e-glow"></view>
+      <view class="e-card">
+        <view class="e-pic"></view>
+        <view class="e-lines">
+          <view class="e-bar" style="width: 200rpx"></view>
+          <view class="e-bar e-bar--2" style="width: 132rpx"></view>
+        </view>
+      </view>
+      <view class="e-badge">+</view>
+    </view>
+    <view class="e-t">暂无归因客户</view>
+    <view class="e-s">
+      <view>分享房源给客户</view>
+      <view>客户预约后自动归属您</view>
+    </view>
+    <button class="e-btn" bindtap="onGoProjects">去分享房源</button>
+  </view>
+
+  <!-- 有数据：漏斗统计卡 + 归因客户列表 -->
+  <block wx:else>
+    <!-- 统计卡（昨日/累计两行漏斗，留资列品牌蓝强调，与 valuation/mine 统一） -->
+    <view class="stats">
+      <view class="stats-row">
+        <view class="stats-tag">昨日</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayShareCount}}</text>
+          <text class="stat-label">分享次数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayPv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayUv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.yesterdayLeadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
+      </view>
+      <view class="stats-row">
+        <view class="stats-tag">累计</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.shareCount}}</text>
+          <text class="stat-label">分享次数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.pv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.uv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.leadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 归因预约客户列表（行式布局：信息密度优先，无封面） -->
+    <view class="list">
+      <view
+        wx:for="{{items}}"
+        wx:key="id"
+        class="card"
+        data-id="{{item.projectId}}"
+        bindtap="onCardTap"
+      >
+        <view class="c-top">
+          <text class="c-phone {{item.phone ? '' : 'c-phone--empty'}}">{{item.phone || '未提供联系方式'}}</text>
+          <text class="c-tag">预约客户</text>
+        </view>
+        <view class="c-title">{{item.projectTitle}}</view>
+        <view wx:if="{{item.communityName}}" class="c-community">{{item.communityName}}</view>
+        <view class="c-foot">
+          <text wx:if="{{item.desc}}" class="c-desc">{{item.desc}}</text>
+          <text class="c-time {{item.desc ? '' : 'c-time--solo'}}">{{item.timeText}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{!loading && items.length === 0}}" class="leads-empty">暂无归因客户</view>
+      <view wx:elif="{{loadingMore}}" class="more">加载中…</view>
+      <view wx:elif="{{!noMore && items.length > 0}}" class="more">上拉加载更多</view>
+      <view wx:elif="{{items.length > 0}}" class="more">没有更多了</view>
+    </view>
+  </block>
+
+  <view class="safe-bottom"></view>
+</view>

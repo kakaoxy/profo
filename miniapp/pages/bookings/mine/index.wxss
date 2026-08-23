@@ -1,0 +1,233 @@
+/* 我的预约页（风格对齐 valuation/mine） */
+
+.page {
+  --brand: #2563eb;
+  --brand-weak: #eef4ff;
+  --ink: #17191c;
+  --ink-2: #777b86;
+  --ink-3: #a5a9b3;
+  --line: #f2f3f5;
+  min-height: 100vh;
+  background: #f7f7f8;
+}
+
+/* ===== 加载态 ===== */
+.state-box {
+  padding: 120rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.state-text {
+  font-size: 28rpx;
+  color: var(--ink-2);
+}
+
+/* ===== 预约卡片列表 ===== */
+.list {
+  padding: 24rpx 32rpx 0;
+}
+.card {
+  display: flex;
+  gap: 20rpx;
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+.card-cover {
+  width: 192rpx;
+  height: 144rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+  background: var(--line);
+}
+/* 无封面占位：品牌蓝弱底 + 字符 */
+.card-cover--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  color: var(--brand);
+  background: var(--brand-weak);
+}
+.card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.card-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 状态标签：本迭代无状态流转，固定「待联系」（琥珀色弱底） */
+.card-tag {
+  flex-shrink: 0;
+  font-size: 21rpx;
+  font-weight: 600;
+  padding: 4rpx 16rpx;
+  border-radius: 12rpx;
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+}
+.card-community {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-desc {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 总价数字强调 */
+.card-price {
+  color: var(--ink);
+  font-weight: 600;
+}
+.card-time {
+  margin-top: auto;
+  padding-top: 12rpx;
+  font-size: 22rpx;
+  color: var(--ink-3);
+}
+.more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx 0 20rpx;
+  font-size: 24rpx;
+  color: var(--ink-3);
+}
+
+/* ===== 游客 / 空态 ===== */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 200rpx 80rpx 0;
+  text-align: center;
+}
+.e-ill {
+  position: relative;
+  width: 380rpx;
+  height: 304rpx;
+}
+.e-glow {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 340rpx;
+  height: 340rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.14) 0%, rgba(37, 99, 235, 0) 68%);
+}
+.e-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 296rpx;
+  height: 192rpx;
+  background: #ffffff;
+  border-radius: 32rpx;
+  box-shadow: 0 20rpx 52rpx rgba(23, 25, 28, 0.08);
+  padding: 36rpx 40rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+.e-pic {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 20rpx;
+  background: var(--brand-weak);
+  flex-shrink: 0;
+}
+.e-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.e-bar {
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: #eef0f4;
+}
+.e-bar--2 {
+  background: #f1f2f6;
+}
+.e-badge {
+  position: absolute;
+  right: 16rpx;
+  bottom: 8rpx;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 40rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12rpx 28rpx rgba(37, 99, 235, 0.35);
+}
+.e-t {
+  margin-top: 48rpx;
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.e-s {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+.e-btn {
+  margin-top: 52rpx;
+  width: 400rpx;
+  height: 88rpx;
+  border: none;
+  border-radius: 9999rpx;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  box-shadow: 0 16rpx 36rpx rgba(37, 99, 235, 0.28);
+}
+.e-btn::after {
+  border: none;
+}
+
+/* ===== 底部安全区 ===== */
+.safe-bottom {
+  height: 64rpx;
+}

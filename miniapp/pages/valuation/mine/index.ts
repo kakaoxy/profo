@@ -2,7 +2,8 @@
  * 估价分享归因 · 我的获客页.
  *
  * 页面职责：
- * - 统计卡：累计获客 / 待评估 / 待看房 / 已签约（已签约品牌蓝强调）
+ * - 统计卡：昨日/累计两行漏斗 × 分享次数/打开 PV/访客 UV/留资（留资列品牌蓝强调，
+ *   与 recruit/mine 统一口径，数据源 /public/valuations/my/share-stats）
  * - 筛选 chips：全部/待评估/待看房/已看房/已签约/已驳回（切换重置第 1 页）
  * - 获客列表：小区/户型面积预期价描述/状态标签（后端下发色值）/来源标签（客户分享/员工录入）/
  *   脱敏手机号/留资时间；「联系客户」拉取完整手机号并调起拨号；触底加载更多 + 下拉刷新
@@ -17,7 +18,7 @@ import { formatLeadTime } from "../../../utils/recruit-logic";
 
 type PublicAcquiredLeadListItem = components["schemas"]["PublicAcquiredLeadListItem"];
 type PublicAcquiredLeadListResponse = components["schemas"]["PublicAcquiredLeadListResponse"];
-type PublicAcquiredLeadStatsResponse = components["schemas"]["PublicAcquiredLeadStatsResponse"];
+type PublicShareStatsResponse = components["schemas"]["PublicShareStatsResponse"];
 type PublicAcquiredLeadPhoneResponse = components["schemas"]["PublicAcquiredLeadPhoneResponse"];
 
 /** 每页数量. */
@@ -43,12 +44,16 @@ const ACQUIRED_STATUS_CHIPS: AcquiredChip[] = [
   { label: "已驳回", value: "rejected" },
 ];
 
-/** 获客统计展示结构. */
-interface StatsDisplay {
-  total: number;
-  pendingAssessment: number;
-  pendingVisit: number;
-  signed: number;
+/** 分享漏斗统计展示结构（累计 + 昨日两行；空态判定仅用累计字段）. */
+interface ShareStatsDisplay {
+  shareCount: number;
+  pv: number;
+  uv: number;
+  leadCount: number;
+  yesterdayShareCount: number;
+  yesterdayPv: number;
+  yesterdayUv: number;
+  yesterdayLeadCount: number;
 }
 
 /** 获客列表项展示结构（wxml 渲染用）. */
@@ -74,7 +79,7 @@ interface DisplayItem {
 }
 
 interface PageData {
-  stats: StatsDisplay;
+  stats: ShareStatsDisplay;
   chips: AcquiredChip[];
   /** 当前筛选状态值；空串=全部. */
   activeStatus: string;
@@ -109,7 +114,16 @@ interface PageCustom {
 
 Page<PageData, PageCustom>({
   data: {
-    stats: { total: 0, pendingAssessment: 0, pendingVisit: 0, signed: 0 },
+    stats: {
+      shareCount: 0,
+      pv: 0,
+      uv: 0,
+      leadCount: 0,
+      yesterdayShareCount: 0,
+      yesterdayPv: 0,
+      yesterdayUv: 0,
+      yesterdayLeadCount: 0,
+    },
     chips: ACQUIRED_STATUS_CHIPS,
     activeStatus: "",
     items: [],
@@ -154,8 +168,9 @@ Page<PageData, PageCustom>({
     // silent 透传给 loadLeads：刷新时保留当前列表，避免骨架屏闪烁
     await Promise.all([this.loadStats(), this.loadLeads(true, true)]);
     const { stats, items, total } = this.data;
+    // 空态判定基于累计漏斗字段（与 recruit/mine 口径一致）
     const allZero =
-      stats.total === 0 && stats.pendingAssessment === 0 && stats.pendingVisit === 0 && stats.signed === 0;
+      stats.shareCount === 0 && stats.pv === 0 && stats.uv === 0 && stats.leadCount === 0;
     // 游客/员工暂无任何数据 → 空态；有数据但当前筛选无线索 → 保留统计卡 + 列表空文案
     this.setData({
       loading: false,
@@ -164,18 +179,22 @@ Page<PageData, PageCustom>({
     });
   },
 
-  /** 获客统计；失败（401/网络）保持 0，由 loadAll 统一判定空态. */
+  /** 分享漏斗统计（昨日 + 累计）；失败（401/网络）保持 0，由 loadAll 统一判定空态. */
   async loadStats() {
     try {
-      const res = await request<PublicAcquiredLeadStatsResponse>({
-        url: "/public/leads/my/acquired/stats",
+      const res = await request<PublicShareStatsResponse>({
+        url: "/public/valuations/my/share-stats",
       });
       this.setData({
         stats: {
-          total: res.total || 0,
-          pendingAssessment: res.pending_assessment || 0,
-          pendingVisit: res.pending_visit || 0,
-          signed: res.signed || 0,
+          shareCount: res.share_count || 0,
+          pv: res.pv || 0,
+          uv: res.uv || 0,
+          leadCount: res.lead_count || 0,
+          yesterdayShareCount: res.yesterday_share_count || 0,
+          yesterdayPv: res.yesterday_pv || 0,
+          yesterdayUv: res.yesterday_uv || 0,
+          yesterdayLeadCount: res.yesterday_lead_count || 0,
         },
       });
     } catch {

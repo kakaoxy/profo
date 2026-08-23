@@ -30,15 +30,20 @@ type RecruitCampaignResponse = components["schemas"]["RecruitCampaignResponse"];
  */
 const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 
-/** 内部入口（viewing/renovation/properties/ledger 已带 route；recruit 走 onRecruitTap 拉活动跳转）. */
+/** 内部入口（均带 route，onMenuTap 统一 navigateTo 跳转）. */
 const INTERNAL_ENTRIES = [
   { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房", route: "/pages/properties/list/index" },
   { key: "analysis", title: "数据分析", sub: "商圈/小区市场行情", icon: "析", route: "/pages/analysis/index/index" },
   { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
   { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装", route: "/pages/renovation/projects/index/index" },
-  { key: "valuation-acquired", title: "估价获客", sub: "分享获客 / 线索跟进", icon: "估", route: "/pages/valuation/submit/index" },
-  { key: "recruit", title: "招募计划", sub: "分享拉新 / 线索归因", icon: "招" },
   { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账", route: "/pages/ledger/projects/index/index" },
+];
+
+/** 分享获客入口（onMenuTap 按 action 分发：switch-tab-* 为 tabBar 页 switchTab，recruit 走 onRecruitTap 拉活动跳转）. */
+const SHARE_ENTRIES: ShareEntry[] = [
+  { key: "share-property", title: "房源分享", sub: "房源转发 / 客户预约", icon: "房", action: "switch-tab-projects" },
+  { key: "share-valuation", title: "评估分享", sub: "评估转发 / 线索跟进", icon: "估", action: "switch-tab-valuation" },
+  { key: "share-recruit", title: "招募分享", sub: "招募转发 / 拉新归因", icon: "招", action: "recruit" },
 ];
 
 interface InternalEntry {
@@ -48,6 +53,18 @@ interface InternalEntry {
   icon: string;
   /** 已落地页面的路由；无 route 的条目点击走「功能待开放」. */
   route?: string;
+}
+
+/** 分享获客入口点击动作. */
+type ShareEntryAction = "switch-tab-projects" | "switch-tab-valuation" | "recruit";
+
+interface ShareEntry {
+  key: string;
+  title: string;
+  sub: string;
+  icon: string;
+  /** onMenuTap 分发依据：switch-tab-* 跳对应 tabBar 页，recruit 复用 onRecruitTap 动态拉活动. */
+  action: ShareEntryAction;
 }
 
 interface PageData {
@@ -75,6 +92,8 @@ interface PageData {
   /** 昵称保存中标志，避免 onblur 重复触发保存. */
   nicknameSaving: boolean;
   internalEntries: InternalEntry[];
+  /** 分享获客分组（房源/评估/招募分享），仅内部用户可见. */
+  shareEntries: ShareEntry[];
 }
 
 interface PageCustom {
@@ -90,6 +109,7 @@ interface PageCustom {
   onLogout(): void;
   onPhoneTap(): void;
   onValuationTap(): void;
+  onBookingsTap(): void;
   onRecruitTap(): void;
   onMenuTap(e: WechatMiniprogram.BaseEvent): void;
   onPhoneModalSkip(): void;
@@ -186,6 +206,7 @@ Page<PageData, PageCustom>({
     avatarUploading: false,
     nicknameSaving: false,
     internalEntries: INTERNAL_ENTRIES,
+    shareEntries: SHARE_ENTRIES,
   },
 
   getToken() {
@@ -412,6 +433,15 @@ Page<PageData, PageCustom>({
     wx.navigateTo({ url: "/pages/valuation/list/index" });
   },
 
+  /** 我的预约：未登录跳登录页；已登录进入「我的预约」列表（面向所有登录用户）. */
+  onBookingsTap() {
+    if (!this.data.loggedIn) {
+      this.onGoLogin();
+      return;
+    }
+    wx.navigateTo({ url: "/pages/bookings/mine/index" });
+  },
+
   /**
    * 招募计划入口：拉取首个启用活动跳转招募详情页.
    * 需后台 recruit:read 权限（/admin/recruit/campaigns）；无活动或无权限 toast 提示不跳转.
@@ -447,15 +477,18 @@ Page<PageData, PageCustom>({
   },
 
   onMenuTap(e: WechatMiniprogram.BaseEvent) {
-    const key = e.currentTarget.dataset.key as string | undefined;
-    // 招募计划：拉取启用活动后跳转招募详情页（需动态 campaign_id，不走静态 route）
-    if (key === "recruit") {
-      this.onRecruitTap();
+    // 分享获客分组：按 action 分发（两目标页均为 tabBar 页须 switchTab；recruit 动态拉活动跳转）
+    const action = e.currentTarget.dataset.action as ShareEntryAction | undefined;
+    if (action === "switch-tab-projects") {
+      wx.switchTab({ url: "/pages/projects/list/index" });
       return;
     }
-    // 估价获客：先进估价落地页（估价提交页为 tabBar 页，须 switchTab）
-    if (key === "valuation-acquired") {
+    if (action === "switch-tab-valuation") {
       wx.switchTab({ url: "/pages/valuation/submit/index" });
+      return;
+    }
+    if (action === "recruit") {
+      this.onRecruitTap();
       return;
     }
     // 已落地条目（route 存在）跳转对应页；未落地条目统一待开放

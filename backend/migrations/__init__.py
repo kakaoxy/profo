@@ -124,6 +124,7 @@ from migrations._permission_system import (
     migrate_permission_system,
     migrate_project_business_permission,
 )
+from migrations._project_booking_share import create_project_booking_and_share_tables
 from migrations._recruit import (
     add_poster_bg_url_to_campaigns,
     create_recruit_tables,
@@ -267,6 +268,9 @@ def _run_all_migrations(engine: Engine) -> None:
         # 招募计划二期：补建 recruit_campaigns.poster_bg_url 列与 recruit_visits.referrer 索引
         add_poster_bg_url_to_campaigns(engine)
         ensure_visit_referrer_index(engine)
+        # 房源预约与分享归因闭环：幂等创建 5 张新表
+        # （project_bookings/project_visits/project_share_events/valuation_visits/valuation_share_events）
+        create_project_booking_and_share_tables(engine)
         # O1：模糊搜索 pg_trgm GIN 索引（前导通配符 LIKE 全表扫描修复）
         add_trgm_search_indexes(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过

@@ -43,23 +43,45 @@
       <button class="sp-btn" bindtap="onSubscribeTap">开启提醒</button>
     </view>
 
-    <!-- 统计卡（留资数品牌蓝强调） -->
+    <!-- 统计卡（昨日/累计两行漏斗，留资列品牌蓝强调） -->
     <view class="stats">
-      <view class="stat">
-        <text class="stat-num">{{stats.shareCount}}</text>
-        <text class="stat-label">分享次数</text>
+      <view class="stats-row">
+        <view class="stats-tag">昨日</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayShareCount}}</text>
+          <text class="stat-label">分享次数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayPv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayUv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.yesterdayLeadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
       </view>
-      <view class="stat">
-        <text class="stat-num">{{stats.pv}}</text>
-        <text class="stat-label">带来打开 PV</text>
-      </view>
-      <view class="stat">
-        <text class="stat-num">{{stats.uv}}</text>
-        <text class="stat-label">独立访客 UV</text>
-      </view>
-      <view class="stat stat--hl">
-        <text class="stat-num">{{stats.leadCount}}</text>
-        <text class="stat-label">留资数</text>
+      <view class="stats-row">
+        <view class="stats-tag">累计</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.shareCount}}</text>
+          <text class="stat-label">分享次数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.pv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.uv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.leadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
       </view>
     </view>
 

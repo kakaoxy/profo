@@ -4,14 +4,31 @@
 """
 
 from sqlalchemy import Integer, and_, case, cast, desc, func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session
 
-from models import Community, L4MarketingMedia, L4MarketingProject, User
+from models import (
+    Community,
+    L4MarketingMedia,
+    L4MarketingProject,
+    ProjectBooking,
+    ProjectShareEvent,
+    ProjectVisit,
+    User,
+)
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory, PublishStatus
+from schemas.public import (
+    PublicCustomerBookingItem,
+    PublicShareEventRequest,
+    PublicVisitEventRequest,
+)
+from services.system.exceptions import ConflictError, ResourceNotFoundError
 from settings import settings
-from utils.formatters import escape_like
+from utils.crypto import hash_phone
+from utils.formatters import escape_like, mask_phone
 from utils.image_processing import derive_thumbnail_url
 from utils.query_params import validate_sort_field
+from utils.time_windows import yesterday_window
 
 
 class PublicProjectService:
@@ -202,13 +219,14 @@ class PublicProjectService:
         return items, total
 
     def get_project_detail(self, marketing_project_id: int) -> L4MarketingProject | None:
-        """获取项目详情."""
+        """获取已发布且未删除的项目详情（C 端读口径，与列表/写入口径一致）."""
         return (
             self.db.query(L4MarketingProject)
             .filter(
                 and_(
                     L4MarketingProject.id == marketing_project_id,
                     L4MarketingProject.is_deleted.is_(False),
+                    L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
                 ),
             )
             .first()
@@ -245,6 +263,246 @@ class PublicProjectService:
         if not AuthService.has_backend_identity(user):
             return None
         return user
+
+    def create_booking(
+        self,
+        user: User,
+        marketing_project_id: int,
+        visitor_id: str | None = None,
+    ) -> tuple[ProjectBooking, L4MarketingProject, bool]:
+        """创建房源预约（同一用户对同一房源幂等）.
+
+        Args:
+            user: 当前 C 端用户（需已绑定手机号）
+            marketing_project_id: 房源ID
+            visitor_id: 匿名访客ID（可选，用于回查访问埋点做分享归因）
+
+        Returns:
+            (预约记录, 房源, is_new)：is_new=False 表示命中既有预约
+
+        Raises:
+            ResourceNotFoundError: 房源不存在或未发布
+            ConflictError: 用户未绑定手机号
+
+        """
+        project = self._get_published_project(marketing_project_id)
+        if project is None:
+            msg = "房源不存在或未发布"
+            raise ResourceNotFoundError(msg)
+
+        if not user.phone:
+            msg = "请先绑定手机号后再预约看房"
+            raise ConflictError(msg)
+
+        existing = self._get_booking(user_id=user.id, marketing_project_id=marketing_project_id)
+        if existing is not None:
+            return existing, project, False
+
+        booking = ProjectBooking(
+            marketing_project_id=marketing_project_id,
+            user_id=user.id,
+            # phone 快照加密存储（EncryptedString 自动加解密），phone_hash 维持可比较性
+            phone=user.phone,
+            phone_hash=hash_phone(user.phone),
+            referrer_user_id=self._resolve_booking_referrer(visitor_id),
+        )
+        try:
+            self.db.add(booking)
+            self.db.commit()
+            self.db.refresh(booking)
+        except IntegrityError:
+            # 并发重复预约：uq_project_bookings_user_project 兜底，回查既有记录
+            self.db.rollback()
+            existing = self._get_booking(user_id=user.id, marketing_project_id=marketing_project_id)
+            if existing is None:
+                raise
+            return existing, project, False
+        return booking, project, True
+
+    def _get_booking(self, *, user_id: str, marketing_project_id: int) -> ProjectBooking | None:
+        """按 (user_id, marketing_project_id) 查既有预约."""
+        return (
+            self.db.query(ProjectBooking)
+            .filter(
+                ProjectBooking.user_id == user_id,
+                ProjectBooking.marketing_project_id == marketing_project_id,
+            )
+            .first()
+        )
+
+    def _resolve_booking_referrer(self, visitor_id: str | None) -> str | None:
+        """解析预约分享归因：该访客最近一次带 referrer 的房源访问埋点.
+
+        project_visits 为免登录埋点（无 user_id 列），归因唯一可行键是前端
+        生成的匿名 visitor_id；未提供或无带 referrer 的埋点时返回 None。
+        """
+        if not visitor_id:
+            return None
+        visit = (
+            self.db.query(ProjectVisit)
+            .filter(
+                ProjectVisit.visitor_id == visitor_id,
+                ProjectVisit.referrer_employee_id.isnot(None),
+            )
+            .order_by(desc(ProjectVisit.created_at))
+            .first()
+        )
+        return visit.referrer_employee_id if visit else None
+
+    def get_my_bookings(
+        self,
+        *,
+        user_id: str,
+        marketing_project_id: int | None = None,
+    ) -> list[tuple[ProjectBooking, L4MarketingProject]]:
+        """获取用户的预约列表（含房源快照），按预约时间倒序.
+
+        Args:
+            user_id: 用户ID
+            marketing_project_id: 房源ID过滤（可选）
+
+        Returns:
+            [(预约记录, 房源)] 列表，created_at 倒序（相同时间按 id 倒序稳定排序）
+
+        """
+        query = (
+            self.db.query(ProjectBooking, L4MarketingProject)
+            .join(L4MarketingProject, L4MarketingProject.id == ProjectBooking.marketing_project_id)
+            .filter(ProjectBooking.user_id == user_id)
+        )
+        if marketing_project_id is not None:
+            query = query.filter(ProjectBooking.marketing_project_id == marketing_project_id)
+        return query.order_by(desc(ProjectBooking.created_at), desc(ProjectBooking.id)).all()
+
+    def get_my_customer_bookings(self, user_id: str) -> list[PublicCustomerBookingItem]:
+        """归属我的预约客户列表（房源分享归因的员工侧「我的客户」）.
+
+        按 ``ProjectBooking.referrer_user_id == user_id`` 过滤；inner join 房源
+        （与 get_my_bookings 同决策：预约必然对应存在房源，缺失即脏数据不应展示），
+        created_at 倒序（相同时间按 id 倒序稳定排序）。封面复用
+        resolve_cover_images_batch 批量解析（避免 N+1）。
+        """
+        rows = (
+            self.db.query(ProjectBooking, L4MarketingProject)
+            .join(L4MarketingProject, L4MarketingProject.id == ProjectBooking.marketing_project_id)
+            .filter(ProjectBooking.referrer_user_id == user_id)
+            .order_by(desc(ProjectBooking.created_at), desc(ProjectBooking.id))
+            .all()
+        )
+        projects = [project for _, project in rows]
+        cover_map = self.resolve_cover_images_batch(projects)
+        return [
+            PublicCustomerBookingItem(
+                id=booking.id,
+                marketing_project_id=booking.marketing_project_id,
+                project_title=project.title,
+                community_name=project.community_name,
+                cover_image=cover_map[project.id][0],
+                layout=project.layout,
+                total_price=float(project.total_price),
+                # phone 为 EncryptedString 加密快照，读属性自动解密；mask_phone 空值返回 None，兜底空串
+                customer_phone_masked=mask_phone(booking.phone) or "",
+                created_at=booking.created_at,
+            )
+            for booking, project in rows
+        ]
+
+    def _get_published_project(self, marketing_project_id: int) -> L4MarketingProject | None:
+        """获取已发布且未删除的房源（C 端写入口径，与 create_booking 一致）."""
+        return (
+            self.db.query(L4MarketingProject)
+            .filter(
+                and_(
+                    L4MarketingProject.id == marketing_project_id,
+                    L4MarketingProject.is_deleted.is_(False),
+                    L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
+                ),
+            )
+            .first()
+        )
+
+    def create_visit_event(self, marketing_project_id: int, data: PublicVisitEventRequest) -> ProjectVisit:
+        """记录房源详情页访问埋点（PV +1，UV 按 visitor_id 去重）.
+
+        referrer 非空即原样落库（与招募 visit 口径一致，不做内部用户校验）。
+
+        Raises:
+            ResourceNotFoundError: 房源不存在或未发布
+
+        """
+        project = self._get_published_project(marketing_project_id)
+        if project is None:
+            msg = "房源不存在或未发布"
+            raise ResourceNotFoundError(msg)
+        visit = ProjectVisit(
+            visitor_id=data.visitor_id,
+            referrer_employee_id=data.referrer,
+            marketing_project_id=marketing_project_id,
+            source=data.source,
+        )
+        self.db.add(visit)
+        self.db.commit()
+        self.db.refresh(visit)
+        return visit
+
+    def create_share_event(
+        self,
+        user: User,
+        marketing_project_id: int,
+        data: PublicShareEventRequest,
+    ) -> ProjectShareEvent:
+        """记录房源分享事件（employee_id 服务端取当前登录用户，禁止前端传入）.
+
+        Raises:
+            ResourceNotFoundError: 房源不存在或未发布
+
+        """
+        project = self._get_published_project(marketing_project_id)
+        if project is None:
+            msg = "房源不存在或未发布"
+            raise ResourceNotFoundError(msg)
+        event = ProjectShareEvent(
+            employee_id=user.id,
+            marketing_project_id=marketing_project_id,
+            share_type=data.share_type,
+        )
+        self.db.add(event)
+        self.db.commit()
+        self.db.refresh(event)
+        return event
+
+    def get_my_share_stats(self, user: User) -> dict[str, int]:
+        """C 端「我的房源分享统计」：分享次数 / PV / UV / 留资（昨日 + 累计）.
+
+        口径：share_count 按 ``ProjectShareEvent.employee_id``、pv/uv 按
+        ``ProjectVisit.referrer_employee_id``（uv 为 distinct visitor_id）、
+        lead_count 按 ``ProjectBooking.referrer_user_id``；昨日窗口为
+        Asia/Shanghai 自然日（见 ``utils.time_windows.yesterday_window``）。
+        """
+        y_start, y_end = yesterday_window()
+        share_q = self.db.query(ProjectShareEvent).filter(ProjectShareEvent.employee_id == user.id)
+        visit_q = self.db.query(ProjectVisit).filter(ProjectVisit.referrer_employee_id == user.id)
+        # 昨日窗口条件（不可变条件对象，pv/uv 两处复用）
+        y_visit_window = [ProjectVisit.created_at >= y_start, ProjectVisit.created_at < y_end]
+        uv_q = self.db.query(func.count(func.distinct(ProjectVisit.visitor_id))).filter(
+            ProjectVisit.referrer_employee_id == user.id
+        )
+        lead_q = self.db.query(func.count(ProjectBooking.id)).filter(ProjectBooking.referrer_user_id == user.id)
+
+        return {
+            "share_count": int(share_q.count()),
+            "pv": int(visit_q.count()),
+            "uv": int(uv_q.scalar() or 0),
+            "lead_count": int(lead_q.scalar() or 0),
+            "yesterday_share_count": int(
+                share_q.filter(ProjectShareEvent.created_at >= y_start, ProjectShareEvent.created_at < y_end).count()
+            ),
+            "yesterday_pv": int(visit_q.filter(*y_visit_window).count()),
+            "yesterday_uv": int(uv_q.filter(*y_visit_window).scalar() or 0),
+            "yesterday_lead_count": int(
+                lead_q.filter(ProjectBooking.created_at >= y_start, ProjectBooking.created_at < y_end).scalar() or 0
+            ),
+        }
 
     def get_platform_stats(self) -> tuple[int, int, int]:
         """获取平台统计数据.

@@ -40,11 +40,13 @@ from routers.monitor import monitor_router
 from routers.projects import core_router
 from routers.public import (
     public_auth_router,
+    public_bookings_router,
     public_communities_router,
     public_files_router,
     public_leads_router,
     public_projects_router,
     public_users_router,
+    public_valuations_router,
 )
 from routers.recruit import admin_recruit_router, public_recruit_router
 from routers.reports import reports_router
@@ -312,7 +314,9 @@ app.include_router(monitor_router, prefix=API_V1_PREFIX)
 app.include_router(public_auth_router, prefix=API_V1_PREFIX)
 app.include_router(public_users_router, prefix=API_V1_PREFIX)
 app.include_router(public_projects_router, prefix=API_V1_PREFIX)
+app.include_router(public_bookings_router, prefix=API_V1_PREFIX)
 app.include_router(public_leads_router, prefix=API_V1_PREFIX)
+app.include_router(public_valuations_router, prefix=API_V1_PREFIX)
 app.include_router(public_files_router, prefix=API_V1_PREFIX)
 app.include_router(public_communities_router, prefix=API_V1_PREFIX)
 app.include_router(public_recruit_router, prefix=API_V1_PREFIX)

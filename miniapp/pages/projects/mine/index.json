@@ -1,0 +1,6 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "我的客户",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#f7f7f8"
+}

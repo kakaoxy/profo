@@ -1,4 +1,4 @@
-/* 我的获客页（对照设计稿 valuation-mine.html） */
+/* 我的客户页（漏斗统计卡对齐 valuation/mine，列表/空态对齐 bookings/mine） */
 
 .page {
   --brand: #2563eb;
@@ -70,136 +70,82 @@
   color: var(--brand);
 }
 
-/* ===== 筛选 chips ===== */
-.chips {
-  white-space: nowrap;
-  padding: 28rpx 32rpx 8rpx;
-  box-sizing: border-box;
-  width: 100%;
-}
-.chip-item {
-  display: inline-flex;
-  align-items: center;
-  font-size: 24rpx;
-  color: var(--ink-2);
-  background: #ffffff;
-  border-radius: 9999rpx;
-  padding: 12rpx 26rpx;
-  margin-right: 16rpx;
-}
-.chip-item--on {
-  background: var(--brand-weak);
-  color: var(--brand);
-  font-weight: 600;
-}
-
-/* ===== 获客列表 ===== */
-.leads {
+/* ===== 归因客户列表 ===== */
+.list {
   padding: 20rpx 32rpx 0;
 }
-.lead {
+.card {
   background: #ffffff;
   border-radius: 28rpx;
   padding: 24rpx 28rpx;
   margin-bottom: 20rpx;
 }
-.l-top {
+.c-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.l-name {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: var(--ink);
-}
-/* 状态标签：前景/底色由后端 status_color 以内联 style 注入 */
-.l-tag {
-  flex-shrink: 0;
-  font-size: 21rpx;
-  font-weight: 600;
-  padding: 4rpx 16rpx;
-  border-radius: 12rpx;
-}
-.l-main {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
-  margin-top: 16rpx;
-}
-.l-layout {
-  font-size: 24rpx;
-  color: var(--ink-2);
-}
-.l-src {
-  flex-shrink: 0;
-  font-size: 20rpx;
-  padding: 3rpx 12rpx;
-  border-radius: 8rpx;
-}
-/* 来源标签：客户分享（品牌蓝弱底）/ 员工录入（灰底） */
-.s-share {
-  background: rgba(37, 99, 235, 0.09);
-  color: var(--brand);
-}
-.s-direct {
-  background: #f2f3f5;
-  color: var(--ink-2);
-}
-.l-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 18rpx;
-  padding-top: 20rpx;
-  border-top: 2rpx solid var(--line);
-}
-.l-left {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  min-width: 0;
-}
-.l-phone {
-  font-size: 28rpx;
-  font-weight: 600;
+/* 脱敏手机号：大字加粗（等宽数字） */
+.c-phone {
+  font-size: 34rpx;
+  font-weight: 700;
   letter-spacing: 0.6rpx;
   color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
-/* 完整号码（已查看）：品牌蓝示区分脱敏态 */
-.l-phone--full {
-  color: var(--brand);
-}
-/* 无联系方式（员工录入等）：次级灰字 */
-.l-phone--empty {
-  font-size: 24rpx;
+/* 无联系方式（客户未授权手机号）：次级灰字 */
+.c-phone--empty {
+  font-size: 26rpx;
   font-weight: 400;
   color: var(--ink-3);
 }
-.l-time {
+/* 「预约客户」标签：品牌蓝弱底 */
+.c-tag {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  font-weight: 500;
+  padding: 3rpx 12rpx;
+  border-radius: 8rpx;
+  background: rgba(37, 99, 235, 0.09);
+  color: var(--brand);
+}
+.c-title {
+  margin-top: 14rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c-community {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid var(--line);
+}
+.c-desc {
+  font-size: 24rpx;
+  color: var(--ink-2);
+}
+.c-time {
+  flex-shrink: 0;
   font-size: 22rpx;
   color: var(--ink-3);
 }
-/* ===== 联系客户操作区 ===== */
-.l-contact {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 176rpx;
-  height: 60rpx;
-  padding: 0 28rpx;
-  border-radius: 9999rpx;
-  background: var(--brand);
-  color: #ffffff;
-  font-size: 24rpx;
-  font-weight: 600;
-  box-shadow: 0 10rpx 24rpx rgba(37, 99, 235, 0.22);
-}
-/* 已查看号码：轻量次级样式，仅触发拨打 */
-.l-contact--plain {
-  background: var(--brand-weak);
-  color: var(--brand);
-  box-shadow: none;
+/* 描述为空时时间独占一行，margin-left:auto 保持靠右 */
+.c-time--solo {
+  margin-left: auto;
 }
 .leads-empty {
   text-align: center;
@@ -249,29 +195,23 @@
   background: #ffffff;
   border-radius: 32rpx;
   box-shadow: 0 20rpx 52rpx rgba(23, 25, 28, 0.08);
-  padding: 36rpx 40rpx 0;
+  padding: 36rpx 40rpx;
   box-sizing: border-box;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 24rpx;
 }
-.e-row {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-.e-dot {
-  width: 24rpx;
-  height: 24rpx;
-  border-radius: 50%;
-  background: #eef4ff;
+.e-pic {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 20rpx;
+  background: var(--brand-weak);
   flex-shrink: 0;
 }
-.e-dot--2 {
-  background: #f1edff;
-}
-.e-dot--3 {
-  background: #e8f7ee;
+.e-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
 }
 .e-bar {
   height: 16rpx;
@@ -280,9 +220,6 @@
 }
 .e-bar--2 {
   background: #f1f2f6;
-}
-.e-bar--3 {
-  background: #e9ebf1;
 }
 .e-badge {
   position: absolute;

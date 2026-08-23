@@ -4,5 +4,13 @@
 """
 
 from .lead import Lead, LeadEvalHistory, LeadFollowUp, LeadPriceHistory
+from .share_tracking import ValuationShareEvent, ValuationVisit
 
-__all__ = ["Lead", "LeadEvalHistory", "LeadFollowUp", "LeadPriceHistory"]
+__all__ = [
+    "Lead",
+    "LeadEvalHistory",
+    "LeadFollowUp",
+    "LeadPriceHistory",
+    "ValuationShareEvent",
+    "ValuationVisit",
+]

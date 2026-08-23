@@ -80,13 +80,37 @@
       </view>
       <view class="menu-right"><text class="chevron">›</text></view>
     </view>
+    <view class="menu-item" bindtap="onBookingsTap">
+      <view class="menu-left">
+        <view class="menu-icon">看</view>
+        <text>我的想看</text>
+      </view>
+      <view class="menu-right"><text class="chevron">›</text></view>
+    </view>
   </view>
+
+  <!-- 分享获客（仅内部用户可见，按 action 分发：switchTab / 拉招募活动） -->
+  <block wx:if="{{isInternal}}">
+    <view class="menu-group-title">分享获客 · 仅内部用户可见</view>
+    <view class="menu-list">
+      <view class="menu-item" wx:for="{{shareEntries}}" wx:key="key" bindtap="onMenuTap" data-action="{{item.action}}">
+        <view class="menu-left">
+          <view class="menu-icon">{{item.icon}}</view>
+          <view>
+            <view class="menu-item-title">{{item.title}}</view>
+            <view class="menu-sub">{{item.sub}}</view>
+          </view>
+        </view>
+        <view class="menu-right"><text class="chevron">›</text></view>
+      </view>
+    </view>
+  </block>
 
   <!-- 内部入口（仅内部用户可见） -->
   <block wx:if="{{isInternal}}">
     <view class="menu-group-title">内部入口 · 仅内部用户可见</view>
     <view class="menu-list">
-      <view class="menu-item" wx:for="{{internalEntries}}" wx:key="key" bindtap="onMenuTap" data-route="{{item.route}}" data-key="{{item.key}}">
+      <view class="menu-item" wx:for="{{internalEntries}}" wx:key="key" bindtap="onMenuTap" data-route="{{item.route}}">
         <view class="menu-left">
           <view class="menu-icon">{{item.icon}}</view>
           <view>

@@ -282,6 +282,8 @@ class PublicConsultantContact(BaseModel):
     phone: str = Field(description="顾问手机号(真实，供客户拨打联系)")
     wechat_number: str = Field(description="微信号(当前复用顾问手机号)")
     nickname: str = Field(description="昵称")
+    avatar: str | None = Field(None, description="头像URL")
+    is_referrer: bool = Field(default=False, description="是否命中内部分享人(角色标签：True=分享人，False=房源顾问)")
 
 
 class PublicSoldProjectItem(BaseModel):
@@ -509,6 +511,94 @@ class PublicLeadDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PublicProjectBookingCreate(BaseModel):
+    """C端房源预约创建请求.
+
+    visitor_id 为可选归因键：前端生成并缓存于 storage 的匿名访客 ID，
+    用于回查该访客最近一次带 referrer 的 project_visits 埋点完成分享归因；
+    未提供或无匹配埋点时 referrer_user_id 为空。
+    """
+
+    marketing_project_id: int = Field(description="房源ID")
+    visitor_id: str | None = Field(None, max_length=64, description="匿名访客ID(分享归因用，可选)")
+
+
+class PublicProjectBookingItem(BaseModel):
+    """C端房源预约列表项（含房源快照字段）."""
+
+    id: int = Field(description="预约ID")
+    marketing_project_id: int = Field(description="房源ID")
+    project_title: str = Field(description="房源标题")
+    community_name: str | None = Field(None, description="小区名称")
+    cover_image: str | None = Field(None, description="封面图URL")
+    layout: str = Field(description="户型")
+    total_price: float = Field(description="总价(万元)")
+    created_at: datetime = Field(description="预约时间")
+
+
+class PublicProjectBookingResponse(BaseModel):
+    """C端房源预约创建响应.
+
+    组合式而非平铺：is_new 是「本次请求是否新建」的操作元信息而非记录字段，
+    嵌套 booking 与 PublicLoginResponse 嵌套 user 的风格一致，
+    同时保持 PublicProjectBookingItem 可复用于列表响应。
+    """
+
+    booking: PublicProjectBookingItem = Field(description="预约记录(含房源快照)")
+    is_new: bool = Field(description="本次请求是否新建预约（幂等命中既有记录时为 false）")
+
+
+class PublicCustomerBookingItem(BaseModel):
+    """C端「归属我的预约客户」列表项（房源分享归因，员工侧我的客户）."""
+
+    id: int = Field(description="预约ID")
+    marketing_project_id: int = Field(description="房源ID")
+    project_title: str = Field(description="房源标题")
+    community_name: str | None = Field(None, description="小区名称")
+    cover_image: str | None = Field(None, description="封面图URL")
+    layout: str | None = Field(None, description="户型")
+    total_price: float | None = Field(None, description="总价(万元)")
+    customer_phone_masked: str = Field(description="客户手机号(脱敏，前3后4，中间****；无手机号时空串)")
+    created_at: datetime = Field(description="预约时间")
+
+
+class PublicVisitEventRequest(BaseModel):
+    """C端访问埋点上报请求（免登录，房源/评估共用）.
+
+    visitor_id 为前端生成并缓存于 storage 的匿名访客 ID（UV 去重键）；
+    referrer 非空即原样落库（与招募 visit 口径一致，不做内部用户校验）。
+    """
+
+    visitor_id: str = Field(min_length=1, max_length=64, description="匿名访客ID(UV去重键，前端生成)")
+    referrer: str | None = Field(None, max_length=36, description="来源员工ID(分享参数透传)")
+    source: str | None = Field(None, max_length=20, description="进入渠道")
+
+
+class PublicShareEventRequest(BaseModel):
+    """C端分享事件上报请求（需登录，房源/评估共用）."""
+
+    share_type: Literal["card", "timeline"] = Field(description="分享方式：card(转发)/timeline(朋友圈)")
+
+
+class PublicTrackingEventResponse(BaseModel):
+    """C端埋点事件写入响应（访问/分享共用）."""
+
+    id: int = Field(description="事件记录ID")
+
+
+class PublicShareStatsResponse(BaseModel):
+    """C端「我的分享统计」响应（房源/评估共用，昨日 + 累计）."""
+
+    share_count: int = Field(description="分享次数(累计)")
+    pv: int = Field(description="经我分享的打开次数 PV(累计)")
+    uv: int = Field(description="经我分享的打开人数 UV(visitor_id 去重，累计)")
+    lead_count: int = Field(description="留资数(累计；房源=归属我的预约，评估=分享归因我的线索)")
+    yesterday_share_count: int = Field(description="昨日分享次数(Asia/Shanghai 自然日)")
+    yesterday_pv: int = Field(description="昨日打开次数 PV")
+    yesterday_uv: int = Field(description="昨日打开人数 UV")
+    yesterday_lead_count: int = Field(description="昨日留资数")
+
+
 class PublicCommunityBrief(BaseModel):
     """C端小区分析响应中的小区基本信息."""
 
@@ -547,6 +637,7 @@ __all__ = [
     "PublicCommunitySearchItem",
     "PublicConsultantContact",
     "PublicConsultantInfo",
+    "PublicCustomerBookingItem",
     "PublicFollowupItem",
     "PublicLeadCountResponse",
     "PublicLeadCreate",
@@ -562,6 +653,9 @@ __all__ = [
     "PublicPhoneUpdate",
     "PublicPlatformStats",
     "PublicProfileUpdate",
+    "PublicProjectBookingCreate",
+    "PublicProjectBookingItem",
+    "PublicProjectBookingResponse",
     "PublicProjectDetail",
     "PublicProjectFilter",
     "PublicProjectListItem",
@@ -570,9 +664,13 @@ __all__ = [
     "PublicRegisterRequest",
     "PublicRegisterResponse",
     "PublicRenovationStage",
+    "PublicShareEventRequest",
+    "PublicShareStatsResponse",
     "PublicSoldProjectItem",
     "PublicSoldProjectListResponse",
+    "PublicTrackingEventResponse",
     "PublicUserInfo",
     "PublicUserProfileResponse",
+    "PublicVisitEventRequest",
     "WechatProfileUpdateRequest",
 ]

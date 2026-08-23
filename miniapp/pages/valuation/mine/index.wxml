@@ -34,23 +34,45 @@
 
   <!-- 有数据：统计卡 + 筛选 + 列表 -->
   <block wx:else>
-    <!-- 统计卡（累计获客/待评估/待看房/已签约，已签约品牌蓝强调） -->
+    <!-- 统计卡（昨日/累计两行漏斗，留资列品牌蓝强调，与 recruit/mine 统一） -->
     <view class="stats">
-      <view class="stat">
-        <text class="stat-num">{{stats.total}}</text>
-        <text class="stat-label">累计获客</text>
+      <view class="stats-row">
+        <view class="stats-tag">昨日</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayShareCount}}</text>
+          <text class="stat-label">分享次数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayPv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayUv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.yesterdayLeadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
       </view>
-      <view class="stat">
-        <text class="stat-num">{{stats.pendingAssessment}}</text>
-        <text class="stat-label">待评估</text>
-      </view>
-      <view class="stat">
-        <text class="stat-num">{{stats.pendingVisit}}</text>
-        <text class="stat-label">待看房</text>
-      </view>
-      <view class="stat stat--hl">
-        <text class="stat-num">{{stats.signed}}</text>
-        <text class="stat-label">已签约</text>
+      <view class="stats-row">
+        <view class="stats-tag">累计</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.shareCount}}</text>
+          <text class="stat-label">分享次数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.pv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.uv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.leadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
       </view>
     </view>
 

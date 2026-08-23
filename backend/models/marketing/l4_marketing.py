@@ -17,6 +17,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     Uuid,
 )
 from sqlalchemy import (
@@ -25,6 +26,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from models.common.base import BaseModel, RenovationStage
+from models.common.encrypted import EncryptedString
 
 
 class PublishStatus(str, Enum):
@@ -292,4 +294,132 @@ class L4MarketingMedia(BaseModel):
         Index("idx_l4_media_stage", "marketing_project_id", "renovation_stage"),
         Index("idx_l4_media_origin", "origin_media_id"),
         Index("idx_l4_media_deleted", "is_deleted"),
+    )
+
+
+class ProjectBooking(BaseModel):
+    """房源预约表.
+
+    C 端登录用户在房源详情页点「想看房」后创建；(user_id, marketing_project_id)
+    唯一约束在 DB 层实现幂等防重，重复预约由 Service 层捕获后返回既有记录.
+    """
+
+    __tablename__ = "project_bookings"
+
+    # 主键 - 整数类型，自增（覆盖基类 Uuid 主键）
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="预约ID")
+
+    marketing_project_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="房源ID(逻辑外键)")
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="预约用户ID(逻辑外键)")
+    # 预约时手机号快照（Fernet 加密，随机 IV 导致密文不可比，唯一性由 phone_hash 维持）
+    phone: Mapped[str] = mapped_column(EncryptedString(20), nullable=False, comment="预约时手机号(加密快照)")
+    phone_hash: Mapped[str] = mapped_column(String(64), nullable=False, comment="手机号哈希")
+    referrer_user_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="归因内部员工ID(逻辑外键，取最近一次带referrer的访问)",
+    )
+
+    # 时间戳（覆盖基类，加列注释）
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        comment="更新时间",
+    )
+
+    __table_args__ = (
+        # 幂等防重：同一用户对同一房源仅一条预约，重复预约复用既有记录
+        UniqueConstraint("user_id", "marketing_project_id", name="uq_project_bookings_user_project"),
+        Index("idx_project_bookings_user", "user_id"),
+        Index("idx_project_bookings_referrer", "referrer_user_id"),
+        Index("idx_project_bookings_project", "marketing_project_id"),
+    )
+
+
+class ProjectVisit(BaseModel):
+    """房源详情页访问埋点表（分享漏斗 PV/UV 数据源）.
+
+    免登录埋点：UV 以前端生成并缓存于 storage 的匿名 visitor_id 去重
+    （与招募的 openid_hash 口径不同，数值不可横向对比）.
+    """
+
+    __tablename__ = "project_visits"
+
+    # 主键 - 整数类型，自增（覆盖基类 Uuid 主键）
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="访问记录ID")
+
+    visitor_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="匿名访客ID(UV去重键，前端生成)")
+    referrer_employee_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="来源员工ID(分享参数透传)",
+    )
+    marketing_project_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="房源ID(逻辑外键)")
+    source: Mapped[str | None] = mapped_column(String(20), nullable=True, comment="进入渠道")
+
+    # 时间戳（覆盖基类，加列注释）
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        comment="更新时间",
+    )
+
+    __table_args__ = (
+        Index("idx_project_visits_visitor", "visitor_id"),
+        # 「我的分享统计」按来源员工过滤 PV/UV，避免全表扫描
+        Index("idx_project_visits_referrer", "referrer_employee_id"),
+        Index("idx_project_visits_created_at", "created_at"),
+    )
+
+
+class ProjectShareEvent(BaseModel):
+    """房源分享事件表（分享漏斗第 1 级）."""
+
+    __tablename__ = "project_share_events"
+
+    # 主键 - 整数类型，自增（覆盖基类 Uuid 主键）
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="分享事件ID")
+
+    employee_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="分享员工ID(逻辑外键)")
+    marketing_project_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="房源ID(逻辑外键)")
+    share_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        comment="分享方式: card(转发)/timeline(朋友圈)",
+    )
+
+    # 时间戳（覆盖基类，加列注释）
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        comment="更新时间",
+    )
+
+    __table_args__ = (
+        Index("idx_project_share_events_employee", "employee_id"),
+        Index("idx_project_share_events_created_at", "created_at"),
     )

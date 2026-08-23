@@ -9,6 +9,7 @@ import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../..
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";
 import { formatThousands } from "../../../utils/format";
+import { getVisitorId } from "../../../utils/visitor";
 import {
   buildValuationSharePath,
   fetchEmployeeId,
@@ -22,6 +23,9 @@ type PublicLeadResponse = components["schemas"]["PublicLeadResponse"];
 type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type UserResponse = components["schemas"]["UserResponse"];
 type PublicLeadCountResponse = components["schemas"]["PublicLeadCountResponse"];
+type PublicVisitEventRequest = components["schemas"]["PublicVisitEventRequest"];
+type PublicShareEventRequest = components["schemas"]["PublicShareEventRequest"];
+type PublicTrackingEventResponse = components["schemas"]["PublicTrackingEventResponse"];
 
 /**
  * 权限说明：
@@ -141,6 +145,8 @@ interface PageCustom {
   handleUnauthorized(): void;
   onLoad(options: Record<string, string | undefined>): void;
   loadEmployee(): void;
+  /** 员工分享事件上报（card/timeline），静默失败. */
+  reportShareEvent(shareType: "card" | "timeline"): void;
   onMineTap(): void;
   onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
   onShareTimeline(): WechatMiniprogram.Page.ICustomTimelineContent;
@@ -194,6 +200,21 @@ Page<PageData, PageCustom>({
     // 无法 await loadEmployee；先从 access_token 解析 sub 填充，确保进入后立即
     // 分享仍携带 referrer 归因（loadEmployee 完成后由后端确认值覆盖）
     this.setData({ referrer, employeeId: getUserIdFromAccessToken() });
+    // 分享/扫码进入（带 referrer）：静默上报访问埋点（PV +1 / UV 按匿名 visitor_id 去重），
+    // 免登录接口（skipAuth 不携带令牌）；source 对齐分享 path 的进入渠道参数；失败不打扰用户
+    if (referrer) {
+      const body: PublicVisitEventRequest = {
+        visitor_id: getVisitorId(),
+        referrer,
+        ...(options.source ? { source: options.source } : {}),
+      };
+      request<PublicTrackingEventResponse>({
+        url: "/public/valuations/visit-events",
+        method: "POST",
+        data: body,
+        skipAuth: true,
+      }).catch(() => {});
+    }
     // 内部员工（admin 令牌存在）：识别身份后展示分享横幅 + 启用分享菜单；
     // 识别失败静默降级（非员工不显示横幅，不影响表单）
     if (getAccessToken()) {
@@ -706,6 +727,7 @@ Page<PageData, PageCustom>({
   /** 分享卡片（与 about 服务页一致）；referrer 用自身员工 ID（员工态优先），未识别则透传进入时的 referrer. */
   onShareAppMessage() {
     const shareReferrer = this.data.employeeId || this.data.referrer;
+    this.reportShareEvent("card");
     return {
       title: VALUATION_SHARE_TITLE,
       path: buildValuationSharePath(shareReferrer),
@@ -716,6 +738,7 @@ Page<PageData, PageCustom>({
   /** 分享朋友圈：query 用 path 的 query 段（朋友圈分享不支持完整 path）. */
   onShareTimeline() {
     const shareReferrer = this.data.employeeId || this.data.referrer;
+    this.reportShareEvent("timeline");
     const path = buildValuationSharePath(shareReferrer);
     const query = path.includes("?") ? path.slice(path.indexOf("?") + 1) : "";
     return {
@@ -723,5 +746,21 @@ Page<PageData, PageCustom>({
       query,
       imageUrl: VALUATION_SHARE_IMAGE,
     };
+  },
+
+  /**
+   * 员工分享事件上报（share-events，需登录令牌，request.ts 对 /public/* 自动注入）.
+   * employeeId 未识别（游客/普通用户转发）不上报；失败静默不打扰用户.
+   */
+  reportShareEvent(shareType: "card" | "timeline") {
+    if (!this.data.employeeId) {
+      return;
+    }
+    const body: PublicShareEventRequest = { share_type: shareType };
+    request<PublicTrackingEventResponse>({
+      url: "/public/valuations/share-events",
+      method: "POST",
+      data: body,
+    }).catch(() => {});
   },
 });

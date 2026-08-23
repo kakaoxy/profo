@@ -1,13 +1,18 @@
 import type { components } from "../../../types/api-types";
 import { request, type HttpResponseError } from "../../../utils/request";
-import { getAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
+import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import { fetchEmployeeId } from "../../../utils/valuation-share";
+import { getVisitorId } from "../../../utils/visitor";
 
 type PublicProjectDetail = components["schemas"]["PublicProjectDetail"];
 type PublicMediaItem = components["schemas"]["PublicMediaItem"];
 type PublicRenovationStage = components["schemas"]["PublicRenovationStage"];
 type PublicConsultantContact = components["schemas"]["PublicConsultantContact"];
+type PublicProjectBookingItem = components["schemas"]["PublicProjectBookingItem"];
+type PublicProjectBookingResponse = components["schemas"]["PublicProjectBookingResponse"];
+type PublicUserInfo = components["schemas"]["PublicUserInfo"];
+type PublicTrackingEventResponse = components["schemas"]["PublicTrackingEventResponse"];
 type RenovationStageName =
   | "拆除"
   | "设计"
@@ -40,6 +45,13 @@ type StageViewer = {
   photos: string[];
   current: number;
 };
+
+/** /public/users/phone/wechat 返回体：成功 { success: true }，冲突 { code: 40901, message }. */
+interface PhoneWechatBindResponse {
+  success?: boolean;
+  code?: number;
+  message?: string;
+}
 
 /** 设计稿仅展示 5 个改造阶段（不含「交付」「已完成」）. */
 const ALL_STAGES: RenovationStageName[] = ["拆除", "设计", "水电", "木瓦", "油漆"];
@@ -77,6 +89,18 @@ interface PageData {
   referrer: string;
   /** 当前登录内部员工 ID（识别成功置值，分享时作为 referrer 归属）. */
   employeeId: string;
+  /** 顾问卡片头像完整 URL（avatar 为空时为空串，wxml 走首字符占位）. */
+  contactAvatarUrl: string;
+  /** 顾问卡片头像缺省占位字符（nickname 首字符）. */
+  contactFallbackChar: string;
+  /** 顾问卡片角色标签：命中分享人「分享人」否则「房源顾问」. */
+  contactRoleText: string;
+  /** 当前用户已预约本房源. */
+  booked: boolean;
+  /** 预约提交中（按钮 loading 防重入）. */
+  bookingSubmitting: boolean;
+  /** 页内手机号授权弹层是否展示（未绑手机号预约时引导）. */
+  phoneAuthVisible: boolean;
 }
 
 type Custom = {
@@ -101,10 +125,22 @@ type Custom = {
       WechatMiniprogram.IAnyObject
     >
   ): void;
-  onCallPhone(): void;
-  onAddWechat(): void;
+  onBookTap(): void;
+  proceedBooking(id: number): Promise<void>;
+  createBooking(id: number): Promise<void>;
+  onPhoneAuth(e: WechatMiniprogram.CustomEvent): void;
+  bindPhoneAndBook(code: string): Promise<void>;
+  onPhoneAuthCancel(): void;
+  loadBookedState(id: number): Promise<void>;
+  reportVisit(id: number, referrer: string, source: string): void;
+  reportShareEvent(id: number, shareType: "card" | "timeline"): void;
   onRetry(): void;
+  /** 员工专属入口：跳转「我的客户」页（分享漏斗 + 归因预约客户）. */
+  onMyCustomersTap(): void;
   onShareTimeline(): void;
+  onShow(): void;
+  /** 登录返回后续约预约流标记（实例字段，无需渲染）. */
+  pendingBook: boolean;
 };
 
 /** 判断是否为 HTTP 非 2xx 错误. */
@@ -203,7 +239,14 @@ Page<PageData, Custom>({
     notFound: false,
     referrer: "",
     employeeId: "",
+    contactAvatarUrl: "",
+    contactFallbackChar: "",
+    contactRoleText: "房源顾问",
+    booked: false,
+    bookingSubmitting: false,
+    phoneAuthVisible: false,
   },
+  pendingBook: false,
   onLoad(options) {
     const rawOptions = options as Record<string, string | undefined>;
     const rawId = rawOptions.id;
@@ -219,13 +262,30 @@ Page<PageData, Custom>({
     // 同步取当前登录员工 ID 作为 employeeId 初值：onShareAppMessage 是同步回调，
     // 无法 await loadEmployee；先从 access_token 解析 sub 填充，确保进入后立即
     // 分享仍携带 referrer 归因（loadEmployee 完成后由后端确认值覆盖）
-    this.setData({ id, referrer: rawOptions.referrer || "", employeeId: getUserIdFromAccessToken() });
+    const referrer = rawOptions.referrer || "";
+    this.setData({ id, referrer, employeeId: getUserIdFromAccessToken() });
     // 启用右上角菜单的「分享给朋友」与「分享到朋友圈」，使 onShareTimeline 可触发
     wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
     this.loadDetail(id);
+    // 经分享进入（带 referrer）：静默上报访问埋点（PV +1，UV 按匿名 visitor_id 去重）
+    if (referrer) {
+      this.reportVisit(id, referrer, rawOptions.source || "share");
+    }
+    // C 端已登录：预置已预约态（重复进入不再展示可预约按钮）
+    if (getCAccessToken()) {
+      this.loadBookedState(id);
+    }
     // 内部员工（admin 令牌存在）：识别身份后分享携带 referrer（分享人归属）
     if (getAccessToken()) {
       this.loadEmployee();
+    }
+  },
+  onShow() {
+    // 登录页返回重试：onBookTap 时未登录跳登录（pendingBook 置位），
+    // 返回本页且已获得 C 端令牌时继续预约流
+    if (this.pendingBook && getCAccessToken() && this.data.id !== null && !this.data.booked) {
+      this.pendingBook = false;
+      this.proceedBooking(this.data.id);
     }
   },
   async loadDetail(id: number): Promise<void> {
@@ -277,7 +337,17 @@ Page<PageData, Custom>({
               url,
               poster: "",
             }));
-      this.setData({ detail: resolvedDetail, contact, stages, gallery, hasRenovationPhotos, loading: false });
+      this.setData({
+        detail: resolvedDetail,
+        contact,
+        stages,
+        gallery,
+        hasRenovationPhotos,
+        loading: false,
+        contactAvatarUrl: resolveAssetUrl(contact.avatar),
+        contactFallbackChar: (contact.nickname || "顾问").slice(0, 1),
+        contactRoleText: contact.is_referrer ? "分享人" : "房源顾问",
+      });
     } catch (err) {
       this.setData({ loading: false });
       if (isHttpResponseError(err) && err.statusCode === 404) {
@@ -360,22 +430,157 @@ Page<PageData, Custom>({
   ): void {
     this.setData({ "stageViewer.current": e.detail.current });
   },
-  onCallPhone(): void {
-    const phone = this.data.contact?.phone;
-    if (phone) {
-      wx.makePhoneCall({ phoneNumber: phone }).catch(() => {});
-    } else {
-      wx.showToast({ title: "暂无联系电话", icon: "none" });
-    }
-  },
-  onAddWechat(): void {
-    const wechat = this.data.contact?.wechat_number;
-    if (!wechat) {
-      wx.showToast({ title: "暂无微信号", icon: "none" });
+  /**
+   * 「想看房」入口（决策 #3 状态机）：
+   * booked 直接返回 → 未登录跳登录页（onShow 返回后重试）→
+   * 已登录查手机号（/public/auth/me）：有则直接预约，无则弹页内微信授权层.
+   */
+  onBookTap(): void {
+    if (this.data.booked || this.data.bookingSubmitting) {
       return;
     }
-    wx.setClipboardData({ data: wechat });
-    wx.showToast({ title: "微信号已复制", icon: "none" });
+    const id = this.data.id;
+    if (id === null) {
+      return;
+    }
+    if (!getCAccessToken()) {
+      this.pendingBook = true;
+      wx.navigateTo({ url: "/pages/login/index/index?from=booking" });
+      return;
+    }
+    this.proceedBooking(id);
+  },
+  /** 已登录：校验手机号绑定后预约（无手机号 → 页内授权弹层）. */
+  async proceedBooking(id: number): Promise<void> {
+    try {
+      const me = await request<PublicUserInfo>({ url: "/public/auth/me" });
+      if (me.phone) {
+        this.createBooking(id);
+        return;
+      }
+    } catch (err) {
+      if (isHttpResponseError(err) && err.statusCode === 401) {
+        // C 端令牌失效（refresh 也失败）：重新走登录
+        this.pendingBook = true;
+        wx.navigateTo({ url: "/pages/login/index/index?from=booking" });
+        return;
+      }
+      wx.showToast({ title: "网络异常，请重试", icon: "none" });
+      return;
+    }
+    this.setData({ phoneAuthVisible: true });
+  },
+  /** 提交预约（幂等）：成功 booked=true；409 为后端未绑手机号兜底 → 弹授权层. */
+  async createBooking(id: number): Promise<void> {
+    if (this.data.bookingSubmitting) {
+      return;
+    }
+    this.setData({ bookingSubmitting: true });
+    try {
+      await request<PublicProjectBookingResponse>({
+        url: "/public/bookings",
+        method: "POST",
+        data: { marketing_project_id: id, visitor_id: getVisitorId() },
+      });
+      this.setData({ booked: true, bookingSubmitting: false, phoneAuthVisible: false });
+      wx.showToast({ title: "预约成功，工作人员将会联系您", icon: "none" });
+    } catch (err) {
+      this.setData({ bookingSubmitting: false });
+      if (isHttpResponseError(err)) {
+        if (err.statusCode === 409) {
+          this.setData({ phoneAuthVisible: true });
+          return;
+        }
+        const body = err.body as { message?: string } | undefined;
+        wx.showToast({ title: body?.message || "预约失败，请重试", icon: "none" });
+        return;
+      }
+      wx.showToast({ title: "网络异常，请重试", icon: "none" });
+    }
+  },
+  /** 手机号授权弹层回调：拒绝静默保留弹层；成功用 code 绑定后自动预约. */
+  onPhoneAuth(e: WechatMiniprogram.CustomEvent): void {
+    const detail = e.detail as { code?: string; errMsg?: string };
+    if (detail.errMsg && !detail.errMsg.includes("ok")) {
+      return;
+    }
+    if (!detail.code) {
+      wx.showToast({ title: "获取手机号失败", icon: "none" });
+      return;
+    }
+    this.bindPhoneAndBook(detail.code);
+  },
+  /** 微信 code 换手机号并绑定，成功后自动提交预约. */
+  async bindPhoneAndBook(code: string): Promise<void> {
+    const id = this.data.id;
+    if (id === null || this.data.bookingSubmitting) {
+      return;
+    }
+    this.setData({ bookingSubmitting: true });
+    try {
+      const res = await request<PhoneWechatBindResponse>({
+        url: "/public/users/phone/wechat",
+        method: "POST",
+        data: { code },
+      });
+      this.setData({ bookingSubmitting: false });
+      if (res.code === 40901) {
+        wx.showToast({ title: "该手机号已绑定其他账号，请先合并账号", icon: "none" });
+        return;
+      }
+      if (res.success !== true) {
+        wx.showToast({ title: res.message || "绑定失败，请重试", icon: "none" });
+        return;
+      }
+      this.createBooking(id);
+    } catch (err) {
+      this.setData({ bookingSubmitting: false });
+      if (isHttpResponseError(err)) {
+        const body = err.body as { message?: string } | undefined;
+        wx.showToast({ title: body?.message || "绑定失败，请重试", icon: "none" });
+        return;
+      }
+      wx.showToast({ title: "网络异常，请重试", icon: "none" });
+    }
+  },
+  /** 手机号授权弹层「取消」. */
+  onPhoneAuthCancel(): void {
+    this.setData({ phoneAuthVisible: false });
+  },
+  /** 预置已预约态：我的预约中含本房源即 booked（失败静默，不阻断浏览）. */
+  async loadBookedState(id: number): Promise<void> {
+    try {
+      const list = await request<PublicProjectBookingItem[]>({
+        url: "/public/bookings/my",
+        data: { marketing_project_id: id },
+      });
+      if (list.length > 0) {
+        this.setData({ booked: true });
+      }
+    } catch {
+      // 静默：未登录/网络异常不影响浏览
+    }
+  },
+  /** 静默上报访问埋点（免登录，失败忽略）. */
+  reportVisit(id: number, referrer: string, source: string): void {
+    request<PublicTrackingEventResponse>({
+      url: `/public/projects/${id}/visit-events`,
+      method: "POST",
+      data: { visitor_id: getVisitorId(), referrer, source },
+      skipAuth: true,
+    }).catch(() => {
+      // 埋点失败静默，不打扰用户
+    });
+  },
+  /** 静默上报分享事件（需登录，失败忽略）. */
+  reportShareEvent(id: number, shareType: "card" | "timeline"): void {
+    request<PublicTrackingEventResponse>({
+      url: `/public/projects/${id}/share-events`,
+      method: "POST",
+      data: { share_type: shareType },
+    }).catch(() => {
+      // 埋点失败静默，不打扰用户
+    });
   },
   onRetry(): void {
     const id = this.data.id;
@@ -384,9 +589,17 @@ Page<PageData, Custom>({
     }
     this.loadDetail(id);
   },
+  /** 员工专属入口：跳转「我的客户」页. */
+  onMyCustomersTap(): void {
+    wx.navigateTo({ url: "/pages/projects/mine/index" });
+  },
   onShareAppMessage() {
     // 封面取图集首图（已为完整地址），无图则省略
     const cover = this.data.gallery.find((g) => g.type === "image")?.url;
+    // 内部员工分享：静默上报分享事件（card），失败忽略
+    if (this.data.employeeId && this.data.id !== null) {
+      this.reportShareEvent(this.data.id, "card");
+    }
     const share: WechatMiniprogram.IAnyObject = {
       title: this.data.detail?.title || "美房宝房源",
       path: buildPropertySharePath(this.data.id ?? 0, this.data.employeeId),
@@ -398,6 +611,10 @@ Page<PageData, Custom>({
   },
   onShareTimeline() {
     const cover = this.data.gallery.find((g) => g.type === "image")?.url;
+    // 内部员工分享：静默上报分享事件（timeline），失败忽略
+    if (this.data.employeeId && this.data.id !== null) {
+      this.reportShareEvent(this.data.id, "timeline");
+    }
     const share: WechatMiniprogram.IAnyObject = {
       title: this.data.detail?.title || "美房宝房源",
       query: buildPropertySharePath(this.data.id ?? 0, this.data.employeeId).split("?")[1] || "",

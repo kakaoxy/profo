@@ -11,6 +11,7 @@ from models import User
 from models.recruit import RecruitLead, RecruitLeadSource, RecruitLeadStatus, RecruitShareEvent, RecruitVisit
 from schemas.recruit import RecruitLeadStatusUpdate
 from services.system.exceptions import ResourceNotFoundError
+from utils.time_windows import yesterday_window
 
 
 def _time_range(
@@ -205,25 +206,35 @@ class RecruitLeadService:
         return {"items": leads, "total": total, "page": page, "page_size": page_size}
 
     def get_my_share_stats(self, user: User) -> dict[str, int]:
-        """C 端「我的分享统计」：分享次数 / 经我分享 PV / UV / 归属我的线索数.
+        """C 端「我的分享统计」：分享次数 / 经我分享 PV / UV / 归属我的线索数（昨日 + 累计）.
 
-        口径与漏斗服务一致：share_count 按 ``RecruitShareEvent.employee_id``、
-        pv/uv 按 ``RecruitVisit.referrer_employee_id``（uv 为 distinct openid_hash）、
-        lead_count 按 ``RecruitLead.referrer_employee_id``。
+        口径与漏斗服务一致：share_count 按 ``RecruitShareEvent.employee_id``（时间列
+        ``shared_at``）、pv/uv 按 ``RecruitVisit.referrer_employee_id``（时间列
+        ``entered_at``，uv 为 distinct openid_hash）、lead_count 按
+        ``RecruitLead.referrer_employee_id``（时间列 ``created_at``）；昨日窗口为
+        Asia/Shanghai 自然日（见 ``utils.time_windows.yesterday_window``）。
         """
-        share_count = (
-            self.db.query(func.count(RecruitShareEvent.id)).filter(RecruitShareEvent.employee_id == user.id).scalar()
-            or 0
-        )
+        y_start, y_end = yesterday_window()
+        share_q = self.db.query(RecruitShareEvent).filter(RecruitShareEvent.employee_id == user.id)
         visit_q = self.db.query(RecruitVisit).filter(RecruitVisit.referrer_employee_id == user.id)
-        pv = visit_q.count()
-        uv = (
-            self.db.query(func.count(func.distinct(RecruitVisit.openid_hash)))
-            .filter(RecruitVisit.referrer_employee_id == user.id)
-            .scalar()
-            or 0
+        # 昨日窗口条件（不可变条件对象，pv/uv 两处复用）
+        y_visit_window = [RecruitVisit.entered_at >= y_start, RecruitVisit.entered_at < y_end]
+        uv_q = self.db.query(func.count(func.distinct(RecruitVisit.openid_hash))).filter(
+            RecruitVisit.referrer_employee_id == user.id
         )
-        lead_count = (
-            self.db.query(func.count(RecruitLead.id)).filter(RecruitLead.referrer_employee_id == user.id).scalar() or 0
-        )
-        return {"share_count": int(share_count), "pv": int(pv), "uv": int(uv), "lead_count": int(lead_count)}
+        lead_q = self.db.query(func.count(RecruitLead.id)).filter(RecruitLead.referrer_employee_id == user.id)
+
+        return {
+            "share_count": int(share_q.count()),
+            "pv": int(visit_q.count()),
+            "uv": int(uv_q.scalar() or 0),
+            "lead_count": int(lead_q.scalar() or 0),
+            "yesterday_share_count": int(
+                share_q.filter(RecruitShareEvent.shared_at >= y_start, RecruitShareEvent.shared_at < y_end).count()
+            ),
+            "yesterday_pv": int(visit_q.filter(*y_visit_window).count()),
+            "yesterday_uv": int(uv_q.filter(*y_visit_window).scalar() or 0),
+            "yesterday_lead_count": int(
+                lead_q.filter(RecruitLead.created_at >= y_start, RecruitLead.created_at < y_end).scalar() or 0
+            ),
+        }

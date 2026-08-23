@@ -149,14 +149,64 @@
         <view class="feature-text">{{detail.description}}</view>
       </view>
 
+      <!-- 员工专属入口：我的客户（分享漏斗 + 归因预约客户） -->
+      <view
+        wx:if="{{employeeId}}"
+        class="staff-entry"
+        hover-class="staff-entry--hover"
+        hover-stay-time="100"
+        bindtap="onMyCustomersTap"
+      >
+        <view class="staff-entry-icon">客</view>
+        <view class="staff-entry-info">
+          <view class="staff-entry-title">我的客户</view>
+          <view class="staff-entry-sub">查看分享带来的预约客户</view>
+        </view>
+        <view class="staff-entry-arrow">›</view>
+      </view>
+
       <!-- 底部留白（避让固定底栏） -->
       <view style="height: 200rpx;"></view>
     </view>
 
-    <!-- 固定底栏 -->
+    <!-- 固定底栏：顾问卡片 + 想看房 -->
     <view class="detail-footer">
-      <button class="btn-secondary footer-btn" bindtap="onAddWechat">添加微信</button>
-      <button class="btn-primary footer-btn" bindtap="onCallPhone">电话联系</button>
+      <view wx:if="{{booked}}" class="booked-tip">已预约，工作人员将会电话联系您</view>
+      <view class="footer-main">
+        <view class="advisor">
+          <image class="advisor-avatar" src="{{contactAvatarUrl}}" wx:if="{{contactAvatarUrl}}" />
+          <view class="advisor-avatar advisor-avatar--fallback" wx:else>{{contactFallbackChar}}</view>
+          <view class="advisor-info">
+            <text class="advisor-name">{{contact.nickname}}</text>
+            <text class="advisor-role">{{contactRoleText}}</text>
+          </view>
+        </view>
+        <button
+          class="btn-primary btn-book {{booked ? 'btn-book--done' : ''}}"
+          bindtap="onBookTap"
+          disabled="{{booked}}"
+          loading="{{bookingSubmitting}}"
+        >
+          {{booked ? '已预约' : '想看房'}}
+        </button>
+      </view>
+    </view>
+
+    <!-- 手机号授权弹层（想看房未绑手机号时引导微信一键绑定） -->
+    <view wx:if="{{phoneAuthVisible}}" class="phone-mask">
+      <view class="phone-modal">
+        <view class="phone-title">绑定手机号</view>
+        <view class="phone-desc">预约看房需先绑定手机号，工作人员将通过电话与您联系</view>
+        <view class="phone-actions">
+          <button
+            class="phone-btn"
+            open-type="getPhoneNumber"
+            bindgetphonenumber="onPhoneAuth"
+            loading="{{bookingSubmitting}}"
+          >微信一键绑定并预约</button>
+          <button class="phone-cancel" bindtap="onPhoneAuthCancel">取消</button>
+        </view>
+      </view>
     </view>
 
     <!-- 阶段照片轮播弹层 -->

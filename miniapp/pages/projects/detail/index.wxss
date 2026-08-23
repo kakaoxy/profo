@@ -265,6 +265,59 @@
   line-height: 1.6;
 }
 
+/* 员工专属入口条（我的客户）：卡片语言对齐 info-item（fog 底/32rpx 圆角） */
+.staff-entry {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 28rpx;
+  background: var(--fog);
+  border-radius: 32rpx;
+  margin-bottom: 48rpx;
+}
+
+.staff-entry--hover {
+  opacity: 0.85;
+}
+
+.staff-entry-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 30rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.staff-entry-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.staff-entry-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.staff-entry-sub {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+
+.staff-entry-arrow {
+  flex-shrink: 0;
+  font-size: 44rpx;
+  line-height: 1;
+  color: var(--graphite);
+}
+
 .detail-footer {
   position: fixed;
   bottom: 0;
@@ -272,19 +325,166 @@
   right: 0;
   z-index: 90;
   display: flex;
-  gap: 24rpx;
+  flex-direction: column;
+  gap: 16rpx;
   padding: 24rpx 40rpx 48rpx;
   background: var(--pure-white);
   border-top: 2rpx solid rgba(163, 166, 175, 0.3);
 }
 
-.footer-btn {
+/* 已预约提示行（footer 顶部居中） */
+.booked-tip {
+  font-size: 24rpx;
+  color: var(--rust);
+  text-align: center;
+}
+
+.footer-main {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+/* 顾问卡片：头像（缺省首字符占位）+ 名字 + 角色标签 */
+.advisor {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.advisor-avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.advisor-avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fog);
+  color: var(--graphite);
+  font-size: 32rpx;
+  font-weight: 500;
+}
+
+.advisor-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.advisor-name {
+  max-width: 100%;
+  font-size: 28rpx;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.advisor-role {
+  margin-top: 6rpx;
+  padding: 2rpx 16rpx;
+  border-radius: 9999rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 20rpx;
+}
+
+/* 想看房按钮（btn-primary 全局底色，此处定宽不挤压卡片） */
+.btn-book {
+  flex-shrink: 0;
+  min-width: 224rpx;
   margin: 0;
 }
 
-.footer-btn.btn-secondary {
-  border: 2rpx solid var(--dove);
+.btn-book--done {
+  opacity: 0.7;
+}
+
+/* 手机号授权弹层（样式对齐 components/phone-bind-modal） */
+.phone-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  background: rgba(23, 25, 28, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phone-modal {
+  width: 600rpx;
+  box-sizing: border-box;
+  padding: 48rpx 40rpx;
+  background: var(--pure-white);
+  border-radius: 32rpx;
+}
+
+.phone-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+}
+
+.phone-desc {
+  margin-top: 20rpx;
+  font-size: 28rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.phone-actions {
+  margin-top: 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.phone-btn {
+  margin: 0;
+  border: none;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0 48rpx;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phone-btn::after {
+  border: none;
+}
+
+.phone-cancel {
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--graphite);
+  border-radius: 9999rpx;
+  font-size: 28rpx;
+  line-height: 1;
+  padding: 0 48rpx;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phone-cancel::after {
+  border: none;
 }
 
 /* 阶段照片轮播弹层 */

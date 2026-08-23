@@ -7,12 +7,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from dependencies.auth import DbSessionDep
+from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from models.common import RenovationStage
 from schemas.public import (
     PublicConsultantContact,
     PublicConsultantInfo,
+    PublicCustomerBookingItem,
     PublicMediaItem,
     PublicPlatformStats,
     PublicProjectDetail,
@@ -20,8 +21,12 @@ from schemas.public import (
     PublicProjectListItem,
     PublicProjectListResponse,
     PublicRenovationStage,
+    PublicShareEventRequest,
+    PublicShareStatsResponse,
     PublicSoldProjectItem,
     PublicSoldProjectListResponse,
+    PublicTrackingEventResponse,
+    PublicVisitEventRequest,
 )
 from services.marketing.public import PublicProjectService
 from services.system.exceptions import ResourceNotFoundError
@@ -149,6 +154,70 @@ def get_sold_projects(
         page=pagination.page,
         page_size=pagination.page_size,
     )
+
+
+@router.post(
+    "/projects/{marketing_project_id}/visit-events",
+    summary="上报房源访问埋点",
+    description="免登录，PV +1，UV 按匿名 visitor_id 去重；房源不存在返回 404",
+    responses={404: {"description": "房源不存在"}},
+)
+@limiter.limit(RateLimits.PROJECT_VISIT)
+def create_visit_event(
+    request: Request,
+    marketing_project_id: int,
+    body: PublicVisitEventRequest,
+    db: DbSessionDep,
+) -> PublicTrackingEventResponse:
+    """上报房源详情页访问埋点."""
+    visit = PublicProjectService(db).create_visit_event(marketing_project_id, body)
+    return PublicTrackingEventResponse(id=visit.id)
+
+
+@router.post(
+    "/projects/{marketing_project_id}/share-events",
+    summary="上报房源分享事件",
+    description="需 C 端登录态（员工经附加 customer 角色访问），employee_id 服务端取当前用户；限流",
+    responses={404: {"description": "房源不存在"}},
+)
+@limiter.limit(RateLimits.PROJECT_SHARE)
+def create_share_event(
+    request: Request,
+    marketing_project_id: int,
+    body: PublicShareEventRequest,
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> PublicTrackingEventResponse:
+    """上报房源分享事件."""
+    event = PublicProjectService(db).create_share_event(current_user, marketing_project_id, body)
+    return PublicTrackingEventResponse(id=event.id)
+
+
+@router.get(
+    "/projects/my/share-stats",
+    summary="我的房源分享统计",
+    description="当前员工的房源分享次数 / 经我分享打开 PV/UV / 归属我的预约留资（昨日 + 累计），需登录",
+)
+def get_my_share_stats(
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> PublicShareStatsResponse:
+    """我的房源分享统计."""
+    data = PublicProjectService(db).get_my_share_stats(current_user)
+    return PublicShareStatsResponse(**data)
+
+
+@router.get(
+    "/projects/my/customers",
+    summary="归属我的预约客户列表",
+    description="当前员工房源分享归因的预约客户列表（含客户脱敏手机号与房源快照），按预约时间倒序，需登录",
+)
+def get_my_customer_bookings(
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> list[PublicCustomerBookingItem]:
+    """归属我的预约客户列表."""
+    return PublicProjectService(db).get_my_customer_bookings(current_user.id)
 
 
 @router.get(
@@ -279,6 +348,8 @@ def get_consultant_contact(
                 phone=phone,
                 wechat_number=phone,
                 nickname=sharer.nickname or "",
+                avatar=sharer.avatar,
+                is_referrer=True,
             )
 
     if project.consultant_id:
@@ -291,12 +362,16 @@ def get_consultant_contact(
                 phone=phone,
                 wechat_number=phone,
                 nickname=consultant.nickname or "",
+                avatar=consultant.avatar,
+                is_referrer=False,
             )
 
     return PublicConsultantContact(
         phone=settings.default_consultant_phone,
         wechat_number=settings.default_consultant_wechat,
         nickname=settings.default_consultant_nickname,
+        avatar=None,
+        is_referrer=False,
     )
 
 
