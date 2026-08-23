@@ -30,12 +30,5 @@ def create_project_booking_and_share_tables(engine: Engine) -> None:
         ValuationShareEvent.__table__,
     ]
 
-    from sqlalchemy import inspect as sa_inspect
-
-    inspector = sa_inspect(engine)
-    existing = set(inspector.get_table_names())
-    missing = [t for t in tables if t.name not in existing]
-
-    if missing:
-        logger.info("迁移：创建房源预约与分享归因表 %s", [t.name for t in missing])
-        Base.metadata.create_all(bind=engine, tables=missing, checkfirst=True)
+    # checkfirst=True 保证幂等：表已存在时跳过创建
+    Base.metadata.create_all(bind=engine, tables=tables, checkfirst=True)

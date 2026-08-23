@@ -7,7 +7,7 @@
 
 import logging
 
-from sqlalchemy import inspect, text
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ def add_lead_eval_history_and_expected_price(engine: Engine) -> None:
     """幂等创建评估历史表 + 为 leads 表添加 expected_price 列.
 
     - 表/列/索引已存在时跳过，不报错
-    - 使用 inspect(engine).get_table_names() 检查表是否存在
+    - 表通过 Base.metadata.create_all(checkfirst=True) 幂等创建
     - 使用 _column_exists 检查列是否存在
     - 表与索引通过 Base.metadata.create_all 创建（与既有迁移模式一致），
       LeadEvalHistory.__table_args__ 已声明 Index("idx_lead_eval_history_lead", "lead_id")，
@@ -28,18 +28,13 @@ def add_lead_eval_history_and_expected_price(engine: Engine) -> None:
     from models import Base
     from models.lead.lead import LeadEvalHistory
 
-    inspector = inspect(engine)
-    existing_tables = set(inspector.get_table_names())
-
-    # 1. 创建 lead_eval_histories 表（含索引，幂等）
+    # 1. 创建 lead_eval_histories 表（含索引，幂等：checkfirst=True 表已存在则跳过）
     # 使用 Base.metadata.create_all 与既有迁移模式统一
-    if "lead_eval_histories" not in existing_tables:
-        logger.info("迁移：创建 lead_eval_histories 表（含索引）")
-        Base.metadata.create_all(
-            bind=engine,
-            tables=[LeadEvalHistory.__table__],
-            checkfirst=True,
-        )
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[LeadEvalHistory.__table__],
+        checkfirst=True,
+    )
 
     # 2. 为 leads 表添加 expected_price 列（幂等，可空）
     if not _column_exists(engine, "leads", "expected_price"):

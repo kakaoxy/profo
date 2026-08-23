@@ -2,7 +2,8 @@
  * 单项目销售记录详情页（profile「带看记录」→「我负责的项目」→ 详情）.
  *
  * 功能对等后台 MobileSellingView：KPI（挂牌天数 + 带看/出价/面谈计数）+
- * Tab 切换 + 记录列表（按 record_date 倒序）+ 新增记录（底部表单）+ 删除记录（二次确认）.
+ * Tab 切换 + 记录列表（按 record_date 倒序）+ 新增记录（底部表单，日期时间精确到时分，
+ * 默认填当前日期时间）+ 删除记录（二次确认）.
  * 仅内部员工（admin 令牌）可访问；401 → 清令牌提示登录失效；403 → 无权限态.
  */
 import type { components } from "../../../../types/api-types";
@@ -79,6 +80,7 @@ interface PageData {
   submitting: boolean;
   deleting: boolean;
   formDate: string;
+  formTime: string;
   formPerson: string;
   formPrice: string;
   formNotes: string;
@@ -97,12 +99,14 @@ interface PageCustom {
   formatShort(iso: string): string;
   formatFull(iso: string): string;
   today(): string;
+  nowTime(): string;
   applyProject(project: ProjectResponse): void;
   doDelete(recordId: string): void;
   onTabTap(e: WechatMiniprogram.BaseEvent): void;
   onAddTap(): void;
   onFormCancel(): void;
   onDateChange(e: WechatMiniprogram.PickerChange): void;
+  onTimeChange(e: WechatMiniprogram.PickerChange): void;
   onPersonInput(e: WechatMiniprogram.Input): void;
   onPriceInput(e: WechatMiniprogram.Input): void;
   onNotesInput(e: WechatMiniprogram.Input): void;
@@ -144,6 +148,7 @@ Page<PageData, PageCustom>({
     submitting: false,
     deleting: false,
     formDate: "",
+    formTime: "",
     formPerson: "",
     formPrice: "",
     formNotes: "",
@@ -166,6 +171,7 @@ Page<PageData, PageCustom>({
     this.setData({
       projectName: name ? decodeURIComponent(name) : "项目详情",
       formDate: this.today(),
+      formTime: this.nowTime(),
     });
     this.loadProject();
   },
@@ -173,6 +179,11 @@ Page<PageData, PageCustom>({
   today(): string {
     const d = new Date();
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  },
+
+  nowTime(): string {
+    const d = new Date();
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   },
 
   parseRecords(project: ProjectResponse): SalesRecordResponse[] {
@@ -291,6 +302,7 @@ Page<PageData, PageCustom>({
     this.setData({
       formOpen: true,
       formDate: this.today(),
+      formTime: this.nowTime(),
       formPerson: "",
       formPrice: "",
       formNotes: "",
@@ -303,6 +315,10 @@ Page<PageData, PageCustom>({
 
   onDateChange(e: WechatMiniprogram.PickerChange) {
     this.setData({ formDate: e.detail.value as string });
+  },
+
+  onTimeChange(e: WechatMiniprogram.PickerChange) {
+    this.setData({ formTime: e.detail.value as string });
   },
 
   onPersonInput(e: WechatMiniprogram.Input) {
@@ -327,8 +343,8 @@ Page<PageData, PageCustom>({
       return;
     }
     const person = this.data.formPerson.trim();
-    if (!this.data.formDate || !person) {
-      wx.showToast({ title: "请填写日期和人员", icon: "none" });
+    if (!this.data.formDate || !this.data.formTime || !person) {
+      wx.showToast({ title: "请填写日期时间和人员", icon: "none" });
       return;
     }
     if (this.data.activeTab === "offer") {
@@ -344,7 +360,7 @@ Page<PageData, PageCustom>({
       const body: components["schemas"]["SalesRecordCreate"] = {
         record_type: type as RecordType,
         customer_name: person,
-        record_date: `${this.data.formDate}T23:59:59`,
+        record_date: `${this.data.formDate}T${this.data.formTime}:00`,
         price:
           type === "offer" ? Number(this.data.formPrice) : undefined,
         notes: type === "negotiation" ? this.data.formNotes : undefined,

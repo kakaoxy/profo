@@ -6,7 +6,7 @@ operation_logs）的创建与初始化，以及权限点索引与报表索引。
 
 import logging
 
-from sqlalchemy import inspect, text
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from migrations._helpers import _index_exists, _pg_quote_literal
@@ -25,15 +25,10 @@ def create_wechat_oauth_tables(engine: Engine) -> None:
     from models import Base
     from models.system import WeChatOAuthState, WeChatTempCode
 
-    inspector = inspect(engine)
-    existing_tables = set(inspector.get_table_names())
-    target_tables = [WeChatOAuthState.__table__, WeChatTempCode.__table__]
-    missing_tables = [t for t in target_tables if t.name not in existing_tables]
-
-    if missing_tables:
-        table_names = [t.name for t in missing_tables]
-        logger.info("迁移：创建微信 OAuth 表 %s", table_names)
-        Base.metadata.create_all(bind=engine, tables=missing_tables, checkfirst=True)
+    # checkfirst=True 保证幂等：表已存在时跳过创建
+    Base.metadata.create_all(
+        bind=engine, tables=[WeChatOAuthState.__table__, WeChatTempCode.__table__], checkfirst=True
+    )
 
     # 清理上次运行残留的过期记录
     with engine.begin() as conn:
@@ -57,11 +52,7 @@ def create_user_roles_table(engine: Engine) -> None:
     from models import Base
     from models.user import UserRole
 
-    inspector = inspect(engine)
-    if "user_roles" in inspector.get_table_names():
-        return
-
-    logger.info("迁移：创建 user_roles 关联表")
+    # checkfirst=True 保证幂等：表已存在时跳过创建
     Base.metadata.create_all(bind=engine, tables=[UserRole.__table__], checkfirst=True)
 
 
@@ -97,16 +88,10 @@ def migrate_permission_system(engine: Engine) -> None:
     from models.system import OperationLog
     from models.user import Permission, role_permissions
 
-    # 1. 幂等创建三张表
-    inspector = inspect(engine)
-    existing_tables = set(inspector.get_table_names())
-    target_tables = [Permission.__table__, role_permissions, OperationLog.__table__]
-    missing_tables = [t for t in target_tables if t.name not in existing_tables]
-
-    if missing_tables:
-        table_names = [t.name for t in missing_tables]
-        logger.info("迁移：创建权限系统表 %s", table_names)
-        Base.metadata.create_all(bind=engine, tables=missing_tables, checkfirst=True)
+    # 1. 幂等创建三张表（checkfirst=True，表已存在则跳过）
+    Base.metadata.create_all(
+        bind=engine, tables=[Permission.__table__, role_permissions, OperationLog.__table__], checkfirst=True
+    )
 
     # 1.1 同步 permissioncategory enum 类型（PG enum 类型创建后不会随 Python enum 自动扩展）
     if engine.dialect.name == "postgresql":

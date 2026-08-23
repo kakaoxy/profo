@@ -10,11 +10,15 @@
 
 from datetime import datetime
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
-from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 from models.common import RecordType
 from schemas.user import UserBriefResponse
+
+# 无时区输入统一按东八区解析（否则 PG timestamptz 按 UTC 解释，客户端 +8 渲染会偏移）
+_CST = ZoneInfo("Asia/Shanghai")
 
 # ========== 销售角色更新 (来自 project_sales.py) ==========
 
@@ -59,6 +63,14 @@ class SalesRecordCreate(BaseModel):
     result: str | None = None
     related_agent: str | None = None
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("record_date", mode="after")
+    @classmethod
+    def _attach_record_date_tz(cls, v: datetime) -> datetime:
+        """无时区输入按东八区解析（显式带时区的输入原样保留）."""
+        if v.tzinfo is None:
+            return v.replace(tzinfo=_CST)
+        return v
 
 
 class SalesRecordResponse(BaseModel):

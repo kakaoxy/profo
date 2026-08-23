@@ -41,15 +41,8 @@ def create_recruit_tables(engine: Engine) -> None:
         RecruitQRScene.__table__,
     ]
 
-    from sqlalchemy import inspect as sa_inspect
-
-    inspector = sa_inspect(engine)
-    existing = set(inspector.get_table_names())
-    missing = [t for t in tables if t.name not in existing]
-
-    if missing:
-        logger.info("迁移：创建招募计划表 %s", [t.name for t in missing])
-        Base.metadata.create_all(bind=engine, tables=missing, checkfirst=True)
+    # checkfirst=True 保证幂等：表已存在时跳过创建
+    Base.metadata.create_all(bind=engine, tables=tables, checkfirst=True)
 
     # 确保 phone_hash 唯一索引（处理修复前已建表但索引为非唯一的部署）
     _ensure_phone_hash_unique(engine)

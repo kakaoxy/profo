@@ -36,22 +36,17 @@ def create_investment_tables(engine: Engine) -> None:
         ReturnAdjustment,
     )
 
-    inspector = inspect(engine)
-    existing_tables = set(inspector.get_table_names())
-    target_tables = [
-        Investment.__table__,
-        Investor.__table__,
-        ReturnAdjustment.__table__,
-        InvestmentLog.__table__,
-    ]
-    missing_tables = [t for t in target_tables if t.name not in existing_tables]
-
-    if not missing_tables:
-        return
-
-    table_names = [t.name for t in missing_tables]
-    logger.info("迁移：创建跟投管理表 %s", table_names)
-    Base.metadata.create_all(bind=engine, tables=missing_tables, checkfirst=True)
+    # checkfirst=True 保证幂等：表/索引已存在时跳过
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[
+            Investment.__table__,
+            Investor.__table__,
+            ReturnAdjustment.__table__,
+            InvestmentLog.__table__,
+        ],
+        checkfirst=True,
+    )
 
 
 def rename_return_adjustment_columns(engine: Engine) -> None:
@@ -111,11 +106,7 @@ def create_finance_record_logs_table(engine: Engine) -> None:
     from models import Base
     from models.project import FinanceRecordLog
 
-    inspector = inspect(engine)
-    if FinanceRecordLog.__table__.name in inspector.get_table_names():
-        return
-
-    logger.info("迁移：创建资金账本操作日志表 %s", FinanceRecordLog.__table__.name)
+    # checkfirst=True 保证幂等：表/索引已存在时跳过
     Base.metadata.create_all(bind=engine, tables=[FinanceRecordLog.__table__], checkfirst=True)
 
 
@@ -134,11 +125,8 @@ def create_finance_subjects_table(engine: Engine) -> None:
     from models import Base
     from models.project import FinanceSubject
 
-    # 1. 幂等创建表
-    inspector = inspect(engine)
-    if FinanceSubject.__table__.name not in inspector.get_table_names():
-        logger.info("迁移：创建科目管理表 %s", FinanceSubject.__table__.name)
-        Base.metadata.create_all(bind=engine, tables=[FinanceSubject.__table__], checkfirst=True)
+    # 1. 幂等创建表（checkfirst=True，表已存在则跳过）
+    Base.metadata.create_all(bind=engine, tables=[FinanceSubject.__table__], checkfirst=True)
 
     # 2. 幂等创建索引（表已存在但索引缺失时补建）
     if not _index_exists(engine, "idx_subject_stage"):

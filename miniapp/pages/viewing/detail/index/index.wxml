@@ -144,6 +144,13 @@
       </view>
 
       <view class="form-item">
+        <view class="form-label">时间</view>
+        <picker mode="time" value="{{formTime}}" bindchange="onTimeChange">
+          <view class="form-value form-value--picker">{{formTime}}</view>
+        </picker>
+      </view>
+
+      <view class="form-item">
         <view class="form-label">{{personLabel}}</view>
         <input
           class="form-input"

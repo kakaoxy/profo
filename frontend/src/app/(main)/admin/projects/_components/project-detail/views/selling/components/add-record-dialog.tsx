@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -44,7 +44,7 @@ export function AddRecordDialog({
   const [price, setPrice] = useState("");
   const [content, setContent] = useState("");
 
-  // 每次打开弹窗重置表单
+  // 每次打开弹窗重置表单（日期默认当前时间，减少手动输入）
   useEffect(() => {
     if (isOpen) {
       setDate(new Date());
@@ -53,6 +53,15 @@ export function AddRecordDialog({
       setContent("");
     }
   }, [isOpen]);
+
+  // 时间输入：把 HH:mm 合并回 date state
+  const handleTimeChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const [h, m] = e.target.value.split(":").map(Number);
+    if (!date || Number.isNaN(h) || Number.isNaN(m)) return;
+    const next = new Date(date);
+    next.setHours(h, m, 0, 0);
+    setDate(next);
+  };
 
   const handleSubmit = async () => {
     if (!date || !person) {
@@ -78,7 +87,7 @@ export function AddRecordDialog({
         projectId: projectId,
         recordType: recordTypeMap[defaultTab] as "viewing" | "offer" | "negotiation", // 使用映射后的类型
         customerName: person,
-        recordDate: format(date, "yyyy-MM-dd"),
+        recordDate: format(date, "yyyy-MM-dd'T'HH:mm:ss"),
         price: defaultTab === "offer" ? Number(price) : undefined,
         notes: defaultTab === "negotiation" ? content : undefined,
       });
@@ -106,7 +115,7 @@ export function AddRecordDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-100">
         <DialogHeader>
           <DialogTitle>
             新增
@@ -119,23 +128,31 @@ export function AddRecordDialog({
           {/* 1. 时间 */}
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium text-muted-foreground">日期时间</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "yyyy-MM-dd HH:mm") : <span>选择时间</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-              </PopoverContent>
-            </Popover>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "min-w-0 flex-1 justify-start text-left font-normal",
+                      !date && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                    {date ? format(date, "yyyy-MM-dd HH:mm") : <span>选择时间</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={date ? format(date, "HH:mm") : ""}
+                onChange={handleTimeChange}
+                className="w-27.5 shrink-0"
+              />
+            </div>
           </div>
 
           {/* 2. 人名 */}

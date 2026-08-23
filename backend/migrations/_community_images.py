@@ -11,7 +11,7 @@
 
 import logging
 
-from sqlalchemy import inspect, text
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from migrations._helpers import _index_exists
@@ -29,10 +29,8 @@ def create_community_images_table(engine: Engine) -> None:
     from models import Base
     from models.property import CommunityImage
 
-    inspector = inspect(engine)
-    if CommunityImage.__table__.name not in inspector.get_table_names():
-        logger.info("迁移：创建小区户型图表 %s", CommunityImage.__table__.name)
-        Base.metadata.create_all(bind=engine, tables=[CommunityImage.__table__], checkfirst=True)
+    # checkfirst=True 保证幂等；部分唯一索引 uq_community_image_url 由下方显式补建
+    Base.metadata.create_all(bind=engine, tables=[CommunityImage.__table__], checkfirst=True)
 
     # PostgreSQL 部分唯一索引：允许同小区已删除记录被重新插入
     # SQLite 不支持 WHERE 子句的部分唯一索引，测试环境由 Service 层去重兜底

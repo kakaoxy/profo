@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -49,7 +49,7 @@ export function MobileRecordForm({
   const [price, setPrice] = useState("");
   const [content, setContent] = useState("");
 
-  // 每次打开弹窗重置表单
+  // 每次打开弹窗重置表单（日期默认当前时间，减少手动输入）
   useEffect(() => {
     if (isOpen) {
       setDate(new Date());
@@ -58,6 +58,15 @@ export function MobileRecordForm({
       setContent("");
     }
   }, [isOpen]);
+
+  // 时间输入：把 HH:mm 合并回 date state
+  const handleTimeChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const [h, m] = e.target.value.split(":").map(Number);
+    if (!date || Number.isNaN(h) || Number.isNaN(m)) return;
+    const next = new Date(date);
+    next.setHours(h, m, 0, 0);
+    setDate(next);
+  };
 
   const handleSubmit = async () => {
     if (!date || !person.trim()) {
@@ -79,7 +88,7 @@ export function MobileRecordForm({
         projectId: projectId,
         recordType: recordType,
         customerName: person,
-        recordDate: format(date, "yyyy-MM-dd"),
+        recordDate: format(date, "yyyy-MM-dd'T'HH:mm:ss"),
         price: recordType === "offer" ? Number(price) : undefined,
         notes: recordType === "negotiation" ? content : undefined,
       });
@@ -113,32 +122,44 @@ export function MobileRecordForm({
         </SheetHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-          {/* 1. 日期 */}
+          {/* 1. 日期时间 */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">日期</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "h-12 w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "yyyy-MM-dd", { locale: zhCN }) : <span>选择日期</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                  locale={zhCN}
-                />
-              </PopoverContent>
-            </Popover>
+            <span className="text-xs font-medium text-muted-foreground">日期时间</span>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "h-12 min-w-0 flex-1 justify-start text-left font-normal",
+                      !date && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                    {date ? (
+                      format(date, "yyyy-MM-dd HH:mm", { locale: zhCN })
+                    ) : (
+                      <span>选择日期</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                    locale={zhCN}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={date ? format(date, "HH:mm") : ""}
+                onChange={handleTimeChange}
+                className="h-12 w-27.5 shrink-0"
+              />
+            </div>
           </div>
 
           {/* 2. 人员 */}
