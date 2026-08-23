@@ -137,16 +137,14 @@
       <view class="sheet-title">{{formTitle}}</view>
 
       <view class="form-item">
-        <view class="form-label">日期</view>
-        <picker mode="date" value="{{formDate}}" bindchange="onDateChange">
-          <view class="form-value form-value--picker">{{formDate}}</view>
-        </picker>
-      </view>
-
-      <view class="form-item">
-        <view class="form-label">时间</view>
-        <picker mode="time" value="{{formTime}}" bindchange="onTimeChange">
-          <view class="form-value form-value--picker">{{formTime}}</view>
+        <view class="form-label">日期时间</view>
+        <picker
+          mode="multiSelector"
+          range="{{dtRange}}"
+          value="{{dtValue}}"
+          bindchange="onDtChange"
+        >
+          <view class="form-value form-value--picker">{{dtText}}</view>
         </picker>
       </view>
 
