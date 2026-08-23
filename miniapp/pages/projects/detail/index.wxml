@@ -171,7 +171,7 @@
 
     <!-- 固定底栏：顾问卡片 + 想看房 -->
     <view class="detail-footer">
-      <view wx:if="{{booked}}" class="booked-tip">已预约，工作人员将会电话联系您</view>
+      <view wx:if="{{booked}}" class="booked-tip">已预约，工作人员将在24小时内电话联系您</view>
       <view class="footer-main">
         <view class="advisor">
           <image class="advisor-avatar" src="{{contactAvatarUrl}}" wx:if="{{contactAvatarUrl}}" />

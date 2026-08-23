@@ -432,6 +432,8 @@ Page<PageData, Custom>({
   },
   /**
    * 「想看房」入口（决策 #3 状态机）：
+   * 先弹确认框：用户「同意」才有工作人员联系，继续后续流程；
+   * 「不同意」则直接返回，不进入预约流程（不会预约成功）→
    * booked 直接返回 → 未登录跳登录页（onShow 返回后重试）→
    * 已登录查手机号（/public/auth/me）：有则直接预约，无则弹页内微信授权层.
    */
@@ -443,12 +445,24 @@ Page<PageData, Custom>({
     if (id === null) {
       return;
     }
-    if (!getCAccessToken()) {
-      this.pendingBook = true;
-      wx.navigateTo({ url: "/pages/login/index/index?from=booking" });
-      return;
-    }
-    this.proceedBooking(id);
+    wx.showModal({
+      title: "预约确认",
+      content: "同意后将会有工作人员通过电话与您联系，是否同意预约看房？",
+      confirmText: "同意",
+      cancelText: "不同意",
+      success: (res) => {
+        if (!res.confirm) {
+          // 用户不同意：不发起任何预约请求
+          return;
+        }
+        if (!getCAccessToken()) {
+          this.pendingBook = true;
+          wx.navigateTo({ url: "/pages/login/index/index?from=booking" });
+          return;
+        }
+        this.proceedBooking(id);
+      },
+    });
   },
   /** 已登录：校验手机号绑定后预约（无手机号 → 页内授权弹层）. */
   async proceedBooking(id: number): Promise<void> {

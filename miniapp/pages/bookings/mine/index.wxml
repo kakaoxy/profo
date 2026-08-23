@@ -45,7 +45,7 @@
         <view wx:if="{{item.layout || item.priceText}}" class="card-desc">
           <text wx:if="{{item.layout}}">{{item.layout}} · </text><text class="card-price">{{item.priceText}}</text>
         </view>
-        <view class="card-time">预约于 {{item.timeText}}</view>
+        <view class="card-time">于 {{item.timeText}}想看</view>
       </view>
     </view>
 
