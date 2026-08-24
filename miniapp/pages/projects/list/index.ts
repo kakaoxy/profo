@@ -1,6 +1,6 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
-import { resolveAssetUrl } from "../../../utils/url";
+import { resolveImageUrl } from "../../../utils/url";
 import { consumeProjectListPendingTab } from "../../../utils/project-list-tab";
 import { animateServedCount, clearServedCountTimer, loadServedCount } from "../../../utils/served-count";
 
@@ -238,8 +238,8 @@ Page<PageData, PageCustom>({
         desc: `${community} · ${layout}`,
         area: `${item.area}㎡`,
         total_price: item.total_price,
-        cover_thumbnail_url: resolveAssetUrl(item.cover_thumbnail_url),
-        cover_image: resolveAssetUrl(item.cover_image),
+        cover_thumbnail_url: resolveImageUrl(item.cover_thumbnail_url),
+        cover_image: resolveImageUrl(item.cover_image),
         tags: [],
         badgeText: "过往案例",
         badgeClass: "badge-fog",
@@ -276,8 +276,8 @@ Page<PageData, PageCustom>({
       desc,
       area: `${onSale.area}㎡`,
       total_price: onSale.total_price,
-      cover_thumbnail_url: resolveAssetUrl(onSale.cover_thumbnail_url),
-      cover_image: resolveAssetUrl(onSale.cover_image),
+      cover_thumbnail_url: resolveImageUrl(onSale.cover_thumbnail_url),
+      cover_image: resolveImageUrl(onSale.cover_image),
       tags: onSale.tags,
       badgeText,
       badgeClass,

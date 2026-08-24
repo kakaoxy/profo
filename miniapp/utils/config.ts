@@ -10,8 +10,8 @@
 type EnvVersion = "develop" | "trial" | "release";
 
 const ENV_BASE_URL: Record<EnvVersion, string> = {
-  // develop: "https://fangmengchina.com/api/v1",
-  develop: "http://192.168.110.169:8000/api/v1",
+  develop: "https://fangmengchina.com/api/v1",
+  // develop: "http://192.168.110.169:8000/api/v1",
   trial: "https://fangmengchina.com/api/v1",
   release: "https://fangmengchina.com/api/v1",
 };
@@ -36,3 +36,11 @@ export const BASE_URL = ENV_BASE_URL[getEnvVersion()];
  * 否则会得到错误的 /api/v1/static/... 路径.
  */
 export const BASE_ORIGIN = BASE_URL.replace(/\/api\/v1$/, "");
+
+/**
+ * OSS 公网访问基址与图片水印样式名，均由 `pnpm gen-env` 从仓库根目录 .env
+ * （OSS_PUBLIC_BASE_URL / OSS_WATERMARK_STYLE）生成.
+ * 用于识别完整 URL 是否指向 OSS，决定是否追加图片处理（水印）参数；
+ * 变更时改 .env 后执行 gen-env 并提交生成的 utils/env.ts.
+ */
+export { OSS_BASE_URL, WATERMARK_STYLE } from "./env";

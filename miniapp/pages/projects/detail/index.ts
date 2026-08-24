@@ -1,7 +1,7 @@
 import type { components } from "../../../types/api-types";
 import { request, type HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
-import { resolveAssetUrl } from "../../../utils/url";
+import { resolveAssetUrl, resolveImageUrl } from "../../../utils/url";
 import { fetchEmployeeId } from "../../../utils/valuation-share";
 import { getVisitorId } from "../../../utils/visitor";
 
@@ -193,7 +193,7 @@ function buildStages(
       continue;
     }
     const stageName = m.renovation_stage as string;
-    const url = resolveAssetUrl(m.file_url);
+    const url = resolveImageUrl(m.file_url);
     if (!url) {
       continue;
     }
@@ -312,7 +312,7 @@ Page<PageData, Custom>({
       // 后端文件 URL 为相对路径 /static/uploads/xxx.jpg，需拼接 origin 供 <image>/<video> 加载
       const resolvedDetail: PublicProjectDetail = {
         ...detail,
-        images: (detail.images ?? []).map((img) => resolveAssetUrl(img)),
+        images: (detail.images ?? []).map((img) => resolveImageUrl(img)),
       };
       // 图集优先用 media（含图片与视频），按类型渲染；无 media 时回退 images
       // 视频项用 thumbnail_url 作封面（后端目前不生成视频缩略图，poster 常为空串→前端黑色占位兜底）
@@ -327,8 +327,9 @@ Page<PageData, Custom>({
                 const type = (m.media_type === "video" ? "video" : "image") as "image" | "video";
                 return {
                   type,
-                  url: resolveAssetUrl(m.file_url),
-                  poster: type === "video" ? resolveAssetUrl(m.thumbnail_url) : "",
+                  // 视频 URL 不可拼图片处理参数（OSS 会处理失败导致无法播放），仅图片加水印
+                  url: type === "video" ? resolveAssetUrl(m.file_url) : resolveImageUrl(m.file_url),
+                  poster: type === "video" ? resolveImageUrl(m.thumbnail_url) : "",
                 };
               })
               .filter((g) => g.url)
