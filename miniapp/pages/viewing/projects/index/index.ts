@@ -13,8 +13,8 @@ import {
   createProjectListPage,
   type BaseDisplayItem,
   type ProjectListState,
-} from "../../../../utils/project-list-page";
-import { parseSalesRecords } from "../../../../utils/sales-records";
+} from "../../utils/project-list-page";
+import { parseSalesRecords } from "../../utils/sales-records";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type RecordType = components["schemas"]["RecordType"];

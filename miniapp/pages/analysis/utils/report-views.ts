@@ -3,8 +3,8 @@
  * 分析页与新报表页等共用；分析页专用逻辑（面板单选/商圈 chip）保留在页面 views.ts.
  */
 
-import type { components } from "../types/api-types";
-import { formatThousands } from "./format";
+import type { components } from "../../../types/api-types";
+import { formatThousands } from "../../../utils/format";
 import { formatPeriodLabel } from "./trend-chart";
 import type { TrendGranularity } from "./trend-chart";
 

@@ -3,7 +3,7 @@
  * 页面持有 canvas 节点，本模块只负责数据整形与绘制，不依赖页面状态.
  */
 
-import type { components } from "../types/api-types";
+import type { components } from "../../../types/api-types";
 
 /** 趋势粒度. */
 export type TrendGranularity = "week" | "month";

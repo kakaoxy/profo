@@ -9,9 +9,9 @@
  * 回退通道 GET /projects/my-responsible 返回全量列表（无分页），一次拉全并置 hasMore=false。
  * 见代码审查报告 🟡-7。
  */
-import type { components } from "../types/api-types";
-import { request, getCacheData, invalidateCache } from "./request";
-import { getAccessToken } from "./token";
+import type { components } from "../../../types/api-types";
+import { request, getCacheData, invalidateCache } from "../../../utils/request";
+import { getAccessToken } from "../../../utils/token";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 

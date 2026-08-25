@@ -5,8 +5,8 @@ import {
   buildTrendLegend,
   drawTrendChart,
   granularityFromRange,
-} from "../../../utils/trend-chart";
-import type { TrendGranularity } from "../../../utils/trend-chart";
+} from "../utils/trend-chart";
+import type { TrendGranularity } from "../utils/trend-chart";
 import {
   ALL_BUSINESS_CIRCLE,
   ALL_DISTRICT,
@@ -152,7 +152,7 @@ interface CanvasNodeInfo {
 }
 
 // 页面编排留在本文件：data 默认值 + Page 生命周期/事件方法为 Page 结构要求的回调绑定，
-// 无法再拆分；纯逻辑已拆至 views.ts（视图构建）与 utils/trend-chart.ts（canvas 绘制），
+// 无法再拆分；纯逻辑已拆至 views.ts（视图构建）与 ../utils/trend-chart.ts（canvas 绘制），
 // 常量在 constants.ts。combined index.ts + constants.ts 略超 500 行，理由见上（不拆）。
 Page<PageData, PageCustom>({
   data: {

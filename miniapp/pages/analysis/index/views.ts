@@ -1,11 +1,11 @@
 /**
  * 数据分析页视图构建纯函数（页面专用部分）：面板单选视图与商圈 chip 文案.
- * 通用视图纯函数已下沉至 ../../../utils/report-views，此处 re-export 以兼容既有导入.
+ * 通用视图纯函数已下沉至 ../utils/report-views，此处 re-export 以兼容既有导入.
  */
 
 import { DEFAULT_BUSINESS_CHIP, RANGE_OPTIONS, STATUS_OPTIONS } from "./constants";
 
-export { buildDistViews, buildKpiViews, buildQoqCell, buildTrendTable, formatInt } from "../../../utils/report-views";
+export { buildDistViews, buildKpiViews, buildQoqCell, buildTrendTable, formatInt } from "../utils/report-views";
 export type {
   DistBucketLike,
   DistView,
@@ -13,7 +13,7 @@ export type {
   KpiView,
   QoqCell,
   TrendTableRow,
-} from "../../../utils/report-views";
+} from "../utils/report-views";
 
 /** 面板单选视图. */
 export interface OptionView {

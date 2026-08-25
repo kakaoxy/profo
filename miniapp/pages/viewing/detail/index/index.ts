@@ -10,7 +10,7 @@ import type { components } from "../../../../types/api-types";
 import { request } from "../../../../utils/request";
 import { getAccessToken } from "../../../../utils/token";
 import { pad2 } from "../../../../utils/format";
-import { parseSalesRecords } from "../../../../utils/sales-records";
+import { parseSalesRecords } from "../../utils/sales-records";
 
 type SalesRecordResponse = components["schemas"]["SalesRecordResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];

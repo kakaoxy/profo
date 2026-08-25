@@ -7,7 +7,7 @@
  * 替换散落各页面的 `as SalesRecordResponse[]` / `as { record_type?: string }`
  * 强转，避免字段漂移（见代码审查 🟡-?）。
  */
-import type { components } from "../types/api-types";
+import type { components } from "../../../types/api-types";
 
 type SalesRecordResponse = components["schemas"]["SalesRecordResponse"];
 type RecordType = components["schemas"]["RecordType"];

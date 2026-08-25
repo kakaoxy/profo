@@ -13,7 +13,7 @@ import {
   createProjectListPage,
   type BaseDisplayItem,
   type ProjectListState,
-} from "../../../../utils/project-list-page";
+} from "../../utils/project-list-page";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 
