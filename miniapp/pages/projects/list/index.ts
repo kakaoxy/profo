@@ -377,8 +377,8 @@ Page<PageData, PageCustom>({
       if (reset) {
         this.setData({ error: true, items: [] });
       } else {
-        // 翻页失败：回滚页码，避免下次触底跳过本页（弱网下不丢数据）
-        this.setData({ page: Math.max(1, this.data.page - 1) });
+        // 翻页失败：回滚页码并恢复 loadingMore/noMore，避免下次触底跳过本页（弱网下不丢数据）
+        this.setData({ page: Math.max(1, this.data.page - 1), loadingMore: false, noMore: false });
         wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
     } finally {
