@@ -79,7 +79,7 @@
       <view class="field-label">票据（最多 9 张）</view>
       <view class="tkt-grid">
         <view class="tkt-cell" wx:for="{{receipts}}" wx:key="key">
-          <image class="tkt-img" src="{{item.thumb}}" mode="aspectFill" />
+          <image class="tkt-img" src="{{item.thumb}}" mode="aspectFill" lazy-load />
           <view class="tkt-mask" wx:if="{{item.uploading}}">上传中</view>
           <view class="tkt-del" data-key="{{item.key}}" bindtap="onRemoveReceipt">×</view>
         </view>

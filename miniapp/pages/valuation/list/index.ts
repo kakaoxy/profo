@@ -140,13 +140,26 @@ Page<PageData, PageCustom>({
         // 不传 header，request.ts 按 /public/* 自动注入 c_access_token
       });
       const newItems = data.items.map((it) => this.toDisplay(it));
-      const merged = reset ? newItems : [...this.data.items, ...newItems];
-      this.setData({
-        items: merged,
-        total: data.total,
-        page,
-        noMore: merged.length >= data.total,
-      });
+      if (reset) {
+        this.setData({
+          items: newItems,
+          total: data.total,
+          page,
+          noMore: newItems.length >= data.total,
+        });
+      } else {
+        // 翻页追加：索引路径局部 setData，payload 不随累计页数增长（P-05）
+        const patch: Record<string, unknown> = {
+          total: data.total,
+          page,
+          noMore: this.data.items.length + newItems.length >= data.total,
+        };
+        const base = this.data.items.length;
+        newItems.forEach((it, i) => {
+          patch[`items[${base + i}]`] = it;
+        });
+        this.setData(patch);
+      }
     } catch (err) {
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       // /public/leads/mine 要求 C 端令牌（aud=c）；401（受众不匹配/令牌失效）或 403（无 C 端身份）时：

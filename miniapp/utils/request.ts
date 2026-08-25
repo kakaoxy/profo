@@ -10,6 +10,9 @@ import { getAccessToken, getCAccessToken, getCRefreshToken, getRefreshToken } fr
  * skipAuth: 是否跳过自动鉴权；公开接口（如 /public/communities/search）置 true，
  *   避免向其发送用户令牌。默认 false——所有请求自动从 storage 读取 access_token 注入，
  *   防止新页面遗漏鉴权头而静默发出无鉴权 GET（见代码审查 🟡-4）。
+ * timeout: 覆盖全局默认超时（默认 DEFAULT_TIMEOUT=15s）.
+ * cacheKey: GET 幂等请求的内存缓存 key（SWR：成功响应写入；页面侧命中缓存先渲染再静默刷新）.
+ * cacheTtl: 缓存有效期 ms（默认 60s）.
  */
 export interface RequestOptions {
   url: string;
@@ -17,6 +20,38 @@ export interface RequestOptions {
   data?: object | string;
   header?: Record<string, string>;
   skipAuth?: boolean;
+  timeout?: number;
+  cacheKey?: string;
+  cacheTtl?: number;
+}
+
+/** 全局默认请求超时（ms）. */
+export const DEFAULT_TIMEOUT = 15000;
+
+/** 内存缓存默认有效期（ms）. */
+const DEFAULT_CACHE_TTL = 60_000;
+
+/** 内存级响应缓存（SWR：页面命中缓存先渲染，后台请求刷新后覆盖）. */
+const memoryCache = new Map<string, { data: unknown; expires: number }>();
+
+/** 读取内存缓存（未命中/过期返回 undefined）. */
+export function getCacheData<T>(key: string): T | undefined {
+  const hit = memoryCache.get(key);
+  if (!hit || hit.expires < Date.now()) {
+    memoryCache.delete(key);
+    return undefined;
+  }
+  return hit.data as T;
+}
+
+/** 写入内存缓存. */
+export function setCacheData(key: string, data: unknown, ttl = DEFAULT_CACHE_TTL): void {
+  memoryCache.set(key, { data, expires: Date.now() + ttl });
+}
+
+/** 失效内存缓存（列表追加/变更后调用）. */
+export function invalidateCache(key: string): void {
+  memoryCache.delete(key);
 }
 
 /** HTTP 非 2xx 时 reject 的错误，附带状态码与响应体. */
@@ -74,7 +109,7 @@ export function refreshAccessToken(): Promise<string | null> {
       method: "POST",
       data: { refresh_token: refreshToken },
       header: { "Content-Type": "application/json" },
-      timeout: 15000,
+      timeout: DEFAULT_TIMEOUT,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           const data = res.data as TokenRefreshResponse | undefined;
@@ -135,7 +170,7 @@ export function refreshCAccessToken(): Promise<string | null> {
       method: "POST",
       data: { refresh_token: cRefreshToken },
       header: { "Content-Type": "application/json" },
-      timeout: 15000,
+      timeout: DEFAULT_TIMEOUT,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           const data = res.data as TokenRefreshResponse | undefined;
@@ -180,7 +215,16 @@ export function refreshCAccessToken(): Promise<string | null> {
  * - HTTP 非 2xx reject { statusCode, body }；网络异常 reject { errMsg }.
  */
 export function request<T>(options: RequestOptions): Promise<T> {
-  const { url, method = "GET", data, header, skipAuth = false } = options;
+  const {
+    url,
+    method = "GET",
+    data,
+    header,
+    skipAuth = false,
+    timeout = DEFAULT_TIMEOUT,
+    cacheKey,
+    cacheTtl,
+  } = options;
 
   const requestHeader: Record<string, string> = { ...header };
   if (!skipAuth && !requestHeader.Authorization) {
@@ -198,7 +242,17 @@ export function request<T>(options: RequestOptions): Promise<T> {
     }
   }
 
-  return doRequest<T>(url, method, data, requestHeader, skipAuth, false);
+  const doFetch = () =>
+    doRequest<T>(url, method, data, requestHeader, skipAuth, false, false, timeout);
+
+  // GET 幂等 + cacheKey：成功后写入内存缓存，供页面 SWR（先渲染缓存再静默刷新）
+  if (method === "GET" && cacheKey) {
+    return doFetch().then((res) => {
+      setCacheData(cacheKey, res, cacheTtl);
+      return res;
+    });
+  }
+  return doFetch();
 }
 
 /**
@@ -214,6 +268,8 @@ function doRequest<T>(
   requestHeader: Record<string, string>,
   skipAuth: boolean,
   retried: boolean,
+  networkRetried: boolean,
+  timeout: number,
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     wx.request({
@@ -221,7 +277,7 @@ function doRequest<T>(
       method,
       data,
       header: requestHeader,
-      timeout: 15000,
+      timeout,
       success: (res) => {
         const statusCode = res.statusCode;
         if (statusCode >= 200 && statusCode < 300) {
@@ -236,7 +292,7 @@ function doRequest<T>(
           refresh().then((newToken) => {
             if (newToken) {
               requestHeader.Authorization = `Bearer ${newToken}`;
-              doRequest<T>(url, method, data, requestHeader, skipAuth, true)
+              doRequest<T>(url, method, data, requestHeader, skipAuth, true, networkRetried, timeout)
                 .then(resolve)
                 .catch(reject);
             } else {
@@ -250,6 +306,15 @@ function doRequest<T>(
         reject(error);
       },
       fail: (err) => {
+        if (method === "GET" && !networkRetried) {
+          // GET 幂等：网络失败重试 1 次（300ms 退避）；POST/PUT/DELETE 非幂等不重试
+          setTimeout(() => {
+            doRequest<T>(url, method, data, requestHeader, skipAuth, retried, true, timeout)
+              .then(resolve)
+              .catch(reject);
+          }, 300);
+          return;
+        }
         const networkError: NetworkError = { errMsg: err.errMsg };
         reject(networkError);
       },

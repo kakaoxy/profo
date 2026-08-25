@@ -100,6 +100,7 @@
           wx:key="*this"
           src="{{item}}"
           mode="aspectFill"
+          lazy-load
           data-src="{{item}}"
           bindtap="onPreviewImage"
         />

@@ -77,7 +77,7 @@
             <view class="rec-right">
               <view class="rec-amount tnum {{item.amountKind === 'out' ? 'money-neg' : (item.amountKind === 'in' ? 'money-pos' : '')}}">{{item.amountText}}</view>
               <view class="rec-tkt" wx:if="{{item.hasTicket}}">
-                <image class="rec-tkt__thumb" src="{{item.ticketThumb}}" mode="aspectFill" />
+                <image class="rec-tkt__thumb" src="{{item.ticketThumb}}" mode="aspectFill" lazy-load />
                 <text>票据 {{item.ticketCount}} 张</text>
               </view>
               <view class="rec-flag-miss" wx:else>缺凭证</view>

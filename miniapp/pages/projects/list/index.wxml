@@ -169,6 +169,7 @@
           wx:if="{{item.cover_thumbnail_url || item.cover_image}}"
           src="{{item.cover_thumbnail_url || item.cover_image}}"
           mode="aspectFill"
+          lazy-load
         />
         <view class="list-badge {{item.badgeClass}}" wx:if="{{item.badgeText}}">{{item.badgeText}}</view>
       </view>

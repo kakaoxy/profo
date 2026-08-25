@@ -189,6 +189,7 @@
             class="prop-thumb__img"
             src="{{item.thumb}}"
             mode="aspectFill"
+            lazy-load
           />
           <view wx:else class="prop-thumb__placeholder"></view>
         </view>

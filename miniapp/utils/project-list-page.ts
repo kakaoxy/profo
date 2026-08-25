@@ -10,7 +10,7 @@
  * 见代码审查报告 🟡-7。
  */
 import type { components } from "../types/api-types";
-import { request } from "./request";
+import { request, getCacheData, invalidateCache } from "./request";
 import { getAccessToken } from "./token";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
@@ -129,13 +129,25 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
           this.setData({ state: "needLogin", items: [] });
           return;
         }
-        this.setData({
-          state: "loading",
-          items: [],
-          page: 1,
-          hasMore: false,
-          loadingMore: false,
-        });
+        const cacheKey = `project-list:${config.status}:${token}`;
+        const cached = getCacheData<{ items: ProjectResponse[]; total: number }>(cacheKey);
+        if (cached) {
+          // SWR：先渲染缓存（避免每次进入清空闪骨架屏），随后请求静默刷新覆盖
+          this.applyItems(cached.items, "replace");
+          this.setData({
+            page: 1,
+            total: cached.total,
+            hasMore: cached.items.length < cached.total,
+          });
+        } else {
+          this.setData({
+            state: "loading",
+            items: [],
+            page: 1,
+            hasMore: false,
+            loadingMore: false,
+          });
+        }
         try {
           // 主通道：持 project:read（admin/operator）分页拉取目标状态项目
           const data = await request<{
@@ -146,6 +158,7 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
           }>({
             url: `/projects?status=${config.status}&include_interactions=true&page=1&page_size=${PAGE_SIZE}`,
             header: { Authorization: `Bearer ${token}` },
+            cacheKey,
           });
           const items = data.items ?? [];
           const total = data.total ?? 0;
@@ -159,7 +172,8 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
           } else if (statusCode === 403) {
             // 无 project:read 权限，回退业务身份负责的同状态项目
             await this.loadResponsible(token);
-          } else {
+          } else if (!cached) {
+            // 有缓存时静默失败（保留缓存数据，不打断浏览）
             this.setData({ state: "error", items: [] });
           }
         }
@@ -198,22 +212,47 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
     ) {
       if (mode === "replace") {
         this._rawItems = projects;
-      } else {
-        // 追加下一页：按 id 去重（新值覆盖旧值），保持 created_at 倒序由下方统一排序
-        const map = new Map<string, ProjectResponse>();
-        [...this._rawItems, ...projects].forEach((p) => map.set(p.id, p));
-        this._rawItems = [...map.values()];
+        const items = [...projects]
+          .sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          )
+          .map((p) => config.toDisplay(p));
+        this.setData({
+          state: items.length > 0 ? "items" : "empty",
+          items,
+        });
+        return;
       }
-      const items = this._rawItems
-        .sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )
-        .map((p) => config.toDisplay(p));
-      this.setData({
-        state: items.length > 0 ? "items" : "empty",
-        items,
+      // 追加下一页：按 id 去重累积原始数据（防御页间重复），展示层仅追加新项尾部——
+      // 后端已按 created_at 倒序分页，追加顺序天然有序，无需全量重排（P-05）
+      const map = new Map<string, ProjectResponse>();
+      [...this._rawItems, ...projects].forEach((p) => map.set(p.id, p));
+      this._rawItems = [...map.values()];
+      const knownIds = new Set(this.data.items.map((it) => it.id));
+      const fresh = projects.filter((p) => !knownIds.has(p.id));
+      if (fresh.length !== projects.length) {
+        // 异常重复（页间数据重叠）：回退全量重建，保证排序正确
+        const items = this._rawItems
+          .sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          )
+          .map((p) => config.toDisplay(p));
+        this.setData({
+          state: items.length > 0 ? "items" : "empty",
+          items,
+        });
+        return;
+      }
+      // 正常追加：索引路径局部 setData，单次 payload 不随累计页数增长
+      const newItems = fresh.map((p) => config.toDisplay(p));
+      const patch: Record<string, unknown> = { state: "items" };
+      const base = this.data.items.length;
+      newItems.forEach((it, i) => {
+        patch[`items[${base + i}]`] = it;
       });
+      this.setData(patch);
     },
 
     onItemTap(e: WechatMiniprogram.BaseEvent) {
@@ -258,6 +297,8 @@ export function createProjectListPage<TItem extends BaseDisplayItem>(
           hasMore: nextPage * PAGE_SIZE < total,
           loadingMore: false,
         });
+        // 列表已更新，失效首屏缓存避免下次进入渲染旧数据
+        invalidateCache(`project-list:${config.status}:${token}`);
       } catch (err) {
         const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
         if (statusCode === 401) {

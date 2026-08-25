@@ -257,9 +257,16 @@ Page<PageData, PageCustom>({
     doUploadFile(localPath, token)
       .then((res) => {
         if (res.statusCode === 401) {
-          return refreshAccessToken().then((newToken) =>
-            newToken ? doUploadFile(localPath, newToken) : null,
-          );
+          // 复用统一 refreshAccessToken（与 request.ts 同源，消除 token 刷新逻辑分叉）：
+          // 刷新成功用新令牌重试一次；刷新失败说明后台会话已失效，清令牌并提示登录失效
+          return refreshAccessToken().then((newToken) => {
+            if (newToken) {
+              return doUploadFile(localPath, newToken);
+            }
+            this.clearToken();
+            wx.showToast({ title: "登录已失效，请重新登录", icon: "none" });
+            return null;
+          });
         }
         return res;
       })

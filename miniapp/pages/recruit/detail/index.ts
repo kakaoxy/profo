@@ -52,8 +52,8 @@ function formatSubmitTime(date: Date): string {
 
 /** 数据卡滚动动画时长（ms）. */
 const STAT_ANIM_DURATION = 1500;
-/** 数据卡滚动动画帧间隔（ms，约 60fps）. */
-const STAT_ANIM_TICK = 16;
+/** 数据卡滚动动画帧间隔（ms，25 次/s，≤30 次/s 目标，消除频繁 setData 告警）. */
+const STAT_ANIM_TICK = 40;
 
 interface PageData {
   // 落地页固定营销内容
@@ -610,13 +610,24 @@ Page<PageData, PageCustom>({
     this.clearStatAnim();
     const targets = RECRUIT_LANDING_CONTENT.stats.map((s) => s.target);
     const startTime = Date.now();
+    let prevValues: number[] = [];
     const tick = () => {
       const elapsed = Date.now() - startTime;
       const t = Math.min(1, elapsed / STAT_ANIM_DURATION);
       // easeOutQuart: 1 - (1 - t)^4，前期快、后期慢，数字「跳起来」更有冲击力
       const eased = 1 - Math.pow(1 - t, 4);
       const values = targets.map((target) => Math.round(target * eased));
-      this.setData({ statValues: values });
+      // 索引路径局部 setData：仅 diff 当前帧数值变化的卡片，避免整组数组替换
+      const patch: Record<string, number> = {};
+      values.forEach((v, i) => {
+        if (v !== prevValues[i]) {
+          patch[`statValues[${i}]`] = v;
+        }
+      });
+      if (Object.keys(patch).length > 0) {
+        this.setData(patch);
+      }
+      prevValues = values;
       if (t < 1) {
         this.statAnimTimer = setTimeout(tick, STAT_ANIM_TICK);
       } else {

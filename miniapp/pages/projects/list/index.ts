@@ -355,16 +355,30 @@ Page<PageData, PageCustom>({
       const newItems: DisplayItem[] = rawItems.map((it) =>
         this.toDisplay(it as OnSaleItem | SoldItem, tab)
       );
-      const merged: DisplayItem[] = reset ? newItems : [...this.data.items, ...newItems];
-      this.setData({
-        items: merged,
-        total,
-        noMore: merged.length >= total,
-      });
+      if (reset) {
+        this.setData({
+          items: newItems,
+          total,
+          noMore: newItems.length >= total,
+        });
+      } else {
+        // 翻页追加：索引路径局部 setData，payload 不随累计页数增长（P-05）
+        const patch: Record<string, unknown> = {
+          total,
+          noMore: this.data.items.length + newItems.length >= total,
+        };
+        const base = this.data.items.length;
+        newItems.forEach((it, i) => {
+          patch[`items[${base + i}]`] = it;
+        });
+        this.setData(patch);
+      }
     } catch {
       if (reset) {
         this.setData({ error: true, items: [] });
       } else {
+        // 翻页失败：回滚页码，避免下次触底跳过本页（弱网下不丢数据）
+        this.setData({ page: Math.max(1, this.data.page - 1) });
         wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
     } finally {

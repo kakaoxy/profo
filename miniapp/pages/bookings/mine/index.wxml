@@ -34,7 +34,7 @@
       data-id="{{item.projectId}}"
       bindtap="onCardTap"
     >
-      <image wx:if="{{item.coverUrl}}" class="card-cover" src="{{item.coverUrl}}" mode="aspectFill" />
+      <image wx:if="{{item.coverUrl}}" class="card-cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load />
       <view wx:else class="card-cover card-cover--fallback">房</view>
       <view class="card-main">
         <view class="card-title-row">

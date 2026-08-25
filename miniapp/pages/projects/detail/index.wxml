@@ -128,6 +128,7 @@
                 class="renovation-cover"
                 src="{{stage.cover}}"
                 mode="aspectFill"
+                lazy-load
               />
               <view wx:else class="renovation-placeholder"></view>
               <view class="badge">{{stage.stage}}</view>
@@ -174,7 +175,7 @@
       <view wx:if="{{booked}}" class="booked-tip">已预约，工作人员将在24小时内电话联系您</view>
       <view class="footer-main">
         <view class="advisor">
-          <image class="advisor-avatar" src="{{contactAvatarUrl}}" wx:if="{{contactAvatarUrl}}" />
+          <image class="advisor-avatar" src="{{contactAvatarUrl}}" wx:if="{{contactAvatarUrl}}" lazy-load />
           <view class="advisor-avatar advisor-avatar--fallback" wx:else>{{contactFallbackChar}}</view>
           <view class="advisor-info">
             <text class="advisor-name">{{contact.nickname}}</text>

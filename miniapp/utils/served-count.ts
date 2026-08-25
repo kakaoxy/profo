@@ -46,6 +46,8 @@ export function animateServedCount(ctx: ServedCountContext, target: number): voi
   }
   const duration = 1200;
   const start = Date.now();
+  // 40ms 间隔（25 次/s，≤30 次/s 目标）：在动画流畅度与 setData 频率间取平衡，
+  // 消除 Audits「频繁 setData」告警（原 16ms ≈ 75 次）
   ctx.servedCountTimer = setInterval(() => {
     const elapsed = Date.now() - start;
     const t = Math.min(1, elapsed / duration);
@@ -56,7 +58,7 @@ export function animateServedCount(ctx: ServedCountContext, target: number): voi
       ctx.setData({ servedCountDisplay: formatThousands(target) });
       clearServedCountTimer(ctx);
     }
-  }, 16);
+  }, 40);
 }
 
 /** 清理计数缓动定时器. */

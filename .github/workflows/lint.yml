@@ -37,6 +37,42 @@ jobs:
       - name: Dependency audit (uv audit)
         run: uv audit
 
+  lint-miniapp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: miniapp
+    if: |
+      contains(github.event.commits.*.modified.*, 'miniapp/') ||
+      contains(github.event.commits.*.added.*, 'miniapp/') ||
+      contains(github.event.commits.*.removed.*, 'miniapp/') ||
+      github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.18.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: miniapp/pnpm-lock.yaml
+
+      - name: Install dependencies (miniapp)
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check (tsc --noEmit)
+        run: pnpm tsc
+
+      - name: Unit tests (vitest)
+        run: pnpm test
+
   lint-frontend:
     runs-on: ubuntu-latest
     defaults:

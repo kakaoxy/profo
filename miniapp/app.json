@@ -1,7 +1,6 @@
 {
   "pages": [
     "pages/projects/list/index",
-    "pages/test-login/index/index",
     "pages/login/index/index",
     "pages/projects/detail/index",
     "pages/projects/mine/index",
@@ -10,24 +9,52 @@
     "pages/valuation/list/index",
     "pages/valuation/detail/index",
     "pages/valuation/mine/index",
-    "pages/viewing/projects/index/index",
-    "pages/viewing/detail/index/index",
-    "pages/renovation/projects/index/index",
-    "pages/renovation/detail/index/index",
     "pages/about/index/index",
     "pages/profile/index/index",
     "pages/properties/list/index",
-    "pages/agreement/user/index/index",
-    "pages/agreement/privacy/index/index",
-    "pages/bind-account/index/index",
     "pages/recruit/detail/index",
-    "pages/recruit/mine/index",
-    "pages/analysis/index/index",
-    "pages/community-analysis/index/index",
-    "pages/ledger/projects/index/index",
-    "pages/ledger/detail/index/index",
-    "pages/ledger/record/index/index"
+    "pages/recruit/mine/index"
   ],
+  "subPackages": [
+    {
+      "root": "pages/agreement",
+      "pages": ["user/index/index", "privacy/index/index"]
+    },
+    {
+      "root": "pages/test-login",
+      "pages": ["index/index"]
+    },
+    {
+      "root": "pages/bind-account",
+      "pages": ["index/index"]
+    },
+    {
+      "root": "pages/ledger",
+      "pages": ["projects/index/index", "detail/index/index", "record/index/index"]
+    },
+    {
+      "root": "pages/viewing",
+      "pages": ["projects/index/index", "detail/index/index"]
+    },
+    {
+      "root": "pages/renovation",
+      "pages": ["projects/index/index", "detail/index/index"]
+    },
+    {
+      "root": "pages/analysis",
+      "pages": ["index/index"]
+    },
+    {
+      "root": "pages/community-analysis",
+      "pages": ["index/index"]
+    }
+  ],
+  "preloadRule": {
+    "pages/projects/mine/index": {
+      "network": "all",
+      "packages": ["pages/ledger", "pages/viewing", "pages/renovation", "pages/analysis", "pages/community-analysis"]
+    }
+  },
   "window": {
     "navigationBarTitleText": "美房宝",
     "navigationBarBackgroundColor": "#ffffff",
@@ -69,6 +96,7 @@
     ]
   },
   "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json",
   "__usePrivacyCheck__": true
 }

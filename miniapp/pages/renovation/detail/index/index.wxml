@@ -64,11 +64,11 @@
           <!-- 照片网格（含上传中占位与上传按钮） -->
           <view class="photo-grid">
             <view class="photo-item" wx:for="{{item.photos}}" wx:for-item="photo" wx:key="id" catchtap="onPreviewPhoto" data-stage="{{item.value}}" data-url="{{photo.url}}">
-              <image class="photo-img" src="{{photo.url}}" mode="aspectFill" />
+              <image class="photo-img" src="{{photo.url}}" mode="aspectFill" lazy-load />
               <view class="photo-remove" wx:if="{{canEdit}}" catchtap="onDeletePhoto" data-id="{{photo.id}}">×</view>
             </view>
             <view class="photo-item photo-item--uploading" wx:for="{{item.uploading}}" wx:for-item="up" wx:key="key">
-              <image wx:if="{{!up.failed}}" class="photo-img" src="{{up.localPath}}" mode="aspectFill" />
+              <image wx:if="{{!up.failed}}" class="photo-img" src="{{up.localPath}}" mode="aspectFill" lazy-load />
               <view class="upload-mask" wx:if="{{!up.failed}}">{{up.percent}}%</view>
               <view wx:if="{{up.failed}}" class="upload-failed" catchtap="onRetryUpload" data-stage="{{item.value}}" data-key="{{up.key}}" data-path="{{up.localPath}}">
                 <view class="upload-failed-text">上传失败</view>

@@ -215,6 +215,22 @@ Page<PageData, PageCustom>({
     this.scheduleTrendDraw();
   },
 
+  onHide() {
+    // 页面不可见时取消未触发的搜索防抖，避免回退后仍执行 applySearch
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = undefined;
+    }
+  },
+
+  onUnload() {
+    // 页面销毁时清理防抖 timer，避免泄漏（原 F9 技术债项，已提前修复）
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = undefined;
+    }
+  },
+
   buildFilterParams(): Record<string, string> {
     const p: Record<string, string> = { range: this.data.range };
     if (this.data.district) p.district = this.data.district;
