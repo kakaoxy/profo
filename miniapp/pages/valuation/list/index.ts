@@ -178,6 +178,8 @@ Page<PageData, PageCustom>({
           this.setData({ error: true, items: [] });
         }
       } else {
+        // 翻页失败：回滚页码并重置 noMore，避免下次触底被 noMore 拦截跳过本页（弱网下不丢数据）
+        this.setData({ page: Math.max(1, this.data.page - 1), noMore: false });
         wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
     } finally {
