@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import { fetchClient } from "@/lib/api-server";
+import { isRedirectError } from "@/lib/auth/server/session";
+import { logger } from "@/lib/logger";
 import { ProjectStats } from "./_components/project-stats";
 import { ProjectView } from "./_components/project-view";
 import { ProjectPagination } from "./_components/project-pagination";
@@ -108,18 +110,47 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 
   const client = await fetchClient();
 
-  const [statsRes, listRes] = await Promise.all([
-    client.GET("/api/v1/projects/stats", {}),
-    client.GET("/api/v1/projects", {
-      params: { query: queryParams },
-    }),
-  ]);
+  let listData: ProjectListResponse | null = null;
+  let statsData: ProjectStatsResponse | null = null;
+  try {
+    const [statsRes, listRes] = await Promise.all([
+      client.GET("/api/v1/projects/stats", {}),
+      client.GET("/api/v1/projects", {
+        params: { query: queryParams },
+      }),
+    ]);
+    listData = (listRes.data as ProjectListResponse | null) ?? null;
+    statsData = (statsRes.data as ProjectStatsResponse | null) ?? null;
+  } catch (e) {
+    // 401 场景 fetchClient 会抛 NEXT_REDIRECT 交由 Next.js 渲染层执行刷新重定向，
+    // 必须放行（与 layout.tsx / dashboard-data.ts 的处理一致）。
+    if (isRedirectError(e)) throw e;
+    // 其余异常（后端瞬时不可用/连接中断，如生产后端进程重启掐断在途连接）降级渲染，
+    // 避免整页 RSC 渲染失败在浏览器端呈现 Minified React error #441。
+    logger.error("项目管理列表数据获取失败", e);
+    return (
+      <div className="min-h-screen bg-fog">
+        <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-1">
+            <h1 className="font-display text-3xl text-ink">项目管理</h1>
+            <p className="text-sm text-ash">
+              全生命周期管理您的房源资产，从签约到售出的每一分钱。
+            </p>
+          </div>
+          <div className="bg-white rounded-cards p-10 shadow-steep text-center">
+            <p className="text-sm text-ash">
+              数据加载失败，请刷新重试（当前筛选会保留在地址栏中）。
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const listData = listRes.data as ProjectListResponse | null;
   const projectData: Project[] = listData?.items?.map(mapProjectResponse) ?? [];
   const total = listData?.total ?? 0;
 
-  const stats = (statsRes.data as ProjectStatsResponse | null) ?? {
+  const stats = statsData ?? {
     signing: 0,
     renovating: 0,
     selling: 0,
