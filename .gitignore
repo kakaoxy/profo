@@ -142,6 +142,9 @@ backend/data.db
 *.png
 !frontend/public/about/*.png
 !frontend/public/about/*.jpg
+# miniapp 本地资源（tabbar 图标、分享图等）
+!miniapp/**/*.png
+!miniapp/**/*.jpg
 *.doc
 *.docx
 *.pdf
