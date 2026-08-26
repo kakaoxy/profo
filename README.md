@@ -518,6 +518,8 @@ cd ..                         # 返回项目根目录
 #    - 支持参数：
 #      ./setup.sh --admin-password 'P@ssw0rd'   # 使用指定密码
 #      ./setup.sh --reset-admin                 # 重置管理员密码
+#      ./setup.sh --sync-db-password            # 认证失败时同步 DB 密码为 .env 值（保留数据）
+#      ./setup.sh --fresh-db                    # 删除数据卷重建（清空数据，彻底全新环境）
 #      ./setup.sh --skip-db                     # 跳过 DB 启动（已在别处启动时使用）
 #      ./setup.sh --help                        # 查看帮助
 ```
@@ -1181,6 +1183,13 @@ pnpm install
 ### Q9: 如何重置整个环境（清空数据）
 
 ```bash
+# 方式一（推荐）：setup.sh 一键完成"删卷 → 重建 → 建表 → 创建管理员"
+# 本地开发：
+./setup.sh --fresh-db
+# Docker 生产：
+./setup.sh --docker --fresh-db
+
+# 方式二：手动操作
 docker compose down              # 停止并删除容器
 docker compose down -v           # 同时删除 pgdata / redisdata volume（数据丢失！）
 docker compose up -d --build     # 重新启动
@@ -1230,6 +1239,48 @@ docker compose restart backend
 ```
 
 > 切换回 `local` 时无需特殊操作——DB 中的 OSS URL 仍可被浏览器直接访问，新上传的文件会写入本地 `./uploads`。建议切换方向前先备份数据库。
+
+### Q12: 启动/初始化报 `password authentication failed for user "profo"`
+
+**根因**：PostgreSQL 数据卷（`pgdata`）是用**旧 `.env` 密码**初始化的，与当前 `.env` 的 `POSTGRES_PASSWORD` 不一致。PostgreSQL 只在**数据卷首次创建**时应用 `POSTGRES_PASSWORD`，之后修改 `.env` **不会自动同步**进数据库。
+
+⚠️ **特别注意**：Docker 卷是引擎级全局资源，**不随 git clone / 删除项目目录而重置**。即使全新 clone 代码，只要这台机器上之前运行过本项目（compose 项目名 = 目录名 → 卷名固定为 `<项目名>_pgdata`），就会复用旧卷、遇到旧密码。常见触发场景：机器上已有旧环境 → 重新 clone + `init-env.sh`（生成了全新的随机密码）→ 新密码 vs 旧卷密码不匹配。
+
+**修复方式**（`setup.sh` 已内置认证探测，会主动检测该问题）：
+
+```bash
+# 方式 A（推荐，保留数据）：同步数据库密码为 .env 中的值
+./setup.sh --sync-db-password
+# 本地:   ./setup.sh --sync-db-password
+# Docker: ./setup.sh --docker --sync-db-password
+
+# 方式 B（清空数据）：删除数据卷重建，得到彻底全新的环境
+./setup.sh --fresh-db
+```
+
+> 不带参数运行时，若检测到认证失败，`setup.sh` 会进入交互模式让你选择 A / B。
+>
+> **原理说明**：PostgreSQL 容器每次启动都会用 `.env` 中的 `POSTGRES_PASSWORD` 作为环境变量，但该变量只在数据卷首次 `initdb` 时生效；卷内已初始化的集群密码保持不变。因此修改 `POSTGRES_PASSWORD` 后，要么同步执行 `ALTER USER`（方式 A），要么删除数据卷重建（方式 B）。Redis 无此问题（`--requirepass` 是每次启动时经命令行参数注入的，不持久化在卷中）。
+
+### Q13: 全新电脑上首次初始化的正确步骤
+
+```bash
+# 1. 克隆代码
+git clone <repo-url> profo && cd profo
+
+# 2. 生成密钥并初始化 .env（自动从模板创建并填入随机密钥）
+./init-env.sh
+
+# 3. 本地开发模式（Docker 只跑数据库，前后端本机热重载）：
+./setup.sh               # 建表 + 创建管理员（打印临时密码）
+./dev-start.sh           # 启动 db + 后端 + 前端
+
+# 或 Docker 生产模式（全部容器化）：
+docker compose up -d --build
+./setup.sh --docker      # 在容器内建表 + 创建管理员
+```
+
+> 首次初始化后请立即保存打印的管理员临时密码（首次登录强制修改）。
 
 ---
 

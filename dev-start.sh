@@ -149,18 +149,21 @@ check_port() {
 
 # 预检 Docker 服务端口（5432/6379）：
 # - 自动清理非 compose 管理的孤儿容器（无 com.docker.compose.project 标签，常见于手动 docker run --name profo-redis 残留）
-# - 若被 compose 管理的容器占用（如上次未正常 stop），提示用户手动处理
-# 返回 0=端口已就绪，1=被 compose 容器占用需用户处理
+# - 被【本项目】compose 容器占用（如 setup.sh 已启动 db）→ 复用（compose up -d 幂等），保证 setup.sh → dev-start.sh 无缝衔接
+# - 被【其他项目】compose 容器占用 → 报错提示手动处理
+# 返回 0=端口已就绪，1=被其他 compose 项目占用需用户处理
 cleanup_orphan_port() {
   local port="$1"
   local service="$2"
+  local my_project
+  my_project="$(basename "$ROOT_DIR")"
   # 匹配 docker ps 的 Ports 列格式：0.0.0.0:6379->6379/tcp 或 [::]:6379->6379/tcp
   local names
   names=$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep ":${port}->" | awk '{print $1}' || true)
 
   [ -z "$names" ] && return 0
 
-  local has_compose=0
+  local has_other=0
   while IFS= read -r name; do
     [ -z "$name" ] && continue
     local project
@@ -168,16 +171,17 @@ cleanup_orphan_port() {
     if [ -z "$project" ]; then
       echo "⚠️  孤儿容器 '$name'（非 compose 管理）占用 $port ($service) 端口，自动清理..."
       docker rm -f "$name" >/dev/null 2>&1 && echo "✅ 已清理 $name"
+    elif [ "$project" = "$my_project" ]; then
+      # 本项目容器已占用端口（setup.sh 或上次 dev-start 遗留）→ 复用，交给 compose up -d 幂等处理
+      echo "ℹ  端口 $port ($service) 已被本项目容器 ($name) 占用，将复用现有容器"
     else
-      has_compose=1
+      echo "❌ 端口 $port ($service) 被其他 compose 项目 ($project) 的容器占用"
+      echo "   请先停止该项目: docker compose -p $project stop"
+      has_other=1
     fi
   done <<< "$names"
 
-  if [ "$has_compose" -eq 1 ]; then
-    echo "❌ 端口 $port ($service) 被 compose 管理的容器占用"
-    echo "   请先停止: ./dev-start.sh stop"
-    return 1
-  fi
+  [ "$has_other" -eq 1 ] && return 1
   return 0
 }
 
