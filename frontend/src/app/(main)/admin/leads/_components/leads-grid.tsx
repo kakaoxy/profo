@@ -9,7 +9,7 @@ import { MapPin, Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isValidUrl } from "@/lib/validators";
 import { Lead } from "../types";
-import { getStatusStyleConfig } from "@/lib/status-colors";
+import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,22 +35,22 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {leads.map((lead) => {
-        const config = getStatusStyleConfig(lead.status);
+        const config = LEAD_STATUS_META[lead.status];
 
         return (
           <Card
             key={lead.id}
-            className="overflow-hidden border border-border shadow-sm hover:shadow-md transition-all cursor-pointer group bg-card"
+            className="overflow-hidden border-none bg-pure-white rounded-cards shadow-steep-sm hover:-translate-y-0.5 hover:shadow-steep transition-all duration-200 cursor-pointer group"
             onClick={() => onOpenDetail(lead.id)}
           >
             {/* Image Area */}
-            <div className="relative aspect-4/3 flex items-center justify-center bg-muted overflow-hidden">
+            <div className="relative aspect-4/3 flex items-center justify-center bg-fog overflow-hidden">
               {lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]) ? (
                 <Image
                   src={lead.images[0]}
                   alt={lead.communityName}
                   fill
-                  className="object-cover transition-transform group-hover:scale-105"
+                  className="object-cover rounded-[12px] transition-transform group-hover:scale-105"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   unoptimized={
                     lead.images[0]?.includes("127.0.0.1") || lead.images[0]?.includes("localhost")
@@ -65,10 +65,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
               {/* Status Badge */}
               <div className="absolute top-3 left-3">
                 <Badge
-                  className={cn(
-                    "font-semibold text-xs border-none shadow-sm px-2.5 py-1",
-                    config.className,
-                  )}
+                  className={cn("text-xs px-2.5 py-1", config.badgeClass)}
                 >
                   {config.label}
                 </Badge>
@@ -83,7 +80,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-primary"
+                    className="h-8 w-8 bg-pure-white/90 backdrop-blur-sm rounded-full shadow-sm text-graphite hover:text-ink hover:bg-fog"
                     onClick={() => onEdit(lead)}
                     aria-label="编辑线索"
                   >
@@ -97,7 +94,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-error"
+                        className="h-8 w-8 bg-pure-white/90 backdrop-blur-sm rounded-full shadow-sm text-graphite hover:text-error hover:bg-error-container"
                         aria-label="删除线索"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -129,7 +126,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
             <div className="p-4">
               {/* Title & Location */}
               <div className="mb-3">
-                <h3 className="font-semibold text-foreground text-base line-clamp-1 group-hover:text-primary transition-colors">
+                <h3 className="font-medium text-ink text-base line-clamp-1">
                   {lead.communityName}
                 </h3>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
@@ -143,13 +140,13 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
 
               {/* Info Grid */}
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="bg-muted rounded-md p-2">
+                <div className="bg-fog rounded-md p-2">
                   <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
                     户型
                   </span>
                   <span className="text-sm font-medium text-foreground">{lead.layout || "-"}</span>
                 </div>
-                <div className="bg-muted rounded-md p-2">
+                <div className="bg-fog rounded-md p-2">
                   <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
                     面积
                   </span>
@@ -160,12 +157,12 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
               </div>
 
               {/* Price & Floor */}
-              <div className="flex items-end justify-between pt-3 border-t border-border">
+              <div className="flex items-end justify-between pt-3 border-t border-dove">
                 <div>
                   <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
                     总价
                   </span>
-                  <span className="text-lg font-bold text-foreground tabular-nums">
+                  <span className="text-lg font-medium text-ink tabular-nums">
                     {lead.totalPrice > 0 ? `¥${lead.totalPrice}万` : "-"}
                   </span>
                 </div>

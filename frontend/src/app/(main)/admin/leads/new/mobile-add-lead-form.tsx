@@ -29,7 +29,7 @@ function FieldLabel({ children, required }: FieldLabelProps) {
   return (
     <span className="text-xs font-medium text-muted-foreground">
       {children}
-      {required && <span className="text-primary ml-0.5">*</span>}
+      {required && <span className="text-rust ml-0.5">*</span>}
     </span>
   );
 }
@@ -118,11 +118,11 @@ export function MobileAddLeadForm() {
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] mx-auto max-w-md pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 md:h-auto md:min-h-[calc(100vh-3.5rem)]">
       {/* Header (shrink-0，自然贴顶) */}
-      <header className="shrink-0 z-40 h-14 bg-card/80 backdrop-blur-xl border-b border-border flex items-center gap-2 px-4">
+      <header className="shrink-0 z-40 h-14 bg-card/80 backdrop-blur-xl border-b border-dove flex items-center gap-2 px-4">
         <Link
           href="/admin"
           aria-label="返回工作台"
-          className="rounded-full p-1 hover:bg-muted transition-colors"
+          className="rounded-full p-1 hover:bg-fog transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
@@ -176,7 +176,7 @@ export function MobileAddLeadForm() {
           </div>
 
           {/* 4. 物理指标与价格（分组卡片） */}
-          <div className="bg-muted/50 rounded-2xl border border-border p-4 space-y-4">
+          <div className="bg-fog/50 rounded-2xl border border-dove p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Ruler className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">
@@ -211,7 +211,7 @@ export function MobileAddLeadForm() {
             <div className="flex flex-col gap-1.5">
               <FieldLabel>朝向</FieldLabel>
               <select
-                className="h-12 w-full px-4 rounded-xl bg-background border border-input text-base font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="h-12 w-full px-4 rounded-xl bg-background border border-input text-base font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
                 value={formData.orientation}
                 onChange={(e) => setFormData({ ...formData, orientation: e.target.value })}
               >
@@ -239,7 +239,7 @@ export function MobileAddLeadForm() {
                 type="number"
                 inputMode="decimal"
                 placeholder="例如: 600"
-                className="h-12 text-base font-black text-primary border-primary/20"
+                className="h-12 text-base font-black text-ink border-dove"
                 value={formData.totalPrice}
                 onChange={(e) => setFormData({ ...formData, totalPrice: e.target.value })}
               />
@@ -278,7 +278,7 @@ export function MobileAddLeadForm() {
             <Textarea
               rows={4}
               placeholder="输入房源核心优势、业主动机等..."
-              className="min-h-24 text-base focus-visible:ring-primary/20"
+              className="min-h-24 text-base focus-visible:ring-ink/20"
               value={formData.remarks}
               onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
             />
@@ -286,11 +286,11 @@ export function MobileAddLeadForm() {
         </div>
 
         {/* Footer (shrink-0，自然贴底，浮动在 Tab Bar 上方) */}
-        <footer className="shrink-0 bg-card/95 backdrop-blur-xl border-t border-border p-4">
+        <footer className="shrink-0 bg-card/95 backdrop-blur-xl border-t border-dove p-4">
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-12 w-full bg-primary text-primary-foreground text-base font-bold rounded-xl hover:bg-primary/90"
+            className="h-12 w-full bg-ink text-white text-base font-bold rounded-xl hover:bg-ink/90"
           >
             {isSubmitting ? "提交中..." : "确认录入线索"}
           </Button>

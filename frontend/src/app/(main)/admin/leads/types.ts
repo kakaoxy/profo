@@ -1,9 +1,10 @@
 export enum LeadStatus {
   PENDING_ASSESSMENT = "pending_assessment", // 待评估
   PENDING_VISIT = "pending_visit", // 待看房
-  REJECTED = "rejected", // 已驳回
+  REJECTED = "rejected", // 已放弃
   VISITED = "visited", // 已看房
   SIGNED = "signed", // 已签约
+  LOST_TO_COMPETITOR = "lost_to_competitor", // 他司已成交
 }
 
 export type FollowUpMethod = "phone" | "wechat" | "face" | "visit";

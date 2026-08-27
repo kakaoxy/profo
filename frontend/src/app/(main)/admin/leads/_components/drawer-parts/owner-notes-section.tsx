@@ -17,20 +17,16 @@ export const OwnerNotesSection: React.FC<OwnerNotesSectionProps> = ({ lead }) =>
   const hasExpected = lead.expectedPrice != null;
 
   return (
-    <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+    <section className="bg-pure-white rounded-cards shadow-steep-sm overflow-hidden">
       {/* 头部 */}
-      <div className="bg-muted/30 px-4 py-2.5 border-b border-border flex items-center justify-between">
+      <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
         <div className="flex items-center gap-1.5 min-w-0">
-          <Quote className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            业主补充信息
-          </span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="text-[10px] text-muted-foreground truncate">C 端提交评估时填写</span>
+          <Quote className="h-3 w-3 text-graphite shrink-0" />
+          <span className="text-xs font-medium text-graphite">业主补充信息</span>
+          <span className="text-dove">·</span>
+          <span className="text-xs text-graphite truncate">C 端提交评估时填写</span>
         </div>
-        <span className="text-[10px] text-muted-foreground font-bold shrink-0 ml-2">
-          {remarks.length} 字
-        </span>
+        <span className="text-xs text-graphite font-medium shrink-0 ml-2">{remarks.length} 字</span>
       </div>
 
       {/* 主体 */}
@@ -38,23 +34,23 @@ export const OwnerNotesSection: React.FC<OwnerNotesSectionProps> = ({ lead }) =>
         {hasNotes ? (
           <div className="space-y-3">
             {hasExpected && (
-              <div className="bg-orange-50 border border-orange-200 px-3 py-2 rounded-lg text-sm font-bold text-orange-800">
+              <div className="bg-apricot-wash px-3 py-2 rounded-[12px] text-sm font-medium text-rust">
                 心理预期价：¥{lead.expectedPrice} 万
               </div>
             )}
-            <div className="border-l-2 border-orange-200 pl-3">
-              <p className="text-sm text-foreground italic leading-relaxed">{remarks}</p>
+            <div className="bg-fog border-l-2 border-l-dove rounded-[12px] pl-3 pr-3 py-2.5">
+              <p className="text-sm text-ink italic leading-relaxed">{remarks}</p>
             </div>
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-bold">
+              <span className="flex items-center gap-1 text-xs text-graphite font-medium">
                 <User className="h-3 w-3" />
                 业主提交 · {formatCreatedAt(lead.createdAt)}
               </span>
-              <span className="text-[10px] text-muted-foreground">来自 C 端估价表单</span>
+              <span className="text-xs text-graphite">来自 C 端估价表单</span>
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground italic">业主未在 C 端提交补充信息</p>
+          <p className="text-xs text-graphite italic">业主未在 C 端提交补充信息</p>
         )}
       </div>
     </section>

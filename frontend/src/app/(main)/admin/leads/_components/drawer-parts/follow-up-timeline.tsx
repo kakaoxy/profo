@@ -61,7 +61,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
           : "评估通过，未填写评估价";
     trailEvents.push({
       key: "audit",
-      title: isRejected ? "评估驳回" : "收房评估通过",
+      title: isRejected ? "评估不符 · 已放弃" : "收房评估通过",
       desc: isRejected ? `评估意见：${lead.auditReason || "未填写具体原因"}` : approvalDesc,
       time: d ? `${isFallback ? "约 " : ""}${d.toLocaleString()}` : "-",
       sortTime: d?.getTime() ?? 0,
@@ -88,27 +88,25 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
   trailEvents.sort((a, b) => b.sortTime - a.sortTime);
 
   return (
-    <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+    <section className="bg-pure-white rounded-2xl border border-dove shadow-sm overflow-hidden">
       {/* 可折叠头部 */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border text-left"
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-fog border-b border-dove text-left"
       >
         <div className="flex items-center gap-1.5 min-w-0">
-          <History className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          <History className="h-3 w-3 text-graphite shrink-0" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-graphite">
             跟进记录
           </span>
           <span className="text-muted-foreground/40">·</span>
-          <span className="text-[10px] text-muted-foreground truncate">
-            {trailEvents.length} 条事件
-          </span>
+          <span className="text-[10px] text-ash truncate">{trailEvents.length} 条事件</span>
         </div>
         <ChevronDown
           className={cn(
-            "h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0 ml-2",
+            "h-3.5 w-3.5 text-graphite transition-transform shrink-0 ml-2",
             open && "rotate-180",
           )}
         />
@@ -120,14 +118,14 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
           {/* 登记最新动态 快速录入区 */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <History className="h-3 w-3 text-primary" />
+              <History className="h-3 w-3 text-rust" />
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 登记最新动态
               </span>
             </div>
             <div className="flex gap-2">
               <select
-                className="h-11 px-3 rounded-xl border bg-muted text-xs font-bold outline-none border-border shrink-0"
+                className="h-11 px-3 rounded-inputs border border-dove bg-fog text-xs font-bold outline-none focus:border-ink/40 shrink-0"
                 value={followUpMethod}
                 onChange={(e) => setFollowUpMethod(e.target.value as FollowUpMethod)}
               >
@@ -138,12 +136,12 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
               </select>
               <input
                 placeholder="输入跟进摘要..."
-                className="flex-1 min-w-0 h-11 px-4 border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 bg-muted"
+                className="flex-1 min-w-0 h-11 px-4 border border-dove rounded-inputs text-xs placeholder:text-graphite outline-none focus:ring-2 focus:ring-ink/20 focus:border-ink/40 bg-fog"
                 value={followUpContent}
                 onChange={(e) => setFollowUpContent(e.target.value)}
               />
               <Button
-                className="rounded-xl h-11 px-6 bg-primary hover:bg-primary/90 font-bold shrink-0"
+                className="rounded-full h-11 px-6 bg-ink text-white hover:bg-ink/90 font-bold shrink-0"
                 onClick={handleAddFollowUpSubmit}
               >
                 记录
@@ -152,7 +150,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
           </div>
 
           {/* 时间线 */}
-          <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">
+          <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-dove">
             {trailEvents.map((e, i) => (
               <TimelineItem
                 key={e.key}
@@ -197,15 +195,12 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   <div className="relative group">
     <div
       className={cn(
-        "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-border flex items-center justify-center shadow-sm transition-all",
-        isNewest ? "bg-primary scale-110" : "bg-muted",
+        "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-dove flex items-center justify-center shadow-sm transition-all",
+        isNewest ? "bg-ink scale-110" : "bg-fog",
       )}
     >
       <Icon
-        className={cn(
-          "h-2.5 w-2.5",
-          isNewest ? "text-primary-foreground" : "text-muted-foreground",
-        )}
+        className={cn("h-2.5 w-2.5", isNewest ? "text-white" : "text-graphite")}
       />
     </div>
     <div className="flex flex-col">
@@ -213,18 +208,18 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
         <span
           className={cn(
             "text-xs font-black uppercase tracking-tight truncate",
-            isNewest ? "text-foreground" : "text-muted-foreground",
+            isNewest ? "text-ink" : "text-graphite",
           )}
         >
           {title}
         </span>
-        <span className="text-[9px] font-bold text-muted-foreground shrink-0">{time}</span>
+        <span className="text-xs text-ash shrink-0">{time}</span>
       </div>
-      <div className="mt-1.5 p-3 bg-card border border-border rounded-xl shadow-sm text-xs text-muted-foreground leading-relaxed italic group-hover:border-primary/20 transition-colors">
+      <div className="mt-1.5 p-3 bg-pure-white border border-dove rounded-xl shadow-sm text-xs text-graphite leading-relaxed italic group-hover:border-ink/40 transition-colors">
         {desc}
         {user && (
           <div className="mt-1 flex justify-end">
-            <span className="text-[9px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground font-bold">
+            <span className="text-[9px] px-1.5 py-0.5 bg-fog rounded text-ash font-bold">
               {user}
             </span>
           </div>

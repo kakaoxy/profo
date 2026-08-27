@@ -97,7 +97,7 @@ export const LeadDrawer: React.FC<Props> = ({
 
         <div
           key={lead.id}
-          className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-muted/30"
+          className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-fog"
         >
           {activeTab === "info" ? (
             <InfoTab

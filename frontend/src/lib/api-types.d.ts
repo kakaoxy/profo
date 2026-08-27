@@ -3014,6 +3014,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/projects/{marketing_project_id}/visit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报房源访问埋点
+         * @description 免登录，PV +1，UV 按匿名 visitor_id 去重；房源不存在返回 404
+         */
+        post: operations["create_visit_event_api_v1_public_projects__marketing_project_id__visit_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/projects/{marketing_project_id}/share-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报房源分享事件
+         * @description 需 C 端登录态（员工经附加 customer 角色访问），employee_id 服务端取当前用户；限流
+         */
+        post: operations["create_share_event_api_v1_public_projects__marketing_project_id__share_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/projects/my/share-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的房源分享统计
+         * @description 当前员工的房源分享次数 / 经我分享打开 PV/UV / 归属我的预约留资（昨日 + 累计），需登录
+         */
+        get: operations["get_my_share_stats_api_v1_public_projects_my_share_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/projects/my/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 归属我的预约客户列表
+         * @description 当前员工房源分享归因的预约客户列表（含客户脱敏手机号与房源快照），按预约时间倒序，需登录
+         */
+        get: operations["get_my_customer_bookings_api_v1_public_projects_my_customers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/projects/{marketing_project_id}": {
         parameters: {
             query?: never;
@@ -3066,6 +3146,46 @@ export interface paths {
          * @description 获取平台统计数据，无需登录
          */
         get: operations["get_platform_stats_api_v1_public_stats_platform_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 预约看房
+         * @description C端登录用户预约看房；未绑手机号返回 409，同一用户对同一房源幂等（重复预约返回既有记录 is_new=false）
+         */
+        post: operations["create_booking_api_v1_public_bookings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/bookings/my": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取我的预约列表
+         * @description 当前用户的房源预约列表（含房源快照字段），按预约时间倒序，支持按房源过滤
+         */
+        get: operations["get_my_bookings_api_v1_public_bookings_my_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3206,6 +3326,66 @@ export interface paths {
          * @description 获取指定线索的详细信息，仅能查看自己创建的线索
          */
         get: operations["get_lead_detail_api_v1_public_leads__lead_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/valuations/visit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报估价页访问埋点
+         * @description 免登录，PV +1，UV 按匿名 visitor_id 去重
+         */
+        post: operations["create_visit_event_api_v1_public_valuations_visit_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/valuations/share-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报估价页分享事件
+         * @description 需 C 端登录态（员工经附加 customer 角色访问），employee_id 服务端取当前用户；限流
+         */
+        post: operations["create_share_event_api_v1_public_valuations_share_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/valuations/my/share-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的评估分享统计
+         * @description 当前员工的估价页分享次数 / 经我分享打开 PV/UV / 分享归因我的线索数（昨日 + 累计），需登录
+         */
+        get: operations["get_my_share_stats_api_v1_public_valuations_my_share_stats_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6641,7 +6821,7 @@ export interface components {
             evaluating: number;
             /**
              * Rejected
-             * @description 已驳回数量
+             * @description 已放弃数量（含他司已成交）
              */
             rejected: number;
             /**
@@ -6824,16 +7004,21 @@ export interface components {
             signed: number;
             /**
              * Rejected
-             * @description 已驳回数量
+             * @description 已放弃数量
              */
             rejected: number;
+            /**
+             * Lost To Competitor
+             * @description 他司已成交数量（展示端与已放弃合并汇总）
+             */
+            lost_to_competitor: number;
         };
         /**
          * LeadStatus
          * @description 线索状态枚举.
          * @enum {string}
          */
-        LeadStatus: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+        LeadStatus: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
         /**
          * LeadUpdate
          * @description 更新线索请求.
@@ -8971,7 +9156,7 @@ export interface components {
              * @description 状态代码
              * @enum {string}
              */
-            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
             /**
              * Status Display
              * @description 状态显示名称
@@ -9069,9 +9254,14 @@ export interface components {
             signed: number;
             /**
              * Rejected
-             * @description 已驳回数量
+             * @description 已放弃数量
              */
             rejected: number;
+            /**
+             * Lost To Competitor
+             * @description 他司已成交数量
+             */
+            lost_to_competitor: number;
         };
         /**
          * PublicCommunityAnalysisResponse
@@ -9174,6 +9364,17 @@ export interface components {
              * @description 昵称
              */
             nickname: string;
+            /**
+             * Avatar
+             * @description 头像URL
+             */
+            avatar?: string | null;
+            /**
+             * Is Referrer
+             * @description 是否命中内部分享人(角色标签：True=分享人，False=房源顾问)
+             * @default false
+             */
+            is_referrer: boolean;
         };
         /**
          * PublicConsultantInfo
@@ -9190,6 +9391,58 @@ export interface components {
              * @description 顾问手机号(脱敏)
              */
             phone?: string | null;
+        };
+        /**
+         * PublicCustomerBookingItem
+         * @description C端「归属我的预约客户」列表项（房源分享归因，员工侧我的客户）.
+         */
+        PublicCustomerBookingItem: {
+            /**
+             * Id
+             * @description 预约ID
+             */
+            id: number;
+            /**
+             * Marketing Project Id
+             * @description 房源ID
+             */
+            marketing_project_id: number;
+            /**
+             * Project Title
+             * @description 房源标题
+             */
+            project_title: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name?: string | null;
+            /**
+             * Cover Image
+             * @description 封面图URL
+             */
+            cover_image?: string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Total Price
+             * @description 总价(万元)
+             */
+            total_price?: number | null;
+            /**
+             * Customer Phone Masked
+             * @description 客户手机号(脱敏，前3后4，中间****；无手机号时空串)
+             */
+            customer_phone_masked: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 预约时间
+             */
+            created_at: string;
         };
         /**
          * PublicFollowupItem
@@ -9355,7 +9608,7 @@ export interface components {
              * @description 状态代码
              * @enum {string}
              */
-            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
             /**
              * Status Display
              * @description 状态显示名称
@@ -9439,7 +9692,7 @@ export interface components {
              * @description 状态代码
              * @enum {string}
              */
-            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
             /**
              * Status Display
              * @description 状态显示名称
@@ -9549,7 +9802,7 @@ export interface components {
              * @description 状态
              * @enum {string}
              */
-            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
             /**
              * Remarks
              * @description 备注
@@ -9737,6 +9990,90 @@ export interface components {
              * @description 昵称
              */
             nickname: string;
+        };
+        /**
+         * PublicProjectBookingCreate
+         * @description C端房源预约创建请求.
+         *
+         *     visitor_id 为可选归因键：前端生成并缓存于 storage 的匿名访客 ID，
+         *     用于回查该访客最近一次带 referrer 的 project_visits 埋点完成分享归因；
+         *     未提供或无匹配埋点时 referrer_user_id 为空。
+         */
+        PublicProjectBookingCreate: {
+            /**
+             * Marketing Project Id
+             * @description 房源ID
+             */
+            marketing_project_id: number;
+            /**
+             * Visitor Id
+             * @description 匿名访客ID(分享归因用，可选)
+             */
+            visitor_id?: string | null;
+        };
+        /**
+         * PublicProjectBookingItem
+         * @description C端房源预约列表项（含房源快照字段）.
+         */
+        PublicProjectBookingItem: {
+            /**
+             * Id
+             * @description 预约ID
+             */
+            id: number;
+            /**
+             * Marketing Project Id
+             * @description 房源ID
+             */
+            marketing_project_id: number;
+            /**
+             * Project Title
+             * @description 房源标题
+             */
+            project_title: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name?: string | null;
+            /**
+             * Cover Image
+             * @description 封面图URL
+             */
+            cover_image?: string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout: string;
+            /**
+             * Total Price
+             * @description 总价(万元)
+             */
+            total_price: number;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 预约时间
+             */
+            created_at: string;
+        };
+        /**
+         * PublicProjectBookingResponse
+         * @description C端房源预约创建响应.
+         *
+         *     组合式而非平铺：is_new 是「本次请求是否新建」的操作元信息而非记录字段，
+         *     嵌套 booking 与 PublicLoginResponse 嵌套 user 的风格一致，
+         *     同时保持 PublicProjectBookingItem 可复用于列表响应。
+         */
+        PublicProjectBookingResponse: {
+            /** @description 预约记录(含房源快照) */
+            booking: components["schemas"]["PublicProjectBookingItem"];
+            /**
+             * Is New
+             * @description 本次请求是否新建预约（幂等命中既有记录时为 false）
+             */
+            is_new: boolean;
         };
         /**
          * PublicProjectDetail
@@ -10019,6 +10356,64 @@ export interface components {
             completed_date?: string | null;
         };
         /**
+         * PublicShareEventRequest
+         * @description C端分享事件上报请求（需登录，房源/评估共用）.
+         */
+        PublicShareEventRequest: {
+            /**
+             * Share Type
+             * @description 分享方式：card(转发)/timeline(朋友圈)
+             * @enum {string}
+             */
+            share_type: "card" | "timeline";
+        };
+        /**
+         * PublicShareStatsResponse
+         * @description C端「我的分享统计」响应（房源/评估共用，昨日 + 累计）.
+         */
+        PublicShareStatsResponse: {
+            /**
+             * Share Count
+             * @description 分享次数(累计)
+             */
+            share_count: number;
+            /**
+             * Pv
+             * @description 经我分享的打开次数 PV(累计)
+             */
+            pv: number;
+            /**
+             * Uv
+             * @description 经我分享的打开人数 UV(visitor_id 去重，累计)
+             */
+            uv: number;
+            /**
+             * Lead Count
+             * @description 留资数(累计；房源=归属我的预约，评估=分享归因我的线索)
+             */
+            lead_count: number;
+            /**
+             * Yesterday Share Count
+             * @description 昨日分享次数(Asia/Shanghai 自然日)
+             */
+            yesterday_share_count: number;
+            /**
+             * Yesterday Pv
+             * @description 昨日打开次数 PV
+             */
+            yesterday_pv: number;
+            /**
+             * Yesterday Uv
+             * @description 昨日打开人数 UV
+             */
+            yesterday_uv: number;
+            /**
+             * Yesterday Lead Count
+             * @description 昨日留资数
+             */
+            yesterday_lead_count: number;
+        };
+        /**
          * PublicSoldProjectItem
          * @description C端已售项目项.
          */
@@ -10104,6 +10499,17 @@ export interface components {
              * @description 每页数量
              */
             page_size: number;
+        };
+        /**
+         * PublicTrackingEventResponse
+         * @description C端埋点事件写入响应（访问/分享共用）.
+         */
+        PublicTrackingEventResponse: {
+            /**
+             * Id
+             * @description 事件记录ID
+             */
+            id: number;
         };
         /**
          * PublicUserInfo
@@ -10204,6 +10610,30 @@ export interface components {
              * @description 更新时间
              */
             updated_at: string;
+        };
+        /**
+         * PublicVisitEventRequest
+         * @description C端访问埋点上报请求（免登录，房源/评估共用）.
+         *
+         *     visitor_id 为前端生成并缓存于 storage 的匿名访客 ID（UV 去重键）；
+         *     referrer 非空即原样落库（与招募 visit 口径一致，不做内部用户校验）。
+         */
+        PublicVisitEventRequest: {
+            /**
+             * Visitor Id
+             * @description 匿名访客ID(UV去重键，前端生成)
+             */
+            visitor_id: string;
+            /**
+             * Referrer
+             * @description 来源员工ID(分享参数透传)
+             */
+            referrer?: string | null;
+            /**
+             * Source
+             * @description 进入渠道
+             */
+            source?: string | null;
         };
         /**
          * PublishStatus
@@ -10663,6 +11093,26 @@ export interface components {
              * @description 归属我的线索数
              */
             lead_count: number;
+            /**
+             * Yesterday Share Count
+             * @description 昨日分享次数（Asia/Shanghai 自然日）
+             */
+            yesterday_share_count: number;
+            /**
+             * Yesterday Pv
+             * @description 昨日经我分享的打开次数 PV
+             */
+            yesterday_pv: number;
+            /**
+             * Yesterday Uv
+             * @description 昨日经我分享的打开人数 UV
+             */
+            yesterday_uv: number;
+            /**
+             * Yesterday Lead Count
+             * @description 昨日归属我的线索数
+             */
+            yesterday_lead_count: number;
         };
         /**
          * RecruitQRCodeGenerateRequest
@@ -18262,6 +18712,130 @@ export interface operations {
             };
         };
     };
+    create_visit_event_api_v1_public_projects__marketing_project_id__visit_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                marketing_project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicVisitEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTrackingEventResponse"];
+                };
+            };
+            /** @description 房源不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_share_event_api_v1_public_projects__marketing_project_id__share_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                marketing_project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicShareEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTrackingEventResponse"];
+                };
+            };
+            /** @description 房源不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_share_stats_api_v1_public_projects_my_share_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicShareStatsResponse"];
+                };
+            };
+        };
+    };
+    get_my_customer_bookings_api_v1_public_projects_my_customers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicCustomerBookingItem"][];
+                };
+            };
+        };
+    };
     get_project_detail_api_v1_public_projects__marketing_project_id__get: {
         parameters: {
             query?: never;
@@ -18343,6 +18917,85 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPlatformStats"];
+                };
+            };
+        };
+    };
+    create_booking_api_v1_public_bookings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicProjectBookingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProjectBookingResponse"];
+                };
+            };
+            /** @description 房源不存在或未发布 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 用户未绑定手机号 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_bookings_api_v1_public_bookings_my_get: {
+        parameters: {
+            query?: {
+                /** @description 按房源ID过滤 */
+                marketing_project_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProjectBookingItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -18550,6 +19203,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_visit_event_api_v1_public_valuations_visit_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicVisitEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTrackingEventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_share_event_api_v1_public_valuations_share_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicShareEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTrackingEventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_share_stats_api_v1_public_valuations_my_share_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicShareStatsResponse"];
                 };
             };
         };

@@ -243,9 +243,12 @@ class LeadService:
             if new_unit is not None:
                 lead.unit_price = new_unit
 
-        # 评估决策流转：状态变更为 PENDING_VISIT/REJECTED 时，记录审核时间与审核人
+        # 评估决策流转：状态变更为 PENDING_VISIT/REJECTED/LOST_TO_COMPETITOR 时，记录审核时间与审核人
         # 仅在状态实际变化时写入，避免重复更新字段时覆盖审计记录
-        if update_data.status in (LeadStatus.PENDING_VISIT, LeadStatus.REJECTED) and old_status != update_data.status:
+        if (
+            update_data.status in (LeadStatus.PENDING_VISIT, LeadStatus.REJECTED, LeadStatus.LOST_TO_COMPETITOR)
+            and old_status != update_data.status
+        ):
             lead.audit_time = datetime.now(timezone.utc)
             lead.auditor_id = updater_id
 

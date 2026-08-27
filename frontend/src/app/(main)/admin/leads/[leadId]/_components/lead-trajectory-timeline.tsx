@@ -22,6 +22,8 @@ type TrailEvent = {
   sortTime: number;
   icon: React.ElementType;
   user?: string;
+  /** 终态节点配色：competitor = 他司已成交（bg-fog/text-rust 系） */
+  tone?: "competitor";
 };
 
 const COMMUNICATION_TITLE_MAP: Record<FollowUpMethod, string> = {
@@ -74,19 +76,25 @@ export function LeadTrajectoryTimeline({ lead, followUps }: LeadTrajectoryTimeli
     });
   });
 
-  // 3. 驳回事件（条件：已驳回且有 auditReason，且未在评估历史中体现）
-  // 评估历史已覆盖正常的评估价调整，这里仅补充"驳回"语义节点
-  if (lead.status === LeadStatus.REJECTED && lead.auditReason && evalHistories.length === 0) {
+  // 3. 放弃/关闭事件（条件：终态且有 auditReason，且未在评估历史中体现）
+  // 评估历史已覆盖正常的评估价调整，这里仅补充"放弃 / 他司已成交"语义节点
+  if (
+    (lead.status === LeadStatus.REJECTED || lead.status === LeadStatus.LOST_TO_COMPETITOR) &&
+    lead.auditReason &&
+    evalHistories.length === 0
+  ) {
     const raw = lead.auditTime ?? lead.updatedAt;
     const auditDate = safeParseDate(raw);
     const isFallback = !lead.auditTime;
+    const isLost = lead.status === LeadStatus.LOST_TO_COMPETITOR;
     events.push({
       key: "audit",
-      title: "评估驳回",
+      title: isLost ? "他司已成交" : "已放弃",
       desc: `评估意见：${lead.auditReason || "未填写具体原因"}`,
       time: `${isFallback ? "约 " : ""}${safeFormatDate(raw, "yyyy/MM/dd HH:mm:ss")}`,
       sortTime: auditDate?.getTime() ?? 0,
       icon: Gavel,
+      tone: isLost ? "competitor" : undefined,
     });
   }
 
@@ -112,14 +120,14 @@ export function LeadTrajectoryTimeline({ lead, followUps }: LeadTrajectoryTimeli
   events.sort((a, b) => b.sortTime - a.sortTime);
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4">
+    <div className="bg-card border border-dove rounded-2xl p-4">
       <div className="mb-4 flex items-center gap-2">
-        <History className="h-4 w-4 text-primary" />
+        <History className="h-4 w-4 text-muted-foreground" />
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
           跟进记录
         </span>
       </div>
-      <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">
+      <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-dove">
         {events.map((e, i) => (
           <TimelineItem
             key={e.key}
@@ -129,6 +137,7 @@ export function LeadTrajectoryTimeline({ lead, followUps }: LeadTrajectoryTimeli
             icon={e.icon}
             isNewest={i === 0}
             user={e.user}
+            tone={e.tone}
           />
         ))}
       </div>
@@ -143,21 +152,26 @@ interface TimelineItemProps {
   icon: React.ElementType;
   isNewest?: boolean;
   user?: string;
+  tone?: "competitor";
 }
 
-function TimelineItem({ title, desc, time, icon: Icon, isNewest, user }: TimelineItemProps) {
+function TimelineItem({ title, desc, time, icon: Icon, isNewest, user, tone }: TimelineItemProps) {
   return (
     <div className="relative group">
       <div
         className={cn(
-          "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-border flex items-center justify-center shadow-sm transition-all",
-          isNewest ? "bg-primary scale-110" : "bg-muted",
+          "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-dove flex items-center justify-center shadow-sm transition-all",
+          isNewest ? (tone === "competitor" ? "bg-fog scale-110" : "bg-ink scale-110") : "bg-fog",
         )}
       >
         <Icon
           className={cn(
             "h-2.5 w-2.5",
-            isNewest ? "text-primary-foreground" : "text-muted-foreground",
+            isNewest
+              ? tone === "competitor"
+                ? "text-rust"
+                : "text-white"
+              : "text-muted-foreground",
           )}
         />
       </div>
@@ -173,11 +187,11 @@ function TimelineItem({ title, desc, time, icon: Icon, isNewest, user }: Timelin
           </span>
           <span className="text-[9px] font-bold text-muted-foreground shrink-0">{time}</span>
         </div>
-        <div className="mt-1.5 p-3 bg-muted/40 border border-border rounded-xl text-xs text-muted-foreground leading-relaxed italic group-hover:border-primary/20 transition-colors">
+        <div className="mt-1.5 p-3 bg-fog border border-dove rounded-xl text-xs text-muted-foreground leading-relaxed italic group-hover:border-ink/40 transition-colors">
           {desc}
           {user && (
             <div className="mt-1 flex justify-end">
-              <span className="text-[9px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground font-bold">
+              <span className="text-[9px] px-1.5 py-0.5 bg-fog rounded text-muted-foreground font-bold">
                 {user}
               </span>
             </div>

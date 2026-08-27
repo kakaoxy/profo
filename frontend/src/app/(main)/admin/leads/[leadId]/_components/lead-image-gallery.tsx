@@ -13,7 +13,7 @@ export function LeadImageGallery({ images, onImageClick }: LeadImageGalleryProps
 
   if (images.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-muted/40 py-12 text-center text-sm text-muted-foreground">
+      <div className="rounded-xl border border-dashed border-dove bg-fog py-12 text-center text-sm text-muted-foreground">
         暂无图片
       </div>
     );
@@ -41,7 +41,7 @@ export function LeadImageGallery({ images, onImageClick }: LeadImageGalleryProps
             key={`${src}-${i}`}
             type="button"
             onClick={() => onImageClick(i)}
-            className="w-[80vw] shrink-0 snap-start aspect-[4/3] rounded-xl bg-muted overflow-hidden"
+            className="w-[80vw] shrink-0 snap-start aspect-[4/3] rounded-xl bg-fog overflow-hidden"
             aria-label={`查看第 ${i + 1} 张图片`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -62,7 +62,7 @@ export function LeadImageGallery({ images, onImageClick }: LeadImageGalleryProps
             key={`${src}-${i}`}
             type="button"
             onClick={() => onImageClick(i)}
-            className="aspect-[4/3] rounded-lg bg-muted overflow-hidden cursor-pointer"
+            className="aspect-[4/3] rounded-lg bg-fog overflow-hidden cursor-pointer"
             aria-label={`查看第 ${i + 1} 张图片`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

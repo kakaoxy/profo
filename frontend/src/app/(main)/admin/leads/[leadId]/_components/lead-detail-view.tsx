@@ -6,7 +6,8 @@ import { ArrowLeft } from "lucide-react";
 
 import { Lead, FollowUp } from "../../types";
 import { isValidUrl } from "@/lib/validators";
-import { getStatusStyleConfig } from "@/lib/status-colors";
+import { cn } from "@/lib/utils";
+import { LEAD_STATUS_META } from "../../_lib/lead-status-meta";
 import { LeadImageGallery } from "./lead-image-gallery";
 import { LeadBasicInfo } from "./lead-basic-info";
 import { LeadTrajectoryTimeline } from "./lead-trajectory-timeline";
@@ -23,7 +24,7 @@ export function LeadDetailView({ lead, initialFollowUps }: LeadDetailViewProps) 
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [followUps, setFollowUps] = useState<FollowUp[]>(initialFollowUps);
 
-  const statusConfig = getStatusStyleConfig(lead.status);
+  const statusMeta = LEAD_STATUS_META[lead.status];
 
   // 统一过滤图片 URL（仅允许 http/https 与相对路径），保证 gallery 与 lightbox 索引一致
   const safeImages = useMemo(
@@ -32,13 +33,13 @@ export function LeadDetailView({ lead, initialFollowUps }: LeadDetailViewProps) 
   );
 
   return (
-    <div className="flex flex-1 flex-col bg-muted/30">
+    <div className="flex flex-1 flex-col bg-fog">
       {/* 顶部 sticky 返回栏 */}
-      <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/80 px-2 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-dove bg-card/80 px-2 backdrop-blur-xl">
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex h-10 w-10 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted"
+          className="flex h-10 w-10 items-center justify-center rounded-md text-foreground transition-colors hover:bg-fog"
           aria-label="返回"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -47,9 +48,12 @@ export function LeadDetailView({ lead, initialFollowUps }: LeadDetailViewProps) 
           {lead.communityName || "线索详情"}
         </span>
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${statusConfig.className}`}
+          className={cn(
+            statusMeta.badgeClass,
+            "px-2 py-0.5 text-[10px] font-bold whitespace-nowrap",
+          )}
         >
-          {statusConfig.label}
+          {statusMeta.label}
         </span>
       </header>
 

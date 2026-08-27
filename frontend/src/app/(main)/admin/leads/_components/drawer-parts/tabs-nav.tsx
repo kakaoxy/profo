@@ -32,16 +32,14 @@ export const TabsNav: React.FC<Props> = ({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-6 text-xs font-bold uppercase tracking-widest transition-all relative",
-                activeTab === tab.id
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground",
+                "flex items-center gap-2 px-6 text-xs font-medium tracking-wide transition-all relative",
+                activeTab === tab.id ? "text-ink" : "text-graphite hover:text-ink",
               )}
             >
               {tab.icon}
               {tab.label}
               {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-primary rounded-t-full"></div>
+                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-ink rounded-full"></div>
               )}
             </button>
           ))}

@@ -66,6 +66,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     visited: 0,
     signed: 0,
     rejected: 0,
+    lost_to_competitor: 0,
   };
 
   // 创建人筛选标签展示名：取当前页首条线索的 creator_name（后端已按 creator_id 过滤）

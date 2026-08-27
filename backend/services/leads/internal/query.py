@@ -96,7 +96,13 @@ class LeadQueryService:
                 func.lower(Lead.community_name).like(f"%{escape_like(search).lower()}%", escape="\\"),
             )
         if statuses:
-            query = query.filter(Lead.status.in_(statuses))
+            # 「已放弃」聚合口径：rejected 为 umbrella，隐含 lost_to_competitor（他司成交归入放弃）
+            has_rejected = LeadStatus.REJECTED in statuses
+            has_lost = LeadStatus.LOST_TO_COMPETITOR in statuses
+            effective_statuses = list(statuses)
+            if has_rejected and not has_lost:
+                effective_statuses.append(LeadStatus.LOST_TO_COMPETITOR)
+            query = query.filter(Lead.status.in_(effective_statuses))
         if district:
             query = query.filter(
                 func.lower(Lead.district).like(f"%{escape_like(district).lower()}%", escape="\\"),
@@ -148,12 +154,12 @@ class LeadQueryService:
             .count()
         )
 
-        # 已驳回
+        # 已放弃（含他司已成交：两终态合并为同一漏斗口径）
         rejected = (
             self.db.query(Lead)
             .filter(
                 Lead.is_deleted.is_(False),
-                Lead.status == LeadStatus.REJECTED,
+                Lead.status.in_([LeadStatus.REJECTED, LeadStatus.LOST_TO_COMPETITOR]),
             )
             .count()
         )
@@ -243,7 +249,13 @@ class LeadQueryService:
             .filter(Lead.is_deleted.is_(False), self._acquired_filter(user_id))
         )
         if status is not None:
-            query = query.filter(Lead.status == status)
+            # 「已放弃」聚合口径：rejected 为 umbrella，隐含 lost_to_competitor（他司成交归入放弃）
+            if status == LeadStatus.REJECTED:
+                query = query.filter(
+                    Lead.status.in_([LeadStatus.REJECTED, LeadStatus.LOST_TO_COMPETITOR]),
+                )
+            else:
+                query = query.filter(Lead.status == status)
 
         total = query.count()
         items = query.order_by(desc(Lead.created_at)).offset((page - 1) * page_size).limit(page_size).all()

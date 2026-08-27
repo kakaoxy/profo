@@ -62,24 +62,22 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
   ];
 
   return (
-    <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-      <div className="bg-muted/30 px-4 py-2.5 border-b border-border flex items-center justify-between">
+    <section className="bg-pure-white rounded-cards shadow-steep-sm overflow-hidden">
+      <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Layers className="h-3 w-3 text-muted-foreground" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            房屋参数
-          </span>
+          <Layers className="h-3 w-3 text-graphite" />
+          <span className="text-xs font-medium text-graphite">房屋参数</span>
         </div>
-        <span className="text-[10px] text-muted-foreground font-bold">{params.length} 项</span>
+        <span className="text-xs text-graphite font-medium">{params.length} 项</span>
       </div>
       <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
         {params.map((p) => (
           <div key={p.label} className="flex flex-col gap-1 min-w-0">
-            <span className="text-[9px] font-black text-muted-foreground uppercase flex items-center gap-1">
+            <span className="text-xs text-graphite flex items-center gap-1">
               <p.icon className="h-3 w-3 shrink-0" />
               {p.label}
             </span>
-            <span className="text-xs font-bold text-foreground truncate">{p.value}</span>
+            <span className="text-sm text-ink font-medium tabular-nums truncate">{p.value}</span>
           </div>
         ))}
       </div>

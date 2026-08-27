@@ -57,16 +57,16 @@ export function LeadFollowUpForm({ leadId, onFollowUpsChange }: LeadFollowUpForm
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+    <div className="bg-card border border-dove rounded-2xl p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <History className="h-4 w-4 text-primary" />
+        <History className="h-4 w-4 text-muted-foreground" />
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
           登记最新动态
         </span>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <select
-          className="h-11 px-3 rounded-xl border border-border bg-muted text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 sm:w-32"
+          className="h-11 px-3 rounded-xl border border-dove bg-fog text-xs font-bold outline-none focus:ring-2 focus:ring-ink/20 sm:w-32"
           value={method}
           onChange={(e) => setMethod(e.target.value as FollowUpMethod)}
           disabled={isSubmitting}
@@ -78,7 +78,7 @@ export function LeadFollowUpForm({ leadId, onFollowUpsChange }: LeadFollowUpForm
           ))}
         </select>
         <input
-          className="flex-1 h-11 px-4 border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 bg-muted"
+          className="flex-1 h-11 px-4 border border-dove rounded-xl text-xs outline-none focus:ring-2 focus:ring-ink/20 bg-fog"
           placeholder="输入跟进摘要..."
           maxLength={500}
           value={content}
@@ -93,7 +93,7 @@ export function LeadFollowUpForm({ leadId, onFollowUpsChange }: LeadFollowUpForm
         />
         <Button
           type="button"
-          className="h-11 rounded-xl bg-primary hover:bg-primary/90 font-bold w-full sm:w-auto sm:px-6"
+          className="h-11 rounded-xl bg-ink hover:bg-ink/90 font-bold w-full sm:w-auto sm:px-6"
           onClick={handleSubmit}
           disabled={!canSubmit}
         >

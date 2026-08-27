@@ -74,6 +74,10 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
   初始化系统权限点，为 4 个内置角色分配默认权限集
 - add_lead_eval_history_and_expected_price: 幂等创建 lead_eval_histories 表（评估历史）+ 索引
   idx_lead_eval_history_lead + 为 leads 表添加 expected_price 列（业主心理预期价）
+- add_lead_status_lost_to_competitor: 幂等收敛 PostgreSQL leadstatus enum 为大写
+  'LOST_TO_COMPETITOR' 值（他司已成交终态；SQLEnum 未配 values_callable 以 .name
+  大写为 DB 标签，小写历史脏数据经 RENAME VALUE 修正，API 层仍用小写 value）；
+  类型不存在时告警跳过
 - add_project_document_category: 为 project_documents 表添加 category 列（文书分类，6 大类）
 - migrate_uploads_to_oss: 启动期仅改写 DB URL 为 OSS URL（仅 storage_backend=oss 时执行，幂等：
   已是 OSS URL 的记录跳过）；本地文件上传由带外脚本 `python -m migrations.migrate_uploads_to_oss`
@@ -162,6 +166,7 @@ from migrations._user_security import (
 # 独立迁移模块
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
+from migrations.add_lead_status_lost_to_competitor import add_lead_status_lost_to_competitor
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
 from migrations.add_project_document_category import add_project_document_category
 from migrations.backfill_lead_total_price_from_expected import backfill_lead_total_price_from_expected
@@ -259,6 +264,7 @@ def _run_all_migrations(engine: Engine) -> None:
         add_permission_foreign_indexes(engine)
         add_reports_indexes(engine)
         add_lead_eval_history_and_expected_price(engine)
+        add_lead_status_lost_to_competitor(engine)
         add_lead_referrer_column(engine)
         add_project_document_category(engine)
         backfill_lead_total_price_from_expected(engine)

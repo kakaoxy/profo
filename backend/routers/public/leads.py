@@ -35,9 +35,10 @@ router = APIRouter(prefix="/public/leads", tags=["public-leads"])
 LEAD_STATUS_DISPLAY_MAP = {
     "pending_assessment": ("待评估", "#FFA500"),
     "pending_visit": ("待看房", "#2196F3"),
-    "rejected": ("已驳回", "#F44336"),
+    "rejected": ("已放弃", "#F44336"),
     "visited": ("已看房", "#4CAF50"),
     "signed": ("已签约", "#9C27B0"),
+    "lost_to_competitor": ("他司已成交", "#B7410E"),
 }
 
 
@@ -258,6 +259,7 @@ def get_my_acquired_stats(
         visited=stats.get(LeadStatus.VISITED.value, 0),
         signed=stats.get(LeadStatus.SIGNED.value, 0),
         rejected=stats.get(LeadStatus.REJECTED.value, 0),
+        lost_to_competitor=stats.get(LeadStatus.LOST_TO_COMPETITOR.value, 0),
     )
 
 

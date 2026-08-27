@@ -11,8 +11,17 @@ import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { LeadTabValue, LeadStatus } from "../types";
+import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
 
 const VALID_TAB_VALUES: LeadTabValue[] = ["all", ...Object.values(LeadStatus)];
+/** 顶部状态 Tab：lost_to_competitor 归属到「已放弃」（rejected）Tab，不单列 */
+const TAB_STATUSES = Object.values(LeadStatus).filter(
+  (status) => status !== LeadStatus.LOST_TO_COMPETITOR,
+);
+
+/** 状态 Tab 统一 Steep 激活态（与 projects 页一致：ink 实底 + 白字） */
+const TAB_TRIGGER_CLASS =
+  "text-xs px-3 text-graphite hover:text-ink data-[state=active]:bg-ink data-[state=active]:text-white";
 
 function isValidTabValue(value: string): value is LeadTabValue {
   return VALID_TAB_VALUES.includes(value as LeadTabValue);
@@ -61,40 +70,15 @@ export function LeadsToolbar({
           }}
           className="w-full sm:w-auto"
         >
-          <TabsList className="h-10 bg-muted/50 p-1 rounded-lg flex-wrap">
-            <TabsTrigger value="all" className="text-xs px-3">
+          <TabsList className="h-auto bg-fog p-1 rounded-cards border-none flex-wrap min-h-10">
+            <TabsTrigger value="all" className={TAB_TRIGGER_CLASS}>
               全部
             </TabsTrigger>
-            <TabsTrigger
-              value="pending_assessment"
-              className="text-xs px-3 data-[state=active]:bg-status-pending/10 data-[state=active]:text-status-pending"
-            >
-              待评估
-            </TabsTrigger>
-            <TabsTrigger
-              value="pending_visit"
-              className="text-xs px-3 data-[state=active]:bg-status-visit/10 data-[state=active]:text-status-visit"
-            >
-              待看房
-            </TabsTrigger>
-            <TabsTrigger
-              value="visited"
-              className="text-xs px-3 data-[state=active]:bg-status-selling/10 data-[state=active]:text-status-selling"
-            >
-              已看房
-            </TabsTrigger>
-            <TabsTrigger
-              value="signed"
-              className="text-xs px-3 data-[state=active]:bg-status-signing/10 data-[state=active]:text-status-signing"
-            >
-              已签约
-            </TabsTrigger>
-            <TabsTrigger
-              value="rejected"
-              className="text-xs px-3 data-[state=active]:bg-muted data-[state=active]:text-foreground"
-            >
-              已驳回
-            </TabsTrigger>
+            {TAB_STATUSES.map((status) => (
+              <TabsTrigger key={status} value={status} className={TAB_TRIGGER_CLASS}>
+                {LEAD_STATUS_META[status].label}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
 
@@ -102,13 +86,13 @@ export function LeadsToolbar({
         {creatorId && (
           <Badge
             variant="secondary"
-            className="h-9 px-3 gap-1.5 rounded-lg bg-primary/10 text-primary"
+            className="h-9 px-3 gap-1.5 rounded-full bg-apricot-wash text-rust"
           >
             {creatorLabel}
             <button
               type="button"
               onClick={onClearCreatorId}
-              className="ml-0.5 inline-flex items-center justify-center rounded-full hover:bg-primary/20 p-0.5 transition-colors"
+              className="ml-0.5 inline-flex items-center justify-center rounded-full hover:bg-rust/15 p-0.5 transition-colors"
               aria-label="清除创建人筛选"
             >
               <X className="h-3 w-3" />
@@ -120,13 +104,13 @@ export function LeadsToolbar({
       {/* Right: Actions */}
       <div className="flex w-full lg:w-auto gap-3 items-center">
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+        <div className="flex items-center gap-1 bg-fog p-1 rounded-cards">
           <button
             className={cn(
-              "flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+              "flex items-center justify-center px-3 py-1.5 rounded-inputs text-xs font-medium transition-all cursor-pointer",
               viewMode === "table"
-                ? "bg-card shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+                ? "bg-pure-white shadow-steep-sm text-ink"
+                : "text-graphite hover:text-ink",
             )}
             onClick={() => onViewModeChange("table")}
           >
@@ -135,10 +119,10 @@ export function LeadsToolbar({
           </button>
           <button
             className={cn(
-              "flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+              "flex items-center justify-center px-3 py-1.5 rounded-inputs text-xs font-medium transition-all cursor-pointer",
               viewMode === "grid"
-                ? "bg-card shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+                ? "bg-pure-white shadow-steep-sm text-ink"
+                : "text-graphite hover:text-ink",
             )}
             onClick={() => onViewModeChange("grid")}
           >
@@ -149,7 +133,7 @@ export function LeadsToolbar({
 
         <Button
           variant="outline"
-          className="flex-1 lg:flex-none bg-background border-border text-foreground hover:bg-muted"
+          className="flex-1 lg:flex-none rounded-full border border-dove bg-pure-white text-ink hover:bg-fog"
           onClick={() => toast.success("正在生成报表...")}
         >
           <Download className="mr-2 h-4 w-4" />
@@ -158,11 +142,11 @@ export function LeadsToolbar({
 
         <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
           <Button
-            className="flex-1 lg:flex-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+            className="flex-1 lg:flex-none rounded-full bg-ink text-white hover:bg-ink/90 h-10 px-4"
             onClick={onAddLead}
           >
             <Plus className="mr-2 h-4 w-4" />
-            新增线索
+            录入新线索
           </Button>
         </HasPermission>
       </div>

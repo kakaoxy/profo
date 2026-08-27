@@ -27,24 +27,18 @@ const KpiCard: React.FC<KpiCardProps> = ({
   className,
 }) => (
   <div
-    className={cn(
-      "rounded-2xl border border-border bg-card shadow-sm p-4 flex flex-col gap-1",
-      className,
-    )}
+    className={cn("bg-pure-white rounded-cards shadow-steep-sm p-4 flex flex-col gap-1", className)}
   >
-    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+    <span className="text-xs font-medium text-graphite flex items-center gap-1.5">
       <Icon className="h-3 w-3" />
       {label}
     </span>
     <span
-      className={cn(
-        "text-2xl font-black tabular-nums text-foreground leading-tight",
-        valueClassName,
-      )}
+      className={cn("text-2xl font-medium tabular-nums text-ink leading-tight", valueClassName)}
     >
       {value}
     </span>
-    <span className={cn("text-[10px] font-bold text-muted-foreground", metaClassName)}>{meta}</span>
+    <span className={cn("text-xs font-medium text-graphite", metaClassName)}>{meta}</span>
   </div>
 );
 
@@ -60,7 +54,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
     hasEval && deltaValue != null && deltaPctStr != null ? (
       <span
         className={cn(
-          deltaValue > 0 ? "text-success" : deltaValue < 0 ? "text-error" : "text-muted-foreground",
+          deltaValue > 0 ? "text-success" : deltaValue < 0 ? "text-error" : "text-graphite",
         )}
       >
         {deltaValue > 0 ? "+" : ""}
@@ -79,12 +73,12 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
       : "评估价 ≥ 报价";
 
   const deviationValueClassName = !hasEval
-    ? "text-muted-foreground"
+    ? "text-graphite"
     : deltaValue! > 0
       ? "text-success"
       : deltaValue! < 0
         ? "text-error"
-        : "text-muted-foreground";
+        : "text-graphite";
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -95,7 +89,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
         value={
           <>
             ¥{lead.totalPrice}
-            <span className="text-xs font-bold text-muted-foreground ml-1">万</span>
+            <span className="text-xs font-medium text-graphite ml-1">万</span>
           </>
         }
         meta={`¥${lead.unitPrice.toFixed(2)} 万/㎡`}
@@ -105,12 +99,11 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
       <KpiCard
         icon={Target}
         label="评估价"
-        className={hasEval ? "bg-emerald-50 border-emerald-100" : undefined}
         value={
           hasEval ? (
             <>
               ¥{lead.evalPrice}
-              <span className="text-xs font-bold text-muted-foreground ml-1">万</span>
+              <span className="text-xs font-medium text-graphite ml-1">万</span>
             </>
           ) : (
             "待评估"
@@ -126,17 +119,16 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
         value={
           <>
             {lead.area}
-            <span className="text-xs font-bold text-muted-foreground ml-1">㎡</span>
+            <span className="text-xs font-medium text-graphite ml-1">㎡</span>
           </>
         }
         meta={`¥${lead.unitPrice.toFixed(2)} 万/㎡`}
       />
 
-      {/* 卡片4：报价偏离（warm 风格） */}
+      {/* 卡片4：报价偏离（正负语义保留在文字功能色） */}
       <KpiCard
         icon={TrendingUp}
         label="报价偏离"
-        className="bg-orange-50 border-orange-100"
         valueClassName={deviationValueClassName}
         value={hasEval && deltaPctStr != null ? `${deltaPctStr}%` : "--"}
         meta={deviationMeta}

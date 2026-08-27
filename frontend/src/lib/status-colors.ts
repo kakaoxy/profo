@@ -76,6 +76,8 @@ export const LEAD_STATUS_MAPPING: Record<LeadStatus, StatusType> = {
   [LeadStatus.VISITED]: "selling",
   [LeadStatus.SIGNED]: "signing",
   [LeadStatus.REJECTED]: "rejected",
+  // 兼容新增线索状态 lost_to_competitor（leads 模块已改用本地 _lib/lead-status-meta.ts，此处仅为满足穷尽 Record 的类型要求）
+  [LeadStatus.LOST_TO_COMPETITOR]: "rejected",
 };
 
 /** 项目状态映射：将项目状态字符串映射到通用 StatusType（支持中英文+L3简写） */
@@ -280,7 +282,12 @@ export function getStatusStyleConfig(status: string): { label: string; className
       className: STATUS_BADGE_CLASS_MAP.signing,
     },
     rejected: {
-      label: "已驳回",
+      label: "已放弃",
+      className: STATUS_BADGE_CLASS_MAP.rejected,
+    },
+    // 新增终态 lost_to_competitor：无此条目时 dashboard 线索表会裸显枚举串
+    lost_to_competitor: {
+      label: "他司已成交",
       className: STATUS_BADGE_CLASS_MAP.rejected,
     },
   };

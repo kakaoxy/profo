@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lead, FilterState, LeadTabValue } from "../types";
+import { Lead, FilterState, LeadStatus, LeadTabValue } from "../types";
 
 /** 解析楼层信息，返回"低"/"中"/"高"/"未知" */
 export function getFloorCategory(floorInfo: string): string {
@@ -54,9 +54,18 @@ export function useLeadsFilter(initialLeads: Lead[]) {
   const searchQuery = searchParams.get("search") || "";
   const statusesParam = searchParams.get("statuses") || "";
   const creatorId = searchParams.get("creator_id") || "";
-  const activeTab: LeadTabValue = statusesParam
-    ? (statusesParam.split(",")[0] as LeadTabValue)
-    : "all";
+
+  // 「已放弃」Tab 聚合 rejected + lost_to_competitor（他司成交归属到放弃）：
+  // URL 若含这两个状态之一即视为激活 rejected Tab
+  const activeTab: LeadTabValue = (() => {
+    const parts = statusesParam.split(",").filter(Boolean);
+    const foldRejected = parts.some(
+      (s) => s === LeadStatus.REJECTED || s === LeadStatus.LOST_TO_COMPETITOR,
+    );
+    if (foldRejected) return LeadStatus.REJECTED;
+    if (parts.length > 0) return parts[0] as LeadTabValue;
+    return "all";
+  })();
 
   /** 更新 URL 参数，过滤条件变化时重置到第 1 页 */
   const updateUrlParams = useCallback(
@@ -107,7 +116,16 @@ export function useLeadsFilter(initialLeads: Lead[]) {
 
   const setActiveTab = useCallback(
     (tabValue: LeadTabValue) => {
-      updateUrlParams({ statuses: tabValue === "all" ? undefined : tabValue });
+      if (tabValue === "all") {
+        updateUrlParams({ statuses: undefined });
+        return;
+      }
+      // 「已放弃」Tab 聚合 rejected + lost_to_competitor（他司成交归属到放弃）
+      if (tabValue === LeadStatus.REJECTED) {
+        updateUrlParams({ statuses: `${LeadStatus.REJECTED},${LeadStatus.LOST_TO_COMPETITOR}` });
+        return;
+      }
+      updateUrlParams({ statuses: tabValue });
     },
     [updateUrlParams],
   );

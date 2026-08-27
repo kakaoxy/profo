@@ -13,7 +13,7 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
   const stages = [
     { key: "total", label: "线索", value: total, color: "bg-primary" },
     { key: "evaluating", label: "评估", value: evaluating, color: "bg-primary/80" },
-    { key: "rejected", label: "驳回", value: rejected, color: "bg-red-400" },
+    { key: "rejected", label: "放弃", value: rejected, color: "bg-red-400" },
     { key: "visiting", label: "看房", value: visiting, color: "bg-primary/60" },
     { key: "signed", label: "签约", value: signed, color: "bg-primary/40" },
   ];

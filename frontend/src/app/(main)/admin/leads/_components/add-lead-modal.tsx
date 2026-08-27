@@ -8,6 +8,7 @@ import { FloorInput } from "@/components/common";
 import { ImageUpload } from "./add-lead-parts/image-upload";
 import { CommunityImagePicker, type PickerImageItem } from "./community-image-picker";
 import { listCommunityImagesForLeadAction } from "@/app/(main)/admin/communities/images/actions/upload-image";
+import { cn } from "@/lib/utils";
 
 interface Props {
   isOpen: boolean;
@@ -143,7 +144,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         onClick={onClose}
       />
 
-      <div className="relative bg-background w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative bg-pure-white w-full max-w-2xl rounded-cards shadow-steep flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <h2 className="text-xl font-black font-sans tracking-tight">
@@ -188,7 +189,10 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     placeholder="例如: 静安区"
-                    className="w-full h-12 pl-10 pr-4 border rounded-xl bg-background outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
+                    className={cn(
+                      "w-full h-12 pl-10 pr-4 rounded-inputs border border-dove bg-pure-white text-sm font-medium outline-none",
+                      "focus:ring-2 focus:ring-ink/20 focus:border-ink/40",
+                    )}
                     value={formData.district}
                     onChange={(e) => setFormData({ ...formData, district: e.target.value })}
                   />
@@ -200,7 +204,10 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                 </label>
                 <input
                   placeholder="例如: 彭浦"
-                  className="w-full h-12 px-4 border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
+                  className={cn(
+                    "w-full h-12 px-4 rounded-inputs border border-dove bg-pure-white text-sm font-medium outline-none",
+                    "focus:ring-2 focus:ring-ink/20 focus:border-ink/40",
+                  )}
                   value={formData.businessArea}
                   onChange={(e) => setFormData({ ...formData, businessArea: e.target.value })}
                 />
@@ -208,7 +215,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             </div>
           </div>
 
-          <div className="bg-muted p-6 rounded-2xl space-y-6 border border-border">
+          <div className="bg-fog p-6 rounded-cards space-y-6 border border-dove">
             <div className="flex items-center gap-2 mb-2">
               <Ruler className="h-4 w-4 text-muted-foreground" />
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
@@ -227,14 +234,20 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                 <input
                   type="number"
                   step="0.1"
-                  className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-bold bg-background"
+                  className={cn(
+                    "w-full h-11 px-4 rounded-inputs border border-dove bg-pure-white text-sm font-bold tabular-nums outline-none",
+                    "focus:ring-2 focus:ring-ink/20 focus:border-ink/40",
+                  )}
                   value={formData.area}
                   onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                 />
               </FormItem>
               <FormItem label="朝向">
                 <select
-                  className="w-full h-11 border rounded-lg bg-background text-sm font-medium"
+                  className={cn(
+                    "w-full h-11 rounded-inputs border border-dove bg-pure-white text-sm font-medium outline-none",
+                    "focus:ring-2 focus:ring-ink/20 focus:border-ink/40",
+                  )}
                   value={formData.orientation}
                   onChange={(e) => setFormData({ ...formData, orientation: e.target.value })}
                 >
@@ -254,13 +267,16 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
               <FormItem label="用户报价 (万) *">
                 <input
                   type="number"
-                  className="w-full h-11 px-4 border border-primary/20 rounded-lg outline-none text-sm font-black text-primary bg-background"
+                  className={cn(
+                    "w-full h-11 px-4 rounded-inputs outline-none text-sm font-bold text-ink tabular-nums",
+                    "border border-dove bg-pure-white focus:ring-2 focus:ring-ink/20 focus:border-ink/40",
+                  )}
                   value={formData.totalPrice}
                   onChange={(e) => setFormData({ ...formData, totalPrice: e.target.value })}
                 />
               </FormItem>
               <FormItem label="计算单价">
-                <div className="h-11 flex items-center px-4 bg-muted rounded-lg text-xs font-black text-muted-foreground">
+                <div className="h-11 flex items-center px-4 rounded-inputs bg-fog text-xs font-medium text-graphite tabular-nums">
                   {calculatedUnitPrice} 万/㎡
                 </div>
               </FormItem>
@@ -274,7 +290,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             type="button"
             disabled={!formData.communityId}
             onClick={() => setPickerOpen(true)}
-            className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-border bg-background text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/40"
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-inputs border border-dove bg-pure-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:border-ink/40"
           >
             <Images className="h-4 w-4" />
             {formData.communityId ? "从小区户型图库选择" : "请先选择小区后可从户型图库选择"}
@@ -287,7 +303,10 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             <textarea
               rows={3}
               placeholder="输入房源核心优势、业主动机等..."
-              className="w-full p-4 border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm transition-all"
+              className={cn(
+                "w-full p-4 rounded-inputs border border-dove bg-pure-white text-sm outline-none transition-all",
+                "focus:ring-2 focus:ring-ink/20 focus:border-ink/40",
+              )}
               value={formData.remarks}
               onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
             />
@@ -296,15 +315,15 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
 
         <div className="border-t p-6 flex flex-col sm:flex-row gap-3">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={onClose}
-            className="order-2 sm:order-1 flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-xs"
+            className="order-2 sm:order-1 flex-1 h-12 rounded-full bg-pure-white border border-dove text-graphite hover:text-ink hover:bg-fog/50 hover:border-ink/60 font-bold uppercase tracking-widest text-xs"
           >
             取消
           </Button>
           <Button
             onClick={handleSubmit}
-            className="order-1 sm:order-2 flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
+            className="order-1 sm:order-2 flex-1 h-12 rounded-full bg-ink text-white hover:bg-ink/90 font-bold uppercase tracking-widest text-xs"
           >
             {isEdit ? "保存修改" : "确认录入线索"}
           </Button>

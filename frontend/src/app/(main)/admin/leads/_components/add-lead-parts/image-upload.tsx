@@ -105,7 +105,7 @@ export const ImageUpload: React.FC<Props> = ({
         {images.map((img, idx) => (
           <div
             key={`${img}-${idx}`}
-            className="aspect-square relative rounded-xl overflow-hidden border group bg-muted"
+            className="aspect-square relative rounded-xl overflow-hidden border group bg-fog"
           >
             {/* 
               使用 next/image 保持优化能力
@@ -137,7 +137,7 @@ export const ImageUpload: React.FC<Props> = ({
             type="button"
             onClick={() => !isUploading && fileInputRef.current?.click()}
             disabled={isUploading}
-            className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-all bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:text-ink hover:border-ink/40 transition-all bg-fog/50 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="添加图片"
           >
             {isUploading ? (
@@ -157,7 +157,7 @@ export const ImageUpload: React.FC<Props> = ({
         )}
 
         {!canAddMore && images.length >= maxImages && (
-          <div className="aspect-square border-2 border-dashed border-status-pending/30 rounded-xl flex flex-col items-center justify-center text-status-pending bg-status-pending/10/50">
+          <div className="aspect-square border-2 border-dashed border-dove rounded-xl flex flex-col items-center justify-center text-graphite bg-fog/50">
             <AlertCircle className="h-5 w-5 mb-1" />
             <span className="text-[8px] font-black uppercase tracking-widest">已满</span>
           </div>

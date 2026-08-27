@@ -91,6 +91,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
   const queryParams: QueryParams = {
     page: page,
     page_size: page_size,
+    contract_sort: true,
   };
 
   if (params.status && params.status !== "all") {

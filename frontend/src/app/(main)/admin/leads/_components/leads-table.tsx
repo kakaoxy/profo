@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { isValidUrl } from "@/lib/validators";
 import { safeFormatDate } from "@/lib/formatters";
 import { Lead } from "../types";
-import { getStatusStyleConfig } from "@/lib/status-colors";
+import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,36 +44,36 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
 }) => {
   return (
     <table className="w-full border-collapse">
-      <thead className="bg-muted border-b border-border">
-        <tr className="text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <th className="p-4 pl-6 lg:pl-4 font-medium">小区 / 房源信息</th>
-          <th className="p-4 pl-6 hidden lg:table-cell font-medium">区域</th>
-          <th className="p-4 hidden md:table-cell font-medium">户型 / 面积</th>
-          <th className="p-4 hidden sm:table-cell font-medium text-right">总价 / 单价</th>
-          <th className="p-4 text-center font-medium">状态</th>
-          <th className="p-4 hidden xl:table-cell font-medium">录入人</th>
-          <th className="p-4 hidden xl:table-cell font-medium text-right whitespace-nowrap">
+      <thead className="border-b border-dove">
+        <tr className="text-left text-xs uppercase tracking-wider text-graphite font-normal">
+          <th className="p-4 pl-6 lg:pl-4">小区 / 房源信息</th>
+          <th className="p-4 pl-6 hidden lg:table-cell">区域</th>
+          <th className="p-4 hidden md:table-cell">户型 / 面积</th>
+          <th className="p-4 hidden sm:table-cell text-right">总价 / 单价</th>
+          <th className="p-4 text-center">状态</th>
+          <th className="p-4 hidden xl:table-cell">录入人</th>
+          <th className="p-4 hidden xl:table-cell text-right whitespace-nowrap">
             评估价
           </th>
-          <th className="p-4 hidden xl:table-cell font-medium whitespace-nowrap">创建时间</th>
-          <th className="p-4 hidden xl:table-cell font-medium whitespace-nowrap">更新时间</th>
-          <th className="p-4 pr-6 text-right font-medium">操作</th>
+          <th className="p-4 hidden xl:table-cell whitespace-nowrap">创建时间</th>
+          <th className="p-4 hidden xl:table-cell whitespace-nowrap">更新时间</th>
+          <th className="p-4 pr-6 text-right">操作</th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-border">
+      <tbody className="divide-y divide-dove">
         {leads.map((lead) => {
-          const config = getStatusStyleConfig(lead.status);
+          const config = LEAD_STATUS_META[lead.status];
 
           return (
             <tr
               key={lead.id}
-              className="hover:bg-muted transition-colors group cursor-pointer"
+              className="hover:bg-fog/50 transition-colors group cursor-pointer"
               onClick={() => onOpenDetail(lead.id)}
             >
               {/* 小区 / 房源信息 */}
               <td className="p-4 pl-6 lg:pl-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-16 overflow-hidden rounded-md bg-muted border border-border relative flex items-center justify-center shrink-0">
+                  <div className="h-12 w-16 overflow-hidden rounded-md bg-fog border border-dove relative flex items-center justify-center shrink-0">
                     {lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]) ? (
                       <Image
                         src={lead.images[0]}
@@ -91,7 +91,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                     )}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-foreground text-sm truncate max-w-[180px] group-hover:text-primary transition-colors">
+                    <span className="font-medium text-ink text-sm truncate max-w-[180px]">
                       {lead.communityName}
                     </span>
                     <span className="text-xs text-muted-foreground font-mono tracking-tight">
@@ -122,7 +122,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               {/* 总价 / 单价 */}
               <td className="p-4 hidden sm:table-cell">
                 <div className="flex flex-col items-end">
-                  <span className="text-sm font-bold text-foreground tabular-nums">
+                  <span className="text-sm font-medium text-ink tabular-nums">
                     {lead.totalPrice > 0 ? `¥${lead.totalPrice}万` : "-"}
                   </span>
                   <span className="text-xs text-muted-foreground tabular-nums">
@@ -135,10 +135,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               <td className="p-4 text-center">
                 <Badge
                   variant="secondary"
-                  className={cn(
-                    "px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none",
-                    config.className,
-                  )}
+                  className={cn("px-3 py-1 text-xs", config.badgeClass)}
                 >
                   {config.label}
                 </Badge>
@@ -146,7 +143,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
 
               {/* 录入人 */}
               <td className="p-4 hidden xl:table-cell">
-                <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                <span className="text-sm text-muted-foreground bg-fog px-2 py-1 rounded-md">
                   {lead.referrerName || lead.creatorName || "-"}
                 </span>
               </td>
@@ -182,7 +179,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 w-8 p-0 rounded-full transition-all"
+                      className="text-graphite hover:text-ink hover:bg-fog h-8 w-8 p-0 rounded-full transition-all"
                       onClick={() => onEdit(lead)}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -195,7 +192,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-muted-foreground hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full transition-all"
+                          className="text-graphite hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full transition-all"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

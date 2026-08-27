@@ -34,7 +34,7 @@ export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
   ];
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4">
+    <div className="bg-card border border-dove rounded-2xl p-4">
       <div className="grid grid-cols-2 gap-3">
         {fields.map((field) => (
           <div key={field.label} className="flex flex-col gap-0.5">

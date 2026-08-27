@@ -115,10 +115,10 @@ export function CommunityImagePicker({
                     disabled={isExisting}
                     className={`relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all ${
                       isSelected
-                        ? "border-primary ring-2 ring-primary/30"
+                        ? "border-ink ring-2 ring-ink/30"
                         : isExisting
                           ? "border-transparent opacity-30 cursor-not-allowed"
-                          : "border-transparent hover:border-primary/40"
+                          : "border-transparent hover:border-ink/40"
                     }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -129,8 +129,8 @@ export function CommunityImagePicker({
                     />
                     {/* 选中标记 */}
                     {isSelected && (
-                      <div className="absolute top-1 right-1 rounded-full bg-primary p-0.5">
-                        <Check className="h-3 w-3 text-primary-foreground" />
+                      <div className="absolute top-1 right-1 rounded-full bg-ink p-0.5">
+                        <Check className="h-3 w-3 text-white" />
                       </div>
                     )}
                     {/* 已添加标记 */}

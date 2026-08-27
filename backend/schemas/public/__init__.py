@@ -372,6 +372,7 @@ LeadStatusType = Literal[
     "rejected",
     "visited",
     "signed",
+    "lost_to_competitor",
 ]
 
 
@@ -465,7 +466,8 @@ class PublicAcquiredLeadStatsResponse(BaseModel):
     pending_visit: int = Field(description="待看房数量")
     visited: int = Field(description="已看房数量")
     signed: int = Field(description="已签约数量")
-    rejected: int = Field(description="已驳回数量")
+    rejected: int = Field(description="已放弃数量")
+    lost_to_competitor: int = Field(description="他司已成交数量")
 
 
 class PublicAcquiredLeadPhoneResponse(BaseModel):

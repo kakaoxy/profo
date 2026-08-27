@@ -41,7 +41,7 @@ const ACQUIRED_STATUS_CHIPS: AcquiredChip[] = [
   { label: "待看房", value: "pending_visit" },
   { label: "已看房", value: "visited" },
   { label: "已签约", value: "signed" },
-  { label: "已驳回", value: "rejected" },
+  { label: "已放弃", value: "rejected" },
 ];
 
 /** 分享漏斗统计展示结构（累计 + 昨日两行；空态判定仅用累计字段）. */

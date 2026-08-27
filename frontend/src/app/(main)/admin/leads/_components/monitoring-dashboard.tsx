@@ -55,7 +55,7 @@ const AIStrategy = dynamic(
 // Loading skeleton for dynamic components
 function ComponentSkeleton({ height }: { height: string }) {
   return (
-    <div className="flex items-center justify-center bg-muted" style={{ minHeight: height }}>
+    <div className="flex items-center justify-center bg-fog" style={{ minHeight: height }}>
       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
     </div>
   );
@@ -71,7 +71,7 @@ interface MonitoringFullscreenProps {
 }
 
 const CardWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden mb-6">
+  <div className="bg-pure-white rounded-cards border border-dove shadow-steep overflow-hidden mb-6">
     {children}
   </div>
 );
@@ -80,7 +80,7 @@ const CardWrapper = ({ children }: { children: React.ReactNode }) => (
 function EmptyState({ communityName }: { communityName: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+      <div className="w-16 h-16 rounded-full bg-fog flex items-center justify-center mb-4">
         <MapPinOff className="h-8 w-8 text-muted-foreground" />
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-2">未找到小区数据</h3>
@@ -167,12 +167,12 @@ export const MonitoringFullscreen: React.FC<MonitoringFullscreenProps> = ({ lead
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in fade-in zoom-in-95 duration-300">
       {/* Header */}
-      <header className="h-14 border-b bg-card flex items-center justify-between px-4 shrink-0">
+      <header className="h-14 border-b border-dove bg-pure-white flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={onExit} aria-label="返回">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="h-6 w-px bg-border" />
+          <div className="h-6 w-px bg-dove" />
           <div>
             <h1 className="text-base font-black font-sans tracking-tight">
               {lead.communityName} · 监控看板
@@ -201,7 +201,7 @@ export const MonitoringFullscreen: React.FC<MonitoringFullscreenProps> = ({ lead
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-muted pb-12">
+      <main className="flex-1 overflow-y-auto bg-fog pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 font-sans space-y-4">
           <DashboardCards lead={lead} />
         </div>

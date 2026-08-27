@@ -158,13 +158,11 @@ export function LeadsView({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-fog">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">线索管理</h1>
-          <p className="text-sm text-muted-foreground">
-            管理和跟进房源线索，从初筛到签约的全流程追踪。
-          </p>
+          <h1 className="font-display text-3xl tracking-tight text-ink">线索管理</h1>
+          <p className="text-sm text-ash">管理和跟进房源线索，从初筛到签约的全流程追踪。</p>
         </div>
 
         <LeadsStats stats={stats} />
@@ -184,7 +182,7 @@ export function LeadsView({
           />
 
           {viewMode === "table" ? (
-            <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+            <div className="bg-pure-white rounded-cards shadow-steep overflow-hidden">
               <div className="overflow-x-auto">
                 <LeadsTable
                   leads={filteredLeads}
@@ -204,7 +202,7 @@ export function LeadsView({
           )}
         </ListView>
 
-        <div className="relative z-50 bg-card">
+        <div className="relative z-50">
           <LeadsPagination total={total} />
         </div>
 

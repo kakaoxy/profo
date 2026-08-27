@@ -56,18 +56,16 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
   };
 
   return (
-    <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+    <section className="bg-pure-white rounded-cards shadow-steep-sm overflow-hidden">
       {/* 头部 */}
-      <div className="bg-muted/30 px-4 py-2.5 border-b border-border flex items-center justify-between">
+      <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
         <div className="flex items-center gap-1.5 min-w-0">
-          <ImageIcon className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            影像库
-          </span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="text-[10px] text-muted-foreground truncate">户型图 / 实勘 / 产证</span>
+          <ImageIcon className="h-3 w-3 text-graphite shrink-0" />
+          <span className="text-xs font-medium text-graphite">影像库</span>
+          <span className="text-dove">·</span>
+          <span className="text-xs text-graphite truncate">户型图 / 实勘 / 产证</span>
         </div>
-        <span className="text-[10px] text-muted-foreground font-bold shrink-0 ml-2">
+        <span className="text-xs text-graphite font-medium shrink-0 ml-2">
           {images.length} / {MAX_COUNT}
         </span>
       </div>
@@ -78,7 +76,7 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
           {images.map((url, idx) => (
             <div
               key={`${idx}-${url}`}
-              className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-border cursor-pointer hover:border-primary/40 transition-colors"
+              className="shrink-0 w-24 h-24 rounded-[12px] overflow-hidden border border-dove cursor-pointer hover:border-ink transition-colors"
               onClick={() => setSelectedIdx(idx)}
               title={`图片 ${idx + 1}`}
             >
@@ -86,7 +84,7 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
               <img
                 src={url}
                 alt={`图片 ${idx + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-[12px]"
                 loading="lazy"
               />
             </div>
@@ -99,8 +97,8 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
               disabled={isUploading}
               onClick={() => !isUploading && fileInputRef.current?.click()}
               className={cn(
-                "shrink-0 w-24 h-24 rounded-lg border-2 border-dashed border-border hover:border-primary/40 flex flex-col items-center justify-center gap-1 text-muted-foreground",
-                isUploading && "opacity-50 cursor-not-allowed hover:border-border",
+                "shrink-0 w-24 h-24 rounded-[12px] border-2 border-dashed border-dove hover:border-ink flex flex-col items-center justify-center gap-1 text-graphite",
+                isUploading && "opacity-50 cursor-not-allowed hover:border-dove",
               )}
               title={isUploading ? "上传中..." : "上传新图片"}
             >
@@ -109,7 +107,7 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
               ) : (
                 <>
                   <Plus className="h-4 w-4" />
-                  <span className="text-[10px] font-bold">添加</span>
+                  <span className="text-[10px] font-medium">添加</span>
                 </>
               )}
             </button>
@@ -209,7 +207,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({ images, startIndex, onClo
       <img
         src={images[idx]}
         alt={`图片 ${idx + 1}`}
-        className="max-w-[80vw] max-h-[80vh] rounded-xl shadow-2xl"
+        className="max-w-[80vw] max-h-[80vh] rounded-[12px] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       />
 

@@ -233,7 +233,7 @@ class LeadFunnelResponse(BaseModel):
 
     total: int = Field(description="线索总数")
     evaluating: int = Field(description="评估中数量")
-    rejected: int = Field(description="已驳回数量")
+    rejected: int = Field(description="已放弃数量（含他司已成交）")
     visiting: int = Field(description="带看中数量")
     signed: int = Field(description="已签约数量")
 
@@ -245,7 +245,8 @@ class LeadStatsResponse(BaseModel):
     pending_visit: int = Field(description="待看房数量")
     visited: int = Field(description="已看房数量")
     signed: int = Field(description="已签约数量")
-    rejected: int = Field(description="已驳回数量")
+    rejected: int = Field(description="已放弃数量")
+    lost_to_competitor: int = Field(description="他司已成交数量（展示端与已放弃合并汇总）")
 
 
 __all__ = [
