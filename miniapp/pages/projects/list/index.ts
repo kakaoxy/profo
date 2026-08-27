@@ -139,6 +139,8 @@ interface PageCustom {
   animateServedCount(target: number): void;
   clearServedCountTimer(): void;
   servedCountTimer: ReturnType<typeof setInterval> | null;
+  /** 请求时代戳：每次 reset 加载（切 tab/搜索/筛选）+1，用于丢弃晚到的旧代翻页响应（竞态守卫） */
+  _epoch: number;
 }
 
 /** 根据 key 查 RangeOption label. */
@@ -179,6 +181,7 @@ Page<PageData, PageCustom>({
     servedCountVisible: true,
   },
   servedCountTimer: null,
+  _epoch: 0,
   onLoad() {
     this.loadList(true);
     this.loadServedCount();
@@ -326,6 +329,11 @@ Page<PageData, PageCustom>({
     return params;
   },
   async loadList(reset = false) {
+    // epoch 守卫：切 tab/搜索/筛选等 reset 加载使旧代请求失效，防止晚到响应污染新列表
+    if (reset) {
+      this._epoch += 1;
+    }
+    const myEpoch = this._epoch;
     if (reset) {
       this.setData({ loading: true, error: false, noMore: false });
     } else {
@@ -352,6 +360,10 @@ Page<PageData, PageCustom>({
       }
       const rawItems: OnSaleItem[] | SoldItem[] = response.items;
       const total = response.total;
+      if (myEpoch !== this._epoch) {
+        // 请求已过期（期间发生了新的 reset 加载），整体丢弃，不触碰当前状态
+        return;
+      }
       const newItems: DisplayItem[] = rawItems.map((it) =>
         this.toDisplay(it as OnSaleItem | SoldItem, tab)
       );
@@ -374,6 +386,10 @@ Page<PageData, PageCustom>({
         this.setData(patch);
       }
     } catch {
+      if (myEpoch !== this._epoch) {
+        // 过期请求的失败不回滚页码、不弹 toast，避免干扰新一代请求的状态
+        return;
+      }
       if (reset) {
         this.setData({ error: true, items: [] });
       } else {
@@ -382,7 +398,10 @@ Page<PageData, PageCustom>({
         wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
     } finally {
-      this.setData({ loading: false, loadingMore: false });
+      if (myEpoch === this._epoch) {
+        // 仅当前代请求负责恢复加载标志；过期请求交给接管的新代请求收尾
+        this.setData({ loading: false, loadingMore: false });
+      }
     }
   },
   onReachBottom() {

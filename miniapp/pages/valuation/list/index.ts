@@ -42,8 +42,10 @@ interface PageData {
   internalOnly: boolean;
 }
 
-/** 页面自定义方法. */
+/** 页面自定义方法（含非响应式实例字段）. */
 interface PageCustom {
+  /** 请求时代戳：每次 reset 加载（onShow 刷新/下拉刷新/重试）+1，用于丢弃晚到的旧代响应（竞态守卫） */
+  _epoch: number;
   getToken(): string;
   loadList(reset?: boolean, silent?: boolean): void;
   toDisplay(item: LeadItem): DisplayItem;
@@ -67,6 +69,8 @@ Page<PageData, PageCustom>({
     needLogin: false,
     internalOnly: false,
   },
+
+  _epoch: 0,
 
   getToken() {
     return getAccessToken();
@@ -120,6 +124,11 @@ Page<PageData, PageCustom>({
       return;
     }
     if (reset) {
+      // epoch 守卫：onShow 静默刷新/下拉刷新/重试使旧代在途请求失效（竞态丢弃）
+      this._epoch += 1;
+    }
+    const myEpoch = this._epoch;
+    if (reset) {
       // silent 时不置 loading（保留当前列表，避免骨架屏闪烁）
       this.setData({
         error: false,
@@ -139,6 +148,10 @@ Page<PageData, PageCustom>({
         data: { page, page_size: this.data.pageSize },
         // 不传 header，request.ts 按 /public/* 自动注入 c_access_token
       });
+      if (myEpoch !== this._epoch) {
+        // 请求已过期（期间发生了新的 reset 加载），整体丢弃，不触碰当前状态
+        return;
+      }
       const newItems = data.items.map((it) => this.toDisplay(it));
       if (reset) {
         this.setData({
@@ -161,6 +174,10 @@ Page<PageData, PageCustom>({
         this.setData(patch);
       }
     } catch (err) {
+      if (myEpoch !== this._epoch) {
+        // 过期请求的失败不清 token、不切内部限定态、不回滚页码、不弹 toast
+        return;
+      }
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       // /public/leads/mine 要求 C 端令牌（aud=c）；401（受众不匹配/令牌失效）或 403（无 C 端身份）时：
       // - 有 admin 令牌但 C 端令牌缺失/失效（内部员工）→ 展示内部限定态，保留有效后台登录态；
@@ -183,7 +200,10 @@ Page<PageData, PageCustom>({
         wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
     } finally {
-      this.setData({ loading: false, loadingMore: false });
+      if (myEpoch === this._epoch) {
+        // 仅当前代请求负责恢复加载标志；过期请求交给接管的新代请求收尾
+        this.setData({ loading: false, loadingMore: false });
+      }
     }
   },
 
