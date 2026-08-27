@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveImageUrl } from "./url";
+import { resolveImageUrl } from "../../utils/url";
 
 const OSS = "https://profo.oss-cn-shanghai.aliyuncs.com";
 

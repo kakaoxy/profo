@@ -3,7 +3,7 @@
  * /public 令牌选择、GET 网络重试、timeout 覆盖、内存缓存.
  */
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { request, getCacheData, DEFAULT_TIMEOUT } from "./request";
+import { request, getCacheData, DEFAULT_TIMEOUT } from "../../utils/request";
 
 type WxRequestOptions = {
   url: string;

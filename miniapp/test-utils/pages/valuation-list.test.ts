@@ -9,20 +9,20 @@ import {
   pendingReqs,
   resetTestStubs,
   wxStubs,
-} from "../../test-harness";
+} from "../test-harness";
 
-vi.mock("../../../utils/request", () => createRequestMock());
-vi.mock("../../../utils/token", () => ({
+vi.mock("../../utils/request", () => createRequestMock());
+vi.mock("../../utils/token", () => ({
   getAccessToken: vi.fn(() => "admin-tok"),
   getCAccessToken: vi.fn(() => "c-tok"),
 }));
-vi.mock("../../../utils/valuation-display", () => ({
+vi.mock("../../utils/valuation-display", () => ({
   formatDate: () => "2026-01-01",
   statusBadgeStyle: () => ({ color: "#0369a1", background: "#e0f2fe" }),
 }));
 
 beforeAll(async () => {
-  await import("./index");
+  await import("../../pages/valuation/list/index");
 });
 
 type AnyRecord = Record<string, any>;

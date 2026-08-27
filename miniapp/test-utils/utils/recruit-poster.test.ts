@@ -8,7 +8,7 @@ import {
   resolvePosterBgUrl,
   toQrcodeDataUri,
   wrapTitleLines,
-} from "./recruit-poster";
+} from "../../utils/recruit-poster";
 
 describe("estimateTextWidth", () => {
   it("CJK 全角字符按 fontSize 计宽", () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   consumeProjectListPendingTab,
   setProjectListPendingTab,
-} from "./project-list-tab";
+} from "../../utils/project-list-tab";
 
 describe("project-list-tab pending tab", () => {
   it("未写入时 consume 返回 null", () => {

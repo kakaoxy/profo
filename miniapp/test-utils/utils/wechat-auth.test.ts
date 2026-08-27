@@ -3,7 +3,7 @@
  * 临时账号标识；员工双令牌 vs C 端单令牌回退；失败路径不抛异常.
  */
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { wechatLogin } from "./wechat-auth";
+import { wechatLogin } from "../../utils/wechat-auth";
 
 type WxRequestOptions = {
   url: string;

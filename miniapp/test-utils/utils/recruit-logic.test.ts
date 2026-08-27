@@ -13,7 +13,7 @@ import {
   toMyLeadDisplayItem,
   applyLeadPhone,
   type RecruitMyLeadItem,
-} from "./recruit-logic";
+} from "../../utils/recruit-logic";
 
 describe("parseRecruitQuery", () => {
   it("解析出 campaign_id / referrer / source", () => {

@@ -4,7 +4,7 @@ import {
   formatDate,
   sliceFollowups,
   statusBadgeStyle,
-} from "./valuation-display";
+} from "../../utils/valuation-display";
 
 describe("formatDate", () => {
   it("格式化为 YYYY-MM-DD", () => {

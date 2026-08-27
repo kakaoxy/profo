@@ -14,7 +14,7 @@ import {
   clearCUserState,
   getTokenAud,
   getUserIdFromAccessToken,
-} from "./token";
+} from "../../utils/token";
 
 /** base64url 编码 JSON（无 padding，与微信手写解码输入一致）；不依赖 Buffer/atob 全局差异. */
 function b64url(obj: unknown): string {

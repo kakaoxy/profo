@@ -9,20 +9,20 @@ import {
   pendingReqs,
   resetTestStubs,
   wxStubs,
-} from "../../test-harness";
+} from "../test-harness";
 
-vi.mock("../../../utils/request", () => createRequestMock());
-vi.mock("../../../utils/url", () => ({
+vi.mock("../../utils/request", () => createRequestMock());
+vi.mock("../../utils/url", () => ({
   resolveImageUrl: (u: string | null | undefined) => u ?? "",
 }));
-vi.mock("../../../utils/served-count", () => ({
+vi.mock("../../utils/served-count", () => ({
   animateServedCount: vi.fn(),
   clearServedCountTimer: vi.fn(),
   loadServedCount: vi.fn(),
 }));
 
 beforeAll(async () => {
-  await import("./index");
+  await import("../../pages/projects/list/index");
 });
 
 type AnyRecord = Record<string, any>;

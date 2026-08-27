@@ -4,7 +4,7 @@ import {
   parseValuationQuery,
   VALUATION_SHARE_IMAGE,
   VALUATION_SHARE_TITLE,
-} from "./valuation-share";
+} from "../../utils/valuation-share";
 
 describe("parseValuationQuery", () => {
   it("解析出 referrer", () => {
