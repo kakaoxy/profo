@@ -7,10 +7,11 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import ColumnElement, desc, func, or_, select
-from sqlalchemy.orm import Session, joinedload, noload
+from sqlalchemy.orm import Session, joinedload, noload, selectinload
 
 from models.common import LeadStatus
 from models.lead import Lead
+from models.user import User
 from settings import settings
 from utils.formatters import escape_like
 
@@ -83,10 +84,13 @@ class LeadQueryService:
         """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
         # 构建查询，优化关系加载
+        # creator 附载 role/roles：供工作台 source 判定「创建者是否为员工」
+        # （has_backend_identity 依赖主角色与附加角色），避免逐行懒加载 N+1
         query = (
             self.db.query(Lead)
             .options(
-                joinedload(Lead.creator),
+                selectinload(Lead.creator).joinedload(User.role),
+                selectinload(Lead.creator).selectinload(User.roles),
                 joinedload(Lead.referrer),
                 noload(Lead.auditor),
                 noload(Lead.follow_ups),
@@ -337,10 +341,12 @@ class LeadQueryService:
 
         """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
+        # creator 附载 role/roles：source 判定需按创建者身份区分（见 routers/public/leads._lead_source）
         query = (
             self.db.query(Lead)
             .options(
-                noload(Lead.creator),
+                selectinload(Lead.creator).joinedload(User.role),
+                selectinload(Lead.creator).selectinload(User.roles),
                 noload(Lead.referrer),
                 noload(Lead.auditor),
                 noload(Lead.follow_ups),

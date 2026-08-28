@@ -73,6 +73,38 @@ def _get_status_display(status_code: str) -> tuple[str, str]:
     return display, color
 
 
+def _lead_source(lead: Lead) -> str:
+    """线索来源标签：客户分享（customer_share）或 员工直录（employee_entry）.
+
+    判定顺序：
+    - 存在分享归因（referrer_id，C 端经员工分享提交）→ customer_share；
+    - creator 存在且无后台身份（纯 C 端注册用户直接提交）→ customer_share；
+    - 其余（员工创建 / 创建人缺失的历史数据）→ employee_entry。
+
+    仅按 referrer_id 有无判定会在「C 端用户直接提交」场景误标员工直录：
+    此类线索 referrer_id 为空但 creator 是普通 C 端用户。
+    依赖查询层已预加载 creator 的 role/roles（has_backend_identity 需主/附加角色），
+    避免此处逐行懒加载 N+1。
+
+    Args:
+        lead: 线索对象（需含已加载的 creator 关系）
+
+    Returns:
+        "customer_share" 或 "employee_entry"
+
+    """
+    if lead.referrer_id:
+        return "customer_share"
+    creator = lead.creator
+    if creator is not None:
+        # 方法内 import 避免潜在循环依赖（与 LeadService._resolve_referrer_id 一致）
+        from services.system.auth import AuthService
+
+        if not AuthService.has_backend_identity(creator):
+            return "customer_share"
+    return "employee_entry"
+
+
 def get_lead_service(db: DbSessionDep) -> LeadService:
     """获取线索服务实例."""
     return LeadService(db)
@@ -326,7 +358,7 @@ def get_pending_assessment(
             remarks=lead.remarks,
             expected_price=_effective_expected_price(lead),
             images=(lead.images or [])[:3],
-            source="customer_share" if lead.referrer_id else "employee_entry",
+            source=_lead_source(lead),
             created_at=lead.created_at,
         )
         for lead in result["items_pending"]
@@ -378,7 +410,7 @@ def get_handled_assessment(
                 remarks=lead.remarks,
                 expected_price=_effective_expected_price(lead),
                 images=(lead.images or [])[:3],
-                source="customer_share" if lead.referrer_id else "employee_entry",
+                source=_lead_source(lead),
                 status=lead.status,
                 status_display=status_display,
                 eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
