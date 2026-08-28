@@ -3,7 +3,7 @@
 职责: 营销项目管理.
 """
 
-from sqlalchemy import and_, desc
+from sqlalchemy import and_, case, desc
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -97,8 +97,16 @@ class MarketingProjectService:
 
         total: int = query.count()
 
+        # 状态分组优先：在售 → 装修中(在途) → 过往案例(已售)；组内权重降序、同权重创建时间倒序（与 C 端一致）
+        status_priority = case(
+            (L4MarketingProject.project_status == MarketingProjectStatus.FOR_SALE.value, 0),
+            (L4MarketingProject.project_status == MarketingProjectStatus.IN_PROGRESS.value, 1),
+            (L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value, 2),
+            else_=3,
+        )
         items: list[L4MarketingProject] = (
             query.order_by(
+                status_priority,
                 desc(L4MarketingProject.sort_order),
                 desc(L4MarketingProject.created_at),
             )

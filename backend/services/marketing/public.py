@@ -173,8 +173,15 @@ class PublicProjectService:
         }
         validated_sort_by = validate_sort_field(sort_by, allowed_sort_fields.keys(), "sort_order")
         if validated_sort_by == "sort_order":
-            # 权重排序：与 admin 侧一致，权重越大越靠前，相同权重按创建时间倒序
+            # 状态分组优先：在售 → 装修中(在途) → 过往案例(已售)；组内权重降序、同权重创建时间倒序
+            status_priority = case(
+                (L4MarketingProject.project_status == MarketingProjectStatus.FOR_SALE.value, 0),
+                (L4MarketingProject.project_status == MarketingProjectStatus.IN_PROGRESS.value, 1),
+                (L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value, 2),
+                else_=3,
+            )
             query = query.order_by(
+                status_priority,
                 desc(L4MarketingProject.sort_order),
                 desc(L4MarketingProject.created_at),
             )
