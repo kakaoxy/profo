@@ -1,10 +1,12 @@
 /**
  * 「评估工作台」列表页（员工侧）.
  *
- * 单请求双段队列（/public/leads/pending-assessment）：
- * - 「待评估」组：分页列表（created_at 倒序），搜索仅过滤本段，触底仅追加本段；
- * - 「已处理」参考组：本人经手线索（不限时间窗，audit_time 倒序，服务端截取最近 50 条，total 为全量计数），
- *   随 reset 刷新，可点击进入只读详情（含跟进记录）。
+ * 双接口并行加载（reset 时 Promise.all，防分组瀑布）：
+ * - 「待评估」段（/public/leads/pending-assessment）：分页列表（created_at 倒序）；
+ * - 「已处理」段（/public/leads/handled-assessment）：本人经手线索全量分页
+ *   （audit_time 倒序，handled_total 为过滤后全量计数），可点击进入只读详情（含跟进记录）；
+ * - 搜索小区名称对两段同时生效（search 随 reset 带给两个接口）；
+ * - 触底加载按「已处理优先、待评估兜底」分派（已处理组物理位于页面底部）。
  * 分页范式严格套用 pages/valuation/list（epoch 竞态守卫 / 触底三重拦截 / 翻页回滚 /
  * 索引路径局部 setData / 403 引导空态）。
  * 视觉遵循 Steep 设计体系（eval-auth-hifi.html 屏B）一比一还原。
@@ -18,6 +20,7 @@ import { formatDate } from "../../../utils/valuation-display";
 type QueueItem = components["schemas"]["PendingAssessmentQueueItem"];
 type HandledItem = components["schemas"]["HandledItem"];
 type QueueResponse = components["schemas"]["PendingAssessmentQueueResponse"];
+type HandledResponse = components["schemas"]["HandledAssessmentQueueResponse"];
 
 /** 每页数量. */
 const PAGE_SIZE = 10;
@@ -88,6 +91,12 @@ interface PageData {
   pendingToday: number;
   handledItems: HandledCard[];
   handledTotal: number;
+  /** 已处理段当前页码（独立于待评估段分页）. */
+  handledPage: number;
+  /** 已处理段翻页进行中. */
+  handledLoadingMore: boolean;
+  /** 已处理段已加载满全量. */
+  handledNoMore: boolean;
   loading: boolean;
   loadingMore: boolean;
   error: boolean;
@@ -107,6 +116,7 @@ interface PageCustom {
   /** 原始已处理项索引（id → 已处理项），供跳转只读详情时经 EventChannel 传递全景数据 */
   _handledById: Record<string, HandledItem>;
   loadList(reset?: boolean, silent?: boolean): void;
+  loadHandledMore(): Promise<void>;
   toPendingCard(item: QueueItem): PendingCard;
   toHandledCard(item: HandledItem): HandledCard;
   onSearchInput(e: WechatMiniprogram.Input): void;
@@ -149,6 +159,9 @@ Page<PageData, PageCustom>({
     pendingToday: 0,
     handledItems: [],
     handledTotal: 0,
+    handledPage: 1,
+    handledLoadingMore: false,
+    handledNoMore: false,
     loading: false,
     loadingMore: false,
     error: false,
@@ -250,38 +263,51 @@ Page<PageData, PageCustom>({
     try {
       const page = reset ? 1 : this.data.page;
       const search = this.data.search.trim();
-      const data = await request<QueueResponse>({
-        url: "/public/leads/pending-assessment",
-        data: {
-          page,
-          page_size: this.data.pageSize,
-          ...(search ? { search } : {}),
-        },
-      });
-      if (myEpoch !== this._epoch) {
-        return; // 过期代整体丢弃
-      }
+      const searchParams = search ? { search } : {};
       if (reset) {
+        // reset：双接口并行拉取（待评估第 1 页 + 已处理第 1 页），search 对两段同时生效
+        const [data, handledData] = await Promise.all([
+          request<QueueResponse>({
+            url: "/public/leads/pending-assessment",
+            data: { page: 1, page_size: this.data.pageSize, ...searchParams },
+          }),
+          request<HandledResponse>({
+            url: "/public/leads/handled-assessment",
+            data: { page: 1, page_size: this.data.pageSize, ...searchParams },
+          }),
+        ]);
+        if (myEpoch !== this._epoch) {
+          return; // 过期代整体丢弃
+        }
         // 重建原始项索引，供 onItemTap/onHandledTap 传递全景数据
         this._rawById = {};
         this._handledById = {};
         data.items_pending.forEach((it) => {
           this._rawById[it.id] = it;
         });
-        data.items_handled.forEach((it) => {
+        handledData.items.forEach((it) => {
           this._handledById[it.id] = it;
         });
         this.setData({
           pendingItems: data.items_pending.map((it) => this.toPendingCard(it)),
           pendingTotal: data.pending_total,
           pendingToday: data.pending_today,
-          handledItems: data.items_handled.map((it) => this.toHandledCard(it)),
-          handledTotal: data.handled_total,
-          page,
+          handledItems: handledData.items.map((it) => this.toHandledCard(it)),
+          handledTotal: handledData.handled_total,
+          handledPage: 1,
+          handledNoMore: handledData.items.length >= handledData.handled_total,
+          page: 1,
           noMore: data.items_pending.length >= data.pending_total,
         });
       } else {
-        // 翻页仅追加待评估段：索引路径局部 setData，payload 不随累计页数增长
+        // 待评估段翻页：索引路径局部 setData，payload 不随累计页数增长
+        const data = await request<QueueResponse>({
+          url: "/public/leads/pending-assessment",
+          data: { page, page_size: this.data.pageSize, ...searchParams },
+        });
+        if (myEpoch !== this._epoch) {
+          return; // 过期代整体丢弃
+        }
         const newItems = data.items_pending.map((it) => this.toPendingCard(it));
         data.items_pending.forEach((it) => {
           this._rawById[it.id] = it;
@@ -324,12 +350,71 @@ Page<PageData, PageCustom>({
     }
   },
 
-  onReachBottom() {
-    // 触底三重拦截：加载中 / 无更多 / 已加载满
-    if (this.data.loading || this.data.loadingMore || this.data.noMore) {
+  /** 已处理段触底翻页（范式与待评估段一致：三重拦截 / epoch 守卫 / 索引路径追加 / 失败回滚）. */
+  async loadHandledMore() {
+    if (
+      !hasAnyToken() ||
+      this.data.handledLoadingMore ||
+      this.data.handledNoMore ||
+      this.data.handledItems.length >= this.data.handledTotal
+    ) {
       return;
     }
-    if (this.data.pendingItems.length >= this.data.pendingTotal) {
+    const myEpoch = this._epoch;
+    const page = this.data.handledPage + 1;
+    this.setData({ handledLoadingMore: true, handledPage: page });
+    try {
+      const search = this.data.search.trim();
+      const data = await request<HandledResponse>({
+        url: "/public/leads/handled-assessment",
+        data: {
+          page,
+          page_size: this.data.pageSize,
+          ...(search ? { search } : {}),
+        },
+      });
+      if (myEpoch !== this._epoch) {
+        return; // 过期代整体丢弃
+      }
+      const newItems = data.items.map((it) => this.toHandledCard(it));
+      data.items.forEach((it) => {
+        this._handledById[it.id] = it;
+      });
+      const patch: Record<string, unknown> = {
+        handledTotal: data.handled_total,
+        handledNoMore: this.data.handledItems.length + newItems.length >= data.handled_total,
+      };
+      const base = this.data.handledItems.length;
+      newItems.forEach((it, i) => {
+        patch[`handledItems[${base + i}]`] = it;
+      });
+      this.setData(patch);
+    } catch (err) {
+      if (myEpoch !== this._epoch) {
+        return; // 过期请求不弹 toast、不切状态、不回滚页码
+      }
+      // 翻页失败：回滚页码并重置 noMore，避免下次触底被拦截跳过本页
+      this.setData({ handledPage: Math.max(1, this.data.handledPage - 1), handledNoMore: false });
+      wx.showToast({ title: "加载失败，请重试", icon: "none" });
+    } finally {
+      if (myEpoch === this._epoch) {
+        this.setData({ handledLoadingMore: false });
+      }
+    }
+  },
+
+  onReachBottom() {
+    // 三重拦截：任一段加载中不重复触发
+    if (this.data.loading || this.data.loadingMore || this.data.handledLoadingMore) {
+      return;
+    }
+    // 已处理组物理位于页面底部，触底优先加载已处理段
+    if (this.data.handledItems.length < this.data.handledTotal) {
+      this.loadHandledMore();
+      return;
+    }
+    // 已处理已加载满：兜底加载待评估段（三重拦截：无更多 / 已加载满）
+    if (this.data.noMore || this.data.pendingItems.length >= this.data.pendingTotal) {
       return;
     }
     this.setData({ page: this.data.page + 1 });
@@ -347,7 +432,7 @@ Page<PageData, PageCustom>({
   },
 
   onSearchConfirm() {
-    // 搜索仅作用于待评估段（服务端过滤），已处理段随响应整体刷新
+    // 搜索小区名称：search 随 reset 同时作用于待评估与已处理两段（服务端过滤）
     this.loadList(true);
   },
 

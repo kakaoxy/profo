@@ -289,7 +289,7 @@ class PendingAssessmentQueueItem(BaseModel):
 
 
 class HandledItem(BaseModel):
-    """本人经手线索项（「已处理」参考组，最近 50 条）.
+    """本人经手线索项（「已处理」段，audit_time 倒序全量分页）.
 
     展示字段与 PendingAssessmentQueueItem 对齐（区域/面积/楼层/朝向/图片/来源），
     支撑工作台已处理卡与待评估卡同构渲染；
@@ -314,17 +314,22 @@ class HandledItem(BaseModel):
 
 
 class PendingAssessmentQueueResponse(BaseModel):
-    """待评估工作台单请求双段队列响应（防分组瀑布）."""
+    """待评估工作台「待评估」段响应."""
 
     items_pending: list[PendingAssessmentQueueItem] = Field(description="待评估队列（分页，created_at 倒序）")
     pending_total: int = Field(description="待评估总数")
     pending_today: int = Field(description="今日（Asia/Shanghai 自然日）新增待评估数")
     page: int = Field(description="当前页码")
     page_size: int = Field(description="每页数量")
-    items_handled: list[HandledItem] = Field(
-        description="本人经手线索（audit_time 倒序，最近 50 条；handled_total 为全量计数）"
-    )
-    handled_total: int = Field(description="本人经手总数")
+
+
+class HandledAssessmentQueueResponse(BaseModel):
+    """待评估工作台「已处理」段响应（本人经手线索，audit_time 倒序全量分页）."""
+
+    items: list[HandledItem] = Field(description="本人经手线索（分页）")
+    handled_total: int = Field(description="过滤后本人经手总数")
+    page: int = Field(description="当前页码")
+    page_size: int = Field(description="每页数量")
 
 
 class LeadAssessmentAuthorizeRequest(BaseModel):
@@ -367,6 +372,7 @@ __all__ = [
     "FollowUpBase",
     "FollowUpCreate",
     "FollowUpResponse",
+    "HandledAssessmentQueueResponse",
     "HandledItem",
     "LeadAssessmentAuthorizeRequest",
     "LeadAssessmentAuthorizeResponse",

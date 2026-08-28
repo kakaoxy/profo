@@ -436,28 +436,23 @@ class LeadService:
 
     def get_pending_assessment_queue(
         self,
-        user_id: str,
         page: int = 1,
         page_size: int | None = None,
         search: str | None = None,
     ) -> dict[str, Any]:
-        """小程序评估工作台队列：单请求双段返回（防分组瀑布）.
+        """小程序评估工作台「待评估」段：全局待评估分页队列 + 今日新增计数.
 
         - items_pending：全局待评估（pending_assessment）分页队列，created_at 倒序，
-          search 仅过滤本段（复用 query.get_list 过滤基建与展示字段口径）；
-        - items_handled：全部 auditor=当前用户 且状态 ∈
-          pending_visit/visited/rejected/lost_to_competitor 的经手记录（audit_time 倒序，
-          截取最近 HANDLED_ITEMS_LIMIT 条）+ 全量计数 handled_total；
+          search 按小区名过滤（复用 query.get_list 过滤基建与展示字段口径）；
         - pending_today：今日（Asia/Shanghai 自然日）新增待评估计数（列表统计条）。
 
         Args:
-            user_id: 当前员工用户ID（用于「已处理」参考组过滤）
             page: 页码
             page_size: 每页数量
-            search: 小区名称搜索（仅作用于待评估段）
+            search: 小区名称搜索（作用于待评估段）
 
         Returns:
-            双段队列字典
+            待评估段字典
 
         """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
@@ -467,16 +462,34 @@ class LeadService:
             search=search,
             statuses=[LeadStatus.PENDING_ASSESSMENT],
         )
-        handled = self.query_service.get_handled(user_id)
         return {
             "items_pending": pending["items"],
             "pending_total": pending["total"],
             "page": page,
             "page_size": effective_page_size,
             "pending_today": self.query_service.count_pending_new_since(cst_today_start()),
-            "items_handled": handled["items"],
-            "handled_total": handled["total"],
         }
+
+    def get_handled_leads(
+        self,
+        user_id: str,
+        page: int = 1,
+        page_size: int | None = None,
+        search: str | None = None,
+    ) -> dict[str, Any]:
+        """小程序评估工作台「已处理」段：本人经手线索全量分页（audit_time 倒序）.
+
+        Args:
+            user_id: 当前员工用户ID（仅返回本人经手线索）
+            page: 页码
+            page_size: 每页数量
+            search: 小区名称搜索
+
+        Returns:
+            已处理段字典（items/total/page/page_size）
+
+        """
+        return self.query_service.get_handled(user_id=user_id, page=page, page_size=page_size, search=search)
 
     def authorize_assessment(
         self,

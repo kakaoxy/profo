@@ -31,7 +31,7 @@
       <view class="evalmeta__today" wx:if="{{pendingToday > 0}}">今日新增 {{pendingToday}}</view>
     </view>
 
-    <!-- 搜索栏（仅过滤待评估段） -->
+    <!-- 搜索栏（同时过滤待评估与已处理两段） -->
     <view class="searchbox">
       <view class="searchbox__icon"></view>
       <input
@@ -145,11 +145,12 @@
         </view>
       </view>
 
-      <!-- 底部加载提示 -->
-      <view class="more-hint" wx:if="{{pendingItems.length > 0}}">
-        <block wx:if="{{loadingMore}}">加载中...</block>
-        <block wx:elif="{{noMore}}">没有更多了</block>
-        <block wx:else>上拉加载更多 · 待处理共 {{pendingTotal}} 条</block>
+      <!-- 底部加载提示（与触底加载优先级一致：已处理优先、待评估兜底） -->
+      <view class="more-hint" wx:if="{{pendingItems.length > 0 || handledItems.length > 0}}">
+        <block wx:if="{{loadingMore || handledLoadingMore}}">加载中...</block>
+        <block wx:elif="{{!handledNoMore && handledItems.length > 0}}">上拉加载更多 · 已处理共 {{handledTotal}} 条</block>
+        <block wx:elif="{{!noMore && pendingItems.length < pendingTotal}}">上拉加载更多 · 待处理共 {{pendingTotal}} 条</block>
+        <block wx:else>没有更多了</block>
       </view>
     </view>
   </block>

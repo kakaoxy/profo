@@ -12,6 +12,7 @@ from dependencies.common import PaginationDep
 from models.common import LeadStatus
 from models.lead import Lead
 from schemas.lead import (
+    HandledAssessmentQueueResponse,
     HandledItem,
     LeadAssessmentAuthorizeRequest,
     LeadAssessmentAuthorizeResponse,
@@ -86,7 +87,7 @@ def _pending_assessment_filter(
         int,
         Query(ge=1, le=settings.max_page_size, description="每页数量"),
     ] = settings.default_page_size,
-    search: Annotated[str | None, Query(max_length=50, description="小区名称搜索，仅作用于待评估段")] = None,
+    search: Annotated[str | None, Query(max_length=50, description="小区名称搜索（作用于待评估段）")] = None,
 ) -> PendingAssessmentFilter:
     """解析待评估工作台查询参数.
 
@@ -297,7 +298,7 @@ def get_my_acquired_stats(
 @router.get(
     "/pending-assessment",
     summary="获取待评估工作台队列",
-    description=("单请求双段返回：待评估分页队列 + 全部本人经手线索 + 今日新增计数（仅 admin/operator）"),
+    description="待评估分页队列 + 今日新增计数（仅 admin/operator）；「已处理」段请用 /handled-assessment",
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_pending_assessment(
@@ -306,9 +307,8 @@ def get_pending_assessment(
     service: LeadServiceDep,
     filters: PendingAssessmentFilterDep,
 ) -> PendingAssessmentQueueResponse:
-    """小程序员工侧待评估工作台队列（双段同响应）."""
+    """小程序员工侧待评估工作台「待评估」段."""
     result = service.get_pending_assessment_queue(
-        user_id=operator.id,
         page=filters.page,
         page_size=filters.page_size,
         search=filters.search,
@@ -332,11 +332,41 @@ def get_pending_assessment(
         for lead in result["items_pending"]
     ]
 
-    items_handled = []
-    for lead in result["items_handled"]:
+    return PendingAssessmentQueueResponse(
+        items_pending=items_pending,
+        pending_total=result["pending_total"],
+        pending_today=result["pending_today"],
+        page=result["page"],
+        page_size=result["page_size"],
+    )
+
+
+@router.get(
+    "/handled-assessment",
+    summary="获取评估工作台已处理列表",
+    description="本人经手线索全量分页（audit_time 倒序），search 按小区名过滤（仅 admin/operator）",
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_handled_assessment(
+    request: Request,
+    operator: CurrentCInternalUserDep,
+    service: LeadServiceDep,
+    pagination: PaginationDep,
+    search: Annotated[str | None, Query(max_length=50, description="小区名称搜索")] = None,
+) -> HandledAssessmentQueueResponse:
+    """小程序员工侧评估工作台「已处理」段（分页）."""
+    result = service.get_handled_leads(
+        user_id=operator.id,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        search=search,
+    )
+
+    items = []
+    for lead in result["items"]:
         status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
         status_display, _ = _get_status_display(status_code)
-        items_handled.append(
+        items.append(
             HandledItem(
                 id=lead.id,
                 community_name=lead.community_name,
@@ -356,14 +386,11 @@ def get_pending_assessment(
             ),
         )
 
-    return PendingAssessmentQueueResponse(
-        items_pending=items_pending,
-        pending_total=result["pending_total"],
-        pending_today=result["pending_today"],
+    return HandledAssessmentQueueResponse(
+        items=items,
+        handled_total=result["total"],
         page=result["page"],
         page_size=result["page_size"],
-        items_handled=items_handled,
-        handled_total=result["handled_total"],
     )
 
 

@@ -3303,9 +3303,29 @@ export interface paths {
         };
         /**
          * 获取待评估工作台队列
-         * @description 单请求双段返回：待评估分页队列 + 全部本人经手线索 + 今日新增计数（仅 admin/operator）
+         * @description 待评估分页队列 + 今日新增计数（仅 admin/operator）；「已处理」段请用 /handled-assessment
          */
         get: operations["get_pending_assessment_api_v1_public_leads_pending_assessment_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/handled-assessment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取评估工作台已处理列表
+         * @description 本人经手线索全量分页（audit_time 倒序），search 按小区名过滤（仅 admin/operator）
+         */
+        get: operations["get_handled_assessment_api_v1_public_leads_handled_assessment_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5567,8 +5587,34 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * HandledAssessmentQueueResponse
+         * @description 待评估工作台「已处理」段响应（本人经手线索，audit_time 倒序全量分页）.
+         */
+        HandledAssessmentQueueResponse: {
+            /**
+             * Items
+             * @description 本人经手线索（分页）
+             */
+            items: components["schemas"]["HandledItem"][];
+            /**
+             * Handled Total
+             * @description 过滤后本人经手总数
+             */
+            handled_total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+        };
+        /**
          * HandledItem
-         * @description 本人经手线索项（「已处理」参考组，最近 50 条）.
+         * @description 本人经手线索项（「已处理」段，audit_time 倒序全量分页）.
          *
          *     展示字段与 PendingAssessmentQueueItem 对齐（区域/面积/楼层/朝向/图片/来源），
          *     支撑工作台已处理卡与待评估卡同构渲染；
@@ -8192,7 +8238,7 @@ export interface components {
         };
         /**
          * PendingAssessmentQueueResponse
-         * @description 待评估工作台单请求双段队列响应（防分组瀑布）.
+         * @description 待评估工作台「待评估」段响应.
          */
         PendingAssessmentQueueResponse: {
             /**
@@ -8220,16 +8266,6 @@ export interface components {
              * @description 每页数量
              */
             page_size: number;
-            /**
-             * Items Handled
-             * @description 本人经手线索（audit_time 倒序，最近 50 条；handled_total 为全量计数）
-             */
-            items_handled: components["schemas"]["HandledItem"][];
-            /**
-             * Handled Total
-             * @description 本人经手总数
-             */
-            handled_total: number;
         };
         /**
          * PermissionCreate
@@ -19480,7 +19516,7 @@ export interface operations {
                 page?: number;
                 /** @description 每页数量 */
                 page_size?: number;
-                /** @description 小区名称搜索，仅作用于待评估段 */
+                /** @description 小区名称搜索（作用于待评估段） */
                 search?: string | null;
             };
             header?: never;
@@ -19496,6 +19532,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PendingAssessmentQueueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_handled_assessment_api_v1_public_leads_handled_assessment_get: {
+        parameters: {
+            query?: {
+                /** @description 小区名称搜索 */
+                search?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HandledAssessmentQueueResponse"];
                 };
             };
             /** @description Validation Error */

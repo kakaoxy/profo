@@ -14,10 +14,6 @@ from models.lead import Lead
 from settings import settings
 from utils.formatters import escape_like
 
-# 「已处理」参考组单次返回上限：total 保持全量计数，items 仅截取最近 N 条，
-# 防止经手记录随年限无界增长拖垮工作台 onShow 高频刷新路径
-HANDLED_ITEMS_LIMIT = 50
-
 
 class LeadQueryService:
     """线索查询服务.
@@ -316,21 +312,31 @@ class LeadQueryService:
             .first()
         )
 
-    def get_handled(self, user_id: str) -> dict[str, Any]:
-        """获取由指定审核人经手的线索列表与全量总数.
+    def get_handled(
+        self,
+        user_id: str,
+        page: int = 1,
+        page_size: int | None = None,
+        search: str | None = None,
+    ) -> dict[str, Any]:
+        """获取由指定审核人经手的线索列表（分页）.
 
-        供小程序评估工作台「已处理」参考组使用：auditor=user_id 且状态 ∈
+        供小程序评估工作台「已处理」段使用：auditor=user_id 且状态 ∈
         pending_visit/visited/rejected/lost_to_competitor（visited 线索
-        支持再次调整评估价，与 admin/leads 口径一致），audit_time 倒序返回最近
-        HANDLED_ITEMS_LIMIT 条；total 为满足条件的全量计数（不受截断影响）。
+        支持再次调整评估价，与 admin/leads 口径一致），audit_time 倒序全量分页；
+        search 按小区名模糊过滤（与 get_list 同口径），total 为过滤后全量计数。
 
         Args:
             user_id: 审核人用户ID
+            page: 页码
+            page_size: 每页数量
+            search: 小区名称搜索
 
         Returns:
-            包含 items（截断后）与 total（全量计数）的字典
+            包含 items、total（全量计数）、page、page_size 的字典
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = (
             self.db.query(Lead)
             .options(
@@ -354,9 +360,18 @@ class LeadQueryService:
                 Lead.audit_time.is_not(None),
             )
         )
+        if search:
+            query = query.filter(
+                func.lower(Lead.community_name).like(f"%{escape_like(search).lower()}%", escape="\\"),
+            )
         total = query.count()
-        items = query.order_by(desc(Lead.audit_time)).limit(HANDLED_ITEMS_LIMIT).all()
-        return {"items": items, "total": total}
+        items = (
+            query.order_by(desc(Lead.audit_time))
+            .offset((page - 1) * effective_page_size)
+            .limit(effective_page_size)
+            .all()
+        )
+        return {"items": items, "total": total, "page": page, "page_size": effective_page_size}
 
     def count_pending_new_since(self, since: datetime) -> int:
         """统计指定时间之后创建的待评估线索数量（「今日新增」口径）.
