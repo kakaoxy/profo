@@ -1,0 +1,345 @@
+<view class="page">
+  <!-- 数据缺失态（冷启动无 EventChannel 数据） -->
+  <view class="state" wx:if="{{missing}}">
+    <view class="state__text">数据已失效，请返回工作台重新进入</view>
+    <view class="state__btn" bindtap="onBack">返回</view>
+  </view>
+
+  <block wx:else>
+    <!-- 1. Hero：状态标签 + 线索 ID + 小区 + 区域 -->
+    <view class="panel hero">
+      <view class="hero__row">
+        <view class="stag stag--{{statusTagClass}}">{{statusTagText}}</view>
+        <view class="hero__lid">{{leadId}}</view>
+      </view>
+      <view class="hero__nm">{{community_name}}</view>
+      <view class="hero__loc" wx:if="{{district}}">{{district}}</view>
+    </view>
+
+    <!-- 2. KPI 双栏：业主报价 / 本次评估价（viewMode 展示授权结果） -->
+    <view class="panel kpi">
+      <view class="kpi__col">
+        <view class="kpi__lb">业主报价</view>
+        <view class="kpi__vl" wx:if="{{hasPrice}}">
+          <text class="kpi__cur">¥</text>{{priceText}}<text class="kpi__unit"> 万</text>
+        </view>
+        <view class="kpi__vl" wx:else>—</view>
+      </view>
+      <view class="kpi__col">
+        <view class="kpi__lb">本次评估价</view>
+        <block wx:if="{{viewMode}}">
+          <view class="kpi__vl kpi__vl--ok" wx:if="{{hasEvalPrice}}">
+            <text class="kpi__cur">¥</text>{{evalPriceText}}<text class="kpi__unit"> 万</text>
+          </view>
+          <view class="kpi__vl" wx:else>—</view>
+          <view class="kpi__sub" wx:if="{{hasEvalPrice}}">已授权 · 作为后续带看与签约的收房基准</view>
+        </block>
+        <block wx:else>
+          <view class="kpi__vl">
+            <view class="kpi__pending">待我给出</view>
+          </view>
+          <view class="kpi__sub">给出后将实时比对差值</view>
+        </block>
+      </view>
+      <view class="kpi__note" wx:if="{{!viewMode}}">批准约看排期前需先授权评估价；该价格将作为后续带看与签约的收房基准。</view>
+    </view>
+
+    <!-- 3. 参数宫格 -->
+    <view class="panel">
+      <view class="pt-grid">
+        <view class="pt" wx:for="{{paramGrid}}" wx:key="label">
+          <view class="pt__lb">{{item.label}}</view>
+          <view class="pt__vl">{{item.value}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 4. 房屋照片（有图才渲染） -->
+    <view class="panel" wx:if="{{images.length > 0}}">
+      <view class="blk-h">房屋照片<text class="blk-h__sub">共 {{images.length}} 张</text></view>
+      <view class="photo-g">
+        <view class="ph" wx:for="{{images}}" wx:key="*this" data-src="{{item}}" bindtap="onPreviewImage">
+          <image class="ph__img" src="{{item}}" mode="aspectFill" lazy-load />
+        </view>
+      </view>
+    </view>
+
+    <!-- 5. 业主备注 -->
+    <view class="panel" wx:if="{{remarks}}">
+      <view class="blk-h">业主备注</view>
+      <view class="quote">{{remarks}}</view>
+    </view>
+
+    <!-- 5.4 评估历史（viewMode 专属，按评估时间倒序，首条为当前评估价） -->
+    <view class="panel" wx:if="{{viewMode}}">
+      <view class="blk-h">评估历史<text class="blk-h__sub" wx:if="{{evalHistories.length > 0}}">共 {{evalHistories.length}} 次</text></view>
+      <view class="fu-list" wx:if="{{evalHistories.length > 0}}">
+        <view class="fu" wx:for="{{evalHistories}}" wx:key="id">
+          <view class="fu__head">
+            <view class="fu__chip">¥{{item.priceText}} 万<text class="fu__cur" wx:if="{{item.isCurrent}}">当前</text></view>
+            <view class="fu__time">{{item.timeText}}</view>
+          </view>
+          <view class="fu__tx" wx:if="{{item.remarkText}}">{{item.remarkText}}</view>
+        </view>
+      </view>
+      <view class="fu-empty" wx:elif="{{evalHistoriesLoaded}}">暂无评估记录</view>
+      <view class="fu-empty" wx:else>加载中...</view>
+    </view>
+
+    <!-- 5.5 跟进记录（viewMode 专属，按跟进时间倒序） -->
+    <view class="panel" wx:if="{{viewMode}}">
+      <view class="blk-h">跟进记录<text class="blk-h__sub" wx:if="{{followups.length > 0}}">共 {{followups.length}} 条</text></view>
+      <view class="fu-list" wx:if="{{followups.length > 0}}">
+        <view class="fu" wx:for="{{followups}}" wx:key="id">
+          <view class="fu__head">
+            <view class="fu__chip">{{item.methodText}}</view>
+            <view class="fu__time">{{item.timeText}}</view>
+          </view>
+          <view class="fu__tx">{{item.content}}</view>
+        </view>
+      </view>
+      <view class="fu-empty" wx:elif="{{followupsLoaded}}">暂无跟进记录</view>
+      <view class="fu-empty" wx:else>加载中...</view>
+    </view>
+
+    <!-- 6. 小区行情分析入口卡（手机号门槛预检后跳转既有页） -->
+    <view class="panel" bindtap="onTapCommunityAnalysis">
+      <view class="ca-entry">
+        <view class="ca-entry__ic">
+          <view class="cae-chart">
+            <view class="cae-chart__line"></view>
+          </view>
+        </view>
+        <view class="ca-entry__tx">
+          <view class="ca-entry__t1">小区行情分析</view>
+          <view class="ca-entry__t2">{{community_name}} · 成交趋势 / 价格分布 / 户型楼层</view>
+        </view>
+        <view class="ca-entry__chev">›</view>
+      </view>
+    </view>
+
+    <!-- 7. 他司成交区块（虚线分隔；viewMode 隐藏） -->
+    <view class="lost-strip" wx:if="{{!viewMode}}">
+      <view class="lost-strip__tip">房源已被其他公司成交？标记后线索将关闭，不再进入约看流程，原因将留存审核轨迹。</view>
+      <button class="lost-strip__btn" data-mode="lost" bindtap="openPanel">标记为他司成交</button>
+    </view>
+
+    <!-- 8. 元信息脚注 -->
+    <view class="meta-foot">{{viewMode ? auditTimeText + ' 处理' : created_at + ' 提交'}} · {{sourceText}}</view>
+  </block>
+</view>
+
+<!-- 底部操作栏（默认模式：三动作；viewMode 且可调整：单按钮再次评估） -->
+<view class="actionbar" wx:if="{{!missing && !viewMode}}">
+  <button class="abtn abtn--reject" data-mode="reject" bindtap="openPanel">评估不符 · 放弃</button>
+  <button class="abtn abtn--primary" data-mode="approve" bindtap="openPanel">给出评估价并批准</button>
+</view>
+<view class="actionbar" wx:if="{{!missing && viewMode && canAdjust}}">
+  <button class="abtn abtn--primary" bindtap="openAdjustPanel">调整评估价</button>
+</view>
+<!-- 操作栏占位 -->
+<view class="actionbar-placeholder" wx:if="{{!missing && (!viewMode || canAdjust)}}"></view>
+
+<!-- 遮罩 -->
+<view class="mask" wx:if="{{panelMode}}" bindtap="closePanel"></view>
+
+<!-- approve 半屏面板 -->
+<view class="sheet" wx:if="{{panelMode === 'approve'}}">
+  <view class="sheet__grab"></view>
+  <view class="sheet__head">
+    <view class="sheet__title">给出评估价并批准</view>
+    <view class="sheet__close" bindtap="closePanel">×</view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">拟收房评估价（万元）</view>
+    <view class="amount-wrap {{focusedField === 'price' ? 'amount-wrap--focus' : ''}}">
+      <text class="amount-cur">¥</text>
+      <input
+        class="amount-inp"
+        type="digit"
+        placeholder="0"
+        placeholder-class="amount-placeholder"
+        value="{{evalPrice}}"
+        data-field="price"
+        bindfocus="onFocusField"
+        bindblur="onBlurField"
+        bindinput="onPriceInput"
+      />
+      <text class="amount-unit">万</text>
+    </view>
+    <view class="diffline">
+      <block wx:if="{{diffType === 'good'}}">较业主报价低 <text class="diff-good">{{diffValue}}</text> 万 · 收房议价空间良好</block>
+      <block wx:elif="{{diffType === 'warn'}}">高于业主报价 <text class="diff-warn">{{diffValue}}</text> 万 · 请补充评估依据再确认</block>
+      <block wx:elif="{{diffType === 'same'}}">与业主报价一致，可按报价直接授权</block>
+      <block wx:elif="{{diffType === 'invalid'}}">请输入大于 0 且不超过 999 万的评估价（最多两位小数）</block>
+      <block wx:else>{{diffDefault}}</block>
+    </view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">评估意见（选填）</view>
+    <textarea
+      class="ta {{focusedField === 'apprTa' ? 'ta--focus' : ''}}"
+      maxlength="{{MAX_REMARK_APPROVE}}"
+      placeholder="补充评估依据、楼层朝向修正或与业主的沟通要点"
+      placeholder-class="ta__placeholder"
+      value="{{remark}}"
+      data-field="apprTa"
+      bindfocus="onFocusField"
+      bindblur="onBlurField"
+      bindinput="onRemarkInput"
+    />
+    <view class="ta-count">{{remarkLen}}/{{MAX_REMARK_APPROVE}}</view>
+  </view>
+  <view class="form-error" wx:if="{{formError}}">{{formError}}</view>
+  <view class="sheet__actions">
+    <button
+      class="confirm-btn"
+      loading="{{submitting}}"
+      disabled="{{!canConfirm || submitting}}"
+      bindtap="submitAuthorize"
+    >{{confirmText}}</button>
+  </view>
+</view>
+
+<!-- adjust 半屏面板（再次评估：对齐 admin「调整评估价」，追加历史不改状态） -->
+<view class="sheet" wx:if="{{panelMode === 'adjust'}}">
+  <view class="sheet__grab"></view>
+  <view class="sheet__head">
+    <view class="sheet__title">调整评估价</view>
+    <view class="sheet__close" bindtap="closePanel">×</view>
+  </view>
+  <view class="warn-strip">
+    <view class="warn-ic"></view>
+    <view class="warn-strip__tx">当前评估价 ¥{{evalPriceText}} 万。调整后将追加评估记录并更新当前价，线索状态保持不变。</view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">新评估价（万元）</view>
+    <view class="amount-wrap {{focusedField === 'price' ? 'amount-wrap--focus' : ''}}">
+      <text class="amount-cur">¥</text>
+      <input
+        class="amount-inp"
+        type="digit"
+        placeholder="0"
+        placeholder-class="amount-placeholder"
+        value="{{evalPrice}}"
+        data-field="price"
+        bindfocus="onFocusField"
+        bindblur="onBlurField"
+        bindinput="onPriceInput"
+      />
+      <text class="amount-unit">万</text>
+    </view>
+    <view class="diffline">
+      <block wx:if="{{diffType === 'good'}}">较业主报价低 <text class="diff-good">{{diffValue}}</text> 万 · 收房议价空间良好</block>
+      <block wx:elif="{{diffType === 'warn'}}">高于业主报价 <text class="diff-warn">{{diffValue}}</text> 万 · 请补充评估依据再确认</block>
+      <block wx:elif="{{diffType === 'same'}}">与业主报价一致，可按报价直接授权</block>
+      <block wx:elif="{{diffType === 'invalid'}}">请输入大于 0 且不超过 999 万的评估价（最多两位小数）</block>
+      <block wx:else>{{diffDefault}}</block>
+    </view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">调整意见（选填）</view>
+    <textarea
+      class="ta {{focusedField === 'apprTa' ? 'ta--focus' : ''}}"
+      maxlength="{{MAX_REMARK_APPROVE}}"
+      placeholder="补充调整依据，如带看后的楼层朝向修正、与业主的最新沟通要点"
+      placeholder-class="ta__placeholder"
+      value="{{remark}}"
+      data-field="apprTa"
+      bindfocus="onFocusField"
+      bindblur="onBlurField"
+      bindinput="onRemarkInput"
+    />
+    <view class="ta-count">{{remarkLen}}/{{MAX_REMARK_APPROVE}}</view>
+  </view>
+  <view class="form-error" wx:if="{{formError}}">{{formError}}</view>
+  <view class="sheet__actions">
+    <button
+      class="confirm-btn"
+      loading="{{submitting}}"
+      disabled="{{!canConfirm || submitting}}"
+      bindtap="submitAuthorize"
+    >{{confirmText}}</button>
+  </view>
+</view>
+
+<!-- reject 半屏面板 -->
+<view class="sheet" wx:if="{{panelMode === 'reject'}}">
+  <view class="sheet__grab"></view>
+  <view class="sheet__head">
+    <view class="sheet__title">评估不符 · 放弃</view>
+    <view class="sheet__close" bindtap="closePanel">×</view>
+  </view>
+  <view class="warn-strip">
+    <view class="warn-ic"></view>
+    <view class="warn-strip__tx">标记放弃后线索停止推进并留存审核轨迹，可在 Web 后台管理员处恢复或重新提交估价。</view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">放弃原因（选填）</view>
+    <textarea
+      class="ta {{focusedField === 'rejTa' ? 'ta--focus' : ''}}"
+      maxlength="{{MAX_REMARK}}"
+      placeholder="如：小区处于封控管理、资料缺失无法核实产权、报价远高于市场价等"
+      placeholder-class="ta__placeholder"
+      value="{{remark}}"
+      data-field="rejTa"
+      bindfocus="onFocusField"
+      bindblur="onBlurField"
+      bindinput="onRemarkInput"
+    />
+    <view class="ta-count">{{remarkLen}}/{{MAX_REMARK}}</view>
+  </view>
+  <view class="form-error" wx:if="{{formError}}">{{formError}}</view>
+  <view class="sheet__actions">
+    <button class="confirm-btn confirm-btn--reject" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitAuthorize">确认放弃</button>
+  </view>
+</view>
+
+<!-- lost 半屏面板 -->
+<view class="sheet" wx:if="{{panelMode === 'lost'}}">
+  <view class="sheet__grab"></view>
+  <view class="sheet__head">
+    <view class="sheet__title">标记为他司成交</view>
+    <view class="sheet__close" bindtap="closePanel">×</view>
+  </view>
+  <view class="warn-strip">
+    <view class="warn-ic"></view>
+    <view class="warn-strip__tx">标记后线索将关闭且不写入评估历史，业主报价不再展示，关闭原因留存审核轨迹。</view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">成交方与补充说明（选填）</view>
+    <textarea
+      class="ta {{focusedField === 'lostTa' ? 'ta--focus' : ''}}"
+      maxlength="{{MAX_REMARK}}"
+      placeholder="如：业主已在其他中介门店成交，可补充成交方与大致时间"
+      placeholder-class="ta__placeholder"
+      value="{{remark}}"
+      data-field="lostTa"
+      bindfocus="onFocusField"
+      bindblur="onBlurField"
+      bindinput="onRemarkInput"
+    />
+    <view class="ta-count">{{remarkLen}}/{{MAX_REMARK}}</view>
+  </view>
+  <view class="form-error" wx:if="{{formError}}">{{formError}}</view>
+  <view class="sheet__actions">
+    <button class="confirm-btn confirm-btn--lost" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitAuthorize">确认标记</button>
+  </view>
+</view>
+
+<!-- 409 幂等/状态冲突弹窗（文案随模式区分） -->
+<view class="modal" wx:if="{{showConflict}}">
+  <view class="modal__card">
+    <view class="modal__icon">!</view>
+    <view class="modal__title">{{conflictTitle}}</view>
+    <view class="modal__desc">{{conflictDesc}}</view>
+    <button class="modal__btn" bindtap="onConflictBack">返回并刷新</button>
+  </view>
+</view>
+
+<!-- 手机号绑定授权弹窗：行情分析入口未绑定手机号时触发 -->
+<phone-bind-modal
+  id="phoneModal"
+  bind:bound="onPhoneModalBound"
+  bind:gobindaccount="onPhoneModalGoBindAccount"
+/>

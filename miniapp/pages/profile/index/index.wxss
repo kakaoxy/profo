@@ -245,7 +245,19 @@
 .menu-right {
   display: flex;
   align-items: center;
+  gap: 12rpx;
   color: var(--graphite);
+}
+/* 评估工作台待办角标（>0 才渲染） */
+.menu-badge {
+  min-width: 32rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 9999rpx;
+  background: #b7410e;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 600;
+  text-align: center;
 }
 .chevron {
   font-size: 40rpx;

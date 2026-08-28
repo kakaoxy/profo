@@ -16,6 +16,7 @@ type AnyRecord = Record<string, any>;
 
 export const wxStubs = {
   navigateTo: vi.fn(),
+  navigateBack: vi.fn(),
   switchTab: vi.fn(),
   stopPullDownRefresh: vi.fn(),
   showToast: vi.fn(),

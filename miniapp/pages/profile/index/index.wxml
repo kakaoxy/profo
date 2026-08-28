@@ -101,7 +101,10 @@
             <view class="menu-sub">{{item.sub}}</view>
           </view>
         </view>
-        <view class="menu-right"><text class="chevron">›</text></view>
+        <view class="menu-right">
+          <view class="menu-badge" wx:if="{{item.key === 'evaluate' && evaluateBadge > 0}}">{{evaluateBadge}}</view>
+          <text class="chevron">›</text>
+        </view>
       </view>
     </view>
     <view class="internal-flag">内部入口由后台身份权限控制显隐，非内部用户不可见。</view>

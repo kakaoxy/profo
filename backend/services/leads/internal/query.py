@@ -3,6 +3,7 @@
 负责线索的查询操作.
 """
 
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import ColumnElement, desc, func, or_, select
@@ -12,6 +13,10 @@ from models.common import LeadStatus
 from models.lead import Lead
 from settings import settings
 from utils.formatters import escape_like
+
+# 「已处理」参考组单次返回上限：total 保持全量计数，items 仅截取最近 N 条，
+# 防止经手记录随年限无界增长拖垮工作台 onShow 高频刷新路径
+HANDLED_ITEMS_LIMIT = 50
 
 
 class LeadQueryService:
@@ -33,20 +38,24 @@ class LeadQueryService:
         """
         self.db = db
 
-    def get_by_id(self, lead_id: str, *, load_creator: bool = True) -> Lead | None:
+    def get_by_id(self, lead_id: str, *, load_creator: bool = True, for_update: bool = False) -> Lead | None:
         """根据ID获取线索.
 
         Args:
             lead_id: 线索ID
             load_creator: 是否加载创建者关系
+            for_update: 是否加行级锁（SELECT ... FOR UPDATE，锁持至事务提交，供状态流转防并发）。
+                不可与 load_creator 同用（PostgreSQL 禁止锁外连接可空侧），行锁调用请传 load_creator=False
 
         Returns:
             线索对象，不存在时返回None
 
         """
         query = self.db.query(Lead)
-        if load_creator:
+        if load_creator and not for_update:
             query = query.options(joinedload(Lead.creator), joinedload(Lead.referrer))
+        if for_update:
+            query = query.with_for_update()
         return query.filter(Lead.id == lead_id, Lead.is_deleted.is_(False)).first()
 
     def get_list(
@@ -305,4 +314,68 @@ class LeadQueryService:
             .options(joinedload(Lead.creator), joinedload(Lead.referrer))
             .filter(Lead.id == lead_id, Lead.is_deleted.is_(False), self._acquired_filter(user_id))
             .first()
+        )
+
+    def get_handled(self, user_id: str) -> dict[str, Any]:
+        """获取由指定审核人经手的线索列表与全量总数.
+
+        供小程序评估工作台「已处理」参考组使用：auditor=user_id 且状态 ∈
+        pending_visit/visited/rejected/lost_to_competitor（visited 线索
+        支持再次调整评估价，与 admin/leads 口径一致），audit_time 倒序返回最近
+        HANDLED_ITEMS_LIMIT 条；total 为满足条件的全量计数（不受截断影响）。
+
+        Args:
+            user_id: 审核人用户ID
+
+        Returns:
+            包含 items（截断后）与 total（全量计数）的字典
+
+        """
+        query = (
+            self.db.query(Lead)
+            .options(
+                noload(Lead.creator),
+                noload(Lead.referrer),
+                noload(Lead.auditor),
+                noload(Lead.follow_ups),
+                noload(Lead.price_history),
+            )
+            .filter(
+                Lead.is_deleted.is_(False),
+                Lead.auditor_id == user_id,
+                Lead.status.in_(
+                    [
+                        LeadStatus.PENDING_VISIT,
+                        LeadStatus.VISITED,
+                        LeadStatus.REJECTED,
+                        LeadStatus.LOST_TO_COMPETITOR,
+                    ],
+                ),
+                Lead.audit_time.is_not(None),
+            )
+        )
+        total = query.count()
+        items = query.order_by(desc(Lead.audit_time)).limit(HANDLED_ITEMS_LIMIT).all()
+        return {"items": items, "total": total}
+
+    def count_pending_new_since(self, since: datetime) -> int:
+        """统计指定时间之后创建的待评估线索数量（「今日新增」口径）.
+
+        Args:
+            since: 起始时间（timezone-aware，左闭）
+
+        Returns:
+            满足条件的线索数量
+
+        """
+        return int(
+            self.db.query(func.count())
+            .select_from(Lead)
+            .filter(
+                Lead.is_deleted.is_(False),
+                Lead.status == LeadStatus.PENDING_ASSESSMENT,
+                Lead.created_at >= since,
+            )
+            .scalar()
+            or 0,
         )

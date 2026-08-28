@@ -2,10 +2,12 @@
 
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from models.common import FollowUpMethod, LeadStatus
+from settings import settings
 
 
 # ----------------------
@@ -249,18 +251,129 @@ class LeadStatsResponse(BaseModel):
     lost_to_competitor: int = Field(description="他司已成交数量（展示端与已放弃合并汇总）")
 
 
+# ----------------------
+# 小程序员工侧评估工作台 Schema
+# ----------------------
+class PendingAssessmentFilter(BaseModel):
+    """待评估工作台队列查询参数（search 仅作用于待评估段）."""
+
+    page: int = Field(1, ge=1, description="页码")
+    page_size: int = Field(
+        default=settings.default_page_size,
+        ge=1,
+        le=settings.max_page_size,
+        description="每页数量",
+    )
+    search: str | None = Field(None, max_length=50, description="小区名称搜索")
+
+
+class PendingAssessmentQueueItem(BaseModel):
+    """待评估队列项（工作台卡片，兼作授权页详情数据源）.
+
+    业主报价口径 = expected_price 回退 total_price（与 admin 总价列/C 端列表一致）；
+    images 裁剪前 3 张。
+    """
+
+    id: str = Field(description="线索ID")
+    community_name: str = Field(description="小区名称")
+    district: str | None = Field(None, description="行政区")
+    layout: str | None = Field(None, description="户型")
+    area: float | None = Field(None, description="面积(m²)")
+    floor_info: str | None = Field(None, description="楼层信息")
+    orientation: str | None = Field(None, description="朝向")
+    remarks: str | None = Field(None, description="业主备注")
+    expected_price: float | None = Field(None, description="业主报价(万) = expected_price 回退 total_price")
+    images: list[str] = Field(default_factory=list, description="图片URL（前 3 张）")
+    source: Literal["customer_share", "employee_entry"] = Field(description="来源：客户分享/员工录入")
+    created_at: datetime = Field(description="创建时间")
+
+
+class HandledItem(BaseModel):
+    """本人经手线索项（「已处理」参考组，最近 50 条）.
+
+    展示字段与 PendingAssessmentQueueItem 对齐（区域/面积/楼层/朝向/图片/来源），
+    支撑工作台已处理卡与待评估卡同构渲染；
+    pending_visit/visited 线索支持再次调整评估价（对齐 admin/leads 口径）。
+    """
+
+    id: str = Field(description="线索ID")
+    community_name: str = Field(description="小区名称")
+    district: str | None = Field(None, description="行政区")
+    layout: str | None = Field(None, description="户型")
+    area: float | None = Field(None, description="面积(m²)")
+    floor_info: str | None = Field(None, description="楼层信息")
+    orientation: str | None = Field(None, description="朝向")
+    remarks: str | None = Field(None, description="业主备注")
+    expected_price: float | None = Field(None, description="业主报价(万)")
+    images: list[str] = Field(default_factory=list, description="图片URL（前 3 张）")
+    source: Literal["customer_share", "employee_entry"] = Field(description="来源：客户分享/员工录入")
+    status: LeadStatus = Field(description="流转后状态")
+    status_display: str = Field(description="状态显示名称")
+    eval_price: float | None = Field(None, description="授权评估价(万)，reject/lost 为空")
+    audit_time: datetime = Field(description="审核时间")
+
+
+class PendingAssessmentQueueResponse(BaseModel):
+    """待评估工作台单请求双段队列响应（防分组瀑布）."""
+
+    items_pending: list[PendingAssessmentQueueItem] = Field(description="待评估队列（分页，created_at 倒序）")
+    pending_total: int = Field(description="待评估总数")
+    pending_today: int = Field(description="今日（Asia/Shanghai 自然日）新增待评估数")
+    page: int = Field(description="当前页码")
+    page_size: int = Field(description="每页数量")
+    items_handled: list[HandledItem] = Field(
+        description="本人经手线索（audit_time 倒序，最近 50 条；handled_total 为全量计数）"
+    )
+    handled_total: int = Field(description="本人经手总数")
+
+
+class LeadAssessmentAuthorizeRequest(BaseModel):
+    """评估价授权请求（触发动作类，approve/reject/lost 三动作单事务原子化）.
+
+    语义对齐 admin PendingAssessmentPanel 三动作组合：
+    - approve = 录评估价（插评估历史 + 刷 eval_price）+ 流转 pending_visit；
+    - reject = 不建评估记录，仅流转 rejected（audit_reason 取 remark）；
+    - lost = 不建评估记录，仅流转 lost_to_competitor（audit_reason 取 remark）。
+    """
+
+    action: Literal["approve", "reject", "lost"] = Field(description="授权动作")
+    eval_price: Decimal | None = Field(
+        None,
+        gt=0,
+        decimal_places=2,
+        description="评估价格(万)，approve 必填",
+    )
+    remark: str | None = Field(None, max_length=500, description="评估意见/原因，三动作均选填")
+
+    @model_validator(mode="after")
+    def _approve_requires_eval_price(self) -> "LeadAssessmentAuthorizeRequest":
+        """模型级校验：approve 必带 eval_price，reject/lost 无必填项（对齐 admin 选填语义）."""
+        if self.action == "approve" and self.eval_price is None:
+            msg = "approve 动作必须提供 eval_price"
+            raise ValueError(msg)
+        return self
+
+
+class LeadAssessmentAuthorizeResponse(BaseModel):
+    """评估价授权响应（更新后的简要对象）."""
+
+    id: str = Field(description="线索ID")
+    status: LeadStatus = Field(description="流转后状态")
+    status_display: str = Field(description="状态显示名称")
+    eval_price: float | None = Field(None, description="授权评估价(万)，reject/lost 为空")
+
+
 __all__ = [
-    # Follow Up
     "FollowUpBase",
     "FollowUpCreate",
     "FollowUpResponse",
-    # Lead
+    "HandledItem",
+    "LeadAssessmentAuthorizeRequest",
+    "LeadAssessmentAuthorizeResponse",
     "LeadBase",
     "LeadCreate",
-    # Lead Eval History
     "LeadEvalHistoryCreate",
     "LeadEvalHistoryResponse",
-    # Funnel
     "LeadFunnelResponse",
     "LeadListItem",
     "LeadResponse",
@@ -268,7 +381,9 @@ __all__ = [
     "LeadUpdate",
     "PaginatedLeadListResponse",
     "PaginatedLeadResponse",
-    # Price History
+    "PendingAssessmentFilter",
+    "PendingAssessmentQueueItem",
+    "PendingAssessmentQueueResponse",
     "PriceHistoryBase",
     "PriceHistoryCreate",
     "PriceHistoryResponse",

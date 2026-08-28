@@ -9,6 +9,8 @@
     "pages/valuation/list/index",
     "pages/valuation/detail/index",
     "pages/valuation/mine/index",
+    "pages/valuation/evaluate/index",
+    "pages/valuation/authorize/index",
     "pages/about/index/index",
     "pages/profile/index/index",
     "pages/properties/list/index",

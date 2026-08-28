@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "评估授权",
+  "usingComponents": {
+    "phone-bind-modal": "/components/phone-bind-modal/index"
+  }
+}

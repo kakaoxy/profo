@@ -7,11 +7,21 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 
-from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
+from dependencies.auth import CurrentCInternalUserDep, CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from models.common import LeadStatus
 from models.lead import Lead
-from schemas.lead import LeadCreate
+from schemas.lead import (
+    HandledItem,
+    LeadAssessmentAuthorizeRequest,
+    LeadAssessmentAuthorizeResponse,
+    LeadCreate,
+    LeadEvalHistoryCreate,
+    LeadEvalHistoryResponse,
+    PendingAssessmentFilter,
+    PendingAssessmentQueueItem,
+    PendingAssessmentQueueResponse,
+)
 from schemas.public import (
     PublicAcquiredLeadListItem,
     PublicAcquiredLeadListResponse,
@@ -26,6 +36,7 @@ from schemas.public import (
     PublicLeadResponse,
 )
 from services.leads.core import LeadService
+from settings import settings
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
 from utils.image_processing import derive_thumbnail_url
@@ -67,6 +78,26 @@ def get_lead_service(db: DbSessionDep) -> LeadService:
 
 
 LeadServiceDep = Annotated[LeadService, Depends(get_lead_service)]
+
+
+def _pending_assessment_filter(
+    page: Annotated[int, Query(ge=1, description="页码")] = 1,
+    page_size: Annotated[
+        int,
+        Query(ge=1, le=settings.max_page_size, description="每页数量"),
+    ] = settings.default_page_size,
+    search: Annotated[str | None, Query(max_length=50, description="小区名称搜索，仅作用于待评估段")] = None,
+) -> PendingAssessmentFilter:
+    """解析待评估工作台查询参数.
+
+    Returns:
+        PendingAssessmentFilter: page/page_size/search 查询参数模型
+
+    """
+    return PendingAssessmentFilter(page=page, page_size=page_size, search=search)
+
+
+PendingAssessmentFilterDep = Annotated[PendingAssessmentFilter, Depends(_pending_assessment_filter)]
 
 
 @router.post(
@@ -264,6 +295,79 @@ def get_my_acquired_stats(
 
 
 @router.get(
+    "/pending-assessment",
+    summary="获取待评估工作台队列",
+    description=("单请求双段返回：待评估分页队列 + 全部本人经手线索 + 今日新增计数（仅 admin/operator）"),
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_pending_assessment(
+    request: Request,
+    operator: CurrentCInternalUserDep,
+    service: LeadServiceDep,
+    filters: PendingAssessmentFilterDep,
+) -> PendingAssessmentQueueResponse:
+    """小程序员工侧待评估工作台队列（双段同响应）."""
+    result = service.get_pending_assessment_queue(
+        user_id=operator.id,
+        page=filters.page,
+        page_size=filters.page_size,
+        search=filters.search,
+    )
+
+    items_pending = [
+        PendingAssessmentQueueItem(
+            id=lead.id,
+            community_name=lead.community_name,
+            district=lead.district,
+            layout=lead.layout,
+            area=float(lead.area) if lead.area is not None else None,
+            floor_info=lead.floor_info,
+            orientation=lead.orientation,
+            remarks=lead.remarks,
+            expected_price=_effective_expected_price(lead),
+            images=(lead.images or [])[:3],
+            source="customer_share" if lead.referrer_id else "employee_entry",
+            created_at=lead.created_at,
+        )
+        for lead in result["items_pending"]
+    ]
+
+    items_handled = []
+    for lead in result["items_handled"]:
+        status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
+        status_display, _ = _get_status_display(status_code)
+        items_handled.append(
+            HandledItem(
+                id=lead.id,
+                community_name=lead.community_name,
+                district=lead.district,
+                layout=lead.layout,
+                area=float(lead.area) if lead.area is not None else None,
+                floor_info=lead.floor_info,
+                orientation=lead.orientation,
+                remarks=lead.remarks,
+                expected_price=_effective_expected_price(lead),
+                images=(lead.images or [])[:3],
+                source="customer_share" if lead.referrer_id else "employee_entry",
+                status=lead.status,
+                status_display=status_display,
+                eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
+                audit_time=lead.audit_time,
+            ),
+        )
+
+    return PendingAssessmentQueueResponse(
+        items_pending=items_pending,
+        pending_total=result["pending_total"],
+        pending_today=result["pending_today"],
+        page=result["page"],
+        page_size=result["page_size"],
+        items_handled=items_handled,
+        handled_total=result["handled_total"],
+    )
+
+
+@router.get(
     "/my/acquired/{lead_id}/phone",
     summary="获取获客线索客户手机号",
     description="获取当前员工分享归因线索的客户真实手机号（直接录入或非本人线索返回 null）",
@@ -278,6 +382,97 @@ def get_my_acquired_phone(
     """获取当前员工获客线索的客户手机号."""
     phone = service.get_my_acquired_phone(user_id=current_user.id, lead_id=lead_id)
     return PublicAcquiredLeadPhoneResponse(phone=phone)
+
+
+@router.post(
+    "/my/acquired/{lead_id}/authorize-assessment",
+    summary="评估价授权",
+    description="对 pending_assessment 线索执行 approve/reject/lost 单事务流转（仅 admin/operator）",
+)
+@limiter.limit(RateLimits.LEAD_UPDATE)
+def authorize_assessment(
+    request: Request,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    body: LeadAssessmentAuthorizeRequest,
+    operator: CurrentCInternalUserDep,
+    service: LeadServiceDep,
+) -> LeadAssessmentAuthorizeResponse:
+    """小程序员工侧评估授权（approve/reject/lost 原子流转）."""
+    lead = service.authorize_assessment(user_id=operator.id, lead_id=lead_id, req=body)
+    status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
+    status_display, _ = _get_status_display(status_code)
+    return LeadAssessmentAuthorizeResponse(
+        id=lead.id,
+        status=lead.status,
+        status_display=status_display,
+        eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
+    )
+
+
+@router.post(
+    "/my/acquired/{lead_id}/evaluations",
+    status_code=status.HTTP_201_CREATED,
+    summary="再次评估（调整评估价）",
+    description="对 pending_visit/visited 线索追加评估记录并更新评估价，不改状态（仅 admin/operator）",
+)
+@limiter.limit(RateLimits.LEAD_UPDATE)
+def create_reevaluation(
+    request: Request,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    body: LeadEvalHistoryCreate,
+    operator: CurrentCInternalUserDep,
+    service: LeadServiceDep,
+) -> LeadEvalHistoryResponse:
+    """小程序员工侧再次评估（语义对齐 admin「调整评估价」）."""
+    rec = service.create_reevaluation(
+        user_id=operator.id,
+        lead_id=lead_id,
+        eval_price=body.eval_price,
+        remark=body.remark,
+    )
+    return LeadEvalHistoryResponse.model_validate(rec)
+
+
+@router.get(
+    "/my/acquired/{lead_id}/evaluations",
+    summary="获取评估历史",
+    description="按评估时间倒序返回线索评估记录（仅 admin/operator）",
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_lead_evaluations(
+    request: Request,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    operator: CurrentCInternalUserDep,
+    service: LeadServiceDep,
+) -> list[LeadEvalHistoryResponse]:
+    """小程序员工侧评估历史（最新一条为当前评估价）."""
+    records = service.get_lead_evaluations(lead_id)
+    return [LeadEvalHistoryResponse.model_validate(rec) for rec in records]
+
+
+@router.get(
+    "/my/acquired/{lead_id}/follow-ups",
+    summary="获取线索跟进记录",
+    description="员工侧查看线索跟进记录（仅 admin/operator），按跟进时间倒序",
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_lead_followups(
+    request: Request,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    operator: CurrentCInternalUserDep,
+    service: LeadServiceDep,
+) -> list[PublicFollowupItem]:
+    """小程序员工侧线索跟进记录（授权详情页「跟进记录」区块）."""
+    follow_ups = service.get_lead_followups(lead_id)
+    return [
+        PublicFollowupItem(
+            id=fu.id,
+            method=fu.method.value if hasattr(fu.method, "value") else str(fu.method),
+            content=fu.content,
+            followed_at=fu.followed_at,
+        )
+        for fu in follow_ups
+    ]
 
 
 @router.get(

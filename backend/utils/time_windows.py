@@ -20,3 +20,14 @@ def yesterday_window() -> tuple[datetime, datetime]:
     now = datetime.now(_CST)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     return today_start - timedelta(days=1), today_start
+
+
+def cst_today_start() -> datetime:
+    """今日自然日起点（Asia/Shanghai 00:00:00，timezone-aware）.
+
+    Returns:
+        今日 00:00:00，统计口径左闭右开 [start, ...)
+
+    """
+    now = datetime.now(_CST)
+    return now.replace(hour=0, minute=0, second=0, microsecond=0)

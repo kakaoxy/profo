@@ -94,6 +94,8 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
 - add_trgm_search_indexes: 安装 pg_trgm 并为 leads/communities/investments/
   projects/project_contracts/users/l4_marketing_projects 的模糊搜索列创建
   trigram GIN 表达式索引，加速 lower(col) 及普通 LIKE '%kw%' 前导通配符查询（O1，幂等）
+- add_lead_auditor_index: 为 leads 表补建 (auditor_id, audit_time) 复合索引
+  （小程序评估工作台「已处理」参考组 get_handled 过滤 + 倒序截取，幂等）
 
 """
 
@@ -165,6 +167,7 @@ from migrations._user_security import (
 
 # 独立迁移模块
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
+from migrations.add_lead_auditor_index import add_lead_auditor_index
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
 from migrations.add_lead_status_lost_to_competitor import add_lead_status_lost_to_competitor
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
@@ -279,6 +282,8 @@ def _run_all_migrations(engine: Engine) -> None:
         create_project_booking_and_share_tables(engine)
         # O1：模糊搜索 pg_trgm GIN 索引（前导通配符 LIKE 全表扫描修复）
         add_trgm_search_indexes(engine)
+        # 小程序评估工作台「已处理」参考组：leads(auditor_id, audit_time) 索引
+        add_lead_auditor_index(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

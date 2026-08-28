@@ -3294,6 +3294,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/leads/pending-assessment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取待评估工作台队列
+         * @description 单请求双段返回：待评估分页队列 + 全部本人经手线索 + 今日新增计数（仅 admin/operator）
+         */
+        get: operations["get_pending_assessment_api_v1_public_leads_pending_assessment_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/leads/my/acquired/{lead_id}/phone": {
         parameters: {
             query?: never;
@@ -3306,6 +3326,70 @@ export interface paths {
          * @description 获取当前员工分享归因线索的客户真实手机号（直接录入或非本人线索返回 null）
          */
         get: operations["get_my_acquired_phone_api_v1_public_leads_my_acquired__lead_id__phone_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/my/acquired/{lead_id}/authorize-assessment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 评估价授权
+         * @description 对 pending_assessment 线索执行 approve/reject/lost 单事务流转（仅 admin/operator）
+         */
+        post: operations["authorize_assessment_api_v1_public_leads_my_acquired__lead_id__authorize_assessment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/my/acquired/{lead_id}/evaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取评估历史
+         * @description 按评估时间倒序返回线索评估记录（仅 admin/operator）
+         */
+        get: operations["get_lead_evaluations_api_v1_public_leads_my_acquired__lead_id__evaluations_get"];
+        put?: never;
+        /**
+         * 再次评估（调整评估价）
+         * @description 对 pending_visit/visited 线索追加评估记录并更新评估价，不改状态（仅 admin/operator）
+         */
+        post: operations["create_reevaluation_api_v1_public_leads_my_acquired__lead_id__evaluations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/my/acquired/{lead_id}/follow-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取线索跟进记录
+         * @description 员工侧查看线索跟进记录（仅 admin/operator），按跟进时间倒序
+         */
+        get: operations["get_lead_followups_api_v1_public_leads_my_acquired__lead_id__follow_ups_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5483,6 +5567,90 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * HandledItem
+         * @description 本人经手线索项（「已处理」参考组，最近 50 条）.
+         *
+         *     展示字段与 PendingAssessmentQueueItem 对齐（区域/面积/楼层/朝向/图片/来源），
+         *     支撑工作台已处理卡与待评估卡同构渲染；
+         *     pending_visit/visited 线索支持再次调整评估价（对齐 admin/leads 口径）。
+         */
+        HandledItem: {
+            /**
+             * Id
+             * @description 线索ID
+             */
+            id: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * District
+             * @description 行政区
+             */
+            district?: string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area?: number | null;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info?: string | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
+            /**
+             * Remarks
+             * @description 业主备注
+             */
+            remarks?: string | null;
+            /**
+             * Expected Price
+             * @description 业主报价(万)
+             */
+            expected_price?: number | null;
+            /**
+             * Images
+             * @description 图片URL（前 3 张）
+             */
+            images?: string[];
+            /**
+             * Source
+             * @description 来源：客户分享/员工录入
+             * @enum {string}
+             */
+            source: "customer_share" | "employee_entry";
+            /** @description 流转后状态 */
+            status: components["schemas"]["LeadStatus"];
+            /**
+             * Status Display
+             * @description 状态显示名称
+             */
+            status_display: string;
+            /**
+             * Eval Price
+             * @description 授权评估价(万)，reject/lost 为空
+             */
+            eval_price?: number | null;
+            /**
+             * Audit Time
+             * Format: date-time
+             * @description 审核时间
+             */
+            audit_time: string;
+        };
+        /**
          * ImportTaskCreateResponse
          * @description 导入任务创建响应.
          */
@@ -6721,6 +6889,56 @@ export interface components {
             total_synced: number;
         };
         /**
+         * LeadAssessmentAuthorizeRequest
+         * @description 评估价授权请求（触发动作类，approve/reject/lost 三动作单事务原子化）.
+         *
+         *     语义对齐 admin PendingAssessmentPanel 三动作组合：
+         *     - approve = 录评估价（插评估历史 + 刷 eval_price）+ 流转 pending_visit；
+         *     - reject = 不建评估记录，仅流转 rejected（audit_reason 取 remark）；
+         *     - lost = 不建评估记录，仅流转 lost_to_competitor（audit_reason 取 remark）。
+         */
+        LeadAssessmentAuthorizeRequest: {
+            /**
+             * Action
+             * @description 授权动作
+             * @enum {string}
+             */
+            action: "approve" | "reject" | "lost";
+            /**
+             * Eval Price
+             * @description 评估价格(万)，approve 必填
+             */
+            eval_price?: number | string | null;
+            /**
+             * Remark
+             * @description 评估意见/原因，三动作均选填
+             */
+            remark?: string | null;
+        };
+        /**
+         * LeadAssessmentAuthorizeResponse
+         * @description 评估价授权响应（更新后的简要对象）.
+         */
+        LeadAssessmentAuthorizeResponse: {
+            /**
+             * Id
+             * @description 线索ID
+             */
+            id: string;
+            /** @description 流转后状态 */
+            status: components["schemas"]["LeadStatus"];
+            /**
+             * Status Display
+             * @description 状态显示名称
+             */
+            status_display: string;
+            /**
+             * Eval Price
+             * @description 授权评估价(万)，reject/lost 为空
+             */
+            eval_price?: number | null;
+        };
+        /**
          * LeadCreate
          * @description 创建线索请求.
          */
@@ -6821,7 +7039,7 @@ export interface components {
             evaluating: number;
             /**
              * Rejected
-             * @description 已驳回数量
+             * @description 已放弃数量（含他司已成交）
              */
             rejected: number;
             /**
@@ -7004,16 +7222,21 @@ export interface components {
             signed: number;
             /**
              * Rejected
-             * @description 已驳回数量
+             * @description 已放弃数量
              */
             rejected: number;
+            /**
+             * Lost To Competitor
+             * @description 他司已成交数量（展示端与已放弃合并汇总）
+             */
+            lost_to_competitor: number;
         };
         /**
          * LeadStatus
          * @description 线索状态枚举.
          * @enum {string}
          */
-        LeadStatus: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+        LeadStatus: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
         /**
          * LeadUpdate
          * @description 更新线索请求.
@@ -7895,6 +8118,118 @@ export interface components {
              * @description 新密码
              */
             password: string;
+        };
+        /**
+         * PendingAssessmentQueueItem
+         * @description 待评估队列项（工作台卡片，兼作授权页详情数据源）.
+         *
+         *     业主报价口径 = expected_price 回退 total_price（与 admin 总价列/C 端列表一致）；
+         *     images 裁剪前 3 张。
+         */
+        PendingAssessmentQueueItem: {
+            /**
+             * Id
+             * @description 线索ID
+             */
+            id: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * District
+             * @description 行政区
+             */
+            district?: string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area?: number | null;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info?: string | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
+            /**
+             * Remarks
+             * @description 业主备注
+             */
+            remarks?: string | null;
+            /**
+             * Expected Price
+             * @description 业主报价(万) = expected_price 回退 total_price
+             */
+            expected_price?: number | null;
+            /**
+             * Images
+             * @description 图片URL（前 3 张）
+             */
+            images?: string[];
+            /**
+             * Source
+             * @description 来源：客户分享/员工录入
+             * @enum {string}
+             */
+            source: "customer_share" | "employee_entry";
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+        };
+        /**
+         * PendingAssessmentQueueResponse
+         * @description 待评估工作台单请求双段队列响应（防分组瀑布）.
+         */
+        PendingAssessmentQueueResponse: {
+            /**
+             * Items Pending
+             * @description 待评估队列（分页，created_at 倒序）
+             */
+            items_pending: components["schemas"]["PendingAssessmentQueueItem"][];
+            /**
+             * Pending Total
+             * @description 待评估总数
+             */
+            pending_total: number;
+            /**
+             * Pending Today
+             * @description 今日（Asia/Shanghai 自然日）新增待评估数
+             */
+            pending_today: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+            /**
+             * Items Handled
+             * @description 本人经手线索（audit_time 倒序，最近 50 条；handled_total 为全量计数）
+             */
+            items_handled: components["schemas"]["HandledItem"][];
+            /**
+             * Handled Total
+             * @description 本人经手总数
+             */
+            handled_total: number;
         };
         /**
          * PermissionCreate
@@ -9151,7 +9486,7 @@ export interface components {
              * @description 状态代码
              * @enum {string}
              */
-            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
             /**
              * Status Display
              * @description 状态显示名称
@@ -9249,9 +9584,14 @@ export interface components {
             signed: number;
             /**
              * Rejected
-             * @description 已驳回数量
+             * @description 已放弃数量
              */
             rejected: number;
+            /**
+             * Lost To Competitor
+             * @description 他司已成交数量
+             */
+            lost_to_competitor: number;
         };
         /**
          * PublicCommunityAnalysisResponse
@@ -9598,7 +9938,7 @@ export interface components {
              * @description 状态代码
              * @enum {string}
              */
-            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
             /**
              * Status Display
              * @description 状态显示名称
@@ -9682,7 +10022,7 @@ export interface components {
              * @description 状态代码
              * @enum {string}
              */
-            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
             /**
              * Status Display
              * @description 状态显示名称
@@ -9792,7 +10132,7 @@ export interface components {
              * @description 状态
              * @enum {string}
              */
-            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed" | "lost_to_competitor";
             /**
              * Remarks
              * @description 备注
@@ -19133,6 +19473,42 @@ export interface operations {
             };
         };
     };
+    get_pending_assessment_api_v1_public_leads_pending_assessment_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+                /** @description 小区名称搜索，仅作用于待评估段 */
+                search?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingAssessmentQueueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_acquired_phone_api_v1_public_leads_my_acquired__lead_id__phone_get: {
         parameters: {
             query?: never;
@@ -19152,6 +19528,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicAcquiredLeadPhoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorize_assessment_api_v1_public_leads_my_acquired__lead_id__authorize_assessment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadAssessmentAuthorizeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadAssessmentAuthorizeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_evaluations_api_v1_public_leads_my_acquired__lead_id__evaluations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadEvalHistoryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_reevaluation_api_v1_public_leads_my_acquired__lead_id__evaluations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadEvalHistoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadEvalHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_followups_api_v1_public_leads_my_acquired__lead_id__follow_ups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicFollowupItem"][];
                 };
             };
             /** @description Validation Error */

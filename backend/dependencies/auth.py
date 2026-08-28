@@ -254,6 +254,33 @@ CurrentInternalUserDep = Annotated[User, Depends(require_roles(["admin", "operat
 CurrentCustomerUserDep = Annotated[User, Depends(require_roles(["customer"]))]
 
 
+def _c_side_internal_checker(user: CurrentCustomerUserDep) -> User:
+    """C 端令牌用户 + admin/operator 角色复核.
+
+    小程序员工侧端点专用：沿 C 端令牌体系认证（aud=c，customer 为主/附加角色），
+    再复核用户具备内部角色（admin/operator），任一不满足 → 403。
+    角色口径与 CurrentInternalUserDep 的 INTERNAL_ROLE_CODES 完全一致。
+
+    Args:
+        user: C 端认证通过的用户
+
+    Returns:
+        User: 具备内部角色的当前用户
+
+    Raises:
+        PermissionDeniedError: 403 Forbidden - 无 admin/operator 角色
+
+    """
+    if not _user_has_any_role(user, set(INTERNAL_ROLE_CODES)):
+        msg = "仅管理员/运营人员可访问员工工作台"
+        raise PermissionDeniedError(msg)
+    return user
+
+
+# C 端令牌 + 内部角色复核依赖类型（小程序员工侧端点）
+CurrentCInternalUserDep = Annotated[User, Depends(_c_side_internal_checker)]
+
+
 # ==================== 权限校验（基于权限码） ====================
 
 
@@ -609,6 +636,7 @@ __all__ = [
     "ApiKeyAuthDep",
     "CurrentActiveUserDep",
     "CurrentAdminUserDep",
+    "CurrentCInternalUserDep",
     "CurrentCustomerUserDep",
     "CurrentInternalUserDep",
     "CurrentOperatorUserDep",

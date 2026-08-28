@@ -9,6 +9,7 @@ import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../..
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";
 import { formatThousands } from "../../../utils/format";
+import { fetchPendingAssessmentCount } from "../../../utils/pending-assessment";
 import { getVisitorId } from "../../../utils/visitor";
 import {
   buildValuationSharePath,
@@ -115,6 +116,8 @@ interface PageData {
   isEmployee: boolean;
   /** 员工自身 ID（识别成功置值，分享时作为 referrer 归属）. */
   employeeId: string;
+  /** 待我评估角标（pending_assessment 数；0/null 不显示）. */
+  evalPendingCount: number;
 }
 
 interface PageCustom {
@@ -148,6 +151,8 @@ interface PageCustom {
   /** 员工分享事件上报（card/timeline），静默失败. */
   reportShareEvent(shareType: "card" | "timeline"): void;
   onMineTap(): void;
+  /** 待我评估入口：进入评估工作台. */
+  onEvalWorkbenchTap(): void;
   onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
   onShareTimeline(): WechatMiniprogram.Page.ICustomTimelineContent;
 }
@@ -191,6 +196,7 @@ Page<PageData, PageCustom>({
     referrer: "",
     isEmployee: false,
     employeeId: "",
+    evalPendingCount: 0,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -232,6 +238,10 @@ Page<PageData, PageCustom>({
       const employeeId = await fetchEmployeeId();
       this.setData({ isEmployee: true, employeeId });
       wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
+      // 待我评估角标：仅员工拉取（403/0 条/失败静默隐藏，不打扰）
+      fetchPendingAssessmentCount().then((count) => {
+        this.setData({ evalPendingCount: count ?? 0 });
+      });
     } catch {
       // 静默降级：非员工不显示横幅
     }
@@ -722,6 +732,11 @@ Page<PageData, PageCustom>({
   /** 员工横幅「我的客户」入口：进入我的获客页（submit 为 tabBar 页，navigateTo 普通页 OK）. */
   onMineTap() {
     wx.navigateTo({ url: "/pages/valuation/mine/index" });
+  },
+
+  /** 待我评估入口：进入评估工作台处理待办. */
+  onEvalWorkbenchTap() {
+    wx.navigateTo({ url: "/pages/valuation/evaluate/index" });
   },
 
   /** 分享卡片（与 about 服务页一致）；referrer 用自身员工 ID（员工态优先），未识别则透传进入时的 referrer. */

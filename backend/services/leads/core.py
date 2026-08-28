@@ -6,18 +6,21 @@
 import logging
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any
 
 from redis.exceptions import RedisError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
+from constants.role_codes import INTERNAL_ROLE_CODES
 from models import User
 from models.common import LeadStatus
-from models.lead import Lead
-from schemas.lead import LeadCreate, LeadUpdate
-from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
+from models.lead import Lead, LeadEvalHistory, LeadFollowUp
+from schemas.lead import LeadAssessmentAuthorizeRequest, LeadCreate, LeadUpdate
+from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError
 from settings import settings
 from utils.redis_client import get_redis_client
+from utils.time_windows import cst_today_start
 
 from .internal import LeadEvalService, LeadFollowUpService, LeadPriceService, LeadQueryService, compute_unit_price
 
@@ -430,3 +433,238 @@ class LeadService:
         if lead.referrer_id == user_id and lead.creator is not None and lead.creator.phone:
             return lead.creator.phone
         return None
+
+    def get_pending_assessment_queue(
+        self,
+        user_id: str,
+        page: int = 1,
+        page_size: int | None = None,
+        search: str | None = None,
+    ) -> dict[str, Any]:
+        """小程序评估工作台队列：单请求双段返回（防分组瀑布）.
+
+        - items_pending：全局待评估（pending_assessment）分页队列，created_at 倒序，
+          search 仅过滤本段（复用 query.get_list 过滤基建与展示字段口径）；
+        - items_handled：全部 auditor=当前用户 且状态 ∈
+          pending_visit/visited/rejected/lost_to_competitor 的经手记录（audit_time 倒序，
+          截取最近 HANDLED_ITEMS_LIMIT 条）+ 全量计数 handled_total；
+        - pending_today：今日（Asia/Shanghai 自然日）新增待评估计数（列表统计条）。
+
+        Args:
+            user_id: 当前员工用户ID（用于「已处理」参考组过滤）
+            page: 页码
+            page_size: 每页数量
+            search: 小区名称搜索（仅作用于待评估段）
+
+        Returns:
+            双段队列字典
+
+        """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
+        pending = self.query_service.get_list(
+            page=page,
+            page_size=effective_page_size,
+            search=search,
+            statuses=[LeadStatus.PENDING_ASSESSMENT],
+        )
+        handled = self.query_service.get_handled(user_id)
+        return {
+            "items_pending": pending["items"],
+            "pending_total": pending["total"],
+            "page": page,
+            "page_size": effective_page_size,
+            "pending_today": self.query_service.count_pending_new_since(cst_today_start()),
+            "items_handled": handled["items"],
+            "handled_total": handled["total"],
+        }
+
+    def authorize_assessment(
+        self,
+        user_id: str,
+        lead_id: str,
+        req: LeadAssessmentAuthorizeRequest,
+    ) -> Lead:
+        """小程序员工侧评估授权：approve/reject/lost 单事务原子流转.
+
+        语义对齐 admin PendingAssessmentPanel 三动作组合：
+        - approve：复用 internal/evaluation.create_evaluation 录价逻辑（插评估历史 +
+          刷 Lead.eval_price；不直接调用该方法因其内部 commit，此处内联保持单事务），
+          并流转 pending_visit；
+        - reject：不建评估记录，仅流转 rejected，audit_reason 取 remark（选填）；
+        - lost：不建评估记录，仅流转 lost_to_competitor，audit_reason 取 remark（选填）；
+        - 三动作统一写 auditor_id/audit_time（与 core.update_lead 状态流转自动化口径一致）。
+
+        Args:
+            user_id: 当前操作员工ID
+            lead_id: 线索ID
+            req: 授权请求（action/eval_price/remark）
+
+        Returns:
+            流转后的线索对象
+
+        Raises:
+            PermissionDeniedError: 操作人不具备 admin/operator 角色
+            ResourceNotFoundError: 线索不存在或已软删除
+            ConflictError: 线索非 pending_assessment（已被他人处理）
+
+        """
+        self._ensure_internal_operator(user_id)
+
+        # 行级锁读取：锁持至 commit，保证「检查 pending_assessment → 流转」原子化，
+        # 并发提交时后到者在锁上等待、拿到锁后状态已变，走 409 ConflictError
+        lead = self.query_service.get_by_id(lead_id, load_creator=False, for_update=True)
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        if lead.status != LeadStatus.PENDING_ASSESSMENT:
+            msg = "该线索已被处理"
+            raise ConflictError(msg)
+
+        now = datetime.now(timezone.utc)
+        if req.action == "approve":
+            rec = LeadEvalHistory(
+                id=uuid.uuid4(),
+                lead_id=lead.id,
+                eval_price=req.eval_price,
+                remark=req.remark,
+                evaluator_id=user_id,
+            )
+            self.db.add(rec)
+            lead.eval_price = req.eval_price
+            lead.status = LeadStatus.PENDING_VISIT
+        elif req.action == "reject":
+            lead.status = LeadStatus.REJECTED
+            lead.audit_reason = req.remark
+        else:
+            lead.status = LeadStatus.LOST_TO_COMPETITOR
+            lead.audit_reason = req.remark
+
+        lead.audit_time = now
+        lead.auditor_id = user_id
+        lead.updated_at = now
+        self.db.add(lead)
+        self.db.commit()
+        self.db.refresh(lead)
+        return lead
+
+    def create_reevaluation(
+        self,
+        user_id: str,
+        lead_id: str,
+        eval_price: Decimal,
+        remark: str | None,
+    ) -> LeadEvalHistory:
+        """小程序员工侧再次评估：追加评估记录并更新评估价，不改状态.
+
+        语义对齐 admin CurrentEvalPriceSection「调整评估价」：
+        仅允许 pending_visit/visited 线索，每次追加一条 LeadEvalHistory 并覆盖
+        Lead.eval_price，不写 status/audit_time/auditor_id（保留首次授权轨迹）。
+
+        Args:
+            user_id: 当前操作员工ID
+            lead_id: 线索ID
+            eval_price: 新评估价格(万)，由 Pydantic Decimal 字段直接解析，避免 float 精度损失
+            remark: 调整意见（选填）
+
+        Returns:
+            创建的评估记录对象（eager-load evaluator）
+
+        Raises:
+            PermissionDeniedError: 操作人不具备 admin/operator 角色
+            ResourceNotFoundError: 线索不存在或已软删除
+            ConflictError: 线索状态非 pending_visit/visited
+
+        """
+        self._ensure_internal_operator(user_id)
+
+        # 行级锁读取：锁持至 commit，保证「检查状态 → 录价」原子化，
+        # 并发流转（如 authorize-assessment）后到者在锁上等待、拿到锁后状态已变，走 409
+        lead = self.query_service.get_by_id(lead_id, load_creator=False, for_update=True)
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        if lead.status not in (LeadStatus.PENDING_VISIT, LeadStatus.VISITED):
+            msg = "仅待看房/已看房状态的线索可调整评估价"
+            raise ConflictError(msg)
+
+        now = datetime.now(timezone.utc)
+        rec = LeadEvalHistory(
+            id=uuid.uuid4(),
+            lead_id=lead.id,
+            eval_price=eval_price,
+            remark=remark,
+            evaluator_id=user_id,
+        )
+        self.db.add(rec)
+        lead.eval_price = eval_price
+        lead.updated_at = now
+        self.db.add(lead)
+        self.db.commit()
+        # 重新查询以 eager-load evaluator，避免 LeadEvalHistoryResponse.evaluator_name 触发 lazy load
+        return (
+            self.db.query(LeadEvalHistory)
+            .options(joinedload(LeadEvalHistory.evaluator))
+            .filter(LeadEvalHistory.id == rec.id)
+            .one()
+        )
+
+    def get_lead_evaluations(self, lead_id: str) -> list[LeadEvalHistory]:
+        """获取线索评估历史（小程序员工侧，按评估时间倒序）.
+
+        Args:
+            lead_id: 线索ID
+
+        Returns:
+            评估历史记录列表（eager-load evaluator）
+
+        Raises:
+            ResourceNotFoundError: 线索不存在或已软删除
+
+        """
+        return self.eval_service.get_evaluations(lead_id)
+
+    def get_lead_followups(self, lead_id: str) -> list[LeadFollowUp]:
+        """获取线索跟进记录（小程序员工侧详情页，按跟进时间倒序）.
+
+        Args:
+            lead_id: 线索ID
+
+        Returns:
+            跟进记录列表
+
+        Raises:
+            ResourceNotFoundError: 线索不存在或已软删除
+
+        """
+        lead = self.query_service.get_by_id(lead_id, load_creator=False)
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        return self.followup_service.get_follow_ups(lead_id)
+
+    def _ensure_internal_operator(self, user_id: str) -> None:
+        """校验用户具备 admin/operator 角色（评估权限卡口）.
+
+        与 dependencies.auth.CurrentInternalUserDep 的 INTERNAL_ROLE_CODES 口径完全一致，
+        Service 层二次复核，避免绕过路由依赖直接调用 Service 时越权。
+
+        Args:
+            user_id: 操作人用户ID
+
+        Raises:
+            PermissionDeniedError: 用户不存在或角色不满足
+
+        """
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            msg = "权限不足"
+            raise PermissionDeniedError(msg)
+        role_codes: set[str] = set()
+        if user.role and user.role.code:
+            role_codes.add(user.role.code)
+        for r in user.roles or []:
+            if r.code:
+                role_codes.add(r.code)
+        if not role_codes & INTERNAL_ROLE_CODES:
+            msg = "仅管理员/运营人员可执行评估授权"
+            raise PermissionDeniedError(msg)

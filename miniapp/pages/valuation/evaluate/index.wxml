@@ -1,0 +1,158 @@
+<view class="page">
+  <!-- 未登录态 -->
+  <view class="state" wx:if="{{needLogin}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请先登录后使用评估工作台</view>
+    <view class="state__btn" bindtap="onGoLogin">去登录</view>
+  </view>
+
+  <!-- 无权限态（403：非 admin/operator） -->
+  <view class="state" wx:elif="{{forbidden}}">
+    <view class="state__title">评估工作台未开通</view>
+    <view class="state__text">该功能仅对具备评估权限的内部账号可见</view>
+  </view>
+
+  <!-- 错误态 -->
+  <view class="state" wx:elif="{{error}}">
+    <view class="state__text">加载失败，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 首次加载态 -->
+  <view class="state" wx:elif="{{loading && pendingItems.length === 0}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <!-- 列表区 -->
+  <block wx:else>
+    <!-- 统计条 -->
+    <view class="evalmeta">
+      <view class="evalmeta__big">待评估 <text class="evalmeta__num">{{pendingTotal}}</text> 套</view>
+      <view class="evalmeta__today" wx:if="{{pendingToday > 0}}">今日新增 {{pendingToday}}</view>
+    </view>
+
+    <!-- 搜索栏（仅过滤待评估段） -->
+    <view class="searchbox">
+      <view class="searchbox__icon"></view>
+      <input
+        class="searchbox__input"
+        placeholder="搜索小区名称"
+        placeholder-class="searchbox__placeholder"
+        value="{{search}}"
+        confirm-type="search"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <view class="searchbox__clear" wx:if="{{search}}" bindtap="onClearSearch">×</view>
+    </view>
+
+    <view class="list">
+      <!-- 待评估分组头 -->
+      <view class="ghead">
+        <view class="ghead__gt">待评估</view>
+        <view class="ghead__gn">{{pendingTotal}}</view>
+        <view class="ghead__gs">需尽快给出评估价</view>
+      </view>
+
+      <!-- 待评估卡片 -->
+      <view
+        class="lcard"
+        wx:for="{{pendingItems}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onItemTap"
+      >
+        <view class="lcard__top">
+          <view class="lcard__nm">{{item.name}}</view>
+          <view class="stag stag--amber">待评估</view>
+        </view>
+        <view class="lcard__mid">
+          <image class="thumb" wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFill" lazy-load />
+          <view class="thumb thumb--empty" wx:else></view>
+          <view class="attrs">
+            <view class="attrs__l1">{{item.l1}}</view>
+            <view class="attrs__l2" wx:if="{{item.l2}}">{{item.l2}}</view>
+          </view>
+          <view class="pricest">
+            <view class="pricest__lb">业主报价</view>
+            <view class="pricest__vl">
+              {{item.priceValue}}<text class="pricest__unit" wx:if="{{item.priceUnit}}">{{item.priceUnit}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="lcard__foot">
+          <view class="lcard__meta">
+            <view class="srcchip srcchip--{{item.sourceClass}}">{{item.sourceText}}</view>
+            <view class="time">{{item.timeText}}</view>
+          </view>
+          <view class="go-eval">去评估 ›</view>
+        </view>
+      </view>
+
+      <!-- 待评估空态 -->
+      <view class="empty" wx:if="{{pendingItems.length === 0 && !loading}}">
+        <view class="empty__ring">
+          <view class="empty__shield"></view>
+        </view>
+        <view class="empty__t">暂无待评估线索</view>
+        <view class="empty__s" wx:if="{{search}}">换个关键词试试</view>
+        <block wx:else>
+          <view class="empty__s">新的待评估线索出现后</view>
+          <view class="empty__s">会自动出现在这里</view>
+        </block>
+        <view class="empty__btn" bindtap="onRetry">刷新试试</view>
+      </view>
+
+      <!-- 已处理分组头（本人全部经手，不限时间窗） -->
+      <view class="ghead ghead--done" wx:if="{{handledItems.length > 0}}">
+        <view class="ghead__gt">已处理</view>
+        <view class="ghead__gn ghead__gn--gray">{{handledTotal}}</view>
+        <view class="ghead__gs">由我经手</view>
+      </view>
+
+      <!-- 已处理卡片（点击进只读详情） -->
+      <view
+        class="lcard lcard--dim"
+        wx:for="{{handledItems}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onHandledTap"
+      >
+        <view class="lcard__top">
+          <view class="lcard__nm">{{item.name}}</view>
+          <view class="stag stag--{{item.tagClass}}">{{item.tagText}}</view>
+        </view>
+        <view class="lcard__mid">
+          <image class="thumb" wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFill" lazy-load />
+          <view class="thumb thumb--empty" wx:else></view>
+          <view class="attrs">
+            <view class="attrs__l1">{{item.l1}}</view>
+            <view class="attrs__l2" wx:if="{{item.l2}}">{{item.l2}}</view>
+          </view>
+          <view class="pricest">
+            <view class="pricest__lb">{{item.priceLabel}}</view>
+            <view class="pricest__vl {{item.priceOk ? 'pricest__vl--ok' : ''}}">
+              {{item.priceValue}}<text class="pricest__unit" wx:if="{{item.priceUnit}}">{{item.priceUnit}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="lcard__foot">
+          <view class="lcard__meta">
+            <view class="srcchip srcchip--{{item.sourceClass}}">{{item.sourceText}}</view>
+            <view class="time">{{item.timeText}}</view>
+          </view>
+          <view class="go-eval go-eval--{{item.actionClass}}">{{item.actionText}}</view>
+        </view>
+      </view>
+
+      <!-- 底部加载提示 -->
+      <view class="more-hint" wx:if="{{pendingItems.length > 0}}">
+        <block wx:if="{{loadingMore}}">加载中...</block>
+        <block wx:elif="{{noMore}}">没有更多了</block>
+        <block wx:else>上拉加载更多 · 待处理共 {{pendingTotal}} 条</block>
+      </view>
+    </view>
+  </block>
+
+  <view class="page__bottom"></view>
+</view>

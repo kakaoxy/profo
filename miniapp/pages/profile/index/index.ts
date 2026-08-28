@@ -1,5 +1,6 @@
 import type { components } from "../../../types/api-types";
 import { BASE_URL } from "../../../utils/config";
+import { fetchPendingAssessmentCount } from "../../../utils/pending-assessment";
 import { updateWechatProfile } from "../../../utils/profile";
 import { refreshCAccessToken, request, type HttpResponseError } from "../../../utils/request";
 import {
@@ -32,6 +33,7 @@ const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 
 /** 内部入口（均带 route，onMenuTap 统一 navigateTo 跳转）. */
 const INTERNAL_ENTRIES = [
+  { key: "evaluate", title: "评估工作台", sub: "待评估线索处理", icon: "评", route: "/pages/valuation/evaluate/index" },
   { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房", route: "/pages/properties/list/index" },
   { key: "analysis", title: "数据分析", sub: "商圈/小区市场行情", icon: "析", route: "/pages/analysis/index/index" },
   { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
@@ -94,6 +96,8 @@ interface PageData {
   internalEntries: InternalEntry[];
   /** 分享获客分组（房源/评估/招募分享），仅内部用户可见. */
   shareEntries: ShareEntry[];
+  /** 评估工作台待办角标（pending_assessment 数；0/null 不显示）. */
+  evaluateBadge: number;
 }
 
 interface PageCustom {
@@ -105,6 +109,8 @@ interface PageCustom {
   loadAdminUser(authHeader: { Authorization: string }): Promise<boolean>;
   applyPublicUser(user: PublicUserInfo): void;
   applyAdminUser(user: UserResponse): void;
+  /** 拉取评估工作台待办角标：403/失败静默隐藏（内部用户专属）. */
+  loadEvaluateBadge(): void;
   onGoLogin(): void;
   onLogout(): void;
   onPhoneTap(): void;
@@ -207,6 +213,7 @@ Page<PageData, PageCustom>({
     nicknameSaving: false,
     internalEntries: INTERNAL_ENTRIES,
     shareEntries: SHARE_ENTRIES,
+    evaluateBadge: 0,
   },
 
   getToken() {
@@ -241,6 +248,7 @@ Page<PageData, PageCustom>({
       roleLabel: "未登录",
       phoneDisplay: "完善手机号",
       hasPhone: false,
+      evaluateBadge: 0,
     });
     this.resetWechatEditState();
   },
@@ -286,6 +294,12 @@ Page<PageData, PageCustom>({
       phoneDisplay: phone || "完善手机号",
       hasPhone: !!phone,
     });
+    // 评估工作台角标：仅内部用户拉取（403/0 条/失败均静默隐藏）
+    if (isInternal) {
+      this.loadEvaluateBadge();
+    } else {
+      this.setData({ evaluateBadge: 0 });
+    }
     this.resetWechatEditState();
   },
 
@@ -305,6 +319,15 @@ Page<PageData, PageCustom>({
       roleLabel: "内部员工 · 已认证",
       phoneDisplay: phone ? maskPhone(phone) : "—",
       hasPhone: !!phone,
+    });
+    // 内部员工同样感知评估待办（接口要求 C 端令牌，admin-only 令牌 403 时静默隐藏）
+    this.loadEvaluateBadge();
+  },
+
+  /** 拉取评估工作台待办角标：/my/acquired/stats 的 pending_assessment；403/失败静默返 null 不显示. */
+  loadEvaluateBadge() {
+    void fetchPendingAssessmentCount().then((count) => {
+      this.setData({ evaluateBadge: count ?? 0 });
     });
   },
 
