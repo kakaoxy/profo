@@ -341,6 +341,32 @@ describe("评估工作台触底加载分派", () => {
     ctx.onReachBottom();
     expect(pendingReqs()).toHaveLength(0);
   });
+
+  it("已处理翻页在途时静默刷新：不残留 handledLoadingMore，触底仍可继续分派", async () => {
+    const ctx = createPageHarness(seedBothPaginated());
+
+    ctx.onReachBottom();
+    const [handledMore] = pendingReqs();
+    expect(handledMore.opts.url).toBe("/public/leads/handled-assessment");
+
+    // 在途期间 onShow 静默刷新（授权返回等）：epoch 更替使旧代已处理翻页响应整体失效
+    ctx.onShow();
+    const [silentPending, silentHandled] = lastResetPair();
+    silentPending.resolve(queueResponse([pendingItem("b")], 1));
+    silentHandled.resolve(handledResponse([handledItem("h1", "visited", 300)], 2));
+    await flush();
+
+    // 旧代响应晚到：不得污染当前代数据
+    handledMore.resolve(handledResponse([handledItem("h2", "visited", 320)], 2));
+    await flush();
+    expect(ctx.data.handledItems.map((i: AnyRecord) => i.id)).toEqual(["h1"]);
+
+    // 残留的 handledLoadingMore 会永久拦截 onReachBottom，双段均无法继续翻页
+    expect(ctx.data.handledLoadingMore).toBe(false);
+    const before = pendingReqs().length;
+    ctx.onReachBottom();
+    expect(pendingReqs()).toHaveLength(before + 1);
+  });
 });
 
 describe("评估工作台已处理卡跳转", () => {

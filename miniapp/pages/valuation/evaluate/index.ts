@@ -241,7 +241,7 @@ Page<PageData, PageCustom>({
 
   async loadList(reset = false, silent = false) {
     if (!hasAnyToken()) {
-      this.setData({ needLogin: true, loading: false, loadingMore: false });
+      this.setData({ needLogin: true, loading: false, loadingMore: false, handledLoadingMore: false });
       return;
     }
     if (reset) {
@@ -250,11 +250,14 @@ Page<PageData, PageCustom>({
     }
     const myEpoch = this._epoch;
     if (reset) {
+      // handledLoadingMore 必须在此释放：在途的 loadHandledMore 会因 epoch 失配直接 return
+      // 且跳过其 finally，若不主动复位该标记将永久拦截 onReachBottom（双段均无法翻页）
       this.setData({
         error: false,
         noMore: false,
         needLogin: false,
         forbidden: false,
+        handledLoadingMore: false,
         ...(silent ? {} : { loading: true }),
       });
     } else {
