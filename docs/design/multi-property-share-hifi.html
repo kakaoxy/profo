@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>房源单分享 · 高保真设计稿</title>
+<!--
+  房源单分享 · 高保真设计稿（单文件自包含 HTML，无外部依赖、无 JS）
+  视觉规范：遵循项目 /DESIGN.md（Steep Style Reference）——
+    · 色彩：Ink #17191c / Fog #f7f7f8 画布，唯一暖色强调 Rust #5d2a1a，
+      Apricot Wash #fbe1d1 与 Sky Wash #d3e3fc 为仅有的两个彩色卡底；禁用饱和蓝绿红
+    · 字体：Signifier 衬线仅用于 display 标题（≥40px），Sohne（system-ui 栈）承担全部 UI，
+      微字重 430/450/480，从不 bold
+    · 形状：卡片 24px / 图片 12px / 输入 16px / 按钮与胶囊 9999px；签名三层阴影
+    · CTA：Ink 填充胶囊每屏最多一个，次操作用文字链接按钮
+  区块：1 交互流程图 / 2 屏A 分享获客入口 / 3 屏B 创建房源单 / 4 屏C 房源单详情
+        / 5 屏D 综合海报预览（核心） / 6 屏E 客户扫码落地页 / 7 视觉规范
+  ⚠️ 屏D 海报按「选 6 套房源」场景绘制：副标题与「更多扫码」提示条数字取实际所选套数（>3 套显示提示条）。
+  照片素材：全部由 text_to_image 接口生成（prompt 已 encodeURIComponent），共 5 张唯一图片。
+  本文件为设计稿交付物，按要求必须"单个自包含 HTML"，故不拆分模块（有意超过 500 行）。
+-->
+<style>
+  :root {
+    /* ===== Steep tokens（/DESIGN.md） ===== */
+    --color-ink: #17191c;
+    --color-pure-white: #ffffff;
+    --color-fog: #f7f7f8;
+    --color-ash: #4c4c4c;
+    --color-graphite: #777b86;
+    --color-dove: #a3a6af;
+    --color-rust: #5d2a1a;
+    --color-apricot-wash: #fbe1d1;
+    --color-sky-wash: #d3e3fc;
+    --font-signifier: "Source Serif 4", "Source Serif Pro", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --font-sohne: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    --radius-cards: 24px;
+    --radius-images: 12px;
+    --radius-inputs: 16px;
+    --radius-pill: 9999px;
+    --shadow-subtle: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --shadow-float: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: var(--font-sohne);
+    font-weight: 400;
+    letter-spacing: -0.009em;
+    background: var(--color-pure-white);
+    color: var(--color-ink);
+    line-height: 1.7;
+  }
+
+  /* ===== 页面骨架：1200px 编辑部式纵向节奏 ===== */
+  .page-head {
+    text-align: center;
+    padding: 96px 24px 0;
+  }
+  .page-head .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.08em;
+    color: var(--color-rust);
+  }
+  .page-head .kicker::before, .page-head .kicker::after {
+    content: ""; width: 28px; height: 1px; background: var(--color-apricot-wash);
+  }
+  .page-head h1 {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 64px;
+    line-height: 1.1;
+    letter-spacing: -1.6px;
+    margin-top: 16px;
+  }
+  .page-head .lede {
+    margin: 18px auto 0;
+    max-width: 640px;
+    font-size: 18px; line-height: 1.6; letter-spacing: -0.016em;
+    color: var(--color-ash);
+    text-wrap: pretty;
+  }
+
+  .band { padding: 80px 24px; }
+  .band--fog { background: var(--color-fog); }
+  .band-inner { max-width: 1200px; margin: 0 auto; }
+
+  .block-head { text-align: center; margin-bottom: 40px; }
+  .bh-tag {
+    display: inline-flex; align-items: center;
+    background: var(--color-apricot-wash); color: var(--color-rust);
+    font-size: 12px; font-weight: 500; letter-spacing: 0.1em;
+    padding: 4px 14px; border-radius: var(--radius-pill);
+  }
+  .block-head h2 {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 44px; line-height: 1.1; letter-spacing: -0.66px;
+    margin-top: 14px;
+  }
+  .block-head p {
+    margin: 10px auto 0;
+    max-width: 760px;
+    font-size: 16px; letter-spacing: -0.014em;
+    color: var(--color-graphite);
+    text-wrap: pretty;
+  }
+  .bh-em { color: var(--color-rust); font-weight: 450; }
+
+  .stage { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 40px; }
+  .phone-fig { display: flex; flex-direction: column; align-items: center; }
+  .card-label {
+    margin-top: 20px; width: 375px; max-width: 100%;
+    font-size: 14px; line-height: 1.75; letter-spacing: -0.013em;
+    color: var(--color-graphite);
+    text-align: center; text-wrap: pretty;
+  }
+  .card-label b { color: var(--color-ink); font-weight: 500; }
+
+  /* ===== 手机外框 ===== */
+  .phone {
+    width: 375px;
+    background: var(--color-fog);
+    border-radius: 54px;
+    box-shadow: var(--shadow-float), 0 32px 64px rgba(23, 25, 28, 0.16);
+    border: 10px solid var(--color-ink);
+    overflow: hidden;
+    position: relative;
+    flex: none;
+  }
+  .phone::before {
+    content: "";
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 96px; height: 26px;
+    background: var(--color-ink);
+    border-radius: 16px;
+    z-index: 60;
+  }
+  .phone-screen {
+    background: var(--color-fog);
+    min-height: 760px;
+    display: flex; flex-direction: column;
+    position: relative;
+    padding-bottom: 24px;
+  }
+
+  /* 状态栏 + 小程序导航 */
+  .statusbar {
+    height: 54px; flex: none;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 26px 6px;
+    background: var(--color-pure-white);
+  }
+  .sb-time { font-size: 15px; font-weight: 480; letter-spacing: 0; }
+  .sb-icons { display: flex; align-items: center; gap: 6px; }
+  .navbar {
+    background: var(--color-pure-white);
+    height: 44px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    border-bottom: 1px solid rgba(163, 166, 175, 0.18);
+  }
+  .navbar b { font-size: 16px; font-weight: 450; letter-spacing: -0.009em; }
+  .nav-badge {
+    position: absolute; right: 110px; top: 50%; transform: translateY(-50%);
+    background: var(--color-apricot-wash); color: var(--color-rust);
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px; border-radius: var(--radius-pill);
+  }
+  .capsule {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    width: 88px; height: 32px;
+    border: 1px solid rgba(163, 166, 175, 0.4);
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: var(--radius-pill);
+    display: flex; align-items: center; justify-content: space-evenly;
+  }
+  .capsule i { display: block; background: var(--color-ink); border-radius: var(--radius-pill); }
+  .capsule i.dots { width: 16px; height: 3px; box-shadow: 0 -5px 0 var(--color-ink), 0 5px 0 var(--color-ink); }
+  .capsule i.ring { width: 12px; height: 12px; background: transparent; border: 1.8px solid var(--color-ink); border-radius: var(--radius-pill); box-sizing: border-box; }
+  .home-ind {
+    position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 5px; border-radius: var(--radius-pill);
+    background: rgba(23, 25, 28, 0.28); z-index: 60;
+  }
+
+  /* ===== 通用组件 ===== */
+  .btn {
+    font-family: var(--font-sohne);
+    border: none; cursor: pointer;
+    border-radius: var(--radius-pill);
+    font-size: 15px; font-weight: 450; letter-spacing: -0.009em;
+    height: 48px; padding: 0 24px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn--pri { background: var(--color-ink); color: var(--color-pure-white); }
+  .btn--txt { background: transparent; color: var(--color-ink); height: 48px; }
+  .btn--sm { height: 40px; font-size: 14px; padding: 0 18px; }
+  .btn--grow { flex: 1; }
+
+  .pill { display: inline-flex; align-items: center; border-radius: var(--radius-pill); font-style: normal; flex: none; }
+  .pill--emp { background: var(--color-sky-wash); color: var(--color-ink); font-size: 10.5px; font-weight: 450; padding: 2px 9px; }
+  .pill--ok { background: var(--color-apricot-wash); color: var(--color-rust); font-size: 11px; font-weight: 450; padding: 3px 11px; }
+  .pill--role { background: var(--color-rust); color: var(--color-pure-white); font-size: 10px; font-weight: 450; padding: 2px 9px; }
+
+  /* ===== 区块1 交互流程图 ===== */
+  .flow {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch;
+    gap: 12px 8px; max-width: 1200px; margin: 0 auto;
+  }
+  .flow-node {
+    background: var(--color-pure-white);
+    border: 1px solid rgba(163, 166, 175, 0.35);
+    border-radius: 16px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(23, 25, 28, 0.04);
+  }
+  .fn-step { font-size: 14px; font-weight: 480; color: var(--color-ink); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+  .fn-note { font-size: 12px; color: var(--color-dove); margin-top: 2px; white-space: nowrap; letter-spacing: -0.008em; }
+  .fn-new {
+    background: var(--color-rust); color: var(--color-pure-white);
+    font-size: 10px; font-weight: 450; letter-spacing: 0.04em;
+    padding: 1px 7px; border-radius: var(--radius-pill);
+  }
+  .flow-node--attr {
+    border: 1.5px solid var(--color-rust);
+    background: var(--color-pure-white);
+    box-shadow: 0 6px 18px rgba(93, 42, 26, 0.10);
+  }
+  .flow-node--attr .fn-step { color: var(--color-rust); }
+  .flow-node--attr .fn-note { color: rgba(93, 42, 26, 0.55); }
+  .flow-arrow { align-self: center; color: var(--color-dove); font-size: 15px; }
+  .flow-note {
+    margin: 28px auto 0; max-width: 760px; text-align: center;
+    font-size: 14px; color: var(--color-ash); letter-spacing: -0.013em;
+  }
+  .flow-note b { font-weight: 500; color: var(--color-ink); }
+
+  /* ===== 屏A 入口 ===== */
+  .avatar-card {
+    margin: 16px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .av {
+    width: 52px; height: 52px; flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--color-apricot-wash);
+    color: var(--color-ink);
+    font-size: 18px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .av-name { font-size: 16px; font-weight: 480; display: flex; align-items: center; gap: 8px; }
+  .av-sub { font-size: 13px; color: var(--color-graphite); margin-top: 2px; }
+
+  .group-card {
+    margin: 16px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 8px 20px;
+  }
+  .gc-head {
+    font-size: 13px; font-weight: 500; letter-spacing: 0.05em;
+    color: var(--color-graphite);
+    padding: 14px 0 4px;
+  }
+  .mi-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--color-fog);
+  }
+  .mi-item:last-child { border-bottom: none; }
+  .mi-item--dim { opacity: 0.45; }
+  .mi-ico {
+    width: 40px; height: 40px; flex: none;
+    border-radius: 12px;
+    background: var(--color-fog);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .mi-ico--brand { background: var(--color-apricot-wash); }
+  .mi-ico svg { width: 19px; height: 19px; stroke: var(--color-ink); }
+  .mi-item--dim .mi-ico svg { stroke: var(--color-graphite); }
+  .mi-ico--brand svg { stroke: var(--color-rust); }
+  .new-dot {
+    position: absolute; top: -6px; right: -8px;
+    background: var(--color-rust); color: var(--color-pure-white);
+    font-size: 9.5px; font-style: normal; font-weight: 450;
+    padding: 1px 6px; border-radius: var(--radius-pill);
+  }
+  .mi-txt { flex: 1; min-width: 0; }
+  .mi-txt b { display: block; font-size: 15px; font-weight: 480; line-height: 1.4; }
+  .mi-txt i { display: block; font-size: 12.5px; font-style: normal; color: var(--color-graphite); margin-top: 1px; }
+  .mi-arrow { color: var(--color-dove); font-size: 18px; }
+
+  /* ===== 屏B/C/E 房源卡片 ===== */
+  .nb {
+    margin: 16px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-inputs);
+    padding: 14px 18px;
+    font-size: 13.5px; line-height: 1.7; color: var(--color-ash);
+    border: 1px solid rgba(163, 166, 175, 0.22);
+  }
+  .nb b { color: var(--color-rust); font-weight: 450; }
+  .search {
+    margin: 12px 16px 0;
+    height: 44px;
+    background: var(--color-pure-white);
+    border: 1px solid rgba(163, 166, 175, 0.35);
+    border-radius: var(--radius-inputs);
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 16px;
+    font-size: 14px; color: var(--color-dove);
+  }
+  .search svg { width: 16px; height: 16px; stroke: var(--color-dove); }
+
+  .h-list { padding: 12px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+  .h-card {
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 12px;
+    display: flex; align-items: center; gap: 12px;
+    position: relative;
+  }
+  .h-cover {
+    width: 84px; height: 64px; flex: none;
+    border-radius: var(--radius-images);
+    overflow: hidden;
+    position: relative;
+    background: var(--color-fog);
+  }
+  .h-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .h-flag {
+    position: absolute; left: 6px; top: 6px;
+    background: rgba(251, 225, 209, 0.94); color: var(--color-rust);
+    font-size: 10px; font-weight: 450;
+    padding: 1px 7px; border-radius: var(--radius-pill);
+  }
+  .h-flag--sold { background: rgba(23, 25, 28, 0.62); color: var(--color-pure-white); }
+  .h-info { flex: 1; min-width: 0; }
+  .h-title { font-size: 14.5px; font-weight: 480; line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h-meta { font-size: 12.5px; color: var(--color-graphite); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h-price { font-size: 18px; font-weight: 480; color: var(--color-ink); margin-top: 3px; }
+  .h-price em { font-style: normal; font-size: 12px; font-weight: 400; color: var(--color-graphite); margin-left: 2px; }
+  .h-cb {
+    width: 22px; height: 22px; flex: none;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--color-dove);
+    background: var(--color-pure-white);
+    position: relative;
+  }
+  .h-cb--on { background: var(--color-ink); border-color: var(--color-ink); }
+  .h-cb--on::after {
+    content: "";
+    position: absolute; left: 7px; top: 3.5px;
+    width: 5px; height: 9px;
+    border: solid var(--color-pure-white); border-width: 0 1.8px 1.8px 0;
+    transform: rotate(43deg);
+  }
+  .h-idx {
+    position: absolute; top: -7px; left: -7px;
+    width: 22px; height: 22px;
+    background: var(--color-ink); color: var(--color-pure-white);
+    border-radius: var(--radius-pill);
+    font-size: 11px; font-weight: 480;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .h-card--sel { outline: 1.5px solid var(--color-ink); outline-offset: -1.5px; }
+
+  .bottom-bar {
+    margin-top: auto;
+    padding: 14px 16px 10px;
+    background: rgba(247, 247, 248, 0.92);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(163, 166, 175, 0.18);
+    display: flex; align-items: center; gap: 16px;
+    position: sticky; bottom: 0;
+  }
+  .bb-txt { flex: 1; min-width: 0; }
+  .bb-txt b { display: block; font-size: 15px; font-weight: 480; }
+  .bb-txt i { display: block; font-size: 11.5px; font-style: normal; color: var(--color-graphite); margin-top: 1px; }
+
+  /* ===== 屏C 房源单详情 ===== */
+  .sheet-card {
+    margin: 16px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 20px;
+  }
+  .sc-row1 { display: flex; align-items: center; justify-content: space-between; }
+  .sc-row1 b { font-size: 17px; font-weight: 480; }
+  .sc-meta { font-size: 12.5px; color: var(--color-graphite); margin-top: 4px; }
+  .sc-code {
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid var(--color-fog);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sc-code > span:first-child { font-size: 13px; color: var(--color-graphite); }
+  .code-pill {
+    font-family: var(--mono);
+    font-size: 13px; letter-spacing: 0.02em;
+    background: var(--color-fog); color: var(--color-ink);
+    border-radius: 10px;
+    padding: 5px 12px;
+  }
+  .tipbar {
+    margin: 12px 16px 0;
+    background: var(--color-apricot-wash);
+    border-radius: var(--radius-inputs);
+    padding: 12px 16px;
+    font-size: 13px; line-height: 1.65; color: var(--color-rust);
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .tipbar::before {
+    content: "";
+    width: 6px; height: 6px; flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--color-rust);
+    margin-top: 8px;
+  }
+
+  /* ===== 屏D 海报预览 ===== */
+  .ghost-area { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+  .skel-card {
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .skel-card.skel-row { flex-direction: row; align-items: center; }
+  .skel { border-radius: 8px; background: var(--color-fog); height: 12px; }
+  .skel-cover { width: 84px; height: 64px; border-radius: var(--radius-images); background: var(--color-fog); flex: none; }
+  .skel-col { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+  .overlay {
+    position: absolute; inset: 0;
+    background: rgba(23, 25, 28, 0.55);
+    backdrop-filter: blur(3px);
+    z-index: 40;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px;
+    padding: 18px;
+  }
+  .ov-cap {
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 11.5px; letter-spacing: 0.02em;
+  }
+  .poster {
+    width: 300px; height: 480px; flex: none;
+    background: var(--color-pure-white);
+    border-radius: 20px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+  }
+  .p-head {
+    position: relative;
+    flex: none; height: 34%;
+    padding: 16px 15px;
+    background:
+      radial-gradient(120% 130% at 12% 0%, rgba(251, 225, 209, 0.95) 0%, rgba(251, 225, 209, 0.42) 42%, rgba(255, 255, 255, 0) 78%),
+      var(--color-pure-white);
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    overflow: hidden;
+  }
+  .p-head::after {
+    content: "";
+    position: absolute; right: -34px; top: -34px;
+    width: 96px; height: 96px;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(93, 42, 26, 0.14);
+  }
+  .p-pill {
+    background: var(--color-rust); color: var(--color-pure-white);
+    font-size: 10.5px; font-weight: 450; letter-spacing: 0.08em;
+    padding: 3px 11px; border-radius: var(--radius-pill);
+  }
+  .p-title {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 27px; line-height: 1.16; letter-spacing: -0.3px;
+    color: var(--color-ink);
+  }
+  .p-sub { font-size: 12px; color: var(--color-ash); letter-spacing: 0; margin-top: 1px; }
+  .p-body {
+    flex: 1;
+    background: var(--color-pure-white);
+    padding: 12px 14px 14px;
+    display: flex; flex-direction: column;
+    border-top: 1px solid rgba(163, 166, 175, 0.2);
+  }
+  .p-img-hero {
+    width: 100%; height: 108px; flex: none;
+    border-radius: var(--radius-images);
+    overflow: hidden;
+  }
+  .p-img-hero img, .p-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .p-img-row { display: flex; gap: 10px; margin-top: 10px; flex: 1; min-height: 0; }
+  .p-img { flex: 1; border-radius: var(--radius-images); overflow: hidden; }
+  .p-more {
+    margin-top: 10px; flex: none;
+    background: var(--color-apricot-wash);
+    color: var(--color-rust);
+    border-radius: 10px;
+    font-size: 11px; font-weight: 450; letter-spacing: 0.02em;
+    text-align: center;
+    padding: 6px 0;
+  }
+  .p-foot {
+    margin-top: 10px; flex: none;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .p-brand b { display: block; font-size: 13px; font-weight: 480; line-height: 1.4; }
+  .p-brand i { display: block; font-size: 10.5px; font-style: normal; color: var(--color-graphite); margin-top: 1px; }
+  .p-brand .rust-dot { display: inline-block; width: 5px; height: 5px; border-radius: var(--radius-pill); background: var(--color-rust); margin-right: 5px; vertical-align: 2px; }
+  .p-qr { text-align: center; flex: none; }
+  .p-qr svg { width: 56px; height: 56px; display: block; }
+  .p-qr i { display: block; font-size: 9px; font-style: normal; color: var(--color-graphite); margin-top: 3px; letter-spacing: 0.02em; }
+  .ov-actions { display: flex; align-items: center; gap: 14px; }
+  .ov-btn {
+    height: 44px; padding: 0 26px;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    color: var(--color-pure-white);
+    font-size: 14px; font-weight: 450;
+    display: inline-flex; align-items: center;
+  }
+  .ov-btn--pri { background: var(--color-pure-white); color: var(--color-ink); border-color: var(--color-pure-white); }
+
+  /* ===== 标注面板 ===== */
+  .anno-panel {
+    width: 420px; max-width: 100%;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 24px;
+  }
+  .ap-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .ap-head b { font-size: 17px; font-weight: 480; }
+  .ap-head span { font-size: 12px; color: var(--color-graphite); }
+  .ap-body { display: flex; flex-direction: column; gap: 18px; margin-top: 18px; }
+  .wf-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .dim-x { width: 236px; display: flex; align-items: center; gap: 6px; color: var(--color-graphite); font-size: 10.5px; }
+  .dim-x span { flex: 1; text-align: center; }
+  .tk { width: 26px; height: 1px; background: var(--color-dove); position: relative; }
+  .tk::before, .tk::after {
+    content: ""; position: absolute; top: -3px;
+    width: 1px; height: 7px; background: var(--color-dove);
+  }
+  .tk::before { left: 0; } .tk::after { right: 0; }
+  .wf-row { display: flex; align-items: stretch; gap: 6px; }
+  .dim-y { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--color-graphite); font-size: 10.5px; }
+  .dim-y span { writing-mode: vertical-rl; flex: 1; display: flex; align-items: center; justify-content: center; }
+  .tk--t, .tk--b { width: 1px; height: 26px; }
+  .tk--t::before { top: 0; left: -3px; width: 7px; height: 1px; }
+  .tk--t::after { display: none; }
+  .tk--b::before { display: none; }
+  .tk--b::after { bottom: 0; left: -3px; width: 7px; height: 1px; }
+  .wf-box {
+    width: 204px; height: 326px; flex: none;
+    border: 1.5px dashed var(--color-dove);
+    border-radius: 10px;
+    position: relative;
+    padding: 9px;
+    display: flex; flex-direction: column; gap: 7px;
+    background: var(--color-pure-white);
+  }
+  .wf-box > div { position: relative; z-index: 2; }
+  .wz-head {
+    height: 30%;
+    border: 1px solid rgba(93, 42, 26, 0.4);
+    border-radius: 8px;
+    background: linear-gradient(160deg, rgba(251, 225, 209, 0.65), rgba(255, 255, 255, 0));
+    color: var(--color-rust);
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wz-imgs { display: flex; flex-direction: column; gap: 5px; }
+  .wz-im { height: 34px; border: 1px solid rgba(163, 166, 175, 0.55); border-radius: 6px; background: var(--color-fog); }
+  .wz-im-row { display: flex; gap: 5px; }
+  .wz-im--half { flex: 1; height: 30px; }
+  .wz-lab { font-size: 9.5px; color: var(--color-graphite); text-align: center; }
+  .wz-strip {
+    border: 1px solid rgba(93, 42, 26, 0.35);
+    background: rgba(251, 225, 209, 0.5);
+    border-radius: 6px;
+    color: var(--color-rust);
+    font-size: 9px; text-align: center;
+    padding: 3px 0;
+  }
+  .wz-foot-lab { font-size: 9.5px; color: var(--color-graphite); line-height: 1.5; }
+  .wz-qr {
+    position: absolute; right: 10px; bottom: 12px; z-index: 2;
+    width: 44px; height: 44px;
+    border: 1.5px solid var(--color-ink);
+    border-radius: 8px;
+    background: var(--color-pure-white);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wz-qr svg { width: 30px; height: 30px; }
+  .wz-qr-lab {
+    position: absolute; right: 62px; bottom: 22px; z-index: 2;
+    font-size: 9px; color: var(--color-graphite);
+    text-align: right; line-height: 1.5;
+    width: 86px;
+  }
+  .wz-safe {
+    position: absolute; inset: 6px; z-index: 1;
+    border: 1px dashed rgba(163, 166, 175, 0.5);
+    border-radius: 6px;
+  }
+  .wz-safe i {
+    position: absolute; left: 50%; top: -8px; transform: translateX(-50%);
+    background: var(--color-pure-white);
+    font-size: 8.5px; font-style: normal; color: var(--color-dove);
+    padding: 0 6px; white-space: nowrap;
+  }
+  .minis { display: flex; gap: 12px; justify-content: center; }
+  .mini { text-align: center; }
+  .m-box {
+    width: 76px; height: 100px;
+    border: 1px solid rgba(163, 166, 175, 0.55);
+    border-radius: 8px;
+    padding: 7px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .m-b { flex: 1; background: var(--color-fog); border: 1px solid rgba(163, 166, 175, 0.5); border-radius: 4px; }
+  .m-flex { flex: 1; display: flex; gap: 5px; }
+  .m-hero { flex: none; height: 52%; background: var(--color-fog); border: 1px solid rgba(163, 166, 175, 0.5); border-radius: 4px; }
+  .mini i { display: block; font-size: 10px; font-style: normal; color: var(--color-graphite); margin-top: 6px; }
+  .ap-note { font-size: 12.5px; line-height: 1.75; color: var(--color-ash); letter-spacing: -0.011em; }
+  .ap-bullets { display: flex; flex-direction: column; gap: 7px; }
+  .pt-li {
+    font-size: 13px; color: var(--color-ash); line-height: 1.6;
+    padding-left: 16px; position: relative;
+  }
+  .pt-li::before {
+    content: "";
+    position: absolute; left: 2px; top: 9px;
+    width: 5px; height: 5px; border-radius: var(--radius-pill);
+    background: var(--color-apricot-wash);
+    box-shadow: 0 0 0 1px var(--color-rust);
+  }
+  .impl-note {
+    font-size: 12.5px; color: var(--color-graphite);
+    border-top: 1px solid var(--color-fog);
+    padding-top: 14px;
+  }
+  .pill-code {
+    font-family: var(--mono); font-size: 11.5px;
+    background: var(--color-fog); color: var(--color-ink);
+    border-radius: 6px; padding: 2px 7px;
+  }
+
+  /* ===== 屏E 落地页 ===== */
+  .hero {
+    margin: 16px 16px 0;
+    background:
+      radial-gradient(140% 160% at 10% 0%, rgba(251, 225, 209, 0.9) 0%, rgba(251, 225, 209, 0.35) 48%, rgba(255, 255, 255, 0) 82%),
+      var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 22px 20px;
+  }
+  .hero b {
+    display: block;
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 24px; line-height: 1.25; letter-spacing: -0.2px;
+  }
+  .hero i { display: block; font-size: 13px; font-style: normal; color: var(--color-graphite); margin-top: 5px; }
+  .cc {
+    margin: 12px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .cc-av {
+    width: 44px; height: 44px; flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--color-apricot-wash);
+    color: var(--color-ink);
+    font-size: 16px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cc-name { font-size: 15px; font-weight: 480; display: flex; align-items: center; gap: 7px; }
+  .cc-sub { font-size: 11.5px; color: var(--color-graphite); margin-top: 2px; }
+  .cc-btns { margin-left: auto; display: flex; flex-direction: column; gap: 6px; flex: none; }
+  .cc-btns .btn { height: 34px; font-size: 12.5px; padding: 0 14px; }
+  .cc-btns .btn--txt { height: 30px; }
+  .cc-note {
+    margin: 10px 18px 0;
+    font-size: 11.5px; color: var(--color-dove); line-height: 1.6;
+  }
+  .track-note {
+    margin: 14px 18px 0;
+    font-size: 11px; color: var(--color-dove);
+    text-align: center; letter-spacing: 0.01em;
+  }
+
+  /* ===== 区块7 视觉规范 ===== */
+  .spec-grid {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .spec-card {
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 24px;
+  }
+  .sp-h { font-size: 15px; font-weight: 480; padding-bottom: 14px; border-bottom: 1px solid var(--color-fog); margin-bottom: 14px; }
+  .sw-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .sw-chip { width: 28px; height: 28px; border-radius: 8px; flex: none; box-shadow: inset 0 0 0 1px rgba(23, 25, 28, 0.08); }
+  .sw-name { font-size: 13px; color: var(--color-ink); flex: 1; }
+  .sw-hex { font-family: var(--mono); font-size: 11px; color: var(--color-graphite); }
+  .ty-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--color-fog); }
+  .ty-row:last-child { border-bottom: none; }
+  .ty-label { font-size: 11px; color: var(--color-dove); flex: none; }
+  .spec-card .pt-li { padding-left: 16px; }
+  .spec-foot {
+    max-width: 1200px; margin: 32px auto 0;
+    text-align: center;
+    font-size: 13px; color: var(--color-graphite);
+  }
+  .spec-foot b { color: var(--color-ink); font-weight: 450; }
+
+  @media (max-width: 900px) {
+    .page-head h1 { font-size: 44px; letter-spacing: -0.66px; }
+    .block-head h2 { font-size: 34px; letter-spacing: -0.4px; }
+    .spec-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="page-head">
+    <span class="kicker">MFB · 房源单分享</span>
+    <h1>一张海报，多套好房</h1>
+    <p class="lede">微信小程序《美房宝》二手房业务 · 员工创建房源单，生成含小程序码的综合海报；单条朋友圈分享多套房源，客户扫码自动归因分享人。视觉遵循 DESIGN.md（Steep）规范。</p>
+  </header>
+
+  <!-- ============ 区块1 交互流程图 ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 1</span>
+        <h2>交互流程图</h2>
+        <p>员工侧创建分享 与 客户侧扫码归因全链路；<span class="bh-em">赭色描边节点 = 归因链路</span></p>
+      </div>
+      <div class="flow">
+        <div class="flow-node">
+          <div class="fn-step">我的页 · 分享获客</div>
+          <div class="fn-note">内部员工入口</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <div class="fn-step">房源单分享 <span class="fn-new">新</span></div>
+          <div class="fn-note">本次新增功能</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <div class="fn-step">选择在售房源</div>
+          <div class="fn-note">多选 · ≤10 套</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <div class="fn-step">创建房源单</div>
+          <div class="fn-note">生成 sheet_id + 唯一短码</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <div class="fn-step">点击分享</div>
+          <div class="fn-note">详情页「生成海报分享」</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <div class="fn-step">生成综合海报</div>
+          <div class="fn-note">canvas 2d · 600×960</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <div class="fn-step">保存相册</div>
+          <div class="fn-note">scope.writePhotosAlbum 授权</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <div class="fn-step">发朋友圈</div>
+          <div class="fn-note">单条朋友圈 · 多房源</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node flow-node--attr">
+          <div class="fn-step">客户扫码</div>
+          <div class="fn-note">识别海报小程序码</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node flow-node--attr">
+          <div class="fn-step">房源单聚合页</div>
+          <div class="fn-note">scene=code=短码 → 解析 sheet_id+referrer</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node flow-node--attr">
+          <div class="fn-step">visit 埋点 + 归因</div>
+          <div class="fn-note">visitor_id + referrer + source=poster</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node flow-node--attr">
+          <div class="fn-step">留资 / 联系分享人</div>
+          <div class="fn-note">线索自动归属分享人</div>
+        </div>
+      </div>
+      <div class="flow-note">归因机制与单房源分享一致：<b>referrer 透传 + visit 埋点 + 留资归因</b></div>
+    </div>
+  </section>
+
+  <!-- ============ 区块2 手机屏A：入口 ============ -->
+  <section class="band">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 2 · 手机屏 A</span>
+        <h2>入口 · 我的页「分享获客」分组</h2>
+        <p>新增「房源单分享」入口，原房源 / 评估 / 招募分享保留并弱化显示</p>
+      </div>
+      <div class="stage">
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏A 入口">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>我的</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+              <div class="avatar-card">
+                <div class="av">李</div>
+                <div class="av-info">
+                  <div class="av-name">李经理 <span class="pill pill--emp">内部员工</span></div>
+                  <div class="av-sub">二手房事业部 · 上海大区</div>
+                </div>
+              </div>
+              <div class="group-card">
+                <div class="gc-head">分享获客</div>
+                <div class="mi-item mi-item--dim">
+                  <div class="mi-ico"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 10 3.5l7 6"/><path d="M5 8.5V16h10V8.5"/></svg></div>
+                  <div class="mi-txt"><b>房源分享</b><i>单房源卡片 · 已上线</i></div>
+                  <span class="mi-arrow">›</span>
+                </div>
+                <div class="mi-item mi-item--dim">
+                  <div class="mi-ico"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7.5 7.5h5M7.5 10.5h5M7.5 13.5h3"/></svg></div>
+                  <div class="mi-txt"><b>评估分享</b><i>估价报告卡片 · 已上线</i></div>
+                  <span class="mi-arrow">›</span>
+                </div>
+                <div class="mi-item mi-item--dim">
+                  <div class="mi-ico"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3"/><path d="M4.5 16.5c1-3 3-4.5 5.5-4.5s4.5 1.5 5.5 4.5"/></svg></div>
+                  <div class="mi-txt"><b>招募分享</b><i>招募海报 · 已上线</i></div>
+                  <span class="mi-arrow">›</span>
+                </div>
+                <div class="mi-item mi-item--new">
+                  <div class="mi-ico mi-ico--brand">
+                    <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="14" height="5" rx="1.5"/><rect x="5.5" y="4" width="9" height="4" rx="1.5"/><path d="M6.5 13.5h.01M13.5 13.5h.01"/></svg>
+                    <span class="new-dot">新</span>
+                  </div>
+                  <div class="mi-txt"><b>房源单分享</b><i>多房源一图分享</i></div>
+                  <span class="mi-arrow">›</span>
+                </div>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label"><b>屏 A · 入口：</b>我的页「分享获客」分组新增「房源单分享」（杏色图标底 + 赭色描边单色线性图标 + 新角标，副标题"多房源一图分享"）；原三个分享入口保留弱化显示</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块3 手机屏B：创建房源单 ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 3 · 手机屏 B</span>
+        <h2>创建房源单 · 选择在售房源</h2>
+        <p>仅「在售」房源可多选（≤10 套），底部实时提示已选数量与海报策略</p>
+      </div>
+      <div class="stage">
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏B 创建房源单">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>创建房源单</b><span class="nav-badge">已选 3/10</span><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+              <div class="nb">勾选<b>在售</b>房源，生成一张含小程序码的海报，朋友圈单条分享多套房源</div>
+              <div class="search"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="5.5"/><path d="m13.5 13.5 3 3"/></svg>搜索小区 / 地址</div>
+              <div class="h-list">
+                <div class="h-card h-card--sel">
+                  <div class="h-cover"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：客厅实拍" loading="lazy" /></div>
+                  <div class="h-info">
+                    <div class="h-title">南北通透 · 满五唯一 · 电梯中楼层</div>
+                    <div class="h-meta">云顶澜湾 · 3室2厅 · 128㎡</div>
+                    <div class="h-price">¥568<em>万</em></div>
+                  </div>
+                  <div class="h-cb h-cb--on"></div>
+                </div>
+                <div class="h-card h-card--sel">
+                  <div class="h-cover"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：卧室实拍" loading="lazy" /></div>
+                  <div class="h-info">
+                    <div class="h-title">精装两房 · 近地铁 · 采光充足</div>
+                    <div class="h-meta">绿城晓风苑 · 2室2厅 · 89㎡</div>
+                    <div class="h-price">¥398<em>万</em></div>
+                  </div>
+                  <div class="h-cb h-cb--on"></div>
+                </div>
+                <div class="h-card">
+                  <div class="h-cover"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=modern%20Chinese%20residential%20building%20exterior%2C%20blue%20sky%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：楼栋外观" loading="lazy" /></div>
+                  <div class="h-info">
+                    <div class="h-title">学区府邸 · 总价友好 · 拎包入住</div>
+                    <div class="h-meta">学府雅苑 · 2室1厅 · 76㎡</div>
+                    <div class="h-price">¥315<em>万</em></div>
+                  </div>
+                  <div class="h-cb"></div>
+                </div>
+                <div class="h-card h-card--sel">
+                  <div class="h-cover"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20apartment%20kitchen%20and%20dining%20room%20interior%2C%20white%20cabinets%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：餐厨实拍" loading="lazy" /></div>
+                  <div class="h-info">
+                    <div class="h-title">一线江景 · 大平层 · 豪华装修</div>
+                    <div class="h-meta">滨江铭邸 · 4室2厅 · 165㎡</div>
+                    <div class="h-price">¥820<em>万</em></div>
+                  </div>
+                  <div class="h-cb h-cb--on"></div>
+                </div>
+                <div class="h-card">
+                  <div class="h-cover"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=sunny%20modern%20Chinese%20apartment%20second%20bedroom%20with%20wooden%20floor%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：次卧实拍" loading="lazy" /></div>
+                  <div class="h-info">
+                    <div class="h-title">湖景三房 · 品牌物业 · 带车位</div>
+                    <div class="h-meta">中海御湖熙岸 · 3室2厅 · 142㎡</div>
+                    <div class="h-price">¥660<em>万</em></div>
+                  </div>
+                  <div class="h-cb"></div>
+                </div>
+              </div>
+              <div class="bottom-bar">
+                <div class="bb-txt">
+                  <b>已选 3 套</b>
+                  <i>超过 3 套海报将提示「更多扫码」</i>
+                </div>
+                <button class="btn btn--pri">创建房源单</button>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label"><b>屏 B · 创建房源单：</b>导航栏实时显示「已选 n/10」；仅在售房源可勾选（选中卡片墨色描边 + 实心复选框）；底部墨色胶囊主按钮，超 3 套时海报拼 3 张并显示「更多扫码」</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块4 手机屏C：房源单详情 ============ -->
+  <section class="band">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 4 · 手机屏 C</span>
+        <h2>房源单详情</h2>
+        <p>唯一短码 code 标识房源单，支持预览海报 / 生成海报分享</p>
+      </div>
+      <div class="stage">
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏C 房源单详情">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>房源单详情</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+              <div class="sheet-card">
+                <div class="sc-row1">
+                  <b>我的精选房源单</b>
+                  <span class="pill pill--ok">可分享</span>
+                </div>
+                <div class="sc-meta">创建于 2026-08-29 14:30 · 共 3 套</div>
+                <div class="sc-code">
+                  <span>分享短码</span>
+                  <span class="code-pill">code: A3F9C2DE</span>
+                </div>
+              </div>
+              <div class="tipbar">
+                <span>海报含小程序码，客户扫码进入本页并自动关联您为分享人</span>
+              </div>
+              <div class="h-list">
+                <div class="h-card">
+                  <span class="h-idx">1</span>
+                  <div class="h-cover"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：客厅实拍" loading="lazy" /></div>
+                  <div class="h-info">
+                    <div class="h-title">南北通透 · 满五唯一 · 电梯中楼层</div>
+                    <div class="h-meta">云顶澜湾 · 3室2厅 · 128㎡</div>
+                    <div class="h-price">¥568<em>万</em></div>
+                  </div>
+                </div>
+                <div class="h-card">
+                  <span class="h-idx">2</span>
+                  <div class="h-cover"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：卧室实拍" loading="lazy" /></div>
+                  <div class="h-info">
+                    <div class="h-title">精装两房 · 近地铁 · 采光充足</div>
+                    <div class="h-meta">绿城晓风苑 · 2室2厅 · 89㎡</div>
+                    <div class="h-price">¥398<em>万</em></div>
+                  </div>
+                </div>
+                <div class="h-card">
+                  <span class="h-idx">3</span>
+                  <div class="h-cover"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20apartment%20kitchen%20and%20dining%20room%20interior%2C%20white%20cabinets%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：餐厨实拍" loading="lazy" /></div>
+                  <div class="h-info">
+                    <div class="h-title">一线江景 · 大平层 · 豪华装修</div>
+                    <div class="h-meta">滨江铭邸 · 4室2厅 · 165㎡</div>
+                    <div class="h-price">¥820<em>万</em></div>
+                  </div>
+                </div>
+              </div>
+              <div class="bottom-bar">
+                <button class="btn btn--txt btn--grow">预览海报</button>
+                <button class="btn btn--pri btn--grow">生成海报分享</button>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label"><b>屏 C · 房源单详情：</b>短码 code: A3F9C2DE 唯一标识，供小程序码 scene 透传；房源按勾选顺序编号 1/2/3；底部「预览海报」文字按钮 +「生成海报分享」墨色主按钮（每屏仅一个填充 CTA）</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块5 手机屏D：综合海报预览（核心） ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 5 · 手机屏 D（核心区块）</span>
+        <h2>综合海报预览 · 600×960 canvas</h2>
+        <p>暖光晕杂志式头图 + 按套数自适应拼版 + 右下角小程序码；本示例按「选 6 套」绘制，仍拼 3 张图并提示「更多扫码」。<span class="bh-em">杏色暖光晕仅用于海报头区（hero），比渐变营销图更不易被朋友圈折叠</span></p>
+      </div>
+      <div class="stage">
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏D 海报预览">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>房源单详情</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+              <div class="ghost-area" aria-hidden="true">
+                <div class="skel-card">
+                  <div class="skel" style="width: 42%; height: 14px;"></div>
+                  <div class="skel" style="width: 68%;"></div>
+                  <div class="skel" style="width: 36%;"></div>
+                </div>
+                <div class="skel-card skel-row">
+                  <div class="skel-cover"></div>
+                  <div class="skel-col">
+                    <div class="skel" style="width: 84%;"></div>
+                    <div class="skel" style="width: 58%;"></div>
+                  </div>
+                </div>
+                <div class="skel-card skel-row">
+                  <div class="skel-cover"></div>
+                  <div class="skel-col">
+                    <div class="skel" style="width: 76%;"></div>
+                    <div class="skel" style="width: 50%;"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="overlay">
+                <div class="ov-cap">海报预览 · 600×960（5:8）· 按选 6 套生成</div>
+                <div class="poster">
+                  <div class="p-head">
+                    <span class="p-pill">精选好房</span>
+                    <div class="p-title">美房宝品质二手房</div>
+                    <!-- ⚠️ 超 3 套场景（示例选 6 套）：副标题/提示条数字取实际套数；≤3 套不显示提示条 -->
+                    <div class="p-sub">6 套优质房源 精选呈现</div>
+                  </div>
+                  <div class="p-body">
+                    <div class="p-img-hero"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="海报主图：客厅实拍" loading="lazy" /></div>
+                    <div class="p-img-row">
+                      <div class="p-img"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="海报副图：卧室实拍" loading="lazy" /></div>
+                      <div class="p-img"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20apartment%20kitchen%20and%20dining%20room%20interior%2C%20white%20cabinets%2C%20realistic%20photo&image_size=landscape_4_3" alt="海报副图：餐厨实拍" loading="lazy" /></div>
+                    </div>
+                    <div class="p-more">已为您精选 6 套 · 更多好房 扫码查看</div>
+                    <div class="p-foot">
+                      <div class="p-brand">
+                        <b><span class="rust-dot"></span>美房宝 · 品质二手房</b>
+                        <i>真实在售 · 实拍房源</i>
+                      </div>
+                      <div class="p-qr">
+                        <svg viewBox="0 0 44 44" role="img" aria-label="小程序码示意"><use href="#wxcode-art"></use></svg>
+                        <i>扫码看全部房源</i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ov-actions">
+                  <span class="ov-btn ov-btn--pri">保存图片</span>
+                  <span class="ov-btn">取消</span>
+                </div>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label"><b>屏 D · 综合海报预览：</b>详情页点「生成海报分享」弹出 canvas 海报（600×960 逻辑像素）；头区杏色暖光晕 + 衬线大标题；图片按套数自适应拼版，超 3 套仍拼 3 张并显示「更多扫码」；小程序码固定右下角</figcaption>
+        </figure>
+
+        <aside class="anno-panel">
+          <div class="ap-head">
+            <b>海报布局标注</b>
+            <span>600 × 960 · 5:8 · 安全边距 26px</span>
+          </div>
+          <div class="ap-body">
+            <div class="wf-col">
+              <div class="dim-x"><i class="tk tk--l"></i><span>600 px</span><i class="tk tk--r"></i></div>
+              <div class="wf-row">
+                <div class="dim-y"><i class="tk tk--t"></i><span>960 px</span><i class="tk tk--b"></i></div>
+                <div class="wf-box">
+                  <div class="wz-head">标题区 · 暖光晕（34%）</div>
+                  <div class="wz-imgs">
+                    <div class="wz-im wz-im--hero"></div>
+                    <div class="wz-im-row">
+                      <div class="wz-im wz-im--half"></div>
+                      <div class="wz-im wz-im--half"></div>
+                    </div>
+                    <div class="wz-lab">图片拼版区（按套数自适应）</div>
+                  </div>
+                  <div class="wz-strip">「更多扫码」提示条（超 3 套）</div>
+                  <div class="wz-foot-lab">品牌信息区<br />美房宝 · 品质二手房</div>
+                  <div class="wz-qr-lab">小程序码 80×80<br />（逻辑 160×160）</div>
+                  <div class="wz-qr"><svg viewBox="0 0 44 44" aria-hidden="true"><use href="#wxcode-art"></use></svg></div>
+                  <div class="wz-safe"><i>安全边距 26px</i></div>
+                </div>
+              </div>
+            </div>
+            <div class="minis">
+              <div class="mini">
+                <div class="m-box"><div class="m-b"></div></div>
+                <i>1 套 · 通栏大图</i>
+              </div>
+              <div class="mini">
+                <div class="m-box"><div class="m-flex"><div class="m-b"></div><div class="m-b"></div></div></div>
+                <i>2 套 · 左右并排</i>
+              </div>
+              <div class="mini">
+                <div class="m-box"><div class="m-hero"></div><div class="m-flex"><div class="m-b"></div><div class="m-b"></div></div></div>
+                <i>3 套 · 上1通栏+下2并排</i>
+              </div>
+            </div>
+            <div class="ap-note">拼版规则：1 套 = 通栏大图；2 套 = 左右并排；3 套 = 上 1 通栏 + 下 2 并排；超 3 套 = 仍拼 3 张 +「更多扫码」提示条。示例按「选 6 套」绘制：副标题与提示条数字取实际套数（≤3 套不显示提示条），图片间距 12px、圆角 12px、cover 裁剪。</div>
+            <div class="ap-bullets">
+              <div class="pt-li">规格 600×960（5:8）逻辑像素，安全边距 26px</div>
+              <div class="pt-li">主标题固定「美房宝品质二手房」，副标题套数随所选变化</div>
+              <div class="pt-li">封面图 cover 裁剪，缩略图优先取 cover_thumbnail_url</div>
+              <div class="pt-li">小程序码固定海报右下角 80×80（逻辑 160×160）</div>
+              <div class="pt-li">保存相册需 scope.writePhotosAlbum 授权，拒绝时引导去设置</div>
+            </div>
+            <div class="impl-note">实现方式：小程序 canvas 2d 绘制，复用招募海报模式 <span class="pill-code">recruit-poster.ts</span></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块6 手机屏E：客户扫码落地页 ============ -->
+  <section class="band">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 6 · 手机屏 E</span>
+        <h2>客户扫码落地页 · 房源单聚合页</h2>
+        <p>scene 解析短码进入聚合页，referrer 命中显示分享人联系卡，非在售房源实时标注</p>
+      </div>
+      <div class="stage">
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏E 落地页">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>精选房源单</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+              <div class="hero">
+                <b>TA 为您精选了 3 套好房</b>
+                <i>真实在售 · 扫码即看</i>
+              </div>
+              <div class="cc">
+                <div class="cc-av">李</div>
+                <div>
+                  <div class="cc-name">李经理 <span class="pill pill--role">分享人</span></div>
+                  <div class="cc-sub">扫码进入 · 已自动关联分享人</div>
+                </div>
+                <div class="cc-btns">
+                  <button class="btn btn--pri">电话咨询</button>
+                  <button class="btn btn--txt">微信</button>
+                </div>
+              </div>
+              <div class="cc-note">复用单房源分享 consultant 接口：referrer 命中时 is_referrer=true，角色显示「分享人」</div>
+              <div class="h-list">
+                <div class="h-card">
+                  <div class="h-cover">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：客厅实拍" loading="lazy" />
+                    <span class="h-flag">在售</span>
+                  </div>
+                  <div class="h-info">
+                    <div class="h-title">南北通透 · 满五唯一 · 电梯中楼层</div>
+                    <div class="h-meta">云顶澜湾 · 3室2厅 · 128㎡</div>
+                    <div class="h-price">¥568<em>万</em></div>
+                  </div>
+                </div>
+                <div class="h-card">
+                  <div class="h-cover">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：卧室实拍" loading="lazy" />
+                    <span class="h-flag">在售</span>
+                  </div>
+                  <div class="h-info">
+                    <div class="h-title">精装两房 · 近地铁 · 采光充足</div>
+                    <div class="h-meta">绿城晓风苑 · 2室2厅 · 89㎡</div>
+                    <div class="h-price">¥398<em>万</em></div>
+                  </div>
+                </div>
+                <div class="h-card">
+                  <div class="h-cover">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20apartment%20kitchen%20and%20dining%20room%20interior%2C%20white%20cabinets%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：餐厨实拍" loading="lazy" />
+                    <span class="h-flag h-flag--sold">已售</span>
+                  </div>
+                  <div class="h-info">
+                    <div class="h-title">一线江景 · 大平层 · 豪华装修</div>
+                    <div class="h-meta">滨江铭邸 · 4室2厅 · 165㎡</div>
+                    <div class="h-price">¥820<em>万</em></div>
+                  </div>
+                </div>
+              </div>
+              <div class="track-note">进入即上报 visit-events（visitor_id + referrer + source=poster）</div>
+              <div class="bottom-bar">
+                <button class="btn btn--txt btn--grow">咨询分享人</button>
+                <button class="btn btn--pri btn--grow">我想卖房 · 免费估价</button>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label"><b>屏 E · 落地页：</b>scene=code 解析 sheet_id + referrer，进入即上报 visit-events；referrer 命中时显示分享人联系卡（墨色主按钮 + 文字次按钮）；房源状态实时过滤标注（已售深灰），底部转化入口承接卖房估价</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块7 视觉规范面板 ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 7</span>
+        <h2>视觉规范</h2>
+        <p>遵循项目 DESIGN.md（Steep Style Reference）—— 色板 / 字体阶梯 / 海报规范要点</p>
+      </div>
+      <div class="spec-grid">
+        <div class="spec-card">
+          <div class="sp-h">色板 · Steep Tokens</div>
+          <div class="sw-row"><span class="sw-chip" style="background:#17191c"></span><span class="sw-name">Ink · 主文字 / 填充 CTA</span><span class="sw-hex">#17191c</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#ffffff"></span><span class="sw-name">Pure White · 画布 / 卡面</span><span class="sw-hex">#ffffff</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#f7f7f8"></span><span class="sw-name">Fog · 区块底 / 侧栏</span><span class="sw-hex">#f7f7f8</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#4c4c4c"></span><span class="sw-name">Ash · 正文辅字</span><span class="sw-hex">#4c4c4c</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#777b86"></span><span class="sw-name">Graphite · 三级文字 / 图标</span><span class="sw-hex">#777b86</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#a3a6af"></span><span class="sw-name">Dove · 发丝线 / 占位</span><span class="sw-hex">#a3a6af</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#5d2a1a"></span><span class="sw-name">Rust · 唯一暖色强调</span><span class="sw-hex">#5d2a1a</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#fbe1d1"></span><span class="sw-name">Apricot Wash · 暖卡底 / 头区光晕</span><span class="sw-hex">#fbe1d1</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#d3e3fc"></span><span class="sw-name">Sky Wash · 冷卡底</span><span class="sw-hex">#d3e3fc</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:linear-gradient(135deg,#fbe1d1 0%,#ffffff 70%)"></span><span class="sw-name">海报头区光晕（radial）</span><span class="sw-hex">Apricot → White</span></div>
+        </div>
+        <div class="spec-card">
+          <div class="sp-h">字体阶梯 · Signifier / Sohne</div>
+          <div class="ty-row"><span class="ty-sample" style="font-family:var(--font-signifier); font-weight:400; font-size:28px; letter-spacing:-0.3px;">美房宝品质二手房</span><span class="ty-label">Signifier 44-64 · 仅标题</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:18px; font-weight:480;">区块标题 heading-sm</span><span class="ty-label">Sohne 22-26 · w480</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:16px; font-weight:450;">卡片标题与按钮 450</span><span class="ty-label">Sohne 16 · w450</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:14px; color:#4c4c4c;">正文说明文字 caption</span><span class="ty-label">Sohne 14 · w400</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:12px; color:#777b86;">辅助注释 Graphite</span><span class="ty-label">Sohne 12 · w400</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:11px; color:#a3a6af; font-family:var(--mono);">标注 · SF Mono</span><span class="ty-label">Mono 11 · 标注专用</span></div>
+        </div>
+        <div class="spec-card">
+          <div class="sp-h">形状 · 阴影 · 海报规范</div>
+          <div class="pt-li">卡片 24px 圆角 / 图片 12px / 输入 16px / 按钮 9999px 胶囊</div>
+          <div class="pt-li">签名阴影：1px 墨色描边 + 20/25px 落影 + 8/10px 微落影</div>
+          <div class="pt-li">填充 CTA 仅墨色胶囊，每屏最多一个；次操作用文字按钮</div>
+          <div class="pt-li">海报 600×960（5:8）逻辑像素，安全边距 26px</div>
+          <div class="pt-li">海报标题固定「美房宝品质二手房」，衬线 display</div>
+          <div class="pt-li">暖光晕仅海报头区使用；超 3 套显示「更多扫码」，仍拼 3 张图</div>
+          <div class="pt-li">小程序码右下角 80×80（逻辑 160×160）</div>
+          <div class="pt-li">实现复用招募海报模式 recruit-poster.ts（canvas 2d）</div>
+        </div>
+      </div>
+      <div class="spec-foot">设计系统来源：<b>/DESIGN.md（Steep — Soft dawn on a marble dashboard）</b> · 禁止饱和蓝绿红 · 色彩仅作标点，让内容自己说话</div>
+    </div>
+  </section>
+
+  <!-- 小程序码示意（放射花瓣形）：仅供设计稿示意，实际由微信 getwxacodeunlimit 生成 -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="wxcode-art">
+        <circle cx="22" cy="22" r="20" fill="none" stroke="#17191c" stroke-width="1.6" stroke-dasharray="4.2 3.4" stroke-dashoffset="2"/>
+        <circle cx="22" cy="22" r="13.5" fill="none" stroke="#17191c" stroke-width="1.4" stroke-dasharray="3 2.6" stroke-dashoffset="1"/>
+        <g stroke="#17191c" stroke-width="1.6" stroke-linecap="round">
+          <path d="M22 8.5v3.4"/><path d="M22 32.1v3.4"/><path d="M8.5 22h3.4"/><path d="M32.1 22h3.4"/>
+          <path d="M12.6 12.6l2.4 2.4"/><path d="M29 29l2.4 2.4"/><path d="M31.4 12.6 29 15"/><path d="M15 29l-2.4 2.4"/>
+        </g>
+        <circle cx="22" cy="22" r="6" fill="#17191c"/>
+        <circle cx="22" cy="22" r="2.4" fill="#ffffff"/>
+      </g>
+    </defs>
+  </svg>
+</body>
+</html>
