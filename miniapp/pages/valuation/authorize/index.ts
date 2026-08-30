@@ -420,10 +420,13 @@ Page<PageData, PageCustom>({
     }
   },
 
-  /** 进入真实模式的小区数据分析页（携带小区名）. */
+  /** 进入真实模式的小区数据分析页（携带小区名；from=authorize 用于分析页展示「查看房源明细」入口，仅员工侧入口显示）. */
   enterCommunityAnalysis(name: string) {
     wx.navigateTo({
-      url: "/pages/community-analysis/index/index?mode=real&community_name=" + encodeURIComponent(name),
+      url:
+        "/pages/community-analysis/index/index?mode=real&community_name=" +
+        encodeURIComponent(name) +
+        "&from=authorize",
     });
   },
 

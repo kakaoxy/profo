@@ -319,6 +319,11 @@
     </block>
   </view>
 
+  <!-- 查看房源明细（仅员工侧授权页入口显示） -->
+  <view wx:if="{{fromAuthorize && !isSample && communityName}}" class="property-link" bindtap="onTapPropertyList">
+    查看「{{communityName}}」小区房源明细 →
+  </view>
+
   <!-- 免责声明 -->
   <view class="disclaimer">{{disclaimerText}}</view>
 

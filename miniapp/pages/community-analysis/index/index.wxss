@@ -566,6 +566,15 @@ page {
 }
 
 /* ===== 免责声明 ===== */
+/* 底部「查看房源明细」链接（仅员工侧授权页入口显示） */
+.property-link {
+  padding: 24rpx 40rpx 8rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--warm-fg);
+  line-height: 1.6;
+}
+
 .disclaimer {
   padding: 8rpx 40rpx 16rpx;
   text-align: center;

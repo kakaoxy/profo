@@ -1,6 +1,21 @@
 import { BASE_ORIGIN, OSS_BASE_URL, WATERMARK_STYLE } from "./config";
 
 /**
+ * 解码小程序 onLoad query 参数（微信不自动解码）：
+ * - 已是中文等无 `%` 序列的串：decodeURIComponent 为 no-op，安全；
+ * - 编码串（如 %E9%80%9A...）：解码回原文；
+ * - 含非法 `%` 序列：抛错回退原值.
+ */
+export function decodeQueryParam(value: string | undefined): string {
+  if (!value) return "";
+  try {
+    return decodeURIComponent(value).trim();
+  } catch {
+    return value.trim();
+  }
+}
+
+/**
  * 将后端返回的资源 URL 解析为小程序可加载的完整 URL.
  * - null/undefined/空：返回空字符串
  * - 完整 URL（http/https）或 data URI：原样返回

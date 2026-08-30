@@ -1,7 +1,7 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
 import { getFloorPlan } from "../../../utils/floor-plan";
-import { resolveAssetUrl } from "../../../utils/url";
+import { resolveAssetUrl, decodeQueryParam } from "../../../utils/url";
 
 type PropertyResponse = components["schemas"]["PropertyResponse"];
 type PaginatedPropertyResponse = components["schemas"]["PaginatedPropertyResponse"];
@@ -229,7 +229,12 @@ Page<PageData, PageCustom>({
     floorViews: buildFloorViews([]),
   },
 
-  onLoad() {
+  onLoad(query: Record<string, string | undefined>) {
+    // 支持外部入口预填搜索词（如小区分析页「查看房源明细」跳转）
+    const keyword = decodeQueryParam(query.keyword);
+    if (keyword) {
+      this.setData({ keyword, searchValue: keyword });
+    }
     // 首屏加载房源列表
     this.loadList(true);
   },

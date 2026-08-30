@@ -1,5 +1,6 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
+import { decodeQueryParam } from "../../../utils/url";
 import {
   buildTrendChartData,
   buildTrendLegend,
@@ -52,22 +53,6 @@ export interface OptionView {
   selected: boolean;
 }
 
-/**
- * 微信 onLoad 的 query 参数不会被框架 URL 解码（实测收到的是 navigateTo 时
- * encodeURIComponent 后的编码串），此处显式解码一次：
- * - 已是中文等无 `%` 序列的串：decodeURIComponent 为 no-op，安全；
- * - 编码串（如 %E9%80%9A...）：解码回原文；
- * - 含非法 `%` 序列：抛错回退原值.
- */
-function decodeQueryParam(value: string | undefined): string {
-  if (!value) return "";
-  try {
-    return decodeURIComponent(value).trim();
-  } catch {
-    return value.trim();
-  }
-}
-
 /** 范围面板单选视图. */
 function buildRangeViews(draft: string): OptionView[] {
   return RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label, selected: o.value === draft }));
@@ -81,6 +66,8 @@ interface PageData {
   communityName: string;
   communityId: string;
   mainLayout: string;
+  /** 是否员工侧授权页入口（控制底部「查看房源明细」链接，C端入口不显示）. */
+  fromAuthorize: boolean;
   // 状态
   loading: boolean;
   error: boolean;
@@ -148,6 +135,7 @@ interface PageCustom {
   onTrendModeChange(e: WechatMiniprogram.BaseEvent): void;
   onPriceModeChange(e: WechatMiniprogram.BaseEvent): void;
   onRoomsFloorModeChange(e: WechatMiniprogram.BaseEvent): void;
+  onTapPropertyList(): void;
   onRetry(): void;
   onGoBack(): void;
   onCtaTap(): void;
@@ -170,6 +158,7 @@ Page<PageData, PageCustom>({
     communityName: "",
     communityId: "",
     mainLayout: "",
+    fromAuthorize: false,
     loading: false,
     error: false,
     authState: "ok",
@@ -211,7 +200,8 @@ Page<PageData, PageCustom>({
   onLoad(query: Record<string, string | undefined>) {
     const mode = query.mode || "real";
     const communityName = decodeQueryParam(query.community_name);
-    this.setData({ mode, isSample: mode === "sample", communityName });
+    const fromAuthorize = query.from === "authorize";
+    this.setData({ mode, isSample: mode === "sample", communityName, fromAuthorize });
     this.loadData();
   },
 
@@ -457,6 +447,16 @@ Page<PageData, PageCustom>({
     const value = e.currentTarget.dataset.value as string;
     if (value === this.data.roomsFloorMode) return;
     this.setData({ roomsFloorMode: value });
+  },
+
+  /** 底部「查看房源明细」：跳转房源查询页并以当前小区名预填搜索（仅授权页入口显示）. */
+  onTapPropertyList() {
+    if (!this.data.fromAuthorize || !this.data.communityName) {
+      return;
+    }
+    wx.navigateTo({
+      url: "/pages/properties/list/index?keyword=" + encodeURIComponent(this.data.communityName),
+    });
   },
 
   onRetry() {
