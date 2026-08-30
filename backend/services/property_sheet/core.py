@@ -84,6 +84,9 @@ class PropertySheetService:
             except IntegrityError:
                 self.db.rollback()
                 continue
+            # refresh 刻意留在 try 外：commit 已成功落库，refresh（纯 SELECT，
+            # 不会抛 IntegrityError）若因连接异常失败必须 fail loud 上抛，
+            # 绝不能回滚重试——否则会重复创建一套相同房源单
             self.db.refresh(sheet)
             return sheet
         msg = "短码冲突，请重试"
