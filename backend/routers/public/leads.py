@@ -6,6 +6,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
+from fastapi.concurrency import run_in_threadpool
 
 from dependencies.auth import CurrentCInternalUserDep, CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
@@ -37,6 +38,7 @@ from schemas.public import (
     PublicLeadResponse,
 )
 from services.leads.core import LeadService
+from services.leads.notify import notify_eval_price_changed
 from settings import settings
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
@@ -449,7 +451,7 @@ def get_my_acquired_phone(
     description="对 pending_assessment 线索执行 approve/reject/lost 单事务流转（仅 admin/operator）",
 )
 @limiter.limit(RateLimits.LEAD_UPDATE)
-def authorize_assessment(
+async def authorize_assessment(
     request: Request,
     lead_id: Annotated[str, Path(description="线索ID")],
     body: LeadAssessmentAuthorizeRequest,
@@ -457,7 +459,12 @@ def authorize_assessment(
     service: LeadServiceDep,
 ) -> LeadAssessmentAuthorizeResponse:
     """小程序员工侧评估授权（approve/reject/lost 原子流转）."""
-    lead = service.authorize_assessment(user_id=operator.id, lead_id=lead_id, req=body)
+    # service 同步 DB 操作（含 FOR UPDATE 行锁等待）放线程池，避免阻塞事件循环
+    lead = await run_in_threadpool(service.authorize_assessment, user_id=operator.id, lead_id=lead_id, req=body)
+    # 仅 approve（授权价产出）触发客户订阅消息通知（阻塞调用放线程池；
+    # 通知内部捕获一切异常仅记日志，绝不影响授权结果）
+    if body.action == "approve" and lead.eval_price is not None:
+        await run_in_threadpool(notify_eval_price_changed, service.db, lead, lead.eval_price, body.remark)
     status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
     status_display, _ = _get_status_display(status_code)
     return LeadAssessmentAuthorizeResponse(
@@ -475,7 +482,7 @@ def authorize_assessment(
     description="对 pending_visit/visited 线索追加评估记录并更新评估价，不改状态（仅 admin/operator）",
 )
 @limiter.limit(RateLimits.LEAD_UPDATE)
-def create_reevaluation(
+async def create_reevaluation(
     request: Request,
     lead_id: Annotated[str, Path(description="线索ID")],
     body: LeadEvalHistoryCreate,
@@ -483,12 +490,18 @@ def create_reevaluation(
     service: LeadServiceDep,
 ) -> LeadEvalHistoryResponse:
     """小程序员工侧再次评估（语义对齐 admin「调整评估价」）."""
-    rec = service.create_reevaluation(
+    # service 同步 DB 操作放线程池，避免阻塞事件循环
+    rec, lead = await run_in_threadpool(
+        service.create_reevaluation,
         user_id=operator.id,
         lead_id=lead_id,
         eval_price=body.eval_price,
         remark=body.remark,
     )
+    # 调整评估价成功后触发客户订阅消息通知（复用 service 返回的已更新 lead，
+    # 阻塞调用放线程池；通知内部捕获一切异常仅记日志，绝不影响调价结果）
+    if lead is not None:
+        await run_in_threadpool(notify_eval_price_changed, service.db, lead, body.eval_price, body.remark)
     return LeadEvalHistoryResponse.model_validate(rec)
 
 

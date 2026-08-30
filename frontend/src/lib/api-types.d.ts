@@ -3154,6 +3154,190 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/property-sheets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 创建房源单
+         * @description 选择 1~10 套在售已发布房源生成房源单（服务端去重保序），需 C 端登录态；限流
+         */
+        post: operations["create_property_sheet_api_v1_public_property_sheets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/property-sheets/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的房源单列表
+         * @description 当前员工未删除的房源单列表（创建时间倒序，含明细数），需登录
+         */
+        get: operations["list_my_property_sheets_api_v1_public_property_sheets_mine_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/property-sheets/my/share-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的房源单分享统计
+         * @description 分享次数 / 经我分享打开 PV/UV / 分享归因留资数（昨日 + 累计），需登录
+         */
+        get: operations["get_my_share_stats_api_v1_public_property_sheets_my_share_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/property-sheets/qr/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 解析小程序码短码
+         * @description 游客可访问，限流；返回房源单ID与来源员工ID（员工无效时 referrer 为 null）
+         */
+        get: operations["resolve_qr_code_api_v1_public_property_sheets_qr__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/property-sheets/{sheet_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取房源单详情
+         * @description 获取房源单及其可见房源明细（仅显示已发布且在售/已售的房源），无需登录
+         */
+        get: operations["get_property_sheet_detail_api_v1_public_property_sheets__sheet_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * 删除房源单
+         * @description 软删归档（status 置 archived），删除后全链路拦截；仅本人可删，需登录
+         */
+        delete: operations["delete_property_sheet_api_v1_public_property_sheets__sheet_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/property-sheets/{sheet_id}/qrcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 生成房源单小程序码
+         * @description 复用房源单短码实时调微信生成，返回短码与 base64 图片；仅本人，需登录；限流
+         */
+        get: operations["generate_property_sheet_qrcode_api_v1_public_property_sheets__sheet_id__qrcode_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/property-sheets/{sheet_id}/consultant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取分享人联系卡
+         * @description 无需登录；referrer 为有效内部员工时返回其联系方式，否则回退默认顾问
+         */
+        get: operations["get_consultant_contact_api_v1_public_property_sheets__sheet_id__consultant_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/property-sheets/{sheet_id}/visit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报房源单访问埋点
+         * @description 免登录，referrer 原样落库；房源单不存在或已删除返回 404
+         */
+        post: operations["create_visit_event_api_v1_public_property_sheets__sheet_id__visit_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/property-sheets/{sheet_id}/share-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报房源单分享事件
+         * @description 需 C 端登录态（员工经附加 customer 角色访问），employee_id 服务端取当前用户；限流
+         */
+        post: operations["create_share_event_api_v1_public_property_sheets__sheet_id__share_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/bookings": {
         parameters: {
             query?: never;
@@ -3430,6 +3614,26 @@ export interface paths {
          * @description 获取指定线索的详细信息，仅能查看自己创建的线索
          */
         get: operations["get_lead_detail_api_v1_public_leads__lead_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/valuations/subscribe-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取授权价提醒订阅模板 ID
+         * @description 免登录下发估价授权价变更提醒的订阅消息模板 ID；后端未配置时返回 null
+         */
+        get: operations["get_subscribe_template_api_v1_public_valuations_subscribe_template_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9482,6 +9686,225 @@ export interface components {
             updated_at: string;
         };
         /**
+         * PropertySheetCreateRequest
+         * @description C端创建房源单请求.
+         */
+        PropertySheetCreateRequest: {
+            /**
+             * Project Ids
+             * @description 房源ID列表(1~10个，服务端去重保序)
+             */
+            project_ids: number[];
+        };
+        /**
+         * PropertySheetItemResponse
+         * @description C端房源单项（含房源展示字段，与 PublicProjectListItem 同名同类型）.
+         */
+        PropertySheetItemResponse: {
+            /**
+             * Marketing Project Id
+             * @description 房源ID
+             */
+            marketing_project_id: number;
+            /**
+             * Sort Order
+             * @description 排序(0起)
+             */
+            sort_order: number;
+            /**
+             * Display Status
+             * @description 展示状态: 在售/已售
+             */
+            display_status: string;
+            /**
+             * Title
+             * @description 标题
+             */
+            title: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name?: string | null;
+            /**
+             * Cover Image
+             * @description 封面图URL
+             */
+            cover_image?: string | null;
+            /**
+             * Cover Thumbnail Url
+             * @description 封面缩略图URL
+             */
+            cover_thumbnail_url?: string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout: string;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation: string;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info: string;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area: number;
+            /**
+             * Total Price
+             * @description 总价(万元)
+             */
+            total_price: number;
+            /**
+             * Unit Price
+             * @description 单价(万元/m²)
+             */
+            unit_price: number;
+            /**
+             * Tags
+             * @description 标签列表
+             */
+            tags?: string[];
+        };
+        /**
+         * PropertySheetMineItemResponse
+         * @description C端我的房源单列表项.
+         */
+        PropertySheetMineItemResponse: {
+            /**
+             * Id
+             * @description 房源单ID
+             */
+            id: number;
+            /**
+             * Code
+             * @description 8位分享短码
+             */
+            code: string;
+            /**
+             * Item Count
+             * @description 房源明细数
+             */
+            item_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+        };
+        /**
+         * PropertySheetMineListResponse
+         * @description C端我的房源单列表响应.
+         */
+        PropertySheetMineListResponse: {
+            /**
+             * Items
+             * @description 房源单列表(创建时间倒序)
+             */
+            items: components["schemas"]["PropertySheetMineItemResponse"][];
+        };
+        /**
+         * PropertySheetQRCodeResponse
+         * @description C端房源单小程序码响应.
+         */
+        PropertySheetQRCodeResponse: {
+            /**
+             * Code
+             * @description 8位分享短码
+             */
+            code: string;
+            /**
+             * Image Base64
+             * @description 小程序码图片 base64
+             */
+            image_base64: string;
+        };
+        /**
+         * PropertySheetQRSceneResponse
+         * @description C端房源单短码解析响应.
+         */
+        PropertySheetQRSceneResponse: {
+            /**
+             * Sheet Id
+             * @description 房源单ID
+             */
+            sheet_id: number;
+            /**
+             * Referrer
+             * @description 分享归属员工ID(员工无效时为 null)
+             */
+            referrer?: string | null;
+        };
+        /**
+         * PropertySheetResponse
+         * @description C端房源单详情响应.
+         */
+        PropertySheetResponse: {
+            /**
+             * Id
+             * @description 房源单ID
+             */
+            id: number;
+            /**
+             * Code
+             * @description 8位分享短码
+             */
+            code: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Items
+             * @description 房源明细(按 sort_order 升序，未发布/在途房源已过滤)
+             */
+            items?: components["schemas"]["PropertySheetItemResponse"][];
+        };
+        /**
+         * PropertySheetShareEventRequest
+         * @description C端房源单分享事件上报请求（需登录，employee_id 服务端取当前用户）.
+         */
+        PropertySheetShareEventRequest: {
+            /**
+             * Share Type
+             * @description 分享方式：poster(保存海报)
+             * @constant
+             */
+            share_type: "poster";
+        };
+        /**
+         * PropertySheetVisitEventRequest
+         * @description C端房源单访问埋点上报请求（免登录）.
+         *
+         *     referrer 非空即原样落库（与单房源 visit 口径一致，不做内部用户校验）。
+         */
+        PropertySheetVisitEventRequest: {
+            /**
+             * Visitor Id
+             * @description 匿名访客ID(UV去重键，前端生成)
+             */
+            visitor_id: string;
+            /**
+             * Referrer
+             * @description 来源员工ID(分享参数透传)
+             */
+            referrer?: string | null;
+            /**
+             * Source
+             * @description 进入渠道
+             */
+            source?: string | null;
+        };
+        /**
          * PropertyStatus
          * @description 房源状态枚举.
          * @enum {string}
@@ -10976,6 +11399,17 @@ export interface components {
              * @description 更新时间
              */
             updated_at: string;
+        };
+        /**
+         * PublicValuationSubscribeTemplateResponse
+         * @description C端估价订阅消息模板下发响应（授权价变更提醒）.
+         */
+        PublicValuationSubscribeTemplateResponse: {
+            /**
+             * Subscribe Template Id
+             * @description 订阅消息模板 ID（后端未配置时为 null，前端据此隐藏授权入口）
+             */
+            subscribe_template_id: string | null;
         };
         /**
          * PublicVisitEventRequest
@@ -19287,6 +19721,375 @@ export interface operations {
             };
         };
     };
+    create_property_sheet_api_v1_public_property_sheets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PropertySheetCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertySheetResponse"];
+                };
+            };
+            /** @description 房源不存在、未发布或非在售 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_property_sheets_api_v1_public_property_sheets_mine_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertySheetMineListResponse"];
+                };
+            };
+        };
+    };
+    get_my_share_stats_api_v1_public_property_sheets_my_share_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicShareStatsResponse"];
+                };
+            };
+        };
+    };
+    resolve_qr_code_api_v1_public_property_sheets_qr__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8位短码 */
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertySheetQRSceneResponse"];
+                };
+            };
+            /** @description 房源单已失效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 短码不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_property_sheet_detail_api_v1_public_property_sheets__sheet_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源单ID */
+                sheet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertySheetResponse"];
+                };
+            };
+            /** @description 房源单不存在或已删除 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_property_sheet_api_v1_public_property_sheets__sheet_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源单ID */
+                sheet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 房源单不存在、已删除或不归属当前员工 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_property_sheet_qrcode_api_v1_public_property_sheets__sheet_id__qrcode_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源单ID */
+                sheet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertySheetQRCodeResponse"];
+                };
+            };
+            /** @description 房源单不存在、已删除或不归属当前员工 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_consultant_contact_api_v1_public_property_sheets__sheet_id__consultant_get: {
+        parameters: {
+            query?: {
+                /** @description 分享归属员工ID(内部员工) */
+                referrer?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description 房源单ID */
+                sheet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicConsultantContact"];
+                };
+            };
+            /** @description 房源单不存在或已删除 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_visit_event_api_v1_public_property_sheets__sheet_id__visit_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源单ID */
+                sheet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PropertySheetVisitEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTrackingEventResponse"];
+                };
+            };
+            /** @description 房源单不存在或已删除 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_share_event_api_v1_public_property_sheets__sheet_id__share_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源单ID */
+                sheet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PropertySheetShareEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTrackingEventResponse"];
+                };
+            };
+            /** @description 房源单不存在或已删除 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_booking_api_v1_public_bookings_post: {
         parameters: {
             query?: never;
@@ -19777,6 +20580,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_subscribe_template_api_v1_public_valuations_subscribe_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicValuationSubscribeTemplateResponse"];
                 };
             };
         };

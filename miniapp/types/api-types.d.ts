@@ -3165,7 +3165,7 @@ export interface paths {
         put?: never;
         /**
          * 创建房源单
-         * @description 选择 1~10 套在售已发布房源生成房源单（服务端去重保序），需 C 端登录态
+         * @description 选择 1~10 套在售已发布房源生成房源单（服务端去重保序），需 C 端登录态；限流
          */
         post: operations["create_property_sheet_api_v1_public_property_sheets_post"];
         delete?: never;
@@ -3614,6 +3614,26 @@ export interface paths {
          * @description 获取指定线索的详细信息，仅能查看自己创建的线索
          */
         get: operations["get_lead_detail_api_v1_public_leads__lead_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/valuations/subscribe-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取授权价提醒订阅模板 ID
+         * @description 免登录下发估价授权价变更提醒的订阅消息模板 ID；后端未配置时返回 null
+         */
+        get: operations["get_subscribe_template_api_v1_public_valuations_subscribe_template_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11379,6 +11399,17 @@ export interface components {
              * @description 更新时间
              */
             updated_at: string;
+        };
+        /**
+         * PublicValuationSubscribeTemplateResponse
+         * @description C端估价订阅消息模板下发响应（授权价变更提醒）.
+         */
+        PublicValuationSubscribeTemplateResponse: {
+            /**
+             * Subscribe Template Id
+             * @description 订阅消息模板 ID（后端未配置时为 null，前端据此隐藏授权入口）
+             */
+            subscribe_template_id: string | null;
         };
         /**
          * PublicVisitEventRequest
@@ -20549,6 +20580,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_subscribe_template_api_v1_public_valuations_subscribe_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicValuationSubscribeTemplateResponse"];
                 };
             };
         };

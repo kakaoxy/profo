@@ -10,12 +10,28 @@ from schemas.public import (
     PublicShareEventRequest,
     PublicShareStatsResponse,
     PublicTrackingEventResponse,
+    PublicValuationSubscribeTemplateResponse,
     PublicVisitEventRequest,
 )
 from services.leads.share_tracking import ValuationShareTrackingService
+from settings import settings
 from utils.common import RateLimits, limiter
 
 router = APIRouter(prefix="/public/valuations", tags=["public-valuations"])
+
+
+@router.get(
+    "/subscribe-template",
+    summary="获取授权价提醒订阅模板 ID",
+    description="免登录下发估价授权价变更提醒的订阅消息模板 ID；后端未配置时返回 null",
+)
+@limiter.limit(RateLimits.VALUATION_SUBSCRIBE_TEMPLATE)
+def get_subscribe_template(request: Request) -> PublicValuationSubscribeTemplateResponse:
+    """下发估价授权价提醒订阅模板 ID（未配置返回 null，前端隐藏授权入口）."""
+    template_id = settings.wechat_valuation_price_template_id
+    return PublicValuationSubscribeTemplateResponse(
+        subscribe_template_id=template_id or None,
+    )
 
 
 @router.post(

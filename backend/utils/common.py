@@ -220,6 +220,8 @@ class RateLimits:
     PROJECT_SHARE = "60/minute"
     VALUATION_VISIT = "120/minute"
     VALUATION_SHARE = "60/minute"
+    # 订阅模板 ID 下发：纯内存配置读取，每次估价页 onLoad 触发一次，防恶意刷接口
+    VALUATION_SUBSCRIBE_TEMPLATE = "60/minute"
 
     # ==================== 房源单（多房源分享）C 端接口 ====================
     # 量级对齐 RECRUIT_*/PROJECT_* 同类端点：qr 解析与访问埋点免登录高频，

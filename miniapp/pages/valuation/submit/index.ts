@@ -18,6 +18,7 @@ import {
   VALUATION_SHARE_IMAGE,
   VALUATION_SHARE_TITLE,
 } from "../../../utils/valuation-share";
+import { fetchValuationSubscribeTemplate, requestValuationPriceSubscribe } from "../../../utils/valuation-notify";
 
 type PublicLeadCreate = components["schemas"]["PublicLeadCreate"];
 type PublicLeadResponse = components["schemas"]["PublicLeadResponse"];
@@ -155,6 +156,10 @@ interface PageCustom {
   onEvalWorkbenchTap(): void;
   onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
   onShareTimeline(): WechatMiniprogram.Page.ICustomTimelineContent;
+  /** 「授权价提醒」订阅模板 ID（后端未配置/取数失败为 null，提交时跳过授权弹窗）. */
+  subscribeTemplateId: string | null;
+  /** 表单校验通过后执行实际提交（订阅授权弹窗结束后由回调进入）. */
+  performSubmit(body: PublicLeadCreate): void;
 }
 
 /** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
@@ -200,6 +205,10 @@ Page<PageData, PageCustom>({
   },
 
   onLoad(options: Record<string, string | undefined>) {
+    // 预取「授权价提醒」订阅模板 ID（静默失败置 null，提交时跳过授权弹窗）
+    fetchValuationSubscribeTemplate().then((templateId) => {
+      this.subscribeTemplateId = templateId;
+    });
     // 分享/扫码进入：解析 referrer（分享归属员工 ID），提交时透传后端归因
     const { referrer } = parseValuationQuery(options);
     // 同步取当前登录员工 ID 作为 employeeId 初值：onShareAppMessage 是同步回调，
@@ -267,6 +276,8 @@ Page<PageData, PageCustom>({
   },
 
   leadCountTimer: null,
+
+  subscribeTemplateId: null,
 
   getToken() {
     return getAccessToken();
@@ -678,6 +689,20 @@ Page<PageData, PageCustom>({
       referrer: this.data.referrer || undefined,
     };
 
+    // 订阅授权（授权价提醒）：必须在 tap 手势回调内同步发起弹窗，
+    // 故先弹授权、待用户操作（允许/拒绝/关闭）后再进入实际提交；
+    // 模板 ID 未配置（后端关闭）时直接提交
+    if (this.subscribeTemplateId) {
+      requestValuationPriceSubscribe(this.subscribeTemplateId, () => {
+        this.performSubmit(body);
+      });
+      return;
+    }
+    this.performSubmit(body);
+  },
+
+  /** 实际提交：由 onSubmit 校验/授权流程后调用（performSubmit 不重复做守卫与校验）. */
+  async performSubmit(body: PublicLeadCreate) {
     this.setData({ submitting: true });
     try {
       await request<PublicLeadResponse>({

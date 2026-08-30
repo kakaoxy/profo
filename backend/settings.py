@@ -183,6 +183,8 @@ class Settings(BaseSettings):
     wechat_subscribe_send_url: str = "https://api.weixin.qq.com/cgi-bin/message/subscribe/send"
     # 招募新线索订阅消息模板 ID（env 可配，空 = 功能关闭）
     wechat_recruit_lead_template_id: str = ""
+    # 估价授权价变更订阅消息模板 ID（授权评估价/调整评估价时推送客户，env 可配，空 = 功能关闭）
+    wechat_valuation_price_template_id: str = ""
 
     @model_validator(mode="after")
     def validate_oss_config(self) -> "Settings":

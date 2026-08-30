@@ -601,6 +601,14 @@ class PublicShareStatsResponse(BaseModel):
     yesterday_lead_count: int = Field(description="昨日留资数")
 
 
+class PublicValuationSubscribeTemplateResponse(BaseModel):
+    """C端估价订阅消息模板下发响应（授权价变更提醒）."""
+
+    subscribe_template_id: str | None = Field(
+        description="订阅消息模板 ID（后端未配置时为 null，前端据此隐藏授权入口）",
+    )
+
+
 class PublicCommunityBrief(BaseModel):
     """C端小区分析响应中的小区基本信息."""
 

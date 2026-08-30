@@ -26,6 +26,31 @@ page {
   color: var(--warm-muted-fg);
 }
 
+/* ===== 授权价提醒授权入口 ===== */
+.notify-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin: 16rpx 40rpx 0;
+  padding: 24rpx 32rpx;
+  background-color: var(--warm-muted);
+  border: 1rpx solid var(--warm-border);
+  border-radius: 24rpx;
+}
+.notify-banner__text {
+  flex: 1;
+  font-size: 24rpx;
+  letter-spacing: -0.13rpx;
+  color: var(--warm-muted-fg);
+}
+.notify-banner__action {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--warm-fg);
+}
+
 /* ===== 评估卡片 ===== */
 .list-card {
   margin: 24rpx 40rpx 0;

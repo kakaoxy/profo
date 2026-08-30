@@ -2,6 +2,16 @@
   <!-- 计数行 -->
   <view class="count-row" wx:if="{{!needLogin && !internalOnly && !error && items.length > 0}}">共 {{total}} 条评估</view>
 
+  <!-- 授权价提醒授权入口（后端已下发订阅模板 ID 且登录可见；一次性订阅，可多次点击积累额度） -->
+  <view
+    class="notify-banner"
+    wx:if="{{!needLogin && !internalOnly && !error && notifyBanner}}"
+    bindtap="onSubscribeTap"
+  >
+    <text class="notify-banner__text">开启提醒，授权价出来或调整后第一时间通知您</text>
+    <text class="notify-banner__action">开启 ›</text>
+  </view>
+
   <!-- 未登录态 -->
   <view class="state" wx:if="{{needLogin}}">
     <view class="state__title">登录已失效</view>

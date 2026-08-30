@@ -566,7 +566,7 @@ class LeadService:
         lead_id: str,
         eval_price: Decimal,
         remark: str | None,
-    ) -> LeadEvalHistory:
+    ) -> tuple[LeadEvalHistory, Lead]:
         """小程序员工侧再次评估：追加评估记录并更新评估价，不改状态.
 
         语义对齐 admin CurrentEvalPriceSection「调整评估价」：
@@ -580,7 +580,8 @@ class LeadService:
             remark: 调整意见（选填）
 
         Returns:
-            创建的评估记录对象（eager-load evaluator）
+            (创建的评估记录对象, 更新后的线索对象)；评估记录 eager-load evaluator，
+            线索 refresh 后携带最新 eval_price，供路由层复用（如订阅消息通知）
 
         Raises:
             PermissionDeniedError: 操作人不具备 admin/operator 角色
@@ -614,12 +615,16 @@ class LeadService:
         self.db.add(lead)
         self.db.commit()
         # 重新查询以 eager-load evaluator，避免 LeadEvalHistoryResponse.evaluator_name 触发 lazy load
-        return (
+        rec = (
             self.db.query(LeadEvalHistory)
             .options(joinedload(LeadEvalHistory.evaluator))
             .filter(LeadEvalHistory.id == rec.id)
             .one()
         )
+        # commit 后 lead 已过期，refresh 以携带最新状态返回（对齐 authorize_assessment 模式），
+        # 供路由层直接复用，免去再次 get_by_id 查询
+        self.db.refresh(lead)
+        return rec, lead
 
     def get_lead_evaluations(self, lead_id: str) -> list[LeadEvalHistory]:
         """获取线索评估历史（小程序员工侧，按评估时间倒序）.

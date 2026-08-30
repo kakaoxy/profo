@@ -9,6 +9,7 @@ import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { formatDate, statusBadgeStyle } from "../../../utils/valuation-display";
+import { fetchValuationSubscribeTemplate, requestValuationPriceSubscribe } from "../../../utils/valuation-notify";
 
 type LeadItem = components["schemas"]["PublicLeadListItem"];
 
@@ -40,12 +41,16 @@ interface PageData {
   needLogin: boolean;
   /** 无 C 端身份（admin 令牌受众不匹配 / 403）时展示内部限定态，而非登录失效. */
   internalOnly: boolean;
+  /** 「授权价提醒」授权入口可见（后端已下发订阅模板 ID）. */
+  notifyBanner: boolean;
 }
 
 /** 页面自定义方法（含非响应式实例字段）. */
 interface PageCustom {
   /** 请求时代戳：每次 reset 加载（onShow 刷新/下拉刷新/重试）+1，用于丢弃晚到的旧代响应（竞态守卫） */
   _epoch: number;
+  /** 「授权价提醒」订阅模板 ID（后端未配置/取数失败为 null，入口隐藏）. */
+  subscribeTemplateId: string | null;
   getToken(): string;
   loadList(reset?: boolean, silent?: boolean): void;
   toDisplay(item: LeadItem): DisplayItem;
@@ -54,6 +59,7 @@ interface PageCustom {
   onGoLogin(): void;
   onGoValuation(): void;
   onRetry(): void;
+  onSubscribeTap(): void;
 }
 
 Page<PageData, PageCustom>({
@@ -68,9 +74,20 @@ Page<PageData, PageCustom>({
     noMore: false,
     needLogin: false,
     internalOnly: false,
+    notifyBanner: false,
   },
 
   _epoch: 0,
+
+  subscribeTemplateId: null,
+
+  onLoad() {
+    // 预取「授权价提醒」订阅模板 ID（静默失败置 null，授权入口隐藏）
+    fetchValuationSubscribeTemplate().then((templateId) => {
+      this.subscribeTemplateId = templateId;
+      this.setData({ notifyBanner: !!templateId });
+    });
+  },
 
   getToken() {
     return getAccessToken();
@@ -242,5 +259,14 @@ Page<PageData, PageCustom>({
 
   onRetry() {
     this.loadList(true);
+  },
+
+  /**
+   * 「授权价提醒」授权入口：发起一次性订阅授权（积累推送额度）.
+   * ⚠️ wx.requestSubscribeMessage 必须在 tap 手势回调内同步调用；
+   * 用户允许/拒绝均静默（授权结果反馈由 utils 内 toast/modal 承担）.
+   */
+  onSubscribeTap() {
+    requestValuationPriceSubscribe(this.subscribeTemplateId);
   },
 });
