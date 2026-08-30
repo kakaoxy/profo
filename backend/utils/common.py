@@ -220,3 +220,14 @@ class RateLimits:
     PROJECT_SHARE = "60/minute"
     VALUATION_VISIT = "120/minute"
     VALUATION_SHARE = "60/minute"
+
+    # ==================== 房源单（多房源分享）C 端接口 ====================
+    # 量级对齐 RECRUIT_*/PROJECT_* 同类端点：qr 解析与访问埋点免登录高频，
+    # 详情/consultant/mine 共用读取限流，qrcode 每次实时调微信接口需收敛防刷；
+    # 创建需登录但有 1 主表+最多 10 明细的写放大，显式收敛（不落默认限流）
+    PROPERTY_SHEET_CREATE = "30/minute"
+    PROPERTY_SHEET_QR_SCENE = "120/minute"
+    PROPERTY_SHEET_VISIT = "120/minute"
+    PROPERTY_SHEET_DETAIL = "60/minute"
+    PROPERTY_SHEET_SHARE = "60/minute"
+    PROPERTY_SHEET_QRCODE = "20/hour"

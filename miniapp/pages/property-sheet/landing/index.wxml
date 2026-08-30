@@ -1,0 +1,93 @@
+<view class="page">
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <!-- 占位错误态：短码无效/房源单已失效（统一文案，不暴露细节差异） -->
+  <view wx:elif="{{notFound}}" class="state-box">
+    <view class="state-icon">!</view>
+    <view class="state-text">房源单不存在或已失效</view>
+    <view class="state-sub">该分享内容无法查看，去逛逛更多在售好房</view>
+    <button class="btn-primary state-btn" bindtap="onBrowseTap">去逛房源</button>
+  </view>
+
+  <!-- 网络错误态（可重试） -->
+  <view wx:elif="{{error}}" class="state-box">
+    <view class="state-text">加载失败，请检查网络</view>
+    <button class="btn-secondary state-btn" bindtap="onRetry">重试</button>
+  </view>
+
+  <!-- 正常内容 -->
+  <block wx:else>
+    <!-- Hero：杏色光晕暖卡 -->
+    <view class="hero">
+      <view class="hero-title">TA 为您精选了 {{heroCount}} 套好房</view>
+      <view class="hero-sub">真实在售 · 扫码即看</view>
+    </view>
+
+    <!-- 分享人联系卡：命中分享人显示 Rust 角标，否则回退默认顾问 -->
+    <view wx:if="{{contact}}" id="contact-card" class="contact-card">
+      <image
+        wx:if="{{contactAvatarUrl}}"
+        class="contact-avatar"
+        src="{{contactAvatarUrl}}"
+        mode="aspectFill"
+        lazy-load
+      />
+      <view wx:else class="contact-avatar contact-avatar--fallback">{{contactFallbackChar}}</view>
+      <view class="contact-main">
+        <view class="contact-name">
+          <text class="contact-name-text">{{contact.nickname}}</text>
+          <text wx:if="{{contactIsReferrer}}" class="contact-pill">分享人</text>
+        </view>
+        <view class="contact-sub">{{contactSubText}}</view>
+      </view>
+      <view class="contact-btns">
+        <!-- 电话/微信为空时对应按钮隐藏（对齐单房源详情页的空值处理） -->
+        <button wx:if="{{hasPhone}}" class="btn-pri contact-btn" bindtap="onCallTap">电话咨询</button>
+        <button wx:if="{{hasWechat}}" class="btn-txt contact-btn" bindtap="onWechatTap">微信</button>
+      </view>
+    </view>
+
+    <!-- 房源卡片列表 -->
+    <view class="sheet-list">
+      <view
+        wx:for="{{items}}"
+        wx:key="id"
+        class="sheet-card"
+        data-id="{{item.id}}"
+        bindtap="onItemTap"
+      >
+        <view class="sheet-cover">
+          <image
+            wx:if="{{item.coverUrl}}"
+            class="sheet-cover-img"
+            src="{{item.coverUrl}}"
+            mode="aspectFill"
+            lazy-load
+          />
+          <view wx:else class="sheet-cover-img sheet-cover-img--empty"></view>
+          <view class="sheet-flag {{item.isSold ? 'sheet-flag--sold' : ''}}">
+            {{item.isSold ? '已售' : '在售'}}
+          </view>
+        </view>
+        <view class="sheet-info">
+          <view class="sheet-title">{{item.title}}</view>
+          <view class="sheet-meta">{{item.metaText}}</view>
+          <view class="sheet-price">¥{{item.priceText}}<text class="sheet-price-unit">万</text></view>
+        </view>
+      </view>
+      <view wx:if="{{items.length === 0}}" class="list-empty">暂无可展示的房源</view>
+    </view>
+
+    <!-- 底部留白（避让固定底栏） -->
+    <view class="list-footer-space"></view>
+
+    <!-- 底部固定操作栏 -->
+    <view class="bottom-bar">
+      <button class="btn-txt bar-btn" bindtap="onContactScrollTap">咨询分享人</button>
+      <button class="btn-pri bar-btn" bindtap="onValuationTap">我想卖房 · 免费估价</button>
+    </view>
+  </block>
+</view>

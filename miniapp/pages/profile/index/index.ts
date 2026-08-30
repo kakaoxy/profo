@@ -41,11 +41,12 @@ const INTERNAL_ENTRIES = [
   { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账", route: "/pages/ledger/projects/index/index" },
 ];
 
-/** 分享获客入口（onMenuTap 按 action 分发：switch-tab-* 为 tabBar 页 switchTab，recruit 走 onRecruitTap 拉活动跳转）. */
+/** 分享获客入口（onMenuTap 按 action 分发：switch-tab-* 为 tabBar 页 switchTab，recruit 走 onRecruitTap 拉活动跳转，property-sheet 进我的房源单页）. */
 const SHARE_ENTRIES: ShareEntry[] = [
   { key: "share-property", title: "房源分享", sub: "房源转发 / 客户预约", icon: "房", action: "switch-tab-projects" },
   { key: "share-valuation", title: "评估分享", sub: "评估转发 / 线索跟进", icon: "估", action: "switch-tab-valuation" },
   { key: "share-recruit", title: "招募分享", sub: "招募转发 / 拉新归因", icon: "招", action: "recruit" },
+  { key: "share-sheet", title: "房源单分享", sub: "多房源一图分享", icon: "单", action: "property-sheet" },
 ];
 
 interface InternalEntry {
@@ -58,14 +59,14 @@ interface InternalEntry {
 }
 
 /** 分享获客入口点击动作. */
-type ShareEntryAction = "switch-tab-projects" | "switch-tab-valuation" | "recruit";
+type ShareEntryAction = "switch-tab-projects" | "switch-tab-valuation" | "recruit" | "property-sheet";
 
 interface ShareEntry {
   key: string;
   title: string;
   sub: string;
   icon: string;
-  /** onMenuTap 分发依据：switch-tab-* 跳对应 tabBar 页，recruit 复用 onRecruitTap 动态拉活动. */
+  /** action 的分发依据：switch-tab-* 跳对应 tabBar 页，recruit 复用 onRecruitTap 动态拉活动，property-sheet 进我的房源单页. */
   action: ShareEntryAction;
 }
 
@@ -500,7 +501,8 @@ Page<PageData, PageCustom>({
   },
 
   onMenuTap(e: WechatMiniprogram.BaseEvent) {
-    // 分享获客分组：按 action 分发（两目标页均为 tabBar 页须 switchTab；recruit 动态拉活动跳转）
+    // 分享获客分组：按 action 分发（两目标页均为 tabBar 页须 switchTab；recruit 动态拉活动跳转；
+    // property-sheet 进我的房源单页，登录态由 mine 页与 request 层兜底，无需预检）
     const action = e.currentTarget.dataset.action as ShareEntryAction | undefined;
     if (action === "switch-tab-projects") {
       wx.switchTab({ url: "/pages/projects/list/index" });
@@ -512,6 +514,10 @@ Page<PageData, PageCustom>({
     }
     if (action === "recruit") {
       this.onRecruitTap();
+      return;
+    }
+    if (action === "property-sheet") {
+      wx.navigateTo({ url: "/pages/property-sheet/mine/index" });
       return;
     }
     // 已落地条目（route 存在）跳转对应页；未落地条目统一待开放

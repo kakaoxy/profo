@@ -1,0 +1,92 @@
+<view class="page">
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <!-- 错误态 -->
+  <view wx:elif="{{error}}" class="state">
+    <view class="state-text">加载失败，请检查网络</view>
+    <view class="state-btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 房源单不存在 / 已删除 / 参数非法 -->
+  <view wx:elif="{{notFound}}" class="state">
+    <view class="state-text">房源单不存在或已删除</view>
+    <view class="state-btn" bindtap="onBack">返回</view>
+  </view>
+
+  <block wx:else>
+    <!-- 房源单卡片（名称 + 可分享 pill + 创建时间/共 N 套 + 分享短码） -->
+    <view class="sheet-card">
+      <view class="sc-row1">
+        <text class="sc-name">我的精选房源单</text>
+        <text class="sc-pill">可分享</text>
+      </view>
+      <view class="sc-meta">创建于 {{createdText}} · 共 {{itemCount}} 套</view>
+      <view class="sc-code">
+        <text class="sc-code-label">分享短码</text>
+        <text class="sc-code-pill">code: {{code}}</text>
+      </view>
+    </view>
+
+    <!-- 杏色提示条（归因说明） -->
+    <view class="tipbar">海报含小程序码，客户扫码进入本页并自动关联您为分享人</view>
+
+    <!-- 房源卡片列表（按 sort_order 编号） -->
+    <view class="h-list" wx:if="{{items.length > 0}}">
+      <view wx:for="{{items}}" wx:key="projectId" class="h-card">
+        <view class="h-idx">{{index + 1}}</view>
+        <view class="h-cover">
+          <image wx:if="{{item.cover}}" src="{{item.cover}}" mode="aspectFill" lazy-load />
+          <view wx:if="{{item.sold}}" class="h-flag">已售</view>
+        </view>
+        <view class="h-info">
+          <view class="h-title">{{item.title}}</view>
+          <view class="h-meta">{{item.meta}}</view>
+          <view class="h-price">
+            <text class="h-price-sym">¥</text>
+            <text class="h-price-num">{{item.totalPrice}}</text>
+            <text class="h-price-unit">万</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view wx:else class="state">
+      <view class="state-text">暂无可展示房源</view>
+    </view>
+
+    <!-- 底栏占位（避免固定栏遮住列表末项） -->
+    <view class="bar-safe"></view>
+  </block>
+
+  <!-- 底部固定操作栏：预览海报（文字按钮）+ 生成海报分享（墨色主按钮） -->
+  <view wx:if="{{!loading && !error && !notFound}}" class="bottom-bar">
+    <view class="bb-preview" bindtap="onPreviewPoster">预览海报</view>
+    <view class="bb-cta {{generating ? 'bb-cta--disabled' : ''}}" bindtap="onSharePoster">
+      {{generating ? '生成中…' : '生成海报分享'}}
+    </view>
+  </view>
+
+  <!-- 海报预览弹层（屏D）：遮罩点击关闭 -->
+  <view wx:if="{{posterVisible}}" class="poster-overlay" bindtap="onPosterClose">
+    <view class="poster-wrap" catchtap="noop">
+      <view class="poster-cap">海报预览 · 600×960 · 按选 {{itemCount}} 套生成</view>
+      <image
+        class="poster-img"
+        src="{{posterImagePath}}"
+        mode="widthFix"
+        show-menu-by-longpress="{{true}}"
+      />
+      <view class="poster-btns">
+        <view class="poster-btn poster-btn--save" catchtap="onPosterSave">
+          {{savingPoster ? '保存中…' : '保存图片'}}
+        </view>
+        <view class="poster-btn poster-btn--cancel" catchtap="onPosterClose">取消</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 海报绘制画布（常驻移出屏幕，节点必须存在才能绘制/导出） -->
+  <canvas type="2d" id="sheetPosterCanvas" class="poster-canvas"></canvas>
+</view>

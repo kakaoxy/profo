@@ -15,7 +15,11 @@
     "pages/profile/index/index",
     "pages/properties/list/index",
     "pages/recruit/detail/index",
-    "pages/recruit/mine/index"
+    "pages/recruit/mine/index",
+    "pages/property-sheet/mine/index",
+    "pages/property-sheet/create/index",
+    "pages/property-sheet/detail/index",
+    "pages/property-sheet/landing/index"
   ],
   "subPackages": [
     {

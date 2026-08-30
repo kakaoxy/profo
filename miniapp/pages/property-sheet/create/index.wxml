@@ -1,0 +1,83 @@
+<view class="page">
+  <!-- 顶部说明条（杏色暖卡底） -->
+  <view class="notice">勾选在售房源，生成一张含小程序码的海报，朋友圈单条分享多套房源</view>
+
+  <!-- 搜索框（300ms 防抖 / 确认触发） -->
+  <view class="search-wrap">
+    <view class="search-icon"></view>
+    <input
+      class="search-input"
+      type="text"
+      placeholder="搜索小区、商圈"
+      value="{{searchValue}}"
+      confirm-type="search"
+      bindinput="onSearchInput"
+      bindconfirm="onSearchConfirm"
+    />
+  </view>
+
+  <!-- 错误态 -->
+  <view class="state" wx:if="{{error}}">
+    <view class="state-text">加载失败，请重试</view>
+    <view class="state-btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 首次加载态 -->
+  <view class="state" wx:elif="{{loading && items.length === 0}}">
+    <view class="state-text">加载中...</view>
+  </view>
+
+  <block wx:else>
+    <view class="count-row" wx:if="{{total > 0}}">共 {{total}} 套在售房源</view>
+
+    <!-- 在售房源卡片（点击切换选中，选中墨色描边 + 实心复选框） -->
+    <view
+      wx:for="{{items}}"
+      wx:key="id"
+      class="p-card {{selectedMap[item.id] ? 'p-card--sel' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onCardTap"
+    >
+      <view class="p-thumb">
+        <image wx:if="{{item.cover}}" src="{{item.cover}}" mode="aspectFill" lazy-load />
+      </view>
+      <view class="p-info">
+        <view class="p-title">{{item.title}}</view>
+        <view class="p-meta">{{item.meta}}</view>
+        <view class="p-price">
+          <text class="p-price-sym">¥</text>
+          <text class="p-price-num">{{item.totalPrice}}</text>
+          <text class="p-price-unit">万</text>
+        </view>
+      </view>
+      <view class="p-cb {{selectedMap[item.id] ? 'p-cb--on' : ''}}">
+        <view class="p-cb-check"></view>
+      </view>
+    </view>
+
+    <!-- 空态 -->
+    <view class="state" wx:if="{{!loading && items.length === 0}}">
+      <view class="state-text">暂无在售房源</view>
+    </view>
+
+    <!-- 底部加载更多 -->
+    <view class="footer" wx:if="{{items.length > 0}}">
+      <view class="footer-text" wx:if="{{loadingMore}}">加载中...</view>
+      <view class="footer-end" wx:elif="{{noMore}}">没有更多了</view>
+    </view>
+  </block>
+
+  <!-- 底部固定操作栏 -->
+  <view class="bottom-bar">
+    <view class="bb-txt">
+      <view class="bb-main">已选 {{selectedCount}} 套</view>
+      <view class="bb-sub">超过 3 套海报将提示「更多扫码」</view>
+    </view>
+    <view
+      class="bb-cta {{selectedCount === 0 || submitting ? 'bb-cta--disabled' : ''}}"
+      bindtap="onCreate"
+    >{{submitting ? '创建中…' : '创建房源单'}}</view>
+  </view>
+  <!-- 底栏占位（避免固定栏遮住列表末项） -->
+  <view class="bar-safe"></view>
+</view>

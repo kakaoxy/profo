@@ -1,0 +1,103 @@
+<view class="page">
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <!-- 游客 / 空态 -->
+  <view wx:elif="{{empty}}" class="empty">
+    <view class="e-ill">
+      <view class="e-glow"></view>
+      <view class="e-card">
+        <view class="e-pic"></view>
+        <view class="e-lines">
+          <view class="e-bar" style="width: 200rpx"></view>
+          <view class="e-bar e-bar--2" style="width: 132rpx"></view>
+        </view>
+      </view>
+      <view class="e-badge">+</view>
+    </view>
+    <view class="e-t">暂无房源单</view>
+    <view class="e-s">
+      <view>勾选多套在售房源生成一张海报</view>
+      <view>朋友圈单条分享多套房源</view>
+    </view>
+    <button class="e-btn" bindtap="onGoCreate">新建房源单</button>
+  </view>
+
+  <!-- 有数据：漏斗统计卡 + 房源单列表 -->
+  <block wx:else>
+    <!-- 统计卡（昨日/累计两行漏斗，留资列 Rust 强调，与 projects/mine 同构） -->
+    <view class="stats">
+      <view class="stats-row">
+        <view class="stats-tag">昨日</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayShareCount}}</text>
+          <text class="stat-label">分享次数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayPv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayUv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.yesterdayLeadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
+      </view>
+      <view class="stats-row">
+        <view class="stats-tag">累计</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.shareCount}}</text>
+          <text class="stat-label">分享次数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.pv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.uv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.leadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 房源单列表（点击进详情，长按删除） -->
+    <view class="list">
+      <view
+        wx:for="{{sheets}}"
+        wx:key="id"
+        class="card"
+        data-id="{{item.id}}"
+        bindtap="onSheetTap"
+        bindlongpress="onSheetLongPress"
+      >
+        <view class="s-top">
+          <text class="s-name">精选房源单</text>
+          <text class="s-code">{{item.code}}</text>
+        </view>
+        <view class="s-foot">
+          <text class="s-count">共 {{item.itemCount}} 套</text>
+          <text class="s-time">{{item.timeText}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{sheets.length === 0}}" class="list-empty">还没有房源单，点击下方「新建房源单」创建</view>
+    </view>
+
+    <!-- 底部按钮占位（避免固定按钮遮住列表末项） -->
+    <view class="safe-bottom"></view>
+  </block>
+
+  <!-- 底部固定「新建房源单」主按钮（整页空态时隐藏，空态内已有同款 CTA） -->
+  <view wx:if="{{!empty}}" class="fab-bar">
+    <button class="fab-btn" bindtap="onGoCreate">新建房源单</button>
+  </view>
+</view>

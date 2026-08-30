@@ -13,6 +13,12 @@ from .l4_marketing import (
     ProjectVisit,
     PublishStatus,
 )
+from .property_sheet import (
+    PropertyShareSheet,
+    PropertyShareSheetItem,
+    PropertySheetShareEvent,
+    PropertySheetVisit,
+)
 
 __all__ = [
     "L4MarketingMedia",
@@ -22,5 +28,9 @@ __all__ = [
     "ProjectBooking",
     "ProjectShareEvent",
     "ProjectVisit",
+    "PropertyShareSheet",
+    "PropertyShareSheetItem",
+    "PropertySheetShareEvent",
+    "PropertySheetVisit",
     "PublishStatus",
 ]

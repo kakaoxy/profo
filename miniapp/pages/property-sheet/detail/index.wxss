@@ -1,0 +1,330 @@
+/* 房源单详情页（Steep 设计体系：杏色提示条 / 墨色序号徽标 / 墨色胶囊 CTA，对齐屏 C/D） */
+
+.page {
+  --line: #f2f3f5;
+  min-height: 100vh;
+  background: var(--fog);
+  padding-bottom: 32rpx;
+}
+
+/* ===== 通用状态（加载/错误/空态兜底） ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 32rpx;
+}
+.state-text {
+  font-size: 28rpx;
+  color: var(--graphite);
+  margin-bottom: 24rpx;
+}
+.state-btn {
+  font-size: 28rpx;
+  color: #ffffff;
+  background: var(--ink);
+  border-radius: 9999rpx;
+  padding: 16rpx 48rpx;
+  font-weight: 500;
+}
+
+/* ===== 房源单卡片 ===== */
+.sheet-card {
+  margin: 24rpx 32rpx 0;
+  background: var(--pure-white);
+  border-radius: 28rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 32rpx;
+}
+.sc-row1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+.sc-name {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+/* 「可分享」pill（杏底 Rust 字） */
+.sc-pill {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  font-weight: 500;
+  color: var(--rust);
+  background: var(--apricot-wash);
+  border-radius: 9999rpx;
+  padding: 6rpx 22rpx;
+}
+.sc-meta {
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  color: var(--graphite);
+  font-variant-numeric: tabular-nums;
+}
+.sc-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 28rpx;
+  padding-top: 28rpx;
+  border-top: 2rpx solid var(--fog);
+}
+.sc-code-label {
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+/* 等宽字体 code 胶囊 */
+.sc-code-pill {
+  font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace;
+  font-size: 26rpx;
+  letter-spacing: 2rpx;
+  color: var(--ink);
+  background: var(--fog);
+  border-radius: 12rpx;
+  padding: 10rpx 24rpx;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 杏色提示条（前缀圆点） ===== */
+.tipbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin: 24rpx 32rpx 0;
+  background: var(--apricot-wash);
+  border-radius: 24rpx;
+  padding: 24rpx 32rpx;
+  font-size: 26rpx;
+  line-height: 1.65;
+  color: var(--rust);
+}
+.tipbar::before {
+  content: "";
+  width: 12rpx;
+  height: 12rpx;
+  flex-shrink: 0;
+  margin-top: 14rpx;
+  border-radius: 50%;
+  background: var(--rust);
+}
+
+/* ===== 房源卡片列表 ===== */
+.h-list {
+  padding: 24rpx 32rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.h-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  background: var(--pure-white);
+  border-radius: 28rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 24rpx;
+}
+/* 墨色圆形序号徽标（绝对定位左上角出血） */
+.h-idx {
+  position: absolute;
+  top: -14rpx;
+  left: -14rpx;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.h-cover {
+  position: relative;
+  width: 168rpx;
+  height: 128rpx;
+  flex-shrink: 0;
+  border-radius: 24rpx;
+  background: var(--fog);
+  overflow: hidden;
+}
+.h-cover image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* 已售角标（员工视角保留展示：深灰底白字） */
+.h-flag {
+  position: absolute;
+  left: 12rpx;
+  top: 12rpx;
+  background: rgba(23, 25, 28, 0.62);
+  color: #ffffff;
+  font-size: 20rpx;
+  border-radius: 9999rpx;
+  padding: 2rpx 14rpx;
+}
+.h-info {
+  flex: 1;
+  min-width: 0;
+}
+.h-title {
+  font-size: 29rpx;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.h-meta {
+  margin-top: 6rpx;
+  font-size: 25rpx;
+  color: var(--graphite);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.h-price {
+  display: flex;
+  align-items: baseline;
+  gap: 2rpx;
+  margin-top: 6rpx;
+}
+.h-price-sym {
+  font-size: 22rpx;
+  color: var(--graphite);
+}
+.h-price-num {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.h-price-unit {
+  font-size: 22rpx;
+  color: var(--graphite);
+}
+
+/* ===== 底部固定操作栏（预览海报 + 生成海报分享，各占 flex:1） ===== */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 20rpx 32rpx 48rpx;
+  background: var(--pure-white);
+  border-top: 2rpx solid rgba(163, 166, 175, 0.3);
+}
+.bb-preview {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.bb-cta {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+/* 生成中：置灰禁用态 */
+.bb-cta--disabled {
+  background: #c9ccd3;
+  color: #ffffff;
+}
+
+/* 底栏占位 */
+.bar-safe {
+  height: 200rpx;
+}
+
+/* ===== 海报预览弹层（屏D） ===== */
+.poster-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(23, 25, 28, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poster-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+  max-height: 92vh;
+}
+/* 顶部小字说明 */
+.poster-cap {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+}
+/* 海报图：600×960 按宽自适应（560rpx 宽 → 896rpx 高） */
+.poster-img {
+  width: 560rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  box-shadow: 0 36rpx 80rpx rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.poster-btns {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  width: 560rpx;
+}
+.poster-btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 9999rpx;
+  font-size: 29rpx;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+/* 「保存图片」白底墨字主按钮 */
+.poster-btn--save {
+  flex: 1;
+  background: #ffffff;
+  color: var(--ink);
+}
+/* 「取消」描边按钮 */
+.poster-btn--cancel {
+  width: 200rpx;
+  background: transparent;
+  border: 2rpx solid rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  font-weight: 400;
+}
+
+/* ===== 海报绘制画布（常驻移出屏幕，节点必须存在才能绘制/导出） ===== */
+.poster-canvas {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 300px;
+  height: 480px;
+  pointer-events: none;
+}

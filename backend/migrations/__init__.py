@@ -96,6 +96,9 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
   trigram GIN 表达式索引，加速 lower(col) 及普通 LIKE '%kw%' 前导通配符查询（O1，幂等）
 - add_lead_auditor_index: 为 leads 表补建 (auditor_id, audit_time) 复合索引
   （小程序评估工作台「已处理」参考组 get_handled 过滤 + 倒序截取，幂等）
+- create_property_sheet_tables: 幂等创建房源单 4 张表
+  （property_share_sheets/property_share_sheet_items/property_sheet_visits/property_sheet_share_events）
+  与索引（多房源分享）
 
 """
 
@@ -131,6 +134,7 @@ from migrations._permission_system import (
     migrate_project_business_permission,
 )
 from migrations._project_booking_share import create_project_booking_and_share_tables
+from migrations._property_sheet import create_property_sheet_tables
 from migrations._recruit import (
     add_poster_bg_url_to_campaigns,
     create_recruit_tables,
@@ -280,6 +284,9 @@ def _run_all_migrations(engine: Engine) -> None:
         # 房源预约与分享归因闭环：幂等创建 5 张新表
         # （project_bookings/project_visits/project_share_events/valuation_visits/valuation_share_events）
         create_project_booking_and_share_tables(engine)
+        # 房源单分享（多房源一图分享）：幂等创建 4 张新表
+        # （property_share_sheets/property_share_sheet_items/property_sheet_visits/property_sheet_share_events）
+        create_property_sheet_tables(engine)
         # O1：模糊搜索 pg_trgm GIN 索引（前导通配符 LIKE 全表扫描修复）
         add_trgm_search_indexes(engine)
         # 小程序评估工作台「已处理」参考组：leads(auditor_id, audit_time) 索引

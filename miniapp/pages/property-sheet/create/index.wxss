@@ -1,0 +1,250 @@
+/* 创建房源单页（Steep 设计体系：杏色说明条 / 墨色描边选中 / 墨色胶囊 CTA） */
+
+.page {
+  --line: #f2f3f5;
+  min-height: 100vh;
+  background: var(--fog);
+  padding-bottom: 32rpx;
+}
+
+/* ===== 顶部说明条（Apricot Wash 暖卡底） ===== */
+.notice {
+  margin: 24rpx 32rpx 0;
+  padding: 20rpx 28rpx;
+  background: var(--apricot-wash);
+  border: 2rpx solid rgba(93, 42, 26, 0.12);
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--rust);
+}
+
+/* ===== 搜索框 ===== */
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin: 24rpx 32rpx 0;
+  height: 80rpx;
+  padding: 0 32rpx;
+  border-radius: 9999rpx;
+  background: #ffffff;
+  border: 2rpx solid var(--line);
+  box-sizing: border-box;
+}
+.search-icon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23777b86' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cline x1='11' y1='11' x2='14.5' y2='14.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--ink);
+}
+
+/* ===== 计数行 ===== */
+.count-row {
+  padding: 20rpx 40rpx 8rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+
+/* ===== 在售房源卡片（横向布局：缩略图 + 信息 + 复选框） ===== */
+.p-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin: 0 32rpx 20rpx;
+  padding: 20rpx;
+  background: #ffffff;
+  border: 2rpx solid var(--line);
+  border-radius: 24rpx;
+  box-sizing: border-box;
+}
+/* 选中：墨色描边（shadow 补粗，不改变盒尺寸） */
+.p-card--sel {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2rpx var(--ink);
+}
+.p-thumb {
+  position: relative;
+  width: 176rpx;
+  height: 132rpx;
+  border-radius: 16rpx;
+  background: var(--fog);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.p-thumb image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.p-info {
+  flex: 1;
+  min-width: 0;
+}
+.p-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.p-meta {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.p-price {
+  display: flex;
+  align-items: baseline;
+  gap: 2rpx;
+  margin-top: 10rpx;
+}
+.p-price-sym {
+  font-size: 22rpx;
+  color: var(--graphite);
+}
+.p-price-num {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.p-price-unit {
+  font-size: 22rpx;
+  color: var(--graphite);
+}
+
+/* 圆形复选框：选中墨色实心 + 白勾 */
+.p-cb {
+  flex-shrink: 0;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  border: 3rpx solid #d5d7dc;
+  background: #ffffff;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.p-cb--on {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.p-cb-check {
+  width: 20rpx;
+  height: 10rpx;
+  border-left: 4rpx solid #ffffff;
+  border-bottom: 4rpx solid #ffffff;
+  transform: rotate(-45deg) translateY(-2rpx);
+}
+
+/* ===== 通用状态（加载/空/错误） ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 32rpx;
+}
+.state-text {
+  font-size: 28rpx;
+  color: var(--graphite);
+  margin-bottom: 24rpx;
+}
+.state-btn {
+  font-size: 28rpx;
+  color: #ffffff;
+  background: var(--ink);
+  border-radius: 9999rpx;
+  padding: 16rpx 48rpx;
+  font-weight: 500;
+}
+
+/* ===== 底部加载更多 ===== */
+.footer {
+  padding: 32rpx 40rpx;
+  text-align: center;
+}
+.footer-text {
+  font-size: 28rpx;
+  color: var(--graphite);
+}
+.footer-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 20rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.footer-end::before,
+.footer-end::after {
+  content: "";
+  width: 64rpx;
+  height: 2rpx;
+  background: var(--line);
+}
+
+/* ===== 底部固定操作栏 ===== */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 20rpx 32rpx 48rpx;
+  background: var(--pure-white);
+  border-top: 2rpx solid rgba(163, 166, 175, 0.3);
+}
+.bb-main {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.bb-sub {
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: var(--graphite);
+}
+.bb-cta {
+  flex-shrink: 0;
+  min-width: 240rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 48rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+  text-align: center;
+  box-sizing: border-box;
+}
+/* 0 套 / 提交中：置灰禁用态 */
+.bb-cta--disabled {
+  background: #c9ccd3;
+  color: #ffffff;
+}
+
+/* 底栏占位 */
+.bar-safe {
+  height: 200rpx;
+}

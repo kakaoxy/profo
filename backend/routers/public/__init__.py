@@ -6,6 +6,7 @@ from .communities import router as public_communities_router
 from .files import router as public_files_router
 from .leads import router as public_leads_router
 from .projects import router as public_projects_router
+from .property_sheets import router as public_property_sheets_router
 from .users import router as public_users_router
 from .valuations import router as public_valuations_router
 
@@ -16,6 +17,7 @@ __all__ = [
     "public_files_router",
     "public_leads_router",
     "public_projects_router",
+    "public_property_sheets_router",
     "public_users_router",
     "public_valuations_router",
 ]

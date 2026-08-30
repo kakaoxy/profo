@@ -45,6 +45,7 @@ from routers.public import (
     public_files_router,
     public_leads_router,
     public_projects_router,
+    public_property_sheets_router,
     public_users_router,
     public_valuations_router,
 )
@@ -314,6 +315,7 @@ app.include_router(monitor_router, prefix=API_V1_PREFIX)
 app.include_router(public_auth_router, prefix=API_V1_PREFIX)
 app.include_router(public_users_router, prefix=API_V1_PREFIX)
 app.include_router(public_projects_router, prefix=API_V1_PREFIX)
+app.include_router(public_property_sheets_router, prefix=API_V1_PREFIX)
 app.include_router(public_bookings_router, prefix=API_V1_PREFIX)
 app.include_router(public_leads_router, prefix=API_V1_PREFIX)
 app.include_router(public_valuations_router, prefix=API_V1_PREFIX)
