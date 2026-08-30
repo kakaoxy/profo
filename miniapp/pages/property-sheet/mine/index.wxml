@@ -87,7 +87,7 @@
           <text class="s-count">共 {{item.itemCount}} 套</text>
           <view class="s-actions">
             <text class="s-time">{{item.timeText}}</text>
-            <text class="s-del" catchtap="onSheetDelete">删除</text>
+            <text class="s-del" data-id="{{item.id}}" catchtap="onSheetDelete">删除</text>
           </view>
         </view>
       </view>
