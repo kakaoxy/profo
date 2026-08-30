@@ -69,7 +69,7 @@
       </view>
     </view>
 
-    <!-- 房源单列表（点击进详情，长按删除） -->
+    <!-- 房源单列表（点击进详情，点删除按钮或长按删除） -->
     <view class="list">
       <view
         wx:for="{{sheets}}"
@@ -85,7 +85,10 @@
         </view>
         <view class="s-foot">
           <text class="s-count">共 {{item.itemCount}} 套</text>
-          <text class="s-time">{{item.timeText}}</text>
+          <view class="s-actions">
+            <text class="s-time">{{item.timeText}}</text>
+            <text class="s-del" catchtap="onSheetDelete">删除</text>
+          </view>
         </view>
       </view>
 

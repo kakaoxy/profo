@@ -52,7 +52,7 @@ interface PageData {
   loading: boolean;
   /** 游客/暂无任何数据：统一空态展示（统计卡与列表均不渲染）. */
   empty: boolean;
-  /** 删除请求进行中（防重复长按触发）. */
+  /** 删除请求进行中（防重复触发）. */
   deleting: boolean;
 }
 
@@ -64,6 +64,8 @@ interface PageCustom {
   toDisplay(item: PropertySheetMineItemResponse): SheetDisplay;
   onSheetTap(e: WechatMiniprogram.BaseEvent): void;
   onSheetLongPress(e: WechatMiniprogram.BaseEvent): void;
+  onSheetDelete(e: WechatMiniprogram.BaseEvent): void;
+  confirmDelete(id: number): void;
   deleteSheet(id: number): Promise<void>;
   onGoCreate(): void;
   onPullDownRefresh(): void;
@@ -196,12 +198,26 @@ Page<PageData, PageCustom>({
     wx.navigateTo({ url: `/pages/property-sheet/detail/index?sheet_id=${id}` });
   },
 
-  /** 长按列表项：弹确认弹窗，确认后软删该房源单. */
+  /** 长按列表项：进入删除确认（与删除按钮共用）. */
   onSheetLongPress(e: WechatMiniprogram.BaseEvent) {
     const id = Number(e.currentTarget.dataset.id);
     if (!id || this.data.deleting) {
       return;
     }
+    this.confirmDelete(id);
+  },
+
+  /** 点击卡片上的「删除」按钮：进入删除确认（与长按共用）. */
+  onSheetDelete(e: WechatMiniprogram.BaseEvent) {
+    const id = Number(e.currentTarget.dataset.id);
+    if (!id || this.data.deleting) {
+      return;
+    }
+    this.confirmDelete(id);
+  },
+
+  /** 删除确认弹窗，确认后软删该房源单. */
+  confirmDelete(id: number) {
     wx.showModal({
       title: "删除房源单",
       content: "删除后该房源单的二维码将失效，确认删除？",

@@ -117,6 +117,17 @@
   font-size: 22rpx;
   color: var(--dove);
 }
+.s-actions {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+/* 删除入口：小号灰字，Steep 体系内不做红色强调 */
+.s-del {
+  font-size: 22rpx;
+  color: var(--graphite);
+  padding: 4rpx 8rpx;
+}
 .list-empty {
   text-align: center;
   font-size: 26rpx;

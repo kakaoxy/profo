@@ -214,7 +214,7 @@ export function buildSheetPosterLayout(opts: { count: number }): SheetPosterLayo
   }));
   // 副标题（套数随实际所选变化）
   const subtitle: SheetPosterText = {
-    text: `${count} 套优质房源 精选呈现`,
+    text: `${count} 套精选好房 倾情呈现`,
     x: SHEET_POSTER_SAFE_MARGIN,
     y: titleY + titleLines.length * TITLE_LINE_HEIGHT + 6,
     font: "400 24px sans-serif",
@@ -286,14 +286,14 @@ export function buildSheetPosterLayout(opts: { count: number }): SheetPosterLayo
   const brand: SheetPosterBrand = {
     dot: { cx: SHEET_POSTER_SAFE_MARGIN + 5, cy: brandMainY + 14, r: 5, color: COLOR_RUST },
     main: {
-      text: "美房宝 · 品质二手房",
+      text: "专注上海老破小",
       x: SHEET_POSTER_SAFE_MARGIN + 20,
       y: brandMainY,
       font: "500 28px sans-serif",
       color: COLOR_INK,
     },
     sub: {
-      text: "真实在售 · 实拍房源",
+      text: "所见即所得 · 每套皆标杆",
       x: SHEET_POSTER_SAFE_MARGIN + 20,
       y: brandMainY + 28 + 8,
       font: "400 22px sans-serif",
