@@ -137,7 +137,7 @@
   gap: 12rpx;
 }
 
-/* 联系卡按钮：墨色主按钮 + 文字按钮 */
+/* 联系卡按钮：墨色主按钮 + 杏色次按钮（flex 居中，避免 button 文字顶格） */
 .btn-pri,
 .btn-txt {
   margin: 0;
@@ -146,6 +146,10 @@
   border-radius: 9999rpx;
   font-size: 25rpx;
   line-height: 1;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-pri {
@@ -154,10 +158,11 @@
   color: #ffffff;
 }
 
+/* 杏色填充：白卡/白底栏上轮廓可见（对齐 chip-apricot 配色） */
 .btn-txt {
   height: 60rpx;
-  background: transparent;
-  color: var(--ink);
+  background: var(--apricot-wash);
+  color: var(--rust);
 }
 
 .btn-pri::after,

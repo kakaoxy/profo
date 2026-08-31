@@ -11,7 +11,7 @@
  * - 聚合展示：详情与分享人联系卡并行加载（消除请求瀑布）；hero 杏色光晕
  *   暖卡 + 联系卡（is_referrer 显示「分享人」角标）+ 房源卡片列表
  *   （在售/已售角标，点击携带 referrer/source 跳单房源详情延续归因）
- * - 转化承接：底栏「咨询分享人」滚动定位联系卡 +「我想卖房 · 免费估价」
+ * - 转化承接：底栏「咨询分享人」直接拨打分享人电话 +「我想卖房 · 免费估价」
  *   switchTab 估价页
  */
 import type { components } from "../../../types/api-types";
@@ -77,7 +77,6 @@ interface PageCustom {
   onCallTap(): void;
   onWechatTap(): void;
   onItemTap(e: WechatMiniprogram.BaseEvent<WechatMiniprogram.IAnyObject, { id?: number }>): void;
-  onContactScrollTap(): void;
   onValuationTap(): void;
 }
 
@@ -187,7 +186,7 @@ Page<PageData, PageCustom>({
         contactAvatarUrl: resolveAssetUrl(contact?.avatar),
         contactFallbackChar: (contact?.nickname || "顾问").slice(0, 1),
         contactIsReferrer: contact?.is_referrer === true,
-        contactSubText: contact?.is_referrer ? "扫码进入 · 已自动关联分享人" : "官方置业顾问",
+        contactSubText: contact?.is_referrer ? "" : "",
         hasPhone: !!contact?.phone,
         hasWechat: !!contact?.wechat_number,
       });
@@ -234,10 +233,14 @@ Page<PageData, PageCustom>({
     wx.switchTab({ url: "/pages/projects/list/index" });
   },
 
-  /** 电话咨询：电话为空时按钮已隐藏（防御兜底 return）. */
+  /**
+   * 电话咨询（联系卡按钮 + 底栏「咨询分享人」共用）：
+   * 电话为空时联系卡按钮已隐藏，底栏按钮兜底 toast（contact 加载失败场景）.
+   */
   onCallTap() {
     const phone = this.data.contact?.phone;
     if (!phone) {
+      wx.showToast({ title: "暂未获取到联系方式", icon: "none" });
       return;
     }
     wx.makePhoneCall({
@@ -273,11 +276,6 @@ Page<PageData, PageCustom>({
       ? `&referrer=${encodeURIComponent(referrer)}&source=poster`
       : "";
     wx.navigateTo({ url: `/pages/projects/detail/index?id=${id}${suffix}` });
-  },
-
-  /** 底栏「咨询分享人」：滚动定位到联系卡. */
-  onContactScrollTap() {
-    wx.pageScrollTo({ selector: "#contact-card", duration: 300 });
   },
 
   /** 底栏主按钮：去估价页（tabBar 页 switchTab）. */
