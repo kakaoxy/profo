@@ -10,7 +10,8 @@
  * - 点击卡片进入房源详情页
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import { formatLeadTime } from "../../../utils/recruit-logic";

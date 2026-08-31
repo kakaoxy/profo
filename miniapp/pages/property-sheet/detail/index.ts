@@ -17,7 +17,8 @@
  * 实现保存流程并暴露成功/失败结果。
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { formatLeadTime } from "../../../utils/recruit-logic";
 import { resolveImageUrl } from "../../../utils/url";
 import { createSheetPosterTempFile } from "../../../utils/property-sheet-poster-render";

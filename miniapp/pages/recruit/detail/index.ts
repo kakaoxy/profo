@@ -19,7 +19,8 @@
  * 海报绘制、员工取数、订阅授权已全部外置 utils，页面仅保留最小编排。
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import {
@@ -31,9 +32,8 @@ import {
   parseRecruitQuery,
   parseSceneCode,
   RECRUIT_LANDING_CONTENT,
-  type RecruitLandingContent,
-  type RecruitSource,
 } from "../../../utils/recruit-logic";
+import type { RecruitLandingContent, RecruitSource } from "../../../utils/recruit-logic";
 import { createPosterTempFile, savePosterToAlbum } from "../../../utils/recruit-poster-render";
 import { fetchEmployeeIdentity, requestLeadSubscribe } from "../../../utils/recruit-employee";
 

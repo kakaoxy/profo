@@ -12,15 +12,10 @@ import {
   computeCoverSourceRect,
   toQrcodeDataUri,
 } from "./recruit-poster";
-import {
-  buildSheetPosterLayout,
-  SHEET_POSTER_HEIGHT,
-  SHEET_POSTER_WIDTH,
-  type SheetPosterLayout,
-  type SheetPosterRect,
-  type SheetPosterText,
-} from "./property-sheet-poster";
-import { savePosterToAlbum, type PosterCanvasPageContext } from "./recruit-poster-render";
+import { buildSheetPosterLayout, SHEET_POSTER_HEIGHT, SHEET_POSTER_WIDTH } from "./property-sheet-poster";
+import type { SheetPosterLayout, SheetPosterRect, SheetPosterText } from "./property-sheet-poster";
+import { savePosterToAlbum } from "./recruit-poster-render";
+import type { PosterCanvasPageContext } from "./recruit-poster-render";
 
 export { savePosterToAlbum };
 export type { PosterCanvasPageContext };

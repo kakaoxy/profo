@@ -11,7 +11,8 @@
  *   有分享数据但暂无房源单 → 保留统计卡 + 列表区空文案引导创建
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { formatLeadTime } from "../../../utils/recruit-logic";
 

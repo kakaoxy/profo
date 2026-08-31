@@ -12,7 +12,8 @@
  *   有分享数据但暂无客户 → 保留统计卡 + 列表区空文案
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { formatLeadTime } from "../../../utils/recruit-logic";
 

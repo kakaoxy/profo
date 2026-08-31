@@ -9,11 +9,8 @@
  * 本文件仅提供 status 过滤、详情路由与展示项转换三个差异点。
  */
 import type { components } from "../../../../types/api-types";
-import {
-  createProjectListPage,
-  type BaseDisplayItem,
-  type ProjectListState,
-} from "../../utils/project-list-page";
+import { createProjectListPage } from "../../utils/project-list-page";
+import type { BaseDisplayItem, ProjectListState } from "../../utils/project-list-page";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 

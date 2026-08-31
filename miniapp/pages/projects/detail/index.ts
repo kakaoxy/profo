@@ -1,5 +1,6 @@
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
 import { resolveAssetUrl, resolveImageUrl } from "../../../utils/url";
 import { fetchEmployeeId } from "../../../utils/valuation-share";

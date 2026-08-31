@@ -12,15 +12,11 @@
  * - 未登录或接口 401：静默展示空态（request 已自动尝试刷新，此处不清登录态不报错）
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
-import {
-  applyLeadPhone,
-  RECRUIT_LEAD_STATUS_CHIPS,
-  toMyLeadDisplayItem,
-  type RecruitLeadChip,
-  type RecruitMyLeadDisplayItem,
-} from "../../../utils/recruit-logic";
+import { applyLeadPhone, RECRUIT_LEAD_STATUS_CHIPS, toMyLeadDisplayItem } from "../../../utils/recruit-logic";
+import type { RecruitLeadChip, RecruitMyLeadDisplayItem } from "../../../utils/recruit-logic";
 import { requestLeadSubscribe } from "../../../utils/recruit-employee";
 
 type RecruitMyLeadListResponse = components["schemas"]["RecruitMyLeadListResponse"];

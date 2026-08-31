@@ -15,7 +15,8 @@
  *   switchTab 估价页
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { parseSceneCode } from "../../../utils/recruit-logic";
 import { resolveAssetUrl, resolveImageUrl } from "../../../utils/url";
 import { getVisitorId } from "../../../utils/visitor";

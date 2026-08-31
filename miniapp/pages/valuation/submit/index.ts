@@ -4,7 +4,8 @@
  * 拆分会导致跨文件共享大量表单状态与守卫，降低可读性，故保持单文件（>500 行）。
  */
 import type { components } from "../../../types/api-types";
-import { request, refreshCAccessToken, type HttpResponseError } from "../../../utils/request";
+import { request, refreshCAccessToken } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";

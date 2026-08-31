@@ -15,9 +15,8 @@ import {
   POSTER_WIDTH,
   resolvePosterBgUrl,
   toQrcodeDataUri,
-  type PosterLayout,
-  type PosterRect,
 } from "./recruit-poster";
+import type { PosterLayout, PosterRect } from "./recruit-poster";
 
 type RecruitCampaignDetailResponse = components["schemas"]["RecruitCampaignDetailResponse"];
 type RecruitQRCodeResponse = components["schemas"]["RecruitQRCodeResponse"];

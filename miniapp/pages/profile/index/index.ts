@@ -2,7 +2,8 @@ import type { components } from "../../../types/api-types";
 import { BASE_URL } from "../../../utils/config";
 import { fetchPendingAssessmentCount } from "../../../utils/pending-assessment";
 import { updateWechatProfile } from "../../../utils/profile";
-import { refreshCAccessToken, request, type HttpResponseError } from "../../../utils/request";
+import { refreshCAccessToken, request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import {
   getAccessToken,
   getCAccessToken,

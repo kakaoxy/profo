@@ -11,7 +11,8 @@
  * - 未登录或接口 401：统一空态（request 已自动尝试刷新，此处不清登录态不报错）
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { statusBadgeStyle } from "../../../utils/valuation-display";
 import { formatLeadTime } from "../../../utils/recruit-logic";

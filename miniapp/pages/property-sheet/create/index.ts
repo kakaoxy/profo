@@ -12,7 +12,8 @@
  *   失败 toast 后端 message（401 提示先登录，对齐 projects/mine 不清登录态）
  */
 import type { components } from "../../../types/api-types";
-import { request, type HttpResponseError } from "../../../utils/request";
+import { request } from "../../../utils/request";
+import type { HttpResponseError } from "../../../utils/request";
 import { resolveImageUrl } from "../../../utils/url";
 
 type PublicProjectListItem = components["schemas"]["PublicProjectListItem"];
