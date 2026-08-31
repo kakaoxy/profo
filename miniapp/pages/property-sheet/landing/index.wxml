@@ -38,7 +38,7 @@
       <view wx:else class="contact-avatar contact-avatar--fallback">{{contactFallbackChar}}</view>
       <view class="contact-main">
         <view class="contact-name">
-          <text class="contact-name-text">{{contact.nickname}}</text>
+          <!-- <text class="contact-name-text">{{contact.nickname}}</text> -->
           <text wx:if="{{contactIsReferrer}}" class="contact-pill">分享人</text>
         </view>
         <view class="contact-sub">{{contactSubText}}</view>
