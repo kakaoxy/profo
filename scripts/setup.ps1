@@ -14,10 +14,10 @@
     本地开发（默认）  使用 backend\.venv\Scripts\python.exe 直连 127.0.0.1:5432
     Docker 生产       使用 docker compose exec backend，容器内直连 db:5432
 
-  运行方式（任选其一）：
-    1. 双击 setup.bat（推荐，自动绕过执行策略）
-    2. PowerShell 中：powershell -ExecutionPolicy Bypass -File .\setup.ps1
-    3. 已放行执行策略时：.\setup.ps1
+  运行方式（任选其一，在项目根目录执行）：
+    1. 双击 scripts\setup.bat（推荐，自动绕过执行策略）
+    2. PowerShell 中：powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+    3. 已放行执行策略时：.\scripts\setup.ps1
 
   关键适配点（与 setup.sh 一致）：
     - settings.py 用 env_file=".env"（相对 CWD），BaseSettings 默认 extra="forbid"
@@ -31,12 +31,12 @@
       本地模式（默认）无此问题，python 是 PowerShell 子进程，继承 env
 
 .EXAMPLE
-  .\setup.ps1                              全量初始化（自动生成管理员临时密码）
-  .\setup.ps1 -AdminPassword 'P@ssw0rd'    使用指定密码创建/重置管理员
-  .\setup.ps1 -ResetAdmin                  仅重置管理员密码（自动生成新临时密码）
-  .\setup.ps1 -Docker                      在 Docker 容器内执行（生产环境）
-  .\setup.ps1 -SkipDb                      跳过 DB 启动（已在别处启动时使用）
-  .\setup.ps1 -Help                        查看帮助
+  .\scripts\setup.ps1                              全量初始化（自动生成管理员临时密码）
+  .\scripts\setup.ps1 -AdminPassword 'P@ssw0rd'    使用指定密码创建/重置管理员
+  .\scripts\setup.ps1 -ResetAdmin                  仅重置管理员密码（自动生成新临时密码）
+  .\scripts\setup.ps1 -Docker                      在 Docker 容器内执行（生产环境）
+  .\scripts\setup.ps1 -SkipDb                      跳过 DB 启动（已在别处启动时使用）
+  .\scripts\setup.ps1 -Help                        查看帮助
 #>
 
 [CmdletBinding()]
@@ -54,8 +54,8 @@ $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
 $OutputEncoding = [Text.Encoding]::UTF8
 
-# ---------- 路径定位（兼容从任意目录调用） ----------
-$RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# ---------- 路径定位（脚本位于 scripts\，项目根为其父目录；兼容从任意目录调用） ----------
+$RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $RootDir
 
 $EnvFile = '.env'
@@ -107,7 +107,7 @@ function Test-Placeholder {
 Write-Step "1/4 检查环境配置"
 
 if (-not (Test-Path $EnvFile)) {
-  Write-Die "未找到 $EnvFile，请先运行: .\init-env.ps1"
+  Write-Die "未找到 $EnvFile，请先运行: .\scripts\init-env.ps1"
 }
 
 $PostgresUser = Read-EnvVar 'POSTGRES_USER'
@@ -115,7 +115,7 @@ $PostgresPassword = Read-EnvVar 'POSTGRES_PASSWORD'
 $PostgresDb = Read-EnvVar 'POSTGRES_DB'
 
 if (Test-Placeholder $PostgresPassword) {
-  Write-Die "POSTGRES_PASSWORD 仍为占位符，请先运行: .\init-env.ps1"
+  Write-Die "POSTGRES_PASSWORD 仍为占位符，请先运行: .\scripts\init-env.ps1"
 }
 
 Write-Ok ".env 配置正常 (POSTGRES_USER=$PostgresUser, POSTGRES_DB=$PostgresDb)"
@@ -193,7 +193,7 @@ if ($Docker) {
   # 校验必需变量是否仍为占位符
   foreach ($v in @('JWT_SECRET_KEY', 'ENCRYPTION_KEY')) {
     if (Test-Placeholder (Read-EnvVar $v)) {
-      Write-Die "$v 仍为占位符，请先运行: .\init-env.ps1"
+      Write-Die "$v 仍为占位符，请先运行: .\scripts\init-env.ps1"
     }
   }
 }

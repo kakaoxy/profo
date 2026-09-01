@@ -12,20 +12,20 @@
 #   本地开发（默认）  使用 backend/.venv/bin/python 直连 127.0.0.1:5432
 #   Docker 生产       使用 docker compose exec backend，容器内直连 db:5432
 #
-# 用法:
-#   ./setup.sh                              全量初始化（自动生成管理员临时密码）
-#   ./setup.sh --admin-password 'P@ssw0rd'  使用指定密码创建/重置管理员
-#   ./setup.sh --reset-admin                仅重置管理员密码（自动生成新临时密码）
-#   ./setup.sh --sync-db-password           数据库认证失败时，同步 DB 密码为 .env 值（保留数据）
-#   ./setup.sh --fresh-db                   删除数据库数据卷重建（清空数据！彻底全新环境）
-#   ./setup.sh --docker                     在 Docker 容器内执行（生产环境）
-#   ./setup.sh --skip-db                    跳过 DB 启动（已在别处启动时使用）
-#   ./setup.sh --help                       查看帮助
+# 用法（在项目根目录执行）:
+#   ./scripts/setup.sh                              全量初始化（自动生成管理员临时密码）
+#   ./scripts/setup.sh --admin-password 'P@ssw0rd'  使用指定密码创建/重置管理员
+#   ./scripts/setup.sh --reset-admin                仅重置管理员密码（自动生成新临时密码）
+#   ./scripts/setup.sh --sync-db-password           数据库认证失败时，同步 DB 密码为 .env 值（保留数据）
+#   ./scripts/setup.sh --fresh-db                   删除数据库数据卷重建（清空数据！彻底全新环境）
+#   ./scripts/setup.sh --docker                     在 Docker 容器内执行（生产环境）
+#   ./scripts/setup.sh --skip-db                    跳过 DB 启动（已在别处启动时使用）
+#   ./scripts/setup.sh --help                       查看帮助
 
 set -euo pipefail
 
-# ---------- 路径定位 ----------
-ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# ---------- 路径定位（脚本位于 scripts/，项目根为其父目录） ----------
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 ENV_FILE=".env"
@@ -97,7 +97,7 @@ read_env_var() {
 step "1/4 检查环境配置"
 
 if [ ! -f "$ENV_FILE" ]; then
-  die "未找到 ${ENV_FILE}，请先运行: ./init-env.sh"
+  die "未找到 ${ENV_FILE}，请先运行: ./scripts/init-env.sh"
 fi
 
 POSTGRES_USER="$(read_env_var POSTGRES_USER)"
@@ -114,7 +114,7 @@ is_placeholder() {
 }
 
 if is_placeholder "$POSTGRES_PASSWORD"; then
-  die "POSTGRES_PASSWORD 仍为占位符，请先运行: ./init-env.sh"
+  die "POSTGRES_PASSWORD 仍为占位符，请先运行: ./scripts/init-env.sh"
 fi
 
 ok ".env 配置正常 (POSTGRES_USER=${POSTGRES_USER}, POSTGRES_DB=${POSTGRES_DB})"
@@ -196,7 +196,7 @@ else
   # 校验必需变量是否仍为占位符
   for v in JWT_SECRET_KEY ENCRYPTION_KEY; do
     if is_placeholder "$(read_env_var "$v")"; then
-      die "${v} 仍为占位符，请先运行: ./init-env.sh"
+      die "${v} 仍为占位符，请先运行: ./scripts/init-env.sh"
     fi
   done
 fi
@@ -293,8 +293,8 @@ handle_auth_failure() {
   echo "        之后修改 .env 不会自动同步 → 新旧密码不匹配。"
   echo ""
   echo "  修复方式："
-  echo "    A) 同步数据库密码（保留数据）: ./setup.sh --sync-db-password"
-  echo "    B) 删除数据卷重建（清空数据）: ./setup.sh --fresh-db"
+  echo "    A) 同步数据库密码（保留数据）: ./scripts/setup.sh --sync-db-password"
+  echo "    B) 删除数据卷重建（清空数据）: ./scripts/setup.sh --fresh-db"
   echo "================================================================"
   if [ "$SYNC_DB_PASSWORD" = true ]; then
     echo ">> 检测到 --sync-db-password，正在同步数据库密码（保留数据）..."
@@ -313,7 +313,7 @@ handle_auth_failure() {
       *) die "已取消" ;;
     esac
   else
-    die "非交互环境，请显式指定: ./setup.sh --sync-db-password 或 --fresh-db"
+    die "非交互环境，请显式指定: ./scripts/setup.sh --sync-db-password 或 --fresh-db"
   fi
 }
 

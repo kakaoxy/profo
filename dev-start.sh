@@ -63,7 +63,7 @@ WECHAT_SECRET="$(read_env_var WECHAT_SECRET)"
 for _field in JWT_SECRET_KEY ENCRYPTION_KEY WECHAT_APPID WECHAT_SECRET; do
   if [ -z "${!_field}" ]; then
     echo "❌ .env 中未找到 ${_field}"
-    echo "   请运行: ./init-env.sh"
+    echo "   请运行: ./scripts/init-env.sh"
     exit 1
   fi
 done

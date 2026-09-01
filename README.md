@@ -372,14 +372,14 @@ from services.projects import ProjectService
 
 ```bash
 # 1. 生成密钥并初始化 .env（自动从 .env.docker.example 创建并填入随机密钥）
-./init-env.sh
+./scripts/init-env.sh
 #    会自动生成并写入：
 #    - POSTGRES_PASSWORD  数据库强密码（24 位字母数字）
 #    - JWT_SECRET_KEY     JWT 签名密钥（64 位 hex）
 #    - ENCRYPTION_KEY     Fernet 加密密钥
 #    - DATABASE_URL       自动同步新密码
-# 查看完整密钥: ./init-env.sh --show
-# 强制重新生成所有密钥: ./init-env.sh --force
+# 查看完整密钥: ./scripts/init-env.sh --show
+# 强制重新生成所有密钥: ./scripts/init-env.sh --force
 
 # 2. 构建并启动全部服务
 docker compose up -d --build
@@ -392,10 +392,10 @@ docker compose up -d --build
 
 ```bash
 # 一键初始化：建表 + 创建角色 + 创建管理员（自动生成临时密码）
-./setup.sh --docker
+./scripts/setup.sh --docker
 ```
 
-`setup.sh --docker` 会在 backend 容器内执行 `init_db.py` 与 `init_admin.py`，并打印管理员账号与临时密码。首次登录强制修改密码。
+`scripts/setup.sh --docker` 会在 backend 容器内执行 `init_db.py` 与 `init_admin.py`，并打印管理员账号与临时密码。首次登录强制修改密码。
 
 > 默认管理员用户名：`admin`，临时密码由脚本随机生成并打印，首次登录强制修改。
 
@@ -477,7 +477,7 @@ docker compose up -d --build frontend  # 仅重建前端
 
 # 方式二：手动启动
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
-# DATABASE_URL 由 dev-start.sh 或 setup.sh 自动覆盖为 127.0.0.1:5432
+# DATABASE_URL 由 dev-start.sh 或 scripts/setup.sh 自动覆盖为 127.0.0.1:5432
 ```
 
 ### 前端依赖安装
@@ -510,18 +510,18 @@ cd ..                         # 返回项目根目录
 
 ```bash
 # 1. 生成 .env 密钥（首次运行自动从模板创建 .env）
-./init-env.sh
+./scripts/init-env.sh
 
 # 2. 初始化数据库 + 管理员（自动启动 PostgreSQL、建表、创建 admin 用户）
-./setup.sh
+./scripts/setup.sh
 #    - 首次运行会自动生成管理员临时密码并打印
 #    - 支持参数：
-#      ./setup.sh --admin-password 'P@ssw0rd'   # 使用指定密码
-#      ./setup.sh --reset-admin                 # 重置管理员密码
-#      ./setup.sh --sync-db-password            # 认证失败时同步 DB 密码为 .env 值（保留数据）
-#      ./setup.sh --fresh-db                    # 删除数据卷重建（清空数据，彻底全新环境）
-#      ./setup.sh --skip-db                     # 跳过 DB 启动（已在别处启动时使用）
-#      ./setup.sh --help                        # 查看帮助
+#      ./scripts/setup.sh --admin-password 'P@ssw0rd'   # 使用指定密码
+#      ./scripts/setup.sh --reset-admin                 # 重置管理员密码
+#      ./scripts/setup.sh --sync-db-password            # 认证失败时同步 DB 密码为 .env 值（保留数据）
+#      ./scripts/setup.sh --fresh-db                    # 删除数据卷重建（清空数据，彻底全新环境）
+#      ./scripts/setup.sh --skip-db                     # 跳过 DB 启动（已在别处启动时使用）
+#      ./scripts/setup.sh --help                        # 查看帮助
 ```
 
 ### 启动开发环境
@@ -966,9 +966,9 @@ graph TB
 | [`docker-compose.yml`](docker-compose.yml) | 编排 db / backend / frontend 三个服务，backend/frontend 仅暴露到 `127.0.0.1`，由宿主 nginx 反代 |
 | [`backend/Dockerfile`](backend/Dockerfile) | 后端多阶段构建：builder（uv sync）→ runner（uvicorn） |
 | [`frontend/Dockerfile`](frontend/Dockerfile) | 前端三阶段构建：deps（pnpm install）→ builder（next build standalone）→ runner |
-| [`.env.docker.example`](.env.docker.example) | 环境变量模板（由 `init-env.sh` 自动复制并填充密钥） |
-| [`init-env.sh`](init-env.sh) | 一键生成 PostgreSQL/JWT/Fernet 密钥并初始化 `.env` |
-| [`setup.sh`](setup.sh) | 一键初始化数据库表与管理员账号（支持 `--docker` 生产模式） |
+| [`.env.docker.example`](.env.docker.example) | 环境变量模板（由 `scripts/init-env.sh` 自动复制并填充密钥） |
+| [`scripts/init-env.sh`](scripts/init-env.sh) | 一键生成 PostgreSQL/JWT/Fernet 密钥并初始化 `.env` |
+| [`scripts/setup.sh`](scripts/setup.sh) | 一键初始化数据库表与管理员账号（支持 `--docker` 生产模式） |
 | [`deploy-server.sh`](deploy-server.sh) | 服务器端部署脚本：加载镜像、启动 compose、健康检查 |
 | [`deploy-local.sh`](deploy-local.sh) | 本地构建并推送镜像到服务器，触发服务器端部署 |
 
@@ -979,13 +979,13 @@ graph TB
 git clone <repo-url> profo && cd profo
 
 # 2. 生成密钥并初始化 .env（自动从模板创建并填入随机密钥）
-./init-env.sh
+./scripts/init-env.sh
 
 # 3. 构建并启动
 docker compose up -d --build
 
 # 4. 初始化数据库 + 管理员（首次部署）
-./setup.sh --docker
+./scripts/setup.sh --docker
 # 会打印临时密码，首次登录强制修改
 
 # 5. 验证
@@ -1091,11 +1091,11 @@ docker compose up -d --build
 
 ### Q1: 后端启动报 `JWT_SECRET_KEY not set` / `ENCRYPTION_KEY not set`
 
-`.env` 缺少必填环境变量。最简单的方式是运行 `./init-env.sh` 自动生成所有密钥：
+`.env` 缺少必填环境变量。最简单的方式是运行 `./scripts/init-env.sh` 自动生成所有密钥：
 
 ```bash
-./init-env.sh        # 生成并写入 POSTGRES_PASSWORD / JWT_SECRET_KEY / ENCRYPTION_KEY
-./init-env.sh --show # 查看完整密钥（默认打码）
+./scripts/init-env.sh        # 生成并写入 POSTGRES_PASSWORD / JWT_SECRET_KEY / ENCRYPTION_KEY
+./scripts/init-env.sh --show # 查看完整密钥（默认打码）
 ```
 
 或手动生成单个密钥：
@@ -1126,20 +1126,20 @@ docker compose exec frontend wget -qO- http://backend:8000/health
 
 ### Q4: 忘记管理员密码
 
-使用 `setup.sh --reset-admin` 重置（自动生成新临时密码）：
+使用 `scripts/setup.sh --reset-admin` 重置（自动生成新临时密码）：
 
 ```bash
 # Docker 部署环境
-./setup.sh --docker --reset-admin
+./scripts/setup.sh --docker --reset-admin
 
 # 本地开发环境
-./setup.sh --reset-admin
+./scripts/setup.sh --reset-admin
 ```
 
 或指定新密码：
 
 ```bash
-./setup.sh --docker --admin-password 'YourNew!Pass1'
+./scripts/setup.sh --docker --admin-password 'YourNew!Pass1'
 ```
 
 > 密码需满足强度策略：≥8 位，含大小写字母、数字、特殊字符。
@@ -1183,17 +1183,17 @@ pnpm install
 ### Q9: 如何重置整个环境（清空数据）
 
 ```bash
-# 方式一（推荐）：setup.sh 一键完成"删卷 → 重建 → 建表 → 创建管理员"
+# 方式一（推荐）：scripts/setup.sh 一键完成"删卷 → 重建 → 建表 → 创建管理员"
 # 本地开发：
-./setup.sh --fresh-db
+./scripts/setup.sh --fresh-db
 # Docker 生产：
-./setup.sh --docker --fresh-db
+./scripts/setup.sh --docker --fresh-db
 
 # 方式二：手动操作
 docker compose down              # 停止并删除容器
 docker compose down -v           # 同时删除 pgdata / redisdata volume（数据丢失！）
 docker compose up -d --build     # 重新启动
-./setup.sh --docker              # 重新初始化数据库 + 管理员
+./scripts/setup.sh --docker              # 重新初始化数据库 + 管理员
 ```
 
 ### Q10: 后端启动报 `REDIS_URL not set` 或 Redis 连接失败
@@ -1203,7 +1203,7 @@ docker compose up -d --build     # 重新启动
 **修复**：
 
 ```bash
-# 1. 确认 .env 包含 REDIS_PASSWORD（init-env.sh 已自动生成）
+# 1. 确认 .env 包含 REDIS_PASSWORD（scripts/init-env.sh 已自动生成）
 grep REDIS_PASSWORD .env
 
 # 2. 确认 redis 容器健康
@@ -1244,21 +1244,21 @@ docker compose restart backend
 
 **根因**：PostgreSQL 数据卷（`pgdata`）是用**旧 `.env` 密码**初始化的，与当前 `.env` 的 `POSTGRES_PASSWORD` 不一致。PostgreSQL 只在**数据卷首次创建**时应用 `POSTGRES_PASSWORD`，之后修改 `.env` **不会自动同步**进数据库。
 
-⚠️ **特别注意**：Docker 卷是引擎级全局资源，**不随 git clone / 删除项目目录而重置**。即使全新 clone 代码，只要这台机器上之前运行过本项目（compose 项目名 = 目录名 → 卷名固定为 `<项目名>_pgdata`），就会复用旧卷、遇到旧密码。常见触发场景：机器上已有旧环境 → 重新 clone + `init-env.sh`（生成了全新的随机密码）→ 新密码 vs 旧卷密码不匹配。
+⚠️ **特别注意**：Docker 卷是引擎级全局资源，**不随 git clone / 删除项目目录而重置**。即使全新 clone 代码，只要这台机器上之前运行过本项目（compose 项目名 = 目录名 → 卷名固定为 `<项目名>_pgdata`），就会复用旧卷、遇到旧密码。常见触发场景：机器上已有旧环境 → 重新 clone + `scripts/init-env.sh`（生成了全新的随机密码）→ 新密码 vs 旧卷密码不匹配。
 
-**修复方式**（`setup.sh` 已内置认证探测，会主动检测该问题）：
+**修复方式**（`scripts/setup.sh` 已内置认证探测，会主动检测该问题）：
 
 ```bash
 # 方式 A（推荐，保留数据）：同步数据库密码为 .env 中的值
-./setup.sh --sync-db-password
-# 本地:   ./setup.sh --sync-db-password
-# Docker: ./setup.sh --docker --sync-db-password
+./scripts/setup.sh --sync-db-password
+# 本地:   ./scripts/setup.sh --sync-db-password
+# Docker: ./scripts/setup.sh --docker --sync-db-password
 
 # 方式 B（清空数据）：删除数据卷重建，得到彻底全新的环境
-./setup.sh --fresh-db
+./scripts/setup.sh --fresh-db
 ```
 
-> 不带参数运行时，若检测到认证失败，`setup.sh` 会进入交互模式让你选择 A / B。
+> 不带参数运行时，若检测到认证失败，`scripts/setup.sh` 会进入交互模式让你选择 A / B。
 >
 > **原理说明**：PostgreSQL 容器每次启动都会用 `.env` 中的 `POSTGRES_PASSWORD` 作为环境变量，但该变量只在数据卷首次 `initdb` 时生效；卷内已初始化的集群密码保持不变。因此修改 `POSTGRES_PASSWORD` 后，要么同步执行 `ALTER USER`（方式 A），要么删除数据卷重建（方式 B）。Redis 无此问题（`--requirepass` 是每次启动时经命令行参数注入的，不持久化在卷中）。
 
@@ -1269,15 +1269,15 @@ docker compose restart backend
 git clone <repo-url> profo && cd profo
 
 # 2. 生成密钥并初始化 .env（自动从模板创建并填入随机密钥）
-./init-env.sh
+./scripts/init-env.sh
 
 # 3. 本地开发模式（Docker 只跑数据库，前后端本机热重载）：
-./setup.sh               # 建表 + 创建管理员（打印临时密码）
+./scripts/setup.sh               # 建表 + 创建管理员（打印临时密码）
 ./dev-start.sh           # 启动 db + 后端 + 前端
 
 # 或 Docker 生产模式（全部容器化）：
 docker compose up -d --build
-./setup.sh --docker      # 在容器内建表 + 创建管理员
+./scripts/setup.sh --docker      # 在容器内建表 + 创建管理员
 ```
 
 > 首次初始化后请立即保存打印的管理员临时密码（首次登录强制修改）。
@@ -1294,12 +1294,15 @@ ProFo/
 ├── docker-compose.yml             # Docker Compose 编排（db / redis / backend / frontend，含 healthcheck / mem_limit / platform）
 ├── docker-compose.dev.yml         # 开发环境 override（映射 db 端口到本地）
 ├── .env.docker.example            # Docker 部署环境变量模板
-├── init-env.sh                    # 一键生成密钥并初始化 .env（支持 --show / --force）
-├── setup.sh                       # 一键初始化数据库与管理员账号（支持 --docker / --reset-admin / --admin-password / --skip-db）
 ├── dev-start.sh                   # 本地开发一键启停（db + backend + frontend，子命令 up/db/stop/status/logs/down）
 ├── dev-start.bat                  # Windows 版本开发启停脚本
 ├── deploy-local.sh                # 本地构建镜像并推送到服务器（amd64 跨平台构建）
 ├── deploy-server.sh               # 服务器端加载镜像并启动 compose
+│
+├── scripts/                       # 低频工具脚本（初始化 / 备份恢复）
+│   ├── init-env.sh                # 一键生成密钥并初始化 .env（支持 --show / --force；Windows 版 init-env.bat / init-env.ps1）
+│   ├── setup.sh                   # 一键初始化数据库与管理员账号（支持 --docker / --reset-admin / --admin-password / --skip-db；Windows 版 setup.bat / setup.ps1）
+│   └── restore-backup.sh          # 将服务器数据库备份导入本地测试环境
 │
 ├── frontend/                      # 前端（Next.js 16，standalone 输出）
 │   ├── src/

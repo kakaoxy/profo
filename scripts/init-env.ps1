@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Profo 一键生成密钥并初始化 .env（Windows / PowerShell 版）
 
@@ -12,16 +12,16 @@
     6. 默认打码输出，-Show 显示完整密钥
     7. -Force 强制覆盖所有密钥（危险，需显式确认）
 
-  运行方式（任选其一）：
-    1. 双击 init-env.bat（推荐，自动绕过执行策略）
-    2. PowerShell 中：powershell -ExecutionPolicy Bypass -File .\init-env.ps1
-    3. 已放行执行策略时：.\init-env.ps1
+  运行方式（任选其一，在项目根目录执行）：
+    1. 双击 scripts\init-env.bat（推荐，自动绕过执行策略）
+    2. PowerShell 中：powershell -ExecutionPolicy Bypass -File .\scripts\init-env.ps1
+    3. 已放行执行策略时：.\scripts\init-env.ps1
 
 .EXAMPLE
-  .\init-env.ps1            智能初始化（仅替换占位符）
-  .\init-env.ps1 -Show      显示完整密钥（默认打码）
-  .\init-env.ps1 -Force     强制覆盖所有密钥
-  .\init-env.ps1 -Help      查看帮助
+  .\scripts\init-env.ps1            智能初始化（仅替换占位符）
+  .\scripts\init-env.ps1 -Show      显示完整密钥（默认打码）
+  .\scripts\init-env.ps1 -Force     强制覆盖所有密钥
+  .\scripts\init-env.ps1 -Help      查看帮助
 #>
 
 [CmdletBinding()]
@@ -37,8 +37,8 @@ $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
 $OutputEncoding = [Text.Encoding]::UTF8
 
-# ---------- 路径定位（兼容从任意目录调用） ----------
-$RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# ---------- 路径定位（脚本位于 scripts\，项目根为其父目录；兼容从任意目录调用） ----------
+$RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $RootDir
 
 $EnvFile = '.env'
@@ -339,7 +339,7 @@ if ($missingFields.Count -gt 0) {
 # ---------- 9. 摘要 ----------
 Write-Host ""
 if (-not $Show) {
-  Write-Info "默认打码显示，查看完整密钥: .\init-env.ps1 -Show"
+  Write-Info "默认打码显示，查看完整密钥: .\scripts\init-env.ps1 -Show"
 }
 if ($BackupFile) {
   Write-Info "原 .env 已备份: $BackupFile"

@@ -10,16 +10,16 @@
 #   6. 默认打码输出，--show 显示完整密钥
 #   7. --force 强制覆盖所有密钥（危险，需显式确认）
 #
-# 用法:
-#   ./init-env.sh            智能初始化（仅替换占位符）
-#   ./init-env.sh --show     显示完整密钥（默认打码）
-#   ./init-env.sh --force    强制覆盖所有密钥
-#   ./init-env.sh --help     查看帮助
+# 用法（在项目根目录执行）:
+#   ./scripts/init-env.sh            智能初始化（仅替换占位符）
+#   ./scripts/init-env.sh --show     显示完整密钥（默认打码）
+#   ./scripts/init-env.sh --force    强制覆盖所有密钥
+#   ./scripts/init-env.sh --help     查看帮助
 
 set -euo pipefail
 
-# ---------- 路径定位（兼容从任意目录调用） ----------
-ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# ---------- 路径定位（脚本位于 scripts/，项目根为其父目录；兼容从任意目录调用） ----------
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 ENV_FILE=".env"
@@ -279,7 +279,7 @@ fi
 # ---------- 9. 摘要 ----------
 echo ""
 if [ "$SHOW_SECRETS" = false ]; then
-  info "默认打码显示，查看完整密钥: ./init-env.sh --show"
+  info "默认打码显示，查看完整密钥: ./scripts/init-env.sh --show"
 fi
 if [ -n "$BACKUP_FILE" ]; then
   info "原 .env 已备份: $BACKUP_FILE"
