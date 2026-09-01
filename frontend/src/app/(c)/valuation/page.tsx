@@ -3,7 +3,14 @@ import { ValuationForm } from "@/components/c/lead/ValuationForm";
 import { ValuationSidebar } from "@/components/c/lead/ValuationSidebar";
 import { cLocale } from "@/lib/i18n/c-locale";
 
-export default function ValuationPage() {
+interface ValuationPageProps {
+  /** 分享链接携带的归属员工ID（经 C 端提交透传后端完成归因） */
+  searchParams: Promise<{ referrer?: string }>;
+}
+
+export default async function ValuationPage({ searchParams }: ValuationPageProps) {
+  const { referrer } = await searchParams;
+
   return (
     <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-6 sm:py-8">
       <div className="mb-6 sm:mb-8">
@@ -20,7 +27,7 @@ export default function ValuationPage() {
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 lg:col-span-8">
-          <ValuationForm />
+          <ValuationForm initialReferrer={referrer} />
         </div>
         <div className="hidden lg:block lg:col-span-4">
           <ValuationSidebar />

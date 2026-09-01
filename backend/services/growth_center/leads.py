@@ -11,12 +11,13 @@ from datetime import date, datetime, time, timedelta
 from typing import Any, TypeAlias
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import String, case, cast, false, func, literal, select, union_all
-from sqlalchemy.orm import Session
+from sqlalchemy import String, case, cast, exists, false, func, literal, or_, select, union_all
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.selectable import Select
 
-from models import Lead, ProjectBooking, RecruitCampaign, RecruitLead, User
+from constants.role_codes import BACKEND_ROLE_CODES
+from models import Lead, ProjectBooking, RecruitCampaign, RecruitLead, Role, User, user_roles
 from models.common.base import LeadStatus
 from schemas.growth_center import GrowthModule, LeadSource, UnifiedLeadStatus
 from utils.formatters import escape_like, mask_phone
@@ -52,6 +53,31 @@ def _date_range(start_date: date | None, end_date: date | None) -> tuple[datetim
 def _name_label() -> ColumnElement:
     """归属员工名称表达式（需 outer join User，nickname 缺失回退 username）."""
     return func.coalesce(User.nickname, User.username).label("employee_name")
+
+
+def _internal_creator_exists() -> ColumnElement:
+    """Creator 为内部员工（主角色或附加角色含后台角色）的 EXISTS 表达式.
+
+    口径与 ``AuthService.has_backend_identity`` 一致：主角色或附加角色属于
+    {admin, operator, user} 之一即视为内部员工。估价/房源单线索的客户即
+    creator，内部员工经 C 端链路上报的线索不作外部客户展示，列表侧过滤。
+
+    """
+    backend_codes = list(BACKEND_ROLE_CODES)
+    creator = aliased(User)
+    primary = exists(
+        select(1)
+        .select_from(creator)
+        .join(Role, Role.id == creator.role_id)
+        .where(creator.id == Lead.creator_id, Role.code.in_(backend_codes)),
+    )
+    additional = exists(
+        select(1)
+        .select_from(user_roles)
+        .join(Role, Role.id == user_roles.c.role_id)
+        .where(user_roles.c.user_id == Lead.creator_id, Role.code.in_(backend_codes)),
+    )
+    return or_(primary, additional)
 
 
 class GrowthLeadService:
@@ -298,15 +324,27 @@ class GrowthLeadService:
         else:
             stmt = stmt.filter(Lead.source_property_id.is_(None))
         stmt = stmt.filter(Lead.is_deleted.is_(False))
+        # 仅展示外部客户提交的线索：过滤 creator 为内部员工的估价/房源单线索
+        stmt = stmt.filter(~_internal_creator_exists())
         return stmt, unified, native, Lead.referrer_id, Lead.created_at, name, source_expr
 
     # ─── 手机号脱敏（仅当前页，按模块回表解密） ────────────────────────────
 
     def _resolve_masked_phones(self, page_rows: Sequence[Any]) -> dict[tuple[str, str], str | None]:
-        """回表解密当前页招募/预约线索手机号并脱敏（估价线索无手机号）."""
+        """回表解密当前页线索手机号并脱敏.
+
+        招募/预约取表内手机号；估价/房源单共用 leads 表（无手机号列），
+        客户手机号取自 creator 的 ``User.phone``（Fernet 自动解密），与
+        ``LeadService.get_my_acquired_phone`` 同数据源。
+
+        """
         phones: dict[tuple[str, str], str | None] = {}
         recruit_ids = [row.id for row in page_rows if row.module == GrowthModule.RECRUIT.value]
         booking_ids = [int(row.id) for row in page_rows if row.module == GrowthModule.BOOKING.value]
+        leads_rows = [
+            row for row in page_rows if row.module in (GrowthModule.VALUATION.value, GrowthModule.SHEET.value)
+        ]
+        leads_ids = [row.id for row in leads_rows]
 
         if recruit_ids:
             rows = self.db.query(RecruitLead.id, RecruitLead.phone).filter(RecruitLead.id.in_(recruit_ids)).all()
@@ -318,4 +356,13 @@ class GrowthLeadService:
             )
             for booking_id, phone in rows:
                 phones[(GrowthModule.BOOKING.value, str(booking_id))] = mask_phone(phone)
+        if leads_ids:
+            creator_phones = dict(
+                self.db.query(Lead.id, User.phone)
+                .join(User, User.id == Lead.creator_id)
+                .filter(Lead.id.in_(leads_ids))
+                .all()
+            )
+            for row in leads_rows:
+                phones[(row.module, row.id)] = mask_phone(creator_phones.get(row.id))
         return phones

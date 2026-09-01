@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import (
     Lead,
@@ -247,7 +247,7 @@ class GrowthLeadDetailService:
             "module": GrowthModule.VALUATION.value,
             "unified_status": map_valuation_status(LeadStatus(lead.status.value)),
             "native_status": lead.status.value,
-            "phone_masked": None,  # leads 表无手机号字段
+            "phone_masked": self._creator_masked_phone(lead),  # leads 表无手机号，取 creator 手机号脱敏
             "employee_id": lead.referrer_id,
             "employee_name": self._employee_name(lead.referrer_id),
             "source": self._lead_source(lead.referrer_id, None, share),
@@ -295,7 +295,7 @@ class GrowthLeadDetailService:
             "module": GrowthModule.SHEET.value,
             "unified_status": map_valuation_status(LeadStatus(lead.status.value)),
             "native_status": lead.status.value,
-            "phone_masked": None,  # leads 表无手机号字段
+            "phone_masked": self._creator_masked_phone(lead),  # leads 表无手机号，取 creator 手机号脱敏
             "employee_id": lead.referrer_id,
             "employee_name": self._employee_name(lead.referrer_id),
             "source": self._lead_source(lead.referrer_id, None, share),
@@ -304,6 +304,10 @@ class GrowthLeadDetailService:
             "is_internal": False,
             "timeline": self._sorted_timeline(timeline),
             "sheet_code": self._resolve_sheet_code(lead.source_property_id),
+            "community_name": lead.community_name,
+            "area": float(lead.area) if lead.area is not None else None,
+            "layout": lead.layout,
+            "expected_price": float(lead.expected_price) if lead.expected_price is not None else None,
         }
 
     # ─── 时间线事件构造 ───────────────────────────────────────────────────
@@ -361,8 +365,11 @@ class GrowthLeadDetailService:
     def _get_leads_row(self, lead_id: str, *, attributed_only: bool) -> Lead:
         """获取 leads 表线索行（按模块判别 source_property_id，已删除不可见）.
 
+        内部员工（creator 有后台身份）提交的估价/房源单线索不作外部客户展示，
+        与列表侧 ``_internal_creator_exists`` 过滤口径一致。
+
         Raises:
-            ResourceNotFoundError: 不存在或已删除
+            ResourceNotFoundError: 不存在、已删除或为内部员工提交
 
         """
         query = self.db.query(Lead).filter(Lead.id == lead_id, Lead.is_deleted.is_(False))
@@ -371,10 +378,28 @@ class GrowthLeadDetailService:
         else:
             query = query.filter(Lead.source_property_id.is_(None))
         lead = query.first()
-        if lead is None:
+        if lead is None or self._creator_is_internal(lead.creator_id):
             msg = "线索不存在"
             raise ResourceNotFoundError(msg)
         return lead
+
+    def _creator_is_internal(self, creator_id: str | None) -> bool:
+        """Creator 是否为内部员工（主角色或附加角色含后台角色）.
+
+        口径与 ``AuthService.has_backend_identity`` 一致。
+
+        """
+        if creator_id is None:
+            return False
+        from services.system.auth import AuthService  # 方法内 import 避免潜在循环依赖
+
+        creator = (
+            self.db.query(User)
+            .options(joinedload(User.role), selectinload(User.roles))
+            .filter(User.id == creator_id)
+            .first()
+        )
+        return creator is not None and AuthService.has_backend_identity(creator)
 
     def _latest_before(
         self,
@@ -407,6 +432,18 @@ class GrowthLeadDetailService:
         if employee_id is None:
             return None
         return self.db.query(_coalesce_name()).filter(User.id == employee_id).scalar()
+
+    def _creator_masked_phone(self, lead: Lead) -> str | None:
+        """客户手机号（leads 表无手机号列，取自 creator 的 User.phone 并脱敏）.
+
+        与 ``LeadService.get_my_acquired_phone`` 同数据源；creator 缺失或未
+        绑定手机号时为 None。
+
+        """
+        if lead.creator_id is None:
+            return None
+        phone = self.db.query(User.phone).filter(User.id == lead.creator_id).scalar()
+        return mask_phone(phone)
 
     @staticmethod
     def _lead_source(

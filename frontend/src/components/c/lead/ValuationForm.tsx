@@ -42,7 +42,7 @@ const FormItem = ({
   </div>
 );
 
-export function ValuationForm() {
+export function ValuationForm({ initialReferrer }: { initialReferrer?: string }) {
   const [state, formAction, isPending] = useActionState(createLeadAction, {
     success: false,
     error: "",
@@ -161,6 +161,8 @@ export function ValuationForm() {
           <input type="hidden" name="community_name" value={formData.communityName} />
           <input type="hidden" name="district" value={formData.district} />
           <input type="hidden" name="business_area" value={formData.businessArea} />
+          {/* 分享归因：分享链接 ?referrer= 透传后端完成归属员工写入 */}
+          <input type="hidden" name="referrer" value={initialReferrer ?? ""} />
 
           <LayoutInputs
             value={formData.layout}

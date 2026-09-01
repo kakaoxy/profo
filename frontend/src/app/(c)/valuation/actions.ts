@@ -30,6 +30,8 @@ const createLeadSchema = z.object({
     .array(z.string().refine(isValidUrl, { message: "无效的图片 URL" }))
     .max(6)
     .default([]),
+  // 分享归属员工ID（分享链接 ?referrer= 透传，后端校验内部员工有效性）
+  referrer: z.string().max(36).nullable().optional(),
 });
 
 const completePhoneSchema = z.object({
@@ -109,6 +111,7 @@ export async function createLeadAction(
         return [];
       }
     })(),
+    referrer: ((formData.get("referrer") as string) || "").trim() || null,
   };
 
   const parsed = createLeadSchema.safeParse(raw);
