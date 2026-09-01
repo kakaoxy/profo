@@ -134,7 +134,9 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   { prefix: "/admin/leads/new", permission: PERMISSION_CODES.LEAD_WRITE, exact: true },
   // 数据报表 → 需 property:read 权限
   { prefix: "/admin/reports", permission: PERMISSION_CODES.PROPERTY_READ },
-  // 招募管理（活动配置/线索列表/漏斗看板）→ 需 recruit:read 权限
+  // 获客中心（获客总览/线索管理/漏斗看板/活动配置）→ 需 recruit:read 权限
+  { prefix: "/admin/growth-center", permission: PERMISSION_CODES.RECRUIT_READ },
+  // 招募管理旧路径重定向页 → 权限对齐新获客中心，避免旧链接绕过客户端权限守卫
   { prefix: "/admin/recruit", permission: PERMISSION_CODES.RECRUIT_READ },
   // 资金账本 → 需 ledger:read 权限
   { prefix: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },

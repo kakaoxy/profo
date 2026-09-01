@@ -4170,6 +4170,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/growth-center/overview/kpi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获客总览 KPI
+         * @description 今日线索（4 链路合计）/ 待跟进（统一状态=new）/ 有效新客（近 30 天，剔除内部员工）/ 整体转化率
+         */
+        get: operations["get_overview_kpi_api_v1_admin_growth_center_overview_kpi_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/overview/source-breakdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 线索来源构成
+         * @description 各模块线索数与占比（估价/预约/房源单/招募）
+         */
+        get: operations["get_source_breakdown_api_v1_admin_growth_center_overview_source_breakdown_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/overview/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 线索逐日趋势
+         * @description 4 链路留资合计的逐日线索数数组（Asia/Shanghai 自然日，缺日补 0）
+         */
+        get: operations["get_overview_trend_api_v1_admin_growth_center_overview_trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 单模块漏斗统计
+         * @description 招募 6 级（分享→PV/UV→深度浏览→点击授权→留资→有效新客，口径对齐招募漏斗服务）；估价/预约/房源单 3 级（分享→打开 PV/UV→留资/预约/承接留资）。响应带 uv_metric 口径标识与口径文案
+         */
+        get: operations["get_funnel_api_v1_admin_growth_center_funnel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/funnel/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 四模块漏斗并排对比
+         * @description 各模块以 share 为基准 100%；uv_percent/leads_percent 为真实百分比（可 >100，由前端封顶渲染）
+         */
+        get: operations["get_funnel_compare_api_v1_admin_growth_center_funnel_compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/employees/top": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 员工获客 TOP 榜
+         * @description 近 N 天按分享归因线索数倒序的员工排行（分享次数/线索数/转化率，4 模块合计），默认取前 20
+         */
+        get: operations["get_employee_top_api_v1_admin_growth_center_employees_top_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/employees/drilldown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 员工维度漏斗下钻
+         * @description 单模块按员工下钻的漏斗各级数据（含未归因聚合行），合计与该模块漏斗一致（同一时间窗同一口径）
+         */
+        get: operations["get_employee_drilldown_api_v1_admin_growth_center_employees_drilldown_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 统一线索分页列表
+         * @description 跨 4 模块统一线索视图（模块/统一状态/员工/来源/日期/员工名搜索筛选），手机号脱敏；手机号加密存储不支持搜索
+         */
+        get: operations["list_unified_leads_api_v1_admin_growth_center_leads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/leads/{module}/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 统一线索详情
+         * @description 归因链路时间线（分享/打开/深度浏览/留资，未埋点事件 occurred=false）+ 归属员工 + 模块差异化字段
+         */
+        get: operations["get_lead_detail_api_v1_admin_growth_center_leads__module___lead_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/market/kpi": {
         parameters: {
             query?: never;
@@ -5471,6 +5651,110 @@ export interface components {
             archive_date?: string | null;
         };
         /**
+         * EmployeeDrilldownResponse
+         * @description 员工维度漏斗下钻响应（各行合计与单模块漏斗一致）.
+         */
+        EmployeeDrilldownResponse: {
+            /** @description 获客模块 */
+            module: components["schemas"]["GrowthModule"];
+            /**
+             * Days
+             * @description 统计窗口天数
+             */
+            days: number;
+            /**
+             * Uv Metric
+             * @description UV 口径标识
+             */
+            uv_metric: string;
+            /**
+             * Notes
+             * @description 口径说明文案
+             */
+            notes: string;
+            /**
+             * Items
+             * @description 按首级（分享）倒序的员工行
+             */
+            items: components["schemas"]["EmployeeDrilldownRow"][];
+        };
+        /**
+         * EmployeeDrilldownRow
+         * @description 员工维度漏斗下钻单行.
+         *
+         *     ``employee_id`` 为 null 表示未归因（referrer/分享人为空的事件聚合行），
+         *     用于保证各行合计与该模块漏斗一致。
+         */
+        EmployeeDrilldownRow: {
+            /**
+             * Employee Id
+             * @description 员工ID（未归因聚合行为 null）
+             */
+            employee_id: string | null;
+            /**
+             * Employee Name
+             * @description 员工名称（未归因行为 null）
+             */
+            employee_name: string | null;
+            /**
+             * Steps
+             * @description 该员工在漏斗各级的数值
+             */
+            steps: components["schemas"]["FunnelStep"][];
+        };
+        /**
+         * EmployeeTopItem
+         * @description 员工获客排行单项.
+         */
+        EmployeeTopItem: {
+            /**
+             * Employee Id
+             * @description 员工ID
+             */
+            employee_id: string;
+            /**
+             * Employee Name
+             * @description 员工名称（nickname 缺失回退 username）
+             */
+            employee_name: string | null;
+            /**
+             * Share Count
+             * @description 分享次数（4 模块合计）
+             */
+            share_count: number;
+            /**
+             * Lead Count
+             * @description 分享归因线索数（4 模块合计）
+             */
+            lead_count: number;
+            /**
+             * Conversion Rate
+             * @description 转化率（%）＝线索数 ÷ 分享次数，分享为 0 时为 null
+             */
+            conversion_rate: number | null;
+        };
+        /**
+         * EmployeeTopResponse
+         * @description 员工获客 TOP 榜响应.
+         */
+        EmployeeTopResponse: {
+            /**
+             * Days
+             * @description 统计窗口天数
+             */
+            days: number;
+            /**
+             * Limit
+             * @description 返回条数上限
+             */
+            limit: number;
+            /**
+             * Items
+             * @description 按归因线索数倒序的员工 TOP
+             */
+            items: components["schemas"]["EmployeeTopItem"][];
+        };
+        /**
          * ErrorResponse
          * @description 报表模块错误响应模型.
          *
@@ -5784,6 +6068,146 @@ export interface components {
             created_by_id: string;
             /** Created By Name */
             created_by_name?: string | null;
+        };
+        /**
+         * FunnelCompareModuleRow
+         * @description 漏斗对比单模块行（share 为基准 100%）.
+         */
+        FunnelCompareModuleRow: {
+            /** @description 获客模块 */
+            module: components["schemas"]["GrowthModule"];
+            /**
+             * Share Count
+             * @description 分享次数（对比基准）
+             */
+            share_count: number;
+            /**
+             * Uv
+             * @description 打开 UV
+             */
+            uv: number;
+            /**
+             * Uv Percent
+             * @description 打开 UV 占分享次数百分比（%，真实值，可 >100，由前端封顶渲染）
+             */
+            uv_percent: number | null;
+            /**
+             * Leads
+             * @description 留资/预约/承接留资数
+             */
+            leads: number;
+            /**
+             * Leads Percent
+             * @description 留资数占分享次数百分比（%）
+             */
+            leads_percent: number | null;
+        };
+        /**
+         * FunnelCompareResponse
+         * @description 四模块漏斗并排对比响应.
+         */
+        FunnelCompareResponse: {
+            /**
+             * Days
+             * @description 统计窗口天数
+             */
+            days: number;
+            /**
+             * Notes
+             * @description 口径说明文案（含 UV 口径差异与封顶渲染说明）
+             */
+            notes: string;
+            /**
+             * Modules
+             * @description 各模块对比行
+             */
+            modules: components["schemas"]["FunnelCompareModuleRow"][];
+        };
+        /**
+         * FunnelResponse
+         * @description 单模块漏斗响应.
+         */
+        FunnelResponse: {
+            /** @description 获客模块 */
+            module: components["schemas"]["GrowthModule"];
+            /**
+             * Days
+             * @description 统计窗口天数
+             */
+            days: number;
+            /**
+             * Uv Metric
+             * @description UV 口径标识（recruit=openid_hash，其余=visitor_id）
+             */
+            uv_metric: string;
+            /**
+             * Notes
+             * @description 口径说明文案
+             */
+            notes: string;
+            /**
+             * Steps
+             * @description 漏斗各级（数值 + 相对上一级转化率）
+             */
+            steps: components["schemas"]["FunnelStep"][];
+        };
+        /**
+         * FunnelStep
+         * @description 漏斗单级.
+         */
+        FunnelStep: {
+            /**
+             * Key
+             * @description 级别标识（share/pv/uv/deep_view/clicked_auth/leads 等）
+             */
+            key: string;
+            /**
+             * Label
+             * @description 级别名称
+             */
+            label: string;
+            /**
+             * Value
+             * @description 数值
+             */
+            value: number;
+            /**
+             * Conversion
+             * @description 相对上一级转化率（%），上一级为 0 时为 null
+             */
+            conversion: number | null;
+        };
+        /**
+         * GrowthModule
+         * @description 获客模块枚举（4 条分享获客链路）.
+         * @enum {string}
+         */
+        GrowthModule: "valuation" | "booking" | "sheet" | "recruit";
+        /**
+         * GrowthOverviewKpiResponse
+         * @description 获客总览 KPI 响应.
+         */
+        GrowthOverviewKpiResponse: {
+            /**
+             * Today Leads
+             * @description 今日线索数（4 链路今日留资合计，Asia/Shanghai 自然日）
+             */
+            today_leads: number;
+            /**
+             * Pending Followups
+             * @description 待跟进数（统一状态=new 的未处理量）
+             */
+            pending_followups: number;
+            /**
+             * Valid New Customers
+             * @description 有效新客数（近 30 天留资，剔除 is_internal）
+             */
+            valid_new_customers: number;
+            /**
+             * Conversion Rate
+             * @description 整体转化率（%）＝有效新客 ÷ 分享次数（近 30 天），分享次数为 0 时为 null
+             */
+            conversion_rate: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -7234,6 +7658,89 @@ export interface components {
             created_at?: string | null;
         };
         /**
+         * LeadDetailResponse
+         * @description 统一线索详情响应（归因时间线 + 模块差异化字段）.
+         */
+        LeadDetailResponse: {
+            /** Id */
+            id: string;
+            module: components["schemas"]["GrowthModule"];
+            unified_status: components["schemas"]["UnifiedLeadStatus"];
+            /** Native Status */
+            native_status: string;
+            /** Phone Masked */
+            phone_masked: string | null;
+            /** Employee Id */
+            employee_id: string | null;
+            /** Employee Name */
+            employee_name: string | null;
+            source: components["schemas"]["LeadSource"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Campaign Name */
+            campaign_name: string | null;
+            /** Is Internal */
+            is_internal: boolean;
+            /**
+             * Timeline
+             * @description 归因链路时间线（按时间排序）
+             */
+            timeline: components["schemas"]["TimelineEvent"][];
+            /**
+             * Community Name
+             * @description 小区名称（估价）
+             */
+            community_name?: string | null;
+            /**
+             * Area
+             * @description 面积㎡（估价）
+             */
+            area?: number | null;
+            /**
+             * Layout
+             * @description 户型（估价）
+             */
+            layout?: string | null;
+            /**
+             * Total Price
+             * @description 当前授权总价万（估价）
+             */
+            total_price?: number | null;
+            /**
+             * Eval Price
+             * @description 评估价格万（估价）
+             */
+            eval_price?: number | null;
+            /**
+             * Expected Price
+             * @description 业主心理预期价万（估价）
+             */
+            expected_price?: number | null;
+            /**
+             * Property Title
+             * @description 房源名称（预约）
+             */
+            property_title?: string | null;
+            /**
+             * Booking Time
+             * @description 预约时间（预约）
+             */
+            booking_time?: string | null;
+            /**
+             * Sheet Code
+             * @description 来源房源单短码（取不到为 null）
+             */
+            sheet_code?: string | null;
+            /**
+             * Main Business Area
+             * @description 主营商圈（招募）
+             */
+            main_business_area?: string | null;
+        };
+        /**
          * LeadEvalHistoryCreate
          * @description 创建评估历史请求.
          */
@@ -7445,6 +7952,12 @@ export interface components {
              */
             updated_at: string;
         };
+        /**
+         * LeadSource
+         * @description 统一来源枚举.
+         * @enum {string}
+         */
+        LeadSource: "card" | "poster" | "direct";
         /**
          * LeadStatsResponse
          * @description 线索状态统计响应（不受分页影响）.
@@ -12863,6 +13376,45 @@ export interface components {
          */
         SortOrder: "asc" | "desc";
         /**
+         * SourceBreakdownItem
+         * @description 线索来源构成单项.
+         */
+        SourceBreakdownItem: {
+            /** @description 获客模块 */
+            module: components["schemas"]["GrowthModule"];
+            /**
+             * Count
+             * @description 线索数
+             */
+            count: number;
+            /**
+             * Percent
+             * @description 占比（%），总数为 0 时为 null
+             */
+            percent: number | null;
+        };
+        /**
+         * SourceBreakdownResponse
+         * @description 线索来源构成响应.
+         */
+        SourceBreakdownResponse: {
+            /**
+             * Days
+             * @description 统计窗口天数
+             */
+            days: number;
+            /**
+             * Total
+             * @description 4 模块线索总数
+             */
+            total: number;
+            /**
+             * Items
+             * @description 各模块线索数与占比
+             */
+            items: components["schemas"]["SourceBreakdownItem"][];
+        };
+        /**
          * SubInvestorCreate
          * @description 创建子投资人请求（属于某母投资方，内部占比）.
          */
@@ -12895,6 +13447,47 @@ export interface components {
          * @enum {string}
          */
         SubjectStage: "signing" | "renovation" | "holding" | "listing" | "sold";
+        /**
+         * TimelineEvent
+         * @description 归因链路时间线事件.
+         */
+        TimelineEvent: {
+            /**
+             * Event
+             * @description 事件标识（share/visit/deep_view/lead_submit）
+             */
+            event: string;
+            /**
+             * Label
+             * @description 事件名称
+             */
+            label: string;
+            /**
+             * Occurred
+             * @description 是否发生/已埋点（未发生为 false）
+             */
+            occurred: boolean;
+            /**
+             * Occurred At
+             * @description 事件时间（未发生为 null）
+             */
+            occurred_at: string | null;
+            /**
+             * Share Type
+             * @description 分享方式（share 事件）
+             */
+            share_type?: string | null;
+            /**
+             * Source
+             * @description 进入渠道（visit 事件）
+             */
+            source?: string | null;
+            /**
+             * Stayed Ms
+             * @description 停留毫秒（deep_view 事件）
+             */
+            stayed_ms?: number | null;
+        };
         /**
          * TokenResponse
          * @description 令牌响应模型.
@@ -13004,6 +13597,111 @@ export interface components {
          * @enum {string}
          */
         TrendDimension: "overall" | "rooms" | "floor" | "price";
+        /**
+         * TrendPoint
+         * @description 逐日线索趋势点.
+         */
+        TrendPoint: {
+            /**
+             * Date
+             * @description 日期（YYYY-MM-DD，Asia/Shanghai 自然日）
+             */
+            date: string;
+            /**
+             * Count
+             * @description 当日线索数（4 链路合计）
+             */
+            count: number;
+        };
+        /**
+         * TrendResponse
+         * @description 逐日线索趋势响应（窗口内无数据日期补 0）.
+         */
+        TrendResponse: {
+            /**
+             * Days
+             * @description 统计窗口天数
+             */
+            days: number;
+            /**
+             * Points
+             * @description 逐日线索数数组
+             */
+            points: components["schemas"]["TrendPoint"][];
+        };
+        /**
+         * UnifiedLeadListItem
+         * @description 统一线索列表项（手机号脱敏）.
+         */
+        UnifiedLeadListItem: {
+            /**
+             * Id
+             * @description 线索ID（各模块原生ID转字符串）
+             */
+            id: string;
+            /** @description 获客模块 */
+            module: components["schemas"]["GrowthModule"];
+            /** @description 统一状态（只读映射，不回写） */
+            unified_status: components["schemas"]["UnifiedLeadStatus"];
+            /**
+             * Native Status
+             * @description 模块原生状态值
+             */
+            native_status: string;
+            /**
+             * Phone Masked
+             * @description 脱敏手机号（估价线索无手机号为 null）
+             */
+            phone_masked: string | null;
+            /**
+             * Employee Id
+             * @description 归属员工ID（referrer）
+             */
+            employee_id: string | null;
+            /**
+             * Employee Name
+             * @description 归属员工名称
+             */
+            employee_name: string | null;
+            /** @description 来源（card/poster/direct）；估价/预约/房源单归因线索的分享方式未埋点为 null */
+            source: components["schemas"]["LeadSource"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 留资时间
+             */
+            created_at: string;
+            /**
+             * Campaign Name
+             * @description 来源活动名（仅招募有，其余 null）
+             */
+            campaign_name: string | null;
+            /**
+             * Is Internal
+             * @description 是否内部员工（仅招募可标记，其余恒为 false）
+             */
+            is_internal: boolean;
+        };
+        /**
+         * UnifiedLeadListResponse
+         * @description 统一线索分页列表响应.
+         */
+        UnifiedLeadListResponse: {
+            /** Items */
+            items: components["schemas"]["UnifiedLeadListItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * UnifiedLeadStatus
+         * @description 统一线索状态枚举（只读映射，不回写各业务线）.
+         * @enum {string}
+         */
+        UnifiedLeadStatus: "new" | "contacted" | "high_intent" | "converted" | "eliminated";
         /**
          * UnsettleRequest
          * @description 反结算请求（settled → unsettled）.
@@ -21499,6 +22197,306 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_overview_kpi_api_v1_admin_growth_center_overview_kpi_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrowthOverviewKpiResponse"];
+                };
+            };
+        };
+    };
+    get_source_breakdown_api_v1_admin_growth_center_overview_source_breakdown_get: {
+        parameters: {
+            query?: {
+                /** @description 统计窗口天数 */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceBreakdownResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_overview_trend_api_v1_admin_growth_center_overview_trend_get: {
+        parameters: {
+            query?: {
+                /** @description 统计窗口天数 */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_funnel_api_v1_admin_growth_center_funnel_get: {
+        parameters: {
+            query: {
+                /** @description 获客模块 */
+                module: components["schemas"]["GrowthModule"];
+                /** @description 统计窗口天数 */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunnelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_funnel_compare_api_v1_admin_growth_center_funnel_compare_get: {
+        parameters: {
+            query?: {
+                /** @description 统计窗口天数 */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunnelCompareResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_employee_top_api_v1_admin_growth_center_employees_top_get: {
+        parameters: {
+            query?: {
+                /** @description 统计窗口天数 */
+                days?: number;
+                /** @description 返回条数上限 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeTopResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_employee_drilldown_api_v1_admin_growth_center_employees_drilldown_get: {
+        parameters: {
+            query: {
+                /** @description 获客模块 */
+                module: components["schemas"]["GrowthModule"];
+                /** @description 统计窗口天数 */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDrilldownResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_unified_leads_api_v1_admin_growth_center_leads_get: {
+        parameters: {
+            query?: {
+                /** @description 获客模块（省略=全部） */
+                module?: components["schemas"]["GrowthModule"] | null;
+                /** @description 统一状态 */
+                status?: components["schemas"]["UnifiedLeadStatus"] | null;
+                /** @description 归属员工ID */
+                employee_id?: string | null;
+                /** @description 来源（card/poster 仅招募可命中） */
+                source?: components["schemas"]["LeadSource"] | null;
+                /** @description 留资开始日期（YYYY-MM-DD，含） */
+                start_date?: string | null;
+                /** @description 留资结束日期（YYYY-MM-DD，含） */
+                end_date?: string | null;
+                /** @description 归属员工名模糊搜索 */
+                search?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnifiedLeadListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_detail_api_v1_admin_growth_center_leads__module___lead_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 获客模块 */
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadDetailResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

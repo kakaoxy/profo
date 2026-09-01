@@ -121,7 +121,7 @@ export function AppSidebar({ user }: { user: User | null }) {
       "/admin/marketing",
       "/admin/investments",
       "/admin/ledger",
-      "/admin/recruit",
+      "/admin/growth-center",
       "/admin/users",
       "/admin/audit-logs",
       "/admin/settings",

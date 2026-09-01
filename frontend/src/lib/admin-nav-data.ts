@@ -95,20 +95,29 @@ export const navMain: NavItem[] = [
     permission: PERMISSION_CODES.L4_MARKETING_READ,
   },
   {
-    title: "招募管理",
-    url: "/admin/recruit/campaigns",
+    title: "获客中心",
+    url: "/admin/growth-center/overview",
     icon: Megaphone,
     permission: PERMISSION_CODES.RECRUIT_READ,
     items: [
       {
-        title: "活动配置",
-        url: "/admin/recruit/campaigns",
+        title: "获客总览",
+        url: "/admin/growth-center/overview",
         permission: PERMISSION_CODES.RECRUIT_READ,
       },
-      { title: "线索列表", url: "/admin/recruit/leads", permission: PERMISSION_CODES.RECRUIT_READ },
+      {
+        title: "线索管理",
+        url: "/admin/growth-center/leads",
+        permission: PERMISSION_CODES.RECRUIT_READ,
+      },
       {
         title: "漏斗看板",
-        url: "/admin/recruit/funnel",
+        url: "/admin/growth-center/funnel",
+        permission: PERMISSION_CODES.RECRUIT_READ,
+      },
+      {
+        title: "活动配置",
+        url: "/admin/growth-center/campaigns",
         permission: PERMISSION_CODES.RECRUIT_READ,
       },
     ],
