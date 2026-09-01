@@ -3,6 +3,9 @@
 员工获客 TOP 榜：近 N 天按分享归因线索数倒序的员工排行（4 模块合计），
 含分享次数、归因线索数与转化率。员工漏斗下钻由 ``GrowthFunnelService.
 employee_drilldown`` 提供（同一时间窗同一口径，合计与模块漏斗一致）。
+
+员工维度统一口径：仅统计具备后台身份的用户（主角色或附加角色命中
+BACKEND_ROLE_CODES）；C 端用户的分享/归因记录不计入员工统计。
 """
 
 from sqlalchemy import func
@@ -11,6 +14,7 @@ from sqlalchemy.orm import Session
 from models import User
 from schemas.growth_center import GrowthModule
 from services.growth_center.funnel import MODULE_SPECS, ModuleFunnelSpec
+from services.growth_center.identity import resolve_backend_employee_ids
 from services.growth_center.normalize import Window, resolve_window
 
 _DEFAULT_TOP_LIMIT = 20
@@ -23,7 +27,7 @@ class GrowthEmployeeService:
         self.db = db
 
     def top(self, *, days: int, limit: int = _DEFAULT_TOP_LIMIT) -> dict:
-        """员工获客 TOP 榜（按分享归因线索数倒序）.
+        """员工获客 TOP 榜（按分享归因线索数倒序，仅统计后台身份员工）.
 
         Args:
             days: 统计窗口天数
@@ -47,6 +51,10 @@ class GrowthEmployeeService:
                 if employee_id is None:
                     continue
                 stats.setdefault(employee_id, {"share_count": 0, "lead_count": 0})["lead_count"] += count
+
+        # 仅统计具备后台身份的用户（C 端用户分享/归因不计入员工榜）
+        backend_ids = resolve_backend_employee_ids(self.db, [eid for eid in stats if eid is not None])
+        stats = {eid: values for eid, values in stats.items() if eid in backend_ids}
 
         names = self._resolve_names([eid for eid in stats if eid is not None])
         items: list[dict] = []

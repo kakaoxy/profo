@@ -25,6 +25,7 @@ from models import (
 )
 from models.marketing.property_sheet import PropertySheetShareEvent, PropertySheetVisit
 from schemas.growth_center import GrowthModule
+from services.growth_center.identity import resolve_backend_employee_ids
 from services.growth_center.normalize import UV_METRIC_BY_MODULE, Window, resolve_window
 
 # 招募 6 级漏斗标签
@@ -243,7 +244,10 @@ class GrowthFunnelService:
     # ─── 员工维度下钻 ────────────────────────────────────────────────────
 
     def employee_drilldown(self, module: GrowthModule, days: int) -> dict:
-        """员工维度漏斗各级数据（含未归因聚合行，合计与单模块漏斗一致）.
+        """员工维度漏斗各级数据（仅后台身份员工 + 未归因聚合行）.
+
+        已过滤非后台身份（C 端）用户行：员工行合计与模块漏斗的差值
+        即 C 端用户的分享/留资（模块漏斗为全量口径）。
 
         Args:
             module: 获客模块
@@ -275,8 +279,12 @@ class GrowthFunnelService:
                 buckets.setdefault(employee_id, {})[step_key] = value
 
         names = self._resolve_employee_names([eid for eid in buckets if eid is not None])
+        # 仅保留具备后台身份的员工行（与员工 TOP 榜口径一致）；未归因（None）聚合行保留
+        backend_ids = resolve_backend_employee_ids(self.db, [eid for eid in buckets if eid is not None])
         items: list[dict] = []
         for employee_id, values in buckets.items():
+            if employee_id is not None and employee_id not in backend_ids:
+                continue
             ordered: list[tuple[str, str, int]] = []
             for key, label in spec.step_labels:
                 ordered.append((key, label, values.get(key, 0)))
@@ -289,11 +297,15 @@ class GrowthFunnelService:
             )
         # 按首级（分享）倒序，未归因聚合行置于末尾
         items.sort(key=lambda r: (r["employee_id"] is None, -(r["steps"][0]["value"] if r["steps"] else 0)))
+        drilldown_note = (
+            "含未归因（referrer 为空）聚合行（employee_id=null）；"
+            "已过滤非后台身份（C 端）用户行，员工行合计与模块漏斗的差值即 C 端用户的分享/留资。"
+        )
         return {
             "module": module.value,
             "days": days,
             "uv_metric": UV_METRIC_BY_MODULE[module],
-            "notes": spec.notes + "含未归因（referrer 为空）聚合行（employee_id=null），各行合计与模块漏斗一致。",
+            "notes": spec.notes + drilldown_note,
             "items": items,
         }
 
