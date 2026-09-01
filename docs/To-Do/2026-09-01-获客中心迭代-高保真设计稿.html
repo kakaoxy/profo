@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>获客总览 · ProFo 管理端</title>
+<style>
+/* ========== Steep Design Tokens（对齐 frontend/src/app/globals.css） ========== */
+:root{
+  --ink:#17191c; --white:#ffffff; --fog:#f7f7f8; --ash:#4c4c4c;
+  --graphite:#777b86; --dove:#a3a6af; --slate:#8b8c8d;
+  --rust:#5d2a1a; --apricot:#fbe1d1; --sky:#d3e3fc;
+  --teal:#059669; --teal-bg:#ecfdf5;
+  --hairline:#e5e7eb; --up:#b91c1c; --down:#15803d;
+  --shadow-steep:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.1) 0 20px 25px -5px, rgba(0,0,0,.1) 0 8px 10px -6px;
+  --shadow-steep-sm:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 8px 10px -6px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+  letter-spacing:-.009em;background:var(--fog);color:var(--ink);font-size:14px;
+}
+button{font-family:inherit}
+a{text-decoration:none;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* ========== 侧边栏 ========== */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;background:rgba(255,255,255,.86);backdrop-filter:blur(20px);border-right:1px solid var(--hairline);display:flex;flex-direction:column;z-index:40}
+.side-brand{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--hairline)}
+.brand-logo{width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-name{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.2px}
+.side-nav{flex:1;overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.menu-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:14px;color:var(--graphite);cursor:default;white-space:nowrap}
+.menu-item.dim:hover{background:var(--fog);color:var(--ash)}
+.menu-item.on{background:var(--fog);color:var(--ink);font-weight:500}
+.menu-item .chev{margin-left:auto;width:16px;height:16px;transition:transform .2s}
+.menu-item.on .chev{transform:rotate(90deg)}
+.submenu{margin:2px 0 6px 30px;padding-left:14px;border-left:1px solid var(--hairline);display:flex;flex-direction:column;gap:2px}
+.sub-item{display:block;padding:8px 12px;border-radius:8px;font-size:14px;color:var(--graphite);transition:all .15s}
+.sub-item:hover{background:var(--fog);color:var(--ink)}
+.sub-item.active{background:var(--fog);color:var(--ink);font-weight:500}
+.side-footer{border-top:1px solid var(--hairline);padding:12px}
+.user-chip{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;cursor:pointer}
+.user-chip:hover{background:var(--fog)}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f7f7f8,#e5e7eb);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--graphite);box-shadow:0 0 0 2px var(--hairline);flex-shrink:0}
+.u-name{font-size:13px;font-weight:500;color:var(--ink)}
+.u-role{font-size:11px;color:var(--graphite);margin-top:1px}
+.u-more{margin-left:auto;color:var(--graphite)}
+
+/* ========== 主区 ========== */
+.main{margin-left:260px;background:var(--fog);min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:28px 40px 48px}
+.stack{display:flex;flex-direction:column;gap:24px}
+.screen{display:none}
+.screen.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* 页头 */
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.page-title{font-size:26px;font-weight:500;letter-spacing:-.23px;color:var(--ink);display:flex;align-items:center;gap:10px}
+.page-desc{margin-top:6px;font-size:15px;color:var(--graphite)}
+.btn-primary{height:38px;padding:0 18px;border-radius:12px;background:var(--ink);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+.phase-tag{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;background:var(--fog);color:var(--graphite);box-shadow:inset 0 0 0 1px #ececee;white-space:nowrap;vertical-align:middle}
+.phase-tag.p2{background:#fff;border:1px dashed #c9ccd4;box-shadow:none;padding:1px 7px}
+.mini-tag{font-size:11px;color:var(--slate);white-space:nowrap}
+
+/* KPI 卡（对齐 recruit-kpi.tsx） */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.kpi{background:#fff;border-radius:24px;box-shadow:var(--shadow-steep);padding:20px 24px}
+.kpi-top{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--graphite)}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-ink{background:var(--ink)}.dot-rust{background:var(--rust)}.dot-apricot{background:var(--apricot)}.dot-sky{background:var(--sky)}.dot-graphite{background:var(--graphite)}
+.kpi-val{margin-top:10px;font-size:32px;font-weight:500;line-height:1;letter-spacing:-.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi-trend{margin-top:8px;font-size:12px;display:flex;align-items:center;gap:4px;color:var(--slate)}
+.kpi-trend.up{color:var(--up)}
+.kpi-trend.down{color:var(--down)}
+
+/* 卡片 */
+.card{background:#fff;border-radius:24px;box-shadow:var(--shadow-steep)}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 24px;border-bottom:1px solid var(--fog)}
+.card-title{font-size:15px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card-sub{margin-top:3px;font-size:13px;color:var(--graphite)}
+.card-body{padding:24px}
+
+/* Badge 药丸（模块统一配色 + 状态） */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;padding:3px 12px;border-radius:999px;white-space:nowrap;line-height:1.5}
+.b-sky{background:var(--sky);color:#1d5bb8}
+.b-apricot{background:var(--apricot);color:var(--rust)}
+.b-teal{background:var(--teal-bg);color:var(--teal)}
+.b-ink{background:var(--ink);color:#fff}
+.b-neutral{background:var(--fog);color:var(--graphite)}
+.b-outline{background:#fff;color:var(--graphite);box-shadow:inset 0 0 0 1px var(--dove)}
+.b-muted{background:#fff;color:var(--slate);box-shadow:inset 0 0 0 1px #ececee}
+
+/* 来源构成 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.stackbar{display:flex;height:24px;border-radius:999px;overflow:hidden}
+.stackbar i{display:flex;align-items:center;justify-content:center;height:100%;font-style:normal;font-size:10.5px;font-weight:500}
+.legend{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 20px;margin-top:18px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.lg-val{margin-left:auto;color:var(--graphite)}
+
+/* 迷你漏斗对比 */
+.mini-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.mini-card{border:1px solid #f0f1f3;border-radius:16px;padding:16px}
+.mini-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mini-rate{font-size:13px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.mini-row{display:grid;grid-template-columns:56px 1fr 44px;gap:8px;align-items:center;margin-top:8px}
+.mini-lab{font-size:11px;color:var(--graphite);white-space:nowrap}
+.mini-track{height:10px;border-radius:999px;background:var(--fog);overflow:hidden}
+.mini-track i{display:block;height:100%;border-radius:999px}
+.mini-val{font-size:11.5px;color:var(--ash);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* 漏斗条（对齐 funnel-stats.tsx） */
+.fn-row{display:grid;grid-template-columns:200px 1fr 118px;gap:16px;align-items:center;padding:7px 0}
+.fn-lab{font-size:14px;font-weight:500;color:var(--ink)}
+.fn-en{display:block;font-size:12px;font-weight:400;color:var(--slate);margin-top:2px}
+.fn-track{display:flex}
+.fn-bar{height:42px;border-radius:14px;display:flex;align-items:center;justify-content:flex-end;padding-right:14px;color:#fff;font-size:15px;font-weight:500;min-width:56px;transition:width .3s;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fn-val{text-align:right}
+.fn-v{font-size:14px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.fn-rate{margin-top:2px;font-size:12px;color:var(--slate);white-space:nowrap}
+.fn-legend{display:flex;gap:20px;font-size:13px;color:var(--graphite);align-items:center;flex-wrap:wrap}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block;flex-shrink:0}
+.fn-notes{margin-top:16px;padding-top:14px;border-top:1px solid var(--fog);font-size:12px;color:var(--slate);line-height:1.8}
+.c-ink{background:var(--ink)}.c-dark{background:#3a3d42}.c-graphite{background:var(--graphite)}.c-dove{background:var(--dove)}.c-slate{background:var(--slate)}.c-rust{background:var(--rust)}
+
+/* 全部对比 */
+.cmp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.cmp-col{border:1px solid #f0f1f3;border-radius:16px;padding:16px}
+.cmp-head{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.cmp-base{font-size:12px;color:var(--slate)}
+.cmp-row{display:grid;grid-template-columns:52px 1fr 42px;gap:8px;align-items:center;margin-top:8px}
+.cmp-lab{font-size:11px;color:var(--graphite);white-space:nowrap}
+.cmp-track{height:16px;border-radius:8px;background:var(--fog);overflow:hidden}
+.cmp-track i{display:block;height:100%;border-radius:8px}
+.cmp-pct{font-size:11px;color:var(--ash);text-align:right;font-variant-numeric:tabular-nums}
+.warn-bar{display:flex;gap:10px;align-items:flex-start;background:#fef3c7;border:1px solid #f5d97a;color:#92400e;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.7;margin-top:20px}
+.warn-bar .ic{width:16px;height:16px;margin-top:2px}
+
+/* Tab / 分段选择 */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tab{height:38px;padding:0 18px;border-radius:999px;border:1px solid var(--hairline);background:#fff;color:var(--graphite);font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap}
+.tab:hover{border-color:var(--dove)}
+.tab.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:500}
+.tab.seg{height:32px;padding:0 14px;font-size:13px}
+
+/* 筛选工具栏 */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.ltab{height:36px;padding:0 16px;border-radius:999px;border:1px solid var(--hairline);background:#fff;color:var(--graphite);font-size:14px;cursor:pointer;transition:all .15s}
+.ltab:hover{border-color:var(--dove)}
+.ltab.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:500}
+.ctl{height:38px;border:1px solid var(--dove);border-radius:16px;background:#fff;font-size:14px;color:var(--ink);padding:0 12px;font-family:inherit}
+.ctl:focus{outline:2px solid rgba(23,25,28,.15)}
+.input-search{position:relative}
+.input-search .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--dove);pointer-events:none}
+.input-search input{padding-left:32px;width:190px}
+.date-sep{font-size:13px;color:var(--slate)}
+.text-btn{background:none;border:none;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;padding:0 2px;white-space:nowrap}
+.text-btn:hover{opacity:.6}
+
+/* 表格 */
+.tbl-wrap{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{padding:12px 20px;border-bottom:1px solid var(--fog);font-size:13px;font-weight:500;color:var(--graphite);text-align:left;white-space:nowrap}
+.tbl td{padding:13px 20px;border-bottom:1px solid var(--fog);vertical-align:middle}
+.tbl tbody tr.lead-row:hover,.tbl tbody tr:hover{background:var(--fog)}
+.tbl tbody tr:last-child td{border-bottom:none}
+.cell-main{font-weight:500;color:var(--ink);white-space:nowrap}
+.cell-sub{margin-top:2px;font-size:12.5px;color:var(--graphite);white-space:nowrap}
+.valid-tag{margin-top:2px;font-size:12px;color:var(--rust);font-weight:500;white-space:nowrap}
+.dim{color:var(--dove)}
+.col-right{text-align:right}
+.link-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:none;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;white-space:nowrap;padding:0 2px}
+.link-btn:hover{opacity:.6}
+.link-btn.danger{color:var(--rust)}
+.flow-select{height:32px;border:1px solid #f0f1f3;border-radius:10px;background:#fff;font-size:13px;color:var(--ink);padding:0 4px;cursor:pointer;max-width:96px;font-family:inherit}
+.img-ph{width:60px;height:48px;border-radius:12px;background:var(--fog);border:1px solid #f0f1f3;display:flex;align-items:center;justify-content:center;color:var(--dove)}
+.img-ph .ic{width:16px;height:16px}
+
+/* 分页（对齐 DesignPagination） */
+.pagi{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-top:1px solid var(--fog);flex-wrap:wrap;gap:10px}
+.pagi-info{font-size:13px;color:var(--graphite)}
+.pagi-btns{display:flex;gap:6px}
+.pg{min-width:32px;height:32px;padding:0 8px;border-radius:10px;border:1px solid var(--fog);background:#fff;font-size:13px;font-weight:500;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit}
+.pg:hover{border-color:var(--dove)}
+.pg.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.pg.ell{border:none;background:transparent;color:var(--graphite);cursor:default;min-width:24px;padding:0 2px}
+
+/* 状态映射说明 details */
+.map-details{background:#fff;border-radius:16px;box-shadow:var(--shadow-steep-sm);padding:0 20px}
+.map-details summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500;color:var(--ink);padding:14px 0}
+.map-details summary::-webkit-details-marker{display:none}
+.map-details summary .chev{width:16px;height:16px;color:var(--graphite);transition:transform .2s}
+.map-details[open] summary .chev{transform:rotate(90deg)}
+.map-body{padding:0 0 16px;display:flex;flex-direction:column;gap:10px}
+.map-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ash);line-height:1.7}
+.map-row .badge{flex-shrink:0}
+
+/* 抽屉 */
+.overlay{position:fixed;inset:0;background:rgba(23,25,28,.45);opacity:0;pointer-events:none;transition:opacity .25s;z-index:90}
+.overlay.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:440px;max-width:94vw;background:#fff;z-index:100;transform:translateX(102%);transition:transform .3s cubic-bezier(.32,.72,0,1);box-shadow:-20px 0 50px rgba(4,23,43,.12);display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--fog)}
+.drawer-head h3{font-size:16px;font-weight:500;color:var(--ink)}
+.drawer-body{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:22px}
+.icon-btn{width:32px;height:32px;border-radius:10px;border:none;background:transparent;color:var(--graphite);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn:hover{background:var(--fog)}
+.d-sec-title{font-size:13px;font-weight:500;color:var(--graphite);margin-bottom:8px}
+.d-phone{display:flex;align-items:center;gap:12px;font-size:15px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.btn-sm{height:32px;padding:0 12px;border-radius:10px;background:var(--ink);color:#fff;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
+.btn-sm:hover{opacity:.85}
+.btn-ghost-sm{height:32px;padding:0 12px;border-radius:10px;background:#fff;color:var(--ink);font-size:13px;font-weight:500;border:1px solid var(--hairline);cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.btn-ghost-sm:hover{border-color:var(--dove)}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.info-item .lab{font-size:12.5px;color:var(--graphite);margin-bottom:4px}
+.info-item .val{font-size:14px;color:var(--ink)}
+.module-box{background:var(--fog);border-radius:16px;padding:16px}
+.module-box-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.module-box .row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0}
+.module-box .row .k{color:var(--graphite);flex-shrink:0}
+.module-box .row .v{color:var(--ink);font-weight:500;text-align:right}
+.tl-item{position:relative;padding:0 0 18px 24px}
+.tl-item::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:2px;background:var(--fog)}
+.tl-item:last-child{padding-bottom:2px}
+.tl-item:last-child::before{display:none}
+.tl-dot{position:absolute;left:0;top:4px;width:12px;height:12px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px #eceef2}
+.tl-item.miss .tl-dot{background:#fff;box-shadow:inset 0 0 0 2px #c9ccd4}
+.tl-title{font-size:13.5px;font-weight:500;color:var(--ink)}
+.tl-item.miss .tl-title{color:var(--dove);font-weight:400}
+.tl-desc{font-size:12.5px;color:var(--graphite);margin-top:2px}
+.tl-item.miss .tl-desc{color:var(--dove)}
+.tl-time{font-size:12px;color:var(--slate);margin-top:2px;font-variant-numeric:tabular-nums}
+
+/* Modal */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:110;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px}
+.modal.open{opacity:1;pointer-events:auto}
+.modal-mask{position:absolute;inset:0;background:rgba(23,25,28,.45)}
+.modal-card{position:relative;width:580px;max-width:94vw;background:#fff;border-radius:24px;box-shadow:var(--shadow-steep);padding:24px;transform:translateY(8px) scale(.98);transition:transform .2s}
+.modal.open .modal-card{transform:none}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.modal-head h3{font-size:16px;font-weight:500;color:var(--ink)}
+.qr-flex{display:flex;gap:28px;align-items:flex-start;margin-top:18px;flex-wrap:wrap}
+.qr-left{flex:1;min-width:220px;display:flex;flex-direction:column;gap:14px}
+.qr-right{display:flex;flex-direction:column;align-items:center;gap:12px}
+.qr-grid{display:grid;grid-template-columns:repeat(21,8px);grid-auto-rows:8px;padding:10px;border:1px solid #f0f1f3;border-radius:12px;background:#fff}
+.qr-grid i{display:block;width:8px;height:8px}
+.qr-grid i.on{background:var(--ink)}
+.qr-cap{font-size:12.5px;color:var(--graphite);text-align:center;max-width:190px}
+.f-label{font-size:12.5px;font-weight:500;color:var(--graphite);margin-bottom:6px;display:block}
+.short-code{font-size:20px;font-weight:600;letter-spacing:2px;color:var(--ink);font-variant-numeric:tabular-nums;background:var(--fog);border-radius:10px;padding:8px 14px;display:inline-block}
+.qr-btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* 空态（二期预留） */
+.empty{max-width:580px;margin:44px auto;text-align:center;padding:48px 40px;border:1px dashed #d9dce2;border-radius:24px;background:#fff}
+.empty .eco{width:72px;height:72px;border-radius:50%;background:var(--fog);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--graphite)}
+.empty .eco .ic{width:30px;height:30px}
+.empty h3{font-size:16px;font-weight:500;color:var(--ink)}
+.empty p{font-size:13px;color:var(--graphite);margin-top:6px}
+.empty ul{text-align:left;margin:22px auto 0;display:inline-flex;flex-direction:column;gap:10px;font-size:13px;color:var(--ash);list-style:none}
+.empty ul li{display:flex;gap:9px;align-items:flex-start}
+.empty ul li::before{content:"";width:6px;height:6px;border-radius:50%;background:#c9ccd4;flex-shrink:0;margin-top:7px}
+.empty .more{margin-top:22px;font-size:12px;color:var(--slate)}
+
+/* 脚注 */
+.footnote{font-size:12px;color:var(--slate);line-height:1.9;padding-top:4px}
+
+/* 响应式 */
+@media(max-width:1180px){.container{padding:24px 24px 40px}.mini-grid{grid-template-columns:repeat(2,1fr)}.cmp-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.fn-row{grid-template-columns:150px 1fr 100px;gap:10px}}
+@media(max-width:600px){.kpi-grid{grid-template-columns:1fr}.page-head{flex-direction:column}.info-grid{grid-template-columns:1fr}.legend{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<!-- ====== 内联 SVG 图标（lucide 风格，零外部依赖） ====== -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+  <symbol id="i-build" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.8.7a2 2 0 0 1 1.7 2Z"/><path d="M22 2 16 8"/><path d="M16 2h6v6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-mobile" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-mega" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 13v-2Z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M21 15h-4a2 2 0 0 0-2 2v4"/><path d="M21 21h.01"/><path d="M12 7v4a2 2 0 0 1-2 2H7"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1Z"/><path d="m12 15-3-3a22 22 0 0 1 2-4 12.9 12.9 0 0 1 11-6c0 2.7-.8 7.5-6 11a22 22 0 0 1-4 2Z"/><path d="M9 12H4s.5-3 2-4c1.6-1.1 5 0 5 0"/><path d="M12 15v5s3-.5 4-2c1.1-1.6 0-5 0-5"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+</svg>
+
+<!-- ====== 侧边栏 ====== -->
+<aside class="sidebar">
+  <div class="side-brand">
+    <span class="brand-logo">P</span>
+    <span class="brand-name">ProFo 管理端</span>
+  </div>
+  <nav class="side-nav">
+    <div class="menu-item dim"><svg class="ic"><use href="#i-dash"/></svg>工作台</div>
+    <div class="menu-item dim"><svg class="ic"><use href="#i-build"/></svg>房源管理</div>
+    <div class="menu-item dim"><svg class="ic"><use href="#i-chart"/></svg>数据报表</div>
+    <div class="menu-item dim"><svg class="ic"><use href="#i-phone"/></svg>线索中心</div>
+    <div class="menu-item dim"><svg class="ic"><use href="#i-folder"/></svg>项目管理</div>
+    <div class="menu-item dim"><svg class="ic"><use href="#i-mobile"/></svg>房源营销</div>
+    <div class="menu-item on"><svg class="ic"><use href="#i-mega"/></svg>获客中心<svg class="ic chev"><use href="#i-chev"/></svg></div>
+    <div class="submenu">
+      <a class="sub-item" data-nav="overview" href="#overview">获客总览</a>
+      <a class="sub-item" data-nav="leads" href="#leads">线索管理</a>
+      <a class="sub-item" data-nav="funnel" href="#funnel">漏斗看板</a>
+      <a class="sub-item" data-nav="campaigns" href="#campaigns">活动配置</a>
+    </div>
+    <div class="menu-item dim"><svg class="ic"><use href="#i-wallet"/></svg>财务管理</div>
+    <div class="menu-item dim"><svg class="ic"><use href="#i-users"/></svg>用户管理</div>
+    <div class="menu-item dim"><svg class="ic"><use href="#i-scroll"/></svg>审计日志</div>
+  </nav>
+  <div class="side-footer">
+    <div class="user-chip">
+      <span class="avatar">SZ</span>
+      <span><span class="u-name">沈知远</span><br><span class="u-role">超级管理员</span></span>
+      <svg class="ic u-more" style="width:16px;height:16px"><use href="#i-chev"/></svg>
+    </div>
+  </div>
+</aside>
+
+<!-- ====== 主内容 ====== -->
+<main class="main">
+<div class="container">
+
+  <!-- ==================== Screen 1：获客总览 ==================== -->
+  <section class="screen" id="screen-overview">
+    <div class="stack">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">获客总览 <span class="phase-tag">一期</span></h1>
+          <p class="page-desc">四条分享获客链路的统一经营视图</p>
+        </div>
+        <button class="btn-primary" type="button">导出周报</button>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-top"><span class="dot dot-ink"></span>今日线索</div>
+          <div class="kpi-val">23</div>
+          <div class="kpi-trend up">▲ 12.4% vs 昨日</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span class="dot dot-sky"></span>待跟进</div>
+          <div class="kpi-val">87</div>
+          <div class="kpi-trend">状态 = 新线索</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span class="dot dot-apricot"></span>有效新客</div>
+          <div class="kpi-val">1,106</div>
+          <div class="kpi-trend">近 30 天 · 已剔除内部</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span class="dot dot-rust"></span>整体转化率</div>
+          <div class="kpi-val">3.4%</div>
+          <div class="kpi-trend">有效新客 ÷ 分享次数</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <!-- 线索来源构成 -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">线索来源构成</div>
+              <div class="card-sub">近 30 天 · 共 1,286 条 · 含直接进入</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="stackbar">
+              <i style="width:52%;background:#d3e3fc;color:#1d5bb8">52%</i>
+              <i style="width:18%;background:#fbe1d1;color:#5d2a1a">18%</i>
+              <i style="width:9%;background:#b9e6d2;color:#067a54">9%</i>
+              <i style="width:21%;background:#17191c;color:#fff">21%</i>
+            </div>
+            <div class="legend">
+              <div class="legend-item"><span class="badge b-sky">估价</span><span class="lg-val num">669 条 · 52%</span></div>
+              <div class="legend-item"><span class="badge b-apricot">房源预约</span><span class="lg-val num">231 条 · 18%</span></div>
+              <div class="legend-item"><span class="badge b-teal">房源单</span><span class="lg-val num">116 条 · 9%</span></div>
+              <div class="legend-item"><span class="badge b-ink">招募</span><span class="lg-val num">270 条 · 21%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 近 30 天线索趋势 -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">近 30 天线索趋势</div>
+              <div class="card-sub num">2026-08-03 ~ 2026-09-01 · 日均 22.7 条</div>
+            </div>
+          </div>
+          <div class="card-body" style="padding:16px 16px 8px">
+            <svg viewBox="0 0 660 240" style="width:100%;height:auto;display:block" role="img" aria-label="近 30 天线索趋势折线图">
+              <defs>
+                <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#5d2a1a" stop-opacity=".16"/>
+                  <stop offset="1" stop-color="#5d2a1a" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g stroke="#eef0f3" stroke-width="1">
+                <line x1="40" y1="30" x2="640" y2="30"/>
+                <line x1="40" y1="90" x2="640" y2="90"/>
+                <line x1="40" y1="150" x2="640" y2="150"/>
+                <line x1="40" y1="210" x2="640" y2="210"/>
+              </g>
+              <g fill="#8b8c8d" font-size="11" text-anchor="end" font-family="inherit">
+                <text x="30" y="34">30</text><text x="30" y="94">20</text><text x="30" y="154">10</text><text x="30" y="214">0</text>
+              </g>
+              <path fill="url(#tg)" d="M40,210 L40,102 L60,84 L80,108 L100,66 L120,96 L140,78 L160,54 L180,90 L200,72 L220,102 L240,60 L260,84 L280,48 L300,78 L320,96 L340,66 L360,42 L380,72 L400,90 L420,54 L440,78 L460,36 L480,66 L500,84 L520,48 L540,60 L560,96 L580,78 L600,54 L620,72 L620,210 Z"/>
+              <polyline fill="none" stroke="#5d2a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="40,102 60,84 80,108 100,66 120,96 140,78 160,54 180,90 200,72 220,102 240,60 260,84 280,48 300,78 320,96 340,66 360,42 380,72 400,90 420,54 440,78 460,36 480,66 500,84 520,48 540,60 560,96 580,78 600,54 620,72"/>
+              <circle cx="620" cy="72" r="3.5" fill="#5d2a1a"/>
+              <text x="620" y="58" fill="#5d2a1a" font-size="11" text-anchor="middle" font-weight="600" font-family="inherit">23</text>
+              <g fill="#8b8c8d" font-size="11" text-anchor="middle" font-family="inherit">
+                <text x="40" y="232">08-03</text><text x="200" y="232">08-11</text><text x="360" y="232">08-19</text><text x="520" y="232">08-27</text><text x="620" y="232">09-01</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 四模块漏斗对比缩略 -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">四模块漏斗对比</div>
+            <div class="card-sub">近 30 天 · 条形以各模块最大级为基准 · 转化率 = 末级 ÷ 分享次数</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="mini-grid">
+            <div class="mini-card">
+              <div class="mini-head"><span class="badge b-sky">估价</span><span class="mini-rate">26.6%</span></div>
+              <div class="mini-row"><span class="mini-lab">分享</span><div class="mini-track"><i class="c-ink" style="width:100%"></i></div><span class="mini-val">2,340</span></div>
+              <div class="mini-row"><span class="mini-lab">打开UV</span><div class="mini-track"><i class="c-graphite" style="width:80%"></i></div><span class="mini-val">1,876</span></div>
+              <div class="mini-row"><span class="mini-lab">留资</span><div class="mini-track"><i class="c-rust" style="width:27%"></i></div><span class="mini-val">623</span></div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-head"><span class="badge b-apricot">房源预约</span><span class="mini-rate">21.3%</span></div>
+              <div class="mini-row"><span class="mini-lab">分享</span><div class="mini-track"><i class="c-ink" style="width:85%"></i></div><span class="mini-val">1,024</span></div>
+              <div class="mini-row"><span class="mini-lab">打开UV</span><div class="mini-track"><i class="c-graphite" style="width:100%"></i></div><span class="mini-val">1,208</span></div>
+              <div class="mini-row"><span class="mini-lab">预约</span><div class="mini-track"><i class="c-rust" style="width:18%"></i></div><span class="mini-val">218</span></div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-head"><span class="badge b-teal">房源单</span><span class="mini-rate">26.4%</span></div>
+              <div class="mini-row"><span class="mini-lab">分享</span><div class="mini-track"><i class="c-ink" style="width:70%"></i></div><span class="mini-val">356</span></div>
+              <div class="mini-row"><span class="mini-lab">打开UV</span><div class="mini-track"><i class="c-graphite" style="width:100%"></i></div><span class="mini-val">512</span></div>
+              <div class="mini-row"><span class="mini-lab">承接留资</span><div class="mini-track"><i class="c-rust" style="width:18%"></i></div><span class="mini-val">94</span></div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-head"><span class="badge b-ink">招募</span><span class="mini-rate">13.8%</span></div>
+              <div class="mini-row"><span class="mini-lab">分享</span><div class="mini-track"><i class="c-ink" style="width:100%"></i></div><span class="mini-val">1,248</span></div>
+              <div class="mini-row"><span class="mini-lab">打开UV</span><div class="mini-track"><i class="c-graphite" style="width:41%"></i></div><span class="mini-val">517</span></div>
+              <div class="mini-row"><span class="mini-lab">留资</span><div class="mini-track"><i class="c-slate" style="width:15%"></i></div><span class="mini-val">187</span></div>
+              <div class="mini-row"><span class="mini-lab">有效新客</span><div class="mini-track"><i class="c-rust" style="width:14%"></i></div><span class="mini-val">172</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 员工获客 TOP 榜 -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">员工获客 TOP 榜 <span class="phase-tag">一期</span></div>
+            <div class="card-sub">近 30 天 · 分享归因线索 · 转化率 = 线索数 ÷ 分享次数</div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl" style="min-width:640px">
+            <thead>
+              <tr>
+                <th style="width:56px">排名</th>
+                <th>员工名</th>
+                <th class="num">分享次数</th>
+                <th class="num">线索数</th>
+                <th>转化率</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="num" style="color:#777b86">1</td>
+                <td><div class="cell-main">陈晓峰</div><div class="cell-sub">员工ID: emp_01</div></td>
+                <td class="num">412</td>
+                <td class="num">34</td>
+                <td><span class="badge b-apricot num">8.3%</span></td>
+              </tr>
+              <tr>
+                <td class="num" style="color:#777b86">2</td>
+                <td><div class="cell-main">林悦</div><div class="cell-sub">员工ID: emp_02</div></td>
+                <td class="num">386</td>
+                <td class="num">26</td>
+                <td><span class="badge b-neutral num">6.7%</span></td>
+              </tr>
+              <tr>
+                <td class="num" style="color:#777b86">3</td>
+                <td><div class="cell-main">周凯</div><div class="cell-sub">员工ID: emp_03</div></td>
+                <td class="num">344</td>
+                <td class="num">22</td>
+                <td><span class="badge b-neutral num">6.4%</span></td>
+              </tr>
+              <tr>
+                <td class="num" style="color:#777b86">4</td>
+                <td><div class="cell-main">吴倩</div><div class="cell-sub">员工ID: emp_04</div></td>
+                <td class="num">298</td>
+                <td class="num">15</td>
+                <td><span class="badge b-neutral num">5.0%</span></td>
+              </tr>
+              <tr>
+                <td class="num" style="color:#777b86">5</td>
+                <td><div class="cell-main">郑阳</div><div class="cell-sub">员工ID: emp_05</div></td>
+                <td class="num">261</td>
+                <td class="num">12</td>
+                <td><span class="badge b-neutral num">4.6%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <footer class="footnote">
+        ① 有效新客：授权留资后剔除内部员工标记与无效线索，按留资人次统计；② 整体转化率 = 有效新客 ÷ 分享次数（近 30 天，分享归因口径）；③ 来源构成含「直接进入」线索；各模块转化率 = 末级 ÷ 分享次数，UV 口径差异详见漏斗看板脚注
+      </footer>
+    </div>
+  </section>
+
+  <!-- ==================== Screen 2：线索管理 ==================== -->
+  <section class="screen" id="screen-leads">
+    <div class="stack">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">线索管理 <span class="phase-tag">一期</span></h1>
+          <p class="page-desc">跨模块统一线索池：估价留资 / 房源预约 / 房源单 / 招募</p>
+        </div>
+        <button class="btn-primary" type="button">导出 CSV</button>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-top"><span class="dot dot-ink"></span>今日新增</div>
+          <div class="kpi-val">23</div>
+          <div class="kpi-trend">今日留资</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span class="dot dot-rust"></span>近 30 天留资</div>
+          <div class="kpi-val">712</div>
+          <div class="kpi-trend">按手机号去重</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span class="dot dot-apricot"></span>有效新客</div>
+          <div class="kpi-val">689</div>
+          <div class="kpi-trend">去重 · 排除内部员工</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span class="dot dot-sky"></span>待跟进</div>
+          <div class="kpi-val">87</div>
+          <div class="kpi-trend">状态 = 新线索</div>
+        </div>
+      </div>
+
+      <!-- 状态映射说明 -->
+      <details class="map-details">
+        <summary><svg class="ic chev"><use href="#i-chev"/></svg>状态映射说明（原生状态 → 统一 5 态）</summary>
+        <div class="map-body">
+          <div class="map-row"><span class="badge b-sky">估价</span><span>待评估 → 新线索 · 待带看 → 已联系 · 已带看 → 意向高 · 已签约 → 已转化 · 已驳回 / 输给竞品 → 已淘汰</span></div>
+          <div class="map-row"><span class="badge b-apricot">房源预约</span><span>已预约 → 新线索（其余预约流程状态不产生线索）</span></div>
+          <div class="map-row"><span class="badge b-teal">房源单</span><span>承接估价状态机（待评估 → 新线索 等），通过 referrer 续传归因至来源房源单</span></div>
+          <div class="map-row"><span class="badge b-ink">招募</span><span>原生即统一 5 态（新线索 / 已联系 / 意向高 / 已转化 / 已淘汰），无需映射</span></div>
+        </div>
+      </details>
+
+      <!-- 筛选工具栏 -->
+      <div class="toolbar">
+        <button class="ltab active" data-ltab="all" type="button">全部</button>
+        <button class="ltab" data-ltab="valuation" type="button">估价</button>
+        <button class="ltab" data-ltab="booking" type="button">房源预约</button>
+        <button class="ltab" data-ltab="sheet" type="button">房源单</button>
+        <button class="ltab" data-ltab="recruit" type="button">招募</button>
+        <select class="ctl" id="f-emp" aria-label="归属员工">
+          <option value="all">全部员工</option>
+          <option value="陈晓峰">陈晓峰</option>
+          <option value="林悦">林悦</option>
+          <option value="周凯">周凯</option>
+          <option value="吴倩">吴倩</option>
+          <option value="郑阳">郑阳</option>
+          <option value="孙婷">孙婷</option>
+        </select>
+        <select class="ctl" id="f-status" aria-label="状态">
+          <option value="all">全部状态</option>
+          <option value="new">新线索</option>
+          <option value="contacted">已联系</option>
+          <option value="high_intent">意向高</option>
+          <option value="converted">已转化</option>
+          <option value="eliminated">已淘汰</option>
+        </select>
+        <select class="ctl" id="f-source" aria-label="来源">
+          <option value="all">全部来源</option>
+          <option value="card">分享卡片</option>
+          <option value="poster">分享海报</option>
+          <option value="direct">直接进入</option>
+        </select>
+        <input class="ctl num" type="date" value="2026-08-02" aria-label="开始日期" style="width:150px">
+        <span class="date-sep">至</span>
+        <input class="ctl num" type="date" value="2026-09-01" aria-label="结束日期" style="width:150px">
+        <span class="input-search">
+          <svg class="ic"><use href="#i-search"/></svg>
+          <input class="ctl" id="f-search" type="text" placeholder="搜索手机号 / 员工" style="width:190px">
+        </span>
+        <button class="text-btn" id="btn-query" type="button">查询</button>
+        <button class="text-btn" id="btn-reset" type="button">重置</button>
+      </div>
+
+      <!-- 统一线索表 -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">线索明细</div>
+            <div class="card-sub">手机号已脱敏展示，完整号码仅归属员工可在详情内查看</div>
+          </div>
+          <div class="card-sub num" id="leads-count">已显示 12 条</div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl" style="min-width:1120px">
+            <thead>
+              <tr>
+                <th>客户</th>
+                <th>来源模块</th>
+                <th>状态</th>
+                <th>活动归属 <span class="phase-tag p2">二期</span></th>
+                <th>归属员工</th>
+                <th>来源</th>
+                <th>留资时间</th>
+                <th class="col-right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="leads-tbody">
+              <tr class="lead-row" data-id="l1" data-module="valuation" data-status="new" data-source="card" data-emp="陈晓峰" data-q="138****5623 陈晓峰 emp_01 估价">
+                <td><div class="cell-main num">138****5623</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-sky">估价</span></td>
+                <td><span class="badge st-badge b-sky">新线索</span><div class="cell-sub">原状态：待评估</div></td>
+                <td><span class="dim">—</span> <span class="mini-tag">二期</span></td>
+                <td><div class="cell-main">陈晓峰</div><div class="cell-sub">员工ID: emp_01</div></td>
+                <td><span class="badge b-outline">分享卡片</span></td>
+                <td class="cell-sub num">2026-09-01 10:24</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l1" type="button">详情</button>
+                  <select class="flow-select" data-id="l1" aria-label="状态流转">
+                    <option value="new" selected disabled>新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l2" data-module="valuation" data-status="contacted" data-source="poster" data-emp="林悦" data-q="137****2384 林悦 emp_02 估价">
+                <td><div class="cell-main num">137****2384</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-sky">估价</span></td>
+                <td><span class="badge st-badge b-neutral">已联系</span><div class="cell-sub">原状态：待带看</div></td>
+                <td><span class="dim">—</span> <span class="mini-tag">二期</span></td>
+                <td><div class="cell-main">林悦</div><div class="cell-sub">员工ID: emp_02</div></td>
+                <td><span class="badge b-outline">分享海报</span></td>
+                <td class="cell-sub num">2026-08-31 16:47</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l2" type="button">详情</button>
+                  <select class="flow-select" data-id="l2" aria-label="状态流转">
+                    <option value="new">新线索</option>
+                    <option value="contacted" selected disabled>已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l3" data-module="valuation" data-status="converted" data-source="direct" data-emp="周凯" data-q="159****7702 周凯 emp_03 估价">
+                <td><div class="cell-main num">159****7702</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-sky">估价</span></td>
+                <td><span class="badge st-badge b-ink">已转化</span><div class="cell-sub">原状态：已签约</div></td>
+                <td><span class="dim">—</span> <span class="mini-tag">二期</span></td>
+                <td><div class="cell-main">周凯</div><div class="cell-sub">员工ID: emp_03</div></td>
+                <td><span class="badge b-neutral">直接进入</span></td>
+                <td class="cell-sub num">2026-08-27 09:32</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l3" type="button">详情</button>
+                  <select class="flow-select" data-id="l3" aria-label="状态流转">
+                    <option value="new">新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted" selected disabled>已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l4" data-module="valuation" data-status="high_intent" data-source="card" data-emp="吴倩" data-q="186****3145 吴倩 emp_04 估价">
+                <td><div class="cell-main num">186****3145</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-sky">估价</span></td>
+                <td><span class="badge st-badge b-apricot">意向高</span><div class="cell-sub">原状态：已带看</div></td>
+                <td><span class="dim">—</span> <span class="mini-tag">二期</span></td>
+                <td><div class="cell-main">吴倩</div><div class="cell-sub">员工ID: emp_04</div></td>
+                <td><span class="badge b-outline">分享卡片</span></td>
+                <td class="cell-sub num">2026-08-30 20:15</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l4" type="button">详情</button>
+                  <select class="flow-select" data-id="l4" aria-label="状态流转">
+                    <option value="new">新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent" selected disabled>意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l5" data-module="booking" data-status="new" data-source="card" data-emp="陈晓峰" data-q="135****9027 陈晓峰 emp_01 预约">
+                <td><div class="cell-main num">135****9027</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-apricot">房源预约</span></td>
+                <td><span class="badge st-badge b-sky">新线索</span><div class="cell-sub">原状态：已预约</div></td>
+                <td><span class="dim">—</span> <span class="mini-tag">二期</span></td>
+                <td><div class="cell-main">陈晓峰</div><div class="cell-sub">员工ID: emp_01</div></td>
+                <td><span class="badge b-outline">分享卡片</span></td>
+                <td class="cell-sub num">2026-09-01 09:05</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l5" type="button">详情</button>
+                  <select class="flow-select" data-id="l5" aria-label="状态流转">
+                    <option value="new" selected disabled>新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l6" data-module="booking" data-status="new" data-source="poster" data-emp="郑阳" data-q="188****6410 郑阳 emp_05 预约">
+                <td><div class="cell-main num">188****6410</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-apricot">房源预约</span></td>
+                <td><span class="badge st-badge b-sky">新线索</span><div class="cell-sub">原状态：已预约</div></td>
+                <td><span class="dim">—</span> <span class="mini-tag">二期</span></td>
+                <td><div class="cell-main">郑阳</div><div class="cell-sub">员工ID: emp_05</div></td>
+                <td><span class="badge b-outline">分享海报</span></td>
+                <td class="cell-sub num">2026-08-31 11:26</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l6" type="button">详情</button>
+                  <select class="flow-select" data-id="l6" aria-label="状态流转">
+                    <option value="new" selected disabled>新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l7" data-module="sheet" data-status="new" data-source="poster" data-emp="林悦" data-q="139****5861 林悦 emp_02 房源单">
+                <td><div class="cell-main num">139****5861</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-teal">房源单</span></td>
+                <td><span class="badge st-badge b-sky">新线索</span><div class="cell-sub">原状态：待评估</div></td>
+                <td><span class="dim">—</span> <span class="mini-tag">二期</span></td>
+                <td><div class="cell-main">林悦</div><div class="cell-sub">员工ID: emp_02</div></td>
+                <td><span class="badge b-outline">分享海报</span></td>
+                <td class="cell-sub num">2026-08-30 15:43</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l7" type="button">详情</button>
+                  <select class="flow-select" data-id="l7" aria-label="状态流转">
+                    <option value="new" selected disabled>新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l8" data-module="recruit" data-status="new" data-source="card" data-emp="陈晓峰" data-q="151****3398 陈晓峰 emp_01 招募">
+                <td><div class="cell-main num">151****3398</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-ink">招募</span></td>
+                <td><span class="badge st-badge b-sky">新线索</span><div class="cell-sub">原状态：新线索</div></td>
+                <td style="font-size:13px">秋季城市合伙人招募计划</td>
+                <td><div class="cell-main">陈晓峰</div><div class="cell-sub">员工ID: emp_01</div></td>
+                <td><span class="badge b-outline">分享卡片</span></td>
+                <td class="cell-sub num">2026-08-31 18:22</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l8" type="button">详情</button>
+                  <select class="flow-select" data-id="l8" aria-label="状态流转">
+                    <option value="new" selected disabled>新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l9" data-module="recruit" data-status="contacted" data-source="poster" data-emp="周凯" data-q="130****7745 周凯 emp_03 招募">
+                <td><div class="cell-main num">130****7745</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-ink">招募</span></td>
+                <td><span class="badge st-badge b-neutral">已联系</span><div class="cell-sub">原状态：已联系</div></td>
+                <td style="font-size:13px">秋季城市合伙人招募计划</td>
+                <td><div class="cell-main">周凯</div><div class="cell-sub">员工ID: emp_03</div></td>
+                <td><span class="badge b-outline">分享海报</span></td>
+                <td class="cell-sub num">2026-08-29 14:08</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l9" type="button">详情</button>
+                  <select class="flow-select" data-id="l9" aria-label="状态流转">
+                    <option value="new">新线索</option>
+                    <option value="contacted" selected disabled>已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l10" data-module="recruit" data-status="high_intent" data-source="card" data-emp="吴倩" data-q="187****2280 吴倩 emp_04 招募">
+                <td><div class="cell-main num">187****2280</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-ink">招募</span></td>
+                <td><span class="badge st-badge b-apricot">意向高</span><div class="cell-sub">原状态：意向高</div></td>
+                <td style="font-size:13px">年末冲刺招募</td>
+                <td><div class="cell-main">吴倩</div><div class="cell-sub">员工ID: emp_04</div></td>
+                <td><span class="badge b-outline">分享卡片</span></td>
+                <td class="cell-sub num">2026-08-28 10:51</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l10" type="button">详情</button>
+                  <select class="flow-select" data-id="l10" aria-label="状态流转">
+                    <option value="new">新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent" selected disabled>意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l11" data-module="recruit" data-status="converted" data-source="card" data-emp="林悦" data-q="155****0913 林悦 emp_02 招募">
+                <td><div class="cell-main num">155****0913</div><div class="valid-tag">有效新客</div></td>
+                <td><span class="badge b-ink">招募</span></td>
+                <td><span class="badge st-badge b-ink">已转化</span><div class="cell-sub">原状态：已转化</div></td>
+                <td style="font-size:13px">精英顾问百人计划</td>
+                <td><div class="cell-main">林悦</div><div class="cell-sub">员工ID: emp_02</div></td>
+                <td><span class="badge b-outline">分享卡片</span></td>
+                <td class="cell-sub num">2026-08-26 09:18</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l11" type="button">详情</button>
+                  <select class="flow-select" data-id="l11" aria-label="状态流转">
+                    <option value="new">新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted" selected disabled>已转化</option>
+                    <option value="eliminated">已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr class="lead-row" data-id="l12" data-module="recruit" data-status="eliminated" data-source="direct" data-emp="孙婷" data-q="176****5549 孙婷 emp_07 招募 内部">
+                <td><div class="cell-main num">176****5549</div><div class="cell-sub">内部员工标记</div></td>
+                <td><span class="badge b-ink">招募</span></td>
+                <td><span class="badge st-badge b-muted">已淘汰</span><div class="cell-sub">原状态：已淘汰</div></td>
+                <td><span class="dim">—</span> <span class="mini-tag">二期</span></td>
+                <td><div class="cell-main">孙婷</div><div class="cell-sub">员工ID: emp_07</div></td>
+                <td><span class="badge b-neutral">直接进入</span></td>
+                <td class="cell-sub num">2026-08-25 17:36</td>
+                <td class="col-right"><span style="display:inline-flex;gap:10px;align-items:center">
+                  <button class="link-btn detail-btn" data-id="l12" type="button">详情</button>
+                  <select class="flow-select" data-id="l12" aria-label="状态流转">
+                    <option value="new">新线索</option>
+                    <option value="contacted">已联系</option>
+                    <option value="high_intent">意向高</option>
+                    <option value="converted">已转化</option>
+                    <option value="eliminated" selected disabled>已淘汰</option>
+                  </select>
+                  <button class="link-btn" type="button">联系</button>
+                </span></td>
+              </tr>
+              <tr id="leads-empty" style="display:none">
+                <td colspan="8" style="text-align:center;padding:40px;color:#8b8c8d;font-size:13px">暂无符合条件的数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagi">
+          <div class="pagi-info num">共 1,286 条 · 第 1/108 页</div>
+          <div class="pagi-btns">
+            <button class="pg" type="button" disabled style="opacity:.35;cursor:not-allowed">‹</button>
+            <button class="pg active" type="button">1</button>
+            <button class="pg" type="button">2</button>
+            <button class="pg" type="button">3</button>
+            <button class="pg" type="button">4</button>
+            <span class="pg ell">…</span>
+            <button class="pg" type="button">108</button>
+            <button class="pg" type="button">›</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="footnote">
+        ① 手机号已脱敏展示，完整号码仅归属员工可在详情内查看；② 归属以首次留资为准，状态映射自 2026-08 起生效，历史线索保留原状态展示；③ 活动归因为一期范围：当前仅招募线索支持活动归属，其余模块在二期接入 campaign_id
+      </footer>
+    </div>
+  </section>
+
+  <!-- ==================== Screen 3：漏斗看板 ==================== -->
+  <section class="screen" id="screen-funnel">
+    <div class="stack">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">漏斗看板 <span class="phase-tag">一期</span></h1>
+          <p class="page-desc">分享 → 打开 → 留资 → 转化的全链路转化监控</p>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+          <div class="tabs">
+            <button class="tab seg" data-range="7" type="button">近 7 天</button>
+            <button class="tab seg active" data-range="30" type="button">近 30 天</button>
+            <button class="tab seg" data-range="90" type="button">近 90 天</button>
+            <button class="tab seg" data-range="custom" type="button">自定义</button>
+          </div>
+          <button class="btn-primary" type="button">导出漏斗数据</button>
+        </div>
+      </div>
+
+      <!-- 模块 Tab -->
+      <div class="tabs">
+        <button class="tab active" data-ftab="recruit" type="button">招募</button>
+        <button class="tab" data-ftab="valuation" type="button">估价</button>
+        <button class="tab" data-ftab="booking" type="button">房源预约</button>
+        <button class="tab" data-ftab="sheet" type="button">房源单</button>
+        <button class="tab" data-ftab="compare" type="button">全部对比</button>
+      </div>
+
+      <!-- 招募：6 级漏斗 -->
+      <div id="fb-recruit">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">转化漏斗 · 近 30 天</div>
+              <div class="card-sub f-range num">近 30 天：2026-08-02 ~ 2026-09-01</div>
+            </div>
+            <div class="fn-legend">
+              <span class="fn-legend-item" style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:#17191c"></i>整体转化率 13.8%</span>
+              <span class="fn-legend-item" style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:#8b8c8d"></i>授权转化率 63.2%</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="fn-row">
+              <div class="fn-lab">分享次数<span class="fn-en">Share Events</span></div>
+              <div class="fn-track"><div class="fn-bar c-ink" style="width:100%">1,248</div></div>
+              <div class="fn-val"><div class="fn-v">1,248</div><div class="fn-rate">— 基准</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">打开 · PV / UV<span class="fn-en">Open PV / UV</span></div>
+              <div class="fn-track"><div class="fn-bar c-dark" style="width:69.1%">862 / 517</div></div>
+              <div class="fn-val"><div class="fn-v">862 / 517</div><div class="fn-rate">打开率 69.1%</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">深度浏览 ≥3s<span class="fn-en">Deep View</span></div>
+              <div class="fn-track"><div class="fn-bar c-graphite" style="width:42.8%">534</div></div>
+              <div class="fn-val"><div class="fn-v">534</div><div class="fn-rate">深度率 61.9%</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">点击授权按钮<span class="fn-en">Click Auth</span></div>
+              <div class="fn-track"><div class="fn-bar c-dove" style="width:23.7%">296</div></div>
+              <div class="fn-val"><div class="fn-v">296</div><div class="fn-rate">点击率 55.4%</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">授权成功（留资）<span class="fn-en">Leads</span></div>
+              <div class="fn-track"><div class="fn-bar c-slate" style="width:15%">187</div></div>
+              <div class="fn-val"><div class="fn-v">187</div><div class="fn-rate">授权成功率 63.2%</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">有效新客<span class="fn-en">Valid New</span></div>
+              <div class="fn-track"><div class="fn-bar c-rust" style="width:13.8%">172</div></div>
+              <div class="fn-val"><div class="fn-v">172</div><div class="fn-rate">有效占比 92.0%</div></div>
+            </div>
+            <div class="fn-notes">UV 口径：openid_hash（需登录）· 有效新客：排除内部员工标记 · 整体转化率 = 有效新客 ÷ 分享次数</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 估价：3 级漏斗 -->
+      <div id="fb-valuation" style="display:none">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">转化漏斗 · 近 30 天</div>
+              <div class="card-sub f-range num">近 30 天：2026-08-02 ~ 2026-09-01</div>
+            </div>
+            <div class="fn-legend">
+              <span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:#17191c"></i>整体转化率 26.6%</span>
+              <span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:#8b8c8d"></i>留资率 15.1%</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="fn-row">
+              <div class="fn-lab">分享次数<span class="fn-en">Share Events</span></div>
+              <div class="fn-track"><div class="fn-bar c-ink" style="width:100%">2,340</div></div>
+              <div class="fn-val"><div class="fn-v">2,340</div><div class="fn-rate">— 基准</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">打开 · PV / UV<span class="fn-en">Open PV / UV</span></div>
+              <div class="fn-track"><div class="fn-bar c-dark" style="width:100%">4,120 / 1,876</div></div>
+              <div class="fn-val"><div class="fn-v">4,120 / 1,876</div><div class="fn-rate">打开率 176%</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">留资<span class="fn-en">Leads</span></div>
+              <div class="fn-track"><div class="fn-bar c-rust" style="width:26.6%">623</div></div>
+              <div class="fn-val"><div class="fn-v">623</div><div class="fn-rate">留资率 15.1%</div></div>
+            </div>
+            <div class="fn-notes">UV 口径：匿名 visitor_id（与招募登录口径不可横向对比）· 打开含非分享自然流量，比率可 ＞100% · 留资率按打开 PV 计算</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 房源预约：3 级漏斗 -->
+      <div id="fb-booking" style="display:none">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">转化漏斗 · 近 30 天</div>
+              <div class="card-sub f-range num">近 30 天：2026-08-02 ~ 2026-09-01</div>
+            </div>
+            <div class="fn-legend">
+              <span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:#17191c"></i>整体转化率 21.3%</span>
+              <span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:#8b8c8d"></i>预约率 18.0%</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="fn-row">
+              <div class="fn-lab">分享次数<span class="fn-en">Share Events</span></div>
+              <div class="fn-track"><div class="fn-bar c-ink" style="width:100%">1,024</div></div>
+              <div class="fn-val"><div class="fn-v">1,024</div><div class="fn-rate">— 基准</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">打开 · PV / UV<span class="fn-en">Open PV / UV</span></div>
+              <div class="fn-track"><div class="fn-bar c-dark" style="width:100%">2,466 / 1,208</div></div>
+              <div class="fn-val"><div class="fn-v">2,466 / 1,208</div><div class="fn-rate">打开率 240.8%</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">预约<span class="fn-en">Booking</span></div>
+              <div class="fn-track"><div class="fn-bar c-rust" style="width:21.3%">218</div></div>
+              <div class="fn-val"><div class="fn-v">218</div><div class="fn-rate">预约率 18.0%（÷UV）</div></div>
+            </div>
+            <div class="fn-notes">UV 口径：匿名 visitor_id（与招募登录口径不可横向对比）· 打开含非分享自然流量，比率可 ＞100%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 房源单：3 级漏斗 -->
+      <div id="fb-sheet" style="display:none">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">转化漏斗 · 近 30 天</div>
+              <div class="card-sub f-range num">近 30 天：2026-08-02 ~ 2026-09-01</div>
+            </div>
+            <div class="fn-legend">
+              <span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:#17191c"></i>整体转化率 26.4%</span>
+              <span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:#8b8c8d"></i>承接留资率 18.4%</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="fn-row">
+              <div class="fn-lab">海报分享<span class="fn-en">Poster Share</span></div>
+              <div class="fn-track"><div class="fn-bar c-ink" style="width:100%">356</div></div>
+              <div class="fn-val"><div class="fn-v">356</div><div class="fn-rate">— 基准</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">打开 · PV / UV<span class="fn-en">Open PV / UV</span></div>
+              <div class="fn-track"><div class="fn-bar c-dark" style="width:100%">890 / 512</div></div>
+              <div class="fn-val"><div class="fn-v">890 / 512</div><div class="fn-rate">打开率 250.0%</div></div>
+            </div>
+            <div class="fn-row">
+              <div class="fn-lab">承接留资<span class="fn-en">Leads</span></div>
+              <div class="fn-track"><div class="fn-bar c-rust" style="width:26.4%">94</div></div>
+              <div class="fn-val"><div class="fn-v">94</div><div class="fn-rate">承接留资率 18.4%（÷UV）</div></div>
+            </div>
+            <div class="fn-notes">转化承接复用估价留资链路（referrer 续传）· UV 口径：匿名 visitor_id · 打开含非分享自然流量，比率可 ＞100%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 全部对比 -->
+      <div id="fb-compare" style="display:none">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">全部对比 · 归一化漏斗</div>
+              <div class="card-sub">以各模块分享 = 100% 基准 · 打开 UV 超 100% 时条形封顶、百分比标注真实值</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cmp-grid">
+              <div class="cmp-col">
+                <div class="cmp-head"><span class="badge b-ink">招募</span><span class="cmp-base num">分享 1,248 · 基准 100%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">分享</span><div class="cmp-track"><i class="c-ink" style="width:100%"></i></div><span class="cmp-pct">100%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">打开UV</span><div class="cmp-track"><i class="c-graphite" style="width:41%"></i></div><span class="cmp-pct">41%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">留资</span><div class="cmp-track"><i class="c-slate" style="width:15%"></i></div><span class="cmp-pct">15%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">有效新客</span><div class="cmp-track"><i class="c-rust" style="width:14%"></i></div><span class="cmp-pct">14%</span></div>
+              </div>
+              <div class="cmp-col">
+                <div class="cmp-head"><span class="badge b-sky">估价</span><span class="cmp-base num">分享 2,340 · 基准 100%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">分享</span><div class="cmp-track"><i class="c-ink" style="width:100%"></i></div><span class="cmp-pct">100%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">打开UV</span><div class="cmp-track"><i class="c-graphite" style="width:80%"></i></div><span class="cmp-pct">80%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">留资</span><div class="cmp-track"><i class="c-rust" style="width:27%"></i></div><span class="cmp-pct">27%</span></div>
+              </div>
+              <div class="cmp-col">
+                <div class="cmp-head"><span class="badge b-apricot">房源预约</span><span class="cmp-base num">分享 1,024 · 基准 100%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">分享</span><div class="cmp-track"><i class="c-ink" style="width:100%"></i></div><span class="cmp-pct">100%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">打开UV</span><div class="cmp-track"><i class="c-graphite" style="width:100%"></i></div><span class="cmp-pct">118%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">预约</span><div class="cmp-track"><i class="c-rust" style="width:21%"></i></div><span class="cmp-pct">21%</span></div>
+              </div>
+              <div class="cmp-col">
+                <div class="cmp-head"><span class="badge b-teal">房源单</span><span class="cmp-base num">分享 356 · 基准 100%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">分享</span><div class="cmp-track"><i class="c-ink" style="width:100%"></i></div><span class="cmp-pct">100%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">打开UV</span><div class="cmp-track"><i class="c-graphite" style="width:100%"></i></div><span class="cmp-pct">144%</span></div>
+                <div class="cmp-row"><span class="cmp-lab">承接留资</span><div class="cmp-track"><i class="c-rust" style="width:26%"></i></div><span class="cmp-pct">26%</span></div>
+              </div>
+            </div>
+            <div class="warn-bar">
+              <svg class="ic"><use href="#i-warn"/></svg>
+              <span>口径提示：招募 UV 为登录态 openid_hash，其余模块为匿名 visitor_id，UV / 转化率不可跨模块横向对比，对比仅看相对趋势。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 员工维度下钻 -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">员工维度下钻</div>
+            <div class="card-sub">招募模块 · 近 30 天 · 转化率 = 有效新客 ÷ 分享次数 · 合计与上方漏斗一致</div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl" style="min-width:900px">
+            <thead>
+              <tr>
+                <th>员工</th>
+                <th class="num">分享</th>
+                <th class="num">打开</th>
+                <th class="num">深度浏览</th>
+                <th class="num">点击授权</th>
+                <th class="num">留资</th>
+                <th class="num">有效新客</th>
+                <th>转化率</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><div class="cell-main">陈晓峰</div><div class="cell-sub">emp_01</div></td><td class="num">286</td><td class="num">208</td><td class="num">131</td><td class="num">74</td><td class="num">47</td><td class="num">44</td><td><span class="badge b-apricot num">15.4%</span></td></tr>
+              <tr><td><div class="cell-main">林悦</div><div class="cell-sub">emp_02</div></td><td class="num">241</td><td class="num">171</td><td class="num">108</td><td class="num">61</td><td class="num">39</td><td class="num">36</td><td><span class="badge b-apricot num">14.9%</span></td></tr>
+              <tr><td><div class="cell-main">周凯</div><div class="cell-sub">emp_03</div></td><td class="num">198</td><td class="num">135</td><td class="num">82</td><td class="num">45</td><td class="num">27</td><td class="num">25</td><td><span class="badge b-apricot num">12.6%</span></td></tr>
+              <tr><td><div class="cell-main">吴倩</div><div class="cell-sub">emp_04</div></td><td class="num">172</td><td class="num">114</td><td class="num">67</td><td class="num">36</td><td class="num">22</td><td class="num">20</td><td><span class="badge b-apricot num">11.6%</span></td></tr>
+              <tr><td><div class="cell-main">郑阳</div><div class="cell-sub">emp_05</div></td><td class="num">141</td><td class="num">92</td><td class="num">54</td><td class="num">29</td><td class="num">18</td><td class="num">16</td><td><span class="badge b-apricot num">11.3%</span></td></tr>
+              <tr><td><div class="cell-main">赵磊</div><div class="cell-sub">emp_06</div></td><td class="num">96</td><td class="num">66</td><td class="num">40</td><td class="num">21</td><td class="num">13</td><td class="num">11</td><td><span class="badge b-apricot num">11.5%</span></td></tr>
+              <tr><td><div class="cell-main">孙婷</div><div class="cell-sub">emp_07</div></td><td class="num">71</td><td class="num">48</td><td class="num">32</td><td class="num">18</td><td class="num">12</td><td class="num">11</td><td><span class="badge b-apricot num">15.5%</span></td></tr>
+              <tr><td><div class="cell-main">王浩</div><div class="cell-sub">emp_08</div></td><td class="num">43</td><td class="num">28</td><td class="num">20</td><td class="num">12</td><td class="num">9</td><td class="num">9</td><td><span class="badge b-apricot num">20.9%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <footer class="footnote">
+        ① 招募 UV 为登录态 openid_hash（需登录），其余模块为匿名 visitor_id，UV 不可跨模块横向对比；② 打开 PV 含非分享自然流量（扫码 / 搜索 / 直接访问），打开率可 ＞100%；③ 有效新客已排除内部员工标记；房源单转化承接复用估价留资链路（referrer 续传）
+      </footer>
+    </div>
+  </section>
+
+  <!-- ==================== Screen 4：活动配置 ==================== -->
+  <section class="screen" id="screen-campaigns">
+    <div class="stack">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">活动配置</h1>
+          <p class="page-desc">分享素材与小程序码的统一管理</p>
+        </div>
+        <button class="btn-primary" type="button">新建活动</button>
+      </div>
+
+      <!-- 活动类型 Tab -->
+      <div class="tabs">
+        <button class="tab active" data-ctab="recruit" type="button">招募活动</button>
+        <button class="tab" data-ctab="p2" data-name="估价推广" type="button">估价推广 <span class="phase-tag p2">二期</span></button>
+        <button class="tab" data-ctab="p2" data-name="房源推广" type="button">房源推广 <span class="phase-tag p2">二期</span></button>
+        <button class="tab" data-ctab="p2" data-name="房源单推广" type="button">房源单推广 <span class="phase-tag p2">二期</span></button>
+      </div>
+
+      <!-- 招募活动 -->
+      <div id="cp-recruit">
+        <div class="stack">
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="kpi-top"><span class="dot dot-ink"></span>进行中活动</div>
+              <div class="kpi-val">2</div>
+              <div class="kpi-trend">共 3 个活动</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-top"><span class="dot dot-rust"></span>累计分享</div>
+              <div class="kpi-val">1,248</div>
+              <div class="kpi-trend">近 30 天</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-top"><span class="dot dot-apricot"></span>累计有效留资</div>
+              <div class="kpi-val">172</div>
+              <div class="kpi-trend">有效占比 92.0%</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-top"><span class="dot dot-sky"></span>整体转化率</div>
+              <div class="kpi-val">13.8%</div>
+              <div class="kpi-trend">有效新客 ÷ 分享次数</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">活动列表</div>
+                <div class="card-sub">共 3 个活动 · 招募业务线</div>
+              </div>
+            </div>
+            <div class="tbl-wrap">
+              <table class="tbl" style="min-width:940px">
+                <thead>
+                  <tr>
+                    <th style="width:40px">#</th>
+                    <th>活动名称</th>
+                    <th>分享标题</th>
+                    <th>分享配图（5:4）</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th class="col-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="num" style="color:#777b86">1</td>
+                    <td><div class="cell-main">秋季城市合伙人招募计划</div><div class="cell-sub">ID: cmp_2026A3</div></td>
+                    <td style="font-weight:500">城市合伙人 · 年入百万不是梦</td>
+                    <td><div class="img-ph"><svg class="ic"><use href="#i-img"/></svg></div></td>
+                    <td><span class="badge b-ink">启用中</span></td>
+                    <td class="cell-sub num">2026-08-01</td>
+                    <td class="col-right"><span style="display:inline-flex;gap:12px;align-items:center">
+                      <button class="link-btn" type="button">编辑</button>
+                      <button class="link-btn qr-btn" data-name="秋季城市合伙人招募计划" type="button">小程序码</button>
+                      <button class="link-btn danger" type="button">停用</button>
+                      <button class="link-btn danger" type="button">删除</button>
+                    </span></td>
+                  </tr>
+                  <tr>
+                    <td class="num" style="color:#777b86">2</td>
+                    <td><div class="cell-main">精英顾问百人计划</div><div class="cell-sub">ID: cmp_2026B7</div></td>
+                    <td style="font-weight:500">百人精英顾问招募开启</td>
+                    <td><div class="img-ph"><svg class="ic"><use href="#i-img"/></svg></div></td>
+                    <td><span class="badge b-outline">已停用</span></td>
+                    <td class="cell-sub num">2026-08-05</td>
+                    <td class="col-right"><span style="display:inline-flex;gap:12px;align-items:center">
+                      <button class="link-btn" type="button">编辑</button>
+                      <button class="link-btn qr-btn" data-name="精英顾问百人计划" type="button">小程序码</button>
+                      <button class="link-btn" type="button">启用</button>
+                      <button class="link-btn danger" type="button">删除</button>
+                    </span></td>
+                  </tr>
+                  <tr>
+                    <td class="num" style="color:#777b86">3</td>
+                    <td><div class="cell-main">年末冲刺招募</div><div class="cell-sub">ID: cmp_2026C2</div></td>
+                    <td style="font-weight:500">年末冲刺 · 高额激励等你来</td>
+                    <td><div class="img-ph"><svg class="ic"><use href="#i-img"/></svg></div></td>
+                    <td><span class="badge b-ink">启用中</span></td>
+                    <td class="cell-sub num">2026-08-18</td>
+                    <td class="col-right"><span style="display:inline-flex;gap:12px;align-items:center">
+                      <button class="link-btn" type="button">编辑</button>
+                      <button class="link-btn qr-btn" data-name="年末冲刺招募" type="button">小程序码</button>
+                      <button class="link-btn danger" type="button">停用</button>
+                      <button class="link-btn danger" type="button">删除</button>
+                    </span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="pagi">
+              <div class="pagi-info num">共 3 条 · 第 1/1 页</div>
+              <div class="pagi-btns">
+                <button class="pg" type="button" disabled style="opacity:.35;cursor:not-allowed">‹</button>
+                <button class="pg active" type="button">1</button>
+                <button class="pg" type="button" disabled style="opacity:.35;cursor:not-allowed">›</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 二期预留空态 -->
+      <div id="cp-p2" style="display:none">
+        <div class="empty">
+          <div class="eco"><svg class="ic"><use href="#i-rocket"/></svg></div>
+          <h3 id="p2-title">二期规划中</h3>
+          <p>该活动类型将在二期上线，届时可在此配置分享素材与小程序码</p>
+          <ul>
+            <li>需小程序分享路径携带 campaign_id 参数</li>
+            <li>需后端短码映射扩展到对应业务线（valuation / projects / property-sheet）</li>
+            <li>上线后可与招募活动共用素材配置与漏斗看板</li>
+          </ul>
+          <div class="more">了解更多：见获客中心迭代方案</div>
+        </div>
+      </div>
+
+      <footer class="footnote">
+        ① 小程序码短码全局唯一，活动停用后二维码立即失效；② 已有关联线索的活动不可删除，请改用停用操作；③ 估价 / 房源 / 房源单推广为二期规划，详见各 Tab 空态说明
+      </footer>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<!-- ====== 线索详情抽屉 ====== -->
+<div class="overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <h3>线索详情</h3>
+    <button class="icon-btn drawer-close" type="button" aria-label="关闭"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<!-- ====== 小程序码弹窗 ====== -->
+<div class="modal" id="qr-modal">
+  <div class="modal-mask qr-mask"></div>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="qr-title">小程序码</h3>
+      <button class="icon-btn qr-close" type="button" aria-label="关闭"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="qr-flex">
+      <div class="qr-left">
+        <div>
+          <label class="f-label" for="qr-emp">归属员工</label>
+          <select class="ctl" id="qr-emp" style="width:100%">
+            <option>全部员工（通用码）</option>
+            <option>陈晓峰 emp_01</option>
+            <option>林悦 emp_02</option>
+            <option>周凯 emp_03</option>
+            <option>吴倩 emp_04</option>
+            <option>郑阳 emp_05</option>
+            <option>孙婷 emp_07</option>
+          </select>
+        </div>
+        <div class="qr-btn-row">
+          <button class="btn-sm" id="qr-gen" type="button">生成</button>
+          <button class="btn-ghost-sm" id="qr-regen" type="button"><svg class="ic" style="width:14px;height:14px"><use href="#i-refresh"/></svg>重新生成</button>
+        </div>
+        <div>
+          <span class="f-label">短码</span>
+          <span class="short-code" id="qr-code">A3F8K2M9</span>
+        </div>
+      </div>
+      <div class="qr-right">
+        <div class="qr-grid" id="qr-grid" aria-label="小程序码占位图"></div>
+        <div class="qr-cap" id="qr-cap">秋季城市合伙人招募计划</div>
+        <button class="btn-ghost-sm" id="qr-dl" type="button"><svg class="ic" style="width:14px;height:14px"><use href="#i-dl"/></svg>下载二维码</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,el){return (el||document).querySelector(s);};
+var $$=function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s));};
+
+/* ========== 1. Screen 切换（hash 路由） ========== */
+var SCREENS={overview:"获客总览",leads:"线索管理",funnel:"漏斗看板",campaigns:"活动配置"};
+function navigate(){
+  var h=(location.hash||"#overview").replace("#","");
+  if(!SCREENS[h])h="overview";
+  $$(".screen").forEach(function(s){s.classList.remove("active");});
+  $("#screen-"+h).classList.add("active");
+  $$(".sub-item").forEach(function(a){a.classList.toggle("active",a.getAttribute("data-nav")===h);});
+  document.title=SCREENS[h]+" · ProFo 管理端";
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange",navigate);
+navigate();
+
+/* ========== 2. 线索筛选（Tab + 下拉 + 搜索） ========== */
+var lstate={module:"all",status:"all",source:"all",emp:"all",q:""};
+var leadRows=$$("#leads-tbody tr.lead-row");
+function applyLeads(){
+  var n=0;
+  leadRows.forEach(function(tr){
+    var ok=(lstate.module==="all"||tr.getAttribute("data-module")===lstate.module)
+      &&(lstate.status==="all"||tr.getAttribute("data-status")===lstate.status)
+      &&(lstate.source==="all"||tr.getAttribute("data-source")===lstate.source)
+      &&(lstate.emp==="all"||tr.getAttribute("data-emp")===lstate.emp)
+      &&(!lstate.q||tr.getAttribute("data-q").indexOf(lstate.q)>-1);
+    tr.style.display=ok?"":"none";
+    if(ok)n++;
+  });
+  $("#leads-empty").style.display=n?"none":"";
+  $("#leads-count").textContent="已显示 "+n+" 条";
+}
+$$(".ltab").forEach(function(b){
+  b.addEventListener("click",function(){
+    $$(".ltab").forEach(function(x){x.classList.remove("active");});
+    b.classList.add("active");
+    lstate.module=b.getAttribute("data-ltab");
+    applyLeads();
+  });
+});
+[["f-status","status"],["f-source","source"],["f-emp","emp"]].forEach(function(pair){
+  $("#"+pair[0]).addEventListener("change",function(e){lstate[pair[1]]=e.target.value;applyLeads();});
+});
+$("#f-search").addEventListener("input",function(e){lstate.q=e.target.value.trim().toLowerCase();applyLeads();});
+$("#btn-query").addEventListener("click",applyLeads);
+$("#btn-reset").addEventListener("click",function(){
+  lstate={module:"all",status:"all",source:"all",emp:"all",q:""};
+  $("#f-status").value="all";$("#f-source").value="all";$("#f-emp").value="all";$("#f-search").value="";
+  $$(".ltab").forEach(function(x){x.classList.toggle("active",x.getAttribute("data-ltab")==="all");});
+  applyLeads();
+});
+
+/* ========== 3. 状态流转（表格行 + 抽屉联动） ========== */
+var STATUS_META={new:["新线索","b-sky"],contacted:["已联系","b-neutral"],high_intent:["意向高","b-apricot"],converted:["已转化","b-ink"],eliminated:["已淘汰","b-muted"]};
+var drawerId=null;
+function setStatus(id,st){
+  var tr=document.querySelector('tr.lead-row[data-id="'+id+'"]');
+  if(tr){
+    tr.setAttribute("data-status",st);
+    var b=tr.querySelector(".st-badge");
+    b.textContent=STATUS_META[st][0];
+    b.className="badge st-badge "+STATUS_META[st][1];
+    var sel=tr.querySelector(".flow-select");
+    if(sel){sel.value=st;$$("option",sel).forEach(function(o){o.disabled=(o.value===st);});}
+  }
+  if(drawerId===id){
+    var db=$("#d-st-badge");
+    if(db){db.textContent=STATUS_META[st][0];db.className="badge "+STATUS_META[st][1];}
+    var ds=$("#d-flow");
+    if(ds){ds.value=st;$$("option",ds).forEach(function(o){o.disabled=(o.value===st);});}
+  }
+}
+$$(".flow-select").forEach(function(sel){
+  sel.addEventListener("change",function(e){setStatus(e.target.getAttribute("data-id"),e.target.value);});
+});
+
+/* ========== 4. 线索详情抽屉 ========== */
+var LEADS={
+  l1:{moduleLabel:"估价",badge:"b-sky",phone:"138****5623",full:"13812345623",status:"new",source:"分享卡片",emp:"陈晓峰",empId:"emp_01",time:"2026-09-01 10:24",campaign:"—",
+    tl:[{t:"员工分享",d:"分享卡片 · 陈晓峰",tm:"2026-09-01 10:02",ok:1},{t:"客户打开",d:"微信",tm:"2026-09-01 10:11",ok:1},{t:"深度浏览",d:"停留 46 秒",ok:1},{t:"授权留资",d:"完成授权留资",tm:"2026-09-01 10:24",ok:1}],
+    extra:{title:"估价信息",rows:[["小区名称","万科翡翠公园"],["建筑面积","89㎡"],["客户心理价","210 万"],["评估价","待评估"]]}},
+  l2:{moduleLabel:"估价",badge:"b-sky",phone:"137****2384",full:"13724682384",status:"contacted",source:"分享海报",emp:"林悦",empId:"emp_02",time:"2026-08-31 16:47",campaign:"—",
+    tl:[{t:"员工分享",d:"分享海报 · 林悦",tm:"2026-08-31 16:05",ok:1},{t:"客户打开",d:"朋友圈",tm:"2026-08-31 16:21",ok:1},{t:"深度浏览",d:"停留 1 分 12 秒",ok:1},{t:"授权留资",d:"完成授权留资",tm:"2026-08-31 16:47",ok:1}],
+    extra:{title:"估价信息",rows:[["小区名称","保利天悦"],["建筑面积","128㎡"],["客户心理价","385 万"],["评估价","368 - 392 万"]]}},
+  l3:{moduleLabel:"估价",badge:"b-sky",phone:"159****7702",full:"15911077027",status:"converted",source:"直接进入",emp:"周凯",empId:"emp_03",time:"2026-08-27 09:32",campaign:"—",
+    tl:[{t:"员工分享",d:"未发生（直接进入）",ok:0},{t:"客户打开",d:"未发生 / 未埋点",ok:0},{t:"深度浏览",d:"停留 2 分 05 秒",ok:1},{t:"授权留资",d:"完成授权留资",tm:"2026-08-27 09:32",ok:1}],
+    extra:{title:"估价信息",rows:[["小区名称","绿城玉兰花园"],["建筑面积","76㎡"],["客户心理价","165 万"],["评估价","172 万"]]}},
+  l4:{moduleLabel:"估价",badge:"b-sky",phone:"186****3145",full:"18657193145",status:"high_intent",source:"分享卡片",emp:"吴倩",empId:"emp_04",time:"2026-08-30 20:15",campaign:"—",
+    tl:[{t:"员工分享",d:"分享卡片 · 吴倩",tm:"2026-08-30 19:40",ok:1},{t:"客户打开",d:"微信群",tm:"2026-08-30 19:58",ok:1},{t:"深度浏览",d:"停留 58 秒",ok:1},{t:"授权留资",d:"完成授权留资",tm:"2026-08-30 20:15",ok:1}],
+    extra:{title:"估价信息",rows:[["小区名称","龙湖天璟"],["建筑面积","143㎡"],["客户心理价","460 万"],["评估价","445 - 478 万"]]}},
+  l5:{moduleLabel:"房源预约",badge:"b-apricot",phone:"135****9027",full:"13588209027",status:"new",source:"分享卡片",emp:"陈晓峰",empId:"emp_01",time:"2026-09-01 09:05",campaign:"—",
+    tl:[{t:"员工分享",d:"分享卡片 · 陈晓峰",tm:"2026-09-01 08:44",ok:1},{t:"客户打开",d:"微信",tm:"2026-09-01 08:52",ok:1},{t:"深度浏览",d:"未发生 / 未埋点",ok:0},{t:"授权留资",d:"完成授权留资",tm:"2026-09-01 09:05",ok:1}],
+    extra:{title:"预约信息",rows:[["房源名称","翡翠公园 · 3 室 2 厅 朝南"],["预约时间","2026-09-03 14:00"]]}},
+  l6:{moduleLabel:"房源预约",badge:"b-apricot",phone:"188****6410",full:"18800126410",status:"new",source:"分享海报",emp:"郑阳",empId:"emp_05",time:"2026-08-31 11:26",campaign:"—",
+    tl:[{t:"员工分享",d:"分享海报 · 郑阳",tm:"2026-08-31 10:57",ok:1},{t:"客户打开",d:"朋友圈",tm:"2026-08-31 11:12",ok:1},{t:"深度浏览",d:"未发生 / 未埋点",ok:0},{t:"授权留资",d:"完成授权留资",tm:"2026-08-31 11:26",ok:1}],
+    extra:{title:"预约信息",rows:[["房源名称","保利天悦 · 4 室 2 厅 江景"],["预约时间","2026-09-02 10:30"]]}},
+  l7:{moduleLabel:"房源单",badge:"b-teal",phone:"139****5861",full:"13968005861",status:"new",source:"分享海报",emp:"林悦",empId:"emp_02",time:"2026-08-30 15:43",campaign:"—",
+    tl:[{t:"员工分享",d:"分享海报 · 林悦",tm:"2026-08-30 15:20",ok:1},{t:"客户打开",d:"微信",tm:"2026-08-30 15:31",ok:1},{t:"深度浏览",d:"停留 37 秒",ok:1},{t:"授权留资",d:"完成授权留资",tm:"2026-08-30 15:43",ok:1}],
+    extra:{title:"承接估价信息（referrer 续传）",rows:[["来源房源单","FS-2026-0817-03"],["小区名称","万科翡翠公园"],["建筑面积","89㎡"],["客户心理价","205 万"]]}},
+  l8:{moduleLabel:"招募",badge:"b-ink",phone:"151****3398",full:"15122363398",status:"new",source:"分享卡片",emp:"陈晓峰",empId:"emp_01",time:"2026-08-31 18:22",campaign:"秋季城市合伙人招募计划",
+    tl:[{t:"员工分享",d:"分享卡片 · 陈晓峰",tm:"2026-08-31 17:59",ok:1},{t:"客户打开",d:"微信",tm:"2026-08-31 18:07",ok:1},{t:"深度浏览",d:"停留 1 分 38 秒",ok:1},{t:"授权留资",d:"完成授权留资",tm:"2026-08-31 18:22",ok:1}],
+    extra:{title:"招募信息",rows:[["主营商圈","滨江 · 长河"],["来源活动","秋季城市合伙人招募计划"]]}},
+  l9:{moduleLabel:"招募",badge:"b-ink",phone:"130****7745",full:"13066587745",status:"contacted",source:"分享海报",emp:"周凯",empId:"emp_03",time:"2026-08-29 14:08",campaign:"秋季城市合伙人招募计划",
+    tl:[{t:"员工分享",d:"分享海报 · 周凯",tm:"2026-08-29 13:40",ok:1},{t:"客户打开",d:"朋友圈",tm:"2026-08-29 13:55",ok:1},{t:"深度浏览",d:"未发生 / 未埋点",ok:0},{t:"授权留资",d:"完成授权留资",tm:"2026-08-29 14:08",ok:1}],
+    extra:{title:"招募信息",rows:[["主营商圈","城东 · 万象汇"],["来源活动","秋季城市合伙人招募计划"]]}},
+  l10:{moduleLabel:"招募",badge:"b-ink",phone:"187****2280",full:"18729662280",status:"high_intent",source:"分享卡片",emp:"吴倩",empId:"emp_04",time:"2026-08-28 10:51",campaign:"年末冲刺招募",
+    tl:[{t:"员工分享",d:"分享卡片 · 吴倩",tm:"2026-08-28 10:22",ok:1},{t:"客户打开",d:"微信群",tm:"2026-08-28 10:35",ok:1},{t:"深度浏览",d:"停留 2 分 11 秒",ok:1},{t:"授权留资",d:"完成授权留资",tm:"2026-08-28 10:51",ok:1}],
+    extra:{title:"招募信息",rows:[["主营商圈","城西 · 未来科技城"],["来源活动","年末冲刺招募"]]}},
+  l11:{moduleLabel:"招募",badge:"b-ink",phone:"155****0913",full:"15501280913",status:"converted",source:"分享卡片",emp:"林悦",empId:"emp_02",time:"2026-08-26 09:18",campaign:"精英顾问百人计划",
+    tl:[{t:"员工分享",d:"分享卡片 · 林悦",tm:"2026-08-26 08:50",ok:1},{t:"客户打开",d:"微信",tm:"2026-08-26 09:01",ok:1},{t:"深度浏览",d:"停留 1 分 45 秒",ok:1},{t:"授权留资",d:"完成授权留资",tm:"2026-08-26 09:18",ok:1}],
+    extra:{title:"招募信息",rows:[["主营商圈","城北 · 运河"],["来源活动","精英顾问百人计划"]]}},
+  l12:{moduleLabel:"招募",badge:"b-ink",phone:"176****5549",full:"17600325549",status:"eliminated",source:"直接进入",emp:"孙婷",empId:"emp_07",time:"2026-08-25 17:36",campaign:"—",internal:true,
+    tl:[{t:"员工分享",d:"未发生（直接进入）",ok:0},{t:"客户打开",d:"未发生 / 未埋点",ok:0},{t:"深度浏览",d:"未发生 / 未埋点",ok:0},{t:"授权留资",d:"完成授权留资",tm:"2026-08-25 17:36",ok:1}],
+    extra:{title:"招募信息",rows:[["主营商圈","城南 · 滨江"],["标记","内部员工"]]}},
+};
+function openDrawer(id){
+  var d=LEADS[id];
+  if(!d)return;
+  drawerId=id;
+  var tlHtml=d.tl.map(function(n){
+    if(n.ok){
+      return '<div class="tl-item"><span class="tl-dot"></span><div class="tl-title">'+n.t+'</div><div class="tl-desc">'+n.d+'</div>'+(n.tm?'<div class="tl-time">'+n.tm+'</div>':'')+'</div>';
+    }
+    return '<div class="tl-item miss"><span class="tl-dot"></span><div class="tl-title">'+n.t+'</div><div class="tl-desc">'+(n.d||"未发生 / 未埋点")+'</div></div>';
+  }).join("");
+  var opts=Object.keys(STATUS_META).map(function(k){
+    return '<option value="'+k+'"'+(k===d.status?" selected disabled":"")+'>'+STATUS_META[k][0]+'</option>';
+  }).join("");
+  var camp=(d.campaign==="—")
+    ?'<span style="color:#a3a6af">—</span> <span class="mini-tag">二期</span>'
+    :d.campaign;
+  $("#drawer-body").innerHTML=
+    '<section><div class="d-sec-title">手机号</div><div class="d-phone">'+
+      '<span id="d-masked">'+d.phone+'</span><span id="d-full" style="display:none">'+d.full+'</span>'+
+      '<button class="btn-sm" id="d-reveal" type="button">查看完整号码</button>'+
+      '<button class="link-btn" id="d-copy" type="button" style="display:none"><svg class="ic" style="width:14px;height:14px"><use href="#i-copy"/></svg>复制</button>'+
+    '</div>'+(d.internal?'<div class="cell-sub" style="margin-top:8px">内部员工标记：不计入有效新客</div>':'')+'</section>'+
+    '<section><div class="d-sec-title">归因链路</div><div class="tl">'+tlHtml+'</div></section>'+
+    '<section><div class="d-sec-title">基础信息</div><div class="info-grid">'+
+      '<div class="info-item"><div class="lab">归属员工</div><div class="val">'+d.emp+' · '+d.empId+'</div></div>'+
+      '<div class="info-item"><div class="lab">来源</div><div class="val">'+d.source+'</div></div>'+
+      '<div class="info-item"><div class="lab">留资时间</div><div class="val num">'+d.time+'</div></div>'+
+      '<div class="info-item"><div class="lab">活动归属 <span class="mini-tag">二期</span></div><div class="val">'+camp+'</div></div>'+
+    '</div></section>'+
+    '<section class="module-box"><div class="module-box-title"><span class="badge '+d.badge+'">'+d.moduleLabel+'</span>'+d.extra.title+'</div>'+
+      d.extra.rows.map(function(r){return '<div class="row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>';}).join("")+
+    '</section>'+
+    '<section><div class="d-sec-title">状态流转</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+
+      '<span class="badge '+STATUS_META[d.status][1]+'" id="d-st-badge">'+STATUS_META[d.status][0]+'</span>'+
+      '<select class="ctl" id="d-flow" style="height:34px;border-radius:10px">'+opts+'</select>'+
+    '</div></section>';
+  $("#d-reveal").addEventListener("click",function(){
+    $("#d-masked").style.display="none";
+    $("#d-full").style.display="";
+    $("#d-reveal").style.display="none";
+    $("#d-copy").style.display="inline-flex";
+  });
+  $("#d-copy").addEventListener("click",function(){
+    try{if(navigator.clipboard)navigator.clipboard.writeText(d.full);}catch(e){}
+  });
+  $("#d-flow").addEventListener("change",function(e){setStatus(id,e.target.value);});
+  $("#drawer-overlay").classList.add("open");
+  $("#drawer").classList.add("open");
+  $("#drawer").setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+}
+function closeDrawer(){
+  drawerId=null;
+  $("#drawer-overlay").classList.remove("open");
+  $("#drawer").classList.remove("open");
+  $("#drawer").setAttribute("aria-hidden","true");
+  if(!$("#qr-modal").classList.contains("open"))document.body.style.overflow="";
+}
+$$(".detail-btn").forEach(function(b){b.addEventListener("click",function(){openDrawer(b.getAttribute("data-id"));});});
+$("#drawer-overlay").addEventListener("click",closeDrawer);
+$(".drawer-close").addEventListener("click",closeDrawer);
+
+/* ========== 5. 小程序码弹窗（CSS 网格模拟二维码） ========== */
+var QR_CH="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function qrMatrix(seed){
+  var s=seed%2147483647;if(s<=0)s+=2147483646;
+  function rnd(){s=s*16807%2147483647;return s/2147483647;}
+  var m=[];
+  for(var r=0;r<21;r++){m.push([]);
+    for(var c=0;c<21;c++){
+      var fz=(r<7&&c<7)?[r,c]:(r<7&&c>13)?[r,c-14]:(r>13&&c<7)?[r-14,c]:null;
+      var on;
+      if(fz){var dr=fz[0],dc=fz[1];on=(dr===0||dr===6||dc===0||dc===6)||(dr>=2&&dr<=4&&dc>=2&&dc<=4);}
+      else{on=rnd()>0.52;}
+      m[r].push(on);
+    }
+  }
+  return m;
+}
+function renderQr(seed){
+  var m=qrMatrix(seed);
+  var html="";
+  m.forEach(function(row){row.forEach(function(c){html+='<i class="'+(c?"on":"")+'"></i>';});});
+  $("#qr-grid").innerHTML=html;
+}
+function newShort(){
+  var out="";
+  for(var i=0;i<8;i++)out+=QR_CH[Math.floor(Math.random()*QR_CH.length)];
+  $("#qr-code").textContent=out;
+}
+renderQr(20260901);
+function openQr(name){
+  $("#qr-title").textContent="小程序码 · "+name;
+  $("#qr-cap").textContent=name;
+  $("#qr-modal").classList.add("open");
+  document.body.style.overflow="hidden";
+}
+function closeQr(){
+  $("#qr-modal").classList.remove("open");
+  if(!$("#drawer").classList.contains("open"))document.body.style.overflow="";
+}
+$$(".qr-btn").forEach(function(b){b.addEventListener("click",function(){openQr(b.getAttribute("data-name"));});});
+$(".qr-close").addEventListener("click",closeQr);
+$(".qr-mask").addEventListener("click",closeQr);
+$("#qr-gen").addEventListener("click",function(){renderQr(Math.floor(Math.random()*1e9));newShort();});
+$("#qr-regen").addEventListener("click",function(){renderQr(Math.floor(Math.random()*1e9));newShort();});
+$("#qr-dl").addEventListener("click",function(){
+  var b=this,old=b.innerHTML;
+  b.textContent="演示环境 · 已触发下载";
+  setTimeout(function(){b.innerHTML=old;},1200);
+});
+
+/* ========== 6. 漏斗模块 Tab ========== */
+$$("[data-ftab]").forEach(function(b){
+  b.addEventListener("click",function(){
+    $$("[data-ftab]").forEach(function(x){x.classList.toggle("active",x===b);});
+    ["recruit","valuation","booking","sheet","compare"].forEach(function(k){
+      $("#fb-"+k).style.display=(b.getAttribute("data-ftab")===k)?"":"none";
+    });
+  });
+});
+
+/* ========== 7. 时间区间快捷选择（演示口径固定近 30 天） ========== */
+var RANGE_NAME={"7":"近 7 天","30":"近 30 天","90":"近 90 天","custom":"自定义"};
+var RANGE_DATE={"7":"2026-08-26 ~ 2026-09-01","30":"2026-08-02 ~ 2026-09-01","90":"2026-06-03 ~ 2026-09-01","custom":"2026-08-01 ~ 2026-08-31"};
+$$("[data-range]").forEach(function(b){
+  b.addEventListener("click",function(){
+    $$("[data-range]").forEach(function(x){x.classList.toggle("active",x===b);});
+    var r=b.getAttribute("data-range");
+    $$(".f-range").forEach(function(el){
+      el.textContent=RANGE_NAME[r]+"："+RANGE_DATE[r]+"（演示数据固定为近 30 天口径）";
+    });
+  });
+});
+
+/* ========== 8. 活动类型 Tab（招募 / 二期空态） ========== */
+$$("[data-ctab]").forEach(function(b){
+  b.addEventListener("click",function(){
+    $$("[data-ctab]").forEach(function(x){x.classList.toggle("active",x===b);});
+    var p2=b.getAttribute("data-ctab")==="p2";
+    $("#cp-recruit").style.display=p2?"none":"";
+    $("#cp-p2").style.display=p2?"":"none";
+    if(p2)$("#p2-title").textContent=b.getAttribute("data-name")+" · 二期规划中";
+  });
+});
+
+/* ========== 9. Esc 关闭 ========== */
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){closeDrawer();closeQr();}
+});
+})();
+</script>
+</body>
+</html>
