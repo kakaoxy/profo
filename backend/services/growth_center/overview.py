@@ -25,6 +25,7 @@ from models import (
 from models.common.base import LeadStatus
 from models.marketing.property_sheet import PropertySheetShareEvent
 from schemas.growth_center import GrowthModule
+from services.growth_center.identity import internal_creator_exists
 from services.growth_center.normalize import Window, resolve_window, today_window
 
 # 趋势/占比返回的模块顺序（固定，前端配色依赖）
@@ -122,16 +123,26 @@ class GrowthOverviewService:
 
     def _lead_sources(self) -> list[tuple]:
         """4 链路留资源（日期表达式, 时间列, 附加过滤）——估价/房源单按 source_property_id 判别拆分."""
+        # 估价/房源单仅统计外部客户提交的线索（过滤内部员工 creator），与统一线索列表口径一致
+        external_customer_filter = ~internal_creator_exists()
         return [
             (
                 self._cst_day_expr(Lead.created_at),
                 Lead.created_at,
-                [Lead.source_property_id.is_(None), Lead.is_deleted.is_(False)],
+                [
+                    Lead.source_property_id.is_(None),
+                    Lead.is_deleted.is_(False),
+                    external_customer_filter,
+                ],
             ),
             (
                 self._cst_day_expr(Lead.created_at),
                 Lead.created_at,
-                [Lead.source_property_id.isnot(None), Lead.is_deleted.is_(False)],
+                [
+                    Lead.source_property_id.isnot(None),
+                    Lead.is_deleted.is_(False),
+                    external_customer_filter,
+                ],
             ),
             (self._cst_day_expr(ProjectBooking.created_at), ProjectBooking.created_at, []),
             (self._cst_day_expr(RecruitLead.created_at), RecruitLead.created_at, []),
@@ -166,8 +177,12 @@ class GrowthOverviewService:
                 q = q.filter(ProjectBooking.created_at >= window.start, ProjectBooking.created_at < window.end)
             return int(q.scalar() or 0)
 
-        # 估价 / 房源单：leads 表按 source_property_id 判别拆分
-        q = self.db.query(func.count(Lead.id)).filter(Lead.is_deleted.is_(False))
+        # 估价 / 房源单：leads 表按 source_property_id 判别拆分；
+        # 仅统计外部客户提交的线索（过滤内部员工 creator），与统一线索列表口径一致
+        q = self.db.query(func.count(Lead.id)).filter(
+            Lead.is_deleted.is_(False),
+            ~internal_creator_exists(),
+        )
         if module == GrowthModule.VALUATION:
             q = q.filter(Lead.source_property_id.is_(None))
         else:
@@ -183,6 +198,8 @@ class GrowthOverviewService:
             .filter(
                 Lead.status == LeadStatus.PENDING_ASSESSMENT,
                 Lead.is_deleted.is_(False),
+                # 与统一线索列表口径一致：仅计外部客户提交的估价线索
+                ~internal_creator_exists(),
             )
             .scalar()
             or 0

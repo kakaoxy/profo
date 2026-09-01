@@ -25,7 +25,7 @@ from models import (
 )
 from models.marketing.property_sheet import PropertySheetShareEvent, PropertySheetVisit
 from schemas.growth_center import GrowthModule
-from services.growth_center.identity import resolve_backend_employee_ids
+from services.growth_center.identity import internal_creator_exists, resolve_backend_employee_ids
 from services.growth_center.normalize import UV_METRIC_BY_MODULE, Window, resolve_window
 
 # 招募 6 级漏斗标签
@@ -53,14 +53,16 @@ _NOTES_RECRUIT = (
 _NOTES_SIMPLE = (
     "UV 口径：匿名 visitor_id（与招募登录态 openid_hash 不可横向对比）；"
     "打开含非分享自然流量，转化率可 >100%；"
-    "留资/预约级为模块全量留资口径（含直接进入，未按分享归因过滤，与招募漏斗口径一致）。"
+    "留资/预约级为模块全量留资口径（含直接进入，未按分享归因过滤；"
+    "估价/房源单已剔除内部员工提交，与统一线索列表口径一致）。"
 )
 _NOTES_SHEET = _NOTES_SIMPLE + "转化承接复用估价留资链路（referrer 续传，leads.source_property_id 非空）。"
 _NOTES_COMPARE = (
     "① 招募 UV 为登录态 openid_hash（需登录），其余模块为匿名 visitor_id，UV 不可跨模块横向对比；"
     "② 打开含非分享自然流量（扫码/搜索/直接访问），uv_percent 为真实百分比、可 >100%，"
     "超 100% 时由前端封顶渲染；③ 各模块以 share 为基准 100%；"
-    "④ 留资级为模块全量留资口径（未按员工归因过滤），房源单承接复用估价 leads。"
+    "④ 留资级为模块全量留资口径（未按员工归因过滤，估价/房源单已剔除内部员工提交），"
+    "房源单承接复用估价 leads。"
 )
 
 
@@ -123,7 +125,12 @@ _SPECS: dict[GrowthModule, ModuleFunnelSpec] = {
         lead_id_col=Lead.id,
         lead_time_col=Lead.created_at,
         lead_referrer_col=Lead.referrer_id,
-        lead_filters=[Lead.source_property_id.is_(None), Lead.is_deleted.is_(False)],
+        lead_filters=[
+            Lead.source_property_id.is_(None),
+            Lead.is_deleted.is_(False),
+            # 仅统计外部客户提交的估价线索，与统一线索列表口径一致
+            ~internal_creator_exists(),
+        ],
         step_labels=[*_SIMPLE_STEP_LABELS, ("leads", "留资")],
         notes=_NOTES_SIMPLE,
     ),
@@ -152,7 +159,12 @@ _SPECS: dict[GrowthModule, ModuleFunnelSpec] = {
         lead_id_col=Lead.id,
         lead_time_col=Lead.created_at,
         lead_referrer_col=Lead.referrer_id,
-        lead_filters=[Lead.source_property_id.isnot(None), Lead.is_deleted.is_(False)],
+        lead_filters=[
+            Lead.source_property_id.isnot(None),
+            Lead.is_deleted.is_(False),
+            # 仅统计外部客户提交的房源单承接线索，与统一线索列表口径一致
+            ~internal_creator_exists(),
+        ],
         step_labels=[*_SIMPLE_STEP_LABELS, ("leads", "承接留资")],
         notes=_NOTES_SHEET,
     ),

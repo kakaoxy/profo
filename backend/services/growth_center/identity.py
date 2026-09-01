@@ -6,10 +6,36 @@ AuthService.has_backend_identity 同口径）。C 端用户（customer）的
 分享/归因记录不计入员工维度统计。
 """
 
-from sqlalchemy.orm import Session
+from sqlalchemy import ColumnElement, exists, or_, select
+from sqlalchemy.orm import Session, aliased
 
 from constants.role_codes import BACKEND_ROLE_CODES
-from models import Role, User, user_roles
+from models import Lead, Role, User, user_roles
+
+
+def internal_creator_exists() -> ColumnElement:
+    """Lead.creator 为内部员工（主/附加角色命中后台角色）的 EXISTS 表达式.
+
+    口径与 ``resolve_backend_employee_ids`` / ``AuthService.has_backend_identity``
+    一致。用于把内部员工经 C 端链路上报的估价/房源单线索从「外部客户线索」
+    统计中剔除，保证列表、漏斗、总览口径一致。
+
+    """
+    backend_codes = list(BACKEND_ROLE_CODES)
+    creator = aliased(User)
+    primary = exists(
+        select(1)
+        .select_from(creator)
+        .join(Role, Role.id == creator.role_id)
+        .where(creator.id == Lead.creator_id, Role.code.in_(backend_codes)),
+    )
+    additional = exists(
+        select(1)
+        .select_from(user_roles)
+        .join(Role, Role.id == user_roles.c.role_id)
+        .where(user_roles.c.user_id == Lead.creator_id, Role.code.in_(backend_codes)),
+    )
+    return or_(primary, additional)
 
 
 def resolve_backend_employee_ids(db: Session, employee_ids: list[str]) -> set[str]:
