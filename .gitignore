@@ -45,6 +45,9 @@ frontend/src/**/*.test.ts
 alembic/
 alembic.ini
 
+# 数据库备份目录（restore-backup.sh 本地下载 / deploy-server.sh 服务器备份）
+backups/
+
 # ==========================================
 # UV 包管理器
 # ==========================================
