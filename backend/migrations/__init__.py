@@ -102,6 +102,9 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
 - create_customer_follow_ups_table: 幂等创建小程序「我的客户」跨模块跟进记录表
   customer_follow_ups（module/lead_id/content/created_by_id）与索引
   idx_customer_follow_up_module_lead (module, lead_id)
+- add_project_booking_status_column: 为 project_bookings 表添加 status 列
+  （统一 5 态 new/contacted/high_intent/converted/eliminated，
+  NOT NULL DEFAULT 'new' 一步回填存量，幂等）
 
 """
 
@@ -138,6 +141,7 @@ from migrations._permission_system import (
     migrate_project_business_permission,
 )
 from migrations._project_booking_share import create_project_booking_and_share_tables
+from migrations._project_booking_status import add_project_booking_status_column
 from migrations._property_sheet import create_property_sheet_tables
 from migrations._recruit import (
     add_poster_bg_url_to_campaigns,
@@ -288,6 +292,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # 房源预约与分享归因闭环：幂等创建 5 张新表
         # （project_bookings/project_visits/project_share_events/valuation_visits/valuation_share_events）
         create_project_booking_and_share_tables(engine)
+        # 预约状态机：project_bookings 补加 status 列（统一 5 态，存量回填 'new'）
+        add_project_booking_status_column(engine)
         # 房源单分享（多房源一图分享）：幂等创建 4 张新表
         # （property_share_sheets/property_share_sheet_items/property_sheet_visits/property_sheet_share_events）
         create_property_sheet_tables(engine)

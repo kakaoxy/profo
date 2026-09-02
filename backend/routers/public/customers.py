@@ -102,14 +102,14 @@ def get_my_customers_share_stats(
 @router.get(
     "/my/subscribe-template",
     summary="我的客户订阅消息模板配置",
-    description="返回订阅消息模板ID（settings 未配置时为 null）；实际推送为二期，当前仅用于小程序端订阅授权",
+    description="返回订阅消息模板ID（settings 未配置时为 null）",
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_my_customers_subscribe_template(
     request: Request,
     current_user: CurrentCustomerUserDep,
 ) -> MyCustomerSubscribeTemplateResponse:
-    """订阅模板配置查询（二期推送预留）."""
+    """订阅模板配置查询."""
     template_id = settings.wechat_customer_lead_template_id or None
     return MyCustomerSubscribeTemplateResponse(template_id=template_id)
 
@@ -160,8 +160,9 @@ def get_my_customer_phone(
 @router.put(
     "/my/{module}/{lead_id}/status",
     summary="我的客户状态流转",
-    description="统一状态矩阵校验（非法流转 409）；估价/房源单仅支持淘汰旁路（reason 必填）；"
-    "预约状态机二期一律 409；remark 非空自动落一条系统跟进记录",
+    description="统一状态矩阵流转（非法流转 409）；booking 全矩阵流转（eliminated 时 reason 必填）；"
+    "估价/房源单支持淘汰旁路（reason 必填）与重新激活（eliminated→contacted，回写 pending_visit）；"
+    "重新激活 remark 必填（缺失 422）；remark 非空自动落一条系统跟进记录",
 )
 @limiter.limit(RateLimits.LEAD_UPDATE)
 async def update_my_customer_status(

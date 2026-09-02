@@ -4,14 +4,14 @@
  * 页面职责（自上而下，对照设计稿 03/04 屏）：
  * - 状态 hero 卡：统一状态标签 + 留资时间 + 「状态×模块」建议文案
  * - 手机号深色卡：查看完整号码 → 拨号（缓存后二次点击直接拨打；
- *   招募线查看即 new→contacted 隐式流转，按返回状态就地刷新页面状态区）
+ *   招募/预约线查看即 new→contacted 隐式流转，按返回状态就地刷新页面状态区）
  * - 业务信息栅格：按模块差异化字段（估价/预约/房源单/招募）
  * - 归因链路时间线：share/visit/deep_view/lead_submit，未发生节点灰点
- * - 状态流转卡：主链路 4 节点进度条 + 淘汰旁路说明 + 按统一流转矩阵生成的
- *   操作按钮（booking 无状态机仅提示；终态显示终态说明）
+ * - 状态流转卡：主链路 4 节点进度条 + 淘汰旁路说明 + 按模块流转矩阵生成的
+ *   操作按钮（booking 全量流转；终态显示终态说明）
  * - 跟进记录：输入（≤500 字）+ 添加 → 倒序时间线
- * - 底部动作面板：目标状态单选（推荐 tag）+ eliminated 原因必填 + 备注选填
- *   → PUT 流转，成功后就地刷新详情与跟进；409/422 toast 展示后端 message
+ * - 底部动作面板：目标状态单选（推荐 tag）+ eliminated 原因必填 + 重新激活备注必填
+ *   → PUT 流转，成功后就地刷新详情与跟进；409/422 toast 展示后端消息
  *
  * 入口参数（与列表页约定）：module（valuation|booking|sheet|recruit）、
  * id（lead_id）、openFlow=1（可选，详情加载完成后自动打开流转面板）。
@@ -39,6 +39,7 @@ import {
   buildTimeline,
   extractErrorMessage,
   heroCopy,
+  statusLabel,
   toFollowUpDisplay,
 } from "./constants";
 import type {
@@ -184,7 +185,7 @@ Page<PageData, PageCustom>({
     const hero = heroCopy(status, d.module);
     this.setData({
       statusValue: status,
-      statusText: meta.text,
+      statusText: statusLabel(status, d.module),
       statusClass: meta.cls,
       heroTitle: hero.title,
       heroSub: hero.sub,
@@ -192,13 +193,13 @@ Page<PageData, PageCustom>({
       phoneDisplay: d.phone_masked || "未提供",
       hasPhone: !!d.phone_masked,
       phoneNote:
-        d.module === "recruit"
+        d.module === "recruit" || d.module === "booking"
           ? "查看完整号码后，新线索将自动流转为已联系；仅归属员工可查看。"
           : "仅归属员工可查看。",
       infoCardTitle: INFO_CARD_TITLES[d.module],
       infoItems: buildInfoItems(d.module, d),
       timelineItems: buildTimeline(d),
-      flowNodes: buildFlowNodes(status),
+      flowNodes: buildFlowNodes(status, d.module),
       flowActions: buildFlowActions(status, d.module),
       terminalNote: TERMINAL_NOTES[status],
       loading: false,
@@ -270,7 +271,7 @@ Page<PageData, PageCustom>({
 
   /**
    * 「查看完整号码」：首次点击拉取完整号码并缓存后拨号；
-   * 二次点击直接拨打；返回状态变化（招募 new→contacted）时就地刷新状态区.
+   * 二次点击直接拨打；返回状态变化（招募/预约 new→contacted）时就地刷新状态区.
    */
   async onViewPhone() {
     if (this.phoneFull) {
@@ -288,7 +289,7 @@ Page<PageData, PageCustom>({
       }
       this.phoneFull = res.phone;
       if (res.unified_status !== this.data.statusValue) {
-        // 状态发生变化（招募线查看即流转）：就地刷新 hero/进度条/按钮
+        // 状态发生变化（招募/预约线查看即流转）：就地刷新 hero/进度条/按钮
         this.loadDetail();
       }
       this.dial(res.phone);
@@ -348,7 +349,7 @@ Page<PageData, PageCustom>({
     this.setData({ flowOpen: false });
   },
 
-  /** 确认流转：eliminated 原因必填；成功关面板+toast+就地刷新详情与跟进；409/422 toast 后端 message. */
+  /** 确认流转：eliminated 原因必填、重新激活（eliminated→contacted）备注必填；成功关面板+就地刷新；409/422 toast 后端 message. */
   async onConfirmFlow() {
     if (this.data.submitting) {
       return;
@@ -363,6 +364,10 @@ Page<PageData, PageCustom>({
       wx.showToast({ title: "请选择淘汰原因", icon: "none" });
       return;
     }
+    if (this.data.statusValue === "eliminated" && status === "contacted" && !remark) {
+      wx.showToast({ title: "重新激活必须填写备注", icon: "none" });
+      return;
+    }
     this.setData({ submitting: true });
     try {
       await request<StatusUpdateResponse>({
@@ -375,7 +380,7 @@ Page<PageData, PageCustom>({
         },
       });
       this.setData({ flowOpen: false });
-      wx.showToast({ title: `已流转为「${STATUS_META[status].text}」`, icon: "none" });
+      wx.showToast({ title: `已流转为「${statusLabel(status, this.data.module)}」`, icon: "none" });
       // 就地刷新：详情（状态区）与跟进（remark 会落一条系统记录）
       await Promise.all([this.loadDetail(), this.loadFollowUps()]);
     } catch (err) {
@@ -384,7 +389,7 @@ Page<PageData, PageCustom>({
         // 登录态/权限异常：静默（与页面空态兜底口径一致）
         return;
       }
-      // 409（非法流转/预约线）与 422（缺原因等）：展示后端 message
+      // 409（非法流转）与 422（缺原因/缺备注等）：展示后端 message
       wx.showToast({ title: extractErrorMessage(err, "流转失败，请重试"), icon: "none" });
     } finally {
       this.setData({ submitting: false });

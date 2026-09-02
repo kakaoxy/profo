@@ -126,6 +126,8 @@ ignore = [
 "services/recruit/attribution.py" = ["PERF203"]
 # 授权价通知: 多 openid 逐个发送，单个失败不阻断后续（订阅消息非关键路径）
 "services/leads/notify.py" = ["PERF203"]
+# 我的客户通知: 多 openid 逐个发送，单个失败不阻断后续（订阅消息非关键路径）
+"services/growth_center/customer_notify.py" = ["PERF203"]
 
 [tool.ruff.format]
 quote-style = "double"

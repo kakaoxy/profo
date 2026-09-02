@@ -24,7 +24,7 @@ from models.marketing.property_sheet import PropertyShareSheet, PropertyShareShe
 from schemas.growth_center import GrowthModule, LeadSource, UnifiedLeadStatus
 from services.growth_center.identity import internal_creator_exists
 from services.growth_center.lead_detail import GrowthLeadDetailService
-from services.growth_center.normalize import BOOKING_NATIVE_STATUS, BOOKING_UNIFIED_STATUS, map_valuation_status
+from services.growth_center.normalize import map_valuation_status
 from services.leads.core import LeadService
 from services.leads.share_tracking import ValuationShareTrackingService
 from services.marketing.public import PublicProjectService
@@ -237,10 +237,11 @@ class MyCustomerService:
         """查看归属线索完整手机号.
 
         分发：估价/房源单复用 ``LeadService.get_my_acquired_phone``（同数据源
-        lead.creator.phone，referrer 校验内置 404）；招募复用
-        ``RecruitLeadService.get_my_lead_phone``（保留 new→contacted 隐式流转，
-        返回最新状态）；预约为本模块新增解密（referrer_user_id 校验，404 防
-        IDOR）。除招募外查看号码不改变任何状态。
+        lead.creator.phone，referrer 校验内置 404）；招募/预约查看即联系——
+        ``new`` 线索隐式流转为 ``contacted``（其他状态不动），返回流转后最新
+        状态供前端就地更新卡片；招募复用 ``RecruitLeadService.get_my_lead_phone``，
+        预约为本模块实现（referrer_user_id 校验，404 防 IDOR）。估价/房源单
+        查看号码不改变任何状态。
 
         Returns:
             {phone, unified_status, native_status}
@@ -271,10 +272,19 @@ class MyCustomerService:
             if booking is None:
                 msg = "线索不存在"
                 raise ResourceNotFoundError(msg)
+            # 查看即联系：new → contacted 隐式流转（与招募线语义一致），非 new 不动
+            if booking.status == UnifiedLeadStatus.NEW.value:
+                booking.status = UnifiedLeadStatus.CONTACTED.value
+                try:
+                    self.db.commit()
+                    self.db.refresh(booking)
+                except Exception:
+                    self.db.rollback()
+                    raise
             return {
                 "phone": booking.phone,
-                "unified_status": BOOKING_UNIFIED_STATUS,
-                "native_status": BOOKING_NATIVE_STATUS,
+                "unified_status": UnifiedLeadStatus(booking.status),
+                "native_status": booking.status,
             }
         # 估价/房源单：归属校验（404）→ 复用估价线解密 → 回读最新原生状态
         ensure_customer_lead_owned(self.db, module, lead_id, user.id)
@@ -340,8 +350,8 @@ class MyCustomerService:
         return stmt, unified, RecruitLead.referrer_employee_id, RecruitLead.created_at
 
     def _booking_branch(self) -> _Branch:
-        """预约分支（无状态机固定 new；房源标题 join 营销房源表）."""
-        unified = literal(UnifiedLeadStatus.NEW.value).label("unified_status")
+        """预约分支（原生状态即统一 5 态，读 project_bookings.status；房源标题 join 营销房源表）."""
+        unified = cast(ProjectBooking.status, String).label("unified_status")
         # 预约表无分享方式字段（card/poster 未埋点），归因线索的 source 按契约
         # 恒为 null（对齐 GrowthLeadService._booking_branch），direct 由 referrer
         # 为空时给出，非空归因时为 null
@@ -353,7 +363,7 @@ class MyCustomerService:
             cast(ProjectBooking.id, String(36)).label("id"),
             literal(GrowthModule.BOOKING.value).label("module"),
             unified,
-            literal(BOOKING_NATIVE_STATUS).label("native_status"),
+            cast(ProjectBooking.status, String).label("native_status"),
             ProjectBooking.referrer_user_id.label("employee_id"),
             source_expr,
             ProjectBooking.created_at.label("created_at"),

@@ -16,7 +16,14 @@ from constants.role_codes import INTERNAL_ROLE_CODES
 from models import User
 from models.common import LeadStatus
 from models.lead import Lead, LeadEvalHistory, LeadFollowUp
+from schemas.growth_center import GrowthModule
 from schemas.lead import LeadAssessmentAuthorizeRequest, LeadCreate, LeadUpdate
+from services.growth_center.customer_notify import (
+    notify_customer_status_changed,
+    notify_new_customer_lead,
+    unified_status_label,
+)
+from services.growth_center.normalize import map_valuation_status
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError
 from settings import settings
 from utils.redis_client import get_redis_client
@@ -102,6 +109,18 @@ class LeadService:
         self.db.refresh(db_lead)
         if creator is not None:
             db_lead.creator = creator
+        # 「我的客户」新线索留资通知（best-effort，通知内部捕获一切异常仅记日志）：
+        # 仅存在归属员工（referrer 非空）时推送，后台/内部创建不传 referrer 天然跳过；
+        # 房源单承接线索（source_property_id 非空）按 sheet 模块通知，其余为估价。
+        if db_lead.referrer_id:
+            module = GrowthModule.SHEET if db_lead.source_property_id is not None else GrowthModule.VALUATION
+            notify_new_customer_lead(
+                self.db,
+                module.value,
+                str(db_lead.id),
+                db_lead.referrer_id,
+                db_lead.community_name or "",
+            )
         return db_lead
 
     def _resolve_referrer_id(self, referrer: str | None) -> str | None:
@@ -261,6 +280,20 @@ class LeadService:
         self.db.refresh(lead)
         if creator is not None and not lead.creator:
             lead.creator = creator
+        # 「我的客户」后台状态变更通知（best-effort，通知内部捕获一切异常仅记日志）：
+        # 仅本次提交包含 status 且统一状态实际变化（对比变更前后）且线索有归属员工时推送
+        if "status" in update_dict and lead.referrer_id:
+            new_unified = map_valuation_status(lead.status)
+            if map_valuation_status(old_status) != new_unified:
+                module = GrowthModule.SHEET if lead.source_property_id is not None else GrowthModule.VALUATION
+                notify_customer_status_changed(
+                    self.db,
+                    module.value,
+                    str(lead.id),
+                    lead.referrer_id,
+                    unified_status_label(new_unified.value),
+                    lead.community_name or "",
+                )
         return lead
 
     def delete_lead(self, lead_id: str) -> None:

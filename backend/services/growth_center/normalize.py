@@ -21,11 +21,7 @@ VALUATION_STATUS_TO_UNIFIED: dict[LeadStatus, UnifiedLeadStatus] = {
     LeadStatus.LOST_TO_COMPETITOR: UnifiedLeadStatus.ELIMINATED,
 }
 
-# 预约无状态机：预约即线索，固定 new
-BOOKING_UNIFIED_STATUS = UnifiedLeadStatus.NEW
-# 预约原生状态展示值
-BOOKING_NATIVE_STATUS = "new"
-
+# 预约原生即统一态（project_bookings.status 直接存储统一 5 态值）
 # 招募 RecruitLeadStatus 原生即统一态（new/contacted/high_intent/converted/eliminated）
 # 统一状态字符串集合（用于 SQL case 输出与筛选校验）
 UNIFIED_STATUS_VALUES: frozenset[str] = frozenset(s.value for s in UnifiedLeadStatus)
@@ -108,9 +104,8 @@ def to_unified_status(module: GrowthModule, native_status: str) -> UnifiedLeadSt
         统一线索状态
 
     """
-    if module == GrowthModule.BOOKING:
-        return BOOKING_UNIFIED_STATUS
-    if module == GrowthModule.RECRUIT:
+    if module in (GrowthModule.BOOKING, GrowthModule.RECRUIT):
+        # 预约/招募原生状态即统一 5 态（booking 存统一态值，recruit 枚举值同构）
         return UnifiedLeadStatus(native_status)
     return map_valuation_status(LeadStatus(native_status))
 

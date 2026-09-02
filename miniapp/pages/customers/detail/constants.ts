@@ -57,6 +57,23 @@ export const STATUS_META: Record<UnifiedLeadStatus, { text: string; cls: string 
   eliminated: { text: "已淘汰", cls: "stg-out" },
 };
 
+/** booking 模块状态标签（存储统一态值，预约线展示按模块映射：new→已预约、high_intent→已带看、converted→已关闭）. */
+export const BOOKING_STATUS_LABELS: Record<UnifiedLeadStatus, string> = {
+  new: "已预约",
+  contacted: "已联系",
+  high_intent: "已带看",
+  converted: "已关闭",
+  eliminated: "已淘汰",
+};
+
+/** 状态展示标签：booking 按模块映射预约线文案，其余模块用统一标签（未知状态回退原始值）. */
+export function statusLabel(status: UnifiedLeadStatus, module: GrowthModule): string {
+  if (module === "booking") {
+    return BOOKING_STATUS_LABELS[status] ?? status;
+  }
+  return STATUS_META[status]?.text ?? status;
+}
+
 /** 来源标签（source 为 null 显示「—」）. */
 export const SOURCE_LABELS: Record<"card" | "poster" | "direct", string> = {
   card: "卡片分享",
@@ -92,18 +109,23 @@ export const HERO_ACTIVE_COPY: Record<"new" | "contacted" | "high_intent", Recor
   },
 };
 
-/** 终态建议文案（converted/eliminated 与模块无关）. */
+/** 终态建议文案（converted/eliminated 与模块无关；booking 差异文案见 HERO_BOOKING_TERMINAL_COPY）. */
 export const HERO_TERMINAL_COPY: Record<"converted" | "eliminated", HeroCopy> = {
   converted: { title: "客户已转化", sub: "合作已达成，状态为终态不可逆。" },
-  eliminated: { title: "客户已淘汰", sub: "线索已淘汰（无意向 / 信息无效 / 他司成交），二期支持备注后重新激活。" },
+  eliminated: { title: "客户已淘汰", sub: "线索已淘汰（无意向 / 信息无效 / 他司成交），可通过重新激活恢复跟进。" },
+};
+
+/** booking 终态建议文案 override（预约线 converted 展示为「已关闭」）. */
+export const HERO_BOOKING_TERMINAL_COPY: Partial<Record<"converted" | "eliminated", HeroCopy>> = {
+  converted: { title: "预约已关闭", sub: "本次预约已完结关闭，状态为终态不可逆。" },
 };
 
 /**
  * 模块感知流转矩阵（模块 × 当前状态 → 可流转目标状态；终态为空数组，按钮区显示终态说明）。
- * 与后端契约对齐（my_customers_flow.py，spec「仅淘汰旁路可写」）：
- * - recruit：全量手动流转（主链路 + 淘汰旁路）；
- * - valuation/sheet：仅 eliminated 淘汰旁路（其余流转后端 409）；
- * - booking：预约状态机二期，不支持手动流转（wxml 分支单独提示）。
+ * 与后端契约对齐（my_customers_flow.py _TRANSITIONS：converted 终态；eliminated → contacted
+ * 重新激活，remark 必填）：
+ * - recruit/booking：全量手动流转（主链路 + 淘汰旁路 + 重新激活）；
+ * - valuation/sheet：仅 eliminated 淘汰旁路 + 重新激活（其余流转后端 409）。
  */
 export const FLOW_MATRIX: Record<GrowthModule, Record<UnifiedLeadStatus, UnifiedLeadStatus[]>> = {
   recruit: {
@@ -111,28 +133,28 @@ export const FLOW_MATRIX: Record<GrowthModule, Record<UnifiedLeadStatus, Unified
     contacted: ["high_intent", "converted", "eliminated"],
     high_intent: ["converted", "eliminated"],
     converted: [],
-    eliminated: [],
+    eliminated: ["contacted"],
   },
   valuation: {
     new: ["eliminated"],
     contacted: ["eliminated"],
     high_intent: ["eliminated"],
     converted: [],
-    eliminated: [],
+    eliminated: ["contacted"],
   },
   booking: {
-    new: [],
-    contacted: [],
-    high_intent: [],
+    new: ["contacted", "high_intent", "converted", "eliminated"],
+    contacted: ["high_intent", "converted", "eliminated"],
+    high_intent: ["converted", "eliminated"],
     converted: [],
-    eliminated: [],
+    eliminated: ["contacted"],
   },
   sheet: {
     new: ["eliminated"],
     contacted: ["eliminated"],
     high_intent: ["eliminated"],
     converted: [],
-    eliminated: [],
+    eliminated: ["contacted"],
   },
 };
 
@@ -143,6 +165,9 @@ export const FLOW_OPTION_DESC: Record<Exclude<UnifiedLeadStatus, "new">, string>
   converted: "完成签约 / 成交 / 合伙入驻",
   eliminated: "无意向 / 信息无效 / 他司成交，需填写原因",
 };
+
+/** 重新激活选项描述（当前 eliminated → 目标 contacted 时的文案覆盖，remark 必填）. */
+const REACTIVATION_OPTION_DESC = "重新激活：客户重新有意向，恢复跟进";
 
 /** 「推荐」下一步（new→contacted、contacted→high_intent、high_intent→converted）. */
 export const RECOMMENDED_NEXT: Partial<Record<UnifiedLeadStatus, UnifiedLeadStatus>> = {
@@ -158,13 +183,8 @@ export const ELIMINATE_REASONS: { value: string; label: string }[] = [
   { value: "lost_to_competitor", label: "他司成交" },
 ];
 
-/** 主链路 4 节点（进度条顺序，eliminated 为旁路不占节点）. */
-export const FLOW_NODES: { status: UnifiedLeadStatus; label: string }[] = [
-  { status: "new", label: "新线索" },
-  { status: "contacted", label: "已联系" },
-  { status: "high_intent", label: "意向高" },
-  { status: "converted", label: "已转化" },
-];
+/** 主链路 4 节点（进度条顺序，eliminated 为旁路不占节点；节点标签经 statusLabel 按模块映射）. */
+export const FLOW_NODES: UnifiedLeadStatus[] = ["new", "contacted", "high_intent", "converted"];
 
 /** 终态说明（无操作按钮时展示；进行中状态不使用）. */
 export const TERMINAL_NOTES: Record<UnifiedLeadStatus, string> = {
@@ -172,7 +192,7 @@ export const TERMINAL_NOTES: Record<UnifiedLeadStatus, string> = {
   contacted: "",
   high_intent: "",
   converted: "客户已转化，状态为终态不可逆。",
-  eliminated: "线索已淘汰为终态，二期支持备注后重新激活。",
+  eliminated: "线索已淘汰，可通过重新激活恢复跟进。",
 };
 
 /** 业务栅格单项展示结构. */
@@ -263,11 +283,17 @@ export function toFollowUpDisplay(item: FollowUpItem): FollowUpDisplay {
   };
 }
 
-/** hero 文案：进行中状态按模块取，终态与模块无关. */
+/** hero 文案：进行中状态按模块取；终态 booking 优先取模块 override，其余与模块无关. */
 export function heroCopy(status: UnifiedLeadStatus, module: GrowthModule): HeroCopy {
   const active = HERO_ACTIVE_COPY[status as "new" | "contacted" | "high_intent"];
   if (active) {
     return active[module];
+  }
+  if (module === "booking") {
+    const bookingTerminal = HERO_BOOKING_TERMINAL_COPY[status as "converted" | "eliminated"];
+    if (bookingTerminal) {
+      return bookingTerminal;
+    }
   }
   return HERO_TERMINAL_COPY[status as "converted" | "eliminated"] ?? HERO_TERMINAL_COPY.eliminated;
 }
@@ -328,34 +354,46 @@ export function buildTimeline(d: CustomerDetail): TimelineDisplay[] {
   }));
 }
 
-/** 4 节点进度条：当前节点 done cur、之前 done、之后默认；eliminated 走旁路全默认. */
-export function buildFlowNodes(status: UnifiedLeadStatus): FlowNodeDisplay[] {
-  const curIdx = FLOW_NODES.findIndex((n) => n.status === status);
-  return FLOW_NODES.map((n, i) => ({
+/** 4 节点进度条：当前节点 done cur、之前 done、之后默认；eliminated 走旁路全默认（节点标签按模块映射）. */
+export function buildFlowNodes(status: UnifiedLeadStatus, module: GrowthModule): FlowNodeDisplay[] {
+  const curIdx = FLOW_NODES.indexOf(status);
+  return FLOW_NODES.map((node, i) => ({
     num: i + 1,
-    label: n.label,
+    label: statusLabel(node, module),
     cls: curIdx < 0 ? "" : i < curIdx ? "done" : i === curIdx ? "done cur" : "",
   }));
 }
 
-/** 操作按钮按模块流转矩阵生成（booking 由 wxml 分支单独提示，不进此分支）. */
+/** 操作按钮按模块流转矩阵生成（booking 参与通用渲染；标签按模块映射）. */
 export function buildFlowActions(status: UnifiedLeadStatus, module: GrowthModule): FlowActionDisplay[] {
   const targets = FLOW_MATRIX[module][status];
   return targets.map((target, i) => ({
     status: target,
-    label: `标记${STATUS_META[target].text}`,
-    // 仅剩淘汰旁路一个按钮（valuation/sheet）时用 ghost 淘汰样式，主链路首位仍 btn-ink
-    cls: targets.length === 1 ? "btn-ghost" : i === 0 ? "btn-ink" : i === 1 ? "btn-warm" : "btn-ghost",
+    label: `标记${statusLabel(target, module)}`,
+    // 单按钮：淘汰旁路（valuation/sheet）用 ghost 淘汰样式，重新激活（eliminated→contacted）用主样式
+    cls:
+      targets.length === 1
+        ? target === "eliminated"
+          ? "btn-ghost"
+          : "btn-ink"
+        : i === 0
+          ? "btn-ink"
+          : i === 1
+            ? "btn-warm"
+            : "btn-ghost",
   }));
 }
 
-/** 面板选项 = 当前模块矩阵允许的目标状态（含推荐 tag；valuation/sheet 仅淘汰项无推荐）. */
+/** 面板选项 = 当前模块矩阵允许的目标状态（含推荐 tag；valuation/sheet 淘汰项无推荐；重新激活用专属文案）. */
 export function buildFlowOptions(status: UnifiedLeadStatus, module: GrowthModule): FlowOptionDisplay[] {
   const recommended = RECOMMENDED_NEXT[status];
   return FLOW_MATRIX[module][status].map((target) => ({
     status: target,
-    label: STATUS_META[target].text,
-    desc: FLOW_OPTION_DESC[target as Exclude<UnifiedLeadStatus, "new">],
+    label: statusLabel(target, module),
+    desc:
+      status === "eliminated" && target === "contacted"
+        ? REACTIVATION_OPTION_DESC
+        : FLOW_OPTION_DESC[target as Exclude<UnifiedLeadStatus, "new">],
     recommended: target === recommended,
     stgClass: STATUS_META[target].cls,
   }));

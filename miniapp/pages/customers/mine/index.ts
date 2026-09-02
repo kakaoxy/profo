@@ -22,6 +22,7 @@ import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import type { components } from "../../../types/api-types";
 import { ACTION_BY_STATUS, MODULE_TABS, STATUS_CHIPS, STATUS_META, toDisplayItem } from "./meta";
+import { statusLabel } from "../detail/constants";
 import type { CustomerDisplayItem, ModuleTab, StatusChip } from "./meta";
 
 type MyCustomerListResponse = components["schemas"]["MyCustomerListResponse"];
@@ -280,7 +281,7 @@ Page<PageData, PageCustom>({
 
   /**
    * 「联系客户/再次联系」：拉取完整手机号并按响应最新统一状态就地刷新卡片
-   * （招募线后端查看即 new→contacted 隐式流转）；已查看过则直接拨打.
+   * （招募/预约线后端查看即 new→contacted 隐式流转）；已查看过则直接拨打.
    */
   async onContactTap(e: WechatMiniprogram.BaseEvent) {
     const id = String(e.currentTarget.dataset.id ?? "");
@@ -301,11 +302,11 @@ Page<PageData, PageCustom>({
       if (res.phone) {
         const meta = STATUS_META[res.unified_status];
         const actions = ACTION_BY_STATUS[res.unified_status];
-        // 就地刷新：完整号码 + 最新状态标签 + 按最新状态重算操作按钮组
+        // 就地刷新：完整号码 + 最新状态标签（booking 按模块映射）+ 按最新状态重算操作按钮组
         this.setData({
           [`items[${idx}].phoneFull`]: res.phone,
           [`items[${idx}].statusValue`]: res.unified_status,
-          [`items[${idx}].statusText`]: meta.text,
+          [`items[${idx}].statusText`]: statusLabel(res.unified_status, item.module),
           [`items[${idx}].statusClass`]: meta.cls,
           [`items[${idx}].primaryText`]: actions.primaryText,
           [`items[${idx}].flowText`]: actions.flowText,

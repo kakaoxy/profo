@@ -34,7 +34,6 @@ def add_lead_auditor_index(engine: Engine) -> None:
     with engine.begin() as conn:
         conn.execute(
             text(
-                "CREATE INDEX idx_lead_auditor_audit_time "
-                "ON leads (auditor_id, audit_time)",
+                "CREATE INDEX idx_lead_auditor_audit_time ON leads (auditor_id, audit_time)",
             ),
         )

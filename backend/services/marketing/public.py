@@ -17,11 +17,13 @@ from models import (
     User,
 )
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory, PublishStatus
+from schemas.growth_center import GrowthModule
 from schemas.public import (
     PublicCustomerBookingItem,
     PublicShareEventRequest,
     PublicVisitEventRequest,
 )
+from services.growth_center.customer_notify import notify_new_customer_lead
 from services.system.exceptions import ConflictError, ResourceNotFoundError
 from settings import settings
 from utils.crypto import hash_phone
@@ -312,6 +314,8 @@ class PublicProjectService:
             phone=user.phone,
             phone_hash=hash_phone(user.phone),
             referrer_user_id=self._resolve_booking_referrer(visitor_id),
+            # C 端创建预约写入默认统一态 new（显式声明，与状态机语义对齐）
+            status="new",
         )
         try:
             self.db.add(booking)
@@ -324,6 +328,16 @@ class PublicProjectService:
             if existing is None:
                 raise
             return existing, project, False
+        # 「我的客户」新线索留资通知（best-effort，通知内部捕获一切异常仅记日志）：
+        # 仅新建预约（幂等命中 is_new=False 不推送）且存在归属员工时触发
+        if booking.referrer_user_id:
+            notify_new_customer_lead(
+                self.db,
+                GrowthModule.BOOKING.value,
+                booking.id,
+                booking.referrer_user_id,
+                project.title,
+            )
         return booking, project, True
 
     def _get_booking(self, *, user_id: str, marketing_project_id: int) -> ProjectBooking | None:

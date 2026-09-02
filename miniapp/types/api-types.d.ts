@@ -4071,7 +4071,7 @@ export interface paths {
         };
         /**
          * 我的客户订阅消息模板配置
-         * @description 返回订阅消息模板ID（settings 未配置时为 null）；实际推送为二期，当前仅用于小程序端订阅授权
+         * @description 返回订阅消息模板ID（settings 未配置时为 null）
          */
         get: operations["get_my_customers_subscribe_template_api_v1_public_customers_my_subscribe_template_get"];
         put?: never;
@@ -4132,7 +4132,7 @@ export interface paths {
         get?: never;
         /**
          * 我的客户状态流转
-         * @description 统一状态矩阵校验（非法流转 409）；估价/房源单仅支持淘汰旁路（reason 必填）；预约状态机二期一律 409；remark 非空自动落一条系统跟进记录
+         * @description 统一状态矩阵流转（非法流转 409）；booking 全矩阵流转（eliminated 时 reason 必填）；估价/房源单支持淘汰旁路（reason 必填）与重新激活（eliminated→contacted，回写 pending_visit）；重新激活 remark 必填（缺失 422）；remark 非空自动落一条系统跟进记录
          */
         put: operations["update_my_customer_status_api_v1_public_customers_my__module___lead_id__status_put"];
         post?: never;

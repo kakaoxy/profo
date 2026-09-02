@@ -319,6 +319,15 @@ class ProjectBooking(BaseModel):
         nullable=True,
         comment="归因内部员工ID(逻辑外键，取最近一次带referrer的访问)",
     )
+    # 预约状态：存储统一 5 态值，展示层按模块映射标签（new→已预约/contacted→已联系/
+    # high_intent→已带看/converted→已关闭/eliminated→已淘汰）
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=lambda: "new",
+        server_default="new",
+        comment="预约状态(统一5态: new/contacted/high_intent/converted/eliminated)",
+    )
 
     # 时间戳（覆盖基类，加列注释）
     created_at: Mapped[datetime] = mapped_column(

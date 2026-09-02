@@ -34,8 +34,8 @@
           <view class="lc-mod"><view class="mdot mdot-blue"></view><text>预约</text></view>
         </view>
         <view class="map-arrows">
-          <view class="map-pair">已预约 <text class="arr">→</text> <text class="pair-target">新线索</text></view>
-          <view class="map-pair map-pair-dashed">后续状态 <text class="arr">→</text> 二期预约状态机</view>
+          <view class="map-pair">原生即统一 5 态 <text class="arr">→</text> <text class="pair-target">无需映射</text></view>
+          <view class="map-pair">展示标签：已预约 / 已联系 / 已带看 / 已关闭</view>
         </view>
       </view>
       <view class="map-row">
@@ -79,13 +79,5 @@
         <text class="auto-rule-text"><text class="rt-strong">订阅提醒</text>：新留资与状态被后台变更时，通过微信订阅消息通知归属员工。</text>
       </view>
     </view>
-  </view>
-
-  <!-- 二期规划（虚线卡） -->
-  <view class="p2-card">
-    <view class="p2-title">二期规划（本次不实现）</view>
-    <view class="p2-item">预约状态机：已预约 → 已联系 → 已带看 → 已关闭（0825 计划 V1.2 F1），落地后自动并入统一映射。</view>
-    <view class="p2-item">跟进提醒日历与客户分层标签（V2.0 员工 CRM 增强）。</view>
-    <view class="p2-item">活动归因扩展：campaign_id 接入估价 / 预约 / 房源单分享。</view>
   </view>
 </view>

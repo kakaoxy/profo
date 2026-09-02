@@ -7,6 +7,7 @@
  * 不含任何请求与页面实例逻辑。
  */
 import type { components } from "../../../types/api-types";
+import { statusLabel } from "../detail/constants";
 
 type GrowthModule = components["schemas"]["GrowthModule"];
 type UnifiedLeadStatus = components["schemas"]["UnifiedLeadStatus"];
@@ -175,9 +176,8 @@ function buildSummary(item: MyCustomerListItem): string {
   return segs.length ? segs.join(" · ") : item.native_status;
 }
 
-/** 列表项 → 展示结构（状态标签/来源 chip/相对时间/操作按钮组）. */
+/** 列表项 → 展示结构（状态标签按模块映射（booking 用预约线文案）/来源 chip/相对时间/操作按钮组）. */
 export function toDisplayItem(item: MyCustomerListItem): CustomerDisplayItem {
-  const statusMeta = STATUS_META[item.unified_status];
   const actions = ACTION_BY_STATUS[item.unified_status];
   return {
     id: item.id,
@@ -187,8 +187,8 @@ export function toDisplayItem(item: MyCustomerListItem): CustomerDisplayItem {
     phone: item.phone_masked || "未提供",
     phoneFull: "",
     statusValue: item.unified_status,
-    statusText: statusMeta.text,
-    statusClass: statusMeta.cls,
+    statusText: statusLabel(item.unified_status, item.module),
+    statusClass: STATUS_META[item.unified_status].cls,
     summary: buildSummary(item),
     sourceText: item.source ? SOURCE_TEXT[item.source] || "" : "",
     timeText: formatLeadTime(item.created_at),

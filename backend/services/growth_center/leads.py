@@ -239,10 +239,10 @@ class GrowthLeadService:
 
     @staticmethod
     def _booking_branch() -> _Branch:
-        """预约分支（无状态机，统一/原生状态固定 new；无 campaign/is_internal）."""
+        """预约分支（原生状态即统一 5 态，读 project_bookings.status；无 campaign/is_internal）."""
         name = _name_label()
-        unified = literal(UnifiedLeadStatus.NEW.value).label("unified_status")
-        native = literal("new").label("native_status")
+        unified = cast(ProjectBooking.status, String).label("unified_status")
+        native = cast(ProjectBooking.status, String).label("native_status")
         # 预约表无分享方式字段（card/poster 未埋点），归因线索的 source 按契约恒为
         # null（见 UnifiedLeadListItem.source 说明），不可从 ProjectVisit.source
         # （自由文本进入渠道）推断，勿臆造映射

@@ -34,12 +34,7 @@ from models.marketing.property_sheet import (
     PropertySheetVisit,
 )
 from schemas.growth_center import GrowthModule, LeadSource, UnifiedLeadStatus
-from services.growth_center.normalize import (
-    BOOKING_NATIVE_STATUS,
-    BOOKING_UNIFIED_STATUS,
-    map_valuation_status,
-    normalize_source,
-)
+from services.growth_center.normalize import map_valuation_status, normalize_source
 from services.system.exceptions import ResourceNotFoundError
 from utils.formatters import mask_phone
 
@@ -199,8 +194,8 @@ class GrowthLeadDetailService:
         return {
             "id": str(booking.id),
             "module": GrowthModule.BOOKING.value,
-            "unified_status": BOOKING_UNIFIED_STATUS,
-            "native_status": BOOKING_NATIVE_STATUS,
+            "unified_status": UnifiedLeadStatus(booking.status),
+            "native_status": booking.status,
             "phone_masked": mask_phone(booking.phone),
             "employee_id": booking.referrer_user_id,
             "employee_name": self._employee_name(booking.referrer_user_id),

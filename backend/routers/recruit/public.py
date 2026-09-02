@@ -12,6 +12,7 @@ from fastapi.concurrency import run_in_threadpool
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from models.recruit import RecruitLeadStatus
+from schemas.growth_center import GrowthModule
 from schemas.recruit import (
     RecruitBusinessAreaItem,
     RecruitCampaignDetailResponse,
@@ -29,6 +30,7 @@ from schemas.recruit import (
     RecruitVisitResponse,
     RecruitVisitUpdate,
 )
+from services.growth_center.customer_notify import notify_new_customer_lead
 from services.recruit import (
     RecruitAttributionService,
     RecruitCampaignService,
@@ -153,6 +155,16 @@ async def submit_lead(
     # 通知内部捕获一切异常仅记日志，绝不影响留资结果）
     if is_new:
         await run_in_threadpool(service.notify_new_lead, lead)
+        # 「我的客户」新线索通知（customer 模板，与 notify_new_lead 模板不同、
+        # 订阅授权独立，两者并存不算重复推送；customer 模板未配置时静默跳过）
+        await run_in_threadpool(
+            notify_new_customer_lead,
+            db,
+            GrowthModule.RECRUIT.value,
+            lead.id,
+            lead.referrer_employee_id,
+            lead.main_business_area,
+        )
     return RecruitLeadSubmitResponse(lead_id=lead.id, is_new=is_new)
 
 

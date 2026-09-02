@@ -141,10 +141,6 @@ page {
   padding: 7rpx 20rpx 7rpx 22rpx;
   color: var(--graphite);
 }
-.map-pair-dashed {
-  border: 1rpx dashed #c9ccd4;
-  background: transparent;
-}
 .pair-target {
   font-weight: 600;
   color: var(--ink);
@@ -190,36 +186,4 @@ page {
   justify-content: center;
   flex-shrink: 0;
   margin-top: 4rpx;
-}
-
-/* 二期规划（虚线卡） */
-.p2-card {
-  margin: 20rpx 32rpx 0;
-  border: 3rpx dashed #c9ccd4;
-  border-radius: 32rpx;
-  padding: 28rpx 32rpx;
-  background: rgba(255, 255, 255, 0.6);
-}
-.p2-title {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: var(--graphite);
-}
-.p2-item {
-  margin-top: 16rpx;
-  font-size: 24rpx;
-  color: var(--graphite);
-  line-height: 1.7;
-  padding-left: 28rpx;
-  position: relative;
-}
-.p2-item::before {
-  content: "";
-  position: absolute;
-  left: 4rpx;
-  top: 18rpx;
-  width: 10rpx;
-  height: 10rpx;
-  border-radius: 50%;
-  background: var(--dove);
 }

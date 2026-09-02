@@ -83,10 +83,8 @@
         <view class="fb-dot-x">×</view>
         <text>任意状态可标记「已淘汰」（无意向 / 信息无效 / 他司成交）</text>
       </view>
-      <!-- booking：无状态机，仅提示 -->
-      <view wx:if="{{module === 'booking'}}" class="fb-note">预约状态机二期上线后支持流转</view>
       <!-- 终态：无按钮，显示终态说明 -->
-      <view wx:elif="{{flowActions.length === 0}}" class="fb-note">{{terminalNote}}</view>
+      <view wx:if="{{flowActions.length === 0}}" class="fb-note">{{terminalNote}}</view>
       <view wx:else class="fb-actions">
         <button
           wx:for="{{flowActions}}"
@@ -157,7 +155,7 @@
           <text wx:if="{{item.recommended}}" class="fopt-tag">推荐</text>
         </view>
         <view class="fopt-desc">{{item.desc}}</view>
-        <!-- 已淘汰：展开原因必填单选 + 备注选填 -->
+        <!-- 已淘汰（淘汰旁路）：展开原因必填单选 + 备注选填 -->
         <block wx:if="{{item.status === 'eliminated' && selectedStatus === 'eliminated'}}">
           <view class="reason-list">
             <view
@@ -176,6 +174,16 @@
             class="remark-input"
             value="{{remark}}"
             placeholder="备注（选填，≤200字）"
+            maxlength="200"
+            bindinput="onRemarkInput"
+          />
+        </block>
+        <!-- 重新激活（当前 eliminated → 目标 contacted）：备注必填 -->
+        <block wx:elif="{{statusValue === 'eliminated' && item.status === 'contacted' && selectedStatus === 'contacted'}}">
+          <input
+            class="remark-input"
+            value="{{remark}}"
+            placeholder="备注（必填，≤200字）"
             maxlength="200"
             bindinput="onRemarkInput"
           />

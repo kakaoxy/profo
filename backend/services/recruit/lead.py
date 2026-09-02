@@ -9,7 +9,9 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from models import User
 from models.recruit import RecruitLead, RecruitLeadSource, RecruitLeadStatus, RecruitShareEvent, RecruitVisit
+from schemas.growth_center import GrowthModule
 from schemas.recruit import RecruitLeadStatusUpdate
+from services.growth_center.customer_notify import notify_customer_status_changed, unified_status_label
 from services.system.exceptions import ResourceNotFoundError
 from utils.time_windows import yesterday_window
 
@@ -163,12 +165,25 @@ class RecruitLeadService:
             msg = "招募线索不存在"
             raise ResourceNotFoundError(msg)
 
+        old_status = lead.status
         lead.status = data.status
         if data.is_internal is not None:
             lead.is_internal = data.is_internal
 
         self.db.commit()
         self.db.refresh(lead)
+
+        # 「我的客户」后台状态变更通知（best-effort，通知内部捕获一切异常仅记日志）：
+        # 仅状态实际变化（对比变更前后）且线索有归属员工时推送
+        if old_status != lead.status and lead.referrer_employee_id:
+            notify_customer_status_changed(
+                self.db,
+                GrowthModule.RECRUIT.value,
+                lead.id,
+                lead.referrer_employee_id,
+                unified_status_label(lead.status.value),
+                lead.main_business_area,
+            )
 
         # 查询归属员工昵称（nickname 缺失时回退 username），保持与 list 端点响应一致
         nickname: str | None = None
