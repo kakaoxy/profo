@@ -99,6 +99,9 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
 - create_property_sheet_tables: 幂等创建房源单 4 张表
   （property_share_sheets/property_share_sheet_items/property_sheet_visits/property_sheet_share_events）
   与索引（多房源分享）
+- create_customer_follow_ups_table: 幂等创建小程序「我的客户」跨模块跟进记录表
+  customer_follow_ups（module/lead_id/content/created_by_id）与索引
+  idx_customer_follow_up_module_lead (module, lead_id)
 
 """
 
@@ -109,6 +112,7 @@ from sqlalchemy.engine import Engine
 
 # 子模块迁移函数
 from migrations._community_images import create_community_images_table
+from migrations._customer_follow_ups import create_customer_follow_ups_table
 from migrations._finance import (
     add_cashflow_category_enum_values,
     add_finance_record_counterparty_columns,
@@ -287,6 +291,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # 房源单分享（多房源一图分享）：幂等创建 4 张新表
         # （property_share_sheets/property_share_sheet_items/property_sheet_visits/property_sheet_share_events）
         create_property_sheet_tables(engine)
+        # 小程序「我的客户」：幂等创建跨模块跟进记录表 customer_follow_ups
+        create_customer_follow_ups_table(engine)
         # O1：模糊搜索 pg_trgm GIN 索引（前导通配符 LIKE 全表扫描修复）
         add_trgm_search_indexes(engine)
         # 小程序评估工作台「已处理」参考组：leads(auditor_id, audit_time) 索引

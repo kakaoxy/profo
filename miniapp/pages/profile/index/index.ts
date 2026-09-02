@@ -1,5 +1,6 @@
 import type { components } from "../../../types/api-types";
 import { BASE_URL } from "../../../utils/config";
+import { fetchCustomersBadgeCount } from "../../../utils/customers-badge";
 import { fetchPendingAssessmentCount } from "../../../utils/pending-assessment";
 import { updateWechatProfile } from "../../../utils/profile";
 import { refreshCAccessToken, request } from "../../../utils/request";
@@ -42,8 +43,9 @@ const INTERNAL_ENTRIES = [
   { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账", route: "/pages/ledger/projects/index/index" },
 ];
 
-/** 分享获客入口（onMenuTap 按 action 分发：switch-tab-* 为 tabBar 页 switchTab，recruit 走 onRecruitTap 拉活动跳转，property-sheet 进我的房源单页）. */
+/** 分享获客入口（onMenuTap 按 action 分发：customers 进我的客户聚合页，switch-tab-* 为 tabBar 页 switchTab，recruit 走 onRecruitTap 拉活动跳转，property-sheet 进我的房源单页）. */
 const SHARE_ENTRIES: ShareEntry[] = [
+  { key: "my-customers", title: "我的客户", sub: "四类线索 · 集中跟进", icon: "客", action: "customers" },
   { key: "share-property", title: "房源分享", sub: "房源转发 / 客户预约", icon: "房", action: "switch-tab-projects" },
   { key: "share-valuation", title: "评估分享", sub: "评估转发 / 线索跟进", icon: "估", action: "switch-tab-valuation" },
   { key: "share-recruit", title: "招募分享", sub: "招募转发 / 拉新归因", icon: "招", action: "recruit" },
@@ -60,7 +62,7 @@ interface InternalEntry {
 }
 
 /** 分享获客入口点击动作. */
-type ShareEntryAction = "switch-tab-projects" | "switch-tab-valuation" | "recruit" | "property-sheet";
+type ShareEntryAction = "customers" | "switch-tab-projects" | "switch-tab-valuation" | "recruit" | "property-sheet";
 
 interface ShareEntry {
   key: string;
@@ -96,10 +98,12 @@ interface PageData {
   /** 昵称保存中标志，避免 onblur 重复触发保存. */
   nicknameSaving: boolean;
   internalEntries: InternalEntry[];
-  /** 分享获客分组（房源/评估/招募分享），仅内部用户可见. */
+  /** 分享获客分组（我的客户/房源/评估/招募分享），仅内部用户可见. */
   shareEntries: ShareEntry[];
   /** 评估工作台待办角标（pending_assessment 数；0/null 不显示）. */
   evaluateBadge: number;
+  /** 我的客户新线索角标（new_count 数；0/null 不显示）. */
+  customersBadge: number;
 }
 
 interface PageCustom {
@@ -113,6 +117,8 @@ interface PageCustom {
   applyAdminUser(user: UserResponse): void;
   /** 拉取评估工作台待办角标：403/失败静默隐藏（内部用户专属）. */
   loadEvaluateBadge(): void;
+  /** 拉取我的客户新线索角标：403/失败静默隐藏（内部用户专属）. */
+  loadCustomersBadge(): void;
   onGoLogin(): void;
   onLogout(): void;
   onPhoneTap(): void;
@@ -216,6 +222,7 @@ Page<PageData, PageCustom>({
     internalEntries: INTERNAL_ENTRIES,
     shareEntries: SHARE_ENTRIES,
     evaluateBadge: 0,
+    customersBadge: 0,
   },
 
   getToken() {
@@ -251,6 +258,7 @@ Page<PageData, PageCustom>({
       phoneDisplay: "完善手机号",
       hasPhone: false,
       evaluateBadge: 0,
+      customersBadge: 0,
     });
     this.resetWechatEditState();
   },
@@ -296,11 +304,12 @@ Page<PageData, PageCustom>({
       phoneDisplay: phone || "完善手机号",
       hasPhone: !!phone,
     });
-    // 评估工作台角标：仅内部用户拉取（403/0 条/失败均静默隐藏）
+    // 评估工作台/我的客户角标：仅内部用户拉取（403/0 条/失败均静默隐藏）
     if (isInternal) {
       this.loadEvaluateBadge();
+      this.loadCustomersBadge();
     } else {
-      this.setData({ evaluateBadge: 0 });
+      this.setData({ evaluateBadge: 0, customersBadge: 0 });
     }
     this.resetWechatEditState();
   },
@@ -324,12 +333,21 @@ Page<PageData, PageCustom>({
     });
     // 内部员工同样感知评估待办（接口要求 C 端令牌，admin-only 令牌 403 时静默隐藏）
     this.loadEvaluateBadge();
+    // 内部员工同样感知我的客户新线索（接口要求 C 端令牌，无 C 端令牌/403 时静默隐藏）
+    this.loadCustomersBadge();
   },
 
   /** 拉取评估工作台待办角标：/my/acquired/stats 的 pending_assessment；403/失败静默返 null 不显示. */
   loadEvaluateBadge() {
     void fetchPendingAssessmentCount().then((count) => {
       this.setData({ evaluateBadge: count ?? 0 });
+    });
+  },
+
+  /** 拉取我的客户新线索角标：/public/customers/my/badge 的 new_count；403/失败静默返 null 不显示. */
+  loadCustomersBadge() {
+    void fetchCustomersBadgeCount().then((count) => {
+      this.setData({ customersBadge: count ?? 0 });
     });
   },
 
@@ -502,9 +520,13 @@ Page<PageData, PageCustom>({
   },
 
   onMenuTap(e: WechatMiniprogram.BaseEvent) {
-    // 分享获客分组：按 action 分发（两目标页均为 tabBar 页须 switchTab；recruit 动态拉活动跳转；
-    // property-sheet 进我的房源单页，登录态由 mine 页与 request 层兜底，无需预检）
+    // 分享获客分组：按 action 分发（customers 进我的客户聚合页；两 switchTab 目标页均为 tabBar 页；
+    // recruit 动态拉活动跳转；property-sheet 进我的房源单页，登录态由 mine 页与 request 层兜底，无需预检）
     const action = e.currentTarget.dataset.action as ShareEntryAction | undefined;
+    if (action === "customers") {
+      wx.navigateTo({ url: "/pages/customers/mine/index" });
+      return;
+    }
     if (action === "switch-tab-projects") {
       wx.switchTab({ url: "/pages/projects/list/index" });
       return;

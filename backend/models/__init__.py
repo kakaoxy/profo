@@ -27,6 +27,9 @@ from .common import (
     SubjectStage,
 )
 
+# 获客中心（小程序「我的客户」跨模块聚合）模块
+from .growth_center import CustomerFollowUp
+
 # 投资管理（跟投管理）模块
 from .investment import (
     Investment,
@@ -123,6 +126,8 @@ __all__ = [
     "CommunityCompetitor",
     "CommunityImage",
     "CommunityImageSource",
+    # 获客中心
+    "CustomerFollowUp",
     # 系统
     "FailedRecord",
     "FinanceActionType",

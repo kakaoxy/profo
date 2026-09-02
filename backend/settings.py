@@ -185,6 +185,9 @@ class Settings(BaseSettings):
     wechat_recruit_lead_template_id: str = ""
     # 估价授权价变更订阅消息模板 ID（授权评估价/调整评估价时推送客户，env 可配，空 = 功能关闭）
     wechat_valuation_price_template_id: str = ""
+    # 「我的客户」新线索订阅消息模板 ID。二期：新留资/状态变更推送归属员工，
+    # 当前仅用于小程序端订阅授权（未配置时小程序隐藏订阅提醒条）
+    wechat_customer_lead_template_id: str = ""
 
     @model_validator(mode="after")
     def validate_oss_config(self) -> "Settings":

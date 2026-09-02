@@ -1,0 +1,227 @@
+/* 客户详情 · 底部动作面板（状态流转确认，对照设计稿 04 屏；由 index.wxss @import 引入） */
+
+/* 遮罩 */
+.sheet-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 13, 15, 0.45);
+  z-index: 80;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.sheet-dim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 面板容器 */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  background: #ffffff;
+  border-radius: 44rpx 44rpx 0 0;
+  padding: 36rpx 36rpx calc(30rpx + env(safe-area-inset-bottom));
+  transform: translateY(105%);
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0.32, 1);
+}
+.sheet.open {
+  transform: none;
+}
+.sheet-grab {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: #f2f3f5;
+  margin: 0 auto 28rpx;
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.sheet-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sheet-cur {
+  flex: 1;
+  text-align: right;
+  font-size: 23rpx;
+  color: var(--graphite);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12rpx;
+}
+.sheet-close {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  background: var(--fog);
+  color: var(--graphite);
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* 目标状态单选列表 */
+.flow-opts {
+  margin-top: 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.fopt {
+  display: flex;
+  align-items: flex-start;
+  gap: 22rpx;
+  padding: 24rpx 26rpx;
+  border-radius: 28rpx;
+  box-shadow: inset 0 0 0 2rpx #ececee;
+}
+.fopt.on {
+  background: var(--apricot-wash);
+  box-shadow: inset 0 0 0 3rpx var(--rust);
+}
+.fopt-radio {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 3rpx var(--dove);
+  flex-shrink: 0;
+  position: relative;
+  margin-top: 2rpx;
+  box-sizing: border-box;
+}
+.fopt.on .fopt-radio {
+  box-shadow: inset 0 0 0 3rpx var(--rust);
+}
+.fopt.on .fopt-radio::after {
+  content: "";
+  position: absolute;
+  inset: 7rpx;
+  border-radius: 50%;
+  background: var(--rust);
+}
+.fopt-main {
+  flex: 1;
+  min-width: 0;
+}
+.fopt-name {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.fopt-tag {
+  font-size: 19rpx;
+  font-weight: 600;
+  padding: 3rpx 14rpx;
+  border-radius: 9999rpx;
+  background: var(--rust);
+  color: #ffffff;
+}
+.fopt-desc {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+}
+.fopt .stg {
+  margin-left: auto;
+}
+
+/* 淘汰原因子单选 + 备注 */
+.reason-list {
+  margin-top: 18rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+.ropt {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: 24rpx;
+  color: var(--ash);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 18rpx;
+  padding: 16rpx 20rpx;
+  box-shadow: inset 0 0 0 2rpx #ececee;
+}
+.ropt.on {
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2rpx var(--rust);
+}
+.ropt-radio {
+  width: 26rpx;
+  height: 26rpx;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2rpx var(--dove);
+  flex-shrink: 0;
+  position: relative;
+  box-sizing: border-box;
+}
+.ropt.on .ropt-radio {
+  box-shadow: inset 0 0 0 2rpx var(--rust);
+}
+.ropt.on .ropt-radio::after {
+  content: "";
+  position: absolute;
+  inset: 5rpx;
+  border-radius: 50%;
+  background: var(--rust);
+}
+.remark-input {
+  margin-top: 16rpx;
+  height: 72rpx;
+  border-radius: 18rpx;
+  border: 2rpx solid #ececee;
+  background: #ffffff;
+  padding: 0 22rpx;
+  font-size: 24rpx;
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+/* 底部说明 + 确认按钮 */
+.sheet-note {
+  margin-top: 24rpx;
+  font-size: 21rpx;
+  color: var(--dove);
+  line-height: 1.6;
+}
+.sheet-confirm {
+  margin-top: 28rpx;
+  width: 100%;
+  height: 92rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 29rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+.sheet-confirm::after {
+  border: none;
+}
+.sheet-confirm[disabled] {
+  opacity: 0.6;
+  background: var(--ink);
+  color: #ffffff;
+}

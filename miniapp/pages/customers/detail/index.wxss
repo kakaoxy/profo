@@ -1,0 +1,472 @@
+/* 客户详情页（对照设计稿 03 客户详情 / 04 状态流转确认，px→rpx ×2） */
+/* 底部动作面板样式拆分至同目录 panel.wxss（控制单文件行数） */
+@import "panel.wxss";
+
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+}
+
+/* ===== 加载态 / 空态 ===== */
+.state-box {
+  padding: 200rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.state-text {
+  font-size: 28rpx;
+  color: var(--graphite);
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 180rpx 80rpx 0;
+}
+.empty-orb {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 50%;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 60rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32rpx;
+}
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.empty-sub {
+  margin-top: 14rpx;
+  font-size: 25rpx;
+  color: var(--graphite);
+  line-height: 1.8;
+}
+.empty-cta {
+  margin-top: 44rpx;
+  height: 80rpx;
+  padding: 0 52rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 27rpx;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.empty-cta::after {
+  border: none;
+}
+
+/* ===== 统一状态标签（设计稿 stg-*，页面与面板共用） ===== */
+.stg {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 21rpx;
+  font-weight: 600;
+  padding: 6rpx 20rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.stg-new {
+  background: var(--sky-wash);
+  color: #1d5bb8;
+}
+.stg-contact {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.stg-high {
+  background: var(--rust);
+  color: var(--apricot-wash);
+}
+.stg-won {
+  background: var(--mint);
+  color: #0b7a5c;
+}
+.stg-out {
+  background: #f2f3f5;
+  color: var(--slate);
+}
+
+/* ===== 1. 状态 hero 卡 ===== */
+.hero-card {
+  margin: 16rpx 32rpx 0;
+  background: #ffffff;
+  border-radius: 32rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 32rpx;
+}
+.hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+.lc-time {
+  font-size: 21rpx;
+  color: var(--dove);
+  font-variant-numeric: tabular-nums;
+}
+.hero-title {
+  margin-top: 20rpx;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.hero-sub {
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  color: var(--graphite);
+  line-height: 1.7;
+}
+
+/* ===== 2. 手机号深色卡 ===== */
+.phone-card {
+  margin: 20rpx 32rpx 0;
+  background: var(--ink);
+  border-radius: 32rpx;
+  padding: 32rpx;
+  color: #ffffff;
+}
+.pc-label {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.55);
+}
+.pc-row {
+  margin-top: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+.pc-num {
+  font-size: 46rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pc-btn {
+  flex-shrink: 0;
+  margin: 0;
+  height: 68rpx;
+  padding: 0 30rpx;
+  border-radius: 9999rpx;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 25rpx;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.pc-btn::after {
+  border: none;
+}
+.pc-note {
+  margin-top: 20rpx;
+  font-size: 21rpx;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.6;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.12);
+  padding-top: 18rpx;
+}
+
+/* ===== 信息卡通用 ===== */
+.info-card {
+  margin: 20rpx 32rpx 0;
+  background: #ffffff;
+  border-radius: 32rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 30rpx 32rpx;
+}
+.ic-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ic-title {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ic-link {
+  font-size: 23rpx;
+  color: var(--graphite);
+}
+
+/* ===== 3. 业务信息栅格（2 列） ===== */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx 32rpx;
+  margin-top: 26rpx;
+}
+.ig-item .k {
+  font-size: 21rpx;
+  color: var(--dove);
+}
+.ig-item .v {
+  margin-top: 6rpx;
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--ink);
+  word-break: break-all;
+}
+.ig-item .v.num {
+  font-variant-numeric: tabular-nums;
+}
+.ig-item .v.mut {
+  color: var(--dove);
+  font-weight: 400;
+}
+
+/* ===== 4. 时间线（归因链路 / 跟进记录共用） ===== */
+.tl {
+  margin-top: 28rpx;
+}
+.tl-item {
+  display: flex;
+  gap: 24rpx;
+  position: relative;
+  padding-bottom: 32rpx;
+}
+.tl-item:last-child {
+  padding-bottom: 4rpx;
+}
+.tl-item::before {
+  content: "";
+  position: absolute;
+  left: 10rpx;
+  top: 28rpx;
+  bottom: 0;
+  width: 2rpx;
+  background: #f2f3f5;
+}
+.tl-item:last-child::before {
+  display: none;
+}
+.tl-dot {
+  width: 22rpx;
+  height: 22rpx;
+  border-radius: 50%;
+  background: var(--sky-wash);
+  border: 5rpx solid #1d5bb8;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+  box-sizing: border-box;
+  z-index: 1;
+}
+.tl-dot.dim {
+  background: var(--fog);
+  border-color: var(--dove);
+}
+.tl-main {
+  flex: 1;
+  min-width: 0;
+}
+.tl-text {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.5;
+  word-break: break-all;
+}
+.tl-time {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--dove);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 5. 状态流转卡 ===== */
+.flow-bar {
+  margin-top: 28rpx;
+  display: flex;
+  align-items: flex-start;
+}
+.fb-node {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+  position: relative;
+}
+.fb-dot {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21rpx;
+  font-weight: 600;
+  background: var(--fog);
+  color: var(--slate);
+  box-shadow: inset 0 0 0 2rpx #ececee;
+  z-index: 1;
+  box-sizing: border-box;
+}
+.fb-node.done .fb-dot {
+  background: var(--apricot-wash);
+  color: var(--rust);
+  box-shadow: none;
+}
+.fb-node.cur .fb-dot {
+  background: var(--rust);
+  color: #ffffff;
+  box-shadow: 0 0 0 8rpx rgba(93, 42, 26, 0.14);
+}
+.fb-lab {
+  font-size: 19rpx;
+  color: var(--graphite);
+  white-space: nowrap;
+}
+.fb-node.cur .fb-lab {
+  color: var(--rust);
+  font-weight: 600;
+}
+.fb-node::before {
+  content: "";
+  position: absolute;
+  top: 22rpx;
+  left: calc(-50% + 24rpx);
+  right: calc(50% + 24rpx);
+  height: 3rpx;
+  background: #f2f3f5;
+}
+.fb-node:first-child::before {
+  display: none;
+}
+.fb-node.done::before {
+  background: var(--rust);
+  opacity: 0.35;
+}
+/* 淘汰旁路说明行 */
+.fb-out-row {
+  margin-top: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 22rpx;
+  color: var(--slate);
+  line-height: 1.5;
+}
+.fb-dot-x {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: #f2f3f5;
+  color: var(--slate);
+  font-size: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fb-note {
+  margin-top: 24rpx;
+  font-size: 22rpx;
+  color: var(--slate);
+  line-height: 1.6;
+}
+.fb-actions {
+  margin-top: 28rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.btn-sm {
+  margin: 0;
+  height: 60rpx;
+  padding: 0 28rpx;
+  border-radius: 9999rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.btn-sm::after {
+  border: none;
+}
+.btn-ink {
+  background: var(--ink);
+  color: #ffffff;
+}
+.btn-warm {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.btn-ghost {
+  background: #ffffff;
+  color: var(--ash);
+  box-shadow: inset 0 0 0 2rpx #ececee;
+}
+
+/* ===== 6. 跟进记录 ===== */
+.fu-input-row {
+  margin-top: 24rpx;
+  display: flex;
+  gap: 16rpx;
+}
+.fu-input {
+  flex: 1;
+  min-width: 0;
+  height: 76rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid #ececee;
+  background: var(--fog);
+  padding: 0 26rpx;
+  font-size: 25rpx;
+  color: var(--ink);
+  box-sizing: border-box;
+}
+.fu-add {
+  flex-shrink: 0;
+  margin: 0;
+  height: 76rpx;
+  padding: 0 32rpx;
+  border-radius: 24rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 25rpx;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.fu-add::after {
+  border: none;
+}
+.fu-add[disabled] {
+  opacity: 0.6;
+  background: var(--ink);
+  color: #ffffff;
+}
+.fu-empty {
+  margin-top: 28rpx;
+  padding: 36rpx 0;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--dove);
+}
+
+/* ===== 底部安全区 ===== */
+.safe-bottom {
+  height: 40rpx;
+}

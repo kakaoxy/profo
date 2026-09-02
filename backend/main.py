@@ -43,6 +43,7 @@ from routers.public import (
     public_auth_router,
     public_bookings_router,
     public_communities_router,
+    public_customers_router,
     public_files_router,
     public_leads_router,
     public_projects_router,
@@ -190,6 +191,7 @@ app = FastAPI(
         {"name": "public-communities", "description": "C端公开 - 小区搜索"},
         {"name": "public-files", "description": "C端公开 - 文件上传"},
         {"name": "public-recruit", "description": "C端公开 - 区域伙伴招募计划"},
+        {"name": "public-customers", "description": "C端公开 - 我的客户（小程序员工侧跨模块聚合）"},
         {"name": "recruit", "description": "招募管理 - 区域伙伴招募计划"},
         {"name": "growth-center", "description": "获客中心 - 跨模块分享获客聚合只读层"},
         {"name": "reports-market", "description": "数据报表 - 商圈分析"},
@@ -324,6 +326,7 @@ app.include_router(public_valuations_router, prefix=API_V1_PREFIX)
 app.include_router(public_files_router, prefix=API_V1_PREFIX)
 app.include_router(public_communities_router, prefix=API_V1_PREFIX)
 app.include_router(public_recruit_router, prefix=API_V1_PREFIX)
+app.include_router(public_customers_router, prefix=API_V1_PREFIX)
 app.include_router(admin_recruit_router, prefix=API_V1_PREFIX)
 app.include_router(growth_center_router, prefix=API_V1_PREFIX)
 app.include_router(reports_router, prefix=API_V1_PREFIX)

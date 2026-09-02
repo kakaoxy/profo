@@ -10,8 +10,8 @@
 type EnvVersion = "develop" | "trial" | "release";
 
 const ENV_BASE_URL: Record<EnvVersion, string> = {
-  develop: "https://fangmengchina.com/api/v1",
-  // develop: "http://192.168.110.169:8000/api/v1",
+  // develop: "https://fangmengchina.com/api/v1",
+  develop: "http://192.168.110.117:8000/api/v1",
   trial: "https://fangmengchina.com/api/v1",
   release: "https://fangmengchina.com/api/v1",
 };

@@ -7,6 +7,7 @@
 
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -247,7 +248,138 @@ class LeadDetailResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ----------------------
+# 小程序「我的客户」（My Customers，员工侧聚合）
+# ----------------------
+class MyCustomerListItem(BaseModel):
+    """我的客户列表项（归属收窄为当前员工，手机号脱敏）."""
+
+    id: str = Field(description="线索ID（各模块原生ID转字符串）")
+    module: GrowthModule = Field(description="获客模块")
+    unified_status: UnifiedLeadStatus = Field(description="统一状态")
+    native_status: str = Field(description="模块原生状态值")
+    phone_masked: str | None = Field(description="脱敏手机号（无手机号为 null）")
+    source: LeadSource | None = Field(
+        description="来源（card/poster/direct）；估价/预约/房源单归因线索的分享方式未埋点为 null",
+    )
+    created_at: datetime = Field(description="留资时间")
+    campaign_name: str | None = Field(default=None, description="来源活动名（仅招募，其余 null）")
+
+    # 模块差异摘要字段（估价/房源单共用 leads 表）
+    community_name: str | None = Field(default=None, description="小区名称（估价/房源单）")
+    layout: str | None = Field(default=None, description="户型（估价/房源单）")
+    area: float | None = Field(default=None, description="面积㎡（估价/房源单）")
+    expected_price: float | None = Field(default=None, description="业主心理预期价万（估价/房源单）")
+    # 模块差异摘要字段（预约）
+    property_title: str | None = Field(default=None, description="房源名称（预约）")
+    booking_time: datetime | None = Field(default=None, description="预约时间（预约）")
+    # 模块差异摘要字段（房源单；分页后回表解析，详见服务层）
+    sheet_code: str | None = Field(default=None, description="来源房源单短码（取不到为 null）")
+    sheet_item_count: int | None = Field(default=None, description="来源房源单共 N 套房源（取不到为 null）")
+    # 模块差异摘要字段（招募）
+    main_business_area: str | None = Field(default=None, description="主营商圈（招募）")
+
+
+class MyCustomerListResponse(BaseModel):
+    """我的客户分页列表响应."""
+
+    items: list[MyCustomerListItem]
+    total: int = Field(description="当前筛选条件下总数")
+    page: int
+    page_size: int
+    module_counts: dict[GrowthModule, int] = Field(
+        description="各模块线索计数（该用户全部线索口径，不受当前筛选影响）",
+    )
+    status_counts: dict[UnifiedLeadStatus, int] = Field(
+        description="各统一状态线索计数（该用户全部线索口径，不受当前筛选影响）",
+    )
+
+
+class MyCustomerBadgeResponse(BaseModel):
+    """我的客户角标响应（统一状态为 new 的计数）."""
+
+    new_count: int = Field(description="统一状态 new 的线索数")
+
+
+class MyCustomerShareStatsResponse(BaseModel):
+    """我的客户分享统计响应（4 链路求和，字段口径与各线 my/share-stats 一致）."""
+
+    share_count: int = Field(description="累计分享次数（4 链路合计）")
+    pv: int = Field(description="累计经我分享的打开次数 PV（4 链路合计）")
+    uv: int = Field(description="累计打开人数 UV（4 链路求和，招募=openid_hash 口径，其余=匿名 visitor_id）")
+    lead_count: int = Field(description="累计归属我的线索数（4 链路合计）")
+    yesterday_share_count: int = Field(description="昨日分享次数")
+    yesterday_pv: int = Field(description="昨日经我分享的打开次数 PV")
+    yesterday_uv: int = Field(description="昨日打开人数 UV")
+    yesterday_lead_count: int = Field(description="昨日归属我的线索数")
+
+
+class MyCustomerSubscribeTemplateResponse(BaseModel):
+    """我的客户订阅消息模板配置响应（二期推送预留，当前仅用于小程序端订阅授权）."""
+
+    template_id: str | None = Field(description="订阅消息模板ID（未配置为 null）")
+
+
+class MyCustomerDetailResponse(LeadDetailResponse):
+    """我的客户线索详情响应.
+
+    字段复用统一线索详情（归因时间线 + 模块差异化字段），独立 schema 名
+    便于 openapi/前端类型区分；归属校验（referrer=当前员工）在服务层强制。
+    """
+
+
+class MyCustomerPhoneResponse(BaseModel):
+    """我的客户完整手机号响应.
+
+    招募线查看即视为已联系（new→contacted 隐式流转），其余线状态不变；
+    status 恒为查看后的最新统一状态。
+    """
+
+    phone: str | None = Field(description="完整手机号（解密）")
+    unified_status: UnifiedLeadStatus = Field(description="查看后的统一状态")
+    native_status: str = Field(description="查看后的模块原生状态值")
+
+
+class MyCustomerStatusUpdateRequest(BaseModel):
+    """我的客户状态流转请求（触发动作类，*Request 后缀）."""
+
+    status: UnifiedLeadStatus = Field(description="目标统一状态")
+    remark: str | None = Field(default=None, max_length=500, description="流转备注（非空时自动落一条系统跟进记录）")
+    reason: Literal["no_intent", "invalid_info", "lost_to_competitor"] | None = Field(
+        default=None,
+        description="淘汰原因（仅 status=eliminated 时必填）",
+    )
+
+
+class MyCustomerStatusUpdateResponse(BaseModel):
+    """我的客户状态流转响应（返回流转后的最新状态）."""
+
+    unified_status: UnifiedLeadStatus = Field(description="流转后的统一状态")
+    native_status: str = Field(description="流转后的模块原生状态值")
+
+
+class CustomerFollowUpCreate(BaseModel):
+    """我的客户跟进记录创建请求."""
+
+    content: str = Field(min_length=1, max_length=500, description="跟进内容（1-500 字符）")
+
+
+class MyCustomerFollowUpItem(BaseModel):
+    """我的客户跟进记录项."""
+
+    id: str
+    module: GrowthModule
+    lead_id: str = Field(description="线索ID（各模块主键转字符串）")
+    content: str
+    created_by_id: str = Field(description="跟进人ID")
+    created_by_name: str | None = Field(description="跟进人名称（nickname 缺失回退 username）")
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 __all__ = [
+    "CustomerFollowUpCreate",
     "EmployeeDrilldownResponse",
     "EmployeeDrilldownRow",
     "EmployeeTopItem",
@@ -260,6 +392,16 @@ __all__ = [
     "GrowthOverviewKpiResponse",
     "LeadDetailResponse",
     "LeadSource",
+    "MyCustomerBadgeResponse",
+    "MyCustomerDetailResponse",
+    "MyCustomerFollowUpItem",
+    "MyCustomerListItem",
+    "MyCustomerListResponse",
+    "MyCustomerPhoneResponse",
+    "MyCustomerShareStatsResponse",
+    "MyCustomerStatusUpdateRequest",
+    "MyCustomerStatusUpdateResponse",
+    "MyCustomerSubscribeTemplateResponse",
     "SourceBreakdownItem",
     "SourceBreakdownResponse",
     "TimelineEvent",

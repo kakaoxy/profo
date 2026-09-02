@@ -110,19 +110,22 @@
     <view class="internal-flag">内部入口由后台身份权限控制显隐，非内部用户不可见。</view>
   </block>
 
-  <!-- 分享获客（仅内部用户可见，按 action 分发：switchTab / 拉招募活动） -->
+  <!-- 分享获客（仅内部用户可见，按 action 分发：我的客户 / switchTab / 拉招募活动 / 房源单） -->
   <block wx:if="{{isInternal}}">
     <view class="menu-group-title">分享获客 · 仅内部用户可见</view>
     <view class="menu-list">
       <view class="menu-item" wx:for="{{shareEntries}}" wx:key="key" bindtap="onMenuTap" data-action="{{item.action}}">
         <view class="menu-left">
-          <view class="menu-icon">{{item.icon}}</view>
+          <view class="menu-icon {{item.key === 'my-customers' ? 'menu-icon-hot' : ''}}">{{item.icon}}</view>
           <view>
             <view class="menu-item-title">{{item.title}}</view>
             <view class="menu-sub">{{item.sub}}</view>
           </view>
         </view>
-        <view class="menu-right"><text class="chevron">›</text></view>
+        <view class="menu-right">
+          <view class="menu-badge" wx:if="{{item.key === 'my-customers' && customersBadge > 0}}">{{customersBadge}}</view>
+          <text class="chevron">›</text>
+        </view>
       </view>
     </view>
   </block>

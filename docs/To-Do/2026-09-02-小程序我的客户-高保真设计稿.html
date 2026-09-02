@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小程序 · 我的客户 — 高保真设计稿</title>
+<style>
+/* ========== Steep Design Tokens（对齐 DESIGN.md / miniapp/app.wxss） ========== */
+:root{
+  --ink:#17191c; --white:#ffffff; --fog:#f7f7f8; --ash:#4c4c4c;
+  --graphite:#777b86; --dove:#a3a6af; --slate:#8b8c8d;
+  --rust:#5d2a1a; --apricot:#fbe1d1; --sky:#d3e3fc; --mint:#d1f2e8;
+  --blue:#1d5bb8; --teal:#0b7a5c;
+  --hairline:#ececee; --line:#f2f3f5;
+  --shadow-steep:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.1) 0 20px 25px -5px, rgba(0,0,0,.1) 0 8px 10px -6px;
+  --shadow-steep-sm:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 8px 10px -6px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  letter-spacing:-.009em;background:var(--fog);color:var(--ink);font-size:14px;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+.num{font-variant-numeric:tabular-nums}
+
+/* ========== 页头 ========== */
+.doc-head{max-width:1200px;margin:0 auto;padding:40px 40px 0}
+.doc-title{font-size:26px;font-weight:500;letter-spacing:-.23px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.doc-sub{margin-top:8px;font-size:14px;color:var(--graphite);line-height:1.7}
+.doc-tags{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.dtag{display:inline-flex;align-items:center;font-size:12px;font-weight:500;padding:3px 12px;border-radius:999px;background:#fff;color:var(--graphite);box-shadow:inset 0 0 0 1px var(--hairline)}
+.dtag.dark{background:var(--ink);color:#fff;box-shadow:none}
+.dtag.warn{background:var(--apricot);color:var(--rust);box-shadow:none}
+
+/* 背景与方案 */
+.brief{max-width:1200px;margin:24px auto 0;padding:0 40px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.brief-card{background:#fff;border-radius:20px;box-shadow:var(--shadow-steep-sm);padding:18px 22px}
+.brief-card h4{font-size:13px;font-weight:500;color:var(--graphite);display:flex;align-items:center;gap:6px}
+.brief-card p{margin-top:8px;font-size:13.5px;line-height:1.8;color:var(--ash)}
+
+/* ========== 屏幕切换 ========== */
+.stage-nav{position:sticky;top:0;z-index:50;background:rgba(247,247,248,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--hairline);margin-top:32px}
+.stage-nav-in{max-width:1200px;margin:0 auto;padding:10px 40px;display:flex;gap:6px;align-items:center;overflow-x:auto}
+.snav{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:500;color:var(--graphite);white-space:nowrap;transition:all .15s}
+.snav:hover{background:#fff;color:var(--ink)}
+.snav.on{background:var(--ink);color:#fff}
+.snav i{font-style:normal;font-size:11px;opacity:.55;font-variant-numeric:tabular-nums}
+.stage-hint{margin-left:auto;font-size:12px;color:var(--slate);white-space:nowrap}
+
+/* ========== 舞台 ========== */
+.stage{max-width:1200px;margin:0 auto;padding:32px 40px 72px;display:none}
+.stage.active{display:grid;grid-template-columns:400px minmax(0,1fr);gap:44px;align-items:start;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (max-width:900px){.stage.active{grid-template-columns:1fr}.brief{grid-template-columns:1fr}}
+
+/* ========== 手机框架 ========== */
+.phone-wrap{display:flex;justify-content:center;position:sticky;top:70px}
+@media (max-width:900px){.phone-wrap{position:static}}
+.phone{width:390px;height:844px;background:#0c0d0f;border-radius:54px;padding:9px;box-shadow:0 30px 60px -18px rgba(23,25,28,.35), 0 0 0 2px #2a2c30;position:relative;flex-shrink:0}
+.phone-screen{width:100%;height:100%;border-radius:46px;background:var(--fog);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:32px;background:#0c0d0f;border-radius:20px;z-index:60}
+.statusbar{height:48px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 4px;font-size:14px;font-weight:600;color:var(--ink);flex-shrink:0}
+.sb-icons{display:flex;align-items:center;gap:6px}
+.sb-cell{display:flex;align-items:flex-end;gap:1.5px;height:11px}
+.sb-cell i{width:3px;background:var(--ink);border-radius:1px;display:block}
+.sb-wifi{width:15px;height:11px;position:relative}
+.sb-wifi::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border:2px solid var(--ink);border-radius:50%;clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%);background:var(--ink)}
+.sb-batt{width:24px;height:11px;border:1.5px solid rgba(23,25,28,.4);border-radius:3.5px;position:relative}
+.sb-batt::before{content:"";position:absolute;inset:1.5px;right:5px;background:var(--ink);border-radius:2px}
+.sb-batt::after{content:"";position:absolute;right:-4px;top:2.5px;width:2px;height:4px;background:rgba(23,25,28,.4);border-radius:0 2px 2px 0}
+/* 微信导航栏 */
+.wxnav{height:44px;display:flex;align-items:center;padding:0 12px;flex-shrink:0;position:relative}
+.wxnav-title{position:absolute;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;color:var(--ink)}
+.wx-back{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.wx-back svg{width:20px;height:20px;stroke:var(--ink);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.wx-capsule{margin-left:auto;width:88px;height:32px;border-radius:16px;background:rgba(255,255,255,.72);box-shadow:inset 0 0 0 .5px rgba(0,0,0,.12);display:flex;align-items:center}
+.wx-capsule span{flex:1;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);letter-spacing:1px}
+.wx-capsule span:first-child{border-right:.5px solid rgba(0,0,0,.12);font-weight:700}
+.wx-capsule .dotc{width:16px;height:16px;border:1.8px solid var(--ink);border-radius:50%;position:relative}
+.wx-capsule .dotc::before{content:"";position:absolute;inset:3.5px;background:var(--ink);border-radius:50%}
+/* 屏幕内容 */
+.screen-body{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:40px;scrollbar-width:none}
+.screen-body::-webkit-scrollbar{display:none}
+.home-indicator{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:rgba(0,0,0,.28);z-index:60}
+.page-pad{padding:8px 16px 0}
+
+/* ========== 小程序通用组件 ========== */
+/* 用户卡（我的页） */
+.user-card{margin:8px 16px 0;background:#fff;border-radius:20px;box-shadow:var(--shadow-steep-sm);padding:20px 18px}
+.user-row{display:flex;align-items:center;gap:14px}
+.avatar{width:54px;height:54px;border-radius:50%;background:var(--ink);color:var(--fog);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;flex-shrink:0}
+.user-main{flex:1;min-width:0}
+.user-name{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600}
+.role-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:500;background:var(--fog);color:var(--graphite)}
+.role-badge.staff{background:var(--ink);color:#fff}
+.user-username{margin-top:3px;font-size:12.5px;color:var(--graphite)}
+.user-fields{margin-top:16px;border-top:1px solid var(--line);padding-top:6px}
+.field-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0}
+.field-label{font-size:13px;color:var(--graphite)}
+.field-value{font-size:13.5px;font-weight:500;color:var(--ink)}
+/* 菜单组 */
+.menu-group-title{font-size:12px;font-weight:500;letter-spacing:.04em;color:var(--graphite);margin:22px 24px 8px}
+.menu-list{margin:0 16px;background:#fff;border-radius:20px;box-shadow:var(--shadow-steep-sm);overflow:hidden}
+.menu-item{display:flex;align-items:center;gap:12px;padding:13px 16px;position:relative}
+.menu-item + .menu-item{border-top:1px solid var(--line)}
+.menu-icon{width:36px;height:36px;border-radius:11px;background:var(--fog);color:var(--graphite);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0}
+.menu-icon.hot{background:var(--apricot);color:var(--rust)}
+.mi-main{flex:1;min-width:0}
+.mi-title{font-size:15px;font-weight:500;color:var(--ink)}
+.mi-sub{margin-top:2px;font-size:11.5px;color:var(--graphite)}
+.mi-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.menu-badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--rust);color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.chev{color:var(--dove);font-size:17px;line-height:1}
+/* 呼出标注 */
+.callout{width:17px;height:17px;border-radius:50%;background:var(--rust);color:#fff;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 0 3px rgba(93,42,26,.12)}
+
+/* 统计卡（昨日/累计两行漏斗，对齐 recruit/mine） */
+.stats{margin:8px 16px 0;background:#fff;border-radius:14px;box-shadow:var(--shadow-steep-sm)}
+.stats-row{display:grid;grid-template-columns:42px repeat(4,1fr);align-items:center;padding:12px 0}
+.stats-row + .stats-row{border-top:1px solid var(--line)}
+.stats-tag{text-align:center;font-size:10px;color:var(--dove)}
+.stat{text-align:center;position:relative}
+.stat + .stat{border-left:1px solid var(--line)}
+.stat-num{display:block;font-size:19px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.2}
+.stat-label{display:block;font-size:10px;color:var(--graphite);margin-top:3px}
+.stat.hl .stat-num{color:var(--rust)}
+.stats-foot{padding:0 14px 10px;font-size:10px;color:var(--dove);line-height:1.5}
+
+/* 订阅提醒条 */
+.subscribe-prompt{margin:12px 16px 0;background:#eef4ff;border:1px solid rgba(29,91,184,.14);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.sp-text{flex:1;min-width:0}
+.sp-title{font-size:13px;font-weight:600;color:var(--ink);line-height:1.4}
+.sp-sub{font-size:10.5px;color:var(--graphite);margin-top:2px}
+.sp-btn{flex-shrink:0;height:32px;line-height:32px;padding:0 14px;background:var(--ink);color:#fff;font-size:12px;font-weight:600;border-radius:999px}
+
+/* 模块筛选 tabs */
+.mtabs{display:flex;gap:6px;padding:14px 16px 0;overflow-x:auto;scrollbar-width:none}
+.mtabs::-webkit-scrollbar{display:none}
+.mtab{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;font-size:12.5px;font-weight:500;background:#fff;color:var(--ash);box-shadow:inset 0 0 0 1px var(--hairline);white-space:nowrap;transition:all .15s}
+.mtab .mdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.mtab.on{background:var(--ink);color:#fff;box-shadow:none}
+.mtab .cnt{font-size:11px;opacity:.6;font-variant-numeric:tabular-nums}
+/* 状态 chips */
+.chips{display:flex;gap:6px;padding:10px 16px 2px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip-item{display:inline-flex;align-items:center;padding:6px 13px;border-radius:999px;font-size:12px;font-weight:500;background:#fff;color:var(--graphite);box-shadow:inset 0 0 0 1px var(--hairline);white-space:nowrap;transition:all .15s}
+.chip-item.on{background:var(--apricot);color:var(--rust);font-weight:600;box-shadow:none}
+.chip-item .cnt{margin-left:3px;font-size:10.5px;opacity:.65;font-variant-numeric:tabular-nums}
+
+/* 客户线索卡 */
+.lead-list{padding:10px 16px 0;display:flex;flex-direction:column;gap:10px}
+.result-line{font-size:11px;color:var(--slate);padding:0 2px}
+.lead-card{background:#fff;border-radius:16px;box-shadow:var(--shadow-steep-sm);padding:14px 15px;cursor:pointer;transition:transform .12s}
+.lead-card:active{transform:scale(.985)}
+.lc-top{display:flex;align-items:center;gap:8px}
+.lc-mod{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:500;color:var(--graphite);background:#fff;box-shadow:inset 0 0 0 1px var(--hairline);padding:2.5px 9px;border-radius:999px;white-space:nowrap}
+.lc-mod .mdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.lc-phone{font-size:14.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stg{flex-shrink:0;display:inline-flex;align-items:center;font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.stg-new{background:var(--sky);color:var(--blue)}
+.stg-contact{background:var(--apricot);color:var(--rust)}
+.stg-high{background:var(--rust);color:var(--apricot)}
+.stg-won{background:var(--mint);color:var(--teal)}
+.stg-out{background:var(--line);color:var(--slate)}
+.lc-sub{margin-top:8px;font-size:12.5px;color:var(--ash);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lc-meta{margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.src-chip{display:inline-flex;align-items:center;font-size:10px;font-weight:500;background:var(--fog);color:var(--graphite);padding:2px 8px;border-radius:999px}
+.lc-time{margin-left:auto;font-size:10.5px;color:var(--dove)}
+.lc-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.btn-sm{height:30px;padding:0 14px;border-radius:999px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s}
+.btn-sm:active{opacity:.8}
+.btn-ink{background:var(--ink);color:#fff}
+.btn-ghost{background:#fff;color:var(--ash);box-shadow:inset 0 0 0 1px var(--hairline)}
+.btn-warm{background:var(--apricot);color:var(--rust)}
+
+/* 空态 */
+.empty-box{padding:64px 40px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.empty-orb{width:88px;height:88px;border-radius:50%;background:var(--apricot);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:600;color:var(--rust);margin-bottom:20px}
+.empty-title{font-size:16px;font-weight:600;color:var(--ink)}
+.empty-sub{margin-top:8px;font-size:13px;color:var(--graphite);line-height:1.8}
+.empty-cta{margin-top:22px;height:44px;padding:0 26px;border-radius:999px;background:var(--ink);color:#fff;font-size:14px;font-weight:600;display:inline-flex;align-items:center}
+
+/* 详情页 */
+.hero-card{margin:8px 16px 0;background:#fff;border-radius:16px;box-shadow:var(--shadow-steep-sm);padding:16px}
+.hero-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hero-title{margin-top:10px;font-size:17px;font-weight:600;line-height:1.4}
+.hero-sub{margin-top:5px;font-size:12.5px;color:var(--graphite);line-height:1.7}
+.phone-card{margin:10px 16px 0;background:var(--ink);border-radius:16px;padding:16px;color:#fff}
+.pc-label{font-size:11px;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:6px}
+.pc-row{margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pc-num{font-size:23px;font-weight:700;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+.pc-btn{height:34px;padding:0 15px;border-radius:999px;background:#fff;color:var(--ink);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+.pc-note{margin-top:10px;font-size:10.5px;color:rgba(255,255,255,.5);line-height:1.6;border-top:1px solid rgba(255,255,255,.12);padding-top:9px}
+.info-card{margin:10px 16px 0;background:#fff;border-radius:16px;box-shadow:var(--shadow-steep-sm);padding:15px 16px}
+.ic-head{display:flex;align-items:center;justify-content:space-between}
+.ic-title{font-size:13.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
+.ic-link{font-size:11.5px;color:var(--graphite);display:inline-flex;align-items:center;gap:3px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:13px}
+.ig-item .k{font-size:10.5px;color:var(--dove)}
+.ig-item .v{margin-top:3px;font-size:13.5px;font-weight:500;color:var(--ink)}
+.ig-item .v.mut{color:var(--dove);font-weight:400}
+/* 时间线 */
+.tl{margin-top:14px;position:relative}
+.tl-item{display:flex;gap:12px;position:relative;padding-bottom:16px}
+.tl-item:last-child{padding-bottom:2px}
+.tl-item::before{content:"";position:absolute;left:5px;top:14px;bottom:0;width:1px;background:var(--line)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:11px;height:11px;border-radius:50%;background:var(--sky);border:2.5px solid var(--blue);flex-shrink:0;margin-top:2px;z-index:1}
+.tl-dot.dim{background:var(--fog);border-color:var(--dove)}
+.tl-main{flex:1;min-width:0}
+.tl-text{font-size:13px;font-weight:500;color:var(--ink);line-height:1.5}
+.tl-time{margin-top:2px;font-size:11px;color:var(--dove);font-variant-numeric:tabular-nums}
+/* 状态流转条 */
+.flow-bar{margin-top:14px;display:flex;align-items:center;gap:0}
+.fb-node{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative}
+.fb-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;background:var(--fog);color:var(--slate);box-shadow:inset 0 0 0 1px var(--hairline);z-index:1}
+.fb-node.done .fb-dot{background:var(--apricot);color:var(--rust);box-shadow:none}
+.fb-node.cur .fb-dot{background:var(--rust);color:#fff;box-shadow:0 0 0 4px rgba(93,42,26,.14)}
+.fb-lab{font-size:9.5px;color:var(--graphite);white-space:nowrap}
+.fb-node.cur .fb-lab{color:var(--rust);font-weight:600}
+.fb-node::before{content:"";position:absolute;top:11px;left:calc(-50% + 12px);right:calc(50% + 12px);height:1.5px;background:var(--line)}
+.fb-node:first-child::before{display:none}
+.fb-node.done::before{background:var(--rust);opacity:.35}
+.fb-out-row{margin-top:12px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--slate)}
+.fb-out-row .fb-dot{width:16px;height:16px;font-size:9px}
+.fb-actions{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+/* 跟进记录 */
+.fu-input-row{margin-top:12px;display:flex;gap:8px}
+.fu-input{flex:1;height:38px;border-radius:12px;border:1px solid var(--hairline);background:var(--fog);padding:0 13px;font-size:12.5px;color:var(--ink);outline:none}
+.fu-input::placeholder{color:var(--dove)}
+.fu-add{height:38px;padding:0 16px;border-radius:12px;background:var(--ink);color:#fff;font-size:12.5px;font-weight:600;flex-shrink:0}
+.fu-empty{margin-top:14px;padding:18px 0;text-align:center;font-size:12px;color:var(--dove)}
+
+/* 底部动作面板（状态流转确认） */
+.sheet-dim{position:absolute;inset:0;background:rgba(12,13,15,.45);z-index:80;opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:90;background:#fff;border-radius:22px 22px 0 0;padding:18px 18px 30px;transform:translateY(105%);transition:transform .25s cubic-bezier(.32,.72,.32,1)}
+.sheet.open .sheet-dim,.sheet-dim.open{opacity:1;pointer-events:auto}
+.sheet.open{transform:none}
+.sheet-grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between}
+.sheet-title{font-size:16px;font-weight:600}
+.sheet-cur{font-size:11.5px;color:var(--graphite);display:flex;align-items:center;gap:6px}
+.sheet-close{width:26px;height:26px;border-radius:50%;background:var(--fog);color:var(--graphite);display:flex;align-items:center;justify-content:center;font-size:13px}
+.flow-opts{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.fopt{display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--hairline);cursor:pointer;transition:all .15s}
+.fopt.on{background:var(--apricot);box-shadow:inset 0 0 0 1.5px var(--rust)}
+.fopt-radio{width:17px;height:17px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--dove);flex-shrink:0;position:relative}
+.fopt.on .fopt-radio{box-shadow:inset 0 0 0 1.5px var(--rust)}
+.fopt.on .fopt-radio::after{content:"";position:absolute;inset:3.5px;border-radius:50%;background:var(--rust)}
+.fopt-main{flex:1;min-width:0}
+.fopt-name{font-size:13.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
+.fopt-tag{font-size:9.5px;font-weight:600;padding:1.5px 7px;border-radius:999px;background:var(--rust);color:#fff}
+.fopt-desc{margin-top:2px;font-size:11px;color:var(--graphite);line-height:1.5}
+.fopt .stg{margin-left:auto}
+.sheet-note{margin-top:12px;font-size:10.5px;color:var(--dove);line-height:1.6}
+.sheet-confirm{margin-top:14px;width:100%;height:46px;border-radius:999px;background:var(--ink);color:#fff;font-size:14.5px;font-weight:600}
+
+/* 规则页 */
+.rule-card{margin:8px 16px 0;background:#fff;border-radius:16px;box-shadow:var(--shadow-steep-sm);padding:15px 16px}
+.rule-intro{font-size:12.5px;color:var(--ash);line-height:1.8;margin-top:6px}
+.map-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.map-row:first-of-type{border-top:none;margin-top:6px}
+.map-mod{width:64px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-top:2px}
+.map-arrows{flex:1;display:flex;flex-wrap:wrap;gap:6px}
+.map-pair{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:var(--fog);border-radius:999px;padding:3.5px 10px 3.5px 11px;color:var(--graphite)}
+.map-pair b{font-weight:600;color:var(--ink)}
+.map-pair .arr{color:var(--dove)}
+.auto-rule{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:12.5px;line-height:1.7;color:var(--ash)}
+.auto-rule:first-of-type{border-top:none;margin-top:6px}
+.auto-rule b{color:var(--ink);font-weight:600}
+.auto-rule .no{width:19px;height:19px;border-radius:50%;background:var(--fog);color:var(--graphite);font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.p2-card{margin:10px 16px 0;border:1.5px dashed #c9ccd4;border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.6)}
+.p2-title{font-size:12px;font-weight:600;color:var(--graphite);display:flex;align-items:center;gap:6px}
+.p2-item{margin-top:8px;font-size:12px;color:var(--graphite);line-height:1.7;padding-left:14px;position:relative}
+.p2-item::before{content:"";position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--dove)}
+
+/* ========== 右侧说明面板 ========== */
+.notes{display:flex;flex-direction:column;gap:16px;min-width:0}
+.note-card{background:#fff;border-radius:20px;box-shadow:var(--shadow-steep-sm);padding:20px 22px}
+.note-card h4{font-size:13px;font-weight:500;color:var(--graphite);display:flex;align-items:center;gap:7px}
+.note-card h4 .co{width:17px;height:17px;border-radius:50%;background:var(--rust);color:#fff;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+.note-card ol,.note-card ul{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.note-card li{font-size:13px;line-height:1.75;color:var(--ash);padding-left:16px;position:relative}
+.note-card ol li::before{content:counter(li);counter-increment:li;position:absolute;left:0;top:2px;font-size:11px;font-weight:600;color:var(--dove)}
+.note-card ol{counter-reset:li}
+.note-card li b{color:var(--ink);font-weight:600}
+.note-code{margin-top:10px;background:var(--fog);border-radius:10px;padding:10px 13px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11.5px;line-height:1.8;color:var(--ash);overflow-x:auto;white-space:nowrap}
+.note-code b{color:var(--rust);font-weight:600}
+
+/* ========== 页脚 ========== */
+.doc-foot{max-width:1200px;margin:0 auto;padding:0 40px 64px;display:flex;flex-direction:column;gap:14px}
+.foot-card{background:#fff;border-radius:20px;box-shadow:var(--shadow-steep-sm);padding:20px 24px}
+.foot-card h4{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.foot-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:12px}
+@media (max-width:900px){.foot-grid{grid-template-columns:1fr}}
+.foot-item .k{font-size:11.5px;color:var(--dove);font-weight:500}
+.foot-item .v{margin-top:4px;font-size:13px;color:var(--ash);line-height:1.8}
+.foot-item .v code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11.5px;background:var(--fog);padding:1.5px 7px;border-radius:6px;color:var(--rust)}
+</style>
+</head>
+<body>
+
+<!-- ============ 页头 ============ -->
+<header class="doc-head">
+  <h1 class="doc-title">小程序 · 我的客户 — 高保真设计稿</h1>
+  <p class="doc-sub">在「我的 → 分享获客」中新增「我的客户」模块，将房源预约、估价留资、房源单承接、招募报名四条链路散落的客户线索集中管理，并引入与招募一致、与 admin 获客中心 UnifiedLeadStatus 对齐的统一 5 态状态流转。</p>
+  <div class="doc-tags">
+    <span class="dtag dark">版本 V1.0 · 2026-09-02</span>
+    <span class="dtag">视觉规范 DESIGN.md · Steep</span>
+    <span class="dtag">状态集 统一 5 态</span>
+    <span class="dtag warn">待评审</span>
+  </div>
+  <div class="brief">
+    <div class="brief-card">
+      <h4><span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--rust)"></span>现状问题</h4>
+      <p>客户线索散落在 4 个「我的」页面：我的获客（valuation/mine）、我的客户（projects/mine，预约归因）、我的线索（recruit/mine）、我的房源单（property-sheet/mine，仅漏斗统计）。员工需在多处切换跟进，且仅招募有状态流转，预约线索无任何跟进动作。</p>
+    </div>
+    <div class="brief-card">
+      <h4><span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--blue)"></span>设计方案</h4>
+      <p>① 分享获客分组新增「我的客户」置顶入口（带新线索角标）；② 聚合列表页：四模块筛选 × 统一 5 态 chips × 漏斗统计；③ 客户详情：状态流转 + 归因链路 + 跟进记录；④ 状态规则页说明映射关系。后端复用 growth-center 的 UnifiedLeadStatus 映射。</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 屏幕切换 ============ -->
+<nav class="stage-nav">
+  <div class="stage-nav-in">
+    <button class="snav on" data-stage="entry"><i>01</i>分享获客入口</button>
+    <button class="snav" data-stage="list"><i>02</i>我的客户列表</button>
+    <button class="snav" data-stage="detail"><i>03</i>客户详情</button>
+    <button class="snav" data-stage="flow"><i>04</i>状态流转确认</button>
+    <button class="snav" data-stage="rules"><i>05</i>状态流转规则</button>
+    <button class="snav" data-stage="empty"><i>06</i>空态</button>
+    <span class="stage-hint">← → 键切换屏幕</span>
+  </div>
+</nav>
+
+<!-- ============ 01 分享获客入口 ============ -->
+<section class="stage active" id="stage-entry">
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="phone-screen">
+        <div class="statusbar">
+          <span class="num">9:41</span>
+          <span class="sb-icons">
+            <span class="sb-cell"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+            <span class="sb-wifi"></span>
+            <span class="sb-batt"></span>
+          </span>
+        </div>
+        <div class="wxnav">
+          <span class="wxnav-title">我的</span>
+          <span class="wx-capsule"><span>•••</span><span><span class="dotc"></span></span></span>
+        </div>
+        <div class="screen-body">
+          <!-- 用户卡 -->
+          <div class="user-card">
+            <div class="user-row">
+              <div class="avatar">王</div>
+              <div class="user-main">
+                <div class="user-name">王工 <span class="role-badge staff">内部员工</span></div>
+                <div class="user-username">@wanggong</div>
+              </div>
+            </div>
+            <div class="user-fields">
+              <div class="field-row"><span class="field-label">手机号</span><span class="field-value num">138****2689</span></div>
+              <div class="field-row"><span class="field-label">权限身份</span><span class="field-value">管理员</span></div>
+            </div>
+          </div>
+
+          <div class="menu-group-title">我的服务</div>
+          <div class="menu-list">
+            <div class="menu-item"><span class="menu-icon">估</span><span class="mi-main"><span class="mi-title">我的估价</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">看</span><span class="mi-main"><span class="mi-title">我想看的</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+          </div>
+
+          <div class="menu-group-title">内部入口 · 仅内部用户可见</div>
+          <div class="menu-list">
+            <div class="menu-item"><span class="menu-icon">评</span><span class="mi-main"><span class="mi-title">评估工作台</span><span class="mi-sub">待评估线索处理</span></span><span class="mi-right"><span class="menu-badge">5</span><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">房</span><span class="mi-main"><span class="mi-title">房源查询</span><span class="mi-sub">交易中心月度签约房源</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">析</span><span class="mi-main"><span class="mi-title">数据分析</span><span class="mi-sub">商圈/小区市场行情</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">带</span><span class="mi-main"><span class="mi-title">带看记录</span><span class="mi-sub">带看 / 谈价 / 面谈</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">装</span><span class="mi-main"><span class="mi-title">装修记录</span><span class="mi-sub">改造 / 施工进度</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">账</span><span class="mi-main"><span class="mi-title">项目记账</span><span class="mi-sub">收支 / 台账</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+          </div>
+
+          <div class="menu-group-title">分享获客 · 仅内部用户可见</div>
+          <div class="menu-list">
+            <div class="menu-item"><span class="menu-icon hot">客</span><span class="mi-main"><span class="mi-title">我的客户</span><span class="mi-sub">四类线索 · 集中跟进</span></span><span class="mi-right"><span class="callout">1</span><span class="menu-badge">3</span><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">房</span><span class="mi-main"><span class="mi-title">房源分享</span><span class="mi-sub">房源转发 / 客户预约</span></span><span class="mi-right"><span class="callout">2</span><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">估</span><span class="mi-main"><span class="mi-title">评估分享</span><span class="mi-sub">评估转发 / 线索跟进</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">招</span><span class="mi-main"><span class="mi-title">招募分享</span><span class="mi-sub">招募转发 / 拉新归因</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+            <div class="menu-item"><span class="menu-icon">单</span><span class="mi-main"><span class="mi-title">房源单分享</span><span class="mi-sub">多房源一图分享</span></span><span class="mi-right"><span class="chev">›</span></span></div>
+          </div>
+          <div style="height:24px"></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note-card">
+      <h4>设计说明</h4>
+      <ol>
+        <li><b>新增「我的客户」入口</b>：置于分享获客分组首位，暖色 icon（apricot/rust）与其他入口区分；右侧<b>新线索角标</b>（未读新线索数，同「评估工作台」角标模式），让员工一进「我的」即感知待跟进量。</li>
+        <li><b>原 4 个分享入口保留不动</b>：房源分享 / 评估分享 / 招募分享 / 房源单分享仍是分享动作的发起端；「我的客户」是线索的<b>集中消费端</b>。</li>
+        <li>入口仅在 <code>isInternal</code> 为 true 时渲染，与现有分组逻辑一致。</li>
+      </ol>
+    </div>
+    <div class="note-card">
+      <h4>对接说明</h4>
+      <div class="note-code">
+        页面: pages/profile/index（改 1 处分组）<br>
+        新页: pages/customers/mine（列表）<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pages/customers/detail（详情）<br>
+        角标: GET /public/customers/my/badge<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ { new_count }
+      </div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============ 02 我的客户列表 ============ -->
+<section class="stage" id="stage-list">
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="phone-screen">
+        <div class="statusbar">
+          <span class="num">9:41</span>
+          <span class="sb-icons">
+            <span class="sb-cell"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+            <span class="sb-wifi"></span>
+            <span class="sb-batt"></span>
+          </span>
+        </div>
+        <div class="wxnav">
+          <span class="wx-back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></span>
+          <span class="wxnav-title">我的客户</span>
+          <span class="wx-capsule"><span>•••</span><span><span class="dotc"></span></span></span>
+        </div>
+        <div class="screen-body">
+          <!-- 订阅提醒 -->
+          <div class="subscribe-prompt">
+            <div class="sp-text">
+              <div class="sp-title">客户留资 / 状态变更，微信实时提醒您</div>
+              <div class="sp-sub">开启后第一时间跟进新线索</div>
+            </div>
+            <button class="sp-btn">开启</button>
+          </div>
+
+          <!-- 漏斗统计 -->
+          <div class="stats">
+            <div class="stats-row">
+              <span class="stats-tag">昨日</span>
+              <span class="stat"><span class="stat-num num">12</span><span class="stat-label">分享</span></span>
+              <span class="stat"><span class="stat-num num">48</span><span class="stat-label">打开 PV</span></span>
+              <span class="stat"><span class="stat-num num">23</span><span class="stat-label">访客 UV</span></span>
+              <span class="stat hl"><span class="stat-num num">3</span><span class="stat-label">留资</span></span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-tag">累计</span>
+              <span class="stat"><span class="stat-num num">486</span><span class="stat-label">分享</span></span>
+              <span class="stat"><span class="stat-num num">2104</span><span class="stat-label">打开 PV</span></span>
+              <span class="stat"><span class="stat-num num">967</span><span class="stat-label">访客 UV</span></span>
+              <span class="stat hl"><span class="stat-num num">87</span><span class="stat-label">留资</span></span>
+            </div>
+            <div class="stats-foot">四类链路合计 · 各线 UV 口径不同（匿名 visitor_id / openid），数据不可横向对比</div>
+          </div>
+
+          <!-- 模块筛选 -->
+          <div class="mtabs">
+            <button class="mtab on" data-m="all"><span class="mdot" style="background:var(--ink)"></span>全部<span class="cnt">10</span></button>
+            <button class="mtab" data-m="valuation"><span class="mdot" style="background:var(--rust)"></span>估价<span class="cnt">4</span></button>
+            <button class="mtab" data-m="booking"><span class="mdot" style="background:var(--blue)"></span>预约<span class="cnt">2</span></button>
+            <button class="mtab" data-m="sheet"><span class="mdot" style="background:var(--graphite)"></span>房源单<span class="cnt">1</span></button>
+            <button class="mtab" data-m="recruit"><span class="mdot" style="background:var(--teal)"></span>招募<span class="cnt">3</span></button>
+          </div>
+
+          <!-- 状态 chips -->
+          <div class="chips">
+            <button class="chip-item on" data-s="all">全部</button>
+            <button class="chip-item" data-s="new">新线索<span class="cnt">4</span></button>
+            <button class="chip-item" data-s="contacted">已联系<span class="cnt">2</span></button>
+            <button class="chip-item" data-s="high">意向高<span class="cnt">2</span></button>
+            <button class="chip-item" data-s="won">已转化<span class="cnt">1</span></button>
+            <button class="chip-item" data-s="out">已淘汰<span class="cnt">1</span></button>
+          </div>
+
+          <!-- 线索列表（可交互筛选） -->
+          <div class="lead-list">
+            <div class="result-line num" id="resultLine">共 10 位客户</div>
+
+            <div class="lead-card" data-m="valuation" data-s="new">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--rust)"></span>估价</span>
+                <span class="lc-phone num">138****2689</span>
+                <span class="stg stg-new">新线索</span>
+              </div>
+              <div class="lc-sub">保利天悦 · 3室2厅 · 128㎡ · 预期价 285万</div>
+              <div class="lc-meta"><span class="src-chip">客户分享</span><span class="lc-time">2 小时前</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ink" onclick="event.stopPropagation();go('detail')">联系客户</button><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('flow')">状态流转</button></div>
+            </div>
+
+            <div class="lead-card" data-m="booking" data-s="new">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--blue)"></span>预约</span>
+                <span class="lc-phone num">186****4321</span>
+                <span class="stg stg-new">新线索</span>
+              </div>
+              <div class="lc-sub">预约看房：保利天悦 建面约118㎡四居 · 明天 10:00</div>
+              <div class="lc-meta"><span class="src-chip">客户分享</span><span class="lc-time">昨天 16:40</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ink" onclick="event.stopPropagation();go('detail')">联系客户</button><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('flow')">状态流转</button></div>
+            </div>
+
+            <div class="lead-card" data-m="recruit" data-s="new">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--teal)"></span>招募</span>
+                <span class="lc-phone num">159****8877</span>
+                <span class="stg stg-new">新线索</span>
+              </div>
+              <div class="lc-sub">报名合伙人 · 主营商圈：望京</div>
+              <div class="lc-meta"><span class="src-chip">卡片</span><span class="lc-time">昨天 10:12</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ink" onclick="event.stopPropagation();go('detail')">联系客户</button><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('flow')">状态流转</button></div>
+            </div>
+
+            <div class="lead-card" data-m="sheet" data-s="new">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--graphite)"></span>房源单</span>
+                <span class="lc-phone num">135****6620</span>
+                <span class="stg stg-new">新线索</span>
+              </div>
+              <div class="lc-sub">扫码承接估价：朝阳学区精选（共 6 套）· 短码 A3F8K2</div>
+              <div class="lc-meta"><span class="src-chip">海报</span><span class="lc-time">3 天前</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ink" onclick="event.stopPropagation();go('detail')">联系客户</button><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('flow')">状态流转</button></div>
+            </div>
+
+            <div class="lead-card" data-m="valuation" data-s="contacted">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--rust)"></span>估价</span>
+                <span class="lc-phone num">137****0092</span>
+                <span class="stg stg-contact">已联系</span>
+              </div>
+              <div class="lc-sub">中海寰宇天下 · 2室1厅 · 89㎡ · 预期价 168万</div>
+              <div class="lc-meta"><span class="src-chip">客户分享</span><span class="lc-time">3 天前</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ink" onclick="event.stopPropagation();go('detail')">再次联系</button><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('flow')">状态流转</button></div>
+            </div>
+
+            <div class="lead-card" data-m="recruit" data-s="contacted">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--teal)"></span>招募</span>
+                <span class="lc-phone num">136****9911</span>
+                <span class="stg stg-contact">已联系</span>
+              </div>
+              <div class="lc-sub">报名合伙人 · 主营商圈：亦庄</div>
+              <div class="lc-meta"><span class="src-chip">海报</span><span class="lc-time">6 天前</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ink" onclick="event.stopPropagation();go('detail')">再次联系</button><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('flow')">状态流转</button></div>
+            </div>
+
+            <div class="lead-card" data-m="valuation" data-s="high">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--rust)"></span>估价</span>
+                <span class="lc-phone num">150****3344</span>
+                <span class="stg stg-high">意向高</span>
+              </div>
+              <div class="lc-sub">万科城市之光 · 4室2厅 · 155㎡ · 预期价 420万 · 已约周末带看</div>
+              <div class="lc-meta"><span class="src-chip">客户分享</span><span class="lc-time">1 周前</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ink" onclick="event.stopPropagation();go('detail')">再次联系</button><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('flow')">状态流转</button></div>
+            </div>
+
+            <div class="lead-card" data-m="recruit" data-s="high">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--teal)"></span>招募</span>
+                <span class="lc-phone num">188****1123</span>
+                <span class="stg stg-high">意向高</span>
+              </div>
+              <div class="lc-sub">报名合伙人 · 主营商圈：国贸 · 已完成首次沟通</div>
+              <div class="lc-meta"><span class="src-chip">海报</span><span class="lc-time">5 天前</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ink" onclick="event.stopPropagation();go('detail')">再次联系</button><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('flow')">状态流转</button></div>
+            </div>
+
+            <div class="lead-card" data-m="booking" data-s="won">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--blue)"></span>预约</span>
+                <span class="lc-phone num">139****7788</span>
+                <span class="stg stg-won">已转化</span>
+              </div>
+              <div class="lc-sub">中海寰宇天下 建面约95㎡三居 · 预约看房后完成签约</div>
+              <div class="lc-meta"><span class="src-chip">客户分享</span><span class="lc-time">2 周前</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('detail')">查看详情</button></div>
+            </div>
+
+            <div class="lead-card" data-m="valuation" data-s="out">
+              <div class="lc-top">
+                <span class="lc-mod"><span class="mdot" style="background:var(--rust)"></span>估价</span>
+                <span class="lc-phone num">133****5566</span>
+                <span class="stg stg-out">已淘汰</span>
+              </div>
+              <div class="lc-sub">融创壹号院 · 3室2厅 · 142㎡ · 客户已在他司成交</div>
+              <div class="lc-meta"><span class="src-chip">客户分享</span><span class="lc-time">2 周前</span></div>
+              <div class="lc-foot"><button class="btn-sm btn-ghost" onclick="event.stopPropagation();go('detail')">查看详情</button></div>
+            </div>
+
+            <div class="result-line" id="emptyLine" style="display:none;padding:26px 0;text-align:center;color:var(--dove)">该筛选条件下暂无客户</div>
+          </div>
+          <div style="height:20px"></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note-card">
+      <h4>设计说明</h4>
+      <ol>
+        <li><b>漏斗统计卡</b>：沿用 recruit/mine 的「昨日/累计两行 × 分享/PV/UV/留资」模式，聚合计数四类链路；「留资」列以 rust 色强调。脚注保留 UV 口径差异提示。</li>
+        <li><b>两级筛选</b>：模块 tabs（带各模块色点与数量）× 统一状态 chips。模块色点与 admin 获客中心来源构成一致：估价 rust / 预约 blue / 房源单 graphite / 招募 teal。</li>
+        <li><b>统一线索卡</b>：模块标签 + 脱敏手机号 + 统一状态标签（右上）；摘要行按模块差异化（估价：小区/户型/面积/预期价；预约：房源标题+预约时间；房源单：名称+短码；招募：主营商圈）；来源 chip（客户分享/卡片/海报）+ 相对时间。</li>
+        <li><b>状态配色（Steep 色板内）</b>：新线索 sky → 已联系 apricot → 意向高 rust 实底 → 已转化 mint → 已淘汰 neutral，语义为「冷→暖→热→成→弃」。</li>
+        <li><b>卡片操作</b>：新线索主按钮「联系客户」→ 查看完整号码（自动流转已联系）；非新线索显示「再次联系」；「状态流转」打开确认面板；已转化/已淘汰仅保留查看。</li>
+        <li>列表分页加载（每页 10 条，滚动触底加载），401/403 与空数据沿用现有空态兜底模式。</li>
+      </ol>
+    </div>
+    <div class="note-card">
+      <h4>对接说明</h4>
+      <div class="note-code">
+        列表: GET /public/customers/my<br>
+        &nbsp;&nbsp;?module=all|valuation|booking|sheet|recruit<br>
+        &nbsp;&nbsp;&status=new|contacted|high_intent|…<br>
+        &nbsp;&nbsp;&page=&page_size=<br>
+        统计: GET /public/customers/my/share-stats<br>
+        映射: 复用 growth-center<br>
+        &nbsp;&nbsp;&nbsp;UnifiedLeadStatus 只读映射规则
+      </div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============ 03 客户详情 ============ -->
+<section class="stage" id="stage-detail">
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="phone-screen">
+        <div class="statusbar">
+          <span class="num">9:41</span>
+          <span class="sb-icons">
+            <span class="sb-cell"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+            <span class="sb-wifi"></span>
+            <span class="sb-batt"></span>
+          </span>
+        </div>
+        <div class="wxnav">
+          <span class="wx-back" onclick="go('list')"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></span>
+          <span class="wxnav-title">客户详情</span>
+          <span class="wx-capsule"><span>•••</span><span><span class="dotc"></span></span></span>
+        </div>
+        <div class="screen-body">
+          <!-- 状态 hero -->
+          <div class="hero-card">
+            <div class="hero-row">
+              <span class="stg stg-new" style="font-size:12px">新线索</span>
+              <span class="lc-time">09-01 14:32 留资</span>
+            </div>
+            <div class="hero-title">客户刚提交估价申请</div>
+            <div class="hero-sub">建议尽快电话联系，确认卖房意向与房屋信息，再发起正式评估。</div>
+          </div>
+
+          <!-- 手机号卡 -->
+          <div class="phone-card">
+            <div class="pc-label">客户手机号 · 估价</div>
+            <div class="pc-row">
+              <span class="pc-num">138****2689</span>
+              <button class="pc-btn">查看完整号码</button>
+            </div>
+            <div class="pc-note">查看完整号码后，客户状态将自动流转为「已联系」；仅归属员工可查看。</div>
+          </div>
+
+          <!-- 业务信息 -->
+          <div class="info-card">
+            <div class="ic-head"><span class="ic-title">估价信息</span><span class="ic-link">09-01 14:32 提交</span></div>
+            <div class="info-grid">
+              <div class="ig-item"><div class="k">小区</div><div class="v">保利天悦</div></div>
+              <div class="ig-item"><div class="k">户型 / 面积</div><div class="v num">3室2厅 · 128㎡</div></div>
+              <div class="ig-item"><div class="k">预期价</div><div class="v num">285 万</div></div>
+              <div class="ig-item"><div class="k">评估价</div><div class="v mut">待评估</div></div>
+              <div class="ig-item"><div class="k">来源</div><div class="v">客户分享</div></div>
+              <div class="ig-item"><div class="k">归属员工</div><div class="v">王工（我）</div></div>
+            </div>
+          </div>
+
+          <!-- 归因链路 -->
+          <div class="info-card">
+            <div class="ic-head"><span class="ic-title">归因链路</span></div>
+            <div class="tl">
+              <div class="tl-item"><span class="tl-dot"></span><div class="tl-main"><div class="tl-text">我分享了估价卡片</div><div class="tl-time">09-01 14:20</div></div></div>
+              <div class="tl-item"><span class="tl-dot"></span><div class="tl-main"><div class="tl-text">客户打开并浏览</div><div class="tl-time">09-01 14:27</div></div></div>
+              <div class="tl-item"><span class="tl-dot"></span><div class="tl-main"><div class="tl-text">客户提交估价申请（留资）</div><div class="tl-time">09-01 14:32</div></div></div>
+            </div>
+          </div>
+
+          <!-- 状态流转 -->
+          <div class="info-card">
+            <div class="ic-head"><span class="ic-title">状态流转</span><span class="ic-link" onclick="go('rules')">流转规则 ›</span></div>
+            <div class="flow-bar">
+              <div class="fb-node done cur"><span class="fb-dot">1</span><span class="fb-lab">新线索</span></div>
+              <div class="fb-node"><span class="fb-dot">2</span><span class="fb-lab">已联系</span></div>
+              <div class="fb-node"><span class="fb-dot">3</span><span class="fb-lab">意向高</span></div>
+              <div class="fb-node"><span class="fb-dot">4</span><span class="fb-lab">已转化</span></div>
+            </div>
+            <div class="fb-out-row"><span class="fb-dot" style="background:var(--line);color:var(--slate)">×</span>任意状态可标记「已淘汰」（无意向 / 信息无效 / 他司成交）</div>
+            <div class="fb-actions">
+              <button class="btn-sm btn-ink" onclick="go('flow')">标记已联系</button>
+              <button class="btn-sm btn-warm" onclick="go('flow')">标记意向高</button>
+              <button class="btn-sm btn-ghost" onclick="go('flow')">标记已转化</button>
+              <button class="btn-sm btn-ghost" onclick="go('flow')">标记已淘汰</button>
+            </div>
+          </div>
+
+          <!-- 跟进记录 -->
+          <div class="info-card">
+            <div class="ic-head"><span class="ic-title">跟进记录</span><span class="ic-link">1 条提醒</span></div>
+            <div class="fu-input-row">
+              <input class="fu-input" placeholder="记录沟通内容，如：电话已联系，周末带看…" />
+              <button class="fu-add">添加</button>
+            </div>
+            <div class="tl">
+              <div class="tl-item"><span class="tl-dot dim"></span><div class="tl-main"><div class="tl-text">已创建跟进提醒：24 小时内未联系将再次推送订阅消息</div><div class="tl-time">09-01 14:32 · 系统</div></div></div>
+            </div>
+            <div class="fu-empty">暂无手动跟进记录</div>
+          </div>
+          <div style="height:20px"></div>
+        </div>
+
+        <!-- 状态流转确认面板（默认收起） -->
+        <div class="sheet-dim" id="flowDim" onclick="closeSheet()"></div>
+        <div class="sheet" id="flowSheet">
+          <div class="sheet-grab"></div>
+          <div class="sheet-head">
+            <span class="sheet-title">变更客户状态</span>
+            <span class="sheet-cur">当前 <span class="stg stg-new">新线索</span></span>
+            <button class="sheet-close" onclick="closeSheet()">✕</button>
+          </div>
+          <div class="flow-opts">
+            <div class="fopt on">
+              <span class="fopt-radio"></span>
+              <div class="fopt-main"><div class="fopt-name">已联系 <span class="fopt-tag">推荐</span></div><div class="fopt-desc">已电话 / 微信联系客户，确认基本信息</div></div>
+              <span class="stg stg-contact">已联系</span>
+            </div>
+            <div class="fopt">
+              <span class="fopt-radio"></span>
+              <div class="fopt-main"><div class="fopt-name">意向高</div><div class="fopt-desc">明确表达卖房 / 带看 / 合伙意向</div></div>
+              <span class="stg stg-high">意向高</span>
+            </div>
+            <div class="fopt">
+              <span class="fopt-radio"></span>
+              <div class="fopt-main"><div class="fopt-name">已转化</div><div class="fopt-desc">完成签约 / 成交 / 合伙入驻</div></div>
+              <span class="stg stg-won">已转化</span>
+            </div>
+            <div class="fopt">
+              <span class="fopt-radio"></span>
+              <div class="fopt-main"><div class="fopt-name">已淘汰</div><div class="fopt-desc">无意向 / 信息无效 / 他司成交，需填写原因</div></div>
+              <span class="stg stg-out">已淘汰</span>
+            </div>
+          </div>
+          <div class="sheet-note">流转后微信订阅消息将通知归属员工；状态变更记录计入归因链路。</div>
+          <button class="sheet-confirm">确认流转</button>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note-card">
+      <h4>设计说明</h4>
+      <ol>
+        <li><b>状态 hero 卡</b>：当前统一状态 + 一句话下一步建议，替代员工自己判断「接下来干嘛」。</li>
+        <li><b>手机号深色卡</b>（ink 实底）：完整号码仅归属员工可见；点击「查看完整号码」直接拨打并<b>自动流转「新线索 → 已联系」</b>，复用招募 mine 页已验证的隐式流转交互（applyLeadPhone 模式）。</li>
+        <li><b>业务信息栅格</b>按模块差异化（估价示例：小区/户型/预期价/评估价；预约示例换为房源标题/预约时间；房源单换为名称+短码；招募换为主营商圈+活动名）。</li>
+        <li><b>归因链路时间线</b>：分享 → 打开 → 留资，与 admin 获客中心线索详情抽屉的 timeline 事件对齐（share / visit / lead_submit）。</li>
+        <li><b>状态流转卡</b>：主链路 4 节点进度条 + 「已淘汰」旁路说明；操作按钮直达确认面板（屏 04）。</li>
+        <li><b>跟进记录</b>：轻量备注 + 时间线，落地 0825 迭代计划 V1.2 F2「leads 增 follow-up 子资源」；新增跟进后自动刷新「上次跟进」时间。</li>
+      </ol>
+    </div>
+    <div class="note-card">
+      <h4>对接说明</h4>
+      <div class="note-code">
+        详情: GET /public/customers/my/{module}/{id}<br>
+        号码: 复用各线既有端点（查看即流转）<br>
+        &nbsp;&nbsp;/public/leads/my/acquired/{id}/phone<br>
+        &nbsp;&nbsp;/public/recruit/my/leads/{id}/phone<br>
+        流转: PUT /public/customers/my/{module}/{id}/status<br>
+        &nbsp;&nbsp;body: { status, remark }<br>
+        跟进: POST /public/customers/my/{module}/{id}/follow-ups
+      </div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============ 04 状态流转确认 ============ -->
+<section class="stage" id="stage-flow">
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="phone-screen">
+        <div class="statusbar">
+          <span class="num">9:41</span>
+          <span class="sb-icons">
+            <span class="sb-cell"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+            <span class="sb-wifi"></span>
+            <span class="sb-batt"></span>
+          </span>
+        </div>
+        <div class="wxnav">
+          <span class="wx-back" onclick="go('list')"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></span>
+          <span class="wxnav-title">客户详情</span>
+          <span class="wx-capsule"><span>•••</span><span><span class="dotc"></span></span></span>
+        </div>
+        <div class="screen-body" style="filter:blur(0.5px)">
+          <div class="hero-card">
+            <div class="hero-row">
+              <span class="stg stg-new" style="font-size:12px">新线索</span>
+              <span class="lc-time">09-01 14:32 留资</span>
+            </div>
+            <div class="hero-title">客户刚提交估价申请</div>
+            <div class="hero-sub">建议尽快电话联系，确认卖房意向与房屋信息，再发起正式评估。</div>
+          </div>
+          <div class="phone-card">
+            <div class="pc-label">客户手机号 · 估价</div>
+            <div class="pc-row">
+              <span class="pc-num">138****2689</span>
+              <button class="pc-btn">查看完整号码</button>
+            </div>
+            <div class="pc-note">查看完整号码后，客户状态将自动流转为「已联系」；仅归属员工可查看。</div>
+          </div>
+          <div class="info-card">
+            <div class="ic-head"><span class="ic-title">状态流转</span><span class="ic-link" onclick="go('rules')">流转规则 ›</span></div>
+            <div class="flow-bar">
+              <div class="fb-node done cur"><span class="fb-dot">1</span><span class="fb-lab">新线索</span></div>
+              <div class="fb-node"><span class="fb-dot">2</span><span class="fb-lab">已联系</span></div>
+              <div class="fb-node"><span class="fb-dot">3</span><span class="fb-lab">意向高</span></div>
+              <div class="fb-node"><span class="fb-dot">4</span><span class="fb-lab">已转化</span></div>
+            </div>
+            <div class="fb-out-row"><span class="fb-dot" style="background:var(--line);color:var(--slate)">×</span>任意状态可标记「已淘汰」（无意向 / 信息无效 / 他司成交）</div>
+          </div>
+          <div style="height:20px"></div>
+        </div>
+
+        <div class="sheet-dim open" onclick="closeSheet()"></div>
+        <div class="sheet open" id="flowSheetDemo">
+          <div class="sheet-grab"></div>
+          <div class="sheet-head">
+            <span class="sheet-title">变更客户状态</span>
+            <span class="sheet-cur">当前 <span class="stg stg-new">新线索</span></span>
+            <button class="sheet-close" onclick="go('detail')">✕</button>
+          </div>
+          <div class="flow-opts">
+            <div class="fopt on">
+              <span class="fopt-radio"></span>
+              <div class="fopt-main"><div class="fopt-name">已联系 <span class="fopt-tag">推荐</span></div><div class="fopt-desc">已电话 / 微信联系客户，确认基本信息</div></div>
+              <span class="stg stg-contact">已联系</span>
+            </div>
+            <div class="fopt">
+              <span class="fopt-radio"></span>
+              <div class="fopt-main"><div class="fopt-name">意向高</div><div class="fopt-desc">明确表达卖房 / 带看 / 合伙意向</div></div>
+              <span class="stg stg-high">意向高</span>
+            </div>
+            <div class="fopt">
+              <span class="fopt-radio"></span>
+              <div class="fopt-main"><div class="fopt-name">已转化</div><div class="fopt-desc">完成签约 / 成交 / 合伙入驻</div></div>
+              <span class="stg stg-won">已转化</span>
+            </div>
+            <div class="fopt">
+              <span class="fopt-radio"></span>
+              <div class="fopt-main"><div class="fopt-name">已淘汰</div><div class="fopt-desc">无意向 / 信息无效 / 他司成交，需填写原因</div></div>
+              <span class="stg stg-out">已淘汰</span>
+            </div>
+          </div>
+          <div class="sheet-note">「推荐」为当前状态的建议下一步；流转后微信订阅消息将通知归属员工。</div>
+          <button class="sheet-confirm" onclick="go('detail')">确认流转</button>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note-card">
+      <h4>设计说明</h4>
+      <ol>
+        <li><b>底部动作面板</b>承接所有手动状态变更（列表卡「状态流转」与详情页操作按钮均打开此面板），避免误触直接改状态。</li>
+        <li>目标状态单选，按当前状态给出<b>「推荐」下一步</b>：新线索→已联系、已联系→意向高、意向高→已转化。</li>
+        <li>「已淘汰」为旁路：任何状态可标记，需填写原因（对应 leads 的 audit_reason / 招募 eliminated 语义）。</li>
+        <li>确认后本地就地更新卡片状态标签（同 recruit/mine applyLeadPhone 的就地刷新模式），并触发订阅消息通知归属员工。</li>
+      </ol>
+    </div>
+    <div class="note-card">
+      <h4>流转矩阵</h4>
+      <div class="note-code">
+        new       → contacted | high | won | out<br>
+        contacted → high | won | out<br>
+        high      → won | out<br>
+        won       → 终态（不可逆）<br>
+        out       → 终态（可备注后重新激活，二期）
+      </div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============ 05 状态流转规则 ============ -->
+<section class="stage" id="stage-rules">
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="phone-screen">
+        <div class="statusbar">
+          <span class="num">9:41</span>
+          <span class="sb-icons">
+            <span class="sb-cell"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+            <span class="sb-wifi"></span>
+            <span class="sb-batt"></span>
+          </span>
+        </div>
+        <div class="wxnav">
+          <span class="wx-back" onclick="go('detail')"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></span>
+          <span class="wxnav-title">状态流转规则</span>
+          <span class="wx-capsule"><span>•••</span><span><span class="dotc"></span></span></span>
+        </div>
+        <div class="screen-body">
+          <div class="rule-card">
+            <div class="ic-title">统一 5 态</div>
+            <p class="rule-intro">四条分享获客链路的客户线索，统一映射为 5 个状态，与 admin 获客中心（UnifiedLeadStatus）口径一致，员工端与管理端对同一客户认知一致。</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+              <span class="stg stg-new">新线索</span>
+              <span class="stg stg-contact">已联系</span>
+              <span class="stg stg-high">意向高</span>
+              <span class="stg stg-won">已转化</span>
+              <span class="stg stg-out">已淘汰</span>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="ic-title">各模块原生状态映射</div>
+            <div class="map-row">
+              <div class="map-mod"><span class="lc-mod"><span class="mdot" style="background:var(--rust)"></span>估价</span></div>
+              <div class="map-arrows">
+                <span class="map-pair">待评估 <span class="arr">→</span> <b>新线索</b></span>
+                <span class="map-pair">待看房 <span class="arr">→</span> <b>已联系</b></span>
+                <span class="map-pair">已看房 <span class="arr">→</span> <b>意向高</b></span>
+                <span class="map-pair">已签约 <span class="arr">→</span> <b>已转化</b></span>
+                <span class="map-pair">已放弃 / 他司成交 <span class="arr">→</span> <b>已淘汰</b></span>
+              </div>
+            </div>
+            <div class="map-row">
+              <div class="map-mod"><span class="lc-mod"><span class="mdot" style="background:var(--blue)"></span>预约</span></div>
+              <div class="map-arrows">
+                <span class="map-pair">已预约 <span class="arr">→</span> <b>新线索</b></span>
+                <span class="map-pair" style="border:1px dashed #c9ccd4;background:transparent">后续状态 <span class="arr">→</span> 二期预约状态机</span>
+              </div>
+            </div>
+            <div class="map-row">
+              <div class="map-mod"><span class="lc-mod"><span class="mdot" style="background:var(--graphite)"></span>房源单</span></div>
+              <div class="map-arrows">
+                <span class="map-pair">复用估价状态机 <span class="arr">→</span> <b>同估价</b></span>
+                <span class="map-pair">来源标识：source_property_id 非空</span>
+              </div>
+            </div>
+            <div class="map-row">
+              <div class="map-mod"><span class="lc-mod"><span class="mdot" style="background:var(--teal)"></span>招募</span></div>
+              <div class="map-arrows">
+                <span class="map-pair">原生即统一 5 态 <span class="arr">→</span> <b>无需映射</b></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="ic-title">自动流转与归属规则</div>
+            <div class="auto-rule"><span class="no">1</span><span><b>查看即联系</b>：点击「查看完整号码」后，「新线索」自动流转为「已联系」，与招募 mine 页既有行为一致，且不可逆。</span></div>
+            <div class="auto-rule"><span class="no">2</span><span><b>归属规则</b>：客户归属以<b>首次留资</b>时的分享归属员工（referrer）为准，后续流转不改变归属。</span></div>
+            <div class="auto-rule"><span class="no">3</span><span><b>内部过滤</b>：内部员工自己提交 / 录入的线索不进入「我的客户」列表（与 admin 获客中心 internal_creator 过滤一致）。</span></div>
+            <div class="auto-rule"><span class="no">4</span><span><b>订阅提醒</b>：新留资与状态被后台变更时，通过微信订阅消息通知归属员工。</span></div>
+          </div>
+
+          <div class="p2-card">
+            <div class="p2-title">二期规划（本次不实现）</div>
+            <div class="p2-item">预约状态机：已预约 → 已联系 → 已带看 → 已关闭（0825 计划 V1.2 F1），落地后自动并入统一映射。</div>
+            <div class="p2-item">跟进提醒日历与客户分层标签（V2.0 员工 CRM 增强）。</div>
+            <div class="p2-item">活动归因扩展：campaign_id 接入估价 / 预约 / 房源单分享。</div>
+          </div>
+          <div style="height:20px"></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note-card">
+      <h4>设计说明</h4>
+      <ol>
+        <li>规则页从详情页「流转规则 ›」与空态页进入，向员工解释统一状态口径，降低「为什么我的估价线索显示已联系」类困惑。</li>
+        <li>映射表内容与 <code>services/growth_center/leads.py</code> 的只读映射逐条对应（pending_assessment→new、pending_visit→contacted、visited→high_intent、signed→converted、其余→eliminated）。</li>
+        <li>「查看即联系」为既有产品行为（招募线已上线），此处将其显式文档化并推广到估价 / 房源单线。</li>
+      </ol>
+    </div>
+    <div class="note-card">
+      <h4>边界情况</h4>
+      <ul>
+        <li><b>已转化 / 已淘汰为终态</b>：列表默认收进对应筛选，不再出现在「新线索」提醒数中。</li>
+        <li>同一客户多链路留资：按线索条目展示（每条独立流转），二期再做客户级合并（以手机号去重）。</li>
+        <li>员工离职 / 权限回收：线索归属转移由后台处理，小程序端仅展示归属自己的线索。</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<!-- ============ 06 空态 ============ -->
+<section class="stage" id="stage-empty">
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="phone-screen">
+        <div class="statusbar">
+          <span class="num">9:41</span>
+          <span class="sb-icons">
+            <span class="sb-cell"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+            <span class="sb-wifi"></span>
+            <span class="sb-batt"></span>
+          </span>
+        </div>
+        <div class="wxnav">
+          <span class="wx-back" onclick="go('entry')"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></span>
+          <span class="wxnav-title">我的客户</span>
+          <span class="wx-capsule"><span>•••</span><span><span class="dotc"></span></span></span>
+        </div>
+        <div class="screen-body">
+          <div class="stats">
+            <div class="stats-row">
+              <span class="stats-tag">昨日</span>
+              <span class="stat"><span class="stat-num num">0</span><span class="stat-label">分享</span></span>
+              <span class="stat"><span class="stat-num num">0</span><span class="stat-label">打开 PV</span></span>
+              <span class="stat"><span class="stat-num num">0</span><span class="stat-label">访客 UV</span></span>
+              <span class="stat"><span class="stat-num num">0</span><span class="stat-label">留资</span></span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-tag">累计</span>
+              <span class="stat"><span class="stat-num num">0</span><span class="stat-label">分享</span></span>
+              <span class="stat"><span class="stat-num num">0</span><span class="stat-label">打开 PV</span></span>
+              <span class="stat"><span class="stat-num num">0</span><span class="stat-label">访客 UV</span></span>
+              <span class="stat"><span class="stat-num num">0</span><span class="stat-label">留资</span></span>
+            </div>
+            <div class="stats-foot">四类链路合计 · 各线 UV 口径不同，数据不可横向对比</div>
+          </div>
+          <div class="empty-box">
+            <div class="empty-orb">客</div>
+            <div class="empty-title">还没有客户线索</div>
+            <div class="empty-sub">将房源、估价、招募或房源单<br>分享给客户，客户留资后将集中展示在这里</div>
+            <button class="empty-cta" onclick="go('entry')">去分享获客</button>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note-card">
+      <h4>设计说明</h4>
+      <ol>
+        <li>空态判定沿用现有模式：<b>累计漏斗全零且列表为空</b>时展示整页空态；仅有筛选条件无结果时用行内空态（列表页「该筛选条件下暂无客户」）。</li>
+        <li>空态主 CTA「去分享获客」返回「我的」页分享获客分组，形成「分享 → 留资 → 跟进」引导闭环。</li>
+        <li>401 / 403（登录态失效）沿用现有「空态兜底不清登录态」模式，不在此屏重复设计。</li>
+      </ol>
+    </div>
+    <div class="note-card">
+      <h4>信息架构总览</h4>
+      <div class="note-code">
+        我的（profile）<br>
+        └─ 分享获客<br>
+        &nbsp;&nbsp;&nbsp;├─ <b>我的客户</b>（新增 · 置顶）<br>
+        &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├─ 列表（模块×状态筛选+漏斗）<br>
+        &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├─ 详情（流转/联系/跟进）<br>
+        &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└─ 流转规则<br>
+        &nbsp;&nbsp;&nbsp;├─ 房源分享（分享发起端）<br>
+        &nbsp;&nbsp;&nbsp;├─ 评估分享（分享发起端）<br>
+        &nbsp;&nbsp;&nbsp;├─ 招募分享（分享发起端）<br>
+        &nbsp;&nbsp;&nbsp;└─ 房源单分享（分享发起端）
+      </div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============ 页脚 ============ -->
+<footer class="doc-foot">
+  <div class="foot-card">
+    <h4>接口设计建议（后端新增聚合层，不动各业务线既有端点）</h4>
+    <div class="foot-grid">
+      <div class="foot-item"><div class="k">统一列表（跨 4 链路 UNION ALL）</div><div class="v"><code>GET /public/customers/my</code>?module&status&page&page_size — 复用 <code>GrowthLeadService.list</code> 的跨链路聚合与 UnifiedLeadStatus 映射，收窄为 referrer=当前员工。</div></div>
+      <div class="foot-item"><div class="k">统一详情 + 时间线</div><div class="v"><code>GET /public/customers/my/{module}/{lead_id}</code> — 复用 <code>GrowthLeadDetailService</code> 归因时间线（share/visit/lead_submit），增加手机号解密（仅归属员工）。</div></div>
+      <div class="foot-item"><div class="k">状态流转（唯一写路径）</div><div class="v"><code>PUT /public/customers/my/{module}/{lead_id}/status</code> body <code>{status, remark}</code> — 按模块分发到各业务线服务回写原生状态，校验流转矩阵与归属。</div></div>
+      <div class="foot-item"><div class="k">跟进记录</div><div class="v"><code>GET|POST /public/customers/my/{module}/{lead_id}/follow-ups</code> — 对应 0825 计划 V1.2 F2「leads 增 follow-up 子资源」。</div></div>
+      <div class="foot-item"><div class="k">联系（查看即流转）</div><div class="v">复用 <code>/public/leads/my/acquired/{id}/phone</code>、<code>/public/recruit/my/leads/{id}/phone</code> 既有端点；预约线补 phone 解密端点。</div></div>
+      <div class="foot-item"><div class="k">统计与角标</div><div class="v"><code>GET /public/customers/my/share-stats</code>（四链路合计）与 <code>GET /public/customers/my/badge</code>（新线索数，profile 角标）。</div></div>
+    </div>
+  </div>
+  <div class="foot-card">
+    <h4>关联文档</h4>
+    <div class="foot-grid">
+      <div class="foot-item"><div class="k">视觉规范</div><div class="v">DESIGN.md（Steep Style Reference）— 本稿全部颜色 / 圆角 / 阴影取自 Steep tokens，与 miniapp/app.wxss 既有令牌一致。</div></div>
+      <div class="foot-item"><div class="k">迭代依据</div><div class="v">docs/Done/2026-08-25-产品调研与迭代功能计划清单.md · F2 线索跟进闭环 / F10 我的客户分页；docs/To-Do/2026-09-01-获客中心迭代-高保真设计稿.html（admin 端同口径设计）。</div></div>
+      <div class="foot-item"><div class="k">状态映射参考</div><div class="v">backend/services/growth_center/leads.py · UnifiedLeadStatus（new / contacted / high_intent / converted / eliminated）。</div></div>
+      <div class="foot-item"><div class="k">交互参考</div><div class="v">miniapp/pages/recruit/mine（筛选 chips / 状态标签 / 查看即流转 / 订阅提醒条模式）。</div></div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var ORDER = ["entry", "list", "detail", "flow", "rules", "empty"];
+  var LABELS = { entry: "01 分享获客入口", list: "02 我的客户列表", detail: "03 客户详情", flow: "04 状态流转确认", rules: "05 状态流转规则", empty: "06 空态" };
+
+  function current() {
+    var h = location.hash.replace(/^#\/?/, "");
+    return ORDER.indexOf(h) >= 0 ? h : "entry";
+  }
+  function render() {
+    var cur = current();
+    ORDER.forEach(function (k) {
+      var el = document.getElementById("stage-" + k);
+      if (el) el.classList.toggle("active", k === cur);
+    });
+    document.querySelectorAll(".snav").forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-stage") === cur);
+    });
+    document.title = LABELS[cur] + " · 小程序我的客户设计稿";
+    window.scrollTo({ top: 0 });
+  }
+  window.go = function (k) { location.hash = "#/" + k; };
+  window.closeSheet = function () { go("detail"); };
+
+  document.querySelectorAll(".snav").forEach(function (b) {
+    b.addEventListener("click", function () { go(b.getAttribute("data-stage")); });
+  });
+  window.addEventListener("hashchange", render);
+
+  // 键盘切换
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    var i = ORDER.indexOf(current());
+    var n = e.key === "ArrowRight" ? Math.min(i + 1, ORDER.length - 1) : Math.max(i - 1, 0);
+    go(ORDER[n]);
+  });
+
+  // ===== 列表页：模块 × 状态交互筛选 =====
+  var filterM = "all", filterS = "all";
+  var cards = Array.prototype.slice.call(document.querySelectorAll("#stage-list .lead-card"));
+  function applyFilter() {
+    var shown = 0;
+    cards.forEach(function (c) {
+      var ok = (filterM === "all" || c.getAttribute("data-m") === filterM) &&
+               (filterS === "all" || c.getAttribute("data-s") === filterS);
+      c.style.display = ok ? "" : "none";
+      if (ok) shown++;
+    });
+    var line = document.getElementById("resultLine");
+    var empty = document.getElementById("emptyLine");
+    if (line) line.textContent = "共 " + shown + " 位客户";
+    if (empty) empty.style.display = shown === 0 ? "" : "none";
+  }
+  document.querySelectorAll("#stage-list .mtab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      document.querySelectorAll("#stage-list .mtab").forEach(function (x) { x.classList.remove("on"); });
+      t.classList.add("on");
+      filterM = t.getAttribute("data-m");
+      applyFilter();
+    });
+  });
+  document.querySelectorAll("#stage-list .chip-item").forEach(function (t) {
+    t.addEventListener("click", function () {
+      document.querySelectorAll("#stage-list .chip-item").forEach(function (x) { x.classList.remove("on"); });
+      t.classList.add("on");
+      filterS = t.getAttribute("data-s");
+      applyFilter();
+    });
+  });
+  cards.forEach(function (c) { c.addEventListener("click", function () { go("detail"); }); });
+
+  // ===== 详情页：动作面板开合（预览用，未从 flow 屏进入时） =====
+  var sheet = document.getElementById("flowSheet");
+  var dim = document.getElementById("flowDim");
+  document.querySelectorAll("#stage-detail .pc-btn").forEach(function (b) {
+    b.addEventListener("click", function () {
+      sheet.classList.add("open"); dim.classList.add("open");
+    });
+  });
+  document.querySelectorAll("#stage-detail .fb-actions .btn-sm, #stage-detail .lc-foot .btn-sm").forEach(function () {});
+  document.querySelectorAll(".fopt").forEach(function (o) {
+    o.addEventListener("click", function () {
+      var group = o.parentElement;
+      group.querySelectorAll(".fopt").forEach(function (x) { x.classList.remove("on"); });
+      o.classList.add("on");
+    });
+  });
+
+  render();
+  applyFilter();
+})();
+</script>
+</body>
+</html>

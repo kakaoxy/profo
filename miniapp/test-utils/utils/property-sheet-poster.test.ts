@@ -54,15 +54,15 @@ describe("buildSheetPosterLayout 基础尺寸与文案", () => {
     expect(layout.head.titleLines.map((l) => l.text)).toEqual(["美房宝品质二手房"]);
     expect(layout.head.titleLines[0].font).toContain("serif");
     expect(layout.head.pill.text.text).toBe("精选好房");
-    expect(layout.brand.main.text).toBe("美房宝 · 品质二手房");
-    expect(layout.brand.sub.text).toBe("真实在售 · 实拍房源");
+    expect(layout.brand.main.text).toBe("专注上海老破小");
+    expect(layout.brand.sub.text).toBe("所见即所得 · 每套皆标杆");
     expect(layout.qr.caption.text).toBe("扫码看全部房源");
     expect(layout.brand.dot.color.toLowerCase()).toBe("#5d2a1a");
   });
 
   it("副标题取实际套数", () => {
-    expect(buildSheetPosterLayout({ count: 1 }).head.subtitle.text).toBe("1 套优质房源 精选呈现");
-    expect(buildSheetPosterLayout({ count: 6 }).head.subtitle.text).toBe("6 套优质房源 精选呈现");
+    expect(buildSheetPosterLayout({ count: 1 }).head.subtitle.text).toBe("1 套精选好房 倾情呈现");
+    expect(buildSheetPosterLayout({ count: 6 }).head.subtitle.text).toBe("6 套精选好房 倾情呈现");
   });
 });
 

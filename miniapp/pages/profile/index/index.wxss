@@ -233,6 +233,11 @@
   font-weight: 500;
   flex-shrink: 0;
 }
+/* 「我的客户」入口 icon 暖色变体（对齐设计稿 hot 样式：apricot 底 rust 字） */
+.menu-icon-hot {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
 .menu-item-title {
   font-size: 30rpx;
   font-weight: 500;

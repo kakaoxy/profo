@@ -1,0 +1,419 @@
+/* 我的客户 · 聚合列表页（对照设计稿「02 我的客户列表」「06 空态」，Steep tokens 见 app.wxss） */
+
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+}
+
+/* ===== 首屏加载态 ===== */
+.state-box {
+  padding: 120rpx 40rpx;
+  display: flex;
+  justify-content: center;
+}
+.state-text {
+  font-size: 28rpx;
+  color: var(--graphite);
+}
+
+/* ===== 订阅提醒条 ===== */
+.subscribe-prompt {
+  margin: 24rpx 32rpx 0;
+  background: var(--sky-wash);
+  border: 2rpx solid rgba(29, 91, 184, 0.14);
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.sp-text {
+  flex: 1;
+  min-width: 0;
+}
+.sp-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.sp-sub {
+  font-size: 21rpx;
+  color: var(--graphite);
+  margin-top: 4rpx;
+  line-height: 1.5;
+}
+.sp-btn {
+  flex-shrink: 0;
+  margin: 0;
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 28rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 600;
+  border-radius: 9999rpx;
+}
+.sp-btn::after {
+  border: none;
+}
+
+/* ===== 漏斗统计卡（昨日/累计两行） ===== */
+.stats {
+  margin: 24rpx 32rpx 0;
+  background: var(--pure-white);
+  border-radius: 28rpx;
+  box-shadow: var(--shadow-sm);
+}
+.stats-row {
+  display: grid;
+  grid-template-columns: 84rpx repeat(4, 1fr);
+  align-items: center;
+  padding: 24rpx 0;
+}
+.stats-row + .stats-row {
+  border-top: 2rpx solid #f2f3f5;
+}
+.stats-tag {
+  text-align: center;
+  font-size: 20rpx;
+  color: var(--dove);
+}
+.stat {
+  text-align: center;
+}
+.stat + .stat {
+  border-left: 2rpx solid #f2f3f5;
+}
+.stat-num {
+  display: block;
+  font-size: 38rpx;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.stat-label {
+  display: block;
+  font-size: 20rpx;
+  color: var(--graphite);
+  margin-top: 6rpx;
+  line-height: 1.4;
+  padding: 0 4rpx;
+}
+/* 留资列 rust 强调 */
+.stat--hl .stat-num {
+  color: var(--rust);
+}
+.stats-foot {
+  padding: 0 28rpx 20rpx;
+  font-size: 20rpx;
+  color: var(--dove);
+  line-height: 1.5;
+}
+
+/* ===== 模块固定色点（估价 rust / 预约 blue / 房源单 graphite / 招募 teal，全部 ink） ===== */
+.mdot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mdot--all {
+  background: var(--ink);
+}
+.mdot--valuation {
+  background: var(--rust);
+}
+.mdot--booking {
+  background: #1d5bb8;
+}
+.mdot--sheet {
+  background: var(--graphite);
+}
+.mdot--recruit {
+  background: #0b7a5c;
+}
+
+/* ===== 模块 tabs（横向滑动） ===== */
+.mtabs {
+  white-space: nowrap;
+  padding: 28rpx 32rpx 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+.mtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 14rpx 26rpx;
+  margin-right: 12rpx;
+  border-radius: 9999rpx;
+  font-size: 25rpx;
+  font-weight: 500;
+  background: var(--pure-white);
+  color: var(--ash);
+  box-shadow: inset 0 0 0 2rpx #ececee;
+  white-space: nowrap;
+}
+.mtab--on {
+  background: var(--ink);
+  color: #ffffff;
+  box-shadow: none;
+}
+.mtab .cnt {
+  font-size: 22rpx;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 统一状态 chips（横向滑动） ===== */
+.chips {
+  white-space: nowrap;
+  padding: 20rpx 32rpx 4rpx;
+  box-sizing: border-box;
+  width: 100%;
+}
+.chip-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 26rpx;
+  margin-right: 12rpx;
+  border-radius: 9999rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  background: var(--pure-white);
+  color: var(--graphite);
+  box-shadow: inset 0 0 0 2rpx #ececee;
+  white-space: nowrap;
+}
+.chip-item--on {
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-weight: 600;
+  box-shadow: none;
+}
+.chip-item .cnt {
+  margin-left: 6rpx;
+  font-size: 21rpx;
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 客户列表 ===== */
+.lead-list {
+  padding: 20rpx 32rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.result-line {
+  font-size: 22rpx;
+  color: var(--slate);
+  padding: 0 4rpx;
+}
+.lead-card {
+  background: var(--pure-white);
+  border-radius: 32rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 28rpx 30rpx;
+}
+.lc-top {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.lc-mod {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 21rpx;
+  font-weight: 500;
+  color: var(--graphite);
+  background: var(--pure-white);
+  box-shadow: inset 0 0 0 2rpx #ececee;
+  padding: 5rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.lc-mod .mdot {
+  width: 10rpx;
+  height: 10rpx;
+}
+.lc-phone {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 统一状态标签（新线索 sky → 已联系 apricot → 意向高 rust 实底 → 已转化 mint → 已淘汰 neutral） */
+.stg {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 21rpx;
+  font-weight: 600;
+  padding: 6rpx 20rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.stg-new {
+  background: var(--sky-wash);
+  color: #1d5bb8;
+}
+.stg-contact {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.stg-high {
+  background: var(--rust);
+  color: #ffffff;
+}
+.stg-converted {
+  background: var(--mint);
+  color: #0b7a5c;
+}
+.stg-eliminated {
+  background: var(--fog);
+  color: var(--slate);
+}
+
+.lc-sub {
+  margin-top: 16rpx;
+  font-size: 25rpx;
+  color: var(--ash);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lc-meta {
+  margin-top: 16rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+.src-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 20rpx;
+  font-weight: 500;
+  background: var(--fog);
+  color: var(--graphite);
+  padding: 4rpx 16rpx;
+  border-radius: 9999rpx;
+}
+.lc-time {
+  margin-left: auto;
+  font-size: 21rpx;
+  color: var(--dove);
+}
+
+/* 卡片操作按钮 */
+.lc-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  height: 60rpx;
+  padding: 0 28rpx;
+  border-radius: 9999rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+.btn-sm--ink {
+  background: var(--ink);
+  color: #ffffff;
+}
+.btn-sm--ghost {
+  background: var(--pure-white);
+  color: var(--ash);
+  box-shadow: inset 0 0 0 2rpx #ececee;
+}
+
+/* 行内空态（筛选无结果） */
+.leads-empty {
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--dove);
+  padding: 52rpx 0;
+}
+/* 触底/分页 footer */
+.more {
+  display: flex;
+  justify-content: center;
+  padding: 28rpx 0 20rpx;
+  font-size: 24rpx;
+  color: var(--dove);
+}
+
+/* ===== 整页空态（累计漏斗全零且列表空） ===== */
+.empty-box {
+  padding: 128rpx 80rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.empty-orb {
+  width: 176rpx;
+  height: 176rpx;
+  border-radius: 50%;
+  background: var(--apricot-wash);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 68rpx;
+  font-weight: 600;
+  color: var(--rust);
+  margin-bottom: 40rpx;
+}
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.empty-sub {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.8;
+}
+.empty-cta {
+  margin-top: 44rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 52rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.empty-cta::after {
+  border: none;
+}
+/* 空态规则页入口（CTA 下方小号灰字链接） */
+.empty-rules-link {
+  margin-top: 28rpx;
+  font-size: 24rpx;
+  color: var(--dove);
+}
+
+/* ===== 底部安全区 ===== */
+.safe-bottom {
+  height: 64rpx;
+}

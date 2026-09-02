@@ -1,0 +1,189 @@
+<!-- 我的客户 · 客户详情（对照设计稿 03 客户详情 / 04 状态流转确认） -->
+<view class="page">
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <!-- 空态（404 / 401 / 403 / 参数缺失）：空态兜底 + 返回，不清登录态 -->
+  <view wx:elif="{{notFound}}" class="empty">
+    <view class="empty-orb">客</view>
+    <view class="empty-title">线索不存在或无权查看</view>
+    <view class="empty-sub">
+      <view>该客户线索可能已被删除，</view>
+      <view>或不归属于当前账号</view>
+    </view>
+    <button class="empty-cta" bindtap="onGoBack">返回</button>
+  </view>
+
+  <block wx:else>
+    <!-- 1. 状态 hero 卡 -->
+    <view class="hero-card">
+      <view class="hero-row">
+        <text class="stg {{statusClass}}">{{statusText}}</text>
+        <text class="lc-time">{{createdTimeText}} 留资</text>
+      </view>
+      <view class="hero-title">{{heroTitle}}</view>
+      <view class="hero-sub">{{heroSub}}</view>
+    </view>
+
+    <!-- 2. 手机号深色卡（ink 实底白字） -->
+    <view class="phone-card">
+      <view class="pc-label">客户手机号 · {{moduleLabel}}</view>
+      <view class="pc-row">
+        <text class="pc-num">{{phoneDisplay}}</text>
+        <button wx:if="{{hasPhone}}" class="pc-btn" bindtap="onViewPhone">查看完整号码</button>
+      </view>
+      <view class="pc-note">{{phoneNote}}</view>
+    </view>
+
+    <!-- 3. 业务信息栅格（按模块差异化） -->
+    <view class="info-card">
+      <view class="ic-head">
+        <text class="ic-title">{{infoCardTitle}}</text>
+        <text class="ic-link">{{createdTimeText}} 提交</text>
+      </view>
+      <view class="info-grid">
+        <view class="ig-item" wx:for="{{infoItems}}" wx:key="k">
+          <view class="k">{{item.k}}</view>
+          <view class="v {{item.num ? 'num' : ''}} {{item.mut ? 'mut' : ''}}">{{item.v}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 4. 归因链路时间线 -->
+    <view class="info-card">
+      <view class="ic-head">
+        <text class="ic-title">归因链路</text>
+      </view>
+      <view class="tl">
+        <view class="tl-item" wx:for="{{timelineItems}}" wx:key="idx">
+          <view class="tl-dot {{item.dim ? 'dim' : ''}}"></view>
+          <view class="tl-main">
+            <view class="tl-text">{{item.text}}</view>
+            <view wx:if="{{item.timeText}}" class="tl-time">{{item.timeText}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 5. 状态流转卡 -->
+    <view class="info-card">
+      <view class="ic-head">
+        <text class="ic-title">状态流转</text>
+        <text class="ic-link" bindtap="onGoRules">流转规则 ›</text>
+      </view>
+      <view class="flow-bar">
+        <view class="fb-node {{item.cls}}" wx:for="{{flowNodes}}" wx:key="label">
+          <view class="fb-dot">{{item.num}}</view>
+          <view class="fb-lab">{{item.label}}</view>
+        </view>
+      </view>
+      <view class="fb-out-row">
+        <view class="fb-dot-x">×</view>
+        <text>任意状态可标记「已淘汰」（无意向 / 信息无效 / 他司成交）</text>
+      </view>
+      <!-- booking：无状态机，仅提示 -->
+      <view wx:if="{{module === 'booking'}}" class="fb-note">预约状态机二期上线后支持流转</view>
+      <!-- 终态：无按钮，显示终态说明 -->
+      <view wx:elif="{{flowActions.length === 0}}" class="fb-note">{{terminalNote}}</view>
+      <view wx:else class="fb-actions">
+        <button
+          wx:for="{{flowActions}}"
+          wx:key="status"
+          class="btn-sm {{item.cls}}"
+          data-status="{{item.status}}"
+          bindtap="onFlowAction"
+        >{{item.label}}</button>
+      </view>
+    </view>
+
+    <!-- 6. 跟进记录 -->
+    <view class="info-card">
+      <view class="ic-head">
+        <text class="ic-title">跟进记录</text>
+        <text wx:if="{{followUps.length}}" class="ic-link">{{followUps.length}} 条</text>
+      </view>
+      <view class="fu-input-row">
+        <input
+          class="fu-input"
+          value="{{followUpInput}}"
+          placeholder="记录沟通内容…"
+          maxlength="500"
+          bindinput="onFollowInput"
+        />
+        <button class="fu-add" bindtap="onAddFollowUp" disabled="{{addingFollowUp}}">添加</button>
+      </view>
+      <view wx:if="{{followUps.length}}" class="tl">
+        <view class="tl-item" wx:for="{{followUps}}" wx:key="id">
+          <view class="tl-dot dim"></view>
+          <view class="tl-main">
+            <view class="tl-text">{{item.content}}</view>
+            <view class="tl-time">{{item.timeText}}{{item.authorText}}</view>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="fu-empty">暂无手动跟进记录</view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </block>
+</view>
+
+<!-- 底部动作面板（状态流转确认，遮罩点击 / ✕ 关闭） -->
+<view class="sheet-dim {{flowOpen ? 'open' : ''}}" bindtap="onCloseFlow"></view>
+<view class="sheet {{flowOpen ? 'open' : ''}}">
+  <view class="sheet-grab"></view>
+  <view class="sheet-head">
+    <text class="sheet-title">变更客户状态</text>
+    <view class="sheet-cur">
+      当前
+      <text class="stg {{statusClass}}">{{statusText}}</text>
+    </view>
+    <view class="sheet-close" bindtap="onCloseFlow">✕</view>
+  </view>
+  <view class="flow-opts">
+    <view
+      wx:for="{{flowOptions}}"
+      wx:key="status"
+      class="fopt {{selectedStatus === item.status ? 'on' : ''}}"
+      data-status="{{item.status}}"
+      bindtap="onPickStatus"
+    >
+      <view class="fopt-radio"></view>
+      <view class="fopt-main">
+        <view class="fopt-name">
+          {{item.label}}
+          <text wx:if="{{item.recommended}}" class="fopt-tag">推荐</text>
+        </view>
+        <view class="fopt-desc">{{item.desc}}</view>
+        <!-- 已淘汰：展开原因必填单选 + 备注选填 -->
+        <block wx:if="{{item.status === 'eliminated' && selectedStatus === 'eliminated'}}">
+          <view class="reason-list">
+            <view
+              wx:for="{{reasonOptions}}"
+              wx:for-item="r"
+              wx:key="value"
+              class="ropt {{reason === r.value ? 'on' : ''}}"
+              data-reason="{{r.value}}"
+              catchtap="onPickReason"
+            >
+              <view class="ropt-radio"></view>
+              <text>{{r.label}}</text>
+            </view>
+          </view>
+          <input
+            class="remark-input"
+            value="{{remark}}"
+            placeholder="备注（选填，≤200字）"
+            maxlength="200"
+            bindinput="onRemarkInput"
+          />
+        </block>
+      </view>
+      <text class="stg {{item.stgClass}}">{{item.label}}</text>
+    </view>
+  </view>
+  <view class="sheet-note">「推荐」为当前状态的建议下一步；填写备注将同步为一条跟进记录。</view>
+  <button class="sheet-confirm" bindtap="onConfirmFlow" disabled="{{submitting}}">确认流转</button>
+</view>

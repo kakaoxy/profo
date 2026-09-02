@@ -1,0 +1,225 @@
+/* 状态流转规则 · 对齐设计稿「05 状态流转规则」屏（px → rpx 按 1:2 换算） */
+/* 设计稿 token --blue/--teal/--line/--hairline 未入 app.wxss，此处页内补充定义，供 var() 消费 */
+page {
+  --blue: #1d5bb8;
+  --teal: #0b7a5c;
+  --line: #f2f3f5;
+  --hairline: #ececee;
+}
+
+.rules-page {
+  padding-bottom: 40rpx;
+}
+
+/* 卡片 */
+.rule-card {
+  margin: 16rpx 32rpx 0;
+  background: var(--pure-white);
+  border-radius: 32rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 30rpx 32rpx;
+}
+.ic-title {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* 卡1：统一 5 态 */
+.rule-intro {
+  font-size: 25rpx;
+  color: var(--ash);
+  line-height: 1.8;
+  margin-top: 12rpx;
+}
+.stg-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 24rpx;
+}
+.stg {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 21rpx;
+  font-weight: 600;
+  padding: 6rpx 20rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.stg-new {
+  background: var(--sky-wash);
+  color: var(--blue);
+}
+.stg-contact {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.stg-high {
+  background: var(--rust);
+  color: var(--apricot-wash);
+}
+.stg-won {
+  background: var(--mint);
+  color: var(--teal);
+}
+.stg-out {
+  background: var(--line);
+  color: var(--slate);
+}
+
+/* 卡2：各模块原生状态映射 */
+/* 行容器独立包裹，保证 :first-of-type 命中首个 map-row（设计稿意图：首行无分隔线） */
+.map-rows {
+  margin-top: 12rpx;
+}
+.map-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-top: 1rpx solid var(--line);
+}
+.map-row:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+.map-mod {
+  width: 128rpx;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8rpx;
+  padding-top: 4rpx;
+}
+.lc-mod {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 21rpx;
+  font-weight: 500;
+  color: var(--graphite);
+  background: var(--pure-white);
+  box-shadow: inset 0 0 0 1rpx var(--hairline);
+  padding: 5rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.mdot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mdot-rust {
+  background: var(--rust);
+}
+.mdot-blue {
+  background: var(--blue);
+}
+.mdot-graphite {
+  background: var(--graphite);
+}
+.mdot-teal {
+  background: var(--teal);
+}
+.map-arrows {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+.map-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 22rpx;
+  background: var(--fog);
+  border-radius: 9999rpx;
+  padding: 7rpx 20rpx 7rpx 22rpx;
+  color: var(--graphite);
+}
+.map-pair-dashed {
+  border: 1rpx dashed #c9ccd4;
+  background: transparent;
+}
+.pair-target {
+  font-weight: 600;
+  color: var(--ink);
+}
+.arr {
+  color: var(--dove);
+}
+
+/* 卡3：自动流转与归属规则 */
+.auto-rules {
+  margin-top: 12rpx;
+}
+.auto-rule {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-top: 1rpx solid var(--line);
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--ash);
+}
+.auto-rule:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+.auto-rule-text {
+  flex: 1;
+}
+.rt-strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.auto-rule .no {
+  width: 38rpx;
+  height: 38rpx;
+  border-radius: 50%;
+  background: var(--fog);
+  color: var(--graphite);
+  font-size: 21rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+/* 二期规划（虚线卡） */
+.p2-card {
+  margin: 20rpx 32rpx 0;
+  border: 3rpx dashed #c9ccd4;
+  border-radius: 32rpx;
+  padding: 28rpx 32rpx;
+  background: rgba(255, 255, 255, 0.6);
+}
+.p2-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--graphite);
+}
+.p2-item {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+  line-height: 1.7;
+  padding-left: 28rpx;
+  position: relative;
+}
+.p2-item::before {
+  content: "";
+  position: absolute;
+  left: 4rpx;
+  top: 18rpx;
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: var(--dove);
+}

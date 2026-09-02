@@ -1,0 +1,159 @@
+<view class="page">
+  <!-- 首屏加载态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <block wx:else>
+    <!-- 订阅提醒条（模板已配置且本地未授权时展示；整页空态不展示） -->
+    <view wx:if="{{showSubscribePrompt && !empty}}" class="subscribe-prompt">
+      <view class="sp-text">
+        <view class="sp-title">客户留资 / 状态变更，微信实时提醒您</view>
+        <view class="sp-sub">开启后第一时间跟进新反馈</view>
+      </view>
+      <button class="sp-btn" bindtap="onSubscribeTap">开启</button>
+    </view>
+
+    <!-- 漏斗统计卡（昨日/累计两行 × 分享/打开 PV/访客 UV/留资，留资列 rust 强调） -->
+    <view class="stats">
+      <view class="stats-row">
+        <view class="stats-tag">昨日</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayShareCount}}</text>
+          <text class="stat-label">分享</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayPv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.yesterdayUv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.yesterdayLeadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
+      </view>
+      <view class="stats-row">
+        <view class="stats-tag">累计</view>
+        <view class="stat">
+          <text class="stat-num">{{stats.shareCount}}</text>
+          <text class="stat-label">分享</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.pv}}</text>
+          <text class="stat-label">打开 PV</text>
+        </view>
+        <view class="stat">
+          <text class="stat-num">{{stats.uv}}</text>
+          <text class="stat-label">访客 UV</text>
+        </view>
+        <view class="stat stat--hl">
+          <text class="stat-num">{{stats.leadCount}}</text>
+          <text class="stat-label">留资</text>
+        </view>
+      </view>
+      <view class="stats-foot">四类链路合计 · 各线 UV 口径不同，数据不可横向对比</view>
+    </view>
+
+    <!-- 整页空态（累计漏斗全零且列表空） -->
+    <view wx:if="{{empty}}" class="empty-box">
+      <view class="empty-orb">客</view>
+      <view class="empty-title">还没有客户线索</view>
+      <view class="empty-sub">
+        <view>将房源、估价、招募或房源单</view>
+        <view>分享给客户，客户留资后将集中展示在这里</view>
+      </view>
+      <button class="empty-cta" bindtap="onGoShare">去分享获客</button>
+      <text class="empty-rules-link" bindtap="onGoRules">查看状态流转规则 ›</text>
+    </view>
+
+    <!-- 有数据：模块 tabs + 状态 chips + 列表 -->
+    <block wx:else>
+      <!-- 模块 tabs（横向滑动，色点+计数） -->
+      <scroll-view class="mtabs" scroll-x enhanced show-scrollbar="{{false}}">
+        <view
+          wx:for="{{moduleTabs}}"
+          wx:key="value"
+          class="mtab {{activeModule === item.value ? 'mtab--on' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onModuleTap"
+        >
+          <view class="mdot {{item.dotClass}}"></view>
+          <text>{{item.label}}</text>
+          <text class="cnt">{{item.count}}</text>
+        </view>
+      </scroll-view>
+
+      <!-- 统一状态 chips（横向滑动，含计数） -->
+      <scroll-view class="chips" scroll-x enhanced show-scrollbar="{{false}}">
+        <view
+          wx:for="{{statusChips}}"
+          wx:key="value"
+          class="chip-item {{activeStatus === item.value ? 'chip-item--on' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onStatusChipTap"
+        >{{item.label}}<text wx:if="{{item.count >= 0}}" class="cnt">{{item.count}}</text></view>
+      </scroll-view>
+
+      <!-- 客户列表 -->
+      <view class="lead-list">
+        <view class="result-line">共 {{total}} 位客户</view>
+
+        <view
+          wx:for="{{items}}"
+          wx:key="id"
+          class="lead-card"
+          data-module="{{item.module}}"
+          data-id="{{item.id}}"
+          bindtap="onCardTap"
+        >
+          <view class="lc-top">
+            <view class="lc-mod">
+              <view class="mdot {{item.dotClass}}"></view>
+              <text>{{item.moduleText}}</text>
+            </view>
+            <text class="lc-phone">{{item.phone}}</text>
+            <text class="stg {{item.statusClass}}">{{item.statusText}}</text>
+          </view>
+          <view class="lc-sub">{{item.summary}}</view>
+          <view class="lc-meta">
+            <text wx:if="{{item.sourceText}}" class="src-chip">{{item.sourceText}}</text>
+            <text class="lc-time">{{item.timeText}}</text>
+          </view>
+          <view class="lc-foot">
+            <view
+              wx:if="{{item.primaryText}}"
+              class="btn-sm btn-sm--ink"
+              data-module="{{item.module}}"
+              data-id="{{item.id}}"
+              catchtap="onContactTap"
+            >{{item.primaryText}}</view>
+            <view
+              wx:if="{{item.flowText}}"
+              class="btn-sm btn-sm--ghost"
+              data-module="{{item.module}}"
+              data-id="{{item.id}}"
+              catchtap="onFlowTap"
+            >{{item.flowText}}</view>
+            <view
+              wx:if="{{item.viewText}}"
+              class="btn-sm btn-sm--ghost"
+              data-module="{{item.module}}"
+              data-id="{{item.id}}"
+              catchtap="onCardTap"
+            >{{item.viewText}}</view>
+          </view>
+        </view>
+
+        <view wx:if="{{!loading && items.length === 0}}" class="leads-empty">该筛选条件下暂无客户</view>
+        <view wx:elif="{{loadingMore}}" class="more">加载中…</view>
+        <view wx:elif="{{!noMore && items.length > 0}}" class="more">上拉加载更多</view>
+        <view wx:elif="{{items.length > 0}}" class="more">没有更多了</view>
+      </view>
+    </block>
+  </block>
+
+  <view class="safe-bottom"></view>
+</view>

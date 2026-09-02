@@ -19,7 +19,10 @@
     "pages/property-sheet/mine/index",
     "pages/property-sheet/create/index",
     "pages/property-sheet/detail/index",
-    "pages/property-sheet/landing/index"
+    "pages/property-sheet/landing/index",
+    "pages/customers/mine/index",
+    "pages/customers/detail/index",
+    "pages/customers/rules/index"
   ],
   "subPackages": [
     {
