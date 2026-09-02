@@ -2,7 +2,8 @@
 set -e
 
 # ---- 变量配置（按需修改） ----
-PROJECT_DIR="/Users/bugco/Desktop/profo"
+# 项目目录 = 脚本所在目录，避免硬编码绝对路径
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_USER="root"
 SERVER_IP="139.224.162.134"
 SERVER_PATH="/root/profo"
