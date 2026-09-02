@@ -21,7 +21,6 @@
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
-import { invalidatePendingAssessmentCount } from "../../../utils/pending-assessment";
 import { resolveImageUrl } from "../../../utils/url";
 import { formatDate } from "../../../utils/valuation-display";
 
@@ -551,8 +550,6 @@ Page<PageData, PageCustom>({
           data: body,
         });
         wx.showToast({ title: "评估价已更新", icon: "success" });
-        // 当前价已变化：失效角标缓存，触发工作台 onShow 静默刷新双段
-        invalidatePendingAssessmentCount();
         setTimeout(() => wx.navigateBack(), 600);
         return;
       }
@@ -568,8 +565,6 @@ Page<PageData, PageCustom>({
       });
       const toastText = action === "approve" ? "已批准约看" : action === "reject" ? "已放弃该线索" : "已标记他司成交";
       wx.showToast({ title: toastText, icon: "success" });
-      // 待办数已变化：失效角标缓存，触发工作台 onShow 静默刷新双段
-      invalidatePendingAssessmentCount();
       setTimeout(() => wx.navigateBack(), 600);
     } catch (err) {
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
@@ -595,7 +590,6 @@ Page<PageData, PageCustom>({
   /** 409 冲突弹窗「返回并刷新」：工作台 onShow 静默刷新双段. */
   onConflictBack() {
     this.setData({ showConflict: false });
-    invalidatePendingAssessmentCount();
     wx.navigateBack();
   },
 

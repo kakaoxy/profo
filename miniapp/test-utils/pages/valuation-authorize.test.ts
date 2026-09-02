@@ -6,9 +6,6 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPageHarness, createRequestMock, pendingReqs, resetTestStubs, wxStubs } from "../test-harness";
 
 vi.mock("../../utils/request", () => createRequestMock());
-vi.mock("../../utils/pending-assessment", () => ({
-  invalidatePendingAssessmentCount: vi.fn(),
-}));
 vi.mock("../../utils/url", () => ({
   resolveImageUrl: vi.fn((u: string) => u || ""),
 }));
@@ -122,8 +119,7 @@ describe("viewMode 详情与再次评估入口", () => {
 });
 
 describe("再次评估（adjust）提交链路", () => {
-  it("打开 adjust 面板 → 输入新价 → 提交 POST evaluations，成功后失效角标并返回", async () => {
-    const { invalidatePendingAssessmentCount } = await import("../../utils/pending-assessment");
+  it("打开 adjust 面板 → 输入新价 → 提交 POST evaluations，成功后 toast 并返回", async () => {
     const ctx = createPageHarness({});
     enterViewMode(ctx, handledItem("pending_visit", 350));
 
@@ -144,7 +140,6 @@ describe("再次评估（adjust）提交链路", () => {
     req.resolve({ id: "e3", eval_price: 362.5 });
     await flush();
     expect(wxStubs.showToast).toHaveBeenCalledWith({ title: "评估价已更新", icon: "success" });
-    expect(invalidatePendingAssessmentCount).toHaveBeenCalled();
     // 600ms 后 navigateBack 返回工作台
     await new Promise((r) => setTimeout(r, 650));
     expect(wxStubs.navigateBack).toHaveBeenCalled();
