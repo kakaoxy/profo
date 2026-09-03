@@ -4002,6 +4002,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/customers/my/badge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的客户角标
+         * @description 统一状态为 new 的线索计数（该用户全部线索口径）
+         */
+        get: operations["get_my_customers_badge_api_v1_public_customers_my_badge_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/customers/my": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的客户列表
+         * @description 跨 4 链路（估价/预约/房源单/招募）归属当前员工的统一线索分页列表，含 module_counts/status_counts（全部线索口径）
+         */
+        get: operations["get_my_customers_api_v1_public_customers_my_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/customers/my/share-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的客户分享统计
+         * @description 四链路 share-stats 逐字段求和（昨日/累计 × 分享/PV/UV/留资），口径与各线一致
+         */
+        get: operations["get_my_customers_share_stats_api_v1_public_customers_my_share_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/customers/my/subscribe-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的客户订阅消息模板配置
+         * @description 返回订阅消息模板ID（settings 未配置时为 null）
+         */
+        get: operations["get_my_customers_subscribe_template_api_v1_public_customers_my_subscribe_template_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/customers/my/{module}/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的客户线索详情
+         * @description 归属校验（非归属统一 404）+ 归因时间线 + 模块差异业务字段 + 统一状态
+         */
+        get: operations["get_my_customer_detail_api_v1_public_customers_my__module___lead_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/customers/my/{module}/{lead_id}/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查看客户完整手机号
+         * @description 归属校验后返回解密手机号；招募线查看即视为已联系（new→contacted），其余线状态不变；隐私敏感限流
+         */
+        get: operations["get_my_customer_phone_api_v1_public_customers_my__module___lead_id__phone_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/customers/my/{module}/{lead_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 我的客户状态流转
+         * @description 统一状态矩阵流转（非法流转 409）；booking 全矩阵流转（eliminated 时 reason 必填）；估价/房源单支持淘汰旁路（reason 必填）与重新激活（eliminated→contacted，回写 pending_visit）；重新激活 remark 必填（缺失 422）；remark 非空自动落一条系统跟进记录
+         */
+        put: operations["update_my_customer_status_api_v1_public_customers_my__module___lead_id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/customers/my/{module}/{lead_id}/follow-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的客户跟进记录
+         * @description 归属校验后按跟进时间倒序返回
+         */
+        get: operations["get_my_customer_follow_ups_api_v1_public_customers_my__module___lead_id__follow_ups_get"];
+        put?: never;
+        /**
+         * 新增我的客户跟进记录
+         * @description content 必填（1-500 字符），写入 created_by_id=当前用户
+         */
+        post: operations["create_my_customer_follow_up_api_v1_public_customers_my__module___lead_id__follow_ups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/recruit/campaigns": {
         parameters: {
             query?: never;
@@ -4350,6 +4514,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/growth-center/leads/{module}/{lead_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 管理端统一线索状态流转
+         * @description 统一 5 态矩阵流转（口径与小程序「我的客户」一致，非法流转 409）：recruit/booking 全矩阵；估价/房源单仅「淘汰」旁路（reason 必填 422）与「重新激活」（eliminated→contacted，remark 必填 422）；remark 非空自动落一条系统跟进记录，状态变化 best-effort 通知归属员工
+         */
+        put: operations["update_lead_status_api_v1_admin_growth_center_leads__module___lead_id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/leads/{module}/{lead_id}/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 管理端查看线索完整手机号
+         * @description recruit/booking 解密原生号码，估价/房源单返回 creator 手机号；查看不改变任何线索状态（区别于 C 端「查看即联系」）；隐私敏感操作记录访问日志
+         */
+        get: operations["get_lead_phone_api_v1_admin_growth_center_leads__module___lead_id__phone_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/market/kpi": {
         parameters: {
             query?: never;
@@ -4585,6 +4789,20 @@ export interface components {
         AddCompetitorRequest: {
             /** Competitor Community Id */
             competitor_community_id: string;
+        };
+        /**
+         * AdminLeadPhoneResponse
+         * @description 管理端线索完整手机号响应.
+         *
+         *     recruit/booking 返回解密原生号码，valuation/sheet 返回 creator 手机号；
+         *     查看不改变任何线索状态（区别于 C 端「查看即联系」）。
+         */
+        AdminLeadPhoneResponse: {
+            /**
+             * Phone
+             * @description 完整手机号（解密）
+             */
+            phone: string;
         };
         /**
          * ApiKeyCreateResponse
@@ -5484,6 +5702,17 @@ export interface components {
          * @enum {string}
          */
         CounterpartyType: "company" | "individual";
+        /**
+         * CustomerFollowUpCreate
+         * @description 我的客户跟进记录创建请求.
+         */
+        CustomerFollowUpCreate: {
+            /**
+             * Content
+             * @description 跟进内容（1-500 字符）
+             */
+            content: string;
+        };
         /**
          * DictionaryResponse
          * @description 字典响应模型.
@@ -8459,6 +8688,357 @@ export interface components {
              * @description 短信验证码（type=phone 时必填）
              */
             sms_code?: string | null;
+        };
+        /**
+         * MyCustomerBadgeResponse
+         * @description 我的客户角标响应（统一状态为 new 的计数）.
+         */
+        MyCustomerBadgeResponse: {
+            /**
+             * New Count
+             * @description 统一状态 new 的线索数
+             */
+            new_count: number;
+        };
+        /**
+         * MyCustomerDetailResponse
+         * @description 我的客户线索详情响应.
+         *
+         *     字段复用统一线索详情（归因时间线 + 模块差异化字段），独立 schema 名
+         *     便于 openapi/前端类型区分；归属校验（referrer=当前员工）在服务层强制。
+         */
+        MyCustomerDetailResponse: {
+            /** Id */
+            id: string;
+            module: components["schemas"]["GrowthModule"];
+            unified_status: components["schemas"]["UnifiedLeadStatus"];
+            /** Native Status */
+            native_status: string;
+            /** Phone Masked */
+            phone_masked: string | null;
+            /** Employee Id */
+            employee_id: string | null;
+            /** Employee Name */
+            employee_name: string | null;
+            source: components["schemas"]["LeadSource"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Campaign Name */
+            campaign_name: string | null;
+            /** Is Internal */
+            is_internal: boolean;
+            /**
+             * Timeline
+             * @description 归因链路时间线（按时间排序）
+             */
+            timeline: components["schemas"]["TimelineEvent"][];
+            /**
+             * Community Name
+             * @description 小区名称（估价）
+             */
+            community_name?: string | null;
+            /**
+             * Area
+             * @description 面积㎡（估价）
+             */
+            area?: number | null;
+            /**
+             * Layout
+             * @description 户型（估价）
+             */
+            layout?: string | null;
+            /**
+             * Total Price
+             * @description 当前授权总价万（估价）
+             */
+            total_price?: number | null;
+            /**
+             * Eval Price
+             * @description 评估价格万（估价）
+             */
+            eval_price?: number | null;
+            /**
+             * Expected Price
+             * @description 业主心理预期价万（估价）
+             */
+            expected_price?: number | null;
+            /**
+             * Property Title
+             * @description 房源名称（预约）
+             */
+            property_title?: string | null;
+            /**
+             * Booking Time
+             * @description 预约时间（预约）
+             */
+            booking_time?: string | null;
+            /**
+             * Sheet Code
+             * @description 来源房源单短码（取不到为 null）
+             */
+            sheet_code?: string | null;
+            /**
+             * Main Business Area
+             * @description 主营商圈（招募）
+             */
+            main_business_area?: string | null;
+        };
+        /**
+         * MyCustomerFollowUpItem
+         * @description 我的客户跟进记录项.
+         */
+        MyCustomerFollowUpItem: {
+            /** Id */
+            id: string;
+            module: components["schemas"]["GrowthModule"];
+            /**
+             * Lead Id
+             * @description 线索ID（各模块主键转字符串）
+             */
+            lead_id: string;
+            /** Content */
+            content: string;
+            /**
+             * Created By Id
+             * @description 跟进人ID
+             */
+            created_by_id: string;
+            /**
+             * Created By Name
+             * @description 跟进人名称（nickname 缺失回退 username）
+             */
+            created_by_name: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * MyCustomerListItem
+         * @description 我的客户列表项（归属收窄为当前员工，手机号脱敏）.
+         */
+        MyCustomerListItem: {
+            /**
+             * Id
+             * @description 线索ID（各模块原生ID转字符串）
+             */
+            id: string;
+            /** @description 获客模块 */
+            module: components["schemas"]["GrowthModule"];
+            /** @description 统一状态 */
+            unified_status: components["schemas"]["UnifiedLeadStatus"];
+            /**
+             * Native Status
+             * @description 模块原生状态值
+             */
+            native_status: string;
+            /**
+             * Phone Masked
+             * @description 脱敏手机号（无手机号为 null）
+             */
+            phone_masked: string | null;
+            /** @description 来源（card/poster/direct）；估价/预约/房源单归因线索的分享方式未埋点为 null */
+            source: components["schemas"]["LeadSource"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 留资时间
+             */
+            created_at: string;
+            /**
+             * Campaign Name
+             * @description 来源活动名（仅招募，其余 null）
+             */
+            campaign_name?: string | null;
+            /**
+             * Community Name
+             * @description 小区名称（估价/房源单）
+             */
+            community_name?: string | null;
+            /**
+             * Layout
+             * @description 户型（估价/房源单）
+             */
+            layout?: string | null;
+            /**
+             * Area
+             * @description 面积㎡（估价/房源单）
+             */
+            area?: number | null;
+            /**
+             * Expected Price
+             * @description 业主心理预期价万（估价/房源单）
+             */
+            expected_price?: number | null;
+            /**
+             * Property Title
+             * @description 房源名称（预约）
+             */
+            property_title?: string | null;
+            /**
+             * Booking Time
+             * @description 预约时间（预约）
+             */
+            booking_time?: string | null;
+            /**
+             * Sheet Code
+             * @description 来源房源单短码（取不到为 null）
+             */
+            sheet_code?: string | null;
+            /**
+             * Sheet Item Count
+             * @description 来源房源单共 N 套房源（取不到为 null）
+             */
+            sheet_item_count?: number | null;
+            /**
+             * Main Business Area
+             * @description 主营商圈（招募）
+             */
+            main_business_area?: string | null;
+        };
+        /**
+         * MyCustomerListResponse
+         * @description 我的客户分页列表响应.
+         */
+        MyCustomerListResponse: {
+            /** Items */
+            items: components["schemas"]["MyCustomerListItem"][];
+            /**
+             * Total
+             * @description 当前筛选条件下总数
+             */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /**
+             * Module Counts
+             * @description 各模块线索计数（该用户全部线索口径，不受当前筛选影响）
+             */
+            module_counts: {
+                [key: string]: number;
+            };
+            /**
+             * Status Counts
+             * @description 各统一状态线索计数（该用户全部线索口径，不受当前筛选影响）
+             */
+            status_counts: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * MyCustomerPhoneResponse
+         * @description 我的客户完整手机号响应.
+         *
+         *     招募线查看即视为已联系（new→contacted 隐式流转），其余线状态不变；
+         *     status 恒为查看后的最新统一状态。
+         */
+        MyCustomerPhoneResponse: {
+            /**
+             * Phone
+             * @description 完整手机号（解密）
+             */
+            phone: string | null;
+            /** @description 查看后的统一状态 */
+            unified_status: components["schemas"]["UnifiedLeadStatus"];
+            /**
+             * Native Status
+             * @description 查看后的模块原生状态值
+             */
+            native_status: string;
+        };
+        /**
+         * MyCustomerShareStatsResponse
+         * @description 我的客户分享统计响应（4 链路求和，字段口径与各线 my/share-stats 一致）.
+         */
+        MyCustomerShareStatsResponse: {
+            /**
+             * Share Count
+             * @description 累计分享次数（4 链路合计）
+             */
+            share_count: number;
+            /**
+             * Pv
+             * @description 累计经我分享的打开次数 PV（4 链路合计）
+             */
+            pv: number;
+            /**
+             * Uv
+             * @description 累计打开人数 UV（4 链路求和，招募=openid_hash 口径，其余=匿名 visitor_id）
+             */
+            uv: number;
+            /**
+             * Lead Count
+             * @description 累计归属我的线索数（4 链路合计）
+             */
+            lead_count: number;
+            /**
+             * Yesterday Share Count
+             * @description 昨日分享次数
+             */
+            yesterday_share_count: number;
+            /**
+             * Yesterday Pv
+             * @description 昨日经我分享的打开次数 PV
+             */
+            yesterday_pv: number;
+            /**
+             * Yesterday Uv
+             * @description 昨日打开人数 UV
+             */
+            yesterday_uv: number;
+            /**
+             * Yesterday Lead Count
+             * @description 昨日归属我的线索数
+             */
+            yesterday_lead_count: number;
+        };
+        /**
+         * MyCustomerStatusUpdateRequest
+         * @description 我的客户状态流转请求（触发动作类，*Request 后缀）.
+         */
+        MyCustomerStatusUpdateRequest: {
+            /** @description 目标统一状态 */
+            status: components["schemas"]["UnifiedLeadStatus"];
+            /**
+             * Remark
+             * @description 流转备注（非空时自动落一条系统跟进记录）
+             */
+            remark?: string | null;
+            /**
+             * Reason
+             * @description 淘汰原因（仅 status=eliminated 时必填）
+             */
+            reason?: ("no_intent" | "invalid_info" | "lost_to_competitor") | null;
+        };
+        /**
+         * MyCustomerStatusUpdateResponse
+         * @description 我的客户状态流转响应（返回流转后的最新状态）.
+         */
+        MyCustomerStatusUpdateResponse: {
+            /** @description 流转后的统一状态 */
+            unified_status: components["schemas"]["UnifiedLeadStatus"];
+            /**
+             * Native Status
+             * @description 流转后的模块原生状态值
+             */
+            native_status: string;
+        };
+        /**
+         * MyCustomerSubscribeTemplateResponse
+         * @description 我的客户订阅消息模板配置响应（二期推送预留，当前仅用于小程序端订阅授权）.
+         */
+        MyCustomerSubscribeTemplateResponse: {
+            /**
+             * Template Id
+             * @description 订阅消息模板ID（未配置为 null）
+             */
+            template_id: string | null;
         };
         /**
          * NeighborhoodRadarItem
@@ -21868,6 +22448,277 @@ export interface operations {
             };
         };
     };
+    get_my_customers_badge_api_v1_public_customers_my_badge_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerBadgeResponse"];
+                };
+            };
+        };
+    };
+    get_my_customers_api_v1_public_customers_my_get: {
+        parameters: {
+            query?: {
+                /** @description 模块筛选（缺省=全部） */
+                module?: components["schemas"]["GrowthModule"] | null;
+                /** @description 统一状态筛选 */
+                status?: components["schemas"]["UnifiedLeadStatus"] | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_customers_share_stats_api_v1_public_customers_my_share_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerShareStatsResponse"];
+                };
+            };
+        };
+    };
+    get_my_customers_subscribe_template_api_v1_public_customers_my_subscribe_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerSubscribeTemplateResponse"];
+                };
+            };
+        };
+    };
+    get_my_customer_detail_api_v1_public_customers_my__module___lead_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_customer_phone_api_v1_public_customers_my__module___lead_id__phone_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerPhoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_my_customer_status_api_v1_public_customers_my__module___lead_id__status_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MyCustomerStatusUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerStatusUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_customer_follow_ups_api_v1_public_customers_my__module___lead_id__follow_ups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerFollowUpItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_my_customer_follow_up_api_v1_public_customers_my__module___lead_id__follow_ups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerFollowUpCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerFollowUpItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_campaigns_api_v1_admin_recruit_campaigns_get: {
         parameters: {
             query?: never;
@@ -22496,6 +23347,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LeadDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lead_status_api_v1_admin_growth_center_leads__module___lead_id__status_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MyCustomerStatusUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerStatusUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_phone_api_v1_admin_growth_center_leads__module___lead_id__phone_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLeadPhoneResponse"];
                 };
             };
             /** @description Validation Error */

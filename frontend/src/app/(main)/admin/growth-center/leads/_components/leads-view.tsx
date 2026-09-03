@@ -22,14 +22,13 @@ import {
   GROWTH_MODULE_ORDER,
   GROWTH_SOURCE_META,
   GROWTH_STATUS_META,
-  PHASE_1_LABEL,
-  PHASE_2_LABEL,
 } from "../../types";
+import type { LeadEliminateReason } from "../../_lib/flow-constants";
 import { LeadsTable } from "./leads-table";
 import { LeadDetailSheet } from "./lead-detail-sheet";
 import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
 import { DesignPagination } from "../../_components/design-pagination";
-import { updateLeadStatusAction } from "../../_lib/growth-actions";
+import { updateGrowthLeadStatusAction } from "../../_lib/growth-actions";
 import type { GrowthEmployee, GrowthLeadsKpi } from "../../_lib/growth-data";
 
 type UnifiedLeadListItem = components["schemas"]["UnifiedLeadListItem"];
@@ -196,16 +195,24 @@ export function LeadsView({
     [kpi],
   );
 
-  // 状态流转（仅招募行）：Server Action + router.refresh()
+  // 状态流转（全模块，目标由 FLOW_MATRIX 矩阵驱动；淘汰/重新激活旁路附带 reason/remark）：
+  // Server Action + router.refresh()
   const [flowingId, setFlowingId] = React.useState<string | null>(null);
-  const handleFlow = async (leadId: string, targetStatus: UnifiedLeadStatus) => {
-    const lead = leads.find((l) => l.id === leadId);
-    if (!lead || lead.unified_status === targetStatus) return;
-    setFlowingId(leadId);
+  const handleFlow = async (
+    lead: UnifiedLeadListItem,
+    targetStatus: UnifiedLeadStatus,
+    extra?: { reason?: LeadEliminateReason; remark?: string },
+  ) => {
+    if (lead.unified_status === targetStatus) return;
+    setFlowingId(lead.id);
     try {
-      const result = await updateLeadStatusAction(leadId, targetStatus);
+      const result = await updateGrowthLeadStatusAction(lead.module, lead.id, {
+        status: targetStatus,
+        remark: extra?.remark,
+        reason: extra?.reason,
+      });
       if (result.success) {
-        toast.success(`状态已流转为「${GROWTH_STATUS_META[targetStatus].label}」`);
+        toast.success(`状态已流转为「${GROWTH_STATUS_META[result.data.unified_status].label}」`);
         router.refresh();
       } else {
         toast.error(result.error);
@@ -244,28 +251,15 @@ export function LeadsView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 页头：标题 + 描述 + 导出（二期预留） */}
+      {/* 页头：标题 + 描述 */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
         <div>
           <h1 className="flex items-center gap-2.5 flex-wrap text-[26px] font-medium tracking-[-0.23px] text-ink">
             线索管理
-            <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-fog text-graphite ring-1 ring-inset ring-[#ececee] whitespace-nowrap">
-              {PHASE_1_LABEL}
-            </span>
           </h1>
           <p className="mt-1.5 text-[15px] text-graphite">
             跨模块统一线索池：估价留资 / 房源预约 / 房源单 / 招募
           </p>
-        </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            disabled
-            className="h-[38px] px-[18px] rounded-[12px] bg-ink text-white text-[14px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            导出 CSV
-          </button>
-          <span className="text-[11px] text-slate whitespace-nowrap">{PHASE_2_LABEL}</span>
         </div>
       </div>
 
@@ -435,11 +429,11 @@ export function LeadsView({
         />
       </div>
 
-      {/* 口径脚注（照设计稿 Screen 2） */}
+      {/* 口径脚注 */}
       <footer className="text-[12px] text-slate leading-[1.9] pt-1">
-        ① 手机号已脱敏展示，完整号码仅归属员工可在详情内查看；② 归属以首次留资为准，状态映射自
-        2026-08 起生效，历史线索保留原状态展示；③ 活动归因为一期范围：当前仅招募线索支持活动归属，
-        其余模块在二期接入 campaign_id
+        ① 手机号已脱敏展示，完整号码可在详情内查看（查看操作记录访问日志）；② 归属以首次留资为准，
+        状态流转口径与小程序「我的客户」状态机一致：招募/预约支持全矩阵流转，估价/房源单仅支持淘汰
+        （原因必填）与重新激活；③ 活动归属当前仅招募线索支持，其余模块暂未接入 campaign_id
       </footer>
 
       {/* 线索详情抽屉 */}

@@ -17,17 +17,15 @@ import { safeFormatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { components } from "@/lib/api-types";
 import type { LeadSource, UnifiedLeadStatus } from "../../types";
-import {
-  GROWTH_MODULE_META,
-  GROWTH_SOURCE_META,
-  GROWTH_STATUS_META,
-  PHASE_2_LABEL,
-} from "../../types";
+import { GROWTH_MODULE_META, GROWTH_SOURCE_META, GROWTH_STATUS_META } from "../../types";
+import type { LeadEliminateReason } from "../../_lib/flow-constants";
+import { ELIMINATE_REASON_REQUIRED, FLOW_MATRIX } from "../../_lib/flow-constants";
 import {
   getLeadDetailAction,
-  getLeadPhoneAction,
-  updateLeadStatusAction,
+  getGrowthLeadPhoneAction,
+  updateGrowthLeadStatusAction,
 } from "../../_lib/growth-actions";
+import { FlowConfirmDialog, type FlowConfirmMode } from "./flow-confirm-dialog";
 
 type UnifiedLeadListItem = components["schemas"]["UnifiedLeadListItem"];
 type LeadDetailResponse = components["schemas"]["LeadDetailResponse"];
@@ -124,7 +122,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 /**
  * 线索详情抽屉（对齐设计稿 Screen 2 抽屉）：
  * 打开时经 Server Action 请求 `/leads/{module}/{lead_id}`，呈现归因链路时间线、
- * 基础信息、模块差异化字段；招募线索支持状态流转与完整手机号查看。
+ * 基础信息、模块差异化字段；全模块支持状态流转（FLOW_MATRIX 矩阵驱动）与完整手机号查看。
  */
 export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
   const router = useRouter();
@@ -132,12 +130,15 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // 完整手机号（仅招募线索可查看）
+  // 完整手机号（有手机号的线索均可查看）
   const [fullPhone, setFullPhone] = React.useState<string | null>(null);
   const [phoneLoading, setPhoneLoading] = React.useState(false);
 
   // 状态流转进行中
   const [flowing, setFlowing] = React.useState(false);
+
+  // 旁路流转确认弹窗（淘汰 / 重新激活）
+  const [confirmMode, setConfirmMode] = React.useState<FlowConfirmMode | null>(null);
 
   // 打开抽屉时按需拉取详情
   React.useEffect(() => {
@@ -175,7 +176,7 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
     if (!detail) return;
     setPhoneLoading(true);
     try {
-      const result = await getLeadPhoneAction(detail.id);
+      const result = await getGrowthLeadPhoneAction(detail.module, detail.id);
       if (result.success) {
         setFullPhone(result.data);
       } else {
@@ -196,14 +197,22 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
       .catch(() => toast.error("复制失败，请手动复制"));
   };
 
-  const handleFlow = async (target: UnifiedLeadStatus) => {
-    if (!detail || detail.module !== "recruit" || detail.unified_status === target) return;
+  /** 直达流转（淘汰 / 重新激活经确认弹窗附带 reason/remark） */
+  const handleFlow = async (
+    target: UnifiedLeadStatus,
+    extra?: { reason?: LeadEliminateReason; remark?: string },
+  ) => {
+    if (!detail || detail.unified_status === target) return;
     setFlowing(true);
     try {
-      const result = await updateLeadStatusAction(detail.id, target);
+      const result = await updateGrowthLeadStatusAction(detail.module, detail.id, {
+        status: target,
+        remark: extra?.remark,
+        reason: extra?.reason,
+      });
       if (result.success) {
-        toast.success(`状态已流转为「${GROWTH_STATUS_META[target].label}」`);
-        setDetail({ ...detail, unified_status: target });
+        toast.success(`状态已流转为「${GROWTH_STATUS_META[result.data.unified_status].label}」`);
+        setDetail({ ...detail, unified_status: result.data.unified_status });
         router.refresh();
       } else {
         toast.error(result.error);
@@ -212,8 +221,29 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
       toast.error("网络错误，请稍后重试");
     } finally {
       setFlowing(false);
+      setConfirmMode(null);
     }
   };
+
+  /** 目标状态菜单点击：淘汰 / 重新激活走确认弹窗，其余直达流转 */
+  const handleTargetSelect = (target: UnifiedLeadStatus) => {
+    if (!detail) return;
+    if (target === "eliminated") {
+      setConfirmMode("eliminate");
+      return;
+    }
+    if (detail.unified_status === "eliminated" && target === "contacted") {
+      setConfirmMode("reactivate");
+      return;
+    }
+    void handleFlow(target);
+  };
+
+  /** 菜单项文案：eliminated → contacted 为重新激活，其余用统一状态标签 */
+  const targetLabel = (target: UnifiedLeadStatus): string =>
+    detail && detail.unified_status === "eliminated" && target === "contacted"
+      ? "重新激活"
+      : GROWTH_STATUS_META[target].label;
 
   const fieldBox = detail ? moduleFieldBox(detail) : null;
 
@@ -241,7 +271,7 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
 
         {!loading && !error && detail && (
           <div className="flex flex-col gap-[22px]">
-            {/* 手机号：招募可查看完整号码，其余模块仅脱敏展示 */}
+            {/* 手机号：有号码即可查看完整号码（估价/房源单无手机号时按钮自然隐藏） */}
             <section>
               <SectionTitle>手机号</SectionTitle>
               <div className="flex items-center flex-wrap gap-3 text-[15px] font-medium text-ink tabular-nums">
@@ -260,7 +290,7 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
                 ) : (
                   <span>{detail.phone_masked ?? "—"}</span>
                 )}
-                {!fullPhone && detail.module === "recruit" && (
+                {!fullPhone && detail.phone_masked && (
                   <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
                     <button
                       type="button"
@@ -353,16 +383,7 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[12.5px] text-graphite mb-1">
-                    {detail.module === "recruit" ? (
-                      "活动归属"
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5">
-                        活动归属
-                        <span className="text-[11px] text-slate">{PHASE_2_LABEL}</span>
-                      </span>
-                    )}
-                  </div>
+                  <div className="text-[12.5px] text-graphite mb-1">活动归属</div>
                   <div className="text-[14px] text-ink">
                     {detail.module === "recruit" ? (detail.campaign_name ?? "—") : "—"}
                   </div>
@@ -395,20 +416,20 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
               </section>
             )}
 
-            {/* 状态流转（仅招募线索 + 写权限） */}
-            {detail.module === "recruit" && (
-              <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
-                <section>
-                  <SectionTitle>状态流转</SectionTitle>
-                  <div className="flex items-center flex-wrap gap-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center text-[13px] font-medium px-3 py-0.5 rounded-full whitespace-nowrap",
-                        GROWTH_STATUS_META[detail.unified_status].badge,
-                      )}
-                    >
-                      {GROWTH_STATUS_META[detail.unified_status].label}
-                    </span>
+            {/* 状态流转（全模块 + 写权限，可选目标由 FLOW_MATRIX 矩阵驱动） */}
+            <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
+              <section>
+                <SectionTitle>状态流转</SectionTitle>
+                <div className="flex items-center flex-wrap gap-3">
+                  <span
+                    className={cn(
+                      "inline-flex items-center text-[13px] font-medium px-3 py-0.5 rounded-full whitespace-nowrap",
+                      GROWTH_STATUS_META[detail.unified_status].badge,
+                    )}
+                  >
+                    {GROWTH_STATUS_META[detail.unified_status].label}
+                  </span>
+                  {FLOW_MATRIX[detail.module][detail.unified_status].length > 0 && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -421,30 +442,37 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
-                        {(
-                          [
-                            "new",
-                            "contacted",
-                            "high_intent",
-                            "converted",
-                            "eliminated",
-                          ] as UnifiedLeadStatus[]
-                        )
-                          .filter((s) => s !== detail.unified_status)
-                          .map((status) => (
-                            <DropdownMenuItem key={status} onClick={() => void handleFlow(status)}>
-                              {GROWTH_STATUS_META[status].label}
-                            </DropdownMenuItem>
-                          ))}
+                        {FLOW_MATRIX[detail.module][detail.unified_status].map((status) => (
+                          <DropdownMenuItem
+                            key={status}
+                            onClick={() => handleTargetSelect(status)}
+                          >
+                            {targetLabel(status)}
+                          </DropdownMenuItem>
+                        ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </div>
-                </section>
-              </HasPermission>
-            )}
+                  )}
+                </div>
+              </section>
+            </HasPermission>
           </div>
         )}
       </SheetContent>
+
+      {/* 淘汰 / 重新激活旁路确认弹窗 */}
+      <FlowConfirmDialog
+        mode={confirmMode}
+        submitting={flowing}
+        reasonRequired={detail ? ELIMINATE_REASON_REQUIRED[detail.module] : false}
+        onConfirm={({ reason, remark }) =>
+          void handleFlow(
+            confirmMode === "eliminate" ? "eliminated" : "contacted",
+            { reason: reason ?? undefined, remark },
+          )
+        }
+        onClose={() => setConfirmMode(null)}
+      />
     </Sheet>
   );
 }

@@ -16,7 +16,8 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from models import User
-from schemas.growth_center import GrowthModule
+from schemas.growth_center import GrowthModule, UnifiedLeadStatus
+from services.growth_center.flow_matrix import UNIFIED_STATUS_LABELS
 from services.system.wechat import WeChatAuthService
 from settings import settings
 
@@ -39,15 +40,7 @@ _MODULE_LABELS: dict[str, str] = {
     GrowthModule.RECRUIT.value: "招募",
 }
 
-# 统一状态值 → 中文标签（与 my_customers_flow._UNIFIED_STATUS_LABELS 口径一致，
-# 本地维护避免跨模块引用私有符号）
-_UNIFIED_STATUS_LABELS: dict[str, str] = {
-    "new": "新线索",
-    "contacted": "已联系",
-    "high_intent": "意向高",
-    "converted": "已转化",
-    "eliminated": "已淘汰",
-}
+# 统一状态值 → 中文标签（单一口径：叶子模块 flow_matrix.UNIFIED_STATUS_LABELS）
 
 _CST = ZoneInfo("Asia/Shanghai")
 
@@ -62,7 +55,10 @@ def unified_status_label(unified_value: str) -> str:
         中文名；未知取值回退原值
 
     """
-    return _UNIFIED_STATUS_LABELS.get(unified_value, unified_value)
+    try:
+        return UNIFIED_STATUS_LABELS[UnifiedLeadStatus(unified_value)]
+    except ValueError:
+        return unified_value
 
 
 def _resolve_employee_openids(db: Session, employee_id: str) -> list[str]:

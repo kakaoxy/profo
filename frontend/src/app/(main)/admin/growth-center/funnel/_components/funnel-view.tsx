@@ -10,7 +10,7 @@ import type {
 import type { FunnelTab } from "../../_lib/funnel-constants";
 import { FUNNEL_DAYS_OPTIONS } from "../../_lib/funnel-constants";
 import { GROWTH_MODULE_META } from "../../types";
-import { PhaseTag1, PhaseTag2 } from "../../_components/phase-tag";
+import { PhaseTag1 } from "../../_components/phase-tag";
 import { FunnelStats } from "./funnel-stats";
 import { FunnelCompare } from "./funnel-compare";
 import { FunnelDrilldown } from "./funnel-drilldown";
@@ -61,7 +61,7 @@ export interface FunnelViewProps {
 
 /**
  * 跨模块漏斗看板视图（对齐设计稿 Screen 3）：
- * 页头（一期标记 + 时间区间快捷选择 + 二期导出占位）→ 模块 Tab（URL 参数驱动）→
+ * 页头（一期标记 + 时间区间快捷选择）→ 模块 Tab（URL 参数驱动）→
  * 单模块漏斗卡 / 全部对比卡 → 员工维度下钻表 → 口径脚注。
  */
 export function FunnelView({
@@ -83,7 +83,7 @@ export function FunnelView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 页头：标题 + 一期标记 + 时间区间 + 导出（二期占位） */}
+      {/* 页头：标题 + 一期标记 + 时间区间 */}
       <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
         <div>
           <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink inline-flex items-center gap-2.5">
@@ -94,28 +94,17 @@ export function FunnelView({
             分享 → 打开 → 留资 → 转化的全链路转化监控
           </p>
         </div>
-        <div className="flex flex-col items-start xl:items-end gap-2.5">
-          <div className="flex flex-wrap gap-2" role="group" aria-label="时间区间">
-            {FUNNEL_DAYS_OPTIONS.map((d) => (
-              <button
-                key={d}
-                type="button"
-                className={segClass(days === d)}
-                onClick={() => setQuery({ days: String(d) })}
-              >
-                近 {d} 天
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center gap-1.5 h-9 px-5 rounded-full bg-ink text-white text-[14px] font-medium opacity-50 cursor-not-allowed"
-            aria-disabled="true"
-          >
-            导出漏斗数据
-            <PhaseTag2 />
-          </button>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="时间区间">
+          {FUNNEL_DAYS_OPTIONS.map((d) => (
+            <button
+              key={d}
+              type="button"
+              className={segClass(days === d)}
+              onClick={() => setQuery({ days: String(d) })}
+            >
+              近 {d} 天
+            </button>
+          ))}
         </div>
       </div>
 

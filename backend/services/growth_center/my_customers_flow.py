@@ -9,6 +9,7 @@
 - booking：原生状态即统一 5 态，参与全量矩阵流转（eliminated reason 必填，
   重新激活 remark 必填，行级锁同模式）。
 remark 非空时自动落一条系统跟进记录（customer_follow_ups）。
+统一 5 态矩阵与校验器抽至叶子模块 ``flow_matrix.py``（与管理端共用）。
 """
 
 from datetime import datetime, timezone
@@ -21,76 +22,21 @@ from models import Lead, ProjectBooking, RecruitLead, RecruitLeadStatus, User
 from models.common.base import LeadStatus
 from models.growth_center import CustomerFollowUp
 from schemas.growth_center import GrowthModule, MyCustomerStatusUpdateRequest, UnifiedLeadStatus
+from services.growth_center.flow_matrix import (
+    UNIFIED_STATUS_LABELS,
+    ensure_reactivation_remark,
+    ensure_transition_allowed,
+)
 from services.growth_center.my_customers import ensure_customer_lead_owned
 from services.growth_center.normalize import map_valuation_status
 from services.system.exceptions import BusinessLogicError, ConflictError, ResourceNotFoundError
 
-# 统一状态流转矩阵（目标状态集合；converted 为终态（空集，含流转到自身一律拒绝）；
-# eliminated 非终态，仅可重新激活至 contacted，remark 必填）
-_TRANSITIONS: dict[UnifiedLeadStatus, set[UnifiedLeadStatus]] = {
-    UnifiedLeadStatus.NEW: {
-        UnifiedLeadStatus.CONTACTED,
-        UnifiedLeadStatus.HIGH_INTENT,
-        UnifiedLeadStatus.CONVERTED,
-        UnifiedLeadStatus.ELIMINATED,
-    },
-    UnifiedLeadStatus.CONTACTED: {
-        UnifiedLeadStatus.HIGH_INTENT,
-        UnifiedLeadStatus.CONVERTED,
-        UnifiedLeadStatus.ELIMINATED,
-    },
-    UnifiedLeadStatus.HIGH_INTENT: {UnifiedLeadStatus.CONVERTED, UnifiedLeadStatus.ELIMINATED},
-    UnifiedLeadStatus.CONVERTED: set(),
-    UnifiedLeadStatus.ELIMINATED: {UnifiedLeadStatus.CONTACTED},
-}
-
-# 统一状态中文名（系统跟进记录文案）
-_UNIFIED_STATUS_LABELS: dict[UnifiedLeadStatus, str] = {
-    UnifiedLeadStatus.NEW: "新线索",
-    UnifiedLeadStatus.CONTACTED: "已联系",
-    UnifiedLeadStatus.HIGH_INTENT: "意向高",
-    UnifiedLeadStatus.CONVERTED: "已转化",
-    UnifiedLeadStatus.ELIMINATED: "已淘汰",
-}
-
 # 淘汰原因 → 估价/房源单原生状态（no_intent/invalid_info→REJECTED，lost_to_competitor→LOST）
-_ELIMINATE_REASON_TO_LEAD_STATUS: dict[str, LeadStatus] = {
+ELIMINATE_REASON_TO_LEAD_STATUS: dict[str, LeadStatus] = {
     "no_intent": LeadStatus.REJECTED,
     "invalid_info": LeadStatus.REJECTED,
     "lost_to_competitor": LeadStatus.LOST_TO_COMPETITOR,
 }
-
-
-def _ensure_transition_allowed(current: UnifiedLeadStatus, target: UnifiedLeadStatus) -> None:
-    """统一状态矩阵校验（终态/回退/非法跳转 → 409）.
-
-    Raises:
-        ConflictError: 不允许的流转（含终态流转到自身）
-
-    """
-    if target not in _TRANSITIONS[current]:
-        msg = f"不允许从「{_UNIFIED_STATUS_LABELS[current]}」流转为「{_UNIFIED_STATUS_LABELS[target]}」"
-        raise ConflictError(msg)
-
-
-def _ensure_reactivation_remark(
-    current: UnifiedLeadStatus,
-    target: UnifiedLeadStatus,
-    remark: str | None,
-) -> None:
-    """重新激活旁路（eliminated → contacted）remark 必填（其余流转不校验）.
-
-    Raises:
-        BusinessLogicError: 重新激活时 remark 缺失（422）
-
-    """
-    if (
-        current == UnifiedLeadStatus.ELIMINATED
-        and target == UnifiedLeadStatus.CONTACTED
-        and not (remark and remark.strip())
-    ):
-        msg = "重新激活必须填写备注"
-        raise BusinessLogicError(msg)
 
 
 class MyCustomerFlowService:
@@ -152,8 +98,8 @@ class MyCustomerFlowService:
             msg = "线索不存在"
             raise ResourceNotFoundError(msg)
         current = UnifiedLeadStatus(lead.status.value)
-        _ensure_transition_allowed(current, req.status)
-        _ensure_reactivation_remark(current, req.status, req.remark)
+        ensure_transition_allowed(current, req.status)
+        ensure_reactivation_remark(current, req.status, req.remark)
 
         lead.status = RecruitLeadStatus(req.status.value)
         # remark 系统跟进与状态回写同一事务提交（原子化，避免中途失败丢记录）
@@ -209,11 +155,11 @@ class MyCustomerFlowService:
             raise ResourceNotFoundError(msg)
 
         current = map_valuation_status(LeadStatus(lead.status.value))
-        _ensure_transition_allowed(current, req.status)
+        ensure_transition_allowed(current, req.status)
 
         unified_after: UnifiedLeadStatus
         if req.status == UnifiedLeadStatus.ELIMINATED:
-            lead.status = _ELIMINATE_REASON_TO_LEAD_STATUS[req.reason]
+            lead.status = ELIMINATE_REASON_TO_LEAD_STATUS[req.reason]
             # 写审计轨迹（与 authorize_assessment 的 reject/lost 口径一致）
             now = datetime.now(timezone.utc)
             lead.audit_time = now
@@ -227,7 +173,7 @@ class MyCustomerFlowService:
             if current != UnifiedLeadStatus.ELIMINATED:
                 msg = "估价/房源单线索仅支持「淘汰」旁路与「重新激活」流转"
                 raise ConflictError(msg)
-            _ensure_reactivation_remark(current, req.status, req.remark)
+            ensure_reactivation_remark(current, req.status, req.remark)
             lead.status = LeadStatus.PENDING_VISIT
             unified_after = UnifiedLeadStatus.CONTACTED
 
@@ -285,8 +231,8 @@ class MyCustomerFlowService:
             raise ResourceNotFoundError(msg)
 
         current = UnifiedLeadStatus(booking.status)
-        _ensure_transition_allowed(current, req.status)
-        _ensure_reactivation_remark(current, req.status, req.remark)
+        ensure_transition_allowed(current, req.status)
+        ensure_reactivation_remark(current, req.status, req.remark)
 
         booking.status = req.status.value
         # remark 系统跟进与状态回写同一事务提交（原子化，避免中途失败丢记录）
@@ -312,24 +258,16 @@ class MyCustomerFlowService:
         status: UnifiedLeadStatus,
         remark: str | None,
     ) -> None:
-        """Remark 非空时向会话添加一条系统跟进记录（不提交，由调用方统一 commit）.
-
-        重新激活流转（eliminated → contacted）使用「重新激活」语义文案。
-
-        """
-        if not remark or not remark.strip():
-            return
-        if current == UnifiedLeadStatus.ELIMINATED and status == UnifiedLeadStatus.CONTACTED:
-            content = f"重新激活为{_UNIFIED_STATUS_LABELS[status]}：{remark.strip()}"
-        else:
-            content = f"状态流转为{_UNIFIED_STATUS_LABELS[status]}：{remark.strip()}"
-        rec = CustomerFollowUp(
-            module=module.value,
+        """Remark 非空时向会话添加一条系统跟进记录（委托模块级函数，供 admin_flow 复用）."""
+        add_system_follow_up_if_remarked(
+            self.db,
+            module=module,
             lead_id=lead_id,
-            content=content,
-            created_by_id=user_id,
+            user_id=user_id,
+            current=current,
+            status=status,
+            remark=remark,
         )
-        self.db.add(rec)
 
     # ─── 跟进记录 ─────────────────────────────────────────────────────────
 
@@ -395,3 +333,43 @@ def _employee_names(db: Session, user_ids: list[str]) -> dict[str, str | None]:
         return {}
     rows = db.query(User.id, func.coalesce(User.nickname, User.username)).filter(User.id.in_(unique_ids)).all()
     return {row[0]: row[1] for row in rows}
+
+
+def add_system_follow_up_if_remarked(
+    db: Session,
+    *,
+    module: GrowthModule,
+    lead_id: str,
+    user_id: str,
+    current: UnifiedLeadStatus,
+    status: UnifiedLeadStatus,
+    remark: str | None,
+) -> None:
+    """Remark 非空时向会话添加一条系统跟进记录（不提交，由调用方统一 commit）.
+
+    重新激活流转（eliminated → contacted）使用「重新激活」语义文案。
+    供 ``MyCustomerFlowService`` 与管理端 ``AdminLeadFlowService`` 复用。
+
+    Args:
+        db: 数据库会话
+        module: 获客模块
+        lead_id: 线索ID（各模块原生ID字符串）
+        user_id: 操作人ID（落 created_by_id）
+        current: 流转前统一状态
+        status: 目标统一状态
+        remark: 流转备注（空/空白时跳过）
+
+    """
+    if not remark or not remark.strip():
+        return
+    if current == UnifiedLeadStatus.ELIMINATED and status == UnifiedLeadStatus.CONTACTED:
+        content = f"重新激活为{UNIFIED_STATUS_LABELS[status]}：{remark.strip()}"
+    else:
+        content = f"状态流转为{UNIFIED_STATUS_LABELS[status]}：{remark.strip()}"
+    rec = CustomerFollowUp(
+        module=module.value,
+        lead_id=lead_id,
+        content=content,
+        created_by_id=user_id,
+    )
+    db.add(rec)

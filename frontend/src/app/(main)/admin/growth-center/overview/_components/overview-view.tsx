@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { components } from "@/lib/api-types";
 import type { GrowthModule } from "../../types";
-import { GROWTH_MODULE_META, GROWTH_MODULE_ORDER, PHASE_1_LABEL, PHASE_2_LABEL } from "../../types";
+import { GROWTH_MODULE_META, GROWTH_MODULE_ORDER, PHASE_1_LABEL } from "../../types";
 import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
 import { TrendChart } from "./trend-chart";
 
@@ -32,11 +32,6 @@ function PhaseTag({ label }: { label: string }) {
       {label}
     </span>
   );
-}
-
-/** 二期角标小字（对齐设计稿 .mini-tag） */
-function MiniTag() {
-  return <span className="text-[11px] text-slate whitespace-nowrap">{PHASE_2_LABEL}</span>;
 }
 
 /** 卡片头：标题 + 副文案（对齐设计稿 .card-head） */
@@ -126,24 +121,12 @@ export function OverviewView({ kpi, breakdown, trend, compare, top }: OverviewVi
   return (
     <div className="flex flex-col gap-6">
       {/* 页头 */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
-        <div>
-          <h1 className="flex items-center gap-2.5 flex-wrap text-[26px] font-medium tracking-[-0.23px] text-ink">
-            获客总览
-            <PhaseTag label={PHASE_1_LABEL} />
-          </h1>
-          <p className="mt-1.5 text-[15px] text-graphite">四条分享获客链路的统一经营视图</p>
-        </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            disabled
-            className="h-[38px] px-[18px] rounded-[12px] bg-ink text-white text-[14px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            导出周报
-          </button>
-          <MiniTag />
-        </div>
+      <div>
+        <h1 className="flex items-center gap-2.5 flex-wrap text-[26px] font-medium tracking-[-0.23px] text-ink">
+          获客总览
+          <PhaseTag label={PHASE_1_LABEL} />
+        </h1>
+        <p className="mt-1.5 text-[15px] text-graphite">四条分享获客链路的统一经营视图</p>
       </div>
 
       {/* KPI 4 卡 */}

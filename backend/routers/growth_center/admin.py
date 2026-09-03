@@ -1,18 +1,22 @@
-"""获客中心后台管理路由（一期聚合只读层）.
+"""获客中心后台管理路由（聚合只读层 + 统一线索写端点）.
 
-前缀 ``/admin/growth-center``，全部为只读端点，鉴权复用 ``recruit:read``
-权限依赖。跨 4 条分享获客链路（估价/房源预约/房源单/招募）提供统一
-总览、漏斗、员工排行与统一线索视图，不修改各业务线现有写路径。
+前缀 ``/admin/growth-center``，读端点复用 ``recruit:read`` 权限依赖。跨
+4 条分享获客链路（估价/房源预约/房源单/招募）提供统一总览、漏斗、员工排行
+与统一线索视图；统一线索状态流转与完整手机号查看端点受 ``recruit:write``
+权限控制，流转口径与小程序「我的客户」状态机一致。
 """
 
+import logging
 from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query
+from fastapi.concurrency import run_in_threadpool
 
-from dependencies.auth import DbSessionDep, RecruitReadPermDep
+from dependencies.auth import DbSessionDep, RecruitReadPermDep, RecruitWritePermDep
 from dependencies.common import PaginationDep
 from schemas.growth_center import (
+    AdminLeadPhoneResponse,
     EmployeeDrilldownResponse,
     EmployeeTopResponse,
     FunnelCompareResponse,
@@ -21,6 +25,8 @@ from schemas.growth_center import (
     GrowthOverviewKpiResponse,
     LeadDetailResponse,
     LeadSource,
+    MyCustomerStatusUpdateRequest,
+    MyCustomerStatusUpdateResponse,
     SourceBreakdownResponse,
     TrendResponse,
     UnifiedLeadListResponse,
@@ -33,6 +39,9 @@ from services.growth_center import (
     GrowthLeadService,
     GrowthOverviewService,
 )
+from services.growth_center.admin_flow import AdminLeadFlowService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/growth-center", tags=["growth-center"])
 
@@ -203,3 +212,53 @@ def get_lead_detail(
 ) -> LeadDetailResponse:
     """统一线索详情."""
     return LeadDetailResponse(**GrowthLeadDetailService(db).get(module, lead_id))
+
+
+@router.put(
+    "/leads/{module}/{lead_id}/status",
+    summary="管理端统一线索状态流转",
+    description="统一 5 态矩阵流转（口径与小程序「我的客户」一致，非法流转 409）："
+    "recruit/booking 全矩阵；估价/房源单仅「淘汰」旁路（reason 必填 422）与"
+    "「重新激活」（eliminated→contacted，remark 必填 422）；"
+    "remark 非空自动落一条系统跟进记录，状态变化 best-effort 通知归属员工",
+)
+async def update_lead_status(
+    module: GrowthModule,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    body: MyCustomerStatusUpdateRequest,
+    db: DbSessionDep,
+    current_user: RecruitWritePermDep,
+) -> MyCustomerStatusUpdateResponse:
+    """管理端统一状态流转（行级锁在 Service 层，放线程池避免阻塞事件循环）."""
+    result = await run_in_threadpool(
+        AdminLeadFlowService(db).update_status,
+        module=module,
+        lead_id=lead_id,
+        user_id=current_user.id,
+        req=body,
+    )
+    return MyCustomerStatusUpdateResponse(**result)
+
+
+@router.get(
+    "/leads/{module}/{lead_id}/phone",
+    summary="管理端查看线索完整手机号",
+    description="recruit/booking 解密原生号码，估价/房源单返回 creator 手机号；"
+    "查看不改变任何线索状态（区别于 C 端「查看即联系」）；隐私敏感操作记录访问日志",
+)
+async def get_lead_phone(
+    module: GrowthModule,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    db: DbSessionDep,
+    current_user: RecruitWritePermDep,
+) -> AdminLeadPhoneResponse:
+    """查看完整号码（解密在 Service 层，放线程池避免阻塞事件循环）."""
+    result = await run_in_threadpool(AdminLeadFlowService(db).reveal_phone, module=module, lead_id=lead_id)
+    # 记录访问日志（操作人/模块/线索ID），与 recruit 既有口径一致
+    logger.info(
+        "管理端查看线索完整手机号：module=%s, lead_id=%s, operator=%s",
+        module.value,
+        lead_id,
+        current_user.id,
+    )
+    return AdminLeadPhoneResponse(**result)

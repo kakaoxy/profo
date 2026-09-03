@@ -358,6 +358,16 @@ class MyCustomerStatusUpdateResponse(BaseModel):
     native_status: str = Field(description="流转后的模块原生状态值")
 
 
+class AdminLeadPhoneResponse(BaseModel):
+    """管理端线索完整手机号响应.
+
+    recruit/booking 返回解密原生号码，valuation/sheet 返回 creator 手机号；
+    查看不改变任何线索状态（区别于 C 端「查看即联系」）。
+    """
+
+    phone: str = Field(description="完整手机号（解密）")
+
+
 class CustomerFollowUpCreate(BaseModel):
     """我的客户跟进记录创建请求."""
 
@@ -379,6 +389,7 @@ class MyCustomerFollowUpItem(BaseModel):
 
 
 __all__ = [
+    "AdminLeadPhoneResponse",
     "CustomerFollowUpCreate",
     "EmployeeDrilldownResponse",
     "EmployeeDrilldownRow",

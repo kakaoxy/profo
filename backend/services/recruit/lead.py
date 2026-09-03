@@ -9,9 +9,10 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from models import User
 from models.recruit import RecruitLead, RecruitLeadSource, RecruitLeadStatus, RecruitShareEvent, RecruitVisit
-from schemas.growth_center import GrowthModule
+from schemas.growth_center import GrowthModule, UnifiedLeadStatus
 from schemas.recruit import RecruitLeadStatusUpdate
 from services.growth_center.customer_notify import notify_customer_status_changed, unified_status_label
+from services.growth_center.flow_matrix import ensure_transition_allowed
 from services.system.exceptions import ResourceNotFoundError
 from utils.time_windows import yesterday_window
 
@@ -155,15 +156,25 @@ class RecruitLeadService:
     def update_status(self, lead_id: str, data: RecruitLeadStatusUpdate) -> tuple[RecruitLead, str | None]:
         """跟进状态流转（可选人工标记内部员工）.
 
+        统一 5 态矩阵校验（叶子模块 flow_matrix，C 端「我的客户」与管理端同口径）：
+        converted 终态不可流转、回退/跨级非法跳转 409。
+
         Returns:
             (lead, referrer_nickname)：归属员工昵称（无归属员工时为 None），
             供路由层填充 ``RecruitLeadListItem.referrer_name``，与列表端点口径一致。
+
+        Raises:
+            ConflictError: 流转矩阵不合法（终态/回退/非法跳转）
 
         """
         lead = self.db.query(RecruitLead).filter(RecruitLead.id == lead_id).first()
         if lead is None:
             msg = "招募线索不存在"
             raise ResourceNotFoundError(msg)
+
+        # 统一矩阵校验（RecruitLeadStatus 与 UnifiedLeadStatus 取值同构）
+        current = UnifiedLeadStatus(lead.status.value)
+        ensure_transition_allowed(current, UnifiedLeadStatus(data.status.value))
 
         old_status = lead.status
         lead.status = data.status
