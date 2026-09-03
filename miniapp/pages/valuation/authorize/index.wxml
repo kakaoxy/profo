@@ -14,6 +14,7 @@
       </view>
       <view class="hero__nm">{{community_name}}</view>
       <view class="hero__loc" wx:if="{{district}}">{{district}}</view>
+      <view class="hero__submitter" wx:if="{{submitterText}}">{{submitterText}}</view>
     </view>
 
     <!-- 2. KPI 双栏：业主报价 / 本次评估价（viewMode 展示授权结果） -->
@@ -24,6 +25,7 @@
           <text class="kpi__cur">¥</text>{{priceText}}<text class="kpi__unit"> 万</text>
         </view>
         <view class="kpi__vl" wx:else>—</view>
+        <view class="kpi__uprice" wx:if="{{priceUnitText}}">{{priceUnitText}}</view>
       </view>
       <view class="kpi__col">
         <view class="kpi__lb">本次评估价</view>
@@ -174,6 +176,7 @@
       <block wx:elif="{{diffType === 'invalid'}}">请输入大于 0 且不超过 999 万的评估价（最多两位小数）</block>
       <block wx:else>{{diffDefault}}</block>
     </view>
+    <view class="unit-live" wx:if="{{evalUnitText}}">折合{{evalUnitText}}</view>
   </view>
   <view class="fld">
     <view class="fld__lb">评估意见（选填）</view>
@@ -236,6 +239,7 @@
       <block wx:elif="{{diffType === 'invalid'}}">请输入大于 0 且不超过 999 万的评估价（最多两位小数）</block>
       <block wx:else>{{diffDefault}}</block>
     </view>
+    <view class="unit-live" wx:if="{{evalUnitText}}">折合{{evalUnitText}}</view>
   </view>
   <view class="fld">
     <view class="fld__lb">调整意见（选填）</view>

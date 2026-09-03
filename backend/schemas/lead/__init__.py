@@ -285,6 +285,8 @@ class PendingAssessmentQueueItem(BaseModel):
     expected_price: float | None = Field(None, description="业主报价(万) = expected_price 回退 total_price")
     images: list[str] = Field(default_factory=list, description="图片URL（前 3 张）")
     source: Literal["customer_share", "employee_entry"] = Field(description="来源：客户分享/员工录入")
+    submitter_nickname: str | None = Field(None, description="提交人昵称（线索创建人）")
+    submitter_phone: str | None = Field(None, description="提交人手机号（已脱敏）")
     created_at: datetime = Field(description="创建时间")
 
 
@@ -307,6 +309,8 @@ class HandledItem(BaseModel):
     expected_price: float | None = Field(None, description="业主报价(万)")
     images: list[str] = Field(default_factory=list, description="图片URL（前 3 张）")
     source: Literal["customer_share", "employee_entry"] = Field(description="来源：客户分享/员工录入")
+    submitter_nickname: str | None = Field(None, description="提交人昵称（线索创建人）")
+    submitter_phone: str | None = Field(None, description="提交人手机号（已脱敏）")
     status: LeadStatus = Field(description="流转后状态")
     status_display: str = Field(description="状态显示名称")
     eval_price: float | None = Field(None, description="授权评估价(万)，reject/lost 为空")

@@ -121,12 +121,18 @@ interface PageData {
   // 线索信息全景
   community_name: string;
   district: string;
+  /** 线索提交人文案「昵称 · 脱敏手机号」，缺失为空串（隐藏）. */
+  submitterText: string;
   /** 参数宫格（建筑面积/户型/朝向/楼层/区域）. */
   paramGrid: { label: string; value: string }[];
+  /** 面积(㎡)，均价折算用，缺失为 null. */
+  area: number | null;
   /** 业主报价（万），缺失为 null（差值提示用）. */
   expectedPrice: number | null;
   hasPrice: boolean;
   priceText: string;
+  /** 业主报价折算单价文案「单价 ≈ 12,500 元/㎡」，报价或面积缺失为空串（隐藏）. */
+  priceUnitText: string;
   /** 授权评估价（viewMode：approved 有值，reject/lost 为空）. */
   hasEvalPrice: boolean;
   evalPriceText: string;
@@ -154,6 +160,8 @@ interface PageData {
   diffType: DiffType;
   diffValue: string;
   diffDefault: string;
+  /** 输入评估价实时折算单价文案（元/㎡），无效输入或面积缺失为空串（隐藏）. */
+  evalUnitText: string;
   focusedField: string;
   canConfirm: boolean;
   confirmText: string;
@@ -222,6 +230,34 @@ function diffOf(price: string, expected: number | null): { type: DiffType; value
   return d < 0 ? { type: "good", value: `${Math.abs(d)}` } : { type: "warn", value: `${d}` };
 }
 
+/** 千分位格式化整数. */
+function thousands(n: number): string {
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/**
+ * 折算单价完整文案「单价 ≈ 12,500 元/㎡」（四舍五入千分位）：报价(万)×10000 ÷ 面积(㎡).
+ * 报价或面积缺失、面积 ≤0 视为无效，返回空串.
+ */
+function unitPriceText(priceWan: number | null | undefined, area: number | null | undefined): string {
+  if (priceWan == null || area == null || area <= 0) {
+    return "";
+  }
+  return `单价 ≈ ${thousands(Math.round((priceWan * 10000) / area))} 元/㎡`;
+}
+
+/** 提交人文案：「昵称 · 138****1234」，缺失项降级，均无返回空串. */
+function submitterTextOf(nickname: string | null | undefined, phone: string | null | undefined): string {
+  const parts: string[] = [];
+  if (nickname) {
+    parts.push(nickname);
+  }
+  if (phone) {
+    parts.push(phone);
+  }
+  return parts.join(" · ");
+}
+
 Page<PageData, PageCustom>({
   data: {
     leadId: "",
@@ -233,10 +269,13 @@ Page<PageData, PageCustom>({
     statusTagClass: "amber",
     community_name: "",
     district: "",
+    submitterText: "",
     paramGrid: [],
+    area: null,
     expectedPrice: null,
     hasPrice: false,
     priceText: "—",
+    priceUnitText: "",
     hasEvalPrice: false,
     evalPriceText: "",
     images: [],
@@ -256,6 +295,7 @@ Page<PageData, PageCustom>({
     diffType: "",
     diffValue: "",
     diffDefault: "",
+    evalUnitText: "",
     focusedField: "",
     canConfirm: false,
     confirmText: "确认授权",
@@ -293,6 +333,8 @@ Page<PageData, PageCustom>({
       missing: false,
       community_name: item.community_name,
       district: item.district || "",
+      submitterText: submitterTextOf(item.submitter_nickname, item.submitter_phone),
+      area: item.area ?? null,
       paramGrid: [
         { label: "建筑面积", value: item.area != null ? `${item.area}㎡` : "—" },
         { label: "户型", value: item.layout || "—" },
@@ -303,6 +345,7 @@ Page<PageData, PageCustom>({
       expectedPrice: item.expected_price,
       hasPrice,
       priceText: hasPrice ? `${item.expected_price}` : "—",
+      priceUnitText: hasPrice ? unitPriceText(item.expected_price, item.area ?? null) : "",
       images: (item.images || []).map((u) => resolveImageUrl(u, { width: 480 })),
       remarks: item.remarks || "",
       created_at: formatDate(item.created_at, true),
@@ -327,6 +370,8 @@ Page<PageData, PageCustom>({
       statusTagClass: meta.cls,
       community_name: item.community_name,
       district: item.district || "",
+      submitterText: submitterTextOf(item.submitter_nickname, item.submitter_phone),
+      area: item.area ?? null,
       paramGrid: [
         { label: "建筑面积", value: item.area != null ? `${item.area}㎡` : "—" },
         { label: "户型", value: item.layout || "—" },
@@ -337,6 +382,7 @@ Page<PageData, PageCustom>({
       expectedPrice: item.expected_price,
       hasPrice,
       priceText: hasPrice ? `${item.expected_price}` : "—",
+      priceUnitText: hasPrice ? unitPriceText(item.expected_price, item.area ?? null) : "",
       hasEvalPrice: approved && item.eval_price != null,
       evalPriceText: item.eval_price != null ? `${item.eval_price}` : "",
       images: (item.images || []).map((u) => resolveImageUrl(u, { width: 480 })),
@@ -459,6 +505,7 @@ Page<PageData, PageCustom>({
       evalPrice: "",
       diffType: "",
       diffValue: "",
+      evalUnitText: "",
       canConfirm: false,
       confirmText: "确认授权",
     });
@@ -477,6 +524,7 @@ Page<PageData, PageCustom>({
       evalPrice: "",
       diffType: "",
       diffValue: "",
+      evalUnitText: "",
       canConfirm: false,
       confirmText: "确认调整",
       focusedField: "",
@@ -507,6 +555,8 @@ Page<PageData, PageCustom>({
       evalPrice: value,
       diffType: type,
       diffValue,
+      // 实时折算单价（元/㎡）：仅有效输入且面积可用时展示
+      evalUnitText: valid ? unitPriceText(Number(value), this.data.area) : "",
       canConfirm: valid,
       confirmText: valid ? `${verb} ¥${value} 万` : verb,
       formError: "",

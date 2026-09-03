@@ -4514,6 +4514,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/growth-center/leads/{module}/{lead_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 管理端统一线索状态流转
+         * @description 统一 5 态矩阵流转（口径与小程序「我的客户」一致，非法流转 409）：recruit/booking 全矩阵；估价/房源单仅「淘汰」旁路（reason 必填 422）与「重新激活」（eliminated→contacted，remark 必填 422）；remark 非空自动落一条系统跟进记录，状态变化 best-effort 通知归属员工
+         */
+        put: operations["update_lead_status_api_v1_admin_growth_center_leads__module___lead_id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/leads/{module}/{lead_id}/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 管理端查看线索完整手机号
+         * @description recruit/booking 解密原生号码，估价/房源单返回 creator 手机号；查看不改变任何线索状态（区别于 C 端「查看即联系」）；隐私敏感操作记录访问日志
+         */
+        get: operations["get_lead_phone_api_v1_admin_growth_center_leads__module___lead_id__phone_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/market/kpi": {
         parameters: {
             query?: never;
@@ -4749,6 +4789,20 @@ export interface components {
         AddCompetitorRequest: {
             /** Competitor Community Id */
             competitor_community_id: string;
+        };
+        /**
+         * AdminLeadPhoneResponse
+         * @description 管理端线索完整手机号响应.
+         *
+         *     recruit/booking 返回解密原生号码，valuation/sheet 返回 creator 手机号；
+         *     查看不改变任何线索状态（区别于 C 端「查看即联系」）。
+         */
+        AdminLeadPhoneResponse: {
+            /**
+             * Phone
+             * @description 完整手机号（解密）
+             */
+            phone: string;
         };
         /**
          * ApiKeyCreateResponse
@@ -6480,6 +6534,16 @@ export interface components {
              * @enum {string}
              */
             source: "customer_share" | "employee_entry";
+            /**
+             * Submitter Nickname
+             * @description 提交人昵称（线索创建人）
+             */
+            submitter_nickname?: string | null;
+            /**
+             * Submitter Phone
+             * @description 提交人手机号（已脱敏）
+             */
+            submitter_phone?: string | null;
             /** @description 流转后状态 */
             status: components["schemas"]["LeadStatus"];
             /**
@@ -9472,6 +9536,16 @@ export interface components {
              * @enum {string}
              */
             source: "customer_share" | "employee_entry";
+            /**
+             * Submitter Nickname
+             * @description 提交人昵称（线索创建人）
+             */
+            submitter_nickname?: string | null;
+            /**
+             * Submitter Phone
+             * @description 提交人手机号（已脱敏）
+             */
+            submitter_phone?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -23293,6 +23367,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LeadDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lead_status_api_v1_admin_growth_center_leads__module___lead_id__status_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MyCustomerStatusUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCustomerStatusUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_phone_api_v1_admin_growth_center_leads__module___lead_id__phone_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLeadPhoneResponse"];
                 };
             };
             /** @description Validation Error */

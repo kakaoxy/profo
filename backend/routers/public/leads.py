@@ -361,6 +361,8 @@ def get_pending_assessment(
             expected_price=_effective_expected_price(lead),
             images=(lead.images or [])[:3],
             source=_lead_source(lead),
+            submitter_nickname=lead.creator.nickname if lead.creator else None,
+            submitter_phone=mask_phone(lead.creator.phone) if lead.creator else None,
             created_at=lead.created_at,
         )
         for lead in result["items_pending"]
@@ -413,6 +415,8 @@ def get_handled_assessment(
                 expected_price=_effective_expected_price(lead),
                 images=(lead.images or [])[:3],
                 source=_lead_source(lead),
+                submitter_nickname=lead.creator.nickname if lead.creator else None,
+                submitter_phone=mask_phone(lead.creator.phone) if lead.creator else None,
                 status=lead.status,
                 status_display=status_display,
                 eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
