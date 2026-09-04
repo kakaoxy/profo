@@ -2,12 +2,12 @@
  * 房源单分享 · 我的房源单页.
  *
  * 页面职责：
- * - 统计卡：昨日/累计两行漏斗 × 分享次数/打开 PV/访客 UV/留资（与 projects/mine 同构，
- *   留资列以 Rust 强调，数据源 /public/property-sheets/my/share-stats）
+ * - 统计卡：今日/累计两行漏斗 × 分享次数/打开 PV/访客 UV/留资
+ *   （留资列以 Rust 强调，数据源 /public/property-sheets/my/share-stats）
  * - 房源单列表：名称「精选房源单」/ 创建时间（相对格式）/ 共 N 套 / 分享短码胶囊；
  *   数据源 GET /public/property-sheets/mine；点击进详情，长按确认删除（软删）后刷新
- * - 未登录不发请求；401（令牌失效）统一空态兜底（对齐 projects/mine：不清登录态、不报错）
- * - 空态判定同 projects/mine：累计漏斗全零且列表为空才整页空态；
+ * - 未登录不发请求；401（令牌失效）统一空态兜底（不清登录态、不报错）
+ * - 空态判定：累计漏斗全零且列表为空才整页空态；
  *   有分享数据但暂无房源单 → 保留统计卡 + 列表区空文案引导创建
  */
 import type { components } from "../../../types/api-types";
@@ -23,16 +23,16 @@ type PropertySheetMineListResponse = components["schemas"]["PropertySheetMineLis
 /** 未登录/无 C 端身份（401）：统一空态兜底，不清登录态、不报错. */
 const HTTP_UNAUTHORIZED = 401;
 
-/** 分享漏斗统计展示结构（累计 + 昨日两行；空态判定仅用累计字段）. */
+/** 分享漏斗统计展示结构（累计 + 今日两行；空态判定仅用累计字段）. */
 interface ShareStatsDisplay {
   shareCount: number;
   pv: number;
   uv: number;
   leadCount: number;
-  yesterdayShareCount: number;
-  yesterdayPv: number;
-  yesterdayUv: number;
-  yesterdayLeadCount: number;
+  todayShareCount: number;
+  todayPv: number;
+  todayUv: number;
+  todayLeadCount: number;
 }
 
 /** 房源单列表项展示结构（wxml 渲染用）. */
@@ -81,10 +81,10 @@ Page<PageData, PageCustom>({
       pv: 0,
       uv: 0,
       leadCount: 0,
-      yesterdayShareCount: 0,
-      yesterdayPv: 0,
-      yesterdayUv: 0,
-      yesterdayLeadCount: 0,
+      todayShareCount: 0,
+      todayPv: 0,
+      todayUv: 0,
+      todayLeadCount: 0,
     },
     sheets: [],
     loading: false,
@@ -122,7 +122,7 @@ Page<PageData, PageCustom>({
     }
     await Promise.all([this.loadStats(), this.loadSheets(silent)]);
     const { stats, sheets } = this.data;
-    // 空态判定基于累计漏斗字段（与 projects/mine 口径一致）
+    // 空态判定基于累计漏斗字段
     const allZero =
       stats.shareCount === 0 && stats.pv === 0 && stats.uv === 0 && stats.leadCount === 0;
     this.setData({
@@ -131,7 +131,7 @@ Page<PageData, PageCustom>({
     });
   },
 
-  /** 分享漏斗统计（昨日 + 累计）；失败（401/网络）保持 0，由 loadAll 统一判定空态. */
+  /** 分享漏斗统计（今日 + 累计）；失败（401/网络）保持 0，由 loadAll 统一判定空态. */
   async loadStats() {
     try {
       const res = await request<PublicShareStatsResponse>({
@@ -143,10 +143,10 @@ Page<PageData, PageCustom>({
           pv: res.pv || 0,
           uv: res.uv || 0,
           leadCount: res.lead_count || 0,
-          yesterdayShareCount: res.yesterday_share_count || 0,
-          yesterdayPv: res.yesterday_pv || 0,
-          yesterdayUv: res.yesterday_uv || 0,
-          yesterdayLeadCount: res.yesterday_lead_count || 0,
+          todayShareCount: res.today_share_count || 0,
+          todayPv: res.today_pv || 0,
+          todayUv: res.today_uv || 0,
+          todayLeadCount: res.today_lead_count || 0,
         },
       });
     } catch {
@@ -170,7 +170,7 @@ Page<PageData, PageCustom>({
       const statusCode = (err as HttpResponseError).statusCode;
       if (statusCode === HTTP_UNAUTHORIZED) {
         // 401（未登录/令牌失效，request 已自动尝试刷新仍失败）：
-        // 清空列表走空态兜底，不清登录态、不报「加载失败」（对齐 projects/mine）
+        // 清空列表走空态兜底，不清登录态、不报「加载失败」
         this.setData({ sheets: [] });
         return;
       }

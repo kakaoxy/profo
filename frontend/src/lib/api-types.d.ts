@@ -3063,7 +3063,7 @@ export interface paths {
         };
         /**
          * 我的房源分享统计
-         * @description 当前员工的房源分享次数 / 经我分享打开 PV/UV / 归属我的预约留资（昨日 + 累计），需登录
+         * @description 当前员工的房源分享次数 / 经我分享打开 PV/UV / 归属我的预约留资（今日 + 累计），需登录
          */
         get: operations["get_my_share_stats_api_v1_public_projects_my_share_stats_get"];
         put?: never;
@@ -3203,7 +3203,7 @@ export interface paths {
         };
         /**
          * 我的房源单分享统计
-         * @description 分享次数 / 经我分享打开 PV/UV / 分享归因留资数（昨日 + 累计），需登录
+         * @description 分享次数 / 经我分享打开 PV/UV / 分享归因留资数（今日 + 累计），需登录
          */
         get: operations["get_my_share_stats_api_v1_public_property_sheets_my_share_stats_get"];
         put?: never;
@@ -3691,7 +3691,7 @@ export interface paths {
         };
         /**
          * 我的评估分享统计
-         * @description 当前员工的估价页分享次数 / 经我分享打开 PV/UV / 分享归因我的线索数（昨日 + 累计），需登录
+         * @description 当前员工的估价页分享次数 / 经我分享打开 PV/UV / 分享归因我的线索数（今日 + 累计），需登录
          */
         get: operations["get_my_share_stats_api_v1_public_valuations_my_share_stats_get"];
         put?: never;
@@ -4051,7 +4051,7 @@ export interface paths {
         };
         /**
          * 我的客户分享统计
-         * @description 四链路 share-stats 逐字段求和（昨日/累计 × 分享/PV/UV/留资），口径与各线一致
+         * @description 四链路 share-stats 逐字段求和（今日/累计 × 分享/PV/UV/留资），口径与各线一致
          */
         get: operations["get_my_customers_share_stats_api_v1_public_customers_my_share_stats_get"];
         put?: never;
@@ -6534,6 +6534,16 @@ export interface components {
              * @enum {string}
              */
             source: "customer_share" | "employee_entry";
+            /**
+             * Submitter Nickname
+             * @description 提交人昵称（线索创建人）
+             */
+            submitter_nickname?: string | null;
+            /**
+             * Submitter Phone
+             * @description 提交人手机号（已脱敏）
+             */
+            submitter_phone?: string | null;
             /** @description 流转后状态 */
             status: components["schemas"]["LeadStatus"];
             /**
@@ -8978,25 +8988,25 @@ export interface components {
              */
             lead_count: number;
             /**
-             * Yesterday Share Count
-             * @description 昨日分享次数
+             * Today Share Count
+             * @description 今日分享次数
              */
-            yesterday_share_count: number;
+            today_share_count: number;
             /**
-             * Yesterday Pv
-             * @description 昨日经我分享的打开次数 PV
+             * Today Pv
+             * @description 今日经我分享的打开次数 PV
              */
-            yesterday_pv: number;
+            today_pv: number;
             /**
-             * Yesterday Uv
-             * @description 昨日打开人数 UV
+             * Today Uv
+             * @description 今日打开人数 UV
              */
-            yesterday_uv: number;
+            today_uv: number;
             /**
-             * Yesterday Lead Count
-             * @description 昨日归属我的线索数
+             * Today Lead Count
+             * @description 今日归属我的线索数
              */
-            yesterday_lead_count: number;
+            today_lead_count: number;
         };
         /**
          * MyCustomerStatusUpdateRequest
@@ -9526,6 +9536,16 @@ export interface components {
              * @enum {string}
              */
             source: "customer_share" | "employee_entry";
+            /**
+             * Submitter Nickname
+             * @description 提交人昵称（线索创建人）
+             */
+            submitter_nickname?: string | null;
+            /**
+             * Submitter Phone
+             * @description 提交人手机号（已脱敏）
+             */
+            submitter_phone?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -12251,7 +12271,7 @@ export interface components {
         };
         /**
          * PublicShareStatsResponse
-         * @description C端「我的分享统计」响应（房源/评估共用，昨日 + 累计）.
+         * @description C端「我的分享统计」响应（房源/评估共用，今日 + 累计）.
          */
         PublicShareStatsResponse: {
             /**
@@ -12275,25 +12295,25 @@ export interface components {
              */
             lead_count: number;
             /**
-             * Yesterday Share Count
-             * @description 昨日分享次数(Asia/Shanghai 自然日)
+             * Today Share Count
+             * @description 今日分享次数(Asia/Shanghai 自然日)
              */
-            yesterday_share_count: number;
+            today_share_count: number;
             /**
-             * Yesterday Pv
-             * @description 昨日打开次数 PV
+             * Today Pv
+             * @description 今日打开次数 PV
              */
-            yesterday_pv: number;
+            today_pv: number;
             /**
-             * Yesterday Uv
-             * @description 昨日打开人数 UV
+             * Today Uv
+             * @description 今日打开人数 UV
              */
-            yesterday_uv: number;
+            today_uv: number;
             /**
-             * Yesterday Lead Count
-             * @description 昨日留资数
+             * Today Lead Count
+             * @description 今日留资数
              */
-            yesterday_lead_count: number;
+            today_lead_count: number;
         };
         /**
          * PublicSoldProjectItem
@@ -12987,25 +13007,25 @@ export interface components {
              */
             lead_count: number;
             /**
-             * Yesterday Share Count
-             * @description 昨日分享次数（Asia/Shanghai 自然日）
+             * Today Share Count
+             * @description 今日分享次数（Asia/Shanghai 自然日）
              */
-            yesterday_share_count: number;
+            today_share_count: number;
             /**
-             * Yesterday Pv
-             * @description 昨日经我分享的打开次数 PV
+             * Today Pv
+             * @description 今日经我分享的打开次数 PV
              */
-            yesterday_pv: number;
+            today_pv: number;
             /**
-             * Yesterday Uv
-             * @description 昨日经我分享的打开人数 UV
+             * Today Uv
+             * @description 今日经我分享的打开人数 UV
              */
-            yesterday_uv: number;
+            today_uv: number;
             /**
-             * Yesterday Lead Count
-             * @description 昨日归属我的线索数
+             * Today Lead Count
+             * @description 今日归属我的线索数
              */
-            yesterday_lead_count: number;
+            today_lead_count: number;
         };
         /**
          * RecruitQRCodeGenerateRequest

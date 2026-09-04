@@ -3,6 +3,8 @@
 提供：
 - ``c_users``：员工侧（customer 角色持 C 端令牌）与外部客户测试用户；
 - ``c_client_factory``：C 端令牌（aud=c）TestClient 工厂；
+- ``customer_user`` / ``c_end_client``：C 端员工侧固定用户及其已认证客户端；
+- ``backend_client`` / ``normal_user_client``：后台管理端与普通用户已认证客户端（含 CSRF 头）；
 - ``my_customers_data``：跨 4 模块的自建测试线索数据。
 
 依赖根 conftest 的 PostgreSQL SAVEPOINT 隔离基建（测试数据随外层事务
@@ -19,7 +21,7 @@ from sqlalchemy.orm import Session
 
 import db
 from models import Lead, ProjectBooking, RecruitLead, RecruitLeadStatus, Role, User
-from utils.auth import AUDIENCE_C, create_access_token, get_password_hash
+from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C, create_access_token, get_password_hash
 from utils.crypto import hash_phone
 
 
@@ -81,6 +83,172 @@ def c_client_factory(seeded_db: dict[str, Any]) -> Generator[Callable[[User], Te
         )
 
     yield _factory
+    app.dependency_overrides.clear()
+
+
+def _make_client(session: Session, cookies: dict[str, str]) -> Generator[TestClient, None, None]:
+    """构造 TestClient 的生成器 helper：覆盖 get_db 并按 cookies 携带认证.
+
+    供测试 fixture 内 ``yield from _make_client(session, {...})`` 复用
+    （与 ``c_client_factory`` 等同构：dependency_overrides + CSRF 头）。
+
+    """
+    from main import app
+
+    def _override_get_db() -> Generator[Session, None, None]:
+        yield session
+
+    app.dependency_overrides[db.get_db] = _override_get_db
+    # Cookie 认证的非安全方法（POST/PUT）须携带 X-Requested-With 过 CSRF 中间件
+    yield TestClient(
+        app,
+        cookies=cookies,
+        headers={"X-Requested-With": "XMLHttpRequest"},
+    )
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def customer_user(seeded_db: dict[str, Any]) -> User:
+    """C 端员工侧测试用户（customer 角色，固定 id 供测试造数字面量对齐）."""
+    session: Session = seeded_db["session"]
+    customer_role = session.query(Role).filter(Role.code == "customer").one()
+    user = User(
+        id="customer-user",
+        username="customer_user",
+        # 测试种子密码随机生成，避免硬编码账号口令
+        password=get_password_hash(f"pw-{uuid.uuid4().hex}"),
+        nickname="分享员工",
+        role_id=customer_role.id,
+        status="active",
+    )
+    session.add(user)
+    session.commit()
+    return user
+
+
+@pytest.fixture
+def c_end_client(seeded_db: dict[str, Any], customer_user: User) -> Generator[TestClient, None, None]:
+    """已认证 C 端员工 TestClient（c_access_token cookie，登录主体 = customer_user）."""
+    from main import app
+
+    session: Session = seeded_db["session"]
+
+    def _override_get_db() -> Generator[Session, None, None]:
+        yield session
+
+    app.dependency_overrides[db.get_db] = _override_get_db
+    token = create_access_token(
+        data={"sub": customer_user.id, "role": "customer", "ver": customer_user.token_version},
+        audience=AUDIENCE_C,
+    )
+    # Cookie 认证的非安全方法（POST/PUT）须携带 X-Requested-With 过 CSRF 中间件
+    yield TestClient(
+        app,
+        cookies={"c_access_token": token},
+        headers={"X-Requested-With": "XMLHttpRequest"},
+    )
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def backend_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
+    """后台管理端已认证 TestClient（access_token cookie + CSRF 头，admin 角色）."""
+    from main import app
+
+    session: Session = seeded_db["session"]
+    admin_user = seeded_db["users"]["admin"]
+
+    def _override_get_db() -> Generator[Session, None, None]:
+        yield session
+
+    app.dependency_overrides[db.get_db] = _override_get_db
+    token = create_access_token(
+        data={"sub": admin_user.id, "role": "admin", "ver": admin_user.token_version},
+        audience=AUDIENCE_ADMIN,
+    )
+    # Cookie 认证的非安全方法（POST/PUT）须携带 X-Requested-With 过 CSRF 中间件
+    yield TestClient(
+        app,
+        cookies={"access_token": token},
+        headers={"X-Requested-With": "XMLHttpRequest"},
+    )
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def normal_user_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
+    """普通用户已认证 TestClient（access_token cookie + CSRF 头，权限 403 场景）."""
+    from main import app
+
+    session: Session = seeded_db["session"]
+    normal_user = seeded_db["users"]["normal"]
+
+    def _override_get_db() -> Generator[Session, None, None]:
+        yield session
+
+    app.dependency_overrides[db.get_db] = _override_get_db
+    token = create_access_token(
+        data={"sub": normal_user.id, "role": "user", "ver": normal_user.token_version},
+        audience=AUDIENCE_ADMIN,
+    )
+    # Cookie 认证的非安全方法（POST/PUT）须携带 X-Requested-With 过 CSRF 中间件
+    yield TestClient(
+        app,
+        cookies={"access_token": token},
+        headers={"X-Requested-With": "XMLHttpRequest"},
+    )
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def customer_audience_token(seeded_db: dict[str, Any], customer_user: User) -> str:
+    """C 端受众 Token 字符串（aud=c，供 Authorization Header 隔离测试）."""
+    return create_access_token(
+        data={"sub": customer_user.id, "role": "customer", "ver": customer_user.token_version},
+        audience=AUDIENCE_C,
+    )
+
+
+@pytest.fixture
+def admin_audience_token(seeded_db: dict[str, Any]) -> str:
+    """后台受众 Token 字符串（aud=admin，供 Authorization Header 隔离测试）."""
+    admin_user = seeded_db["users"]["admin"]
+    return create_access_token(
+        data={"sub": admin_user.id, "role": "admin", "ver": admin_user.token_version},
+        audience=AUDIENCE_ADMIN,
+    )
+
+
+@pytest.fixture
+def dual_login_client(
+    seeded_db: dict[str, Any],
+    customer_user: User,
+) -> Generator[TestClient, None, None]:
+    """同时携带后台与 C 端两类 Cookie 的 TestClient（双端登录隔离测试）."""
+    from main import app
+
+    session: Session = seeded_db["session"]
+    admin_user = seeded_db["users"]["admin"]
+    admin_token = create_access_token(
+        data={"sub": admin_user.id, "role": "admin", "ver": admin_user.token_version},
+        audience=AUDIENCE_ADMIN,
+    )
+    c_token = create_access_token(
+        data={"sub": customer_user.id, "role": "customer", "ver": customer_user.token_version},
+        audience=AUDIENCE_C,
+    )
+
+    def _override_get_db() -> Generator[Session, None, None]:
+        yield session
+
+    app.dependency_overrides[db.get_db] = _override_get_db
+    # Cookie 认证的非安全方法（POST/PUT）须携带 X-Requested-With 过 CSRF 中间件
+    yield TestClient(
+        app,
+        cookies={"access_token": admin_token, "c_access_token": c_token},
+        headers={"X-Requested-With": "XMLHttpRequest"},
+    )
     app.dependency_overrides.clear()
 
 

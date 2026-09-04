@@ -56,6 +56,29 @@
       <view class="state-text">暂无可展示房源</view>
     </view>
 
+    <!-- 员工专属区块：分享提示 + 我的客户入口 + 分享给客户（员工自有页面，直接展示） -->
+    <view class="share-tip">
+      <view class="share-tip-title">分享给您的客户</view>
+      <view class="share-tip-sub">客户打开并留资后，线索自动归属您</view>
+      <view class="staff-divider"></view>
+      <view class="clue-entry" bindtap="onMineTap">
+        <view class="clue-ic">
+          <view class="clue-ic-line"></view>
+          <view class="clue-ic-line clue-ic-line--short"></view>
+          <view class="clue-ic-line"></view>
+        </view>
+        <view class="clue-tt">
+          <view class="clue-tt-title">我的客户</view>
+          <view class="clue-tt-sub">查看分享带来的客户线索</view>
+        </view>
+        <view class="clue-chev"></view>
+      </view>
+      <view class="staff-divider"></view>
+      <view class="staff-btn-row">
+        <button class="staff-btn staff-btn--pri" open-type="share">分享给客户</button>
+      </view>
+    </view>
+
     <!-- 底栏占位（避免固定栏遮住列表末项） -->
     <view class="bar-safe"></view>
   </block>

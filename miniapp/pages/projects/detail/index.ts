@@ -136,8 +136,8 @@ type Custom = {
   reportVisit(id: number, referrer: string, source: string): void;
   reportShareEvent(id: number, shareType: "card" | "timeline"): void;
   onRetry(): void;
-  /** 员工专属入口：跳转「我的客户」页（分享漏斗 + 归因预约客户）. */
-  onMyCustomersTap(): void;
+  /** 员工区块「我的客户」入口：进入我的客户页（分享线索归属列表）. */
+  onMineTap(): void;
   onShareTimeline(): void;
   onShow(): void;
   /** 登录返回后续约预约流标记（实例字段，无需渲染）. */
@@ -605,9 +605,9 @@ Page<PageData, Custom>({
     }
     this.loadDetail(id);
   },
-  /** 员工专属入口：跳转「我的客户」页. */
-  onMyCustomersTap(): void {
-    wx.navigateTo({ url: "/pages/projects/mine/index" });
+  /** 员工区块「我的客户」入口：进入我的客户页（分享线索归属列表）. */
+  onMineTap(): void {
+    wx.navigateTo({ url: "/pages/customers/mine/index" });
   },
   onShareAppMessage() {
     // 封面取图集首图（已为完整地址），无图则省略

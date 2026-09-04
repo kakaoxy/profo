@@ -818,7 +818,7 @@ POST /api/v1/public/projects/{project_id}/share-events
 
 ### 6.8 获取我的房源分享统计
 
-获取当前员工的房源分享漏斗统计（昨日 + 累计）。
+获取当前员工的房源分享漏斗统计（今日 + 累计）。
 
 ```
 GET /api/v1/public/projects/my/share-stats
@@ -836,10 +836,10 @@ GET /api/v1/public/projects/my/share-stats
   "pv": 45,
   "uv": 38,
   "lead_count": 3,
-  "yesterday_share_count": 2,
-  "yesterday_pv": 5,
-  "yesterday_uv": 4,
-  "yesterday_lead_count": 1
+  "today_share_count": 2,
+  "today_pv": 5,
+  "today_uv": 4,
+  "today_lead_count": 1
 }
 ```
 
@@ -849,10 +849,10 @@ GET /api/v1/public/projects/my/share-stats
 | `pv` | integer | 经我分享的打开次数 PV（累计） |
 | `uv` | integer | 经我分享的打开人数 UV（`visitor_id` 去重，累计） |
 | `lead_count` | integer | 留资数（累计；归属我的预约数） |
-| `yesterday_share_count` | integer | 昨日分享次数（Asia/Shanghai 自然日） |
-| `yesterday_pv` | integer | 昨日打开次数 PV |
-| `yesterday_uv` | integer | 昨日打开人数 UV |
-| `yesterday_lead_count` | integer | 昨日留资数 |
+| `today_share_count` | integer | 今日分享次数（Asia/Shanghai 自然日） |
+| `today_pv` | integer | 今日打开次数 PV |
+| `today_uv` | integer | 今日打开人数 UV |
+| `today_lead_count` | integer | 今日留资数 |
 
 > 口径：分享按 `ProjectShareEvent.employee_id`、PV/UV 按 `ProjectVisit.referrer_employee_id`、留资按 `ProjectBooking.referrer_user_id`。
 
@@ -1062,7 +1062,7 @@ POST /api/v1/public/valuations/share-events
 
 ### 8.3 获取我的估价分享统计
 
-获取当前员工的估价页分享漏斗统计（昨日 + 累计）。口径与房源侧一致，留资为分享归因我的线索数。
+获取当前员工的估价页分享漏斗统计（今日 + 累计）。口径与房源侧一致，留资为分享归因我的线索数。
 
 ```
 GET /api/v1/public/valuations/my/share-stats
@@ -1831,10 +1831,10 @@ PUT /api/v1/public/users/phone
   "pv": 45,
   "uv": 38,
   "lead_count": 3,
-  "yesterday_share_count": 2,
-  "yesterday_pv": 5,
-  "yesterday_uv": 4,
-  "yesterday_lead_count": 1
+  "today_share_count": 2,
+  "today_pv": 5,
+  "today_uv": 4,
+  "today_lead_count": 1
 }
 ```
 
@@ -1844,10 +1844,10 @@ PUT /api/v1/public/users/phone
 | `pv` | integer | 经我分享的打开次数 PV(累计) |
 | `uv` | integer | 经我分享的打开人数 UV(visitor_id 去重，累计) |
 | `lead_count` | integer | 留资数(累计；房源=归属我的预约，评估=分享归因我的线索) |
-| `yesterday_share_count` | integer | 昨日分享次数(Asia/Shanghai 自然日) |
-| `yesterday_pv` | integer | 昨日打开次数 PV |
-| `yesterday_uv` | integer | 昨日打开人数 UV |
-| `yesterday_lead_count` | integer | 昨日留资数 |
+| `today_share_count` | integer | 今日分享次数(Asia/Shanghai 自然日) |
+| `today_pv` | integer | 今日打开次数 PV |
+| `today_uv` | integer | 今日打开人数 UV |
+| `today_lead_count` | integer | 今日留资数 |
 
 ---
 

@@ -1,4 +1,4 @@
-/* 我的房源单页（Steep 设计体系：统计卡同构 projects/mine，留资列 Rust 强调） */
+/* 我的房源单页（Steep 设计体系：统计卡今日/累计两行漏斗，留资列 Rust 强调） */
 
 .page {
   --line: #f2f3f5;
@@ -18,7 +18,7 @@
   color: var(--graphite);
 }
 
-/* ===== 统计卡（昨日/累计两行漏斗） ===== */
+/* ===== 统计卡（今日/累计两行漏斗） ===== */
 .stats {
   margin: 24rpx 32rpx 0;
   background: #ffffff;
@@ -33,7 +33,7 @@
 .stats-row + .stats-row {
   border-top: 2rpx solid var(--line);
 }
-/* 行标签（昨日/累计）：紧凑置灰 */
+/* 行标签（今日/累计）：紧凑置灰 */
 .stats-tag {
   text-align: center;
   font-size: 20rpx;
@@ -148,7 +148,7 @@
   width: 380rpx;
   height: 304rpx;
 }
-/* 杏色暖光晕（Apricot Wash，替代 projects/mine 的品牌蓝光晕） */
+/* 杏色暖光晕（Apricot Wash） */
 .e-glow {
   position: absolute;
   left: 50%;

@@ -198,7 +198,7 @@ class MyCustomerService:
     def share_stats(self, user: User) -> dict[str, int]:
         """「我的客户」漏斗统计：四链路既有 my/share-stats 逐字段求和.
 
-        复用各线服务保证口径一致（share/pv/uv/lead_count × 昨日/累计）；
+        复用各线服务保证口径一致（share/pv/uv/lead_count × 今日/累计）；
         UV 为四链路 UV 数值求和（招募=openid_hash，其余=匿名 visitor_id，
         口径差异由前端脚注说明，此处不做跨口径去重）。
 
@@ -208,10 +208,10 @@ class MyCustomerService:
             "pv",
             "uv",
             "lead_count",
-            "yesterday_share_count",
-            "yesterday_pv",
-            "yesterday_uv",
-            "yesterday_lead_count",
+            "today_share_count",
+            "today_pv",
+            "today_uv",
+            "today_lead_count",
         )
         parts = [
             ValuationShareTrackingService(self.db).get_my_share_stats(user),

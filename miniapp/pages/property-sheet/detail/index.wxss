@@ -212,6 +212,108 @@
   color: var(--graphite);
 }
 
+/* ===== 员工专属区块（分享提示 + 我的客户 + 分享给客户，Steep：fog 底上白卡 48rpx 圆角） ===== */
+.share-tip {
+  margin: 24rpx 32rpx 0;
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  padding: 32rpx 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+.share-tip-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 12rpx;
+}
+.share-tip-sub {
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+/* dove 1px 分隔线 */
+.staff-divider {
+  height: 2rpx;
+  background: var(--dove);
+  margin: 24rpx 0 20rpx;
+}
+.clue-entry {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 8rpx 0 4rpx;
+}
+.clue-ic {
+  flex-shrink: 0;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  background: var(--apricot-wash);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+.clue-ic-line {
+  width: 30rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--rust);
+}
+.clue-ic-line--short {
+  width: 20rpx;
+}
+.clue-tt {
+  flex: 1;
+  min-width: 0;
+}
+.clue-tt-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.clue-tt-sub {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--graphite);
+}
+.clue-chev {
+  flex-shrink: 0;
+  width: 16rpx;
+  height: 16rpx;
+  border-right: 4rpx solid var(--dove);
+  border-top: 4rpx solid var(--dove);
+  transform: rotate(45deg);
+}
+.staff-btn-row {
+  display: flex;
+  gap: 20rpx;
+  padding-top: 20rpx;
+}
+/* Steep 主按钮：ink 底白字 9999rpx 药丸 */
+.staff-btn {
+  flex: 1;
+  height: 88rpx;
+  border: none;
+  border-radius: 9999rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+}
+.staff-btn::after {
+  border: none;
+}
+.staff-btn--pri {
+  background: var(--ink);
+  color: var(--pure-white);
+}
+
 /* ===== 底部固定操作栏（预览海报 + 生成海报分享，各占 flex:1） ===== */
 .bottom-bar {
   position: fixed;

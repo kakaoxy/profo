@@ -265,57 +265,120 @@
   line-height: 1.6;
 }
 
-/* 员工专属入口条（我的客户）：卡片语言对齐 info-item（fog 底/32rpx 圆角） */
-.staff-entry {
+/* 员工专属区块（分享提示 + 我的客户 + 分享给客户，Steep 配色）：白卡内 fog 底区块，卡片语言对齐 info-item */
+.share-tip {
+  margin-bottom: 48rpx;
+  padding: 32rpx 40rpx;
+  background: var(--fog);
+  border-radius: 32rpx;
+}
+
+.share-tip-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 12rpx;
+}
+
+.share-tip-sub {
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+
+/* dove 1px 分隔线 */
+.staff-divider {
+  height: 2rpx;
+  background: var(--dove);
+  margin: 24rpx 0 20rpx;
+}
+
+.clue-entry {
   display: flex;
   align-items: center;
   gap: 20rpx;
-  padding: 28rpx;
-  background: var(--fog);
-  border-radius: 32rpx;
-  margin-bottom: 48rpx;
+  padding: 8rpx 0 4rpx;
 }
 
-.staff-entry--hover {
-  opacity: 0.85;
-}
-
-.staff-entry-icon {
+.clue-ic {
+  flex-shrink: 0;
   width: 72rpx;
   height: 72rpx;
-  border-radius: 50%;
+  border-radius: 20rpx;
   background: var(--apricot-wash);
-  color: var(--rust);
-  font-size: 30rpx;
-  font-weight: 500;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  gap: 6rpx;
 }
 
-.staff-entry-info {
+.clue-ic-line {
+  width: 30rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--rust);
+}
+
+.clue-ic-line--short {
+  width: 20rpx;
+}
+
+.clue-tt {
   flex: 1;
   min-width: 0;
 }
 
-.staff-entry-title {
-  font-size: 30rpx;
-  font-weight: 500;
+.clue-tt-title {
+  font-size: 28rpx;
+  font-weight: 600;
   color: var(--ink);
 }
 
-.staff-entry-sub {
+.clue-tt-sub {
   margin-top: 6rpx;
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: var(--graphite);
 }
 
-.staff-entry-arrow {
+.clue-chev {
   flex-shrink: 0;
-  font-size: 44rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-right: 4rpx solid var(--dove);
+  border-top: 4rpx solid var(--dove);
+  transform: rotate(45deg);
+}
+
+.staff-btn-row {
+  display: flex;
+  gap: 20rpx;
+  padding-top: 20rpx;
+}
+
+/* Steep 主按钮：ink 底白字 9999rpx 药丸 */
+.staff-btn {
+  flex: 1;
+  height: 88rpx;
+  border: none;
+  border-radius: 9999rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
-  color: var(--graphite);
+  padding: 0;
+  margin: 0;
+}
+
+.staff-btn::after {
+  border: none;
+}
+
+.staff-btn--pri {
+  background: var(--ink);
+  color: var(--pure-white);
 }
 
 .detail-footer {

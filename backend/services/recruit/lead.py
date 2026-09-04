@@ -14,7 +14,7 @@ from schemas.recruit import RecruitLeadStatusUpdate
 from services.growth_center.customer_notify import notify_customer_status_changed, unified_status_label
 from services.growth_center.flow_matrix import ensure_transition_allowed
 from services.system.exceptions import ResourceNotFoundError
-from utils.time_windows import yesterday_window
+from utils.time_windows import today_window
 
 
 def _time_range(
@@ -232,19 +232,19 @@ class RecruitLeadService:
         return {"items": leads, "total": total, "page": page, "page_size": page_size}
 
     def get_my_share_stats(self, user: User) -> dict[str, int]:
-        """C 端「我的分享统计」：分享次数 / 经我分享 PV / UV / 归属我的线索数（昨日 + 累计）.
+        """C 端「我的分享统计」：分享次数 / 经我分享 PV / UV / 归属我的线索数（今日 + 累计）.
 
         口径与漏斗服务一致：share_count 按 ``RecruitShareEvent.employee_id``（时间列
         ``shared_at``）、pv/uv 按 ``RecruitVisit.referrer_employee_id``（时间列
         ``entered_at``，uv 为 distinct openid_hash）、lead_count 按
-        ``RecruitLead.referrer_employee_id``（时间列 ``created_at``）；昨日窗口为
-        Asia/Shanghai 自然日（见 ``utils.time_windows.yesterday_window``）。
+        ``RecruitLead.referrer_employee_id``（时间列 ``created_at``）；今日窗口为
+        Asia/Shanghai 自然日（见 ``utils.time_windows.today_window``）。
         """
-        y_start, y_end = yesterday_window()
+        t_start, t_end = today_window()
         share_q = self.db.query(RecruitShareEvent).filter(RecruitShareEvent.employee_id == user.id)
         visit_q = self.db.query(RecruitVisit).filter(RecruitVisit.referrer_employee_id == user.id)
-        # 昨日窗口条件（不可变条件对象，pv/uv 两处复用）
-        y_visit_window = [RecruitVisit.entered_at >= y_start, RecruitVisit.entered_at < y_end]
+        # 今日窗口条件（不可变条件对象，pv/uv 两处复用）
+        t_visit_window = [RecruitVisit.entered_at >= t_start, RecruitVisit.entered_at < t_end]
         uv_q = self.db.query(func.count(func.distinct(RecruitVisit.openid_hash))).filter(
             RecruitVisit.referrer_employee_id == user.id
         )
@@ -255,12 +255,12 @@ class RecruitLeadService:
             "pv": int(visit_q.count()),
             "uv": int(uv_q.scalar() or 0),
             "lead_count": int(lead_q.scalar() or 0),
-            "yesterday_share_count": int(
-                share_q.filter(RecruitShareEvent.shared_at >= y_start, RecruitShareEvent.shared_at < y_end).count()
+            "today_share_count": int(
+                share_q.filter(RecruitShareEvent.shared_at >= t_start, RecruitShareEvent.shared_at < t_end).count()
             ),
-            "yesterday_pv": int(visit_q.filter(*y_visit_window).count()),
-            "yesterday_uv": int(uv_q.filter(*y_visit_window).scalar() or 0),
-            "yesterday_lead_count": int(
-                lead_q.filter(RecruitLead.created_at >= y_start, RecruitLead.created_at < y_end).scalar() or 0
+            "today_pv": int(visit_q.filter(*t_visit_window).count()),
+            "today_uv": int(uv_q.filter(*t_visit_window).scalar() or 0),
+            "today_lead_count": int(
+                lead_q.filter(RecruitLead.created_at >= t_start, RecruitLead.created_at < t_end).scalar() or 0
             ),
         }

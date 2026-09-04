@@ -216,7 +216,7 @@
 
         <view class="staff-divider"></view>
 
-        <!-- 我的线索入口（未读角标 badgeCount） -->
+        <!-- 我的客户入口（未读角标 badgeCount） -->
         <view class="clue-entry" bindtap="onMineTap">
           <view class="clue-ic">
             <view class="clue-ic-line"></view>
@@ -225,7 +225,7 @@
           </view>
           <view class="clue-tt">
             <view class="clue-tt-row">
-              <text class="clue-tt-title">我的线索</text>
+              <text class="clue-tt-title">我的客户</text>
               <text wx:if="{{badgeCount > 0}}" class="clue-badge">{{badgeCount}}</text>
             </view>
             <view class="clue-tt-sub">{{badgeCount > 0 ? badgeCount + ' 条新线索待跟进' : '查看分享带来的客户线索'}}</view>

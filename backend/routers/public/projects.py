@@ -196,7 +196,7 @@ def create_share_event(
 @router.get(
     "/projects/my/share-stats",
     summary="我的房源分享统计",
-    description="当前员工的房源分享次数 / 经我分享打开 PV/UV / 归属我的预约留资（昨日 + 累计），需登录",
+    description="当前员工的房源分享次数 / 经我分享打开 PV/UV / 归属我的预约留资（今日 + 累计），需登录",
 )
 def get_my_share_stats(
     current_user: CurrentCustomerUserDep,

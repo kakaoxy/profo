@@ -197,10 +197,10 @@ class RecruitMyShareStatsResponse(BaseModel):
     pv: int = Field(description="经我分享的打开次数 PV")
     uv: int = Field(description="经我分享的打开人数 UV（openid 去重）")
     lead_count: int = Field(description="归属我的线索数")
-    yesterday_share_count: int = Field(description="昨日分享次数（Asia/Shanghai 自然日）")
-    yesterday_pv: int = Field(description="昨日经我分享的打开次数 PV")
-    yesterday_uv: int = Field(description="昨日经我分享的打开人数 UV")
-    yesterday_lead_count: int = Field(description="昨日归属我的线索数")
+    today_share_count: int = Field(description="今日分享次数（Asia/Shanghai 自然日）")
+    today_pv: int = Field(description="今日经我分享的打开次数 PV")
+    today_uv: int = Field(description="今日经我分享的打开人数 UV")
+    today_lead_count: int = Field(description="今日归属我的线索数")
 
 
 # ----------------------

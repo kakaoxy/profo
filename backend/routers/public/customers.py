@@ -86,7 +86,7 @@ def get_my_customers(
 @router.get(
     "/my/share-stats",
     summary="我的客户分享统计",
-    description="四链路 share-stats 逐字段求和（昨日/累计 × 分享/PV/UV/留资），口径与各线一致",
+    description="四链路 share-stats 逐字段求和（今日/累计 × 分享/PV/UV/留资），口径与各线一致",
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_my_customers_share_stats(

@@ -14,24 +14,24 @@
       <button class="sp-btn" bindtap="onSubscribeTap">开启</button>
     </view>
 
-    <!-- 漏斗统计卡（昨日/累计两行 × 分享/打开 PV/访客 UV/留资，留资列 rust 强调） -->
+    <!-- 漏斗统计卡（今日/累计两行 × 分享/打开 PV/访客 UV/留资，留资列 rust 强调） -->
     <view class="stats">
       <view class="stats-row">
-        <view class="stats-tag">昨日</view>
+        <view class="stats-tag">今日</view>
         <view class="stat">
-          <text class="stat-num">{{stats.yesterdayShareCount}}</text>
+          <text class="stat-num">{{stats.todayShareCount}}</text>
           <text class="stat-label">分享</text>
         </view>
         <view class="stat">
-          <text class="stat-num">{{stats.yesterdayPv}}</text>
+          <text class="stat-num">{{stats.todayPv}}</text>
           <text class="stat-label">打开 PV</text>
         </view>
         <view class="stat">
-          <text class="stat-num">{{stats.yesterdayUv}}</text>
+          <text class="stat-num">{{stats.todayUv}}</text>
           <text class="stat-label">访客 UV</text>
         </view>
         <view class="stat stat--hl">
-          <text class="stat-num">{{stats.yesterdayLeadCount}}</text>
+          <text class="stat-num">{{stats.todayLeadCount}}</text>
           <text class="stat-label">留资</text>
         </view>
       </view>

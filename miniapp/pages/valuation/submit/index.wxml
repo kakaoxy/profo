@@ -134,7 +134,7 @@
 
     <view class="staff-divider"></view>
 
-    <!-- 我的客户入口（进入我的获客页） -->
+    <!-- 我的客户入口（进入我的客户页） -->
     <view class="clue-entry" bindtap="onMineTap">
       <view class="clue-ic">
         <view class="clue-ic-line"></view>
@@ -144,25 +144,6 @@
       <view class="clue-tt">
         <view class="clue-tt-title">我的客户</view>
         <view class="clue-tt-sub">查看分享带来的客户线索</view>
-      </view>
-      <view class="clue-chev"></view>
-    </view>
-
-    <view class="staff-divider"></view>
-
-    <!-- 待我评估入口（评估工作台；角标来自 my/acquired/stats 的 pending_assessment，403/0 条不显示） -->
-    <view class="clue-entry" bindtap="onEvalWorkbenchTap">
-      <view class="clue-ic">
-        <view class="clue-ic-line"></view>
-        <view class="clue-ic-line clue-ic-line--short"></view>
-        <view class="clue-ic-line"></view>
-      </view>
-      <view class="clue-tt">
-        <view class="clue-tt-title">
-          待我评估
-          <text class="eval-badge" wx:if="{{evalPendingCount > 0}}">{{evalPendingCount}}</text>
-        </view>
-        <view class="clue-tt-sub">进入评估工作台处理待办</view>
       </view>
       <view class="clue-chev"></view>
     </view>

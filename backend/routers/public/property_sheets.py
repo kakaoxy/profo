@@ -68,7 +68,7 @@ def list_my_property_sheets(
 @router.get(
     "/my/share-stats",
     summary="我的房源单分享统计",
-    description="分享次数 / 经我分享打开 PV/UV / 分享归因留资数（昨日 + 累计），需登录",
+    description="分享次数 / 经我分享打开 PV/UV / 分享归因留资数（今日 + 累计），需登录",
 )
 def get_my_share_stats(
     current_user: CurrentCustomerUserDep,

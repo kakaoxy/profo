@@ -34,7 +34,7 @@ from services.marketing.public import PublicProjectService
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 from services.system.wechat import WeChatAuthService
 from settings import settings
-from utils.time_windows import yesterday_window
+from utils.time_windows import today_window
 
 _MAX_RETRY = 5
 _CODE_LENGTH = 8
@@ -304,19 +304,19 @@ class PropertySheetService:
         return event
 
     def get_my_share_stats(self, user: User) -> dict[str, int]:
-        """C 端「我的房源单分享统计」：分享次数 / PV / UV / 留资（昨日 + 累计）.
+        """C 端「我的房源单分享统计」：分享次数 / PV / UV / 留资（今日 + 累计）.
 
         与房源/评估 share-stats 完全同构：share_count 按
         ``PropertySheetShareEvent.employee_id``、pv/uv 按
         ``PropertySheetVisit.referrer_employee_id``（uv 为 distinct visitor_id）、
-        lead_count 按 ``Lead.referrer_id``（仅分享归因线索口径）；昨日窗口为
-        Asia/Shanghai 自然日（见 ``utils.time_windows.yesterday_window``）.
+        lead_count 按 ``Lead.referrer_id``（仅分享归因线索口径）；今日窗口为
+        Asia/Shanghai 自然日（见 ``utils.time_windows.today_window``）.
         """
-        y_start, y_end = yesterday_window()
+        t_start, t_end = today_window()
         share_q = self.db.query(PropertySheetShareEvent).filter(PropertySheetShareEvent.employee_id == user.id)
         visit_q = self.db.query(PropertySheetVisit).filter(PropertySheetVisit.referrer_employee_id == user.id)
-        # 昨日窗口条件（不可变条件对象，pv/uv 两处复用）
-        y_visit_window = [PropertySheetVisit.created_at >= y_start, PropertySheetVisit.created_at < y_end]
+        # 今日窗口条件（不可变条件对象，pv/uv 两处复用）
+        t_visit_window = [PropertySheetVisit.created_at >= t_start, PropertySheetVisit.created_at < t_end]
         uv_q = self.db.query(func.count(func.distinct(PropertySheetVisit.visitor_id))).filter(
             PropertySheetVisit.referrer_employee_id == user.id
         )
@@ -327,16 +327,14 @@ class PropertySheetService:
             "pv": int(visit_q.count()),
             "uv": int(uv_q.scalar() or 0),
             "lead_count": int(lead_q.scalar() or 0),
-            "yesterday_share_count": int(
+            "today_share_count": int(
                 share_q.filter(
-                    PropertySheetShareEvent.created_at >= y_start, PropertySheetShareEvent.created_at < y_end
+                    PropertySheetShareEvent.created_at >= t_start, PropertySheetShareEvent.created_at < t_end
                 ).count()
             ),
-            "yesterday_pv": int(visit_q.filter(*y_visit_window).count()),
-            "yesterday_uv": int(uv_q.filter(*y_visit_window).scalar() or 0),
-            "yesterday_lead_count": int(
-                lead_q.filter(Lead.created_at >= y_start, Lead.created_at < y_end).scalar() or 0
-            ),
+            "today_pv": int(visit_q.filter(*t_visit_window).count()),
+            "today_uv": int(uv_q.filter(*t_visit_window).scalar() or 0),
+            "today_lead_count": int(lead_q.filter(Lead.created_at >= t_start, Lead.created_at < t_end).scalar() or 0),
         }
 
     @staticmethod

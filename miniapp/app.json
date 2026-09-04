@@ -3,19 +3,16 @@
     "pages/projects/list/index",
     "pages/login/index/index",
     "pages/projects/detail/index",
-    "pages/projects/mine/index",
     "pages/bookings/mine/index",
     "pages/valuation/submit/index",
     "pages/valuation/list/index",
     "pages/valuation/detail/index",
-    "pages/valuation/mine/index",
     "pages/valuation/evaluate/index",
     "pages/valuation/authorize/index",
     "pages/about/index/index",
     "pages/profile/index/index",
     "pages/properties/list/index",
     "pages/recruit/detail/index",
-    "pages/recruit/mine/index",
     "pages/property-sheet/mine/index",
     "pages/property-sheet/create/index",
     "pages/property-sheet/detail/index",
@@ -59,7 +56,7 @@
     }
   ],
   "preloadRule": {
-    "pages/projects/mine/index": {
+    "pages/profile/index/index": {
       "network": "all",
       "packages": ["pages/ledger", "pages/viewing", "pages/renovation", "pages/analysis", "pages/community-analysis"]
     }

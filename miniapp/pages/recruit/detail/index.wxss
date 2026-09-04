@@ -6,9 +6,6 @@
     0 40rpx 50rpx -10rpx rgba(0, 0, 0, 0.1),
     0 16rpx 20rpx -12rpx rgba(0, 0, 0, 0.1);
   --font-serif: "Songti SC", Georgia, serif;
-  /* 员工区块/海报弹层品牌色（招募计划二期设计稿） */
-  --brand: #2563eb;
-  --brand-weak: #eef4ff;
   min-height: 100vh;
   background: var(--fog);
 }
@@ -671,10 +668,10 @@
   height: 64rpx;
 }
 
-/* ===== 员工专属区块（招募计划二期，对照 poster-flow.html 步骤1） ===== */
+/* ===== 员工专属区块（Steep：ink 药丸主按钮 + dove 描边次按钮） ===== */
 .staff-divider {
   height: 2rpx;
-  background: var(--fog);
+  background: var(--dove);
   margin: 24rpx 0 20rpx;
 }
 .clue-entry {
@@ -688,7 +685,7 @@
   width: 72rpx;
   height: 72rpx;
   border-radius: 20rpx;
-  background: var(--brand-weak);
+  background: var(--fog);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -699,7 +696,7 @@
   width: 30rpx;
   height: 4rpx;
   border-radius: 2rpx;
-  background: var(--brand);
+  background: var(--ink);
 }
 .clue-ic-line--short {
   width: 20rpx;
@@ -735,8 +732,8 @@
   flex-shrink: 0;
   width: 16rpx;
   height: 16rpx;
-  border-right: 4rpx solid #c3c7cf;
-  border-top: 4rpx solid #c3c7cf;
+  border-right: 4rpx solid var(--dove);
+  border-top: 4rpx solid var(--dove);
   transform: rotate(45deg);
 }
 .staff-btn-row {
@@ -761,14 +758,17 @@
 .staff-btn::after {
   border: none;
 }
+/* Steep 主按钮：ink 药丸（唯一深色实心按钮） */
 .staff-btn--pri {
-  background: var(--brand);
-  color: #ffffff;
-  box-shadow: 0 12rpx 28rpx rgba(37, 99, 235, 0.25);
+  background: var(--ink);
+  color: var(--pure-white);
 }
+/* Steep 次按钮：白底 dove 1px 描边药丸 */
 .staff-btn--sec {
-  background: rgba(37, 99, 235, 0.08);
-  color: var(--brand);
+  background: var(--pure-white);
+  color: var(--ink);
+  border: 2rpx solid var(--dove);
+  box-sizing: border-box;
 }
 .staff-sub-tip {
   margin-top: 16rpx;
@@ -824,7 +824,7 @@
 }
 .poster-btn--save {
   flex: 1;
-  background: var(--brand);
+  background: var(--ink);
   color: #ffffff;
   box-shadow: 0 16rpx 36rpx rgba(0, 0, 0, 0.3);
 }

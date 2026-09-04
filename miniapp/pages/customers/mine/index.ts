@@ -5,7 +5,7 @@
  * - 订阅提醒条：subscribe-template 返回模板 ID 且本地未授权时展示；
  *   「开启」在 tap 手势回调内同步发起 wx.requestSubscribeMessage
  *   （accept → 隐藏+toast+写本地标记；ban → 引导 openSetting；其余静默）
- * - 漏斗统计卡：昨日/累计两行 × 分享/打开 PV/访客 UV/留资（留资列 rust 强调）
+ * - 漏斗统计卡：今日/累计两行 × 分享/打开 PV/访客 UV/留资（留资列 rust 强调）
  * - 两级筛选：模块 tabs（色点+计数）× 统一状态 chips（计数），切换重置第 1 页
  * - 客户卡片：模块标签（色点）+脱敏手机号+统一状态标签+模块摘要+来源 chip+相对时间；
  *   new →「联系客户」+「状态流转」；contacted/high_intent →「再次联系」+「状态流转」；
@@ -39,16 +39,16 @@ const HTTP_FORBIDDEN = 403;
 /** 订阅授权本地标记（accept 后写入，命中则不再展示订阅提醒条）. */
 const SUBSCRIBE_GRANTED_KEY = "customers_subscribe_granted";
 
-/** 分享统计展示结构（累计 + 昨日两行漏斗；空态判定仅用累计字段）. */
+/** 分享统计展示结构（累计 + 今日两行漏斗；空态判定仅用累计字段）. */
 interface ShareStatsDisplay {
   shareCount: number;
   pv: number;
   uv: number;
   leadCount: number;
-  yesterdayShareCount: number;
-  yesterdayPv: number;
-  yesterdayUv: number;
-  yesterdayLeadCount: number;
+  todayShareCount: number;
+  todayPv: number;
+  todayUv: number;
+  todayLeadCount: number;
 }
 
 interface PageData {
@@ -102,10 +102,10 @@ Page<PageData, PageCustom>({
       pv: 0,
       uv: 0,
       leadCount: 0,
-      yesterdayShareCount: 0,
-      yesterdayPv: 0,
-      yesterdayUv: 0,
-      yesterdayLeadCount: 0,
+      todayShareCount: 0,
+      todayPv: 0,
+      todayUv: 0,
+      todayLeadCount: 0,
     },
     items: [],
     page: 1,
@@ -174,10 +174,10 @@ Page<PageData, PageCustom>({
           pv: res.pv || 0,
           uv: res.uv || 0,
           leadCount: res.lead_count || 0,
-          yesterdayShareCount: res.yesterday_share_count || 0,
-          yesterdayPv: res.yesterday_pv || 0,
-          yesterdayUv: res.yesterday_uv || 0,
-          yesterdayLeadCount: res.yesterday_lead_count || 0,
+          todayShareCount: res.today_share_count || 0,
+          todayPv: res.today_pv || 0,
+          todayUv: res.today_uv || 0,
+          todayLeadCount: res.today_lead_count || 0,
         },
       });
     } catch {

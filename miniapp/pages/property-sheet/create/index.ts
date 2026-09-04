@@ -9,7 +9,7 @@
  * - 卡片勾选：封面（thumbnail 降级 cover）+ 标题 + 小区·户型·面积 + 总价 + 圆形复选框，
  *   选中态墨色描边 + 墨色实心白勾；上限 10 套，超出 toast 并阻止
  * - 底部固定操作栏：已选 N 套 + 「创建房源单」（0 套置灰）；创建成功 redirectTo 详情页，
- *   失败 toast 后端 message（401 提示先登录，对齐 projects/mine 不清登录态）
+ *   失败 toast 后端 message（401 提示先登录，不清登录态）
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
@@ -280,7 +280,7 @@ Page<PageData, PageCustom>({
         | undefined;
       let msg = "创建失败，请重试";
       if (statusCode === HTTP_UNAUTHORIZED) {
-        // 401（未登录/令牌失效）：提示先登录，不清登录态（对齐 projects/mine 兜底口径）
+        // 401（未登录/令牌失效）：提示先登录，不清登录态
         msg = UNAUTHORIZED_TIP;
       } else if (body?.message) {
         // 后端业务校验错误（如含非在售房源）：透出后端 message

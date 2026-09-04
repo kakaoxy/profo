@@ -308,10 +308,10 @@ class MyCustomerShareStatsResponse(BaseModel):
     pv: int = Field(description="累计经我分享的打开次数 PV（4 链路合计）")
     uv: int = Field(description="累计打开人数 UV（4 链路求和，招募=openid_hash 口径，其余=匿名 visitor_id）")
     lead_count: int = Field(description="累计归属我的线索数（4 链路合计）")
-    yesterday_share_count: int = Field(description="昨日分享次数")
-    yesterday_pv: int = Field(description="昨日经我分享的打开次数 PV")
-    yesterday_uv: int = Field(description="昨日打开人数 UV")
-    yesterday_lead_count: int = Field(description="昨日归属我的线索数")
+    today_share_count: int = Field(description="今日分享次数")
+    today_pv: int = Field(description="今日经我分享的打开次数 PV")
+    today_uv: int = Field(description="今日打开人数 UV")
+    today_lead_count: int = Field(description="今日归属我的线索数")
 
 
 class MyCustomerSubscribeTemplateResponse(BaseModel):

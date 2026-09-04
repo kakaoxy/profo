@@ -106,7 +106,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "D100", "D101", "D102", "D103", "D104", "PLR2004", "ARG001", "ARG002", "ARG005", "SLF001", "PLC0415", "ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN204"]
+"tests/**/*.py" = ["S101", "S105", "S106", "D100", "D101", "D102", "D103", "D104", "PLR2004", "ARG001", "ARG002", "ARG005", "SLF001", "PLC0415", "ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN204"]
 # routers: slowapi @limiter.limit 要求 request 参数；FastAPI 依赖注入要求 current_user
 "routers/**/*.py" = ["ARG001"]
 # reports 子模块: spec 显式要求声明 response_model（与 return 注解冗余）；

@@ -150,20 +150,27 @@
         <view class="feature-text">{{detail.description}}</view>
       </view>
 
-      <!-- 员工专属入口：我的客户（分享漏斗 + 归因预约客户） -->
-      <view
-        wx:if="{{employeeId}}"
-        class="staff-entry"
-        hover-class="staff-entry--hover"
-        hover-stay-time="100"
-        bindtap="onMyCustomersTap"
-      >
-        <view class="staff-entry-icon">客</view>
-        <view class="staff-entry-info">
-          <view class="staff-entry-title">我的客户</view>
-          <view class="staff-entry-sub">查看分享带来的预约客户</view>
+      <!-- 员工专属区块：分享提示 + 我的客户入口 + 分享给客户 -->
+      <view wx:if="{{employeeId}}" class="share-tip">
+        <view class="share-tip-title">分享给您的客户</view>
+        <view class="share-tip-sub">客户打开并留资后，线索自动归属您</view>
+        <view class="staff-divider"></view>
+        <view class="clue-entry" bindtap="onMineTap">
+          <view class="clue-ic">
+            <view class="clue-ic-line"></view>
+            <view class="clue-ic-line clue-ic-line--short"></view>
+            <view class="clue-ic-line"></view>
+          </view>
+          <view class="clue-tt">
+            <view class="clue-tt-title">我的客户</view>
+            <view class="clue-tt-sub">查看分享带来的客户线索</view>
+          </view>
+          <view class="clue-chev"></view>
         </view>
-        <view class="staff-entry-arrow">›</view>
+        <view class="staff-divider"></view>
+        <view class="staff-btn-row">
+          <button class="staff-btn staff-btn--pri" open-type="share">分享给客户</button>
+        </view>
       </view>
 
       <!-- 底部留白（避让固定底栏） -->

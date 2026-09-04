@@ -27,24 +27,24 @@
 
   <!-- 有数据：漏斗统计卡 + 房源单列表 -->
   <block wx:else>
-    <!-- 统计卡（昨日/累计两行漏斗，留资列 Rust 强调，与 projects/mine 同构） -->
+    <!-- 统计卡（今日/累计两行漏斗，留资列 Rust 强调） -->
     <view class="stats">
       <view class="stats-row">
-        <view class="stats-tag">昨日</view>
+        <view class="stats-tag">今日</view>
         <view class="stat">
-          <text class="stat-num">{{stats.yesterdayShareCount}}</text>
+          <text class="stat-num">{{stats.todayShareCount}}</text>
           <text class="stat-label">分享次数</text>
         </view>
         <view class="stat">
-          <text class="stat-num">{{stats.yesterdayPv}}</text>
+          <text class="stat-num">{{stats.todayPv}}</text>
           <text class="stat-label">打开 PV</text>
         </view>
         <view class="stat">
-          <text class="stat-num">{{stats.yesterdayUv}}</text>
+          <text class="stat-num">{{stats.todayUv}}</text>
           <text class="stat-label">访客 UV</text>
         </view>
         <view class="stat stat--hl">
-          <text class="stat-num">{{stats.yesterdayLeadCount}}</text>
+          <text class="stat-num">{{stats.todayLeadCount}}</text>
           <text class="stat-label">留资</text>
         </view>
       </view>

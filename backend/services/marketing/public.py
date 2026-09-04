@@ -30,7 +30,7 @@ from utils.crypto import hash_phone
 from utils.formatters import escape_like, mask_phone
 from utils.image_processing import derive_thumbnail_url
 from utils.query_params import validate_sort_field
-from utils.time_windows import yesterday_window
+from utils.time_windows import today_window
 
 
 class PublicProjectService:
@@ -493,18 +493,18 @@ class PublicProjectService:
         return event
 
     def get_my_share_stats(self, user: User) -> dict[str, int]:
-        """C 端「我的房源分享统计」：分享次数 / PV / UV / 留资（昨日 + 累计）.
+        """C 端「我的房源分享统计」：分享次数 / PV / UV / 留资（今日 + 累计）.
 
         口径：share_count 按 ``ProjectShareEvent.employee_id``、pv/uv 按
         ``ProjectVisit.referrer_employee_id``（uv 为 distinct visitor_id）、
-        lead_count 按 ``ProjectBooking.referrer_user_id``；昨日窗口为
-        Asia/Shanghai 自然日（见 ``utils.time_windows.yesterday_window``）。
+        lead_count 按 ``ProjectBooking.referrer_user_id``；今日窗口为
+        Asia/Shanghai 自然日（见 ``utils.time_windows.today_window``）。
         """
-        y_start, y_end = yesterday_window()
+        t_start, t_end = today_window()
         share_q = self.db.query(ProjectShareEvent).filter(ProjectShareEvent.employee_id == user.id)
         visit_q = self.db.query(ProjectVisit).filter(ProjectVisit.referrer_employee_id == user.id)
-        # 昨日窗口条件（不可变条件对象，pv/uv 两处复用）
-        y_visit_window = [ProjectVisit.created_at >= y_start, ProjectVisit.created_at < y_end]
+        # 今日窗口条件（不可变条件对象，pv/uv 两处复用）
+        t_visit_window = [ProjectVisit.created_at >= t_start, ProjectVisit.created_at < t_end]
         uv_q = self.db.query(func.count(func.distinct(ProjectVisit.visitor_id))).filter(
             ProjectVisit.referrer_employee_id == user.id
         )
@@ -515,13 +515,13 @@ class PublicProjectService:
             "pv": int(visit_q.count()),
             "uv": int(uv_q.scalar() or 0),
             "lead_count": int(lead_q.scalar() or 0),
-            "yesterday_share_count": int(
-                share_q.filter(ProjectShareEvent.created_at >= y_start, ProjectShareEvent.created_at < y_end).count()
+            "today_share_count": int(
+                share_q.filter(ProjectShareEvent.created_at >= t_start, ProjectShareEvent.created_at < t_end).count()
             ),
-            "yesterday_pv": int(visit_q.filter(*y_visit_window).count()),
-            "yesterday_uv": int(uv_q.filter(*y_visit_window).scalar() or 0),
-            "yesterday_lead_count": int(
-                lead_q.filter(ProjectBooking.created_at >= y_start, ProjectBooking.created_at < y_end).scalar() or 0
+            "today_pv": int(visit_q.filter(*t_visit_window).count()),
+            "today_uv": int(uv_q.filter(*t_visit_window).scalar() or 0),
+            "today_lead_count": int(
+                lead_q.filter(ProjectBooking.created_at >= t_start, ProjectBooking.created_at < t_end).scalar() or 0
             ),
         }
 

@@ -589,16 +589,16 @@ class PublicTrackingEventResponse(BaseModel):
 
 
 class PublicShareStatsResponse(BaseModel):
-    """C端「我的分享统计」响应（房源/评估共用，昨日 + 累计）."""
+    """C端「我的分享统计」响应（房源/评估共用，今日 + 累计）."""
 
     share_count: int = Field(description="分享次数(累计)")
     pv: int = Field(description="经我分享的打开次数 PV(累计)")
     uv: int = Field(description="经我分享的打开人数 UV(visitor_id 去重，累计)")
     lead_count: int = Field(description="留资数(累计；房源=归属我的预约，评估=分享归因我的线索)")
-    yesterday_share_count: int = Field(description="昨日分享次数(Asia/Shanghai 自然日)")
-    yesterday_pv: int = Field(description="昨日打开次数 PV")
-    yesterday_uv: int = Field(description="昨日打开人数 UV")
-    yesterday_lead_count: int = Field(description="昨日留资数")
+    today_share_count: int = Field(description="今日分享次数(Asia/Shanghai 自然日)")
+    today_pv: int = Field(description="今日打开次数 PV")
+    today_uv: int = Field(description="今日打开人数 UV")
+    today_lead_count: int = Field(description="今日留资数")
 
 
 class PublicValuationSubscribeTemplateResponse(BaseModel):

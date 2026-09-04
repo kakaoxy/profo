@@ -8,7 +8,7 @@
  * - 成功态：双层徽标 + 报名信息回执卡 + 返回首页 / 查看合作流程
  * - 访问埋点：onShow 创建访问记录 → onHide/onUnload 上报停留时长与深度浏览（>=3s）
  * - 员工侧：识别内部员工，分享 path 携带 referrer（自身 user_id）+ 未读新线索角标
- * - 员工侧（招募计划二期）：「我的线索」入口（未读角标取数改 /public/recruit/my/leads）、
+ * - 员工侧（招募计划二期）：「我的客户」入口（未读角标取数改 /public/recruit/my/leads）、
  *   生成海报（canvas 竖版 5:8，绘制与布局全部在 utils/recruit-poster.ts）、
  *   「分享给客户/生成海报」tap 手势内同步发起订阅消息授权（utils/recruit-employee.ts）
  *
@@ -253,7 +253,7 @@ Page<PageData, PageCustom>({
       this.setData({ enterTime: Date.now(), clickedAuth: false, visitId: "" });
       this.createVisit();
     }
-    // 从「我的线索」联系客户等操作返回：静默刷新新线索角标（badgeCount 仅
+    // 从「我的客户」联系客户等操作返回：静默刷新新线索角标（badgeCount 仅
     // onLoad 加载一次会滞留旧值，如已联系后仍显示「N 条新线索待跟进」）
     if (this.data.isEmployee) {
       this.loadIdentityAndBadge();
@@ -575,25 +575,9 @@ Page<PageData, PageCustom>({
     this.setData({ posterVisible: false });
   },
 
-  /** 员工区块「我的线索」入口：请求订阅授权后携带活动信息进入我的线索页. */
+  /** 员工区块「我的客户」入口：进入我的客户页（员工专属获客列表）. */
   onMineTap() {
-    if (this.data.isEmployee) {
-      requestLeadSubscribe(this.data.campaign?.subscribe_template_id);
-    }
-    const { campaignId } = this.data;
-    const subscribeTemplateId = this.data.campaign?.subscribe_template_id || "";
-    let url = "/pages/recruit/mine/index";
-    const params: string[] = [];
-    if (campaignId) {
-      params.push(`campaign_id=${encodeURIComponent(campaignId)}`);
-    }
-    if (subscribeTemplateId) {
-      params.push(`subscribe_template_id=${encodeURIComponent(subscribeTemplateId)}`);
-    }
-    if (params.length > 0) {
-      url += "?" + params.join("&");
-    }
-    wx.navigateTo({ url });
+    wx.navigateTo({ url: "/pages/customers/mine/index" });
   },
 
   /** 阻止海报弹层内容区冒泡（遮罩点击关闭）. */

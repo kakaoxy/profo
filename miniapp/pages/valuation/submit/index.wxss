@@ -1,6 +1,4 @@
 .page {
-  --brand: #2563eb;
-  --brand-weak: #eef4ff;
   --shadow-sm: 0 4rpx 20rpx -6rpx rgba(0, 0, 0, 0.08);
   min-height: 100vh;
   background: var(--fog);
@@ -122,7 +120,7 @@
   transform: rotate(45deg);
 }
 
-/* 员工专属区块（仅内部员工展示；样式对齐招募落地页底部区块） */
+/* 员工专属区块（Steep：ink 药丸主按钮，类名/间距与招募落地页底部区块一致） */
 .share-tip {
   margin: 24rpx 40rpx 0;
   background: var(--pure-white);
@@ -143,7 +141,7 @@
 }
 .staff-divider {
   height: 2rpx;
-  background: var(--fog);
+  background: var(--dove);
   margin: 24rpx 0 20rpx;
 }
 .clue-entry {
@@ -157,7 +155,7 @@
   width: 72rpx;
   height: 72rpx;
   border-radius: 20rpx;
-  background: var(--brand-weak);
+  background: var(--fog);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -168,7 +166,7 @@
   width: 30rpx;
   height: 4rpx;
   border-radius: 2rpx;
-  background: var(--brand);
+  background: var(--ink);
 }
 .clue-ic-line--short {
   width: 20rpx;
@@ -182,20 +180,6 @@
   font-weight: 600;
   color: var(--ink);
 }
-/* 待我评估角标（>0 才渲染） */
-.eval-badge {
-  display: inline-block;
-  margin-left: 12rpx;
-  min-width: 32rpx;
-  padding: 2rpx 12rpx;
-  border-radius: 9999rpx;
-  background: #b7410e;
-  color: #ffffff;
-  font-size: 20rpx;
-  font-weight: 600;
-  text-align: center;
-  vertical-align: middle;
-}
 .clue-tt-sub {
   font-size: 22rpx;
   color: var(--graphite);
@@ -205,8 +189,8 @@
   flex-shrink: 0;
   width: 16rpx;
   height: 16rpx;
-  border-right: 4rpx solid #c3c7cf;
-  border-top: 4rpx solid #c3c7cf;
+  border-right: 4rpx solid var(--dove);
+  border-top: 4rpx solid var(--dove);
   transform: rotate(45deg);
 }
 .staff-btn-row {
@@ -231,10 +215,10 @@
 .staff-btn::after {
   border: none;
 }
+/* Steep 主按钮：ink 药丸（唯一深色实心按钮） */
 .staff-btn--pri {
-  background: var(--brand);
-  color: #ffffff;
-  box-shadow: 0 12rpx 28rpx rgba(37, 99, 235, 0.25);
+  background: var(--ink);
+  color: var(--pure-white);
 }
 
 /* 底部安全区留白（避让原生 tabBar） */

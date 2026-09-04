@@ -5,6 +5,8 @@
  * - 房源单卡片：名称「我的精选房源单」+「可分享」pill + 创建时间/共 N 套 + 分享短码 code 胶囊
  * - 杏色提示条（归因说明）+ 按 sort_order 编号的房源卡片列表
  *   （详情为员工视角：display_status=="已售" 的房源保留展示，封面加深灰角标）
+ * - 员工专属区块：分享提示 + 「我的客户」入口 + 「分享给客户」（open-type=share
+ *   转发客户落地页 landing，按分享短码归因，见 onShareAppMessage）
  * - 海报流程（「预览海报」/「生成海报分享」统一 generatePoster）：
  *   loading → GET .../qrcode（需登录，401 引导登录）→ createSheetPosterTempFile
  *   （前 3 套封面拼版，单张加载失败占位不阻断）→ 弹层预览
@@ -76,6 +78,8 @@ interface PageCustom {
   toDisplay(item: PropertySheetItemResponse): SheetItemDisplay;
   onRetry(): void;
   onBack(): void;
+  onMineTap(): void;
+  onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
   onPreviewPoster(): void;
   onSharePoster(): void;
   generatePoster(): Promise<void>;
@@ -251,6 +255,23 @@ Page<PageData, PageCustom>({
     wx.navigateBack({
       fail: () => wx.switchTab({ url: "/pages/profile/index/index" }),
     });
+  },
+
+  /** 员工区块「我的客户」入口：进入我的客户页（分享线索归属列表）. */
+  onMineTap() {
+    wx.navigateTo({ url: "/pages/customers/mine/index" });
+  },
+
+  /**
+   * 员工区块「分享给客户」（open-type=share 触发）：转发客户落地页而非本员工页.
+   * 落地页按分享短码解析归属（referrer=房源单归属员工），客户视角展示并上报访问埋点.
+   */
+  onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent {
+    const { code, itemCount } = this.data;
+    return {
+      title: itemCount > 0 ? `为您精选了 ${itemCount} 套好房` : "为您精选的房源单",
+      path: `/pages/property-sheet/landing/index?code=${code}`,
+    };
   },
 
   /** 底栏「预览海报」：与「生成海报分享」同流程. */

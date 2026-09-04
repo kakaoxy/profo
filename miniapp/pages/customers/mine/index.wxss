@@ -59,7 +59,7 @@
   border: none;
 }
 
-/* ===== 漏斗统计卡（昨日/累计两行） ===== */
+/* ===== 漏斗统计卡（今日/累计两行） ===== */
 .stats {
   margin: 24rpx 32rpx 0;
   background: var(--pure-white);
