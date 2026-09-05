@@ -478,7 +478,8 @@ Page<PageData, PageCustom>({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/test-login/index/index" });
+    // 统一走正式登录页；from=valuation 让登录成功后 navigateBack 返回本页（onShow 自动刷新）
+    wx.navigateTo({ url: "/pages/login/index/index?from=valuation" });
   },
 
   onRetry() {

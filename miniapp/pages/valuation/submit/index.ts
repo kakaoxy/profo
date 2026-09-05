@@ -31,8 +31,9 @@ type PublicTrackingEventResponse = components["schemas"]["PublicTrackingEventRes
 
 /**
  * 权限说明：
- * - /public/* 接口要求 C 端令牌（aud=c）；内部员工持 admin 令牌时由 test-login 同时获取
- *   C 端令牌（c_access_token），request.ts 按 URL 自动选择令牌，/public/* 调用无需手动指定.
+ * - /public/* 接口要求 C 端令牌（aud=c）；内部员工持 admin 令牌时由登录体系（微信登录 /
+ *   账号密码登录）同时获取 C 端令牌（c_access_token），request.ts 按 URL 自动选择令牌，
+ *   /public/* 调用无需手动指定.
  * - c_access_token 过期时由 request.ts / uploadImage 自动用 c_refresh_token 刷新，无需重新登录
  *   （c_refresh_token 7 天有效期内）；两令牌均失效才需重新登录.
  */
@@ -612,9 +613,8 @@ Page<PageData, PageCustom>({
   },
 
   onGoLogin() {
-    // 后端微信登录未完成，先跳账号密码测试登录页（test-login）；
-    // from=valuation 让登录成功后可 navigateBack 返回本页并保留已填表单
-    wx.navigateTo({ url: "/pages/test-login/index/index?from=valuation" });
+    // 统一走正式登录页；from=valuation 让登录成功后可 navigateBack 返回本页并保留已填表单
+    wx.navigateTo({ url: "/pages/login/index/index?from=valuation" });
   },
 
   async onSubmit() {

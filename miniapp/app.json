@@ -2,6 +2,7 @@
   "pages": [
     "pages/projects/list/index",
     "pages/login/index/index",
+    "pages/login/password/index",
     "pages/projects/detail/index",
     "pages/bookings/mine/index",
     "pages/valuation/submit/index",
@@ -25,10 +26,6 @@
     {
       "root": "pages/agreement",
       "pages": ["user/index/index", "privacy/index/index"]
-    },
-    {
-      "root": "pages/test-login",
-      "pages": ["index/index"]
     },
     {
       "root": "pages/bind-account",

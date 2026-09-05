@@ -1,20 +1,23 @@
 /**
- * 测试登录页 · 独立模块
+ * 账号密码登录页 · login 体系子页.
  *
- * 用途：后端微信登录功能完成前，用于系统测试后台账号密码真实登录流程，
- * 并衔接 profile 页（我的）的后链路测试（内部员工身份 / 手机号展示 / 退出登录）。
+ * 用途：login 页（微信一键登录正式入口）「账号密码登录」按钮的子页，为外部
+ * 已有账号用户（fangmengchina.com 注册）提供密码登录入口；内部员工也可经此
+ * 直接获得 admin 令牌，衔接 profile 页（我的）的双通道身份识别。
  *
  * 登录接口：先 POST /auth/token（后台登录，内部员工获 admin 令牌，可访问带看记录等
  * 后台接口 /projects/*）；纯 customer 账号后台登录返回 403 时回退 POST /public/auth/token
  * 签发 C 端令牌。登录成功后把 access_token / refresh_token 写入 storage（与 profile 页
- * 读取的 key 一致），再跳转 `pages/profile/index/index`（TabBar 页）验证后链路。
+ * 读取的 key 一致），再按 from 回跳。
  * profile 页依据令牌 aud 双通道识别身份并差异化展示内容。
  *
  * 双令牌：内部员工登录后同时获取 admin 令牌（access_token，访问 /projects/* 等后台接口）
  * 与 C 端令牌（c_access_token，访问 /public/* 接口）；C 端用户两者相同。
  *
+ * 来源参数 from：=valuation/=recruit/=booking 时登录成功 navigateBack 返回对应来源页
+ * （保留已填表单/预约上下文）；其他入口登录成功 switchTab 到 profile。
+ *
  * 依赖：仅本目录 + app.json pages 中对应条目 + utils/request + utils/token + types/api-types.d.ts。
- * 移除：删除本目录并去掉 app.json 中 `pages/test-login/index` 条目即可，无残留依赖。
  */
 
 import type { components } from "../../../types/api-types";
@@ -37,7 +40,7 @@ interface LoginFailure {
 type LoginResult = LoginFailure;
 
 interface PageData {
-  /** 来源标记：=valuation 时登录成功后 navigateBack 返回估价页（保留已填表单）；否则 switchTab 到 profile. */
+  /** 来源标记：=valuation/=recruit/=booking 时登录成功后 navigateBack 返回来源页（保留已填表单）；否则 switchTab 到 profile. */
   from: string;
   username: string;
   password: string;
@@ -205,8 +208,8 @@ Page<PageData, PageCustom>({
         wx.setStorageSync("c_refresh_token", res.refresh_token);
       }
       wx.showToast({ title: "登录成功", icon: "success" });
-      if (this.data.from === "valuation" || this.data.from === "booking") {
-        // 由估价提交页/房源详情页（想看房）拦截而来：navigateBack 返回来源页，
+      if (this.data.from === "valuation" || this.data.from === "recruit" || this.data.from === "booking") {
+        // 由估价提交页/招募页/房源详情页（想看房）拦截而来：navigateBack 返回来源页，
         // 其页面实例仍在导航栈中，已填写的表单数据/预约上下文完整保留
         setTimeout(() => {
           wx.navigateBack();

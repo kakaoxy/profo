@@ -133,6 +133,13 @@ Page<PageData, PageCustom>({
     this.loadDetail();
   },
 
+  onShow() {
+    // 登录页 navigateBack 返回：未登录态下已获得令牌时重新拉取详情
+    if (this.data.needLogin && (getCAccessToken() || this.getToken())) {
+      this.loadDetail();
+    }
+  },
+
   applyDetail(detail: LeadDetail) {
     // 跟进记录：后端 /public/leads/{id} 一次返回全部 follow_ups，无分页参数（C 端场景，
     // 单条线索跟进量有限，可接受全量拉取，不做过度设计）。前端按 FOLLOWUP_PAGE_SIZE
@@ -281,7 +288,8 @@ Page<PageData, PageCustom>({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/test-login/index/index" });
+    // 统一走正式登录页；from=valuation 让登录成功后 navigateBack 返回本页
+    wx.navigateTo({ url: "/pages/login/index/index?from=valuation" });
   },
 
   onBack() {

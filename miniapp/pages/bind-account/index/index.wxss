@@ -1,4 +1,4 @@
-/* 绑定已有账号页 · 对齐 test-login 风格（Steep 设计系统） */
+/* 绑定已有账号页 · 对齐 login 体系风格（Steep 设计系统） */
 page {
   height: 100%;
 }

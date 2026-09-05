@@ -46,7 +46,7 @@
       </view>
     </view>
 
-    <!-- 未登录：跳转登录页（微信登录后端未完成，先跳 test-login 测试页） -->
+    <!-- 未登录：跳转登录页 -->
     <button
       wx:if="{{!loggedIn && !loading}}"
       class="btn-primary login-btn"

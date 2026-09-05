@@ -1,4 +1,4 @@
-/* 测试登录页 · 独立模块样式（Steep 设计系统，响应式） */
+/* 账号密码登录页 · login 体系子页样式（Steep 设计系统，响应式） */
 page {
   height: 100%;
 }
@@ -93,7 +93,7 @@ page {
   color: var(--graphite);
 }
 
-/* ===== 模拟结果卡片 ===== */
+/* ===== 登录失败结果卡片 ===== */
 .result-card {
   width: 100%;
   max-width: 640rpx;

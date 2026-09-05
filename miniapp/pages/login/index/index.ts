@@ -2,8 +2,8 @@
  * 登录页 · 微信一键登录 + 账号密码登录入口.
  *
  * 用途：微信登录正式入口页。主按钮「微信一键登录」调 utils/wechat-auth.ts 的
- * wechatLogin() 完成微信登录流程并写入令牌；次按钮「账号密码登录」跳 test-login
- * 保留原有账号密码入口作为子入口。
+ * wechatLogin() 完成微信登录流程并写入令牌；次按钮「账号密码登录」跳账号密码
+ * 登录子页（login/password）保留原有账号密码入口作为子入口。
  *
  * 协议勾选：未勾选《用户协议》与《隐私政策》时，点击任一登录按钮均 toast 提示并
  * return，不发起登录请求。配合 app.json 的 __usePrivacyCheck__ 触发微信原生
@@ -79,7 +79,7 @@ Page<PageData, PageCustom>({
       wx.showToast({ title: "请先阅读并同意《用户协议》和《隐私政策》", icon: "none" });
       return;
     }
-    const url = "/pages/test-login/index/index" + (this.data.from ? "?from=" + this.data.from : "");
+    const url = "/pages/login/password/index" + (this.data.from ? "?from=" + this.data.from : "");
     wx.navigateTo({ url });
   },
 });
