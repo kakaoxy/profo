@@ -209,10 +209,12 @@ Page<PageData, PageCustom>({
       }
       wx.showToast({ title: "登录成功", icon: "success" });
       if (this.data.from === "valuation" || this.data.from === "recruit" || this.data.from === "booking") {
-        // 由估价提交页/招募页/房源详情页（想看房）拦截而来：navigateBack 返回来源页，
-        // 其页面实例仍在导航栈中，已填写的表单数据/预约上下文完整保留
+        // 由估价提交页/招募页/房源详情页（想看房）拦截而来：本页经 login/index 中转进入，
+        // 导航栈为「来源页→login/index→本页」，需回退两层直达来源页，其页面实例仍在
+        // 导航栈中，已填写的表单数据/预约上下文完整保留；栈深异常不足时按一层回退兜底
         setTimeout(() => {
-          wx.navigateBack();
+          const delta = getCurrentPages().length >= 3 ? 2 : 1;
+          wx.navigateBack({ delta });
         }, 400);
       } else {
         // 其他入口（如 profile）：登录成功跳转 profile（TabBar 页）
