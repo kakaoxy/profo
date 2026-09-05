@@ -96,6 +96,8 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
   trigram GIN 表达式索引，加速 lower(col) 及普通 LIKE '%kw%' 前导通配符查询（O1，幂等）
 - add_lead_auditor_index: 为 leads 表补建 (auditor_id, audit_time) 复合索引
   （小程序评估工作台「已处理」参考组 get_handled 过滤 + 倒序截取，幂等）
+- add_lead_referrer_index: 为 leads 表补建 referrer_id 单列索引
+  （分享统计 lead_count 聚合过滤，幂等）
 - create_property_sheet_tables: 幂等创建房源单 4 张表
   （property_share_sheets/property_share_sheet_items/property_sheet_visits/property_sheet_share_events）
   与索引（多房源分享）
@@ -181,6 +183,7 @@ from migrations._user_security import (
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_lead_auditor_index import add_lead_auditor_index
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
+from migrations.add_lead_referrer_index import add_lead_referrer_index
 from migrations.add_lead_status_lost_to_competitor import add_lead_status_lost_to_competitor
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
 from migrations.add_project_document_category import add_project_document_category
@@ -303,6 +306,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_trgm_search_indexes(engine)
         # 小程序评估工作台「已处理」参考组：leads(auditor_id, audit_time) 索引
         add_lead_auditor_index(engine)
+        # 分享统计 lead_count：leads(referrer_id) 索引
+        add_lead_referrer_index(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:
