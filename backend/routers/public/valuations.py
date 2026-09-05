@@ -72,7 +72,9 @@ def create_share_event(
     summary="我的评估分享统计",
     description="当前员工的估价页分享次数 / 经我分享打开 PV/UV / 分享归因我的线索数（今日 + 累计），需登录",
 )
+@limiter.limit(RateLimits.PUBLIC_MY_SHARE_STATS)
 def get_my_share_stats(
+    request: Request,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,
 ) -> PublicShareStatsResponse:

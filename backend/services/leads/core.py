@@ -25,6 +25,7 @@ from services.growth_center.customer_notify import (
 )
 from services.growth_center.normalize import map_valuation_status
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError
+from services.utils import resolve_valid_referrer
 from settings import settings
 from utils.redis_client import get_redis_client
 from utils.time_windows import cst_today_start
@@ -126,10 +127,9 @@ class LeadService:
     def _resolve_referrer_id(self, referrer: str | None) -> str | None:
         """解析分享归属员工ID：存在、active 且具备后台身份才生效，否则静默忽略.
 
-        与 /public/projects/{id}/consultant 的 referrer 校验口径一致（见
-        PublicProjectService.get_internal_contact_user）：仅内部员工（主角色或
-        附加角色含后台角色）可作为分享归属人，普通 C 端用户 ID 不生效，
-        避免归因数据被非员工 ID 污染.
+        统一委托 ``resolve_valid_referrer``（估价/房源/房源单/招募四链路
+        referrer 写路径一致口径）：仅内部员工（主角色或附加角色含后台角色）
+        可作为分享归属人，普通 C 端用户 ID 不生效，避免归因数据被非员工 ID 污染.
 
         Args:
             referrer: 分享归属员工ID（原始入参，可为空）
@@ -138,17 +138,7 @@ class LeadService:
             校验通过的员工ID；为空或无效（不存在/非 active/无后台身份）时返回 None
 
         """
-        if not referrer:
-            return None
-        referrer_user = self.db.query(User).filter(User.id == referrer, User.status == "active").first()
-        if referrer_user is None:
-            return None
-        # 方法内 import 避免与 services.system.auth 的潜在循环依赖
-        from services.system.auth import AuthService
-
-        if not AuthService.has_backend_identity(referrer_user):
-            return None
-        return referrer_user.id
+        return resolve_valid_referrer(self.db, referrer)
 
     def get_lead(self, lead_id: str) -> Lead | None:
         """获取单个线索详情.

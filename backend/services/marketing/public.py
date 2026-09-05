@@ -25,12 +25,12 @@ from schemas.public import (
 )
 from services.growth_center.customer_notify import notify_new_customer_lead
 from services.system.exceptions import ConflictError, ResourceNotFoundError
+from services.utils import aggregate_my_share_stats, resolve_valid_referrer
 from settings import settings
 from utils.crypto import hash_phone
 from utils.formatters import escape_like, mask_phone
 from utils.image_processing import derive_thumbnail_url
 from utils.query_params import validate_sort_field
-from utils.time_windows import today_window
 
 
 class PublicProjectService:
@@ -445,7 +445,8 @@ class PublicProjectService:
     def create_visit_event(self, marketing_project_id: int, data: PublicVisitEventRequest) -> ProjectVisit:
         """记录房源详情页访问埋点（PV +1，UV 按 visitor_id 去重）.
 
-        referrer 非空即原样落库（与招募 visit 口径一致，不做内部用户校验）。
+        referrer 经统一校验后落库：无效（不存在/非 active/无后台身份）时置空，
+        防止伪造归属污染归因统计（与估价线索 referrer 口径一致）。
 
         Raises:
             ResourceNotFoundError: 房源不存在或未发布
@@ -457,7 +458,7 @@ class PublicProjectService:
             raise ResourceNotFoundError(msg)
         visit = ProjectVisit(
             visitor_id=data.visitor_id,
-            referrer_employee_id=data.referrer,
+            referrer_employee_id=resolve_valid_referrer(self.db, data.referrer),
             marketing_project_id=marketing_project_id,
             source=data.source,
         )
@@ -497,33 +498,20 @@ class PublicProjectService:
 
         口径：share_count 按 ``ProjectShareEvent.employee_id``、pv/uv 按
         ``ProjectVisit.referrer_employee_id``（uv 为 distinct visitor_id）、
-        lead_count 按 ``ProjectBooking.referrer_user_id``；今日窗口为
-        Asia/Shanghai 自然日（见 ``utils.time_windows.today_window``）。
+        lead_count 按 ``ProjectBooking.referrer_user_id``；聚合统一走
+        ``aggregate_my_share_stats``（今日窗口为 Asia/Shanghai 自然日）。
         """
-        t_start, t_end = today_window()
-        share_q = self.db.query(ProjectShareEvent).filter(ProjectShareEvent.employee_id == user.id)
-        visit_q = self.db.query(ProjectVisit).filter(ProjectVisit.referrer_employee_id == user.id)
-        # 今日窗口条件（不可变条件对象，pv/uv 两处复用）
-        t_visit_window = [ProjectVisit.created_at >= t_start, ProjectVisit.created_at < t_end]
-        uv_q = self.db.query(func.count(func.distinct(ProjectVisit.visitor_id))).filter(
-            ProjectVisit.referrer_employee_id == user.id
+        return aggregate_my_share_stats(
+            self.db,
+            user_id=user.id,
+            share_employee_col=ProjectShareEvent.employee_id,
+            share_time_col=ProjectShareEvent.created_at,
+            visit_referrer_col=ProjectVisit.referrer_employee_id,
+            visit_uv_col=ProjectVisit.visitor_id,
+            visit_time_col=ProjectVisit.created_at,
+            lead_referrer_col=ProjectBooking.referrer_user_id,
+            lead_time_col=ProjectBooking.created_at,
         )
-        lead_q = self.db.query(func.count(ProjectBooking.id)).filter(ProjectBooking.referrer_user_id == user.id)
-
-        return {
-            "share_count": int(share_q.count()),
-            "pv": int(visit_q.count()),
-            "uv": int(uv_q.scalar() or 0),
-            "lead_count": int(lead_q.scalar() or 0),
-            "today_share_count": int(
-                share_q.filter(ProjectShareEvent.created_at >= t_start, ProjectShareEvent.created_at < t_end).count()
-            ),
-            "today_pv": int(visit_q.filter(*t_visit_window).count()),
-            "today_uv": int(uv_q.filter(*t_visit_window).scalar() or 0),
-            "today_lead_count": int(
-                lead_q.filter(ProjectBooking.created_at >= t_start, ProjectBooking.created_at < t_end).scalar() or 0
-            ),
-        }
 
     def get_platform_stats(self) -> tuple[int, int, int]:
         """获取平台统计数据.

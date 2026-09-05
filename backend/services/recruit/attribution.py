@@ -24,6 +24,7 @@ from models.recruit import (
 from schemas.recruit import RecruitShareEventCreate, RecruitVisitCreate, RecruitVisitUpdate
 from services.system.exceptions import ResourceNotFoundError
 from services.system.wechat import WeChatAuthService
+from services.utils import resolve_valid_referrer
 from settings import settings
 from utils.crypto import hash_phone
 
@@ -54,13 +55,17 @@ class RecruitAttributionService:
         return hash_phone(user.wechat_openid or user.id)
 
     def create_visit(self, user: User, data: RecruitVisitCreate) -> RecruitVisit:
-        """创建访问记录（PV +1，UV 按 openid_hash 去重）."""
+        """创建访问记录（PV +1，UV 按 openid_hash 去重）.
+
+        referrer 经统一校验后落库：无效（不存在/非 active/无后台身份）时置空，
+        防止伪造归属污染归因统计（与其他三链路 visit 口径一致）。
+        """
         visit = RecruitVisit(
             id=str(uuid.uuid4()),
             campaign_id=data.campaign_id,
             visitor_id=user.id,
             openid_hash=self.derive_openid_hash(user),
-            referrer_employee_id=data.referrer,
+            referrer_employee_id=resolve_valid_referrer(self.db, data.referrer),
             source=data.source,
         )
         self.db.add(visit)
@@ -126,6 +131,8 @@ class RecruitAttributionService:
             (lead, is_new)：首次留资返回 (新建线索, True)，重复返回 (已有线索, False)。
 
         """
+        # referrer 统一校验：无效（不存在/非 active/无后台身份）时置空，防止伪造归属
+        referrer = resolve_valid_referrer(self.db, referrer)
         phone_hash = hash_phone(phone)
         existing = self.db.query(RecruitLead).filter(RecruitLead.phone_hash == phone_hash).first()
         if existing is not None:

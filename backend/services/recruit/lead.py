@@ -14,7 +14,7 @@ from schemas.recruit import RecruitLeadStatusUpdate
 from services.growth_center.customer_notify import notify_customer_status_changed, unified_status_label
 from services.growth_center.flow_matrix import ensure_transition_allowed
 from services.system.exceptions import ResourceNotFoundError
-from utils.time_windows import today_window
+from services.utils import aggregate_my_share_stats
 
 
 def _time_range(
@@ -237,30 +237,17 @@ class RecruitLeadService:
         口径与漏斗服务一致：share_count 按 ``RecruitShareEvent.employee_id``（时间列
         ``shared_at``）、pv/uv 按 ``RecruitVisit.referrer_employee_id``（时间列
         ``entered_at``，uv 为 distinct openid_hash）、lead_count 按
-        ``RecruitLead.referrer_employee_id``（时间列 ``created_at``）；今日窗口为
-        Asia/Shanghai 自然日（见 ``utils.time_windows.today_window``）。
+        ``RecruitLead.referrer_employee_id``；聚合统一走
+        ``aggregate_my_share_stats``（今日窗口为 Asia/Shanghai 自然日）。
         """
-        t_start, t_end = today_window()
-        share_q = self.db.query(RecruitShareEvent).filter(RecruitShareEvent.employee_id == user.id)
-        visit_q = self.db.query(RecruitVisit).filter(RecruitVisit.referrer_employee_id == user.id)
-        # 今日窗口条件（不可变条件对象，pv/uv 两处复用）
-        t_visit_window = [RecruitVisit.entered_at >= t_start, RecruitVisit.entered_at < t_end]
-        uv_q = self.db.query(func.count(func.distinct(RecruitVisit.openid_hash))).filter(
-            RecruitVisit.referrer_employee_id == user.id
+        return aggregate_my_share_stats(
+            self.db,
+            user_id=user.id,
+            share_employee_col=RecruitShareEvent.employee_id,
+            share_time_col=RecruitShareEvent.shared_at,
+            visit_referrer_col=RecruitVisit.referrer_employee_id,
+            visit_uv_col=RecruitVisit.openid_hash,
+            visit_time_col=RecruitVisit.entered_at,
+            lead_referrer_col=RecruitLead.referrer_employee_id,
+            lead_time_col=RecruitLead.created_at,
         )
-        lead_q = self.db.query(func.count(RecruitLead.id)).filter(RecruitLead.referrer_employee_id == user.id)
-
-        return {
-            "share_count": int(share_q.count()),
-            "pv": int(visit_q.count()),
-            "uv": int(uv_q.scalar() or 0),
-            "lead_count": int(lead_q.scalar() or 0),
-            "today_share_count": int(
-                share_q.filter(RecruitShareEvent.shared_at >= t_start, RecruitShareEvent.shared_at < t_end).count()
-            ),
-            "today_pv": int(visit_q.filter(*t_visit_window).count()),
-            "today_uv": int(uv_q.filter(*t_visit_window).scalar() or 0),
-            "today_lead_count": int(
-                lead_q.filter(RecruitLead.created_at >= t_start, RecruitLead.created_at < t_end).scalar() or 0
-            ),
-        }

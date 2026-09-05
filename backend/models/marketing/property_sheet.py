@@ -128,7 +128,7 @@ class PropertySheetShareEvent(BaseModel):
     share_type: Mapped[str | None] = mapped_column(
         String(20),
         nullable=True,
-        comment="分享方式: poster(保存海报)",
+        comment="分享方式: poster(保存海报)/card(转发卡片)",
     )
 
     # 时间戳（覆盖基类，加列注释）

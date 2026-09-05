@@ -33,8 +33,8 @@ from schemas.public.property_sheet import (
 from services.marketing.public import PublicProjectService
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 from services.system.wechat import WeChatAuthService
+from services.utils import aggregate_my_share_stats, resolve_valid_referrer
 from settings import settings
-from utils.time_windows import today_window
 
 _MAX_RETRY = 5
 _CODE_LENGTH = 8
@@ -262,7 +262,7 @@ class PropertySheetService:
         )
 
     def create_visit_event(self, sheet_id: int, data: PropertySheetVisitEventRequest) -> PropertySheetVisit:
-        """记录房源单落地页访问埋点（referrer 原样落库，与单房源 visit 口径一致）.
+        """记录房源单落地页访问埋点（referrer 经统一校验后落库，无效时置空防伪造归属）.
 
         Raises:
             ResourceNotFoundError: 房源单不存在或已删除
@@ -272,7 +272,7 @@ class PropertySheetService:
         visit = PropertySheetVisit(
             sheet_id=sheet.id,
             visitor_id=data.visitor_id,
-            referrer_employee_id=data.referrer,
+            referrer_employee_id=resolve_valid_referrer(self.db, data.referrer),
             source=data.source,
         )
         self.db.add(visit)
@@ -309,33 +309,20 @@ class PropertySheetService:
         与房源/评估 share-stats 完全同构：share_count 按
         ``PropertySheetShareEvent.employee_id``、pv/uv 按
         ``PropertySheetVisit.referrer_employee_id``（uv 为 distinct visitor_id）、
-        lead_count 按 ``Lead.referrer_id``（仅分享归因线索口径）；今日窗口为
-        Asia/Shanghai 自然日（见 ``utils.time_windows.today_window``）.
+        lead_count 按 ``Lead.referrer_id``（仅分享归因线索口径）；聚合统一走
+        ``aggregate_my_share_stats``（今日窗口为 Asia/Shanghai 自然日）.
         """
-        t_start, t_end = today_window()
-        share_q = self.db.query(PropertySheetShareEvent).filter(PropertySheetShareEvent.employee_id == user.id)
-        visit_q = self.db.query(PropertySheetVisit).filter(PropertySheetVisit.referrer_employee_id == user.id)
-        # 今日窗口条件（不可变条件对象，pv/uv 两处复用）
-        t_visit_window = [PropertySheetVisit.created_at >= t_start, PropertySheetVisit.created_at < t_end]
-        uv_q = self.db.query(func.count(func.distinct(PropertySheetVisit.visitor_id))).filter(
-            PropertySheetVisit.referrer_employee_id == user.id
+        return aggregate_my_share_stats(
+            self.db,
+            user_id=user.id,
+            share_employee_col=PropertySheetShareEvent.employee_id,
+            share_time_col=PropertySheetShareEvent.created_at,
+            visit_referrer_col=PropertySheetVisit.referrer_employee_id,
+            visit_uv_col=PropertySheetVisit.visitor_id,
+            visit_time_col=PropertySheetVisit.created_at,
+            lead_referrer_col=Lead.referrer_id,
+            lead_time_col=Lead.created_at,
         )
-        lead_q = self.db.query(func.count(Lead.id)).filter(Lead.referrer_id == user.id)
-
-        return {
-            "share_count": int(share_q.count()),
-            "pv": int(visit_q.count()),
-            "uv": int(uv_q.scalar() or 0),
-            "lead_count": int(lead_q.scalar() or 0),
-            "today_share_count": int(
-                share_q.filter(
-                    PropertySheetShareEvent.created_at >= t_start, PropertySheetShareEvent.created_at < t_end
-                ).count()
-            ),
-            "today_pv": int(visit_q.filter(*t_visit_window).count()),
-            "today_uv": int(uv_q.filter(*t_visit_window).scalar() or 0),
-            "today_lead_count": int(lead_q.filter(Lead.created_at >= t_start, Lead.created_at < t_end).scalar() or 0),
-        }
 
     @staticmethod
     def _dedup_project_ids(project_ids: list[int]) -> list[int]:

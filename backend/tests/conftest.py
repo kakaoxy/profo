@@ -16,6 +16,7 @@ from collections.abc import Callable, Generator
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -23,6 +24,17 @@ import db
 from models import Lead, ProjectBooking, RecruitLead, RecruitLeadStatus, Role, User
 from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C, create_access_token, get_password_hash
 from utils.crypto import hash_phone
+
+
+def _reset_dependency_overrides(app: FastAPI, previous_overrides: dict[Any, Any]) -> None:
+    """清空测试期间新增的依赖 override，并恢复 fixture 启动前已存在的 override.
+
+    直接 ``clear()`` 会连原有的 override 一起清掉，造成跨测试污染；
+    快照-恢复语义保证只移除本 fixture 及被测代码新增的部分。
+
+    """
+    app.dependency_overrides.clear()
+    app.dependency_overrides.update(previous_overrides)
 
 
 @pytest.fixture
@@ -68,6 +80,7 @@ def c_client_factory(seeded_db: dict[str, Any]) -> Generator[Callable[[User], Te
     def _override_get_db() -> Generator[Session, None, None]:
         yield session
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[db.get_db] = _override_get_db
 
     def _factory(user: User) -> TestClient:
@@ -83,7 +96,7 @@ def c_client_factory(seeded_db: dict[str, Any]) -> Generator[Callable[[User], Te
         )
 
     yield _factory
-    app.dependency_overrides.clear()
+    _reset_dependency_overrides(app, previous_overrides)
 
 
 def _make_client(session: Session, cookies: dict[str, str]) -> Generator[TestClient, None, None]:
@@ -98,6 +111,7 @@ def _make_client(session: Session, cookies: dict[str, str]) -> Generator[TestCli
     def _override_get_db() -> Generator[Session, None, None]:
         yield session
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[db.get_db] = _override_get_db
     # Cookie 认证的非安全方法（POST/PUT）须携带 X-Requested-With 过 CSRF 中间件
     yield TestClient(
@@ -105,7 +119,7 @@ def _make_client(session: Session, cookies: dict[str, str]) -> Generator[TestCli
         cookies=cookies,
         headers={"X-Requested-With": "XMLHttpRequest"},
     )
-    app.dependency_overrides.clear()
+    _reset_dependency_overrides(app, previous_overrides)
 
 
 @pytest.fixture
@@ -137,6 +151,7 @@ def c_end_client(seeded_db: dict[str, Any], customer_user: User) -> Generator[Te
     def _override_get_db() -> Generator[Session, None, None]:
         yield session
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[db.get_db] = _override_get_db
     token = create_access_token(
         data={"sub": customer_user.id, "role": "customer", "ver": customer_user.token_version},
@@ -148,7 +163,7 @@ def c_end_client(seeded_db: dict[str, Any], customer_user: User) -> Generator[Te
         cookies={"c_access_token": token},
         headers={"X-Requested-With": "XMLHttpRequest"},
     )
-    app.dependency_overrides.clear()
+    _reset_dependency_overrides(app, previous_overrides)
 
 
 @pytest.fixture
@@ -162,6 +177,7 @@ def backend_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, Non
     def _override_get_db() -> Generator[Session, None, None]:
         yield session
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[db.get_db] = _override_get_db
     token = create_access_token(
         data={"sub": admin_user.id, "role": "admin", "ver": admin_user.token_version},
@@ -173,7 +189,7 @@ def backend_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, Non
         cookies={"access_token": token},
         headers={"X-Requested-With": "XMLHttpRequest"},
     )
-    app.dependency_overrides.clear()
+    _reset_dependency_overrides(app, previous_overrides)
 
 
 @pytest.fixture
@@ -187,6 +203,7 @@ def normal_user_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None,
     def _override_get_db() -> Generator[Session, None, None]:
         yield session
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[db.get_db] = _override_get_db
     token = create_access_token(
         data={"sub": normal_user.id, "role": "user", "ver": normal_user.token_version},
@@ -198,7 +215,7 @@ def normal_user_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None,
         cookies={"access_token": token},
         headers={"X-Requested-With": "XMLHttpRequest"},
     )
-    app.dependency_overrides.clear()
+    _reset_dependency_overrides(app, previous_overrides)
 
 
 @pytest.fixture
@@ -242,6 +259,7 @@ def dual_login_client(
     def _override_get_db() -> Generator[Session, None, None]:
         yield session
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[db.get_db] = _override_get_db
     # Cookie 认证的非安全方法（POST/PUT）须携带 X-Requested-With 过 CSRF 中间件
     yield TestClient(
@@ -249,7 +267,7 @@ def dual_login_client(
         cookies={"access_token": admin_token, "c_access_token": c_token},
         headers={"X-Requested-With": "XMLHttpRequest"},
     )
-    app.dependency_overrides.clear()
+    _reset_dependency_overrides(app, previous_overrides)
 
 
 @pytest.fixture

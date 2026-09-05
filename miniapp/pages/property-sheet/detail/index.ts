@@ -85,7 +85,7 @@ interface PageCustom {
   generatePoster(): Promise<void>;
   onPosterClose(): void;
   onPosterSave(): Promise<void>;
-  reportShareEvent(): void;
+  reportShareEvent(shareType: "poster" | "card"): void;
   noop(): void;
 }
 
@@ -265,9 +265,11 @@ Page<PageData, PageCustom>({
   /**
    * 员工区块「分享给客户」（open-type=share 触发）：转发客户落地页而非本员工页.
    * 落地页按分享短码解析归属（referrer=房源单归属员工），客户视角展示并上报访问埋点.
+   * 卡片转发上报 share-events（share_type=card），与房源/估价卡片口径对齐；失败静默.
    */
   onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent {
     const { code, itemCount } = this.data;
+    this.reportShareEvent("card");
     return {
       title: itemCount > 0 ? `为您精选了 ${itemCount} 套好房` : "为您精选的房源单",
       path: `/pages/property-sheet/landing/index?code=${code}`,
@@ -346,18 +348,18 @@ Page<PageData, PageCustom>({
       return;
     }
     // 保存成功才上报（统计口径 = 实际保存），失败静默不阻断
-    this.reportShareEvent();
+    this.reportShareEvent("poster");
     this.setData({ posterVisible: false });
     wx.showToast({ title: "已保存相册，请在朋友圈发布", icon: "none", duration: 3000 });
   },
 
-  /** 上报海报分享事件（employee_id 服务端取当前用户），失败静默. */
-  reportShareEvent() {
+  /** 上报分享事件（employee_id 服务端取当前用户），失败静默；share_type: poster(保存海报)/card(转发卡片). */
+  reportShareEvent(shareType: "poster" | "card") {
     const { sheetId } = this.data;
     if (!sheetId) {
       return;
     }
-    const body: PropertySheetShareEventRequest = { share_type: "poster" };
+    const body: PropertySheetShareEventRequest = { share_type: shareType };
     request<unknown>({
       url: `/public/property-sheets/${sheetId}/share-events`,
       method: "POST",

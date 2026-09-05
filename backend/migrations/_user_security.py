@@ -10,7 +10,13 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from migrations._helpers import _FERNET_CIPHER_PREFIX, _MIGRATION_BATCH_SIZE, _column_exists, _index_exists
+from migrations._helpers import (
+    _FERNET_CIPHER_PREFIX,
+    _MIGRATION_BATCH_SIZE,
+    _column_default,
+    _column_exists,
+    _index_exists,
+)
 from utils.crypto import decrypt, encrypt, hash_phone
 
 logger = logging.getLogger(__name__)
@@ -158,6 +164,12 @@ def add_user_temporary_fields(engine: Engine) -> None:
         logger.info("迁移：为 users 表添加 is_temporary 列")
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users ADD COLUMN is_temporary BOOLEAN NOT NULL DEFAULT FALSE"))
+    elif _column_default(engine, "users", "is_temporary") is None:
+        # 自愈陈旧中间态：列已存在但缺 DEFAULT（如手工建列的旧库/测试库），
+        # 插入未显式指定 is_temporary 的行会因 NOT NULL 无默认值而失败
+        logger.info("迁移：users.is_temporary 列已存在但缺 DEFAULT，补充 SET DEFAULT FALSE")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ALTER COLUMN is_temporary SET DEFAULT FALSE"))
 
     if not _column_exists(engine, "users", "merged_to_user_id"):
         logger.info("迁移：为 users 表添加 merged_to_user_id 列")

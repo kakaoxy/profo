@@ -5,12 +5,11 @@
 ``creator_id`` 本人录入，与招募漏斗口径一致——迭代决策 #2）.
 """
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models import Lead, User, ValuationShareEvent, ValuationVisit
 from schemas.public import PublicShareEventRequest, PublicVisitEventRequest
-from utils.time_windows import today_window
+from services.utils import aggregate_my_share_stats, resolve_valid_referrer
 
 
 class ValuationShareTrackingService:
@@ -22,11 +21,12 @@ class ValuationShareTrackingService:
     def create_visit_event(self, data: PublicVisitEventRequest) -> ValuationVisit:
         """记录估价页访问埋点（PV +1，UV 按 visitor_id 去重）.
 
-        referrer 非空即原样落库（与招募 visit 口径一致，不做内部用户校验）。
+        referrer 经统一校验后落库：无效（不存在/非 active/无后台身份）时置空，
+        防止伪造归属污染归因统计（与估价线索 referrer 口径一致）。
         """
         visit = ValuationVisit(
             visitor_id=data.visitor_id,
-            referrer_employee_id=data.referrer,
+            referrer_employee_id=resolve_valid_referrer(self.db, data.referrer),
             source=data.source,
         )
         self.db.add(visit)
@@ -50,30 +50,17 @@ class ValuationShareTrackingService:
 
         口径：share_count 按 ``ValuationShareEvent.employee_id``、pv/uv 按
         ``ValuationVisit.referrer_employee_id``（uv 为 distinct visitor_id）、
-        lead_count 按 ``Lead.referrer_id``（仅分享归因）；今日窗口为
-        Asia/Shanghai 自然日（见 ``utils.time_windows.today_window``）。
+        lead_count 按 ``Lead.referrer_id``（仅分享归因）；聚合统一走
+        ``aggregate_my_share_stats``（今日窗口为 Asia/Shanghai 自然日）。
         """
-        t_start, t_end = today_window()
-        share_q = self.db.query(ValuationShareEvent).filter(ValuationShareEvent.employee_id == user.id)
-        visit_q = self.db.query(ValuationVisit).filter(ValuationVisit.referrer_employee_id == user.id)
-        # 今日窗口条件（不可变条件对象，pv/uv 两处复用）
-        t_visit_window = [ValuationVisit.created_at >= t_start, ValuationVisit.created_at < t_end]
-        uv_q = self.db.query(func.count(func.distinct(ValuationVisit.visitor_id))).filter(
-            ValuationVisit.referrer_employee_id == user.id
+        return aggregate_my_share_stats(
+            self.db,
+            user_id=user.id,
+            share_employee_col=ValuationShareEvent.employee_id,
+            share_time_col=ValuationShareEvent.created_at,
+            visit_referrer_col=ValuationVisit.referrer_employee_id,
+            visit_uv_col=ValuationVisit.visitor_id,
+            visit_time_col=ValuationVisit.created_at,
+            lead_referrer_col=Lead.referrer_id,
+            lead_time_col=Lead.created_at,
         )
-        lead_q = self.db.query(func.count(Lead.id)).filter(Lead.referrer_id == user.id)
-
-        return {
-            "share_count": int(share_q.count()),
-            "pv": int(visit_q.count()),
-            "uv": int(uv_q.scalar() or 0),
-            "lead_count": int(lead_q.scalar() or 0),
-            "today_share_count": int(
-                share_q.filter(
-                    ValuationShareEvent.created_at >= t_start, ValuationShareEvent.created_at < t_end
-                ).count()
-            ),
-            "today_pv": int(visit_q.filter(*t_visit_window).count()),
-            "today_uv": int(uv_q.filter(*t_visit_window).scalar() or 0),
-            "today_lead_count": int(lead_q.filter(Lead.created_at >= t_start, Lead.created_at < t_end).scalar() or 0),
-        }

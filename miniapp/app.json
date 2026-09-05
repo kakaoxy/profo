@@ -57,7 +57,7 @@
   ],
   "preloadRule": {
     "pages/profile/index/index": {
-      "network": "all",
+      "network": "wifi",
       "packages": ["pages/ledger", "pages/viewing", "pages/renovation", "pages/analysis", "pages/community-analysis"]
     }
   },

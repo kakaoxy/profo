@@ -37,6 +37,25 @@ def _column_exists(engine: Engine, table: str, column: str) -> bool:
     return any(col["name"] == column for col in inspector.get_columns(table))
 
 
+def _column_default(engine: Engine, table: str, column: str) -> str | None:
+    """查询某列的 DDL 默认值表达式.
+
+    Returns:
+        默认值表达式（如 ``false``）；列不存在或无默认值时返回 None。
+        用于识别「列存在但缺 DEFAULT」的陈旧中间态（幂等迁移盲区）。
+
+    """
+    with engine.connect() as conn:
+        row = conn.execute(
+            text(
+                "SELECT column_default FROM information_schema.columns "
+                "WHERE table_name = :table AND column_name = :column LIMIT 1"
+            ),
+            {"table": table, "column": column},
+        ).first()
+    return str(row[0]) if row and row[0] is not None else None
+
+
 def _index_exists(engine: Engine, index_name: str) -> bool:
     """检查某索引是否已存在."""
     with engine.connect() as conn:

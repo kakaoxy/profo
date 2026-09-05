@@ -8,7 +8,7 @@
 
   <!-- 登录卡片 -->
   <view class="form-card">
-    <button class="btn-primary wechat-btn" disabled="{{loading}}" bindtap="onWechatLogin">微信一键登录</button>
+    <button class="btn-primary wechat-btn" disabled="{{loading}}" bindtap="onWechatLogin">手机号快捷登录</button>
     <button class="btn-secondary password-btn" bindtap="onPasswordLogin">账号密码登录</button>
 
     <!-- 协议勾选区 -->

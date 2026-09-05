@@ -270,7 +270,9 @@ def get_my_lead_phone(
     summary="我的分享统计",
     description="分享次数 / 经我分享的打开 PV/UV / 归属我的线索数",
 )
+@limiter.limit(RateLimits.PUBLIC_MY_SHARE_STATS)
 def get_my_share_stats(
+    request: Request,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,
 ) -> RecruitMyShareStatsResponse:

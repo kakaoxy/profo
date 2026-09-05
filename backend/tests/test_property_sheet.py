@@ -436,11 +436,12 @@ class TestConsultant:
 
 class TestVisitEvent:
     def test_visit_event_saved_as_is(self, no_auth_client: TestClient, db_session: Session):
-        """免登录成功落库，visitor_id/referrer/source 原样保存."""
+        """免登录成功落库；有效员工 referrer 原样保存，无效 referrer 置空防伪造归属."""
+        emp = _make_employee(db_session, "emp-visit")
         sheet = _make_sheet(db_session, "customer-user", code="visit001")
         resp = no_auth_client.post(
             f"{BASE}/{sheet.id}/visit-events",
-            json={"visitor_id": "visitor-1", "referrer": "emp-raw", "source": "poster"},
+            json={"visitor_id": "visitor-1", "referrer": emp.id, "source": "poster"},
         )
         assert resp.status_code == 200
         assert resp.json()["id"]
@@ -448,8 +449,17 @@ class TestVisitEvent:
         visit = db_session.query(PropertySheetVisit).filter(PropertySheetVisit.sheet_id == sheet.id).first()
         assert visit is not None
         assert visit.visitor_id == "visitor-1"
-        assert visit.referrer_employee_id == "emp-raw"  # referrer 原样落库不做校验
+        assert visit.referrer_employee_id == emp.id  # 有效员工 referrer 原样落库
         assert visit.source == "poster"
+
+        # 无效 referrer（不存在员工）：静默置空，不阻断埋点落库
+        resp_ghost = no_auth_client.post(
+            f"{BASE}/{sheet.id}/visit-events",
+            json={"visitor_id": "visitor-2", "referrer": "emp-raw", "source": "poster"},
+        )
+        assert resp_ghost.status_code == 200
+        visit_ghost = db_session.query(PropertySheetVisit).filter(PropertySheetVisit.visitor_id == "visitor-2").one()
+        assert visit_ghost.referrer_employee_id is None
 
     def test_visit_event_deleted_sheet_404(self, no_auth_client: TestClient, db_session: Session):
         """已删除房源单返回 404."""
@@ -463,21 +473,25 @@ class TestVisitEvent:
 
 class TestShareEvent:
     def test_share_event_saved_with_current_user(self, c_end_client: TestClient, db_session: Session):
-        """登录上报成功，employee_id 服务端取当前用户."""
+        """登录上报成功，employee_id 服务端取当前用户；card/poster 均可写入."""
         sheet = _make_sheet(db_session, "customer-user", code="share001")
         resp = c_end_client.post(f"{BASE}/{sheet.id}/share-events", json={"share_type": "poster"})
         assert resp.status_code == 200
         assert resp.json()["id"]
 
-        event = db_session.query(PropertySheetShareEvent).filter(PropertySheetShareEvent.sheet_id == sheet.id).first()
-        assert event is not None
-        assert event.employee_id == "customer-user"
-        assert event.share_type == "poster"
+        resp_card = c_end_client.post(f"{BASE}/{sheet.id}/share-events", json={"share_type": "card"})
+        assert resp_card.status_code == 200
+        assert resp_card.json()["id"]
+
+        events = db_session.query(PropertySheetShareEvent).filter(PropertySheetShareEvent.sheet_id == sheet.id).all()
+        assert len(events) == 2
+        assert {event.share_type for event in events} == {"poster", "card"}
+        assert all(event.employee_id == "customer-user" for event in events)
 
     def test_share_event_invalid_share_type_422(self, c_end_client: TestClient, db_session: Session):
-        """share_type 仅允许 poster（Literal 校验 422）."""
+        """share_type 仅允许 poster/card（Literal 校验 422）."""
         sheet = _make_sheet(db_session, "customer-user", code="share002")
-        resp = c_end_client.post(f"{BASE}/{sheet.id}/share-events", json={"share_type": "card"})
+        resp = c_end_client.post(f"{BASE}/{sheet.id}/share-events", json={"share_type": "timeline"})
         assert resp.status_code == 422
 
     def test_share_event_unauthorized_401(self, no_auth_client: TestClient, db_session: Session):

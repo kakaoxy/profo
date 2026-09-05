@@ -199,6 +199,9 @@ class TestDownloadExternalImage:
     def test_download_jpeg_success(self, tmp_path, monkeypatch):
         jpeg = _make_jpeg_bytes()
         monkeypatch.setattr("utils.image_download.settings.upload_dir", str(tmp_path))
+        # 固定 local 后端：本测试断言「本地临时文件已写入」，
+        # oss 模式上传后会主动清理临时文件（该行为由 test_download_oss_mode_cleans_temp_file 覆盖）
+        monkeypatch.setattr("utils.image_download.settings.storage_backend", "local")
         mock_storage = MagicMock()
         mock_storage.upload_file.return_value = "/static/uploads/properties/stored.jpg"
         monkeypatch.setattr("utils.image_download.get_storage_backend", lambda: mock_storage)

@@ -186,22 +186,32 @@ class TestProjectShareStats:
         }
 
     def test_visit_event_anonymous_writes(self, seeded_db: dict[str, Any]) -> None:
-        """visit-events 免登录可写，referrer/source 原样落库."""
+        """visit-events 免登录可写；有效员工 referrer 原样落库，无效 referrer 置空."""
         session: Session = seeded_db["session"]
         project = _create_project(session, project_id=9302)
+        employee_id = seeded_db["users"]["admin"].id
 
         with _no_auth_client(session) as client:
             resp = client.post(
                 f"{_PROJECTS_URL}/{project.id}/visit-events",
-                json={"visitor_id": "guest-visitor-1", "referrer": "emp-share", "source": "card"},
+                json={"visitor_id": "guest-visitor-1", "referrer": employee_id, "source": "card"},
+            )
+            # 无效 referrer（不存在员工）：静默置空，不阻断埋点落库
+            resp_invalid = client.post(
+                f"{_PROJECTS_URL}/{project.id}/visit-events",
+                json={"visitor_id": "guest-visitor-2", "referrer": "emp-share", "source": "card"},
             )
 
         assert resp.status_code == 200, resp.text
         assert isinstance(resp.json()["id"], int)
         visit = session.query(ProjectVisit).filter(ProjectVisit.visitor_id == "guest-visitor-1").one()
-        assert visit.referrer_employee_id == "emp-share"
+        assert visit.referrer_employee_id == employee_id
         assert visit.source == "card"
         assert visit.marketing_project_id == project.id
+
+        assert resp_invalid.status_code == 200, resp_invalid.text
+        visit_invalid = session.query(ProjectVisit).filter(ProjectVisit.visitor_id == "guest-visitor-2").one()
+        assert visit_invalid.referrer_employee_id is None
 
     def test_visit_event_project_not_found(self, seeded_db: dict[str, Any]) -> None:
         """房源不存在 → 404 + {"code":≠0,"message":...}."""
@@ -279,16 +289,25 @@ class TestValuationShareStats:
         }
 
     def test_visit_event_anonymous_writes(self, seeded_db: dict[str, Any]) -> None:
-        """visit-events 免登录可写."""
+        """visit-events 免登录可写；有效员工 referrer 原样落库，无效 referrer 置空."""
         session: Session = seeded_db["session"]
+        employee_id = seeded_db["users"]["admin"].id
         with _no_auth_client(session) as client:
             resp = client.post(
-                f"{_VALUATIONS_URL}/visit-events", json={"visitor_id": "val-guest-1", "referrer": "emp-share"}
+                f"{_VALUATIONS_URL}/visit-events", json={"visitor_id": "val-guest-1", "referrer": employee_id}
+            )
+            # 无效 referrer（不存在员工）：静默置空
+            resp_invalid = client.post(
+                f"{_VALUATIONS_URL}/visit-events", json={"visitor_id": "val-guest-2", "referrer": "emp-share"}
             )
 
         assert resp.status_code == 200, resp.text
         visit = session.query(ValuationVisit).filter(ValuationVisit.visitor_id == "val-guest-1").one()
-        assert visit.referrer_employee_id == "emp-share"
+        assert visit.referrer_employee_id == employee_id
+
+        assert resp_invalid.status_code == 200, resp_invalid.text
+        visit_invalid = session.query(ValuationVisit).filter(ValuationVisit.visitor_id == "val-guest-2").one()
+        assert visit_invalid.referrer_employee_id is None
 
     def test_share_event_requires_login(self, seeded_db: dict[str, Any]) -> None:
         """share-events 未登录 → 401."""

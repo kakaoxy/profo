@@ -50,35 +50,60 @@ def _make_campaign(db: Session, **kwargs: Any) -> RecruitCampaign:
     return campaign
 
 
+def _make_employee(session: Session, employee_id: str, *, wechat_openid: str | None = None) -> User:
+    """创建具备后台身份的员工用户（referrer 写路径校验仅 backend 身份生效）."""
+    role = session.query(Role).filter(Role.code == "admin").first()
+    if role is None:
+        role = Role(id="admin-role", name="管理员", code="admin")
+        session.add(role)
+        session.commit()
+    user = User(
+        id=employee_id,
+        username=f"emp_{employee_id}",
+        password=get_password_hash("Emp123!.."),
+        nickname=f"员工{employee_id}",
+        role_id=role.id,
+        status="active",
+        wechat_openid=wechat_openid,
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
 # ==================== 归因引擎 ====================
 
 
 class TestAttribution:
     def test_first_lead_writes_referrer(self, db_session: Session):
         """首次留资写入归属员工."""
+        emp_a = _make_employee(db_session, "emp-a")
         service = RecruitAttributionService(db_session)
         lead, is_new = service.submit_lead(
             "13800138000",
             campaign_id=None,
             main_business_area="天河商圈",
-            referrer="emp-a",
+            referrer=emp_a.id,
             source=RecruitLeadSource.CARD,
             visit_id=None,
             user_id="customer-user",
         )
         assert is_new is True
-        assert lead.referrer_employee_id == "emp-a"
+        assert lead.referrer_employee_id == emp_a.id
         assert lead.phone_hash == hash_phone("13800138000")
         assert lead.status == RecruitLeadStatus.NEW
 
     def test_duplicate_lead_does_not_overwrite(self, db_session: Session):
         """重复留资（不同员工）返回原记录且归属永不覆盖."""
+        emp_a = _make_employee(db_session, "emp-a")
+        emp_b = _make_employee(db_session, "emp-b")
         service = RecruitAttributionService(db_session)
         service.submit_lead(
             "13800138001",
             campaign_id=None,
             main_business_area="天河商圈",
-            referrer="emp-a",
+            referrer=emp_a.id,
             source=RecruitLeadSource.CARD,
             visit_id=None,
             user_id="customer-user",
@@ -88,16 +113,18 @@ class TestAttribution:
             "13800138001",
             campaign_id=None,
             main_business_area="越秀商圈",
-            referrer="emp-b",
+            referrer=emp_b.id,
             source=RecruitLeadSource.POSTER,
             visit_id=None,
             user_id="customer-user",
         )
         assert is_new is False
-        assert lead2.referrer_employee_id == "emp-a"
+        assert lead2.referrer_employee_id == emp_a.id
 
     def test_duplicate_lead_backfills_missing_referrer(self, db_session: Session):
         """重复留资：已有线索无归属且本次携带归属员工时补充归属（不新建记录）."""
+        emp_a = _make_employee(db_session, "emp-a")
+        emp_b = _make_employee(db_session, "emp-b")
         service = RecruitAttributionService(db_session)
         # 首次留资未带 referrer（如直接进入页面），线索无归属
         service.submit_lead(
@@ -116,12 +143,12 @@ class TestAttribution:
             campaign_id=None,
             main_business_area="天河商圈",
             source=RecruitLeadSource.CARD,
-            referrer="emp-a",
+            referrer=emp_a.id,
             visit_id=None,
             user_id="customer-user",
         )
         assert is_new is False
-        assert lead2.referrer_employee_id == "emp-a"
+        assert lead2.referrer_employee_id == emp_a.id
         assert db_session.query(RecruitLead).count() == 1
 
         # 已补充归属后，其他员工再留资不覆盖
@@ -129,12 +156,12 @@ class TestAttribution:
             "13800138003",
             campaign_id=None,
             main_business_area="天河商圈",
-            referrer="emp-b",
+            referrer=emp_b.id,
             source=RecruitLeadSource.POSTER,
             visit_id=None,
             user_id="customer-user",
         )
-        assert lead3.referrer_employee_id == "emp-a"
+        assert lead3.referrer_employee_id == emp_a.id
 
     def test_backfill_referrer_persists_without_visit(self, db_session: Session):
         """补充归属必须真正落库：visit_id 缺失（埋点未创建/失败/不归属）时不得静默丢失.
@@ -155,11 +182,12 @@ class TestAttribution:
             user_id="customer-user",
         )
         # 经员工分享链接重复留资：携带 referrer，但 visit_id 缺失
+        emp_a = _make_employee(db_session, "emp-a")
         _, is_new = service.submit_lead(
             "13800138005",
             campaign_id=None,
             main_business_area="天河商圈",
-            referrer="emp-a",
+            referrer=emp_a.id,
             source=RecruitLeadSource.CARD,
             visit_id=None,
             user_id="customer-user",
@@ -547,9 +575,10 @@ class TestPublicRecruitRouter:
         assert resp.status_code == 200
         assert resp.json()["id"]
 
-    def test_submit_lead(self, c_end_client: TestClient, db_session: Session, monkeypatch):
-        """C 端留资并归因（mock 微信解密）."""
+    def test_submit_lead(self, c_end_client: TestClient, seeded_db: dict[str, Any], db_session: Session, monkeypatch):
+        """C 端留资并归因（mock 微信解密）；referrer 仅有效员工生效."""
         campaign = _make_campaign(db_session)
+        admin_id = seeded_db["users"]["admin"].id
 
         monkeypatch.setattr(
             "services.system.wechat.WeChatAuthService.fetch_wechat_phone_number",
@@ -562,7 +591,7 @@ class TestPublicRecruitRouter:
                 "code": "wx-code",
                 "campaign_id": campaign.id,
                 "main_business_area": "天河商圈",
-                "referrer": "emp-a",
+                "referrer": admin_id,
                 "source": "card",
             },
         )
@@ -571,7 +600,7 @@ class TestPublicRecruitRouter:
 
         lead = db_session.query(RecruitLead).filter(RecruitLead.phone_hash == hash_phone("13800138002")).first()
         assert lead is not None
-        assert lead.referrer_employee_id == "emp-a"
+        assert lead.referrer_employee_id == admin_id
 
     def test_update_visit_idor_blocked(self, c_end_client: TestClient, seeded_db: dict[str, Any], db_session: Session):
         """IDOR 防护：A 用户创建的 visit，B 用户无法上报离开.
@@ -1224,9 +1253,9 @@ class TestMyShareStats:
 
 @pytest.fixture
 def employee_with_openid(seeded_db: dict[str, Any]) -> User:
-    """创建已绑定微信 openid 的员工用户（线索归属人）."""
+    """创建已绑定微信 openid 的员工用户（线索归属人，具备后台身份）."""
     session = seeded_db["session"]
-    role = session.query(Role).filter(Role.code == "customer").first()
+    role = session.query(Role).filter(Role.code == "admin").first()
     employee = User(
         id="emp-notify",
         username="emp_notify",
@@ -1285,7 +1314,7 @@ class TestLeadSubscribeNotify:
         from settings import settings
 
         session = seeded_db["session"]
-        role = session.query(Role).filter(Role.code == "customer").first()
+        role = session.query(Role).filter(Role.code == "admin").first()
         employee = User(
             id="emp-no-openid",
             username="emp_no_openid",
@@ -1404,7 +1433,7 @@ class TestLeadSubscribeNotify:
         from settings import settings
 
         session = seeded_db["session"]
-        role = session.query(Role).filter(Role.code == "customer").first()
+        role = session.query(Role).filter(Role.code == "admin").first()
 
         # 创建主账号（无 wechat_openid）
         main_user = User(
@@ -1458,7 +1487,7 @@ class TestLeadSubscribeNotify:
         from settings import settings
 
         session = seeded_db["session"]
-        role = session.query(Role).filter(Role.code == "customer").first()
+        role = session.query(Role).filter(Role.code == "admin").first()
 
         # 创建主账号（有 wechat_openid）
         main_user = User(
@@ -1513,7 +1542,7 @@ class TestLeadSubscribeNotify:
         from settings import settings
 
         session = seeded_db["session"]
-        role = session.query(Role).filter(Role.code == "customer").first()
+        role = session.query(Role).filter(Role.code == "admin").first()
 
         main_user = User(
             id="emp-no-openid2",

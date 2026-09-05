@@ -10989,10 +10989,10 @@ export interface components {
         PropertySheetShareEventRequest: {
             /**
              * Share Type
-             * @description 分享方式：poster(保存海报)
-             * @constant
+             * @description 分享方式：poster(保存海报)/card(转发卡片)
+             * @enum {string}
              */
-            share_type: "poster";
+            share_type: "poster" | "card";
         };
         /**
          * PropertySheetVisitEventRequest

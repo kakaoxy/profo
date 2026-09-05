@@ -154,8 +154,8 @@ class WechatProfileUpdateRequest(BaseModel):
 
     @model_validator(mode="after")
     def _at_least_one_field(self) -> "WechatProfileUpdateRequest":
-        """至少一个字段非空，否则 422."""
-        if not self.nickname and not self.avatar_url:
+        """至少一个字段非空，否则 422（显式区分 None；空串由 min_length=1 在字段级拦截）."""
+        if self.nickname is None and self.avatar_url is None:
             msg = "nickname 与 avatar_url 至少一个非空"
             raise ValueError(msg)
         return self

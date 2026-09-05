@@ -103,7 +103,7 @@ class PropertySheetVisitEventRequest(BaseModel):
 class PropertySheetShareEventRequest(BaseModel):
     """C端房源单分享事件上报请求（需登录，employee_id 服务端取当前用户）."""
 
-    share_type: Literal["poster"] = Field(description="分享方式：poster(保存海报)")
+    share_type: Literal["poster", "card"] = Field(description="分享方式：poster(保存海报)/card(转发卡片)")
 
 
 __all__ = [

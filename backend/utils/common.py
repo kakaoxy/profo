@@ -194,6 +194,9 @@ class RateLimits:
     PUBLIC_PROJECT_LIST = "60/minute"
     PUBLIC_LEAD_CREATE = "10/hour"
     PUBLIC_LEAD_LIST = "60/minute"
+    # 「我的分享统计」：估价/房源/房源单/招募四链路共用的登录态读取端点，
+    # 单请求触发多表聚合查询，收敛频次防刷（对齐 PUBLIC_LEAD_LIST 读取量级）
+    PUBLIC_MY_SHARE_STATS = "60/minute"
     # 房源预约：创建与线索提交同量级收敛防刷，列表为高频读取
     PUBLIC_BOOKING_CREATE = "10/hour"
     PUBLIC_BOOKING_LIST = "60/minute"
