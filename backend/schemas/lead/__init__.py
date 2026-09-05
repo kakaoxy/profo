@@ -271,7 +271,7 @@ class PendingAssessmentQueueItem(BaseModel):
     """待评估队列项（工作台卡片，兼作授权页详情数据源）.
 
     业主报价口径 = expected_price 回退 total_price（与 admin 总价列/C 端列表一致）；
-    images 裁剪前 3 张。
+    images 返回全量（授权页照片区依赖完整图片列表）。
     """
 
     id: str = Field(description="线索ID")
@@ -283,7 +283,7 @@ class PendingAssessmentQueueItem(BaseModel):
     orientation: str | None = Field(None, description="朝向")
     remarks: str | None = Field(None, description="业主备注")
     expected_price: float | None = Field(None, description="业主报价(万) = expected_price 回退 total_price")
-    images: list[str] = Field(default_factory=list, description="图片URL（前 3 张）")
+    images: list[str] = Field(default_factory=list, description="图片URL")
     source: Literal["customer_share", "employee_entry"] = Field(description="来源：客户分享/员工录入")
     submitter_nickname: str | None = Field(None, description="提交人昵称（线索创建人）")
     submitter_phone: str | None = Field(None, description="提交人手机号（已脱敏）")
@@ -307,7 +307,7 @@ class HandledItem(BaseModel):
     orientation: str | None = Field(None, description="朝向")
     remarks: str | None = Field(None, description="业主备注")
     expected_price: float | None = Field(None, description="业主报价(万)")
-    images: list[str] = Field(default_factory=list, description="图片URL（前 3 张）")
+    images: list[str] = Field(default_factory=list, description="图片URL")
     source: Literal["customer_share", "employee_entry"] = Field(description="来源：客户分享/员工录入")
     submitter_nickname: str | None = Field(None, description="提交人昵称（线索创建人）")
     submitter_phone: str | None = Field(None, description="提交人手机号（已脱敏）")

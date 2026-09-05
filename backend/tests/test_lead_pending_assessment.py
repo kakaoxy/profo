@@ -219,20 +219,21 @@ class TestPendingAssessmentQueue:
         assert body["pending_total"] == 1
         assert [it["community_name"] for it in body["items_pending"]] == ["阳光小区"]
 
-    def test_pending_images_trimmed_to_three(
+    def test_pending_images_full_list(
         self,
         eval_operator_client: TestClient,
         seeded_db: dict[str, Any],
     ) -> None:
-        """待评估卡片仅返回前 3 张图片 URL."""
+        """待评估队列项返回全量图片 URL（授权页照片区依赖完整列表）."""
         session: Session = seeded_db["session"]
-        _make_lead(session, images=[f"/static/img{i}.jpg" for i in range(5)])
+        images = [f"/static/img{i}.jpg" for i in range(5)]
+        _make_lead(session, images=images)
         session.commit()
 
         resp = eval_operator_client.get(_PENDING_URL)
         assert resp.status_code == 200
         items = resp.json()["items_pending"]
-        assert len(items[0]["images"]) == 3
+        assert items[0]["images"] == images
 
     def test_403_for_customer_without_internal_role(
         self,
