@@ -57,5 +57,4 @@ export function getListingDaysText(listingDate: string | null | undefined): stri
   return `挂牌${days}天`;
 }
 
-export { mapProjectResponseToProject } from "./project-card-mapper";
 export { toNumber } from "@/lib/number-utils";

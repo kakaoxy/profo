@@ -20,6 +20,7 @@ import type { PhotoCategory } from "@/app/(main)/admin/marketing/types";
 import type { PhotosSectionProps } from "./types";
 
 import { UploadArea } from "@/components/common/image-upload";
+import { MAX_UPLOAD_FILES } from "@/lib/constants";
 import { useImageUpload } from "../photo-manager/use-image-upload";
 import { useProjectId } from "../photo-manager/use-project-id";
 import { PhotoCategorySelector } from "../photo-manager/photo-category-selector";
@@ -177,9 +178,9 @@ export const PhotosSection = memo(function PhotosSection({
             <UploadArea
               isUploading={isUploading}
               disabled={isUploading}
-              title="点击或拖拽图片到此处上传"
-              description="支持 JPG, PNG, GIF, WebP 格式，单文件最大 100MB"
-              accept=".jpg,.jpeg,.png,.gif,.webp"
+              title="点击或拖拽图片或视频到此处上传"
+              description={`支持 JPG, PNG, GIF, WebP 图片及 MP4, MOV, WebM 视频，图片最大 100MB，视频最大 500MB，单次最多 ${MAX_UPLOAD_FILES} 个文件`}
+              accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm"
               multiple
               onUpload={uploadFiles}
             />
