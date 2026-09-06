@@ -206,6 +206,7 @@ Page<PageData, PageCustom>({
         id: p.id,
         url: resolveAssetUrl(p.url),
         thumb: resolveAssetUrl(p.thumbnail_url),
+        type: p.media_type === "video" ? "video" : "image",
       });
     });
     const stages = this.data.stages.map((s) => ({
@@ -357,13 +358,22 @@ Page<PageData, PageCustom>({
 
   onPreviewPhoto(e: WechatMiniprogram.BaseEvent) {
     const stage = e.currentTarget.dataset.stage as string;
-    const current = e.currentTarget.dataset.url as string;
+    const tappedUrl = e.currentTarget.dataset.url as string;
     const stageObj = this.data.stages.find((s) => s.value === stage);
     if (!stageObj) {
       return;
     }
-    const urls = stageObj.photos.map((p) => p.url);
-    wx.previewImage({ current, urls });
+    // 图/视频混合预览统一走 previewMedia（previewImage 不支持视频）；
+    // 视频源携带 thumb 封面，避免预览黑屏（图片项 thumb 为空串转 undefined）
+    const tappedIndex = stageObj.photos.findIndex((p) => p.url === tappedUrl);
+    wx.previewMedia({
+      sources: stageObj.photos.map((p) => ({
+        url: p.url,
+        type: p.type,
+        poster: p.thumb || undefined,
+      })),
+      current: tappedIndex >= 0 ? tappedIndex : 0,
+    });
   },
 
   onDeletePhoto(e: WechatMiniprogram.BaseEvent) {

@@ -25,6 +25,8 @@ export interface DisplayPhoto {
   id: string;
   url: string;
   thumb: string;
+  /** 媒体类型：视频瓦片渲染封面/占位，预览统一走 previewMedia. */
+  type: "image" | "video";
 }
 
 /** 上传中占位项. */

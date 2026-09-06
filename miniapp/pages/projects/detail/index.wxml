@@ -123,13 +123,25 @@
             bindtap="onStageTap"
           >
             <view class="renovation-img">
-              <image
-                wx:if="{{stage.cover}}"
-                class="renovation-cover"
-                src="{{stage.cover}}"
-                mode="aspectFill"
-                lazy-load
-              />
+              <block wx:if="{{stage.cover}}">
+                <image
+                  class="renovation-cover"
+                  src="{{stage.cover.url}}"
+                  mode="aspectFill"
+                  lazy-load
+                />
+                <view wx:if="{{stage.cover.type === 'video'}}" class="renovation-play">
+                  <view class="renovation-play-triangle"></view>
+                </view>
+              </block>
+              <view
+                wx:elif="{{stage.media.length > 0}}"
+                class="renovation-placeholder renovation-placeholder--video"
+              >
+                <view class="renovation-play">
+                  <view class="renovation-play-triangle"></view>
+                </view>
+              </view>
               <view wx:else class="renovation-placeholder"></view>
               <view class="badge">{{stage.stage}}</view>
               <view wx:if="{{stage.photoCount > 0}}" class="photo-count">{{stage.photoCount}}</view>
@@ -231,29 +243,6 @@
           >微信一键绑定并预约</button>
           <button class="phone-cancel" bindtap="onPhoneAuthCancel">取消</button>
         </view>
-      </view>
-    </view>
-
-    <!-- 阶段照片轮播弹层 -->
-    <view wx:if="{{stageViewer.visible}}" class="stage-viewer" catchtap="onViewerClose">
-      <view class="stage-viewer-inner" catchtap="">
-        <view class="stage-viewer-header">
-          <text class="stage-viewer-title">{{stageViewer.stage}} · {{stageViewer.current + 1}}/{{stageViewer.photos.length}}</text>
-          <view class="stage-viewer-close" bindtap="onViewerClose">×</view>
-        </view>
-        <swiper
-          class="stage-viewer-swiper"
-          current="{{stageViewer.current}}"
-          bindchange="onViewerChange"
-          indicator-dots
-          indicator-active-color="#ffffff"
-          indicator-color="rgba(255,255,255,0.5)"
-          circular
-        >
-          <swiper-item wx:for="{{stageViewer.photos}}" wx:key="*this">
-            <image class="stage-viewer-img" src="{{item}}" mode="aspectFit" />
-          </swiper-item>
-        </swiper>
       </view>
     </view>
   </block>

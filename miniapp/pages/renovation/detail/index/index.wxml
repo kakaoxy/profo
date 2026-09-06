@@ -64,7 +64,12 @@
           <!-- 照片网格（含上传中占位与上传按钮） -->
           <view class="photo-grid">
             <view class="photo-item" wx:for="{{item.photos}}" wx:for-item="photo" wx:key="id" catchtap="onPreviewPhoto" data-stage="{{item.value}}" data-url="{{photo.url}}">
-              <image class="photo-img" src="{{photo.url}}" mode="aspectFill" lazy-load />
+              <image wx:if="{{photo.type === 'video' && photo.thumb}}" class="photo-img" src="{{photo.thumb}}" mode="aspectFill" lazy-load />
+              <view wx:elif="{{photo.type === 'video'}}" class="photo-video-placeholder"></view>
+              <image wx:else class="photo-img" src="{{photo.url}}" mode="aspectFill" lazy-load />
+              <view wx:if="{{photo.type === 'video'}}" class="photo-play">
+                <view class="photo-play-triangle"></view>
+              </view>
               <view class="photo-remove" wx:if="{{canEdit}}" catchtap="onDeletePhoto" data-id="{{photo.id}}">×</view>
             </view>
             <view class="photo-item photo-item--uploading" wx:for="{{item.uploading}}" wx:for-item="up" wx:key="key">

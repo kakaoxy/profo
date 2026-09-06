@@ -25,30 +25,26 @@ type RenovationStageName =
 
 type StageStatus = "completed" | "in_progress" | "pending";
 
-/** 改造阶段展示数据：完成时间 + 该阶段照片（用于点击轮播）. */
+/** 改造阶段展示数据：完成时间 + 该阶段媒体（图片/视频，用于点击查看）. */
 type DisplayStage = {
   stage: RenovationStageName;
   status: StageStatus;
   completedDate: string | null;
   photoCount: number;
-  cover: string | null;
-  photos: string[];
+  /** 阶段封面：优先首个图片；无图片时取首个视频封面（poster 为空则 null）. */
+  cover: { url: string; type: "image" | "video" } | null;
+  media: StageMediaItem[];
   clickable: boolean;
 };
+
+/** 阶段媒体项：视频 poster 为封面(thumbnail_url)，图片 poster 为空串. */
+type StageMediaItem = { type: "image" | "video"; url: string; poster: string };
 
 /** 图集项：图片或视频，供 swiper 渲染. poster 为视频封面(来自 thumbnail_url)，图片为空串. */
 type GalleryItem = { type: "image" | "video"; url: string; poster: string };
 
 /** 现场实景视频项：营销类视频独立展示. poster 为封面(thumbnail_url)，可为空串. */
 type SiteVideoItem = { url: string; poster: string };
-
-/** 阶段照片轮播弹层状态. */
-type StageViewer = {
-  visible: boolean;
-  stage: string;
-  photos: string[];
-  current: number;
-};
 
 /** /public/users/phone/wechat 返回体：成功 { success: true }，冲突 { code: 40901, message }. */
 interface PhoneWechatBindResponse {
@@ -86,7 +82,6 @@ interface PageData {
   gallery: GalleryItem[];
   /** 现场实景：营销类视频列表（独立于顶部图集展示）. */
   siteVideos: SiteVideoItem[];
-  stageViewer: StageViewer;
   hasRenovationPhotos: boolean;
   loading: boolean;
   error: boolean;
@@ -122,13 +117,6 @@ type Custom = {
     e: WechatMiniprogram.BaseEvent<
       WechatMiniprogram.IAnyObject,
       { stage?: string }
-    >
-  ): void;
-  onViewerClose(): void;
-  onViewerChange(
-    e: WechatMiniprogram.SwiperChange<
-      WechatMiniprogram.IAnyObject,
-      WechatMiniprogram.IAnyObject
     >
   ): void;
   onBookTap(): void;
@@ -187,46 +175,61 @@ function sortGalleryMedia(media: PublicMediaItem[]): PublicMediaItem[] {
     .map(({ item }) => item);
 }
 
-/** 将后端改造阶段与媒体分组映射为 5 项展示数据（含完成时间与照片）. */
+/** 将后端改造阶段与媒体分组映射为 5 项展示数据（含完成时间与媒体）. */
 function buildStages(
   media: PublicMediaItem[],
   apiStages?: PublicRenovationStage[]
 ): DisplayStage[] {
-  // 按 renovation_stage 分组 renovation 类目的图片，并 resolve 为完整 URL
-  const photosByStage = new Map<string, string[]>();
+  // 按 renovation_stage 分组 renovation 类目的媒体；
+  // 图片走 resolveImageUrl（水印），视频必须走 resolveAssetUrl
+  //（图片处理参数会导致 OSS 视频加载失败，见 utils/url.ts）
+  const mediaByStage = new Map<string, StageMediaItem[]>();
   for (const m of media) {
     if (m.photo_category !== "renovation" || !m.renovation_stage) {
       continue;
     }
     const stageName = m.renovation_stage as string;
-    const url = resolveImageUrl(m.file_url);
+    const isVideo = m.media_type === "video";
+    const url = isVideo ? resolveAssetUrl(m.file_url) : resolveImageUrl(m.file_url);
     if (!url) {
       continue;
     }
-    const list = photosByStage.get(stageName) ?? [];
-    list.push(url);
-    photosByStage.set(stageName, list);
+    const list = mediaByStage.get(stageName) ?? [];
+    list.push({
+      type: isVideo ? "video" : "image",
+      url,
+      poster: isVideo ? resolveImageUrl(m.thumbnail_url) : "",
+    });
+    mediaByStage.set(stageName, list);
   }
 
   return ALL_STAGES.map((stageName) => {
     const matched = apiStages?.find((s) => s.stage === stageName);
     const completedDate = matched?.completed_date ?? null;
-    const photos = photosByStage.get(stageName) ?? [];
-    const photoCount = matched?.photo_count ?? photos.length;
+    const stageMedia = mediaByStage.get(stageName) ?? [];
+    const photoCount = matched?.photo_count ?? stageMedia.length;
     let status: StageStatus = "pending";
     if (completedDate) {
       status = "completed";
-    } else if (photos.length > 0) {
+    } else if (stageMedia.length > 0) {
       status = "in_progress";
     }
+    // 封面优先首个图片；无图片时取首个视频封面（poster 为空则 cover 为空 → 占位 + 播放角标）
+    const firstImage = stageMedia.find((m) => m.type === "image");
+    const firstVideo = stageMedia.find((m) => m.type === "video");
+    const cover = firstImage
+      ? { url: firstImage.url, type: "image" as const }
+      : firstVideo && firstVideo.poster
+        ? { url: firstVideo.poster, type: "video" as const }
+        : null;
     return {
       stage: stageName,
       status,
       completedDate,
       photoCount,
-      cover: photos[0] ?? null,
-      photos,
-      clickable: photos.length > 0,
+      cover,
+      media: stageMedia,
+      clickable: stageMedia.length > 0,
     };
   });
 }
@@ -239,7 +242,6 @@ Page<PageData, Custom>({
     stages: [],
     gallery: [],
     siteVideos: [],
-    stageViewer: { visible: false, stage: "", photos: [], current: 0 },
     hasRenovationPhotos: false,
     loading: false,
     error: false,
@@ -339,7 +341,7 @@ Page<PageData, Custom>({
         )
       );
       const stages = buildStages(galleryMedia, resolvedDetail.renovation_stages);
-      const hasRenovationPhotos = stages.some((s) => s.photos.length > 0);
+      const hasRenovationPhotos = stages.some((s) => s.media.length > 0);
       const gallery: GalleryItem[] =
         galleryMedia.length > 0
           ? galleryMedia
@@ -425,32 +427,21 @@ Page<PageData, Custom>({
       return;
     }
     const target = this.data.stages.find((s) => s.stage === stageName);
-    if (!target || !target.clickable || target.photos.length === 0) {
-      // 无照片的阶段不可查看轮播
-      wx.showToast({ title: "该阶段暂无照片", icon: "none" });
+    if (!target || !target.clickable || target.media.length === 0) {
+      // 无照片/视频的阶段不可查看
+      wx.showToast({ title: "该阶段暂无照片/视频", icon: "none" });
       return;
     }
-    this.setData({
-      stageViewer: {
-        visible: true,
-        stage: stageName,
-        photos: target.photos,
-        current: 0,
-      },
+    // 图/视频混合预览交由 previewMedia 原生播放（与顶部图集一致）；
+    // 视频源携带 poster 封面，避免预览黑屏（图片项 poster 为空串转 undefined）
+    wx.previewMedia({
+      sources: target.media.map((m) => ({
+        url: m.url,
+        type: m.type,
+        poster: m.poster || undefined,
+      })),
+      current: 0,
     });
-  },
-  onViewerClose(): void {
-    this.setData({
-      stageViewer: { visible: false, stage: "", photos: [], current: 0 },
-    });
-  },
-  onViewerChange(
-    e: WechatMiniprogram.SwiperChange<
-      WechatMiniprogram.IAnyObject,
-      WechatMiniprogram.IAnyObject
-    >
-  ): void {
-    this.setData({ "stageViewer.current": e.detail.current });
   },
   /**
    * 「想看房」入口（决策 #3 状态机）：
