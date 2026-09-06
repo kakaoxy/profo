@@ -259,6 +259,21 @@
   color: var(--graphite);
 }
 
+/* 现场实景：营销视频纵向列表，内嵌播放 */
+.site-videos {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.site-video {
+  width: 100%;
+  height: 380rpx;
+  border-radius: 32rpx;
+  overflow: hidden;
+  background: #000;
+}
+
 .feature-text {
   font-size: 28rpx;
   color: var(--ash);

@@ -144,6 +144,23 @@
         </view>
       </view>
 
+      <!-- 现场实景：营销视频独立展示，内嵌播放 -->
+      <view wx:if="{{siteVideos.length}}" class="detail-section">
+        <view class="section-title">现场实景</view>
+        <view class="site-videos">
+          <video
+            wx:for="{{siteVideos}}"
+            wx:key="url"
+            class="site-video"
+            src="{{item.url}}"
+            poster="{{item.poster}}"
+            object-fit="cover"
+            controls
+            lazy-load
+          />
+        </view>
+      </view>
+
       <!-- 房源特色 -->
       <view wx:if="{{detail.description}}" class="detail-section">
         <view class="section-title">房源特色</view>

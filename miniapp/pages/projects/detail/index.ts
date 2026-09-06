@@ -39,6 +39,9 @@ type DisplayStage = {
 /** 图集项：图片或视频，供 swiper 渲染. poster 为视频封面(来自 thumbnail_url)，图片为空串. */
 type GalleryItem = { type: "image" | "video"; url: string; poster: string };
 
+/** 现场实景视频项：营销类视频独立展示. poster 为封面(thumbnail_url)，可为空串. */
+type SiteVideoItem = { url: string; poster: string };
+
 /** 阶段照片轮播弹层状态. */
 type StageViewer = {
   visible: boolean;
@@ -81,6 +84,8 @@ interface PageData {
   contact: PublicConsultantContact | null;
   stages: DisplayStage[];
   gallery: GalleryItem[];
+  /** 现场实景：营销类视频列表（独立于顶部图集展示）. */
+  siteVideos: SiteVideoItem[];
   stageViewer: StageViewer;
   hasRenovationPhotos: boolean;
   loading: boolean;
@@ -233,6 +238,7 @@ Page<PageData, Custom>({
     contact: null,
     stages: [],
     gallery: [],
+    siteVideos: [],
     stageViewer: { visible: false, stage: "", photos: [], current: 0 },
     hasRenovationPhotos: false,
     loading: false,
@@ -315,15 +321,28 @@ Page<PageData, Custom>({
         ...detail,
         images: (detail.images ?? []).map((img) => resolveImageUrl(img)),
       };
+      // 营销类视频移出图集，独立展示在「现场实景」区块（保持后端 sort_order 原始顺序，有多少展示多少）
+      const siteVideos: SiteVideoItem[] = (detail.media ?? [])
+        .filter((m) => m.photo_category === "marketing" && m.media_type === "video")
+        .map((m) => ({
+          // 视频 URL 不可拼图片处理参数（OSS 会处理失败导致无法播放）
+          url: resolveAssetUrl(m.file_url),
+          poster: resolveImageUrl(m.thumbnail_url),
+        }))
+        .filter((v) => v.url);
       // 图集优先用 media（含图片与视频），按类型渲染；无 media 时回退 images
       // 视频项用 thumbnail_url 作封面（后端目前不生成视频缩略图，poster 常为空串→前端黑色占位兜底）
-      // 顺序：营销照片 → 改造照片（拆除/设计/水电/木瓦/油漆）
-      const media = sortGalleryMedia(detail.media ?? []);
-      const stages = buildStages(media, resolvedDetail.renovation_stages);
+      // 顺序：营销照片 → 改造照片（拆除/设计/水电/木瓦/油漆）；营销视频已移出至 siteVideos
+      const galleryMedia = sortGalleryMedia(
+        (detail.media ?? []).filter(
+          (m) => !(m.photo_category === "marketing" && m.media_type === "video")
+        )
+      );
+      const stages = buildStages(galleryMedia, resolvedDetail.renovation_stages);
       const hasRenovationPhotos = stages.some((s) => s.photos.length > 0);
       const gallery: GalleryItem[] =
-        media.length > 0
-          ? media
+        galleryMedia.length > 0
+          ? galleryMedia
               .map((m) => {
                 const type = (m.media_type === "video" ? "video" : "image") as "image" | "video";
                 return {
@@ -344,6 +363,7 @@ Page<PageData, Custom>({
         contact,
         stages,
         gallery,
+        siteVideos,
         hasRenovationPhotos,
         loading: false,
         contactAvatarUrl: resolveAssetUrl(contact.avatar),
