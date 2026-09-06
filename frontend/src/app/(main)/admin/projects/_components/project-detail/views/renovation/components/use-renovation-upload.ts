@@ -4,9 +4,37 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useUpload, compressImage } from "@/components/common/upload";
 import { addRenovationPhotoAction } from "../../../../../actions/renovation";
+import {
+  ALLOWED_IMAGE_TYPES,
+  ALLOWED_VIDEO_TYPES,
+  MAX_IMAGE_SIZE,
+  MAX_VIDEO_SIZE,
+} from "@/lib/constants";
+import { formatFileSize } from "@/lib/formatters";
 import { UploadingPhoto } from "./photo-grid";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB（图片/文档统一限额）
+/** 允许的媒体类型（图片 + 视频，对齐 marketing 上传规格） */
+const ALLOWED_MEDIA_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
+
+/** 按文件类型分类型校验：图片 >100MB 或视频 >500MB 或非法类型则报错 */
+function validateMediaFile(file: File): string | null {
+  const isVideo = file.type.startsWith("video/");
+  if (isVideo && file.size > MAX_VIDEO_SIZE) {
+    return `视频文件过大，最大支持 ${formatFileSize(MAX_VIDEO_SIZE)}`;
+  }
+  if (!isVideo && file.size > MAX_IMAGE_SIZE) {
+    return `图片文件过大，最大支持 ${formatFileSize(MAX_IMAGE_SIZE)}`;
+  }
+  if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
+    return "不支持的文件格式";
+  }
+  return null;
+}
+
+/** 根据文件类型推断媒体类型 */
+function inferIsVideo(file: File): boolean {
+  return file.type.startsWith("video/");
+}
 
 interface UseRenovationUploadProps {
   projectId: string;
@@ -27,7 +55,9 @@ export function useRenovationUpload({
   }, [onPhotoUploaded]);
 
   const { upload: baseUpload } = useUpload({
-    maxSize: MAX_FILE_SIZE,
+    maxSize: MAX_VIDEO_SIZE,
+    allowedTypes: ALLOWED_MEDIA_TYPES,
+    validateFile: validateMediaFile,
     onSuccess: async (response, file) => {
       const dbRes = await addRenovationPhotoAction({
         projectId,
@@ -35,6 +65,7 @@ export function useRenovationUpload({
         url: response.url,
         thumbnail_url: response.thumbnail_url,
         filename: file.name,
+        media_type: inferIsVideo(file) ? "video" : "image",
       });
 
       if (dbRes.success) {
@@ -87,8 +118,11 @@ export function useRenovationUpload({
       // 导致上传成功的队列项无法被移除（残留"上传中"占位）
       const processedResults = await Promise.all(
         fileArray.map(async (file) => {
-          if (file.size > MAX_FILE_SIZE) {
-            toast.error(`${file.name} 过大，已跳过`);
+          // 与 useUpload 内自定义校验一致：分类型（图片 100MB / 视频 500MB）预校验，
+          // 提前拦截非法/过大文件，避免创建多余的 Blob URL
+          const validationError = validateMediaFile(file);
+          if (validationError) {
+            toast.error(`${file.name}: ${validationError}`);
             return null;
           }
           const processedFile = await compressImage(file);
@@ -110,6 +144,7 @@ export function useRenovationUpload({
           id: result.id,
           file: result.processedFile,
           previewUrl: result.previewUrl,
+          isVideo: inferIsVideo(result.processedFile),
           progress: 0,
           status: "uploading",
         });

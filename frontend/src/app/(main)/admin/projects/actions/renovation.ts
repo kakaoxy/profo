@@ -28,6 +28,9 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+/** 媒体类型（与后端 MediaKind 枚举对齐：image/video） */
+type RenovationPhotoMediaType = "image" | "video";
+
 // addRenovationPhotoAction 入参（JSON，文件已通过 useUpload 单独上传）
 const addRenovationPhotoSchema = z.object({
   projectId: projectIdSchema,
@@ -35,6 +38,7 @@ const addRenovationPhotoSchema = z.object({
   url: z.string().min(1, "照片 URL 不能为空"),
   thumbnail_url: z.string().optional(),
   filename: z.string().optional(),
+  media_type: z.enum(["image", "video"]).optional(),
 });
 
 // updateRenovationStageAction 入参
@@ -157,6 +161,7 @@ export async function addRenovationPhotoAction(payload: {
   url: string;
   thumbnail_url?: string;
   filename?: string;
+  media_type?: RenovationPhotoMediaType;
 }) {
   const parsed = addRenovationPhotoSchema.safeParse(payload);
   if (!parsed.success) {
@@ -178,6 +183,7 @@ export async function addRenovationPhotoAction(payload: {
           url: parsed.data.url,
           thumbnail_url: parsed.data.thumbnail_url,
           filename: parsed.data.filename,
+          media_type: parsed.data.media_type,
         },
       },
     });

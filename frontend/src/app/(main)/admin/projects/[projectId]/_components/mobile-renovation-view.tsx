@@ -12,6 +12,7 @@ import {
   UploadCloud,
   Trash2,
   Loader2,
+  Play,
   Calendar as CalendarIcon,
   ChevronDown,
 } from "lucide-react";
@@ -158,6 +159,44 @@ function MobileStageCard({
     return null;
   };
 
+  // 渲染单个照片/视频的缩略媒体节点（Image 或 Play 占位）
+  // 视频无缩略图（上传端点不为其生成缩略图，thumbnail_url 为空）时用 Play 图标占位，
+  // 避免用 <Image> 加载原视频导致首帧元数据请求。图片无 URL 时返回 null。
+  const renderPhotoMedia = (photo: RenovationPhoto, sizes: string) => {
+    const url = getThumbnailUrl(photo.thumbnail_url, photo.url);
+    const isVideo = photo.media_type === "video";
+    const hasThumb =
+      !isVideo || (photo.thumbnail_url && isValidUrl(photo.thumbnail_url));
+
+    if (isValidUrl(url) && hasThumb) {
+      return (
+        <>
+          <Image
+            src={url}
+            alt={photo.filename || "照片"}
+            fill
+            sizes={sizes}
+            unoptimized
+            className="object-cover"
+          />
+          {isVideo && (
+            <span className="absolute bottom-1 right-1 rounded bg-black/50 p-0.5 text-white">
+              <Play className="h-3 w-3" fill="currentColor" />
+            </span>
+          )}
+        </>
+      );
+    }
+    if (isVideo) {
+      return (
+        <div className="flex h-full w-full items-center justify-center">
+          <Play className="h-4 w-4 text-muted-foreground" fill="currentColor" />
+        </div>
+      );
+    }
+    return null;
+  };
+
   // 折叠态：已完成阶段展示前 4 张缩略图
   const renderCollapsedThumbnails = () => {
     if (photos.length === 0) return null;
@@ -165,26 +204,14 @@ function MobileStageCard({
     const remaining = photos.length - 4;
     return (
       <div className="grid grid-cols-4 gap-1.5 mt-2">
-        {visible.map((photo) => {
-          const url = getThumbnailUrl(photo.thumbnail_url, photo.url);
-          return (
-            <div
-              key={photo.id}
-              className="aspect-square rounded-md overflow-hidden bg-muted relative"
-            >
-              {isValidUrl(url) ? (
-                <Image
-                  src={url}
-                  alt={photo.filename || "照片"}
-                  fill
-                  sizes="20vw"
-                  unoptimized
-                  className="object-cover"
-                />
-              ) : null}
-            </div>
-          );
-        })}
+        {visible.map((photo) => (
+          <div
+            key={photo.id}
+            className="aspect-square rounded-md overflow-hidden bg-muted relative"
+          >
+            {renderPhotoMedia(photo, "20vw")}
+          </div>
+        ))}
         {remaining > 0 && (
           <div className="aspect-square rounded-md bg-muted/80 flex items-center justify-center text-xs text-muted-foreground font-medium">
             +{remaining}
@@ -201,48 +228,45 @@ function MobileStageCard({
         {/* 照片网格 + 上传中项 */}
         {(photos.length > 0 || uploadQueue.length > 0) && (
           <div className="grid grid-cols-2 gap-2">
-            {photos.map((photo) => {
-              const url = getThumbnailUrl(photo.thumbnail_url, photo.url);
-              return (
-                <div
-                  key={photo.id}
-                  className="aspect-square relative rounded-lg overflow-hidden bg-muted border border-border group"
-                >
-                  {isValidUrl(url) ? (
-                    <Image
-                      src={url}
-                      alt={photo.filename || "照片"}
-                      fill
-                      sizes="50vw"
-                      unoptimized
-                      className="object-cover"
-                    />
-                  ) : null}
-                  {canEdit && (
-                    <button
-                      onClick={() => handleDelete(photo.id)}
-                      className="absolute top-1 right-1 z-10 bg-black/50 backdrop-blur-sm p-1.5 rounded-full text-white hover:bg-error transition-colors"
-                      title="删除照片"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+            {photos.map((photo) => (
+              <div
+                key={photo.id}
+                className="aspect-square relative rounded-lg overflow-hidden bg-muted border border-border group"
+              >
+                {renderPhotoMedia(photo, "50vw")}
+                {canEdit && (
+                  <button
+                    onClick={() => handleDelete(photo.id)}
+                    className="absolute top-1 right-1 z-10 bg-black/50 backdrop-blur-sm p-1.5 rounded-full text-white hover:bg-error transition-colors"
+                    title="删除照片"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
             {uploadQueue.map((item) => (
               <div
                 key={item.id}
                 className="aspect-square relative rounded-lg overflow-hidden bg-muted border border-border"
               >
-                <Image
-                  src={item.previewUrl}
-                  alt="上传中"
-                  fill
-                  sizes="50vw"
-                  unoptimized
-                  className="object-cover opacity-60"
-                />
+                {item.isVideo ? (
+                  <video
+                    src={item.previewUrl}
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover opacity-60"
+                  />
+                ) : (
+                  <Image
+                    src={item.previewUrl}
+                    alt="上传中"
+                    fill
+                    sizes="50vw"
+                    unoptimized
+                    className="object-cover opacity-60"
+                  />
+                )}
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 p-2 gap-1.5">
                   {item.status === "error" ? (
                     <span className="text-xs text-white bg-error/90 px-2 py-1 rounded font-medium">
@@ -268,7 +292,7 @@ function MobileStageCard({
           <label className="flex items-center justify-center gap-2 min-h-[48px] w-full rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted hover:border-primary/50 cursor-pointer transition-colors text-muted-foreground hover:text-primary">
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,video/mp4,video/quicktime,video/webm"
               multiple
               className="hidden"
               onChange={handleUpload}

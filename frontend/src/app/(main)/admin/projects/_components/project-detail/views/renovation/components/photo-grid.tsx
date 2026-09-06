@@ -2,7 +2,7 @@
 
 import { useState, memo } from "react";
 import Image from "next/image";
-import { UploadCloud, Loader2, Trash2, Eye, ImageIcon, Download } from "lucide-react";
+import { UploadCloud, Loader2, Trash2, Eye, ImageIcon, Download, Play } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
 import { getThumbnailUrl, getFileUrl } from "../../../utils";
 import { Progress } from "@/components/ui/progress";
@@ -29,6 +29,7 @@ export interface UploadingPhoto {
   id: string; // Temporary ID
   file: File; // Raw file object
   previewUrl: string; // Local Blob URL
+  isVideo?: boolean; // 是否为视频（决定占位渲染 <video> 或 <Image>）
   progress: number; // 0-100
   status: "uploading" | "error";
 }
@@ -55,32 +56,49 @@ const TILE_CLASS =
 
 const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }: PhotoItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  // 网格缩略图和大图预览统一使用缩略图（800px WebP），避免加载原图导致卡顿
-  const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
+  const isVideo = photo.media_type === "video";
+  // 图片直接使用缩略图（800px WebP）；视频有缩略图时也用缩略图，避免加载原视频首帧
+  const fileThumb = getThumbnailUrl(photo.thumbnail_url, photo.url);
+  // 视频若无缩略图（上传端点不为其生成缩略图，thumbnail_url 为空）则用 Play 图标占位，
+  // 避免网格 scene 用 <Image> 加载原视频导致首帧元数据请求
+  const hasVideoThumb = !isVideo || (photo.thumbnail_url ? isValidUrl(photo.thumbnail_url) : false);
+  const showImage = isValidUrl(fileThumb) && hasVideoThumb;
+  const displayUrl = showImage ? fileThumb : "";
 
   return (
     <Dialog>
       <div className={cn(TILE_CLASS, "group")}>
-        {isValidUrl(displayUrl) ? (
-          <Image
-            src={displayUrl}
-            alt={photo.filename || "Renovation Photo"}
-            fill
-            sizes="92px"
-            loading="lazy"
-            unoptimized
-            onLoad={() => setImageLoaded(true)}
-            className={cn(
-              "object-cover transition-all duration-500 hover:scale-105",
-              imageLoaded ? "opacity-100" : "opacity-0",
+        {showImage && isValidUrl(displayUrl) ? (
+          <>
+            <Image
+              src={displayUrl}
+              alt={photo.filename || "Renovation Photo"}
+              fill
+              sizes="92px"
+              loading="lazy"
+              unoptimized
+              onLoad={() => setImageLoaded(true)}
+              className={cn(
+                "object-cover transition-all duration-500 hover:scale-105",
+                imageLoaded ? "opacity-100" : "opacity-0",
+              )}
+            />
+            {isVideo && (
+              <span className="absolute bottom-1 right-1 rounded-md bg-black/50 p-0.5 text-white">
+                <Play className="h-3.5 w-3.5" fill="currentColor" />
+              </span>
             )}
-          />
+          </>
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-muted">
-            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+            {isVideo ? (
+              <Play className="h-5 w-5 text-muted-foreground" fill="currentColor" />
+            ) : (
+              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+            )}
           </div>
         )}
-        {!imageLoaded && isValidUrl(displayUrl) && (
+        {!imageLoaded && showImage && (
           <div className="absolute inset-0 animate-pulse bg-muted" />
         )}
 
@@ -135,7 +153,21 @@ const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }
           Photo Preview - {photo.filename || "Untitled"}
         </DialogTitle>
         <div className="relative aspect-video w-full">
-          {isValidUrl(displayUrl) ? (
+          {isVideo ? (
+            isValidUrl(getFileUrl(photo.url)) ? (
+              <video
+                src={getFileUrl(photo.url)}
+                controls
+                playsInline
+                preload="metadata"
+                className="h-full w-full rounded-lg bg-black object-contain shadow-2xl"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
+                <Play className="h-8 w-8 text-muted-foreground" fill="currentColor" />
+              </div>
+            )
+          ) : isValidUrl(displayUrl) ? (
             <Image
               src={displayUrl}
               alt="Large Preview"
@@ -174,15 +206,24 @@ PhotoItem.displayName = "PhotoItem";
 const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPhoto }) {
   return (
     <div className={cn(TILE_CLASS)}>
-      {/* Local Preview Image */}
-      <Image
-        src={item.previewUrl}
-        alt="Uploading..."
-        fill
-        sizes="92px"
-        unoptimized
-        className="object-cover opacity-60 blur-[1px] transition-all"
-      />
+      {/* Local Preview - 视频用本地 blob 直接播放预览，图片保持 <Image> */}
+      {item.isVideo ? (
+        <video
+          src={item.previewUrl}
+          muted
+          playsInline
+          className="h-full w-full object-cover opacity-60 blur-[1px]"
+        />
+      ) : (
+        <Image
+          src={item.previewUrl}
+          alt="Uploading..."
+          fill
+          sizes="92px"
+          unoptimized
+          className="object-cover opacity-60 blur-[1px] transition-all"
+        />
+      )}
 
       {/* Progress Overlay */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/10 p-2">
@@ -241,7 +282,7 @@ export function PhotoGrid({
         >
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,video/mp4,video/quicktime,video/webm"
             multiple
             className="hidden"
             onChange={onUpload}
