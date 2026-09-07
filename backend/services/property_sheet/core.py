@@ -30,6 +30,7 @@ from schemas.public.property_sheet import (
     PropertySheetShareEventRequest,
     PropertySheetVisitEventRequest,
 )
+from services.growth_center.identity import internal_creator_exists
 from services.marketing.public import PublicProjectService
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 from services.system.wechat import WeChatAuthService
@@ -309,7 +310,9 @@ class PropertySheetService:
         与房源/评估 share-stats 完全同构：share_count 按
         ``PropertySheetShareEvent.employee_id``、pv/uv 按
         ``PropertySheetVisit.referrer_employee_id``（uv 为 distinct visitor_id）、
-        lead_count 按 ``Lead.referrer_id``（仅分享归因线索口径）；聚合统一走
+        lead_count 按 ``Lead.referrer_id``（仅分享归因，且仅房源单承接线索——
+        source_property_id 非空、未删除、非内部员工提交，与 admin 漏斗
+        ``GrowthFunnelService`` SHEET lead_filters 口径一致）；聚合统一走
         ``aggregate_my_share_stats``（今日窗口为 Asia/Shanghai 自然日）.
         """
         return aggregate_my_share_stats(
@@ -322,6 +325,13 @@ class PropertySheetService:
             visit_time_col=PropertySheetVisit.created_at,
             lead_referrer_col=Lead.referrer_id,
             lead_time_col=Lead.created_at,
+            lead_filters=[
+                # 仅房源单承接线索（referrer 续传）：估价线索（source_property_id 为空）由估价链路统计
+                Lead.source_property_id.isnot(None),
+                Lead.is_deleted.is_(False),
+                # 仅外部客户提交的线索，与统一线索列表口径一致
+                ~internal_creator_exists(),
+            ],
         )
 
     @staticmethod

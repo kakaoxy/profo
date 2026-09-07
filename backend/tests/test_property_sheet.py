@@ -506,7 +506,11 @@ class TestShareEvent:
 
 class TestMyShareStats:
     def test_stats_metrics(self, c_end_client: TestClient, db_session: Session):
-        """统计口径：share 按 employee_id、pv/uv 按 referrer（uv 去重）、lead 按 referrer_id."""
+        """统计口径：share 按 employee_id、pv/uv 按 referrer（uv 去重）、lead 按 referrer_id.
+
+        留资仅计房源单承接线索（source_property_id 非空、未删除）：估价线索由
+        估价链路统计，与 admin 漏斗 SHEET lead_filters 口径一致。
+        """
         for _ in range(2):
             db_session.add(PropertySheetShareEvent(sheet_id=1, employee_id="customer-user", share_type="poster"))
         db_session.add(PropertySheetShareEvent(sheet_id=1, employee_id="emp-other", share_type="poster"))
@@ -514,9 +518,14 @@ class TestMyShareStats:
         for visitor_id in ["v1", "v2", "v1"]:
             db_session.add(PropertySheetVisit(sheet_id=1, visitor_id=visitor_id, referrer_employee_id="customer-user"))
         db_session.add(PropertySheetVisit(sheet_id=1, visitor_id="v1", referrer_employee_id="emp-other"))
-        # 归属线索：customer-user 1 条 + 他人 1 条
-        db_session.add(Lead(community_name="小区A", referrer_id="customer-user"))
+        # 归属承接线索：customer-user 1 条计入 + 他人 1 条不计入
+        db_session.add(Lead(community_name="小区A", referrer_id="customer-user", source_property_id=1))
         db_session.add(Lead(community_name="小区B", referrer_id="emp-other"))
+        # 不计入：估价线索（source_property_id 为空，归估价链路）、已删除承接线索
+        db_session.add(Lead(community_name="小区A-估价", referrer_id="customer-user"))
+        db_session.add(
+            Lead(community_name="小区A-已删", referrer_id="customer-user", source_property_id=2, is_deleted=True)
+        )
         db_session.commit()
 
         resp = c_end_client.get(f"{BASE}/my/share-stats")

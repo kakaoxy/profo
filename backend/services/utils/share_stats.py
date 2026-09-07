@@ -12,7 +12,7 @@ shared_at/entered_at、UV 去重键为 openid_hash，预约归属为 referrer_us
 
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from utils.time_windows import today_window
@@ -40,6 +40,7 @@ def aggregate_my_share_stats(
     visit_time_col: InstrumentedAttribute[Any],
     lead_referrer_col: InstrumentedAttribute[Any],
     lead_time_col: InstrumentedAttribute[Any],
+    lead_filters: list[ColumnElement[Any]] | None = None,
 ) -> dict[str, int]:
     """聚合单链路「我的分享统计」8 项指标（单次数据库往返）.
 
@@ -59,6 +60,10 @@ def aggregate_my_share_stats(
         lead_referrer_col: 线索/预约归属列（referrer_id / referrer_user_id /
             referrer_employee_id）
         lead_time_col: 线索/预约时间列
+        lead_filters: 留资级附加过滤（估价/房源单共用 leads 表，需注入
+            source_property_id 模块判别 + is_deleted + 内部员工剔除，
+            与 admin 漏斗 ``GrowthFunnelService`` 的 lead_filters 口径对齐；
+            独立表链路不传）
 
     Returns:
         与 ``PublicShareStatsResponse``/``RecruitMyShareStatsResponse`` 字段
@@ -66,6 +71,7 @@ def aggregate_my_share_stats(
 
     """
     t_start, t_end = today_window()
+    extra_lead_conditions = list(lead_filters) if lead_filters else []
 
     def _count_subquery(conditions: list[Any], *, distinct_col: InstrumentedAttribute[Any] | None = None) -> Any:
         """构造标量子查询：按条件 count（可选按列 distinct 去重）."""
@@ -77,14 +83,16 @@ def aggregate_my_share_stats(
             _count_subquery([share_employee_col == user_id]),
             _count_subquery([visit_referrer_col == user_id]),
             _count_subquery([visit_referrer_col == user_id], distinct_col=visit_uv_col),
-            _count_subquery([lead_referrer_col == user_id]),
+            _count_subquery([lead_referrer_col == user_id, *extra_lead_conditions]),
             _count_subquery([share_employee_col == user_id, share_time_col >= t_start, share_time_col < t_end]),
             _count_subquery([visit_referrer_col == user_id, visit_time_col >= t_start, visit_time_col < t_end]),
             _count_subquery(
                 [visit_referrer_col == user_id, visit_time_col >= t_start, visit_time_col < t_end],
                 distinct_col=visit_uv_col,
             ),
-            _count_subquery([lead_referrer_col == user_id, lead_time_col >= t_start, lead_time_col < t_end]),
+            _count_subquery(
+                [lead_referrer_col == user_id, lead_time_col >= t_start, lead_time_col < t_end, *extra_lead_conditions]
+            ),
         )
     ).one()
 

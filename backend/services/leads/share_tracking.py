@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from models import Lead, User, ValuationShareEvent, ValuationVisit
 from schemas.public import PublicShareEventRequest, PublicVisitEventRequest
+from services.growth_center.identity import internal_creator_exists
 from services.utils import aggregate_my_share_stats, resolve_valid_referrer
 
 
@@ -50,7 +51,9 @@ class ValuationShareTrackingService:
 
         口径：share_count 按 ``ValuationShareEvent.employee_id``、pv/uv 按
         ``ValuationVisit.referrer_employee_id``（uv 为 distinct visitor_id）、
-        lead_count 按 ``Lead.referrer_id``（仅分享归因）；聚合统一走
+        lead_count 按 ``Lead.referrer_id``（仅分享归因，且仅估价线索——
+        source_property_id 为空、未删除、非内部员工提交，与 admin 漏斗
+        ``GrowthFunnelService`` VALUATION lead_filters 口径一致）；聚合统一走
         ``aggregate_my_share_stats``（今日窗口为 Asia/Shanghai 自然日）。
         """
         return aggregate_my_share_stats(
@@ -63,4 +66,11 @@ class ValuationShareTrackingService:
             visit_time_col=ValuationVisit.created_at,
             lead_referrer_col=Lead.referrer_id,
             lead_time_col=Lead.created_at,
+            lead_filters=[
+                # 仅估价线索：房源单承接线索（source_property_id 非空）由房源单链路统计
+                Lead.source_property_id.is_(None),
+                Lead.is_deleted.is_(False),
+                # 仅外部客户提交的线索，与统一线索列表口径一致
+                ~internal_creator_exists(),
+            ],
         )

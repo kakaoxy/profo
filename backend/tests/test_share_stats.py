@@ -249,10 +249,16 @@ class TestValuationShareStats:
     """评估埋点与 GET /public/valuations/my/share-stats."""
 
     def test_stats_total_today_and_creator_excluded(
-        self, c_end_client: TestClient, customer_user: User, db_session: Session
+        self, c_end_client: TestClient, customer_user: User, db_session: Session, seeded_db: dict[str, Any]
     ) -> None:
-        """lead_count 仅计 referrer_id 分享归因（creator_id 本人录入不计入）."""
+        """lead_count 仅计 referrer_id 分享归因的估价线索.
+
+        排除：creator_id 本人录入、已删除、房源单承接（source_property_id 非空，
+        归房源单链路）、内部员工提交（creator 命中后台角色）——与 admin 漏斗
+        VALUATION lead_filters 口径一致。
+        """
         me = customer_user.id
+        admin_id: str = seeded_db["users"]["admin"].id
         t_start, t_end = today_window()
         today_at = t_start + timedelta(hours=1)
         tomorrow_at = t_end + timedelta(hours=1)
@@ -271,6 +277,10 @@ class TestValuationShareStats:
         )
         db_session.add(Lead(community_name="明日线索小区", referrer_id=me, created_at=tomorrow_at))
         db_session.add(Lead(community_name="本人录入小区", creator_id=me, created_at=tomorrow_at))
+        # 不计入：已删除归因线索 / 房源单承接线索 / 内部员工（admin）创建但归属 me 的线索
+        db_session.add(Lead(community_name="已删除小区", referrer_id=me, created_at=today_at, is_deleted=True))
+        db_session.add(Lead(community_name="承接小区", referrer_id=me, source_property_id=42, created_at=today_at))
+        db_session.add(Lead(community_name="内部提交小区", referrer_id=me, creator_id=admin_id, created_at=today_at))
         # 他人数据（今日）：不计入
         db_session.add(ValuationVisit(visitor_id="vv-3", referrer_employee_id="emp-other", created_at=today_at))
         db_session.commit()
@@ -388,4 +398,36 @@ class TestRecruitShareStatsToday:
             "today_pv": 2,
             "today_uv": 2,
             "today_lead_count": 1,
+        }
+
+
+class TestMyCustomersAggregateShareStats:
+    """四链路聚合 GET /public/customers/my/share-stats（估价/房源单共表防重复计数）."""
+
+    def test_aggregate_no_double_counting(
+        self, c_end_client: TestClient, customer_user: User, db_session: Session
+    ) -> None:
+        """估价与房源单共用 leads 表：各链路按 source_property_id 判别拆分，不重复计数.
+
+        1 条估价线索 + 1 条房源单承接线索（同 referrer）→ 聚合 lead_count == 2
+        （修复前两链路均无模块判别，同一线索被计 2 次、聚合为 4）。
+        """
+        me = customer_user.id
+        t_start, _ = today_window()
+        today_at = t_start + timedelta(hours=1)
+        db_session.add(Lead(community_name="估价小区", referrer_id=me, created_at=today_at))
+        db_session.add(Lead(community_name="承接小区", referrer_id=me, source_property_id=42, created_at=today_at))
+        db_session.commit()
+
+        resp = c_end_client.get("/api/v1/public/customers/my/share-stats")
+        assert resp.status_code == 200, resp.text
+        assert resp.json() == {
+            "share_count": 0,
+            "pv": 0,
+            "uv": 0,
+            "lead_count": 2,
+            "today_share_count": 0,
+            "today_pv": 0,
+            "today_uv": 0,
+            "today_lead_count": 2,
         }
