@@ -3782,6 +3782,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/recruit/campaigns/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 最新启用中招募活动
+         * @description 返回最新启用中活动的 campaign_id（服务页经纪人入口跳转用）；无启用中活动返回 404
+         */
+        get: operations["get_latest_campaign_api_v1_public_recruit_campaigns_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/recruit/campaigns/{campaign_id}": {
         parameters: {
             query?: never;
@@ -12714,6 +12734,14 @@ export interface components {
              * @description 新线索订阅消息模板ID（未配置为 None）
              */
             subscribe_template_id?: string | null;
+        };
+        /**
+         * RecruitCampaignLatestResponse
+         * @description 最新启用中招募活动 ID（服务页经纪人入口跳转用）.
+         */
+        RecruitCampaignLatestResponse: {
+            /** Campaign Id */
+            campaign_id: string;
         };
         /**
          * RecruitCampaignResponse
@@ -22130,6 +22158,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_latest_campaign_api_v1_public_recruit_campaigns_latest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitCampaignLatestResponse"];
                 };
             };
         };

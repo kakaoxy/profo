@@ -162,3 +162,23 @@ def ensure_visit_referrer_index(engine: Engine) -> None:
         conn.execute(
             text("CREATE INDEX idx_recruit_visit_referrer ON recruit_visits (referrer_employee_id)"),
         )
+
+
+def ensure_campaign_status_created_index(engine: Engine) -> None:
+    """幂等补建 ``recruit_campaigns(status, created_at)`` 复合索引.
+
+    C 端「最新启用中活动」（``get_latest_enabled``）按 status 过滤 + created_at
+    倒序取第一条，后台列表亦按 created_at 排序；缺索引会全表扫描。
+    ``create_all`` 仅随建表创建索引，已部署环境需显式补建。
+    """
+    if engine.dialect.name != "postgresql":
+        return
+    if "recruit_campaigns" not in _get_table_names(engine):
+        return
+    if _index_exists(engine, "idx_recruit_campaign_status_created"):
+        return
+    logger.info("迁移：补建 recruit_campaigns(status, created_at) 复合索引")
+    with engine.begin() as conn:
+        conn.execute(
+            text("CREATE INDEX idx_recruit_campaign_status_created ON recruit_campaigns (status, created_at)"),
+        )

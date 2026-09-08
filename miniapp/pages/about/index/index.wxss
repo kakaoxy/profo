@@ -86,6 +86,55 @@
   opacity: 0.7;
 }
 
+/* 1.5 经纪人合作横幅：杏色暖卡 + Rust 文案，从业主内容中跳出但不喧宾夺主 */
+.agent-banner {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin: 24rpx 32rpx 0;
+  padding: 28rpx 32rpx;
+  background: var(--apricot-wash);
+  border-radius: 32rpx;
+}
+.agent-banner--hover {
+  opacity: 0.85;
+}
+.agent-banner__ico {
+  flex: none;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 9999rpx;
+  background: var(--pure-white);
+  color: var(--rust);
+  font-size: 28rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.agent-banner__body {
+  flex: 1;
+  min-width: 0;
+}
+.agent-banner__title {
+  font-size: 28rpx;
+  font-weight: 480;
+  color: var(--rust);
+  line-height: 1.4;
+}
+.agent-banner__sub {
+  font-size: 23rpx;
+  color: rgba(93, 42, 26, 0.62);
+  margin-top: 2rpx;
+  letter-spacing: -0.008em;
+}
+.agent-banner__arrow {
+  flex: none;
+  color: var(--rust);
+  font-size: 34rpx;
+  line-height: 1;
+}
+
 /* 2. 痛点 / 3. 三部曲 / 5. 算一笔账 共享卡片样式 */
 .pain-card,
 .step-card,

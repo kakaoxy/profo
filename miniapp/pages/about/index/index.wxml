@@ -15,6 +15,16 @@
     </view>
   </view>
 
+  <!-- 1.5 经纪人合作入口：杏色横幅卡，点击跳招募落地页（方案A，见 docs/design/landing-service-funnel-hifi.html） -->
+  <view class="agent-banner" hover-class="agent-banner--hover" hover-stay-time="80" bindtap="onAgentCoopTap">
+    <view class="agent-banner__ico">经</view>
+    <view class="agent-banner__body">
+      <view class="agent-banner__title">我是经纪人，了解更多合作信息</view>
+      <view class="agent-banner__sub">佣金秒结 · 快速响应 · 装修代卖</view>
+    </view>
+    <view class="agent-banner__arrow">›</view>
+  </view>
+
   <!-- 2. 痛点 -->
   <view class="section-header">
     <h3>这些痛点，您是否也遇到过？</h3>

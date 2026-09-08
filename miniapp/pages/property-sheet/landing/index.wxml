@@ -87,7 +87,7 @@
     <!-- 底部固定操作栏 -->
     <view class="bottom-bar">
       <button class="btn-txt bar-btn" bindtap="onCallTap">咨询分享人</button>
-      <button class="btn-pri bar-btn" bindtap="onValuationTap">我想卖房 · 免费估价</button>
+      <button class="btn-pri bar-btn" bindtap="onServiceTap">了解服务</button>
     </view>
   </block>
 </view>

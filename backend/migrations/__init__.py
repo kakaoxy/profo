@@ -148,6 +148,7 @@ from migrations._property_sheet import create_property_sheet_tables
 from migrations._recruit import (
     add_poster_bg_url_to_campaigns,
     create_recruit_tables,
+    ensure_campaign_status_created_index,
     ensure_visit_referrer_index,
 )
 from migrations._schema_columns import (
@@ -292,6 +293,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # 招募计划二期：补建 recruit_campaigns.poster_bg_url 列与 recruit_visits.referrer 索引
         add_poster_bg_url_to_campaigns(engine)
         ensure_visit_referrer_index(engine)
+        # 招募活动列表/最新启用中查询：recruit_campaigns(status, created_at) 复合索引
+        ensure_campaign_status_created_index(engine)
         # 房源预约与分享归因闭环：幂等创建 5 张新表
         # （project_bookings/project_visits/project_share_events/valuation_visits/valuation_share_events）
         create_project_booking_and_share_tables(engine)

@@ -11,8 +11,8 @@
  * - 聚合展示：详情与分享人联系卡并行加载（消除请求瀑布）；hero 杏色光晕
  *   暖卡 + 联系卡（is_referrer 显示「分享人」角标）+ 房源卡片列表
  *   （在售/已售角标，点击携带 referrer/source 跳单房源详情延续归因）
- * - 转化承接：底栏「咨询分享人」直接拨打分享人电话 +「我想卖房 · 免费估价」
- *   switchTab 估价页
+ * - 转化承接：底栏「咨询分享人」直接拨打分享人电话 +「了解服务」switchTab 服务页
+ *   （服务页承接业主估价与经纪人合作分流，见 docs/design/landing-service-funnel-hifi.html）
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
@@ -78,7 +78,7 @@ interface PageCustom {
   onCallTap(): void;
   onWechatTap(): void;
   onItemTap(e: WechatMiniprogram.BaseEvent<WechatMiniprogram.IAnyObject, { id?: number }>): void;
-  onValuationTap(): void;
+  onServiceTap(): void;
 }
 
 /** 总价格式化：整数省小数，最多保留 1 位（万元）. */
@@ -279,8 +279,8 @@ Page<PageData, PageCustom>({
     wx.navigateTo({ url: `/pages/projects/detail/index?id=${id}${suffix}` });
   },
 
-  /** 底栏主按钮：去估价页（tabBar 页 switchTab）. */
-  onValuationTap() {
-    wx.switchTab({ url: "/pages/valuation/submit/index" });
+  /** 底栏主按钮：去服务页（tabBar 页 switchTab，服务页承接业主估价与经纪人合作分流）. */
+  onServiceTap() {
+    wx.switchTab({ url: "/pages/about/index/index" });
   },
 });

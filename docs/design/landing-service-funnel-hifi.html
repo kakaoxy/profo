@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>落地页 · 服务承接链路 · 高保真设计稿</title>
+<!--
+  落地页 · 服务承接链路 · 高保真设计稿（单文件自包含 HTML，无外部依赖、无 JS）
+  背景与构想：
+    · 现状：pages/property-sheet/landing/index 底栏右侧主 CTA「我想卖房 · 免费估价」
+      switchTab 估价页——该假设把访客当业主，但实际扫码访客以经纪人居多，转化错位。
+    · 调整一：底栏右侧改为「了解服务」→ switchTab 服务页（pages/about/index/index，
+      tabBar 页）。
+    · 调整二：服务页新增「我是经纪人 · 了解更多合作信息」入口 → navigateTo 招募落地页
+      （pages/recruit/detail/index）。业主卖房诉求不丢失：仍由服务页 hero
+      「免费在线估价」承接，链路闭环。
+  视觉规范：遵循项目 /DESIGN.md（Steep Style Reference）——
+    · 色彩：Ink #17191c / Fog #f7f7f8 画布，唯一暖色强调 Rust #5d2a1a，
+      Apricot Wash #fbe1d1 与 Sky Wash #d3e3fc 为仅有的两个彩色卡底；禁用饱和蓝绿红
+    · 字体：Signifier 衬线仅用于 display 标题（≥40px），Sohne（system-ui 栈）承担全部 UI，
+      微字重 430/450/480，从不 bold
+    · 形状：卡片 24px / 图片 12px / 输入 16px / 按钮与胶囊 9999px；签名三层阴影
+    · CTA：Ink 填充胶囊每屏最多一个，次操作用文字/杏色按钮
+  区块：1 链路总览 / 2 屏A 落地页（现状 vs 调整后） / 3 屏B 服务页（经纪人入口两方案）
+        / 4 屏C 招募落地页（承接终点） / 5 实现要点 / 6 视觉规范
+  ⚠️ 实现约束：招募落地页强依赖有效 campaign_id（无 ID 直接 notFound 态），服务页入口
+  跳转必须携带活动参数，详见区块 5。
+  照片素材：全部由 text_to_image 接口生成（prompt 已 encodeURIComponent），共 3 张唯一图片。
+  本文件为设计稿交付物，按要求必须"单个自包含 HTML"，故不拆分模块（有意超过 500 行）。
+-->
+<style>
+  :root {
+    /* ===== Steep tokens（/DESIGN.md） ===== */
+    --color-ink: #17191c;
+    --color-pure-white: #ffffff;
+    --color-fog: #f7f7f8;
+    --color-ash: #4c4c4c;
+    --color-graphite: #777b86;
+    --color-dove: #a3a6af;
+    --color-rust: #5d2a1a;
+    --color-apricot-wash: #fbe1d1;
+    --color-sky-wash: #d3e3fc;
+    --font-signifier: "Source Serif 4", "Source Serif Pro", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --font-sohne: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    --radius-cards: 24px;
+    --radius-images: 12px;
+    --radius-inputs: 16px;
+    --radius-pill: 9999px;
+    --shadow-subtle: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --shadow-float: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: var(--font-sohne);
+    font-weight: 400;
+    letter-spacing: -0.009em;
+    background: var(--color-pure-white);
+    color: var(--color-ink);
+    line-height: 1.7;
+  }
+
+  /* ===== 页面骨架：1200px 编辑部式纵向节奏 ===== */
+  .page-head {
+    text-align: center;
+    padding: 96px 24px 0;
+  }
+  .page-head .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.08em;
+    color: var(--color-rust);
+  }
+  .page-head .kicker::before, .page-head .kicker::after {
+    content: ""; width: 28px; height: 1px; background: var(--color-apricot-wash);
+  }
+  .page-head h1 {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 64px;
+    line-height: 1.1;
+    letter-spacing: -1.6px;
+    margin-top: 16px;
+  }
+  .page-head .lede {
+    margin: 18px auto 0;
+    max-width: 680px;
+    font-size: 18px; line-height: 1.6; letter-spacing: -0.016em;
+    color: var(--color-ash);
+    text-wrap: pretty;
+  }
+  .page-head .lede b { color: var(--color-ink); font-weight: 480; }
+  .page-head .lede .em { color: var(--color-rust); font-weight: 450; }
+
+  .band { padding: 80px 24px; }
+  .band--fog { background: var(--color-fog); }
+  .band-inner { max-width: 1200px; margin: 0 auto; }
+
+  .block-head { text-align: center; margin-bottom: 40px; }
+  .bh-tag {
+    display: inline-flex; align-items: center;
+    background: var(--color-apricot-wash); color: var(--color-rust);
+    font-size: 12px; font-weight: 500; letter-spacing: 0.1em;
+    padding: 4px 14px; border-radius: var(--radius-pill);
+  }
+  .block-head h2 {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 44px; line-height: 1.1; letter-spacing: -0.66px;
+    margin-top: 14px;
+  }
+  .block-head p {
+    margin: 10px auto 0;
+    max-width: 760px;
+    font-size: 16px; letter-spacing: -0.014em;
+    color: var(--color-graphite);
+    text-wrap: pretty;
+  }
+  .bh-em { color: var(--color-rust); font-weight: 450; }
+
+  .stage { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 40px; }
+  .phone-fig { display: flex; flex-direction: column; align-items: center; }
+  .card-label {
+    margin-top: 20px; width: 375px; max-width: 100%;
+    font-size: 14px; line-height: 1.75; letter-spacing: -0.013em;
+    color: var(--color-graphite);
+    text-align: center; text-wrap: pretty;
+  }
+  .card-label b { color: var(--color-ink); font-weight: 500; }
+  .card-label .em { color: var(--color-rust); font-weight: 450; }
+
+  /* ===== 手机外框 ===== */
+  .phone {
+    width: 375px;
+    background: var(--color-fog);
+    border-radius: 54px;
+    box-shadow: var(--shadow-float), 0 32px 64px rgba(23, 25, 28, 0.16);
+    border: 10px solid var(--color-ink);
+    overflow: hidden;
+    position: relative;
+    flex: none;
+  }
+  .phone::before {
+    content: "";
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 96px; height: 26px;
+    background: var(--color-ink);
+    border-radius: 16px;
+    z-index: 60;
+  }
+  .phone-screen {
+    background: var(--color-fog);
+    min-height: 760px;
+    display: flex; flex-direction: column;
+    position: relative;
+    padding-bottom: 24px;
+  }
+
+  /* 状态栏 + 小程序导航 */
+  .statusbar {
+    height: 54px; flex: none;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 26px 6px;
+    background: var(--color-pure-white);
+  }
+  .sb-time { font-size: 15px; font-weight: 480; letter-spacing: 0; }
+  .sb-icons { display: flex; align-items: center; gap: 6px; }
+  .navbar {
+    background: var(--color-pure-white);
+    height: 44px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    border-bottom: 1px solid rgba(163, 166, 175, 0.18);
+  }
+  .navbar b { font-size: 16px; font-weight: 450; letter-spacing: -0.009em; }
+  .capsule {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    width: 88px; height: 32px;
+    border: 1px solid rgba(163, 166, 175, 0.4);
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: var(--radius-pill);
+    display: flex; align-items: center; justify-content: space-evenly;
+  }
+  .capsule i { display: block; background: var(--color-ink); border-radius: var(--radius-pill); }
+  .capsule i.dots { width: 16px; height: 3px; box-shadow: 0 -5px 0 var(--color-ink), 0 5px 0 var(--color-ink); }
+  .capsule i.ring { width: 12px; height: 12px; background: transparent; border: 1.8px solid var(--color-ink); border-radius: var(--radius-pill); box-sizing: border-box; }
+  .home-ind {
+    position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 5px; border-radius: var(--radius-pill);
+    background: rgba(23, 25, 28, 0.28); z-index: 60;
+  }
+
+  /* ===== 通用组件 ===== */
+  .btn {
+    font-family: var(--font-sohne);
+    border: none; cursor: pointer;
+    border-radius: var(--radius-pill);
+    font-size: 15px; font-weight: 450; letter-spacing: -0.009em;
+    height: 48px; padding: 0 24px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn--pri { background: var(--color-ink); color: var(--color-pure-white); }
+  .btn--txt { background: transparent; color: var(--color-ink); height: 48px; }
+  .btn--apr { background: var(--color-apricot-wash); color: var(--color-rust); }
+  .btn--grow { flex: 1; }
+
+  .pill { display: inline-flex; align-items: center; border-radius: var(--radius-pill); font-style: normal; flex: none; }
+  .pill--ok { background: var(--color-apricot-wash); color: var(--color-rust); font-size: 11px; font-weight: 450; padding: 3px 11px; }
+  .pill--role { background: var(--color-rust); color: var(--color-pure-white); font-size: 10px; font-weight: 450; padding: 2px 9px; }
+
+  /* 屏内注释条（mono 小字，模拟实现标注） */
+  .mock-note {
+    margin: 10px 16px 0;
+    padding: 8px 14px;
+    border: 1px dashed rgba(163, 166, 175, 0.55);
+    border-radius: var(--radius-inputs);
+    font-family: var(--mono);
+    font-size: 10.5px; line-height: 1.6; letter-spacing: 0;
+    color: var(--color-graphite);
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .mock-note b { color: var(--color-rust); font-weight: 500; }
+  .mock-note--chg { border-color: rgba(93, 42, 26, 0.45); color: var(--color-rust); background: rgba(251, 225, 209, 0.35); }
+
+  /* 屏内内容省略提示 */
+  .more-ellipsis {
+    text-align: center;
+    color: var(--color-dove);
+    font-size: 15px;
+    letter-spacing: 0.4em;
+    padding: 14px 0 4px;
+  }
+
+  /* ===== 区块1 链路流程图 ===== */
+  .flow-group { max-width: 1080px; margin: 0 auto 36px; }
+  .flow-group-title {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+    font-size: 14px; font-weight: 500; letter-spacing: 0.02em;
+    color: var(--color-ash);
+    justify-content: center;
+  }
+  .fg-badge {
+    font-size: 11px; font-weight: 450; letter-spacing: 0.05em;
+    padding: 2px 10px; border-radius: var(--radius-pill);
+  }
+  .fg-badge--old { background: var(--color-fog); color: var(--color-graphite); border: 1px solid rgba(163, 166, 175, 0.4); }
+  .fg-badge--new { background: var(--color-rust); color: var(--color-pure-white); }
+  .flow {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch;
+    gap: 12px 8px;
+  }
+  .flow-node {
+    background: var(--color-pure-white);
+    border: 1px solid rgba(163, 166, 175, 0.35);
+    border-radius: 16px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(23, 25, 28, 0.04);
+  }
+  .fn-step { font-size: 14px; font-weight: 480; color: var(--color-ink); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+  .fn-note { font-size: 12px; color: var(--color-dove); margin-top: 2px; white-space: nowrap; letter-spacing: -0.008em; }
+  .fn-new {
+    background: var(--color-rust); color: var(--color-pure-white);
+    font-size: 10px; font-weight: 450; letter-spacing: 0.04em;
+    padding: 1px 7px; border-radius: var(--radius-pill);
+  }
+  .flow-node--attr {
+    border: 1.5px solid var(--color-rust);
+    background: var(--color-pure-white);
+    box-shadow: 0 6px 18px rgba(93, 42, 26, 0.10);
+  }
+  .flow-node--attr .fn-step { color: var(--color-rust); }
+  .flow-node--attr .fn-note { color: rgba(93, 42, 26, 0.55); }
+  .flow-arrow { align-self: center; color: var(--color-dove); font-size: 15px; }
+  .flow-branch {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 12px 8px;
+  }
+  .flow-fork {
+    align-self: center;
+    width: 22px; height: 26px; flex: none;
+    border-left: 1.5px solid var(--color-dove);
+    border-bottom: 1.5px solid var(--color-dove);
+    border-radius: 0 0 0 12px;
+    margin: -8px 0 0;
+  }
+  .flow-note {
+    margin: 26px auto 0; max-width: 760px; text-align: center;
+    font-size: 14px; color: var(--color-ash); letter-spacing: -0.013em;
+  }
+  .flow-note b { font-weight: 500; color: var(--color-ink); }
+  .flow-note .em { color: var(--color-rust); font-weight: 450; }
+
+  /* ===== 屏A 落地页 ===== */
+  .hero {
+    margin: 16px 16px 0;
+    padding: 24px 22px;
+    border-radius: var(--radius-cards);
+    background:
+      radial-gradient(140% 160% at 10% 0%, rgba(251, 225, 209, 0.9) 0%, rgba(251, 225, 209, 0.35) 48%, rgba(255, 255, 255, 0) 82%),
+      var(--color-pure-white);
+    box-shadow: var(--shadow-subtle);
+  }
+  .hero b {
+    display: block;
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 24px; line-height: 1.25; letter-spacing: -0.2px;
+    color: var(--color-ink);
+  }
+  .hero i { display: block; font-size: 13px; font-style: normal; color: var(--color-graphite); margin-top: 5px; }
+
+  .cc {
+    margin: 12px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .cc-av {
+    width: 48px; height: 48px; flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--color-apricot-wash);
+    color: var(--color-ink);
+    font-size: 17px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cc-name { font-size: 15px; font-weight: 480; display: flex; align-items: center; gap: 7px; }
+  .cc-sub { font-size: 12px; color: var(--color-graphite); margin-top: 2px; }
+  .cc-btns { flex: none; display: flex; flex-direction: column; gap: 7px; }
+  .cc-btns .btn { height: 34px; font-size: 12.5px; padding: 0 16px; }
+
+  .h-list { padding: 12px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+  .h-card {
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    overflow: hidden;
+  }
+  .h-cover { position: relative; width: 100%; height: 170px; background: var(--color-fog); }
+  .h-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .h-flag {
+    position: absolute; left: 10px; top: 10px;
+    background: rgba(251, 225, 209, 0.94); color: var(--color-rust);
+    font-size: 11px; font-weight: 450;
+    padding: 2px 9px; border-radius: var(--radius-pill);
+  }
+  .h-flag--sold { background: rgba(23, 25, 28, 0.62); color: var(--color-pure-white); }
+  .h-info { padding: 12px 15px 15px; }
+  .h-title { font-size: 14.5px; font-weight: 480; line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h-meta { font-size: 12.5px; color: var(--color-graphite); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h-price { font-size: 18px; font-weight: 480; color: var(--color-ink); margin-top: 3px; }
+  .h-price em { font-style: normal; font-size: 12px; font-weight: 400; color: var(--color-graphite); margin-left: 2px; }
+
+  .bottom-bar {
+    margin-top: auto;
+    padding: 14px 16px 10px;
+    background: rgba(247, 247, 248, 0.92);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(163, 166, 175, 0.25);
+    display: flex; gap: 10px;
+    position: relative;
+  }
+  .bottom-bar .btn { height: 46px; font-size: 14px; padding: 0 8px; white-space: nowrap; }
+
+  /* 改动标记：悬浮在底栏按钮上方的小标签 */
+  .chg-tag {
+    position: absolute; top: -16px; z-index: 5;
+    background: var(--color-rust); color: var(--color-pure-white);
+    font-size: 10px; font-weight: 450; letter-spacing: 0.04em;
+    padding: 2px 9px; border-radius: var(--radius-pill);
+    box-shadow: 0 4px 10px rgba(93, 42, 26, 0.22);
+    white-space: nowrap;
+  }
+  .chg-tag--old { background: var(--color-graphite); box-shadow: 0 4px 10px rgba(23, 25, 28, 0.16); }
+
+  /* ===== 屏B 服务页 ===== */
+  .s-hero {
+    position: relative;
+    padding: 26px 22px 30px;
+    background: var(--color-pure-white);
+    overflow: hidden;
+  }
+  .s-hero::after {
+    content: "";
+    position: absolute; top: -60px; right: -60px;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(251, 225, 209, 0.7) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .s-hero-title {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 30px; line-height: 1.15; letter-spacing: -0.3px;
+    position: relative; z-index: 2;
+  }
+  .s-hero-sub {
+    font-size: 13.5px; color: var(--color-graphite); line-height: 1.55;
+    margin-top: 10px; position: relative; z-index: 2;
+  }
+  .s-hero-cta { display: flex; align-items: center; gap: 8px; margin-top: 18px; position: relative; z-index: 2; }
+  .s-hero-cta .btn { height: 46px; font-size: 14.5px; flex: none; }
+  .served-tag {
+    flex: 1; min-width: 0;
+    height: 46px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--color-apricot-wash); color: var(--color-rust);
+    border-radius: var(--radius-pill);
+    font-size: 12.5px; font-weight: 450;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .served-tag b { font-weight: 500; margin: 0 2px; }
+
+  /* 方案A：hero 下经纪人合作横幅（杏色暖卡 + Rust 文案） */
+  .agent-banner {
+    margin: 12px 16px 0;
+    background: var(--color-apricot-wash);
+    border-radius: var(--radius-cards);
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    position: relative;
+  }
+  .agent-banner--outline { outline: 1.5px dashed rgba(93, 42, 26, 0.5); outline-offset: 3px; }
+  .ab-ico {
+    width: 38px; height: 38px; flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--color-pure-white);
+    color: var(--color-rust);
+    font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ab-body { flex: 1; min-width: 0; }
+  .ab-title { font-size: 14px; font-weight: 480; color: var(--color-rust); line-height: 1.4; }
+  .ab-sub { font-size: 11.5px; color: rgba(93, 42, 26, 0.62); margin-top: 1px; letter-spacing: -0.008em; }
+  .ab-arrow { flex: none; color: var(--color-rust); font-size: 17px; line-height: 1; }
+
+  /* 方案B：页尾经纪人合作卡（白卡 + 杏色按钮） */
+  .agent-card {
+    margin: 12px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 18px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+    position: relative;
+  }
+  .agent-card--outline { outline: 1.5px dashed rgba(93, 42, 26, 0.5); outline-offset: 3px; }
+  .ac-kicker {
+    font-size: 10.5px; font-weight: 500; letter-spacing: 0.08em;
+    color: var(--color-rust);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .ac-kicker::before { content: ""; width: 14px; height: 1px; background: var(--color-apricot-wash); }
+  .ac-title { font-size: 16px; font-weight: 480; line-height: 1.4; }
+  .ac-desc { font-size: 12.5px; color: var(--color-graphite); line-height: 1.6; }
+  .agent-card .btn { height: 40px; font-size: 13px; padding: 0 22px; margin-top: 4px; }
+
+  /* 服务页内容区（现状模块的缩略呈现） */
+  .s-section { padding: 22px 16px 0; }
+  .s-h3 { font-size: 16px; font-weight: 480; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .s-card {
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .s-card b { display: block; font-size: 13.5px; font-weight: 480; }
+  .s-card i { display: block; font-style: normal; font-size: 12px; color: var(--color-graphite); margin-top: 3px; line-height: 1.55; }
+  .s-card--warm { background: var(--color-apricot-wash); }
+  .s-card--warm b { color: var(--color-rust); }
+  .s-card--warm i { color: rgba(93, 42, 26, 0.66); }
+
+  .s-share {
+    margin: 16px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 18px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .s-share b { font-size: 13.5px; font-weight: 480; }
+  .s-share .btn { width: 100%; height: 42px; font-size: 13.5px; }
+
+  /* 屏内 tabBar（服务页为 tabBar 页面） */
+  .mini-tab {
+    margin-top: auto;
+    flex: none;
+    background: var(--color-pure-white);
+    border-top: 1px solid rgba(163, 166, 175, 0.2);
+    display: flex;
+    padding: 6px 10px 14px;
+    position: relative;
+  }
+  .mt-item {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10px; color: var(--color-graphite);
+  }
+  .mt-item svg { width: 20px; height: 20px; stroke: var(--color-graphite); }
+  .mt-item--on { color: var(--color-ink); font-weight: 480; }
+  .mt-item--on svg { stroke: var(--color-ink); }
+
+  /* ===== 屏C 招募落地页 ===== */
+  .r-hero {
+    margin: 16px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 24px 22px;
+  }
+  .r-hero-title {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 30px; line-height: 1.15; letter-spacing: -0.3px;
+  }
+  .r-hero-lead { font-size: 14px; color: var(--color-ash); margin-top: 8px; }
+  .r-hero-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .r-tag {
+    background: var(--color-apricot-wash); color: var(--color-rust);
+    font-size: 11px; font-weight: 450;
+    padding: 3px 10px; border-radius: var(--radius-pill);
+  }
+  .r-hero-closer { font-size: 14px; margin-top: 12px; color: var(--color-ash); }
+  .r-hero-closer b { color: var(--color-rust); font-weight: 480; }
+
+  .r-stats {
+    margin: 12px 16px 0;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 16px 12px;
+    display: flex;
+  }
+  .r-stat { flex: 1; text-align: center; }
+  .r-stat + .r-stat { border-left: 1px solid rgba(163, 166, 175, 0.22); }
+  .r-stat-num { font-size: 18px; font-weight: 480; color: var(--color-rust); }
+  .r-stat-num em { font-style: normal; font-size: 12px; font-weight: 450; }
+  .r-stat-label { font-size: 10.5px; color: var(--color-graphite); margin-top: 2px; }
+
+  .r-sec { padding: 20px 16px 0; }
+  .r-sec-h { font-size: 16px; font-weight: 480; margin-bottom: 4px; }
+  .r-sec-sub { font-size: 12px; color: var(--color-dove); margin-bottom: 10px; }
+
+  .r-form {
+    margin-top: 6px;
+    background: var(--color-pure-white);
+    border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle);
+    padding: 16px;
+  }
+  .r-label { font-size: 12px; font-weight: 450; color: var(--color-ash); margin-bottom: 6px; }
+  .r-label em { color: var(--color-rust); font-style: normal; }
+  .r-input {
+    height: 44px;
+    border: 1px solid rgba(163, 166, 175, 0.45);
+    border-radius: var(--radius-inputs);
+    display: flex; align-items: center;
+    padding: 0 14px;
+    font-size: 13px; color: var(--color-dove);
+    background: var(--color-pure-white);
+  }
+  .r-agree { display: flex; align-items: center; gap: 8px; margin: 12px 0; font-size: 11.5px; color: var(--color-graphite); }
+  .r-check {
+    width: 16px; height: 16px; flex: none;
+    border: 1.5px solid var(--color-dove);
+    border-radius: var(--radius-pill);
+  }
+  .r-agree a { color: var(--color-rust); text-decoration: none; }
+  .r-form .btn { width: 100%; height: 46px; font-size: 14.5px; letter-spacing: 0.2em; }
+  .r-form .btn--dis { background: rgba(23, 25, 28, 0.28); cursor: default; }
+
+  /* ===== 区块5 实现要点 ===== */
+  .impl-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+    max-width: 1080px; margin: 0 auto;
+  }
+  .impl-card {
+    background: var(--color-pure-white);
+    border: 1px solid rgba(163, 166, 175, 0.3);
+    border-radius: var(--radius-cards);
+    padding: 22px 24px;
+    box-shadow: 0 2px 10px rgba(23, 25, 28, 0.04);
+  }
+  .impl-card--warn { border: 1.5px solid rgba(93, 42, 26, 0.45); background: rgba(251, 225, 209, 0.28); }
+  .impl-card b.ic-h { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 480; }
+  .ic-no {
+    flex: none; width: 20px; height: 20px;
+    background: var(--color-ink); color: var(--color-pure-white);
+    border-radius: var(--radius-pill);
+    font-size: 11px; font-weight: 450;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .impl-card--warn .ic-no { background: var(--color-rust); }
+  .impl-card p { margin-top: 8px; font-size: 13.5px; line-height: 1.75; color: var(--color-ash); text-wrap: pretty; }
+  .impl-card code {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    background: var(--color-fog);
+    border: 1px solid rgba(163, 166, 175, 0.3);
+    border-radius: 6px;
+    padding: 1px 6px;
+    color: var(--color-rust);
+    white-space: nowrap;
+  }
+
+  /* ===== 区块6 视觉规范 ===== */
+  .spec-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    max-width: 1200px; margin: 0 auto;
+  }
+  .spec-card {
+    background: var(--color-pure-white);
+    border: 1px solid rgba(163, 166, 175, 0.3);
+    border-radius: var(--radius-cards);
+    padding: 22px 24px;
+    box-shadow: 0 2px 10px rgba(23, 25, 28, 0.04);
+  }
+  .sp-h { font-size: 15px; font-weight: 480; margin-bottom: 14px; }
+  .sw-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 12.5px; color: var(--color-ash); }
+  .sw-chip { width: 18px; height: 18px; border-radius: 6px; border: 1px solid rgba(163, 166, 175, 0.35); flex: none; }
+  .sw-name { flex: 1; }
+  .sw-hex { font-family: var(--mono); font-size: 10.5px; color: var(--color-dove); }
+  .ty-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; }
+  .ty-label { font-size: 11px; color: var(--color-dove); white-space: nowrap; }
+  .pt-li { position: relative; padding: 4px 0 4px 16px; font-size: 13px; line-height: 1.7; color: var(--color-ash); }
+  .pt-li::before {
+    content: ""; position: absolute; left: 0; top: 13px;
+    width: 7px; height: 7px; border-radius: var(--radius-pill);
+    background: var(--color-apricot-wash); border: 1px solid var(--color-rust); box-sizing: border-box;
+  }
+  .spec-foot {
+    max-width: 1200px; margin: 28px auto 0; text-align: center;
+    font-size: 13px; color: var(--color-dove);
+  }
+  .spec-foot b { color: var(--color-graphite); font-weight: 480; }
+
+  .page-foot {
+    text-align: center;
+    padding: 0 24px 72px;
+    font-size: 12.5px; color: var(--color-dove); letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ 页头 ============ -->
+  <header class="page-head">
+    <span class="kicker">转化链路调整 · 设计提案</span>
+    <h1>从「卖房估价」到「服务承接」</h1>
+    <p class="lede">
+      房源单落地页的实际扫码访客<b>以经纪人居多</b>，而底栏右侧主 CTA「我想卖房 · 免费估价」
+      把访客默认当成了业主，转化持续错位。本次调整：<span class="em">底栏右侧改为「了解服务」</span>跳转服务页，
+      服务页新增<span class="em">「我是经纪人」合作入口</span>承接至招募落地页；
+      业主卖房诉求不丢失——仍由服务页 hero「免费在线估价」闭环。
+    </p>
+  </header>
+
+  <!-- ============ 区块1 链路总览 ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 1 · 链路总览</span>
+        <h2>现状 vs 调整后</h2>
+        <p>一处按钮改动，把「业主假设」换成「服务枢纽」——业主与经纪人两条链路都闭环</p>
+      </div>
+
+      <!-- 现状链路 -->
+      <div class="flow-group">
+        <div class="flow-group-title"><span class="fg-badge fg-badge--old">现状</span>底栏主 CTA 直跳估价页，经纪人访客被默认引导去「卖房估价」</div>
+        <div class="flow">
+          <div class="flow-node">
+            <div class="fn-step">扫码进入</div>
+            <div class="fn-note">落地页 · 房源单聚合</div>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <div class="fn-step">我想卖房 · 免费估价</div>
+            <div class="fn-note">底栏右侧主 CTA（switchTab）</div>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <div class="fn-step">估价页</div>
+            <div class="fn-note">tabBar · 业主卖房链路</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 调整后链路 -->
+      <div class="flow-group" style="margin-bottom: 0;">
+        <div class="flow-group-title"><span class="fg-badge fg-badge--new">调整后</span>落地页 → 服务页枢纽 → 业主 / 经纪人双链路分流</div>
+        <div class="flow">
+          <div class="flow-node">
+            <div class="fn-step">扫码进入</div>
+            <div class="fn-note">落地页 · 房源单聚合</div>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node flow-node--attr">
+            <div class="fn-step">了解服务 <span class="fn-new">改</span></div>
+            <div class="fn-note">底栏右侧主 CTA（switchTab）</div>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node flow-node--attr">
+            <div class="fn-step">服务页 <span class="fn-new">新增入口</span></div>
+            <div class="fn-note">tabBar · 服务承接枢纽</div>
+          </div>
+        </div>
+        <div class="flow-branch" style="margin-top: 10px;">
+          <span class="flow-fork" aria-hidden="true"></span>
+          <div class="flow-node">
+            <div class="fn-step">业主 · 免费在线估价</div>
+            <div class="fn-note">服务页 hero 原有 CTA</div>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <div class="fn-step">估价页</div>
+            <div class="fn-note">卖房链路保持闭环</div>
+          </div>
+        </div>
+        <div class="flow-branch">
+          <span style="width: 22px;" aria-hidden="true"></span>
+          <div class="flow-node flow-node--attr">
+            <div class="fn-step">经纪人 · 我是经纪人 <span class="fn-new">新</span></div>
+            <div class="fn-note">「了解更多合作信息」入口</div>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <div class="fn-step">招募落地页</div>
+            <div class="fn-note">navigateTo · 携 campaign_id</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="flow-note">
+        关键取舍：<b>底栏只保留一个主 CTA</b>（Steep 规范每屏至多一个填充按钮），
+        <span class="em">业主链路不由落地页承担</span>而是由服务页 hero 承接——服务页本就是业主转化主阵地，
+        经纪人则多一次轻量分流入口，不与业主内容互相打断。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 区块2 屏A 落地页 ============ -->
+  <section class="band">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 2 · 手机屏 A</span>
+        <h2>落地页 · 底栏 CTA 调整</h2>
+        <p>页面结构零改动，仅底栏右侧按钮：<span class="bh-em">「我想卖房 · 免费估价」→「了解服务」</span>，switchTab 服务页</p>
+      </div>
+      <div class="stage">
+
+        <!-- 现状 -->
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏A-1 落地页·现状">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>精选房源单</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+              <div class="hero">
+                <b>TA 为您精选了 3 套好房</b>
+                <i>所见即所得，每套皆标杆</i>
+              </div>
+              <div class="cc">
+                <div class="cc-av">李</div>
+                <div>
+                  <div class="cc-name">李经理 <span class="pill pill--role">分享人</span></div>
+                  <div class="cc-sub">扫码进入 · 已自动关联分享人</div>
+                </div>
+                <div class="cc-btns">
+                  <button class="btn btn--pri">电话咨询</button>
+                  <button class="btn btn--apr">微信</button>
+                </div>
+              </div>
+              <div class="h-list">
+                <div class="h-card">
+                  <div class="h-cover">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：客厅实拍" loading="lazy" />
+                    <span class="h-flag">在售</span>
+                  </div>
+                  <div class="h-info">
+                    <div class="h-title">南北通透 · 满五唯一 · 电梯中楼层</div>
+                    <div class="h-meta">云顶澜湾 · 3室2厅 · 128㎡</div>
+                    <div class="h-price">¥568<em>万</em></div>
+                  </div>
+                </div>
+                <div class="h-card">
+                  <div class="h-cover">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：卧室实拍" loading="lazy" />
+                    <span class="h-flag">在售</span>
+                  </div>
+                  <div class="h-info">
+                    <div class="h-title">精装两房 · 近地铁 · 采光充足</div>
+                    <div class="h-meta">绿城晓风苑 · 2室2厅 · 89㎡</div>
+                    <div class="h-price">¥398<em>万</em></div>
+                  </div>
+                </div>
+              </div>
+              <div class="bottom-bar">
+                <button class="btn btn--txt btn--grow">咨询分享人</button>
+                <button class="btn btn--pri btn--grow"><span class="chg-tag chg-tag--old" style="right: 22%;">现状 · switchTab 估价页</span>我想卖房 · 免费估价</button>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label">
+            <b>屏 A-1 · 现状：</b>底栏右侧「我想卖房 · 免费估价」switchTab 估价页。
+            该按钮假设访客是<span class="em">业主</span>，但实际访客以<span class="em">经纪人</span>居多，
+            扫码进来的经纪人被直接引导去「卖房估价」，意图错位。
+          </figcaption>
+        </figure>
+
+        <!-- 调整后 -->
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏A-2 落地页·调整后">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>精选房源单</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+              <div class="hero">
+                <b>TA 为您精选了 3 套好房</b>
+                <i>所见即所得，每套皆标杆</i>
+              </div>
+              <div class="cc">
+                <div class="cc-av">李</div>
+                <div>
+                  <div class="cc-name">李经理 <span class="pill pill--role">分享人</span></div>
+                  <div class="cc-sub">扫码进入 · 已自动关联分享人</div>
+                </div>
+                <div class="cc-btns">
+                  <button class="btn btn--pri">电话咨询</button>
+                  <button class="btn btn--apr">微信</button>
+                </div>
+              </div>
+              <div class="h-list">
+                <div class="h-card">
+                  <div class="h-cover">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：客厅实拍" loading="lazy" />
+                    <span class="h-flag">在售</span>
+                  </div>
+                  <div class="h-info">
+                    <div class="h-title">南北通透 · 满五唯一 · 电梯中楼层</div>
+                    <div class="h-meta">云顶澜湾 · 3室2厅 · 128㎡</div>
+                    <div class="h-price">¥568<em>万</em></div>
+                  </div>
+                </div>
+                <div class="h-card">
+                  <div class="h-cover">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="房源封面：卧室实拍" loading="lazy" />
+                    <span class="h-flag">在售</span>
+                  </div>
+                  <div class="h-info">
+                    <div class="h-title">精装两房 · 近地铁 · 采光充足</div>
+                    <div class="h-meta">绿城晓风苑 · 2室2厅 · 89㎡</div>
+                    <div class="h-price">¥398<em>万</em></div>
+                  </div>
+                </div>
+              </div>
+              <div class="mock-note mock-note--chg">onServiceTap → <b>wx.switchTab("/pages/about/index/index")</b>，样式与布局零改动</div>
+              <div class="bottom-bar">
+                <button class="btn btn--txt btn--grow">咨询分享人</button>
+                <button class="btn btn--pri btn--grow"><span class="chg-tag" style="right: 30%;">调整为 · 跳服务页</span>了解服务</button>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label">
+            <b>屏 A-2 · 调整后：</b>右侧主 CTA 改为<span class="em">「了解服务」</span>——文案不预设访客身份，
+            经纪人与业主都成立；服务页作为枢纽完成身份分流。
+            左侧「咨询分享人」保持不变（电话直连分享人，最高频动作不动）。
+          </figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块3 屏B 服务页 ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 3 · 手机屏 B</span>
+        <h2>服务页 · 新增经纪人合作入口</h2>
+        <p>两个落位方案：<span class="bh-em">方案 A（推荐）</span>hero 下方杏色横幅，进入即分流；<span class="bh-em">方案 B</span>页尾合作卡，读完业主内容后承接。虚线描边仅为标注改动位置，非界面元素</p>
+      </div>
+      <div class="stage">
+
+        <!-- 方案A -->
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏B-1 服务页·方案A hero下横幅">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>服务</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+
+              <div class="s-hero">
+                <div class="s-hero-title">卖房不想再投钱，<br />还想拿一个好价格？</div>
+                <div class="s-hero-sub">美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。</div>
+                <div class="s-hero-cta">
+                  <button class="btn btn--pri">免费在线估价</button>
+                  <span class="served-tag">累计服务<b>128</b>组家庭</span>
+                </div>
+              </div>
+
+              <!-- 方案A：经纪人合作横幅（推荐） -->
+              <div class="agent-banner agent-banner--outline">
+                <span class="chg-tag" style="top: -14px; left: 16px;">新 · 方案 A（推荐）</span>
+                <div class="ab-ico">经</div>
+                <div class="ab-body">
+                  <div class="ab-title">我是经纪人，了解更多合作信息</div>
+                  <div class="ab-sub">佣金秒结 · 快速响应 · 装修代卖</div>
+                </div>
+                <span class="ab-arrow">›</span>
+              </div>
+
+              <div class="s-section">
+                <div class="s-h3">这些痛点，您是否也遇到过？</div>
+                <div class="s-card">
+                  <b>我装修旧了，不想再投钱</b>
+                  <i>房子旧、卖相差，自己掏钱重新装修要花十几万，还不一定卖得掉。</i>
+                </div>
+                <div class="s-card">
+                  <b>我怕自己装修，卖不掉血亏</b>
+                  <i>钱投进去，房子卖不掉，钱就压在装修上，进退两难。</i>
+                </div>
+              </div>
+
+              <div class="more-ellipsis" aria-hidden="true">···</div>
+              <div class="mock-note">全流程托管 · 服务保障 · 算一笔账 · 常见疑问 等模块保持不变</div>
+
+              <div class="mini-tab">
+                <div class="mt-item">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke-width="1.6"/><path d="M15.5 15.5L20 20" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  房源
+                </div>
+                <div class="mt-item mt-item--on">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11L12 4l8 7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9h12v-9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  服务
+                </div>
+                <div class="mt-item">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 20V12" stroke-width="1.6" stroke-linecap="round"/><path d="M12 20V6" stroke-width="1.6" stroke-linecap="round"/><path d="M19 20v-5" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  估价
+                </div>
+                <div class="mt-item">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke-width="1.6"/><path d="M5 20c1.2-3.4 3.9-5 7-5s5.8 1.6 7 5" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  我的
+                </div>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label">
+            <b>屏 B-1 · 方案 A（推荐）：</b>hero 下方一条<span class="em">杏色横幅卡</span>——
+            落地页改版后经纪人被 switchTab 直达本页，<span class="em">第一屏即可分流</span>，
+            不必读完业主向内容；杏色暖卡 + Rust 文案与「服务人」品牌强调色一致，
+            视觉上从业主内容中跳出来但不喧宾夺主。副文案取自招募页四承诺中的三个关键词。
+          </figcaption>
+        </figure>
+
+        <!-- 方案B -->
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏B-2 服务页·方案B 页尾合作卡">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>服务</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+
+              <div class="s-hero">
+                <div class="s-hero-title">卖房不想再投钱，<br />还想拿一个好价格？</div>
+                <div class="s-hero-sub">美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。</div>
+                <div class="s-hero-cta">
+                  <button class="btn btn--pri">免费在线估价</button>
+                  <span class="served-tag">累计服务<b>128</b>组家庭</span>
+                </div>
+              </div>
+
+              <div class="s-section">
+                <div class="s-h3">这些痛点，您是否也遇到过？</div>
+                <div class="s-card">
+                  <b>我装修旧了，不想再投钱</b>
+                  <i>房子旧、卖相差，自己掏钱重新装修要花十几万，还不一定卖得掉。</i>
+                </div>
+                <div class="s-card">
+                  <b>我怕自己装修，卖不掉血亏</b>
+                  <i>钱投进去，房子卖不掉，钱就压在装修上，进退两难。</i>
+                </div>
+              </div>
+
+              <div class="more-ellipsis" aria-hidden="true">···</div>
+              <div class="mock-note">全流程托管 · 服务保障 · 算一笔账 · 常见疑问 等模块保持不变</div>
+
+              <!-- 方案B：页尾经纪人合作卡 -->
+              <div class="agent-card agent-card--outline">
+                <span class="chg-tag" style="top: -14px; left: 16px;">新 · 方案 B</span>
+                <span class="ac-kicker">FOR 经纪人</span>
+                <div class="ac-title">我是经纪人，了解更多合作信息</div>
+                <div class="ac-desc">与我们合作：佣金秒结、2 小时书面报价、随时带看。查看完整合作模式与报名入口。</div>
+                <button class="btn btn--apr">查看合作详情</button>
+              </div>
+
+              <div class="s-share">
+                <b>觉得有用？分享给需要的朋友</b>
+                <button class="btn btn--apr">分享给朋友</button>
+              </div>
+
+              <div class="mini-tab">
+                <div class="mt-item">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke-width="1.6"/><path d="M15.5 15.5L20 20" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  房源
+                </div>
+                <div class="mt-item mt-item--on">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11L12 4l8 7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9h12v-9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  服务
+                </div>
+                <div class="mt-item">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 20V12" stroke-width="1.6" stroke-linecap="round"/><path d="M12 20V6" stroke-width="1.6" stroke-linecap="round"/><path d="M19 20v-5" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  估价
+                </div>
+                <div class="mt-item">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke-width="1.6"/><path d="M5 20c1.2-3.4 3.9-5 7-5s5.8 1.6 7 5" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  我的
+                </div>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label">
+            <b>屏 B-2 · 方案 B：</b>入口放在页尾（风险提示之后、分享卡之前），以<span class="em">白卡 + 杏色按钮</span>呈现。
+            优点是不打断业主阅读动线、经纪人内容有更多铺垫文案；
+            代价是经纪人访客需<b>划到最底部</b>才能看到入口，从落地页跳转而来的经纪人<b>首屏无分流</b>——
+            与「访客以经纪人居多」的现状不匹配，故推荐方案 A。
+          </figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块4 屏C 招募落地页 ============ -->
+  <section class="band">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 4 · 手机屏 C</span>
+        <h2>招募落地页 · 链路终点承接</h2>
+        <p>服务页「我是经纪人」入口的落点——现有招募落地页零改动，仅确认<span class="bh-em">带 campaign_id 直达</span>的进入路径可用</p>
+      </div>
+      <div class="stage">
+
+        <figure class="phone-fig">
+          <div class="phone" data-screen-label="屏C 招募落地页">
+            <div class="phone-screen">
+              <div class="statusbar">
+                <span class="sb-time">9:41</span>
+                <span class="sb-icons">
+                  <svg width="46" height="12" viewBox="0 0 46 12" fill="none" aria-hidden="true"><rect x="0" y="7" width="2.5" height="4" rx="1" fill="#17191c"/><rect x="4" y="5" width="2.5" height="6" rx="1" fill="#17191c"/><rect x="8" y="3" width="2.5" height="8" rx="1" fill="#17191c"/><rect x="12" y="1" width="2.5" height="10" rx="1" fill="#17191c" opacity="0.3"/><path d="M20 5.5c1.8-1.6 4.2-1.6 6 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><path d="M21.4 7.6c1-0.9 2.2-0.9 3.2 0" stroke="#17191c" stroke-width="1.4" stroke-linecap="round"/><circle cx="23" cy="10" r="1" fill="#17191c"/><rect x="30" y="2.5" width="12" height="7" rx="2" stroke="#17191c" stroke-width="1"/><rect x="31.2" y="3.7" width="7" height="4.6" rx="1" fill="#17191c"/><rect x="43" y="4.5" width="1.5" height="3" rx="0.75" fill="#17191c"/></svg>
+                </span>
+              </div>
+              <div class="navbar"><b>区域伙伴招募</b><span class="capsule" aria-hidden="true"><i class="dots"></i><i class="ring"></i></span></div>
+
+              <div class="r-hero">
+                <div class="r-hero-title">你缺客户吗？</div>
+                <div class="r-hero-lead">我们就是那个——</div>
+                <div class="r-hero-tags">
+                  <span class="r-tag">不约时间</span>
+                  <span class="r-tag">不磨价格</span>
+                  <span class="r-tag">不玩消失</span>
+                </div>
+                <div class="r-hero-closer">的<b>“神仙客户”</b></div>
+              </div>
+
+              <div class="r-stats">
+                <div class="r-stat">
+                  <div class="r-stat-num">300<em>+</em> 人</div>
+                  <div class="r-stat-label">已合作经纪人</div>
+                </div>
+                <div class="r-stat">
+                  <div class="r-stat-num">15 个</div>
+                  <div class="r-stat-label">覆盖商圈</div>
+                </div>
+                <div class="r-stat">
+                  <div class="r-stat-num"><em>¥</em>1000<em>W+</em></div>
+                  <div class="r-stat-label">累计佣金</div>
+                </div>
+              </div>
+
+              <div class="r-sec">
+                <div class="r-sec-h">为什么选择跟我们合作？</div>
+                <div class="r-sec-sub">四个硬核承诺</div>
+                <div class="s-card"><b>01 · 1% 佣金秒结</b><i>交房即到账，不拖不欠</i></div>
+                <div class="s-card s-card--warm"><b>02 · 快速响应</b><i>7×12 小时在线，最快 2 小时书面出价</i></div>
+              </div>
+
+              <div class="more-ellipsis" aria-hidden="true">···</div>
+              <div class="mock-note">痛点共鸣 · 合作流程 · 合作伙伴评价 等模块保持不变</div>
+
+              <div class="r-sec">
+                <div class="r-sec-h">立即报名</div>
+                <div class="r-form">
+                  <div class="r-label">所在商圈<em>*</em></div>
+                  <div class="r-input">请输入您覆盖的商圈</div>
+                  <div class="r-agree">
+                    <span class="r-check"></span>
+                    <span>我已阅读并同意<a href="javascript:void(0)">《隐私协议》</a></span>
+                  </div>
+                  <button class="btn btn--pri btn--dis">立即报名</button>
+                </div>
+              </div>
+
+              <div class="home-ind"></div>
+            </div>
+          </div>
+          <figcaption class="card-label">
+            <b>屏 C · 承接终点：</b>服务页入口 navigateTo 进入，携带 <span class="em">campaign_id + source=card</span>；
+            hero「你缺客户吗？」直接对话经纪人身份，与前置链路（看房 → 服务页 → 经纪人入口）心理动线连贯。
+            页面本身<span class="em">零改动</span>，本次仅新增一条免分享的站内进入路径。
+          </figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块5 实现要点 ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 5</span>
+        <h2>实现要点</h2>
+        <p>三处代码改动 + 一个前置依赖确认，估价链路零改动</p>
+      </div>
+      <div class="impl-grid">
+        <div class="impl-card">
+          <b class="ic-h"><span class="ic-no">1</span>落地页 · 底栏按钮</b>
+          <p>
+            <code>pages/property-sheet/landing/index</code> 底栏右侧按钮文案改为「了解服务」，
+            <code>onValuationTap</code> 替换为 <code>onServiceTap</code>：
+            <code>wx.switchTab("/pages/about/index/index")</code>——服务页是 tabBar 页，必须 switchTab。
+            wxml 结构与 wxss 均不动。
+          </p>
+        </div>
+        <div class="impl-card">
+          <b class="ic-h"><span class="ic-no">2</span>服务页 · 经纪人入口（方案 A）</b>
+          <p>
+            <code>pages/about/index/index</code> hero 区块之后新增杏色横幅卡，
+            <code>onAgentCoopTap</code>：<code>wx.navigateTo("/pages/recruit/detail/index?campaign_id=…&source=card")</code>。
+            Zod 无涉；入口文案与副文案按屏 B-1 落稿。
+          </p>
+        </div>
+        <div class="impl-card impl-card--warn">
+          <b class="ic-h"><span class="ic-no">!</span>前置依赖 · campaign_id</b>
+          <p>
+            招募落地页强依赖有效活动 ID：<code>loadCampaign</code> 在无 <code>campaign_id</code> 时直接落
+            notFound 态（「活动不存在或已停止报名」）。服务页入口跳转前必须拿到可用活动——
+            建议由后端下发「最新启用中活动」接口，或管理后台约定一个默认活动短码。
+            <b>未确认活动来源前，此链路不可上线。</b>
+          </p>
+        </div>
+        <div class="impl-card">
+          <b class="ic-h"><span class="ic-no">3</span>链路兼容 · 业主不受影响</b>
+          <p>
+            业主卖房诉求仍闭环：服务页 hero「免费在线估价」→ <code>pages/valuation/submit/index</code>。
+            落地页 <code>visit-events</code> 埋点保持；服务页入口点击建议扩展埋点
+            （source 透传 <code>card</code>），便于后续对比经纪人/业主分流占比。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块6 视觉规范 ============ -->
+  <section class="band">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 6</span>
+        <h2>视觉规范</h2>
+        <p>遵循项目 DESIGN.md（Steep Style Reference）—— 色板 / 字体阶梯 / 组件规范要点</p>
+      </div>
+      <div class="spec-grid">
+        <div class="spec-card">
+          <div class="sp-h">色板 · Steep Tokens</div>
+          <div class="sw-row"><span class="sw-chip" style="background:#17191c"></span><span class="sw-name">Ink · 主文字 / 填充 CTA</span><span class="sw-hex">#17191c</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#ffffff"></span><span class="sw-name">Pure White · 画布 / 卡面</span><span class="sw-hex">#ffffff</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#f7f7f8"></span><span class="sw-name">Fog · 区块底</span><span class="sw-hex">#f7f7f8</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#4c4c4c"></span><span class="sw-name">Ash · 正文辅字</span><span class="sw-hex">#4c4c4c</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#777b86"></span><span class="sw-name">Graphite · 三级文字 / 图标</span><span class="sw-hex">#777b86</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#a3a6af"></span><span class="sw-name">Dove · 发丝线 / 占位</span><span class="sw-hex">#a3a6af</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#5d2a1a"></span><span class="sw-name">Rust · 唯一暖色强调 / 经纪人入口</span><span class="sw-hex">#5d2a1a</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#fbe1d1"></span><span class="sw-name">Apricot Wash · 暖卡底 / 入口横幅</span><span class="sw-hex">#fbe1d1</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#d3e3fc"></span><span class="sw-name">Sky Wash · 冷卡底（本稿未用）</span><span class="sw-hex">#d3e3fc</span></div>
+        </div>
+        <div class="spec-card">
+          <div class="sp-h">字体阶梯 · Signifier / Sohne</div>
+          <div class="ty-row"><span class="ty-sample" style="font-family:var(--font-signifier); font-weight:400; font-size:26px; letter-spacing:-0.3px;">卖房不想再投钱</span><span class="ty-label">Signifier 30-44 · 仅标题</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:16px; font-weight:480;">区块标题 heading-sm</span><span class="ty-label">Sohne 22-26 · w480</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:14px; font-weight:480;">入口横幅标题 w480</span><span class="ty-label">Sohne 14 · w480</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:14px; color:#4c4c4c;">正文说明文字 caption</span><span class="ty-label">Sohne 14 · w400</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:12px; color:#777b86;">辅助注释 Graphite</span><span class="ty-label">Sohne 12 · w400</span></div>
+          <div class="ty-row"><span class="ty-sample" style="font-size:11px; color:#a3a6af; font-family:var(--mono);">标注 · SF Mono</span><span class="ty-label">Mono 11 · 标注专用</span></div>
+        </div>
+        <div class="spec-card">
+          <div class="sp-h">形状 · 阴影 · 组件规范</div>
+          <div class="pt-li">卡片 24px 圆角 / 图片 12px / 输入 16px / 按钮 9999px 胶囊</div>
+          <div class="pt-li">签名阴影：1px 墨色描边 + 20/25px 落影 + 8/10px 微落影</div>
+          <div class="pt-li">填充 CTA 仅墨色胶囊，每屏最多一个；次操作用杏色/文字按钮</div>
+          <div class="pt-li">经纪人入口 = 杏色暖卡 + Rust 文案 + 白底圆徽 + 右箭头 ›</div>
+          <div class="pt-li">虚线描边与「改 / 新」小标签仅为设计稿标注，非界面元素</div>
+          <div class="pt-li">底栏高度、按钮尺寸、左右主次关系与现状完全一致</div>
+        </div>
+      </div>
+      <div class="spec-foot">设计系统来源：<b>/DESIGN.md（Steep — Soft dawn on a marble dashboard）</b> · 禁止饱和蓝绿红 · 色彩仅作标点，让内容自己说话</div>
+    </div>
+  </section>
+
+  <footer class="page-foot">
+    落地页 · 服务承接链路 · 高保真设计稿 · 2026-09-08 · 配套代码基线：miniapp/pages/property-sheet/landing · pages/about/index · pages/recruit/detail
+  </footer>
+
+</body>
+</html>

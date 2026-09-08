@@ -1,5 +1,9 @@
+import type { components } from "../../../types/api-types";
 import { setProjectListPendingTab } from "../../../utils/project-list-tab";
+import { request } from "../../../utils/request";
 import { animateServedCount, clearServedCountTimer, loadServedCount } from "../../../utils/served-count";
+
+type RecruitCampaignLatestResponse = components["schemas"]["RecruitCampaignLatestResponse"];
 
 interface FaqItem {
   q: string;
@@ -14,12 +18,15 @@ interface PageData {
   servedCountDisplay: string;
   servedCountLoading: boolean;
   servedCountVisible: boolean;
+  // 经纪人合作横幅请求防重入标记
+  agentCoopLoading: boolean;
 }
 
 interface PageCustom {
   onLoad(): void;
   onUnload(): void;
   onGoValuation(): void;
+  onAgentCoopTap(): void;
   onToggleFaq(e: WechatMiniprogram.BaseEvent): void;
   onServedTagTap(): void;
   onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
@@ -58,6 +65,7 @@ Page<PageData, PageCustom>({
     servedCountDisplay: "0",
     servedCountLoading: false,
     servedCountVisible: true,
+    agentCoopLoading: false,
   },
   servedCountTimer: null,
   onLoad() {
@@ -69,6 +77,27 @@ Page<PageData, PageCustom>({
   },
   onGoValuation() {
     wx.switchTab({ url: "/pages/valuation/submit/index" });
+  },
+  /** 经纪人合作横幅：取最新启用中活动后跳招募落地页；无活动/失败 toast 兜底，防重入. */
+  onAgentCoopTap() {
+    if (this.data.agentCoopLoading) {
+      return;
+    }
+    this.setData({ agentCoopLoading: true });
+    request<RecruitCampaignLatestResponse>({
+      url: "/public/recruit/campaigns/latest",
+      skipAuth: true,
+    })
+      .then((res) => {
+        this.setData({ agentCoopLoading: false });
+        wx.navigateTo({
+          url: `/pages/recruit/detail/index?campaign_id=${encodeURIComponent(res.campaign_id)}&source=card`,
+        });
+      })
+      .catch(() => {
+        this.setData({ agentCoopLoading: false });
+        wx.showToast({ title: "暂无进行中的合作活动", icon: "none" });
+      });
   },
   onToggleFaq(e: WechatMiniprogram.BaseEvent) {
     const index = e.currentTarget.dataset.index as number;

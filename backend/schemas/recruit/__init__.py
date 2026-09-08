@@ -70,6 +70,12 @@ class RecruitCampaignDetailResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class RecruitCampaignLatestResponse(BaseModel):
+    """最新启用中招募活动 ID（服务页经纪人入口跳转用）."""
+
+    campaign_id: str
+
+
 # ----------------------
 # Business Area（主营商圈）
 # ----------------------
@@ -267,6 +273,7 @@ __all__ = [
     "RecruitBusinessAreaItem",
     "RecruitCampaignCreate",
     "RecruitCampaignDetailResponse",
+    "RecruitCampaignLatestResponse",
     "RecruitCampaignResponse",
     "RecruitCampaignUpdate",
     "RecruitFunnelResponse",

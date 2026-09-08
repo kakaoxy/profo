@@ -16,6 +16,7 @@ from schemas.growth_center import GrowthModule
 from schemas.recruit import (
     RecruitBusinessAreaItem,
     RecruitCampaignDetailResponse,
+    RecruitCampaignLatestResponse,
     RecruitLeadCreate,
     RecruitLeadSubmitResponse,
     RecruitMyLeadItem,
@@ -46,6 +47,18 @@ from utils.formatters import mask_phone
 router = APIRouter(prefix="/public/recruit", tags=["public-recruit"])
 
 logger = logging.getLogger(__name__)
+
+
+@router.get(
+    "/campaigns/latest",
+    summary="最新启用中招募活动",
+    description="返回最新启用中活动的 campaign_id（服务页经纪人入口跳转用）；无启用中活动返回 404",
+)
+def get_latest_campaign(db: DbSessionDep) -> RecruitCampaignLatestResponse:
+    """获取最新启用中招募活动 ID."""
+    service = RecruitCampaignService(db)
+    campaign = service.get_latest_enabled()
+    return RecruitCampaignLatestResponse(campaign_id=campaign.id)
 
 
 @router.get(

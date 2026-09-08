@@ -102,6 +102,11 @@ class RecruitCampaign(Base):
         comment="更新时间",
     )
 
+    __table_args__ = (
+        # 支撑「最新启用中活动」查询（status 过滤 + created_at 倒序）与后台列表排序
+        Index("idx_recruit_campaign_status_created", "status", "created_at"),
+    )
+
 
 class RecruitLead(Base):
     """招募客户线索表（核心归因表，手机号为主键语义）."""

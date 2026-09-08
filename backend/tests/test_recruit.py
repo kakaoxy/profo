@@ -557,6 +557,30 @@ class TestPublicRecruitRouter:
         assert resp.json()["title"] == "招募分享标题"
         assert resp.json()["poster_bg_url"] == "https://cdn.example.com/poster-bg.png"
 
+    def test_latest_campaign_guest(self, no_auth_client: TestClient, db_session: Session):
+        """游客可获取最新启用中活动 ID（后创建的 enabled 活动优先，disabled 被排除）."""
+        older = _make_campaign(db_session, name="旧活动")
+        _make_campaign(db_session, name="停用活动", status=RecruitCampaignStatus.DISABLED)
+        latest = _make_campaign(db_session, name="最新活动")
+        # created_at 为唯一排序键，显式错开时间戳保证断言确定性
+        older.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        latest.created_at = datetime(2026, 1, 2, tzinfo=timezone.utc)
+        db_session.commit()
+        resp = no_auth_client.get("/api/v1/public/recruit/campaigns/latest")
+        assert resp.status_code == 200
+        assert resp.json()["campaign_id"] == latest.id
+
+    def test_latest_campaign_disabled_only_404(self, no_auth_client: TestClient, db_session: Session):
+        """仅停用活动时返回 404."""
+        _make_campaign(db_session, status=RecruitCampaignStatus.DISABLED)
+        resp = no_auth_client.get("/api/v1/public/recruit/campaigns/latest")
+        assert resp.status_code == 404
+
+    def test_latest_campaign_empty_404(self, no_auth_client: TestClient):
+        """无任何活动时返回 404."""
+        resp = no_auth_client.get("/api/v1/public/recruit/campaigns/latest")
+        assert resp.status_code == 404
+
     def test_business_areas_guest(self, no_auth_client: TestClient, db_session: Session):
         """游客可获取商圈选项."""
         db_session.add(Community(id="c0", name="小区0", business_circle="天河商圈"))

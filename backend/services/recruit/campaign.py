@@ -35,6 +35,19 @@ class RecruitCampaignService:
             raise ValidationError(msg)
         return campaign
 
+    def get_latest_enabled(self) -> RecruitCampaign:
+        """获取最新启用中的活动（按 created_at 倒序取第一条）；无启用中活动抛 ResourceNotFoundError."""
+        campaign = (
+            self.db.query(RecruitCampaign)
+            .filter(RecruitCampaign.status == RecruitCampaignStatus.ENABLED)
+            .order_by(RecruitCampaign.created_at.desc())
+            .first()
+        )
+        if campaign is None:
+            msg = "招募活动不存在"
+            raise ResourceNotFoundError(msg)
+        return campaign
+
     def list_all(self) -> list[RecruitCampaign]:
         """活动列表（按创建时间倒序）."""
         return self.db.query(RecruitCampaign).order_by(RecruitCampaign.created_at.desc()).all()
