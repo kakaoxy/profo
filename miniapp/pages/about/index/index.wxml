@@ -19,7 +19,7 @@
   <view class="agent-banner" hover-class="agent-banner--hover" hover-stay-time="80" bindtap="onAgentCoopTap">
     <view class="agent-banner__ico">经</view>
     <view class="agent-banner__body">
-      <view class="agent-banner__title">我是经纪人，了解更多合作信息</view>
+      <view class="agent-banner__title">我是经纪公司，了解更多合作信息</view>
       <view class="agent-banner__sub">佣金秒结 · 快速响应 · 装修代卖</view>
     </view>
     <view class="agent-banner__arrow">›</view>
