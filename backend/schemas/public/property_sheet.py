@@ -27,6 +27,7 @@ class PropertySheetItemResponse(BaseModel):
     display_status: str = Field(description="展示状态: 在售/已售")
     title: str = Field(description="标题")
     community_name: str | None = Field(None, description="小区名称")
+    business_circle: str | None = Field(None, description="商圈名称(经小区关联查询，缺失为 None)")
     cover_image: str | None = Field(None, description="封面图URL")
     cover_thumbnail_url: str | None = Field(None, description="封面缩略图URL")
     layout: str = Field(description="户型")

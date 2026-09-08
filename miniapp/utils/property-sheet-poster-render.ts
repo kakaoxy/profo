@@ -13,7 +13,12 @@ import {
   toQrcodeDataUri,
 } from "./recruit-poster";
 import { buildSheetPosterLayout, SHEET_POSTER_HEIGHT, SHEET_POSTER_WIDTH } from "./property-sheet-poster";
-import type { SheetPosterLayout, SheetPosterRect, SheetPosterText } from "./property-sheet-poster";
+import type {
+  SheetPosterLayout,
+  SheetPosterListingRow,
+  SheetPosterRect,
+  SheetPosterText,
+} from "./property-sheet-poster";
 import { savePosterToAlbum } from "./recruit-poster-render";
 import type { PosterCanvasPageContext } from "./recruit-poster-render";
 
@@ -41,12 +46,14 @@ export interface SheetPosterImages {
 
 /** createSheetPosterTempFile 入参. */
 export interface SheetPosterRenderOptions {
-  /** 房源单实际套数（可能 >3，驱动副标题与「更多扫码」提示条）. */
+  /** 房源单实际套数（可能 >5，驱动副标题与「更多扫码」提示条）. */
   count: number;
   /** 封面 URL 列表（cover_thumbnail_url 优先；最多取前 3 张，单张失败跳过不阻断）. */
   covers: string[];
   /** 小程序码 base64（接口返回的 image_base64）. */
   qrcodeBase64: string;
+  /** 逐套格式化后的清单行（formatSheetPosterListings 产出，驱动清单面板排版）. */
+  listings: SheetPosterListingRow[];
 }
 
 /** 占位底色（设计稿 Fog，封面缺失时）. */
@@ -131,7 +138,23 @@ export function drawSheetPoster(
     }
     ctx.restore();
   });
-  // 「更多扫码」提示条（仅 >3 套）
+  // 清单面板（方案B卡片清单）：Fog 底圆角矩形 + 每行序号 chip（杏色底）+ 字段段与价格
+  if (layout.list) {
+    ctx.fillStyle = COLOR_FOG;
+    roundRectPath(ctx, layout.list.rect);
+    ctx.fill();
+    for (const row of layout.list.rows) {
+      ctx.fillStyle = "#fbe1d1";
+      roundRectPath(ctx, row.chip.rect);
+      ctx.fill();
+      drawText(ctx, row.chip.text);
+      for (const segment of row.segments) {
+        drawText(ctx, segment);
+      }
+      drawText(ctx, row.price);
+    }
+  }
+  // 「更多扫码」提示条（仅 >5 套）
   if (layout.moreStrip) {
     ctx.fillStyle = "#fbe1d1";
     roundRectPath(ctx, layout.moreStrip.rect);
@@ -235,7 +258,7 @@ export async function createSheetPosterTempFile(
     opts.covers.slice(0, 3).map((url) => loadCover(canvas, url)),
   );
   const qr = await loadImage(canvas, toQrcodeDataUri(opts.qrcodeBase64));
-  const layout = buildSheetPosterLayout({ count: opts.count });
+  const layout = buildSheetPosterLayout({ count: opts.count, listings: opts.listings });
   drawSheetPoster(ctx, layout, { covers, qr });
   return canvasToTempFile(canvas);
 }

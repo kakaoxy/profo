@@ -31,6 +31,7 @@ from models.marketing.property_sheet import (
     PropertySheetShareEvent,
     PropertySheetVisit,
 )
+from models.property.community import Community
 from settings import settings
 from utils.auth import get_password_hash
 
@@ -275,6 +276,33 @@ class TestDetail:
         # 明细按 sort_order 升序
         orders = [i["sort_order"] for i in body["items"]]
         assert orders == sorted(orders)
+
+    def test_detail_business_circle(self, no_auth_client: TestClient, db_session: Session):
+        """business_circle 三分支：小区有值原样返回，空串/NULL 归一 None，未关联小区为 None."""
+        c_circle = Community(name="三林新城", business_circle="三林")
+        c_empty = Community(name="空串商圈小区", business_circle="")
+        c_null = Community(name="NULL商圈小区", business_circle=None)
+        db_session.add_all([c_circle, c_empty, c_null])
+        db_session.commit()
+
+        p_circle = _make_project(db_session, title="有商圈房", community_id=c_circle.id)
+        p_empty = _make_project(db_session, title="空串商圈房", community_id=c_empty.id)
+        p_null = _make_project(db_session, title="NULL商圈房", community_id=c_null.id)
+        p_no_community = _make_project(db_session, title="无小区房", community_id="ghost-community")
+
+        sheet = _make_sheet(
+            db_session,
+            "customer-user",
+            project_ids=[p_circle.id, p_empty.id, p_null.id, p_no_community.id],
+        )
+
+        resp = no_auth_client.get(f"{BASE}/{sheet.id}")
+        assert resp.status_code == 200
+        by_pid = {i["marketing_project_id"]: i for i in resp.json()["items"]}
+        assert by_pid[p_circle.id]["business_circle"] == "三林"
+        assert by_pid[p_empty.id]["business_circle"] is None
+        assert by_pid[p_null.id]["business_circle"] is None
+        assert by_pid[p_no_community.id]["business_circle"] is None
 
     def test_detail_not_found_404(self, no_auth_client: TestClient):
         """不存在返回 404."""

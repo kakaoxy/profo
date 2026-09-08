@@ -6525,7 +6525,7 @@ export interface components {
             expected_price?: number | null;
             /**
              * Images
-             * @description 图片URL（前 3 张）
+             * @description 图片URL
              */
             images?: string[];
             /**
@@ -9477,7 +9477,7 @@ export interface components {
          * @description 待评估队列项（工作台卡片，兼作授权页详情数据源）.
          *
          *     业主报价口径 = expected_price 回退 total_price（与 admin 总价列/C 端列表一致）；
-         *     images 裁剪前 3 张。
+         *     images 返回全量（授权页照片区依赖完整图片列表）。
          */
         PendingAssessmentQueueItem: {
             /**
@@ -9527,7 +9527,7 @@ export interface components {
             expected_price?: number | null;
             /**
              * Images
-             * @description 图片URL（前 3 张）
+             * @description 图片URL
              */
             images?: string[];
             /**
@@ -10839,6 +10839,11 @@ export interface components {
              * @description 小区名称
              */
             community_name?: string | null;
+            /**
+             * Business Circle
+             * @description 商圈名称(经小区关联查询，缺失为 None)
+             */
+            business_circle?: string | null;
             /**
              * Cover Image
              * @description 封面图URL

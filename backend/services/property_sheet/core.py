@@ -19,6 +19,7 @@ from models.marketing.property_sheet import (
     PropertySheetShareEvent,
     PropertySheetVisit,
 )
+from models.property.community import Community
 from schemas.public import PublicConsultantContact
 from schemas.public.property_sheet import (
     PropertySheetCreateRequest,
@@ -138,7 +139,8 @@ class PropertySheetService:
     def get_sheet_detail(self, sheet_id: int) -> PropertySheetResponse:
         """房源单详情（免登录，仅 active；明细实时过滤未发布/在途房源）.
 
-        房源一次性 in_ 批量查询（禁 N+1），封面复用 PublicProjectService 批量解析.
+        房源一次性 in_ 批量查询（禁 N+1），LEFT JOIN 小区补充商圈字段，
+        封面复用 PublicProjectService 批量解析.
 
         Raises:
             ResourceNotFoundError: 房源单不存在或已删除
@@ -152,18 +154,24 @@ class PropertySheetService:
             .all()
         )
         projects = (
-            self.db.query(L4MarketingProject)
+            self.db.query(L4MarketingProject, Community.business_circle)
+            .outerjoin(Community, L4MarketingProject.community_id == Community.id)
             .filter(L4MarketingProject.id.in_([item.marketing_project_id for item in items]))
             .all()
         )
-        project_map = {project.id: project for project in projects}
-        cover_map = PublicProjectService(self.db).resolve_cover_images_batch(list(project_map.values()))
+        project_map = {project.id: (project, business_circle) for project, business_circle in projects}
+        cover_map = PublicProjectService(self.db).resolve_cover_images_batch(
+            [project for project, _business_circle in project_map.values()]
+        )
 
         rows: list[PropertySheetItemResponse] = []
         for item in items:
-            project = project_map.get(item.marketing_project_id)
+            project_business = project_map.get(item.marketing_project_id)
             # C 端读口径：仅展示已发布且非在途（在售/已售）的房源，缺失/未发布/在途/已删除均隐藏
-            if project is None or project.is_deleted:
+            if project_business is None:
+                continue
+            project, business_circle = project_business
+            if project.is_deleted:
                 continue
             if project.publish_status != PublishStatus.PUBLISHED.value:
                 continue
@@ -177,6 +185,7 @@ class PropertySheetService:
                     display_status=project.project_status.value,
                     title=project.title,
                     community_name=project.community_name,
+                    business_circle=business_circle or None,
                     cover_image=cover_image,
                     cover_thumbnail_url=cover_thumbnail_url,
                     layout=project.layout,

@@ -10840,6 +10840,11 @@ export interface components {
              */
             community_name?: string | null;
             /**
+             * Business Circle
+             * @description 商圈名称(经小区关联查询，缺失为 None)
+             */
+            business_circle?: string | null;
+            /**
              * Cover Image
              * @description 封面图URL
              */

@@ -1,0 +1,630 @@
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>房源单海报 · 房源清单迭代 · 高保真设计稿</title>
+<!--
+  房源单海报迭代 · 高保真设计稿（单文件自包含 HTML，无外部依赖、无 JS）
+  迭代目标：在 pages/property-sheet/detail 海报（miniapp/utils/property-sheet-poster.ts，
+  600×960 canvas）中新增「已选房源文字清单」，每行格式：商圈/几室/楼层/价格
+  （示例：徐家汇商圈/2室/3F/248万）。
+
+  已确认的设计决策（2026-09-08 与需求方对齐）：
+    · 文案格式：理想格式「商圈/2室/3F/248万」——后端补商圈字段、前端格式化
+      （layout「三室两厅」→「3室」、floor_info「15/28层」→「15F」、价格取整或最多 1 位小数）
+    · 布局：独立清单区块（图片拼版下方，行序 = 图序，图文分离）
+    · 条数：最多 5 行，>5 套显示溢出提示条「已精选 N 套 · 更多好房 扫码查看」
+    · 产出：2~3 个方案对比（本文档区块 1：方案 A 极简清单 / 方案 B 卡片清单 / 方案 C 序号对应）
+
+  ⚠️ 数据依赖（必须显式标注）：商圈 business_circle 存于 Community 表，当前
+    PropertySheetItemResponse 未返回该字段，需后端在 PropertySheetService.get_sheet_detail
+    补 JOIN；缺失时降级为小区名 community_name（见区块 3）。
+
+  视觉规范：遵循项目 Steep Style Reference（与 multi-property-share-hifi.html 同源 token）——
+    Ink #17191c / Fog #f7f7f8 / Rust #5d2a1a 唯一暖色强调 / Apricot Wash #fbe1d1 / Sky Wash #d3e3fc；
+    Signifier 衬线仅用于海报主标题；微字重 430/450/480；卡片 24px / 图片 12px / 胶囊 9999px。
+  纵向预算（新版，600×960，安全边距 26）：标题区 0–214（原 326 压缩，主标题 44→40px）
+    → 图片拼版 234–494（通栏 124 + 间距 12 + 半图 124，原 150/148）
+    → 房源清单 510–675（行高 33 × ≤5 行，新增）→ 溢出提示条 690–730（仅 >5 套，高 40，原 44）
+    → 品牌区 + 小程序码 744–934（不变，码 160×160 右下角）。
+  示例场景：与旧稿一致按「选 6 套」绘制（清单显示前 5 条 + 溢出提示条）。
+  照片素材：text_to_image 接口生成（与 multi-property-share-hifi.html 同源 prompt）。
+  本文件为设计稿交付物，按要求必须"单个自包含 HTML"，故不拆分模块（有意超过 500 行）。
+-->
+<style>
+  :root {
+    /* ===== Steep tokens（/DESIGN.md） ===== */
+    --color-ink: #17191c;
+    --color-pure-white: #ffffff;
+    --color-fog: #f7f7f8;
+    --color-ash: #4c4c4c;
+    --color-graphite: #777b86;
+    --color-dove: #a3a6af;
+    --color-rust: #5d2a1a;
+    --color-apricot-wash: #fbe1d1;
+    --color-sky-wash: #d3e3fc;
+    --font-signifier: "Source Serif 4", "Source Serif Pro", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --font-sohne: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    --radius-cards: 24px;
+    --radius-images: 12px;
+    --radius-pill: 9999px;
+    --hairline: 1px solid rgba(23, 25, 28, 0.07);
+    --shadow-subtle: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --shadow-float: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: var(--font-sohne);
+    font-weight: 400;
+    letter-spacing: -0.009em;
+    background: var(--color-pure-white);
+    color: var(--color-ink);
+    line-height: 1.7;
+  }
+  img { display: block; }
+
+  /* ===== 页面骨架：1200px 编辑部式纵向节奏 ===== */
+  .page-head {
+    text-align: center;
+    padding: 96px 24px 0;
+  }
+  .page-head .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.08em;
+    color: var(--color-rust);
+  }
+  .page-head .kicker::before, .page-head .kicker::after {
+    content: ""; width: 28px; height: 1px; background: var(--color-apricot-wash);
+  }
+  .page-head h1 {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 64px;
+    line-height: 1.1;
+    letter-spacing: -1.6px;
+    margin-top: 16px;
+  }
+  .page-head .lede {
+    margin: 18px auto 0;
+    max-width: 680px;
+    font-size: 18px; line-height: 1.6; letter-spacing: -0.016em;
+    color: var(--color-ash);
+    text-wrap: pretty;
+  }
+  .lede .bh-em { color: var(--color-rust); font-weight: 450; }
+
+  .band { padding: 80px 24px; }
+  .band--fog { background: var(--color-fog); }
+  .band-inner { max-width: 1200px; margin: 0 auto; }
+
+  .block-head { text-align: center; margin-bottom: 40px; }
+  .bh-tag {
+    display: inline-flex; align-items: center;
+    background: var(--color-apricot-wash); color: var(--color-rust);
+    font-size: 12px; font-weight: 500; letter-spacing: 0.1em;
+    padding: 4px 14px; border-radius: var(--radius-pill);
+  }
+  .block-head h2 {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    font-size: 44px; line-height: 1.1; letter-spacing: -0.66px;
+    margin-top: 14px;
+  }
+  .block-head p {
+    margin: 10px auto 0;
+    max-width: 780px;
+    font-size: 16px; letter-spacing: -0.014em;
+    color: var(--color-graphite);
+    text-wrap: pretty;
+  }
+  .bh-em { color: var(--color-rust); font-weight: 450; }
+
+  /* ===== 区块 1：方案对比 ===== */
+  .variants {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    align-items: flex-start; gap: 36px;
+  }
+  .variant-fig { display: flex; flex-direction: column; align-items: center; width: 372px; }
+  .poster-shell {
+    width: 372px; padding: 6px;
+    background: var(--color-pure-white);
+    border-radius: 20px;
+    box-shadow: var(--shadow-float), 0 24px 48px rgba(23, 25, 28, 0.12);
+  }
+  .variant-tag {
+    display: inline-flex; align-items: baseline; gap: 8px;
+    margin-bottom: 14px;
+  }
+  .variant-tag b {
+    font-family: var(--font-signifier);
+    font-weight: 400; font-size: 26px; letter-spacing: -0.3px;
+  }
+  .variant-tag i {
+    font-style: normal; font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+    color: var(--color-rust);
+    background: var(--color-apricot-wash);
+    padding: 2px 10px; border-radius: var(--radius-pill);
+  }
+  .variant-note {
+    margin-top: 18px; width: 100%;
+    font-size: 14px; line-height: 1.75; letter-spacing: -0.013em;
+    color: var(--color-graphite); text-wrap: pretty;
+  }
+  .variant-note b { color: var(--color-ink); font-weight: 500; }
+  .variant-note .risk { color: var(--color-rust); }
+
+  /* ===== 海报（600×960 逻辑坐标，0.6 缩放呈现） ===== */
+  .poster-scale { width: 360px; height: 576px; overflow: hidden; border-radius: 14px; }
+  .poster {
+    position: relative; width: 600px; height: 960px;
+    transform: scale(0.6); transform-origin: 0 0;
+    background: var(--color-pure-white);
+    font-family: var(--font-sohne);
+  }
+
+  /* --- 标题区 0–214 --- */
+  .p-head { position: absolute; top: 0; left: 0; width: 600px; height: 214px; overflow: hidden; }
+  .p-glow {
+    position: absolute; left: -488px; top: -560px; width: 1120px; height: 1120px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(251,225,209,0.95) 0%, rgba(251,225,209,0.42) 42%, rgba(255,255,255,0) 78%);
+  }
+  .p-ring {
+    position: absolute; left: 476px; top: -68px; width: 192px; height: 192px;
+    border: 2px solid rgba(93,42,26,0.14); border-radius: 50%;
+  }
+  .p-pill {
+    position: absolute; left: 26px; top: 36px;
+    background: var(--color-rust); color: var(--color-pure-white);
+    font-size: 21px; line-height: 1; padding: 6px 22px;
+    border-radius: var(--radius-pill);
+  }
+  .p-title {
+    position: absolute; left: 26px; top: 85px;
+    font-family: var(--font-signifier);
+    font-weight: 400; font-size: 40px; line-height: 48px;
+    letter-spacing: 0; color: var(--color-ink);
+  }
+  .p-sub {
+    position: absolute; left: 26px; top: 139px;
+    font-size: 22px; line-height: 22px; color: var(--color-graphite);
+  }
+
+  /* --- 图片拼版区 234–494 --- */
+  .p-img { position: absolute; border-radius: 12px; overflow: hidden; background: var(--color-fog); }
+  .p-img img { width: 100%; height: 100%; object-fit: cover; }
+  .p-img-hero { left: 26px; top: 234px; width: 548px; height: 124px; }
+  .p-img-a { left: 26px; top: 370px; width: 268px; height: 124px; }
+  .p-img-b { left: 306px; top: 370px; width: 268px; height: 124px; }
+  .p-badge {
+    position: absolute; left: 8px; top: 8px;
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--color-pure-white);
+    border: 1px solid rgba(23,25,28,0.12);
+    color: var(--color-ink); font-size: 17px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* --- 房源清单区 510–675（新增） --- */
+  .p-list { position: absolute; left: 26px; top: 510px; width: 548px; }
+  .p-row {
+    height: 33px; display: flex; align-items: center;
+    font-size: 22px; line-height: 33px; letter-spacing: 0;
+  }
+  .p-row + .p-row { border-top: var(--hairline); }
+  .p-seg { color: var(--color-ink); }
+  .p-sep { color: var(--color-dove); margin: 0 7px; font-size: 20px; }
+  .p-price { color: var(--color-rust); font-weight: 500; }
+  .p-price-right { margin-left: auto; color: var(--color-rust); font-weight: 500; }
+  .p-mid { color: var(--color-dove); margin: 0 9px; font-size: 18px; }
+  .p-chip {
+    flex: none; width: 22px; height: 22px; margin-right: 10px;
+    border-radius: 7px; background: var(--color-apricot-wash); color: var(--color-rust);
+    font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .p-chip--line { background: var(--color-pure-white); border: 1px solid rgba(23,25,28,0.12); color: var(--color-ink); }
+  .p-panel {
+    position: absolute; left: 26px; top: 510px; width: 548px; height: 165px;
+    background: var(--color-fog); border-radius: 12px;
+  }
+  .p-panel .p-row { padding: 0 16px 0 14px; }
+  .p-panel .p-row + .p-row { border-top: none; }
+
+  /* --- 溢出提示条 690–730（仅 >5 套） --- */
+  .p-more {
+    position: absolute; left: 26px; top: 690px; width: 548px; height: 40px;
+    background: var(--color-apricot-wash); border-radius: 12px;
+    color: var(--color-rust); font-size: 20px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* --- 品牌区 + 小程序码 744–934 --- */
+  .p-brand-dot {
+    position: absolute; left: 26px; top: 819px; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--color-rust);
+  }
+  .p-brand-main { position: absolute; left: 46px; top: 810px; font-size: 28px; font-weight: 500; color: var(--color-ink); }
+  .p-brand-sub { position: absolute; left: 46px; top: 846px; font-size: 22px; color: var(--color-graphite); }
+  .p-qr { position: absolute; left: 414px; top: 744px; width: 160px; height: 160px; }
+  .p-qr svg { width: 160px; height: 160px; }
+  .p-qr-cap {
+    position: absolute; left: 414px; top: 912px; width: 160px;
+    font-size: 22px; line-height: 22px; color: var(--color-graphite); text-align: center;
+  }
+
+  /* ===== 区块 2：纵向预算对比图 ===== */
+  .budget-wrap { display: flex; flex-wrap: wrap; justify-content: center; gap: 48px; align-items: flex-start; }
+  .budget-col { display: flex; flex-direction: column; align-items: center; }
+  .budget-title { font-size: 14px; font-weight: 500; color: var(--color-ash); margin-bottom: 14px; letter-spacing: 0.02em; }
+  .budget-bar { width: 300px; display: flex; flex-direction: column; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow-subtle); }
+  .bg-seg { display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 13px; letter-spacing: 0; }
+  .bg-seg .bg-px { font-family: var(--mono); font-size: 11.5px; opacity: 0.75; }
+  .bg-head { background: var(--color-apricot-wash); color: var(--color-rust); }
+  .bg-gap { background: var(--color-pure-white); color: var(--color-dove); justify-content: center; }
+  .bg-imgs { background: var(--color-fog); color: var(--color-ash); box-shadow: inset 0 0 0 1px rgba(23,25,28,0.05); }
+  .bg-list { background: var(--color-sky-wash); color: var(--color-ink); }
+  .bg-strip { background: var(--color-apricot-wash); color: var(--color-rust); }
+  .bg-foot { background: var(--color-pure-white); color: var(--color-ash); box-shadow: inset 0 0 0 1px rgba(23,25,28,0.08); }
+  .bg-margin { background: var(--color-ink); color: var(--color-dove); justify-content: center; }
+  .bg-new { outline: 2px solid var(--color-rust); outline-offset: -2px; }
+
+  .budget-params { max-width: 380px; font-size: 14px; line-height: 1.8; color: var(--color-ash); }
+  .budget-params h3 { font-size: 16px; font-weight: 500; color: var(--color-ink); margin-bottom: 10px; }
+  .bp-li { display: flex; gap: 10px; }
+  .bp-li::before { content: "—"; color: var(--color-dove); flex: none; }
+
+  /* ===== 区块 3：字段映射表 / 依赖 / 实现要点 ===== */
+  .spec-grid { display: flex; flex-direction: column; gap: 28px; max-width: 980px; margin: 0 auto; }
+  .spec-card {
+    background: var(--color-pure-white); border-radius: var(--radius-cards);
+    box-shadow: var(--shadow-subtle); padding: 28px 32px;
+  }
+  .spec-card h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.2px; margin-bottom: 4px; }
+  .spec-card .sc-sub { font-size: 14px; color: var(--color-graphite); margin-bottom: 16px; }
+  table.field-map { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  .field-map th {
+    text-align: left; font-weight: 500; color: var(--color-graphite);
+    font-size: 12.5px; letter-spacing: 0.06em;
+    padding: 0 12px 8px 0; border-bottom: 1px solid rgba(23,25,28,0.1);
+  }
+  .field-map td { padding: 10px 12px 10px 0; border-bottom: 1px solid rgba(23,25,28,0.06); vertical-align: top; color: var(--color-ash); }
+  .field-map td:first-child { color: var(--color-ink); font-weight: 500; white-space: nowrap; }
+  .field-map code, .pill-code {
+    font-family: var(--mono); font-size: 12.5px;
+    background: var(--color-fog); border-radius: 6px; padding: 2px 7px;
+    color: var(--color-ink); white-space: nowrap;
+  }
+  .field-map .fmt { font-family: var(--mono); font-size: 13px; color: var(--color-rust); white-space: nowrap; }
+  .dep-warn {
+    border-radius: 16px; background: var(--color-apricot-wash);
+    padding: 20px 24px; font-size: 14.5px; line-height: 1.8; color: var(--color-rust);
+  }
+  .dep-warn b { font-weight: 500; }
+  .impl-li { display: flex; gap: 10px; font-size: 14.5px; line-height: 1.85; color: var(--color-ash); }
+  .impl-li::before { content: "·"; color: var(--color-rust); font-weight: 600; flex: none; }
+
+  /* ===== 区块 4：视觉规范增量 ===== */
+  .tok-grid { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+  .tok-card { background: var(--color-pure-white); border-radius: var(--radius-cards); box-shadow: var(--shadow-subtle); padding: 22px 26px; min-width: 250px; }
+  .tok-card h3 { font-size: 15px; font-weight: 500; margin-bottom: 14px; color: var(--color-ink); }
+  .sw-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--color-ash); margin-top: 8px; }
+  .sw-chip { width: 22px; height: 22px; border-radius: 7px; flex: none; box-shadow: inset 0 0 0 1px rgba(23,25,28,0.08); }
+  .sw-hex { font-family: var(--mono); font-size: 11.5px; color: var(--color-dove); margin-left: auto; }
+  .ty-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-top: 10px; }
+  .ty-label { font-size: 12px; color: var(--color-dove); font-family: var(--mono); white-space: nowrap; }
+
+  .page-foot { text-align: center; padding: 40px 24px 96px; font-size: 14px; color: var(--color-dove); }
+</style>
+</head>
+<body>
+
+  <!-- 小程序码示意（放射花瓣形）：仅供设计稿示意，实际由微信 getwxacodeunlimit 生成 -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="wxcode-art">
+        <circle cx="22" cy="22" r="20" fill="none" stroke="#17191c" stroke-width="1.6" stroke-dasharray="4.2 3.4" stroke-dashoffset="2"/>
+        <circle cx="22" cy="22" r="13.5" fill="none" stroke="#17191c" stroke-width="1.4" stroke-dasharray="3 2.6" stroke-dashoffset="1"/>
+        <g stroke="#17191c" stroke-width="1.6" stroke-linecap="round">
+          <path d="M22 8.5v3.4"/><path d="M22 32.1v3.4"/><path d="M8.5 22h3.4"/><path d="M32.1 22h3.4"/>
+          <path d="M12.6 12.6l2.4 2.4"/><path d="M29 29l2.4 2.4"/><path d="M31.4 12.6 29 15"/><path d="M15 29l-2.4 2.4"/>
+        </g>
+        <circle cx="22" cy="22" r="6" fill="#17191c"/>
+        <circle cx="22" cy="22" r="2.4" fill="#ffffff"/>
+      </g>
+    </defs>
+  </svg>
+
+  <header class="page-head">
+    <span class="kicker">房源单海报 · 迭代设计</span>
+    <h1>海报上的房源清单</h1>
+    <p class="lede">在 600×960 综合海报中新增<span class="bh-em">已选房源文字清单</span>：每行「商圈 / 几室 / 楼层 / 价格」，最多 5 行，行序与图片拼版一致；超 5 套由提示条承接。三个方案均保持既有品牌骨架（暖光晕标题区 / 拼版图 / 右下角小程序码）不变，仅重排纵向预算。</p>
+  </header>
+
+  <!-- ============ 区块 1 三方案对比 ============ -->
+  <section class="band">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 1</span>
+        <h2>三方案对比</h2>
+        <p>示例场景与旧稿一致：按<span class="bh-em">选 6 套</span>绘制，清单显示前 5 条 + 溢出提示条；≤5 套时行数 = 套数且不显示提示条。示例数据为理想格式（商圈字段需后端补充，见区块 3）。</p>
+      </div>
+      <div class="variants">
+
+        <!-- ===== 方案 A · 极简清单 ===== -->
+        <figure class="variant-fig">
+          <div class="variant-tag"><b>方案 A</b><i>极简清单</i></div>
+          <div class="poster-shell">
+            <div class="poster-scale">
+              <div class="poster" data-screen-label="方案A 极简清单海报">
+                <div class="p-head">
+                  <div class="p-glow"></div>
+                  <div class="p-ring"></div>
+                  <span class="p-pill">精选好房</span>
+                  <div class="p-title">美房宝品质二手房</div>
+                  <div class="p-sub">6 套精选好房 倾情呈现</div>
+                </div>
+                <div class="p-img p-img-hero"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 1 套封面：客厅实拍" loading="lazy" /></div>
+                <div class="p-img p-img-a"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 2 套封面：卧室实拍" loading="lazy" /></div>
+                <div class="p-img p-img-b"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20apartment%20kitchen%20and%20dining%20room%20interior%2C%20white%20cabinets%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 3 套封面：餐厨实拍" loading="lazy" /></div>
+                <div class="p-list">
+                  <div class="p-row"><span class="p-seg">徐家汇商圈</span><span class="p-sep">/</span><span class="p-seg">2室</span><span class="p-sep">/</span><span class="p-seg">3F</span><span class="p-sep">/</span><span class="p-price">248万</span></div>
+                  <div class="p-row"><span class="p-seg">联洋商圈</span><span class="p-sep">/</span><span class="p-seg">1室</span><span class="p-sep">/</span><span class="p-seg">2F</span><span class="p-sep">/</span><span class="p-price">148万</span></div>
+                  <div class="p-row"><span class="p-seg">世博商圈</span><span class="p-sep">/</span><span class="p-seg">2室</span><span class="p-sep">/</span><span class="p-seg">4F</span><span class="p-sep">/</span><span class="p-price">100万</span></div>
+                  <div class="p-row"><span class="p-seg">大宁商圈</span><span class="p-sep">/</span><span class="p-seg">1室</span><span class="p-sep">/</span><span class="p-seg">5F</span><span class="p-sep">/</span><span class="p-price">128万</span></div>
+                  <div class="p-row"><span class="p-seg">塘桥商圈</span><span class="p-sep">/</span><span class="p-seg">2室</span><span class="p-sep">/</span><span class="p-seg">6F</span><span class="p-sep">/</span><span class="p-price">135万</span></div>
+                </div>
+                <div class="p-more">已精选 6 套 · 更多好房 扫码查看</div>
+                <div class="p-brand-dot"></div>
+                <div class="p-brand-main">专注上海老破小</div>
+                <div class="p-brand-sub">所见即所得 · 每套皆标杆</div>
+                <div class="p-qr"><svg viewBox="0 0 44 44" role="img" aria-label="小程序码示意"><use href="#wxcode-art"></use></svg></div>
+                <div class="p-qr-cap">扫码看全部房源</div>
+              </div>
+            </div>
+          </div>
+          <figcaption class="variant-note"><b>忠实需求文案格式</b>：商圈/2室/3F/248万 一行连排，分隔符弱化为 Dove 色，价格 Rust 微加粗收尾；行间发丝线。canvas 改动最小、版面最克制。<span class="risk">风险：纯文本行视觉锚点弱，多行时扫读节奏平。</span></figcaption>
+        </figure>
+
+        <!-- ===== 方案 B · 卡片清单 ===== -->
+        <figure class="variant-fig">
+          <div class="variant-tag"><b>方案 B</b><i>卡片清单</i></div>
+          <div class="poster-shell">
+            <div class="poster-scale">
+              <div class="poster" data-screen-label="方案B 卡片清单海报">
+                <div class="p-head">
+                  <div class="p-glow"></div>
+                  <div class="p-ring"></div>
+                  <span class="p-pill">精选好房</span>
+                  <div class="p-title">美房宝品质二手房</div>
+                  <div class="p-sub">6 套精选好房 倾情呈现</div>
+                </div>
+                <div class="p-img p-img-hero"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 1 套封面：客厅实拍" loading="lazy" /></div>
+                <div class="p-img p-img-a"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 2 套封面：卧室实拍" loading="lazy" /></div>
+                <div class="p-img p-img-b"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20apartment%20kitchen%20and%20dining%20room%20interior%2C%20white%20cabinets%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 3 套封面：餐厨实拍" loading="lazy" /></div>
+                <div class="p-panel">
+                  <div class="p-row"><span class="p-chip">1</span><span class="p-seg">徐家汇商圈</span><span class="p-mid">·</span><span class="p-seg">2室</span><span class="p-mid">·</span><span class="p-seg">3F</span><span class="p-price-right">248万</span></div>
+                  <div class="p-row"><span class="p-chip">2</span><span class="p-seg">联洋商圈</span><span class="p-mid">·</span><span class="p-seg">1室</span><span class="p-mid">·</span><span class="p-seg">2F</span><span class="p-price-right">148万</span></div>
+                  <div class="p-row"><span class="p-chip">3</span><span class="p-seg">世博商圈</span><span class="p-mid">·</span><span class="p-seg">2室</span><span class="p-mid">·</span><span class="p-seg">4F</span><span class="p-price-right">100万</span></div>
+                  <div class="p-row"><span class="p-chip">4</span><span class="p-seg">大宁商圈</span><span class="p-mid">·</span><span class="p-seg">1室</span><span class="p-mid">·</span><span class="p-seg">5F</span><span class="p-price-right">128万</span></div>
+                  <div class="p-row"><span class="p-chip">5</span><span class="p-seg">塘桥商圈</span><span class="p-mid">·</span><span class="p-seg">2室</span><span class="p-mid">·</span><span class="p-seg">6F</span><span class="p-price-right">135万</span></div>
+                </div>
+                <div class="p-more">已精选 6 套 · 更多好房 扫码查看</div>
+                <div class="p-brand-dot"></div>
+                <div class="p-brand-main">专注上海老破小</div>
+                <div class="p-brand-sub">所见即所得 · 每套皆标杆</div>
+                <div class="p-qr"><svg viewBox="0 0 44 44" role="img" aria-label="小程序码示意"><use href="#wxcode-art"></use></svg></div>
+                <div class="p-qr-cap">扫码看全部房源</div>
+              </div>
+            </div>
+          </div>
+          <figcaption class="variant-note"><b>结构感最强</b>：Fog 面板承载整组清单，杏色序号 chip 起头，字段以中点分组、价格右对齐成列，扫读最快；与详情页卡片语言一致。<span class="risk">风险：面板体量感比纯文本行强，挤占留白。</span></figcaption>
+        </figure>
+
+        <!-- ===== 方案 C · 序号对应 ===== -->
+        <figure class="variant-fig">
+          <div class="variant-tag"><b>方案 C</b><i>序号对应</i></div>
+          <div class="poster-shell">
+            <div class="poster-scale">
+              <div class="poster" data-screen-label="方案C 序号对应海报">
+                <div class="p-head">
+                  <div class="p-glow"></div>
+                  <div class="p-ring"></div>
+                  <span class="p-pill">精选好房</span>
+                  <div class="p-title">美房宝品质二手房</div>
+                  <div class="p-sub">6 套精选好房 倾情呈现</div>
+                </div>
+                <div class="p-img p-img-hero"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20Chinese%20apartment%20living%20room%20interior%2C%20warm%20sunlight%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 1 套封面：客厅实拍" loading="lazy" /><span class="p-badge">1</span></div>
+                <div class="p-img p-img-a"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cozy%20modern%20Chinese%20apartment%20bedroom%20interior%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 2 套封面：卧室实拍" loading="lazy" /><span class="p-badge">2</span></div>
+                <div class="p-img p-img-b"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bright%20modern%20apartment%20kitchen%20and%20dining%20room%20interior%2C%20white%20cabinets%2C%20realistic%20photo&image_size=landscape_4_3" alt="第 3 套封面：餐厨实拍" loading="lazy" /><span class="p-badge">3</span></div>
+                <div class="p-list">
+                  <div class="p-row"><span class="p-chip p-chip--line">1</span><span class="p-seg">徐家汇商圈</span><span class="p-sep">/</span><span class="p-seg">2室</span><span class="p-sep">/</span><span class="p-seg">3F</span><span class="p-price-right">248万</span></div>
+                  <div class="p-row"><span class="p-chip p-chip--line">2</span><span class="p-seg">联洋商圈</span><span class="p-sep">/</span><span class="p-seg">1室</span><span class="p-sep">/</span><span class="p-seg">2F</span><span class="p-price-right">148万</span></div>
+                  <div class="p-row"><span class="p-chip p-chip--line">3</span><span class="p-seg">世博商圈</span><span class="p-sep">/</span><span class="p-seg">2室</span><span class="p-sep">/</span><span class="p-seg">4F</span><span class="p-price-right">100万</span></div>
+                  <div class="p-row"><span class="p-chip p-chip--line">4</span><span class="p-seg">大宁商圈</span><span class="p-sep">/</span><span class="p-seg">1室</span><span class="p-sep">/</span><span class="p-seg">5F</span><span class="p-price-right">128万</span></div>
+                  <div class="p-row"><span class="p-chip p-chip--line">5</span><span class="p-seg">塘桥商圈</span><span class="p-sep">/</span><span class="p-seg">2室</span><span class="p-sep">/</span><span class="p-seg">6F</span><span class="p-price-right">135万</span></div>
+                </div>
+                <div class="p-more">已精选 6 套 · 更多好房 扫码查看</div>
+                <div class="p-brand-dot"></div>
+                <div class="p-brand-main">专注上海老破小</div>
+                <div class="p-brand-sub">所见即所得 · 每套皆标杆</div>
+                <div class="p-qr"><svg viewBox="0 0 44 44" role="img" aria-label="小程序码示意"><use href="#wxcode-art"></use></svg></div>
+                <div class="p-qr-cap">扫码看全部房源</div>
+              </div>
+            </div>
+          </div>
+          <figcaption class="variant-note"><b>图文强对应</b>：拼版图左上角加白底序号角标，清单行前用同款 chip，客户可「看图找行」，弥补图文分离后对应关系丢失的痛点；保留 slash 文案格式。<span class="risk">风险：角标遮挡封面局部（8px 内边距 + 白底，可控）。</span></figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块 2 布局标注：纵向预算 ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 2</span>
+        <h2>纵向预算 · 旧版 → 新版</h2>
+        <p>600×960（5:8）逻辑像素、安全边距 26px 不变。为清单让位：<span class="bh-em">标题区 326→214（主标题 44→40px）</span>、拼版图 150/148→124；清单行高 33×≤5 行；溢出提示条仅 &gt;5 套显示（触发阈值由 3 改为 5）。</p>
+      </div>
+      <div class="budget-wrap">
+
+        <div class="budget-col">
+          <div class="budget-title">旧版 · 现线上实现</div>
+          <div class="budget-bar">
+            <div class="bg-seg bg-head" style="height: 244.5px;"><span>标题区（暖光晕）</span><span class="bg-px">326</span></div>
+            <div class="bg-seg bg-gap" style="height: 18px;">24</div>
+            <div class="bg-seg bg-imgs" style="height: 232.5px;"><span>图片拼版</span><span class="bg-px">310</span></div>
+            <div class="bg-seg bg-gap" style="height: 15px;">20</div>
+            <div class="bg-seg bg-strip" style="height: 33px;"><span>提示条 &gt;3 套</span><span class="bg-px">44</span></div>
+            <div class="bg-seg bg-gap" style="height: 15px;">20</div>
+            <div class="bg-seg bg-foot" style="height: 142.5px;"><span>品牌区 + 小程序码</span><span class="bg-px">190</span></div>
+            <div class="bg-seg bg-margin" style="height: 19.5px;">26</div>
+          </div>
+        </div>
+
+        <div class="budget-col">
+          <div class="budget-title">新版 · 增加房源清单（区块描红为新增/调整）</div>
+          <div class="budget-bar">
+            <div class="bg-seg bg-head" style="height: 160.5px;"><span>标题区（压缩）</span><span class="bg-px">214</span></div>
+            <div class="bg-seg bg-gap" style="height: 15px;">20</div>
+            <div class="bg-seg bg-imgs" style="height: 195px;"><span>图片拼版（124+12+124）</span><span class="bg-px">260</span></div>
+            <div class="bg-seg bg-gap" style="height: 12px;">16</div>
+            <div class="bg-seg bg-list bg-new" style="height: 123.75px;"><span>房源清单 ≤5 行</span><span class="bg-px">165</span></div>
+            <div class="bg-seg bg-gap" style="height: 11.25px;">15</div>
+            <div class="bg-seg bg-strip bg-new" style="height: 30px;"><span>提示条 &gt;5 套</span><span class="bg-px">40</span></div>
+            <div class="bg-seg bg-gap" style="height: 10.5px;">14</div>
+            <div class="bg-seg bg-foot" style="height: 142.5px;"><span>品牌区 + 小程序码</span><span class="bg-px">190</span></div>
+            <div class="bg-seg bg-margin" style="height: 19.5px;">26</div>
+          </div>
+        </div>
+
+        <aside class="budget-params">
+          <h3>关键参数</h3>
+          <div class="bp-li">清单行高 33px，字号 22px；最多 5 行，行序 = 图片拼版顺序</div>
+          <div class="bp-li">≤5 套：行数 = 套数，不显示提示条；1~2 套时拼版图可回吃清单让出的高度（实现层按套数放宽）</div>
+          <div class="bp-li">&gt;5 套：显示溢出提示条「已精选 N 套 · 更多好房 扫码查看」（Apricot 底 / Rust 字 20px，高 40）</div>
+          <div class="bp-li">主标题 44→40px、行高 48；副标题 24→22px；「精选好房」胶囊与装饰环不变</div>
+          <div class="bp-li">品牌区、小程序码 160×160（右下角）与配文完全不变</div>
+          <div class="bp-li">所有新元素仍落在安全区 [26, 26, 574, 934] 内</div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块 3 文案格式与数据依赖 ============ -->
+  <section class="band">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 3</span>
+        <h2>每行文案的字段映射与数据依赖</h2>
+        <p>目标格式 <code style="font-family: var(--mono); color: var(--color-rust);">商圈/几室/楼层/价格</code>。逐套字段由页面层从 <span class="pill-code">PropertySheetItemResponse</span> 格式化后传给布局纯函数，布局层不接触网络数据。</p>
+      </div>
+      <div class="spec-grid">
+
+        <div class="spec-card">
+          <h3>字段映射</h3>
+          <div class="sc-sub">四段拼接，分隔符「/」以 Dove 色弱化；价格段 Rust 500 字重收尾（方案 B 为中点分组 + 价格右对齐）。</div>
+          <table class="field-map">
+            <thead>
+              <tr><th>段</th><th>数据来源</th><th>格式化规则</th><th>示例</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>商圈</td>
+                <td><code>Community.business_circle</code>（经后端补充进 <code>PropertySheetItemResponse</code>）</td>
+                <td>原样展示；缺失时降级小区名 <code>community_name</code></td>
+                <td class="fmt">徐家汇商圈</td>
+              </tr>
+              <tr>
+                <td>几室</td>
+                <td><code>layout</code>（如「三室两厅」）</td>
+                <td>取首个居室词转数字 +「室」；解析失败整段省略</td>
+                <td class="fmt">2室</td>
+              </tr>
+              <tr>
+                <td>楼层</td>
+                <td><code>floor_info</code>（如「15/28层」）</td>
+                <td>取所在层转「N F」；无「/」时原样展示</td>
+                <td class="fmt">3F</td>
+              </tr>
+              <tr>
+                <td>价格</td>
+                <td><code>total_price</code>（万元，number）</td>
+                <td>整数省小数、最多 1 位（与落地页 formatPrice 口径一致）+「万」</td>
+                <td class="fmt">248万</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="dep-warn">
+          <b>⚠️ 数据依赖（实现前置条件）：</b>商圈 <code>business_circle</code> 存于小区表 <code>Community</code>，当前房源单链路 <code>PropertySheetService.get_sheet_detail</code> 只冗余了 <code>community_name</code>，<b>未返回商圈</b>。需后端补 JOIN Community 并在 <code>PropertySheetItemResponse</code> 增加字段（跑 <code>pnpm gen-api</code> 同步类型）；字段缺失期间前端按「降级为小区名」渲染，布局层无需感知。
+        </div>
+
+        <div class="spec-card">
+          <h3>canvas 实现要点</h3>
+          <div class="sc-sub">改动集中在布局纯函数与绘制器，套数自适应逻辑已有单测覆盖，扩展成本低。</div>
+          <div class="impl-li"><span><span class="pill-code">property-sheet-poster.ts</span>：<code>buildSheetPosterLayout</code> 新增入参 <code>listings</code>（逐套格式化后的展示字段数组）；新增 <code>SheetPosterListing</code> / <code>SheetPosterList</code> 接口（行段文本、价格、序号、行坐标 y = 510 + i × 33），行数 = min(count, 5)。</span></div>
+          <div class="impl-li"><span>提示条触发阈值由 count &gt; 3 改为 count &gt; 5，文案改为「已精选 N 套 · 更多好房 扫码查看」，高度 44→40、y=690。</span></div>
+          <div class="impl-li"><span>1~2 套场景：清单行数随套数减少，拼版图高度按剩余空间放宽（布局函数内按同一下边距回算）。</span></div>
+          <div class="impl-li"><span><span class="pill-code">property-sheet-poster-render.ts</span>：新增清单/序号 chip/图片角标落笔；发丝线 1px <code>rgba(23,25,28,0.07)</code>，价格 500 字重；方案 C 需在拼版图左上角绘角标（仅前 3 张）。</span></div>
+          <div class="impl-li"><span>单测 <span class="pill-code">property-sheet-poster.test.ts</span>：行数截断（5/6/10 套）、坐标边界、无商圈降级文案、阈值翻转（4、5、6 套）。</span></div>
+          <div class="impl-li"><span>文案格式化放页面层 <span class="pill-code">pages/property-sheet/detail/index.ts</span>（layout→几室、floor_info→NF、价格取整），保持纯函数不解析业务字符串。</span></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块 4 视觉规范增量 ============ -->
+  <section class="band band--fog">
+    <div class="band-inner">
+      <div class="block-head">
+        <span class="bh-tag">区块 4</span>
+        <h2>视觉规范增量</h2>
+        <p>仅新增清单区相关 token，其余全部沿用 Steep 既有规范（见 multi-property-share-hifi.html 区块 7）。</p>
+      </div>
+      <div class="tok-grid">
+
+        <div class="tok-card">
+          <h3>清单区用色</h3>
+          <div class="sw-row"><span class="sw-chip" style="background:#17191c"></span><span class="sw-name">Ink · 字段正文</span><span class="sw-hex">#17191c</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#5d2a1a"></span><span class="sw-name">Rust · 价格 / 序号字</span><span class="sw-hex">#5d2a1a</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#a3a6af"></span><span class="sw-name">Dove · 分隔符「/」「·」</span><span class="sw-hex">#a3a6af</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#fbe1d1"></span><span class="sw-name">Apricot · 提示条 / 序号 chip 底</span><span class="sw-hex">#fbe1d1</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:#f7f7f8"></span><span class="sw-name">Fog · 方案 B 面板底</span><span class="sw-hex">#f7f7f8</span></div>
+          <div class="sw-row"><span class="sw-chip" style="background:linear-gradient(90deg, rgba(23,25,28,0.07), rgba(23,25,28,0.07))"></span><span class="sw-name">发丝线 · 行分隔</span><span class="sw-hex">rgba(23,25,28,.07)</span></div>
+        </div>
+
+        <div class="tok-card">
+          <h3>字号与字重</h3>
+          <div class="ty-row"><span>清单行字段 / 价格</span><span class="ty-label">22px · w400 / w500</span></div>
+          <div class="ty-row"><span>分隔符</span><span class="ty-label">20px · w400 · Dove</span></div>
+          <div class="ty-row"><span>序号 chip / 图片角标</span><span class="ty-label">13px / 17px · w500</span></div>
+          <div class="ty-row"><span>溢出提示条</span><span class="ty-label">20px · w500 · Rust</span></div>
+          <div class="ty-row"><span>主标题（衬线 Signifier）</span><span class="ty-label">40px · 行高 48 · w400</span></div>
+          <div class="ty-row"><span>副标题</span><span class="ty-label">22px · w400 · Graphite</span></div>
+        </div>
+
+        <div class="tok-card">
+          <h3>形状</h3>
+          <div class="ty-row"><span>溢出提示条 / 方案 B 面板圆角</span><span class="ty-label">12px（= 图片圆角）</span></div>
+          <div class="ty-row"><span>序号 chip 圆角</span><span class="ty-label">7px · 22×22</span></div>
+          <div class="ty-row"><span>图片角标圆角</span><span class="ty-label">8px · 28×28 · 白底</span></div>
+          <div class="ty-row"><span>「精选好房」胶囊</span><span class="ty-label">9999px（不变）</span></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="page-foot">
+    房源单海报 · 房源清单迭代 · 高保真设计稿 · 选定方案后进入实现（后端补商圈字段 → 布局纯函数 → 绘制器 → 单测 → gen-api）
+  </footer>
+</body>
+</html>

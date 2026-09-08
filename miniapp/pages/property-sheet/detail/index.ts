@@ -24,6 +24,8 @@ import type { HttpResponseError } from "../../../utils/request";
 import { formatLeadTime } from "../../../utils/recruit-logic";
 import { resolveImageUrl } from "../../../utils/url";
 import { createSheetPosterTempFile } from "../../../utils/property-sheet-poster-render";
+import { formatSheetPosterListings } from "../../../utils/property-sheet-poster";
+import type { SheetPosterListingRow } from "../../../utils/property-sheet-poster";
 
 type PropertySheetResponse = components["schemas"]["PropertySheetResponse"];
 type PropertySheetItemResponse = components["schemas"]["PropertySheetItemResponse"];
@@ -63,6 +65,8 @@ interface PageData {
   /** 明细套数（items 实际数量，驱动海报副标题/提示条/弹层文案）. */
   itemCount: number;
   items: SheetItemDisplay[];
+  /** 海报清单行（loadDetail 时由 formatSheetPosterListings 一次性格式化，供海报绘制）. */
+  posterListings: SheetPosterListingRow[];
   /** 海报生成中（防重入）. */
   generating: boolean;
   /** 海报预览弹层是否展示. */
@@ -179,6 +183,7 @@ Page<PageData, PageCustom>({
     createdText: "",
     itemCount: 0,
     items: [],
+    posterListings: [],
     generating: false,
     posterVisible: false,
     posterImagePath: "",
@@ -209,12 +214,23 @@ Page<PageData, PageCustom>({
         url: `/public/property-sheets/${sheetId}`,
       });
       const items = sheet.items || [];
+      // 海报清单行：API snake_case 字段在调用处映射为 SheetPosterListingSource 后格式化
+      const posterListings = formatSheetPosterListings(
+        items.map((it) => ({
+          businessCircle: it.business_circle,
+          communityName: it.community_name,
+          layout: it.layout,
+          floorInfo: it.floor_info,
+          totalPrice: it.total_price,
+        })),
+      );
       this.setData({
         loading: false,
         code: sheet.code,
         createdText: formatLeadTime(sheet.created_at),
         itemCount: items.length,
         items: items.map((it) => this.toDisplay(it)),
+        posterListings,
       });
     } catch (err) {
       const statusCode = (err as HttpResponseError).statusCode;
@@ -293,7 +309,7 @@ Page<PageData, PageCustom>({
    * - 绘制/导出失败（封面占位不阻断，码图/画布/导出失败才抛错）：toast 重试.
    */
   async generatePoster() {
-    const { sheetId, itemCount, items, generating } = this.data;
+    const { sheetId, itemCount, items, posterListings, generating } = this.data;
     if (!sheetId || generating) {
       return;
     }
@@ -325,6 +341,7 @@ Page<PageData, PageCustom>({
         count: itemCount,
         covers: items.slice(0, 3).map((it) => it.posterCover),
         qrcodeBase64: qrcode.image_base64,
+        listings: posterListings,
       });
       this.setData({ posterImagePath, posterVisible: true, generating: false });
       wx.hideLoading();
