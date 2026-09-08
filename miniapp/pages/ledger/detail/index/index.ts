@@ -48,6 +48,8 @@ interface RecordItem {
   hasTicket: boolean;
   ticketCount: number;
   ticketThumb: string;
+  /** 全部票据 URL（已 resolve），用于预览. */
+  ticketUrls: string[];
 }
 
 /** 页面 data. */
@@ -72,6 +74,7 @@ interface PageCustom {
   apply(cf: CashFlowResponse): void;
   loadDetail(): void;
   onGoRecord(): void;
+  onPreviewTicket(e: WechatMiniprogram.TouchEvent): void;
   onRetry(): void;
   onGoLogin(): void;
 }
@@ -232,6 +235,7 @@ Page<PageData, PageCustom>({
         hasTicket,
         ticketCount: receiptUrls.length,
         ticketThumb: hasTicket ? resolveAssetUrl(receiptUrls[0]) : "",
+        ticketUrls: receiptUrls.map((u) => resolveAssetUrl(u)),
       };
     });
   },
@@ -286,6 +290,19 @@ Page<PageData, PageCustom>({
         `id=${encodeURIComponent(projectId)}&name=${encodeURIComponent(projectName)}` +
         `&community_name=${encodeURIComponent(communityName)}` +
         `&business_form=${businessForm ? encodeURIComponent(businessForm) : ""}`,
+    });
+  },
+
+  onPreviewTicket(e: WechatMiniprogram.TouchEvent) {
+    const index = Number((e.currentTarget.dataset.index as string) ?? "");
+    const record = this.data.records[index];
+    if (!record || record.ticketUrls.length === 0) {
+      return;
+    }
+    // 原生图片预览：全屏 + 左右滑动切换 + 双指缩放
+    wx.previewImage({
+      current: record.ticketUrls[0],
+      urls: record.ticketUrls,
     });
   },
 
