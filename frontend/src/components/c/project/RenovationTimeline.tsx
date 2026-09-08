@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import { ChevronRight, ChevronUp, ImageIcon, Play } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getFileUrl, getThumbnailUrl } from "@/lib/config";
 import type { components } from "@/lib/api-types";
 import { isValidUrl } from "@/lib/validators";
@@ -20,6 +21,7 @@ interface RenovationTimelineProps {
 
 export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
   const [expanded, setExpanded] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<PublicMediaItem | null>(null);
 
   const toggle = useCallback(() => setExpanded((prev) => !prev), []);
 
@@ -191,25 +193,47 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                           className="relative aspect-square rounded-images overflow-hidden bg-fog"
                         >
                           {isVideo ? (
-                            videoUrl ? (
-                              <video
-                                src={videoUrl}
-                                poster={videoPoster || undefined}
-                                controls
-                                playsInline
-                                preload="metadata"
-                                className="absolute inset-0 h-full w-full bg-black object-contain"
-                                aria-label={item.description ?? stage.stage}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Play
-                                  className="h-5 w-5 text-graphite"
-                                  fill="currentColor"
-                                  aria-hidden="true"
-                                />
-                              </div>
-                            )
+                            // 视频瓦片：封面（无封面则黑色占位）+ Play 角标，点击后 Dialog 内才挂载 <video>，
+                            // 避免展开多阶段时网格内并发发起大量视频元数据请求（与 admin 端方案一致）
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isValidUrl(videoUrl)) setPreviewVideo(item);
+                              }}
+                              aria-label={item.description ?? stage.stage}
+                              className="absolute inset-0 cursor-pointer"
+                            >
+                              {videoPoster && isValidUrl(videoPoster) ? (
+                                isDev ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={videoPoster}
+                                    alt={item.description ?? stage.stage}
+                                    width={200}
+                                    height={200}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <Image
+                                    src={videoPoster}
+                                    alt={item.description ?? stage.stage}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 50vw, 33vw"
+                                  />
+                                )
+                              ) : (
+                                <span className="absolute inset-0 bg-black" aria-hidden="true" />
+                              )}
+                              <span
+                                className="absolute inset-0 flex items-center justify-center"
+                                aria-hidden="true"
+                              >
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50">
+                                  <Play className="h-4 w-4 text-white" fill="currentColor" />
+                                </span>
+                              </span>
+                            </button>
                           ) : isValidUrl(imageUrl) ? (
                             isDev ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -248,6 +272,25 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
           })}
         </div>
       )}
+
+      {/* 视频预览弹层：仅在此处挂载 <video>，网格瓦片只加载封面图 */}
+      <Dialog open={previewVideo !== null} onOpenChange={(open) => !open && setPreviewVideo(null)}>
+        <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
+          <DialogTitle className="sr-only">
+            {previewVideo?.description ?? cLocale.projects.renovationProcess}
+          </DialogTitle>
+          {previewVideo && isValidUrl(getFileUrl(previewVideo.file_url)) ? (
+            <video
+              src={getFileUrl(previewVideo.file_url)}
+              controls
+              playsInline
+              autoPlay
+              preload="metadata"
+              className="max-h-[80vh] w-full rounded-lg bg-black object-contain shadow-2xl"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

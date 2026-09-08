@@ -4,37 +4,8 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useUpload, compressImage } from "@/components/common/upload";
 import { addRenovationPhotoAction } from "../../../../../actions/renovation";
-import {
-  ALLOWED_IMAGE_TYPES,
-  ALLOWED_VIDEO_TYPES,
-  MAX_IMAGE_SIZE,
-  MAX_VIDEO_SIZE,
-} from "@/lib/constants";
-import { formatFileSize } from "@/lib/formatters";
+import { validateMediaFile, isVideoFile } from "@/lib/media-validation";
 import { UploadingPhoto } from "./photo-grid";
-
-/** 允许的媒体类型（图片 + 视频，对齐 marketing 上传规格） */
-const ALLOWED_MEDIA_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
-
-/** 按文件类型分类型校验：图片 >100MB 或视频 >500MB 或非法类型则报错 */
-function validateMediaFile(file: File): string | null {
-  const isVideo = file.type.startsWith("video/");
-  if (isVideo && file.size > MAX_VIDEO_SIZE) {
-    return `视频文件过大，最大支持 ${formatFileSize(MAX_VIDEO_SIZE)}`;
-  }
-  if (!isVideo && file.size > MAX_IMAGE_SIZE) {
-    return `图片文件过大，最大支持 ${formatFileSize(MAX_IMAGE_SIZE)}`;
-  }
-  if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-    return "不支持的文件格式";
-  }
-  return null;
-}
-
-/** 根据文件类型推断媒体类型 */
-function inferIsVideo(file: File): boolean {
-  return file.type.startsWith("video/");
-}
 
 interface UseRenovationUploadProps {
   projectId: string;
@@ -54,9 +25,9 @@ export function useRenovationUpload({
     onPhotoUploadedRef.current = onPhotoUploaded;
   }, [onPhotoUploaded]);
 
+  // 校验仅走自定义 validateMediaFile（分类型 100MB/500MB），
+  // 不传 maxSize/allowedTypes —— useUpload 中自定义校验与内置校验互斥，传了也不会生效
   const { upload: baseUpload } = useUpload({
-    maxSize: MAX_VIDEO_SIZE,
-    allowedTypes: ALLOWED_MEDIA_TYPES,
     validateFile: validateMediaFile,
     onSuccess: async (response, file) => {
       const dbRes = await addRenovationPhotoAction({
@@ -65,7 +36,7 @@ export function useRenovationUpload({
         url: response.url,
         thumbnail_url: response.thumbnail_url,
         filename: file.name,
-        media_type: inferIsVideo(file) ? "video" : "image",
+        media_type: isVideoFile(file) ? "video" : "image",
       });
 
       if (dbRes.success) {
@@ -144,7 +115,7 @@ export function useRenovationUpload({
           id: result.id,
           file: result.processedFile,
           previewUrl: result.previewUrl,
-          isVideo: inferIsVideo(result.processedFile),
+          isVideo: isVideoFile(result.processedFile),
           progress: 0,
           status: "uploading",
         });

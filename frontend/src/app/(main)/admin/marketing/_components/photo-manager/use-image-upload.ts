@@ -9,38 +9,9 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useUpload, compressImage } from "@/components/common/upload";
 import { createL4MarketingMediaAction } from "../../actions";
-import {
-  ALLOWED_IMAGE_TYPES,
-  ALLOWED_VIDEO_TYPES,
-  MAX_IMAGE_SIZE,
-  MAX_UPLOAD_FILES,
-  MAX_VIDEO_SIZE,
-} from "@/lib/constants";
-import { formatFileSize } from "@/lib/formatters";
-import type { L4MarketingMedia, MediaType, PhotoCategory } from "../../types";
-
-/** 允许的媒体类型（图片 + 视频） */
-const ALLOWED_MEDIA_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
-
-/** 按文件类型校验大小：图片 100MB，视频 500MB */
-function validateMediaFile(file: File): string | null {
-  const isVideo = file.type.startsWith("video/");
-  if (isVideo && file.size > MAX_VIDEO_SIZE) {
-    return `视频文件过大，最大支持 ${formatFileSize(MAX_VIDEO_SIZE)}`;
-  }
-  if (!isVideo && file.size > MAX_IMAGE_SIZE) {
-    return `图片文件过大，最大支持 ${formatFileSize(MAX_IMAGE_SIZE)}`;
-  }
-  if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-    return "不支持的文件格式";
-  }
-  return null;
-}
-
-/** 根据文件类型推断媒体类型 */
-function inferMediaType(file: File): MediaType {
-  return file.type.startsWith("video/") ? "video" : "image";
-}
+import { MAX_UPLOAD_FILES } from "@/lib/constants";
+import { validateMediaFile, isVideoFile } from "@/lib/media-validation";
+import type { L4MarketingMedia, PhotoCategory } from "../../types";
 
 export interface UploadProgress {
   filename: string;
@@ -99,12 +70,11 @@ export function useImageUpload({
     photosRef.current = photos;
   }, [photos]);
 
+  // 校验仅走自定义 validateMediaFile（分类型 100MB/500MB），与装修上传共用同一实现；
+  // 不传 maxSize/allowedTypes —— useUpload 中自定义校验与内置校验互斥，传了也不会生效
   const { isUploading, uploadSingle } = useUpload({
-    maxSize: MAX_VIDEO_SIZE,
-    allowedTypes: ALLOWED_MEDIA_TYPES,
-    multiple: true,
     validateFile: validateMediaFile,
-    beforeUpload: (file) => (file.type.startsWith("video/") ? file : compressImage(file)),
+    beforeUpload: (file) => (isVideoFile(file) ? file : compressImage(file)),
     onProgress: ({ file, progress }) => {
       // 同步到组件的 uploadingFiles 状态（用于UI展示）
       setUploadingFiles((prev) =>
@@ -118,7 +88,7 @@ export function useImageUpload({
       return {
         id: Date.now() + Math.random(),
         file_url: fileUrl,
-        media_type: inferMediaType(file),
+        media_type: isVideoFile(file) ? "video" : "image",
         photo_category: uploadCategory,
         renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
         sort_order: sortOrder,
@@ -191,7 +161,7 @@ export function useImageUpload({
             succeeded.map(({ file, response, index }) =>
               createL4MarketingMediaAction(projectId, {
                 file_url: response.url,
-                media_type: inferMediaType(file),
+                media_type: isVideoFile(file) ? "video" : "image",
                 photo_category: uploadCategory,
                 renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
                 sort_order: baseSortOrderRef.current + index,
