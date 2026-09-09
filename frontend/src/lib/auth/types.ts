@@ -6,6 +6,53 @@ import type {
   updateSessionTokenAction,
 } from "./server/actions";
 
+// ─── Errors ──────────────────────────────────────────────────────────────────
+
+/**
+ * 带 HTTP 状态码的 API 错误。
+ *
+ * adapter 的 refreshToken 在后端返回非 2xx 时抛出本类型，让调用方
+ * （refresh 路由、auth-middleware）能区分「后端明确拒绝」（401/403，
+ * 会话确定性失效，应清 cookie）与「瞬时故障」（5xx/429/网络/超时，
+ * 应保留 cookie 允许重试）。网络错误/超时不经过本类型（无 status）。
+ */
+export class ApiStatusError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiStatusError";
+    this.status = status;
+  }
+}
+
+/**
+ * 判定 error 是否为 ApiStatusError。
+ *
+ * 使用鸭子类型（检查 name/status）而非 instanceof：Next.js dev（Turbopack）
+ * 与多 bundle 场景下同一模块可能存在多个实例，跨实例 instanceof 会失真；
+ * 鸭子类型对模块复制免疫，生产与 dev 行为一致。
+ */
+export function isApiStatusError(error: unknown): error is ApiStatusError {
+  return (
+    error instanceof Error &&
+    error.name === "ApiStatusError" &&
+    typeof (error as Partial<ApiStatusError>).status === "number"
+  );
+}
+
+/**
+ * 判定刷新失败是否为「后端明确拒绝」（HTTP 401/403，refresh_token 已
+ * 撤销/无效，会话确定性失效，应清 cookie）。
+ *
+ * 统一契约：refresh 路由与 auth-middleware 三处共用同一判定，避免语义
+ * 漂移。瞬时故障（5xx/429/网络/超时）一律返回 false，调用方应保留 cookie
+ * 允许重试。
+ */
+export function isDefinitiveRejection(error: unknown): boolean {
+  const status = isApiStatusError(error) ? error.status : null;
+  return status === 401 || status === 403;
+}
+
 // ─── Core Domain Types ────────────────────────────────────────────────────────
 
 /**

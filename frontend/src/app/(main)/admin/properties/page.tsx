@@ -25,7 +25,7 @@ export default async function PropertiesPage(props: PageProps) {
   const client = await fetchClient();
 
   // 4. 发起请求
-  const { data, error } = await client.GET("/api/v1/properties", {
+  const { data, error, response } = await client.GET("/api/v1/properties", {
     params: {
       query: {
         page: query.page,
@@ -49,6 +49,10 @@ export default async function PropertiesPage(props: PageProps) {
   });
 
   if (error) {
+    const status = response?.status;
+    if (status === 401) {
+      return <div className="p-8 text-error">登录状态已失效，请刷新页面重新登录</div>;
+    }
     return <div className="p-8 text-error">连接后端失败，请稍后重试</div>;
   }
 

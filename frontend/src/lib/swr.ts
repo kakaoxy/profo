@@ -23,7 +23,7 @@ export class ForbiddenError extends Error {
 export async function fetcher<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
   if (res.status === 401) {
-    const { success: refreshed } = await refreshTokensDedup(getRefreshEndpoint());
+    const { success: refreshed, retryable } = await refreshTokensDedup(getRefreshEndpoint());
     if (refreshed) {
       const retryRes = await fetch(url, { credentials: "include" });
       if (retryRes.status === 401 || retryRes.status === 403) throw new AuthError();
@@ -32,6 +32,10 @@ export async function fetcher<T>(url: string): Promise<T> {
         throw new Error(error.message || `HTTP ${retryRes.status}`);
       }
       return retryRes.json();
+    }
+    if (retryable) {
+      // 瞬时失败：会话仍有效，抛可重试网络错误而非 AuthError（避免被当未登录处理）
+      throw new Error("服务暂时不可用，请稍后重试");
     }
     throw new AuthError();
   }

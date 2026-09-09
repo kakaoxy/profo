@@ -16,7 +16,16 @@
  * Promise settles to coalesce burst traffic, then evicted.
  */
 
-const refreshPromises = new Map<string, Promise<unknown>>();
+/**
+ * 去重注册表挂在 globalThis 上：dev 模式（Turbopack）每个请求可能重新实例化
+ * 模块，模块级 Map 会随之丢失，导致跨请求去重失效；globalThis 在同一服务进程
+ * 内持久，保证 dev 与生产行为一致。
+ */
+const globalRegistry = globalThis as unknown as {
+  __authServerRefreshPromises?: Map<string, Promise<unknown>>;
+};
+const refreshPromises: Map<string, Promise<unknown>> =
+  (globalRegistry.__authServerRefreshPromises ??= new Map());
 
 const CACHE_WINDOW_MS = 2000;
 

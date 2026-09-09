@@ -22,14 +22,15 @@ import { hasPathPermission } from "@/lib/auth/permissions";
 export function PermissionGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { permissions, isLoading } = usePermission();
+  const { permissions, isLoading, error } = usePermission();
 
   useEffect(() => {
-    if (isLoading) return;
+    // 权限查询出错时不能确定真实权限，不弹回（后端 API 仍会做权限校验，安全）
+    if (isLoading || error) return;
     if (!hasPathPermission(pathname, permissions)) {
       router.replace("/admin");
     }
-  }, [pathname, permissions, isLoading, router]);
+  }, [pathname, permissions, isLoading, error, router]);
 
   return <>{children}</>;
 }

@@ -20,7 +20,7 @@ export default async function GovernancePage(props: GovernancePageProps) {
 
   const client = await fetchClient();
 
-  const { data, error } = await client.GET("/api/v1/admin/communities", {
+  const { data, error, response } = await client.GET("/api/v1/admin/communities", {
     params: {
       query: {
         page: page,
@@ -31,8 +31,13 @@ export default async function GovernancePage(props: GovernancePageProps) {
   });
 
   if (error || !data) {
-    logger.error("连接后端失败:", error);
-    return <div className="p-8 text-center text-error">加载数据失败，请检查网络或权限。</div>;
+    const status = response?.status;
+    logger.error("加载数据失败:", { status, error });
+    return (
+      <div className="p-8 text-center text-error">
+        {status === 401 ? "登录状态已失效，请刷新页面重新登录" : "加载数据失败，请检查网络或权限。"}
+      </div>
+    );
   }
 
   const { items, total } = extractPaginatedData<components["schemas"]["CommunityResponse"]>(data);

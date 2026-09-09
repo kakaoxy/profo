@@ -32,6 +32,8 @@ export interface UsePermissionReturn {
   hasAnyPermission: (codes: string[]) => boolean;
   /** 是否正在加载（首次请求未完成） */
   isLoading: boolean;
+  /** 权限查询错误（含会话失效/网络错误）；null 表示无错误。让 PermissionGuard 在出错时不误判为无权限而弹回工作台 */
+  error: unknown;
 }
 
 /**
@@ -47,7 +49,7 @@ export interface UsePermissionReturn {
  * @returns 权限集合与判断函数
  */
 export function usePermission(): UsePermissionReturn {
-  const { data, isLoading } = useSWR<AuthMePermissionResponse>(AUTH_ME_KEY, fetcher);
+  const { data, isLoading, error } = useSWR<AuthMePermissionResponse>(AUTH_ME_KEY, fetcher);
 
   const permissions = useMemo<string[]>(() => data?.permissions ?? [], [data]);
 
@@ -69,5 +71,6 @@ export function usePermission(): UsePermissionReturn {
     hasPermission,
     hasAnyPermission,
     isLoading,
+    error,
   };
 }

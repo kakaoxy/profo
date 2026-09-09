@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { adminAuth } from "@/admin-auth";
 import { debugLog } from "@/lib/auth/config";
+import { isTokenValid } from "@/lib/auth/core/jwt";
 import type { AuthMiddlewareResult } from "@/lib/auth/middleware/auth-middleware";
 
 // Module-level singletons: library design intends one resolver reused across requests.
@@ -132,14 +133,22 @@ export default async function proxy(request: NextRequest) {
     const session = await resolveAuth(request);
 
     if (!session.isAuthenticated) {
-      // 无 token 或刷新失败：清 cookies 并重定向到登录页
-      debugLog("proxy: C-side unauthenticated — redirecting to login", { pathname });
-      const loginUrl = new URL("/login", request.url);
-      // 与 refresh/route.ts 对齐：仅当 pathname 非默认首页时透传 redirect，避免冗余参数
-      if (pathname !== "/") {
-        loginUrl.searchParams.set("redirect", pathname);
+      // 刷新瞬时失败（5xx/网络/超时）但 refresh_token 仍有效且未被后端明确拒绝：
+      // 放行请求（不清 cookie、不跳登录），由下游 401 → refresh 路由兜底恢复
+      //（路由层对瞬时失败返回 503 保留 cookie）。
+      const recoverable =
+        session.refreshToken && isTokenValid(session.refreshToken) && !session.refreshRejected;
+      if (!recoverable) {
+        debugLog("proxy: C-side unauthenticated — redirecting to login", { pathname });
+        const loginUrl = new URL("/login", request.url);
+        // 与 refresh/route.ts 对齐：仅当 pathname 非默认首页时透传 redirect，避免冗余参数
+        if (pathname !== "/") {
+          loginUrl.searchParams.set("redirect", pathname);
+        }
+        return applyCsp(session.redirect(loginUrl), nonce);
       }
-      return applyCsp(session.redirect(loginUrl), nonce);
+      debugLog("proxy: C-side refresh transiently failed — passing through", { pathname });
+      return applyCsp(session.response(nextWithNonce(request, nonce)), nonce);
     }
 
     // 已认证：写回可能刷新后的 token cookies
@@ -163,27 +172,36 @@ export default async function proxy(request: NextRequest) {
     return applyCsp(nextWithNonce(request, nonce), nonce);
   }
 
-  // ── 4. Admin-side auth (HTML requests only) ──
-  // 仅对 HTML 页面请求执行 proxy 层刷新，避免并发 API 请求多次触发刷新。
-  // 客户端 API 请求的 401 由 api-server.ts 的 forceRefreshToken 重试机制处理
-  // （内部走 adminAuth.adapter.refreshToken + setTokenCookies，复用统一 dedup）。
-  // adminAuth.createMiddleware() 已捕获 admin resolved config，不依赖 singleton。
-  const isHtmlRequest = request.headers.get("accept")?.includes("text/html");
-
-  if (!isHtmlRequest) {
-    return applyCsp(nextWithNonce(request, nonce), nonce);
-  }
-
+  // ── 4. Admin-side auth ──
+  // 对所有保护路径请求（HTML 整页 + RSC 软导航）执行 proxy 层认证与自动刷新，
+  // 消除「整页刷新能续期、点击跳转不能续期」的路径不对称（此前软导航 401 后
+  // 只能依赖 4 跳补救链，任一环失败即跳登录/白屏）。
+  // 客户端 API 请求不经过本层（第 3 步已跳过 /api 前缀）。
+  //
+  // 注意：无法在 proxy 内识别预取请求 —— Next.js 会从 proxy 的 request.headers
+  // 中剥离全部 Flight 头（rsc / next-router-state-tree / next-router-prefetch，
+  // 见 Next 16 官方文档 proxy.md「RSC requests and rewrites」）。预取请求与导航
+  // 请求一样走 resolveAdminAuth：刷新仅在 access_token 缺失/过期/临近阈值时触发，
+  // 并发经 dedupServerRefresh（2s 窗口）合并；预取引发的偶发刷新失败按瞬时故障
+  // 放行（refresh 路由 503 保留 cookie），不会误杀会话。
   const session = await resolveAdminAuth(request);
 
   if (!session.isAuthenticated) {
-    debugLog("proxy: admin unauthenticated — redirecting to /admin/login", { pathname });
-    const loginUrl = new URL("/admin/login", request.url);
-    // 与 refresh/route.ts 对齐：仅当 pathname 非默认 /admin 时透传 redirect，避免冗余参数
-    if (pathname !== "/admin") {
-      loginUrl.searchParams.set("redirect", pathname);
+    // 刷新瞬时失败但 refresh_token 仍有效且未被后端明确拒绝：放行请求，
+    // 由下游 401 → /api/auth/refresh 兜底（路由层对瞬时失败返回 503 保留 cookie）。
+    const recoverable =
+      session.refreshToken && isTokenValid(session.refreshToken) && !session.refreshRejected;
+    if (!recoverable) {
+      debugLog("proxy: admin unauthenticated — redirecting to /admin/login", { pathname });
+      const loginUrl = new URL("/admin/login", request.url);
+      // 与 refresh/route.ts 对齐：仅当 pathname 非默认 /admin 时透传 redirect，避免冗余参数
+      if (pathname !== "/admin") {
+        loginUrl.searchParams.set("redirect", pathname);
+      }
+      return applyCsp(session.redirect(loginUrl), nonce);
     }
-    return applyCsp(session.redirect(loginUrl), nonce);
+    debugLog("proxy: admin refresh transiently failed — passing through", { pathname });
+    return applyCsp(session.response(nextWithNonce(request, nonce)), nonce);
   }
 
   // 用 session 中可能已刷新的 token 覆盖请求 cookie，让 Server Component

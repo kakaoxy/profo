@@ -40,7 +40,7 @@ const authMiddleware: Middleware = {
         return response;
       }
 
-      const { success: refreshed } = await refreshTokensDedup(getRefreshEndpoint());
+      const { success: refreshed, retryable } = await refreshTokensDedup(getRefreshEndpoint());
 
       if (refreshed) {
         const storedBody = consumeRequestBody(request);
@@ -54,6 +54,12 @@ const authMiddleware: Middleware = {
         }
 
         return await fetch(new Request(request, init));
+      }
+
+      // 瞬时失败（后端 5xx/网络抖动）：会话仍有效，不跳登录页，
+      // 返回原响应交由页面错误态展示可重试错误
+      if (retryable) {
+        return response;
       }
 
       if (typeof window !== "undefined") {

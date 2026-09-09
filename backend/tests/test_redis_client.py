@@ -72,6 +72,9 @@ class TestGetRedisClient:
             decode_responses=False,
             socket_connect_timeout=5,
             socket_timeout=5,
+            socket_keepalive=True,
+            health_check_interval=30,
+            retry_on_timeout=True,
         )
         mock_client.ping.assert_called_once()
 

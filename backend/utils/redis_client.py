@@ -63,6 +63,11 @@ def get_redis_client() -> Redis:
         decode_responses=False,
         socket_connect_timeout=5,
         socket_timeout=5,
+        # 保活：长静置后连接可能被中间设备静默回收，keepalive + 健康检查 +
+        # 超时重试避免限流中间件首个请求 5xx（模块 docstring 的用途之一）
+        socket_keepalive=True,
+        health_check_interval=30,
+        retry_on_timeout=True,
     )
     try:
         _redis_client.ping()

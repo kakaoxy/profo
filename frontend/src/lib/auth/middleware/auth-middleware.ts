@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSecondsUntilExpiry, isTokenValid } from "../core/jwt";
-import type { ResolvedAuthConfig } from "../types";
+import { isApiStatusError, isDefinitiveRejection, type ResolvedAuthConfig } from "../types";
 import { getGlobalAuthConfig, debugLog } from "../config";
 import { dedupServerRefresh } from "../server/refresh-dedup";
 
@@ -13,6 +13,12 @@ export interface AuthMiddlewareResult {
   /** The current refresh token (may be a freshly rotated one). */
   refreshToken: string | null;
   /**
+   * True when a refresh was attempted and the backend definitively rejected
+   * the refresh token (HTTP 401/403). False for transient failures
+   * (5xx/429/network/timeout) where the session may still be recoverable.
+   */
+  refreshRejected: boolean;
+  /**
    * Wraps a NextResponse, writing any refreshed token cookies onto it.
    * Always use this instead of returning the response directly.
    *
@@ -22,8 +28,10 @@ export interface AuthMiddlewareResult {
    */
   response: (base: NextResponse) => NextResponse;
   /**
-   * Redirects to a URL and clears the session cookies.
-   * Use this when redirecting unauthenticated users to the login page.
+   * Redirects to a URL. Session cookies are cleared only when the session is
+   * definitively dead (no refresh token, refresh token expired/invalid, or
+   * backend rejected the refresh). Transient refresh failures keep the
+   * cookies so later requests can still recover.
    *
    * @example
    * return session.redirect(new URL("/login", request.url));
@@ -137,6 +145,7 @@ export function createAuthMiddleware(config?: ResolvedAuthConfig) {
       request.cookies.get(resolvedConfig.cookieNames.refreshToken)?.value ?? null;
 
     let refreshedTokens: { accessToken: string; refreshToken: string } | null = null;
+    let refreshRejected = false;
 
     if (!accessToken && !refreshToken) {
       debugLog("Middleware: no tokens found", { pathname });
@@ -170,9 +179,16 @@ export function createAuthMiddleware(config?: ResolvedAuthConfig) {
         accessToken = refreshedTokens.accessToken;
         debugLog("Middleware: token refresh successful", { pathname });
       } catch (error) {
-        // Refresh failed — proceed with the existing (potentially expired) token state
+        // 刷新失败：区分「后端明确拒绝」（401/403，refresh_token 已撤销/无效，
+        // 会话确定性失效）与「瞬时故障」（5xx/429/网络/超时，可重试，不应清
+        // cookie）。isDefinitiveRejection 与 refresh 路由共用同一契约
+        // （见 ../types）；isApiStatusError 用鸭子类型判定，免疫 dev 模式下
+        // 模块多实例导致的 instanceof 失真。
+        refreshRejected = isDefinitiveRejection(error);
         debugLog("Middleware: token refresh failed — proceeding with existing state", {
           pathname,
+          status: isApiStatusError(error) ? error.status : null,
+          refreshRejected,
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -195,12 +211,20 @@ export function createAuthMiddleware(config?: ResolvedAuthConfig) {
     }
 
     function redirect(url: URL): NextResponse {
-      debugLog("Middleware: redirecting and clearing session cookies", {
+      // 会话确定性失效（无 refresh_token / 本地已过期 / 后端明确拒绝）才清
+      // cookie；瞬时刷新失败保留 cookie，让后续请求（含 Server Component
+      // 401 → refresh 路由兜底）仍可恢复会话。
+      const sessionDead =
+        !refreshToken || !isTokenValid(refreshToken) || refreshRejected;
+      debugLog("Middleware: redirecting", {
         pathname,
         destination: url.pathname,
+        clearCookies: sessionDead,
       });
       const redirectResponse = NextResponse.redirect(url);
-      clearTokensFromResponse(redirectResponse, resolvedConfig);
+      if (sessionDead) {
+        clearTokensFromResponse(redirectResponse, resolvedConfig);
+      }
       return redirectResponse;
     }
 
@@ -208,6 +232,7 @@ export function createAuthMiddleware(config?: ResolvedAuthConfig) {
       isAuthenticated,
       accessToken,
       refreshToken: refreshedTokens?.refreshToken ?? refreshToken,
+      refreshRejected,
       response,
       redirect,
     };

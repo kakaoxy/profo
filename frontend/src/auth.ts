@@ -1,4 +1,6 @@
 import { Auth } from "@/lib/auth";
+// 直接从 @/lib/auth/types 导入，避免经过 @/lib/auth 桶文件的循环依赖
+import { ApiStatusError } from "@/lib/auth/types";
 import { apiPaths, getApiUrl } from "@/lib/config";
 
 // ─── SessionUser 扩展 ────────────────────────────────────────────────────────
@@ -172,7 +174,7 @@ export const auth = Auth({
       });
 
       if (!response.ok) {
-        throw new Error(await extractApiError(response, "Token 刷新失败"));
+        throw new ApiStatusError(await extractApiError(response, "Token 刷新失败"), response.status);
       }
 
       const data: TokenResponse = await response.json();

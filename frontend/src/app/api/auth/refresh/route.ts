@@ -4,6 +4,8 @@ import { adminAuth } from "@/admin-auth";
 import { clearTokenCookies, setTokenCookies } from "@/lib/auth/core";
 import { sanitizeCallbackUrl } from "@/lib/auth/utils/sanitize-callback-url";
 import { debugLog } from "@/lib/auth/config";
+import { dedupServerRefresh } from "@/lib/auth/server/refresh-dedup";
+import { isDefinitiveRejection } from "@/lib/auth/types";
 
 /**
  * POST /api/auth/refresh[?next=<root-relative-path>]
@@ -15,8 +17,12 @@ import { debugLog } from "@/lib/auth/config";
  * 通过 `adminAuth.adapter.refreshToken` 调用后端 `/api/v1/auth/refresh`，
  * 再用 `setTokenCookies(tokens, adminAuth.config)` 写入 cookie（maxAge 从
  * token exp claim 读取，不再硬编码 `expires_in || 36000` / `60*60*24*7`）。
- * 刷新失败时 `clearTokenCookies` 清除 cookie 并返回 401，强制用户重新登录
- * （fail-closed：不再区分 401/403/500，任何刷新失败都视为会话失效）。
+ * 刷新失败时仅在后端明确拒绝（ApiStatusError 401/403）时 `clearTokenCookies`
+ * 清除 cookie 并返回 401，强制用户重新登录（仅后端明确拒绝 401/403 时清
+ * cookie；瞬时失败保留 cookie 返回 503 可重试）。
+ *
+ * 并发去重：同一 refresh_token 的并发刷新经 `dedupServerRefresh` 共享同一
+ * Promise，避免 rotation 下并发请求拿着已被撤销的旧 token 各自失败。
  *
  * Task 8.2: 支持 `?next=<path>` 查询参数，用于 Server Component 401 重定向流程：
  *  - **导航请求**（`Accept: text/html`）：刷新成功后 303 重定向到 `next`，
@@ -44,7 +50,11 @@ export async function POST(request: Request) {
 
   try {
     debugLog("[admin refresh route] 向后端请求刷新 token...", { next: nextPath });
-    const tokens = await adminAuth.adapter.refreshToken(refreshToken);
+    // 与 proxy / token-refresh-server 一致的服务端去重：同一 refresh_token 的
+    // 并发刷新共享同一 Promise，避免 rotation 下「旧 jti 已撤销」误杀并发请求。
+    const tokens = await dedupServerRefresh(refreshToken, () =>
+      adminAuth.adapter.refreshToken(refreshToken),
+    );
     await setTokenCookies(tokens, adminAuth.config);
     debugLog("[admin refresh route] Token 刷新成功");
 
@@ -83,9 +93,12 @@ export async function POST(request: Request) {
     debugLog("[admin refresh route] 刷新失败", {
       error: error instanceof Error ? error.message : String(error),
     });
-    // 刷新失败：清除 cookies，强制用户重新登录（fail-closed）
-    await clearTokenCookies(adminAuth.config);
-    return NextResponse.json({ error: "Token refresh failed" }, { status: 401 });
+    if (isDefinitiveRejection(error)) {
+      await clearTokenCookies(adminAuth.config);
+      return NextResponse.json({ error: "Token refresh failed" }, { status: 401 });
+    }
+    // 瞬时失败：保留 cookie，返回 503 让客户端按可重试错误处理
+    return NextResponse.json({ error: "Service temporarily unavailable" }, { status: 503 });
   }
 }
 
@@ -97,10 +110,14 @@ export async function POST(request: Request) {
  * 浏览器 303 跳转，浏览器以 GET 方法请求本路由。
  *
  * 行为：
- *  - 无 refresh_token / 刷新失败：清 cookie 并 303 重定向到 /admin/login
- *    （不能返回 JSON，因为浏览器导航无法处理 JSON 响应）
+ *  - 无 refresh_token / 后端明确拒绝（ApiStatusError 401/403）：清 cookie 并
+ *    303 重定向到 /admin/login（不能返回 JSON，因为浏览器导航无法处理 JSON 响应）
+ *  - 瞬时失败（5xx/429/网络/超时）：保留 cookie，返回 503 提示页可重试
  *  - 刷新成功：setTokenCookies 落盘新 token，303 重定向回 `next` 路径
  *  - `next` 缺失或不合法：回退到 /admin
+ *
+ * 并发去重：同一 refresh_token 的并发刷新经 `dedupServerRefresh` 共享同一
+ * Promise，避免 rotation 下并发请求拿着已被撤销的旧 token 各自失败。
  *
  * 安全：
  *  - 仅使用 httpOnly cookie 中的 refresh_token，JS 不可读
@@ -140,7 +157,11 @@ export async function GET(request: Request) {
 
   try {
     debugLog("[admin refresh route] GET: 向后端请求刷新 token...", { next: nextPath });
-    const tokens = await adminAuth.adapter.refreshToken(refreshToken);
+    // 与 POST 一致的服务端去重：同一 refresh_token 的并发刷新共享同一 Promise，
+    // 避免 rotation 下「旧 jti 已撤销」误杀并发请求。
+    const tokens = await dedupServerRefresh(refreshToken, () =>
+      adminAuth.adapter.refreshToken(refreshToken),
+    );
     await setTokenCookies(tokens, adminAuth.config);
     debugLog("[admin refresh route] GET: Token 刷新成功，303 重定向到", nextPath);
     return NextResponse.redirect(new URL(nextPath, baseUrl), {
@@ -150,14 +171,18 @@ export async function GET(request: Request) {
     debugLog("[admin refresh route] GET: 刷新失败", {
       error: error instanceof Error ? error.message : String(error),
     });
-    // fail-closed：清 cookie 并跳登录
-    await clearTokenCookies(adminAuth.config);
-    const loginUrl = new URL("/admin/login", baseUrl);
-    if (nextPath && nextPath !== "/admin") {
-      loginUrl.searchParams.set("redirect", nextPath);
+    if (isDefinitiveRejection(error)) {
+      await clearTokenCookies(adminAuth.config);
+      const loginUrl = new URL("/admin/login", baseUrl);
+      if (nextPath && nextPath !== "/admin") {
+        loginUrl.searchParams.set("redirect", nextPath);
+      }
+      return NextResponse.redirect(loginUrl, { status: 303 });
     }
-    return NextResponse.redirect(loginUrl, {
-      status: 303,
-    });
+    // 瞬时失败：保留 cookie，返回 503 提示页（不重定向回 next，避免 401→refresh 死循环）
+    return new NextResponse(
+      "<!doctype html><html lang=\"zh-CN\"><meta charset=\"utf-8\"><title>服务暂时不可用</title><body style=\"font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0\"><p>服务暂时不可用，请稍后刷新重试</p></body></html>",
+      { status: 503, headers: { "content-type": "text/html; charset=utf-8", "retry-after": "5" } },
+    );
   }
 }

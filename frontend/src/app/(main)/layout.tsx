@@ -16,14 +16,16 @@ async function getUser() {
   try {
     const client = await fetchClient();
     const { data, error, response } = await client.GET("/api/v1/auth/me");
-    // [修复] 区分 401 错误和其他错误
-    // 401 错误会在 fetchClient 中自动处理刷新，如果刷新失败才会返回 error
-    // 其他错误（如网络错误）才返回 null
+    // [修复] 区分会话失效（401/403）与其他错误
+    // 401/403 会在 fetchClient 中先自动刷新，刷新失败才会返回 error
+    //（此时会话已确定性失效，交由 layout 重定向登录）
+    // 其他错误（如网络错误）不作为登出依据
     if (error) {
       const status = (response as Response | undefined)?.status;
       logger.error("获取用户信息失败", { status, message: `HTTP ${status ?? "unknown"}` });
-      // 如果是 401，说明 token 刷新也失败了，返回 null 让页面重定向
-      if (status === 401) {
+      // 401（token 刷新也失败）/403（账号已禁用，见 backend /me 语义）：
+      // 两者都是会话确定性失效，返回 null 让页面重定向登录
+      if (status === 401 || status === 403) {
         return null;
       }
       // 429 速率限制：用户仍处于认证状态，不应登出
@@ -31,8 +33,10 @@ async function getUser() {
       if (status === 429) {
         return { rateLimited: true } as const;
       }
-      // 其他错误（如 403, 500 等），尝试返回 data（可能部分数据可用）
-      return data;
+      // 其他错误（如 5xx 等服务端/网络问题）：用户会话仍然有效，仅 401 才判
+      // 未登录；返回错误标记由 layout 渲染可重试错误态，避免后端抖动被误判
+      // 为登出而重定向登录页
+      return { serverError: true } as const;
     }
     return data;
   } catch (e) {
@@ -41,9 +45,10 @@ async function getUser() {
     // 必须放行该错误交由 Next.js 渲染层处理 303 跳转，否则用户会被误判
     // 为未登录并重定向到 /admin/login，丢失原本可刷新的 refresh_token。
     if (isRedirectError(e)) throw e;
-    // 捕获网络错误 (例如后端没启动)，返回 null 防止页面崩溃
+    // 捕获网络异常 (例如后端没启动)：仅 401 判未登录，网络异常不能证明会话
+    // 失效，返回错误标记渲染可重试错误态，避免后端抖动被误判为登出
     logger.error("获取用户信息失败 (可能是后端未启动):", e);
-    return null;
+    return { serverError: true } as const;
   }
 }
 
@@ -57,6 +62,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="text-center space-y-4 max-w-md">
           <h2 className="text-xl font-semibold text-foreground">请求过于频繁</h2>
           <p className="text-muted-foreground">请稍后刷新页面重试</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 5xx/网络错误：渲染可重试错误态，不重定向登录页（用户会话仍然有效）
+  if (user && "serverError" in user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background p-8">
+        <div className="text-center space-y-4 max-w-md">
+          <h2 className="text-xl font-semibold text-foreground">服务暂时不可用</h2>
+          <p className="text-muted-foreground">后端服务暂时无法访问，请稍后刷新页面重试</p>
         </div>
       </div>
     );
