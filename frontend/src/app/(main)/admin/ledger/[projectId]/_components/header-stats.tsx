@@ -94,7 +94,7 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
                 <div className="flex flex-col items-start">
                   <span className="text-xs text-graphite">总收入</span>
                   <span className="text-sm font-medium text-rust font-mono">
-                    ¥{(stats.total_income / 10000).toFixed(2)}万
+                    {formatYuanToWan(stats.total_income)}
                   </span>
                 </div>
               </div>
