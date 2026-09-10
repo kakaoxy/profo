@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import React from "react";
 import type { UsePermissionReturn } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { MobileSellingView } from "./mobile-selling-view";
 
 // ─── Per-test configurable mocks (hoisted so vi.mock factories can read them) ─
 const { mockUsePermission, mockDeleteSalesRecordAction } = vi.hoisted(() => ({
@@ -69,6 +70,15 @@ vi.mock("./mobile-record-form", () => ({
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * 「新增记录」按钮为纯图标按钮（`Plus`），没有文本节点，
+ * 可访问名由组件上的 `aria-label="新增<tab>记录"` 提供，
+ * 因此一律用 `getByRole("button", { name })` 查询，而非 `getByText`。
+ */
+function addRecordButton(tab: "带看" | "出价" | "面谈") {
+  return screen.queryByRole("button", { name: `新增${tab}记录` });
+}
 
 function mockPermissions(permissions: string[]): UsePermissionReturn {
   const hasPermission = (code: string): boolean => permissions.includes(code);
@@ -137,33 +147,27 @@ describe("MobileSellingView - 业务身份按钮显隐", () => {
   });
 
   // ─── admin 角色：持有 PROJECT_WRITE → 新增记录按钮显示 ──────────────────────
-  it("admin 角色访问时：新增带看记录按钮显示", async () => {
+  it("admin 角色访问时：新增带看记录按钮显示", () => {
     mockUsePermission.mockReturnValue(mockPermissions(ADMIN_PERMISSIONS));
-
-    const { MobileSellingView } = await import("./mobile-selling-view");
 
     render(<MobileSellingView projectId="p1" project={makeProject()} />);
 
-    // 默认 activeTab = "viewing"，按钮文本 = "新增带看记录"
-    expect(screen.getByText("新增带看记录")).toBeInTheDocument();
+    // 默认 activeTab = "viewing"，按钮可访问名 = "新增带看记录"
+    expect(addRecordButton("带看")).toBeInTheDocument();
   });
 
   // ─── operator 角色：持有 PROJECT_SALES_ADD_RECORD → 新增记录按钮显示 ───────
-  it("operator 角色访问时：新增带看记录按钮显示", async () => {
+  it("operator 角色访问时：新增带看记录按钮显示", () => {
     mockUsePermission.mockReturnValue(mockPermissions(OPERATOR_PERMISSIONS));
-
-    const { MobileSellingView } = await import("./mobile-selling-view");
 
     render(<MobileSellingView projectId="p1" project={makeProject()} />);
 
-    expect(screen.getByText("新增带看记录")).toBeInTheDocument();
+    expect(addRecordButton("带看")).toBeInTheDocument();
   });
 
   // ─── user 被指派为销售团队成员（can_edit_sales === true）→ 按钮显示 ─────────
-  it("user 被指派为销售团队成员（can_edit_sales === true）：按钮显示", async () => {
+  it("user 被指派为销售团队成员（can_edit_sales === true）：按钮显示", () => {
     mockUsePermission.mockReturnValue(mockPermissions(USER_PERMISSIONS));
-
-    const { MobileSellingView } = await import("./mobile-selling-view");
 
     render(
       <MobileSellingView
@@ -172,14 +176,12 @@ describe("MobileSellingView - 业务身份按钮显隐", () => {
       />,
     );
 
-    expect(screen.getByText("新增带看记录")).toBeInTheDocument();
+    expect(addRecordButton("带看")).toBeInTheDocument();
   });
 
   // ─── user 无业务身份（can_edit_sales === false）→ 按钮不渲染 ────────────────
-  it("user 无业务身份（can_edit_sales === false）：按钮不渲染", async () => {
+  it("user 无业务身份（can_edit_sales === false）：按钮不渲染", () => {
     mockUsePermission.mockReturnValue(mockPermissions(USER_PERMISSIONS));
-
-    const { MobileSellingView } = await import("./mobile-selling-view");
 
     render(
       <MobileSellingView
@@ -189,18 +191,16 @@ describe("MobileSellingView - 业务身份按钮显隐", () => {
     );
 
     // 按钮不渲染
-    expect(screen.queryByText("新增带看记录")).not.toBeInTheDocument();
-    expect(screen.queryByText("新增出价记录")).not.toBeInTheDocument();
-    expect(screen.queryByText("新增面谈记录")).not.toBeInTheDocument();
+    expect(addRecordButton("带看")).not.toBeInTheDocument();
+    expect(addRecordButton("出价")).not.toBeInTheDocument();
+    expect(addRecordButton("面谈")).not.toBeInTheDocument();
   });
 
   // ─── user 持有 PROJECT_SALES_ADD_RECORD 子权限码 → 按钮显示 ─────────────────
-  it("user 持有 PROJECT_SALES_ADD_RECORD 子权限码：新增记录按钮显示", async () => {
+  it("user 持有 PROJECT_SALES_ADD_RECORD 子权限码：新增记录按钮显示", () => {
     mockUsePermission.mockReturnValue(
       mockPermissions([PERMISSION_CODES.PROJECT_READ, PERMISSION_CODES.PROJECT_SALES_ADD_RECORD]),
     );
-
-    const { MobileSellingView } = await import("./mobile-selling-view");
 
     render(
       <MobileSellingView
@@ -209,17 +209,15 @@ describe("MobileSellingView - 业务身份按钮显隐", () => {
       />,
     );
 
-    expect(screen.getByText("新增带看记录")).toBeInTheDocument();
+    expect(addRecordButton("带看")).toBeInTheDocument();
   });
 
   // ─── 项目非 selling 状态：按钮不渲染（即使有权限） ─────────────────────────
-  it("项目非 selling 状态（如 sold）时：新增记录按钮不渲染", async () => {
+  it("项目非 selling 状态（如 sold）时：新增记录按钮不渲染", () => {
     mockUsePermission.mockReturnValue(mockPermissions(ADMIN_PERMISSIONS));
-
-    const { MobileSellingView } = await import("./mobile-selling-view");
 
     render(<MobileSellingView projectId="p1" project={makeProject({ status: "sold" })} />);
 
-    expect(screen.queryByText("新增带看记录")).not.toBeInTheDocument();
+    expect(addRecordButton("带看")).not.toBeInTheDocument();
   });
 });

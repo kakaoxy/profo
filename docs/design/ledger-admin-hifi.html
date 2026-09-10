@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="l4Glwf6YBRn1AMF04ZWcjm">
+<head data-page-node-id="ytvJ0iypd2YZmBR6ip8rYu">
+<meta charset="UTF-8" data-page-node-id="gX3tAlAvMp1BHlFkrRVEMn" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="RxMiCc476BKH1ewfBtbWg9" />
+<title>资金账本（admin/ledger）· 重构高保真设计稿</title>
+<!--
+  资金账本模块（admin/ledger）· 重构高保真设计稿
+  单文件自包含 HTML，无外部依赖、无 JS，纯静态交付物。
+
+  背景：
+    · 项目已按 /DESIGN.md（Steep Style Reference）完成多个页面的视觉重构，
+      设计 token 已落入 frontend/src/app/globals.css（--color-ink / --color-fog /
+      --color-rust / --color-apricot-wash / --color-sky-wash / --font-signifier /
+      --radius-cards / --shadow-steep 等）。
+    · ledger 模块进度不一：
+        - /admin/ledger            （列表页）      → 仍是原风格，本次重构主目标
+        - /admin/ledger/subjects   （科目管理）    → 半迁移（头部仍旧、局部已用暖色）
+        - /admin/ledger/[projectId]（明细页）      → 主体已 Steep，个别子组件仍为旧样式
+        - /admin/ledger/[projectId]/statistics     → 已 Steep，作为风格基准
+    · 参照物：admin/marketing 列表页（commit bf1bbe00）是同构的“列表页对齐 Steep”范例。
+
+  本稿用途：重构前确认需求。含 4 个页面 + 决策点 + 实现落点。
+  视觉规范：严格遵循 /DESIGN.md —— Ink #17191c / Fog #f7f7f8 画布，唯一暖色强调
+    Rust #5d2a1a，Apricot Wash #fbe1d1 与 Sky Wash #d3e3fc 为唯二的彩色卡底；
+    Signifier 衬线仅用于 display 标题（≥40px），Sohne（system-ui 栈）承担全部 UI；
+    卡片 24px / 图片 12px / 输入 16px / 按钮与胶囊 9999px；签名三层阴影。
+    金额语义遵循中国习惯：红 = 流入/正向，绿 = 流出/负向。
+
+  ⚠️ 本文件为设计稿交付物，按要求必须“单个自包含 HTML”，故不拆分模块（有意超过 500 行）。
+-->
+<style>
+  /* ============================================================
+     1. Steep 设计 token（对齐 /DESIGN.md 与 globals.css）
+     ============================================================ */
+  :root {
+    /* Colors */
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --obsidian: #000000;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky: #d3e3fc;
+
+    /* 金额语义（中国习惯：红=正、绿=负） */
+    --pos: #ef4444;
+    --neg: #10b981;
+
+    /* 旧风格残留色（仅用于「现状」对照区块） */
+    --old-muted: #f1f5f9;
+    --old-emerald: #10b981;
+    --old-amber: #f59e0b;
+    --old-blue: #3b82f6;
+    --old-purple: #a855f7;
+
+    /* Typography */
+    --font-display: "Source Serif 4", "Source Serif Pro", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    /* Radii */
+    --r-cards: 24px;
+    --r-img: 12px;
+    --r-inputs: 16px;
+    --r-pill: 9999px;
+
+    /* Shadows */
+    --sh-steep: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.1) 0px 20px 25px -5px,
+      rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --sh-sm: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.06) 0px 8px 10px -6px;
+    --sh-kpi: rgba(4, 23, 43, 0.04) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.06) 0px 12px 16px -4px;
+
+    /* 文档外壳（非产品配色，仅用于承载设计稿） */
+    --doc-bg: #eef0f2;
+    --doc-line: #dde1e6;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--doc-bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    letter-spacing: -0.009em;
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     2. 图标（描边单色，1.75px，与 hairline 语言一致）
+     ============================================================ */
+  .ic {
+    width: 16px; height: 16px;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    flex: none; display: block;
+  }
+  .ic-lg { width: 20px; height: 20px; }
+  .ic-sm { width: 14px; height: 14px; }
+  .ic-xs { width: 12px; height: 12px; }
+
+  /* ============================================================
+     3. 文档外壳
+     ============================================================ */
+  .doc-head {
+    background: var(--pwhite);
+    border-bottom: 1px solid var(--doc-line);
+    padding: 40px 0 32px;
+  }
+  .doc-wrap { width: 100%; max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+  .doc-kicker {
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--graphite); margin: 0 0 14px;
+  }
+  .doc-title {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 44px; line-height: 1.1; letter-spacing: -0.015em;
+    margin: 0 0 14px; color: var(--ink);
+  }
+  .doc-sub { font-size: 17px; color: var(--ash); margin: 0; max-width: 780px; }
+  .doc-meta {
+    display: flex; flex-wrap: wrap; gap: 10px 28px;
+    margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--doc-line);
+  }
+  .doc-meta div { font-size: 13px; color: var(--graphite); }
+  .doc-meta b { color: var(--ink); font-weight: 480; }
+
+  .doc-nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.88);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--doc-line);
+  }
+  .doc-nav .doc-wrap { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 12px; padding-bottom: 12px; }
+  .doc-nav a {
+    font-size: 13px; color: var(--ash); text-decoration: none;
+    padding: 6px 12px; border-radius: var(--r-pill);
+    border: 1px solid transparent; transition: all .15s ease;
+  }
+  .doc-nav a:hover { color: var(--ink); background: var(--fog); }
+  .doc-nav a.on { color: var(--ink); background: var(--apricot); }
+
+  main { padding: 56px 0 96px; }
+  section.block { margin-bottom: 88px; scroll-margin-top: 72px; }
+
+  .sec-head { margin-bottom: 24px; }
+  .sec-head .idx {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: var(--r-pill);
+    background: var(--ink); color: #fff; font-size: 13px; font-weight: 480;
+    margin-right: 12px; vertical-align: middle;
+  }
+  .sec-head h2 {
+    display: inline; margin: 0; vertical-align: middle;
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 30px; line-height: 1.2; letter-spacing: -0.015em; color: var(--ink);
+  }
+  .sec-head p { margin: 12px 0 0; font-size: 15px; color: var(--ash); max-width: 900px; }
+
+  /* 状态 chip */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: var(--r-pill);
+    font-size: 12px; font-weight: 480; letter-spacing: -0.009em;
+    vertical-align: middle; margin-left: 12px; white-space: nowrap;
+  }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .chip-do { background: var(--apricot); color: var(--rust); }
+  .chip-ok { background: var(--fog); color: var(--graphite); }
+  .chip-fix { background: var(--sky); color: var(--ink); }
+
+  /* 画板 */
+  .artboard {
+    border-radius: 28px; overflow: hidden; background: var(--pwhite);
+    box-shadow: var(--sh-steep); margin-bottom: 20px;
+  }
+  .artboard-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 20px; background: var(--pwhite);
+    border-bottom: 1px solid var(--doc-line);
+  }
+  .artboard-bar .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--doc-line); }
+  .artboard-bar .name { font-size: 12px; color: var(--graphite); font-family: var(--font-mono); }
+  .artboard-bar .spacer { flex: 1; }
+  .artboard-bar .tag { font-size: 11px; color: var(--graphite); }
+  .artboard-body { overflow-x: auto; }
+
+  /* 应用屏（真实画布：Fog） */
+  .app {
+    background: var(--fog); min-width: 1080px; padding: 40px 32px 48px;
+    font-size: 14px;
+  }
+  .app-plain { background: var(--fog); min-width: 1080px; padding: 0 0 48px; font-size: 14px; }
+  .wrap { width: 100%; max-width: 1200px; margin: 0 auto; }
+
+  /* ============================================================
+     4. 通用组件（还原 Tailwind 语义）
+     ============================================================ */
+  .h1d {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 40px; line-height: 1.12; letter-spacing: -0.015em;
+    color: var(--ink); margin: 0;
+  }
+  .page-sub { margin: 10px 0 0; font-size: 17px; color: var(--ash); }
+
+  .card {
+    background: var(--pwhite); border-radius: var(--r-cards);
+    box-shadow: var(--sh-sm); padding: 22px;
+  }
+  .card-flat { background: var(--pwhite); border-radius: var(--r-cards); box-shadow: var(--sh-steep); overflow: hidden; }
+
+  /* 胶囊 Tab 组 */
+  .pilltabs { display: inline-flex; gap: 2px; background: var(--fog); border-radius: var(--r-cards); padding: 4px; }
+  .pilltabs button {
+    font-family: var(--font-ui); font-size: 12.5px; font-weight: 450; letter-spacing: -0.009em;
+    color: var(--graphite); background: transparent; border: 0; cursor: pointer;
+    padding: 7px 14px; border-radius: 10px; white-space: nowrap; transition: all .15s ease;
+  }
+  .pilltabs button:hover { color: var(--ink); }
+  .pilltabs button.on { background: var(--ink); color: #fff; }
+  .pilltabs .cnt { opacity: .62; margin-left: 5px; font-variant-numeric: tabular-nums; }
+
+  /* 输入 */
+  .input {
+    position: relative; display: flex; align-items: center;
+    background: var(--pwhite); border: 1px solid var(--dove);
+    border-radius: var(--r-inputs); height: 44px; padding: 0 14px 0 40px;
+    width: 320px; box-shadow: none;
+  }
+  .input .ic { position: absolute; left: 14px; color: var(--graphite); }
+  .input input { border: 0; outline: 0; background: transparent; font: inherit; color: var(--ink); width: 100%; }
+  .input input::placeholder { color: var(--dove); }
+
+  /* 按钮 */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    font-family: var(--font-ui); font-size: 14px; font-weight: 450; letter-spacing: -0.009em;
+    border-radius: var(--r-pill); padding: 0 18px; height: 44px; cursor: pointer;
+    border: 1px solid transparent; transition: all .15s ease; white-space: nowrap; text-decoration: none;
+  }
+  .btn-ink { background: var(--ink); color: #fff; }
+  .btn-ink:hover { background: #000; }
+  .btn-out { background: var(--pwhite); color: var(--ink); border-color: var(--dove); }
+  .btn-out:hover { background: var(--fog); }
+  .btn-ghost { background: transparent; color: var(--ink); padding: 0 10px; }
+  .btn-ghost:hover { color: var(--rust); }
+  .btn-sm { height: 36px; padding: 0 14px; font-size: 13px; }
+  .btn-rust { background: var(--rust); color: #fff; }
+  .btn-rust:hover { background: #47200f; }
+
+  /* 标签 / 徽章 */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 11px; border-radius: 10px;
+    font-size: 12px; font-weight: 480; letter-spacing: -0.009em; white-space: nowrap;
+  }
+  .badge-ink { background: var(--ink); color: #fff; }
+  .badge-dove { background: rgba(163,166,175,.22); color: var(--dove); }
+  .badge-fog { background: var(--fog); color: var(--ash); }
+  .badge-rust { background: var(--apricot); color: var(--rust); }
+  .badge-sky { background: var(--sky); color: var(--ink); }
+  .badge-hair { background: transparent; border: 1px solid var(--dove); color: var(--graphite); }
+
+  /* 表格 */
+  table.tbl { width: 100%; border-collapse: collapse; }
+  table.tbl th {
+    text-align: left; font-size: 12.5px; font-weight: 480; color: var(--graphite);
+    padding: 14px 16px; border-bottom: 1px solid var(--doc-line);
+    white-space: nowrap; background: transparent;
+  }
+  table.tbl td {
+    padding: 15px 16px; border-bottom: 1px solid #ececee;
+    font-size: 13.5px; color: var(--ink); vertical-align: middle;
+  }
+  table.tbl tbody tr:last-child td { border-bottom: 0; }
+  table.tbl tbody tr:hover td { background: var(--fog); }
+  .th-r, td.td-r { text-align: right; }
+  .th-c, td.td-c { text-align: center; }
+  .num { font-variant-numeric: tabular-nums; }
+  td.num, th.num, td.mono { white-space: nowrap; }
+  .mono { font-family: var(--font-mono); }
+  .c-ink { color: var(--ink); }
+  .c-ash { color: var(--ash); }
+  .c-graphite { color: var(--graphite); }
+  .c-dove { color: var(--dove); }
+  .c-pos { color: var(--pos); }
+  .c-neg { color: var(--neg); }
+  .c-rust { color: var(--rust); }
+  .w-med { font-weight: 480; }
+
+  .row-flex { display: flex; align-items: center; gap: 12px; }
+  .col-flex { display: flex; flex-direction: column; gap: 3px; }
+  .between { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .stack-6 { display: flex; flex-direction: column; gap: 24px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+
+  .spacer { flex: 1; }
+
+  /* ============================================================
+     5. 统计卡（Steep 版）
+     ============================================================ */
+  .stat {
+    background: var(--pwhite); border-radius: var(--r-cards);
+    box-shadow: var(--sh-sm); padding: 22px;
+  }
+  .stat-warm { background: var(--apricot); }
+  .stat .lbl {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 13.5px; color: var(--graphite);
+  }
+  .stat .val {
+    margin-top: 14px; font-size: 30px; line-height: 1.1;
+    font-weight: 450; letter-spacing: -0.02em; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .val small { font-size: 15px; font-weight: 400; color: var(--graphite); margin-left: 4px; }
+
+  /* ============================================================
+     6. 「现状」对照（旧风格，仅用于说明问题）
+     ============================================================ */
+  .before .app { background: #f1f5f9; }
+  .before h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.025em; }
+  .before .oldcard {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    display: flex; justify-content: space-between; gap: 8px;
+  }
+  .before .oldicon {
+    width: 36px; height: 36px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+  }
+  .before .oldselect {
+    display: inline-flex; align-items: center; justify-content: space-between; gap: 12px;
+    height: 40px; padding: 0 12px; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 8px; font-size: 14px; color: #64748b; min-width: 148px;
+  }
+  .before .oldbtn {
+    display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px;
+    border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #0f172a;
+    font-size: 14px; font-weight: 500;
+  }
+  .before .oldbadge { padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+  .before table.tbl th { color: #64748b; font-size: 12.5px; font-weight: 500; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+  .before table.tbl td { font-size: 13.5px; border-bottom: 1px solid #f1f5f9; }
+  .before table.tbl tbody tr:hover td { background: #f8fafc; }
+  .before .shell { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+  /* 标注点 */
+  .pin {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--ink); color: #fff; font-size: 11px; font-weight: 480;
+    flex: none;
+  }
+  .issues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .issues li { display: flex; gap: 12px; font-size: 14px; color: var(--ash); align-items: flex-start; }
+  .issues li b { color: var(--ink); font-weight: 480; }
+
+  /* 改动清单 */
+  .changes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 28px; }
+  .changes li { display: flex; gap: 10px; font-size: 13.5px; color: var(--ash); line-height: 1.5; align-items: flex-start; }
+  .changes li .ic { color: var(--rust); margin-top: 2px; }
+  .changes li b { color: var(--ink); font-weight: 480; }
+
+  .panel {
+    background: var(--pwhite); border-radius: var(--r-cards); box-shadow: var(--sh-sm);
+    padding: 24px 26px;
+  }
+  .panel h3 { margin: 0 0 16px; font-size: 16px; font-weight: 500; color: var(--ink); }
+  .panel h3 span { font-family: var(--font-mono); font-size: 12px; color: var(--graphite); font-weight: 400; margin-left: 8px; }
+
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* 决策点表 */
+  table.dec { width: 100%; border-collapse: collapse; background: var(--pwhite); border-radius: var(--r-cards); overflow: hidden; box-shadow: var(--sh-sm); }
+  table.dec th { text-align: left; font-size: 12px; font-weight: 480; color: var(--graphite); padding: 14px 18px; border-bottom: 1px solid var(--doc-line); white-space: nowrap; }
+  table.dec td { padding: 15px 18px; border-bottom: 1px solid #ececee; font-size: 13.5px; color: var(--ash); vertical-align: top; line-height: 1.55; }
+  table.dec tbody tr:last-child td { border-bottom: 0; }
+  table.dec td b { color: var(--ink); font-weight: 480; }
+  table.dec code { font-family: var(--font-mono); font-size: 12px; background: var(--fog); padding: 1px 6px; border-radius: 6px; color: var(--ink); }
+
+  /* 层级 pill 新旧对照 */
+  .lp { display: inline-flex; align-items: center; border-radius: var(--r-pill); padding: 3px 10px; font-size: 10.5px; font-weight: 480; letter-spacing: -0.005em; white-space: nowrap; }
+  .lp-warm1 { background: #fbe1d1; color: #5d2a1a; }
+  .lp-warm2 { background: #f6cba9; color: #5d2a1a; }
+  .lp-warm3 { background: #ecad83; color: #3f1c10; }
+  .lp-warm4 { background: #dc8c60; color: #fff; }
+  .lp-warm5 { background: #c46b42; color: #fff; }
+  .lp-warm6 { background: #9c4a2b; color: #fff; }
+  .lp-warm7 { background: #5d2a1a; color: #fff; }
+  .lp-old { border: 1px solid; }
+
+  /* 阶段流程 */
+  .stages { position: relative; display: grid; gap: 0; }
+  .stages .line {
+    position: absolute; left: 10%; right: 10%; top: 25px; height: 2px; z-index: 0;
+    background: linear-gradient(90deg, var(--apricot), var(--rust));
+  }
+  .stage-col { position: relative; z-index: 1; padding: 0 8px; }
+  .stage-mark {
+    width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 50%;
+    background: var(--pwhite); display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 4px var(--fog), var(--sh-sm); color: var(--rust);
+  }
+  .stage-name { text-align: center; font-size: 14px; font-weight: 480; color: var(--ink); }
+  .stage-sub { text-align: center; font-size: 11px; color: var(--graphite); margin: 3px 0 12px; }
+  .stage-box {
+    min-height: 168px; border: 1px solid var(--doc-line); border-radius: 14px;
+    background: var(--pwhite); padding: 8px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .subj {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    border: 1px solid var(--doc-line); border-radius: 10px; padding: 6px 8px; background: var(--pwhite);
+  }
+  .subj .meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .subj .nm { font-size: 12px; font-weight: 480; color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .subj .pn { font-size: 10px; color: var(--graphite); }
+  .stage-add {
+    margin-top: auto; border: 1px dashed var(--dove); border-radius: 10px;
+    padding: 6px; text-align: center; font-size: 11px; color: var(--graphite);
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+
+  /* 统计页 KPI */
+  .kpi {
+    text-align: center; border-radius: 20px; padding: 28px 20px; box-shadow: var(--sh-kpi);
+  }
+  .kpi-warm { background: linear-gradient(135deg, var(--apricot), rgba(251,225,209,.5)); }
+  .kpi-plain { background: var(--pwhite); }
+  .kpi .k-lbl { font-size: 14px; color: var(--graphite); margin: 0 0 8px; }
+  .kpi .k-val { font-size: 30px; line-height: 1.1; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; margin: 0; }
+  .kpi .k-val small { font-size: 15px; color: var(--ash); margin-left: 4px; }
+
+  /* 利润阶梯 */
+  .ladder { position: relative; overflow: hidden; background: var(--pwhite); border-radius: 18px; padding: 24px 20px 20px; box-shadow: var(--sh-kpi); }
+  .ladder .top { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+  .ladder .step { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--graphite); margin-bottom: 6px; }
+  .ladder .step i { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 12px; font-weight: 480; background: linear-gradient(135deg, var(--apricot), rgba(251,225,209,.5)); color: var(--rust); }
+  .ladder h3 { margin: 0 0 8px; font-size: 15px; font-weight: 480; color: var(--ink); }
+  .ladder .formula { margin: 0 0 14px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7; color: var(--graphite); }
+  .ladder .amt { margin: 0; font-size: 26px; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .ladder .bar { margin-top: 14px; height: 6px; border-radius: var(--r-pill); background: rgba(251,225,209,.35); overflow: hidden; }
+  .ladder .bar i { display: block; height: 100%; border-radius: var(--r-pill); }
+
+  /* 阶段现金流 */
+  .flow-card { background: var(--pwhite); border-radius: 14px; padding: 16px; box-shadow: var(--sh-sm); }
+  .flow-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 8px; }
+  .flow-row:last-child { margin-bottom: 0; }
+  .flow-row.net { border-top: 1px solid var(--doc-line); padding-top: 8px; margin-top: 8px; }
+
+  .note-band {
+    background: rgba(251,225,209,.45); border-radius: 16px; padding: 14px 16px;
+    font-size: 13px; line-height: 1.65; color: var(--ash);
+  }
+  .note-band b { color: var(--rust); }
+
+  .footnote { font-size: 13px; color: var(--graphite); margin-top: 16px; line-height: 1.7; }
+  .footnote b { color: var(--ink); font-weight: 480; }
+
+  @media (max-width: 900px) {
+    .grid-5, .grid-4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid-3, .cols-2, .changes { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-page-node-id="D2yzxpAe0z6ct8YBYr0Wu0">
+
+<!-- ============ 图标 sprite ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false" data-page-node-id="9hSpxOSXUEHRMgeA5TW17r"><defs data-page-node-id="LI2XtDPJ0Ip8WchPzdLVRW">
+  <symbol id="i-search" viewBox="0 0 24 24" data-page-node-id="hIlHhv9KOsJgdsGnUaob9e"><circle cx="11" cy="11" r="7" data-page-node-id="GqPiLZLfFHRVWdIO3oGPB2"/><path d="m20 20-3.7-3.7" data-page-node-id="i4Aa86e7K2pLBfXZUaEDOG"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" data-page-node-id="jhnxLtvSGdYfksOx52wAvB"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" data-page-node-id="Yxoj1ejQBmNK4HOpu7AbMu"/><path d="m7 10 5 5 5-5" data-page-node-id="KVScGCbZnDDIAYdhIxhVNO"/><path d="M12 15V3" data-page-node-id="QNflw1rvT1HxrRw7BHFotG"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" data-page-node-id="FV3omqEDxOKHFeRPoFEBP6"><path d="M5 12h14M12 5v14" data-page-node-id="sy4jIMBaaQ2cgJIqlamtAJ"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" data-page-node-id="ulQX3bbcYVHcLkzN4xxrKE"><path d="M2.5 12S5.5 5 12 5s9.5 7 9.5 7-3 7-9.5 7-9.5-7-9.5-7Z" data-page-node-id="itKXEu7ic8I0PNUHLFbeKE"/><circle cx="12" cy="12" r="3" data-page-node-id="HAJvfLYD2OsUsGsWvoPqIT"/></symbol>
+  <symbol id="i-coins" viewBox="0 0 24 24" data-page-node-id="dqm1onU32qHRbalgmFCYh0"><circle cx="9" cy="9" r="5.5" data-page-node-id="T1lbn4TdjolF3hFJPIKRFc"/><path d="M15.5 3.6a5.5 5.5 0 0 1 0 10.3" data-page-node-id="IzOcjsqkgT59rspxXuWzrB"/><path d="M19.5 8.8v6.7a4.5 4.5 0 0 1-4.5 4.5H9" data-page-node-id="bSU1ZSaUQfsu2buVw5lb2a"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24" data-page-node-id="fMgzYvX2kHmWGPGFZabzzc"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18" data-page-node-id="fwqfsRSdDYuEKqdtBrCENO"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" data-page-node-id="kuoBB6eBLo1c0IHo4cAVoT"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" data-page-node-id="XNhaGTiLtQBDyIycPkAY4v"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4" data-page-node-id="ALcCih5iu1fM6ArZI8MdiO"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" data-page-node-id="OUAz9ypxtWc2FXyGOxR745"><path d="m22 7-8.5 8.5-5-5L2 17" data-page-node-id="FtvcoSQS2dDNGTuF8bKBJC"/><path d="M16 7h6v6" data-page-node-id="ajx2hNFJOJR1aUFZvCqWYW"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" data-page-node-id="zRyLKdqZZeOkl8ruDMlwzR"><path d="m22 17-8.5-8.5-5 5L2 7" data-page-node-id="uDtVk6UfsRSGmwqpxHVhyQ"/><path d="M16 17h6v-6" data-page-node-id="I0eN1en2Vo7QW4OAphdbWp"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24" data-page-node-id="906SrwCc0Rjj08EDO3zBBx"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v3" data-page-node-id="EnWfLMxvutlXMgN6Js2aTU"/><path d="M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3" data-page-node-id="16qPKAqpSYuSBCyCNW6BFD"/><path d="M21 10h-3a2 2 0 0 0 0 4h3" data-page-node-id="egYBpRs4q7QYmn9vIdYxPk"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24" data-page-node-id="IMn9nsr9SYbKtFAPrFxXZA"><path d="M5 3v18l2-1.2L9 21l2-1.2L13 21l2-1.2L17 21l2-1.2V3l-2 1.2L15 3l-2 1.2L11 3 9 4.2 7 3Z" data-page-node-id="ZSbty1Lgvd9dhG21ElGH0M"/><path d="M9 8h6M9 12h6" data-page-node-id="71I5Uyf0sWzFfq3lqdAW3V"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24" data-page-node-id="m6WdlEeK4DAfNmuSk4nz2o"><path d="M19 12H5" data-page-node-id="7v5Ol0sbODiBr3aCdVYhwp"/><path d="m12 19-7-7 7-7" data-page-node-id="iG3idkdFfPH4EQ07vANNNP"/></symbol>
+  <symbol id="i-bars" viewBox="0 0 24 24" data-page-node-id="wmXTVgS6P3roShFQP29eEv"><path d="M3 3v18h18" data-page-node-id="RsvsdFHrRZDfaCns89R45I"/><path d="M18 17V9M13 17V5M8 17v-3" data-page-node-id="0fwb95dSQLZA6SmdoEDhH2"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24" data-page-node-id="IfIz0SMHdZuBZMnR3BYs3o"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" data-page-node-id="o2Tr9tFDlCI2aMNAVWdL8y"/><path d="M12 20h9" data-page-node-id="WOeABMViwsoKPjomNEkaZp"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" data-page-node-id="aLIQuetGpqB0G4v979UABK"><path d="M3 6h18" data-page-node-id="jzdvoqdU1ApX0Ngr1oaXth"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" data-page-node-id="2shMIRBNmtj0WbUUYrvTBY"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" data-page-node-id="cTtFM1JTmCGMQxaD5i1PgC"/><path d="M10 11v6M14 11v6" data-page-node-id="XiPh3NHCeMVnltE6kjhawL"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24" data-page-node-id="LcWIxniN3TTnzSHDGaVt9k"><path d="M21.4 11 12.2 20.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" data-page-node-id="NyHhxbwXwO6VpIi5krwIzO"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" data-page-node-id="lOEPDqkVD8VYEIF4xDPGTd"><rect x="3" y="11" width="18" height="11" rx="2" data-page-node-id="wEHxV9snR2N41eTTkMjD1j"/><path d="M7 11V7a5 5 0 0 1 10 0v4" data-page-node-id="MC6HTppun5nIIGE0PXHxkI"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" data-page-node-id="D5rPtt2gE4kci9FvV33GHx"><circle cx="12" cy="12" r="9" data-page-node-id="ECoGoNyDELThPv9uLk3xSp"/><path d="M12 16v-4M12 8h.01" data-page-node-id="0bH5kWbNmU3ShmJyFB8xTU"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24" data-page-node-id="N32R4OFHE2yYwQb60GV8EU"><path d="m15 18-6-6 6-6" data-page-node-id="tG6jiKtmBN3kkVJg4chygr"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24" data-page-node-id="GyzgTwD1XH3jFom4wu7dfp"><path d="m9 18 6-6-6-6" data-page-node-id="WFRjTo3BZgEq6y0vd99Opf"/></symbol>
+  <symbol id="i-chevs-l" viewBox="0 0 24 24" data-page-node-id="EIxu5ZJKo4JpY9CyngTxdv"><path d="m11 17-5-5 5-5M18 17l-5-5 5-5" data-page-node-id="WawSm4kzFtmuFsS6RWDK8k"/></symbol>
+  <symbol id="i-chevs-r" viewBox="0 0 24 24" data-page-node-id="lVOJFDcGxFyQ6rkxVweTlB"><path d="m6 17 5-5-5-5M13 17l5-5-5-5" data-page-node-id="ZcmXBGr6gaM7TziVj8gAHJ"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24" data-page-node-id="3BAXkO8RW4Vd2D6JGSSCkS"><path d="m6 9 6 6 6-6" data-page-node-id="WhtUp3SjfEeVZyaXh95GX5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" data-page-node-id="HB2XsvEeCjwzoIomSvvej7"><path d="M18 6 6 18M6 6l12 12" data-page-node-id="NyUfb2DYQ2jrVaVvEyZpBJ"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" data-page-node-id="ke6KOELEaqa6pqkssFEDSU"><path d="M20 6 9 17l-5-5" data-page-node-id="JwaBJVvAHkALdVriGRtkqk"/></symbol>
+  <symbol id="i-check-c" viewBox="0 0 24 24" data-page-node-id="yXGFNp98BRzJmiKpmqnKt4"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1" data-page-node-id="EBaOKP979CiHf0oNJlteBH"/><path d="m9 11 3 3L22 4" data-page-node-id="W4q0Ece6Jn6ZKLPWCOSbcr"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" data-page-node-id="yhrVOGUwUH6vBzUEZurnu7"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4Z" data-page-node-id="tPRhRkFWZ7XWN2fXZk8qFv"/><circle cx="7.5" cy="7.5" r=".6" data-page-node-id="rXQJsnZazXfzfBJadqhLZ9"/></symbol>
+  <symbol id="i-hammer" viewBox="0 0 24 24" data-page-node-id="yWrH3e4ETmizu5WI6xZJfM"><path d="m15 12-8.5 8.5a2.1 2.1 0 1 1-3-3L12 9" data-page-node-id="x8AhCKyi7ScVYuiJ0gKmBW"/><path d="M17.6 15 22 10.6" data-page-node-id="Mxx29S6IO6BZkf9wXYToA2"/><path d="M20.9 11.7 19.7 10.4a3 3 0 0 1-.9-2.2v-.9L16 4.6a5.6 5.6 0 0 0-3.9-1.6H8l1.8 1.6a6.2 6.2 0 0 1 2.2 4.6v1.4l2 2h2.5Z" data-page-node-id="VBDev5SgLbhlD5QwEXnIBf"/></symbol>
+  <symbol id="i-landmark" viewBox="0 0 24 24" data-page-node-id="IwIFiFGyCjRuHkYkVbsfUL"><path d="M3 22h18" data-page-node-id="52iZJcjV0JeuxB6ZrtHozo"/><path d="M6 18v-7M10 18v-7M14 18v-7M18 18v-7" data-page-node-id="XRC19tqXGZ1wh4CBZpDvGX"/><path d="M12 2 3 7h18Z" data-page-node-id="42pAZyXRPY2XAFI1yXKt49"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" data-page-node-id="pLZPGV1TZs1J5JsdMgosNX"><rect x="3" y="4" width="18" height="18" rx="2" data-page-node-id="DyS2998tdY6P4SvPzA9Fey"/><path d="M16 2v4M8 2v4M3 10h18" data-page-node-id="3gB9oUHcgZr1uklAyJBoL8"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24" data-page-node-id="ARaeVcHhOOxL8A5U83xECm"><path d="M12 20h9" data-page-node-id="dZvBDZlFGbBqt9zpzsl2K9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" data-page-node-id="c6ct0QOGA0mrEyiBBdS7ua"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" data-page-node-id="dkbqQuveL73VQRiDyt6jyQ"><path d="m12 2 9 5-9 5-9-5Z" data-page-node-id="uMRNqiPPp19LH51H7CCX0g"/><path d="m3 12 9 5 9-5" data-page-node-id="VIARMx70hpfs8ttypfPhxs"/><path d="m3 17 9 5 9-5" data-page-node-id="c8jOgREdCNmuOxE099OK4U"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24" data-page-node-id="RK2Vvyqz1zEltRMcVPaBQK"><path d="M3 5h18l-7 8v6l-4 2v-8Z" data-page-node-id="rCUKCOPAK2JxlvQyHS2yJX"/></symbol>
+</defs></svg>
+
+<!-- ============ 文档头部 ============ -->
+<header class="doc-head" data-page-node-id="7skkWjxaXzKznRM3RUcApb">
+  <div class="doc-wrap" data-page-node-id="mq7sFG4wTAPhjF8bifyaVT">
+    <p class="doc-kicker" data-page-node-id="gMqDi2qPVT8cmMeG6b2BxP">Design Spec · Steep</p>
+    <h1 class="doc-title" data-page-node-id="pihs060qowMW5FXbPcRe2z">资金账本 admin/ledger · 重构高保真设计稿</h1>
+    <p class="doc-sub" data-page-node-id="hfRibyCSmeytYlrFTmfmuJ">
+      覆盖「资金账本列表 / 科目管理 / 流水明细 / 项目统计」四个页面。目标：把尚未迁移或半迁移的页面统一到
+      DESIGN.md（Steep）视觉体系，与已重构的 admin/marketing、projects 列表页保持同一套语言。
+    </p>
+    <div class="doc-meta" data-page-node-id="6XdyAOrEG4w24Dj8F3SaK0">
+      <div data-page-node-id="qKLf0nZxxncASrx7Ey2xFN">依据　<b data-page-node-id="QrKzGwqGayacRz4XjGnlBN">/DESIGN.md</b>（Steep Style Reference）</div>
+      <div data-page-node-id="3Nz3QNArqDsF3KXNr3Mwqn">参照　<b data-page-node-id="JWny7THZ9jjbKnHFAG5YFM">admin/marketing 列表页</b>（commit bf1bbe00）</div>
+      <div data-page-node-id="n2Za0M4bGgGD32Hvuzcv5q">Token　<b data-page-node-id="a2DI2wS5HGcMv0AjWliiSs">frontend/src/app/globals.css</b></div>
+      <div data-page-node-id="tBaVK0yHF8jEKw8hR0Rdq6">方案　<b data-page-node-id="ebBBNPY5b5VX8TtE4ZAzRc">单一推荐方案</b></div>
+      <div data-page-node-id="cyvSUjJcSid6NdnR1Y1fdZ">日期　<b data-page-node-id="bOtwLhUX2zYLkp497Ax486">2026-09-10</b></div>
+    </div>
+  </div>
+</header>
+
+<nav class="doc-nav" data-page-node-id="vMJYfxxPVgXvR2beROxMpk">
+  <div class="doc-wrap" data-page-node-id="aPwChT7ZhsIDjezgL0nIZo">
+    <a href="#contract" data-page-node-id="POcmC1WKdVQ0oYuRyfw7Io">设计契约</a>
+    <a href="#p1" data-page-node-id="b5UyRMojcEtF3E4sEeRHYY">① 资金账本列表页</a>
+    <a href="#p2" data-page-node-id="lWEJJQC83xSkCkCpLy8uNQ">② 科目管理页</a>
+    <a href="#p3" data-page-node-id="F3kvlrkGaWF8TvRy2emF8L">③ 流水明细页</a>
+    <a href="#p4" data-page-node-id="r0wbn8RyeGJUnQ9TKM5MmZ">④ 项目统计页</a>
+    <a href="#impl" data-page-node-id="rQsbCbVYckIP3XE2sOGxOo">实现落点</a>
+    <a href="#decide" data-page-node-id="JJ9S1r2cX21Nuv8JB5qiaJ">待确认决策</a>
+  </div>
+</nav>
+
+<main data-page-node-id="nVQABz2pVoOsAkl2mIeClL">
+<div class="doc-wrap" data-page-node-id="T7WhxkxqmCwch7Be1v4m4g">
+
+  <!-- ============ 0. 设计契约 ============ -->
+  <section class="block" id="contract" data-page-node-id="0ZBXMDdbtydLEbnDDxrQ1e">
+    <div class="sec-head" data-page-node-id="5CwaUFxWcWiElZ6k8SXPCJ">
+      <h2 data-page-node-id="CSUccxnqOKn5pg4MlqH8eH"><span class="idx" data-page-node-id="DbJSCuuDZ9SJne1Gmjmlae">0</span>本次重构遵循的设计契约</h2>
+      <p data-page-node-id="cFsr2fkKPGXWmSKf4pLq33">以下规则直接来自 DESIGN.md；括号内为本次改动的具体落法。四条硬约束决定了所有页面的观感。</p>
+    </div>
+
+    <div class="cols-2" data-page-node-id="mUCaa4hvQ5wiLbdRCF0WRT">
+      <div class="panel" data-page-node-id="luBLuFidi1OhoNSDBEfIZV">
+        <h3 data-page-node-id="yTS3xK6fXAmgSzGCc62LZ7">配色 · 单色 chrome + 一个暖色强调</h3>
+        <div class="row-flex" style="flex-wrap:wrap;gap:10px;margin-bottom:16px" data-page-node-id="pGIF6TR5mtGXnpU4WEzV86">
+          <span class="badge badge-ink" data-page-node-id="nRzRGHKMifBoOvq1Mbq1vx">Ink #17191c</span>
+          <span class="badge badge-fog" data-page-node-id="wtYzFzaOgwUJ8GRZiJsPaU">Fog #f7f7f8</span>
+          <span class="badge badge-dove" data-page-node-id="SC39x76yyWRLnKbu5F0vld">Dove #a3a6af</span>
+          <span class="badge badge-rust" data-page-node-id="lNMKIqAbUi1usHuIQx90CB">Rust #5d2a1a</span>
+          <span class="badge" style="background:#fbe1d1;color:#5d2a1a" data-page-node-id="aTRmpwle08UZRYCCV5GbZ1">Apricot #fbe1d1</span>
+          <span class="badge badge-sky" data-page-node-id="RZCxutMFcMLN6gFaMK1VQY">Sky #d3e3fc</span>
+        </div>
+        <ul class="issues" data-page-node-id="BJUY2QAA3vA2lTfNBJau9Y">
+          <li data-page-node-id="NzfzaasCs9t9qfgyWTK1GP"><span class="pin" data-page-node-id="mqpd9QALSmLuvQL8VrmA1I">1</span><span data-page-node-id="wcBdx7oYp3cYKIY5utATMQ">删除 <b data-page-node-id="ajZZaAMNXrzxI5DBlRTNvj">emerald / amber / blue / purple</b> 彩色实心图标圆——《资金账本》列表页与明细统计卡是重灾区。</span></li>
+          <li data-page-node-id="GDojOrNqp1ILThqOcQeDFX"><span class="pin" data-page-node-id="R7L7ZiqCZXwPnJz5h19tHo">2</span><span data-page-node-id="leNAUvVEEUEPWp9anQ56tM">彩色只保留三种声音：<b data-page-node-id="sG1AfHsaADGm8VIDA65V0N">Rust</b>（暖强调）、<b data-page-node-id="JAXCKx3BSe189DhuvFGtNi">Apricot</b> 与 <b data-page-node-id="lKBGFE2M3ilyCXHgCQ7F5D">Sky</b>（唯二的彩色卡底）。</span></li>
+          <li data-page-node-id="S7BEFGJxniG7LUSBZ8GprT"><span class="pin" data-page-node-id="Rx8wJAr6OpFgrlAdIP0axL">3</span><span data-page-node-id="m7P6n9juUgenIG8Kg2ubZR">金额红/绿（中国习惯）只在<b data-page-node-id="rEDjiC3Kn6Eo5cYGg58W3d">数字本身</b>出现，不作为 chrome、不铺底色。</span></li>
+        </ul>
+      </div>
+
+      <div class="panel" data-page-node-id="g2nLQh8bi3DH26YQ4At6i5">
+        <h3 data-page-node-id="JwvkaQ1VGQtudA9mJ27B9x">字体 · Signifier 只做标题</h3>
+        <ul class="issues" data-page-node-id="DNhFTQqxDzd4mmrVoAfG9W">
+          <li data-page-node-id="HwoXkVIFaCRGpL1Irfk4iu"><span class="pin" data-page-node-id="lmXVwS9Bq38CJ7j99zaAyJ">4</span><span data-page-node-id="ufXSeXCJ4NtroN5j596CfK">页面 H1 用 <b data-page-node-id="i1eFzCkuUoDDeq29xdFyHU">Signifier 衬线 40px</b>（DESIGN.md 规定衬线不得低于 40px），替换当前 <code data-page-node-id="B4uJNqGVbFlTOrtHsOdNri">text-2xl font-bold</code>。</span></li>
+          <li data-page-node-id="TUUs9fSjm4j3LnYjgiJmDE"><span class="pin" data-page-node-id="p8tj2DnvMi2K8UIHPoujC0">5</span><span data-page-node-id="bvRG1cqtJBZGOMo6Ns05UW">其余全部 Sohne 栈，微字重 <b data-page-node-id="FM3vccT1bRAxP4BIRiueIy">430 / 450 / 480</b> 取代 bold/regular 二分；<b data-page-node-id="zJdEELm8qHqHcwIQerM3Km">从不 bold</b>。</span></li>
+          <li data-page-node-id="MDuFARSYMJELi7adqYph8a"><span class="pin" data-page-node-id="lkAUGDOjJ73xwf4Gio06fr">6</span><span data-page-node-id="hBsvoGXe0Sp1QnjsAyfebI">所有数字加 <code data-page-node-id="DDiGcGvUAxbf7MPfziuZyX">tabular-nums</code>；全站 <code data-page-node-id="mLlY5zymwtUpzkqhhGCSib">letter-spacing: -0.009em</code>。</span></li>
+        </ul>
+        <div style="display:flex;align-items:baseline;gap:18px;margin-top:20px;padding-top:18px;border-top:1px solid var(--doc-line)" data-page-node-id="eOvXUpCUxvivt7MCyqWvJ8">
+          <span style="font-family:var(--font-display);font-size:34px;line-height:1.1" data-page-node-id="5Ws1lPxsqtWRfz7x9c4Eqw">资金账本</span>
+          <span style="font-size:13px;color:var(--graphite)" data-page-node-id="nQKWOmLW77FhQpImsUKMQf">Signifier 40 · display only</span>
+        </div>
+      </div>
+
+      <div class="panel" data-page-node-id="XRhbbGwYPan6pxXETzVuve">
+        <h3 data-page-node-id="mlSVa5CRJ4xjTDidzrhExJ">形状 · 大圆角 ceramic</h3>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end" data-page-node-id="bRLwh6CAGiVxdqDE6mt9DN">
+          <div style="text-align:center" data-page-node-id="b6zC7bEwMnnTQcDMiz3BkV"><div style="width:64px;height:52px;background:#fff;border-radius:24px;box-shadow:var(--sh-sm)" data-page-node-id="KfzhI9oFOlVcyjfMhzINhr"></div><div style="font-size:11px;color:var(--graphite);margin-top:8px" data-page-node-id="p6qqBEKd4TCxTIElrYPQv6">卡片 24</div></div>
+          <div style="text-align:center" data-page-node-id="PXs2pXOcA8jmSK1kNOFF5A"><div style="width:64px;height:52px;background:#fff;border-radius:12px;box-shadow:var(--sh-sm)" data-page-node-id="3JLCgGGl7fCGUgT2nXUyeH"></div><div style="font-size:11px;color:var(--graphite);margin-top:8px" data-page-node-id="5W5OpKeCDhzsGKjAm7zoSa">图片 12</div></div>
+          <div style="text-align:center" data-page-node-id="NLaF6fWP3hOKLrOFHMHLvP"><div style="width:64px;height:52px;background:#fff;border-radius:16px;box-shadow:var(--sh-sm)" data-page-node-id="XPsp7AkccVXwRad3JF1GWT"></div><div style="font-size:11px;color:var(--graphite);margin-top:8px" data-page-node-id="oVxGd35Nz9pA2MFSZZ4bEu">输入 16</div></div>
+          <div style="text-align:center" data-page-node-id="cvbox2tBHaE2rlN9mN3r25"><div style="width:64px;height:52px;background:#17191c;border-radius:9999px;box-shadow:var(--sh-sm)" data-page-node-id="Z7qjlfJXd2cBG0GTENF3AC"></div><div style="font-size:11px;color:var(--graphite);margin-top:8px" data-page-node-id="MGaFaYIqXFQKqeFCg2J8th">按钮 胶囊</div></div>
+        </div>
+        <ul class="issues" style="margin-top:20px" data-page-node-id="0ktJ4gmxtWZDBztyYnaERs">
+          <li data-page-node-id="CvjZycuZAfvrDbKIo9BiBz"><span class="pin" data-page-node-id="QY67HaQ6GHrQ6pyOd8r8bz">7</span><span data-page-node-id="CxxhWoMBYaxHPlX4BGPCXL">表格容器从 <code data-page-node-id="fFWzysII5rcnySgAbHEdVL">rounded-lg border border-border shadow-sm</code> 改为 <b data-page-node-id="iaGImNGr4YRPSWHidwFjmr">无边框 + shadow-steep + 24px 圆角</b>（明细页的 <code data-page-node-id="wMwMrL8OcAGvJ1eTlEOZI2">border</code> 与 <code data-page-node-id="qjhHtDVpKS6jchrNDeWY2M">bg-muted/50</code> 表头同理）。</span></li>
+        </ul>
+      </div>
+
+      <div class="panel" data-page-node-id="k035dRx3qEDInLAEurWfbd">
+        <h3 data-page-node-id="JOgbOw3BQ6Yfi4I3UJM6cp">层级 · 一个填充 CTA，其余是文字链</h3>
+        <ul class="issues" data-page-node-id="KkH41G5nBctJ7C42nSDNG7">
+          <li data-page-node-id="HlAHAEAexe4Exh3mQfl2ls"><span class="pin" data-page-node-id="pwQYPMxTpSZlI0oxUUy1v8">8</span><span data-page-node-id="KYrZ8fF7i2Rfxg27xggEcc">每屏最多一个 Ink 填充胶囊。<b data-page-node-id="2EbAkRds5bHLsM5AhxW4pc">列表页</b>：唯一填充为「导出 Excel」；状态筛选改为胶囊 Tab 组（你的选择）。</span></li>
+          <li data-page-node-id="cKldZDGCHRq4jS4iUumAR3"><span class="pin" data-page-node-id="VAFcHule0IqLlemjsnU98J">9</span><span data-page-node-id="BB2sqJpmCfTrBnXdft1qZK">明细页把「记一笔」保留为 Ink 填充，次级操作（导出/结算）降为文字链或浅色胶囊。</span></li>
+          <li data-page-node-id="9I01InXEl0dSwZVv0d8Vpn"><span class="pin" data-page-node-id="4KjpBeMGYJ1XfdlKmJY1o4">10</span><span data-page-node-id="0cWKfWSyB3KeftiP5SYipV">表格行内操作图标：默认隐形，hover 显现，颜色 Graphite → Rust。</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ① 列表页 ============ -->
+  <section class="block" id="p1" data-page-node-id="ogumTb2GjR5aOamTxRv6UK">
+    <div class="sec-head" data-page-node-id="YIZjQlXEV6dGk3Jacgny0H">
+      <h2 data-page-node-id="jKBqBDOSYgL52UtMLaM8nb"><span class="idx" data-page-node-id="E7IGzgMsmtcDLVquYRaeg3">1</span>资金账本列表页</h2>
+      <span class="chip chip-do" data-page-node-id="nFYle4WxsT1Qsaa8MmfedY"><span class="chip-dot" style="background:var(--rust)" data-page-node-id="vO8uiyvDB03WRoQiMVwEva"></span>本次重构主目标</span>
+      <p data-page-node-id="wXAiOMwoEYwCBVAkLnmqpR">先看现状问题，再看重构后的完整页面与逐项改动。</p>
+    </div>
+
+    <!-- 现状 -->
+    <div class="panel before" style="margin-bottom:24px" data-page-node-id="evP9EyZATVHwieR6uZl59V">
+      <h3 data-page-node-id="h5JwQCxBWeRNpQJODybbXA">现状 <span data-page-node-id="lDlAYpWK2MVAX8ZiIXEH3R">frontend/src/app/(main)/admin/ledger/page.tsx 及 _components</span></h3>
+      <div data-page-node-id="YEq41Cb4eoFdeC8yve2ePl">
+        <h1 style="display:flex;align-items:center;gap:10px" data-page-node-id="cXuIZdn9f9HIMj5aVLeQvS">资金账本<span class="pin" data-page-node-id="YOMXHLDY3ldLL1DnPenOJU">A</span></h1>
+        <p style="font-size:14px;color:#64748b;margin:6px 0 20px" data-page-node-id="S8yBdtnBO6UAAtL0eRqmEI">管理和追踪所有项目的资金流水，按项目聚合查看收支与 ROI</p>
+
+        <div class="grid-5" style="margin-bottom:20px" data-page-node-id="zCxhQGaRDz9aPpAUaS6WCg">
+          <div class="oldcard" data-page-node-id="j5oAti8XQgEPD4zEbJwlou">
+            <div data-page-node-id="DWnHZ1wFsR4TckFWpT2iz4"><div style="font-size:12px;font-weight:500;color:#64748b" data-page-node-id="EM8ZmYzffJbNHG0QnLpStD">项目总数</div><div style="font-size:20px;font-weight:700;color:#0f172a;margin-top:4px" data-page-node-id="bsNAU94EUFuHooYw3hqcWV">28 <span style="font-size:12px;font-weight:400;color:#64748b" data-page-node-id="vh9BplasnfEq0RtDnrM2x7">个</span></div></div>
+            <div class="oldicon" style="background:#005daa" data-page-node-id="ULTAWxgDRx0osC3EbtdS3t"><svg class="ic" style="color:#fff" data-page-node-id="0VfdrEntYrrvRVpXVRwZAZ"><use href="#i-building" data-page-node-id="PqSRIBcmC4tGQadEvi38LD"/></svg></div>
+          </div>
+          <div class="oldcard" data-page-node-id="G1nrzNkM17nZjYKwjTuux4">
+            <div data-page-node-id="GurevKJ3GOS5hDiMtkLlLR"><div style="font-size:12px;font-weight:500;color:#64748b" data-page-node-id="V5fa77xLjUFvyPHWMOjAXZ">总收入</div><div style="font-size:20px;font-weight:700;color:#0f172a;margin-top:4px" data-page-node-id="9G89XrbAZHl0Zlo2owuqpi">3,842.6万</div></div>
+            <div class="oldicon" style="background:var(--old-emerald)" data-page-node-id="2TqgB63PAY5detiJ4lYeqS"><svg class="ic" style="color:#fff" data-page-node-id="5DF8cIxZaeMoeV6bq5mDOb"><use href="#i-up" data-page-node-id="nI5w6H3t1hFwN3KEluoUer"/></svg></div>
+          </div>
+          <div class="oldcard" data-page-node-id="rUPw3pNSCo2PZTYvrqb1Dc">
+            <div data-page-node-id="z4w8FKf8tWyXQV5AupVeoK"><div style="font-size:12px;font-weight:500;color:#64748b" data-page-node-id="LkpLMoTJm1T8bsQl4rYDln">总支出</div><div style="font-size:20px;font-weight:700;color:#0f172a;margin-top:4px" data-page-node-id="hnAFKj2XEyvdKLd2yCsjlC">2,915.4万</div></div>
+            <div class="oldicon" style="background:var(--old-amber)" data-page-node-id="xYXXoWZUSAuuNXF5ST7x5y"><svg class="ic" style="color:#fff" data-page-node-id="iEeLW3Ylpf25oJzEBjgQ5A"><use href="#i-down" data-page-node-id="zxcsNxeq3aGVa516WAtlGP"/></svg></div>
+          </div>
+          <div class="oldcard" data-page-node-id="SJmxVf2cvabWAcT8nH8PcF">
+            <div data-page-node-id="OzryyVEyLrqGfPtBCh4oLF"><div style="font-size:12px;font-weight:500;color:#64748b" data-page-node-id="h5IVqUEq25cvVPSSRwbZM4">净现金流</div><div style="font-size:20px;font-weight:700;color:var(--pos);margin-top:4px" data-page-node-id="GARiSTnZaJx6fD1CI35dTV">927.2万</div></div>
+            <div class="oldicon" style="background:var(--old-blue)" data-page-node-id="y2fWWWFHifFIuStqdXYgIa"><svg class="ic" style="color:#fff" data-page-node-id="vffGnieLToFSnHTNk9Jlsr"><use href="#i-wallet" data-page-node-id="Iu7XKSDacNGDAQKrhcnsOn"/></svg></div>
+          </div>
+          <div class="oldcard" data-page-node-id="fTVGKE7DuhJHymHi5dJfY3">
+            <div data-page-node-id="FD6scaQPF40ZDIrYZkILmv"><div style="font-size:12px;font-weight:500;color:#64748b" data-page-node-id="auRteGooJ7GSck3HGSZhWi">流水记录数</div><div style="font-size:20px;font-weight:700;color:#0f172a;margin-top:4px" data-page-node-id="Jz4o3ONyEos3vZ36QUEYCA">1,264 <span style="font-size:12px;font-weight:400;color:#64748b" data-page-node-id="gsMd9GgMo7Q3GijUoErzO2">条</span></div></div>
+            <div class="oldicon" style="background:var(--old-purple)" data-page-node-id="KUT3ZWaktJ4VVg2CTmqiIP"><svg class="ic" style="color:#fff" data-page-node-id="csH4eRua8YgzjLI1Bb0ySZ"><use href="#i-receipt" data-page-node-id="lqxTj4Lxl1Ml9uifYnB9hW"/></svg></div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:16px" data-page-node-id="pPBkomDmQMKvapSjOpB30W">
+          <div style="display:flex;gap:12px" data-page-node-id="nm7MZmNphoA04yOnGcqZ2U">
+            <div class="oldselect" style="min-width:288px" data-page-node-id="3r6tMglttnDNEyokh0VT3a">搜索项目编号/小区/地址...<span class="pin" data-page-node-id="YGO0C2nz51DhXdPA5Zilth">C</span></div>
+            <div class="oldselect" data-page-node-id="83mGLeXpIH3JU2yPrwO4b7">全部项目状态 <svg class="ic ic-sm" data-page-node-id="wpcNBYRZ0T2ai9ELe0zYS0"><use href="#i-chev-d" data-page-node-id="PNtDZOLdoxnbwHknLsvOHi"/></svg></div>
+          </div>
+          <div class="oldbtn" data-page-node-id="IcfZYW2tiFAuYEfZkhvMoq"><svg class="ic" data-page-node-id="Vhsf5mH2vLre54jHB8tMuj"><use href="#i-download" data-page-node-id="4LkxHiJ9UhVWwaUe0lG7uj"/></svg>导出 Excel</div>
+        </div>
+
+        <div class="shell" data-page-node-id="32L9NDaCAdVzCaHiZYjDZL">
+          <table class="tbl" style="min-width:1000px" data-page-node-id="WCGMEUyZpaIoF0qo5m49LP">
+            <thead data-page-node-id="h5QW9I69qyKECf4wb3G4At"><tr data-page-node-id="T8zWte4AbP3NZn3wP174Xl">
+              <th data-page-node-id="Dq6abfcBWU08FZCAdGC1pR">项目编号 <span class="pin" data-page-node-id="wUut7HsYCkTMKJvah5t4NF">E</span></th><th data-page-node-id="QeWLVd6QBNzoUVARnyR3xa">小区 / 地址</th><th data-page-node-id="iomUlX2iGY0wZGu29dSb5j">项目状态</th>
+              <th class="th-r" data-page-node-id="rvQK28qYlU64jEm6GXbCgv">总收入</th><th class="th-r" data-page-node-id="GKFds2GPFzbiUrZMfLJPEk">总支出</th><th class="th-r" data-page-node-id="Loodo6CCalmga0Epql92Ud">净现金流</th>
+              <th class="th-r" data-page-node-id="XyXOpkhDA1J39f0mdBti6L">ROI</th><th class="th-c" data-page-node-id="CpyAmEV58pTh7ybG9cBZ1u">记录数</th><th class="th-c" data-page-node-id="WHAh9wDrEaw8pm6uAkHhox">跟投</th><th class="th-c" data-page-node-id="r7VE1yCHa7wxeGovLDIcjL">操作</th>
+            </tr></thead>
+            <tbody data-page-node-id="TflG3eZZQJ2rN8kJEX9YnD">
+              <tr data-page-node-id="bb5GbHjZajeIRWzRNnJ2CW">
+                <td class="mono" style="font-size:12px;color:#64748b" data-page-node-id="YwnKeTHxyhY5SoTV3ssy1F">XM-2026-0018</td>
+                <td data-page-node-id="0eG68NowJKvTbzmw3CrCWi"><div style="font-weight:500;color:#0f172a" data-page-node-id="AGqkrlLBLcsXqZs6ucUKNn">阳光里 3-2-1801</div><div style="font-size:12px;color:#64748b" data-page-node-id="0A1lXL1GDKsXAN5bDzaVP6">浦东新区张杨路 1288 弄</div></td>
+                <td data-page-node-id="yt0eHXAjMlmScflBVa6VOk"><span class="oldbadge" style="background:rgba(16,185,129,.1);color:#10b981" data-page-node-id="TOjLSIxh2CJiWcphJHlYww">在售</span></td>
+                <td class="td-r num" style="font-family:var(--font-mono)" data-page-node-id="Hn7dQLElxlzPgSV0pR945O">¥2,684,000</td>
+                <td class="td-r num" style="font-family:var(--font-mono)" data-page-node-id="eIeXoHuHPRYBPaHwRSU9A9">¥2,013,000</td>
+                <td class="td-r num" style="font-family:var(--font-mono);font-weight:500;color:var(--pos)" data-page-node-id="OygoEOMFCxHABXEsu1bHwN">+¥671,000</td>
+                <td class="td-r num" style="font-family:var(--font-mono);font-weight:600;color:var(--pos)" data-page-node-id="ywTxbla3dIGoquPOgG4skd">+33.31%</td>
+                <td class="td-c num" style="font-family:var(--font-mono)" data-page-node-id="LEuNfxdW5w590R2jGVnI3P">42</td>
+                <td class="td-c" data-page-node-id="pEDKs3wjLz0CwxuamJXDJo"><svg class="ic c-graphite" data-page-node-id="QaDOAwNuVi8nhGLTRD619Y"><use href="#i-coins" data-page-node-id="lrWYUgCRvTjhlVurnnb9cV"/></svg></td>
+                <td class="td-c" data-page-node-id="nC9GOwe5hDBHAuuoezDNHY"><svg class="ic c-graphite" data-page-node-id="pBj9Uogakaz2olyydSLY1p"><use href="#i-eye" data-page-node-id="HSBcO4NEZhiDG4O2cfINNa"/></svg></td>
+              </tr>
+              <tr data-page-node-id="yKgLBZlWzLJ3xoJ8TvmTWo">
+                <td class="mono" style="font-size:12px;color:#64748b" data-page-node-id="oumDDokDqcqJKAr4C1dpUr">XM-2026-0013</td>
+                <td data-page-node-id="ty2GERzQGUjyVcqWbiOBkr"><div style="font-weight:500;color:#0f172a" data-page-node-id="riH3rz5jrYpryQow41jUwF">碧云国际 9-1-1502</div><div style="font-size:12px;color:#64748b" data-page-node-id="KzMiHqP4fo6JoEQbvV1TYx">浦东新区碧云路 300 弄</div></td>
+                <td data-page-node-id="tBrTZ0bODDLSpShDFPTKFb"><span class="oldbadge" style="background:rgba(100,116,139,.1);color:#64748b" data-page-node-id="pr8D4kV1kmkOcbJZP6wBTJ">已售</span></td>
+                <td class="td-r num" style="font-family:var(--font-mono)" data-page-node-id="tAPGBYevOJhCFRi4i8HTxy">¥3,369,000</td>
+                <td class="td-r num" style="font-family:var(--font-mono)" data-page-node-id="FXhZmTo05yJTbzAuhScy3e">¥4,015,000</td>
+                <td class="td-r num" style="font-family:var(--font-mono);font-weight:500;color:var(--neg)" data-page-node-id="3Tl0KC930FK5TxC7ERP3Jb">−¥646,000</td>
+                <td class="td-r num" style="font-family:var(--font-mono);font-weight:600;color:var(--neg)" data-page-node-id="460OsbG2R5oaNHrgde3ijI">−16.09%</td>
+                <td class="td-c num" style="font-family:var(--font-mono)" data-page-node-id="ZkikaySvDjn4VgcJ6FTxGc">49</td>
+                <td class="td-c" data-page-node-id="1xvdNPojpAgcvvUxGj7x0k"><svg class="ic c-graphite" data-page-node-id="v0667OcOe4Gq89iSOmLDKj"><use href="#i-coins" data-page-node-id="AOMvtwwkMt4YExnYv9vPEo"/></svg></td>
+                <td class="td-c" data-page-node-id="TNG28eA75BvG2gtH7A44Hu"><svg class="ic c-graphite" data-page-node-id="fCfBzUt8oWcz6rmr8ENqty"><use href="#i-eye" data-page-node-id="fGEo7Cw91VtDLGzobuRiBV"/></svg></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:12px;color:#64748b;margin-top:10px" data-page-node-id="j24IrYgDlU0a7U7Cu4M8uf">显示 2 条记录 (共 28 条) <span class="pin" data-page-node-id="b519JnVvVlyQ41JE5ZCugU">F</span></p>
+      </div>
+
+      <ul class="issues" style="margin-top:24px;padding-top:22px;border-top:1px solid var(--doc-line)" data-page-node-id="GLCbKwy6PUMKMCyYw1L8tc">
+        <li data-page-node-id="7YHWdJbwh9QPCmZ67MnBBx"><span class="pin" data-page-node-id="fkbFmC2DSEGMtghGpqcgNg">A</span><span data-page-node-id="tUl66jKhSYcDF727WHH7JZ">H1 用 <b data-page-node-id="3KT8LidF6eYAPIluMNZHpG">24px 粗体无衬线</b>，丢失模块的 editorial 语气；与已重构的统计页（Signifier 44px）割裂。</span></li>
+        <li data-page-node-id="Jl4aKvOfmYcQxsYct6nATq"><span class="pin" data-page-node-id="5S256wf3RaSuuJiPi7MESm">B</span><span data-page-node-id="q5VlX7QXJDlgMW4hcvbfpB">统计卡使用 <b data-page-node-id="lT2JTtxxIXld0Ai6LdNwMI">蓝/绿/琥珀/蓝/紫 五种实心图标圆</b>，是全项目最明显的旧风格残留；净现金流金额同时用红又配蓝底图标，语义打架。</span></li>
+        <li data-page-node-id="YASjgjfj8HYiTMcwSWaeR6"><span class="pin" data-page-node-id="wZH2cNTrqJDk3teljJzsHW">C</span><span data-page-node-id="xZxnzvdMkoEaeEw0XLGEHM">搜索框无图标、无 16px 圆角；状态筛选用 <b data-page-node-id="sboiDyBTjdEwhSeCjYSmnE">下拉 Select</b>，与 marketing 列表页的胶囊 Tab 语言不一致。</span></li>
+        <li data-page-node-id="unulQBjHABvyrsq9MI6xOR"><span class="pin" data-page-node-id="GbPQqBSfqRRF75NJBFSYxD">D</span><span data-page-node-id="YtvV3i74UTUEqLQwe3IWUK">卡片/表格用 <code data-page-node-id="PyyxrmFPuh4ULWMCnGuaPi">rounded-lg + border + shadow-sm</code>，小圆角 + 实边框，缺乏 Steep 的 ceramic 质感。</span></li>
+        <li data-page-node-id="cOIaIArSjNp8tFUqN57ske"><span class="pin" data-page-node-id="bcgZzrfOV5OVexB9CYDqXR">E</span><span data-page-node-id="SGYArg88iFZsgBvnvX1JUz">表格用 <b data-page-node-id="1pF4en3YSlM1AORimNbiwn">色相各异的状态徽章</b>（蓝/橙/绿/灰），与 Steep「chrome 单色」冲突。金额用完整数字 <code data-page-node-id="kfA1CZCr0WNBAqkrGx4xji">¥2,684,000</code>，宽度浪费。</span></li>
+        <li data-page-node-id="bCmQQrJfDTqpKLMEMFyBwX"><span class="pin" data-page-node-id="9nlRrpiQNf2A6DU7DU8hA2">F</span><span data-page-node-id="ZjrTE6VbBdTvli06lXJYFr">计数与分页样式未统一；页面底色 <code data-page-node-id="oSAcMCNilHsZ2t9KdIfUC3">bg-muted</code> 而非 <code data-page-node-id="R58JkrqHMAjR9qCXK1Oqq8">bg-fog</code>。</span></li>
+      </ul>
+    </div>
+
+    <!-- 重构后 -->
+    <div class="artboard" data-page-node-id="HFjjAA82EOojg3B3ZfNcGw">
+      <div class="artboard-bar" data-page-node-id="Ly7NVlWE1aFNTOAApzZuuE">
+        <span class="dot" data-page-node-id="gg7QKFr5LOtqZzXjQrjhTn"></span><span class="dot" data-page-node-id="SiK2ZSkoe197cx5ahRzX3o"></span><span class="dot" data-page-node-id="c0Vxsz606HKu700m0SVE0e"></span>
+        <span class="name" data-page-node-id="HNDHop5bEAsKrwlwUzC4eB">/admin/ledger</span>
+        <span class="spacer" data-page-node-id="PwJ4BJXrzDyhvrHwB6yiaA"></span>
+        <span class="tag" data-page-node-id="wq2rdeOqMb1vwbePFUo5tF">重构后 · 1200px · bg-fog</span>
+      </div>
+      <div class="artboard-body" data-page-node-id="VYUAAnURkgF9GCuEXZv1A8">
+        <div class="app" data-page-node-id="RjPHmWwqIeRR6qjSGJBtui">
+          <div class="wrap" data-page-node-id="09dbm1m2IZIMdEf0PLWDcS">
+            <div class="stack-6" data-page-node-id="hOlkBfNAMR2DAjQfoLoZmv">
+
+              <!-- 页头 -->
+              <header data-page-node-id="0P3hHBVMap4q3WyQ1r5uzF">
+                <h1 class="h1d" data-page-node-id="IPzUA5DUBBJH46BhF3IhtI">资金账本</h1>
+                <p class="page-sub" data-page-node-id="HUt3qds2htzwam8K643Rq7">管理和追踪所有项目的资金流水，按项目聚合查看收支与 ROI。</p>
+              </header>
+
+              <!-- 统计卡：唯一暖卡 = 净现金流 -->
+              <div class="grid-5" data-page-node-id="VpK7kF1PcJ7F5DKLGvmRx7">
+                <div class="stat" data-page-node-id="Q9Se3gcpDAz9MtwP8yKJsN">
+                  <div class="lbl" data-page-node-id="lcdHRJoBgZ1ClNPtGe74MX">项目总数<svg class="ic c-graphite" data-page-node-id="qYAeGhbSKnij9Bnk4l5P0H"><use href="#i-building" data-page-node-id="I5P1Hc7gZPrYAg0THIRsL4"/></svg></div>
+                  <div class="val" data-page-node-id="l91BNC08T6440HaG66gBuy">28 <small data-page-node-id="pKIovCThhW8x8aWlYxXbHi">个</small></div>
+                </div>
+                <div class="stat" data-page-node-id="DLijG0h0MlrgptPqCfRd3b">
+                  <div class="lbl" data-page-node-id="DYJ7mDBYTb6ZH3c44f7GGk">总收入<svg class="ic c-graphite" data-page-node-id="gDIrOC37NBTkUHaf6RxEJP"><use href="#i-up" data-page-node-id="1G0j1FKBwH0XTTeFbv9Kif"/></svg></div>
+                  <div class="val" data-page-node-id="HIRTqjQy67kdJhVhvpL50n">¥3,842.6<small data-page-node-id="nSJYWC4er3qm9hpFM2xeRZ">万</small></div>
+                </div>
+                <div class="stat" data-page-node-id="ZAE0THP1r5XsxylqFBdiH3">
+                  <div class="lbl" data-page-node-id="ALmkVP4SMNOvIhyxtl7DFV">总支出<svg class="ic c-graphite" data-page-node-id="1B7Q64Smd0eoXZsMSPVsUu"><use href="#i-down" data-page-node-id="GSHKTxtfnCXIkF5XzaivFw"/></svg></div>
+                  <div class="val" data-page-node-id="zrpIYPv7DFIxw4e9pcKOKR">¥2,915.4<small data-page-node-id="BA4iA7FUpK3frNh74yiO6E">万</small></div>
+                </div>
+                <div class="stat stat-warm" data-page-node-id="hvsneZcongrw1JCloMSyfG">
+                  <div class="lbl" style="color:var(--rust)" data-page-node-id="aeYrTBWd7WcEAiDDUfqn8G">净现金流<svg class="ic" style="color:var(--rust)" data-page-node-id="jf4VfitjaH0Se4w8nOAnFy"><use href="#i-wallet" data-page-node-id="GkPE67b7MbiUEY8W0H33ba"/></svg></div>
+                  <div class="val c-rust" data-page-node-id="E1Gc53EFBogT7vAFXcYDAS">+¥927.2<small style="color:var(--rust);opacity:.7" data-page-node-id="8CyRNe1vcfg7c5X77ecFNp">万</small></div>
+                </div>
+                <div class="stat" data-page-node-id="nVxCfXym8lk6gdd6FJSsW7">
+                  <div class="lbl" data-page-node-id="W0ypUf24NZc19F0RaNiBJC">流水记录数<svg class="ic c-graphite" data-page-node-id="uchW5I3GkstgQAkfBXb3CZ"><use href="#i-receipt" data-page-node-id="thWMIYnSrPeyaozGFJGBmz"/></svg></div>
+                  <div class="val" data-page-node-id="1xS6qdTM0xkXWn4Qcc3Txd">1,264 <small data-page-node-id="xahS0MjGuaZzq6Zx3KBo6M">条</small></div>
+                </div>
+              </div>
+
+              <!-- 工具栏 -->
+              <div class="between" style="flex-wrap:wrap" data-page-node-id="OwfEsvnOQOIQfjgzZNqCi2">
+                <div class="row-flex" style="flex-wrap:wrap;gap:12px" data-page-node-id="dQeTxIDFTT6TcngVUiB28V">
+                  <div class="input" data-page-node-id="bgvdXxDD1C07SrbmGkIQBh">
+                    <svg class="ic" data-page-node-id="sm5jE9ynHQxY1foNRuWhKo"><use href="#i-search" data-page-node-id="GKGvxanAM44uYCgW7H5jLT"/></svg>
+                    <input placeholder="搜索项目编号 / 小区 / 地址" value="" readonly data-page-node-id="Wgf5CPdRVVkSNyyd2PGbxZ" />
+                  </div>
+                  <div class="pilltabs" data-page-node-id="0u1EZVGmKrIUkIOHmwQIqm">
+                    <button class="on" data-page-node-id="WZzEmcEDNbRBZ6q7Mt7Q4J">全部<span class="cnt" data-page-node-id="KSN3kMxF5CyfOprGaCbYEr">28</span></button>
+                    <button data-page-node-id="Tsz4NlqVOtyIFk2BfIYcNp">已签约<span class="cnt" data-page-node-id="KljJR9Tf4qypeZX9wz0EFf">6</span></button>
+                    <button data-page-node-id="SRepDA6jUfJqWN8CfRsGfG">装修中<span class="cnt" data-page-node-id="1UKcxDHemmMfqZ7GdnCTYv">5</span></button>
+                    <button data-page-node-id="9Tp8Ow4tcS0b6FBdb6C1Ed">在售<span class="cnt" data-page-node-id="WgzgbGoXNmsp3lgQklDG9m">11</span></button>
+                    <button data-page-node-id="kYq7i02oY3ChDxnuJ0PUXE">已售<span class="cnt" data-page-node-id="gaRyXKowGZwGjQCjhOCHL2">6</span></button>
+                  </div>
+                </div>
+                <button class="btn btn-ink" data-page-node-id="y8jbPBK7Ag300v0Mecbwwh"><svg class="ic" data-page-node-id="MHJS64NHs3KYg56WamrTsh"><use href="#i-download" data-page-node-id="QswiMLXdLkjmEir2zhDlzd"/></svg>导出 Excel</button>
+              </div>
+
+              <!-- 表格 -->
+              <div class="card-flat" data-page-node-id="nIi8fPNYJeLNYCYIhPBCZg">
+                <div style="overflow-x:auto" data-page-node-id="mgO43YOC6oAs1ZDnQo9ZfE">
+                  <table class="tbl" style="min-width:1040px" data-page-node-id="BzGRhVKgm5OkbDvNgdVNvn">
+                    <thead data-page-node-id="r2QM0TS9Mgx8B3FWnLkdOd">
+                      <tr data-page-node-id="9OphZ6vzCU8EKsjHjvx6WW">
+                        <th style="width:118px" data-page-node-id="QjgAZKBnoL7CgaCfu5z31o">项目编号</th>
+                        <th data-page-node-id="BINfjkVrGbM4qefd4VCxZk">小区 / 地址</th>
+                        <th style="width:96px" data-page-node-id="7AzCT0jh7y3m8GoydBijKQ">项目状态</th>
+                        <th class="th-r" style="width:118px" data-page-node-id="8zGHHE1r9NWJUGepoNcrmG">总收入</th>
+                        <th class="th-r" style="width:118px" data-page-node-id="AzuKeEDwkEePQZ4y3TKqbj">总支出</th>
+                        <th class="th-r" style="width:124px" data-page-node-id="2Z9mMYMFTx17CDorfKAhqH">净现金流</th>
+                        <th class="th-r" style="width:96px" data-page-node-id="4iwjAPnHp9kAKVewVPZzos">ROI</th>
+                        <th class="th-c" style="width:76px" data-page-node-id="7b2Cs3PYFIMErqs6D701g9">记录数</th>
+                        <th class="th-c" style="width:70px" data-page-node-id="EICr57DCsJ3ANKERjWaiNP">跟投</th>
+                        <th class="th-c" style="width:70px" data-page-node-id="MG5gCNU0BbM2RPuo15cBrp">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody data-page-node-id="yB5C5QgdFjnP3sd7JrFTRL">
+                      <tr data-page-node-id="DBUWHKmwPzjfNq3Ip0Cx16">
+                        <td class="mono c-graphite" style="font-size:12px" data-page-node-id="AE3EuXIeAlDwvcmzZM5lhq">XM-2026-0018</td>
+                        <td data-page-node-id="dBlkj1vSmvNv5HvGZZr06i"><div class="col-flex" data-page-node-id="dHpSM5EV21hPYCOlmltuv4"><span class="w-med" data-page-node-id="KaUPStXdBCzlUmmTyHDZ0N">阳光里 3-2-1801</span><span class="c-graphite" style="font-size:12px" data-page-node-id="iEUTfg9s3eb5Ysq5OzaDQu">浦东新区张杨路 1288 弄</span></div></td>
+                        <td data-page-node-id="JWPeDgAZ1UjCNLcHjF0twg"><span class="badge badge-ink" data-page-node-id="NTygyCbEpmnfRfCbWKieuj">在售</span></td>
+                        <td class="td-r num" data-page-node-id="VGyi2xZIgcgFIWAA5k3Gko">¥268.40万</td>
+                        <td class="td-r num" data-page-node-id="OzxDUdo2RVrnF0hnCom0oS">¥201.30万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="uCWeVLCBBrFpQ7M3ZUgBH8">+¥67.10万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="FQ1xElMQYFH7qE3u4AepBD">+33.31%</td>
+                        <td class="td-c num c-ash" data-page-node-id="FD19dXPLwVeuiVLjH5QCXD">42</td>
+                        <td class="td-c" data-page-node-id="bHJXZqQumQG4bE2lcnHCuJ"><svg class="ic c-graphite" data-page-node-id="3PUsJTxQKJ9AB0d3hRiFSc"><use href="#i-coins" data-page-node-id="27a1h8S8oELXwYVY6eYaUt"/></svg></td>
+                        <td class="td-c" data-page-node-id="1tjKt8LNhdG2AdyTFPpDBW"><svg class="ic c-graphite" data-page-node-id="SPhuxMfxADoi8daBRYAZxA"><use href="#i-eye" data-page-node-id="EMAh0tkiX4OBCuj7aZQwDl"/></svg></td>
+                      </tr>
+                      <tr data-page-node-id="8X8Y21STJEbjoWw2A81uv9">
+                        <td class="mono c-graphite" style="font-size:12px" data-page-node-id="qZmB92zlpoySGRpuniCSTT">XM-2026-0017</td>
+                        <td data-page-node-id="MASp00uw2ATBhswsyQRR6P"><div class="col-flex" data-page-node-id="YApHB44fiRrOYp8LstPrYB"><span class="w-med" data-page-node-id="g36J3LXHFYFvW0XlfVixGP">翠湖雅苑 8-1-602</span><span class="c-graphite" style="font-size:12px" data-page-node-id="nRde5BkhrejEkNmC5vE3ho">徐汇区龙华中路 66 号</span></div></td>
+                        <td data-page-node-id="KsFsP6CmPRFU2hLYIdf75f"><span class="badge badge-dove" data-page-node-id="HI9PxhJW0ojoTCMnCxIQo7">已售</span></td>
+                        <td class="td-r num" data-page-node-id="ns0nuzBuaaDGIzx5JbRpEG">¥412.80万</td>
+                        <td class="td-r num" data-page-node-id="nZwe8JwlwhNKnH61u5VxAO">¥318.60万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="MVqgqXaGZKEveFx7YlIj5j">+¥94.20万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="GnAoCVCGReDWskwIKbj0qk">+29.57%</td>
+                        <td class="td-c num c-ash" data-page-node-id="ZHsW8402bzqOKxq4wwWVcr">56</td>
+                        <td class="td-c" data-page-node-id="D2Nca3S2Nx2rCyuoruuWTg"><svg class="ic c-graphite" data-page-node-id="jeg14fi5D5hYsRUQBTM48W"><use href="#i-coins" data-page-node-id="nGpMQ889WFoDBPeIG101ZO"/></svg></td>
+                        <td class="td-c" data-page-node-id="tpNu4wGJVrQpX8BvSgqcjf"><svg class="ic c-graphite" data-page-node-id="hpVV8GfiCk7gxchFvZCqLG"><use href="#i-eye" data-page-node-id="D1mx8LJ4KHdNVgzoJGIR2j"/></svg></td>
+                      </tr>
+                      <tr data-page-node-id="1lfGg1QZvETwmGc1Wwldvp">
+                        <td class="mono c-graphite" style="font-size:12px" data-page-node-id="rGUH8ArirfFj4nIL1Lv24e">XM-2026-0016</td>
+                        <td data-page-node-id="XWGRC95a7CIIDBJcv2P1Oz"><div class="col-flex" data-page-node-id="mps9wxurIEoh5fCWiJxAYg"><span class="w-med" data-page-node-id="9G6JUqPD7ryfVLdkiPCqEW">金桥花园 12-3-902</span><span class="c-graphite" style="font-size:12px" data-page-node-id="MMFKBwfC4Is9s5ZVGzcUrW">浦东新区金桥路 445 弄</span></div></td>
+                        <td data-page-node-id="C3PBYH7YqeOVSFqbUnvK5s"><span class="badge badge-fog" data-page-node-id="k1qDCQBEbW4d6ELH69qz3L">装修中</span></td>
+                        <td class="td-r num" data-page-node-id="4015cAfuYyaeZtFjlRGuVY">¥156.20万</td>
+                        <td class="td-r num" data-page-node-id="YmQccOwGRd8lNjsVbLRbrC">¥128.40万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="FA5S2dqbtBH6iRDrm7bkor">+¥27.80万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="LA50vwWG0gTZNORw3a6yEG">+21.65%</td>
+                        <td class="td-c num c-ash" data-page-node-id="K7tmBmMOK6UYHCjMVO0VtZ">23</td>
+                        <td class="td-c" data-page-node-id="oJX6UihZKFbJV6j8BMiXw4"><svg class="ic c-graphite" data-page-node-id="2CGi56USgO6IkEL6Ceqh9I"><use href="#i-coins" data-page-node-id="ZXQulxbC0LkzTqS1dwpsm9"/></svg></td>
+                        <td class="td-c" data-page-node-id="G43sBGM5iBmFXi4N20AtOL"><svg class="ic c-graphite" data-page-node-id="tdtoNBcbCDTNQCM6NlJhsZ"><use href="#i-eye" data-page-node-id="qgGupIgKWmYgNUPPD8MwsN"/></svg></td>
+                      </tr>
+                      <tr data-page-node-id="XTxmOvyVmInsLRK1ePERZv">
+                        <td class="mono c-graphite" style="font-size:12px" data-page-node-id="pxyhyWnuY6KMpcVHOK3DQU">XM-2026-0015</td>
+                        <td data-page-node-id="tSiJhR3np1PgtKTkbDvIE0"><div class="col-flex" data-page-node-id="5QDBY6Jmg3qAq2NgAw8ceP"><span class="w-med" data-page-node-id="7MzTxA0jQeXkNY7mqNOGhU">香榭丽园 5-2-1101</span><span class="c-graphite" style="font-size:12px" data-page-node-id="sGvm5uAxnVahuTX6MZIUj8">静安区大宁路 88 弄</span></div></td>
+                        <td data-page-node-id="eb1JDW7lYTez6ZD5oQRqBp"><span class="badge badge-ink" data-page-node-id="ibVhOhnpXX1uR1aBxzrfx4">在售</span></td>
+                        <td class="td-r num" data-page-node-id="EHlehYzxKpSpD0CURTK0iR">¥298.60万</td>
+                        <td class="td-r num" data-page-node-id="lELk0iysxG1SE9LE8RgOuc">¥254.90万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="3Aqo8ejjhGPar7ljqnqt2u">+¥43.70万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="NhHwEZhbBPHUpMyrfKaTUI">+17.14%</td>
+                        <td class="td-c num c-ash" data-page-node-id="YfX7zkSVcWA7CFQJajrVHj">38</td>
+                        <td class="td-c" data-page-node-id="cBO6SrFlhHCynU7VFc3omu"><svg class="ic c-graphite" data-page-node-id="vo57HZVVx27pAwQ2ywKAan"><use href="#i-coins" data-page-node-id="Jq8eFJ2vychwWL72EyeBDX"/></svg></td>
+                        <td class="td-c" data-page-node-id="TlMoVxqCy9FxWGtkPNLOpN"><svg class="ic c-graphite" data-page-node-id="TX4Q2toPRRvoAkGEB4nyVT"><use href="#i-eye" data-page-node-id="hikPs7ZuceLMhSDLX4sKVy"/></svg></td>
+                      </tr>
+                      <tr data-page-node-id="EL9W8Sf0bvB6Cegnf8gBwo">
+                        <td class="mono c-graphite" style="font-size:12px" data-page-node-id="EtrEMP7mnJbLdprDOe51vG">XM-2026-0014</td>
+                        <td data-page-node-id="zZioBE6kqScCaREE0VaJWo"><div class="col-flex" data-page-node-id="dDNYyQCWVDV1YYxcWfORay"><span class="w-med" data-page-node-id="thjaXh6frpj3TXcUcKJ8ZV">四季花城 2-1-303</span><span class="c-graphite" style="font-size:12px" data-page-node-id="OUJDvfmMXoyl6Yk2zFJGFa">闵行区春申路 199 号</span></div></td>
+                        <td data-page-node-id="ea9OViw4VwMI5OXfSxlTDp"><span class="badge badge-fog" data-page-node-id="NCj7jDYgmshqYk9GmFCMPg">已签约</span></td>
+                        <td class="td-r num" data-page-node-id="ObzW1BaJY7D2IVQIBLGUqr">¥86.40万</td>
+                        <td class="td-r num" data-page-node-id="y8910mNd8DvRVy0avvXHhx">¥79.20万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="davWfWoE5REcpu6vzmjzkv">+¥7.20万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="awK65DyxOAgrZBRdE3QNaY">+9.09%</td>
+                        <td class="td-c num c-ash" data-page-node-id="FssiLF8n8EZHyRVpmZ4KGz">11</td>
+                        <td class="td-c" data-page-node-id="lLcr1DId5llbJYHfK0xLKK"><svg class="ic c-graphite" data-page-node-id="jo66Iu8dYFPUN3hlBo6z9y"><use href="#i-coins" data-page-node-id="nqBGTXFmuCjHsqILE1gShl"/></svg></td>
+                        <td class="td-c" data-page-node-id="uhXb6db9cvaE6d4zFlGJp2"><svg class="ic c-graphite" data-page-node-id="yuykQGNlhJX2Dxou78WrxN"><use href="#i-eye" data-page-node-id="IBq2G0Ij5Z0zKsUhdD7evh"/></svg></td>
+                      </tr>
+                      <tr data-page-node-id="x9mNdBcH61QmzBZ2jc1p91">
+                        <td class="mono c-graphite" style="font-size:12px" data-page-node-id="Bzhh6ge2O4iLJXbKVDVyLG">XM-2026-0013</td>
+                        <td data-page-node-id="Iskod1hpmbaifpsB4uuMAY"><div class="col-flex" data-page-node-id="lE5YyvKAiTCcsdUAMjJGIA"><span class="w-med" data-page-node-id="uWF1m30BXy4JzgnE1lA7Xq">碧云国际 9-1-1502</span><span class="c-graphite" style="font-size:12px" data-page-node-id="Ph0ywEtdAFcPAXWW78Gt67">浦东新区碧云路 300 弄</span></div></td>
+                        <td data-page-node-id="exiFyojD7HaG8cyN7n73Jl"><span class="badge badge-dove" data-page-node-id="K57S8TKSO2TSwVRjwn4LIq">已售</span></td>
+                        <td class="td-r num" data-page-node-id="o4ZQYeYpWbXSfcQEkv609k">¥336.90万</td>
+                        <td class="td-r num" data-page-node-id="JfKXK2jiZcsuIRPeI3pVZx">¥401.50万</td>
+                        <td class="td-r num c-neg w-med" data-page-node-id="tA5p1QTzZnzIuNh8E2HCpv">−¥64.60万</td>
+                        <td class="td-r num c-neg w-med" data-page-node-id="HHABpXIXmGAyhStEz5HJY2">−16.09%</td>
+                        <td class="td-c num c-ash" data-page-node-id="6W0zKhUGr3poGjOfrJsJ3m">49</td>
+                        <td class="td-c" data-page-node-id="ONj6CaS8gCZ3RG16qnJaX6"><svg class="ic c-graphite" data-page-node-id="qRqXwDAI1qOc7WYQrIjfgH"><use href="#i-coins" data-page-node-id="5M1qwvbc44eRnHN6HoQ28J"/></svg></td>
+                        <td class="td-c" data-page-node-id="hMEaxhjHBUTe7RhkONwNev"><svg class="ic c-graphite" data-page-node-id="CdRDHkOsCyk2ahewBJs6MY"><use href="#i-eye" data-page-node-id="WAmHL3fu4jNum5IABsTNzd"/></svg></td>
+                      </tr>
+                      <tr data-page-node-id="jGEhQQZJwPsNBT6c14pFf9">
+                        <td class="mono c-graphite" style="font-size:12px" data-page-node-id="BZUfMkBDsIFzT6KDxD6Khd">XM-2026-0012</td>
+                        <td data-page-node-id="p1ybvjtXJlZxGVp9RPXF4A"><div class="col-flex" data-page-node-id="5ozUgV5BSTwBZMt1HxLkoE"><span class="w-med" data-page-node-id="RQxJM8Uc9DniVonfY6yN0x">绿城桂花园 6-3-801</span><span class="c-graphite" style="font-size:12px" data-page-node-id="YWgSEPs6FWpiJlhwMGgCeU">徐汇区宛平南路 758 弄</span></div></td>
+                        <td data-page-node-id="S46gMfEdQU75aVIStKEHHG"><span class="badge badge-ink" data-page-node-id="rlomToECh13QkF0ZQUKf9g">在售</span></td>
+                        <td class="td-r num" data-page-node-id="E9v721Z7ig0GoGnDZqHs4A">¥245.30万</td>
+                        <td class="td-r num" data-page-node-id="6Ql9yYHHuqADe8gpwzp94y">¥186.70万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="Ao7jaXBHYlS6HJyCj5a1ZQ">+¥58.60万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="agZjsWYp32FPlVCpsMTNFw">+31.39%</td>
+                        <td class="td-c num c-ash" data-page-node-id="rYV813nVHAoxmScdrmQgYs">35</td>
+                        <td class="td-c" data-page-node-id="3jT1xds87QtJ4yXGAECBhN"><svg class="ic c-graphite" data-page-node-id="3zJXahApNDAUUjctc4ohad"><use href="#i-coins" data-page-node-id="Pp3i6kQrVKO7IIGs7WSqB2"/></svg></td>
+                        <td class="td-c" data-page-node-id="6iZoblHZjCHTz4BBzv95S7"><svg class="ic c-graphite" data-page-node-id="WLn4ruGXfwdB1Am9OpHR9e"><use href="#i-eye" data-page-node-id="UfL7oOESxklrRZFpFMo7FC"/></svg></td>
+                      </tr>
+                      <tr data-page-node-id="DPEX6ouicMBgAOFxazOmwq">
+                        <td class="mono c-graphite" style="font-size:12px" data-page-node-id="Tg4F18VktOg69qFhnKZa2U">XM-2026-0011</td>
+                        <td data-page-node-id="YL48s4ax46fct5pPzLHZJv"><div class="col-flex" data-page-node-id="L9WdzuLZ2BwHx2LuJqb4RG"><span class="w-med" data-page-node-id="fIsIxfUZJ2OU9YRUTwr7t0">万科城市花园 4-2-1001</span><span class="c-graphite" style="font-size:12px" data-page-node-id="wQwBuGjO3sOaW96kzi7afj">松江区新松江路 1000 号</span></div></td>
+                        <td data-page-node-id="nWcaDLuoP84EG3ue54xaeq"><span class="badge badge-fog" data-page-node-id="kFtbd0Csv5zWxg84FLyuqX">装修中</span></td>
+                        <td class="td-r num" data-page-node-id="MCZjUWTeN0T7PeFpCM4yXr">¥132.70万</td>
+                        <td class="td-r num" data-page-node-id="v0Ud03yjj4ckUJwxE8dvmY">¥118.30万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="FG8WB4o2X1xfG2MAt7OSUB">+¥14.40万</td>
+                        <td class="td-r num c-pos w-med" data-page-node-id="GCYCn56BDiKNWkdPTx7WSb">+12.17%</td>
+                        <td class="td-c num c-ash" data-page-node-id="orGiZzqZN42YQTh0VPbG6k">19</td>
+                        <td class="td-c" data-page-node-id="YbtfFmYJEc3JCrYYogEu8D"><svg class="ic c-graphite" data-page-node-id="nIZaSyoMJZ4xV8gJDaZUW3"><use href="#i-coins" data-page-node-id="BjBB39eAMGbwF9VSyIqF86"/></svg></td>
+                        <td class="td-c" data-page-node-id="J809s60y00DPny3YESCoBs"><svg class="ic c-graphite" data-page-node-id="g3fZAkEtE1lheizv6yYmqF"><use href="#i-eye" data-page-node-id="wPk0LHEFGmEXLmEEMayzSc"/></svg></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 分页 -->
+              <div class="between" style="flex-wrap:wrap" data-page-node-id="TG83NMnWSrySNLgJ0h7a1y">
+                <span class="c-graphite" style="font-size:12.5px" data-page-node-id="QMUtaphXX26FoO4ajsxvLd">共 <b style="color:var(--ink);font-weight:480" data-page-node-id="SmhjIsmAH6g6dItQXnZBTD">28</b> 条 · 显示 8 条</span>
+                <div class="row-flex" style="gap:8px" data-page-node-id="0QcXLPgRGsXaW8iEA2PCBM">
+                  <span class="c-graphite" style="font-size:12.5px" data-page-node-id="doEE3DqunpDNMNqCBkeSTT">每页
+                    <span class="badge badge-fog" style="margin-left:4px" data-page-node-id="u02O7cZ78AwbYvLNz52hKT">10<svg class="ic ic-xs" style="display:inline-block;vertical-align:middle" data-page-node-id="jFdxQo1gB1H5XwIgwphk2j"><use href="#i-chev-d" data-page-node-id="KULmWD6MUsvWOdqTIluOnr"/></svg></span>
+                  </span>
+                  <span class="c-ash num" style="font-size:13px;margin:0 4px" data-page-node-id="zpzzczrHNpvOX4Cbjg5nMi">1 / 3</span>
+                  <button class="btn btn-out btn-sm" style="width:36px;padding:0" data-page-node-id="rhi98KcmhvhgB9QpiV5YWx"><svg class="ic ic-sm" data-page-node-id="hFFcQGMhWUOtXUl01LugU1"><use href="#i-chevs-l" data-page-node-id="NvRZOxKv55tH8UfBvv1IWW"/></svg></button>
+                  <button class="btn btn-out btn-sm" style="width:36px;padding:0" data-page-node-id="EaFEFy0zVLo8TfWv2SuFYD"><svg class="ic ic-sm" data-page-node-id="273drELCaCeZWfZXEc26fD"><use href="#i-chev-l" data-page-node-id="oi0sMOXmmoeeA3zHiNoSH8"/></svg></button>
+                  <button class="btn btn-ink btn-sm" style="width:36px;padding:0" data-page-node-id="3ih90m2W40BvHSPlsyJZeo">1</button>
+                  <button class="btn btn-out btn-sm" style="width:36px;padding:0" data-page-node-id="D1zb07I3FEjkjb9wAebo2L">2</button>
+                  <button class="btn btn-out btn-sm" style="width:36px;padding:0" data-page-node-id="Njw214yuTpf2qfRJHiApHg">3</button>
+                  <button class="btn btn-out btn-sm" style="width:36px;padding:0" data-page-node-id="AyR96zcqFYmCjAzPUpmEHR"><svg class="ic ic-sm" data-page-node-id="dXZ1KKCZKrS31okjIA1Uyf"><use href="#i-chev-r" data-page-node-id="TngkDx5B0IhE1flntkEZZ8"/></svg></button>
+                  <button class="btn btn-out btn-sm" style="width:36px;padding:0" data-page-node-id="BL4eAH5vYxFefVhXArdBIf"><svg class="ic ic-sm" data-page-node-id="FLUA2mwL8j4ymwZttRqDLK"><use href="#i-chevs-r" data-page-node-id="GDLepuhgJpK3DKFl1eQodB"/></svg></button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-page-node-id="GqCdInptXAvc9ROoPoj9AE">
+      <h3 data-page-node-id="KygX7RMxlIQEVqGNIzBO2M">逐项改动清单</h3>
+      <ul class="changes" data-page-node-id="aVrTrLO7ZduAHt3Kf3Nbfv">
+        <li data-page-node-id="axeujFFGRpAulDgh8inRHN"><svg class="ic ic-sm" data-page-node-id="IH153BQ8EoFxFT0LFgIJp8"><use href="#i-check" data-page-node-id="iEPuLQwhzhlgIHkPzcUlSI"/></svg><span data-page-node-id="Hf8ls6E35Uvfea1DCkEXHD"><b data-page-node-id="GAleUFxyh0qp0GV8noC1yf">画布</b>　<code data-page-node-id="CO0d6iEgbiZtKMZTc6loRZ">bg-muted</code> → <code data-page-node-id="FxRjrUXoHDHgnlC5xDg3Er">bg-fog</code>；容器宽度统一 1200px。</span></li>
+        <li data-page-node-id="VpXPt9Y24tW26B0yrW9HW2"><svg class="ic ic-sm" data-page-node-id="C1DrYo3JNI9h05BbeH5EZR"><use href="#i-check" data-page-node-id="wuOGzHu0HSwpn8RUlYa7hv"/></svg><span data-page-node-id="ZtwdtMKzV0mhI2pysdlNiW"><b data-page-node-id="21K4U7ovFYTMHltQT7soSp">页头</b>　<code data-page-node-id="jyZBuCnEwbES979HGYbVsB">text-2xl font-bold</code> → <code data-page-node-id="0BEPMwFIfTzSxr6ZgIi5QW">font-display text-[40px]</code> + 17px Ash 副标题。</span></li>
+        <li data-page-node-id="Ahx2CAR7Y1Am2KbGWWD1u4"><svg class="ic ic-sm" data-page-node-id="IfQFMdEUjwnxlvWuPdEOjG"><use href="#i-check" data-page-node-id="OQppP9jAuWC6RnJ0mrr9Xv"/></svg><span data-page-node-id="MEoMQPaTA6XCtpjbclkImf"><b data-page-node-id="YEkYh0bRZAE5TE3oB6yIsg">统计卡</b>　去彩色图标圆，改单色描边小图标；<b data-page-node-id="H80Hl5qYugbDW4s6kxkc5f">仅净现金流用 Apricot 暖卡</b>，其余白卡。</span></li>
+        <li data-page-node-id="55KN9lDiiERy6rpfDNhO97"><svg class="ic ic-sm" data-page-node-id="EcWwwvkVDgXMx5s8tKyDla"><use href="#i-check" data-page-node-id="29morViGmru1FE2Hi0zrbc"/></svg><span data-page-node-id="6wGfnVHlfYOGmLuBADrKXK"><b data-page-node-id="cT2S5wJfiX3oBZERPrZJ3V">统计卡数值</b>　<code data-page-node-id="UwKb50ni88nCvw88BAzJyW">font-bold text-xl</code> → <code data-page-node-id="05ffP4T8IPfQAavL0mfSiQ">30px / weight 450 / tabular-nums</code>；净现金流 ≥0 用 Rust、&lt;0 用 Ink（与明细页 HeaderStats 口径一致）。</span></li>
+        <li data-page-node-id="A7hRrNPXNqfU7gSnpHREg3"><svg class="ic ic-sm" data-page-node-id="5WnsMRtX4IObHLXVYS9rYY"><use href="#i-check" data-page-node-id="SLyFU3PoFu160sEhxqSxT9"/></svg><span data-page-node-id="IvnBZ0uguOy837Lg7As9Do"><b data-page-node-id="u2s3BfpUiJ9MYmdBZs5e04">搜索框</b>　加前置放大镜图标、16px 圆角、Dove 描边。</span></li>
+        <li data-page-node-id="VXzHoLrEosS4HKRqorwH95"><svg class="ic ic-sm" data-page-node-id="VVrWXL8NVOegpzPDTn5ka8"><use href="#i-check" data-page-node-id="7bFrZ22XhW9aBK8KoU4wEB"/></svg><span data-page-node-id="YalrVvzUqUuL8oc3hqiMnT"><b data-page-node-id="1ttUxjEpVJtqdYGOjyAeHx">状态筛选</b>　下拉 Select → <b data-page-node-id="8MpAJdytjZ6mYzCnXYfEOZ">胶囊 Tab 组</b>（Fog 底、激活 Ink 填充），带各状态计数。</span></li>
+        <li data-page-node-id="j3Fv5aQDdSAgooL0iDt0R1"><svg class="ic ic-sm" data-page-node-id="zEzYuHwdm56a5uNoqqtCft"><use href="#i-check" data-page-node-id="yqZGya8HFFDBDqE53aOsN2"/></svg><span data-page-node-id="g1q1inQVVGLH4UrUVEzVEI"><b data-page-node-id="C3AubsX71HssLZlo62BRD3">导出按钮</b>　唯一的 Ink 填充胶囊；移除多余 outline 变体。</span></li>
+        <li data-page-node-id="QSnHtnwkAAq9Yh3GiXfMc5"><svg class="ic ic-sm" data-page-node-id="HwraqLAjdU136z7GllTyAk"><use href="#i-check" data-page-node-id="9dyAduavGTl86MW7jgn9qs"/></svg><span data-page-node-id="hyTPDq3muL401vUKiMVHB0"><b data-page-node-id="UJVtqPa0IZS706Jvb1eN1I">表格容器</b>　去边框 → <code data-page-node-id="Cvg9qJY6TuIk3R35OpyMXy">rounded-cards + shadow-steep</code>。</span></li>
+        <li data-page-node-id="87pg0Ki3rpRxlv6EpsrDBx"><svg class="ic ic-sm" data-page-node-id="rzyezY0WB9OTjsm8IAijOj"><use href="#i-check" data-page-node-id="NRkejo24EsXFYAxGs6KwHu"/></svg><span data-page-node-id="LRBZdaTjI01U5ltAGXFc2e"><b data-page-node-id="XkWMQoVCJP9zgZlY5YSJ7p">表头</b>　13px / weight 480 / Graphite，首字母不变大写。</span></li>
+        <li data-page-node-id="bQtIyKJRHrQVZVlb9MEXeM"><svg class="ic ic-sm" data-page-node-id="BV9F3exkLkJYRmZhKm329F"><use href="#i-check" data-page-node-id="QvTVQlM7wbrWT2JYqBEGCv"/></svg><span data-page-node-id="At7QoZ6kvwbboSLvqkM6QM"><b data-page-node-id="dbphKa23711L0zd4M3eIwB">状态徽章</b>　改 Steep 单色：在售＝Ink 填充、已售＝Dove、已签约/装修中＝Fog。</span></li>
+        <li data-page-node-id="y2VJ5zGxmHe1kcnjNZ4NgA"><svg class="ic ic-sm" data-page-node-id="EE7ZPCyrZqjGEQn5RAaaBI"><use href="#i-check" data-page-node-id="wGYwCTfZiNZWuHI6CnBMEP"/></svg><span data-page-node-id="UbPdBHE4qqIyaiAPcmPRDV"><b data-page-node-id="2EA0ZkHT50ac2j8G9aceiM">金额展示</b>　统一 <code data-page-node-id="Fvp45PWxu0H9I709YuVgjU">¥xxx.xx万</code> 缩写，<code data-page-node-id="50eI1ba3K10YS8T8ID3W6e">tabular-nums</code>；净现金流/ROI 保留红/绿语义。</span></li>
+        <li data-page-node-id="VLjasMj4bBckpQn8QtwiWj"><svg class="ic ic-sm" data-page-node-id="9xzn4ztKuiILqIyqYHOnAS"><use href="#i-check" data-page-node-id="8gnEvRjmkKI7RzLzy5RBOd"/></svg><span data-page-node-id="7FIKDwzUPU1SdF9U4qO5ut"><b data-page-node-id="qRCL0zJrCh53IV6f4BvTDK">行内操作</b>　图标默认隐形、hover 显现，Graphite → Rust；点击不冒泡到整行跳转。</span></li>
+        <li data-page-node-id="ji09Px6ZKHKLCacXPYKvzW"><svg class="ic ic-sm" data-page-node-id="zcDL9EddnhKIB7A57cHAPa"><use href="#i-check" data-page-node-id="p0E03KkZsDJNyLpaj7ICtI"/></svg><span data-page-node-id="82tNHtIlAEiYONeIiFEQHC"><b data-page-node-id="qCGHxvwh8MlbaCMTtbXIwq">分页</b>　Fog 胶囊按钮、当前页 Ink 填充、36px 圆形按钮，与全局分页统一。</span></li>
+        <li data-page-node-id="kyyB05FYyOBUnHaZ2bHwEx"><svg class="ic ic-sm" data-page-node-id="0gup3tVVlbDUlJDn4hAq6W"><use href="#i-check" data-page-node-id="mcBUhjBq4DGMPFCvjGF7AG"/></svg><span data-page-node-id="44sYhXN1fNPILlGbi0cgne"><b data-page-node-id="OfJxOTPTFRqBkJzO1h6DuC">复用</b>　抽用 <code data-page-node-id="0IBpaWvzbPECHa9RH8jlNE">@/components/common</code> 的 <code data-page-node-id="GqaIFwarLcAaWvoHtrZAy4">ListView</code> / <code data-page-node-id="tupj2wavgcBhBmho6xCLZ0">SearchBar</code>，与 marketing 列表页共用骨架。</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ ② 科目管理页 ============ -->
+  <section class="block" id="p2" data-page-node-id="dFOIK8QsNl2AOlG926oNWQ">
+    <div class="sec-head" data-page-node-id="25Egkn9TBLr60E79uGJJan">
+      <h2 data-page-node-id="l2ylPUUZXKSZnh7tJlsQLG"><span class="idx" data-page-node-id="PoqRUdqQVASpgmgpMcBBTn">2</span>科目管理页</h2>
+      <span class="chip chip-do" data-page-node-id="IfdSPngU7sdWW5vsAEzyz8"><span class="chip-dot" style="background:var(--rust)" data-page-node-id="PeCLsqCPyKyuXbL6XTdK46"></span>待重构</span>
+      <p data-page-node-id="XiQEZOiVQJQ7oxUAMwm4xo">半迁移状态：头部仍是旧的 24px 粗体，流程图局部已用暖色。重点是把彩虹层级 pill、紫色模式切换、小圆角卡片统一收口。</p>
+    </div>
+
+    <div class="artboard" data-page-node-id="fWCzx9EevtxcXn1jjjpyvD">
+      <div class="artboard-bar" data-page-node-id="ny4virkABVMNeaaNl53yhc">
+        <span class="dot" data-page-node-id="v1dDCSY8DOP1PT3kYgttiv"></span><span class="dot" data-page-node-id="PWyJfGCJDLdS6g5f9FhVN8"></span><span class="dot" data-page-node-id="ttncHraydIcxPeMzHF3wh6"></span>
+        <span class="name" data-page-node-id="ygCBMAYMi5CMZuZrQQkiZ1">/admin/ledger/subjects</span>
+        <span class="spacer" data-page-node-id="NE5LlnHO73YA00HQbZLZsA"></span>
+        <span class="tag" data-page-node-id="2OPgMmYoDIuA0Dxxpi96Yt">重构后 · 1200px · bg-fog</span>
+      </div>
+      <div class="artboard-body" data-page-node-id="aNaFRtjungQEcrPfRmnG1m">
+        <div class="app" data-page-node-id="4kxMVRHnCHTM228PEOcjzF">
+          <div class="wrap" data-page-node-id="pAQz3hssHwSYCeeB6o1l9R">
+            <div class="stack-6" data-page-node-id="hJVti8YNoKXeH2O0NS87aU">
+
+              <header data-page-node-id="cbJVRVqXbuvui7A8tvpRG9">
+                <h1 class="h1d" data-page-node-id="XwuNcfAoWHKmCa6tuFaroR">科目管理</h1>
+                <p class="page-sub" data-page-node-id="Fu4KrL2rCUnBQogFawo6OY">按业务流阶段呈现科目 · 支持增删改查 · 代理 / 收购双模式切换。</p>
+              </header>
+
+              <!-- 说明条 -->
+              <div class="row-flex" style="background:rgba(251,225,209,.5);border-radius:16px;padding:13px 16px;align-items:flex-start" data-page-node-id="Opdy3B5pONYMAm1TEfQfL6">
+                <span style="width:18px;height:18px;border-radius:50%;background:var(--rust);color:#fff;font-size:11px;font-weight:480;display:inline-flex;align-items:center;justify-content:center;flex:none;margin-top:1px" data-page-node-id="ZRO8ZCpJbOEmpk1x9H4gFz">i</span>
+                <span style="font-size:13.5px;color:var(--rust);line-height:1.6" data-page-node-id="lj8VOJT5WhsGGvJmk5j4cu">
+                  按项目业务流分阶段呈现科目：每个阶段下挂该阶段会发生的科目。系统预置科目不可删除，用户自定义科目可增删改。
+                </span>
+              </div>
+
+              <!-- 流程图卡片 -->
+              <div class="card-flat" style="padding:22px" data-page-node-id="QOXt8vc6bc7NinAISMp4je">
+                <header class="row-flex" style="flex-wrap:wrap;margin-bottom:20px" data-page-node-id="DaFZLsXUW8TA9e7RyMqW0U">
+                  <h2 style="margin:0;font-size:15.5px;font-weight:480;color:var(--ink)" data-page-node-id="sk3jYPUBYASuX3xVChhRFl">业务流阶段流程图</h2>
+                  <span class="badge badge-rust" data-page-node-id="s6RFtovtibvN7ffmuHa30k">14 个科目</span>
+                  <span class="badge badge-rust" data-page-node-id="1Xy48FHf1ICgYekUT4eIn6">自定义 3</span>
+                  <span class="spacer" data-page-node-id="UfWjzpGAfKWzgKX50IGui3"></span>
+                  <div class="pilltabs" data-page-node-id="f43hjcFJFPqtZn8KJtgAsF">
+                    <button class="on" style="background:var(--apricot);color:var(--rust);border-radius:var(--r-pill);padding:7px 16px" data-page-node-id="Fs9CiCu8wOT6DvBCTshDQH">代理业务</button>
+                    <button style="background:var(--sky);color:var(--ink);border-radius:var(--r-pill);padding:7px 16px" data-page-node-id="6vlFr5o410y5Yu9D3DQNFk">收购业务</button>
+                  </div>
+                  <button class="btn btn-rust btn-sm" data-page-node-id="Qsyvkwgfq3WPdXzem3U49j"><svg class="ic ic-sm" data-page-node-id="rHFpEPeBcZE5vGBEKzK3GF"><use href="#i-plus" data-page-node-id="tnEivowGQ42uNFpjsr98qi"/></svg>新增科目</button>
+                </header>
+
+                <div class="stages" style="grid-template-columns:repeat(4,minmax(0,1fr))" data-page-node-id="0fj8tGzkJk5COBZn1WSvbD">
+                  <div class="line" data-page-node-id="57v3bo3EAGHVviSuAEduqc"></div>
+
+                  <div class="stage-col" data-page-node-id="OTQ6CWvpNoleS8E3VYXnnx">
+                    <div class="stage-mark" data-page-node-id="AKjdRD0cDTTDtOYbO8GEys"><svg class="ic ic-lg" data-page-node-id="lFggHJAK9vBFG6RKSAgvPz"><use href="#i-pen" data-page-node-id="raXDNb9CMAOlhkFeog57T9"/></svg></div>
+                    <div class="stage-name" data-page-node-id="KgYUHFgDn7wsQkMGEEilPJ">签约</div>
+                    <div class="stage-sub" data-page-node-id="Hc1tHzb7fcHiZGgGcasWz0">阶段一 · 资金注入</div>
+                    <div class="stage-box" data-page-node-id="yHbG7QUOyRTtKGOhSa1GaI">
+                      <div class="subj" data-page-node-id="kffzwX8AyAO8oh3wopUN7z"><div class="meta" data-page-node-id="kYoSRI6BEaEkRTcKwVAUXp"><span class="lp lp-warm1" data-page-node-id="HQkJWyXpNt6deOmunG6gmY">①取得成本</span><span class="nm" data-page-node-id="x6hSJWu0qi3B12q1m78qp7">业主底价</span><span class="pn" data-page-node-id="XUK0QX38tiIoFenXeZFltE">进损益</span></div></div>
+                      <div class="subj" data-page-node-id="v4XMM4brHCs0qMuKeyRwuv"><div class="meta" data-page-node-id="Ll1T5eFmIS8oGuX1PoKEPB"><span class="lp lp-warm4" data-page-node-id="BwX5m0VWUGsJaYS2mUZHPl">④资金成本</span><span class="nm" data-page-node-id="H40NaEqMouchuVDJuijjwQ">首付款</span><span class="pn" data-page-node-id="vUKz0R2YCj3RSVEpmMjzmp">不进损益</span></div></div>
+                      <div class="stage-add" data-page-node-id="wR1kmQ543lhojXTsINNXCZ"><svg class="ic ic-xs" data-page-node-id="6QjiKSMNAwZX0cGjtJQvHY"><use href="#i-plus" data-page-node-id="hfCuO2ahVLf1wLSHkg6HW3"/></svg>新增到本阶段</div>
+                    </div>
+                  </div>
+
+                  <div class="stage-col" data-page-node-id="jmAvZINXYhb7Hz4nQ3k83H">
+                    <div class="stage-mark" data-page-node-id="tmZPFQAnX2jU8oXASG3JPG"><svg class="ic ic-lg" data-page-node-id="aPpju2ikCu1Rlj6NGhpoCu"><use href="#i-hammer" data-page-node-id="Dd8WlpxUqRVqcfo4whRkNx"/></svg></div>
+                    <div class="stage-name" data-page-node-id="deVhBK5u6IIn5jhQHtPHLL">装修</div>
+                    <div class="stage-sub" data-page-node-id="zfNEcJ3BkJZPU2KDETcg9I">阶段二 · 改造投入</div>
+                    <div class="stage-box" data-page-node-id="bRDBVThBVkkheiLZBEe5Jt">
+                      <div class="subj" data-page-node-id="WaQqCGG3QDGD8IKRxFeoQV"><div class="meta" data-page-node-id="poUuHwMU2s3iAkvHuixVOK"><span class="lp lp-warm2" data-page-node-id="L834VyNAYDe47aQ1alkx3B">②直接改造成本</span><span class="nm" data-page-node-id="BLlt2dJnXHHNpmEtyDMmdi">硬装工程款</span><span class="pn" data-page-node-id="Klv7Vai4E8P0S7FSAa5kZT">进损益</span></div></div>
+                      <div class="subj" data-page-node-id="6B42w9VgIiGyefWuoAy1Bs"><div class="meta" data-page-node-id="6GbOkCnY9xEHK0m4cRWxyO"><span class="lp lp-warm2" data-page-node-id="46DagjC9ikdH2UzxnYuEiU">②直接改造成本</span><span class="nm" data-page-node-id="DzehPli9UkSNJrvBr8mAym">软装采购</span><span class="pn" data-page-node-id="pW5Xh4ocEtCyhgaRWaG5EM">进损益</span></div></div>
+                      <div class="stage-add" data-page-node-id="7o2tA4gXaGjexMsTGnIHZE"><svg class="ic ic-xs" data-page-node-id="Y3pXLYz0Dlah9VuYkrTMe5"><use href="#i-plus" data-page-node-id="A5LlihtKGeEsmyH8LtZfLJ"/></svg>新增到本阶段</div>
+                    </div>
+                  </div>
+
+                  <div class="stage-col" data-page-node-id="eFX8B4aAFh1Tf94FXOBnX6">
+                    <div class="stage-mark" data-page-node-id="v6W9zYHJLJcJ0LzDIyRYRQ"><svg class="ic ic-lg" data-page-node-id="AxJQEHTvD4JRhRAun900eG"><use href="#i-tag" data-page-node-id="9HIGaE1ySvjTNlczQ8l6hg"/></svg></div>
+                    <div class="stage-name" data-page-node-id="WQvicij4x2HjhkLZX3yE8B">在售</div>
+                    <div class="stage-sub" data-page-node-id="KipTTpaQ8T4I9EzGK6lhlT">阶段三 · 营销推广</div>
+                    <div class="stage-box" data-page-node-id="mG7B8uXcuRBLztiK3H0yXZ">
+                      <div class="subj" data-page-node-id="comRjBzqk8DJN3zbl13aVj"><div class="meta" data-page-node-id="IZ5fPeGak4UfaNZzEfmAKa"><span class="lp lp-warm3" data-page-node-id="wjJHSfxZXPQO9UXACW8YWF">③交易费用</span><span class="nm" data-page-node-id="9uiip3k8sHtIgLAzIGOvyH">中介佣金</span><span class="pn" data-page-node-id="iEiSSydhjtFfN5jHR9DNfJ">进损益</span></div></div>
+                      <div class="subj" data-page-node-id="9B8pGlrJmT1pA1kMzlpc70"><div class="meta" data-page-node-id="OCDialQdgCWVzIaLnjICSE"><span class="lp lp-warm6" data-page-node-id="XB95E0fNUpPYgyFiGvE0NG">⑥收入项</span><span class="nm" data-page-node-id="Oslf5vmfKkZloiMrB5kasY">增值服务费</span><span class="pn" data-page-node-id="csYnliVlkNgD8pxgM5xosb">进损益</span></div></div>
+                      <div class="stage-add" data-page-node-id="QbWe1g2ZGSXgWgcyKj7uFT"><svg class="ic ic-xs" data-page-node-id="ETIiCQ6J40SaoWgkyU5ae2"><use href="#i-plus" data-page-node-id="geB7sUxSNzmqD7ZDvPtGJS"/></svg>新增到本阶段</div>
+                    </div>
+                  </div>
+
+                  <div class="stage-col" data-page-node-id="DF0WiaWxpz0PZvUBGBDTza">
+                    <div class="stage-mark" data-page-node-id="85BBfzivLYfde5T6F1eS9k"><svg class="ic ic-lg" data-page-node-id="QwQfejuDglyY0DRGH3ycfy"><use href="#i-check-c" data-page-node-id="6MWxBzFE6ua90QxUoZzgPK"/></svg></div>
+                    <div class="stage-name" data-page-node-id="PycvOtkzRGeQjhhvLMeogl">已售</div>
+                    <div class="stage-sub" data-page-node-id="jSee4k0f6GtHHsYUqpNOt9">阶段四 · 收入实现</div>
+                    <div class="stage-box" data-page-node-id="d9HX5rRSifbHbMJr5yghvx">
+                      <div class="subj" data-page-node-id="Bcdclie587cZ08sEUZkta3"><div class="meta" data-page-node-id="Te2TVkJeCaCCQQzqExCWEG"><span class="lp lp-warm6" data-page-node-id="ouy6rRto5aTsHtq9vbdoE8">⑥收入项</span><span class="nm" data-page-node-id="T8HPKrUUsE8kfqICq8pM5y">售房回款</span><span class="pn" data-page-node-id="n0BECduofo9gJVkaRLZG8I">进损益</span></div></div>
+                      <div class="subj" data-page-node-id="FPGKX3V4lZdxrbZmMC2Xo1"><div class="meta" data-page-node-id="VbU3ZRApGRiZfe99vtBxqP"><span class="lp lp-warm7" data-page-node-id="qTXjCz5tWnChx0qDOPsreA">⑦配对项</span><span class="nm" data-page-node-id="EG4HJGreufaJQ5F0Zlbi1k">业主结算尾款</span><span class="pn" data-page-node-id="Lpm6VkdAB25ezw1tdIXSBq">不进损益</span></div></div>
+                      <div class="stage-add" data-page-node-id="FaaagHoIcnohCIAM7PTa70"><svg class="ic ic-xs" data-page-node-id="kX4OXkVitu5iunO0s8NYLd"><use href="#i-plus" data-page-node-id="LKcpoKPPAFC7BAzgbQDOhk"/></svg>新增到本阶段</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 字典表（折叠展开） -->
+              <details open data-page-node-id="tJKKIAFyCYIFajSwVNFlB0">
+                <summary class="row-flex" style="cursor:pointer;list-style:none;background:var(--pwhite);border-radius:16px;padding:14px 18px;box-shadow:var(--sh-sm);font-size:14px;font-weight:480;color:var(--graphite)" data-page-node-id="dQ5TP5h8GtoaCK9KK5eRRm">
+                  <svg class="ic ic-sm" style="transform:rotate(90deg)" data-page-node-id="i6jHJnNQ7tFEKQjO7zMFTO"><use href="#i-chev-l" data-page-node-id="rXM8Nf4q6eu7BEPD3hmbLM"/></svg>
+                  查看完整科目字典表（14 项）
+                </summary>
+                <div style="margin-top:10px;border:1px solid var(--doc-line);border-radius:16px;overflow:hidden;background:var(--pwhite)" data-page-node-id="EIGcMbw4bkEEaau9MkHzpM">
+                  <table class="tbl" data-page-node-id="sDfynpzY0iaE5b3d08EkZ1">
+                    <thead data-page-node-id="GZg1SsWx75lJtv6S2PS0kv"><tr data-page-node-id="3yu8AJ1hkt32D5HYUPEQZG">
+                      <th data-page-node-id="dWZ0u5YqFBFyav5bQeSvHZ">ID</th><th data-page-node-id="eWul6RFqMrbFZn3KE3J4aV">科目名称</th><th data-page-node-id="PZz4L0KpdgDubPGaDT2bky">归入成本层级</th><th data-page-node-id="TzSAHg7RmHn4Nuh5hF08rU">进损益</th><th data-page-node-id="dZn9A7uxl1JLxpSsc35tYu">业务模式</th><th data-page-node-id="lwb0n087SxgILhIX62izII">业务阶段</th><th data-page-node-id="XiHreHnNms3t3kbcPlMH04">备注</th>
+                    </tr></thead>
+                    <tbody data-page-node-id="h15wUZaZ8MbjCFgOHeAu4B">
+                      <tr data-page-node-id="jHhwlkiGcdAnU3A32V5lJg">
+                        <td class="mono c-graphite" style="font-size:11.5px" data-page-node-id="rJc1dor8UsVZNLmpX1Bk9q">sub_01</td>
+                        <td class="w-med" data-page-node-id="69PmtSbfkYU3cslqGegBn0">业主底价</td>
+                        <td data-page-node-id="FNvIyjYXOKYx9GM1zBvvON"><span class="lp lp-warm1" data-page-node-id="auVGKRiFZ8TGolhSScD4Xe">①取得成本</span></td>
+                        <td data-page-node-id="NlvGiySBBn2tSLBlEzFp38"><span class="badge badge-rust" style="padding:2px 8px;font-size:11px" data-page-node-id="WWFXDoxMBfW3MEPw4SVBhb">是</span></td>
+                        <td data-page-node-id="U1t8BEtAUAn8x95ud1jAzx"><span class="badge badge-rust" style="padding:2px 8px;font-size:11px" data-page-node-id="1KlPGRXXKKHEE5QL4Pxkr4">代理</span></td>
+                        <td class="c-ash" style="font-size:12.5px" data-page-node-id="5yzHZpPDnTE2w8R6OvtUOr">签约</td>
+                        <td class="c-graphite" style="font-size:12.5px" data-page-node-id="5znKVKKta3WguvMaSDUtYx">收购价基准</td>
+                      </tr>
+                      <tr data-page-node-id="dlKXMrfkuohTOoCyhoRRhs">
+                        <td class="mono c-graphite" style="font-size:11.5px" data-page-node-id="MAC48G3FyfZHnc1MDvUoov">sub_07</td>
+                        <td class="w-med" data-page-node-id="lD5Zp2q96sAQSD675ATIzT">硬装工程款 <span class="badge badge-rust" style="padding:1px 6px;font-size:9.5px" data-page-node-id="IQD2IEQ7PaqAujtXxG2tJc">自定义</span></td>
+                        <td data-page-node-id="M3yXBANwaekYnSrgncNDp9"><span class="lp lp-warm2" data-page-node-id="NAFm178wHPn5WrbegCyCDB">②直接改造成本</span></td>
+                        <td data-page-node-id="LTTUeEfcSoaa2sCp28J4WI"><span class="badge badge-rust" style="padding:2px 8px;font-size:11px" data-page-node-id="AN8ZO9qPaB0kSjcS8iFGBT">是</span></td>
+                        <td data-page-node-id="vzgPOeqAE8N20HzHyhzJRR"><span class="badge badge-rust" style="padding:2px 8px;font-size:11px" data-page-node-id="NHxnjoilzwyAU7FUfN2m1P">代理</span><span class="badge badge-sky" style="padding:2px 8px;font-size:11px;margin-left:4px" data-page-node-id="jy1e1KfgGMaybUO0vdZK2G">收购</span></td>
+                        <td class="c-ash" style="font-size:12.5px" data-page-node-id="qbYLMQyF47BppjYUgnUiU0">装修</td>
+                        <td class="c-graphite" style="font-size:12.5px" data-page-node-id="8GhFlRU8I37lJGU7oMtzkW">含主材与人工</td>
+                      </tr>
+                      <tr data-page-node-id="9NbJuaiQ3iL1IGFlWAeOj0">
+                        <td class="mono c-graphite" style="font-size:11.5px" data-page-node-id="LRP62uWsGAlL01oVGK0kNx">sub_12</td>
+                        <td class="w-med" data-page-node-id="RwKad1bDnpjJHh8VtT9rCz">中介佣金</td>
+                        <td data-page-node-id="EBty0KTjpbpksuZbYnneNM"><span class="lp lp-warm3" data-page-node-id="9FyLDqI1SYvlQyXLSmz0ap">③交易费用</span></td>
+                        <td data-page-node-id="wSrjLQsOOILD9h3VcENCFX"><span class="badge badge-rust" style="padding:2px 8px;font-size:11px" data-page-node-id="X87IymWFWFfJP2tUfpFQsQ">是</span></td>
+                        <td data-page-node-id="t6xliasZb9mcqJSgHSkMZ3"><span class="badge badge-rust" style="padding:2px 8px;font-size:11px" data-page-node-id="dBYq9bDDrh4M91uBl6jbYc">代理</span></td>
+                        <td class="c-ash" style="font-size:12.5px" data-page-node-id="TiocbhJdd5TGgnbgGYvn0Y">在售</td>
+                        <td class="c-graphite" style="font-size:12.5px" data-page-node-id="AwlyyaHBV02XFkO9rqEFdD">按成交价 2%</td>
+                      </tr>
+                      <tr data-page-node-id="ELsBlyriixNwFoC6sS9dvW">
+                        <td class="mono c-graphite" style="font-size:11.5px" data-page-node-id="kEJNQx3uKKotMlz0lgFuA1">sub_18</td>
+                        <td class="w-med" data-page-node-id="5XzONS5whyouklbYKxx7tV">业主结算尾款</td>
+                        <td data-page-node-id="wsp4ajlHqkDVJHmPYaPfrs"><span class="lp lp-warm7" data-page-node-id="uTINgEAvAkpu77trY6HPPL">⑦配对项</span></td>
+                        <td data-page-node-id="oo0PfVzVoOhiML1qKPGDs6"><span class="badge badge-fog" style="padding:2px 8px;font-size:11px;color:var(--ash)" data-page-node-id="UPL7frHClYbL7DkoBdLkzP">否</span></td>
+                        <td data-page-node-id="my7KahtXqGHUBpqNC823eT"><span class="badge badge-rust" style="padding:2px 8px;font-size:11px" data-page-node-id="P09fTuzYxeznmKtCo2j5MV">代理</span></td>
+                        <td class="c-ash" style="font-size:12.5px" data-page-node-id="iMy5ryo4KbLdXgzvgVHeSR">已售</td>
+                        <td class="c-graphite" style="font-size:12.5px" data-page-node-id="ckGm8oCavNQmCG3dEDIGCT">—</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-page-node-id="lAKCnPbp9OpT7tvCWvS9MB">
+      <h3 data-page-node-id="alBHRKfIgf9d2jPuMIL6SB">关键改动 · 层级 pill 的重做</h3>
+      <p style="font-size:14px;color:var(--ash);margin:0 0 18px;line-height:1.7" data-page-node-id="cekMr4E7pZrL5IUXdhhqr0">
+        现状的 7 级层级 pill 使用 <b data-page-node-id="ltQKiM068PSeUNGKXNwZ2m">红 / 琥珀 / 蓝 / 橙 / 天蓝 / 绿 / 紫</b> 七色，是页面里最刺眼的旧风格残留，也违反 DESIGN.md「chrome 单色、彩色只留 Rust + 两个 wash」。
+        建议改为 <b data-page-node-id="MXIkonDIbuEBkrfB7Aa3f3">Apricot → Rust 的 7 级暖色梯度</b>：既是单色系（符合规范），又能一眼看出成本层级由浅到深，比彩虹更清楚地表达“层级”。
+      </p>
+
+      <div class="cols-2" data-page-node-id="w9OPYht4M90B7u5oErQFzL">
+        <div data-page-node-id="FzwBIuPe6tbtBlmsI8QlPt">
+          <div class="c-graphite" style="font-size:12px;margin-bottom:10px" data-page-node-id="dCgFs3Yoi4JuywwLPp357h">现状 · 彩虹层级 pill</div>
+          <div class="row-flex" style="flex-wrap:wrap;gap:8px" data-page-node-id="CrJDTBXW9EBbawkDl1r2rE">
+            <span class="lp lp-old" style="background:#fee2e2;border-color:#fecaca;color:#b91c1c" data-page-node-id="a1ntLOHkkhlTtZE1Hi8pAi">①取得成本</span>
+            <span class="lp lp-old" style="background:#fef3c7;border-color:#fde68a;color:#b45309" data-page-node-id="yqvEOaZumBGsrS4niYdkbn">②直接改造成本</span>
+            <span class="lp lp-old" style="background:#dbeafe;border-color:#bfdbfe;color:#1d4ed8" data-page-node-id="vHruHcPNpqrUbb16ddGG6D">③交易费用</span>
+            <span class="lp lp-old" style="background:#ffedd5;border-color:#fed7aa;color:#c2410c" data-page-node-id="MTrVme1AjOA5qw00jTfSI4">④资金成本</span>
+            <span class="lp lp-old" style="background:#e0f2fe;border-color:#bae6fd;color:#0369a1" data-page-node-id="B7oLj2KRqtyXAIUdvRedgA">⑤现金流专属</span>
+            <span class="lp lp-old" style="background:#dcfce7;border-color:#bbf7d0;color:#15803d" data-page-node-id="nbD5otvgQiL2lvYTBBaGVZ">⑥收入项</span>
+            <span class="lp lp-old" style="background:#f3e8ff;border-color:#e9d5ff;color:#7e22ce" data-page-node-id="jHqy2DQQ2AAsrcBsnUHONC">⑦配对项</span>
+          </div>
+        </div>
+        <div data-page-node-id="uwf0UnTFtdeZOAVUZja1lR">
+          <div class="c-graphite" style="font-size:12px;margin-bottom:10px" data-page-node-id="4NKSt69FzReGXmuLyTqUXe">建议 · Apricot → Rust 暖色梯度</div>
+          <div class="row-flex" style="flex-wrap:wrap;gap:8px" data-page-node-id="Gv2ouer6qyT0iJ68vrNDN6">
+            <span class="lp lp-warm1" data-page-node-id="pbNmcIAWx0DVF0hmmEtWIp">①取得成本</span>
+            <span class="lp lp-warm2" data-page-node-id="dlGRKBJWHCqbm79cUIs9oJ">②直接改造成本</span>
+            <span class="lp lp-warm3" data-page-node-id="2CMEM35F81N4vZG8WxxOa3">③交易费用</span>
+            <span class="lp lp-warm4" data-page-node-id="Hgj1bm0GoBz4Vd1w62jMSt">④资金成本</span>
+            <span class="lp lp-warm5" data-page-node-id="TOXg36EgrLEpf9KRnIvf8j">⑤现金流专属</span>
+            <span class="lp lp-warm6" data-page-node-id="RPCU2U6aHRhMLeVjhBAZea">⑥收入项</span>
+            <span class="lp lp-warm7" data-page-node-id="qSAJ8y8SAI4GLx63ALIOE8">⑦配对项</span>
+          </div>
+        </div>
+      </div>
+
+      <ul class="changes" style="margin-top:26px" data-page-node-id="BBrZ745XdHxcqGSHFbGWLD">
+        <li data-page-node-id="zQV6xBI2njv51hlpRC4z84"><svg class="ic ic-sm" data-page-node-id="RUmpDVzjQof9gJ0ItkGEVN"><use href="#i-check" data-page-node-id="lGk28CDlYj6alM1S5n2k2w"/></svg><span data-page-node-id="Zej4lfFzlY1ICRIsj2NNU1"><b data-page-node-id="S0l5u2fpnLbVqIKaid5jVc">页头</b>　<code data-page-node-id="4A7MKnJiMM9qQw1GNs1rmT">text-2xl font-bold</code> → <code data-page-node-id="G7hctkWxptNft2aR3vxXzZ">font-display text-[40px]</code>；底部 <code data-page-node-id="BGGg1AgrmTUYgIGa2vVdCa">bg-muted</code> → <code data-page-node-id="vNY6zkySXZhF6mHxKOKOlB">bg-fog</code>。</span></li>
+        <li data-page-node-id="fg71dRRIMU1Bg540NNqlRe"><svg class="ic ic-sm" data-page-node-id="gc7QSPVegckkezBti9BWTr"><use href="#i-check" data-page-node-id="GKMCenq18OazSMvGMEbhdG"/></svg><span data-page-node-id="7X9V7OlBuBelYNjt92ybQK"><b data-page-node-id="Y7bUxLQsJsZEM0AoNSqnT3">层级 pill</b>　七色彩虹 → <b data-page-node-id="UUauhKfyqhhSbgAySn7D6b">暖色 7 级梯度</b>（改 <code data-page-node-id="NrhystM98zbamyM45LXuyZ">subject-schema.ts</code> 的 <code data-page-node-id="VdOsFLdtKgCY5W0FTeNJcR">LEVEL_PILL_CLASS</code>）。</span></li>
+        <li data-page-node-id="cISc77FPklfTF1fgxgsQGE"><svg class="ic ic-sm" data-page-node-id="E22CU7igVeA94KSHiI3hWO"><use href="#i-check" data-page-node-id="mXv6Eo9O04Up91fDoH0KnR"/></svg><span data-page-node-id="qJA8Xs2RNCL3YZlWZh0Qo8"><b data-page-node-id="yy2ukjO79h1gXMKYfuE6Jw">模式切换</b>　收购的 <b data-page-node-id="gC164p1HBxBvqACHXfThFK">紫色</b> → <b data-page-node-id="aB2U025CFfrQ9Xi2Z3Ibl1">Sky Wash</b>；代理用 Apricot + Rust，形态统一为胶囊。</span></li>
+        <li data-page-node-id="lH8YftLgKCDgjEC2LDpdTU"><svg class="ic ic-sm" data-page-node-id="TgtHr9oDeA7acQzE69xwhr"><use href="#i-check" data-page-node-id="wqnFsZ0I4lbzRBbMBc6vEl"/></svg><span data-page-node-id="M3YNGMWBJ1DkQgbp9Bc5Pi"><b data-page-node-id="vl3MHn1X5C6Z9XCl1UUhMa">阶段标记</b>　emoji（✍️🔨🏷️✅）→ <b data-page-node-id="hgiEusqfuxgDrl4GvjqhI6">单色描边图标</b>，圆环用 Fog 描边 + Rust 图标。</span></li>
+        <li data-page-node-id="GvAyyEYzW7JwudSe1egZ1l"><svg class="ic ic-sm" data-page-node-id="MzhZJzu11rSQAaKHvNxLlI"><use href="#i-check" data-page-node-id="zJiIkjhu3H0gNUAS0AnEtn"/></svg><span data-page-node-id="ppPJcpqYLrfRG2vNI1FdRN"><b data-page-node-id="KAQ6Wt3gedbM91reW4zz6W">主按钮</b>　「新增科目」<code data-page-node-id="b0aWooUY8WPksNgeRiiY9U">bg-rust</code> 保留 Rust 填充（本屏唯一强调）。</span></li>
+        <li data-page-node-id="VxEMdMuYLRAMfGt9X2FYGX"><svg class="ic ic-sm" data-page-node-id="TI018jl1mjNOjA0SBSJTdM"><use href="#i-check" data-page-node-id="YuFyd69xcsZ2kNLVNGJMrj"/></svg><span data-page-node-id="pPO9odUswOZnvUqyiI6z9J"><b data-page-node-id="H3Z9jt0rhBHNH1Ib3hOlRV">卡片</b>　<code data-page-node-id="z0w7Jec2KIK2OnTkpvmk1A">rounded-2xl border shadow-sm</code> → <b data-page-node-id="12KoTPMhCu8jVJSESctrXO">无边框 + rounded-cards + shadow-steep</b>；科目卡 hover 用 Apricot 30%。</span></li>
+        <li data-page-node-id="s4VkkHXkY6MAuntv8asRAC"><svg class="ic ic-sm" data-page-node-id="QpqngqZZhqp7LcgKk5n60D"><use href="#i-check" data-page-node-id="ZDuwaTe4SoCvSQl3wVQT3S"/></svg><span data-page-node-id="bMOMhSZgUoeo58uIQQySrB"><b data-page-node-id="t96LaWvhYpjXu7YOkU3AqD">字典表</b>　折叠条与表头统一圆角与 Fog 表头；「进损益/业务模式」标签改 Steep 双色（Apricot / Sky）。</span></li>
+        <li data-page-node-id="1OvEP4KZGYJWyeYQBGj0ZS"><svg class="ic ic-sm" data-page-node-id="03KldVmFufZ8VmJZdGDsYY"><use href="#i-check" data-page-node-id="oKMcYxgK2xHJnXTssVv1jp"/></svg><span data-page-node-id="XljG5a0MWDDziQ5rDNww2u"><b data-page-node-id="9ZKeURIZoESPfZnbuiPgho">说明条</b>　保留 Apricot 底 + Rust 文案的柔和提示形态，圆角提到 16px。</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ ③ 流水明细页 ============ -->
+  <section class="block" id="p3" data-page-node-id="zhbafOCysd2YgzCGbScwCC">
+    <div class="sec-head" data-page-node-id="pE4X9eKAAZgpqZavpFAen6">
+      <h2 data-page-node-id="v7aV7aZwnyPigjufXH3Qv3"><span class="idx" data-page-node-id="HUsVtAbeWH01Mw9XPSxrB4">3</span>流水明细页</h2>
+      <span class="chip chip-fix" data-page-node-id="WFGd6dgMyv80eVgIfvLvPN"><span class="chip-dot" style="background:#17191c" data-page-node-id="jtApL2LDAjZG5dqlMIDeYy"></span>主体已 Steep · 2 处待修</span>
+      <p data-page-node-id="9i49zDtbGEaEN7Oj9nDRDj">本页主体已迁移（HeaderStats / LogsCard / 明细表格容器已用 Steep token）。回归核对时发现两处旧样式残留，一并列出。</p>
+    </div>
+
+    <div class="artboard" data-page-node-id="o2l1rPlPol3NEBnXNyLbJG">
+      <div class="artboard-bar" data-page-node-id="FtbbHw8iCsQ7kj2wBeTxHx">
+        <span class="dot" data-page-node-id="bxLktwJSFURCGMFrZQAObr"></span><span class="dot" data-page-node-id="GdiegdcmQrDYk8mMvBvYww"></span><span class="dot" data-page-node-id="vncsllFcrunJ2sz5eVCmD3"></span>
+        <span class="name" data-page-node-id="1pIGNKAIpBNVChRX2hmPG9">/admin/ledger/[projectId]</span>
+        <span class="spacer" data-page-node-id="6yCtpYNGoOcSAPgkIY0aqf"></span>
+        <span class="tag" data-page-node-id="X8NYJCBV4HfszSn9Vj4gOj">回归核对 · 已 Steep</span>
+      </div>
+      <div class="artboard-body" data-page-node-id="3GdcDyPQzGBv1AVywkVTFc">
+        <div class="app" data-page-node-id="uomTPBDymrJlLzLApPsZeS">
+          <div class="wrap" data-page-node-id="YHQ24U1ERJHRljOByzrJku">
+            <div style="display:flex;flex-direction:column;gap:32px" data-page-node-id="iiqTMhLDiEQWTQBL8bs1ja">
+
+              <div class="between" data-page-node-id="iokXXmzdHB1VKWFa3qVhfx">
+                <a class="row-flex c-graphite" style="text-decoration:none;font-size:14px;font-weight:450;gap:6px" data-page-node-id="VXNd5K2fUTK7hbsKJKzN6t">
+                  <svg class="ic" data-page-node-id="UROSFt067BVRmPBvaFmT12"><use href="#i-arrow-left" data-page-node-id="pjXHx6WJRjPCRVBhoBN2ZX"/></svg>返回资金账本
+                </a>
+                <a class="row-flex c-graphite" style="text-decoration:none;font-size:14px;font-weight:450;gap:6px" data-page-node-id="y9SOAXUs8q7n9W4cemKSTu">
+                  <svg class="ic" data-page-node-id="O07xCnzanu3Rr2aOIyuNux"><use href="#i-bars" data-page-node-id="MWxB6rrLB6NYNDoaovrblM"/></svg>统计视图
+                </a>
+              </div>
+
+              <!-- HeaderStats 三栏 -->
+              <div class="card-flat" style="display:grid;grid-template-columns:3fr 5fr 4fr" data-page-node-id="doG990hpakev2E1HTTHrtC">
+                <div style="padding:24px;display:flex;flex-direction:column;gap:12px;justify-content:center;border-right:1px solid rgba(163,166,175,.4)" data-page-node-id="ZDJNAuwdWE1UxZl2uWgkcT">
+                  <div style="font-size:14px;font-weight:480;color:var(--ink);margin-bottom:4px" data-page-node-id="3DnGvRrHUv58T4fgeCL3le">项目基础信息</div>
+                  <div class="between" data-page-node-id="d2SbFrRVzjwhARRsyxCyPd"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="YnVXGfqsUlv5AYA6ETe8Hs">项目编号</span><span class="mono" style="font-size:13px;font-weight:480" data-page-node-id="iLOsUynR3mDVxqRYcp7rB7">XM-2026-0018</span></div>
+                  <div class="between" data-page-node-id="kSxGFFGYrDL4Bqbg3cA4Bi"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="O7BvyDEag8fRFNYS60lONk">小区</span><span style="font-size:13px;font-weight:480" data-page-node-id="2NEoLeRSbROAnhES6UWDTf">阳光里</span></div>
+                  <div class="between" data-page-node-id="1zumgEsfUW8ukk7ADlefhC"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="l0rAqqOAOnYUzAOwO63iSK">地址</span><span style="font-size:13px;font-weight:480" data-page-node-id="wZDvoPhCNBFlROytOcmAek">浦东新区张杨路 1288 弄</span></div>
+                  <div class="between" data-page-node-id="Cu6x1OhwJdq6cYgEpCmtI9"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="ENKW7eHDxpQ2U8o4YSTJhS">面积</span><span style="font-size:13px;font-weight:480" data-page-node-id="GENRD8lmqe2hMZNEWIf90P">89.5 m²</span></div>
+                  <div class="between" data-page-node-id="XMfWQ2oLjDpmJnH3JOnTk0"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="8BHfXwnKsXfxvNYBWALYSm">楼层</span><span style="font-size:13px;font-weight:480" data-page-node-id="6Mn8y8XmMhOiGOSIkMfhgo">18 / 22F</span></div>
+                </div>
+
+                <div style="padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;border-right:1px solid rgba(163,166,175,.4)" data-page-node-id="rk1DE2iDZ2ioBlO3oPBAGC">
+                  <div style="text-align:center" data-page-node-id="TVys6V2sMimMdKfxklUYL9">
+                    <div class="c-graphite" style="font-size:13.5px;font-weight:480;margin-bottom:6px" data-page-node-id="R6neKxHamF5Kxtxx1iz1jr">净现金流 (Net Cash Flow)</div>
+                    <div class="c-rust num" style="font-size:38px;font-weight:480;font-family:var(--font-mono);letter-spacing:-0.02em" data-page-node-id="ZokOkj0FDYmz55hjvNqJBh">+¥67.10 万</div>
+                  </div>
+                  <div class="row-flex" style="gap:36px" data-page-node-id="bEnYErGq3LCyKH0jCk8P92">
+                    <div class="row-flex" style="gap:9px" data-page-node-id="ptHTIimYNHAzENTu9kv91i">
+                      <span style="width:30px;height:30px;border-radius:50%;background:var(--apricot);display:inline-flex;align-items:center;justify-content:center;color:var(--rust)" data-page-node-id="HqdxaAICzFkXYnvOXgUKGX"><svg class="ic ic-sm" data-page-node-id="EN37CsNt04mrasssC2acBH"><use href="#i-up" data-page-node-id="07MXEucozsDYPZcKEwhY6S"/></svg></span>
+                      <div class="col-flex" data-page-node-id="RfFdqeFLNBZ00nWlCZoQV5"><span class="c-graphite" style="font-size:11.5px" data-page-node-id="cXJn1lyO2V535UNNUoStEG">总收入</span><span class="c-rust num mono" style="font-size:13.5px;font-weight:480" data-page-node-id="Pu7xlzdR9gED1BCbG1Rytq">¥268.40万</span></div>
+                    </div>
+                    <div class="row-flex" style="gap:9px" data-page-node-id="Gaf335UvYKn2JUxjfgNE5h">
+                      <span style="width:30px;height:30px;border-radius:50%;background:var(--sky);display:inline-flex;align-items:center;justify-content:center;color:var(--ink)" data-page-node-id="fN6ujXOA7I3H2f7nDgxfzA"><svg class="ic ic-sm" data-page-node-id="CpLMuI8WOvABtWjCtcnCIj"><use href="#i-down" data-page-node-id="pa9Uc6jlq6ATQvddmQfW43"/></svg></span>
+                      <div class="col-flex" data-page-node-id="rpCT3mmMbK8IjvyVdzBI3s"><span class="c-graphite" style="font-size:11.5px" data-page-node-id="uvJe0hJn6GNaTQuSrXLS7H">总支出</span><span class="c-ink num mono" style="font-size:13.5px;font-weight:480" data-page-node-id="UEIRIAZXL2zNHgC8qHPzgi">¥201.30万</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="padding:24px;background:var(--fog);display:flex;flex-direction:column;gap:16px;justify-content:center" data-page-node-id="JReIuIiyZfwJumSy7nSBJX">
+                  <div class="between" data-page-node-id="4tfMJvgbL3oIwvggc8p29T"><span class="c-graphite" style="font-size:13.5px" data-page-node-id="iTqvIpG5ZqY9KiZvc1DMWg">ROI (投资回报率)</span><span class="c-rust num" style="font-size:20px;font-weight:480" data-page-node-id="t4GCsPp425XOf0MnN3OmvW">33.31%</span></div>
+                  <div class="between" data-page-node-id="063MXBJF1FGGRLsj079qAM"><span class="c-graphite" style="font-size:13.5px" data-page-node-id="kffMhLI23CtUDjuKIWz1uO">年化收益率 <svg class="ic ic-xs c-graphite" style="display:inline-block;vertical-align:middle" data-page-node-id="FA8gR0HfxAnWE31pTh6Gn4"><use href="#i-info" data-page-node-id="GcP4yKiCdiJiIDnnw0Lc4X"/></svg></span><span class="c-ink num mono" style="font-size:17px;font-weight:480" data-page-node-id="c3bJ0FIY2kE1InY40F3Yuf">21.08%</span></div>
+                  <div class="between" style="border-top:1px solid rgba(163,166,175,.4);padding-top:14px" data-page-node-id="tWZpfcV10g6Kc4hh35bKFz"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="azPrntkCCQUhLa4X4PxDkk">资金占用天数</span><span style="font-size:13.5px;font-weight:480" data-page-node-id="R5JzFKDAvsBxJdUMjP1K00">186 天</span></div>
+                </div>
+              </div>
+
+              <!-- 明细统计卡（待修） -->
+              <div data-page-node-id="z4Va3x2qkwAYulp9OOEtRG">
+                <div class="row-flex" style="margin-bottom:10px" data-page-node-id="vVZF6laSGrILMEY0YJUkAy">
+                  <span class="badge badge-sky" data-page-node-id="TumQBFrvIvPYoDiqZiQyWR"><svg class="ic ic-xs" data-page-node-id="hqsxov8z76rwUXIoz4qYgF"><use href="#i-info" data-page-node-id="XEjKs5luMnfs2hV1s7wNk6"/></svg>待修</span>
+                  <span class="c-graphite" style="font-size:13px" data-page-node-id="DzTFASGzdaVdxpNbMXt1MP">ledger-detail-stats.tsx 仍是旧样式（emerald / amber / blue / red 彩色图标圆），下方为建议的 Steep 版本</span>
+                </div>
+                <div class="grid-4" data-page-node-id="M6V9JtoFdGrRn1AjVkfvug">
+                  <div class="card" style="padding:18px" data-page-node-id="3MVHSWUdZLxOlwJTTDnDxE">
+                    <div class="between" data-page-node-id="qqnkzcx8AuA76WEIQm1C3m"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="bJQ5KTZ8FOxwMxGOf1j7DX">流入合计</span><svg class="ic c-graphite" data-page-node-id="Yi8R5Nltx72iX9dYQ3cPUO"><use href="#i-up" data-page-node-id="mFkEBA5Ei1oz0zNKH1Qcet"/></svg></div>
+                    <div class="c-pos num" style="margin-top:10px;font-size:22px;font-weight:450" data-page-node-id="TeR2t5xUFBjmA6hEiH5kEL">+¥312.60万</div>
+                  </div>
+                  <div class="card" style="padding:18px" data-page-node-id="tmcikWsmcFZ1QeYGBHOA5N">
+                    <div class="between" data-page-node-id="a7bub5fbGleEuRtzYc6pmY"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="noMVsmsKvnivLWIhtQzZD5">流出合计</span><svg class="ic c-graphite" data-page-node-id="0N2e1HWglRYwHUizRiYnNj"><use href="#i-down" data-page-node-id="DP8zU22TvlGECk4QVHnA1M"/></svg></div>
+                    <div class="c-neg num" style="margin-top:10px;font-size:22px;font-weight:450" data-page-node-id="rV9194Ri1oKP7S1g8udkK9">−¥245.50万</div>
+                  </div>
+                  <div class="card stat-warm" style="padding:18px" data-page-node-id="PYk5Fqs3AewTb1ZjJ5cMth">
+                    <div class="between" data-page-node-id="94TqdBBlozOClIa8GObei8"><span style="color:var(--rust);font-size:12.5px" data-page-node-id="UcWVnYOXTu4BrWHWgZiTip">净现金流</span><svg class="ic c-rust" data-page-node-id="H0yh1Yx38QNuiFTRikV2QF"><use href="#i-wallet" data-page-node-id="NWZrVNRo1dBrzmDWnpaFiU"/></svg></div>
+                    <div class="c-rust num" style="margin-top:10px;font-size:22px;font-weight:450" data-page-node-id="IXWts8gqlrD5yiFIOyc9hx">+¥67.10万</div>
+                  </div>
+                  <div class="card" style="padding:18px" data-page-node-id="hXX1uSkOR51PprDqhsdQbc">
+                    <div class="between" data-page-node-id="AbDiw7wDg5wWIlEsrPxOAZ"><span class="c-graphite" style="font-size:12.5px" data-page-node-id="kWN2KyxEeJXL4GRnKhtnHA">进损益流出</span><svg class="ic c-graphite" data-page-node-id="HHgGzE8UDPm1lVEzdgDgri"><use href="#i-receipt" data-page-node-id="7OAv8xAM3e2N0mAFBHg8Bq"/></svg></div>
+                    <div class="c-neg num" style="margin-top:10px;font-size:22px;font-weight:450" data-page-node-id="jAbutceJw5obqrnGwW5Zwf">¥186.70万</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 工具栏 -->
+              <div class="between" style="flex-wrap:wrap" data-page-node-id="vQAQ5s1ZAFPglfjXKACAwt">
+                <div class="pilltabs" data-page-node-id="SV7XauqLTS68D3RwB7qRM2">
+                  <button class="on" data-page-node-id="4gY4F8YxDFBQFxoFL0v7c2">全部</button>
+                  <button data-page-node-id="dVcWMcRhMKAaidgrzpwhZd">仅流入</button>
+                  <button data-page-node-id="RQsd6HsBnwnLSFpoMNq7ag">仅流出</button>
+                </div>
+                <div class="row-flex" style="flex-wrap:wrap;gap:10px" data-page-node-id="Gk46W3xC1aM2MQBP9rYWfS">
+                  <div class="input" style="width:230px;height:40px" data-page-node-id="02AtLMIxIGQRfzIHRaarOD">
+                    <svg class="ic" data-page-node-id="DVTm5PWFNpkTrVhodA4gw1"><use href="#i-search" data-page-node-id="BVIPbz6cUgdX9TUEcTialk"/></svg>
+                    <input placeholder="搜索摘要 / 付款方 / 收款方" readonly data-page-node-id="F30PvfRhA9XXF6YG33GR5u" />
+                  </div>
+                  <span class="btn btn-out btn-sm" style="border-radius:16px;min-width:132px;justify-content:space-between" data-page-node-id="GyraKwj20kdUqL2722eIzG">全部科目<svg class="ic ic-sm" data-page-node-id="KkSNXNTJADaMn7vPNUDMpd"><use href="#i-chev-d" data-page-node-id="J5jimgDkmEu7VGlKyEOHKK"/></svg></span>
+                  <span class="btn btn-out btn-sm" style="border-radius:16px;min-width:112px;justify-content:space-between" data-page-node-id="6mAbtqIT7LmPJs9mYLsqxQ">凭证状态<svg class="ic ic-sm" data-page-node-id="PDz6Ly1MO8NP0SzQtqlje4"><use href="#i-chev-d" data-page-node-id="q4kmovXdCB8dpBEqM6PG6s"/></svg></span>
+                  <button class="btn btn-ghost btn-sm" data-page-node-id="WWqpYJlTL24UDlJGoEjzr0"><svg class="ic ic-sm" data-page-node-id="kgghsDNZEAKqmlYw41tQKc"><use href="#i-download" data-page-node-id="IfOgD42JhA7Z0btLKlr4H9"/></svg>导出</button>
+                  <button class="btn btn-ink btn-sm" data-page-node-id="okEMZcXuA2PdTXT0E1IT36"><svg class="ic ic-sm" data-page-node-id="YcLp4Qvi43VSJh23EFjRj6"><use href="#i-plus" data-page-node-id="HDWYidjN3JFil9QoiFMaec"/></svg>记一笔</button>
+                  <span class="badge badge-fog" data-page-node-id="PDAWieeUjnJ47FBcyGUzBv"><span style="width:7px;height:7px;border-radius:50%;background:var(--graphite)" data-page-node-id="HlF7dm7ZoxZNCOr5UcXhCL"></span>未结算</span>
+                  <button class="btn btn-ink btn-sm" data-page-node-id="Fiv0jLqhe6axqF1WEvwmkW">结算</button>
+                </div>
+              </div>
+
+              <!-- 汇总条 -->
+              <div style="background:var(--fog);border-radius:14px;padding:9px 14px;font-size:12.5px;color:var(--graphite)" class="num" data-page-node-id="MhamOQkkM1kUrdi9Wd1ZXh">
+                共 42 笔 · 净现金流 +¥67.10万
+              </div>
+
+              <!-- 明细表格 -->
+              <div class="card-flat" data-page-node-id="kxsin4LQEZSlPJcYO2UUSb">
+                <div style="overflow-x:auto" data-page-node-id="ExjAvCIdYmkVI8kszj0yx4">
+                  <table class="tbl" style="min-width:1120px" data-page-node-id="u9RTjqHu5NUXQATsNPCdbJ">
+                    <thead data-page-node-id="C3dsu0SjLYqLd2WvIJrFVQ">
+                      <tr data-page-node-id="TtKpiT7JCd74qqzapSe3ew">
+                        <th style="width:112px" data-page-node-id="hrc1RYOgJPNn0Dknnbj2Jh">日期</th>
+                        <th style="width:176px" data-page-node-id="dLU2Mj7rvjnVRLaShnr6Ji">科目分类</th>
+                        <th style="width:104px" data-page-node-id="WH873vEX3F3nlIxqPKtfiQ">付款方</th>
+                        <th style="width:104px" data-page-node-id="yarv9RpXdLblg9wcdNEoWf">收款方</th>
+                        <th class="th-r" style="width:128px" data-page-node-id="BPDO4pyuG1HdaRIeQAVE0e">流出</th>
+                        <th class="th-r" style="width:128px" data-page-node-id="SDnWf4t2eeqkVrnMPCiUdK">流入</th>
+                        <th class="th-c" style="width:86px" data-page-node-id="Kjm4ooNHuH2HplTh7aYCB5">凭证</th>
+                        <th style="min-width:190px" data-page-node-id="RBqEwJDvtUGr8XDTHMh37q">摘要</th>
+                        <th class="th-c" style="width:76px" data-page-node-id="dFLMjmbT8COKazwj8VF3BG">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody data-page-node-id="ccKiV8Mk8Hd7TYAig382KS">
+                      <tr data-page-node-id="789q7DjUatsvBl3kYh8VVm">
+                        <td class="mono num" style="font-size:12.5px" data-page-node-id="CLq19kHKKZE0xHDrZF881b">2026-08-28</td>
+                        <td data-page-node-id="2YLYvHmzH22zLAPWpvP4s8"><div class="col-flex" data-page-node-id="cDbtyLGrfwDN91tjNAnnFZ"><span class="w-med" style="font-size:12.5px" data-page-node-id="pyzLpyFlPn9yZL9V87wPus">中介佣金</span><span class="lp lp-warm3" data-page-node-id="UavuR7ZBQ9rdA2GNhThixu">③交易费用</span></div></td>
+                        <td class="c-graphite" data-page-node-id="xu8BRhhSsYS4a2ieP5dmcp">王先生</td>
+                        <td class="c-graphite" data-page-node-id="5DYzFOHLQkaabgLFJcbZAa">链家</td>
+                        <td class="td-r c-dove" data-page-node-id="JddYnk0nFObeFgjEv3dkI1">—</td>
+                        <td class="td-r num mono c-pos w-med" data-page-node-id="WzCA1KcW3SRouFuF7ijgxI">+¥12,000.00</td>
+                        <td class="td-c row-flex" style="justify-content:center;gap:4px" data-page-node-id="FyuFZqs5vHqfknvwJPBF4C"><span style="width:26px;height:26px;border-radius:8px;background:var(--fog);border:1px solid var(--doc-line)" data-page-node-id="EHZlwFy5rU4MFHmysuo394"></span><span style="width:26px;height:26px;border-radius:8px;background:var(--fog);border:1px solid var(--doc-line)" data-page-node-id="6H4OFHHgoCa4Fx5cJ4juYs"></span></td>
+                        <td class="c-ash" data-page-node-id="Aa57aqN5Y8HAHzaPnwUrVB">出售中介费返还</td>
+                        <td class="td-c" data-page-node-id="HoF4lTOfVtZNZXUgAzYAEx"><div class="row-flex" style="justify-content:center;gap:2px" data-page-node-id="gA0EiwGY3oiUXLkofxAJaY"><svg class="ic ic-sm c-graphite" data-page-node-id="etHB7CYZOdyzhp6UgLtYbi"><use href="#i-clip" data-page-node-id="SB0RabViKx66of5FLHri9G"/></svg><svg class="ic ic-sm c-graphite" data-page-node-id="mnVrgX1NKLPyhByShDjW01"><use href="#i-trash" data-page-node-id="sTxQYI0duPGv2fNDD2foxO"/></svg></div></td>
+                      </tr>
+                      <tr data-page-node-id="sazh6l2gaDBbYDsofLpK3z">
+                        <td class="mono num" style="font-size:12.5px" data-page-node-id="ere28rTBpAgzARFDBNdSHe">2026-08-20</td>
+                        <td data-page-node-id="eKG5Fkxkoed7cNTB05UZNU"><div class="col-flex" data-page-node-id="uF2GEPDXdbuzmDuSqgPq7o"><span class="w-med" style="font-size:12.5px" data-page-node-id="8NGZvHld2ih2kUy2u4RBmF">硬装工程款</span><span class="lp lp-warm2" data-page-node-id="eQ4xBYYo0JXTyETWD05aav">②直接改造成本</span></div></td>
+                        <td class="c-graphite" data-page-node-id="tr6xFEblJggU4eLf75kE5V">本公司</td>
+                        <td class="c-graphite" data-page-node-id="PuDPJsblLfWESDiNh2HahW">施工队</td>
+                        <td class="td-r num mono c-neg w-med" data-page-node-id="oobYqE1R1cfrtysqxOyl58">−¥86,400.00</td>
+                        <td class="td-r c-dove" data-page-node-id="1MDYrpeEpuvOXhI66cX6Zu">—</td>
+                        <td class="td-c row-flex" style="justify-content:center;gap:4px" data-page-node-id="ahAvxayqibDgDhlTdqmLFw"><span style="width:26px;height:26px;border-radius:8px;background:var(--fog);border:1px solid var(--doc-line)" data-page-node-id="tuv0kYOkRj4Hx8MGE7Fs4E"></span><span style="width:26px;height:26px;border-radius:8px;background:var(--fog);border:1px solid var(--doc-line)" data-page-node-id="9aiEsQYIJXqJIH9qsH6pes"></span><span style="width:26px;height:26px;border-radius:8px;background:var(--fog);border:1px solid var(--doc-line)" data-page-node-id="4FcQQTR25qj5sySfhXGWiZ"></span></td>
+                        <td class="c-ash" data-page-node-id="bhiZ8Xw1HRPCNBWCaEfEVd">卫生间整体翻新</td>
+                        <td class="td-c" data-page-node-id="TdDD9hh2FI24r4fhPCo3tW"><div class="row-flex" style="justify-content:center;gap:2px" data-page-node-id="9XZoQOqcLggXPjU1I5BNMp"><svg class="ic ic-sm c-graphite" data-page-node-id="pSHyIIbtaMPZYg6HJXSbtn"><use href="#i-clip" data-page-node-id="o98tu6urPgsfwSvOlbhUXO"/></svg><svg class="ic ic-sm c-graphite" data-page-node-id="4XKYWFYBW1z7AeYkaL5FYA"><use href="#i-trash" data-page-node-id="92e3Dh5SiMKyiVuHymaHRE"/></svg></div></td>
+                      </tr>
+                      <tr data-page-node-id="qU5XsJ4B84EnyQ1z85QurR">
+                        <td class="mono num" style="font-size:12.5px" data-page-node-id="nj0MjVlo46uCh4nYAzQexF">2026-08-12</td>
+                        <td data-page-node-id="YBkT9Gxp0HG9BmIVQBK6kZ"><div class="col-flex" data-page-node-id="DrGZLPNfecWnL2QRv0MdQg"><span class="w-med" style="font-size:12.5px" data-page-node-id="9Ty6L6mzjnAELPVEm8S8MA">业主底价首付</span><span class="lp lp-warm1" data-page-node-id="4Ya6FvM1IrWpxmsYbWmWMY">①取得成本</span></div></td>
+                        <td class="c-graphite" data-page-node-id="6NifGIiV2s4ggoiczgQmCD">本公司</td>
+                        <td class="c-graphite" data-page-node-id="SIl2dpsFaNVubDinwtYWhj">李先生</td>
+                        <td class="td-r num mono c-neg w-med" data-page-node-id="nK3Jea5YwnCe6lhwvzbJcW">−¥1,500,000.00</td>
+                        <td class="td-r c-dove" data-page-node-id="X2hbFiO1YpmaIjG0XweYlu">—</td>
+                        <td class="td-c" data-page-node-id="UMoC82mg2x2oUkyHNxCdNd"><span class="badge badge-hair" style="color:var(--graphite);padding:3px 9px;font-size:11px" data-page-node-id="EHraWmJe7Bmok3umnuCsjZ">缺凭证</span></td>
+                        <td class="c-ash" data-page-node-id="VKeMEnwsLiyM75nVhAwy0C">购房首付款 30%</td>
+                        <td class="td-c" data-page-node-id="8oGGIU7UdrIkAi1OGED8o6"><div class="row-flex" style="justify-content:center;gap:2px" data-page-node-id="JabfBZxigifHhKe7T6WEPk"><svg class="ic ic-sm c-graphite" data-page-node-id="54KrLF6wncfcljjB4Ich3F"><use href="#i-clip" data-page-node-id="JZtOGuHgfdSBfFEi4mogvS"/></svg><svg class="ic ic-sm c-graphite" data-page-node-id="E5mDjzHmEbXsYPI7ui5Pn6"><use href="#i-trash" data-page-node-id="kOwiXaAyG1HVImqd3wMRaB"/></svg></div></td>
+                      </tr>
+                      <tr data-page-node-id="NLHaaZGQFnQElVwmww9FkA">
+                        <td class="mono num" style="font-size:12.5px" data-page-node-id="weZAiKsMuswo9KP7cq3ULF">2026-08-05</td>
+                        <td data-page-node-id="1Su68KCEYSSVqyGCY8KWif"><div class="col-flex" data-page-node-id="87KwoxraiYKYMkl4PrEen7"><span class="w-med" style="font-size:12.5px" data-page-node-id="k0BpX9aO1A6qxg9m8uGb5h">增值服务费</span><span class="lp lp-warm6" data-page-node-id="BsC286yoasynQ0U7qHrVHg">⑥收入项</span></div></td>
+                        <td class="c-graphite" data-page-node-id="rDQJb4gsHFuCVBZaKDEMrX">买方 张女士</td>
+                        <td class="c-graphite" data-page-node-id="Q397IOGV9lCRNIVYToUJkn">本公司</td>
+                        <td class="td-r c-dove" data-page-node-id="axSNrYzzFw1nMH4Nk83bQR">—</td>
+                        <td class="td-r num mono c-pos w-med" data-page-node-id="DPRjJf4M1YOcB8eKYuC4aD">+¥268,400.00</td>
+                        <td class="td-c row-flex" style="justify-content:center;gap:4px" data-page-node-id="NBFVCHeeKHPwNBq52zZYxF"><span style="width:26px;height:26px;border-radius:8px;background:var(--fog);border:1px solid var(--doc-line)" data-page-node-id="fxNGI10G8joQFs0HKBRer8"></span></td>
+                        <td class="c-ash" data-page-node-id="H4tlPinVGyDYLwlrVWsnJt">成交增值服务费</td>
+                        <td class="td-c" data-page-node-id="MaLrlXRqxA1nT1ZJFL0YpY"><div class="row-flex" style="justify-content:center;gap:2px" data-page-node-id="Dx1bMlb853BKpuURhAosfT"><svg class="ic ic-sm c-graphite" data-page-node-id="b54wPbvDUTPcUwaEv4oPh5"><use href="#i-clip" data-page-node-id="ZSkLo73onv52VgAVGaSTiJ"/></svg><svg class="ic ic-sm c-graphite" data-page-node-id="tImf4KU60gAPEV1XldrGFh"><use href="#i-trash" data-page-node-id="HG9CnGUrF6rqBu1H6zwYaD"/></svg></div></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 趋势 + 日志 -->
+              <div class="card" style="padding:22px" data-page-node-id="bEcrJBn0C4iuA1jdWnHOQG">
+                <div style="font-size:13.5px;font-weight:480;color:var(--graphite);margin-bottom:18px" data-page-node-id="6zV0PXk0CVK7aQN2MvnVBN">资金流向趋势</div>
+                <svg viewBox="0 0 1000 200" style="width:100%;height:180px" preserveAspectRatio="none" data-page-node-id="cqeejVa8rnoi25tNZNpoBj">
+                  <line x1="0" y1="40" x2="1000" y2="40" stroke="#f1f5f9" stroke-width="1" data-page-node-id="9ExG31dNKA7aKdEa49xpeG"/>
+                  <line x1="0" y1="90" x2="1000" y2="90" stroke="#f1f5f9" stroke-width="1" data-page-node-id="Fb4JTgYq7BIn80W6IuOJlV"/>
+                  <line x1="0" y1="140" x2="1000" y2="140" stroke="#f1f5f9" stroke-width="1" data-page-node-id="eLX70ePgWOLnEi49fOlCxP"/>
+                  <polyline points="0,150 160,120 320,132 480,70 640,84 800,38 1000,46" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linejoin="round" data-page-node-id="lZwZYlhrcqAqSERGBS0pOG"/>
+                  <polyline points="0,60 160,80 320,72 480,110 640,96 800,128 1000,120" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linejoin="round" data-page-node-id="clv5fsHauNVMJXYQYN1SuP"/>
+                  <circle cx="800" cy="38" r="4" fill="#ef4444" data-page-node-id="06a8HcE30Xs9iiWMGLcSx2"/>
+                  <circle cx="800" cy="128" r="4" fill="#10b981" data-page-node-id="rbdUrONXeecZCkRWsb3Pbm"/>
+                </svg>
+                <div class="row-flex" style="gap:18px;font-size:12px;color:var(--graphite);margin-top:12px" data-page-node-id="dOkAy7OCN52w1V2U7i8gmB">
+                  <span class="row-flex" style="gap:6px" data-page-node-id="u0nkVDMWBTmsk5EYMLhDcc"><span style="width:8px;height:8px;border-radius:50%;background:#ef4444" data-page-node-id="eN7XlOcuLG4ShngWbRTwGw"></span>流入</span>
+                  <span class="row-flex" style="gap:6px" data-page-node-id="18317ymgnyacmCKuyLZTDI"><span style="width:8px;height:8px;border-radius:50%;background:#10b981" data-page-node-id="rinkAKfNH5H3AmaIgSk2vn"></span>流出</span>
+                </div>
+              </div>
+
+              <div class="card" style="padding:22px" data-page-node-id="MMcVuDmGDbMuHEFC7LcbPZ">
+                <div class="row-flex" style="gap:8px;margin-bottom:18px" data-page-node-id="EEQzLCNVnP1KGsKcXCG5Fd">
+                  <svg class="ic c-graphite" data-page-node-id="OUkDvYLPGYS06mFFadOgoc"><use href="#i-receipt" data-page-node-id="RoV7b5wjvWwuAunp3byFVF"/></svg>
+                  <span style="font-size:15px;font-weight:480;color:var(--ink)" data-page-node-id="eF1FpOKmfyRLSYjjRj6bbz">操作日志</span>
+                </div>
+                <table class="tbl" data-page-node-id="GKlIQFhMhPHmWCZxeLytSl">
+                  <thead data-page-node-id="Jvw4mkncloCJrAFvuYTpnW"><tr data-page-node-id="oM8NOwygfQ4eZkiyBqjwIW"><th style="width:180px" data-page-node-id="snPU5rrRzd1vZLvVeWHEBp">时间</th><th style="width:150px" data-page-node-id="2y3RUXMYD0pRkM0wnafJb5">操作人</th><th data-page-node-id="ogOxq3HN0Q0OhlmutraXrK">操作内容</th></tr></thead>
+                  <tbody data-page-node-id="vJlcx518Xc9lScXxZl3shg">
+                    <tr data-page-node-id="YoRoBlv2S1bmZsU9jbUS2z"><td class="mono num" style="font-size:12.5px" data-page-node-id="f7ClSOTD30auHqhVlvaTCw">2026-08-28 14:22</td><td class="c-ash" data-page-node-id="GmGj5TRsvYmAN31WlPn5VU">admin</td><td class="c-ash" data-page-node-id="rKKmxwqoKTgXluKRtHjzkF">创建记录 · 中介佣金 · ¥12,000.00</td></tr>
+                    <tr data-page-node-id="0JtuWtDfVUaPBfZK8taGzI"><td class="mono num" style="font-size:12.5px" data-page-node-id="wxrB1ZEsTtOOBZUJ4pU8NE">2026-08-26 09:41</td><td class="c-ash" data-page-node-id="F9ETLctBc9eok5Y9pA2sA3">admin</td><td class="c-ash" data-page-node-id="ONoqGwJ0qAwTXOOwLsoYHJ">删除记录 · 软装采购 · ¥23,800.00</td></tr>
+                    <tr data-page-node-id="lyCugx0LW4knxTxkToPckU"><td class="mono num" style="font-size:12.5px" data-page-node-id="iE7xfC5thqcNXIPfhpq2PA">2026-08-20 17:05</td><td class="c-ash" data-page-node-id="j2hVFxipURgjFkotVpHMAF">ops_zhang</td><td class="c-ash" data-page-node-id="6sY1o8M7UNsgB95ZbPDjAX">结算 · 2026-08-20 · 月度结算完成</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-page-node-id="KWsC8qKAEg1Y0lW3RD50UV">
+      <h3 data-page-node-id="cTZPUDDdcqT6pUZHI1LWzE">回归核对结论 · 仅 2 处需修</h3>
+      <ul class="changes" data-page-node-id="8BbLS1KTOCcgmXBdcT70Tv">
+        <li data-page-node-id="Oh0B1WAzZ1EyTUNuEV3vOg"><svg class="ic ic-sm" data-page-node-id="spF8MleFwflGd7e11cUWTi"><use href="#i-x" data-page-node-id="kX16TVjStG8GUrV6FITCVj"/></svg><span data-page-node-id="4iDilgwEx0QfBM54iOkp7J"><b data-page-node-id="AUeXdYpJvH9uaoSpe7ELCD">待修①</b>　<code data-page-node-id="XHQTnVAaUbBXIzN1J6oRKj">ledger-detail-stats.tsx</code>：4 张统计卡仍是 <b data-page-node-id="o9JAKgrB1rOFXB3YI1Y3QA">emerald / amber / blue / red 彩色图标圆 + font-bold</b>。改为单色描边图标 + weight 450，净现金流用 Apricot 暖卡（见上方蓝色「待修」块）。</span></li>
+        <li data-page-node-id="eauDhJTJHW05neOXeIHwoS"><svg class="ic ic-sm" data-page-node-id="EBRfkH2RTLwNccaIivIfnq"><use href="#i-x" data-page-node-id="HFKIQ8umdhZTWLf8NtYr4S"/></svg><span data-page-node-id="uRa93JAixQSMeH0uSoAriW"><b data-page-node-id="GX7kKxfFAUT07A6uHzf99F">待修②</b>　<code data-page-node-id="eFaipcIsYdQCW8e1JLuLfT">ledger-detail-table-filter.tsx</code>：<code data-page-node-id="tYQDbFTVVIndtnvsJmorPi">TabsList</code> 用 <code data-page-node-id="MIW4k5fi8eVSwPAWinqAiV">bg-muted</code> 且激活态未填充，与列表页新 Tab 不一致 → 改 <code data-page-node-id="fL0Acq3ODCQefUzulNJ49O">bg-fog</code> + 激活 <code data-page-node-id="armPmLfUOK1x27kTcwtyCH">bg-ink</code>。</span></li>
+        <li data-page-node-id="j7m3xWHyZTAwzh7FvHBkR9"><svg class="ic ic-sm" data-page-node-id="UaYwfzU3Yl0ZxLvKok6R2G"><use href="#i-check" data-page-node-id="XcvG96bUnmfGs3hHxMY1nT"/></svg><span data-page-node-id="T4WL4AU36TlQ88tR9xG13H"><b data-page-node-id="RegvwVlMZEnL8JTYE1VzDC">已达标</b>　HeaderStats 三栏卡、LogsCard、图表卡：已用 <code data-page-node-id="okAXvNXgtejmUnoLNKwTLe">rounded-cards / shadow-steep / bg-fog / text-rust / apricot-sky wash</code>。</span></li>
+        <li data-page-node-id="y08pHrkOb3jNRzH1B8cen3"><svg class="ic ic-sm" data-page-node-id="1yAyfd0MofKHgMpyHycDDC"><use href="#i-check" data-page-node-id="5npDP3RHjKQvM1Jvbd1Vvi"/></svg><span data-page-node-id="uJcfeCmEtzHComSy066vMn"><b data-page-node-id="osQNPOBU6nL9A7AGUVkBwB">已达标</b>　明细表格金额已按中国习惯红/绿（<code data-page-node-id="5GQeSMRaS3M4pLP0gkQHiE">money-positive / money-negative</code>），需保留。</span></li>
+        <li data-page-node-id="FdGQTjE5zCH2Zm966qDpvM"><svg class="ic ic-sm" data-page-node-id="udQRCePYMIMRZKRwh7Xn2x"><use href="#i-check" data-page-node-id="2AuUkLKoFNJz4d0LxNd1Zn"/></svg><span data-page-node-id="bDH9H5yfbGiRMkEc6CemcF"><b data-page-node-id="irGRCPeOrlDxKSSrSTO8Rm">微调</b>　表格容器 <code data-page-node-id="XzuVAMZcVvfDJakrBanaGU">rounded-3xl border shadow-sm</code> → <code data-page-node-id="EWqIdtxj8I5ZPRG3B9aojL">rounded-cards shadow-steep</code>；表头 <code data-page-node-id="K7sHz82HFQTehu3Qqs2LXJ">bg-muted/50</code> → <code data-page-node-id="81h2U2MWGyXZCdrMrDG6kD">bg-fog</code>；行 hover <code data-page-node-id="F8WD5QaY9nHr6S3f3NRpYR">bg-muted</code> → <code data-page-node-id="paVijuGyazVkjAd59Pn5Xn">bg-fog</code>。</span></li>
+        <li data-page-node-id="fLBlsZgSP3ZQn2423DfjLr"><svg class="ic ic-sm" data-page-node-id="25GNNHzOu5VzDE8Sm4Pn3b"><use href="#i-check" data-page-node-id="oHVPbARcXE0zK2WjrW3y6P"/></svg><span data-page-node-id="gcMqqq8HHiXWf3Z7NclUik"><b data-page-node-id="v4KWeXQvPs6gu5QVQ4lMIl">微调</b>　趋势图标题 <code data-page-node-id="RY9gEtE3AjJnJ7sHIz79kU">text-muted-foreground</code> → <code data-page-node-id="NVicbVPWThmkIkDwaP4kjb">text-graphite</code>；日志卡标题 emoji 📝 → 单色图标。</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ ④ 统计页 ============ -->
+  <section class="block" id="p4" data-page-node-id="oTxad0qUiWPbOcPQ3Jacsu">
+    <div class="sec-head" data-page-node-id="LpmRFk0fmrBDoxPA4CQydQ">
+      <h2 data-page-node-id="RCcHQ0JdMx5vkjmEJHXDy0"><span class="idx" data-page-node-id="tH7hEm5iNrAgzTonrrxmb9">4</span>项目统计页</h2>
+      <span class="chip chip-ok" data-page-node-id="DY4mVcbn5VCxGlxmmZ1eHl"><span class="chip-dot" style="background:var(--apricot)" data-page-node-id="G8EyLKX400uvA5ScVtpMdI"></span>已 Steep · 作为风格基准</span>
+      <p data-page-node-id="5v89zpm8cUFybt8FEPb8JB">本页是全模块的视觉基准：Signifier 44px 居中标题、Apricot 渐变 KPI、利润阶梯、阶段现金流量表。列表页/科目页的改法都向它看齐。</p>
+    </div>
+
+    <div class="artboard" data-page-node-id="zZkULxTiJyvAH9JB6jQDmm">
+      <div class="artboard-bar" data-page-node-id="XaSO9JuxQZihVHEiR7zoAZ">
+        <span class="dot" data-page-node-id="6lL6Gfq2Sc2D51mK5SJ2JY"></span><span class="dot" data-page-node-id="E5xmzi4GRWxI5OCYclH1aY"></span><span class="dot" data-page-node-id="0c5AyupA9D6t1DnrzxioNJ"></span>
+        <span class="name" data-page-node-id="fFwcoaje0wpxAFh6YHjvkr">/admin/ledger/[projectId]/statistics</span>
+        <span class="spacer" data-page-node-id="AacG8duPqAsRAlL6TfF7EA"></span>
+        <span class="tag" data-page-node-id="Em3bX2TkNMZb9vaGYjpiWq">风格基准 · 1200px</span>
+      </div>
+      <div class="artboard-body" data-page-node-id="usqOaZH8GkOzBZc4OxvD3s">
+        <div class="app-plain" data-page-node-id="uKzURmuMxp1P49p9jS6Opc">
+
+          <div class="wrap" style="padding:32px 0 0" data-page-node-id="hyPKnwyAY0sJVQ5cR7fhvl">
+            <a class="row-flex c-graphite" style="text-decoration:none;font-size:14px;font-weight:450;gap:6px" data-page-node-id="wqIicEbDEHY0kBNcGOzLcs">
+              <svg class="ic" data-page-node-id="KnjUD7rGxGWYu7KBQ81h7z"><use href="#i-arrow-left" data-page-node-id="VdVtJx0res8qs8MGyBYEIP"/></svg>返回流水明细
+            </a>
+          </div>
+
+          <!-- Hero -->
+          <div class="wrap" style="padding:48px 0 40px" data-page-node-id="ZOSiWKGHjR5oAVVP0ClJtt">
+            <div style="text-align:center" data-page-node-id="4LtYxE5eAa7RWLz49IH8Bz">
+              <h1 style="font-family:var(--font-display);font-weight:400;font-size:44px;line-height:1.1;letter-spacing:-0.015em;color:var(--ink);margin:0 0 16px" data-page-node-id="rYbCeLkwf38KtskT0EY0fF">项目资金账本</h1>
+              <p style="font-size:18px;line-height:1.35;color:var(--ash);margin:0" data-page-node-id="xLIMVJsavNNVSXfcGOAW2W">全周期资金追踪 · 数据从交易流水实时计算</p>
+              <div style="margin-top:16px" data-page-node-id="lHcquhtvgMqN3YSicqJRRN">
+                <span class="badge" style="background:rgba(251,225,209,.6);color:var(--rust);padding:5px 14px;font-size:14px;gap:7px" data-page-node-id="TlblpiaUS8X4SiId6iwcSP">
+                  <svg class="ic ic-sm" data-page-node-id="FZ93GrE4XKRBxpMbbZ2BuV"><use href="#i-receipt" data-page-node-id="FEXLjtkm7XhaW4hTikFsrA"/></svg>42 笔流水
+                </span>
+              </div>
+            </div>
+
+            <div class="grid-4" style="margin-top:40px;margin-bottom:16px" data-page-node-id="5svxvaECo8fpnAlRkjnU4K">
+              <div class="kpi kpi-warm" data-page-node-id="9efGqOT2PsPpi8PoqI1Eog"><p class="k-lbl" data-page-node-id="5S0qmoMl1TeTdFm8GI359F">项目收入</p><p class="k-val c-rust" data-page-node-id="zqZWEZgyjrL3zlV3tdoo3M">¥268.40万</p></div>
+              <div class="kpi kpi-warm" data-page-node-id="mM06e0FqdHAnGDi4NSE9BL"><p class="k-lbl" data-page-node-id="N8nPqtKDNHHPvsXnoNgNvs">毛利</p><p class="k-val c-ink" data-page-node-id="h1FDWFuKQ9qVpLxiAVj8BJ">¥92.10万</p></div>
+              <div class="kpi kpi-warm" data-page-node-id="yQ9g0TGByde2OTm1O6c5Rd"><p class="k-lbl" data-page-node-id="5EpAXkjOLccloubjwtPDtK">净利</p><p class="k-val c-rust" data-page-node-id="fMdZXYlUWVCBnYpAhjh7tZ">¥67.10万</p></div>
+              <div class="kpi kpi-warm" data-page-node-id="OUFSHlzyn7fC8zEKbyWkAH"><p class="k-lbl" data-page-node-id="lqbjxYOHTSlrSJCq5GJZyh">总支出(进损益)</p><p class="k-val c-ink" data-page-node-id="xR8GVfw5PMUL7725JhBxCt">¥201.30万</p></div>
+            </div>
+            <div class="grid-4" data-page-node-id="AdEYZLhMV4iEwkH2AD4tCm">
+              <div class="kpi kpi-plain" data-page-node-id="zpyQyBPGlB3X7SrHM7zJV7"><p class="k-lbl" data-page-node-id="s6PC30Pyyb3LSL504nCnfW">现金流入</p><p class="k-val c-pos" data-page-node-id="Do8PU3mGEMvPFTx4qwLuZV">+¥312.60万</p></div>
+              <div class="kpi kpi-plain" data-page-node-id="LP15LHs4Lm2XxtJJtAE59d"><p class="k-lbl" data-page-node-id="E2olLI7Y5xQEzXEpAvltEY">现金流出</p><p class="k-val c-neg" data-page-node-id="LyIkCaUcwOWiFyn7Nss1zH">−¥245.50万</p></div>
+              <div class="kpi kpi-plain" data-page-node-id="daxbMo8aSmFEDV05366q5n"><p class="k-lbl" data-page-node-id="Y2xJXaIfwkfkcQRuYdZNLJ">净现金流</p><p class="k-val c-rust" data-page-node-id="2jvSt1Uf7NyClSe0gEjCa9">+¥67.10万</p></div>
+              <div class="kpi kpi-plain" data-page-node-id="FaJDDUCxKYNf4vPC4FaiDt"><p class="k-lbl" data-page-node-id="LCaAla6uuwXbHVTBzHqvpu">流水笔数</p><p class="k-val c-ink" data-page-node-id="SEE4I5vfkxkE5Ddl2XEVWR">42<small data-page-node-id="Wc30rWaaqUOixtXV0hllrL">笔</small></p></div>
+            </div>
+          </div>
+
+          <!-- 利润三层 -->
+          <div class="wrap" style="padding:40px 0" data-page-node-id="mxf4zssy8I1MutmPi8yp2Q">
+            <div class="between" style="align-items:flex-end;margin-bottom:22px" data-page-node-id="pQxkJHsmCL67g4qMAraSG3">
+              <div data-page-node-id="3QeykVCHXBdacuz5AnHFcA">
+                <p style="font-size:12px;letter-spacing:.2em;color:var(--graphite);margin:0 0 8px" data-page-node-id="UOxZOnVZFHEy6H9GnWjY1f">PROFIT STRUCTURE</p>
+                <h2 class="row-flex" style="margin:0;font-family:var(--font-display);font-weight:400;font-size:24px;color:var(--ink);gap:12px" data-page-node-id="xRGHfbz9pcvu45kKmwoF2p">
+                  利润三层结构
+                  <span class="badge badge-rust" style="font-size:12px" data-page-node-id="i3m4qdk8q2QLPmtoXcSSDo">权责发生制</span>
+                </h2>
+              </div>
+              <span class="c-rust" style="font-size:14px" data-page-node-id="fUkVIejHa8ouUqyEe8Uma5">查看计算明细 →</span>
+            </div>
+
+            <div class="grid-3" data-page-node-id="nz7UsPjuF41GaZQQEguV5o">
+              <div class="ladder" data-page-node-id="a39w4FotrnshIEmgpTHCPB">
+                <div class="top" style="background:linear-gradient(90deg,var(--apricot),rgba(93,42,26,.3))" data-page-node-id="DfSuB1FL1peP5jMKsQTixG"></div>
+                <div class="step" data-page-node-id="I40uop4z0ppjNbOXl6rc2r"><i data-page-node-id="Ll5U9psndc7OcGIMy1gFZM">1</i>收入层</div>
+                <h3 data-page-node-id="Ee3LsmgQt2HRxfByxoLu3Q">增值服务费</h3>
+                <p class="formula" data-page-node-id="U9IW4RNYECFydbXLBsidWq">= 卖出价 − 业主底价</p>
+                <p class="amt" data-page-node-id="2TcK7F1FLpfO0O5FGOGYRc">¥268.40万</p>
+                <div class="bar" data-page-node-id="EPIGQDJezb1tEAtAYYtoKc"><i style="width:100%;background:rgba(93,42,26,.3)" data-page-node-id="7EvMA85bSGhJU79QcxlQFQ"></i></div>
+              </div>
+              <div class="ladder" data-page-node-id="ddBKy1Do2pCppr24CNtmwb">
+                <div class="top" style="background:linear-gradient(90deg,rgba(93,42,26,.3),rgba(93,42,26,.6))" data-page-node-id="1ZvhBi4SIgePHBvoqbj51E"></div>
+                <div class="step" data-page-node-id="cuF8XCVuA6cUhWWno4OZ1N"><i data-page-node-id="6z9a8ERNcpWie4B3MzrfbN">2</i>毛利层</div>
+                <h3 data-page-node-id="5Y5eE2HRBqcipjIDdhxEiM">收入 − 直接成本</h3>
+                <p class="formula" data-page-node-id="w6OUj1BgLH5ki4oMjGtAYo">= 收入 − (取得成本 + 改造成本 + 佣金)</p>
+                <p class="amt" data-page-node-id="2COcuvko9leaJ5Y1AYlXya">¥92.10万</p>
+                <div class="bar" data-page-node-id="GR4koeH6xnKXPGHlD5NFur"><i style="width:34%;background:rgba(93,42,26,.6)" data-page-node-id="LSTj1juizdeSaqzvH6pehW"></i></div>
+              </div>
+              <div class="ladder" data-page-node-id="EU0RWJ8VeGHhX0CFh2DZ82">
+                <div class="top" style="background:linear-gradient(90deg,rgba(93,42,26,.6),var(--rust))" data-page-node-id="yFopbqv5zwKAbuK2P9f6eS"></div>
+                <div class="step" data-page-node-id="fcymXvmWb6vfQkS9LyVLlX"><i data-page-node-id="iQXWWpPsPMkcG6RFiGyvFO">3</i>净利层</div>
+                <h3 data-page-node-id="cjhPKqH9G5Uhmv89a0WVkH">毛利 − 运营费用 − 融资成本</h3>
+                <p class="formula" data-page-node-id="cZ3Og8LPQYigGQFasBV0G6">= 毛利 − 运营费用 − 项目分润</p>
+                <p class="amt c-rust" data-page-node-id="gZhaBOC74pwJlTUHhaYAA0">¥67.10万</p>
+                <div class="bar" data-page-node-id="51ub7QSFtFNqg9LJJ1FNR8"><i style="width:25%;background:var(--rust)" data-page-node-id="r7pqoUYBUOEiy9iwMymA6T"></i></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 阶段现金流 -->
+          <div style="background:var(--fog);padding:40px 0" data-page-node-id="8P7A8wgko437PfDJPN3WQD">
+            <div class="wrap" data-page-node-id="qtbg1Tv9bqAsiZMsDsZvOf">
+              <div style="margin-bottom:22px" data-page-node-id="lGWqCFqcWs5NfhwN5nGFOK">
+                <p style="font-size:12px;letter-spacing:.2em;color:var(--graphite);margin:0 0 8px" data-page-node-id="TNZJXXcZvxcgm7glNbA3Ov">PROJECT LIFECYCLE CASHFLOW</p>
+                <h2 class="row-flex" style="margin:0;font-family:var(--font-display);font-weight:400;font-size:24px;color:var(--ink);gap:12px" data-page-node-id="Im3kMguwp5OHD7x79nJFRA">
+                  全周期阶段现金流量表
+                  <span class="badge badge-rust" style="font-size:12px" data-page-node-id="iW2Lb10DGkc8rAgCcKXGzh">4 阶段</span>
+                </h2>
+              </div>
+
+              <div class="stages" style="grid-template-columns:repeat(4,minmax(0,1fr))" data-page-node-id="xBDjQTBjF8rhgg1lHCwiun">
+                <div class="line" style="top:14px" data-page-node-id="nt21AGvCIKHLNkVoAieIT1"></div>
+                <div class="stage-col" style="padding:0 12px" data-page-node-id="y1w0X3MUXCqXNyRbNjyPJv">
+                  <div style="margin-bottom:12px;display:flex;flex-direction:column;align-items:center" data-page-node-id="VOObCSFGfY5hvruNIiZxeW">
+                    <div style="width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--apricot);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--rust);font-weight:480" data-page-node-id="spr0v4Tq1dbX0OzZZ95y95">1</div>
+                    <p style="margin:8px 0 0;font-size:14px;font-weight:480;color:var(--ink)" data-page-node-id="JUusWFgpo4Q7w5XradcCAX">签约</p>
+                  </div>
+                  <div class="flow-card" data-page-node-id="jkOupZcDHjXdagR15lQc5M">
+                    <div class="flow-row" data-page-node-id="E4AHnwMAs49RazUhVeGlGB"><span class="c-graphite" data-page-node-id="IXlMYnAzFECygXd7Jc6tWN">流入</span><span class="num c-pos" data-page-node-id="ISFwW1GABKq8kdHN6CGTSE">+¥0</span></div>
+                    <div class="flow-row" data-page-node-id="jCQ6aMhXBB5rX4QhAzAqLP"><span class="c-graphite" data-page-node-id="C2Cs4X9jGLoBgjfrGMRg9U">流出</span><span class="num c-neg" data-page-node-id="TGsmeooPkxEIevZN04Dg4b">−¥150.00万</span></div>
+                    <div class="flow-row net" data-page-node-id="sb6EpHk5IXJSM2NJVvlrIF"><span class="c-graphite" data-page-node-id="dBMhHquOLoOxR8OxCm8njk">阶段净额</span><span class="num c-neg w-med" data-page-node-id="YA52Ij2sqDr2XFQscau8Vc">−¥150.00万</span></div>
+                    <div class="flow-row" data-page-node-id="aFmrDCIhiqoaVkY9xrZInu"><span class="c-graphite" data-page-node-id="kHYfFK21P5dcGBHPLzAtAZ">流水笔数</span><span class="num c-ink" data-page-node-id="8veDp25wHJxHlAHa9CnCRL">6 笔</span></div>
+                  </div>
+                </div>
+                <div class="stage-col" style="padding:0 12px" data-page-node-id="3U7ZnrYmqa3HQjoRU0OdTe">
+                  <div style="margin-bottom:12px;display:flex;flex-direction:column;align-items:center" data-page-node-id="gqC4fCfMuJqFHlguTmC4BF">
+                    <div style="width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--apricot);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--rust);font-weight:480" data-page-node-id="FE8IZMhnzF6apGzaCUNNFo">2</div>
+                    <p style="margin:8px 0 0;font-size:14px;font-weight:480;color:var(--ink)" data-page-node-id="IQ6dB9J020dz9kALIEl1Ds">装修</p>
+                  </div>
+                  <div class="flow-card" data-page-node-id="rvqKJHXc2Jgxw4Rlw0XAEA">
+                    <div class="flow-row" data-page-node-id="WC9FMquGOaHldF17x1Ugnr"><span class="c-graphite" data-page-node-id="xfM3IoDBMHU1Z3AQYa4Zwn">流入</span><span class="num c-pos" data-page-node-id="GB9zx4Uen3hsEXSjOSHFyr">+¥0</span></div>
+                    <div class="flow-row" data-page-node-id="gMqyw8VUjfixP3Eg7aDXq4"><span class="c-graphite" data-page-node-id="HhVRrqhbuHx5ST6PGR2wBy">流出</span><span class="num c-neg" data-page-node-id="Z5nigdGsa4p3bWC2xt5w2Q">−¥35.80万</span></div>
+                    <div class="flow-row net" data-page-node-id="bd1RwRC2qOIFgHDc0BClyE"><span class="c-graphite" data-page-node-id="sBEXSe8EWYb8qR3QSW1baC">阶段净额</span><span class="num c-neg w-med" data-page-node-id="nsqiz0r9E9klSmJ87UvXlP">−¥35.80万</span></div>
+                    <div class="flow-row" data-page-node-id="6EBhukGCMlF0pwiNBOJrE4"><span class="c-graphite" data-page-node-id="vOL2S8cDtKy4GHeUgUE1Qf">流水笔数</span><span class="num c-ink" data-page-node-id="qBahTnggzbKeW3aj2Px92Y">9 笔</span></div>
+                  </div>
+                </div>
+                <div class="stage-col" style="padding:0 12px" data-page-node-id="ZrQMSrGwSxK8cbvW2nCfDj">
+                  <div style="margin-bottom:12px;display:flex;flex-direction:column;align-items:center" data-page-node-id="cdTv99BBiQRt0AoueP0Ov0">
+                    <div style="width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--apricot);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--rust);font-weight:480" data-page-node-id="QxCa6hauv3xSA9hKO7duLK">3</div>
+                    <p style="margin:8px 0 0;font-size:14px;font-weight:480;color:var(--ink)" data-page-node-id="XFHuoEYh5MdFIGETLDLmHt">在售</p>
+                  </div>
+                  <div class="flow-card" data-page-node-id="sGBsPh22m9v8fUsinUpRuW">
+                    <div class="flow-row" data-page-node-id="3OCXn5pHdfjxg8BL18GYV4"><span class="c-graphite" data-page-node-id="2hBV0dkP87m6HEfa6sivOj">流入</span><span class="num c-pos" data-page-node-id="wU2MCtsfXb5KeSrlZFEagY">+¥12,000</span></div>
+                    <div class="flow-row" data-page-node-id="HmdkiKFYPpF0yEEMRs2lhw"><span class="c-graphite" data-page-node-id="ksdEe6iHOwsHvqOCocg0SQ">流出</span><span class="num c-neg" data-page-node-id="5Z6MSAkttKS5j2MvvMNPIz">−¥5.20万</span></div>
+                    <div class="flow-row net" data-page-node-id="OVDFVwYlgchAqbLzzjcVpt"><span class="c-graphite" data-page-node-id="ymKtkvv2PyueTCLgWnrnvv">阶段净额</span><span class="num c-neg w-med" data-page-node-id="b5JFeDaEWKWHAxHGIlTcrb">−¥4.00万</span></div>
+                    <div class="flow-row" data-page-node-id="vFj5D7EWM2xeFitTNB5mht"><span class="c-graphite" data-page-node-id="2E6oGYF3Aa8o1SuQ10V9KE">流水笔数</span><span class="num c-ink" data-page-node-id="hWD2cDKcCY3GjoD9F1vSNq">7 笔</span></div>
+                  </div>
+                </div>
+                <div class="stage-col" style="padding:0 12px" data-page-node-id="DBVdTK8yliAaqoIZ0jMo7z">
+                  <div style="margin-bottom:12px;display:flex;flex-direction:column;align-items:center" data-page-node-id="oJh3TH5C1fhX31faADm3rw">
+                    <div style="width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--apricot);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--rust);font-weight:480" data-page-node-id="TMXm2zWa3ZqAWL7VizoHru">4</div>
+                    <p style="margin:8px 0 0;font-size:14px;font-weight:480;color:var(--ink)" data-page-node-id="SauRLONNtayiajLHAH3fPD">已售</p>
+                  </div>
+                  <div class="flow-card" data-page-node-id="l70O0NCO6CEBTj1KJkYscT">
+                    <div class="flow-row" data-page-node-id="kIAEA8amilMgdJRiHUSa2i"><span class="c-graphite" data-page-node-id="cGIrF1lDSCY95aa2CzCM93">流入</span><span class="num c-pos" data-page-node-id="eAlpzeG3hrAqW13N9FBV9x">+¥312.48万</span></div>
+                    <div class="flow-row" data-page-node-id="ahUwFsSIhgNXxYoYtmDo3Q"><span class="c-graphite" data-page-node-id="64FpoLiVz7UvF32aJGn3l2">流出</span><span class="num c-neg" data-page-node-id="H25W9oVXW2Y6n8TOGgZc4q">−¥54.50万</span></div>
+                    <div class="flow-row net" data-page-node-id="UGSiAPyRyxNQPNR0diEwJx"><span class="c-graphite" data-page-node-id="Hm8oTpdvxvv7mUjPOrkVci">阶段净额</span><span class="num c-pos w-med" data-page-node-id="DCx0WGgIOrzhB8rLlcAJEf">+¥257.98万</span></div>
+                    <div class="flow-row" data-page-node-id="8JV5ZUkqRrg9rzbckjgb6R"><span class="c-graphite" data-page-node-id="hza0rbA3NoDeTgqUFl5yIL">流水笔数</span><span class="num c-ink" data-page-node-id="MPvKMwjUGGlqKvwdFTAQnV">20 笔</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row-flex" style="gap:20px;margin-top:24px;font-size:12px;color:var(--graphite)" data-page-node-id="8zSqMtZ4bADPmKsYo377uZ">
+                <span class="row-flex" style="gap:6px" data-page-node-id="NfFNpWROP9pF5KClk3Ftoj"><span style="width:8px;height:8px;border-radius:50%;background:var(--pos)" data-page-node-id="tfufPHsYrj77Sh6RYYRvP0"></span>流入（收入/配对回退/融资流入）</span>
+                <span class="row-flex" style="gap:6px" data-page-node-id="PBxNQHgnOsi8xRnBJXtBH4"><span style="width:8px;height:8px;border-radius:50%;background:var(--neg)" data-page-node-id="akH1fzFzik78GFGA4DEU9H"></span>流出（支出/税费）</span>
+              </div>
+
+              <div class="note-band" style="margin-top:16px" data-page-node-id="XoHM5G3Q1yzHkf1cpVaACx">
+                <b data-page-node-id="DINfQx5CFaFaOP6xKS6Sfi">数据说明：</b>本看板数据由“交易流水 + 科目字典”的层级映射实时计算得出，与权责发生制损益口径一致。切换项目或新增流水后此处会同步刷新。
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-page-node-id="SNQZhT8SjGbLi5d88NNtfK">
+      <h3 data-page-node-id="OcS4TM6W8owN0rZCzpB88J">确认项 · 仅 3 处无关视觉的微调</h3>
+      <ul class="changes" data-page-node-id="cMhMljaBHjeC3UnJvCYDnu">
+        <li data-page-node-id="8xbeg4zuAnfFMKXVVPKlRz"><svg class="ic ic-sm" data-page-node-id="FMtBrBX2UJl1HYFtzRADuE"><use href="#i-check" data-page-node-id="dAFCEVs4GpAOVvKMArZMim"/></svg><span data-page-node-id="BjDvmEfwWZOlBGUoMAGFlQ"><b data-page-node-id="WfFycIHrqmqmr2KPgFnJqS">硬编码底色</b>　<code data-page-node-id="KuLWyTXnxO3EG5vtuWWmJK">bg-[#f7f7f8]</code> ×2 → <code data-page-node-id="WQOJONakBV7MALq3AFZ9bS">bg-fog</code>，避免 token 漂移。</span></li>
+        <li data-page-node-id="E9XajEuwvylKJyofe9yPiL"><svg class="ic ic-sm" data-page-node-id="XhtcAaO7Q4NAjbRJZkkSAz"><use href="#i-check" data-page-node-id="by2cEuWDF5ASlloISVCKVr"/></svg><span data-page-node-id="WBCyIhn4XCeY0NBRllRweS"><b data-page-node-id="PJYggCToR0qct8KkAs3ZtA">宽度</b>　<code data-page-node-id="YgGLY9eb6e1rV7nGwsBP1R">max-w-[1200px]</code> 出现 4 次 → 统一常量或复用容器，与列表页一致。</span></li>
+        <li data-page-node-id="Rh3d8aDdVDnD3BnlSFRU7c"><svg class="ic ic-sm" data-page-node-id="HFkcfg5IakrwbSz8HEOh7M"><use href="#i-check" data-page-node-id="sHv3xYHydZzzYgxtG3AL1R"/></svg><span data-page-node-id="YgF0fItDzGDAfXWkZuhgth"><b data-page-node-id="ts5OPxOWBHtNLwtfasEZTZ">emoji</b>　「📊 42 笔流水」保留或换单色图标（本稿推荐换图标，与阶段标记口径一致）。</span></li>
+        <li data-page-node-id="95rZKUW9uvv9m5Ew7hgHnk"><svg class="ic ic-sm" data-page-node-id="IjYsSjVE2pDEuvt2WRjLJ8"><use href="#i-check" data-page-node-id="MPLdTdB7c9e7UBGq4AUzXH"/></svg><span data-page-node-id="c6sgfEFTxaGlfGDHg0HtY2"><b data-page-node-id="JurDJViDaPpL7uU6GrKTfA">无需改</b>　Hero、8 KPI、利润阶梯、阶段现金流表均已达标，本次不动布局。</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 实现落点 ============ -->
+  <section class="block" id="impl" data-page-node-id="yzaHrYFzW4BwnM7277o0Om">
+    <div class="sec-head" data-page-node-id="Q6duMi6YECdQPgxgbV048v">
+      <h2 data-page-node-id="neGMKwu33sjZgubO1XbHBJ"><span class="idx" data-page-node-id="bqpjPCCSlh4Bw28h86goK4">5</span>实现落点</h2>
+      <p data-page-node-id="nbvyXHTmGCeQSxw10FuDBn">确认设计后，按文件逐项落地。新增/修改均落在 ledger 目录内，不改动 <code data-page-node-id="WDMrvGJKGMzGJx4MG5LgTa">ui/</code> 源码（样式用 <code data-page-node-id="Ix7xvMdPps49V90cXn2nYQ">cn()</code> 覆盖）。</p>
+    </div>
+
+    <table class="dec" data-page-node-id="v1PWnd25RFs65ezABkFbb8">
+      <thead data-page-node-id="BqvOFNtJScNajrmzlLDBLU">
+        <tr data-page-node-id="VESCGZq55sqI8pad4aqJz6"><th style="width:280px" data-page-node-id="unofxj51rKJCTgi2FS5ZN9">文件</th><th style="width:110px" data-page-node-id="40cepB0xJLJTkY1tkgpcA5">动作</th><th data-page-node-id="xFvCqr7cKkVQJZNc5fMZS5">说明</th></tr>
+      </thead>
+      <tbody data-page-node-id="kluSZR7VIZZBzyV3tBCt19">
+        <tr data-page-node-id="hK3PaRTWRjMdiREBi2Gf8h"><td data-page-node-id="zEyw3JrIdYGWXFPr5RkklS"><code data-page-node-id="L53EdDhNa1kkVUoUigxDb5">admin/ledger/page.tsx</code></td><td data-page-node-id="sSinIg1S1zXWANeRjSLe7E">改</td><td data-page-node-id="Wj9nmJCyPAsmYbKCbD7Qw4"><b data-page-node-id="6jmMcsBdtHDHPXU87WyzsM">画布</b> <code data-page-node-id="CAywK6nzYheCDX2fyvS9gg">bg-muted→bg-fog</code>；<b data-page-node-id="r1jxB5xIojGKEIkXP9ECLi">页头</b> <code data-page-node-id="H1HiXAd7iZtKB3zgifvpiH">font-display text-[40px]</code> + Ash 副标题；容器宽度统一 1200px。</td></tr>
+        <tr data-page-node-id="IqIEVLKQj2jzTIt5cBngl4"><td data-page-node-id="Cp5ks7v7ZtWgFTD9emZ2G0"><code data-page-node-id="5Ba8YuwXqZ8i4dyz6OA5Hx">ledger/_components/ledger-stats.tsx</code></td><td data-page-node-id="RwjuYqAHIS8FoOjgCG4vtk">重写</td><td data-page-node-id="GC6GZEUX9I37lgRrUbswoC">5 张卡：去彩色图标圆、单色描边图标、<b data-page-node-id="wxtIHXOXdIDQ2ZRAvFbjkv">仅净现金流用 Apricot 暖卡</b>、数值 30px/450/tabular-nums。</td></tr>
+        <tr data-page-node-id="LHyQpC3z0mRyC80A1SsSj8"><td data-page-node-id="nHXTHDFeBEOVFjwlBGQ1ac"><code data-page-node-id="yQpIj8PpqnnFBA9j3g4beJ">ledger/_components/ledger-view.tsx</code></td><td data-page-node-id="2cPjjS4oxysTGNaE9cniza">重写</td><td data-page-node-id="sE5oOqWgcNHNXAc7NoAEE1">状态筛选 <code data-page-node-id="ig2weo0be1nuAMfe1hLg5y">Select</code> → <b data-page-node-id="kQZdvKDtS9MTT5A9mWsWUS">胶囊 Tab 组</b>；搜索框加图标/16px 圆角；导出为唯一 Ink 胶囊；抽用 <code data-page-node-id="cyBh8lpRl6Xgi5Og0Nmhhg">ListView</code> / <code data-page-node-id="i8lSEFfedJPkEAs3wMblUD">SearchBar</code>。</td></tr>
+        <tr data-page-node-id="aoPWOCzBAzGuwUzBQbpKfx"><td data-page-node-id="lIiyN4Zg6ydH6EE7d0yNuD"><code data-page-node-id="eOn9l8oKbcY0JjCOb3MDzC">ledger/_components/ledger-table.tsx</code></td><td data-page-node-id="ZV7HuXSCJdINlROM1unuWK">改</td><td data-page-node-id="CwSuIK0emZiKEDb5otGGDP">容器 <code data-page-node-id="ELB81cC4oPKqqnlyVaPnr9">rounded-cards + shadow-steep</code> 去边框；状态徽章改 Steep 单色；金额统一 <code data-page-node-id="QPn43aSAUW1R3i1kkbSGQ7">¥xx.xx万</code>；行内操作 hover 显现。</td></tr>
+        <tr data-page-node-id="quL0GMAuxcm4ZgVBzWExdH"><td data-page-node-id="q38pQYfaSEhJpU6hMSBTln"><code data-page-node-id="UkTZJ6uZd94eUz50fCXwpM">ledger/_components/ledger-pagination.tsx</code></td><td data-page-node-id="u2EwtwgJnZikpDstqajkwR">微调</td><td data-page-node-id="Yeg7GZ1g2dXxnA1HXpZOHQ">复用 <code data-page-node-id="OGKCoqSeZ65GJCQSqyOVqE">common/pagination</code>，包裹容器去 <code data-page-node-id="5hACjjqJbTn9v8WEMSG8E3">bg-card</code>，与 Fog 画布融合。</td></tr>
+        <tr data-page-node-id="vVPTv1QCBpKdzqpDsHfh8e"><td data-page-node-id="hK09gzfsdh1y4CKrO87Vaj"><code data-page-node-id="iZasyq3ALhxN1vDpEiAIlP">ledger/subjects/page.tsx</code></td><td data-page-node-id="n5Ljz7RvsqZ7PhpEcsRQol">改</td><td data-page-node-id="oQryP9yhZFgLrgr9n01tWj">画布 + 页头统一；说明条圆角、错误条配色。</td></tr>
+        <tr data-page-node-id="IXeHEy31sjBuwRAEzhDLmt"><td data-page-node-id="zcUkBE9Nku7EFRhjnP0FGC"><code data-page-node-id="BQTwNtXKaL10QFPhAB0mLN">ledger/subjects/_components/subject-flowchart.tsx</code></td><td data-page-node-id="IGQNREzXhao2EdgMypxlxP">改</td><td data-page-node-id="qA5SNfkzzTjU6LJbBxCR5H">卡片无边框 + <code data-page-node-id="BuRyCkBNg88rDweKWGIPBu">shadow-steep</code>；模式切换紫色 → Sky Wash；阶段 emoji → 单色图标；科目卡 hover Apricot。</td></tr>
+        <tr data-page-node-id="BBTlEY03Akxty8D31qbZAI"><td data-page-node-id="xZM2xmzhNje5puCDaWRRSP"><code data-page-node-id="C7KIDWUQykHrQz6hUMpUdF">ledger/subjects/_components/subject-schema.ts</code></td><td data-page-node-id="J9vmJk9Cpy9iWlBIQE7Wd2">改</td><td data-page-node-id="BoOOQOCOTald4RncxmkIFK"><code data-page-node-id="ISDgvDyXeeXl5DT5vVha6w">LEVEL_PILL_CLASS</code> 七色彩虹 → <b data-page-node-id="6PgiyXICiBfzODBZTZCpSR">Apricot→Rust 暖色 7 级</b>。</td></tr>
+        <tr data-page-node-id="cW7ZdKS8e8ydC3PZAKRXEE"><td data-page-node-id="69WANkPPrTuKGOEWdDLHcR"><code data-page-node-id="tIHNqOHAa6lf93GoyjkH79">ledger/subjects/_components/subject-dictionary-table.tsx</code></td><td data-page-node-id="1paB62XJyURxI5boiclmVa">改</td><td data-page-node-id="rtO4FpUdJpPH3wnYd5VAdf">折叠条/表头圆角与底色；「是/否」「代理/收购」标签改 Apricot / Sky。</td></tr>
+        <tr data-page-node-id="wIV5VMTEgmZFLRVB7wQ9pj"><td data-page-node-id="t8qYumEMB9vgeVGW9WVdP7"><code data-page-node-id="J2zAXnO25ySlAUuHY4wvuF">ledger/[projectId]/_components/ledger-detail-stats.tsx</code></td><td data-page-node-id="AFXU5La2BW8n1KBktF27EK">重写</td><td data-page-node-id="miIQoAuPe7UwYUIQNmD5zI"><b data-page-node-id="q7vOU1G6LPtX0B9u6Gi9xm">待修①</b>：彩色图标圆 → 单色 + 暖卡，与列表页统计卡同构。</td></tr>
+        <tr data-page-node-id="aZYHPAMG3REE6b3WBqJgmc"><td data-page-node-id="d1v3Hu0ymhMBrSkLYsiM01"><code data-page-node-id="fYBA83DTrtgUhrDc0jvfCz">ledger/[projectId]/_components/ledger-detail-table-filter.tsx</code></td><td data-page-node-id="9exFAIrXIOOysT0hfV7YGb">微调</td><td data-page-node-id="r7gg7pIgGhk39AG4VCViyf"><b data-page-node-id="VuU8CN0zMuL2ACDEcAWZYk">待修②</b>：<code data-page-node-id="x02cq1EP2Lkv3LExWRCKHo">TabsList bg-muted</code> → <code data-page-node-id="QJtsjSiQQ5tyAaz9YE1fJy">bg-fog</code> + 激活 <code data-page-node-id="X9falCk3HUoHZBxH0S1rYd">bg-ink</code>；按钮统一胶囊。</td></tr>
+        <tr data-page-node-id="vSgVW4FUiB2RBEiq9pDxl7"><td data-page-node-id="XGjmNcESzSObyUV8sJcmHD"><code data-page-node-id="Sqc42LxRTfwhtiaZjIBcHg">ledger/[projectId]/_components/ledger-detail-table.tsx</code></td><td data-page-node-id="oGkPRdlEBTRTFxz8txXw6t">微调</td><td data-page-node-id="AytXInNkQKHEU2mTIrMbpL">容器去 <code data-page-node-id="7fM2taB1bSPDYCaQRLd38L">border</code>；汇总条 <code data-page-node-id="mFEPs52CeQ2LLuLDUnxIAp">bg-muted/30</code> → <code data-page-node-id="IVvGu7jHqYe7N6kr51q5OV">bg-fog</code>。</td></tr>
+        <tr data-page-node-id="uKEs1d5jDQ0aX9YQ6EQhLS"><td data-page-node-id="F2LFOOsmeg5fSfiQ3PFNOU"><code data-page-node-id="Qp0FOct4AU6bKI27OpuYb7">ledger/[projectId]/_components/ledger-detail-table-header.tsx</code> / <code data-page-node-id="SKgLS3Ahg2YrRCht8phNvy">-row.tsx</code></td><td data-page-node-id="i6KYqaBUpr99LdGFFHp8Gy">微调</td><td data-page-node-id="S7AM5MkUOclYYIXTJH5YRK">表头 <code data-page-node-id="NeXvJOQ7GBZVbpIuJNdgdr">bg-muted/50</code> → <code data-page-node-id="ZxeXIMru5k2zFKtMkUwr2o">bg-fog</code>；行 hover <code data-page-node-id="kKeZMtlsiAAuULMsgFBi9y">bg-muted</code> → <code data-page-node-id="Pf3a8v8DfBFvtPTBXEuhNf">bg-fog</code>。</td></tr>
+        <tr data-page-node-id="7cFlABC07oc0nWD25pWOUM"><td data-page-node-id="7KbtwbMqsFADtvKP9GbfBc"><code data-page-node-id="vGuzL8C5DYtPuwDGZtfVOs">ledger/[projectId]/_components/trend-chart.tsx</code></td><td data-page-node-id="KuZBL3j4dhSwMm7JprqNxD">微调</td><td data-page-node-id="boLqfkKAATyyVKBi8n71v8">标题 → <code data-page-node-id="pvNNWwpBaiNY2eVjE25H8e">text-graphite</code>；图表色板用 Rust / Sky 双色。</td></tr>
+        <tr data-page-node-id="qLRAHWwCrvbqnA24uFRrNZ"><td data-page-node-id="DswckqamWl0HPmdPngaIey"><code data-page-node-id="kb2LCggynLFEUCNLEcSSyF">ledger/[projectId]/statistics/page.tsx</code></td><td data-page-node-id="SKHHoSGXHAqPjB3fxB1ERM">微调</td><td data-page-node-id="ti2yzxAXHfMQaGuDQSub9C"><code data-page-node-id="9R2WHzoDtTMgeA64uOWl5t">bg-[#f7f7f8]</code> → <code data-page-node-id="5ydscNlzrIpESTVjYYww5u">bg-fog</code>；宽度收敛到统一常量。</td></tr>
+      </tbody>
+    </table>
+
+    <div class="footnote" data-page-node-id="vDR7TVu2Sk8LCHVJgsrQTU">
+      <b data-page-node-id="HUUtvsXlxvVNmCthxIYpY9">不改动：</b><code data-page-node-id="b3lShE36k5BnKWjt63jZbn">components/ui/*</code>、<code data-page-node-id="cuwdpIeVbPp3uIqIiFU7jW">common/pagination.tsx</code> 的交互逻辑、后端接口与数据口径。全部为样式层改动，风险可控。
+      <br data-page-node-id="TRxNfG42TJxiBTHtxhJJGZ"><b data-page-node-id="zv9ik7zSmaZd3YGgkHlQBa">验证：</b>改动后执行 <code data-page-node-id="TbEWfzVxq6hGwQlRBFJirW">tsc --noEmit</code>、<code data-page-node-id="J9moWfb6oltKaVcFW92fJp">pnpm lint</code>，并在 <code data-page-node-id="kZzHGoV9LkhNFmiEo60MoM">:3000</code> 调试模式下逐页核对四个页面。
+    </div>
+  </section>
+
+  <!-- ============ 待确认决策 ============ -->
+  <section class="block" id="decide" data-page-node-id="q0tUFVGlDamadALYxSmCgz">
+    <div class="sec-head" data-page-node-id="yZ9fHFyJIIG9rDUZTm1FOs">
+      <h2 data-page-node-id="b978oNH78PoAL4dLIE8er5"><span class="idx" data-page-node-id="uFhRMGXAqXvs7YqdfVjkrR">6</span>待确认决策</h2>
+      <p data-page-node-id="xnM3qV9wgeVtWnXoxmkWRu">以下 8 项需要你拍板；<b data-page-node-id="4iVuS1v8m4BXYOIFokBBRB">「建议」</b>列为本次设计稿已采用的做法。确认后即可进入编码。</p>
+    </div>
+
+    <table class="dec" data-page-node-id="KIMrT0mqtNZhsUmTDRO1eE">
+      <thead data-page-node-id="jZruHPehoXHnVRhQt2Um4Q">
+        <tr data-page-node-id="sXOgIPZt7EMTvMGUdwB3Ah"><th style="width:44px" data-page-node-id="2NE7uE45yNj1Z5RJ3yJ7JF">#</th><th style="width:200px" data-page-node-id="8cw8mMSq2QeD4oAsHh8PnP">决策点</th><th data-page-node-id="QRqwNRXnYk7ZxploIEH0rE">建议（本稿采用）</th></tr>
+      </thead>
+      <tbody data-page-node-id="G1HYP7o35vN0RuQURCcA3M">
+        <tr data-page-node-id="DY6fACQTAHtLLsxwTCDN8P"><td class="c-graphite" data-page-node-id="DKjExV0WyTuB34T6jcedrm">1</td><td data-page-node-id="0o54LFONAW3ekfFYLnd1Xl"><b data-page-node-id="tO59amqwRChG23SwRTDlLK">列表页 H1 字号</b></td><td data-page-node-id="02VsCvp9qcExmHacg1P58E">用 <b data-page-node-id="ElrSiYWmXkOXVCJcg8ESwF">Signifier 40px</b>（DESIGN.md 规定衬线 ≥40px），而非照搬 marketing 的 <code data-page-node-id="PFTMlCvdGM66hQayqloIj1">text-3xl</code>(30px)。若要与 marketing 严格一致，可退回 30px —— 但会低于规范下限。</td></tr>
+        <tr data-page-node-id="kg22mVkCHV7U19UTAxKwiq"><td class="c-graphite" data-page-node-id="gvl1b8O4YFRW1UG1NIt1uw">2</td><td data-page-node-id="LB8neDO1CogSnRgHJB1f25"><b data-page-node-id="ouOQoEz23UFbt5n8jxdVGC">页面宽度</b></td><td data-page-node-id="LAqp4hAa0ezcYCdcqR1dFN">统一 <b data-page-node-id="O36uexp17kGxs808xhF42P">1200px</b>（DESIGN.md / 统计页口径），而非 marketing 的 <code data-page-node-id="ito3MwY4NR2bjiAMSEGDY2">max-w-400</code>(1600px)。</td></tr>
+        <tr data-page-node-id="pb0fBizJBlhbzdfKKmMMNG"><td class="c-graphite" data-page-node-id="zHMGuCahTGaSrk6hVMaI2D">3</td><td data-page-node-id="DLGdO6WD25XW66rSaUEqAQ"><b data-page-node-id="m89zyHnnKK00ERSlGPCHC5">统计卡强调色</b></td><td data-page-node-id="XeknOfEK2HCHtX0hXHgRFF"><b data-page-node-id="2GBCdXixGCInzbm0eoEXHa">净现金流</b>作唯一 Apricot 暖卡（Rust 数值）；其余 4 张白卡 Ink 数值。表格内金额保留红/绿语义。</td></tr>
+        <tr data-page-node-id="DyWZmIoVEpyDbAqwNZcWa0"><td class="c-graphite" data-page-node-id="D7iTSBSSeaqFIrTcQ7vDBM">4</td><td data-page-node-id="GOGqeuBhvKrTxC4d5MTkku"><b data-page-node-id="iTyIEKDWEPRgz9aipDhTZi">状态徽章</b></td><td data-page-node-id="oar45hL7i3DwXbLSrWEVMs">改 Steep 单色：<b data-page-node-id="AHL4QZDkAsGSHwcuGaWpiC">在售 = Ink 填充</b>、<b data-page-node-id="dCPzPZ1tZfdZFNCchRJqjU">已售 = Dove</b>、<b data-page-node-id="Vt4iKQENOwaO8gShAcGyOj">已签约/装修中 = Fog</b>。放弃现有蓝/橙/绿/灰四色。</td></tr>
+        <tr data-page-node-id="E61GTaF0QfzKfK9H6zUTcQ"><td class="c-graphite" data-page-node-id="Hx2aL1ym19NS2Od9cuS0jl">5</td><td data-page-node-id="1jJAPftU9infCjuAVb9rXA"><b data-page-node-id="SbsxOZ3HkyKdzgeebLz8QO">科目层级 pill</b></td><td data-page-node-id="5POOEIp8dWycQ8KAAQSrH9"><b data-page-node-id="eqjq6hGbUKGFx7wjb0E17s">七色彩虹 → Apricot→Rust 暖色 7 级</b>。改动 <code data-page-node-id="yEVMlZILS7woFpBkctBt6J">LEVEL_PILL_CLASS</code>，会同时影响明细页科目列与字典表（预期内）。</td></tr>
+        <tr data-page-node-id="rKBVAvqZwaM7zDNZDg8fA0"><td class="c-graphite" data-page-node-id="gKd2yQ295ekVDsubDeAbx9">6</td><td data-page-node-id="FRniNzCYgWQdc5Gh3HuUqm"><b data-page-node-id="fhKhHXRj5srqkDAB8qLHHL">科目模式切换</b></td><td data-page-node-id="04QAnyv9sU6nNF8TsbpPOM">收购的<b data-page-node-id="GvG3o6L7oMZL4Xjk4kmQBI">紫色 → Sky Wash</b>；代理用 Apricot + Rust。</td></tr>
+        <tr data-page-node-id="GgCwxTiFHmDB33c2ce3VHG"><td class="c-graphite" data-page-node-id="EX0TJd8b9WDHk6eCog7IeX">7</td><td data-page-node-id="frGdfzSoGy59O98DBYRiV4"><b data-page-node-id="g5qMgYgS5rvgdBklmR390Z">明细页统计卡</b></td><td data-page-node-id="fstcDBcYFlCnd4poOI8Oed">确认一并重构 <code data-page-node-id="c2RNUdLXw0Dog8EoebNWBF">ledger-detail-stats.tsx</code>（4 张卡改单色 + 暖卡），否则明细页会留下唯一的彩色残留。</td></tr>
+        <tr data-page-node-id="79VyU7vXTnLDFfJSroap4r"><td class="c-graphite" data-page-node-id="IlgwSWUKX2m5OgWFIEHsNj">8</td><td data-page-node-id="jyJnqwtChRhUJU0EF6GDPk"><b data-page-node-id="HeiRYMSgqKp7Nhm2EJHMre">图标风格</b></td><td data-page-node-id="tqeafwuhJLELgecZVXtivy">去掉所有<b data-page-node-id="rydgGMAbg5cq52AnFJQ7ie">彩色实心图标圆</b>，统一 <b data-page-node-id="CNsvXOgoiVIEb3d9f4h0jo">16px 描边单色图标</b>（1.75px），颜色随语境 Graphite / Rust。</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note-band" style="margin-top:24px" data-page-node-id="1EEkbgPb9zKKHDvHXsQyJ6">
+      <b data-page-node-id="sZCRNLWqC2gMJHYe5yV7zz">下一步：</b>你确认以上 8 项后，我将按「实现落点」表逐文件重构，完成后在本地 <code data-page-node-id="9JJSvYXAPLOkUHSVDUK7DT">localhost:3000</code> 逐页核对，并保证 <code data-page-node-id="Ocg8i9TC8BAQN60BAooM6x">tsc --noEmit</code> 与 <code data-page-node-id="HLeN7k0IKE5MF6ZpyfMXSd">pnpm lint</code> 全绿。
+      若某项希望保留现状或另作选择，直接指出编号即可，我会同步调整设计稿。
+    </div>
+  </section>
+
+  <div style="text-align:center;padding:32px 0 0;border-top:1px solid var(--doc-line)" data-page-node-id="3r0F7B8BpjaPlUoBv2O1m9">
+    <p style="font-size:12.5px;color:var(--graphite);margin:0" data-page-node-id="yNOA27cLHQtQhEDh4Gced4">
+      资金账本 admin/ledger · 重构高保真设计稿　·　依据 DESIGN.md（Steep）·　参照 admin/marketing（bf1bbe00）
+    </p>
+  </div>
+
+</div>
+</main>
+
+</body>
+</html>

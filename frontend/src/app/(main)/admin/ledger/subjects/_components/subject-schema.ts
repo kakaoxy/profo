@@ -1,4 +1,13 @@
 import { z } from "zod";
+import {
+  Calendar,
+  CheckCircle,
+  Hammer,
+  Landmark,
+  PenLine,
+  Tag,
+  type LucideIcon,
+} from "lucide-react";
 import type { components } from "@/lib/api-types";
 
 /**
@@ -74,38 +83,49 @@ export const LEVEL_LABELS: Record<SubjectLevel, string> = {
   "7": "⑦配对项",
 };
 
-/** 层级 pill Tailwind 类（对齐设计文档 lp-1~lp-7 配色） */
+/**
+ * 层级 pill Tailwind 类（Steep：Apricot → Rust 暖色梯度）
+ *
+ * DESIGN.md 的彩色硬约束只留 Rust + Apricot/Sky 两个 wash，故弃用原
+ * 红/琥珀/蓝/橙/天蓝/绿/紫 七色彩虹。梯度按「①②③④ 成本层（浅底 + Rust 深字）
+ * → ⑤⑥⑦ 现金流/收入/配对项（深底 + 白字）」分两组展开，
+ * 每一色阶的正文对比度均 ≥ 4.5:1（层级数字 ①~⑦ 同时写在文案里，颜色仅作强化）。
+ *
+ * 该梯度已在 DESIGN.md「Warm Ladder」登记为调色板的受控扩展；改色请同步该表。
+ * text-rust 即 #5d2a1a、text-pure-white 即 #ffffff，故此处只写底色/描边的裸值。
+ */
 export const LEVEL_PILL_CLASS: Record<SubjectLevel, string> = {
-  "1": "bg-red-100 text-red-700 border-red-200",
-  "2": "bg-amber-100 text-amber-700 border-amber-200",
-  "3": "bg-blue-100 text-blue-700 border-blue-200",
-  "4": "bg-orange-100 text-orange-700 border-orange-200",
-  "5": "bg-sky-100 text-sky-700 border-sky-200",
-  "6": "bg-green-100 text-green-700 border-green-200",
-  "7": "bg-purple-100 text-purple-700 border-purple-200",
+  "1": "bg-[#fbe1d1] text-rust border-[#f2d0ba]",
+  "2": "bg-[#f7d0b4] text-rust border-[#eec3a3]",
+  "3": "bg-[#f0bd97] text-rust border-[#e6b088]",
+  "4": "bg-[#e6a877] text-rust border-[#dc9c6a]",
+  "5": "bg-[#a85028] text-pure-white border-[#9a4723]",
+  "6": "bg-[#83381b] text-pure-white border-[#763116]",
+  "7": "bg-[#5d2a1a] text-pure-white border-[#5d2a1a]",
 };
 
 /** 业务阶段元数据（按业务模式分组，对齐设计文档 STAGE_META） */
 export interface StageMeta {
   key: SubjectStage;
-  icon: string;
+  /** 阶段标记图标：单色描边（Steep 弃用 emoji） */
+  icon: LucideIcon;
   name: string;
   sub: string;
 }
 
 export const STAGE_META: Record<SubjectMode, StageMeta[]> = {
   agent: [
-    { key: "signing", icon: "✍️", name: "签约", sub: "阶段一 · 资金注入" },
-    { key: "renovation", icon: "🔨", name: "装修", sub: "阶段二 · 改造投入" },
-    { key: "listing", icon: "🏷️", name: "在售", sub: "阶段三 · 营销推广" },
-    { key: "sold", icon: "✅", name: "已售", sub: "阶段四 · 收入实现" },
+    { key: "signing", icon: PenLine, name: "签约", sub: "阶段一 · 资金注入" },
+    { key: "renovation", icon: Hammer, name: "装修", sub: "阶段二 · 改造投入" },
+    { key: "listing", icon: Tag, name: "在售", sub: "阶段三 · 营销推广" },
+    { key: "sold", icon: CheckCircle, name: "已售", sub: "阶段四 · 收入实现" },
   ],
   acquire: [
-    { key: "signing", icon: "🏦", name: "签约/买入", sub: "阶段一 · 产权登记" },
-    { key: "holding", icon: "📆", name: "持有期", sub: "阶段二 · 按揭持有" },
-    { key: "renovation", icon: "🔨", name: "装修", sub: "阶段三 · 改造投入" },
-    { key: "listing", icon: "🏷️", name: "在售", sub: "阶段四 · 营销推广" },
-    { key: "sold", icon: "✅", name: "已售", sub: "阶段五 · 差额回收" },
+    { key: "signing", icon: Landmark, name: "签约/买入", sub: "阶段一 · 产权登记" },
+    { key: "holding", icon: Calendar, name: "持有期", sub: "阶段二 · 按揭持有" },
+    { key: "renovation", icon: Hammer, name: "装修", sub: "阶段三 · 改造投入" },
+    { key: "listing", icon: Tag, name: "在售", sub: "阶段四 · 营销推广" },
+    { key: "sold", icon: CheckCircle, name: "已售", sub: "阶段五 · 差额回收" },
   ],
 };
 

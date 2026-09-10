@@ -32,11 +32,11 @@ interface SubjectFlowchartProps {
 }
 
 /**
- * 业务流阶段流程图
+ * 业务流阶段流程图（Steep）
  *
- * - 顶部代理/收购模式切换
- * - 按阶段分列展示科目卡片（层级 pill + 名称 + 进损益标签 + 编辑/删除）
- * - 参照设计文档 flowchart 布局：阶段标记圆圈 + 连接线 + 阶段卡片列
+ * - 白卡 + rounded-cards + shadow-steep，无边框
+ * - 顶部代理/收购模式切换：Apricot（代理）/ Sky Wash（收购），替换原紫色
+ * - 阶段标记为单色描边图标（弃用 emoji），连接线为 Apricot → Rust 渐变
  */
 export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlowchartProps) {
   const [modeView, setModeView] = useState<SubjectMode>("agent");
@@ -104,14 +104,14 @@ export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlow
   }
 
   return (
-    <section className="rounded-2xl bg-card p-5 shadow-sm">
-      <header className="mb-4 flex flex-wrap items-center gap-3">
-        <h2 className="text-base font-semibold text-foreground">业务流阶段流程图</h2>
-        <span className="rounded-md border border-rust/20 bg-apricot-wash/60 px-2 py-0.5 text-xs font-medium text-rust">
+    <section className="rounded-cards bg-white p-6 shadow-steep">
+      <header className="mb-5 flex flex-wrap items-center gap-3">
+        <h2 className="text-[15px] font-medium text-ink">业务流阶段流程图</h2>
+        <span className="rounded-full bg-apricot-wash px-2.5 py-0.5 text-xs font-medium text-rust">
           {counts.total} 个科目
         </span>
         {counts.custom > 0 && (
-          <span className="rounded-md bg-apricot-wash px-2 py-0.5 text-xs font-medium text-rust">
+          <span className="rounded-full bg-apricot-wash px-2.5 py-0.5 text-xs font-medium text-rust">
             自定义 {counts.custom}
           </span>
         )}
@@ -119,7 +119,7 @@ export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlow
         <div className="inline-flex rounded-full bg-fog p-1">
           <ModeButton
             active={modeView === "agent"}
-            activeClass="bg-apricot-wash/70 text-rust"
+            activeClass="bg-apricot-wash text-rust"
             dotClass="bg-rust"
             onClick={() => setModeView("agent")}
           >
@@ -127,8 +127,8 @@ export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlow
           </ModeButton>
           <ModeButton
             active={modeView === "acquire"}
-            activeClass="bg-purple-100 text-purple-700"
-            dotClass="bg-purple-600"
+            activeClass="bg-sky-wash text-ink"
+            dotClass="bg-ink"
             onClick={() => setModeView("acquire")}
           >
             收购业务
@@ -136,7 +136,7 @@ export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlow
         </div>
         <Button
           size="sm"
-          className="bg-rust text-pure-white hover:bg-rust/90"
+          className="h-9 rounded-full bg-rust px-4 text-pure-white hover:bg-rust/90"
           onClick={() => openCreate()}
         >
           <Plus className="mr-1 h-4 w-4" /> 新增科目
@@ -148,7 +148,7 @@ export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlow
           {/* 阶段连接线（置于阶段标记圆圈后） */}
           <div
             aria-hidden
-            className="absolute left-[10%] right-[10%] top-[26px] h-0.5 bg-gradient-to-r from-apricot-wash via-rust/50 to-rust"
+            className="absolute top-[26px] right-[10%] left-[10%] h-0.5 bg-gradient-to-r from-apricot-wash via-rust/50 to-rust"
           />
           <div
             className="relative z-10 grid gap-0"
@@ -157,19 +157,20 @@ export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlow
             }}
           >
             {stages.map((st) => {
+              const StageIcon = st.icon;
               const list = (stageSubjects[st.key] ?? [])
                 .slice()
                 .sort((a, b) => a.level.localeCompare(b.level));
               return (
                 <div key={st.key} className="px-2">
-                  <div className="mx-auto mb-3 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-card text-xl shadow-sm ring-4 ring-fog">
-                    <span>{st.icon}</span>
+                  <div className="mx-auto mb-3 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-white text-rust shadow-steep-sm ring-4 ring-fog">
+                    <StageIcon className="h-5 w-5" aria-hidden="true" />
                   </div>
-                  <p className="text-center text-sm font-semibold text-foreground">{st.name}</p>
-                  <p className="mb-3 text-center text-[11px] text-muted-foreground">{st.sub}</p>
-                  <div className="flex min-h-[140px] flex-col gap-1.5 rounded-xl border bg-card p-2">
+                  <p className="text-center text-sm font-medium text-ink">{st.name}</p>
+                  <p className="mb-3 text-center text-[11px] text-graphite">{st.sub}</p>
+                  <div className="flex min-h-[140px] flex-col gap-1.5 rounded-[14px] border border-dove/40 bg-white p-2">
                     {list.length === 0 && (
-                      <div className="py-5 text-center text-[11px] italic text-muted-foreground">
+                      <div className="py-5 text-center text-[11px] text-graphite italic">
                         无科目
                       </div>
                     )}
@@ -185,7 +186,7 @@ export function SubjectFlowchart({ agentSubjects, acquireSubjects }: SubjectFlow
                     <button
                       type="button"
                       onClick={() => openCreate(st.key)}
-                      className="mt-auto flex items-center justify-center gap-1 rounded-lg border border-dashed border-muted-foreground/40 py-1.5 text-[11px] text-muted-foreground transition-colors hover:border-rust hover:bg-apricot-wash/40 hover:text-rust"
+                      className="mt-auto flex items-center justify-center gap-1 rounded-[10px] border border-dashed border-dove py-1.5 text-[11px] text-graphite transition-colors hover:border-rust hover:bg-apricot-wash/50 hover:text-rust"
                     >
                       <Plus className="h-3 w-3" /> 新增到本阶段
                     </button>
@@ -254,18 +255,16 @@ function SubjectRow({
   onDelete: () => void;
 }) {
   return (
-    <div className="group flex items-center justify-between gap-1.5 rounded-lg border bg-card px-2 py-1.5 text-xs transition-all hover:-translate-y-px hover:border-rust hover:bg-apricot-wash/30">
+    <div className="group flex items-center justify-between gap-1.5 rounded-[10px] border border-dove/40 bg-white px-2 py-1.5 text-xs transition-all hover:-translate-y-px hover:border-rust hover:bg-apricot-wash/30">
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <LevelPill level={subject.level} />
-        <span className="flex items-center gap-1 font-medium text-graphite">
+        <span className="flex items-center gap-1 font-medium text-ash">
           <span className="truncate">{subject.name}</span>
           {subject.system && (
-            <span className="rounded bg-sky-wash/50 px-1 text-[9px] text-graphite">系统</span>
+            <span className="rounded bg-sky-wash/60 px-1 text-[9px] text-graphite">系统</span>
           )}
         </span>
-        <span className="text-[10px] text-muted-foreground">
-          {subject.pnl ? "进损益" : "不进损益"}
-        </span>
+        <span className="text-[10px] text-graphite">{subject.pnl ? "进损益" : "不进损益"}</span>
       </div>
       <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <button
@@ -275,7 +274,7 @@ function SubjectRow({
             onEdit();
           }}
           title="编辑"
-          className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-fog hover:text-rust"
+          className="flex h-5 w-5 items-center justify-center rounded text-graphite hover:bg-fog hover:text-rust"
         >
           <Pencil className="h-3 w-3" />
         </button>
@@ -288,7 +287,7 @@ function SubjectRow({
             }}
             title="删除"
             disabled={deleting}
-            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+            className="flex h-5 w-5 items-center justify-center rounded text-graphite hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
           >
             {deleting ? (
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -336,7 +335,7 @@ function ModeButton({
       onClick={onClick}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-        active ? activeClass : "text-muted-foreground hover:text-foreground",
+        active ? activeClass : "text-graphite hover:text-ink",
       )}
     >
       <span className={cn("h-2 w-2 rounded-full", dotClass)} />

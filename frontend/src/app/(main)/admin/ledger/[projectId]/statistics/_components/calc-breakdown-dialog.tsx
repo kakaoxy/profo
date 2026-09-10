@@ -66,12 +66,10 @@ export function CalcBreakdownDialog({ breakdown, children }: CalcBreakdownDialog
           {breakdown.sections.map((section, index) => (
             <section
               key={section.title}
-              className={index > 0 ? "mt-4 pt-4 border-t border-border" : undefined}
+              className={index > 0 ? "mt-4 pt-4 border-t border-dove" : undefined}
             >
               <h3 className="font-medium text-sm">{section.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                {section.formula}
-              </p>
+              <p className="text-xs text-graphite leading-relaxed mt-1">{section.formula}</p>
               <ul className="mt-2 space-y-1">
                 {section.items.map((item) => {
                   const value = formatItemValue(item);
@@ -90,7 +88,7 @@ export function CalcBreakdownDialog({ breakdown, children }: CalcBreakdownDialog
                   );
                 })}
               </ul>
-              <div className="flex items-baseline justify-between gap-3 mt-2 pt-2 border-t border-border/60">
+              <div className="flex items-baseline justify-between gap-3 mt-2 pt-2 border-t border-dove/60">
                 <span className="text-sm font-medium">结果</span>
                 <span className="tabular-nums text-sm font-medium text-ink">
                   {formatSectionResult(section)}

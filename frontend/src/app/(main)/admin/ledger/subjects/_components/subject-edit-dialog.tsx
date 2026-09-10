@@ -37,6 +37,7 @@ import {
   createSubjectSchema,
   LEVEL_LABELS,
   STAGE_META,
+  type StageMeta,
   type Subject,
   type SubjectFormValues,
   type SubjectLevel,
@@ -102,7 +103,7 @@ export function SubjectEditDialog({
   // 可选阶段 = 已选模式的阶段并集（保持顺序）
   const availableStages = useMemo(() => {
     const seen = new Set<SubjectStage>();
-    const result: { key: SubjectStage; name: string; sub: string; icon: string }[] = [];
+    const result: StageMeta[] = [];
     watchedModes.forEach((m) => {
       STAGE_META[m].forEach((s) => {
         if (!seen.has(s.key)) {
@@ -271,7 +272,7 @@ export function SubjectEditDialog({
                       <SelectContent>
                         {availableStages.map((s) => (
                           <SelectItem key={s.key} value={s.key}>
-                            {s.icon} {s.name} · {s.sub}
+                            {s.name} · {s.sub}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -321,7 +322,7 @@ export function SubjectEditDialog({
               />
             </div>
 
-            <DialogFooter className="shrink-0 gap-2 border-t bg-card px-6 py-3">
+            <DialogFooter className="shrink-0 gap-2 border-t bg-white px-6 py-3">
               <Button
                 type="button"
                 variant="outline"
@@ -363,7 +364,7 @@ function ModeChip({
         "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
         active
           ? "border-rust bg-apricot-wash/60 text-rust"
-          : "border-border bg-card text-muted-foreground hover:text-foreground",
+          : "border-dove bg-white text-graphite hover:text-foreground",
       )}
     >
       {children}

@@ -1,3 +1,4 @@
+import { Receipt } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -80,8 +81,8 @@ export function LogsCard({ logs }: LogsCardProps) {
     <Card className="rounded-cards border-0 shadow-steep-sm">
       <CardContent className="space-y-5 p-6">
         <div>
-          <h2 className="text-base font-semibold text-ink flex items-center gap-2">
-            <span aria-hidden="true">📝</span>
+          <h2 className="text-[15px] font-medium text-ink flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-graphite" aria-hidden="true" />
             操作日志
           </h2>
         </div>

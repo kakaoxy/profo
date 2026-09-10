@@ -175,7 +175,7 @@ export function SettlementDialog({ open, onOpenChange, projectId, mode }: Settle
           )}
         </div>
 
-        <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
+        <DialogFooter className="gap-2 border-t border-dove bg-white px-6 py-3">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>

@@ -15,7 +15,7 @@ export function StageCashflowTimeline({ stageFlows }: StageCashflowTimelineProps
 
   return (
     <section className="bg-fog py-12">
-      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <p className="text-xs tracking-[0.2em] text-graphite mb-2">PROJECT LIFECYCLE CASHFLOW</p>
           <h2 className="text-2xl font-display text-ink flex items-center gap-3">
@@ -41,7 +41,7 @@ export function StageCashflowTimeline({ stageFlows }: StageCashflowTimelineProps
               <div key={s.stage} className="relative px-3 z-10">
                 {/* 阶段 marker */}
                 <div className="mb-3 flex flex-col items-center">
-                  <div className="w-7 h-7 rounded-full bg-white border-2 border-apricot-wash flex items-center justify-center text-xs text-rust font-semibold shadow-sm">
+                  <div className="w-7 h-7 rounded-full bg-white border-2 border-apricot-wash flex items-center justify-center text-xs text-rust font-medium shadow-sm">
                     {i + 1}
                   </div>
                   <p className="mt-2 text-sm text-ink font-medium">{s.stage_label}</p>
@@ -65,7 +65,7 @@ export function StageCashflowTimeline({ stageFlows }: StageCashflowTimelineProps
                           −{formatCurrency(s.outflow)}
                         </span>
                       </div>
-                      <div className="border-t border-border/60 pt-2 mt-2 flex items-baseline justify-between gap-2">
+                      <div className="border-t border-dove/60 pt-2 mt-2 flex items-baseline justify-between gap-2">
                         <span className="text-graphite">阶段净额</span>
                         <span
                           className={cn(

@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { formatCNY } from "@/lib/formatters";
+import { formatYuanToWanSigned } from "@/lib/format-amount";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -307,22 +307,22 @@ export function LedgerDetailTable({
 
       {/* 筛选汇总条 */}
       <div
-        className="bg-muted/30 rounded-lg px-3 py-2 text-xs text-muted-foreground tabular-nums"
+        className="rounded-inputs bg-fog px-3.5 py-2 text-xs text-graphite tabular-nums"
         aria-live="polite"
       >
-        共 {summary.count} 笔 · 净现金流 {formatCNY(summary.net)}
+        共 {summary.count} 笔 · 净现金流 {formatYuanToWanSigned(summary.net)}
       </div>
 
       {/* 已结算编辑锁警示条 */}
       {isSettled && (
-        <div className="flex items-center gap-2 rounded-lg bg-apricot-wash border border-rust/30 px-4 py-2.5 text-sm text-rust">
+        <div className="flex items-center gap-2 rounded-inputs bg-apricot-wash px-4 py-2.5 text-sm text-rust">
           <Lock className="h-4 w-4 shrink-0" />
           <span>该资金账本已结算，不可编辑。如需修改请先反结算。</span>
         </div>
       )}
 
       {/* 表格 */}
-      <div className="rounded-3xl border border-border bg-card overflow-x-auto shadow-sm">
+      <div className="overflow-x-auto rounded-cards bg-white shadow-steep">
         <Table className="table-fixed w-full">
           <colgroup>
             <col className="w-[10%]" />
@@ -339,7 +339,7 @@ export function LedgerDetailTable({
           <TableBody>
             {filteredData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-xs text-muted-foreground">
+                <TableCell colSpan={9} className="h-24 text-center text-xs text-graphite">
                   暂无记录
                 </TableCell>
               </TableRow>
@@ -426,7 +426,7 @@ export function LedgerDetailTable({
           </DialogHeader>
           <div className="grid gap-3 py-2 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
             {supplementTarget && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-graphite">
                 记录：{supplementTarget.description || supplementTarget.remark || "-"} ·{" "}
                 {(Number(supplementTarget.outflow) || 0) > 0
                   ? `−¥${Number(supplementTarget.outflow).toLocaleString("en-US", {

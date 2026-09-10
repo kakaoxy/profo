@@ -184,7 +184,12 @@ function ControlledPagination({
               <Button
                 key={item}
                 variant={currentPage === item ? "default" : "outline"}
-                className="h-8 w-8 p-0 text-sm"
+                className={cn(
+                  "h-8 w-8 rounded-[10px] p-0 text-xs",
+                  currentPage === item
+                    ? "bg-ink text-white hover:bg-ink/90"
+                    : "border-dove bg-white text-ink shadow-none hover:bg-fog hover:text-ink",
+                )}
                 onClick={() => onPageChange(item as number)}
               >
                 {item}
@@ -334,7 +339,12 @@ function UrlPagination({
               <Button
                 key={item}
                 variant={page === item ? "default" : "outline"}
-                className="h-8 w-8 p-0 text-sm"
+                className={cn(
+                  "h-8 w-8 rounded-[10px] p-0 text-xs",
+                  page === item
+                    ? "bg-ink text-white hover:bg-ink/90"
+                    : "border-dove bg-white text-ink shadow-none hover:bg-fog hover:text-ink",
+                )}
                 onClick={() => handlePageChange(item as number)}
               >
                 {item}

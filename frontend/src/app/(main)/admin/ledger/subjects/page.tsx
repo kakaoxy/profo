@@ -33,17 +33,17 @@ export default async function SubjectManagePage() {
       : null;
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="mx-auto flex w-full max-w-400 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog">
+      <div className="mx-auto flex w-full max-w-300 flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">科目管理</h1>
-          <p className="text-sm text-muted-foreground">
-            按业务流阶段呈现科目 · 支持增删改查 · 代理/收购双模式切换
+          <h1 className="font-display text-[40px] text-ink">科目管理</h1>
+          <p className="text-[17px] leading-[1.35] text-ash">
+            按业务流阶段呈现科目 · 支持增删改查 · 代理 / 收购双模式切换。
           </p>
         </div>
 
-        <div className="flex items-start gap-2 rounded-lg border border-rust/20 bg-apricot-wash/30 px-4 py-3 text-sm text-rust">
-          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-rust text-[10px] font-bold text-pure-white">
+        <div className="flex items-start gap-2.5 rounded-inputs bg-apricot-wash/50 px-4 py-3 text-sm text-rust">
+          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-rust text-[10px] font-medium text-pure-white">
             i
           </span>
           <span>
@@ -52,7 +52,7 @@ export default async function SubjectManagePage() {
         </div>
 
         {errorMsg && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <div className="rounded-inputs border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {errorMsg}
           </div>
         )}

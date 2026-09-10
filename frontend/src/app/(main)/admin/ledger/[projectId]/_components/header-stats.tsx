@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CashFlowStats } from "./types";
+import { formatYuanToWan, formatYuanToWanSigned } from "@/lib/format-amount";
 
 export interface ProjectInfo {
   contract_no: string | null;
@@ -76,11 +77,11 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
               <div className="text-sm text-graphite font-medium mb-1">净现金流 (Net Cash Flow)</div>
               <div
                 className={cn(
-                  "text-4xl font-bold font-mono tracking-tight",
+                  "text-4xl font-medium font-mono tracking-tight",
                   stats.net_cash_flow >= 0 ? "text-rust" : "text-ink",
                 )}
               >
-                {stats.net_cash_flow >= 0 ? "+" : ""}¥{(stats.net_cash_flow / 10000).toFixed(2)} 万
+                {formatYuanToWanSigned(stats.net_cash_flow)}
               </div>
             </div>
 
@@ -92,7 +93,7 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="text-xs text-graphite">总收入</span>
-                  <span className="text-sm font-bold text-rust font-mono">
+                  <span className="text-sm font-medium text-rust font-mono">
                     ¥{(stats.total_income / 10000).toFixed(2)}万
                   </span>
                 </div>
@@ -104,8 +105,8 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="text-xs text-graphite">总支出</span>
-                  <span className="text-sm font-bold text-ink font-mono">
-                    ¥{(stats.total_expense / 10000).toFixed(2)}万
+                  <span className="text-sm font-medium text-ink font-mono">
+                    {formatYuanToWan(stats.total_expense)}
                   </span>
                 </div>
               </div>
@@ -116,7 +117,9 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
           <div className={cn("p-6 bg-fog flex flex-col justify-center space-y-4", roiColClass)}>
             <div className="flex justify-between items-center">
               <span className="text-sm text-graphite">ROI (投资回报率)</span>
-              <span className={cn("text-xl font-bold", stats.roi >= 0 ? "text-rust" : "text-ink")}>
+              <span
+                className={cn("text-xl font-medium", stats.roi >= 0 ? "text-rust" : "text-ink")}
+              >
                 {stats.roi.toFixed(2)}%
               </span>
             </div>
@@ -135,7 +138,7 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
                   </Tooltip>
                 </TooltipProvider>
               </span>
-              <span className="text-lg font-mono font-semibold text-ink">
+              <span className="text-lg font-mono font-medium text-ink">
                 {stats.annualized_return}%
               </span>
             </div>

@@ -64,7 +64,7 @@ export function TrendChart({ data }: TrendChartProps) {
   return (
     <Card className="shadow-none border-0 bg-transparent">
       <CardHeader className="px-0 pt-0 pb-4">
-        <CardTitle className="text-sm font-medium text-muted-foreground">资金流向趋势</CardTitle>
+        <CardTitle className="text-sm font-medium text-graphite">资金流向趋势</CardTitle>
       </CardHeader>
       <CardContent className="px-0 pl-0 h-[250px]">
         <ChartRenderer

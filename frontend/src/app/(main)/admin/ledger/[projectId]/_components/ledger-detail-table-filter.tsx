@@ -76,19 +76,22 @@ export function LedgerDetailTableFilter({
         onValueChange={(v) => onFilterChange(v as FilterTab)}
         className="w-full sm:w-auto"
       >
-        <TabsList className="bg-muted p-1 h-9">
-          <TabsTrigger value="all" className="text-xs h-7">
+        <TabsList className="h-10 rounded-cards bg-fog p-1">
+          <TabsTrigger
+            value="all"
+            className="text-xs data-[state=active]:bg-ink data-[state=active]:text-white"
+          >
             全部
           </TabsTrigger>
           <TabsTrigger
             value="in"
-            className="text-xs h-7 text-money-positive data-[state=active]:text-money-positive"
+            className="text-xs data-[state=active]:bg-ink data-[state=active]:text-white"
           >
             仅流入
           </TabsTrigger>
           <TabsTrigger
             value="out"
-            className="text-xs h-7 text-money-negative data-[state=active]:text-money-negative"
+            className="text-xs data-[state=active]:bg-ink data-[state=active]:text-white"
           >
             仅流出
           </TabsTrigger>
@@ -99,13 +102,16 @@ export function LedgerDetailTableFilter({
           placeholder="搜索摘要/付款方/收款方…"
           value={searchInput}
           onChange={(e) => onSearchInputChange(e.target.value)}
-          className="h-9 w-full sm:w-56 bg-card border-border"
+          className="h-10 w-full rounded-inputs border-dove bg-white shadow-none focus-visible:border-rust focus-visible:ring-rust/25 sm:w-56"
           aria-label="搜索流水"
           name="ledger-search"
           autoComplete="off"
         />
         <Select value={subjectFilter} onValueChange={onSubjectFilterChange}>
-          <SelectTrigger className="h-9 w-40 bg-card border-border" aria-label="筛选科目分类">
+          <SelectTrigger
+            className="h-10 w-40 rounded-inputs border-dove bg-white shadow-none"
+            aria-label="筛选科目分类"
+          >
             <SelectValue placeholder="全部科目" />
           </SelectTrigger>
           <SelectContent>
@@ -118,7 +124,10 @@ export function LedgerDetailTableFilter({
           </SelectContent>
         </Select>
         <Select value={voucherFilter} onValueChange={onVoucherFilterChange}>
-          <SelectTrigger className="h-9 w-30 bg-card border-border" aria-label="筛选凭证状态">
+          <SelectTrigger
+            className="h-10 w-30 rounded-inputs border-dove bg-white shadow-none"
+            aria-label="筛选凭证状态"
+          >
             <SelectValue placeholder="凭证状态" />
           </SelectTrigger>
           <SelectContent>
@@ -130,7 +139,7 @@ export function LedgerDetailTableFilter({
         <Button
           variant="ghost"
           size="sm"
-          className="h-9 gap-1.5 rounded-full text-ink hover:text-rust hover:bg-transparent"
+          className="h-10 gap-1.5 rounded-full px-3 text-ink hover:bg-transparent hover:text-rust"
           onClick={onExport}
           disabled={isExporting}
         >
@@ -143,7 +152,7 @@ export function LedgerDetailTableFilter({
         </Button>
         <Button
           size="sm"
-          className="h-9 gap-1.5 rounded-full bg-ink text-pure-white hover:bg-ink/90"
+          className="h-10 gap-1.5 rounded-full bg-ink px-4 text-pure-white hover:bg-ink/90"
           onClick={onAddRecord}
           disabled={isSettled}
           title={isSettled ? "已结算，不可记账" : undefined}
@@ -169,13 +178,13 @@ export function LedgerDetailTableFilter({
           </Badge>
         )}
         <Button
-          variant="ghost"
+          variant={isSettled ? "ghost" : "outline"}
           size="sm"
           className={cn(
-            "h-9 gap-1.5 rounded-full",
+            "h-10 gap-1.5 rounded-full px-4",
             isSettled
-              ? "text-rust hover:text-rust hover:bg-apricot-wash/50"
-              : "bg-ink text-pure-white hover:bg-ink/90",
+              ? "text-rust hover:bg-apricot-wash/50 hover:text-rust"
+              : "border-dove bg-white text-ink shadow-none hover:bg-fog hover:text-ink",
           )}
           onClick={onSettlement}
         >

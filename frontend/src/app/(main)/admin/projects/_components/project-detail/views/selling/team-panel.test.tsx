@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import type { UsePermissionReturn } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { SalesTeamPanel } from "./team-panel";
 
 // ─── Per-test configurable mocks (hoisted so vi.mock factories can read them) ─
 const { mockUsePermission, mockGetSalesUsersSimpleAction, mockUpdateSalesRolesAction } = vi.hoisted(
@@ -136,8 +137,6 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
   it("user 角色访问（无 project:sales:manage_team 权限）：Select 只读，渲染 ReadOnlyMember", async () => {
     mockUsePermission.mockReturnValue(mockPermissions(USER_PERMISSIONS));
 
-    const { SalesTeamPanel } = await import("./team-panel");
-
     render(
       <SalesTeamPanel
         project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]}
@@ -159,8 +158,6 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
   // ─── admin 角色：持有 manage_team 权限 → Select 可编辑 ─────────────────────
   it("admin 角色访问（持有 project:sales:manage_team 权限）：Select 可编辑", async () => {
     mockUsePermission.mockReturnValue(mockPermissions(ADMIN_PERMISSIONS));
-
-    const { SalesTeamPanel } = await import("./team-panel");
 
     render(
       <SalesTeamPanel
@@ -185,8 +182,6 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
   it("operator 角色访问（持有 project:sales:manage_team 权限）：Select 可编辑", async () => {
     mockUsePermission.mockReturnValue(mockPermissions(OPERATOR_PERMISSIONS));
 
-    const { SalesTeamPanel } = await import("./team-panel");
-
     render(
       <SalesTeamPanel
         project={makeProject() as React.ComponentProps<typeof SalesTeamPanel>["project"]}
@@ -207,8 +202,6 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
       success: true,
       data: [makeUser("u1", "张三"), makeUser("u2", "李四"), makeUser("u3", "王五")],
     });
-
-    const { SalesTeamPanel } = await import("./team-panel");
 
     render(
       <SalesTeamPanel
@@ -240,8 +233,6 @@ describe("SalesTeamPanel - 销售团队 Select 控件权限", () => {
     mockUsePermission.mockReturnValue(mockPermissions(USER_PERMISSIONS));
     // 不让 promise resolve，保持 isLoading=true
     mockGetSalesUsersSimpleAction.mockReturnValue(new Promise(() => {}));
-
-    const { SalesTeamPanel } = await import("./team-panel");
 
     render(
       <SalesTeamPanel

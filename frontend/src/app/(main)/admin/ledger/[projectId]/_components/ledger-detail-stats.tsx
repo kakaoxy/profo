@@ -1,8 +1,7 @@
 import { TrendingUp, TrendingDown, Wallet, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
-import { formatCNY } from "@/lib/formatters";
 import { toNumber } from "@/lib/number-utils";
+import { formatYuanToWan, formatYuanToWanSigned } from "@/lib/format-amount";
 import type { components } from "@/lib/api-types";
 
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
@@ -12,8 +11,12 @@ interface LedgerDetailStatsProps {
 }
 
 /**
- * 顶部统计卡：流入合计 / 流出合计 / 净现金流 / 进损益流出。
- * 进损益流出 = subject.pnl=true 的记录 outflow 合计。
+ * 顶部统计卡（Steep）：流入合计 / 流出合计 / 净现金流 / 进损益流出。
+ *
+ * - 净现金流为唯一 Apricot 暖卡（与列表页统计卡同构，且与上方 HeaderStats 的
+ *   「净现金流用 Rust」口径一致）
+ * - 图标改为单色描边，替代原 emerald / amber / blue / red 彩色图标圆
+ * - 金额统一按「万」缩写（对齐 DESIGN.md 与 HeaderStats）
  */
 export function LedgerDetailStats({ data }: LedgerDetailStatsProps) {
   let inflow = 0;
@@ -28,62 +31,65 @@ export function LedgerDetailStats({ data }: LedgerDetailStatsProps) {
   }
   const net = inflow - outflow;
 
-  // 颜色规则（中国习惯）：流入红、流出绿；净现金流净额为流入口径 → 正数红、负数绿
+  // 颜色规则（中国习惯）：流入红、流出绿；净现金流用暖卡 Rust 承载
   const cards = [
     {
       label: "流入合计",
-      value: `+${formatCNY(inflow)}`,
+      value: `+${formatYuanToWan(inflow)}`,
       icon: TrendingUp,
-      iconBg: "bg-emerald-500",
       valueClass: "text-money-positive",
+      warm: false,
     },
     {
       label: "流出合计",
-      value: `−${formatCNY(outflow)}`,
+      value: `−${formatYuanToWan(outflow)}`,
       icon: TrendingDown,
-      iconBg: "bg-amber-500",
       valueClass: "text-money-negative",
+      warm: false,
     },
     {
       label: "净现金流",
-      value: `${net >= 0 ? "+" : "−"}${formatCNY(Math.abs(net))}`,
+      value: formatYuanToWanSigned(net),
       icon: Wallet,
-      iconBg: "bg-blue-500",
-      valueClass: net >= 0 ? "text-money-positive" : "text-money-negative",
+      // 与 HeaderStats 口径一致：非负用 Rust 强调，为负回落到 Ink
+      valueClass: net >= 0 ? "text-rust" : "text-ink",
+      warm: true,
     },
     {
       label: "进损益流出",
-      value: formatCNY(pnlOut),
+      value: formatYuanToWan(pnlOut),
       icon: Receipt,
-      iconBg: "bg-red-500",
       valueClass: "text-money-negative",
+      warm: false,
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {cards.map((c) => {
         const Icon = c.icon;
+        const tone = c.warm ? "text-rust" : "text-graphite";
         return (
-          <Card key={c.label} className="p-4 bg-card border-border shadow-sm">
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-[11px] font-medium text-muted-foreground truncate">{c.label}</p>
-                <p className={cn("text-xl font-bold tabular-nums truncate", c.valueClass)}>
-                  {c.value}
-                </p>
-              </div>
-              <div
-                className={cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-white",
-                  c.iconBg,
-                )}
-                aria-hidden="true"
-              >
-                <Icon className="w-4 h-4" strokeWidth={1.75} />
-              </div>
+          <div
+            key={c.label}
+            className={cn(
+              "rounded-cards p-5 shadow-steep-sm",
+              c.warm ? "bg-apricot-wash" : "bg-white",
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className={cn("text-[12.5px]", tone)}>{c.label}</span>
+              <Icon className={cn("h-4 w-4", tone)} aria-hidden="true" />
             </div>
-          </Card>
+            <div
+              className={cn(
+                "mt-2.5 truncate font-mono text-[30px] leading-[1.1] font-[450] tabular-nums",
+                c.valueClass,
+              )}
+            >
+              {c.value}
+            </div>
+          </div>
         );
       })}
     </div>

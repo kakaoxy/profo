@@ -3,17 +3,10 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQueryStates, parseAsString, parseAsInteger } from "nuqs";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
 import { LedgerTable } from "./ledger-table";
 import { exportLedger } from "../export-actions";
@@ -25,13 +18,14 @@ interface LedgerViewProps {
   total: number;
 }
 
+// 项目状态筛选项：value 直接对应后端 project_status 参数值
 const PROJECT_STATUS_OPTIONS = [
-  { value: "all", label: "全部项目状态" },
-  { value: "signing", label: "签约" },
-  { value: "renovating", label: "改造" },
+  { value: "all", label: "全部" },
+  { value: "signing", label: "已签约" },
+  { value: "renovating", label: "装修中" },
   { value: "selling", label: "在售" },
   { value: "sold", label: "已售" },
-];
+] as const;
 
 export function LedgerView({ data, total }: LedgerViewProps) {
   const router = useRouter();
@@ -117,42 +111,66 @@ export function LedgerView({ data, total }: LedgerViewProps) {
   return (
     <div className="space-y-4">
       {/* 工具栏 */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
-        <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-center">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+        <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:w-auto">
           {/* 搜索框 */}
           <div className="relative w-full sm:w-72">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-graphite"
+              aria-hidden="true"
+            />
             <Input
-              placeholder="搜索项目编号/小区/地址..."
+              placeholder="搜索项目编号 / 小区 / 地址"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="bg-card border-border focus-visible:ring-primary"
+              className="h-11 rounded-inputs border-dove bg-white pr-10 pl-10 text-sm shadow-none placeholder:text-dove focus-visible:border-rust focus-visible:ring-rust/25"
             />
+            {searchInput ? (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                aria-label="清除搜索"
+                className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-graphite transition-colors hover:text-ink"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
           </div>
 
-          {/* 项目状态筛选 */}
-          <Select
-            value={query.project_status}
-            onValueChange={(val) => setQuery({ project_status: val, page: 1 })}
+          {/*
+            项目状态筛选：胶囊分段控件（对齐 Steep，替代原下拉 Select）。
+            语义用 aria-pressed 而非 role="tab"：这里没有 tabpanel、也不做方向键漫游焦点，
+            套用 tab 角色会向读屏软件承诺并不存在的交互模型。
+          */}
+          <div
+            className="flex w-fit rounded-cards bg-fog p-1"
+            role="group"
+            aria-label="项目状态筛选"
           >
-            <SelectTrigger className="h-10 w-[140px] bg-card border-border rounded-lg">
-              <SelectValue placeholder="项目状态" />
-            </SelectTrigger>
-            <SelectContent>
-              {PROJECT_STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
+            {PROJECT_STATUS_OPTIONS.map((opt) => {
+              const active = query.project_status === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setQuery({ project_status: opt.value, page: 1 })}
+                  className={`rounded-[10px] px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
+                    active ? "bg-ink text-white" : "text-graphite hover:text-ink"
+                  }`}
+                >
                   {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex w-full lg:w-auto gap-3">
+        <div className="flex w-full gap-3 lg:w-auto">
           <Button
-            variant="outline"
-            className="flex-1 lg:flex-none bg-card border-border text-foreground hover:bg-muted"
             onClick={handleExport}
             disabled={exporting}
+            className="h-11 flex-1 rounded-full bg-ink px-5 text-white hover:bg-ink/90 lg:flex-none"
           >
             {exporting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -168,7 +186,7 @@ export function LedgerView({ data, total }: LedgerViewProps) {
       <LedgerTable data={data} onRowClick={handleRowClick} />
 
       {/* 底部计数 */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+      <div className="flex items-center justify-between px-1 text-xs text-graphite">
         <span>
           显示 {data.length} 条记录 (共 {total} 条)
         </span>

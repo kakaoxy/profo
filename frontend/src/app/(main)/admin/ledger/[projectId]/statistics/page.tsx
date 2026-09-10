@@ -33,8 +33,8 @@ export default async function LedgerStatisticsPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f7f8]">
-      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+    <div className="min-h-screen bg-fog">
+      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <Link
           href={`/admin/ledger/${projectId}`}
           className="text-sm font-medium text-graphite hover:text-ink transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rust focus-visible:ring-offset-2 rounded-sm"
@@ -46,7 +46,7 @@ export default async function LedgerStatisticsPage({ params }: PageProps) {
 
       {/* Hero + 8 KPI */}
       <section className="py-12">
-        <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8">
           <StatisticsHero kpi={stats.kpi} />
         </div>
       </section>

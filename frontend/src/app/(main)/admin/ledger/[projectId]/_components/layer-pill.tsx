@@ -22,8 +22,7 @@ export interface LayerPillProps {
 export function LayerPill({ level, className }: LayerPillProps) {
   const key = level == null ? "" : String(level);
   const cls =
-    (LEVEL_PILL_CLASS as Record<string, string>)[key] ??
-    "bg-muted text-muted-foreground border-border";
+    (LEVEL_PILL_CLASS as Record<string, string>)[key] ?? "bg-fog text-graphite border-dove";
   const label = (LEVEL_LABELS as Record<string, string>)[key] ?? `L${key}`;
   return (
     <span

@@ -3,7 +3,7 @@ import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 export function LedgerDetailTableHeader() {
   return (
     <TableHeader>
-      <TableRow className="bg-muted/50 hover:bg-muted/50">
+      <TableRow className="bg-fog hover:bg-fog [&_th]:font-medium [&_th]:text-graphite">
         <TableHead className="px-4 py-3 text-xs w-[10%]">日期</TableHead>
         <TableHead className="px-4 py-3 text-xs w-[16%]">科目分类</TableHead>
         <TableHead className="px-4 py-3 text-xs w-[9%]">付款方</TableHead>

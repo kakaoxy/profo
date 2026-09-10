@@ -59,12 +59,12 @@ export default async function LedgerPage({ searchParams }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog">
+      <div className="w-full max-w-300 mx-auto flex flex-col gap-8 py-10 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">资金账本</h1>
-          <p className="text-sm text-muted-foreground">
-            管理和追踪所有项目的资金流水，按项目聚合查看收支与 ROI
+          <h1 className="font-display text-[40px] text-ink">资金账本</h1>
+          <p className="text-[17px] leading-[1.35] text-ash">
+            管理和追踪所有项目的资金流水，按项目聚合查看收支与 ROI。
           </p>
         </div>
 
@@ -72,7 +72,7 @@ export default async function LedgerPage({ searchParams }: PageProps) {
 
         <LedgerView data={items} total={total} />
 
-        <div className="relative z-50 bg-card">
+        <div className="relative z-50">
           <LedgerPagination total={total} />
         </div>
       </div>

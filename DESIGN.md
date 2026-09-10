@@ -21,7 +21,24 @@ Steep is a daylight analytics workspace: an almost achromatic canvas of white an
 | Apricot Wash | `#fbe1d1` | `--color-apricot-wash` | Soft warm card background for warm-toned data widgets, hero glow tint |
 | Sky Wash | `#d3e3fc` | `--color-sky-wash` | Soft cool card background for cool-toned data widgets and chat surfaces |
 
-## Tokens — Typography
+### Warm Ladder — 科目层级 ①~⑦ 的暖色梯度（受控扩展）
+
+七级科目层级需要可区分的色阶，但不得引入彩虹色。梯度全部取自 Rust/Apricot 同色系，
+浅底配深字、深底配白字，**每一级的正文对比度均 ≥ 4.5:1**（层级序号 ①~⑦ 同时写在文案里，颜色只作强化）。
+定义位置：`frontend/src/app/(main)/admin/ledger/subjects/_components/subject-schema.ts` 的 `LEVEL_PILL_CLASS`。
+
+| 层级 | 底色 | 描边（同色系加深） | 文字 | 用途 |
+|------|------|------|------|------|
+| ① 取得成本 | `#fbe1d1`（= Apricot Wash） | `#f2d0ba` | Rust | 浅底深字组 |
+| ② 直接改造成本 | `#f7d0b4` | `#eec3a3` | Rust | 浅底深字组 |
+| ③ 交易费用 | `#f0bd97` | `#e6b088` | Rust | 浅底深字组 |
+| ④ 资金成本 | `#e6a877` | `#dc9c6a` | Rust | 浅底深字组 |
+| ⑤ 现金流专属 | `#a85028` | `#9a4723` | Pure White | 深底白字组 |
+| ⑥ 收入项 | `#83381b` | `#763116` | Pure White | 深底白字组 |
+| ⑦ 配对项 | `#5d2a1a`（= Rust） | `#5d2a1a` | Pure White | 深底白字组 |
+
+> **此梯度是调色板唯一的「受控扩展」：不要在其它模块复制这些值来做装饰性底色；
+> 新增层级时请沿用同色系并校验对比度。**
 
 ### Signifier — Display serif used exclusively for hero and section headlines — the only place the brand 'raises its voice'. Its editorial weight against Sohne's utility is the system's most distinctive typographic move · `--font-signifier`
 - **Substitute:** GT Sectra, Tiempos Headline, Source Serif Pro

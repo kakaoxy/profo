@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import type { UsePermissionReturn } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { MobileRenovationView } from "./mobile-renovation-view";
 
 // ─── Per-test configurable mocks (hoisted so vi.mock factories can read them) ─
 const {
@@ -185,8 +186,6 @@ describe("MobileRenovationView - 业务身份按钮显隐", () => {
       data: [makePhoto("ph1")],
     });
 
-    const { MobileRenovationView } = await import("./mobile-renovation-view");
-
     render(<MobileRenovationView projectId="p1" project={makeProject()} />);
 
     // 等待照片加载完成
@@ -210,8 +209,6 @@ describe("MobileRenovationView - 业务身份按钮显隐", () => {
       data: [makePhoto("ph1")],
     });
 
-    const { MobileRenovationView } = await import("./mobile-renovation-view");
-
     render(<MobileRenovationView projectId="p1" project={makeProject()} />);
 
     await waitFor(() => {
@@ -230,8 +227,6 @@ describe("MobileRenovationView - 业务身份按钮显隐", () => {
       success: true,
       data: [makePhoto("ph1")],
     });
-
-    const { MobileRenovationView } = await import("./mobile-renovation-view");
 
     render(
       <MobileRenovationView
@@ -259,8 +254,6 @@ describe("MobileRenovationView - 业务身份按钮显隐", () => {
       success: true,
       data: [makePhoto("ph1")],
     });
-
-    const { MobileRenovationView } = await import("./mobile-renovation-view");
 
     render(
       <MobileRenovationView
@@ -296,8 +289,6 @@ describe("MobileRenovationView - 业务身份按钮显隐", () => {
       success: true,
       data: [makePhoto("ph1")],
     });
-
-    const { MobileRenovationView } = await import("./mobile-renovation-view");
 
     render(
       <MobileRenovationView

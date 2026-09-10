@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import CLoginPage from "./page";
 
 // ─── Per-test configurable mocks (hoisted so vi.mock factories can read them) ─
 const { mockReplace, mockLogin, searchParamsState } = vi.hoisted(() => ({
@@ -62,7 +63,6 @@ describe("CLoginPage redirect sanitization", () => {
 
   it("redirect=/my (合法根相对路径) 登录成功后 router.replace 调用 /my", async () => {
     searchParamsState.query = "redirect=/my";
-    const { default: CLoginPage } = await import("./page");
     render(<CLoginPage />);
 
     await fillAndSubmitForm();
@@ -74,7 +74,6 @@ describe("CLoginPage redirect sanitization", () => {
 
   it("redirect=//evil.com (协议相对攻击) 登录成功后 router.replace 回退到 /", async () => {
     searchParamsState.query = "redirect=//evil.com";
-    const { default: CLoginPage } = await import("./page");
     render(<CLoginPage />);
 
     await fillAndSubmitForm();
@@ -86,7 +85,6 @@ describe("CLoginPage redirect sanitization", () => {
 
   it("redirect=https://evil.com (绝对 URL 攻击) 登录成功后 router.replace 回退到 /", async () => {
     searchParamsState.query = "redirect=https://evil.com";
-    const { default: CLoginPage } = await import("./page");
     render(<CLoginPage />);
 
     await fillAndSubmitForm();

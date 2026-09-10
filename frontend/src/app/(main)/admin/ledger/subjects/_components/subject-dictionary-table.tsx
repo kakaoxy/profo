@@ -21,15 +21,15 @@ export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps
 
   return (
     <details className="group">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl bg-card px-4 py-3 text-sm font-semibold text-graphite shadow-sm [&::-webkit-details-marker]:hidden">
-        <span className="transition-transform group-open:rotate-90">▸</span>
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-inputs bg-white px-5 py-3.5 text-sm font-medium text-ash shadow-steep-sm [&::-webkit-details-marker]:hidden">
+        <span className="text-graphite transition-transform group-open:rotate-90">▸</span>
         查看完整科目字典表（{subjects.length} 项）
       </summary>
-      <div className="mt-2 overflow-hidden rounded-xl border bg-card">
+      <div className="mt-2 overflow-hidden rounded-cards bg-white shadow-steep-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-fog text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+              <tr className="border-b border-dove/40 bg-fog text-left text-[11px] tracking-wide text-graphite">
                 <th className="px-3 py-2 font-medium">ID</th>
                 <th className="px-3 py-2 font-medium">科目名称</th>
                 <th className="px-3 py-2 font-medium">归入成本层级</th>
@@ -43,10 +43,10 @@ export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps
               {sorted.map((s) => (
                 <tr
                   key={s.id}
-                  className="border-b transition-colors last:border-0 hover:bg-apricot-wash/20"
+                  className="border-b border-dove/30 transition-colors last:border-0 hover:bg-apricot-wash/20"
                 >
-                  <td className="px-3 py-2 text-[11px] text-muted-foreground">{s.id}</td>
-                  <td className="px-3 py-2 font-medium">
+                  <td className="px-3 py-2 font-mono text-[11px] text-graphite">{s.id}</td>
+                  <td className="px-3 py-2 font-medium text-ink">
                     {s.name}
                     {!s.system && (
                       <span className="ml-1 rounded bg-apricot-wash px-1 text-[9px] text-rust">
@@ -66,11 +66,11 @@ export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps
                   </td>
                   <td className="px-3 py-2">
                     {s.pnl ? (
-                      <span className="rounded bg-green-100 px-1.5 py-0.5 text-[11px] text-green-700">
+                      <span className="rounded bg-apricot-wash px-1.5 py-0.5 text-[11px] text-rust">
                         是
                       </span>
                     ) : (
-                      <span className="rounded bg-fog px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                      <span className="rounded bg-fog px-1.5 py-0.5 text-[11px] text-graphite">
                         否
                       </span>
                     )}
@@ -78,7 +78,7 @@ export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps
                   <td className="px-3 py-2">
                     <ModeTicks modes={s.modes as SubjectMode[]} />
                   </td>
-                  <td className="px-3 py-2 text-xs">
+                  <td className="px-3 py-2 text-xs text-ash">
                     {stageLabel(s.modes[0] as SubjectMode, s.stage)}
                   </td>
                   <td className="px-3 py-2 text-xs text-graphite">{s.note ?? "—"}</td>
@@ -86,7 +86,7 @@ export function SubjectDictionaryTable({ subjects }: SubjectDictionaryTableProps
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-3 py-8 text-center text-graphite">
                     暂无科目
                   </td>
                 </tr>
@@ -113,7 +113,7 @@ function ModeTicks({ modes }: { modes: SubjectMode[] }) {
       <span
         className={cn(
           "rounded px-1.5 py-0.5 text-[10px]",
-          modes.includes("acquire") ? "bg-purple-100 text-purple-700" : "bg-fog text-dove",
+          modes.includes("acquire") ? "bg-sky-wash text-ink" : "bg-fog text-dove",
         )}
       >
         收购

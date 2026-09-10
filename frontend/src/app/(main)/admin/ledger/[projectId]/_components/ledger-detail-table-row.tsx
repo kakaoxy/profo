@@ -3,7 +3,6 @@
 import { Paperclip, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeFormatDate, formatCNY } from "@/lib/formatters";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -33,7 +32,7 @@ export function LedgerDetailTableRow({
   const summary = record.description || record.remark || "-";
 
   return (
-    <TableRow key={record.id} className="group text-xs hover:bg-muted">
+    <TableRow key={record.id} className="group text-xs hover:bg-fog">
       {/* 日期 */}
       <TableCell className="px-4 py-3">
         <span className="font-medium text-foreground tabular-nums">
@@ -50,18 +49,18 @@ export function LedgerDetailTableRow({
             <LayerPill level={subject.level} />
           </div>
         ) : (
-          <span className="text-muted-foreground">-</span>
+          <span className="text-graphite">-</span>
         )}
       </TableCell>
       {/* 付款方 */}
       <TableCell className="px-4 py-3">
-        <span className="text-muted-foreground truncate block" title={record.payer ?? ""}>
+        <span className="text-graphite truncate block" title={record.payer ?? ""}>
           {record.payer || "-"}
         </span>
       </TableCell>
       {/* 收款方 */}
       <TableCell className="px-4 py-3">
-        <span className="text-muted-foreground truncate block" title={record.payee ?? ""}>
+        <span className="text-graphite truncate block" title={record.payee ?? ""}>
           {record.payee || "-"}
         </span>
       </TableCell>
@@ -72,7 +71,7 @@ export function LedgerDetailTableRow({
             −{formatCNY(outflow)}
           </span>
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-graphite">—</span>
         )}
       </TableCell>
       {/* 流入（红色，中国习惯） */}
@@ -82,7 +81,7 @@ export function LedgerDetailTableRow({
             +{formatCNY(inflow)}
           </span>
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-graphite">—</span>
         )}
       </TableCell>
       {/* 凭证 */}
@@ -106,7 +105,7 @@ export function LedgerDetailTableRow({
                       width={28}
                       height={28}
                       loading="lazy"
-                      className="size-7 rounded object-cover border border-border"
+                      className="size-7 rounded object-cover border border-dove"
                     />
                   </a>
                 </HoverCardTrigger>
@@ -122,12 +121,9 @@ export function LedgerDetailTableRow({
             ))}
           </div>
         ) : (
-          <Badge
-            variant="outline"
-            className="font-normal border-amber-300 text-amber-700 bg-amber-50"
-          >
+          <span className="inline-flex items-center rounded-[10px] bg-apricot-wash px-2.5 py-1 text-[11px] font-medium text-rust">
             缺凭证
-          </Badge>
+          </span>
         )}
       </TableCell>
       {/* 摘要（移至凭证和操作之间） */}
@@ -143,7 +139,7 @@ export function LedgerDetailTableRow({
             variant="ghost"
             size="sm"
             className={cn(
-              "h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-opacity",
+              "h-7 w-7 p-0 text-graphite hover:bg-fog hover:text-ink transition-opacity",
               isSettled
                 ? "opacity-0 pointer-events-none"
                 : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
@@ -159,7 +155,7 @@ export function LedgerDetailTableRow({
             variant="ghost"
             size="sm"
             className={cn(
-              "h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-opacity",
+              "h-7 w-7 p-0 text-graphite hover:text-destructive transition-opacity",
               isSettled
                 ? "opacity-0 pointer-events-none"
                 : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",

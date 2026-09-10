@@ -95,8 +95,8 @@ export function SubjectSelectPanel({
           })
         }
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2 text-left transition-[border-color,box-shadow] duration-200",
-          open ? "border-ink ring-1 ring-ink/20" : "border-border hover:border-dove",
+          "flex w-full items-center justify-between gap-2 rounded-inputs border bg-white px-3 py-2 text-left transition-[border-color,box-shadow] duration-200",
+          open ? "border-ink ring-1 ring-ink/20" : "border-dove hover:border-dove",
           error && !open && "border-destructive",
         )}
       >
@@ -121,10 +121,10 @@ export function SubjectSelectPanel({
       {open && (
         <div
           ref={panelRef}
-          className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-card shadow-lg max-h-[320px] overflow-auto"
+          className="absolute z-20 mt-1 w-full rounded-inputs border border-dove bg-white shadow-lg max-h-[320px] overflow-auto"
         >
           {/* 搜索框 */}
-          <div className="sticky top-0 bg-card border-b border-border p-2 z-10">
+          <div className="sticky top-0 bg-white border-b border-dove p-2 z-10">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-dove pointer-events-none" />
               <Input
@@ -148,7 +148,7 @@ export function SubjectSelectPanel({
           ) : (
             grouped.map(([level, items]) => (
               <div key={level}>
-                <div className="sticky top-[44px] bg-fog/80 backdrop-blur px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-graphite z-[5]">
+                <div className="sticky top-[44px] bg-fog/80 backdrop-blur px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-graphite z-[5]">
                   {LEVEL_LABELS[level] ?? `L${level}`}
                 </div>
                 {items.map((s) => {
@@ -162,7 +162,7 @@ export function SubjectSelectPanel({
                         setOpen(false);
                       }}
                       className={cn(
-                        "flex w-full items-center gap-2 px-3 py-2 text-left transition-[background-color] duration-150 border-b border-border/50",
+                        "flex w-full items-center gap-2 px-3 py-2 text-left transition-[background-color] duration-150 border-b border-dove/50",
                         isSelected ? "bg-apricot-wash/40" : "hover:bg-fog",
                       )}
                     >
@@ -171,7 +171,7 @@ export function SubjectSelectPanel({
                       <span
                         className={cn(
                           "text-[10px] px-1.5 py-0.5 rounded shrink-0",
-                          s.pnl ? "bg-success-container text-success" : "bg-fog text-dove",
+                          s.pnl ? "bg-apricot-wash text-rust" : "bg-fog text-graphite",
                         )}
                       >
                         {s.pnl ? "进损益" : "不进损益"}

@@ -39,7 +39,7 @@ export function ProfitLadder({ fiveLayer, breakdown, businessForm }: ProfitLadde
 
   return (
     <section className="py-12">
-      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
           <div>
             <p className="text-xs tracking-[0.2em] text-graphite mb-2">PROFIT STRUCTURE</p>
@@ -133,7 +133,7 @@ function LadderCard({
       <div className="inline-flex items-center gap-1.5 text-xs text-graphite mb-1.5">
         <span
           className={cn(
-            "inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-xs font-semibold",
+            "inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-xs font-medium",
             "bg-gradient-to-br from-apricot-wash to-apricot-wash/50 text-rust",
           )}
         >
