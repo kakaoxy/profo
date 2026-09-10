@@ -158,3 +158,31 @@ def test_keyword_with_special_chars_does_not_raise(db_session: Session, bad_keyw
     result = ProjectQueryService(db_session).get_by_status(keyword=bad_keyword)
 
     assert result["total"] == 0
+
+
+def test_keyword_with_contract_sort_combined(db_session: Session) -> None:
+    """Keyword + contract_sort 组合可正常执行.
+
+    回归防护：contract_sort 使主查询显式 outerjoin contract 后，keyword 的 exists
+    子查询若不显式 correlate(Project)，自动关联会把两张表全部剔出子查询 FROM，
+    抛 "no FROM clauses due to auto-correlation"（台账列表搜索 500 的根因）。
+    """
+    hit = _make_project(db_session, name="项目A", community_name="阳光花园")
+    _make_project(db_session, name="项目B", community_name="翡翠湾")
+
+    result = ProjectQueryService(db_session).get_by_status(keyword="阳光花园", contract_sort=True)
+
+    assert result["total"] == 1
+    assert [p.id for p in result["items"]] == [hit.id]
+
+
+def test_keyword_with_monitor_sort_combined(db_session: Session) -> None:
+    """Keyword + monitor_sort 组合可正常执行（同一显式 outerjoin 路径）."""
+    hit = _make_project(db_session, name="项目A", community_name="阳光花园")
+    _make_project(db_session, name="项目B", community_name="翡翠湾")
+    _make_contract(db_session, hit, contract_no="SH0001-DL")
+
+    result = ProjectQueryService(db_session).get_by_status(keyword="SH0001", monitor_sort=True)
+
+    assert result["total"] == 1
+    assert [p.id for p in result["items"]] == [hit.id]

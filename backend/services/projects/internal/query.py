@@ -185,16 +185,21 @@ class ProjectQueryService:
         if keyword:
             kw = escape_like(keyword.lower())
             # 合同编号匹配用 exists 子查询而非引用 outerjoin 右表列：
-            # WHERE 中直接过滤右表会把 LEFT JOIN 收紧成隐式 INNER JOIN
+            # WHERE 中直接过滤右表会把 LEFT JOIN 收紧成隐式 INNER JOIN。
+            # correlate(Project) 显式声明仅关联外层 Project——否则 contract_sort/monitor_sort
+            # 让 ProjectContract 进入外层 FROM 后，自动关联会把两张表全部剔出子查询，
+            # 导致 "no FROM clauses due to auto-correlation" 异常（台账列表搜索 500 的根因）
             query = query.filter(
                 or_(
                     func.lower(Project.community_name).like(f"%{kw}%", escape="\\"),
-                    exists().where(
+                    exists()
+                    .where(
                         and_(
                             ProjectContract.project_id == Project.id,
                             func.lower(ProjectContract.contract_no).like(f"%{kw}%", escape="\\"),
                         )
-                    ),
+                    )
+                    .correlate(Project),
                 ),
             )
 
