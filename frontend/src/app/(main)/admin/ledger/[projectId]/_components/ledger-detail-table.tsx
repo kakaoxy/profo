@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { formatCNY } from "@/lib/formatters";
+import { formatYuanToWanSigned } from "@/lib/format-amount";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -310,7 +310,7 @@ export function LedgerDetailTable({
         className="rounded-inputs bg-fog px-3.5 py-2 text-xs text-graphite tabular-nums"
         aria-live="polite"
       >
-        共 {summary.count} 笔 · 净现金流 {formatCNY(summary.net)}
+        共 {summary.count} 笔 · 净现金流 {formatYuanToWanSigned(summary.net)}
       </div>
 
       {/* 已结算编辑锁警示条 */}
