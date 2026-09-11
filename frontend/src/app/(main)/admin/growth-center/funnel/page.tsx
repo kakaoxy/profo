@@ -8,6 +8,7 @@ import {
   parseFunnelTab,
 } from "../_lib/funnel-data";
 import { FunnelView } from "./_components/funnel-view";
+import { PageContainer } from "@/app/(main)/admin/_components";
 
 /** 将 Date 格式化为 YYYY-MM-DD */
 function toDateStr(d: Date): string {
@@ -42,7 +43,7 @@ export default async function GrowthFunnelPage({ searchParams }: GrowthFunnelPag
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageContainer>
         <FunnelView
           module={tab}
           days={days}
@@ -51,7 +52,7 @@ export default async function GrowthFunnelPage({ searchParams }: GrowthFunnelPag
           drilldown={drilldown}
           dateRange={dateRange}
         />
-      </div>
+      </PageContainer>
     </div>
   );
 }

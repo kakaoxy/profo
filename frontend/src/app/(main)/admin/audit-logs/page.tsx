@@ -1,7 +1,8 @@
 import { Suspense } from "react";
-import { Loader2, ScrollText } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { getOperationLogsAction } from "./actions/audit-log-actions";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import { AuditLogsClient } from "./_components/audit-logs-client";
 
 /**
@@ -44,32 +45,32 @@ export default async function AuditLogsPage(props: {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h1 className="flex items-center gap-2 text-2xl sm:text-3xl font-bold tracking-tight">
-          <ScrollText className="h-7 w-7" />
-          审计日志
-        </h1>
-      </div>
-
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        }
-      >
-        <AuditLogsClient
-          initialData={result.data}
-          filters={{
-            user_id,
-            action,
-            resource_type,
-            start_time: searchParams.start_time,
-            end_time: searchParams.end_time,
-          }}
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
+        <PageHeader
+          title="审计日志"
+          description="记录后台关键操作，支持按用户、动作与资源类型追溯"
         />
-      </Suspense>
+
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          }
+        >
+          <AuditLogsClient
+            initialData={result.data}
+            filters={{
+              user_id,
+              action,
+              resource_type,
+              start_time: searchParams.start_time,
+              end_time: searchParams.end_time,
+            }}
+          />
+        </Suspense>
+      </PageContainer>
     </div>
   );
 }

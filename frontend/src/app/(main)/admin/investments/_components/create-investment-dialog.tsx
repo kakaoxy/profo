@@ -147,16 +147,16 @@ export function CreateInvestmentDialog({
           <div className="space-y-4">
             {/* 项目选择器 */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+              <label className="text-sm font-medium text-ink">
                 关联项目 <span className="text-red-500">*</span>
               </label>
 
               {selected ? (
-                <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-2">
+                <div className="rounded-lg border border-fog bg-fog/60 p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-foreground truncate">
+                        <span className="font-medium text-sm text-ink truncate">
                           {selected.name}
                         </span>
                         {selected.status && (
@@ -168,7 +168,7 @@ export function CreateInvestmentDialog({
                           </Badge>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground space-y-0.5">
+                      <div className="text-xs text-graphite space-y-0.5">
                         {selected.project_code && <div>编号: {selected.project_code}</div>}
                         {selected.community_name && <div>小区: {selected.community_name}</div>}
                         {selected.address && <div>地址: {selected.address}</div>}
@@ -177,7 +177,7 @@ export function CreateInvestmentDialog({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground shrink-0"
+                      className="h-7 w-7 p-0 text-graphite hover:text-ink shrink-0"
                       onClick={handleClearSelected}
                       aria-label="取消选择"
                     >
@@ -188,7 +188,7 @@ export function CreateInvestmentDialog({
               ) : (
                 <>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-graphite" />
                     <Input
                       placeholder="搜索小区名称..."
                       value={searchQuery}
@@ -198,17 +198,17 @@ export function CreateInvestmentDialog({
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-graphite hover:text-ink"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     )}
                   </div>
 
-                  <div className="rounded-lg border border-border max-h-60 overflow-hidden">
+                  <div className="rounded-lg border border-fog max-h-60 overflow-hidden">
                     {loading ? (
                       <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        <Loader2 className="w-5 h-5 animate-spin text-graphite" />
                       </div>
                     ) : projects.length > 0 ? (
                       <ScrollArea className="h-60">
@@ -218,12 +218,12 @@ export function CreateInvestmentDialog({
                               key={project.id}
                               type="button"
                               onClick={() => handleSelect(project)}
-                              className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors"
+                              className="w-full text-left px-4 py-3 hover:bg-fog/60 transition-colors"
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-medium text-sm text-foreground truncate">
+                                    <span className="font-medium text-sm text-ink truncate">
                                       {project.name}
                                     </span>
                                     {project.status && (
@@ -235,7 +235,7 @@ export function CreateInvestmentDialog({
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                                  <div className="text-xs text-graphite mt-0.5 truncate">
                                     {project.community_name || "—"}
                                     {project.address ? ` · ${project.address}` : ""}
                                   </div>
@@ -246,7 +246,7 @@ export function CreateInvestmentDialog({
                         </div>
                       </ScrollArea>
                     ) : (
-                      <div className="text-center py-8 text-sm text-muted-foreground">
+                      <div className="text-center py-8 text-sm text-graphite">
                         {searchQuery ? "未找到匹配的项目" : "请输入小区名称搜索"}
                       </div>
                     )}
@@ -257,7 +257,7 @@ export function CreateInvestmentDialog({
 
             {/* 投资总额 */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+              <label className="text-sm font-medium text-ink">
                 投资总额(元) <span className="text-red-500">*</span>
               </label>
               <Input
@@ -268,12 +268,12 @@ export function CreateInvestmentDialog({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">两位小数，单位：元</p>
+              <p className="text-xs text-graphite">两位小数，单位：元</p>
             </div>
 
             {/* 备注 */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">备注</label>
+              <label className="text-sm font-medium text-ink">备注</label>
               <Textarea
                 placeholder="选填，记录跟投相关说明"
                 value={remark}
@@ -284,7 +284,7 @@ export function CreateInvestmentDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-3 border-t border-border bg-card gap-2">
+        <DialogFooter className="px-6 py-3 border-t border-fog bg-white gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>

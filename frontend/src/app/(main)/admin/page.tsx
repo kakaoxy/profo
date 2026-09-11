@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { LayoutDashboard, Plus, Filter, SortAsc } from "lucide-react";
+import { Plus, Filter, SortAsc } from "lucide-react";
 import {
   ProjectOverviewCardSkeleton,
   LeadsFunnelCardSkeleton,
@@ -14,6 +14,8 @@ import {
   DashboardProjectsWrapper,
   DashboardLeadsWrapper,
   DashboardQuickEntryWrapper,
+  PageContainer,
+  PageHeader,
 } from "./_components";
 import { CreateProjectDialog } from "./projects/_components/create-project";
 import { HasPermission } from "@/components/has-permission";
@@ -27,15 +29,7 @@ export const metadata = {
 // 头部组件（静态部分）
 function DashboardHeader() {
   return (
-    <div className="mb-8 flex items-center gap-3">
-      <div className="p-2 bg-card rounded-lg shadow-sm">
-        <LayoutDashboard className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
-      </div>
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">工作台</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">欢迎回来，这是您今日的数据概览</p>
-      </div>
-    </div>
+    <PageHeader title="工作台" description="欢迎回来，这是您今日的数据概览" className="mb-8" />
   );
 }
 
@@ -44,19 +38,19 @@ function MonitorSectionSkeleton() {
   return (
     <section className="mb-8 overflow-hidden">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-on-surface dark:text-white">重点监控项目</h2>
+        <h2 className="text-[22px] font-medium text-ink">重点监控项目</h2>
         <div className="flex gap-2">
           <button
             disabled
             aria-label="筛选功能开发中"
-            className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60"
+            className="p-2 rounded-inputs bg-white border border-dove/40 text-graphite cursor-not-allowed opacity-60"
           >
             <Filter className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             disabled
             aria-label="排序功能开发中"
-            className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60"
+            className="p-2 rounded-inputs bg-white border border-dove/40 text-graphite cursor-not-allowed opacity-60"
           >
             <SortAsc className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -65,11 +59,11 @@ function MonitorSectionSkeleton() {
       <div className="flex flex-col sm:flex-row gap-4 sm:overflow-x-auto pb-4 pt-2 sm:custom-scrollbar min-w-0">
         <ProjectCardListSkeleton />
         {/* 添加项目卡片占位 */}
-        <div className="w-full sm:w-70 sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center min-h-100">
-          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5">
+        <div className="w-full sm:w-70 sm:shrink-0 bg-fog rounded-cards border-2 border-dashed border-dove/40 flex flex-col items-center justify-center p-6 text-center min-h-100">
+          <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-graphite mb-5">
             <Plus className="w-8 h-8" aria-hidden="true" />
           </div>
-          <p className="text-lg font-bold text-muted-foreground">添加新项目</p>
+          <p className="text-lg font-bold text-graphite">添加新项目</p>
         </div>
       </div>
     </section>
@@ -81,16 +75,13 @@ function MonitorSection() {
   return (
     <section className="mb-8 overflow-hidden" aria-labelledby="monitor-section-title">
       <div className="flex items-center justify-between mb-6">
-        <h2
-          id="monitor-section-title"
-          className="text-xl font-bold text-on-surface dark:text-white"
-        >
+        <h2 id="monitor-section-title" className="text-[22px] font-medium text-ink">
           重点监控项目
         </h2>
         <div className="flex gap-2">
           <button
             disabled
-            className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="p-2 rounded-inputs bg-white border border-dove/40 text-graphite cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="筛选功能开发中"
             aria-label="筛选功能开发中"
           >
@@ -98,7 +89,7 @@ function MonitorSection() {
           </button>
           <button
             disabled
-            className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="p-2 rounded-inputs bg-white border border-dove/40 text-graphite cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="排序功能开发中"
             aria-label="排序功能开发中"
           >
@@ -114,16 +105,14 @@ function MonitorSection() {
 
         <CreateProjectDialog
           trigger={
-            <div className="w-full sm:w-70 sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-card hover:border-primary/40 transition-[background-color,border-color] min-h-100">
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5 group-hover:bg-primary group-hover:text-white transition-colors shadow-sm">
+            <div className="w-full sm:w-70 sm:shrink-0 bg-fog rounded-cards border-2 border-dashed border-dove/40 flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-white hover:border-dove transition-[background-color,border-color] min-h-100">
+              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-graphite mb-5 group-hover:bg-ink group-hover:text-white transition-colors">
                 <Plus className="w-8 h-8" aria-hidden="true" />
               </div>
-              <p className="text-lg font-bold text-muted-foreground group-hover:text-primary transition-colors">
+              <p className="text-lg font-bold text-graphite group-hover:text-ink transition-colors">
                 添加新项目
               </p>
-              <p className="text-xs text-muted-foreground mt-2 max-w-35">
-                快速录入房源或新建开发项目
-              </p>
+              <p className="text-xs text-graphite mt-2 max-w-35">快速录入房源或新建开发项目</p>
             </div>
           }
         />
@@ -134,61 +123,60 @@ function MonitorSection() {
 
 export default function DashboardPage() {
   return (
-    <main
-      id="dashboard-main"
-      className="min-h-screen bg-muted p-4 md:p-8 md:pb-8 min-w-0 overflow-x-hidden scroll-mt-4"
-    >
+    <main id="dashboard-main" className="min-h-screen bg-fog min-w-0 overflow-x-hidden scroll-mt-4">
       {/* Skip link for keyboard / AT users */}
       <a
         href="#dashboard-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-inputs focus:bg-primary focus:text-primary-foreground focus:shadow-lg"
       >
         跳到主内容
       </a>
 
-      {/* Header - 静态部分 */}
-      <DashboardHeader />
+      <PageContainer>
+        {/* Header - 静态部分 */}
+        <DashboardHeader />
 
-      {/* Top Row - Three Column Layout */}
-      <div className="grid grid-cols-12 gap-4 lg:gap-6 mb-8 min-w-0">
-        <Suspense fallback={null}>
-          <DashboardErrorWrapper />
+        {/* Top Row - Three Column Layout */}
+        <div className="grid grid-cols-12 gap-4 lg:gap-6 mb-8 min-w-0">
+          <Suspense fallback={null}>
+            <DashboardErrorWrapper />
+          </Suspense>
+          <HasPermission code={PERMISSION_CODES.PROJECT_READ}>
+            <Suspense fallback={<ProjectOverviewCardSkeleton />}>
+              <DashboardOverviewWrapper />
+            </Suspense>
+          </HasPermission>
+          <HasPermission code={PERMISSION_CODES.LEAD_READ}>
+            <Suspense fallback={<LeadsFunnelCardSkeleton />}>
+              <DashboardFunnelWrapper />
+            </Suspense>
+          </HasPermission>
+          <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+            <Suspense fallback={<AlertCardSkeleton />}>
+              <DashboardAlertWrapper />
+            </Suspense>
+          </HasPermission>
+        </div>
+
+        {/* Quick Entry Section */}
+        <Suspense fallback={<QuickEntrySkeleton />}>
+          <DashboardQuickEntryWrapper />
         </Suspense>
+
+        {/* Monitor Projects Section */}
         <HasPermission code={PERMISSION_CODES.PROJECT_READ}>
-          <Suspense fallback={<ProjectOverviewCardSkeleton />}>
-            <DashboardOverviewWrapper />
+          <Suspense fallback={<MonitorSectionSkeleton />}>
+            <MonitorSection />
           </Suspense>
         </HasPermission>
+
+        {/* Leads Table Section */}
         <HasPermission code={PERMISSION_CODES.LEAD_READ}>
-          <Suspense fallback={<LeadsFunnelCardSkeleton />}>
-            <DashboardFunnelWrapper />
+          <Suspense fallback={<DashboardLeadsTableSkeleton />}>
+            <DashboardLeadsWrapper />
           </Suspense>
         </HasPermission>
-        <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
-          <Suspense fallback={<AlertCardSkeleton />}>
-            <DashboardAlertWrapper />
-          </Suspense>
-        </HasPermission>
-      </div>
-
-      {/* Quick Entry Section */}
-      <Suspense fallback={<QuickEntrySkeleton />}>
-        <DashboardQuickEntryWrapper />
-      </Suspense>
-
-      {/* Monitor Projects Section */}
-      <HasPermission code={PERMISSION_CODES.PROJECT_READ}>
-        <Suspense fallback={<MonitorSectionSkeleton />}>
-          <MonitorSection />
-        </Suspense>
-      </HasPermission>
-
-      {/* Leads Table Section */}
-      <HasPermission code={PERMISSION_CODES.LEAD_READ}>
-        <Suspense fallback={<DashboardLeadsTableSkeleton />}>
-          <DashboardLeadsWrapper />
-        </Suspense>
-      </HasPermission>
+      </PageContainer>
     </main>
   );
 }

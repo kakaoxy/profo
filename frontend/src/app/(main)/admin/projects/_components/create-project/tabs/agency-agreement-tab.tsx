@@ -93,7 +93,7 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
         name="contract_no"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-[14px] font-medium text-foreground tracking-tight mb-2">
+            <FormLabel className="text-[14px] font-medium text-ink tracking-tight mb-2">
               合同编号<span className="text-error ml-0.5">*</span>
             </FormLabel>
             <div className="flex gap-2">
@@ -159,7 +159,7 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
           render={({ field }) => (
             <FormItem>
               <div className="flex items-center justify-between">
-                <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                   合同周期 (天)
                 </FormLabel>
                 <label className="flex items-center gap-1.5 cursor-pointer">
@@ -209,7 +209,7 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
         name="cost_assumption_type"
         render={({ field }) => (
           <FormItem className="space-y-3">
-            <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+            <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
               税费及佣金承担方
             </FormLabel>
             <FormControl>
@@ -250,7 +250,7 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
           name="cost_assumption_other"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+              <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                 其他说明
               </FormLabel>
               <FormControl>

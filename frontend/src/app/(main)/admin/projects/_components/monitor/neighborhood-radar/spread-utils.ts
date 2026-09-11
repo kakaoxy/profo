@@ -3,10 +3,10 @@
 import type { NeighborhoodRadarItem } from "../../../actions/monitor-lib/types";
 
 export function getSpreadStyle(item: NeighborhoodRadarItem): string {
-  if (item.is_subject) return "text-muted-foreground";
+  if (item.is_subject) return "text-graphite";
   if (item.spread_percent > 0) return "text-primary";
   if (item.spread_percent < 0) return "text-rose-500";
-  return "text-muted-foreground";
+  return "text-graphite";
 }
 
 export function getSpreadIcon(item: NeighborhoodRadarItem): string {

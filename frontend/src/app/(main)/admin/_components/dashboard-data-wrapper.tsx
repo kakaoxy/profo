@@ -26,7 +26,7 @@ export async function DashboardErrorWrapper() {
       role="alert"
       aria-live="polite"
       aria-atomic="true"
-      className="col-span-12 mb-4 p-3 bg-status-pending/10 dark:bg-amber-900/20 border border-status-pending/30 dark:border-amber-800 rounded-lg"
+      className="col-span-12 mb-4 p-3 bg-status-pending/10 dark:bg-amber-900/20 border border-status-pending/30 dark:border-amber-800 rounded-inputs"
     >
       <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
         部分数据加载失败，请刷新页面重试

@@ -18,24 +18,24 @@ export default function MarketingProjectsError({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-card rounded-xl shadow-lg border border-border p-8 text-center">
+    <div className="min-h-screen bg-fog/60 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-fog p-8 text-center">
         {/* Error Icon */}
         <div className="mx-auto w-16 h-16 bg-error-container rounded-full flex items-center justify-center mb-6">
           <AlertCircle className="h-8 w-8 text-error" />
         </div>
 
         {/* Error Title */}
-        <h2 className="text-xl font-semibold text-foreground mb-2">页面加载失败</h2>
+        <h2 className="text-xl font-semibold text-ink mb-2">页面加载失败</h2>
 
         {/* Error Message */}
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-graphite mb-6">
           {error.message || "获取营销项目列表时发生错误，请稍后重试"}
         </p>
 
         {/* Error Digest (for debugging) */}
         {error.digest && (
-          <p className="text-xs text-muted-foreground mb-6 font-mono">错误代码: {error.digest}</p>
+          <p className="text-xs text-graphite mb-6 font-mono">错误代码: {error.digest}</p>
         )}
 
         {/* Action Buttons */}
@@ -54,9 +54,7 @@ export default function MarketingProjectsError({ error, reset }: ErrorProps) {
         </div>
 
         {/* Help Text */}
-        <p className="text-xs text-muted-foreground mt-6">
-          如果问题持续存在，请联系管理员或稍后重试
-        </p>
+        <p className="text-xs text-graphite mt-6">如果问题持续存在，请联系管理员或稍后重试</p>
       </div>
     </div>
   );

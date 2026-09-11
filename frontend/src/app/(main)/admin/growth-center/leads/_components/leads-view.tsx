@@ -26,7 +26,8 @@ import {
 import type { LeadEliminateReason } from "../../_lib/flow-constants";
 import { LeadsTable } from "./leads-table";
 import { LeadDetailSheet } from "./lead-detail-sheet";
-import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
+import { StatCardGrid, type StatItem } from "@/app/(main)/admin/_components/stat-card-grid";
 import { DesignPagination } from "../../_components/design-pagination";
 import { updateGrowthLeadStatusAction } from "../../_lib/growth-actions";
 import type { GrowthEmployee, GrowthLeadsKpi } from "../../_lib/growth-data";
@@ -165,28 +166,28 @@ export function LeadsView({
   }, [page, maxPage, setQuery]);
 
   // KPI 概览（overview/kpi 四字段 + 来源构成近 30 天合计）
-  const kpiItems: RecruitKpiItem[] = React.useMemo(
+  const kpiItems: StatItem[] = React.useMemo(
     () => [
       {
-        dotClass: "bg-ink",
+        dotColor: "bg-ink",
         label: "今日新增",
         value: kpi.todayLeads.toLocaleString(),
         trend: { text: "今日留资" },
       },
       {
-        dotClass: "bg-rust",
+        dotColor: "bg-rust",
         label: "近 30 天留资",
         value: kpi.last30Leads.toLocaleString(),
         trend: { text: "4 模块合计" },
       },
       {
-        dotClass: "bg-apricot-wash",
+        dotColor: "bg-apricot-wash",
         label: "有效新客",
         value: kpi.validNew.toLocaleString(),
         trend: { text: "近 30 天 · 已剔除内部" },
       },
       {
-        dotClass: "bg-sky-wash",
+        dotColor: "bg-sky-wash",
         label: "待跟进",
         value: kpi.pending.toLocaleString(),
         trend: { text: "状态 = 新线索" },
@@ -252,22 +253,16 @@ export function LeadsView({
   return (
     <div className="flex flex-col gap-6">
       {/* 页头：标题 + 描述 */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
-        <div>
-          <h1 className="flex items-center gap-2.5 flex-wrap text-[26px] font-medium tracking-[-0.23px] text-ink">
-            线索管理
-          </h1>
-          <p className="mt-1.5 text-[15px] text-graphite">
-            跨模块统一线索池：估价留资 / 房源预约 / 房源单 / 招募
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="线索管理"
+        description="跨模块统一线索池：估价留资 / 房源预约 / 房源单 / 招募"
+      />
 
       {/* KPI 概览 */}
-      <RecruitKpiGrid items={kpiItems} />
+      <StatCardGrid items={kpiItems} />
 
       {/* 状态映射说明折叠面板 */}
-      <details className="bg-white rounded-2xl shadow-steep px-5 group">
+      <details className="bg-white rounded-cards shadow-steep px-5 group">
         <summary className="cursor-pointer list-none flex items-center gap-2 text-[13.5px] font-medium text-ink py-3.5 [&::-webkit-details-marker]:hidden">
           <ChevronRight className="h-4 w-4 text-graphite transition-transform group-open:rotate-90" />
           状态映射说明（原生状态 → 统一 5 态）

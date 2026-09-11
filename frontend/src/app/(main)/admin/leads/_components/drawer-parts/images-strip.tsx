@@ -56,7 +56,7 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
   };
 
   return (
-    <section className="bg-pure-white rounded-cards shadow-steep-sm overflow-hidden">
+    <section className="bg-white rounded-cards shadow-steep-sm overflow-hidden">
       {/* 头部 */}
       <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -97,7 +97,7 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
               disabled={isUploading}
               onClick={() => !isUploading && fileInputRef.current?.click()}
               className={cn(
-                "shrink-0 w-24 h-24 rounded-[12px] border-2 border-dashed border-dove hover:border-ink flex flex-col items-center justify-center gap-1 text-graphite",
+                "shrink-0 w-24 h-24 rounded-inputs border border-dashed border-dove/40 hover:border-ink flex flex-col items-center justify-center gap-1 text-graphite",
                 isUploading && "opacity-50 cursor-not-allowed hover:border-dove",
               )}
               title={isUploading ? "上传中..." : "上传新图片"}
@@ -227,7 +227,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({ images, startIndex, onClo
       )}
 
       {/* 分页指示器 */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-foreground">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-ink">
         {idx + 1} / {total}
       </div>
     </div>

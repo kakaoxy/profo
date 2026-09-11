@@ -17,7 +17,7 @@ interface ErrorProps {
 
 export default function MarketReportsError({ reset }: ErrorProps) {
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center px-4">
+    <div className="min-h-screen bg-fog flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -26,7 +26,7 @@ export default function MarketReportsError({ reset }: ErrorProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">页面加载失败，请稍后重试</p>
+          <p className="text-sm text-graphite">页面加载失败，请稍后重试</p>
           <Button onClick={reset}>重试</Button>
         </CardContent>
       </Card>

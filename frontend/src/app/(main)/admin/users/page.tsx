@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { getUsersAction, getRolesAction } from "./actions/index";
 import { RoleListResponse } from "./actions/role-actions";
 import { UsersClient } from "./_components/users-client";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 
 export default async function UsersPage(props: {
   searchParams: Promise<{
@@ -48,31 +49,26 @@ export default async function UsersPage(props: {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-8 pt-6">
-      <div>
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-1.5">
-          <span>ADMIN</span>
-          <span className="w-1 h-1 rounded-full bg-muted-foreground inline-block" />
-          <span>USER MANAGEMENT</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">用户管理</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          管理后台团队成员与 C 端客户账号，查看每位用户的线索提交活跃度
-        </p>
-      </div>
-
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        }
-      >
-        <UsersClient
-          initialData={usersResult.data}
-          roles={(rolesResult.data as RoleListResponse).items}
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
+        <PageHeader
+          title="用户管理"
+          description="管理后台团队成员与 C 端客户账号，查看每位用户的线索提交活跃度"
         />
-      </Suspense>
+
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          }
+        >
+          <UsersClient
+            initialData={usersResult.data}
+            roles={(rolesResult.data as RoleListResponse).items}
+          />
+        </Suspense>
+      </PageContainer>
     </div>
   );
 }

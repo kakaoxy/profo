@@ -22,7 +22,7 @@ import { UserTable } from "./user-table";
 import { UserDialog } from "./user-dialog";
 import { ResetPasswordDialog } from "./reset-password-dialog";
 import { UnbindWechatDialog } from "./unbind-wechat-dialog";
-import { UsersStatCards } from "./users-stat-cards";
+import { UsersStatCards } from "./users-stats";
 import type { UserListResponse, UserResponse, RoleResponse } from "../actions/index";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
@@ -169,106 +169,111 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
   };
 
   return (
-    <div className="users-redesign space-y-4">
+    <div className="users-redesign space-y-6">
       {/* Stat Cards */}
       <UsersStatCards internalItems={internalItems} customerItems={customerItems} />
 
-      {/* Tab Bar */}
-      <div className="users-tabs-bar">
-        <div className="flex">
-          <button
-            className={`users-tab-btn ${tab === "internal" ? "active" : ""}`}
-            onClick={() => handleTabChange("internal")}
-          >
-            <Users className="h-3.5 w-3.5 mr-1.5" />
-            内部用户
-            <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-              {internalTotal}
-            </span>
-          </button>
-          <button
-            className={`users-tab-btn ${tab === "customer" ? "active" : ""}`}
-            data-tab="customer"
-            onClick={() => handleTabChange("customer")}
-          >
-            <UserCircle className="h-3.5 w-3.5 mr-1.5" />C 端用户
-            <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-              {customerTotal}
-            </span>
-          </button>
+      {/* 用户明细卡：Tab 栏 + 工具栏 + 表格（单一 Steep 卡片） */}
+      <div className="bg-white rounded-cards shadow-steep overflow-hidden">
+        {/* Tab Bar */}
+        <div className="users-tabs-bar">
+          <div className="flex">
+            <button
+              className={`users-tab-btn ${tab === "internal" ? "active" : ""}`}
+              onClick={() => handleTabChange("internal")}
+            >
+              <Users className="h-3.5 w-3.5 mr-1.5" />
+              内部用户
+              <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-fog text-graphite">
+                {internalTotal}
+              </span>
+            </button>
+            <button
+              className={`users-tab-btn ${tab === "customer" ? "active" : ""}`}
+              data-tab="customer"
+              onClick={() => handleTabChange("customer")}
+            >
+              <UserCircle className="h-3.5 w-3.5 mr-1.5" />C 端用户
+              <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-fog text-graphite">
+                {customerTotal}
+              </span>
+            </button>
+          </div>
+          <div className="text-xs text-graphite flex items-center gap-1.5">
+            <Shield className="h-3 w-3" />
+            <span>C 端用户不可登录后台</span>
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Shield className="h-3 w-3" />
-          <span>C 端用户不可登录后台</span>
-        </div>
-      </div>
 
-      {/* Toolbar */}
-      <div className="users-toolbar">
-        <div className="flex flex-wrap items-center gap-2">
-          <form onSubmit={handleSearch} className="users-search-wrap">
-            <Search className="users-search-icon h-3.5 w-3.5" />
-            <Input
-              className="users-search-input"
-              placeholder={tab === "internal" ? "搜索用户名 / 昵称 / 手机号" : "搜索昵称 / 手机号"}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </form>
-          {tab === "internal" && (
-            <Select value={roleFilter} onValueChange={handleRoleChange}>
-              <SelectTrigger className="w-35">
-                <SelectValue placeholder="所有角色" />
+        {/* Toolbar */}
+        <div className="users-toolbar">
+          <div className="flex flex-wrap items-center gap-2">
+            <form onSubmit={handleSearch} className="users-search-wrap">
+              <Search className="users-search-icon h-3.5 w-3.5" />
+              <Input
+                className="users-search-input"
+                placeholder={
+                  tab === "internal" ? "搜索用户名 / 昵称 / 手机号" : "搜索昵称 / 手机号"
+                }
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </form>
+            {tab === "internal" && (
+              <Select value={roleFilter} onValueChange={handleRoleChange}>
+                <SelectTrigger className="w-35">
+                  <SelectValue placeholder="所有角色" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">所有角色</SelectItem>
+                  {roles
+                    .filter((r) => r.code !== "customer")
+                    .map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Select value={statusFilter} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-30">
+                <SelectValue placeholder="所有状态" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">所有角色</SelectItem>
-                {roles
-                  .filter((r) => r.code !== "customer")
-                  .map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
+                <SelectItem value="all">所有状态</SelectItem>
+                <SelectItem value="active">正常</SelectItem>
+                <SelectItem value="inactive">停用</SelectItem>
+                <SelectItem value="locked">锁定</SelectItem>
               </SelectContent>
             </Select>
-          )}
-          <Select value={statusFilter} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-30">
-              <SelectValue placeholder="所有状态" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">所有状态</SelectItem>
-              <SelectItem value="active">正常</SelectItem>
-              <SelectItem value="inactive">停用</SelectItem>
-              <SelectItem value="locked">锁定</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-            <X className="h-3 w-3 mr-1" />
-            清除
-          </Button>
+            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+              <X className="h-3 w-3 mr-1" />
+              清除
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {tab === "internal" && (
+              <HasPermission code={PERMISSION_CODES.USER_CREATE}>
+                <Button size="sm" onClick={handleCreate}>
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  新建用户
+                </Button>
+              </HasPermission>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {tab === "internal" && (
-            <HasPermission code={PERMISSION_CODES.USER_CREATE}>
-              <Button size="sm" onClick={handleCreate}>
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                新建用户
-              </Button>
-            </HasPermission>
-          )}
-        </div>
+        <UserTable
+          data={paginatedItems}
+          sort={sort}
+          onSort={handleSort}
+          onEdit={handleEdit}
+          onResetPassword={handleResetPassword}
+          onUnbindWechat={handleUnbindWechat}
+        />
       </div>
-
-      <UserTable
-        data={paginatedItems}
-        sort={sort}
-        onSort={handleSort}
-        onEdit={handleEdit}
-        onResetPassword={handleResetPassword}
-        onUnbindWechat={handleUnbindWechat}
-      />
 
       <Pagination
         mode="controlled"

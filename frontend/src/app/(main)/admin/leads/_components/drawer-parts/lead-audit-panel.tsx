@@ -28,10 +28,10 @@ export const LeadAuditPanel: React.FC<LeadAuditPanelProps> = ({ lead, onAudit })
     lead.status !== LeadStatus.LOST_TO_COMPETITOR;
 
   return (
-    <div className="bg-card rounded-2xl shadow-sm border border-dove overflow-hidden">
+    <div className="bg-white rounded-cards shadow-steep overflow-hidden">
       <div className="p-4 border-b border-dove bg-fog flex items-center gap-2">
-        <Gavel className="h-4 w-4 text-muted-foreground" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+        <Gavel className="h-4 w-4 text-graphite" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-graphite">
           管理决策终端
         </span>
       </div>
@@ -135,7 +135,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-muted-foreground uppercase ml-1">
+          <label className="text-[10px] font-black text-graphite uppercase ml-1">
             拟收房评估价 (万)
           </label>
           <input
@@ -147,7 +147,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-muted-foreground uppercase ml-1">
+          <label className="text-[10px] font-black text-graphite uppercase ml-1">
             评估意见摘要
           </label>
           <input
@@ -175,9 +175,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
         </Button>
       </div>
       <MarkLostSection
-        onConfirm={(reason) =>
-          onAudit(lead.id, LeadStatus.LOST_TO_COMPETITOR, undefined, reason)
-        }
+        onConfirm={(reason) => onAudit(lead.id, LeadStatus.LOST_TO_COMPETITOR, undefined, reason)}
       />
     </div>
   );
@@ -218,10 +216,10 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
 
   return (
     <div>
-      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center justify-between">
+      <div className="bg-emerald-50 border border-emerald-100 rounded-inputs p-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4 text-emerald-600" />
-          <span className="text-xs text-muted-foreground">当前评估价</span>
+          <span className="text-xs text-graphite">当前评估价</span>
           <span className="text-sm font-medium text-ink tabular-nums">
             ¥{lead.evalPrice ?? "-"} 万
           </span>
@@ -235,7 +233,7 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
         </Button>
       </div>
       {showAdjustForm && (
-        <div className="mt-3 grid grid-cols-2 gap-3 p-3 bg-fog rounded-xl">
+        <div className="mt-3 grid grid-cols-2 gap-3 p-3 bg-fog rounded-inputs">
           <div className="space-y-1.5">
             <label className="text-xs text-graphite ml-1">新评估价 (万)</label>
             <input
@@ -302,7 +300,7 @@ interface PendingVisitPanelProps {
 const PendingVisitPanel: React.FC<PendingVisitPanelProps> = ({ lead, onAudit, onEvalAdjusted }) => (
   <div className="space-y-4">
     <CurrentEvalPriceSection lead={lead} onEvalAdjusted={onEvalAdjusted} />
-    <div className="bg-fog border border-dove p-4 rounded-xl flex gap-3">
+    <div className="bg-fog p-4 rounded-inputs flex gap-3">
       <AlertTriangle className="h-5 w-5 text-graphite shrink-0" />
       <div className="space-y-1">
         <p className="text-xs font-bold text-ink">当前阶段：实勘核验</p>
@@ -332,7 +330,7 @@ interface VisitedPanelProps {
 const VisitedPanel: React.FC<VisitedPanelProps> = ({ lead, onAudit, onEvalAdjusted }) => (
   <div className="space-y-4">
     <CurrentEvalPriceSection lead={lead} onEvalAdjusted={onEvalAdjusted} />
-    <div className="bg-success-container border border-emerald-100 p-4 rounded-xl flex gap-3">
+    <div className="bg-success-container border border-emerald-100 p-4 rounded-inputs flex gap-3">
       <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
       <div className="space-y-1">
         <p className="text-xs font-bold text-emerald-800">实勘通过 - 等待签约</p>
@@ -358,8 +356,8 @@ const SignedPanel: React.FC = () => (
     <div className="inline-flex h-12 w-12 rounded-full bg-emerald-100 text-success items-center justify-center mb-3">
       <CheckCircle2 className="h-6 w-6" />
     </div>
-    <h4 className="font-black text-foreground">恭喜！已完成资产收储</h4>
-    <p className="text-xs text-muted-foreground mt-1">该房源已进入&quot;工程翻新&quot;阶段</p>
+    <h4 className="font-black text-ink">恭喜！已完成资产收储</h4>
+    <p className="text-xs text-graphite mt-1">该房源已进入&quot;工程翻新&quot;阶段</p>
   </div>
 );
 
@@ -378,21 +376,21 @@ const TerminalStatusPanel: React.FC<TerminalStatusPanelProps> = ({
   auditReason,
   auditTime,
 }) => (
-  <div className="bg-fog border border-dove p-4 rounded-xl space-y-1.5">
-    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{title}</p>
-    <p className="text-[11px] text-muted-foreground leading-relaxed">{description}</p>
+  <div className="bg-fog p-4 rounded-inputs space-y-1.5">
+    <p className="text-xs font-bold text-graphite uppercase tracking-widest">{title}</p>
+    <p className="text-[11px] text-graphite leading-relaxed">{description}</p>
     {auditReason && (
       <div className="pt-1 space-y-0.5">
         {reasonLabel && (
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+          <p className="text-[10px] font-black text-graphite uppercase tracking-widest">
             {reasonLabel}
           </p>
         )}
-        <p className="text-sm italic text-muted-foreground">&quot;{auditReason}&quot;</p>
+        <p className="text-sm italic text-graphite">&quot;{auditReason}&quot;</p>
       </div>
     )}
     {auditTime && (
-      <p className="text-[10px] font-bold text-muted-foreground pt-1 border-t border-dove">
+      <p className="text-[10px] font-bold text-graphite pt-1 border-t border-dove">
         处理时间：{safeFormatDate(auditTime, "yyyy/MM/dd HH:mm:ss")}
       </p>
     )}

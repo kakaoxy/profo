@@ -20,26 +20,26 @@ export function CompetitorList({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-graphite" />
       </div>
     );
   }
 
   if (competitors.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-muted-foreground bg-muted rounded-lg">
+      <div className="text-center py-8 text-sm text-graphite bg-fog rounded-lg">
         暂未添加竞品小区
       </div>
     );
   }
 
   return (
-    <div className="border border-border rounded-lg divide-y divide-border">
+    <div className="border border-fog rounded-lg divide-y divide-border">
       {competitors.map((item) => (
         <div key={item.community_id} className="px-4 py-3 flex items-center justify-between">
           <div>
-            <div className="font-medium text-sm text-foreground">{item.community_name}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">
+            <div className="font-medium text-sm text-ink">{item.community_name}</div>
+            <div className="text-xs text-graphite mt-0.5">
               在售 {item.on_sale_count} 套 · 均价 ¥{item.avg_price?.toLocaleString() || "-"}/㎡
             </div>
           </div>

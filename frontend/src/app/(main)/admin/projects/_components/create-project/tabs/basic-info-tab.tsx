@@ -151,7 +151,7 @@ export function BasicInfoTab({ form }: TabProps) {
             const hasCommunityDistrict = !!communityDistrict;
             return (
               <FormItem>
-                <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                   行政区
                   {!hasCommunityDistrict && (
                     <span className="text-[12px] text-graphite font-normal ml-1">（可手输）</span>
@@ -182,7 +182,7 @@ export function BasicInfoTab({ form }: TabProps) {
             const hasCommunityBusinessCircleVal = !!communityBusinessCircle;
             return (
               <FormItem>
-                <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                   商圈
                   {!hasCommunityBusinessCircleVal && (
                     <span className="text-[12px] text-graphite font-normal ml-1">（可手输）</span>
@@ -212,7 +212,7 @@ export function BasicInfoTab({ form }: TabProps) {
         name="address"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+            <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
               详细地址
               <span className="text-error ml-0.5">*</span>
             </FormLabel>
@@ -237,7 +237,7 @@ export function BasicInfoTab({ form }: TabProps) {
           name="area"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+              <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                 产证面积 (㎡)
               </FormLabel>
               <FormControl>
@@ -256,7 +256,7 @@ export function BasicInfoTab({ form }: TabProps) {
 
         {/* 户型 - Steep: pill-chip styled room inputs */}
         <FormItem>
-          <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+          <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
             户型
             <span className="text-[12px] text-graphite font-normal ml-1">（至少填写一项）</span>
           </FormLabel>
@@ -279,7 +279,7 @@ export function BasicInfoTab({ form }: TabProps) {
           name="floor_info"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+              <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                 楼层
               </FormLabel>
               <FormControl>
@@ -296,7 +296,7 @@ export function BasicInfoTab({ form }: TabProps) {
           name="orientation"
           render={({ field }) => (
             <FormItem className="space-y-3">
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+              <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                 朝向
               </FormLabel>
               <FormControl>
@@ -340,7 +340,7 @@ export function BasicInfoTab({ form }: TabProps) {
           name="business_form"
           render={({ field }) => (
             <FormItem className="space-y-3">
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+              <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                 业务形式
               </FormLabel>
               <FormControl>
@@ -381,7 +381,7 @@ export function BasicInfoTab({ form }: TabProps) {
           name="project_manager_id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+              <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
                 项目负责人
               </FormLabel>
               <Select

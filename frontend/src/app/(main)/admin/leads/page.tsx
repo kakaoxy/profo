@@ -73,7 +73,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   const creatorName = params.creator_id ? leads[0]?.creatorName : undefined;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-fog">
       <LeadsView
         initialLeads={leads}
         total={total}

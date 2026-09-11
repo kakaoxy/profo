@@ -10,7 +10,7 @@ import type {
 import type { FunnelTab } from "../../_lib/funnel-constants";
 import { FUNNEL_DAYS_OPTIONS } from "../../_lib/funnel-constants";
 import { GROWTH_MODULE_META } from "../../types";
-import { PhaseTag1 } from "../../_components/phase-tag";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { FunnelStats } from "./funnel-stats";
 import { FunnelCompare } from "./funnel-compare";
 import { FunnelDrilldown } from "./funnel-drilldown";
@@ -83,17 +83,9 @@ export function FunnelView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 页头：标题 + 一期标记 + 时间区间 */}
+      {/* 页头：标题 + 时间区间 */}
       <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
-        <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink inline-flex items-center gap-2.5">
-            漏斗看板
-            <PhaseTag1 />
-          </h1>
-          <p className="mt-1.5 text-[15px] text-graphite">
-            分享 → 打开 → 留资 → 转化的全链路转化监控
-          </p>
-        </div>
+        <PageHeader title="漏斗看板" description="分享 → 打开 → 留资 → 转化的全链路转化监控" />
         <div className="flex flex-wrap gap-2" role="group" aria-label="时间区间">
           {FUNNEL_DAYS_OPTIONS.map((d) => (
             <button

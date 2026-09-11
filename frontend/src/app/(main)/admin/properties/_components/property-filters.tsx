@@ -48,7 +48,7 @@ export function PropertyFiltersCore() {
     <>
       {/* 1. 状态 */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">房源状态</Label>
+        <Label className="text-xs font-medium text-graphite">房源状态</Label>
         <div className="flex gap-2">
           {["", "在售", "成交", "过期"].map((s) => (
             <Button
@@ -66,9 +66,9 @@ export function PropertyFiltersCore() {
 
       {/* 2. 小区搜索 */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">小区名称</Label>
+        <Label className="text-xs font-medium text-graphite">小区名称</Label>
         <div className="relative">
-          <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2 top-2 h-4 w-4 text-graphite" />
           <Input
             placeholder="搜索小区..."
             className="pl-8 h-8 text-sm"
@@ -81,9 +81,9 @@ export function PropertyFiltersCore() {
 
       {/* 2.1 商圈搜索 */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">商圈名称</Label>
+        <Label className="text-xs font-medium text-graphite">商圈名称</Label>
         <div className="relative">
-          <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2 top-2 h-4 w-4 text-graphite" />
           <Input
             placeholder="搜索商圈..."
             className="pl-8 h-8 text-sm"
@@ -96,7 +96,7 @@ export function PropertyFiltersCore() {
 
       {/* 3. 户型 (多选，5+ 走 rooms_gte) */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">户型 (室)</Label>
+        <Label className="text-xs font-medium text-graphite">户型 (室)</Label>
         <div className="flex flex-wrap gap-1.5">
           {["1", "2", "3", "4", "5+"].map((r) => {
             const isPlus = r === "5+";
@@ -121,7 +121,7 @@ export function PropertyFiltersCore() {
 
       {/* 4. 楼层 (修复为多选) */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">楼层</Label>
+        <Label className="text-xs font-medium text-graphite">楼层</Label>
         <div className="flex flex-wrap gap-1.5">
           {["低楼层", "中楼层", "高楼层"].map((f) => (
             <Button
@@ -157,7 +157,7 @@ export function PropertyFiltersAdvanced() {
     <>
       {/* 5. 价格范围 */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">价格范围 (万)</Label>
+        <Label className="text-xs font-medium text-graphite">价格范围 (万)</Label>
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -167,7 +167,7 @@ export function PropertyFiltersAdvanced() {
             maxLength={50}
             onChange={(e) => setMinPrice(e.target.value || null)}
           />
-          <span className="text-muted-foreground">-</span>
+          <span className="text-graphite">-</span>
           <Input
             type="number"
             placeholder="最高"
@@ -181,7 +181,7 @@ export function PropertyFiltersAdvanced() {
 
       {/* 6. 面积范围 */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">面积范围 (㎡)</Label>
+        <Label className="text-xs font-medium text-graphite">面积范围 (㎡)</Label>
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -191,7 +191,7 @@ export function PropertyFiltersAdvanced() {
             maxLength={50}
             onChange={(e) => setMinArea(e.target.value || null)}
           />
-          <span className="text-muted-foreground">-</span>
+          <span className="text-graphite">-</span>
           <Input
             type="number"
             placeholder="最大"
@@ -206,7 +206,7 @@ export function PropertyFiltersAdvanced() {
       {/* 7. 区域展示 */}
       {districts && (
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground">已选区域</Label>
+          <Label className="text-xs font-medium text-graphite">已选区域</Label>
           <div className="flex flex-wrap gap-1">
             {districts.split(",").map((d) => (
               <Badge
@@ -252,7 +252,7 @@ export function PropertyFilters() {
             variant="ghost"
             size="sm"
             onClick={handleReset}
-            className="h-8 px-2 text-muted-foreground hover:text-primary"
+            className="h-8 px-2 text-graphite hover:text-primary"
           >
             <RotateCcw className="mr-1 h-3 w-3" />
             重置

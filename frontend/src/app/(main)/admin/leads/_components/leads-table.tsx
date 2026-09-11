@@ -52,9 +52,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
           <th className="p-4 hidden sm:table-cell text-right">总价 / 单价</th>
           <th className="p-4 text-center">状态</th>
           <th className="p-4 hidden xl:table-cell">录入人</th>
-          <th className="p-4 hidden xl:table-cell text-right whitespace-nowrap">
-            评估价
-          </th>
+          <th className="p-4 hidden xl:table-cell text-right whitespace-nowrap">评估价</th>
           <th className="p-4 hidden xl:table-cell whitespace-nowrap">创建时间</th>
           <th className="p-4 hidden xl:table-cell whitespace-nowrap">更新时间</th>
           <th className="p-4 pr-6 text-right">操作</th>
@@ -87,14 +85,14 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                         }
                       />
                     ) : (
-                      <Home className="h-5 w-5 text-muted-foreground/50" />
+                      <Home className="h-5 w-5 text-graphite/50" />
                     )}
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="font-medium text-ink text-sm truncate max-w-[180px]">
                       {lead.communityName}
                     </span>
-                    <span className="text-xs text-muted-foreground font-mono tracking-tight">
+                    <span className="text-xs text-graphite font-mono tracking-tight">
                       ID: {lead.id.slice(0, 8)}
                     </span>
                   </div>
@@ -103,7 +101,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
 
               {/* 区域 */}
               <td className="p-4 pl-6 hidden lg:table-cell">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-graphite">
                   {lead.district || "-"}
                   {lead.businessArea ? ` · ${lead.businessArea}` : ""}
                 </span>
@@ -112,8 +110,8 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               {/* 户型 / 面积 */}
               <td className="p-4 hidden md:table-cell">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">{lead.layout || "-"}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-sm font-medium text-ink">{lead.layout || "-"}</span>
+                  <span className="text-xs text-graphite">
                     {lead.area > 0 ? `${lead.area}㎡` : "-"} · {lead.floorInfo || "-"}
                   </span>
                 </div>
@@ -125,7 +123,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                   <span className="text-sm font-medium text-ink tabular-nums">
                     {lead.totalPrice > 0 ? `¥${lead.totalPrice}万` : "-"}
                   </span>
-                  <span className="text-xs text-muted-foreground tabular-nums">
+                  <span className="text-xs text-graphite tabular-nums">
                     {lead.unitPrice > 0 ? `${lead.unitPrice.toFixed(2)}万/㎡` : "-"}
                   </span>
                 </div>
@@ -133,38 +131,35 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
 
               {/* 状态 */}
               <td className="p-4 text-center">
-                <Badge
-                  variant="secondary"
-                  className={cn("px-3 py-1 text-xs", config.badgeClass)}
-                >
+                <Badge variant="secondary" className={cn("px-3 py-1 text-xs", config.badgeClass)}>
                   {config.label}
                 </Badge>
               </td>
 
               {/* 录入人 */}
               <td className="p-4 hidden xl:table-cell">
-                <span className="text-sm text-muted-foreground bg-fog px-2 py-1 rounded-md">
+                <span className="text-sm text-graphite bg-fog px-2 py-1 rounded-md">
                   {lead.referrerName || lead.creatorName || "-"}
                 </span>
               </td>
 
               {/* 评估价 */}
               <td className="p-4 hidden xl:table-cell text-right">
-                <span className="text-sm font-medium text-foreground tabular-nums">
+                <span className="text-sm font-medium text-ink tabular-nums">
                   {lead.evalPrice ? `¥${lead.evalPrice}万` : "-"}
                 </span>
               </td>
 
               {/* 创建时间 */}
               <td className="p-4 hidden xl:table-cell">
-                <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
+                <span className="text-sm text-graphite tabular-nums whitespace-nowrap">
                   {formatDateOnly(lead.createdAt)}
                 </span>
               </td>
 
               {/* 更新时间 */}
               <td className="p-4 hidden xl:table-cell">
-                <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
+                <span className="text-sm text-graphite tabular-nums whitespace-nowrap">
                   {formatDateOnly(lead.updatedAt)}
                 </span>
               </td>

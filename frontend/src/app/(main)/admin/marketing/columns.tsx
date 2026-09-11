@@ -75,7 +75,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
           {imageUrl && isValidUrl(imageUrl) ? (
-            <div className="relative w-20 h-14 rounded-[var(--radius-images)] shrink-0 border border-border overflow-hidden">
+            <div className="relative w-20 h-14 rounded-[var(--radius-images)] shrink-0 border border-fog overflow-hidden">
               {isDev ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt="封面" className="w-full h-full object-cover" />
@@ -84,7 +84,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               )}
             </div>
           ) : (
-            <div className="w-20 h-14 rounded-[var(--radius-images)] bg-fog flex items-center justify-center text-xs text-graphite shrink-0 border border-border">
+            <div className="w-20 h-14 rounded-[var(--radius-images)] bg-fog flex items-center justify-center text-xs text-graphite shrink-0 border border-fog">
               无图
             </div>
           )}
@@ -93,7 +93,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               {project.title || "未命名项目"}
             </span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-[11px] text-muted-foreground font-mono tracking-tight">
+              <span className="text-[11px] text-graphite font-mono tracking-tight">
                 ID: {project.id}
               </span>
               <Badge
@@ -102,7 +102,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               >
                 {config?.label}
               </Badge>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-[11px] text-graphite">
                 {project.community_name || "未知小区"}
               </span>
             </div>
@@ -114,39 +114,35 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "layout",
-    header: () => <div className="hidden md:block text-muted-foreground font-medium">户型</div>,
+    header: () => <div className="hidden md:block text-graphite font-medium">户型</div>,
     cell: ({ row }) => (
       <div className="hidden md:block">
-        <div className="text-sm font-medium text-foreground">{row.original.layout || "-"}</div>
-        <div className="text-xs text-muted-foreground">{formatArea(row.original.area)}</div>
+        <div className="text-sm font-medium text-ink">{row.original.layout || "-"}</div>
+        <div className="text-xs text-graphite">{formatArea(row.original.area)}</div>
       </div>
     ),
   },
 
   {
     accessorKey: "orientation",
-    header: () => <div className="hidden md:block text-muted-foreground font-medium">朝向</div>,
+    header: () => <div className="hidden md:block text-graphite font-medium">朝向</div>,
     cell: ({ row }) => (
-      <span className="hidden md:block text-sm text-foreground">
-        {row.original.orientation || "-"}
-      </span>
+      <span className="hidden md:block text-sm text-ink">{row.original.orientation || "-"}</span>
     ),
   },
 
   {
     accessorKey: "floor_info",
-    header: () => <div className="hidden lg:block text-muted-foreground font-medium">楼层</div>,
+    header: () => <div className="hidden lg:block text-graphite font-medium">楼层</div>,
     cell: ({ row }) => (
-      <span className="hidden lg:block text-sm text-foreground">
-        {row.original.floor_info || "-"}
-      </span>
+      <span className="hidden lg:block text-sm text-ink">{row.original.floor_info || "-"}</span>
     ),
   },
 
   {
     accessorKey: "total_price",
     header: () => (
-      <div className="hidden sm:block text-right pr-4 text-muted-foreground font-medium">总价</div>
+      <div className="hidden sm:block text-right pr-4 text-graphite font-medium">总价</div>
     ),
     cell: ({ row }) => (
       <div className="hidden sm:block text-right pr-4">
@@ -162,9 +158,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "project_status",
-    header: () => (
-      <div className="hidden md:block pl-2 text-muted-foreground font-medium">项目状态</div>
-    ),
+    header: () => <div className="hidden md:block pl-2 text-graphite font-medium">项目状态</div>,
     cell: ({ row }) => {
       const status = row.original.project_status || "在途";
       const config = statusConfig[status] || { label: status };
@@ -185,7 +179,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "publish_status",
-    header: () => <div className="hidden lg:block text-muted-foreground font-medium">发布状态</div>,
+    header: () => <div className="hidden lg:block text-graphite font-medium">发布状态</div>,
     cell: ({ row }) => {
       const publishStatus = row.original.publish_status || "草稿";
       const config = publishStatusConfig[publishStatus] || {
@@ -208,11 +202,11 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     accessorKey: "updated_at",
-    header: () => <div className="hidden xl:block text-muted-foreground font-medium">更新时间</div>,
+    header: () => <div className="hidden xl:block text-graphite font-medium">更新时间</div>,
     cell: ({ row }) => {
       const date = row.original.updated_at;
       return (
-        <span className="hidden xl:block text-sm text-muted-foreground">
+        <span className="hidden xl:block text-sm text-graphite">
           {safeFormatDate(date, "yyyy/MM/dd HH:mm")}
         </span>
       );
@@ -221,7 +215,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     id: "actions",
-    header: () => <div className="text-right pr-4 text-muted-foreground font-medium">操作</div>,
+    header: () => <div className="text-right pr-4 text-graphite font-medium">操作</div>,
     cell: ({ row }) => <ActionCell project={row.original} />,
   },
 ];

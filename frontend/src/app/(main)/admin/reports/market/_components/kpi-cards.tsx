@@ -1,17 +1,18 @@
 /**
  * 报表页 KPI 卡片组件。
  *
+ * 复用后台统一 KPI 卡网格 StatCardGrid（Steep 体系）：
  * 接收聚合好的 KpiData 作为 props，渲染 4 张 KPI 卡片：
  * 成交套数 / 平均成交价 / 平均单价 / 在售房源。
- * 顶部小标签，中部大数值（tabular-nums），底部环比指示器（图标+百分比）。
+ * 顶部小标签，中部大数值（30px / 450 / tabular-nums），底部环比指示器（图标+百分比）。
  *
  * variant='community' 时第 4 张卡片切换为「主力户型」（无环比，显示 —）。
  *
  * Server Component，无需 'use client'。
  */
-import { Card, CardContent } from "@/components/ui/card";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import type { ReactElement } from "react";
+import { StatCardGrid, type StatItem } from "@/app/(main)/admin/_components";
 import {
   formatAvgPriceWan,
   formatCount,
@@ -60,15 +61,15 @@ const CARDS: readonly CardConfig[] = [
   },
 ];
 
-/** 环比方向 → 文本颜色（涨红跌绿，持平/未知灰；遵循中国股市习惯） */
-function qoqColorClass(direction: QoqDirection): string {
+/** 环比方向 → 趋势色调（涨红跌绿，持平/未知中性；遵循中国股市习惯） */
+function qoqTone(direction: QoqDirection): "up" | "down" | "neutral" {
   switch (direction) {
     case "up":
-      return "text-money-positive";
+      return "up";
     case "down":
-      return "text-money-negative";
+      return "down";
     default:
-      return "text-muted-foreground";
+      return "neutral";
   }
 }
 
@@ -80,53 +81,53 @@ function QoqIcon({ direction }: { direction: QoqDirection }): ReactElement {
   return <Minus className={className} aria-hidden="true" />;
 }
 
+/**
+ * 环比指示器（无颜色，颜色由 StatCardGrid 按 tone 统一渲染）。
+ * 保留 formatQoq 调用与 sr-only 无障碍文本。
+ */
 function QoqIndicator({ card }: { card: KpiCard }): ReactElement {
   const { text, direction } = formatQoq(card.qoq);
-  const colorClass = qoqColorClass(direction);
   const srText = direction === "up" ? "上涨" : direction === "down" ? "下跌" : "持平";
   return (
-    <p className={`flex items-center gap-1 text-xs font-medium tabular-nums ${colorClass}`}>
+    <span className="flex items-center gap-1 tabular-nums">
       <QoqIcon direction={direction} />
       <span>{text}</span>
       <span className="sr-only">{srText}</span>
-    </p>
+    </span>
   );
 }
 
 export function KpiCards({ data, variant = "market", mainLayout }: KpiCardsProps): ReactElement {
   // community 变体下，前 3 张卡片复用，第 4 张切换为「主力户型」
   const cards = variant === "community" ? CARDS.slice(0, 3) : CARDS;
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {cards.map((cfg) => {
-        const card = data[cfg.key];
-        return (
-          <Card
-            key={cfg.key}
-            className="p-4 bg-card border-border shadow-sm transition-colors hover:bg-muted/50"
-          >
-            <CardContent className="px-0 space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground truncate">{cfg.label}</p>
-              <p className="text-xl font-bold text-foreground tabular-nums">
-                {cfg.format(card.value)}
-              </p>
-              <QoqIndicator card={card} />
-            </CardContent>
-          </Card>
-        );
-      })}
-      {variant === "community" && (
-        <Card className="p-4 bg-card border-border shadow-sm transition-colors hover:bg-muted/50">
-          <CardContent className="px-0 space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground truncate">主力户型</p>
-            <p className="text-xl font-bold text-foreground">{mainLayout ?? "-"}</p>
-            <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-              <Minus className="w-3 h-3" aria-hidden="true" />
-              <span>&mdash;</span>
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+
+  const items: StatItem[] = cards.map((cfg) => {
+    const card = data[cfg.key];
+    const { direction } = formatQoq(card.qoq);
+    return {
+      label: cfg.label,
+      value: cfg.format(card.value),
+      trend: {
+        text: <QoqIndicator card={card} />,
+        tone: qoqTone(direction),
+      },
+    };
+  });
+
+  if (variant === "community") {
+    items.push({
+      label: "主力户型",
+      value: mainLayout ?? "-",
+      trend: {
+        text: (
+          <span className="flex items-center gap-1">
+            <Minus className="w-3 h-3" aria-hidden="true" />
+            <span>—</span>
+          </span>
+        ),
+      },
+    });
+  }
+
+  return <StatCardGrid items={items} columns={4} />;
 }

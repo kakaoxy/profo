@@ -18,6 +18,8 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import type { components } from "@/lib/api-types";
 
 import { ImageGrid } from "./_components/image-grid";
+import { PageContainer } from "@/app/(main)/admin/_components/page-container";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { ImageUploadDialog } from "./_components/image-upload-dialog";
 import { ImagePreviewDialog } from "./_components/image-preview-dialog";
 import {
@@ -106,34 +108,38 @@ export default function CommunityImagesPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)]">
-      {/* Header */}
-      <header className="shrink-0 border-b border-border px-4 py-3">
-        <h1 className="text-base font-bold mb-3">小区户型图库</h1>
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <CommunitySelect
-              value={selectedCommunity?.name ?? ""}
-              onChange={handleCommunityChange}
-              allowCreate={false}
-              placeholder="搜索小区名称或商圈..."
-              label="选择小区"
-            />
-          </div>
-          {canWrite && selectedCommunity && (
-            <Button size="sm" onClick={() => setUploadOpen(true)} className="h-12 shrink-0">
-              <Plus className="h-4 w-4 mr-1" />
-              上传户型图
-            </Button>
-          )}
-        </div>
-      </header>
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
+        <PageHeader
+          title="小区户型图库"
+          description="选择小区后管理其户型图：上传、编辑描述、删除与大图预览"
+        />
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+        {/* 搜索与上传工具条 */}
+        <div className="border-b border-fog pb-5">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <CommunitySelect
+                value={selectedCommunity?.name ?? ""}
+                onChange={handleCommunityChange}
+                allowCreate={false}
+                placeholder="搜索小区名称或商圈..."
+                label="选择小区"
+              />
+            </div>
+            {canWrite && selectedCommunity && (
+              <Button size="sm" onClick={() => setUploadOpen(true)} className="h-12 shrink-0">
+                <Plus className="h-4 w-4 mr-1" />
+                上传户型图
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
         {!selectedCommunity ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <span className="text-sm">请搜索并选择小区</span>
+          <div className="rounded-cards bg-white shadow-steep py-20 text-center">
+            <span className="text-sm text-graphite">请搜索并选择小区</span>
           </div>
         ) : (
           <div className="space-y-4">
@@ -154,7 +160,7 @@ export default function CommunityImagesPage() {
             )}
           </div>
         )}
-      </div>
+      </PageContainer>
 
       {/* Dialogs */}
       {selectedCommunity && (

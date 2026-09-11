@@ -3,6 +3,7 @@ import { fetchClient } from "@/lib/api-server";
 import { extractPaginatedData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
 import { GovernanceView } from "./governance-view";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import { pickCommunityFields } from "./pick-community-fields";
 
 interface GovernancePageProps {
@@ -47,16 +48,16 @@ export default async function GovernancePage(props: GovernancePageProps) {
   const minimalItems = items.map(pickCommunityFields);
 
   return (
-    <div className="container h-full flex flex-col gap-4 sm:gap-6 p-4 sm:p-8 m-x-8">
-      <div className="flex flex-col gap-1 sm:gap-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">数据治理</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          合并重复的小区名称，清洗脏数据。合并操作将迁移关联的房源数据，操作不可撤销。
-        </p>
-      </div>
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
+        <PageHeader
+          title="数据治理"
+          description="合并重复的小区名称，清洗脏数据。合并操作将迁移关联的房源数据，操作不可撤销。"
+        />
 
-      {/* 核心治理视图 */}
-      <GovernanceView data={minimalItems} total={total || 0} page={page} pageSize={pageSize} />
+        {/* 核心治理视图 */}
+        <GovernanceView data={minimalItems} total={total || 0} page={page} pageSize={pageSize} />
+      </PageContainer>
     </div>
   );
 }

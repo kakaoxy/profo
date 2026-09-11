@@ -93,10 +93,10 @@ export const ImageUpload: React.FC<Props> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+        <span className="text-[10px] font-black text-graphite uppercase tracking-widest ml-1">
           房源实拍
         </span>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[10px] text-graphite">
           {images.length}/{maxImages}
         </span>
       </div>
@@ -137,7 +137,7 @@ export const ImageUpload: React.FC<Props> = ({
             type="button"
             onClick={() => !isUploading && fileInputRef.current?.click()}
             disabled={isUploading}
-            className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:text-ink hover:border-ink/40 transition-all bg-fog/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="aspect-square border border-dashed border-dove/40 rounded-inputs flex flex-col items-center justify-center text-graphite hover:text-ink hover:border-ink/40 transition-all bg-fog disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="添加图片"
           >
             {isUploading ? (
@@ -157,7 +157,7 @@ export const ImageUpload: React.FC<Props> = ({
         )}
 
         {!canAddMore && images.length >= maxImages && (
-          <div className="aspect-square border-2 border-dashed border-dove rounded-xl flex flex-col items-center justify-center text-graphite bg-fog/50">
+          <div className="aspect-square border border-dashed border-dove/40 rounded-inputs flex flex-col items-center justify-center text-graphite bg-fog">
             <AlertCircle className="h-5 w-5 mb-1" />
             <span className="text-[8px] font-black uppercase tracking-widest">已满</span>
           </div>

@@ -103,22 +103,22 @@ function ChangesDisplay({
   after: Record<string, unknown> | null;
 }) {
   if (!before && !after) {
-    return <span className="text-sm text-muted-foreground">无变更记录</span>;
+    return <span className="text-sm text-graphite">无变更记录</span>;
   }
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {before && (
         <div>
-          <div className="text-xs font-medium text-muted-foreground mb-1">变更前</div>
-          <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-60 whitespace-pre-wrap break-all">
+          <div className="text-xs font-medium text-graphite mb-1">变更前</div>
+          <pre className="rounded-inputs bg-fog p-3 text-xs overflow-auto max-h-60 whitespace-pre-wrap break-all">
             {JSON.stringify(before, null, 2)}
           </pre>
         </div>
       )}
       {after && (
         <div>
-          <div className="text-xs font-medium text-muted-foreground mb-1">变更后</div>
-          <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-60 whitespace-pre-wrap break-all">
+          <div className="text-xs font-medium text-graphite mb-1">变更后</div>
+          <pre className="rounded-inputs bg-fog p-3 text-xs overflow-auto max-h-60 whitespace-pre-wrap break-all">
             {JSON.stringify(after, null, 2)}
           </pre>
         </div>
@@ -205,11 +205,11 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
       {/* 筛选表单 */}
       <form
         onSubmit={handleSearch}
-        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4"
+        className="flex flex-col gap-3 rounded-cards bg-white p-6 shadow-steep"
       >
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">操作者用户ID</label>
+            <label className="text-xs text-graphite">操作者用户ID</label>
             <Input
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
@@ -220,7 +220,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">操作类型</label>
+            <label className="text-xs text-graphite">操作类型</label>
             <Select value={action} onValueChange={setAction}>
               <SelectTrigger className="h-9 w-[160px]">
                 <SelectValue placeholder="全部操作" />
@@ -237,7 +237,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">资源类型</label>
+            <label className="text-xs text-graphite">资源类型</label>
             <Select value={resourceType} onValueChange={setResourceType}>
               <SelectTrigger className="h-9 w-[160px]">
                 <SelectValue placeholder="全部资源" />
@@ -254,7 +254,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">开始日期</label>
+            <label className="text-xs text-graphite">开始日期</label>
             <Input
               type="date"
               value={startTime}
@@ -264,7 +264,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">结束日期</label>
+            <label className="text-xs text-graphite">结束日期</label>
             <Input
               type="date"
               value={endTime}
@@ -293,7 +293,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
       </form>
 
       {/* 表格 */}
-      <div className="rounded-md border overflow-x-auto">
+      <div className="rounded-cards bg-white shadow-steep overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -309,7 +309,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
           <TableBody>
             {initialData.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-graphite">
                   暂无审计日志
                 </TableCell>
               </TableRow>
@@ -320,7 +320,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
                 return (
                   <Fragment key={log.id}>
                     <TableRow>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-graphite">
                         {safeFormatDate(log.created_at, "yyyy-MM-dd HH:mm:ss")}
                       </TableCell>
                       <TableCell className="text-sm font-mono" title={log.user_id ?? undefined}>
@@ -337,9 +337,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
                       <TableCell className="text-sm font-mono" title={log.resource_id ?? undefined}>
                         {truncateId(log.resource_id)}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {log.ip ?? "-"}
-                      </TableCell>
+                      <TableCell className="text-sm text-graphite">{log.ip ?? "-"}</TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
@@ -360,7 +358,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
                     </TableRow>
                     {isExpanded && (
                       <TableRow>
-                        <TableCell colSpan={7} className="bg-muted/30">
+                        <TableCell colSpan={7} className="bg-fog/60">
                           <ChangesDisplay before={log.before ?? null} after={log.after ?? null} />
                         </TableCell>
                       </TableRow>

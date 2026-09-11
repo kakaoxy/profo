@@ -24,7 +24,7 @@ export const TabsNav: React.FC<Props> = ({
   ];
 
   return (
-    <div className="px-6 bg-card border-b">
+    <div className="px-6 bg-white border-b">
       <div className="flex h-12 items-center justify-between">
         <div className="flex h-12">
           {tabs.map((tab) => (

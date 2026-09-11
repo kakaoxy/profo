@@ -146,7 +146,7 @@ const CommunitySearchChip = memo(function CommunitySearchChip() {
   if (expanded) {
     return (
       <div ref={containerRef} className="relative shrink-0">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-graphite pointer-events-none" />
         <Input
           ref={inputRef}
           placeholder="搜索小区..."

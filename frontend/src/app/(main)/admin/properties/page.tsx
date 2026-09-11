@@ -5,6 +5,7 @@ import { PropertyFilters } from "./_components/property-filters";
 import { PropertyFilterSheet } from "./_components/property-filter-sheet";
 import { PropertyFilterChips } from "./_components/property-filter-chips";
 import { ExportButton } from "./_components/export-button";
+import { PageHeader } from "@/app/(main)/admin/_components";
 import { searchParamsCache } from "./search-params";
 import { PropertyPagination } from "./_components/property-pagination";
 import { PropertyDetailSheet } from "./_components/property-detail-sheet";
@@ -57,29 +58,29 @@ export default async function PropertiesPage(props: PageProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-card">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b bg-background gap-2">
-        <h1 className="text-lg sm:text-xl font-bold tracking-tight">房源列表</h1>
+    <div className="h-screen flex flex-col bg-fog">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-fog bg-fog gap-2">
+        <PageHeader title="房源列表" />
         <div className="flex items-center gap-2">
           {/* 移动端筛选按钮 */}
           <div className="md:hidden">
             <PropertyFilterSheet />
           </div>
-          <span className="text-xs sm:text-sm text-muted-foreground">共 {data?.total || 0} 条</span>
+          <span className="text-xs sm:text-sm text-graphite">共 {data?.total || 0} 条</span>
           <ExportButton />
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* 左侧筛选面板 - 仅在 md 及以上显示 */}
-        <div className="hidden md:flex w-64 border-r bg-muted/50 p-4 overflow-y-auto shrink-0">
+        <div className="hidden md:flex w-64 border-r border-fog bg-fog p-4 overflow-y-auto shrink-0">
           <PropertyFilters />
         </div>
 
         {/* 右侧表格区域 */}
         <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col min-w-0">
-          <div className="flex-1 overflow-y-auto overflow-x-auto scrollbar-hide border rounded-md bg-card shadow-sm hidden md:block">
-            <DataTable columns={columns} data={data?.items || []} />
+          <div className="flex-1 overflow-y-auto scrollbar-hide rounded-cards bg-white shadow-steep hidden md:block">
+            <DataTable columns={columns} data={data?.items || []} container={false} />
           </div>
           {/* 移动端筛选 Chip 工具条 */}
           <PropertyFilterChips />
@@ -87,7 +88,7 @@ export default async function PropertiesPage(props: PageProps) {
           <div className="flex-1 overflow-y-auto md:hidden">
             <PropertyCardList properties={data?.items || []} />
           </div>
-          <div className="mt-2 relative z-50 bg-card md:pb-2">
+          <div className="mt-2 relative z-50 md:pb-2">
             <PropertyPagination total={data?.total || 0} />
           </div>
         </div>

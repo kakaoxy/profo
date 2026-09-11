@@ -26,9 +26,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
   metaClassName,
   className,
 }) => (
-  <div
-    className={cn("bg-pure-white rounded-cards shadow-steep-sm p-4 flex flex-col gap-1", className)}
-  >
+  <div className={cn("bg-white rounded-cards shadow-steep-sm p-4 flex flex-col gap-1", className)}>
     <span className="text-xs font-medium text-graphite flex items-center gap-1.5">
       <Icon className="h-3 w-3" />
       {label}

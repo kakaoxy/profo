@@ -69,7 +69,7 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
 
   return (
     <>
-      <div className="rounded-md border overflow-x-auto scrollbar-hide">
+      <div className="rounded-cards bg-white shadow-steep overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -106,7 +106,7 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
                       </Badge>
                     )}
                     {(!role.permission_codes || role.permission_codes.length === 0) && (
-                      <span className="text-xs text-muted-foreground">-</span>
+                      <span className="text-xs text-graphite">-</span>
                     )}
                   </div>
                 </TableCell>
@@ -115,7 +115,7 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
                     {role.is_active ? "启用" : "禁用"}
                   </Badge>
                 </TableCell>
-                <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                <TableCell className="hidden md:table-cell text-sm text-graphite">
                   {safeFormatDate(role.updated_at, "MM-dd HH:mm")}
                 </TableCell>
                 <TableCell>

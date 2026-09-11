@@ -29,15 +29,15 @@ const LeadCard = memo(function LeadCard({ lead, onClick }: LeadCardProps) {
           onClick(lead.id);
         }
       }}
-      className="active:opacity-70 cursor-pointer transition rounded-lg border border-border bg-card p-3 flex flex-col gap-1"
+      className="active:opacity-70 cursor-pointer transition rounded-cards bg-white shadow-steep-sm p-3 flex flex-col gap-1"
     >
-      <div className="truncate font-medium text-sm text-foreground">{lead.community}</div>
+      <div className="truncate font-medium text-sm text-ink">{lead.community}</div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col">
           <span className="text-error font-bold tabular-nums">
             {formatPriceWan(lead.totalPrice)}
           </span>
-          <span className="text-xs text-muted-foreground tabular-nums">
+          <span className="text-xs text-graphite tabular-nums">
             评估: {formatPriceWan(lead.evalPrice)}
           </span>
         </div>
@@ -47,7 +47,7 @@ const LeadCard = memo(function LeadCard({ lead, onClick }: LeadCardProps) {
           {config.label}
         </span>
       </div>
-      <div className="text-xs text-muted-foreground tabular-nums">
+      <div className="text-xs text-graphite tabular-nums">
         {safeFormatDate(lead.updatedAt, "MM/dd")}
       </div>
     </div>
@@ -66,7 +66,7 @@ export function DashboardLeadsCardList({ leads }: DashboardLeadsCardListProps) {
 
   if (leads.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-muted/40 py-12 text-center text-sm text-muted-foreground">
+      <div className="rounded-cards border border-dashed border-dove/40 bg-fog py-12 text-center text-sm text-graphite">
         暂无线索数据
       </div>
     );

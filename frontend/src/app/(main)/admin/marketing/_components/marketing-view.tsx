@@ -249,7 +249,12 @@ export function MarketingView({ data, total }: MarketingViewProps) {
       >
         <div className="bg-white rounded-cards shadow-steep overflow-hidden">
           <div className="overflow-x-auto">
-            <DataTable columns={columns} data={filteredData} onRowClick={handleRowClick} />
+            <DataTable
+              columns={columns}
+              data={filteredData}
+              onRowClick={handleRowClick}
+              container={false}
+            />
           </div>
         </div>
       </ListView>

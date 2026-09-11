@@ -41,11 +41,11 @@ function PropertyCardItemImpl({ property }: PropertyCardItemProps) {
 
   return (
     <div
-      className="rounded-lg border border-border bg-card p-3 cursor-pointer active:opacity-70 transition flex items-center gap-3"
+      className="rounded-cards bg-white shadow-steep-sm p-3 cursor-pointer active:opacity-70 transition flex items-center gap-3"
       onClick={() => setPropertyId(String(property.id))}
     >
       {/* 左侧：户型图缩略图 */}
-      <div className="w-16 h-12 rounded overflow-hidden bg-muted shrink-0 relative">
+      <div className="w-16 h-12 rounded overflow-hidden bg-fog shrink-0 relative">
         {cover ? (
           <Image
             src={cover}
@@ -57,7 +57,7 @@ function PropertyCardItemImpl({ property }: PropertyCardItemProps) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+          <div className="w-full h-full flex items-center justify-center text-graphite">
             <ImageIcon className="h-4 w-4" />
           </div>
         )}
@@ -85,18 +85,18 @@ function PropertyCardItemImpl({ property }: PropertyCardItemProps) {
         </div>
 
         {/* 第二行：户型·楼层·面积 */}
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-graphite">
           {rooms}室{baths}卫 · {floor_display} · {build_area}㎡
         </div>
 
         {/* 第三行：价格 + 单价 */}
         <div className="flex items-baseline">
           <span className="text-error font-bold text-sm">{total_price}万</span>
-          <span className="text-[10px] text-muted-foreground ml-2">{unit_price} 元/㎡</span>
+          <span className="text-[10px] text-graphite ml-2">{unit_price} 元/㎡</span>
         </div>
 
         {/* 第四行：时间 MM/DD */}
-        {formattedDate && <div className="text-[10px] text-muted-foreground">{formattedDate}</div>}
+        {formattedDate && <div className="text-[10px] text-graphite">{formattedDate}</div>}
       </div>
     </div>
   );

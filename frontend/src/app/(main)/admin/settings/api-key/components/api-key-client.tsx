@@ -45,11 +45,11 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
   if (showNewKey && newApiKey) {
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-status-pending/30 bg-status-pending/10 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-status-pending shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2.5 rounded-inputs bg-apricot-wash/50 px-4 py-3 text-sm text-rust">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <div>
-            <p className="text-sm font-medium text-status-pending">请立即复制您的 API Key</p>
-            <p className="text-sm text-status-pending/80 mt-1">
+            <p className="font-medium">请立即复制您的 API Key</p>
+            <p className="mt-1">
               这是唯一一次显示完整 Key 的机会，关闭后将无法再次查看。请妥善保管。
             </p>
           </div>
@@ -83,13 +83,11 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
   return (
     <>
       <div className="space-y-4">
-        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-success-container/50 dark:bg-emerald-900/20 p-4 flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 text-success dark:text-success shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 rounded-cards bg-white px-6 py-5 shadow-steep">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-rust" aria-hidden="true" />
           <div>
-            <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
-              API Key 已激活
-            </p>
-            <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">
+            <p className="text-sm font-medium text-ink">API Key 已激活</p>
+            <p className="mt-1 text-sm text-graphite">
               您的 API Key 正在使用中。如需更换，请先删除当前 Key 后重新生成。
             </p>
           </div>

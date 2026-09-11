@@ -73,10 +73,10 @@ export function CompetitorsBrawl({ projectId, communityId }: CompetitorsBrawlPro
           onSearchChange={setSearch}
         />
 
-        <Card className="border-border shadow-sm bg-card min-h-75">
+        <Card className="border-fog  bg-white min-h-75">
           {showSpinner ? (
             <div className="flex items-center justify-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
+              <Loader2 className="h-8 w-8 animate-spin text-graphite/50" />
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-40 text-error">
@@ -84,7 +84,7 @@ export function CompetitorsBrawl({ projectId, communityId }: CompetitorsBrawlPro
               <span className="text-sm">{error}</span>
             </div>
           ) : displayItems.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
+            <div className="flex items-center justify-center h-40 text-graphite text-sm">
               暂无数据
             </div>
           ) : (
@@ -113,7 +113,7 @@ export function CompetitorsBrawl({ projectId, communityId }: CompetitorsBrawlPro
                   onPageSizeChange={setPageSize}
                   showPageSizeSelector
                   showFirstLastButtons
-                  className="border-t border-border"
+                  className="border-t border-fog"
                 />
               )}
             </>

@@ -4,6 +4,7 @@ import {
   getGrowthEmployees,
 } from "../_lib/campaign-data";
 import { CampaignsView } from "./_components/campaigns-view";
+import { PageContainer } from "@/app/(main)/admin/_components";
 
 /**
  * 获客中心 · 活动配置页（对齐设计稿 Screen 4）。
@@ -19,9 +20,9 @@ export default async function GrowthCampaignsPage() {
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageContainer>
         <CampaignsView campaigns={campaigns} stats={stats} employees={employees} />
-      </div>
+      </PageContainer>
     </div>
   );
 }

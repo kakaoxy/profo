@@ -6,7 +6,6 @@
  */
 import type { ReactElement } from "react";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -31,8 +30,8 @@ interface ComparisonSummaryTableProps {
 const QOQ_COLOR: Record<QoqDirection, string> = {
   up: "text-money-positive",
   down: "text-money-negative",
-  flat: "text-muted-foreground",
-  unknown: "text-muted-foreground",
+  flat: "text-graphite",
+  unknown: "text-graphite",
 };
 
 function QoqIcon({ direction }: { direction: QoqDirection }): ReactElement {
@@ -82,11 +81,11 @@ function renderMetricValue(metric: string, value: number | null): ReactElement {
 export function ComparisonSummaryTable({ data }: ComparisonSummaryTableProps): ReactElement {
   const { business_circles, summary } = data;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>指标汇总</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="bg-white rounded-cards shadow-steep overflow-hidden">
+      <div className="border-b border-fog px-6 py-4">
+        <h3 className="text-sm font-semibold text-ink">指标汇总</h3>
+      </div>
+      <div className="p-6">
         <Table>
           <TableHeader>
             <TableRow>
@@ -111,7 +110,7 @@ export function ComparisonSummaryTable({ data }: ComparisonSummaryTableProps): R
             ))}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

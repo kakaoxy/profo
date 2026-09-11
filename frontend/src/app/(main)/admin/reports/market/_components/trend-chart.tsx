@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useQueryState, parseAsString } from "nuqs";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -57,52 +56,48 @@ export function TrendChart({ data, granularity, dimension }: TrendChartProps) {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>成交趋势图</CardTitle>
-        <CardAction>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                维度
-              </Label>
-              <ToggleGroup
-                type="single"
-                value={dimension}
-                onValueChange={(v) => {
-                  if (v) void setTrendDim(v);
-                }}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1.5"
-              >
-                {DIMENSION_OPTIONS.map((opt) => (
-                  <ToggleGroupItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant={trendView === "chart" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setTrendView("chart")}
-              >
-                图表
-              </Button>
-              <Button
-                variant={trendView === "table" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setTrendView("table")}
-              >
-                数值
-              </Button>
-            </div>
+    <div className="bg-white rounded-cards shadow-steep overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-fog px-6 py-4">
+        <h3 className="text-sm font-semibold text-ink">成交趋势图</h3>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs font-medium text-graphite whitespace-nowrap">维度</Label>
+            <ToggleGroup
+              type="single"
+              value={dimension}
+              onValueChange={(v) => {
+                if (v) void setTrendDim(v);
+              }}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1.5"
+            >
+              {DIMENSION_OPTIONS.map((opt) => (
+                <ToggleGroupItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
           </div>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
+          <div className="flex items-center gap-1">
+            <Button
+              variant={trendView === "chart" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setTrendView("chart")}
+            >
+              图表
+            </Button>
+            <Button
+              variant={trendView === "table" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setTrendView("table")}
+            >
+              数值
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="p-6">
         {trendView === "chart" ? (
           <TrendChartRenderer data={data} granularity={granularity} dimension={dimension} />
         ) : (
@@ -139,7 +134,7 @@ export function TrendChart({ data, granularity, dimension }: TrendChartProps) {
             </TableBody>
           </Table>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

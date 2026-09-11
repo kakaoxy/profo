@@ -108,7 +108,7 @@ const SortableHeader = ({ title, value }: { title: string; value: string }) => {
           <ArrowDown className="ml-2 h-3.5 w-3.5" />
         )
       ) : (
-        <ArrowUpDown className="ml-2 h-3.5 w-3.5 text-muted-foreground/70" />
+        <ArrowUpDown className="ml-2 h-3.5 w-3.5 text-graphite/70" />
       )}
     </Button>
   );
@@ -150,7 +150,7 @@ const FloorPlanPreviewImpl = ({
   // 防御性校验：无效 URL 时显示占位图，避免 next/image 崩溃
   if (!isValidUrl(cover)) {
     return (
-      <div className="w-10 h-8 sm:w-12 sm:h-9 bg-muted rounded border flex items-center justify-center text-muted-foreground">
+      <div className="w-10 h-8 sm:w-12 sm:h-9 bg-fog rounded border flex items-center justify-center text-graphite">
         <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4" />
       </div>
     );
@@ -159,7 +159,7 @@ const FloorPlanPreviewImpl = ({
   return (
     <HoverCard openDelay={200} closeDelay={100} open={open} onOpenChange={setOpen}>
       <HoverCardTrigger asChild>
-        <div className="relative w-10 h-8 sm:w-12 sm:h-9 rounded overflow-hidden border bg-muted cursor-zoom-in group">
+        <div className="relative w-10 h-8 sm:w-12 sm:h-9 rounded overflow-hidden border bg-fog cursor-zoom-in group">
           <Image
             src={cover}
             alt="户型图缩略"
@@ -174,12 +174,12 @@ const FloorPlanPreviewImpl = ({
 
       {open && (
         <HoverCardContent
-          className="w-100 p-2 bg-card z-50 shadow-lg"
+          className="w-100 p-2 bg-white z-50 shadow-lg"
           side="bottom"
           align="start"
           sideOffset={10}
         >
-          <div className="rounded overflow-hidden bg-muted border aspect-4/3 flex items-center justify-center relative">
+          <div className="rounded overflow-hidden bg-fog border aspect-4/3 flex items-center justify-center relative">
             <Image
               src={cover}
               alt="户型图大图预览"
@@ -190,9 +190,7 @@ const FloorPlanPreviewImpl = ({
               unoptimized
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            数据来源: {dataSource || "未知"}
-          </p>
+          <p className="text-xs text-graphite mt-2 text-center">数据来源: {dataSource || "未知"}</p>
         </HoverCardContent>
       )}
     </HoverCard>
@@ -206,9 +204,7 @@ export const columns: ColumnDef<Property>[] = [
     accessorKey: "id",
     header: () => <span className="inline md:table-cell">ID</span>,
     cell: ({ row }) => (
-      <span className="inline text-xs text-muted-foreground md:table-cell">
-        #{row.getValue("id")}
-      </span>
+      <span className="inline text-xs text-graphite md:table-cell">#{row.getValue("id")}</span>
     ),
     size: 60,
   },
@@ -228,7 +224,7 @@ export const columns: ColumnDef<Property>[] = [
       // 如果没图，显示占位符 (保持不变)
       if (!cover) {
         return (
-          <div className="w-10 h-8 sm:w-12 sm:h-9 bg-muted rounded border flex items-center justify-center text-muted-foreground">
+          <div className="w-10 h-8 sm:w-12 sm:h-9 bg-fog rounded border flex items-center justify-center text-graphite">
             <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4" />
           </div>
         );
@@ -272,7 +268,7 @@ export const columns: ColumnDef<Property>[] = [
             <span className="font-medium text-xs truncate max-w-[6em] text-primary underline-offset-2 hover:underline">
               {name}
             </span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-graphite">
               {rooms}室{baths}卫 · {floor}
             </span>
           </div>
@@ -311,9 +307,7 @@ export const columns: ColumnDef<Property>[] = [
     header: () => <span className="inline md:table-cell">商圈</span>,
     cell: ({ row }) => {
       const val = row.getValue("business_circle") as string;
-      return (
-        <span className="inline text-sm text-muted-foreground md:table-cell">{val || "-"}</span>
-      );
+      return <span className="inline text-sm text-graphite md:table-cell">{val || "-"}</span>;
     },
   },
   // 6. 户型
@@ -343,7 +337,7 @@ export const columns: ColumnDef<Property>[] = [
       return (
         <div className="flex flex-col gap-1 py-2 whitespace-nowrap md:table-cell">
           <span className="text-xs leading-tight">{floor}</span>
-          <span className="text-[10px] text-muted-foreground leading-tight">{orientation}</span>
+          <span className="text-[10px] text-graphite leading-tight">{orientation}</span>
         </div>
       );
     },
@@ -374,7 +368,7 @@ export const columns: ColumnDef<Property>[] = [
       return (
         <div className="flex flex-col gap-1 py-2 min-w-0">
           <span className="text-error font-bold text-sm leading-tight">{price}万</span>
-          <span className="text-[10px] text-muted-foreground leading-tight">{unitPrice} 元/㎡</span>
+          <span className="text-[10px] text-graphite leading-tight">{unitPrice} 元/㎡</span>
         </div>
       );
     },
@@ -394,7 +388,7 @@ export const columns: ColumnDef<Property>[] = [
         dateStr = row.original.listed_date;
       }
 
-      if (!dateStr) return <span className="text-muted-foreground">-</span>;
+      if (!dateStr) return <span className="text-graphite">-</span>;
 
       const date = new Date(dateStr);
       // 移动端显示 MM/DD，桌面端显示完整日期
@@ -415,16 +409,14 @@ export const columns: ColumnDef<Property>[] = [
     cell: ({ row }) => {
       const remarks = row.original.listing_remarks;
       if (!remarks || remarks.trim() === "") {
-        return <span className="text-xs text-muted-foreground">-</span>;
+        return <span className="text-xs text-graphite">-</span>;
       }
       return (
         <div className="hidden md:table-cell">
           <TooltipProvider>
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
-                <div className="max-w-50 truncate text-xs text-muted-foreground cursor-help">
-                  {remarks}
-                </div>
+                <div className="max-w-50 truncate text-xs text-graphite cursor-help">{remarks}</div>
               </TooltipTrigger>
               <TooltipContent className="max-w-100">
                 <p className="whitespace-pre-wrap wrap-break-word text-xs">{remarks}</p>

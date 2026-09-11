@@ -1,12 +1,15 @@
 import { Loader2 } from "lucide-react";
+import { PageContainer } from "@/app/(main)/admin/_components";
 
 export default function Loading() {
   return (
-    <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6 container max-w-400 mx-auto">
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-ink" />
-        <span className="ml-3 text-muted-foreground">加载线索数据...</span>
-      </div>
+    <div className="min-h-screen bg-fog">
+      <PageContainer>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-ink" />
+          <span className="ml-3 text-graphite">加载线索数据...</span>
+        </div>
+      </PageContainer>
     </div>
   );
 }

@@ -64,12 +64,12 @@ export function ComparisonPool(): ReactElement {
   };
 
   if (count === 0) {
-    return <p className="text-xs text-muted-foreground">点击商圈表格「+ 对比」添加</p>;
+    return <p className="text-xs text-graphite">点击商圈表格「+ 对比」添加</p>;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="text-xs text-muted-foreground tabular-nums">
+      <span className="text-xs text-graphite tabular-nums">
         已选对比: {count} 个
         {atLimit && <span className="ml-1 text-amber-600 dark:text-amber-500">（已达上限）</span>}
       </span>
@@ -81,7 +81,7 @@ export function ComparisonPool(): ReactElement {
             <button
               type="button"
               onClick={() => handleRemove(bc)}
-              className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive hover:text-white"
+              className="inline-flex size-4 items-center justify-center rounded-full text-graphite transition-colors hover:bg-destructive hover:text-white"
               aria-label={`移除 ${bc}`}
             >
               <X className="size-3" aria-hidden="true" />

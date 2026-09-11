@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import type { components } from "@/lib/api-types";
 import type { GrowthModule } from "../../types";
 import { GROWTH_MODULE_META, GROWTH_MODULE_ORDER, PHASE_1_LABEL } from "../../types";
-import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
+import { PageHeader, StatCardGrid, type StatItem } from "@/app/(main)/admin/_components";
 import { TrendChart } from "./trend-chart";
 
 type GrowthOverviewKpiResponse = components["schemas"]["GrowthOverviewKpiResponse"];
@@ -28,7 +28,7 @@ const badgeBase =
 /** 分期药丸标注（对齐设计稿 .phase-tag） */
 function PhaseTag({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-fog text-graphite ring-1 ring-inset ring-[#ececee] whitespace-nowrap">
+    <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-fog text-graphite ring-1 ring-inset ring-fog whitespace-nowrap">
       {label}
     </span>
   );
@@ -64,27 +64,27 @@ const LAST_STEP_LABEL: Record<GrowthModule, string> = {
  */
 export function OverviewView({ kpi, breakdown, trend, compare, top }: OverviewViewProps) {
   // KPI 4 卡（口径以 /overview/kpi 响应为准）
-  const kpiItems: RecruitKpiItem[] = [
+  const kpiItems: StatItem[] = [
     {
-      dotClass: "bg-ink",
+      dotColor: "bg-ink",
       label: "今日线索",
       value: kpi.today_leads.toLocaleString(),
       trend: { text: "今日留资" },
     },
     {
-      dotClass: "bg-sky-wash",
+      dotColor: "bg-sky-wash",
       label: "待跟进",
       value: kpi.pending_followups.toLocaleString(),
       trend: { text: "状态 = 新线索" },
     },
     {
-      dotClass: "bg-apricot-wash",
+      dotColor: "bg-apricot-wash",
       label: "有效新客",
       value: kpi.valid_new_customers.toLocaleString(),
       trend: { text: "近 30 天 · 已剔除内部" },
     },
     {
-      dotClass: "bg-rust",
+      dotColor: "bg-rust",
       label: "整体转化率",
       value: kpi.conversion_rate == null ? "—" : `${kpi.conversion_rate.toFixed(1)}%`,
       trend: { text: "有效新客 ÷ 分享次数" },
@@ -121,16 +121,10 @@ export function OverviewView({ kpi, breakdown, trend, compare, top }: OverviewVi
   return (
     <div className="flex flex-col gap-6">
       {/* 页头 */}
-      <div>
-        <h1 className="flex items-center gap-2.5 flex-wrap text-[26px] font-medium tracking-[-0.23px] text-ink">
-          获客总览
-          <PhaseTag label={PHASE_1_LABEL} />
-        </h1>
-        <p className="mt-1.5 text-[15px] text-graphite">四条分享获客链路的统一经营视图</p>
-      </div>
+      <PageHeader title="获客总览" description="四条分享获客链路的统一经营视图" />
 
       {/* KPI 4 卡 */}
-      <RecruitKpiGrid items={kpiItems} />
+      <StatCardGrid items={kpiItems} />
 
       {/* 来源构成 + 趋势 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -208,7 +202,7 @@ export function OverviewView({ kpi, breakdown, trend, compare, top }: OverviewVi
                   { label: LAST_STEP_LABEL[row.module], value: row.leads, barClass: "bg-rust" },
                 ];
                 return (
-                  <div key={row.module} className="border border-[#f0f1f3] rounded-2xl p-4">
+                  <div key={row.module} className="rounded-inputs bg-fog p-4">
                     <div className="flex items-center justify-between mb-3">
                       <span className={`${badgeBase} ${GROWTH_MODULE_META[row.module].badge}`}>
                         {GROWTH_MODULE_META[row.module].label}

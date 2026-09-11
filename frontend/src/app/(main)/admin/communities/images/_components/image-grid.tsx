@@ -76,7 +76,7 @@ export function ImageGrid({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
+      <div className="flex items-center justify-center py-16 text-graphite text-sm">
         <span className="animate-pulse">加载中...</span>
       </div>
     );
@@ -84,7 +84,7 @@ export function ImageGrid({
 
   if (images.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+      <div className="flex flex-col items-center justify-center py-16 text-graphite">
         <span className="text-sm">该小区暂无户型图</span>
       </div>
     );
@@ -95,7 +95,7 @@ export function ImageGrid({
       {images.map((img, index) => (
         <div
           key={img.id}
-          className="group relative rounded-xl overflow-hidden border border-border bg-muted"
+          className="group relative rounded-images overflow-hidden bg-white shadow-steep-sm"
         >
           {/* 缩略图 */}
           <button
@@ -148,7 +148,7 @@ export function ImageGrid({
                   }}
                   placeholder="输入描述..."
                   maxLength={200}
-                  className="flex-1 min-w-0 px-1.5 py-1 text-xs rounded border border-input bg-background outline-none focus:ring-1 focus:ring-primary/30"
+                  className="flex-1 min-w-0 px-1.5 py-1 text-xs rounded border border-input bg-fog outline-none focus:ring-1 focus:ring-primary/30"
                   autoFocus
                 />
                 <button
@@ -160,7 +160,7 @@ export function ImageGrid({
                 </button>
                 <button
                   onClick={cancelEdit}
-                  className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted"
+                  className="shrink-0 rounded p-1 text-graphite hover:bg-fog"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -168,9 +168,9 @@ export function ImageGrid({
             ) : (
               <>
                 {img.description && (
-                  <p className="text-xs text-foreground line-clamp-1">{img.description}</p>
+                  <p className="text-xs text-ink line-clamp-1">{img.description}</p>
                 )}
-                <p className="text-[10px] text-muted-foreground">{formatDate(img.created_at)}</p>
+                <p className="text-[10px] text-graphite">{formatDate(img.created_at)}</p>
               </>
             )}
           </div>

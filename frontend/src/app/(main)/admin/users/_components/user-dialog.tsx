@@ -43,7 +43,7 @@ interface UserDialogProps {
   roles: RoleResponse[];
 }
 
-const SECTION_LABEL = "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3";
+const SECTION_LABEL = "text-xs font-semibold text-graphite uppercase tracking-wider mb-3";
 
 export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps) {
   const { form, isPending, isEdit, onSubmit } = useUserForm({ user, open, onOpenChange, roles });
@@ -61,7 +61,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
           className="w-full sm:max-w-[560px] sm:w-[560px] overflow-y-auto p-0 gap-0"
         >
           <SheetHeader className="px-6 pt-6 pb-4 border-b">
-            <div className="text-xs font-medium text-muted-foreground">
+            <div className="text-xs font-medium text-graphite">
               {eyebrowText} · {isEdit ? "编辑" : "新建"}
             </div>
             <SheetTitle className="text-lg">{isEdit ? "编辑用户" : "新建用户"}</SheetTitle>
@@ -230,10 +230,10 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                   <section>
                     <div className={SECTION_LABEL}>账号安全</div>
                     <div className="space-y-3">
-                      <div className="rounded-lg border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
+                      <div className="rounded-lg border bg-fog/60 px-3 py-2.5 text-xs text-graphite">
                         <div>
                           最后登录：
-                          <span className="tabular-nums text-foreground">
+                          <span className="tabular-nums text-ink">
                             {safeFormatDate(user?.last_login_at, "yyyy-MM-dd HH:mm")}
                           </span>
                         </div>

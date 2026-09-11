@@ -14,7 +14,7 @@ export function ReportsFooter({ lastUpdated }: ReportsFooterProps): ReactElement
   return (
     <footer className="py-6">
       <Separator className="mb-4" />
-      <p className="text-center text-xs text-muted-foreground tabular-nums">
+      <p className="text-center text-xs text-graphite tabular-nums">
         Profo 商圈分析 v3.2 · 数据源: 链家 / 贝壳 / 网签 · 最近更新 {lastUpdated}
       </p>
     </footer>

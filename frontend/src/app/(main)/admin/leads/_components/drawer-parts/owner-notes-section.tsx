@@ -17,7 +17,7 @@ export const OwnerNotesSection: React.FC<OwnerNotesSectionProps> = ({ lead }) =>
   const hasExpected = lead.expectedPrice != null;
 
   return (
-    <section className="bg-pure-white rounded-cards shadow-steep-sm overflow-hidden">
+    <section className="bg-white rounded-cards shadow-steep-sm overflow-hidden">
       {/* 头部 */}
       <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -34,11 +34,11 @@ export const OwnerNotesSection: React.FC<OwnerNotesSectionProps> = ({ lead }) =>
         {hasNotes ? (
           <div className="space-y-3">
             {hasExpected && (
-              <div className="bg-apricot-wash px-3 py-2 rounded-[12px] text-sm font-medium text-rust">
+              <div className="bg-apricot-wash px-3 py-2 rounded-inputs text-sm font-medium text-rust">
                 心理预期价：¥{lead.expectedPrice} 万
               </div>
             )}
-            <div className="bg-fog border-l-2 border-l-dove rounded-[12px] pl-3 pr-3 py-2.5">
+            <div className="bg-fog border-l-2 border-l-dove rounded-inputs pl-3 pr-3 py-2.5">
               <p className="text-sm text-ink italic leading-relaxed">{remarks}</p>
             </div>
             <div className="flex items-center justify-between">

@@ -26,7 +26,7 @@ interface BaseFieldProps {
 const steepInput =
   "rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10 text-[14px]";
 
-const steepLabel = "text-[14px] font-medium text-foreground tracking-tight";
+const steepLabel = "text-[14px] font-medium text-ink tracking-tight";
 
 // 1. 通用文本/数字输入框
 interface SimpleInputProps extends BaseFieldProps {

@@ -59,7 +59,7 @@ const statusMap: Record<string, { label: string; color: string; icon: React.Reac
   },
   cancelled: {
     label: "已取消",
-    color: "bg-muted text-gray-700",
+    color: "bg-fog text-gray-700",
     icon: <Ban className="h-4 w-4" />,
   },
 };
@@ -235,10 +235,10 @@ export function UploadZone() {
       {/* 拖拽上传区域 */}
       <div
         className={cn(
-          "relative border-2 border-dashed rounded-xl p-10 transition-all duration-200 ease-in-out flex flex-col items-center justify-center gap-4 cursor-pointer min-h-75",
+          "relative border-2 border-dashed rounded-cards p-10 transition-all duration-200 ease-in-out flex flex-col items-center justify-center gap-4 cursor-pointer min-h-75",
           isDragging
             ? "border-primary bg-primary/5 scale-[1.01]"
-            : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted",
+            : "border-dove/40 hover:border-primary/50 hover:bg-fog",
           (isUploading || isPolling) && "pointer-events-none opacity-60",
         )}
         onDragOver={handleDragOver}
@@ -256,7 +256,7 @@ export function UploadZone() {
 
         {isUploading || isPolling ? (
           <div className="w-full max-w-md space-y-4 text-center animate-in fade-in">
-            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+            <div className="mx-auto w-16 h-16 bg-fog rounded-full flex items-center justify-center">
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
             </div>
             <div className="space-y-2">
@@ -275,7 +275,7 @@ export function UploadZone() {
                     value={taskStatus.progress_percent}
                     className="h-2 w-full max-w-xs mx-auto"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-graphite">
                     {taskStatus.total_records > 0 ? (
                       <>
                         已处理 {taskStatus.processed_records} / {taskStatus.total_records} 条 (
@@ -287,7 +287,7 @@ export function UploadZone() {
                   </p>
 
                   {(taskStatus.success_count > 0 || taskStatus.failed_count > 0) && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-graphite">
                       <span className="text-success">成功: {taskStatus.success_count}</span>
                       <span className="mx-2">|</span>
                       <span className="text-error">失败: {taskStatus.failed_count}</span>
@@ -295,7 +295,7 @@ export function UploadZone() {
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">正在创建导入任务...</p>
+                <p className="text-xs text-graphite">正在创建导入任务...</p>
               )}
 
               {canCancel && (
@@ -316,12 +316,12 @@ export function UploadZone() {
           </div>
         ) : (
           <>
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-              <UploadCloud className="h-8 w-8 text-muted-foreground" />
+            <div className="w-16 h-16 bg-fog rounded-full flex items-center justify-center">
+              <UploadCloud className="h-8 w-8 text-graphite" />
             </div>
             <div className="text-center space-y-1">
               <h3 className="text-lg font-semibold">点击或拖拽上传 CSV 文件</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-graphite">
                 支持批量导入房源数据，单次最大 10MB，支持数千条记录
               </p>
             </div>
@@ -335,7 +335,7 @@ export function UploadZone() {
 
       {/* 结果反馈区域 */}
       {taskStatus && !isPolling && (
-        <Card className="animate-in slide-in-from-bottom-4 fade-in">
+        <Card className="rounded-cards bg-white shadow-steep border-0 animate-in slide-in-from-bottom-4 fade-in">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               {taskStatus.status === "completed" && taskStatus.failed_count === 0 ? (
@@ -351,8 +351,8 @@ export function UploadZone() {
                   <AlertCircle className="h-6 w-6 text-error" />
                 </div>
               ) : taskStatus.status === "cancelled" ? (
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <Ban className="h-6 w-6 text-muted-foreground" />
+                <div className="w-10 h-10 rounded-full bg-fog flex items-center justify-center shrink-0">
+                  <Ban className="h-6 w-6 text-graphite" />
                 </div>
               ) : (
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -378,7 +378,7 @@ export function UploadZone() {
                   </Badge>
                 </div>
 
-                <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                <div className="text-sm text-graphite flex flex-wrap gap-x-4 gap-y-1">
                   <span>总记录: {taskStatus.total_records}</span>
                   <span className="text-success">成功: {taskStatus.success_count}</span>
                   <span className="text-error">失败: {taskStatus.failed_count}</span>
@@ -401,7 +401,7 @@ export function UploadZone() {
                       <Download className="mr-2 h-4 w-4" />
                       下载失败记录 (CSV)
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-xs text-graphite mt-2">
                       请下载失败记录，修改错误后重新上传该文件。
                     </p>
                   </div>

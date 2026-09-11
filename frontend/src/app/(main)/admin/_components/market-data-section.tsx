@@ -38,10 +38,10 @@ export function MarketDataSection({
   // 标题行：左标题 + 右数据截止日（同一行，不增加卡片高度）
   const titleRow = (
     <div className="flex justify-between items-center mb-3">
-      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+      <span className="text-[10px] font-bold text-graphite uppercase tracking-widest">
         市场数据
       </span>
-      {dataAsOfText && <span className="text-[10px] text-muted-foreground">{dataAsOfText}</span>}
+      {dataAsOfText && <span className="text-[10px] text-graphite">{dataAsOfText}</span>}
     </div>
   );
 
@@ -49,7 +49,7 @@ export function MarketDataSection({
     return (
       <div>
         {titleRow}
-        <div className="flex items-center justify-center min-h-17.5 text-xs text-muted-foreground bg-muted rounded-lg">
+        <div className="flex items-center justify-center min-h-17.5 text-xs text-graphite bg-fog rounded-inputs">
           未关联小区，暂无数据
         </div>
       </div>
@@ -60,7 +60,7 @@ export function MarketDataSection({
     return (
       <div>
         {titleRow}
-        <div className="flex items-center justify-center min-h-17.5 text-xs text-muted-foreground bg-muted rounded-lg">
+        <div className="flex items-center justify-center min-h-17.5 text-xs text-graphite bg-fog rounded-inputs">
           暂无市场数据
         </div>
       </div>
@@ -82,30 +82,30 @@ export function MarketDataSection({
       {titleRow}
       <div className="grid grid-cols-2 gap-3 min-h-17.5">
         <div className="space-y-0.5">
-          <p className="text-[10px] text-muted-foreground">竞品在售</p>
+          <p className="text-[10px] text-graphite">竞品在售</p>
           <p className="text-sm font-bold tabular-nums">
             {isLoading ? "-" : `${formatCount(onSaleCount)} 套`}
           </p>
         </div>
         <div className="space-y-0.5 text-right">
-          <p className="text-[10px] text-muted-foreground">成交均价</p>
+          <p className="text-[10px] text-graphite">成交均价</p>
           <p className="text-sm font-bold tabular-nums">{isLoading ? "-" : avgPriceWan}</p>
         </div>
         <div className="space-y-0.5">
-          <p className="text-[10px] text-muted-foreground">30日成交</p>
+          <p className="text-[10px] text-graphite">30日成交</p>
           <p className="text-sm font-bold tabular-nums">
             {isLoading ? "-" : `${formatCount(volume30d)} 套`}
           </p>
         </div>
         <div className="space-y-0.5 text-right">
-          <p className="text-[10px] text-muted-foreground">30日趋势</p>
+          <p className="text-[10px] text-graphite">30日趋势</p>
           <p
             className={`text-sm font-bold flex items-center justify-end gap-1 tabular-nums ${
               isPriceUp === true
                 ? "text-primary"
                 : isPriceUp === false
                   ? "text-error"
-                  : "text-muted-foreground"
+                  : "text-graphite"
             }`}
           >
             {isPriceUp === true ? (

@@ -24,9 +24,7 @@ export function DatePickerField({ control, name, label }: DatePickerProps) {
       name={name}
       render={({ field }) => (
         <FormItem className="flex flex-col">
-          <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
-            {label}
-          </FormLabel>
+          <FormLabel className="text-[14px] font-medium text-ink tracking-tight">{label}</FormLabel>
           <Popover>
             <PopoverTrigger asChild>
               <FormControl>

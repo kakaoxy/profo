@@ -36,7 +36,7 @@ export function TrendPositioning({
           subtitle="Trend & Positioning"
         />
         <div className="px-6 flex justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="h-8 w-8 animate-spin text-graphite" />
         </div>
       </section>
     );
@@ -66,7 +66,7 @@ export function TrendPositioning({
           title="趋势研判 (价格与成交量预测)"
           subtitle="Trend & Positioning"
         />
-        <div className="px-6 text-center py-10 text-muted-foreground text-sm">暂无走势数据</div>
+        <div className="px-6 text-center py-10 text-graphite text-sm">暂无走势数据</div>
       </section>
     );
   }
@@ -76,10 +76,10 @@ export function TrendPositioning({
       <SectionHeader index="3" title="趋势研判 (价格与成交量预测)" subtitle="Trend & Positioning" />
 
       <div className="px-4 sm:px-6">
-        <Card className="p-6 border-border shadow-sm bg-card">
+        <Card className="p-6 border-fog  bg-white">
           <PriceChart data={data} myPricing={myPricing} priceRange={priceRange} />
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-border">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-fog">
             <InsightCard
               iconColor="amber"
               title="市场趋势"
@@ -119,10 +119,8 @@ function InsightCard({ iconColor, title, content }: InsightCardProps) {
         <Info className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-          {title}
-        </p>
-        <p className="text-sm font-bold text-foreground">{content}</p>
+        <p className="text-[10px] text-graphite font-bold uppercase tracking-wider">{title}</p>
+        <p className="text-sm font-bold text-ink">{content}</p>
       </div>
     </div>
   );

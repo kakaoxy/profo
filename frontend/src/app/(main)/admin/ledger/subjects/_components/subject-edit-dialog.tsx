@@ -364,7 +364,7 @@ function ModeChip({
         "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
         active
           ? "border-rust bg-apricot-wash/60 text-rust"
-          : "border-dove bg-white text-graphite hover:text-foreground",
+          : "border-dove bg-white text-graphite hover:text-ink",
       )}
     >
       {children}

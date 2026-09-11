@@ -29,7 +29,7 @@ export const FormItem = ({
   testId?: string;
 }) => (
   <div data-testid={testId} className="space-y-1.5">
-    <label className="text-[10px] font-bold text-muted-foreground ml-1">{label}</label>
+    <label className="text-[10px] font-bold text-graphite ml-1">{label}</label>
     {children}
   </div>
 );
@@ -144,7 +144,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         onClick={onClose}
       />
 
-      <div className="relative bg-pure-white w-full max-w-2xl rounded-cards shadow-steep flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative bg-white w-full max-w-2xl rounded-cards shadow-steep flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <h2 className="text-xl font-black font-sans tracking-tight">
@@ -182,11 +182,11 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                <label className="text-[10px] font-black text-graphite uppercase tracking-widest ml-1">
                   所在区域
                 </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-graphite" />
                   <input
                     placeholder="例如: 静安区"
                     className={cn(
@@ -199,7 +199,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                <label className="text-[10px] font-black text-graphite uppercase tracking-widest ml-1">
                   核心商圈
                 </label>
                 <input
@@ -215,10 +215,10 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             </div>
           </div>
 
-          <div className="bg-fog p-6 rounded-cards space-y-6 border border-dove">
+          <div className="bg-fog p-6 rounded-inputs space-y-6">
             <div className="flex items-center gap-2 mb-2">
-              <Ruler className="h-4 w-4 text-muted-foreground" />
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+              <Ruler className="h-4 w-4 text-graphite" />
+              <span className="text-[10px] font-black text-graphite uppercase tracking-widest">
                 物理指标与价格
               </span>
             </div>
@@ -297,7 +297,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
           </button>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+            <label className="text-[10px] font-black text-graphite uppercase tracking-widest ml-1">
               补充信息
             </label>
             <textarea

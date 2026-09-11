@@ -37,24 +37,24 @@ export function ProjectCardClient({ project, marketData }: ProjectCardClientProp
       type="button"
       onClick={() => router.push(`/admin/projects/${project.id}`)}
       aria-label={`查看项目 ${communityName} 详情`}
-      className="w-full text-left bg-card rounded-xl border border-border shadow-card overflow-hidden flex flex-col hover:border-primary/40 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-[border-color,transform,box-shadow] group cursor-pointer motion-safe:animate-fade-in-up"
+      className="w-full text-left bg-white rounded-cards shadow-steep overflow-hidden flex flex-col hover:shadow-steep hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-[border-color,transform,box-shadow] group cursor-pointer motion-safe:animate-fade-in-up"
     >
-      <div className="p-4 border-b border-border bg-muted">
+      <div className="p-4 border-b border-fog bg-fog">
         <div className="flex justify-between items-start mb-1">
           <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">
             #{contractNo}
           </span>
           <MoreHorizontal
-            className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors"
+            className="w-4 h-4 text-graphite group-hover:text-ink transition-colors"
             aria-hidden="true"
           />
         </div>
-        <h3 className="text-lg font-semibold text-foreground truncate">{communityName}</h3>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+        <h3 className="text-lg font-semibold text-ink truncate">{communityName}</h3>
+        <p className="text-xs text-graphite flex items-center gap-1 mt-1">
           <MapPin className="w-3 h-3" aria-hidden="true" />
           {address}
         </p>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+        <p className="text-xs text-graphite flex items-center gap-1 mt-0.5">
           <Home className="w-3 h-3" aria-hidden="true" />
           {layout} · {area}
         </p>
@@ -70,14 +70,14 @@ export function ProjectCardClient({ project, marketData }: ProjectCardClientProp
 
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 block">
+          <span className="text-[10px] font-bold text-graphite uppercase tracking-widest mb-3 block">
             项目动态
           </span>
           <ProjectStatsSection salesRecords={salesRecords} />
         </div>
 
         <div className="py-2">
-          <div className="border-t border-dashed border-border"></div>
+          <div className="border-t border-dashed border-dove/40"></div>
         </div>
 
         <div>

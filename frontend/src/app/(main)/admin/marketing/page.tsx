@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { fetchClient } from "@/lib/api-server";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import { MarketingStats } from "./_components/marketing-stats";
 import { MarketingView } from "./_components/marketing-view";
 import { MarketingPagination } from "./_components/marketing-pagination";
@@ -37,12 +38,10 @@ function getSearchParam(value: string | string[] | undefined, fallback = ""): st
 // 静态错误状态组件 - 提取到组件外部避免重复创建
 function ErrorState({ message, statusCode }: { message: string; statusCode?: number }) {
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center">
+    <div className="min-h-screen bg-fog flex items-center justify-center">
       <div className="text-center">
         <div className="text-sm font-semibold text-error">{message}</div>
-        {statusCode ? (
-          <div className="mt-2 text-xs text-muted-foreground">状态码: {statusCode}</div>
-        ) : null}
+        {statusCode ? <div className="mt-2 text-xs text-graphite">状态码: {statusCode}</div> : null}
       </div>
     </div>
   );
@@ -53,7 +52,7 @@ function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-white rounded-cards shadow-steep-sm p-4">
+        <div key={i} className="rounded-cards bg-white px-6 py-5 shadow-steep">
           <Skeleton className="h-4 w-16 mb-2" />
           <Skeleton className="h-8 w-12" />
         </div>
@@ -83,11 +82,8 @@ function ContentSkeleton() {
       <div className="bg-white rounded-cards shadow-steep overflow-hidden">
         <div className="p-4">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 py-4 border-b border-border last:border-0"
-            >
-              <Skeleton className="h-12 w-12 rounded-lg" />
+            <div key={i} className="flex items-center gap-4 py-4 border-b border-fog last:border-0">
+              <Skeleton className="h-12 w-12 rounded-inputs" />
               <div className="flex-1">
                 <Skeleton className="h-4 w-48 mb-2" />
                 <Skeleton className="h-3 w-32" />
@@ -157,7 +153,7 @@ async function ProjectsDataFetcher({
     <>
       <MarketingStats stats={stats} />
       <MarketingView data={items} total={total} />
-      <div className="relative z-50 bg-card">
+      <div className="relative z-50">
         <MarketingPagination total={total} />
       </div>
     </>
@@ -173,12 +169,9 @@ export default async function MarketingProjectsPage({
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
+      <PageContainer className="flex flex-col gap-8">
         {/* Header - 立即渲染 */}
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl text-ink">营销项目管理</h1>
-          <p className="text-sm text-ash">管理房源营销信息，发布和编辑房源展示内容。</p>
-        </div>
+        <PageHeader title="营销项目管理" description="管理房源营销信息，发布和编辑房源展示内容。" />
 
         {/* Stats and Content - 使用 Suspense 渐进加载 */}
         <Suspense
@@ -191,7 +184,7 @@ export default async function MarketingProjectsPage({
         >
           <ProjectsDataFetcher searchParams={params} />
         </Suspense>
-      </div>
+      </PageContainer>
     </div>
   );
 }

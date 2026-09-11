@@ -19,13 +19,14 @@
  */
 import { type ReactElement } from "react";
 import { useQueryState } from "nuqs";
-import { BarChart3, ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import type { RangeOption } from "../../_lib/types";
 
 interface RangeOptionItem {
@@ -96,24 +97,17 @@ export function TopFilterBar({
 
   return (
     <div className="space-y-4">
-      {/* 顶部：品牌 + 标题 + 最近更新 */}
+      {/* 顶部：标题 + 最近更新 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <BarChart3 className="size-5" aria-hidden="true" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">商圈分析报表</h1>
-        </div>
-        <span className="text-xs text-muted-foreground tabular-nums">最近更新: {lastUpdated}</span>
+        <PageHeader title="商圈分析报表" />
+        <span className="text-xs text-graphite tabular-nums">最近更新: {lastUpdated}</span>
       </div>
 
       {/* 筛选区：范围 / 来源 / 地区 */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         {/* 范围 */}
         <div className="flex items-center gap-2">
-          <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-            范围
-          </Label>
+          <Label className="text-xs font-medium text-graphite whitespace-nowrap">范围</Label>
           <ToggleGroup
             type="single"
             value={range}
@@ -134,9 +128,7 @@ export function TopFilterBar({
 
         {/* 来源 */}
         <div className="flex items-center gap-2">
-          <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-            来源
-          </Label>
+          <Label className="text-xs font-medium text-graphite whitespace-nowrap">来源</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 w-28 justify-between font-normal">
@@ -172,11 +164,9 @@ export function TopFilterBar({
           <div className="flex flex-wrap items-center gap-4">
             {/* 商圈名称 */}
             <div className="flex items-center gap-2">
-              <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                商圈
-              </Label>
+              <Label className="text-xs font-medium text-graphite whitespace-nowrap">商圈</Label>
               <div className="relative">
-                <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-2 h-4 w-4 text-graphite" />
                 <Input
                   placeholder="搜索商圈..."
                   className="pl-8 h-8 text-sm"
@@ -189,11 +179,9 @@ export function TopFilterBar({
 
             {/* 小区名称 */}
             <div className="flex items-center gap-2">
-              <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                小区
-              </Label>
+              <Label className="text-xs font-medium text-graphite whitespace-nowrap">小区</Label>
               <div className="relative">
-                <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-2 h-4 w-4 text-graphite" />
                 <Input
                   placeholder="搜索小区..."
                   className="pl-8 h-8 text-sm"

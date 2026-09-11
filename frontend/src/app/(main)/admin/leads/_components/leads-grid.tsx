@@ -40,7 +40,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
         return (
           <Card
             key={lead.id}
-            className="overflow-hidden border-none bg-pure-white rounded-cards shadow-steep-sm hover:-translate-y-0.5 hover:shadow-steep transition-all duration-200 cursor-pointer group"
+            className="overflow-hidden border-none bg-white rounded-cards shadow-steep-sm hover:-translate-y-0.5 hover:shadow-steep transition-all duration-200 cursor-pointer group"
             onClick={() => onOpenDetail(lead.id)}
           >
             {/* Image Area */}
@@ -57,16 +57,14 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                   }
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground/30">
+                <div className="flex flex-col items-center gap-2 text-graphite/30">
                   <Home className="h-10 w-10" />
                 </div>
               )}
 
               {/* Status Badge */}
               <div className="absolute top-3 left-3">
-                <Badge
-                  className={cn("text-xs px-2.5 py-1", config.badgeClass)}
-                >
+                <Badge className={cn("text-xs px-2.5 py-1", config.badgeClass)}>
                   {config.label}
                 </Badge>
               </div>
@@ -80,7 +78,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 bg-pure-white/90 backdrop-blur-sm rounded-full shadow-sm text-graphite hover:text-ink hover:bg-fog"
+                    className="h-8 w-8 bg-pure-white/90 backdrop-blur-sm rounded-full text-graphite hover:text-ink hover:bg-fog"
                     onClick={() => onEdit(lead)}
                     aria-label="编辑线索"
                   >
@@ -94,7 +92,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 bg-pure-white/90 backdrop-blur-sm rounded-full shadow-sm text-graphite hover:text-error hover:bg-error-container"
+                        className="h-8 w-8 bg-pure-white/90 backdrop-blur-sm rounded-full text-graphite hover:text-error hover:bg-error-container"
                         aria-label="删除线索"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -129,7 +127,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                 <h3 className="font-medium text-ink text-base line-clamp-1">
                   {lead.communityName}
                 </h3>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                <div className="flex items-center gap-1 text-xs text-graphite mt-1">
                   <MapPin className="h-3 w-3" />
                   <span className="line-clamp-1">
                     {lead.district || "-"}
@@ -140,17 +138,17 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
 
               {/* Info Grid */}
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="bg-fog rounded-md p-2">
-                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
+                <div className="bg-fog rounded-inputs p-2">
+                  <span className="text-[10px] text-graphite/60 uppercase tracking-wider block mb-0.5">
                     户型
                   </span>
-                  <span className="text-sm font-medium text-foreground">{lead.layout || "-"}</span>
+                  <span className="text-sm font-medium text-ink">{lead.layout || "-"}</span>
                 </div>
-                <div className="bg-fog rounded-md p-2">
-                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
+                <div className="bg-fog rounded-inputs p-2">
+                  <span className="text-[10px] text-graphite/60 uppercase tracking-wider block mb-0.5">
                     面积
                   </span>
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="text-sm font-medium text-ink">
                     {lead.area > 0 ? `${lead.area}㎡` : "-"}
                   </span>
                 </div>
@@ -159,7 +157,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
               {/* Price & Floor */}
               <div className="flex items-end justify-between pt-3 border-t border-dove">
                 <div>
-                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
+                  <span className="text-[10px] text-graphite/60 uppercase tracking-wider block mb-0.5">
                     总价
                   </span>
                   <span className="text-lg font-medium text-ink tabular-nums">
@@ -167,9 +165,9 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-muted-foreground">{lead.floorInfo || "-"}</span>
+                  <span className="text-xs text-graphite">{lead.floorInfo || "-"}</span>
                   {lead.unitPrice > 0 && (
-                    <span className="text-xs text-muted-foreground/60 block tabular-nums">
+                    <span className="text-xs text-graphite/60 block tabular-nums">
                       {lead.unitPrice.toFixed(2)}万/㎡
                     </span>
                   )}

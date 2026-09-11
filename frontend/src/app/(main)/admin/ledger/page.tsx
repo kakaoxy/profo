@@ -1,4 +1,5 @@
 import { fetchClient } from "@/lib/api-server";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import { LedgerStats } from "./_components/ledger-stats";
 import { LedgerView } from "./_components/ledger-view";
 import { LedgerPagination } from "./_components/ledger-pagination";
@@ -60,13 +61,11 @@ export default async function LedgerPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto flex flex-col gap-8 py-10 px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-[40px] text-ink">资金账本</h1>
-          <p className="text-[17px] leading-[1.35] text-ash">
-            管理和追踪所有项目的资金流水，按项目聚合查看收支与 ROI。
-          </p>
-        </div>
+      <PageContainer className="flex flex-col gap-8">
+        <PageHeader
+          title="资金账本"
+          description="管理和追踪所有项目的资金流水，按项目聚合查看收支与 ROI。"
+        />
 
         <LedgerStats stats={stats} />
 
@@ -75,7 +74,7 @@ export default async function LedgerPage({ searchParams }: PageProps) {
         <div className="relative z-50">
           <LedgerPagination total={total} />
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }

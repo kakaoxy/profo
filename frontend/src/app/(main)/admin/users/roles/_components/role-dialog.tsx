@@ -156,16 +156,16 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
                     <div className="max-h-[40vh] overflow-y-auto rounded-lg border p-1">
                       {isLoading ? (
-                        <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+                        <div className="flex items-center justify-center gap-2 py-10 text-sm text-graphite">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           加载权限列表...
                         </div>
                       ) : error ? (
-                        <div className="px-3 py-10 text-center text-sm text-muted-foreground">
+                        <div className="px-3 py-10 text-center text-sm text-graphite">
                           权限列表加载失败，请稍后重试
                         </div>
                       ) : !permissionGroups || permissionGroups.length === 0 ? (
-                        <div className="px-3 py-10 text-center text-sm text-muted-foreground">
+                        <div className="px-3 py-10 text-center text-sm text-graphite">
                           暂无权限点
                         </div>
                       ) : (
@@ -309,7 +309,7 @@ function ModulePermissionGroup({ group, selectedCodes, onChange }: ModulePermiss
           </span>
           <ChevronDownIcon
             className={cn(
-              "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+              "size-4 shrink-0 text-graphite transition-transform duration-200",
               isOpen && "rotate-180",
             )}
           />
@@ -351,7 +351,7 @@ function PermissionItem({ permission, checked, onCheckedChange }: PermissionItem
           )}
         </div>
         {permission.description && (
-          <p className="text-xs text-muted-foreground">{permission.description}</p>
+          <p className="text-xs text-graphite">{permission.description}</p>
         )}
       </div>
     </label>

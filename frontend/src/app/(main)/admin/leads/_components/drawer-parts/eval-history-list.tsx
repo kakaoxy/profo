@@ -41,7 +41,7 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
 
   // 服务端已按 evaluated_at DESC 返回，前端无需重复排序
   return (
-    <div className="bg-pure-white rounded-2xl border border-dove shadow-sm overflow-hidden">
+    <div className="bg-white rounded-cards shadow-steep overflow-hidden">
       <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
         <div className="flex items-center gap-2">
           <History className="h-3 w-3" />
@@ -58,7 +58,7 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
           histories.map((h, idx) => (
             <div
               key={h.id}
-              className="flex items-start gap-3 p-3 rounded-xl border border-dove hover:border-ink/40 transition-colors"
+              className="flex items-start gap-3 p-3 rounded-inputs border border-dove hover:border-ink/40 transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">

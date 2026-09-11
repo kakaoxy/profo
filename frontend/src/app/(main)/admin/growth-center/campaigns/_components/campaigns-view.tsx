@@ -29,7 +29,8 @@ import {
   generateCampaignQRCodeAction,
   type CampaignFormData as ActionCampaignFormData,
 } from "../../_lib/campaign-actions";
-import { RecruitKpiGrid, type RecruitKpiItem } from "../../_components/recruit-kpi";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
+import { StatCardGrid, type StatItem } from "@/app/(main)/admin/_components/stat-card-grid";
 import { DesignPagination } from "../../_components/design-pagination";
 
 // 动态导入弹窗组件（ssr: false，仅在客户端加载）
@@ -54,7 +55,7 @@ function tabClass(active: boolean): string {
     "h-[38px] px-[18px] rounded-full border inline-flex items-center gap-1.5 whitespace-nowrap text-[14px] transition-colors",
     active
       ? "bg-ink border-ink text-white font-medium"
-      : "bg-white border-[#ececee] text-graphite hover:border-dove",
+      : "bg-white border-dove/40 text-graphite hover:border-dove",
   ].join(" ");
 }
 
@@ -94,29 +95,29 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
   );
 
   // KPI 概览（与列表状态联动：停用/启用后「进行中」实时变化）
-  const kpiItems: RecruitKpiItem[] = React.useMemo(() => {
+  const kpiItems: StatItem[] = React.useMemo(() => {
     const enabled = campaigns.filter((c) => c.status === "enabled").length;
     return [
       {
-        dotClass: "bg-ink",
+        dotColor: "bg-ink",
         label: "进行中活动",
         value: String(enabled),
         trend: { text: `共 ${campaigns.length} 个活动` },
       },
       {
-        dotClass: "bg-rust",
+        dotColor: "bg-rust",
         label: "累计分享",
         value: stats.shared.toLocaleString(),
         trend: stats.sharedTrend ?? { text: "近 30 天" },
       },
       {
-        dotClass: "bg-apricot-wash",
+        dotColor: "bg-apricot-wash",
         label: "累计有效留资",
         value: stats.authed.toLocaleString(),
         trend: { text: `有效占比 ${stats.validPct.toFixed(1)}%` },
       },
       {
-        dotClass: "bg-sky-wash",
+        dotColor: "bg-sky-wash",
         label: "整体转化率",
         value: `${stats.conversion.toFixed(1)}%`,
         trend: { text: "有效新客 ÷ 分享次数" },
@@ -234,10 +235,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
       <div className="flex flex-col gap-6">
         {/* 页头：标题 + 描述 + 新建按钮（仅招募 Tab 下可用） */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
-          <div>
-            <h1 className="text-[26px] font-medium tracking-[-0.23px] text-ink">活动配置</h1>
-            <p className="mt-1.5 text-[15px] text-graphite">分享素材与小程序码的统一管理</p>
-          </div>
+          <PageHeader title="活动配置" description="分享素材与小程序码的统一管理" />
           {activeTab === "recruit" && (
             <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
               <Button
@@ -271,7 +269,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
         {activeTab === "recruit" ? (
           <>
             {/* KPI 概览 */}
-            <RecruitKpiGrid items={kpiItems} />
+            <StatCardGrid items={kpiItems} />
 
             {/* 活动列表卡 */}
             <div className="bg-white rounded-cards shadow-steep overflow-hidden">
@@ -309,7 +307,7 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
           </>
         ) : (
           /* 二期预留空态（对齐设计稿 Screen 4 空态卡） */
-          <div className="max-w-[580px] mx-auto my-11 w-full text-center px-10 py-12 border border-dashed border-[#d9dce2] rounded-3xl bg-white">
+          <div className="max-w-[580px] mx-auto my-11 w-full text-center px-10 py-12 rounded-cards border border-dashed border-dove/40 bg-white">
             <div className="h-[72px] w-[72px] rounded-full bg-fog flex items-center justify-center mx-auto mb-[18px] text-graphite">
               <Rocket className="h-[30px] w-[30px]" />
             </div>
@@ -321,15 +319,15 @@ export function CampaignsView({ campaigns, stats, employees }: CampaignsViewProp
             </p>
             <ul className="mt-5 inline-flex flex-col gap-2.5 text-left text-[13px] text-ash">
               <li className="flex gap-2 items-start">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#c9ccd4] shrink-0 mt-[7px]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-dove/40 shrink-0 mt-[7px]" />
                 需小程序分享路径携带 campaign_id 参数
               </li>
               <li className="flex gap-2 items-start">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#c9ccd4] shrink-0 mt-[7px]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-dove/40 shrink-0 mt-[7px]" />
                 需后端短码映射扩展到对应业务线（valuation / projects / property-sheet）
               </li>
               <li className="flex gap-2 items-start">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#c9ccd4] shrink-0 mt-[7px]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-dove/40 shrink-0 mt-[7px]" />
                 上线后可与招募活动共用素材配置与漏斗看板
               </li>
             </ul>

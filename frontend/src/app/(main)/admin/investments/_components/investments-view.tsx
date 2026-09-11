@@ -155,7 +155,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
                 placeholder="搜索项目编号/小区/地址..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="bg-card border-border focus-visible:ring-primary"
+                className="bg-white border-fog focus-visible:ring-primary"
               />
             </div>
 
@@ -164,7 +164,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
               value={query.project_status}
               onValueChange={(val) => setQuery({ project_status: val, page: 1 })}
             >
-              <SelectTrigger className="h-10 w-[140px] bg-card border-border rounded-lg">
+              <SelectTrigger className="h-10 w-[140px] bg-white border-fog rounded-lg">
                 <SelectValue placeholder="项目状态" />
               </SelectTrigger>
               <SelectContent>
@@ -181,7 +181,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
               value={query.settlement_status}
               onValueChange={(val) => setQuery({ settlement_status: val, page: 1 })}
             >
-              <SelectTrigger className="h-10 w-[140px] bg-card border-border rounded-lg">
+              <SelectTrigger className="h-10 w-[140px] bg-white border-fog rounded-lg">
                 <SelectValue placeholder="跟投状态" />
               </SelectTrigger>
               <SelectContent>
@@ -197,7 +197,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
           <div className="flex w-full lg:w-auto gap-3">
             <Button
               variant="outline"
-              className="flex-1 lg:flex-none bg-card border-border text-foreground hover:bg-muted"
+              className="flex-1 lg:flex-none bg-white border-fog text-ink hover:bg-fog"
               onClick={handleExport}
               disabled={exporting}
             >
@@ -224,7 +224,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
         <InvestmentsTable data={data} onRowClick={handleRowClick} />
 
         {/* 底部计数 */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+        <div className="flex items-center justify-between text-xs text-graphite px-1">
           <span>
             显示 {data.length} 条记录 (共 {total} 条)
           </span>

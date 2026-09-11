@@ -26,14 +26,12 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
 
   return (
     <div
-      className="col-span-12 lg:col-span-6 bg-card rounded-xl border border-border shadow-card p-5 h-auto flex flex-col min-w-0"
+      className="col-span-12 lg:col-span-6 bg-white rounded-cards shadow-steep p-5 h-auto flex flex-col min-w-0"
       role="region"
       aria-label="线索漏斗转化"
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-muted-foreground font-black uppercase tracking-widest">
-          线索漏斗
-        </span>
+        <span className="text-xs text-graphite font-black uppercase tracking-widest">线索漏斗</span>
         <Link
           href="/admin/leads/new"
           className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 hover:bg-primary/90 transition-colors"
@@ -71,16 +69,16 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
         })}
       </div>
 
-      <div className="flex justify-between items-center mt-2 pt-2 border-t border-border">
+      <div className="flex justify-between items-center mt-2 pt-2 border-t border-fog">
         <div className="flex items-center gap-4">
-          <span className="text-xs text-muted-foreground">
-            总线索: <span className="font-bold text-foreground tabular-nums">{total}</span>
+          <span className="text-xs text-graphite">
+            总线索: <span className="font-bold text-ink tabular-nums">{total}</span>
           </span>
-          <span className="text-xs text-muted-foreground hidden sm:inline">
+          <span className="text-xs text-graphite hidden sm:inline">
             签约: <span className="font-bold text-primary tabular-nums">{signed}</span>
           </span>
         </div>
-        <span className="text-xs font-bold text-foreground">转化率: {conversionRate}</span>
+        <span className="text-xs font-bold text-ink">转化率: {conversionRate}</span>
       </div>
     </div>
   );

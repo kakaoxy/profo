@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { fetchClient } from "@/lib/api-server";
 import { isRedirectError } from "@/lib/auth/server/session";
 import { logger } from "@/lib/logger";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import { ProjectStats } from "./_components/project-stats";
 import { ProjectView } from "./_components/project-view";
 import { ProjectPagination } from "./_components/project-pagination";
@@ -131,19 +132,17 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
     logger.error("项目管理列表数据获取失败", e);
     return (
       <div className="min-h-screen bg-fog">
-        <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-1">
-            <h1 className="font-display text-3xl text-ink">项目管理</h1>
-            <p className="text-sm text-ash">
-              全生命周期管理您的房源资产，从签约到售出的每一分钱。
-            </p>
-          </div>
-          <div className="bg-white rounded-cards p-10 shadow-steep text-center">
+        <PageContainer className="flex flex-col gap-8">
+          <PageHeader
+            title="项目管理"
+            description="全生命周期管理您的房源资产，从签约到售出的每一分钱。"
+          />
+          <div className="rounded-cards bg-white p-10 text-center shadow-steep">
             <p className="text-sm text-ash">
               数据加载失败，请刷新重试（当前筛选会保留在地址栏中）。
             </p>
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
@@ -160,24 +159,24 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl text-ink">项目管理</h1>
-          <p className="text-sm text-ash">全生命周期管理您的房源资产，从签约到售出的每一分钱。</p>
-        </div>
+      <PageContainer className="flex flex-col gap-8">
+        <PageHeader
+          title="项目管理"
+          description="全生命周期管理您的房源资产，从签约到售出的每一分钱。"
+        />
 
         <ProjectStats stats={stats} />
 
         <ProjectView data={projectData} total={total} />
 
-        <div className="mt-2 relative z-50 bg-card">
+        <div className="mt-2 relative z-50">
           <ProjectPagination total={total} />
         </div>
 
         <Suspense fallback={null}>
           <MonitorSheet />
         </Suspense>
-      </div>
+      </PageContainer>
     </div>
   );
 }

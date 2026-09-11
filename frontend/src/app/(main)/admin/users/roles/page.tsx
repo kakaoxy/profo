@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { getRolesAction } from "@/app/(main)/admin/users/actions/index";
 import { RoleListResponse } from "@/app/(main)/admin/users/actions/role-actions";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import { RolesClient } from "./_components/roles-client";
 
 export default async function RolesPage(props: {
@@ -22,20 +23,20 @@ export default async function RolesPage(props: {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">权限管理</h2>
-      </div>
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
+        <PageHeader title="权限管理" description="配置角色及其菜单、操作权限范围" />
 
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        }
-      >
-        <RolesClient initialData={result.data as RoleListResponse} />
-      </Suspense>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          }
+        >
+          <RolesClient initialData={result.data as RoleListResponse} />
+        </Suspense>
+      </PageContainer>
     </div>
   );
 }

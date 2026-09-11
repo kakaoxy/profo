@@ -49,22 +49,22 @@ export function QuickEntryCard({
   );
 
   return (
-    <div className="bg-card rounded-xl border border-border shadow-card">
+    <div className="bg-white rounded-cards shadow-steep">
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center gap-2">
-          <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", iconBgClass)}>
+          <span
+            className={cn("flex h-8 w-8 items-center justify-center rounded-inputs", iconBgClass)}
+          >
             <Icon className={cn("h-4 w-4", accentClass)} aria-hidden="true" />
           </span>
-          <h2 className="text-sm font-bold text-foreground">{title}</h2>
+          <h2 className="text-sm font-medium text-ink">{title}</h2>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground tabular-nums">
-            {projects.length}个项目
-          </span>
+          <span className="text-[10px] text-graphite tabular-nums">{projects.length}个项目</span>
           {showViewAll && (
             <Link
               href={viewAllHref}
-              className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+              className="flex items-center gap-0.5 text-[10px] text-graphite hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
             >
               查看全部
               <ChevronRight className="h-3 w-3" aria-hidden="true" />
@@ -74,7 +74,7 @@ export function QuickEntryCard({
       </div>
 
       {visibleProjects.length === 0 ? (
-        <div className="py-8 text-center text-xs text-muted-foreground">{emptyText}</div>
+        <div className="py-8 text-center text-xs text-graphite">{emptyText}</div>
       ) : (
         <div className="flex flex-col">
           {visibleProjects.map((project) => (
@@ -82,7 +82,7 @@ export function QuickEntryCard({
               key={project.id}
               type="button"
               onClick={() => handleRowClick(project)}
-              className="flex w-full items-center border-b border-border p-3 text-left transition-colors last:border-b-0 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring min-h-[56px]"
+              className="flex w-full items-center border-b border-fog p-3 text-left transition-colors last:border-b-0 hover:bg-fog focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring min-h-[56px]"
             >
               {renderRow(project)}
             </button>
@@ -102,8 +102,8 @@ export function RenovationRow(project: ProjectResponse): ReactNode {
   return (
     <div className="flex w-full items-center justify-between">
       <div className="min-w-0 flex-1 mr-2">
-        <p className="truncate text-sm font-semibold text-foreground">{communityName}</p>
-        <p className="text-[10px] text-muted-foreground">{contractNo}</p>
+        <p className="truncate text-sm font-semibold text-ink">{communityName}</p>
+        <p className="text-[10px] text-graphite">{contractNo}</p>
       </div>
       <Badge
         variant="secondary"
@@ -131,10 +131,10 @@ export function SellingRow(project: ProjectResponse): ReactNode {
   return (
     <div className="flex w-full items-center justify-between">
       <div className="min-w-0 flex-1 mr-2">
-        <p className="truncate text-sm font-semibold text-foreground">{communityName}</p>
-        <p className="text-[10px] text-muted-foreground">{listingText}</p>
+        <p className="truncate text-sm font-semibold text-ink">{communityName}</p>
+        <p className="text-[10px] text-graphite">{listingText}</p>
       </div>
-      <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 ml-auto">
+      <div className="flex items-center gap-1 text-[10px] text-graphite shrink-0 ml-auto">
         <span className="rounded bg-status-selling/10 px-1.5 py-0.5 text-status-selling tabular-nums">
           带看{stats.viewing}
         </span>

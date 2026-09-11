@@ -62,7 +62,7 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
   ];
 
   return (
-    <section className="bg-pure-white rounded-cards shadow-steep-sm overflow-hidden">
+    <section className="bg-white rounded-cards shadow-steep-sm overflow-hidden">
       <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Layers className="h-3 w-3 text-graphite" />

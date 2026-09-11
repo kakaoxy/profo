@@ -34,7 +34,7 @@ export function NeighborhoodRadar({ projectId, communityId }: NeighborhoodRadarP
               variant="outline"
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="bg-card text-primary border-primary/20 hover:bg-primary/5 gap-1.5 shadow-sm"
+              className="bg-white text-primary border-primary/20 hover:bg-primary/5 gap-1.5 "
             >
               <Plus className="h-3.5 w-3.5" />
               管理竞品小区
@@ -44,16 +44,16 @@ export function NeighborhoodRadar({ projectId, communityId }: NeighborhoodRadarP
       />
 
       <div className="px-4 sm:px-6">
-        <Card className="border-border shadow-sm overflow-hidden bg-card">
+        <Card className="border-fog  overflow-hidden bg-white">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+              <Loader2 className="h-6 w-6 animate-spin text-graphite" />
+              <span className="ml-2 text-sm text-graphite">加载中...</span>
             </div>
           ) : error ? (
-            <div className="text-center py-12 text-sm text-muted-foreground">{error}</div>
+            <div className="text-center py-12 text-sm text-graphite">{error}</div>
           ) : competitors.length === 0 ? (
-            <div className="text-center py-12 text-sm text-muted-foreground">
+            <div className="text-center py-12 text-sm text-graphite">
               暂无竞品数据，请先添加竞品小区
             </div>
           ) : (

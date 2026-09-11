@@ -167,7 +167,7 @@ export const columns: ColumnDef<Project>[] = [
     ),
     cell: ({ row }) => {
       const val = row.original.net_cash_flow || 0;
-      let colorClass = "text-muted-foreground";
+      let colorClass = "text-graphite";
       if (val > 0) colorClass = "text-money-positive";
       if (val < 0) colorClass = "text-money-negative";
 

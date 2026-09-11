@@ -2,7 +2,6 @@
 
 import { KeyRound, Clock, Calendar, Activity, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiKeyInfoResponse } from "../actions";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -26,21 +25,21 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
     const statusConfig: Record<string, { label: string; className: string }> = {
       active: {
         label: "正常",
-        className: "bg-success/20 text-success",
+        className: "bg-apricot-wash/60 text-rust",
       },
       revoked: {
         label: "已撤销",
-        className: "bg-destructive/20 text-destructive",
+        className: "bg-fog text-ash",
       },
       expired: {
         label: "已过期",
-        className: "bg-status-pending/20 text-status-pending",
+        className: "bg-fog text-graphite",
       },
     };
 
     const config = statusConfig[status] || {
       label: status,
-      className: "bg-muted text-foreground",
+      className: "bg-fog text-graphite",
     };
 
     return (
@@ -54,71 +53,66 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
   const maskedKey = `${apiKeyInfo.prefix}••••••••••••••••••••••••`;
 
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-base font-semibold flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-muted-foreground" />
-            <span>当前 API Key</span>
-          </div>
-          {getStatusBadge(apiKeyInfo.status)}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="rounded-cards bg-white shadow-steep">
+      <div className="flex items-center justify-between gap-4 border-b border-fog px-6 py-5">
+        <div className="flex items-center gap-2 text-[15px] font-medium text-ink">
+          <KeyRound className="h-4 w-4 text-graphite" aria-hidden="true" />
+          <span>当前 API Key</span>
+        </div>
+        {getStatusBadge(apiKeyInfo.status)}
+      </div>
+
+      <div className="space-y-4 px-6 py-5">
         {/* Key Display */}
         <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <label className="text-xs font-medium text-graphite uppercase tracking-wider">
             API Key
           </label>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 px-4 py-3 rounded-lg border border-border bg-muted font-mono text-sm text-muted-foreground">
-              {maskedKey}
-            </code>
-          </div>
-          <p className="text-xs text-muted-foreground dark:text-muted-foreground">
-            出于安全考虑，完整的 Key 不会再次显示
-          </p>
+          <code className="block rounded-inputs bg-fog px-4 py-3 font-mono text-sm text-graphite">
+            {maskedKey}
+          </code>
+          <p className="text-xs text-graphite">出于安全考虑，完整的 Key 不会再次显示</p>
         </div>
 
         {/* Key Info Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
+            <label className="flex items-center gap-1 text-xs font-medium text-graphite uppercase tracking-wider">
+              <Calendar className="h-3 w-3" aria-hidden="true" />
               创建时间
             </label>
-            <p className="text-sm text-foreground">{formatDate(apiKeyInfo.created_at)}</p>
+            <p className="text-sm text-ink">{formatDate(apiKeyInfo.created_at)}</p>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <Activity className="h-3 w-3" />
+            <label className="flex items-center gap-1 text-xs font-medium text-graphite uppercase tracking-wider">
+              <Activity className="h-3 w-3" aria-hidden="true" />
               最后使用
             </label>
-            <p className="text-sm text-foreground">{formatDate(apiKeyInfo.last_used_at)}</p>
+            <p className="text-sm text-ink">{formatDate(apiKeyInfo.last_used_at)}</p>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <Clock className="h-3 w-3" />
+            <label className="flex items-center gap-1 text-xs font-medium text-graphite uppercase tracking-wider">
+              <Clock className="h-3 w-3" aria-hidden="true" />
               过期时间
             </label>
-            <p className="text-sm text-foreground">
+            <p className="text-sm text-ink">
               {apiKeyInfo.expires_at ? formatDate(apiKeyInfo.expires_at) : "永不过期"}
             </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end pt-4 border-t border-border">
+        <div className="flex justify-end border-t border-fog pt-4">
           <Button
             onClick={onDelete}
             variant="outline"
-            className="gap-2 text-error dark:text-error hover:bg-error-container dark:hover:bg-error/20 hover:text-error dark:hover:text-error border-error/30 dark:border-error"
+            className="gap-2 border-error/30 text-error hover:bg-error-container hover:text-error"
           >
             <Trash2 className="h-4 w-4" />
             撤销 Key
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

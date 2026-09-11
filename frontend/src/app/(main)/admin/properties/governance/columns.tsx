@@ -69,7 +69,7 @@ export function createColumns(options: CreateColumnsOptions): ColumnDef<Communit
       cell: ({ row }) => {
         const aliases = row.original.aliases;
         if (!aliases || aliases.length === 0) {
-          return <span className="text-muted-foreground">-</span>;
+          return <span className="text-graphite">-</span>;
         }
         const visible = aliases.slice(0, 3);
         const overflowCount = aliases.length - visible.length;

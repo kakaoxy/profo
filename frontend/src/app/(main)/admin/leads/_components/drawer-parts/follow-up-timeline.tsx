@@ -88,7 +88,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
   trailEvents.sort((a, b) => b.sortTime - a.sortTime);
 
   return (
-    <section className="bg-pure-white rounded-2xl border border-dove shadow-sm overflow-hidden">
+    <section className="bg-white rounded-cards shadow-steep overflow-hidden">
       {/* 可折叠头部 */}
       <button
         type="button"
@@ -101,7 +101,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
           <span className="text-[10px] font-black uppercase tracking-widest text-graphite">
             跟进记录
           </span>
-          <span className="text-muted-foreground/40">·</span>
+          <span className="text-slate/40">·</span>
           <span className="text-[10px] text-ash truncate">{trailEvents.length} 条事件</span>
         </div>
         <ChevronDown
@@ -119,7 +119,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
               <History className="h-3 w-3 text-rust" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <span className="text-[10px] font-black uppercase tracking-widest text-graphite">
                 登记最新动态
               </span>
             </div>
@@ -195,13 +195,11 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   <div className="relative group">
     <div
       className={cn(
-        "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-dove flex items-center justify-center shadow-sm transition-all",
+        "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-dove flex items-center justify-center transition-all",
         isNewest ? "bg-ink scale-110" : "bg-fog",
       )}
     >
-      <Icon
-        className={cn("h-2.5 w-2.5", isNewest ? "text-white" : "text-graphite")}
-      />
+      <Icon className={cn("h-2.5 w-2.5", isNewest ? "text-white" : "text-graphite")} />
     </div>
     <div className="flex flex-col">
       <div className="flex items-center justify-between gap-2">
@@ -215,7 +213,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
         </span>
         <span className="text-xs text-ash shrink-0">{time}</span>
       </div>
-      <div className="mt-1.5 p-3 bg-pure-white border border-dove rounded-xl shadow-sm text-xs text-graphite leading-relaxed italic group-hover:border-ink/40 transition-colors">
+      <div className="mt-1.5 p-3 bg-white rounded-inputs shadow-steep text-xs text-graphite leading-relaxed italic group-hover:border-ink/40 transition-colors">
         {desc}
         {user && (
           <div className="mt-1 flex justify-end">

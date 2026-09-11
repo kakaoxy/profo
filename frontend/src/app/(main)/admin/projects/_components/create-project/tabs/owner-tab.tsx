@@ -42,7 +42,7 @@ export function OwnerTab({ form, onSave }: OwnerTabProps) {
         {/* 公用事业户号（项目级字段，UI 归属业主信息 tab） */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-[14px] font-medium text-foreground tracking-tight">公用事业户号</h3>
+            <h3 className="text-[14px] font-medium text-ink tracking-tight">公用事业户号</h3>
             {onSave && (
               <Button type="button" variant="outline" size="sm" onClick={handleSave}>
                 <Save className="mr-1 h-4 w-4" />

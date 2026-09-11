@@ -86,7 +86,7 @@ export function CreateProjectDialog({
         <DialogHeader className="px-7 py-5 border-b border-dove/30 bg-pure-white shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-foreground font-sohne font-medium text-[18px] tracking-tight">
+              <DialogTitle className="text-ink font-sohne font-medium text-[18px] tracking-tight">
                 {project ? "编辑项目" : "新建项目"}
               </DialogTitle>
               <DialogDescription className="mt-1.5 text-graphite text-[14px] font-normal">

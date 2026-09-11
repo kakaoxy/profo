@@ -15,14 +15,12 @@ export function ProjectOverviewCard({
 }: ProjectOverviewCardProps) {
   return (
     <div
-      className="col-span-12 lg:col-span-4 bg-card rounded-xl border border-border shadow-card p-4 lg:p-6 flex flex-col justify-between h-40 min-w-0"
+      className="col-span-12 lg:col-span-4 bg-white rounded-cards shadow-steep p-4 lg:p-6 flex flex-col justify-between h-40 min-w-0"
       role="region"
       aria-label="项目总览"
     >
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xs text-muted-foreground font-black uppercase tracking-widest">
-          项目总览
-        </span>
+        <span className="text-xs text-graphite font-black uppercase tracking-widest">项目总览</span>
         <Link
           href="/admin/projects"
           className="text-primary text-xs font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
@@ -35,31 +33,19 @@ export function ProjectOverviewCard({
           <p className="text-2xl lg:text-3xl font-black text-primary tabular-nums">
             {signingCount}
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold truncate">
-            已签约
-          </p>
+          <p className="text-[10px] text-graphite mt-1 uppercase font-bold truncate">已签约</p>
         </div>
         <div className="text-center px-2 lg:px-3 min-w-0">
-          <p className="text-2xl lg:text-3xl font-black text-on-surface tabular-nums">
-            {renovatingCount}
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold truncate">
-            装修中
-          </p>
+          <p className="text-2xl lg:text-3xl font-black text-ink tabular-nums">{renovatingCount}</p>
+          <p className="text-[10px] text-graphite mt-1 uppercase font-bold truncate">装修中</p>
         </div>
         <div className="text-center px-2 lg:px-3 min-w-0">
-          <p className="text-2xl lg:text-3xl font-black text-on-surface tabular-nums">
-            {sellingCount}
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold truncate">
-            在售中
-          </p>
+          <p className="text-2xl lg:text-3xl font-black text-ink tabular-nums">{sellingCount}</p>
+          <p className="text-[10px] text-graphite mt-1 uppercase font-bold truncate">在售中</p>
         </div>
         <div className="text-center px-2 lg:px-3 min-w-0">
           <p className="text-2xl lg:text-3xl font-black text-tertiary tabular-nums">{soldCount}</p>
-          <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold truncate">
-            已成交
-          </p>
+          <p className="text-[10px] text-graphite mt-1 uppercase font-bold truncate">已成交</p>
         </div>
       </div>
     </div>

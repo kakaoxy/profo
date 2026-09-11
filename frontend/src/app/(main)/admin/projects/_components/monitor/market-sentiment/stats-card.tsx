@@ -24,13 +24,11 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
     : "bg-status-selling/10 text-status-selling";
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-muted/50 flex flex-col">
+    <div className="flex flex-col rounded-inputs bg-fog p-5">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-            {title}
-          </p>
-          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{subtitle}</p>
+          <p className="text-xs font-bold text-graphite uppercase tracking-wider">{title}</p>
+          <p className="text-[10px] text-graphite font-medium mt-0.5">{subtitle}</p>
         </div>
         <div
           className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${trendColor}`}
@@ -52,12 +50,12 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
                 <div className="flex items-center gap-3">
                   <div className={`w-1 h-8 rounded-full ${colorClass}`} />
                   <div>
-                    <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                    <p className="text-[10px] text-graphite font-medium flex items-center gap-1">
                       {FLOOR_TYPE_MAP[item.type] || item.type}
                       <span className="text-border">|</span>
                       <span className="text-primary font-bold">{count} 套</span>
                     </p>
-                    <p className="text-base font-black text-foreground">{avgPrice.toFixed(0)} 万</p>
+                    <p className="text-base font-black text-ink">{avgPrice.toFixed(0)} 万</p>
                   </div>
                 </div>
               </div>
@@ -65,9 +63,7 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
             </div>
           );
         })}
-        {stats.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">暂无数据</p>
-        )}
+        {stats.length === 0 && <p className="text-sm text-graphite text-center py-4">暂无数据</p>}
       </div>
     </div>
   );

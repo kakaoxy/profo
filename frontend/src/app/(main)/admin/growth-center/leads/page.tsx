@@ -8,6 +8,7 @@ import {
   type GrowthLeadsQuery,
 } from "../_lib/growth-data";
 import { LeadsView, type LeadsViewProps } from "./_components/leads-view";
+import { PageContainer } from "@/app/(main)/admin/_components";
 import type { GrowthModule, LeadSource, UnifiedLeadStatus } from "../types";
 
 /** 将 Date 格式化为 YYYY-MM-DD */
@@ -127,9 +128,9 @@ export default async function GrowthLeadsPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageContainer>
         <LeadsView {...viewProps} />
-      </div>
+      </PageContainer>
     </div>
   );
 }

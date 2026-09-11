@@ -8,40 +8,38 @@ import { useMounted } from "@/hooks/use-mounted";
 
 const HeroSection = dynamic(() => import("./hero-section").then((m) => m.HeroSection), {
   ssr: false,
-  loading: () => <div className="p-6 h-56 bg-card" />,
+  loading: () => <div className="p-6 h-56 bg-white" />,
 });
 
 const MarketSentiment = dynamic(() => import("./market-sentiment").then((m) => m.MarketSentiment), {
   ssr: false,
-  loading: () => <div className="p-6 h-72 bg-card" />,
+  loading: () => <div className="p-6 h-72 bg-white" />,
 });
 
 const NeighborhoodRadar = dynamic(
   () => import("./neighborhood-radar").then((m) => m.NeighborhoodRadar),
-  { ssr: false, loading: () => <div className="p-6 h-80 bg-card" /> },
+  { ssr: false, loading: () => <div className="p-6 h-80 bg-white" /> },
 );
 
 const TrendPositioning = dynamic(
   () => import("./trend-positioning").then((m) => m.TrendPositioning),
-  { ssr: false, loading: () => <div className="p-6 h-128 bg-card" /> },
+  { ssr: false, loading: () => <div className="p-6 h-128 bg-white" /> },
 );
 
 const CompetitorsBrawl = dynamic(
   () => import("./competitors-brawl").then((m) => m.CompetitorsBrawl),
-  { ssr: false, loading: () => <div className="p-6 h-96 bg-card" /> },
+  { ssr: false, loading: () => <div className="p-6 h-96 bg-white" /> },
 );
 
 const AIStrategy = dynamic(() => import("./ai-strategy").then((m) => m.AIStrategy), {
   ssr: false,
-  loading: () => <div className="p-6 h-80 bg-card" />,
+  loading: () => <div className="p-6 h-80 bg-white" />,
 });
 
 // 新增：一个简单的包装组件，专门解决“糊在一起”的问题
 // 它负责提供白色背景、边框和阴影，不改变内部布局
 const CardWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-    {children}
-  </div>
+  <div className="rounded-cards bg-white shadow-steep overflow-hidden">{children}</div>
 );
 
 export function MonitorSheet() {
@@ -70,18 +68,18 @@ export function MonitorSheet() {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full sm:max-w-none p-0 flex flex-col h-full border-l border-border shadow-xl overflow-hidden outline-none"
+        className="w-full sm:max-w-none p-0 flex flex-col h-full border-l border-fog shadow-xl overflow-hidden outline-none"
       >
         {/* Sticky Header */}
-        <div className="flex-none bg-card border-b border-border px-6 py-4 flex items-center justify-between z-50 sticky top-0 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+        <div className="flex-none bg-white border-b border-fog px-6 py-4 flex items-center justify-between z-50 sticky top-0 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-md shadow-primary/20">
               <span className="text-sm font-bold">M</span>
             </div>
             <div>
-              <SheetTitle className="text-xl font-bold text-foreground">项目房价监控</SheetTitle>
+              <SheetTitle className="text-xl font-bold text-ink">项目房价监控</SheetTitle>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm font-medium text-muted-foreground">{projectName}</span>
+                <span className="text-sm font-medium text-graphite">{projectName}</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 <span className="text-[10px] font-bold text-success uppercase tracking-widest">
                   Live Monitoring
@@ -91,14 +89,14 @@ export function MonitorSheet() {
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-muted border border-transparent hover:border-border rounded-lg transition-all text-muted-foreground hover:text-muted-foreground"
+            className="p-2 hover:bg-fog border border-transparent hover:border-fog rounded-lg transition-all text-graphite hover:text-graphite"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto bg-muted pb-20">
+        <div className="flex-1 overflow-y-auto bg-fog pb-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
             <CardWrapper>
               <HeroSection projectId={monitorId} projectName={projectName} />

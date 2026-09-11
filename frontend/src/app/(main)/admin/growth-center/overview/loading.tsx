@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageContainer } from "@/app/(main)/admin/_components";
 
 /**
  * 获客总览页路由级加载态（Server Component 取数期间展示）。
@@ -7,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function GrowthOverviewLoading() {
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto flex flex-col gap-6 py-8 px-4 sm:px-6 lg:px-8">
+      <PageContainer className="flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
           <div className="flex flex-col gap-1.5">
             <Skeleton className="h-7 w-40" />
@@ -30,7 +31,7 @@ export default function GrowthOverviewLoading() {
         <Skeleton className="h-72 rounded-cards" />
 
         <Skeleton className="h-72 rounded-cards" />
-      </div>
+      </PageContainer>
     </div>
   );
 }

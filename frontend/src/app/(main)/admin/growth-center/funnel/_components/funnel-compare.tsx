@@ -79,7 +79,7 @@ export function FunnelCompare({ data }: FunnelCompareProps) {
         {rows.map((row) => {
           const meta = GROWTH_MODULE_META[row.module];
           return (
-            <div key={row.module} className="border border-[#f0f1f3] rounded-2xl p-4">
+            <div key={row.module} className="rounded-inputs bg-fog p-4">
               <div className="flex flex-col gap-1.5 mb-2.5">
                 <span className={`${BADGE_BASE} ${meta.badge}`}>{meta.label}</span>
                 <span className="text-xs text-slate tabular-nums">

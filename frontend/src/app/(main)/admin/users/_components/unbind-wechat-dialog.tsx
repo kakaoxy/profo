@@ -64,7 +64,7 @@ export function UnbindWechatDialog({ open, onOpenChange, user }: UnbindWechatDia
               <p>
                 正在解绑用户 <b>{user?.nickname || user?.username}</b> 的微信账号
               </p>
-              <div className="text-muted-foreground">
+              <div className="text-graphite">
                 <p>解绑后该用户将无法通过微信登录</p>
                 <p>如该用户仅有微信一种登录方式，需重新注册或联系管理员</p>
                 <p>操作不可撤销，将立即失效该用户的所有现有登录会话</p>

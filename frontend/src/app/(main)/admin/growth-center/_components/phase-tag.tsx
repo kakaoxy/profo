@@ -1,4 +1,4 @@
-import { PHASE_1_LABEL, PHASE_2_LABEL } from "../types";
+import { PHASE_2_LABEL } from "../types";
 
 /**
  * 获客中心分期标记（对齐设计稿 .phase-tag）：
@@ -7,14 +7,6 @@ import { PHASE_1_LABEL, PHASE_2_LABEL } from "../types";
  */
 
 /** 一期标记 */
-export function PhaseTag1() {
-  return (
-    <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-fog text-graphite ring-1 ring-inset ring-[#ececee] whitespace-nowrap align-middle">
-      {PHASE_1_LABEL}
-    </span>
-  );
-}
-
 /** 二期标记 */
 export function PhaseTag2() {
   return (

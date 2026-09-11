@@ -34,7 +34,7 @@ interface FieldProps {
 function Field({ label, value, icon: Icon, full = false }: FieldProps) {
   return (
     <div className={`flex flex-col gap-1 ${full ? "col-span-2" : ""}`}>
-      <span className="text-xs text-muted-foreground flex items-center gap-1">
+      <span className="text-xs text-graphite flex items-center gap-1">
         {Icon && <Icon className="w-3 h-3" />} {label}
       </span>
       <span className="text-sm font-medium wrap-break-word">
@@ -86,13 +86,13 @@ export function PropertyDetailSheet() {
     <Sheet open={isOpen} onOpenChange={handleClose}>
       <SheetContent className="w-full sm:w-[600px] p-0 flex flex-col gap-0 bg-background">
         {/* 头部：标题与状态 */}
-        <SheetHeader className="p-6 bg-card border-b shrink-0">
+        <SheetHeader className="p-6 bg-white border-b shrink-0">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline">{data?.data_source || "数据源"}</Badge>
             {data?.status && (
               <Badge className={getProjectStatusBadgeClass(data.status)}>{data.status}</Badge>
             )}
-            <span className="text-xs text-muted-foreground ml-auto">ID: {propertyId}</span>
+            <span className="text-xs text-graphite ml-auto">ID: {propertyId}</span>
           </div>
           <SheetTitle className="text-xl leading-snug">
             {isLoading ? "加载中..." : data?.community_name || "房源详情"}
@@ -107,41 +107,41 @@ export function PropertyDetailSheet() {
         <ScrollArea className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-8">
             {isLoading && (
-              <div className="flex h-40 items-center justify-center text-muted-foreground">
+              <div className="flex h-40 items-center justify-center text-graphite">
                 <Loader2 className="w-8 h-8 animate-spin" />
               </div>
             )}
 
             {errorMsg && (
-              <div className="p-4 bg-error-container text-error rounded-md text-sm">{errorMsg}</div>
+              <div className="rounded-inputs bg-error-container p-4 text-sm text-error">
+                {errorMsg}
+              </div>
             )}
 
             {data && !isLoading && (
               <>
                 {/* 1. 核心价格与面积 */}
-                <div className="grid grid-cols-3 gap-4 bg-card p-4 rounded-lg border shadow-sm">
+                <div className="grid grid-cols-3 gap-4 rounded-inputs bg-fog p-4">
                   <div className="text-center border-r">
-                    <div className="text-xs text-muted-foreground mb-1">
+                    <div className="text-xs text-graphite mb-1">
                       {data.status === "成交" ? "成交总价" : "挂牌总价"}
                     </div>
                     {/* 修复：使用 listed_price_wan 或 sold_price_wan */}
                     <div className="text-xl font-bold text-error">
-                      {displayPrice}{" "}
-                      <span className="text-xs font-normal text-muted-foreground">万</span>
+                      {displayPrice} <span className="text-xs font-normal text-graphite">万</span>
                     </div>
                   </div>
                   <div className="text-center border-r">
-                    <div className="text-xs text-muted-foreground mb-1">单价</div>
+                    <div className="text-xs text-graphite mb-1">单价</div>
                     <div className="text-lg font-semibold">
-                      {data.unit_price}{" "}
-                      <span className="text-xs font-normal text-muted-foreground"></span>
+                      {data.unit_price} <span className="text-xs font-normal text-graphite"></span>
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-muted-foreground mb-1">建筑面积</div>
+                    <div className="text-xs text-graphite mb-1">建筑面积</div>
                     <div className="text-lg font-semibold">
                       {data.build_area}{" "}
-                      <span className="text-xs font-normal text-muted-foreground">㎡</span>
+                      <span className="text-xs font-normal text-graphite">㎡</span>
                     </div>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export function PropertyDetailSheet() {
                   if (validLinks.length === 0) return null;
                   return (
                     <div>
-                      <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
+                      <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-ink">
                         <Layers className="w-4 h-4" /> 图片预览
                       </h3>
                       <div className="grid grid-cols-3 gap-2">
@@ -161,7 +161,7 @@ export function PropertyDetailSheet() {
                           // 使用 next/image 与 columns.tsx 对齐；unoptimized 保留外链原 URL
                           <div
                             key={idx}
-                            className="relative w-full aspect-4/3 rounded border bg-muted overflow-hidden"
+                            className="relative w-full aspect-4/3 rounded border bg-fog overflow-hidden"
                           >
                             <Image
                               src={link}
@@ -181,10 +181,10 @@ export function PropertyDetailSheet() {
 
                 {/* 2. 基础信息 */}
                 <div>
-                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
+                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-ink">
                     <Home className="w-4 h-4" /> 基础属性
                   </h3>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-8 bg-card p-4 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-4 rounded-inputs bg-fog p-4 sm:gap-x-8">
                     <Field label="户型结构" value={data.layout_display} />
                     <Field label="所在楼层" value={data.floor_display} />
                     <Field label="房屋朝向" value={data.orientation} />
@@ -198,10 +198,10 @@ export function PropertyDetailSheet() {
 
                 {/* 3. 交易属性 */}
                 <div>
-                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
+                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-ink">
                     <Tag className="w-4 h-4" /> 交易属性
                   </h3>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-8 bg-card p-4 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-4 rounded-inputs bg-fog p-4 sm:gap-x-8">
                     <Field
                       label="挂牌时间"
                       value={data.listed_date?.split("T")[0]}

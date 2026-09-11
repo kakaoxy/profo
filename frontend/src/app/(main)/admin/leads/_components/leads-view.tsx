@@ -19,6 +19,8 @@ import { LeadsGrid } from "./leads-grid";
 import { LeadsToolbar } from "./leads-toolbar";
 import { LeadsPagination } from "./leads-pagination";
 import { ListView } from "@/components/common";
+import { PageContainer } from "@/app/(main)/admin/_components/page-container";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 
 const LeadDrawer = dynamic(() => import("./lead-drawer").then((mod) => mod.LeadDrawer), {
   ssr: false,
@@ -159,11 +161,8 @@ export function LeadsView({
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl tracking-tight text-ink">线索管理</h1>
-          <p className="text-sm text-ash">管理和跟进房源线索，从初筛到签约的全流程追踪。</p>
-        </div>
+      <PageContainer className="flex flex-col gap-8">
+        <PageHeader title="线索管理" description="管理和跟进房源线索，从初筛到签约的全流程追踪。" />
 
         <LeadsStats stats={stats} />
 
@@ -221,7 +220,7 @@ export function LeadsView({
           onAdd={handleAddLead}
           lead={editingLead}
         />
-      </div>
+      </PageContainer>
     </div>
   );
 }

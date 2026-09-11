@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { parseAsString, useQueryState } from "nuqs";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,29 +47,27 @@ export function DistributionChart({
   const [view, setView] = useQueryState(viewKey, parseAsString.withDefault("chart"));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardAction>
-          <div className="flex items-center gap-1">
-            <Button
-              variant={view === "chart" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("chart")}
-            >
-              图表
-            </Button>
-            <Button
-              variant={view === "table" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("table")}
-            >
-              数值
-            </Button>
-          </div>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
+    <div className="bg-white rounded-cards shadow-steep overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-fog px-6 py-4">
+        <h3 className="text-sm font-semibold text-ink">{title}</h3>
+        <div className="flex items-center gap-1">
+          <Button
+            variant={view === "chart" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setView("chart")}
+          >
+            图表
+          </Button>
+          <Button
+            variant={view === "table" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setView("table")}
+          >
+            数值
+          </Button>
+        </div>
+      </div>
+      <div className="p-6">
         {view === "chart" ? (
           <DistributionRenderer buckets={buckets} />
         ) : (
@@ -101,7 +98,7 @@ export function DistributionChart({
             </TableBody>
           </Table>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

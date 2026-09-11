@@ -29,7 +29,7 @@ export interface BusinessDistrictColumnOptions {
   onAddToCompare: (bc: string) => void;
 }
 
-const TEXT_MUTED = "text-muted-foreground font-medium";
+const TEXT_MUTED = "text-graphite font-medium";
 const NUMERIC_CELL = "text-right font-mono text-sm tabular-nums";
 
 function SortHeader({
@@ -55,12 +55,12 @@ function SortHeader({
         type="button"
         onClick={() => onSortChange(column)}
         className={cn(
-          "inline-flex items-center gap-1 transition-colors hover:text-foreground",
-          active ? "text-foreground font-medium" : TEXT_MUTED,
+          "inline-flex items-center gap-1 transition-colors hover:text-ink",
+          active ? "text-ink font-medium" : TEXT_MUTED,
         )}
       >
         <span>{label}</span>
-        <Icon className={cn("h-3 w-3", active ? "text-foreground" : "text-muted-foreground/60")} />
+        <Icon className={cn("h-3 w-3", active ? "text-ink" : "text-graphite/60")} />
       </button>
     </div>
   );
@@ -73,7 +73,7 @@ function QoqCell({ value }: { value: number | null }) {
       ? "text-money-positive"
       : direction === "down"
         ? "text-money-negative"
-        : "text-muted-foreground";
+        : "text-graphite";
   const Icon = direction === "up" ? TrendingUp : direction === "down" ? TrendingDown : Minus;
   return (
     <span
@@ -123,14 +123,14 @@ export function buildColumns(
       header: () => <span className={TEXT_MUTED}>商圈</span>,
       cell: ({ row }) => {
         const bc = row.original.business_circle;
-        return <span className="font-medium text-foreground">{bc ? bc : "未分类"}</span>;
+        return <span className="font-medium text-ink">{bc ? bc : "未分类"}</span>;
       },
     },
     {
       accessorKey: "district",
       header: () => <span className={TEXT_MUTED}>行政区</span>,
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">{row.original.district || "-"}</span>
+        <span className="text-sm text-graphite">{row.original.district || "-"}</span>
       ),
     },
     {

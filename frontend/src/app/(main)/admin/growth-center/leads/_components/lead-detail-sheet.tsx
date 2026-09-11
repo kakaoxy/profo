@@ -328,14 +328,14 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
                         className={cn(
                           "absolute left-0 top-1 h-3 w-3 rounded-full",
                           ev.occurred
-                            ? "bg-ink ring-4 ring-[#eceef2]"
-                            : "bg-white ring-2 ring-inset ring-[#c9ccd4]",
+                            ? "bg-ink ring-4 ring-fog"
+                            : "bg-white ring-2 ring-inset ring-dove/40",
                         )}
                       />
                       <div
                         className={cn(
                           "text-[13.5px]",
-                          ev.occurred ? "font-medium text-ink" : "font-normal text-[#c9ccd4]",
+                          ev.occurred ? "font-medium text-ink" : "font-normal text-slate",
                         )}
                       >
                         {ev.label}
@@ -343,7 +343,7 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
                       <div
                         className={cn(
                           "mt-0.5 text-[12.5px]",
-                          ev.occurred ? "text-graphite" : "text-[#c9ccd4]",
+                          ev.occurred ? "text-graphite" : "text-slate",
                         )}
                       >
                         {ev.occurred ? (desc ?? "已完成") : "未发生 / 未埋点"}
@@ -393,7 +393,7 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
 
             {/* 模块差异化字段 */}
             {fieldBox && fieldBox.rows.length > 0 && (
-              <section className="bg-fog rounded-2xl p-4">
+              <section className="rounded-inputs bg-fog p-4">
                 <div className="flex items-center gap-2 flex-wrap text-[13px] font-medium text-ink mb-2.5">
                   <span
                     className={cn(
@@ -443,10 +443,7 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
                         {FLOW_MATRIX[detail.module][detail.unified_status].map((status) => (
-                          <DropdownMenuItem
-                            key={status}
-                            onClick={() => handleTargetSelect(status)}
-                          >
+                          <DropdownMenuItem key={status} onClick={() => handleTargetSelect(status)}>
                             {targetLabel(status)}
                           </DropdownMenuItem>
                         ))}
@@ -466,10 +463,10 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
         submitting={flowing}
         reasonRequired={detail ? ELIMINATE_REASON_REQUIRED[detail.module] : false}
         onConfirm={({ reason, remark }) =>
-          void handleFlow(
-            confirmMode === "eliminate" ? "eliminated" : "contacted",
-            { reason: reason ?? undefined, remark },
-          )
+          void handleFlow(confirmMode === "eliminate" ? "eliminated" : "contacted", {
+            reason: reason ?? undefined,
+            remark,
+          })
         }
         onClose={() => setConfirmMode(null)}
       />

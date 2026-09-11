@@ -7,7 +7,6 @@ import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tan
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -131,20 +130,20 @@ export function BusinessDistrictTable({
   const rangeEnd = Math.min(page * pageSize, initialTotal);
 
   return (
-    <Card>
-      <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2">
+    <div className="bg-white rounded-cards shadow-steep overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-fog px-6 py-4">
+        <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
           <span>商圈列表</span>
           <Badge variant="secondary" className="text-xs">
             共 {initialTotal} 个
           </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
+        </h3>
+      </div>
+      <div className="p-0">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="bg-muted/30">
+              <TableRow key={headerGroup.id} className="bg-fog/50">
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder
@@ -161,7 +160,7 @@ export function BusinessDistrictTable({
                 <TableRow
                   key={row.id}
                   onClick={() => handleRowClick(row.original)}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-fog/60"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -172,20 +171,17 @@ export function BusinessDistrictTable({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-muted-foreground"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center text-graphite">
                   暂无数据
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </CardContent>
+      </div>
       {showPagination && (
-        <div className="flex flex-col gap-2 border-t px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-muted-foreground">
+        <div className="flex flex-col gap-2 border-t border-fog px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-graphite">
             显示 {rangeStart}-{rangeEnd} 条 / 共 {initialTotal} 条
           </div>
           <div className="flex items-center gap-1">
@@ -198,7 +194,7 @@ export function BusinessDistrictTable({
               <ChevronLeft className="h-4 w-4" />
               上一页
             </Button>
-            <span className="px-2 text-sm text-muted-foreground">
+            <span className="px-2 text-sm text-graphite">
               {page} / {totalPages}
             </span>
             <Button
@@ -213,6 +209,6 @@ export function BusinessDistrictTable({
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

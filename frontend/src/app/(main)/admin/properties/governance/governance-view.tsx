@@ -110,7 +110,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <form onSubmit={handleSearch} className="relative flex items-center gap-2">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-graphite" />
               <Input
                 placeholder="搜索小区名称..."
                 value={searchValue}
@@ -136,7 +136,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
           </div>
         </div>
 
-        <div className="rounded-md border bg-card overflow-x-auto scrollbar-hide">
+        <div className="rounded-cards bg-white shadow-steep overflow-hidden">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -175,7 +175,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
 
         {/* 分页控制栏 */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-2">
-          <div className="text-xs sm:text-sm text-muted-foreground">
+          <div className="text-xs sm:text-sm text-graphite">
             共 {total} 条，第 {page}/{totalPages} 页
           </div>
           <div className="flex items-center space-x-2">

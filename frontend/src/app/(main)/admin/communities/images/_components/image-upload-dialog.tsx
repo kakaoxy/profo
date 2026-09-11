@@ -131,11 +131,11 @@ export function ImageUploadDialog({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-border rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50"
+            className="w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-fog rounded-xl hover:bg-fog/60 transition-colors disabled:opacity-50"
           >
-            <Upload className="h-6 w-6 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">点击选择户型图</span>
-            <span className="text-xs text-muted-foreground/70">支持 JPG / PNG / WebP / GIF</span>
+            <Upload className="h-6 w-6 text-graphite" />
+            <span className="text-sm text-graphite">点击选择户型图</span>
+            <span className="text-xs text-graphite/70">支持 JPG / PNG / WebP / GIF</span>
           </button>
           <input
             ref={fileInputRef}
@@ -150,19 +150,19 @@ export function ImageUploadDialog({
           {items.map((item, index) => (
             <div
               key={`${item.file.name}-${index}`}
-              className="flex flex-col gap-1.5 p-3 rounded-lg border border-border bg-muted/30"
+              className="flex flex-col gap-1.5 p-3 rounded-lg border border-fog bg-fog/60"
             >
               <div className="flex items-center gap-2">
                 <span className="flex-1 min-w-0 truncate text-xs font-medium">
                   {item.file.name}
                 </span>
-                <span className="shrink-0 text-[10px] text-muted-foreground">
+                <span className="shrink-0 text-[10px] text-graphite">
                   {(item.file.size / 1024).toFixed(0)} KB
                 </span>
                 {item.status === "pending" && !uploading && (
                   <button
                     onClick={() => removeItem(index)}
-                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                    className="shrink-0 text-graphite hover:text-ink"
                   >
                     ✕
                   </button>

@@ -27,6 +27,7 @@ import type {
   TrendDataPoint,
 } from "../_lib/types";
 import { buildRoomsUrl, parseRoomsUrl } from "./_components/url-helpers";
+import { PageContainer } from "@/app/(main)/admin/_components";
 import { BusinessDistrictTable } from "./_components/business-district-table";
 import { ComparisonPool } from "./_components/comparison-pool";
 import { DistributionChart } from "./_components/distribution-chart";
@@ -252,8 +253,8 @@ export default async function MarketReportsPage({ searchParams }: PageProps) {
   const lastUpdated = lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
         <TopFilterBar dataSources={dataSources} lastUpdated={lastUpdated} />
         <SubFilterBar />
         <ComparisonPool />
@@ -289,7 +290,7 @@ export default async function MarketReportsPage({ searchParams }: PageProps) {
           compareIds={compareIds}
         />
         <ReportsFooter lastUpdated={lastUpdated} />
-      </div>
+      </PageContainer>
     </div>
   );
 }

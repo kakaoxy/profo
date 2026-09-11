@@ -31,7 +31,7 @@ export const LifecycleStepper: React.FC<Props> = ({ lead }) => {
   return (
     <div
       className={cn(
-        "px-4 py-3 bg-pure-white border-b border-dove overflow-x-auto no-scrollbar relative",
+        "px-4 py-3 bg-white border-b border-dove overflow-x-auto no-scrollbar relative",
         isTerminalClosed && "opacity-70 saturate-50",
       )}
     >

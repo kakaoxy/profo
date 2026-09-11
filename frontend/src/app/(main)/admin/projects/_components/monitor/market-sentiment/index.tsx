@@ -31,10 +31,7 @@ export function MarketSentiment({ projectId, communityId }: MarketSentimentProps
         <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
         <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="p-5 rounded-xl border border-border bg-muted/50 h-48 animate-pulse"
-            />
+            <div key={i} className="h-48 animate-pulse rounded-inputs bg-fog p-5" />
           ))}
         </div>
       </section>
@@ -66,12 +63,12 @@ export function MarketSentiment({ projectId, communityId }: MarketSentimentProps
           dataKey="current"
         />
 
-        <div className="p-5 rounded-xl border border-border bg-muted/50 flex flex-col">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+        <div className="flex flex-col rounded-inputs bg-fog p-5">
+          <p className="text-xs font-bold text-graphite uppercase tracking-wider">
             去化压力 (库存/月销)
           </p>
           <div className="mt-2 flex flex-col justify-center grow pb-6">
-            <p className="text-3xl font-black text-foreground">{inventoryMonths.toFixed(1)} 个月</p>
+            <p className="text-3xl font-black text-ink">{inventoryMonths.toFixed(1)} 个月</p>
             <p className={`text-sm font-bold ${pressureColor} mt-2`}>
               {pressureIcon} {pressureLabel}
             </p>

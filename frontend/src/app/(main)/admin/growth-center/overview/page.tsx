@@ -5,6 +5,7 @@ import {
   getGrowthSourceBreakdown,
   getGrowthTrend,
 } from "../_lib/growth-data";
+import { PageContainer } from "@/app/(main)/admin/_components";
 import { OverviewView } from "./_components/overview-view";
 
 /**
@@ -24,9 +25,9 @@ export default async function GrowthOverviewPage() {
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageContainer>
         <OverviewView kpi={kpi} breakdown={breakdown} trend={trend} compare={compare} top={top} />
-      </div>
+      </PageContainer>
     </div>
   );
 }
