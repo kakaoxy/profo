@@ -36,7 +36,7 @@ export default async function LedgerStatisticsPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-fog">
       {/* 返回链接 + Hero + 8 KPI */}
-      <PageContainer className="flex flex-col gap-8">
+      <PageContainer className="flex flex-col gap-12">
         <Link
           href={`/admin/ledger/${projectId}`}
           className="text-sm font-medium text-graphite hover:text-ink transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rust focus-visible:ring-offset-2 rounded-sm"
