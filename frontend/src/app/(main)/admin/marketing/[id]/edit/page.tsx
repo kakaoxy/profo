@@ -12,6 +12,7 @@ import Link from "next/link";
 import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { safeParseDate } from "@/lib/validators";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 
 // 路由参数验证 schema
 const paramsSchema = z.object({
@@ -104,8 +105,8 @@ export default async function ProjectEditPage({ params }: { params: Promise<{ id
   const photos: L4MarketingMedia[] = apiItems.map(mapToL4MarketingMedia);
 
   return (
-    <div className="min-h-screen bg-muted/50">
-      <div className="w-full max-w-[1400px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog">
+      <PageContainer>
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
@@ -114,13 +115,10 @@ export default async function ProjectEditPage({ params }: { params: Promise<{ id
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">编辑房源信息</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                最后更新于{" "}
-                {safeParseDate(project.updated_at)?.toLocaleString("zh-CN") ?? "未知时间"}
-              </p>
-            </div>
+            <PageHeader
+              title="编辑房源信息"
+              description={`最后更新于 ${safeParseDate(project.updated_at)?.toLocaleString("zh-CN") ?? "未知时间"}`}
+            />
           </div>
           <div className="flex gap-3">
             <Link href="/admin/marketing">
@@ -137,7 +135,7 @@ export default async function ProjectEditPage({ params }: { params: Promise<{ id
 
         {/* Content */}
         <MiniProjectForm mode="edit" initialProject={project} initialPhotos={photos} />
-      </div>
+      </PageContainer>
     </div>
   );
 }

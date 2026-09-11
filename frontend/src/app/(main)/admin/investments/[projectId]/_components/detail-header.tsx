@@ -49,7 +49,7 @@ export function DetailHeader({
             <ArrowLeft className="h-4 w-4" />
             返回跟投列表
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="font-display text-3xl text-ink">
             💰 跟投详情 — {investment.project_code || "-"} {investment.project_name || ""}
           </h1>
         </div>

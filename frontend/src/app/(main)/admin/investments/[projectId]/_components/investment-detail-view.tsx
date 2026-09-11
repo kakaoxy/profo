@@ -494,7 +494,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
               <ArrowLeft className="h-4 w-4" />
               返回跟投列表
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="font-display text-3xl text-ink">
               💰 跟投详情 — {investment.project_code || "-"} {investment.project_name || ""}
             </h1>
           </div>
@@ -644,19 +644,19 @@ function InvestmentEditView({ investment }: DetailViewProps) {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="min-w-[220px] text-muted-foreground font-medium">
+                    <TableHead className="min-w-55 text-muted-foreground font-medium">
                       投资方
                     </TableHead>
-                    <TableHead className="min-w-[120px] text-muted-foreground font-medium">
+                    <TableHead className="min-w-30 text-muted-foreground font-medium">
                       投资占比
                     </TableHead>
-                    <TableHead className="min-w-[160px] text-right text-muted-foreground font-medium">
+                    <TableHead className="min-w-40 text-right text-muted-foreground font-medium">
                       投资金额
                     </TableHead>
-                    <TableHead className="min-w-[60px] text-center text-muted-foreground font-medium">
+                    <TableHead className="min-w-15 text-center text-muted-foreground font-medium">
                       子投资人
                     </TableHead>
-                    <TableHead className="min-w-[200px] text-right text-muted-foreground font-medium">
+                    <TableHead className="min-w-50 text-right text-muted-foreground font-medium">
                       操作
                     </TableHead>
                   </TableRow>

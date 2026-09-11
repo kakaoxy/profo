@@ -24,10 +24,8 @@ export function StatisticsHero({ kpi }: StatisticsHeroProps) {
     <div className="text-center">
       {/* 标题 */}
       <div className="mb-10 animate-in" style={{ animationDelay: "0.1s" }}>
-        <h1 className="font-display text-[44px] leading-[1.1] tracking-[-0.66px] mb-4 text-ink text-balance">
-          项目资金账本
-        </h1>
-        <p className="text-[18px] leading-[1.35] text-ash">
+        <h1 className="font-display text-3xl mb-4 text-ink text-balance">项目资金账本</h1>
+        <p className="text-[15px] leading-[1.35] text-graphite">
           全周期资金追踪 · 数据从交易流水实时计算
         </p>
         <div className="mt-4">
@@ -129,7 +127,7 @@ function KpiCard({ label, value, suffix, variant, accent, className }: KpiCardPr
         className,
       )}
     >
-      <p className="text-[14px] mb-2 text-graphite leading-[1.5]">{label}</p>
+      <p className="text-[14px] mb-2 text-graphite leading-normal">{label}</p>
       <p
         className={cn(
           "text-[32px] leading-[1.1] tabular-nums tracking-[-0.3px]",

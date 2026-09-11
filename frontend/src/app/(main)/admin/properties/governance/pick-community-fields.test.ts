@@ -5,7 +5,7 @@ import { pickCommunityFields, type Community } from "./pick-community-fields";
  * pickCommunityFields 等价性测试
  *
  * 验证 P2 重构（RSC 序列化精简）后：
- *   1. 前端实际使用的 6 个字段完整保留
+ *   1. 前端实际使用的 8 个字段完整保留（含 is_active / aliases）
  *   2. 剔除 city_id / avg_price_wan（前端无引用）
  *   3. 字段值与原对象一致
  */
@@ -18,7 +18,9 @@ describe("pickCommunityFields", () => {
     business_circle: "人民广场",
     avg_price_wan: 85000,
     total_properties: 42,
+    is_active: true,
     created_at: "2025-01-15T08:30:00Z",
+    aliases: [{ id: "al-1", alias_name: "黄浦花园（别名）", data_source: "manual", created_at: "2025-01-16T08:30:00Z" }],
   };
 
   it("保留 id 字段", () => {
@@ -45,6 +47,24 @@ describe("pickCommunityFields", () => {
     expect(pickCommunityFields(fullCommunity).created_at).toBe("2025-01-15T08:30:00Z");
   });
 
+  it("保留 is_active 字段", () => {
+    expect(pickCommunityFields(fullCommunity).is_active).toBe(true);
+  });
+
+  it("保留 aliases 字段", () => {
+    expect(pickCommunityFields(fullCommunity).aliases).toEqual(fullCommunity.aliases);
+  });
+
+  it("is_active 缺省时回退为 true", () => {
+    const input = { ...fullCommunity, is_active: undefined } as Community;
+    expect(pickCommunityFields(input).is_active).toBe(true);
+  });
+
+  it("aliases 缺省时回退为空数组", () => {
+    const input = { ...fullCommunity, aliases: undefined } as Community;
+    expect(pickCommunityFields(input).aliases).toEqual([]);
+  });
+
   it("剔除 city_id 字段", () => {
     const result = pickCommunityFields(fullCommunity) as Record<string, unknown>;
     expect(result).not.toHaveProperty("city_id");
@@ -55,10 +75,10 @@ describe("pickCommunityFields", () => {
     expect(result).not.toHaveProperty("avg_price_wan");
   });
 
-  it("结果对象仅含 6 个字段", () => {
+  it("结果对象仅含 8 个字段", () => {
     const result = pickCommunityFields(fullCommunity) as Record<string, unknown>;
     expect(Object.keys(result).sort()).toEqual(
-      ["id", "name", "district", "business_circle", "total_properties", "created_at"].sort(),
+      ["id", "name", "district", "business_circle", "total_properties", "is_active", "created_at", "aliases"].sort(),
     );
   });
 

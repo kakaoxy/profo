@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
+import { PageContainer } from "@/app/(main)/admin/_components";
 import { StatisticsHero } from "./_components/statistics-hero";
 import { ProfitLadder } from "./_components/profit-ladder";
 import { StageCashflowTimeline } from "./_components/stage-cashflow-timeline";
@@ -34,7 +35,8 @@ export default async function LedgerStatisticsPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      {/* 返回链接 + Hero + 8 KPI */}
+      <PageContainer className="flex flex-col gap-8">
         <Link
           href={`/admin/ledger/${projectId}`}
           className="text-sm font-medium text-graphite hover:text-ink transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rust focus-visible:ring-offset-2 rounded-sm"
@@ -42,14 +44,8 @@ export default async function LedgerStatisticsPage({ params }: PageProps) {
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           返回流水明细
         </Link>
-      </div>
-
-      {/* Hero + 8 KPI */}
-      <section className="py-12">
-        <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8">
-          <StatisticsHero kpi={stats.kpi} />
-        </div>
-      </section>
+        <StatisticsHero kpi={stats.kpi} />
+      </PageContainer>
 
       {/* 利润三层结构 + 计算明细入口 */}
       <ProfitLadder

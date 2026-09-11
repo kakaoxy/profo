@@ -37,11 +37,12 @@ describe("refreshTokenServer", () => {
     const result = await refreshTokenServer();
 
     expect(result).toBeNull();
-    // adminAuth.adapter.refreshToken 抛 Error（extractApiError 提取后端 message），
+    // adminAuth.adapter.refreshToken 抛 ApiStatusError（extractApiError 提取后端
+    // message，并携带 HTTP 状态码供 isDefinitiveRejection 分类），
     // logger.error 将 Error 序列化为 { name, message } 后输出。
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringMatching(/^\[ERROR\] Token 刷新失败/),
-      expect.objectContaining({ name: "Error", message: expect.any(String) }),
+      expect.objectContaining({ name: "ApiStatusError", message: expect.any(String) }),
     );
 
     vi.doUnmock("next/headers");

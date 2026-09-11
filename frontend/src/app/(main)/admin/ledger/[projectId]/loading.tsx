@@ -1,9 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageContainer } from "@/app/(main)/admin/_components";
 
 export default function LedgerDetailLoading() {
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto flex flex-col gap-6 py-10 px-4 sm:px-6 lg:px-8">
+      <PageContainer className="flex flex-col gap-6">
         {/* Header 骨架 */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -27,7 +28,7 @@ export default function LedgerDetailLoading() {
           <Skeleton className="h-9 w-64 rounded-cards" />
           <Skeleton className="h-96 rounded-cards" />
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }

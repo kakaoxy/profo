@@ -38,7 +38,7 @@ describe("refreshTokensDedup", () => {
       credentials: "include",
     });
 
-    const expected: RefreshResult = { success: true };
+    const expected: RefreshResult = { success: true, retryable: false };
     expect(r1).toEqual(expected);
     expect(r2).toEqual(expected);
     expect(r3).toEqual(expected);
@@ -67,8 +67,8 @@ describe("refreshTokensDedup", () => {
     const [adminR, cR] = await Promise.all([adminP, cP]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(adminR).toEqual({ success: true });
-    expect(cR).toEqual({ success: true });
+    expect(adminR).toEqual({ success: true, retryable: false });
+    expect(cR).toEqual({ success: true, retryable: false });
   });
 
   it("首个刷新返回 401 时，所有并发调用者共享失败结果", async () => {
@@ -87,7 +87,8 @@ describe("refreshTokensDedup", () => {
     const [r1, r2, r3] = await Promise.all([p1, p2, p3]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const expected: RefreshResult = { success: false };
+    // 401=后端明确拒绝（确定性失效），不可重试
+    const expected: RefreshResult = { success: false, retryable: false };
     expect(r1).toEqual(expected);
     expect(r2).toEqual(expected);
     expect(r3).toEqual(expected);
@@ -108,7 +109,8 @@ describe("refreshTokensDedup", () => {
     const [r1, r2] = await Promise.all([p1, p2]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const expected: RefreshResult = { success: false };
+    // 403 ≠ 401：不证明 refresh_token 失效，按可重试处理
+    const expected: RefreshResult = { success: false, retryable: true };
     expect(r1).toEqual(expected);
     expect(r2).toEqual(expected);
   });
@@ -125,9 +127,26 @@ describe("refreshTokensDedup", () => {
     const [r1, r2] = await Promise.all([p1, p2]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const expected: RefreshResult = { success: false };
+    // 网络异常：会话仍可能有效，视作可重试，不触发登出
+    const expected: RefreshResult = { success: false, retryable: true };
     expect(r1).toEqual(expected);
     expect(r2).toEqual(expected);
+  });
+
+  it("刷新路由返回 503（瞬时失败）时 retryable=true，会话仍有效", async () => {
+    const { refreshTokensDedup } = await loadModule();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "Service temporarily unavailable" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const r = await refreshTokensDedup("/api/auth/refresh");
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    // 503=路由层约定的瞬时失败语义：保留 cookie 可重试，调用方不应登出
+    expect(r).toEqual({ success: false, retryable: true });
   });
 
   it("等待超过 2000ms 后同一 key 可发起新刷新，且 Map 条目已清理", async () => {
@@ -148,13 +167,13 @@ describe("refreshTokensDedup", () => {
       );
 
     const r1 = await refreshTokensDedup("/api/auth/refresh");
-    expect(r1).toEqual({ success: true });
+    expect(r1).toEqual({ success: true, retryable: false });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
     vi.advanceTimersByTime(2100);
 
     const r2 = await refreshTokensDedup("/api/auth/refresh");
-    expect(r2).toEqual({ success: true });
+    expect(r2).toEqual({ success: true, retryable: false });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
@@ -174,7 +193,7 @@ describe("refreshTokensDedup", () => {
     const r2 = await refreshTokensDedup("/api/auth/refresh");
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(r1).toEqual({ success: true });
-    expect(r2).toEqual({ success: true });
+    expect(r1).toEqual({ success: true, retryable: false });
+    expect(r2).toEqual({ success: true, retryable: false });
   });
 });

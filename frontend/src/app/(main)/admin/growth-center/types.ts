@@ -54,8 +54,6 @@ export const GROWTH_SOURCE_META: Record<LeadSource, { label: string; badge: stri
 
 // ─── 分期标注 ─────────────────────────────────────────────────────────────────
 
-/** 一期标记文案 */
-export const PHASE_1_LABEL = "一期";
 /** 二期标记文案 */
 export const PHASE_2_LABEL = "二期";
 

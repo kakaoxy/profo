@@ -19,6 +19,11 @@ const VALID_REFRESH = makeJwt(7200); // 2 小时后过期
 describe("proxy admin refresh dedup", () => {
   beforeEach(() => {
     vi.resetModules();
+    // 清空 dedupServerRefresh 挂在 globalThis 的去重注册表：
+    // vi.resetModules 只重置模块缓存，globalThis 上的注册表会跨用例存活，
+    // 前序用例缓存的 Promise（本文件所有用例共用同一 VALID_REFRESH）
+    // 会让后续用例复用旧结果而非真正发起刷新（假失败/假成功）
+    delete (globalThis as { __authServerRefreshPromises?: unknown }).__authServerRefreshPromises;
   });
 
   afterEach(() => {
@@ -160,11 +165,14 @@ describe("proxy admin refresh dedup", () => {
     const response = await proxy(req);
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("http://localhost/admin/login");
+    // 登录 URL 携带 ?redirect=pathname：重新登录后回跳原页面（登录重定向持久化）
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/admin/login?redirect=%2Fadmin%2Fdashboard",
+    );
 
     expect(countRefreshCalls(fetchSpy)).toBe(1);
 
-    // 库 middleware 的 session.redirect() 通过 clearTokensFromResponse 清除 cookies
+    // 后端明确拒绝（401）→ 会话确定性失效 → session.redirect() 清除 cookies
     expect(response.cookies.get("access_token")?.value).toBe("");
     expect(response.cookies.get("refresh_token")?.value).toBe("");
   });
@@ -191,8 +199,13 @@ describe("proxy admin refresh dedup", () => {
 
     expect(r1.status).toBe(307);
     expect(r2.status).toBe(307);
-    expect(r1.headers.get("location")).toBe("http://localhost/admin/login");
-    expect(r2.headers.get("location")).toBe("http://localhost/admin/login");
+    // 登录 URL 携带各自 ?redirect=pathname（登录重定向持久化）
+    expect(r1.headers.get("location")).toBe(
+      "http://localhost/admin/login?redirect=%2Fadmin%2Fdashboard",
+    );
+    expect(r2.headers.get("location")).toBe(
+      "http://localhost/admin/login?redirect=%2Fadmin%2Fprojects",
+    );
 
     expect(countRefreshCalls(fetchSpy)).toBe(1);
 
@@ -202,10 +215,22 @@ describe("proxy admin refresh dedup", () => {
     expect(r2.cookies.get("refresh_token")?.value).toBe("");
   });
 
-  it("非 HTML 请求不触发 admin 刷新", async () => {
+  it("非 HTML（JSON/RSC）admin 请求同样触发 proxy 层自动刷新（消除整页/软导航路径不对称）", async () => {
     const proxy = await loadProxy();
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const newAccess = makeJwt(3600);
+    const newRefresh = makeJwt(7200);
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createJsonResponse(
+        {
+          access_token: newAccess,
+          refresh_token: newRefresh,
+          expires_in: 3600,
+        },
+        200,
+      ),
+    );
 
     const req = createRequest({
       pathname: "/admin/dashboard",
@@ -215,11 +240,16 @@ describe("proxy admin refresh dedup", () => {
 
     const response = await proxy(req);
 
+    // 行为变更：proxy 层对 HTML 整页 + RSC 软导航统一执行认证与自动刷新，
+    // 消除「整页刷新能续期、点击跳转不能续期」的路径不对称；
+    // 客户端 API 请求（/api 前缀）不经过本层
     expect(response.status).toBe(200);
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(countRefreshCalls(fetchSpy)).toBe(1);
+    expect(response.cookies.get("access_token")?.value).toBe(newAccess);
+    expect(response.cookies.get("refresh_token")?.value).toBe(newRefresh);
   });
 
-  it("fetch reject 时 fail-closed 跳转 /admin/login（库 middleware 刷新失败视为未认证）", async () => {
+  it("fetch reject 时视为瞬时失败放行（refresh_token 仍有效，由下游 401 → refresh 路由兜底）", async () => {
     const proxy = await loadProxy();
 
     const fetchSpy = vi
@@ -234,14 +264,17 @@ describe("proxy admin refresh dedup", () => {
 
     const response = await proxy(req);
 
-    // 行为变更：原实现网络错误时 pass-through (200)，库 middleware fail-closed
-    // 刷新失败 → access_token 仍过期 → isAuthenticated=false → redirect
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("http://localhost/admin/login");
+    // 行为变更：网络异常属瞬时失败（refreshRejected=false 且 refresh_token 本地
+    // 仍有效 → recoverable），proxy 放行请求且不清 cookie，由下游 401 →
+    // /api/auth/refresh 兜底（路由层对瞬时失败返回 503 保留 cookie），
+    // 避免后端抖动误杀仍有效的会话
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
 
     expect(countRefreshCalls(fetchSpy)).toBe(1);
 
-    expect(response.cookies.get("access_token")?.value).toBe("");
-    expect(response.cookies.get("refresh_token")?.value).toBe("");
+    // 瞬时失败保留 cookie（未发生确定性失效，不下发 Set-Cookie 清除）
+    expect(response.cookies.get("access_token")?.value).toBeUndefined();
+    expect(response.cookies.get("refresh_token")?.value).toBeUndefined();
   });
 });

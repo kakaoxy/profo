@@ -330,7 +330,10 @@
 /* Steep display font utility — Signifier for hero/section headlines only (44px+) */
 @layer utilities {
   .font-display {
-    font-family: var(--font-signifier);
+    /* 直接引用 next/font 注入在 <body> 上的 --font-source-serif；
+       不能走 var(--font-signifier)：@theme inline 变量不输出到 :root，
+       手写类中的 var() 引用会落空导致字体回退到 sans（与 font-signifier 工具类的 inline 行为对齐） */
+    font-family: var(--font-source-serif), ui-serif, Georgia, Cambria, "Times New Roman", serif;
     font-weight: 400;
     line-height: 1.1;
     letter-spacing: -0.025em;

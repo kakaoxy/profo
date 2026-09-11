@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { components } from "@/lib/api-types";
 import type { GrowthModule } from "../../types";
-import { GROWTH_MODULE_META, GROWTH_MODULE_ORDER, PHASE_1_LABEL } from "../../types";
+import { GROWTH_MODULE_META, GROWTH_MODULE_ORDER } from "../../types";
 import { PageHeader, StatCardGrid, type StatItem } from "@/app/(main)/admin/_components";
 import { TrendChart } from "./trend-chart";
 
@@ -24,15 +24,6 @@ export interface OverviewViewProps {
 /** 药丸 Badge 基础样式（与设计稿 .badge 一致） */
 const badgeBase =
   "inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-0.5 rounded-full whitespace-nowrap";
-
-/** 分期药丸标注（对齐设计稿 .phase-tag） */
-function PhaseTag({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-fog text-graphite ring-1 ring-inset ring-fog whitespace-nowrap">
-      {label}
-    </span>
-  );
-}
 
 /** 卡片头：标题 + 副文案（对齐设计稿 .card-head） */
 function CardHead({ title, sub, extra }: { title: ReactNode; sub?: ReactNode; extra?: ReactNode }) {
@@ -155,7 +146,7 @@ export function OverviewView({ kpi, breakdown, trend, compare, top }: OverviewVi
                 )}
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 gap-x-5 mt-[18px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 gap-x-5 mt-4.5">
               {breakdownRows.map((row) => (
                 <div key={row.module} className="flex items-center gap-2 text-[13px]">
                   <span className={`${badgeBase} ${GROWTH_MODULE_META[row.module].badge}`}>
@@ -242,11 +233,10 @@ export function OverviewView({ kpi, breakdown, trend, compare, top }: OverviewVi
       <div className="bg-white rounded-cards shadow-steep overflow-hidden">
         <CardHead
           title="员工获客 TOP 榜"
-          extra={<PhaseTag label={PHASE_1_LABEL} />}
           sub="近 30 天 · 分享归因线索 · 转化率 = 线索数 ÷ 分享次数"
         />
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-[14px]">
+          <table className="w-full min-w-160 border-collapse text-[14px]">
             <thead>
               <tr className="text-left text-[13px] font-medium text-graphite whitespace-nowrap">
                 <th className="px-5 py-3 border-b border-fog w-14">排名</th>

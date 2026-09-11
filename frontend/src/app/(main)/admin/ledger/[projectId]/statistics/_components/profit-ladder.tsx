@@ -1,5 +1,6 @@
 import type { components } from "@/lib/api-types";
 import { cn } from "@/lib/utils";
+import { PageContainer } from "@/app/(main)/admin/_components";
 import { formatCurrency } from "./format";
 import { CalcBreakdownDialog } from "./calc-breakdown-dialog";
 
@@ -38,58 +39,56 @@ export function ProfitLadder({ fiveLayer, breakdown, businessForm }: ProfitLadde
   const pct = (v: number): string => `${Math.min(100, Math.max(0, (Math.abs(v) / maxAbs) * 100))}%`;
 
   return (
-    <section className="py-12">
-      <div className="w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
-          <div>
-            <p className="text-xs tracking-[0.2em] text-graphite mb-2">PROFIT STRUCTURE</p>
-            <h2 className="text-2xl font-display text-ink flex items-center gap-3">
-              利润三层结构
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-apricot-wash text-rust text-xs font-medium">
-                权责发生制
-              </span>
-            </h2>
-          </div>
-          <CalcBreakdownDialog breakdown={breakdown}>
-            <button
-              type="button"
-              className="text-sm text-rust hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rust focus-visible:ring-offset-2 rounded-sm"
-            >
-              查看计算明细 →
-            </button>
-          </CalcBreakdownDialog>
+    <PageContainer>
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+        <div>
+          <p className="text-xs tracking-[0.2em] text-graphite mb-2">PROFIT STRUCTURE</p>
+          <h2 className="text-2xl font-display text-ink flex items-center gap-3">
+            利润三层结构
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-apricot-wash text-rust text-xs font-medium">
+              权责发生制
+            </span>
+          </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <LadderCard
-            step={1}
-            stepLabel="收入层"
-            title={l1.title}
-            formula={l1.formula}
-            value={income}
-            progress={pct(income)}
-            variant="l1"
-          />
-          <LadderCard
-            step={2}
-            stepLabel="毛利层"
-            title="收入 − 直接成本"
-            formula="= 收入 − (取得成本 + 改造成本 + 佣金)"
-            value={gross}
-            progress={pct(gross)}
-            variant="l2"
-          />
-          <LadderCard
-            step={3}
-            stepLabel="净利层"
-            title="毛利 − 运营费用 − 融资成本"
-            formula="= 毛利 − 运营费用 − 项目分润"
-            value={net}
-            progress={pct(net)}
-            variant="l3"
-          />
-        </div>
+        <CalcBreakdownDialog breakdown={breakdown}>
+          <button
+            type="button"
+            className="text-sm text-rust hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rust focus-visible:ring-offset-2 rounded-sm"
+          >
+            查看计算明细 →
+          </button>
+        </CalcBreakdownDialog>
       </div>
-    </section>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <LadderCard
+          step={1}
+          stepLabel="收入层"
+          title={l1.title}
+          formula={l1.formula}
+          value={income}
+          progress={pct(income)}
+          variant="l1"
+        />
+        <LadderCard
+          step={2}
+          stepLabel="毛利层"
+          title="收入 − 直接成本"
+          formula="= 收入 − (取得成本 + 改造成本 + 佣金)"
+          value={gross}
+          progress={pct(gross)}
+          variant="l2"
+        />
+        <LadderCard
+          step={3}
+          stepLabel="净利层"
+          title="毛利 − 运营费用 − 融资成本"
+          formula="= 毛利 − 运营费用 − 项目分润"
+          value={net}
+          progress={pct(net)}
+          variant="l3"
+        />
+      </div>
+    </PageContainer>
   );
 }
 
@@ -133,8 +132,8 @@ function LadderCard({
       <div className="inline-flex items-center gap-1.5 text-xs text-graphite mb-1.5">
         <span
           className={cn(
-            "inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-xs font-medium",
-            "bg-gradient-to-br from-apricot-wash to-apricot-wash/50 text-rust",
+            "inline-flex items-center justify-center w-5.5 h-5.5 rounded-full text-xs font-medium",
+            "bg-linear-to-br from-apricot-wash to-apricot-wash/50 text-rust",
           )}
         >
           {step}

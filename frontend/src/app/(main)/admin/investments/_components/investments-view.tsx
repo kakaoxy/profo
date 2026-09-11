@@ -164,7 +164,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
               value={query.project_status}
               onValueChange={(val) => setQuery({ project_status: val, page: 1 })}
             >
-              <SelectTrigger className="h-10 w-[140px] bg-white border-fog rounded-lg">
+              <SelectTrigger className="h-10 w-35 bg-white border-fog rounded-lg">
                 <SelectValue placeholder="项目状态" />
               </SelectTrigger>
               <SelectContent>
@@ -181,7 +181,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
               value={query.settlement_status}
               onValueChange={(val) => setQuery({ settlement_status: val, page: 1 })}
             >
-              <SelectTrigger className="h-10 w-[140px] bg-white border-fog rounded-lg">
+              <SelectTrigger className="h-10 w-35 bg-white border-fog rounded-lg">
                 <SelectValue placeholder="跟投状态" />
               </SelectTrigger>
               <SelectContent>

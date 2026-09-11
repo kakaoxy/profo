@@ -60,8 +60,11 @@ describe("hasPathPermission", () => {
     expect(hasPathPermission("/admin/projects/123", ["project:read"])).toBe(true);
   });
 
-  it("should return false for child path when user lacks project:read", () => {
-    expect(hasPathPermission("/admin/projects/123", ["user:read"])).toBe(false);
+  it("should 放行 child path /admin/projects/123 when user lacks project:read（exact 匹配：详情页放行，由后端业务身份双通道校验）", () => {
+    // /admin/projects 为 exact: true：仅列表页精确匹配权限；详情页
+    // /admin/projects/{id} 放行，让被指派为业务负责人的普通用户能进入
+    // 自己负责的项目详情，不被角色权限覆盖
+    expect(hasPathPermission("/admin/projects/123", ["user:read"])).toBe(true);
   });
 
   it("should return true for non-restricted path /admin regardless of permissions", () => {
@@ -69,8 +72,10 @@ describe("hasPathPermission", () => {
     expect(hasPathPermission("/admin", [])).toBe(true);
   });
 
-  it("should return true for non-restricted path /admin/leads", () => {
-    expect(hasPathPermission("/admin/leads", [])).toBe(true);
+  it("should return false for restricted path /admin/leads when user lacks lead:read", () => {
+    // /admin/leads 已纳入 PATH_PERMISSION_MAP（需 lead:read），不再是非受限路径
+    expect(hasPathPermission("/admin/leads", [])).toBe(false);
+    expect(hasPathPermission("/admin/leads", ["lead:read"])).toBe(true);
   });
 
   it("should treat null permissions as no permission", () => {
@@ -93,8 +98,10 @@ describe("isRestrictedAdminPath", () => {
     expect(isRestrictedAdminPath("/admin/projects")).toBe(true);
   });
 
-  it("should return true for /admin/projects/123 (child of restricted)", () => {
-    expect(isRestrictedAdminPath("/admin/projects/123")).toBe(true);
+  it("should return false for /admin/projects/123 (exact 匹配：详情页放行)", () => {
+    // /admin/projects 为 exact: true：详情页 /admin/projects/{id} 不匹配受限项，
+    // 由后端业务身份双通道（ProjectReadOrBusinessPermDep）校验
+    expect(isRestrictedAdminPath("/admin/projects/123")).toBe(false);
   });
 
   it("should return true for /admin/users (restricted)", () => {
@@ -105,7 +112,7 @@ describe("isRestrictedAdminPath", () => {
     expect(isRestrictedAdminPath("/admin")).toBe(false);
   });
 
-  it("should return false for /admin/leads (non-restricted)", () => {
-    expect(isRestrictedAdminPath("/admin/leads")).toBe(false);
+  it("should return true for /admin/leads (restricted: lead:read)", () => {
+    expect(isRestrictedAdminPath("/admin/leads")).toBe(true);
   });
 });

@@ -1,9 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageContainer } from "@/app/(main)/admin/_components";
 
 export default function InvestmentDetailLoading() {
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="w-full max-w-[1200px] mx-auto flex flex-col gap-6 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Skeleton className="h-9 w-28 rounded-full" />
@@ -22,7 +23,7 @@ export default function InvestmentDetailLoading() {
         <Skeleton className="h-56 rounded-2xl" />
 
         <Skeleton className="h-48 rounded-2xl" />
-      </div>
+      </PageContainer>
     </div>
   );
 }

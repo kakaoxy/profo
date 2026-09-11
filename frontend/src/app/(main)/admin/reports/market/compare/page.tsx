@@ -11,6 +11,7 @@ import { ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { fetchClient } from "@/lib/api-server";
 import { logger } from "@/lib/logger";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import type { ComparisonData, Granularity, RangeOption } from "../../_lib/types";
 import { ComparisonSummaryTable } from "../_components/comparison-summary-table";
 import { ComparisonChart } from "../_components/comparison-chart";
@@ -47,8 +48,8 @@ export default async function ComparePage({ searchParams }: PageProps) {
 
   if (ids.length < 2) {
     return (
-      <div className="min-h-screen bg-muted">
-        <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-fog">
+        <PageContainer className="flex flex-col gap-8">
           <div className="flex flex-col gap-1">
             <Link
               href="/admin/reports/market"
@@ -57,7 +58,7 @@ export default async function ComparePage({ searchParams }: PageProps) {
               <ArrowLeft className="size-4" />
               退出对比
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">多商圈对比分析</h1>
+            <PageHeader title="多商圈对比分析" />
           </div>
           <Alert>
             <AlertTitle>需要至少 2 个商圈</AlertTitle>
@@ -68,7 +69,7 @@ export default async function ComparePage({ searchParams }: PageProps) {
               </Link>
             </AlertDescription>
           </Alert>
-        </div>
+        </PageContainer>
       </div>
     );
   }
@@ -86,8 +87,8 @@ export default async function ComparePage({ searchParams }: PageProps) {
   const data: ComparisonData = rawData;
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-8">
         <div className="flex flex-col gap-1">
           <Link
             href="/admin/reports/market"
@@ -96,16 +97,14 @@ export default async function ComparePage({ searchParams }: PageProps) {
             <ArrowLeft className="size-4" />
             退出对比
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            多商圈对比分析 · {ids.length}个商圈
-          </h1>
+          <PageHeader title={`多商圈对比分析 · ${ids.length}个商圈`} />
         </div>
         <ComparisonSummaryTable data={data} />
         <ComparisonChart type="volume" data={data} granularity={granularity} />
         <ComparisonChart type="price" data={data} granularity={granularity} />
         <ComparisonChart type="floor" data={data} granularity={granularity} />
         <ComparisonChart type="room" data={data} granularity={granularity} />
-      </div>
+      </PageContainer>
     </div>
   );
 }

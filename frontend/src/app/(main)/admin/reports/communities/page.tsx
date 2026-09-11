@@ -19,6 +19,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { fetchClient } from "@/lib/api-server";
 import { logger } from "@/lib/logger";
+import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import type {
   CommunityRow,
   DistributionBucket,
@@ -105,8 +106,8 @@ export default async function CommunitiesPage({
   // 无 business_circles 引导分支（spec：缺失时显示引导文案）
   if (businessCircles.length === 0) {
     return (
-      <div className="min-h-screen bg-muted">
-        <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-fog">
+        <PageContainer className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
             <Link
               href="/admin/reports/market"
@@ -115,7 +116,7 @@ export default async function CommunitiesPage({
               <ArrowLeft className="size-4" />
               返回商圈分析报表
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">小区明细</h1>
+            <PageHeader title="小区明细" />
           </div>
           <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
             请从
@@ -127,7 +128,7 @@ export default async function CommunitiesPage({
             </Link>
             选择一个商圈下钻
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
@@ -249,8 +250,8 @@ export default async function CommunitiesPage({
   const lastUpdated = lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
         <TopFilterBar hideLocationSelector dataSources={dataSources} lastUpdated={lastUpdated} />
         <SubFilterBar />
         <KpiCards data={kpiData} />
@@ -281,7 +282,7 @@ export default async function CommunitiesPage({
         </div>
         <CommunityTable items={communitiesData.items} total={communitiesData.total} />
         <ReportsFooter lastUpdated={lastUpdated} />
-      </div>
+      </PageContainer>
     </div>
   );
 }

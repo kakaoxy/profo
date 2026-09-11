@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
+import { PageContainer } from "@/app/(main)/admin/_components";
 import { HeaderStats } from "./_components/header-stats";
 import { TrendChart } from "./_components/trend-chart";
 import { LedgerDetailHeader } from "./_components/ledger-detail-header";
@@ -72,7 +73,7 @@ export default async function LedgerDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-fog">
-      <div className="w-full max-w-300 mx-auto flex flex-col gap-12 py-10 px-4 sm:px-6 lg:px-8">
+      <PageContainer className="flex flex-col gap-12">
         <LedgerDetailHeader projectId={projectId} />
 
         {/* 汇总卡片（三栏：基础信息 | 现金流 | ROI） */}
@@ -99,7 +100,7 @@ export default async function LedgerDetailPage({ params }: PageProps) {
         <section>
           <LogsCard logs={logs} />
         </section>
-      </div>
+      </PageContainer>
     </div>
   );
 }

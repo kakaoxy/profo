@@ -60,6 +60,10 @@ function createJsonResponse(body: unknown, status: number): Response {
 describe("POST /api/auth/refresh", () => {
   beforeEach(() => {
     vi.resetModules();
+    // 清空 dedupServerRefresh 挂在 globalThis 的去重注册表：
+    // vi.resetModules 只重置模块缓存，globalThis 上的注册表会跨用例存活，
+    // 前序失败用例缓存的 rejected Promise 会让后续成功用例拿到 401（假失败）
+    delete (globalThis as { __authServerRefreshPromises?: unknown }).__authServerRefreshPromises;
   });
 
   afterEach(() => {
@@ -106,7 +110,7 @@ describe("POST /api/auth/refresh", () => {
     expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
   });
 
-  it("后端返回 500 时 fail-closed 清除 cookies 并返回 401", async () => {
+  it("后端返回 500 时视为瞬时失败：保留 cookies 并返回 503 可重试", async () => {
     const cookieStore = createCookieStore();
     cookieStore.set("refresh_token", "old-refresh");
     cookieStore.set("access_token", "old-access");
@@ -119,11 +123,11 @@ describe("POST /api/auth/refresh", () => {
 
     const response = await POST(createRequest());
 
-    // 行为变更：原实现 500 保留 cookies，新实现 fail-closed 清除 cookies
-    // 任何刷新失败都视为会话失效，强制用户重新登录（更安全）
-    expect(response.status).toBe(401);
-    expect(cookieStore.delete).toHaveBeenCalledWith("access_token");
-    expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
+    // 行为变更：仅后端明确拒绝（401/403）才 fail-closed 清 cookie 并 401；
+    // 5xx 属瞬时失败，保留 cookie 返回 503，让客户端按可重试错误处理，
+    // 避免后端抖动把仍有效的会话误杀
+    expect(response.status).toBe(503);
+    expect(cookieStore.delete).not.toHaveBeenCalled();
   });
 
   it("刷新成功时通过 setTokenCookies 设置新的 access_token 与 refresh_token cookies", async () => {
@@ -323,6 +327,8 @@ describe("POST /api/auth/refresh", () => {
 describe("GET /api/auth/refresh", () => {
   beforeEach(() => {
     vi.resetModules();
+    // 同 POST：清空 globalThis 上的刷新去重注册表，保证用例隔离
+    delete (globalThis as { __authServerRefreshPromises?: unknown }).__authServerRefreshPromises;
   });
 
   afterEach(() => {
@@ -342,7 +348,10 @@ describe("GET /api/auth/refresh", () => {
     );
 
     expect(response.status).toBe(303);
-    expect(response.headers.get("Location")).toBe("http://localhost:3000/admin/login");
+    // 登录 URL 携带 ?redirect=next：重新登录后回跳原页面（登录重定向持久化）
+    expect(response.headers.get("Location")).toBe(
+      "http://localhost:3000/admin/login?redirect=%2Fadmin%2Fproperties%2Fgovernance",
+    );
     // 清 cookie（fail-closed，避免半失效状态）
     expect(cookieStore.delete).toHaveBeenCalledWith("access_token");
     expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
@@ -364,7 +373,10 @@ describe("GET /api/auth/refresh", () => {
     );
 
     expect(response.status).toBe(303);
-    expect(response.headers.get("Location")).toBe("http://localhost:3000/admin/login");
+    // 登录 URL 携带 ?redirect=next：重新登录后回跳原页面（登录重定向持久化）
+    expect(response.headers.get("Location")).toBe(
+      "http://localhost:3000/admin/login?redirect=%2Fadmin%2Fproperties%2Fgovernance",
+    );
     expect(cookieStore.delete).toHaveBeenCalledWith("access_token");
     expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
   });

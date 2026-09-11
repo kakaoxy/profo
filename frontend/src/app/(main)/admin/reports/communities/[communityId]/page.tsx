@@ -20,6 +20,7 @@ import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { fetchClient } from "@/lib/api-server";
 import { logger } from "@/lib/logger";
+import { PageContainer } from "@/app/(main)/admin/_components";
 import type {
   CommunityRow,
   DistributionBucket,
@@ -101,12 +102,12 @@ export default async function CommunityDetailPage({
   // 无效 ID → 回退 UI
   if (!communityId) {
     return (
-      <div className="min-h-screen bg-muted">
-        <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-fog">
+        <PageContainer className="flex flex-col gap-6">
           <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
             小区ID无效，请从小区列表进入。
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
@@ -161,12 +162,12 @@ export default async function CommunityDetailPage({
     // 404 小区不存在 → 回退 UI
     if (response.status === 404) {
       return (
-        <div className="min-h-screen bg-muted">
-          <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-fog">
+          <PageContainer className="flex flex-col gap-6">
             <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
               未找到该小区，请从小区列表进入。
             </div>
-          </div>
+          </PageContainer>
         </div>
       );
     }
@@ -243,8 +244,8 @@ export default async function CommunityDetailPage({
   const lastUpdated = lastUpdatedRes.data?.items?.[0] ?? new Date().toISOString();
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="w-full max-w-400 mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex flex-col gap-6">
         <TopFilterBar hideLocationSelector dataSources={dataSources} lastUpdated={lastUpdated} />
         <SubFilterBar />
 
@@ -298,7 +299,7 @@ export default async function CommunityDetailPage({
         )}
 
         <ReportsFooter lastUpdated={lastUpdated} />
-      </div>
+      </PageContainer>
     </div>
   );
 }
