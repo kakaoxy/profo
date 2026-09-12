@@ -424,10 +424,50 @@ class TestMyCustomersAggregateShareStats:
         assert resp.json() == {
             "share_count": 0,
             "pv": 0,
+            "anon_uv": 0,
+            "recruit_uv": 0,
             "uv": 0,
             "lead_count": 2,
             "today_share_count": 0,
             "today_pv": 0,
+            "today_anon_uv": 0,
+            "today_recruit_uv": 0,
             "today_uv": 0,
             "today_lead_count": 2,
         }
+
+    def test_anonymous_uv_dedup_across_links(
+        self, c_end_client: TestClient, customer_user: User, db_session: Session
+    ) -> None:
+        """匿名三链路共用同一设备 visitor_id：跨表去重，不因链路数重复计数.
+
+        同一 visitor_id 在估价/预约两条链路各留 1 次访问 → anon_uv == 1
+        （修复前各链路 UV 相加，同一客户被计 2 次）。
+        """
+        me = customer_user.id
+        t_start, _ = today_window()
+        today_at = t_start + timedelta(hours=1)
+        same_device = "11111111-2222-4333-8444-555555555555"
+        # marketing_project_id 为逻辑外键（库中无 FK 约束），此处用占位值
+        db_session.add(ValuationVisit(visitor_id=same_device, referrer_employee_id=me, created_at=today_at))
+        db_session.add(
+            ProjectVisit(
+                visitor_id=same_device,
+                referrer_employee_id=me,
+                marketing_project_id=1,
+                created_at=today_at,
+            )
+        )
+        db_session.commit()
+
+        resp = c_end_client.get("/api/v1/public/customers/my/share-stats")
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["pv"] == 2, "两条链路 PV 仍应各计 1（PV 可求和）"
+        assert body["anon_uv"] == 1, "同一设备跨链路应去重为 1"
+        assert body["today_anon_uv"] == 1
+        # 过渡别名与 anon_uv 同值（旧版小程序兼容）
+        assert body["uv"] == body["anon_uv"]
+        assert body["today_uv"] == body["today_anon_uv"]
+        # 招募 UV 单列，不并入匿名 UV
+        assert body["recruit_uv"] == 0

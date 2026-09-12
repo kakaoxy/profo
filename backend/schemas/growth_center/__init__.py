@@ -302,15 +302,30 @@ class MyCustomerBadgeResponse(BaseModel):
 
 
 class MyCustomerShareStatsResponse(BaseModel):
-    """我的客户分享统计响应（4 链路求和，字段口径与各线 my/share-stats 一致）."""
+    """我的客户分享统计响应（可求和指标为 4 链路合计；UV 分列，键不同不可相加）.
+
+    ``uv`` / ``today_uv`` 为**过渡别名**（= ``anon_uv`` / ``today_anon_uv``），
+    仅供未升级的小程序读取，避免滚动发版期间 UV 显示为空；小程序新版发布后
+    可直接删除这两个字段（届时属破坏性变更，需再次 gen-api）。
+    """
 
     share_count: int = Field(description="累计分享次数（4 链路合计）")
     pv: int = Field(description="累计经我分享的打开次数 PV（4 链路合计）")
-    uv: int = Field(description="累计打开人数 UV（4 链路求和，招募=openid_hash 口径，其余=匿名 visitor_id）")
+    anon_uv: int = Field(description="累计匿名访客 UV（估价/房源预约/房源单三链路按设备 visitor_id 跨表去重）")
+    recruit_uv: int = Field(description="累计招募登录访客 UV（openid_hash 按人去重，与 anon_uv 键不同不可相加）")
+    uv: int = Field(
+        description="[已废弃] 旧版小程序兼容别名，值同 anon_uv；新版小程序发布后移除",
+        deprecated=True,
+    )
     lead_count: int = Field(description="累计归属我的线索数（4 链路合计）")
     today_share_count: int = Field(description="今日分享次数")
     today_pv: int = Field(description="今日经我分享的打开次数 PV")
-    today_uv: int = Field(description="今日打开人数 UV")
+    today_anon_uv: int = Field(description="今日匿名访客 UV（三链路跨表去重）")
+    today_recruit_uv: int = Field(description="今日招募登录访客 UV（openid_hash 去重）")
+    today_uv: int = Field(
+        description="[已废弃] 旧版小程序兼容别名，值同 today_anon_uv；新版小程序发布后移除",
+        deprecated=True,
+    )
     today_lead_count: int = Field(description="今日归属我的线索数")
 
 

@@ -5,7 +5,8 @@
  * - 订阅提醒条：subscribe-template 返回模板 ID 且本地未授权时展示；
  *   「开启」在 tap 手势回调内同步发起 wx.requestSubscribeMessage
  *   （accept → 隐藏+toast+写本地标记；ban → 引导 openSetting；其余静默）
- * - 漏斗统计卡：今日/累计两行 × 分享/打开 PV/访客 UV/留资（留资列 rust 强调）
+ * - 漏斗统计卡：今日/累计两行 × 分享/打开 PV/访客 UV/留资（留资列 rust 强调）；
+ *   访客 UV 取匿名三链路跨表去重值（招募登录访客另见卡片脚注，键不同不可相加）
  * - 两级筛选：模块 tabs（色点+计数）× 统一状态 chips（计数），切换重置第 1 页
  * - 客户卡片：模块标签（色点）+脱敏手机号+统一状态标签+模块摘要+来源 chip+相对时间；
  *   new →「联系客户」+「状态流转」；contacted/high_intent →「再次联系」+「状态流转」；
@@ -39,15 +40,22 @@ const HTTP_FORBIDDEN = 403;
 /** 订阅授权本地标记（accept 后写入，命中则不再展示订阅提醒条）. */
 const SUBSCRIBE_GRANTED_KEY = "customers_subscribe_granted";
 
-/** 分享统计展示结构（累计 + 今日两行漏斗；空态判定仅用累计字段）. */
+/** 分享统计展示结构（累计 + 今日两行漏斗；空态判定仅用累计字段）.
+ *
+ * 「访客 UV」采用**匿名跨链路去重口径**（估价/预约/房源单共用同一设备 visitor_id，
+ * 跨表去重后为真实访客数）；招募为登录态 openid_hash（按人）口径，键不同不可相加，
+ * 单独以 foot 小字给出。
+ */
 interface ShareStatsDisplay {
   shareCount: number;
   pv: number;
-  uv: number;
+  anonUv: number;
+  recruitUv: number;
   leadCount: number;
   todayShareCount: number;
   todayPv: number;
-  todayUv: number;
+  todayAnonUv: number;
+  todayRecruitUv: number;
   todayLeadCount: number;
 }
 
@@ -100,11 +108,13 @@ Page<PageData, PageCustom>({
     stats: {
       shareCount: 0,
       pv: 0,
-      uv: 0,
+      anonUv: 0,
+      recruitUv: 0,
       leadCount: 0,
       todayShareCount: 0,
       todayPv: 0,
-      todayUv: 0,
+      todayAnonUv: 0,
+      todayRecruitUv: 0,
       todayLeadCount: 0,
     },
     items: [],
@@ -154,7 +164,11 @@ Page<PageData, PageCustom>({
     await Promise.all([this.loadStats(), this.loadLeads(true, true)]);
     const { stats, items, total } = this.data;
     const allZero =
-      stats.shareCount === 0 && stats.pv === 0 && stats.uv === 0 && stats.leadCount === 0;
+      stats.shareCount === 0 &&
+      stats.pv === 0 &&
+      stats.anonUv === 0 &&
+      stats.recruitUv === 0 &&
+      stats.leadCount === 0;
     // 累计漏斗全零且列表空 → 整页空态；有数据但当前筛选无结果 → 保留统计卡 + 行内空态
     this.setData({
       loading: false,
@@ -172,11 +186,13 @@ Page<PageData, PageCustom>({
         stats: {
           shareCount: res.share_count || 0,
           pv: res.pv || 0,
-          uv: res.uv || 0,
+          anonUv: res.anon_uv || 0,
+          recruitUv: res.recruit_uv || 0,
           leadCount: res.lead_count || 0,
           todayShareCount: res.today_share_count || 0,
           todayPv: res.today_pv || 0,
-          todayUv: res.today_uv || 0,
+          todayAnonUv: res.today_anon_uv || 0,
+          todayRecruitUv: res.today_recruit_uv || 0,
           todayLeadCount: res.today_lead_count || 0,
         },
       });

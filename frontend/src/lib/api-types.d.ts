@@ -3782,6 +3782,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/recruit/campaigns/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 最新启用中招募活动
+         * @description 返回最新启用中活动的 campaign_id（服务页经纪人入口跳转用）；无启用中活动返回 404
+         */
+        get: operations["get_latest_campaign_api_v1_public_recruit_campaigns_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/recruit/campaigns/{campaign_id}": {
         parameters: {
             query?: never;
@@ -4051,7 +4071,7 @@ export interface paths {
         };
         /**
          * 我的客户分享统计
-         * @description 四链路 share-stats 逐字段求和（今日/累计 × 分享/PV/UV/留资），口径与各线一致
+         * @description 分享/PV/留资为四链路合计；UV 分列（anon_uv=估价/预约/房源单按设备 visitor_id 跨表去重，recruit_uv=招募 openid_hash 按人去重），两者键不同不可相加
          */
         get: operations["get_my_customers_share_stats_api_v1_public_customers_my_share_stats_get"];
         put?: never;
@@ -8964,7 +8984,11 @@ export interface components {
         };
         /**
          * MyCustomerShareStatsResponse
-         * @description 我的客户分享统计响应（4 链路求和，字段口径与各线 my/share-stats 一致）.
+         * @description 我的客户分享统计响应（可求和指标为 4 链路合计；UV 分列，键不同不可相加）.
+         *
+         *     ``uv`` / ``today_uv`` 为**过渡别名**（= ``anon_uv`` / ``today_anon_uv``），
+         *     仅供未升级的小程序读取，避免滚动发版期间 UV 显示为空；小程序新版发布后
+         *     可直接删除这两个字段（届时属破坏性变更，需再次 gen-api）。
          */
         MyCustomerShareStatsResponse: {
             /**
@@ -8978,8 +9002,19 @@ export interface components {
              */
             pv: number;
             /**
+             * Anon Uv
+             * @description 累计匿名访客 UV（估价/房源预约/房源单三链路按设备 visitor_id 跨表去重）
+             */
+            anon_uv: number;
+            /**
+             * Recruit Uv
+             * @description 累计招募登录访客 UV（openid_hash 按人去重，与 anon_uv 键不同不可相加）
+             */
+            recruit_uv: number;
+            /**
              * Uv
-             * @description 累计打开人数 UV（4 链路求和，招募=openid_hash 口径，其余=匿名 visitor_id）
+             * @deprecated
+             * @description [已废弃] 旧版小程序兼容别名，值同 anon_uv；新版小程序发布后移除
              */
             uv: number;
             /**
@@ -8998,8 +9033,19 @@ export interface components {
              */
             today_pv: number;
             /**
+             * Today Anon Uv
+             * @description 今日匿名访客 UV（三链路跨表去重）
+             */
+            today_anon_uv: number;
+            /**
+             * Today Recruit Uv
+             * @description 今日招募登录访客 UV（openid_hash 去重）
+             */
+            today_recruit_uv: number;
+            /**
              * Today Uv
-             * @description 今日打开人数 UV
+             * @deprecated
+             * @description [已废弃] 旧版小程序兼容别名，值同 today_anon_uv；新版小程序发布后移除
              */
             today_uv: number;
             /**
@@ -12714,6 +12760,14 @@ export interface components {
              * @description 新线索订阅消息模板ID（未配置为 None）
              */
             subscribe_template_id?: string | null;
+        };
+        /**
+         * RecruitCampaignLatestResponse
+         * @description 最新启用中招募活动 ID（服务页经纪人入口跳转用）.
+         */
+        RecruitCampaignLatestResponse: {
+            /** Campaign Id */
+            campaign_id: string;
         };
         /**
          * RecruitCampaignResponse
@@ -22130,6 +22184,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_latest_campaign_api_v1_public_recruit_campaigns_latest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruitCampaignLatestResponse"];
                 };
             };
         };

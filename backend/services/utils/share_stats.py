@@ -8,11 +8,16 @@ shared_at/entered_at、UV 去重键为 openid_hash，预约归属为 referrer_us
 
 每条链路以单条 SELECT + 8 个标量子查询返回全部指标（1 次数据库往返），
 「我的客户」四链路聚合由约 32 条顺序查询降至 4 条。
+
+另提供 ``aggregate_anonymous_uv``：估价/预约/房源单三条匿名链路共用同一
+设备级 ``visitor_id``（见小程序 ``utils/visitor.ts``），可跨表去重得到真实
+访客数——**跨链路 UV 求和会把同一客户重复计数，故聚合场景必须用本函数**。
 """
 
+from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import ColumnElement, func, select
+from sqlalchemy import ColumnElement, func, select, union_all
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from utils.time_windows import today_window
@@ -97,3 +102,54 @@ def aggregate_my_share_stats(
     ).one()
 
     return {key: int(value or 0) for key, value in zip(_SHARE_STATS_KEYS, row, strict=True)}
+
+
+def aggregate_anonymous_uv(
+    db: Session,
+    *,
+    user_id: str,
+    visit_models: Sequence[Any],
+) -> dict[str, int]:
+    """跨匿名链路去重的访客 UV（累计 + 今日）.
+
+    估价 / 房源预约 / 房源单三条匿名链路的埋点共用同一设备级 ``visitor_id``
+    （小程序 ``utils/visitor.ts``：storage key ``profo_visitor_id``，跨会话稳定），
+    因此可跨表去重得到一个真实访客数。若改为各链路 UV 相加，同一客户在三条
+    链路各访问一次会被计 3 次（口径事故）。
+
+    招募链路为登录态 ``openid_hash``（按人）口径，与设备级 ``visitor_id``
+    命名空间不同，**不并入本函数**，由调用方单独取值。
+
+    Args:
+        db: 同步数据库会话
+        user_id: 当前员工 ID（按访问埋点归属收窄）
+        visit_models: 具备 ``visitor_id`` / ``referrer_employee_id`` /
+            ``created_at`` 三列的访问埋点模型（估价/预约/房源单）
+
+    Returns:
+        ``{"anon_uv": 累计去重访客, "today_anon_uv": 今日去重访客}``
+        （今日窗口为 Asia/Shanghai 自然日、左闭右开）
+
+    """
+    t_start, t_end = today_window()
+
+    def _branch(model: Any, *, today: bool) -> Any:
+        """单链路访问分支（仅取 visitor_id，归属收窄 + 可选今日窗口）."""
+        conditions: list[Any] = [
+            model.referrer_employee_id == user_id,
+            # visitor_id 为空的行无法参与去重，显式排除避免污染（count distinct 亦忽略 NULL）
+            model.visitor_id.isnot(None),
+        ]
+        if today:
+            conditions += [model.created_at >= t_start, model.created_at < t_end]
+        # 显式命名结果列：UNION ALL 结果列名取第一个分支，各分支列名必须一致，
+        # 依赖 SQLAlchemy 对裸列的隐式别名，改为表达式分支时会漂移导致 c.visitor_id 失效
+        return select(model.visitor_id.label("visitor_id")).where(*conditions)
+
+    def _distinct_count(*, today: bool) -> int:
+        """三链路 UNION ALL 后按 visitor_id 去重计数（含今日窗口变体）."""
+        unioned = union_all(*[_branch(model, today=today) for model in visit_models]).subquery()
+        stmt = select(func.count(func.distinct(unioned.c.visitor_id)))
+        return int(db.execute(stmt).scalar() or 0)
+
+    return {"anon_uv": _distinct_count(today=False), "today_anon_uv": _distinct_count(today=True)}

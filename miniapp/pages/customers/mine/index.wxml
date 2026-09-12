@@ -14,7 +14,8 @@
       <button class="sp-btn" bindtap="onSubscribeTap">开启</button>
     </view>
 
-    <!-- 漏斗统计卡（今日/累计两行 × 分享/打开 PV/访客 UV/留资，留资列 rust 强调） -->
+    <!-- 漏斗统计卡（今日/累计两行 × 分享/打开 PV/访客 UV/留资，留资列 rust 强调）
+         访客 UV = 估价/预约/房源单按设备跨链路去重；招募登录访客按人另计，见脚注 -->
     <view class="stats">
       <view class="stats-row">
         <view class="stats-tag">今日</view>
@@ -27,7 +28,7 @@
           <text class="stat-label">打开 PV</text>
         </view>
         <view class="stat">
-          <text class="stat-num">{{stats.todayUv}}</text>
+          <text class="stat-num">{{stats.todayAnonUv}}</text>
           <text class="stat-label">访客 UV</text>
         </view>
         <view class="stat stat--hl">
@@ -46,7 +47,7 @@
           <text class="stat-label">打开 PV</text>
         </view>
         <view class="stat">
-          <text class="stat-num">{{stats.uv}}</text>
+          <text class="stat-num">{{stats.anonUv}}</text>
           <text class="stat-label">访客 UV</text>
         </view>
         <view class="stat stat--hl">
@@ -54,7 +55,10 @@
           <text class="stat-label">留资</text>
         </view>
       </view>
-      <view class="stats-foot">四类链路合计 · 各线 UV 口径不同，数据不可横向对比</view>
+      <view class="stats-foot">
+        <view>访客 UV 为估价/预约/房源单跨链路去重（按设备）</view>
+        <view>招募登录访客另计：今日 {{stats.todayRecruitUv}} · 累计 {{stats.recruitUv}}（按人，口径不同不可相加）</view>
+      </view>
     </view>
 
     <!-- 整页空态（累计漏斗全零且列表空） -->

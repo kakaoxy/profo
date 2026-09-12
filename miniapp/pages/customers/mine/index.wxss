@@ -110,7 +110,7 @@
   padding: 0 28rpx 20rpx;
   font-size: 20rpx;
   color: var(--dove);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* ===== 模块固定色点（估价 rust / 预约 blue / 房源单 graphite / 招募 teal，全部 ink） ===== */

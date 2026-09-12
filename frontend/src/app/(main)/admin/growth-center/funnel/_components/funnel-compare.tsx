@@ -26,19 +26,21 @@ const BADGE_BASE =
 /** 对比条形配色（对齐设计稿 cmp-row：分享 Ink / 打开UV Graphite / 留资 Rust） */
 const ROW_BAR_COLORS = ["bg-ink", "bg-graphite", "bg-rust"] as const;
 
-/** 对比行：条形宽度按 100% 封顶渲染，百分比文本显示真实值（可 >100%） */
+/** 对比行：条形宽度按 100% 封顶渲染；右侧并列原始值与真实百分比（可 >100%） */
 function CompareRow({
   label,
+  value,
   percent,
   index,
 }: {
   label: string;
+  value: number;
   percent: number | null;
   index: number;
 }) {
   const width = Math.min(percent ?? 0, 100);
   return (
-    <div className="grid grid-cols-[52px_1fr_42px] gap-2 items-center mt-2">
+    <div className="grid grid-cols-[44px_1fr_108px] gap-2 items-center mt-2">
       <span className="text-[11px] text-graphite whitespace-nowrap">{label}</span>
       <div className="h-4 rounded-full bg-fog overflow-hidden">
         <i
@@ -46,8 +48,9 @@ function CompareRow({
           style={{ width: `${width}%` }}
         />
       </div>
-      <span className="text-[11px] text-slate text-right tabular-nums">
-        {percent === null ? "—" : `${percent}%`}
+      <span className="text-[11px] text-slate text-right tabular-nums whitespace-nowrap">
+        {value.toLocaleString()}
+        <span className="text-dove ml-1">{percent === null ? "—" : `${percent}%`}</span>
       </span>
     </div>
   );
@@ -70,7 +73,7 @@ export function FunnelCompare({ data }: FunnelCompareProps) {
       <div className="pb-5 border-b border-fog">
         <div className="text-[15px] font-medium text-ink">全部对比 · 归一化漏斗</div>
         <div className="mt-0.5 text-[13px] text-graphite">
-          以各模块分享 = 100% 基准 · 打开 UV 超 100% 时条形封顶、百分比标注真实值
+          以各模块分享 = 100% 基准 · 右侧「原始值 + 百分比」，打开 UV 超 100% 时条形封顶
         </div>
       </div>
 
@@ -86,10 +89,11 @@ export function FunnelCompare({ data }: FunnelCompareProps) {
                   分享 {row.share_count.toLocaleString()} · 基准 100%
                 </span>
               </div>
-              <CompareRow label="分享" percent={100} index={0} />
-              <CompareRow label="打开UV" percent={row.uv_percent} index={1} />
+              <CompareRow label="分享" value={row.share_count} percent={100} index={0} />
+              <CompareRow label="打开UV" value={row.uv} percent={row.uv_percent} index={1} />
               <CompareRow
                 label={LEADS_ROW_LABEL[row.module]}
+                value={row.leads}
                 percent={row.leads_percent}
                 index={2}
               />

@@ -18,9 +18,18 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.selectable import Select
 
-from models import L4MarketingProject, Lead, ProjectBooking, RecruitCampaign, RecruitLead, User
+from models import (
+    L4MarketingProject,
+    Lead,
+    ProjectBooking,
+    ProjectVisit,
+    RecruitCampaign,
+    RecruitLead,
+    User,
+    ValuationVisit,
+)
 from models.common.base import LeadStatus
-from models.marketing.property_sheet import PropertyShareSheet, PropertyShareSheetItem
+from models.marketing.property_sheet import PropertyShareSheet, PropertyShareSheetItem, PropertySheetVisit
 from schemas.growth_center import GrowthModule, LeadSource, UnifiedLeadStatus
 from services.growth_center.identity import internal_creator_exists
 from services.growth_center.lead_detail import GrowthLeadDetailService
@@ -31,6 +40,7 @@ from services.marketing.public import PublicProjectService
 from services.property_sheet.core import PropertySheetService
 from services.recruit.lead import RecruitLeadService
 from services.system.exceptions import ResourceNotFoundError
+from services.utils import aggregate_anonymous_uv
 from utils.formatters import mask_phone
 
 # UNION 分支构造返回：(语句, 统一状态列, 归属员工列, 创建时间列)
@@ -196,30 +206,54 @@ class MyCustomerService:
     # ─── 分享统计（4 链路求和） ────────────────────────────────────────────
 
     def share_stats(self, user: User) -> dict[str, int]:
-        """「我的客户」漏斗统计：四链路既有 my/share-stats 逐字段求和.
+        """「我的客户」漏斗统计：可跨链路求和的指标合计 + UV 分列.
 
-        复用各线服务保证口径一致（share/pv/uv/lead_count × 今日/累计）；
-        UV 为四链路 UV 数值求和（招募=openid_hash，其余=匿名 visitor_id，
-        口径差异由前端脚注说明，此处不做跨口径去重）。
+        口径：
+        - **可求和项**（share_count / pv / lead_count × 今日/累计）取四链路既有
+          ``my/share-stats`` 逐字段求和（复用各线服务保证口径一致）；
+        - **UV 不求和**。四链路存在两种互不可比的去重键：
+          ``anon_uv`` = 估价/预约/房源单三条匿名链路按设备 ``visitor_id``
+          **跨表去重**（三条链路同源于小程序同一个 ``profo_visitor_id``，
+          直接相加会把同一客户重复计数）；
+          ``recruit_uv`` = 招募链路登录态 ``openid_hash`` 去重（按人）。
+          两者键不同（设备 vs 人），既不可横向对比也不可相加，故分列返回，
+          由前端分开展示。
+        - ``uv`` / ``today_uv`` 为旧版小程序兼容别名（值同 ``anon_uv`` /
+          ``today_anon_uv``），新版小程序发布后随 schema 一并删除。
 
         """
-        keys = (
-            "share_count",
-            "pv",
-            "uv",
-            "lead_count",
-            "today_share_count",
-            "today_pv",
-            "today_uv",
-            "today_lead_count",
-        )
-        parts = [
+        valuation, project, sheet, recruit = (
             ValuationShareTrackingService(self.db).get_my_share_stats(user),
             PublicProjectService(self.db).get_my_share_stats(user),
             PropertySheetService(self.db).get_my_share_stats(user),
             RecruitLeadService(self.db).get_my_share_stats(user),
-        ]
-        return {key: sum(int(part[key]) for part in parts) for key in keys}
+        )
+        parts = (valuation, project, sheet, recruit)
+        stats = {
+            key: sum(int(part[key]) for part in parts)
+            for key in (
+                "share_count",
+                "pv",
+                "lead_count",
+                "today_share_count",
+                "today_pv",
+                "today_lead_count",
+            )
+        }
+        # 匿名三链路跨表去重 UV（不可用各链路 UV 相加替代）
+        anon = aggregate_anonymous_uv(
+            self.db,
+            user_id=user.id,
+            visit_models=(ValuationVisit, ProjectVisit, PropertySheetVisit),
+        )
+        stats.update(anon)
+        # 过渡别名：旧版小程序读 uv/today_uv，滚动发版期间避免显示为空（新版发布后删除）
+        stats["uv"] = anon["anon_uv"]
+        stats["today_uv"] = anon["today_anon_uv"]
+        # 招募登录态 UV 单列（按人，与匿名设备 UV 不同口径）
+        stats["recruit_uv"] = int(recruit["uv"])
+        stats["today_recruit_uv"] = int(recruit["today_uv"])
+        return stats
 
     # ─── 详情 / 手机号 ────────────────────────────────────────────────────
 
