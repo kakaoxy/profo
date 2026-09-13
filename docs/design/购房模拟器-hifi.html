@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="购房模拟器" />
+<title>上海购房流程模拟器 · 高保真交互原型</title>
+<!--
+  上海购房流程模拟器 · 高保真交互原型（可点击）
+  单文件自包含 HTML，无外部依赖、纯原生 JS/CSS，offline 可直接双击打开。
+
+  依据：
+    · 需求：docs/To-Do/购房模拟器.md（PRD v1.0，2026 上海限购/贷款/税费/资金监管政策）
+    · 视觉：/DESIGN.md（Steep Style Reference）—— Ink #17191c / Fog #f7f7f8 画布，
+      唯一暖色强调 Rust #5d2a1a，Apricot Wash #fbe1d1 与 Sky Wash #d3e3fc 为唯二彩色卡底；
+      Signifier 衬线仅用于 display 标题（≥40px），Sohne（system-ui 栈）承担全部 UI；
+      卡片 24px / 图片 12px / 输入 16px / 按钮与胶囊 9999px；签名三层阴影。
+
+  用途：重构/开发前确认需求。全流程 12 屏（开始→选房→资格核验→砍价→算账→筹钱→
+       签约→贷款→资金监管→过户→领证放款→最终账单），HUD 实时展示 阶段/现金/压力/卖家情绪。
+  工具栏：可跳转任意阶段（自动走默认分支补齐前置状态）或一键重置。
+
+  ⚠️ 设计稿交付物要求单文件自包含 HTML，故有意超出源文件 500 行约束。
+-->
+<style>
+  /* ============================================================
+     1. Steep 设计 token（对齐 /DESIGN.md）
+     ============================================================ */
+  :root {
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --obsidian: #000000;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky: #d3e3fc;
+    --pos: #c2410c;   /* 资金缺口警示（沿 Rust 暖色系，非新色谱） */
+    --neg: #176b4d;   /* 资金充足（低调绿色，仅状态用） */
+
+    --font-display: "Source Serif 4", "Source Serif Pro", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --r-cards: 24px;
+    --r-img: 12px;
+    --r-inputs: 16px;
+    --r-pill: 9999px;
+
+    --sh-steep: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.1) 0px 20px 25px -5px,
+      rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+    --sh-sm: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.06) 0px 8px 10px -6px;
+
+    --doc-bg: #eef0f2;
+    --doc-line: #dde1e6;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0;
+    background: var(--doc-bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    letter-spacing: -0.009em;
+    line-height: 1.5;
+  }
+  button { font-family: inherit; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ============================================================
+     2. 图标（描边单色 1.75px，与 hairline 语言一致）
+     ============================================================ */
+  .ic { width: 16px; height: 16px; stroke: currentColor; fill: none;
+        stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; display: block; }
+
+  /* ============================================================
+     3. 文档外壳（承载设计稿的评审层，非产品配色）
+     ============================================================ */
+  .doc-head { background: var(--pwhite); border-bottom: 1px solid var(--doc-line); padding: 36px 0 30px; }
+  .doc-wrap { width: 100%; max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .kicker { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--graphite); margin-bottom: 10px; }
+  .kicker .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rust); }
+  h1.doc-title { font-family: var(--font-display); font-weight: 400; font-size: 40px; line-height: 1.12;
+                 letter-spacing: -0.015em; color: var(--ink); margin: 0; }
+  .doc-sub { margin: 12px 0 0; font-size: 15.5px; color: var(--ash); max-width: 720px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--r-pill);
+          font-size: 12px; font-weight: 480; background: var(--fog); color: var(--graphite); }
+  .chip b { color: var(--ink); font-weight: 480; }
+
+  .doc-body { padding: 28px 0 64px; }
+  .sec-head { display: flex; align-items: center; gap: 12px; margin: 8px 0 16px; }
+  .sec-no { width: 26px; height: 26px; border-radius: var(--r-pill); background: var(--ink); color: #fff;
+            font-size: 13px; font-weight: 480; display: flex; align-items: center; justify-content: center; flex: none; }
+  .sec-head h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 26px;
+                 line-height: 1.2; letter-spacing: -0.015em; color: var(--ink); }
+  .sec-head p { margin: 0; font-size: 13.5px; color: var(--graphite); }
+
+  /* 简注条（每屏一行要点） */
+  .note-strip { background: var(--pwhite); border: 1px solid var(--doc-line); border-radius: 16px;
+                padding: 12px 18px; margin-top: 14px; display: flex; gap: 10px; align-items: baseline; }
+  .note-strip .n-tag { flex: none; font-size: 11px; font-weight: 500; color: var(--rust);
+                       letter-spacing: .02em; padding-top: 2px; }
+  .note-strip .n-txt { font-size: 13px; color: var(--ash); line-height: 1.6; }
+
+  /* 工具栏（设计师评审用：跳转/重置） */
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .toolbar label { font-size: 12.5px; color: var(--graphite); }
+  .toolbar select {
+    font-family: var(--font-ui); font-size: 13px; color: var(--ink);
+    background: var(--pwhite); border: 1px solid var(--dove); border-radius: var(--r-inputs);
+    padding: 7px 12px; height: 38px; outline: none; cursor: pointer; max-width: 260px;
+  }
+  .btn-sm2 { height: 38px; padding: 0 16px; font-size: 13px; border-radius: var(--r-pill);
+             background: var(--ink); color: #fff; border: 0; cursor: pointer; font-weight: 450;
+             letter-spacing: -0.009em; }
+  .btn-sm2:hover { background: #000; }
+
+  .doc-foot { border-top: 1px solid var(--doc-line); padding: 22px 0 40px; }
+  .doc-foot p { margin: 0 0 6px; font-size: 12.5px; color: var(--graphite); max-width: 840px; line-height: 1.7; }
+  .doc-foot b { color: var(--ash); font-weight: 480; }
+
+  /* ============================================================
+     4. 手机框（桌面 390×844 居中；窄屏全出血）
+     ============================================================ */
+  html, body { height: 100%; overscroll-behavior: none; }
+  .phone-wrap { display: grid; place-items: center; }
+  #phone {
+    width: 100vw; height: 100vh; background: var(--fog);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    margin: 0 auto;
+  }
+  @media (min-width: 700px) {
+    .phone-wrap { padding: 44px 0 24px; }
+    #phone { width: 390px; height: 844px; border-radius: 44px; box-shadow: 0 30px 80px rgba(0,0,0,.35);
+             border: 1px solid rgba(0,0,0,.08); }
+  }
+
+  /* HUD 顶部状态条（阶段徽章 / 现金 / 压力表情） */
+  .hud {
+    flex: none; display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px 10px; background: var(--pwhite);
+    border-bottom: 1px solid var(--doc-line); z-index: 5;
+  }
+  .hud .stage-badge { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px;
+                      background: var(--fog); border-radius: var(--r-pill); font-size: 12px; font-weight: 480;
+                      color: var(--ash); white-space: nowrap; }
+  .hud .stage-badge .sd { width: 6px; height: 6px; border-radius: 50%; background: var(--rust); }
+  .hud .sp { flex: 1; }
+  .hud .hud-item { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--graphite); white-space: nowrap; }
+  .hud .hud-item .num { font-size: 13px; font-weight: 480; color: var(--ink); }
+  .hud .hud-item.low .num { color: var(--pos); }
+  .hud .moodface { font-size: 15px; }
+  /* 砍价期卖家情绪 */
+  .sellerbar { flex: none; background: var(--pwhite); border-bottom: 1px solid var(--doc-line);
+               padding: 7px 16px; display: flex; align-items: center; gap: 8px; z-index: 5; }
+  .sellerbar .name { font-size: 12px; color: var(--graphite); }
+  .sellerbar .bar { flex: 1; height: 6px; border-radius: var(--r-pill); background: var(--fog); overflow: hidden; }
+  .sellerbar .fill { height: 100%; border-radius: var(--r-pill); background: var(--rust);
+                     transition: width .5s ease; }
+  .sellerbar .face { font-size: 15px; }
+
+  /* 舞台内容区 */
+  .stage { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0; -webkit-overflow-scrolling: touch; }
+  .stage > .sc { padding: 20px 18px 36px; animation: arrive .42s cubic-bezier(.22,1,.36,1); }
+  @keyframes arrive { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .stage::-webkit-scrollbar { width: 0; height: 0; }
+
+  /* ============================================================
+     5. 组件（Steep 语言）
+     ============================================================ */
+  .eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500;
+             color: var(--rust); letter-spacing: .02em; text-transform: uppercase; }
+  .hd { font-family: var(--font-display); font-weight: 400; font-size: 27px; line-height: 1.22;
+        letter-spacing: -0.015em; color: var(--ink); margin: 8px 0 0; }
+  .sub { margin: 8px 0 0; font-size: 14px; color: var(--ash); line-height: 1.65; }
+
+  .card { background: var(--pwhite); border-radius: var(--r-cards); box-shadow: var(--sh-sm); padding: 18px; }
+  .card-warm { background: var(--apricot); }
+  .card-sky { background: var(--sky); }
+  .card-flush { padding: 0; overflow: hidden; }
+
+  .price { font-family: var(--font-ui); font-weight: 480; font-size: 24px; letter-spacing: -0.02em;
+           color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .price small { font-size: 13px; font-weight: 400; color: var(--graphite); margin-left: 3px; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px;
+           border-radius: 10px; font-size: 11.5px; font-weight: 480; white-space: nowrap; }
+  .badge-warm { background: var(--apricot); color: var(--rust); }
+  .badge-sky { background: var(--sky); color: var(--ink); }
+  .badge-fog { background: var(--fog); color: var(--ash); }
+  .badge-hair { background: transparent; border: 1px solid var(--dove); color: var(--graphite); }
+  .badge-ink { background: var(--ink); color: #fff; }
+
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+         height: 52px; border-radius: var(--r-pill); border: 0; cursor: pointer;
+         font-size: 15px; font-weight: 450; letter-spacing: -0.009em;
+         transition: transform .12s ease, background .15s ease, opacity .15s ease; }
+  .btn:active { transform: scale(.985); }
+  .btn-ink { background: var(--ink); color: #fff; }
+  .btn-ink:hover { background: #000; }
+  .btn-out { background: var(--pwhite); color: var(--ink); border: 1px solid var(--dove); }
+  .btn-out:hover { background: var(--fog); }
+  .btn-ghost { background: transparent; color: var(--ink); box-shadow: none; }
+  .btn-rust { background: var(--rust); color: #fff; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; }
+
+  .textlink { display: inline-flex; align-items: center; gap: 5px; background: none; border: 0;
+              font-size: 13.5px; color: var(--ink); cursor: pointer; padding: 10px 2px; }
+  .textlink:hover { color: var(--rust); }
+
+  .opt { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+         background: var(--pwhite); border: 1px solid var(--doc-line); border-radius: var(--r-cards);
+         padding: 13px 16px; cursor: pointer; transition: all .15s ease; }
+  .opt:hover { border-color: var(--dove); box-shadow: var(--sh-sm); }
+  .opt .t { font-size: 14.5px; font-weight: 450; color: var(--ink); line-height: 1.4; }
+  .opt .d { font-size: 12.5px; color: var(--graphite); margin-top: 2px; line-height: 1.55; }
+  .opt .m { margin-left: auto; flex: none; font-size: 13px; font-weight: 480; color: var(--rust);
+            font-variant-numeric: tabular-nums; }
+  .opts { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+
+  /* 表单控件（自定义现金 / 自定义房源） */
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 12.5px; color: var(--graphite); }
+  .field input, .field select {
+    width: 100%; height: 46px; padding: 0 14px; border: 1px solid var(--dove);
+    border-radius: var(--r-inputs); background: var(--pwhite); color: var(--ink);
+    font-family: var(--font-ui); font-size: 15px; outline: none; appearance: none; -webkit-appearance: none;
+  }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b8c8d' fill='none' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 34px; }
+  .field input:focus, .field select:focus { border-color: var(--ink); }
+  .cash-row { display: flex; gap: 10px; align-items: center; }
+  .cash-row .field { flex: 1; margin-bottom: 0; }
+  .cash-suffix { flex: none; font-size: 13px; color: var(--graphite); }
+
+  /* 对话气泡 */
+  .chat { display: flex; flex-direction: column; gap: 14px; }
+  .bubble { display: flex; gap: 10px; max-width: 92%; }
+  .bubble.me { align-self: flex-end; flex-direction: row-reverse; }
+  .bubble .ava { width: 34px; height: 34px; border-radius: var(--r-pill); flex: none;
+                 display: flex; align-items: center; justify-content: center;
+                 font-size: 13px; font-weight: 500; color: var(--ink); }
+  .ava-apricot { background: var(--apricot); }
+  .ava-sky { background: var(--sky); }
+  .bubble .ball { background: var(--pwhite); border-radius: 18px; border-bottom-left-radius: 6px;
+                  padding: 12px 15px; box-shadow: var(--sh-sm); font-size: 14px; color: var(--ink);
+                  line-height: 1.65; }
+  .bubble.me .ball { background: var(--ink); color: #fff; border-radius: 18px; border-bottom-right-radius: 6px; }
+  .bubble .who { font-size: 11px; color: var(--graphite); margin-bottom: 3px; }
+
+  /* 房源卡 */
+  .hcard { background: var(--pwhite); border-radius: var(--r-cards); box-shadow: var(--sh-sm);
+           cursor: pointer; overflow: hidden; transition: all .15s ease; }
+  .hcard:hover { box-shadow: var(--sh-steep); border-color: transparent; }
+  .hthumb { position: relative; height: 118px; display: flex; align-items: center; justify-content: center;
+            font-size: 46px; }
+  .thumb-a { background: linear-gradient(135deg, #fdf3ec 0%, var(--apricot) 100%); }
+  .thumb-b { background: linear-gradient(135deg, #f6f8fd 0%, var(--sky) 100%); }
+  .thumb-c { background: var(--fog); }
+  .hthumb .corner { position: absolute; top: 10px; left: 10px; display: inline-flex; gap: 6px; }
+  .hcard .hbody { padding: 13px 16px 15px; }
+  .hrow { display: flex; align-items: center; gap: 8px; }
+  .hname { font-size: 15px; font-weight: 480; color: var(--ink); }
+  .hmeta { font-size: 12px; color: var(--graphite); margin-top: 4px; }
+
+  /* 问答进度 */
+  .qdots { display: flex; gap: 6px; align-items: center; }
+  .qdots .qd { width: 6px; height: 6px; border-radius: 50%; background: var(--doc-line); }
+  .qdots .qd.on { background: var(--rust); }
+
+  /* 账单行 */
+  .brow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+          padding: 10px 0; border-bottom: 1px solid #eeeff1; font-size: 13.5px; }
+  .brow:last-child { border-bottom: 0; }
+  .brow .k { color: var(--ash); }
+  .brow .v { font-weight: 480; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .brow.total { border-top: 1px solid var(--doc-line); border-bottom: 0; padding-top: 14px; }
+  .brow.total .v { font-size: 17px; }
+
+  /* 进度条（压力/情绪/监管） */
+  .bar { height: 6px; border-radius: var(--r-pill); background: var(--fog); overflow: hidden; }
+  .fill { height: 100%; border-radius: var(--r-pill); background: var(--ink); transition: width .5s ease; }
+  .fill-rust { background: var(--rust); }
+
+  /* 风险模态 */
+  .overlay { position: absolute; inset: 0; background: rgba(23,25,28,.42); display: flex;
+             align-items: flex-end; justify-content: center; z-index: 20;
+             padding: 16px; animation: fadein .2s ease; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .sheet { width: 100%; max-width: 390px; background: var(--pwhite); border-radius: 24px; padding: 22px 20px 18px;
+           animation: rise .28s cubic-bezier(.22,1,.36,1); }
+  @keyframes rise { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .sheet .tag { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 500;
+                color: var(--rust); }
+  .sheet h4 { margin: 10px 0 6px; font-size: 17px; font-weight: 480; color: var(--ink); }
+  .sheet p { margin: 0; font-size: 13.5px; color: var(--ash); line-height: 1.7; }
+
+  /* 电子证照 */
+  .deed { background: var(--pwhite); border: 1px solid var(--doc-line); border-radius: 14px;
+          padding: 16px 18px; box-shadow: var(--sh-sm); }
+  .deed .deed-head { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #eeeff1; padding-bottom: 12px; }
+  .logo-c { width: 40px; height: 40px; border-radius: 12px; background: var(--apricot);
+            display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--rust); }
+  .logo-s { width: 40px; height: 40px; border-radius: 12px; background: var(--sky);
+            display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--ink); }
+
+  .qrcode { width: 74px; height: 74px; border-radius: 12px; background:
+            repeating-conic-gradient(var(--ink) 0% 25%, transparent 0% 50%) 0 0 / 9px 9px;
+            opacity: .85; flex: none; }
+
+  .kpi { display: flex; gap: 10px; margin-top: 6px; }
+  .kpi .kc { flex: 1; background: var(--pwhite); border-radius: var(--r-cards); box-shadow: var(--sh-sm);
+             padding: 14px 16px 15px; }
+  .kpi .kl { font-size: 12px; color: var(--graphite); }
+  .kpi .kv { margin-top: 6px; font-size: 21px; font-weight: 480; color: var(--ink);
+             font-variant-numeric: tabular-nums; letter-spacing: -0.015em; line-height: 1.1; }
+  .kpi .kv small { font-size: 12px; font-weight: 400; color: var(--graphite); }
+
+  .spacer-v { height: 6px; }
+  .sec-t { margin: 20px 0 10px; font-size: 13px; font-weight: 500; color: var(--graphite);
+           display: flex; align-items: center; gap: 8px; }
+  .sec-t::after { content: ""; flex: 1; height: 1px; background: var(--doc-line); }
+
+  .ok-note { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.6;
+             color: var(--ash); background: var(--fog); border-radius: 14px; padding: 10px 14px; margin-top: 10px; }
+  .ok-note b { color: var(--ink); font-weight: 480; }
+
+  /* ============================================================
+     流程步进条（12 节点：开始→选房→资格→砍价→算账→筹钱→
+     签约→贷款→监管→过户→领证→交房）
+     ============================================================ */
+  .steps { flex: none; background: var(--pwhite); border-bottom: 1px solid var(--doc-line);
+           padding: 8px 0 10px; z-index: 5; }
+  .steps-top { display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+               font-size: 11px; color: var(--graphite); }
+  .steps-top b { color: var(--ink); font-weight: 500; }
+  .steps-row { display: flex; flex-wrap: wrap; gap: 4px 0; padding: 8px 6px 0; }
+  .stp { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px;
+         padding: 0 9px; cursor: pointer; border: 0; background: none; font-family: inherit; }
+  .stp i { width: 9px; height: 9px; border-radius: 50%; background: var(--doc-line);
+           font-style: normal; font-size: 7px; line-height: 9px; text-align: center; color: #fff; }
+  .stp b { font-size: 10px; font-weight: 450; color: var(--dove); white-space: nowrap; }
+  .stp.done i { background: var(--neg); }
+  .stp.done b { color: var(--graphite); }
+  .stp.cur i { background: var(--rust); box-shadow: 0 0 0 3px var(--apricot); }
+  .stp.cur b { color: var(--ink); font-weight: 600; }
+
+  /* 轻提示 toast（随申办 / 银行事件通知） */
+  .toast { position: absolute; top: 66px; left: 50%; transform: translate(-50%, -8px); z-index: 40;
+           background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 450;
+           padding: 9px 16px; border-radius: var(--r-pill); box-shadow: var(--sh-steep);
+           opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease;
+           max-width: 86%; text-align: center; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* 完成清单（最终屏） */
+  .chk-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+  <!-- 文档外壳 -->
+  <div class="doc-head">
+    <div class="doc-wrap">
+      <div class="kicker"><span class="dot"></span>docs/design · 高保真交互原型</div>
+      <h1 class="doc-title">上海购房流程模拟器</h1>
+      <p class="doc-sub">以第一人称走完「身份角色 → 现金预设 → 选房 → 资格核验 → 砍价（含「到手价」暗坑）→ 算钱 → 筹钱 → 签约 → 贷款 → 资金监管 → 过户 → 领证 → 交房账单」全流程，顶部 12 节点流程条实时显示进度与第 X 天。视觉遵循 /DESIGN.md（Steep），数据与流程遵循 docs/To-Do/购房模拟器.md（PRD v1.0，2026 上海政策）。下方是手机级可点击原型，HUD 实时展示阶段 / 现金 / 压力 / 卖家情绪。</p>
+      <div class="meta">
+        <span class="chip">视觉 <b>DESIGN.md · Steep</b></span>
+        <span class="chip">需求 <b>购房模拟器 PRD v1.0</b></span>
+        <span class="chip">政策基准 <b>2026 上海</b></span>
+        <span class="chip">形态 <b>微信小程序 / H5 单页</b></span>
+        <span class="chip">交付 <b>自包含单文件 · 无外部依赖</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-body">
+    <div class="doc-wrap">
+      <div class="sec-head">
+        <span class="sec-no">1</span>
+        <h2>全流程原型</h2>
+        <p>先选身份（刚需/置换/投资）再选房；顶部流程条实时显示 12 节点进度与第 X 天。试试「身份角色」「中介费协商」「贷款方式选择」「砍价叫停」「贷款风控拦截」「交房交割」。</p>
+      </div>
+
+      <div class="phone-wrap">
+        <div id="phone">
+          <div class="hud" id="hud">
+            <span class="stage-badge"><span class="sd"></span><span id="stageLabel">开始</span></span>
+            <span class="sp"></span>
+            <span class="hud-item">步 <span class="num" id="hudStep">—</span></span>
+            <span class="hud-item">现金 <span class="num" id="hudCash">—</span></span>
+            <span class="hud-item" id="hudStressWrap">压力 <span class="moodface" id="hudStressFace">😌</span></span>
+          </div>
+          <div class="steps">
+            <div class="steps-top"><span>流程 <b id="stepsPos">—</b></span><span id="stepsDay">—</span></div>
+            <div class="steps-row" id="stepsRow"></div>
+          </div>
+          <div class="toast" id="toast"></div>
+          <div class="sellerbar" id="sellerbar" style="display:none;">
+            <span class="name" id="sellerName">卖家 · 情绪</span>
+            <span class="bar"><span class="fill" id="sellerFill" style="width:70%"></span></span>
+            <span class="face" id="sellerFace">🙂</span>
+          </div>
+          <div class="stage" id="stage"></div>
+        </div>
+      </div>
+
+      <!-- 每屏简注 -->
+      <div class="note-strip">
+        <span class="n-tag">本屏要点</span>
+        <span class="n-txt" id="noteText"></span>
+      </div>
+
+      <!-- 评审工具栏 -->
+      <div class="toolbar">
+        <label for="jump">跳转阶段（自动走默认分支补齐前置）：</label>
+        <select id="jump">
+          <option value="start">① 开始</option>
+          <option value="role">① 身份角色（刚需/置换/投资）</option>
+          <option value="cash">① 可动用现金（预设档 / 自定义）</option>
+          <option value="select">② 选房</option>
+          <option value="custom">② 自定义房源（房价/环线/税费条件）</option>
+          <option value="qa">③ 资格核验</option>
+          <option value="nego1">④ 砍价 · 第一轮</option>
+          <option value="nego2">④ 砍价 · 第二轮</option>
+          <option value="nego3">④ 砍价 · 成交 / 叫停</option>
+          <option value="feeNego">④ 中介费协商（2%→1%）</option>
+          <option value="loanType">⑤ 贷款方式（商贷/组合/公积金）</option>
+          <option value="funds">⑤ 资金盘点</option>
+          <option value="borrow">⑥ 筹钱</option>
+          <option value="sign">⑦ 签约 · 网签</option>
+          <option value="loan">⑧ 贷款方案</option>
+          <option value="loanChk">⑧ 贷款 · 审批（风控）</option>
+          <option value="escrow">⑨ 资金监管</option>
+          <option value="transfer">⑩ 过户 · 缴税</option>
+          <option value="deed">⑪ 领证 · 放款</option>
+          <option value="handover">⑫ 交房 · 交割检查</option>
+          <option value="final">⑫ 交房 · 账单</option>
+        </select>
+        <button class="btn-sm2" id="resetBtn">重置流程</button>
+      </div>
+
+      <div style="height:30px"></div>
+
+      <div class="sec-head">
+        <span class="sec-no">2</span>
+        <h2>设计说明</h2>
+        <p>关键实现决策与政策落点。</p>
+      </div>
+      <div class="note-strip">
+        <span class="n-tag">注</span>
+        <span class="n-txt" style="line-height:1.75">
+          · 顶部 HUD「12 节点流程条」：已过节点打勾、当前节点高亮并显示「第 X/12 步」与「第 X 天」；节点可点击直达（评审用）。<br>
+          · 先选身份再选现金再选房：刚需首套 / 置换改善 / 投资二套——决定贷款利率（首套公积金 2.6% / 商贷 3.05%，二套公积金 3.075% / 商贷 3.06%）、名下套数（0/1/1）与房产税口径（仅投资二套按年）；可动用现金提供 50/70/100/200/300 万预设档 + 自定义输入，不再写死 70 万。<br>
+          · 自定义房源（新增）：挂牌价 / 面积 / 环线 / 税费条件（新房、满五唯一、满五不唯一、满二不唯一、不满 2 年全额增值税）全由用户填写，议价空间默认 5%，之后照常走资格核验与砍价。<br>
+          · 贷款方式选择（新增，对齐 20260901 上海按揭政策表）：纯商贷 / 组合贷 / 纯公积金——首套首付 15%（商贷）/ 20%（组合贷·公积金）；二套外环内 25%、外环外（特殊区域口径）商贷 15% / 组合贷·公积金 20%；组合贷为默认，公积金演示额度上限 80 万，不足部分并入首付。<br>
+          · 房源价格跨度 200 / 300 / 400 / 550 / 600 / 1600 万，覆盖内外环、新房/二手、满五唯一/不唯一、满二不唯一、不满 2 年全额增值税等税费情形；内外环继续作为限购判定与二套首付差异维度。<br>
+          · 税费逐项单列：契税（首套 ≤140㎡ 1% / >140㎡ 1.5%；二套 ≤140㎡ 1% / >140㎡ 2%）、增值税（满 2 年免征；不满 2 年全额 5% + 附加税费 ≈ 增值税×12%≈0.6%）、卖方个税（满五唯一免征，否则核定 1%）、不动产登记费 80 元、中介费（服务费，与税费分开算）；投资二套另列按年房产税（≈成交价×70%×0.4%，高单价按 0.6%）。<br>
+          · 中介费协商：行情 1%–2%，默认报 2%，谈成 1%（省下的是软装钱）。<br>
+          · 首付口径 = 房款首付 + 买方全部交易税费（含中介费）；最终账单突出「首付多少、月供多少」，不展示购房总成本（顺应鼓励住房消费导向）。<br>
+          · 限购问答树依 PRD §6.1（沪籍单身 1 套/家庭 2 套；非沪籍居住证满 5 年 1 套；社保满 1 年外环外不限、外环内 1 套；满 3 年外环内 2 套），名下套数由身份角色提供、不再重复提问。<br>
+          · 砍价上限 = 该套房源议价空间（A6%/B5%/C3%/D8%/E4%/F5%），超线卖家叫停、亮明底线（如「最多让到 380 万」），只提供「接受底价 / 换房」——底线已出，买家不再有任何“加价”空间。第二轮选项按「第一轮报价是否越线」动态生成：越线后只有 加价缓和 / 按底线成交 / 继续硬压（必叫停），杜绝「刚拒绝 -6% 又谈成 -7%」的逻辑矛盾；成交确认后不存在任何“加价”入口。<br>
+          · 「到手价」暗坑（新增）：价格谈定后，满五不唯一 / 不满 2 年等有卖方税费的房源，房东补一句「这价是到手价」——增值税/个税由此转嫁买方，默认感觉得罪人家就随口答应；算账页首次显示这笔钱，签约页合同条款锁定「反悔即违约」，「先问清」会弹出解释模态。<br>
+          · 贷款审批环节：月供 > 家庭月收入 50% 触发银行风控拦截（拉长年限 / 追加首付 / 坚持硬上被拒 / 换房）；借款缺口超可借上限时引导换房，不留死按钮。<br>
+          · 交房交割检查：水电煤/物业/户口逐项核验，户口未迁出可协商「尾款扣押」（上海惯例，押金最高不超合同价 5%）。<br>
+          · 关键节点弹出「随申办 / 银行」事件 toast（资格通过、网签备案、批贷函、放款、交房），增强第一人称代入感。
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-foot">
+    <div class="doc-wrap">
+      <p><b>免责声明：</b>本原型为需求确认用的高保真设计稿，所有金额、税率、利率均为按 2026 上海公开口径的估算值，仅供演示。</p>
+      <p>本模拟器不收集用户真实个人信息；「信用贷」等选项仅为风险教育演示，绝不构成信贷建议。实际交易请以政府部门、银行与税务机关为准。模拟结果不构成任何法律或财务决策依据。</p>
+    </div>
+  </div>
+
+<script>
+/* ============================================================
+   数据（引 PRD §5.1 房源表 / §6 政策规则）
+   ============================================================ */
+var HOUSES = [
+  { id:'A', emoji:'🏚️', name:'内环老破小', area:'58㎡', price:2000000, type:'二手房', ring:'内',
+    tag:'满五唯一', tagCls:'badge-warm', thumbCls:'thumb-a',
+    holdYears:5, unique:true,
+    seller:'陈老师', sellerTag:'房东 · 急售', negotiable:.06, intro:'房龄偏大，但离地铁 300m，陈老师急着换大房。' },
+  { id:'B', emoji:'🏢', name:'中环次新两房', area:'88㎡', price:4000000, type:'二手房', ring:'内',
+    tag:'满五唯一', tagCls:'badge-warm', thumbCls:'thumb-b',
+    holdYears:5, unique:true,
+    seller:'张先生', sellerTag:'房东 · 置换急卖', negotiable:.05, intro:'2019 年次新房，精装修，张先生已看中下一套，想尽快成交。' },
+  { id:'C', emoji:'🏙️', name:'外环品质新房', area:'95㎡', price:6000000, type:'新房', ring:'外',
+    tag:'新房 · 免增值税', tagCls:'badge-sky', thumbCls:'thumb-c',
+    hold:'new', unique:true,
+    seller:'销售小刘', sellerTag:'案场销售', negotiable:.03, intro:'国企开发商，三房两卫，一口价 + 少量优惠。' },
+  { id:'D', emoji:'🏠', name:'外环内老工房', area:'72㎡', price:3000000, type:'二手房', ring:'内',
+    tag:'满五不唯一', tagCls:'badge-fog', thumbCls:'thumb-a',
+    holdYears:5, unique:false,
+    seller:'王阿姨', sellerTag:'房东 · 资金周转', negotiable:.08, intro:'老工房但满五，王阿姨周转资金，砍价空间最大。' },
+  { id:'E', emoji:'🏘️', name:'内环江景大平层', area:'160㎡', price:16000000, type:'二手房', ring:'内',
+    tag:'满二不唯一', tagCls:'badge-fog', thumbCls:'thumb-b',
+    holdYears:2, unique:false,
+    seller:'赵总', sellerTag:'房东 · 改善置换', negotiable:.04, intro:'160㎡ 江景大平层，满二不唯一；面积超 140㎡，契税按高档计。' },
+  { id:'F', emoji:'🏗️', name:'中环新交付次新', area:'92㎡', price:5500000, type:'二手房', ring:'内',
+    tag:'不满 2 年 · 全额增值税', tagCls:'badge-hair', thumbCls:'thumb-c',
+    holdYears:0, unique:false,
+    seller:'刘先生', sellerTag:'房东 · 投资客回笼', negotiable:.05, intro:'去年刚交付的次新房，投资客想回笼资金；未满 2 年需缴全额增值税（5%+附加），税费是大头。' }
+];
+
+/* 身份角色（先选身份，再选房）：决定贷款利率 / 名下套数 / 房产税口径；
+   首付比例由「身份 × 房源环线 × 贷款方式」共同决定（见 downRateFor） */
+var ROLES = {
+  first:  { k:'first',  name:'刚需首套', emoji:'🏠', owned:0, gjjRate:.026, commRate:.0305,
+            badge:'badge-sky', desc:'名下 0 套 · 首套待遇：商贷首付 15% / 组合贷·公积金 20% · 公积金 2.6% / 商贷 3.05%' },
+  trade:  { k:'trade',  name:'置换改善', emoji:'🔄', owned:1, gjjRate:.026, commRate:.0305,
+            badge:'badge-warm', desc:'卖一买一 · 按首套首付与利率 · 卖房个税一年内可退' },
+  invest: { k:'invest', name:'投资二套', emoji:'📈', owned:1, gjjRate:.03075, commRate:.0306,
+            badge:'badge-fog', desc:'名下 1 套 · 二套首付 25%（外环内）/ 15%–20%（外环外）· 利率上浮（公积金 3.075% / 商贷 3.06%）' }
+};
+
+/* 贷款方式（20260901 上海按揭政策表：首付 / 利率随方式与套数区域差异化） */
+var LOAN_TYPES = {
+  comm:  { k:'comm',  name:'纯商贷',   short:'商贷', desc:'额度高，首付最低（首套 15% / 二套外环外 15%）' },
+  combo: { k:'combo', name:'组合贷',   short:'组合', desc:'公积金 + 商贷，多数家庭首选' },
+  gjj:   { k:'gjj',   name:'纯公积金', short:'公积金', desc:'利率最低，但额度有限（演示上限 80 万）' }
+};
+function downRateFor(roleK, ring, lt){
+  lt = lt || 'combo';
+  var first = roleK !== 'invest';
+  if (first) return lt === 'comm' ? .15 : .20;          /* 首套：商贷 15% / 组合贷·公积金 20% */
+  if (ring === '内') return .25;                         /* 二套外环内：25% */
+  return lt === 'comm' ? .15 : .20;                      /* 二套外环外（特殊区域口径）：商贷 15% / 组合贷·公积金 20% */
+}
+
+/* 阶段徽章 */
+var STAGES = {
+  start:'开始', role:'角色', cash:'资金', select:'看房', qa:'资格核验', nego1:'谈判中', nego2:'谈判中',
+  nego3:'谈判中', feeNego:'谈判中',
+  loanType:'贷款方式', funds:'算账', borrow:'筹钱', sign:'签约', loan:'贷款', loanChk:'贷款审批', escrow:'资金监管',
+  transfer:'过户', deed:'领证 / 放款', handover:'交房', final:'完成', blocked:'资格', custom:'自定义房源'
+};
+
+/* 12 节点流程条（HUD 下方）：已过 ✓ / 当前高亮 / 未到置灰 */
+var NODES = [
+  {k:'start', t:'开始'}, {k:'select', t:'选房'}, {k:'qa', t:'资格'}, {k:'nego', t:'砍价'},
+  {k:'funds', t:'算账'}, {k:'borrow', t:'筹钱'}, {k:'sign', t:'签约'}, {k:'loan', t:'贷款'},
+  {k:'escrow', t:'监管'}, {k:'transfer', t:'过户'}, {k:'deed', t:'领证'}, {k:'final', t:'交房'}
+];
+var SCENE_NODE = {start:'start', role:'start', cash:'start', select:'select', custom:'select', qa:'qa', blocked:'qa',
+  nego1:'nego', nego2:'nego', nego3:'nego', negoC:'nego', feeNego:'nego',
+  loanType:'funds', funds:'funds', borrow:'borrow', sign:'sign', loan:'loan', loanChk:'loan',
+  escrow:'escrow', transfer:'transfer', deed:'deed', handover:'final', final:'final'};
+var STEP_REP = {start:'start', select:'select', qa:'qa', nego:'nego1', funds:'funds',
+  borrow:'borrow', sign:'sign', loan:'loan', escrow:'escrow', transfer:'transfer',
+  deed:'deed', final:'final'};
+
+/* 时间轴（PRD 附录 13.2，累计自然日） */
+var DAYS = {start:1, role:1, cash:1, select:3, custom:3, qa:1, blocked:1, nego1:7, nego2:8, nego3:9, feeNego:9, negoC:9,
+  loanType:10, funds:10, borrow:11, sign:14, loan:28, loanChk:29, escrow:30, transfer:31, deed:33,
+  handover:42, final:42};
+
+/* 家庭月收入（演示值，用于贷款审批风控：月供 ≤ 收入 50%） */
+var INCOME = 40000;
+
+/* 每屏简注 */
+var NOTES = {
+  start:'入口页：第一人称开场 + 定位 + 免责声明，点击先选身份，再进入选房。避免“表单式”开端，用一句话建立代入感。',
+  role:'身份角色（新增）：刚需首套 / 置换改善 / 投资二套——决定首付比例、贷款利率、名下套数与房产税口径。先定身份，再定现金，再挑房子。',
+  cash:'可动用现金（新增）：不再写死 70 万——给 50 / 70 / 100 / 200 / 300 万几个预设档 + 自定义输入，首付能力直接决定你能不能买得起、要不要借款。',
+  select:'预设六套房 + 一张「自定义房源」卡：可用挂牌 / 面积 / 环线 / 税费条件（满五唯一、满五不唯一、满二不唯一、不满 2 年、新房）造一套自己的房子再谈。',
+  qa:'按 户籍→婚姻/居住证→社保 的动态问答树判定资格（PRD §6.1），名下套数由所选身份决定，不再重复提问。',
+  nego1:'第一轮试探：直接还价 / 温和试探 / 先聊为什么卖。房东的真实底线（议价空间）藏在房源里，超线就会被叫停——这叫价的参照随时可见。',
+  nego2:'第二轮选项由「第一轮报价是否越过房东底线」动态生成：越线时房东明确拒绝，只剩 加价缓和 / 按底线成交 / 继续硬压（会被叫停）；未越线才有 再砍一刀 的空间。杜绝「刚拒绝 -6% 又谈成 -7%」的矛盾。',
+  nego3:'成交页：展示成交价、砍下金额与折扣；砍过头会触发“卖家叫停”并亮明底线——此时只剩「接受底价 / 换房」，没有“加价”入口（底线已出，再加价是自掏冤枉钱）。成交后才露出「到手价」暗坑——满五不唯一 / 不满 2 年房源，卖方税费是否转嫁由你这一刻定。',
+  custom:'自定义房源页：挂牌价、面积、环线、税费条件（满五唯一/不唯一/满二/不满 2 年/新房）全由你填，议价空间默认 5%，之后照常核验资格、砍价。',
+  feeNego:'中介费协商（新增）：行情 1%–2%，默认报 2%；谈一下可压到 1%——中介费是服务费，与税费分开算，别混在一笔里。',
+  loanType:'贷款方式（新增，按 20260901 上海按揭政策表）：纯商贷 / 组合贷 / 纯公积金——首付比例与利率各不相同；二套还按外环内外差异化（外环内 25%，外环外商贷 15% / 组合贷·公积金 20%）。',
+  funds:'资金盘点：首付（房款，按身份×环线×贷款方式）+ 契税（按面积/套数分档）+ 登记费 80 元 + 中介费 = 需要现金；若砍价时答应了「到手价」，卖方增值税/个税转嫁会另列一行、直接扩大现金缺口——很多坑在这一步首次显形。',
+  borrow:'三种筹钱方式性质不同：亲友距合规最安全、公积金对二手房不能直接付首付、信用贷触碰“信贷资金禁入楼市”红线且需二次确认；缺口超可借上限时引导换房，不留死按钮。',
+  sign:'定金=成交价×5%，不超过合同价 20%；网签后价格锁定，卖方违约双倍返还。签约后现金立即扣除定金。',
+  loan:'贷款方案：贷款额 = 成交价 − 房款首付；按所选贷款方式拆分（纯商贷 / 组合贷 / 纯公积金，公积金演示上限 80 万），利率按套数差异化（首套 2.6%/3.05%，二套 3.075%/3.06%）；等额本息，年限可切换。',
+  loanChk:'贷款审批分支：月供 ≤ 家庭月收入 50% 直接批贷；超标触发风控拦截——可拉长至 30 年、追加首付压月供，或坚持硬上被拒批，或换更便宜的房。',
+  escrow:'首付存入资金监管账户（上海全面推行，支持“带押过户”），领证后 1 个工作日内划转卖方——钱不经手，买卖双方都安心。',
+  transfer:'过户缴税：买方契税 / 登记费逐项扣除；卖方增值税（满 2 年免征，不满 2 年全额 5%+附加≈0.6%）与个税（满五唯一免征，否则核定 1%）按房源口径单列；“一网通办”最快当天出证。',
+  deed:'领取电子不动产权证（随申办可下载）；银行放款的“尾款”直接付给卖方，买方无需再掏钱。',
+  handover:'交房交割检查：水电煤/物业/户口逐项核验；户口未迁出或物业欠费，可协商“尾款扣押”待迁出结清——上海交房高频纠纷点。',
+  final:'交房账单（新口径）：突出「首付多少、月供多少」，不再列购房总成本；12 节点全流程打卡 + 尾款扣押说明。',
+  blocked:'资格判定：不通过时给出明确原因与政策依据，提供“换一套试试”或“放弃”，不让用户卡死在死胡同。'
+};
+
+/* ============================================================
+   全局状态
+   ============================================================ */
+var S = {
+  scene:'start',
+  role:null,           // 身份角色对象（ROLES 引用）
+  house:null,          // 当前房源对象
+  slash:0,             // 最终砍价比例
+  deal:0,              // 成交价（元）
+  deposit:0,           // 定金（元）
+  loanType:'combo',    // 贷款方式（comm / combo / gjj）
+  downRate:.2,         // 首付比例（由身份×环线×贷款方式决定）
+  down:0,              // 房款首付（元，纯公积金额度不足时含追加）
+  gjjTopUp:0,          // 纯公积金额度不足并入首付的金额（元）
+  deedTax:0,           // 契税（元，按面积/套数分档）
+  regFee:80,           // 登记费（元）
+  agentRate:.02,       // 中介费率（可砍到 1%）
+  agentFee:0,          // 中介费（元）
+  estateTax:0,         // 房产税（元/年，投资二套演示）
+  vat:0,               // 增值税（元，卖方；不满 2 年全额 5%，满 2 年免征）
+  vatAdd:0,            // 增值税附加（元，城建/教育费附加/地方教育附加 ≈ 增值税×12%）
+  sellerTax:0,         // 卖方个税（元，满五唯一免征，否则核定 1%）
+  areaNum:0,           // 建筑面积（用于契税分档）
+  taxes:0,             // 买方一次性税费合计 = 契税 + 登记费 + 中介费
+  need:0,              // 需要现金 = 房款首付 + 买方税费（含中介）+ 到手价转嫁税费
+  cash:700000,         // 手头存款（元，身份角色确定后再选）
+  START_CASH:700000,
+  cashSet:false,       // 是否已通过现金选项确定存款（避免跳转/重置覆盖）
+  netDeal:false,       // 是否答应「到手价」（卖方税费转嫁买方）——砍价成交时的暗坑
+  netTax:0,            // 到手价转嫁的卖方税费（增值税+附加+个税，元）
+  stress:8,            // 压力 0-100
+  seller:70,           // 卖家情绪 0-100
+  borrowed:0,          // 累计借款
+  usedBorrow:{},       // 已用借款类型
+  ans:{},              // 限购问答答案
+  qaProg:0,            // 问答进度
+  qaSteps:[],          // 动态问题列表
+  negoR1:null,         // 第一轮选择 key
+  negoR2:null,         // 第二轮选择 key
+  judge:null,          // 资格判定结果 {ok,title,reason}
+  loanYears:30,
+  loan:{gjj:0, comm:0, monthly:0, totalInt:0}
+};
+
+var HUD = { stageEl:null, cashEl:null, stressEl:null, stressFace:null };
+var $ = function(id){ return document.getElementById(id); };
+
+/* ============================================================
+   工具
+   ============================================================ */
+function fmt(v){ // 元 → 万
+  var w = v / 10000;
+  return w % 1 === 0 ? String(Math.round(w)) : w.toFixed(1);
+}
+function fmtY(v){ return '¥' + fmt(v) + '万'; }
+function fmtYuan(v){ // 元 → 千分位字符串（用于月供等「元」口径金额）
+  return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+/* 百分比显示：去掉尾零（2.6%、3.05%、3.075%），避免浮点舍入错显 */
+function pct(v){ return (v*100).toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + '%'; }
+function stressFace(s){
+  return s < 25 ? '😌' : s < 50 ? '😐' : s < 75 ? '😰' : '😱';
+}
+function sellerFace(s){
+  return s < 40 ? '😤' : s < 65 ? '😑' : s < 85 ? '🙂' : '😄';
+}
+
+/* 等额本息月供 */
+function pmt(P, annual, years){
+  var r = annual/12, n = years*12;
+  if (r === 0) return P/n;
+  var f = Math.pow(1+r, n);
+  return P*r*f/(f-1);
+}
+
+/* 依房源 + 砍价比例计算衍生金额（税费逐项单列，首付含买方全部交易税费） */
+function derive(){
+  var h = S.house, deal = Math.round(h.price*(1-S.slash)/10000)*10000;
+  S.deal = deal;
+  S.deposit = Math.round(deal*0.05/10000)*10000;
+  S.areaNum = parseInt(h.area, 10) || 0;
+  /* 契税分档（2024 契税新政）：≤140㎡ 1%；>140㎡ 首套 1.5% / 二套 2% */
+  var isFirst = S.role.k !== 'invest';
+  var deedRate = S.areaNum <= 140 ? 0.01 : (isFirst ? 0.015 : 0.02);
+  S.deedTax = Math.round(deal*deedRate/10000)*10000;
+  /* 登记费：不动产登记费 80 元/件 */
+  S.regFee = 80;
+  /* 中介费：按已谈定费率（默认 2%，可压到 1%），服务费与税费分开 */
+  S.agentFee = Math.round(deal*S.agentRate/10000)*10000;
+  /* 房产税：上海试点——二套按年征收（演示：成交价×70%×0.4%≈0.28%/年），单列不计入一次性首付 */
+  S.estateTax = S.role.k === 'invest' ? Math.round(deal*0.0028/10000)*10000 : 0;
+  /* 卖方税费口径（按房源持有年限/唯一性）：
+     增值税：满 2 年免征；不满 2 年全额 5% + 附加（城建 7% + 教育费附加 3% + 地方教育附加 2% ≈ 增值税×12%）
+     个税：满五唯一免征；否则核定 1%（上海住宅口径） */
+  S.vat = 0; S.vatAdd = 0; S.sellerTax = 0;
+  if (h.hold !== 'new'){
+    if (h.holdYears < 2){
+      S.vat = Math.round(deal*0.05/10000)*10000;
+      S.vatAdd = Math.round(S.vat*0.12/10000)*10000;
+    }
+    if (!(h.holdYears >= 5 && h.unique)){
+      S.sellerTax = Math.round(deal*0.01/10000)*10000;
+    }
+  }
+  /* 买方一次性税费 = 契税 + 登记费 + 中介费 */
+  S.taxes = S.deedTax + S.agentFee + S.regFee;
+  /* 到手价暗坑：砍价时答应「到手价」，卖方税费（增值税+附加+个税）转嫁买方 */
+  S.netTax = S.netDeal ? S.vat + S.vatAdd + S.sellerTax : 0;
+  /* 房款首付：身份 × 环线 × 贷款方式；纯公积金额度不足部分并入首付 */
+  S.downRate = downRateFor(S.role.k, h.ring, S.loanType);
+  S.down = Math.round(deal*S.downRate/10000)*10000;
+  if (S.loanType === 'gjj'){
+    var gjjLoan = S.deal - S.down;
+    var gjjCap = 800000;                       /* 公积金家庭额度上限（演示） */
+    S.gjjTopUp = gjjLoan > gjjCap ? gjjLoan - gjjCap : 0;
+    S.down += S.gjjTopUp;
+  } else { S.gjjTopUp = 0; }
+  S.need = S.down + S.taxes + S.netTax;
+  S.gjjRate = S.role.gjjRate;
+  S.commRate = S.role.commRate;
+  iloan();
+}
+/* 贷款计算（利率按身份角色：首套公积金 2.6%/商贷 3.05%；二套公积金 3.075%/商贷 3.06%，附图 20260901 口径） */
+function iloan(){
+  var loan = S.deal - S.down;
+  var y = S.loanYears;
+  if (S.loanType === 'gjj'){
+    var gjj1 = Math.min(loan, 800000);
+    var m1 = pmt(gjj1, S.gjjRate, y);
+    S.loan = { gjj:gjj1, comm:0, monthly:m1, totalInt:m1*y*12 - gjj1 };
+    return;
+  }
+  if (S.loanType === 'comm'){
+    var m2 = pmt(loan, S.commRate, y);
+    S.loan = { gjj:0, comm:loan, monthly:m2, totalInt:m2*y*12 - loan };
+    return;
+  }
+  /* 组合贷：公积金 min(贷款×40%, 80万) + 商贷 */
+  var gjj = Math.min(loan*0.4, 800000);
+  var comm = loan - gjj;
+  var mg = pmt(gjj, S.gjjRate, y);
+  var mc = pmt(comm, S.commRate, y);
+  S.loan = { gjj:gjj, comm:comm, monthly:mg+mc, totalInt:(mg+mc)*y*12 - loan };
+}
+
+/* ============================================================
+   限购问答树（PRD §6.1）
+   ============================================================ */
+/* 名下套数由所选身份角色决定（刚需 0 / 置换 1 / 投资 1），问答不再重复提问 */
+function buildQA(){
+  var steps = ['hukou'];
+  if (S.ans.hukou === 'sh'){ steps.push('married'); }
+  else {
+    steps.push('permit');
+    if (S.ans.permit !== 'yes'){ steps.push('years'); }
+  }
+  return steps;
+}
+var QA_DEFS = {
+  hukou:   { q:'你的户籍是？', opts:[['sh','上海户籍'],['non-sh','非上海户籍']] },
+  married: { q:'婚姻状况是？', opts:[['single','单身'],['married','已婚']] },
+  permit:  { q:'是否持《上海市居住证》满 5 年？', opts:[['yes','是，已满 5 年'],['no','否 / 未满 5 年']] },
+  years:   { q:'个税 / 社保连续缴纳多久？', opts:[['l1','不满 1 年'],['m1-3','满 1 年，不满 3 年'],['m3p','满 3 年及以上']] }
+};
+function judgeQA(){
+  var a = S.ans, inner = S.house.ring === '内', owned = S.role.owned;
+  if (a.hukou === 'sh'){
+    if (a.married === 'single'){
+      return owned === 0
+        ? { ok:true,  title:'恭喜，可购买 1 套', reason:'沪籍单身限购 1 套；你名下 0 套，具备购买资格（沪七条）。' }
+        : { ok:false, title:'限购 · 不符合条件', reason:'沪籍单身限购 1 套，你名下已有住房，无法再购（沪七条）。' };
+    }
+    return owned < 2
+      ? { ok:true,  title:'恭喜，可购买 ' + (owned===0?'2':'1') + ' 套', reason:'沪籍家庭限购 2 套；你名下 ' + (owned===0?'0 套，可购 2 套':'1 套，可再购 1 套') + '（沪七条）。' }
+      : { ok:false, title:'限购 · 不符合条件', reason:'沪籍家庭限购 2 套，你名下已满 2 套，无法再购（沪七条）。' };
+  }
+  if (a.permit === 'yes'){
+    return owned === 0
+      ? { ok:true,  title:'恭喜，可购买 1 套', reason:'持居住证满 5 年视同沪籍购房资格，全市限购 1 套；你名下 0 套，具备资格。' }
+      : { ok:false, title:'限购 · 不符合条件', reason:'持居住证满 5 年限购 1 套，你名下已有住房，无法再购。' };
+  }
+  if (a.years === 'l1'){ return { ok:false, title:'暂不具备购房资格', reason:'个税 / 社保连续缴纳不满 1 年，不满足限购政策要求，建议到期后再试。' }; }
+  if (a.years === 'm1-3'){
+    return !inner
+      ? { ok:true,  title:'恭喜，可购买（外环外）', reason:'非沪籍社保满 1 年：外环外不限套数，外环内限购 1 套。你选的是外环外房源，可直接购买。' }
+      : owned === 0
+        ? { ok:true,  title:'恭喜，可购买 1 套', reason:'非沪籍社保满 1 年：外环内限购 1 套；你名下 0 套，具备资格。' }
+        : { ok:false, title:'限购 · 不符合条件', reason:'非沪籍社保满 1 年：外环内限购 1 套，你名下已有住房，无法再购。' };
+  }
+  // m3p
+  return !inner
+    ? { ok:true,  title:'恭喜，可购买（外环外）', reason:'非沪籍社保满 3 年：外环外不限套数，外环内限购 2 套。你选的是外环外房源，可直接购买。' }
+    : owned < 2
+      ? { ok:true,  title:'恭喜，可购买', reason:'非沪籍社保满 3 年：外环内限购 2 套；你名下 ' + (owned===0?'0 套':'1 套') + '，具备资格。' }
+      : { ok:false, title:'限购 · 不符合条件', reason:'非沪籍社保满 3 年：外环内限购 2 套，你名下已满 2 套，无法再购。' };
+}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+var stage = $('stage');
+
+function re(scene, html){
+  S.scene = scene;
+  stage.setAttribute('data-screen-label', scene.toUpperCase());
+  stage.innerHTML = '<div class="sc">' + html + '</div>';
+  renderHUD();
+  renderSteps();
+  $('noteText').textContent = NOTES[scene] || '';
+  stage.scrollTop = 0;
+  /* 同步跳转下拉框（仅当该场景存在于下拉选项中） */
+  var j = $('jump');
+  if (j.querySelector('option[value="' + scene + '"]')) j.value = scene;
+}
+function nodeIdx(){
+  var k = SCENE_NODE[S.scene] || 'start';
+  for (var i = 0; i < NODES.length; i++){ if (NODES[i].k === k) return i; }
+  return 0;
+}
+function renderSteps(){
+  var idx = nodeIdx();
+  var row = '';
+  NODES.forEach(function(n, i){
+    var cls = i < idx ? 'done' : (i === idx ? 'cur' : '');
+    row += '<button class="stp ' + cls + '" data-act="step:' + n.k + '" title="跳到' + n.t + '">' +
+      '<i>' + (i < idx ? '✓' : '') + '</i><b>' + n.t + '</b></button>';
+  });
+  $('stepsRow').innerHTML = row;
+  $('stepsPos').textContent = '第 ' + (idx + 1) + ' / 12 步 · ' + NODES[idx].t;
+  $('stepsDay').textContent = '📅 第 ' + (DAYS[S.scene] || 1) + ' 天';
+}
+function renderHUD(){
+  $('stageLabel').textContent = STAGES[S.scene];
+  $('hudStep').textContent = (nodeIdx() + 1) + '/12';
+  $('hudCash').textContent = fmt(S.cash) + '万';
+  var low = S.scene==='funds'||S.scene==='borrow'||S.scene==='sign'||S.scene==='escrow'||S.scene==='transfer';
+  $('hudCash').parentElement.classList.toggle('low', low && S.cash < S.need);
+  var f = stressFace(S.stress);
+  S.stress = Math.max(0, Math.min(100, S.stress));
+  $('hudStressFace').textContent = f;
+  /* 卖家情绪条（砍价 + 成交阶段显示） */
+  var showSell = S.scene.indexOf('nego') === 0 || S.scene==='select';
+  $('sellerbar').style.display = showSell ? 'flex' : 'none';
+  if (S.house){
+    $('sellerName').textContent = S.house.seller + ' · 情绪';
+    $('sellerFill').style.width = S.seller + '%';
+    $('sellerFace').textContent = sellerFace(S.seller);
+  }
+}
+
+/* 事件 toast（随申办 / 银行 / 流程通知） */
+var toastTimer = null;
+function toast(msg){
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+
+/* —— 组件辅助 —— */
+function bubble(who, txt, me, cls){
+  return '<div class="bubble' + (me?' me':'') + '">' +
+    '<span class="ava ' + (me?'ava-sky':(cls||'ava-apricot')) + '">' + who.charAt(0) + '</span>' +
+    '<div><div class="who">' + who + '</div><div class="ball">' + txt + '</div></div></div>';
+}
+function optBtn(action, t, d, m){
+  return '<button class="opt" data-act="' + action + '"><span><span class="t">' + t + '</span>' +
+    (d?'<div class="d">' + d + '</div>':'') + '</span>' + (m?'<span class="m">' + m + '</span>':'') + '</button>';
+}
+function btn(action, t, cls){
+  return '<button class="btn ' + (cls||'btn-ink') + '" data-act="' + action + '">' + t + '</button>';
+}
+function badge(t, cls){ return '<span class="badge ' + (cls||'badge-fog') + '">' + t + '</span>'; }
+
+/* ============================================================
+   各屏幕
+   ============================================================ */
+function screenStart(){
+  return '<p class="eyebrow">沉浸式流程模拟 · 10 分钟</p>' +
+    '<h1 class="hd" style="font-size:31px;">在上海，<br>买下第一套房</h1>' +
+    '<p class="sub">从选房到交房，以第一人称走完全流程：身份、选房、资格、砍价、算钱、借款、贷款、过户。每一步都算给你看。</p>' +
+    '<div style="height:22px"></div>' +
+    '<div class="card card-sky"><div style="font-size:13px;font-weight:500;color:var(--ink)">你会遇到</div>' +
+    '<div style="font-size:12.5px;color:var(--ash);margin-top:6px;line-height:1.75">身份角色（刚需 / 置换 / 投资）· 可动用现金预设 · 限购问答树 · 多轮砍价博弈与「到手价」暗坑 · 自定义房源 · 贷款方式选择（商贷/组合/公积金）· 资金缺口与红线借款 · 组合贷月供 · 资金监管到领证放款</div></div>' +
+    '<div style="height:22px"></div>' +
+    btn('role', '开始模拟', 'btn-ink') +
+    '<div style="height:12px"></div>' +
+    '<p style="font-size:11.5px;color:var(--graphite);line-height:1.6;margin:0">演示数据 · 计算结果仅供参考，以政府部门、银行、税务机关为准。本模拟不收集任何个人信息。</p>';
+}
+
+/* 身份角色选择：决定贷款利率 / 名下套数 / 房产税；首付比例在选完房后按贷款方式确定 */
+function screenRole(){
+  var opts = Object.keys(ROLES).map(function(k){
+    var r = ROLES[k];
+    return optBtn('role:' + k, r.emoji + ' ' + r.name, r.desc,
+      r.owned === 0 ? '首套' : (k === 'invest' ? '二套' : '置换'));
+  }).join('');
+  return '<p class="eyebrow">第一步 · 你的身份</p>' +
+    '<h1 class="hd" style="font-size:26px;">你为什么买房？</h1>' +
+    '<p class="sub">身份决定贷款利率、名下套数与税费口径；首付比例在选定贷款方式后确定（商贷最低 15%）。先定身份，再挑房子。</p>' +
+    '<div class="opts">' + opts + '</div>' +
+    '<div class="ok-note"><b>提示：</b>置换（卖一买一）按首套首付与利率，且一年内卖房再买房个税可退；投资二套首付与利率上浮（二套公积金 3.075% / 商贷 3.06%），且可能触发房产税（上海试点）。</div>';
+}
+
+/* 可动用现金：预设档 + 自定义输入（不再写死 70 万） */
+function screenCash(){
+  var presets = [
+    ['50',  '50 万',  '刚工作不久，积蓄不多——选房按“够得着”来。'],
+    ['70',  '70 万',  '不上不下，最常见的状态。'],
+    ['100', '100 万', '有备而来，从容一点。'],
+    ['200', '200 万', '准备充分，可覆盖换房周期。'],
+    ['300', '300 万', '资金雄厚，几乎不为首付发愁。']
+  ];
+  var opts = presets.map(function(p){
+    var sel = S.cashSet && S.cash === parseInt(p[0], 10) * 10000;
+    return optBtn('cash:p' + p[0], p[1], p[2], (sel ? '已选' : p[0] + '万'));
+  }).join('');
+  return '<h1 class="hd" style="font-size:26px;">你能拿出多少现金？</h1>' +
+    '<p class="sub">首付 = 房款首付 + 全部交易税费，都要从你手头这沓现金里出。先亮家底，后面才不会到算账时傻眼。</p>' +
+    '<div class="opts" style="margin-top:14px">' + opts + '</div>' +
+    '<div class="card" style="margin-top:14px">' +
+    '<div class="cash-row"><div class="field">' +
+    '<label>或自定义金额（万元）</label><input type="number" id="cashInput" min="1" max="5000" placeholder="比如 150" value="' +
+    (S.cashSet ? Math.round(S.cash/10000) : '') + '" inputmode="numeric" /></div>' +
+    '<span class="cash-suffix">万</span>' +
+    '<button class="btn btn-out" style="width:auto;height:46px;padding:0 18px;font-size:14px" data-act="cashCustom">就用这笔</button></div></div>' +
+    '<div class="ok-note"><b>为什么先问现金：</b>同样一套房，手头 50 万和 300 万，面临的方案天差地别——这道题决定你后面要不要借钱、借多少。</div>';
+}
+
+function screenCustom(){
+  return '<h1 class="hd" style="font-size:24px;">自定义一套房源</h1>' +
+    '<p class="sub">预设房源不够贴身？把自己的预算和税费条件填进去，后面照常核验资格、砍价。</p>' +
+    '<div class="card" style="margin-top:14px">' +
+    '<div class="field"><label>挂牌价（万元，示例：400）</label>' +
+    '<input type="number" id="custPrice" min="1" max="5000" placeholder="400" inputmode="numeric" /></div>' +
+    '<div class="field"><label>建筑面积（㎡，用于契税分档，≤140㎡ 税低）</label>' +
+    '<input type="number" id="custArea" min="20" max="500" placeholder="90" inputmode="numeric" /></div>' +
+    '<div class="field"><label>环线（决定限购政策与二套首付）</label>' +
+    '<select id="custRing"><option value="内">外环内</option><option value="外">外环外</option></select></div>' +
+    '<div class="field"><label>税费条件（决定增值税 / 个税口径）</label>' +
+    '<select id="custTax">' +
+    '<option value="new">新房（免增值税 / 无卖方个税）</option>' +
+    '<option value="5u">满五唯一（免增值税、免个税）</option>' +
+    '<option value="5n">满五不唯一（免增值税、个税核定 1%）</option>' +
+    '<option value="2n">满二不唯一（免增值税、个税核定 1%）</option>' +
+    '<option value="0n">不满 2 年（全额增值税 5% + 附加 + 个税 1%）</option>' +
+    '</select></div></div>' +
+    '<div class="ok-note"><b>说明：</b>议价空间（房东可让幅度）按默认 5% 计；面积 ≤140㎡ 契税 1%，否则首套 1.5% / 二套 2%。填完即可模拟，全程不落库。</div>' +
+    '<div style="height:16px"></div>' +
+    btn('custOk','确认这套 · 去核验资格','btn-ink');
+}
+
+function screenSelect(){
+  var hh = '';
+  HOUSES.forEach(function(h){
+    var downEst = fmt(Math.round(h.price * downRateFor(S.role.k, h.ring, S.loanType) / 10000) * 10000);
+    hh += '<div class="hcard" data-act="pick:' + h.id + '">' +
+      '<div class="hthumb ' + h.thumbCls + '"><span class="corner">' + badge(h.tag, h.tagCls) + '</span>' + h.emoji + '</div>' +
+      '<div class="hbody">' +
+      '<div class="hrow"><span class="hname">' + h.name + '</span>' + badge(h.ring==='内'?'外环内':'外环外','badge-hair') + '</div>' +
+      '<div class="hmeta">' + h.area + ' · ' + h.type + ' · 首付约 ' + downEst + ' 万 · 卖家 ' + h.seller + '</div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="hrow"><span class="price">' + fmt(h.price) + '<small>万</small></span>' +
+      '<span style="margin-left:auto;font-size:12px;color:var(--rust)">可砍 ' + (h.negotiable*100).toFixed(0) + '%</span></div>' +
+      '</div></div>';
+  });
+  /* 自定义房源卡 */
+  hh += '<div class="hcard" style="cursor:pointer" data-act="pick:custom">' +
+    '<div class="hthumb thumb-c">✏️</div>' +
+    '<div class="hbody">' +
+    '<div class="hrow"><span class="hname">自定义房源</span>' + badge('自由填写','badge-hair') + '</div>' +
+    '<div class="hmeta">挂牌价 / 面积 / 环线 / 税费条件全由你定——用你自己的房价和年限。</div>' +
+    '<div style="height:10px"></div>' +
+    '<div class="hrow"><span class="price" style="font-size:17px;">✨ 造一套自己的房子</span></div>' +
+    '</div></div>';
+  return '<div class="chat">' +
+    bubble('中介 小王','钥匙在手，几个盘随便挑：200 万到 1600 万都有。先看哪套？税费和议价空间差挺多的——满五唯一、满二不唯一、还有一套不满 2 年要缴全额增值税。也可以说个数，我给你现造一套。', false) +
+    '</div>' +
+    '<div class="ok-note"><b>身份：</b>' + S.role.emoji + ' ' + S.role.name + ' · 现金 ' + fmt(S.cash) + ' 万 · 首付约 ' + (S.downRate*100).toFixed(0) + '%（默认' + LOAN_TYPES[S.loanType].name + '估算，选房后可调）</div>' +
+    '<div class="opts">' + hh + '</div>';
+}
+
+function screenQA(){
+  var steps = buildQA();
+  var cur = steps[S.qaProg];
+  var d = QA_DEFS[cur];
+  var dots = steps.map(function(s, i){ return '<span class="qd' + (i<=S.qaProg?' on':'') + '"></span>'; }).join('');
+  var opts = d.opts.map(function(o){ return optBtn('qa:' + cur + ':' + o[0], o[1]); }).join('');
+  var back = '';
+  if (S.qaProg > 0) back = '<button class="textlink" data-act="qaBack">‹ 上一步</button>';
+  return '<div class="qdots">' + dots + '</div>' +
+    '<h1 class="hd" style="font-size:24px;">' + d.q + '</h1>' +
+    '<p class="sub">答案只用于本机判定，不会上传或收集。</p>' +
+    '<div class="opts">' + opts + '</div>' +
+    '<div style="height:14px"></div>' + back;
+}
+
+function screenBlocked(){
+  var j = S.judge;
+  return '<div class="card card-warm" style="margin-top:8px">' +
+    '<div style="font-size:13px;font-weight:500;color:var(--rust)">' + (j.ok?'✓':'✕') + ' ' + j.title + '</div>' +
+    '<div style="font-size:13.5px;color:var(--ash);line-height:1.7;margin-top:8px">' + j.reason + '</div></div>' +
+    '<div style="height:16px"></div>' +
+    '<div class="btn-row">' +
+    btn('select', '换一套试试', 'btn-out') +
+    btn('start', '放弃模拟', 'btn-ink') +
+    '</div>';
+}
+
+/* 砍价选项数据
+   关键点：每个选项定义「最终净让幅 chip」（成交价 = 挂牌价×(1-chip)，正数表示砍价幅度）。
+   第二轮选项不会写死，而是按「第一轮报价是否越过房东底线」动态生成——
+   越线 → 房东已拒绝，只剩 加价缓和/按底线成交/继续硬压（会被叫停）；
+   未越线 → 才有 再砍一刀、假装离开 的空间。杜绝「刚拒绝 -6% 又谈成 -7%」的矛盾。 */
+var NEGO_R1 = {
+  hard: { label:'直接还价 -6%', chip:.06, mood:-25, stress:12, d:'-6%：会不会太狠了？' },
+  soft: { label:'试探出价 -3%', chip:.03, mood:-10, stress:5,  d:'-3%：先探探底价。' },
+  chat: { label:'先聊聊，为什么卖？', chip:0, mood:10, stress:2, d:'先建立感情，再谈价。' }
+};
+/* 第一轮报价生效（含越线判定）：chip = 本轮报价（净让幅） */
+function setOffer(chip){
+  var cap = S.house.negotiable;
+  S.slash = Math.min(cap, chip);
+  S.negoCap = chip > cap;              /* 报价越线 → 卖家叫停 */
+  if (S.negoCap) S.seller = Math.max(5, S.seller - 8);
+  derive();
+}
+/* 第二轮选项：由 r1 报价与底线动态生成 */
+function nego2Options(){
+  var cap = S.house.negotiable;
+  var base = NEGO_R1[S.negoR1].chip;
+  var over = S.negoCap;                        /* 第一轮报价已越线 */
+  var mk = function(key, label, d, chip, mood, stress){
+    return { key:key, label:label, d:d, chip:chip, mood:mood||0, stress:stress||0 };
+  };
+  var o;
+  if (over){
+    /* 房东已经拒绝你上一轮报价：只能往回找补，没有更低的选项 */
+    o = [
+      mk('acc', '按房东底线 ' + pct(cap) + ' 成交', '顺着台阶下，房东松口。', cap, 12, 0),
+      mk('retreat', '加价缓和到 ' + pct(Math.max(0, cap - .005)), '你让一步，给彼此台阶——房东同意。', Math.max(0, cap - .005), 15, 0),
+      mk('push', '坚持原报价一步不让', '继续硬压，逼近房东叫停线。', base, -20, 10)
+    ];
+  } else if (S.negoR1 === 'hard'){
+    o = [
+      mk('up2', '加价 0.5% 缓和（→ ' + pct(.055) + '）', '对方嫌狠，给个台阶，你诚他也让。', .055, 10, 0),
+      mk('pick2', '挑毛病，再砍 1%（→ ' + pct(.07) + '）', '户型/装修挨个挑刺——注意，可能越过房东底线。', .07, -15, 8),
+      mk('walk2', '假装离开（→ ' + pct(.06) + '）', '作势要走，赌他被你叫回。', .06, -8, 8)
+    ];
+  } else if (S.negoR1 === 'soft'){
+    o = [
+      mk('up3', '加价 0.5% 卖人情（→ ' + pct(.025) + '）', '你诚，他也让。', .025, 8, 0),
+      mk('pick3', '承诺提高首付换再让（→ ' + pct(.035) + '）', '反正首付按政策算，姿态先给足。', .035, 18, 2),
+      mk('keep3', '坚持原价磨（→ ' + pct(.03) + '）', '磨就是拼耐心。', .03, -6, 2)
+    ];
+  } else { /* chat */
+    o = [
+      mk('m5', '顺势出价 ' + pct(.05), '聊得热络，趁热打铁。', .05, -5, 3),
+      mk('m4', '试探性 ' + pct(.04), '稳一点。', .04, -2, 2),
+      mk('m7', '大胆开价 ' + pct(.07), '聊归聊，价照砍——小心越过底线。', .07, -20, 8)
+    ];
+  }
+  return { over:over, opts:o };
+}
+function findN2Option(key){
+  var r = nego2Options();
+  for (var i = 0; i < r.opts.length; i++){ if (r.opts[i].key === key) return r.opts[i]; }
+  return null;
+}
+
+function screenNego1(){
+  var h = S.house;
+  var opts = [optBtn('n1:hard','直接还价','第一天就摆底线：-6%，能行就签。','-6%'),
+              optBtn('n1:soft','试探出价 -3%','礼貌试探：挂牌价虚高，砍一点意思意思。','-3%'),
+              optBtn('n1:chat','先聊聊，为什么卖？','不问价，先听故事——急售的人往往最好谈。')];
+  return '<div class="chat">' +
+    '<div class="card card-warm"><div style="font-size:12px;color:var(--rust);font-weight:500">在谈 · ' + h.name + '</div>' +
+    '<div style="font-size:15px;font-weight:480;color:var(--ink);margin-top:4px">挂牌价 ' + fmt(h.price) + ' 万</div>' +
+    '<div style="font-size:12.5px;color:var(--ash);margin-top:4px">' + h.intro + '</div></div>' +
+    bubble('中介 小王','这套房诚意挂价 ' + fmt(h.price) + ' 万，' + h.seller + '那边我熟，好好谈有空间。你的心理价多少？', false) +
+    '</div>' +
+    '<div class="opts">' + opts + '</div>' +
+    '<div class="ok-note"><b>谈判口径：</b>房东的底线约在挂牌价下方 ' + (h.negotiable*100).toFixed(0) + '% 附近。第一轮报价就冲破底线，房东会直接甩脸拒绝——后面只能往回找补。</div>';
+}
+
+function screenNego2(){
+  var r = nego2Options();
+  var over = r.over;
+  var h = S.house;
+  var baseChip = NEGO_R1[S.negoR1].chip;
+  var score = { hard:'第一轮你直接还了 -6%', soft:'第一轮你试探了 -3%', chat:'第一轮你们聊得不错' }[S.negoR1];
+  var sellerLine;
+  if (over){
+    sellerLine = baseChip > 0
+      ? '低于 ' + pct(baseChip) + '？这个价我做不了，真做不了。你要诚心想买，就再给我一个够得着的价。'
+      : '价还没谈，你上来就压这么狠，这单没法聊。';
+  } else {
+    sellerLine = {
+      hard:'小伙子上来就砍 6%？你要真喜欢，我再看看能让多少，但你也别太狠。',
+      soft:'-3% 不太够意思，除非……你再有点诚意？',
+      chat:'你懂我的难处。这样吧，你要真喜欢，我再给你个实在价。'
+    }[S.negoR1];
+  }
+  var opts = r.opts.map(function(o){
+    return optBtn('n2:' + o.key, o.label, o.d,
+      (o.chip*100).toFixed(1).replace(/\.0$/,'') + '%');
+  }).join('');
+  return '<div class="chat">' +
+    bubble('中介 小王', score + '。' + (over ? '价位过了头，' + h.seller + '这边很抵触。' : '对方在犹豫。') + '第二轮你打算怎么出？', false) +
+    bubble(h.seller + '（房东）', sellerLine, false) +
+    '</div>' +
+    '<div class="opts">' + opts + '</div>' +
+    '<p style="font-size:11.5px;color:var(--graphite);margin:10px 2px 0">房东可接受底线约在挂牌价下方 ' + (h.negotiable*100).toFixed(0) + '%；报价高出不超过这个数才有得谈，超了会被叫停。</p>';
+}
+
+function screenNego3(){
+  var h = S.house;
+  var cut = h.price - S.deal;
+  var off = cut/h.price;
+  var msg = S.negoCap
+    ? '<div class="card card-warm" style="margin-top:12px"><div style="font-size:12.5px;color:var(--rust);font-weight:500">卖家叫停</div><div style="font-size:13px;color:var(--ash);margin-top:4px;line-height:1.6">超过我的底线了，最多让到 ' + fmt(S.deal) + ' 万，一句顶八句。</div></div>'
+    : '';
+  /* 叫停补救分支：接受底价 / 换房
+     关键约束：房东已亮明底线（这句就是他的可接受价），此时买家没有任何“加价”空间——
+     再加 0.5% 等于自掏冤枉钱，也与「已经接受」矛盾，故不再提供该选项。
+     让步（加价缓和）只发生在第二轮房东尚未亮底、只是拒了你的报价时。 */
+  var foot = S.negoCap
+    ? '<div class="opts" style="margin-top:14px">' +
+      optBtn('negoAccept','接受底价 ' + fmt(S.deal) + ' 万','不再拉扯，按房东底线成交，后面流程照走。','成交') +
+      optBtn('negoQuit','谈崩了，换一套','不勉强，回选房重新挑。') +
+      '</div>'
+    : '';
+  /* —— 成交后的「到手价」暗坑 ——
+     仅当房子实际有卖方税（非满五唯一/非新房满五唯一→无税可转嫁），且价格已谈定，
+     房东才补一句「到手价」：挂牌/谈定价 ≠ 你实际付给一切方的钱，卖方税费归你。
+     很多买家把「拿到手的价格」理解成“总价里面含税”，一口答应，到算账/签约才傻眼。 */
+  var canTransfer = S.vat > 0 || S.sellerTax > 0;
+  var trap = (!S.negoCap && canTransfer)
+    ? '<div class="card card-warm" style="margin-top:14px">' +
+      '<div style="font-size:13px;font-weight:500;color:var(--rust)">房东补一句：这价是「到手价」</div>' +
+      '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">「我也不看挂牌价了，' + fmt(S.deal) + ' 万到手，税你那边包一下。」听起来就是随口一句对吧？要不要应？</div></div>' +
+      '<div class="opts" style="margin-top:12px">' +
+      optBtn('n3NetYes','行，就按到手价来','看着省事。但卖方税费（' +
+        (S.vat ? '增值税 ' + fmt(S.vat) + ' 万' + (S.vatAdd ? '+' + fmt(S.vatAdd) + ' 万' : '') : '') +
+        (S.sellerTax ? (S.vat ? '、' : '') + '个税 ' + fmt(S.sellerTax) + ' 万' : '') +
+        '）也会转嫁到你头上。','成交') +
+      optBtn('n3NetAsk','等下，到手价是啥意思？','把话说透再决定——你不知道这笔钱给谁。','先问清') +
+      optBtn('n3NetNo','我不同意到手价，按含税价','卖方税费让房东自担，替自己省下十几万。','含税') +
+      '</div>'
+    : (!S.negoCap
+        ? '<div style="height:18px"></div>' + btn('negoOk','确认成交，进入算账','btn-ink')
+        : '');
+  return '<div class="chat">' +
+    bubble(S.house.seller + '（房东）', S.negoCap ? '这个价我真做不了，你给个准话。' : '行吧，' + fmt(S.deal) + ' 万，说定。我这个人最讲信用。', false) +
+    bubble('中介 小王','成了！' + fmt(S.deal) + ' 万成交，比挂牌省了 ' + fmt(cut) + ' 万。我帮你们走后续流程。', false) +
+    '</div>' +
+    '<div class="card" style="margin-top:14px;text-align:center">' +
+    '<div style="font-size:12px;color:var(--graphite)">成交价（原挂牌 ' + fmt(h.price) + ' 万）</div>' +
+    '<div class="price" style="font-size:34px;margin-top:6px">' + fmt(S.deal) + '<small>万</small></div>' +
+    '<div style="margin-top:8px">' + badge('砍下 ' + fmt(cut) + ' 万 · ' + (off*100).toFixed(1) + '%', 'badge-warm') + badge((1-off).toFixed(2) + ' 折','badge-hair') + '</div>' +
+    '</div>' + msg + trap + foot;
+}
+
+/* 中介费协商：行情 1%–2%，默认报 2%，可谈 1%（中介费与税费分开算） */
+function screenFeeNego(){
+  var deal = S.deal;
+  return '<h1 class="hd" style="font-size:24px;">中介费 · 再谈一档</h1>' +
+    '<div class="chat" style="margin-top:12px">' +
+    bubble('中介 小王','房子谈妥了。中介费按行业惯例 2%：带看、谈判、网签、过户、放款一条龙，全包。', false) +
+    '</div>' +
+    '<div class="card" style="margin-top:12px">' +
+    brow('成交价', fmtY(deal)) +
+    brow('中介费 2%', fmtY(Math.round(deal*0.02/10000)*10000)) +
+    '</div>' +
+    '<div class="opts" style="margin-top:14px">' +
+    optBtn('fee2','按 2% 给，省心','服务全包，图个顺当。','-' + fmt(Math.round(deal*0.02/10000)*10000) + '万') +
+    optBtn('fee1','聊聊，压到 1%','“都是老朋友了”——小王松口。','-' + fmt(Math.round(deal*0.01/10000)*10000) + '万') +
+    '</div>' +
+    '<div class="ok-note"><b>行情：</b>上海中介费 1%–2% 都有，1% 足够覆盖主流服务。多问几家、敢于开口，省下的就是软装钱。中介费是服务费，与税费分开算。</div>';
+}
+
+/* 贷款方式选择（新增）：纯商贷 / 组合贷 / 纯公积金——首付比例与利率随方式、套数、环线差异化（20260901 按揭表口径） */
+function screenLoanType(){
+  var h = S.house;
+  var isInv = S.role.k === 'invest';
+  var ringTag = h.ring === '内' ? '外环内' : '外环外（特殊区域口径）';
+  function dr(lt){ return (downRateFor(S.role.k, h.ring, lt)*100).toFixed(0) + '%'; }
+  function downEst(lt){ return fmt(Math.round(S.deal * downRateFor(S.role.k, h.ring, lt) / 10000) * 10000) + ' 万'; }
+  var optComm  = optBtn('lt:comm',  '纯商贷', '首付 ' + dr('comm') + ' · 商贷 ' + pct(S.role.commRate) + '（' + (isInv?'二套':'首套') + '利率）', downEst('comm'));
+  var optCombo = optBtn('lt:combo', '组合贷（默认）', '首付 ' + dr('combo') + ' · 公积金 ' + pct(S.role.gjjRate) + ' + 商贷 ' + pct(S.role.commRate), downEst('combo'));
+  var optGjj   = optBtn('lt:gjj',   '纯公积金', '首付 ' + dr('gjj') + ' · 公积金 ' + pct(S.role.gjjRate) + ' · 额度上限 80 万（演示）', downEst('gjj'));
+  return '<h1 class="hd" style="font-size:24px;">贷款方式 · 先定门槛</h1>' +
+    '<div class="chat" style="margin-top:12px">' +
+    bubble('信贷经理 高经理','房子定了，先选贷款方式——首付比例、利率都不一样。' + ringTag + (isInv?'、二套':'、首套') + '，多数家庭用组合贷。', false) +
+    '</div>' +
+    '<div class="card" style="margin-top:12px">' +
+    brow('成交价', fmtY(S.deal)) +
+    brow('当前首付（' + LOAN_TYPES[S.loanType].name + '）', fmtY(S.down) + '（含定金 ' + fmt(S.deposit) + ' 万）') +
+    '</div>' +
+    '<div class="opts" style="margin-top:14px">' + optComm + optCombo + optGjj + '</div>' +
+    '<div class="ok-note"><b>口径：</b>首套商贷最低 15%、组合贷/公积金 20%；二套外环内 25%、外环外（特殊区域）商贷 15% / 组合贷·公积金 20%。贷款 ≥500 万且成数 ≥5 成或属风险类客户，利率可能上浮，以按揭银行核定为准。</div>' +
+    '<div style="height:14px"></div>' +
+    btn('ltOk','选好了，去算账','btn-ink');
+}
+
+function screenFunds(){
+  var gap = Math.max(0, S.need - S.cash);
+  var h = S.house;
+  var isInv = S.role.k === 'invest';
+  var deedTag = '契税（' + (S.areaNum <= 140 ? (isInv?'二套 1%':'首套 1%') : (isInv?'二套 2%':'首套 1.5%')) + '）';
+  var rows =
+    brow('成交价', fmtY(S.deal)) +
+    brow('首付（房款 ' + (S.downRate*100).toFixed(0) + '% · ' + LOAN_TYPES[S.loanType].name + '，含定金 ' + fmt(S.deposit) + ' 万签约时付）', fmtY(S.down)) +
+    brow(deedTag, fmtY(S.deedTax)) +
+    brow('登记费（不动产登记费）', '¥80') +
+    brow('中介费（' + pct(S.agentRate) + '）', fmtY(S.agentFee)) +
+    (S.netTax ? brow('卖方税费转嫁（你已答应「到手价」）', fmtY(S.netTax)) : '') +
+    (S.gjjTopUp ? brow('公积金额度补足（已并入首付）', fmtY(S.gjjTopUp)) : '') +
+    (S.estateTax ? brow('房产税（投资二套 · 按年，不计入一次性）', fmt(S.estateTax) + ' 万/年') : '') +
+    brow('首付需现金（含全部交易税费）', fmtY(S.need), true);
+  var status = gap > 0
+    ? '<div class="card card-warm" style="margin-top:12px"><div style="font-size:13px;font-weight:500;color:var(--rust)">还差 ' + fmt(gap) + ' 万</div>' +
+      '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">你手头有 ' + fmt(S.cash) + ' 万存款，不够覆盖「房款首付 + 交易税费' + (S.netTax ? ' + 到手价转嫁' : '') + '」。</div></div>'
+    : '<div class="card card-sky" style="margin-top:12px"><div style="font-size:13px;font-weight:500;color:var(--ink)">✓ 资金充足</div>' +
+      '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">手头 ' + fmt(S.cash) + ' 万，扣除首付税费后结余 ' + fmt(S.cash - S.need) + ' 万，可继续签约。</div></div>';
+  var netNote = S.netTax
+    ? '<div class="card card-warm" style="margin-top:12px">' +
+      '<div style="font-size:13px;font-weight:500;color:var(--rust)">⚠️ 你现在才看到这笔钱</div>' +
+      '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">砍价成交时你随口应了「' + fmt(S.deal) + ' 万到手」——卖方增值税/个税约 ' + fmt(S.netTax) + ' 万由此转嫁给你，已经算进上面「需现金」里了。当时要是按含税价谈，这一行根本不会出现。</div></div>'
+    : '';
+  var footer = gap > 0
+    ? btn('borrow','先筹钱，再签约','btn-ink')
+    : btn('sign','资金充足，去签约','btn-ink');
+  return '<h1 class="hd" style="font-size:24px;">这笔账，先算清楚</h1>' +
+    '<p class="sub">' + h.name + ' · 以 ' + fmt(S.deal) + ' 万成交价估算 · ' + LOAN_TYPES[S.loanType].name + '。首付口径已含买方全部交易税费，中介费与税费分开单列。</p>' +
+    '<div class="card" style="margin-top:14px">' + rows + '</div>' + status + netNote +
+    (S.vat ? '<div class="ok-note"><b>卖方税费提示：</b>本房卖方另需缴增值税约 ' + fmt(S.vat) + ' 万 + 附加约 ' + fmt(S.vatAdd) + ' 万' + (S.sellerTax ? '、个税约 ' + fmt(S.sellerTax) + ' 万' : '') + '。按上海惯例由卖方承担，不在你现金中列支——' + (S.netTax ? '除非你刚才答应了「到手价」（见上方警示行）。' : '除非你在砍价时答应他「到手价」。这一行，别让它在合同里复活。') + '</div>' : '') +
+    '<div style="height:16px"></div>' + footer +
+    '<p style="font-size:11.5px;color:var(--graphite);margin:10px 2px 0">定金含在首付内，签约时先付、过户时冲抵；贷款部分由银行后端解决，不算入“需要现金”。</p>';
+}
+
+function screenBorrow(){
+  var gap = Math.max(0, S.need - S.cash);
+  var cap = 300000 + 200000 + 200000;         /* 亲友 + 公积金提取 + 信用贷 合计上限（演示） */
+  var room = cap - S.borrowed;                /* 还可借多少 */
+  var still = gap > 0
+    ? '<div class="card card-warm" style="margin-top:12px"><div style="font-size:13px;font-weight:500;color:var(--rust)">仍有缺口 ' + fmt(gap) + ' 万</div>' +
+      (gap > room
+        ? '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">三条借款渠道合计最多约 ' + fmt(cap) + ' 万，缺口已超出可借上限。继续硬撑不现实，建议换一套总价更低的房源。</div>'
+        : '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">还可通过下方渠道再借约 ' + fmt(room) + ' 万。</div>')
+      + '</div>'
+    : '<div class="card card-sky" style="margin-top:12px"><div style="font-size:13px;font-weight:500;color:var(--ink)">✓ 缺口已补齐</div></div>';
+  var famBtn = 'family' in S.usedBorrow
+    ? '<div class="card" style="padding:12px 16px;font-size:12.5px;color:var(--graphite)">已向亲友借入，缺口 ' + (gap>0?'仍差 '+fmt(gap)+' 万':'已补齐') + '</div>'
+    : optBtn('bor:family','向亲友借款（最多 30 万）','视缺口借入，无利息压力，人情慢慢还。','+30万内');
+  var gjjBtn = 'gjj' in S.usedBorrow
+    ? '<div class="card" style="padding:12px 16px;font-size:12.5px;color:var(--graphite)">已按演示提取公积金</div>'
+    : optBtn('bor:gjj','提取公积金（演示，最多 20 万）','二手房通常不能直接提取付首付，需先自筹；此处仅作额度演示。','压力 +15');
+  var crdBtn = 'credit' in S.usedBorrow
+    ? '<div class="card" style="padding:12px 16px;font-size:12.5px;color:var(--graphite)">已申请信用贷</div>'
+    : optBtn('bor:credit','信用贷 / 消费贷（最多 20 万）','门槛低、放款快，但资金用途属于监管红线。','⚠️ 红线');
+  var cta = gap <= 0
+    ? btn('sign','签约 · 付定金','btn-ink')
+    : gap > room
+      ? btn('select','缺口过大 · 换套便宜点的','btn-ink')
+      : '<div class="card" style="padding:14px 16px;font-size:13px;color:var(--rust);text-align:center">还需 ' + fmt(gap) + ' 万 · 用上方渠道补足后再签约</div>';
+  return '<h1 class="hd" style="font-size:24px;">怎么补上这笔钱？</h1>' +
+    '<p class="sub">手头 ' + fmt(S.cash) + ' 万，缺口 ' + fmt(gap) + ' 万。不同来路的钱，代价完全不同。</p>' +
+    '<div class="opts" style="margin-top:14px">' + famBtn + gjjBtn + crdBtn +
+    optBtn('select','换套便宜点的','回到选房，重新挑一套总价更低的。') + '</div>' + still +
+    '<div style="height:16px"></div>' + cta +
+    '<div class="ok-note"><b>红线提示：</b>上海银保监局严禁信贷资金流入房地产。信用贷购房可能被银行拒贷、影响征信，本模拟仅用于风险教育，绝不构成建议。</div>';
+}
+
+function screenSign(){
+  var h = S.house;
+  var netWarn = S.netTax
+    ? '<div class="card card-warm" style="margin-top:12px">' +
+      '<div style="font-size:13px;font-weight:500;color:var(--rust)">⚠️ 合同第 1 条：成交价 = 卖方到手价</div>' +
+      '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">合同价格条款写明「' + fmt(S.deal) + ' 万为卖方到手价，相关税费由买方承担」——卖方增值税/个税约 ' + fmt(S.netTax) + ' 万已锁定给你。<b>现在反悔就是违约。</b>签约前这是最后一次看清它。</div></div>'
+    : '';
+  return '<h1 class="hd" style="font-size:24px;">签约 · 网签</h1>' +
+    '<p class="sub">' + h.name + ' · 卖方 ' + h.seller + ' · 成交价 ' + fmt(S.deal) + ' 万' + (S.netTax ? '（到手价）' : '') + '</p>' +
+    '<div class="card card-sky" style="margin-top:14px">' +
+    '<div style="font-size:12px;font-weight:500;color:var(--ink)">📄 上海市存量房买卖合同 · 网签备案</div>' +
+    '<div style="font-size:11.5px;color:var(--graphite);margin-top:4px;line-height:1.6">备案号 SH-2026-XXXX · 经「一网通办」完成 · 合同价锁定，反悔属违约</div></div>' + netWarn +
+    '<div class="card" style="margin-top:12px">' +
+    brow('成交价', fmtY(S.deal)) +
+    (S.netTax ? brow('卖方税费（到手价转嫁）', fmtY(S.netTax)) : '') +
+    brow('定金（5%）', fmtY(S.deposit)) +
+    brow('买方现金（现有）', fmtY(S.cash)) +
+    brow('签约后余额', fmtY(S.cash - S.deposit)) +
+    '</div>' +
+    '<div class="card card-warm" style="margin-top:12px">' +
+    '<div style="font-size:13px;font-weight:500;color:var(--rust)">定金规则</div>' +
+    '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">定金不超过合同价 20%；买方违约不予退还，卖方违约须双倍返还（' + fmtY(S.deposit*2) + '）。</div></div>' +
+    '<div style="height:16px"></div>' + btn('signOk','确认签约，支付定金 ' + fmt(S.deposit) + ' 万','btn-ink');
+}
+
+function screenLoan(){
+  var L = S.loan;
+  var y = S.loanYears;
+  var gjjPct = pct(S.gjjRate);
+  var commPct = pct(S.commRate);
+  var ltName = LOAN_TYPES[S.loanType].name;
+  var years = [10,20,30].map(function(v){
+    return '<button class="btn ' + (v===y?'btn-ink':'btn-out') + '" style="height:38px;font-size:13px" data-act="ly:' + v + '">' + v + '年</button>';
+  }).join('');
+  var rows = '';
+  if (S.loanType === 'comm'){
+    rows += brow('商贷（' + fmt(L.comm) + ' 万 · ' + commPct + '）', pmtY(L.comm, S.commRate, y));
+  } else if (S.loanType === 'gjj'){
+    rows += brow('公积金（' + fmt(L.gjj) + ' 万 · ' + gjjPct + '）', pmtY(L.gjj, S.gjjRate, y));
+  } else {
+    rows += brow('公积金（' + fmt(L.gjj) + ' 万 · ' + gjjPct + '）', pmtY(L.gjj, S.gjjRate, y)) +
+            brow('商贷（' + fmt(L.comm) + ' 万 · ' + commPct + '）', pmtY(L.comm, S.commRate, y));
+  }
+  var rateLine = S.loanType === 'comm' ? '商贷 ' + commPct
+    : S.loanType === 'gjj' ? '公积金 ' + gjjPct
+    : '公积金 ' + gjjPct + ' + 商贷 ' + commPct;
+  var topUp = S.gjjTopUp
+    ? '<div class="ok-note"><b>公积金额度：</b>本演示额度上限 80 万，不足部分 ' + fmt(S.gjjTopUp) + ' 万已并入首付（见算账页）。</div>'
+    : '';
+  return '<h1 class="hd" style="font-size:24px;">贷款方案</h1>' +
+    '<p class="sub">贷款额 = 成交价 − 房款首付（' + fmt(S.deal - S.down) + ' 万）· ' + ltName + ' · ' + (S.role.k==='invest'?'二套利率':'首套利率') + '（' + rateLine + '）· 等额本息。</p>' +
+    '<div class="chat" style="margin-top:12px">' +
+    bubble('信贷经理 高经理','材料收到。按你' + (S.role.k==='invest'?'（二套）':'（' + S.role.name + '）') + '的资质，' + rateLine + ' 送审——月供别超过你们家庭月收入一半，不然风控过不了。', false) +
+    '</div>' +
+    '<div class="card" style="margin-top:12px">' + rows +
+    brow('月供合计', fmtYuan(L.monthly) + ' 元/月') +
+    brow('月供 / 家庭月收入', Math.round(L.monthly / INCOME * 100) + '%（风控线 50%）') +
+    brow('总利息（' + y + ' 年）', '¥' + fmt(L.totalInt) + '万') +
+    '</div>' + topUp +
+    '<div class="card card-sky" style="margin-top:12px">' +
+    '<div style="font-size:34px;font-weight:480;color:var(--ink);font-variant-numeric:tabular-nums">' + fmtYuan(L.monthly) + '<small style="font-size:13px;color:var(--graphite);font-weight:400"> 元 / 月</small></div>' +
+    '<div style="font-size:12.5px;color:var(--ash);margin-top:4px">月供不宜超过家庭月收入一半（2026 参考口径）。贷款 ≥500 万且成数 ≥5 成或属风险类客户，利率可能上浮；送审后银行会复核。</div></div>' +
+    '<div style="height:14px"></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--graphite)">还款年限' +
+    '<span class="btn-row" style="gap:8px">' + years + '</span></div>' +
+    '<div style="height:16px"></div>' + btn('loanOk','方案 OK，送银行审批','btn-ink');
+}
+function pmtY(P, annual, years){
+  return '¥' + fmtYuan(pmt(P, annual, years)) + '/月';
+}
+function brow(k, v, total){
+  return '<div class="brow' + (total?' total':'') + '"><span class="k">' + k + '</span><span class="v num">' + v + '</span></div>';
+}
+function loanRowLabel(){
+  if (S.loanType === 'comm') return '商贷 ' + fmt(S.loan.comm) + ' 万';
+  if (S.loanType === 'gjj') return '公积金 ' + fmt(S.loan.gjj) + ' 万';
+  return '公积金 ' + fmt(S.loan.gjj) + ' + 商贷 ' + fmt(S.loan.comm);
+}
+
+/* 贷款审批（风控分支）：月供 ≤ 家庭月收入 50% 直接批贷，否则拦截调整 */
+function screenLoanChk(){
+  var L = S.loan;
+  var ltName = LOAN_TYPES[S.loanType].name;
+  var compLine = S.loanType === 'comm' ? '商贷 ' + fmt(L.comm) + ' 万 @' + pct(S.commRate)
+    : S.loanType === 'gjj' ? '公积金 ' + fmt(L.gjj) + ' 万 @' + pct(S.gjjRate)
+    : '公积金 ' + fmt(L.gjj) + ' 万 @' + pct(S.gjjRate) + ' + 商贷 ' + fmt(L.comm) + ' 万 @' + pct(S.commRate);
+  var ok = L.monthly <= INCOME * 0.5;
+  if (ok){
+    return '<h1 class="hd" style="font-size:24px;">贷款审批 · 通过</h1>' +
+      '<div class="chat" style="margin-top:12px">' +
+      bubble('信贷经理 高经理','流水和征信都核过了：月供 ' + fmtYuan(L.monthly) + ' 元，约占家庭月收入 ' + Math.round(L.monthly/INCOME*100) + '%，在风控线（50%）以内。批贷函这就出。', false) +
+      '</div>' +
+      '<div class="card card-sky" style="margin-top:14px">' +
+      '<div style="font-size:13px;font-weight:500;color:var(--ink)">🏦 批贷函 · ' + ltName + ' · ' + S.loanYears + ' 年</div>' +
+      '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">' + compLine + ' · 等额本息 · 月供 ' + fmtYuan(L.monthly) + ' 元 / 月</div></div>' +
+      '<div class="ok-note"><b>贷款材料：</b>身份证 · 收入流水 · 征信授权 · 网签合同。真实审批需 7–15 个工作日，本演示已加速。</div>' +
+      '<div style="height:16px"></div>' + btn('lcOk','批贷通过，走资金监管','btn-ink');
+  }
+  /* 超线：风控拦截 */
+  var excess = L.monthly - INCOME * 0.5;
+  var f = L.monthly / (S.deal - S.down);
+  var needPay = Math.max(10000, Math.ceil(excess / f / 10000) * 10000);
+  var yW = fmt(needPay);
+  var longOpt = S.loanYears < 30
+    ? optBtn('lcLong','拉长还款到 30 年','月供立刻降档，但总利息更多。','→ 30年')
+    : '';
+  /* 追加首付：现金需覆盖（首付尾款 + 税费 + 追加额） */
+  var avail = S.cash - (S.down - S.deposit) - S.taxes;
+  var payOpt = avail >= needPay
+    ? optBtn('lcPay','追加首付 ' + yW + ' 万','把月供压回收入一半以内，现金够付。','-' + yW + '万')
+    : '<div class="card" style="padding:12px 16px;font-size:12.5px;color:var(--graphite)">追加首付需约 ' + yW + ' 万，当前现金不足——只能拉长年限或换房。</div>';
+  return '<h1 class="hd" style="font-size:24px;">贷款审批 · 风控拦截</h1>' +
+    '<div class="chat" style="margin-top:12px">' +
+    bubble('信贷经理 高经理','月供 ' + fmtYuan(L.monthly) + ' 元，超过你们家庭月收入的一半（' + fmtYuan(INCOME*0.5) + ' 元）。按银行风控，要么降月供、要么加首付，否则批不了。', false) +
+    '</div>' +
+    '<div class="card card-warm" style="margin-top:14px">' +
+    '<div style="font-size:13px;font-weight:500;color:var(--rust)">⚠️ 月供占收入 ' + Math.round(L.monthly/INCOME*100) + '%（风控线 50%）</div>' +
+    '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">当前方案 ' + S.loanYears + ' 年 · 月供 ' + fmtYuan(L.monthly) + ' 元。需调整后重新送审。</div></div>' +
+    '<div class="opts" style="margin-top:14px">' + longOpt + payOpt +
+    optBtn('lcStick','坚持原方案硬上','银行直接拒批，徒增压力。','❌ 拒批') +
+    optBtn('lcChange','换套便宜点的','回到选房，总价低、月供自然低。') + '</div>';
+}
+
+function screenEscrow(){
+  return '<h1 class="hd" style="font-size:24px;">资金监管</h1>' +
+    '<p class="sub">首付不直接打给卖家，先存入监管账户，领证后 1 个工作日划转。</p>' +
+    '<div class="card" style="margin-top:14px">' +
+    brow('已付定金（签约时）', fmtY(S.deposit)) +
+    brow('本次存入监管（冲抵定金后）', fmtY(S.down - S.deposit)) +
+    brow('监管后现金余额', fmtY(S.cash - (S.down - S.deposit))) +
+    brow('监管状态', badge('「带押过户」已适用','badge-warm')) +
+    '</div>' +
+    '<div class="card card-sky" style="margin-top:12px"><div style="font-size:13px;font-weight:500;color:var(--ink)">为什么放心？</div>' +
+    '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">上海已全面推行存量房交易资金监管；过户遇阻，监管资金原路退回，双方都踏实。</div></div>' +
+    '<div style="height:16px"></div>' + btn('escrowOk','首付已入监管，去过户','btn-ink');
+}
+
+function screenTransfer(){
+  var isInv = S.role.k === 'invest';
+  var h = S.house;
+  var deedTag = '契税（' + (S.areaNum <= 140 ? (isInv?'二套 1%':'首套 1%') : (isInv?'二套 2%':'首套 1.5%')) + '）';
+  /* 卖方税费口径（按持有年限 / 唯一性）：增值税满 2 年免征；个税满五唯一免征 */
+  var taxTitle = h.hold === 'new' ? '新房一手' : h.holdYears >= 5 ? (h.unique ? '满五唯一' : '满五不唯一') : h.holdYears >= 2 ? '满二不唯一' : '未满 2 年';
+  var taxNote;
+  if (h.hold === 'new'){ taxNote = '一手新房：增值税由开发商缴纳，买方仅承担契税、登记费；无卖方个税。'; }
+  else if (h.holdYears >= 5 && h.unique){ taxNote = '满五唯一：免增值税（满 2 年即免）、免卖方个税。'; }
+  else if (h.holdYears >= 2){
+    taxNote = (h.holdYears >= 5 ? '满五不唯一' : '满二不唯一') + '：满 2 年免增值税；卖方个税按核定 1% 计（不唯一）。卖方税费若按「到手价」约定则已转嫁，签约时谈妥。';
+  } else {
+    taxNote = '未满 2 年：全额 5% 增值税 + 附加税费（城建/教育费附加/地方教育附加，约增值税 12% ≈ 0.6%）+ 卖方个税核定 1%。卖方税费若按「到手价」约定则已转嫁，签约时谈妥。';
+  }
+  return '<h1 class="hd" style="font-size:24px;">过户 · 缴税</h1>' +
+    '<p class="sub">随申办 / 一网通办在线办结，最快当天出证。买方税费与卖方税费口径逐项单列。</p>' +
+    '<div class="card" style="margin-top:14px">' +
+    brow(deedTag, fmtY(S.deedTax)) +
+    brow('登记费（不动产登记费）', '¥80') +
+    (S.vat ? brow('增值税（卖方 · 未满 2 年全额 5%）', fmtY(S.vat)) : '') +
+    (S.vatAdd ? brow('增值税附加（卖方）', fmtY(S.vatAdd)) : '') +
+    (S.sellerTax ? brow('卖方个税（核定 1%）', fmtY(S.sellerTax)) : '') +
+    (S.netTax ? brow('卖方税费实付（到手价转嫁 · 你承担）', fmtY(S.netTax)) : '') +
+    brow('中介费（' + pct(S.agentRate) + '）', fmtY(S.agentFee)) +
+    brow('买方一次性税费（契税+登记+中介' + (S.netTax ? '+到手价转嫁' : '') + '）', fmtY(S.taxes + S.netTax), true) +
+    brow('本次扣除后现金余额', fmtY(S.cash - S.taxes - S.netTax), true) +
+    '</div>' +
+    (S.estateTax
+      ? '<div class="card card-warm" style="margin-top:12px"><div style="font-size:12.5px;color:var(--rust);font-weight:500">房产税（投资二套 · 上海试点）</div>' +
+        '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">按年约 ' + fmt(S.estateTax) + ' 万/年（成交价×70%×0.4%；单价高于上年度新建商品住房均价 2 倍按 0.6%），自持有年度起按年申报，不在此一次性扣除。</div></div>'
+      : '') +
+    '<div class="card card-warm" style="margin-top:12px"><div style="font-size:12.5px;color:var(--rust);font-weight:500">' + taxTitle + '</div>' +
+    '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">' + taxNote + '</div></div>' +
+    '<div style="height:16px"></div>' + btn('trOk','完成过户缴税','btn-ink');
+}
+
+function screenDeed(){
+  return '<h1 class="hd" style="font-size:24px;">领证 · 放款</h1>' +
+    '<p class="sub">不动产登记办结，电子证照即时可查；银行同步放款。</p>' +
+    '<div class="chat" style="margin-top:12px">' +
+    bubble('信贷经理 高经理','产证已出，我这边同步放款——尾款直接打到卖方，你不用再掏一分钱。', false) +
+    '</div>' +
+    '<div class="deed" style="margin-top:12px">' +
+    '<div class="deed-head"><span class="logo-c">🏛️</span>' +
+    '<div style="flex:1"><div style="font-size:13.5px;font-weight:480;color:var(--ink)">不动产权证书 · 电子版</div>' +
+    '<div style="font-size:11.5px;color:var(--graphite);margin-top:2px">沪（2026）市不动产权第 0000001 号 · 随申办可下载</div></div>' +
+    '<span class="qrcode"></span></div>' +
+    '<div style="padding-top:12px;font-size:12px;color:var(--graphite);display:flex;justify-content:space-between">' +
+    '<span>' + S.house.name + ' · ' + S.house.area + '</span><span>共有人：本人</span></div></div>' +
+    '<div class="card" style="margin-top:12px">' +
+    brow('银行放款（尾款）', fmtY(S.deal - S.down - S.deposit)) +
+    brow('卖方累计收款', fmtY(S.deal)) +
+    brow('你本次掏出的钱（含借款）', fmtY(S.down + S.taxes + S.netTax)) +
+    '</div>' +
+    '<div class="ok-note"><b>别误会：</b>贷款买房的“尾款”是银行放款直接付给卖方，不需要你再掏一分钱。</div>' +
+    '<div style="height:16px"></div>' + btn('deedOk','交房，做交割检查','btn-ink');
+}
+
+/* 交房交割检查：户口 / 物业 / 水电煤，支持尾款扣押（上海惯例） */
+function screenHandover(){
+  var hold = Math.round(S.deal * 0.01 / 10000) * 10000;
+  return '<h1 class="hd" style="font-size:24px;">交房 · 交割检查</h1>' +
+    '<p class="sub">钥匙到手前还有三件事：户口迁出、物业交割、水电煤过户。</p>' +
+    '<div class="chat" style="margin-top:12px">' +
+    bubble('中介 小王','产证、放款都齐了。交房前我把交割清单过一遍，别让前任留坑。', false) +
+    '</div>' +
+    '<div class="card" style="margin-top:12px">' +
+    brow('水电煤 / 宽带 / 物业费', '待核验') +
+    brow('户口迁出（学区、落户）', S.holdback ? '未迁出 ⚠️' : '待核验') +
+    brow('钥匙 / 门禁 / 家具清单', '待移交') +
+    brow('专项维修资金', '随房移交') +
+    '</div>' +
+    '<div class="opts" style="margin-top:14px">' +
+    optBtn('hoOk','逐项核对，全部结清','水电煤物业当场过户，痛快收房。','🔑 交房') +
+    optBtn('hoHold','发现物业欠费 / 户口未迁','与卖家协商：尾款扣押 ' + fmt(hold) + ' 万，迁出结清后再付。','尾款扣押') +
+    '</div>' +
+    '<div class="ok-note"><b>上海惯例：</b>户口未迁出是交房高频纠纷（影响学区/落户）。买卖双方常约定「尾款（户口保证金）」扣押，迁出后结清，一般不超过合同价 5%。</div>';
+}
+
+function screenFinal(){
+  var h = S.house;
+  var L = S.loan;
+  var pay = S.down + S.taxes + S.netTax;   // 首付口径 = 房款首付 + 全部交易税费（含中介）+ 到手价转嫁
+  var tip = {
+    first:  '在上海，你有了自己的家。首付付得清爽，月供在计划内——这第一套，稳了。',
+    trade:  '卖一买一升级完成。记住：一年内卖房再买房的个税可以退，收好契税票去办。',
+    invest: '资产落袋。投资二套按年缴房产税约 ' + fmt(S.estateTax) + ' 万，先算清租金与增值，再谈收益。'
+  }[S.role.k];
+  var netRow = S.netTax
+    ? '<div class="card card-warm" style="margin-top:12px">' +
+      '<div style="font-size:12.5px;color:var(--rust);font-weight:500">学费：' + fmt(S.netTax) + ' 万的「到手价」</div>' +
+      '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">那一刻的「行，就按到手价来」，最后落地成实打实的 ' + fmt(S.netTax) + ' 万。下次谈价，先问一句「含税还是到手」。</div></div>'
+    : '';
+  return '<div style="text-align:center;padding-top:6px">' +
+    '<div style="font-size:40px">🎉</div>' +
+    '<h1 class="hd" style="font-size:27px;margin-top:6px">交房了</h1>' +
+    '<p class="sub" style="text-align:center">' + h.name + ' · ' + h.area + ' · ' + fmt(S.deal) + ' 万 成交 · 钥匙到手</p></div>' +
+    /* 核心：首付多少 + 一个月还多少（不展示总成本劝退数字） */
+    '<div class="card card-warm" style="margin-top:14px">' +
+    '<div style="font-size:11.5px;color:var(--rust);font-weight:500">首付落地 · 月供从容</div>' +
+    '<div class="kpi" style="margin-top:10px">' +
+    '<div class="kc"><div class="kl">首付（含全部交易税费）</div><div class="kv">' + fmt(pay) + '<small> 万</small></div></div>' +
+    '<div class="kc"><div class="kl">月供（' + S.loanYears + ' 年等额本息）</div><div class="kv">' + fmtYuan(L.monthly) + '<small> 元/月</small></div></div>' +
+    '</div></div>' +
+    '<div class="card" style="margin-top:12px">' +
+    brow('成交价（参考）', fmtY(S.deal)) +
+    brow('房款首付（' + (S.downRate*100).toFixed(0) + '% · ' + LOAN_TYPES[S.loanType].name + '）', fmtY(S.down)) +
+    brow('交易税费（契税 + 登记费 + 中介费' + (S.netTax ? ' + 到手价转嫁' : '') + '）', fmtY(S.taxes + S.netTax)) +
+    brow('贷款月供（' + loanRowLabel() + '）', fmtYuan(L.monthly) + '元/月') +
+    brow('手头余额', fmtY(S.cash), true) +
+    '</div>' + netRow +
+    '<div class="card card-sky" style="margin-top:12px"><div style="font-size:12.5px;color:var(--ash);line-height:1.7">' +
+    (S.borrowed
+      ? '你向' + (S.usedBorrow.family?'亲友':'') + (S.usedBorrow.gjj?'公积金':'') + (S.usedBorrow.credit?'信用贷':'') + '周转了 ' + fmt(S.borrowed) + ' 万，已计入首付——这笔钱记得还。' + tip
+      : tip) +
+    '</div></div>' +
+    (S.holdback
+      ? '<div class="card card-warm" style="margin-top:12px"><div style="font-size:12.5px;color:var(--rust);font-weight:500">尾款扣押 ¥' + fmt(S.holdback) + ' 万</div>' +
+        '<div style="font-size:12.5px;color:var(--ash);margin-top:4px;line-height:1.6">等卖方户口迁出 / 物业结清后支付，记得跟进，别拖成烂账。</div></div>'
+      : '') +
+    '<div class="card" style="margin-top:12px">' +
+    '<div style="font-size:12px;font-weight:500;color:var(--graphite);margin-bottom:10px">购房之旅 · 12 个节点全走完 · 第 ' + DAYS.final + ' 天</div>' +
+    '<div class="chk-wrap">' + NODES.map(function(n){
+      return '<span class="badge badge-fog">✓ ' + n.t + '</span>';
+    }).join('') + '</div></div>' +
+    '<div style="height:16px"></div>' +
+    btn('start','重新模拟','btn-ink') +
+    '<p style="font-size:11px;color:var(--graphite);margin:10px 0 0;text-align:center">模拟结果仅供参考 · 以官方口径为准</p>';
+}
+
+/* ============================================================
+   事件
+   ============================================================ */
+function nextScene(scene){
+  re(scene, renderScene(scene));
+}
+function renderScene(scene){
+  switch(scene){
+    case 'start': return screenStart();
+    case 'role': return screenRole();
+    case 'cash': return screenCash();
+    case 'select': return screenSelect();
+    case 'custom': return screenCustom();
+    case 'qa': return screenQA();
+    case 'blocked': return screenBlocked();
+    case 'nego1': return screenNego1();
+    case 'nego2': return screenNego2();
+    case 'nego3': return screenNego3();
+    case 'feeNego': return screenFeeNego();
+    case 'loanType': return screenLoanType();
+    case 'funds': return screenFunds();
+    case 'borrow': return screenBorrow();
+    case 'sign': return screenSign();
+    case 'loan': return screenLoan();
+    case 'loanChk': return screenLoanChk();
+    case 'escrow': return screenEscrow();
+    case 'transfer': return screenTransfer();
+    case 'deed': return screenDeed();
+    case 'handover': return screenHandover();
+    case 'final': return screenFinal();
+  }
+  return '';
+}
+
+function setupHouse(h){
+  if (!S.role) S.role = ROLES.first;   /* 跳转兜底：未选身份默认刚需 */
+  S.house = h;
+  S.slash = 0; S.negoCap = false; S.netDeal = false;
+  S.judge = null; S.ans = {}; S.qaProg = 0;
+  if (S.stress < 8) S.stress = 8;
+  derive();
+  nextScene('qa');  // 先核验资格
+}
+function pickHouse(id){
+  setupHouse(HOUSES.filter(function(x){ return x.id===id; })[0]);
+}
+
+/* 事件代理挂在 #phone 上：覆盖舞台与风险模态（模态挂在 #phone 内、stage 之外） */
+$('phone').addEventListener('click', function(e){
+  var el = e.target.closest('[data-act]');
+  if (!el) return;
+  var act = el.getAttribute('data-act');
+  handle(act);
+});
+$('resetBtn').addEventListener('click', resetAll);
+$('jump').addEventListener('change', function(e){ runTo(e.target.value); });
+
+function handle(act){
+  if (act === 'start')  { resetAll(); return; }
+  if (act === 'select') { nextScene('select'); return; }
+  if (act === 'role')   { nextScene('role'); return; }   /* 入口「开始模拟」 */
+
+  /* 身份角色（先选身份，再选现金，再选房） */
+  if (act.indexOf('role:') === 0){
+    S.role = ROLES[act.split(':')[1]];
+    S.gjjRate = S.role.gjjRate; S.commRate = S.role.commRate;
+    S.agentRate = 0.02;   /* 换角色重置中介费报价 */
+    toast('👤 身份：' + S.role.emoji + ' ' + S.role.name);
+    nextScene('cash'); return;
+  }
+
+  /* 可动用现金（预设档 / 自定义） */
+  if (act.indexOf('cash:') === 0){
+    var cashKey = act.split(':')[1];
+    var amount;
+    if (cashKey === 'custom'){
+      var inp = $('cashInput');
+      amount = parseFloat(inp ? inp.value : '');
+      if (!(amount > 0)){ toast('请输入大于 0 的金额'); return; }
+    } else {
+      amount = parseInt(cashKey.replace('p',''), 10);
+    }
+    S.cash = Math.round(amount) * 10000;
+    S.START_CASH = S.cash; S.cashSet = true;
+    toast('💰 可动用现金 ' + fmt(S.cash) + ' 万');
+    nextScene('select'); return;
+  }
+
+  /* 选房（预设房源 / 自定义房源） */
+  if (act === 'pick:custom'){ nextScene('custom'); return; }
+  if (act.indexOf('pick:') === 0){ pickHouse(act.split(':')[1]); return; }
+
+  /* 自定义房源确认：按用户填写造一套房子，税费/环线口径落地 */
+  if (act === 'custOk'){
+    var price = parseFloat($('custPrice').value);
+    var area  = parseFloat($('custArea').value);
+    var ring  = $('custRing').value;
+    var tax   = $('custTax').value;
+    if (!(price > 0) || !(area >= 20)){ toast('请填写合理的挂牌价与面积'); return; }
+    var holdYears = 0, unique = false, hold = undefined, type = '二手房';
+    var tagMap = {
+      'new':'新房 · 免增值税', '5u':'满五唯一', '5n':'满五不唯一',
+      '2n':'满二不唯一', '0n':'不满 2 年 · 全额增值税'
+    };
+    if (tax === 'new'){ hold = 'new'; type = '新房'; }
+    else if (tax === '5u'){ holdYears = 5; unique = true; }
+    else if (tax === '5n'){ holdYears = 5; unique = false; }
+    else if (tax === '2n'){ holdYears = 2; unique = false; }
+    else { holdYears = 0; unique = false; }
+    var custom = {
+      id:'X', emoji:'📐', name:'自定义房源', area: Math.round(area) + '㎡',
+      price: Math.round(price) * 10000, type:type, ring:ring,
+      tag: tagMap[tax], tagCls: tax==='new' ? 'badge-sky' : (tax==='5u' ? 'badge-warm' : (tax==='0n' ? 'badge-hair' : 'badge-fog')),
+      thumbCls:'thumb-b',
+      hold:hold, holdYears:holdYears, unique:unique,
+      negotiable:.05,
+      seller:'房主', sellerTag:'房东 · 按需定制',
+      intro:'按你填的口径（' + tagMap[tax] + ' · ' + (ring==='内'?'外环内':'外环外') + '）精算税费与砍价空间（默认 5%）。'
+    };
+    setupHouse(custom); return;
+  }
+
+  /* 资格问答 */
+  if (act.indexOf('qa:') === 0){
+    var p = act.split(':');
+    S.ans[p[1]] = p[2];
+    var steps = buildQA();
+    if (S.qaProg + 1 < steps.length){
+      S.qaProg++;
+      nextScene('qa');
+    } else {
+      S.judge = judgeQA();
+      if (S.judge.ok){
+        toast('✅ 随申办 · 购房资格核验通过');
+        nextScene('nego1');
+      } else {
+        nextScene('blocked');
+      }
+    }
+    return;
+  }
+  if (act === 'qaBack'){
+    if (S.qaProg > 0){ S.qaProg--; }
+    nextScene('qa');
+    return;
+  }
+  if (act === 'blockedKeep'){ nextScene('select'); return; }
+
+  /* 砍价 */
+  if (act.indexOf('n1:') === 0){
+    S.negoR1 = act.split(':')[1];
+    S.negoR2 = null;                       /* 重新进入第二轮 */
+    var o1 = NEGO_R1[S.negoR1];
+    S.stress += o1.stress;
+    S.seller = Math.max(5, Math.min(100, S.seller + o1.mood));
+    setOffer(o1.chip);                     /* 越线即刻记录，第二轮选项据此生成 */
+    nextScene('nego2'); return;
+  }
+  if (act.indexOf('n2:') === 0){
+    S.negoR2 = act.split(':')[1];
+    var o2 = findN2Option(S.negoR2);
+    if (!o2){ return; }
+    S.stress += o2.stress;
+    S.seller = Math.max(5, Math.min(100, S.seller + o2.mood));
+    setOffer(o2.chip);
+    nextScene('nego3'); return;
+  }
+  if (act === 'negoOk'){
+    toast('🤝 口头成交 ' + fmt(S.deal) + ' 万，先谈中介费');
+    nextScene('feeNego'); return;
+  }
+  /* 叫停补救：接受底价 / 换房（房东已亮明底线，买家不再有“加价”空间） */
+  if (act === 'negoAccept'){
+    S.negoCap = false; S.seller = Math.min(100, S.seller + 10);
+    toast('🤝 按底价 ' + fmt(S.deal) + ' 万成交');
+    nextScene('nego3'); return;            /* 回成交页，走「到手价」确认 */
+  }
+  if (act === 'negoQuit'){ nextScene('select'); return; }
+
+  /* —— 成交后的「到手价」暗坑选择 —— */
+  if (act === 'n3NetYes'){
+    S.netDeal = true; derive();
+    toast('🤝 到手价成交——卖方税费将转嫁给你');
+    nextScene('feeNego'); return;
+  }
+  if (act === 'n3NetAsk'){ openNetModal(); return; }
+  if (act === 'n3NetNo'){
+    S.netDeal = false; derive();
+    toast('👍 按含税价成交，卖方税费房东自担');
+    nextScene('feeNego'); return;
+  }
+  if (act === 'netYes2'){
+    closeModal();
+    S.netDeal = true; derive();
+    toast('🤝 到手价成交——卖方税费将转嫁给你');
+    nextScene('feeNego'); return;
+  }
+  if (act === 'netNo2'){
+    closeModal();
+    S.netDeal = false; derive();
+    toast('👍 按含税价成交，卖方税费房东自担');
+    nextScene('feeNego'); return;
+  }
+
+  /* 中介费协商（1%–2%，谈成 1%）→ 选贷款方式 */
+  if (act === 'fee2'){
+    S.agentRate = 0.02; derive();
+    nextScene('loanType'); return;
+  }
+  if (act === 'fee1'){
+    S.agentRate = 0.01; S.stress += 3;
+    derive();
+    toast('🤝 中介费谈成 1%：' + fmt(S.agentFee) + ' 万');
+    nextScene('loanType'); return;
+  }
+
+  /* 贷款方式选择（纯商贷 / 组合贷 / 纯公积金） */
+  if (act === 'ltOk'){ nextScene('funds'); return; }
+  if (act.indexOf('lt:') === 0){
+    S.loanType = act.split(':')[1];
+    derive();
+    toast('🏦 贷款方式：' + LOAN_TYPES[S.loanType].name + ' · 首付 ' + (S.downRate*100).toFixed(0) + '%');
+    nextScene('funds'); return;
+  }
+
+  /* 借款 */
+  if (act === 'bor:family'){
+    var gapF = S.need - S.cash;
+    if (gapF <= 0){ nextScene('borrow'); return; }
+    var addF = Math.min(300000, gapF);
+    S.cash += addF; S.borrowed += addF;
+    S.usedBorrow.family = true; S.stress += 10;
+    nextScene('borrow'); return;
+  }
+  if (act === 'bor:gjj'){
+    var gapG = S.need - S.cash;
+    if (gapG <= 0){ nextScene('borrow'); return; }
+    var addG = Math.min(200000, gapG);
+    S.cash += addG; S.borrowed += addG;
+    S.usedBorrow.gjj = true; S.stress += 15;
+    nextScene('borrow'); return;
+  }
+  if (act === 'bor:credit'){
+    openCreditModal(); return;
+  }
+  if (act === 'creditYes'){
+    closeModal();
+    var gapC = S.need - S.cash;
+    if (gapC > 0){
+      var addC = Math.min(200000, gapC);
+      S.cash += addC; S.borrowed += addC;
+    }
+    S.usedBorrow.credit = true; S.stress += 35;
+    nextScene('borrow'); return;
+  }
+  if (act === 'creditNo'){ closeModal(); return; }
+
+  if (act === 'sign'){ nextScene('sign'); return; }
+  if (act === 'borrow'){ nextScene('borrow'); return; }
+  if (act === 'signOk'){
+    S.cash -= S.deposit;
+    toast('✅ 网签备案完成 · 定金 ' + fmt(S.deposit) + ' 万已支付');
+    nextScene('loan'); return;
+  }
+  if (act.indexOf('ly:') === 0){
+    S.loanYears = parseInt(act.split(':')[1], 10);
+    iloan();
+    nextScene('loan'); return;
+  }
+  if (act === 'loanOk'){ nextScene('loanChk'); return; }
+
+  /* 贷款审批（风控）分支 */
+  if (act === 'lcOk'){
+    toast('🏦 批贷函已出 · 贷款审批通过');
+    nextScene('escrow'); return;
+  }
+  if (act === 'lcLong'){
+    S.loanYears = 30; iloan();
+    nextScene('loanChk'); return;
+  }
+  if (act === 'lcPay'){
+    var Lp = S.loan;
+    var fp = Lp.monthly / (S.deal - S.down);
+    var addP = Math.max(10000, Math.ceil((Lp.monthly - INCOME*0.5) / fp / 10000) * 10000);
+    S.down += addP;          /* 追加首付并入首付，过户前随监管一起扣 */
+    S.stress += 8;
+    iloan();
+    toast('💰 追加首付 ' + fmt(addP) + ' 万，重新送审');
+    nextScene('loanChk'); return;
+  }
+  if (act === 'lcStick'){
+    S.stress += 20;
+    toast('❌ 银行拒批：月供超收入一半');
+    nextScene('loan'); return;
+  }
+  if (act === 'lcChange'){ nextScene('select'); return; }
+
+  if (act === 'escrowOk'){
+    S.cash -= (S.down - S.deposit);   /* 定金已付，冲抵首付 */
+    toast('🔒 首付已入资金监管账户');
+    nextScene('transfer'); return;
+  }
+  if (act === 'trOk'){
+    S.cash -= S.taxes + S.netTax;   /* 到手价转嫁税费随过户一并缴纳 */
+    toast('📄 过户完成 · 一网通办出证');
+    nextScene('deed'); return;
+  }
+  if (act === 'deedOk'){
+    toast('🏦 放款完成 · 尾款已划转卖方');
+    nextScene('handover'); return;
+  }
+
+  /* 交房交割 */
+  if (act === 'hoOk'){
+    toast('🔑 交房完成，恭喜新房东');
+    nextScene('final'); return;
+  }
+  if (act === 'hoHold'){
+    S.holdback = Math.round(S.deal * 0.01 / 10000) * 10000;
+    S.stress += 6;
+    toast('🤝 尾款扣押 ' + fmt(S.holdback) + ' 万，迁出后结清');
+    nextScene('final'); return;
+  }
+
+  /* 流程条点击跳转（评审用） */
+  if (act.indexOf('step:') === 0){
+    var tk = act.split(':')[1];
+    if (SCENE_NODE[S.scene] !== tk) runTo(STEP_REP[tk]);
+    return;
+  }
+}
+
+/* 信用贷二次确认（红线） */
+function openCreditModal(){
+  var ov = document.createElement('div');
+  ov.className = 'overlay'; ov.id = 'creditOv';
+  ov.innerHTML = '<div class="sheet">' +
+    '<span class="tag">⚠️ 监管红线 · 二次确认</span>' +
+    '<h4>信贷资金禁入楼市</h4>' +
+    '<p>信用贷 / 消费贷资金流入房地产属于监管禁止行为：银行发现后可能<strong>拒批贷款、要求提前还款</strong>，并影响个人征信记录。本模拟仅用于风险教育，不构成任何建议。</p>' +
+    '<div style="height:16px"></div>' +
+    '<div class="btn-row">' + btn('creditNo','取消','btn-out') + btn('creditYes','我仍要试试（演示）','btn-rust') + '</div></div>';
+  $('phone').appendChild(ov);
+}
+/* 「到手价」解释模态：把话在签约前说透 */
+function openNetModal(){
+  var ov = document.createElement('div');
+  ov.className = 'overlay'; ov.id = 'netOv';
+  ov.innerHTML = '<div class="sheet">' +
+    '<span class="tag">⚠️ 到手价 · 先弄明白</span>' +
+    '<h4>「到手价」到底是谁到手？</h4>' +
+    '<p>成交价有两种说法：<strong>含税价</strong>（税费各自承担）和<strong>到手价</strong>（卖方净得这么多，税费全部由买方出）。<br><br>' +
+    '这套房卖方要缴：' +
+    (S.vat ? '增值税约 ' + fmt(S.vat + S.vatAdd) + ' 万（未满 2 年全额 5% + 附加）' : '') +
+    (S.vat && S.sellerTax ? '、' : '') +
+    (S.sellerTax ? '个税约 ' + fmt(S.sellerTax) + ' 万（不唯一核定 1%）' : '') +
+    '。答应「到手价」= 这笔钱落到你头上，约 <strong>' + fmt(S.vat + S.vatAdd + S.sellerTax) + ' 万</strong>，够付大半年房贷。<br><br>' +
+    '你刚才只是口头应了一句，合同还没签——现在改还来得及。</p>' +
+    '<div style="height:16px"></div>' +
+    '<div class="btn-row">' + btn('netNo2','我不接受，按含税价成交','btn-out') + btn('netYes2','还是要到手价（演示）','btn-rust') + '</div></div>';
+  $('phone').appendChild(ov);
+}
+function closeModal(){
+  var ov = $('creditOv') || $('netOv');
+  if (ov) ov.remove();
+}
+
+/* ============================================================
+   重置 & 跳转（自动走默认分支补齐前置状态）
+   ============================================================ */
+function resetAll(){
+  S.cash = S.START_CASH; S.stress = 8; S.seller = 70; S.borrowed = 0;
+  S.usedBorrow = {}; S.ans = {}; S.qaProg = 0; S.negoR1 = null; S.negoR2 = null;
+  S.judge = null; S.house = null; S.slash = 0; S.negoCap = false;
+  S.netDeal = false; S.netTax = 0; S.cashSet = false;
+  S.role = null; S.loanType = 'combo'; S.downRate = .2; S.gjjTopUp = 0;
+  S.gjjRate = .026; S.commRate = .0305;
+  S.agentRate = .02; S.agentFee = 0; S.deedTax = 0; S.estateTax = 0; S.areaNum = 0;
+  S.vat = 0; S.vatAdd = 0; S.sellerTax = 0;
+  S.holdback = 0;
+  S.loanYears = 30;
+  S.loan = {gjj:0, comm:0, monthly:0, totalInt:0};
+  closeModal();
+  nextScene('start');
+  stage.scrollTop = 0;
+}
+function runTo(target){
+  resetAll();
+  var guard = 0;
+  while (S.scene !== target && guard++ < 30){
+    var sc = S.scene;
+    switch(sc){
+      case 'start':
+        if (target === 'role'){ nextScene('role'); break; }
+        if (!S.role) handle('role:first');            /* → cash */
+        if (target === 'cash'){ nextScene('cash'); break; }
+        if (target === 'select' || target === 'custom'){ if (!S.cashSet) handle('cash:70'); else nextScene('select'); break; }
+        if (!S.cashSet) handle('cash:70'); else nextScene('select');
+        pickHouse('B');
+        break;
+      case 'role': handle('role:first'); break;
+      case 'cash': if (!S.cashSet) handle('cash:70'); else nextScene('select'); break;
+      case 'select': if (target === 'custom') nextScene('custom'); else pickHouse('B'); break;
+      case 'qa':    defaultQA(); break;                             /* 默认沪籍已婚 → 直接可购 */
+      case 'nego1': handle('n1:chat'); break;                       /* 默认先聊 */
+      case 'nego2': handle('n2:m4'); break;                         /* 默认试探 -4% */
+      case 'nego3': if (S.negoCap) handle('negoAccept'); else if (S.vat>0 || S.sellerTax>0) handle('n3NetNo'); else handle('negoOk'); break;
+      case 'feeNego': handle('fee1'); break;                        /* 默认中介费谈 1% */
+      case 'loanType': handle('lt:combo'); break;                   /* 默认组合贷 */
+      case 'funds': if (S.need > S.cash) handle('bor:family'); else handle('sign'); break;
+      case 'borrow': handle('sign'); break;
+      case 'sign': handle('signOk'); break;
+      case 'loan': handle('loanOk'); break;
+      case 'loanChk': handle('lcOk'); break;                        /* 默认 30 年可通过风控 */
+      case 'escrow': handle('escrowOk'); break;
+      case 'transfer': handle('trOk'); break;
+      case 'deed': handle('deedOk'); break;
+      case 'handover': handle('hoOk'); break;
+      default: /* final 已到目标或不可达 */ break;
+    }
+  }
+  nextScene(S.scene);
+}
+var _qaDef = null;
+function defaultQA(){
+  if (!_qaDef){
+    _qaDef = ['sh','married'].slice();
+  }
+  /* 走一遍默认答案（名下套数由身份角色决定，不再单独提问） */
+  S.ans.hukou = 'sh'; S.ans.married = 'married';
+  S.qaProg = buildQA().length;
+  S.judge = judgeQA();
+  nextScene('nego1');
+}
+
+/* 启动 */
+resetAll();
+</script>
+</body>
+</html>

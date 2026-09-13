@@ -1,0 +1,280 @@
+<view class="page">
+  <!-- HUD 顶部状态条 -->
+  <view class="hud">
+    <view class="stage-badge"><view class="sd"></view><text>{{hud.stageLabel}}</text></view>
+    <view class="sp"></view>
+    <view class="hud-item">步 <text class="num">{{hud.stepText}}</text></view>
+    <view class="hud-item">现金 <text class="num {{hud.cashLow ? 'low' : ''}}">{{hud.cashText}}</text></view>
+    <view class="hud-item">压力 <text class="moodface">{{hud.stressEmoji}}</text></view>
+  </view>
+
+  <!-- 12 节点流程条（仅展示，不可点击） -->
+  <view class="steps">
+    <view class="steps-top">
+      <view>流程 <text class="steps-pos">{{stepPos}}</text></view>
+      <view>📅 {{dayText}}</view>
+    </view>
+    <view class="steps-row">
+      <view class="stp {{item.cls}}" wx:for="{{steps}}" wx:key="index">
+        <view class="stp-dot">{{item.mark}}</view>
+        <text class="stp-label">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 砍价期卖家情绪条 -->
+  <view class="sellerbar" wx:if="{{sellerBar.show && sellerBar.name}}">
+    <text class="s-name">{{sellerBar.name}} · 情绪</text>
+    <view class="s-bar"><view class="s-fill" style="width: {{sellerBar.fill}}%"></view></view>
+    <text class="s-face">{{sellerBar.face}}</text>
+  </view>
+
+  <!-- 舞台内容（场景块有序渲染） -->
+  <scroll-view class="stage" scroll-y>
+    <view class="sc">
+      <block wx:for="{{blocks}}" wx:key="index">
+        <!-- 页眉 -->
+        <view wx:if="{{item.t === 'eyebrow'}}" class="eyebrow">{{item.text}}</view>
+
+        <view wx:elif="{{item.t === 'title'}}" class="hd {{item.big ? 'hd-big' : ''}}">
+          <text wx:if="{{item.hero}}" class="hd-hero">{{item.hero}}</text>
+          {{item.text}}
+        </view>
+
+        <view wx:elif="{{item.t === 'sub'}}" class="sub">{{item.text}}</view>
+
+        <!-- 问答进度圆点 -->
+        <view wx:elif="{{item.t === 'dots'}}" class="qdots">
+          <view class="qd {{dot.on ? 'on' : ''}}" wx:for="{{item.items}}" wx:for-item="dot" wx:key="index"></view>
+        </view>
+
+        <!-- 对话气泡 -->
+        <view wx:elif="{{item.t === 'chat'}}" class="chat">
+          <view class="bubble {{b.me ? 'me' : ''}}" wx:for="{{item.items}}" wx:for-item="b" wx:key="index">
+            <view class="ava {{b.me ? 'ava-sky' : 'ava-warm'}}">{{b.whoChar}}</view>
+            <view class="ball-wrap">
+              <view class="who">{{b.who}}</view>
+              <view class="ball">{{b.text}}</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 暖/蓝横幅卡 -->
+        <view wx:elif="{{item.t === 'banner'}}" class="card {{item.cls === 'warm' ? 'card-warm' : 'card-sky'}}">
+          <view wx:if="{{item.title}}" class="b-title {{item.large ? 'b-title-lg' : ''}}">{{item.title}}</view>
+          <view wx:if="{{item.desc}}" class="b-desc">{{item.desc}}</view>
+        </view>
+
+        <!-- 账单行卡 -->
+        <view wx:elif="{{item.t === 'rows'}}" class="card card-rows">
+          <view class="brow {{r.total ? 'total' : ''}}" wx:for="{{item.items}}" wx:for-item="r" wx:key="index">
+            <text class="k">{{r.k}}</text>
+            <text class="v num">{{r.v}}</text>
+          </view>
+        </view>
+
+        <!-- 最终账单 KPI -->
+        <view wx:elif="{{item.t === 'kpis'}}" class="kpi">
+          <view class="kc" wx:for="{{item.items}}" wx:for-item="k" wx:key="index">
+            <view class="kl">{{k.label}}</view>
+            <view class="kv">{{k.value}}<text wx:if="{{k.unit}}" class="ku">{{k.unit}}</text></view>
+          </view>
+        </view>
+
+        <!-- 砍价成交卡 -->
+        <view wx:elif="{{item.t === 'deal'}}" class="card deal-card">
+          <view class="deal-label">{{item.origText}}</view>
+          <view class="deal-price">{{item.deal}}</view>
+          <view class="deal-chips">
+            <view class="badge {{c.cls}}" wx:for="{{item.chips}}" wx:for-item="c" wx:key="index">{{c.text}}</view>
+          </view>
+        </view>
+
+        <!-- 房源卡列表（含自定义房源卡） -->
+        <view wx:elif="{{item.t === 'houses'}}" class="hlist">
+          <view class="hcard" data-act="pick:{{hh.id}}" bindtap="onAction" wx:for="{{item.items}}" wx:for-item="hh" wx:key="index">
+            <view class="hthumb {{hh.thumbCls}}">
+              <view class="hcorner">
+                <view class="badge {{hh.tagCls}}">{{hh.tag}}</view>
+              </view>
+              <text class="h-emoji">{{hh.emoji}}</text>
+            </view>
+            <view class="hbody">
+              <view class="hrow">
+                <text class="hname">{{hh.name}}</text>
+                <view wx:if="{{hh.ringTag}}" class="badge badge-hair">{{hh.ringTag}}</view>
+              </view>
+              <view class="hmeta">{{hh.meta}}</view>
+              <view class="hrow hfoot">
+                <text class="hprice">{{hh.price}}</text>
+                <text wx:if="{{hh.cut}}" class="hcut">{{hh.cut}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 选项大按钮（disabled 为已用渠道占位卡） -->
+        <view wx:elif="{{item.t === 'opts'}}" class="opts">
+          <block wx:for="{{item.items}}" wx:for-item="o" wx:key="index">
+            <view wx:if="{{!o.disabled}}" class="opt" data-act="{{o.action}}" bindtap="onAction">
+              <view class="opt-main">
+                <view class="opt-t">{{o.title}}</view>
+                <view wx:if="{{o.desc}}" class="opt-d">{{o.desc}}</view>
+              </view>
+              <view wx:if="{{o.marker}}" class="opt-m">{{o.marker}}</view>
+            </view>
+            <view wx:else class="opt-disabled">{{o.title}}</view>
+          </block>
+        </view>
+
+        <!-- 提示条 -->
+        <view wx:elif="{{item.t === 'note'}}" class="ok-note">
+          <text wx:if="{{item.bold}}" class="ok-b">{{item.bold}}</text>{{item.text}}
+        </view>
+
+        <!-- 自定义现金表单 -->
+        <view wx:elif="{{item.t === 'form-cash'}}" class="card form-card">
+          <view class="cash-row">
+            <view class="f-group">
+              <view class="f-label">或自定义金额（万元）</view>
+              <input
+                class="f-input"
+                type="number"
+                value="{{formCash}}"
+                placeholder="比如 150"
+                bindinput="onCashInput"
+              />
+            </view>
+            <view class="cash-suffix">万</view>
+            <view class="btn btn-out btn-sm" data-act="cash:custom" bindtap="onAction">就用这笔</view>
+          </view>
+        </view>
+
+        <!-- 自定义房源表单 -->
+        <view wx:elif="{{item.t === 'form-custom'}}" class="card form-card">
+          <view class="field">
+            <view class="f-label">挂牌价（万元，示例：400）</view>
+            <input class="f-input" type="number" value="{{custPrice}}" placeholder="400" data-field="custPrice" bindinput="onCustInput" />
+          </view>
+          <view class="field">
+            <view class="f-label">建筑面积（㎡，用于契税分档，≤140㎡ 税低）</view>
+            <input class="f-input" type="number" value="{{custArea}}" placeholder="90" data-field="custArea" bindinput="onCustInput" />
+          </view>
+          <view class="field">
+            <view class="f-label">环线（决定限购政策与二套首付）</view>
+            <picker class="f-picker" mode="selector" range="{{custRingOptions}}" value="{{custRingIndex}}" bindchange="onCustRingChange">
+              <view class="picker-value">{{custRingOptions[custRingIndex]}}<text class="picker-caret">▾</text></view>
+            </picker>
+          </view>
+          <view class="field">
+            <view class="f-label">税费条件（决定增值税 / 个税口径）</view>
+            <picker class="f-picker" mode="selector" range="{{custTaxOptions}}" value="{{custTaxIndex}}" bindchange="onCustTaxChange">
+              <view class="picker-value">{{custTaxOptions[custTaxIndex]}}<text class="picker-caret">▾</text></view>
+            </picker>
+          </view>
+        </view>
+
+        <!-- 贷款年限切换 -->
+        <view wx:elif="{{item.t === 'form-years'}}" class="years-bar">
+          <text class="y-label">还款年限</text>
+          <view class="btn-row years-row">
+            <view
+              class="btn {{y.active ? 'btn-ink' : 'btn-out'}} btn-years"
+              data-act="{{y.action}}"
+              bindtap="onAction"
+              wx:for="{{item.items}}"
+              wx:for-item="y"
+              wx:key="index"
+            >{{y.label}}</view>
+          </view>
+        </view>
+
+        <!-- 首付档位（最低 / 30% / 50% / 全款） -->
+        <view wx:elif="{{item.t === 'downSteps'}}" class="card ds-card">
+          <view class="ds-head"><text class="ds-title">首付档位</text><text class="ds-min">最低 {{item.min}}</text></view>
+          <view class="ds-row">
+            <view
+              class="ds-item {{s.active ? 'ds-item--on' : ''}}"
+              data-act="{{s.action}}"
+              bindtap="onAction"
+              wx:for="{{item.items}}"
+              wx:for-item="s"
+              wx:key="index"
+            >
+              <view class="ds-t">{{s.label}}</view>
+              <view class="ds-amt">{{s.amount}}</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 全宽 CTA（1~2 个） -->
+        <view wx:elif="{{item.t === 'cta'}}" class="btn-row">
+          <view class="btn {{c.cls}}" data-act="{{c.action}}" bindtap="onAction" wx:for="{{item.items}}" wx:for-item="c" wx:key="index">{{c.title}}</view>
+        </view>
+
+        <!-- 文本链接 -->
+        <view wx:elif="{{item.t === 'link'}}" class="textlink" data-act="{{item.action}}" bindtap="onAction">{{item.text}}</view>
+
+        <!-- 完成打卡清单 -->
+        <view wx:elif="{{item.t === 'check'}}" class="card chk-card">
+          <view class="chk-title">购房之旅 · 12 个节点全走完 · 第 {{dayText}}</view>
+          <view class="chk-wrap">
+            <view class="badge badge-fog" wx:for="{{item.items}}" wx:for-item="c" wx:key="index">{{c}}</view>
+          </view>
+        </view>
+
+        <!-- 电子证照 -->
+        <view wx:elif="{{item.t === 'deed'}}" class="deed">
+          <view class="deed-head">
+            <view class="logo-c">🏛️</view>
+            <view class="deed-title-wrap">
+              <view class="deed-title">不动产权证书 · 电子版</view>
+              <view class="deed-sub">沪（2026）市不动产权第 0000001 号 · 随申办可下载</view>
+            </view>
+            <view class="qrcode"></view>
+          </view>
+          <view class="deed-foot">
+            <text>{{item.name}} · {{item.area}}</text>
+            <text>共有人：本人</text>
+          </view>
+        </view>
+      </block>
+
+      <view class="safe-bottom"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部弹层：信用贷红线二次确认 -->
+  <view wx:if="{{modal.type === 'credit'}}" class="overlay" bindtap="onModalMask">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-tag">⚠️ 监管红线 · 二次确认</view>
+      <view class="sheet-title">信贷资金禁入楼市</view>
+      <view class="sheet-desc">信用贷 / 消费贷资金流入房地产属于监管禁止行为：银行发现后可能<text class="strong">拒批贷款、要求提前还款</text>，并影响个人征信记录。本模拟仅用于风险教育，不构成任何建议。</view>
+      <view class="sheet-actions">
+        <view class="btn btn-out" data-act="creditNo" bindtap="onAction">取消</view>
+        <view class="btn btn-rust" data-act="creditYes" bindtap="onAction">我仍要试试（演示）</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部弹层：「到手价」解释 -->
+  <view wx:elif="{{modal.type === 'net'}}" class="overlay" bindtap="onModalMask">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-tag">⚠️ 到手价 · 先弄明白</view>
+      <view class="sheet-title">「到手价」到底是谁到手？</view>
+      <view class="sheet-desc">
+        <text class="strong">含税价</text>（税费各自承担）和<text class="strong">到手价</text>（卖方净得这么多，税费全部由买方出）。
+      </view>
+      <view class="sheet-desc">
+        这套房卖方要缴：
+        <view wx:for="{{modal.lines}}" wx:for-item="ln" wx:key="index" class="net-line">{{ln}}</view>
+        答应「到手价」= 这笔钱落到你头上，约 <text class="strong">{{modal.total}}</text>，够付大半年房贷。
+      </view>
+      <view class="sheet-desc">你刚才只是口头应了一句，合同还没签——现在改还来得及。</view>
+      <view class="sheet-actions">
+        <view class="btn btn-out" data-act="netNo2" bindtap="onAction">我不接受，按含税价成交</view>
+        <view class="btn btn-rust" data-act="netYes2" bindtap="onAction">还是要到手价（演示）</view>
+      </view>
+    </view>
+  </view>
+</view>

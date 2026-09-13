@@ -12,6 +12,7 @@
     "pages/valuation/authorize/index",
     "pages/about/index/index",
     "pages/profile/index/index",
+    "pages/house-simulator/index/index",
     "pages/properties/list/index",
     "pages/recruit/detail/index",
     "pages/property-sheet/mine/index",

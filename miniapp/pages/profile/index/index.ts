@@ -124,6 +124,7 @@ interface PageCustom {
   onPhoneTap(): void;
   onValuationTap(): void;
   onBookingsTap(): void;
+  onHouseSimulatorTap(): void;
   onRecruitTap(): void;
   onMenuTap(e: WechatMiniprogram.BaseEvent): void;
   onPhoneModalSkip(): void;
@@ -483,6 +484,15 @@ Page<PageData, PageCustom>({
       return;
     }
     wx.navigateTo({ url: "/pages/bookings/mine/index" });
+  },
+
+  /** 购房模拟器：未登录跳登录页；已登录进入本机运行的购房流程模拟页（无后端依赖）. */
+  onHouseSimulatorTap() {
+    if (!this.data.loggedIn) {
+      this.onGoLogin();
+      return;
+    }
+    wx.navigateTo({ url: "/pages/house-simulator/index/index" });
   },
 
   /**
