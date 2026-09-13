@@ -159,3 +159,48 @@ describe("buildScene 全屏冒烟", () => {
     expect(S.loan.totalInt).toBeGreaterThan(0);
   });
 });
+
+/**
+ * 推到「贷款审批 · 风控拦截」：F 房（550 万 · 不满 2 年 · 未砍价）+ 到手价 + 组合贷 20 年，
+ * 月供 24,334 元 > 家庭月收入一半 20,000 元。cashWan = 现金屏金额（万元）；
+ * 定金在签约屏已付讫，故 loanChk 时现金 = 现金屏金额 − 定金。
+ */
+function atLoanChkRisk(cashWan: number): ReturnType<typeof createInitialState> {
+  const S = createInitialState();
+  S.role = ROLES.first;
+  S.house = HOUSES.find((h) => h.id === "F")!;
+  S.cashSet = true;
+  S.loanType = "combo";
+  S.agentRate = 0.02;
+  S.netDeal = true;
+  S.slash = 0;
+  S.loanYears = 20;
+  derive(S);
+  S.cash = cashWan * 10000 - S.deposit;
+  S.scene = "loanChk";
+  return S;
+}
+
+/** 风控拦截屏产出的可选 action. */
+function riskOpts(S: ReturnType<typeof createInitialState>): string[] {
+  return buildScene(S)
+    .filter((b) => b.t === "opts")
+    .flatMap((b) => (b.t === "opts" ? b.items.map((o) => o.action) : []));
+}
+
+describe("风控追加首付口径（到手价 · 月供超线 · 现金临界）", () => {
+  it("到手价转嫁税费（F 房 36.3 万）必须计入待付现金：现金 206 万不得放行追加首付", () => {
+    const S = atLoanChkRisk(206);
+    // 550 万 ×（增值税 5% + 附加 0.6% + 个税 1%）= 36.30 万
+    expect(S.netTax).toBe(363000);
+    expect(riskOpts(S)).not.toContain("lcPay");
+    const blocks = buildScene(S);
+    expect(blocks.some((b) => b.t === "note" && b.text.indexOf("当前现金不足") >= 0)).toBe(true);
+  });
+
+  it("追加首付放行阈值 = 需现金 + 追加额（临界 241.81 万）", () => {
+    // 待付 需现金−定金 = 135.31 万，追加额 79.00 万 → 需现金 241.81 万
+    expect(riskOpts(atLoanChkRisk(241))).not.toContain("lcPay");
+    expect(riskOpts(atLoanChkRisk(242))).toContain("lcPay");
+  });
+});

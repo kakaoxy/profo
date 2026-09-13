@@ -14,7 +14,7 @@ export interface HudData {
   stageLabel: string;
   stepText: string;
   cashText: string;
-  /** 算账/筹钱/签约/监管/过户 阶段且现金 < 需现金 时置警示态. */
+  /** 算账/筹钱/签约/监管/过户 阶段且现金 < 尚待支付的现金 时置警示态. */
   cashLow: boolean;
   stressEmoji: string;
 }
@@ -68,9 +68,20 @@ export function nodeIdx(scene: SimState["scene"]): number {
 /** 构建 HUD 数据. */
 export function buildHud(S: SimState): HudData {
   const idx = nodeIdx(S.scene);
+  /*
+   * 现金警示：拿「当前现金」比「尚待支付的现金」，而非无脑比 need。
+   * 定金在签约屏确认后扣除、首付在监管屏扣除，因此已发生扣款的屏要把已付款项从 need 里摘掉，
+   * 否则会把已付款项重复计入 → 钱够也报「现金不足」（need 是「总需现金」，非「还差多少」）。
+   */
+  const due =
+    S.scene === "escrow"
+      ? S.need - S.deposit /* 定金已付，只剩 首付尾款 + 税费 */
+      : S.scene === "transfer"
+        ? S.need - S.down /* 首付已入监管，只剩 税费 */
+        : S.need; /* funds/borrow/sign：定金未付，需全额现金 */
   const low =
     (S.scene === "funds" || S.scene === "borrow" || S.scene === "sign" || S.scene === "escrow" || S.scene === "transfer") &&
-    S.cash < S.need;
+    S.cash < due;
   return {
     stageLabel: STAGES[S.scene],
     stepText: idx + 1 + "/12",

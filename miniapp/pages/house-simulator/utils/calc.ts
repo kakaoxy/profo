@@ -4,7 +4,8 @@
  * 涵盖：金额格式化、等额本息月供、税费/首付/缺口汇总（derive）、贷款分摊（iloan）、
  * 限购问答树（buildQA/judgeQA）、多轮砍价（NEGO_R1/nego2Options/findN2Option）。
  * 全部函数只依赖入参（SimState 就地修改），不触碰 wx/系统 API，便于 vitest 单测。
- * 政策口径见 PRD §6（2026 上海），与 HiFi 原型 docs/design/购房模拟器-hifi.html 逐条对齐。
+ * 政策口径见 PRD §6（2026 上海）。HiFi 原型 docs/design/购房模拟器-hifi.html 已于 2026-09-13
+ * 冻结为历史存档（项目实现已领先），**不再作为对齐依据**；口径以本目录代码为唯一真源。
  *
  * ⚠️ 单文件 >500 行说明：本模块承载同一策略域（税费/贷款/限购/砍价）的全部纯计算
  * 函数，聚拢便于按 PRD 政策表逐条对照与单测；数据配置已拆入 constants.ts，场景视图
@@ -116,7 +117,7 @@ export function derive(S: SimState): void {
   } else {
     S.gjjTopUp = 0;
   }
-  S.need = round2(S.down + S.taxes + S.netTax);
+  recalcNeed(S);
   S.gjjRate = S.role!.gjjRate;
   S.commRate = S.role!.commRate;
   iloan(S);
@@ -125,6 +126,16 @@ export function derive(S: SimState): void {
 /** 金额取整到分（避免浮点误差）. */
 function round2(v: number): number {
   return Math.round(v * 100) / 100;
+}
+
+/**
+ * 重算「需要现金」= 房款首付 + 买方一次性税费 + 到手价转嫁的卖方税费.
+ * derive 与风控「追加首付」(lcPay) 共用同一口径：凡是改动 S.down / S.taxes / S.netTax
+ * 的动作都必须调用本函数，否则 need 会与后续实扣（监管扣 down−deposit、过户扣 taxes+netTax）
+ * 及 HUD 现金警示漂移。
+ */
+export function recalcNeed(S: SimState): void {
+  S.need = round2(S.down + S.taxes + S.netTax);
 }
 
 /**

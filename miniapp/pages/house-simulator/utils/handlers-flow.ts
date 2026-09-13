@@ -7,7 +7,7 @@
  * （toast/nextScene/弹层/风险确认），与前置阶段保持同一套 action 语义。
  */
 
-import { derive, findN2Option, fmt, iloan, NEGO_R1, setOffer } from "./calc";
+import { derive, findN2Option, fmt, iloan, NEGO_R1, recalcNeed, setOffer } from "./calc";
 import { downRateFor, INCOME, LOAN_TYPES, SimState } from "./constants";
 import type { LoanTypeKey } from "./constants";
 import type { HandlerCtx } from "./handlers";
@@ -277,6 +277,7 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
     const addP = Math.max(10000, Math.ceil((Lp.monthly - INCOME * 0.5) / fp / 10000) * 10000);
     // 追加首付按整万元向上补齐（银行风控惯例），非金额精度损失
     S.down += addP; /* 追加首付并入首付，过户前随监管一起扣 */
+    recalcNeed(S); /* 首付已变，需现金必须同口径重算（HUD 现金警示据此判定） */
     S.stress += 8;
     iloan(S);
     toast("💰 追加首付 " + fmt(addP) + " 万，重新送审");

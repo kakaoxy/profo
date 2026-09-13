@@ -350,3 +350,35 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
     expect(S.scene).toBe("final");
   });
 });
+
+describe("流程阶段：风控追加首付（lcPay）", () => {
+  /**
+   * 走完整流程到「贷款审批 · 风控拦截」：F 房（550 万 · 不满 2 年）砍价 5% → 522.5 万 + 到手价 +
+   * 组合贷 20 年，月供 23,108 元 > 收入一半 20,000 元。cashWan = 现金屏金额（万元）。
+   */
+  function atLoanChkRisk(cashWan: string): { p: FakePage; S: SimState } {
+    const p = page();
+    p.data.formCash = cashWan;
+    run(p, "role:first", "cash:custom", "pick:F", "qa:non-sh", "qa:permit:no", "qa:years:m1-3",
+      "n1:chat", "n2:m5", "n3NetYes", "taxCheck", "taxRiskOk",
+      "fee2", "lt:combo", "ltOk", "sign", "signOk", "breachOk", "signNetOk", "breachOk", "ly:20", "loanOk");
+    return { p, S: p.S };
+  }
+
+  it("lcPay 追加首付后重算需现金，走完监管/过户现金不为负", () => {
+    const { p, S } = atLoanChkRisk("220");
+    expect(S.scene).toBe("loanChk");
+    expect(S.netTax).toBe(344850); // 到手价 · 522.5 万 × 6.6%
+    const needBefore = S.need; // 154.67 万（首付 104.50 万 + 税费 15.68 万 + 转嫁 34.49 万）
+    run(p, "lcPay");
+    expect(S.down).toBe(1615000); // 104.50 万 + 风控要求追加 57 万
+    expect(S.need).toBeCloseTo(needBefore + 570000); // 需现金随之抬到 211.67 万
+    expect(S.need).toBeCloseTo(S.down + S.taxes + S.netTax); // 与 derive 同口径
+    run(p, "escrowOk");
+    expect(S.cash).toBeGreaterThanOrEqual(0);
+    run(p, "trOk");
+    expect(S.scene).toBe("deed");
+    expect(S.cash).toBeGreaterThanOrEqual(0);
+    expect(S.cash).toBeCloseTo(2200000 - (S.down + S.taxes + S.netTax));
+  });
+});

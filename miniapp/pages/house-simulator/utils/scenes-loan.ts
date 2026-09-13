@@ -135,7 +135,10 @@ export function sceneLoanChk(S: SimState): SceneBlock[] {
   const needPay = Math.max(10000, Math.ceil((L.monthly - INCOME * 0.5) / f / 10000) * 10000);
   // 风控要求补充的首付按整万元向上计（银行惯例），非金额精度损失
   const yW = fmt(needPay);
-  const avail = S.cash - (S.down - S.deposit) - S.taxes;
+  /* 追加首付可行性：定金已在签约屏付讫，此后尚待支付的现金 = 需现金 − 已付定金
+     （首付尾款 + 买方税费 + 到手价转嫁的卖方税费），与实际扣款口径一致
+     （escrowOk 扣 down−deposit、trOk 扣 taxes+netTax）；漏掉 netTax 会低估待付额、放行付不起的追加首付。 */
+  const avail = S.cash - (S.need - S.deposit);
   const opts: OptItem[] = [];
   if (S.loanYears < 30) {
     opts.push({ action: "lcLong", title: "拉长还款到 30 年", desc: "月供立刻降档，但总利息更多。", marker: "→ 30年" });
