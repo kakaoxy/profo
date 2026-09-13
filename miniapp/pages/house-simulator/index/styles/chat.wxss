@@ -1,0 +1,60 @@
+/* 购房模拟器 · 对话气泡 */
+/* ===== 对话气泡 ===== */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-top: 28rpx;
+}
+.bubble {
+  display: flex;
+  gap: 18rpx;
+  max-width: 92%;
+}
+.bubble.me {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.ava {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.ava-warm {
+  background: var(--apricot-wash);
+}
+.ava-sky {
+  background: var(--sky-wash);
+}
+.ball-wrap {
+  min-width: 0;
+}
+.who {
+  font-size: 22rpx;
+  color: var(--graphite);
+  margin-bottom: 6rpx;
+}
+.ball {
+  background: var(--pure-white);
+  border-radius: 32rpx;
+  border-bottom-left-radius: 12rpx;
+  padding: 22rpx 28rpx;
+  box-shadow: var(--shadow-sm);
+  font-size: 28rpx;
+  color: var(--ink);
+  line-height: 1.65;
+  white-space: pre-line;
+}
+.bubble.me .ball {
+  background: var(--ink);
+  color: #ffffff;
+  border-radius: 32rpx;
+  border-bottom-right-radius: 12rpx;
+}

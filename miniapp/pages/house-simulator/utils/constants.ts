@@ -86,6 +86,22 @@ export interface Judge {
   reason: string;
 }
 
+/**
+ * 风险确认记录（交易凭证的一部分，本地持久化，见 utils/riskLog.ts）.
+ * 记录用户对「居间签约·定金刚则 / 网签·违约金20% / 到手价税费风险」提示的确认操作
+ * （类型 + 时间戳 + 摘要），确保可追溯.
+ */
+export interface RiskRecord {
+  /** 记录类型：居间签约定金刚则确认 / 网签违约金确认 / 到手价税费风险确认. */
+  type: "deposit" | "liquidated" | "netTax";
+  /** 标题（如 违约风险确认）. */
+  title: string;
+  /** 确认时间（YYYY-MM-DD HH:mm:ss，本地时钟）. */
+  ts: string;
+  /** 摘要（提示框核心内容与金额口径）. */
+  detail: string;
+}
+
 /** 贷款计算结果（等额本息）. */
 export interface LoanState {
   /** 公积金贷款额（元）. */
@@ -171,6 +187,8 @@ export interface SimState {
   loan: LoanState;
   /** 尾款扣押（元，交房交割用）. */
   holdback: number;
+  /** 风险确认记录（交易凭证，本地持久化镜像，用于 final 屏展示）. */
+  riskLog: RiskRecord[];
 }
 
 /** 初始手头现金（元，可动用现金预设档之一 70 万）. */
@@ -425,5 +443,6 @@ export function createInitialState(): SimState {
     loanYears: 30,
     loan: { gjj: 0, comm: 0, monthly: 0, totalInt: 0 },
     holdback: 0,
+    riskLog: [],
   };
 }

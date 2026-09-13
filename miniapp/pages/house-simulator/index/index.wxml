@@ -238,6 +238,18 @@
             <text>共有人：本人</text>
           </view>
         </view>
+
+        <!-- 交易凭证 · 风险确认记录 -->
+        <view wx:elif="{{item.t === 'riskLog'}}" class="card risk-card">
+          <view class="risk-card-title">📋 交易凭证 · 风险确认记录</view>
+          <view class="risk-entry" wx:for="{{item.items}}" wx:for-item="rk" wx:key="index">
+            <view class="rk-head">
+              <view class="badge badge-warm">{{rk.tag}}</view>
+              <text class="rk-ts">{{rk.ts}}</text>
+            </view>
+            <view class="rk-detail">{{rk.detail}}</view>
+          </view>
+        </view>
       </block>
 
       <view class="safe-bottom"></view>
@@ -274,6 +286,65 @@
       <view class="sheet-actions">
         <view class="btn btn-out" data-act="netNo2" bindtap="onAction">我不接受，按含税价成交</view>
         <view class="btn btn-rust" data-act="netYes2" bindtap="onAction">还是要到手价（演示）</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部弹层：签约风险强制确认（居间协议·定金刚则 / 网签·违约金 20%，不可关闭） -->
+  <view wx:if="{{modal.type === 'breach'}}" class="overlay">
+    <view class="sheet risk-sheet">
+      <!-- 阶段一：居间协议签署前 · 定金刚则 -->
+      <block wx:if="{{modal.stage === 'deposit'}}">
+        <view class="sheet-tag tag-red">🚨 违约风险 · 签署前强制确认</view>
+        <view class="sheet-title">签居间协议前 · 违约定金不退</view>
+        <view class="sheet-desc">居间协议一签、定金 <text class="strong risk-num">{{modal.deposit}}</text> 万即付。一旦你单方违约（如反悔不买）：</view>
+        <view class="sheet-li"><text class="risk-b">① 定金罚则：</text>已付定金 <text class="strong risk-num">{{modal.deposit}}</text> 万<text class="strong risk-num">不予返还</text>；卖方违约，则双倍返还（{{modal.deposit}} 万×2）。</view>
+        <view class="sheet-li"><text class="risk-b">② 网签后更重：</text>若网签后违约，还需按合同总价 20% 赔付违约金——这笔定金只是第一步。</view>
+        <view class="sheet-li"><text class="risk-b">③ 法律后果：</text>可能被诉至法院，承担诉讼费、律师费，影响个人征信。</view>
+        <view class="risk-alert">⚠️ 定金不是押金，是合同约束。是否确认签署居间协议并支付定金？</view>
+        <view class="sheet-actions">
+          <view class="btn btn-out" data-act="signCancel" bindtap="onAction">我再想想</view>
+          <view class="btn btn-rust" data-act="breachOk" bindtap="onAction">我已了解定金违约后果，确认签约</view>
+        </view>
+      </block>
+      <!-- 阶段二：网签前 · 违约金 20% -->
+      <block wx:if="{{modal.stage === 'net'}}">
+        <view class="sheet-tag tag-red">🚨 违约风险 · 网签前强制确认</view>
+        <view class="sheet-title">网签生效后 · 违约赔付房价 20%</view>
+        <view class="sheet-desc">《上海市房地产买卖合同》网签备案即生效。超过约定节点（付款 / 过户 / 放款）未履约，买方违约需承担：</view>
+        <view class="sheet-li"><text class="risk-b">① 违约金：</text>按合同总价 <text class="strong risk-num">20%</text> 赔付，约 <text class="strong risk-num">{{modal.penalty}}</text> 万。</view>
+        <view class="sheet-li"><text class="risk-b">② 定金罚则：</text>已付定金 <text class="strong risk-num">{{modal.deposit}}</text> 万仍面临没收风险；与违约金不重复计算，守约方可就高主张。</view>
+        <view class="sheet-li"><text class="risk-b">③ 法律后果：</text>守约方可要求继续履行或解除合同并索赔；可能被列入失信被执行人名单、影响个人征信。</view>
+        <view class="risk-alert">⚠️ 网签生效后反悔就是真违约。是否确认完成网签备案？</view>
+        <view class="sheet-actions">
+          <view class="btn btn-out" data-act="signCancel" bindtap="onAction">我再想想</view>
+          <view class="btn btn-rust" data-act="breachOk" bindtap="onAction">我已了解违约金后果，确认网签</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 底部弹层：「到手价」税费风险确认（强制勾选 + 确认，不可关闭） -->
+  <view wx:if="{{modal.type === 'taxRisk'}}" class="overlay">
+    <view class="sheet risk-sheet">
+      <view class="sheet-tag tag-red">🚨 税费风险 · 强制确认</view>
+      <view class="sheet-title">「到手价」把这些税费转嫁给了你</view>
+      <view class="sheet-desc">你已同意按「到手价」成交——以下卖方税费（原应由房东承担）将转嫁给你额外承担，并已计入首付现金需求：</view>
+      <view class="tax-item" wx:for="{{modal.taxItems}}" wx:for-item="ti" wx:key="index">
+        <view class="tax-head">
+          <text class="tax-name">{{ti.name}}</text>
+          <text class="tax-amt">约 {{ti.amount}}</text>
+        </view>
+        <view class="tax-std">{{ti.std}}</view>
+      </view>
+      <view class="tax-total">合计转嫁税费：<text class="strong risk-num">约 {{modal.total}} 万</text></view>
+      <view class="risk-alert">⚠️ 这笔钱若当时按「含税价」谈本不用你出；合同一旦写明「到手价」，网签后反悔即属违约。请逐一核对以上税费后确认。</view>
+      <view class="risk-check {{modal.checked ? 'on' : ''}}" data-act="taxCheck" bindtap="onAction">
+        <view class="check-box">{{modal.checked ? '✓' : ''}}</view>
+        <view class="check-text">我已阅读并清楚：上述税费将由我额外承担</view>
+      </view>
+      <view class="sheet-actions">
+        <view class="btn {{modal.checked ? 'btn-rust' : 'btn-disabled'}}" data-act="taxRiskOk" bindtap="onAction">我已了解并确认承担上述风险</view>
       </view>
     </view>
   </view>

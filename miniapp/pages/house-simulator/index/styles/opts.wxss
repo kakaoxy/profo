@@ -1,0 +1,74 @@
+/* 购房模拟器 · 选项大按钮 / 提示条 */
+/* ===== 选项大按钮 ===== */
+.opts {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 32rpx;
+}
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  width: 100%;
+  text-align: left;
+  box-sizing: border-box;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  padding: 26rpx 32rpx;
+  min-height: 96rpx;
+}
+.opt:active {
+  border-color: var(--dove);
+  box-shadow: var(--shadow-sm);
+}
+.opt-main {
+  flex: 1;
+  min-width: 0;
+}
+.opt-t {
+  font-size: 29rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.opt-d {
+  font-size: 25rpx;
+  color: var(--graphite);
+  margin-top: 4rpx;
+  line-height: 1.55;
+}
+.opt-m {
+  flex: none;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--rust);
+  font-variant-numeric: tabular-nums;
+}
+.opt-disabled {
+  padding: 24rpx 32rpx;
+  border-radius: 32rpx;
+  background: var(--fog);
+  font-size: 25rpx;
+  color: var(--graphite);
+}
+
+/* ===== 提示条 ===== */
+.ok-note {
+  display: flex;
+  gap: 12rpx;
+  align-items: flex-start;
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--ash);
+  background: var(--fog);
+  border-radius: 28rpx;
+  padding: 20rpx 28rpx;
+  margin-top: 24rpx;
+}
+.ok-b {
+  color: var(--ink);
+  font-weight: 500;
+  flex: none;
+}

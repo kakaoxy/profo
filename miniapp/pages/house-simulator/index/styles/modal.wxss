@@ -1,0 +1,202 @@
+/* 购房模拟器 · 底部弹层（普通弹层 / 风险强制确认 / 税费分项明细 / 勾选确认） */
+/* ===== 底部弹层 ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 25, 28, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 20;
+  padding: 32rpx;
+  animation: fadein 0.2s ease;
+}
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.sheet {
+  width: 100%;
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  padding: 40rpx 40rpx 36rpx;
+  animation: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes rise {
+  from {
+    transform: translateY(80rpx);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.sheet-tag {
+  display: inline-flex;
+  gap: 12rpx;
+  align-items: center;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--rust);
+}
+.sheet-title {
+  margin: 16rpx 0 10rpx;
+  font-size: 34rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.sheet-desc {
+  font-size: 27rpx;
+  color: var(--ash);
+  line-height: 1.7;
+  margin-bottom: 14rpx;
+}
+.sheet-desc:last-of-type {
+  margin-bottom: 0;
+}
+.strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+.net-line {
+  padding: 4rpx 0 4rpx 24rpx;
+  color: var(--rust);
+  font-weight: 500;
+}
+.sheet-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 32rpx;
+}
+.sheet-actions .btn {
+  flex: 1;
+}
+
+/* ===== 风险弹层（红色警示 · 强制确认） ===== */
+.risk-sheet {
+  border: 4rpx solid var(--rust);
+}
+.tag-red {
+  color: var(--rust);
+  font-weight: 600;
+}
+.sheet-li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6rpx;
+  font-size: 27rpx;
+  line-height: 1.7;
+  color: var(--ash);
+  background: var(--apricot-wash);
+  border-left: 8rpx solid var(--rust);
+  border-radius: 16rpx;
+  padding: 18rpx 22rpx;
+  margin-bottom: 14rpx;
+}
+.risk-b {
+  color: var(--ink);
+  font-weight: 600;
+  flex: none;
+}
+.risk-num {
+  color: var(--rust);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.risk-alert {
+  margin-top: 16rpx;
+  font-size: 25rpx;
+  font-weight: 500;
+  color: var(--rust);
+  background: var(--apricot-wash);
+  border: 2rpx solid #e8b79b;
+  border-radius: 20rpx;
+  padding: 16rpx 20rpx;
+  line-height: 1.6;
+}
+
+/* ===== 税费风险确认 · 分项明细 ===== */
+.tax-item {
+  background: var(--fog);
+  border-radius: 20rpx;
+  padding: 18rpx 22rpx;
+  margin-bottom: 12rpx;
+}
+.tax-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.tax-name {
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.tax-amt {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: var(--rust);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tax-std {
+  margin-top: 6rpx;
+  font-size: 23rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+}
+.tax-total {
+  margin-top: 10rpx;
+  font-size: 29rpx;
+  color: var(--ink);
+}
+
+/* ===== 税费风险确认 · 勾选与确认 ===== */
+.risk-check {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 18rpx;
+  padding: 16rpx 20rpx;
+  border: 2rpx solid var(--dove);
+  border-radius: 20rpx;
+}
+.risk-check:active {
+  border-color: var(--rust);
+}
+.risk-check.on {
+  background: var(--apricot-wash);
+  border-color: var(--rust);
+}
+.check-box {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid var(--graphite);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  color: #ffffff;
+}
+.risk-check.on .check-box {
+  background: var(--rust);
+  border-color: var(--rust);
+}
+.check-text {
+  flex: 1;
+  font-size: 25rpx;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.btn-disabled {
+  background: var(--fog);
+  color: var(--dove);
+}

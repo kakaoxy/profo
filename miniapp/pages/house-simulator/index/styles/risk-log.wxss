@@ -1,0 +1,36 @@
+/* 购房模拟器 · 交易凭证 · 风险确认记录（final 屏） */
+.risk-card {
+  padding: 28rpx 32rpx;
+}
+.risk-card-title {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--graphite);
+  margin-bottom: 18rpx;
+}
+.risk-entry {
+  background: var(--fog);
+  border-radius: 24rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 16rpx;
+}
+.risk-entry:last-child {
+  margin-bottom: 0;
+}
+.rk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.rk-ts {
+  font-size: 21rpx;
+  color: var(--graphite);
+  font-variant-numeric: tabular-nums;
+}
+.rk-detail {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--ash);
+  line-height: 1.6;
+}
