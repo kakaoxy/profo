@@ -228,6 +228,16 @@ export const HOUSES: House[] = [
   },
 ];
 
+/**
+ * 自定义房源 · 环线 picker 配置（显示文案与环线口径必须同序一一对应）.
+ * picker 的 `range` 只吃文案数组、回传的是**下标**，因此不能再拿文案去比 "外"
+ *（否则「外环外」会被静默当成「外环内」，误判限购资格与二套首付）。
+ */
+export const CUST_RING_OPTIONS: string[] = ["外环内", "外环外"];
+
+/** 环线口径值（与 CUST_RING_OPTIONS 同序）：下标 1 = 外环外. */
+export const CUST_RING_VALUES: House["ring"][] = ["内", "外"];
+
 /** 身份角色（先选身份，再选房）：决定贷款利率 / 名下套数 / 房产税口径；首付比例由「身份 × 房源环线 × 贷款方式」共同决定. */
 export const ROLES: Record<RoleKey, Role> = {
   first: {

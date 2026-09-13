@@ -26,6 +26,8 @@ import {
 } from "../utils/calc";
 import {
   createInitialState,
+  CUST_RING_OPTIONS,
+  CUST_RING_VALUES,
   DAYS,
   downRateFor,
   HOUSES,
@@ -87,6 +89,8 @@ interface PageData {
   custPrice: string;
   custArea: string;
   custRingOptions: string[];
+  /** 环线口径值（与 custRingOptions 同序），picker 回传下标后据此取值. */
+  custRingValues: House["ring"][];
   custRingIndex: number;
   custTaxOptions: string[];
   custTaxValues: string[];
@@ -176,7 +180,8 @@ Page<PageData, PageCustom>({
     formCash: "",
     custPrice: "",
     custArea: "",
-    custRingOptions: ["外环内", "外环外"],
+    custRingOptions: CUST_RING_OPTIONS,
+    custRingValues: CUST_RING_VALUES,
     custRingIndex: 0,
     custTaxOptions: [
       "新房（免增值税 / 无卖方个税）",
@@ -320,7 +325,7 @@ Page<PageData, PageCustom>({
     if (action === "custOk") {
       const price = parseFloat(this.data.custPrice);
       const area = parseFloat(this.data.custArea);
-      const ring = (this.data.custRingOptions[this.data.custRingIndex] ?? "外环内") === "外" ? "外" : "内";
+      const ring = this.data.custRingValues[this.data.custRingIndex] ?? "内";
       const tax = this.data.custTaxValues[this.data.custTaxIndex] ?? "5u";
       if (!(price > 0) || !(area >= 20)) {
         toast("请填写合理的挂牌价与面积");

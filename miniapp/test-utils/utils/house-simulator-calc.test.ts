@@ -18,6 +18,8 @@ import {
 } from "../../pages/house-simulator/utils/calc";
 import {
   createInitialState,
+  CUST_RING_OPTIONS,
+  CUST_RING_VALUES,
   downRateFor,
   HOUSES,
   ROLES,
@@ -71,6 +73,24 @@ describe("首付比例 downRateFor", () => {
     expect(downRateFor("invest", "内", "combo")).toBe(0.25);
     expect(downRateFor("invest", "外", "comm")).toBe(0.15);
     expect(downRateFor("invest", "外", "combo")).toBe(0.2);
+  });
+});
+
+describe("自定义房源环线 picker（下标 → 环线口径）", () => {
+  /* 回归：picker 的 range 只吃文案、回传下标；曾用文案与 "外" 比较，导致
+     「外环外」被静默当成「外环内」（首付按 25% 多算、非沪籍满 1 年误判限购） */
+  it("选项与取值同序一一对应：下标 1 = 外环外", () => {
+    expect(CUST_RING_OPTIONS.length).toBe(CUST_RING_VALUES.length);
+    expect(CUST_RING_OPTIONS[CUST_RING_VALUES.indexOf("外")]).toBe("外环外");
+    expect(CUST_RING_OPTIONS[CUST_RING_VALUES.indexOf("内")]).toBe("外环内");
+  });
+
+  it("外环外 + 非沪籍社保满 1 年 → 可购（若被当作外环内则误判限购）", () => {
+    const S = createInitialState();
+    S.role = ROLES.trade; // owned 1
+    S.house = { ...HOUSES[0], ring: "外" };
+    S.ans = { hukou: "non-sh", permit: "no", years: "m1-3" };
+    expect(judgeQA(S).ok).toBe(true);
   });
 });
 
