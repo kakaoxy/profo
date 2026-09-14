@@ -241,6 +241,45 @@
   color: var(--dove);
 }
 
+/* ===== 居间协议核对清单（签署前逐项勾选，全部核对后才可确认） ===== */
+.agreement-sheet {
+  padding-bottom: 36rpx;
+}
+.agr-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  margin-top: 14rpx;
+  padding: 16rpx 20rpx;
+  border: 2rpx solid var(--dove);
+  border-radius: 20rpx;
+}
+.agr-item:active {
+  border-color: var(--rust);
+}
+.agr-item.on {
+  background: var(--apricot-wash);
+  border-color: var(--rust);
+}
+.agr-item .check-box {
+  margin-top: 2rpx;
+}
+.agr-body {
+  flex: 1;
+  min-width: 0;
+}
+.agr-title {
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.agr-tip {
+  margin-top: 4rpx;
+  font-size: 23rpx;
+  color: var(--graphite);
+  line-height: 1.55;
+}
+
 /* ===== 模拟日历 · 时间快进 ===== */
 .cal-sheet {
   padding-bottom: 40rpx;

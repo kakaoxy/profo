@@ -10,7 +10,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createInitialState, HOUSES, ROLES, SimState } from "../../pages/house-simulator/utils/constants";
 import { derive, nego2Options } from "../../pages/house-simulator/utils/calc";
 import { handleAction, HandlerCtx } from "../../pages/house-simulator/utils/handlers";
-import { emptyModal, netModal, payModal, taxRiskModal } from "../../pages/house-simulator/utils/render";
+import { emptyModal, netModal, payModal, taxRiskModal, agreementModal } from "../../pages/house-simulator/utils/render";
 
 /* wx API 存根（handlers 内 toast 使用）. */
 beforeAll(() => {
@@ -38,18 +38,19 @@ class FakePage {
 
   constructor(public S: SimState) {}
 
-  private has(k: string): boolean {
-    return k in this.data && this.data[k] !== undefined;
-  }
-
-  /** setData 支持 "modal.checked" 点路径. */
+  /** setData 支持 "modal.checked"、"modal.agreement.all" 等点路径（含多级）. */
   setData(patch: Record<string, unknown>): void {
     for (const k of Object.keys(patch)) {
       if (k.indexOf(".") > 0) {
-        const [a, b] = k.split(".");
-        if (this.has(a)) {
-          this.data[a][b] = patch[k];
+        const segs = k.split(".");
+        let cur: Record<string, any> = this.data;
+        for (let i = 0; i < segs.length - 1; i++) {
+          if (cur[segs[i]] === undefined) {
+            cur[segs[i]] = {};
+          }
+          cur = cur[segs[i]];
         }
+        cur[segs[segs.length - 1]] = patch[k];
       } else {
         this.data[k] = patch[k];
       }
@@ -84,6 +85,12 @@ class FakePage {
   openTaxModal(): void {
     this.setData({ modal: taxRiskModal(this.S) });
     this.calls.push("modal:taxRisk");
+  }
+
+  /** 镜像 index.ts openAgreementModal：居间协议核对清单（6 处逐项勾选）. */
+  openAgreementModal(): void {
+    this.setData({ modal: agreementModal() });
+    this.calls.push("modal:agreement");
   }
 
   /** 镜像 index.ts openPayModal：付款确认弹层，确认（payOk）后才真实扣款. */
@@ -133,6 +140,13 @@ function run(p: FakePage, ...acts: string[]): void {
     handleAction(p as unknown as HandlerCtx, p.S, a);
   }
 }
+
+/** 全量核对居间协议清单并确认签署（signOk → 逐项勾选 → 确认 → 进入付款确认，不含 payOk）. */
+const AGREE_TO_PAY = [
+  "signOk",
+  "agrCheck:0", "agrCheck:1", "agrCheck:2", "agrCheck:3", "agrCheck:4", "agrCheck:5",
+  "agrOk",
+];
 
 describe("前置阶段：身份 / 现金 / 选房 / 资格问答", () => {
   it("role:first → 进入现金屏，角色落定且中介费率重置 2%", () => {
@@ -314,13 +328,30 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
     expect(S.scene).toBe("borrow");
   });
 
-  it("签约定金：signOk 直接进付款确认（含违约风险警示，不扣款）→ payOk 才扣定金进网签 → 网签确认记录违约金后进贷款", () => {
+  it("签约定金：signOk 先弹协议核对清单（6 处逐项勾选）→ 全部核对才进付款确认 → payOk 才扣定金进网签 → 网签确认记录违约金后进贷款", () => {
     const { p, S } = atFundsShort();
     run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign");
     expect(S.cash - 0 >= S.need).toBe(true); // 三条渠道补足后无缺口
     expect(S.scene).toBe("sign");
     const cash0 = S.cash;
+    // signOk 先进居间协议核对清单，不是直接进付款确认
     run(p, "signOk");
+    expect(p.calls).toContain("modal:agreement");
+    expect(p.data.modal.type).toBe("agreement");
+    expect(p.data.modal.agreement!.items).toHaveLength(6);
+    expect(p.data.modal.agreement!.all).toBe(false);
+    // 未全部核对时 agrOk 被拦截：不进入付款确认、不扣款、不离开签约屏
+    run(p, "agrCheck:0");
+    expect(p.data.modal.agreement!.checked[0]).toBe(true);
+    expect(p.data.modal.agreement!.all).toBe(false);
+    run(p, "agrOk");
+    expect(p.data.modal.type).toBe("agreement");
+    expect(S.cash).toBe(cash0);
+    expect(S.scene).toBe("sign");
+    // 逐一核对剩余条款 → 全部核对完成 → agrOk 才进付款确认（deposit，含违约风险警示）
+    run(p, "agrCheck:1", "agrCheck:2", "agrCheck:3", "agrCheck:4", "agrCheck:5");
+    expect(p.data.modal.agreement!.all).toBe(true);
+    run(p, "agrOk");
     expect(p.calls).toContain("modal:pay");
     expect(p.data.modal.pay!.kind).toBe("deposit");
     expect(p.data.modal.pay!.warn).toBeTruthy(); // 违约风险并入付款确认醒目警示
@@ -341,7 +372,7 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
 
   it("定金付款确认可取消：payCancel 关闭弹层且不扣款", () => {
     const { p, S } = atFundsShort();
-    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign", "signOk");
+    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign", ...AGREE_TO_PAY);
     const cash0 = S.cash;
     expect(p.data.modal.pay!.kind).toBe("deposit");
     run(p, "payCancel");
@@ -353,9 +384,9 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
 
   it("贷款审批通过 → 监管扣首付 → 过户扣税费 → 领证交房 → 扣押分支", () => {
     const { p, S } = atFundsShort();
-    // 补足缺口并完成签约（付款确认扣定金）/网签/送审
+    // 补足缺口并完成签约（核对清单 + 付款确认扣定金）/网签/送审
     run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign",
-      "signOk", "payOk", "signNetOk", "loanOk", "lcOk");
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "loanOk", "lcOk");
     expect(S.scene).toBe("escrow");
     const cash0 = S.cash;
     // 付款确认：escrowOk 仅弹层，payOk 确认后冲抵定金扣首付尾款，且弹层关闭
@@ -382,7 +413,7 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
 
   it("时间快进仅交易流程展示：前期无快进；申贷 → cal:loanChk / 缴税 → cal:deed / 领证 → cal:handover", () => {
     const { p } = atFundsShort();
-    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign", "signOk", "payOk", "signNetOk", "loanOk", "lcOk");
+    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign", ...AGREE_TO_PAY, "payOk", "signNetOk", "loanOk", "lcOk");
     expect(p.calls).not.toContain("cal:select"); // 前期（现金/选房/资格/砍价/筹钱）均不再弹时间快进
     expect(p.calls).not.toContain("cal:nego1");
     const c0 = p.calls.indexOf("cal:loanChk"); // 送银行审批：贷款审批 7 天
@@ -412,7 +443,7 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     p.data.formCash = cashWan;
     run(p, "role:first", "cash:custom", "pick:F", "qa:non-sh", "qa:permit:no", "qa:years:m1-3",
       "n1:chat", "n2:m5", "n3NetYes", "taxCheck", "taxRiskOk",
-      "fee2", "lt:combo", "ltOk", "sign", "signOk", "payOk", "signNetOk", "ly:20", "loanOk");
+      "fee2", "lt:combo", "ltOk", "sign", ...AGREE_TO_PAY, "payOk", "signNetOk", "ly:20", "loanOk");
     return { p, S: p.S };
   }
 

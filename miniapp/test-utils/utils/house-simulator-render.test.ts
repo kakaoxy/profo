@@ -8,7 +8,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createInitialState, HOUSES, ROLES, SimState } from "../../pages/house-simulator/utils/constants";
 import { derive } from "../../pages/house-simulator/utils/calc";
-import { buildHud, calModal, buildCalGrid, realOf } from "../../pages/house-simulator/utils/render";
+import { buildHud, calModal, buildCalGrid, realOf, agreementModal } from "../../pages/house-simulator/utils/render";
 import { handleAction, HandlerCtx } from "../../pages/house-simulator/utils/handlers";
 
 /* wx API 存根（handlers 内 toast 使用）. */
@@ -87,6 +87,33 @@ describe("HUD 现金警示（尚待支付口径）", () => {
     expect(S.cash).toBeLessThan(S.need);
     expect(S.cash).toBeGreaterThan(S.need - S.down);
     expect(buildHud(S).cashLow).toBe(false);
+  });
+});
+
+describe("居间协议核对清单（agreementModal）", () => {
+  it("6 处条款逐项列出：覆盖付款/贷款/过户/交房/尾款节点，且不写具体金额与日期", () => {
+    const m = agreementModal();
+    expect(m.type).toBe("agreement");
+    expect(m.agreement!.items).toHaveLength(6);
+    const titles = m.agreement!.items.map((it) => it.title);
+    expect(titles).toContain("最晚首付支付时间");
+    expect(titles).toContain("贷款金额");
+    expect(titles).toContain("贷款额度不足时现金补足的最晚时间");
+    expect(titles).toContain("最晚过户时间");
+    expect(titles).toContain("最晚交房时间");
+    expect(titles).toContain("尾款及尾款支付条件");
+    // 每项都有「签署时注意什么」的提示，且不出现数字金额/日期
+    for (const it of m.agreement!.items) {
+      expect(it.tip.length).toBeGreaterThan(0);
+      expect(it.tip).not.toMatch(/[0-9]/);
+    }
+  });
+
+  it("初始未勾选：全否、all=false（确认按钮不可用）", () => {
+    const m = agreementModal();
+    expect(m.agreement!.checked).toHaveLength(6);
+    expect(m.agreement!.checked.every((c) => c === false)).toBe(true);
+    expect(m.agreement!.all).toBe(false);
   });
 });
 

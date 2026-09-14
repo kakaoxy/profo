@@ -37,6 +37,7 @@ import {
   payModal,
   realOf,
   taxRiskModal,
+  agreementModal,
 } from "../utils/render";
 import type { HudData, ModalData, SellerBarData, StepItem } from "../utils/render";
 import { handleAction } from "../utils/handlers";
@@ -81,6 +82,7 @@ interface PageCustom {
   openCreditModal(): void;
   openNetModal(): void;
   openTaxModal(): void;
+  openAgreementModal(): void;
   openPayModal(kind: "deposit" | "escrow" | "transfer"): void;
   /** 打开「模拟日历 · 时间快进」弹层：自动翻页流逝到下一节点日期后展示注意事项/风险. */
   openCalModal(to: SceneKey): void;
@@ -233,6 +235,11 @@ Page<PageData, PageCustom>({
   /** 「到手价」税费风险强制确认弹层：分项列明卖方税费转嫁明细，勾选后才可确认（不可关闭）. */
   openTaxModal() {
     this.setData({ modal: taxRiskModal(S) });
+  },
+
+  /** 居间协议核对清单弹层：6 处条款逐项勾选核对，全部核对后才可进入付款确认. */
+  openAgreementModal() {
+    this.setData({ modal: agreementModal() });
   },
 
   /** 付款确认弹层（定金 / 首付入监管 / 过户缴税，确认后才真实扣款）. */

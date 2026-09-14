@@ -220,8 +220,39 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
     return;
   }
   if (action === "signOk") {
-    /* 签约即付定金：直接进付款确认（内含违约风险醒目警示），payOk 才真实扣款 */
+    /* 签约即付定金：先弹出居间协议核对清单（6 处条款逐项勾选），全部核对确认后才进付款确认 */
+    ctx.openAgreementModal();
+    return;
+  }
+  /* 居间协议核对清单：勾选某一项 / 全部核对完成确认签署 / 退出核对（返回签约屏） */
+  if (action.indexOf("agrCheck:") === 0) {
+    const ag = ctx.data.modal.agreement;
+    if (!ag) {
+      return;
+    }
+    const n = parseInt(action.split(":")[1], 10);
+    const checked = ag.checked.slice();
+    if (n >= 0 && n < checked.length) {
+      checked[n] = !checked[n];
+    }
+    ctx.setData({
+      "modal.agreement.checked": checked,
+      "modal.agreement.all": checked.every(Boolean),
+    });
+    return;
+  }
+  if (action === "agrOk") {
+    const ag = ctx.data.modal.agreement;
+    if (!ag || !ag.all) {
+      toast("请先逐项核对并确认全部条款");
+      return;
+    }
+    ctx.closeModal(); /* 核对完成：进入付款确认，确认后才真实扣定金 */
     ctx.openPayModal("deposit");
+    return;
+  }
+  if (action === "agrCancel") {
+    ctx.closeModal(); /* 暂不签署：退回居间协议屏 */
     return;
   }
   if (action === "signNetOk") {

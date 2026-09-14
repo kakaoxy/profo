@@ -55,6 +55,23 @@ export interface PayInfo {
   warn?: string;
 }
 
+/** 居间协议核对清单单项（无具体金额/日期，仅提示签署时注意什么）. */
+export interface AgreementItem {
+  /** 条款标题（如 最晚首付支付时间）. */
+  title: string;
+  /** 核对提示（该条款要注意什么）. */
+  tip: string;
+}
+
+/** 居间协议核对清单（签约前逐项勾选核对，全部勾选后才可确认签署）. */
+export interface AgreementInfo {
+  items: AgreementItem[];
+  /** 各项是否已核对（与 items 同序）. */
+  checked: boolean[];
+  /** 是否全部核对完成（控制确认按钮可用态）. */
+  all: boolean;
+}
+
 /** 模拟日历单元格（d=0 表示日历网格空位）. */
 export interface CalCell {
   /** 日号（0 = 空位）. */
@@ -95,9 +112,9 @@ export interface CalInfo {
   done: boolean;
 }
 
-/** 底部弹层数据（信用贷红线二确认 / 到手价解释 / 到手价税费风险确认 / 付款确认 / 模拟日历）. */
+/** 底部弹层数据（信用贷红线二确认 / 到手价解释 / 到手价税费风险确认 / 付款确认 / 模拟日历 / 居间协议核对）. */
 export interface ModalData {
-  type: "" | "credit" | "net" | "taxRisk" | "pay" | "cal";
+  type: "" | "credit" | "net" | "taxRisk" | "pay" | "cal" | "agreement";
   /** 到手价弹层：卖方税费分项说明. */
   lines: string[];
   /** 合计（到手价解释「约 X 万」 / 税费确认「转嫁合计约 X 万」）. */
@@ -110,6 +127,8 @@ export interface ModalData {
   pay?: PayInfo;
   /** 模拟日历（时间快进）弹层数据. */
   cal?: CalInfo;
+  /** 居间协议核对清单（签署前逐项确认，agreement 弹层用）. */
+  agreement?: AgreementInfo;
 }
 
 /** 弹层空态（关闭 / 信用贷红线二确认）. */
@@ -390,5 +409,47 @@ export function payModal(S: SimState, kind: "deposit" | "escrow" | "transfer"): 
             ? "网签合同已生效：此刻反悔或迟延履行（如不按期过户），按房价 20% 赔付违约金，约 " + fmt(liquidated) + " 万。"
             : undefined,
     },
+  };
+}
+
+/**
+ * 居间协议核对清单弹层（签署前逐项确认，全部勾选后才可进入付款确认）.
+ * 6 处条款不写具体金额与日期，每项只提示「签合同时该特别留意什么」，
+ * 让买家意识到这些节点与条件以合同为准、签字即生效。
+ */
+export function agreementModal(): ModalData {
+  const items: AgreementItem[] = [
+    {
+      title: "最晚首付支付时间",
+      tip: "首付最迟付款节点会写死在合同里，先确认存款与放款节奏赶不赶得上，逾期即成违约先兆。",
+    },
+    {
+      title: "贷款金额",
+      tip: "合同写明申请贷款金额，但获批以银行审批为准——先按政策自评资质，批下来的钱才作数。",
+    },
+    {
+      title: "贷款额度不足时现金补足的最晚时间",
+      tip: "批贷不足合同贷款额时，差额须限时以现金补足；签约前就想好最坏情况下这笔钱从哪来。",
+    },
+    {
+      title: "最晚过户时间",
+      tip: "过户最迟日期与贷款放款、尾款结算直接挂钩，过户逾期容易触发违约责任。",
+    },
+    {
+      title: "最晚交房时间",
+      tip: "合同约定卖房人腾房交房的最迟时点，户口迁出、物业水电交接也应一并写清。",
+    },
+    {
+      title: "尾款及尾款支付条件",
+      tip: "尾款何时付、以过户办结或交房完成为前提，都要写进合同——有条件的尾款是买家的最后筹码。",
+    },
+  ];
+  return {
+    type: "agreement",
+    lines: [],
+    total: "",
+    taxItems: [],
+    checked: false,
+    agreement: { items, checked: items.map(() => false), all: false },
   };
 }
