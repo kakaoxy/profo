@@ -6,7 +6,7 @@
  * 纯函数，不触碰 wx/Page 实例，便于单测与逐屏对照校验。
  */
 
-import { fmt, sellerFace, stressFace } from "./calc";
+import { firstPayFor, fmt, sellerFace, stressFace } from "./calc";
 import { DAYS, NODES, SCENE_NODE, STAGES, SimState } from "./constants";
 
 /** HUD 顶部数据. */
@@ -38,10 +38,10 @@ export interface SellerBarData {
   face: string;
 }
 
-/** 付款确认弹层数据（定金 / 首付入监管 / 过户缴税）. */
+/** 付款确认弹层数据（定金 / 网签首付先付 / 补足剩余首付 / 缴税领证 / 扣押尾款）. */
 export interface PayInfo {
   /** 付款用途（决定 payOk 后扣哪笔钱）. */
-  kind: "deposit" | "escrow" | "transfer";
+  kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback";
   title: string;
   /** 现有现金（万元字符串）. */
   now: string;
@@ -211,7 +211,7 @@ export const NODE_WAIT: Record<string, { phase: string; note: string; risk: stri
   },
   sign: {
     phase: "等中介排期，准备签约材料",
-    note: "逐字读合同：成交价、定金、付款节点、违约责任。",
+    note: "逐字读合同：成交价、定金、付款节点、违约责任；签约前先查产调（抵押/查封/居住权），共有房须全部产权人到场。",
     risk: "违约定金不退（定金罚则）；网签后违约按房价 20% 赔付。",
   },
   loan: {
@@ -219,25 +219,30 @@ export const NODE_WAIT: Record<string, { phase: string; note: string; risk: stri
     note: "审批约 7 天：准备身份证 / 收入流水 / 征信授权，送审后等批贷函。",
     risk: "月供应 ≤ 家庭收入 50%，否则被风控拦截：加首付或拉长年限，甚至拒批。",
   },
-  escrow: {
-    phase: "对接资金监管账户",
-    note: "首付进监管账户，过户成功才划给卖方——这是买家的护身符。",
-    risk: "别把首付直接打给卖家，过户遇阻钱难追。",
-  },
   transfer: {
-    phase: "预约过户档期",
-    note: "核对税费口径：契税按面积/套数分档；未满 2 年还有全额增值税 + 个税。",
-    risk: "税单与预期不符会很痛——这笔账签约前就该算清。",
+    phase: "过户受理 · 审税进行中",
+    note: "递交材料后交易中心出具《收件收据》，期间税务机关核定过户真实价格（审税），约 7 天。",
+    risk: "审税核价与申报不符会被调整计税——这笔账签约前就该算清。",
   },
   deed: {
-    phase: "过户审税 · 税务核价",
-    note: "审税约 7 天：税务机关核定过户真实价格，核完后缴税、出不动产登记证书。",
-    risk: "审税核价与申报不符会被调整补税；放款后你不再有主动权，遗留问题只能靠尾款扣押约束卖方。",
+    phase: "审税完成 · 缴税领证",
+    note: "审税结果出来后，前往缴税并领取新产证；将新产证拍照给银行，银行发放贷款。",
+    risk: "缴税金额以审税核定为准；放款后你不再有主动权，遗留问题只能靠尾款扣押约束卖方。",
+  },
+  handover: {
+    phase: "交房 · 交割检查",
+    note: "三查：户口迁出、物业/水电煤过户、钥匙家具清点；交割完成后支付尾款。",
+    risk: "户口未迁影响学区/落户，是高频纠纷——可扣押尾款作保证金。",
   },
   final: {
-    phase: "等卖方腾房、办理交割",
-    note: "交房三查：户口迁出、物业/水电煤过户、钥匙家具清点。",
-    risk: "户口未迁影响学区/落户，是高频纠纷——可扣押 1% 尾款作保证金。",
+    phase: "交割结算 · 支付尾款",
+    note: "交割水电/天然气/物业费、户口迁出后支付尾款；有条件的尾款扣押是买家最后筹码。",
+    risk: "户口未迁影响学区/落户，是高频纠纷——可扣押尾款作保证金。",
+  },
+  renov: {
+    phase: "装修施工进行中",
+    note: "按设计图纸逐阶段推进：拆除→砌墙→水电→瓦工→木工→油漆→安装→保洁交付。",
+    risk: "隐蔽工程（水电）返工成本最高；赶工换来的省时可能换来起皮开裂。",
   },
 };
 
@@ -248,11 +253,14 @@ export const NODE_WAIT: Record<string, { phase: string; note: string; risk: stri
  */
 export function calModal(S: SimState, to: SimState["scene"]): ModalData {
   const toK = SCENE_NODE[to] ?? "";
-  /* 贷款审批与「贷款」节点同屏（loan/loanChk），目标名直接写明「贷款审批结果」避免歧义 */
+  /* 贷款审批与「贷款」节点同屏（loan/loanChk），目标名直接写明「贷款审批结果」避免歧义；
+     装修阶段直接显示阶段名（STAGES），其余取流程条节点名 */
   const toName =
     to === "loanChk"
       ? "贷款审批结果"
-      : NODES.find((n) => n.k === toK)?.t ?? "下一节点";
+      : to.indexOf("renov") === 0
+        ? (STAGES[to] ?? "下一阶段")
+        : NODES.find((n) => n.k === toK)?.t ?? "下一节点";
   const wait = NODE_WAIT[toK];
   const fromDay = DAYS[S.scene] ?? 1;
   const toDay = DAYS[to] ?? fromDay;
@@ -293,17 +301,22 @@ export function buildHud(S: SimState): HudData {
   const idx = nodeIdx(S.scene);
   /*
    * 现金警示：拿「当前现金」比「尚待支付的现金」，而非无脑比 need。
-   * 定金在签约屏确认后扣除、首付在监管屏扣除，因此已发生扣款的屏要把已付款项从 need 里摘掉，
+   * 定金（sign 付）、首付先付（signNet 付）、剩余首付（loanContract 付）、税费（deed 缴）、
+   * 扣押尾款（settle 付）按阶段逐笔扣除，已扣款项要从 need 里摘掉，
    * 否则会把已付款项重复计入 → 钱够也报「现金不足」（need 是「总需现金」，非「还差多少」）。
    */
   const due =
-    S.scene === "escrow"
-      ? S.need - S.deposit /* 定金已付，只剩 首付尾款 + 税费 */
-      : S.scene === "transfer"
-        ? S.need - S.down /* 首付已入监管，只剩 税费 */
-        : S.need; /* funds/borrow/sign：定金未付，需全额现金 */
+    S.scene === "signNet"
+      ? S.need - S.deposit /* 定金已付，待付 首付（先付部分+补足）+ 税费 */
+      : S.scene === "loanContract"
+        ? S.need - S.deposit - S.firstPay /* 网签先付已付，待付 剩余首付 + 税费 */
+        : S.scene === "deed"
+          ? S.taxes + S.netTax /* 首付已全部支付，待缴税费 */
+          : S.scene === "settle"
+            ? S.holdback /* 尾款扣押（如有）待结 */
+            : S.need; /* funds/borrow/sign：定金未付，需全额现金 */
   const low =
-    (S.scene === "funds" || S.scene === "borrow" || S.scene === "sign" || S.scene === "escrow" || S.scene === "transfer") &&
+    (S.scene === "funds" || S.scene === "borrow" || S.scene === "sign" || S.scene === "signNet" || S.scene === "loanContract" || S.scene === "deed" || S.scene === "settle") &&
     S.cash < due;
   return {
     stageLabel: STAGES[S.scene],
@@ -316,18 +329,56 @@ export function buildHud(S: SimState): HudData {
   };
 }
 
-/** 构建 12 节点流程条 + 顶部步骤/天数文案. */
+/** 装修阶段流程条（10 项，替代交易 12 节点）. */
+const RENOV_STEP_LABELS = ["设计", "定案", "拆除", "砌墙", "水电", "瓦工", "木工", "油漆", "安装", "保洁"];
+
+/** 装修场景 → 阶段下标（1=设计起，10=全部完成；renovDone 与保洁同格）. */
+const RENOV_SCENE_IDX: Partial<Record<SimState["scene"], number>> = {
+  renovDesign: 1,
+  renovPlan: 2,
+  renovDemo: 3,
+  renovWall: 4,
+  renovElec: 5,
+  renovTile: 6,
+  renovWood: 7,
+  renovPaint: 8,
+  renovInstall: 9,
+  renovClean: 10,
+  renovDone: 10,
+};
+
+/** 构建 12 节点流程条（交易）或 10 项装修阶段流程条（装修）+ 顶部步骤/天数文案. */
 export function buildSteps(S: SimState): { steps: StepItem[]; stepPos: string; dayText: string } {
+  const isRenov = S.scene.indexOf("renov") === 0;
+  if (isRenov) {
+    const idx = RENOV_SCENE_IDX[S.scene] ?? 0;
+    const steps = RENOV_STEP_LABELS.map((label, i) => ({
+      label,
+      mark: i < idx ? "✓" : "",
+      /* 当前阶段 = 下标 idx-1（idx 从 1 起对应 labels 下标 0 起），优先于 done；未开始（idx=0）与完成（idx=10）无 cur */
+      cls: i === idx - 1 && i < RENOV_STEP_LABELS.length ? "cur" : i < idx ? "done" : "",
+    }));
+    return {
+      steps,
+      stepPos: "装修 " + idx + " / 10",
+      dayText: "第 " + (DAYS[S.scene] ?? 1) + " 天",
+    };
+  }
   const idx = nodeIdx(S.scene);
   const steps = NODES.map((n, i) => ({
     label: n.t,
     mark: i < idx ? "✓" : "",
     cls: i < idx ? "done" : i === idx ? "cur" : "",
   }));
+  /* 装修完成回到最终账单：天数按装修完工日（第 78 天）计，而非交易完成日（第 16 天） */
+  const day =
+    S.scene === "final" && S.renovDone && !S.renovSkipped
+      ? DAYS.renovDone ?? DAYS[S.scene]
+      : DAYS[S.scene];
   return {
     steps,
     stepPos: "第 " + (idx + 1) + " / 12 步 · " + NODES[idx].t,
-    dayText: "第 " + (DAYS[S.scene] ?? 1) + " 天",
+    dayText: "第 " + (day ?? 1) + " 天",
   };
 }
 
@@ -377,12 +428,23 @@ export function taxRiskModal(S: SimState): ModalData {
 }
 
 /**
- * 付款确认弹层（定金 / 首付入监管 / 过户缴税）：现有现金 → 本次支付 → 支付后剩余。
+ * 付款确认弹层（定金 / 网签首付先付 / 补足剩余首付 / 缴税领证 / 扣押尾款）：
+ * 现有现金 → 本次支付 → 支付后剩余。
  * 违约风险在此醒目警示（warn 字段，支付确认时以更明显的字号/颜色提示），
  * 替代原「违约风险 · 强制确认」弹层，避免与付款确认重复。
  */
-export function payModal(S: SimState, kind: "deposit" | "escrow" | "transfer"): ModalData {
-  const payAmt = kind === "deposit" ? S.deposit : kind === "escrow" ? S.down - S.deposit : S.taxes + S.netTax;
+export function payModal(S: SimState, kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback"): ModalData {
+  const firstPay = S.firstPay > 0 ? S.firstPay : firstPayFor(S);
+  const payAmt =
+    kind === "deposit"
+      ? S.deposit
+      : kind === "firstPay"
+        ? firstPay
+        : kind === "restPay"
+          ? Math.max(0, S.down - S.deposit - firstPay)
+          : kind === "holdback"
+            ? S.holdback
+            : S.taxes + S.netTax;
   const liquidated = S.deal * 0.2;
   return {
     type: "pay",
@@ -392,20 +454,33 @@ export function payModal(S: SimState, kind: "deposit" | "escrow" | "transfer"): 
     checked: false,
     pay: {
       kind,
-      title: kind === "deposit" ? "定金 · 居间协议" : kind === "escrow" ? "首付 · 资金监管" : "过户 · 缴税",
+      title:
+        kind === "deposit"
+          ? "定金 · 居间协议"
+          : kind === "firstPay"
+            ? "首付先付 · 网签"
+            : kind === "restPay"
+              ? "补足剩余首付 · 贷款合同"
+              : kind === "holdback"
+                ? "尾款 · 交割结算"
+                : "过户 · 缴税",
       now: fmt(S.cash),
       pay: fmt(payAmt),
       after: fmt(S.cash - payAmt),
       note:
         kind === "deposit"
           ? "定金计入首付、过户时冲抵；居间协议一签即生效，这不是押金，是合同约束。"
-          : kind === "escrow"
-            ? "定金已在签约时支付，本次冲抵后入监管账户的是尾付部分；产证办结后由监管账户划转卖方，而非直接打款。"
-            : "契税、登记费、中介费" + (S.netTax ? "与到手价转嫁的卖方税费" : "") + "一次性缴纳，此后再无大额现金支出。",
+          : kind === "firstPay"
+            ? "网签同步支付首付先付部分（入资金监管），随即办理贷款；剩余首付等贷款合同确认后补足。"
+            : kind === "restPay"
+              ? "贷款合同确认：剩余首付入资金监管，过户领证后由监管账户划转卖方，而非直接打款。"
+              : kind === "holdback"
+                ? "交割完成（户口迁出 / 物业结清）后支付扣押尾款，双方两清。"
+                : "契税、登记费、中介费" + (S.netTax ? "与到手价转嫁的卖方税费" : "") + "一次性缴纳，缴清后领取新产证。",
       warn:
         kind === "deposit"
           ? "你违约 → 已付定金 " + fmt(S.deposit) + " 万不予返还（定金罚则）；卖方违约 → 双倍返还（" + fmt(S.deposit * 2) + " 万）。"
-          : kind === "escrow"
+          : kind === "firstPay" || kind === "restPay"
             ? "网签合同已生效：此刻反悔或迟延履行（如不按期过户），按房价 20% 赔付违约金，约 " + fmt(liquidated) + " 万。"
             : undefined,
     },
@@ -414,11 +489,19 @@ export function payModal(S: SimState, kind: "deposit" | "escrow" | "transfer"): 
 
 /**
  * 居间协议核对清单弹层（签署前逐项确认，全部勾选后才可进入付款确认）.
- * 6 处条款不写具体金额与日期，每项只提示「签合同时该特别留意什么」，
+ * 8 处条款不写具体金额与日期，每项只提示「签合同时该特别留意什么」，
  * 让买家意识到这些节点与条件以合同为准、签字即生效。
  */
 export function agreementModal(): ModalData {
   const items: AgreementItem[] = [
+    {
+      title: "产权状况（产调）",
+      tip: "签约前让中介出示《不动产权属查询》（产调）：房屋存在抵押、查封等限制的须先解押；带居住权登记或未到期租约的房子，买下也可能无法入住清户。",
+    },
+    {
+      title: "共有权人签字",
+      tip: "夫妻共有或多人共有的房产，必须全部产权人到场签字；缺一个名字，合同效力就悬着，过户一拖再拖，风险全在买方。",
+    },
     {
       title: "最晚首付支付时间",
       tip: "首付最迟付款节点会写死在合同里，先确认存款与放款节奏赶不赶得上，逾期即成违约先兆。",

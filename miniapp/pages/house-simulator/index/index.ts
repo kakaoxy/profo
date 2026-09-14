@@ -83,7 +83,7 @@ interface PageCustom {
   openNetModal(): void;
   openTaxModal(): void;
   openAgreementModal(): void;
-  openPayModal(kind: "deposit" | "escrow" | "transfer"): void;
+  openPayModal(kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback"): void;
   /** 打开「模拟日历 · 时间快进」弹层：自动翻页流逝到下一节点日期后展示注意事项/风险. */
   openCalModal(to: SceneKey): void;
   /** 清理时间快进定时器（弹层关闭 / 页面卸载时调用）. */
@@ -237,13 +237,13 @@ Page<PageData, PageCustom>({
     this.setData({ modal: taxRiskModal(S) });
   },
 
-  /** 居间协议核对清单弹层：6 处条款逐项勾选核对，全部核对后才可进入付款确认. */
+  /** 居间协议核对清单弹层：8 处条款逐项勾选核对（含产调/共有权人核查），全部核对后才可进入付款确认. */
   openAgreementModal() {
     this.setData({ modal: agreementModal() });
   },
 
-  /** 付款确认弹层（定金 / 首付入监管 / 过户缴税，确认后才真实扣款）. */
-  openPayModal(kind: "deposit" | "escrow" | "transfer") {
+  /** 付款确认弹层（定金 / 网签首付先付 / 补足剩余首付 / 缴税领证 / 扣押尾款，确认后才真实扣款）. */
+  openPayModal(kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback") {
     this.setData({ modal: payModal(S, kind) });
   },
 

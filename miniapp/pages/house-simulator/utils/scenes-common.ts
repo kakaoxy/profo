@@ -89,7 +89,7 @@ export type SceneBlock =
     }
   | { t: "cta"; items: { action: string; title: string; cls: string }[] }
   | { t: "link"; action: string; text: string }
-  | { t: "check"; items: string[] }
+  | { t: "check"; items: string[]; title?: string }
   | { t: "deed"; name: string; area: string }
   | { t: "riskLog"; items: { tag: string; ts: string; detail: string }[] };
 

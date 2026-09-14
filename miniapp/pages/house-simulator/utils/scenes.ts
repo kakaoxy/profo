@@ -24,14 +24,27 @@ import {
 } from "./scenes-start";
 import { sceneFeeNego, sceneNego1, sceneNego2, sceneNego3 } from "./scenes-nego";
 import { sceneBorrow, sceneFunds, sceneLoanType, sceneSign, sceneSignNet } from "./scenes-money";
-import { sceneLoan, sceneLoanChk } from "./scenes-loan";
+import { sceneLoan, sceneLoanChk, sceneLoanContract } from "./scenes-loan";
 import {
   sceneDeed,
-  sceneEscrow,
   sceneFinal,
   sceneHandover,
+  sceneSettle,
   sceneTransfer,
 } from "./scenes-close";
+import {
+  sceneRenovClean,
+  sceneRenovDemo,
+  sceneRenovDesign,
+  sceneRenovDone,
+  sceneRenovElec,
+  sceneRenovInstall,
+  sceneRenovPaint,
+  sceneRenovPlan,
+  sceneRenovTile,
+  sceneRenovWall,
+  sceneRenovWood,
+} from "./scenes-renov";
 
 /** 构建当前场景内容块（每次 setData 全量重建）. */
 export function buildScene(S: SimState): SceneBlock[] {
@@ -72,16 +85,40 @@ export function buildScene(S: SimState): SceneBlock[] {
       return sceneLoan(S);
     case "loanChk":
       return sceneLoanChk(S);
-    case "escrow":
-      return sceneEscrow(S);
+    case "loanContract":
+      return sceneLoanContract(S);
     case "transfer":
       return sceneTransfer(S);
     case "deed":
       return sceneDeed(S);
     case "handover":
       return sceneHandover(S);
+    case "settle":
+      return sceneSettle(S);
     case "final":
       return sceneFinal(S);
+    case "renovDesign":
+      return sceneRenovDesign(S);
+    case "renovPlan":
+      return sceneRenovPlan(S);
+    case "renovDemo":
+      return sceneRenovDemo(S);
+    case "renovWall":
+      return sceneRenovWall(S);
+    case "renovElec":
+      return sceneRenovElec(S);
+    case "renovTile":
+      return sceneRenovTile(S);
+    case "renovWood":
+      return sceneRenovWood(S);
+    case "renovPaint":
+      return sceneRenovPaint(S);
+    case "renovInstall":
+      return sceneRenovInstall(S);
+    case "renovClean":
+      return sceneRenovClean(S);
+    case "renovDone":
+      return sceneRenovDone(S);
     default:
       return [];
   }

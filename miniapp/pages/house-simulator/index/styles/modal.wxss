@@ -21,6 +21,10 @@
 }
 .sheet {
   width: 100%;
+  box-sizing: border-box;
+  /* 内容超高（如 8 项协议核对清单）时弹层内部可滚动，保证底部操作可达 */
+  max-height: 90vh;
+  overflow-y: auto;
   background: var(--pure-white);
   border-radius: 48rpx;
   padding: 40rpx 40rpx 36rpx;
@@ -259,6 +263,10 @@
 }
 .agr-item.on {
   background: var(--apricot-wash);
+  border-color: var(--rust);
+}
+.agr-item.on .check-box {
+  background: var(--rust);
   border-color: var(--rust);
 }
 .agr-item .check-box {

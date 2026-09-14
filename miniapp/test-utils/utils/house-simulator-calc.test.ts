@@ -7,6 +7,7 @@ import {
   buildQA,
   derive,
   findN2Option,
+  firstPayFor,
   fmt,
   fmtY,
   fmtYuan,
@@ -308,5 +309,38 @@ describe("多轮砍价 nego2Options", () => {
     setOffer(S2, 0);
     setOffer(S2, 0.07);
     expect(S2.negoCap).toBe(true);
+  });
+});
+
+describe("首付分期 firstPayFor", () => {
+  function base(downSel: number, loanType: "comm" | "combo" | "gjj" = "combo") {
+    const S = createInitialState();
+    S.role = ROLES.first;
+    S.house = HOUSES.find((h) => h.id === "B")!; // 400 万
+    S.loanType = loanType;
+    S.downSel = downSel;
+    derive(S);
+    return S;
+  }
+
+  it("50% 档：网签先付 = 成交价 × 20% − 定金 5%，贷款合同后补足 30%", () => {
+    const S = base(0.5);
+    const first = firstPayFor(S);
+    expect(first).toBeCloseTo(S.deal * 0.2 - S.deposit); // 定金 5% 已付，网签再付 15%
+    expect(S.down - S.deposit - first).toBeCloseTo(S.deal * 0.3); // 剩余 30% 贷款合同后补足
+  });
+
+  it("20% 档：网签一次付清，贷款合同后无剩余补足", () => {
+    const S = base(0);
+    expect(S.downRate).toBe(0.2); // 首套组合贷最低 20%
+    const first = firstPayFor(S);
+    expect(first).toBeCloseTo(S.deal * 0.2 - S.deposit);
+    expect(S.down - S.deposit - first).toBeCloseTo(0);
+  });
+
+  it("全款：网签一次性付清剩余全部房款", () => {
+    const S = base(1);
+    expect(S.downRate).toBe(1);
+    expect(firstPayFor(S)).toBeCloseTo(S.deal - S.deposit);
   });
 });

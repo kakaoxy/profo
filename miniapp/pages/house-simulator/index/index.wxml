@@ -218,7 +218,7 @@
 
         <!-- 完成打卡清单 -->
         <view wx:elif="{{item.t === 'check'}}" class="card chk-card">
-          <view class="chk-title">购房之旅 · 12 个节点全走完 · 第 {{dayText}}</view>
+          <view class="chk-title">{{item.title || '购房之旅 · 12 个节点全走完'}} · 第 {{dayText}}</view>
           <view class="chk-wrap">
             <view class="badge badge-fog" wx:for="{{item.items}}" wx:for-item="c" wx:key="index">{{c}}</view>
           </view>
@@ -320,8 +320,8 @@
   <view wx:if="{{modal.type === 'agreement'}}" class="overlay">
     <view class="sheet agreement-sheet">
       <view class="sheet-tag tag-red">📋 签署前核对 · 居间协议</view>
-      <view class="sheet-title">这 6 处条款，签字前逐项核对</view>
-      <view class="sheet-desc">居间协议把付款、过户、交房的节点和条件都写死了。下面 6 处不写具体金额和日期，只提示你<text class="strong">签合同时要特别留意什么</text>——逐项点开核对，全部确认后才能签署。</view>
+      <view class="sheet-title">这 8 处条款，签字前逐项核对</view>
+      <view class="sheet-desc">居间协议把付款、过户、交房的节点和条件都写死了。下面 8 处不写具体金额和日期，只提示你<text class="strong">签合同时要特别留意什么</text>——逐项点开核对，全部确认后才能签署。</view>
       <view
         class="agr-item {{modal.agreement.checked[idx] ? 'on' : ''}}"
         data-act="agrCheck:{{idx}}"
@@ -339,7 +339,7 @@
       </view>
       <view class="sheet-actions">
         <view class="btn btn-out" data-act="agrCancel" bindtap="onAction">再想想，暂不签署</view>
-        <view class="btn {{modal.agreement.all ? 'btn-ink' : 'btn-disabled'}}" data-act="agrOk" bindtap="onAction">全部核对无误 · 确认签署</view>
+        <view class="btn {{modal.agreement.all ? 'btn-ink' : 'btn-disabled'}}" data-act="agrOk" bindtap="onAction">核对无误</view>
       </view>
     </view>
   </view>

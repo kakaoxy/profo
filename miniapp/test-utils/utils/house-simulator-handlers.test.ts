@@ -94,7 +94,7 @@ class FakePage {
   }
 
   /** 镜像 index.ts openPayModal：付款确认弹层，确认（payOk）后才真实扣款. */
-  openPayModal(kind: "deposit" | "escrow" | "transfer"): void {
+  openPayModal(kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback"): void {
     this.setData({ modal: payModal(this.S, kind) });
     this.calls.push("modal:pay");
   }
@@ -144,7 +144,7 @@ function run(p: FakePage, ...acts: string[]): void {
 /** 全量核对居间协议清单并确认签署（signOk → 逐项勾选 → 确认 → 进入付款确认，不含 payOk）. */
 const AGREE_TO_PAY = [
   "signOk",
-  "agrCheck:0", "agrCheck:1", "agrCheck:2", "agrCheck:3", "agrCheck:4", "agrCheck:5",
+  "agrCheck:0", "agrCheck:1", "agrCheck:2", "agrCheck:3", "agrCheck:4", "agrCheck:5", "agrCheck:6", "agrCheck:7",
   "agrOk",
 ];
 
@@ -338,7 +338,7 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
     run(p, "signOk");
     expect(p.calls).toContain("modal:agreement");
     expect(p.data.modal.type).toBe("agreement");
-    expect(p.data.modal.agreement!.items).toHaveLength(6);
+    expect(p.data.modal.agreement!.items).toHaveLength(8);
     expect(p.data.modal.agreement!.all).toBe(false);
     // 未全部核对时 agrOk 被拦截：不进入付款确认、不扣款、不离开签约屏
     run(p, "agrCheck:0");
@@ -349,7 +349,7 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
     expect(S.cash).toBe(cash0);
     expect(S.scene).toBe("sign");
     // 逐一核对剩余条款 → 全部核对完成 → agrOk 才进付款确认（deposit，含违约风险警示）
-    run(p, "agrCheck:1", "agrCheck:2", "agrCheck:3", "agrCheck:4", "agrCheck:5");
+    run(p, "agrCheck:1", "agrCheck:2", "agrCheck:3", "agrCheck:4", "agrCheck:5", "agrCheck:6", "agrCheck:7");
     expect(p.data.modal.agreement!.all).toBe(true);
     run(p, "agrOk");
     expect(p.calls).toContain("modal:pay");
@@ -364,10 +364,15 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
     expect(S.cash).toBe(cash0 - S.deposit);
     expect(S.scene).toBe("signNet");
     expect(p.data.modal.type).toBe("");
-    // 网签确认：记录违约金 20% 风险，随即进入贷款申请
+    // 网签确认：记录违约金 20% 风险，随即弹「首付先付」付款确认（网签同步支付首付并办贷款）
     run(p, "signNetOk");
     expect(p.calls).toContain("confirmRisk:liquidated");
-    expect(S.scene).toBe("loan");
+    expect(p.data.modal.pay!.kind).toBe("firstPay");
+    expect(p.data.modal.pay!.warn).toBeTruthy(); // 网签后违约按房价 20% 警示
+    const cash1 = S.cash;
+    run(p, "payOk");
+    expect(S.cash).toBe(cash1 - S.firstPay);
+    expect(S.scene).toBe("loan"); // 首付先付入监管 → 办理贷款
   });
 
   it("定金付款确认可取消：payCancel 关闭弹层且不扣款", () => {
@@ -382,47 +387,63 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
     expect(p.calls).not.toContain("confirmRisk:deposit");
   });
 
-  it("贷款审批通过 → 监管扣首付 → 过户扣税费 → 领证交房 → 扣押分支", () => {
-    const { p, S } = atFundsShort();
-    // 补足缺口并完成签约（核对清单 + 付款确认扣定金）/网签/送审
-    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign",
-      ...AGREE_TO_PAY, "payOk", "signNetOk", "loanOk", "lcOk");
-    expect(S.scene).toBe("escrow");
+  it("贷款审批通过 → 签贷款合同 → 递交过户（收件收据/审税）→ 缴税领证 → 交房 → 交割尾款（扣押分支）", () => {
+    /* 现金 200 万（无需借款，支付全部首付税费后仍有结余，足以扣押尾款）：
+       借款恰好补足缺口时，支付完全部首付税费后现金为 0，扣不起尾款（hoHold 会因现金不足被拦截） */
+    const p = page();
+    run(p, "role:first", "cash:p200", "pick:B", "qa:non-sh", "qa:permit:yes",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk");
+    const S = p.S;
+    expect(S.scene).toBe("funds");
+    expect(S.need).toBeLessThanOrEqual(S.cash); // 资金充足，无需筹钱
+    // 签约（核对清单 + 付款确认扣定金）/网签付首付先付/送审/批贷
+    run(p, "sign", ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk");
+    expect(S.scene).toBe("loanContract");
+    // 20% 档：网签已付清全部首付（firstPay=deal×20%−定金），无剩余补足 → 确认合同直接递交过户
+    expect(S.firstPay).toBeCloseTo(S.deal * 0.2 - S.deposit);
+    run(p, "lcContractOk");
+    expect(S.scene).toBe("transfer");
+    // 递交材料 → 交易中心收件收据 → 审税等待（cal:deed）
+    run(p, "trDone");
+    expect(p.calls).toContain("cal:deed");
+    expect(S.scene).toBe("deed");
+    // 审税结果 → 缴税领证：trOk 弹付款确认，payOk 扣税费并出证（taxed，回 deed 显示领证态）
     const cash0 = S.cash;
-    // 付款确认：escrowOk 仅弹层，payOk 确认后冲抵定金扣首付尾款，且弹层关闭
-    run(p, "escrowOk");
+    run(p, "trOk");
     expect(p.calls).toContain("modal:pay");
     expect(S.cash).toBe(cash0); // 未确认不扣款
     run(p, "payOk");
-    expect(S.cash).toBe(cash0 - (S.down - S.deposit));
-    expect(S.scene).toBe("transfer");
-    expect(p.data.modal.type).toBe(""); // 确认支付后面临弹层关闭
-    const cash1 = S.cash;
-    run(p, "trOk");
-    expect(p.calls).toContain("modal:pay");
-    run(p, "payOk");
-    expect(S.cash).toBe(cash1 - (S.taxes + S.netTax));
+    expect(S.cash).toBe(cash0 - (S.taxes + S.netTax));
+    expect(S.taxed).toBe(true);
     expect(S.scene).toBe("deed");
     expect(p.data.modal.type).toBe("");
+    // 产证拍照给银行 → 放款完成 → 交房 → 扣押尾款 → 交割结算支付扣押尾款
     run(p, "deedOk");
     expect(S.scene).toBe("handover");
     run(p, "hoHold");
     expect(S.holdback).toBeCloseTo(Math.round(S.deal * 0.01 * 100) / 100);
+    expect(S.scene).toBe("settle");
+    const cash1 = S.cash;
+    run(p, "stOk");
+    expect(p.data.modal.pay!.kind).toBe("holdback");
+    run(p, "payOk");
+    expect(S.cash).toBe(cash1 - S.holdback);
     expect(S.scene).toBe("final");
   });
 
-  it("时间快进仅交易流程展示：前期无快进；申贷 → cal:loanChk / 缴税 → cal:deed / 领证 → cal:handover", () => {
+  it("时间快进仅交易流程展示：前期无快进；申贷 → cal:loanChk / 递交过户 → cal:deed / 领证放款 → cal:handover", () => {
     const { p } = atFundsShort();
-    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign", ...AGREE_TO_PAY, "payOk", "signNetOk", "loanOk", "lcOk");
+    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign", ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk");
     expect(p.calls).not.toContain("cal:select"); // 前期（现金/选房/资格/砍价/筹钱）均不再弹时间快进
     expect(p.calls).not.toContain("cal:nego1");
     const c0 = p.calls.indexOf("cal:loanChk"); // 送银行审批：贷款审批 7 天
     expect(c0).toBeGreaterThan(-1);
-    run(p, "escrowOk", "payOk");
+    run(p, "lcContractOk"); // 20% 档无剩余补足，直接递交过户
+    run(p, "trDone");
+    expect(p.calls.slice(c0)).toContain("cal:deed"); // 递交材料 → 审税 7 天 → 缴税领证
     run(p, "trOk", "payOk");
-    expect(p.calls.slice(c0)).toContain("cal:deed"); // 过户缴税 → 过户审税 7 天 → 缴税出产证
     run(p, "deedOk");
-    expect(p.calls.slice(c0)).toContain("cal:handover"); // 出证/放款 → 交房（1 天）
+    expect(p.calls.slice(c0)).toContain("cal:handover"); // 领证/放款 → 交房（1 天）
   });
 
   it("模拟日历弹层 calOk 关闭", () => {
@@ -443,11 +464,11 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     p.data.formCash = cashWan;
     run(p, "role:first", "cash:custom", "pick:F", "qa:non-sh", "qa:permit:no", "qa:years:m1-3",
       "n1:chat", "n2:m5", "n3NetYes", "taxCheck", "taxRiskOk",
-      "fee2", "lt:combo", "ltOk", "sign", ...AGREE_TO_PAY, "payOk", "signNetOk", "ly:20", "loanOk");
+      "fee2", "lt:combo", "ltOk", "sign", ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "ly:20", "loanOk");
     return { p, S: p.S };
   }
 
-  it("lcPay 追加首付后重算需现金，走完监管/过户现金不为负", () => {
+  it("lcPay 追加首付后重算需现金，走完贷款合同/过户现金不为负", () => {
     const { p, S } = atLoanChkRisk("220");
     expect(S.scene).toBe("loanChk");
     expect(S.netTax).toBe(344850); // 到手价 · 522.5 万 × 6.6%
@@ -456,11 +477,143 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     expect(S.down).toBe(1615000); // 104.50 万 + 风控要求追加 57 万
     expect(S.need).toBeCloseTo(needBefore + 570000); // 需现金随之抬到 211.67 万
     expect(S.need).toBeCloseTo(S.down + S.taxes + S.netTax); // 与 derive 同口径
-    run(p, "escrowOk", "payOk"); // 弹付款确认并确认支付
+    // 重审通过 → 贷款合同确认 → 追加的 57 万作为剩余首付补足入监管（网签已付 firstPay）
+    run(p, "lcOk");
+    expect(S.scene).toBe("loanContract");
+    run(p, "lcContractOk");
+    expect(p.data.modal.pay!.kind).toBe("restPay");
+    run(p, "payOk");
     expect(S.cash).toBeGreaterThanOrEqual(0);
+    expect(S.scene).toBe("transfer");
+    run(p, "trDone");
     run(p, "trOk", "payOk");
     expect(S.scene).toBe("deed");
     expect(S.cash).toBeGreaterThanOrEqual(0);
     expect(S.cash).toBeCloseTo(2200000 - (S.down + S.taxes + S.netTax));
+  });
+
+  it("50% 档首付分期：网签付 20%（含定金 5%），贷款合同后补足 30%", () => {
+    const p = page();
+    // B 房（400 万，砍价 5% → 380 万），50% 档 → 首付 190 万
+    run(p, "role:first", "cash:p200", "pick:B", "qa:hukou:sh", "qa:married:married",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ds:0.5", "ltOk", "sign",
+      ...AGREE_TO_PAY, "payOk");
+    const S = p.S;
+    expect(S.downRate).toBe(0.5);
+    expect(S.down).toBeCloseTo(S.deal * 0.5);
+    // 网签首付先付 = 成交价 × 20% − 定金 5%（即再付 15%）
+    run(p, "signNetOk");
+    expect(p.data.modal.pay!.kind).toBe("firstPay");
+    const firstExpected = S.deal * 0.2 - S.deposit;
+    expect(S.firstPay).toBe(0); // 未确认支付前不记录
+    run(p, "payOk");
+    expect(S.firstPay).toBeCloseTo(firstExpected);
+    expect(S.cash).toBeCloseTo(2000000 - S.deposit - firstExpected);
+    expect(S.scene).toBe("loan");
+    // 审批通过 → 贷款合同确认 → 补足剩余 30%（= down − deposit − firstPay）
+    run(p, "loanOk", "lcOk");
+    expect(S.scene).toBe("loanContract");
+    const restExpected = S.down - S.deposit - S.firstPay;
+    expect(restExpected).toBeCloseTo(S.deal * 0.3);
+    run(p, "lcContractOk");
+    expect(p.data.modal.pay!.kind).toBe("restPay");
+    run(p, "payOk");
+    expect(S.cash).toBeCloseTo(2000000 - S.down);
+    expect(S.scene).toBe("transfer");
+  });
+
+  it("装修流程：final 屏决策后 → 开始装修直达设计 → 10 阶段推进 → 完成回 final（装修入口消失）", () => {
+    const p = page();
+    run(p, "role:first", "cash:p70", "pick:B", "qa:hukou:sh", "qa:married:married",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
+      "lcContractOk", "trDone", "trOk", "payOk", "deedOk", "hoOk", "stOk");
+    const S = p.S;
+    expect(S.scene).toBe("final");
+    expect(S.renovDone).toBe(false);
+    // final 屏已决策 → 开始装修直接进设计，不再二次询问「是否装修」
+    run(p, "renovGo");
+    expect(S.scene).toBe("renovDesign");
+    expect(S.house!.reno).toBe("精装");
+    // 设计 → 定案 → 8 个施工阶段 → 完成
+    run(p, "renovNext:renovPlan");
+    expect(p.calls).toContain("cal:renovPlan");
+    run(p, "renovNext:renovDemo", "renovNext:renovWall", "renovNext:renovElec",
+      "renovNext:renovTile", "renovNext:renovWood", "renovNext:renovPaint",
+      "renovNext:renovInstall", "renovNext:renovClean", "renovNext:renovDone");
+    expect(S.scene).toBe("renovDone");
+    run(p, "renovFinish");
+    expect(S.renovDone).toBe(true);
+    expect(S.renovSkipped).toBe(false);
+    expect(S.scene).toBe("final");
+    // 装修入口消失：renovGo 不再推进（仍停留 final）
+    run(p, "renovGo");
+    expect(S.scene).toBe("final");
+  });
+
+  it("跳过装修：renovSkip 置 renovDone 并回 final", () => {
+    const p = page();
+    run(p, "role:first", "cash:p70", "pick:B", "qa:hukou:sh", "qa:married:married",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
+      "lcContractOk", "trDone", "trOk", "payOk", "deedOk", "hoOk", "stOk", "renovSkip");
+    expect(p.S.renovDone).toBe(true);
+    expect(p.S.renovSkipped).toBe(true);
+    expect(p.S.scene).toBe("final");
+  });
+});
+
+describe("流程阶段：换房 / 尾款扣押的现金一致性（防死胡同）", () => {
+  /** 推进到筹钱屏（B 房 380 万成交 · 现金 50 万 · 缺口 ≈37.4 万）. */
+  function atBorrow(): { p: FakePage; S: SimState } {
+    const p = page();
+    run(p, "role:first", "cash:p50", "pick:B", "qa:non-sh", "qa:permit:yes",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "bor:family");
+    expect(p.S.borrowed).toBe(300000);
+    expect(p.S.scene).toBe("borrow");
+    return { p, S: p.S };
+  }
+
+  it("筹钱屏换房（changeHouse）：已借资金退还，现金回到初始值", () => {
+    const { p, S } = atBorrow();
+    run(p, "changeHouse");
+    expect(S.scene).toBe("select");
+    expect(S.cash).toBe(500000); // 借款 30 万退还，不再虚高
+    expect(S.borrowed).toBe(0);
+    expect(S.usedBorrow.family).toBeUndefined();
+  });
+
+  it("贷款被拒换房（lcChange）：定金 / 首付先付 / 借款全额退还，现金回到签约前", () => {
+    const p = page();
+    p.data.formCash = "220";
+    /* F 房（550 万 · 不满 2 年）砍价 5% → 522.5 万 + 到手价 + 组合贷 20 年 → 月供超线被风控拦截 */
+    run(p, "role:first", "cash:custom", "pick:F", "qa:non-sh", "qa:permit:no", "qa:years:m1-3",
+      "n1:chat", "n2:m5", "n3NetYes", "taxCheck", "taxRiskOk",
+      "fee2", "lt:combo", "ltOk", "sign", ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "ly:20", "loanOk");
+    expect(p.S.scene).toBe("loanChk");
+    expect(p.S.firstPay).toBeGreaterThan(0); // 定金 + 网签首付先付已付
+    run(p, "lcChange");
+    expect(p.S.scene).toBe("select");
+    expect(p.S.cash).toBe(2200000); // 全额退还，恢复签约前原始现金
+    expect(p.S.borrowed).toBe(0);
+    expect(p.S.firstPay).toBe(0);
+    expect(p.S.holdback).toBe(0);
+    expect(p.S.taxed).toBe(false);
+  });
+
+  it("尾款扣押现金不足：hoHold 被拦截留在交房屏，可改选直接结清，现金不为负", () => {
+    const { p, S } = atBorrow();
+    /* 借款恰补足缺口（B 房 380 万）：付清首付税费后现金恰为 0，扣不起 1% 尾款 */
+    run(p, "bor:gjj", "bor:credit", "creditYes", "sign",
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
+      "lcContractOk", "trDone", "trOk", "payOk", "deedOk");
+    expect(S.scene).toBe("handover");
+    expect(S.cash).toBe(0);
+    run(p, "hoHold");
+    expect(S.holdback).toBe(0); // 拦截：现金不足无法扣押
+    expect(S.scene).toBe("handover");
+    run(p, "hoOk", "stOk");
+    expect(S.scene).toBe("final");
+    expect(S.cash).toBeGreaterThanOrEqual(0);
   });
 });

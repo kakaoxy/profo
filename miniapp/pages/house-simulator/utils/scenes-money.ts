@@ -6,7 +6,7 @@
  * 纯函数，仅依赖 SimState 与 calc/constants 工具。
  */
 
-import { fmt, fmtY, pct } from "./calc";
+import { firstPayFor, fmt, fmtY, pct } from "./calc";
 import { downRateFor, LOAN_TYPES, SimState } from "./constants";
 import { bubble, OptItem, RowItem, SceneBlock } from "./scenes-common";
 
@@ -136,6 +136,7 @@ export function sceneFunds(S: SimState): SceneBlock[] {
       : { t: "note", text: "定金含在首付内，签约时先付、过户时冲抵；贷款部分由银行后端解决，不算入“需要现金”。" };
   blocks.push(
     { t: "cta", items: [{ action: gap > 0 ? "borrow" : "sign", title: gap > 0 ? "先筹钱，再签约" : "资金充足，去签约", cls: "btn-ink" }] },
+    { t: "link", action: "loanType", text: "‹ 返回调整首付档位 / 贷款方式" },
     footNote,
   );
   return blocks;
@@ -162,7 +163,7 @@ export function sceneBorrow(S: SimState): SceneBlock[] {
   } else {
     opts.push({ action: "bor:credit", title: "信用贷 / 消费贷（最多 20 万）", desc: "门槛低、放款快，但资金用途属于监管红线。", marker: "⚠️ 红线" });
   }
-  opts.push({ action: "select", title: "换套便宜点的", desc: "回到选房，重新挑一套总价更低的。" });
+  opts.push({ action: "changeHouse", title: "换套便宜点的", desc: "回到选房，重新挑一套总价更低的。", marker: "借款将退还" });
 
   const still: SceneBlock =
     gap > 0
@@ -172,7 +173,7 @@ export function sceneBorrow(S: SimState): SceneBlock[] {
           title: "仍有缺口 " + fmt(gap) + " 万",
           desc:
             gap > room
-              ? "三条借款渠道合计最多约 " + fmt(cap) + " 万，缺口已超出可借上限。继续硬撑不现实，建议换一套总价更低的房源。"
+              ? "三条借款渠道合计最多约 " + fmt(cap) + " 万，缺口已超出可借上限。继续硬撑不现实，建议换一套总价更低的房源（限购受限时可自定义一套外环外低价房源）。"
               : "还可通过下方渠道再借约 " + fmt(room) + " 万。",
         }
       : { t: "banner", cls: "sky", title: "✓ 缺口已补齐" };
@@ -186,10 +187,11 @@ export function sceneBorrow(S: SimState): SceneBlock[] {
   if (gap <= 0) {
     blocks.push({ t: "cta", items: [{ action: "sign", title: "签约 · 付定金", cls: "btn-ink" }] });
   } else if (gap > room) {
-    blocks.push({ t: "cta", items: [{ action: "select", title: "缺口过大 · 换套便宜点的", cls: "btn-ink" }] });
+    blocks.push({ t: "cta", items: [{ action: "changeHouse", title: "缺口过大 · 换套便宜点的", cls: "btn-ink" }] });
   } else {
     blocks.push({ t: "note", text: "还需 " + fmt(gap) + " 万 · 用上方渠道补足后再签约" });
   }
+  blocks.push({ t: "link", action: "funds", text: "‹ 返回算账，调整首付档位 / 贷款方式" });
   blocks.push({
     t: "note",
     bold: "红线提示：",
@@ -227,19 +229,27 @@ export function sceneSign(S: SimState): SceneBlock[] {
       title: "⚠️ 定金罚则 · 此刻已锁定",
       desc: "定金 " + fmtY(S.deposit) + "（成交价 5%，不超合同价 20%）。一旦签字付定：买方违约，定金不予退还；卖方违约，双倍返还（" + fmtY(S.deposit * 2) + "）。这笔钱不是押金，是合同约束。",
     },
+    {
+      t: "note",
+      bold: "签字前，先查产调：",
+      text: "让中介出示《不动产权属查询》（产调）：确认无抵押、无查封、无居住权登记、无未到期长期租约；夫妻共有房须所有产权人到场签字。产权有问题，先解押或换房——一签一付，主动权就交了。",
+    },
     { t: "cta", items: [{ action: "signOk", title: "确认签署居间协议 · 付定金 " + fmt(S.deposit) + " 万", cls: "btn-ink" }] },
   );
   return blocks;
 }
 
-/** 网签 · 买卖合同屏（违约金 20% 警示）. */
+/** 网签 · 买卖合同屏（违约金 20% 警示 + 同步支付首付先付部分并办理贷款）. */
 export function sceneSignNet(S: SimState): SceneBlock[] {
-  /* ② 网签合同（上海市房地产买卖合同）→ 签约后违约赔付房价 20%，不再是定金的事 */
+  /* ② 网签合同（上海市房地产买卖合同）→ 签约后违约赔付房价 20%，不再是定金的事；
+     网签同步支付首付（先付部分，入资金监管）并办理贷款 */
   const h = S.house!;
   const liquidated = S.deal * 0.2;
+  const firstPay = firstPayFor(S);
+  const restPay = S.downRate >= 1 ? 0 : Math.max(0, S.down - S.deposit - firstPay);
   const blocks: SceneBlock[] = [
     { t: "title", text: "网签 · 上海市房地产买卖合同" },
-    { t: "sub", text: h.name + " · 卖方 " + h.seller + " · 合同价 " + fmt(S.deal) + " 万" + (S.netTax ? "（到手价）" : "") },
+    { t: "sub", text: h.name + " · 卖方 " + h.seller + " · 合同价 " + fmt(S.deal) + " 万" + (S.netTax ? "（到手价）" : "") + " · 网签同步支付首付并办理贷款" },
     {
       t: "banner",
       cls: "warm",
@@ -250,7 +260,7 @@ export function sceneSignNet(S: SimState): SceneBlock[] {
       t: "banner",
       cls: "sky",
       title: "📄 上海市房地产买卖合同 · 网签备案",
-      desc: "合同价锁定（" + fmtY(S.deal) + "），经「一网通办」完成 · 反悔属违约",
+      desc: "合同价锁定（" + fmtY(S.deal) + "），经「一网通办」完成 · 反悔属违约。网签当日同步：支付首付（先付部分入资金监管）并向银行申请贷款。",
     },
   ];
   if (S.netTax) {
@@ -263,8 +273,12 @@ export function sceneSignNet(S: SimState): SceneBlock[] {
   }
   const rows: RowItem[] = [
     { k: "成交价（合同价）", v: fmtY(S.deal) },
+    { k: "定金（签约已付）", v: fmtY(S.deposit) },
+    { k: "首付先付（网签同步支付 · 入资金监管）", v: fmtY(firstPay) },
+    ...(S.downRate >= 1
+      ? [{ k: "剩余房款", v: "已随首付先付一次结清（全款）" }]
+      : [{ k: "贷款合同后补足（剩余首付）", v: fmtY(restPay) }]),
     { k: "违约责任（房价 20%）", v: fmtY(liquidated) },
-    { k: "定金（已付）", v: fmtY(S.deposit) },
   ];
   const okRows: RowItem[] = [];
   if (S.netTax) {
@@ -272,7 +286,7 @@ export function sceneSignNet(S: SimState): SceneBlock[] {
   }
   blocks.push(
     { t: "rows", items: okRows.concat(rows) },
-    { t: "cta", items: [{ action: "signNetOk", title: "确认网签 · 完成备案", cls: "btn-ink" }] },
+    { t: "cta", items: [{ action: "signNetOk", title: "确认网签 · 支付首付先付部分", cls: "btn-ink" }] },
   );
   return blocks;
 }

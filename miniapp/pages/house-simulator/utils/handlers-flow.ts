@@ -7,9 +7,9 @@
  * （toast/nextScene/弹层/风险确认），与前置阶段保持同一套 action 语义。
  */
 
-import { derive, findN2Option, fmt, iloan, NEGO_R1, recalcNeed, setOffer } from "./calc";
+import { derive, findN2Option, firstPayFor, fmt, iloan, NEGO_R1, recalcNeed, setOffer } from "./calc";
 import { downRateFor, INCOME, LOAN_TYPES, SimState } from "./constants";
-import type { LoanTypeKey } from "./constants";
+import type { LoanTypeKey, SceneKey } from "./constants";
 import type { HandlerCtx } from "./handlers";
 
 /** 轻提示. */
@@ -207,6 +207,27 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
     return;
   }
 
+  /* 筹钱阶段换房：已借资金退还，恢复签约前原始现金（避免借款残留导致现金虚高） */
+  if (action === "changeHouse") {
+    if (S.borrowed > 0) {
+      S.cash -= S.borrowed;
+      S.borrowed = 0;
+      S.usedBorrow = {};
+    }
+    ctx.nextScene("select");
+    return;
+  }
+
+  /* 私人决策阶段返回：算账 ↔ 贷款方式（调整首付档位/贷款方式）、筹钱 ↔ 算账 */
+  if (action === "loanType") {
+    ctx.nextScene("loanType");
+    return;
+  }
+  if (action === "funds") {
+    ctx.nextScene("funds");
+    return;
+  }
+
   if (action === "sign" || action === "borrow") {
     /* 算账/筹钱阶段完成：均为私人决策当天空转，无时间预期，不弹模拟日历 */
     toast(
@@ -220,7 +241,7 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
     return;
   }
   if (action === "signOk") {
-    /* 签约即付定金：先弹出居间协议核对清单（6 处条款逐项勾选），全部核对确认后才进付款确认 */
+    /* 签约即付定金：先弹出居间协议核对清单（8 处条款逐项勾选），全部核对确认后才进付款确认 */
     ctx.openAgreementModal();
     return;
   }
@@ -256,14 +277,14 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
     return;
   }
   if (action === "signNetOk") {
-    /* 网签备案生效：违约风险直接记录为交易凭证，随即进入贷款申请 */
+    /* 网签备案生效：违约风险直接记录为交易凭证，随即支付首付先付部分（入资金监管）并办理贷款 */
     const liquidated = S.deal * 0.2;
     ctx.confirmRisk(
       "liquidated",
       "网签备案生效（合同价 " + fmt(S.deal) + " 万）。买方超过约定节点违约：按合同总价 20% 赔付违约金约 " + fmt(liquidated) + " 万，与定金罚则就高主张，并承担诉讼/律师费及征信、失信记录等法律后果。"
     );
     toast("✅ 网签备案完成 · 上海市房地产买卖合同已生效");
-    ctx.nextScene("loan");
+    ctx.openPayModal("firstPay");
     return;
   }
   if (action.indexOf("ly:") === 0) {
@@ -280,15 +301,15 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
   }
   if (action === "loanOkAllCash") {
     toast("💰 全款支付 · 跳过贷款审批");
-    ctx.openCalModal("escrow");
-    ctx.nextScene("escrow");
+    ctx.openCalModal("transfer"); /* 全款无贷款环节：直接递交过户材料（收件收据/审税） */
+    ctx.nextScene("transfer");
     return;
   }
 
   /* 贷款审批（风控）分支 */
   if (action === "lcOk") {
     toast("🏦 批贷函已出 · 贷款审批通过");
-    ctx.nextScene("escrow"); /* 审批通过当天付首付入监管（定金后 7 天内） */
+    ctx.nextScene("loanContract"); /* 审批通过 → 签贷款合同并补足剩余首付 */
     return;
   }
   if (action === "lcLong") {
@@ -317,22 +338,46 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
     return;
   }
   if (action === "lcChange") {
+    /* 换房（贷款被拒，交易中断）：退还已付定金/首付先付与已借资金，恢复签约前原始现金，
+       否则换房后定金/首付先付被二次扣缴、借款残留，现金口径失真 */
+    S.cash += S.deposit + S.firstPay; /* 定金 + 网签首付先付退回 */
+    if (S.borrowed > 0) {
+      S.cash -= S.borrowed; /* 借款退还 */
+      S.borrowed = 0;
+      S.usedBorrow = {};
+    }
+    S.firstPay = 0;
+    S.holdback = 0;
+    S.taxed = false;
     ctx.nextScene("select");
     return;
   }
 
-  if (action === "escrowOk") {
-    /* 首付入监管：先弹付款确认（现有现金 → 本次支付 → 支付后剩余），确认后才冲抵定金扣款 */
-    ctx.openPayModal("escrow");
+  /* 贷款合同确认：补足剩余首付 */
+  if (action === "lcContractOk") {
+    const rest = Math.max(0, S.down - S.deposit - (S.firstPay > 0 ? S.firstPay : firstPayFor(S)));
+    if (rest > 0) {
+      /* 确认贷款合同 → 弹付款确认补足剩余首付（入资金监管） */
+      ctx.openPayModal("restPay");
+    } else {
+      toast("🤝 贷款合同已签 · 首付已全部支付");
+      ctx.nextScene("transfer"); /* 无剩余补足（20%/15% 档已付清）直接递交过户材料 */
+    }
+    return;
+  }
+  /* 过户递交材料完成：进入审税等待（约 7 天） */
+  if (action === "trDone") {
+    ctx.openCalModal("deed");
+    ctx.nextScene("deed");
     return;
   }
   if (action === "trOk") {
-    /* 过户税费：先弹付款确认，确认后才一次性扣缴 */
+    /* 缴税领证（deed 屏缴税前态）：先弹付款确认，确认后才一次性扣缴并出证 */
     ctx.openPayModal("transfer");
     return;
   }
 
-  /* 付款确认弹层：确认后按用途真实扣款（定金 / 首付入监管 / 过户缴税），并关闭弹层 */
+  /* 付款确认弹层：确认后按用途真实扣款（定金 / 网签首付先付 / 补足剩余首付 / 缴税领证 / 扣押尾款），并关闭弹层 */
   if (action === "payCancel") {
     ctx.closeModal();
     return;
@@ -348,17 +393,33 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
       S.cash -= S.deposit;
       toast("🤝 居间协议已签 · 定金 " + fmt(S.deposit) + " 万已支付 · 余 " + fmt(S.cash) + " 万");
       ctx.nextScene("signNet");
-    } else if (kind === "escrow") {
+    } else if (kind === "firstPay") {
       ctx.closeModal();
-      S.cash -= S.down - S.deposit; /* 定金已付，冲抵首付 */
-      toast("🔒 首付已入资金监管账户");
-      ctx.nextScene("transfer"); /* 付首付当天过户 */
+      S.firstPay = firstPayFor(S); /* 记录网签已付首付先付部分（入资金监管） */
+      S.cash -= S.firstPay;
+      toast("🔒 首付先付已入资金监管 · 随即办理贷款");
+      ctx.nextScene("loan");
+    } else if (kind === "restPay") {
+      ctx.closeModal();
+      S.cash -= S.down - S.deposit - S.firstPay; /* 贷款合同确认后补足剩余首付（入监管） */
+      toast("🤝 贷款合同已签 · 剩余首付已入资金监管");
+      ctx.nextScene("transfer"); /* 补足后递交过户材料 */
     } else if (kind === "transfer") {
       ctx.closeModal();
-      S.cash -= S.taxes + S.netTax; /* 到手价转嫁税费随过户一并缴纳 */
-      toast("📄 过户完成 · 一网通办出证");
-      ctx.openCalModal("deed"); /* 过户审税需 7 天，快进到缴税出产证 */
-      ctx.nextScene("deed");
+      S.cash -= S.taxes + S.netTax; /* 到手价转嫁税费随缴税一并缴纳 */
+      S.taxed = true;
+      toast("📄 税费已缴 · 新产证到手");
+      ctx.nextScene("deed"); /* 回 deed 屏显示「领证 · 产证已交银行」态 */
+    } else if (kind === "holdback") {
+      if (S.cash < S.holdback) {
+        toast("现金不足，无法支付扣押尾款");
+        ctx.closeModal();
+        return; /* 留在交割结算屏 */
+      }
+      ctx.closeModal();
+      S.cash -= S.holdback;
+      toast("💰 尾款已结清 · 交易两清");
+      ctx.nextScene("final");
     }
     return;
   }
@@ -372,14 +433,61 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
 
   /* 交房交割 */
   if (action === "hoOk") {
-    toast("🔑 交房完成，恭喜新房东");
-    ctx.nextScene("final");
+    toast("🔑 交房完成 · 交割核验通过");
+    ctx.nextScene("settle"); /* 交割结算 · 支付尾款 */
     return;
   }
   if (action === "hoHold") {
-    S.holdback = Math.round(S.deal * 0.01 * 100) / 100; /* 尾款扣押演示 1%，精确到分 */
+    const hold = Math.round(S.deal * 0.01 * 100) / 100; /* 尾款扣押演示 1%，精确到分 */
+    if (S.cash < hold) {
+      toast("现金不足（尾款扣押需 " + fmt(hold) + " 万），建议直接结清交房");
+      return; /* 留在交房屏，可改选「逐项核对，全部结清」 */
+    }
+    S.holdback = hold;
     S.stress += 6;
     toast("🤝 尾款扣押 " + fmt(S.holdback) + " 万，迁出后结清");
+    ctx.nextScene("settle"); /* 交割结算 · 支付扣押尾款 */
+    return;
+  }
+
+  /* 交割结算：支付扣押尾款（如有）→ 总账单 */
+  if (action === "stOk") {
+    if (S.holdback > 0) {
+      ctx.openPayModal("holdback");
+    } else {
+      toast("🎉 交易全部完成");
+      ctx.nextScene("final");
+    }
+    return;
+  }
+
+  /* 交易完成 → 装修决策与装修流程推进 */
+  if (action === "renovGo") {
+    if (S.renovDone) {
+      return; /* 装修流程已结束（装完或跳过），忽略重复入口 */
+    }
+    toast("🏗️ 开始装修");
+    ctx.nextScene("renovDesign"); /* final 屏已做装修决策，直接进入设计，不再二次询问 */
+    return;
+  }
+  if (action === "renovSkip") {
+    S.renovDone = true;
+    S.renovSkipped = true;
+    toast("🏡 直接入住 · 日后有需要再装");
+    ctx.nextScene("final");
+    return;
+  }
+  if (action.indexOf("renovNext:") === 0) {
+    /* 装修阶段推进：施工阶段带日历快进工期；无等待（同天）时 openCalModal 自动跳过 */
+    const to = action.split(":")[1] as SceneKey;
+    ctx.openCalModal(to);
+    ctx.nextScene(to);
+    return;
+  }
+  if (action === "renovFinish") {
+    S.renovDone = true;
+    S.renovSkipped = false;
+    toast("🏡 装修完成 · 乔迁大吉");
     ctx.nextScene("final");
     return;
   }

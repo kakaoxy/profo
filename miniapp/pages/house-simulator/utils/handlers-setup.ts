@@ -127,6 +127,7 @@ export function handleSetup(ctx: HandlerCtx, S: SimState, action: string): boole
       seller: "房主",
       sellerTag: "房东 · 按需定制",
       intro: "按你填的口径（" + (tagMap[tax] ?? "") + " · " + (ring === "内" ? "外环内" : "外环外") + "）精算税费与砍价空间（默认 5%）。",
+      reno: "简装",
     };
     ctx.setupHouse(custom);
     return true;

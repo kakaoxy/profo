@@ -12,7 +12,7 @@ export type RoleKey = "first" | "trade" | "invest";
 /** 贷款方式 key：纯商贷 / 组合贷 / 纯公积金. */
 export type LoanTypeKey = "comm" | "combo" | "gjj";
 
-/** 场景 key（23 屏，与 HiFi renderScene 一一对应，签约拆为 居间协议→网签 两屏）. */
+/** 场景 key（37 屏，签约拆为 居间协议→网签 两屏；交易收尾拆为 过户递交→缴税领证→交割尾款；交易完成后接入装修流程）. */
 export type SceneKey =
   | "start"
   | "role"
@@ -32,11 +32,23 @@ export type SceneKey =
   | "signNet"
   | "loan"
   | "loanChk"
-  | "escrow"
+  | "loanContract"
   | "transfer"
   | "deed"
   | "handover"
-  | "final";
+  | "settle"
+  | "final"
+  | "renovDesign"
+  | "renovPlan"
+  | "renovDemo"
+  | "renovWall"
+  | "renovElec"
+  | "renovTile"
+  | "renovWood"
+  | "renovPaint"
+  | "renovInstall"
+  | "renovClean"
+  | "renovDone";
 
 /** 身份角色配置：决定贷款利率 / 名下套数 / 房产税口径（首付比例由身份×环线×贷款方式共同决定，见 downRateFor）. */
 export interface Role {
@@ -78,6 +90,8 @@ export interface House {
   seller: string;
   sellerTag: string;
   intro: string;
+  /** 交房时装修状态（决定交易完成后「是否装修」决策的参考口径）. */
+  reno: "毛坯" | "简装" | "精装";
 }
 
 /** 限购资格判定结果. */
@@ -188,6 +202,14 @@ export interface SimState {
   loan: LoanState;
   /** 尾款扣押（元，交房交割用）. */
   holdback: number;
+  /** 网签时已支付的首付先付部分（元，不含定金；贷款合同后补足 = down − deposit − firstPay）. */
+  firstPay: number;
+  /** 过户税费是否已缴（deed 屏「缴税领证」与「放款」两态切换依据）. */
+  taxed: boolean;
+  /** 装修流程是否已结束（final 屏据此隐藏「开始装修」入口）. */
+  renovDone: boolean;
+  /** 是否跳过装修直接入住（renovDone=true 时区分「装完」与「跳过」）. */
+  renovSkipped: boolean;
   /** 风险确认记录（交易凭证，本地持久化镜像，用于 final 屏展示）. */
   riskLog: RiskRecord[];
 }
@@ -209,6 +231,7 @@ export const HOUSES: House[] = [
     holdYears: 5, unique: true,
     seller: "陈老师", sellerTag: "房东 · 急售", negotiable: 0.06,
     intro: "房龄偏大，但离地铁 300m，陈老师急着换大房。",
+    reno: "简装",
   },
   {
     id: "B", emoji: "🏢", name: "中环次新两房", area: "88㎡", price: 4000000,
@@ -216,6 +239,7 @@ export const HOUSES: House[] = [
     holdYears: 5, unique: true,
     seller: "张先生", sellerTag: "房东 · 置换急卖", negotiable: 0.05,
     intro: "2019 年次新房，精装修，张先生已看中下一套，想尽快成交。",
+    reno: "精装",
   },
   {
     id: "C", emoji: "🏙️", name: "外环品质新房", area: "95㎡", price: 6000000,
@@ -223,6 +247,7 @@ export const HOUSES: House[] = [
     hold: "new", holdYears: 0, unique: true,
     seller: "销售小刘", sellerTag: "案场销售", negotiable: 0.03,
     intro: "国企开发商，三房两卫，一口价 + 少量优惠。",
+    reno: "毛坯",
   },
   {
     id: "D", emoji: "🏠", name: "外环内老工房", area: "72㎡", price: 3000000,
@@ -230,6 +255,7 @@ export const HOUSES: House[] = [
     holdYears: 5, unique: false,
     seller: "王阿姨", sellerTag: "房东 · 资金周转", negotiable: 0.08,
     intro: "老工房但满五，王阿姨周转资金，砍价空间最大。",
+    reno: "简装",
   },
   {
     id: "E", emoji: "🏘️", name: "内环江景大平层", area: "160㎡", price: 16000000,
@@ -237,6 +263,7 @@ export const HOUSES: House[] = [
     holdYears: 2, unique: false,
     seller: "赵总", sellerTag: "房东 · 改善置换", negotiable: 0.04,
     intro: "160㎡ 江景大平层，满二不唯一；面积超 140㎡，契税按高档计。",
+    reno: "精装",
   },
   {
     id: "F", emoji: "🏗️", name: "中环新交付次新", area: "92㎡", price: 5500000,
@@ -244,6 +271,7 @@ export const HOUSES: House[] = [
     holdYears: 0, unique: false,
     seller: "刘先生", sellerTag: "房东 · 投资客回笼", negotiable: 0.05,
     intro: "去年刚交付的次新房，投资客想回笼资金；未满 2 年需缴全额增值税（5%+附加），税费是大头。",
+    reno: "简装",
   },
 ];
 
@@ -318,11 +346,23 @@ export const STAGES: Record<SceneKey, string> = {
   signNet: "网签",
   loan: "贷款",
   loanChk: "贷款审批",
-  escrow: "资金监管",
+  loanContract: "贷款合同",
   transfer: "过户",
-  deed: "领证 / 放款",
+  deed: "缴税领证",
   handover: "交房",
+  settle: "交割结算",
   final: "完成",
+  renovDesign: "设计",
+  renovPlan: "定方案",
+  renovDemo: "拆除",
+  renovWall: "砌墙",
+  renovElec: "水电",
+  renovTile: "瓦工",
+  renovWood: "木工",
+  renovPaint: "油漆",
+  renovInstall: "安装",
+  renovClean: "保洁",
+  renovDone: "完工",
 };
 
 /** 12 节点流程条（HUD 下方）：已过 ✓ / 当前高亮 / 未到置灰. */
@@ -340,10 +380,10 @@ export const NODES: FlowNode[] = [
   { k: "borrow", t: "筹钱" },
   { k: "sign", t: "签约" },
   { k: "loan", t: "贷款" },
-  { k: "escrow", t: "监管" },
   { k: "transfer", t: "过户" },
   { k: "deed", t: "领证" },
-  { k: "final", t: "交房" },
+  { k: "handover", t: "交房" },
+  { k: "renov", t: "装修" },
 ];
 
 /** 场景 → 12 节点归属（用于高亮当前节点）. */
@@ -366,11 +406,23 @@ export const SCENE_NODE: Partial<Record<SceneKey, string>> = {
   signNet: "sign",
   loan: "loan",
   loanChk: "loan",
-  escrow: "escrow",
+  loanContract: "loan",
   transfer: "transfer",
   deed: "deed",
-  handover: "final",
-  final: "final",
+  handover: "handover",
+  settle: "handover",
+  final: "renov",
+  renovDesign: "renov",
+  renovPlan: "renov",
+  renovDemo: "renov",
+  renovWall: "renov",
+  renovElec: "renov",
+  renovTile: "renov",
+  renovWood: "renov",
+  renovPaint: "renov",
+  renovInstall: "renov",
+  renovClean: "renov",
+  renovDone: "renov",
 };
 
 /**
@@ -378,8 +430,12 @@ export const SCENE_NODE: Partial<Record<SceneKey, string>> = {
  *
  * 前期（身份/现金/选房/资格/砍价/算账/筹钱）都是私人随机决策，没有固定时间预期，
  * 一律视为「今天」（第 1 天）；自签约付定金起才进入交易流程，按固定节奏推进：
- * 付定金(第1天) → 7 天内付首付(第 8 天) → 当天办贷款 → 审批 7 天(第 8 天出批贷函) →
- * 过户(第 8 天) → 过户审税 7 天 → 第 15 天缴税出产证 → 次日交房。
+ * 付定金(第1天) → 网签付首付先付部分并申贷(第1天) → 审批 7 天(第 8 天出批贷函) →
+ * 贷款合同确认并补足剩余首付(第 8 天) → 递交过户材料出收件收据(第 8 天) →
+ * 审税 7 天 → 第 15 天缴税领证、产证给银行放款 → 次日交房 → 同日交割结算尾款。
+ * 装修流程自交易完成(第16天)起按阶段工期累加：设计 1 天 → 定方案 1 天 → 拆除 4 天 →
+ * 砌墙 4 天 → 水电 8 天 → 瓦工 10 天 → 木工 8 天 → 油漆 14 天 → 安装 8 天 → 保洁交付 4 天，
+ * 第 78 天装修完工。
  */
 export const DAYS: Partial<Record<SceneKey, number>> = {
   /* 前期 · 私人决策：无时间预期，均视为今天 */
@@ -397,17 +453,31 @@ export const DAYS: Partial<Record<SceneKey, number>> = {
   loanType: 1,
   funds: 1,
   borrow: 1,
-  /* 交易流程自付定金起：定金/网签/申贷同日 → 审批 7 天 → 定金后 7 天内付首付 →
-     过户同日 → 审税 7 天 → 缴税出产证 → 次日交房 */
+  /* 交易流程自付定金起：定金/网签付首付先付部分/申贷同日 → 审批 7 天 → 贷款合同确认并补足剩余首付 →
+     同日递交过户材料出收件收据 → 审税 7 天 → 缴税领证、产证给银行放款 → 次日交房 → 同日交割结算尾款 */
   sign: 1,
   signNet: 1,
   loan: 1,
   loanChk: 8,
-  escrow: 8,
+  loanContract: 8,
   transfer: 8,
   deed: 15,
   handover: 16,
+  settle: 16,
   final: 16,
+  /* 装修流程：交易完成(第16天) → 设计出方案 1 天 → 定方案 1 天 → 拆除 4 天 → 砌墙 4 天 →
+     水电 8 天 → 瓦工 10 天 → 木工 8 天 → 油漆 14 天 → 安装 8 天 → 保洁交付 4 天 */
+  renovDesign: 17,
+  renovPlan: 18,
+  renovDemo: 22,
+  renovWall: 26,
+  renovElec: 34,
+  renovTile: 44,
+  renovWood: 52,
+  renovPaint: 66,
+  renovInstall: 74,
+  renovClean: 78,
+  renovDone: 78,
 };
 
 /** 初始全局状态（等同 HiFi resetAll 后的 S；进入页面每次新模拟）. */
@@ -454,6 +524,10 @@ export function createInitialState(): SimState {
     loanYears: 30,
     loan: { gjj: 0, comm: 0, monthly: 0, totalInt: 0 },
     holdback: 0,
+    firstPay: 0,
+    taxed: false,
+    renovDone: false,
+    renovSkipped: false,
     riskLog: [],
   };
 }

@@ -1,6 +1,6 @@
 /**
  * 购房模拟器 · 场景视图冒烟测试.
- * 覆盖 buildScene 全部 22 屏：为每屏构造满足前置条件的 SimState，断言产物非空、
+ * 覆盖 buildScene 全部 36 屏：为每屏构造满足前置条件的 SimState，断言产物非空、
  * 无运行时异常；并按真实流程顺序走一遍全流程状态机（纯函数路径），验证派生数据一致。
  */
 import { describe, expect, it } from "vitest";
@@ -69,18 +69,27 @@ function stateForScene(scene: Parameters<typeof buildScene>[0]["scene"]): Return
     S.usedBorrow = { family: true, credit: true }; // 覆盖已用渠道占位分支
     return S;
   }
-  if (scene === "loan" || scene === "loanChk") {
+  if (scene === "loan" || scene === "loanChk" || scene === "loanContract") {
     return S; // base 已 derive，组合贷月供在风控线内 → 通过分支
   }
-  if (scene === "escrow" || scene === "deed") {
-    return S;
-  }
-  if (scene === "transfer") {
-    return S;
+  if (scene === "deed" || scene === "transfer") {
+    return S; // deed 默认缴税前态（taxed=false）
   }
   if (scene === "handover") {
     S.holdback = 100000; // 覆盖户口未迁分支
     return S;
+  }
+  if (scene === "settle") {
+    S.holdback = 100000; // 覆盖扣押尾款待付分支
+    return S;
+  }
+  if (
+    scene === "renovDesign" || scene === "renovPlan" ||
+    scene === "renovDemo" || scene === "renovWall" || scene === "renovElec" ||
+    scene === "renovTile" || scene === "renovWood" || scene === "renovPaint" ||
+    scene === "renovInstall" || scene === "renovClean" || scene === "renovDone"
+  ) {
+    return S; // 装修屏仅需 base（含 house.reno）
   }
   if (scene === "final") {
     S.holdback = 100000;
@@ -92,11 +101,14 @@ function stateForScene(scene: Parameters<typeof buildScene>[0]["scene"]): Return
 }
 
 describe("buildScene 全屏冒烟", () => {
-  it("23 屏均产出非空内容块且不抛异常", () => {
+  it("35 屏均产出非空内容块且不抛异常", () => {
     const scenes: Parameters<typeof buildScene>[0]["scene"][] = [
       "start", "role", "cash", "select", "custom", "qa", "blocked",
       "nego1", "nego2", "nego3", "feeNego", "loanType", "funds", "borrow",
-      "sign", "signNet", "loan", "loanChk", "escrow", "transfer", "deed", "handover", "final",
+      "sign", "signNet", "loan", "loanChk", "loanContract", "transfer", "deed",
+      "handover", "settle", "final",
+      "renovDesign", "renovPlan", "renovDemo", "renovWall", "renovElec",
+      "renovTile", "renovWood", "renovPaint", "renovInstall", "renovClean", "renovDone",
     ];
     scenes.forEach((scene) => {
       const S = stateForScene(scene);
@@ -122,7 +134,7 @@ describe("buildScene 全屏冒烟", () => {
     expect(judgeQA(S).ok).toBe(true);
   });
 
-  it("全款路径：贷款方案屏直接转资金监管（无贷款审批）", () => {
+  it("全款路径：贷款方案屏直接递交过户（无贷款审批/无放款）", () => {
     const S = base();
     S.downSel = 1;
     derive(S);

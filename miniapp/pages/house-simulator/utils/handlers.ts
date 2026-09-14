@@ -35,8 +35,8 @@ export interface HandlerCtx {
   openTaxModal(): void;
   /** 打开「居间协议核对清单」弹层（签署前逐项确认，全部核对后才可进付款确认）. */
   openAgreementModal(): void;
-  /** 打开付款确认弹层（定金 / 首付入监管 / 过户缴税，确认后才真实扣款）;含违约风险醒目警示. */
-  openPayModal(kind: "deposit" | "escrow" | "transfer"): void;
+  /** 打开付款确认弹层（定金 / 网签首付先付 / 补足剩余首付 / 缴税领证 / 扣押尾款，确认后才真实扣款）;含违约风险醒目警示. */
+  openPayModal(kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback"): void;
   /** 打开「模拟日历 · 时间快进」弹层（节点完成 → 下一节点等待天数可视化）. */
   openCalModal(to: SceneKey): void;
   confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string): void;

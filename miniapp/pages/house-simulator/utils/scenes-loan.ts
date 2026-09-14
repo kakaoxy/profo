@@ -6,7 +6,7 @@
  * 纯函数，仅依赖 SimState 与 calc/constants 工具。
  */
 
-import { fmt, fmtY, fmtYuan, pct } from "./calc";
+import { firstPayFor, fmt, fmtY, fmtYuan, pct } from "./calc";
 import { INCOME, LOAN_TYPES, SimState } from "./constants";
 import { bubble, OptItem, pmtY, RowItem, SceneBlock } from "./scenes-common";
 
@@ -26,13 +26,13 @@ export function sceneLoan(S: SimState): SceneBlock[] {
           { k: "首付 + 尾款（全款）", v: fmtY(S.down), total: true },
         ],
       },
-      { t: "banner", cls: "sky", large: true, title: "💰 全款 · 无贷款", desc: "全部房款以现金结清，跳过贷款申请与银行审批；直接进入资金监管环节。" },
+      { t: "banner", cls: "sky", large: true, title: "💰 全款 · 无贷款", desc: "全部房款以现金结清，跳过贷款申请与银行审批；直接进入过户递交材料。" },
       {
         t: "note",
         bold: "全款优势：",
         text: "无月供、无利息、无征信审批；只要现金充足，这一步就结束了贷款的烦恼。",
       },
-      { t: "cta", items: [{ action: "loanOkAllCash", title: "确认全款 · 走资金监管", cls: "btn-ink" }] },
+      { t: "cta", items: [{ action: "loanOkAllCash", title: "确认全款 · 递交过户", cls: "btn-ink" }] },
     ];
   }
   const L = S.loan;
@@ -127,7 +127,7 @@ export function sceneLoanChk(S: SimState): SceneBlock[] {
         desc: compLine + " · 等额本息 · 月供 " + fmtYuan(L.monthly) + " 元 / 月",
       },
       { t: "note", bold: "贷款材料：", text: "身份证 · 收入流水 · 征信授权 · 网签合同。审批约需 7 天：送审后银行核征信、流水、面签，出批贷函即通过。" },
-      { t: "cta", items: [{ action: "lcOk", title: "批贷通过，走资金监管", cls: "btn-ink" }] },
+      { t: "cta", items: [{ action: "lcOk", title: "批贷通过 · 签贷款合同", cls: "btn-ink" }] },
     ];
   }
   /* 超线：风控拦截 */
@@ -135,10 +135,11 @@ export function sceneLoanChk(S: SimState): SceneBlock[] {
   const needPay = Math.max(10000, Math.ceil((L.monthly - INCOME * 0.5) / f / 10000) * 10000);
   // 风控要求补充的首付按整万元向上计（银行惯例），非金额精度损失
   const yW = fmt(needPay);
-  /* 追加首付可行性：定金已在签约屏付讫，此后尚待支付的现金 = 需现金 − 已付定金
-     （首付尾款 + 买方税费 + 到手价转嫁的卖方税费），与实际扣款口径一致
-     （escrowOk 扣 down−deposit、trOk 扣 taxes+netTax）；漏掉 netTax 会低估待付额、放行付不起的追加首付。 */
-  const avail = S.cash - (S.need - S.deposit);
+  /* 追加首付可行性：定金已在签约屏付讫、首付先付已在网签屏付讫，
+     此后尚待支付的现金 = 需现金 − 已付定金 − 已付首付先付（首付剩余 + 买方税费 + 到手价转嫁的卖方税费），
+     与实际扣款口径一致（网签扣 firstPay、贷款合同扣 restPay、领证缴税扣 taxes+netTax）；
+     漏掉 netTax 会低估待付额、放行付不起的追加首付。 */
+  const avail = S.cash - (S.need - S.deposit - S.firstPay);
   const opts: OptItem[] = [];
   if (S.loanYears < 30) {
     opts.push({ action: "lcLong", title: "拉长还款到 30 年", desc: "月供立刻降档，但总利息更多。", marker: "→ 30年" });
@@ -169,4 +170,65 @@ export function sceneLoanChk(S: SimState): SceneBlock[] {
   );
   blocks.push({ t: "opts", items: opts });
   return blocks;
+}
+
+/** 贷款合同确认屏：批贷合同签字 + 补足剩余首付. */
+export function sceneLoanContract(S: SimState): SceneBlock[] {
+  const L = S.loan;
+  const firstPay = S.firstPay > 0 ? S.firstPay : firstPayFor(S);
+  const restPay = Math.max(0, S.down - S.deposit - firstPay);
+  const compLine =
+    S.loanType === "comm"
+      ? "商贷 " + fmt(L.comm) + " 万 @" + pct(S.commRate)
+      : S.loanType === "gjj"
+        ? "公积金 " + fmt(L.gjj) + " 万 @" + pct(S.gjjRate)
+        : "公积金 " + fmt(L.gjj) + " 万 @" + pct(S.gjjRate) + " + 商贷 " + fmt(L.comm) + " 万 @" + pct(S.commRate);
+  return [
+    { t: "title", text: "贷款合同 · 确认" },
+    {
+      t: "sub",
+      text:
+        "批贷合同确认金额与月供。网签时已付首付先付部分 " + fmt(firstPay) + " 万（定金 " + fmt(S.deposit) + " 万已含其中），剩余首付 " + fmt(restPay) + " 万现在补足入资金监管。",
+    },
+    {
+      t: "chat",
+      items: [
+        bubble("信贷经理 高经理", "合同条款和金额都确认无误的话，签字生效。放款以新产证到手为前提：过户缴税领证后，把产证拍照发我，当天放款到卖方。"),
+      ],
+    },
+    {
+      t: "rows",
+      items: [
+        { k: "贷款金额（" + LOAN_TYPES[S.loanType].name + " · " + S.loanYears + " 年）", v: fmtY(L.gjj + L.comm) },
+        { k: compLine, v: "等额本息" },
+        { k: "月供", v: fmtYuan(L.monthly) + " 元/月" },
+        { k: "首付（定金 + 网签先付）", v: fmtY(S.deposit + firstPay) },
+        { k: "本次补足剩余首付（入资金监管）", v: fmtY(restPay), total: true },
+      ],
+    },
+    {
+      t: "banner",
+      cls: "sky",
+      title: "🔒 资金监管",
+      desc: "首付不直接打给卖家，先存入监管账户，过户领证后划转卖方；过户遇阻，监管资金原路退回，双方都踏实。",
+    },
+    {
+      t: "banner",
+      cls: "warm",
+      title: "⚠️ 贷款金额不及预期？",
+      desc: "银行按「评估价」（常低于成交价，如按 95% 计）批贷：贷款额核减时，差额须以现金补足。这笔备用金在签约前的《居间协议核对清单》里就谈好了最晚补足时间——合同金额与批贷金额不一致时，按约定期限补足，否则构成违约。",
+    },
+    {
+      t: "opts",
+      items: [
+        {
+          action: "lcContractOk",
+          title: "确认贷款合同 · 补足剩余首付",
+          desc: "支付剩余首付 " + fmt(restPay) + " 万入监管，随后递交过户材料。",
+          marker: "-" + fmt(restPay) + "万",
+        },
+      ],
+    },
+    { t: "note", bold: "放款条件：", text: "过户缴税领证后，将新产证拍照发给银行，银行确认后放款至卖方账户。" },
+  ];
 }

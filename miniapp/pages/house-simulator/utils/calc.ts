@@ -139,6 +139,20 @@ export function recalcNeed(S: SimState): void {
 }
 
 /**
+ * 网签时应先付的首付部分（元，不含已付定金）：首付档位 ≥20% 先付 20% 房款，
+ * <20%（如最低 15%）网签一次付清；全款则网签一次性付清剩余全部房款。
+ * 贷款合同确认后补足 = down − deposit − firstPay（贷款路径）。
+ * 50% 档口径精确对应参考流程：定金 5%（签约已付）+ 网签再付 15% + 贷款合同后补 30%。
+ */
+export function firstPayFor(S: SimState): number {
+  if (S.downRate >= 1) {
+    return round2(Math.max(0, S.deal - S.deposit)); /* 全款：网签付清剩余房款，不再有补足 */
+  }
+  const rate = Math.min(S.downRate, 0.2);
+  return round2(Math.max(0, S.deal * rate - S.deposit));
+}
+
+/**
  * 贷款计算（利率按身份角色：首套公积金 2.6%/商贷 3.05%；二套公积金 3.075%/商贷 3.06%）.
  * 贷款额 = 成交价 − 房款首付；纯公积金 min(贷款, 80万)；组合贷 公积金 min(贷款×40%, 80万) + 商贷补足.
  */
