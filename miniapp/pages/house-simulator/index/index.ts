@@ -21,18 +21,21 @@ import {
   createInitialState,
   CUST_RING_OPTIONS,
   CUST_RING_VALUES,
+  DAYS,
   ROLES,
 } from "../utils/constants";
 import type { House, RiskRecord, SceneKey, SimState } from "../utils/constants";
 import { clearRiskLog, fmtTs, pushRiskLog } from "../utils/riskLog";
 import {
+  buildCalGrid,
   buildHud,
   buildSellerBar,
   buildSteps,
-  depositModal,
+  calModal,
   emptyModal,
   netModal,
-  netSignModal,
+  payModal,
+  realOf,
   taxRiskModal,
 } from "../utils/render";
 import type { HudData, ModalData, SellerBarData, StepItem } from "../utils/render";
@@ -77,17 +80,28 @@ interface PageCustom {
   setupHouse(h: House): void;
   openCreditModal(): void;
   openNetModal(): void;
-  openDepositModal(): void;
-  openNetSignModal(): void;
   openTaxModal(): void;
+  openPayModal(kind: "deposit" | "escrow" | "transfer"): void;
+  /** 打开「模拟日历 · 时间快进」弹层：自动翻页流逝到下一节点日期后展示注意事项/风险. */
+  openCalModal(to: SceneKey): void;
+  /** 清理时间快进定时器（弹层关闭 / 页面卸载时调用）. */
+  clearCalTimer(): void;
   confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string): void;
   closeModal(): void;
+  onLoad(): void;
+  onUnload(): void;
+  /** 时间快进定时器句柄（onLoad 初始化，关闭/卸载时清理）. */
+  calTimer?: number | null;
+  /** 快进起点 / 当前定位 / 终点（真实日期，以今天为第 1 天）. */
+  calStart?: Date;
+  calCur?: Date;
+  calEnd?: Date;
 }
 
 Page<PageData, PageCustom>({
   data: {
     blocks: [],
-    hud: { stageLabel: "", stepText: "", cashText: "", cashLow: false, stressEmoji: "😌" },
+    hud: { stageLabel: "", stepText: "", cashText: "", cashLow: false, borrowed: false, borrowedText: "0万", stressEmoji: "😌" },
     stepPos: "",
     dayText: "",
     steps: [],
@@ -111,7 +125,13 @@ Page<PageData, PageCustom>({
   },
 
   onLoad() {
+    this.calTimer = null; /* 时间快进定时器句柄，onLoad 初始化 */
     this.resetAll();
+  },
+
+  /** 页面卸载：清理快进定时器，防止页面离场后仍在 setData. */
+  onUnload() {
+    this.clearCalTimer();
   },
 
   /** 事件代理：所有 data-act 点击统一分发到 handle. */
@@ -196,7 +216,8 @@ Page<PageData, PageCustom>({
       S.stress = 8;
     }
     derive(S);
-    this.nextScene("qa");
+    wx.showToast({ title: "✅ 房源已定 · " + h.name, icon: "none" });
+    this.nextScene("qa"); /* 前期为私人决策，无时间预期，选完直接进入资格核验 */
   },
 
   /** 信用贷二次确认（红线）：弹层仅作风险教育，不收集信息. */
@@ -209,19 +230,64 @@ Page<PageData, PageCustom>({
     this.setData({ modal: netModal(S) });
   },
 
-  /** 居间协议签署前：定金罚则强制确认弹层（不可关闭，确认后才付定金）. */
-  openDepositModal() {
-    this.setData({ modal: depositModal(S) });
-  },
-
-  /** 网签前：违约金 20% 强制确认弹层（不可关闭，确认后才完成网签）. */
-  openNetSignModal() {
-    this.setData({ modal: netSignModal(S) });
-  },
-
   /** 「到手价」税费风险强制确认弹层：分项列明卖方税费转嫁明细，勾选后才可确认（不可关闭）. */
   openTaxModal() {
     this.setData({ modal: taxRiskModal(S) });
+  },
+
+  /** 付款确认弹层（定金 / 首付入监管 / 过户缴税，确认后才真实扣款）. */
+  openPayModal(kind: "deposit" | "escrow" | "transfer") {
+    this.setData({ modal: payModal(S, kind) });
+  },
+
+  /**
+   * 打开「模拟日历 · 时间快进」弹层：以当前场景为第 fromDay 天、目标场景为第 toDay 天，
+   * 定时器自动翻页（跨月自动切页），快进结束后定格目标日期并展示下一环节注意事项与风险。
+   */
+  openCalModal(to: SceneKey) {
+    const fromDay = DAYS[S.scene] ?? 1;
+    const toDay = DAYS[to] ?? 1;
+    if (toDay <= fromDay) {
+      return; /* 无正向等待时长（同节点内流转）不弹日历 */
+    }
+    this.clearCalTimer();
+    const start = realOf(fromDay);
+    const end = realOf(toDay);
+    const gap = toDay - fromDay;
+    this.calStart = start;
+    this.calCur = start;
+    this.calEnd = end;
+    this.setData({ modal: calModal(S, to) });
+    /* 单步快进天数：最多 6 步走完（间隔一致，步数越多等待感越强） */
+    const step = Math.max(1, Math.ceil(gap / 6));
+    this.calTimer = setInterval(() => {
+      const cur = this.calCur ?? start;
+      const next = new Date(cur.getTime());
+      next.setDate(next.getDate() + step);
+      const done = next.getTime() >= end.getTime();
+      const target = done ? end : next;
+      const grid = buildCalGrid(target);
+      const progress = done ? gap : Math.min(gap, Math.round((target.getTime() - start.getTime()) / 86400000));
+      this.setData({
+        "modal.cal.month": grid.month,
+        "modal.cal.cells": grid.cells,
+        "modal.cal.progress": progress,
+        "modal.cal.pct": Math.round((progress / gap) * 100),
+        "modal.cal.done": done,
+      });
+      this.calCur = target;
+      if (done) {
+        this.clearCalTimer();
+      }
+    }, 620);
+  },
+
+  /** 清理时间快进定时器. */
+  clearCalTimer() {
+    if (this.calTimer) {
+      clearInterval(this.calTimer);
+      this.calTimer = null;
+    }
   },
 
   /** 记录一次风险确认（写本地存储 + 镜像 S.riskLog），作为交易凭证一部分. */
@@ -242,6 +308,7 @@ Page<PageData, PageCustom>({
   },
 
   closeModal() {
+    this.clearCalTimer(); /* 弹层关闭时一并终止尚未完成的日历快进动画 */
     this.setData({ modal: emptyModal() });
   },
 });

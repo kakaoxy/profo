@@ -85,24 +85,6 @@
   color: var(--rust);
   font-weight: 600;
 }
-.sheet-li {
-  display: flex;
-  align-items: flex-start;
-  gap: 6rpx;
-  font-size: 27rpx;
-  line-height: 1.7;
-  color: var(--ash);
-  background: var(--apricot-wash);
-  border-left: 8rpx solid var(--rust);
-  border-radius: 16rpx;
-  padding: 18rpx 22rpx;
-  margin-bottom: 14rpx;
-}
-.risk-b {
-  color: var(--ink);
-  font-weight: 600;
-  flex: none;
-}
 .risk-num {
   color: var(--rust);
   font-weight: 600;
@@ -118,6 +100,64 @@
   border-radius: 20rpx;
   padding: 16rpx 20rpx;
   line-height: 1.6;
+}
+
+/* ===== 付款确认 · 违约风险警示（醒目字号 / 警示色，替代原「违约风险」弹层） ===== */
+.pay-warn {
+  margin-top: 18rpx;
+  background: var(--apricot-wash);
+  border: 3rpx solid var(--rust);
+  border-radius: 20rpx;
+  padding: 18rpx 22rpx;
+}
+.pay-warn-flag {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--rust);
+}
+.pay-warn-text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--rust);
+  line-height: 1.6;
+}
+
+/* ===== 付款确认 · 现金去向（定金 / 首付入监管 / 过户税费） ===== */
+.cash-flow {
+  margin-top: 18rpx;
+  background: var(--fog);
+  border-radius: 20rpx;
+  padding: 4rpx 24rpx;
+}
+.cf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 18rpx 0;
+  font-size: 28rpx;
+}
+.cf-row:not(:last-child) {
+  border-bottom: 2rpx dashed var(--dove);
+}
+.cf-k {
+  color: var(--graphite);
+  flex: none;
+}
+.cf-v {
+  color: var(--ink);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.cf-out .cf-v {
+  color: var(--rust);
+  font-weight: 600;
+}
+.cf-bal .cf-v {
+  font-weight: 600;
 }
 
 /* ===== 税费风险确认 · 分项明细 ===== */
@@ -199,4 +239,156 @@
 .btn-disabled {
   background: var(--fog);
   color: var(--dove);
+}
+
+/* ===== 模拟日历 · 时间快进 ===== */
+.cal-sheet {
+  padding-bottom: 40rpx;
+}
+.cal-title {
+  margin: 16rpx 0 6rpx;
+  display: flex;
+  align-items: flex-end;
+  gap: 16rpx;
+}
+.cal-arr {
+  font-size: 30rpx;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.cal-gap {
+  margin-left: auto;
+  font-size: 26rpx;
+  color: var(--ink);
+  flex: none;
+}
+.cal-gap-n {
+  font-size: 56rpx;
+  font-weight: 600;
+  color: var(--rust);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.cal-phase {
+  font-size: 26rpx;
+  color: var(--graphite);
+  margin-bottom: 20rpx;
+}
+.cal-card {
+  background: var(--fog);
+  border-radius: 24rpx;
+  padding: 24rpx;
+}
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+.cal-month {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.cal-fast {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--rust);
+  font-variant-numeric: tabular-nums;
+}
+.cal-day {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #176b4d;
+  font-variant-numeric: tabular-nums;
+}
+.cal-week {
+  display: flex;
+}
+.cal-wk {
+  flex: 1;
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--dove);
+  padding-bottom: 10rpx;
+}
+.cal-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+.cal-cell {
+  width: calc(100% / 7);
+  height: 66rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+.cal-cell.past {
+  color: #c9c2b4;
+}
+.cal-cell.cur {
+  background: var(--rust);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 16rpx;
+  box-shadow: 0 6rpx 16rpx rgba(193, 70, 30, 0.22);
+}
+.cal-range {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+  font-variant-numeric: tabular-nums;
+}
+.cal-arrow {
+  color: var(--rust);
+  font-weight: 600;
+}
+.cal-progress {
+  height: 10rpx;
+  border-radius: 9999rpx;
+  background: #ece7de;
+  margin-top: 14rpx;
+  overflow: hidden;
+}
+.cal-progress-fill {
+  height: 100%;
+  border-radius: 9999rpx;
+  background: var(--rust);
+  transition: width 0.5s ease;
+}
+.cal-note {
+  margin-top: 20rpx;
+  font-size: 26rpx;
+  color: var(--ash);
+  line-height: 1.7;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 18rpx;
+  padding: 16rpx 20rpx;
+}
+.cal-note-b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.cal-risk {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: var(--rust);
+  line-height: 1.7;
+  background: var(--apricot-wash);
+  border: 2rpx solid #e8b79b;
+  border-radius: 18rpx;
+  padding: 16rpx 20rpx;
+}
+.cal-risk-b {
+  font-weight: 600;
 }

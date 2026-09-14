@@ -19,6 +19,12 @@ function toast(title: string): void {
 
 /** 后续流程阶段分发（前置阶段未命中后调用）. */
 export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
+  /* 模拟日历「知道了」：关闭时间快进弹层 */
+  if (action === "calOk") {
+    ctx.closeModal();
+    return;
+  }
+
   /* 砍价 */
   if (action.indexOf("n1:") === 0) {
     S.negoR1 = action.split(":")[1] as "hard" | "soft" | "chat";
@@ -120,6 +126,7 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
   if (action === "fee2") {
     S.agentRate = 0.02;
     derive(S);
+    toast("🤝 中介费按 2% 确认");
     ctx.nextScene("loanType");
     return;
   }
@@ -201,46 +208,31 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
   }
 
   if (action === "sign" || action === "borrow") {
+    /* 算账/筹钱阶段完成：均为私人决策当天空转，无时间预期，不弹模拟日历 */
+    toast(
+      (action === "borrow"
+        ? "✅ 算账清楚，需要先筹钱"
+        : S.scene === "borrow"
+          ? "✅ 缺口已补齐"
+          : "✅ 资金充足")
+    );
     ctx.nextScene(action);
     return;
   }
   if (action === "signOk") {
-    /* 居间协议签署前：强制确认定金罚则，确认后才付定金 */
-    ctx.openDepositModal();
+    /* 签约即付定金：直接进付款确认（内含违约风险醒目警示），payOk 才真实扣款 */
+    ctx.openPayModal("deposit");
     return;
   }
   if (action === "signNetOk") {
-    /* 网签前：强制确认违约金 20%，确认后才完成网签 */
-    ctx.openNetSignModal();
-    return;
-  }
-  if (action === "signCancel") {
-    /* 暂不签约：关闭弹层停留在当前签约屏，可重新决策 */
-    ctx.closeModal();
-    return;
-  }
-  if (action === "breachOk") {
-    if (ctx.data.modal.stage === "deposit") {
-      /* 居间协议：确认定金罚则后才真实付定金、进网签 */
-      ctx.confirmRisk(
-        "deposit",
-        "签署《房地产买卖居间协议》并支付定金 " + fmt(S.deposit) + " 万。买方违约：定金不予返还；卖方违约：双倍返还。"
-      );
-      ctx.closeModal();
-      S.cash -= S.deposit;
-      toast("🤝 居间协议已签 · 定金 " + fmt(S.deposit) + " 万已支付");
-      ctx.nextScene("signNet");
-    } else {
-      /* 网签：确认违约金 20% 后才视为完成备案、进入贷款 */
-      const liquidated = S.deal * 0.2;
-      ctx.confirmRisk(
-        "liquidated",
-        "网签备案生效（合同价 " + fmt(S.deal) + " 万）。买方超过约定节点违约：按合同总价 20% 赔付违约金约 " + fmt(liquidated) + " 万，与定金罚则就高主张，并承担诉讼/律师费及征信、失信记录等法律后果。"
-      );
-      ctx.closeModal();
-      toast("✅ 网签备案完成 · 上海市房地产买卖合同已生效");
-      ctx.nextScene("loan");
-    }
+    /* 网签备案生效：违约风险直接记录为交易凭证，随即进入贷款申请 */
+    const liquidated = S.deal * 0.2;
+    ctx.confirmRisk(
+      "liquidated",
+      "网签备案生效（合同价 " + fmt(S.deal) + " 万）。买方超过约定节点违约：按合同总价 20% 赔付违约金约 " + fmt(liquidated) + " 万，与定金罚则就高主张，并承担诉讼/律师费及征信、失信记录等法律后果。"
+    );
+    toast("✅ 网签备案完成 · 上海市房地产买卖合同已生效");
+    ctx.nextScene("loan");
     return;
   }
   if (action.indexOf("ly:") === 0) {
@@ -250,11 +242,14 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
     return;
   }
   if (action === "loanOk") {
+    /* 送银行审批：贷款审批约需 7 天，弹模拟日历快进到审批结果 */
+    ctx.openCalModal("loanChk");
     ctx.nextScene("loanChk");
     return;
   }
   if (action === "loanOkAllCash") {
     toast("💰 全款支付 · 跳过贷款审批");
+    ctx.openCalModal("escrow");
     ctx.nextScene("escrow");
     return;
   }
@@ -262,7 +257,7 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
   /* 贷款审批（风控）分支 */
   if (action === "lcOk") {
     toast("🏦 批贷函已出 · 贷款审批通过");
-    ctx.nextScene("escrow");
+    ctx.nextScene("escrow"); /* 审批通过当天付首付入监管（定金后 7 天内） */
     return;
   }
   if (action === "lcLong") {
@@ -296,19 +291,50 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
   }
 
   if (action === "escrowOk") {
-    S.cash -= S.down - S.deposit; /* 定金已付，冲抵首付 */
-    toast("🔒 首付已入资金监管账户");
-    ctx.nextScene("transfer");
+    /* 首付入监管：先弹付款确认（现有现金 → 本次支付 → 支付后剩余），确认后才冲抵定金扣款 */
+    ctx.openPayModal("escrow");
     return;
   }
   if (action === "trOk") {
-    S.cash -= S.taxes + S.netTax; /* 到手价转嫁税费随过户一并缴纳 */
-    toast("📄 过户完成 · 一网通办出证");
-    ctx.nextScene("deed");
+    /* 过户税费：先弹付款确认，确认后才一次性扣缴 */
+    ctx.openPayModal("transfer");
     return;
   }
+
+  /* 付款确认弹层：确认后按用途真实扣款（定金 / 首付入监管 / 过户缴税），并关闭弹层 */
+  if (action === "payCancel") {
+    ctx.closeModal();
+    return;
+  }
+  if (action === "payOk") {
+    const kind = ctx.data.modal.pay?.kind;
+    if (kind === "deposit") {
+      ctx.confirmRisk(
+        "deposit",
+        "签署《房地产买卖居间协议》并支付定金 " + fmt(S.deposit) + " 万。买方违约：定金不予返还；卖方违约：双倍返还。"
+      );
+      ctx.closeModal();
+      S.cash -= S.deposit;
+      toast("🤝 居间协议已签 · 定金 " + fmt(S.deposit) + " 万已支付 · 余 " + fmt(S.cash) + " 万");
+      ctx.nextScene("signNet");
+    } else if (kind === "escrow") {
+      ctx.closeModal();
+      S.cash -= S.down - S.deposit; /* 定金已付，冲抵首付 */
+      toast("🔒 首付已入资金监管账户");
+      ctx.nextScene("transfer"); /* 付首付当天过户 */
+    } else if (kind === "transfer") {
+      ctx.closeModal();
+      S.cash -= S.taxes + S.netTax; /* 到手价转嫁税费随过户一并缴纳 */
+      toast("📄 过户完成 · 一网通办出证");
+      ctx.openCalModal("deed"); /* 过户审税需 7 天，快进到缴税出产证 */
+      ctx.nextScene("deed");
+    }
+    return;
+  }
+
   if (action === "deedOk") {
     toast("🏦 放款完成 · 尾款已划转卖方");
+    ctx.openCalModal("handover");
     ctx.nextScene("handover");
     return;
   }

@@ -60,7 +60,7 @@ export function handleSetup(ctx: HandlerCtx, S: SimState, action: string): boole
     S.cash = Math.round(amount) * 10000;
     S.cashSet = true;
     toast("💰 可动用现金 " + fmt(S.cash) + " 万");
-    ctx.nextScene("select");
+    ctx.nextScene("select"); /* 现金是私人决策，无时间预期，不定档后直接选房 */
     return true;
   }
 
@@ -144,7 +144,7 @@ export function handleSetup(ctx: HandlerCtx, S: SimState, action: string): boole
       S.judge = judgeQA(S);
       if (S.judge.ok) {
         toast("✅ 随申办 · 购房资格核验通过");
-        ctx.nextScene("nego1");
+        ctx.nextScene("nego1"); /* 资格核验无固定等待，通过即进入砍价 */
       } else {
         ctx.nextScene("blocked");
       }

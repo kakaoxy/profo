@@ -373,31 +373,41 @@ export const SCENE_NODE: Partial<Record<SceneKey, string>> = {
   final: "final",
 };
 
-/** 时间轴（PRD 附录 13.2，累计自然日）. */
+/**
+ * 时间轴（累计自然日）.
+ *
+ * 前期（身份/现金/选房/资格/砍价/算账/筹钱）都是私人随机决策，没有固定时间预期，
+ * 一律视为「今天」（第 1 天）；自签约付定金起才进入交易流程，按固定节奏推进：
+ * 付定金(第1天) → 7 天内付首付(第 8 天) → 当天办贷款 → 审批 7 天(第 8 天出批贷函) →
+ * 过户(第 8 天) → 过户审税 7 天 → 第 15 天缴税出产证 → 次日交房。
+ */
 export const DAYS: Partial<Record<SceneKey, number>> = {
+  /* 前期 · 私人决策：无时间预期，均视为今天 */
   start: 1,
   role: 1,
   cash: 1,
-  select: 3,
-  custom: 3,
+  select: 1,
+  custom: 1,
   qa: 1,
   blocked: 1,
-  nego1: 7,
-  nego2: 8,
-  nego3: 9,
-  feeNego: 9,
-  loanType: 10,
-  funds: 10,
-  borrow: 11,
-  sign: 14,
-  signNet: 14,
-  loan: 28,
-  loanChk: 29,
-  escrow: 30,
-  transfer: 31,
-  deed: 33,
-  handover: 42,
-  final: 42,
+  nego1: 1,
+  nego2: 1,
+  nego3: 1,
+  feeNego: 1,
+  loanType: 1,
+  funds: 1,
+  borrow: 1,
+  /* 交易流程自付定金起：定金/网签/申贷同日 → 审批 7 天 → 定金后 7 天内付首付 →
+     过户同日 → 审税 7 天 → 缴税出产证 → 次日交房 */
+  sign: 1,
+  signNet: 1,
+  loan: 1,
+  loanChk: 8,
+  escrow: 8,
+  transfer: 8,
+  deed: 15,
+  handover: 16,
+  final: 16,
 };
 
 /** 初始全局状态（等同 HiFi resetAll 后的 S；进入页面每次新模拟）. */

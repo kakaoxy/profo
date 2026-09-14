@@ -126,7 +126,7 @@ export function sceneLoanChk(S: SimState): SceneBlock[] {
         title: "🏦 批贷函 · " + LOAN_TYPES[S.loanType].name + " · " + S.loanYears + " 年",
         desc: compLine + " · 等额本息 · 月供 " + fmtYuan(L.monthly) + " 元 / 月",
       },
-      { t: "note", bold: "贷款材料：", text: "身份证 · 收入流水 · 征信授权 · 网签合同。真实审批需 7–15 个工作日，本演示已加速；审批通过后再签正式贷款合同，银行按约放款。" },
+      { t: "note", bold: "贷款材料：", text: "身份证 · 收入流水 · 征信授权 · 网签合同。审批约需 7 天：送审后银行核征信、流水、面签，出批贷函即通过。" },
       { t: "cta", items: [{ action: "lcOk", title: "批贷通过，走资金监管", cls: "btn-ink" }] },
     ];
   }

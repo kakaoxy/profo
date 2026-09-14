@@ -10,7 +10,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createInitialState, HOUSES, ROLES, SimState } from "../../pages/house-simulator/utils/constants";
 import { derive, nego2Options } from "../../pages/house-simulator/utils/calc";
 import { handleAction, HandlerCtx } from "../../pages/house-simulator/utils/handlers";
-import { depositModal, emptyModal, netModal, netSignModal, taxRiskModal } from "../../pages/house-simulator/utils/render";
+import { emptyModal, netModal, payModal, taxRiskModal } from "../../pages/house-simulator/utils/render";
 
 /* wx API 存根（handlers 内 toast 使用）. */
 beforeAll(() => {
@@ -81,19 +81,20 @@ class FakePage {
     this.calls.push("modal:net");
   }
 
-  openDepositModal(): void {
-    this.setData({ modal: depositModal(this.S) });
-    this.calls.push("modal:deposit");
-  }
-
-  openNetSignModal(): void {
-    this.setData({ modal: netSignModal(this.S) });
-    this.calls.push("modal:netSign");
-  }
-
   openTaxModal(): void {
     this.setData({ modal: taxRiskModal(this.S) });
     this.calls.push("modal:taxRisk");
+  }
+
+  /** 镜像 index.ts openPayModal：付款确认弹层，确认（payOk）后才真实扣款. */
+  openPayModal(kind: "deposit" | "escrow" | "transfer"): void {
+    this.setData({ modal: payModal(this.S, kind) });
+    this.calls.push("modal:pay");
+  }
+
+  /** 镜像 index.ts openCalModal：模拟日历 · 时间快进（动画由页面驱动，桩仅记录） */
+  openCalModal(to: string): void {
+    this.calls.push("cal:" + to);
   }
 
   confirmRisk(type: string, _detail: string): void {
@@ -313,41 +314,91 @@ describe("流程阶段：筹钱 / 签约 / 贷款 / 监管 / 过户 / 交房", (
     expect(S.scene).toBe("borrow");
   });
 
-  it("signOk → 定金弹层 → breachOk(deposit) 扣定金进网签 → 网签确认后进贷款", () => {
+  it("签约定金：signOk 直接进付款确认（含违约风险警示，不扣款）→ payOk 才扣定金进网签 → 网签确认记录违约金后进贷款", () => {
     const { p, S } = atFundsShort();
     run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign");
     expect(S.cash - 0 >= S.need).toBe(true); // 三条渠道补足后无缺口
     expect(S.scene).toBe("sign");
     const cash0 = S.cash;
     run(p, "signOk");
-    expect(p.calls).toContain("modal:deposit");
-    run(p, "breachOk");
+    expect(p.calls).toContain("modal:pay");
+    expect(p.data.modal.pay!.kind).toBe("deposit");
+    expect(p.data.modal.pay!.warn).toBeTruthy(); // 违约风险并入付款确认醒目警示
+    // 付款确认只是弹层：未真实扣款、未离开签约屏
+    expect(S.cash).toBe(cash0);
+    expect(S.scene).toBe("sign");
+    // 付款确认 → 记录风险并真实扣定金，弹层关闭
+    run(p, "payOk");
+    expect(p.calls).toContain("confirmRisk:deposit");
     expect(S.cash).toBe(cash0 - S.deposit);
     expect(S.scene).toBe("signNet");
-    run(p, "signNetOk", "breachOk");
-    expect(p.calls).toContain("modal:netSign");
+    expect(p.data.modal.type).toBe("");
+    // 网签确认：记录违约金 20% 风险，随即进入贷款申请
+    run(p, "signNetOk");
+    expect(p.calls).toContain("confirmRisk:liquidated");
     expect(S.scene).toBe("loan");
+  });
+
+  it("定金付款确认可取消：payCancel 关闭弹层且不扣款", () => {
+    const { p, S } = atFundsShort();
+    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign", "signOk");
+    const cash0 = S.cash;
+    expect(p.data.modal.pay!.kind).toBe("deposit");
+    run(p, "payCancel");
+    expect(S.cash).toBe(cash0);
+    expect(S.scene).toBe("sign");
+    expect(p.data.modal.type).toBe("");
+    expect(p.calls).not.toContain("confirmRisk:deposit");
   });
 
   it("贷款审批通过 → 监管扣首付 → 过户扣税费 → 领证交房 → 扣押分支", () => {
     const { p, S } = atFundsShort();
-    // 补足缺口并完成签约/网签
+    // 补足缺口并完成签约（付款确认扣定金）/网签/送审
     run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign",
-      "signOk", "breachOk", "signNetOk", "breachOk", "loanOk", "lcOk");
+      "signOk", "payOk", "signNetOk", "loanOk", "lcOk");
     expect(S.scene).toBe("escrow");
     const cash0 = S.cash;
+    // 付款确认：escrowOk 仅弹层，payOk 确认后冲抵定金扣首付尾款，且弹层关闭
     run(p, "escrowOk");
+    expect(p.calls).toContain("modal:pay");
+    expect(S.cash).toBe(cash0); // 未确认不扣款
+    run(p, "payOk");
     expect(S.cash).toBe(cash0 - (S.down - S.deposit));
     expect(S.scene).toBe("transfer");
+    expect(p.data.modal.type).toBe(""); // 确认支付后面临弹层关闭
     const cash1 = S.cash;
     run(p, "trOk");
+    expect(p.calls).toContain("modal:pay");
+    run(p, "payOk");
     expect(S.cash).toBe(cash1 - (S.taxes + S.netTax));
     expect(S.scene).toBe("deed");
+    expect(p.data.modal.type).toBe("");
     run(p, "deedOk");
     expect(S.scene).toBe("handover");
     run(p, "hoHold");
     expect(S.holdback).toBeCloseTo(Math.round(S.deal * 0.01 * 100) / 100);
     expect(S.scene).toBe("final");
+  });
+
+  it("时间快进仅交易流程展示：前期无快进；申贷 → cal:loanChk / 缴税 → cal:deed / 领证 → cal:handover", () => {
+    const { p } = atFundsShort();
+    run(p, "bor:family", "bor:gjj", "bor:credit", "creditYes", "sign", "signOk", "payOk", "signNetOk", "loanOk", "lcOk");
+    expect(p.calls).not.toContain("cal:select"); // 前期（现金/选房/资格/砍价/筹钱）均不再弹时间快进
+    expect(p.calls).not.toContain("cal:nego1");
+    const c0 = p.calls.indexOf("cal:loanChk"); // 送银行审批：贷款审批 7 天
+    expect(c0).toBeGreaterThan(-1);
+    run(p, "escrowOk", "payOk");
+    run(p, "trOk", "payOk");
+    expect(p.calls.slice(c0)).toContain("cal:deed"); // 过户缴税 → 过户审税 7 天 → 缴税出产证
+    run(p, "deedOk");
+    expect(p.calls.slice(c0)).toContain("cal:handover"); // 出证/放款 → 交房（1 天）
+  });
+
+  it("模拟日历弹层 calOk 关闭", () => {
+    const p = page();
+    run(p, "role:first", "cash:p70", "pick:B");
+    run(p, "calOk");
+    expect(p.data.modal.type).toBe("");
   });
 });
 
@@ -361,7 +412,7 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     p.data.formCash = cashWan;
     run(p, "role:first", "cash:custom", "pick:F", "qa:non-sh", "qa:permit:no", "qa:years:m1-3",
       "n1:chat", "n2:m5", "n3NetYes", "taxCheck", "taxRiskOk",
-      "fee2", "lt:combo", "ltOk", "sign", "signOk", "breachOk", "signNetOk", "breachOk", "ly:20", "loanOk");
+      "fee2", "lt:combo", "ltOk", "sign", "signOk", "payOk", "signNetOk", "ly:20", "loanOk");
     return { p, S: p.S };
   }
 
@@ -374,9 +425,9 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     expect(S.down).toBe(1615000); // 104.50 万 + 风控要求追加 57 万
     expect(S.need).toBeCloseTo(needBefore + 570000); // 需现金随之抬到 211.67 万
     expect(S.need).toBeCloseTo(S.down + S.taxes + S.netTax); // 与 derive 同口径
-    run(p, "escrowOk");
+    run(p, "escrowOk", "payOk"); // 弹付款确认并确认支付
     expect(S.cash).toBeGreaterThanOrEqual(0);
-    run(p, "trOk");
+    run(p, "trOk", "payOk");
     expect(S.scene).toBe("deed");
     expect(S.cash).toBeGreaterThanOrEqual(0);
     expect(S.cash).toBeCloseTo(2200000 - (S.down + S.taxes + S.netTax));

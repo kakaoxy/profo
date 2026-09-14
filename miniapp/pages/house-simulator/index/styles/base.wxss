@@ -59,6 +59,10 @@
 .hud-item .num.low {
   color: #b7410e;
 }
+.hud-item .num.debt {
+  color: #b7410e;
+  font-weight: 600;
+}
 .moodface {
   font-size: 28rpx;
 }

@@ -32,9 +32,11 @@ export interface HandlerCtx {
   closeModal(): void;
   openCreditModal(): void;
   openNetModal(): void;
-  openDepositModal(): void;
-  openNetSignModal(): void;
   openTaxModal(): void;
+  /** 打开付款确认弹层（定金 / 首付入监管 / 过户缴税，确认后才真实扣款）;含违约风险醒目警示. */
+  openPayModal(kind: "deposit" | "escrow" | "transfer"): void;
+  /** 打开「模拟日历 · 时间快进」弹层（节点完成 → 下一节点等待天数可视化）. */
+  openCalModal(to: SceneKey): void;
   confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string): void;
   setupHouse(h: House): void;
 }
