@@ -183,9 +183,10 @@ function walk(p: FakePage, houseId: string): "final" | "blocked" | "stuck" {
         run(p, "stOk");
         if (p.data.modal.type === "pay") run(p, "payOk");
         break;
-      case "renovDesign": case "renovPlan": case "renovDemo": case "renovWall":
-      case "renovElec": case "renovTile": case "renovWood": case "renovPaint":
-      case "renovInstall": case "renovClean":
+      case "renovStart": case "renovDesign": case "renovBudget": case "renovDemo":
+      case "renovElec": case "renovSeal": case "renovTile": case "renovWood":
+      case "renovPaint": case "renovMain": case "renovInstall": case "renovClean":
+      case "renovAir": case "renovWarr":
         run(p, "renovSkip");
         break;
       default:

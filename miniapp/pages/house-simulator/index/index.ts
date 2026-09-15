@@ -1,14 +1,15 @@
 /**
- * 购房模拟器 · 页面（23 屏第一人称购房流程模拟）.
+ * 购房模拟器 · 页面（41 屏第一人称购房+装修流程模拟）.
  *
  * 状态 S 为模块级单实例（对应 HiFi 全局 S），交互统一走 handle(action) 代理：
  * 改 S → derive()/iloan() → setData(buildScene(S) + HUD + 流程条 + 卖家情绪条)。
  * 纯前端本地计算，无后端依赖（PRD §10）；每次进入页面重新开始新模拟。
  *
  * 页面职责已按层拆分（本文件仅保留 Page 实例与薄方法）：
- *  - utils/scenes*.ts：场景内容块构建（23 屏文案）
+ *  - utils/scenes*.ts：场景内容块构建（41 屏文案）
+ *  - utils/renov-data.ts / renov-events.ts：装修 13 阶段与信息迷雾事件池
  *  - utils/calc.ts：税费/贷款/限购/砍价纯计算
- *  - utils/handlers*.ts：handle() 事件分发（前置阶段 + 流程阶段）
+ *  - utils/handlers*.ts：handle() 事件分发（前置 + 流程 + 装修阶段）
  *  - utils/render.ts：HUD / 流程条 / 卖家情绪 / 弹层数据构建
  *  - utils/constants.ts：房源/角色/贷款方式等数据配置
  *  - utils/riskLog.ts：风险确认记录（本地持久化）
@@ -84,8 +85,8 @@ interface PageCustom {
   openTaxModal(): void;
   openAgreementModal(): void;
   openPayModal(kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback"): void;
-  /** 打开「模拟日历 · 时间快进」弹层：自动翻页流逝到下一节点日期后展示注意事项/风险. */
-  openCalModal(to: SceneKey): void;
+  /** 打开「模拟日历 · 时间快进」弹层：自动翻页流逝到下一节点日期后展示注意事项/风险；装修阶段显式传起止天数. */
+  openCalModal(to: SceneKey, fromDayArg?: number, toDayArg?: number): void;
   /** 清理时间快进定时器（弹层关闭 / 页面卸载时调用）. */
   clearCalTimer(): void;
   confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string): void;
@@ -248,12 +249,13 @@ Page<PageData, PageCustom>({
   },
 
   /**
-   * 打开「模拟日历 · 时间快进」弹层：以当前场景为第 fromDay 天、目标场景为第 toDay 天，
+   * 打开「模拟日历 · 时间快进」弹层：fromDay/toDay 缺省取静态时间轴（交易流程），
+   * 装修阶段由 handler 显式传入动态天数（S.renovDay 口径）。
    * 定时器自动翻页（跨月自动切页），快进结束后定格目标日期并展示下一环节注意事项与风险。
    */
-  openCalModal(to: SceneKey) {
-    const fromDay = DAYS[S.scene] ?? 1;
-    const toDay = DAYS[to] ?? 1;
+  openCalModal(to: SceneKey, fromDayArg?: number, toDayArg?: number) {
+    const fromDay = fromDayArg ?? DAYS[S.scene] ?? 1;
+    const toDay = toDayArg ?? DAYS[to] ?? 1;
     if (toDay <= fromDay) {
       return; /* 无正向等待时长（同节点内流转）不弹日历 */
     }

@@ -41,6 +41,11 @@ export function fmtYuan(v: number): string {
   });
 }
 
+/** 元 → 千分位整数字符串（如 8,000，用于装修增项/返工等小额「元」口径展示）. */
+export function fmtN(v: number): string {
+  return Math.round(v).toLocaleString("zh-CN");
+}
+
 /** 百分比显示：去掉尾零（2.6%、3.05%、3.075%），避免浮点舍入错显. */
 export function pct(v: number): string {
   return (v * 100).toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + "%";

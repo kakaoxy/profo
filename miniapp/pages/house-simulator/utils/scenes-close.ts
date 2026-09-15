@@ -7,7 +7,7 @@
  * 纯函数，仅依赖 SimState 与 calc/constants 工具。
  */
 
-import { fmt, fmtY, fmtYuan, pct } from "./calc";
+import { fmt, fmtN, fmtY, fmtYuan, pct } from "./calc";
 import { DAYS, LOAN_TYPES, NODES, SimState } from "./constants";
 import { bubble, loanRowLabel, RowItem, SceneBlock } from "./scenes-common";
 
@@ -305,14 +305,14 @@ export function sceneFinal(S: SimState): SceneBlock[] {
             t: "banner",
             cls: "sky",
             title: "✅ 装修完成 · 可以入住",
-            desc: "10 个装修阶段全部走完，历时约 " + ((DAYS.renovDone ?? 0) - (DAYS.final ?? 0)) + " 天（第 16 天决策 → 第 78 天完工），新房焕然一新。",
+            desc: "13 个装修阶段全部走完，历时约 " + ((S.renovDoneDay || S.renovDay) - (DAYS.final ?? 0)) + " 天（含做功课与返工耗时），装修实际花费 " + fmt(S.renovBudget + S.renovSpend) + " 万（预算 " + fmt(S.renovBudget) + " 万 + 增项 ¥" + fmtN(S.renovSpend) + "）。",
           },
     );
     if (!S.renovSkipped) {
       blocks.push({
         t: "note",
         bold: "历时统计：",
-        text: "装修阶段 " + ((DAYS.renovDone ?? 0) - (DAYS.final ?? 0)) + " 天 + 交易 " + (DAYS.final ?? 0) + " 天 = 全程 " + (DAYS.renovDone ?? 0) + " 天（理想无延误口径）。实际常因方案返工、材料到货、隐蔽工程验收而拉长。",
+        text: "装修阶段 " + ((S.renovDoneDay || S.renovDay) - (DAYS.final ?? 0)) + " 天 + 交易 " + (DAYS.final ?? 0) + " 天 = 全程 " + (S.renovDoneDay || S.renovDay) + " 天（模拟口径）。真实装修 90㎡ 常见 3-6 个月，增项 10-30% 是常态。",
       });
     }
   } else {
@@ -322,7 +322,7 @@ export function sceneFinal(S: SimState): SceneBlock[] {
         {
           action: "renovGo",
           title: "🏗️ 开始装修",
-          desc: "房屋当前为「" + h.reno + "」。走完 10 个装修阶段（设计 → 保洁交付），历时约 " + ((DAYS.renovDone ?? 0) - (DAYS.final ?? 0)) + " 天（理想口径）。",
+          desc: "房屋当前为「" + h.reno + "」。先定装修预算，再走完 13 个阶段（设计量房 → 售后质保）——工期和增项由你的每一个决策决定。",
           marker: h.reno,
         },
         {

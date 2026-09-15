@@ -9,7 +9,7 @@
 
 import { derive, findN2Option, firstPayFor, fmt, iloan, NEGO_R1, recalcNeed, setOffer } from "./calc";
 import { downRateFor, INCOME, LOAN_TYPES, SimState } from "./constants";
-import type { LoanTypeKey, SceneKey } from "./constants";
+import type { LoanTypeKey } from "./constants";
 import type { HandlerCtx } from "./handlers";
 
 /** 轻提示. */
@@ -461,34 +461,5 @@ export function handleFlow(ctx: HandlerCtx, S: SimState, action: string): void {
     return;
   }
 
-  /* 交易完成 → 装修决策与装修流程推进 */
-  if (action === "renovGo") {
-    if (S.renovDone) {
-      return; /* 装修流程已结束（装完或跳过），忽略重复入口 */
-    }
-    toast("🏗️ 开始装修");
-    ctx.nextScene("renovDesign"); /* final 屏已做装修决策，直接进入设计，不再二次询问 */
-    return;
-  }
-  if (action === "renovSkip") {
-    S.renovDone = true;
-    S.renovSkipped = true;
-    toast("🏡 直接入住 · 日后有需要再装");
-    ctx.nextScene("final");
-    return;
-  }
-  if (action.indexOf("renovNext:") === 0) {
-    /* 装修阶段推进：施工阶段带日历快进工期；无等待（同天）时 openCalModal 自动跳过 */
-    const to = action.split(":")[1] as SceneKey;
-    ctx.openCalModal(to);
-    ctx.nextScene(to);
-    return;
-  }
-  if (action === "renovFinish") {
-    S.renovDone = true;
-    S.renovSkipped = false;
-    toast("🏡 装修完成 · 乔迁大吉");
-    ctx.nextScene("final");
-    return;
-  }
+  /* 交易完成 → 装修决策与装修流程推进（见 handlers-renov.ts） */
 }

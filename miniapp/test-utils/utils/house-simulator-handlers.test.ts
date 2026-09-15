@@ -10,6 +10,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createInitialState, HOUSES, ROLES, SimState } from "../../pages/house-simulator/utils/constants";
 import { derive, nego2Options } from "../../pages/house-simulator/utils/calc";
 import { handleAction, HandlerCtx } from "../../pages/house-simulator/utils/handlers";
+import { renovArrive, setRenovRng } from "../../pages/house-simulator/utils/handlers-renov";
+import { buildScene } from "../../pages/house-simulator/utils/scenes";
 import { emptyModal, netModal, payModal, taxRiskModal, agreementModal } from "../../pages/house-simulator/utils/render";
 
 /* wx API 存根（handlers 内 toast 使用）. */
@@ -99,8 +101,8 @@ class FakePage {
     this.calls.push("modal:pay");
   }
 
-  /** 镜像 index.ts openCalModal：模拟日历 · 时间快进（动画由页面驱动，桩仅记录） */
-  openCalModal(to: string): void {
+  /** 镜像 index.ts openCalModal：模拟日历 · 时间快进（动画由页面驱动，桩仅记录目标与天数） */
+  openCalModal(to: string, _fromDay?: number, _toDay?: number): void {
     this.calls.push("cal:" + to);
   }
 
@@ -522,7 +524,13 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     expect(S.scene).toBe("transfer");
   });
 
-  it("装修流程：final 屏决策后 → 开始装修直达设计 → 10 阶段推进 → 完成回 final（装修入口消失）", () => {
+  /**
+   * 装修全流程（信息迷雾版）：final 决策 → 预算屏 → 13 阶段 → 完成总账 → 回 final。
+   * rng 固定为 0：每阶段都触发事件池第 1 个事件；全程盲选（选项 a）→ 连环埋雷，
+   * 在 水电/安装/保洁/通风/质保 依次爆雷。金额与天数按 renov-events.ts 数据硬断言，
+   * 锁住"盲选 = 增项 + 返工"的经济口径。
+   */
+  it("装修流程：盲选全走 13 阶段 → 连环爆雷 → 总账回 final（入口消失）", () => {
     const p = page();
     run(p, "role:first", "cash:p70", "pick:B", "qa:hukou:sh", "qa:married:married",
       "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
@@ -531,24 +539,111 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     const S = p.S;
     expect(S.scene).toBe("final");
     expect(S.renovDone).toBe(false);
-    // final 屏已决策 → 开始装修直接进设计，不再二次询问「是否装修」
+    setRenovRng(() => 0);
+    // final 决策 → 预算屏（B 房 88㎡ × 1500 元/㎡ = 13.2 万）
     run(p, "renovGo");
+    expect(S.scene).toBe("renovStart");
+    run(p, "renovBudgetGo:1500");
     expect(S.scene).toBe("renovDesign");
-    expect(S.house!.reno).toBe("精装");
-    // 设计 → 定案 → 8 个施工阶段 → 完成
-    run(p, "renovNext:renovPlan");
-    expect(p.calls).toContain("cal:renovPlan");
-    run(p, "renovNext:renovDemo", "renovNext:renovWall", "renovNext:renovElec",
-      "renovNext:renovTile", "renovNext:renovWood", "renovNext:renovPaint",
-      "renovNext:renovInstall", "renovNext:renovClean", "renovNext:renovDone");
+    expect(S.renovBudget).toBe(132000);
+    expect(S.renovDay).toBe(17); // 交易完成次日量房
+    expect(S.renovEvent).toBe("Dsn1"); // rng=0 → 事件池第 1 个
+    // 逐阶段盲选推进（每阶段 1 事件 + 1 盲选）
+    run(p,
+      "renovChoice:Dsn1:a", "renovNext:renovBudget",
+      "renovChoice:Bdg1:a", "renovNext:renovDemo",
+      "renovChoice:Dmo1:a", "renovNext:renovElec",
+      "renovChoice:Elc1:a", "renovNext:renovSeal",
+      "renovChoice:Sew1:a", "renovNext:renovTile",
+      "renovChoice:Til1:a", "renovNext:renovWood",
+      "renovChoice:Wod1:a", "renovNext:renovPaint",
+      "renovChoice:Pnt1:a", "renovNext:renovMain",
+      "renovChoice:Mai1:a", "renovNext:renovInstall",
+      "renovChoice:Ins1:a", "renovNext:renovClean",
+      "renovChoice:Cln1:a", "renovNext:renovAir",
+      "renovChoice:Air1:a", "renovNext:renovWarr",
+      "renovChoice:Wty1:a", "renovNext:renovDone");
     expect(S.scene).toBe("renovDone");
+    // 盲选经济口径：承重墙 12000 + 漏项 15000 + 安装爆雷(收纳8000+插座6000+开启扇5000)
+    //   + 保洁爆雷(空鼓4000+收口3000) + 楼下渗水 5000 + 质保爆雷(龙骨5000+发霉5000+保洁2000+甲醛6000)
+    //   + 质保自费 2000 = 78000
+    expect(S.renovSpend).toBe(78000);
+    // 工期：17(开工) + 基础 100 天 + 拆改即时 3 天 + 爆雷返工(2+4+4+3+24) → 完工入住第 133 天
+    expect(S.renovDoneDay).toBe(133);
+    expect(S.renovDay).toBe(133 + 365 + 24); // 质保叙事 +1 年 + 质保期爆雷返工
+    expect(S.renovMines).toHaveLength(0); // 全部爆完
+    expect(S.renovLog.filter((l) => l.text.indexOf("🚨") === 0)).toHaveLength(11); // 5 站爆雷合计 11 雷记录
+    // 质保阶段不弹日历（跨年叙事）
+    expect(p.calls).not.toContain("cal:renovWarr");
+    // 总账 → 回 final，入口消失
     run(p, "renovFinish");
     expect(S.renovDone).toBe(true);
     expect(S.renovSkipped).toBe(false);
     expect(S.scene).toBe("final");
-    // 装修入口消失：renovGo 不再推进（仍停留 final）
     run(p, "renovGo");
     expect(S.scene).toBe("final");
+  });
+
+  it("信息迷雾：做功课解锁真实信息并消耗工期；盲选当场埋雷不提示", () => {
+    const p = page();
+    run(p, "role:first", "cash:p70", "pick:B", "qa:hukou:sh", "qa:married:married",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
+      "lcContractOk", "trDone", "trOk", "payOk", "deedOk", "hoOk", "stOk", "renovGo", "renovBudgetGo:1500");
+    const S = p.S;
+    setRenovRng(() => 0);
+    // 做功课：收纳清单逐项核对（+4 天、解锁 learned、不埋雷）
+    expect(S.renovEvent).toBe("Dsn1");
+    run(p, "renovChoice:Dsn1:b");
+    expect(S.renovDay).toBe(21); // 17 + 4
+    expect(S.renovLearned).toContain("Design");
+    expect(S.renovMines).toHaveLength(0);
+    expect(S.renovSpend).toBe(0);
+    // 结果屏展示解锁信息（重渲染本屏）
+    const learnedShown = buildScene(S).some((b) => b.t === "banner" && (b.title ?? "").indexOf("功课没白做") >= 0);
+    expect(learnedShown).toBe(true);
+    // 盲选（换一局）：当场只记一笔，雷不提示
+    const p2 = page();
+    run(p2, "role:first", "cash:p70", "pick:B", "qa:hukou:sh", "qa:married:married",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
+      "lcContractOk", "trDone", "trOk", "payOk", "deedOk", "hoOk", "stOk", "renovGo", "renovBudgetGo:1500");
+    const S2 = p2.S;
+    setRenovRng(() => 0);
+    run(p2, "renovChoice:Dsn1:a");
+    expect(S2.renovDay).toBe(17); // 盲选不花时间
+    expect(S2.renovMines).toHaveLength(1); // 雷已埋（到 Install 才爆）
+    expect(S2.renovMines[0].at).toBe("Install");
+    expect(S2.renovLearned).toHaveLength(0);
+  });
+
+  it("爆雷结算（renovArrive）：到站消耗 支出/工期/压力 并转入记事；质保 freeIfStudied 联动预算合同功课", () => {
+    const p = page();
+    const S = p.S;
+    setRenovRng(() => 0.99); // 不触发事件
+    S.renovDay = 80;
+    S.renovMines = [{ at: "Install", log: "柜子挡插座", text: "插座被挡", cost: 6000, days: 2, stress: 8 }];
+    renovArrive(S, "Install");
+    expect(S.renovSpend).toBe(6000);
+    expect(S.renovDay).toBe(82);
+    expect(S.renovBurst).toHaveLength(1);
+    expect(S.renovMines).toHaveLength(0);
+    expect(S.renovLog[0].stage).toBe("安装");
+    expect(S.renovEvent).toBeNull(); // rng=0.99 ≥ 0.8 → 无事件
+    // 质保联动：预算合同阶段做过功课 → 盲选报修免自费
+    S.scene = "renovWarr";
+    S.renovEvent = "Wty1";
+    S.renovLearned = ["Budget"];
+    const stress0 = S.stress;
+    run(p, "renovChoice:Wty1:a");
+    expect(S.renovSpend).toBe(6000); // 2000 被合同+质保金免除
+    expect(S.stress).toBe(stress0 + 5);
+    const p2 = page();
+    const S2 = p2.S;
+    S2.scene = "renovWarr";
+    S2.renovEvent = "Wty1"; // 未做过预算合同功课 → 自费 2000
+    run(p2, "renovChoice:Wty1:a");
+    expect(S2.renovSpend).toBe(2000);
   });
 
   it("跳过装修：renovSkip 置 renovDone 并回 final", () => {

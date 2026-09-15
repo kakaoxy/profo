@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>购房模拟器 · 装修模块 高保真设计稿 v2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="装修模块设计稿">
+<!--
+  购房模拟器 · 装修模块 高保真可点击设计稿 v2
+  ─────────────────────────────────────────────
+  唯一视觉真源：miniapp/app.wxss（Steep 令牌）+ docs/DESIGN.md（规范）
+  唯一数值/文案真源：miniapp/pages/house-simulator/utils/{renov-data,renov-events,handlers-renov,scenes-renov}.ts
+  本文件仅为设计评审稿，不参与构建；所有文案与金额口径均按上列代码逐字复刻，未改动任何公式。
+  自包含单文件（无 CDN / 无构建），file:// 与 http:// 均可直接打开。
+-->
+<style>
+/* ════════════════════════════════════════════════════════════════
+   令牌层 · 与 miniapp/app.wxss 逐项对齐（rpx ÷ 2 = px，375px 设计宽）
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  --ink:#17191c; --pure-white:#ffffff; --fog:#f7f7f8;
+  --ash:#4c4c4c; --graphite:#777b86; --dove:#a3a6af; --slate:#8b8c8d;
+  --rust:#5d2a1a; --apricot-wash:#fbe1d1; --sky-wash:#d3e3fc; --mint:#d1f2e8;
+  --shadow-sm:0 4px 16px rgba(23,25,28,.06);
+  --shadow-md:0 8px 28px rgba(23,25,28,.10);
+  --hairline:#ece7de;         /* 页面 .hud/.steps 分隔线 */
+  --hairline-soft:#eeeff1;    /* .brow 分隔线 */
+  --ok:#176b4d;               /* 流程条 done 绿 / 日历完成绿（沿用既有） */
+  --danger:#b7410e;           /* HUD .num.low / .num.debt 警示橙（沿用既有） */
+  --sky-ink:#2a5ca0;          /* .chip-sky 文字色（沿用既有） */
+  --font:-apple-system,BlinkMacSystemFont,Roboto,"Noto Sans SC","Source Han Sans SC",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overscroll-behavior:none}
+body{
+  background:#111214;
+  font-family:var(--font);
+  font-size:14px; line-height:1.4; color:var(--ink);
+  display:grid; place-items:center;
+}
+
+/* ── 设备外框（≥700px 时居中成手机；窄屏全屏铺满） ── */
+#app{
+  position:relative; width:100vw; height:100vh;
+  display:flex; flex-direction:column;
+  background:var(--fog); overflow:hidden;
+}
+@media (min-width:700px){
+  #app{width:390px;height:844px;border-radius:44px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+}
+
+/* ════════════════════════════════════════════════════════════════
+   装修状态带（guard）· 替代交易模式的 HUD + 13 项流程条
+   一行阶段定位 + 一条 13 段进度线 + 钱条 + 工期条
+   ════════════════════════════════════════════════════════════════ */
+.guard{
+  flex:none; background:var(--pure-white); border-bottom:1px solid var(--hairline);
+  padding:10px 16px 12px; z-index:6;
+}
+.g-top{display:flex;align-items:center;gap:8px;font-size:12px}
+.g-badge{
+  display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;
+  background:var(--fog);border-radius:999px;font-size:12px;font-weight:500;color:var(--ash);
+}
+.g-dot{width:6px;height:6px;border-radius:50%;background:var(--rust)}
+.g-cur{color:var(--ink);font-weight:500}
+.g-cur b{font-variant-numeric:tabular-nums}
+.g-sp{flex:1}
+.g-day{color:var(--graphite);font-variant-numeric:tabular-nums}
+.g-day b{color:var(--ink);font-weight:500}
+.g-face{font-size:14px;line-height:1}
+
+/* 13 段进度线：已完成 ink / 当前 rust / 未到 hairline */
+.g-line{display:flex;gap:2px;margin-top:9px}
+.g-seg{flex:1;height:3px;border-radius:999px;background:var(--hairline);transition:background .3s}
+.g-seg.done{background:var(--ink)}
+.g-seg.cur{background:var(--rust);box-shadow:0 0 0 2px var(--apricot-wash)}
+.g-seg.future{background:var(--hairline)}
+
+/* 钱条 / 工期条 */
+.g-meters{display:flex;flex-direction:column;gap:7px;margin-top:11px}
+.gm{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--graphite)}
+.gm-k{flex:none;width:12px;color:var(--dove);font-weight:500}
+.gm-bar{
+  flex:1;height:7px;border-radius:999px;background:var(--fog);
+  display:flex;overflow:hidden;position:relative;
+}
+.gm-bar i{display:block;height:100%;transition:width .55s cubic-bezier(.22,1,.36,1)}
+.gm-base{background:var(--ink)}
+.gm-over{background:var(--danger)}
+.gm-study{background:var(--sky-ink);opacity:.72}
+.gm-rework{background:var(--danger)}
+.gm-v{flex:none;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;min-width:62px;text-align:right}
+.gm-v em{font-style:normal;color:var(--dove);font-weight:400;margin-left:4px}
+/* 被啃动的高亮脉冲（爆雷结算时触发） */
+.gm-bar.hit{animation:barHit .9s ease}
+@keyframes barHit{
+  0%{box-shadow:0 0 0 0 rgba(183,65,14,0)}
+  30%{box-shadow:0 0 0 3px rgba(183,65,14,.28)}
+  100%{box-shadow:0 0 0 0 rgba(183,65,14,0)}
+}
+
+/* ════════════════════════════════════════════════════════════════
+   舞台区
+   ════════════════════════════════════════════════════════════════ */
+.stage{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.stage::-webkit-scrollbar{width:0;height:0}
+.sc{padding:20px 18px 40px;animation:arrive .42s cubic-bezier(.22,1,.36,1)}
+@keyframes arrive{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* 排版（typo.wxss 对齐） */
+.eyebrow{display:inline-flex;align-items:center;font-size:12px;font-weight:500;color:var(--rust);letter-spacing:.04em}
+.hd{font-weight:500;font-size:25px;line-height:1.22;letter-spacing:-.015em;color:var(--ink);margin:6px 0 0;white-space:pre-line;text-wrap:pretty}
+.hd-hero{display:block;font-size:38px;line-height:1.2;margin-bottom:4px}
+.sub{margin:6px 0 0;font-size:14px;color:var(--ash);line-height:1.65;text-wrap:pretty}
+
+/* 卡片 */
+.card{background:var(--pure-white);border-radius:24px;box-shadow:var(--shadow-sm);padding:18px;margin-top:14px}
+.card-warm{background:var(--apricot-wash)}
+.card-sky{background:var(--sky-wash)}
+.b-title{font-size:13px;font-weight:500;color:var(--ink);line-height:1.5}
+.b-desc{font-size:12.5px;color:var(--ash);margin-top:5px;line-height:1.7;white-space:pre-line;text-wrap:pretty}
+
+/* 提示条 */
+.ok-note{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;line-height:1.6;color:var(--ash);background:var(--fog);border-radius:14px;padding:10px 14px;margin-top:12px;text-wrap:pretty}
+.ok-note .ok-b{color:var(--ink);font-weight:500;flex:none}
+
+/* 对话气泡 */
+.chat{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.bubble{display:flex;gap:9px;max-width:94%}
+.bubble.me{align-self:flex-end;flex-direction:row-reverse}
+.ava{width:32px;height:32px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--ink)}
+.ava-warm{background:var(--apricot-wash)}
+.ava-sky{background:var(--sky-wash)}
+.ball-wrap{min-width:0}
+.who{font-size:11px;color:var(--graphite);margin-bottom:3px}
+.ball{background:var(--pure-white);border-radius:16px 16px 16px 6px;padding:11px 14px;box-shadow:var(--shadow-sm);font-size:14px;color:var(--ink);line-height:1.65;white-space:pre-line;text-wrap:pretty}
+.bubble.me .ball{background:var(--ink);color:#fff;border-radius:16px 16px 6px 16px}
+
+/* 账单行 */
+.card-rows{padding:10px 18px}
+.brow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--hairline-soft);font-size:13.5px}
+.brow:last-child{border-bottom:0}
+.brow .k{color:var(--ash);flex:1}
+.brow .v{font-weight:500;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.brow.total{border-top:1px solid var(--hairline);border-bottom:0;padding-top:13px}
+.brow.total .v{font-size:16px}
+.brow .v.over{color:var(--danger)}
+
+/* KPI */
+.kpi{display:flex;gap:10px;margin-top:10px}
+.kc{flex:1;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:13px 15px}
+.kl{font-size:12px;color:var(--graphite)}
+.kv{margin-top:5px;font-size:20px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.015em;line-height:1.1}
+.kv.over{color:var(--danger)}
+.ku{font-size:11px;font-weight:400;color:var(--graphite)}
+
+/* 徽章 */
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 10px;border-radius:10px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-warm{background:var(--apricot-wash);color:var(--rust)}
+.badge-sky{background:var(--sky-wash);color:var(--sky-ink)}
+.badge-fog{background:var(--fog);color:var(--ash)}
+.badge-hair{background:transparent;border:1px solid var(--dove);color:var(--graphite)}
+.badge-mint{background:var(--mint);color:var(--ok)}
+
+/* 内部工具类 */
+.num{font-variant-numeric:tabular-nums}
+.hr{height:1px;background:var(--hairline);margin:14px 0}
+.sect{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:22px}
+.sect-t{font-size:13px;font-weight:500;color:var(--ink)}
+.sect-x{font-size:11px;color:var(--dove);font-variant-numeric:tabular-nums}
+
+/* ════════════════════════════════════════════════════════════════
+   陈设一 · 家的生长 · 房间剖面图（Blueprint）
+   结构层 → 管线层 → 饰面层 → 主材层 → 陈设层 → 入住层 逐层点亮
+   ════════════════════════════════════════════════════════════════ */
+.bp{
+  margin-top:14px;background:var(--pure-white);border-radius:24px;
+  box-shadow:var(--shadow-sm);padding:14px 14px 12px;position:relative;overflow:hidden;
+}
+.bp-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bp-t{font-size:12px;font-weight:500;color:var(--ink)}
+.bp-cap{font-size:11px;color:var(--dove);margin-left:auto;font-variant-numeric:tabular-nums}
+.bp-svg{display:block;width:100%;height:auto}
+/* 图层显隐由 JS 切 .on；未点亮时 0 不占视觉 */
+.ly{opacity:0;transition:opacity .65s ease}
+.ly.on{opacity:1}
+.ly-cur .cur-ring{animation:curRing 2.4s ease-in-out infinite}
+@keyframes curRing{0%,100%{opacity:.35}50%{opacity:.9}}
+.bp-tag{font-size:9.5px;fill:var(--dove);font-weight:500}
+.bp-day{font-size:9.5px;fill:var(--ok);font-weight:600}
+.bp-warn{font-size:9.5px;fill:var(--danger);font-weight:600}
+.bp-pulse{fill:none;stroke:var(--rust);stroke-width:1;stroke-dasharray:4 3}
+/* 爆雷时整张图纸泛起一层警示辉光 */
+.bp.hit::after{
+  content:"";position:absolute;inset:0;border-radius:24px;pointer-events:none;
+  box-shadow:inset 0 0 0 2px rgba(183,65,14,.5);animation:bpFlash 1.1s ease;
+}
+@keyframes bpFlash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+
+/* ════════════════════════════════════════════════════════════════
+   陈设二 · 现场卡（说话人 + 现场状况 + 客观证据物件）
+   ════════════════════════════════════════════════════════════════ */
+.site{margin-top:14px}
+.site-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.site-role{font-size:11px;font-weight:500;color:var(--graphite)}
+/* 证据物件卡：只陈列客观物件，不做任何解读（信息迷雾不可剧透） */
+.doc{
+  display:flex;gap:10px;align-items:flex-start;margin-top:9px;
+  background:var(--fog);border:1px dashed var(--dove);border-radius:16px;padding:11px 13px;
+}
+.doc-ic{flex:none;font-size:17px;line-height:1.25}
+.doc-b{min-width:0}
+.doc-t{font-size:12px;font-weight:500;color:var(--ink)}
+.doc-d{font-size:11.5px;color:var(--graphite);line-height:1.55;margin-top:2px;text-wrap:pretty}
+.doc-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--ink);background:var(--pure-white);border-radius:6px;padding:1px 5px}
+
+/* ════════════════════════════════════════════════════════════════
+   陈设三 · 智慧选项卡（把 days / cost / learned 从文案里提出来）
+   快选：中性灰徽章（不标风险，保住迷雾）
+   功课：Sky 徽章 + 「换真实信息」
+   ════════════════════════════════════════════════════════════════ */
+.opts{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.opt{
+  display:block;width:100%;text-align:left;background:var(--pure-white);
+  border:1px solid var(--hairline);border-radius:20px;padding:13px 16px;min-height:48px;
+  font-family:inherit;color:inherit;cursor:pointer;transition:border-color .16s,box-shadow .16s,transform .16s;
+}
+.opt:active{border-color:var(--dove);box-shadow:var(--shadow-sm);transform:scale(.988)}
+.opt-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.opt-t{font-size:14.5px;font-weight:500;color:var(--ink);line-height:1.45;text-wrap:pretty}
+.opt-d{font-size:12.5px;color:var(--graphite);margin-top:3px;line-height:1.55;text-wrap:pretty}
+.opt.picked{border-color:var(--ink);background:var(--fog)}
+.opt.picked::after{content:"已选";float:right;font-size:11px;color:var(--graphite)}
+.opt[disabled]{opacity:.45;cursor:default}
+
+/* ════════════════════════════════════════════════════════════════
+   陈设四 · 爆雷条（进入阶段时结算已埋下的雷 · 情绪高点）
+   ════════════════════════════════════════════════════════════════ */
+.burst{
+  margin-top:14px;background:var(--apricot-wash);border:2px solid var(--danger);
+  border-radius:20px;padding:14px 16px;animation:burstIn .5s cubic-bezier(.22,1,.36,1);
+}
+@keyframes burstIn{from{opacity:0;transform:scale(.97) translateY(-4px)}to{opacity:1;transform:none}}
+.burst-t{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--danger)}
+.burst-src{font-size:10.5px;font-weight:500;color:var(--rust);background:rgba(255,255,255,.6);border-radius:8px;padding:2px 7px;margin-left:auto}
+.burst-d{font-size:13px;color:var(--rust);line-height:1.65;margin-top:7px;text-wrap:pretty}
+.burst-nums{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.bn{flex:1;min-width:72px;background:rgba(255,255,255,.72);border-radius:14px;padding:8px 10px}
+.bn-k{font-size:10.5px;color:var(--graphite)}
+.bn-v{font-size:15px;font-weight:600;color:var(--danger);font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* ════════════════════════════════════════════════════════════════
+   陈设五 · 证据链钱包（做功课的可见回报 · 质保期兑现）
+   ════════════════════════════════════════════════════════════════ */
+.wallet{margin-top:16px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:13px 15px}
+.w-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.w-t{font-size:12px;font-weight:500;color:var(--ink)}
+.w-n{font-size:11px;color:var(--dove);margin-left:auto;font-variant-numeric:tabular-nums}
+.w-grid{display:flex;gap:6px}
+.w-slot{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  border:1px dashed var(--dove);border-radius:12px;padding:8px 2px;background:transparent;
+  transition:all .3s;
+}
+.w-slot .wi{font-size:15px;line-height:1.2;opacity:.28;filter:grayscale(1)}
+.w-slot .wn{font-size:9.5px;color:var(--dove);white-space:nowrap}
+.w-slot.on{border:1px solid var(--ink);background:var(--fog)}
+.w-slot.on .wi{opacity:1;filter:none}
+.w-slot.on .wn{color:var(--ink);font-weight:500}
+.w-slot.just{animation:slotIn .55s cubic-bezier(.22,1,.36,1)}
+@keyframes slotIn{0%{transform:scale(.82);box-shadow:0 0 0 0 rgba(23,25,28,.22)}60%{transform:scale(1.06)}100%{transform:scale(1);box-shadow:0 0 0 8px rgba(23,25,28,0)}}
+
+/* ════════════════════════════════════════════════════════════════
+   按钮 / CTA
+   ════════════════════════════════════════════════════════════════ */
+.btn-row{display:flex;gap:10px;margin-top:16px}
+.btn{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  min-height:48px;padding:0 18px;border-radius:999px;border:0;cursor:pointer;
+  font-family:inherit;font-size:14px;font-weight:500;transition:transform .16s,opacity .16s;
+}
+.btn:active{transform:scale(.98)}
+.btn-ink{background:var(--ink);color:#fff}
+.btn-out{background:transparent;color:var(--ink);border:1px solid var(--dove)}
+.btn-rust{background:var(--rust);color:#fff}
+.btn-disabled{background:var(--fog);color:var(--dove);cursor:default}
+
+/* ════════════════════════════════════════════════════════════════
+   预算决策屏 · 单价 × 面积 心算 + 三档卡 + 13 阶段分账预估
+   ════════════════════════════════════════════════════════════════ */
+.calc{
+  margin-top:14px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);
+  padding:14px 16px;display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap;
+}
+.calc .k{color:var(--graphite)}
+.calc .v{font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.calc .op{color:var(--dove)}
+.calc .eq{color:var(--dove)}
+.calc .r{font-size:19px;font-weight:500;color:var(--rust);font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+
+.grade{
+  display:block;width:100%;text-align:left;background:var(--pure-white);
+  border:1px solid var(--hairline);border-radius:20px;padding:14px 16px;margin-top:10px;
+  font-family:inherit;color:inherit;cursor:pointer;transition:border-color .16s,box-shadow .16s;
+}
+.grade:active{transform:scale(.99)}
+.grade.on{border:2px solid var(--ink);box-shadow:var(--shadow-sm);padding:13px 15px}
+.gr-hd{display:flex;align-items:baseline;gap:8px}
+.gr-n{font-size:14.5px;font-weight:500;color:var(--ink)}
+.gr-p{margin-left:auto;font-size:17px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+.gr-u{font-size:11px;color:var(--dove);font-variant-numeric:tabular-nums}
+.gr-d{font-size:12.5px;color:var(--graphite);margin-top:4px;line-height:1.55;text-wrap:pretty}
+.gr-bar{display:flex;height:5px;border-radius:999px;overflow:hidden;margin-top:10px;background:var(--fog)}
+.gr-bar i{display:block;height:100%}
+.gr-note{font-size:11px;color:var(--dove);margin-top:6px;font-variant-numeric:tabular-nums}
+
+/* 分账预估（横条 + 图例） */
+.split{margin-top:14px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:14px 16px}
+.split-bar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--fog)}
+.split-bar i{display:block;height:100%;border-right:2px solid var(--pure-white)}
+.split-bar i:last-child{border-right:0}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:11px}
+.lg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--graphite)}
+.lg i{width:9px;height:9px;border-radius:3px;flex:none}
+.lg b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;margin-left:2px}
+
+/* ════════════════════════════════════════════════════════════════
+   施工进度弹层（替代交易模式的「模拟日历」在装修段的复用）
+   分段工期：基础 / 功课（主动） / 返工（被动）
+   ════════════════════════════════════════════════════════════════ */
+.overlay{
+  position:absolute;inset:0;background:rgba(23,25,28,.42);display:flex;
+  align-items:flex-end;justify-content:center;z-index:20;padding:16px;
+  animation:fadein .2s ease;
+}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.sheet{
+  width:100%;max-height:90%;overflow-y:auto;background:var(--pure-white);
+  border-radius:24px;padding:20px 20px 18px;animation:rise .28s cubic-bezier(.22,1,.36,1);
+}
+.sheet::-webkit-scrollbar{width:0}
+@keyframes rise{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet-tag{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:500;color:var(--rust)}
+.sheet-title{margin:8px 0 5px;font-size:17px;font-weight:500;color:var(--ink)}
+.sheet-desc{font-size:13.5px;color:var(--ash);line-height:1.7;margin-bottom:7px;text-wrap:pretty}
+.sheet-actions{display:flex;gap:10px;margin-top:16px}
+
+.gap-title{display:flex;align-items:flex-end;gap:8px;margin:8px 0 3px}
+.gap-arr{font-size:15px;color:var(--ink);line-height:1.4}
+.gap-gap{margin-left:auto;font-size:13px;color:var(--ink);flex:none}
+.gap-n{font-size:28px;font-weight:600;color:var(--rust);font-variant-numeric:tabular-nums;line-height:1.1}
+.gap-phase{font-size:13px;color:var(--graphite);margin-bottom:10px}
+
+.seg-card{background:var(--fog);border-radius:18px;padding:13px 15px}
+.seg-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 0}
+.seg-row .sr-k{color:var(--graphite);flex:1}
+.seg-row .sr-v{font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.seg-swatch{width:9px;height:9px;border-radius:3px;flex:none}
+.seg-bar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:var(--hairline);margin-top:10px}
+.seg-bar i{display:block;height:100%;transition:width .5s ease}
+.seg-total{display:flex;justify-content:space-between;font-size:12px;color:var(--ink);margin-top:8px;font-variant-numeric:tabular-nums;font-weight:500}
+
+/* 日历折叠区（保留交易模块已建立的"真实日期"沉浸感） */
+.cal-fold{margin-top:12px;border:1px solid var(--hairline);border-radius:16px;overflow:hidden}
+.cal-fold>summary{padding:11px 14px;font-size:12.5px;color:var(--graphite);cursor:pointer;list-style:none;display:flex;align-items:center;gap:7px}
+.cal-fold>summary::-webkit-details-marker{display:none}
+.cal-fold>summary::after{content:"▾";margin-left:auto;color:var(--dove)}
+.cal-fold[open]>summary::after{content:"▴"}
+.cal-body{padding:0 12px 12px}
+.cal-week{display:flex}
+.cal-wk{flex:1;text-align:center;font-size:11px;color:var(--dove);padding-bottom:5px}
+.cal-grid{display:flex;flex-wrap:wrap}
+.cal-cell{width:calc(100% / 7);height:33px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.cal-cell.past{color:#c9c2b4}
+.cal-cell.cur{background:var(--rust);color:#fff;font-weight:600;border-radius:8px;box-shadow:0 3px 8px rgba(93,42,26,.22)}
+.cal-range{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:8px;font-size:11.5px;color:var(--graphite);font-variant-numeric:tabular-nums}
+.cal-arrow{color:var(--rust);font-weight:600}
+.cal-note{margin-top:10px;font-size:12.5px;color:var(--ash);line-height:1.65;background:var(--fog);border-radius:14px;padding:10px 13px;text-wrap:pretty}
+.cal-note b{color:var(--ink);font-weight:600}
+.cal-risk{margin-top:8px;font-size:12.5px;color:var(--danger);line-height:1.65;background:var(--apricot-wash);border:1px solid #e8b79b;border-radius:14px;padding:10px 13px;text-wrap:pretty}
+.cal-risk b{font-weight:600}
+
+/* ════════════════════════════════════════════════════════════════
+   完工总账屏 · 超支瀑布 / 时间账 / 证据结算 / 记事时间轴
+   ════════════════════════════════════════════════════════════════ */
+.wf{margin-top:12px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:14px 16px}
+.wf-row{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:12.5px}
+.wf-k{flex:none;width:34px;color:var(--graphite)}
+.wf-track{flex:1;height:9px;background:var(--fog);border-radius:999px;overflow:hidden}
+.wf-fill{display:block;height:100%;background:var(--danger);border-radius:999px;transition:width .6s cubic-bezier(.22,1,.36,1)}
+.wf-v{flex:none;width:56px;text-align:right;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+.wf-sum{margin-top:10px;padding-top:10px;border-top:1px solid var(--hairline-soft);font-size:12.5px;color:var(--ash);line-height:1.6;text-wrap:pretty}
+.wf-sum b{color:var(--ink);font-weight:500}
+
+/* 时间账（计划 vs 实际，分段着色） */
+.tl{margin-top:12px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:14px 16px}
+.tl-row{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:12.5px}
+.tl-k{flex:none;width:30px;color:var(--graphite)}
+.tl-bar{flex:1;display:flex;height:11px;border-radius:999px;overflow:hidden;background:var(--fog)}
+.tl-bar i{display:block;height:100%}
+.tl-v{flex:none;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+.tl-legend{display:flex;flex-wrap:wrap;gap:6px 13px;margin-top:3px}
+.tl-line{margin-top:11px;padding-top:11px;border-top:1px solid var(--hairline-soft);font-size:13px;color:var(--ink);line-height:1.65;text-wrap:pretty}
+.tl-line b{color:var(--rust);font-weight:600}
+
+/* 结算卡（证据链兑现） */
+.payoff{margin-top:12px;background:var(--sky-wash);border-radius:20px;padding:14px 16px}
+.payoff-t{font-size:13px;font-weight:500;color:var(--sky-ink)}
+.payoff-d{font-size:12.5px;color:var(--ash);line-height:1.65;margin-top:5px;text-wrap:pretty}
+.payoff-d b{color:var(--ink);font-weight:600}
+.payoff-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+
+/* 记事时间轴 */
+.log{margin-top:12px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:14px 16px}
+.log-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--hairline-soft)}
+.log-item:last-child{border-bottom:0}
+.log-rail{flex:none;width:44px;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px}
+.log-node{width:7px;height:7px;border-radius:50%;background:var(--ink);flex:none}
+.log-node.hit{background:var(--danger);box-shadow:0 0 0 3px var(--apricot-wash)}
+.log-stage{font-size:9.5px;color:var(--dove);text-align:center;line-height:1.2}
+.log-b{flex:1;min-width:0}
+.log-t{font-size:12.5px;color:var(--ink);line-height:1.6;text-wrap:pretty}
+.log-t.hit{color:var(--danger);font-weight:500}
+.log-x{font-size:11px;color:var(--graphite);margin-top:2px;font-variant-numeric:tabular-nums}
+
+/* 13 阶段打卡 */
+.chk-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.chk-wrap .badge{height:24px}
+
+/* ════════════════════════════════════════════════════════════════
+   评审工具条（不属于设计稿，评审用；可折叠）
+   ════════════════════════════════════════════════════════════════ */
+.rv{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-family:var(--font)}
+.rv-toggle{
+  display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border:0;cursor:pointer;
+  background:var(--pure-white);color:var(--ink);border-radius:999px;box-shadow:var(--shadow-md);
+  font-family:inherit;font-size:13px;font-weight:500;
+}
+.rv-panel{
+  width:264px;max-height:76vh;overflow-y:auto;background:var(--pure-white);border-radius:20px;
+  box-shadow:0 16px 48px rgba(0,0,0,.28);padding:16px;display:none;
+}
+.rv-panel.on{display:block;animation:rise .24s cubic-bezier(.22,1,.36,1)}
+.rv-h{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:12px}
+.rv-grp{margin-bottom:14px}
+.rv-l{font-size:10.5px;color:var(--dove);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.rv-btns{display:flex;flex-direction:column;gap:5px}
+.rv-btns button{
+  width:100%;text-align:left;padding:8px 11px;border:1px solid var(--hairline);background:var(--pure-white);
+  border-radius:10px;font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;
+}
+.rv-btns button:active{background:var(--fog)}
+.rv-jump{display:flex;flex-wrap:wrap;gap:3px}
+.rv-jump button{
+  width:calc(100% / 5 - 3px);padding:6px 0;border:1px solid var(--hairline);background:var(--pure-white);
+  border-radius:8px;font-family:inherit;font-size:10.5px;color:var(--graphite);cursor:pointer;font-variant-numeric:tabular-nums;
+}
+.rv-jump button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.rv-chk{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);padding:5px 0;cursor:pointer}
+.rv-chk input{accent-color:var(--rust);width:14px;height:14px}
+.rv-hint{font-size:10.5px;color:var(--dove);line-height:1.5;margin-top:4px}
+
+/* ── 标注模式：圈出本轮新增 / 变更的元素 ── */
+body.annotate [data-new]{position:relative;outline:1.5px dashed var(--rust);outline-offset:3px;border-radius:6px}
+body.annotate [data-new]::after{
+  content:"新";position:absolute;top:-9px;right:-4px;background:var(--rust);color:#fff;
+  font-size:9px;font-weight:600;line-height:1;padding:2px 5px;border-radius:6px;z-index:3;
+}
+body.annotate [data-chg]{position:relative;outline:1.5px dashed var(--sky-ink);outline-offset:3px;border-radius:6px}
+body.annotate [data-chg]::after{
+  content:"改";position:absolute;top:-9px;right:-4px;background:var(--sky-ink);color:#fff;
+  font-size:9px;font-weight:600;line-height:1;padding:2px 5px;border-radius:6px;z-index:3;
+}
+/* ── 设计说明气泡 ── */
+.note-i{
+  display:none;margin-top:7px;background:#fffbeb;border:1px solid #f3e2b3;border-radius:12px;
+  padding:9px 12px;font-size:11.5px;color:#6b5427;line-height:1.6;text-wrap:pretty;
+}
+body.notes .note-i{display:block}
+.note-i b{color:#4a3a18;font-weight:600}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="guard" id="guard"></div>
+  <div class="stage" id="stage"><div class="sc" id="sc"></div></div>
+  <div id="modalRoot"></div>
+</div>
+
+<div class="rv">
+  <div class="rv-panel" id="rvPanel">
+    <div class="rv-h">评审工具 · 装修模块 v2</div>
+    <div class="rv-grp">
+      <div class="rv-l">演示路径</div>
+      <div class="rv-btns">
+        <button data-demo="quick">▶ 一路快选 · 跑到完工</button>
+        <button data-demo="study">▶ 一路做功课 · 跑到完工</button>
+        <button data-demo="reset">↺ 回到装修预算屏</button>
+      </div>
+      <div class="rv-hint">两条路的结局不同：快选省下前期的天数，会在安装与质保期加倍还回来。</div>
+    </div>
+    <div class="rv-grp">
+      <div class="rv-l">跳转</div>
+      <div class="rv-jump" id="rvJump"></div>
+    </div>
+    <div class="rv-grp">
+      <div class="rv-l">标注</div>
+      <label class="rv-chk"><input type="checkbox" id="ckNew"> 圈出新增元素</label>
+      <label class="rv-chk"><input type="checkbox" id="ckNote"> 显示设计说明</label>
+    </div>
+  </div>
+  <button class="rv-toggle" id="rvToggle">⚙ 评审工具</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   数据层 · 逐字复刻 miniapp/pages/house-simulator/utils/renov-data.ts
+           与 renov-events.ts（13 阶段基础叙事 + 事件池文案 + 全部数值）
+   ═══════════════════════════════════════════════════════════════════════════
+   本层唯一的新增字段是 opt.kind（见下方注释）——它是设计稿提出的口径显式化建议，
+   不改变任何金额/工期/压力的计算方式。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 证据链 6 格。做功课的可见回报：到「售后质保」阶段兑现（对应现有 freeIfStudied 机制）。 */
+const EVID = [
+  { k: 'doc',      ic: '📄', n: '合同' },
+  { k: 'photo',    ic: '📷', n: '影像' },
+  { k: 'report',   ic: '🧪', n: '报告' },
+  { k: 'receipt',  ic: '🧾', n: '票据' },
+  { k: 'warranty', ic: '🛡️', n: '质保' },
+  { k: 'paint',    ic: '🎨', n: '剩漆' }
+];
+
+/* 房间剖面图图层顺序（rank 越大越"后装"，逐层点亮） */
+const LAYER_RANK = { orig: 0, struct: 1, pipe: 2, finish: 3, main: 4, furn: 5, live: 6 };
+
+/* ── 13 阶段基础定义（renov-data.ts RENOV_RAW 逐字复刻 + 图层归属） ── */
+const STAGES = [
+  { k:'Design', to:'Budget', idx:1, name:'设计量房', days:7, daysText:'7-30 天',
+    who:'设计师 小美', layer:'orig',
+    chat:'量完房了，效果图出来了：客厅显大、颜色温馨，收纳我都给你排上了。这套方案落地没问题，后面交给我。',
+    note:'效果图之外的功课，都藏在收纳清单、门窗点位和图纸深度里。',
+    risk:'方案没定就开工，后面每一步返工都从设计错开始；收纳、门窗、柜子没算，全是后期加钱项。',
+    cta:'方案敲定 · 进入预算合同' },
+
+  { k:'Budget', to:'Demo', idx:2, name:'预算合同', days:3, daysText:'3-7 天',
+    who:'装修公司销售 大伟', layer:'orig',
+    chat:'哥，全包 12 万拎包入住，主材全含，你什么都不用管。今天签约还送全屋开关面板，这价格真的只有我们有。',
+    note:'低价全包是钩子还是实惠，答案藏在报价单的每一行里。',
+    risk:'低价全包的漏项，开工后一张张变成增项单；付款节点没留余地，后期没有筹码。',
+    cta:'合同签订 · 开工拆改' },
+
+  { k:'Demo', to:'Elec', idx:3, name:'拆改', days:5, daysText:'5-15 天',
+    who:'工长 老周', layer:'struct',
+    chat:'老房拆旧，我带俩师傅三天拆完，垃圾清运我安排。墙面看着挺结实，有什么问题我会提醒你，放心。',
+    note:'拆改是施工第一锤：哪里能拆、哪里绝不能动，开工前就要弄清楚。',
+    risk:'承重墙动了是安全事故；空鼓不铲到底层，三个月后墙面成片开裂。',
+    cta:'拆改完成 · 水电进场' },
+
+  { k:'Elec', to:'Seal', idx:4, name:'水电交底', days:7, daysText:'7-15 天',
+    who:'水电工 李师傅', layer:'pipe',
+    chat:'开关插座按常规点位走，你家这面积 40 来个够用了。行业都这么干，差不多就行，封槽之前都不算数。',
+    note:'水电是隐蔽工程：封槽之前，每一根管、每一个点位都要亲眼确认。',
+    risk:'点位错一点，家具挡一片；打压不做，渗漏全在入住后爆。',
+    cta:'水电封槽 · 防水进场' },
+
+  { k:'Seal', to:'Tile', idx:5, name:'防水闭水', days:3, daysText:'3-7 天',
+    who:'瓦工 阿强', layer:'pipe',
+    chat:'卫生间防水刷好了，绿色涂层看着就专业。刷了两遍，稳得很，可以贴砖了。',
+    note:'防水做完必须闭水试验：48 小时，楼下天花板是唯一判卷人。',
+    risk:'闭水不足 48 小时，楼下渗水赔钱又伤和气；高度不够，水汽照样渗墙。',
+    cta:'闭水合格 · 瓦工贴砖' },
+
+  { k:'Tile', to:'Wood', idx:6, name:'瓦工', days:10, daysText:'10-20 天',
+    who:'瓦工 阿强', layer:'finish',
+    chat:'瓷砖上墙，横平竖直。你看这缝，机器都贴不出这水平，验收不验收都一个样。',
+    note:'贴完不等于贴好：空鼓锤、水平尺、地漏试水，一样都不能省。',
+    risk:'空鼓和坡度问题，贴完才发现就是砸砖返工。',
+    cta:'瓦工验收 · 木工进场' },
+
+  { k:'Wood', to:'Paint', idx:7, name:'木工', days:5, daysText:'5-15 天',
+    who:'木工 老赵', layer:'finish',
+    chat:'吊顶龙骨打完了，双层石膏板一封，造型漂亮。龙骨我用了二十年，比什么都结实。',
+    note:'吊顶封板之前，龙骨间距、检修口、窗帘盒尺寸，都要抬头看一眼。',
+    risk:'龙骨间距大、没留检修口，开裂了连修都没地方下手。',
+    cta:'木工封板 · 油漆进场' },
+
+  { k:'Paint', to:'Main', idx:8, name:'油漆', days:15, daysText:'15-30 天',
+    who:'油漆工 小陈', layer:'finish',
+    chat:'头遍腻子今天批完，明天打磨刷漆，一周收工。加点风扇吹着，干得快，不影响质量。',
+    note:'油漆的活儿，七分靠等：没干透的每一道工序都是隐患。',
+    risk:'湿度过高抢工，干透是假的，发霉是真的。',
+    cta:'油漆完工 · 主材下单' },
+
+  { k:'Main', to:'Install', idx:9, name:'主材下单', days:2, daysText:'贯穿全程（复尺下单 2 天）',
+    who:'建材市场销售们', layer:'main',
+    chat:'断桥铝 500 一平全含；定制柜颗粒板 E0 环保、激光封边；套餐 18㎡ 一万八。每家都拍着胸口保证。',
+    note:'主材的水全在参数和报价单里：问清「含什么」，比问「多少钱」重要。',
+    risk:'报价只看单价：展开面积、五金、封边工艺，样样都是加钱项。',
+    cta:'主材下单 · 约安装进场' },
+
+  { k:'Install', to:'Clean', idx:10, name:'安装', days:10, daysText:'10-20 天',
+    who:'工长 老周', layer:'furn',
+    chat:'门、柜、地板、灯具、卫浴全到货了，我安排师傅依次装，尺寸差不多，现场都能调。',
+    note:'安装顺序有讲究：门 → 柜 → 地板 → 灯具 → 卫浴；先到的先装容易打架。',
+    risk:'顺序装错全是缝，复尺没量准就返厂。',
+    cta:'安装到位 · 开荒保洁' },
+
+  { k:'Clean', to:'Air', idx:11, name:'开荒保洁', days:3, daysText:'3-5 天',
+    who:'保洁领队 王姐', layer:'furn',
+    chat:'姐妹们干了一整天：窗明几净，地反光。大面上都干净了，验收吧，可以拎包入住了。',
+    note:'开荒保洁的验收要打灯看细节：划痕、死角、五金，验收合格再付尾款。',
+    risk:'验收不细，划痕堵塞入住才发现，售后扯皮没证据。',
+    cta:'保洁验收 · 通风等待' },
+
+  { k:'Air', to:'Warr', idx:12, name:'通风检测', days:30, daysText:'30-180 天',
+    who:'你 · 等待通风', layer:'live',
+    chat:'全部完工。新家安静地空着：柜门全开、抽屉拉开，每天开窗对流。通风一个月，已经没味道了——是不是就能住了？',
+    note:'没味道 ≠ 没甲醛：甲醛释放 3-15 年，检测合格才是入住标准。',
+    risk:'没味道不等于没甲醛，检测合格才是入住线；暴雨天正好检验门窗。',
+    cta:'检测合格 · 准备入住' },
+
+  { k:'Warr', to:'Done', idx:13, name:'售后质保', days:365, daysText:'1-5 年',
+    who:'一年后的你', layer:'live',
+    chat:'入住一年。水电平稳、柜门顺滑——直到某天，柜门铰链开始吱呀作响，浴室五金起了白斑。翻出合同：质保五年。打电话给装修公司……',
+    note:'质保不是一句话：合同里的质保范围、尾款/质保金、聊天记录和发票，都是证据链。',
+    risk:'合同、发票、记录没留全，报修时全凭对方良心。',
+    cta:'查看装修总账 · 结束流程' }
+];
+
+/* ── 事件池（renov-events.ts 精选复刻，共 25 个事件，覆盖全部 13 阶段） ──
+   opt.kind 口径（设计稿新增显式字段，用于结果屏选对卡片颜色与标题）：
+     study   = 主动做功课：花时间/钱去拿"真实的信息" → 结果屏 📖「功课没白做」（sky）
+     quick   = 直接定：省时间省事，可能埋雷（mine），风险不在选项上剧透 → 结果屏 ⏳「按原计划推进」（fog）
+     paid    = 直接定但当场付学费：结果本身就是教训 → 结果屏 🎓「这堂课的学费」（warm）
+     neutral = 无风险的选择（仅 Wod2-a）                              → 结果屏 ⏳「按原计划推进」（fog）
+   注意：paid 是本设计稿对现有数据的重分类。现有代码靠 opt.learned 是否存在来判断
+   "做没做功课"，因此 Dmo1-a / Elc3-a / Warr1-a 这三条"踩坑"选项也被当成"功课没白做"
+   渲染（scenes-renov.ts:87-89），文案与实际不符——详见迭代方案 §4.3。 */
+const EVENTS = {
+  Design: [
+    { id:'Dsn1', who:'设计师 小美',
+      chat:'晚上你把效果图发给家人，群里炸了：丈母娘要电视墙做满收纳、老婆要儿童房加书桌、你还想要投影仪。小美说：『都加也行，改改很快。』',
+      doc:{ ic:'📐', t:'装修效果图 · 第 1 稿', d:'客厅 / 主卧 / 儿童房各一张，标注"收纳已排"。图纸上没有任何柜体的内部格局。' },
+      opts:[
+        { key:'a', kind:'quick', title:'先这样吧，效果图挺好看的，住进去再慢慢调',
+          desc:'不改了，下周就出施工图，工期一点不耽误。', days:0, cost:0, stress:2,
+          result:'效果图定稿。家人的需求谁也没再核对——真到装柜子那天，才知道差了多少。',
+          log:'效果图直接定稿，收纳需求没逐项核对',
+          mine:{ at:'Install', cost:8000, days:3, stress:8,
+            log:'收纳没逐项核对，装完才发现差一半',
+            text:'定制柜装完你才发现：鞋柜塞不下 20 双鞋、衣柜没有长衣区、阳台没留家政柜。加装两组柜子，钱和工期都翻倍。' } },
+        { key:'b', kind:'study', title:'把收纳逐项列清楚：谁的东西、多大体积，按需求排柜子',
+          desc:'拉清单、量体积、逐格核对，改图至少多花三四天。', days:4, cost:0, stress:2, ev:'photo',
+          result:'清单拉了 47 项：鞋柜按 30 双排、衣柜分长衣短衣、阳台加家政柜。图纸改到第三稿，全家人都签了字。',
+          log:'收纳需求逐项核对，图纸改到第三稿定案',
+          learned:'收纳要按『人的东西』设计，不是按墙排柜子：先列物品清单再定柜体，柜子内部格局比外观重要得多。' },
+        { key:'c', kind:'study', title:'先找住过同户型的邻居取取经',
+          desc:'翻翻业主群、约一顿饭，两三天能问到不少实话。', days:2, cost:0, stress:1, ev:'doc',
+          result:'邻居翻出他家的增项单：当初效果图也好看，光后期加柜子就花了 2 万，门窗换断桥铝又是大几千。',
+          log:'走访同户型邻居，拿到一份真实增项单',
+          learned:'同户型邻居是最好的教材：效果图不会告诉你的门窗、柜子、收纳缺口，住过的人都知道。' }
+      ] },
+    { id:'Dsn2', who:'设计师 小美',
+      chat:'小美把新报价发来：『你要的这几处改动，属于方案深化，设计费要加 1500。免费设计的话，就按现在的模板方案走。』',
+      doc:{ ic:'🧾', t:'设计费补充报价', d:'方案深化 · 改稿费 1500 元，未注明按次还是封顶。' },
+      opts:[
+        { key:'a', kind:'quick', title:'算了，不加钱了，就按现在这版定',
+          desc:'省下 1500，方案有点将就但也能用。', days:0, cost:0, stress:3,
+          result:'方案就这么定了。家人那几条分歧还悬着——先记着吧，总觉得哪里不对劲。',
+          log:'为省设计费放弃改稿，方案带着分歧定稿',
+          mine:{ at:'Elec', cost:4000, days:3, stress:8,
+            log:'方案分歧没解决，开工后家人坚持改布局',
+            text:'开工后家人看到邻居家改了布局，坚持要改：水电重新开槽布管，已封的墙面全部重来。' } },
+        { key:'b', kind:'study', title:'改就改到位，加钱就加钱',
+          desc:'加 1500 元改稿费，前后多花三天。', days:3, cost:1500, stress:2, ev:'doc',
+          result:'加 1500 改稿费，方案改到全家人都签字：收纳、点位、柜体全部落到图纸上。',
+          log:'加 1500 改稿费，方案改到全家签字',
+          learned:'设计改稿收不收费要提前谈死：按次、按深度、封顶多少。嘴上说『改改也快』的，签字时都会算钱。' }
+      ] }
+  ],
+
+  Budget: [
+    { id:'Bdg1', who:'装修公司销售 大伟',
+      chat:'你翻开合同附件的报价单：水电按点位另算、墙顶面找平不含、垃圾清运另计、五金件不含……大伟凑过来：『这些都是小钱，到时候象征性补一点。』',
+      doc:{ ic:'📄', t:'全包报价单 · 附件三', d:'第 4/7 行：水电按点位计价（未注明单价）；第 9 行：垃圾清运另计；末页：未列增项上限条款。' },
+      opts:[
+        { key:'a', kind:'quick', title:'反正是全包，先签了开工要紧',
+          desc:'12 万全包，签完开工，工期不等人。', days:0, cost:0, stress:3,
+          result:'合同签了。报价单里那些『小钱』，一页页压在你的心口——但愿真是小钱。',
+          log:'低价全包合同直接签，漏项没有逐项核实',
+          mine:{ at:'Elec', cost:15000, days:2, stress:9,
+            log:'低价套餐漏项爆雷，增项单一张接一张',
+            text:'开工后增项单一张接一张：水电开槽按米另算、墙面找平不含、垃圾清运另计……销售说的『象征性』，合计一万五。' } },
+        { key:'b', kind:'study', title:'把报价单逐项过：缺的补进去，含什么不含什么写进合同',
+          desc:'逐项核单、补条款，多花一两天，一时半会儿开不了工。', days:2, cost:0, stress:2, ev:'doc',
+          result:'逐项补进合同：开槽、找平、清运、五金全写死，增项上限 5%。大伟的脸都绿了，但章还是盖了。',
+          log:'报价逐项核实补进合同，增项上限写死 5%',
+          learned:'『全包』的全是写进合同的部分：报价单逐项核、漏项补进去、增项上限写进条款——低价套餐后期增项 10-30% 是行业常态。' },
+        { key:'c', kind:'study', title:'找装过修的朋友帮忙看合同',
+          desc:'把合同拍照发给朋友，等他下班逐条看。', days:1, cost:0, stress:1, ev:'doc',
+          result:'朋友发来他家当年 11 万签的合同：最后 15 万完工。『全包 12 万是引流价，兄弟。』',
+          log:'请朋友把关合同，拿到一份真实增项样本',
+          learned:'装过修的朋友都在增项单上吃过亏：把合同拿给『过来人』看一遍，漏项藏不住。' }
+      ] },
+    { id:'Bdg2', who:'装修公司销售 大伟',
+      chat:'大伟指着付款条款：『签约付 60%，瓦工进场付 35%，完工付 5%。行规都这样，我们大公司不差你这点尾款。』',
+      doc:{ ic:'📝', t:'付款条款 · 第 5 条', d:'签约 60% / 瓦工进场 35% / 完工 5%。无质保金条款，无验收前置条件。' },
+      opts:[
+        { key:'a', kind:'quick', title:'行规就行规，签',
+          desc:'钱付了大头，人家干活也有劲。', days:0, cost:0, stress:2,
+          result:'60% 当天打了过去。工地确实热闹了几天——只是后来你想起，钱付完了，主动权好像也没了。',
+          log:'按『行规』付款：签约即付 60%',
+          mine:{ at:'Install', cost:3000, days:7, stress:7,
+            log:'钱付了大头，工期开始拖',
+            text:'安装周工地三天打鱼两天晒网：『师傅家里有事』『材料没到』。钱早付了大头，你催工期只能靠微信问候。' } },
+        { key:'b', kind:'study', title:'按节点分段付：验收一段付一段，尾款留 10%、质保金留 5%',
+          desc:'销售会不高兴，谈判多耗一天。', days:1, cost:0, stress:2, ev:'doc',
+          result:'合同改成 30%/30%/30%/质保金 10%，每个节点验收合格再打款。大伟嘟囔：『你这比监理还严。』',
+          log:'付款改按验收节点分段，尾款+质保金留 15%',
+          learned:'付款节点是业主最后的筹码：每笔钱跟着验收走，尾款 + 质保金留够，工期和售后才有底气。' }
+      ] }
+  ],
+
+  Demo: [
+    { id:'Dmo1', who:'工长 老周',
+      chat:'老周指着客厅和卧室之间的墙：『这堵墙拆了采光好，看着不厚，应该不碍事。』你瞥见图纸上它是一根黑色实线。',
+      doc:{ ic:'📐', t:'原始结构图 · 局部', d:'客厅与卧室之间：黑色实线（图例页第 2 项 = 剪力墙）。图例页你没翻到。' },
+      opts:[
+        { key:'a', kind:'paid', title:'师傅说没碍事，拆！',
+          desc:'老周干了二十年，他说行就行。', days:3, cost:12000, stress:15,
+          result:'拆到一半物业找上门：承重墙擅动，责令停工恢复，邻居投诉到房管所。补墙加固花了 12000，工期原地停了三天。',
+          log:'误拆承重墙被叫停，恢复加固花了 12000',
+          learned:'承重墙／剪力墙动不得：图纸上黑色实线是结构墙，拆改前必须物业备案 + 结构确认——这一课学费 12000。' },
+        { key:'b', kind:'study', title:'等等——图纸上这是实线，先让设计师确认结构',
+          desc:'停一天工，等设计师和物业给话。', days:1, cost:0, stress:2, ev:'photo',
+          result:'设计师电话都急了：『这是承重墙，动了整栋楼都危险！』改用玻璃砖垭口，采光和结构两全。',
+          log:'图纸核对确认承重墙，改玻璃砖垭口',
+          learned:'看不懂图纸就别让师傅替你看：黑色实线 = 结构墙，拆改前查图 + 物业备案，一天时间换一个底线的安全。' },
+        { key:'c', kind:'study', title:'查原始图纸 + 找物业调档案',
+          desc:'物业存着楼栋原始结构图，调档要跑一趟。', days:1, cost:0, stress:1, ev:'doc',
+          result:'物业调出图纸确认是承重墙，备案后只拆了非承重的隔断墙。老周挠头：『现在业主都这么懂行了？』',
+          log:'物业调档核实结构，只拆非承重隔断',
+          learned:'物业存有原始结构图：动墙前先查图、再报备，流程走对才不返工。' }
+      ] },
+    { id:'Dmo2', who:'工长 老周',
+      chat:'拆完旧瓷砖，墙面坑坑洼洼。老周拍板：『这些空鼓不用铲到底，抹平就行，能省 5000 块。』墙角的老铸铁管锈得掉渣，他建议『刷个漆凑合用』。',
+      doc:{ ic:'🔨', t:'现场 · 拆旧后墙面', d:'墙砖已铲除，基层可见多处空鼓（手掌拍击有空响）；墙角立着一根锈蚀的铸铁落水管。' },
+      opts:[
+        { key:'a', kind:'quick', title:'听师傅的，抹平继续，工期要紧',
+          desc:'省 5000，墙面抹平了看着也挺平整。', days:0, cost:0, stress:2,
+          result:'墙面抹平了，老管也刷了漆。基础里的隐患看不见——但它们都在。',
+          log:'空鼓没铲、老管没换，全按『省』处理',
+          mine:{ at:'Paint', cost:6000, days:5, stress:9,
+            log:'空鼓没铲到底层，油漆后墙面成片开裂',
+            text:'油漆做完不到一个月，墙面顺着空鼓位置裂出一道道细纹——新层挂在空鼓上，必然开裂，铲掉重粉。' } },
+        { key:'b', kind:'study', title:'空鼓全铲到基层重粉，老管顺手换掉',
+          desc:'铲墙重粉 + 换管，多花六七千、多等三四天。', days:3, cost:7000, stress:3, ev:'photo',
+          result:'加 7000：空鼓铲到基层重新粉墙，铸铁管换成 PVC 并换了阀门。基层结实了，后面每一步都稳。',
+          log:'空鼓铲到基层重粉 + 老管换新，多花 7000',
+          learned:'空鼓必须铲到基层重粉，不然新层挂在空鼓上三个月必裂；老房水管是隐形炸弹，装修是唯一一次敞开随便换的机会。' },
+        { key:'c', kind:'study', title:'拿空鼓锤自己敲一圈再决定',
+          desc:'网购空鼓锤第二天到，自己敲一遍。', days:1, cost:30, stress:1, ev:'report',
+          result:'『梆梆梆』——大半面墙都是空鼓。老周叹口气：『行，铲吧。』',
+          log:'自购空鼓锤敲验，实锤大半面墙空鼓',
+          learned:'空鼓锤敲出『梆梆』声就是空鼓：一面墙空鼓率超 5% 就得整面铲重粉，别信『抹平就行』。' }
+      ] }
+  ],
+
+  Elec: [
+    { id:'Elc1', who:'水电工 李师傅',
+      chat:'李师傅拿粉笔在墙上画点位：『床头插座 30 公分高，电视墙留 5 个，够了。你家沙发多长、柜子多深？不用管，点位不冲突。』——家具你还没定。',
+      doc:{ ic:'✏️', t:'墙面点位草图', d:'粉笔现场画线，共 38 个点位。未标注家具尺寸与柜体深度。' },
+      opts:[
+        { key:'a', kind:'quick', title:'师傅是专业的，按常规点位走',
+          desc:'常规点位是多年经验，应该错不了。', days:0, cost:0, stress:2,
+          result:'按常规走完了。李师傅手艺确实利索——只是没人问过你家家具长什么样。',
+          log:'水电按常规点位走，家具尺寸没定',
+          mine:{ at:'Install', cost:6000, days:1, stress:8,
+            log:'柜子挡插座、床头压网口，现场改线',
+            text:'安装时对上了雷：定制柜正好挡住两个插座，床头柜压住网口。现场开槽改线，一面墙补漆一块。' } },
+        { key:'b', kind:'study', title:'先把家具尺寸定了再交底，逐件标进点位图',
+          desc:'跑两天家居店定尺寸，点位图重画一遍。', days:3, cost:0, stress:2, ev:'doc',
+          result:'沙发 3.2 米、床头柜 55 高、全屋柜体深 600——点位图改了 11 处。李师傅：『你们这么细，后面省大事。』',
+          log:'先定家具尺寸再交底，点位图改了 11 处',
+          learned:'水电交底要拿家具图纸定点位：柜子深度挡插座、床头高度定开关——先定家具再开槽，顺序反了必返工。' },
+        { key:'c', kind:'study', title:'让师傅每面墙念一遍点位，你全程拍照录像',
+          desc:'一个点位一个点位对，多花一天。', days:1, cost:0, stress:1, ev:'photo',
+          result:'每个点位拍照编号，水管走向全程录像。三个月后打孔装窗帘，你翻出照片一秒定位，一次没打错。',
+          log:'水电交底全程拍照录像留底',
+          learned:'交底全程拍照录像：封槽之后图纸找不回来，留底是后期打孔、维修的命根子。' }
+      ] },
+    { id:'Elc2', who:'水电工 李师傅',
+      chat:'水管布完，李师傅收拾工具：『打压就不必了，我干了十几年没漏过。』你记得网上说水管要做打压试验。',
+      doc:{ ic:'🔧', t:'水管打压泵 · 未使用', d:'打压泵在工地角落里，压力表指针停在 0。管件为热熔连接。' },
+      opts:[
+        { key:'a', kind:'quick', title:'老师傅不会错，省一道工序',
+          desc:'老师傅的牌子比什么试验都硬。', days:0, cost:0, stress:2,
+          result:'没打压就封了槽。李师傅拍着胸脯走了——胸脯不会漏水，接口可能会。',
+          log:'听信老师傅经验，水管没做打压',
+          mine:{ at:'Air', cost:7000, days:2, stress:10,
+            log:'热熔接口渗水，泡了地板赔了楼下',
+            text:'入住前的台风夜，一个热熔接口渗了水：木地板泡了两块，楼下阳台顶也花了。开槽返修 + 赔偿。' } },
+        { key:'b', kind:'study', title:'必须打压：0.8 兆帕保 30 分钟，掉压就是有问题',
+          desc:'借打压泵当场试，多花半小时到一天。', days:1, cost:0, stress:2, ev:'report',
+          result:'当场打压：表针 20 分钟掉了 0.1——一个热熔接口没接好。李师傅脸红了，重接复压合格。',
+          log:'坚持打压试验，揪出渗漏接口',
+          learned:'水管打压 0.8MPa、30 分钟掉压 ≤0.05 才合格——这是验收底线，跟师傅多少年工龄无关。' }
+      ] },
+    { id:'Elc3', who:'懂行的朋友',
+      chat:'水电结算单出来：180 米管，横平竖直特别漂亮。朋友看了照片直摇头：『这线绕远了，点对点能省 60 米。按米计费，绕线就是利润。』',
+      doc:{ ic:'🧾', t:'水电结算单', d:'管线 180 米 × 单价（按米计费）。走线为"横平竖直"直角路径。' },
+      opts:[
+        { key:'a', kind:'paid', title:'横平竖直才规范，认了',
+          desc:'多花 4000 买个『美观』。', days:0, cost:4000, stress:4,
+          result:'线绕着走，多花了 4000。『好看』的走线不一定省钱——这一课记在小本本上。',
+          log:'按米计费被绕线，多花 4000',
+          learned:'横平竖直 ≠ 规范：点对点最短路径才是省钱又合规的做法，『绕线』是按米计费模式下的利润密码。' },
+        { key:'b', kind:'study', title:'按点对点重新核算，多退少补',
+          desc:'拉着重算一遍线，扯皮半天。', days:1, cost:0, stress:2, ev:'doc',
+          result:'按点对点重新核算：少 60 米管，省回 4000。李师傅嘟囔着改了报价。',
+          log:'按点对点重算水电，省回 4000',
+          learned:'水电按米计费要先谈『点对点』：横平竖直的『美观』是按米计费的利润密码，一米几十块，绕的就是你的钱。' }
+      ] }
+  ],
+
+  Seal: [
+    { id:'Sew1', who:'瓦工 阿强',
+      chat:'阿强：『闭水试验？蓄一晚上看看就行，明天贴砖，工期紧。』——楼下的房子还没人住，真漏了也一时发现不了。',
+      doc:{ ic:'💧', t:'卫生间 · 防水已完成', d:'绿色防水涂层已刷 2 遍，蓄水约 1 公分。楼下尚未交房。' },
+      opts:[
+        { key:'a', kind:'quick', title:'工期要紧，蓄一晚上就贴',
+          desc:'看一眼不漏就过，省两天。', days:0, cost:0, stress:2,
+          result:'蓄了一晚上，楼下天花板看着还行。阿强说『我就说没问题』——只是 48 小时和 12 小时，差的不只是时间。',
+          log:'闭水只蓄了 12 小时就贴砖',
+          mine:{ at:'Air', cost:5000, days:3, stress:10,
+            log:'防水不达标，楼下天花板渗水赔偿',
+            text:'入住一个月，楼下找上门：天花板渗水一片。防水返工 + 楼下维修赔偿，还搭进去多年邻里人情。' } },
+        { key:'b', kind:'study', title:'按规范闭水 48 小时，提前跟楼下打好招呼',
+          desc:'蓄水等两天，还得上门送盒水果。', days:2, cost:0, stress:1, ev:'photo',
+          result:'蓄水 3 公分，48 小时后下楼查看：天花板干干净净。阿强：『行，你较真，我服。』楼下邻居也记住了你这个准邻居。',
+          log:'闭水 48 小时 + 提前告知楼下，一次过',
+          learned:'闭水 48 小时是国标底线：蓄水 3-5 公分、提前通知楼下、到点看天花板——邻里关系也是防水的一部分。' },
+        { key:'c', kind:'study', title:'先问阿强防水刷到多高',
+          desc:'一句「多高」的事，当场就问。', days:1, cost:0, stress:1, ev:'photo',
+          result:'阿强挠头：『常规刷 30 公分……』淋浴墙当场补刷到 1.8 米，多花半天。',
+          log:'追问防水高度，淋浴墙补刷到 1.8 米',
+          learned:'防水高度：淋浴区 1.8 米、其他墙面 30 公分；高度不够，水汽照样渗墙。' }
+      ] },
+    { id:'Sew2', who:'建材商',
+      chat:'建材商压低声音：『装修公司给你刷的是最便宜的防水。我这个德国技术，一桶顶三桶，就贵 800。』',
+      doc:{ ic:'🪣', t:'防水涂料 · 两只桶', d:'A 桶：装修公司配，桶身执行标准栏模糊。B 桶：标注"德国技术"，未印执行标准号。' },
+      opts:[
+        { key:'a', kind:'quick', title:'装修公司配的就行，不折腾',
+          desc:'反正刷了两遍，应该够用。', days:0, cost:0, stress:1,
+          result:'用回了装修公司配的涂料。是不是『最便宜的』，没人再提——刷在墙里的东西，看不见。',
+          log:'防水材料没验标准，用装修公司配的',
+          mine:{ at:'Air', cost:3000, days:2, stress:6,
+            log:'防水涂料不达标，卫生间外墙返碱',
+            text:'卫生间外墙乳胶漆起皮、返碱一片——涂料不达标的『慢动作回报』。铲墙重刷 + 补防水。' } },
+        { key:'b', kind:'study', title:'不看故事看标准：认准国标 II 型以上，查检测报告',
+          desc:'查执行标准、看报告，多跑一趟建材城。', days:1, cost:800, stress:1, ev:'report',
+          result:'比对执行标准后补差价换了达标涂料，检测报告拍照存档。德国故事没打动你，GB/T23445 打动了。',
+          log:'按执行标准选防水涂料，报告存档',
+          learned:'防水涂料看执行标准和检测报告，不看『德国技术』的故事：室内认准 GB/T23445 II 型以上，墙刚地柔。' }
+      ] }
+  ],
+
+  Tile: [
+    { id:'Til1', who:'瓦工 阿强',
+      chat:'阿强催着验收：『趁我还在，今天验收了结了，过两天我撤场可就不管了。』你手里没有空鼓锤，墙看着确实挺平。',
+      doc:{ ic:'🧱', t:'墙砖 · 已贴完', d:'客厅东墙整面贴完，肉眼观察平整。你手里没有空鼓锤、没有靠尺。' },
+      opts:[
+        { key:'a', kind:'quick', title:'看着挺平的，验收吧',
+          desc:'省一天事，师傅也痛快。', days:0, cost:0, stress:2,
+          result:'验收签了字。墙还是那面墙，只是『看着平』和『敲着实』是两回事。',
+          log:'瓦工凭目测验收，没做空鼓敲击',
+          mine:{ at:'Clean', cost:4000, days:2, stress:8,
+            log:'三块空鼓砖脱落，砸裂马桶盖',
+            text:'保洁进场当天，三块墙砖连着水泥整块脱落，砸裂了新马桶盖。铲砖重贴 + 换马桶盖。' } },
+        { key:'b', kind:'study', title:'空鼓锤逐块敲 + 水平尺靠，超标的铲了重贴',
+          desc:'逐块敲一遍，多花一两天。', days:2, cost:30, stress:2, ev:'report',
+          result:'敲出 6 块空鼓砖，当场铲了重贴。阿强嘟囔：『头一回见业主自己带锤子的。』',
+          log:'空鼓锤逐块验收，敲出 6 块重贴',
+          learned:'空鼓锤逐块敲：单片空鼓超 15% 或整面超 5% 必须返工——验收要在师傅撤场前做完，撤场后再找人就难了。' },
+        { key:'c', kind:'study', title:'查国标 GB50210，拿数字验收',
+          desc:'查标准、抄数字，多花一天做验收表。', days:1, cost:0, stress:1, ev:'doc',
+          result:'照着国标数字逐条验：平整度 ≤2mm、接缝高低差 ≤0.5mm、空鼓率 ≤5%。阿强挑不出毛病。',
+          log:'按 GB50210 数字化验收瓦工',
+          learned:'GB50210 是装饰装修验收国标：空鼓率 ≤5%、表面平整度 ≤2mm、接缝高低差 ≤0.5mm——验收拿数字说话，不靠感觉。' }
+      ] },
+    { id:'Til2', who:'瓦工 阿强',
+      chat:'阿强准备贴最后一排：『地漏那块按老做法来，先贴墙后贴地都一样。』你看淋浴区，几乎是平的。',
+      doc:{ ic:'🚿', t:'淋浴区地面 · 待贴', d:'地漏位于角落，地面目测接近水平（无明显找坡）。' },
+      opts:[
+        { key:'a', kind:'quick', title:'都一样，按你的来',
+          desc:'老做法用了几十年了。', days:0, cost:0, stress:1,
+          result:'老做法贴完了。浴室看着很整齐——水往哪儿流，只有第一次洗澡知道。',
+          log:'地漏坡度随老做法，没做试水',
+          mine:{ at:'Air', cost:3000, days:2, stress:7,
+            log:'地漏坡度不够，洗澡积水砸砖返工',
+            text:'第一次淋浴就露馅：积水漫过脚背，半小时排不干净。砸砖重新找坡重贴。' } },
+        { key:'b', kind:'study', title:'墙压地 + 淋浴区 2% 坡度坡向地漏，贴完倒水试',
+          desc:'重新排版贴砖，多花一天。', days:1, cost:0, stress:1, ev:'photo',
+          result:'贴完当场倒水试：水『哗』地汇进地漏。阿强也跟着点了点头。',
+          log:'墙压地 + 2% 坡度，倒水试一次过',
+          learned:'『墙压地』美观防渗；地漏坡度 1-2% 坡向地漏，验收倒一盆水看流速——积水就是返工信号。' }
+      ] }
+  ],
+
+  Wood: [
+    { id:'Wod1', who:'木工 老赵',
+      chat:'老赵：『木龙骨我用了二十年，比轻钢的还结实。检修口留不留随你，封得严严实实才好看，反正是吊顶又不是天窗。』',
+      doc:{ ic:'🏗️', t:'吊顶龙骨 · 已上架', d:'木龙骨，目测间距略大于 60 公分；顶面未见预留检修口。' },
+      opts:[
+        { key:'a', kind:'quick', title:'老师傅说了算，封板',
+          desc:'省事，造型也完整。', days:0, cost:0, stress:2,
+          result:'石膏板封上了，顶面严丝合缝。龙骨什么样、口子在哪，只有老赵知道。',
+          log:'木龙骨 + 无检修口，吊顶直接封板',
+          mine:{ at:'Warr', cost:5000, days:3, stress:8,
+            log:'吊顶接缝开裂，检修无口拆顶',
+            text:'吊顶转角裂开一道缝；修缝不难，难的是空调检修没口子——拆顶检修，修完重做。' } },
+        { key:'b', kind:'study', title:'换轻钢龙骨，间距不超 60，检修口必须留',
+          desc:'换材 + 调间距，多花一天和几百块。', days:1, cost:500, stress:2, ev:'photo',
+          result:'轻钢龙骨 60 间距，转角 7 字板防裂，灯位检修口留好。老赵：『你比监理还懂行。』',
+          log:'轻钢龙骨 60 间距 + 检修口留位',
+          learned:'轻钢龙骨不变形；间距 ≤60cm、转角用 7 字板防裂；检修口不是难看，是以后救命的口子。' }
+      ] },
+    { id:'Wod2', who:'木工 老赵',
+      chat:'老赵按经验做了 12 公分宽的窗帘盒。你最近正犹豫：以后要不要上双轨电动窗帘。',
+      doc:{ ic:'📏', t:'窗帘盒 · 已成型', d:'净宽 12 公分，未预埋电源。封板计划在明天。' },
+      opts:[
+        { key:'a', kind:'neutral', title:'先装普通窗帘，够用就行',
+          desc:'省 200 加宽钱，以后的事以后说。', days:0, cost:0, stress:0,
+          result:'窗帘盒 12 公分，装了普通窗帘，刚好够用。至于以后……以后再说。',
+          log:'窗帘盒按 12 公分常规做' },
+        { key:'b', kind:'study', title:'以后大概率上电动窗帘，盒加宽到 18 公分',
+          desc:'改一下尺寸，加 200 块。', days:0, cost:200, stress:1, ev:'photo',
+          result:'窗帘盒加宽到 18 公分。半年后你真装了双轨——刚好卡进去，一点没返工。',
+          log:'窗帘盒加宽到 18 公分预留双轨',
+          learned:'窗帘盒尺寸要匹配窗帘类型：单轨 15 / 双轨 18 / 电动 20 公分起——封顶前想清楚，加宽只要 200，返工要拆顶。' }
+      ] }
+  ],
+
+  Paint: [
+    { id:'Pnt1', who:'油漆工 小陈',
+      chat:'连着一周阴雨，湿度计显示 82%。小陈：『没事，我加两台风扇吹着，腻子照样干，一周收工。』',
+      doc:{ ic:'🌡️', t:'温湿度计 · 现场', d:'湿度 82%，温度 19℃。当前批腻子工序第 1 遍。风扇 2 台已就位。' },
+      opts:[
+        { key:'a', kind:'quick', title:'吹风机吹干，接着干',
+          desc:'工期不等人，风扇管够。', days:0, cost:0, stress:2,
+          result:'风扇呼呼吹了三天，墙面摸着干了。工序一道没停，小陈按期收了工。',
+          log:'湿度 82% 抢工，风扇吹干继续刷',
+          mine:{ at:'Warr', cost:5000, days:5, stress:9,
+            log:'湿度过高抢工，入秋墙面发霉起皮',
+            text:'入秋之后，墙面成片发霉、起皮——表面结膜锁住了里层的水汽。铲到底层返工重来。' } },
+        { key:'b', kind:'study', title:'湿度超 70% 停工：除湿机压到 60 以下再批',
+          desc:'租除湿机 + 停工等干，多等四五天。', days:5, cost:2000, stress:3, ev:'report',
+          result:'租了除湿机停工 4 天，湿度压到 58 再批腻子。工期多了一周，墙面结实得能拍桌子。',
+          log:'湿度超标停工除湿，干透再刷',
+          learned:'湿度 >70% 批腻子刷漆必埋雷：每一层干透才算数，梅雨季宁停一周不抢一天。' }
+      ] },
+    { id:'Pnt2', who:'油漆工 小陈',
+      chat:'面漆刷完，小陈指着两个桶：『同一批的，肯定没色差。』你借着窗光看，两面墙的光泽好像不太一样。',
+      doc:{ ic:'🪣', t:'面漆 · 两只桶', d:'两桶生产批号一致。客厅东墙与西墙分别用不同桶刷涂。' },
+      opts:[
+        { key:'a', kind:'quick', title:'同批漆应该没事',
+          desc:'师傅都这么说了。', days:0, cost:0, stress:1,
+          result:'没多想，收工。光线好的时候，那面墙看起来……嗯，应该没事。',
+          log:'面漆没有对色验收',
+          mine:{ at:'Clean', cost:3000, days:2, stress:6,
+            log:'墙面色差补刷一遍',
+            text:'开荒保洁打灯一看：客厅两片墙色差明显，白天像打了补丁。调色重刷一遍。' } },
+        { key:'b', kind:'study', title:'两桶兑在一起搅匀刷，剩漆封存留底',
+          desc:'混桶调色多花半天。', days:1, cost:0, stress:1, ev:'paint',
+          result:'两桶兑匀了刷，剩漆封存标好房间。打灯验收，光泽一致。',
+          log:'两桶漆混匀 + 剩漆留底',
+          learned:'同批次漆也可能有色差：两桶混匀再刷、剩漆封存留底，后期补漆才有得对。' }
+      ] }
+  ],
+
+  Main: [
+    { id:'Mai1', who:'门窗店销售',
+      chat:'『断桥铝 500 一平，窗纱五金全送。』合同小字：本价格含固定扇玻璃，开启扇按 380 元/扇另计，五金件品牌未注明。你家窗户要开 8 扇。',
+      doc:{ ic:'📄', t:'门窗报价 · 合同小字', d:'正文：500 元/㎡ 全含。小字第 3 条：开启扇 380 元/扇另计；五金品牌栏空白。' },
+      opts:[
+        { key:'a', kind:'quick', title:'『全含』『全送』都写了，下单',
+          desc:'500 一平看着真便宜。', days:0, cost:0, stress:2,
+          result:'交了定金。500 一平确实便宜——便宜的部分，小字都写着呢。',
+          log:'断桥铝按『全含』单价下单',
+          mine:{ at:'Install', cost:5000, days:0, stress:8,
+            log:'开启扇+五金结算加价 5000',
+            text:'窗户装完结算：8 个开启扇 ×380 + 五金加价——说好的『全含』只含固定玻璃，一张单子补 5000。' } },
+        { key:'b', kind:'study', title:'要两套报价：开启扇单算、五金品牌写进合同',
+          desc:'两家门店比价，多跑两天。', days:2, cost:0, stress:2, ev:'doc',
+          result:'两套报价摆在一起：单价 500 的那家加完开启扇反而更贵。换了实价那家，总价反而省 800。',
+          log:'两套报价比价，五金写进合同',
+          learned:'门窗要两套报价：固定扇一价、开启扇一价；五金问品牌问产地（诺托/好博……），写进合同才算数。' }
+      ] },
+    { id:'Mai2', who:'定制柜销售',
+      chat:'『投影面积 1200 一平，便宜吧？实木颗粒板 E0 环保，激光封边。』你算了算 3 个柜子 9 个平方——一万出头就拿下？',
+      doc:{ ic:'🧾', t:'定制柜报价 · 计价方式', d:'计价方式：投影面积 1200 元/㎡。抽屉、层板、封边工艺是否另计，报价单未注明。' },
+      opts:[
+        { key:'a', kind:'quick', title:'投影面积便宜，就它了',
+          desc:'9 个平方一万出头，真香。', days:0, cost:0, stress:2,
+          result:'签了投影计价的合同。销售笑着按了手印——投影面积的数学游戏，才刚开始。',
+          log:'定制柜按投影面积签单',
+          mine:{ at:'Install', cost:8000, days:0, stress:9,
+            log:'定制柜按展开面积结算，报价翻倍',
+            text:'结算单按展开面积算：抽屉、层板、封边逐项展开——报价直接翻倍，合同白纸黑字，只能认。' } },
+        { key:'b', kind:'study', title:'让销售按展开面积重报，五金铰链滑轨逐项列品牌',
+          desc:'重新报价、逐项列单，多磨两天。', days:2, cost:0, stress:2, ev:'doc',
+          result:'展开面积重报：3.2 万，比投影报价贵一倍多——但这是真实总价。五金全是品牌件，写进了合同。',
+          log:'定制柜按展开面积重报，五金写品牌',
+          learned:'定制柜：展开面积 ≈ 投影面积 ×3-4，投影报价只是钩子；颗粒板 = 刨花板，环保等级看 GB/T39600 检测报告，不看故事。' }
+      ] },
+    { id:'Mai3', who:'定制柜销售',
+      chat:'『我们激光封边，行业最高级。』参观车间时，你瞟见封边机旁的操作单上印着『PUR 封边』四个字。',
+      doc:{ ic:'🏭', t:'车间 · 封边机操作单', d:'操作单标注工艺：PUR 封边。销售口述工艺：激光封边。两者不一致。' },
+      opts:[
+        { key:'a', kind:'quick', title:'销售说是激光，那就是激光',
+          desc:'人家总不会拿设备骗人。', days:0, cost:0, stress:1,
+          result:'合同里写上『激光封边』四个字。没有型号、没有照片——这四个字有好几种解释。',
+          log:'封边工艺凭销售一句话，合同没写型号',
+          mine:{ at:'Warr', cost:3000, days:2, stress:7,
+            log:'封边开胶起翘，售后推诿『人为受潮』',
+            text:'柜门封边半年开始开胶起翘，售后一句『人为受潮不保修』——合同里没写工艺，你连争的依据都没有。' } },
+        { key:'b', kind:'study', title:'要求写明封边工艺 + 设备型号，拍照留证',
+          desc:'销售不太乐意，谈判多耗一天。', days:1, cost:0, stress:1, ev:'photo',
+          result:'合同补上『PUR 封边 + 设备型号』，车间设备拍了照。销售不太高兴，但单子还是签了。',
+          log:'封边工艺+设备型号写进合同',
+          learned:'封边看设备不看话术：激光封边机上千万，PUR 是主流防潮选择，EVA 便宜但怕热——销售的话要落到合同里才作数。' }
+      ] }
+  ],
+
+  Install: [
+    { id:'Ins1', who:'工长 老周',
+      chat:'地板师傅先到了。老周：『先铺地板吧，省得等。』你想起柜子还没装——柜子、门套和地板，好像谁先谁后有讲究。',
+      doc:{ ic:'🚚', t:'到货清单 · 今日', d:'地板（3 件）、门套（2 件）、定制柜（6 件）全部到货。师傅可同场作业。' },
+      opts:[
+        { key:'a', kind:'quick', title:'先到先装，省时间',
+          desc:'师傅难得凑齐，装一个是呗。', days:0, cost:0, stress:2,
+          result:'地板先铺了。省了半天等待——省下的时间，后面加倍还。',
+          log:'安装顺序错乱，先铺了地板',
+          mine:{ at:'Clean', cost:3000, days:2, stress:7,
+            log:'柜子与地板收不了边，门套漏缝',
+            text:'柜子压住地板收不了边、门套和地板之间豁着 3 毫米的缝——顺序装错，全靠玻璃胶打补丁。' } },
+        { key:'b', kind:'study', title:'按顺序来：门 → 柜 → 地板 → 灯具卫浴，师傅错峰约',
+          desc:'重新排期，多等两三天。', days:3, cost:0, stress:2, ev:'photo',
+          result:'师傅重新排期，多等 3 天。门 → 柜 → 地板依次到位，收口严丝合缝。',
+          log:'安装按 门→柜→地板 顺序错峰排期',
+          learned:'安装顺序错了全是缝：先装门定缝隙、再装柜压踢脚、最后铺地板收边——错峰施工比抢时间省返工。' }
+      ] },
+    { id:'Ins2', who:'卫浴安装师傅',
+      chat:'师傅现场拆箱：『马桶坑距 400 的，你家量过吗？』你想起来下单时量过——好像。大概。差不多。',
+      doc:{ ic:'📦', t:'马桶 · 已拆箱', d:'型号标注坑距 400。你手边没有卷尺，也没有当初的复尺记录。' },
+      opts:[
+        { key:'a', kind:'quick', title:'当时量了，装吧',
+          desc:'下过单的就是量过的。', days:0, cost:0, stress:2,
+          result:'装上了。马桶离墙一条缝，玻璃胶打了又开——『差不多』的代价，是要天天看的。',
+          log:'马桶坑距没复尺，离墙留缝',
+          mine:{ at:'Clean', cost:3000, days:3, stress:7,
+            log:'坑距对不上，返厂换货等 20 天',
+            text:'坑距实际 350，马桶是 400 的——返厂换货，卫生间空了 20 天。' } },
+        { key:'b', kind:'study', title:'先复尺：坑距、柜位、门洞逐个量完再拆箱',
+          desc:'卷尺量一遍，多花十分钟到一天。', days:1, cost:0, stress:1, ev:'report',
+          result:'逐个复尺：坑距实际 350，好在马桶是 300/400 两用款。师傅直冒汗：『今天不量，返厂 20 天。』',
+          log:'安装前逐项复尺，避开返厂',
+          learned:'安装进场先复尺：马桶坑距（300/400）、门洞、柜位误差超 1 公分都要现场调整——复尺十分钟，返厂二十天。' }
+      ] }
+  ],
+
+  Clean: [
+    { id:'Cln1', who:'保洁领队 王姐',
+      chat:'王姐催着验收：『大面上都干净了，尾款结一下，姐妹们还赶下一家。』你拿手电照了照窗框……',
+      doc:{ ic:'🔦', t:'手电 · 已备', d:'窗框轨道、花洒五金、地漏三处尚未检查。尾款未结。' },
+      opts:[
+        { key:'a', kind:'quick', title:'看着挺干净，结账',
+          desc:'大面确实干净，人都赶时间。', days:0, cost:0, stress:1,
+          result:'尾款结了。窗明几净——明面上。',
+          log:'开荒保洁凭目测验收结账',
+          mine:{ at:'Warr', cost:2000, days:1, stress:5,
+            log:'窗框水泥点、五金划痕、地漏堵塞',
+            text:'入住才发现：窗框槽里全是水泥点、花洒两道划痕、地漏堵着涂料渣——返修的钱，本可以省。' } },
+        { key:'b', kind:'study', title:'打灯逐项验收：窗框槽、五金划痕、地漏下水，合格再付',
+          desc:'手电 + 一桶水，多验半天。', days:1, cost:0, stress:1, ev:'receipt',
+          result:'照出窗框三处水泥点、地漏堵着涂料渣，返工半天重新过。王姐：『你家最难伺候，但服气。』',
+          log:'打灯逐项验收保洁，返工后付尾款',
+          learned:'开荒验收：手电照窗框轨道、查五金划痕、倒水试地漏——验收合格再付尾款，留 10% 质保金。' }
+      ] }
+  ],
+
+  Air: [
+    { id:'Air1', who:'家人',
+      chat:'通风一个月，屋里已经没味道。家人说：『有味道才有甲醛，没味道就能住了。』你想起买的那些板材……',
+      doc:{ ic:'👃', t:'新家 · 通风第 30 天', d:'柜门全日开放，对流开窗。室内无异味。板材为颗粒板。' },
+      opts:[
+        { key:'a', kind:'quick', title:'没味道就是没事，搬家！',
+          desc:'多通风一个月也是白等。', days:0, cost:0, stress:2,
+          result:'搬家了。新家清清爽爽——闻不到的，才是要命的。',
+          log:'没做检测凭感觉入住',
+          mine:{ at:'Warr', cost:6000, days:15, stress:12,
+            log:'甲醛超标 2 倍，二次治理 15 天',
+            text:'孩子房间夜间咳嗽不止，复检甲醛 0.16mg/m³ 超标 2 倍。二次治理 + 搬出去住了半个月。' } },
+        { key:'b', kind:'study', title:'找 CMA 机构检测：密闭 12 小时采样，对着限值看',
+          desc:'约机构、等报告，多花三四天和几百块。', days:3, cost:500, stress:2, ev:'report',
+          result:'报告出来：客厅 0.06 达标，主卧柜子内侧 0.09 超标。柜门再敞 20 天复检，合格才搬家。',
+          log:'CMA 机构检测，柜内超标再通风 20 天',
+          learned:'自测盒不靠谱：认准 CMA 资质机构，密闭 12 小时采样，甲醛 ≤0.08mg/m³ 才算合格——有小孩建议 ≤0.05 再入住。' }
+      ] },
+    { id:'Air2', who:'你 · 巡查新家',
+      chat:'台风夜过后你特意去新房看了看：窗台底下有一道浅浅的水痕——下暴雨那晚，风是从窗缝里灌的。',
+      doc:{ ic:'💧', t:'窗台 · 雨后水痕', d:'次卧窗台内侧一道浅水痕，长约 20 公分。外侧胶条目测有缺口。' },
+      opts:[
+        { key:'a', kind:'quick', title:'就一道印子，擦掉算了',
+          desc:'一道水痕而已，不至于。', days:0, cost:0, stress:1,
+          result:'水痕擦掉了。窗户没修——它记住你的宽容，冬天再来。',
+          log:'窗边渗水未处理，擦掉了事',
+          mine:{ at:'Warr', cost:5000, days:3, stress:8,
+            log:'窗边渗水拖成墙皮发霉，大修',
+            text:'冬天连阴雨，窗边墙皮鼓包发霉——重新打胶 + 铲墙皮重做，一道水痕滚成一万块的工程。' } },
+        { key:'b', kind:'study', title:'叫门窗师傅重新打胶 + 淋水试验',
+          desc:'约师傅上门，多等两天。', days:2, cost:300, stress:1, ev:'photo',
+          result:'师傅重新内外打胶，淋水试验半小时，窗台干爽。一场台风帮你提前验收了窗户。',
+          log:'窗边重新打胶 + 淋水试验通过',
+          learned:'装完的房子要经历一场雨才算验收：窗边渗水当场打胶重试，拖到冬天就是墙面发霉大修。' }
+      ] }
+  ],
+
+  Warr: [
+    { id:'Wty1', who:'装修公司售后',
+      chat:'电话接通了。售后：『质保五年没错，但您这个情况……我们得先判断是不是人为的。您方便来一趟吗？带着合同。』',
+      doc:{ ic:'🛡️', t:'质保条款 · 合同第 8 条', d:'整装质保 5 年；第 9 条免责栏含"易耗件""人为损坏"。尾款/质保金是否留，取决于预算阶段签的付款条款。' },
+      opts:[
+        { key:'a', kind:'paid', title:'质保五年，报修就行，等他们上门',
+          desc:'白纸黑字的质保，怕什么。', days:0, cost:2000, stress:5,
+          result:'售后上门看了一圈：『这个属于易耗件，合同免责条款第 9 条……材料费 2000，上门费我们出。』质保五年，自费两千。',
+          resultStudied:'售后上门换了铰链和五金，一分没收——增项上限写进了合同、质保金还捏在你手里，没人敢怠慢你。',
+          freeIfStudied:'Budget',
+          log:'凭『质保五年』报修，被免责条款挡回',
+          learned:'质保五年 ≠ 什么都保：易耗件（铰链/五金/密封条）和『人为』常在免责条款里——签字前要划掉这些坑。' },
+        { key:'b', kind:'study', title:'带着合同、发票、报修记录上门交涉',
+          desc:'翻出全部证据，跑一趟公司。', days:0, cost:0, stress:2, ev:'warranty',
+          result:'证据链摆出来：合同、发票、微信报修记录。公司按合同免费换了铰链和五金，还补了封边胶。',
+          log:'带齐合同发票记录交涉，免费维修',
+          learned:'留证据三件套：合同 + 发票 + 书面报修记录（微信文字，不口头）——质保期的底气是证据链，不是嗓子。' }
+      ] }
+  ]
+};
+
+/* ── 预算档位（scenes-renov.ts sceneRenovStart 逐字复刻） + 分账预估（设计稿新增） ── */
+const GRADES = [
+  { perSq:1000, name:'经济型', desc:'约 1000 元/㎡：主材够用、造型从简，适合出租或过渡。',
+    split:[{k:'硬装施工',p:50,c:'#17191c'},{k:'主材',p:26,c:'#4c4c4c'},{k:'安装辅料',p:9,c:'#a3a6af'},{k:'增项预留',p:15,c:'#b7410e'}] },
+  { perSq:1500, name:'舒适型', desc:'约 1500 元/㎡：主流档位，板材五金达标，适度设计。',
+    split:[{k:'硬装施工',p:48,c:'#17191c'},{k:'主材',p:30,c:'#4c4c4c'},{k:'安装辅料',p:10,c:'#a3a6af'},{k:'增项预留',p:12,c:'#b7410e'}] },
+  { perSq:2200, name:'品质型', desc:'约 2200 元/㎡：用料讲究、定制多，工期也更长。',
+    split:[{k:'硬装施工',p:45,c:'#17191c'},{k:'主材',p:34,c:'#4c4c4c'},{k:'安装辅料',p:11,c:'#a3a6af'},{k:'增项预留',p:10,c:'#b7410e'}] }
+];
+
+/* ── 演示用固定房源（对齐 constants.ts HOUSES 的 C 号：外环品质新房，毛坯，95㎡） ──
+   毛坯房是装修模拟最典型的场景；面积 95㎡ 使三档预算落在 9.5 / 14.25 / 20.9 万，数量级真实。 */
+const HOUSE = { name:'外环品质新房', area:95, reno:'毛坯', areaText:'95㎡' };
+
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   交互引擎 · 装修模块 v2
+   三条主线：
+     A 家的生长 —— 房间剖面图按阶段逐层点亮（结构→管线→饰面→主材→陈设→入住）
+     B 预算守卫 —— 钱条 / 工期条常驻，把 renovSpend / renovDay 变成可感知的压力
+     C 证据链   —— 做功课的可见回报，在「售后质保」阶段兑现（freeIfStudied）
+   所有金额与工期口径与 utils/handlers-renov.ts 完全一致，仅改变表达层。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 确定性随机（mulberry32）：保证每次评审看到同一套事件分布 ──
+   SEED 经过筛选：13 个阶段触发 11 个事件 + 2 个「安静态」；
+   快选路 增项 ¥4.6 万 / 工期 127 天 / 10 处爆雷；功课路 增项 ¥0.83 万 / 工期 118 天 / 0 爆雷。 */
+const SEED = 1662;
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+let rng = mulberry32(SEED);
+
+/* ── 固定日期锚点：以开工日为第 1 天（评审稿用固定锚点，保证可复现） ── */
+const ANCHOR = new Date(2026, 8, 16);
+function dateOf(day){ const d = new Date(ANCHOR.getTime()); d.setDate(d.getDate() + (day-1)); return d; }
+function md(day){ const d = dateOf(day); return (d.getMonth()+1) + '月' + d.getDate() + '日'; }
+function calGrid(day){
+  const d = dateOf(day), y = d.getFullYear(), m = d.getMonth();
+  let wd = new Date(y, m, 1).getDay(); wd = wd === 0 ? 7 : wd;
+  const dim = new Date(y, m+1, 0).getDate(), cur = d.getDate();
+  const cells = [];
+  for (let i = 0; i < 42; i++){ const dd = i - wd + 1;
+    cells.push(dd < 1 || dd > dim ? { d:0, cur:false, past:false } : { d:dd, cur:dd===cur, past:dd<cur }); }
+  return { month: y + '年' + (m+1) + '月', cells };
+}
+
+const PLAN_BASE = STAGES.reduce((a,s)=>a + (s.k==='Warr' ? 0 : s.days), 0);  /* 100 天 */
+const PLAN_TOTAL = 1 + PLAN_BASE;                                            /* 101 天（含开工日）*/
+const BASE_DAY = 1;                                                          /* 开工第 1 天 = 量房 */
+
+/* ── 金额/工期格式化（口径对齐 utils/calc.ts fmt / fmtN） ── */
+const wan = v => (v/10000).toFixed(2).replace(/\.?0+$/,'');       /* 元 → 万 */
+const yuan = v => '¥' + v.toLocaleString('en-US');                /* 元 → ¥1,234 */
+const dstr = (a,b) => a + '-' + b + ' 天';
+
+/* ══════════════════════════ 状态 ══════════════════════════ */
+let S = null;
+function newState(){
+  return {
+    screen:'budget',            /* budget | stage | done */
+    stageIdx:0,                 /* 0=未开工；1..13 */
+    grade:null, budget:0,
+    day:BASE_DAY, doneDay:0,
+    spend:0,                    /* 增项 + 返工 + 做功课的支出（= 原 renovSpend） */
+    studyDays:0, reworkDays:0,  /* 主动耗时 / 被动耗时（本设计稿新增的拆解口径） */
+    learned:[], mines:[], burst:[],
+    evidence:[], log:[],
+    stress:8,
+    choice:null, event:null,
+    byStage:{},                 /* 按阶段的耗时/支出明细，供进度弹层与总账复盘 */
+    done:false, justEarned:null
+  };
+}
+function st(k){
+  if (!S.byStage[k]) S.byStage[k] = { studyDays:0, reworkDays:0, burstDays:0, burstCost:0, studyCost:0, burst:[], note:[] };
+  return S.byStage[k];
+}
+/* 图层可见性：rank ≤ 当前阶段所属层级的全部点亮；orig 只在拆改前出现 */
+function layersOn(){
+  const rank = S.stageIdx ? LAYER_RANK[STAGES[S.stageIdx-1].layer] : 0;
+  return { orig:rank===0, struct:rank>=1, pipe:rank>=2, finish:rank>=3, main:rank>=4, furn:rank>=5, live:rank>=6 };
+}
+
+/* ══════════════════════════ 进入阶段（等价 renovArrive） ══════════════════════════ */
+function arrive(idx){
+  const def = STAGES[idx-1];
+  S.stageIdx = idx; S.choice = null; S.burst = [];
+  if (def.k === 'Warr') S.doneDay = S.day;          /* 快照完工入住日，再叙事推进一年 */
+  /* 1) 结算到站爆雷 */
+  const b = S.mines.filter(m => m.at === def.k);
+  if (b.length){
+    S.mines = S.mines.filter(m => m.at !== def.k);
+    S.burst = b;
+    const rec = st(def.k);
+    b.forEach(m => {
+      S.spend += m.cost; S.day += m.days; S.reworkDays += m.days; S.stress += m.stress;
+      rec.reworkDays += m.days; rec.burstDays += m.days; rec.burstCost += m.cost; rec.burst.push(m);
+      S.log.push({ stage:def.name, hit:true, text:m.log, cost:m.cost, days:m.days });
+    });
+  }
+  if (def.k === 'Warr') S.day += 365;               /* 售后质保叙事推进一年 */
+  /* 2) 按概率随机触发事件（prob 口径同 renov-data.ts：默认 0.8，质保 = 1） */
+  const pool = EVENTS[def.k] || [];
+  const prob = def.k === 'Warr' ? 1 : 0.8;
+  const r = rng();
+  S.event = (pool.length && r < prob) ? pool[Math.floor((r/prob) * pool.length)] : null;
+}
+
+/* ══════════════════════════ 选择事件选项（等价 renovChoice） ══════════════════════════ */
+function choose(key){
+  const def = STAGES[S.stageIdx-1];
+  const opt = S.event.opts.find(o => o.key === key);
+  if (!opt || S.choice) return;
+  S.choice = key;
+  const free = opt.freeIfStudied && S.learned.indexOf(opt.freeIfStudied) >= 0;
+  const cost = free ? 0 : opt.cost;
+  const rec = st(def.k);
+  if (opt.days){
+    S.day += opt.days;
+    if (opt.kind === 'study'){ S.studyDays += opt.days; rec.studyDays += opt.days; }
+    else { S.reworkDays += opt.days; rec.reworkDays += opt.days; }
+  }
+  if (cost){ S.spend += cost; if (opt.kind === 'study') rec.studyCost += cost; }
+  S.stress += opt.stress;
+  if (opt.mine){ S.mines.push(Object.assign({}, opt.mine)); }
+  if (opt.learned) S.learned.push(def.k);
+  if (opt.ev && S.evidence.indexOf(opt.ev) < 0){ S.evidence.push(opt.ev); S.justEarned = opt.ev; }
+  S.log.push({ stage:def.name, hit:false, text:opt.log, cost:cost, days:opt.days });
+  rec.note.push({ text:opt.log, hit:false });
+  render();
+  if (S.justEarned){ setTimeout(()=>{ S.justEarned = null; }, 900); }
+}
+
+/* ══════════════════════════ 推进阶段（等价 renovNext） ══════════════════════════ */
+function advance(){
+  const cur = STAGES[S.stageIdx-1];
+  const toIdx = S.stageIdx + 1;
+  if (cur.k === 'Warr'){ S.done = true; S.screen = 'done'; S.doneDay = S.doneDay || S.day; render(); return; }
+  const fromDay = S.day, toDay = fromDay + cur.days;
+  S.day = toDay;
+  arrive(toIdx);
+  openProgress(cur, toIdx, fromDay, toDay);
+  render();
+}
+
+/* ══════════════════════════ 自动走完（评审演示用） ══════════════════════════ */
+function runThrough(path){
+  S = newState();
+  S.grade = GRADES[1]; S.budget = HOUSE.area * GRADES[1].perSq;
+  rng = mulberry32(SEED);
+  arrive(1);
+  for (let i = 1; i <= 13; i++){
+    const cur = STAGES[i-1];
+    if (cur.k === 'Warr'){
+      S.doneDay = S.doneDay || S.day;
+      /* 质保阶段的事件也要结算（Warr 的事件是必需的收尾） */
+      if (S.event){
+        const opt = path === 'study'
+          ? (S.event.opts.find(o => o.kind === 'study') || S.event.opts[0])
+          : S.event.opts[0];
+        chooseSilent(opt);
+      }
+      break;
+    }
+    if (S.event){
+      const opt = path === 'study'
+        ? (S.event.opts.find(o => o.kind === 'study') || S.event.opts[0])
+        : S.event.opts[0];
+      chooseSilent(opt);
+    }
+    S.day += cur.days;
+    arrive(i+1);
+  }
+  S.done = true; S.screen = 'done';
+  render();
+}
+/* 静默选择（批量跑通时复用同一套计算，不触发重渲染） */
+function chooseSilent(opt){
+  const def = STAGES[S.stageIdx-1];
+  const free = opt.freeIfStudied && S.learned.indexOf(opt.freeIfStudied) >= 0;
+  const cost = free ? 0 : opt.cost;
+  const rec = st(def.k);
+  S.choice = opt.key;
+  if (opt.days){
+    S.day += opt.days;
+    if (opt.kind === 'study'){ S.studyDays += opt.days; rec.studyDays += opt.days; }
+    else { S.reworkDays += opt.days; rec.reworkDays += opt.days; }
+  }
+  if (cost){ S.spend += cost; if (opt.kind === 'study') rec.studyCost += cost; }
+  S.stress += opt.stress;
+  if (opt.mine) S.mines.push(Object.assign({}, opt.mine));
+  if (opt.learned) S.learned.push(def.k);
+  if (opt.ev && S.evidence.indexOf(opt.ev) < 0) S.evidence.push(opt.ev);
+  S.log.push({ stage:def.name, hit:false, text:opt.log, cost:cost, days:opt.days });
+  rec.note.push({ text:opt.log, hit:false });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   渲染 · 装修状态带
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* 压力表情：阈值逐项对齐 utils/calc.ts::stressFace（<25 😌 / <50 😐 / <75 😰 / ≥75 😱）
+   ⚠️ SimState.stress 声明为「0-100」但全链路只被 stressFace 读取、从不 clamp，
+   快选路径实测可达 106——见迭代方案 §4.4。 */
+function faceOf(v){ return v < 25 ? '😌' : v < 50 ? '😐' : v < 75 ? '😰' : '😱'; }
+
+function renderGuard(){
+  const el = document.getElementById('guard');
+  if (S.screen === 'budget'){
+    el.innerHTML = `
+      <div class="g-top">
+        <span class="g-badge"><i class="g-dot"></i>装修</span>
+        <span class="g-cur">开工前 · 定预算</span>
+        <span class="g-sp"></span>
+        <span class="g-day">第 <b>1</b> 天</span>
+        <span class="g-face">😌</span>
+      </div>
+      <div class="g-line">${STAGES.map(()=>'<span class="g-seg future"></span>').join('')}</div>
+      <div class="g-meters">
+        <div class="gm"><span class="gm-k">钱</span><div class="gm-bar"><i class="gm-base" style="width:0%"></i></div><span class="gm-v">未定预算</span></div>
+        <div class="gm"><span class="gm-k">工</span><div class="gm-bar"><i class="gm-base" style="width:0%"></i></div><span class="gm-v">计划 ${PLAN_TOTAL} 天</span></div>
+      </div>`;
+    return;
+  }
+  const idx = S.stageIdx;
+  const def = STAGES[idx-1];
+  const segs = STAGES.map((s,i)=>
+    `<span class="g-seg ${i < idx-1 ? 'done' : i === idx-1 ? 'cur' : 'future'}"></span>`).join('');
+  /* 钱条：轨道 = max(预算, 实际)，ink = 预算内，danger = 超支 */
+  const maxv = Math.max(S.budget, S.spend, 1);
+  const ink = Math.min(S.budget, S.spend) / maxv * 100;
+  const over = Math.max(0, S.spend - S.budget) / maxv * 100;
+  const overPct = S.budget ? Math.round((S.spend - S.budget) / S.budget * 100) : 0;
+  const overTxt = overPct > 0 ? `<span style="color:var(--danger)">超 +${overPct}%</span>` : `${Math.round(100 - S.spend/Math.max(S.budget,1)*100)}% 可用`;
+  /* 工期条：ink = 基础工期，sky = 主动做功课，danger = 返工/教训 */
+  const tw = Math.max(PLAN_TOTAL, S.day, 1);
+  const bPct = Math.min(PLAN_BASE + 1, S.day) / tw * 100;
+  const sPct = S.studyDays / tw * 100;
+  const rPct = S.reworkDays / tw * 100;
+  el.innerHTML = `
+    <div class="g-top">
+      <span class="g-badge"><i class="g-dot"></i>装修</span>
+      <span class="g-cur">${def.name} <b>${idx}</b>/13</span>
+      <span class="g-sp"></span>
+      <span class="g-day">第 <b>${S.day}</b> 天</span>
+      <span class="g-face">${faceOf(S.stress)}</span>
+    </div>
+    <div class="g-line">${segs}</div>
+    <div class="g-meters">
+      <div class="gm">
+        <span class="gm-k">钱</span>
+        <div class="gm-bar" id="barMoney"><i class="gm-base" style="width:${ink}%"></i><i class="gm-over" style="width:${over}%"></i></div>
+        <span class="gm-v">${yuan(S.spend)}<em> / ${wan(S.budget)}万</em></span>
+      </div>
+      <div class="gm">
+        <span class="gm-k">工</span>
+        <div class="gm-bar" id="barTime"><i class="gm-base" style="width:${bPct}%"></i><i class="gm-study" style="width:${sPct}%"></i><i class="gm-rework" style="width:${rPct}%"></i></div>
+        <span class="gm-v">${S.day}<em>/ ${PLAN_TOTAL} 天</em></span>
+      </div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   渲染 · 家的生长（房间剖面图）
+   ═══════════════════════════════════════════════════════════════════════════ */
+function bpSvg(){
+  const on = layersOn();
+  const g = (k, inner) => `<g class="ly${on[k]?' on':''}${on[k]&&isCurLayer(k)?' ly-cur':''}">${inner}</g>`;
+  const H = '#c9c2b4', INK = '#17191c', RUST = '#b7410e', SKY = '#2a5ca0', MINT = '#d1f2e8', OK = '#176b4d';
+  return `
+<svg class="bp-svg" viewBox="0 0 320 172" xmlns="http://www.w3.org/2000/svg" aria-label="装修进度剖面图">
+  <!-- 基准结构（常驻）：天花 / 地面 / 外墙 / 承重墙 -->
+  <line x1="14" y1="22" x2="306" y2="22" stroke="${H}" stroke-width="1.6"/>
+  <line x1="14" y1="150" x2="306" y2="150" stroke="${H}" stroke-width="1.6"/>
+  <line x1="14" y1="22" x2="14" y2="150" stroke="${H}" stroke-width="1.6"/>
+  <line x1="306" y1="22" x2="306" y2="150" stroke="${H}" stroke-width="1.6"/>
+  <line x1="124" y1="22" x2="124" y2="150" stroke="${H}" stroke-width="1"/>
+  <line x1="168" y1="22" x2="168" y2="118" stroke="${H}" stroke-width="1"/>
+  <line x1="168" y1="118" x2="168" y2="150" stroke="${H}" stroke-width="1" stroke-dasharray="3 3"/>
+
+  ${g('orig', `
+    <rect x="14" y="22" width="292" height="128" fill="#f7f7f8" opacity=".7"/>
+    <line x1="252" y1="22" x2="252" y2="150" stroke="${H}" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="256" y="36" font-size="10" fill="#a3a6af">轻质隔墙</text>
+    <line x1="20" y1="146" x2="300" y2="146" stroke="#dcd6cc" stroke-width="1"/>
+    <text x="18" y="40" font-size="10" fill="#a3a6af">原有：旧墙面 · 老地面</text>`)}
+
+  ${g('struct', `
+    <path d="M252 22 V74 M252 98 V150" stroke="${INK}" stroke-width="1.8" fill="none"/>
+    <line x1="252" y1="74" x2="252" y2="98" stroke="${RUST}" stroke-width="1" stroke-dasharray="3 2"/>
+    <text x="256" y="90" font-size="10" fill="#b7410e">拆 → 垭口</text>
+    <line x1="168" y1="22" x2="168" y2="118" stroke="${INK}" stroke-width="3.2"/>
+    <text x="172" y="34" font-size="10" fill="#17191c" font-weight="600">承重墙 · 不可动</text>
+    <path d="M100 132 h44 M100 132 l6 -3 M100 132 l6 3" stroke="#a3a6af" stroke-width="1" fill="none"/>
+    <text x="20" y="136" font-size="10" fill="#a3a6af">空鼓铲至基层 · 重粉</text>`)}
+
+  ${g('pipe', `
+    <path d="M20 32 H58 V62 H112 V40 H160 V32" stroke="${RUST}" stroke-width="1.3" fill="none"/>
+    <path d="M20 44 H46 V84 H118" stroke="${SKY}" stroke-width="1.3" fill="none"/>
+    <line x1="146" y1="28" x2="146" y2="146" stroke="${SKY}" stroke-width="1.3" stroke-dasharray="4 3"/>
+    <circle cx="58" cy="62" r="2.2" fill="${RUST}"/><circle cx="112" cy="40" r="2.2" fill="${RUST}"/>
+    <circle cx="46" cy="84" r="2.2" fill="${SKY}"/>
+    <rect x="124" y="22" width="44" height="128" fill="${MINT}" opacity=".8"/>
+    <line x1="124" y1="86" x2="168" y2="86" stroke="${OK}" stroke-width="1.2" stroke-dasharray="3 3"/>
+    <text x="127" y="82" font-size="10" fill="#176b4d">防水上翻 1.8m</text>
+    <text x="20" y="60" font-size="10" fill="#b7410e">强电</text>
+    <text x="20" y="74" font-size="10" fill="#2a5ca0">给水</text>`)}
+
+  ${g('finish', `
+    <rect x="14" y="22" width="110" height="128" fill="#fdf3ec" opacity=".55"/>
+    <rect x="168" y="22" width="138" height="128" fill="#fdf3ec" opacity=".4"/>
+    ${[132,140,148].map(y=>`<line x1="20" y1="${y}" x2="118" y2="${y}" stroke="#dcd6cc" stroke-width=".9"/>`).join('')}
+    ${[132,140,148].map(y=>`<line x1="172" y1="${y}" x2="300" y2="${y}" stroke="#dcd6cc" stroke-width=".9"/>`).join('')}
+    ${[30,44,58,72,86,100,114,128,142].map(y=>`<line x1="126" y1="${y}" x2="166" y2="${y}" stroke="#c9c2b4" stroke-width=".8"/>`).join('')}
+    ${[124,146].map(x=>`<line x1="${x}" y1="22" x2="${x}" y2="150" stroke="#c9c2b4" stroke-width=".8"/>`).join('')}
+    <rect x="14" y="22" width="292" height="7" fill="#e8e4dc"/>
+    <circle cx="60" cy="26" r="2.4" fill="#fbe1d1" stroke="#c9c2b4" stroke-width=".7"/>
+    <circle cx="120" cy="26" r="2.4" fill="#fbe1d1" stroke="#c9c2b4" stroke-width=".7"/>
+    <circle cx="210" cy="26" r="2.4" fill="#fbe1d1" stroke="#c9c2b4" stroke-width=".7"/>
+    <text x="20" y="116" font-size="10" fill="#a3a6af">墙压地 · 2% 找坡</text>`)}
+
+  ${g('main', `
+    <rect x="303" y="56" width="6" height="38" fill="#ffffff" stroke="${INK}" stroke-width="1.4"/>
+    <line x1="306" y1="56" x2="306" y2="94" stroke="${INK}" stroke-width="1"/>
+    <line x1="168" y1="118" x2="196" y2="118" stroke="${INK}" stroke-width="1.6"/>
+    <path d="M170 118 V148 H194" stroke="${INK}" stroke-width="1.2" fill="none"/>
+    <rect x="22" y="106" width="66" height="14" fill="#ffffff" stroke="${INK}" stroke-width="1.2"/>
+    <line x1="22" y1="113" x2="88" y2="113" stroke="#c9c2b4" stroke-width=".8"/>
+    <rect x="250" y="132" width="50" height="16" fill="#ffffff" stroke="${INK}" stroke-width="1.2"/>
+    <text x="256" y="60" font-size="10" fill="#17191c">断桥铝 换窗</text>
+    <text x="24" y="104" font-size="10" fill="#17191c">定制柜</text>`)}
+
+  ${g('furn', `
+    <rect x="30" y="112" width="58" height="18" rx="4" fill="#dcd6cc"/>
+    <rect x="30" y="106" width="58" height="8" rx="3" fill="#c9c2b4"/>
+    <rect x="196" y="118" width="78" height="24" rx="3" fill="#dcd6cc"/>
+    <rect x="196" y="108" width="78" height="12" rx="3" fill="#c9c2b4"/>
+    <ellipse cx="146" cy="140" rx="12" ry="7" fill="#ffffff" stroke="${INK}" stroke-width="1.1"/>
+    <circle cx="60" cy="27" r="2.6" fill="#fbe1d1"/>
+    <circle cx="210" cy="27" r="2.6" fill="#fbe1d1"/>
+    <path d="M20 22 L86 150" stroke="#ffffff" stroke-width="9" opacity=".5"/>
+    <path d="M40 22 L106 150" stroke="#ffffff" stroke-width="5" opacity=".4"/>`)}
+
+  ${g('live', `
+    <path d="M234 40 q16 6 30 0 t30 0" stroke="${SKY}" stroke-width="1.2" fill="none" opacity=".85"/>
+    <path d="M240 52 q14 5 26 0 t26 0" stroke="${SKY}" stroke-width="1.2" fill="none" opacity=".6"/>
+    <text x="236" y="36" font-size="10" fill="#2a5ca0">通风对流</text>
+    <rect x="228" y="72" width="56" height="22" rx="4" fill="#d1f2e8" opacity=".85"/>
+    <text x="234" y="87" font-size="11" fill="#176b4d" font-weight="600">检测合格 · 可入住</text>`)}
+
+  <!-- 房间标注 -->
+  <text x="20" y="166" font-size="10.5" fill="#a3a6af">客餐厅</text>
+  <text x="128" y="166" font-size="10.5" fill="#a3a6af">卫生间</text>
+  <text x="172" y="166" font-size="10.5" fill="#a3a6af">卧室</text>
+  <text x="252" y="166" font-size="10.5" fill="#a3a6af">阳台</text>
+</svg>`;
+}
+function isCurLayer(k){
+  if (!S.stageIdx) return false;
+  const cur = STAGES[S.stageIdx-1].layer;
+  if (k === 'orig') return cur === 'orig';
+  return LAYER_RANK[k] === LAYER_RANK[cur];
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   渲染 · 预算决策屏
+   ═══════════════════════════════════════════════════════════════════════════ */
+function screenBudget(){
+  const sel = S.grade;
+  return `
+  <div data-screen-label="01 装修预算">
+    <div class="eyebrow">装修准备</div>
+    <div class="hd"><span class="hd-hero">🏗️</span>定装修预算</div>
+    <div class="sub">${HOUSE.name} · ${HOUSE.areaText} · ${HOUSE.reno}交付 · 装修是买房之外的第二本账</div>
+
+    <div class="calc" data-chg>
+      <span class="v num">${HOUSE.area}</span><span class="k">㎡</span>
+      <span class="op">×</span>
+      <span class="v num">${sel ? sel.perSq : '—'}</span><span class="k">元/㎡</span>
+      <span class="eq">=</span>
+      <span class="r num">${sel ? wan(S.budget) + ' 万' : '待定'}</span>
+    </div>
+    <div class="note-i"><b>改动：</b>原设计只有一行「约 X 万」的按钮标题，把 面积 × 单价 的心算还给用户。装修预算的心理账是从这一次乘法开始的。</div>
+
+    <div class="card card-warm">
+      <div class="b-title">预算怎么定</div>
+      <div class="b-desc">行业常见口径 1000-2500 元/㎡（硬装+主材，不含家电家具）。先按面积定档位——装修公司报的『全包价』只是起点，真正的总花费由后面每一个决策决定。</div>
+    </div>
+
+    <div class="sect"><div class="sect-t">选一个档位</div><div class="sect-x">${HOUSE.area}㎡ 口径</div></div>
+    ${GRADES.map((g,i)=>`
+      <button class="grade${sel && sel.perSq===g.perSq ? ' on' : ''}" data-grade="${i}">
+        <div class="gr-hd">
+          <span class="gr-n">${g.name}</span>
+          <span class="gr-u">${g.perSq} 元/㎡</span>
+          <span class="gr-p">${wan(HOUSE.area*g.perSq)} 万</span>
+        </div>
+        <div class="gr-d">${g.desc}</div>
+      </button>`).join('')}
+
+    ${sel ? splitBlock(sel) : ''}
+
+    <div class="ok-note"><span class="ok-b">提醒：</span>本模拟中装修支出单独记账，不影响购房现金。</div>
+    <div class="btn-row">
+      <button class="btn ${sel ? 'btn-ink' : 'btn-disabled'}" ${sel ? 'data-act="start"' : 'disabled'}>${sel ? '按 ' + wan(S.budget) + ' 万开工 · 进入设计量房' : '先选一个档位'}</button>
+    </div>
+  </div>`;
+}
+function splitBlock(g){
+  const total = HOUSE.area * g.perSq;
+  const reserve = g.split.find(s=>s.k==='增项预留');
+  return `
+  <div class="split" data-new>
+    <div class="sect" style="margin-top:0"><div class="sect-t">这笔钱要撑 13 个阶段</div><div class="sect-x">${wan(total)} 万</div></div>
+    <div class="split-bar">
+      ${g.split.map(s=>`<i style="width:${s.p}%;background:${s.c}"></i>`).join('')}
+    </div>
+    <div class="legend">
+      ${g.split.map(s=>`<span class="lg"><i style="background:${s.c}"></i>${s.k}<b>${wan(total*s.p/100)} 万</b></span>`).join('')}
+    </div>
+    <div class="ok-note" style="margin-top:11px">
+      <span class="ok-b">增项预留：</span>约 ${wan(total*reserve.p/100)} 万。${g.perSq===1000
+        ? '经济档的缓冲垫最薄——后面每爆一次雷，都要从别处挪钱。'
+        : '这是给"看到的便宜"留的缓冲；缓冲越厚，被增项追着跑的概率越低。'}
+    </div>
+    <div class="note-i"><b>新增：</b>分账预估条。用一条横条把「硬装 / 主材 / 安装 / 增项预留」摊开，让用户开工前就看见"这笔钱要分 13 次花完"——这是全屏最该教会的一件事，原设计只有文字。</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   渲染 · 阶段屏（13 屏共用）
+   ═══════════════════════════════════════════════════════════════════════════ */
+function screenStage(){
+  const def = STAGES[S.stageIdx-1];
+  const ev = S.event;
+  const picked = S.choice && ev ? ev.opts.find(o=>o.key===S.choice) : null;
+  const free = picked && picked.freeIfStudied && S.learned.indexOf(picked.freeIfStudied) >= 0;
+
+  let h = `
+  <div data-screen-label="${String(def.idx).padStart(2,'0')} ${def.name}">
+    <div class="eyebrow">装修 ${def.idx} / 13</div>
+    <div class="hd">${def.name}</div>
+    <div class="sub">${def.k === 'Warr'
+      ? '完工入住日 · 第 ' + S.doneDay + ' 天 · ' + md(S.doneDay) + ' 入住 · 现在是一年后'
+      : '工期约 ' + def.daysText + ' · 开工第 ' + S.day + ' 天 · ' + md(S.day)}</div>`;
+
+  /* ── 爆雷条（进入阶段时结算已埋下的雷） ── */
+  if (S.burst.length){
+    const tc = S.burst.reduce((a,m)=>a+m.cost,0);
+    const td = S.burst.reduce((a,m)=>a+m.days,0);
+    const ts = S.burst.reduce((a,m)=>a+m.stress,0);
+    h += `
+    <div class="burst" data-chg>
+      <div class="burst-t">🚨 ${S.burst.length>1 ? S.burst.length + ' 处爆雷' : '爆雷'}<span class="burst-src">前面埋下的，现在到站</span></div>
+      ${S.burst.map(m=>`<div class="burst-d">${m.text}</div>`).join('')}
+      <div class="burst-nums">
+        <div class="bn"><div class="bn-k">硬支出</div><div class="bn-v">${yuan(tc)}</div></div>
+        <div class="bn"><div class="bn-k">返工工期</div><div class="bn-v">+ ${td} 天</div></div>
+        <div class="bn"><div class="bn-k">压力</div><div class="bn-v">+ ${ts}</div></div>
+      </div>
+    </div>
+    <div class="note-i"><b>改动：</b>原设计是一行 banner 文案。改成整块警示卡 + 三个数字（钱 / 工期 / 压力），并联动顶部钱条与工期条同步「被啃」——爆雷是装修模块唯一的情绪高点，必须给足视觉。</div>`;
+  }
+
+  /* ── 家的生长 ── */
+  h += `
+    <div class="bp" id="bp" data-new>
+      <div class="bp-head">
+        <span class="bp-t">家的生长</span>
+        <span class="bp-cap">${def.name} · 第 ${S.day} 天</span>
+      </div>
+      ${bpSvg()}
+    </div>
+    <div class="note-i"><b>新增：</b>房间剖面图。13 个阶段共用一个模板，是原设计最大的体验缺口——屏幕上没有任何空间锚点。剖面图按「结构 → 管线 → 饰面 → 主材 → 陈设 → 入住」六层随阶段逐层点亮，同时把「隐蔽工程」的抽象概念变成看得见的层。</div>`;
+
+  /* ── 现场卡（基础叙事 + 客观证据物件 + 事件话术） ── */
+  h += `
+  <div class="site">
+    <div class="site-hd"><span class="site-role">现场 · ${def.who}</span></div>
+    <div class="chat">
+      <div class="bubble">
+        <div class="ava ava-warm">${def.who.charAt(0)}</div>
+        <div class="ball-wrap"><div class="who">${def.who}</div><div class="ball">${def.chat}</div></div>
+      </div>
+    </div>`;
+
+  if (ev){
+    h += `
+    <div class="chat" style="margin-top:10px">
+      <div class="bubble">
+        <div class="ava ava-warm">${ev.who.charAt(0)}</div>
+        <div class="ball-wrap"><div class="who">${ev.who}</div><div class="ball">${ev.chat}</div></div>
+      </div>
+    </div>`;
+    if (ev.doc){
+      h += `
+      <div class="doc" data-new>
+        <span class="doc-ic">${ev.doc.ic}</span>
+        <div class="doc-b"><div class="doc-t">${ev.doc.t}</div><div class="doc-d">${ev.doc.d}</div></div>
+      </div>
+      <div class="note-i"><b>新增：</b>证据物件卡。把「该看什么」物化成一张图纸 / 一张报价单 / 一份检测报告，只陈列客观信息、绝不解读——既给了视觉节奏，也守住了信息迷雾（不剧透哪个选项是坑）。</div>`;
+    }
+    h += `</div>`;
+  }
+
+  /* ── 决策 / 结果 ── */
+  if (ev && !picked){
+    h += `<div class="sect"><div class="sect-t">你怎么回</div><div class="sect-x">${ev.opts.length} 个回应</div></div>
+    <div class="opts">${ev.opts.map(o=>optCard(o)).join('')}</div>
+    <div class="note-i"><b>改动：</b>选项卡把 days / cost / learned 从文案里提出来做成代价徽章。关键约束：<b>快选项不标风险</b>（不剧透埋雷），只给中性的「⚡ 直接定」；做功课给 Sky 徽章「⏳ +N 天 · 换真实信息」。玩家自己学会识别，而不是被系统提示。</div>`;
+  } else if (picked){
+    h += `
+    <div class="chat" style="margin-top:14px">
+      <div class="bubble me"><div class="ball-wrap"><div class="ball">${picked.title}</div></div></div>
+    </div>`;
+    if (picked.kind === 'study' && picked.learned){
+      h += `
+      <div class="card card-sky" data-chg>
+        <div class="b-title">📖 功课没白做 · 真实的信息</div>
+        <div class="b-desc">${picked.learned}</div>
+      </div>`;
+    } else if (picked.kind === 'paid' && picked.learned){
+      h += `
+      <div class="card card-warm" data-chg>
+        <div class="b-title">🎓 这一课的学费</div>
+        <div class="b-desc">${picked.learned}</div>
+      </div>
+      <div class="note-i"><b>修正：</b>现有代码靠 opt.learned 是否存在判断"做没做功课"，因此「师傅说没碍事，拆！」这种踩坑选项也会被渲染成「📖 功课没白做 · 真实的信息」（scenes-renov.ts:87-89）——踩了坑却说功课没白做，语义是反的。本稿按新增的 opt.kind 字段分流出「🎓 这一课的学费」。共 3 条受影响：Dmo1-a / Elc3-a / Warr1-a。</div>`;
+    }
+    h += `
+    <div class="card${picked.kind === 'paid' ? ' card-warm' : ''}" data-chg>
+      <div class="b-title">${picked.kind === 'study' || picked.kind === 'paid' ? '本阶段结果' : '⏳ 按原计划推进'}</div>
+      <div class="b-desc">${free && picked.resultStudied ? picked.resultStudied : picked.result}${!free && picked.cost ? '（支出 ' + yuan(picked.cost) + '）' : ''}${picked.days ? '（+ ' + picked.days + ' 天）' : ''}${free ? '（合同 + 质保金生效 · 免维修费）' : ''}</div>
+    </div>`;
+  } else {
+    h += `
+    <div class="card" data-new>
+      <div class="b-title">本阶段无异常</div>
+      <div class="b-desc">按图施工，师傅按节点推进。这一阶段没有需要你当场决定的事——安静地过去，也是装修里常见的节奏。</div>
+    </div>
+    <div class="note-i"><b>新增：</b>「安静态」。原设计的事件触发概率是 0.8，意味着约 1/5 的阶段不会被触发；但原模板无论有没有事件都渲染成同一个长相，安静阶段缺乏存在感。补一张低压力的「按图施工」卡，让有事件的高点更显高。</div>`;
+  }
+
+  /* ── 证据链钱包 ── */
+  h += walletBlock();
+
+  /* ── 中性提示 + CTA ── */
+  h += `
+    <div class="ok-note"><span class="ok-b">提醒：</span>${def.note}</div>
+    <div class="btn-row">
+      <button class="btn btn-ink" data-act="next">${def.cta}</button>
+    </div>
+  </div>`;
+  return h;
+}
+
+/* 选项卡：代价徽章由 kind 决定；快选不透露任何代价（守住迷雾） */
+function optCard(o){
+  let badges = '';
+  if (o.kind === 'study'){
+    badges += `<span class="badge badge-sky">⏳ ${o.days ? '+' + o.days + ' 天' : '现场同步'}${o.cost ? ' · ' + yuan(o.cost) : ''}</span>`;
+    badges += `<span class="badge badge-sky">换真实信息</span>`;
+  } else if (o.kind === 'neutral'){
+    badges += `<span class="badge badge-fog">⚡ 直接定 · 无风险</span>`;
+  } else {
+    badges += `<span class="badge badge-fog">⚡ 直接定 · 不花时间</span>`;
+  }
+  return `
+  <button class="opt" data-opt="${o.key}">
+    <div class="opt-badges">${badges}</div>
+    <div class="opt-t">${o.title}</div>
+    <div class="opt-d">${o.desc}</div>
+  </button>`;
+}
+
+/* 证据链钱包（6 格） */
+function walletBlock(){
+  const has = k => S.evidence.indexOf(k) >= 0;
+  return `
+  <div class="wallet" data-new>
+    <div class="w-head">
+      <span class="w-t">证据链</span>
+      <span class="w-n">${S.evidence.length} / ${EVID.length} 件 · 质保期兑现</span>
+    </div>
+    <div class="w-grid">
+      ${EVID.map(e=>`<div class="w-slot${has(e.k)?' on':''}${S.justEarned===e.k?' just':''}">
+        <span class="wi">${e.ic}</span><span class="wn">${e.n}</span></div>`).join('')}
+    </div>
+    <div class="note-i"><b>新增：</b>证据链钱包。原设计里「拍照录像留底」「合同发票质保金」「检测报告存档」只散落在文案中，用户攒了什么完全不可见。钱包把做功课的回报做成看得见、攒得起来的东西，并在「售后质保」阶段兑现（对应现有 freeIfStudied 机制）。</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   渲染 · 完工总账屏
+   ═══════════════════════════════════════════════════════════════════════════ */
+function screenDone(){
+  const total = S.budget + S.spend;
+  const overPct = S.budget ? (S.spend / S.budget * 100) : 0;
+  /* 瀑布：按阶段汇总爆雷硬支出 */
+  const wf = STAGES.map(s => ({ name:s.name, v:(S.byStage[s.k]||{}).burstCost || 0 }))
+    .filter(x => x.v > 0).sort((a,b) => b.v - a.v);
+  const wfMax = Math.max(1, ...wf.map(x => x.v));
+  const burstTotal = wf.reduce((a,x)=>a + x.v, 0);
+  const top2 = wf.slice(0,2);
+  const top2Sum = top2.reduce((a,x)=>a + x.v, 0);
+  const burstCount = STAGES.reduce((a,s)=>a + ((S.byStage[s.k]||{}).burst || []).length, 0);
+  /* 时间账：把工期拆成「基础 / 主动做功课（可预期）/ 工期内返工（被动）」，
+     并单独交代落在质保期、不计入装修历时的返工 —— 口径与 handlers-renov.ts 的
+     renovDoneDay 快照时机严格一致（质保期爆雷发生在快照之后）。 */
+  const studyD = S.studyDays;
+  const reworkIn = Math.max(0, S.doneDay - PLAN_TOTAL - studyD);   /* 计入历时的返工 */
+  const reworkPost = Math.max(0, S.reworkDays - reworkIn);         /* 落在质保期的返工 */
+  const tMax = Math.max(PLAN_TOTAL, S.doneDay);
+  /* 质保兑现 */
+  const studiedBudget = S.learned.indexOf('Budget') >= 0;
+  const savedWarr = studiedBudget ? 2000 : 0;
+
+  return `
+  <div data-screen-label="14 装修完成">
+    <div class="hd"><span class="hd-hero">🏡</span>装修完成</div>
+    <div class="sub">${HOUSE.name} · 13 个阶段全部走完 · 总算能住进去了</div>
+
+    <div class="bp" style="margin-top:14px">
+      <div class="bp-head"><span class="bp-t">家的生长 · 终态</span><span class="bp-cap">第 ${S.doneDay} 天</span></div>
+      ${bpSvgFinal()}
+    </div>
+
+    <div class="kpi" data-chg>
+      <div class="kc"><div class="kl">装修预算</div><div class="kv">${wan(S.budget)}<span class="ku">万</span></div></div>
+      <div class="kc"><div class="kl">实际总花费</div><div class="kv${overPct>30?' over':''}">${wan(total)}<span class="ku">万</span></div></div>
+      <div class="kc"><div class="kl">增项 / 返工</div><div class="kv${overPct>30?' over':''}">${yuan(S.spend)}</div></div>
+    </div>
+    <div class="ok-note">
+      <span class="ok-b">增项占比 <span class="num" style="color:${overPct>30?'var(--danger)':'var(--ink)'}">${overPct.toFixed(1)}%</span>：</span>
+      行业常见 10-30%。本次共触发 ${burstCount} 处「之前埋下的雷」，占比 ${overPct>30?'明显高于常态——问题不在施工，在每处「看到的便宜」都跳过了功课。':'落在常态区间内。'}
+    </div>
+
+    ${wf.length ? `
+    <div class="wf" data-new>
+      <div class="sect" style="margin-top:0"><div class="sect-t">钱是在哪几个阶段漏的</div><div class="sect-x">爆雷返工 ¥${(burstTotal/10000).toFixed(2)} 万</div></div>
+      ${wf.map(x=>`
+        <div class="wf-row">
+          <span class="wf-k">${x.name}</span>
+          <span class="wf-track"><i class="wf-fill" style="width:${x.v/wfMax*100}%"></i></span>
+          <span class="wf-v">${yuan(x.v)}</span>
+        </div>`).join('')}
+      <div class="wf-sum">${top2.length>=2 ? `<b>${top2[0].name}</b> 与 <b>${top2[1].name}</b> 两个阶段，吃掉了全部返工支出的 <b>${Math.round(top2Sum/burstTotal*100)}%</b>。` : ''}它们都不是施工失误——是前面几个阶段「直接定」的结果，${
+        (S.byStage.Install||{}).burstCost ? '一直到安装周才一起到账。' : '在后面的阶段陆续到账。'}</div>
+      <div class="note-i"><b>新增：</b>爆雷瀑布图。原来只在总账里给一个「增项占比」的百分比，用户无从复盘。把返工支出按阶段摊开，一眼看出钱在哪爆——这正是「装修记事」该有的价值。</div>
+    </div>` : ''}
+
+    <div class="tl" data-new>
+      <div class="sect" style="margin-top:0"><div class="sect-t">时间账</div><div class="sect-x">工期内 +${studyD + reworkIn} 天${reworkPost ? ' · 事后 +' + reworkPost + ' 天' : ''}</div></div>
+      <div class="tl-row">
+        <span class="tl-k">计划</span>
+        <span class="tl-bar"><i style="width:${PLAN_TOTAL/tMax*100}%;background:var(--hairline)"></i></span>
+        <span class="tl-v">${PLAN_TOTAL} 天</span>
+      </div>
+      <div class="tl-row">
+        <span class="tl-k">实际</span>
+        <span class="tl-bar">
+          <i style="width:${PLAN_TOTAL/tMax*100}%;background:var(--ink)"></i>
+          ${studyD?`<i style="width:${studyD/tMax*100}%;background:var(--sky-ink);opacity:.72"></i>`:''}
+          ${reworkIn?`<i style="width:${reworkIn/tMax*100}%;background:var(--danger)"></i>`:''}
+        </span>
+        <span class="tl-v">${S.doneDay} 天</span>
+      </div>
+      <div class="tl-legend">
+        <span class="lg"><i style="background:var(--ink)"></i>基础工期 ${PLAN_TOTAL} 天</span>
+        ${studyD?`<span class="lg"><i style="background:var(--sky-ink);opacity:.72"></i>主动做功课 +${studyD} 天</span>`:''}
+        ${reworkIn?`<span class="lg"><i style="background:var(--danger)"></i>工期内返工 +${reworkIn} 天</span>`:''}
+      </div>
+      <div class="tl-line">${
+        reworkIn === 0 && reworkPost === 0
+          ? `没有一天是返工花掉的。做功课看起来「慢」——主动多花 <b>${studyD} 天</b>，换来的是全程零返工、零爆雷。`
+          : studyD === 0
+            ? `你一天功课都没做。工期内为返工付出 <b>+${reworkIn} 天</b>${reworkPost?`，质保期还要再赔进去 <b>+${reworkPost} 天</b>`:''}——前期省下的时间，连本带利还了回去。`
+            : `主动花 <b>${studyD} 天</b>做功课，换掉 <b>${reworkIn + reworkPost} 天</b>返工（工期内 ${reworkIn} 天${reworkPost?` + 质保期 ${reworkPost} 天`:''}）。前者可预期，后者不可控——这就是装修的时间账。`
+      }</div>
+      ${reworkPost ? `<div class="ok-note" style="margin-top:11px"><span class="ok-b">另有 +${reworkPost} 天不计入装修历时：</span>它们落在入住后的质保期（拆顶检修、铲墙重做、二次除甲醛）——统计口径上没有记入工期，生活里一天都没少。</div>` : ''}
+      <div class="note-i"><b>新增：</b>时间账与「主动 / 被动」两色区分。原设计只有一个「历时约 N 天」。把工期拆成"我主动花的"和"被夺走的"，才能把课程核心说清楚。⚠️ 这需要 RenovOpt 增加 kind 字段来区分两类耗时（现有代码把 opt.days 一律累加，无法区分）。</div>
+    </div>
+
+    <div class="payoff" data-new>
+      <div class="payoff-t">🛡️ 证据链结算 · 质保期兑现</div>
+      <div class="payoff-d">${
+        S.evidence.length
+          ? `你攒下 <b>${S.evidence.length}</b> 件证据。售后上门时，合同、发票、书面报修记录摆出来，公司按条款走——${studiedBudget ? `预算阶段的付款条款留了质保金，这一次维修<b>一分没收</b>（省下 ¥2,000）。` : `虽然证据不全，但书面记录帮你把「人为受潮」的推诿挡了回去。`}`
+          : `你手里没有留下任何证据。售后一句「人为损坏」就把责任推了回来——质保五年，自费两千。`
+      }</div>
+      <div class="payoff-row">${EVID.map(e=>`<span class="badge ${S.evidence.indexOf(e.k)>=0?'badge-mint':'badge-hair'}">${e.ic} ${e.n}</span>`).join('')}</div>
+      <div class="note-i"><b>新增：</b>证据链结算。现有 freeIfStudied 机制（Warr1-a）在后台静默生效，用户完全不知道自己做功课省了钱。把结算显式化，做功课这条路才有正反馈。</div>
+    </div>
+
+    <div class="log" data-chg>
+      <div class="sect" style="margin-top:0"><div class="sect-t">装修记事 · ${S.log.length} 条</div><div class="sect-x">按阶段回溯</div></div>
+      ${S.log.map(l=>`
+        <div class="log-item">
+          <div class="log-rail"><span class="log-node${l.hit?' hit':''}"></span><span class="log-stage">${l.stage}</span></div>
+          <div class="log-b"><div class="log-t${l.hit?' hit':''}">${l.hit?'🚨 ':''}${l.text}</div>
+            <div class="log-x">${l.cost?'支出 ' + yuan(l.cost):'无支出'}${l.days?' · +' + l.days + ' 天':''}</div></div>
+        </div>`).join('')}
+      <div class="note-i"><b>改动：</b>原设计把装修记事渲染成一串 rows（左键右值），十几条读起来是流水账。改成带节点色标的时间轴：爆雷节点为红，一眼看出"哪几步踩了坑"。</div>
+    </div>
+
+    <div class="card chk-card">
+      <div class="b-title">装修全流程 · 13 个阶段全走完</div>
+      <div class="chk-wrap">${STAGES.map(s=>`<span class="badge badge-fog">✓ ${s.name}</span>`).join('')}</div>
+    </div>
+
+    <div class="ok-note"><span class="ok-b">复盘一句话：</span>装修的麻烦不在干活，在决策——每一项『看到的便宜』背后都有『真实的账单』。功课做在前面，增项就追不上你。</div>
+    <div class="ok-note"><span class="ok-b">口径说明：</span>工期为模拟口径：基础工期 + 做功课与返工的额外耗时。真实装修 ${HOUSE.area}㎡ 常见 3-6 个月、增项 10-30%；本表只演示『谁在什么环节偷懒，钱就在哪爆』。</div>
+    <div class="card card-sky"><div class="b-title">住进去了</div><div class="b-desc">水电图、合同、发票、质保卡收进一个文件袋——下一个五年，它们就是你的底气。</div></div>
+    <div class="btn-row"><button class="btn btn-ink" data-act="reset">查看总账单 · 重来一次</button></div>
+  </div>`;
+}
+/* 终态剖面图：全部图层点亮，追加暖光与乔迁印记 */
+function bpSvgFinal(){
+  const saved = S;
+  S = Object.assign({}, saved, { stageIdx:13 });
+  const svg = bpSvg().replace('</svg>', `
+    <rect x="14" y="22" width="292" height="128" fill="#fbe1d1" opacity=".16"/>
+    <rect x="196" y="60" width="70" height="28" rx="5" fill="#d1f2e8" opacity=".9"/>
+    <text x="202" y="78" font-size="11" fill="#176b4d" font-weight="600">✓ 已入住</text>
+  </svg>`);
+  S = saved;
+  return svg;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   渲染 · 施工进度弹层
+   ═══════════════════════════════════════════════════════════════════════════ */
+function openProgress(cur, toIdx, fromDay, toDay){
+  const to = STAGES[toIdx-1];
+  const rec = S.byStage[cur.k] || { studyDays:0, reworkDays:0 };
+  const gap = toDay - fromDay;
+  const grid = calGrid(fromDay);
+  const isYear = to.k === 'Warr';
+  const total = cur.days + rec.studyDays + rec.reworkDays;
+  const segs = [
+    { k:'基础工期', v:cur.days, c:'var(--ink)' },
+    { k:'主动做功课', v:rec.studyDays, c:'var(--sky-ink)' },
+    { k:'返工 / 教训', v:rec.reworkDays, c:'var(--danger)' }
+  ].filter(x => x.v > 0);
+
+  document.getElementById('modalRoot').innerHTML = `
+  <div class="overlay" id="ov">
+    <div class="sheet">
+      <div class="sheet-tag">${isYear ? '📅 时间来到一年后' : '⏳ 时间快进 · 施工进度'}</div>
+      ${isYear ? `
+        <div class="gap-title"><div class="gap-arr">入住完成<br><span style="color:var(--graphite);font-size:12.5px">第 ${S.doneDay} 天 · ${md(S.doneDay)} 入住 · 质保期起算</span></div></div>
+        <div class="sheet-desc" style="margin-top:8px">一年过去。水电平稳、柜门顺滑——直到某天，柜门铰链开始吱呀作响，浴室五金起了白斑。</div>
+      ` : `
+        <div class="gap-title">
+          <div class="gap-arr">完成「<span class="num">${cur.name}</span>」还有</div>
+          <div class="gap-gap"><span class="gap-n num">${gap}</span> 天</div>
+        </div>
+        <div class="gap-phase">正在施工：${cur.name}（${cur.daysText}）</div>
+      `}
+
+      <div class="seg-card">
+        <div style="font-size:12px;font-weight:500;color:var(--ink);margin-bottom:6px">本阶段工期拆解</div>
+        ${segs.map(x=>`<div class="seg-row">
+          <span class="seg-swatch" style="background:${x.c}"></span>
+          <span class="sr-k">${x.k}</span>
+          <span class="sr-v">${x.v} 天</span>
+        </div>`).join('')}
+        <div class="seg-bar">${segs.map(x=>`<i style="width:${x.v/total*100}%;background:${x.c}"></i>`).join('')}</div>
+        <div class="seg-total"><span>本阶段合计</span><span>${total} 天</span></div>
+      </div>
+      <div class="note-i"><b>改动：</b>把同一个日历弹层换成「本阶段工期拆解」。三色分段（基础 / 主动功课 / 返工）直接讲清课程核心。同时修正一处文案错位：原 calModal 的 phase 取的是<b>目标阶段</b>（findRenovDef(to)）而天数取的是<b>当前阶段</b>基础工期，会出现「距离防水还有 7 天 · 这期间：防水闭水施工（3-7 天）」——7 天其实是水电的工期。本稿把「正在施工」改为当前阶段。</div>
+
+      ${isYear ? '' : `
+      <details class="cal-fold">
+        <summary>▸ 查看对应日期</summary>
+        <div class="cal-body">
+          <div class="cal-week">${['一','二','三','四','五','六','日'].map(w=>`<div class="cal-wk">${w}</div>`).join('')}</div>
+          <div class="cal-grid">${grid.cells.map(c=>`<div class="cal-cell${c.cur?' cur':''}${c.past?' past':''}">${c.d || ''}</div>`).join('')}</div>
+          <div class="cal-range"><span>第 ${fromDay} 天 · ${md(fromDay)}</span><span class="cal-arrow">⇢</span><span>第 ${toDay} 天 · ${md(toDay)}</span></div>
+        </div>
+      </details>`}
+
+      <div style="margin-top:14px">
+        <div class="cal-note"><b>下一环节「${to.name}」注意事项：</b>${to.note}</div>
+        <div class="cal-risk"><b>⚠️ 可能风险：</b>${to.risk}</div>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="btn btn-ink" data-act="closeModal">${isYear ? '翻出合同 · 打电话' : '知道了，进入' + to.name}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   主渲染
+   ═══════════════════════════════════════════════════════════════════════════ */
+function render(){
+  renderGuard();
+  const sc = document.getElementById('sc');
+  if (S.screen === 'budget') sc.innerHTML = screenBudget();
+  else if (S.screen === 'done') sc.innerHTML = screenDone();
+  else sc.innerHTML = screenStage();
+  sc.scrollTop = 0;
+  document.getElementById('stage').scrollTop = 0;
+  renderJump();
+  /* 爆雷后让顶部两条 meter 闪一下，把"钱与工期被啃"落到视觉 */
+  if (S.burst.length){
+    ['barMoney','barTime'].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'), 950); }
+    });
+    const bp = document.getElementById('bp');
+    if (bp){ bp.classList.add('hit'); setTimeout(()=>bp.classList.remove('hit'), 1150); }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   评审工具
+   ═══════════════════════════════════════════════════════════════════════════ */
+function renderJump(){
+  const el = document.getElementById('rvJump');
+  if (!el) return;
+  const items = [{ i:0, t:'预算' }].concat(STAGES.map(s=>({ i:s.idx, t:s.name.replace('设计量房','设计').replace('防水闭水','防水').replace('水电交底','水电').replace('主材下单','主材').replace('开荒保洁','保洁').replace('通风检测','通风').replace('售后质保','质保').replace('预算合同','合同').slice(0,2) })), [{ i:99, t:'总账' }]);
+  el.innerHTML = items.map(x=>`<button data-jump="${x.i}" class="${(x.i===S.stageIdx && S.screen!=='done') || (x.i===99 && S.screen==='done') ? 'on':''}">${x.t}</button>`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   事件绑定
+   ═══════════════════════════════════════════════════════════════════════════ */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-grade],[data-act],[data-opt],[data-jump],[data-demo]');
+  if (!t) return;
+
+  if (t.dataset.grade !== undefined && t.classList.contains('grade')){
+    const g = GRADES[+t.dataset.grade];
+    S.grade = g; S.budget = HOUSE.area * g.perSq;
+    render(); return;
+  }
+  if (t.dataset.opt){
+    choose(t.dataset.opt);
+    /* 证据链新增时滚动到钱包，让"攒到东西"被看见 */
+    if (S.evidence.length){ const w = document.querySelector('.wallet'); if (w) w.scrollIntoView({ behavior:'smooth', block:'center' }); }
+    return;
+  }
+  if (t.dataset.jump !== undefined){
+    const i = +t.dataset.jump;
+    location.hash = i === 0 ? 's=budget' : i === 99 ? 's=done&path=study' : 's=' + i;
+    return;
+  }
+  if (t.dataset.demo){
+    if (t.dataset.demo === 'reset'){ location.hash = 's=budget'; applyHash(); }
+    else { location.hash = 's=done&path=' + t.dataset.demo; applyHash(); }
+    return;
+  }
+  switch (t.dataset.act){
+    case 'start':    clearHash(); S.screen = 'stage'; rng = mulberry32(SEED); arrive(1); render(); break;
+    case 'next':     clearHash(); advance(); break;
+    case 'closeModal': document.getElementById('modalRoot').innerHTML = ''; break;
+    case 'reset':    location.hash = 's=budget'; applyHash(); break;
+  }
+});
+/* 手动走流程后清掉深链，避免刷新跳回旧阶段 */
+function clearHash(){ try { history.replaceState(null, '', location.pathname + location.search); } catch(e){} }
+
+const rvToggle = document.getElementById('rvToggle');
+const rvPanel = document.getElementById('rvPanel');
+rvToggle.addEventListener('click', ()=>{ rvPanel.classList.toggle('on'); });
+document.getElementById('ckNew').addEventListener('change', e => document.body.classList.toggle('annotate', e.target.checked));
+document.getElementById('ckNote').addEventListener('change', e => document.body.classList.toggle('notes', e.target.checked));
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Hash 深链路由（评审用）
+     #s=budget              装修预算屏
+     #s=1 … #s=13           直接跳到第 N 阶段（前置阶段自动按快选推进，故会带出爆雷）
+     #s=3&pick=a            跳到第 3 阶段并自动选中选项 a（看"已选"结果态）
+     #s=7                   安静态（木工 / 主材下单 是无事件阶段）
+     #path=quick|study      直接跑到完工总账
+   ═══════════════════════════════════════════════════════════════════════════ */
+function seedToStage(n, pick, modal){
+  S = newState(); S.grade = GRADES[1]; S.budget = HOUSE.area * GRADES[1].perSq;
+  rng = mulberry32(SEED); S.screen = 'stage';
+  for (let j = 1; j <= n; j++){
+    arrive(j);
+    if (j < n && S.event) chooseSilent(S.event.opts[0]);
+    if (j < n) S.day += STAGES[j-1].days;
+  }
+  if (pick && S.event){ const o = S.event.opts.find(x=>x.key===pick); if (o) { S.choice = null; choose(pick); } }
+  render();
+  if (modal){ const cur = STAGES[n-1]; openProgress(cur, Math.min(13, n+1), S.day, S.day + cur.days); }
+}
+function applyHash(){
+  const h = location.hash.replace(/^#/, '');
+  const q = {};
+  h.split('&').forEach(p => { const i = p.indexOf('='); if (i > 0) q[p.slice(0,i)] = decodeURIComponent(p.slice(i+1)); });
+  if (q.path === 'quick' || q.path === 'study'){ runThrough(q.path); return; }
+  if (q.s === 'budget' || q.s === undefined && !q.path && !q.s){ S = newState(); render(); return; }
+  if (q.s === 'done'){ runThrough(q.path || 'quick'); return; }
+  const n = parseInt(q.s, 10);
+  if (n >= 1 && n <= 13){ seedToStage(n, q.pick, q.modal); return; }
+  S = newState(); render();
+}
+window.addEventListener('hashchange', applyHash);
+
+/* 启动 */
+S = newState();
+applyHash();
+
+</script>
+</body>
+</html>

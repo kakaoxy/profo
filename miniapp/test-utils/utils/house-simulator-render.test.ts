@@ -7,7 +7,7 @@
  * 出现「钱够却报现金不足」的假警示。
  */
 import { beforeAll, describe, expect, it } from "vitest";
-import { createInitialState, HOUSES, ROLES, SimState } from "../../pages/house-simulator/utils/constants";
+import { createInitialState, HOUSES, ROLES } from "../../pages/house-simulator/utils/constants";
 import { derive } from "../../pages/house-simulator/utils/calc";
 import { buildHud, buildSteps, calModal, buildCalGrid, realOf, agreementModal } from "../../pages/house-simulator/utils/render";
 import { handleAction, HandlerCtx } from "../../pages/house-simulator/utils/handlers";
@@ -144,35 +144,39 @@ describe("模拟日历 · 时间快进（calModal / buildCalGrid）", () => {
     expect(m.cal!.gap).toBe(7);
   });
 
-  it("装修阶段快进：拆除 → 砌墙 gap=4 天，目标名用阶段名「砌墙」", () => {
+  it("装修阶段快进：显式传入动态天数（拆除 5 天基础工期），等待期文案取阶段定义", () => {
     const S = createInitialState();
-    S.scene = "renovDemo";
-    const m = calModal(S, "renovWall");
-    expect(m.cal!.toName).toBe("砌墙");
-    expect(m.cal!.gap).toBe(4);
-    expect(m.cal!.phase.length).toBeGreaterThan(0);
+    S.renovDay = 20;
+    const m = calModal(S, "renovDemo", 20, 25);
+    expect(m.cal!.toName).toBe("拆改");
+    expect(m.cal!.gap).toBe(5);
+    expect(m.cal!.phase).toContain("拆改");
+    expect(m.cal!.risk.length).toBeGreaterThan(0);
   });
 
-  it("装修流程条：buildSteps 在装修场景返回 10 项阶段并标记进度", () => {
+  it("装修流程条：buildSteps 在装修场景返回 13 项阶段并标记进度", () => {
     const S = createInitialState();
-    S.scene = "renovElec"; // 水电 = 第 5 阶段
+    S.scene = "renovElec"; // 水电 = 第 4 阶段
+    S.renovDay = 20;
     const r = buildSteps(S);
-    expect(r.steps).toHaveLength(10);
-    expect(r.stepPos).toBe("装修 5 / 10");
-    expect(r.steps.filter((s) => s.cls === "done")).toHaveLength(4); // 前 4 阶段已完成
-    expect(r.steps.filter((s) => s.cls === "cur")).toHaveLength(1); // 当前为第 5 阶段（水电）
-    expect(r.steps[4].label).toBe("水电"); // 当前阶段标记在水电
+    expect(r.steps).toHaveLength(13);
+    expect(r.stepPos).toBe("装修 4 / 13");
+    expect(r.dayText).toBe("第 20 天");
+    expect(r.steps.filter((s) => s.cls === "done")).toHaveLength(3); // 前 3 阶段已完成
+    expect(r.steps.filter((s) => s.cls === "cur")).toHaveLength(1); // 当前为第 4 阶段（水电）
+    expect(r.steps[3].label).toBe("水电"); // 当前阶段标记在水电
     const t = createInitialState();
     t.scene = "sign";
     expect(buildSteps(t).steps).toHaveLength(12);
   });
 
-  it("装修完成回最终账单：dayText 按装修完工日（第 78 天）计；跳过装修仍按交易完成日（第 16 天）", () => {
+  it("装修完成回最终账单：dayText 按完工入住日快照（S.renovDoneDay）计；跳过装修仍按交易完成日（第 16 天）", () => {
     const S = createInitialState();
     S.scene = "final";
     S.renovDone = true;
     S.renovSkipped = false;
-    expect(buildSteps(S).dayText).toBe("第 78 天");
+    S.renovDoneDay = 140;
+    expect(buildSteps(S).dayText).toBe("第 140 天");
     const t = createInitialState();
     t.scene = "final";
     t.renovDone = true;

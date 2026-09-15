@@ -6,19 +6,21 @@
  * 以及模拟状态 SimState 的初始工厂。计算逻辑见 ./calc.ts，场景视图见 ./scenes.ts。
  */
 
+import type { RenovMine } from "./renov-data";
+
 /** 身份角色 key：刚需首套 / 置换改善 / 投资二套. */
 export type RoleKey = "first" | "trade" | "invest";
 
 /** 贷款方式 key：纯商贷 / 组合贷 / 纯公积金. */
 export type LoanTypeKey = "comm" | "combo" | "gjj";
 
-/** 场景 key（37 屏，签约拆为 居间协议→网签 两屏；交易收尾拆为 过户递交→缴税领证→交割尾款；交易完成后接入装修流程）. */
+/** 场景 key（41 屏：交易 24 屏 + 装修流程 17 屏；装修拆为 预算决策 → 13 阶段 → 完成总账）. */
 export type SceneKey =
   | "start"
   | "role"
   | "cash"
-  | "select"
   | "custom"
+  | "select"
   | "qa"
   | "blocked"
   | "nego1"
@@ -38,16 +40,20 @@ export type SceneKey =
   | "handover"
   | "settle"
   | "final"
+  | "renovStart"
   | "renovDesign"
-  | "renovPlan"
+  | "renovBudget"
   | "renovDemo"
-  | "renovWall"
   | "renovElec"
+  | "renovSeal"
   | "renovTile"
   | "renovWood"
   | "renovPaint"
+  | "renovMain"
   | "renovInstall"
   | "renovClean"
+  | "renovAir"
+  | "renovWarr"
   | "renovDone";
 
 /** 身份角色配置：决定贷款利率 / 名下套数 / 房产税口径（首付比例由身份×环线×贷款方式共同决定，见 downRateFor）. */
@@ -210,6 +216,30 @@ export interface SimState {
   renovDone: boolean;
   /** 是否跳过装修直接入住（renovDone=true 时区分「装完」与「跳过」）. */
   renovSkipped: boolean;
+  /**
+   * 装修动态日程（信息迷雾机制，见 renov-data.ts）：
+   * renovDay = 当前绝对天数（进入 renovStart 后由交易完成日 +1 起累加，
+   * 基础工期 + 做功课耗时 + 爆雷返工全在此推进）；renovDoneDay = 通风完成
+   * （完工入住）日的快照，供总账屏统计"装修历时"。
+   */
+  renovDay: number;
+  renovDoneDay: number;
+  /** 装修总预算（元，预算屏档位单价 × 面积；装修支出独立于购房现金记账）. */
+  renovBudget: number;
+  /** 装修累计增项/返工支出（元）. */
+  renovSpend: number;
+  /** 当前阶段已触发的随机事件 id（null = 本阶段未触发）. */
+  renovEvent: string | null;
+  /** 当前事件已选选项 key（null = 尚未选择，场景展示选项）. */
+  renovChoice: string | null;
+  /** 已埋雷列表（到达对应阶段时爆雷结算）. */
+  renovMines: RenovMine[];
+  /** 当前阶段爆雷结果（进入阶段时由 handler 结算，场景据此展示警示）. */
+  renovBurst: RenovMine[];
+  /** 做过功课的阶段尾缀（影响后续结果，如质保期走合同免费维修）. */
+  renovLearned: string[];
+  /** 装修记事（事件决策 + 爆雷记录，完成总账屏复盘展示）. */
+  renovLog: { stage: string; text: string }[];
   /** 风险确认记录（交易凭证，本地持久化镜像，用于 final 屏展示）. */
   riskLog: RiskRecord[];
 }
@@ -352,16 +382,20 @@ export const STAGES: Record<SceneKey, string> = {
   handover: "交房",
   settle: "交割结算",
   final: "完成",
+  renovStart: "装修预算",
   renovDesign: "设计",
-  renovPlan: "定方案",
-  renovDemo: "拆除",
-  renovWall: "砌墙",
+  renovBudget: "预算",
+  renovDemo: "拆改",
   renovElec: "水电",
+  renovSeal: "防水",
   renovTile: "瓦工",
   renovWood: "木工",
   renovPaint: "油漆",
+  renovMain: "主材",
   renovInstall: "安装",
   renovClean: "保洁",
+  renovAir: "通风",
+  renovWarr: "质保",
   renovDone: "完工",
 };
 
@@ -412,16 +446,20 @@ export const SCENE_NODE: Partial<Record<SceneKey, string>> = {
   handover: "handover",
   settle: "handover",
   final: "renov",
+  renovStart: "renov",
   renovDesign: "renov",
-  renovPlan: "renov",
+  renovBudget: "renov",
   renovDemo: "renov",
-  renovWall: "renov",
   renovElec: "renov",
+  renovSeal: "renov",
   renovTile: "renov",
   renovWood: "renov",
   renovPaint: "renov",
+  renovMain: "renov",
   renovInstall: "renov",
   renovClean: "renov",
+  renovAir: "renov",
+  renovWarr: "renov",
   renovDone: "renov",
 };
 
@@ -433,9 +471,9 @@ export const SCENE_NODE: Partial<Record<SceneKey, string>> = {
  * 付定金(第1天) → 网签付首付先付部分并申贷(第1天) → 审批 7 天(第 8 天出批贷函) →
  * 贷款合同确认并补足剩余首付(第 8 天) → 递交过户材料出收件收据(第 8 天) →
  * 审税 7 天 → 第 15 天缴税领证、产证给银行放款 → 次日交房 → 同日交割结算尾款。
- * 装修流程自交易完成(第16天)起按阶段工期累加：设计 1 天 → 定方案 1 天 → 拆除 4 天 →
- * 砌墙 4 天 → 水电 8 天 → 瓦工 10 天 → 木工 8 天 → 油漆 14 天 → 安装 8 天 → 保洁交付 4 天，
- * 第 78 天装修完工。
+ *
+ * 装修流程天数不再静态配置：13 阶段工期 + 随机事件做功课耗时 + 爆雷返工
+ * 全部由 handlers-renov.ts 动态累加到 S.renovDay（起点 = final + 1）。
  */
 export const DAYS: Partial<Record<SceneKey, number>> = {
   /* 前期 · 私人决策：无时间预期，均视为今天 */
@@ -465,19 +503,6 @@ export const DAYS: Partial<Record<SceneKey, number>> = {
   handover: 16,
   settle: 16,
   final: 16,
-  /* 装修流程：交易完成(第16天) → 设计出方案 1 天 → 定方案 1 天 → 拆除 4 天 → 砌墙 4 天 →
-     水电 8 天 → 瓦工 10 天 → 木工 8 天 → 油漆 14 天 → 安装 8 天 → 保洁交付 4 天 */
-  renovDesign: 17,
-  renovPlan: 18,
-  renovDemo: 22,
-  renovWall: 26,
-  renovElec: 34,
-  renovTile: 44,
-  renovWood: 52,
-  renovPaint: 66,
-  renovInstall: 74,
-  renovClean: 78,
-  renovDone: 78,
 };
 
 /** 初始全局状态（等同 HiFi resetAll 后的 S；进入页面每次新模拟）. */
@@ -528,6 +553,16 @@ export function createInitialState(): SimState {
     taxed: false,
     renovDone: false,
     renovSkipped: false,
+    renovDay: 0,
+    renovDoneDay: 0,
+    renovBudget: 0,
+    renovSpend: 0,
+    renovEvent: null,
+    renovChoice: null,
+    renovMines: [],
+    renovBurst: [],
+    renovLearned: [],
+    renovLog: [],
     riskLog: [],
   };
 }

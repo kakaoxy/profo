@@ -8,6 +8,7 @@
 
 import { firstPayFor, fmt, sellerFace, stressFace } from "./calc";
 import { DAYS, NODES, SCENE_NODE, STAGES, SimState } from "./constants";
+import { findRenovDef } from "./renov-data";
 
 /** HUD 顶部数据. */
 export interface HudData {
@@ -241,17 +242,23 @@ export const NODE_WAIT: Record<string, { phase: string; note: string; risk: stri
   },
   renov: {
     phase: "装修施工进行中",
-    note: "按设计图纸逐阶段推进：拆除→砌墙→水电→瓦工→木工→油漆→安装→保洁交付。",
-    risk: "隐蔽工程（水电）返工成本最高；赶工换来的省时可能换来起皮开裂。",
+    note: "13 个阶段按序推进：设计→预算→拆改→水电→防水→瓦工→木工→油漆→主材→安装→保洁→通风→质保。",
+    risk: "隐蔽工程（水电/防水）返工成本最高；赶工省下的天数，都会在安装或入住后加倍还回来。",
   },
 };
 
 /**
- * 构建「模拟日历 · 时间快进」弹层初始数据：从当前场景节点快进到 to 场景节点，
- * gap = 等待天数（DAYS 差）；仅供快进开始态（done=false, progress=0），
- * 后续翻页由页面侧定时器驱动 buildCalGrid 更新 month/cells/progress/done。
+ * 构建「模拟日历 · 时间快进」弹层初始数据：快进到 to 场景节点。
+ * fromDay/toDay 缺省时取静态时间轴 DAYS（交易流程）；装修阶段由 handler 显式传入
+ * 动态天数（S.renovDay 口径），目标为装修阶段时等待期文案取该阶段定义。
+ * 仅供快进开始态（done=false, progress=0），后续翻页由页面侧定时器驱动。
  */
-export function calModal(S: SimState, to: SimState["scene"]): ModalData {
+export function calModal(
+  S: SimState,
+  to: SimState["scene"],
+  fromDayArg?: number,
+  toDayArg?: number,
+): ModalData {
   const toK = SCENE_NODE[to] ?? "";
   /* 贷款审批与「贷款」节点同屏（loan/loanChk），目标名直接写明「贷款审批结果」避免歧义；
      装修阶段直接显示阶段名（STAGES），其余取流程条节点名 */
@@ -261,9 +268,12 @@ export function calModal(S: SimState, to: SimState["scene"]): ModalData {
       : to.indexOf("renov") === 0
         ? (STAGES[to] ?? "下一阶段")
         : NODES.find((n) => n.k === toK)?.t ?? "下一节点";
-  const wait = NODE_WAIT[toK];
-  const fromDay = DAYS[S.scene] ?? 1;
-  const toDay = DAYS[to] ?? fromDay;
+  const rDef = findRenovDef(to);
+  const wait = rDef
+    ? { phase: rDef.name + "施工（" + rDef.daysText + "）", note: rDef.note, risk: rDef.risk }
+    : NODE_WAIT[toK];
+  const fromDay = fromDayArg ?? DAYS[S.scene] ?? 1;
+  const toDay = toDayArg ?? DAYS[to] ?? fromDay;
   const grid = buildCalGrid(realOf(fromDay));
   return {
     type: "cal",
@@ -329,25 +339,29 @@ export function buildHud(S: SimState): HudData {
   };
 }
 
-/** 装修阶段流程条（10 项，替代交易 12 节点）. */
-const RENOV_STEP_LABELS = ["设计", "定案", "拆除", "砌墙", "水电", "瓦工", "木工", "油漆", "安装", "保洁"];
+/** 装修阶段流程条（13 项，替代交易 12 节点）. */
+const RENOV_STEP_LABELS = ["设计", "预算", "拆改", "水电", "防水", "瓦工", "木工", "油漆", "主材", "安装", "保洁", "通风", "质保"];
 
-/** 装修场景 → 阶段下标（1=设计起，10=全部完成；renovDone 与保洁同格）. */
+/** 装修场景 → 阶段下标（1=设计起，13=全部完成；renovStart=0，renovDone 与质保同格）. */
 const RENOV_SCENE_IDX: Partial<Record<SimState["scene"], number>> = {
+  renovStart: 0,
   renovDesign: 1,
-  renovPlan: 2,
+  renovBudget: 2,
   renovDemo: 3,
-  renovWall: 4,
-  renovElec: 5,
+  renovElec: 4,
+  renovSeal: 5,
   renovTile: 6,
   renovWood: 7,
   renovPaint: 8,
-  renovInstall: 9,
-  renovClean: 10,
-  renovDone: 10,
+  renovMain: 9,
+  renovInstall: 10,
+  renovClean: 11,
+  renovAir: 12,
+  renovWarr: 13,
+  renovDone: 13,
 };
 
-/** 构建 12 节点流程条（交易）或 10 项装修阶段流程条（装修）+ 顶部步骤/天数文案. */
+/** 构建 12 节点流程条（交易）或 13 项装修阶段流程条（装修）+ 顶部步骤/天数文案. */
 export function buildSteps(S: SimState): { steps: StepItem[]; stepPos: string; dayText: string } {
   const isRenov = S.scene.indexOf("renov") === 0;
   if (isRenov) {
@@ -355,13 +369,13 @@ export function buildSteps(S: SimState): { steps: StepItem[]; stepPos: string; d
     const steps = RENOV_STEP_LABELS.map((label, i) => ({
       label,
       mark: i < idx ? "✓" : "",
-      /* 当前阶段 = 下标 idx-1（idx 从 1 起对应 labels 下标 0 起），优先于 done；未开始（idx=0）与完成（idx=10）无 cur */
+      /* 当前阶段 = 下标 idx-1（idx 从 1 起对应 labels 下标 0 起），优先于 done；未开始（idx=0）与完成（idx=13）无 cur */
       cls: i === idx - 1 && i < RENOV_STEP_LABELS.length ? "cur" : i < idx ? "done" : "",
     }));
     return {
       steps,
-      stepPos: "装修 " + idx + " / 10",
-      dayText: "第 " + (DAYS[S.scene] ?? 1) + " 天",
+      stepPos: idx === 0 ? "开工前 · 定预算" : "装修 " + idx + " / 13",
+      dayText: "第 " + (S.renovDay || DAYS[S.scene] || 1) + " 天",
     };
   }
   const idx = nodeIdx(S.scene);
@@ -370,10 +384,10 @@ export function buildSteps(S: SimState): { steps: StepItem[]; stepPos: string; d
     mark: i < idx ? "✓" : "",
     cls: i < idx ? "done" : i === idx ? "cur" : "",
   }));
-  /* 装修完成回到最终账单：天数按装修完工日（第 78 天）计，而非交易完成日（第 16 天） */
+  /* 装修完成回到最终账单：天数按完工入住日快照（S.renovDoneDay）计，而非交易完成日（第 16 天） */
   const day =
     S.scene === "final" && S.renovDone && !S.renovSkipped
-      ? DAYS.renovDone ?? DAYS[S.scene]
+      ? S.renovDoneDay || DAYS[S.scene]
       : DAYS[S.scene];
   return {
     steps,

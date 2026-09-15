@@ -9,6 +9,7 @@
  * 筹钱·签约 → 贷款·风控 → 监管·过户·领证·交房·账单），本文件仅保留 switch 分发：
  *  - scenes-common.ts：块类型与公共构造（bubble/pmtY/loanRowLabel）
  *  - scenes-start.ts / scenes-nego.ts / scenes-money.ts / scenes-loan.ts / scenes-close.ts：分阶段场景文案
+ *  - scenes-renov.ts：装修流程（预算屏 / 13 阶段事件屏 / 完成总账），事件数据见 renov-events.ts
  */
 
 import type { SimState } from "./constants";
@@ -33,17 +34,10 @@ import {
   sceneTransfer,
 } from "./scenes-close";
 import {
-  sceneRenovClean,
-  sceneRenovDemo,
-  sceneRenovDesign,
+  RENOV_STAGE_SCENES,
   sceneRenovDone,
-  sceneRenovElec,
-  sceneRenovInstall,
-  sceneRenovPaint,
-  sceneRenovPlan,
-  sceneRenovTile,
-  sceneRenovWall,
-  sceneRenovWood,
+  sceneRenovStart,
+  sceneRenovStage,
 } from "./scenes-renov";
 
 /** 构建当前场景内容块（每次 setData 全量重建）. */
@@ -97,29 +91,15 @@ export function buildScene(S: SimState): SceneBlock[] {
       return sceneSettle(S);
     case "final":
       return sceneFinal(S);
-    case "renovDesign":
-      return sceneRenovDesign(S);
-    case "renovPlan":
-      return sceneRenovPlan(S);
-    case "renovDemo":
-      return sceneRenovDemo(S);
-    case "renovWall":
-      return sceneRenovWall(S);
-    case "renovElec":
-      return sceneRenovElec(S);
-    case "renovTile":
-      return sceneRenovTile(S);
-    case "renovWood":
-      return sceneRenovWood(S);
-    case "renovPaint":
-      return sceneRenovPaint(S);
-    case "renovInstall":
-      return sceneRenovInstall(S);
-    case "renovClean":
-      return sceneRenovClean(S);
+    case "renovStart":
+      return sceneRenovStart(S);
     case "renovDone":
       return sceneRenovDone(S);
     default:
+      /* 13 个装修阶段（renovDesign…renovWarr）共用事件化阶段屏 */
+      if (RENOV_STAGE_SCENES.indexOf(S.scene) >= 0) {
+        return sceneRenovStage(S);
+      }
       return [];
   }
 }
