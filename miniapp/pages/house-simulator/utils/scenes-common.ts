@@ -42,6 +42,86 @@ export interface OptItem {
   disabled?: boolean;
 }
 
+/** 档位卡（装修预算档位 / 设计师档位；选中态停留本屏）. */
+export interface GradeItem {
+  /** 档位 key. */
+  k: string;
+  name: string;
+  /** 标签（主材自购 / 100 元/㎡ 等）. */
+  tag: string;
+  /** 标签配色类（hot / cool / 空）. */
+  tagCls: string;
+  /** 价格文案（约 15 万 / ¥6,000）. */
+  price: string;
+  desc: string;
+  /** 选中后显示的一句话（档位的底牌）. */
+  tail?: string;
+  /** 是否选中. */
+  on: boolean;
+  action: string;
+}
+
+/** 上划卡信息格（工期 / 谁在做）. */
+export interface SwipeCell {
+  k: string;
+  v: string;
+}
+
+/** 上划卡（3 秒一屏：一句现场 + 两个数字 + 一句提醒；决策屏无 hint/action 不可上划）. */
+export interface SwipeBlock {
+  t: "swipe";
+  /** 日期行（装修 N / 12 · 第 X 天 · X月X日 · 本阶段 +N 天）. */
+  day?: string;
+  name: string;
+  /** 这一步在干什么（≤ 26 字）. */
+  one: string;
+  /** 信息格（工期 / 谁在做）. */
+  cells?: SwipeCell[];
+  /** 提醒前缀（最容易踩的点： / 验收时间表：）. */
+  tipLabel?: string;
+  /** 提醒正文. */
+  tip?: string;
+  /** 提醒配色：warm（全包坑点）/ sky（半包验收时间表）. */
+  tipCls?: "warm" | "sky";
+  /** 是否展示「上划继续」提示. */
+  hint?: boolean;
+  /** 上划触发的动作（决策屏留空 = 不可上划跳过）. */
+  action?: string;
+}
+
+/** 合同清单单项行. */
+export interface ClRowItem {
+  /** 合同项 k. */
+  k: string;
+  name: string;
+  /** 状态胶囊文案（已写进合同 ¥8,000 / 明确不做 / 没提）. */
+  pill: string;
+  pillCls: string;
+  /** 纠纷点. */
+  why: string;
+  /** 「写清」正文（do 态展示）. */
+  write?: string;
+  /** 「不做」后果（no 态展示）. */
+  noNote?: string;
+  doLabel: string;
+  doAction: string;
+  doOn: boolean;
+  noLabel: string;
+  noAction: string;
+  noOn: boolean;
+}
+
+/** 增项单条目. */
+export interface BurstItem {
+  no: string;
+  stage: string;
+  /** 爆单日（第 N 天）. */
+  day: number;
+  lines: { k: string; v: string }[];
+  /** 小计文案（¥10,800 · +2 天）. */
+  sum: string;
+}
+
 /** 房源卡. */
 export interface HouseCardItem {
   id: string;
@@ -78,6 +158,23 @@ export type SceneBlock =
     }
   | { t: "houses"; items: HouseCardItem[] }
   | { t: "opts"; items: OptItem[] }
+  | { t: "grades"; items: GradeItem[] }
+  | SwipeBlock
+  | { t: "pricebar"; label: string; value: string; note?: string; bad?: boolean }
+  | { t: "prog"; label: string; done: number; total: number; pct: number }
+  | { t: "clSec"; title: string; count: string; rows: ClRowItem[] }
+  | {
+      t: "burst";
+      count: number;
+      src: string;
+      items: BurstItem[];
+      restText?: string;
+      restSum?: string;
+      hint: string;
+      /** 本次合计文案（¥8,700 · 返工 +3 天）. */
+      total: string;
+    }
+  | { t: "gantt"; items: { h: number; hot: boolean }[]; labels: string[] }
   | { t: "note"; bold?: string; text: string }
   | { t: "form-cash" }
   | { t: "form-custom" }

@@ -1,220 +1,288 @@
 /**
- * 购房模拟器 · 装修流程数据（13 阶段定义 + 信息迷雾事件机制）.
+ * 购房模拟器 · 装修流程数据 v4「一个坑 + 上划节奏」.
  *
- * 口径对齐装修阶段表（设计量房 → 售后质保）：
- *  - 每阶段有基础工期（days），做功课/返工在此基础上累加（S.renovDay 动态推进）；
- *  - 每阶段按概率（prob，默认 0.8）从事件池随机触发 1 个事件；
- *  - 事件呈现为「具体问题」（销售/师傅的话术与现场状况，即玩家"看到的"），
- *    选项是自然的问题回应：直接定（省钱省时但可能埋雷）vs 做功课（多花天数，
- *    解锁"真实的"信息）；雷（mine）在后续阶段到站爆雷，扣钱 + 拖工期 + 加压力；
- *  - 本文件只放类型、阶段定义与查找函数；事件文案池拆在 renov-events.ts
- *    （纯数据体量大，拆分保持单文件可读）。
+ * 策略（对齐设计稿 docs/2026-09-15-装修模块-高保真设计稿.html v4）：
+ *  - 不再「全面表达装修的坑」——不现实。只深耕一个最大的坑：签合同
+ *    （13 项清单数据见 renov-contract.ts）；
+ *  - 决策点只有 3 处：① 预算档位 ② 设计师档位 ③ 13 项合同清单；
+ *    其余 10 个阶段是「上划卡」（一句现场 + 工期/工种 + 一句提醒），不设分支；
+ *  - 合同清单不预先标价——「合同价看着低、好签」正是坑本身；
+ *    没提的项装到那一步才以增项单到站（比写进合同贵 ≈35%）；
+ *  - 半包 = 做过功课的人：不演坑，卡片提醒换成「验收 / 功课时间表」（help 字段）。
  *
- * 纯数据/纯函数模块，不依赖 constants/SimState（避免循环引用）。
+ * 钱的三个数：合同价 = 预算 + 设计费 + 写进合同的项；
+ *             增项 = 合同没写的到站结算；结账价 = 合同价 + 增项。
+ * 纯数据/纯函数模块（对 SimState 仅 type-only 引用，无运行时循环依赖）。
  */
 
-import { RENOV_EVENTS } from "./renov-events";
+import type { SimState } from "./constants";
+import { RENOV_CONTRACT } from "./renov-contract";
 
-/** 埋雷定义：盲选埋下，到达 at 阶段时爆雷结算. */
+/** 增项单明细行：[项目名, 金额（元）]. */
+export type RenovLine = [string, number];
+
+/** 已结算的增项单（合同没写的项到站的账目化凭证）. */
+export interface RenovBill {
+  /** 单号（"#01" 起连续编号）. */
+  no: string;
+  /** 爆单阶段名（如 拆除）. */
+  stage: string;
+  /** 爆单日（返工后的第 N 天）. */
+  day: number;
+  /** 明细行. */
+  lines: RenovLine[];
+  /** 小计（元）. */
+  cost: number;
+  /** 返工耗时（天）. */
+  days: number;
+  /** 爆单文案. */
+  text: string;
+  /** 溯源（哪一项合同没写 / 你选了不做）. */
+  src: string;
+  /** 下次怎么避免. */
+  hint: string;
+}
+
+/** 合同没写清 / 明确不做而埋下的雷：到达 at 阶段时按增项价结算成 RenovBill. */
 export interface RenovMine {
   /** 爆雷阶段尾缀（如 "Install" = renovInstall 屏）. */
   at: string;
-  /** 记事短句（装修记事本复盘用）. */
-  log: string;
-  /** 爆雷文案（结果屏警示条）. */
+  /** 返工耗时（天）. */
+  days: number;
+  /** 明细行. */
+  lines: RenovLine[];
+  /** 爆雷文案. */
   text: string;
-  /** 爆雷支出（元，计入 renovSpend 增项）. */
-  cost: number;
-  /** 爆雷返工耗时（天）. */
-  days: number;
-  /** 压力变化. */
-  stress: number;
+  /** 溯源（哪一项没写清）. */
+  src: string;
+  /** 下次怎么避免. */
+  hint: string;
+  /** 关联合同项 k（溯源用）. */
+  scope: string | null;
 }
 
-/** 装修事件选项（对问题的自然回应；不出现"要不要做功课"式的元提问）. */
-export interface RenovOpt {
-  key: string;
-  /** 选项文案（第一人称回应）. */
-  title: string;
-  /** 补充说明（含时间/金钱代价的自然描述）. */
-  desc: string;
-  /** 选择后的直接结果文案（结果屏展示）. */
-  result: string;
-  /** 装修记事短句（复盘用）. */
-  log: string;
-  /** 额外耗时（天，做功课的工期代价）. */
-  days: number;
-  /** 额外支出（元）. */
-  cost: number;
-  /** 压力变化（做功课消耗精力）. */
-  stress: number;
-  /** 快选埋雷：不解锁信息，雷在 at 阶段爆. */
-  mine?: RenovMine;
-  /** 做功课解锁的真实信息（结果屏展示；有此字段即视为"做了功课"）. */
-  learned?: string;
-  /** 指定阶段做过功课（renovLearned 含其尾缀）时，本选项支出全免（如质保走合同免费维修）. */
-  freeIfStudied?: string;
-  /** freeIfStudied 命中时的替代结果文案. */
-  resultStudied?: string;
-}
-
-/** 装修随机事件：谁说的 + 表面话术/问题呈现 + 选项. */
-export interface RenovEvent {
-  id: string;
-  who: string;
-  /** 表面话术 / 问题呈现（信息迷雾的"看到的"）. */
-  chat: string;
-  opts: RenovOpt[];
-}
-
-/** 装修阶段定义. */
-export interface RenovStageDef {
-  /** 场景 key 尾缀（renovDesign → "Design"）. */
+/** 合同清单单项（13 项数据见 renov-contract.ts）. */
+export interface RenovContractItem {
   k: string;
-  /** 下一阶段尾缀（"Budget"…；末段 "Done" = renovDone 总账屏）. */
-  to: string;
-  /** 阶段序号（1-13）. */
+  /** 分组标题（一 · 拆改的边界 等）. */
+  sec: string;
+  name: string;
+  /** 纠纷点（为什么这一项要写清）. */
+  why: string;
+  /** 写清什么（写进合同后的展示文案）. */
+  write: string;
+  /** 写进合同的价格（元；0 = 无追加费用，只锁标准）。不预先标价，仅用于合同价累计. */
+  doPrice: number;
+  /** 「不做」按钮文案（半包可用 halfNoLabel 覆盖）. */
+  noLabel: string;
+  /** 「不做」的后果说明. */
+  noNote: string;
+  /** safe = 不做无风险；risk = 不做埋雷（noMine）. */
+  noKind: "safe" | "risk";
+  /** 半包口径的「写清」文案（如主材自购清单）. */
+  halfWrite?: string;
+  /** 半包口径的「不做」文案. */
+  halfNoLabel?: string;
+  /** 半包口径的「不做」后果. */
+  halfNoNote?: string;
+  /** 明确不做埋下的风险雷. */
+  noMine?: { at: string; days: number; lines: RenovLine[]; text: string; src: string; hint: string };
+  /** 合同没提 → 到 at 阶段按增项价爆单. */
+  omit?: { at: string; days: number; lines: RenovLine[]; text: string; src: string; hint: string };
+}
+
+/** 预算档位（上海就两种情况：半包 / 全包三档）. */
+export interface RenovPkg {
+  k: "half" | "f15" | "f25" | "f40";
+  /** 标签（主材自购 / 广告里的全包价 等）. */
+  tag: string;
+  /** 单价（元/㎡）. */
+  perSq: number;
+  /** 标签配色：hot=暖 / cool=蓝 / 空=灰. */
+  badge: "" | "hot" | "cool";
+  name: string;
+  desc: string;
+  /** 选中后显示的一句话（档位的底牌）. */
+  tail: string;
+}
+
+/** 设计师档位（价格以「元」显示，不进万元口径）. */
+export interface RenovTier {
+  k: "free" | "d100" | "d400";
+  name: string;
+  /** 设计费（元）. */
+  price: number;
+  /** 标签（整装公司送设计 / 100 元/㎡ 等）. */
+  badge: string;
+  desc: string;
+  /** 选中后显示的一句话（档位的底牌）. */
+  tail: string;
+}
+
+/** 装修阶段定义（12 阶段；每张卡一句话，任何一句 ≤ 26 字）. */
+export interface RenovStageDef {
+  /** 阶段尾缀（renovDesign → "Design"）. */
+  k: string;
+  /** 阶段序号（1-12）. */
   idx: number;
   name: string;
-  /** 基础工期（天；质保阶段特殊 = 365，由 handler 跳过日历叙事推进）. */
+  /** 基础工期（天；质保阶段 365 由 handler 叙事推进）. */
   days: number;
-  /** 工期展示口径（如 "7-30 天"）. */
+  /** 工期展示口径（如 "9-15 天"）. */
   daysText: string;
-  /** 基础叙事说话人. */
+  /** 谁在做. */
   who: string;
-  /** 表面叙事（看到的：一切正常/很专业/很便宜）. */
-  chat: string;
-  /** 中性提示（不揭底的温馨提示，保持迷雾）. */
-  note: string;
-  /** 模拟日历快进弹层的"可能风险"提示. */
-  risk: string;
+  /** 这一步在干什么（≤ 26 字）. */
+  one: string;
+  /** 全包视角——这一步最容易踩的点. */
+  key: string;
+  /** 半包视角——什么时候该验收 / 该做什么功课. */
+  help: string;
   /** 完成本阶段的 CTA 文案. */
   cta: string;
-  /** 事件触发概率（缺省 0.8；售后质保 = 1）. */
-  prob?: number;
-  /** 事件池（由 RENOV_EVENTS 注入，见文件尾）. */
-  events: RenovEvent[];
+  /** 本屏为设计师档位决策屏（不可上划跳过）. */
+  pickTier?: boolean;
+  /** 本屏为合同清单决策屏（不可上划跳过）. */
+  contract?: boolean;
 }
 
-/** 阶段定义（不含事件；事件池见 renov-events.ts）. */
-const RENOV_RAW: Omit<RenovStageDef, "events">[] = [
+/** 预算档位（半包不演坑：tail 说明后续口径）. */
+export const RENOV_PKGS: RenovPkg[] = [
   {
-    k: "Design", to: "Budget", idx: 1, name: "设计量房", days: 7, daysText: "7-30 天",
-    who: "设计师 小美",
-    chat: "量完房了，效果图出来了：客厅显大、颜色温馨，收纳我都给你排上了。这套方案落地没问题，后面交给我。",
-    note: "效果图之外的功课，都藏在收纳清单、门窗点位和图纸深度里。",
-    risk: "方案没定就开工，后面每一步返工都从设计错开始；收纳、门窗、柜子没算，全是后期加钱项。",
-    cta: "方案敲定 · 进入预算合同",
+    k: "half", tag: "主材自购", perSq: 1000, badge: "cool", name: "半包 · 施工 + 辅材",
+    desc: "人工 + 辅材，主材自己买（另约 3-6 万）。",
+    tail: "选这条路的人做过功课：后面不演坑，只给你验收时间表。",
   },
   {
-    k: "Budget", to: "Demo", idx: 2, name: "预算合同", days: 3, daysText: "3-7 天",
-    who: "装修公司销售 大伟",
-    chat: "哥，全包 12 万拎包入住，主材全含，你什么都不用管。今天签约还送全屋开关面板，这价格真的只有我们有。",
-    note: "低价全包是钩子还是实惠，答案藏在报价单的每一行里。",
-    risk: "低价全包的漏项，开工后一张张变成增项单；付款节点没留余地，后期没有筹码。",
-    cta: "合同签订 · 开工拆改",
+    k: "f15", tag: "广告里的全包价", perSq: 1500, badge: "hot", name: "全包 · 起步档",
+    desc: "主材最低配，边界项一项都不含。",
+    tail: "合同价看着低，因为它什么都没写。",
   },
   {
-    k: "Demo", to: "Elec", idx: 3, name: "拆改", days: 5, daysText: "5-15 天",
-    who: "工长 老周",
-    chat: "老房拆旧，我带俩师傅三天拆完，垃圾清运我安排。墙面看着挺结实，有什么问题我会提醒你，放心。",
-    note: "拆改是施工第一锤：哪里能拆、哪里绝不能动，开工前就要弄清楚。",
-    risk: "承重墙动了是安全事故；空鼓不铲到底层，三个月后墙面成片开裂。",
-    cta: "拆改完成 · 水电进场",
+    k: "f25", tag: "多数家庭的成交价", perSq: 2500, badge: "", name: "全包 · 主流档",
+    desc: "主材可选品牌，施工标准写进合同。",
+    tail: "档位解决材料，解决不了「边界写没写」。",
   },
   {
-    k: "Elec", to: "Seal", idx: 4, name: "水电交底", days: 7, daysText: "7-15 天",
-    who: "水电工 李师傅",
-    chat: "开关插座按常规点位走，你家这面积 40 来个够用了。行业都这么干，差不多就行，封槽之前都不算数。",
-    note: "水电是隐蔽工程：封槽之前，每一根管、每一个点位都要亲眼确认。",
-    risk: "点位错一点，家具挡一片；打压不做，渗漏全在入住后爆。",
-    cta: "水电封槽 · 防水进场",
-  },
-  {
-    k: "Seal", to: "Tile", idx: 5, name: "防水闭水", days: 3, daysText: "3-7 天",
-    who: "瓦工 阿强",
-    chat: "卫生间防水刷好了，绿色涂层看着就专业。刷了两遍，稳得很，可以贴砖了。",
-    note: "防水做完必须闭水试验：48 小时，楼下天花板是唯一判卷人。",
-    risk: "闭水不足 48 小时，楼下渗水赔钱又伤和气；高度不够，水汽照样渗墙。",
-    cta: "闭水合格 · 瓦工贴砖",
-  },
-  {
-    k: "Tile", to: "Wood", idx: 6, name: "瓦工", days: 10, daysText: "10-20 天",
-    who: "瓦工 阿强",
-    chat: "瓷砖上墙，横平竖直。你看这缝，机器都贴不出这水平，验收不验收都一个样。",
-    note: "贴完不等于贴好：空鼓锤、水平尺、地漏试水，一样都不能省。",
-    risk: "空鼓和坡度问题，贴完才发现就是砸砖返工。",
-    cta: "瓦工验收 · 木工进场",
-  },
-  {
-    k: "Wood", to: "Paint", idx: 7, name: "木工", days: 5, daysText: "5-15 天",
-    who: "木工 老赵",
-    chat: "吊顶龙骨打完了，双层石膏板一封，造型漂亮。龙骨我用了二十年，比什么都结实。",
-    note: "吊顶封板之前，龙骨间距、检修口、窗帘盒尺寸，都要抬头看一眼。",
-    risk: "龙骨间距大、没留检修口，开裂了连修都没地方下手。",
-    cta: "木工封板 · 油漆进场",
-  },
-  {
-    k: "Paint", to: "Main", idx: 8, name: "油漆", days: 15, daysText: "15-30 天",
-    who: "油漆工 小陈",
-    chat: "头遍腻子今天批完，明天打磨刷漆，一周收工。加点风扇吹着，干得快，不影响质量。",
-    note: "油漆的活儿，七分靠等：没干透的每一道工序都是隐患。",
-    risk: "湿度过高抢工，干透是假的，发霉是真的。",
-    cta: "油漆完工 · 主材下单",
-  },
-  {
-    k: "Main", to: "Install", idx: 9, name: "主材下单", days: 2, daysText: "贯穿全程（复尺下单 2 天）",
-    who: "建材市场销售们",
-    chat: "断桥铝 500 一平全含；定制柜颗粒板 E0 环保、激光封边；套餐 18㎡ 一万八。每家都拍着胸口保证。",
-    note: "主材的水全在参数和报价单里：问清「含什么」，比问「多少钱」重要。",
-    risk: "报价只看单价：展开面积、五金、封边工艺，样样都是加钱项。",
-    cta: "主材下单 · 约安装进场",
-  },
-  {
-    k: "Install", to: "Clean", idx: 10, name: "安装", days: 10, daysText: "10-20 天",
-    who: "工长 老周",
-    chat: "门、柜、地板、灯具、卫浴全到货了，我安排师傅依次装，尺寸差不多，现场都能调。",
-    note: "安装顺序有讲究：门 → 柜 → 地板 → 灯具 → 卫浴；先到的先装容易打架。",
-    risk: "顺序装错全是缝，复尺没量准就返厂。",
-    cta: "安装到位 · 开荒保洁",
-  },
-  {
-    k: "Clean", to: "Air", idx: 11, name: "开荒保洁", days: 3, daysText: "3-5 天",
-    who: "保洁领队 王姐",
-    chat: "姐妹们干了一整天：窗明几净，地反光。大面上都干净了，验收吧，可以拎包入住了。",
-    note: "开荒保洁的验收要打灯看细节：划痕、死角、五金，验收合格再付尾款。",
-    risk: "验收不细，划痕堵塞入住才发现，售后扯皮没证据。",
-    cta: "保洁验收 · 通风等待",
-  },
-  {
-    k: "Air", to: "Warr", idx: 12, name: "通风检测", days: 30, daysText: "30-180 天",
-    who: "你 · 等待通风",
-    chat: "全部完工。新家安静地空着：柜门全开、抽屉拉开，每天开窗对流。通风一个月，已经没味道了——是不是就能住了？",
-    note: "没味道 ≠ 没甲醛：甲醛释放 3-15 年，检测合格才是入住标准。",
-    risk: "没味道不等于没甲醛，检测合格才是入住线；暴雨天正好检验门窗。",
-    cta: "检测合格 · 准备入住",
-  },
-  {
-    k: "Warr", to: "Done", idx: 13, name: "售后质保", days: 365, daysText: "1-5 年",
-    who: "一年后的你",
-    chat: "入住一年。水电平稳、柜门顺滑——直到某天，柜门铰链开始吱呀作响，浴室五金起了白斑。翻出合同：质保五年。打电话给装修公司……",
-    note: "质保不是一句话：合同里的质保范围、尾款/质保金、聊天记录和发票，都是证据链。",
-    risk: "合同、发票、记录没留全，报修时全凭对方良心。",
-    cta: "查看装修总账 · 结束流程",
-    prob: 1,
+    k: "f40", tag: "省心不省合同", perSq: 4000, badge: "cool", name: "全包 · 品质档",
+    desc: "品牌主材 + 部分定制柜。",
+    tail: "贵的是确定性；没写的，照样来加钱。",
   },
 ];
 
-/** 13 阶段定义（注入事件池）. */
-export const RENOV_STAGES: RenovStageDef[] = RENOV_RAW.map((d) => ({
-  ...d,
-  events: RENOV_EVENTS[d.k] ?? [],
-}));
+/** 设计师三档. */
+export const RENOV_TIERS: RenovTier[] = [
+  {
+    k: "free", name: "免费设计", price: 0, badge: "整装公司送设计",
+    desc: "会画 CAD 的销售。图纸到效果图为止。",
+    tail: "免费的最贵：它是获客成本，会在合同里赚回来。",
+  },
+  {
+    k: "d100", name: "独立设计师", price: 6000, badge: "100 元/㎡",
+    desc: "看运气：可能是真独立设计师，也可能是免费的换个马甲。",
+    tail: "验货三问：施工图看几张？到场交底几次？改稿封顶多少？",
+  },
+  {
+    k: "d400", name: "全案设计师", price: 24000, badge: "300-500 元/㎡",
+    desc: "墙顶地色彩、动线、收纳、照明一起想，图纸能落到施工。",
+    tail: "贵在「提前想完」：插座、动线、颜色，图纸阶段就定了。",
+  },
+];
 
-/** 事件默认触发概率. */
-export const RENOV_EVENT_PROB = 0.8;
+/** 12 阶段定义（one ≤ 26 字；key = 全包提醒，help = 半包验收时间表）. */
+export const RENOV_STAGES: RenovStageDef[] = [
+  {
+    k: "Design", idx: 1, name: "设计", days: 10, daysText: "10-30 天", pickTier: true,
+    who: "设计师", one: "量完房，效果图明天出来。",
+    key: "效果图好看没用：施工图、点位图、柜体图才是能落地的。",
+    help: "自己先量一遍：墙、窗、管道位置，拍照存档。",
+    cta: "图纸定稿",
+  },
+  {
+    k: "Contract", idx: 2, name: "签合同", days: 3, daysText: "3-7 天", contract: true,
+    who: "装修公司销售 大伟", one: "合同都是标准文本，直接签就行。",
+    key: "", help: "", cta: "按清单签约 · 开工",
+  },
+  {
+    k: "Demo", idx: 3, name: "拆除", days: 6, daysText: "6-15 天",
+    who: "工长 老周", one: "拆旧、清运、铲墙皮。",
+    key: "别动承重墙：图纸上的黑色实线不能碰。",
+    help: "开工前让工长出一张「拆改分项单」，逐项写清再动工。",
+    cta: "拆完，水电进场",
+  },
+  {
+    k: "Elec", idx: 4, name: "水电", days: 9, daysText: "9-15 天",
+    who: "水电工 李师傅", one: "开槽、布管、穿线。",
+    key: "封槽前拍照留底——以后在墙上打孔全靠它。",
+    help: "验收时间点：封槽前。点位对不对、线走没走直角、水管打压合格。",
+    cta: "封槽，防水进场",
+  },
+  {
+    k: "Seal", idx: 5, name: "防水", days: 3, daysText: "3-7 天",
+    who: "瓦工 阿强", one: "防水刷两遍，做蓄水试验。",
+    key: "闭水 48 小时，提前跟楼下打招呼。",
+    help: "验收时间点：蓄水 48 小时后去看楼下天花板，合格再贴砖。",
+    cta: "闭水合格，木瓦进场",
+  },
+  {
+    k: "TileWood", idx: 6, name: "木瓦", days: 12, daysText: "12-20 天",
+    who: "瓦工 阿强 / 木工 老赵", one: "贴砖、吊顶、墙面找平。",
+    key: "要装柜子的三面墙，一定量平整度：墙差 5 毫米，柜子就装不平。",
+    help: "验收时间点：贴完砖、师傅撤场前。空鼓锤逐块敲，撤场后再找人难。",
+    cta: "木瓦验收，主材下单",
+  },
+  {
+    k: "Paint", idx: 7, name: "油漆", days: 15, daysText: "15-30 天 · 跨梅雨",
+    who: "油漆工 小陈", one: "批腻子、打磨、刷漆。",
+    key: "上海梅雨季在 6-7 月：湿度超过 85% 就停工，宁可多等一周。",
+    help: "验收时间点：每一遍腻子干透再上下一遍；剩漆封存留底。",
+    cta: "油漆完工，主材进场",
+  },
+  {
+    k: "Main", idx: 8, name: "主材", days: 2, daysText: "复尺 2 天",
+    who: "建材市场销售们", one: "复尺、下单、等货。",
+    key: "下单前先复尺：坑距、门洞、柜位，差 5 公分就装不上。",
+    help: "自购主材：先列清单再跑店，别让工人带买（有回扣）。",
+    cta: "主材下单，安装进场",
+  },
+  {
+    k: "Install", idx: 9, name: "安装", days: 10, daysText: "10-20 天",
+    who: "工长 老周", one: "门、柜、地板、灯具依次装。",
+    key: "顺序错了全是缝：门 → 柜 → 地板，先到先装会打架。",
+    help: "验收时间点：装完当场验水平、门缝、收口，别等师傅撤场。",
+    cta: "安装到位，开荒保洁",
+  },
+  {
+    k: "Clean", idx: 10, name: "开荒保洁", days: 3, daysText: "3-5 天",
+    who: "保洁领队 王姐", one: "窗明几净，看着挺干净。",
+    key: "打灯看细节：窗框槽、五金划痕、地漏下水。",
+    help: "尾款留 10%：验收合格再付。",
+    cta: "保洁验收，通风检测",
+  },
+  {
+    k: "Air", idx: 11, name: "通风检测", days: 30, daysText: "30-180 天",
+    who: "你 · 等待通风", one: "柜门打开、每天对流，一个月过去。",
+    key: "没味道 ≠ 没甲醛：CMA 检测合格才是入住线。",
+    help: "检测时间点：密闭 12 小时采样，甲醛 ≤0.08mg/m³ 才搬家。",
+    cta: "检测合格，准备入住",
+  },
+  {
+    k: "Warr", idx: 12, name: "售后质保", days: 365, daysText: "1-5 年",
+    who: "一年后的你", one: "一年后：柜门铰链响了、五金起了斑。",
+    key: "质保 5 年 ≠ 什么都保：易耗件常写在免责条款里。",
+    help: "留证据三件套：合同附件 + 发票 + 书面报修记录。",
+    cta: "查看装修总账",
+  },
+];
 
-/** 按场景 key（"renovDesign"）或尾缀（"Design"）查找阶段定义. */
+/** 合同清单 13 项（数据见 renov-contract.ts）. */
+export { RENOV_CONTRACT };
+
+/** 计划工期：11 个施工阶段基础天数合计（质保 365 天不计时）+ 开工首日. */
+export const RENOV_PLAN_BASE: number = RENOV_STAGES.filter((s) => s.k !== "Warr").reduce((a, s) => a + s.days, 0);
+export const RENOV_PLAN_TOTAL: number = RENOV_PLAN_BASE + 1;
+
+/** 按场景 key（"renovDemo"）或尾缀（"Demo"）查找阶段定义. */
 export function findRenovDef(scene: string): RenovStageDef | null {
   const tail = scene.replace(/^renov/, "");
   for (const d of RENOV_STAGES) {
@@ -223,6 +291,41 @@ export function findRenovDef(scene: string): RenovStageDef | null {
     }
   }
   return null;
+}
+
+/** 元 → 万元去尾零（15.00 → "15"、15.50 → "15.5"；对齐设计稿 wan()）. */
+export function wanFmt(v: number): string {
+  return (v / 10000).toFixed(2).replace(/\.?0+$/, "");
+}
+
+/** 元 → ¥千分位（6000 → "¥6,000"；对齐设计稿 yuan()）. */
+export function yuanFmt(v: number): string {
+  return "¥" + Math.round(v).toLocaleString("en-US");
+}
+
+/** 写进合同的 13 项追加费用合计（元）. */
+export function contractAddOf(con: Record<string, string>): number {
+  return RENOV_CONTRACT.reduce((a, it) => a + (con[it.k] === "do" ? it.doPrice : 0), 0);
+}
+
+/** 合同价（元）= 预算 + 设计费 + 写进合同的项. */
+export function contractPriceOf(S: Pick<SimState, "renovBudget" | "renovDesignFee" | "renovCon">): number {
+  return S.renovBudget + S.renovDesignFee + contractAddOf(S.renovCon);
+}
+
+/** 结账价（元）= 合同价 + 增项. */
+export function paidTotalOf(S: Pick<SimState, "renovBudget" | "renovDesignFee" | "renovCon" | "renovExtra">): number {
+  return contractPriceOf(S) + S.renovExtra;
+}
+
+/** 已定结论的合同项数. */
+export function decidedCountOf(con: Record<string, string>): number {
+  return RENOV_CONTRACT.filter((it) => con[it.k]).length;
+}
+
+/** 已写进合同的项名列表. */
+export function writtenListOf(con: Record<string, string>): string[] {
+  return RENOV_CONTRACT.filter((it) => con[it.k] === "do").map((it) => it.name);
 }
 
 /** 完成打卡清单名（装修总账屏用）. */

@@ -144,25 +144,15 @@ describe("模拟日历 · 时间快进（calModal / buildCalGrid）", () => {
     expect(m.cal!.gap).toBe(7);
   });
 
-  it("装修阶段快进：显式传入动态天数（拆除 5 天基础工期），等待期文案取阶段定义", () => {
-    const S = createInitialState();
-    S.renovDay = 20;
-    const m = calModal(S, "renovDemo", 20, 25);
-    expect(m.cal!.toName).toBe("拆改");
-    expect(m.cal!.gap).toBe(5);
-    expect(m.cal!.phase).toContain("拆改");
-    expect(m.cal!.risk.length).toBeGreaterThan(0);
-  });
-
-  it("装修流程条：buildSteps 在装修场景返回 13 项阶段并标记进度", () => {
+  it("装修流程条：buildSteps 在装修场景返回 12 项阶段并标记进度", () => {
     const S = createInitialState();
     S.scene = "renovElec"; // 水电 = 第 4 阶段
     S.renovDay = 20;
     const r = buildSteps(S);
-    expect(r.steps).toHaveLength(13);
-    expect(r.stepPos).toBe("装修 4 / 13");
+    expect(r.steps).toHaveLength(12);
+    expect(r.stepPos).toBe("装修 4 / 12");
     expect(r.dayText).toBe("第 20 天");
-    expect(r.steps.filter((s) => s.cls === "done")).toHaveLength(3); // 前 3 阶段已完成
+    expect(r.steps.filter((s) => s.cls === "done")).toHaveLength(3); // 前 3 阶段（设计/签约/拆除）已完成
     expect(r.steps.filter((s) => s.cls === "cur")).toHaveLength(1); // 当前为第 4 阶段（水电）
     expect(r.steps[3].label).toBe("水电"); // 当前阶段标记在水电
     const t = createInitialState();

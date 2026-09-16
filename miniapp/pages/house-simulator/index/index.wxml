@@ -30,9 +30,17 @@
     <text class="s-face">{{sellerBar.face}}</text>
   </view>
 
-  <!-- 舞台内容（场景块有序渲染） -->
-  <scroll-view class="stage" scroll-y>
+  <!-- 舞台内容（场景块有序渲染；换屏经动态锚点回顶，上划手势在到底后翻卡） -->
+  <scroll-view
+    class="stage"
+    scroll-y
+    scroll-into-view="{{intoView}}"
+    bindscroll="onStageScroll"
+    bindtouchstart="onStageTouchStart"
+    bindtouchend="onStageTouchEnd"
+  >
     <view class="sc">
+      <view id="{{anchor}}"></view>
       <block wx:for="{{blocks}}" wx:key="index">
         <!-- 页眉 -->
         <view wx:if="{{item.t === 'eyebrow'}}" class="eyebrow">{{item.text}}</view>
@@ -127,6 +135,101 @@
             <view wx:else class="opt-disabled">{{o.title}}</view>
           </block>
         </view>
+
+        <!-- 装修 · 档位卡（预算档位 / 设计师档位；选中态停留展示底牌） -->
+        <view wx:elif="{{item.t === 'grades'}}" class="grades">
+          <view class="grade {{g.on ? 'on' : ''}}" data-act="{{g.action}}" bindtap="onAction" wx:for="{{item.items}}" wx:for-item="g" wx:key="index">
+            <view class="gr-hd">
+              <text class="gr-n">{{g.name}}</text>
+              <view class="opt-tag {{g.tagCls}}">{{g.tag}}</view>
+              <text class="gr-p num">{{g.price}}</text>
+            </view>
+            <view class="gr-d">{{g.desc}}</view>
+            <view wx:if="{{g.tail}}" class="gr-note">{{g.tail}}</view>
+          </view>
+        </view>
+
+        <!-- 装修 · 上划卡（3 秒一屏：一句现场 + 工期/工种 + 一句提醒） -->
+        <view wx:elif="{{item.t === 'swipe'}}" class="swipe">
+          <view wx:if="{{item.day}}" class="sw-day">{{item.day}}</view>
+          <view class="sw-hd">{{item.name}}</view>
+          <view class="sw-one">{{item.one}}</view>
+          <view wx:if="{{item.cells.length}}" class="sw-kv">
+            <view class="sw-cell" wx:for="{{item.cells}}" wx:for-item="c" wx:key="index">
+              <view class="sw-k">{{c.k}}</view>
+              <view class="sw-v">{{c.v}}</view>
+            </view>
+          </view>
+          <view wx:if="{{item.tip}}" class="sw-key {{item.tipCls}}"><text class="sw-key-b">{{item.tipLabel}}</text>{{item.tip}}</view>
+          <view wx:if="{{item.hint}}" class="sw-hint"><text>上划继续</text><text class="sw-hint-arrow">↑</text></view>
+        </view>
+
+        <!-- 装修 · 合同价条（合同价看着低，正是这个坑本身；bad = 13 项全有结论） -->
+        <view wx:elif="{{item.t === 'pricebar'}}" class="pricebar {{item.bad ? 'bad' : ''}}">
+          <view class="pb-k">{{item.label}}</view>
+          <view class="pb-v">{{item.value}}</view>
+          <view wx:if="{{item.note}}" class="pb-n">{{item.note}}</view>
+        </view>
+
+        <!-- 装修 · 已定进度（合同清单勾选推进） -->
+        <view wx:elif="{{item.t === 'prog'}}" class="prog">
+          <text>{{item.label}}</text>
+          <view class="prog-bar"><view class="prog-bar-i" style="width: {{item.pct}}%"></view></view>
+          <text class="prog-v">{{item.done}}/{{item.total}}</text>
+        </view>
+
+        <!-- 装修 · 合同清单分组（不预先标价，写入后合同价条上涨；就地勾选不回顶） -->
+        <view wx:elif="{{item.t === 'clSec'}}" class="cl-sec">
+          <view class="cl-sec-h">
+            <text class="cl-sec-t">{{item.title}}</text>
+            <text class="cl-sec-x">{{item.count}}</text>
+          </view>
+          <view class="cl-row" wx:for="{{item.rows}}" wx:for-item="r" wx:key="index">
+            <view class="cl-top">
+              <text class="cl-n">{{r.name}}</text>
+              <view class="pill {{r.pillCls}}">{{r.pill}}</view>
+            </view>
+            <view class="cl-why">{{r.why}}</view>
+            <view wx:if="{{r.write}}" class="cl-write">{{r.write}}</view>
+            <view wx:elif="{{r.noNote}}" class="cl-write">{{r.noNote}}</view>
+            <view class="cl-acts">
+              <view class="cl-btn {{r.doOn ? 'on' : ''}}" data-act="{{r.doAction}}" bindtap="onAction">{{r.doLabel}}</view>
+              <view class="cl-btn {{r.noOn ? 'on-no' : ''}}" data-act="{{r.noAction}}" bindtap="onAction">{{r.noLabel}}</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 装修 · 增项单（爆雷条的账目化；多张时只展开前 2 张 + 其余合计） -->
+        <view wx:elif="{{item.t === 'burst'}}" class="burst">
+          <view class="burst-t">
+            <text>🧾 增项单 {{item.count}} 张</text>
+            <text class="burst-src">{{item.src}}</text>
+          </view>
+          <view class="adj" wx:for="{{item.items}}" wx:for-item="b" wx:key="index">
+            <view class="adj-hd">
+              <text>{{b.no}} · {{b.stage}} 阶段</text>
+              <text class="adj-no">第 {{b.day}} 天</text>
+            </view>
+            <view class="adj-line" wx:for="{{b.lines}}" wx:for-item="ln" wx:key="index">
+              <text>{{ln.k}}</text>
+              <text class="adj-line-v">{{ln.v}}</text>
+            </view>
+            <view class="adj-sum"><text>小计</text><text>{{b.sum}}</text></view>
+          </view>
+          <view wx:if="{{item.restText}}" class="adj-more"><text>{{item.restText}}</text><text>{{item.restSum}}</text></view>
+          <view class="adj-hint">{{item.hint}}</view>
+          <view class="adj-hint burst-total">本次 {{item.total}}</view>
+        </view>
+
+        <!-- 装修 · 总账工期条（爆单阶段标红；labels 均布对齐） -->
+        <block wx:elif="{{item.t === 'gantt'}}">
+          <view class="gantt">
+            <view class="gantt-i {{b.hot ? 'hot' : ''}}" style="height: {{b.h}}rpx" wx:for="{{item.items}}" wx:for-item="b" wx:key="index"></view>
+          </view>
+          <view class="gantt-x">
+            <text wx:for="{{item.labels}}" wx:for-item="lb" wx:key="index">{{lb}}</text>
+          </view>
+        </block>
 
         <!-- 提示条 -->
         <view wx:elif="{{item.t === 'note'}}" class="ok-note">

@@ -1,0 +1,478 @@
+/* 购房模拟器 · 装修模块（对齐 HiFi 设计稿 docs/2026-09-15-装修模块-高保真设计稿.html v4）
+   档位卡 / 上划卡 / 合同价条 / 已定进度 / 合同清单 / 增项单 / 工期条。
+   设计稿新增局部变量沿用既有色值，挂 .page 作用域避免全局污染：
+   --hairline #ece7de · --hairline-soft #eeeff1 · --ok #176b4d · --danger #b7410e · --sky-ink #2a5ca0 */
+.page {
+  --hairline: #ece7de;
+  --hairline-soft: #eeeff1;
+  --ok: #176b4d;
+  --danger: #b7410e;
+  --sky-ink: #2a5ca0;
+}
+
+/* ===== 装修 · 档位卡（预算档位 / 设计师档位；选中态停留展示底牌） ===== */
+.grades {
+  margin-top: 8rpx;
+}
+.grade {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  background: var(--pure-white);
+  border: 2rpx solid var(--hairline);
+  border-radius: 40rpx;
+  padding: 22rpx 28rpx;
+  margin-top: 16rpx;
+  transition: border-color 0.16s, box-shadow 0.16s;
+}
+.grade:active {
+  transform: scale(0.99);
+}
+.grade.on {
+  border: 4rpx solid var(--ink);
+  box-shadow: var(--shadow-sm);
+  padding: 20rpx 26rpx;
+}
+.gr-hd {
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+}
+.gr-n {
+  font-size: 29rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.gr-p {
+  margin-left: auto;
+  font-size: 34rpx;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+.gr-d {
+  font-size: 24rpx;
+  color: var(--graphite);
+  margin-top: 6rpx;
+  line-height: 1.5;
+}
+.gr-note {
+  font-size: 21rpx;
+  color: var(--dove);
+  margin-top: 10rpx;
+  font-variant-numeric: tabular-nums;
+}
+.opt-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 38rpx;
+  padding: 0 16rpx;
+  border-radius: 12rpx;
+  font-size: 21rpx;
+  font-weight: 500;
+  background: var(--fog);
+  color: var(--ash);
+}
+.opt-tag.hot {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.opt-tag.cool {
+  background: var(--sky-wash);
+  color: var(--sky-ink);
+}
+
+/* ===== 装修 · 上划卡（3 秒一屏：一句现场 + 两个数字 + 一句提醒） ===== */
+.swipe {
+  margin-top: 28rpx;
+  background: var(--pure-white);
+  border-radius: 52rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 34rpx 32rpx 28rpx;
+  animation: arrive 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sw-day {
+  font-size: 24rpx;
+  color: var(--graphite);
+  font-variant-numeric: tabular-nums;
+}
+.sw-hd {
+  font-size: 44rpx;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin-top: 10rpx;
+  line-height: 1.2;
+}
+.sw-one {
+  font-size: 29rpx;
+  color: var(--ash);
+  line-height: 1.62;
+  margin-top: 18rpx;
+}
+.sw-kv {
+  display: flex;
+  gap: 18rpx;
+  margin-top: 24rpx;
+}
+.sw-cell {
+  flex: 1;
+  background: var(--fog);
+  border-radius: 30rpx;
+  padding: 18rpx 22rpx;
+}
+.sw-k {
+  font-size: 22rpx;
+  color: var(--graphite);
+}
+.sw-v {
+  font-size: 38rpx;
+  font-weight: 500;
+  color: var(--ink);
+  margin-top: 6rpx;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+.sw-key {
+  margin-top: 22rpx;
+  border-radius: 30rpx;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.sw-key.sky {
+  background: var(--sky-wash);
+  color: var(--sky-ink);
+}
+.sw-key-b {
+  font-weight: 600;
+}
+.sw-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  margin-top: 24rpx;
+  font-size: 23rpx;
+  color: var(--dove);
+}
+.sw-hint-arrow {
+  font-style: normal;
+  font-size: 30rpx;
+  animation: upse 1.5s ease-in-out infinite;
+}
+@keyframes upse {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateY(-10rpx);
+    opacity: 1;
+  }
+}
+
+/* ===== 合同价条：合同价看着低，正是这个坑本身（bad = 全部写入后的结算口径） ===== */
+.pricebar {
+  margin-top: 28rpx;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 40rpx;
+  padding: 26rpx 32rpx;
+}
+.pb-k {
+  font-size: 22rpx;
+  opacity: 0.66;
+}
+.pb-v {
+  font-size: 48rpx;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+  margin-top: 4rpx;
+}
+.pb-n {
+  font-size: 23rpx;
+  opacity: 0.8;
+  margin-top: 10rpx;
+  line-height: 1.5;
+}
+.pricebar.bad {
+  background: var(--danger);
+}
+
+/* ===== 已定进度（合同清单勾选推进） ===== */
+.prog {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.prog-bar {
+  flex: 1;
+  height: 12rpx;
+  border-radius: 9999rpx;
+  background: var(--fog);
+  overflow: hidden;
+}
+.prog-bar-i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  border-radius: 9999rpx;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.prog-v {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ===== 合同清单分组（不预先标价，写入后合同价条上涨） ===== */
+.cl-sec {
+  margin-top: 36rpx;
+}
+.cl-sec-h {
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+  margin-bottom: 4rpx;
+}
+.cl-sec-t {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.cl-sec-x {
+  font-size: 22rpx;
+  color: var(--dove);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+.cl-row {
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid var(--hairline-soft);
+}
+.cl-row:last-child {
+  border-bottom: 0;
+}
+.cl-top {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+.cl-n {
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.cl-why {
+  font-size: 23rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+  margin-top: 8rpx;
+}
+.cl-write {
+  font-size: 23rpx;
+  color: var(--ash);
+  line-height: 1.6;
+  margin-top: 10rpx;
+  background: var(--fog);
+  border-radius: 20rpx;
+  padding: 14rpx 20rpx;
+}
+.cl-acts {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+.cl-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72rpx;
+  border-radius: 9999rpx;
+  border: 2rpx solid var(--hairline);
+  background: var(--pure-white);
+  font-size: 24rpx;
+  color: var(--ink);
+  padding: 0 20rpx;
+  transition: all 0.15s;
+}
+.cl-btn:active {
+  transform: scale(0.98);
+}
+.cl-btn.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+  font-weight: 500;
+}
+.cl-btn.on-no {
+  background: var(--fog);
+  border-color: var(--dove);
+  color: var(--ink);
+  font-weight: 500;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  height: 40rpx;
+  padding: 0 16rpx;
+  border-radius: 9999rpx;
+  font-size: 21rpx;
+  font-weight: 500;
+  flex: none;
+}
+.pill-todo {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.pill-do {
+  background: var(--ink);
+  color: #fff;
+}
+.pill-no {
+  background: var(--fog);
+  color: var(--graphite);
+  border: 2rpx solid var(--dove);
+}
+
+/* ===== 增项单（爆雷条的账目化） ===== */
+.burst {
+  margin-top: 28rpx;
+  background: var(--apricot-wash);
+  border: 4rpx solid var(--danger);
+  border-radius: 40rpx;
+  padding: 28rpx 32rpx;
+  animation: burstIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes burstIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-8rpx);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.burst-t {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--danger);
+}
+.burst-src {
+  font-size: 21rpx;
+  font-weight: 500;
+  color: var(--rust);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16rpx;
+  padding: 4rpx 14rpx;
+  margin-left: auto;
+}
+.adj {
+  margin-top: 18rpx;
+  background: rgba(255, 255, 255, 0.78);
+  border: 2rpx dashed var(--danger);
+  border-radius: 28rpx;
+  padding: 20rpx 24rpx;
+}
+.adj-hd {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 21rpx;
+  color: var(--rust);
+  font-weight: 500;
+}
+.adj-no {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--graphite);
+  font-weight: 400;
+}
+.adj-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  font-size: 24rpx;
+  color: var(--ink);
+  padding: 6rpx 0;
+  font-variant-numeric: tabular-nums;
+}
+.adj-line-v {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.adj-more {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 8rpx 24rpx 0;
+  font-size: 24rpx;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.adj-sum {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 10rpx;
+  padding-top: 12rpx;
+  border-top: 2rpx solid rgba(183, 65, 14, 0.28);
+  font-size: 25rpx;
+  color: var(--danger);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.adj-hint {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: var(--rust);
+  line-height: 1.55;
+}
+.burst-total {
+  font-weight: 600;
+  margin-top: 6rpx;
+}
+
+/* ===== 总账工期条（爆单阶段标红） ===== */
+.gantt {
+  display: flex;
+  gap: 4rpx;
+  align-items: flex-end;
+  height: 76rpx;
+  margin-top: 20rpx;
+}
+.gantt-i {
+  display: block;
+  flex: 1;
+  border-radius: 6rpx 6rpx 0 0;
+  background: var(--ink);
+  opacity: 0.82;
+}
+.gantt-i.hot {
+  background: var(--danger);
+  opacity: 1;
+}
+.gantt-x {
+  display: flex;
+  justify-content: space-between;
+  font-size: 21rpx;
+  color: var(--dove);
+  margin-top: 8rpx;
+  font-variant-numeric: tabular-nums;
+}

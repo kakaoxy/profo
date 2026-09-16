@@ -1,70 +1,101 @@
 /**
- * 购房模拟器 · 事件分发「装修阶段：预算决策 → 13 阶段（信息迷雾 + 随机事件 + 爆雷）→ 完成总账」.
+ * 购房模拟器 · 事件分发「装修阶段 v4：预算档位 → 12 阶段（3 处决策 + 上划卡）→ 完成总账」.
  *
- * 从 handlers-flow.ts 拆出：final 屏的装修决策（renovGo/renovSkip）、预算屏档位
- * （renovBudgetGo）、阶段内事件选项（renovChoice）、阶段推进（renovNext）、完成回账单
- * （renovFinish）。全部分支就地修改 SimState，并通过 HandlerCtx 回调页面。
+ * 从 handlers-flow.ts 拆出。口径对齐设计稿 v4「一个坑 + 上划节奏」：
+ *  - 决策点只有 3 处：预算档位（renovPick）、设计师档位（renovTier）、13 项合同清单（renovCl）；
+ *  - 其余阶段为上划卡，推进统一走 renovNext（CTA 与页面「上划手势」共用）；
+ *  - 签约（离开合同屏）时结算：没提的项埋「增项单雷」，到对应阶段按增项价爆单；
+ *  - 明确不做（noKind=risk）的项当场埋「风险雷」（如空鼓 / 跳闸 / 渗水）。
  *
- * 信息迷雾机制（口径见 renov-data.ts / renov-events.ts）：
- *  - 进入阶段（renovArrive）：先结算该阶段爆雷（mines），再按概率随机触发事件；
- *  - 事件以"具体问题"呈现，选项是自然回应：直接定 → 常埋雷；做功课 → 多花天数
- *    换真实信息（learned）；
- *  - 阶段推进（renovNext）：基础工期经模拟日历快进，做功课/返工耗时由各步就地累加；
- *  - 售后质保（Warr）：快照完工日（renovDoneDay）→ 叙事推进一年 → 结算质保期爆雷。
+ * 钱的三个数：合同价 = renovBudget + renovDesignFee + 写进合同的项（contractAddOf）；
+ *             增项 = renovExtra（爆单累计）；结账价 = 合同价 + 增项（paidTotalOf）。
+ * 全部分支就地修改 SimState，并通过 HandlerCtx 回调页面。
  */
 
 import { fmt, fmtN } from "./calc";
 import { DAYS, SimState } from "./constants";
-import type { SceneKey } from "./constants";
 import type { HandlerCtx } from "./handlers";
-import { findRenovDef, RENOV_EVENT_PROB } from "./renov-data";
-import type { RenovMine } from "./renov-data";
+import { findRenovDef, RENOV_CONTRACT, RENOV_PKGS, RENOV_TIERS } from "./renov-data";
+import type { RenovBill } from "./renov-data";
 
 /** 轻提示. */
 function toast(title: string): void {
   wx.showToast({ title, icon: "none" });
 }
 
-/** 随机源（可注入以便单测确定化；默认 Math.random）. */
-let renovRng: () => number = Math.random;
-
-/** 单测注入确定性随机源. */
-export function setRenovRng(rng: () => number): void {
-  renovRng = rng;
+/** 埋雷：合同没写 / 明确不做的项，到 at 阶段爆单. */
+function pushMine(
+  S: SimState,
+  m: { at: string; days: number; lines: [string, number][]; text: string; src: string; hint: string },
+  how: string,
+  scope: string | null,
+): void {
+  S.renovMines.push({
+    at: m.at,
+    days: m.days || 0,
+    lines: m.lines,
+    text: m.text,
+    src: (how ? how + " · " : "") + m.src,
+    hint: m.hint,
+    scope,
+  });
 }
 
 /**
  * 进入某装修阶段（进场结算）：
  * 1. 售后质保阶段先快照完工入住日（renovDoneDay），再叙事推进一年；
- * 2. 结算到站爆雷：支出计入 renovSpend、返工计入 renovDay、压力累加、记入记事；
- * 3. 按阶段概率（默认 RENOV_EVENT_PROB）从事件池随机触发 1 个事件，未命中则本阶段无事件。
+ * 2. 结算到站雷：每笔生成增项单（RenovBill），支出计入 renovExtra、返工计入 renovDay、
+ *    压力累加、记入记事，供本屏增项单警示条展示。
  */
 export function renovArrive(S: SimState, tail: string): void {
   const def = findRenovDef(tail);
-  S.renovChoice = null;
   if (tail === "Warr") {
     S.renovDoneDay = S.renovDay; /* 快照完工入住日（供总账屏统计装修历时） */
     S.renovDay += 365; /* 售后质保叙事推进一年 */
   }
-  const burst = S.renovMines.filter((m) => m.at === tail);
-  S.renovBurst = burst;
-  if (burst.length) {
-    S.renovMines = S.renovMines.filter((m) => m.at !== tail);
-    for (const m of burst) {
-      S.renovSpend += m.cost;
-      S.renovDay += m.days;
-      S.stress += m.stress;
-      S.renovLog.push({ stage: def?.name ?? tail, text: "🚨 " + m.log + "（支出 ¥" + fmtN(m.cost) + (m.days ? " · 返工 " + m.days + " 天" : "") + "）" });
-    }
+  const hits = S.renovMines.filter((m) => m.at === tail);
+  S.renovBurst = [];
+  if (!hits.length) {
+    return;
   }
-  /* 随机事件：单次取随机数，[0, prob) 内按比例落位到事件池（便于测试确定化） */
-  const prob = def?.prob ?? RENOV_EVENT_PROB;
-  const r = renovRng();
-  if (def && def.events.length && r < prob) {
-    S.renovEvent = def.events[Math.floor((r / prob) * def.events.length)].id;
-  } else {
-    S.renovEvent = null;
+  S.renovMines = S.renovMines.filter((m) => m.at !== tail);
+  for (const m of hits) {
+    const cost = m.lines.reduce((a, l) => a + l[1], 0);
+    S.renovExtra += cost;
+    S.renovDay += m.days;
+    S.stress += 5;
+    const bill: RenovBill = {
+      no: "#" + String(S.renovBills.length + 1).padStart(2, "0"),
+      stage: def?.name ?? tail,
+      day: S.renovDay,
+      lines: m.lines,
+      cost,
+      days: m.days,
+      text: m.text,
+      src: m.src,
+      hint: m.hint,
+    };
+    S.renovBills.push(bill);
+    S.renovBurst.push(bill);
+    S.renovLog.push({
+      stage: bill.stage,
+      text: "🧾 " + m.text + "（¥" + fmtN(cost) + (m.days ? " · 返工 " + m.days + " 天" : "") + "）",
+    });
   }
+}
+
+/** 签约结算（离开合同屏时调用）：没提的项 → 增项单雷（合同价因此看着更低）. */
+export function settleContract(S: SimState): void {
+  const omitItems = RENOV_CONTRACT.filter((it) => !S.renovCon[it.k] && it.omit);
+  for (const it of omitItems) {
+    pushMine(S, it.omit!, "", it.k);
+  }
+  S.renovLog.push({
+    stage: "签合同",
+    text: omitItems.length
+      ? omitItems.length + " 项边界没提（合同价因此看着更低）——装到那一步才来加钱"
+      : "13 项全部有结论：写进合同的按价走，不做的不再产生费用",
+  });
 }
 
 /** 装修阶段分发（前置与流程阶段均未命中后调用）. */
@@ -75,7 +106,7 @@ export function handleRenov(ctx: HandlerCtx, S: SimState, action: string): void 
       return; /* 装修流程已结束（装完或跳过），忽略重复入口 */
     }
     toast("🏗️ 开始装修");
-    ctx.nextScene("renovStart"); /* 先定装修预算，再进 13 阶段 */
+    ctx.nextScene("renovStart"); /* 先定装修预算，再进 12 阶段 */
     return;
   }
   if (action === "renovSkip") {
@@ -86,86 +117,92 @@ export function handleRenov(ctx: HandlerCtx, S: SimState, action: string): void 
     return;
   }
 
-  /* 预算屏：选定档位（元/㎡ × 面积）→ 量房开工 */
-  if (action.indexOf("renovBudgetGo:") === 0) {
-    const perSq = parseInt(action.split(":")[1], 10);
-    if (!perSq || !S.house) {
+  /* 预算屏：选定档位（就地更新合同基础价，停留本屏展示档位底牌） */
+  if (action.indexOf("renovPick:") === 0) {
+    const k = action.slice("renovPick:".length);
+    const pkg = RENOV_PKGS.find((p) => p.k === k);
+    if (!pkg || !S.house) {
       return;
     }
     const area = S.areaNum || parseInt(S.house.area, 10) || 90;
-    S.renovBudget = area * perSq;
-    S.renovDay = (DAYS.final ?? 16) + 1; /* 交易完成次日量房 */
+    S.renovPkg = pkg.k;
+    S.renovBudget = area * pkg.perSq;
+    ctx.render();
+    return;
+  }
+
+  /* 预算屏 CTA：按选定档位开工（未选档位不响应） */
+  if (action === "renovBegin") {
+    if (!S.renovPkg) {
+      return;
+    }
+    S.renovDay = (DAYS.final ?? 16) + 1; /* 交易完成次日开工 */
     S.renovLog = [];
-    toast("💰 装修预算 " + fmt(S.renovBudget) + " 万 · 量房开始");
+    S.renovMoved = 0;
+    S.renovLog.push({
+      stage: "预算",
+      text: "定了 " + (RENOV_PKGS.find((p) => p.k === S.renovPkg)?.name ?? "") + "：约 " + fmt(S.renovBudget) + " 万",
+    });
+    toast("🏗️ 按 " + fmt(S.renovBudget) + " 万开工");
     renovArrive(S, "Design");
     ctx.nextScene("renovDesign");
     return;
   }
 
-  /* 事件选项：就地结算耗时/支出/压力/埋雷/功课，重渲染本屏展示结果 */
-  if (action.indexOf("renovChoice:") === 0) {
-    const parts = action.split(":");
-    const def = findRenovDef(S.scene);
-    const ev = def?.events.find((e) => e.id === parts[1]);
-    const opt = ev?.opts.find((o) => o.key === parts[2]);
-    if (!def || !ev || !opt || S.renovChoice) {
-      return; /* 未找到选项 / 已选择过（防重复提交） */
+  /* 设计屏：选定设计师档位（就地更新设计费，停留本屏） */
+  if (action.indexOf("renovTier:") === 0) {
+    const k = action.slice("renovTier:".length);
+    const tier = RENOV_TIERS.find((t) => t.k === k);
+    if (!tier || S.renovTier) {
+      return; /* 档位一次性选定，防重复 */
     }
-    S.renovChoice = opt.key;
-    const free = !!opt.freeIfStudied && S.renovLearned.indexOf(opt.freeIfStudied) >= 0;
-    const cost = free ? 0 : opt.cost;
-    if (opt.days) {
-      S.renovDay += opt.days; /* 做功课的工期代价当场推进 */
-    }
-    if (cost) {
-      S.renovSpend += cost;
-    }
-    S.stress += opt.stress;
-    if (opt.mine) {
-      const m: RenovMine = { ...opt.mine };
-      S.renovMines.push(m); /* 盲选埋雷：不提示，at 阶段爆 */
-    }
-    if (opt.learned) {
-      S.renovLearned.push(def.k); /* 记录做过功课（质保期等处联动） */
-    }
+    S.renovTier = tier.k;
+    S.renovDesignFee = tier.price;
     S.renovLog.push({
-      stage: def.name,
-      text: opt.log + (cost ? "（支出 ¥" + fmtN(cost) + "）" : "") + (opt.days ? "（+ " + opt.days + " 天）" : ""),
+      stage: "设计",
+      text: "定了 " + tier.name + (tier.price ? "（¥" + fmtN(tier.price) + "）" : "（免费）"),
     });
-    const bits: string[] = [];
-    if (opt.days) {
-      bits.push("+" + opt.days + " 天");
-    }
-    if (cost) {
-      bits.push("支出 ¥" + fmtN(cost));
-    }
-    if (free) {
-      bits.push("合同+质保金生效 · 免维修费");
-    }
-    toast(bits.length ? "⏳ " + bits.join(" · ") : "✔ 已记录");
-    ctx.render(); /* 停留本屏：展示选择结果与解锁信息 */
+    ctx.render();
     return;
   }
 
-  /* 阶段推进：基础工期走模拟日历快进；到站先爆雷再随机触发事件 */
+  /* 合同清单：单项决策（do=写进合同 / no=明确不做；risk 项不做埋雷） */
+  if (action.indexOf("renovCl:") === 0) {
+    const parts = action.split(":");
+    const it = RENOV_CONTRACT.find((x) => x.k === parts[1]);
+    const v = parts[2];
+    if (!it || (v !== "do" && v !== "no")) {
+      return;
+    }
+    S.renovCon[it.k] = v;
+    if (v === "no" && it.noKind === "risk" && it.noMine) {
+      pushMine(S, it.noMine, "你选了「" + (it.noLabel || "不做") + "」", it.k);
+    }
+    ctx.render(); /* 停留本屏：合同价条与进度就地更新（不回顶） */
+    return;
+  }
+
+  /* 阶段推进（CTA / 上划手势共用）：签约结算 → 基础工期推进 → 到站爆单 */
   if (action.indexOf("renovNext:") === 0) {
-    const to = action.split(":")[1] as SceneKey;
+    const to = action.slice("renovNext:".length) as SimState["scene"];
     const cur = findRenovDef(S.scene);
-    if (!cur || to === "renovDone") {
-      ctx.nextScene(to); /* 总账屏无工期，直接进入 */
+    if (!cur) {
       return;
     }
-    const fromDay = S.renovDay;
-    const toDay = fromDay + cur.days;
-    S.renovDay = toDay;
-    if (to === "renovWarr") {
-      /* 售后质保：叙事推进一年，不弹日历（月历快进不适合跨年跨度） */
-      renovArrive(S, "Warr");
-      toast("📅 时间来到一年后 · 售后质保期");
-      ctx.nextScene(to);
+    /* 决策屏门槛：设计档位必须先选 */
+    if (cur.pickTier && !S.renovTier) {
       return;
     }
-    ctx.openCalModal(to, fromDay, toDay);
+    if (cur.contract) {
+      settleContract(S);
+    }
+    if (cur.k === "Warr") {
+      /* 质保收官 → 装修总账（无工期推进） */
+      ctx.nextScene("renovDone");
+      return;
+    }
+    S.renovDay += cur.days;
+    S.renovMoved = cur.days;
     renovArrive(S, to.replace(/^renov/, ""));
     ctx.nextScene(to);
     return;

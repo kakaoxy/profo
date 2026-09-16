@@ -85,13 +85,13 @@ function stateForScene(scene: Parameters<typeof buildScene>[0]["scene"]): Return
   }
   if (
     scene === "renovStart" ||
-    scene === "renovDesign" || scene === "renovBudget" ||
+    scene === "renovDesign" || scene === "renovContract" ||
     scene === "renovDemo" || scene === "renovElec" || scene === "renovSeal" ||
-    scene === "renovTile" || scene === "renovWood" || scene === "renovPaint" ||
+    scene === "renovTileWood" || scene === "renovPaint" ||
     scene === "renovMain" || scene === "renovInstall" || scene === "renovClean" ||
     scene === "renovAir" || scene === "renovWarr" || scene === "renovDone"
   ) {
-    return S; // 装修屏仅需 base（含 house.reno；事件字段保持空态 → 基础叙事渲染）
+    return S; // 装修屏仅需 base（含 house.reno；renov 决策字段保持空态 → 基础叙事渲染）
   }
   if (scene === "final") {
     S.holdback = 100000;
@@ -103,15 +103,15 @@ function stateForScene(scene: Parameters<typeof buildScene>[0]["scene"]): Return
 }
 
 describe("buildScene 全屏冒烟", () => {
-  it("39 屏均产出非空内容块且不抛异常", () => {
+  it("38 屏均产出非空内容块且不抛异常", () => {
     const scenes: Parameters<typeof buildScene>[0]["scene"][] = [
       "start", "role", "cash", "select", "custom", "qa", "blocked",
       "nego1", "nego2", "nego3", "feeNego", "loanType", "funds", "borrow",
       "sign", "signNet", "loan", "loanChk", "loanContract", "transfer", "deed",
       "handover", "settle", "final",
       "renovStart",
-      "renovDesign", "renovBudget", "renovDemo", "renovElec", "renovSeal",
-      "renovTile", "renovWood", "renovPaint", "renovMain", "renovInstall",
+      "renovDesign", "renovContract", "renovDemo", "renovElec", "renovSeal",
+      "renovTileWood", "renovPaint", "renovMain", "renovInstall",
       "renovClean", "renovAir", "renovWarr", "renovDone",
     ];
     scenes.forEach((scene) => {

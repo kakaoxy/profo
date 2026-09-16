@@ -1,148 +1,361 @@
 /**
- * 购房模拟器 · 场景分组「装修」（信息迷雾版）.
+ * 购房模拟器 · 场景分组「装修」v4「一个坑 + 上划节奏」.
  *
- * 覆盖 17 屏：装修预算决策（renovStart）/ 13 个装修阶段（设计量房 → 售后质保，
- * 每阶段可能随机触发"具体问题"式事件：直接定 vs 做功课，盲选埋雷后续阶段爆）/
- * 装修完成总账（renovDone：预算 vs 实际 + 装修记事复盘）。
- * 装修决策在 final 账单屏完成（开始装修 / 直接入住）；工期与增项全部动态累加。
- * 纯函数，仅依赖 SimState 与 renov-data/scenes-common 工具。
+ * 口径对齐设计稿 docs/2026-09-15-装修模块-高保真设计稿.html v4：
+ *  - 预算屏（renovStart）：半包 / 全包三档，选中停留展示档位底牌；
+ *  - 设计屏（renovDesign）：三档设计师决策（不可上划跳过）；
+ *  - 合同屏（renovContract）：13 项清单不预先标价，合同价条随写入上涨（不可上划跳过）；
+ *  - 上划卡（10 个阶段共用）：一句现场 + 工期/工种 + 一句提醒，3 秒一屏；
+ *    全包显示「最容易踩的点」，半包不演坑、显示「验收时间表」；
+ *  - 总账（renovDone）：签合同时的价 → 结账时的价 + 增项复盘 + 工期条。
+ * 纯函数，仅依赖 SimState 与 renov-data/render 工具。
  */
 
 import { fmt, fmtN } from "./calc";
-import { DAYS, SimState } from "./constants";
-import { RENOV_ALL, RENOV_STAGES, findRenovDef } from "./renov-data";
-import type { RenovStageDef } from "./renov-data";
-import { bubble } from "./scenes-common";
-import type { OptItem, RowItem, SceneBlock } from "./scenes-common";
+import { SimState } from "./constants";
+import {
+  contractAddOf,
+  contractPriceOf,
+  decidedCountOf,
+  findRenovDef,
+  paidTotalOf,
+  RENOV_CONTRACT,
+  RENOV_PKGS,
+  RENOV_PLAN_BASE,
+  RENOV_PLAN_TOTAL,
+  RENOV_STAGES,
+  RENOV_TIERS,
+  wanFmt,
+  writtenListOf,
+  yuanFmt,
+} from "./renov-data";
+import type { RenovBill, RenovContractItem, RenovStageDef } from "./renov-data";
+import { realOf } from "./render";
+import type {
+  BurstItem,
+  ClRowItem,
+  GradeItem,
+  SceneBlock,
+  SwipeCell,
+} from "./scenes-common";
 
-/** 爆雷警示条文案（支出 + 返工耗时）. */
-function burstDesc(m: { text: string; cost: number; days: number }): string {
-  return m.text + "（支出 ¥" + fmtN(m.cost) + (m.days ? " · 返工 " + m.days + " 天" : "") + "）";
+/** 第 N 天 → 真实日期文案（X月X日；今天为第 1 天）. */
+function md(day: number): string {
+  const d = realOf(day);
+  return d.getMonth() + 1 + "月" + d.getDate() + "日";
 }
 
-/** 装修预算决策屏（开工前先定总预算，装修支出独立于购房现金记账）. */
+/** 日期行（装修 N / 12 · 第 X 天 · X月X日 · 本阶段 +N 天；质保屏显示完工日）. */
+function dayLine(S: SimState, def: RenovStageDef): string {
+  const shown = def.k === "Warr" ? S.renovDoneDay || S.renovDay : S.renovDay;
+  const moved = S.renovMoved && def.k !== "Warr" ? " · 本阶段 +" + S.renovMoved + " 天" : "";
+  return "装修 " + def.idx + " / 12 · 第 " + shown + " 天 · " + md(shown) + moved;
+}
+
+/** 当前提醒（半包 = 验收时间表 sky；全包 = 最容易踩的点 warm）. */
+function tipOf(S: SimState, def: RenovStageDef): { label: string; tip: string; cls: "warm" | "sky" } {
+  const half = S.renovPkg === "half";
+  return half
+    ? { label: "验收时间表：", tip: def.help, cls: "sky" }
+    : { label: "最容易踩的点：", tip: def.key, cls: "warm" };
+}
+
+/** 增项单警示块（many 时只显前 2 张完整明细 + 其余合计，控屏高）. */
+function burstBlock(S: SimState): SceneBlock {
+  const bills = S.renovBurst;
+  const tc = bills.reduce((a, b) => a + b.cost, 0);
+  const td = bills.reduce((a, b) => a + b.days, 0);
+  const many = bills.length > 1;
+  const shown = many ? bills.slice(0, 2) : bills;
+  const rest = many ? bills.slice(2) : [];
+  const items: BurstItem[] = shown.map((b) => ({
+    no: b.no,
+    stage: b.stage,
+    day: b.day,
+    lines: b.lines.map((l) => ({ k: l[0], v: yuanFmt(l[1]) })),
+    sum: yuanFmt(b.cost) + (b.days ? " · +" + b.days + " 天" : ""),
+  }));
+  const big = bills.slice().sort((a, b) => b.cost - a.cost)[0];
+  return {
+    t: "burst",
+    count: bills.length,
+    src: "合同里没写的 · 比合同价贵 30% 以上",
+    items,
+    restText: rest.length ? "其余 " + rest.length + " 笔：" + rest.map((b) => b.lines[0][0]).join("、") : undefined,
+    restSum: rest.length ? yuanFmt(rest.reduce((a, b) => a + b.cost, 0)) : undefined,
+    hint: big.hint,
+    total: yuanFmt(tc) + (td ? " · 返工 +" + td + " 天" : ""),
+  };
+}
+
+/** 装修预算屏：面积 × 单价 心算 + 半包 / 全包三档（选中停留展示底牌）. */
 export function sceneRenovStart(S: SimState): SceneBlock[] {
   const area = S.areaNum || parseInt(S.house!.area, 10) || 90;
-  const mk = (perSq: number, name: string, desc: string): OptItem => ({
-    action: "renovBudgetGo:" + perSq,
-    title: name + " · 约 " + fmt(area * perSq) + " 万",
-    desc: desc,
-  });
+  const sel = S.renovPkg;
+  const items: GradeItem[] = RENOV_PKGS.map((p) => ({
+    k: p.k,
+    name: p.name,
+    tag: p.tag,
+    tagCls: p.badge,
+    price: "约 " + wanFmt(area * p.perSq) + " 万",
+    desc: p.desc,
+    tail: sel === p.k ? p.tail : undefined,
+    on: sel === p.k,
+    action: "renovPick:" + p.k,
+  }));
   return [
     { t: "eyebrow", text: "装修准备" },
     { t: "title", text: "定装修预算", hero: "🏗️" },
-    { t: "sub", text: S.house!.name + " · " + S.house!.area + " · 装修是买房之外的第二本账" },
+    { t: "sub", text: S.house!.name + " · " + area + "㎡ · 上海 · 半包 1000 / 全包 1500 元/㎡ 起" },
     {
-      t: "banner",
-      cls: "warm",
-      title: "预算怎么定",
-      desc: "行业常见口径 1000-2500 元/㎡（硬装+主材，不含家电家具）。先按面积定档位——装修公司报的『全包价』只是起点，真正的总花费由后面每一个决策决定。",
+      t: "rows",
+      items: [{ k: area + "㎡ × " + (sel ? (RENOV_PKGS.find((p) => p.k === sel)?.perSq ?? "—") + " 元/㎡" : "— 元/㎡"), v: sel ? fmt(S.renovBudget) + " 万" : "待定", total: true }],
     },
+    { t: "grades", items },
     {
-      t: "opts",
-      items: [
-        mk(1000, "经济型", "约 1000 元/㎡：主材够用、造型从简，适合出租或过渡。"),
-        mk(1500, "舒适型", "约 1500 元/㎡：主流档位，板材五金达标，适度设计。"),
-        mk(2200, "品质型", "约 2200 元/㎡：用料讲究、定制多，工期也更长。"),
-      ],
+      t: "cta",
+      items: [{
+        action: "renovBegin",
+        title: sel ? "按 " + fmt(S.renovBudget) + " 万开工" : "先选一种",
+        cls: sel ? "btn-ink" : "btn-disabled",
+      }],
     },
-    { t: "note", text: "本模拟中装修支出单独记账，不影响购房现金。" },
+    { t: "note", text: "装修支出单独记账，不影响购房现金。" },
   ];
 }
 
-/**
- * 装修阶段通用屏（13 阶段共用）：
- * 爆雷警示（如有）→ 表面叙事 → 随机事件（问题 + 选项）或已选结果 → 中性提示 → CTA。
- */
-export function sceneRenovStage(S: SimState): SceneBlock[] {
-  const def: RenovStageDef | null = findRenovDef(S.scene);
+/** 设计屏（决策点 ②）：三种价格，三种图纸深度（不可上划跳过）. */
+export function sceneRenovDesign(S: SimState): SceneBlock[] {
+  const def = findRenovDef(S.scene)!;
+  const tip = tipOf(S, def);
+  const items: GradeItem[] = RENOV_TIERS.map((t) => ({
+    k: t.k,
+    name: t.name,
+    tag: t.badge,
+    tagCls: "",
+    price: t.price ? yuanFmt(t.price) : "0 元",
+    desc: t.desc,
+    tail: S.renovTier === t.k ? t.tail : undefined,
+    on: S.renovTier === t.k,
+    action: "renovTier:" + t.k,
+  }));
+  return [
+    {
+      t: "swipe",
+      day: dayLine(S, def),
+      name: "选设计师",
+      one: def.one,
+      tipLabel: tip.label,
+      tip: tip.tip,
+      tipCls: tip.cls,
+    },
+    { t: "grades", items },
+    {
+      t: "cta",
+      items: [{
+        action: "renovNext:renovContract",
+        title: S.renovTier ? "图纸定稿 · 去签合同" : "先选一位设计师",
+        cls: S.renovTier ? "btn-ink" : "btn-disabled",
+      }],
+    },
+  ];
+}
+
+/** 合同清单单项行（不预先标价——「合同价看着低」正是这个坑本身）. */
+function clRow(S: SimState, it: RenovContractItem): ClRowItem {
+  const half = S.renovPkg === "half";
+  const v = S.renovCon[it.k];
+  const writeTxt = half && it.halfWrite ? it.halfWrite : it.write;
+  const noLabel = half && it.halfNoLabel ? it.halfNoLabel : (it.noLabel || "明确不做");
+  const noNote = half && it.halfNoNote ? it.halfNoNote : it.noNote;
+  const pill = v === "do"
+    ? "已写进合同" + (it.doPrice ? " " + yuanFmt(it.doPrice) : "")
+    : v === "no" ? noLabel : "没提";
+  const pillCls = v === "do" ? "pill-do" : v === "no" ? (it.noKind === "risk" ? "pill-todo" : "pill-no") : "pill-todo";
+  return {
+    k: it.k,
+    name: it.name,
+    pill,
+    pillCls,
+    why: it.why,
+    write: v === "do" ? writeTxt : undefined,
+    noNote: v === "no" ? noNote : undefined,
+    doLabel: "写进合同",
+    doAction: "renovCl:" + it.k + ":do",
+    doOn: v === "do",
+    noLabel,
+    noAction: "renovCl:" + it.k + ":no",
+    noOn: v === "no",
+  };
+}
+
+/** 合同屏（决策点 ③，唯一的深坑）：13 项清单 + 合同价条 + 进度（不可上划跳过）. */
+export function sceneRenovContract(S: SimState): SceneBlock[] {
+  const def = findRenovDef(S.scene)!;
+  const done = decidedCountOf(S.renovCon);
+  const left = RENOV_CONTRACT.length - done;
+  const written = writtenListOf(S.renovCon);
+  const secs: string[] = [];
+  RENOV_CONTRACT.forEach((it) => {
+    if (secs.indexOf(it.sec) < 0) {
+      secs.push(it.sec);
+    }
+  });
+  return [
+    { t: "sub", text: dayLine(S, def) },
+    {
+      t: "pricebar",
+      label: "合同价（还没签）",
+      value: "¥" + wanFmt(contractPriceOf(S)) + " 万",
+      note: written.length
+        ? "已写进去 " + written.length + " 项：" + written.slice(0, 3).join("、") + (written.length > 3 ? " 等" : "")
+        : "看起来不贵——因为下面 13 项，一项都没写进去。",
+      bad: left === 0,
+    },
+    { t: "prog", label: "已定", done, total: RENOV_CONTRACT.length, pct: Math.round((done / RENOV_CONTRACT.length) * 100) },
+    ...secs.map<SceneBlock>((s) => ({
+      t: "clSec",
+      title: s,
+      count: RENOV_CONTRACT.filter((x) => x.sec === s).length + " 项",
+      rows: RENOV_CONTRACT.filter((x) => x.sec === s).map((it) => clRow(S, it)),
+    })),
+    {
+      t: "note",
+      bold: left ? "还有 " + left + " 项没提：" : "13 项都有结论：",
+      text: left
+        ? "合同价才会这么好看——等装到那一步，它们会一张张变成增项单。"
+        : "写进合同的按价走，明确不做的不会再产生费用。",
+    },
+    {
+      t: "cta",
+      items: [
+        { action: "renovNext:renovDemo", title: left ? "按这份清单签约（还有 " + left + " 项没提）" : "按这份清单签约 · 开工", cls: "btn-ink" },
+        { action: "renovNext:renovDemo", title: "先签，以后再说（合同价最低）", cls: "btn-out" },
+      ],
+    },
+  ];
+}
+
+/** 上划卡（10 个阶段共用，3 秒一屏）：一句现场 + 工期/工种 + 一句提醒. */
+export function sceneRenovCard(S: SimState): SceneBlock[] {
+  const def = findRenovDef(S.scene);
   if (!def) {
     return [{ t: "sub", text: "" }];
   }
-  const blocks: SceneBlock[] = [
-    { t: "eyebrow", text: "装修 " + def.idx + " / 13" },
-    { t: "title", text: def.name },
-    { t: "sub", text: "工期约 " + def.daysText + " · 第 " + S.renovDay + " 天" },
+  const tip = tipOf(S, def);
+  const cells: SwipeCell[] = [
+    { k: "这一步工期", v: def.days + "天" },
+    { k: "谁在做", v: def.who },
   ];
-  /* 到站爆雷：进入阶段时已结算的隐患（装修是排队踩坑的过程） */
-  for (const m of S.renovBurst) {
-    blocks.push({ t: "banner", cls: "warm", title: "🚨 爆雷", desc: burstDesc(m) });
+  const blocks: SceneBlock[] = [{ t: "sub", text: dayLine(S, def) }];
+  if (S.renovBurst.length) {
+    blocks.push(burstBlock(S));
   }
-  blocks.push({ t: "chat", items: [bubble(def.who, def.chat)] });
-
-  const ev = def.events.find((e) => e.id === S.renovEvent);
-  if (ev && !S.renovChoice) {
-    /* 事件呈现：具体问题 + 自然回应选项（不出现"要不要做功课"式元提问） */
-    blocks.push({ t: "chat", items: [bubble(ev.who, ev.chat)] });
-    blocks.push({
-      t: "opts",
-      items: ev.opts.map((o) => ({ action: "renovChoice:" + ev.id + ":" + o.key, title: o.title, desc: o.desc })),
-    });
-  } else if (ev && S.renovChoice) {
-    const opt = ev.opts.find((o) => o.key === S.renovChoice);
-    if (opt) {
-      const free = !!opt.freeIfStudied && S.renovLearned.indexOf(opt.freeIfStudied) >= 0;
-      const cost = free ? 0 : opt.cost;
-      blocks.push({ t: "chat", items: [bubble("你", opt.title)] });
-      if (opt.learned) {
-        blocks.push({ t: "banner", cls: "sky", title: "📖 功课没白做 · 真实的信息", desc: opt.learned });
-      }
-      const result = free && opt.resultStudied ? opt.resultStudied : opt.result;
-      blocks.push({
-        t: "banner",
-        cls: opt.learned ? "sky" : "warm",
-        title: opt.learned ? "本阶段结果" : "⏳ 按原计划推进",
-        desc: result + (cost ? "（支出 ¥" + fmtN(cost) + "）" : "") + (opt.days ? "（+ " + opt.days + " 天）" : ""),
-      });
-    }
-  }
-  blocks.push({ t: "note", bold: "提醒：", text: def.note });
-  blocks.push({ t: "cta", items: [{ action: "renovNext:renov" + def.to, title: def.cta, cls: "btn-ink" }] });
+  blocks.push({
+    t: "swipe",
+    name: def.name,
+    one: def.one,
+    cells,
+    tipLabel: tip.label,
+    tip: tip.tip,
+    tipCls: tip.cls,
+    hint: true,
+    action: "renovNext:renov" + RENOV_STAGES[def.idx < RENOV_STAGES.length ? def.idx : def.idx - 1].k,
+  });
+  blocks.push({ t: "cta", items: [{ action: "renovNext:renov" + RENOV_STAGES[def.idx < RENOV_STAGES.length ? def.idx : def.idx - 1].k, title: def.cta, cls: "btn-out" }] });
   return blocks;
 }
 
-/** 装修完成总账屏（预算 vs 实际 + 装修记事复盘 + 13 阶段打卡）. */
+/** 装修完成总账屏：签合同时的价 → 结账时的价 + 复杂度 + 增项复盘. */
 export function sceneRenovDone(S: SimState): SceneBlock[] {
+  const plan = contractPriceOf(S);
+  const paid = paidTotalOf(S);
+  const extra = S.renovExtra;
+  const pct = plan ? (extra / plan) * 100 : 0;
+  const allDo: Record<string, string> = {};
+  RENOV_CONTRACT.forEach((it) => {
+    allDo[it.k] = "do";
+  });
+  const ifAll = S.renovBudget + S.renovDesignFee + contractAddOf(allDo);
   const doneDay = S.renovDoneDay || S.renovDay;
-  const rnDays = doneDay - (DAYS.final ?? 0);
-  const rows: RowItem[] = [
-    { k: "装修预算", v: fmt(S.renovBudget) + " 万" },
-    { k: "增项 / 返工支出", v: "¥" + fmtN(S.renovSpend) },
-    { k: "实际总花费", v: fmt(S.renovBudget + S.renovSpend) + " 万", total: true },
-  ];
-  if (S.renovSpend > 0 && S.renovBudget > 0) {
-    rows.push({ k: "增项占比", v: ((S.renovSpend / S.renovBudget) * 100).toFixed(1) + "%" });
-  }
-  rows.push(
-    { k: "开工 → 完工入住", v: "历时约 " + rnDays + " 天" },
-    { k: "定房 → 完工", v: "全程 " + doneDay + " 天" },
-  );
+  const half = S.renovPkg === "half";
+  const gmax = Math.max(...RENOV_STAGES.filter((s) => s.k !== "Warr").map((s) => s.days));
+  const rankBills = S.renovBills.slice().sort((a, b) => b.cost - a.cost);
+  const topBills = rankBills.slice(0, 3);
+  const restBills = rankBills.slice(3);
+
   const blocks: SceneBlock[] = [
     { t: "title", text: "装修完成", hero: "🏡" },
-    { t: "sub", text: S.house!.name + " · 13 个阶段全部走完 · 总算能住进去了" },
-    { t: "rows", items: rows },
+    { t: "sub", text: S.house!.name + " · " + S.house!.area + " · 第 " + doneDay + " 天（" + md(doneDay) + "）入住" },
+    {
+      t: "pricebar",
+      label: "签合同时的价 → 结账时的价",
+      value: "¥" + wanFmt(plan) + " 万 → ¥" + wanFmt(paid) + " 万",
+      note: extra
+        ? "多出来的 " + yuanFmt(extra) + "（+" + pct.toFixed(0) + "%）全是合同里没写的：" + S.renovBills.length + " 张增项单，装到那一步才来。把 13 项都写进合同：约 ¥" + wanFmt(ifAll) + " 万，比现在少 " + yuanFmt(Math.max(0, paid - ifAll)) + "。"
+        : "一分没多花：13 项合同清单全部写清 / 明确不做，装到哪一步都不用再掏钱。",
+      bad: extra > 0,
+    },
   ];
-  /* 装修记事：一路上的决策与爆雷（复盘全靠它） */
-  if (S.renovLog.length) {
-    blocks.push({ t: "rows", items: S.renovLog.map((l) => ({ k: "【" + l.stage + "】", v: l.text })) });
+
+  /* 装修到底有多复杂：12 阶段 / 工种 / 计划 vs 实际 + 工期条（爆过单的阶段标红） */
+  blocks.push({
+    t: "rows",
+    items: [
+      { k: "阶段 / 工种", v: "12 个阶段 · 9 个工种 / 供应商" },
+      { k: "计划 vs 实际", v: "计划 " + RENOV_PLAN_TOTAL + " 天，实际 " + doneDay + " 天" },
+    ],
+  });
+  blocks.push({
+    t: "gantt",
+    items: RENOV_STAGES.filter((s) => s.k !== "Warr").map((s) => {
+      const hot = S.renovBills.some((b) => b.stage === s.name);
+      return { h: Math.round(16 + (s.days / gmax) * 22), hot };
+    }),
+    labels: ["设计", "水电", "木瓦", "安装", "通风"],
+  });
+
+  if (S.renovBills.length) {
+    blocks.push({
+      t: "rows",
+      items: topBills.map<import("./scenes-common").RowItem>((b) => ({ k: b.stage + "阶段 · " + b.text, v: yuanFmt(b.cost) })),
+    });
+    if (restBills.length) {
+      blocks.push({
+        t: "rows",
+        items: [{ k: "其余 " + restBills.length + " 笔（" + restBills.map((b) => b.stage).join("、") + "）", v: yuanFmt(restBills.reduce((a, b) => a + b.cost, 0)) }],
+      });
+    }
+    blocks.push({
+      t: "note",
+      bold: "下次怎么避免：",
+      text: topBills.map((b) => b.src + " → " + b.hint).join("；"),
+    });
+  } else {
+    blocks.push({
+      t: "banner",
+      cls: "sky",
+      title: "0 张增项单",
+      desc: "合同清单 13 项逐项有结论，装到哪一步都没有「再掏钱」。",
+    });
   }
-  blocks.push({ t: "check", title: "装修全流程 · 13 个阶段全走完", items: RENOV_ALL.map((n) => "✓ " + n) });
+
+  const takeaway = half
+    ? "主材清单（自己买、自己比）· 验收时间表 · 一套自己量的尺寸"
+    : (S.renovTier && S.renovTier !== "free" ? "施工图 / 点位图 / 柜体图 · " : "") + (extra ? "增项单的教训" : "合同清单 13 项");
   blocks.push(
+    { t: "note", bold: "你带走了：", text: takeaway },
     {
       t: "note",
-      bold: "复盘一句话：",
-      text: "装修的麻烦不在干活，在决策——每一项『看到的便宜』背后都有『真实的账单』。功课做在前面，增项就追不上你。",
+      bold: "复盘：",
+      text: "装修的麻烦不在干活，在签合同那 10 分钟——写清楚了，后面 100 天都省心。（工期为模拟口径：基础 " + RENOV_PLAN_BASE + " 天 + 增项返工）",
     },
-    {
-      t: "note",
-      bold: "口径说明：",
-      text: "工期为模拟口径：基础工期 + 做功课与返工的额外耗时。真实装修 90㎡ 常见 3-6 个月、增项 10-30%；本表只演示『谁在什么环节偷懒，钱就在哪爆』。",
-    },
-    { t: "banner", cls: "sky", title: "住进去了", desc: "水电图、合同、发票、质保卡收进一个文件袋——下一个五年，它们就是你的底气。" },
-    { t: "cta", items: [{ action: "renovFinish", title: "查看总账单 · 结束模拟", cls: "btn-ink" }] },
+    { t: "cta", items: [{ action: "renovFinish", title: "重来一次 · 换一条路", cls: "btn-ink" }] },
   );
   return blocks;
 }
 
-/** 供 scenes.ts 分发：装修阶段场景 key 列表（renovStart/renovDone 单独处理）. */
-export const RENOV_STAGE_SCENES: string[] = RENOV_STAGES.map((d) => "renov" + d.k);
+/** 供 scenes.ts 分发：上划卡场景 key 列表（10 个非决策阶段）. */
+export const RENOV_CARD_SCENES: string[] = RENOV_STAGES
+  .filter((d) => !d.pickTier && !d.contract)
+  .map((d) => "renov" + d.k);

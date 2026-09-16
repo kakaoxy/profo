@@ -1,13 +1,13 @@
 /**
- * 购房模拟器 · 页面（41 屏第一人称购房+装修流程模拟）.
+ * 购房模拟器 · 页面（38 屏第一人称购房+装修流程模拟）.
  *
  * 状态 S 为模块级单实例（对应 HiFi 全局 S），交互统一走 handle(action) 代理：
  * 改 S → derive()/iloan() → setData(buildScene(S) + HUD + 流程条 + 卖家情绪条)。
  * 纯前端本地计算，无后端依赖（PRD §10）；每次进入页面重新开始新模拟。
  *
  * 页面职责已按层拆分（本文件仅保留 Page 实例与薄方法）：
- *  - utils/scenes*.ts：场景内容块构建（41 屏文案）
- *  - utils/renov-data.ts / renov-events.ts：装修 13 阶段与信息迷雾事件池
+ *  - utils/scenes*.ts：场景内容块构建（38 屏文案）
+ *  - utils/renov-data.ts / renov-contract.ts：装修 12 阶段与合同清单
  *  - utils/calc.ts：税费/贷款/限购/砍价纯计算
  *  - utils/handlers*.ts：handle() 事件分发（前置 + 流程 + 装修阶段）
  *  - utils/render.ts：HUD / 流程条 / 卖家情绪 / 弹层数据构建
@@ -17,6 +17,7 @@
 
 import { buildScene } from "../utils/scenes";
 import type { SceneBlock } from "../utils/scenes";
+import type { SwipeBlock } from "../utils/scenes-common";
 import { derive } from "../utils/calc";
 import {
   createInitialState,
@@ -48,6 +49,10 @@ let S: SimState;
 
 interface PageData {
   blocks: SceneBlock[];
+  /** 舞台顶部动态锚点 id（换屏时递增变化，配合 scroll-into-view 强制回顶）. */
+  anchor: string;
+  /** scroll-view scroll-into-view 目标 id. */
+  intoView: string;
   hud: HudData;
   stepPos: string;
   dayText: string;
@@ -91,6 +96,29 @@ interface PageCustom {
   clearCalTimer(): void;
   confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string): void;
   closeModal(): void;
+  /** 舞台滚动：跟踪 scrollTop（供上划到底判定）. */
+  onStageScroll(e: { detail: { scrollTop: number } }): void;
+  /** 舞台上划手势：记录起点 Y. */
+  onStageTouchStart(e: WechatMiniprogram.TouchEvent): void;
+  /** 舞台上划手势：上划位移超阈值且已滚到底 → 翻卡. */
+  onStageTouchEnd(e: WechatMiniprogram.TouchEvent): void;
+  /** 上划翻卡判定（对齐设计稿 trySwipe）. */
+  trySwipe(dy: number): void;
+  /** 测量舞台视口 / 内容高度与滚动位（setData 回调后调用）. */
+  measureStage(): void;
+  /** 动态锚点序号（换屏递增，保证 intoView 每次都变化触发）. */
+  anchorN?: number;
+  /** 上一次渲染的场景 key（判断换屏 → 回顶；就地更新不回顶）. */
+  curScene?: string;
+  /** 当前屏上划触发的动作（决策屏为空 = 不可上划跳过）. */
+  swipeAction?: string;
+  /** 舞台视口高度 / 内容高度 / 当前滚动位（px，measureStage 维护）. */
+  stageH?: number;
+  scH?: number;
+  scrollT?: number;
+  /** 上划手势起点 Y / 上次翻卡时间戳（420ms 节流）. */
+  touchY0?: number;
+  swipeAt?: number;
   onLoad(): void;
   onUnload(): void;
   /** 时间快进定时器句柄（onLoad 初始化，关闭/卸载时清理）. */
@@ -104,6 +132,8 @@ interface PageCustom {
 Page<PageData, PageCustom>({
   data: {
     blocks: [],
+    anchor: "top0",
+    intoView: "top0",
     hud: { stageLabel: "", stepText: "", cashText: "", cashLow: false, borrowed: false, borrowedText: "0万", stressEmoji: "😌" },
     stepPos: "",
     dayText: "",
@@ -129,6 +159,8 @@ Page<PageData, PageCustom>({
 
   onLoad() {
     this.calTimer = null; /* 时间快进定时器句柄，onLoad 初始化 */
+    this.anchorN = 0; /* 动态锚点序号，换屏回顶用 */
+    this.swipeAt = 0; /* 上划翻卡节流起点 */
     this.resetAll();
   },
 
@@ -180,22 +212,110 @@ Page<PageData, PageCustom>({
     this.render();
   },
 
-  /** 依据 S 全量渲染当前场景 + HUD + 流程条 + 卖家情绪条. */
+  /**
+   * 依据 S 全量渲染当前场景 + HUD + 流程条 + 卖家情绪条。
+   * 换屏时递增动态锚点并置 intoView 强制回顶（一次 setData 同步变更 id 与目标，
+   * id 变化保证每次都触发滚动）；就地更新（如合同勾选）不动锚点 → 不回顶。
+   * 同时提取本屏上划动作（决策屏为空），渲染完成后测量舞台尺寸供上划判定。
+   */
   render() {
+    const blocks = buildScene(S);
+    const sw = blocks.find((b) => b.t === "swipe") as SwipeBlock | undefined;
+    this.swipeAction = sw?.action ?? "";
+    const sceneChanged = S.scene !== this.curScene;
+    this.curScene = S.scene;
     const stepsData = buildSteps(S);
-    this.setData({
-      blocks: buildScene(S),
+    const patch: Record<string, unknown> = {
+      blocks,
       hud: buildHud(S),
       steps: stepsData.steps,
       stepPos: stepsData.stepPos,
       dayText: stepsData.dayText,
       sellerBar: buildSellerBar(S),
-    });
+    };
+    if (sceneChanged || this.anchorN === undefined) {
+      this.anchorN = (this.anchorN ?? 0) + 1;
+      const anchor = "top" + this.anchorN;
+      patch.anchor = anchor;
+      patch.intoView = anchor;
+    }
+    this.setData(patch, () => this.measureStage());
   },
 
   nextScene(scene: SceneKey) {
     S.scene = scene;
     this.render();
+  },
+
+  /** 舞台滚动：跟踪 scrollTop（供上划到底判定）. */
+  onStageScroll(e: { detail: { scrollTop: number } }) {
+    this.scrollT = e.detail.scrollTop;
+  },
+
+  /** 舞台上划手势：记录起点 Y. */
+  onStageTouchStart(e: WechatMiniprogram.TouchEvent) {
+    const t = e.touches && e.touches[0];
+    if (t) {
+      this.touchY0 = t.clientY;
+    }
+  },
+
+  /** 舞台上划手势：上划位移超阈值且已滚到底 → 翻卡. */
+  onStageTouchEnd(e: WechatMiniprogram.TouchEvent) {
+    const t = e.changedTouches && e.changedTouches[0];
+    if (!t || this.touchY0 === undefined) {
+      return;
+    }
+    const dy = this.touchY0 - t.clientY;
+    this.touchY0 = undefined;
+    this.trySwipe(dy);
+  },
+
+  /**
+   * 上划翻卡判定（对齐设计稿 trySwipe）：上划位移 > 46px、已滚到距底部 16px 内
+   * （scrollT + 视口高 ≥ 内容高 − 16）、420ms 节流；swipeAction 为空的决策屏不可跳过。
+   */
+  trySwipe(dy: number) {
+    if (dy <= 46 || !this.swipeAction) {
+      return;
+    }
+    const now = Date.now();
+    if (now - (this.swipeAt ?? 0) < 420) {
+      return;
+    }
+    if (this.stageH === undefined || this.scH === undefined) {
+      return;
+    }
+    if ((this.scrollT ?? 0) + this.stageH < this.scH - 16) {
+      return;
+    }
+    this.swipeAt = now;
+    this.handle(this.swipeAction);
+  },
+
+  /** 测量舞台视口 / 内容高度与当前滚动位（px； setData 回调后调用，供上划判定）. */
+  measureStage() {
+    this.createSelectorQuery()
+      .select(".stage")
+      .boundingClientRect()
+      .select(".stage")
+      .scrollOffset()
+      .select(".sc")
+      .boundingClientRect()
+      .exec((res) => {
+        const stage = res[0] as { height: number } | null;
+        const off = res[1] as { scrollTop: number } | null;
+        const sc = res[2] as { height: number } | null;
+        if (stage) {
+          this.stageH = stage.height;
+        }
+        if (off) {
+          this.scrollT = off.scrollTop;
+        }
+        if (sc) {
+          this.scH = sc.height;
+        }
+      });
   },
 
   /** 事件代理：前置（身份/现金/选房/资格）与流程（砍价→账单）两阶段依次捕获. */

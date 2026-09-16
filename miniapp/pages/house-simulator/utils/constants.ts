@@ -6,7 +6,7 @@
  * 以及模拟状态 SimState 的初始工厂。计算逻辑见 ./calc.ts，场景视图见 ./scenes.ts。
  */
 
-import type { RenovMine } from "./renov-data";
+import type { RenovBill, RenovMine } from "./renov-data";
 
 /** 身份角色 key：刚需首套 / 置换改善 / 投资二套. */
 export type RoleKey = "first" | "trade" | "invest";
@@ -14,7 +14,7 @@ export type RoleKey = "first" | "trade" | "invest";
 /** 贷款方式 key：纯商贷 / 组合贷 / 纯公积金. */
 export type LoanTypeKey = "comm" | "combo" | "gjj";
 
-/** 场景 key（41 屏：交易 24 屏 + 装修流程 17 屏；装修拆为 预算决策 → 13 阶段 → 完成总账）. */
+/** 场景 key（38 屏：交易 24 屏 + 装修流程 14 屏；装修 v4 口径 = 预算 → 12 阶段（设计/签约两个决策屏 + 10 张上划卡）→ 完成总账）. */
 export type SceneKey =
   | "start"
   | "role"
@@ -42,12 +42,11 @@ export type SceneKey =
   | "final"
   | "renovStart"
   | "renovDesign"
-  | "renovBudget"
+  | "renovContract"
   | "renovDemo"
   | "renovElec"
   | "renovSeal"
-  | "renovTile"
-  | "renovWood"
+  | "renovTileWood"
   | "renovPaint"
   | "renovMain"
   | "renovInstall"
@@ -217,28 +216,33 @@ export interface SimState {
   /** 是否跳过装修直接入住（renovDone=true 时区分「装完」与「跳过」）. */
   renovSkipped: boolean;
   /**
-   * 装修动态日程（信息迷雾机制，见 renov-data.ts）：
-   * renovDay = 当前绝对天数（进入 renovStart 后由交易完成日 +1 起累加，
-   * 基础工期 + 做功课耗时 + 爆雷返工全在此推进）；renovDoneDay = 通风完成
-   * （完工入住）日的快照，供总账屏统计"装修历时"。
+   * 装修动态日程（v4 口径，见 renov-data.ts）：
+   * renovDay = 当前绝对天数（开工日 = 交易完成次日）；基础工期 + 增项返工全在此推进；
+   * renovDoneDay = 完工入住日快照（通风完成、进入质保时快照），供总账屏统计装修历时。
    */
   renovDay: number;
   renovDoneDay: number;
-  /** 装修总预算（元，预算屏档位单价 × 面积；装修支出独立于购房现金记账）. */
+  /** 装修合同基础价（元，预算屏档位单价 × 面积；装修支出独立于购房现金记账）. */
   renovBudget: number;
-  /** 装修累计增项/返工支出（元）. */
-  renovSpend: number;
-  /** 当前阶段已触发的随机事件 id（null = 本阶段未触发）. */
-  renovEvent: string | null;
-  /** 当前事件已选选项 key（null = 尚未选择，场景展示选项）. */
-  renovChoice: string | null;
-  /** 已埋雷列表（到达对应阶段时爆雷结算）. */
+  /** 选定的预算档位 key（"half" | "f15" | "f25" | "f40"）. */
+  renovPkg: string | null;
+  /** 选定的设计师档位 key（"free" | "d100" | "d400"）. */
+  renovTier: string | null;
+  /** 设计费（元，随设计师档位一次性计入合同价）. */
+  renovDesignFee: number;
+  /** 13 项合同清单结论（k → "do" 写进合同 | "no" 明确不做；缺省 = 没提）. */
+  renovCon: Record<string, string>;
+  /** 增项累计（元，合同没写的到站结算）. */
+  renovExtra: number;
+  /** 已结算的增项单（总账复盘用）. */
+  renovBills: RenovBill[];
+  /** 已埋雷列表（到达对应阶段时按增项价结算）. */
   renovMines: RenovMine[];
-  /** 当前阶段爆雷结果（进入阶段时由 handler 结算，场景据此展示警示）. */
-  renovBurst: RenovMine[];
-  /** 做过功课的阶段尾缀（影响后续结果，如质保期走合同免费维修）. */
-  renovLearned: string[];
-  /** 装修记事（事件决策 + 爆雷记录，完成总账屏复盘展示）. */
+  /** 当前阶段爆出的增项单（进入阶段时由 handler 结算，场景据此展示警示）. */
+  renovBurst: RenovBill[];
+  /** 本阶段推进天数（上划卡「本阶段 +N 天」展示）. */
+  renovMoved: number;
+  /** 装修记事（决策 + 爆单记录，完成总账屏复盘展示）. */
   renovLog: { stage: string; text: string }[];
   /** 风险确认记录（交易凭证，本地持久化镜像，用于 final 屏展示）. */
   riskLog: RiskRecord[];
@@ -384,12 +388,11 @@ export const STAGES: Record<SceneKey, string> = {
   final: "完成",
   renovStart: "装修预算",
   renovDesign: "设计",
-  renovBudget: "预算",
-  renovDemo: "拆改",
+  renovContract: "签合同",
+  renovDemo: "拆除",
   renovElec: "水电",
   renovSeal: "防水",
-  renovTile: "瓦工",
-  renovWood: "木工",
+  renovTileWood: "木瓦",
   renovPaint: "油漆",
   renovMain: "主材",
   renovInstall: "安装",
@@ -448,12 +451,11 @@ export const SCENE_NODE: Partial<Record<SceneKey, string>> = {
   final: "renov",
   renovStart: "renov",
   renovDesign: "renov",
-  renovBudget: "renov",
+  renovContract: "renov",
   renovDemo: "renov",
   renovElec: "renov",
   renovSeal: "renov",
-  renovTile: "renov",
-  renovWood: "renov",
+  renovTileWood: "renov",
   renovPaint: "renov",
   renovMain: "renov",
   renovInstall: "renov",
@@ -472,7 +474,7 @@ export const SCENE_NODE: Partial<Record<SceneKey, string>> = {
  * 贷款合同确认并补足剩余首付(第 8 天) → 递交过户材料出收件收据(第 8 天) →
  * 审税 7 天 → 第 15 天缴税领证、产证给银行放款 → 次日交房 → 同日交割结算尾款。
  *
- * 装修流程天数不再静态配置：13 阶段工期 + 随机事件做功课耗时 + 爆雷返工
+ * 装修流程天数不再静态配置：12 阶段工期 + 增项返工
  * 全部由 handlers-renov.ts 动态累加到 S.renovDay（起点 = final + 1）。
  */
 export const DAYS: Partial<Record<SceneKey, number>> = {
@@ -556,12 +558,15 @@ export function createInitialState(): SimState {
     renovDay: 0,
     renovDoneDay: 0,
     renovBudget: 0,
-    renovSpend: 0,
-    renovEvent: null,
-    renovChoice: null,
+    renovPkg: null,
+    renovTier: null,
+    renovDesignFee: 0,
+    renovCon: {},
+    renovExtra: 0,
+    renovBills: [],
     renovMines: [],
     renovBurst: [],
-    renovLearned: [],
+    renovMoved: 0,
     renovLog: [],
     riskLog: [],
   };

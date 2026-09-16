@@ -9,6 +9,7 @@
 
 import { fmt, fmtN, fmtY, fmtYuan, pct } from "./calc";
 import { DAYS, LOAN_TYPES, NODES, SimState } from "./constants";
+import { contractPriceOf, paidTotalOf } from "./renov-data";
 import { bubble, loanRowLabel, RowItem, SceneBlock } from "./scenes-common";
 
 /** 过户递交屏：递交材料 → 交易中心出具收件收据 → 期间审税（税费缴付移至领证屏）. */
@@ -305,7 +306,7 @@ export function sceneFinal(S: SimState): SceneBlock[] {
             t: "banner",
             cls: "sky",
             title: "✅ 装修完成 · 可以入住",
-            desc: "13 个装修阶段全部走完，历时约 " + ((S.renovDoneDay || S.renovDay) - (DAYS.final ?? 0)) + " 天（含做功课与返工耗时），装修实际花费 " + fmt(S.renovBudget + S.renovSpend) + " 万（预算 " + fmt(S.renovBudget) + " 万 + 增项 ¥" + fmtN(S.renovSpend) + "）。",
+            desc: "12 个装修阶段全部走完，历时约 " + ((S.renovDoneDay || S.renovDay) - (DAYS.final ?? 0)) + " 天（含增项返工耗时），装修实际花费 " + fmt(paidTotalOf(S)) + " 万（签约 " + fmt(contractPriceOf(S)) + " 万 + 增项 ¥" + fmtN(S.renovExtra) + "）。",
           },
     );
     if (!S.renovSkipped) {
@@ -322,7 +323,7 @@ export function sceneFinal(S: SimState): SceneBlock[] {
         {
           action: "renovGo",
           title: "🏗️ 开始装修",
-          desc: "房屋当前为「" + h.reno + "」。先定装修预算，再走完 13 个阶段（设计量房 → 售后质保）——工期和增项由你的每一个决策决定。",
+          desc: "房屋当前为「" + h.reno + "」。先定装修预算，再走完 12 个阶段（设计 → 售后质保）——工期和增项由你的每一个决策决定。",
           marker: h.reno,
         },
         {

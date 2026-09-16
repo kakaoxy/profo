@@ -11,3 +11,4 @@
 @import "./styles/deed.wxss";
 @import "./styles/modal.wxss";
 @import "./styles/risk-log.wxss";
+@import "./styles/renov.wxss";
