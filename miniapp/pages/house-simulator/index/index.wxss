@@ -1,6 +1,7 @@
-/* 购房模拟器 · Steep 风格（对齐 HiFi 原型 docs/design/购房模拟器-hifi.html）
+/* 购房模拟器 · Steep 风格（视觉真源 miniapp/app.wxss 令牌 + docs/DESIGN.md）
    样式按区块拆分为 styles/ 部分文件（基础骨架 / 排版 / 数据展示 / 对话 / 房源 /
-   选项 / 表单 / 电子证照 / 弹层 / 交易凭证），此处 @import 组合，保持原顺序不变。 */
+   选项 / 表单 / 弹层 / 交易凭证 / 装修 / 购房流程），此处 @import 组合。
+   flow.wxss 放最后：购房模块新增块与对既有类的覆盖（如 .opt 改为块级布局）。 */
 @import "./styles/base.wxss";
 @import "./styles/typo.wxss";
 @import "./styles/rows.wxss";
@@ -8,7 +9,7 @@
 @import "./styles/houses.wxss";
 @import "./styles/opts.wxss";
 @import "./styles/forms.wxss";
-@import "./styles/deed.wxss";
 @import "./styles/modal.wxss";
 @import "./styles/risk-log.wxss";
 @import "./styles/renov.wxss";
+@import "./styles/flow.wxss";

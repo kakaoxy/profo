@@ -18,7 +18,6 @@
  * 纯数据/纯函数模块（对 SimState 仅 type-only 引用，无运行时循环依赖）。
  */
 
-import { DAYS } from "./constants";
 import type { SimState } from "./constants";
 import { RENOV_CONTRACT } from "./renov-contract";
 
@@ -325,14 +324,17 @@ export const RENOV_PLAN_TOTAL: number = RENOV_PLAN_BASE + 1;
 
 /**
  * 计划工期的「绝对天」口径（HUD 与总账的「计划 / 实际」都用它）：
- * renovDay 是模拟器的全局天数（开工日 = 交易完成次日 = 第 DAYS.final + 1 天），
- * 而 RENOV_PLAN_TOTAL 是从开工起算的历时，两者相减会多算 DAYS.final 天。
+ * renovDay 是模拟器的全局天数（开工日 = 交易完成次日），而 RENOV_PLAN_TOTAL
+ * 是从开工起算的历时——交易完成日由购房流程的经历周期抽取决定（S.renovStartDay），
+ * 因此计划完工日 = 交易完成日 + 装修计划历时。
  */
-export const RENOV_PLAN_ABS: number = (DAYS.final ?? 16) + RENOV_PLAN_TOTAL;
+export function renovPlanAbs(startDay: number): number {
+  return (startDay || 1) + RENOV_PLAN_TOTAL;
+}
 
 /** 增项返工拖出来的天数（绝对天口径；0 = 一天没多）. */
-export function renovDelayDays(day: number): number {
-  return Math.max(0, day - RENOV_PLAN_ABS);
+export function renovDelayDays(day: number, startDay: number): number {
+  return Math.max(0, day - renovPlanAbs(startDay));
 }
 
 /** 按场景 key（"renovDemo"）或尾缀（"Demo"）查找阶段定义. */

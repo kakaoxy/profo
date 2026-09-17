@@ -1,292 +1,305 @@
 /**
- * 购房模拟器 · 场景分组「贷款方式 · 算账 · 筹钱 · 签约」.
+ * 购房模拟器 · 场景分组「贷款方式 · 算账 · 筹钱 · 签约 · 网签」.
  *
  * 覆盖 5 屏：贷款方式（含首付档位）/ 算账 / 筹钱 / 签约·居间协议 / 网签·买卖合同。
- * 文案逐条移植自 docs/design/购房模拟器-hifi.html（PRD §7 沉浸式第一人称）。
- * 纯函数，仅依赖 SimState 与 calc/constants 工具。
+ * 文案与结构逐条对齐 docs/2026-09-17-购房模块-高保真设计稿.html v1：
+ * 签约 12 项深坑拆两屏（sign = 签字前查清 6 项，signNet = 合同里写死 6 项），
+ * 每项只留三样：为什么 / 写清什么 / 不写的代价（「先不写」会埋雷，到那一步爆成学费单）。
  */
 
-import { firstPayFor, fmt, fmtY, pct } from "./calc";
-import { downRateFor, LOAN_TYPES, SimState } from "./constants";
-import { bubble, OptItem, RowItem, SceneBlock } from "./scenes-common";
+import { borrowOverflow, fmt, gap, gjjCap, handCash, houseOf, money, stageDays } from "./calc";
+import { downRateFor, GJJ_POLICY_NOTE, LOAN_TYPES } from "./constants";
+import type { SceneKey, SimState } from "./constants";
+import { BORROW_CAP, BORROW_CAPS, screenMeta, SIGN_ITEMS } from "./flow";
+import type { SignItem } from "./flow";
+import { bubble, dayBlock, pitBlock } from "./scenes-common";
+import type { ClRowItem, OptItem, SceneBlock, SceneView } from "./scenes-common";
+import { netBlocked } from "./scenes-start";
 
-/** 贷款方式屏（含首付档位选择）. */
-export function sceneLoanType(S: SimState): SceneBlock[] {
-  const h = S.house!;
-  const isInv = S.role!.k === "invest";
-  const ringTag = h.ring === "内" ? "外环内" : "外环外（特殊区域口径）";
-  const dr = (lt: "comm" | "combo" | "gjj") => (downRateFor(S.role!.k, h.ring, lt) * 100).toFixed(0) + "%";
-  const downEst = (lt: "comm" | "combo" | "gjj") =>
-    fmt(S.deal * downRateFor(S.role!.k, h.ring, lt)) + " 万";
-  /* 首付档位：最低（联动贷款方式）+ 可在最低之上多付，100% = 全款不贷款 */
+/** 屏首：第 N 天 + 双层时间条. */
+function head(S: SimState, k: SceneKey): SceneBlock {
+  const d = screenMeta(k);
+  return dayBlock(S, d, stageDays(S, d));
+}
+
+/** 出款点按钮动作（付款确认弹窗）. */
+export function payAction(kind: string): string {
+  return "pay:" + kind;
+}
+
+/* ============================ 12 贷款方式 ============================ */
+
+/** 贷款方式屏：首付比例与利率随方式和套数变. */
+export function sceneLoanType(S: SimState): SceneView {
+  const h = houseOf(S)!;
+  const m = money(S);
+  const keys = ["comm", "combo", "gjj"] as const;
+  /* 公积金家庭上限（沪公积金管委会〔2026〕1号）：首套 240 万 / 二套 200 万（含补充公积金） */
+  const cap = gjjCap(S);
+  const opts: OptItem[] = keys.map((k) => {
+    const t = LOAN_TYPES[k];
+    const rate = downRateFor(S.role!.k, h.ring, k);
+    const shortfall = Math.max(0, S.deal - S.deal * rate - (k === "gjj" ? cap : Infinity));
+    return {
+      action: "lt:" + k,
+      title: t.name,
+      price: "首付 " + (rate * 100).toFixed(0) + "%",
+      desc: t.desc,
+      note: "最低首付约 " + fmt(S.deal * rate) + " 万" + (shortfall > 0 ? " · 公积金上限 " + fmt(cap) + " 万，另需现金补 " + fmt(shortfall) + " 万" : ""),
+      on: S.loanType === k,
+    };
+  });
+  /* 最低档 = 政策最低（身份 × 环线 × 贷款方式），不能拿「当前实际首付」当最低档：
+   选了 30% 之后若还引用 S.downRate，最低档会跟着变成「最低 30%」，看起来像没有 15% 这一档 */
   const minRate = downRateFor(S.role!.k, h.ring, S.loanType);
-  const steps: { action: string; label: string; amount: string; active: boolean }[] = [
+  const steps = [
     { action: "ds:0", label: "最低 " + (minRate * 100).toFixed(0) + "%", amount: fmt(S.deal * minRate) + " 万", active: S.downSel === 0 },
     { action: "ds:0.3", label: "30%", amount: fmt(S.deal * 0.3) + " 万", active: S.downSel === 0.3 },
     { action: "ds:0.5", label: "50%", amount: fmt(S.deal * 0.5) + " 万", active: S.downSel === 0.5 },
     { action: "ds:1", label: "全款 100%", amount: fmt(S.deal) + " 万", active: S.downSel === 1 },
   ];
-  return [
-    { t: "title", text: "贷款方式 · 先定门槛" },
-    {
-      t: "chat",
-      items: [
-        bubble("信贷经理 高经理", "房子定了，先选贷款方式——首付比例、利率都不一样。" + ringTag + (isInv ? "、二套" : "、首套") + "，多数家庭用组合贷。首付也可以在最底线之上多付，手头宽裕甚至可以不贷款。"),
-      ],
-    },
-    {
-      t: "rows",
-      items: [
-        { k: "成交价", v: fmtY(S.deal) },
-        { k: "当前首付（" + (S.downRate >= 1 ? "全款" : LOAN_TYPES[S.loanType].name) + "）", v: fmtY(S.down) + "（含定金 " + fmt(S.deposit) + " 万）" },
-      ],
-    },
-    {
-      t: "opts",
-      items: [
-        { action: "lt:comm", title: "纯商贷", desc: "最低首付 " + dr("comm") + " · 商贷 " + pct(S.role!.commRate) + "（" + (isInv ? "二套" : "首套") + "利率）", marker: "最低 " + downEst("comm") },
-        { action: "lt:combo", title: "组合贷（默认）", desc: "最低首付 " + dr("combo") + " · 公积金 " + pct(S.role!.gjjRate) + " + 商贷 " + pct(S.role!.commRate), marker: "最低 " + downEst("combo") },
-        { action: "lt:gjj", title: "纯公积金", desc: "最低首付 " + dr("gjj") + " · 公积金 " + pct(S.role!.gjjRate) + " · 额度上限 80 万（演示）", marker: "最低 " + downEst("gjj") },
-      ],
-    },
-    {
-      t: "downSteps",
-      min: "最低 " + (minRate * 100).toFixed(0) + "%",
-      items: steps,
-    },
-    {
-      t: "note",
-      bold: "首付怎么定：",
-      text: "比例可在最低之上多加（首付越高贷款越少）；选「全款 100%」则无需向银行申请贷款，流程直接跳过贷款审批。贷款利率按套数口径：首套商贷 " + pct(S.role!.commRate) + " / 公积金 " + pct(S.role!.gjjRate) + "；二套上浮（公积金 3.075% / 商贷 3.06%）。",
-    },
-    { t: "cta", items: [{ action: "ltOk", title: "选好了，去算账", cls: "btn-ink" }] },
-  ];
+  return {
+    blocks: [
+      head(S, "loanType"),
+      { t: "title", text: "贷款方式 · 先定门槛" },
+      { t: "sub", text: "成交价 ¥" + fmt(S.deal) + " 万 · 当前首付 " + fmt(m.downCash) + " 万（含定金 " + fmt(S.deposit) + " 万）" },
+      { t: "opts", items: opts },
+      { t: "sect", title: "首付还能往上加", x: "贷款越少，利息越少" },
+      { t: "downSteps", min: (minRate * 100).toFixed(0) + "%", items: steps },
+      /* 选了「纯公积金」才摆政策口径（额度/补充/上浮）：其余方式不刷屏 */
+      ...(S.loanType === "gjj" ? [{ t: "note" as const, bold: "公积金口径：", text: GJJ_POLICY_NOTE }] : []),
+      ...pitBlock(screenMeta("loanType")),
+    ],
+    primary: { title: "选好了，去算账", action: "next", wait: "", disabled: false },
+  };
 }
 
-/** 算账屏（首付需现金明细 + 资金缺口警示）. */
-export function sceneFunds(S: SimState): SceneBlock[] {
-  const gap = Math.max(0, S.need - S.cash);
-  const isInv = S.role!.k === "invest";
-  const deedTag = "契税（" + (S.areaNum <= 140 ? (isInv ? "二套 1%" : "首套 1%") : isInv ? "二套 2%" : "首套 1.5%") + "）";
-  const rows: RowItem[] = [
-    { k: "成交价", v: fmtY(S.deal) },
-    {
-      k: S.downRate >= 1
-        ? "首付（房款 100% · 全款现金支付，含定金 " + fmt(S.deposit) + " 万）"
-        : "首付（房款 " + (S.downRate * 100).toFixed(0) + "% · " + LOAN_TYPES[S.loanType].name + "，含定金 " + fmt(S.deposit) + " 万）",
-      v: fmtY(S.down),
-    },
-    { k: deedTag, v: fmtY(S.deedTax) },
-    { k: "登记费（不动产登记费）", v: "¥80.00" },
-    { k: "中介费（" + pct(S.agentRate) + "）", v: fmtY(S.agentFee) },
-  ];
-  if (S.netTax) {
-    rows.push({ k: "卖方税费转嫁（你已答应「到手价」）", v: fmtY(S.netTax) });
-  }
-  if (S.gjjTopUp) {
-    rows.push({ k: "公积金额度补足（已并入首付）", v: fmtY(S.gjjTopUp) });
-  }
-  if (S.estateTax) {
-    rows.push({ k: "房产税（投资二套 · 按年，不计入一次性）", v: fmt(S.estateTax) + " 万/年" });
-  }
-  rows.push({ k: "首付需现金（含全部交易税费）", v: fmtY(S.need), total: true });
+/* ============================ 13 算账 ============================ */
 
-  const status: SceneBlock =
-    gap > 0
-      ? {
-          t: "banner",
-          cls: "warm",
-          title: "还差 " + fmt(gap) + " 万",
-          desc: "你手头有 " + fmt(S.cash) + " 万存款，不够覆盖「房款首付 + 交易税费" + (S.netTax ? " + 到手价转嫁" : "") + "」。",
-        }
-      : {
-          t: "banner",
-          cls: "sky",
-          title: "✓ 资金充足",
-          desc: "手头 " + fmt(S.cash) + " 万，扣除首付税费后结余 " + fmt(S.cash - S.need) + " 万，可继续签约。",
-        };
+/** 算账屏：首付口径 = 房款首付 + 全部税费，一次算完. */
+export function sceneFunds(S: SimState): SceneView {
+  const m = money(S);
+  const h = houseOf(S)!;
+  const g = gap(S);
+  const rows: SceneBlock = {
+    t: "rows",
+    items: [
+      { k: "成交价", v: "¥" + fmt(m.deal) + " 万" },
+      {
+        k: "房款首付（" + (S.downRate * 100).toFixed(0) + "% · " + (S.downSel === 1 ? "全款" : LOAN_TYPES[S.loanType].name) + "，含定金 " + fmt(S.deal * 0.05) + " 万）",
+        v: "¥" + fmt(m.down) + " 万",
+      },
+      ...(m.shortfall > 0
+        ? [{ k: "贷款额度不足（纯公积金上限 " + fmt(gjjCap(S)) + " 万，需现金补）", v: "¥" + fmt(m.shortfall) + " 万" }]
+        : []),
+      { k: "契税（" + deedRateOfPercent(S) + "）", v: "¥" + fmt(m.deedTax) + " 万" },
+      { k: "登记费", v: "¥80.00" },
+      { k: "中介费（" + (S.agentRate * 100).toFixed(0) + "%）", v: "¥" + fmt(m.agentFee) + " 万" },
+      ...(S.netDeal ? [{ k: "卖方税费转嫁（你答应了「到手价」）", v: "¥" + fmt(m.sellerTax) + " 万" }] : []),
+      { k: "首付需现金（含全部税费）", v: "¥" + fmt(m.need) + " 万", total: true },
+    ],
+  };
   const blocks: SceneBlock[] = [
+    head(S, "funds"),
     { t: "title", text: "这笔账，先算清楚" },
-    { t: "sub", text: S.house!.name + " · 以 " + fmt(S.deal) + " 万成交价估算 · " + LOAN_TYPES[S.loanType].name + "。首付口径已含买方全部交易税费，中介费与税费分开单列。" },
-    { t: "rows", items: rows },
-    status,
+    rows,
+    {
+      t: "pit", sky: g <= 0, fixLabel: "",
+      title: g > 0 ? "还差 " + fmt(g) + " 万" : "✓ 资金充足",
+      fix: g > 0
+        ? "手头 " + fmt(handCash(S)) + " 万" + (S.borrowed ? " + 已筹 " + fmt(S.borrowed) + " 万" : "") + "，不够覆盖「房款首付 + 全部税费」。"
+        : "手头 " + fmt(handCash(S)) + " 万" + (S.borrowed ? " + 已筹 " + fmt(S.borrowed) + " 万" : "") + "，扣除首付税费后结余 " + fmt(S.cash - m.need) + " 万。",
+    },
   ];
-  if (S.netTax) {
+  if (S.netDeal) {
     blocks.push({
-      t: "banner",
-      cls: "warm",
-      title: "⚠️ 你现在才看到这笔钱",
-      desc: "砍价成交时你随口应了「" + fmt(S.deal) + " 万到手」——卖方增值税/个税约 " + fmt(S.netTax) + " 万由此转嫁给你，已经算进上面「需现金」里了。当时要是按含税价谈，这一行根本不会出现。",
+      t: "pit",
+      title: "砍价时随口应了一句「到手价」，卖方税费 ¥" + fmt(m.sellerTax) + " 万由此转嫁给你。",
+      fix: "谈价先问「含税还是到手」，再落价。",
     });
   }
-  if (S.vat) {
-    blocks.push({
-      t: "note",
-      bold: "卖方税费提示：",
-      text:
-        "本房卖方另需缴增值税约 " + fmt(S.vat) + " 万 + 附加约 " + fmt(S.vatAdd) + " 万" +
-        (S.sellerTax ? "、个税约 " + fmt(S.sellerTax) + " 万" : "") +
-        "。按上海惯例由卖方承担，不在你现金中列支——" +
-        (S.netTax ? "除非你刚才答应了「到手价」（见上方警示行）。" : "除非你在砍价时答应他「到手价」。这一行，别让它在合同里复活。"),
-    });
-  }
-  const footNote: SceneBlock =
-    S.downRate >= 1
-      ? { t: "note", text: "已选全款：全部房款以现金结清，无银行贷款环节，后续直接进入签约 → 资金监管 → 过户领证。" }
-      : { t: "note", text: "定金含在首付内，签约时先付、过户时冲抵；贷款部分由银行后端解决，不算入“需要现金”。" };
-  blocks.push(
-    { t: "cta", items: [{ action: gap > 0 ? "borrow" : "sign", title: gap > 0 ? "先筹钱，再签约" : "资金充足，去签约", cls: "btn-ink" }] },
-    { t: "link", action: "loanType", text: "‹ 返回调整首付档位 / 贷款方式" },
-    footNote,
-  );
-  return blocks;
-}
-
-/** 筹钱屏（三条借款渠道 + 红线提示）. */
-export function sceneBorrow(S: SimState): SceneBlock[] {
-  const gap = Math.max(0, S.need - S.cash);
-  const cap = 300000 + 200000 + 200000; /* 亲友 + 公积金提取 + 信用贷 合计上限（演示） */
-  const room = cap - S.borrowed;
-  const opts: OptItem[] = [];
-  if ("family" in S.usedBorrow) {
-    opts.push({ action: "bor:family", title: "已向亲友借入，缺口 " + (gap > 0 ? "仍差 " + fmt(gap) + " 万" : "已补齐"), disabled: true });
-  } else {
-    opts.push({ action: "bor:family", title: "向亲友借款（最多 30 万）", desc: "视缺口借入，无利息压力，人情慢慢还。", marker: "+30万内" });
-  }
-  if ("gjj" in S.usedBorrow) {
-    opts.push({ action: "bor:gjj", title: "已按演示提取公积金", disabled: true });
-  } else {
-    opts.push({ action: "bor:gjj", title: "提取公积金（演示，最多 20 万）", desc: "二手房通常不能直接提取付首付，需先自筹；此处仅作额度演示。", marker: "压力 +15" });
-  }
-  if ("credit" in S.usedBorrow) {
-    opts.push({ action: "bor:credit", title: "已申请信用贷", disabled: true });
-  } else {
-    opts.push({ action: "bor:credit", title: "信用贷 / 消费贷（最多 20 万）", desc: "门槛低、放款快，但资金用途属于监管红线。", marker: "⚠️ 红线" });
-  }
-  opts.push({ action: "changeHouse", title: "换套便宜点的", desc: "回到选房，重新挑一套总价更低的。", marker: "借款将退还" });
-
-  const still: SceneBlock =
-    gap > 0
-      ? {
-          t: "banner",
-          cls: "warm",
-          title: "仍有缺口 " + fmt(gap) + " 万",
-          desc:
-            gap > room
-              ? "三条借款渠道合计最多约 " + fmt(cap) + " 万，缺口已超出可借上限。继续硬撑不现实，建议换一套总价更低的房源（限购受限时可自定义一套外环外低价房源）。"
-              : "还可通过下方渠道再借约 " + fmt(room) + " 万。",
-        }
-      : { t: "banner", cls: "sky", title: "✓ 缺口已补齐" };
-
-  const blocks: SceneBlock[] = [
-    { t: "title", text: "怎么补上这笔钱？" },
-    { t: "sub", text: "手头 " + fmt(S.cash) + " 万，缺口 " + fmt(gap) + " 万。不同来路的钱，代价完全不同。" },
-    { t: "opts", items: opts },
-    still,
-  ];
-  if (gap <= 0) {
-    blocks.push({ t: "cta", items: [{ action: "sign", title: "签约 · 付定金", cls: "btn-ink" }] });
-  } else if (gap > room) {
-    blocks.push({ t: "cta", items: [{ action: "changeHouse", title: "缺口过大 · 换套便宜点的", cls: "btn-ink" }] });
-  } else {
-    blocks.push({ t: "note", text: "还需 " + fmt(gap) + " 万 · 用上方渠道补足后再签约" });
-  }
-  blocks.push({ t: "link", action: "funds", text: "‹ 返回算账，调整首付档位 / 贷款方式" });
+  blocks.push(...pitBlock(screenMeta("funds")));
   blocks.push({
-    t: "note",
-    bold: "红线提示：",
-    text: "上海银保监局严禁信贷资金流入房地产。信用贷购房可能被银行拒贷、影响征信，本模拟仅用于风险教育，绝不构成建议。",
+    t: "cta",
+    items: [{ action: "backLoanType", title: "‹ 回到贷款方式", cls: "btn-out" }],
   });
-  return blocks;
+  return {
+    blocks,
+    /* 主按钮必须走 fundsNext：缺口判定在处理器里（资金充足直接去签约，不进筹钱屏） */
+    primary: g > 0
+      ? { title: "先筹钱，再签约", action: "fundsNext", wait: "筹钱 1-2 周", disabled: false }
+      : { title: "资金充足，去签约", action: "fundsNext", wait: "签约 1-3 天", disabled: false },
+  };
 }
 
-/** 签约 · 居间协议屏（定金罚则警示）. */
-export function sceneSign(S: SimState): SceneBlock[] {
-  /* ① 居间协议（中介/买方/卖方三方）→ 签后即付定金；此时违约定金罚则锁定 */
-  const h = S.house!;
-  const blocks: SceneBlock[] = [
-    { t: "title", text: "签约 · 居间协议" },
-    { t: "sub", text: h.name + " · 卖方 " + h.seller + " · 成交价 " + fmt(S.deal) + " 万" + (S.netTax ? "（到手价）" : "") },
-    {
-      t: "banner",
-      cls: "sky",
-      title: "📄 房地产买卖居间协议",
-      desc: "三方签署：中介公司（居间方）/ 你（买方）/ " + h.seller + "（卖方）· 中介费 " + pct(S.agentRate) + "（" + fmtY(S.agentFee) + "）已言明 · 协议签定即付定金",
-    },
-  ];
-  const rows: RowItem[] = [
-    { k: "成交价", v: fmtY(S.deal) },
-    { k: "中介费（" + pct(S.agentRate) + "）", v: fmtY(S.agentFee) },
-    { k: "定金（5%）", v: fmtY(S.deposit) },
-    { k: "买方现金（现有）", v: fmtY(S.cash) },
-    { k: "签约后余额", v: fmtY(S.cash - S.deposit) },
-  ];
-  blocks.push(
-    { t: "rows", items: rows },
-    {
-      t: "banner",
-      cls: "warm",
-      title: "⚠️ 定金罚则 · 此刻已锁定",
-      desc: "定金 " + fmtY(S.deposit) + "（成交价 5%，不超合同价 20%）。一旦签字付定：买方违约，定金不予退还；卖方违约，双倍返还（" + fmtY(S.deposit * 2) + "）。这笔钱不是押金，是合同约束。",
-    },
-    {
-      t: "note",
-      bold: "签字前，先查产调：",
-      text: "让中介出示《不动产权属查询》（产调）：确认无抵押、无查封、无居住权登记、无未到期长期租约；夫妻共有房须所有产权人到场签字。产权有问题，先解押或换房——一签一付，主动权就交了。",
-    },
-    { t: "cta", items: [{ action: "signOk", title: "确认签署居间协议 · 付定金 " + fmt(S.deposit) + " 万", cls: "btn-ink" }] },
-  );
-  return blocks;
+/** 契税档位文案（按面积 × 家庭套数）. */
+function deedRateOfPercent(S: SimState): string {
+  const area = S.areaNum || 0;
+  const rate = area <= 140 ? 0.01 : S.role && S.role.k === "invest" ? 0.02 : 0.015;
+  return (rate * 100).toFixed(1) + "%";
 }
 
-/** 网签 · 买卖合同屏（违约金 20% 警示 + 同步支付首付先付部分并办理贷款）. */
-export function sceneSignNet(S: SimState): SceneBlock[] {
-  /* ② 网签合同（上海市房地产买卖合同）→ 签约后违约赔付房价 20%，不再是定金的事；
-     网签同步支付首付（先付部分，入资金监管）并办理贷款 */
-  const h = S.house!;
-  const liquidated = S.deal * 0.2;
-  const firstPay = firstPayFor(S);
-  const restPay = S.downRate >= 1 ? 0 : Math.max(0, S.down - S.deposit - firstPay);
+/* ============================ 14 筹钱 ============================ */
+
+/** 筹钱屏：不同来路的钱，代价完全不同. */
+export function sceneBorrow(S: SimState): SceneView {
+  const g = gap(S);
+  /* 缺口是否超出三渠道合计上限：单位换算收在 calc.borrowOverflow 里 */
+  const over = borrowOverflow(S);
+  const opts: OptItem[] = [
+    {
+      action: "bor:family", title: "向亲友借款", desc: "视缺口借入，无利息压力。",
+      tag: "最多 " + BORROW_CAPS.family + " 万", disabled: over,
+    },
+    {
+      action: "bor:gjj", title: "提取公积金", desc: "二手房通常不能直接提取付首付，此处仅作额度演示。",
+      tag: "最多 " + BORROW_CAPS.gjj + " 万", disabled: over,
+    },
+    {
+      action: "bor:credit", title: "信用贷 / 消费贷", desc: "门槛低放款快，但资金用途属监管红线。",
+      tag: "⚠️ 红线", tagCls: "hot", disabled: over,
+    },
+    {
+      action: "changeHouse", title: "换套便宜点的", desc: "回选房重新挑一套总价更低的。",
+      tag: "借款将退还",
+    },
+  ].map((o) => {
+    /* 已用的渠道：支出金额 + 选中态（再点一次退回该渠道） */
+    const key = o.action.indexOf("bor:") === 0 ? o.action.slice(4) : "";
+    const used = key ? S.usedBorrow[key] || 0 : 0;
+    return used > 0 ? { ...o, tag: "已筹 " + fmt(used) + " 万 · 点一下退回", on: true } : o;
+  });
   const blocks: SceneBlock[] = [
-    { t: "title", text: "网签 · 上海市房地产买卖合同" },
-    { t: "sub", text: h.name + " · 卖方 " + h.seller + " · 合同价 " + fmt(S.deal) + " 万" + (S.netTax ? "（到手价）" : "") + " · 网签同步支付首付并办理贷款" },
+    head(S, "borrow"),
+    /* 没有缺口时不摆「缺口 X 万 / 缺口已补齐」这类字眼（用户只关心还差多少、怎么补） */
+    { t: "title", text: g > 0 ? "怎么补上这 " + fmt(g) + " 万？" : "资金已备齐" },
     {
-      t: "banner",
-      cls: "warm",
-      title: "⚠️ 违约责任：房价 20%",
-      desc: "网签备案后合同生效：买方违约，按房价 20%（" + fmtY(liquidated) + "）赔付违约金——已经不再是「定金没了」那么简单，悔约代价由此放大。",
+      t: "sub",
+      text: "手头 " + fmt(handCash(S)) + " 万" + (S.borrowed ? " · 已筹 " + fmt(S.borrowed) + " 万" : "")
+        + (g > 0 ? " · 缺口 " + fmt(g) + " 万" : "")
+        + " · 三条借款渠道合计上限 " + BORROW_CAP + " 万",
     },
-    {
-      t: "banner",
-      cls: "sky",
-      title: "📄 上海市房地产买卖合同 · 网签备案",
-      desc: "合同价锁定（" + fmtY(S.deal) + "），经「一网通办」完成 · 反悔属违约。网签当日同步：支付首付（先付部分入资金监管）并向银行申请贷款。",
-    },
+    { t: "opts", items: opts },
   ];
-  if (S.netTax) {
+  if (over) {
     blocks.push({
-      t: "banner",
-      cls: "warm",
-      title: "⚠️ 合同第 1 条：成交价 = 卖方到手价",
-      desc: "合同价格条款写明「" + fmt(S.deal) + " 万为卖方到手价，相关税费由买方承担」——卖方增值税/个税约 " + fmt(S.netTax) + " 万已锁定给你。现在反悔就是违约。网签前这是最后一次看清它。",
+      t: "pit", fixLabel: "",
+      title: "缺口超出可借上限",
+      fix: "硬撑不现实。换一套总价更低的房源，比借钱更划算。",
     });
   }
-  const rows: RowItem[] = [
-    { k: "成交价（合同价）", v: fmtY(S.deal) },
-    { k: "定金（签约已付）", v: fmtY(S.deposit) },
-    { k: "首付先付（网签同步支付 · 入资金监管）", v: fmtY(firstPay) },
-    ...(S.downRate >= 1
-      ? [{ k: "剩余房款", v: "已随首付先付一次结清（全款）" }]
-      : [{ k: "贷款合同后补足（剩余首付）", v: fmtY(restPay) }]),
-    { k: "违约责任（房价 20%）", v: fmtY(liquidated) },
-  ];
-  const okRows: RowItem[] = [];
-  if (S.netTax) {
-    okRows.push({ k: "卖方税费（到手价转嫁）", v: fmtY(S.netTax) });
+  if (S.borrowed > 0) {
+    blocks.push({ t: "note", bold: "已筹：", text: fmt(S.borrowed) + " 万" + (g <= 0 ? " · 已够覆盖首付与税费" : " · 仍差 " + fmt(g) + " 万") });
+  }
+  blocks.push(...pitBlock(screenMeta("borrow")));
+  let primary: SceneView["primary"];
+  if (g <= 0) {
+    primary = { title: "签约 · 付定金", action: "next", wait: "约 1-3 天", disabled: false };
+  } else if (over) {
+    primary = { title: "缺口过大 · 换套便宜点的", action: "changeHouse", wait: "", disabled: false };
+  } else {
+    primary = { title: "还差 " + fmt(g) + " 万 · 先选一条渠道", action: "next", wait: "", disabled: true };
+  }
+  return { blocks, primary };
+}
+
+/* ============================ 15/16 签约 · 网签（12 项深坑）============================ */
+
+/** 签约清单一项 → 清单行. */
+function clRow(S: SimState, it: SignItem): ClRowItem {
+  const v = S.con[it.k];
+  const costTxt = it.omit.cost ? "¥" + fmt(it.omit.cost * 10000) + " 万" : it.omit.risk || "有风险";
+  return {
+    k: it.k,
+    name: it.name,
+    pill: v === "do" ? "已写进合同" : v === "no" ? "不写 · " + costTxt : "没提",
+    pillCls: v === "do" ? "pill-do" : v === "no" ? "pill-todo" : "pill-no",
+    why: it.why,
+    write: v === "do" ? it.write : undefined,
+    noNote: v === "no" ? it.omit.text : undefined,
+    doLabel: "写进合同",
+    doAction: "cl:" + it.k + ":do",
+    doOn: v === "do",
+    noLabel: "先不写",
+    noAction: "cl:" + it.k + ":no",
+    noOn: v === "no",
+  };
+}
+
+/** 本屏爆出的学费单. */
+export function tuitionBlock(S: SimState): SceneBlock[] {
+  if (!S.burst.length) {
+    return [];
+  }
+  const cost = S.burst.reduce((a, b) => a + b.cost, 0);
+  const days = S.burst.reduce((a, b) => a + b.days, 0);
+  return [{
+    t: "tuition",
+    title: "🧾 学费单 " + S.burst.length + " 张",
+    src: "合同里没写清 · 到这一步才来",
+    items: S.burst.map((b) => ({
+      name: b.short,
+      amount: b.cost ? "¥" + fmt(b.cost) : b.risk || "有风险",
+      text: b.text,
+    })),
+    total: "本次合计 ¥" + fmt(cost) + (days ? " · +" + days + " 天" : ""),
+  }];
+}
+
+/** 签约两屏的公共骨架（清单 + 进度 + 结论 + 主按钮 + 快速路径）. */
+function checkScreen(S: SimState, key: "sign" | "signNet", items: SignItem[]): SceneView {
+  const d = screenMeta(key);
+  const done = items.filter((it) => S.con[it.k]).length;
+  const secs: string[] = [];
+  for (const it of items) {
+    if (secs.indexOf(it.sec) < 0) {
+      secs.push(it.sec);
+    }
+  }
+  const blocks: SceneBlock[] = [head(S, key), ...tuitionBlock(S)];
+  if (key === "sign") {
+    blocks.push({
+      t: "pricebar",
+      label: "签字时锁定的钱（定金）",
+      value: "¥" + fmt(S.deal * 0.05) + " 万",
+      note: "成交价 5% · 不超合同价 20% · 一旦签字：买方违约不退，卖方违约双倍返还",
+    });
+  } else {
+    blocks.push({
+      t: "pricebar",
+      label: "网签后违约的代价",
+      value: "¥" + fmt(S.deal * 0.2) + " 万",
+      note: "房价 20% · 已经不再是「定金没了」那么简单",
+    });
+  }
+  blocks.push({ t: "prog", label: "已定", done, total: items.length, pct: Math.round((done / items.length) * 100) });
+  for (const sec of secs) {
+    const rows = items.filter((it) => it.sec === sec).map((it) => clRow(S, it));
+    blocks.push({ t: "clSec", title: sec, count: rows.filter((r) => r.doOn || r.noOn).length + " / " + rows.length, rows });
   }
   blocks.push(
-    { t: "rows", items: okRows.concat(rows) },
-    { t: "cta", items: [{ action: "signNetOk", title: "确认网签 · 支付首付先付部分", cls: "btn-ink" }] },
+    done === items.length
+      ? { t: "note", text: "这一屏写清了：没写的项目，到那一步就会以「学费单」的形式回来。" }
+      : { t: "pit", fixLabel: "", title: "还有 " + (items.length - done) + " 项没结论——没写的，到那一步才来。" },
+    { t: "cta", items: [{ action: "fastSign", title: "都不写，先签（最快）", cls: "btn-out" }] },
   );
-  return blocks;
+  return {
+    blocks,
+    primary: key === "sign"
+      ? { title: "签署居间协议 · 付定金 " + fmt(S.deal * 0.05) + " 万", action: payAction("deposit"), wait: "", disabled: false }
+      : { title: "确认网签 · 支付首付先付部分", action: payAction("firstPay"), wait: "备方案 1-3 天", disabled: false },
+  };
+}
+
+/** 签约 · 居间协议屏（签字前查清 6 项 + 合同里写死 6 项的前两屏）. */
+export function sceneSign(S: SimState): SceneView {
+  return checkScreen(S, "sign", SIGN_ITEMS.filter((it) => it.half === "sign"));
+}
+
+/** 网签 · 买卖合同屏（资格不过 → 网签备案真的过不去）. */
+export function sceneSignNet(S: SimState): SceneView {
+  if (!S.judge || !S.judge.ok) {
+    return netBlocked(S);
+  }
+  return checkScreen(S, "signNet", SIGN_ITEMS.filter((it) => it.half === "signNet"));
 }

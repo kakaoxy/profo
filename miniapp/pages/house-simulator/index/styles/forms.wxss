@@ -1,16 +1,7 @@
-/* 购房模拟器 · 表单（现金 / 自定义房源 / 按钮 / 贷款年限 / 首付档位 / 打卡） */
-/* ===== 表单 ===== */
+/* 购房模拟器 · 表单（现金 / 自定义房源）+ 按钮 / 贷款年限 / 首付档位 */
+/* ===== 表单（现金 / 自定义房源） ===== */
 .form-card {
   padding: 32rpx;
-}
-.cash-row {
-  display: flex;
-  gap: 16rpx;
-  align-items: flex-end;
-}
-.f-group {
-  flex: 1;
-  min-width: 0;
 }
 .f-label {
   font-size: 25rpx;
@@ -28,41 +19,11 @@
   color: var(--ink);
   font-size: 30rpx;
 }
-.cash-suffix {
-  flex: none;
-  font-size: 26rpx;
-  color: var(--graphite);
-  line-height: 88rpx;
-}
 .field {
   margin-bottom: 28rpx;
 }
 .field:last-child {
   margin-bottom: 0;
-}
-.f-picker {
-  width: 100%;
-  height: 88rpx;
-  box-sizing: border-box;
-  border: 2rpx solid var(--dove);
-  border-radius: 28rpx;
-  background: var(--pure-white);
-  display: flex;
-  align-items: center;
-}
-.picker-value {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24rpx;
-  font-size: 30rpx;
-  color: var(--ink);
-  line-height: 88rpx;
-}
-.picker-caret {
-  color: var(--slate);
-  font-size: 24rpx;
 }
 
 /* ===== 按钮 ===== */
@@ -134,19 +95,6 @@
 }
 
 /* ===== 文本链接 ===== */
-.textlink {
-  display: inline-flex;
-  align-items: center;
-  font-size: 27rpx;
-  color: var(--ink);
-  padding: 20rpx 4rpx;
-  margin-top: 8rpx;
-}
-.textlink:active {
-  color: var(--rust);
-}
-
-/* ===== 首付档位 ===== */
 .ds-card {
   padding: 32rpx;
 }
@@ -181,9 +129,16 @@
 .ds-item:active {
   border-color: var(--dove);
 }
+/* 选中档位 = 墨底白字（与现金胶囊同一套「选中」语言：远看一眼就能认出） */
 .ds-item--on {
-  background: var(--apricot-wash);
-  border-color: var(--apricot-wash);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.ds-item--on .ds-t {
+  color: #ffffff;
+}
+.ds-item--on .ds-amt {
+  color: var(--apricot-wash);
 }
 .ds-t {
   font-size: 25rpx;
@@ -196,24 +151,7 @@
   font-size: 21rpx;
   color: var(--graphite);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
   white-space: nowrap;
 }
-.ds-item--on .ds-amt {
-  color: var(--rust);
-}
 
-/* ===== 完成打卡 ===== */
-.chk-card {
-  padding: 32rpx;
-}
-.chk-title {
-  font-size: 24rpx;
-  font-weight: 500;
-  color: var(--graphite);
-  margin-bottom: 20rpx;
-}
-.chk-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-}

@@ -23,11 +23,11 @@ import {
   paidTotalOf,
   RENOV_CONTRACT,
   RENOV_PKGS,
-  RENOV_PLAN_ABS,
   RENOV_PLAN_BASE,
   RENOV_STAGES,
   RENOV_TIERS,
   renovDelayDays,
+  renovPlanAbs,
   riskAddOf,
   riskLeftOf,
   wanFmt,
@@ -311,9 +311,10 @@ export function sceneRenovDone(S: SimState): SceneBlock[] {
   const doneDay = S.renovDoneDay || S.renovDay;
   const half = S.renovPkg === "half";
   const srcLabel = half ? "自己买主材踩的" : "合同里没写的";
-  const extraDays = renovDelayDays(doneDay); /* 增项返工拖出来的天数（绝对天口径） */
+  const planAbs = renovPlanAbs(S.renovStartDay); /* 计划完工日（绝对天口径：交易完成日 + 装修计划历时） */
+  const extraDays = renovDelayDays(doneDay, S.renovStartDay); /* 增项返工拖出来的天数（绝对天口径） */
   const monthTxt = (extraDays / 30).toFixed(1).replace(/\.0$/, "");
-  const tden = Math.max(RENOV_PLAN_ABS, doneDay, 1);
+  const tden = Math.max(planAbs, doneDay, 1);
   const gmax = Math.max(...RENOV_STAGES.filter((s) => s.k !== "Warr").map((s) => s.days));
   const rankBills = S.renovBills.slice().sort((a, b) => b.cost - a.cost);
   const topBills = rankBills.slice(0, 3);
@@ -338,11 +339,11 @@ export function sceneRenovDone(S: SimState): SceneBlock[] {
     {
       t: "pricebar",
       label: "计划总工期 → 实际总工期",
-      value: RENOV_PLAN_ABS + " 天 → " + doneDay + " 天",
-      bar: { base: (RENOV_PLAN_ABS / tden) * 100, over: (extraDays / tden) * 100 },
+      value: planAbs + " 天 → " + doneDay + " 天",
+      bar: { base: (planAbs / tden) * 100, over: (extraDays / tden) * 100 },
       note: extraDays
         ? "多 " + extraDays + " 天（≈ " + monthTxt + " 个月），全是 " + (half ? "自购踩坑 " + S.renovBills.length + " 笔" : S.renovBills.length + " 张增项单") + "拖出来的：等货、返工、整改各占一段。房子多空这些天，房租和房贷一样照走。"
-        : "一天没多：边界写死，" + RENOV_PLAN_ABS + " 天按计划走完，房子正好空这一段。",
+        : "一天没多：边界写死，" + planAbs + " 天按计划走完，房子正好空这一段。",
     },
   ];
 

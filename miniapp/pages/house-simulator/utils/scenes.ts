@@ -1,19 +1,20 @@
 /**
- * 购房模拟器 · 场景视图构建分发器（38 屏 → 有序 SceneBlock 列表）.
+ * 购房模拟器 · 场景视图构建分发器（38 屏 → SceneView：有序内容块 + 主按钮）.
  *
- * 与 HiFi 原型 renderScene(scene) 一一对应：每屏产出「顺序化内容块」，
- * WXML 按块类型（banner/chat/rows/opts/cta/...）渲染，天然保留 HiFi 的
- * 文案顺序与交互层级。纯函数，仅依赖 SimState 与 calc 工具，便于单测。
+ * 各屏构建函数按模块 / 阶段拆分，本文件仅保留 switch 分发：
+ *  - scenes-start.ts：开场·身份·现金·选房（含自定义房源）·资格核验·资格结果
+ *  - scenes-nego.ts：三轮砍价 · 到手价 · 中介费
+ *  - scenes-money.ts：贷款方式 · 算账 · 筹钱 · 签约·网签（12 项深坑）
+ *  - scenes-loan.ts：贷款方案 · 贷款审批 · 贷款合同
+ *  - scenes-close.ts：过户 · 缴税领证 · 交房 · 交割结算 · 完成总账
+ *  - scenes-renov.ts：装修流程（预算 / 设计师 / 合同清单 / 10 张上划卡 / 完成总账）
  *
- * 各屏构建函数按流程阶段拆分（开场·身份·现金·选房·资格 → 砍价 → 贷款方式·算账·
- * 筹钱·签约 → 贷款·风控 → 监管·过户·领证·交房·账单），本文件仅保留 switch 分发：
- *  - scenes-common.ts：块类型与公共构造（bubble/pmtY/loanRowLabel）
- *  - scenes-start.ts / scenes-nego.ts / scenes-money.ts / scenes-loan.ts / scenes-close.ts：分阶段场景文案
- *  - scenes-renov.ts：装修流程（预算屏 / 设计师 / 合同清单 / 10 张上划卡 / 完成总账），数据见 renov-data.ts
+ * 纯函数（stageDays 会就地抽一次经历天数并缓存进 S.drawn，与 derive 同类）。
  */
 
 import type { SimState } from "./constants";
-import type { SceneBlock } from "./scenes-common";
+import type { SceneView } from "./scenes-common";
+import { plainView } from "./scenes-common";
 import {
   sceneBlocked,
   sceneCash,
@@ -26,13 +27,7 @@ import {
 import { sceneFeeNego, sceneNego1, sceneNego2, sceneNego3 } from "./scenes-nego";
 import { sceneBorrow, sceneFunds, sceneLoanType, sceneSign, sceneSignNet } from "./scenes-money";
 import { sceneLoan, sceneLoanChk, sceneLoanContract } from "./scenes-loan";
-import {
-  sceneDeed,
-  sceneFinal,
-  sceneHandover,
-  sceneSettle,
-  sceneTransfer,
-} from "./scenes-close";
+import { sceneDeed, sceneFinal, sceneHandover, sceneSettle, sceneTransfer } from "./scenes-close";
 import {
   RENOV_CARD_SCENES,
   sceneRenovCard,
@@ -42,8 +37,8 @@ import {
   sceneRenovStart,
 } from "./scenes-renov";
 
-/** 构建当前场景内容块（每次 setData 全量重建）. */
-export function buildScene(S: SimState): SceneBlock[] {
+/** 构建当前场景视图（每次 setData 全量重建）. */
+export function buildScene(S: SimState): SceneView {
   switch (S.scene) {
     case "start":
       return sceneStart();
@@ -52,7 +47,7 @@ export function buildScene(S: SimState): SceneBlock[] {
     case "cash":
       return sceneCash(S);
     case "custom":
-      return sceneCustom();
+      return sceneCustom(S);
     case "select":
       return sceneSelect(S);
     case "qa":
@@ -94,20 +89,20 @@ export function buildScene(S: SimState): SceneBlock[] {
     case "final":
       return sceneFinal(S);
     case "renovStart":
-      return sceneRenovStart(S);
+      return plainView(sceneRenovStart(S));
     case "renovDesign":
-      return sceneRenovDesign(S);
+      return plainView(sceneRenovDesign(S));
     case "renovContract":
-      return sceneRenovContract(S);
+      return plainView(sceneRenovContract(S));
     case "renovDone":
-      return sceneRenovDone(S);
+      return plainView(sceneRenovDone(S));
     default:
-      /* 10 个非决策装修阶段（renovDemo…renovWarr）共用 3 秒上划卡 */
+      /* 10 个非决策装修阶段（renovDemo…renovWarr）共用上划卡 */
       if (RENOV_CARD_SCENES.indexOf(S.scene) >= 0) {
-        return sceneRenovCard(S);
+        return plainView(sceneRenovCard(S));
       }
-      return [];
+      return plainView([]);
   }
 }
 
-export type { SceneBlock } from "./scenes-common";
+export type { SceneBlock, SceneView } from "./scenes-common";

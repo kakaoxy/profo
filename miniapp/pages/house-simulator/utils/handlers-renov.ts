@@ -16,7 +16,7 @@
  */
 
 import { fmt, fmtN } from "./calc";
-import { DAYS, SimState } from "./constants";
+import { SimState } from "./constants";
 import type { HandlerCtx } from "./handlers";
 import { findRenovDef, RENOV_CONTRACT, RENOV_HALF_MINES, RENOV_PKGS, RENOV_TIERS } from "./renov-data";
 import type { RenovBill } from "./renov-data";
@@ -145,7 +145,8 @@ export function handleRenov(ctx: HandlerCtx, S: SimState, action: string): void 
     if (!S.renovPkg) {
       return;
     }
-    S.renovDay = (DAYS.final ?? 16) + 1; /* 交易完成次日开工 */
+    S.renovStartDay = S.day; /* 交易完成日（经历周期口径，装修工期与计划条的基准） */
+    S.renovDay = S.day + 1; /* 交易完成次日开工 */
     S.renovLog = [];
     S.renovMoved = 0;
     S.renovLog.push({

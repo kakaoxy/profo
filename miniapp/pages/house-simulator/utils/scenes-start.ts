@@ -1,164 +1,308 @@
 /**
  * 购房模拟器 · 场景分组「开场 · 身份 · 现金 · 选房 · 资格」.
  *
- * 覆盖 7 屏：开始 / 身份角色 / 可动用现金 / 自定义房源 / 选房 / 资格问答 / 资格拦截。
- * 文案逐条移植自 docs/design/购房模拟器-hifi.html（PRD §7 沉浸式第一人称）。
- * 纯函数，仅依赖 SimState 与 calc/constants 工具。
+ * 覆盖 7 屏：开始 / 身份 / 亮家底 / 看房 / 自定义房源 / 资格核验 / 资格结果，
+ * 外加「资格不过 → 网签被拦下」的结果屏（signNet 复用）。
+ * 文案与结构逐条对齐 docs/2026-09-17-购房模块-高保真设计稿.html v1：
+ * 每屏 = 第 N 天 +（双层时间条）+ 一句现场 + 选项 + 一句坑 + 一句怎么避免 + 主按钮等待承诺。
  */
 
-import { buildQA, fmt, QA_DEFS } from "./calc";
-import { downRateFor, HOUSES, LOAN_TYPES, ROLES, SimState } from "./constants";
-import { bubble, HouseCardItem, SceneBlock } from "./scenes-common";
+import {
+  buildQA, defaultCustom, fmt, judgeQA, QA_DEFS, sellerIncomeTax, sellerVatOf, stageDays, syncCustom,
+} from "./calc";
+import { downRateFor, HOUSES, NODES, ROLES } from "./constants";
+import type { House, SceneKey, SimState } from "./constants";
+import { screenMeta } from "./flow";
+import { bubble, dayBlock, houseDownText, pitBlock } from "./scenes-common";
+import type { ChipItem, HouseCardItem, OptItem, PrimaryAction, SceneBlock, SceneView } from "./scenes-common";
 
-/** 开始屏. */
-export function sceneStart(): SceneBlock[] {
-  return [
-    { t: "eyebrow", text: "沉浸式流程模拟 · 10 分钟" },
-    { t: "title", text: "在上海，\n买下第一套房", big: true },
-    { t: "sub", text: "从选房到交房，以第一人称走完全流程：身份、选房、资格、砍价、算钱、借款、贷款、过户。每一步都算给你看。" },
-    {
-      t: "banner",
-      cls: "sky",
-      title: "你会遇到",
-      desc: "身份角色（刚需 / 置换 / 投资）· 可动用现金预设 · 限购问答树 · 多轮砍价博弈与「到手价」暗坑 · 自定义房源 · 贷款方式选择（商贷/组合/公积金）· 资金缺口与红线借款 · 组合贷月供 · 资金监管到领证放款",
-    },
-    { t: "note", text: "演示数据 · 计算结果仅供参考，以政府部门、银行、税务机关为准。本模拟不收集任何个人信息。" },
-    { t: "cta", items: [{ action: "role", title: "开始模拟", cls: "btn-ink" }] },
-  ];
+/** 现金预设档（万元）. */
+const CASH = [50, 70, 100, 200, 300];
+
+/** 现金胶囊（预设档；输入框改值时页面单独 patch 这一块）. */
+export function cashChips(S: SimState): ChipItem[] {
+  return CASH.map((v) => ({
+    action: "cash:" + v,
+    label: v + " 万",
+    on: S.cashSet && S.cash === v * 10000,
+  }));
 }
 
-/** 身份角色屏. */
-export function sceneRole(S: SimState): SceneBlock[] {
-  const opts = (Object.keys(ROLES) as (keyof typeof ROLES)[]).map((k) => {
+/** 现金屏主按钮（输入框改值时页面单独 patch）. */
+export function cashPrimary(S: SimState): PrimaryAction {
+  return {
+    title: S.cashSet ? "手头 " + (S.cash / 10000).toFixed(2) + " 万 · 去看房" : "先亮家底",
+    action: "next", wait: "", disabled: !S.cashSet,
+  };
+}
+
+/** 自定义房源屏主按钮（口径 / 输入改值时页面单独 patch）. */
+export function customPrimary(S: SimState): PrimaryAction {
+  return {
+    title: S.custom ? "确认这套 · 去核验资格" : "填完再继续",
+    action: "next", wait: "核验 1-3 天", disabled: !S.custom,
+  };
+}
+
+/** 自定义房源展示口径（未定稿时按默认口径预览：满五唯一 · 买卖取得）. */
+export function customDraftView(S: SimState): House {
+  return S.custom || syncCustom(defaultCustom());
+}
+
+/** 屏首：第 N 天 + 双层时间条. */
+function head(S: SimState, k: SceneKey): SceneBlock {
+  const d = screenMeta(k);
+  return dayBlock(S, d, stageDays(S, d));
+}
+
+/** 开始屏（开场三卡 + 12 节点一览）. */
+export function sceneStart(): SceneView {
+  const blocks: SceneBlock[] = [
+    { t: "eyebrow", text: "沉浸式流程模拟 · 约 10 分钟" },
+    { t: "title", text: "在上海，\n买下第一套房", big: true },
+    {
+      t: "g3",
+      items: [
+        { k: "流程", v: "12 个节点", n: "选房 → 资格 → 砍价 → 签约 → 过户 → 交房" },
+        { k: "时间", v: "1-3 个月", n: "每段天数从常规区间里抽，你这趟实际多少天，走到头才知道" },
+        { k: "坑", v: "2 处深坑", n: "签字那 10 分钟，和交房那一天" },
+      ],
+    },
+    {
+      t: "trail",
+      items: NODES.map((n, i) => ({ text: i + 1 + " " + n, hot: i === 6 || i === 10 })),
+    },
+    ...pitBlock(screenMeta("start")),
+  ];
+  return { blocks, primary: { title: "开始购房之旅", action: "next", wait: "", disabled: false } };
+}
+
+/** 身份屏：身份决定首付、利率、税费口径. */
+export function sceneRole(S: SimState): SceneView {
+  const opts: OptItem[] = (Object.keys(ROLES) as (keyof typeof ROLES)[]).map((k) => {
     const r = ROLES[k];
     return {
       action: "role:" + k,
       title: r.emoji + " " + r.name,
-      desc: r.desc,
-      marker: r.owned === 0 ? "首套" : k === "invest" ? "二套" : "置换",
+      desc: r.d,
+      price: r.p,
+      tag: r.tag,
+      tagCls: r.tagCls.replace("badge-", ""),
+      note: r.note,
+      on: !!S.role && S.role.k === k,
     };
   });
-  return [
-    { t: "eyebrow", text: "第一步 · 你的身份" },
-    { t: "title", text: "你为什么买房？" },
-    { t: "sub", text: "身份决定贷款利率、名下套数与税费口径；首付比例在选定贷款方式后确定（商贷最低 15%）。先定身份，再挑房子。" },
-    { t: "opts", items: opts },
-    { t: "note", bold: "提示：", text: "置换（卖一买一）按首套首付与利率，且一年内卖房再买房个税可退；投资二套首付与利率上浮（二套公积金 3.075% / 商贷 3.06%），且可能触发房产税（上海试点）。" },
-  ];
-}
-
-/** 可动用现金屏. */
-export function sceneCash(S: SimState): SceneBlock[] {
-  const presets: [number, string, string][] = [
-    [50, "50 万", "刚工作不久，积蓄不多——选房按“够得着”来。"],
-    [70, "70 万", "不上不下，最常见的状态。"],
-    [100, "100 万", "有备而来，从容一点。"],
-    [200, "200 万", "准备充分，可覆盖换房周期。"],
-    [300, "300 万", "资金雄厚，几乎不为首付发愁。"],
-  ];
-  const opts = presets.map((p) => {
-    const sel = S.cashSet && S.cash === p[0] * 10000;
-    return {
-      action: "cash:p" + p[0],
-      title: p[1],
-      desc: p[2],
-      marker: sel ? "已选" : p[0] + "万",
-    };
-  });
-  return [
-    { t: "title", text: "你能拿出多少现金？" },
-    { t: "sub", text: "首付 = 房款首付 + 全部交易税费，都要从你手头这沓现金里出。先亮家底，后面才不会到算账时傻眼。" },
-    { t: "opts", items: opts },
-    { t: "form-cash" },
-    { t: "note", bold: "为什么先问现金：", text: "同样一套房，手头 50 万和 300 万，面临的方案天差地别——这道题决定你后面要不要借钱、借多少。" },
-  ];
-}
-
-/** 自定义房源屏. */
-export function sceneCustom(): SceneBlock[] {
-  return [
-    { t: "title", text: "自定义一套房源" },
-    { t: "sub", text: "预设房源不够贴身？把自己的预算和税费条件填进去，后面照常核验资格、砍价。" },
-    { t: "form-custom" },
-    { t: "note", bold: "说明：", text: "议价空间（房东可让幅度）按默认 5% 计；面积 ≤140㎡ 契税 1%，否则首套 1.5% / 二套 2%。填完即可模拟，全程不落库。" },
-    { t: "cta", items: [{ action: "custOk", title: "确认这套 · 去核验资格", cls: "btn-ink" }] },
-  ];
-}
-
-/** 选房屏（预设房源 + 自定义入口）. */
-export function sceneSelect(S: SimState): SceneBlock[] {
-  const hh: HouseCardItem[] = HOUSES.map((h) => {
-    const downEst = fmt(h.price * downRateFor(S.role!.k, h.ring, S.loanType));
-    return {
-      id: h.id,
-      emoji: h.emoji,
-      thumbCls: h.thumbCls,
-      tag: h.tag,
-      tagCls: h.tagCls,
-      name: h.name,
-      ringTag: h.ring === "内" ? "外环内" : "外环外",
-      meta: h.area + " · " + h.type + " · 首付约 " + downEst + " 万 · 卖家 " + h.seller,
-      price: fmt(h.price) + "万",
-      cut: "可砍 " + (h.negotiable * 100).toFixed(0) + "%",
-    };
-  });
-  hh.push({
-    id: "custom",
-    emoji: "✏️",
-    thumbCls: "thumb-c",
-    tag: "自由填写",
-    tagCls: "badge-hair",
-    name: "自定义房源",
-    ringTag: "",
-    meta: "挂牌价 / 面积 / 环线 / 税费条件全由你定——用你自己的房价和年限。",
-    price: "✨ 造一套自己的房子",
-    cut: "",
-  });
-  return [
-    {
-      t: "chat",
-      items: [
-        bubble("中介 小王", "钥匙在手，几个盘随便挑：200 万到 1600 万都有。先看哪套？税费和议价空间差挺多的——满五唯一、满二不唯一、还有一套不满 2 年要缴全额增值税。也可以说个数，我给你现造一套。"),
-      ],
-    },
-    {
-      t: "note",
-      bold: "身份：",
-      text: S.role!.emoji + " " + S.role!.name + " · 现金 " + fmt(S.cash) + " 万 · 首付约 " + (S.downRate * 100).toFixed(0) + "%（默认" + LOAN_TYPES[S.loanType].name + "估算，选房后可调）",
-    },
-    { t: "houses", items: hh },
-  ];
-}
-
-/** 资格问答屏. */
-export function sceneQa(S: SimState): SceneBlock[] {
-  const steps = buildQA(S);
-  const cur = steps[S.qaProg];
-  const d = QA_DEFS[cur];
-  const opts = d.opts.map((o) => ({ action: "qa:" + cur + ":" + o[0], title: o[1] }));
   const blocks: SceneBlock[] = [
-    { t: "dots", items: steps.map((_, i) => ({ on: i <= S.qaProg })) },
-    { t: "title", text: d.q },
-    { t: "sub", text: "答案只用于本机判定，不会上传或收集。" },
+    head(S, "role"),
+    { t: "title", text: "你为什么买房？" },
+    { t: "sub", text: "身份决定首付、利率与税费口径。" },
     { t: "opts", items: opts },
+    ...pitBlock(screenMeta("role")),
   ];
-  if (S.qaProg > 0) {
-    blocks.push({ t: "link", action: "qaBack", text: "‹ 上一步" });
-  }
-  return blocks;
+  return {
+    blocks,
+    primary: {
+      title: S.role ? "按「" + S.role.name + "」继续" : "先选一个身份",
+      action: "next", wait: "", disabled: !S.role,
+    },
+  };
 }
 
-/** 资格拦截屏（核验通过 / 被限购）. */
-export function sceneBlocked(S: SimState): SceneBlock[] {
-  const j = S.judge!;
-  return [
-    { t: "banner", cls: "warm", title: (j.ok ? "✓ " : "✕ ") + j.title, desc: j.reason },
-    {
-      t: "cta",
-      items: [
-        { action: "select", title: "换一套试试", cls: "btn-out" },
-        { action: "start", title: "放弃模拟", cls: "btn-ink" },
-      ],
-    },
+/** 亮家底屏：首付 = 房款首付 + 全部交易税费. */
+export function sceneCash(S: SimState): SceneView {
+  const blocks: SceneBlock[] = [
+    head(S, "cash"),
+    { t: "title", text: "你能拿出多少现金？" },
+    { t: "sub", text: "首付 = 房款首付 + 全部交易税费。" },
+    { t: "chips", key: "cash", items: cashChips(S) },
+    { t: "form-cash" },
+    ...pitBlock(screenMeta("cash")),
   ];
+  return { blocks, primary: cashPrimary(S) };
+}
+
+/** 房源卡：面积 · 首付估算 · 环线 + 税费口径. */
+function houseCard(S: SimState, h: House): HouseCardItem {
+  const rate = S.role ? downRateFor(S.role.k, h.ring, S.loanType) : 0.2;
+  const vat = h.hold !== "new" && h.holdYears < 2;
+  const tax = h.hold !== "new" && !(h.holdYears >= 5 && h.unique);
+  return {
+    id: h.id,
+    emoji: h.emoji,
+    tag: h.tag,
+    tagCls: h.tagCls === "badge-sky" ? "cool" : h.tagCls === "badge-warm" ? "hot" : "",
+    name: h.name,
+    metas: [
+      h.area + " · " + houseDownText(h.price, rate) + " · " + (h.ring === "内" ? "外环内" : "外环外"),
+      "税费：" + (vat ? "全额增值税" : "免增值税") + (tax ? " · 个税 1%" : " · 免个税"),
+    ],
+    price: h.price / 10000 + "万",
+    cut: "可砍 " + (h.negotiable * 100).toFixed(0) + "%",
+    on: !!S.house && S.house.id === h.id,
+  };
+}
+
+/** 看房屏：先比「到手总成本」，不是只比挂牌价. */
+export function sceneSelect(S: SimState): SceneView {
+  const cards: HouseCardItem[] = HOUSES.map((h) => houseCard(S, h));
+  cards.push({
+    id: "custom", emoji: "📐", tag: "自由填写", tagCls: "", name: "自定义房源",
+    metas: ["挂牌价 / 面积 / 环线 / 税费条件全由你定"], price: "填一套", cut: "",
+    on: !!S.custom,
+  });
+  const blocks: SceneBlock[] = [
+    head(S, "select"),
+    { t: "chat", items: [bubble("中介 小王", "钥匙在手，200 万到 1600 万都有。先看哪套？")] },
+    { t: "houses", items: cards },
+    {
+      t: "note", bold: "身份：",
+      text: (S.role ? S.role.emoji + " " + S.role.name : "未选") + " · 现金 " + fmt(S.cash) + " 万 · 默认按组合贷最低首付估算",
+    },
+    ...pitBlock(screenMeta("select")),
+  ];
+  return {
+    blocks,
+    primary: {
+      title: S.house ? "就这套 · 去核验资格" : "先选一套房",
+      action: "next", wait: "核验 1-3 天", disabled: !S.house,
+    },
+  };
+}
+
+/** 自定义房源屏：四组口径 + 三行输入 + 税费口径预览. */
+export function sceneCustom(S: SimState): SceneView {
+  const c = customDraftView(S);
+  const chipsRow = (label: string, items: ChipItem[]): SceneBlock => ({ t: "chipsRows", rows: [{ k: label, items }] });
+  const blocks: SceneBlock[] = [
+    head(S, "custom"),
+    { t: "title", text: "自定义一套房源" },
+    { t: "sub", text: "房价、环线与税费口径由你定，后面照常核验资格、砍价。" },
+    { t: "form-custom" },
+    chipsRow("环线", [
+      { action: "ring:内", label: "外环内", on: c.ring === "内" },
+      { action: "ring:外", label: "外环外", on: c.ring === "外" },
+    ]),
+    chipsRow("持有年限", [
+      { action: "cy:0", label: "不满 2 年", on: c.holdYears === 0 },
+      { action: "cy:2", label: "满 2 年", on: c.holdYears === 2 },
+      { action: "cy:5", label: "满 5 年", on: c.holdYears === 5 },
+    ]),
+    chipsRow("是否唯一", [
+      { action: "cu:1", label: "唯一", on: c.unique },
+      { action: "cu:0", label: "不唯一", on: !c.unique },
+    ]),
+    chipsRow("取得方式", [
+      { action: "ca:buy", label: "买卖取得", on: c.acq !== "inherit" },
+      { action: "ca:inherit", label: "继承 / 赠与", on: c.acq === "inherit" },
+    ]),
+    { t: "sect", title: "税费口径", x: "按挂牌价估算" },
+    { t: "rows", key: "custTax", items: customTaxRows(S) },
+    { t: "note", bold: "口径：", text: customNote(c) },
+    ...pitBlock(screenMeta("custom")),
+    { t: "cta", items: [{ action: "backSelect", title: "用不上，回选房", cls: "btn-out" }] },
+  ];
+  return { blocks, primary: customPrimary(S) };
+}
+
+/** 自定义房源税费口径预览（与实付同走 sellerVatOf / sellerIncomeTax，避免两套口径）. */
+export function customTaxRows(S: SimState): { k: string; v: string }[] {
+  const c = customDraftView(S);
+  const price = c.price;
+  const inherit = c.acq === "inherit" && !(c.holdYears >= 5 && c.unique);
+  const income = sellerIncomeTax(c, price);
+  const vat = sellerVatOf(c, price);
+  const deed = (c.areaNum || 0) <= 140 ? 0.01 : S.role && S.role.k === "invest" ? 0.02 : 0.015;
+  return [
+    { k: "增值税（不满 2 年全额 5% + 附加）", v: vat ? "¥" + fmt(vat) + " 万" : "免" },
+    inherit
+      ? { k: "卖方个税（继承 / 赠与所得：差额 × 20%）", v: "¥" + fmt(income) + " 万" + (c.base ? "" : "（原值未填，按全额计）") }
+      : { k: "卖方个税（满五唯一免征，否则核定 1%）", v: income ? "¥" + fmt(income) + " 万" : "免" },
+    { k: "契税（" + (deed * 100).toFixed(1) + "% · 买方承担）", v: "¥" + fmt(price * deed) + " 万" },
+  ];
+}
+
+/** 自定义房源口径脚注（含继承 / 赠与的差额 20% 说明）. */
+export function customNote(c: House | null): string {
+  const base =
+    "满 2 年免增值税；买卖所得满五唯一免个税，否则核定 1%；契税 ≤140㎡ 1%，超 140㎡ 首套 1.5% / 二套 2%；议价空间默认 5%。";
+  if (c && c.acq === "inherit") {
+    return base + "继承 / 赠与所得：满二、满五起算可追溯原产权人；非满五唯一时个税按（转让价 − 原值）× 20% 计——原购房发票、契税完税凭证要留好，签约时写清税费归属。";
+  }
+  return base;
+}
+
+/** 资格核验屏（问答树：户籍 → 居住证 → 社保年限）. */
+export function sceneQa(S: SimState): SceneView {
+  const steps = buildQA(S);
+  const ci = Math.min(S.qaProg, steps.length - 1);
+  const cur = steps[ci];
+  const q = QA_DEFS[cur];
+  if (!q) {
+    return sceneBlocked(S);
+  }
+  const opts: OptItem[] = q.opts.map((o) => ({ action: "qa:" + cur + ":" + o[0], title: o[1] }));
+  return {
+    blocks: [
+      head(S, "qa"),
+      { t: "prog", label: "核验", done: ci, total: steps.length, pct: Math.round((ci / steps.length) * 100) },
+      { t: "title", text: q.q, big: false },
+      { t: "opts", items: opts },
+      ...pitBlock(screenMeta("qa")),
+    ],
+    primary: null,
+  };
+}
+
+/** 资格结果屏（通过 / 被限购；被限购仍可继续，但会卡在网签）. */
+export function sceneBlocked(S: SimState): SceneView {
+  const d = screenMeta("blocked");
+  const j = S.judge ?? judgeQA(S);
+  return {
+    blocks: [
+      dayBlock(S, d, 0),
+      {
+        t: "pit", sky: j.ok, fixLabel: "",
+        title: (j.ok ? "✓ " : "✕ ") + j.title, fix: j.reason,
+      },
+      {
+        t: "cta",
+        items: [
+          { action: "backSelect", title: "换一套试试", cls: "btn-out" },
+          { action: "requalify", title: "重新核验资格", cls: "btn-out" },
+        ],
+      },
+      ...pitBlock(d),
+    ],
+    primary: {
+      title: j.ok ? "去砍价" : "仍然继续（会卡在网签）",
+      action: "next",
+      wait: j.ok ? "谈价 1-4 周" : "",
+      disabled: false,
+      cls: j.ok ? "" : "btn-out",
+    },
+  };
+}
+
+/** 资格不过 → 网签备案过不去（signNet 屏的真实拦截）. */
+export function netBlocked(S: SimState): SceneView {
+  const j = S.judge ?? judgeQA(S);
+  const d = screenMeta("signNet");
+  return {
+    blocks: [
+      dayBlock(S, d, 0),
+      {
+        t: "pit", fixLabel: "",
+        title: "✕ 无法网签：" + j.title,
+        fix: j.reason + "居间协议与定金已经签了，网签备案过不去——定金能不能拿回来，就看合同里那几行怎么写。",
+      },
+      {
+        t: "cta",
+        items: [
+          { action: "backSelect", title: "换一套房源", cls: "btn-out" },
+          { action: "requalify", title: "重新核验资格", cls: "btn-out" },
+        ],
+      },
+    ],
+    primary: null,
+  };
 }

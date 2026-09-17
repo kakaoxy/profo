@@ -1,172 +1,126 @@
 /**
- * 购房模拟器 · 页面（38 屏第一人称购房+装修流程模拟）.
+ * 购房模拟器 · 页面（38 屏第一人称购房 + 装修流程模拟）.
  *
- * 状态 S 为模块级单实例（对应 HiFi 全局 S），交互统一走 handle(action) 代理：
- * 改 S → derive()/iloan() → setData(buildScene(S) + HUD + 流程条 + 卖家情绪条)。
- * 纯前端本地计算，无后端依赖（PRD §10）；每次进入页面重新开始新模拟。
+ * 状态 S 为模块级单实例，交互统一走 handle(action) 代理：
+ * 改 S → setData(buildScene(S) + 状态带 / 装修流程条 / 弹层)。
+ * 纯前端本地计算，无后端依赖；每次进入页面重新开始新模拟。
  *
  * 页面职责已按层拆分（本文件仅保留 Page 实例与薄方法）：
- *  - utils/scenes*.ts：场景内容块构建（38 屏文案）
- *  - utils/renov-data.ts / renov-contract.ts：装修 12 阶段与合同清单
- *  - utils/calc.ts：税费/贷款/限购/砍价纯计算
- *  - utils/handlers*.ts：handle() 事件分发（前置 + 流程 + 装修阶段）
- *  - utils/render.ts：HUD / 流程条 / 卖家情绪 / 弹层数据构建
- *  - utils/constants.ts：房源/角色/贷款方式等数据配置
- *  - utils/riskLog.ts：风险确认记录（本地持久化）
+ *  - utils/scenes*.ts：场景内容块 + 主按钮（38 屏）
+ *  - utils/flow.ts：购房 24 屏流程数据（常规周期 / 等谁 / 一句现场 / 坑 / 签约 12 项）
+ *  - utils/calc.ts：税费 / 贷款 / 限购 / 砍价 / 经历周期时间线纯计算
+ *  - utils/handlers*.ts：handle() 事件分发（前置 / 流程 / 装修阶段）
+ *  - utils/render.ts：状态带 / 装修流程条与双条 / 付款确认弹窗数据
+ *  - utils/constants.ts：房源 / 角色 / 贷款方式等配置与 SimState
+ *  - utils/riskLog.ts：风险确认记录（本地持久化，交易凭证）
  */
 
 import { buildScene } from "../utils/scenes";
-import type { SceneBlock } from "../utils/scenes";
-import type { SwipeBlock } from "../utils/scenes-common";
-import { derive } from "../utils/calc";
-import {
-  createInitialState,
-  CUST_RING_OPTIONS,
-  CUST_RING_VALUES,
-  DAYS,
-  ROLES,
-} from "../utils/constants";
-import type { House, RiskRecord, SceneKey, SimState } from "../utils/constants";
+import type { SceneBlock, SceneView } from "../utils/scenes";
+import type { PrimaryAction, SwipeBlock } from "../utils/scenes-common";
+import { elapsed, payAmount, settleMines, stressFace } from "../utils/calc";
+import { createInitialState } from "../utils/constants";
+import type { RiskRecord, SceneKey, SimState } from "../utils/constants";
 import { clearRiskLog, fmtTs, pushRiskLog } from "../utils/riskLog";
 import {
-  buildCalGrid,
-  buildHud,
-  buildSellerBar,
-  buildSteps,
-  calModal,
+  buildGuard,
+  buildRenovMeters,
+  buildRenovSteps,
   emptyModal,
-  netModal,
   payModal,
-  realOf,
-  taxRiskModal,
-  agreementModal,
+  renovStageLabel,
 } from "../utils/render";
-import type { HudData, ModalData, SellerBarData, StepItem } from "../utils/render";
+import type { GuardData, ModalData, RenovMeters, StepItem } from "../utils/render";
+import type { PayKind } from "../utils/flow";
 import { handleAction } from "../utils/handlers";
+import type { HandlerCtx, HandlerData } from "../utils/handlers";
+import { commitCustom } from "../utils/handlers-setup";
+import { cashChips, cashPrimary, customPrimary, customTaxRows } from "../utils/scenes-start";
 
 /** 全局模拟状态（单实例）. */
 let S: SimState;
 
-interface PageData {
+interface PageData extends HandlerData {
   blocks: SceneBlock[];
-  /** 舞台顶部动态锚点 id（换屏时递增变化，配合 scroll-into-view 强制回顶）. */
-  anchor: string;
-  /** scroll-view scroll-into-view 目标 id. */
-  intoView: string;
-  hud: HudData;
+  /** 主按钮（页面渲染在内容块之后；输入框改值时可单独 patch）. */
+  primary: PrimaryAction | null;
+  /** 购房状态带（装修屏为 null，走装修流程条 + 双条）. */
+  guard: GuardData | null;
+  /** 装修阶段流程条（购房屏为空数组）. */
+  steps: StepItem[];
   stepPos: string;
   dayText: string;
-  steps: StepItem[];
-  sellerBar: SellerBarData;
-  /** 自定义现金（万元）. */
-  formCash: string;
-  custPrice: string;
-  custArea: string;
-  custRingOptions: string[];
-  /** 环线口径值（与 custRingOptions 同序），picker 回传下标后据此取值. */
-  custRingValues: House["ring"][];
-  custRingIndex: number;
-  custTaxOptions: string[];
-  custTaxValues: string[];
-  custTaxIndex: number;
-  modal: ModalData;
+  /** 装修阶段徽章文案. */
+  renovLabel: string;
+  /** 装修期双条（钱 / 工）. */
+  meters: RenovMeters | null;
+  /** 装修期压力表情. */
+  stressEmoji: string;
+  /** 自定义房源：是否展示「取得原值」输入框（取得方式 = 继承 / 赠与）. */
+  custBaseVisible: boolean;
+  /** 舞台顶部动态锚点 id（换屏时递增变化，配合 scroll-into-view 强制回顶）. */
+  anchor: string;
+  intoView: string;
 }
 
 interface PageCustom {
   onAction(e: WechatMiniprogram.TouchEvent): void;
+  /** 事件分发（前置 → 流程 → 装修）；ctx 回调由 Page 实例自身承担. */
+  handle(action: string): void;
   onCashInput(e: WechatMiniprogram.Input): void;
   onCustInput(e: WechatMiniprogram.Input): void;
-  onCustRingChange(e: WechatMiniprogram.PickerChange): void;
-  onCustTaxChange(e: WechatMiniprogram.PickerChange): void;
-  onModalMask(): void;
-  noop(): void;
+  /** 就地替换某个内容块的数据（输入框改值时不整屏重绘，避免失焦与光标跳位）. */
+  patchBlock(key: string, patch: Record<string, unknown>): void;
   resetAll(): void;
   render(): void;
   nextScene(scene: SceneKey): void;
-  handle(action: string): void;
-  setupHouse(h: House): void;
-  openCreditModal(): void;
-  openNetModal(): void;
-  openTaxModal(): void;
-  openAgreementModal(): void;
-  openPayModal(kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback"): void;
-  /** 打开「模拟日历 · 时间快进」弹层：自动翻页流逝到下一节点日期后展示注意事项/风险；装修阶段显式传起止天数. */
-  openCalModal(to: SceneKey, fromDayArg?: number, toDayArg?: number): void;
-  /** 清理时间快进定时器（弹层关闭 / 页面卸载时调用）. */
-  clearCalTimer(): void;
-  confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string): void;
+  /** 打开付款确认弹窗. */
+  openPayModal(kind: PayKind): void;
   closeModal(): void;
-  /** 舞台滚动：跟踪 scrollTop（供上划到底判定）. */
+  /** 记录风险确认（交易凭证，本地持久化）. */
+  confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string): void;
+  noop(): void;
   onStageScroll(e: { detail: { scrollTop: number } }): void;
-  /** 舞台上划手势：记录起点 Y. */
   onStageTouchStart(e: WechatMiniprogram.TouchEvent): void;
-  /** 舞台上划手势：上划位移超阈值且已滚到底 → 翻卡. */
   onStageTouchEnd(e: WechatMiniprogram.TouchEvent): void;
-  /** 上划翻卡判定（对齐设计稿 trySwipe）. */
   trySwipe(dy: number): void;
-  /** 测量舞台视口 / 内容高度与滚动位（setData 回调后调用）. */
   measureStage(): void;
-  /** 动态锚点序号（换屏递增，保证 intoView 每次都变化触发）. */
   anchorN?: number;
-  /** 上一次渲染的场景 key（判断换屏 → 回顶；就地更新不回顶）. */
   curScene?: string;
-  /** 当前屏上划触发的动作（决策屏为空 = 不可上划跳过）. */
   swipeAction?: string;
-  /** 舞台视口高度 / 内容高度 / 当前滚动位（px，measureStage 维护）. */
   stageH?: number;
   scH?: number;
   scrollT?: number;
-  /** 上划手势起点 Y / 上次翻卡时间戳（420ms 节流）. */
   touchY0?: number;
   swipeAt?: number;
   onLoad(): void;
-  onUnload(): void;
-  /** 时间快进定时器句柄（onLoad 初始化，关闭/卸载时清理）. */
-  calTimer?: number | null;
-  /** 快进起点 / 当前定位 / 终点（真实日期，以今天为第 1 天）. */
-  calStart?: Date;
-  calCur?: Date;
-  calEnd?: Date;
 }
 
 Page<PageData, PageCustom>({
   data: {
     blocks: [],
-    anchor: "top0",
-    intoView: "top0",
-    hud: { stageLabel: "", stepText: "", cashText: "", cashLow: false, borrowed: false, borrowedText: "0万", stressEmoji: "😌", meters: null },
+    primary: null,
+    guard: null,
+    steps: [],
     stepPos: "",
     dayText: "",
-    steps: [],
-    sellerBar: { show: false, name: "", fill: 70, face: "🙂" },
+    renovLabel: "",
+    meters: null,
+    stressEmoji: "",
+    custBaseVisible: false,
+    anchor: "top0",
+    intoView: "top0",
+    modal: emptyModal(),
     formCash: "",
     custPrice: "",
     custArea: "",
-    custRingOptions: CUST_RING_OPTIONS,
-    custRingValues: CUST_RING_VALUES,
-    custRingIndex: 0,
-    custTaxOptions: [
-      "新房（免增值税 / 无卖方个税）",
-      "满五唯一（免增值税、免个税）",
-      "满五不唯一（免增值税、个税核定 1%）",
-      "满二不唯一（免增值税、个税核定 1%）",
-      "不满 2 年（全额增值税 5% + 附加 + 个税 1%）",
-    ],
-    custTaxValues: ["new", "5u", "5n", "2n", "0n"],
-    custTaxIndex: 0,
-    modal: emptyModal(),
+    custBase: "",
   },
 
   onLoad() {
-    this.calTimer = null; /* 时间快进定时器句柄，onLoad 初始化 */
     this.anchorN = 0; /* 动态锚点序号，换屏回顶用 */
     this.swipeAt = 0; /* 上划翻卡节流起点 */
     this.resetAll();
-  },
-
-  /** 页面卸载：清理快进定时器，防止页面离场后仍在 setData. */
-  onUnload() {
-    this.clearCalTimer();
   },
 
   /** 事件代理：所有 data-act 点击统一分发到 handle. */
@@ -177,61 +131,81 @@ Page<PageData, PageCustom>({
     }
   },
 
+  /** 现金自定义输入：实时更新家底并只刷新现金胶囊与主按钮（整屏重绘会让输入框失焦）. */
   onCashInput(e: WechatMiniprogram.Input) {
+    const v = parseFloat(e.detail.value);
     this.setData({ formCash: e.detail.value });
+    S.cashSet = v > 0;
+    if (v > 0) {
+      S.cash = Math.round(v * 10000);
+      S.borrowed = 0;
+      S.usedBorrow = {};
+    }
+    this.patchBlock("cash", { items: cashChips(S) });
+    this.setData({ primary: cashPrimary(S) });
   },
 
+  /** 自定义房源输入：落定口径并只刷新税费预览与主按钮. */
   onCustInput(e: WechatMiniprogram.Input) {
     const field = e.currentTarget.dataset.field as string;
     this.setData({ [field]: e.detail.value });
+    commitCustom(this, S, {}, false);
+    this.patchBlock("custTax", { items: customTaxRows(S) });
+    this.setData({ primary: customPrimary(S) });
   },
 
-  onCustRingChange(e: WechatMiniprogram.PickerChange) {
-    this.setData({ custRingIndex: parseInt(String(e.detail.value), 10) || 0 });
-  },
-
-  onCustTaxChange(e: WechatMiniprogram.PickerChange) {
-    this.setData({ custTaxIndex: parseInt(String(e.detail.value), 10) || 0 });
-  },
-
-  /** 点弹层遮罩关闭（sheet 内 catchtap 阻断冒泡，不会误关）. */
-  onModalMask() {
-    this.closeModal();
+  /** 就地替换内容块数据（按块 key 定位）. */
+  patchBlock(key: string, patch: Record<string, unknown>) {
+    const blocks = this.data.blocks as { key?: string }[];
+    for (let i = 0; i < blocks.length; i++) {
+      if (blocks[i].key === key) {
+        const path: Record<string, unknown> = {};
+        for (const k of Object.keys(patch)) {
+          path["blocks[" + i + "]." + k] = patch[k];
+        }
+        this.setData(path);
+        return;
+      }
+    }
   },
 
   noop() {
     // sheet 内点击阻断冒泡，防止触发遮罩关闭
   },
 
-  /** 重置为初始状态并渲染开始屏（等同 HiFi resetAll）. */
+  /** 重置为初始状态并渲染开始屏. */
   resetAll() {
     S = createInitialState();
     clearRiskLog(); /* 交易凭证随本次模拟生命周期结束，重新开始即清空 */
-    this.setData({ formCash: "", custPrice: "", custArea: "", custRingIndex: 0, custTaxIndex: 0 });
+    this.setData({ formCash: "", custPrice: "", custArea: "", custBase: "" });
     this.closeModal();
     this.render();
   },
 
   /**
-   * 依据 S 全量渲染当前场景 + HUD + 流程条 + 卖家情绪条。
+   * 依据 S 全量渲染当前场景 + 状态带 + 装修流程条 + 弹层。
    * 换屏时递增动态锚点并置 intoView 强制回顶（一次 setData 同步变更 id 与目标，
-   * id 变化保证每次都触发滚动）；就地更新（如合同勾选）不动锚点 → 不回顶。
-   * 同时提取本屏上划动作（决策屏为空），渲染完成后测量舞台尺寸供上划判定。
+   * id 变化保证每次都触发滚动）；就地更新（如签约清单勾选）不动锚点 → 不回顶。
    */
   render() {
-    const blocks = buildScene(S);
-    const sw = blocks.find((b) => b.t === "swipe") as SwipeBlock | undefined;
+    const view: SceneView = buildScene(S);
+    const sw = view.blocks.find((b) => b.t === "swipe") as SwipeBlock | undefined;
     this.swipeAction = sw?.action ?? "";
+    const renov = S.scene.indexOf("renov") === 0;
+    const stepsData = renov ? buildRenovSteps(S) : { steps: [] as StepItem[], stepPos: "", dayText: "第 " + S.day + " 天" };
     const sceneChanged = S.scene !== this.curScene;
     this.curScene = S.scene;
-    const stepsData = buildSteps(S);
     const patch: Record<string, unknown> = {
-      blocks,
-      hud: buildHud(S),
+      blocks: view.blocks,
+      primary: view.primary,
+      guard: buildGuard(S),
       steps: stepsData.steps,
       stepPos: stepsData.stepPos,
       dayText: stepsData.dayText,
-      sellerBar: buildSellerBar(S),
+      renovLabel: renov ? renovStageLabel(S) : "",
+      meters: buildRenovMeters(S),
+      stressEmoji: stressFace(S.stress),
+      custBaseVisible: S.scene === "custom" && !!S.custom && S.custom.acq === "inherit",
     };
     if (sceneChanged || this.anchorN === undefined) {
       this.anchorN = (this.anchorN ?? 0) + 1;
@@ -242,9 +216,49 @@ Page<PageData, PageCustom>({
     this.setData(patch, () => this.measureStage());
   },
 
+  /**
+   * 换屏：记录走过的屏（决定累加哪些段的经历天数）→ 结算到站学费单 → 重算已走天数 → 重绘。
+   * 顺序与设计稿一致：先结算本屏埋的雷，天数才是含坑的总量。
+   */
   nextScene(scene: SceneKey) {
     S.scene = scene;
+    if (S.walked.indexOf(scene) < 0) {
+      S.walked.push(scene);
+    }
+    settleMines(S, scene);
+    S.day = elapsed(S);
     this.render();
+  },
+
+  /** 事件代理：前置（身份/现金/选房/资格）→ 流程（砍价→总账）→ 装修 三阶段依次捕获. */
+  handle(action: string) {
+    handleAction(this, S, action);
+  },
+
+  /** 打开付款确认弹窗（金额与「下一节点」口径见 render.payModal）. */
+  openPayModal(kind: PayKind) {
+    this.setData({ modal: payModal(S, kind, payAmount(S, kind)) });
+  },
+
+  closeModal() {
+    this.setData({ modal: emptyModal() });
+  },
+
+  /** 记录一次风险确认（写本地存储 + 镜像 S.riskLog），作为交易凭证一部分. */
+  confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string) {
+    const rec: RiskRecord = {
+      type,
+      title:
+        type === "deposit"
+          ? "居间签约 · 定金罚则确认"
+          : type === "liquidated"
+            ? "网签 · 违约金 20% 确认"
+            : "到手价 · 税费风险确认",
+      ts: fmtTs(),
+      detail,
+    };
+    pushRiskLog(rec);
+    S.riskLog = S.riskLog.concat([rec]);
   },
 
   /** 舞台滚动：跟踪 scrollTop（供上划到底判定）. */
@@ -272,8 +286,9 @@ Page<PageData, PageCustom>({
   },
 
   /**
-   * 上划翻卡判定（对齐设计稿 trySwipe）：上划位移 > 46px、已滚到距底部 16px 内
-   * （scrollT + 视口高 ≥ 内容高 − 16）、420ms 节流；swipeAction 为空的决策屏不可跳过。
+   * 上划翻卡判定：上划位移 > 46px、已滚到距底部 16px 内、420ms 节流；
+   * 只有带 action 的上划卡（装修阶段）可跳过——购房屏（含过户/领证）不设上划动作，
+   * 避免上划绕过付款确认。
    */
   trySwipe(dy: number) {
     if (dy <= 46 || !this.swipeAction) {
@@ -316,128 +331,5 @@ Page<PageData, PageCustom>({
           this.scH = sc.height;
         }
       });
-  },
-
-  /** 事件代理：前置（身份/现金/选房/资格）与流程（砍价→账单）两阶段依次捕获. */
-  handle(action: string) {
-    handleAction(this, S, action);
-  },
-
-  /** 选房后统一入口：落定房源、清空砍价/问答态，先核验资格. */
-  setupHouse(h: House) {
-    if (!S.role) {
-      S.role = ROLES.first; /* 兜底：未选身份默认刚需 */
-    }
-    S.house = h;
-    S.slash = 0;
-    S.negoCap = false;
-    S.netDeal = false;
-    S.judge = null;
-    S.ans = {};
-    S.qaProg = 0;
-    if (S.stress < 8) {
-      S.stress = 8;
-    }
-    derive(S);
-    wx.showToast({ title: "✅ 房源已定 · " + h.name, icon: "none" });
-    this.nextScene("qa"); /* 前期为私人决策，无时间预期，选完直接进入资格核验 */
-  },
-
-  /** 信用贷二次确认（红线）：弹层仅作风险教育，不收集信息. */
-  openCreditModal() {
-    this.setData({ modal: { ...emptyModal(), type: "credit" } });
-  },
-
-  /** 「到手价」解释弹层：把卖方税费金额算给用户看. */
-  openNetModal() {
-    this.setData({ modal: netModal(S) });
-  },
-
-  /** 「到手价」税费风险强制确认弹层：分项列明卖方税费转嫁明细，勾选后才可确认（不可关闭）. */
-  openTaxModal() {
-    this.setData({ modal: taxRiskModal(S) });
-  },
-
-  /** 居间协议核对清单弹层：8 处条款逐项勾选核对（含产调/共有权人核查），全部核对后才可进入付款确认. */
-  openAgreementModal() {
-    this.setData({ modal: agreementModal() });
-  },
-
-  /** 付款确认弹层（定金 / 网签首付先付 / 补足剩余首付 / 缴税领证 / 扣押尾款，确认后才真实扣款）. */
-  openPayModal(kind: "deposit" | "firstPay" | "restPay" | "transfer" | "holdback") {
-    this.setData({ modal: payModal(S, kind) });
-  },
-
-  /**
-   * 打开「模拟日历 · 时间快进」弹层：fromDay/toDay 缺省取静态时间轴（交易流程），
-   * 装修阶段由 handler 显式传入动态天数（S.renovDay 口径）。
-   * 定时器自动翻页（跨月自动切页），快进结束后定格目标日期并展示下一环节注意事项与风险。
-   */
-  openCalModal(to: SceneKey, fromDayArg?: number, toDayArg?: number) {
-    const fromDay = fromDayArg ?? DAYS[S.scene] ?? 1;
-    const toDay = toDayArg ?? DAYS[to] ?? 1;
-    if (toDay <= fromDay) {
-      return; /* 无正向等待时长（同节点内流转）不弹日历 */
-    }
-    this.clearCalTimer();
-    const start = realOf(fromDay);
-    const end = realOf(toDay);
-    const gap = toDay - fromDay;
-    this.calStart = start;
-    this.calCur = start;
-    this.calEnd = end;
-    this.setData({ modal: calModal(S, to) });
-    /* 单步快进天数：最多 6 步走完（间隔一致，步数越多等待感越强） */
-    const step = Math.max(1, Math.ceil(gap / 6));
-    this.calTimer = setInterval(() => {
-      const cur = this.calCur ?? start;
-      const next = new Date(cur.getTime());
-      next.setDate(next.getDate() + step);
-      const done = next.getTime() >= end.getTime();
-      const target = done ? end : next;
-      const grid = buildCalGrid(target);
-      const progress = done ? gap : Math.min(gap, Math.round((target.getTime() - start.getTime()) / 86400000));
-      this.setData({
-        "modal.cal.month": grid.month,
-        "modal.cal.cells": grid.cells,
-        "modal.cal.progress": progress,
-        "modal.cal.pct": Math.round((progress / gap) * 100),
-        "modal.cal.done": done,
-      });
-      this.calCur = target;
-      if (done) {
-        this.clearCalTimer();
-      }
-    }, 620);
-  },
-
-  /** 清理时间快进定时器. */
-  clearCalTimer() {
-    if (this.calTimer) {
-      clearInterval(this.calTimer);
-      this.calTimer = null;
-    }
-  },
-
-  /** 记录一次风险确认（写本地存储 + 镜像 S.riskLog），作为交易凭证一部分. */
-  confirmRisk(type: "deposit" | "liquidated" | "netTax", detail: string) {
-    const rec: RiskRecord = {
-      type,
-      title:
-        type === "deposit"
-          ? "居间签约 · 定金罚则确认"
-          : type === "liquidated"
-            ? "网签 · 违约金 20% 确认"
-            : "到手价 · 税费风险确认",
-      ts: fmtTs(),
-      detail,
-    };
-    pushRiskLog(rec);
-    S.riskLog = S.riskLog.concat([rec]);
-  },
-
-  closeModal() {
-    this.clearCalTimer(); /* 弹层关闭时一并终止尚未完成的日历快进动画 */
-    this.setData({ modal: emptyModal() });
   },
 });

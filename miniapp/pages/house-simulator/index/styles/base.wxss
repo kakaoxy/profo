@@ -8,6 +8,9 @@
 }
 .num {
   font-variant-numeric: tabular-nums;
+  /* 设计稿「移植须知」：微信不认 font-variant-numeric（数字会跳动），
+     这里用 tnum 兜底（保持系统无衬线字体，仅锁定数字等宽） */
+  font-feature-settings: "tnum" 1;
 }
 
 /* ===== HUD 顶部状态条 ===== */
@@ -55,13 +58,6 @@
   font-size: 26rpx;
   font-weight: 500;
   color: var(--ink);
-}
-.hud-item .num.low {
-  color: #b7410e;
-}
-.hud-item .num.debt {
-  color: #b7410e;
-  font-weight: 600;
 }
 .moodface {
   font-size: 28rpx;
@@ -131,38 +127,6 @@
 .stp.cur .stp-label {
   color: var(--ink);
   font-weight: 600;
-}
-
-/* ===== 卖家情绪条 ===== */
-.sellerbar {
-  flex: none;
-  background: var(--pure-white);
-  border-bottom: 2rpx solid #ece7de;
-  padding: 12rpx 32rpx;
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  z-index: 5;
-}
-.s-name {
-  font-size: 24rpx;
-  color: var(--graphite);
-}
-.s-bar {
-  flex: 1;
-  height: 12rpx;
-  border-radius: 9999rpx;
-  background: var(--fog);
-  overflow: hidden;
-}
-.s-fill {
-  height: 100%;
-  border-radius: 9999rpx;
-  background: var(--rust);
-  transition: width 0.5s ease;
-}
-.s-face {
-  font-size: 28rpx;
 }
 
 /* ===== 舞台内容区 ===== */

@@ -27,6 +27,7 @@
   font-size: 21rpx;
   color: var(--graphite);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 .rk-detail {
   margin-top: 10rpx;
