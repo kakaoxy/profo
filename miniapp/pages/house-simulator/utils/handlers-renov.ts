@@ -1,11 +1,14 @@
 /**
- * 购房模拟器 · 事件分发「装修阶段 v4：预算档位 → 12 阶段（3 处决策 + 上划卡）→ 完成总账」.
+ * 购房模拟器 · 事件分发「装修阶段 v6：预算档位 → 12 阶段（3 处决策 + 上划卡）→ 完成总账」.
  *
- * 从 handlers-flow.ts 拆出。口径对齐设计稿 v4「一个坑 + 上划节奏」：
+ * 从 handlers-flow.ts 拆出。口径对齐设计稿 v6「一个坑 + 上划节奏」：
  *  - 决策点只有 3 处：预算档位（renovPick）、设计师档位（renovTier）、13 项合同清单（renovCl）；
  *  - 其余阶段为上划卡，推进统一走 renovNext（CTA 与页面「上划手势」共用）；
  *  - 签约（离开合同屏）时结算：没提的项埋「增项单雷」，到对应阶段按增项价爆单；
- *  - 明确不做（noKind=risk）的项当场埋「风险雷」（如空鼓 / 跳闸 / 渗水）。
+ *  - 明确不做（noKind=risk）的项当场埋「风险雷」（如空鼓 / 跳闸 / 渗水）；
+ *    同一项反复点「不做」只埋一张（pushMine 按 scope 去重），改点「写进合同」撤回该雷；
+ *  - 半包：halfOwn 项只列自购清单（不计合同价），签约时另埋 3 笔「自购主材」雷；
+ *  - 设计师档位可改选；「先写清不能省的 N 项」（renovWriteRisk）只覆盖还没结论的项。
  *
  * 钱的三个数：合同价 = renovBudget + renovDesignFee + 写进合同的项（contractAddOf）；
  *             增项 = renovExtra（爆单累计）；结账价 = 合同价 + 增项（paidTotalOf）。
@@ -15,7 +18,7 @@
 import { fmt, fmtN } from "./calc";
 import { DAYS, SimState } from "./constants";
 import type { HandlerCtx } from "./handlers";
-import { findRenovDef, RENOV_CONTRACT, RENOV_PKGS, RENOV_TIERS } from "./renov-data";
+import { findRenovDef, RENOV_CONTRACT, RENOV_HALF_MINES, RENOV_PKGS, RENOV_TIERS } from "./renov-data";
 import type { RenovBill } from "./renov-data";
 
 /** 轻提示. */
@@ -23,13 +26,16 @@ function toast(title: string): void {
   wx.showToast({ title, icon: "none" });
 }
 
-/** 埋雷：合同没写 / 明确不做的项，到 at 阶段爆单. */
+/** 埋雷：合同没写 / 明确不做的项，到 at 阶段爆单. 同一 scope 只埋一张（反复点「不做」不翻倍）. */
 function pushMine(
   S: SimState,
   m: { at: string; days: number; lines: [string, number][]; text: string; src: string; hint: string },
   how: string,
   scope: string | null,
 ): void {
+  if (scope && S.renovMines.some((x) => x.scope === scope)) {
+    return;
+  }
   S.renovMines.push({
     at: m.at,
     days: m.days || 0,
@@ -43,15 +49,14 @@ function pushMine(
 
 /**
  * 进入某装修阶段（进场结算）：
- * 1. 售后质保阶段先快照完工入住日（renovDoneDay），再叙事推进一年；
+ * 1. 售后质保阶段快照完工入住日（renovDoneDay）——质保 365 天只是展示口径，不再往工期累加；
  * 2. 结算到站雷：每笔生成增项单（RenovBill），支出计入 renovExtra、返工计入 renovDay、
- *    压力累加、记入记事，供本屏增项单警示条展示。
+ *    压力累加（步长 6：13 张全踩 = 8+78 才够到 😱）、记入记事，供本屏增项单警示条展示。
  */
 export function renovArrive(S: SimState, tail: string): void {
   const def = findRenovDef(tail);
   if (tail === "Warr") {
     S.renovDoneDay = S.renovDay; /* 快照完工入住日（供总账屏统计装修历时） */
-    S.renovDay += 365; /* 售后质保叙事推进一年 */
   }
   const hits = S.renovMines.filter((m) => m.at === tail);
   S.renovBurst = [];
@@ -63,7 +68,7 @@ export function renovArrive(S: SimState, tail: string): void {
     const cost = m.lines.reduce((a, l) => a + l[1], 0);
     S.renovExtra += cost;
     S.renovDay += m.days;
-    S.stress += 5;
+    S.stress += 6;
     const bill: RenovBill = {
       no: "#" + String(S.renovBills.length + 1).padStart(2, "0"),
       stage: def?.name ?? tail,
@@ -84,11 +89,15 @@ export function renovArrive(S: SimState, tail: string): void {
   }
 }
 
-/** 签约结算（离开合同屏时调用）：没提的项 → 增项单雷（合同价因此看着更低）. */
+/** 签约结算（离开合同屏时调用）：没提的项 → 增项单雷（合同价因此看着更低）；
+ *  半包再加 3 笔「自购主材」雷——13 项写清只保证不被装修公司加价，主材自购的坑与合同无关. */
 export function settleContract(S: SimState): void {
   const omitItems = RENOV_CONTRACT.filter((it) => !S.renovCon[it.k] && it.omit);
   for (const it of omitItems) {
     pushMine(S, it.omit!, "", it.k);
+  }
+  if (S.renovPkg === "half") {
+    RENOV_HALF_MINES.forEach((m, i) => pushMine(S, m, "半包 · 自购主材", "half:" + i));
   }
   S.renovLog.push({
     stage: "签合同",
@@ -149,15 +158,16 @@ export function handleRenov(ctx: HandlerCtx, S: SimState, action: string): void 
     return;
   }
 
-  /* 设计屏：选定设计师档位（就地更新设计费，停留本屏） */
+  /* 设计屏：选定设计师档位（就地更新设计费，停留本屏；可改选，合同价随之重算） */
   if (action.indexOf("renovTier:") === 0) {
     const k = action.slice("renovTier:".length);
     const tier = RENOV_TIERS.find((t) => t.k === k);
-    if (!tier || S.renovTier) {
-      return; /* 档位一次性选定，防重复 */
+    if (!tier) {
+      return;
     }
     S.renovTier = tier.k;
     S.renovDesignFee = tier.price;
+    S.renovLog = S.renovLog.filter((l) => l.stage !== "设计"); /* 改主意只留最后一次 */
     S.renovLog.push({
       stage: "设计",
       text: "定了 " + tier.name + (tier.price ? "（¥" + fmtN(tier.price) + "）" : "（免费）"),
@@ -166,7 +176,21 @@ export function handleRenov(ctx: HandlerCtx, S: SimState, action: string): void 
     return;
   }
 
-  /* 合同清单：单项决策（do=写进合同 / no=明确不做；risk 项不做埋雷） */
+  /* 合同清单：一键写清「不能省」的项（noKind=risk）——只覆盖还没结论的项，
+     已选「不做」的项保留用户的选择（要改就点那一行的「写进合同」） */
+  if (action === "renovWriteRisk") {
+    const left = RENOV_CONTRACT.filter((it) => it.noKind === "risk" && !S.renovCon[it.k]);
+    if (!left.length) {
+      return;
+    }
+    for (const it of left) {
+      S.renovCon[it.k] = "do";
+    }
+    ctx.render();
+    return;
+  }
+
+  /* 合同清单：单项决策（do=写进合同 / no=明确不做；risk 项不做埋雷，改主意则撤雷） */
   if (action.indexOf("renovCl:") === 0) {
     const parts = action.split(":");
     const it = RENOV_CONTRACT.find((x) => x.k === parts[1]);
@@ -175,7 +199,9 @@ export function handleRenov(ctx: HandlerCtx, S: SimState, action: string): void 
       return;
     }
     S.renovCon[it.k] = v;
-    if (v === "no" && it.noKind === "risk" && it.noMine) {
+    if (v === "do") {
+      S.renovMines = S.renovMines.filter((m) => m.scope !== it.k); /* 改主意写进合同：撤回已埋的雷 */
+    } else if (it.noKind === "risk" && it.noMine) {
       pushMine(S, it.noMine, "你选了「" + (it.noLabel || "不做") + "」", it.k);
     }
     ctx.render(); /* 停留本屏：合同价条与进度就地更新（不回顶） */

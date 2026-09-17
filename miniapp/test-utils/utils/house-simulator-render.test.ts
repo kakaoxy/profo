@@ -144,20 +144,45 @@ describe("模拟日历 · 时间快进（calModal / buildCalGrid）", () => {
     expect(m.cal!.gap).toBe(7);
   });
 
-  it("装修流程条：buildSteps 在装修场景返回 12 项阶段并标记进度", () => {
+  it("装修流程条：buildSteps 在装修场景返回 12 项阶段并标记进度（主材紧跟拆除）", () => {
     const S = createInitialState();
-    S.scene = "renovElec"; // 水电 = 第 4 阶段
+    S.scene = "renovElec"; // 水电 = 第 5 阶段（拆除 → 主材 → 水电）
     S.renovDay = 20;
     const r = buildSteps(S);
     expect(r.steps).toHaveLength(12);
-    expect(r.stepPos).toBe("装修 4 / 12");
+    expect(r.stepPos).toBe("装修 5 / 12");
     expect(r.dayText).toBe("第 20 天");
-    expect(r.steps.filter((s) => s.cls === "done")).toHaveLength(3); // 前 3 阶段（设计/签约/拆除）已完成
-    expect(r.steps.filter((s) => s.cls === "cur")).toHaveLength(1); // 当前为第 4 阶段（水电）
-    expect(r.steps[3].label).toBe("水电"); // 当前阶段标记在水电
+    expect(r.steps.filter((s) => s.cls === "done")).toHaveLength(4); // 前 4 阶段（设计/签约/拆除/主材）已完成
+    expect(r.steps.filter((s) => s.cls === "cur")).toHaveLength(1); // 当前为第 5 阶段（水电）
+    expect(r.steps[3].label).toBe("主材"); // 主材前移到拆除之后
+    expect(r.steps[4].label).toBe("水电"); // 当前阶段标记在水电
     const t = createInitialState();
     t.scene = "sign";
     expect(buildSteps(t).steps).toHaveLength(12);
+  });
+
+  it("装修 HUD 双条：钱条（结账 / 合同）与工期条（实际 / 计划）按超支、超期分段", () => {
+    const S = createInitialState();
+    S.scene = "renovPaint";
+    S.renovPkg = "f30";
+    S.renovBudget = 264000; // 26.4 万
+    S.renovDesignFee = 0;
+    S.renovCon = {};
+    S.renovDay = 17 + 103 + 60; // 超期 60 天（绝对天：计划 16 + 104 = 120 天）
+    S.renovExtra = 103000;
+    const m = buildHud(S).meters!;
+    expect(m.money.value).toBe("¥36.7 万"); // 26.4 万 + 增项 10.3 万
+    expect(m.money.of).toBe("合同 26.4 万");
+    expect(Math.round(m.money.over)).toBe(28); // 10.3 / 36.7
+    expect(m.time.value).toBe("180 天");
+    expect(m.time.of).toBe("计划 120 天"); // 交易 16 天 + 开工首日 + 基础 103 天
+    expect(Math.round(m.time.over)).toBe(33); // 超期 60 / 180
+    expect(Math.round(m.time.base)).toBe(67); // 计划 120 / 180（两段合计 100）
+    expect(m.loss).toContain("增项");
+    // 交易阶段没有这两条
+    const t = createInitialState();
+    t.scene = "nego1";
+    expect(buildHud(t).meters).toBeNull();
   });
 
   it("装修完成回最终账单：dayText 按完工入住日快照（S.renovDoneDay）计；跳过装修仍按交易完成日（第 16 天）", () => {

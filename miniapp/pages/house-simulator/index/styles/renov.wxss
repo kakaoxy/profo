@@ -1,5 +1,5 @@
-/* 购房模拟器 · 装修模块（对齐 HiFi 设计稿 docs/2026-09-15-装修模块-高保真设计稿.html v4）
-   档位卡 / 上划卡 / 合同价条 / 已定进度 / 合同清单 / 增项单 / 工期条。
+/* 购房模拟器 · 装修模块（对齐 HiFi 设计稿 docs/2026-09-15-装修模块-高保真设计稿.html v6）
+   HUD 双条 / 档位卡 / 上划卡 / 合同价条 / 已定进度 / 合同清单 / 增项单 / 阶段柱图。
    设计稿新增局部变量沿用既有色值，挂 .page 作用域避免全局污染：
    --hairline #ece7de · --hairline-soft #eeeff1 · --ok #176b4d · --danger #b7410e · --sky-ink #2a5ca0 */
 .page {
@@ -8,6 +8,59 @@
   --ok: #176b4d;
   --danger: #b7410e;
   --sky-ink: #2a5ca0;
+}
+
+/* ===== 装修期 HUD 双条（钱 = 结账/合同，工 = 实际/计划；深色 = 计划内，橙 = 超出的部分） =====
+   注意：这段渲染在页面顶部 HUD（index.wxml 的 .meters），不是舞台内容 */
+.meters {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  padding: 16rpx 28rpx 20rpx;
+  background: var(--pure-white);
+  border-bottom: 2rpx solid var(--hairline);
+}
+.gm {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: 21rpx;
+  color: var(--graphite);
+}
+.gm-k {
+  flex: none;
+  width: 24rpx;
+  color: var(--dove);
+  font-weight: 500;
+}
+.gm-bar {
+  flex: 1;
+  height: 14rpx;
+  border-radius: 999rpx;
+  background: var(--fog);
+  display: flex;
+  overflow: hidden;
+}
+.gm-base {
+  background: var(--ink);
+}
+.gm-over {
+  background: var(--danger);
+}
+.gm-v {
+  flex: none;
+  color: var(--ink);
+  font-weight: 500;
+  min-width: 210rpx;
+  text-align: right;
+}
+.gm-of {
+  color: var(--dove);
+  font-weight: 400;
+}
+.gm-loss {
+  font-size: 21rpx;
+  color: var(--danger);
 }
 
 /* ===== 装修 · 档位卡（预算档位 / 设计师档位；选中态停留展示底牌） ===== */
@@ -135,6 +188,13 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.015em;
 }
+/* 工期口径补充（如「下单 2 天 · 等货 30-45 天」） */
+.sw-note {
+  font-size: 21rpx;
+  color: var(--dove);
+  margin-top: 8rpx;
+  line-height: 1.35;
+}
 .sw-key {
   margin-top: 22rpx;
   border-radius: 30rpx;
@@ -204,6 +264,25 @@
 }
 .pricebar.bad {
   background: var(--danger);
+}
+/* 13 项全写清 = 正反馈（绿）；写清不该被染成警告色 */
+.pricebar.ok {
+  background: var(--ok);
+}
+/* 双段进度条（总账「计划 → 实际工期」）：白 = 计划内，暖色 = 增项拖出来的天数 */
+.t-bar {
+  display: flex;
+  height: 16rpx;
+  border-radius: 999rpx;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.18);
+  margin-top: 18rpx;
+}
+.t-base {
+  background: rgba(255, 255, 255, 0.92);
+}
+.t-over {
+  background: var(--apricot-wash);
 }
 
 /* ===== 已定进度（合同清单勾选推进） ===== */
@@ -345,6 +424,11 @@
   background: var(--fog);
   color: var(--graphite);
   border: 2rpx solid var(--dove);
+}
+/* 半包 · 主材自购：这一项只列自购清单，不进装修公司合同价 */
+.pill-warn {
+  background: var(--sky-wash);
+  color: var(--sky-ink);
 }
 
 /* ===== 增项单（爆雷条的账目化） ===== */

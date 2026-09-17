@@ -1,20 +1,24 @@
 /**
- * 购房模拟器 · 装修流程数据 v4「一个坑 + 上划节奏」.
+ * 购房模拟器 · 装修流程数据 v6「一个坑 + 上划节奏」.
  *
- * 策略（对齐设计稿 docs/2026-09-15-装修模块-高保真设计稿.html v4）：
+ * 策略（对齐设计稿 docs/2026-09-15-装修模块-高保真设计稿.html v6）：
  *  - 不再「全面表达装修的坑」——不现实。只深耕一个最大的坑：签合同
  *    （13 项清单数据见 renov-contract.ts）；
  *  - 决策点只有 3 处：① 预算档位 ② 设计师档位 ③ 13 项合同清单；
  *    其余 10 个阶段是「上划卡」（一句现场 + 工期/工种 + 一句提醒），不设分支；
  *  - 合同清单不预先标价——「合同价看着低、好签」正是坑本身；
  *    没提的项装到那一步才以增项单到站（比写进合同贵 ≈35%）；
- *  - 半包 = 做过功课的人：不演坑，卡片提醒换成「验收 / 功课时间表」（help 字段）。
+ *  - 半包 = 人工 + 辅材，主材自购：合同上没坑（halfOwn 项只列清单、不计合同价），
+ *    坑在建材市场（RENOV_HALF_MINES 3 笔：等货超期 / 复尺量错 / 辅材被换），
+ *    卡片提醒从「最容易踩的点」换成「验收 / 主材时间表」（help 字段）；
+ *  - 设计档位可改选；「明确不做」反复点不重复埋雷、改点「写进合同」撤回雷。
  *
  * 钱的三个数：合同价 = 预算 + 设计费 + 写进合同的项；
  *             增项 = 合同没写的到站结算；结账价 = 合同价 + 增项。
  * 纯数据/纯函数模块（对 SimState 仅 type-only 引用，无运行时循环依赖）。
  */
 
+import { DAYS } from "./constants";
 import type { SimState } from "./constants";
 import { RENOV_CONTRACT } from "./renov-contract";
 
@@ -79,6 +83,8 @@ export interface RenovContractItem {
   noNote: string;
   /** safe = 不做无风险；risk = 不做埋雷（noMine）. */
   noKind: "safe" | "risk";
+  /** 半包下这一项属「主材自购」：写进合同也只列清单，不计入装修公司合同价. */
+  halfOwn?: boolean;
   /** 半包口径的「写清」文案（如主材自购清单）. */
   halfWrite?: string;
   /** 半包口径的「不做」文案. */
@@ -93,7 +99,7 @@ export interface RenovContractItem {
 
 /** 预算档位（上海就两种情况：半包 / 全包三档）. */
 export interface RenovPkg {
-  k: "half" | "f15" | "f25" | "f40";
+  k: "half" | "f20" | "f30" | "f40";
   /** 标签（主材自购 / 广告里的全包价 等）. */
   tag: string;
   /** 单价（元/㎡）. */
@@ -126,7 +132,7 @@ export interface RenovStageDef {
   /** 阶段序号（1-12）. */
   idx: number;
   name: string;
-  /** 基础工期（天；质保阶段 365 由 handler 叙事推进）. */
+  /** 基础工期（天；质保 365 只是展示口径，不往工期上累加）. */
   days: number;
   /** 工期展示口径（如 "9-15 天"）. */
   daysText: string;
@@ -146,26 +152,27 @@ export interface RenovStageDef {
   contract?: boolean;
 }
 
-/** 预算档位（半包不演坑：tail 说明后续口径）. */
+/** 预算档位（半包不省心：tail 说明后续口径）.
+ *  全包三档 gap 各 1000 元/㎡ ≈ 13 项写清总额（59,900），所以「起步档补齐 ≈ 追平主流档」成立。 */
 export const RENOV_PKGS: RenovPkg[] = [
   {
     k: "half", tag: "主材自购", perSq: 1000, badge: "cool", name: "半包 · 施工 + 辅材",
-    desc: "人工 + 辅材，主材自己买（另约 3-6 万）。",
-    tail: "选这条路的人做过功课：后面不演坑，只给你验收时间表。",
+    desc: "含人工 + 辅材 + 基础拆改 + 水电点位；主材自购另约 8-15 万，铲墙到红砖等按项另计。",
+    tail: "半包不省心：主材全靠自己比价、盯货、盯尺寸；总价也未必比全包低。",
   },
   {
-    k: "f15", tag: "广告里的全包价", perSq: 1500, badge: "hot", name: "全包 · 起步档",
-    desc: "主材最低配，边界项一项都不含。",
-    tail: "合同价看着低，因为它什么都没写。",
+    k: "f20", tag: "广告里的全包价", perSq: 2000, badge: "hot", name: "全包 · 起步档",
+    desc: "只含基础施工 + 最低配主材；橱柜、门窗都不含。",
+    tail: "合同价看着低，因为它什么都没写——验收标准、增项单价一条也没写。把边界补齐，钱会追平主流档。",
   },
   {
-    k: "f25", tag: "多数家庭的成交价", perSq: 2500, badge: "", name: "全包 · 主流档",
-    desc: "主材可选品牌，施工标准写进合同。",
+    k: "f30", tag: "多数家庭的成交价", perSq: 3000, badge: "", name: "全包 · 主流档",
+    desc: "含基础施工 + 可选品牌主材；定制柜、门窗、深拆改仍要另算。",
     tail: "档位解决材料，解决不了「边界写没写」。",
   },
   {
     k: "f40", tag: "省心不省合同", perSq: 4000, badge: "cool", name: "全包 · 品质档",
-    desc: "品牌主材 + 部分定制柜。",
+    desc: "含品牌主材 + 部分定制柜；门窗、边界仍要自己盯。",
     tail: "贵的是确定性；没写的，照样来加钱。",
   },
 ];
@@ -183,13 +190,15 @@ export const RENOV_TIERS: RenovTier[] = [
     tail: "验货三问：施工图看几张？到场交底几次？改稿封顶多少？",
   },
   {
-    k: "d400", name: "全案设计师", price: 24000, badge: "300-500 元/㎡",
+    k: "d400", name: "全案设计师", price: 15000, badge: "200-300 元/㎡",
     desc: "墙顶地色彩、动线、收纳、照明一起想，图纸能落到施工。",
     tail: "贵在「提前想完」：插座、动线、颜色，图纸阶段就定了。",
   },
 ];
 
-/** 12 阶段定义（one ≤ 26 字；key = 全包提醒，help = 半包验收时间表）. */
+/** 12 阶段定义（one ≤ 26 字；key = 全包提醒，help = 半包验收时间表）.
+ *  顺序：设计 → 签合同 → 拆除 → 主材 → 水电 → 防水 → 木瓦 → 油漆 → 安装 → 保洁 → 通风 → 质保。
+ *  主材紧跟拆除：柜子 / 门窗 / 瓷砖 / 定制柜要排生产 + 配送 + 加工，下单越早越不会卡在安装等货。 */
 export const RENOV_STAGES: RenovStageDef[] = [
   {
     k: "Design", idx: 1, name: "设计", days: 10, daysText: "10-30 天", pickTier: true,
@@ -208,48 +217,48 @@ export const RENOV_STAGES: RenovStageDef[] = [
     who: "工长 老周", one: "拆旧、清运、铲墙皮。",
     key: "别动承重墙：图纸上的黑色实线不能碰。",
     help: "开工前让工长出一张「拆改分项单」，逐项写清再动工。",
-    cta: "拆完，水电进场",
+    cta: "拆完，主材下单",
   },
   {
-    k: "Elec", idx: 4, name: "水电", days: 9, daysText: "9-15 天",
+    k: "Main", idx: 4, name: "主材", days: 2, daysText: "下单 2 天 · 等货 30-45 天",
+    who: "建材市场销售们", one: "门窗先复尺下单，柜子等墙地找平再量。",
+    key: "柜类复尺要等墙地找平；门窗拆完就能定，晚了卡安装。",
+    help: "自购主材：拆完当天就下单，按生产周期倒排到货日。",
+    cta: "主材下单，水电进场",
+  },
+  {
+    k: "Elec", idx: 5, name: "水电", days: 9, daysText: "9-15 天",
     who: "水电工 李师傅", one: "开槽、布管、穿线。",
     key: "封槽前拍照留底——以后在墙上打孔全靠它。",
-    help: "验收时间点：封槽前。点位对不对、线走没走直角、水管打压合格。",
+    help: "验收时间点：封槽前。点位对不对、线管能不能抽换、水管打压合格。",
     cta: "封槽，防水进场",
   },
   {
-    k: "Seal", idx: 5, name: "防水", days: 3, daysText: "3-7 天",
+    k: "Seal", idx: 6, name: "防水", days: 3, daysText: "3-7 天",
     who: "瓦工 阿强", one: "防水刷两遍，做蓄水试验。",
     key: "闭水 48 小时，提前跟楼下打招呼。",
     help: "验收时间点：蓄水 48 小时后去看楼下天花板，合格再贴砖。",
     cta: "闭水合格，木瓦进场",
   },
   {
-    k: "TileWood", idx: 6, name: "木瓦", days: 12, daysText: "12-20 天",
+    k: "TileWood", idx: 7, name: "木瓦", days: 12, daysText: "12-20 天",
     who: "瓦工 阿强 / 木工 老赵", one: "贴砖、吊顶、墙面找平。",
-    key: "要装柜子的三面墙，一定量平整度：墙差 5 毫米，柜子就装不平。",
-    help: "验收时间点：贴完砖、师傅撤场前。空鼓锤逐块敲，撤场后再找人难。",
-    cta: "木瓦验收，主材下单",
+    key: "要装柜子的三面墙，一定量平整度：2m 靠尺差 3mm 就装不平。",
+    help: "验收：贴完砖撤场前空鼓锤敲一遍；复尺图让施工方出。",
+    cta: "木瓦验收，油漆进场",
   },
   {
-    k: "Paint", idx: 7, name: "油漆", days: 15, daysText: "15-30 天 · 跨梅雨",
+    k: "Paint", idx: 8, name: "油漆", days: 15, daysText: "15-30 天 · 跨梅雨",
     who: "油漆工 小陈", one: "批腻子、打磨、刷漆。",
     key: "上海梅雨季在 6-7 月：湿度超过 85% 就停工，宁可多等一周。",
     help: "验收时间点：每一遍腻子干透再上下一遍；剩漆封存留底。",
-    cta: "油漆完工，主材进场",
-  },
-  {
-    k: "Main", idx: 8, name: "主材", days: 2, daysText: "复尺 2 天",
-    who: "建材市场销售们", one: "复尺、下单、等货。",
-    key: "下单前先复尺：坑距、门洞、柜位，差 5 公分就装不上。",
-    help: "自购主材：先列清单再跑店，别让工人带买（有回扣）。",
-    cta: "主材下单，安装进场",
+    cta: "油漆完工，安装进场",
   },
   {
     k: "Install", idx: 9, name: "安装", days: 10, daysText: "10-20 天",
     who: "工长 老周", one: "门、柜、地板、灯具依次装。",
     key: "顺序错了全是缝：门 → 柜 → 地板，先到先装会打架。",
-    help: "验收时间点：装完当场验水平、门缝、收口，别等师傅撤场。",
+    help: "验收：装完当场验水平、门缝、收口；辅材进场对桶拍照。",
     cta: "安装到位，开荒保洁",
   },
   {
@@ -278,9 +287,53 @@ export const RENOV_STAGES: RenovStageDef[] = [
 /** 合同清单 13 项（数据见 renov-contract.ts）. */
 export { RENOV_CONTRACT };
 
+/** 半包专属雷的字段（无 scope，由 handler 按 half:序号 补）. */
+export type RenovHalfMine = Pick<RenovMine, "at" | "days" | "lines" | "text" | "src" | "hint">;
+
+/**
+ * 半包专属雷 · 3 笔 —— 半包不等于没坑，只是坑换了地方：
+ * 13 项写清就不会被装修公司加价，但「自己买主材」这件事躲不掉等货 / 尺寸 / 辅材被换。
+ * src 前缀由 pushMine 的 how 参数统一拼成「半包 · 自购主材 · …」。
+ */
+export const RENOV_HALF_MINES: RenovHalfMine[] = [
+  {
+    at: "Main", days: 12,
+    lines: [["瓦工误工费（主材到货晚 12 天）", 3200]],
+    text: "瓷砖下单晚了一周：瓦工白跑两趟，误工费 3,200，进度往后压 12 天。",
+    src: "主材等货超期",
+    hint: "拆完当天就下主材单：瓷砖 / 柜子 / 门窗按生产周期倒排到货日。",
+  },
+  {
+    at: "TileWood", days: 5,
+    lines: [["瓷砖复尺差 3cm · 补货 + 二次加工", 2400]],
+    text: "自己量的尺寸差了 3 公分：补货等 5 天，加工费再掏 2,400。",
+    src: "复尺尺寸量错",
+    hint: "让施工方出复尺图再下单；自己量的只能作参考，不当下单依据。",
+  },
+  {
+    at: "Install", days: 4,
+    lines: [["辅材被换 · 拆开重做", 2800]],
+    text: "电线规格和单子不符，拆开重走——半包最容易栽在这儿：辅材你不验。",
+    src: "辅材被换",
+    hint: "辅材进场当天对桶身 / 线盘拍照，认执行标准，不认故事。",
+  },
+];
+
 /** 计划工期：11 个施工阶段基础天数合计（质保 365 天不计时）+ 开工首日. */
 export const RENOV_PLAN_BASE: number = RENOV_STAGES.filter((s) => s.k !== "Warr").reduce((a, s) => a + s.days, 0);
 export const RENOV_PLAN_TOTAL: number = RENOV_PLAN_BASE + 1;
+
+/**
+ * 计划工期的「绝对天」口径（HUD 与总账的「计划 / 实际」都用它）：
+ * renovDay 是模拟器的全局天数（开工日 = 交易完成次日 = 第 DAYS.final + 1 天），
+ * 而 RENOV_PLAN_TOTAL 是从开工起算的历时，两者相减会多算 DAYS.final 天。
+ */
+export const RENOV_PLAN_ABS: number = (DAYS.final ?? 16) + RENOV_PLAN_TOTAL;
+
+/** 增项返工拖出来的天数（绝对天口径；0 = 一天没多）. */
+export function renovDelayDays(day: number): number {
+  return Math.max(0, day - RENOV_PLAN_ABS);
+}
 
 /** 按场景 key（"renovDemo"）或尾缀（"Demo"）查找阶段定义. */
 export function findRenovDef(scene: string): RenovStageDef | null {
@@ -303,19 +356,38 @@ export function yuanFmt(v: number): string {
   return "¥" + Math.round(v).toLocaleString("en-US");
 }
 
-/** 写进合同的 13 项追加费用合计（元）. */
-export function contractAddOf(con: Record<string, string>): number {
-  return RENOV_CONTRACT.reduce((a, it) => a + (con[it.k] === "do" ? it.doPrice : 0), 0);
+/** 写进合同的 13 项追加费用合计（元）. 半包下「主材自购」项（halfOwn）只列清单，不计入装修公司合同价. */
+export function contractAddOf(con: Record<string, string>, pkg?: string | null): number {
+  const half = pkg === "half";
+  return RENOV_CONTRACT.reduce(
+    (a, it) => a + (con[it.k] === "do" && !(half && it.halfOwn) ? it.doPrice : 0),
+    0,
+  );
 }
 
 /** 合同价（元）= 预算 + 设计费 + 写进合同的项. */
-export function contractPriceOf(S: Pick<SimState, "renovBudget" | "renovDesignFee" | "renovCon">): number {
-  return S.renovBudget + S.renovDesignFee + contractAddOf(S.renovCon);
+export function contractPriceOf(
+  S: Pick<SimState, "renovBudget" | "renovDesignFee" | "renovCon" | "renovPkg">,
+): number {
+  return S.renovBudget + S.renovDesignFee + contractAddOf(S.renovCon, S.renovPkg);
 }
 
 /** 结账价（元）= 合同价 + 增项. */
-export function paidTotalOf(S: Pick<SimState, "renovBudget" | "renovDesignFee" | "renovCon" | "renovExtra">): number {
+export function paidTotalOf(
+  S: Pick<SimState, "renovBudget" | "renovDesignFee" | "renovCon" | "renovExtra" | "renovPkg">,
+): number {
   return contractPriceOf(S) + S.renovExtra;
+}
+
+/** 还没结论的「不能省」项（noKind = risk）：一键写清用（已选「不做」的项不在内）. */
+export function riskLeftOf(con: Record<string, string>): RenovContractItem[] {
+  return RENOV_CONTRACT.filter((it) => it.noKind === "risk" && !con[it.k]);
+}
+
+/** 这些未决 risk 项写进合同后，合同价会涨多少（元；半包排除自购项）. */
+export function riskAddOf(con: Record<string, string>, pkg?: string | null): number {
+  const half = pkg === "half";
+  return riskLeftOf(con).reduce((a, it) => a + (half && it.halfOwn ? 0 : it.doPrice), 0);
 }
 
 /** 已定结论的合同项数. */

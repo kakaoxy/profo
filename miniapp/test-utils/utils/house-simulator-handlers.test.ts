@@ -11,7 +11,7 @@ import { createInitialState, HOUSES, ROLES, SimState } from "../../pages/house-s
 import { derive, nego2Options } from "../../pages/house-simulator/utils/calc";
 import { handleAction, HandlerCtx } from "../../pages/house-simulator/utils/handlers";
 import { renovArrive } from "../../pages/house-simulator/utils/handlers-renov";
-import { contractPriceOf, paidTotalOf } from "../../pages/house-simulator/utils/renov-data";
+import { contractPriceOf, paidTotalOf, RENOV_CONTRACT } from "../../pages/house-simulator/utils/renov-data";
 import { emptyModal, netModal, payModal, taxRiskModal, agreementModal } from "../../pages/house-simulator/utils/render";
 
 /* wx API 存根（handlers 内 toast 使用）. */
@@ -525,9 +525,9 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
   });
 
   /**
-   * 装修全流程 v4（quick 口径：f25 主流档 + 免费设计 + 13 项合同全没提）：
+   * 装修全流程 v6（quick 口径：f30 主流档 + 免费设计 + 13 项合同全没提）：
    * final 决策 → 预算屏 → 设计屏 → 合同屏（一项不写直接签约）→ 10 张上划卡 → 完成总账 → 回 final。
-   * 锁住「合同没写 = 到站增项」的经济口径：13 张增项单 87,100 元 / 返工 27 天。
+   * 锁住「合同没写 = 到站增项」的经济口径：13 张增项单 103,000 元 / 返工 60 天。
    */
   it("装修流程：13 项全没提 → 到站连环爆单 → 总账回 final（入口消失）", () => {
     const p = page();
@@ -538,12 +538,12 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     const S = p.S;
     expect(S.scene).toBe("final");
     expect(S.renovDone).toBe(false);
-    // final 决策 → 预算屏（B 房 88㎡ × 2500 元/㎡ = 22 万）
+    // final 决策 → 预算屏（B 房 88㎡ × 3000 元/㎡ = 26.4 万）
     run(p, "renovGo");
     expect(S.scene).toBe("renovStart");
-    run(p, "renovPick:f25");
-    expect(S.renovPkg).toBe("f25");
-    expect(S.renovBudget).toBe(220000);
+    run(p, "renovPick:f30");
+    expect(S.renovPkg).toBe("f30");
+    expect(S.renovBudget).toBe(264000);
     // 开工：交易完成次日（第 17 天）进设计屏
     run(p, "renovBegin");
     expect(S.scene).toBe("renovDesign");
@@ -551,36 +551,42 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
     // 设计屏门槛：未选设计师档位时 renovNext 不响应（不可上划跳过）
     run(p, "renovNext:renovContract");
     expect(S.scene).toBe("renovDesign");
+    // 设计师档位可改选，设计费随最后一次选择重算
+    run(p, "renovTier:free");
+    expect(S.renovDesignFee).toBe(0);
+    run(p, "renovTier:d400");
+    expect(S.renovDesignFee).toBe(15000);
     run(p, "renovTier:free");
     expect(S.renovDesignFee).toBe(0);
     run(p, "renovNext:renovContract");
     expect(S.scene).toBe("renovContract");
     expect(S.renovDay).toBe(27); // 17 + 设计 10 天
-    expect(contractPriceOf(S)).toBe(220000); // 一项没写：合同价看着低
+    expect(contractPriceOf(S)).toBe(264000); // 一项没写：合同价看着低
     // 不勾任何项直接签约 → 13 项全部埋「增项单雷」
     run(p, "renovNext:renovDemo");
     expect(S.scene).toBe("renovDemo");
-    expect(S.renovMines).toHaveLength(11); // 埋 13 张 − 拆除到站已结算 铲墙/砌墙 2 张
-    // 拆除到站：铲墙 10,800 + 砌墙 2,400（返工 1 天）
-    expect(S.renovBurst).toHaveLength(2);
-    expect(S.renovExtra).toBe(13200);
-    expect(S.renovDay).toBe(31); // 30 + 1 天返工
-    // 逐张上划卡推进（CTA 与上划手势共用 renovNext；Warr 屏再推一跳进总账）
+    expect(S.renovMines).toHaveLength(10); // 埋 13 张 − 拆除到站已结算 铲墙/砌墙/垃圾清运 3 张
+    // 拆除到站：铲墙 13,500 + 砌墙 2,400 + 垃圾清运 5,200（返工 4 天）
+    expect(S.renovBurst).toHaveLength(3);
+    expect(S.renovExtra).toBe(21100);
+    expect(S.renovDay).toBe(34); // 30（17 + 设计 10 + 签约 3）+ 返工 4 天
+    // 逐张上划卡推进（主材紧跟拆除；CTA 与上划手势共用 renovNext；Warr 屏再推一跳进总账）
     run(p,
-      "renovNext:renovElec", "renovNext:renovSeal", "renovNext:renovTileWood",
-      "renovNext:renovPaint", "renovNext:renovMain", "renovNext:renovInstall",
+      "renovNext:renovMain", "renovNext:renovElec", "renovNext:renovSeal",
+      "renovNext:renovTileWood", "renovNext:renovPaint", "renovNext:renovInstall",
       "renovNext:renovClean", "renovNext:renovAir", "renovNext:renovWarr",
       "renovNext:renovDone");
     expect(S.scene).toBe("renovDone");
-    // 经济口径：13 张增项单合计 87,100；结账价 = 22 万 + 87,100 = 307,100
+    // 经济口径：13 张增项单合计 103,000；结账价 = 26.4 万 + 103,000 = 367,000
     expect(S.renovBills).toHaveLength(13);
-    expect(S.renovExtra).toBe(87100);
-    expect(paidTotalOf(S)).toBe(307100);
+    expect(S.renovExtra).toBe(103000);
+    expect(paidTotalOf(S)).toBe(367000);
     expect(S.renovMines).toHaveLength(0); // 全部爆完
     expect(S.renovLog.filter((l) => l.text.indexOf("🧾") === 0)).toHaveLength(13);
-    // 工期：17 开工 + 基础 103 天 + 返工 27 天 = 第 147 天完工入住；质保叙事 +1 年
-    expect(S.renovDoneDay).toBe(147);
-    expect(S.renovDay).toBe(147 + 365);
+    // 工期：17 开工 + 基础 103 天 + 返工 60 天 = 第 180 天完工入住；
+    // 质保 365 天只是展示口径，不再往 renovDay 上累加（状态带与总账统一到入住日）
+    expect(S.renovDoneDay).toBe(180);
+    expect(S.renovDay).toBe(180);
     // 总账 → 回 final，入口消失
     run(p, "renovFinish");
     expect(S.renovDone).toBe(true);
@@ -596,53 +602,133 @@ describe("流程阶段：风控追加首付（lcPay）", () => {
       "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
       ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
       "lcContractOk", "trDone", "trOk", "payOk", "deedOk", "hoOk", "stOk",
-      "renovGo", "renovPick:f15", "renovBegin", "renovTier:free", "renovNext:renovContract");
+      "renovGo", "renovPick:f20", "renovBegin", "renovTier:free", "renovNext:renovContract");
     const S = p.S;
-    expect(S.renovBudget).toBe(132000); // 88㎡ × 1500
-    expect(contractPriceOf(S)).toBe(132000);
+    expect(S.renovBudget).toBe(176000); // 88㎡ × 2000
+    expect(contractPriceOf(S)).toBe(176000);
     // 写进合同：合同价按写入价上涨（清单上不预先标价）
     run(p, "renovCl:chan:do");
-    expect(contractPriceOf(S)).toBe(140000); // + 铲墙 8,000
+    expect(contractPriceOf(S)).toBe(186000); // + 铲墙 10,000
     // 明确不做（risk 项）：当场埋风险雷，不等到站
     run(p, "renovCl:wire:no");
     expect(S.renovMines).toHaveLength(1);
     expect(S.renovMines[0].at).toBe("Elec");
-    expect(contractPriceOf(S)).toBe(140000); // 「不做」不涨价
+    expect(contractPriceOf(S)).toBe(186000); // 「不做」不涨价
     // 签约结算：其余 11 项没提 → 增项单雷（chan 已写、wire 已明确不做）
     run(p, "renovNext:renovDemo");
-    expect(S.renovMines).toHaveLength(11); // 11 张没提 + 1 张风险雷 − 拆除到站已结算砌墙
-    // 拆除到站：只有砌墙爆单（铲墙已写进合同）
-    expect(S.renovBurst).toHaveLength(1);
-    expect(S.renovExtra).toBe(2400);
+    expect(S.renovMines).toHaveLength(10); // 12 张（11 没提 + 1 风险）− 拆除到站已结算 砌墙/垃圾清运
+    // 拆除到站：砌墙粉墙 2,400 + 垃圾清运 5,200（铲墙已写进合同）
+    expect(S.renovBurst).toHaveLength(2);
+    expect(S.renovExtra).toBe(7600);
     expect(S.renovBills[0].src).toContain("砌墙粉墙");
+    // 主材到站：橱柜 13,000 + 主材标准 3,000（+2 天）
+    run(p, "renovNext:renovMain");
+    expect(S.renovExtra).toBe(7600 + 16000);
     // 水电到站：wire 风险雷爆单，溯源标记「你选了不做」
     run(p, "renovNext:renovElec");
-    expect(S.renovExtra).toBe(2400 + 2700);
-    expect(S.renovBills[1].stage).toBe("水电");
-    expect(S.renovBills[1].src).toContain("你选了「明确不做」");
+    expect(S.renovExtra).toBe(23600 + 2700);
+    expect(S.renovBills[S.renovBills.length - 1].stage).toBe("水电");
+    expect(S.renovBills[S.renovBills.length - 1].src).toContain("你选了「明确不做」");
   });
 
-  it("爆雷结算（renovArrive）：到站消耗 支出/工期/压力 并转入记事；质保先快照完工日再叙事 +365", () => {
+  it("合同清单：反复点「不做」不重复埋雷、改点「写进合同」撤雷；一键写清只覆盖未决项", () => {
+    const p = page();
+    run(p, "role:first", "cash:p70", "pick:B", "qa:hukou:sh", "qa:married:married",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
+      "lcContractOk", "trDone", "trOk", "payOk", "deedOk", "hoOk", "stOk",
+      "renovGo", "renovPick:f20", "renovBegin", "renovTier:free", "renovNext:renovContract");
+    const S = p.S;
+    // 同一项反复点「不做」：只埋一张雷（此前会翻倍）
+    run(p, "renovCl:junk:no");
+    expect(S.renovMines).toHaveLength(1);
+    run(p, "renovCl:junk:no", "renovCl:junk:no");
+    expect(S.renovMines).toHaveLength(1);
+    // 改主意写进合同：当场撤回已埋的雷，且合同价按写入价上涨
+    run(p, "renovCl:junk:do");
+    expect(S.renovMines).toHaveLength(0);
+    expect(contractPriceOf(S)).toBe(176000 + 3200);
+    // 一键写清「不能省的 8 项」：risk 项（chan/junk/mat/aux/wire/seal/pay/pen）全有结论
+    run(p, "renovWriteRisk");
+    expect(RENOV_CONTRACT.filter((it) => it.noKind === "risk" && !S.renovCon[it.k])).toHaveLength(0);
+    // 8 项里只有 铲墙 10,000 + 垃圾清运 3,200 + 入户线 2,000 计价 → 合同价 +15,200
+    expect(contractPriceOf(S)).toBe(176000 + 15200);
+  });
+
+  it("装修总账：13 项全写清 → 0 张增项单、120 天按计划入住", () => {
+    const p = page();
+    run(p, "role:first", "cash:p70", "pick:B", "qa:hukou:sh", "qa:married:married",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
+      "lcContractOk", "trDone", "trOk", "payOk", "deedOk", "hoOk", "stOk",
+      "renovGo", "renovPick:f30", "renovBegin", "renovTier:d100", "renovNext:renovContract",
+      ...RENOV_CONTRACT.map((it) => "renovCl:" + it.k + ":do"));
+    const S = p.S;
+    // 合同价 = 26.4 万 + 设计费 6,000 + 13 项写清 59,900
+    expect(contractPriceOf(S)).toBe(329900);
+    run(p,
+      "renovNext:renovDemo", "renovNext:renovMain", "renovNext:renovElec",
+      "renovNext:renovSeal", "renovNext:renovTileWood", "renovNext:renovPaint",
+      "renovNext:renovInstall", "renovNext:renovClean", "renovNext:renovAir",
+      "renovNext:renovWarr", "renovNext:renovDone");
+    expect(S.scene).toBe("renovDone");
+    expect(S.renovBills).toHaveLength(0);
+    expect(S.renovExtra).toBe(0);
+    expect(paidTotalOf(S)).toBe(329900);
+    // 一天没多：17 开工 + 基础 103 天 = 第 120 天入住
+    expect(S.renovDoneDay).toBe(120);
+  });
+
+  it("半包：halfOwn 项只列自购清单（不计合同价）+ 签约即埋 3 笔自购雷", () => {
+    const p = page();
+    run(p, "role:first", "cash:p70", "pick:B", "qa:hukou:sh", "qa:married:married",
+      "n1:chat", "n2:m5", "negoOk", "fee2", "lt:combo", "ltOk", "sign",
+      ...AGREE_TO_PAY, "payOk", "signNetOk", "payOk", "loanOk", "lcOk",
+      "lcContractOk", "trDone", "trOk", "payOk", "deedOk", "hoOk", "stOk",
+      "renovGo", "renovPick:half", "renovBegin", "renovTier:free", "renovNext:renovContract");
+    const S = p.S;
+    expect(S.renovBudget).toBe(88000); // 88㎡ × 1000
+    // 13 项全写清：门窗 / 橱柜 / 定制柜 / 主材属自购，只列清单不计合同价 → 只加 17,000
+    run(p, ...RENOV_CONTRACT.map((it) => "renovCl:" + it.k + ":do"));
+    expect(contractPriceOf(S)).toBe(88000 + 17000);
+    // 签约：13 项已写清 → 没有增项雷；半包另埋 3 笔自购雷（等货 / 复尺 / 辅材被换）
+    run(p, "renovNext:renovDemo");
+    expect(S.renovBills).toHaveLength(0);
+    expect(S.renovMines).toHaveLength(3);
+    run(p,
+      "renovNext:renovMain", "renovNext:renovElec", "renovNext:renovSeal",
+      "renovNext:renovTileWood", "renovNext:renovPaint", "renovNext:renovInstall",
+      "renovNext:renovClean", "renovNext:renovAir", "renovNext:renovWarr",
+      "renovNext:renovDone");
+    expect(S.renovBills).toHaveLength(3);
+    expect(S.renovExtra).toBe(8400); // 3,200 + 2,400 + 2,800
+    expect(paidTotalOf(S)).toBe(105000 + 8400);
+    expect(S.renovDoneDay).toBe(141); // 120 + 自购返工 21 天
+  });
+
+  it("爆雷结算（renovArrive）：到站消耗 支出/工期/压力 并转入记事；质保只快照完工日、不再推进天数", () => {
     const p = page();
     const S = p.S;
     S.renovDay = 80;
     S.renovMines = [{ at: "Install", days: 2, lines: [["插座被挡", 6000]], text: "插座被柜子挡住", src: "点位没核对", hint: "交底对点位图", scope: null }];
+    const stressBefore = S.stress;
     renovArrive(S, "Install");
     expect(S.renovExtra).toBe(6000);
     expect(S.renovDay).toBe(82);
+    expect(S.stress).toBe(stressBefore + 6); // 压力步长 6：13 张全踩才够到 😱
     expect(S.renovBurst).toHaveLength(1);
     expect(S.renovBills[0].no).toBe("#01");
     expect(S.renovBills[0].stage).toBe("安装");
     expect(S.renovMines).toHaveLength(0);
-    expect(S.renovLog[0].text).toContain("🧾");
-    // 质保到站：先快照完工入住日（不含质保期内返工），再叙事推进一年
+    expect(S.renovLog[0].text).toContain("插座被柜子挡住"); // 爆单转入记事
+    // 质保到站：只快照完工入住日（质保 365 天是展示口径，不往工期上累加）
     const p2 = page();
     const S2 = p2.S;
     S2.renovDay = 120;
     S2.renovMines = [{ at: "Warr", days: 5, lines: [["铰链维修", 500]], text: "铰链响了", src: "易耗件", hint: "留证据", scope: null }];
     renovArrive(S2, "Warr");
     expect(S2.renovDoneDay).toBe(120);
-    expect(S2.renovDay).toBe(120 + 365 + 5);
+    expect(S2.renovDay).toBe(120 + 5);
   });
 
   it("跳过装修：renovSkip 置 renovDone 并回 final", () => {

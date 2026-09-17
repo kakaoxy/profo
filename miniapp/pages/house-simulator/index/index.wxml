@@ -23,6 +23,27 @@
     </view>
   </view>
 
+  <!-- 装修期双条：钱（结账 / 合同）+ 工（实际 / 计划），深色 = 计划内，橙 = 超出的部分 -->
+  <view class="meters" wx:if="{{hud.meters}}">
+    <view class="gm">
+      <text class="gm-k">钱</text>
+      <view class="gm-bar">
+        <view class="gm-base" style="width: {{hud.meters.money.base}}%"></view>
+        <view class="gm-over" style="width: {{hud.meters.money.over}}%"></view>
+      </view>
+      <text class="gm-v">{{hud.meters.money.value}}<text class="gm-of"> / {{hud.meters.money.of}}</text></text>
+    </view>
+    <view class="gm">
+      <text class="gm-k">工</text>
+      <view class="gm-bar">
+        <view class="gm-base" style="width: {{hud.meters.time.base}}%"></view>
+        <view class="gm-over" style="width: {{hud.meters.time.over}}%"></view>
+      </view>
+      <text class="gm-v">{{hud.meters.time.value}}<text class="gm-of"> / {{hud.meters.time.of}}</text></text>
+    </view>
+    <view class="gm-loss" wx:if="{{hud.meters.loss}}">{{hud.meters.loss}}</view>
+  </view>
+
   <!-- 砍价期卖家情绪条 -->
   <view class="sellerbar" wx:if="{{sellerBar.show && sellerBar.name}}">
     <text class="s-name">{{sellerBar.name}} · 情绪</text>
@@ -158,16 +179,21 @@
             <view class="sw-cell" wx:for="{{item.cells}}" wx:for-item="c" wx:key="index">
               <view class="sw-k">{{c.k}}</view>
               <view class="sw-v">{{c.v}}</view>
+              <view wx:if="{{c.note}}" class="sw-note">{{c.note}}</view>
             </view>
           </view>
           <view wx:if="{{item.tip}}" class="sw-key {{item.tipCls}}"><text class="sw-key-b">{{item.tipLabel}}</text>{{item.tip}}</view>
           <view wx:if="{{item.hint}}" class="sw-hint"><text>上划继续</text><text class="sw-hint-arrow">↑</text></view>
         </view>
 
-        <!-- 装修 · 合同价条（合同价看着低，正是这个坑本身；bad = 13 项全有结论） -->
-        <view wx:elif="{{item.t === 'pricebar'}}" class="pricebar {{item.bad ? 'bad' : ''}}">
+        <!-- 装修 · 价条（合同价：看着低正是坑本身，13 项全有结论转绿；总账还用它放「计划 → 实际工期」双段条） -->
+        <view wx:elif="{{item.t === 'pricebar'}}" class="pricebar {{item.bad ? 'bad' : ''}} {{item.ok ? 'ok' : ''}}">
           <view class="pb-k">{{item.label}}</view>
           <view class="pb-v">{{item.value}}</view>
+          <view wx:if="{{item.bar}}" class="t-bar">
+            <view class="t-base" style="width: {{item.bar.base}}%"></view>
+            <view wx:if="{{item.bar.over}}" class="t-over" style="width: {{item.bar.over}}%"></view>
+          </view>
           <view wx:if="{{item.note}}" class="pb-n">{{item.note}}</view>
         </view>
 
@@ -199,10 +225,10 @@
           </view>
         </view>
 
-        <!-- 装修 · 增项单（爆雷条的账目化；多张时只展开前 2 张 + 其余合计） -->
+        <!-- 装修 · 增项单 / 半包自购踩坑（爆雷条的账目化；多张时只展开前 2 张 + 其余合计） -->
         <view wx:elif="{{item.t === 'burst'}}" class="burst">
           <view class="burst-t">
-            <text>🧾 增项单 {{item.count}} 张</text>
+            <text>{{item.title}}</text>
             <text class="burst-src">{{item.src}}</text>
           </view>
           <view class="adj" wx:for="{{item.items}}" wx:for-item="b" wx:key="index">

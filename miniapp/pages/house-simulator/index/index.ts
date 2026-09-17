@@ -134,7 +134,7 @@ Page<PageData, PageCustom>({
     blocks: [],
     anchor: "top0",
     intoView: "top0",
-    hud: { stageLabel: "", stepText: "", cashText: "", cashLow: false, borrowed: false, borrowedText: "0万", stressEmoji: "😌" },
+    hud: { stageLabel: "", stepText: "", cashText: "", cashLow: false, borrowed: false, borrowedText: "0万", stressEmoji: "😌", meters: null },
     stepPos: "",
     dayText: "",
     steps: [],

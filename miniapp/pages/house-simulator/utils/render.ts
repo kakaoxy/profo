@@ -8,6 +8,7 @@
 
 import { firstPayFor, fmt, sellerFace, stressFace } from "./calc";
 import { DAYS, NODES, SCENE_NODE, STAGES, SimState } from "./constants";
+import { contractPriceOf, paidTotalOf, RENOV_PLAN_ABS, renovDelayDays, wanFmt, yuanFmt } from "./renov-data";
 
 /** HUD 顶部数据. */
 export interface HudData {
@@ -21,6 +22,48 @@ export interface HudData {
   /** 累计借款（万元字符串）. */
   borrowedText: string;
   stressEmoji: string;
+  /** 装修期的钱条 / 工期条（交易阶段为空，不渲染）. */
+  meters: RenovMeters | null;
+}
+
+/** 装修期双条：钱（结账 / 合同）+ 工（实际 / 计划），条宽为百分比. */
+export interface RenovMeters {
+  /** 钱条：base = 合同价占比，over = 增项占比. */
+  money: { base: number; over: number; value: string; of: string };
+  /** 工期条：base = 计划内占比，over = 超期占比. */
+  time: { base: number; over: number; value: string; of: string };
+  /** 条下方的损失口径（有增项才显示）. */
+  loss: string;
+}
+
+/** 装修期双条（仅装修场景返回；口径对齐设计稿 v6）. */
+export function buildRenovMeters(S: SimState): RenovMeters | null {
+  if (S.scene.indexOf("renov") !== 0) {
+    return null;
+  }
+  const plan = contractPriceOf(S);
+  const paid = paidTotalOf(S);
+  const extra = S.renovExtra;
+  const den = Math.max(plan, paid, 1);
+  const day = S.scene === "renovWarr" || S.scene === "renovDone" ? S.renovDoneDay || S.renovDay : S.renovDay;
+  const tden = Math.max(RENOV_PLAN_ABS, day, 1);
+  return {
+    money: {
+      base: (plan / den) * 100,
+      over: (extra / den) * 100,
+      value: "¥" + wanFmt(paid) + " 万",
+      of: "合同 " + wanFmt(plan) + " 万",
+    },
+    time: {
+      base: (Math.min(RENOV_PLAN_ABS, day) / tden) * 100,
+      over: (renovDelayDays(day) / tden) * 100,
+      value: day + " 天",
+      of: "计划 " + RENOV_PLAN_ABS + " 天",
+    },
+    loss: extra
+      ? (S.renovPkg === "half" ? "自购踩坑 " + S.renovBills.length + " 笔" : "增项 " + S.renovBills.length + " 张") + " · " + yuanFmt(extra) + "（" + (S.renovPkg === "half" ? "合同外的账" : "合同里没写的") + "）"
+      : "",
+  };
 }
 
 /** 12 节点流程条单节点. */
@@ -327,11 +370,12 @@ export function buildHud(S: SimState): HudData {
     borrowed: S.borrowed > 0,
     borrowedText: fmt(S.borrowed) + "万",
     stressEmoji: stressFace(S.stress),
+    meters: buildRenovMeters(S),
   };
 }
 
-/** 装修阶段流程条（12 项，替代交易 12 节点）. */
-const RENOV_STEP_LABELS = ["设计", "签约", "拆除", "水电", "防水", "木瓦", "油漆", "主材", "安装", "保洁", "通风", "质保"];
+/** 装修阶段流程条（12 项，替代交易 12 节点；顺序与 RENOV_STAGES 一致，主材紧跟拆除）. */
+const RENOV_STEP_LABELS = ["设计", "签约", "拆除", "主材", "水电", "防水", "木瓦", "油漆", "安装", "保洁", "通风", "质保"];
 
 /** 装修场景 → 阶段下标（1=设计起，12=全部完成；renovStart=0，renovDone 与质保同格）. */
 const RENOV_SCENE_IDX: Partial<Record<SimState["scene"], number>> = {
@@ -339,11 +383,11 @@ const RENOV_SCENE_IDX: Partial<Record<SimState["scene"], number>> = {
   renovDesign: 1,
   renovContract: 2,
   renovDemo: 3,
-  renovElec: 4,
-  renovSeal: 5,
-  renovTileWood: 6,
-  renovPaint: 7,
-  renovMain: 8,
+  renovMain: 4,
+  renovElec: 5,
+  renovSeal: 6,
+  renovTileWood: 7,
+  renovPaint: 8,
   renovInstall: 9,
   renovClean: 10,
   renovAir: 11,

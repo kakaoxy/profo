@@ -224,7 +224,7 @@ export interface SimState {
   renovDoneDay: number;
   /** 装修合同基础价（元，预算屏档位单价 × 面积；装修支出独立于购房现金记账）. */
   renovBudget: number;
-  /** 选定的预算档位 key（"half" | "f15" | "f25" | "f40"）. */
+  /** 选定的预算档位 key（"half" | "f20" | "f30" | "f40"）. */
   renovPkg: string | null;
   /** 选定的设计师档位 key（"free" | "d100" | "d400"）. */
   renovTier: string | null;
@@ -240,7 +240,7 @@ export interface SimState {
   renovMines: RenovMine[];
   /** 当前阶段爆出的增项单（进入阶段时由 handler 结算，场景据此展示警示）. */
   renovBurst: RenovBill[];
-  /** 本阶段推进天数（上划卡「本阶段 +N 天」展示）. */
+  /** 本阶段推进天数（上划卡「上一步 +N 天」展示）. */
   renovMoved: number;
   /** 装修记事（决策 + 爆单记录，完成总账屏复盘展示）. */
   renovLog: { stage: string; text: string }[];

@@ -65,12 +65,14 @@ export interface GradeItem {
 export interface SwipeCell {
   k: string;
   v: string;
+  /** 补充口径（如「下单 2 天 · 等货 30-45 天」）. */
+  note?: string;
 }
 
 /** 上划卡（3 秒一屏：一句现场 + 两个数字 + 一句提醒；决策屏无 hint/action 不可上划）. */
 export interface SwipeBlock {
   t: "swipe";
-  /** 日期行（装修 N / 12 · 第 X 天 · X月X日 · 本阶段 +N 天）. */
+  /** 日期行（装修 N / 12 · 第 X 天 · X月X日 · 上一步 +N 天）. */
   day?: string;
   name: string;
   /** 这一步在干什么（≤ 26 字）. */
@@ -160,11 +162,24 @@ export type SceneBlock =
   | { t: "opts"; items: OptItem[] }
   | { t: "grades"; items: GradeItem[] }
   | SwipeBlock
-  | { t: "pricebar"; label: string; value: string; note?: string; bad?: boolean }
+  | {
+      t: "pricebar";
+      label: string;
+      value: string;
+      note?: string;
+      /** 超支（结账 > 合同）：染警示色. */
+      bad?: boolean;
+      /** 正反馈（13 项全写清）：染绿色——写清不该被染成警告色. */
+      ok?: boolean;
+      /** 双段进度条（白 = 计划内，暖色 = 超出来的部分），仅总账工期条用. */
+      bar?: { base: number; over: number };
+    }
   | { t: "prog"; label: string; done: number; total: number; pct: number }
   | { t: "clSec"; title: string; count: string; rows: ClRowItem[] }
   | {
       t: "burst";
+      /** 标题（全包「🧾 增项单 N 张」/ 半包「🛒 自购踩坑 N 笔」）. */
+      title: string;
       count: number;
       src: string;
       items: BurstItem[];
