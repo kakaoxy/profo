@@ -35,7 +35,6 @@ export interface HandlerData {
 export interface HandlerCtx {
   /** 当前页面数据（只读）.*/
   data: HandlerData;
-  setData(patch: Record<string, unknown>): void;
   /** 就地重绘（停留本屏，不推进天数、不结算学费单）.*/
   render(): void;
   /** 换屏：记录走过的屏 + 结算到站学费单 + 重算已走天数 + 重绘.*/

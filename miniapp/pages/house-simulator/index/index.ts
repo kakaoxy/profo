@@ -30,10 +30,10 @@ import {
   payModal,
   renovStageLabel,
 } from "../utils/render";
-import type { GuardData, ModalData, RenovMeters, StepItem } from "../utils/render";
+import type { GuardData, RenovMeters, StepItem } from "../utils/render";
 import type { PayKind } from "../utils/flow";
 import { handleAction } from "../utils/handlers";
-import type { HandlerCtx, HandlerData } from "../utils/handlers";
+import type { HandlerData } from "../utils/handlers";
 import { commitCustom } from "../utils/handlers-setup";
 import { cashChips, cashPrimary, customPrimary, customTaxRows } from "../utils/scenes-start";
 

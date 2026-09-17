@@ -16,7 +16,6 @@
  */
 
 import type { RenovBill, RenovMine } from "./renov-data";
-import type { PayKind } from "./flow";
 
 /** 身份角色 key：刚需首套 / 置换改善 / 投资二套. */
 export type RoleKey = "first" | "trade" | "invest";
@@ -98,12 +97,10 @@ export interface House {
   areaNum?: number;
   /** 挂牌价（元）. */
   price: number;
-  type: string;
   /** 环线：内=外环内 / 外=外环外（决定限购与二套首付差异）. */
   ring: "内" | "外";
   tag: string;
   tagCls: string;
-  thumbCls: string;
   /** 新房标记（免增值税 / 无卖方个税）. */
   hold?: "new";
   /** 持有年限：0 | 2 | 5. */
@@ -116,9 +113,6 @@ export interface House {
   base?: number;
   /** 议价底线（叫停阈值，成交价 = 挂牌价×(1-幅度)）. */
   negotiable: number;
-  seller: string;
-  sellerTag: string;
-  intro: string;
   /** 交房时装修状态（决定交易完成后「是否装修」决策的参考口径）. */
   reno: "毛坯" | "简装" | "精装";
 }
@@ -269,8 +263,6 @@ export interface SimState {
   walked: SceneKey[];
   /** 已走天数（= 抽取累计 + 坑拖出来的天，状态带 / 时间条 / 总账同口径）. */
   day: number;
-  /** 付款确认弹窗（null = 未打开）. */
-  payKind: PayKind | null;
   /** 装修流程是否已结束（final 屏据此隐藏「开始装修」入口）. */
   renovDone: boolean;
   /** 是否跳过装修直接入住（renovDone=true 时区分「装完」与「跳过」）. */
@@ -332,50 +324,44 @@ export const GJJ_POLICY_NOTE =
 export const HOUSES: House[] = [
   {
     id: "A", emoji: "🏚️", name: "内环老破小", area: "58㎡", price: 2000000,
-    type: "二手房", ring: "内", tag: "满五唯一", tagCls: "badge-sky", thumbCls: "thumb-a",
+    ring: "内", tag: "满五唯一", tagCls: "badge-sky",
     holdYears: 5, unique: true,
-    seller: "陈老师", sellerTag: "房东 · 急售", negotiable: 0.06,
-    intro: "房龄偏大，但离地铁 300m，陈老师急着换大房。",
+    negotiable: 0.06,
     reno: "简装",
   },
   {
     id: "B", emoji: "🏢", name: "中环次新两房", area: "88㎡", price: 4000000,
-    type: "二手房", ring: "内", tag: "满五唯一", tagCls: "badge-sky", thumbCls: "thumb-b",
+    ring: "内", tag: "满五唯一", tagCls: "badge-sky",
     holdYears: 5, unique: true,
-    seller: "张先生", sellerTag: "房东 · 置换急卖", negotiable: 0.05,
-    intro: "2019 年次新房，精装修，张先生已看中下一套，想尽快成交。",
+    negotiable: 0.05,
     reno: "精装",
   },
   {
     id: "C", emoji: "🏙️", name: "外环品质新房", area: "95㎡", price: 6000000,
-    type: "新房", ring: "外", tag: "新房 · 免增值税", tagCls: "badge-sky", thumbCls: "thumb-c",
+    ring: "外", tag: "新房 · 免增值税", tagCls: "badge-sky",
     hold: "new", holdYears: 0, unique: true,
-    seller: "销售小刘", sellerTag: "案场销售", negotiable: 0.03,
-    intro: "国企开发商，三房两卫，一口价 + 少量优惠。",
+    negotiable: 0.03,
     reno: "毛坯",
   },
   {
     id: "D", emoji: "🏠", name: "外环内老工房", area: "72㎡", price: 3000000,
-    type: "二手房", ring: "内", tag: "满五不唯一", tagCls: "badge-fog", thumbCls: "thumb-a",
+    ring: "内", tag: "满五不唯一", tagCls: "badge-fog",
     holdYears: 5, unique: false,
-    seller: "王阿姨", sellerTag: "房东 · 资金周转", negotiable: 0.08,
-    intro: "老工房但满五，王阿姨周转资金，砍价空间最大。",
+    negotiable: 0.08,
     reno: "简装",
   },
   {
     id: "E", emoji: "🏘️", name: "内环江景大平层", area: "160㎡", price: 16000000,
-    type: "二手房", ring: "内", tag: "满二不唯一", tagCls: "badge-fog", thumbCls: "thumb-b",
+    ring: "内", tag: "满二不唯一", tagCls: "badge-fog",
     holdYears: 2, unique: false,
-    seller: "赵总", sellerTag: "房东 · 改善置换", negotiable: 0.04,
-    intro: "160㎡ 江景大平层，满二不唯一；面积超 140㎡，契税按高档计。",
+    negotiable: 0.04,
     reno: "精装",
   },
   {
     id: "F", emoji: "🏗️", name: "中环新交付次新", area: "92㎡", price: 5500000,
-    type: "二手房", ring: "内", tag: "不满 2 年 · 全额增值税", tagCls: "badge-hair", thumbCls: "thumb-c",
+    ring: "内", tag: "不满 2 年 · 全额增值税", tagCls: "badge-hair",
     holdYears: 0, unique: false,
-    seller: "刘先生", sellerTag: "房东 · 投资客回笼", negotiable: 0.05,
-    intro: "去年刚交付的次新房，投资客想回笼资金；未满 2 年需缴全额增值税（5%+附加），税费是大头。",
+    negotiable: 0.05,
     reno: "简装",
   },
 ];
@@ -500,7 +486,6 @@ export function createInitialState(): SimState {
     drawn: {},
     walked: [],
     day: 1,
-    payKind: null,
     renovDone: false,
     renovSkipped: false,
     renovStartDay: 0,

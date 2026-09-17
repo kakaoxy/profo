@@ -107,9 +107,6 @@
   max-width: 62%;
   text-align: right;
 }
-.gm-v .gm-of {
-  white-space: normal;
-}
 .g-loss {
   font-size: 22rpx;
   color: #b7410e;

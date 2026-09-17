@@ -263,7 +263,7 @@ export interface PrimaryAction {
   /** 等待承诺（如「等批贷 7-15 天」），按下之前就知道要等多久. */
   wait: string;
   disabled: boolean;
-  /** 按钮配色类（缺省 btn-ink；异常见 btn-out / btn-rust）. */
+  /** 按钮配色类（缺省 btn-ink；次级动作用 btn-out；禁用态由 disabled 自动走 btn-disabled）. */
   cls?: string;
 }
 

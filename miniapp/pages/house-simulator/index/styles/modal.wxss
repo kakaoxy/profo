@@ -85,6 +85,15 @@
   color: var(--rust);
   line-height: 1.6;
 }
+/* ===== 弹层底部操作区（与顶部内容留白、两个按钮并排等宽） ===== */
+.sheet-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 32rpx;
+}
+.sheet-actions .btn {
+  flex: 1;
+}
 .btn-disabled {
   background: var(--fog);
   color: var(--dove);

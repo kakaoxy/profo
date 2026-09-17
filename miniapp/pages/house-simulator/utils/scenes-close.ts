@@ -12,7 +12,7 @@ import { NODES, SimState } from "./constants";
 import { HAND_ITEMS, NODE_DAYS, REAL_MAX, screenMeta, SIGN_ITEMS } from "./flow";
 import { contractPriceOf, paidTotalOf } from "./renov-data";
 import { bubble, dayBlock, pitBlock, waitBlock } from "./scenes-common";
-import type { OptItem, RowItem, SceneBlock, SceneView } from "./scenes-common";
+import type { RowItem, SceneBlock, SceneView } from "./scenes-common";
 import { payAction, tuitionBlock } from "./scenes-money";
 import type { SceneKey } from "./constants";
 

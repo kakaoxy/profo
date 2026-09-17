@@ -52,10 +52,6 @@
   color: var(--ink);
   border: 2rpx solid var(--dove);
 }
-.btn-rust {
-  background: var(--rust);
-  color: #ffffff;
-}
 .btn-row {
   display: flex;
   gap: 20rpx;
@@ -63,13 +59,6 @@
 }
 .btn-row .btn {
   flex: 1;
-}
-.btn-sm {
-  width: auto;
-  height: 88rpx;
-  padding: 0 28rpx;
-  font-size: 28rpx;
-  flex: none;
 }
 .btn-years {
   height: 76rpx;

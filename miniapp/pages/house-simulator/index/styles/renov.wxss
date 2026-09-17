@@ -54,14 +54,6 @@
   min-width: 210rpx;
   text-align: right;
 }
-.gm-of {
-  color: var(--dove);
-  font-weight: 400;
-}
-.gm-loss {
-  font-size: 21rpx;
-  color: var(--danger);
-}
 
 /* ===== 装修 · 档位卡（预算档位 / 设计师档位；选中态停留展示底牌） ===== */
 .grades {
@@ -118,25 +110,6 @@
   margin-top: 10rpx;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
-}
-.opt-tag {
-  display: inline-flex;
-  align-items: center;
-  height: 38rpx;
-  padding: 0 16rpx;
-  border-radius: 12rpx;
-  font-size: 21rpx;
-  font-weight: 500;
-  background: var(--fog);
-  color: var(--ash);
-}
-.opt-tag.hot {
-  background: var(--apricot-wash);
-  color: var(--rust);
-}
-.opt-tag.cool {
-  background: var(--sky-wash);
-  color: var(--sky-ink);
 }
 
 /* ===== 装修 · 上划卡（3 秒一屏：一句现场 + 两个数字 + 一句提醒） ===== */

@@ -10,7 +10,7 @@ import {
   addDownAmount, addDownText, fmt, fmtYuan, gjjCap, incomeRatio, minDownToClear, money, overRisk,
   stageDays,
 } from "./calc";
-import { INCOME, LOAN_TYPES } from "./constants";
+import { LOAN_TYPES } from "./constants";
 import type { SceneKey, SimState } from "./constants";
 import { screenMeta } from "./flow";
 import { dayBlock, pitBlock, waitBlock } from "./scenes-common";
@@ -59,7 +59,6 @@ export function sceneLoan(S: SimState): SceneView {
 /** 贷款审批屏：等待屏 + 风控拦截 / 拒批补救. */
 export function sceneLoanChk(S: SimState): SceneView {
   const d = screenMeta("loanChk");
-  const m = money(S);
   const rej = S.loanRejected || overRisk(S);
   const target = minDownToClear(S);
   const blocks: SceneBlock[] = [head(S, "loanChk"), ...tuitionBlock(S), ...waitBlock(d)];

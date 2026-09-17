@@ -12,7 +12,7 @@ import { downRateFor, GJJ_POLICY_NOTE, LOAN_TYPES } from "./constants";
 import type { SceneKey, SimState } from "./constants";
 import { BORROW_CAP, BORROW_CAPS, screenMeta, SIGN_ITEMS } from "./flow";
 import type { SignItem } from "./flow";
-import { bubble, dayBlock, pitBlock } from "./scenes-common";
+import { dayBlock, pitBlock } from "./scenes-common";
 import type { ClRowItem, OptItem, SceneBlock, SceneView } from "./scenes-common";
 import { netBlocked } from "./scenes-start";
 
@@ -79,7 +79,6 @@ export function sceneLoanType(S: SimState): SceneView {
 /** 算账屏：首付口径 = 房款首付 + 全部税费，一次算完. */
 export function sceneFunds(S: SimState): SceneView {
   const m = money(S);
-  const h = houseOf(S)!;
   const g = gap(S);
   const rows: SceneBlock = {
     t: "rows",
@@ -248,7 +247,6 @@ export function tuitionBlock(S: SimState): SceneBlock[] {
 
 /** 签约两屏的公共骨架（清单 + 进度 + 结论 + 主按钮 + 快速路径）. */
 function checkScreen(S: SimState, key: "sign" | "signNet", items: SignItem[]): SceneView {
-  const d = screenMeta(key);
   const done = items.filter((it) => S.con[it.k]).length;
   const secs: string[] = [];
   for (const it of items) {

@@ -13,7 +13,7 @@
  * 纯函数，仅依赖 SimState 与 renov-data/render 工具。
  */
 
-import { fmt, fmtN } from "./calc";
+import { fmt } from "./calc";
 import { SimState } from "./constants";
 import {
   contractAddOf,
@@ -34,7 +34,7 @@ import {
   writtenListOf,
   yuanFmt,
 } from "./renov-data";
-import type { RenovBill, RenovContractItem, RenovStageDef } from "./renov-data";
+import type { RenovContractItem, RenovStageDef } from "./renov-data";
 import { realOf } from "./render";
 import type {
   BurstItem,

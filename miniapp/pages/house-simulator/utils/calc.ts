@@ -147,17 +147,16 @@ export function sellerIncomeTax(h: House, price: number): number {
 export function defaultCustom(): House {
   return {
     id: "X", emoji: "📐", name: "自定义房源", area: "90㎡", price: 4500000,
-    type: "二手房", ring: "内", tag: "", tagCls: "badge-sky", thumbCls: "thumb-b",
+    ring: "内", tag: "", tagCls: "badge-sky",
     holdYears: 5, unique: true, acq: "buy", base: 0,
-    negotiable: 0.05, seller: "房主", sellerTag: "房东 · 按需定制",
-    intro: "", reno: "简装",
+    negotiable: 0.05,
+    reno: "简装",
   };
 }
 
 /** 由「持有年限 × 是否唯一 × 取得方式」推导自定义房源的标签与税费口径（就地返回同一对象）. */
 export function syncCustom(c: House): House {
   c.area = Math.round(parseFloat(c.area) || 0) + "㎡";
-  c.type = "二手房";
   const holdTxt = c.holdYears >= 5 ? "满五" : c.holdYears >= 2 ? "满二" : "不满 2 年";
   c.tag = c.holdYears < 2 ? "不满 2 年 · 全额增值税" : holdTxt + (c.unique ? "唯一" : "不唯一");
   if (c.acq === "inherit") {

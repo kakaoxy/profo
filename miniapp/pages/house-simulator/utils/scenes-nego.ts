@@ -44,7 +44,6 @@ export function sceneNego1(S: SimState): SceneView {
 
 /** 第二轮出价（越线 → 卖家叫停，只剩接受或换房；未越线 → 继续谈）. */
 export function sceneNego2(S: SimState): SceneView {
-  const h = houseOf(S)!;
   const d = screenMeta("nego2");
   const head0 = head(S, "nego2");
   if (S.negoCap) {

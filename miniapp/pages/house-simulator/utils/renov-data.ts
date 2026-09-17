@@ -401,6 +401,3 @@ export function decidedCountOf(con: Record<string, string>): number {
 export function writtenListOf(con: Record<string, string>): string[] {
   return RENOV_CONTRACT.filter((it) => con[it.k] === "do").map((it) => it.name);
 }
-
-/** 完成打卡清单名（装修总账屏用）. */
-export const RENOV_ALL: string[] = RENOV_STAGES.map((d) => d.name);

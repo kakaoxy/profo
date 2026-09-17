@@ -19,12 +19,6 @@
   border-color: var(--dove);
   box-shadow: var(--shadow-sm);
 }
-.opt-t {
-  font-size: 29rpx;
-  font-weight: 500;
-  color: var(--ink);
-  line-height: 1.4;
-}
 .opt-d {
   font-size: 25rpx;
   color: var(--graphite);
