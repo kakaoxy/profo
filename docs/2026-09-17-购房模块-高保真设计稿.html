@@ -1,0 +1,2341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>购房模拟器 · 购房模块 高保真设计稿 v1 · 经历周期 + 两个深坑</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="购房模块设计稿 v1">
+<!--
+  购房模拟器 · 购房模块 高保真可点击设计稿 v1
+  ─────────────────────────────────────────────────────────────
+  视觉真源：miniapp/app.wxss（Steep 令牌）+ docs/DESIGN.md + 装修模块设计稿 v4/v6
+
+  迭代动因（2026-09-17）：
+    装修模块重做后（docs/2026-09-15-装修模块-高保真设计稿.html），再回看购房模块
+    显得文字过多。购房模块照装修 v4 的思路减量，但目标不同 —— 装修是「少讲坑、
+    只深耕一个坑」，购房要同时讲清三件事：
+
+      目标 ①  流程清晰   —— 12 个节点，一屏一句话，不再有 60-130 字的说明段
+      目标 ②  时间周期   —— 「经历周期 / 常规周期」并列，每屏都摆出来
+      目标 ③  坑与规避   —— 每个阶段一句「最容易踩的点 + 怎么避免」，
+                            另有两个深坑做成逐条决策清单（签约 / 交房）
+
+  三条设计口径（2026-09-17 与用户确认）：
+    ① 深坑策略：2 个深坑 = 签约（不可逆的钱）+ 交房（最后一张牌）。
+       签约拆两屏：签字前查清 6 项（产调/产权人/学位/税费归属/定金罚则/付款节点）
+                   ＋ 合同里写死 6 项（违约金/交期/贷不到怎么办/尾款扣押/欠费/清单）。
+       交房一屏：交割 4 项核对 + 「全部结清 / 尾款扣押」二选一。
+    ② 决策点：维持现状（不删任何决策点，只压每屏文字）。共 24 屏，与原实现的
+       SceneKey 一一对应；每屏 = 一句现场（≤26 字）+ 选项 + 一句坑 + 一句怎么避免。
+    ③ 时间口径：单轨 + 一个对照。只有一条「经历周期」时间线——每段天数从该段的
+       「常规周期」区间随机抽一个数（如审批 7-15 天 → 抽 11 天），同一次运行内固定、
+       重开重抽；行业常见口径（全程 1-3 个月，见 scenes-close.ts）只作对照。
+       落到界面上是四处：
+         · 每屏顶部「双层时间条」：左 = 经历周期（这一段抽到的天数 + 累计第 N 天），
+           右 = 常规周期（X-Y 天）+ 这一段在等谁、为什么是这个区间
+         · 顶部状态带的期字条：已走的 N 天（黑）+ 到 90 天刻度的余量（暖色区）
+         · 三张「等待屏」（审批 / 过户 / 交房）：常规节点轴（走到哪一步）+ 对方在做什么
+           + 你现在要做什么——回答「为什么要等这么久」
+         · 每屏主按钮上的等待承诺（如「送银行审批 · 等批贷 7-15 天」）：按下之前就知道要等多久
+         · 总账屏：你这趟走出来的总天数（抽取 + 踩坑）→ 常规 1-3 个月的对比条 + 节点柱图
+       真不花时间的屏不摆时间条——不编数字：选身份 / 选现金 / 自定义房源 / 成交·到手价 /
+       中介费 / 贷款方式 / 算账 / 资格结果（与 qa 同属「资格」节点，时间已在 qa 屏给出）。
+
+  时间体感迭代（2026-09-17 与用户确认后落地，动因：用户「不清楚下一步什么时候做、要多久、
+  为什么要等这么久」）：
+    ① 时间条信息配对纠错：原来右格只写「常见口径」（等于浪费），而把最能说明问题的
+       realNote（如「公积金 15-30 天」）错配在左格；现在右格 = 常规周期 + 等谁 + 为什么。
+    ② 主按钮统一加等待承诺：核验 1-3 天 / 筹钱 1-2 周 / 等批贷 7-15 天 / 审税 7-15 天 /
+       出证 1-3 天 / 放款 3-15 天；当天办完的屏不加（避免满屏噪音）。
+    ③ 三张等待屏（审批 18 / 过户 20 / 交房 22）在原有屏内展开等待明细，不新增屏幕，
+       24 屏与 SceneKey 的对应关系不变。
+    ④ 措辞与取值（本轮）：模拟工期 → 经历周期、真实周期 → 常规周期；经历周期不再写死档位，
+       改为从该段常规区间抽数；逻辑上同期的环节（资格核验与看房同期、砍价在看房里谈、
+       网签与签约同一趟）标记 par 不重复计时，使总经历落在 1-3 个月的量级。
+       ⚠️ 这条与代码不一致：miniapp constants.ts 的 DAYS「模拟 16 天」轨道在本稿已退休，
+          代码侧仍是 16 天档位（同步时需一并决定保留哪一套）。
+
+  付款确认（2026-09-17 与用户确认后加，动因：用户认为「出款时应该同时感知这一步的分量
+  和下一步的时间周期」）：五个出款点——定金 / 网签首付先付 / 补足剩余首付 / 缴税 / 扣押尾款
+  （kind 名沿用实现的 payModal：deposit / firstPay / restPay / transfer / holdback）。
+  ⚠️ 2026-09-17 修正：末笔「扣押尾款」是**从卖方应得房款中扣留**，不占用买方现金——
+  弹窗第三格因此显示「现金不变」，总账也不把它算成多花的钱（原先按买方出款算，
+  总账少记一笔、且现金刚好够时会显示负剩余）。
+  弹窗固定三层信息：
+    · 现金三段：现有现金 → 本次支付 → 支付后剩余（与对应屏的账同一口径，不另编数字）
+      「现有现金」= 可动用现金（手头 + 已筹）− 进入本屏前已出的款；口径见 paid()
+    · 口径说明 + 违约警示（定金罚则 / 网签后违约金 20%，取自实现 payModal 的 warn）
+    · 「下一节点：名称 · 常规周期 X-Y 天」+「等谁」——常规周期与 waitWho / waitWhy 复用 FLOW；
+      末笔（扣押尾款）的下一节点是装修，本稿不含工期，只标注「见装修模块设计稿」。
+
+  政策口径（2026-09-17 核对，真源：上海市住建委 / 市房屋管理局通知）：
+    · 限购（自 2026-02-26 起施行）：沪籍家庭含成年单身按居民家庭执行——外环外不限套数、
+      外环内限购 2 套；非沪籍社保 / 个税满 1 年——外环外不限套数、外环内限购 1 套，
+      满 3 年及以上——外环内限购 2 套；持《上海市居住证》满 5 年——免社保 / 个税，全市限购 1 套。
+    · 二套商贷最低首付（自 2026-08-21 起施行）：外环内 25% / 外环外 15%。
+    · 置换：先卖后买、原房已售 → 名下 0 套，按首套认定（首付与利率均按首套算）。
+    · 卖方税费：增值税满 2 年免征（不满 2 年全额 5% + 附加）；个税——买卖所得满五唯一免征、
+      否则核定 1%，继承 / 赠与所得满五唯一免征、否则按（转让价 − 原值）× 20% 计，
+      且满二 / 满五起算可追溯原产权人（原值凭证要留好）。
+    · 婚姻状况自 2025-08-26 起不再影响限购口径，故问答树已删去「婚姻状况」一问。
+
+  减量实测（口径：只数中日韩表意字；原实现 = 24 屏场景文案 + 该屏会弹出的弹层文案
+  （agreementModal 379 字 / payModal 等），由 miniapp 临时 vitest 实测；本稿 = 屏内可见正文，
+  去掉评审用「设计说明」与默认折叠的明细）：
+    原实现 5054 字 → 本稿 3830 字（−24.2%）；24 屏里 21 屏更轻；折叠明细 506 字为按需展开。
+    ⚠️ 2026-09-17 时间体感迭代后已不是 3830：按同一口径实测 +478 字（三张等待屏约 258 字，
+    时间条「等谁 + 为什么」与主按钮等待承诺约 220 字，同时删去了不再显示的 realNote 与
+    「常见口径」），本稿正文约 4308 字（对原实现 −14.8%）——减量让位于「等多久、为什么等」。
+    ⚠️ 同日又加了五个付款确认弹窗：实测 +551 字（deposit 117 / firstPay 129 / restPay 126 /
+    transfer 93 / holdback 86，含现金三段与按钮）。这部分文案原实现本来就有（payModal 等，
+    已计入 5054 字的原实现口径）——按用户要求加回，本稿正文约 4859 字（对原实现 −3.9%）。
+    要回收字数，最直接的是砍掉五个弹窗的「口径说明 + 违约警示」（约 240 字，实现里已有），
+    只留现金三段 + 下一节点与常规周期。
+    原「3 屏更重」的账（当时口径）：
+      · qa +53（原屏只有题干与 2 个选项共 28 字；现在多了「资格不过 → 无法网签」这一坑）
+      · loanChk +16（多了「审批 7-15 天 / 公积金 15-30 天」的真实周期条）
+      · settle +89（多的是「学费单」结算块；写清路径下 settle 为 65 字，反而 −44%）
+
+  与代码的对齐（事实真源：miniapp/pages/house-simulator）：文案与数据均取自
+  constants.ts（房源 / 角色 / 贷款方式 / 12 节点 / 税费口径）、calc.ts（限购问答树 /
+  砍价底线）、scenes-*.ts（各屏原文，本稿只做压缩不做改写口径）。
+  ⚠️ 本稿是设计稿，不是实现：金额为演示口径（房源 F · 522.5 万成交 · 首套组合贷）。
+
+  ⚠️ 2026-09-17 全流程金额与逻辑修正（评审稿自查后逐项修，改动都要同步进 miniapp）：
+    ① 筹钱：缺口 = 需现金 −（手头 + 已筹），三条渠道各有上限（30/20/20），已筹只补到缺口为止；
+       原先借款不减缺口，「签约」按钮永不出现 → 缺口 ≤70 万时流程死锁。
+    ② paid() 改为「进入本屏之前已出的款」，出款弹窗不再把本次支付重复扣一次（现金刚好够时会显示负剩余）。
+    ③ 「追加首付」标出真实差额（首付提到 X%、多掏 Y 万），提档后必须回算账屏复核现金是否够。
+    ④ 契税统一由 deedRateOf（面积 × 家庭套数）推导，预设房源不再写死 1.5%（二套 >140㎡ 应为 2%）。
+    ⑤ 自定义房源税费预览与实付同走 sellerVatOf（未满 2 年的增值税含 12% 附加）。
+    ⑥ 「自定义房源」屏不再被 ensureData 静默塞入房源 F；「用不上」改为回选房。
+    ⑦ 纯公积金额度上限 80 万计入账：超出部分列为「需现金补足」，贷款额与月供按上限算。
+    ⑧ 全款（100%）跳过贷款方案 / 审批，直达补足尾款；贷款方式标签按所选方式显示，不再硬编码「组合贷」。
+    ⑨ 后果落到流程里：资格不过 → 网签屏被拦下；风控「坚持硬上」→ 银行拒批，需追加首付 / 拉长年限 / 换房。
+    ⑩ 天数统一 elapsed() = 抽取累计 + 坑拖出的天，状态带 / 时间条 / 总账同口径；砍价折扣按「9.4 折」显示。
+    ⑪ 第一轮出价即越线（如 -6% 撞上 5% 底线）时立刻定成交价 = 房东底线价：
+      原先只在第二轮落价，叫停屏读的是还没赋值的 S.deal，会显示「最多让到 0 万 / 接受底价 0 万」。
+     ⚠️ 以上修正让正文文案净增约 150 字（额度缺口行、拒批与网签被拦的后果块），字数口径需重算。
+
+  ⚠️ 移植到微信小程序的已知替换（评审稿里的写法在小程序不可用 / 降级）：
+    · font-variant-numeric:tabular-nums —— 微信不支持，数字会跳动，改用等宽字体
+    · scrollIntoView({behavior:'smooth'}) —— 改用 scroll-into-view 属性
+    · wheel 事件（桌面评审用）—— 小程序无滚轮，移植时删掉
+    · 本文件自包含单文件（无 CDN / 无构建），file:// 直接打开即可评审。
+      之所以不拆文件：与 装修模块设计稿 保持同一交付形态，评审时两个文件对照看。
+-->
+<style>
+/* ════════════════════════════════════════════════════════════════
+   令牌层 · 与 miniapp/app.wxss 逐项对齐（rpx ÷ 2 = px，375px 设计宽）
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  --ink:#17191c; --pure-white:#ffffff; --fog:#f7f7f8;
+  --ash:#4c4c4c; --graphite:#777b86; --dove:#a3a6af;
+  --rust:#5d2a1a; --apricot-wash:#fbe1d1; --sky-wash:#d3e3fc;
+  --shadow-sm:0 4px 16px rgba(23,25,28,.06);
+  --shadow-md:0 8px 28px rgba(23,25,28,.10);
+  --hairline:#ece7de;
+  --hairline-soft:#eeeff1;
+  --ok:#176b4d;
+  --danger:#b7410e;
+  --sky-ink:#2a5ca0;
+  --font:-apple-system,BlinkMacSystemFont,Roboto,"Noto Sans SC","Source Han Sans SC",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overscroll-behavior:none}
+body{
+  background:#111214;
+  font-family:var(--font);
+  font-size:14px; line-height:1.4; color:var(--ink);
+  display:grid; place-items:center;
+}
+
+/* ── 设备外框（≥700px 时居中成手机；窄屏全屏铺满） ── */
+#app{
+  position:relative; width:100vw; height:100vh;
+  display:flex; flex-direction:column;
+  background:var(--fog); overflow:hidden;
+}
+@media (min-width:700px){
+  #app{width:390px;height:844px;border-radius:44px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+}
+
+/* ════════════════════════════════════════════════════════════════
+   购房状态带（guard）· 一行定位 + 12 段节点线 + 钱条 + 时间条
+   时间条是本稿与装修稿最大的差别：经历在我这边，常规在我对面
+   ════════════════════════════════════════════════════════════════ */
+.guard{
+  flex:none; background:var(--pure-white); border-bottom:1px solid var(--hairline);
+  padding:10px 16px 12px; z-index:6;
+}
+.g-top{display:flex;align-items:center;gap:8px;font-size:12px}
+.g-badge{
+  display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;
+  background:var(--fog);border-radius:999px;font-size:12px;font-weight:500;color:var(--ash);
+}
+.g-dot{width:6px;height:6px;border-radius:50%;background:var(--rust)}
+.g-cur{color:var(--ink);font-weight:500}
+.g-sp{flex:1}
+.g-day{color:var(--graphite);font-variant-numeric:tabular-nums}
+.g-day b{color:var(--ink);font-weight:500}
+
+/* 12 段节点线：已完成 ink / 当前 rust / 未到 hairline */
+.g-line{display:flex;gap:2px;margin-top:9px}
+.g-seg{flex:1;height:4px;border-radius:999px;background:var(--hairline);transition:background .3s}
+.g-seg.done{background:var(--ink)}
+.g-seg.cur{background:var(--rust);box-shadow:0 0 0 2px var(--apricot-wash)}
+.g-seg.future{background:var(--hairline)}
+.g-names{display:flex;gap:2px;margin-top:4px}
+.g-names span{flex:1;text-align:center;font-size:8.5px;color:var(--dove);overflow:hidden;white-space:nowrap}
+.g-names span.on{color:var(--ink);font-weight:500}
+
+/* 钱条 / 时间条 */
+.g-meters{display:flex;flex-direction:column;gap:7px;margin-top:11px}
+.gm{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--graphite)}
+.gm-k{flex:none;width:12px;color:var(--dove);font-weight:500}
+.gm-bar{
+  flex:1;height:7px;border-radius:999px;background:var(--fog);
+  display:flex;overflow:hidden;position:relative;
+}
+.gm-bar i{display:block;height:100%;transition:width .55s cubic-bezier(.22,1,.36,1)}
+.gm-base{background:var(--ink)}
+.gm-over{background:var(--danger)}
+/* 常规周期区间带：经历天数之外、到 90 天刻度还剩下的那些天 */
+.gm-range{background:var(--apricot-wash);opacity:.85}
+.gm-v{flex:none;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;min-width:0;white-space:nowrap;text-align:right}
+.gm-v em{font-style:normal;color:var(--dove);font-weight:400;margin-left:4px}
+.gm-bar.hit{animation:barHit .9s ease}
+@keyframes barHit{
+  0%{box-shadow:0 0 0 0 rgba(183,65,14,0)}
+  30%{box-shadow:0 0 0 3px rgba(183,65,14,.28)}
+  100%{box-shadow:0 0 0 0 rgba(183,65,14,0)}
+}
+.g-real{margin-top:2px;font-size:10.5px;color:var(--dove);line-height:1.4}
+
+/* ════════════════════════════════════════════════════════════════
+   舞台区
+   ═══════════════════════════════════════════════════════════════ */
+.stage{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.stage::-webkit-scrollbar{width:0;height:0}
+.sc{padding:20px 18px 40px;animation:arrive .42s cubic-bezier(.22,1,.36,1)}
+@keyframes arrive{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* 排版（typo.wxss 对齐） */
+.eyebrow{display:inline-flex;align-items:center;font-size:12px;font-weight:500;color:var(--rust);letter-spacing:.04em}
+.hd{font-weight:500;font-size:25px;line-height:1.22;letter-spacing:-.015em;color:var(--ink);margin:6px 0 0;white-space:pre-line;text-wrap:pretty}
+.hd-hero{display:block;font-size:38px;line-height:1.2;margin-bottom:4px}
+.sub{margin:6px 0 0;font-size:14px;color:var(--ash);line-height:1.65;text-wrap:pretty}
+.sub.sm{font-size:12.5px;color:var(--graphite);line-height:1.6}
+
+/* 卡片 */
+.card{background:var(--pure-white);border-radius:24px;box-shadow:var(--shadow-sm);padding:18px;margin-top:14px}
+.card-sky{background:var(--sky-wash)}
+.b-title{font-size:13px;font-weight:500;color:var(--ink);line-height:1.5}
+.b-desc{font-size:12.5px;color:var(--ash);margin-top:5px;line-height:1.7;white-space:pre-line;text-wrap:pretty}
+
+/* 提示条 */
+.ok-note{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;line-height:1.6;color:var(--ash);background:var(--fog);border-radius:14px;padding:10px 14px;margin-top:12px;text-wrap:pretty}
+.ok-note .ok-b{color:var(--ink);font-weight:500;flex:none}
+
+/* 内部工具类 */
+.num{font-variant-numeric:tabular-nums}
+.sect{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:22px}
+.sect-t{font-size:13px;font-weight:500;color:var(--ink)}
+.sect-x{font-size:11px;color:var(--dove);font-variant-numeric:tabular-nums}
+
+/*  双层时间条（每屏顶部，本稿的签名组件）：左 = 经历周期，右 = 常规周期 ── */
+.tstrip{display:flex;gap:8px;margin-top:10px}
+.tstrip .cell{flex:1;background:var(--pure-white);border-radius:16px;box-shadow:var(--shadow-sm);padding:9px 11px}
+.tstrip .cell.real{background:var(--apricot-wash)}
+.tstrip .k{font-size:10.5px;color:var(--graphite)}
+.tstrip .v{font-size:17px;font-weight:500;color:var(--ink);margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+.tstrip .v em{font-size:11px;font-weight:400;color:var(--graphite);font-style:normal;margin-left:2px}
+.tstrip .n{font-size:10px;color:var(--dove);margin-top:3px;line-height:1.35;text-wrap:pretty}
+.tstrip .cell.real .k,.tstrip .cell.real .n{color:var(--rust);opacity:.75}
+
+/* ════════════════════════════════════════════════════════════════
+   上划卡（并购房版）· 一句现场 + 双层时间 + 一句坑 + 一句怎么避免
+   ════════════════════════════════════════════════════════════════ */
+.swipe{
+  margin-top:14px;background:var(--pure-white);border-radius:26px;box-shadow:var(--shadow-sm);
+  padding:17px 16px 14px;animation:arrive .34s cubic-bezier(.22,1,.36,1);
+}
+.sw-day{font-size:12px;color:var(--graphite);font-variant-numeric:tabular-nums}
+.sw-hd{font-size:22px;font-weight:500;letter-spacing:-.015em;color:var(--ink);margin-top:5px;line-height:1.2}
+.sw-one{font-size:14.5px;color:var(--ash);line-height:1.62;margin-top:9px;text-wrap:pretty}
+.sw-hint{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:14px;font-size:11.5px;color:var(--dove)}
+.sw-hint i{font-style:normal;font-size:15px;animation:upse 1.5s ease-in-out infinite}
+@keyframes upse{0%,100%{transform:translateY(0);opacity:.45}50%{transform:translateY(-5px);opacity:1}}
+
+/* ── 坑 / 怎么避免（每屏一块，本稿的核心减量单元） ── */
+.pit{margin-top:12px;border-radius:15px;padding:11px 13px;background:var(--apricot-wash);color:var(--rust)}
+.pit-k{font-size:10.5px;font-weight:500;opacity:.8;letter-spacing:.02em}
+.pit-t{font-size:13px;line-height:1.6;margin-top:3px;text-wrap:pretty}
+.pit-f{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(93,42,26,.16);font-size:12.5px;line-height:1.55;color:var(--ash);text-wrap:pretty}
+.pit-f b{flex:none;color:var(--ink);font-weight:500}
+.pit.sky{background:var(--sky-wash);color:var(--sky-ink)}
+.pit.sky .pit-f{border-top-color:rgba(42,92,160,.18)}
+
+/* ── 进度与状态胶囊 ── */
+.prog{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--graphite)}
+.prog-bar{flex:1;height:6px;border-radius:999px;background:var(--fog);overflow:hidden}
+.prog-bar i{display:block;height:100%;background:var(--ink);border-radius:999px;transition:width .4s cubic-bezier(.22,1,.36,1)}
+.prog-v{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:500}
+.pill{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:500}
+.pill-todo{background:var(--apricot-wash);color:var(--rust)}
+.pill-do{background:var(--ink);color:#fff}
+.pill-no{background:var(--fog);color:var(--graphite);border:1px solid var(--dove)}
+.pill-warn{background:var(--sky-wash);color:var(--sky-ink)}
+
+/* ── 选项按钮 / 档位卡 ── */
+.opts{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+.opt{
+  display:block;width:100%;text-align:left;background:var(--pure-white);
+  border:1px solid var(--hairline);border-radius:20px;padding:13px 15px;
+  font-family:inherit;color:inherit;cursor:pointer;transition:border-color .16s,box-shadow .16s;
+}
+.opt:active{transform:scale(.99)}
+.opt.on{border:2px solid var(--ink);box-shadow:var(--shadow-sm);padding:12px 14px}
+.op-hd{display:flex;align-items:center;gap:8px}
+.op-n{font-size:14px;font-weight:500;color:var(--ink)}
+.op-tag{display:inline-flex;align-items:center;height:19px;padding:0 8px;border-radius:6px;font-size:10.5px;font-weight:500;background:var(--fog);color:var(--ash)}
+.op-tag.hot{background:var(--apricot-wash);color:var(--rust)}
+.op-tag.cool{background:var(--sky-wash);color:var(--sky-ink)}
+.op-p{margin-left:auto;font-size:15px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+.op-d{font-size:12px;color:var(--graphite);margin-top:4px;line-height:1.5;text-wrap:pretty}
+.op-note{font-size:11px;color:var(--dove);margin-top:5px;line-height:1.5}
+.op-note.risk{color:var(--danger)}
+
+/* ── 现金档 / 环线选择 ── */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{
+  min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--hairline);
+  background:var(--pure-white);font-family:inherit;font-size:14px;color:var(--ink);cursor:pointer;
+}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:500}
+.chips-2{gap:10px}
+.chips-2 .chip{flex:1}
+
+/* ── 表单（自定义房源） ── */
+.form{margin-top:14px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:4px 16px}
+.f-row{display:flex;align-items:center;gap:10px;min-height:52px;border-bottom:1px solid var(--hairline-soft)}
+.f-row:last-child{border-bottom:0}
+.f-k{flex:none;width:82px;font-size:13px;color:var(--graphite)}
+.f-in{flex:1;border:0;outline:0;font-family:inherit;font-size:14px;color:var(--ink);background:transparent;text-align:right}
+.f-in::placeholder{color:var(--dove)}
+
+/* ── 房源卡 ─ */
+.hcard{
+  display:flex;gap:11px;align-items:center;width:100%;text-align:left;
+  background:var(--pure-white);border:1px solid var(--hairline);border-radius:20px;
+  padding:12px 14px;margin-top:10px;font-family:inherit;color:inherit;cursor:pointer;
+}
+.hcard.on{border:2px solid var(--ink);padding:11px 13px}
+.hc-emo{flex:none;width:40px;height:40px;border-radius:13px;background:var(--fog);display:grid;place-items:center;font-size:19px}
+.hc-b{flex:1;min-width:0}
+.hc-n{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--ink)}
+.hc-m{display:block;font-size:11.5px;color:var(--graphite);margin-top:3px;line-height:1.5;text-wrap:pretty}
+.hc-p{flex:none;text-align:right}
+.hc-v{font-size:15px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+.hc-x{font-size:10.5px;color:var(--dove);margin-top:3px;font-variant-numeric:tabular-nums}
+
+/* ─ 账单行 ─ */
+.rows{margin-top:14px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:4px 16px}
+.row{display:flex;align-items:baseline;gap:10px;min-height:44px;padding:9px 0;border-bottom:1px solid var(--hairline-soft)}
+.row:last-child{border-bottom:0}
+.row .k{flex:1;font-size:12.5px;color:var(--ash);line-height:1.5}
+.row .v{font-size:13px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.row.total .k{color:var(--ink);font-weight:500}
+.row.total .v{font-size:15px;color:var(--rust)}
+
+/* ── 对话气泡 ── */
+.chat{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.bubble{background:var(--pure-white);border-radius:18px 18px 18px 6px;box-shadow:var(--shadow-sm);padding:11px 14px}
+.who{font-size:10.5px;color:var(--dove);margin-bottom:4px}
+.bubble p{margin:0;font-size:13px;color:var(--ink);line-height:1.6;text-wrap:pretty}
+
+/* ── 清单（深坑 · 与装修稿合同清单同一套骨架） ── */
+.cl-sec{margin-top:18px}
+.cl-sec-h{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.cl-sec-t{font-size:13px;font-weight:500;color:var(--ink)}
+.cl-sec-x{font-size:11px;color:var(--dove);font-variant-numeric:tabular-nums;margin-left:auto}
+.cl-row{padding:12px 0;border-bottom:1px solid var(--hairline-soft)}
+.cl-row:last-child{border-bottom:0}
+.cl-top{display:flex;align-items:center;gap:7px}
+.cl-n{font-size:13.5px;font-weight:500;color:var(--ink)}
+.cl-why{font-size:11.5px;color:var(--graphite);line-height:1.6;margin-top:4px;text-wrap:pretty}
+.cl-write{font-size:11.5px;color:var(--ash);line-height:1.6;margin-top:5px;background:var(--fog);border-radius:10px;padding:7px 10px;text-wrap:pretty}
+.cl-write b{color:var(--ink);font-weight:500}
+.cl-acts{display:flex;gap:7px;margin-top:9px}
+.cl-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;
+  border-radius:999px;border:1px solid var(--hairline);background:var(--pure-white);
+  font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;transition:all .15s;padding:0 10px;
+}
+.cl-btn:active{transform:scale(.98)}
+.cl-btn.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:500}
+.cl-btn.on-no{background:var(--fog);border-color:var(--dove);color:var(--ink);font-weight:500}
+.cl-say{margin-top:12px;font-size:12.5px;line-height:1.65;border-radius:14px;padding:10px 14px;text-wrap:pretty}
+.cl-say.warn{background:var(--apricot-wash);color:var(--rust);border:1px solid #e8b79b}
+.cl-say.calm{background:var(--fog);color:var(--ash)}
+.cl-quick{margin-top:7px;font-size:11px;color:var(--graphite);line-height:1.55;text-wrap:pretty}
+
+/* ── 学费单（合同没写清 / 谈价没谈清的账目化） ── */
+.burst{
+  margin-top:14px;background:var(--apricot-wash);border:2px solid var(--danger);
+  border-radius:20px;padding:14px 16px;animation:burstIn .5s cubic-bezier(.22,1,.36,1);
+}
+@keyframes burstIn{from{opacity:0;transform:scale(.97) translateY(-4px)}to{opacity:1;transform:none}}
+.burst-t{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--danger)}
+.burst-src{font-size:10.5px;font-weight:500;color:var(--rust);background:rgba(255,255,255,.6);border-radius:8px;padding:2px 7px;margin-left:auto}
+.adj{margin-top:9px;background:rgba(255,255,255,.78);border:1px dashed var(--danger);border-radius:14px;padding:10px 12px}
+.adj-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink);padding:3px 0;font-variant-numeric:tabular-nums}
+.adj-line span:last-child{font-weight:500;white-space:nowrap}
+.adj-sum{display:flex;justify-content:space-between;gap:10px;margin-top:5px;padding-top:6px;border-top:1px solid rgba(183,65,14,.28);font-size:12.5px;color:var(--danger);font-weight:600;font-variant-numeric:tabular-nums}
+.adj-hint{margin-top:6px;font-size:11px;color:var(--rust);line-height:1.55;text-wrap:pretty}
+
+/* ════════════════════════════════════════════════════════════════
+   完成总账 · 钱条 / 时间条 / 长图 / 学费清单
+   ════════════════════════════════════════════════════════════════ */
+.pricebar{margin-top:14px;background:var(--ink);color:#fff;border-radius:20px;padding:13px 16px}
+.pricebar .pb-k{font-size:11px;opacity:.66}
+.pricebar .pb-v{font-size:23px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.015em;margin-top:2px}
+.pricebar .pb-n{font-size:11.5px;opacity:.8;margin-top:5px;line-height:1.5}
+.pricebar .pb-n b{color:#fff;font-weight:600}
+.pricebar.bad{background:var(--danger)}
+.pricebar.ok{background:var(--ok)}
+/* 时间条：黑 = 已经走出来的经历天数，暖色 = 到 90 天刻度的余量。
+   工期卡固定黑底不转橙，避免与钱条叠成两张大橙卡 */
+.t-bar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.18);margin-top:9px}
+.t-bar i{display:block;height:100%}
+.t-base{background:rgba(255,255,255,.92)}
+.t-over{background:var(--apricot-wash)}
+.gantt{display:flex;gap:2px;align-items:flex-end;height:38px;margin-top:10px}
+.gantt i{display:block;border-radius:3px 3px 0 0;background:var(--ink);opacity:.82;flex:1}
+.gantt i.hot{background:var(--danger);opacity:1}
+.gantt-x{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dove);margin-top:4px;font-variant-numeric:tabular-nums}
+.lrn{margin-top:12px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:14px 16px}
+.lrn-row{display:flex;gap:9px;padding:10px 0;border-bottom:1px solid var(--hairline-soft)}
+.lrn-row:last-child{border-bottom:0}
+.lrn-l{flex:1;min-width:0;font-size:12px;color:var(--ash);line-height:1.6;text-wrap:pretty}
+.lrn-l b{color:var(--ink);font-weight:500}
+.lrn-r{flex:none;width:86px;text-align:right;font-size:12.5px;font-weight:600;color:var(--danger);font-variant-numeric:tabular-nums}
+
+/* ════════════════════════════════════════════════════════════════
+   等待屏（审批 / 过户 / 交房）· 这一段在等谁、为什么等这么久
+   ════════════════════════════════════════════════════════════════ */
+.wait{margin-top:14px;background:var(--pure-white);border-radius:20px;box-shadow:var(--shadow-sm);padding:14px 15px}
+.wait-t{font-size:12.5px;font-weight:500;color:var(--ink)}
+.wait-t em{font-style:normal;color:var(--rust)}
+.wait-rail{display:flex;margin-top:13px}
+.wait-n{flex:1;position:relative;text-align:center}
+.wait-n i{display:block;width:8px;height:8px;border-radius:50%;background:var(--hairline);margin:0 auto 6px;position:relative;z-index:2}
+.wait-n span{display:block;font-size:10px;color:var(--dove);line-height:1.3}
+.wait-n::before,.wait-n::after{content:"";position:absolute;top:3.5px;height:2px;background:var(--hairline)}
+.wait-n::before{left:0;right:50%}
+.wait-n::after{left:50%;right:0}
+.wait-n:first-child::before,.wait-n:last-child::after{display:none}
+.wait-n.done i,.wait-n.done::before,.wait-n.done::after{background:var(--ink)}
+.wait-n.on i{background:var(--rust);box-shadow:0 0 0 3px var(--apricot-wash)}
+.wait-n.on::before{background:var(--ink)}
+.wait-n.on span{color:var(--ink);font-weight:500}
+.wait-x{display:flex;gap:6px;font-size:11.5px;color:var(--ash);line-height:1.6;margin-top:9px;text-wrap:pretty}
+.wait-x b{flex:none;color:var(--ink);font-weight:500}
+
+/* ════════════════════════════════════════════════════════════════
+   付款确认弹窗（五个出款点）· 现金三段 + 违约警示 + 下一节点与它的常规周期
+   ═══════════════════════════════════════════════════════════════ */
+.m-mask{position:absolute;inset:0;z-index:20;display:none;align-items:flex-end;background:rgba(23,25,28,.42)}
+.m-mask.on{display:flex;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.m-card{width:100%;background:var(--pure-white);border-radius:26px 26px 0 0;padding:20px 18px 18px;animation:rise .26s cubic-bezier(.22,1,.36,1)}
+.m-k{font-size:11px;color:var(--dove);letter-spacing:.04em}
+.m-t{font-size:19px;font-weight:500;color:var(--ink);margin-top:3px}
+/* 现金三段：现有 → 本次支付 → 支付后剩余 */
+.m-amt{display:flex;align-items:flex-end;gap:7px;margin-top:14px;background:var(--fog);border-radius:16px;padding:11px 13px}
+.m-amt>div{flex:1;min-width:0}
+.m-amt span{display:block;font-size:10.5px;color:var(--graphite)}
+.m-amt b{display:block;font-size:15px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:3px;letter-spacing:-.015em}
+.m-amt b.pay{color:var(--rust)}
+.m-amt i{font-style:normal;font-size:12px;color:var(--dove);line-height:1.9}
+.m-note{margin-top:11px;font-size:12px;color:var(--ash);line-height:1.6;text-wrap:pretty}
+.m-warn{margin-top:9px;font-size:12px;color:var(--danger);background:var(--apricot-wash);border-radius:12px;padding:9px 12px;line-height:1.6;text-wrap:pretty}
+/* 下一节点：出款这一下同时告诉用户「接下来做什么、要等多久、等谁」 */
+.m-next{margin-top:12px;background:var(--apricot-wash);border-radius:16px;padding:11px 13px}
+.m-next-row{display:flex;align-items:baseline;gap:7px}
+.m-next-k{flex:none;font-size:10.5px;color:var(--rust);opacity:.8}
+.m-next-row b{font-size:14px;font-weight:500;color:var(--ink)}
+.m-next-d{margin-left:auto;font-size:12px;font-weight:500;color:var(--rust);font-variant-numeric:tabular-nums;white-space:nowrap}
+.m-next-w{margin-top:5px;font-size:11.5px;color:var(--rust);opacity:.85;line-height:1.5;text-wrap:pretty}
+.m-btns{display:flex;gap:10px;margin-top:16px}
+
+/* ── 按钮 / CTA ── */
+.btn-row{display:flex;gap:10px;margin-top:16px}
+.btn{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  min-height:48px;padding:0 18px;border-radius:999px;border:0;cursor:pointer;
+  font-family:inherit;font-size:14px;font-weight:500;transition:transform .16s,opacity .16s;
+}
+.btn:active{transform:scale(.98)}
+.btn-ink{background:var(--ink);color:#fff}
+.btn-out{background:transparent;color:var(--ink);border:1px solid var(--dove)}
+.btn-disabled{background:var(--fog);color:var(--dove);cursor:default}
+/* 主按钮上的等待承诺：按下之前就知道这一步要等多久 */
+.btn-w{font-size:11px;font-weight:400;opacity:.72;margin-left:7px}
+
+/* 折叠区（评审用；小程序需自实现） */
+.cal-fold{margin-top:12px;border:1px solid var(--hairline);border-radius:16px;overflow:hidden;background:var(--pure-white)}
+.cal-fold>summary{padding:11px 14px;min-height:44px;font-size:12.5px;color:var(--graphite);cursor:pointer;list-style:none;display:flex;align-items:center;gap:7px}
+.cal-fold>summary::-webkit-details-marker{display:none}
+.cal-fold>summary::after{content:"▾";margin-left:auto;color:var(--dove)}
+.cal-fold[open]>summary::after{content:"▴"}
+.cal-body{padding:0 12px 12px}
+.cal-note{margin-top:8px;font-size:12px;color:var(--ash);line-height:1.6;background:var(--fog);border-radius:14px;padding:10px 13px;text-wrap:pretty}
+.cal-note b{color:var(--ink);font-weight:600}
+
+/* ═══════════════════════════════════════════════════════════════
+   开场三卡（对应三个目标）
+   ════════════════════════════════════════════════════════════════ */
+.g3{display:flex;gap:9px;margin-top:14px}
+.g3-cell{flex:1;background:var(--pure-white);border-radius:18px;box-shadow:var(--shadow-sm);padding:12px 11px}
+.g3-k{font-size:10.5px;color:var(--dove);letter-spacing:.02em}
+.g3-v{font-size:15px;font-weight:500;color:var(--ink);margin-top:4px;line-height:1.3;letter-spacing:-.015em}
+.g3-n{font-size:10.5px;color:var(--graphite);margin-top:4px;line-height:1.45}
+.trail{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+.trail span{font-size:10.5px;color:var(--graphite);background:var(--pure-white);border-radius:8px;padding:4px 8px;box-shadow:var(--shadow-sm)}
+.trail span.hot{background:var(--ink);color:#fff}
+
+/* ════════════════════════════════════════════════════════════════
+   评审工具条（不属于设计稿，评审用；可折叠）
+   ════════════════════════════════════════════════════════════════ */
+.rv{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-family:var(--font)}
+.rv-toggle{
+  display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border:0;cursor:pointer;
+  background:var(--pure-white);color:var(--ink);border-radius:999px;box-shadow:var(--shadow-md);
+  font-family:inherit;font-size:13px;font-weight:500;
+}
+.rv-panel{
+  width:268px;max-height:76vh;overflow-y:auto;background:var(--pure-white);border-radius:20px;
+  box-shadow:0 16px 48px rgba(0,0,0,.28);padding:16px;display:none;
+}
+.rv-panel.on{display:block;animation:rise .24s cubic-bezier(.22,1,.36,1)}
+@keyframes rise{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.rv-h{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:12px}
+.rv-grp{margin-bottom:14px}
+.rv-l{font-size:10.5px;color:var(--dove);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.rv-btns{display:flex;flex-direction:column;gap:5px}
+.rv-btns button{
+  width:100%;text-align:left;padding:8px 11px;border:1px solid var(--hairline);background:var(--pure-white);
+  border-radius:10px;font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;
+}
+.rv-btns button:active{background:var(--fog)}
+.rv-jump{display:flex;flex-wrap:wrap;gap:3px}
+.rv-jump button{
+  width:calc(100% / 5 - 3px);padding:6px 0;border:1px solid var(--hairline);background:var(--pure-white);
+  border-radius:8px;font-family:inherit;font-size:10.5px;color:var(--graphite);cursor:pointer;font-variant-numeric:tabular-nums;
+}
+.rv-jump button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.rv-chk{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);padding:5px 0;cursor:pointer}
+.rv-chk input{accent-color:var(--rust);width:14px;height:14px}
+.rv-hint{font-size:10.5px;color:var(--dove);line-height:1.5;margin-top:4px}
+
+/* 设计说明气泡 */
+.note-i{
+  display:none;margin-top:7px;background:#fffbeb;border:1px solid #f3e2b3;border-radius:12px;
+  padding:9px 12px;font-size:11.5px;color:#6b5427;line-height:1.6;text-wrap:pretty;
+}
+body.notes .note-i{display:block}
+.note-i b{color:#4a3a18;font-weight:600}
+</style>
+</head><body>
+<div id="app">
+  <div class="guard" id="guard"></div>
+  <div class="stage" id="stage"><div class="sc" id="sc"></div></div>
+  <div class="m-mask" id="modal"></div>
+</div>
+
+<div class="rv">
+  <div class="rv-panel" id="rvPanel">
+    <div class="rv-h">评审工具 · 购房模块 v1</div>
+    <div class="rv-grp">
+      <div class="rv-l">演示路径</div>
+      <div class="rv-btns">
+        <button data-demo="quick">▶ 一路顺签（签约 12 项全没写清）</button>
+        <button data-demo="careful">▶ 逐条写清（0 笔学费）</button>
+        <button data-demo="net">▶ 只答应了「到手价」（其余写清）</button>
+        <button data-demo="reset"> 回到开场屏</button>
+      </div>
+      <div class="rv-hint">三条路的差别只有两个动作：签合同时写没写清、谈价时有没有问「含税还是到手」。</div>
+    </div>
+    <div class="rv-grp">
+      <div class="rv-l">跳转</div>
+      <div class="rv-jump" id="rvJump"></div>
+    </div>
+    <div class="rv-grp">
+      <div class="rv-l">节奏</div>
+      <label class="rv-chk"><input type="checkbox" id="ckFast" checked> 上划即可继续（3 秒一屏）</label>
+      <label class="rv-chk"><input type="checkbox" id="ckNote"> 显示设计说明</label>
+    </div>
+  </div>
+  <button class="rv-toggle" id="rvToggle">⚙ 评审工具</button>
+</div>
+
+<script>/* ═══════════════════════════════════════════════════════════════════════════
+   数据层 · 购房模块 v1「双层时间 + 两个深坑」
+   ─────────────────────────────────────────────────────────────────────────
+   文字量原则：
+     · 卡片上任何一句 ≤ 26 字；坑 ≤ 26 字；怎么避免 ≤ 30 字。
+     · 决策点一个不删（24 屏与原 SceneKey 一一对应），减的是「说明段」：
+       原稿每屏 1 副文案（30-60 字）+ 1-2 张 banner/note（各 60-130 字）
+       → 现在每屏 1 句现场 + 1 块「坑 / 怎么避免」+ 选项自身的话。
+     · 数字只留三类：钱、天数、比例。其余形容与铺垫全部删掉。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const DEMO = { city: '上海', anchor: '2026-09-17' };
+
+/* ─ 身份角色（口径取自 constants.ts ROLES） ─ */
+const ROLES = [
+  {
+    k: 'first', emoji: '🏠', name: '刚需首套', tag: '首套待遇', tagCls: 'cool',
+    d: '名下 0 套 · 商贷首付 15% / 组合贷·公积金 20%',
+    p: '公积金 2.6%', note: '商贷 3.05% · 契税 1%',
+  },
+  {
+    k: 'trade', emoji: '🔄', name: '置换改善', tag: '卖一买一', tagCls: 'hot',
+    d: '原房已售 · 名下 0 套 · 按首套首付与利率算',
+    p: '首付 15-20%', note: '先卖后买 · 一年内卖房再买，个税可退',
+  },
+  {
+    k: 'invest', emoji: '📈', name: '投资二套', tag: '二套口径', tagCls: '',
+    d: '名下 1 套 · 外环内首付 25%',
+    p: '利率上浮', note: '公积金 3.075% / 商贷 3.06% · 可能触发房产税',
+  },
+];
+
+/* ── 可动用现金（预设档取自 scenes-start.ts） ── */
+const CASH = [50, 70, 100, 200, 300];
+
+/* ─ 六套预设房源（数据取自 constants.ts HOUSES；vat/seller 为卖方税费口径）
+   契税不进数据：按「面积 + 家庭套数」推导（deedRateOf），与自定义房源同一套口径 ─ */
+const HOUSES = [
+  { id: 'A', emoji: '🏚️', name: '内环老破小', area: '58㎡', areaNum: 58, price: 200, ring: '内', tag: '满五唯一', tagCls: 'cool', cut: 0.06, vat: 0, seller: 0 },
+  { id: 'B', emoji: '🏢', name: '中环次新两房', area: '88㎡', areaNum: 88, price: 400, ring: '内', tag: '满五唯一', tagCls: 'cool', cut: 0.05, vat: 0, seller: 0 },
+  { id: 'C', emoji: '🏙️', name: '外环品质新房', area: '95㎡', areaNum: 95, price: 600, ring: '外', tag: '新房 · 免增值税', tagCls: 'cool', cut: 0.03, vat: 0, seller: 0 },
+  { id: 'D', emoji: '🏠', name: '外环内老工房', area: '72㎡', areaNum: 72, price: 300, ring: '内', tag: '满五不唯一', tagCls: '', cut: 0.08, vat: 0, seller: 0.01 },
+  { id: 'E', emoji: '🏘️', name: '内环江景大平层', area: '160㎡', areaNum: 160, price: 1600, ring: '内', tag: '满二不唯一', tagCls: '', cut: 0.04, vat: 0, seller: 0.01 },
+  { id: 'F', emoji: '🏗️', name: '中环新交付次新', area: '92㎡', areaNum: 92, price: 550, ring: '内', tag: '不满 2 年', tagCls: 'hot', cut: 0.05, vat: 0.0476, seller: 0.01 },
+];
+
+/* ── 限购问答（取自 calc.ts QA_DEFS；套数由身份决定，婚姻状况按 2026 口径不再影响限购，不提问） ── */
+const QA = {
+  hukou: { q: '你的户籍是？', opts: [['sh', '上海户籍'], ['non-sh', '非上海户籍']] },
+  permit: { q: '是否持《上海市居住证》满 5 年？', opts: [['yes', '是，已满 5 年'], ['no', '否 / 未满 5 年']] },
+  years: { q: '个税 / 社保连续缴纳多久？', opts: [['l1', '不满 1 年'], ['m1-3', '满 1 年，不满 3 年'], ['m3p', '满 3 年及以上']] },
+};
+
+/* ── 砍价第一轮（chip = 净让幅，取自 calc.ts NEGO_R1） ── */
+const NEGO_R1 = [
+  { k: 'hard', chip: 0.06, label: '直接还价 -6%', d: '第一天就摆底线，能行就签。', note: '越线大概率被叫停' },
+  { k: 'soft', chip: 0.03, label: '试探出价 -3%', d: '礼貌试探，先看看房东的反应。', note: '留有余地' },
+  { k: 'chat', chip: 0, label: '先聊聊，为什么卖？', d: '不问价，先听故事。', note: '急售的房东最好谈' },
+];
+
+/* ── 12 节点（逐字取自 constants.ts NODES） ── */
+const NODES = ['开始', '选房', '资格', '砍价', '算账', '筹钱', '签约', '贷款', '过户', '领证', '交房', '装修'];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   24 屏流程 · 与原 SceneKey 一一对应（决策点一个不删）
+   real / days = 该段的「常规周期」：real 是展示文案，days = [下界, 上界]（天，已换算单位），
+                 两者必须一致（'2-8 周' ↔ [14, 56]、'当天-3 天' ↔ [0, 3]、'1 天' ↔ [1, 1]）
+   经历周期     = 进入该段时从 days 区间随机取的一个天数（同一次运行内固定，重开重抽）
+   par: true    = 与相邻环节同期发生、不额外占时间（资格核验与看房同期、砍价在看房里谈、
+                  网签与签约同一趟、筹钱与看房/签约准备同期）——顶部「已走 N 天」只累加非同期段
+   ⚠️ 计时段 = 看房 + 签约 + 贷款方案 + 审批 + 贷款合同 + 过户 + 领证 + 放款交房 + 结算
+      （200 趟蒙特卡洛：最短约 48 天 / 平均约 75 天 / 最长约 101 天，对照常规 1-3 个月；
+        抽到区间高位时会超过 90 天——总账屏把这种情况标成「比常规更久」）
+   waitWho / waitWhy = 这一段在等谁、为什么是这个区间
+   wait         = 等待屏的展开明细（节点轴 + 对方在做什么 + 你现在要做什么），只在三张等待屏用
+   ⚠️ 与代码的有意差异：constants.ts 的 DAYS「模拟 16 天」轨道已退休，本稿只留一条「经历周期」
+      时间线，天数由抽取决定——见文件头「时间体感迭代」第 ④ 条。
+   ══════════════════════════════════════════════════════════════════════════ */
+const FLOW = [
+  { k: 'start', lbl: '01 开场', node: 0, name: '开始', type: 'hero', real: '—',
+    one: '12 个节点，从选房到拿钥匙。', who: '你',
+    pit: '以为流程是「看房 → 交钱 → 拿钥匙」。',
+    fix: '真正的坑只有两处：签字那 10 分钟，和交房那一天。' },
+
+  { k: 'role', lbl: '02 身份', node: 0, name: '你是谁', type: 'pick', real: '—',
+    one: '身份决定首付、利率、税费口径。', who: '你',
+    pit: '按首套算，却被认定二套：首付多一成。',
+    fix: '名下套数按家庭合并算；置换要确认卖房时点。' },
+
+  { k: 'cash', lbl: '03 现金', node: 0, name: '亮家底', type: 'pick', real: '—',
+    one: '首付 = 房款首付 + 全部交易税费。', who: '你',
+    pit: '只算房款首付，忘了契税、中介费。',
+    fix: '先算「首付需现金」，再去看房。' },
+
+  { k: 'select', lbl: '04 选房', node: 1, name: '看房', type: 'house', real: '2-8 周', days: [14, 56],
+    waitWho: '你 + 中介', waitWhy: '看房、比价、复看，急不来',
+    one: '钥匙在手，200 万到 1600 万都有。', who: '中介 小王',
+    pit: '只比挂牌价：不满 2 年的房子，税费多十几万。',
+    fix: '比「到手总成本」：房价 + 税费 + 中介费。' },
+
+  { k: 'custom', lbl: '05 自定义', node: 1, name: '自定义房源', type: 'form', real: '—',
+    one: '预设房源不够贴身？把自己的条件填进去。', who: '你',
+    pit: '面积填到 141㎡：契税从 1% 跳到 1.5%。',
+    fix: '≤140㎡ 契税 1%，超一平就进高档。' },
+
+  { k: 'qa', lbl: '06 资格', node: 2, name: '资格核验', type: 'pick', real: '1-3 天', days: [1, 3], par: true,
+    waitWho: '交易中心', waitWhy: '系统比对，材料齐才快',
+    one: '先核验限购资格，再看房不迟。', who: '交易中心',
+    pit: '资格不过 → 无法网签，谈好的价与已付定金都可能白搭。',
+    fix: '签约前先核验：非沪籍满 1 年可买，满 3 年外环内 2 套。' },
+
+  { k: 'blocked', lbl: '07 资格结果', node: 2, name: '资格结果', type: 'result', real: '—',
+    one: '结果只看户籍、社保年限、环线与名下套数。', who: '交易中心',
+    pit: '被限购就换套更贵的，问题不会消失。',
+    fix: '外环外不限套数；置换的原房已卖，名下按 0 套算。' },
+
+  { k: 'nego1', lbl: '08 砍价 R1', node: 3, name: '砍价 · 第一轮', type: 'pick', real: '1-4 周', days: [7, 28], par: true,
+    waitWho: '房东 + 中介', waitWhy: '出价要来回磨几轮',
+    one: '挂牌价只是起点，先摸底再出价。', who: '中介 小王',
+    pit: '第一轮就压到底线以下，房东直接甩脸。',
+    fix: '第一轮留余地，别急着亮底牌。' },
+
+  { k: 'nego2', lbl: '09 砍价 R2', node: 3, name: '砍价 · 第二轮', type: 'pick', real: '1-4 周', days: [7, 28], par: true,
+    waitWho: '房东', waitWhy: '并入上一轮，谈崩要重来',
+    one: '房东在犹豫，就看这一轮怎么出。', who: '房东',
+    pit: '反复加价试探，把房东情绪耗光。',
+    fix: '报价别越过底线，超了会被叫停。' },
+
+  { k: 'nego3', lbl: '10 成交', node: 3, name: '成交 · 到手价', type: 'pick', real: '—',
+    one: '成交价谈拢了，房东补了一句话。', who: '房东',
+    pit: '随口应了「到手价」：卖方税费全归你。',
+    fix: '先问一句「含税还是到手」，再落价。' },
+
+  { k: 'feeNego', lbl: '11 中介费', node: 3, name: '中介费', type: 'pick', real: '—',
+    one: '中介费按惯例 2%，但可以谈。', who: '中介 小王',
+    pit: '按 2% 一签了事，多花几万。',
+    fix: '1% 足够覆盖主流服务，敢开口就能谈。' },
+
+  { k: 'loanType', lbl: '12 贷款方式', node: 4, name: '贷款方式', type: 'pick', real: '—',
+    one: '首付比例与利率，随方式和套数变。', who: '信贷经理',
+    pit: '只挑最低首付：月供压到收入一半以上会被拒。',
+    fix: '月供 ≤ 家庭月收入 50%，是风控线。' },
+
+  { k: 'funds', lbl: '13 算账', node: 4, name: '算账', type: 'rows', real: '—',
+    one: '这笔账先算清楚，再往下走。', who: '你',
+    pit: '首付算漏税费，到这一步才发现差钱。',
+    fix: '首付口径 = 房款首付 + 全部税费，一次算完。' },
+
+  { k: 'borrow', lbl: '14 筹钱', node: 5, name: '筹钱', type: 'pick', real: '1-2 周', days: [7, 14], par: true,
+    waitWho: '亲友 / 银行', waitWhy: '亲友当天到，贷款要审',
+    one: '不同来路的钱，代价完全不同。', who: '你',
+    pit: '用信用贷补首付：属监管红线，可能被拒贷、抽贷。',
+    fix: '优先亲友与公积金；缺口太大就换房。' },
+
+  { k: 'sign', lbl: '15 签约', node: 6, name: '签约 · 居间协议', type: 'check', real: '当天-3 天', days: [0, 3],
+    waitWho: '中介 + 房东', waitWhy: '要凑齐买卖双方时间',
+    one: '签字那一刻，定金罚则就锁定了。', who: '中介 小王',
+    pit: '', fix: '' },
+
+  { k: 'signNet', lbl: '16 网签', node: 6, name: '网签 · 买卖合同', type: 'check', real: '当天-3 天', days: [0, 3], par: true,
+    waitWho: '中介（网签系统）', waitWhy: '备案排档期，当场能办',
+    one: '合同已备案，违约就不再是定金的事了。', who: '中介 小王',
+    pit: '', fix: '' },
+
+  { k: 'loan', lbl: '17 贷款方案', node: 7, name: '贷款方案', type: 'pick', real: '1-3 天', days: [1, 3],
+    waitWho: '你 + 信贷经理', waitWhy: '选方案、备材料',
+    one: '贷款额、年限、月供，一次定下来。', who: '信贷经理',
+    pit: '只盯月供选了 30 年：总利息几乎翻倍。',
+    fix: '月供能承受就缩短年限，总利息差很多。' },
+
+  /* ── 等待屏 ① 贷款审批：这 7-15 天到底在等什么 ── */
+  { k: 'loanChk', lbl: '18 审批', node: 7, name: '贷款审批', type: 'pick', real: '7-15 天', days: [7, 15],
+    waitWho: '银行风控 + 公积金', waitWhy: '核征信、评估、面签，按月放额度',
+    wait: { steps: ['送审当天', '核征信 · 评估', '面签', '出批贷函'], at: 1,
+      peer: '银行要核征信、流水、收入证明与房屋评估；公积金中心额度按月轮候——所以口径是 7-15 天，公积金能拉到 15-30 天。',
+      you: '把流水与收入证明补齐；这段时间别新增负债、别刷爆信用卡；首付尾款留着别动。' },
+    one: '银行核征信、流水、面签，出批贷函。', who: '银行风控',
+    pit: '批贷不足或拒批时，合同里没写怎么办。',
+    fix: '追加首付或拉长年限；兜底条款签约时就写好。' },
+
+  { k: 'loanContract', lbl: '19 贷款合同', node: 7, name: '贷款合同', type: 'pick', real: '1-3 天', days: [1, 3],
+    waitWho: '银行', waitWhy: '签合同、补首付',
+    one: '签贷款合同，同时补足剩余首付。', who: '信贷经理',
+    pit: '剩余首付被要求提前补足，现金被抽干。',
+    fix: '付款节点写死：定金 / 先付 / 补足 / 尾款。' },
+
+  /* ── 等待屏 ② 过户审税：这 7-15 天在等谁核价 ── */
+  { k: 'transfer', lbl: '20 过户', node: 8, name: '过户递交', type: 'card', real: '7-15 天', days: [7, 15],
+    waitWho: '交易中心（税务）', waitWhy: '核价审税，申报价低了要重核',
+    wait: { steps: ['递交受理', '出收件收据', '核价审税', '出税单'], at: 2,
+      peer: '交易中心要核申报价：比对同小区成交与评估价，申报低了会按核定价格重新计税；税务审完才出税单。',
+      you: '确认签约时写清的税费归属；备好完税资金；税单出来后按数缴，别拖到过户档期作废。' },
+    one: '递交材料，交易中心出《收件收据》。', who: '交易中心',
+    pit: '审税核价与申报不符，会按核定价格重新计税。',
+    fix: '税费口径签约前就算清，别等税单出来。' },
+
+  { k: 'deed', lbl: '21 领证', node: 9, name: '缴税领证', type: 'card', real: '1-3 天', days: [1, 3],
+    waitWho: '交易中心', waitWhy: '缴税出证，最快当天',
+    one: '缴清税费，领新产证，产证拍照给银行。', who: '交易中心',
+    pit: '产证交了银行：放款前你已经没有主动权。',
+    fix: '放款前用尾款扣押约束卖方，写进合同。' },
+
+  /* ── 等待屏 ③ 放款 + 交房：最后这 3-15 天在等谁 ── */
+  { k: 'handover', lbl: '22 交房', node: 10, name: '交房 · 交割检查', type: 'check', real: '3-15 天', days: [3, 15],
+    waitWho: '银行放款 + 卖方', waitWhy: '放款排队、卖方腾房',
+    wait: { steps: ['银行放款', '到账确认', '交割核对', '结清尾款'], at: 2,
+      peer: '银行按额度排队放款（快 3 天、慢两三周）；卖方要等新房装完或搬完家，才肯交钥匙。',
+      you: '交割 4 项逐条核：水电煤、户口、钥匙、维修资金；尾款扣押 ≤5%，结清迁出后再付。' },
+    one: '钥匙到手前，还有四件事要核。', who: '中介 小王',
+    pit: '', fix: '' },
+
+  { k: 'settle', lbl: '23 尾款', node: 10, name: '交割结算', type: 'pick', real: '1 天', days: [1, 1],
+    waitWho: '你 + 卖方', waitWhy: '结清当天完成',
+    one: '结清尾款，交易流程走完。', who: '你',
+    pit: '尾款一次付完：发现欠费与户口问题，手里没牌。',
+    fix: '留一笔尾款，等结清再付（≤ 合同价 5%）。' },
+
+  /* 末屏 real = 全程常规口径（总账屏拿它做对比，不参与抽取） */
+  { k: 'final', lbl: '24 总账', node: 11, name: '完成', type: 'done', real: '1-3 个月',
+    one: '', who: '', pit: '', fix: '' },
+];
+
+/* ══════════════════════════════════════════════════════════════════════════
+   深坑 ① 签约 · 12 项（分两屏：sign = 签字前查清 6 项，signNet = 合同里写死 6 项）
+   ───────────────────────────────────────────────────────────────────────────
+   关键：与装修稿的合同清单同一套骨架。每项 = 为什么 / 写清什么 / 不写的代价。
+   「不写」的项会埋雷，到对应阶段爆成一张学费单（burst）。
+   ⚠️ at 必须晚于该清单所在的屏：sign 屏的项 at 要在 signNet 之后，signNet 屏的项 at 要在 signNet 之后，
+      否则进这一屏的瞬间就把还没做的决定当成坑结算了。
+   cost 单位为万元（房源 F · 522.5 万成交口径下算出的演示值）；cost = 0 的项是「钱解决不了」的风险。
+   ═══════════════════════════════════════════════════════════════════════════ */
+const SIGN_ITEMS = [
+  /* 一 · 签字前查清（sign 屏） */
+  {
+    k: 'chan', half: 'sign', sec: '一 · 签字前查清', name: '产调（抵押 / 查封 / 居住权）',
+    why: '房子可能还押在银行，或已被查封。',
+    write: '出具《不动产权属查询》：无抵押、无查封、无居住权、无长租约',
+    omit: { at: 'transfer', cost: 1.2, days: 15, text: '过户才发现房子还抵押着：垫资解押 1.2 万，流程多等 15 天。', fix: '签字前让中介出产调，逐条核对再落笔。' },
+  },
+  {
+    k: 'owner', half: 'sign', sec: '一 · 签字前查清', name: '产权人到场',
+    why: '夫妻共有房只来一人，合同可能无效。',
+    write: '全部产权人到场签字；无法到场须公证委托',
+    omit: { at: 'loan', cost: 0, days: 7, risk: '钱解决不了', text: '网签发现缺一位产权人：合同重签，7 天白等。', fix: '签约前核对产证姓名与人，缺人先办委托公证。' },
+  },
+  {
+    k: 'school', half: 'sign', sec: '一 · 签字前查清', name: '学位与户口',
+    why: '学位被占、户口不迁，钱解决不了。',
+    write: '户口迁出日期 + 学位未被占用，写进补充条款',
+    omit: { at: 'settle', cost: 0, days: 0, risk: '钱解决不了', text: '户口迟迟不迁：孩子入学被统筹，合同里没有可依据的条款。', fix: '写清迁出日期与违约金；学位向学校核实。' },
+  },
+  /* 二 · 钱与税（sign 屏） */
+  {
+    k: 'net', half: 'sign', sec: '二 · 钱与税', name: '税费归属（含税价 / 到手价）',
+    why: '不写清归属，房东缴税前还能再提一次。',
+    write: '写明成交价含卖方增值税与个税；若要谈「到手价」，把税费清单一起列上',
+    omit: { at: 'deed', cost: 0, days: 0, risk: '扯皮风险', text: '合同没写税费归属：房东到缴税前还能再提一次「到手价」。', fix: '把税费归属写进合同：含税价，或到手价 + 税费清单。' },
+  },
+  {
+    k: 'deposit', half: 'sign', sec: '二 · 钱与税', name: '定金罚则',
+    why: '写成「订金」，反悔时退不退全靠扯。',
+    write: '定金 5%（不超合同价 20%）+ 买方违约不退 / 卖方违约双倍返还',
+    omit: { at: 'loanContract', cost: 0, days: 0, risk: '扯皮风险', text: '合同写的是「订金」：想反悔时，退不退全凭对方一句话。', fix: '写「定金」，金额、时限、罚则三样写在同一句。' },
+  },
+  {
+    k: 'paynode', half: 'sign', sec: '二 · 钱与税', name: '付款节点',
+    why: '钱在谁手里，谁才有筹码。',
+    write: '首付先付入资金监管 / 剩余首付在贷款合同后补足 / 尾款交房后付',
+    omit: { at: 'loanContract', cost: 0, days: 0, risk: '资金被抽干', text: '付款节点没写：剩余首付被要求提前补足，现金一次被抽干。', fix: '四段写死：定金 / 先付 / 补足 / 尾款。' },
+  },
+  /* 三 · 违约与工期（signNet 屏） */
+  {
+    k: 'breach', half: 'signNet', sec: '三 · 违约与工期', name: '违约金',
+    why: '网签后反悔，赔的是房价 20%。',
+    write: '违约金比例（房价 20%）+ 触发条件，逐字看清再签',
+    omit: { at: 'loanChk', cost: 0, days: 0, risk: '钱解决不了', text: '违约金条款没看清：网签后反悔，代价是房价的 20%。', fix: '网签前把「违约责任」那一栏逐字读完。' },
+  },
+  {
+    k: 'date', half: 'signNet', sec: '三 · 违约与工期', name: '交房日期与逾期赔付',
+    why: '交房没有日期，拖起来就没底。',
+    write: '交房日期 + 逾期按日赔付（如日万分之三），写在同一句',
+    omit: { at: 'handover', cost: 0.65, days: 20, text: '交房拖了 20 天：多付一个月房租 6,500，一分赔不到。', fix: '日期与日赔付写在一起，别分开写。' },
+  },
+  {
+    k: 'loanfail', half: 'signNet', sec: '三 · 违约与工期', name: '贷款失败怎么办',
+    why: '批贷不足或拒批，没写清就算你违约。',
+    write: '批贷不足 / 拒批时：追加首付或协商解约，双方互不追责',
+    omit: { at: 'loanChk', cost: 0, days: 0, risk: '算你违约', text: '银行批贷不足：合同没写怎么办，差额算你违约。', fix: '把「贷不到怎么办」写进补充条款。' },
+  },
+  /* 四 · 交房与兜底（signNet 屏） */
+  {
+    k: 'holdback', half: 'signNet', sec: '四 · 交房与兜底', name: '尾款扣押（户口保证金）',
+    why: '户口没迁、欠费没结，尾款是最后的牌。',
+    write: '扣押尾款金额（≤ 合同价 5%）+ 结清迁出后再支付',
+    omit: { at: 'settle', cost: 0, days: 0, risk: '手里没牌', text: '尾款一次付完：发现欠费与户口问题，手里一张牌都没有。', fix: '留一笔尾款，结清迁出后再付。' },
+  },
+  {
+    k: 'arrears', half: 'signNet', sec: '四 · 交房与兜底', name: '欠费结清',
+    why: '物业、水电煤的欠费都挂在房子上。',
+    write: '交房前结清物业 / 水电煤 / 宽带，凭票据交割',
+    omit: { at: 'settle', cost: 0.38, days: 0, text: '过户后才发现物业欠费 3,800，前任电话已经打不通。', fix: '交割当天凭票据逐项核，未结清不签字。' },
+  },
+  {
+    k: 'stuff', half: 'signNet', sec: '四 · 交房与兜底', name: '家具家电清单',
+    why: '合同没列的，交房时都可以「不在清单里」。',
+    write: '逐项写品牌型号与数量，附照片双方签字',
+    omit: { at: 'settle', cost: 0.6, days: 0, text: '清单只写「家电若干」：交房时空调与热水器都被搬走了。', fix: '逐项写型号数量，附照片签字。' },
+  },
+];
+
+/* ── 深坑 ② 交房 · 交割检查 4 项（handover 屏；文案取自 scenes-close.ts sceneHandover） ── */
+const HAND_ITEMS = [
+  { k: 'util', name: '水电煤 / 宽带 / 物业费', why: '欠费都挂在房子上，过户后会追到你。', ok: '已过户 · 费用结清', bad: '未结清 ⚠️' },
+  { k: 'hukou', name: '户口迁出（学区、落户）', why: '交房高频纠纷，影响学区与落户。', ok: '已迁出', bad: '未迁出 ⚠️' },
+  { k: 'key', name: '钥匙 / 门禁 / 家具清单', why: '清单没列的，交房时都可以「不在清单里」。', ok: '已移交', bad: '仍未移交 ⚠️' },
+  { k: 'fund', name: '专项维修资金', why: '随房移交，余额要过户到你名下。', ok: '随房移交', bad: '未过户 ⚠️' },
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   引擎 · 购房模块 v1
+   ══════════════════════════════════════════════════════════════════════════ */
+const wan = v => (Math.round(v * 100) / 100).toFixed(2).replace(/\.?0+$/, '');
+const yuan = v => '¥' + Math.round(v * 10000).toLocaleString('en-US');
+const REAL_MAX = 90;   /* 常规周期上界（1-3 个月的 90 天口径，用于时间条刻度） */
+const REAL_MIN = 30;   /* 常规周期下界 */
+const VAT_FULL = 0.0476; /* 未满 2 年：全额增值税 5% + 附加的价内税口径（与房源 F 同口径） */
+
+/* ── 经历周期：每段从自己的「常规周期」区间随机取一个天数（同一次运行内固定，重开重抽） ──
+   par 段（同期发生）照常取数、照常展示「这段花了多久」，但不累加进「已走 N 天」 */
+function stageDays(f) {
+  if (S.drawn[f.k] === undefined) S.drawn[f.k] = f.days[0] + Math.floor(Math.random() * (f.days[1] - f.days[0] + 1));
+  return S.drawn[f.k];
+}
+/* 已走天数 = 今天 + 走过的各段（不含同期段）之和；只随走过哪些屏变化，不随重绘变化 */
+function expDays() {
+  let d = 1;
+  S.walked.forEach(k => {
+    const f = defOf(k);
+    if (f && f.days && !f.par) d += stageDays(f);
+  });
+  return d;
+}
+
+/* ── 自定义房源：默认口径 + 税费推导（口径与 constants.ts 的 hold / holdYears / unique 一致） ── */
+function newCustom() {
+  return { id: 'X', emoji: '✏️', name: '自定义房源', area: '90㎡', price: 450, areaNum: 90,
+    ring: '内', holdYears: 5, unique: true, acq: 'buy', base: 0, cut: 0.05 };
+}
+/* 由「持有年限 × 是否唯一 × 取得方式」推导卖方税费；契税按面积与套数分档（2024 契税新政）
+   卖方个税分两条口径：买卖所得 = 满五唯一免征、否则核定 1%；继承 / 赠与所得 = 满五唯一免征、
+   否则按（转让价 − 原值）× 20% 计（见 sellerIncomeTax），故 seller 这个「税率」只对买卖所得生效 */
+/* 契税：按面积与家庭套数推导（2024 契税新政）——预设房源与自定义房源共用这一条，
+   避免「同一套房换个身份进场，契税不变」的两套口径 */
+function deedRateOf(h) {
+  if (!h) return 0.01;
+  if ((h.areaNum || 0) <= 140) return 0.01;
+  return S.role && S.role.k === 'invest' ? 0.02 : 0.015;
+}
+/* 卖方增值税（价内税口径）：未满 2 年全额 5% × 价内换算 + 附加 12%。
+   预览与实付必须走这同一个函数，否则「税费口径」那几行会比实际转嫁少一笔附加 */
+function sellerVatOf(h, price) {
+  const p = price === undefined ? S.deal : price;
+  return p * (h.vat + h.vat * 0.12);
+}
+function syncCustom(c) {
+  c.area = Math.round(c.areaNum) + '㎡';
+  c.vat = c.holdYears < 2 ? VAT_FULL : 0;                     /* 不满 2 年：全额增值税；满 2 年免征 */
+  c.seller = (c.holdYears >= 5 && c.unique) ? 0 : 0.01;        /* 买卖所得：满五唯一免征，否则核定 1% */
+  c.base = c.base || 0;                                        /* 取得原值（万元），继承 / 赠与口径用 */
+  const holdTxt = c.holdYears >= 5 ? '满五' : c.holdYears >= 2 ? '满二' : '不满 2 年';
+  c.tag = c.holdYears < 2 ? '不满 2 年 · 全额增值税' : holdTxt + (c.unique ? '唯一' : '不唯一');
+  if (c.acq === 'inherit') c.tag += ' · 继承所得';
+  c.tagCls = c.holdYears < 2 ? 'hot' : (c.holdYears >= 5 && c.unique) ? 'cool' : '';
+  return c;
+}
+/* 卖方个税：继承 / 赠与所得（非满五唯一）以「转让价 − 原值」为应纳税所得额，按 20% 计征 */
+function sellerIncomeTax(h, price) {
+  const p = price === undefined ? S.deal : price;
+  if (h.acq === 'inherit') {
+    if (h.holdYears >= 5 && h.unique) return 0;               /* 满五唯一：仍免征 */
+    return Math.max(0, p - (h.base || 0)) * 0.2;
+  }
+  return p * h.seller;
+}
+/* 表单草稿：并入输入框里已填的值；fillDefault = 输入框为空时沿用当前口径（点选口径时用） */
+function custDraft(fillDefault) {
+  const pv = document.getElementById('cPrice'), av = document.getElementById('cArea');
+  const bv = document.getElementById('cBase');
+  const price = +(pv && pv.value) || 0, areaNum = +(av && av.value) || 0, base = +(bv && bv.value) || 0;
+  const c = Object.assign({}, S.custom || newCustom());
+  c.price = price > 0 ? price : (fillDefault ? c.price : 0);
+  if (areaNum > 0) c.areaNum = areaNum;
+  if (bv) c.base = base;
+  return c;
+}
+
+let S = null, SILENT = false, FAST_ON = true, VIEW_KEY = '';
+const defOf = k => FLOW.find(f => f.k === k);
+const idxOf = k => FLOW.findIndex(f => f.k === k);
+
+function newState() {
+  return {
+    screen: 'start',
+    role: null, cash: 200, cashSet: false,
+    house: null, slash: 0, deal: 0,
+    ans: {}, qaProg: 0, qaDone: false,
+    negoR1: null, negoCap: false, netDeal: false,
+    agent: 0.02, loanType: 'combo', downSel: 0, loanYears: 30,
+    loanRejected: false,   /* 风控「坚持硬上」→ 银行拒批，需回头调整 */
+    con: {}, hand: {}, handHold: false,
+    usedBorrow: {},        /* 已勾选的借款渠道（额度见 BORROW_CAPS，已筹金额按缺口动态算） */
+    custom: null,
+    lessons: [],          /* 学费单（= 装修稿的增项单） */
+    burst: [],            /* 本屏爆出的学费 */
+    day: 1, stress: 8,      /* day = 已走天数（含坑，由 elapsed() 算，不是固定档位） */
+    drawn: {}, walked: [],  /* drawn = 各段抽到的经历天数；walked = 走过的屏（决定累加哪些段） */
+    modal: null,            /* 付款确认弹窗：deposit / firstPay / restPay / transfer / holdback */
+    path: null,
+  };
+}
+
+/* ── 税费与资金（口径取自 calc.ts / scenes-money.ts；单位：万元） ── */
+/* 家庭名下住房套数：置换 = 原房已售 → 0 套（先卖后买，按首套认定）；投资二套 = 1 套 */
+function ownedCount() {
+  return S.role && S.role.k === 'invest' ? 1 : 0;
+}
+function downRate() {
+  const inv = S.role && S.role.k === 'invest';
+  const inner = houseOf() && houseOf().ring === '内';   /* 自定义房源也要按所选环线定二套首付 */
+  if (!inv) return S.loanType === 'comm' ? 0.15 : 0.2;
+  if (inner) return 0.25;
+  return S.loanType === 'comm' ? 0.15 : 0.2;
+}
+/* 实际首付比例：最低档 → 用户加档 → 全款 */
+function down() {
+  if (S.downSel === 1) return 1;
+  const min = downRate();
+  return Math.max(min, S.downSel || 0);
+}
+function houseOf() { return S.custom || S.house; }
+/* 卖方税费（增值税价内税口径见 sellerVatOf；个税按取得方式分两条口径） */
+function sellerTaxOf() {
+  const h = houseOf();
+  if (!h || !S.deal) return 0;
+  return sellerVatOf(h, S.deal) + sellerIncomeTax(h, S.deal);
+}
+/* 纯公积金演示额度上限（万元）：超出部分必须现金补足，否则「额度上限 80 万」只是句空话 */
+const GJJ_CAP = 80;
+const loanCap = () => (S.loanType === 'gjj' ? GJJ_CAP : Infinity);
+/* 实际可贷额 = min(房款 − 首付, 额度上限)；上限不足的部分转为现金需求（shortfall） */
+function loanPrincipal() {
+  return Math.max(0, Math.min(S.deal - S.deal * down(), loanCap()));
+}
+function loanRate() { return S.role && S.role.k === 'invest' ? 0.0306 : 0.0305; }
+const LOAN_NAMES = { comm: '纯商贷', combo: '组合贷', gjj: '纯公积金' };
+const loanName = () => LOAN_NAMES[S.loanType] || '组合贷';
+/* 月供（按当前首付档 / 年限 / 贷款方式） */
+function monthlyOf(downRatio) {
+  const P = Math.max(0, Math.min(S.deal - S.deal * (downRatio === undefined ? down() : downRatio), loanCap()));
+  const y = S.loanYears, r = loanRate() / 12, n = y * 12;
+  if (!P || !n) return 0;
+  return P * 10000 * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+}
+const RISK_INCOME = 40000;   /* 演示：家庭月收入 4 万，风控线 = 月供 ≤ 50% */
+const OVER_RISK = () => monthlyOf() / RISK_INCOME > 0.5;
+/* 追加首付到多少才能过风控线：取第一档达标值，最高全款（全款必然达标） */
+function minDownToClear() {
+  const floor = downRate();
+  for (const c of [0.3, 0.5, 0.7, 1]) {
+    const d = Math.max(c, floor);
+    if (monthlyOf(d) / RISK_INCOME <= 0.5) return d;
+  }
+  return 1;
+}
+function money() {
+  const h = houseOf();
+  const lessons = S.lessons.reduce((a, b) => a + b.cost, 0);
+  if (!h || !S.deal) return { deal: 0, down: 0, downCash: 0, shortfall: 0, deedTax: 0, agentFee: 0, reg: 0, sellerTax: 0, need: 0, base: 0, total: lessons };
+  const downPay = S.deal * down();
+  const shortfall = Math.max(0, S.deal - downPay - loanPrincipal());  /* 额度不够、必须现金补的房款 */
+  const downCash = downPay + shortfall;                               /* 定金 + 先付 + 补足 三段之和 */
+  const deedTax = S.deal * deedRateOf(h);
+  const agentFee = S.deal * S.agent;
+  const reg = 0.008;                       /* 不动产登记费 80 元 */
+  const sellerTax = S.netDeal ? sellerTaxOf() : 0;
+  const base = downCash + deedTax + reg + agentFee;   /* 不谈「到手价」时该掏的钱 */
+  const need = base + sellerTax;
+  return { deal: S.deal, down: downPay, downCash: downCash, shortfall: shortfall,
+    deedTax: deedTax, agentFee: agentFee, reg: reg, sellerTax: sellerTax,
+    need: need, base: base, total: need + lessons };
+}
+/* 已付出的钱（钱条白段 / 弹窗「现有现金」）：口径 = 进入当前屏之前已经出过的款，
+   所以每一屏都按「上一屏完成的那一笔」记，弹窗里的本次支付不会被重复扣一次 */
+function paid() {
+  const m = money();
+  if (!m.need) return 0;
+  const i = idxOf(S.screen);
+  if (i < idxOf('signNet')) return 0;                                 /* 定金还没付 */
+  if (i < idxOf('loan')) return m.deal * 0.05;                        /* 已付定金 */
+  if (i < idxOf('transfer')) return m.deal * 0.05 + m.deal * down() * 0.3; /* 已付定金 + 首付先付 */
+  if (i < idxOf('handover')) return m.downCash;                       /* 已付清房款现金部分 */
+  return m.need;                                                      /* 过户缴税后 */
+}
+/* 筹钱：三条渠道各有上限，已筹只补到缺口为止（0 缺口时不多借） */
+const BORROW_CAPS = { family: 30, gjj: 20, credit: 20 };
+const BORROW_CAP = BORROW_CAPS.family + BORROW_CAPS.gjj + BORROW_CAPS.credit;   /* 演示上限 70 万 */
+function borrowTotal() {
+  const raw = Math.max(0, money().need - S.cash);
+  let t = 0;
+  Object.keys(BORROW_CAPS).forEach(k => { if (S.usedBorrow[k]) t += BORROW_CAPS[k]; });
+  return Math.min(t, raw);
+}
+/* 可动用现金 = 手头 + 已筹 */
+function avail() { return S.cash + borrowTotal(); }
+function gap() { const m = money(); return Math.max(0, m.need - avail()); }
+/* 踩坑额外拖出来的天 + 这趟实际走过的天（含坑）：状态带、时间条、总账共用同一口径 */
+function pitDays() { return S.lessons.reduce((a, b) => a + b.days, 0); }
+function elapsed() { return expDays() + pitDays(); }
+
+/* ═══════════════════════════════════════════════════════════════
+   付款确认弹窗 · 五个出款点（kind 名沿用实现的 payModal：定金 / 网签首付先付 /
+   补足剩余首付 / 缴税（实现里叫 transfer，发生在领证屏）/ 扣押尾款）
+   弹窗 = 现有现金 → 本次支付 → 支付后剩余 + 口径说明 + 违约警示
+   ＋「下一节点：名称 · 常规周期 X-Y 天 · 等谁」——出款这一下同时让用户感知
+   这笔钱锁住了什么、以及接下来等多久、等谁。金额口径与对应屏的账完全一致。
+   ═══════════════════════════════════════════════════════════════ */
+const PAY_KINDS = {
+  deposit: {
+    next: 'loanChk', title: '定金 · 居间协议',
+    note: '定金计入首付、过户时冲抵；居间协议一签即生效——这不是押金，是合同约束。',
+    warn: () => '你违约 → 已付定金 ' + wan(S.deal * 0.05) + ' 万不予返还；卖方违约 → 双倍返还 ' + wan(S.deal * 0.1) + ' 万。',
+  },
+  firstPay: {
+    next: 'loanChk', title: '首付先付 · 网签',
+    note: '网签同步把首付先付部分打进资金监管，随即送银行审批；剩余首付等贷款合同确认后补足。',
+    warn: () => '网签合同已生效：此刻反悔或迟延履行，按房价 20% 赔违约金，约 ' + wan(S.deal * 0.2) + ' 万。',
+  },
+  restPay: {
+    next: 'transfer', title: '补足剩余首付 · 贷款合同',
+    note: '剩余首付入资金监管；过户领证后由监管账户划转卖方，而不是直接打给对方。',
+    warn: () => '网签合同已生效：此刻反悔或迟延履行，按房价 20% 赔违约金，约 ' + wan(S.deal * 0.2) + ' 万。',
+  },
+  transfer: {
+    next: 'handover', title: '过户 · 缴税',
+    note: '契税、登记费、中介费一次性缴清，缴完即可领新产证；产证拍照发银行才会放款。',
+  },
+  holdback: {
+    next: null, title: '尾款 · 交割结算', noCash: true,
+    note: '这笔钱从卖方应得的房款里扣留，不占用你的现金；户口迁出、费用结清后再划给卖方——它是你手里最后一张牌。',
+  },
+};
+/* 本次支付金额：与 sign / signNet / loanContract / deed / settle 五屏的账同口径 */
+function payAmount(kind) {
+  const m = money();
+  if (kind === 'deposit') return m.deal * 0.05;
+  if (kind === 'firstPay') return m.deal * down() * 0.3;
+  if (kind === 'restPay') return Math.max(0, m.downCash - m.deal * 0.05 - m.deal * down() * 0.3);
+  if (kind === 'transfer') return m.deedTax + m.agentFee + 0.008 + m.sellerTax;
+  return m.deal * 0.01;                                    /* holdback：扣押尾款（从卖方房款中扣） */
+}
+function renderModal() {
+  const el = document.getElementById('modal');
+  if (!el) return;
+  const p = S.modal ? PAY_KINDS[S.modal] : null;
+  if (!p) { el.className = 'm-mask'; el.innerHTML = ''; return; }
+  const amt = payAmount(S.modal), now = avail() - paid();   /* 现有现金 = 可动用现金 − 之前已付 */
+  const nx = p.next ? defOf(p.next) : null;
+  el.className = 'm-mask on';
+  el.innerHTML = `<div class="m-card">
+    <div class="m-k">付款确认</div>
+    <div class="m-t">${p.title}</div>
+    <div class="m-amt">
+      <div><span>现有现金</span><b>${wan(now)} 万</b></div>
+      <i>→</i>
+      <div><span>${p.noCash ? '扣留尾款' : '本次支付'}</span><b class="pay">${wan(amt)} 万</b></div>
+      <i>→</i>
+      <div><span>${p.noCash ? '现金不变' : '支付后剩余'}</span><b>${wan(p.noCash ? now : now - amt)} 万</b></div>
+    </div>
+    <div class="m-note">${p.note}</div>
+    ${p.warn ? `<div class="m-warn">${p.warn()}</div>` : ''}
+    <div class="m-next">
+      ${nx
+      ? `<div class="m-next-row"><span class="m-next-k">下一节点</span><b>${nx.name}</b><span class="m-next-d">常规周期 ${nx.real}</span></div>
+        <div class="m-next-w">${nx.waitWho}：${nx.waitWhy}</div>`
+      : `<div class="m-next-row"><span class="m-next-k">下一节点</span><b>装修</b><span class="m-next-d">交房后即可开工</span></div>
+        <div class="m-next-w">装修工期见装修模块设计稿（本稿不含）。</div>`}
+    </div>
+    <div class="m-btns">
+      <button class="btn btn-out" data-act="payCancel">再想想</button>
+      <button class="btn btn-ink" data-act="payOk">确认支付 ${wan(amt)} 万</button>
+    </div>
+  </div>`;
+}
+
+/* ─ 埋雷与爆雷：签约清单里「不写」的项，到对应阶段结算 ─ */
+function mineList() {
+  /* 「先不写」与「没提」是同一件事：没写进合同就会埋雷 */
+  return SIGN_ITEMS.filter(it => S.con[it.k] !== 'do')
+    .map(it => ({ it: it, o: it.omit, explicit: S.con[it.k] === 'no' }));
+}
+function settleMines(screenKey) {
+  S.burst = [];
+  mineList().forEach(m => {
+    if (m.o.at !== screenKey) return;
+    if (S.lessons.some(l => l.k === m.it.k)) return;
+    const src = m.explicit
+      ? '签约清单「' + m.it.name + '」你写的是「先不写」'
+      : '签约清单「' + m.it.name + '」你没提';
+    S.lessons.push({ k: m.it.k, short: m.it.name, stage: defOf(screenKey) ? defOf(screenKey).name : '', cost: m.o.cost, days: m.o.days, risk: m.o.risk, text: m.o.text, src: src, fix: m.o.fix });
+    S.burst.push({ name: m.it.name, cost: m.o.cost, days: m.o.days, risk: m.o.risk, text: m.o.text, fix: m.o.fix });
+  });
+  if (S.burst.length) S.stress = Math.min(100, S.stress + 22);
+}
+
+/* ── 屏幕推进 ── */
+function advance() {
+  const i = idxOf(S.screen);
+  if (i < 0 || i >= FLOW.length - 1) return;
+  go(FLOW[i + 1].k);
+}
+/* 跳转兜底：直接跳到中后段屏时，补齐它依赖的前置状态（评审跳转用） */
+function ensureData(k) {
+  const i = idxOf(k);
+  if (i > idxOf('role') && !S.role) S.role = ROLES[0];
+  /* 「自定义房源」屏不补房源：它本来就是「不选预设」的去处，静默塞一套 F 会让用户莫名其妙背上一套 550 万的房子 */
+  if (i > idxOf('select') && k !== 'custom' && !S.house && !S.custom) S.house = HOUSES[5];
+  if (i >= idxOf('blocked') && !S.ans.hukou) { S.ans = { hukou: 'sh' }; S.qaProg = 1; }
+  if (!S.deal && i >= idxOf('nego3')) { S.slash = houseOf().cut; S.deal = houseOf().price * (1 - S.slash); }
+}
+function go(k) {
+  const d = defOf(k);
+  if (!d) return;
+  ensureData(k);
+  S.screen = k;
+  if (S.walked.indexOf(k) < 0) S.walked.push(k);   /* 走过的段才计入已走天数（跳转也不会重复累加） */
+  settleMines(k);                                  /* 先结算本屏埋的雷，天数才是含坑的总量 */
+  S.day = elapsed();
+  render();
+}
+/* 退回选房：清掉上一套房的成交状态，否则状态带还挂着上一套的「需现金」 */
+function toSelect() {
+  S.deal = 0; S.slash = 0; S.negoR1 = null; S.negoCap = false;
+  S.netDeal = false; S.usedBorrow = {}; S.loanRejected = false;
+  go('select');
+}
+
+/* 多花的钱 = 签约清单没写清的 N 笔 + 谈价时答应的「到手价」（状态带与总账共用一套口径） */
+function lossRows() {
+  const m = money();
+  const rows = S.lessons.slice();
+  if (S.netDeal && m.sellerTax > 0) {
+    rows.unshift({
+      k: 'netprice', short: '「到手价」', src: '砍价时你答应的「到手价」', cost: m.sellerTax, days: 0,
+      text: '卖方增值税 + 附加 + 个税整体转嫁给你，签约时这一句就锁定了。',
+      fix: '谈价先问一句「含税还是到手」，再落价。',
+    });
+  }
+  return rows;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   状态带
+   ════════════════════════════════════════════════════════════════ */
+function renderGuard() {
+  const el = document.getElementById('guard');
+  const d = defOf(S.screen);
+  const i = idxOf(S.screen);
+  const done = S.screen === 'final';
+  const m = money();
+  const p = paid();
+  const rows = lossRows();
+  const lessons = rows.reduce((a, b) => a + b.cost, 0);
+  const den = Math.max(m.need + lessons, 0.001);
+  const dayPct = Math.min(S.day, REAL_MAX) / REAL_MAX * 100;
+  const rangePct = (REAL_MAX - REAL_MIN) / REAL_MAX * 100;
+  const rangeAt = REAL_MIN / REAL_MAX * 100;
+  el.innerHTML = `
+    <div class="g-top">
+      <span class="g-badge"><i class="g-dot"></i>购房</span>
+      <span class="g-cur">${done ? '交易完成 · 已拿钥匙' : d.name + ' <b>' + (i + 1) + '</b>/' + FLOW.length}</span>
+      <span class="g-sp"></span>
+      <span class="g-day">第 <b>${S.day}</b> 天</span>
+    </div>
+    <div class="g-line">${NODES.map((n, x) => `<span class="g-seg ${done || x < d.node ? 'done' : x === d.node ? 'cur' : 'future'}"></span>`).join('')}</div>
+    <div class="g-names">${NODES.map((n, x) => `<span class="${!done && x === d.node ? 'on' : ''}">${n}</span>`).join('')}</div>
+    <div class="g-meters">
+      <div class="gm"><span class="gm-k">钱</span>
+        <div class="gm-bar" id="barMoney"><i class="gm-base" style="width:${p / den * 100}%"></i><i class="gm-over" style="width:${lessons / den * 100}%"></i></div>
+        <span class="gm-v">${m.need ? '¥' + wan(p) + ' 万<em> / 需现金 ' + wan(m.need) + ' 万</em>' + (borrowTotal() ? '<em>（已筹 ' + wan(borrowTotal()) + ' 万）</em>' : '') : '预算未定'}</span></div>
+      <div class="gm"><span class="gm-k">期</span>
+        <div class="gm-bar" id="barTime"><i class="gm-base" style="width:${dayPct}%"></i><i class="gm-range" style="margin-left:${rangeAt - dayPct > 0 ? rangeAt - dayPct : 0}%;width:${dayPct < REAL_MAX ? rangePct : 0}%"></i></div>
+        <span class="gm-v">已走 ${S.day}<em> 天${pitDays() ? '（含坑拖出 ' + pitDays() + ' 天）' : ''} / 常规 1-3 个月</em></span></div>
+    </div>
+    ${lessons ? `<div class="gm" style="margin-top:1px"><span class="gm-k"></span><span style="font-size:11px;color:var(--danger)">多花 ${rows.length} 笔 · ¥${wan(lessons)} 万（合同没写清 / 谈价没谈清的账）</span></div>` : ''}`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   公共块
+   ════════════════════════════════════════════════════════════════ */
+function dayLine(d) {
+  return `<div class="sw-day">第 ${S.day} 天</div>` + timeStrip(d);
+}
+function railBlock(d) {
+  return `<div class="rail" style="display:flex;gap:2px;margin-top:12px">${NODES.map((n, x) => `<i style="flex:1;height:4px;border-radius:999px;background:${x < d.node ? 'var(--ink)' : x === d.node ? 'var(--rust)' : 'var(--hairline)'}"></i>`).join('')}</div>`;
+}
+/* 双层时间：左 = 经历周期（这一段从常规区间抽到的天数 + 已走累计），右 = 常规周期 + 等谁 + 为什么。
+   经历周期只在进入该段时抽一次，同一次运行内不变；par 段（与相邻环节同期）照常展示天数但不累计。
+   real === '—' 的屏（选身份/填表/算账）不摆这一条——那几步真的不花时间，不编数字。 */
+function timeStrip(d) {
+  if (d.real === '—') return '';
+  const n = stageDays(d);
+  return `<div class="tstrip">
+    <div class="cell"><div class="k">经历周期</div>
+      <div class="v">${n > 0 ? n + '<em>天</em>' : '当天'}</div>
+      <div class="n">${d.par ? '与相邻环节同期 · ' : ''}累计第 ${S.day} 天${pitDays() ? '（含坑 ' + pitDays() + ' 天）' : ''}</div></div>
+    <div class="cell real"><div class="k">常规周期 · 等谁</div>
+      <div class="v">${d.real}</div>
+      <div class="n">${d.waitWho}：${d.waitWhy}</div></div>
+  </div>`;
+}
+/* 等待屏（审批 / 过户 / 交房）：把「为什么等这么久」摊开——
+   节点轴（走到哪一步）+ 对方在做什么 + 你现在要做什么。只这三张屏展开，其余屏只换时间条一格 */
+function waitBlock(d) {
+  const w = d.wait;
+  if (!w) return '';
+  return `<div class="wait">
+    <div class="wait-t">这 ${d.real}在等谁：<em>${d.waitWho}</em></div>
+    <div class="wait-rail">${w.steps.map((s, i) =>
+    `<div class="wait-n${i < w.at ? ' done' : i === w.at ? ' on' : ''}"><i></i><span>${s}</span></div>`).join('')}</div>
+    <div class="wait-x"><b>对方</b>${w.peer}</div>
+    <div class="wait-x"><b>你</b>${w.you}</div>
+  </div>`;
+}
+function pitBlock(d) {
+  if (!d.pit) return '';
+  /* 不写「这一步最容易踩的点」这类固定标签：暖色块 + 下方「怎么避免」已经说明了结构，
+     同一句标签在 20 屏里重复 20 次，是纯噪声 */
+  return `<div class="pit">
+    <div class="pit-t">${d.pit}</div>
+    <div class="pit-f"><b>怎么避免：</b>${d.fix}</div>
+  </div>`;
+}
+function bubble(who, text) {
+  return `<div class="bubble"><div class="who">${who}</div><p>${text}</p></div>`;
+}
+function burstBlock() {
+  if (!S.burst.length) return '';
+  const tc = S.burst.reduce((a, b) => a + b.cost, 0);
+  const td = S.burst.reduce((a, b) => a + b.days, 0);
+  return `<div class="burst">
+    <div class="burst-t">🧾 学费单 ${S.burst.length} 张<span class="burst-src">合同里没写清 · 到这一步才来</span></div>
+    ${S.burst.map(b => `<div class="adj">
+        <div class="adj-line"><span>${b.name}</span><span>${b.cost ? yuan(b.cost) : (b.risk || '有风险')}</span></div>
+        <div class="adj-hint">${b.text}</div>
+      </div>`).join('')}
+    <div class="adj-sum"><span>本次合计</span><span>${yuan(tc)}${td ? ' · +' + td + ' 天' : ''}</span></div>
+  </div>`;
+}
+function nextBtn(text, disabled, wait, pay) {
+  const attr = pay ? `data-pay="${pay}"` : 'data-act="next"';
+  return `<div class="btn-row"><button id="nextBtn" class="btn ${disabled ? 'btn-disabled' : 'btn-ink'}" ${disabled ? 'disabled' : attr}>${text}${wait ? `<span class="btn-w">${wait}</span>` : ''}</button></div>`;
+}
+/* 输入框（现金 / 自定义房源）改值时只同步主按钮——整屏重绘会让输入框失焦、光标跳位 */
+function syncNextBtn(text, disabled, wait) {
+  const b = document.getElementById('nextBtn');
+  if (!b) return;
+  b.innerHTML = text + (wait ? `<span class="btn-w">${wait}</span>` : '');
+  b.className = 'btn ' + (disabled ? 'btn-disabled' : 'btn-ink');
+  b.disabled = disabled;
+  if (disabled) b.removeAttribute('data-act'); else b.setAttribute('data-act', 'next');
+}
+function okBlock(items, totalLabel, totalValue) {
+  return `<div class="rows">${items.map(it => `<div class="row${it.total ? ' total' : ''}"><span class="k">${it.k}</span><span class="v">${it.v}</span></div>`).join('')}
+    ${totalLabel ? `<div class="row total"><span class="k">${totalLabel}</span><span class="v">${totalValue}</span></div>` : ''}</div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   各屏
+   ════════════════════════════════════════════════════════════════ */
+function screenHero(d) {
+  return `
+  <div data-screen-label="${d.lbl}">
+    <div class="eyebrow">沉浸式流程模拟 · 约 10 分钟</div>
+    <div class="hd">在上海，\n买下第一套房</div>
+    <div class="g3">
+      <div class="g3-cell"><div class="g3-k">流程</div><div class="g3-v">12 个节点</div><div class="g3-n">选房 → 资格 → 砍价 → 签约 → 过户 → 交房</div></div>
+      <div class="g3-cell"><div class="g3-k">时间</div><div class="g3-v">1-3 个月</div><div class="g3-n">每段天数从常规区间里抽，你这趟实际多少天，走到头才知道</div></div>
+      <div class="g3-cell"><div class="g3-k">坑</div><div class="g3-v">2 处深坑</div><div class="g3-n">签字那 10 分钟，和交房那一天</div></div>
+    </div>
+    <div class="trail">${NODES.map((n, i) => `<span class="${i === 6 || i === 10 ? 'hot' : ''}">${i + 1} ${n}</span>`).join('')}</div>
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>开场只给三个数（节点数 / 周期 / 深坑数），把原来那块 110 字的「你会遇到」整段删掉——用户不需要在读之前先读一遍目录。</div>
+    ${nextBtn('开始购房之旅')}
+  </div>`;
+}
+
+function screenRole(d) {
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="hd">你为什么买房？</div>
+    <div class="sub">身份决定首付、利率与税费口径。</div>
+    <div class="opts">${ROLES.map(r => `
+      <button class="opt${S.role && S.role.k === r.k ? ' on' : ''}" data-role="${r.k}" id="role-${r.k}">
+        <div class="op-hd"><span class="op-n">${r.emoji} ${r.name}</span>
+          <span class="op-tag ${r.tagCls}">${r.tag}</span><span class="op-p">${r.p}</span></div>
+        <div class="op-d">${r.d}</div>
+        <div class="op-note">${r.note}</div>
+      </button>`).join('')}</div>
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏 44 字副文案 + 86 字 note 压成一句「身份决定首付、利率与税费口径」。三个角色卡里的信息一个字没删，只是从散文挪进了卡片。</div>
+    ${nextBtn(S.role ? '按「' + S.role.name + '」继续' : '先选一个身份', !S.role)}
+  </div>`;
+}
+
+function screenCash(d) {
+  const custom = S.cashSet && CASH.indexOf(S.cash) < 0;
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="hd">你能拿出多少现金？</div>
+    <div class="sub">首付 = 房款首付 + 全部交易税费。</div>
+    <div class="chips">${CASH.map(v => `<button class="chip${S.cashSet && S.cash === v ? ' on' : ''}" data-cash="${v}">${v} 万</button>`).join('')}</div>
+    <div class="form" style="margin-top:12px">
+      <div class="f-row"><span class="f-k">自定义</span>
+        <input class="f-in" id="cashIn" type="number" inputmode="numeric" placeholder="填入你能动用的现金（万）" value="${custom ? S.cash : ''}"></div>
+    </div>
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏 5 张档位卡各带一句 15-20 字的情绪描述（「刚工作不久…」「不上不下…」），全部删掉，改成一行 5 个 chip——这一屏用户只需要做一个数字决定。</div>
+    ${nextBtn(S.cashSet ? '手头 ' + S.cash + ' 万 · 去看房' : '先亮家底', !S.cashSet)}
+  </div>`;
+}
+
+function screenSelect(d) {
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="chat">${bubble('中介 小王', '钥匙在手，200 万到 1600 万都有。先看哪套？')}</div>
+    ${HOUSES.map(h => `
+      <button class="hcard${S.house && S.house.id === h.id ? ' on' : ''}" data-house="${h.id}" id="house-${h.id}">
+        <span class="hc-emo">${h.emoji}</span>
+        <span class="hc-b">
+          <span class="hc-n">${h.name}<span class="op-tag ${h.tagCls}">${h.tag}</span></span>
+          <span class="hc-m">${h.area} · 首付约 ${wan(h.price * downRate())} 万 · ${h.ring === '内' ? '外环内' : '外环外'}</span>
+          <span class="hc-m">税费：${h.vat ? '全额增值税' : '免增值税'}${h.seller ? ' · 个税 1%' : ' · 免个税'}</span>
+        </span>
+        <span class="hc-p"><span class="hc-v">${h.price}万</span><span class="hc-x">可砍 ${(h.cut * 100).toFixed(0)}%</span></span>
+      </button>`).join('')}
+    <button class="hcard" data-act="goCustom">
+      <span class="hc-emo">✏️</span>
+      <span class="hc-b"><span class="hc-n">自定义房源</span>
+        <span class="hc-m">挂牌价 / 面积 / 环线 / 税费条件全由你定</span></span>
+      <span class="hc-p"><span class="hc-v" style="font-size:12.5px">填一套</span></span>
+    </button>
+    <div class="ok-note"><span class="ok-b">身份：</span>${S.role ? S.role.emoji + ' ' + S.role.name : '未选'} · 现金 ${S.cash} 万 · 默认按组合贷最低首付估算</div>
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>中介那 76 字的长开场压成一句；房源卡的「套数 / 类型 / 卖家」等非决策信息删掉，换成两个真正影响钱的字段：首付估算与税费口径。</div>
+    ${nextBtn(S.house ? '就这套 · 去核验资格' : '先选一套房', !S.house, '核验 1-3 天')}
+  </div>`;
+}
+
+/* 自定义房源 · 四组口径选择（与输入框分离：输入时局部重绘这两块，输入框不会失焦） */
+function custChipsBlock(c) {
+  const chipRow = (label, btns) => `<div class="f-row"><span class="f-k">${label}</span>
+      <div class="chips" style="margin-top:0;flex:1;flex-wrap:wrap;justify-content:flex-end">${btns}</div></div>`;
+  const chip = (on, attrs, text) => `<button class="chip${on ? ' on' : ''}" ${attrs} style="flex:none;padding:0 12px;font-size:13px">${text}</button>`;
+  return `
+    ${chipRow('环线', chip(c.ring === '内', 'data-ring="内"', '外环内') + chip(c.ring === '外', 'data-ring="外"', '外环外'))}
+    ${chipRow('持有年限', [[0, '不满 2 年'], [2, '满 2 年'], [5, '满 5 年']].map(o => chip(c.holdYears === o[0], 'data-cy="' + o[0] + '"', o[1])).join(''))}
+    ${chipRow('是否唯一', chip(c.unique, 'data-cu="1"', '唯一') + chip(!c.unique, 'data-cu="0"', '不唯一'))}
+    ${chipRow('取得方式', chip(c.acq === 'buy', 'data-ca="buy"', '买卖取得') + chip(c.acq === 'inherit', 'data-ca="inherit"', '继承 / 赠与'))}`;
+}
+function custTaxRows(c) {
+  const p = c.price || 0;
+  const inheritTax = c.acq === 'inherit' && !(c.holdYears >= 5 && c.unique);
+  const it = sellerIncomeTax(c, p);
+  const vat = sellerVatOf(c, p);
+  const deed = deedRateOf(c);
+  return [
+    { k: '增值税（不满 2 年全额 5% + 附加）', v: vat ? '¥' + wan(vat) + ' 万' : '免' },
+    inheritTax
+      ? { k: '卖方个税（继承 / 赠与所得：差额 × 20%）', v: '¥' + wan(it) + ' 万' + (c.base > 0 ? '' : '（原值未填，按全额计）') }
+      : { k: '卖方个税（满五唯一免征，否则核定 1%）', v: it ? '¥' + wan(it) + ' 万' : '免' },
+    { k: '契税（' + (deed * 100).toFixed(1) + '% · 买方承担）', v: '¥' + wan(p * deed) + ' 万' },
+  ].map(r => `<div class="row"><span class="k">${r.k}</span><span class="v">${r.v}</span></div>`).join('');
+}
+function screenCustom(d) {
+  /* 未定稿时按默认口径预览（满五唯一 · 买卖取得），定稿以「确认这套」为准 */
+  const c = S.custom || syncCustom(newCustom());
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="hd">自定义一套房源</div>
+    <div class="sub">房价、环线与税费口径由你定，后面照常核验资格、砍价。</div>
+    <div class="form">
+      <div class="f-row"><span class="f-k">挂牌价</span><input class="f-in" id="cPrice" type="number" inputmode="decimal" placeholder="如 450（万）" value="${S.custom ? S.custom.price : ''}"></div>
+      <div class="f-row"><span class="f-k">建筑面积</span><input class="f-in" id="cArea" type="number" inputmode="decimal" placeholder="如 90（㎡）" value="${S.custom ? S.custom.areaNum : ''}"></div>
+      ${S.custom && S.custom.acq === 'inherit' ? `<div class="f-row"><span class="f-k">取得原值</span><input class="f-in" id="cBase" type="number" inputmode="decimal" placeholder="被继承人取得价，如 120（万）" value="${S.custom.base > 0 ? S.custom.base : ''}"></div>` : ''}
+    </div>
+    <div class="form" style="margin-top:10px" id="custChips">${custChipsBlock(c)}</div>
+    <div class="sect"><div class="sect-t">税费口径</div><div class="sect-x">按挂牌价估算</div></div>
+    <div class="rows" id="custTaxRows">${custTaxRows(c)}</div>
+    <div class="ok-note"><span class="ok-b">口径：</span>满 2 年免增值税；买卖所得满五唯一免个税，否则核定 1%；契税 ≤140㎡ 1%，超 140㎡ 首套 1.5% / 二套 2%；议价空间默认 5%。${c.acq === 'inherit' ? '继承 / 赠与所得：满二、满五起算可追溯原产权人；非满五唯一时个税按（转让价 − 原值）× 20% 计——原购房发票、契税完税凭证要留好，签约时写清税费归属。' : ''}</div>
+    ${nextBtn(S.custom ? '确认这套 · 去核验资格' : '填完再继续', !S.custom, '核验 1-3 天')}
+    <div class="btn-row" style="margin-top:8px"><button class="btn btn-out" data-act="backSelect">用不上，回选房</button></div>
+    <div class="note-i"><b>设计说明：</b>预设房源卡靠标签给出「满五唯一 / 满二不唯一 / 不满 2 年」，自定义房源没有标签可依，必须让用户自己说清「满几年 × 是否唯一 × 取得方式」——这三样直接决定卖方税费是否转嫁；继承 / 赠与所得另有一层「起算可追溯 + 差额 20%」的口径。</div>
+  </div>`;
+}
+
+function qaSteps() {
+  /* 婚姻状况自 2025-08-26 起不再影响限购口径（成年单身按居民家庭执行），故不再提问 */
+  const steps = ['hukou'];
+  if (S.ans.hukou !== 'sh') { steps.push('permit'); if (S.ans.permit !== 'yes') steps.push('years'); }
+  return steps;
+}
+function screenQa(d) {
+  const steps = qaSteps();
+  /* 评审跳转回来时 qaProg 可能已走完，夹到最后一题，避免直接渲染成结果屏 */
+  const ci = Math.min(S.qaProg, steps.length - 1);
+  const cur = steps[ci];
+  const q = QA[cur];
+  if (!q) return screenBlocked(d);
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="prog"><span>核验</span><div class="prog-bar"><i style="width:${ci / steps.length * 100}%"></i></div><span class="prog-v">${ci} / ${steps.length}</span></div>
+    <div class="hd" style="font-size:21px">${q.q}</div>
+    <div class="opts">${q.opts.map(o => `<button class="opt" data-qa="${cur}:${o[0]}"><div class="op-hd"><span class="op-n">${o[1]}</span></div></button>`).join('')}</div>
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>删掉「答案只用于本机判定，不会上传或收集」这句（放到开场的一句话隐私声明里），这一屏只留题干与选项。</div>
+  </div>`;
+}
+/* 限购判定 · 口径 = 上海自 2026-02-26 起施行的限购政策
+   沪籍家庭（含成年单身）：外环外不限套数；外环内限购 2 套
+   非沪籍：社保 / 个税满 1 年 → 外环外不限套数、外环内限购 1 套；满 3 年及以上 → 外环内限购 2 套
+   持《上海市居住证》满 5 年：免社保 / 个税证明，全市限购 1 套 */
+function judge() {
+  const h = houseOf();
+  const inner = !!(h && h.ring === '内');      /* 外环外：符合购房条件即不限套数 */
+  const owned = ownedCount();
+  const a = S.ans;
+  const mine = (S.role && S.role.k === 'trade')
+    ? '置换：原房已售，名下 0 套'
+    : '你名下 ' + owned + ' 套';
+  if (a.hukou === 'sh') {
+    if (!inner) return { ok: true, t: '可购买（外环外）', d: '沪籍（含成年单身）在外环外购房不限套数；' + mine + '。' };
+    return owned < 2
+      ? { ok: true, t: '可购买', d: '沪籍外环内限购 2 套；' + mine + '。' }
+      : { ok: false, t: '限购 · 不符合条件', d: '沪籍外环内限购 2 套，名下已满 2 套。' };
+  }
+  if (a.permit === 'yes') {
+    return owned === 0
+      ? { ok: true, t: '可购买 1 套', d: '持居住证满 5 年：免社保或个税证明，全市限购 1 套；' + mine + '。' }
+      : { ok: false, t: '限购 · 不符合条件', d: '持居住证满 5 年全市限购 1 套，名下已有住房。' };
+  }
+  if (a.years === 'l1') return { ok: false, t: '暂不具备购房资格', d: '社保 / 个税不满 1 年：外环内、外环外都还不能买。' };
+  if (a.years === 'm1-3') {
+    if (!inner) return { ok: true, t: '可购买（外环外）', d: '非沪籍社保满 1 年：外环外不限套数。' };
+    return owned === 0
+      ? { ok: true, t: '可购买 1 套', d: '非沪籍社保满 1 年：外环内限购 1 套；' + mine + '。' }
+      : { ok: false, t: '限购 · 不符合条件', d: '非沪籍社保满 1 年：外环内限购 1 套，名下已有住房。' };
+  }
+  if (!inner) return { ok: true, t: '可购买（外环外）', d: '非沪籍社保满 3 年：外环外不限套数。' };
+  return owned < 2
+    ? { ok: true, t: '可购买', d: '非沪籍社保满 3 年：外环内限购 2 套（原有 1 套 + 增购 1 套）；' + mine + '。' }
+    : { ok: false, t: '限购 · 不符合条件', d: '非沪籍社保满 3 年：外环内限购 2 套，名下已满。' };
+}
+function screenBlocked(d) {
+  const j = judge();
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="pit${j.ok ? ' sky' : ''}" style="margin-top:14px">
+      <div class="pit-t" style="font-size:16px;font-weight:500">${j.ok ? '✓ ' : '✕ '}${j.t}</div>
+      <div class="pit-f" style="border-top:0;padding-top:2px;margin-top:4px">${j.d}</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-out" data-act="backSelect">换一套试试</button>
+      <button class="btn btn-out" data-act="requalify">重新核验资格</button>
+    </div>
+    ${j.ok
+      ? `<div class="btn-row" style="margin-top:8px"><button class="btn btn-ink" data-act="next">继续砍价<span class="btn-w">谈价 1-4 周</span></button></div>`
+      : `<div class="btn-row" style="margin-top:8px"><button class="btn btn-out" data-act="next">仍然继续（会卡在网签）</button></div>`}
+    <div class="note-i"><b>设计说明：</b>原屏的限购理由有 40-60 字（含「沪七条」等出处），压到一句话说清结论与依据；限购被判失败时仍允许往下走，但会在网签那一步被拦下——后果是「定金与居间协议已经签了，网签过不去」。</div>
+  </div>`;
+}
+/* 资格不过 → 网签这一屏必须真的过不去（否则「无法网签」只是句文案） */
+function screenNetBlocked(d) {
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="pit" style="margin-top:14px">
+      <div class="pit-k">资格核验未通过</div>
+      <div class="pit-t" style="font-size:16px;font-weight:500">✕ 无法网签：${judge().t}</div>
+      <div class="pit-f" style="border-top:0;padding-top:2px;margin-top:4px">${judge().d}居间协议与定金已经签了，网签备案过不去——定金能不能拿回来，就看合同里那几行怎么写。</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-out" data-act="backSelect">换一套房源</button>
+      <button class="btn btn-out" data-act="requalify">重新核验资格</button>
+    </div>
+  </div>`;
+}
+
+function screenNego1(d) {
+  const h = houseOf();
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="chat">${bubble('中介 小王', '这套诚意挂价 ' + h.price + ' 万，好好谈有空间。你的心理价多少？')}</div>
+    <div class="opts">${NEGO_R1.map(o => `<button class="opt" data-n1="${o.k}">
+      <div class="op-hd"><span class="op-n">${o.label}</span><span class="op-p">${(o.chip * 100).toFixed(0)}%</span></div>
+      <div class="op-d">${o.d}</div><div class="op-note">${o.note}</div></button>`).join('')}</div>
+    ${pitBlock(d)}
+    <div class="ok-note"><span class="ok-b">底线：</span>房东的可让幅度约 ${(h.cut * 100).toFixed(0)}%，报价越过底线会被叫停。</div>
+    <div class="note-i"><b>设计说明：</b>原屏 60 字的「谈判口径」note 压成一行「底线：可让约 X%」——口径保留，铺垫删掉。</div>
+  </div>`;
+}
+function nego2Options() {
+  const h = houseOf();
+  const chip = S.negoR1 ? (NEGO_R1.find(o => o.k === S.negoR1) || {}).chip || 0 : 0;
+  const over = chip > h.cut;
+  if (over) {
+    return { over: true, opts: [
+      { k: 'bottom', label: '按房东底线 ' + (h.cut * 100).toFixed(0) + '% 成交', d: '不再拉扯，按底线成交。', slash: h.cut },
+      { k: 'mid', label: '往回退一点，收 ' + ((h.cut - 0.01) * 100).toFixed(0) + '%', d: '缓和一下气氛。', slash: Math.max(0.01, h.cut - 0.01) },
+      { k: 'quit', label: '硬压到底，不谈了', d: '大概率谈崩。', slash: 0, cap: true },
+    ] };
+  }
+  /* 不摆重复项：已经压到底线时「再压 1 个点」不存在，
+     且「就按 X% 成交」与「直接压到底线」在数值相同时是同一件事，只留一条 */
+  const pushSlash = Math.min(chip + 0.01, h.cut);
+  const opts = [];
+  if (chip < h.cut) opts.push({ k: 'push', label: '再压 1 个点，到 ' + (pushSlash * 100).toFixed(0) + '%', d: '再试一次，看房东松不松口。', slash: pushSlash });
+  opts.push({ k: 'hold', label: '就按 ' + (chip * 100).toFixed(0) + '% 成交', d: '见好就收。', slash: chip });
+  if (chip < h.cut && pushSlash < h.cut) opts.push({ k: 'bottom', label: '直接压到底线 ' + (h.cut * 100).toFixed(0) + '%', d: '一步到位，风险自负。', slash: h.cut });
+  return { over: false, opts: opts };
+}
+function screenNego2(d) {
+  const h = houseOf();
+  const r = nego2Options();
+  if (S.negoCap) {
+    return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="chat">${bubble('房东', '超过我的底线了，最多让到 ' + wan(S.deal) + ' 万，一句顶八句。')}</div>
+    <div class="pit"><div class="pit-k">卖家叫停</div>
+      <div class="pit-t">压到底线以下，谈判就结束了——只剩接受或换房。</div>
+      <div class="pit-f"><b>怎么避免：</b>先摸底再出价，报价别越过房东底线。</div></div>
+    <div class="opts">
+      <button class="opt" data-act="n2Accept"><div class="op-hd"><span class="op-n">接受底价 ${wan(S.deal)} 万</span><span class="op-tag hot">成交</span></div>
+        <div class="op-d">不再拉扯，后面流程照走。</div></button>
+      <button class="opt" data-act="backSelect"><div class="op-hd"><span class="op-n">谈崩了，换一套</span></div>
+        <div class="op-d">不勉强，回选房重新挑。</div></button>
+    </div>
+    ${pitBlock(d)}
+  </div>`;
+  }
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="chat">
+      ${bubble('房东', r.over ? '这个价我真做不了，你要诚心买，再给我一个够得着的价。' : '能谈，但你也别太狠，我再看看能让多少。')}
+    </div>
+    <div class="opts">${r.opts.map(o => `<button class="opt" data-n2="${o.k}:${o.slash}:${o.cap ? 1 : 0}">
+      <div class="op-hd"><span class="op-n">${o.label}</span><span class="op-p">${(o.slash * 100).toFixed(0)}%</span></div>
+      <div class="op-d">${o.d}</div></button>`).join('')}</div>
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏有两段共 40 字的中介 + 房东台词，压成房东一句；中介那句「第一轮你直接还了 -6%，价位过了头」属于复盘信息，挪到结算屏。叫停后只剩「接受 / 换房」——原实现还留了三条加价路径，那不是真实谈判里有的东西。</div>
+  </div>`;
+}
+function screenNego3(d) {
+  const h = houseOf();
+  const canTransfer = sellerTaxOf() > 0;
+  const cut = h.price - S.deal;
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="chat">
+      ${bubble('中介 小王', '成了！' + wan(S.deal) + ' 万成交，比挂牌省了 ' + wan(cut) + ' 万。')}
+    </div>
+    <div class="pricebar">
+      <div class="pb-k">成交价（原挂牌 ${h.price} 万）</div>
+      <div class="pb-v">¥${wan(S.deal)} 万</div>
+      <div class="pb-n">砍下 ${wan(cut)} 万 · ${((S.slash || 0) * 100).toFixed(1)}% · ${((1 - (S.slash || 0)) * 10).toFixed(1)} 折</div>
+    </div>
+    ${canTransfer ? `
+    <div class="chat" style="margin-top:12px">${bubble('房东', '我也不看挂牌价了，' + wan(S.deal) + ' 万到手，税你那边包一下。')}</div>
+    <div class="opts">
+      <button class="opt" data-net="yes"><div class="op-hd"><span class="op-n">行，就按到手价来</span><span class="op-p" style="color:var(--danger)">+${wan(sellerTaxOf())} 万</span></div>
+        <div class="op-d">看着省事，卖方税费转嫁到你头上。</div><div class="op-note risk">这笔钱在算账屏才会出现</div></button>
+      <button class="opt" data-net="ask"><div class="op-hd"><span class="op-n">等下，到手价是啥意思？</span><span class="op-tag cool">先问清</span></div>
+        <div class="op-d">增值税 + 附加 + 个税，约 ${wan(sellerTaxOf())} 万，谁付先说明白。</div></button>
+      <button class="opt" data-net="no"><div class="op-hd"><span class="op-n">我不同意，按含税价</span><span class="op-tag hot">省下 ${wan(sellerTaxOf())} 万</span></div>
+        <div class="op-d">卖方税费由房东自担，写进合同。</div></button>
+    </div>
+    <div class="note-i"><b>设计说明：</b>「到手价」是全流程最贵的一句话，所以把它做成三选一，并把金额直接标在选项上——原稿是选完到算账屏才用一段 90 字的警示段告诉用户，那时钱已经算进去了。</div>
+    ` : nextBtn('确认成交，进入算账') + `<div class="note-i"><b>设计说明：</b>该房源无卖方税费（满五唯一 / 新房），「到手价」这道题不出现——不为了演示而硬造坑。</div>`}
+    ${pitBlock(d)}
+  </div>`;
+}
+function screenFeeNego(d) {
+  const deal = S.deal;
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="chat">${bubble('中介 小王', '房子谈妥了。中介费按惯例 2%：带看、谈判、网签、过户一条龙。')}</div>
+    <div class="opts">
+      <button class="opt${S.agent === 0.02 ? ' on' : ''}" data-fee="0.02"><div class="op-hd"><span class="op-n">按 2% 给，省心</span><span class="op-p">${wan(deal * 0.02)} 万</span></div>
+        <div class="op-d">服务全包，图个顺当。</div></button>
+      <button class="opt${S.agent === 0.01 ? ' on' : ''}" data-fee="0.01"><div class="op-hd"><span class="op-n">聊聊，压到 1%</span><span class="op-tag hot">省 ${wan(deal * 0.01)} 万</span><span class="op-p">${wan(deal * 0.01)} 万</span></div>
+        <div class="op-d">1% 足够覆盖主流服务。</div></button>
+    </div>
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏 62 字的「行情」note 压成选项卡里的一句「1% 足够覆盖主流服务」——结论进选项，行情背景删掉。</div>
+  </div>`;
+}
+
+function screenLoanType(d) {
+  const types = [
+    { k: 'comm', name: '纯商贷', p: (downRateOf('comm') * 100).toFixed(0) + '%', d: '额度按房款算，无上限。' },
+    { k: 'combo', name: '组合贷', p: (downRateOf('combo') * 100).toFixed(0) + '%', d: '公积金 + 商贷，多数家庭首选。' },
+    { k: 'gjj', name: '纯公积金', p: (downRateOf('gjj') * 100).toFixed(0) + '%', d: '利率最低，但额度上限 ' + GJJ_CAP + ' 万——不够的部分要现金补足。' },
+  ];
+  const downSteps = [['最低 ' + (downRate() * 100).toFixed(0) + '%', 0], ['30%', 0.3], ['50%', 0.5], ['全款 100%', 1]];
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="hd" style="font-size:21px">贷款方式 · 先定门槛</div>
+    <div class="sub">成交价 ¥${wan(S.deal)} 万 · 当前首付 ${wan(S.deal * down())} 万（含定金 ${wan(S.deal * 0.05)} 万）</div>
+    <div class="opts">${types.map(t => {
+      const needCash = Math.max(0, S.deal - S.deal * downRateOf(t.k) - (t.k === 'gjj' ? GJJ_CAP : Infinity));
+      return `<button class="opt${S.loanType === t.k ? ' on' : ''}" data-lt="${t.k}">
+      <div class="op-hd"><span class="op-n">${t.name}</span><span class="op-p">首付 ${t.p}</span></div>
+      <div class="op-d">${t.d}</div>
+      <div class="op-note">最低首付约 ${wan(S.deal * downRateOf(t.k))} 万${needCash > 0 ? ' · 额度上限 ' + GJJ_CAP + ' 万，另需现金补 ' + wan(needCash) + ' 万' : ''}</div></button>`;
+    }).join('')}</div>
+    <div class="sect"><div class="sect-t">首付还能往上加</div><div class="sect-x">贷款越少，利息越少</div></div>
+    <div class="chips">${downSteps.map(s => `<button class="chip${S.downSel === s[1] ? ' on' : ''}" data-ds="${s[1]}">${s[0]}</button>`).join('')}</div>
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏 106 字的信贷经理台词 + 118 字的首付说明，压成「成交价 / 当前首付」一行摘要 + 选项卡自带的金额。利率口径没丢，落在选项卡副行。</div>
+    ${nextBtn('选好了，去算账')}
+  </div>`;
+}
+function downRateOf(lt) {
+  const inv = S.role && S.role.k === 'invest';
+  const inner = houseOf() && houseOf().ring === '内';
+  if (!inv) return lt === 'comm' ? 0.15 : 0.2;
+  if (inner) return 0.25;
+  return lt === 'comm' ? 0.15 : 0.2;
+}
+
+function screenFunds(d) {
+  const m = money();
+  const g = gap();
+  const h = houseOf();
+  const av = avail();
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="hd" style="font-size:21px">这笔账，先算清楚</div>
+    ${okBlock([
+    { k: '成交价', v: '¥' + wan(m.deal) + ' 万' },
+    { k: '房款首付（' + (down() * 100).toFixed(0) + '% · ' + (S.downSel === 1 ? '全款' : loanName()) + '，含定金 ' + wan(m.deal * 0.05) + ' 万）', v: '¥' + wan(m.down) + ' 万' },
+    ...(m.shortfall > 0 ? [{ k: '贷款额度不足（' + loanName() + '上限 ' + GJJ_CAP + ' 万，需现金补）', v: '¥' + wan(m.shortfall) + ' 万' }] : []),
+    { k: '契税（' + (deedRateOf(h) * 100).toFixed(1) + '%）', v: '¥' + wan(m.deedTax) + ' 万' },
+    { k: '登记费', v: '¥80.00' },
+    { k: '中介费（' + (S.agent * 100).toFixed(0) + '%）', v: '¥' + wan(m.agentFee) + ' 万' },
+    ...(S.netDeal ? [{ k: '卖方税费转嫁（你答应了「到手价」）', v: '¥' + wan(m.sellerTax) + ' 万' }] : []),
+  ], '首付需现金（含全部税费）', '¥' + wan(m.need) + ' 万')}
+    <div class="pit${g > 0 ? '' : ' sky'}" style="margin-top:12px">
+      <div class="pit-t" style="font-size:15px;font-weight:500">${g > 0 ? '还差 ' + wan(g) + ' 万' : '✓ 资金充足'}</div>
+      <div class="pit-f" style="border-top:0;padding-top:2px;margin-top:4px">${g > 0
+      ? '手头 ' + wan(S.cash) + ' 万' + (borrowTotal() ? ' + 已筹 ' + wan(borrowTotal()) + ' 万' : '') + '，不够覆盖「房款首付 + 全部税费」。'
+      : '手头 ' + wan(S.cash) + ' 万' + (borrowTotal() ? ' + 已筹 ' + wan(borrowTotal()) + ' 万' : '') + '，扣除首付税费后结余 ' + wan(av - m.need) + ' 万。'}</div>
+    </div>
+    ${S.netDeal ? `<div class="pit"><div class="pit-k">你现在才看到这笔钱</div>
+      <div class="pit-t">砍价时随口应了一句「到手价」，卖方税费 ¥${wan(m.sellerTax)} 万由此转嫁给你。</div>
+      <div class="pit-f"><b>怎么避免：</b>谈价先问「含税还是到手」，再落价。</div></div>` : ''}
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏在到手价之外还挂了一段 120 字的「卖方税费提示」（讲卖方要缴多少、按惯例谁承担）。这段对用户的决策没有增量——他只关心自己那行数字，删。</div>
+    ${g > 0
+      ? `<div class="btn-row"><button class="btn btn-ink" data-act="fundsNext">先筹钱，再签约<span class="btn-w">筹钱 1-2 周</span></button></div>`
+      : `<div class="btn-row"><button class="btn btn-ink" data-act="fundsNext">资金充足，去签约<span class="btn-w">签约 1-3 天</span></button></div>`}
+    <div class="btn-row" style="margin-top:8px"><button class="btn btn-out" data-act="backLoanType">‹ 回到贷款方式</button></div>
+  </div>`;
+}
+
+function screenBorrow(d) {
+  const g = gap();
+  const bor = borrowTotal();
+  const over = Math.max(0, money().need - S.cash) > BORROW_CAP;   /* 三条渠道全借满也不够 */
+  const opts = [
+    { k: 'family', n: '向亲友借款', d: '视缺口借入，无利息压力。', m: '最多 ' + BORROW_CAPS.family + ' 万' },
+    { k: 'gjj', n: '提取公积金', d: '二手房通常不能直接提取付首付，此处仅作额度演示。', m: '最多 ' + BORROW_CAPS.gjj + ' 万' },
+    { k: 'credit', n: '信用贷 / 消费贷', d: '门槛低放款快，但资金用途属监管红线。', m: '⚠️ 红线' },
+    { k: 'changeHouse', n: '换套便宜点的', d: '回选房重新挑一套总价更低的。', m: '借款将退还' },
+  ];
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="hd" style="font-size:21px">${g > 0 ? '怎么补上这 ' + wan(g) + ' 万？' : '缺口已补齐'}</div>
+    <div class="sub">手头 ${wan(S.cash)} 万${bor ? ' · 已筹 ' + wan(bor) + ' 万' : ''} · 缺口 ${wan(g)} 万 · 三条借款渠道合计上限 ${BORROW_CAP} 万</div>
+    <div class="opts">${opts.map(o => `<button class="opt${S.usedBorrow[o.k] ? ' on' : ''}" data-bor="${o.k}" ${over && o.k !== 'changeHouse' ? 'disabled style="opacity:.5"' : ''}>
+      <div class="op-hd"><span class="op-n">${o.n}</span><span class="op-tag ${o.k === 'credit' ? 'hot' : ''}">${o.m}</span></div>
+      <div class="op-d">${o.d}</div></button>`).join('')}</div>
+    ${over ? `<div class="pit"><div class="pit-t" style="font-size:15px;font-weight:500">缺口超出可借上限</div>
+      <div class="pit-f" style="border-top:0;padding-top:2px;margin-top:4px">硬撑不现实。换一套总价更低的房源，比借钱更划算。</div></div>` : ''}
+    ${bor ? `<div class="ok-note"><span class="ok-b">已筹：</span>${wan(bor)} 万${g <= 0 ? ' · 缺口已补齐' : ' · 仍差 ' + wan(g) + ' 万'}</div>` : ''}
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏 74 字的红线提示与 90 字的缺口说明全部删掉——红线已经写在「信用贷」这张卡上（⚠️ 红线），缺口数字在标题里。风险教育不靠一段免责声明，靠选项上的标记。</div>
+    ${g <= 0
+      ? `<div class="btn-row"><button class="btn btn-ink" data-act="next">签约 · 付定金<span class="btn-w">约 1-3 天</span></button></div>`
+      : over
+        ? `<div class="btn-row"><button class="btn btn-ink" data-act="changeHouse">缺口过大 · 换套便宜点的</button></div>`
+        : `<div class="btn-row"><button class="btn btn-ink" data-act="next" disabled>还差 ${wan(g)} 万 · 先选一条渠道</button></div>`}
+  </div>`;
+}
+
+function screenSign(d) {
+  const items = SIGN_ITEMS.filter(it => it.half === 'sign');
+  return checkScreen(d, items);
+}
+function screenSignNet(d) {
+  if (!judge().ok) return screenNetBlocked(d);   /* 资格不过 → 网签备案过不去 */
+  const items = SIGN_ITEMS.filter(it => it.half === 'signNet');
+  return checkScreen(d, items);
+}
+function checkScreen(d, items) {
+  const done = items.filter(it => S.con[it.k]).length;
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    ${burstBlock()}
+    ${d.k === 'sign' ? `
+    <div class="pricebar">
+      <div class="pb-k">签字时锁定的钱（定金）</div>
+      <div class="pb-v">¥${wan(S.deal * 0.05)} 万</div>
+      <div class="pb-n">成交价 5% · 不超合同价 20% · <b>一旦签字：买方违约不退，卖方违约双倍返还</b></div>
+    </div>` : `
+    <div class="pricebar">
+      <div class="pb-k">网签后违约的代价</div>
+      <div class="pb-v">¥${wan(S.deal * 0.2)} 万</div>
+      <div class="pb-n">房价 20% · 已经不再是「定金没了」那么简单</div>
+    </div>`}
+    <div class="prog"><span>已定</span><div class="prog-bar"><i style="width:${done / items.length * 100}%"></i></div><span class="prog-v">${done} / ${items.length}</span></div>
+    ${items.map(it => clRow(it)).join('')}
+    <div class="cl-say ${done === items.length ? 'calm' : 'warn'}">${done === items.length
+      ? '这一屏写清了：没写的项目，到那一步就会以「学费单」的形式回来。'
+      : '还有 <b>' + (items.length - done) + ' 项</b>没结论——没写的，到那一步才来。'}</div>
+    ${nextBtn(d.k === 'sign' ? '签署居间协议 · 付定金 ' + wan(S.deal * 0.05) + ' 万' : '确认网签 · 支付首付先付部分', false, d.k === 'sign' ? '' : '备方案 1-3 天', d.k === 'sign' ? 'deposit' : 'firstPay')}
+    <div class="btn-row" style="margin-top:8px"><button class="btn btn-out" data-act="fastSign">都不写，先签（最快）</button></div>
+    <div class="note-i"><b>设计说明：</b>这是全稿唯一「深挖」的坑。原实现把居间协议 8 项核对做成一个 8 条 × 80-100 字的弹层清单，用户读完记不住任何一条。现在拆成两屏 × 6 项，每项只留三样：为什么 / 写清什么 / 不写的代价，且「不写」是可点的——坑要自己踩出来，不是读出来。</div>
+  </div>`;
+}
+function clRow(it) {
+  const v = S.con[it.k];
+  const costTxt = it.omit.cost ? '¥' + wan(it.omit.cost) + ' 万' : (it.omit.risk || '有风险');
+  return `
+  <div class="cl-row" id="cl-${it.k}">
+    <div class="cl-top"><span class="cl-n">${it.name}</span>
+      ${v === 'do' ? '<span class="pill pill-do">已写进合同</span>'
+      : v === 'no' ? `<span class="pill pill-todo">不写 · ${costTxt}</span>`
+        : '<span class="pill pill-no">没提</span>'}
+    </div>
+    <div class="cl-why">${it.why}</div>
+    ${v === 'do' ? `<div class="cl-write"><b>写清：</b>${it.write}</div>` : ''}
+    ${v === 'no' ? `<div class="cl-write">${it.omit.text}</div>` : ''}
+    <div class="cl-acts">
+      <button class="cl-btn${v === 'do' ? ' on' : ''}" data-cl="${it.k}:do">写进合同</button>
+      <button class="cl-btn${v === 'no' ? ' on-no' : ''}" data-cl="${it.k}:no">先不写</button>
+    </div>
+  </div>`;
+}
+
+function screenLoan(d) {
+  const P = loanPrincipal();
+  const y = S.loanYears;
+  const rate = loanRate();
+  const monthly = monthlyOf();
+  const cashOnly = S.downSel === 1;                 /* 全款：这一屏没有贷款可谈 */
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="hd" style="font-size:21px">${cashOnly ? '付款方式' : '贷款方案'}</div>
+    ${okBlock(cashOnly ? [
+    { k: '成交价', v: '¥' + wan(S.deal) + ' 万' },
+    { k: '首付（100% · 全款）', v: '¥' + wan(S.deal) + ' 万' },
+    { k: '贷款额', v: '¥0.00（全款不贷款）' },
+  ] : [
+    { k: '成交价', v: '¥' + wan(S.deal) + ' 万' },
+    { k: '首付（' + (down() * 100).toFixed(0) + '%）', v: '¥' + wan(S.deal * down()) + ' 万' },
+    ...(money().shortfall > 0 ? [{ k: '贷款额度不足（' + loanName() + '上限 ' + GJJ_CAP + ' 万，需现金补）', v: '¥' + wan(money().shortfall) + ' 万' }] : []),
+    { k: '贷款额（' + loanName() + '）', v: '¥' + wan(P) + ' 万' },
+    { k: '月供（' + y + ' 年 · 约 ' + (rate * 100).toFixed(2) + '%）', v: '¥' + Math.round(monthly).toLocaleString('en-US') },
+  ], cashOnly ? '' : '月供占家庭月收入', cashOnly ? '' : (monthly / RISK_INCOME * 100).toFixed(0) + '%')}
+    ${cashOnly ? '' : `
+    <div class="sect"><div class="sect-t">还款年限</div><div class="sect-x">月供 ≤ 收入 50% 是风控线</div></div>
+    <div class="chips">${[10, 20, 30].map(v => `<button class="chip${y === v ? ' on' : ''}" data-ly="${v}">${v} 年</button>`).join('')}</div>`}
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏的贷款合同 banner（80 字）+ 公积金额度 note（60 字）压成上面这张账单——额度、月供、占收入比都在数里，不用讲。全款不摆这一套：没有贷款就没有月供与年限。</div>
+    ${nextBtn(cashOnly ? '全款 · 去补足尾款' : '方案 OK，送银行审批', false, cashOnly ? '补足 1-3 天' : '等批贷 7-15 天')}
+  </div>`;
+}
+
+function screenLoanChk(d) {
+  const P = loanPrincipal();
+  const monthly = monthlyOf();
+  const over = OVER_RISK();
+  const rej = S.loanRejected || over;               /* 拒批与风控拦截共用同一组补救动作 */
+  const target = minDownToClear();
+  const addDown = S.deal * (target - down());
+  const canLong = S.loanYears < 30;
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    ${burstBlock()}
+    ${waitBlock(d)}
+    ${rej ? `
+    <div class="pit" style="margin-top:12px">
+      <div class="pit-k">${S.loanRejected ? '银行拒批' : '风控拦截'}</div>
+      <div class="pit-t">${S.loanRejected
+        ? '坚持原方案递交，银行直接拒批——材料与时间都白花了。'
+        : '月供占收入 ' + (monthly / RISK_INCOME * 100).toFixed(0) + '%，超过风控线 50%。'}</div>
+      <div class="pit-f"><b>怎么避免：</b>追加首付或拉长年限，把月供压回收入一半以内。</div>
+    </div>
+    <div class="opts">
+      <button class="opt" data-lc="pay"><div class="op-hd"><span class="op-n">追加首付：首付提到 ${(target * 100).toFixed(0)}%</span><span class="op-p">＋${wan(addDown)} 万</span></div><div class="op-d">把月供压回收入一半以内，差额按实际首付档算。</div></button>
+      ${canLong ? `<button class="opt" data-lc="long"><div class="op-hd"><span class="op-n">拉长还款到 30 年</span><span class="op-tag cool">月供降档</span></div><div class="op-d">月供立刻降，但总利息更多。</div></button>` : ''}
+      <button class="opt" data-lc="change"><div class="op-hd"><span class="op-n">换套便宜点的</span></div><div class="op-d">总价低，月供自然低。</div></button>
+      <button class="opt" data-lc="stick"><div class="op-hd"><span class="op-n">坚持原方案硬上</span><span class="op-tag hot">❌ 拒批</span></div><div class="op-d">银行直接拒批，徒增压力。</div></button>
+    </div>` : `
+    <div class="pit sky" style="margin-top:12px">
+      <div class="pit-k">批贷函</div>
+      <div class="pit-t">${loanName()} ${wan(P)} 万 · ${S.loanYears} 年 · 月供占收入 ${(monthly / RISK_INCOME * 100).toFixed(0)}%</div>
+      <div class="pit-f"><b>下一步：</b>${S.downSel === 1 ? '全款不涉及贷款，直接补足剩余房款。' : '签贷款合同，同时补足剩余首付。'}</div>
+    </div>
+    ${nextBtn(S.downSel === 1 ? '确认 · 去补足尾款' : '批贷通过 · 签贷款合同', false, '约 1-3 天')}`}
+    <div class="note-i"><b>设计说明：</b>原屏的贷款材料清单（身份证 / 流水 / 征信授权 / 网签合同，58 字）删掉——它是操作说明不是决策信息；风控线只留一个数字（月供占收入比）。「追加首付」标的是真实差额（首付提到多少、再多掏多少），不是拍脑袋的一个 10%。</div>
+  </div>`;
+}
+
+function screenLoanContract(d) {
+  const m = money();
+  const cashOnly = S.downSel === 1;
+  const firstPay = S.deal * down() * 0.3;
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    <div class="hd" style="font-size:21px">${cashOnly ? '全款 · 补足尾款' : '贷款合同 · 补足首付'}</div>
+    ${okBlock([
+    { k: '定金（签约已付）', v: '¥' + wan(S.deal * 0.05) + ' 万' },
+    { k: '首付先付（网签已付 · 入资金监管）', v: '¥' + wan(firstPay) + ' 万' },
+    ...(m.shortfall > 0 ? [{ k: '贷款额度不足需现金补足（' + loanName() + '）', v: '¥' + wan(m.shortfall) + ' 万' }] : []),
+    { k: cashOnly ? '本次补足剩余房款' : '本次补足剩余首付', v: '¥' + wan(m.downCash - S.deal * 0.05 - firstPay) + ' 万' },
+  ], cashOnly ? '已付房款合计' : '首付合计', '¥' + wan(m.downCash) + ' 万')}
+    ${S.con.paynode === 'no' ? `<div class="pit"><div class="pit-k">没写付款节点</div>
+      <div class="pit-t">剩余首付被要求提前补足，现金一次被抽干。</div>
+      <div class="pit-f"><b>怎么避免：</b>四段写死：定金 / 先付 / 补足 / 尾款。</div></div>` : ''}
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏有一段「贷款金额不及预期？」的 60 字假设性警示。它讲的情形已经由「贷款失败怎么办」这一项在签约屏管住了，这里删掉，只留账。</div>
+    ${nextBtn(cashOnly ? '确认全款交付 · 补足剩余房款' : '确认贷款合同 · 补足剩余首付', false, '递交后审税 7-15 天', 'restPay')}
+  </div>`;
+}
+
+function screenCard(d) {
+  const m = money();
+  const h = houseOf();
+  const extra = d.k === 'deed'
+    ? okBlock([
+      { k: '契税（' + (deedRateOf(h) * 100).toFixed(1) + '%）', v: '¥' + wan(m.deedTax) + ' 万' },
+      { k: '登记费（不动产登记费）', v: '¥80.00' },
+      { k: '中介费（' + (S.agent * 100).toFixed(0) + '%）', v: '¥' + wan(m.agentFee) + ' 万' },
+      ...(S.netDeal ? [{ k: '卖方税费实付（到手价转嫁）', v: '¥' + wan(m.sellerTax) + ' 万' }] : []),
+    ], '买方一次性税费', '¥' + wan(m.deedTax + m.agentFee + 0.008 + m.sellerTax) + ' 万')
+    : (d.k === 'transfer'
+      ? okBlock([
+        { k: '交易中心', v: '已受理 · 出具收件收据' },
+        { k: '审税状态', v: '审税中（约 7 天）' },
+        { k: '到场核验', v: '买卖双方本人到场' },
+      ], '', '')
+      : '');
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    ${burstBlock()}
+    <div class="swipe">
+      <div class="sw-hd">${d.name}</div>
+      <div class="sw-one">${d.one}</div>
+      ${pitBlock(d)}
+      <div class="sw-hint"><i>↑</i>上划继续</div>
+    </div>
+    ${railBlock(d)}
+    ${extra}
+    ${d.k === 'transfer' ? waitBlock(d) : ''}
+    ${nextBtn(d.k === 'transfer' ? '材料已递交 · 等待审税' : '缴税并领取新产证', false, d.k === 'transfer' ? '审税 7-15 天' : '出证 1-3 天', d.k === 'transfer' ? '' : 'transfer')}
+  </div>`;
+}
+
+function screenHandover(d) {
+  const hold = S.deal * 0.01;
+  const done = HAND_ITEMS.filter(it => S.hand[it.k]).length;
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    ${burstBlock()}
+    <div class="chat">${bubble('中介 小王', '产证、放款都齐了。交房前我把交割清单过一遍，别让前任留坑。')}</div>
+    <div class="prog"><span>已核</span><div class="prog-bar"><i style="width:${done / HAND_ITEMS.length * 100}%"></i></div><span class="prog-v">${done} / ${HAND_ITEMS.length}</span></div>
+    <div class="rows">${HAND_ITEMS.map(it => `<div class="row"><span class="k">${it.name}<br><span style="color:var(--dove);font-size:11px">${it.why}</span></span>
+      <span class="v" style="color:${S.hand[it.k] ? 'var(--ok)' : 'var(--danger)'}">${S.hand[it.k] ? it.ok : it.bad}</span></div>`).join('')}</div>
+    <div class="opts">
+      <button class="opt" data-ho="ok"><div class="op-hd"><span class="op-n">逐项核对，全部结清</span><span class="op-tag cool">痛快收房</span></div>
+        <div class="op-d">水电煤物业当场过户，钥匙当面移交。</div></button>
+      <button class="opt" data-ho="hold"><div class="op-hd"><span class="op-n">发现欠费 / 户口未迁</span><span class="op-p">扣押 ${wan(hold)} 万</span></div>
+        <div class="op-d">与卖家协商：尾款扣押，迁出结清后再付。</div>
+        <div class="op-note">上海惯例：尾款（户口保证金）一般不超过合同价 5%</div></button>
+    </div>
+    ${waitBlock(d)}
+    ${pitBlock(d)}
+    <div class="note-i"><b>设计说明：</b>原屏有两段共 150 字（上海惯例 + 学区提醒），压成选项卡上的一行小字「一般不超过合同价 5%」。学区那段的实质内容是「买前核实学位与户口，写进补充条款」——已收到签约屏「学位与户口」这一项里，不重复讲两遍。</div>
+  </div>`;
+}
+
+function screenSettle(d) {
+  const hold = S.handHold ? S.deal * 0.01 : 0;
+  const bad = HAND_ITEMS.filter(it => !S.hand[it.k]);
+  return `
+  <div data-screen-label="${d.lbl}">
+    ${dayLine(d)}
+    ${burstBlock()}
+    <div class="rows">
+      <div class="row"><span class="k">水 / 电 / 天然气</span><span class="v">已过户 · 费用结清</span></div>
+      <div class="row"><span class="k">物业费</span><span class="v" style="color:${bad.some(b => b.k === 'util') ? 'var(--danger)' : 'var(--ok)'}">${bad.some(b => b.k === 'util') ? '未结清 ⚠️' : '已结清'}</span></div>
+      <div class="row"><span class="k">户口迁出（学区、落户）</span><span class="v" style="color:${bad.some(b => b.k === 'hukou') ? 'var(--danger)' : 'var(--ok)'}">${bad.some(b => b.k === 'hukou') ? '未迁出 ⚠️' : '已迁出'}</span></div>
+      <div class="row total"><span class="k">尾款</span><span class="v">${hold ? '扣押 ¥' + wan(hold) + ' 万待付' : '已结清（银行放款）'}</span></div>
+    </div>
+    ${hold ? `<div class="ok-note"><span class="ok-b">扣押：</span>¥${wan(hold)} 万从卖方房款中扣留（不占你的现金）· 卖家完成户口迁出与费用结清后划给对方。</div>` : ''}
+    <div class="note-i"><b>设计说明：</b>这一屏原来是一段 60 字的交割说明 + 一张 40 字的 banner。这里不再重复「尾款是最后的牌」——那句话属于交房屏，同一课不在一屏里讲两遍。</div>
+    ${S.handHold
+      ? nextBtn('扣押尾款 ' + wan(hold) + ' 万 · 结清后支付', false, '', 'holdback')
+      : nextBtn('查看总账单')}
+  </div>`;
+}
+
+function screenDone() {
+  const m = money();
+  const pitD = pitDays();                                     /* 踩坑额外拖出来的天 */
+  const walked = expDays();                                   /* 抽取累计的经历天数（不含坑） */
+  const totalDays = walked + pitD;                            /* 与状态带、时间条同一口径（= S.day） */
+  const over = totalDays > REAL_MAX;                          /* 超出「1-3 个月」的 90 天上界 */
+  const byNode = [2, 30, 2, 14, 1, 7, 3, 10, 10, 2, 7, 1];
+  const gmax = Math.max.apply(null, byNode);   /* 柱高上限 10 + 26 = 36px，压在 38px 图高内，避免压住上方说明 */
+  const penalties = lossRows();
+  const loss = penalties.reduce((a, b) => a + b.cost, 0);
+  /* 结算屏默认只摊 3 笔，其余折叠——复盘要能一眼看完，明细按需展开 */
+  const topPen = penalties.slice(0, 3);
+  const restPen = penalties.slice(3);
+  const restCost = restPen.reduce((a, l) => a + l.cost, 0);
+  return `
+  <div data-screen-label="${FLOW[FLOW.length - 1].lbl}">
+    <div class="hd"><span class="hd-hero">🎉</span>交房了</div>
+    <div class="sub">${houseOf().name} · ${houseOf().area} · ${wan(S.deal)} 万 成交 · 钥匙到手</div>
+
+    <div class="pricebar${loss ? ' bad' : ''}" style="margin-top:14px">
+      <div class="pb-k">该掏的 → 实际掏的</div>
+      <div class="pb-v">¥${wan(m.base)} 万 → ¥${wan(m.total)} 万</div>
+      <div class="pb-n">${loss
+      ? `多花的 <b>¥${wan(loss)} 万</b>，全部来自签字没写清与谈价没问清。写清这 ${SIGN_ITEMS.length} 项：约 <b>¥${wan(m.base)} 万</b>。`
+      : `一分没多花：${SIGN_ITEMS.length} 项逐项有结论，卖方税费谈的也是含税价。`}</div>
+    </div>
+
+    <div class="pricebar${over ? ' bad' : ''}" style="margin-top:10px">
+      <div class="pb-k">你这趟的经历周期 → 常规周期</div>
+      <div class="pb-v">${totalDays} 天 → ${defOf('final').real}</div>
+      <div class="t-bar"><i class="t-base" style="width:${Math.min(walked, REAL_MAX) / REAL_MAX * 100}%"></i><i class="t-over" style="width:${Math.min(pitD, Math.max(0, REAL_MAX - walked)) / REAL_MAX * 100}%"></i></div>
+      <div class="pb-n">${over ? '<b>比常规更久</b>：' : ''}每段天数是在常规区间里抽出来的${pitD ? '，其中 <b>' + pitD + ' 天</b>是坑拖出来的' : ''}——放款排队、审税核价、公积金轮候，各段都在区间的高位时就走到 90 天以上。房子空着，房租和房贷照走。</div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="b-title">这条流程到底有多长</div>
+      <div class="b-desc">柱高 = 该节点常规周期（天），红 = 这一步爆了雷。</div>
+      <div class="gantt">${byNode.map((v, i) => `<i class="${S.lessons.some(l => l.stage.indexOf(NODES[i]) >= 0) ? 'hot' : ''}" style="height:${10 + v / gmax * 26}px"></i>`).join('')}</div>
+      <div class="gantt-x"><span>开始</span><span>砍价</span><span>签约</span><span>贷款</span><span>交房</span></div>
+    </div>
+
+    ${penalties.length ? `
+    <div class="lrn">
+      <div class="sect" style="margin-top:0"><div class="sect-t">多花的 ${penalties.length} 笔</div><div class="sect-x">¥${wan(loss)} 万</div></div>
+      ${topPen.map(l => `<div class="lrn-row"><div class="lrn-l"><b>${l.short}</b> · ${l.text}</div><div class="lrn-r">${l.cost ? '¥' + wan(l.cost) + ' 万' : (l.risk || '有风险')}</div></div>`).join('')}
+      ${restPen.length ? `<div class="lrn-row"><div class="lrn-l">其余 ${restPen.length} 笔：${restPen.slice(0, 4).map(l => l.short).join('、')}${restPen.length > 4 ? ' 等' : ''}</div><div class="lrn-r">${restCost ? '¥' + wan(restCost) + ' 万' : '都是风险'}</div></div>` : ''}
+      <details class="cal-fold"><summary>▸ 展开 ${penalties.length} 笔明细 · 含怎么避免</summary>
+        <div class="cal-body">${penalties.map(l => `<div class="cal-note"><b>${l.short}</b><br>${l.text}<br>${l.fix}</div>`).join('')}</div>
+      </details>
+    </div>` : `
+    <div class="card card-sky" style="margin-top:12px"><div class="b-title">0 笔多花</div>
+      <div class="b-desc">签约清单 ${SIGN_ITEMS.length} 项逐项有结论，卖方税费谈的是含税价——走到交房没有「再掏钱」。</div></div>`}
+
+    <div class="ok-note"><span class="ok-b">带走：</span>签约清单 ${SIGN_ITEMS.length} 项 · 交割清单 ${HAND_ITEMS.length} 项</div>
+    <div class="ok-note"><span class="ok-b">复盘：</span>麻烦不在砍价，在签字那 10 分钟。</div>
+    <div class="sub sm" style="margin-top:10px;text-align:center">演示口径 · 以官方为准</div>
+    <div class="btn-row"><button class="btn btn-ink" data-act="reset">重来一次 · 换一条路</button></div>
+    <div class="btn-row" style="margin-top:8px"><button class="btn btn-out" data-act="toRenov">下一步：装修（见装修模块设计稿）</button></div>
+  </div>`;
+}
+
+/* ═════════════════ 主渲染 ══════════════════ */
+function viewKey() { return S.screen + '|' + idxOf(S.screen); }
+function doRender() {
+  const stageEl = document.getElementById('stage');
+  const key = viewKey(), changed = key !== VIEW_KEY;
+  const keep = changed ? 0 : stageEl.scrollTop;
+  VIEW_KEY = key;
+  renderGuard();
+  const sc = document.getElementById('sc');
+  const d = defOf(S.screen) || FLOW[0];
+  sc.innerHTML = screenOf(d);
+  stageEl.scrollTop = keep;
+  renderJump();
+  renderModal();            /* 换屏时若有弹窗残留（如跳转），一并清掉 */
+  if (S.burst.length) {
+    ['barMoney', 'barTime'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 950); }
+    });
+  }
+}
+/* 屏 → 视图函数（按 k 分发，避免一长串三元） */
+function screenOf(d) {
+  const byKey = {
+    start: screenHero, role: screenRole, cash: screenCash, select: screenSelect, custom: screenCustom,
+    qa: screenQa, blocked: screenBlocked, nego1: screenNego1, nego2: screenNego2, nego3: screenNego3,
+    feeNego: screenFeeNego, loanType: screenLoanType, funds: screenFunds, borrow: screenBorrow,
+    sign: screenSign, signNet: screenSignNet, loan: screenLoan, loanChk: screenLoanChk,
+    loanContract: screenLoanContract, transfer: screenCard, deed: screenCard,
+    handover: screenHandover, settle: screenSettle, final: screenDone,
+  };
+  const fn = byKey[d.k] || screenHero;
+  return fn(d);
+}
+function render() { if (SILENT) return; doRender(); }
+function renderJump() {
+  const el = document.getElementById('rvJump');
+  if (!el) return;
+  el.innerHTML = FLOW.map(f => `<button data-jump="${f.k}" class="${f.k === S.screen ? 'on' : ''}">${f.lbl.slice(3)}</button>`).join('');
+}
+
+/* ══════════════════ 上划 ══════════════════ */
+let lastSwipe = 0;
+function trySwipe() {
+  if (!FAST_ON) return;
+  const d = defOf(S.screen);
+  if (!d || d.type !== 'card') return;          /* 决策屏不跳过 */
+  const stEl = document.getElementById('stage');
+  if (stEl.scrollTop + stEl.clientHeight < stEl.scrollHeight - 16) return;
+  const now = Date.now();
+  if (now - lastSwipe < 420) return;
+  lastSwipe = now;
+  advance();
+}
+function bindSwipe() {
+  const stEl = document.getElementById('stage');
+  let y0 = null;
+  stEl.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+  stEl.addEventListener('touchend', e => {
+    if (y0 == null) return;
+    if (y0 - e.changedTouches[0].clientY > 46) trySwipe();
+    y0 = null;
+  }, { passive: true });
+  /* wheel 只是评审稿桌面预览用；小程序没有滚轮，移植时删掉这条 */
+  stEl.addEventListener('wheel', e => { if (e.deltaY > 22) trySwipe(); }, { passive: true });
+}
+
+/* ══════════════════ 事件 ══════════════════ */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-role],[data-cash],[data-house],[data-ring],[data-cy],[data-cu],[data-ca],[data-qa],[data-n1],[data-n2],[data-net],[data-fee],[data-lt],[data-ds],[data-bor],[data-ly],[data-lc],[data-cl],[data-ho],[data-pay],[data-act],[data-jump],[data-demo]');
+  if (!t) return;
+  const D = t.dataset;
+
+  /* 出款点：先弹出付款确认（含下一节点与常规周期），确认后才真的继续 */
+  if (D.pay) { S.modal = D.pay; renderModal(); return; }
+
+  if (D.role) { S.role = ROLES.find(r => r.k === D.role); render(); return; }
+  if (D.cash) { S.cash = +D.cash; S.cashSet = true; S.usedBorrow = {}; render(); return; }
+  if (D.house) { S.house = HOUSES.find(h => h.id === D.house); S.custom = null; S.loanRejected = false; render(); return; }
+  /* 自定义房源：环线 / 持有年限 / 是否唯一 / 取得方式 四组口径，点一下即定稿（税费随之重算） */
+  if (D.ring || D.cy !== undefined || D.cu !== undefined || D.ca) {
+    const patch = D.ring ? { ring: D.ring }
+      : D.cy !== undefined ? { holdYears: +D.cy }
+        : D.cu !== undefined ? { unique: D.cu === '1' } : { acq: D.ca };
+    S.custom = syncCustom(Object.assign(custDraft(true), patch));
+    S.house = null;
+    render(); return;
+  }
+  if (D.qa) { const p = D.qa.split(':'); S.ans[p[0]] = p[1]; S.qaProg++; if (S.qaProg >= qaSteps().length) { S.qaDone = true; next('blocked'); } else render(); return; }
+  if (D.n1) {
+    S.negoR1 = D.n1;
+    const o = NEGO_R1.find(x => x.k === D.n1);
+    S.negoCap = o.chip > houseOf().cut;
+    S.slash = Math.min(houseOf().cut, o.chip);
+    /* 越线被叫停时立刻定成交价（= 房东底线价）：nego2 的叫停屏要显示这个数，
+       否则 S.deal 还是 0，会渲染成「最多让到 0 万 / 接受底价 0 万」 */
+    S.deal = houseOf().price * (1 - S.slash);
+    next('nego2'); return;      /* 出价即行动，一屏只做一次决定 */
+  }
+  if (D.n2) {
+    const p = D.n2.split(':');
+    S.negoCap = p[2] === '1';
+    S.slash = S.negoCap ? houseOf().cut : +p[1];
+    S.deal = houseOf().price * (1 - S.slash);
+    if (S.negoCap) { render(); return; }
+    next('nego3'); return;
+  }
+  if (D.net) {
+    if (D.net === 'yes') { S.netDeal = true; S.deal = houseOf().price * (1 - S.slash); next('feeNego'); return; }
+    if (D.net === 'no') { S.netDeal = false; S.deal = houseOf().price * (1 - S.slash); next('feeNego'); return; }
+    next('feeNego'); return;          /* ask：先问清，默认按含税价进下一步 */
+  }
+  if (D.fee) { S.agent = +D.fee; next('loanType'); return; }
+  if (D.lt) { S.loanType = D.lt; S.loanRejected = false; render(); return; }
+  if (D.ds !== undefined) { S.downSel = +D.ds; S.loanRejected = false; render(); return; }
+  /* 筹钱：三条渠道各有上限，已筹按缺口动态算——点第二次取消该渠道 */
+  if (D.bor) {
+    if (D.bor === 'changeHouse') { toSelect(); return; }
+    if (S.usedBorrow[D.bor]) delete S.usedBorrow[D.bor]; else S.usedBorrow[D.bor] = true;
+    render(); return;
+  }
+  if (D.ly) { S.loanYears = +D.ly; S.loanRejected = false; render(); return; }
+  if (D.lc) {
+    if (D.lc === 'change') { toSelect(); return; }
+    if (D.lc === 'pay') {
+      /* 追加首付按「真正能过风控线的首付档」提，并提出后必须重新校验现金是否够 */
+      S.downSel = minDownToClear();
+      S.loanRejected = false;
+      if (gap() > 0) { next('funds'); return; }
+      next('loanContract'); return;
+    }
+    if (D.lc === 'long') { S.loanYears = 30; S.loanRejected = false; render(); return; }
+    S.loanRejected = true; render(); return;   /* stick：银行拒批，必须回头调整 */
+  }
+  if (D.cl) { const p = D.cl.split(':'); S.con[p[0]] = p[1]; render(); return; }
+  if (D.ho) {
+    if (D.ho === 'ok') { S.hand = { util: true, hukou: true, key: true, fund: true }; S.handHold = false; }
+    else { S.hand = { util: false, hukou: false, key: true, fund: true }; S.handHold = true; }
+    next('settle'); return;
+  }
+  if (D.jump) { SILENT = true; go(D.jump); SILENT = false; render(); return; }
+  if (D.demo) {
+    if (D.demo === 'reset') { S = newState(); render(); return; }
+    runPath(D.demo); return;
+  }
+  switch (D.act) {
+    case 'next':
+      /* 已在选房屏选定房源时直奔资格核验——自定义房源页只在主动点「自定义房源」时进入 */
+      if (S.screen === 'select' && S.house) { next('qa'); break; }
+      /* 全款不贷款：跳过贷款方案与审批，直接去补足尾款 */
+      if (S.screen === 'loan' && S.downSel === 1) { next('loanContract'); break; }
+      advance(); break;
+    case 'goCustom': next('custom'); break;
+    case 'backSelect': toSelect(); break;
+    case 'requalify': S.ans = {}; S.qaProg = 0; S.qaDone = false; next('qa'); break;
+    case 'backLoanType': next('loanType'); break;
+    case 'n2Accept': S.negoCap = false; next('nego3'); break;
+    case 'fundsNext': gap() > 0 ? next('borrow') : next('sign'); break;
+    case 'changeHouse': toSelect(); break;
+    case 'fastSign': {
+      const items = SIGN_ITEMS.filter(it => it.half === (S.screen === 'sign' ? 'sign' : 'signNet'));
+      items.forEach(it => { S.con[it.k] = 'no'; });
+      advance(); break;
+    }
+    case 'payOk': {
+      const kind = S.modal;
+      S.modal = null;
+      /* 全款付清「首付先付」后直接进补足尾款，不经过贷款审批 */
+      if (kind === 'firstPay' && S.downSel === 1) { next('loanContract'); break; }
+      advance(); break;
+    }
+    case 'payCancel': S.modal = null; renderModal(); break;
+    case 'reset': S = newState(); render(); break;
+    case 'toRenov': window.open('Done/2026-09-15-装修模块-高保真设计稿.html', '_blank'); break;
+  }
+});
+/* 跳过一屏（用于交互里直接落到指定屏） */
+function next(k) { go(k); }
+
+/* 现金自定义输入：只刷新钱条与主按钮，不整屏重绘（重绘会让输入框失焦） */
+document.addEventListener('input', e => {
+  if (e.target.id === 'cashIn') {
+    const v = +e.target.value;
+    S.cashSet = v > 0;
+    if (v > 0) { S.cash = v; S.usedBorrow = {}; }   /* 改了家底，之前按旧缺口筹的钱作废 */
+    document.querySelectorAll('[data-cash]').forEach(c => c.classList.toggle('on', +c.dataset.cash === S.cash));
+    renderGuard();
+    syncNextBtn(v > 0 ? '手头 ' + S.cash + ' 万 · 去看房' : '先亮家底', !(v > 0));
+    return;
+  }
+  /* 自定义房源：改挂牌价 / 面积 / 取得原值即定稿，并就地重算税费口径与主按钮 */
+  if (e.target.id !== 'cPrice' && e.target.id !== 'cArea' && e.target.id !== 'cBase') return;
+  const draft = custDraft(false);
+  const ok = draft.price > 0;
+  if (ok) {
+    S.custom = syncCustom(draft);
+    S.house = null;
+    const chips = document.getElementById('custChips'), rows = document.getElementById('custTaxRows');
+    if (chips) chips.innerHTML = custChipsBlock(S.custom);
+    if (rows) rows.innerHTML = custTaxRows(S.custom);
+    renderGuard();
+  }
+  syncNextBtn(ok ? '确认这套 · 去核验资格' : '填完再继续', !ok, '核验 1-3 天');
+});
+
+/* ═════════════════ 评审：三条演示路径 ══════════════════ */
+function runPath(p) {
+  S = newState();
+  S.role = ROLES[0];
+  S.cash = 200; S.cashSet = true;
+  S.house = HOUSES[5];                 /* F · 中环新交付次新 · 不满 2 年 */
+  S.slash = HOUSES[5].cut;
+  S.deal = HOUSES[5].price * (1 - S.slash);
+  S.negoR1 = 'soft';
+  S.agent = 0.01;
+  S.loanType = 'combo';
+  S.ans = { hukou: 'sh' };
+  S.qaProg = 1; S.qaDone = true;
+  if (p === 'quick') { S.netDeal = true; SIGN_ITEMS.forEach(it => { S.con[it.k] = 'no'; }); }
+  if (p === 'careful') { S.netDeal = false; SIGN_ITEMS.forEach(it => { S.con[it.k] = 'do'; }); }
+  if (p === 'net') { S.netDeal = true; SIGN_ITEMS.forEach(it => { S.con[it.k] = 'do'; }); }
+  S.hand = p === 'quick' ? { util: false, hukou: false, key: true, fund: true } : { util: true, hukou: true, key: true, fund: true };
+  S.handHold = p === 'quick';
+  /* 重放埋雷结算，让总账一次算完 */
+  S.lessons = []; SIGN_ITEMS.forEach(it => {
+    if (S.con[it.k] === 'do') return;
+    S.lessons.push({ k: it.k, short: it.name, stage: defOf(it.omit.at) ? defOf(it.omit.at).name : '', cost: it.omit.cost, days: it.omit.days, risk: it.omit.risk, text: it.omit.text, src: '签约清单「' + it.name + '」你没写', fix: it.omit.fix });
+  });
+  S.burst = [];
+  /* 演示路径 = 走完一整趟：先记下各段，总账屏的经历天数才是完整一趟的量级（而不是 1 天） */
+  S.walked = FLOW.filter(f => f.days).map(f => f.k);
+  go('final');
+  render();
+}
+
+/* ═════════════════ 评审工具 ══════════════════ */
+const rvToggle = document.getElementById('rvToggle'), rvPanel = document.getElementById('rvPanel');
+rvToggle.addEventListener('click', () => { rvPanel.classList.toggle('on'); });
+document.getElementById('ckFast').addEventListener('change', e => { FAST_ON = e.target.checked; });
+document.getElementById('ckNote').addEventListener('change', e => { document.body.classList.toggle('notes', e.target.checked); });
+
+bindSwipe();
+S = newState();
+/* 默认停在开场屏；带 hash 时跳到对应屏（评审用） */
+(function () {
+  const h = location.hash.replace(/^#/, '');
+  if (h === 'quick' || h === 'careful' || h === 'net') { runPath(h); return; }
+  if (h && defOf(h)) go(h); else render();
+})();
+</script>
+</body>
+</html>
