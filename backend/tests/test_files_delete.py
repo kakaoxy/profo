@@ -5,8 +5,9 @@
 1. 未认证 → 401
 2. 外部域名 URL → 400（无法反解存储键，不可能是本系统上传的孤儿）
 3. URL 仍被项目附件库（signing_materials）引用 → 422 拒绝删除
-4. 正常孤儿 URL → 200 + 物理文件删除
-5. 文件不存在（幂等）→ 200
+4. URL 仍被软装明细附件（soft_detail_attachment）引用 → 422 拒绝删除
+5. 正常孤儿 URL → 200 + 物理文件删除
+6. 文件不存在（幂等）→ 200
 """
 
 import uuid
@@ -19,7 +20,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import db
-from models import Project, ProjectContract
+from models import Project, ProjectContract, ProjectRenovation
 from models.common import ProjectStatus
 from utils import storage as storage_module
 from utils.auth import AUDIENCE_ADMIN, create_access_token
@@ -85,6 +86,28 @@ def _make_contract_referencing(session: Session, url: str) -> None:
     session.commit()
 
 
+def _make_renovation_referencing(session: Session, url: str) -> None:
+    """创建一个软装明细附件（soft_detail_attachment）引用给定 URL 的项目."""
+    project = Project(
+        id=uuid.uuid4(),
+        name=f"测试项目-{url[-12:-4]}",
+        community_name="测试小区",
+        address="测试地址",
+        status=ProjectStatus.RENOVATING,
+        is_deleted=False,
+    )
+    session.add(project)
+    session.add(
+        ProjectRenovation(
+            id=uuid.uuid4(),
+            project_id=project.id,
+            soft_detail_attachment=url,
+            is_deleted=False,
+        )
+    )
+    session.commit()
+
+
 class TestDeleteUploadedFile:
     """DELETE /api/v1/files/upload 孤儿文件清理."""
 
@@ -107,6 +130,25 @@ class TestDeleteUploadedFile:
         (tmp_path / key).write_bytes(b"shared")
         url = f"/static/uploads/{key}"
         _make_contract_referencing(session, url)
+
+        client = _make_client(seeded_db, authenticated=True)
+        resp = client.delete("/api/v1/files/upload", params={"url": url})
+
+        assert resp.status_code == 422
+        assert resp.json()["code"] != 0
+        assert (tmp_path / key).exists()
+
+    def test_url_referenced_by_renovation_attachment_rejected(self, seeded_db: dict[str, Any], tmp_path: Path) -> None:
+        """URL 仍被软装明细附件（soft_detail_attachment）引用 → 422 拒绝删除，物理文件保留.
+
+        场景：文件已随表单保存进某项目的软装明细附件（或前端未拿到保存结果而误判为孤儿），
+        清理请求到达时若直接删物理文件，DB 中的附件链接会永久 404。
+        """
+        session = seeded_db["session"]
+        key = "20260921_renovation_ref.pdf"
+        (tmp_path / key).write_bytes(b"renovation ref")
+        url = f"/static/uploads/{key}"
+        _make_renovation_referencing(session, url)
 
         client = _make_client(seeded_db, authenticated=True)
         resp = client.delete("/api/v1/files/upload", params={"url": url})

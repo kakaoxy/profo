@@ -444,12 +444,12 @@ class RenovationService:
         self.db.refresh(renovation)
 
         # 旧附件已不再被本字段引用 → 删除物理文件（失败只记日志，保存结果不受影响）。
-        # 例外：URL 仍被任意项目附件库（signing_materials）引用时必须保留——本字段曾是
-        # 手填链接，运营可能粘贴本项目或其他项目附件库中已上传文件的 URL，
-        # 共享文件删除会连带弄坏附件库条目。
+        # 例外：URL 仍被附件库（signing_materials）或其它项目的软装明细附件引用时必须保留
+        # ——本字段曾是手填链接，运营可能粘贴本项目/其他项目已上传文件的 URL，
+        # 共享文件删除会连带弄坏对方的条目（404）。
         if old_attachment and old_attachment != renovation.soft_detail_attachment:
             if attachment_url_in_use(self.db, old_attachment):
-                logger.info("装修合同：旧附件仍被项目附件库引用，跳过物理删除: %s", old_attachment)
+                logger.info("装修合同：旧附件仍被项目引用，跳过物理删除: %s", old_attachment)
             else:
                 _delete_storage_file(old_attachment)
 

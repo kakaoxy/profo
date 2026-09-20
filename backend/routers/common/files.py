@@ -163,8 +163,8 @@ def delete_uploaded_file(
     供前端「上传后取消/未保存」场景清理物理文件。安全约束：
     - 仅接受可反解为本存储后端键的 URL（extract_storage_key 校验前缀与路径安全，
       挡住外部域名与路径穿越），外部 URL 一律拒绝
-    - URL 仍被任意项目附件库（signing_materials）引用时拒绝删除，
-      防止误删共享文件弄坏附件库条目
+    - URL 仍被任意项目引用（附件库 signing_materials / 软装明细附件
+      soft_detail_attachment）时拒绝删除，防止误删共享文件或已保存附件
     - 幂等：文件不存在也返回成功
     """
     key = extract_storage_key(url)
@@ -173,7 +173,7 @@ def delete_uploaded_file(
         raise ValidationError(msg)
 
     if attachment_url_in_use(db, url):
-        msg = "文件仍被项目附件库引用，禁止删除"
+        msg = "文件仍被项目引用，禁止删除"
         raise BusinessLogicError(msg)
 
     try:

@@ -295,3 +295,31 @@ class TestUpdateContractAttachmentCleanup:
         assert _attachment_of(session, project_a.id) == ""
         # B 项目附件库仍引用该文件 → 物理文件必须保留
         assert (tmp_path / old_key).exists()
+
+    def test_cross_project_renovation_reference_blocks_deletion(
+        self, seeded_db: dict[str, Any], tmp_path: Path
+    ) -> None:
+        """旧附件 URL 被另一项目的软装明细附件引用 → 同样跳过物理删除.
+
+        场景：同一套软装明细链接被填进多个项目的软装明细附件（本字段曾是手填链接，
+        复制粘贴为常见用法）；A 项目替换附件时不能删掉 B 项目仍在用的共享文件，
+        否则 B 项目「预览」直接 404 且文件不可恢复。
+        """
+        session = seeded_db["session"]
+        old_key = "20260920_crossrenovation.pdf"
+        (tmp_path / old_key).write_bytes(b"cross renovation")
+        project_a = _make_project(session, project_id="proj-renov-a")
+        project_b = _make_project(session, project_id="proj-renov-b")
+        # A 项目无 ProjectContract（附件库为空），共享仅体现在两项目的软装明细附件
+        _make_renovation(session, project_id=project_a.id, attachment=f"/static/uploads/{old_key}")
+        _make_renovation(session, project_id=project_b.id, attachment=f"/static/uploads/{old_key}")
+
+        RenovationService(db=session).update_contract(
+            project_a.id,
+            RenovationContractUpdate(soft_detail_attachment=""),
+        )
+
+        assert _attachment_of(session, project_a.id) == ""
+        # B 项目软装明细附件仍引用该文件 → 物理文件必须保留
+        assert _attachment_of(session, project_b.id) == f"/static/uploads/{old_key}"
+        assert (tmp_path / old_key).exists()

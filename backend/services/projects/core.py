@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Project, ProjectContract
+from models import Project, ProjectContract, ProjectRenovation
 from models.common import BusinessForm, ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from settings import settings
@@ -33,20 +33,32 @@ if TYPE_CHECKING:
 
 
 def attachment_url_in_use(db: Session, url: str) -> bool:
-    """检查附件 URL 是否仍被任意项目的附件库（ProjectContract.signing_materials）引用.
+    """检查附件 URL 是否仍被任意项目引用：附件库（signing_materials）或软装明细附件（soft_detail_attachment）.
 
     供装修合同附件替换清理、孤儿文件删除端点等共用：URL 仍被引用时禁止物理删除，
     防止共享文件被误删（如运营曾把手填链接字段填成附件库文件 URL）。
 
-    兼容两种历史格式：dict（filename/url/category/fileType/size）与纯 URL 字符串。
-    仅取 signing_materials 单列全表扫描（项目量为百级，内存扫描可接受）。
+    signing_materials 兼容两种历史格式：dict（filename/url/category/fileType/size）与
+    纯 URL 字符串；soft_detail_attachment 曾是手填链接，同一 URL 可能被填进多个项目
+    （同一套软装明细复用），故两处都必须检查。signing_materials 为 JSON 列，只能取
+    单列全表扫描（项目量为百级，内存扫描可接受）；soft_detail_attachment 为普通文本列，
+    直接走 WHERE 等值查询。
     """
     rows = db.query(ProjectContract.signing_materials).filter(ProjectContract.is_deleted.is_(False)).all()
     for (materials,) in rows:
         for item in materials or []:
             if item == url or (isinstance(item, dict) and item.get("url") == url):
                 return True
-    return False
+
+    renovation_reference = (
+        db.query(ProjectRenovation.id)
+        .filter(
+            ProjectRenovation.is_deleted.is_(False),
+            ProjectRenovation.soft_detail_attachment == url,
+        )
+        .first()
+    )
+    return renovation_reference is not None
 
 
 class ProjectCoreService:
