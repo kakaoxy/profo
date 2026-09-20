@@ -15,6 +15,7 @@ import { FileUploader } from "@/components/common/upload";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { formatFileSize } from "@/lib/formatters";
+import { isValidUrl } from "@/lib/validators";
 import { cn } from "@/lib/utils";
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE_BY_TYPE } from "../../../attachment-types";
 import { DatePickerField, NumberInputField, TextInputField } from "./form-fields";
@@ -252,9 +253,17 @@ export function TimeSection({ values, setValue, isEditing }: ContractSectionsPro
 }
 
 // 装修费用（硬装合同额+软装预算+定制柜+窗户更换+墙面处理；设计稿 1296-1306）
-export function DecorationCostSection({ values, setValue, isEditing }: ContractSectionsProps) {
+export function DecorationCostSection({
+  values,
+  setValue,
+  isEditing,
+  onAttachmentUploaded,
+}: ContractSectionsProps & {
+  /** 本编辑会话内上传成功时上报 URL，供父组件在取消/未保存时清理孤儿文件 */
+  onAttachmentUploaded?: (url: string) => void;
+}) {
   const attachment = values.soft_detail_attachment?.trim();
-  // 只读态：金额统一「N.N 万元」；软装明细附件全宽 + 预览 mini-link
+  // 只读态：金额统一「N.N 万元」；软装明细附件全宽（URL 显示预览链接，遗留手填文本按纯文本展示）
   if (!isEditing) {
     return (
       <div>
@@ -267,7 +276,12 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
           <InfoItem k="墙面处理" v={formatWanAmount(values.wall_treatment_amount)} />
           <InfoItem k="软装明细附件" full>
             {attachment ? (
-              <MiniLink href={attachment}>预览</MiniLink>
+              isValidUrl(attachment) ? (
+                <MiniLink href={attachment}>预览</MiniLink>
+              ) : (
+                // 遗留手填文本（非 URL，如「详见纸质合同」）按纯文本展示，避免渲染无效链接
+                <span className="text-[14.5px] font-[450] text-ink">{attachment}</span>
+              )
             ) : (
               <span className="text-[14.5px] font-[400] text-dove">-</span>
             )}
@@ -333,6 +347,7 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
             onUploadComplete={(response) => {
               if (response.url) {
                 setValue("soft_detail_attachment", response.url, { shouldDirty: true });
+                onAttachmentUploaded?.(response.url);
               }
             }}
             title="点击或拖拽文件到此处上传"
@@ -341,11 +356,16 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
           />
           {attachment && (
             <div className="flex items-center gap-3">
-              <MiniLink href={attachment}>预览已保存附件</MiniLink>
+              {isValidUrl(attachment) ? (
+                <MiniLink href={attachment}>预览已保存附件</MiniLink>
+              ) : (
+                // 遗留手填文本（非 URL）按纯文本展示，仅保留「移除」操作
+                <span className="truncate text-[13px] font-[430] text-graphite">{attachment}</span>
+              )}
               <button
                 type="button"
                 onClick={() => setValue("soft_detail_attachment", "", { shouldDirty: true })}
-                className="text-[13px] font-[430] text-error transition-colors hover:underline"
+                className="shrink-0 text-[13px] font-[430] text-error transition-colors hover:underline"
               >
                 移除
               </button>

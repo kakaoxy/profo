@@ -1,7 +1,8 @@
 "use client";
 
 import { logger } from "@/lib/logger";
-import { useEffect, useState } from "react";
+import { apiPaths, getClientApiUrl } from "@/lib/config";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -38,6 +39,23 @@ function toNumber(v: unknown): number | undefined {
   return isNaN(n) ? undefined : n;
 }
 
+/** 删除本次会话上传但未随表单保存的孤儿文件（fire-and-forget）.
+
+ * keepalive 保证「取消后整页刷新」场景请求仍能送达；失败静默——
+ * 孤儿文件不阻塞业务，后端仍按「仍被引用禁止删除」兜底防误删。
+ * Cookie 认证的非安全方法须携带 X-Requested-With 过 CSRF 中间件（与上传一致）。
+ */
+function deleteUnsavedUpload(url: string): void {
+  void fetch(`${getClientApiUrl(apiPaths.files.upload)}?url=${encodeURIComponent(url)}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+    keepalive: true,
+  }).catch(() => {
+    // 清理失败静默处理
+  });
+}
+
 export function RenovationContractForm({ projectId, area }: RenovationContractFormProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -69,6 +87,25 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
       other_fee_reason: "",
     },
   });
+
+  // 本编辑会话内上传成功的附件 URL（含随后被覆盖/移除的），用于取消/未保存时清理孤儿文件
+  const sessionUploadsRef = useRef<Set<string>>(new Set());
+  // 服务端当前已持久化的附件值：清理时排除，避免误删已保存文件
+  const savedAttachmentRef = useRef<string>("");
+
+  /** 删除会话内上传但未保存的孤儿文件（保存成功/取消/卸载时调用）. */
+  const cleanupUnsavedUploads = useCallback(() => {
+    const saved = savedAttachmentRef.current;
+    for (const url of sessionUploadsRef.current) {
+      if (url !== saved) {
+        deleteUnsavedUpload(url);
+      }
+    }
+    sessionUploadsRef.current.clear();
+  }, []);
+
+  // 卸载时清理：覆盖「SPA 内导航离开、未点保存/取消」的场景
+  useEffect(() => cleanupUnsavedUploads, [cleanupUnsavedUploads]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -125,6 +162,7 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
             other_extra_fee: toNumber(data.other_extra_fee),
             other_fee_reason: (data.other_fee_reason as string) || "",
           });
+          savedAttachmentRef.current = (data.soft_detail_attachment as string) || "";
         } else {
           setError(result.message || "加载数据失败");
         }
@@ -162,6 +200,9 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
       const result = await updateRenovationContractAction(projectId, payload);
 
       if (result.success) {
+        // 已保存值之外的会话内上传（如连续上传两个文件只保留后者）此刻成为孤儿 → 清理
+        savedAttachmentRef.current = values.soft_detail_attachment ?? "";
+        cleanupUnsavedUploads();
         toast.success("装修合同信息已保存");
         setIsEditing(false);
       } else {
@@ -176,6 +217,8 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
   };
 
   const handleCancel = () => {
+    // 取消：会话内上传的文件均未保存 → 全部清理（keepalive 请求在整页刷新后仍送达）
+    cleanupUnsavedUploads();
     setIsEditing(false);
     window.location.reload();
   };
@@ -262,7 +305,12 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
           isLoadingUsers={isLoadingUsers}
         />
         <TimeSection values={values} setValue={setValue} isEditing={isEditing} />
-        <DecorationCostSection values={values} setValue={setValue} isEditing={isEditing} />
+        <DecorationCostSection
+          values={values}
+          setValue={setValue}
+          isEditing={isEditing}
+          onAttachmentUploaded={(url) => sessionUploadsRef.current.add(url)}
+        />
         <OtherFeesSection values={values} setValue={setValue} isEditing={isEditing} />
         <CostSummarySection values={values} area={area} />
       </div>

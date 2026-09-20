@@ -8,18 +8,19 @@ from pathlib import Path
 from typing import Annotated
 
 import filetype
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from db import get_db
 from dependencies.auth import LeadUploadPhotoPermDep
-from services.system.exceptions import FileProcessingError, ValidationError
+from services.projects.core import attachment_url_in_use
+from services.system.exceptions import BusinessLogicError, FileProcessingError, ValidationError
 from settings import settings
 from utils.common import RateLimits, limiter
 from utils.file_security import get_safe_file_path, sanitize_filename
 from utils.image_processing import generate_thumbnail
-from utils.storage import get_storage_backend
+from utils.storage import extract_storage_key, get_storage_backend
 
 router = APIRouter(prefix="/files", tags=["files"])
 logger = logging.getLogger(__name__)
@@ -149,3 +150,37 @@ def upload_file(
     速率限制：50次/小时（防止资源耗尽攻击）.
     """
     return save_upload_file(file, request)
+
+
+@router.delete("/upload", summary="删除已上传文件（孤儿文件清理）")
+def delete_uploaded_file(
+    _current_user: LeadUploadPhotoPermDep,
+    url: Annotated[str, Query(max_length=500, description="上传接口返回的文件 URL")],
+    db: Annotated[Session, Depends(get_db)],
+) -> dict:
+    """删除本次会话上传但未随表单保存的孤儿文件.
+
+    供前端「上传后取消/未保存」场景清理物理文件。安全约束：
+    - 仅接受可反解为本存储后端键的 URL（extract_storage_key 校验前缀与路径安全，
+      挡住外部域名与路径穿越），外部 URL 一律拒绝
+    - URL 仍被任意项目附件库（signing_materials）引用时拒绝删除，
+      防止误删共享文件弄坏附件库条目
+    - 幂等：文件不存在也返回成功
+    """
+    key = extract_storage_key(url)
+    if key is None:
+        msg = "无法识别的文件 URL"
+        raise ValidationError(msg)
+
+    if attachment_url_in_use(db, url):
+        msg = "文件仍被项目附件库引用，禁止删除"
+        raise BusinessLogicError(msg)
+
+    try:
+        get_storage_backend().delete_file(key)
+    except Exception:
+        logger.exception("文件删除失败: %s", key)
+        msg = "文件删除失败，请稍后重试"
+        raise FileProcessingError(msg) from None
+
+    return {"deleted": True}

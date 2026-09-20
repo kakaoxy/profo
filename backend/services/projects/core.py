@@ -32,6 +32,23 @@ if TYPE_CHECKING:
     from models import User
 
 
+def attachment_url_in_use(db: Session, url: str) -> bool:
+    """检查附件 URL 是否仍被任意项目的附件库（ProjectContract.signing_materials）引用.
+
+    供装修合同附件替换清理、孤儿文件删除端点等共用：URL 仍被引用时禁止物理删除，
+    防止共享文件被误删（如运营曾把手填链接字段填成附件库文件 URL）。
+
+    兼容两种历史格式：dict（filename/url/category/fileType/size）与纯 URL 字符串。
+    仅取 signing_materials 单列全表扫描（项目量为百级，内存扫描可接受）。
+    """
+    rows = db.query(ProjectContract.signing_materials).filter(ProjectContract.is_deleted.is_(False)).all()
+    for (materials,) in rows:
+        for item in materials or []:
+            if item == url or (isinstance(item, dict) and item.get("url") == url):
+                return True
+    return False
+
+
 class ProjectCoreService:
     """项目核心业务服务 (Facade 模式).
 
