@@ -5,6 +5,7 @@
 注意：已适配新的规范化表结构，装修信息使用 ProjectRenovation 表
 """
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -16,6 +17,9 @@ from models import Project, ProjectRenovation, RenovationPhoto
 from models.common import ProjectStatus, RenovationStage
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
 from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
+from utils.storage import extract_storage_key, get_storage_backend
+
+logger = logging.getLogger(__name__)
 
 # 允许更新的装修字段白名单（防止设置 id/is_deleted 等敏感字段）
 _RENOVATION_ALLOWED_FIELDS = {
@@ -45,6 +49,21 @@ _RENOVATION_ALLOWED_FIELDS = {
     "other_extra_fee",
     "other_fee_reason",
 }
+
+
+def _delete_storage_file(url: str) -> None:
+    """删除存储中的物理文件（best-effort：解析失败或删除失败仅记日志，不抛异常）.
+
+    用于软装明细附件被移除/替换后清理旧文件，避免孤儿文件堆积。
+    """
+    key = extract_storage_key(url)
+    if key is None:
+        logger.warning("装修合同：无法从附件 URL 反解存储键，跳过删除: %s", url)
+        return
+    try:
+        get_storage_backend().delete_file(key)
+    except Exception:
+        logger.exception("装修合同：删除旧附件文件失败（不影响保存结果）: %s", key)
 
 
 class RenovationService:
@@ -412,6 +431,9 @@ class RenovationService:
 
         # 更新字段（使用白名单过滤，防止设置敏感字段）
         update_data = contract_data.model_dump(exclude_unset=True)
+        # 附件被移除/替换前先记下旧值，保存成功后删除其物理文件（方案 A：保存时清理）
+        # 注：value is not None 过滤会让显式 null 被跳过，故此处「旧值 != 新值」不会误判
+        old_attachment = renovation.soft_detail_attachment if "soft_detail_attachment" in update_data else None
         for field, value in update_data.items():
             if field in _RENOVATION_ALLOWED_FIELDS and value is not None:
                 setattr(renovation, field, value)
@@ -419,6 +441,10 @@ class RenovationService:
         renovation.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(renovation)
+
+        # 旧附件已不再被引用 → 删除物理文件（失败只记日志，保存结果不受影响）
+        if old_attachment and old_attachment != renovation.soft_detail_attachment:
+            _delete_storage_file(old_attachment)
 
         return renovation
 

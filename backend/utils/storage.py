@@ -10,6 +10,7 @@
 """
 
 import logging
+import re
 import shutil
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -116,6 +117,49 @@ class OSSStorage:
         """删除 OSS 对象（幂等，不存在返回 204）."""
         self._bucket.delete_object(key)
         return True
+
+
+# 本地静态文件 URL 前缀（与 LocalStorage.upload_file 的返回值约定一致）
+_STATIC_UPLOADS_PREFIX = "/static/uploads/"
+
+# 存储键白名单：首字符为字母/数字，其余允许字母/数字/点/下划线/连字符/斜杠。
+# 借此排除 .. 与反斜杠等路径穿越写法，避免 delete_file 被用于删除任意路径。
+_STORAGE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+
+
+def extract_storage_key(url: str | None) -> str | None:
+    """从文件访问 URL 反解出存储键（即 ``upload_file`` 的 ``key``）.
+
+    支持两种形态（与 ``upload_file`` 的返回值互为逆运算）：
+    - local: ``/static/uploads/{key}``
+    - oss:   ``{settings.oss_public_base_url}/{key}``
+
+    无法识别、或 key 不安全（含 ``..`` / 反斜杠 / 非法字符）时返回 None，
+    调用方据此跳过删除，避免误删任意路径。
+
+    Examples:
+        >>> extract_storage_key("/static/uploads/20260722_abc.pdf")
+        '20260722_abc.pdf'
+
+    """
+    if not url:
+        return None
+
+    # 剥离 query string / fragment（图片处理参数、签名 URL 参数）
+    candidate = url.strip().split("?", 1)[0].split("#", 1)[0]
+
+    if candidate.startswith(_STATIC_UPLOADS_PREFIX):
+        key = candidate[len(_STATIC_UPLOADS_PREFIX) :]
+    else:
+        base = (settings.oss_public_base_url or "").rstrip("/")
+        # 必须匹配 `{base}/` 前缀：可挡住 https://cdn.example.com.evil.com 这类前缀绕过
+        if not base or not candidate.startswith(f"{base}/"):
+            return None
+        key = candidate[len(base) + 1 :]
+
+    if not key or ".." in key or "\\" in key or not _STORAGE_KEY_PATTERN.match(key):
+        return None
+    return key
 
 
 _storage_backend: StorageBackend | None = None

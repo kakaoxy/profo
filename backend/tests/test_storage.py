@@ -10,7 +10,13 @@ from unittest.mock import patch
 import pytest
 
 from utils import storage as storage_module
-from utils.storage import LocalStorage, OSSStorage, StorageBackend, get_storage_backend
+from utils.storage import (
+    LocalStorage,
+    OSSStorage,
+    StorageBackend,
+    extract_storage_key,
+    get_storage_backend,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -310,3 +316,52 @@ class TestGetStorageBackend:
         backend = get_storage_backend()
 
         assert isinstance(backend, LocalStorage)
+
+
+class TestExtractStorageKey:
+    """从访问 URL 反解存储键（与 upload_file 互为逆运算）."""
+
+    def test_local_url(self) -> None:
+        """本地模式 /static/uploads/{key} → {key}."""
+        assert extract_storage_key("/static/uploads/20260722_abc.pdf") == "20260722_abc.pdf"
+
+    def test_local_url_strips_query_string(self) -> None:
+        """剥离 query string（图片处理参数 / 签名 URL）."""
+        assert extract_storage_key("/static/uploads/a.pdf?x-oss-process=style/profo") == "a.pdf"
+        assert extract_storage_key("/static/uploads/a.pdf?v=1#frag") == "a.pdf"
+
+    def test_local_url_nested_key(self) -> None:
+        """支持子目录 key（如 thumbs/xxx.webp）."""
+        assert extract_storage_key("/static/uploads/thumbs/abc.webp") == "thumbs/abc.webp"
+
+    def test_oss_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """OSS 模式 {oss_public_base_url}/{key} → {key}."""
+        monkeypatch.setattr(storage_module.settings, "oss_public_base_url", "https://cdn.example.com")
+        assert extract_storage_key("https://cdn.example.com/20260722_abc.pdf") == "20260722_abc.pdf"
+
+    def test_oss_url_requires_configured_base(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """oss_public_base_url 未配置 → 无法反解，返回 None."""
+        monkeypatch.setattr(storage_module.settings, "oss_public_base_url", None)
+        assert extract_storage_key("https://cdn.example.com/a.pdf") is None
+
+    def test_rejects_foreign_host(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """非白名单 hostname 一律拒绝（含前缀绕过写法）."""
+        monkeypatch.setattr(storage_module.settings, "oss_public_base_url", "https://cdn.example.com")
+        assert extract_storage_key("https://cdn.example.com.evil.com/a.pdf") is None
+        assert extract_storage_key("https://cdn.example.com@evil.com/a.pdf") is None
+        assert extract_storage_key("https://evil.com/a.pdf") is None
+
+    def test_rejects_path_traversal(self) -> None:
+        """含 .. 的 key 一律拒绝，避免删除任意路径."""
+        assert extract_storage_key("/static/uploads/../../etc/passwd") is None
+        assert extract_storage_key("/static/uploads/a/../../b.pdf") is None
+
+    def test_rejects_backslash(self) -> None:
+        """含反斜杠的 key 一律拒绝（Windows 路径分隔符）."""
+        assert extract_storage_key("/static/uploads/..\\a.pdf") is None
+
+    def test_rejects_empty_and_plain_name(self) -> None:
+        """空值 / 非 URL 形态的裸文件名 → None."""
+        assert extract_storage_key(None) is None
+        assert extract_storage_key("") is None
+        assert extract_storage_key("just-a-name.pdf") is None
