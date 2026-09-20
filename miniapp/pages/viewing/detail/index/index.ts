@@ -11,6 +11,7 @@ import { request } from "../../../../utils/request";
 import { getAccessToken } from "../../../../utils/token";
 import { pad2 } from "../../../../utils/format";
 import { parseSalesRecords } from "../../utils/sales-records";
+import { buildPickerState, normalizePicker, type DateTimePickerState } from "../../utils/datetime-picker";
 
 type SalesRecordResponse = components["schemas"]["SalesRecordResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
@@ -39,23 +40,6 @@ const ADD_PATH: Record<TabType, string> = {
   negotiation: "/selling/negotiations",
 };
 
-/** 日期时间选择器 · 年列跨度（上一年～下一年，共 3 项）. */
-const DT_YEAR_SPAN = 1;
-/** 日期时间选择器 · 月/时/分列文案（固定列）. */
-const DT_MONTHS = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
-const DT_HOURS = Array.from({ length: 24 }, (_, i) => `${pad2(i)}时`);
-const DT_MINUTES = Array.from({ length: 60 }, (_, i) => `${pad2(i)}分`);
-
-/** 指定年月的天数. */
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
-}
-
-/** 日列文案（1~count 日）. */
-function dayLabels(count: number): string[] {
-  return Array.from({ length: count }, (_, i) => `${i + 1}日`);
-}
-
 /** 带看列表项展示结构. */
 interface DisplayViewing {
   id: string;
@@ -81,7 +65,7 @@ interface DisplayNegotiation {
 }
 
 /** 页面 data. */
-interface PageData {
+interface PageData extends DateTimePickerState {
   state: "loading" | "error" | "needLogin" | "noPermission" | "ready";
   projectName: string;
   listingDaysText: string;
@@ -96,14 +80,6 @@ interface PageData {
   formOpen: boolean;
   submitting: boolean;
   deleting: boolean;
-  /** 日期时间选择器 · 年列起始年（年列 = 起始年起 3 项）. */
-  dtYearStart: number;
-  /** 日期时间选择器 · 五列选项（年/月/日/时/分）. */
-  dtRange: string[][];
-  /** 日期时间选择器 · 五列选中下标. */
-  dtValue: number[];
-  /** 日期时间选择器 · 触发行展示文本（YYYY-MM-DD HH:mm）. */
-  dtText: string;
   formPerson: string;
   formPrice: string;
   formNotes: string;
@@ -122,6 +98,7 @@ interface PageCustom {
   formatShort(iso: string): string;
   formatFull(iso: string): string;
   initDateTimePicker(d: Date): void;
+  onDtColumnChange(e: WechatMiniprogram.CustomEvent<{ column: number; value: number }>): void;
   onDtChange(e: WechatMiniprogram.PickerChange): void;
   formatRecordDate(): string;
   applyProject(project: ProjectResponse): void;
@@ -326,36 +303,22 @@ Page<PageData, PageCustom>({
 
   /** 按给定时间构建五列（年/月/日/时/分）选择器并定位默认选中项. */
   initDateTimePicker(d: Date): void {
-    const y = d.getFullYear();
-    const start = y - DT_YEAR_SPAN;
-    const dim = daysInMonth(y, d.getMonth() + 1);
-    this.setData({
-      dtYearStart: start,
-      dtRange: [
-        Array.from({ length: DT_YEAR_SPAN * 2 + 1 }, (_, i) => `${start + i}年`),
-        DT_MONTHS,
-        dayLabels(dim),
-        DT_HOURS,
-        DT_MINUTES,
-      ],
-      dtValue: [DT_YEAR_SPAN, d.getMonth(), d.getDate() - 1, d.getHours(), d.getMinutes()],
-      dtText: `${y}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
-    });
+    this.setData(buildPickerState(d));
+  },
+
+  /** 年/月列滚动 → 重建日列（multiSelector 联动必须走 bindcolumnchange，bindchange 只在确定时触发）. */
+  onDtColumnChange(e: WechatMiniprogram.CustomEvent<{ column: number; value: number }>) {
+    const { column, value } = e.detail;
+    if (column !== 0 && column !== 1) {
+      return;
+    }
+    const picked = [...this.data.dtValue];
+    picked[column] = value;
+    this.setData(normalizePicker(this.data, picked));
   },
 
   onDtChange(e: WechatMiniprogram.PickerChange) {
-    const v = e.detail.value as number[];
-    const year = this.data.dtYearStart + v[0];
-    const dim = daysInMonth(year, v[1] + 1);
-    // 年/月变化后重建日列，并夹紧原选中日避免越界
-    const di = Math.min(v[2], dim - 1);
-    const range = [...this.data.dtRange];
-    range[2] = dayLabels(dim);
-    this.setData({
-      dtRange: range,
-      dtValue: [v[0], v[1], di, v[3], v[4]],
-      dtText: `${year}-${pad2(v[1] + 1)}-${pad2(di + 1)} ${pad2(v[3])}:${pad2(v[4])}`,
-    });
+    this.setData(normalizePicker(this.data, e.detail.value as number[]));
   },
 
   /** 由选择器下标拼 record_date（秒固定 00）. */

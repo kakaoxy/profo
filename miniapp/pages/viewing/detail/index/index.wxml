@@ -142,6 +142,7 @@
           mode="multiSelector"
           range="{{dtRange}}"
           value="{{dtValue}}"
+          bindcolumnchange="onDtColumnChange"
           bindchange="onDtChange"
         >
           <view class="form-value form-value--picker">{{dtText}}</view>
