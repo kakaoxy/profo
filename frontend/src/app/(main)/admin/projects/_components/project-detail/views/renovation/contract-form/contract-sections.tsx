@@ -3,7 +3,6 @@
 import { Eye } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,10 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { FileUploader } from "@/components/common/upload";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
-import { isValidUrl } from "@/lib/validators";
+import { formatFileSize } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE_BY_TYPE } from "../../../attachment-types";
 import { DatePickerField, NumberInputField, TextInputField } from "./form-fields";
 import { formatWanAmount } from "./cost-summary";
 import { RenovationContractFormValues } from "./schema";
@@ -31,6 +32,26 @@ interface ContractSectionsProps {
   values: RenovationContractFormValues;
   setValue: UseFormSetValue<RenovationContractFormValues>;
   isEditing: boolean;
+}
+
+/** 软装明细附件：仅 Excel / PDF，单文件最大 100MB（与 attachment-types 文档类限额一致） */
+const SOFT_LIST_EXTENSIONS = [".xlsx", ".xls", ".pdf"];
+const SOFT_LIST_MIME_TYPES = [
+  ...ALLOWED_FILE_TYPES.excel.mimeTypes,
+  ...ALLOWED_FILE_TYPES.pdf.mimeTypes,
+];
+const SOFT_LIST_MAX_SIZE = MAX_FILE_SIZE_BY_TYPE.excel;
+
+/** 软装明细附件上传校验：扩展名白名单 + 100MB 上限；返回错误文案，通过返回 null. */
+function validateSoftListFile(file: File): string | null {
+  const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  if (!SOFT_LIST_EXTENSIONS.includes(ext)) {
+    return "仅支持 Excel（.xlsx/.xls）或 PDF 文件";
+  }
+  if (file.size > SOFT_LIST_MAX_SIZE) {
+    return `文件大小超过限制（最大 ${formatFileSize(SOFT_LIST_MAX_SIZE)}）`;
+  }
+  return null;
 }
 
 /** 设计稿 .group-title：13px 大写 graphite + 右侧分隔线（间距由外层 space-y 控制） */
@@ -232,9 +253,9 @@ export function TimeSection({ values, setValue, isEditing }: ContractSectionsPro
 
 // 装修费用（硬装合同额+软装预算+定制柜+窗户更换+墙面处理；设计稿 1296-1306）
 export function DecorationCostSection({ values, setValue, isEditing }: ContractSectionsProps) {
+  const attachment = values.soft_detail_attachment?.trim();
   // 只读态：金额统一「N.N 万元」；软装明细附件全宽 + 预览 mini-link
   if (!isEditing) {
-    const attachment = values.soft_detail_attachment?.trim();
     return (
       <div>
         <GroupTitle>装修费用</GroupTitle>
@@ -246,10 +267,7 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
           <InfoItem k="墙面处理" v={formatWanAmount(values.wall_treatment_amount)} />
           <InfoItem k="软装明细附件" full>
             {attachment ? (
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-[14.5px] font-[450] text-ink">{attachment}</span>
-                {isValidUrl(attachment) && <MiniLink href={attachment}>预览</MiniLink>}
-              </span>
+              <MiniLink href={attachment}>预览</MiniLink>
             ) : (
               <span className="text-[14.5px] font-[400] text-dove">-</span>
             )}
@@ -303,16 +321,36 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
           disabled={!isEditing}
           suffix="元"
         />
-        {/* 软装明细附件（full-width 行）：值为链接时可预览，否则按文本展示 */}
+        {/* 软装明细附件：上传 Excel/PDF（≤100MB），成功后写入附件 URL */}
         <div className="col-span-3 space-y-2">
           <Label className="text-xs font-medium text-muted-foreground">软装明细附件</Label>
-          <Input
-            type="text"
-            placeholder="请输入软装明细附件链接"
-            value={values.soft_detail_attachment ?? ""}
-            onChange={(e) => setValue("soft_detail_attachment", e.target.value)}
-            className="h-9 text-sm"
+          <FileUploader
+            options={{
+              allowedTypes: SOFT_LIST_MIME_TYPES,
+              multiple: false,
+              validateFile: validateSoftListFile,
+            }}
+            onUploadComplete={(response) => {
+              if (response.url) {
+                setValue("soft_detail_attachment", response.url, { shouldDirty: true });
+              }
+            }}
+            title="点击或拖拽文件到此处上传"
+            description="支持 Excel（.xlsx/.xls）、PDF 格式，单文件最大 100MB"
+            className="space-y-2"
           />
+          {attachment && (
+            <div className="flex items-center gap-3">
+              <MiniLink href={attachment}>预览已保存附件</MiniLink>
+              <button
+                type="button"
+                onClick={() => setValue("soft_detail_attachment", "", { shouldDirty: true })}
+                className="text-[13px] font-[430] text-error transition-colors hover:underline"
+              >
+                移除
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
