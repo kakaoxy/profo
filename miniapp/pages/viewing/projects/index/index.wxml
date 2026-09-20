@@ -42,10 +42,12 @@
     >
       <view class="card-header">
         <view class="card-name">{{item.name}}</view>
-        <view
-          class="status-badge"
-          style="color: {{item.statusColor}}; background: {{item.statusColor}}1A;"
-        >{{item.statusText}}</view>
+        <view class="offer-info">
+          <view
+            class="offer-info__max {{item.hasOffer ? 'offer-info__max--on' : ''}}"
+          >最高出价：{{item.maxOfferText}}</view>
+          <view class="offer-info__time" wx:if="{{item.offerTimeText}}">出价时间：{{item.offerTimeText}}</view>
+        </view>
       </view>
       <view class="card-counts">
         <view class="count-item">

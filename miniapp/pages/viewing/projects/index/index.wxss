@@ -36,12 +36,27 @@
   color: var(--ink);
   overflow-wrap: break-word;
 }
-.status-badge {
+
+/* 卡片右上角：最高出价 / 出价时间（两行文本块） */
+.offer-info {
   flex-shrink: 0;
-  padding: 4rpx 16rpx;
-  border-radius: 999rpx;
-  font-size: 22rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4rpx;
+}
+.offer-info__max {
+  font-size: 24rpx;
   font-weight: 500;
+  color: var(--graphite);
+  white-space: nowrap;
+}
+.offer-info__max--on {
+  color: var(--rust);
+}
+.offer-info__time {
+  font-size: 22rpx;
+  color: var(--dove);
   white-space: nowrap;
 }
 .card-counts {
