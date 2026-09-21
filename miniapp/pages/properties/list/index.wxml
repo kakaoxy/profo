@@ -141,9 +141,14 @@
         <view class="skeleton-block skeleton-card__thumb"></view>
         <view class="skeleton-card__body">
           <view class="skeleton-block skeleton-card__line w-70"></view>
-          <view class="skeleton-block skeleton-card__line w-90"></view>
-          <view class="skeleton-block skeleton-card__line w-50 h-20"></view>
-          <view class="skeleton-block skeleton-card__line w-40"></view>
+          <view class="skeleton-card__main">
+            <view class="skeleton-card__left">
+              <view class="skeleton-block skeleton-card__line w-90"></view>
+              <view class="skeleton-block skeleton-card__line w-90"></view>
+              <view class="skeleton-block skeleton-card__line w-70"></view>
+            </view>
+            <view class="skeleton-block skeleton-card__price"></view>
+          </view>
         </view>
       </view>
     </block>
@@ -198,14 +203,22 @@
             <view class="prop-name">{{item.communityName}}</view>
             <view class="prop-status {{item.statusClass}}">{{item.statusText}}</view>
           </view>
-          <view class="prop-meta">{{item.meta}}</view>
-          <view class="prop-price">
-            <text class="prop-price__sym">¥</text>
-            <text class="prop-price__num">{{item.totalPrice}}</text>
-            <text class="prop-price__unit">万</text>
-            <text class="prop-price__unit-price">{{item.unitPriceText}}</text>
+          <!-- 下半部两栏：左「基础信息 + 位置 + 备注」 / 右「总价 + 单价」，两栏底部对齐 -->
+          <view class="prop-main">
+            <view class="prop-main__left">
+              <view class="prop-meta">{{item.meta}}</view>
+              <view class="prop-loc">{{item.loc}}</view>
+              <view wx:if="{{item.remark}}" class="prop-remark">{{item.remark}}</view>
+            </view>
+            <view class="prop-price">
+              <view class="prop-price__total">
+                <text class="prop-price__sym">¥</text>
+                <text class="prop-price__num">{{item.totalPrice}}</text>
+                <text class="prop-price__unit">万</text>
+              </view>
+              <text class="prop-price__unit-price">{{item.unitPriceText}}</text>
+            </view>
           </view>
-          <view class="prop-loc">{{item.loc}}</view>
         </view>
       </view>
 

@@ -23,6 +23,8 @@ interface DisplayProperty {
   totalPrice: number;
   unitPriceText: string;
   loc: string;
+  /** 挂牌备注（已 trim；空串表示无备注，WXML 据此隐藏该行）. */
+  remark: string;
   thumb: string;
 }
 
@@ -261,6 +263,7 @@ Page<PageData, PageCustom>({
       totalPrice: p.total_price,
       unitPriceText: `${formatThousand(p.unit_price)}元/㎡`,
       loc: locParts.join(" · "),
+      remark: (p.listing_remarks ?? "").trim(),
       thumb: resolveAssetUrl(getFloorPlan(p.data_source, p.picture_links)),
     };
   },

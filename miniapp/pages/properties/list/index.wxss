@@ -370,18 +370,41 @@ page {
   color: var(--status-sold-fg);
 }
 .prop-meta {
-  font-size: 24rpx;
+  /* 并入左栏后可用宽度收窄，字号降到与位置/备注一致，避免户型信息被截断 */
+  font-size: 22rpx;
   color: var(--warm-muted-fg);
-  line-height: 1.4;
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 卡片下半部：左「基础信息 + 位置 + 备注」 / 右「总价 + 单价」两栏 */
+.prop-main {
+  display: flex;
+  /* 两栏底部对齐：单价与左侧备注下沿齐平 */
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 2rpx;
+}
+.prop-main__left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
 .prop-price {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2rpx;
+}
+.prop-price__total {
   display: flex;
   align-items: baseline;
   gap: 4rpx;
-  margin-top: 4rpx;
 }
 .prop-price__sym {
   font-size: 24rpx;
@@ -401,9 +424,16 @@ page {
 .prop-price__unit-price {
   font-size: 22rpx;
   color: var(--warm-muted-fg);
-  margin-left: 12rpx;
 }
 .prop-loc {
+  font-size: 22rpx;
+  color: var(--warm-muted-fg);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prop-remark {
   font-size: 22rpx;
   color: var(--warm-muted-fg);
   line-height: 1.3;
@@ -550,14 +580,25 @@ page {
 .skeleton-card__line.w-90 {
   width: 90%;
 }
-.skeleton-card__line.w-50 {
-  width: 50%;
+.skeleton-card__main {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 4rpx;
 }
-.skeleton-card__line.w-40 {
-  width: 40%;
+.skeleton-card__left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
 }
-.skeleton-card__line.h-20 {
-  height: 40rpx;
+.skeleton-card__price {
+  width: 135rpx;
+  height: 52rpx;
+  border-radius: 8rpx;
+  flex-shrink: 0;
 }
 
 /* 底部安全区 */
