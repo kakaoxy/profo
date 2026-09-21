@@ -9,6 +9,12 @@
  * - 触底加载按「已处理优先、待评估兜底」分派（已处理组物理位于页面底部）。
  * 分页范式严格套用 pages/valuation/list（epoch 竞态守卫 / 触底三重拦截 / 翻页回滚 /
  * 索引路径局部 setData / 403 引导空态）。
+ * 滚动位置保持：从详情页（跟进/授权）navigateBack 返回时 onShow 走「保量刷新」
+ * （按各自已加载页数并行重拉双段，内容量不塌缩），完成后按跳转前记录的线索 id
+ * 精准回位（pageScrollTo selector），未命中再回退恢复 scrollTop；下拉/搜索/重试
+ * 仍走 reset 式 loadList(true) 回顶重置。
+ * 【不拆分说明】本文件 > 500 行：页面为双段长列表（触底分派 + 保量刷新 + 回位共用同一份
+ * 状态与映射函数），拆分会割裂 epoch 竞态守卫与索引重建逻辑，故保持单文件（长列表页豁免）。
  * 视觉遵循 Steep 设计体系（eval-auth-hifi.html 屏B）一比一还原。
  */
 import type { components } from "../../../types/api-types";
@@ -116,8 +122,20 @@ interface PageCustom {
   _rawById: Record<string, QueueItem>;
   /** 原始已处理项索引（id → 已处理项），供跳转只读详情时经 EventChannel 传递全景数据 */
   _handledById: Record<string, HandledItem>;
+  /** 滚动位置跟踪：onPageScroll 持续记录，保量刷新后 selector 未命中时 scrollTop 兜底恢复用 */
+  _lastScrollTop: number;
+  /** 跳转详情前记录的线索 id：保量刷新完成后精准回位到该卡，消费后即清空 */
+  _returnFocusId: string;
+  /** 保量刷新进行中：拦截触底翻页，避免与整体替换 setData 竞态 */
+  _refreshing: boolean;
   loadList(reset?: boolean, silent?: boolean): void;
   loadHandledMore(): Promise<void>;
+  /** 返回场景保量刷新：按各自已加载页数并行重拉双段并精准回位（不重置到第 1 页） */
+  refreshKeepingDepth(): Promise<void>;
+  /** 刷新完成后回位：优先定位刚操作的线索卡，未命中则恢复记录的滚动位置 */
+  restoreReturnFocus(): void;
+  /** 主动刷新（下拉/搜索/重试）前清空回位锚点：用户预期回顶重置 */
+  clearReturnAnchor(): void;
   toPendingCard(item: QueueItem): PendingCard;
   toHandledCard(item: HandledItem): HandledCard;
   onSearchInput(e: WechatMiniprogram.Input): void;
@@ -176,6 +194,12 @@ Page<PageData, PageCustom>({
   _rawById: {},
 
   _handledById: {},
+
+  _lastScrollTop: 0,
+
+  _returnFocusId: "",
+
+  _refreshing: false,
 
   toPendingCard(item: QueueItem): PendingCard {
     const src = sourceParts(item.source);
@@ -238,12 +262,17 @@ Page<PageData, PageCustom>({
       this.setData({ needLogin: true, loading: false, loadingMore: false });
       return;
     }
-    if (this.data.pendingItems.length === 0) {
+    if (this.data.pendingItems.length === 0 && this.data.handledItems.length === 0) {
       this.loadList(true, false);
     } else {
-      // 已有数据：静默刷新（授权操作 navigateBack 返回时触发，同步双段）
-      this.loadList(true, true);
+      // 已有数据（详情页 navigateBack 返回）：保量刷新并回位，
+      // 避免重置到第 1 页导致内容塌缩、滚动位置丢失
+      this.refreshKeepingDepth();
     }
+  },
+
+  onPageScroll(e: { scrollTop: number }) {
+    this._lastScrollTop = e.scrollTop;
   },
 
   async loadList(reset = false, silent = false) {
@@ -413,9 +442,151 @@ Page<PageData, PageCustom>({
     }
   },
 
+  /**
+   * 返回场景保量刷新：按各自已加载页数并行重拉双段（page=1..N，页序拼接 + id 去重，
+   * 吸收期间新增/流转导致的页边界条目平移），整体替换后内容量与刷新前一致（不塌缩），
+   * 原生滚动位置得以保留；完成后按 _returnFocusId 精准回位。
+   * 失败时保留旧数据（数据可能略旧但不跳顶），仅 toast 提示。
+   * ⚠️ 与主动刷新语义不同：下拉/搜索/重试仍走 loadList(true) 回顶重置。
+   */
+  async refreshKeepingDepth() {
+    if (!hasAnyToken()) {
+      this.setData({ needLogin: true, loading: false, loadingMore: false, handledLoadingMore: false });
+      return;
+    }
+    this._refreshing = true;
+    this._epoch += 1;
+    const myEpoch = this._epoch;
+    const search = this.data.search.trim();
+    const searchParams = search ? { search } : {};
+    // 按已加载数折算页数（ceil），比 data.page 更贴近实际行数（noMore 后两者一致）
+    const pendingPages = Math.max(1, Math.ceil(this.data.pendingItems.length / PAGE_SIZE));
+    const handledPages = Math.max(1, Math.ceil(this.data.handledItems.length / PAGE_SIZE));
+    try {
+      const [pendingPagesData, handledPagesData] = await Promise.all([
+        Promise.all(
+          Array.from({ length: pendingPages }, (_, i) =>
+            request<QueueResponse>({
+              url: "/public/leads/pending-assessment",
+              data: { page: i + 1, page_size: PAGE_SIZE, ...searchParams },
+            }),
+          ),
+        ),
+        Promise.all(
+          Array.from({ length: handledPages }, (_, i) =>
+            request<HandledResponse>({
+              url: "/public/leads/handled-assessment",
+              data: { page: i + 1, page_size: PAGE_SIZE, ...searchParams },
+            }),
+          ),
+        ),
+      ]);
+      if (myEpoch !== this._epoch) {
+        return; // 过期代整体丢弃
+      }
+      const rawPending: QueueItem[] = [];
+      const seenPending = new Set<string>();
+      pendingPagesData.forEach((d) => {
+        d.items_pending.forEach((it) => {
+          if (!seenPending.has(it.id)) {
+            seenPending.add(it.id);
+            rawPending.push(it);
+          }
+        });
+      });
+      const rawHandled: HandledItem[] = [];
+      const seenHandled = new Set<string>();
+      handledPagesData.forEach((d) => {
+        d.items.forEach((it) => {
+          if (!seenHandled.has(it.id)) {
+            seenHandled.add(it.id);
+            rawHandled.push(it);
+          }
+        });
+      });
+      // 重建原始项索引，供 onItemTap/onHandledTap 传递全景数据
+      this._rawById = {};
+      this._handledById = {};
+      rawPending.forEach((it) => {
+        this._rawById[it.id] = it;
+      });
+      rawHandled.forEach((it) => {
+        this._handledById[it.id] = it;
+      });
+      const pendingTotal = pendingPagesData[0].pending_total;
+      const pendingToday = pendingPagesData[0].pending_today;
+      const handledTotal = handledPagesData[0].handled_total;
+      this.setData(
+        {
+          pendingItems: rawPending.map((it) => this.toPendingCard(it)),
+          pendingTotal,
+          pendingToday,
+          // 页码收敛为实际加载页数（期间总数变少时按返回条数折算）
+          page: Math.max(1, Math.ceil(rawPending.length / PAGE_SIZE)),
+          noMore: rawPending.length >= pendingTotal,
+          handledItems: rawHandled.map((it) => this.toHandledCard(it)),
+          handledTotal,
+          handledPage: Math.max(1, Math.ceil(rawHandled.length / PAGE_SIZE)),
+          handledNoMore: rawHandled.length >= handledTotal,
+        },
+        () => {
+          this.restoreReturnFocus();
+        },
+      );
+    } catch (err) {
+      if (myEpoch !== this._epoch) {
+        return; // 过期请求不弹 toast、不切状态
+      }
+      const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+      if (statusCode === 403) {
+        // 无 admin/operator 角色：隐藏入口不发起后续调用
+        this.setData({ forbidden: true, pendingItems: [], handledItems: [] });
+      } else if (statusCode === 401) {
+        this.setData({ needLogin: true, pendingItems: [], handledItems: [] });
+      } else {
+        // 保量刷新失败：保留旧数据不塌缩、不跳顶，仅提示数据可能未更新
+        wx.showToast({ title: "刷新失败，数据可能未更新", icon: "none" });
+      }
+    } finally {
+      if (myEpoch === this._epoch) {
+        this._refreshing = false;
+      }
+    }
+  },
+
+  /** 刷新完成后回位：优先精准定位到跳转前记录的卡片，未命中则恢复记录的滚动位置. */
+  restoreReturnFocus() {
+    // 刷新期间用户可能已再次点卡进入详情：pageScrollTo 只作用于栈顶页，须跳过本次回位
+    // （保留 _returnFocusId 由二次跳转覆盖，返回后的下一轮刷新按最新锚点回位）
+    const pages = getCurrentPages();
+    if (pages[pages.length - 1] !== this) {
+      return;
+    }
+    const focusId = this._returnFocusId;
+    this._returnFocusId = "";
+    if (focusId) {
+      const exists =
+        this.data.pendingItems.some((it) => it.id === focusId) ||
+        this.data.handledItems.some((it) => it.id === focusId);
+      if (exists) {
+        wx.pageScrollTo({ selector: `[data-id="${focusId}"]`, duration: 0 });
+        return;
+      }
+    }
+    if (this._lastScrollTop > 0) {
+      wx.pageScrollTo({ scrollTop: this._lastScrollTop, duration: 0 });
+    }
+  },
+
+  /** 主动刷新（下拉/搜索/重试）前清空回位锚点：用户预期回顶重置，无需恢复位置. */
+  clearReturnAnchor() {
+    this._returnFocusId = "";
+    this._lastScrollTop = 0;
+  },
+
   onReachBottom() {
-    // 三重拦截：任一段加载中不重复触发
-    if (this.data.loading || this.data.loadingMore || this.data.handledLoadingMore) {
+    // 三重拦截：任一段加载中不重复触发（保量刷新期间一并拦截）
+    if (this._refreshing || this.data.loading || this.data.loadingMore || this.data.handledLoadingMore) {
       return;
     }
     // 已处理组物理位于页面底部，触底优先加载已处理段
@@ -433,6 +604,7 @@ Page<PageData, PageCustom>({
 
   async onPullDownRefresh() {
     // 下拉刷新重取双段；等 loadList 结束再停止动画
+    this.clearReturnAnchor();
     await this.loadList(true, true);
     wx.stopPullDownRefresh();
   },
@@ -443,6 +615,7 @@ Page<PageData, PageCustom>({
 
   onSearchConfirm() {
     // 搜索小区名称：search 随 reset 同时作用于待评估与已处理两段（服务端过滤）
+    this.clearReturnAnchor();
     this.loadList(true);
   },
 
@@ -451,6 +624,7 @@ Page<PageData, PageCustom>({
       return;
     }
     this.setData({ search: "" });
+    this.clearReturnAnchor();
     this.loadList(true);
   },
 
@@ -460,6 +634,8 @@ Page<PageData, PageCustom>({
     if (!raw) {
       return;
     }
+    // 记录回位锚点：返回后保量刷新完成时精准定位到本卡
+    this._returnFocusId = id;
     wx.navigateTo({
       url: `/pages/valuation/authorize/index?id=${id}`,
       success: (res) => {
@@ -476,6 +652,8 @@ Page<PageData, PageCustom>({
     if (!raw) {
       return;
     }
+    // 记录回位锚点：跟进/调整评估价提交返回后精准定位到本卡
+    this._returnFocusId = id;
     wx.navigateTo({
       url: `/pages/valuation/authorize/index?id=${id}&mode=view`,
       success: (res) => {
@@ -490,6 +668,7 @@ Page<PageData, PageCustom>({
   },
 
   onRetry() {
+    this.clearReturnAnchor();
     this.loadList(true);
   },
 });
