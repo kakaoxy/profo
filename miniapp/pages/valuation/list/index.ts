@@ -4,11 +4,21 @@
  * 具备 C 端身份的内部员工（后端按其 customer 身份签发 aud=c 令牌）可正常访问 C 端
  * /public/leads/mine 查看自己的评估；仅当请求返回 401（admin 令牌受众不匹配）或 403
  * （无 C 端身份）时，才展示内部限定态，而非误判为「登录已失效」清空有效登录态。
+ * 卡片骨架与令牌（lcard/stag/fresh）与评估工作台 evaluate 同源：状态标签走
+ * statusTagClass 令牌类（不消费后端 status_color 饱和色），时效标签复用
+ * utils/valuation-freshness 纯函数（仅 pending_visit/visited 出现）。
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
-import { formatDate, statusBadgeStyle } from "../../../utils/valuation-display";
+import { resolveImageUrl } from "../../../utils/url";
+import { statusTagClass } from "../../../utils/valuation-display";
+import {
+  cardTimeLabel,
+  FRESHNESS_LABELS,
+  freshnessLevel,
+  isFreshnessWindow,
+} from "../../../utils/valuation-freshness";
 import { fetchValuationSubscribeTemplate, requestValuationPriceSubscribe } from "../../../utils/valuation-notify";
 
 type LeadItem = components["schemas"]["PublicLeadListItem"];
@@ -16,15 +26,26 @@ type LeadItem = components["schemas"]["PublicLeadListItem"];
 /** 每页数量. */
 const PAGE_SIZE = 10;
 
-/** 列表项展示用统一结构. */
+/** 列表卡展示结构（与 evaluate 的 lcard 三段同构：top / mid / foot）. */
 interface DisplayItem {
   id: string;
-  community_name: string;
-  desc: string;
-  date: string;
-  badgeText: string;
-  badgeColor: string;
-  badgeBackground: string;
+  name: string;
+  tagText: string;
+  tagClass: string;
+  image: string;
+  /** 参数行一：户型 · 面积 · 楼层. */
+  l1: string;
+  /** 参数行二：区域 · 朝向. */
+  l2: string;
+  priceLabel: string;
+  priceValue: string;
+  priceUnit: string;
+  priceOk: boolean;
+  timeText: string;
+  /** 时效标签文案（「跟进中」等）；非跟进窗口为空串（右下角留空）. */
+  freshText: string;
+  /** 时效样式档（ok/soon/over）；空串不渲染. */
+  freshClass: string;
 }
 
 /** 页面 data. */
@@ -101,18 +122,44 @@ Page<PageData, PageCustom>({
   },
 
   toDisplay(item: LeadItem): DisplayItem {
-    const layout = item.layout || "";
-    const area = item.area != null ? `${item.area}㎡` : "";
-    const desc = [layout, area].filter(Boolean).join(" · ");
-    const badge = statusBadgeStyle(item.status_color);
+    // 参数行拼接：空段过滤，全空回退「—」（与 evaluate 的 attrsLine 同口径）
+    const l1 = [item.layout, item.area != null ? `${item.area}㎡` : "", item.floor_info].filter(Boolean).join(" · ");
+    const l2 = [item.district, item.orientation].filter(Boolean).join(" · ");
+    // 价格栈：评估价（绿）；未出价回退业主报价（墨）
+    const evaluated = item.eval_price != null;
+    const priceValue = evaluated
+      ? `${item.eval_price}`
+      : item.expected_price != null
+        ? `${item.expected_price}`
+        : "—";
+    // 左槽时间与右侧时效标签同源（同一份纯函数、同一套出现窗口）
+    const timeLabel = cardTimeLabel({
+      status: item.status,
+      lastFollowUpAt: item.last_follow_up_at,
+      auditTime: item.audit_time,
+      createdAt: item.created_at,
+    });
+    const fresh = isFreshnessWindow(item.status)
+      ? freshnessLevel(item.last_follow_up_at || item.audit_time)
+      : null;
     return {
       id: item.id,
-      community_name: item.community_name,
-      desc,
-      date: formatDate(item.created_at),
-      badgeText: item.status_display,
-      badgeColor: badge.color,
-      badgeBackground: badge.background,
+      name: item.community_name,
+      tagText: item.status_display,
+      tagClass: statusTagClass(item.status),
+      image:
+        item.image_thumbnails && item.image_thumbnails.length > 0
+          ? resolveImageUrl(item.image_thumbnails[0], { width: 240 })
+          : "",
+      l1: l1 || "—",
+      l2,
+      priceLabel: evaluated ? "评估价" : "业主报价",
+      priceValue,
+      priceUnit: priceValue === "—" ? "" : "万",
+      priceOk: evaluated,
+      timeText: `${timeLabel.prefix} ${timeLabel.text}`,
+      freshText: fresh ? FRESHNESS_LABELS[fresh] : "",
+      freshClass: fresh ?? "",
     };
   },
 

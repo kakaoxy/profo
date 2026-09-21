@@ -1,8 +1,10 @@
 <view class="page">
-  <!-- 计数行 -->
-  <view class="count-row" wx:if="{{!needLogin && !internalOnly && !error && items.length > 0}}">共 {{total}} 条评估</view>
+  <!-- 统计条（对齐 evaluate 的 evalmeta） -->
+  <view class="evalmeta" wx:if="{{!needLogin && !internalOnly && !error && items.length > 0}}">
+    <view class="evalmeta__big">共 <text class="evalmeta__num">{{total}}</text> 条评估</view>
+  </view>
 
-  <!-- 授权价提醒授权入口（后端已下发订阅模板 ID 且登录可见；一次性订阅，可多次点击积累额度） -->
+  <!-- 授权价提醒授权入口（结构保留，令牌换 nbanner 语义：Apricot 洗底 + 圆角） -->
   <view
     class="notify-banner"
     wx:if="{{!needLogin && !internalOnly && !error && notifyBanner}}"
@@ -35,26 +37,40 @@
     <view class="state__text">加载中...</view>
   </view>
 
-  <!-- 列表区 -->
+  <!-- 列表区（lcard 骨架：top 状态标签 / mid 缩略图+参数+价格栈 / foot 时间+时效标签） -->
   <block wx:if="{{!needLogin && !internalOnly && !error}}">
     <view
-      class="list-card"
+      class="lcard"
       wx:for="{{items}}"
       wx:key="id"
       bindtap="onItemTap"
       data-id="{{item.id}}"
     >
-      <view class="list-header">
-        <view class="list-title">{{item.community_name}}</view>
-        <view
-          class="badge"
-          style="color: {{item.badgeColor}}; background: {{item.badgeBackground}};"
-        >{{item.badgeText}}</view>
+      <view class="lcard__top">
+        <view class="lcard__nm">{{item.name}}</view>
+        <view class="stag stag--{{item.tagClass}}">{{item.tagText}}</view>
       </view>
-      <view class="list-desc">{{item.desc}}</view>
-      <view class="list-footer">
-        <view class="list-date">{{item.date}}</view>
-        <view class="chevron">›</view>
+      <view class="lcard__mid">
+        <image class="thumb" wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFill" lazy-load />
+        <view class="thumb thumb--empty" wx:else></view>
+        <view class="attrs">
+          <view class="attrs__l1">{{item.l1}}</view>
+          <view class="attrs__l2" wx:if="{{item.l2}}">{{item.l2}}</view>
+        </view>
+        <view class="pricest">
+          <view class="pricest__lb">{{item.priceLabel}}</view>
+          <view class="pricest__vl {{item.priceOk ? 'pricest__vl--ok' : ''}}">
+            {{item.priceValue}}<text class="pricest__unit" wx:if="{{item.priceUnit}}">{{item.priceUnit}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="lcard__foot">
+        <view class="lcard__meta">
+          <view class="time">{{item.timeText}}</view>
+        </view>
+        <view class="fresh fresh--{{item.freshClass}}" wx:if="{{item.freshClass}}">
+          <view class="fresh__dot"></view>{{item.freshText}}
+        </view>
       </view>
     </view>
 

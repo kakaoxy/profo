@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from models.common import RenovationStage
+from models.common import FollowUpMethod, RenovationStage
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
 from schemas.reports.market import (
     DistributionResponse,
@@ -407,6 +407,13 @@ class PublicLeadListItem(BaseModel):
     area: float | None = Field(None, description="面积(m²)")
     total_price: float | None = Field(None, description="当前授权总价(万)")
     expected_price: float | None = Field(None, description="业主心理预期价(万)")
+    eval_price: float | None = Field(None, description="评估价格(万)，未出价为空")
+    district: str | None = Field(None, description="行政区")
+    floor_info: str | None = Field(None, description="楼层信息")
+    orientation: str | None = Field(None, description="朝向")
+    image_thumbnails: list[str] | None = Field(None, description="缩略图URL列表，无图为空")
+    last_follow_up_at: datetime | None = Field(None, description="最近跟进时间，无跟进为空")
+    audit_time: datetime | None = Field(None, description="审核时间，未审核为空")
     status: LeadStatusType = Field(description="状态代码")
     status_display: str = Field(description="状态显示名称")
     status_color: str = Field(description="状态颜色")
@@ -487,6 +494,27 @@ class PublicFollowupItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PublicFollowupCreate(BaseModel):
+    """C端员工侧跟进创建请求（POST /public/leads/my/acquired/{lead_id}/follow-ups）."""
+
+    method: FollowUpMethod = Field(description="跟进方式：phone/wechat/face/visit")
+    content: str = Field(min_length=1, max_length=500, description="跟进内容（1-500 字）")
+
+    @field_validator("content")
+    @classmethod
+    def _strip_and_reject_blank(cls, v: str) -> str:
+        """服务端兜底校验：去除首尾空白后拒绝纯空白内容.
+
+        小程序提交前已 trim，但 Pydantic 的 min_length=1 只校验原始长度，
+        直连 API 提交 "   " 仍会通过并落库；服务端是输入校验的最后卡口。
+        """
+        content = v.strip()
+        if not content:
+            msg = "跟进内容不能为空"
+            raise ValueError(msg)
+        return content
+
+
 class PublicLeadDetail(BaseModel):
     """C端线索详情."""
 
@@ -507,6 +535,7 @@ class PublicLeadDetail(BaseModel):
     images: list[str] = Field(default_factory=list, description="户型图URL列表")
     image_thumbnails: list[str] | None = Field(None, description="户型图缩略图URL列表")
     follow_ups: list[PublicFollowupItem] = Field(default_factory=list, description="跟进记录")
+    can_follow_up: bool = Field(default=False, description="是否可登记跟进（内部员工能力位）")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")
 

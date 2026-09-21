@@ -10,7 +10,7 @@ from sqlalchemy import ColumnElement, desc, func, or_, select
 from sqlalchemy.orm import Session, joinedload, noload, selectinload
 
 from models.common import LeadStatus
-from models.lead import Lead
+from models.lead import Lead, LeadFollowUp
 from models.user import User
 from settings import settings
 from utils.formatters import escape_like
@@ -315,6 +315,29 @@ class LeadQueryService:
             .filter(Lead.id == lead_id, Lead.is_deleted.is_(False), self._acquired_filter(user_id))
             .first()
         )
+
+    def get_followup_stats(self, lead_ids: list[str]) -> dict[str, dict[str, Any]]:
+        """按线索ID批量聚合跟进统计（单次 GROUP BY，避免逐条查询 N+1）.
+
+        Args:
+            lead_ids: 线索ID列表（空列表直接返回空字典，不发查询）
+
+        Returns:
+            dict[lead_id] -> {"last_follow_up_at": max(followed_at) 或 None, "follow_up_count": 条数}
+
+        """
+        if not lead_ids:
+            return {}
+        rows = self.db.execute(
+            select(
+                LeadFollowUp.lead_id,
+                func.max(LeadFollowUp.followed_at),
+                func.count(),
+            )
+            .where(LeadFollowUp.lead_id.in_(lead_ids))
+            .group_by(LeadFollowUp.lead_id),
+        ).all()
+        return {lead_id: {"last_follow_up_at": last_at, "follow_up_count": count} for lead_id, last_at, count in rows}
 
     def get_handled(
         self,

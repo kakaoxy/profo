@@ -39,6 +39,8 @@ function handledItem(status: string, evalPrice: number | null) {
     status,
     status_display: "—",
     eval_price: evalPrice,
+    last_follow_up_at: "2026-01-05T00:00:00Z" as string | null,
+    follow_up_count: 1,
     audit_time: "2026-01-01T00:00:00Z",
   };
 }
@@ -92,29 +94,128 @@ describe("viewMode 详情与再次评估入口", () => {
     expect(ctx.data.followupsLoaded).toBe(true);
   });
 
-  it("可调整状态（pending_visit/visited）置 canAdjust 并展示已授权价", () => {
+  it("可调整状态（pending_visit/visited）置 canAdjust/canFollowup 并展示已授权价", () => {
     const ctx = createPageHarness({});
     enterViewMode(ctx, handledItem("pending_visit", 350));
     expect(ctx.data.canAdjust).toBe(true);
+    expect(ctx.data.canFollowup).toBe(true);
     expect(ctx.data.statusTagText).toBe("已授权");
     expect(ctx.data.hasEvalPrice).toBe(true);
     expect(ctx.data.evalPriceText).toBe("350");
+    // 「最近跟进」宫格：last_follow_up_at 优先
+    expect(ctx.data.recentFollowupText).toBe("2026-01-01");
 
     const ctx2 = createPageHarness({});
     enterViewMode(ctx2, handledItem("visited", 320));
     expect(ctx2.data.canAdjust).toBe(true);
+    expect(ctx2.data.canFollowup).toBe(true);
     expect(ctx2.data.statusTagText).toBe("已看房");
     expect(ctx2.data.hasEvalPrice).toBe(true);
   });
 
-  it("终态（rejected/lost）不可调整评估价", () => {
+  it("无跟进记录时「最近跟进」回退 audit_time", () => {
+    const ctx = createPageHarness({});
+    const item = handledItem("pending_visit", 350);
+    item.last_follow_up_at = null;
+    enterViewMode(ctx, item);
+    expect(ctx.data.recentFollowupText).toBe("2026-01-01");
+  });
+
+  it("终态（rejected/lost）不可调整评估价、不可登记跟进", () => {
     const ctx = createPageHarness({});
     enterViewMode(ctx, handledItem("rejected", null));
     expect(ctx.data.canAdjust).toBe(false);
+    expect(ctx.data.canFollowup).toBe(false);
 
     const ctx2 = createPageHarness({});
     enterViewMode(ctx2, handledItem("lost_to_competitor", null));
     expect(ctx2.data.canAdjust).toBe(false);
+    expect(ctx2.data.canFollowup).toBe(false);
+  });
+});
+
+describe("登记跟进（followup）提交链路", () => {
+  it("打开面板默认电话 → 输入内容 → 提交 POST follow-ups，成功后 toast 并返回", async () => {
+    const ctx = createPageHarness({});
+    enterViewMode(ctx, handledItem("pending_visit", 350));
+
+    ctx.openFollowupPanel();
+    expect(ctx.data.panelMode).toBe("followup");
+    expect(ctx.data.followupMethod).toBe("phone");
+    expect(ctx.data.followupContent).toBe("");
+
+    // 切换跟进方式
+    ctx.onFollowupMethodTap({ currentTarget: { dataset: { method: "wechat" } } });
+    expect(ctx.data.followupMethod).toBe("wechat");
+
+    ctx.onFollowupContentInput({ detail: { value: "微信确认看房时间" } });
+    ctx.submitFollowup();
+
+    const req = findReq("/public/leads/my/acquired/h1/follow-ups", "POST");
+    expect(req.opts.data).toEqual({ method: "wechat", content: "微信确认看房时间" });
+
+    req.resolve({ id: "f9", method: "wechat", content: "微信确认看房时间", followed_at: "2026-01-06T00:00:00Z" });
+    await flush();
+    expect(wxStubs.showToast).toHaveBeenCalledWith({ title: "已登记跟进", icon: "success" });
+    await new Promise((r) => setTimeout(r, 650));
+    expect(wxStubs.navigateBack).toHaveBeenCalled();
+  }, 10_000);
+
+  it("空内容阻止提交；409 弹「线索已关闭，无法登记跟进」冲突弹窗", async () => {
+    const ctx = createPageHarness({});
+    enterViewMode(ctx, handledItem("pending_visit", 350));
+
+    ctx.openFollowupPanel();
+    ctx.submitFollowup();
+    // 空内容：不发请求，面板内提示
+    expect(pendingReqs().some((r) => (r.opts as AnyRecord).method === "POST")).toBe(false);
+    expect(ctx.data.formError).toBe("请填写跟进内容");
+
+    ctx.onFollowupContentInput({ detail: { value: "电话跟进" } });
+    ctx.submitFollowup();
+    findReq("/public/leads/my/acquired/h1/follow-ups", "POST").reject({
+      statusCode: 409,
+      body: { message: "该线索已关闭，无法登记跟进" },
+    });
+    await flush();
+
+    expect(ctx.data.showConflict).toBe(true);
+    expect(ctx.data.panelMode).toBe("");
+    expect(ctx.data.conflictTitle).toBe("线索状态已变化");
+    expect(ctx.data.conflictDesc).toContain("无法登记跟进");
+  });
+});
+
+describe("viewMode lost 入口与 409 文案分档", () => {
+  it("viewMode 打开 lost 面板并提交 authorize-assessment 成功", async () => {
+    const ctx = createPageHarness({});
+    enterViewMode(ctx, handledItem("pending_visit", 350));
+
+    ctx.openPanel({ currentTarget: { dataset: { mode: "lost" } } });
+    expect(ctx.data.panelMode).toBe("lost");
+
+    ctx.submitAuthorize();
+    const req = findReq("/public/leads/my/acquired/h1/authorize-assessment", "POST");
+    expect(req.opts.data).toEqual({ action: "lost" });
+    req.resolve({ id: "h1", status: "lost_to_competitor", status_display: "他司已成交", eval_price: 350 });
+    await flush();
+    expect(wxStubs.showToast).toHaveBeenCalledWith({ title: "已标记他司成交", icon: "success" });
+  }, 10_000);
+
+  it("lost 提交 409：弹「不可标记为他司成交」文案（与 adjust/default 区分）", async () => {
+    const ctx = createPageHarness({});
+    enterViewMode(ctx, handledItem("pending_visit", 350));
+
+    ctx.openPanel({ currentTarget: { dataset: { mode: "lost" } } });
+    ctx.submitAuthorize();
+    findReq("/public/leads/my/acquired/h1/authorize-assessment", "POST").reject({
+      statusCode: 409,
+      body: { message: "该线索当前状态不可标记为他司成交" },
+    });
+    await flush();
+
+    expect(ctx.data.showConflict).toBe(true);
+    expect(ctx.data.conflictDesc).toContain("不可标记为他司成交");
   });
 });
 

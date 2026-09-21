@@ -28,6 +28,7 @@ from models.common import FollowUpMethod, LeadStatus
 from models.lead import Lead, LeadEvalHistory, LeadFollowUp
 from tests.conftest import _make_client
 from utils.auth import AUDIENCE_C, create_access_token, get_password_hash
+from utils.image_processing import derive_thumbnail_url
 from utils.time_windows import cst_today_start
 
 _PENDING_URL = "/api/v1/public/leads/pending-assessment"
@@ -35,6 +36,7 @@ _HANDLED_URL = "/api/v1/public/leads/handled-assessment"
 _AUTHORIZE_URL_TPL = "/api/v1/public/leads/my/acquired/{lead_id}/authorize-assessment"
 _EVALUATIONS_URL_TPL = "/api/v1/public/leads/my/acquired/{lead_id}/evaluations"
 _FOLLOWUPS_URL_TPL = "/api/v1/public/leads/my/acquired/{lead_id}/follow-ups"
+_MINE_URL = "/api/v1/public/leads/mine"
 
 
 # ---------------------------------------------------------------------------
@@ -49,6 +51,7 @@ def _make_lead(
     community_name: str = "测试小区",
     district: str | None = None,
     floor_info: str | None = None,
+    orientation: str | None = None,
     is_deleted: bool = False,
     expected_price: float | None = None,
     total_price: float | None = None,
@@ -66,6 +69,7 @@ def _make_lead(
         community_name=community_name,
         district=district,
         floor_info=floor_info,
+        orientation=orientation,
         status=status,
         is_deleted=is_deleted,
         expected_price=expected_price,
@@ -424,6 +428,68 @@ class TestHandledAssessment:
         body = resp.json()
         assert body["code"] != 0
         assert body["message"]
+
+    def test_followup_stats_filled_and_missing(
+        self,
+        eval_operator_client: TestClient,
+        eval_operator: User,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """时效字段：有跟进取 max(followed_at) 与条数；无跟进为 null 且 count 为 0."""
+        session: Session = seeded_db["session"]
+        now = datetime.now(timezone.utc)
+        followed_at_first = now - timedelta(days=2)
+        followed_at_latest = now - timedelta(days=1)
+        lead_with = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="有跟进小区",
+            auditor_id=eval_operator.id,
+            audit_time=now - timedelta(days=3),
+        )
+        session.add(
+            LeadFollowUp(
+                id=str(uuid.uuid4()),
+                lead_id=lead_with.id,
+                method=FollowUpMethod.PHONE,
+                content="第一次电话",
+                followed_at=followed_at_first,
+                created_by_id=eval_operator.id,
+            )
+        )
+        session.add(
+            LeadFollowUp(
+                id=str(uuid.uuid4()),
+                lead_id=lead_with.id,
+                method=FollowUpMethod.WECHAT,
+                content="微信沟通",
+                followed_at=followed_at_latest,
+                created_by_id=eval_operator.id,
+            )
+        )
+        lead_without = _make_lead(
+            session,
+            status=LeadStatus.VISITED,
+            community_name="无跟进小区",
+            auditor_id=eval_operator.id,
+            audit_time=now - timedelta(hours=1),
+        )
+        session.commit()
+
+        resp = eval_operator_client.get(_HANDLED_URL)
+        assert resp.status_code == 200
+        by_id = {it["id"]: it for it in resp.json()["items"]}
+
+        with_item = by_id[lead_with.id]
+        assert with_item["follow_up_count"] == 2
+        assert with_item["last_follow_up_at"] is not None
+        last_at = datetime.fromisoformat(with_item["last_follow_up_at"].replace("Z", "+00:00"))
+        # max(followed_at)：取最近一次（非首条）
+        assert last_at == followed_at_latest
+
+        without_item = by_id[lead_without.id]
+        assert without_item["last_follow_up_at"] is None
+        assert without_item["follow_up_count"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -1079,3 +1145,379 @@ class TestLeadSourceLabel:
         items = resp.json()["items"]
         assert items[0]["community_name"] == "客户直提已批准"
         assert items[0]["source"] == "customer_share"
+
+
+# ---------------------------------------------------------------------------
+# lost 动作放开：pending_visit / visited 可标记他司成交
+# ---------------------------------------------------------------------------
+
+
+class TestAuthorizeLostFromActiveStates:
+    """lost 动作放开至 pending_visit/visited（评估流程不可借 approve/reject 绕过）."""
+
+    def test_lost_from_pending_visit_preserves_eval_price(
+        self,
+        eval_operator_client: TestClient,
+        eval_operator: User,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """pending_visit + lost：状态流转，eval_price 保留，不写评估历史，写 audit 字段."""
+        session: Session = seeded_db["session"]
+        now = datetime.now(timezone.utc)
+        lead = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="已授权他司小区",
+            auditor_id=eval_operator.id,
+            audit_time=now - timedelta(days=2),
+            eval_price=350.0,
+        )
+        session.commit()
+
+        resp = eval_operator_client.post(
+            _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
+            json={"action": "lost", "remark": "业主已在别处成交"},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "lost_to_competitor"
+        # eval_price 保留（不清空）
+        assert body["eval_price"] == 350.0
+
+        session.refresh(lead)
+        assert lead.status == LeadStatus.LOST_TO_COMPETITOR
+        assert float(lead.eval_price) == 350.0  # type: ignore[arg-type]
+        assert lead.audit_reason == "业主已在别处成交"
+        assert lead.auditor_id == eval_operator.id
+        assert lead.audit_time is not None
+        # 不写评估历史
+        assert session.query(LeadEvalHistory).filter(LeadEvalHistory.lead_id == lead.id).all() == []
+
+    def test_lost_from_visited_lead(
+        self,
+        eval_operator_client: TestClient,
+        eval_operator: User,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """Visited + lost：状态流转为 lost_to_competitor."""
+        session: Session = seeded_db["session"]
+        now = datetime.now(timezone.utc)
+        lead = _make_lead(
+            session,
+            status=LeadStatus.VISITED,
+            community_name="已看房他司小区",
+            auditor_id=eval_operator.id,
+            audit_time=now - timedelta(days=1),
+            eval_price=320.0,
+        )
+        session.commit()
+
+        resp = eval_operator_client.post(
+            _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
+            json={"action": "lost"},
+        )
+        assert resp.status_code == 200
+        session.refresh(lead)
+        assert lead.status == LeadStatus.LOST_TO_COMPETITOR
+        assert float(lead.eval_price) == 320.0  # type: ignore[arg-type]
+
+    def test_approve_and_reject_still_restricted_to_pending_assessment(
+        self,
+        eval_operator_client: TestClient,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """pending_visit + approve/reject → 409「该线索已被处理」，评估流程不可绕过."""
+        session: Session = seeded_db["session"]
+        lead = _make_lead(session, status=LeadStatus.PENDING_VISIT, community_name="不可绕过小区")
+        session.commit()
+
+        for action, payload in (
+            ("approve", {"action": "approve", "eval_price": 300.0}),
+            ("reject", {"action": "reject"}),
+        ):
+            resp = eval_operator_client.post(_AUTHORIZE_URL_TPL.format(lead_id=lead.id), json=payload)
+            assert resp.status_code == 409, f"action={action} 应返回 409"
+            body = resp.json()
+            assert body["code"] != 0
+            assert "已被处理" in body["message"]
+
+        session.refresh(lead)
+        assert lead.status == LeadStatus.PENDING_VISIT
+
+    def test_lost_rejected_for_terminal_states(
+        self,
+        eval_operator_client: TestClient,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """signed/rejected/lost_to_competitor + lost → 409."""
+        session: Session = seeded_db["session"]
+        for st in (LeadStatus.SIGNED, LeadStatus.REJECTED, LeadStatus.LOST_TO_COMPETITOR):
+            lead = _make_lead(session, status=st, community_name=f"终态{st.value}")
+            session.commit()
+            resp = eval_operator_client.post(
+                _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
+                json={"action": "lost"},
+            )
+            assert resp.status_code == 409, f"status={st.value} 应返回 409"
+            body = resp.json()
+            assert body["code"] != 0
+            assert "不可标记为他司成交" in body["message"]
+
+
+# ---------------------------------------------------------------------------
+# 员工侧跟进写入端点：POST /my/acquired/{lead_id}/follow-ups
+# ---------------------------------------------------------------------------
+
+
+class TestLeadFollowupCreate:
+    """POST /my/acquired/{lead_id}/follow-ups：201/409/403/404/422."""
+
+    def test_create_success_persists_and_refreshes_lead(
+        self,
+        eval_operator_client: TestClient,
+        eval_operator: User,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """201：lead_followups 落库（created_by_id=当前员工）且 Lead.last_follow_up_at 刷新."""
+        session: Session = seeded_db["session"]
+        now = datetime.now(timezone.utc)
+        lead = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="跟进小区",
+            auditor_id=eval_operator.id,
+            audit_time=now - timedelta(days=1),
+        )
+        assert lead.last_follow_up_at is None
+        session.commit()
+
+        resp = eval_operator_client.post(
+            _FOLLOWUPS_URL_TPL.format(lead_id=lead.id),
+            json={"method": "phone", "content": "电话确认看房时间"},
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["method"] == "phone"
+        assert body["content"] == "电话确认看房时间"
+        assert body["followed_at"]
+
+        rec = session.query(LeadFollowUp).filter(LeadFollowUp.lead_id == lead.id).one()
+        assert rec.created_by_id == eval_operator.id
+        assert rec.content == "电话确认看房时间"
+        session.refresh(lead)
+        assert lead.last_follow_up_at is not None
+
+    def test_content_surrounding_whitespace_trimmed(
+        self,
+        eval_operator_client: TestClient,
+        eval_operator: User,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """首尾空白由服务端 strip 归一化后落库（直连 API 同样生效）."""
+        session: Session = seeded_db["session"]
+        lead = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="空白裁剪小区",
+            auditor_id=eval_operator.id,
+        )
+        session.commit()
+
+        resp = eval_operator_client.post(
+            _FOLLOWUPS_URL_TPL.format(lead_id=lead.id),
+            json={"method": "wechat", "content": "  已微信确认看房时间  "},
+        )
+        assert resp.status_code == 201
+        assert resp.json()["content"] == "已微信确认看房时间"
+        rec = session.query(LeadFollowUp).filter(LeadFollowUp.lead_id == lead.id).one()
+        assert rec.content == "已微信确认看房时间"
+
+    def test_409_for_terminal_statuses(
+        self,
+        eval_operator_client: TestClient,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """rejected/lost_to_competitor 线索拒绝登记跟进，返回统一 409 错误体."""
+        session: Session = seeded_db["session"]
+        for st in (LeadStatus.REJECTED, LeadStatus.LOST_TO_COMPETITOR):
+            lead = _make_lead(session, status=st, community_name=f"终态不可跟进{st.value}")
+            session.commit()
+            resp = eval_operator_client.post(
+                _FOLLOWUPS_URL_TPL.format(lead_id=lead.id),
+                json={"method": "phone", "content": "尝试跟进"},
+            )
+            assert resp.status_code == 409, f"status={st.value} 应返回 409"
+            body = resp.json()
+            assert body["code"] == 409
+            assert body["message"]
+            assert session.query(LeadFollowUp).filter(LeadFollowUp.lead_id == lead.id).all() == []
+
+    def test_403_for_customer_without_internal_role(
+        self,
+        c_end_client: TestClient,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """纯 C 端用户（无 admin/operator 角色）登记跟进返回 403."""
+        session: Session = seeded_db["session"]
+        lead = _make_lead(session, status=LeadStatus.PENDING_VISIT, creator_id="customer-user")
+        session.commit()
+
+        resp = c_end_client.post(
+            _FOLLOWUPS_URL_TPL.format(lead_id=lead.id),
+            json={"method": "phone", "content": "客户自行跟进"},
+        )
+        assert resp.status_code == 403
+        assert resp.json()["code"] != 0
+        assert session.query(LeadFollowUp).filter(LeadFollowUp.lead_id == lead.id).all() == []
+
+    def test_404_for_missing_lead(self, eval_operator_client: TestClient) -> None:
+        """线索不存在返回 404."""
+        resp = eval_operator_client.post(
+            _FOLLOWUPS_URL_TPL.format(lead_id="nonexistent-id"),
+            json={"method": "phone", "content": "幽灵线索"},
+        )
+        assert resp.status_code == 404
+
+    def test_422_for_invalid_content_or_method(
+        self,
+        eval_operator_client: TestClient,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """Content 为空 / 纯空白 / 超 500 字 / method 非法 → 422."""
+        session: Session = seeded_db["session"]
+        lead = _make_lead(session, status=LeadStatus.PENDING_VISIT)
+        session.commit()
+
+        for payload in (
+            {"method": "phone", "content": ""},
+            {"method": "phone", "content": "   "},
+            {"method": "phone", "content": "x" * 501},
+            {"method": "email", "content": "非法方式"},
+            {"content": "缺少 method"},
+        ):
+            resp = eval_operator_client.post(_FOLLOWUPS_URL_TPL.format(lead_id=lead.id), json=payload)
+            assert resp.status_code == 422, f"payload={payload} 应返回 422"
+
+
+# ---------------------------------------------------------------------------
+# 我的评估列表新字段 + 详情 can_follow_up 能力位
+# ---------------------------------------------------------------------------
+
+
+class TestMyLeadsFieldsAndCanFollowUp:
+    """GET /public/leads/mine 新字段 与 GET /public/leads/{id} can_follow_up."""
+
+    def test_mine_list_returns_new_fields(
+        self,
+        c_end_client: TestClient,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """列表项下发 eval_price/district/floor_info/orientation/image_thumbnails/last_follow_up_at/audit_time."""
+        session: Session = seeded_db["session"]
+        now = datetime.now(timezone.utc)
+        lead = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="字段齐全小区",
+            district="思明区",
+            floor_info="高楼层/28层",
+            orientation="南北",
+            creator_id="customer-user",
+            auditor_id="someone-else",
+            audit_time=now - timedelta(days=2),
+            eval_price=350.0,
+            created_at=now - timedelta(days=3),
+        )
+        followed_at = now - timedelta(days=1)
+        session.add(
+            LeadFollowUp(
+                id=str(uuid.uuid4()),
+                lead_id=lead.id,
+                method=FollowUpMethod.PHONE,
+                content="电话跟进",
+                followed_at=followed_at,
+                created_by_id="someone-else",
+            )
+        )
+        no_follow = _make_lead(
+            session,
+            status=LeadStatus.PENDING_ASSESSMENT,
+            community_name="待评估无跟进",
+            creator_id="customer-user",
+            created_at=now - timedelta(hours=2),
+        )
+        session.commit()
+
+        resp = c_end_client.get(_MINE_URL)
+        assert resp.status_code == 200
+        by_id = {it["id"]: it for it in resp.json()["items"]}
+
+        item = by_id[lead.id]
+        assert item["eval_price"] == 350.0
+        assert item["district"] == "思明区"
+        assert item["floor_info"] == "高楼层/28层"
+        assert item["orientation"] == "南北"
+        # 无图 → null（非空数组）
+        assert item["image_thumbnails"] is None
+        assert item["last_follow_up_at"] is not None
+        assert datetime.fromisoformat(item["last_follow_up_at"].replace("Z", "+00:00")) == followed_at
+        assert item["audit_time"] is not None
+
+        pending_item = by_id[no_follow.id]
+        assert pending_item["last_follow_up_at"] is None
+        assert pending_item["eval_price"] is None
+        assert pending_item["audit_time"] is None
+
+    def test_mine_list_thumbnail_derivation_matches_helper(
+        self,
+        c_end_client: TestClient,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """缩略图派生与 get_lead_detail 同一 helper：期望值按 derive_thumbnail_url 直接计算."""
+        session: Session = seeded_db["session"]
+        images = ["/static/uploads/no-such-file.jpg", "/static/legacy/img2.jpg"]
+        lead = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="带图小区",
+            images=images,
+            creator_id="customer-user",
+        )
+        session.commit()
+
+        resp = c_end_client.get(_MINE_URL)
+        assert resp.status_code == 200
+        by_id = {it["id"]: it for it in resp.json()["items"]}
+        expected = [t for t in (derive_thumbnail_url(u) for u in images) if t] or None
+        assert by_id[lead.id]["image_thumbnails"] == expected
+
+    def test_detail_can_follow_up_for_internal_and_customer(
+        self,
+        eval_operator_client: TestClient,
+        c_end_client: TestClient,
+        eval_operator: User,
+        seeded_db: dict[str, Any],
+    ) -> None:
+        """内部员工 can_follow_up=true；纯 C 端客户 false."""
+        session: Session = seeded_db["session"]
+        internal_lead = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="员工可见跟进入口",
+            creator_id=eval_operator.id,
+        )
+        customer_lead = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="客户不可见跟进入口",
+            creator_id="customer-user",
+        )
+        session.commit()
+
+        resp_internal = eval_operator_client.get(f"/api/v1/public/leads/{internal_lead.id}")
+        assert resp_internal.status_code == 200
+        assert resp_internal.json()["can_follow_up"] is True
+
+        resp_customer = c_end_client.get(f"/api/v1/public/leads/{customer_lead.id}")
+        assert resp_customer.status_code == 200
+        assert resp_customer.json()["can_follow_up"] is False

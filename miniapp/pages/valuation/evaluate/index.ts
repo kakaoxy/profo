@@ -16,6 +16,12 @@ import { request } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { resolveImageUrl } from "../../../utils/url";
 import { formatDate } from "../../../utils/valuation-display";
+import {
+  cardTimeLabel,
+  FRESHNESS_LABELS,
+  freshnessLevel,
+  isFreshnessWindow,
+} from "../../../utils/valuation-freshness";
 
 type QueueItem = components["schemas"]["PendingAssessmentQueueItem"];
 type HandledItem = components["schemas"]["HandledItem"];
@@ -25,20 +31,13 @@ type HandledResponse = components["schemas"]["HandledAssessmentQueueResponse"];
 /** 每页数量. */
 const PAGE_SIZE = 10;
 
-/** 已处理卡标签/动作芯片语义（对齐设计稿 ACT_META：已授权绿 / 已看房绿 / 已驳回灰 / 他司成交 rust）. */
-const HANDLED_STATUS_META: Record<
-  string,
-  { tagText: string; tagClass: string; actionText: string; actionClass: string }
-> = {
-  pending_visit: { tagText: "已授权", tagClass: "green", actionText: "已授权 · 待看房", actionClass: "ap" },
-  visited: { tagText: "已看房", tagClass: "green", actionText: "已看房 · 可调整评估价", actionClass: "ap" },
-  rejected: { tagText: "已驳回", tagClass: "gray", actionText: "已驳回", actionClass: "rj" },
-  lost_to_competitor: {
-    tagText: "他司成交",
-    tagClass: "rust",
-    actionText: "他司已成交 · 线索关闭",
-    actionClass: "lost",
-  },
+/** 已处理卡右上状态标签语义（对齐设计稿：已授权绿 / 已看房绿 / 已驳回灰 / 他司成交 rust / 已签约 ink）. */
+const HANDLED_STATUS_META: Record<string, { tagText: string; tagClass: string }> = {
+  pending_visit: { tagText: "已授权", tagClass: "green" },
+  visited: { tagText: "已看房", tagClass: "green" },
+  signed: { tagText: "已签约", tagClass: "ink" },
+  rejected: { tagText: "已驳回", tagClass: "gray" },
+  lost_to_competitor: { tagText: "他司成交", tagClass: "rust" },
 };
 
 /** 可再次评估（调整评估价）的状态集合，对齐 admin CurrentEvalPriceSection 口径. */
@@ -60,7 +59,7 @@ interface PendingCard {
   sourceClass: string;
 }
 
-/** 已处理卡片展示结构（与待评估卡同构 + 状态标签 / 动作芯片）. */
+/** 已处理卡片展示结构（与待评估卡同构 + 状态标签 / 时效标签）. */
 interface HandledCard {
   id: string;
   name: string;
@@ -76,8 +75,10 @@ interface HandledCard {
   timeText: string;
   sourceText: string;
   sourceClass: string;
-  actionText: string;
-  actionClass: string;
+  /** 时效标签文案（「跟进中」等）；终态与其余状态为空串（右下角留空）. */
+  freshText: string;
+  /** 时效样式档（ok/soon/over）；空串不渲染. */
+  freshClass: string;
 }
 
 /** 页面 data. */
@@ -194,18 +195,24 @@ Page<PageData, PageCustom>({
   },
 
   toHandledCard(item: HandledItem): HandledCard {
-    const meta = HANDLED_STATUS_META[item.status] ?? {
-      tagText: item.status_display,
-      tagClass: "gray",
-      actionText: item.status_display,
-      actionClass: "rj",
-    };
+    const meta = HANDLED_STATUS_META[item.status] ?? { tagText: item.status_display, tagClass: "gray" };
     const src = sourceParts(item.source);
     // 已授权/已看房卡展示授权价（绿色）；reject/lost 不涉及评估价，报价显示「—」
     const approved = ADJUSTABLE_STATUSES.indexOf(item.status) >= 0;
     const price = approved
       ? priceParts(item.eval_price)
       : { value: "—", unit: "" };
+    // 左槽时间与右下角时效标签同源：基准 = last_follow_up_at ?? audit_time
+    // （已处理段 audit_time 恒非空且无 created_at 字段，终态回退天然可用）
+    const timeLabel = cardTimeLabel({
+      status: item.status,
+      lastFollowUpAt: item.last_follow_up_at,
+      auditTime: item.audit_time,
+    });
+    // 时效三态仅出现在跟进窗口（pending_visit/visited）；终态与其余状态右下角留空
+    const fresh = isFreshnessWindow(item.status)
+      ? freshnessLevel(item.last_follow_up_at || item.audit_time)
+      : null;
     return {
       id: item.id,
       name: item.community_name,
@@ -218,11 +225,11 @@ Page<PageData, PageCustom>({
       priceUnit: price.unit,
       priceOk: approved && item.eval_price != null,
       image: item.images && item.images.length > 0 ? resolveImageUrl(item.images[0], { width: 240 }) : "",
-      timeText: formatDate(item.audit_time, true),
+      timeText: `${timeLabel.prefix} ${timeLabel.text}`,
       sourceText: src.text,
       sourceClass: src.cls,
-      actionText: meta.actionText,
-      actionClass: meta.actionClass,
+      freshText: fresh ? FRESHNESS_LABELS[fresh] : "",
+      freshClass: fresh ?? "",
     };
   },
 

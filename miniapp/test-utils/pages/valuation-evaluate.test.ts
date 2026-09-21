@@ -22,6 +22,16 @@ vi.mock("../../utils/url", () => ({
 vi.mock("../../utils/valuation-display", () => ({
   formatDate: () => "2026-01-01",
 }));
+// 时效纯函数 mock：基准 "stale" → over，其余 → ok（窗口判断保持真实口径）
+vi.mock("../../utils/valuation-freshness", () => ({
+  FRESHNESS_LABELS: { ok: "跟进中", soon: "即将过期", over: "已过期" },
+  freshnessLevel: (baseline: string | null) => (baseline === "stale" ? "over" : baseline ? "ok" : null),
+  isFreshnessWindow: (status: string) => status === "pending_visit" || status === "visited",
+  cardTimeLabel: ({ status }: { status: string }) =>
+    status === "pending_visit" || status === "visited"
+      ? { prefix: "跟进", text: "01-01" }
+      : { prefix: "处理", text: "01-01" },
+}));
 
 beforeAll(async () => {
   await import("../../pages/valuation/evaluate/index");
@@ -65,6 +75,8 @@ function handledItem(id: string, status: string, evalPrice: number | null) {
     status,
     status_display: "—",
     eval_price: evalPrice,
+    last_follow_up_at: "2026-01-05T00:00:00Z" as string | null,
+    follow_up_count: 1,
     audit_time: "2026-01-01T00:00:00Z",
   };
 }
@@ -218,7 +230,7 @@ describe("评估工作台双接口渲染与语义映射", () => {
     expect(card.sourceClass).toBe("share");
   });
 
-  it("已处理卡语义：approve 展示授权价（绿），rejected/lost 报价 —，动作芯片对齐设计稿", async () => {
+  it("已处理卡语义：授权价（绿）/ 终态报价 —，时效标签对齐设计稿（终态留空）", async () => {
     const ctx = createPageHarness({});
     ctx.onShow();
     resolveReset(
@@ -239,20 +251,26 @@ describe("评估工作台双接口渲染与语义映射", () => {
     expect(approve.priceUnit).toBe("万");
     expect(approve.priceOk).toBe(true);
     expect(approve.tagText).toBe("已授权");
-    expect(approve.actionText).toBe("已授权 · 待看房");
-    expect(approve.actionClass).toBe("ap");
+    // 右下角时效标签：跟进窗口内 → 跟进中（Sky 洗底档）
+    expect(approve.freshText).toBe("跟进中");
+    expect(approve.freshClass).toBe("ok");
+    // 左槽时间与时效标签同源：跟进前缀
+    expect(approve.timeText).toBe("跟进 01-01");
     expect(reject.priceLabel).toBe("业主报价");
     expect(reject.priceValue).toBe("—");
     expect(reject.priceUnit).toBe("");
     expect(reject.priceOk).toBe(false);
     expect(reject.tagText).toBe("已驳回");
-    expect(reject.actionText).toBe("已驳回");
     expect(reject.tagClass).toBe("gray");
+    // 终态右下角留空，左槽时间回落「处理」前缀
+    expect(reject.freshText).toBe("");
+    expect(reject.freshClass).toBe("");
+    expect(reject.timeText).toBe("处理 01-01");
     expect(lost.priceValue).toBe("—");
     expect(lost.tagText).toBe("他司成交");
     expect(lost.tagClass).toBe("rust");
-    expect(lost.actionText).toBe("他司已成交 · 线索关闭");
-    expect(lost.actionClass).toBe("lost");
+    expect(lost.freshClass).toBe("");
+    expect(lost.timeText).toBe("处理 01-01");
     expect(lost.sourceText).toBe("员工直录");
     expect(lost.sourceClass).toBe("direct");
   });
@@ -266,11 +284,42 @@ describe("评估工作台双接口渲染与语义映射", () => {
     const [visited] = ctx.data.handledItems;
     expect(visited.tagText).toBe("已看房");
     expect(visited.tagClass).toBe("green");
-    expect(visited.actionText).toBe("已看房 · 可调整评估价");
-    expect(visited.actionClass).toBe("ap");
+    expect(visited.freshText).toBe("跟进中");
+    expect(visited.freshClass).toBe("ok");
     expect(visited.priceLabel).toBe("授权价");
     expect(visited.priceValue).toBe("320");
     expect(visited.priceOk).toBe(true);
+  });
+
+  it("已处理卡语义：已签约补 ink 档；跟进超 14 天切已过期（over）", async () => {
+    const ctx = createPageHarness({});
+    ctx.onShow();
+    const signed = handledItem("h1", "signed", 500);
+    const stale = handledItem("h2", "pending_visit", 300);
+    stale.last_follow_up_at = "stale"; // 时效 mock：该基准 → over
+    resolveReset([], 0, [signed, stale], 2);
+    await flush();
+
+    const [signedCard, staleCard] = ctx.data.handledItems;
+    expect(signedCard.tagText).toBe("已签约");
+    expect(signedCard.tagClass).toBe("ink");
+    expect(signedCard.freshClass).toBe("");
+    expect(signedCard.timeText).toBe("处理 01-01");
+    expect(staleCard.freshText).toBe("已过期");
+    expect(staleCard.freshClass).toBe("over");
+  });
+
+  it("已处理卡语义：无跟进记录回退 audit_time 作为时效基准", async () => {
+    const ctx = createPageHarness({});
+    ctx.onShow();
+    const item = handledItem("h1", "pending_visit", 300);
+    item.last_follow_up_at = null;
+    item.follow_up_count = 0;
+    resolveReset([], 0, [item], 1);
+    await flush();
+
+    // freshnessLevel 收到 audit_time 兜底基准（mock 中非 "stale" 即 ok）
+    expect(ctx.data.handledItems[0].freshClass).toBe("ok");
   });
 
   it("403 切无权限态并清空双段", async () => {

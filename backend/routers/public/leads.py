@@ -29,6 +29,7 @@ from schemas.public import (
     PublicAcquiredLeadListResponse,
     PublicAcquiredLeadPhoneResponse,
     PublicAcquiredLeadStatsResponse,
+    PublicFollowupCreate,
     PublicFollowupItem,
     PublicLeadCountResponse,
     PublicLeadCreate,
@@ -207,10 +208,14 @@ def get_my_leads(
     """获取当前用户创建的线索列表（此路由必须在 /{lead_id} 之前定义以避免路径冲突）."""
     result = service.get_my_leads(user_id=current_user.id, page=pagination.page, page_size=pagination.page_size)
 
+    # 时效数据源：按当前页线索批量聚合最近跟进（单次 GROUP BY，避免 N+1）
+    followup_stats = service.get_followup_stats([lead.id for lead in result["items"]])
+
     items = []
     for lead in result["items"]:
         status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
         status_display, status_color = _get_status_display(status_code)
+        stats = followup_stats.get(lead.id, {})
         items.append(
             PublicLeadListItem(
                 id=lead.id,
@@ -219,6 +224,13 @@ def get_my_leads(
                 area=float(lead.area) if lead.area else None,
                 total_price=float(lead.total_price) if lead.total_price else None,
                 expected_price=_effective_expected_price(lead),
+                eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
+                district=lead.district,
+                floor_info=lead.floor_info,
+                orientation=lead.orientation,
+                image_thumbnails=[t for t in (derive_thumbnail_url(u) for u in (lead.images or [])) if t] or None,
+                last_follow_up_at=stats.get("last_follow_up_at"),
+                audit_time=lead.audit_time,
                 status=status_code,
                 status_display=status_display,
                 status_color=status_color,
@@ -398,10 +410,12 @@ def get_handled_assessment(
         search=search,
     )
 
+    followup_stats = result["followup_stats"]
     items = []
     for lead in result["items"]:
         status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
         status_display, _ = _get_status_display(status_code)
+        stats = followup_stats.get(lead.id, {})
         items.append(
             HandledItem(
                 id=lead.id,
@@ -420,6 +434,8 @@ def get_handled_assessment(
                 status=lead.status,
                 status_display=status_display,
                 eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
+                last_follow_up_at=stats.get("last_follow_up_at"),
+                follow_up_count=stats.get("follow_up_count", 0),
                 audit_time=lead.audit_time,
             ),
         )
@@ -452,7 +468,10 @@ def get_my_acquired_phone(
 @router.post(
     "/my/acquired/{lead_id}/authorize-assessment",
     summary="评估价授权",
-    description="对 pending_assessment 线索执行 approve/reject/lost 单事务流转（仅 admin/operator）",
+    description=(
+        "approve/reject 仅 pending_assessment；lost 额外允许 pending_visit/visited"
+        "（已授权/已看房线索他司成交后关闭，不清空 eval_price，仅 admin/operator）"
+    ),
 )
 @limiter.limit(RateLimits.LEAD_UPDATE)
 async def authorize_assessment(
@@ -551,6 +570,37 @@ def get_lead_followups(
     ]
 
 
+@router.post(
+    "/my/acquired/{lead_id}/follow-ups",
+    status_code=status.HTTP_201_CREATED,
+    summary="登记跟进",
+    description="员工侧登记线索跟进记录（仅 admin/operator）；rejected/lost_to_competitor 终态返回 409",
+)
+@limiter.limit(RateLimits.LEAD_UPDATE)
+async def create_lead_followup(
+    request: Request,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    body: PublicFollowupCreate,
+    operator: CurrentCInternalUserDep,
+    service: LeadServiceDep,
+) -> PublicFollowupItem:
+    """小程序员工侧登记跟进（已处理详情页「＋ 登记」）."""
+    # service 同步 DB 操作放线程池，避免阻塞事件循环
+    fu = await run_in_threadpool(
+        service.create_followup,
+        user_id=operator.id,
+        lead_id=lead_id,
+        method=body.method,
+        content=body.content,
+    )
+    return PublicFollowupItem(
+        id=fu.id,
+        method=fu.method.value if hasattr(fu.method, "value") else str(fu.method),
+        content=fu.content,
+        followed_at=fu.followed_at,
+    )
+
+
 @router.get(
     "/{lead_id}",
     summary="获取估价详情",
@@ -616,6 +666,9 @@ def get_lead_detail(
         images=lead.images or [],
         image_thumbnails=[t for t in (derive_thumbnail_url(u) for u in (lead.images or [])) if t] or None,
         follow_ups=timeline_items,
+        # 内部员工能力位（能力位为 true ⟺ 提交新跟进端点会通过权限校验，不出现「入口显示但提交 403」）
+        # 直接复用认证依赖已预加载角色的 current_user，避免详情请求多一次 User 查询
+        can_follow_up=service.can_follow_up(current_user),
         created_at=lead.created_at,
         updated_at=lead.updated_at,
     )

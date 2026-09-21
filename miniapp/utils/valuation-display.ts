@@ -1,5 +1,5 @@
 /**
- * 「我的评估」纯展示工具：日期格式化 / 跟进方式映射 / 跟进记录前端分页 / 状态徽章样式.
+ * 「我的评估」纯展示工具：日期格式化 / 跟进方式映射 / 跟进记录前端分页 / 状态标签令牌类.
  *
  * 全部为无副作用纯函数，供列表页与详情页复用，并用 vitest 单测覆盖.
  */
@@ -16,23 +16,18 @@ const FOLLOWUP_METHOD_LABELS: Record<string, string> = {
   evaluation: "评估",
 };
 
-/** 将 #RGB / #RRGGBB 解析为 rgba 字符串；非 hex 色值原样返回. */
-function toRgba(color: string, alpha: number): string {
-  const rgb = color.match(/^#([0-9a-fA-F]{6})$/);
-  if (rgb) {
-    const n = parseInt(rgb[1], 16);
-    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-  }
-  const short = color.match(/^#([0-9a-fA-F]{3})$/);
-  if (short) {
-    const v = short[1];
-    const r = parseInt(v[0] + v[0], 16);
-    const g = parseInt(v[1] + v[1], 16);
-    const b = parseInt(v[2] + v[2], 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  return color;
-}
+/**
+ * 状态 → stag 令牌类映射（Steep 体系，不消费后端 status_color 饱和色）.
+ * pending_visit 与 visited 同为 green；signed 为 ink 实底档；未知状态回退 gray.
+ */
+const STATUS_TAG_CLASSES: Record<string, string> = {
+  pending_assessment: "amber",
+  pending_visit: "green",
+  visited: "green",
+  signed: "ink",
+  rejected: "gray",
+  lost_to_competitor: "rust",
+};
 
 /**
  * 格式化日期为 YYYY-MM-DD（withTime=false）或 YYYY-MM-DD HH:mm（withTime=true）.
@@ -74,8 +69,9 @@ export function sliceFollowups<T>(all: T[], page: number, pageSize: number): T[]
 }
 
 /**
- * 状态徽章样式：前景用状态色，背景用状态色 + 20% 透明度.
+ * 状态标签令牌类：返回 stag--{class} 的 class 段（amber/green/ink/gray/rust）.
+ * 未知状态回退 gray；后端 status_color 字段保留但不再用于渲染.
  */
-export function statusBadgeStyle(color: string): { color: string; background: string } {
-  return { color, background: toRgba(color, 0.2) };
+export function statusTagClass(status: string): string {
+  return STATUS_TAG_CLASSES[status] ?? "gray";
 }

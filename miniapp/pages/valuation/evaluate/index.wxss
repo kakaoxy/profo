@@ -195,6 +195,11 @@ page {
   color: var(--rust);
   background: var(--apricot);
 }
+/* 已签约实底档（已处理卡 signed） */
+.stag--ink {
+  color: #ffffff;
+  background: var(--ink);
+}
 .lcard__mid {
   display: flex;
   align-items: center;
@@ -294,20 +299,46 @@ page {
   gap: 6rpx;
   box-shadow: 0 10rpx 24rpx rgba(23, 25, 28, 0.22);
 }
-.go-eval--ap {
+
+/* ===== 时效标签（已处理卡右下角：三态 + 圆点；终态不渲染） ===== */
+.fresh {
+  height: 54rpx;
+  padding: 0 26rpx;
+  border-radius: 9999rpx;
+  font-size: 23rpx;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.fresh__dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.fresh--ok {
   background: var(--greenw);
   color: var(--green);
-  box-shadow: none;
 }
-.go-eval--rj {
-  background: #eef0f3;
-  color: var(--ink2);
-  box-shadow: none;
+.fresh--ok .fresh__dot {
+  background: var(--green);
 }
-.go-eval--lost {
+.fresh--soon {
   background: var(--apricot);
   color: var(--rust);
-  box-shadow: none;
+}
+.fresh--soon .fresh__dot {
+  background: var(--rust);
+}
+.fresh--over {
+  background: var(--rust);
+  color: #ffffff;
+}
+.fresh--over .fresh__dot {
+  background: #ffffff;
 }
 
 /* ===== 空态（圆底盾形勾 + 引导 + 刷新） ===== */

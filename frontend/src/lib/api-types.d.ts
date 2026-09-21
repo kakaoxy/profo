@@ -2610,7 +2610,18 @@ export interface paths {
          *     速率限制：50次/小时（防止资源耗尽攻击）.
          */
         post: operations["upload_file_api_v1_files_upload_post"];
-        delete?: never;
+        /**
+         * 删除已上传文件（孤儿文件清理）
+         * @description 删除本次会话上传但未随表单保存的孤儿文件.
+         *
+         *     供前端「上传后取消/未保存」场景清理物理文件。安全约束：
+         *     - 仅接受可反解为本存储后端键的 URL（extract_storage_key 校验前缀与路径安全，
+         *       挡住外部域名与路径穿越），外部 URL 一律拒绝
+         *     - URL 仍被任意项目引用（附件库 signing_materials / 软装明细附件
+         *       soft_detail_attachment）时拒绝删除，防止误删共享文件或已保存附件
+         *     - 幂等：文件不存在也返回成功
+         */
+        delete: operations["delete_uploaded_file_api_v1_files_upload_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3549,7 +3560,7 @@ export interface paths {
         put?: never;
         /**
          * 评估价授权
-         * @description 对 pending_assessment 线索执行 approve/reject/lost 单事务流转（仅 admin/operator）
+         * @description approve/reject 仅 pending_assessment；lost 额外允许 pending_visit/visited（已授权/已看房线索他司成交后关闭，不清空 eval_price，仅 admin/operator）
          */
         post: operations["authorize_assessment_api_v1_public_leads_my_acquired__lead_id__authorize_assessment_post"];
         delete?: never;
@@ -3595,7 +3606,11 @@ export interface paths {
          */
         get: operations["get_lead_followups_api_v1_public_leads_my_acquired__lead_id__follow_ups_get"];
         put?: never;
-        post?: never;
+        /**
+         * 登记跟进
+         * @description 员工侧登记线索跟进记录（仅 admin/operator）；rejected/lost_to_competitor 终态返回 409
+         */
+        post: operations["create_lead_followup_api_v1_public_leads_my_acquired__lead_id__follow_ups_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6576,6 +6591,17 @@ export interface components {
              * @description 授权评估价(万)，reject/lost 为空
              */
             eval_price?: number | null;
+            /**
+             * Last Follow Up At
+             * @description 最近跟进时间（max(lead_followups.followed_at)，无跟进为空）
+             */
+            last_follow_up_at?: string | null;
+            /**
+             * Follow Up Count
+             * @description 跟进记录条数
+             * @default 0
+             */
+            follow_up_count: number;
             /**
              * Audit Time
              * Format: date-time
@@ -11398,6 +11424,19 @@ export interface components {
             created_at: string;
         };
         /**
+         * PublicFollowupCreate
+         * @description C端员工侧跟进创建请求（POST /public/leads/my/acquired/{lead_id}/follow-ups）.
+         */
+        PublicFollowupCreate: {
+            /** @description 跟进方式：phone/wechat/face/visit */
+            method: components["schemas"]["FollowUpMethod"];
+            /**
+             * Content
+             * @description 跟进内容（1-500 字）
+             */
+            content: string;
+        };
+        /**
          * PublicFollowupItem
          * @description C端跟进记录项.
          */
@@ -11593,6 +11632,12 @@ export interface components {
              */
             follow_ups?: components["schemas"]["PublicFollowupItem"][];
             /**
+             * Can Follow Up
+             * @description 是否可登记跟进（内部员工能力位）
+             * @default false
+             */
+            can_follow_up: boolean;
+            /**
              * Created At
              * Format: date-time
              * @description 创建时间
@@ -11640,6 +11685,41 @@ export interface components {
              * @description 业主心理预期价(万)
              */
             expected_price?: number | null;
+            /**
+             * Eval Price
+             * @description 评估价格(万)，未出价为空
+             */
+            eval_price?: number | null;
+            /**
+             * District
+             * @description 行政区
+             */
+            district?: string | null;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info?: string | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
+            /**
+             * Image Thumbnails
+             * @description 缩略图URL列表，无图为空
+             */
+            image_thumbnails?: string[] | null;
+            /**
+             * Last Follow Up At
+             * @description 最近跟进时间，无跟进为空
+             */
+            last_follow_up_at?: string | null;
+            /**
+             * Audit Time
+             * @description 审核时间，未审核为空
+             */
+            audit_time?: string | null;
             /**
              * Status
              * @description 状态代码
@@ -20068,6 +20148,40 @@ export interface operations {
             };
         };
     };
+    delete_uploaded_file_api_v1_files_upload_delete: {
+        parameters: {
+            query: {
+                /** @description 上传接口返回的文件 URL */
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_sentiment_api_v1_monitor_communities__community_id__sentiment_get: {
         parameters: {
             query?: never;
@@ -21896,6 +22010,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicFollowupItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_lead_followup_api_v1_public_leads_my_acquired__lead_id__follow_ups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicFollowupCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicFollowupItem"];
                 };
             };
             /** @description Validation Error */

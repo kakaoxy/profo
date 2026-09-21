@@ -122,14 +122,15 @@
       </view>
     </view>
 
-    <!-- 4. 跟进记录 -->
+    <!-- 4. 跟进记录（内部员工多出「＋ 登记」入口） -->
     <view class="card">
       <view class="card__head">
         <view class="card__title">跟进记录</view>
-        <view class="card__note" wx:if="{{hasMore}}">共 {{allFollowups.length}} 条</view>
+        <view class="card__act" wx:if="{{canFollowup}}" bindtap="openFollowupPanel">＋ 登记</view>
+        <view class="card__note" wx:elif="{{hasMore}}">共 {{allFollowups.length}} 条</view>
       </view>
       <view wx:if="{{followups.length > 0}}">
-        <view class="followup" wx:for="{{followups}}" wx:key="method">
+        <view class="followup" wx:for="{{followups}}" wx:key="id">
           <view class="followup__meta">
             <view class="followup__method">{{item.method}}</view>
             <view class="followup__time">{{item.at}}</view>
@@ -144,6 +145,53 @@
       <view class="empty" wx:else>暂无跟进记录</view>
     </view>
   </block>
+</view>
+
+<!-- 底部操作栏 + 半屏面板（仅 can_follow_up 的内部员工；纯 C 端客户页面与改造前一致） -->
+<view class="actionbar" wx:if="{{canFollowup}}">
+  <button class="abtn abtn--primary" bindtap="openFollowupPanel">更新跟进</button>
+</view>
+<view class="actionbar-placeholder" wx:if="{{canFollowup}}"></view>
+
+<view class="mask" wx:if="{{panelMode}}" bindtap="closePanel"></view>
+
+<view class="sheet" wx:if="{{panelMode === 'followup'}}">
+  <view class="sheet__grab"></view>
+  <view class="sheet__head">
+    <view class="sheet__title">登记跟进</view>
+    <view class="sheet__close" bindtap="closePanel">×</view>
+  </view>
+  <view class="sheet__sub">记录与业主的最新沟通进展，保持跟进连续性</view>
+  <view class="fld">
+    <view class="fld__lb">跟进方式</view>
+    <view class="chips">
+      <view class="chip {{followupMethod === 'phone' ? 'chip--on' : ''}}" data-method="phone" bindtap="onFollowupMethodTap">电话</view>
+      <view class="chip {{followupMethod === 'wechat' ? 'chip--on' : ''}}" data-method="wechat" bindtap="onFollowupMethodTap">微信</view>
+      <view class="chip {{followupMethod === 'face' ? 'chip--on' : ''}}" data-method="face" bindtap="onFollowupMethodTap">面谈</view>
+      <view class="chip {{followupMethod === 'visit' ? 'chip--on' : ''}}" data-method="visit" bindtap="onFollowupMethodTap">实地带看</view>
+    </view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">跟进内容</view>
+    <textarea
+      class="ta"
+      maxlength="500"
+      placeholder="如：已电话确认看房时间，业主周三下午方便"
+      placeholder-class="ta__placeholder"
+      value="{{followupContent}}"
+      bindinput="onFollowupContentInput"
+    />
+    <view class="ta-count">{{followupLen}}/500</view>
+  </view>
+  <view class="form-error" wx:if="{{formError}}">{{formError}}</view>
+  <view class="sheet__actions">
+    <button
+      class="confirm-btn"
+      loading="{{submitting}}"
+      disabled="{{!followupContent || submitting}}"
+      bindtap="submitFollowup"
+    >确认登记</button>
+  </view>
 </view>
 
 <!-- 手机号绑定授权弹窗：小区数据分析入口未绑定手机号时主动触发 -->

@@ -141,7 +141,9 @@
             <view class="srcchip srcchip--{{item.sourceClass}}">{{item.sourceText}}</view>
             <view class="time">{{item.timeText}}</view>
           </view>
-          <view class="go-eval go-eval--{{item.actionClass}}">{{item.actionText}}</view>
+          <view class="fresh fresh--{{item.freshClass}}" wx:if="{{item.freshClass}}">
+            <view class="fresh__dot"></view>{{item.freshText}}
+          </view>
         </view>
       </view>
 

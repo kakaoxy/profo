@@ -1,4 +1,7 @@
-/* 评估授权页 · Steep 设计体系（#17191c 墨 / #f7f7f8 雾白 / 琥珀 #5d2a1a / 蓝 #2f5f96） */
+/* 评估授权页 · Steep 设计体系（#17191c 墨 / #f7f7f8 雾白 / 琥珀 #5d2a1a / 蓝 #2f5f96）
+   【不拆分说明】本文件 > 500 行：默认模式三动作面板 + viewMode（评估历史/跟进记录/followup 面板）
+   共用同一组 .sheet/.fld/.chip/.confirm-btn 骨架与令牌变量（CSS 变量定义于 .page 作用域），
+   拆分文件会令牌失联或需全局化变量；本轮 spec 明确不抽公共组件/样式文件，故保持单文件。 */
 
 page {
   background-color: #f7f7f8;
@@ -185,10 +188,27 @@ page {
   font-size: 26rpx;
   font-weight: 700;
 }
+.blk-h__main {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
 .blk-h__sub {
   font-size: 21rpx;
   color: var(--ink3);
   font-weight: 400;
+}
+/* 区块头内联操作按钮（调整评估价 / ＋ 登记） */
+.blk-h__act {
+  margin-left: auto;
+  font-size: 23rpx;
+  font-weight: 600;
+  color: var(--green);
+  border: 2rpx solid rgba(47, 95, 150, 0.28);
+  border-radius: 9999rpx;
+  padding: 6rpx 22rpx;
+  background: #ffffff;
+  flex-shrink: 0;
 }
 
 /* ===== 照片宫格 ===== */
@@ -434,6 +454,13 @@ page {
   color: var(--rust);
   border: 2rpx solid #e8cdbc;
 }
+/* viewMode 左按钮：标记为他司成交（白底锈色描边，与 reject 同构） */
+.abtn--lost {
+  flex: 1;
+  background: #ffffff;
+  color: var(--rust);
+  border: 2rpx solid #e8cdbc;
+}
 .abtn--primary {
   flex: 1.9;
   background: var(--ink);
@@ -495,6 +522,11 @@ page {
   font-size: 31rpx;
   font-weight: 700;
 }
+.sheet__sub {
+  font-size: 22rpx;
+  color: var(--ink3);
+  margin-top: 8rpx;
+}
 .sheet__close {
   width: 52rpx;
   height: 52rpx;
@@ -515,6 +547,37 @@ page {
   font-size: 24rpx;
   color: var(--ink2);
   margin-bottom: 16rpx;
+}
+/* 跟进方式 chip 行 */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.chip {
+  height: 68rpx;
+  padding: 0 28rpx;
+  border-radius: 9999rpx;
+  background: var(--fog);
+  border: 2rpx solid var(--line);
+  color: var(--ink2);
+  font-size: 25rpx;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+.chip--on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #ffffff;
+}
+/* 面板底部说明文字 */
+.hint {
+  margin-top: 24rpx;
+  font-size: 22rpx;
+  color: var(--ink3);
+  line-height: 1.65;
 }
 .amount-wrap {
   border-bottom: 4rpx solid var(--line);

@@ -1,4 +1,6 @@
-/* 「评估详情」页 · Steep（DESIGN.md）：Fog 画布 + 白卡 + 24rpx 圆角，暖色仅用于价格 */
+/* 「评估详情」页 · Steep（DESIGN.md）：Fog 画布 + 白卡 + 24rpx 圆角，暖色仅用于价格
+   【不拆分说明】本文件 > 500 行：跟进半屏面板样式（.sheet/.chips/.confirm-btn 等）与页面
+   既有令牌同源同放（spec 要求与 authorize 逐像素同构），拆分会割裂样式同源约定，故保持单文件。 */
 page {
   background-color: #f7f7f8;
 }
@@ -37,6 +39,18 @@ page {
   font-size: 24rpx;
   letter-spacing: -0.1px;
   color: #777b86;
+}
+/* 区块头内联操作按钮（＋ 登记，与 authorize 的 blk-h__act 同构） */
+.card__act {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 23rpx;
+  font-weight: 600;
+  color: #2f5f96;
+  border: 2rpx solid rgba(47, 95, 150, 0.28);
+  border-radius: 9999rpx;
+  padding: 6rpx 22rpx;
+  background: #ffffff;
 }
 
 /* ===== 价格 Hero（结论先行）===== */
@@ -303,6 +317,190 @@ page {
   letter-spacing: -0.12px;
   color: #777b86;
   padding: 16rpx 0;
+}
+
+/* ===== 底部操作栏 / 半屏面板（与 authorize 同名样式逐像素同构） ===== */
+.actionbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1rpx solid #e6e8ec;
+  display: flex;
+  gap: 20rpx;
+  padding: 24rpx 32rpx calc(env(safe-area-inset-bottom) + 24rpx);
+}
+.abtn {
+  border: none;
+  border-radius: 9999rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  height: 92rpx;
+  line-height: 92rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+}
+.abtn::after {
+  border: none;
+}
+.abtn--primary {
+  flex: 1;
+  background: #17191c;
+  color: #ffffff;
+  box-shadow: 0 16rpx 40rpx rgba(23, 25, 28, 0.25);
+}
+.actionbar-placeholder {
+  height: 180rpx;
+}
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 25, 28, 0.45);
+  z-index: 70;
+  animation: detail-fade-in 0.25s ease;
+}
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 75;
+  background: #ffffff;
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 20rpx 36rpx calc(env(safe-area-inset-bottom) + 28rpx);
+  animation: detail-slide-up 0.3s cubic-bezier(0.32, 0.72, 0.28, 1);
+}
+@keyframes detail-slide-up {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes detail-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.sheet__grab {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: #e6e8ec;
+  margin: 0 auto 24rpx;
+}
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet__title {
+  font-size: 31rpx;
+  font-weight: 700;
+}
+.sheet__sub {
+  font-size: 22rpx;
+  color: #a3a6af;
+  margin-top: 8rpx;
+}
+.sheet__close {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  background: #f7f7f8;
+  color: #4c4c4c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+.fld {
+  margin-top: 32rpx;
+}
+.fld__lb {
+  font-size: 24rpx;
+  color: #4c4c4c;
+  margin-bottom: 16rpx;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.chip {
+  height: 68rpx;
+  padding: 0 28rpx;
+  border-radius: 9999rpx;
+  background: #f7f7f8;
+  border: 2rpx solid #e6e8ec;
+  color: #4c4c4c;
+  font-size: 25rpx;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+.chip--on {
+  background: #17191c;
+  border-color: #17191c;
+  color: #ffffff;
+}
+.ta {
+  width: 100%;
+  border: 2rpx solid #e6e8ec;
+  border-radius: 24rpx;
+  padding: 22rpx 24rpx;
+  font-size: 26rpx;
+  color: #17191c;
+  min-height: 140rpx;
+  line-height: 1.65;
+  box-sizing: border-box;
+}
+.ta__placeholder {
+  color: #a3a6af;
+}
+.ta-count {
+  text-align: right;
+  font-size: 21rpx;
+  color: #a3a6af;
+  margin-top: 10rpx;
+}
+.form-error {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #b42318;
+}
+.sheet__actions {
+  margin-top: 36rpx;
+}
+.confirm-btn {
+  width: 100%;
+  height: 94rpx;
+  border-radius: 9999rpx;
+  background: #17191c;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 94rpx;
+  padding: 0;
+  box-shadow: 0 18rpx 44rpx rgba(23, 25, 28, 0.24);
+}
+.confirm-btn::after {
+  border: none;
+}
+.confirm-btn[disabled] {
+  background: #c6cbd4;
+  color: #ffffff;
+  box-shadow: none;
 }
 
 /* ===== 通用状态 ===== */

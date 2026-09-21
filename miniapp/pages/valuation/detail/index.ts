@@ -3,6 +3,9 @@
  *
  * 内部员工持双令牌（admin + c_access_token）时可正常访问 C 端 /public/leads/{id}；
  * 仅当无 C 端令牌（纯 admin 用户）或令牌均失效时，展示内部限定态或登录失效态.
+ * 内部员工额外开放跟进录入（detail.can_follow_up 能力位）：跟进记录区块头「＋ 登记」
+ * 与底部「更新跟进」共用同一半屏面板，提交 POST /public/leads/my/acquired/{id}/follow-ups
+ * 成功后重拉详情，跟进记录即时出现；纯 C 端客户页面与改造前完全一致。
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
@@ -17,11 +20,19 @@ import {
 type LeadDetail = components["schemas"]["PublicLeadDetail"];
 type Followup = components["schemas"]["PublicFollowupItem"];
 
+/** 面板模式：空串表示全部关闭. */
+type PanelMode = "" | "followup";
+
 /** 跟进记录每批展示条数. */
 const FOLLOWUP_PAGE_SIZE = 5;
 
+/** 跟进内容长度上限（对齐后端 PublicFollowupCreate max_length=500）. */
+const MAX_FOLLOWUP_CONTENT = 500;
+
 /** 跟进记录展示项. */
 interface DisplayFollowup {
+  /** 唯一标识（后端真实跟进为 UUID，评估历史合成项为 eval:{UUID}），用于 wx:key. */
+  id: string;
   method: string;
   content: string;
   at: string;
@@ -65,6 +76,20 @@ interface PageData {
   remaining: number;
   /** 待进入小区数据分析的小区名（未绑定手机号时暂存，绑定成功后使用）. */
   pendingCommunityName: string;
+  // 跟进录入（仅 can_follow_up 为 true 的内部员工可见）
+  /** 可登记跟进（后端 can_follow_up 能力位）. */
+  canFollowup: boolean;
+  /** 半屏面板模式（空串 = 关闭）. */
+  panelMode: PanelMode;
+  /** 跟进方式（phone/wechat/face/visit，默认电话）. */
+  followupMethod: string;
+  /** 跟进内容（1-500 字）. */
+  followupContent: string;
+  followupLen: number;
+  /** 提交中. */
+  submitting: boolean;
+  /** 面板内错误提示. */
+  formError: string;
 }
 
 /** 页面自定义方法. */
@@ -82,6 +107,12 @@ interface PageCustom {
   onGoLogin(): void;
   onBack(): void;
   onRetry(): void;
+  /** 打开跟进半屏面板（区块头「＋ 登记」与底部「更新跟进」共用）. */
+  openFollowupPanel(): void;
+  closePanel(): void;
+  onFollowupMethodTap(e: WechatMiniprogram.BaseEvent): void;
+  onFollowupContentInput(e: WechatMiniprogram.Input): void;
+  submitFollowup(): Promise<void>;
 }
 
 Page<PageData, PageCustom>({
@@ -109,6 +140,13 @@ Page<PageData, PageCustom>({
     hasMore: false,
     remaining: 0,
     pendingCommunityName: "",
+    canFollowup: false,
+    panelMode: "",
+    followupMethod: "phone",
+    followupContent: "",
+    followupLen: 0,
+    submitting: false,
+    formError: "",
   },
 
   getToken() {
@@ -145,6 +183,7 @@ Page<PageData, PageCustom>({
     // 单条线索跟进量有限，可接受全量拉取，不做过度设计）。前端按 FOLLOWUP_PAGE_SIZE
     // 切片逐批展示（allFollowups 全量缓存，followups 展示切片，onLoadMoreFollowups 追加）.
     const allFollowups = (detail.follow_ups ?? []).map((f: Followup) => ({
+      id: f.id,
       method: followupMethodLabel(f.method),
       content: f.content,
       at: formatDate(f.followed_at, true),
@@ -167,6 +206,8 @@ Page<PageData, PageCustom>({
       floor_display: floorDisplay,
       remarks: detail.remarks || "",
       created_at: formatDate(detail.created_at, true),
+      // 内部员工能力位：跟进录入入口（纯 C 端客户恒 false，页面不出现任何录入元素）
+      canFollowup: detail.can_follow_up === true,
       // 缩略图优先，兜底原图
       images: (
         detail.image_thumbnails && detail.image_thumbnails.length
@@ -298,5 +339,91 @@ Page<PageData, PageCustom>({
 
   onRetry() {
     this.loadDetail();
+  },
+
+  /** 跟进半屏面板：跟进方式默认电话，内容清空. */
+  openFollowupPanel() {
+    if (!this.data.canFollowup) {
+      return;
+    }
+    this.setData({
+      panelMode: "followup",
+      formError: "",
+      followupMethod: "phone",
+      followupContent: "",
+      followupLen: 0,
+    });
+  },
+
+  closePanel() {
+    if (this.data.submitting) {
+      return;
+    }
+    this.setData({ panelMode: "", formError: "" });
+  },
+
+  /** 切换跟进方式 chip（phone/wechat/face/visit）. */
+  onFollowupMethodTap(e: WechatMiniprogram.BaseEvent) {
+    const method = e.currentTarget.dataset.method as string;
+    if (!method) {
+      return;
+    }
+    this.setData({ followupMethod: method });
+  },
+
+  onFollowupContentInput(e: WechatMiniprogram.Input) {
+    const content = e.detail.value || "";
+    this.setData({ followupContent: content, followupLen: content.length, formError: "" });
+  },
+
+  /** 登记跟进提交：成功后关闭面板、toast 并重拉详情，跟进记录即时出现. */
+  async submitFollowup() {
+    if (this.data.submitting) {
+      return;
+    }
+    const content = this.data.followupContent.trim();
+    if (!content) {
+      this.setData({ formError: "请填写跟进内容" });
+      return;
+    }
+    if (content.length > MAX_FOLLOWUP_CONTENT) {
+      this.setData({ formError: `内容最多 ${MAX_FOLLOWUP_CONTENT} 字` });
+      return;
+    }
+    this.setData({ submitting: true, formError: "" });
+    try {
+      await request<unknown>({
+        url: `/public/leads/my/acquired/${this.data.leadId}/follow-ups`,
+        method: "POST",
+        data: {
+          method: this.data.followupMethod,
+          content,
+        },
+      });
+      this.setData({ panelMode: "", followupContent: "", followupLen: 0 });
+      wx.showToast({ title: "已登记跟进", icon: "success" });
+      // 重拉详情：跟进记录即时出现，canFollowup/时效基准同步刷新
+      await this.loadDetail();
+    } catch (err) {
+      const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+      const errBody = (err as { body?: { message?: string } | undefined }).body;
+      if (statusCode === 409) {
+        // 线索已被关闭（rejected/lost_to_competitor）：关闭面板重拉详情承接最新状态
+        this.setData({ panelMode: "", formError: "" });
+        wx.showToast({ title: errBody?.message || "线索已关闭", icon: "none" });
+        await this.loadDetail();
+        return;
+      }
+      this.setData({
+        formError:
+          statusCode === 403
+            ? errBody?.message || "仅管理员/运营人员可登记跟进"
+            : statusCode === 422
+              ? errBody?.message || "表单校验未通过，请检查输入"
+              : errBody?.message || "提交失败，请重试",
+      });
+    } finally {
+      this.setData({ submitting: false });
+    }
   },
 });

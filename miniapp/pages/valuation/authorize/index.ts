@@ -5,19 +5,29 @@
  * - 待评估授权（默认）：数据源为工作台列表经 EventChannel 传递的原始队列项（leadDetail 事件），
  *   不新增详情端点；冷启动无数据时展示缺失态引导返回列表。
  * - 已处理只读详情（?mode=view）：工作台已处理卡进入，展示授权结果、评估历史与跟进记录
- *   （GET /public/leads/my/acquired/{id}/follow-ups、GET .../evaluations）。
+ *   （GET /public/leads/my/acquired/{id}/follow-ups、GET .../evaluations），
+ *   参数宫格补第 6 格「最近跟进」（last_follow_up_at ?? audit_time）。
  * - 再次评估（viewMode 内 openAdjustPanel）：对 pending_visit/visited 线索调整评估价，
  *   语义对齐 admin CurrentEvalPriceSection「调整评估价」，
  *   提交 POST /public/leads/my/acquired/{id}/evaluations（追加评估历史 + 刷 eval_price，不改状态）。
+ * - 登记跟进（viewMode 内 openFollowupPanel，跟进记录区块头「＋ 登记」与底部「更新跟进」共用）：
+ *   提交 POST /public/leads/my/acquired/{id}/follow-ups（写 lead_followups + 刷 last_follow_up_at）。
+ * - viewMode 底部操作栏：左「标记为他司成交」（复用 lost 面板，authorize-assessment 放开至
+ *   pending_visit/visited）/ 右「更新跟进」。
  * 待评估模式三动作（approve/reject/lost）语义对齐 admin PendingAssessmentPanel，
  * 单端点原子提交（POST /public/leads/my/acquired/{id}/authorize-assessment）：
  * - approve：评估价必填（>0、≤999 万、≤2 位小数）+ 意见选填 ≤200 字，
  *   实时差值提示（低报绿 / 高报琥珀 / 确认按钮禁用与动态金额文案）；
  * - reject / lost：原因选填 ≤500 字（对齐 admin 选填语义）。
- * 409 幂等冲突弹窗引导返回并刷新列表（默认/adjust 模式文案区分）。
+ * 409 幂等冲突弹窗引导返回并刷新列表（默认/adjust/lost/followup 模式文案区分）。
  * 「小区行情分析」入口复用 valuation/detail 的 GET /public/auth/me 预检模式
  * （未登录 toast 引导 / 未绑手机弹绑定框），通过后跳转既有分析页。
  * 视觉遵循 Steep 设计体系（eval-auth-hifi.html 屏C）一比一还原。
+ *
+ * 【不拆分说明】本文件 > 500 行：页面承载「默认授权 / viewMode 详情 / adjust / lost /
+ * followup 四类半屏面板」的一体化交互与状态机，面板间共享表单校验与提交管线；
+ * 若按面板拆分会割裂 SubmitAction 分发与 409 冲突文案分档逻辑，本轮 spec 亦明确
+ * 不抽公共组件（卡片/面板样式各页同源存放），故保持单文件。
  */
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
@@ -33,11 +43,11 @@ type EvalHistoryItem = components["schemas"]["LeadEvalHistoryResponse"];
 
 type AuthorizeAction = "approve" | "reject" | "lost";
 
-/** 提交动作：三动作授权 + 再次评估（adjust 走独立端点，不改状态）. */
-type SubmitAction = AuthorizeAction | "adjust";
+/** 提交动作：三动作授权 + 再次评估（adjust 走独立端点）+ 登记跟进（followup 走新端点）. */
+type SubmitAction = AuthorizeAction | "adjust" | "followup";
 
 /** 面板模式：空串表示全部关闭. */
-type PanelMode = "" | "approve" | "reject" | "lost" | "adjust";
+type PanelMode = "" | "approve" | "reject" | "lost" | "adjust" | "followup";
 
 /** 差值提示类型：空串=默认引导文案. */
 type DiffType = "" | "good" | "warn" | "same" | "invalid";
@@ -62,7 +72,7 @@ const VIEW_STATUS_META: Record<string, { text: string; cls: string }> = {
 /** 可再次评估（调整评估价）的状态集合，对齐 admin CurrentEvalPriceSection 口径. */
 const ADJUSTABLE_STATUSES: string[] = ["pending_visit", "visited"];
 
-/** 冲突弹窗（409）文案：默认模式与再次评估模式区分. */
+/** 冲突弹窗（409）文案：默认 / 再次评估 / 标记他司成交 / 登记跟进 四档区分. */
 const CONFLICT_COPY = {
   default: {
     title: "该线索已被完成评估",
@@ -71,6 +81,14 @@ const CONFLICT_COPY = {
   adjust: {
     title: "线索状态已变化",
     desc: "该线索当前状态不支持调整评估价，返回后将自动刷新工作台列表。",
+  },
+  lost: {
+    title: "线索状态已变化",
+    desc: "该线索当前状态不可标记为他司成交，返回后将自动刷新工作台列表。",
+  },
+  followup: {
+    title: "线索状态已变化",
+    desc: "该线索已关闭，无法登记跟进，返回后将自动刷新工作台列表。",
   },
 } as const;
 
@@ -113,8 +131,10 @@ interface PageData {
   missing: boolean;
   /** 只读详情模式（工作台已处理卡进入）：隐藏操作栏与面板，展示跟进记录. */
   viewMode: boolean;
-  /** 可再次评估（viewMode 且状态为 pending_visit/visited 时展示「调整评估价」操作栏）. */
+  /** 可再次评估（viewMode 且状态为 pending_visit/visited 时在评估历史区块头展示「调整评估价」）. */
   canAdjust: boolean;
+  /** 可登记跟进（viewMode 且状态为 pending_visit/visited，与 canAdjust 同口径）. */
+  canFollowup: boolean;
   /** Hero 状态标签（待评估=琥珀；viewMode 按流转状态着色）. */
   statusTagText: string;
   statusTagClass: string;
@@ -141,6 +161,8 @@ interface PageData {
   created_at: string;
   /** 处理时间（viewMode）. */
   auditTimeText: string;
+  /** 最近跟进时间（viewMode 参数宫格第 6 格：last_follow_up_at ?? audit_time）. */
+  recentFollowupText: string;
   sourceText: string;
   /** 跟进记录（viewMode 拉取）. */
   followups: FollowupDisplay[];
@@ -167,7 +189,13 @@ interface PageData {
   confirmText: string;
   formError: string;
   submitting: boolean;
-  /** 409 幂等冲突弹窗（默认/adjust 模式文案区分）. */
+  // 跟进面板（followup）
+  /** 跟进方式（phone/wechat/face/visit，默认电话）. */
+  followupMethod: string;
+  /** 跟进内容（1-500 字，对齐后端 PublicFollowupCreate）. */
+  followupContent: string;
+  followupLen: number;
+  /** 409 幂等冲突弹窗（四档文案区分）. */
   showConflict: boolean;
   conflictTitle: string;
   conflictDesc: string;
@@ -198,6 +226,11 @@ interface PageCustom {
   /** 确认按钮主文案（模板事件外复用）：adjust=「确认调整」，其余=「确认授权」. */
   confirmVerb(): string;
   openAdjustPanel(): void;
+  /** 打开跟进半屏面板（viewMode 底部「更新跟进」与跟进记录区块头「＋ 登记」共用）. */
+  openFollowupPanel(): void;
+  onFollowupMethodTap(e: WechatMiniprogram.BaseEvent): void;
+  onFollowupContentInput(e: WechatMiniprogram.Input): void;
+  submitFollowup(): void;
   onConflictBack(): void;
   onBack(): void;
 }
@@ -265,6 +298,7 @@ Page<PageData, PageCustom>({
     missing: true,
     viewMode: false,
     canAdjust: false,
+    canFollowup: false,
     statusTagText: "● 待评估",
     statusTagClass: "amber",
     community_name: "",
@@ -282,6 +316,7 @@ Page<PageData, PageCustom>({
     remarks: "",
     created_at: "",
     auditTimeText: "",
+    recentFollowupText: "",
     sourceText: "",
     followups: [],
     followupsLoaded: false,
@@ -301,6 +336,9 @@ Page<PageData, PageCustom>({
     confirmText: "确认授权",
     formError: "",
     submitting: false,
+    followupMethod: "phone",
+    followupContent: "",
+    followupLen: 0,
     showConflict: false,
     conflictTitle: CONFLICT_COPY.default.title,
     conflictDesc: CONFLICT_COPY.default.desc,
@@ -357,15 +395,16 @@ Page<PageData, PageCustom>({
     });
   },
 
-  /** 已处理线索只读详情：状态标签 + 授权价/处理时间 + 再次评估入口 + 评估历史. */
+  /** 已处理线索只读详情：状态标签 + 授权价/处理时间 + 再次评估/跟进入口 + 评估历史. */
   applyHandledItem(item: HandledItem) {
     const hasPrice = item.expected_price != null;
     const meta = VIEW_STATUS_META[item.status] ?? { text: item.status_display, cls: "gray" };
-    // 已授权/已看房展示授权价，且支持再次评估（对齐 admin CurrentEvalPriceSection 口径）
+    // 已授权/已看房展示授权价，且支持再次评估与登记跟进（对齐 admin 口径）
     const approved = ADJUSTABLE_STATUSES.indexOf(item.status) >= 0;
     this.setData({
       missing: false,
       canAdjust: approved,
+      canFollowup: approved,
       statusTagText: meta.text,
       statusTagClass: meta.cls,
       community_name: item.community_name,
@@ -388,6 +427,8 @@ Page<PageData, PageCustom>({
       images: (item.images || []).map((u) => resolveImageUrl(u, { width: 480 })),
       remarks: item.remarks || "",
       auditTimeText: formatDate(item.audit_time, true),
+      // 「最近跟进」宫格：无跟进回退处理时间
+      recentFollowupText: formatDate(item.last_follow_up_at || item.audit_time, true),
       sourceText: item.source === "customer_share" ? "客户分享" : "员工直录",
     });
   },
@@ -538,6 +579,53 @@ Page<PageData, PageCustom>({
     this.setData({ panelMode: "", formError: "", focusedField: "" });
   },
 
+  /** 跟进半屏面板（viewMode）：跟进方式默认电话，内容清空. */
+  openFollowupPanel() {
+    if (!this.data.canFollowup) {
+      return;
+    }
+    this.setData({
+      panelMode: "followup",
+      formError: "",
+      followupMethod: "phone",
+      followupContent: "",
+      followupLen: 0,
+      focusedField: "",
+    });
+  },
+
+  /** 切换跟进方式 chip（phone/wechat/face/visit）. */
+  onFollowupMethodTap(e: WechatMiniprogram.BaseEvent) {
+    const method = e.currentTarget.dataset.method as string;
+    if (!method) {
+      return;
+    }
+    this.setData({ followupMethod: method });
+  },
+
+  onFollowupContentInput(e: WechatMiniprogram.Input) {
+    const content = e.detail.value || "";
+    this.setData({ followupContent: content, followupLen: content.length, formError: "" });
+  },
+
+  /** 登记跟进提交：内容 1-500 字校验 → POST 新端点 → toast → navigateBack. */
+  submitFollowup() {
+    if (this.data.submitting) {
+      return;
+    }
+    const content = this.data.followupContent.trim();
+    if (!content) {
+      this.setData({ formError: "请填写跟进内容" });
+      return;
+    }
+    if (content.length > MAX_REMARK) {
+      this.setData({ formError: `内容最多 ${MAX_REMARK} 字` });
+      return;
+    }
+    this.setData({ followupContent: content, followupLen: content.length });
+    void this.doSubmit("followup");
+  },
+
   onFocusField(e: WechatMiniprogram.BaseEvent) {
     this.setData({ focusedField: e.currentTarget.dataset.field as string });
   },
@@ -603,6 +691,21 @@ Page<PageData, PageCustom>({
         setTimeout(() => wx.navigateBack(), 600);
         return;
       }
+      if (action === "followup") {
+        // 登记跟进：写 lead_followups 并同步刷 last_follow_up_at（服务端）
+        const body: components["schemas"]["PublicFollowupCreate"] = {
+          method: this.data.followupMethod as components["schemas"]["PublicFollowupCreate"]["method"],
+          content: this.data.followupContent,
+        };
+        await request<unknown>({
+          url: `/public/leads/my/acquired/${this.data.leadId}/follow-ups`,
+          method: "POST",
+          data: body,
+        });
+        wx.showToast({ title: "已登记跟进", icon: "success" });
+        setTimeout(() => wx.navigateBack(), 600);
+        return;
+      }
       const body: components["schemas"]["LeadAssessmentAuthorizeRequest"] = {
         action,
         ...(action === "approve" ? { eval_price: Number(this.data.evalPrice) } : {}),
@@ -620,8 +723,15 @@ Page<PageData, PageCustom>({
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       const errBody = (err as { body?: { message?: string } | undefined }).body;
       if (statusCode === 409) {
-        // 幂等/状态防护：弹窗引导返回并刷新列表（默认=已被处理，adjust=状态不可调整）
-        const copy = action === "adjust" ? CONFLICT_COPY.adjust : CONFLICT_COPY.default;
+        // 幂等/状态防护：按动作选择对应冲突文案，弹窗引导返回并刷新列表
+        const copy =
+          action === "adjust"
+            ? CONFLICT_COPY.adjust
+            : action === "lost"
+              ? CONFLICT_COPY.lost
+              : action === "followup"
+                ? CONFLICT_COPY.followup
+                : CONFLICT_COPY.default;
         this.setData({ panelMode: "", showConflict: true, conflictTitle: copy.title, conflictDesc: copy.desc });
         return;
       }

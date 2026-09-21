@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>评估模块 · 已处理线索 + 我的评估 迭代 高保真设计稿 v1</title>
+<!--
+  评估工作台 · 已处理线索迭代 高保真设计稿 v1（2026-09-21）
+  ─────────────────────────────────────────────────────────────────────
+  视觉真源：miniapp/pages/valuation/{evaluate,authorize}/*.wxss + docs/DESIGN.md
+             （Steep 令牌：Ink #17191c / Fog #f7f7f8 / Rust #5d2a1a / Apricot #fbe1d1 / Sky #d3e3fc）
+
+  迭代动因：把 miniapp/pages/valuation/evaluate/index 与 Web admin/leads 详情抽屉对齐，
+  三个业务场景当前没有覆盖 ——
+
+    场景 ①  他司成交功能缺失
+      现状：authorize/index 的 lost-strip 被 wx:if="{{!viewMode}}" 挡住，
+            「已处理」线索点进去是纯只读，已授权后到他司成交之间没有出口。
+      对照：admin/leads 的 MarkLostSection 在 pending_visit / visited 两个状态下都在。
+      缺口：后端 POST /public/leads/my/acquired/{id}/authorize-assessment 只接受
+            pending_assessment（service 内校验，否则 409），需放开「lost」在
+            pending_visit / visited 下可用。
+
+    场景 ②  授权后到签约前，内部用户需要更新跟进信息
+      现状：authorize/index?mode=view 只 GET 跟进记录（只读），小程序侧没有登记入口；
+            后端 public 侧只有 GET .../follow-ups，没有 POST。
+      对照：admin/leads 抽屉有「登记最新动态」（FollowUpTimeline）+ 独立
+            [leadId]/_components/lead-follow-up-form.tsx。
+      缺口：新增 POST .../follow-ups（method + content）。
+
+    场景 ③  已处理卡右下角标签语义与右上角重叠
+      现状：右上角 stag = 已授权 / 已看房 / 已驳回 / 他司成交；
+            右下角 go-eval chip = 已授权 · 待看房 / 已看房 · 可调整评估价 /
+            已驳回 / 他司已成交 · 线索关闭 —— 与右上角说的是同一件事，
+            且芯片是按钮外观（胶囊 + 洗底 + 阴影）却不可点，整卡只进只读详情。
+      改造：右下角改为「跟进时效」标签，回答评估员真正的问题 —— 这条线索我还要不要跟：
+            ≤7 天 = 跟进中 / 8-14 天 = 即将过期 / >14 天 = 已过期。
+            终态（已驳回 / 他司成交）右下角留空 —— 留空本身就是「不必再跟」的信号。
+
+  本轮与用户确认的四条口径（2026-09-21）：
+    ① 只出小程序评估工作台（evaluate 列表卡 + authorize viewMode 详情页），
+       Web admin/leads 不动，只在第 05 节写明为何不动。
+    ② 场景 ① 入口 = 详情页底部操作栏（与右栏「更新跟进」并列），卡片不加动作，
+       避免与右下角时效标签抢位。
+    ③ 场景 ② 形式 = 底部按钮 → 半屏 sheet（与 approve/reject/lost 面板同一套语言）。
+    ④ 时效标签仅落在小程序已处理卡；详情页 Hero 不加标签（Hero 已有状态标签，
+       再加时效会重现「两个标签说同一件事」的老问题）。
+
+  联动结论：登记跟进成功后 navigateBack → 工作台 onShow 已静默刷新双段（现有实现），
+  时效标签自动回到「跟进中」，无需新增刷新逻辑。
+
+  ⚠️ 依赖未落地：本稿描述的两处后端改动尚未实现（第 05 节表 2）。
+  ⚠️ HandledItem（backend/schemas/lead/__init__.py）当前不下发 last_follow_up_at，
+     时效三态无法计算；本稿按「后端补字段 + 前端纯函数」推演。
+
+  ─────────────────────────────────────────────────────────────────────
+  第二轮（2026-09-21，同日追加 06–09 节）：pages/valuation/list/index
+  ─────────────────────────────────────────────────────────────────────
+  动因：list（我的评估）与 detail（评估详情）是 C 端客户与内部员工的共用页
+  ——「C 端客户和内部员工都在这个页面跟进」。它有两个问题：
+
+    问题 ①  列表与同模块其它页两套视觉语言
+      现状：list/index.wxss 走「暖色编辑风格」（hsl(40,16%,98%) 画布 +
+            hsl(43,23%,85%) 描边 + 24px 圆角 + 无阴影），而同模块的
+            detail/index.wxss 与 evaluate/index.wxss 都是 Steep（Fog #f7f7f8 +
+            白卡 + 阴影 + 无边框）。切页时底色和卡片质感会跳一次。
+      叠加：状态徽章色来自后端 LEAD_STATUS_DISPLAY_MAP（routers/public/leads.py），
+            是一套 Material 色板 —— #FFA500 / #2196F3 / #F44336 / #4CAF50 / #9C27B0。
+            其中蓝、绿、紫、橙正是 DESIGN.md「Don't introduce saturated blues,
+            greens, or reds for UI chrome — the only chromatic voices are Rust
+            and the two pastel washes」明令避免的色。同一模块里第三套色板。
+      卡片信息量：只有 小区名 / 状态 / 户型·面积 / 日期；没有缩略图、没有价格，
+            也看不出从提交到评估的进展。
+
+    问题 ②  内部员工无法在详情页登记跟进
+      现状：detail/index 对任何人都是只读 —— 跟进记录区只有列表没有录入入口；
+            后端 public 侧只有 GET .../follow-ups，没有 POST。
+      注意：上一轮为 authorize（员工工作台）设计的
+            POST /public/leads/my/acquired/{id}/follow-ups 恰好可直接复用 ——
+            /public/leads/mine 只返回 creator_id == 当前用户 的线索，而
+            get_acquired_list 同时收 直接录入（creator_id==me），故本页每条线索
+            必然落在该员工「本人经手」范围内。无需新增端点。
+
+  本轮与用户确认的口径（2026-09-21）：
+    ① 列表样式与 evaluate/index 保持一致 —— 采用同一套 Steep 令牌与同一份
+       lcard 卡槽骨架（缩略图 / 参数两行 / 价格栈 / 分隔线 / 右上状态标签 / 右下胶囊）。
+    ② 允许内部员工在详情页填写跟进信息 —— 入口与面板复用上一轮 authorize 的
+       「＋ 登记」+ 半屏 sheet，纯 C 端客户完全看不到这两个入口。
+
+  对第 01–05 节的一处修订：终态集合由「已驳回 / 他司成交」补全为
+  「已签约 / 已驳回 / 他司成交」—— 已签约后同样不需要再跟进，右下角也应留空。
+  （同时暴露一个既有缺口：evaluate 的 HANDLED_STATUS_META 没有 signed 映射，
+  已签约线索会退化成灰色 status_display，见第 09 节改动清单。）
+-->
+<style>
+  :root {
+    --ink: #17191c;
+    --ink2: #4c4c4c;
+    --ink3: #a3a6af;
+    --line: #e6e8ec;
+    --fog: #f7f7f8;
+    --pure-white: #ffffff;
+    --amber: #5d2a1a;
+    --amberw: rgba(93, 42, 26, 0.07);
+    --green: #2f5f96;
+    --greenw: #d3e3fc;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --gray-chip-bg: #eef0f3;
+    --gray-chip-fg: #6b6e76;
+    --warm-bg: hsl(40, 16%, 98%);
+    --warm-fg: hsl(37.5, 15.69%, 20%);
+    --warm-muted-fg: hsl(36, 19.84%, 49.41%);
+    --warm-muted: hsl(44, 26.32%, 88.82%);
+    --warm-border: hsl(43.33, 23.08%, 84.71%);
+    --font-body: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: #e9ebef;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 80px;
+    gap: 28px;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ===== 页头 ===== */
+  .page-head { text-align: center; max-width: 760px; }
+  .page-head h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.2px; }
+  .page-head p { font-size: 13px; color: #6b7280; margin-top: 7px; line-height: 1.7; }
+  .tokens { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .token { display: flex; align-items: center; gap: 5px; }
+  .token i { display: block; width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(23, 25, 28, 0.1); }
+  .token span { font-size: 10px; color: #6b7280; letter-spacing: 0.02em; }
+
+  /* ===== 区块 ===== */
+  .sec { width: 100%; max-width: 1180px; }
+  .sec-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; padding-left: 4px; }
+  .sec-no { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: var(--rust); }
+  .sec-head h2 { font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+  .sec-note { font-size: 12.5px; color: #6b7280; line-height: 1.75; padding-left: 4px; max-width: 860px; }
+  .sec-note b { color: var(--ink2); font-weight: 600; }
+  .sec-note em { font-style: normal; color: var(--rust); font-weight: 600; }
+
+  /* ===== 控件 ===== */
+  .controls { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 18px 0 4px; }
+  .ctrl-group { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .ctrl-label { font-size: 12px; color: #6b7280; margin-right: 2px; }
+  .tab {
+    border: 1px solid #d4d8e0;
+    background: #fff;
+    color: #4c4c4c;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .tab:hover { border-color: #a3a6af; }
+  .tab--on { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 500; }
+
+  /* ===== 图形容器 ===== */
+  .figs { display: flex; flex-wrap: wrap; gap: 34px; justify-content: center; align-items: flex-start; margin-top: 20px; }
+  .fig { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .fig__label { font-size: 12px; font-weight: 600; color: var(--ink2); letter-spacing: -0.1px; }
+  .fig__label span { display: block; font-size: 11px; font-weight: 400; color: #8b919c; margin-top: 3px; letter-spacing: 0; }
+
+  /* ===== 手机外框 ===== */
+  .phone {
+    width: 375px;
+    background: var(--fog);
+    border-radius: 40px;
+    box-shadow: 0 24px 60px rgba(23, 25, 28, 0.18);
+    overflow: hidden;
+    border: 8px solid #1c1e26;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .phone::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 22px;
+    background: #1c1e26;
+    border-radius: 12px;
+    z-index: 60;
+  }
+
+  .statusbar {
+    height: 44px;
+    background: var(--pure-white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px 0;
+  }
+  .sb-time { font-size: 14px; font-weight: 600; letter-spacing: -0.1px; }
+  .sb-icons { display: flex; align-items: center; gap: 5px; }
+  .sb-icons svg { display: block; }
+
+  .navbar {
+    background: var(--pure-white);
+    height: 44px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 1px solid rgba(163, 166, 175, 0.3);
+  }
+  .nav-back { position: absolute; left: 12px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+  .nav-title { flex: 1; text-align: center; font-size: 16px; font-weight: 500; letter-spacing: -0.14px; }
+  .nav-title-pad { width: 94px; }
+  .capsule {
+    position: absolute;
+    right: 8px;
+    width: 86px;
+    height: 32px;
+    border: 1px solid rgba(23, 25, 28, 0.12);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .capsule-side { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .capsule-div { width: 1px; height: 18px; background: rgba(23, 25, 28, 0.1); }
+
+  .screen { background: var(--fog); min-height: 668px; padding: 14px 0 26px; position: relative; }
+
+  /* ===== 评估工作台：统计条 / 搜索 ===== */
+  .evalmeta { display: flex; align-items: baseline; gap: 8px; padding: 6px 20px 10px; }
+  .evalmeta__big { font-size: 15px; font-weight: 700; }
+  .evalmeta__num { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .evalmeta__today { font-size: 12px; font-weight: 600; color: var(--amber); background: var(--amberw); border-radius: 9999px; padding: 3px 10px; }
+
+  .searchbox {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 2px 16px 10px;
+    height: 44px;
+    background: #fff;
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    padding: 0 16px;
+  }
+  .searchbox__icon { width: 16px; height: 16px; border: 2px solid var(--ink3); border-radius: 50%; position: relative; flex-shrink: 0; }
+  .searchbox__icon::after { content: ""; position: absolute; width: 2px; height: 7px; background: var(--ink3); transform: rotate(-45deg); right: -3.5px; bottom: -4.5px; }
+  .searchbox__ph { flex: 1; font-size: 13.5px; color: var(--ink3); }
+
+  /* ===== 分组头 ===== */
+  .ghead { display: flex; align-items: center; gap: 8px; margin: 14px 2px 9px; }
+  .ghead__gt { font-size: 13.5px; font-weight: 800; }
+  .ghead__gn {
+    min-width: 21px;
+    height: 21px;
+    padding: 0 8px;
+    border-radius: 9999px;
+    background: var(--amber);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .ghead__gn--gray { background: #e7e9ee; color: var(--ink2); }
+  .ghead__gs { margin-left: auto; font-size: 10.5px; color: var(--ink3); }
+  .ghead--done { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .ghead--done .ghead__gt { color: var(--ink2); font-weight: 700; }
+
+  /* ===== 线索卡片 ===== */
+  .lcard {
+    background: #fff;
+    border-radius: 16px;
+    padding: 13px 15px;
+    margin: 0 16px 11px;
+    box-shadow: 0 2px 10px rgba(23, 25, 28, 0.04);
+    position: relative;
+  }
+  .lcard--dim { opacity: 0.86; }
+  .lcard__top { display: flex; align-items: center; justify-content: space-between; }
+  .lcard__nm { font-size: 15px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 8px; }
+  .stag { flex-shrink: 0; font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 7px; }
+  .stag--amber { color: var(--amber); background: var(--amberw); }
+  .stag--green { color: var(--green); background: var(--greenw); }
+  .stag--gray { color: var(--gray-chip-fg); background: var(--gray-chip-bg); }
+  .stag--rust { color: var(--rust); background: var(--apricot); }
+
+  .lcard__mid { display: flex; align-items: center; gap: 11px; margin-top: 11px; }
+  .thumb { width: 46px; height: 46px; border-radius: 9px; flex-shrink: 0; background: #eceef2; }
+  .attrs { flex: 1; min-width: 0; }
+  .attrs__l1 { font-size: 12.5px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .attrs__l2 { font-size: 11px; color: var(--ink3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pricest { text-align: right; flex-shrink: 0; }
+  .pricest__lb { font-size: 10px; color: var(--ink3); }
+  .pricest__vl { font-size: 17px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .pricest__unit { font-size: 11px; font-weight: 600; color: var(--ink2); margin-left: 1px; }
+  .pricest__vl--ok { color: var(--green); }
+
+  .lcard__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .lcard__meta { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .srcchip { font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: 500; flex-shrink: 0; }
+  .srcchip--share { color: var(--green); background: var(--greenw); }
+  .srcchip--direct { color: var(--ink2); background: #f2f3f5; }
+  .time { font-size: 10.5px; color: var(--ink3); white-space: nowrap; }
+
+  /* 现状（改造前）：右下角动作芯片 */
+  .go-eval {
+    height: 27px;
+    padding: 0 15px;
+    border-radius: 9999px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .go-eval--ap { background: var(--greenw); color: var(--green); }
+  .go-eval--rj { background: var(--gray-chip-bg); color: var(--ink2); }
+  .go-eval--lost { background: var(--apricot); color: var(--rust); }
+
+  /* 改造后：右下角时效标签 */
+  .fresh {
+    height: 27px;
+    padding: 0 13px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .fresh__dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .fresh--ok { background: var(--greenw); color: var(--green); }
+  .fresh--ok .fresh__dot { background: var(--green); }
+  .fresh--soon { background: var(--apricot); color: var(--rust); }
+  .fresh--soon .fresh__dot { background: var(--rust); }
+  .fresh--over { background: var(--rust); color: #fff; }
+  .fresh--over .fresh__dot { background: #fff; }
+
+  /* 标注徽标（仅现状屏使用） */
+  .mk {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--rust);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: center;
+    margin-right: 6px;
+  }
+  .anno {
+    border: 1.5px dashed rgba(93, 42, 26, 0.5);
+    border-radius: 9999px;
+    padding: 1px;
+  }
+
+  /* ===== 详情页（viewMode）===== */
+  .panel { background: #fff; border-radius: 16px; padding: 15px 16px; margin: 0 16px 11px; }
+  .panel.hero { margin-top: 8px; }
+  .hero__row { display: flex; align-items: center; justify-content: space-between; }
+  .hero__lid { font-size: 10.5px; color: var(--ink3); letter-spacing: 0.02em; }
+  .hero__nm { font-size: 19px; font-weight: 800; margin-top: 9px; }
+  .hero__loc { font-size: 12px; color: var(--ink2); margin-top: 5px; }
+  .hero__submitter { font-size: 12px; color: var(--ink2); margin-top: 3px; }
+
+  .kpi { display: flex; flex-wrap: wrap; position: relative; }
+  .kpi::after { content: ""; position: absolute; left: 50%; top: 16%; bottom: 30%; width: 1px; background: var(--line); }
+  .kpi__col { width: 50%; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 4px 0 2px; }
+  .kpi__lb { font-size: 11px; color: var(--ink3); }
+  .kpi__vl { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 3px; }
+  .kpi__cur { font-size: 13px; font-weight: 700; }
+  .kpi__unit { font-size: 12px; font-weight: 600; color: var(--ink2); }
+  .kpi__vl--ok { color: var(--green); }
+  .kpi__sub { font-size: 10.5px; color: var(--ink3); line-height: 1.5; text-align: center; padding: 0 6px; }
+
+  .pt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; }
+  .pt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .pt__lb { font-size: 10.5px; color: var(--ink3); }
+  .pt__vl { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pt__vl--muted { color: var(--ink3); font-weight: 500; }
+
+  .blk-h { display: flex; align-items: baseline; gap: 8px; }
+  .blk-h__t { font-size: 13.5px; font-weight: 700; }
+  .blk-h__sub { font-size: 10.5px; color: var(--ink3); }
+  .blk-h__act {
+    margin-left: auto;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--green);
+    border: 1px solid rgba(47, 95, 150, 0.28);
+    border-radius: 9999px;
+    padding: 3px 11px;
+    background: #fff;
+    flex-shrink: 0;
+  }
+  .blk-h__act--ink { color: var(--ink); border-color: rgba(23, 25, 28, 0.2); }
+
+  .photo-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 11px; }
+  .ph { height: 74px; border-radius: 9px; background: #eceef2; }
+
+  .quote {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--ink2);
+    line-height: 1.75;
+    background: var(--fog);
+    border-radius: 10px;
+    padding: 11px 13px;
+  }
+
+  .fu-list { margin-top: 10px; }
+  .fu { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .fu:first-child { padding-top: 0; }
+  .fu:last-child { border-bottom: none; padding-bottom: 0; }
+  .fu__head { display: flex; align-items: center; justify-content: space-between; }
+  .fu__chip { font-size: 10px; font-weight: 600; color: var(--green); background: var(--greenw); padding: 2px 8px; border-radius: 9999px; }
+  .fu__chip--ink { color: var(--ink2); background: var(--gray-chip-bg); }
+  .fu__cur { margin-left: 5px; font-size: 9px; font-weight: 700; color: #fff; background: var(--green); padding: 1px 5px; border-radius: 9999px; }
+  .fu__time { font-size: 10.5px; color: var(--ink3); }
+  .fu__tx { margin-top: 6px; font-size: 12.5px; color: var(--ink2); line-height: 1.7; }
+  .fu-empty { margin-top: 10px; font-size: 11.5px; color: var(--ink3); text-align: center; padding: 12px 0; }
+
+  .ca-entry { display: flex; align-items: center; gap: 12px; }
+  .ca-entry__ic { width: 40px; height: 40px; border-radius: 12px; background: var(--greenw); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cae-chart { position: relative; width: 18px; height: 16px; }
+  .cae-chart::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1.5px; background: var(--green); }
+  .cae-chart::after { content: ""; position: absolute; left: 0; bottom: 0; right: 0; height: 1.5px; background: var(--green); }
+  .cae-chart__line { position: absolute; left: 2px; bottom: 2px; width: 17px; height: 1.5px; background: var(--green); transform: rotate(-35deg); transform-origin: left bottom; }
+  .ca-entry__tx { flex: 1; min-width: 0; }
+  .ca-entry__t1 { font-size: 14px; font-weight: 700; }
+  .ca-entry__t2 { font-size: 11px; color: var(--ink3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ca-entry__chev { flex-shrink: 0; font-size: 16px; color: #c3c6cd; }
+
+  .meta-foot { text-align: center; font-size: 11px; color: var(--ink3); padding: 4px 0 10px; }
+
+  /* ===== 底部操作栏 ===== */
+  .actionbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    background: rgba(255, 255, 255, 0.97);
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px 18px;
+  }
+  .abtn {
+    border: none;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 600;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .abtn--lost { flex: 1; background: #fff; color: var(--rust); border: 1px solid #e8cdbc; }
+  .abtn--follow { flex: 1.9; background: var(--ink); color: #fff; box-shadow: 0 8px 20px rgba(23, 25, 28, 0.25); }
+  .actionbar-spacer { height: 86px; }
+
+  /* ===== 半屏面板 ===== */
+  .mask { position: absolute; inset: 0; background: rgba(23, 25, 28, 0.45); z-index: 70; }
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 75;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 10px 18px 22px;
+  }
+  .sheet__grab { width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 12px; }
+  .sheet__head { display: flex; align-items: center; justify-content: space-between; }
+  .sheet__title { font-size: 15.5px; font-weight: 700; }
+  .sheet__sub { font-size: 11px; color: var(--ink3); margin-top: 4px; }
+  .sheet__close { width: 26px; height: 26px; border-radius: 50%; background: var(--fog); color: var(--ink2); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+  .fld { margin-top: 16px; }
+  .fld__lb { font-size: 12px; color: var(--ink2); margin-bottom: 8px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    background: var(--fog);
+    border: 1px solid var(--line);
+    color: var(--ink2);
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+  }
+  .chip--on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .ta {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 11px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    min-height: 70px;
+    line-height: 1.65;
+    font-family: inherit;
+  }
+  .ta--ph { color: var(--ink3); }
+  .ta-count { text-align: right; font-size: 10.5px; color: var(--ink3); margin-top: 5px; }
+  .hint { margin-top: 12px; font-size: 11px; color: var(--ink3); line-height: 1.65; }
+  .hint b { color: var(--ink2); font-weight: 600; }
+  .warn-strip {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    background: var(--amberw);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    color: var(--rust);
+    line-height: 1.6;
+    margin-top: 14px;
+  }
+  .warn-ic { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 14px solid var(--rust); position: relative; flex-shrink: 0; margin-top: 2px; }
+  .warn-ic::after { content: "!"; position: absolute; left: -2px; top: 2.5px; color: #fff; font-size: 10px; font-weight: 700; }
+  .sheet__actions { margin-top: 18px; }
+  .confirm-btn {
+    width: 100%;
+    height: 47px;
+    border-radius: 9999px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    font-family: inherit;
+  }
+  .confirm-btn--lost { background: var(--apricot); color: var(--rust); }
+  .confirm-btn[disabled] { background: #c6cbd4; color: #fff; }
+
+  /* ===== 口径 / 依赖 表 ===== */
+  .sheet-panel {
+    width: 100%;
+    max-width: 1180px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 26px 28px 30px;
+    box-shadow: 0 2px 14px rgba(23, 25, 28, 0.05);
+  }
+  .sheet-panel h3 { font-size: 13px; font-weight: 700; margin: 22px 0 10px; letter-spacing: -0.1px; }
+  .sheet-panel h3:first-child { margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.65; }
+  th { font-size: 11px; font-weight: 700; color: var(--ink3); letter-spacing: 0.04em; background: var(--fog); white-space: nowrap; }
+  td code, .sheet-panel p code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; background: var(--fog); padding: 1px 5px; border-radius: 4px; color: var(--ink2); }
+  .tick { color: var(--green); font-weight: 700; }
+  .cross { color: var(--ink3); }
+  .flag { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--rust); background: var(--apricot); border-radius: 9999px; padding: 2px 9px; }
+  .flag--calm { color: var(--green); background: var(--greenw); }
+  ul.plain { list-style: none; display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; line-height: 1.7; color: var(--ink2); }
+  ul.plain li { display: flex; gap: 8px; }
+  ul.plain li::before { content: "—"; color: var(--ink3); flex-shrink: 0; }
+  .tbl-nw { white-space: nowrap; }
+
+  /* ============================================================
+     第二轮：我的评估（list / detail）
+     ============================================================ */
+
+  .screen--flush { padding: 0 0 26px; }
+  .screen--warm { background: var(--warm-bg); }
+
+  /* ===== 现状：暖色编辑风格（list/index.wxss 一比一）===== */
+  .w-count { padding: 16px 20px 4px; font-size: 12px; color: var(--warm-muted-fg); }
+  .w-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px 20px 0;
+    padding: 12px 16px;
+    background: var(--warm-muted);
+    border: 1px solid var(--warm-border);
+    border-radius: 12px;
+  }
+  .w-banner__t { flex: 1; font-size: 12px; color: var(--warm-muted-fg); }
+  .w-banner__a { flex-shrink: 0; font-size: 12px; font-weight: 500; color: var(--warm-fg); }
+  .w-card {
+    margin: 12px 20px 0;
+    padding: 20px;
+    background: var(--warm-bg);
+    border: 1px solid var(--warm-border);
+    border-radius: 24px;
+  }
+  .w-card--last { margin-bottom: 8px; }
+  .w-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .w-title { flex: 1; font-size: 17px; font-weight: 500; line-height: 1.3; letter-spacing: -0.15px; color: var(--warm-fg); }
+  .w-badge { flex-shrink: 0; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 500; }
+  .w-desc { margin-top: 8px; font-size: 14px; letter-spacing: -0.1px; color: var(--warm-muted-fg); }
+  .w-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--warm-border);
+  }
+  .w-date { font-size: 12px; color: var(--warm-muted-fg); }
+  .w-chev { font-size: 16px; color: var(--warm-muted-fg); }
+
+  /* ===== 状态标签：新增 Ink 实底档（已签约）===== */
+  .stag--ink { color: #fff; background: var(--ink); }
+
+  /* ===== 我的评估卡片：底部左槽为纯时间（无来源芯片）===== */
+  .lcard__foot--plain { min-height: 27px; }
+
+  /* ===== 评估详情页（detail/index.wxss 一比一）===== */
+  .dpage { padding: 8px 10px 0; display: flex; flex-direction: column; gap: 10px; }
+  .dcard {
+    background: #fff;
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.1) 0 20px 25px -5px, rgba(0, 0, 0, 0.1) 0 8px 10px -6px;
+  }
+  .dcard__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  .dcard__title { font-size: 15px; font-weight: 500; letter-spacing: -0.13px; color: var(--ink); }
+  .dcard__note { font-size: 12px; color: #777b86; }
+
+  .dhero__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dhero__name { flex: 1; min-width: 0; font-size: 17px; font-weight: 500; letter-spacing: -0.16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dhero__meta { margin-top: 6px; font-size: 13px; letter-spacing: -0.11px; color: #777b86; }
+  .dpill { flex-shrink: 0; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 9999px; letter-spacing: 0.01em; }
+  .dpill--warm { background: #fbe1d1; color: #5d2a1a; }
+  .dpill--muted { background: var(--fog); color: #777b86; }
+  .dprice { margin-top: 14px; background: #fbe1d1; border-radius: 16px; padding: 16px 18px; }
+  .dprice__cap { display: flex; align-items: center; font-size: 12px; letter-spacing: 0.06em; color: #777b86; }
+  .dprice__cap::before { content: ""; margin-right: 6px; width: 6px; height: 6px; border-radius: 2px; background: #5d2a1a; }
+  .dprice__row { margin-top: 10px; display: flex; align-items: baseline; gap: 4px; color: var(--ink); }
+  .dprice__sym { font-size: 17px; color: var(--ink2); }
+  .dprice__num { font-size: 48px; font-weight: 500; letter-spacing: -1.2px; line-height: 1; }
+  .dprice__unit { font-size: 13px; color: var(--ink2); }
+  .dpending { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .dpending__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rust); }
+  .dpending__tx { font-size: 15px; letter-spacing: -0.14px; color: var(--ink); }
+  .dhero__foot { margin-top: 10px; font-size: 12px; color: #777b86; }
+
+  .dspec { display: flex; flex-direction: column; gap: 12px; }
+  .dspec__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .dspec__lb { flex-shrink: 0; font-size: 14px; letter-spacing: -0.12px; color: #777b86; }
+  .dspec__vl { flex: 1; font-size: 14px; letter-spacing: -0.12px; color: var(--ink); text-align: right; word-break: break-all; }
+
+  .dfu { padding: 12px 0; border-bottom: 1px solid rgba(163, 166, 175, 0.3); }
+  .dfu:first-child { padding-top: 0; }
+  .dfu:last-child { border-bottom: none; padding-bottom: 0; }
+  .dfu__meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dfu__method { flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--ink2); background: var(--fog); border-radius: 9999px; padding: 3px 10px; letter-spacing: 0.01em; }
+  .dfu__time { font-size: 12px; letter-spacing: -0.1px; color: #777b86; }
+  .dfu__content { margin-top: 8px; font-size: 14px; letter-spacing: -0.12px; color: var(--ink2); line-height: 1.65; }
+  .dempty { font-size: 13px; color: #777b86; text-align: center; padding: 14px 0; }
+  .dactionbar-spacer { height: 82px; }
+  .dplan { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dph { height: 130px; border-radius: 12px; background: var(--fog); }
+  .nbanner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 4px 16px 10px;
+    padding: 12px 16px;
+    background: var(--apricot);
+    border-radius: 16px;
+  }
+  .nbanner__t { flex: 1; font-size: 12px; line-height: 1.5; color: var(--rust); }
+  .nbanner__a { flex-shrink: 0; font-size: 12px; font-weight: 600; color: var(--rust); }
+</style>
+</head>
+<body>
+
+  <div class="page-head">
+    <h1>评估模块 · 已处理线索 + 我的评估 迭代 高保真设计稿 v1</h1>
+    <p>第 01–05 节 · miniapp/pages/valuation/evaluate（列表卡）＋ authorize（viewMode 详情）：补齐与 admin/leads 详情抽屉差距的三个业务场景<br />
+       第 06–09 节 · miniapp/pages/valuation/list（我的评估）＋ detail（评估详情）：列表对齐 evaluate、详情开放内部员工跟进<br />
+       Steep 设计体系 · 2026-09-21</p>
+    <div class="tokens">
+      <div class="token"><i style="background:#17191c"></i><span>Ink</span></div>
+      <div class="token"><i style="background:#f7f7f8"></i><span>Fog</span></div>
+      <div class="token"><i style="background:#a3a6af"></i><span>Dove</span></div>
+      <div class="token"><i style="background:#5d2a1a"></i><span>Rust</span></div>
+      <div class="token"><i style="background:#fbe1d1"></i><span>Apricot</span></div>
+      <div class="token"><i style="background:#d3e3fc"></i><span>Sky</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 01 现状 -->
+  <!-- ============================================================ -->
+  <div class="sec">
+    <div class="sec-head">
+      <span class="sec-no">01</span>
+      <h2>现状 · 已处理卡右下角与右上角说的是同一件事</h2>
+    </div>
+    <p class="sec-note">
+      右上角状态标签（已授权 / 已看房 / 已驳回 / 他司成交）与右下角动作芯片（已授权 · 待看房 /
+      已看房 · 可调整评估价 / 已驳回 / 他司已成交 · 线索关闭）语义重复；且右下角是<em>按钮外观</em>却不可点
+      —— 整卡点击只进只读详情。右下角真正该回答的是：<b>这条线索我还要不要跟</b>。
+    </p>
+  </div>
+
+  <div class="figs">
+    <div class="fig">
+      <div class="fig__label">屏 A1 · 改造前<span>evaluate 列表 · 已处理段现状</span></div>
+      <div class="phone" data-screen-label="A1-现状">
+        <div class="statusbar">
+          <span class="sb-time">9:41</span>
+          <div class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="navbar">
+          <div class="nav-back">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="nav-title">评估工作台</div>
+          <div class="nav-title-pad"></div>
+          <div class="capsule">
+            <div class="capsule-side"><svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg></div>
+            <span class="capsule-div"></span>
+            <div class="capsule-side"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg></div>
+          </div>
+        </div>
+        <div class="screen">
+          <div class="evalmeta">
+            <div class="evalmeta__big">待评估 <span class="evalmeta__num">6</span> 套</div>
+            <div class="evalmeta__today">今日新增 2</div>
+          </div>
+          <div class="searchbox">
+            <div class="searchbox__icon"></div>
+            <div class="searchbox__ph">搜索小区名称</div>
+          </div>
+
+          <div class="ghead ghead--done">
+            <div class="ghead__gt">已处理</div>
+            <div class="ghead__gn ghead__gn--gray">128</div>
+            <div class="ghead__gs">由我经手</div>
+          </div>
+
+          <!-- 卡 1 · 已授权 -->
+          <div class="lcard lcard--dim">
+            <div class="lcard__top">
+              <div class="lcard__nm">仁恒河滨城</div>
+              <span class="mk">2</span>
+              <span class="anno"><span class="stag stag--green">已授权</span></span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">2室1厅 · 89㎡ · 18/32层</div>
+                <div class="attrs__l2">浦东新区 · 南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">授权价</div>
+                <div class="pricest__vl pricest__vl--ok">868<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--share">客户分享</div>
+                <div class="time">09-18 14:32</div>
+              </div>
+              <span class="mk">1</span>
+              <span class="anno"><span class="go-eval go-eval--ap">已授权 · 待看房</span></span>
+            </div>
+          </div>
+
+          <!-- 卡 2 · 已看房 -->
+          <div class="lcard lcard--dim">
+            <div class="lcard__top">
+              <div class="lcard__nm">万科翡翠雅宾利</div>
+              <span class="stag stag--green">已看房</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">3室2厅 · 128㎡ · 6/18层</div>
+                <div class="attrs__l2">静安区 · 南北</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">授权价</div>
+                <div class="pricest__vl pricest__vl--ok">1,150<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--direct">员工直录</div>
+                <div class="time">09-16 10:05</div>
+              </div>
+              <span class="anno"><span class="go-eval go-eval--ap">已看房 · 可调整评估价</span></span>
+            </div>
+          </div>
+
+          <!-- 卡 3 · 已驳回 -->
+          <div class="lcard lcard--dim">
+            <div class="lcard__top">
+              <div class="lcard__nm">静安府</div>
+              <span class="stag stag--gray">已驳回</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">2室2厅 · 96㎡ · 3/11层</div>
+                <div class="attrs__l2">静安区 · 东南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">授权价</div>
+                <div class="pricest__vl">—</div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--share">客户分享</div>
+                <div class="time">09-20 15:02</div>
+              </div>
+              <span class="anno"><span class="go-eval go-eval--rj">已驳回</span></span>
+            </div>
+          </div>
+
+          <!-- 卡 4 · 他司成交 -->
+          <div class="lcard lcard--dim">
+            <div class="lcard__top">
+              <div class="lcard__nm">中海顺昌玖里</div>
+              <span class="stag stag--rust">他司成交</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">4室2厅 · 186㎡ · 9/15层</div>
+                <div class="attrs__l2">黄浦区 · 南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">业主报价</div>
+                <div class="pricest__vl">2,180<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--direct">员工直录</div>
+                <div class="time">09-19 17:40</div>
+              </div>
+              <span class="anno"><span class="go-eval go-eval--lost">他司已成交 · 线索关闭</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fig">
+      <div class="fig__label">问题清单<span>标注编号对应屏 A1</span></div>
+      <div class="sheet-panel" style="max-width:340px; padding:20px 22px 22px;">
+        <ul class="plain">
+          <li><b>① 语义重叠</b>：右下角「已授权 · 待看房」与右上角「已授权」重复，同一张卡右侧说了两遍同一件事。</li>
+          <li><b>② 外观与行为不符</b>：右下角是胶囊按钮外观（洗底 + 阴影），但整卡点击只进只读详情，芯片本身不可点，评估员会以为能直接操作。</li>
+          <li><b>③ 缺时效信息</b>：列表只看得到「处理过」，看不出「多久没跟了」。14 天没人碰的线索和昨天刚跟的线索长得一模一样。</li>
+          <li><b>④ 缺跟进入口</b>：已处理线索点进去是纯只读，授权后到签约前这段没人能登记跟进。</li>
+          <li><b>⑤ 缺他司成交出口</b>：已授权 / 已看房 的房源在他司成交后，小程序侧没有任何入口可以标记关闭。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 02 方案 · 列表卡 -->
+  <!-- ============================================================ -->
+  <div class="sec" style="margin-top:44px;">
+    <div class="sec-head">
+      <span class="sec-no">02</span>
+      <h2>方案 · 已处理卡右下角换成「跟进时效」标签</h2>
+    </div>
+    <p class="sec-note">
+      基准时间 = 该线索最后一条跟进记录的 <code>followed_at</code>；<b>从未跟进则回退 <code>audit_time</code></b>
+      （即线索进入「已处理」的时刻，视为跟进的起点）。右下角只保留一个语义：<b>还要不要跟</b>。
+      左侧时间同步由「处理时间」改为「跟进时间」，与右侧标签同源，避免「标签说 16 天前、左边却显示处理时间」的口径错位。
+    </p>
+  </div>
+
+  <div class="figs">
+    <div class="fig">
+      <div class="fig__label">屏 A2 · 改造后<span>三态同屏 · 终态留空</span></div>
+      <div class="phone" data-screen-label="A2-改造后">
+        <div class="statusbar">
+          <span class="sb-time">9:41</span>
+          <div class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="navbar">
+          <div class="nav-back">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="nav-title">评估工作台</div>
+          <div class="nav-title-pad"></div>
+          <div class="capsule">
+            <div class="capsule-side"><svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg></div>
+            <span class="capsule-div"></span>
+            <div class="capsule-side"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg></div>
+          </div>
+        </div>
+        <div class="screen">
+          <div class="evalmeta">
+            <div class="evalmeta__big">待评估 <span class="evalmeta__num">6</span> 套</div>
+            <div class="evalmeta__today">今日新增 2</div>
+          </div>
+          <div class="searchbox">
+            <div class="searchbox__icon"></div>
+            <div class="searchbox__ph">搜索小区名称</div>
+          </div>
+
+          <div class="ghead ghead--done">
+            <div class="ghead__gt">已处理</div>
+            <div class="ghead__gn ghead__gn--gray">128</div>
+            <div class="ghead__gs">由我经手</div>
+          </div>
+
+          <!-- 跟进中 -->
+          <div class="lcard lcard--dim">
+            <div class="lcard__top">
+              <div class="lcard__nm">仁恒河滨城</div>
+              <span class="stag stag--green">已授权</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">2室1厅 · 89㎡ · 18/32层</div>
+                <div class="attrs__l2">浦东新区 · 南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">授权价</div>
+                <div class="pricest__vl pricest__vl--ok">868<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--share">客户分享</div>
+                <div class="time">跟进 09-18</div>
+              </div>
+              <span class="fresh fresh--ok"><span class="fresh__dot"></span>跟进中</span>
+            </div>
+          </div>
+
+          <!-- 即将过期 -->
+          <div class="lcard lcard--dim">
+            <div class="lcard__top">
+              <div class="lcard__nm">万科翡翠雅宾利</div>
+              <span class="stag stag--green">已看房</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">3室2厅 · 128㎡ · 6/18层</div>
+                <div class="attrs__l2">静安区 · 南北</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">授权价</div>
+                <div class="pricest__vl pricest__vl--ok">1,150<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--direct">员工直录</div>
+                <div class="time">跟进 09-12</div>
+              </div>
+              <span class="fresh fresh--soon"><span class="fresh__dot"></span>即将过期</span>
+            </div>
+          </div>
+
+          <!-- 已过期 -->
+          <div class="lcard lcard--dim">
+            <div class="lcard__top">
+              <div class="lcard__nm">绿城黄浦湾</div>
+              <span class="stag stag--green">已授权</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">3室2厅 · 143㎡ · 21/28层</div>
+                <div class="attrs__l2">黄浦区 · 南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">授权价</div>
+                <div class="pricest__vl pricest__vl--ok">1,620<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--share">客户分享</div>
+                <div class="time">跟进 09-04</div>
+              </div>
+              <span class="fresh fresh--over"><span class="fresh__dot"></span>已过期</span>
+            </div>
+          </div>
+
+          <!-- 终态：右下角留空 -->
+          <div class="lcard lcard--dim">
+            <div class="lcard__top">
+              <div class="lcard__nm">中海顺昌玖里</div>
+              <span class="stag stag--rust">他司成交</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">4室2厅 · 186㎡ · 9/15层</div>
+                <div class="attrs__l2">黄浦区 · 南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">业主报价</div>
+                <div class="pricest__vl">2,180<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--direct">员工直录</div>
+                <div class="time">处理 09-19</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fig">
+      <div class="fig__label">时效三态<span>阈值与配色</span></div>
+      <div class="sheet-panel" style="max-width:340px; padding:20px 22px 22px;">
+        <table>
+          <thead>
+            <tr><th>距最近跟进</th><th>右下角</th><th>配色</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>≤ 7 天</td>
+              <td><span class="fresh fresh--ok"><span class="fresh__dot"></span>跟进中</span></td>
+              <td>Sky 洗底 / <code>#2f5f96</code></td>
+            </tr>
+            <tr>
+              <td>8 – 14 天</td>
+              <td><span class="fresh fresh--soon"><span class="fresh__dot"></span>即将过期</span></td>
+              <td>Apricot 洗底 / <code>#5d2a1a</code></td>
+            </tr>
+            <tr>
+              <td>&gt; 14 天</td>
+              <td><span class="fresh fresh--over"><span class="fresh__dot"></span>已过期</span></td>
+              <td>Rust 实底 / 白字</td>
+            </tr>
+            <tr>
+              <td>终态<br />（已签约 / 已驳回 / 他司成交）</td>
+              <td><span class="cross">右下角留空</span></td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>为什么终态留空</h3>
+        <ul class="plain">
+          <li>留空本身就是信号：<b>有右下角标签 = 还需要我继续跟</b>。给已驳回的线索挂「已过期」会误导评估员继续跟一条死线索。</li>
+          <li>终态左侧时间回落为「处理 09-19」，与「跟进」区分开。</li>
+          <li>若希望终态也保留右下角，可改为灰底「已关闭」——本稿按留空处理，等你确认。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 03 方案 · 详情页 -->
+  <!-- ============================================================ -->
+  <div class="sec" style="margin-top:44px;">
+    <div class="sec-head">
+      <span class="sec-no">03</span>
+      <h2>方案 · 已处理线索详情页（authorize?mode=view）</h2>
+    </div>
+    <p class="sec-note">
+      三种状态共用一套骨架，只换状态标签、评估价口径与操作栏：<b>已授权 · 待看房 / 已看房</b> 可跟进、可标他司成交、可调整评估价；
+      <b>已驳回（终态）</b> 只读，无底部操作栏。改动四处：底部操作栏双按钮、参数宫格补「最近跟进」、
+      评估历史区块头挂「调整评估价」、跟进记录区块头挂「＋ 登记」。
+    </p>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">线索状态</span>
+      <button class="tab tab--on" data-tab="pv" onclick="setDetail('pv')">已授权 · 待看房</button>
+      <button class="tab" data-tab="vd" onclick="setDetail('vd')">已看房</button>
+      <button class="tab" data-tab="rj" onclick="setDetail('rj')">已驳回（终态）</button>
+    </div>
+  </div>
+
+  <div class="figs">
+    <div class="fig">
+      <div class="fig__label" id="detailLabel">屏 B · 已授权 · 待看房<span>viewMode 详情 · 可跟进可标记</span></div>
+      <div class="phone" data-screen-label="B-详情">
+        <div class="statusbar">
+          <span class="sb-time">9:41</span>
+          <div class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="navbar">
+          <div class="nav-back">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="nav-title">评估详情</div>
+          <div class="nav-title-pad"></div>
+          <div class="capsule">
+            <div class="capsule-side"><svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg></div>
+            <span class="capsule-div"></span>
+            <div class="capsule-side"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg></div>
+          </div>
+        </div>
+
+        <div class="screen">
+          <!-- 1. Hero -->
+          <div class="panel hero">
+            <div class="hero__row">
+              <span class="stag stag--green" data-when="pv">已授权</span>
+              <span class="stag stag--green hidden" data-when="vd">已看房</span>
+              <span class="stag stag--gray hidden" data-when="rj">已驳回</span>
+              <span class="hero__lid">Case #LD2409-0071</span>
+            </div>
+            <div class="hero__nm">仁恒河滨城</div>
+            <div class="hero__loc">浦东新区 · 花木</div>
+            <div class="hero__submitter">张伟 · 138****1234</div>
+          </div>
+
+          <!-- 2. KPI -->
+          <div class="panel kpi">
+            <div class="kpi__col">
+              <div class="kpi__lb">业主报价</div>
+              <div class="kpi__vl"><span class="kpi__cur">¥</span>880<span class="kpi__unit">万</span></div>
+              <div class="kpi__sub">单价 ≈ 98,876 元/㎡</div>
+            </div>
+            <div class="kpi__col">
+              <div class="kpi__lb">本次评估价</div>
+              <div class="kpi__vl kpi__vl--ok" data-when="pv,vd"><span class="kpi__cur">¥</span>868<span class="kpi__unit">万</span></div>
+              <div class="kpi__vl hidden" data-when="rj">—</div>
+              <div class="kpi__sub" data-when="pv">已授权 · 作为后续带看与签约的收房基准</div>
+              <div class="kpi__sub hidden" data-when="vd">实勘已完成 · 等待商务谈判与签约</div>
+            </div>
+          </div>
+
+          <!-- 3. 参数宫格 -->
+          <div class="panel">
+            <div class="pt-grid">
+              <div class="pt"><div class="pt__lb">建筑面积</div><div class="pt__vl">89㎡</div></div>
+              <div class="pt"><div class="pt__lb">户型</div><div class="pt__vl">2室1厅</div></div>
+              <div class="pt"><div class="pt__lb">朝向</div><div class="pt__vl">南</div></div>
+              <div class="pt"><div class="pt__lb">楼层</div><div class="pt__vl">18/32层</div></div>
+              <div class="pt"><div class="pt__lb">区域</div><div class="pt__vl">浦东新区</div></div>
+              <div class="pt">
+                <div class="pt__lb">最近跟进</div>
+                <div class="pt__vl" data-when="pv">09-18 14:32</div>
+                <div class="pt__vl hidden" data-when="vd">09-12 10:05</div>
+                <div class="pt__vl hidden" data-when="rj">09-20 15:02</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. 房屋照片 -->
+          <div class="panel">
+            <div class="blk-h">
+              <span class="blk-h__t">房屋照片</span>
+              <span class="blk-h__sub">共 5 张</span>
+            </div>
+            <div class="photo-g">
+              <div class="ph"></div>
+              <div class="ph"></div>
+              <div class="ph"></div>
+            </div>
+          </div>
+
+          <!-- 5. 业主备注 -->
+          <div class="panel">
+            <div class="blk-h"><span class="blk-h__t">业主备注</span></div>
+            <div class="quote">满五唯一，无抵押。业主希望 11 月底前完成过户，可接受小幅议价。</div>
+          </div>
+
+          <!-- 6. 评估历史（终态不展示） -->
+          <div class="panel" data-when="pv,vd">
+            <div class="blk-h">
+              <span class="blk-h__t">评估历史</span>
+              <span class="blk-h__sub" data-when="pv">共 2 次</span>
+              <span class="blk-h__sub hidden" data-when="vd">共 3 次</span>
+              <span class="blk-h__act">调整评估价</span>
+            </div>
+            <div class="fu-list">
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip">¥868 万<span class="fu__cur">当前</span></div>
+                  <div class="fu__time">09-18 14:32</div>
+                </div>
+                <div class="fu__tx">带看后按楼层与朝向折价，较业主报价低 12 万。</div>
+              </div>
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip fu__chip--ink">¥872 万</div>
+                  <div class="fu__time">09-15 09:10</div>
+                </div>
+                <div class="fu__tx">首轮评估，按小区近 3 个月成交均价折算。</div>
+              </div>
+              <div class="fu hidden" data-when="vd">
+                <div class="fu__head">
+                  <div class="fu__chip fu__chip--ink">¥880 万</div>
+                  <div class="fu__time">09-11 16:48</div>
+                </div>
+                <div class="fu__tx">按业主报价直接授权（首次评估）。</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7. 跟进记录 -->
+          <div class="panel">
+            <div class="blk-h">
+              <span class="blk-h__t">跟进记录</span>
+              <span class="blk-h__sub" data-when="pv">共 2 条</span>
+              <span class="blk-h__sub hidden" data-when="vd">共 4 条</span>
+              <span class="blk-h__sub hidden" data-when="rj">共 1 条</span>
+              <span class="blk-h__act" data-when="pv,vd">＋ 登记</span>
+            </div>
+            <div class="fu-list" data-when="pv">
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip">电话</div>
+                  <div class="fu__time">09-18 14:32</div>
+                </div>
+                <div class="fu__tx">业主确认可接受 868 万，希望 10 月上旬安排带看。</div>
+              </div>
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip">微信</div>
+                  <div class="fu__time">09-10 16:05</div>
+                </div>
+                <div class="fu__tx">发送小区近 3 个月成交明细，业主回复收到。</div>
+              </div>
+            </div>
+            <div class="fu-list hidden" data-when="vd">
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip">实地带看</div>
+                  <div class="fu__time">09-12 10:05</div>
+                </div>
+                <div class="fu__tx">上门实勘，无漏水与结构改动，物业费已结清。</div>
+              </div>
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip">面谈</div>
+                  <div class="fu__time">09-11 15:20</div>
+                </div>
+                <div class="fu__tx">与业主当面核对产调，确认满五唯一。</div>
+              </div>
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip">电话</div>
+                  <div class="fu__time">09-10 16:05</div>
+                </div>
+                <div class="fu__tx">预约上门实勘时间。</div>
+              </div>
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip">微信</div>
+                  <div class="fu__time">09-09 09:30</div>
+                </div>
+                <div class="fu__tx">发送授权评估价，业主回复可接受。</div>
+              </div>
+            </div>
+            <div class="fu-list hidden" data-when="rj">
+              <div class="fu">
+                <div class="fu__head">
+                  <div class="fu__chip">电话</div>
+                  <div class="fu__time">09-20 15:02</div>
+                </div>
+                <div class="fu__tx">业主已在他处签约，放弃本次收房。</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8. 行情分析入口 -->
+          <div class="panel">
+            <div class="ca-entry">
+              <div class="ca-entry__ic">
+                <div class="cae-chart"><div class="cae-chart__line"></div></div>
+              </div>
+              <div class="ca-entry__tx">
+                <div class="ca-entry__t1">小区行情分析</div>
+                <div class="ca-entry__t2">仁恒河滨城 · 成交趋势 / 价格分布 / 户型楼层</div>
+              </div>
+              <div class="ca-entry__chev">›</div>
+            </div>
+          </div>
+
+          <div class="meta-foot" data-when="pv">2026-09-18 14:32 处理 · 客户分享</div>
+          <div class="meta-foot hidden" data-when="vd">2026-09-12 10:05 处理 · 客户分享</div>
+          <div class="meta-foot hidden" data-when="rj">2026-09-20 15:02 处理 · 客户分享</div>
+
+          <div class="actionbar-spacer" data-when="pv,vd"></div>
+        </div>
+
+        <!-- 底部操作栏：终态不渲染 -->
+        <div class="actionbar" data-when="pv,vd">
+          <button class="abtn abtn--lost" type="button">标记为他司成交</button>
+          <button class="abtn abtn--follow" type="button">更新跟进</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="fig">
+      <div class="fig__label">操作栏改造对照<span>窄屏 375px 实测</span></div>
+      <div class="sheet-panel" style="max-width:340px; padding:20px 22px 22px;">
+        <h3>改造前</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; padding:12px 16px; background:rgba(255,255,255,.97); border:1px solid var(--line); border-radius:12px;">
+            <div class="abtn abtn--follow" style="flex:1;">调整评估价</div>
+          </div>
+          <p style="font-size:11.5px; color:var(--ink3); line-height:1.6;">单按钮。已处理线索只能调价，不能跟进、不能标他司成交。</p>
+        </div>
+        <h3>改造后</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; gap:10px; padding:12px 16px; background:rgba(255,255,255,.97); border:1px solid var(--line); border-radius:12px;">
+            <div class="abtn abtn--lost">标记为他司成交</div>
+            <div class="abtn abtn--follow">更新跟进</div>
+          </div>
+          <p style="font-size:11.5px; color:var(--ink3); line-height:1.6;">
+            左「标记为他司成交」（白底锈色描边，低频不可逆）／右「更新跟进」（Ink 实底，高频主操作）。
+            沿用现有 <code>reject</code> 左 <code>primary</code> 右的权重分配，不改视觉秩序。
+          </p>
+        </div>
+        <h3>「调整评估价」为什么挪走</h3>
+        <ul class="plain">
+          <li>三个按钮塞进 375px 会挤到不可读（「调整评估价」按 14px 字号需 ≥ 140px 宽）。</li>
+          <li>挪到「评估历史」区块头，与它实际作用的对象（评估记录）放在一起 —— 也正是 admin 抽屉 <code>CurrentEvalPriceSection</code> 把「调整评估价」放在评估价块内的同一逻辑。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 04 方案 · 半屏面板 -->
+  <!-- ============================================================ -->
+  <div class="sec" style="margin-top:44px;">
+    <div class="sec-head">
+      <span class="sec-no">04</span>
+      <h2>方案 · 两个半屏面板（沿用 authorize 现有 sheet 语言）</h2>
+    </div>
+    <p class="sec-note">
+      面板骨架、圆角、把手、关闭按钮、警示条与 <code>confirm-btn</code> 全部复用 approve / reject / lost 的既有样式，
+      只新增「更新跟进」的跟进方式 chip 行与内容输入区。提交成功后 <code>navigateBack</code>，
+      工作台 <code>onShow</code> 静默刷新双段 → 列表右下角标签自动回到「跟进中」。
+    </p>
+  </div>
+
+  <div class="figs">
+    <!-- 屏 C1 更新跟进 -->
+    <div class="fig">
+      <div class="fig__label">屏 C1 · 更新跟进<span>场景 ② 主入口</span></div>
+      <div class="phone" data-screen-label="C1-更新跟进">
+        <div class="statusbar">
+          <span class="sb-time">9:41</span>
+          <div class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="navbar">
+          <div class="nav-back">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="nav-title">评估详情</div>
+          <div class="nav-title-pad"></div>
+          <div class="capsule">
+            <div class="capsule-side"><svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg></div>
+            <span class="capsule-div"></span>
+            <div class="capsule-side"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg></div>
+          </div>
+        </div>
+        <div class="screen">
+          <div class="panel hero">
+            <div class="hero__row">
+              <span class="stag stag--green">已授权</span>
+              <span class="hero__lid">Case #LD2409-0071</span>
+            </div>
+            <div class="hero__nm">仁恒河滨城</div>
+            <div class="hero__loc">浦东新区 · 花木</div>
+          </div>
+          <div class="panel kpi">
+            <div class="kpi__col">
+              <div class="kpi__lb">业主报价</div>
+              <div class="kpi__vl"><span class="kpi__cur">¥</span>880<span class="kpi__unit">万</span></div>
+            </div>
+            <div class="kpi__col">
+              <div class="kpi__lb">本次评估价</div>
+              <div class="kpi__vl kpi__vl--ok"><span class="kpi__cur">¥</span>868<span class="kpi__unit">万</span></div>
+            </div>
+          </div>
+          <div class="panel" style="opacity:.5;">
+            <div class="blk-h"><span class="blk-h__t">跟进记录</span><span class="blk-h__sub">共 2 条</span></div>
+            <div class="fu-list">
+              <div class="fu">
+                <div class="fu__head"><div class="fu__chip">电话</div><div class="fu__time">09-18 14:32</div></div>
+                <div class="fu__tx">业主确认可接受 868 万…</div>
+              </div>
+            </div>
+          </div>
+          <div class="mask"></div>
+          <div class="sheet">
+            <div class="sheet__grab"></div>
+            <div class="sheet__head">
+              <div>
+                <div class="sheet__title">更新跟进</div>
+                <div class="sheet__sub">仁恒河滨城 · Case #LD2409-0071</div>
+              </div>
+              <div class="sheet__close">×</div>
+            </div>
+            <div class="fld">
+              <div class="fld__lb">跟进方式</div>
+              <div class="chips">
+                <span class="chip chip--on">电话</span>
+                <span class="chip">微信</span>
+                <span class="chip">面谈</span>
+                <span class="chip">实地带看</span>
+              </div>
+            </div>
+            <div class="fld">
+              <div class="fld__lb">跟进内容</div>
+              <div class="ta ta--ph">本次沟通要点、业主最新意向、下次约定…</div>
+              <div class="ta-count">0/500</div>
+            </div>
+            <div class="hint">登记人记为当前登录员工。提交后本条线索的时效标签将刷新为 <b>跟进中</b>。</div>
+            <div class="sheet__actions">
+              <button class="confirm-btn" type="button" disabled>提交跟进</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 屏 C2 标记为他司成交 -->
+    <div class="fig">
+      <div class="fig__label">屏 C2 · 标记为他司成交<span>场景 ① 主入口</span></div>
+      <div class="phone" data-screen-label="C2-标记他司成交">
+        <div class="statusbar">
+          <span class="sb-time">9:41</span>
+          <div class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="navbar">
+          <div class="nav-back">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="nav-title">评估详情</div>
+          <div class="nav-title-pad"></div>
+          <div class="capsule">
+            <div class="capsule-side"><svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg></div>
+            <span class="capsule-div"></span>
+            <div class="capsule-side"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg></div>
+          </div>
+        </div>
+        <div class="screen">
+          <div class="panel hero">
+            <div class="hero__row">
+              <span class="stag stag--green">已看房</span>
+              <span class="hero__lid">Case #LD2409-0071</span>
+            </div>
+            <div class="hero__nm">仁恒河滨城</div>
+            <div class="hero__loc">浦东新区 · 花木</div>
+          </div>
+          <div class="panel kpi">
+            <div class="kpi__col">
+              <div class="kpi__lb">业主报价</div>
+              <div class="kpi__vl"><span class="kpi__cur">¥</span>880<span class="kpi__unit">万</span></div>
+            </div>
+            <div class="kpi__col">
+              <div class="kpi__lb">本次评估价</div>
+              <div class="kpi__vl kpi__vl--ok"><span class="kpi__cur">¥</span>868<span class="kpi__unit">万</span></div>
+            </div>
+          </div>
+          <div class="panel" style="opacity:.5;">
+            <div class="blk-h"><span class="blk-h__t">评估历史</span><span class="blk-h__sub">共 3 次</span><span class="blk-h__act">调整评估价</span></div>
+            <div class="fu-list">
+              <div class="fu">
+                <div class="fu__head"><div class="fu__chip">¥868 万<span class="fu__cur">当前</span></div><div class="fu__time">09-18 14:32</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="mask"></div>
+          <div class="sheet">
+            <div class="sheet__grab"></div>
+            <div class="sheet__head">
+              <div>
+                <div class="sheet__title">标记为他司成交</div>
+                <div class="sheet__sub">仁恒河滨城 · Case #LD2409-0071</div>
+              </div>
+              <div class="sheet__close">×</div>
+            </div>
+            <div class="warn-strip">
+              <span class="warn-ic"></span>
+              <span>该线索已给出评估价（¥868 万），仍在约看 / 签约流程中。标记后线索将关闭、不再进入约看流程，业主报价不再展示，原因将留存审核轨迹。</span>
+            </div>
+            <div class="fld">
+              <div class="fld__lb">成交方与补充说明（选填）</div>
+              <div class="ta ta--ph">如：业主已在其他中介门店成交，可补充成交方与大致时间</div>
+              <div class="ta-count">0/500</div>
+            </div>
+            <div class="sheet__actions">
+              <button class="confirm-btn confirm-btn--lost" type="button">确认标记</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 05 口径 / 依赖 / 改动清单 -->
+  <!-- ============================================================ -->
+  <div class="sec" style="margin-top:44px;">
+    <div class="sec-head">
+      <span class="sec-no">05</span>
+      <h2>口径 · 依赖 · 改动清单</h2>
+    </div>
+  </div>
+
+  <div class="sheet-panel" style="margin-top:16px;">
+    <h3>表 1 · 时效三态判定口径（建议落成 miniapp 纯函数 + 单测）</h3>
+    <table>
+      <thead>
+        <tr><th>项</th><th>取值</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>基准时间 <code>t</code></td>
+          <td><code>max(followed_at)</code>，无跟进时回退 <code>audit_time</code></td>
+          <td>回退值正好是线索进入「已处理」的时刻，等价于跟进的起点；两者都为空则该卡不显示标签</td>
+        </tr>
+        <tr>
+          <td>差值 <code>d</code></td>
+          <td>按 <b>Asia/Shanghai 自然日</b> 相减，非 24h 累加</td>
+          <td>评估员按天感知；<code>09-18 23:50</code> 与 <code>09-19 00:10</code> 应算 1 天而不是 0 天</td>
+        </tr>
+        <tr>
+          <td><code>d ≤ 7</code></td>
+          <td>跟进中 · Sky 洗底</td>
+          <td>恰好 7 天算「跟进中」</td>
+        </tr>
+        <tr>
+          <td><code>7 &lt; d ≤ 14</code></td>
+          <td>即将过期 · Apricot 洗底</td>
+          <td>恰好 14 天算「即将过期」（用户表述的「超过 7 天不足 14 天」与「超过 14 天」之间，14 天归此档）</td>
+        </tr>
+        <tr>
+          <td><code>d &gt; 14</code></td>
+          <td>已过期 · Rust 实底白字</td>
+          <td>第 15 天起</td>
+        </tr>
+        <tr>
+          <td>终态</td>
+          <td><code>signed</code> / <code>rejected</code> / <code>lost_to_competitor</code> → 不显示</td>
+          <td>右下角留空；左侧时间回落为「处理 MM-DD」</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>表 2 · 后端改动清单（⚠️ 全部未实现，本稿按此推演）</h3>
+    <table>
+      <thead>
+        <tr><th>#</th><th>文件 / 端点</th><th>改动</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><code>backend/schemas/lead/__init__.py</code><br /><code>HandledItem</code></td>
+          <td>新增 <code>last_follow_up_at: datetime | None</code>，取 <code>max(lead_followups.followed_at)</code>；<code>None</code> 表示从未跟进</td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><code>backend/routers/public/leads.py</code><br /><code>GET /public/leads/handled-assessment</code></td>
+          <td>填充上面字段；建议同批下发 <code>follow_up_count</code>，列表/详情可直接复用，不必逐条再查</td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><code>POST /public/leads/my/acquired/{id}/follow-ups</code></td>
+          <td><b>新增</b>。body = <code>PublicFollowupCreate</code>（<code>method</code> 限定 phone/wechat/face/visit，<code>content</code> 1-500 字）；写 <code>lead_followups</code>，<code>created_by_id</code> = 当前 operator；返回 <code>PublicFollowupItem</code>；限流 <code>RateLimits.LEAD_UPDATE</code>；<code>rejected</code> / <code>lost_to_competitor</code> 返回 409</td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><code>POST /public/leads/my/acquired/{id}/authorize-assessment</code></td>
+          <td>放开 <code>action == "lost"</code> 在 <code>pending_visit</code> / <code>visited</code> 下可用（<code>approve</code> / <code>reject</code> 仍仅限 <code>pending_assessment</code>，不得借此绕过评估流程）。等价于 admin <code>MarkLostSection</code> 在 <code>PendingVisitPanel</code> / <code>VisitedPanel</code> 中的位置</td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>表 3 · 小程序前端改动清单</h3>
+    <table>
+      <thead>
+        <tr><th>文件</th><th>改动</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>pages/valuation/evaluate/index.ts</code></td>
+          <td><code>HANDLED_STATUS_META</code> 去掉 <code>actionText</code> / <code>actionClass</code>（或改名 <code>freshText</code> / <code>freshClass</code>）；<code>toHandledCard</code> 用新纯函数算时效；<code>HandledCard</code> 增 <code>freshText</code> / <code>freshClass</code> / <code>freshDot</code>；左侧 <code>timeText</code> 改取 <code>last_follow_up_at ?? audit_time</code> 并加「跟进 / 处理」前缀</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/evaluate/index.wxml</code></td>
+          <td>已处理卡 <code>lcard__foot</code> 右槽由 <code>go-eval go-eval--{actionClass}</code> 换成 <code>fresh fresh--{freshClass}</code>（含 <code>fresh__dot</code>）；终态 <code>wx:if</code> 不渲染右槽</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/evaluate/index.wxss</code></td>
+          <td>保留 <code>.go-eval</code>（待评估卡「去评估 ›」仍在用）；新增 <code>.fresh</code> / <code>.fresh--ok|--soon|--over</code> / <code>.fresh__dot</code>；<code>.go-eval--ap|--rj|--lost</code> 三档失去引用，需一并删除</td>
+        </tr>
+        <tr>
+          <td><code>utils/valuation-freshness.ts</code>（新增）</td>
+          <td>纯函数 <code>followUpFreshness(t, auditTime, now)</code> → <code>"ok" | "soon" | "over"</code> + 文案；随同单测（对齐 <code>house-simulator</code> 的 utils + test-utils 惯例）</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/authorize/index.ts</code></td>
+          <td><code>canAdjust</code> 旁新增 <code>canFollowup</code>（= <code>canAdjust</code>，pending_visit / visited）；新增 <code>panelMode: "followup"</code> 与 <code>followupMethod</code>；新增 <code>submitFollowup()</code>（POST 新端点，成功 toast + <code>navigateBack</code>，409 走现有 <code>CONFLICT_COPY</code> 兜底）</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/authorize/index.wxml</code></td>
+          <td>参数宫格追加「最近跟进」第 6 格；评估历史区块头右侧加「调整评估价」（<code>wx:if="{{canAdjust}}"</code>，替换原底部单按钮操作栏）；跟进记录区块头右侧加「＋ 登记」；底部操作栏改为双按钮（<code>wx:if="{{canFollowup}}"</code>）；新增 followup 半屏面板</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>本稿明确不改动的部分</h3>
+    <ul class="plain">
+      <li><b>Web admin/leads 抽屉</b>：<code>MarkLostSection</code> 已在 <code>PendingVisitPanel</code> / <code>VisitedPanel</code> 就位，「登记最新动态」也已具备，本轮无缺口 —— 这正是小程序侧要对齐的基准，不动它。</li>
+      <li><b>「待评估」卡</b>：<code>go-eval</code>「去评估 ›」是真实可点的入口，保持原样；时效标签只属于「已处理」段。</li>
+      <li><b>授权页默认模式（pending_assessment）</b>：三动作 approve / reject / lost 与 <code>lost-strip</code> 逻辑不变。</li>
+      <li><b>详情页 Hero</b>：不加时效标签。Hero 已有状态标签，再加一个会把「两个标签说同一件事」的老问题搬到详情页。时效的上下文由参数宫格的「最近跟进」承担。</li>
+      <li><b>时效标签的刷新时机</b>：复用工作台 <code>onShow</code> 已有的静默刷新，不新增逻辑。</li>
+    </ul>
+
+    <h3>待你确认的三个开放点</h3>
+    <ul class="plain">
+      <li><b>终态右下角</b>：本稿按「留空」处理。备选是显示灰底「已关闭」。留空的理由是它同时表达了「不需要再跟」。</li>
+      <li><b>左槽时间由「处理时间」改为「跟进时间」</b>：这是为了让左右两侧同源。若你希望列表仍以处理时间排序/展示，可改为左侧不变、仅右侧换标签 —— 代价是标签说「已过期」而左侧显示的是授权那天。</li>
+      <li><b>「跟进中」与来源芯片同为 Sky 洗底</b>：来源是 <code>customer_share</code> 时，左侧「客户分享」与右侧「跟进中」会撞同一个蓝。本稿保留蓝色以维持「正常」的语义（也与原 <code>go-eval--ap</code> 色一致）；若要彻底分开，可把「跟进中」降为中性灰底（<code>#eef0f3</code> / <code>#6b6e76</code>），代价是失去绿色的「正常」暗示。</li>
+    </ul>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 06 我的评估 · 现状 -->
+  <!-- ============================================================ -->
+  <div class="sec" style="margin-top:56px;">
+    <div class="sec-head">
+      <span class="sec-no">06</span>
+      <h2>我的评估 · 现状：同模块里第三套视觉语言</h2>
+    </div>
+    <p class="sec-note">
+      `pages/valuation/list/index` 是 <b>C 端客户与内部员工的共用页</b>。它目前走「暖色编辑风格」
+      （<code>hsl(40,16%,98%)</code> 画布 + 描边卡 + 24px 圆角 + 无阴影），而同模块的
+      <code>detail</code> 与 <code>evaluate</code> 都是 Steep（Fog 画布 + 白卡 + 阴影 + 无边框）—— 切页时底色与卡片质感会跳一次。
+      叠加第三个问题：状态徽章色来自后端 <code>LEAD_STATUS_DISPLAY_MAP</code>，是一套 Material 色板，
+      其中的蓝 / 绿 / 紫 / 橙正是 <code>DESIGN.md</code> 明令避免的「saturated blues, greens, or reds」。
+    </p>
+  </div>
+
+  <div class="figs">
+    <div class="fig">
+      <div class="fig__label">屏 D1 · 现状<span>list/index · 暖色编辑风格</span></div>
+      <div class="phone" data-screen-label="D1-我的评估-现状">
+        <div class="statusbar">
+          <span class="sb-time">9:41</span>
+          <div class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="navbar">
+          <div class="nav-title-pad"></div>
+          <div class="nav-title">我的评估</div>
+          <div class="nav-title-pad"></div>
+          <div class="capsule">
+            <div class="capsule-side"><svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg></div>
+            <span class="capsule-div"></span>
+            <div class="capsule-side"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg></div>
+          </div>
+        </div>
+        <div class="screen screen--flush screen--warm">
+          <div class="w-count">共 3 条评估</div>
+          <div class="w-banner">
+            <span class="w-banner__t">开启提醒，授权价出来或调整后第一时间通知您</span>
+            <span class="w-banner__a">开启 ›</span>
+          </div>
+
+          <div class="w-card">
+            <div class="w-head">
+              <div class="w-title">仁恒河滨城</div>
+              <div class="w-badge" style="color:#FFA500;background:rgba(255,165,0,0.2);">待评估</div>
+            </div>
+            <div class="w-desc">2室1厅 · 89㎡</div>
+            <div class="w-foot">
+              <span class="w-date">2026-09-20</span>
+              <span class="w-chev">›</span>
+            </div>
+          </div>
+
+          <div class="w-card">
+            <div class="w-head">
+              <div class="w-title">万科翡翠雅宾利</div>
+              <div class="w-badge" style="color:#2196F3;background:rgba(33,150,243,0.2);">待看房</div>
+            </div>
+            <div class="w-desc">3室2厅 · 128㎡</div>
+            <div class="w-foot">
+              <span class="w-date">2026-09-12</span>
+              <span class="w-chev">›</span>
+            </div>
+          </div>
+
+          <div class="w-card w-card--last">
+            <div class="w-head">
+              <div class="w-title">保利世博天悦</div>
+              <div class="w-badge" style="color:#9C27B0;background:rgba(156,39,176,0.2);">已签约</div>
+            </div>
+            <div class="w-desc">4室2厅 · 186㎡</div>
+            <div class="w-foot">
+              <span class="w-date">2026-09-05</span>
+              <span class="w-chev">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fig">
+      <div class="fig__label">问题清单<span>与 evaluate / detail 的落差</span></div>
+      <div class="sheet-panel" style="max-width:400px; padding:20px 22px 22px;">
+        <ul class="plain">
+          <li><b>① 画布与卡片两套语言</b>：本页 <code>hsl(40,16%,98%)</code> 暖白画布 + 1px 暖色描边 + 无阴影；同模块 <code>detail</code>/<code>evaluate</code> 是 Fog <code>#f7f7f8</code> + 白卡 + <code>0 4rpx 20rpx rgba(23,25,28,.04)</code>。来回切页会有一次明显的底色跳变。</li>
+          <li><b>② 第三套色板</b>：状态色由后端下发 hex —— <code>#FFA500</code>（橙）/ <code>#2196F3</code>（蓝）/ <code>#4CAF50</code>（绿）/ <code>#9C27B0</code>（紫）/ <code>#F44336</code>（红）。<code>DESIGN.md</code> 明确「Don't introduce saturated blues, greens, or reds for UI chrome — the only chromatic voices are Rust and the two pastel washes」。本页同时出现蓝、绿、紫、橙四种。</li>
+          <li><b>③ 信息密度低</b>：只有 小区名 / 状态 / 户型·面积 / 日期。没有缩略图，也没有价格 —— 客户最想知道的那个数字（评估价）不在列表里。</li>
+          <li><b>④ 看不出进展</b>：从提交到评估到签约，列表只有日期会变。内部员工真正要回答的「这条我多久没跟了」没有任何承载。</li>
+          <li><b>⑤ 详情页对内部员工只读</b>：跟进记录只有列表，没有录入入口（见第 08 节）。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 07 方案 · 列表卡对齐 -->
+  <!-- ============================================================ -->
+  <div class="sec" style="margin-top:44px;">
+    <div class="sec-head">
+      <span class="sec-no">07</span>
+      <h2>方案 · 列表卡与 evaluate 同骨架同令牌</h2>
+    </div>
+    <p class="sec-note">
+      换的是<b>皮肤与骨架</b>，不是语义：同一份白卡 / 圆角 / 阴影 / 分隔线，同一份 <code>stag</code> 状态标签与
+      <code>fresh</code> 时效标签，同一份 <code>lcard</code> 槽位。内容按各自场景填 —— 员工卡右侧是「授权价」，
+      客户卡右侧是「评估价」（未出价时回退「业主报价」）。
+      <b>右下角时效标签只在「已授权 → 签约前」窗口出现</b>，与第 02 节口径完全一致：待评估、已签约、已放弃、他司成交一律留空。
+    </p>
+  </div>
+
+  <div class="figs">
+    <div class="fig">
+      <div class="fig__label">屏 D2 · 改造后<span>4 种状态 · 右下角只出现在跟进窗口</span></div>
+      <div class="phone" data-screen-label="D2-我的评估-改造后">
+        <div class="statusbar">
+          <span class="sb-time">9:41</span>
+          <div class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="navbar">
+          <div class="nav-title-pad"></div>
+          <div class="nav-title">我的评估</div>
+          <div class="nav-title-pad"></div>
+          <div class="capsule">
+            <div class="capsule-side"><svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg></div>
+            <span class="capsule-div"></span>
+            <div class="capsule-side"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg></div>
+          </div>
+        </div>
+        <div class="screen screen--flush">
+          <div class="evalmeta">
+            <div class="evalmeta__big">共 <span class="evalmeta__num">4</span> 条评估</div>
+          </div>
+          <div class="nbanner">
+            <span class="nbanner__t">开启提醒，授权价出来或调整后第一时间通知您</span>
+            <span class="nbanner__a">开启 ›</span>
+          </div>
+
+          <!-- 待评估：右下角留空 -->
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">仁恒河滨城</div>
+              <span class="stag stag--amber">待评估</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">2室1厅 · 89㎡ · 18/32层</div>
+                <div class="attrs__l2">浦东新区 · 南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">业主报价</div>
+                <div class="pricest__vl">880<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot lcard__foot--plain">
+              <div class="lcard__meta">
+                <div class="time">提交 09-20</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 已授权：即将过期 -->
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">万科翡翠雅宾利</div>
+              <span class="stag stag--green">已授权</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">3室2厅 · 128㎡ · 6/18层</div>
+                <div class="attrs__l2">静安区 · 南北</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">评估价</div>
+                <div class="pricest__vl pricest__vl--ok">1,150<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="time">跟进 09-12</div>
+              </div>
+              <span class="fresh fresh--soon"><span class="fresh__dot"></span>即将过期</span>
+            </div>
+          </div>
+
+          <!-- 已看房：跟进中 -->
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">保利世博天悦</div>
+              <span class="stag stag--green">已看房</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">4室2厅 · 186㎡ · 12/26层</div>
+                <div class="attrs__l2">浦东新区 · 南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">评估价</div>
+                <div class="pricest__vl pricest__vl--ok">1,420<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="time">跟进 09-19</div>
+              </div>
+              <span class="fresh fresh--ok"><span class="fresh__dot"></span>跟进中</span>
+            </div>
+          </div>
+
+          <!-- 已签约：终态留空 -->
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">中海顺昌玖里</div>
+              <span class="stag stag--ink">已签约</span>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">3室2厅 · 143㎡ · 21/28层</div>
+                <div class="attrs__l2">黄浦区 · 南</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">评估价</div>
+                <div class="pricest__vl pricest__vl--ok">2,050<span class="pricest__unit">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot lcard__foot--plain">
+              <div class="lcard__meta">
+                <div class="time">处理 09-05</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fig">
+      <div class="fig__label">槽位对照<span>evaluate 已处理卡 → 我的评估卡</span></div>
+      <div class="sheet-panel" style="max-width:470px; padding:20px 22px 22px;">
+        <table>
+          <thead>
+            <tr><th>卡槽</th><th>evaluate 已处理卡</th><th>我的评估卡</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="tbl-nw">左上</td><td>小区名 15px / 600</td><td>同</td></tr>
+            <tr><td class="tbl-nw">右上</td><td><code>stag</code> 令牌类</td><td>同（替换后端 hex 内联色）</td></tr>
+            <tr><td class="tbl-nw">缩略图</td><td>首图 46px 圆角</td><td>同</td></tr>
+            <tr><td class="tbl-nw">参数</td><td>l1 户型·面积·楼层<br />l2 区域·朝向</td><td>同</td></tr>
+            <tr><td class="tbl-nw">价格</td><td>授权价（绿）</td><td>评估价（绿）／未出价回退业主报价（墨）</td></tr>
+            <tr><td class="tbl-nw">底·左</td><td>来源 chip + 时间</td><td>仅时间（客户看自己的提交记录，来源无信息量）</td></tr>
+            <tr><td class="tbl-nw">底·右</td><td><code>fresh</code> 时效标签<br />（仅 pending_visit / visited）</td><td>同（同一套纯函数、同一套出现窗口）</td></tr>
+          </tbody>
+        </table>
+        <h3>需要后端补的字段</h3>
+        <p style="font-size:12.5px; line-height:1.75; color:var(--ink2);">
+          <code>PublicLeadListItem</code> 目前只有小区名 / 户型 / 面积 / total_price / expected_price / status* / 时间，
+          <b>既没有图也没有 eval_price / district / floor_info / orientation</b>。上面的骨架要落地，
+          需按第 09 节表 C 补字段；若本轮后端不补，降级方案是<b>只对齐色彩与骨架</b>——
+          缩略图不留空位、价格栈整体隐藏，仍能拿到「画布统一 + 状态标签入令牌体系」这两项主要收益。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 08 方案 · 详情页开放内部员工跟进 -->
+  <!-- ============================================================ -->
+  <div class="sec" style="margin-top:44px;">
+    <div class="sec-head">
+      <span class="sec-no">08</span>
+      <h2>方案 · 详情页允许内部员工填写跟进</h2>
+    </div>
+    <p class="sec-note">
+      只对<b>内部员工</b>多出两个入口：跟进记录区块头的「＋ 登记」，以及底部操作栏的「更新跟进」——
+      两者打开同一个半屏面板（与第 04 节屏 C1 逐像素同构，本稿不复刻）。<b>纯 C 端客户的页面与今天完全一致</b>，
+      不会看到任何录入入口。提交成功后重新拉 <code>/public/leads/{id}</code>，跟进记录立刻出现；
+      返回列表时 list 的 <code>onShow</code> 静默刷新 → 卡片右下角时效标签同步回「跟进中」。
+    </p>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">查看者身份</span>
+      <button class="tab tab--on" data-role-tab="internal" onclick="setRole('internal')">内部员工</button>
+      <button class="tab" data-role-tab="customer" onclick="setRole('customer')">纯 C 端客户</button>
+    </div>
+  </div>
+
+  <div class="figs">
+    <div class="fig">
+      <div class="fig__label" id="roleLabel">屏 E · 内部员工视角<span>多出「＋ 登记」与底部「更新跟进」</span></div>
+      <div class="phone" data-screen-label="E-评估详情">
+        <div class="statusbar">
+          <span class="sb-time">9:41</span>
+          <div class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.5" fill="#17191c"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.5" fill="#17191c"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="#17191c"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#17191c" opacity="0.35"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 9.8a1.4 1.4 0 100 .01z" fill="#17191c"/><path d="M8 7.2c1 0 1.9.4 2.6 1.1l1-1.1A5.1 5.1 0 008 5.6c-1.4 0-2.7.6-3.6 1.6l1 1.1A3.6 3.6 0 018 7.2z" fill="#17191c"/><path d="M8 3.9c1.9 0 3.6.8 4.9 2.1l1-1.1A8.6 8.6 0 008 2.3c-2.2 0-4.3.9-5.9 2.6l1 1.1A6.6 6.6 0 018 3.9z" fill="#17191c"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" stroke-opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="#17191c"/><path d="M23.5 4v4a2.2 2.2 0 000-4z" fill="#17191c" fill-opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="navbar">
+          <div class="nav-back">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M10 2L2.5 10l7.5 8" stroke="#17191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="nav-title">评估详情</div>
+          <div class="nav-title-pad"></div>
+          <div class="capsule">
+            <div class="capsule-side"><svg width="17" height="5" viewBox="0 0 17 5" fill="none"><circle cx="2.5" cy="2.5" r="2" fill="#17191c"/><circle cx="8.5" cy="2.5" r="2" fill="#17191c"/><circle cx="14.5" cy="2.5" r="2" fill="#17191c"/></svg></div>
+            <span class="capsule-div"></span>
+            <div class="capsule-side"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="#17191c" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#17191c"/></svg></div>
+          </div>
+        </div>
+        <div class="screen screen--flush">
+          <div class="dpage">
+            <!-- 评估价格（结论先行） -->
+            <div class="dcard">
+              <div class="dhero__head">
+                <div class="dhero__name">仁恒河滨城</div>
+                <span class="dpill dpill--warm">已评估</span>
+              </div>
+              <div class="dhero__meta">2室1厅 · 89㎡ · 18/32层 · 南 · 心理预期 880万</div>
+              <div class="dprice">
+                <div class="dprice__cap">评估价格</div>
+                <div class="dprice__row">
+                  <span class="dprice__sym">¥</span>
+                  <span class="dprice__num">868</span>
+                  <span class="dprice__unit">万</span>
+                </div>
+              </div>
+              <div class="dhero__foot">评估完成于 2026-09-18 14:32</div>
+            </div>
+
+            <!-- 户型图 -->
+            <div class="dcard">
+              <div class="dcard__head">
+                <div class="dcard__title">户型图</div>
+                <div class="dcard__note">2 张 · 点击预览</div>
+              </div>
+              <div class="dplan">
+                <div class="dph"></div>
+                <div class="dph"></div>
+              </div>
+            </div>
+
+            <!-- 房源信息 -->
+            <div class="dcard">
+              <div class="dcard__head">
+                <div class="dcard__title">房源信息</div>
+              </div>
+              <div class="dspec">
+                <div class="dspec__row"><span class="dspec__lb">小区</span><span class="dspec__vl">仁恒河滨城</span></div>
+                <div class="dspec__row"><span class="dspec__lb">户型</span><span class="dspec__vl">2室1厅</span></div>
+                <div class="dspec__row"><span class="dspec__lb">面积</span><span class="dspec__vl">89㎡</span></div>
+                <div class="dspec__row"><span class="dspec__lb">楼层/朝向</span><span class="dspec__vl">18/32层 · 南</span></div>
+                <div class="dspec__row"><span class="dspec__lb">留言</span><span class="dspec__vl">满五唯一，希望 11 月底前完成过户</span></div>
+                <div class="dspec__row"><span class="dspec__lb">提交时间</span><span class="dspec__vl">2026-09-09 10:24</span></div>
+              </div>
+            </div>
+
+            <!-- 跟进记录 -->
+            <div class="dcard">
+              <div class="dcard__head">
+                <div class="dcard__title">跟进记录</div>
+                <div class="dcard__note" data-role-when="customer">共 2 条</div>
+                <span class="blk-h__act" data-role-when="internal">＋ 登记</span>
+              </div>
+              <div class="dfu">
+                <div class="dfu__meta">
+                  <span class="dfu__method">电话</span>
+                  <span class="dfu__time">2026-09-18 14:32</span>
+                </div>
+                <div class="dfu__content">业主确认可接受 868 万，希望 10 月上旬安排带看。</div>
+              </div>
+              <div class="dfu">
+                <div class="dfu__meta">
+                  <span class="dfu__method">微信</span>
+                  <span class="dfu__time">2026-09-10 16:05</span>
+                </div>
+                <div class="dfu__content">发送小区近 3 个月成交明细，业主回复收到。</div>
+              </div>
+            </div>
+
+            <div class="dactionbar-spacer" data-role-when="internal"></div>
+          </div>
+        </div>
+
+        <div class="actionbar" data-role-when="internal">
+          <button class="abtn abtn--follow" type="button" style="flex:1;">更新跟进</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="fig">
+      <div class="fig__label">身份判定与复用<span>内部员工从哪来、面板从哪来</span></div>
+      <div class="sheet-panel" style="max-width:400px; padding:20px 22px 22px;">
+        <h3>「是否内部员工」怎么判</h3>
+        <table>
+          <thead>
+            <tr><th>方案</th><th>做法</th><th>取舍</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="flag--calm flag">推荐</span></td>
+              <td><code>PublicLeadDetail</code> 增下发 <code>can_follow_up: bool</code>，后端按 <code>INTERNAL_ROLE_CODES = {admin, operator}</code> + 线索归属（<code>creator_id == me</code> 或 <code>referrer_id == me</code>）判定</td>
+              <td>前端零推断、零额外请求；能力位跟数据同源，不会出现「入口显示了但提交 403」</td>
+            </tr>
+            <tr>
+              <td><span class="flag">备选</span></td>
+              <td>复用 <code>/public/auth/me</code> 的 <code>permissions</code>：把 <code>pages/profile/index/index.ts</code> 里的 <code>isInternalUser(permissions)</code> 提到 <code>utils/</code>，判定「含 <code>customer</code> 基础权限（<code>valuation:write</code> / <code>lead:submit</code>）之外的代码」</td>
+              <td>多一次请求 + 前端推断；该函数注释里已标 <code>TODO 待后端下发显式身份字段</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>提交端点直接复用，无需新增</h3>
+        <p style="font-size:12.5px; line-height:1.75; color:var(--ink2);">
+          <code>POST /public/leads/my/acquired/{id}/follow-ups</code>（第 05 节表 2 第 3 条，仍未实现）的归属校验是
+          「<code>referrer_id == me</code> 或 <code>creator_id == me</code>」。而 <code>/public/leads/mine</code>
+          只返回 <code>creator_id == me</code> 的线索 —— <b>本页每一条线索必然落在该员工的「本人经手」范围内</b>，
+          因此 authorize 页和 detail 页可以共用同一个端点。
+        </p>
+        <h3>纯 C 端客户</h3>
+        <ul class="plain">
+          <li>不显示「＋ 登记」，不渲染底部操作栏 —— 页面与今天逐像素一致。</li>
+          <li>跟进记录仍按现有逻辑前端切片展示（<code>FOLLOWUP_PAGE_SIZE = 5</code>，「展开剩余 N 条」）。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 09 第二轮 · 口径 / 依赖 / 改动清单 -->
+  <!-- ============================================================ -->
+  <div class="sec" style="margin-top:44px;">
+    <div class="sec-head">
+      <span class="sec-no">09</span>
+      <h2>第二轮 · 口径 · 依赖 · 改动清单</h2>
+    </div>
+  </div>
+
+  <div class="sheet-panel" style="margin-top:16px;">
+    <h3>表 A · 时效标签的出现窗口（两页统一，也是对第 02 节口径的收口）</h3>
+    <table>
+      <thead>
+        <tr><th>状态</th><th>evaluate 已处理卡</th><th>我的评估卡</th><th>右下角</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>pending_assessment</code> 待评估</td><td>—（属「待评估」段，右槽是「去评估 ›」）</td><td>出现</td><td><span class="cross">留空</span></td></tr>
+        <tr><td><code>pending_visit</code> 已授权</td><td>出现</td><td>出现</td><td>时效三态</td></tr>
+        <tr><td><code>visited</code> 已看房</td><td>出现</td><td>出现</td><td>时效三态</td></tr>
+        <tr><td><code>signed</code> 已签约</td><td>出现</td><td>出现</td><td><span class="cross">留空</span></td></tr>
+        <tr><td><code>rejected</code> 已放弃</td><td>出现</td><td>出现</td><td><span class="cross">留空</span></td></tr>
+        <tr><td><code>lost_to_competitor</code> 他司成交</td><td>出现</td><td>出现</td><td><span class="cross">留空</span></td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12.5px; line-height:1.75; color:var(--ink2); margin-top:10px;">
+      一句话口径：<b>时效标签只属于「已授权 → 签约前」这一段窗口</b>。待评估还没有「跟进」这个动作
+      （催评估由工作台的「待评估 N 套 / 今日新增」承接），终态则不需要再跟 —— 右下角留空本身就是「无需动作」的信号。
+    </p>
+
+    <h3>表 B · 状态标签映射（后端 hex → 令牌类）</h3>
+    <table>
+      <thead>
+        <tr><th>状态</th><th>后端 <code>status_color</code></th><th>令牌类</th><th>替代关系</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>pending_assessment</td><td><code>#FFA500</code></td><td><code>stag--amber</code></td><td>Rust/Apricot 暖档替代橙</td></tr>
+        <tr><td>pending_visit</td><td><code>#2196F3</code></td><td><code>stag--green</code></td><td>Sky 档替代蓝</td></tr>
+        <tr><td>visited</td><td><code>#4CAF50</code></td><td><code>stag--green</code></td><td>同档（两个绿统一成一个 Sky）</td></tr>
+        <tr><td>signed</td><td><code>#9C27B0</code></td><td><code>stag--ink</code>（新增档）</td><td>Ink 实底替代紫</td></tr>
+        <tr><td>rejected</td><td><code>#F44336</code></td><td><code>stag--gray</code></td><td>灰档替代红</td></tr>
+        <tr><td>lost_to_competitor</td><td><code>#B7410E</code></td><td><code>stag--rust</code></td><td>Rust 同色，仅换成 Apricot 洗底</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12.5px; line-height:1.75; color:var(--ink2); margin-top:10px;">
+      <code>status_color</code> 字段建议<b>保留不删</b>（避免破坏其它消费方），只是前端不再用它渲染；
+      <code>utils/valuation-display.ts</code> 的 <code>statusBadgeStyle</code> 在改造后失去唯一调用方，可一并删除。
+    </p>
+
+    <h3>表 C · 后端改动清单（⚠️ 全部未实现）</h3>
+    <table>
+      <thead>
+        <tr><th>#</th><th>文件 / 端点</th><th>改动</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><code>backend/schemas/public/__init__.py</code><br /><code>PublicLeadListItem</code></td>
+          <td>补 <code>eval_price</code> / <code>district</code> / <code>floor_info</code> / <code>orientation</code> / <code>image_thumbnails</code> / <code>last_follow_up_at</code>（可选 <code>source</code>）</td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><code>GET /public/leads/mine</code></td>
+          <td>填充上述字段，复用既有 <code>_effective_expected_price</code> / <code>_lead_source</code> / 缩略图派生 helper</td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><code>PublicLeadDetail</code>（<code>GET /public/leads/{id}</code>）</td>
+          <td>增下发 <code>can_follow_up: bool</code>（见第 08 节「推荐」方案）</td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><code>POST /public/leads/my/acquired/{id}/follow-ups</code></td>
+          <td>沿用第 05 节表 2 第 3 条，<b>本页直接复用，不新增端点</b></td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><code>HandledItem</code> / <code>handled-assessment</code>、<code>authorize-assessment</code> 放开 lost</td>
+          <td>第 05 节表 2 的第 1、2、4 条，本轮不涉及，仍待实现</td>
+          <td><span class="flag">未实现</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>表 D · 小程序前端改动清单（第二轮）</h3>
+    <table>
+      <thead>
+        <tr><th>文件</th><th>改动</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>pages/valuation/list/index.wxml</code></td>
+          <td><code>list-card</code> 换 <code>lcard</code> 骨架（thumb / attrs l1·l2 / pricest / foot）；<code>badge</code> 换 <code>stag stag--{class}</code>；<code>notify-banner</code> 保留结构换令牌</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/list/index.wxss</code></td>
+          <td><b>删除全部 <code>--warm-*</code> 变量与 <code>.list-*</code> / <code>.badge</code> / <code>.count-row</code> / <code>.notify-banner</code> 暖色规则</b>，改为 Fog 画布 + <code>lcard</code>/<code>stag</code>/<code>fresh</code>/<code>srcchip</code>/<code>time</code>（建议把 evaluate 的卡片样式提到公共 wxss 或抽 <code>components/lead-card</code>，避免两页各存一份）</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/list/index.ts</code></td>
+          <td><code>DisplayItem</code> 重做（补 tagClass / 两行参数 / 价格栈 / freshText）；撤回 <code>statusBadgeStyle</code> 依赖</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/detail/index.wxml</code></td>
+          <td>跟进记录区块头加「＋ 登记」（<code>wx:if="{{canFollowup}}"</code>）；新增底部操作栏单按钮；新增 followup 半屏面板</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/detail/index.ts</code></td>
+          <td>新增 <code>canFollowup</code> / <code>panelMode: "followup"</code> / <code>followupMethod</code> / <code>submitFollowup()</code>（成功 toast → 重拉详情刷新跟进记录）</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/detail/index.wxss</code></td>
+          <td>新增 <code>.blk-h__act</code>（区块头内联按钮）与 followup sheet 样式（可从 authorize 的 <code>.sheet</code>/<code>.fld</code>/<code>.confirm-btn</code> 提取共用）</td>
+        </tr>
+        <tr>
+          <td><code>utils/valuation-display.ts</code></td>
+          <td>新增 <code>statusTagClass(status)</code> 映射；<code>statusBadgeStyle</code> 失去调用方后删除</td>
+        </tr>
+        <tr>
+          <td><code>utils/valuation-freshness.ts</code>（第 05 节新增）</td>
+          <td>本页复用同一份 <code>followUpFreshness</code>，不另写阈值</td>
+        </tr>
+        <tr>
+          <td><code>utils/identity.ts</code>（新增，仅走备选方案时需要）</td>
+          <td>把 <code>pages/profile/index/index.ts</code> 的 <code>isInternalUser(permissions)</code> + <code>CUSTOMER_BASE_PERMISSIONS</code> 提到 utils 共用</td>
+        </tr>
+        <tr>
+          <td><code>pages/valuation/evaluate/index.ts</code></td>
+          <td>顺手补 <code>signed</code> 的 <code>HANDLED_STATUS_META</code> 映射（现缺 → 已签约线索会退化成灰色 <code>status_display</code>）</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>本稿明确不改动的部分</h3>
+    <ul class="plain">
+      <li><b>Web admin/leads</b>：本来就是对齐基准，不动。</li>
+      <li><b>详情页的 <code>internalOnly</code> 态</b>：无 C 端令牌的内部员工仍看不到 C 端评估详情（现状保留）。本轮只让「有 C 端身份的内部员工」能登记跟进 —— 这正好也是需求里说的那批人。若以后要让纯后台账号也能看，属于另一个议题。</li>
+      <li><b>列表的分页 / 排序 / 搜索</b>：<code>/public/leads/mine</code> 现有行为不变，只换皮。</li>
+      <li><b>「授权价提醒」订阅逻辑</b>：<code>onSubscribeTap</code> 与 <code>utils/valuation-notify.ts</code> 不变，只换外观。</li>
+    </ul>
+
+    <h3>本轮开放的三个点</h3>
+    <ul class="plain">
+      <li><b>「我的评估」是否对纯 C 端客户也显示时效标签</b>：本稿统一显示（同一套组件、零分支）。备选是客户侧改显「评估中 / 已出评估价」这类进度文案 —— 理由是 14 天阈值本质是内部考核口径，对客户暴露「已过期」可能引起投诉。</li>
+      <li><b>卡片样式是否抽成公共组件</b>：两个页面复制同一份 <code>lcard</code> wxss 是下一轮重构的候选（<code>components/lead-card</code>）；本稿只要求「同一份样式」，不强制抽组件。</li>
+      <li><b>后端不补字段时的降级</b>：若本轮只做「画布 + 状态标签入令牌体系」，缩略图不留空位、价格栈整体隐藏，视觉骨架仍然统一。</li>
+    </ul>
+  </div>
+
+<script>
+  function setDetail(v) {
+    var nodes = document.querySelectorAll("[data-when]");
+    for (var i = 0; i < nodes.length; i++) {
+      var list = nodes[i].getAttribute("data-when").split(",");
+      if (list.indexOf(v) >= 0) {
+        nodes[i].classList.remove("hidden");
+      } else {
+        nodes[i].classList.add("hidden");
+      }
+    }
+    var tabs = document.querySelectorAll("[data-tab]");
+    for (var j = 0; j < tabs.length; j++) {
+      if (tabs[j].getAttribute("data-tab") === v) {
+        tabs[j].classList.add("tab--on");
+      } else {
+        tabs[j].classList.remove("tab--on");
+      }
+    }
+    var label = document.getElementById("detailLabel");
+    if (label) {
+      var map = {
+        pv: "屏 B · 已授权 · 待看房<span>viewMode 详情 · 可跟进可标记</span>",
+        vd: "屏 B · 已看房<span>viewMode 详情 · 可跟进可标记</span>",
+        rj: "屏 B · 已驳回（终态）<span>viewMode 详情 · 只读，无底部操作栏</span>"
+      };
+      label.innerHTML = map[v] || map.pv;
+    }
+  }
+
+  function setRole(v) {
+    var nodes = document.querySelectorAll("[data-role-when]");
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].getAttribute("data-role-when") === v) {
+        nodes[i].classList.remove("hidden");
+      } else {
+        nodes[i].classList.add("hidden");
+      }
+    }
+    var tabs = document.querySelectorAll("[data-role-tab]");
+    for (var j = 0; j < tabs.length; j++) {
+      if (tabs[j].getAttribute("data-role-tab") === v) {
+        tabs[j].classList.add("tab--on");
+      } else {
+        tabs[j].classList.remove("tab--on");
+      }
+    }
+    var label = document.getElementById("roleLabel");
+    if (label) {
+      label.innerHTML =
+        v === "customer"
+          ? "屏 E · 纯 C 端客户视角<span>无「＋ 登记」、无底部操作栏</span>"
+          : "屏 E · 内部员工视角<span>多出「＋ 登记」与底部「更新跟进」</span>";
+    }
+  }
+</script>
+
+</body>
+</html>

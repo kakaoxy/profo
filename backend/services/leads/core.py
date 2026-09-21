@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from constants.role_codes import INTERNAL_ROLE_CODES
 from models import User
-from models.common import LeadStatus
+from models.common import FollowUpMethod, LeadStatus
 from models.lead import Lead, LeadEvalHistory, LeadFollowUp
 from schemas.growth_center import GrowthModule
 from schemas.lead import LeadAssessmentAuthorizeRequest, LeadCreate, LeadUpdate
@@ -509,10 +509,15 @@ class LeadService:
             search: 小区名称搜索
 
         Returns:
-            已处理段字典（items/total/page/page_size）
+            已处理段字典（items/total/page/page_size），另附 followup_stats：
+            dict[lead_id] -> {"last_follow_up_at": max(followed_at) 或 None, "follow_up_count": 条数}
+            （按当前页 items 批量聚合，供时效标签展示）
 
         """
-        return self.query_service.get_handled(user_id=user_id, page=page, page_size=page_size, search=search)
+        result = self.query_service.get_handled(user_id=user_id, page=page, page_size=page_size, search=search)
+        items: list[Lead] = result["items"]
+        result["followup_stats"] = self.query_service.get_followup_stats([item.id for item in items])
+        return result
 
     def authorize_assessment(
         self,
@@ -528,6 +533,9 @@ class LeadService:
           并流转 pending_visit；
         - reject：不建评估记录，仅流转 rejected，audit_reason 取 remark（选填）；
         - lost：不建评估记录，仅流转 lost_to_competitor，audit_reason 取 remark（选填）；
+          状态守卫按动作分档：lost 允许 pending_assessment/pending_visit/visited
+          （已授权/已看房线索在他司成交后可关闭，语义对齐 admin MarkLostSection），
+          且不清空 eval_price、不写评估历史；
         - 三动作统一写 auditor_id/audit_time（与 core.update_lead 状态流转自动化口径一致）。
 
         Args:
@@ -541,18 +549,25 @@ class LeadService:
         Raises:
             PermissionDeniedError: 操作人不具备 admin/operator 角色
             ResourceNotFoundError: 线索不存在或已软删除
-            ConflictError: 线索非 pending_assessment（已被他人处理）
+            ConflictError: 状态守卫不通过（approve/reject 仅 pending_assessment；
+                lost 仅 pending_assessment/pending_visit/visited）
 
         """
         self._ensure_internal_operator(user_id)
 
-        # 行级锁读取：锁持至 commit，保证「检查 pending_assessment → 流转」原子化，
+        # 行级锁读取：锁持至 commit，保证「检查状态 → 流转」原子化，
         # 并发提交时后到者在锁上等待、拿到锁后状态已变，走 409 ConflictError
         lead = self.query_service.get_by_id(lead_id, load_creator=False, for_update=True)
         if lead is None:
             msg = "线索不存在"
             raise ResourceNotFoundError(msg)
-        if lead.status != LeadStatus.PENDING_ASSESSMENT:
+        if req.action == "lost":
+            # lost：已授权/已看房线索他司成交后的关闭出口；评估流程不可借此绕过
+            # （approve/reject 仍仅 pending_assessment）
+            if lead.status not in (LeadStatus.PENDING_ASSESSMENT, LeadStatus.PENDING_VISIT, LeadStatus.VISITED):
+                msg = "该线索当前状态不可标记为他司成交"
+                raise ConflictError(msg)
+        elif lead.status != LeadStatus.PENDING_ASSESSMENT:
             msg = "该线索已被处理"
             raise ConflictError(msg)
 
@@ -683,6 +698,56 @@ class LeadService:
             raise ResourceNotFoundError(msg)
         return self.followup_service.get_follow_ups(lead_id)
 
+    def create_followup(self, user_id: str, lead_id: str, method: FollowUpMethod, content: str) -> LeadFollowUp:
+        """员工侧登记跟进（小程序已处理详情页「＋ 登记」）.
+
+        权限与同族端点（authorize-assessment / evaluations / follow-ups GET）一致：
+        内部员工 + 线索存在校验，不额外校验归属；终态（rejected/lost_to_competitor）
+        拒绝写入。复用 LeadFollowUpService.create_follow_up 落库并同步刷
+        Lead.last_follow_up_at（该函数内部 commit）。
+
+        Args:
+            user_id: 当前操作员工ID（写入 created_by_id）
+            lead_id: 线索ID
+            method: 跟进方式（phone/wechat/face/visit）
+            content: 跟进内容（1-500 字，路由层 Pydantic 已校验）
+
+        Returns:
+            创建的跟进记录对象
+
+        Raises:
+            PermissionDeniedError: 操作人不具备 admin/operator 角色
+            ResourceNotFoundError: 线索不存在或已软删除
+            ConflictError: 线索为 rejected/lost_to_competitor 终态
+
+        """
+        self._ensure_internal_operator(user_id)
+        # 行级锁读取：锁持至 commit（create_follow_up 内部 commit），保证「检查非终态 → 写入」
+        # 原子化，对齐 authorize_assessment / create_reevaluation 的并发防护模式，
+        # 避免并发 lost 流转 commit 后仍向已关闭线索写入跟进
+        lead = self.query_service.get_by_id(lead_id, load_creator=False, for_update=True)
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        if lead.status in (LeadStatus.REJECTED, LeadStatus.LOST_TO_COMPETITOR):
+            msg = "该线索已关闭，无法登记跟进"
+            raise ConflictError(msg)
+        return self.followup_service.create_follow_up(
+            lead_id=lead_id, method=method, content=content, created_by_id=user_id
+        )
+
+    def get_followup_stats(self, lead_ids: list[str]) -> dict[str, dict[str, Any]]:
+        """按线索ID批量聚合跟进统计（透传查询组件，供列表路由填充时效字段）.
+
+        Args:
+            lead_ids: 线索ID列表
+
+        Returns:
+            dict[lead_id] -> {"last_follow_up_at": ... 或 None, "follow_up_count": ...}
+
+        """
+        return self.query_service.get_followup_stats(lead_ids)
+
     def _ensure_internal_operator(self, user_id: str) -> None:
         """校验用户具备 admin/operator 角色（评估权限卡口）.
 
@@ -700,12 +765,46 @@ class LeadService:
         if user is None:
             msg = "权限不足"
             raise PermissionDeniedError(msg)
+        if not self._has_internal_role(user):
+            msg = "仅管理员/运营人员可执行评估授权"
+            raise PermissionDeniedError(msg)
+
+    def _has_internal_role(self, user: User) -> bool:
+        """判断用户主角色或附加角色是否命中 INTERNAL_ROLE_CODES（admin/operator）.
+
+        与 _ensure_internal_operator / can_follow_up 共用同一份角色判定，避免各自维护。
+
+        Args:
+            user: 用户对象（需含 role 与 roles 关系）
+
+        Returns:
+            具备内部角色时返回 True
+
+        """
         role_codes: set[str] = set()
         if user.role and user.role.code:
             role_codes.add(user.role.code)
         for r in user.roles or []:
             if r.code:
                 role_codes.add(r.code)
-        if not role_codes & INTERNAL_ROLE_CODES:
-            msg = "仅管理员/运营人员可执行评估授权"
-            raise PermissionDeniedError(msg)
+        return bool(role_codes & INTERNAL_ROLE_CODES)
+
+    def can_follow_up(self, user: User) -> bool:
+        """判定当前用户是否可登记跟进（PublicLeadDetail.can_follow_up 能力位）.
+
+        与 _ensure_internal_operator 同口径（INTERNAL_ROLE_CODES）；归属无需校验：
+        本能力位仅在 GET /public/leads/{id}（强制 lead.creator_id == user_id）下发，
+        能力位为 true ⟺ 提交新跟进端点会通过权限校验。
+
+        入参直接复用认证依赖返回的 User：AuthService.get_user_by_id 已
+        joinedload(role) + selectinload(roles) 预加载角色关系，无需在详情
+        请求中再发一次 User 查询。
+
+        Args:
+            user: 当前认证用户（含已预加载的 role 与 roles 关系）
+
+        Returns:
+            具备 admin/operator 角色时返回 True
+
+        """
+        return self._has_internal_role(user)

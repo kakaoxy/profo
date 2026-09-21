@@ -46,12 +46,16 @@
       <view class="kpi__note" wx:if="{{!viewMode}}">批准约看排期前需先授权评估价；该价格将作为后续带看与签约的收房基准。</view>
     </view>
 
-    <!-- 3. 参数宫格 -->
+    <!-- 3. 参数宫格（viewMode 追加第 6 格「最近跟进」） -->
     <view class="panel">
       <view class="pt-grid">
         <view class="pt" wx:for="{{paramGrid}}" wx:key="label">
           <view class="pt__lb">{{item.label}}</view>
           <view class="pt__vl">{{item.value}}</view>
+        </view>
+        <view class="pt" wx:if="{{viewMode}}">
+          <view class="pt__lb">最近跟进</view>
+          <view class="pt__vl">{{recentFollowupText}}</view>
         </view>
       </view>
     </view>
@@ -72,9 +76,12 @@
       <view class="quote">{{remarks}}</view>
     </view>
 
-    <!-- 5.4 评估历史（viewMode 专属，按评估时间倒序，首条为当前评估价） -->
+    <!-- 5.4 评估历史（viewMode 专属，按评估时间倒序，首条为当前评估价；区块头挂「调整评估价」） -->
     <view class="panel" wx:if="{{viewMode}}">
-      <view class="blk-h">评估历史<text class="blk-h__sub" wx:if="{{evalHistories.length > 0}}">共 {{evalHistories.length}} 次</text></view>
+      <view class="blk-h">
+        <view class="blk-h__main">评估历史<text class="blk-h__sub" wx:if="{{evalHistories.length > 0}}">共 {{evalHistories.length}} 次</text></view>
+        <view class="blk-h__act" wx:if="{{canAdjust}}" bindtap="openAdjustPanel">调整评估价</view>
+      </view>
       <view class="fu-list" wx:if="{{evalHistories.length > 0}}">
         <view class="fu" wx:for="{{evalHistories}}" wx:key="id">
           <view class="fu__head">
@@ -88,9 +95,12 @@
       <view class="fu-empty" wx:else>加载中...</view>
     </view>
 
-    <!-- 5.5 跟进记录（viewMode 专属，按跟进时间倒序） -->
+    <!-- 5.5 跟进记录（viewMode 专属，按跟进时间倒序；区块头挂「＋ 登记」） -->
     <view class="panel" wx:if="{{viewMode}}">
-      <view class="blk-h">跟进记录<text class="blk-h__sub" wx:if="{{followups.length > 0}}">共 {{followups.length}} 条</text></view>
+      <view class="blk-h">
+        <view class="blk-h__main">跟进记录<text class="blk-h__sub" wx:if="{{followups.length > 0}}">共 {{followups.length}} 条</text></view>
+        <view class="blk-h__act" wx:if="{{canFollowup}}" bindtap="openFollowupPanel">＋ 登记</view>
+      </view>
       <view class="fu-list" wx:if="{{followups.length > 0}}">
         <view class="fu" wx:for="{{followups}}" wx:key="id">
           <view class="fu__head">
@@ -131,16 +141,17 @@
   </block>
 </view>
 
-<!-- 底部操作栏（默认模式：三动作；viewMode 且可调整：单按钮再次评估） -->
+<!-- 底部操作栏（默认模式：三动作；viewMode 且可跟进：左「标记为他司成交」/ 右「更新跟进」） -->
 <view class="actionbar" wx:if="{{!missing && !viewMode}}">
   <button class="abtn abtn--reject" data-mode="reject" bindtap="openPanel">评估不符 · 放弃</button>
   <button class="abtn abtn--primary" data-mode="approve" bindtap="openPanel">给出评估价并批准</button>
 </view>
-<view class="actionbar" wx:if="{{!missing && viewMode && canAdjust}}">
-  <button class="abtn abtn--primary" bindtap="openAdjustPanel">调整评估价</button>
+<view class="actionbar" wx:if="{{!missing && viewMode && canFollowup}}">
+  <button class="abtn abtn--lost" data-mode="lost" bindtap="openPanel">标记为他司成交</button>
+  <button class="abtn abtn--primary" bindtap="openFollowupPanel">更新跟进</button>
 </view>
 <!-- 操作栏占位 -->
-<view class="actionbar-placeholder" wx:if="{{!missing && (!viewMode || canAdjust)}}"></view>
+<view class="actionbar-placeholder" wx:if="{{!missing && (!viewMode || canFollowup)}}"></view>
 
 <!-- 遮罩 -->
 <view class="mask" wx:if="{{panelMode}}" bindtap="closePanel"></view>
@@ -328,6 +339,50 @@
   <view class="form-error" wx:if="{{formError}}">{{formError}}</view>
   <view class="sheet__actions">
     <button class="confirm-btn confirm-btn--lost" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitAuthorize">确认标记</button>
+  </view>
+</view>
+
+<!-- followup 半屏面板（登记跟进：跟进方式 chip + 内容输入） -->
+<view class="sheet" wx:if="{{panelMode === 'followup'}}">
+  <view class="sheet__grab"></view>
+  <view class="sheet__head">
+    <view class="sheet__title">登记跟进</view>
+    <view class="sheet__close" bindtap="closePanel">×</view>
+  </view>
+  <view class="sheet__sub">记录与业主的最新沟通进展，保持跟进连续性</view>
+  <view class="fld">
+    <view class="fld__lb">跟进方式</view>
+    <view class="chips">
+      <view class="chip {{followupMethod === 'phone' ? 'chip--on' : ''}}" data-method="phone" bindtap="onFollowupMethodTap">电话</view>
+      <view class="chip {{followupMethod === 'wechat' ? 'chip--on' : ''}}" data-method="wechat" bindtap="onFollowupMethodTap">微信</view>
+      <view class="chip {{followupMethod === 'face' ? 'chip--on' : ''}}" data-method="face" bindtap="onFollowupMethodTap">面谈</view>
+      <view class="chip {{followupMethod === 'visit' ? 'chip--on' : ''}}" data-method="visit" bindtap="onFollowupMethodTap">实地带看</view>
+    </view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">跟进内容</view>
+    <textarea
+      class="ta {{focusedField === 'fupTa' ? 'ta--focus' : ''}}"
+      maxlength="{{MAX_REMARK}}"
+      placeholder="如：已电话确认看房时间，业主周三下午方便"
+      placeholder-class="ta__placeholder"
+      value="{{followupContent}}"
+      data-field="fupTa"
+      bindfocus="onFocusField"
+      bindblur="onBlurField"
+      bindinput="onFollowupContentInput"
+    />
+    <view class="ta-count">{{followupLen}}/{{MAX_REMARK}}</view>
+  </view>
+  <view class="hint">登记后线索的「最近跟进」时间同步刷新，避免超 14 天未跟进被标记为已过期。</view>
+  <view class="form-error" wx:if="{{formError}}">{{formError}}</view>
+  <view class="sheet__actions">
+    <button
+      class="confirm-btn"
+      loading="{{submitting}}"
+      disabled="{{!followupContent || submitting}}"
+      bindtap="submitFollowup"
+    >确认登记</button>
   </view>
 </view>
 

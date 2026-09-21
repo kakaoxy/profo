@@ -3,7 +3,7 @@ import {
   followupMethodLabel,
   formatDate,
   sliceFollowups,
-  statusBadgeStyle,
+  statusTagClass,
 } from "../../utils/valuation-display";
 
 describe("formatDate", () => {
@@ -73,20 +73,29 @@ describe("sliceFollowups", () => {
   });
 });
 
-describe("statusBadgeStyle", () => {
-  it("前景用状态色", () => {
-    expect(statusBadgeStyle("#ff8c00").color).toBe("#ff8c00");
+describe("statusTagClass 六态映射", () => {
+  it("pending_assessment → amber（待评估）", () => {
+    expect(statusTagClass("pending_assessment")).toBe("amber");
   });
 
-  it("背景用状态色 + 20% 透明度（#RRGGBB）", () => {
-    expect(statusBadgeStyle("#ff8c00").background).toBe("rgba(255, 140, 0, 0.2)");
+  it("pending_visit / visited → green（已授权 / 已看房）", () => {
+    expect(statusTagClass("pending_visit")).toBe("green");
+    expect(statusTagClass("visited")).toBe("green");
   });
 
-  it("支持 #RGB 缩写", () => {
-    expect(statusBadgeStyle("#f80").background).toBe("rgba(255, 136, 0, 0.2)");
+  it("signed → ink（已签约实底档）", () => {
+    expect(statusTagClass("signed")).toBe("ink");
   });
 
-  it("非 hex 色值背景原样返回", () => {
-    expect(statusBadgeStyle("red").background).toBe("red");
+  it("rejected → gray（已驳回）", () => {
+    expect(statusTagClass("rejected")).toBe("gray");
+  });
+
+  it("lost_to_competitor → rust（他司成交）", () => {
+    expect(statusTagClass("lost_to_competitor")).toBe("rust");
+  });
+
+  it("未知状态回退 gray", () => {
+    expect(statusTagClass("unknown")).toBe("gray");
   });
 });

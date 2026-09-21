@@ -314,6 +314,11 @@ class HandledItem(BaseModel):
     status: LeadStatus = Field(description="流转后状态")
     status_display: str = Field(description="状态显示名称")
     eval_price: float | None = Field(None, description="授权评估价(万)，reject/lost 为空")
+    last_follow_up_at: datetime | None = Field(
+        None,
+        description="最近跟进时间（max(lead_followups.followed_at)，无跟进为空）",
+    )
+    follow_up_count: int = Field(0, description="跟进记录条数")
     audit_time: datetime = Field(description="审核时间")
 
 
