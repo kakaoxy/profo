@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Path, Query, Request
 
 from dependencies.auth import (
     DbSessionDep,
+    PropertyGovernancePermDep,
     PropertyReadPermDep,
     PropertyWritePermDep,
 )
@@ -90,9 +91,11 @@ def merge_communities(
     request: Request,
     merge_request: CommunityMergeRequest,
     db: DbSessionDep,
-    _current_user: PropertyWritePermDep,
+    _current_user: PropertyGovernancePermDep,
 ) -> CommunityMergeResponse:
     """合并小区操作.
+
+    权限：property:governance（与数据治理页的前端拦截口径一致，治理动作专用）.
 
     参数:
         request: FastAPI HTTP 请求对象（用于速率限制）

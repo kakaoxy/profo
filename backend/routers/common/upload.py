@@ -11,7 +11,7 @@ from fastapi import APIRouter, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep
+from dependencies.auth import DbSessionDep, PropertyUploadPermDep
 from models import ImportTaskStatus
 from schemas import ImportTaskCreateResponse, ImportTaskStatusResponse
 from services.market import get_import_task_service, start_import_task
@@ -44,7 +44,7 @@ async def create_import_task(
     request: Request,
     file: Annotated[UploadFile, File(description="CSV 文件")],
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    current_user: PropertyUploadPermDep,
 ) -> ImportTaskCreateResponse:
     """上传 CSV 文件并创建异步导入任务.
 
@@ -92,7 +92,7 @@ def get_task_status(
     request: Request,
     task_id: str,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    current_user: PropertyUploadPermDep,
 ) -> ImportTaskStatusResponse:
     """查询导入任务状态和进度.
 
@@ -116,7 +116,7 @@ def get_task_status(
 @router.get("/tasks")
 def list_tasks(
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    current_user: PropertyUploadPermDep,
     status: Annotated[
         str | None,
         Query(description="按状态筛选: pending/processing/completed/failed/cancelled"),
@@ -137,7 +137,7 @@ def list_tasks(
 def cancel_task(
     task_id: str,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    current_user: PropertyUploadPermDep,
 ) -> CancelTaskResponse:
     """取消导入任务.
 
@@ -156,7 +156,7 @@ def cancel_task(
 @router.get("/download/{filename}")
 def download_failed_file(
     filename: str,
-    _current_user: CurrentInternalUserDep,
+    _current_user: PropertyUploadPermDep,
 ) -> FileResponse:
     """下载失败记录文件.
 

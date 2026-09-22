@@ -13,7 +13,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from constants.role_codes import RoleCode
-from dependencies.auth import CurrentActiveUserDep, CurrentInternalUserDep, DbSessionDep
+from dependencies.auth import ApiKeyManagePermDep, CurrentActiveUserDep, DbSessionDep
 from models import User
 from schemas.user import (
     ApiKeyCreateResponse,
@@ -427,21 +427,21 @@ def get_current_user_info(
     "/api-key",
     responses={
         401: {"description": "未认证"},
-        403: {"description": "无权限（仅限内部角色）"},
+        403: {"description": "无权限（缺少 api_key:manage）"},
         429: {"description": "请求过于频繁"},
     },
 )
 @limiter.limit(RateLimits.AUTH_API_KEY_CREATE)
 def create_api_key(
     request: Request,
-    current_user: CurrentInternalUserDep,
+    current_user: ApiKeyManagePermDep,
     db: DbSessionDep,
 ) -> ApiKeyCreateResponse:
     """生成新的 API Key.
 
     每个用户只能有一个有效 Key，生成新 Key 会自动撤销旧 Key
     Key 仅显示一次，请妥善保存.
-    仅限后台内部角色(admin/operator)生成，避免 C 端用户调用机器接口.
+    权限：api_key:manage（种子 admin/operator 持有）.
     """
     key_string, api_key = ApiKeyService.generate_api_key(db, str(current_user.id))
     return ApiKeyCreateResponse(
@@ -457,17 +457,17 @@ def create_api_key(
     response_model=ApiKeyInfoResponse | None,
     responses={
         401: {"description": "未认证"},
-        403: {"description": "无权限（仅限内部角色）"},
+        403: {"description": "无权限（缺少 api_key:manage）"},
     },
 )
 def get_api_key_info(
-    current_user: CurrentInternalUserDep,
+    current_user: ApiKeyManagePermDep,
     db: DbSessionDep,
 ) -> ApiKeyInfoResponse | None:
     """获取当前用户的 API Key 信息.
 
     不返回完整的 Key，只返回前缀和状态信息.
-    仅限后台内部角色(admin/operator)访问.
+    权限：api_key:manage（种子 admin/operator 持有）.
     """
     api_key = ApiKeyService.get_api_key_info(db, str(current_user.id))
     if not api_key:
@@ -488,19 +488,19 @@ def get_api_key_info(
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         401: {"description": "未认证"},
-        403: {"description": "无权限（仅限内部角色）"},
+        403: {"description": "无权限（缺少 api_key:manage）"},
         429: {"description": "请求过于频繁"},
     },
 )
 @limiter.limit(RateLimits.AUTH_API_KEY_DELETE)
 def delete_api_key(
     request: Request,
-    current_user: CurrentInternalUserDep,
+    current_user: ApiKeyManagePermDep,
     db: DbSessionDep,
 ) -> None:
     """撤销当前用户的 API Key.
 
     速率限制：20次/小时.
-    仅限后台内部角色(admin/operator)访问.
+    权限：api_key:manage（种子 admin/operator 持有）.
     """
     ApiKeyService.revoke_api_key(db, str(current_user.id))

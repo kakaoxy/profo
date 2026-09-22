@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep, ProjectReadPermDep
+from dependencies.auth import DbSessionDep, ProjectReadPermDep, ProjectWritePermDep
 from schemas.monitor import (
     AddCompetitorRequest,
     AIStrategyRequest,
@@ -58,7 +58,7 @@ def get_trends(
 def generate_strategy(
     request: AIStrategyRequest,
     service: _MonitorServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
 ) -> AIStrategyResponse:
     """生成AI策略建议."""
     return service.generate_ai_strategy(request.project_id, request.user_context)
@@ -89,7 +89,7 @@ def add_competitor(
     community_id: CommunityIdPath,
     request: AddCompetitorRequest,
     service: _MonitorServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
 ) -> None:
     """添加竞品小区."""
     added = service.add_competitor(community_id, request.competitor_community_id)
@@ -105,7 +105,7 @@ def remove_competitor(
     community_id: CommunityIdPath,
     competitor_id: CompetitorIdPath,
     service: _MonitorServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
 ) -> None:
     """删除竞品.
 

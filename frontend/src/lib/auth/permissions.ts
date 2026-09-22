@@ -51,7 +51,6 @@ export const PERMISSION_CODES = {
   // 线索管理
   LEAD_READ: "lead:read",
   LEAD_WRITE: "lead:write",
-  LEAD_EXPORT: "lead:export",
   LEAD_SUBMIT: "lead:submit",
   LEAD_UPLOAD_PHOTO: "lead:upload_photo",
   // 项目管理

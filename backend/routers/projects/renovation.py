@@ -6,7 +6,6 @@ from fastapi import APIRouter, Path, Query, Request
 from pydantic import UUID4
 
 from dependencies.auth import (
-    CurrentAdminUserDep,
     ProjectReadOrBusinessPermDep,
     ProjectRenovationCompleteStagePermDep,
     ProjectRenovationUploadPhotoPermDep,
@@ -50,12 +49,13 @@ def update_renovation_stage_date(
     stage: Annotated[RenovationStage, Path(description="改造阶段")],
     payload: RenovationStageDateUpdate,
     service: ProjectServiceDep,
-    current_user: CurrentAdminUserDep,
+    current_user: ProjectRenovationCompleteStagePermDep,
 ) -> ProjectResponse:
-    """修改/清空已完成阶段的完成时间（仅管理员）.
+    """修改/清空已完成阶段的完成时间.
 
+    权限：与「标记阶段完成」同口径双通道（project:renovation:complete_stage 子码
+    OR project:write OR 装修对接负责人业务身份），由 ProjectRenovationCompleteStagePermDep 校验。
     速率限制：100次/小时.
-    Router 层强制 admin 角色，Service 层不再重复校验。
     """
     return service.update_renovation_stage_date(
         project_id,

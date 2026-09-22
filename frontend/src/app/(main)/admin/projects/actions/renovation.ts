@@ -250,7 +250,7 @@ const updateRenovationStageDateSchema = z.object({
 });
 
 /**
- * 修改/清空已完成阶段的完成时间（仅管理员）
+ * 修改/清空已完成阶段的完成时间
  */
 export async function updateRenovationStageDateAction(payload: {
   projectId: string;
@@ -265,7 +265,9 @@ export async function updateRenovationStageDateAction(payload: {
     };
   }
 
-  // 权限校验由后端 CurrentAdminUserDep 注入（仅 admin 可调用）。
+  // 权限校验由后端 ProjectRenovationCompleteStagePermDep 注入（双通道：
+  // complete_stage 子码 OR project:write OR 装修对接负责人业务身份），
+  // 与前端 timeline-item 的 canComplete 判断口径一致。
 
   try {
     const client = await fetchClient();

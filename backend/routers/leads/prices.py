@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Request
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep, LeadReadPermDep
+from dependencies.auth import DbSessionDep, LeadReadPermDep, LeadWritePermDep
 from schemas.lead import PriceHistoryCreate, PriceHistoryResponse
 from services.leads import LeadPriceService
 from utils.common import RateLimits, limiter
@@ -28,7 +28,7 @@ def get_price_history(
 def add_price_record(
     request: Request,
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LeadWritePermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
     price_in: PriceHistoryCreate,
 ) -> PriceHistoryResponse:

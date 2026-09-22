@@ -7,7 +7,7 @@ from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from db import get_db
-from dependencies.auth import CurrentInternalUserDep, ProjectReadPermDep
+from dependencies.auth import ProjectReadPermDep, ProjectWritePermDep
 from models.common import BusinessForm
 from schemas.project import (
     DocumentCreate,
@@ -45,7 +45,7 @@ def create_document(
     request: Request,
     payload: DocumentCreate,
     db: Annotated[Session, _get_db_dep],
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
     project_id: Annotated[UUID4, Path(description="项目ID")],
 ) -> DocumentResponse:
     """新增文书."""
@@ -60,7 +60,7 @@ def update_document(
     request: Request,
     payload: DocumentUpdate,
     db: Annotated[Session, _get_db_dep],
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
     project_id: Annotated[UUID4, Path(description="项目ID")],
     document_id: Annotated[str, Path(description="文书ID")],
 ) -> DocumentResponse:
@@ -76,7 +76,7 @@ def update_document(
 @router.delete("/{project_id}/documents/{document_id}", status_code=204)
 def delete_document(
     db: Annotated[Session, _get_db_dep],
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
     project_id: Annotated[UUID4, Path(description="项目ID")],
     document_id: Annotated[str, Path(description="文书ID")],
 ) -> None:
@@ -93,7 +93,7 @@ def delete_document(
 def initialize_documents(
     request: Request,
     db: Annotated[Session, _get_db_dep],
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
     project_id: Annotated[UUID4, Path(description="项目ID")],
 ) -> DocumentInitializeResponse:
     """初始化默认文书清单（幂等）。business_form=None 抛 400."""

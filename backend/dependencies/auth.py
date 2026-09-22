@@ -386,11 +386,14 @@ PermissionManagePermDep = Annotated[User, Depends(require_permission("permission
 PropertyReadPermDep = Annotated[User, Depends(require_permission("property:read"))]
 PropertyWritePermDep = Annotated[User, Depends(require_permission("property:write"))]
 PropertyUploadPermDep = Annotated[User, Depends(require_permission("property:upload"))]
+# 房源数据治理（小区合并等治理动作）
+PropertyGovernancePermDep = Annotated[User, Depends(require_permission("property:governance"))]
 # reports 模块（复用 property:read 权限，不新增权限码）
 ReportsReadPermDep = Annotated[User, Depends(require_permission("property:read"))]
 # project 模块
 ProjectReadPermDep = Annotated[User, Depends(require_permission("project:read"))]
 ProjectWritePermDep = Annotated[User, Depends(require_permission("project:write"))]
+ProjectDeletePermDep = Annotated[User, Depends(require_permission("project:delete"))]
 # project 业务身份子权限码（仅 admin/operator 持有，user 由业务身份豁免）
 ProjectSalesManageTeamPermDep = Annotated[User, Depends(require_permission("project:sales:manage_team"))]
 # lead 模块
@@ -398,7 +401,6 @@ LeadReadPermDep = Annotated[User, Depends(require_permission("lead:read"))]
 LeadWritePermDep = Annotated[User, Depends(require_permission("lead:write"))]
 # 创建线索双权限通道：lead:create（普通员工录入）OR lead:write（admin/operator 全权）
 LeadCreatePermDep = Annotated[User, Depends(require_any_permission(["lead:create", "lead:write"]))]
-LeadExportPermDep = Annotated[User, Depends(require_permission("lead:export"))]
 # 上传接口双权限通道：property:upload（房源批量上传）OR lead:upload_photo（线索录入上传）
 LeadUploadPhotoPermDep = Annotated[User, Depends(require_any_permission(["property:upload", "lead:upload_photo"]))]
 # ledger 模块
@@ -420,6 +422,8 @@ RecruitReadPermDep = Annotated[User, Depends(require_permission("recruit:read"))
 RecruitWritePermDep = Annotated[User, Depends(require_permission("recruit:write"))]
 # operation_log 模块
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
+# api_key 模块（API Key 管理端点；使用侧仍受 INTERNAL_ROLE_CODES 机器接口角色限制）
+ApiKeyManagePermDep = Annotated[User, Depends(require_permission("api_key:manage"))]
 
 
 # ==================== 业务身份双通道校验 ====================
@@ -634,6 +638,7 @@ ProjectReadOrBusinessPermDep = Annotated[User, Depends(require_project_read_or_b
 
 __all__ = [
     "ApiKeyAuthDep",
+    "ApiKeyManagePermDep",
     "CurrentActiveUserDep",
     "CurrentAdminUserDep",
     "CurrentCInternalUserDep",
@@ -648,7 +653,6 @@ __all__ = [
     "InvestmentWritePermDep",
     "L4MarketingReadPermDep",
     "L4MarketingWritePermDep",
-    "LeadExportPermDep",
     "LeadReadPermDep",
     "LeadWritePermDep",
     "LedgerReadPermDep",
@@ -657,6 +661,7 @@ __all__ = [
     "OperationLogReadPermDep",
     "PermissionManagePermDep",
     "PermissionReadPermDep",
+    "ProjectDeletePermDep",
     "ProjectReadOrBusinessPermDep",
     "ProjectReadPermDep",
     "ProjectRenovationCompleteStagePermDep",
@@ -664,6 +669,7 @@ __all__ = [
     "ProjectSalesAddRecordPermDep",
     "ProjectSalesManageTeamPermDep",
     "ProjectWritePermDep",
+    "PropertyGovernancePermDep",
     "PropertyReadPermDep",
     "PropertyUploadPermDep",
     "PropertyWritePermDep",

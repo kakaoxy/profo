@@ -3,7 +3,7 @@
 按 AGENTS.md 规范：
 - Router 禁 SQLAlchemy 查询，全部通过 InvestmentService 编排
 - 直接返回 Pydantic 模型，不包装 code/msg/data
-- 写端点统一 RateLimits 限流；写操作统一 CurrentInternalUserDep（admin/operator）
+- 写端点统一 RateLimits 限流；写操作统一 InvestmentWritePermDep（investment:write 权限码）
 - 404 由 ResourceNotFoundError 统一异常处理器返回
 """
 
@@ -16,7 +16,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from dependencies.auth import (
-    CurrentInternalUserDep,
     DbSessionDep,
     InvestmentCopyPermDep,
     InvestmentReadPermDep,
@@ -217,7 +216,7 @@ def delete_investment(
     request: Request,
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> None:
     """软删除跟投记录（设 deleted_at），子表保留.
 
@@ -240,7 +239,7 @@ def add_investor(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     data: InvestorCreate,
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> InvestorResponse:
     """添加投资方（含子投资人）：校验名称唯一、比例合计、子投资人内部占比.
 
@@ -260,7 +259,7 @@ def update_investor(
     investor_id: Annotated[str, Path(description="投资方ID")],
     data: InvestorUpdate,
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> InvestorResponse:
     """更新投资方：sub_investors 整体替换；仅 unsettled 可改.
 
@@ -280,7 +279,7 @@ def delete_investor(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     investor_id: Annotated[str, Path(description="投资方ID")],
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> None:
     """删除投资方：母投资方级联删除子投资人；仅 unsettled 可改.
 
@@ -315,7 +314,7 @@ def adjust_distribution_ratios(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     data: ReturnAdjustmentBatchRequest,
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> list[ReturnAdjustmentResponse]:
     """批量调整分配比例：校验分配比例合计 = 100%；写记录与日志.
 
@@ -338,7 +337,7 @@ def settle_investment(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     data: SettlementChangeRequest,
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> InvestmentResponse:
     """结算：unsettled → settled，记录日期与说明，写日志.
 
@@ -357,7 +356,7 @@ def unsettle_investment(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     data: UnsettleRequest,
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> InvestmentResponse:
     """反结算：settled → unsettled，清空结算字段，写日志.
 

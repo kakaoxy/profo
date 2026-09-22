@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Request
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep, LeadReadPermDep
+from dependencies.auth import DbSessionDep, LeadReadPermDep, LeadWritePermDep
 from schemas.lead import LeadEvalHistoryCreate, LeadEvalHistoryResponse
 from services.leads import LeadService
 from utils.common import RateLimits, limiter
@@ -28,7 +28,7 @@ def get_evaluations(
 def create_evaluation(
     request: Request,
     db: DbSessionDep,
-    current_internal_user: CurrentInternalUserDep,
+    current_user: LeadWritePermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
     eval_in: LeadEvalHistoryCreate,
 ) -> LeadEvalHistoryResponse:
@@ -42,5 +42,5 @@ def create_evaluation(
         lead_id=lead_id,
         eval_price=eval_in.eval_price,
         remark=eval_in.remark,
-        evaluator_id=current_internal_user.id,
+        evaluator_id=current_user.id,
     )

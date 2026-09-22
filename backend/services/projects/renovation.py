@@ -220,10 +220,11 @@ class RenovationService:
         stage: RenovationStage,
         stage_completed_at: datetime | None,
     ) -> Project:
-        """修改/清空已完成阶段的完成时间（仅管理员）.
+        """修改/清空已完成阶段的完成时间.
 
-        权限校验由 Router 层 CurrentAdminUserDep 注入（仅 admin 可调用），
-        Service 层不再重复校验角色。
+        权限校验由 Router 层 ProjectRenovationCompleteStagePermDep 注入（双通道：
+        complete_stage 子码 OR project:write OR 装修对接负责人业务身份），
+        Service 层不再重复校验权限。
         不流转 project.renovation_stage 主阶段，仅修改 stage_completed_dates。
         清空日期时根据剩余已完成阶段回退主阶段，避免硬编码。
 

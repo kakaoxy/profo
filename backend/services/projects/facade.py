@@ -163,7 +163,7 @@ class ProjectService:
         *,
         current_user: User,
     ) -> ProjectResponse:
-        """修改/清空已完成阶段的完成时间（仅管理员）."""
+        """修改/清空已完成阶段的完成时间（双通道权限，见 Router 层）."""
         project = self._renovation_service.update_stage_date(project_id, stage, stage_completed_at)
         from .internal import ProjectResponseBuilder
 

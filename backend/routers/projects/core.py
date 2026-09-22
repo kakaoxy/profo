@@ -13,10 +13,11 @@ from pydantic import UUID4
 from dependencies.auth import (
     CurrentActiveUserDep,
     CurrentAdminUserDep,
-    CurrentInternalUserDep,
     DbSessionDep,
+    ProjectDeletePermDep,
     ProjectReadOrBusinessPermDep,
     ProjectReadPermDep,
+    ProjectWritePermDep,
 )
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
@@ -82,7 +83,9 @@ def get_owner_bank_card(
     """获取业主未脱敏银行卡号.
 
     完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。
-    仅 admin 角色可调用（银行卡号为敏感财务数据）。
+    权限：保留 CurrentAdminUserDep（admin 角色硬编码）——银行卡号为敏感财务数据，
+    刻意不纳入权限码体系，避免自定义角色被授予权限码后即可读取卡号；如需放开
+    请显式评估并新增专用权限码。
     service 层会校验 owner 所属 project 未被软删除；
     审计日志（OperationLog）在路由层记录，不记录银行卡号本身。
 
@@ -112,7 +115,7 @@ def create_project(
     request: Request,
     project_data: ProjectCreate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
 ) -> ProjectResponse:
     """创建项目.
 
@@ -198,7 +201,7 @@ def get_my_responsible_projects(
 def export_projects(
     request: Request,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
     status: Annotated[str | None, Query(max_length=100, description="项目状态筛选")] = None,
     community_name: Annotated[str | None, Query(max_length=100, description="小区名称筛选")] = None,
 ) -> StreamingResponse:
@@ -244,7 +247,7 @@ def update_project(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     update_data: ProjectUpdate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
 ) -> ProjectResponse:
     """更新项目信息.
 
@@ -263,10 +266,11 @@ def delete_project(
     request: Request,
     project_id: Annotated[UUID4, Path(description="项目ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectDeletePermDep,
 ) -> None:
     """删除项目.
 
+    权限：project:delete（种子仅 admin 持有；与前端删除按钮的 project:delete 校验一致）.
     速率限制：20次/小时.
     """
     service.delete_project(project_id)
@@ -279,7 +283,7 @@ def update_project_status(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     status_update: ProjectStatusUpdate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectWritePermDep,
 ) -> ProjectResponse:
     """更新项目状态.
 
@@ -297,7 +301,7 @@ def complete_project(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     complete_data: ProjectCompleteRequest,
     service: ProjectServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: ProjectWritePermDep,
 ) -> ProjectResponse:
     """完成项目."""
     project = service.complete_project(project_id, complete_data, current_user=current_user)

@@ -52,7 +52,7 @@ export function TimelineItem({
   onRefresh,
 }: TimelineItemProps) {
   const router = useRouter();
-  const { roleCode, hasAnyPermission } = usePermission();
+  const { hasAnyPermission } = usePermission();
   const today = useCurrentDate();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -60,7 +60,7 @@ export function TimelineItem({
     setSelectedDate(new Date());
   }, []);
 
-  // 已完成阶段修改/清空相关 state（仅 admin）
+  // 已完成阶段修改/清空相关 state
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [editDate, setEditDate] = useState<Date | undefined>(undefined);
   const [isEditingSubmitting, setIsEditingSubmitting] = useState(false);
@@ -98,8 +98,9 @@ export function TimelineItem({
   const canEditRenovation = canEditByPermission || project.renovation?.can_edit_renovation === true;
   const canComplete = canCompleteByPermission || project.renovation?.can_edit_renovation === true;
 
-  // 仅 admin 可修改/清空已完成阶段的时间
-  const canEditDate = roleCode === "admin";
+  // 修改/清空已完成阶段时间：与「标记阶段完成」同口径双通道
+  // （complete_stage 子码 OR project:write OR 装修业务身份标志），与后端 PATCH 端点一致
+  const canEditDate = canComplete;
 
   const handleSubmit = async () => {
     if (uploadQueue.length > 0) {

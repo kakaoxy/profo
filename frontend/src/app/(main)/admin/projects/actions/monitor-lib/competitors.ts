@@ -6,6 +6,8 @@ import { CompetitorItem } from "./types";
 import { getProjectDetailAction } from "../core";
 import { extractApiData, extractPaginatedData } from "@/lib/api-helpers";
 import { z } from "zod";
+import { requirePermission } from "@/lib/auth/server/require-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 const communityIdSchema = z.string().min(1, "小区 ID 不能为空");
 const competitorIdSchema = z.string().min(1, "竞品小区 ID 不能为空");
@@ -119,6 +121,11 @@ export async function addCompetitorAction(communityId: string, competitorId: str
     };
   }
 
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.POST("/api/v1/monitor/communities/{community_id}/competitors", {
@@ -155,6 +162,11 @@ export async function removeCompetitorAction(communityId: string, competitorId: 
       success: false,
       message: competitorParsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

@@ -176,14 +176,6 @@ _PERMISSIONS_SEED: list[dict] = [
         "description": "仅创建线索（不可修改/删除），供普通员工录入使用",
     },
     {
-        "code": "lead:export",
-        "name": "导出线索",
-        "module": "lead",
-        "category": "api",
-        "sort_order": 30,
-        "description": "导出线索数据",
-    },
-    {
         "code": "lead:submit",
         "name": "提交线索",
         "module": "lead",
@@ -398,7 +390,6 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "property:governance",
         "lead:read",
         "lead:write",
-        "lead:export",
         "lead:upload_photo",
         "project:read",
         "project:write",

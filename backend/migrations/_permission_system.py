@@ -14,6 +14,10 @@ from migrations._seeds import _PERMISSIONS_SEED, _ROLE_PERMISSIONS_SEED
 
 logger = logging.getLogger(__name__)
 
+# 已废弃的系统权限点（种子中已移除，启动迁移时清理 DB 残留）
+# - lead:export：全库无线索导出端点、前端零使用（2026-09 权限体系对齐时移除）
+_DEPRECATED_PERMISSION_CODES: list[str] = ["lead:export"]
+
 
 def create_wechat_oauth_tables(engine: Engine) -> None:
     """幂等创建微信 OAuth state/temp_code 表并清理过期记录.
@@ -199,6 +203,30 @@ def migrate_permission_system(engine: Engine) -> None:
                 inserted_links += 1
     if inserted_links:
         logger.info("迁移：为内置角色分配 %d 条权限关联", inserted_links)
+
+    # 4. 清理已废弃的系统权限点（幂等：先删 role_permissions 关联再删 permissions 行）
+    #    ⚠️ 仅清理 _DEPRECATED_PERMISSION_CODES 显式列出的 code；
+    #    不可按「不在 _PERMISSIONS_SEED 中即删除」实现——API 可创建自定义权限点，
+    #    全量差异清理会误删用户自建权限。
+    with engine.begin() as conn:
+        for code in _DEPRECATED_PERMISSION_CODES:
+            deleted_links = conn.execute(
+                text(
+                    "DELETE FROM role_permissions WHERE permission_id IN "
+                    "(SELECT id FROM permissions WHERE code = :code)"
+                ),
+                {"code": code},
+            ).rowcount
+            deleted_perm = conn.execute(
+                text("DELETE FROM permissions WHERE code = :code"),
+                {"code": code},
+            ).rowcount
+            if deleted_perm:
+                logger.info(
+                    "迁移：清理废弃权限点 %s（删除 %d 条角色关联）",
+                    code,
+                    deleted_links,
+                )
 
 
 def migrate_project_business_permission(engine: Engine) -> None:
