@@ -184,7 +184,7 @@ Page<PageData, PageCustom>({
     const completed = RENOVATION_STAGES.filter((s) => dates[s.value]).length;
     const percent = Math.round((completed / RENOVATION_STAGES.length) * 100);
     this.setData({
-      projectName: project.community_name ?? project.name ?? "项目详情",
+      projectName: project.address ?? project.community_name ?? "项目详情",
       currentStageText: toStageLabel(project.renovation_stage),
       progressText: `${percent}%`,
       canEdit: project.renovation?.can_edit_renovation === true,

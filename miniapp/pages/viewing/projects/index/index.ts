@@ -100,7 +100,7 @@ Page<PageData, PageCustom>(
       const top = topOfferOf(project);
       return {
         id: project.id,
-        name: project.community_name ?? project.name ?? "未命名项目",
+        name: project.address ?? project.community_name ?? "未命名项目",
         maxOfferText: top ? `${top.price}万` : "暂无",
         hasOffer: top !== null,
         offerTimeText: top ? formatDay(top.date) : "",

@@ -222,7 +222,7 @@ Page<PageData, PageCustom>({
     const canEditSales = project.sale?.can_edit_sales === true;
     this.setData({
       state: "ready",
-      projectName: project.community_name ?? project.name ?? "项目详情",
+      projectName: project.address ?? project.community_name ?? "项目详情",
       listingDaysText: getListingDaysText(project.listing_date),
       viewingCount: viewings.length,
       offerCount: offers.length,

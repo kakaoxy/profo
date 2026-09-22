@@ -68,7 +68,7 @@ Page<PageData, PageCustom>(
       );
       return {
         id: project.id,
-        name: project.community_name ?? project.name ?? "未命名项目",
+        name: project.address ?? project.community_name ?? "未命名项目",
         statusText: "装修中",
         statusColor: "#f97316",
         stageText,
