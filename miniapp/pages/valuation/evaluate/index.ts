@@ -4,7 +4,8 @@
  * 双接口并行加载（reset 时 Promise.all，防分组瀑布）：
  * - 「待评估」段（/public/leads/pending-assessment）：分页列表（created_at 倒序）；
  * - 「已处理」段（/public/leads/handled-assessment）：本人经手线索全量分页
- *   （audit_time 倒序，handled_total 为过滤后全量计数），可点击进入只读详情（含跟进记录）；
+ *   （时效四层排序：即将过期→跟进中→已过期→终态，组内 created_at 降序，
+ *   handled_total 为过滤后全量计数），可点击进入只读详情（含跟进记录）；
  * - 搜索小区名称对两段同时生效（search 随 reset 带给两个接口）；
  * - 触底加载按「已处理优先、待评估兜底」分派（已处理组物理位于页面底部）。
  * 分页范式严格套用 pages/valuation/list（epoch 竞态守卫 / 触底三重拦截 / 翻页回滚 /

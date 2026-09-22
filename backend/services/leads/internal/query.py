@@ -6,7 +6,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ColumnElement, desc, func, or_, select
+from sqlalchemy import ColumnElement, Date, and_, case, cast, desc, func, or_, select
 from sqlalchemy.orm import Session, joinedload, noload, selectinload
 
 from models.common import LeadStatus
@@ -25,6 +25,11 @@ class LeadQueryService:
         db: SQLAlchemy数据库会话
 
     """
+
+    # 跟进时效分档阈值（自然日，对齐 miniapp utils/valuation-freshness：
+    # d≤7 跟进中 / 7<d≤14 即将过期 / d>14 已过期）
+    FRESHNESS_OK_MAX_DAYS = 7
+    FRESHNESS_SOON_MAX_DAYS = 14
 
     def __init__(self, db: Session) -> None:
         """初始化查询服务.
@@ -350,8 +355,12 @@ class LeadQueryService:
 
         供小程序评估工作台「已处理」段使用：auditor=user_id 且状态 ∈
         pending_visit/visited/rejected/lost_to_competitor（visited 线索
-        支持再次调整评估价，与 admin/leads 口径一致），audit_time 倒序全量分页；
-        search 按小区名模糊过滤（与 get_list 同口径），total 为过滤后全量计数。
+        支持再次调整评估价，与 admin/leads 口径一致）；时效四层排序
+        （即将过期→跟进中→已过期→终态，组内 created_at 降序，末位
+        audit_time 倒序作确定性 tiebreaker），分层口径对齐
+        miniapp/utils/valuation-freshness（Asia/Shanghai 自然日差，
+        基准 = last_follow_up_at ?? audit_time）；search 按小区名模糊
+        过滤（与 get_list 同口径），total 为过滤后全量计数。
 
         Args:
             user_id: 审核人用户ID
@@ -394,8 +403,30 @@ class LeadQueryService:
                 func.lower(Lead.community_name).like(f"%{escape_like(search).lower()}%", escape="\\"),
             )
         total = query.count()
+        # 时效分层排序（口径对齐 miniapp utils/valuation-freshness：Asia/Shanghai 自然日差 d，
+        # 基准 = last_follow_up_at ?? audit_time）：
+        # 0 即将过期(7<d≤14) → 1 跟进中(d≤7) → 2 已过期(d>14，仍属授权组) → 3 其他(终态)；组内录入时间降序
+        follow_baseline = func.coalesce(Lead.last_follow_up_at, Lead.audit_time)
+        days_since = cast(func.timezone("Asia/Shanghai", func.now()), Date) - cast(
+            func.timezone("Asia/Shanghai", follow_baseline),
+            Date,
+        )
+        in_follow_window = Lead.status.in_([LeadStatus.PENDING_VISIT, LeadStatus.VISITED])
+        sort_tier = case(
+            (
+                and_(
+                    in_follow_window,
+                    days_since > self.FRESHNESS_OK_MAX_DAYS,
+                    days_since <= self.FRESHNESS_SOON_MAX_DAYS,
+                ),
+                0,
+            ),
+            (and_(in_follow_window, days_since <= self.FRESHNESS_OK_MAX_DAYS), 1),
+            (in_follow_window, 2),
+            else_=3,
+        )
         items = (
-            query.order_by(desc(Lead.audit_time))
+            query.order_by(sort_tier.asc(), Lead.created_at.desc(), Lead.audit_time.desc())
             .offset((page - 1) * effective_page_size)
             .limit(effective_page_size)
             .all()

@@ -500,7 +500,7 @@ class LeadService:
         page_size: int | None = None,
         search: str | None = None,
     ) -> dict[str, Any]:
-        """小程序评估工作台「已处理」段：本人经手线索全量分页（audit_time 倒序）.
+        """小程序评估工作台「已处理」段：本人经手线索全量分页（时效四层排序，组内 created_at 降序）.
 
         Args:
             user_id: 当前员工用户ID（仅返回本人经手线索）

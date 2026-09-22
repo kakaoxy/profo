@@ -58,6 +58,7 @@ def _make_lead(
     images: list[str] | None = None,
     auditor_id: str | None = None,
     audit_time: datetime | None = None,
+    last_follow_up_at: datetime | None = None,
     eval_price: float | None = None,
     referrer_id: str | None = None,
     creator_id: str | None = None,
@@ -77,6 +78,7 @@ def _make_lead(
         images=images or [],
         auditor_id=auditor_id,
         audit_time=audit_time,
+        last_follow_up_at=last_follow_up_at,
         eval_price=eval_price,
         referrer_id=referrer_id,
         creator_id=creator_id,
@@ -260,10 +262,15 @@ class TestHandledAssessment:
         eval_operator: User,
         seeded_db: dict[str, Any],
     ) -> None:
-        """本人全部经手（不限时间窗）audit_time 倒序，含四种状态，排除他人经手."""
+        """本人全部经手（不限时间窗）时效四层排序，含五种场景，排除他人经手.
+
+        分层：即将过期(7<d≤14) → 跟进中(d≤7) → 已过期(d>14) → 终态；
+        组内按 created_at 降序（各 fixture 显式传 created_at 保证确定性）。
+        """
         session: Session = seeded_db["session"]
         now = datetime.now(timezone.utc)
-        handled_visit = _make_lead(
+        # 即将过期层：最后跟进 10 天前（7<d≤14）
+        handled_soon = _make_lead(
             session,
             status=LeadStatus.PENDING_VISIT,
             community_name="已批准小区",
@@ -271,8 +278,20 @@ class TestHandledAssessment:
             floor_info="高楼层/28层",
             images=["/static/h1.jpg", "/static/h2.jpg"],
             auditor_id=eval_operator.id,
+            audit_time=now - timedelta(days=12),
+            last_follow_up_at=now - timedelta(days=10),
+            eval_price=360.0,
+            created_at=now - timedelta(days=15),
+        )
+        # 跟进中层：visited / pending_visit 均入组，created_at 降序（visited 更晚录入在前）
+        handled_visit = _make_lead(
+            session,
+            status=LeadStatus.PENDING_VISIT,
+            community_name="跟进中小区",
+            auditor_id=eval_operator.id,
             audit_time=now - timedelta(hours=1),
             eval_price=350.0,
+            created_at=now - timedelta(days=2),
         )
         handled_visited = _make_lead(
             session,
@@ -281,21 +300,34 @@ class TestHandledAssessment:
             auditor_id=eval_operator.id,
             audit_time=now - timedelta(hours=3),
             eval_price=320.0,
+            created_at=now - timedelta(days=1),
         )
+        # 已过期层：20 天前经手仍属授权组，排在终态之前
+        handled_over = _make_lead(
+            session,
+            status=LeadStatus.VISITED,
+            community_name="已过期授权",
+            auditor_id=eval_operator.id,
+            audit_time=now - timedelta(days=20),
+            created_at=now - timedelta(days=25),
+        )
+        # 终态层：lost / rejected，created_at 降序（lost 更晚录入在前）
         handled_lost = _make_lead(
             session,
             status=LeadStatus.LOST_TO_COMPETITOR,
             community_name="他司成交小区",
             auditor_id=eval_operator.id,
             audit_time=now - timedelta(hours=2),
+            created_at=now - timedelta(days=3),
         )
-        # 多日前经手：已处理段不限时间窗，应仍在列
+        # 多日前驳回：已处理段不限时间窗，应仍在列
         handled_old = _make_lead(
             session,
             status=LeadStatus.REJECTED,
             community_name="多日前经手",
             auditor_id=eval_operator.id,
             audit_time=now - timedelta(days=8),
+            created_at=now - timedelta(days=10),
         )
         # 不应出现：他人经手
         _make_lead(
@@ -320,27 +352,30 @@ class TestHandledAssessment:
         assert resp.status_code == 200
         body = resp.json()
 
-        # 仅本人经手四种状态，audit_time 倒序
-        assert body["handled_total"] == 4
+        # 四层排序：即将过期 → 跟进中(created_at 降序) → 已过期 → 终态(created_at 降序)
+        assert body["handled_total"] == 6
         assert [it["id"] for it in body["items"]] == [
-            handled_visit.id,
-            handled_lost.id,
+            handled_soon.id,
             handled_visited.id,
+            handled_visit.id,
+            handled_over.id,
+            handled_lost.id,
             handled_old.id,
         ]
-        visit_item = body["items"][0]
-        assert visit_item["status"] == "pending_visit"
-        assert visit_item["eval_price"] == 350.0
-        assert visit_item["status_display"] == "待看房"
+        soon_item = body["items"][0]
+        assert soon_item["status"] == "pending_visit"
+        assert soon_item["eval_price"] == 360.0
+        assert soon_item["status_display"] == "待看房"
         # 展示字段与待评估卡同构：区域 / 楼层 / 图片 / 来源
-        assert visit_item["district"] == "思明区"
-        assert visit_item["floor_info"] == "高楼层/28层"
-        assert visit_item["images"] == ["/static/h1.jpg", "/static/h2.jpg"]
-        assert visit_item["source"] == "employee_entry"
-        lost_item = body["items"][1]
+        assert soon_item["district"] == "思明区"
+        assert soon_item["floor_info"] == "高楼层/28层"
+        assert soon_item["images"] == ["/static/h1.jpg", "/static/h2.jpg"]
+        assert soon_item["source"] == "employee_entry"
+        lost_item = body["items"][4]
         assert lost_item["status"] == "lost_to_competitor"
         assert lost_item["eval_price"] is None
-        assert body["items"][2]["eval_price"] == 320.0
+        assert body["items"][1]["eval_price"] == 320.0
+        assert body["items"][2]["eval_price"] == 350.0
         assert body["page"] == 1
 
     def test_pagination_with_full_total(

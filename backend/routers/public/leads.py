@@ -392,7 +392,10 @@ def get_pending_assessment(
 @router.get(
     "/handled-assessment",
     summary="获取评估工作台已处理列表",
-    description="本人经手线索全量分页（audit_time 倒序），search 按小区名过滤（仅 admin/operator）",
+    description=(
+        "本人经手线索全量分页（时效四层排序：即将过期→跟进中→已过期→终态，组内 created_at 降序）；"
+        "search 按小区名过滤（仅 admin/operator）"
+    ),
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_handled_assessment(

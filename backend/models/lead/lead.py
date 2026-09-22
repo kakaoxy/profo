@@ -122,7 +122,7 @@ class Lead(Base):
         Index("idx_lead_community", "community_name"),
         Index("idx_lead_creator", "creator_id"),
         Index("idx_lead_deleted", "is_deleted"),
-        # 小程序评估工作台「已处理」参考组：auditor_id 过滤 + audit_time 倒序截取（get_handled）
+        # 小程序评估工作台「已处理」：auditor_id 过滤（get_handled 排序为时效分层，组内 created_at 降序）
         Index("idx_lead_auditor_audit_time", "auditor_id", "audit_time"),
         # 分享统计/归因：按 referrer_id 聚合「我的分享统计」lead_count 与今日 lead_count
         Index("idx_lead_referrer", "referrer_id"),
