@@ -9,7 +9,7 @@
  *   转发客户落地页 landing，按分享短码归因，见 onShareAppMessage）
  * - 海报流程（「预览海报」/「生成海报分享」统一 generatePoster）：
  *   loading → GET .../qrcode（需登录，401 引导登录）→ createSheetPosterTempFile
- *   （前 3 套封面拼版，单张加载失败占位不阻断）→ 弹层预览
+ *   （清单按商圈优先排序，封面取排序后前 3 套拼版，单张加载失败占位不阻断）→ 弹层预览
  * - 保存相册：授权拒绝 → modal 引导去设置 → 自动重试；保存成功后上报
  *   share-events（share_type="poster"，静默失败）+ 关弹层 + toast 引导发朋友圈
  *
@@ -24,7 +24,7 @@ import type { HttpResponseError } from "../../../utils/request";
 import { formatLeadTime } from "../../../utils/recruit-logic";
 import { resolveImageUrl } from "../../../utils/url";
 import { createSheetPosterTempFile } from "../../../utils/property-sheet-poster-render";
-import { formatSheetPosterListings } from "../../../utils/property-sheet-poster";
+import { formatSheetPosterListings, selectSheetPosterIndices } from "../../../utils/property-sheet-poster";
 import type { SheetPosterListingRow } from "../../../utils/property-sheet-poster";
 
 type PropertySheetResponse = components["schemas"]["PropertySheetResponse"];
@@ -336,10 +336,15 @@ Page<PageData, PageCustom>({
       return;
     }
     try {
-      // 前 3 套封面（缩略图优先，降级原图；原始 URL 传入，渲染工具内部解析与失败占位）
+      // 封面拼版跟随清单商圈优先排序：全量排序后取前 3 套（缩略图优先，降级原图；
+      // 原始 URL 传入，渲染工具内部解析与失败占位）
+      const posterOrder = selectSheetPosterIndices(
+        posterListings.map((row) => row.district),
+        items.length,
+      );
       const posterImagePath = await createSheetPosterTempFile(this, {
         count: itemCount,
-        covers: items.slice(0, 3).map((it) => it.posterCover),
+        covers: posterOrder.slice(0, 3).map((i) => items[i].posterCover),
         qrcodeBase64: qrcode.image_base64,
         listings: posterListings,
       });

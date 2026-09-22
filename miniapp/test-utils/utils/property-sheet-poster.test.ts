@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildSheetPosterLayout,
   formatSheetPosterListings,
+  selectSheetPosterIndices,
   SHEET_POSTER_HEIGHT,
   SHEET_POSTER_IMAGE_GAP,
   SHEET_POSTER_IMAGE_RADIUS,
@@ -243,8 +244,38 @@ describe("buildSheetPosterLayout 清单行数截断", () => {
   });
 });
 
-describe("buildSheetPosterLayout 清单商圈去重", () => {
-  it("3 套同商圈：仅第 1 行展示商圈段", () => {
+describe("selectSheetPosterIndices 商圈优先选取", () => {
+  it("例1 a/b/b/c/d/e（max 5）→ [0,1,3,4,5]", () => {
+    expect(selectSheetPosterIndices(["a", "b", "b", "c", "d", "e"], 5)).toEqual([0, 1, 3, 4, 5]);
+  });
+
+  it("例2 a/b/c/c/c/d（max 5）→ [0,1,2,5,3]", () => {
+    expect(selectSheetPosterIndices(["a", "b", "c", "c", "c", "d"], 5)).toEqual([0, 1, 2, 5, 3]);
+  });
+
+  it("空商圈进补位段（不占第一轮名额）", () => {
+    expect(selectSheetPosterIndices(["徐家汇", "", "联洋"], 3)).toEqual([0, 2, 1]);
+  });
+
+  it("全唯一 → 恒等顺序", () => {
+    expect(selectSheetPosterIndices(["a", "b", "c", "d", "e"], 5)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it("max 截断：全唯一 6 套 max 5 → [0,1,2,3,4]", () => {
+    expect(selectSheetPosterIndices(["a", "b", "c", "d", "e", "f"], 5)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it("≤5 也重排：a/x/a/b → [0,1,3,2]", () => {
+    expect(selectSheetPosterIndices(["a", "x", "a", "b"], 4)).toEqual([0, 1, 3, 2]);
+  });
+
+  it("全空商圈 → 原顺序（补位段）", () => {
+    expect(selectSheetPosterIndices(["", "", ""], 3)).toEqual([0, 1, 2]);
+  });
+});
+
+describe("buildSheetPosterLayout 清单商圈选取", () => {
+  it("3 套同商圈：3 行均展示商圈段、顺序不变", () => {
     const listings: SheetPosterListingRow[] = [
       { district: "徐家汇", rooms: "3室", floor: "5F", price: "580万" },
       { district: "徐家汇", rooms: "2室", floor: "12F", price: "248.5万" },
@@ -252,9 +283,7 @@ describe("buildSheetPosterLayout 清单商圈去重", () => {
     ];
     const { list } = buildSheetPosterLayout({ count: 3, listings });
     const rows = list!.rows;
-    expect(rows[0].segments[0].text).toBe("徐家汇");
-    expect(rows[1].segments.some((s) => s.text === "徐家汇")).toBe(false);
-    expect(rows[2].segments.some((s) => s.text === "徐家汇")).toBe(false);
+    expect(rows.map((r) => r.segments[0].text)).toEqual(["徐家汇", "徐家汇", "徐家汇"]);
   });
 
   it("商圈互不相同：各行商圈段按传入顺序展示", () => {
@@ -267,7 +296,7 @@ describe("buildSheetPosterLayout 清单商圈去重", () => {
     expect(list!.rows.map((r) => r.segments[0].text)).toEqual(["徐家汇", "联洋", "大宁"]);
   });
 
-  it("非连续重复（徐家汇/联洋/徐家汇）：第 3 行无商圈段且「徐家汇」全表仅出现一次", () => {
+  it("非连续重复（徐家汇/联洋/徐家汇）：全展示、顺序不变", () => {
     const listings: SheetPosterListingRow[] = [
       { district: "徐家汇", rooms: "3室", floor: "5F", price: "580万" },
       { district: "联洋", rooms: "2室", floor: "12F", price: "248.5万" },
@@ -275,26 +304,53 @@ describe("buildSheetPosterLayout 清单商圈去重", () => {
     ];
     const { list } = buildSheetPosterLayout({ count: 3, listings });
     const rows = list!.rows;
-    expect(rows[2].segments.some((s) => s.text === "徐家汇")).toBe(false);
-    const allTexts = rows.flatMap((r) => r.segments.map((s) => s.text));
-    expect(allTexts.filter((t) => t === "徐家汇")).toHaveLength(1);
+    expect(rows.map((r) => r.segments[0].text)).toEqual(["徐家汇", "联洋", "徐家汇"]);
+  });
+
+  it("端到端排序 例1（6 套 a/b/b/c/d/e）：面板 rooms 序列 1室,2室,4室,5室,6室", () => {
+    const listings: SheetPosterListingRow[] = [
+      { district: "徐家汇", rooms: "1室", floor: "5F", price: "580万" },
+      { district: "联洋", rooms: "2室", floor: "12F", price: "248.5万" },
+      { district: "联洋", rooms: "3室", floor: "8F", price: "490万" },
+      { district: "大宁", rooms: "4室", floor: "3F", price: "690万" },
+      { district: "古北", rooms: "5室", floor: "7F", price: "850万" },
+      { district: "花木", rooms: "6室", floor: "2F", price: "430万" },
+    ];
+    const { list } = buildSheetPosterLayout({ count: 6, listings });
+    expect(list!.rows.map((r) => r.segments.find((s) => s.text.endsWith("室"))!.text))
+      .toEqual(["1室", "2室", "4室", "5室", "6室"]);
+  });
+
+  it("端到端排序 例2（6 套 a/b/c/c/c/d）：面板 rooms 序列 1室,2室,3室,6室,4室", () => {
+    const listings: SheetPosterListingRow[] = [
+      { district: "徐家汇", rooms: "1室", floor: "5F", price: "580万" },
+      { district: "联洋", rooms: "2室", floor: "12F", price: "248.5万" },
+      { district: "大宁", rooms: "3室", floor: "8F", price: "490万" },
+      { district: "大宁", rooms: "4室", floor: "3F", price: "690万" },
+      { district: "大宁", rooms: "5室", floor: "7F", price: "850万" },
+      { district: "古北", rooms: "6室", floor: "2F", price: "430万" },
+    ];
+    const { list } = buildSheetPosterLayout({ count: 6, listings });
+    expect(list!.rows.map((r) => r.segments.find((s) => s.text.endsWith("室"))!.text))
+      .toEqual(["1室", "2室", "3室", "6室", "4室"]);
   });
 });
 
 describe("buildSheetPosterLayout 清单列对齐与均匀分布", () => {
-  // 行 2 同商圈（省略商圈段）、行 5 无商圈无楼层：混合列成立场景
+  // 行 4 与行 1 同商圈（均展示商圈段）、行 5 无商圈无楼层：混合列成立场景
+  // （选取后顺序 = 输入顺序：首过取行 1/2/3，行 4/5 补位）
   const listings: SheetPosterListingRow[] = [
     { district: "徐家汇", rooms: "3室", floor: "5F", price: "580万" },
-    { district: "徐家汇", rooms: "2室", floor: "12F", price: "248.5万" },
-    { district: "联洋", rooms: "4室", floor: "3F", price: "690万" },
-    { district: "虹桥商务核心区", rooms: "3室", floor: "8F", price: "350万" },
+    { district: "联洋", rooms: "2室", floor: "12F", price: "248.5万" },
+    { district: "虹桥商务核心区", rooms: "4室", floor: "3F", price: "690万" },
+    { district: "徐家汇", rooms: "3室", floor: "8F", price: "350万" },
     { district: "", rooms: "2室", floor: "", price: "268万" },
   ];
   const { list } = buildSheetPosterLayout({ count: 5, listings });
   const rows = list!.rows;
 
   it("商圈 7 字符截断为 5 字符 + 省略号", () => {
-    const seg = rows[3].segments.find((s) => s.text.includes("…"));
+    const seg = rows[2].segments.find((s) => s.text.includes("…"));
     expect(seg?.text).toBe("虹桥商务核…");
   });
 

@@ -2,7 +2,7 @@
  * 房源单分享 · 综合海报布局纯函数（多房源分享 Task 5 + 房源清单迭代 方案B卡片清单）.
  *
  * 仅含不依赖微信运行时的纯函数（vitest 直测）：按套数自适应拼版/文案组装/
- * 暖光晕与装饰环数据描述/清单面板几何（商圈去重 + 跨行对齐列排版）。
+ * 暖光晕与装饰环数据描述/清单面板几何（商圈优先选取 + 跨行对齐列排版）。
  * canvas 绘制编排见 utils/property-sheet-poster-render.ts，
  * 文本测宽/换行/cover 裁剪/二维码 data URI 复用 utils/recruit-poster.ts 导出的纯函数。
  *
@@ -268,6 +268,26 @@ export function formatSheetPosterListings(items: SheetPosterListingSource[]): Sh
   });
 }
 
+/**
+ * 商圈优先选取：返回按展示顺序排列的房源下标（最多 max 个）.
+ * 第一轮按原顺序收集首次出现的非空商圈下标；第二轮剩余下标（重复商圈/空商圈）
+ * 按原顺序补位。例：a/b/b/c/d/e（max 5）→ [0,1,3,4,5]；a/b/c/c/c/d → [0,1,2,5,3]。
+ */
+export function selectSheetPosterIndices(districts: readonly string[], max: number): number[] {
+  const first: number[] = [];
+  const rest: number[] = [];
+  const seen = new Set<string>();
+  districts.forEach((district, i) => {
+    if (district !== "" && !seen.has(district)) {
+      seen.add(district);
+      first.push(i);
+    } else {
+      rest.push(i);
+    }
+  });
+  return [...first, ...rest].slice(0, max);
+}
+
 /** 取一组文本按指定字号的估算宽度最大值（空文本计 0）. */
 function maxTextWidth(texts: readonly string[], fontSize: number): number {
   let max = 0;
@@ -285,20 +305,14 @@ type ListColumnKey = "district" | "rooms" | "floor";
 
 /**
  * 组装清单行（方案B卡片清单）：序号 chip + 跨行对齐字段列 + 右对齐价格列.
- * 商圈以截断前完整串为键去重（仅首次出现行展示商圈段）；
+ * 商圈段逐行展示（空串省略该段）；>6 字符截为 5 + 省略号（截断仅影响展示与列宽）；
  * 各字段列宽 = 该列非空文本最大估宽，blocks = [chip, ...字段列, 价格列] 等间距均匀分布，
  * 价格列右缘落在内容区右缘 558.
  */
 function buildListPanelRows(listings: SheetPosterListingRow[], listTop: number): SheetPosterListRow[] {
-  // 商圈去重 + 截断（>6 字符截为 5 + 省略号；截断仅影响展示与列宽，不影响去重键）
-  const seenDistricts = new Set<string>();
-  const districtTexts = listings.map((row) => {
-    if (row.district === "" || seenDistricts.has(row.district)) {
-      return "";
-    }
-    seenDistricts.add(row.district);
-    return row.district.length > 6 ? `${row.district.slice(0, 5)}…` : row.district;
-  });
+  const districtTexts = listings.map((row) =>
+    row.district === "" ? "" : row.district.length > 6 ? `${row.district.slice(0, 5)}…` : row.district,
+  );
   // 列：按 [district, rooms, floor] 顺序，出现过非空文本的列成立
   const columnTexts: { key: ListColumnKey; texts: string[] }[] = [
     { key: "district", texts: districtTexts },
@@ -361,8 +375,9 @@ function buildListPanelRows(listings: SheetPosterListingRow[], listTop: number):
 /**
  * 组装综合海报布局（拼版/坐标/文案/清单面板）.
  * @param opts.count 房源单实际套数（1~10；图片最多拼 3 张，>5 套出提示条）
- * @param opts.listings 逐套格式化后的清单行（formatSheetPosterListings 产出，最多展示 5 行；
- *   空数组为防御路径 → list=null，图片区回吃清单让出的高度）
+ * @param opts.listings 逐套格式化后的清单行（formatSheetPosterListings 产出；经商圈优先
+ *   选取 selectSheetPosterIndices 排序后最多展示 5 行；空数组为防御路径 → list=null，
+ *   图片区回吃清单让出的高度）
  */
 export function buildSheetPosterLayout(opts: {
   count: number;
@@ -439,7 +454,11 @@ export function buildSheetPosterLayout(opts: {
   const head: SheetPosterHead = { rect: headRect, glow, ring, pill, titleLines, subtitle };
 
   // ===== 清单面板（方案B卡片清单：底边固定 675，行数自适应向上生长）=====
-  const shownListings = opts.listings.slice(0, LIST_MAX_ROWS);
+  // 行选取：商圈优先排序（每商圈先取一套，剩余补位），最多 5 行
+  const shownListings = selectSheetPosterIndices(
+    opts.listings.map((row) => row.district),
+    LIST_MAX_ROWS,
+  ).map((i) => opts.listings[i]);
   const contentWidth = SHEET_POSTER_WIDTH - SHEET_POSTER_SAFE_MARGIN * 2;
   let list: SheetPosterListPanel | null = null;
   // 图片区底边：有清单时 = 面板顶 - 16；无清单（防御路径）= 675 - 16 = 659
