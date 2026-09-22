@@ -43,6 +43,10 @@ const RESOURCE_TYPE_OPTIONS = [
   { value: "role", label: "角色" },
   { value: "permission", label: "权限" },
   { value: "project", label: "项目" },
+  { value: "project_sales", label: "项目销售" },
+  { value: "project_document", label: "项目文书" },
+  { value: "project_renovation", label: "项目装修" },
+  { value: "project_finance", label: "项目账本" },
   { value: "owner_bank_card", label: "业主银行卡" },
 ] as const;
 

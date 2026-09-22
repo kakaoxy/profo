@@ -40,6 +40,7 @@ from schemas.project.finance import (
     FinanceUnsettleRequest,
 )
 from services import FinanceService
+from services.system.operation_log import operation_log_service
 from utils.common import RateLimits, limiter
 
 router = APIRouter(
@@ -106,7 +107,8 @@ def get_ledger_stats(
 def export_ledger(
     request: Request,
     service: _FinanceServiceDep,
-    _current_user: LedgerReadPermDep,
+    current_user: LedgerReadPermDep,
+    db: DbSessionDep,
     search: Annotated[str | None, Query(max_length=100, description="模糊搜索")] = None,
     project_status: Annotated[ProjectStatus | None, Query(description="项目状态筛选")] = None,
 ) -> StreamingResponse:
@@ -117,6 +119,15 @@ def export_ledger(
     content = service.export_ledger_excel(
         search=search,
         project_status=project_status.value if project_status else None,
+    )
+    # 审计日志：敏感数据导出在导出成功后记录（与 routers/projects/core.py 银行卡模式一致）
+    operation_log_service.log_action(
+        db,
+        user_id=str(current_user.id),
+        action="sensitive_data_access",
+        resource_type="project_finance",
+        resource_id=None,
+        request=request,
     )
     filename = f"资金账本_{datetime.now(tz=timezone.utc).strftime('%Y%m%d')}.xlsx"
     # 中文文件名需 RFC5987 编码
@@ -199,13 +210,23 @@ def export_project_ledger(
     request: Request,
     project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
-    _current_user: LedgerReadPermDep,
+    current_user: LedgerReadPermDep,
+    db: DbSessionDep,
 ) -> StreamingResponse:
     """导出单项目流水为 zip（含流水 CSV + 票据图片）.
 
     速率限制：10次/小时.
     """
     filename_stem, content = service.export_project_records_zip(project_id)
+    # 审计日志：敏感数据导出在导出成功后记录（与 routers/projects/core.py 银行卡模式一致）
+    operation_log_service.log_action(
+        db,
+        user_id=str(current_user.id),
+        action="sensitive_data_access",
+        resource_type="project_finance",
+        resource_id=str(project_id),
+        request=request,
+    )
     filename = f"{filename_stem}.zip"
     filename_encoded = urllib.parse.quote(filename)
     return StreamingResponse(
@@ -236,7 +257,7 @@ def settle_project_finance(
 
     速率限制：50次/小时.
     """
-    return service.settle_finance(project_id, data, current_user.id)
+    return service.settle_finance(project_id, data, current_user.id, request=request)
 
 
 @router.post(
@@ -255,7 +276,7 @@ def unsettle_project_finance(
 
     速率限制：50次/小时.
     """
-    return service.unsettle_finance(project_id, data, current_user.id)
+    return service.unsettle_finance(project_id, data, current_user.id, request=request)
 
 
 # ==================== 流水 CRUD ====================
@@ -277,7 +298,7 @@ def create_ledger_record(
 
     速率限制：100次/小时.
     """
-    record = service.create_record(data.project_id, data, _current_user.id)
+    record = service.create_record(data.project_id, data, _current_user.id, request=request)
     return CashFlowRecordResponse.model_validate(record)
 
 
@@ -297,7 +318,7 @@ def delete_ledger_record(
 
     速率限制：20次/小时.
     """
-    service.delete_record_by_id(record_id, _current_user.id)
+    service.delete_record_by_id(record_id, _current_user.id, request=request)
 
 
 @router.patch(
@@ -313,5 +334,5 @@ def update_ledger_record(
     _current_user: LedgerWritePermDep,
 ) -> CashFlowRecordResponse:
     """补充上传记账凭证或更新支付方类型."""
-    record = service.update_record(record_id, data, _current_user.id)
+    record = service.update_record(record_id, data, _current_user.id, request=request)
     return CashFlowRecordResponse.model_validate(record)

@@ -38,7 +38,13 @@ def update_renovation_stage(
 
     速率限制：100次/小时.
     """
-    return service.update_renovation_stage(project_id, renovation_data, current_user=current_user)
+    return service.update_renovation_stage(
+        project_id,
+        renovation_data,
+        current_user=current_user,
+        operator_id=str(current_user.id),
+        request=request,
+    )
 
 
 @router.patch("/{project_id}/renovation/stages/{stage}")
@@ -62,6 +68,8 @@ def update_renovation_stage_date(
         stage,
         payload.stage_completed_at,
         current_user=current_user,
+        operator_id=str(current_user.id),
+        request=request,
     )
 
 
@@ -73,7 +81,7 @@ def upload_renovation_photo(
     stage: Annotated[str, Query(max_length=100, description="改造阶段")],
     url: Annotated[str, Query(max_length=2000, description="图片URL", pattern=r"^(https?://|/)[^\s]+$")],
     service: ProjectServiceDep,
-    _current_user: ProjectRenovationUploadPhotoPermDep,
+    current_user: ProjectRenovationUploadPhotoPermDep,
     filename: Annotated[str | None, Query(max_length=255, description="文件名")] = None,
     description: Annotated[str | None, Query(max_length=500, description="描述")] = None,
     thumbnail_url: Annotated[
@@ -90,6 +98,8 @@ def upload_renovation_photo(
         description,
         thumbnail_url,
         media_type,
+        operator_id=str(current_user.id),
+        request=request,
     )
 
 
@@ -117,13 +127,18 @@ def delete_renovation_photo(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     photo_id: Annotated[str, Path(description="照片ID")],
     service: ProjectServiceDep,
-    _current_user: ProjectRenovationUploadPhotoPermDep,
+    current_user: ProjectRenovationUploadPhotoPermDep,
 ) -> None:
     """删除改造阶段照片.
 
     速率限制：20次/小时.
     """
-    service.delete_renovation_photo(project_id, photo_id)
+    service.delete_renovation_photo(
+        project_id,
+        photo_id,
+        operator_id=str(current_user.id),
+        request=request,
+    )
 
 
 @router.get("/{project_id}/renovation/contract")
@@ -152,4 +167,9 @@ def update_renovation_contract(
 
     速率限制：100次/小时.
     """
-    return service.update_renovation_contract(project_id, contract_data)
+    return service.update_renovation_contract(
+        project_id,
+        contract_data,
+        operator_id=str(current_user.id),
+        request=request,
+    )

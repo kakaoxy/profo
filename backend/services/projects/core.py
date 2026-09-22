@@ -4,18 +4,23 @@
 
 注意：此服务已适配新的规范化表结构。
 项目基础信息在 projects 表，签约/业主/销售等信息在关联的子表中。
+
+注：含项目本体审计插桩后约 540 行，略超 500 行约束；插桩与快照 helper 强耦合
+Facade 内 commit 时机（主操作 commit 后写日志），拆分会割裂调用链，故不拆。
 """
 
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models import Project, ProjectContract, ProjectRenovation
 from models.common import BusinessForm, ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
+from services.system.operation_log import operation_log_service
 from settings import settings
 
 from .internal import (
@@ -59,6 +64,37 @@ def attachment_url_in_use(db: Session, url: str) -> bool:
         .first()
     )
     return renovation_reference is not None
+
+
+def _enum_value(value: object) -> str | None:
+    """枚举/字符串状态字段统一取值（SQLEnum 读取为枚举、写入为 str，两种均需兼容）."""
+    if value is None:
+        return None
+    return value.value if hasattr(value, "value") else str(value)
+
+
+def _project_snapshot(project: Project) -> dict[str, Any]:
+    """构建项目本体审计快照（关键字段，业主电话/身份证等敏感信息不入快照）.
+
+    需在 contract/owners/sale 关联已预加载时调用（get_by_id 均已加载）；
+    Decimal/date 统一转字符串，保证 JSON 列可序列化。
+    """
+    contract = project.contract if project.contract is not None and not project.contract.is_deleted else None
+    sale = project.sale if project.sale is not None and not project.sale.is_deleted else None
+    owner = next((o for o in project.owners if not o.is_deleted), None)
+    return {
+        "name": project.name,
+        "community_name": project.community_name,
+        "status": _enum_value(project.status),
+        "business_form": _enum_value(project.business_form),
+        "contract_no": contract.contract_no if contract else None,
+        "signing_price": str(contract.signing_price) if contract and contract.signing_price is not None else None,
+        "owner_name": owner.owner_name if owner else None,
+        "sold_price": str(sale.sold_price) if sale and sale.sold_price is not None else None,
+        "sold_date": sale.sold_date.strftime("%Y-%m-%d") if sale and sale.sold_date else None,
+        "transaction_status": sale.transaction_status if sale else None,
+        "is_deleted": project.is_deleted,
+    }
 
 
 class ProjectCoreService:
@@ -129,11 +165,19 @@ class ProjectCoreService:
         """
         return get_bank_card_number(self.db, owner_id, operator_id=operator_id)
 
-    def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
+    def create_project(
+        self,
+        project_data: ProjectCreate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> ProjectResponse:
         """创建项目.
 
         Args:
             project_data: 项目创建数据
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
         Returns:
             创建成功的项目响应数据
@@ -142,6 +186,16 @@ class ProjectCoreService:
         project = self.creator.create(project_data)
         # 重新查询以预加载 builder 所需的所有关联（create 已 commit，关联已 expire）
         project = self.query_service.get_by_id(project.id, include_all=False)
+        # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="create",
+            resource_type="project",
+            resource_id=str(project.id),
+            after=_project_snapshot(project),
+            request=request,
+        )
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
     def get_project(
@@ -357,12 +411,21 @@ class ProjectCoreService:
             for p in projects
         ]
 
-    def update_project(self, project_id: uuid.UUID, update_data: ProjectUpdate) -> ProjectResponse:
+    def update_project(
+        self,
+        project_id: uuid.UUID,
+        update_data: ProjectUpdate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> ProjectResponse:
         """更新项目信息.
 
         Args:
             project_id: 项目ID
             update_data: 更新数据
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
         Returns:
             更新后的项目响应数据
@@ -374,25 +437,48 @@ class ProjectCoreService:
         project = self.query_service.get_by_id(project_id, include_all=False)
 
         update_dict = update_data.model_dump(exclude_unset=True)
+        # 变更前快照（updater.update 会 commit 并 expire 属性，before 需在更新前构造）
+        before_snapshot = _project_snapshot(project)
         project = self.updater.update(project, update_dict)
 
         # update 已 commit，重新查询以预加载 builder 所需关联
         project = self.query_service.get_by_id(project_id, include_all=False)
+        # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project",
+            resource_id=str(project_id),
+            before=before_snapshot,
+            after=_project_snapshot(project),
+            request=request,
+        )
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
-    def delete_project(self, project_id: uuid.UUID) -> None:
+    def delete_project(
+        self,
+        project_id: uuid.UUID,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> None:
         """删除项目 (软删除).
 
         同时软删除关联的合同记录，释放合同编号供复用。
 
         Args:
             project_id: 项目ID
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
         Raises:
             ResourceNotFoundError: 项目不存在时抛出
 
         """
         project = self.query_service.get_by_id(project_id, include_all=False)
+        # 删除前快照（软删除会改写 status/is_deleted）
+        before_snapshot = _project_snapshot(project)
 
         project.is_deleted = True
         project.status = ProjectStatus.DELETED.value
@@ -413,12 +499,32 @@ class ProjectCoreService:
 
         self.db.commit()
 
-    def update_status(self, project_id: uuid.UUID, status_update: ProjectStatusUpdate) -> ProjectResponse:
+        # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="delete",
+            resource_type="project",
+            resource_id=str(project_id),
+            before=before_snapshot,
+            request=request,
+        )
+
+    def update_status(
+        self,
+        project_id: uuid.UUID,
+        status_update: ProjectStatusUpdate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> ProjectResponse:
         """更新项目状态.
 
         Args:
             project_id: 项目ID
             status_update: 状态更新数据
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
         Returns:
             更新后的项目响应数据
@@ -428,11 +534,23 @@ class ProjectCoreService:
 
         """
         project = self.query_service.get_by_id(project_id, include_all=False)
+        old_status = _enum_value(project.status)
 
         project = self.state_manager.update_status(project, status_update)
 
         # update_status 已 commit，重新查询以预加载 builder 所需关联
         project = self.query_service.get_by_id(project_id, include_all=False)
+        # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project",
+            resource_id=str(project_id),
+            before={"status": old_status},
+            after={"status": _enum_value(project.status)},
+            request=request,
+        )
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
     def get_project_stats(self) -> dict[str, int]:

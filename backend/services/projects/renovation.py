@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from fastapi import Request
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -18,6 +19,7 @@ from models.common import ProjectStatus, RenovationStage
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
 from services.projects.core import attachment_url_in_use
 from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
+from services.system.operation_log import operation_log_service
 from utils.storage import extract_storage_key, get_storage_backend
 
 logger = logging.getLogger(__name__)
@@ -65,6 +67,28 @@ def _delete_storage_file(url: str) -> None:
         get_storage_backend().delete_file(key)
     except Exception:
         logger.exception("装修合同：删除旧附件文件失败（不影响保存结果）: %s", key)
+
+
+def _snapshot_value(value: Any) -> Any:
+    """审计快照值 JSON 安全化：datetime/Decimal 等非原生 JSON 类型转为字符串."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
+def _stage_snapshot(project: Project, renovation: ProjectRenovation) -> dict[str, Any]:
+    """装修阶段进度快照（审计日志用，含主阶段/各阶段完成时间/实际开竣工时间）."""
+    return {
+        "renovation_stage": project.renovation_stage,
+        "stage_completed_dates": (dict(renovation.stage_completed_dates) if renovation.stage_completed_dates else None),
+        "actual_start_date": _snapshot_value(renovation.actual_start_date),
+        "actual_end_date": _snapshot_value(renovation.actual_end_date),
+    }
+
+
+def _renovation_contract_snapshot(renovation: ProjectRenovation) -> dict[str, Any]:
+    """装修合同关键字段快照（审计日志用，覆盖更新白名单全部字段）."""
+    return {field: _snapshot_value(getattr(renovation, field, None)) for field in _RENOVATION_ALLOWED_FIELDS}
 
 
 class RenovationService:
@@ -157,11 +181,25 @@ class RenovationService:
                 last_completed = stage
         return last_completed.value
 
-    def update_stage(self, project_id: uuid.UUID, renovation_data: RenovationUpdate) -> Project:
+    def update_stage(
+        self,
+        project_id: uuid.UUID,
+        renovation_data: RenovationUpdate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> Project:
         """更新改造阶段.
 
         权限校验由 Router 层 ProjectRenovationCompleteStagePermDep 注入，
         Service 层不再重复校验。
+
+        Args:
+            project_id: 项目ID
+            renovation_data: 阶段更新数据
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
+
         """
         project = self._get_project(project_id)
 
@@ -177,6 +215,9 @@ class RenovationService:
 
         # 获取或创建装修记录
         renovation = self._get_or_create_renovation(project_id)
+
+        # 审计快照：变更前阶段进度（须在写操作前抓取）
+        before = _stage_snapshot(project, renovation)
 
         # 记录指定阶段的完成时间（支持无序完成）
         current_stage = project.renovation_stage
@@ -212,6 +253,17 @@ class RenovationService:
 
         self.db.commit()
         self.db.refresh(project)
+        # 审计日志在主操作成功后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project_renovation",
+            resource_id=str(renovation.id),
+            before=before,
+            after=_stage_snapshot(project, renovation),
+            request=request,
+        )
         return project
 
     def update_stage_date(
@@ -219,6 +271,9 @@ class RenovationService:
         project_id: uuid.UUID,
         stage: RenovationStage,
         stage_completed_at: datetime | None,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> Project:
         """修改/清空已完成阶段的完成时间.
 
@@ -232,6 +287,8 @@ class RenovationService:
             project_id: 项目ID
             stage: 要修改的阶段
             stage_completed_at: 新完成时间；None 表示清空回退未完成
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
         Raises:
             ResourceNotFoundError: 项目不存在
@@ -250,6 +307,11 @@ class RenovationService:
             raise BusinessLogicError(msg)
 
         renovation = self._get_or_create_renovation(project_id)
+
+        # 审计快照：变更前阶段与完成时间（须在写操作前抓取）
+        before = _stage_snapshot(project, renovation)
+        before["stage"] = stage.value
+        before["stage_completed_date"] = (renovation.stage_completed_dates or {}).get(stage.value)
 
         dates = {} if not renovation.stage_completed_dates else dict(renovation.stage_completed_dates)
 
@@ -283,6 +345,20 @@ class RenovationService:
 
         self.db.commit()
         self.db.refresh(project)
+        after = _stage_snapshot(project, renovation)
+        after["stage"] = stage.value
+        after["stage_completed_date"] = (renovation.stage_completed_dates or {}).get(stage.value)
+        # 审计日志在主操作成功后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project_renovation",
+            resource_id=str(renovation.id),
+            before=before,
+            after=after,
+            request=request,
+        )
         return project
 
     def get_info(self, project_id: uuid.UUID) -> ProjectRenovation | None:
@@ -332,11 +408,26 @@ class RenovationService:
         description: str | None = None,
         thumbnail_url: str | None = None,
         media_type: str = "image",
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> RenovationPhoto:
         """添加改造阶段照片.
 
         权限校验由 Router 层 ProjectRenovationUploadPhotoPermDep 注入（业务身份双通道），
         Service 层不再重复校验。
+
+        Args:
+            project_id: 项目ID
+            stage: 改造阶段
+            url: 图片/视频 URL
+            filename: 文件名（可选）
+            description: 描述（可选）
+            thumbnail_url: 缩略图 URL（可选）
+            media_type: 媒体种类（image/video）
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
+
         """
         project = self._get_project(project_id)
 
@@ -372,6 +463,23 @@ class RenovationService:
         self.db.add(photo)
         self.db.commit()
         self.db.refresh(photo)
+        # 审计日志在主操作成功后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="create",
+            resource_type="project_renovation",
+            resource_id=str(photo.id),
+            after={
+                "stage": _snapshot_value(photo.stage),
+                "url": photo.url,
+                "media_type": _snapshot_value(photo.media_type),
+                "filename": photo.filename,
+                "description": photo.description,
+                "thumbnail_url": photo.thumbnail_url,
+            },
+            request=request,
+        )
         return photo
 
     def get_photos(self, project_id: uuid.UUID, stage: str | None = None) -> list[RenovationPhoto]:
@@ -385,10 +493,24 @@ class RenovationService:
             query = query.filter(RenovationPhoto.stage == stage)
         return query.order_by(RenovationPhoto.created_at.desc()).all()
 
-    def delete_photo(self, project_id: uuid.UUID, photo_id: str) -> None:
+    def delete_photo(
+        self,
+        project_id: uuid.UUID,
+        photo_id: str,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> None:
         """删除改造阶段照片 (软删除).
 
         权限校验由 Router 层 ProjectRenovationUploadPhotoPermDep 注入。
+
+        Args:
+            project_id: 项目ID
+            photo_id: 照片ID
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
+
         """
         photo = (
             self.db.query(RenovationPhoto)
@@ -403,8 +525,25 @@ class RenovationService:
             msg = "照片不存在"
             raise ResourceNotFoundError(msg)
 
+        # 审计快照：删除前照片信息（须在软删除前抓取）
+        before = {
+            "stage": _snapshot_value(photo.stage),
+            "url": photo.url,
+            "media_type": _snapshot_value(photo.media_type),
+            "filename": photo.filename,
+        }
         photo.is_deleted = True
         self.db.commit()
+        # 审计日志在主操作成功后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="delete",
+            resource_type="project_renovation",
+            resource_id=str(photo.id),
+            before=before,
+            request=request,
+        )
 
     def get_contract(self, project_id: uuid.UUID) -> ProjectRenovation:
         """获取装修合同信息."""
@@ -415,8 +554,19 @@ class RenovationService:
         self,
         project_id: uuid.UUID,
         contract_data: RenovationContractUpdate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectRenovation:
-        """更新装修合同信息."""
+        """更新装修合同信息.
+
+        Args:
+            project_id: 项目ID
+            contract_data: 合同更新数据
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
+
+        """
         project = self._get_project(project_id)
 
         # 验证状态
@@ -431,6 +581,9 @@ class RenovationService:
 
         renovation = self._get_or_create_renovation(project_id)
 
+        # 审计快照：变更前合同字段（含 soft_detail_attachment，须在写操作前抓取）
+        before = _renovation_contract_snapshot(renovation)
+
         # 更新字段（使用白名单过滤，防止设置敏感字段）
         update_data = contract_data.model_dump(exclude_unset=True)
         # 附件被移除/替换前先记下旧值，保存成功后删除其物理文件（方案 A：保存时清理）
@@ -443,6 +596,18 @@ class RenovationService:
         renovation.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(renovation)
+
+        # 审计日志在主操作成功后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project_renovation",
+            resource_id=str(renovation.id),
+            before=before,
+            after=_renovation_contract_snapshot(renovation),
+            request=request,
+        )
 
         # 旧附件已不再被本字段引用 → 删除物理文件（失败只记日志，保存结果不受影响）。
         # 例外：URL 仍被附件库（signing_materials）或其它项目的软装明细附件引用时必须保留

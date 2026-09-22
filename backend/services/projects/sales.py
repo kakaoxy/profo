@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from fastapi import Request
 from sqlalchemy.orm import Session, selectinload
 
 from models import Project, ProjectInteraction, ProjectSale, User
@@ -20,11 +21,24 @@ from schemas.project.sales import (
     SalesRolesUpdate,
 )
 from services.system.exceptions import BusinessLogicError, ResourceNotFoundError, ValidationError
+from services.system.operation_log import operation_log_service
 
+from .core import _project_snapshot
 from .internal import ProjectQueryService, ProjectResponseBuilder
 
 # 允许更新的销售角色字段白名单（防止设置 id/is_deleted 等敏感字段）
 _SALES_ROLE_FIELDS = {"channel_manager_id", "property_agent_id", "negotiator_id"}
+
+
+def _interaction_snapshot(record: ProjectInteraction) -> dict[str, Any]:
+    """构造互动记录审计快照（键名与 Router 响应字段对齐，值需 JSON 可序列化）."""
+    return {
+        "record_type": record.record_type,
+        "customer_name": record.interaction_target,
+        "record_date": record.interaction_at.isoformat() if record.interaction_at else None,
+        "price": float(record.price) if record.price is not None else None,
+        "notes": record.content,
+    }
 
 
 class SalesService:
@@ -70,7 +84,13 @@ class SalesService:
                 raise ValidationError(msg)
 
     def update_roles(
-        self, project_id: uuid.UUID, roles_data: SalesRolesUpdate, *, current_user: User
+        self,
+        project_id: uuid.UUID,
+        roles_data: SalesRolesUpdate,
+        *,
+        current_user: User,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectResponse:
         """更新销售角色 (渠道、讲房、谈判)."""
         project = self._get_project(project_id)
@@ -95,6 +115,13 @@ class SalesService:
             )
             self.db.add(sale)
 
+        # 变更前角色快照（首次创建 sale 时三字段均为 None）
+        before_roles = {
+            "channel_manager_id": sale.channel_manager_id,
+            "property_agent_id": sale.property_agent_id,
+            "negotiator_id": sale.negotiator_id,
+        }
+
         # 更新销售角色
         update_dict = roles_data.model_dump(exclude_unset=True, by_alias=False)
 
@@ -108,13 +135,35 @@ class SalesService:
         sale.updated_at = datetime.now(timezone.utc)
         self.db.commit()
 
+        # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project_sales",
+            resource_id=str(sale.id),
+            before=before_roles,
+            after={
+                "channel_manager_id": sale.channel_manager_id,
+                "property_agent_id": sale.property_agent_id,
+                "negotiator_id": sale.negotiator_id,
+            },
+            request=request,
+        )
+
         # commit 后关联已 expire，重新查询以预加载 builder 所需关联
         # 透传 current_user 以正确计算 can_edit_sales 业务身份标志
         project = self.query_service.get_by_id(project_id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project, current_user=current_user))
 
     def create_record(
-        self, project_id: uuid.UUID, record_data: SalesRecordCreate, current_user: User
+        self,
+        project_id: uuid.UUID,
+        record_data: SalesRecordCreate,
+        current_user: User,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectInteraction:
         """创建销售记录（互动记录）.
 
@@ -143,6 +192,17 @@ class SalesService:
         self.db.add(record)
         self.db.commit()
         self.db.refresh(record)
+
+        # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="create",
+            resource_type="project_sales",
+            resource_id=str(record.id),
+            after=_interaction_snapshot(record),
+            request=request,
+        )
         return record
 
     def get_records(self, project_id: uuid.UUID, record_type: str | None = None) -> list[dict[str, Any]]:
@@ -183,7 +243,14 @@ class SalesService:
             for r in records
         ]
 
-    def delete_record(self, project_id: uuid.UUID, record_id: str) -> None:
+    def delete_record(
+        self,
+        project_id: uuid.UUID,
+        record_id: str,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> None:
         """删除销售记录（互动记录）.
 
         权限校验由 Router 层 ProjectSalesAddRecordPermDep 注入。
@@ -203,12 +270,32 @@ class SalesService:
             msg = "销售记录不存在"
             raise ResourceNotFoundError(msg)
 
+        # 软删前捕获变更前快照
+        before_snapshot = _interaction_snapshot(record)
+
         record.is_deleted = True
         record.updated_at = datetime.now(timezone.utc)
         self.db.commit()
 
+        # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="delete",
+            resource_type="project_sales",
+            resource_id=str(record.id),
+            before=before_snapshot,
+            request=request,
+        )
+
     def complete_project(
-        self, project_id: uuid.UUID, complete_data: ProjectCompleteRequest, *, current_user: User
+        self,
+        project_id: uuid.UUID,
+        complete_data: ProjectCompleteRequest,
+        *,
+        current_user: User,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectResponse:
         """确认成交 (标记为已售)."""
         project = self._get_project(project_id)
@@ -255,6 +342,16 @@ class SalesService:
         # commit 后关联已 expire，重新查询以预加载 builder 所需关联
         # 透传 current_user 以正确计算 can_edit_sales 业务身份标志
         project = self.query_service.get_by_id(project_id, include_all=False)
+        # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project",
+            resource_id=str(project_id),
+            after=_project_snapshot(project),
+            request=request,
+        )
         return ProjectResponse.model_validate(self.response_builder.build(project, current_user=current_user))
 
 

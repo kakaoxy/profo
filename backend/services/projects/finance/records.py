@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
+from fastapi import Request
+
 from models import FinanceRecord, FinanceRecordLog, FinanceSubject, Project
 from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType
 from schemas.project.finance import (
@@ -13,6 +15,7 @@ from schemas.project.finance import (
     LedgerRecordUpdate,
 )
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
+from services.system.operation_log import operation_log_service
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +33,25 @@ def _business_form_to_mode(business_form: BusinessForm | None) -> str | None:
     if business_form == BusinessForm.WHOLESALE:
         return "acquire"
     return None
+
+
+def _record_audit_snapshot(record: FinanceRecord) -> dict[str, Any]:
+    """提取流水关键字段快照（审计日志 OperationLog 用，枚举/日期/金额统一转基本类型）."""
+    return {
+        "project_id": str(record.project_id),
+        "type": getattr(record.type, "value", record.type),
+        "category": getattr(record.category, "value", record.category),
+        "amount": str(record.amount) if record.amount is not None else None,
+        "outflow": str(record.outflow) if record.outflow is not None else None,
+        "inflow": str(record.inflow) if record.inflow is not None else None,
+        "subject_id": record.subject_id,
+        "payer": record.payer,
+        "payee": record.payee,
+        "counterparty": record.counterparty,
+        "counterparty_type": getattr(record.counterparty_type, "value", record.counterparty_type),
+        "record_date": record.record_date.isoformat() if record.record_date else None,
+        "remark": record.remark,
+    }
 
 
 class _RecordMixin:
@@ -80,7 +102,14 @@ class _RecordMixin:
             msg = "流出/流入至少填一项且大于0"
             raise ValidationError(msg)
 
-    def create_record(self, project_id: uuid.UUID, record_data: LedgerRecordCreate, operator_id: str) -> FinanceRecord:
+    def create_record(
+        self,
+        project_id: uuid.UUID,
+        record_data: LedgerRecordCreate,
+        operator_id: str,
+        *,
+        request: Request | None = None,
+    ) -> FinanceRecord:
         """创建现金流记录.
 
         Task 5 调整：
@@ -198,6 +227,17 @@ class _RecordMixin:
         self.db.commit()
         self.db.refresh(record)
 
+        # 审计日志在主操作成功提交后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="create",
+            resource_type="project_finance",
+            resource_id=str(record.id),
+            after=_record_audit_snapshot(record),
+            request=request,
+        )
+
         logger.info("Cashflow record created successfully: %s", record.id)
         return record
 
@@ -222,7 +262,13 @@ class _RecordMixin:
             logger.info("Found %d cashflow records for project %s", len(records), project_id)
             return records
 
-    def delete_record_by_id(self, record_id: str, operator_id: str) -> None:
+    def delete_record_by_id(
+        self,
+        record_id: str,
+        operator_id: str,
+        *,
+        request: Request | None = None,
+    ) -> None:
         """资金账本：按记录ID软删除流水（无需 project_id）.
 
         删除后触发财务数据同步计算.
@@ -254,6 +300,9 @@ class _RecordMixin:
             raise ResourceNotFoundError(msg)
         self._assert_finance_editable(project)
 
+        # 变更前快照（软删除前捕获，供审计日志）
+        before_snapshot = _record_audit_snapshot(record)
+
         # 写入操作日志（与删除同一事务）
         log = FinanceRecordLog(
             project_id=project_id,
@@ -280,6 +329,17 @@ class _RecordMixin:
             raise
         self.db.commit()
 
+        # 审计日志在主操作成功提交后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="delete",
+            resource_type="project_finance",
+            resource_id=str(record_id),
+            before=before_snapshot,
+            request=request,
+        )
+
         logger.info("Finance record deleted successfully: %s", record_id)
 
     def update_record(
@@ -287,6 +347,8 @@ class _RecordMixin:
         record_id: str,
         payload: LedgerRecordUpdate,
         operator_id: str,
+        *,
+        request: Request | None = None,
     ) -> FinanceRecord:
         """资金账本：按记录ID更新流水（支持 Task 5 新字段 + 兼容字段 + 通用字段）.
 
@@ -321,6 +383,9 @@ class _RecordMixin:
             msg = "项目不存在"
             raise ResourceNotFoundError(msg)
         self._assert_finance_editable(project)
+
+        # 变更前快照（任何字段修改前捕获，供审计日志）
+        before_snapshot = _record_audit_snapshot(record)
 
         detail: dict[str, Any] = {}
 
@@ -432,6 +497,18 @@ class _RecordMixin:
             raise
         self.db.commit()
         self.db.refresh(record)
+
+        # 审计日志在主操作成功提交后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project_finance",
+            resource_id=str(record_id),
+            before=before_snapshot,
+            after=_record_audit_snapshot(record),
+            request=request,
+        )
 
         logger.info("Finance record updated successfully: %s", record_id)
         return record

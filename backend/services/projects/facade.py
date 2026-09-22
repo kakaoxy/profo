@@ -15,6 +15,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from fastapi import Request
 from sqlalchemy.orm import Session
 
 # 导入模型和 Schema 类型
@@ -63,9 +64,15 @@ class ProjectService:
 
     # ========== ProjectCoreService 方法委托 ==========
 
-    def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
+    def create_project(
+        self,
+        project_data: ProjectCreate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> ProjectResponse:
         """创建项目."""
-        return self._core_service.create_project(project_data)
+        return self._core_service.create_project(project_data, operator_id=operator_id, request=request)
 
     def get_project(
         self,
@@ -104,17 +111,52 @@ class ProjectService:
             contract_sort=contract_sort,
         )
 
-    def update_project(self, project_id: uuid.UUID, update_data: ProjectUpdate) -> ProjectResponse:
+    def update_project(
+        self,
+        project_id: uuid.UUID,
+        update_data: ProjectUpdate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> ProjectResponse:
         """更新项目."""
-        return self._core_service.update_project(project_id, update_data)
+        return self._core_service.update_project(project_id, update_data, operator_id=operator_id, request=request)
 
-    def delete_project(self, project_id: uuid.UUID) -> None:
+    def delete_project(
+        self,
+        project_id: uuid.UUID,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> None:
         """删除项目."""
-        return self._core_service.delete_project(project_id)
+        return self._core_service.delete_project(project_id, operator_id=operator_id, request=request)
 
-    def update_status(self, project_id: uuid.UUID, status_update: ProjectStatusUpdate) -> ProjectResponse:
+    def update_status(
+        self,
+        project_id: uuid.UUID,
+        status_update: ProjectStatusUpdate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> ProjectResponse:
         """更新项目状态."""
-        return self._core_service.update_status(project_id, status_update)
+        return self._core_service.update_status(project_id, status_update, operator_id=operator_id, request=request)
+
+    def build_projects_export(
+        self,
+        status_filter: str | None = None,
+        community_name: str | None = None,
+    ) -> tuple[list[str], list[list[str]]]:
+        """构建项目导出 CSV（headers + rows）.
+
+        修复既有缺陷：core 服务已有实现但 Facade 缺委托，GET /projects/export
+        调用 service.build_projects_export 时 AttributeError 500。
+        """
+        return self._core_service.build_projects_export(
+            status_filter=status_filter,
+            community_name=community_name,
+        )
 
     def get_project_stats(self) -> dict[str, int]:
         """获取项目统计."""
@@ -148,9 +190,16 @@ class ProjectService:
         renovation_data: RenovationUpdate,
         *,
         current_user: User,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectResponse:
         """更新装修阶段."""
-        project = self._renovation_service.update_stage(project_id, renovation_data)
+        project = self._renovation_service.update_stage(
+            project_id,
+            renovation_data,
+            operator_id=operator_id,
+            request=request,
+        )
         from .internal import ProjectResponseBuilder
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
@@ -162,9 +211,17 @@ class ProjectService:
         stage_completed_at: datetime | None,
         *,
         current_user: User,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectResponse:
         """修改/清空已完成阶段的完成时间（双通道权限，见 Router 层）."""
-        project = self._renovation_service.update_stage_date(project_id, stage, stage_completed_at)
+        project = self._renovation_service.update_stage_date(
+            project_id,
+            stage,
+            stage_completed_at,
+            operator_id=operator_id,
+            request=request,
+        )
         from .internal import ProjectResponseBuilder
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
@@ -192,6 +249,9 @@ class ProjectService:
         description: str | None = None,
         thumbnail_url: str | None = None,
         media_type: str = "image",
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> RenovationPhoto:
         """添加装修照片."""
         return self._renovation_service.add_photo(
@@ -202,15 +262,29 @@ class ProjectService:
             description,
             thumbnail_url,
             media_type,
+            operator_id=operator_id,
+            request=request,
         )
 
     def get_renovation_photos(self, project_id: uuid.UUID, stage: str | None = None) -> list[RenovationPhoto]:
         """获取装修照片."""
         return self._renovation_service.get_photos(project_id, stage)
 
-    def delete_renovation_photo(self, project_id: uuid.UUID, photo_id: str) -> None:
+    def delete_renovation_photo(
+        self,
+        project_id: uuid.UUID,
+        photo_id: str,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> None:
         """删除装修照片."""
-        return self._renovation_service.delete_photo(project_id, photo_id)
+        return self._renovation_service.delete_photo(
+            project_id,
+            photo_id,
+            operator_id=operator_id,
+            request=request,
+        )
 
     def get_renovation_contract(self, project_id: uuid.UUID) -> ProjectRenovation:
         """获取装修合同."""
@@ -220,23 +294,47 @@ class ProjectService:
         self,
         project_id: uuid.UUID,
         contract_data: RenovationContractUpdate,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectRenovation:
         """更新装修合同."""
-        return self._renovation_service.update_contract(project_id, contract_data)
+        return self._renovation_service.update_contract(
+            project_id,
+            contract_data,
+            operator_id=operator_id,
+            request=request,
+        )
 
     # ========== SalesService 方法委托 ==========
 
     def update_sales_roles(
-        self, project_id: uuid.UUID, roles_data: SalesRolesUpdate, *, current_user: User
+        self,
+        project_id: uuid.UUID,
+        roles_data: SalesRolesUpdate,
+        *,
+        current_user: User,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectResponse:
         """更新销售角色."""
-        return self._sales_service.update_roles(project_id, roles_data, current_user=current_user)
+        return self._sales_service.update_roles(
+            project_id, roles_data, current_user=current_user, operator_id=operator_id, request=request
+        )
 
     def create_sales_record(
-        self, project_id: uuid.UUID, record_data: SalesRecordCreate, *, current_user: User
+        self,
+        project_id: uuid.UUID,
+        record_data: SalesRecordCreate,
+        current_user: User,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectInteraction:
         """创建销售记录."""
-        return self._sales_service.create_record(project_id, record_data, current_user)
+        return self._sales_service.create_record(
+            project_id, record_data, current_user, operator_id=operator_id, request=request
+        )
 
     def get_sales_records(
         self,
@@ -246,15 +344,30 @@ class ProjectService:
         """获取销售记录."""
         return self._sales_service.get_records(project_id, record_type)
 
-    def delete_sales_record(self, project_id: uuid.UUID, record_id: str) -> None:
+    def delete_sales_record(
+        self,
+        project_id: uuid.UUID,
+        record_id: str,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> None:
         """删除销售记录."""
-        return self._sales_service.delete_record(project_id, record_id)
+        return self._sales_service.delete_record(project_id, record_id, operator_id=operator_id, request=request)
 
     def complete_project(
-        self, project_id: uuid.UUID, complete_data: ProjectCompleteRequest, *, current_user: User
+        self,
+        project_id: uuid.UUID,
+        complete_data: ProjectCompleteRequest,
+        *,
+        current_user: User,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> ProjectResponse:
         """完成项目（标记已售）."""
-        return self._sales_service.complete_project(project_id, complete_data, current_user=current_user)
+        return self._sales_service.complete_project(
+            project_id, complete_data, current_user=current_user, operator_id=operator_id, request=request
+        )
 
     # ========== FinanceService 方法委托 ==========
 

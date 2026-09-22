@@ -36,7 +36,9 @@ def update_sales_roles(
 
     速率限制：100次/小时.
     """
-    return service.update_sales_roles(project_id, roles_data, current_user=current_user)
+    return service.update_sales_roles(
+        project_id, roles_data, current_user=current_user, operator_id=str(current_user.id), request=request
+    )
 
 
 @router.post("/{project_id}/selling/viewings", status_code=201)
@@ -49,7 +51,9 @@ def create_viewing_record(
     current_user: ProjectSalesAddRecordPermDep,
 ) -> SalesRecordResponse:
     """创建带看记录."""
-    return service.create_sales_record(project_id, record_data, current_user=current_user)
+    return service.create_sales_record(
+        project_id, record_data, current_user, operator_id=str(current_user.id), request=request
+    )
 
 
 @router.post("/{project_id}/selling/offers", status_code=201)
@@ -62,7 +66,9 @@ def create_offer_record(
     current_user: ProjectSalesAddRecordPermDep,
 ) -> SalesRecordResponse:
     """创建出价记录."""
-    return service.create_sales_record(project_id, record_data, current_user=current_user)
+    return service.create_sales_record(
+        project_id, record_data, current_user, operator_id=str(current_user.id), request=request
+    )
 
 
 @router.post("/{project_id}/selling/negotiations", status_code=201)
@@ -75,7 +81,9 @@ def create_negotiation_record(
     current_user: ProjectSalesAddRecordPermDep,
 ) -> SalesRecordResponse:
     """创建面谈记录."""
-    return service.create_sales_record(project_id, record_data, current_user=current_user)
+    return service.create_sales_record(
+        project_id, record_data, current_user, operator_id=str(current_user.id), request=request
+    )
 
 
 @router.get("/{project_id}/selling/records")
@@ -102,10 +110,10 @@ def delete_sales_record(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     record_id: Annotated[str, Path(description="记录ID")],
     service: ProjectServiceDep,
-    _current_user: ProjectSalesAddRecordPermDep,
+    current_user: ProjectSalesAddRecordPermDep,
 ) -> None:
     """删除销售记录.
 
     速率限制：20次/小时.
     """
-    service.delete_sales_record(project_id, record_id)
+    service.delete_sales_record(project_id, record_id, operator_id=str(current_user.id), request=request)

@@ -115,13 +115,13 @@ def create_project(
     request: Request,
     project_data: ProjectCreate,
     service: ProjectServiceDep,
-    _current_user: ProjectWritePermDep,
+    current_user: ProjectWritePermDep,
 ) -> ProjectResponse:
     """创建项目.
 
     速率限制：100次/小时.
     """
-    return service.create_project(project_data)
+    return service.create_project(project_data, operator_id=str(current_user.id), request=request)
 
 
 @router.get("")
@@ -201,7 +201,8 @@ def get_my_responsible_projects(
 def export_projects(
     request: Request,
     service: ProjectServiceDep,
-    _current_user: ProjectWritePermDep,
+    current_user: ProjectWritePermDep,
+    db: DbSessionDep,
     status: Annotated[str | None, Query(max_length=100, description="项目状态筛选")] = None,
     community_name: Annotated[str | None, Query(max_length=100, description="小区名称筛选")] = None,
 ) -> StreamingResponse:
@@ -213,6 +214,15 @@ def export_projects(
     headers, rows = service.build_projects_export(
         status_filter=status,
         community_name=community_name,
+    )
+    # 导出包含业主信息等敏感数据，Router 层记录敏感数据访问审计（无快照，与银行卡端点模式一致）
+    operation_log_service.log_action(
+        db,
+        user_id=str(current_user.id),
+        action="sensitive_data_access",
+        resource_type="project",
+        resource_id=None,
+        request=request,
     )
     return generate_csv_response(headers, rows, "projects_export")
 
@@ -247,13 +257,13 @@ def update_project(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     update_data: ProjectUpdate,
     service: ProjectServiceDep,
-    _current_user: ProjectWritePermDep,
+    current_user: ProjectWritePermDep,
 ) -> ProjectResponse:
     """更新项目信息.
 
     速率限制：100次/小时.
     """
-    project = service.update_project(project_id, update_data)
+    project = service.update_project(project_id, update_data, operator_id=str(current_user.id), request=request)
     if not project:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
@@ -266,14 +276,14 @@ def delete_project(
     request: Request,
     project_id: Annotated[UUID4, Path(description="项目ID")],
     service: ProjectServiceDep,
-    _current_user: ProjectDeletePermDep,
+    current_user: ProjectDeletePermDep,
 ) -> None:
     """删除项目.
 
     权限：project:delete（种子仅 admin 持有；与前端删除按钮的 project:delete 校验一致）.
     速率限制：20次/小时.
     """
-    service.delete_project(project_id)
+    service.delete_project(project_id, operator_id=str(current_user.id), request=request)
 
 
 @router.put("/{project_id}/status")
@@ -283,13 +293,13 @@ def update_project_status(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     status_update: ProjectStatusUpdate,
     service: ProjectServiceDep,
-    _current_user: ProjectWritePermDep,
+    current_user: ProjectWritePermDep,
 ) -> ProjectResponse:
     """更新项目状态.
 
     速率限制：100次/小时.
     """
-    project = service.update_status(project_id, status_update)
+    project = service.update_status(project_id, status_update, operator_id=str(current_user.id), request=request)
     if not project:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
@@ -298,13 +308,16 @@ def update_project_status(
 
 @router.post("/{project_id}/complete", status_code=status.HTTP_201_CREATED)
 def complete_project(
+    request: Request,
     project_id: Annotated[UUID4, Path(description="项目ID")],
     complete_data: ProjectCompleteRequest,
     service: ProjectServiceDep,
     current_user: ProjectWritePermDep,
 ) -> ProjectResponse:
     """完成项目."""
-    project = service.complete_project(project_id, complete_data, current_user=current_user)
+    project = service.complete_project(
+        project_id, complete_data, current_user=current_user, operator_id=str(current_user.id), request=request
+    )
     if not project:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)

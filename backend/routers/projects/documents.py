@@ -45,12 +45,18 @@ def create_document(
     request: Request,
     payload: DocumentCreate,
     db: Annotated[Session, _get_db_dep],
-    _current_user: ProjectWritePermDep,
+    current_user: ProjectWritePermDep,
     project_id: Annotated[UUID4, Path(description="项目ID")],
 ) -> DocumentResponse:
     """新增文书."""
     documents_service.assert_project_exists(db, project_id)
-    doc = documents_service.create_document(db, project_id, payload)
+    doc = documents_service.create_document(
+        db,
+        project_id,
+        payload,
+        operator_id=str(current_user.id),
+        request=request,
+    )
     return DocumentResponse.model_validate(doc)
 
 
@@ -60,13 +66,20 @@ def update_document(
     request: Request,
     payload: DocumentUpdate,
     db: Annotated[Session, _get_db_dep],
-    _current_user: ProjectWritePermDep,
+    current_user: ProjectWritePermDep,
     project_id: Annotated[UUID4, Path(description="项目ID")],
     document_id: Annotated[str, Path(description="文书ID")],
 ) -> DocumentResponse:
     """更新文书签收状态/归档日期/名称."""
     documents_service.assert_project_exists(db, project_id)
-    doc = documents_service.update_document(db, project_id, document_id, payload)
+    doc = documents_service.update_document(
+        db,
+        project_id,
+        document_id,
+        payload,
+        operator_id=str(current_user.id),
+        request=request,
+    )
     if doc is None:
         msg = "文书不存在"
         raise ResourceNotFoundError(msg)
@@ -75,14 +88,21 @@ def update_document(
 
 @router.delete("/{project_id}/documents/{document_id}", status_code=204)
 def delete_document(
+    request: Request,
     db: Annotated[Session, _get_db_dep],
-    _current_user: ProjectWritePermDep,
+    current_user: ProjectWritePermDep,
     project_id: Annotated[UUID4, Path(description="项目ID")],
     document_id: Annotated[str, Path(description="文书ID")],
 ) -> None:
     """删除文书（逻辑删除）."""
     documents_service.assert_project_exists(db, project_id)
-    ok = documents_service.delete_document(db, project_id, document_id)
+    ok = documents_service.delete_document(
+        db,
+        project_id,
+        document_id,
+        operator_id=str(current_user.id),
+        request=request,
+    )
     if not ok:
         msg = "文书不存在"
         raise ResourceNotFoundError(msg)
@@ -93,7 +113,7 @@ def delete_document(
 def initialize_documents(
     request: Request,
     db: Annotated[Session, _get_db_dep],
-    _current_user: ProjectWritePermDep,
+    current_user: ProjectWritePermDep,
     project_id: Annotated[UUID4, Path(description="项目ID")],
 ) -> DocumentInitializeResponse:
     """初始化默认文书清单（幂等）。business_form=None 抛 400."""
@@ -107,5 +127,11 @@ def initialize_documents(
     except ValueError:
         msg = "请先设置业务形式"
         raise ValidationError(msg) from None
-    count = documents_service.initialize_documents(db, project_id, business_form_enum)
+    count = documents_service.initialize_documents(
+        db,
+        project_id,
+        business_form_enum,
+        operator_id=str(current_user.id),
+        request=request,
+    )
     return DocumentInitializeResponse(initialized_count=count)

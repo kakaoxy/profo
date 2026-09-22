@@ -3,6 +3,8 @@
 import logging
 import uuid
 
+from fastapi import Request
+
 from models import FinanceRecordLog, Project, User
 from models.common import FinanceActionType, SettlementStatus
 from schemas.project import FinanceLogResponse
@@ -12,6 +14,7 @@ from schemas.project.finance import (
     FinanceUnsettleRequest,
 )
 from services.system.exceptions import ResourceNotFoundError, ValidationError
+from services.system.operation_log import operation_log_service
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,8 @@ class _SettlementMixin:
         project_id: uuid.UUID,
         data: FinanceSettlementChangeRequest,
         operator_id: str,
+        *,
+        request: Request | None = None,
     ) -> FinanceSettlementResponse:
         """结算：unsettled → settled，记录日期与说明，写日志."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
@@ -52,6 +57,22 @@ class _SettlementMixin:
         self.db.add(log)
         self.db.commit()
         self.db.refresh(project)
+
+        # 审计日志在主操作成功提交后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project_finance",
+            resource_id=str(project_id),
+            after={
+                "settled": True,
+                "settled_date": data.settled_date.isoformat(),
+                "settled_note": data.settled_note,
+            },
+            request=request,
+        )
+
         logger.info("项目 %s 资金账本已结算", project_id)
         return self._build_settlement_response(project)
 
@@ -60,6 +81,8 @@ class _SettlementMixin:
         project_id: uuid.UUID,
         data: FinanceUnsettleRequest,
         operator_id: str,
+        *,
+        request: Request | None = None,
     ) -> FinanceSettlementResponse:
         """反结算：settled → unsettled，清空结算字段，写日志."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
@@ -83,6 +106,18 @@ class _SettlementMixin:
         self.db.add(log)
         self.db.commit()
         self.db.refresh(project)
+
+        # 审计日志在主操作成功提交后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="project_finance",
+            resource_id=str(project_id),
+            after={"settled": False, "reason": data.reason},
+            request=request,
+        )
+
         logger.info("项目 %s 资金账本已反结算", project_id)
         return self._build_settlement_response(project)
 
