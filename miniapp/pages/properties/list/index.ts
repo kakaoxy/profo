@@ -1,7 +1,7 @@
 import type { components } from "../../../types/api-types";
-import { request } from "../../../utils/request";
+import { request, getCacheData } from "../../../utils/request";
 import { getFloorPlan } from "../../../utils/floor-plan";
-import { resolveAssetUrl, decodeQueryParam } from "../../../utils/url";
+import { resolveImageUrl, decodeQueryParam } from "../../../utils/url";
 
 type PropertyResponse = components["schemas"]["PropertyResponse"];
 type PaginatedPropertyResponse = components["schemas"]["PaginatedPropertyResponse"];
@@ -128,6 +128,7 @@ interface PageCustom {
   loadList(reset?: boolean): void;
   toDisplay(p: PropertyResponse): DisplayProperty;
   buildQueryParams(): Record<string, string | number>;
+  buildCacheKey(): string;
   onStatusTabChange(e: WechatMiniprogram.BaseEvent): void;
   onFilterChipTap(e: WechatMiniprogram.BaseEvent): void;
   onMaskTap(): void;
@@ -271,7 +272,12 @@ Page<PageData, PageCustom>({
       unitPriceText: `${formatThousand(p.unit_price)}元/㎡`,
       loc: locParts.join(" · "),
       remark: (p.listing_remarks ?? "").trim(),
-      thumb: resolveAssetUrl(getFloorPlan(p.data_source, p.picture_links)),
+      // 列表缩略图按展示尺寸（128rpx×144rpx，3x 屏约 192×216 物理像素）请求，
+      // 避免拉取原图：OSS 图 425KB → 约 7KB；非 OSS 外站图由 resolveImageUrl 原样返回
+      thumb: resolveImageUrl(getFloorPlan(p.data_source, p.picture_links), {
+        width: 240,
+        quality: 70,
+      }),
     };
   },
 
@@ -302,8 +308,38 @@ Page<PageData, PageCustom>({
     return params;
   },
 
+  /**
+   * 首屏（page=1）响应的内存缓存 key：由查询参数按字典序拼接，保证筛选/排序变化即换 key.
+   *
+   * 不含 token：/properties 返回的房源列表不按用户维度过滤，同筛选条件下结果全局一致。
+   */
+  buildCacheKey(): string {
+    const params = this.buildQueryParams();
+    params.page = 1;
+    const query = Object.keys(params)
+      .sort()
+      .map((k) => `${k}=${params[k]}`)
+      .join("&");
+    return `properties-list:${query}`;
+  },
+
   async loadList(reset = false) {
-    if (reset) {
+    // SWR：仅首屏（reset）读写内存缓存；翻页追加不参与，避免把第 N 页响应写进首屏 key
+    const cacheKey = reset ? this.buildCacheKey() : "";
+    const cached = reset
+      ? getCacheData<PaginatedPropertyResponse>(cacheKey)
+      : undefined;
+    if (cached) {
+      // 命中缓存：先渲染，避免每次进入都闪骨架屏；随后请求静默刷新覆盖
+      const cachedItems: DisplayProperty[] = cached.items.map((it) =>
+        this.toDisplay(it)
+      );
+      this.setData({
+        items: cachedItems,
+        total: cached.total,
+        noMore: cachedItems.length >= cached.total,
+      });
+    } else if (reset) {
       this.setData({ loading: true, error: false, noMore: false });
     } else {
       this.setData({ loadingMore: true });
@@ -316,6 +352,7 @@ Page<PageData, PageCustom>({
       const response = await request<PaginatedPropertyResponse>({
         url: "/properties",
         data,
+        cacheKey: reset ? cacheKey : undefined,
       });
       const newItems: DisplayProperty[] = response.items.map((it) =>
         this.toDisplay(it)
@@ -339,7 +376,8 @@ Page<PageData, PageCustom>({
         } else if (statusCode === 403) {
           // 无权限：不清令牌
           this.setData({ authState: "forbidden", items: [], error: false });
-        } else {
+        } else if (!cached) {
+          // 无缓存可兜底：整屏错误态；有缓存时静默失败，保留缓存内容不打断浏览
           this.setData({ error: true, items: [] });
         }
       } else {

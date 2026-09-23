@@ -1,12 +1,46 @@
 /**
- * 户型图取数工具（与后台 admin/properties/columns.tsx 的 getFloorPlan 等价移植）.
+ * 户型图取数工具（取图规则与后台 admin/properties/columns.tsx 的 getFloorPlan 等价移植）.
  *
  * 房源缩略图按数据源（贝壳 / 我爱我家 / 其他）匹配 picture_links 中的户型图：
  * - 贝壳：hdic-frame → 第3张 → 第1张，并对 ljcdn.com 外站 URL 追加 CDN 裁剪参数；
- * - 我爱我家：floorplan/layout → 最后一张；
+ * - 我爱我家：floorplan/layout → 最后一张，并按列表展示尺寸改写 5i5j CDN 处理参数；
  * - 其他：默认第一张。
  * 无合法图片时返回 null，由调用方渲染 SVG 占位。
+ *
+ * ⚠️ 与后台的差异：后台同名函数不做「我爱我家缩略图尺寸改写」，本文件的尺寸策略
+ * 仅作用于小程序列表；后台侧若需同步，须另行确认其列表展示尺寸。
  */
+
+/**
+ * 列表缩略图目标宽度（px）.
+ *
+ * 展示框为 128rpx×144rpx，3x 屏约合 192×216 物理像素，取 240 留余量。
+ */
+const THUMB_WIDTH = 240;
+
+/** 列表缩略图目标质量（1-100）. */
+const THUMB_QUALITY = 70;
+
+/**
+ * 将我爱我家（5i5j.com）图片的处理参数改写为列表缩略图尺寸.
+ *
+ * 5i5j CDN 与阿里云 OSS 同源，支持 `x-image-process`；实测把已有参数改写为
+ * `image/resize,w_240/quality,q_70` 后单图由 280~586KB 降至 14~25KB（HTTP 200）。
+ * 仅处理 host 含 5i5j.com 的 URL，避免误改其他外站图；URL 无该参数时追加
+ * （若对方 CDN 不识别则原图返回，不会加载失败）。
+ *
+ * 注意：小程序运行环境不支持 URL 构造函数，故用正则判断 host。
+ */
+function applyThumbSizeFor5i5j(url: string): string {
+  if (!/^https?:\/\/[^/]*5i5j\.com\//i.test(url)) {
+    return url;
+  }
+  const process = `image/resize,w_${THUMB_WIDTH}/quality,q_${THUMB_QUALITY}`;
+  if (/[?&]x-image-process=/i.test(url)) {
+    return url.replace(/([?&]x-image-process=)[^&]*/i, `$1${process}`);
+  }
+  return `${url}${url.includes("?") ? "&" : "?"}x-image-process=${process}`;
+}
 
 /**
  * 清洗 URL 字符串：去除首尾空格和可能包裹的反引号/引号.
@@ -95,8 +129,9 @@ export function getFloorPlan(
       imageUrl += "!m_fill,w_1000,h_750,l_bk,f_jpg,ls_50";
     }
   } else if (source === "我爱我家") {
-    // 优先级：匹配到的 -> 最后一张
-    imageUrl = floorPlanImage || validLinks[validLinks.length - 1];
+    // 优先级：匹配到的 -> 最后一张；随后按列表展示尺寸改写 5i5j CDN 处理参数
+    const picked = floorPlanImage || validLinks[validLinks.length - 1];
+    imageUrl = picked ? applyThumbSizeFor5i5j(picked) : picked;
   } else {
     // 其他来源：默认显示第一张图
     imageUrl = validLinks[0];
