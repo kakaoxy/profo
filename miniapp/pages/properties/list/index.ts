@@ -354,6 +354,12 @@ Page<PageData, PageCustom>({
         data,
         cacheKey: reset ? cacheKey : undefined,
       });
+      // 缓存命中后的静默刷新期间用户可能已触底翻页（cache-hit 路径不置 loading，
+      // 不拦截 onReachBottom）。此时响应已写入 SWR 缓存，但不得覆盖 items：
+      // 否则列表被截断回第 1 页而页码停在 2，下次触底将从第 3 页续拉，第 2 页内容被永久跳过。
+      if (reset && this.data.page !== 1) {
+        return;
+      }
       const newItems: DisplayProperty[] = response.items.map((it) =>
         this.toDisplay(it)
       );
@@ -384,7 +390,11 @@ Page<PageData, PageCustom>({
         wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
     } finally {
-      this.setData({ loading: false, loadingMore: false });
+      // 被跳过的静默刷新不得清掉在途翻页请求的 loadingMore（由翻页请求自身的
+      // finally 恢复），否则会提前放行 onReachBottom 并发拉取第 3 页造成乱序拼接
+      if (!(reset && this.data.page !== 1)) {
+        this.setData({ loading: false, loadingMore: false });
+      }
     }
   },
 
