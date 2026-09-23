@@ -147,6 +147,8 @@ interface PageCustom {
     draftRoomsGte?: boolean,
     draftFloor?: string[]
   ): { roomViews: RoomView[]; floorViews: FloorView[] };
+  /** 请求时代戳：每次 reset 加载（切 tab/搜索/筛选/重试）+1，用于丢弃晚到的旧代响应（竞态守卫） */
+  _epoch: number;
 }
 
 /** 千分位格式化. */
@@ -231,6 +233,7 @@ Page<PageData, PageCustom>({
     roomViews: buildRoomViews([], false),
     floorViews: buildFloorViews([]),
   },
+  _epoch: 0,
 
   onLoad(query: Record<string, string | undefined>) {
     // 支持外部入口预填搜索词（如小区分析页「查看房源明细」跳转）
@@ -324,6 +327,11 @@ Page<PageData, PageCustom>({
   },
 
   async loadList(reset = false) {
+    // epoch 守卫：切 tab/搜索/筛选等 reset 加载使旧代请求失效，防止晚到响应污染新列表
+    if (reset) {
+      this._epoch += 1;
+    }
+    const myEpoch = this._epoch;
     // SWR：仅首屏（reset）读写内存缓存；翻页追加不参与，避免把第 N 页响应写进首屏 key
     const cacheKey = reset ? this.buildCacheKey() : "";
     const cached = reset
@@ -354,6 +362,10 @@ Page<PageData, PageCustom>({
         data,
         cacheKey: reset ? cacheKey : undefined,
       });
+      if (myEpoch !== this._epoch) {
+        // 请求已过期（期间发生了新的 reset 加载，如快速切 tab），整体丢弃，不触碰当前状态
+        return;
+      }
       // 缓存命中后的静默刷新期间用户可能已触底翻页（cache-hit 路径不置 loading，
       // 不拦截 onReachBottom）。此时响应已写入 SWR 缓存，但不得覆盖 items：
       // 否则列表被截断回第 1 页而页码停在 2，下次触底将从第 3 页续拉，第 2 页内容被永久跳过。
@@ -372,6 +384,10 @@ Page<PageData, PageCustom>({
         noMore: merged.length >= response.total,
       });
     } catch (err) {
+      if (myEpoch !== this._epoch) {
+        // 过期请求的失败不清理令牌/不置错误态/不弹 toast，避免干扰新一代请求
+        return;
+      }
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       if (reset) {
         if (statusCode === 401) {
@@ -390,9 +406,10 @@ Page<PageData, PageCustom>({
         wx.showToast({ title: "加载失败，请重试", icon: "none" });
       }
     } finally {
-      // 被跳过的静默刷新不得清掉在途翻页请求的 loadingMore（由翻页请求自身的
-      // finally 恢复），否则会提前放行 onReachBottom 并发拉取第 3 页造成乱序拼接
-      if (!(reset && this.data.page !== 1)) {
+      // 过期请求不恢复加载标志（由接管的新代请求收尾）；被跳过的静默刷新不得清掉
+      // 在途翻页请求的 loadingMore（由翻页请求自身的 finally 恢复），否则会提前
+      // 放行 onReachBottom 并发拉取第 3 页造成乱序拼接
+      if (myEpoch === this._epoch && !(reset && this.data.page !== 1)) {
         this.setData({ loading: false, loadingMore: false });
       }
     }
