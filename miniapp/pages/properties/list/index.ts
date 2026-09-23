@@ -254,12 +254,19 @@ Page<PageData, PageCustom>({
     if (date) {
       locParts.push(date);
     }
+    // 户型段：baths=0 时省略「0卫」，避免出现「3室0卫」
+    const layoutPart = p.baths > 0 ? `${p.rooms}室${p.baths}卫` : `${p.rooms}室`;
+    // 基础信息行：空值段直接跳过，避免连续分隔符「· ·」（orientation 空串见 DB 61% 记录）
+    const meta = [layoutPart, p.orientation, p.floor_display, `${p.build_area}㎡`]
+      .filter(Boolean)
+      .join(" · ");
+
     return {
       id: p.id,
       communityName: p.community_name || "",
       statusText: isOnSale ? "在售" : "成交",
       statusClass: isOnSale ? "on-sale" : "sold",
-      meta: `${p.rooms}室${p.baths}卫 · ${p.orientation} · ${p.floor_display} · ${p.build_area}㎡`,
+      meta,
       totalPrice: p.total_price,
       unitPriceText: `${formatThousand(p.unit_price)}元/㎡`,
       loc: locParts.join(" · "),
