@@ -169,7 +169,13 @@ def create_lead(
 
     # 分享归因：referrer 透传 Service，由其校验员工存在、active 且有后台身份；
     # 无效（不存在/非 active/无后台身份）静默忽略（referrer_id=None），不阻断提交
-    lead = service.create_lead(lead_data, creator_id=current_user.id, referrer=body.referrer)
+    # C 端留资启用归属兜底链（分享归因 → 讲房人 → 全局兜底负责人）
+    lead = service.create_lead(
+        lead_data,
+        creator_id=current_user.id,
+        referrer=body.referrer,
+        apply_fallback=True,
+    )
 
     return PublicLeadResponse(
         id=lead.id,

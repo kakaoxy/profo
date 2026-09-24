@@ -207,6 +207,8 @@ export interface paths {
          * Merge Communities
          * @description 合并小区操作.
          *
+         *     权限：property:governance（与数据治理页的前端拦截口径一致，治理动作专用）.
+         *
          *     参数:
          *         request: FastAPI HTTP 请求对象（用于速率限制）
          *         merge_request: 小区合并请求体，包含主小区 ID 和待合并小区 ID 列表
@@ -602,10 +604,11 @@ export interface paths {
         head?: never;
         /**
          * Update Renovation Stage Date
-         * @description 修改/清空已完成阶段的完成时间（仅管理员）.
+         * @description 修改/清空已完成阶段的完成时间.
          *
+         *     权限：与「标记阶段完成」同口径双通道（project:renovation:complete_stage 子码
+         *     OR project:write OR 装修对接负责人业务身份），由 ProjectRenovationCompleteStagePermDep 校验。
          *     速率限制：100次/小时.
-         *     Router 层强制 admin 角色，Service 层不再重复校验。
          */
         patch: operations["update_renovation_stage_date_api_v1_projects__project_id__renovation_stages__stage__patch"];
         trace?: never;
@@ -852,7 +855,9 @@ export interface paths {
          * @description 获取业主未脱敏银行卡号.
          *
          *     完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。
-         *     仅 admin 角色可调用（银行卡号为敏感财务数据）。
+         *     权限：保留 CurrentAdminUserDep（admin 角色硬编码）——银行卡号为敏感财务数据，
+         *     刻意不纳入权限码体系，避免自定义角色被授予权限码后即可读取卡号；如需放开
+         *     请显式评估并新增专用权限码。
          *     service 层会校验 owner 所属 project 未被软删除；
          *     审计日志（OperationLog）在路由层记录，不记录银行卡号本身。
          *
@@ -999,6 +1004,7 @@ export interface paths {
          * Delete Project
          * @description 删除项目.
          *
+         *     权限：project:delete（种子仅 admin 持有；与前端删除按钮的 project:delete 校验一致）.
          *     速率限制：20次/小时.
          */
         delete: operations["delete_project_api_v1_projects__project_id__delete"];
@@ -2042,7 +2048,7 @@ export interface paths {
          * @description 获取当前用户的 API Key 信息.
          *
          *     不返回完整的 Key，只返回前缀和状态信息.
-         *     仅限后台内部角色(admin/operator)访问.
+         *     权限：api_key:manage（种子 admin/operator 持有）.
          */
         get: operations["get_api_key_info_api_v1_auth_api_key_get"];
         put?: never;
@@ -2052,7 +2058,7 @@ export interface paths {
          *
          *     每个用户只能有一个有效 Key，生成新 Key 会自动撤销旧 Key
          *     Key 仅显示一次，请妥善保存.
-         *     仅限后台内部角色(admin/operator)生成，避免 C 端用户调用机器接口.
+         *     权限：api_key:manage（种子 admin/operator 持有）.
          */
         post: operations["create_api_key_api_v1_auth_api_key_post"];
         /**
@@ -2060,7 +2066,7 @@ export interface paths {
          * @description 撤销当前用户的 API Key.
          *
          *     速率限制：20次/小时.
-         *     仅限后台内部角色(admin/operator)访问.
+         *     权限：api_key:manage（种子 admin/operator 持有）.
          */
         delete: operations["delete_api_key_api_v1_auth_api_key_delete"];
         options?: never;
@@ -3518,7 +3524,7 @@ export interface paths {
         };
         /**
          * 获取评估工作台已处理列表
-         * @description 本人经手线索全量分页（audit_time 倒序），search 按小区名过滤（仅 admin/operator）
+         * @description 本人经手线索全量分页（时效四层排序：即将过期→跟进中→已过期→终态，组内 created_at 降序）；search 按小区名过滤（仅 admin/operator）
          */
         get: operations["get_handled_assessment_api_v1_public_leads_handled_assessment_get"];
         put?: never;
@@ -4562,6 +4568,50 @@ export interface paths {
          * @description 统一 5 态矩阵流转（口径与小程序「我的客户」一致，非法流转 409）：recruit/booking 全矩阵；估价/房源单仅「淘汰」旁路（reason 必填 422）与「重新激活」（eliminated→contacted，remark 必填 422）；remark 非空自动落一条系统跟进记录，状态变化 best-effort 通知归属员工
          */
         put: operations["update_lead_status_api_v1_admin_growth_center_leads__module___lead_id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/leads/{module}/{lead_id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 管理端设置无归属线索兜底员工
+         * @description 四模块通用：仅当前归属为空（无分享归因）的线索可指派，已归属线索 409 不可改派；指派员工需存在、active 且具备后台身份（无效 422）；指派成功 best-effort 通知该员工
+         */
+        put: operations["assign_lead_employee_api_v1_admin_growth_center_leads__module___lead_id__assign_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/growth-center/fallback-employee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询全局兜底负责人
+         * @description 获客中心无归属留资的最终兜底归属人（未设置/已清除时两字段均为 null）
+         */
+        get: operations["get_fallback_employee_api_v1_admin_growth_center_fallback_employee_get"];
+        /**
+         * 设置/清除全局兜底负责人
+         * @description 兜底链最后一环：分享归因/讲房人均未命中时归属该员工，仅影响后续新建留资；employee_id=null 清除设置；员工需存在、active 且具备后台身份（无效 422）
+         */
+        put: operations["set_fallback_employee_api_v1_admin_growth_center_fallback_employee_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6442,6 +6492,33 @@ export interface components {
             conversion: number | null;
         };
         /**
+         * GrowthFallbackEmployeeResponse
+         * @description 获客中心全局兜底负责人查询响应（未设置时两字段均为 null）.
+         */
+        GrowthFallbackEmployeeResponse: {
+            /**
+             * Employee Id
+             * @description 全局兜底员工ID（未设置为 null）
+             */
+            employee_id?: string | null;
+            /**
+             * Employee Name
+             * @description 全局兜底员工名称（未设置为 null）
+             */
+            employee_name?: string | null;
+        };
+        /**
+         * GrowthFallbackEmployeeUpdateRequest
+         * @description 获客中心全局兜底负责人设置请求（触发动作类，*Request 后缀）.
+         */
+        GrowthFallbackEmployeeUpdateRequest: {
+            /**
+             * Employee Id
+             * @description 全局兜底员工ID（null=清除设置）
+             */
+            employee_id?: string | null;
+        };
+        /**
          * GrowthModule
          * @description 获客模块枚举（4 条分享获客链路）.
          * @enum {string}
@@ -7896,6 +7973,33 @@ export interface components {
              * @description 授权评估价(万)，reject/lost 为空
              */
             eval_price?: number | null;
+        };
+        /**
+         * LeadAssignRequest
+         * @description 管理端无归属线索兜底员工指派请求（触发动作类，*Request 后缀）.
+         */
+        LeadAssignRequest: {
+            /**
+             * Employee Id
+             * @description 兜底员工ID
+             */
+            employee_id: string;
+        };
+        /**
+         * LeadAssignResponse
+         * @description 管理端无归属线索兜底员工指派响应.
+         */
+        LeadAssignResponse: {
+            /**
+             * Employee Id
+             * @description 指派的员工ID
+             */
+            employee_id: string;
+            /**
+             * Employee Name
+             * @description 指派的员工名称（nickname 缺失回退 username）
+             */
+            employee_name: string | null;
         };
         /**
          * LeadCreate
@@ -13581,7 +13685,7 @@ export interface components {
         RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "交付" | "已完成";
         /**
          * RenovationStageDateUpdate
-         * @description 修改/清空已完成阶段的完成时间（仅管理员）.
+         * @description 修改/清空已完成阶段的完成时间（双通道权限校验见 Router 层）.
          */
         RenovationStageDateUpdate: {
             /**
@@ -19039,7 +19143,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description 无权限（仅限内部角色） */
+            /** @description 无权限（缺少 api_key:manage） */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -19073,7 +19177,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description 无权限（仅限内部角色） */
+            /** @description 无权限（缺少 api_key:manage） */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -19112,7 +19216,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description 无权限（仅限内部角色） */
+            /** @description 无权限（缺少 api_key:manage） */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -23633,6 +23737,96 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyCustomerStatusUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_lead_employee_api_v1_admin_growth_center_leads__module___lead_id__assign_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module: components["schemas"]["GrowthModule"];
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadAssignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadAssignResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_fallback_employee_api_v1_admin_growth_center_fallback_employee_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrowthFallbackEmployeeResponse"];
+                };
+            };
+        };
+    };
+    set_fallback_employee_api_v1_admin_growth_center_fallback_employee_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrowthFallbackEmployeeUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrowthFallbackEmployeeResponse"];
                 };
             };
             /** @description Validation Error */

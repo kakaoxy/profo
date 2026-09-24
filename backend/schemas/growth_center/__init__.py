@@ -383,6 +383,37 @@ class AdminLeadPhoneResponse(BaseModel):
     phone: str = Field(description="完整手机号（解密）")
 
 
+class LeadAssignRequest(BaseModel):
+    """管理端无归属线索兜底员工指派请求（触发动作类，*Request 后缀）."""
+
+    employee_id: str = Field(..., min_length=1, max_length=36, description="兜底员工ID")
+
+
+class LeadAssignResponse(BaseModel):
+    """管理端无归属线索兜底员工指派响应."""
+
+    employee_id: str = Field(description="指派的员工ID")
+    employee_name: str | None = Field(description="指派的员工名称（nickname 缺失回退 username）")
+
+
+class GrowthFallbackEmployeeResponse(BaseModel):
+    """获客中心全局兜底负责人查询响应（未设置时两字段均为 null）."""
+
+    employee_id: str | None = Field(default=None, description="全局兜底员工ID（未设置为 null）")
+    employee_name: str | None = Field(default=None, description="全局兜底员工名称（未设置为 null）")
+
+
+class GrowthFallbackEmployeeUpdateRequest(BaseModel):
+    """获客中心全局兜底负责人设置请求（触发动作类，*Request 后缀）."""
+
+    employee_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=36,
+        description="全局兜底员工ID（null=清除设置）",
+    )
+
+
 class CustomerFollowUpCreate(BaseModel):
     """我的客户跟进记录创建请求."""
 

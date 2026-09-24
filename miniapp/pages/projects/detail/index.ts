@@ -67,11 +67,13 @@ const GALLERY_STAGE_ORDER: Record<string, number> = {
 
 /**
  * 构建房源分享 path（卡片 path 与朋友圈 query 共用前缀）.
- * employeeId（内部员工）为空时省略 referrer（游客/客户分享无归属，接收方仍显示房源顾问）.
+ * referrer 取值：内部员工用自身员工 ID（转发归属自己）；客户/游客透传进入时的
+ * referrer（保留原始归属，后端 resolve_valid_referrer 校验，无效自动置空）；
+ * 两者皆空时省略（直接进入无归属，接收方仍显示房源顾问）.
  */
-function buildPropertySharePath(id: number, employeeId: string): string {
+function buildPropertySharePath(id: number, referrer: string): string {
   const base = `/pages/projects/detail/index?id=${id}`;
-  return employeeId ? `${base}&referrer=${encodeURIComponent(employeeId)}` : base;
+  return referrer ? `${base}&referrer=${encodeURIComponent(referrer)}` : base;
 }
 
 interface PageData {
@@ -627,9 +629,11 @@ Page<PageData, Custom>({
     if (this.data.employeeId && this.data.id !== null) {
       this.reportShareEvent(this.data.id, "card");
     }
+    // 员工态优先自身 ID；客户/游客透传进入时的 referrer（归属不因转发丢失）
+    const shareReferrer = this.data.employeeId || this.data.referrer;
     const share: WechatMiniprogram.IAnyObject = {
       title: this.data.detail?.title || "美房宝房源",
-      path: buildPropertySharePath(this.data.id ?? 0, this.data.employeeId),
+      path: buildPropertySharePath(this.data.id ?? 0, shareReferrer),
     };
     if (cover) {
       share.imageUrl = cover;
@@ -642,9 +646,10 @@ Page<PageData, Custom>({
     if (this.data.employeeId && this.data.id !== null) {
       this.reportShareEvent(this.data.id, "timeline");
     }
+    const shareReferrer = this.data.employeeId || this.data.referrer;
     const share: WechatMiniprogram.IAnyObject = {
       title: this.data.detail?.title || "美房宝房源",
-      query: buildPropertySharePath(this.data.id ?? 0, this.data.employeeId).split("?")[1] || "",
+      query: buildPropertySharePath(this.data.id ?? 0, shareReferrer).split("?")[1] || "",
     };
     if (cover) {
       share.imageUrl = cover;

@@ -5,6 +5,7 @@ import {
   getGrowthLeads,
   getGrowthOverviewKpi,
   getGrowthSourceBreakdown,
+  getGrowthFallbackEmployee,
   type GrowthLeadsQuery,
 } from "../_lib/growth-data";
 import { LeadsView, type LeadsViewProps } from "./_components/leads-view";
@@ -103,11 +104,12 @@ export default async function GrowthLeadsPage({ searchParams }: PageProps) {
   };
 
   // 并行获取数据，避免请求瀑布
-  const [leadsResponse, employees, overviewKpi, breakdown] = await Promise.all([
+  const [leadsResponse, employees, overviewKpi, breakdown, fallbackEmployee] = await Promise.all([
     getGrowthLeads(query),
     getGrowthEmployees(),
     getGrowthOverviewKpi(),
     getGrowthSourceBreakdown(30),
+    getGrowthFallbackEmployee(),
   ]);
 
   const viewProps: LeadsViewProps = {
@@ -116,6 +118,7 @@ export default async function GrowthLeadsPage({ searchParams }: PageProps) {
     page: leadsResponse.page,
     pageSize: leadsResponse.page_size,
     employees,
+    fallbackEmployee,
     kpi: {
       todayLeads: overviewKpi.today_leads,
       last30Leads: breakdown.total,

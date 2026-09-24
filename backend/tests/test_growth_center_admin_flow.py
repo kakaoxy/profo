@@ -1,10 +1,12 @@
-"""管理端获客中心统一线索流转/查号端点测试（/api/v1/admin/growth-center/leads/*）.
+"""管理端获客中心统一线索流转/查号/兜底归属端点测试（/api/v1/admin/growth-center/leads/*）.
 
 覆盖：booking 全矩阵流转（缺 reason/remark 422、重新激活 200）、
 估价仅淘汰旁路与重新激活（409 拒绝、审计轨迹写入与保留、回写映射）、
 招募新旧端点统一矩阵校验（旧端点回退 409、converted 终态 409）、
 完整手机号查看（booking 原生解密/valuation 取 creator 号、状态不变、404）、
-recruit:write 权限 403、remark 系统跟进记录与订阅通知静默路径。
+recruit:write 权限 403、remark 系统跟进记录与订阅通知静默路径、
+无归属线索兜底员工指派（四模块 200 / 已归属 409 / 无效员工 422 / 模块判别 404）、
+全局兜底负责人设置与清除、以及「兜底归属只作用于 C 端留资、不作用于后台录入」回归。
 """
 
 from collections.abc import Generator
@@ -15,8 +17,17 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import db
-from models import Lead, LeadStatus, ProjectBooking, RecruitLead, RecruitLeadStatus, User
+from models import (
+    Lead,
+    LeadStatus,
+    ProjectBooking,
+    RecruitLead,
+    RecruitLeadStatus,
+    SystemConfig,
+    User,
+)
 from models.growth_center import CustomerFollowUp
+from services.utils.referrer import GROWTH_GLOBAL_FALLBACK_KEY
 from settings import settings
 from utils.auth import AUDIENCE_ADMIN, create_access_token
 from utils.crypto import hash_phone
@@ -422,3 +433,260 @@ def test_transition_notify_silent_without_template(
 
     booking = db_session.query(ProjectBooking).filter(ProjectBooking.id == int(admin_flow_data["booking_id"])).one()
     assert booking.status == "contacted"
+
+
+# ─── 无归属线索兜底员工指派 / 全局兜底负责人 ──────────────────────────────────
+
+FALLBACK_URL = "/api/v1/admin/growth-center/fallback-employee"
+LEADS_ADMIN_URL = "/api/v1/leads"
+PUBLIC_LEADS_URL = "/api/v1/public/leads"
+# 具备后台身份的种子员工（user 角色 ∈ BACKEND_ROLE_CODES），可作合法归属人
+EMPLOYEE_ID = "normal-user"
+EMPLOYEE_NAME = "测试用户"
+
+
+@pytest.fixture
+def fallback_data(c_users: dict[str, User], seeded_db: dict[str, Any]) -> dict[str, Any]:
+    """兜底指派测试数据：四链路各建无归属线索，另建已归属估价线索供 409 断言.
+
+    - unowned_valuation / owned_valuation：估价线（source_property_id 为空）；
+    - unowned_sheet：房源单承接线索（source_property_id 非空，模块判别依据）；
+    - unowned_booking / unowned_recruit：预约线（project_bookings）、招募线（recruit_leads）。
+    """
+    session: Session = seeded_db["session"]
+    customer = c_users["customer"]
+
+    unowned_valuation = Lead(community_name="无归属估价", creator_id=customer.id)
+    owned_valuation = Lead(community_name="已归属估价", creator_id=customer.id, referrer_id=EMPLOYEE_ID)
+    unowned_sheet = Lead(community_name="无归属房源单", creator_id=customer.id, source_property_id=9801)
+    unowned_booking = ProjectBooking(
+        marketing_project_id=9201,
+        user_id=customer.id,
+        phone="13711119999",
+        phone_hash=hash_phone("13711119999"),
+    )
+    unowned_recruit = RecruitLead(
+        phone="13911119999",
+        phone_hash=hash_phone("13911119999"),
+        main_business_area="滨江商圈",
+        status=RecruitLeadStatus.NEW,
+    )
+    session.add_all([unowned_valuation, owned_valuation, unowned_sheet, unowned_booking, unowned_recruit])
+    session.commit()
+
+    return {
+        "unowned_valuation_id": unowned_valuation.id,
+        "owned_valuation_id": owned_valuation.id,
+        "unowned_sheet_id": unowned_sheet.id,
+        "unowned_booking_id": str(unowned_booking.id),
+        "unowned_recruit_id": unowned_recruit.id,
+    }
+
+
+def test_assign_unowned_valuation_success(
+    admin_flow_client: TestClient,
+    fallback_data: dict[str, Any],
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """无归属估价线索指派：200 返回员工 ID/名称，且 referrer_id 落库."""
+    monkeypatch.setattr(settings, "wechat_customer_lead_template_id", "")
+    lead_id = fallback_data["unowned_valuation_id"]
+
+    resp = admin_flow_client.put(f"{BASE}/valuation/{lead_id}/assign", json={"employee_id": EMPLOYEE_ID})
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"employee_id": EMPLOYEE_ID, "employee_name": EMPLOYEE_NAME}
+    lead = db_session.query(Lead).filter(Lead.id == lead_id).one()
+    assert lead.referrer_id == EMPLOYEE_ID
+
+
+def test_assign_booking_and_recruit_success(
+    admin_flow_client: TestClient,
+    fallback_data: dict[str, Any],
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """预约线与招募线无归属线索均可指派（四模块通用口径）."""
+    monkeypatch.setattr(settings, "wechat_customer_lead_template_id", "")
+
+    booking_resp = admin_flow_client.put(
+        f"{BASE}/booking/{fallback_data['unowned_booking_id']}/assign",
+        json={"employee_id": EMPLOYEE_ID},
+    )
+    assert booking_resp.status_code == 200, booking_resp.text
+    booking = (
+        db_session.query(ProjectBooking).filter(ProjectBooking.id == int(fallback_data["unowned_booking_id"])).one()
+    )
+    assert booking.referrer_user_id == EMPLOYEE_ID
+
+    recruit_resp = admin_flow_client.put(
+        f"{BASE}/recruit/{fallback_data['unowned_recruit_id']}/assign",
+        json={"employee_id": EMPLOYEE_ID},
+    )
+    assert recruit_resp.status_code == 200, recruit_resp.text
+    recruit = db_session.query(RecruitLead).filter(RecruitLead.id == fallback_data["unowned_recruit_id"]).one()
+    assert recruit.referrer_employee_id == EMPLOYEE_ID
+
+
+def test_assign_already_owned_409(
+    admin_flow_client: TestClient,
+    fallback_data: dict[str, Any],
+    db_session: Session,
+) -> None:
+    """已归属线索不可改派：409 且归属保持原值."""
+    lead_id = fallback_data["owned_valuation_id"]
+
+    resp = admin_flow_client.put(f"{BASE}/valuation/{lead_id}/assign", json={"employee_id": EMPLOYEE_ID})
+
+    assert resp.status_code == 409
+    lead = db_session.query(Lead).filter(Lead.id == lead_id).one()
+    assert lead.referrer_id == EMPLOYEE_ID
+
+
+def test_assign_invalid_employee_422(
+    admin_flow_client: TestClient,
+    fallback_data: dict[str, Any],
+    c_users: dict[str, User],
+    db_session: Session,
+) -> None:
+    """无效员工（无后台身份的 C 端用户 / 不存在）指派 422，且归属不变."""
+    lead_id = fallback_data["unowned_valuation_id"]
+
+    # C 端 customer 角色不具备后台身份，不可作为归属人
+    resp = admin_flow_client.put(
+        f"{BASE}/valuation/{lead_id}/assign",
+        json={"employee_id": c_users["customer"].id},
+    )
+    assert resp.status_code == 422
+
+    resp = admin_flow_client.put(f"{BASE}/valuation/{lead_id}/assign", json={"employee_id": "no-such-employee"})
+    assert resp.status_code == 422
+
+    lead = db_session.query(Lead).filter(Lead.id == lead_id).one()
+    assert lead.referrer_id is None
+
+
+def test_assign_module_discrimination_404(
+    admin_flow_client: TestClient,
+    fallback_data: dict[str, Any],
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """估价/房源单共用 leads 表：模块与 source_property_id 判别的线索不匹配即 404."""
+    monkeypatch.setattr(settings, "wechat_customer_lead_template_id", "")
+
+    # sheet 模块不可见估价线索（source_property_id 为空）
+    resp = admin_flow_client.put(
+        f"{BASE}/sheet/{fallback_data['unowned_valuation_id']}/assign",
+        json={"employee_id": EMPLOYEE_ID},
+    )
+    assert resp.status_code == 404
+
+    # valuation 模块不可见房源单承接线索（source_property_id 非空）
+    resp = admin_flow_client.put(
+        f"{BASE}/valuation/{fallback_data['unowned_sheet_id']}/assign",
+        json={"employee_id": EMPLOYEE_ID},
+    )
+    assert resp.status_code == 404
+
+    # 模块匹配的房源单承接线索可指派
+    resp = admin_flow_client.put(
+        f"{BASE}/sheet/{fallback_data['unowned_sheet_id']}/assign",
+        json={"employee_id": EMPLOYEE_ID},
+    )
+    assert resp.status_code == 200, resp.text
+    sheet_lead = db_session.query(Lead).filter(Lead.id == fallback_data["unowned_sheet_id"]).one()
+    assert sheet_lead.referrer_id == EMPLOYEE_ID
+
+
+def test_assign_low_permission_403(
+    low_perm_client: TestClient,
+    fallback_data: dict[str, Any],
+    db_session: Session,
+) -> None:
+    """无 recruit:write 的后台登录用户指派 403，且归属不变."""
+    lead_id = fallback_data["unowned_valuation_id"]
+
+    resp = low_perm_client.put(f"{BASE}/valuation/{lead_id}/assign", json={"employee_id": EMPLOYEE_ID})
+
+    assert resp.status_code == 403
+    lead = db_session.query(Lead).filter(Lead.id == lead_id).one()
+    assert lead.referrer_id is None
+
+
+def test_fallback_employee_set_and_clear_roundtrip(
+    admin_flow_client: TestClient,
+    db_session: Session,
+) -> None:
+    """全局兜底负责人默认未设置 → 设置 → 查询回显 → 清除，全链路两字段一致."""
+    # 初始未设置
+    resp = admin_flow_client.get(FALLBACK_URL)
+    assert resp.status_code == 200
+    assert resp.json() == {"employee_id": None, "employee_name": None}
+
+    # 设置
+    resp = admin_flow_client.put(FALLBACK_URL, json={"employee_id": EMPLOYEE_ID})
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"employee_id": EMPLOYEE_ID, "employee_name": EMPLOYEE_NAME}
+
+    # 查询回显 + 审计字段落库
+    resp = admin_flow_client.get(FALLBACK_URL)
+    assert resp.json() == {"employee_id": EMPLOYEE_ID, "employee_name": EMPLOYEE_NAME}
+    row = db_session.query(SystemConfig).filter(SystemConfig.key == GROWTH_GLOBAL_FALLBACK_KEY).one()
+    assert row.value == EMPLOYEE_ID
+    assert row.updated_by_id == "admin-user"
+
+    # 清除（employee_id=null）
+    resp = admin_flow_client.put(FALLBACK_URL, json={"employee_id": None})
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"employee_id": None, "employee_name": None}
+    resp = admin_flow_client.get(FALLBACK_URL)
+    assert resp.json() == {"employee_id": None, "employee_name": None}
+
+
+def test_fallback_employee_invalid_employee_422_and_low_permission(
+    admin_flow_client: TestClient,
+    low_perm_client: TestClient,
+    c_users: dict[str, User],
+) -> None:
+    """无效员工设置 422；无 recruit:read/write 的后台用户读写均 403."""
+    resp = admin_flow_client.put(FALLBACK_URL, json={"employee_id": c_users["customer"].id})
+    assert resp.status_code == 422
+
+    resp = low_perm_client.put(FALLBACK_URL, json={"employee_id": EMPLOYEE_ID})
+    assert resp.status_code == 403
+
+    resp = low_perm_client.get(FALLBACK_URL)
+    assert resp.status_code == 403
+
+
+def test_fallback_chain_attributes_public_lead_but_not_admin_entry(
+    admin_flow_client: TestClient,
+    c_end_client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """归属兜底链只作用于 C 端留资，不作用于后台员工录入（回归）.
+
+    回归缺陷：``LeadService.create_lead`` 曾无条件应用兜底链，导致后台
+    ``POST /api/v1/leads`` 录入的线索被自动归属到「全局兜底负责人」，
+    污染「我的客户」归属口径并向无关员工推送新线索通知。
+    """
+    monkeypatch.setattr(settings, "wechat_customer_lead_template_id", "")
+
+    # 先配置全局兜底负责人
+    resp = admin_flow_client.put(FALLBACK_URL, json={"employee_id": EMPLOYEE_ID})
+    assert resp.status_code == 200, resp.text
+
+    # C 端留资（无 referrer）→ 命中全局兜底负责人
+    resp = c_end_client.post(PUBLIC_LEADS_URL, json={"community_name": "兜底C端小区", "floor_info": "2/6层"})
+    assert resp.status_code == 201, resp.text
+    public_lead = db_session.query(Lead).filter(Lead.id == resp.json()["id"]).one()
+    assert public_lead.referrer_id == EMPLOYEE_ID
+
+    # 后台员工录入（无 referrer）→ 归属必须为空，不得被兜底
+    resp = admin_flow_client.post(LEADS_ADMIN_URL, json={"community_name": "后台录入小区"})
+    assert resp.status_code in (200, 201), resp.text
+    admin_lead = db_session.query(Lead).filter(Lead.id == resp.json()["id"]).one()
+    assert admin_lead.referrer_id is None

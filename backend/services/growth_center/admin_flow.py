@@ -1,4 +1,4 @@
-"""管理端获客中心统一线索写服务（状态流转 + 完整手机号查看）.
+"""管理端获客中心统一线索写服务（状态流转 + 兜底员工指派 + 全局兜底负责人 + 完整手机号查看）.
 
 管理端统一线索页的写路径，状态流转口径与小程序「我的客户」状态机
 （``my_customers_flow`` / 叶子模块 ``flow_matrix``）完全一致：
@@ -15,16 +15,32 @@ remark 非空自动落一条系统跟进记录（复用 ``add_system_follow_up_i
 状态实际变化时 best-effort 推送订阅通知给归属员工（通知内部捕获一切异常）。
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from models import L4MarketingProject, Lead, ProjectBooking, RecruitLead, RecruitLeadStatus
+from models import (
+    L4MarketingProject,
+    Lead,
+    ProjectBooking,
+    RecruitCampaign,
+    RecruitLead,
+    RecruitLeadStatus,
+    SystemConfig,
+    User,
+)
 from models.common.base import LeadStatus
-from schemas.growth_center import GrowthModule, MyCustomerStatusUpdateRequest, UnifiedLeadStatus
+from schemas.growth_center import (
+    GrowthModule,
+    MyCustomerStatusUpdateRequest,
+    UnifiedLeadStatus,
+)
 from schemas.recruit import RecruitLeadStatusUpdate
-from services.growth_center.customer_notify import notify_customer_status_changed
+from services.growth_center.customer_notify import notify_customer_status_changed, notify_new_customer_lead
 from services.growth_center.flow_matrix import (
     UNIFIED_STATUS_LABELS,
     ensure_reactivation_remark,
@@ -37,6 +53,12 @@ from services.growth_center.my_customers_flow import (
 from services.growth_center.normalize import map_valuation_status
 from services.recruit.lead import RecruitLeadService
 from services.system.exceptions import BusinessLogicError, ConflictError, ResourceNotFoundError
+from services.utils.referrer import (
+    GROWTH_GLOBAL_FALLBACK_KEY,
+    resolve_valid_referrer,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class AdminLeadFlowService:
@@ -276,6 +298,166 @@ class AdminLeadFlowService:
         """预约线通知摘要：房源标题（取不到为空串，通知侧自动容错）."""
         row = self.db.query(L4MarketingProject.title).filter(L4MarketingProject.id == marketing_project_id).first()
         return row[0] if row else ""
+
+    # ─── 兜底员工指派 ─────────────────────────────────────────────────────
+
+    def assign_employee(self, *, module: GrowthModule, lead_id: str, employee_id: str) -> dict[str, Any]:
+        """管理端为无归属线索指派兜底员工（仅归属为空可指派，已归属 409 不可改派）.
+
+        四模块通用：booking/valuation/sheet/recruit 均按当前归属为空（无分享
+        归因）才允许指派——招募 referrer 语义为「首次留资写入，此后永不更新」，
+        从 NULL 填充视为首次写入，已归属永不改派。指派员工经
+        ``resolve_valid_referrer`` 校验（存在 + active + 后台身份，无效 422）。
+        指派成功后 best-effort 推送新线索留资通知给该员工（通知内部捕获一切异常）。
+
+        Raises:
+            ResourceNotFoundError: 线索不存在
+            ConflictError: 线索已有归属员工
+            BusinessLogicError: 员工不存在 / 非 active / 无后台身份（422）
+
+        """
+        valid_employee_id = resolve_valid_referrer(self.db, employee_id)
+        if valid_employee_id is None:
+            msg = "员工不存在或无后台身份"
+            raise BusinessLogicError(msg)
+
+        if module == GrowthModule.BOOKING:
+            summary = self._assign_booking(lead_id, valid_employee_id)
+        elif module == GrowthModule.RECRUIT:
+            summary = self._assign_recruit(lead_id, valid_employee_id)
+        else:
+            summary = self._assign_lead(module, lead_id, valid_employee_id)
+
+        self.db.commit()
+        # best-effort 新线索留资通知（通知内部捕获一切异常）
+        notify_new_customer_lead(self.db, module.value, lead_id, valid_employee_id, summary)
+        return {"employee_id": valid_employee_id, "employee_name": self._employee_name(valid_employee_id)}
+
+    def _assign_booking(self, lead_id: str, employee_id: str) -> str:
+        """预约线指派（行级锁防并发，锁持至 commit），返回通知摘要."""
+        try:
+            booking_id = int(lead_id)
+        except ValueError as exc:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg) from exc
+        booking = self.db.query(ProjectBooking).filter(ProjectBooking.id == booking_id).with_for_update().first()
+        if booking is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        if booking.referrer_user_id is not None:
+            msg = "线索已有归属员工"
+            raise ConflictError(msg)
+        booking.referrer_user_id = employee_id
+        return self._booking_summary(booking.marketing_project_id)
+
+    def _assign_recruit(self, lead_id: str, employee_id: str) -> str:
+        """招募线指派（行级锁防并发），返回通知摘要（活动名称）."""
+        lead = self.db.query(RecruitLead).filter(RecruitLead.id == lead_id).with_for_update().first()
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        if lead.referrer_employee_id is not None:
+            msg = "线索已有归属员工"
+            raise ConflictError(msg)
+        lead.referrer_employee_id = employee_id
+        if lead.campaign_id is None:
+            return ""
+        row = self.db.query(RecruitCampaign.name).filter(RecruitCampaign.id == lead.campaign_id).first()
+        return row[0] if row else ""
+
+    def _assign_lead(self, module: GrowthModule, lead_id: str, employee_id: str) -> str:
+        """估价/房源单线指派（行级锁 + source_property_id 模块判别），返回通知摘要."""
+        query = self.db.query(Lead).filter(Lead.id == lead_id, Lead.is_deleted.is_(False))
+        query = (
+            query.filter(Lead.source_property_id.isnot(None))
+            if module == GrowthModule.SHEET
+            else query.filter(Lead.source_property_id.is_(None))
+        )
+        lead = query.with_for_update().first()
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        if lead.referrer_id is not None:
+            msg = "线索已有归属员工"
+            raise ConflictError(msg)
+        lead.referrer_id = employee_id
+        return lead.community_name or ""
+
+    def _employee_name(self, employee_id: str) -> str | None:
+        """员工名称（nickname 缺失回退 username，与统一列表口径一致）."""
+        row = self.db.query(func.coalesce(User.nickname, User.username)).filter(User.id == employee_id).first()
+        return row[0] if row else None
+
+    # ─── 全局兜底负责人 ───────────────────────────────────────────────────
+
+    def get_fallback_employee(self) -> dict[str, Any]:
+        """查询全局兜底负责人配置（未设置/已清除时两字段均为 None）.
+
+        读取不做 active/后台身份校验——员工被停用后仍回显其名，便于管理员
+        感知「配置存在但已失效」并重新设置；留资链路侧经
+        ``resolve_global_fallback_referrer`` 校验失效自动降级。
+
+        """
+        value = self.db.query(SystemConfig.value).filter(SystemConfig.key == GROWTH_GLOBAL_FALLBACK_KEY).scalar()
+        if not value:
+            return {"employee_id": None, "employee_name": None}
+        return {"employee_id": value, "employee_name": self._employee_name(value)}
+
+    def set_fallback_employee(self, *, employee_id: str | None, operator_id: str) -> dict[str, Any]:
+        """设置/清除全局兜底负责人（仅影响后续新建留资的兜底归属，不改存量线索）.
+
+        Args:
+            employee_id: 目标员工ID（None=清除设置）
+            operator_id: 当前操作管理员ID（写入 updated_by_id 审计）
+
+        Returns:
+            {employee_id, employee_name}（清除后两字段均为 None）
+
+        Raises:
+            BusinessLogicError: 员工不存在 / 非 active / 无后台身份（422）；配置行写入失败
+
+        """
+        if employee_id is None:
+            valid_id, name = None, None
+        else:
+            valid_id = resolve_valid_referrer(self.db, employee_id)
+            if valid_id is None:
+                msg = "员工不存在或无后台身份"
+                raise BusinessLogicError(msg)
+            name = self._employee_name(valid_id)
+
+        row = (
+            self.db.query(SystemConfig).filter(SystemConfig.key == GROWTH_GLOBAL_FALLBACK_KEY).with_for_update().first()
+        )
+        if row is None:
+            # 首次创建路径无行可锁：依赖 flush 撞唯一索引 uq_system_configs_key 后的
+            # IntegrityError 回退 + 加锁重查（与 services/projects/renovation.py 同口径），
+            # 避免两个管理员并发保存时向用户抛 500
+            self.db.add(SystemConfig(key=GROWTH_GLOBAL_FALLBACK_KEY, value=valid_id, updated_by_id=operator_id))
+            try:
+                self.db.flush()
+            except IntegrityError:
+                logger.info("全局兜底负责人配置并发创建，回退为更新已有行：key=%s", GROWTH_GLOBAL_FALLBACK_KEY)
+                self.db.rollback()
+            row = (
+                self.db.query(SystemConfig)
+                .filter(SystemConfig.key == GROWTH_GLOBAL_FALLBACK_KEY)
+                .with_for_update()
+                .first()
+            )
+        if row is None:
+            # 理论不可达：唯一索引冲突必然意味着并发事务已提交该行；显式报错而非静默丢弃
+            msg = "全局兜底负责人配置写入失败"
+            raise BusinessLogicError(msg)
+        row.value = valid_id
+        row.updated_by_id = operator_id
+        self.db.commit()
+        logger.info(
+            "获客中心全局兜底负责人已更新：value=%s, operator=%s",
+            valid_id,
+            operator_id,
+        )
+        return {"employee_id": valid_id, "employee_name": name}
 
     # ─── 完整手机号查看 ───────────────────────────────────────────────────
 

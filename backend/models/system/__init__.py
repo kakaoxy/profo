@@ -6,6 +6,7 @@
 from .error import FailedRecord
 from .import_task import ImportTaskStatus, PropertyImportTask
 from .operation_log import OperationLog
+from .system_config import SystemConfig
 from .wechat_oauth import WeChatOAuthState, WeChatTempCode
 
 __all__ = [
@@ -13,6 +14,7 @@ __all__ = [
     "ImportTaskStatus",
     "OperationLog",
     "PropertyImportTask",
+    "SystemConfig",
     "WeChatOAuthState",
     "WeChatTempCode",
 ]

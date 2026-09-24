@@ -25,7 +25,12 @@ from schemas.public import (
 )
 from services.growth_center.customer_notify import notify_new_customer_lead
 from services.system.exceptions import ConflictError, ResourceNotFoundError
-from services.utils import aggregate_my_share_stats, resolve_valid_referrer
+from services.utils import (
+    aggregate_my_share_stats,
+    resolve_global_fallback_referrer,
+    resolve_property_agent_referrer,
+    resolve_valid_referrer,
+)
 from settings import settings
 from utils.crypto import hash_phone
 from utils.formatters import escape_like, mask_phone
@@ -307,13 +312,20 @@ class PublicProjectService:
         if existing is not None:
             return existing, project, False
 
+        # 归因优先级：分享归因（visitor_id 回查埋点）→ 讲房人兜底（L4→Project→
+        # ProjectSale.property_agent_id）→ 全局兜底负责人（system_configs 配置）；
+        # 各级链缺失/员工无效时静默降级到下一级，全部未命中为无归属
         booking = ProjectBooking(
             marketing_project_id=marketing_project_id,
             user_id=user.id,
             # phone 快照加密存储（EncryptedString 自动加解密），phone_hash 维持可比较性
             phone=user.phone,
             phone_hash=hash_phone(user.phone),
-            referrer_user_id=self._resolve_booking_referrer(visitor_id),
+            referrer_user_id=(
+                self._resolve_booking_referrer(visitor_id)
+                or resolve_property_agent_referrer(self.db, marketing_project_id)
+                or resolve_global_fallback_referrer(self.db)
+            ),
             # C 端创建预约写入默认统一态 new（显式声明，与状态机语义对齐）
             status="new",
         )

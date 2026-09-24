@@ -96,7 +96,7 @@ from .recruit import (
 )
 
 # 系统模块
-from .system import FailedRecord, OperationLog, PropertyImportTask, WeChatOAuthState, WeChatTempCode
+from .system import FailedRecord, OperationLog, PropertyImportTask, SystemConfig, WeChatOAuthState, WeChatTempCode
 
 # 用户权限模块
 from .user import (
@@ -195,6 +195,7 @@ __all__ = [
     "SettlementStatus",
     "SubjectLevel",
     "SubjectStage",
+    "SystemConfig",
     "User",
     "UserRole",
     # 估价页分享埋点

@@ -34,6 +34,8 @@ interface LeadsTableProps {
   ) => void;
   /** 详情回调（打开抽屉） */
   onDetail: (lead: UnifiedLeadListItem) => void;
+  /** 兜底员工指派回调（仅无归属行渲染入口） */
+  onAssign: (lead: UnifiedLeadListItem) => void;
   /** 正在流转状态的线索 ID（null 表示无操作进行中） */
   flowingId: string | null;
 }
@@ -48,7 +50,7 @@ const badgeBase =
  * 状态列展示统一 5 态 Badge + 原状态子标签；状态流转对全模块开放，
  * 可选目标由 FLOW_MATRIX[module][当前状态] 驱动（无可选目标不渲染流转入口）。
  */
-export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTableProps) {
+export function LeadsTable({ leads, onFlow, onDetail, onAssign, flowingId }: LeadsTableProps) {
   // 旁路流转确认弹窗（淘汰 / 重新激活）
   const [confirm, setConfirm] = React.useState<{
     lead: UnifiedLeadListItem;
@@ -132,7 +134,9 @@ export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTablePro
                     </span>
                   </td>
                   <td className="px-5 py-3.5 border-b border-fog align-middle">
-                    <span className={`${badgeBase} ${GROWTH_STATUS_META[lead.unified_status].badge}`}>
+                    <span
+                      className={`${badgeBase} ${GROWTH_STATUS_META[lead.unified_status].badge}`}
+                    >
                       {GROWTH_STATUS_META[lead.unified_status].label}
                     </span>
                     <div className="mt-0.5 text-[12.5px] text-graphite whitespace-nowrap">
@@ -175,6 +179,18 @@ export function LeadsTable({ leads, onFlow, onDetail, flowingId }: LeadsTablePro
                       >
                         详情
                       </button>
+                      {/* 无归属线索：兜底员工指派入口（直接进入未分享归因） */}
+                      {!lead.employee_id && (
+                        <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
+                          <button
+                            type="button"
+                            className="text-[14px] font-medium text-ink px-0.5 hover:opacity-60 transition-opacity"
+                            onClick={() => onAssign(lead)}
+                          >
+                            设置归属
+                          </button>
+                        </HasPermission>
+                      )}
                       {targets.length > 0 && (
                         <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
                           <DropdownMenu>

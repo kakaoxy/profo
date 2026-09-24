@@ -25,7 +25,7 @@ from services.growth_center.customer_notify import (
 )
 from services.growth_center.normalize import map_valuation_status
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError
-from services.utils import resolve_valid_referrer
+from services.utils import resolve_global_fallback_referrer, resolve_property_agent_referrer, resolve_valid_referrer
 from settings import settings
 from utils.redis_client import get_redis_client
 from utils.time_windows import cst_today_start
@@ -71,6 +71,7 @@ class LeadService:
         *,
         creator: User | None = None,
         referrer: str | None = None,
+        apply_fallback: bool = False,
     ) -> Lead:
         """创建线索.
 
@@ -80,12 +81,23 @@ class LeadService:
             creator: 创建人对象（可选，用于预加载关联避免 N+1 查询）
             referrer: 分享归属员工ID（可选，C 端经分享提交时透传；
                 服务端校验员工存在且 active，无效静默忽略不阻断提交）
+            apply_fallback: 是否启用归属兜底链（默认 False，仅 C 端留资路径传 True）。
+                后台/内部录入（`POST /api/v1/leads`）由员工本人录入，归属应为空，
+                不得兜底到「全局兜底负责人」，否则会污染「我的客户」归属口径
+                并给无关员工推送新线索通知。
 
         Returns:
             创建成功的线索对象
 
         """
         referrer_id = self._resolve_referrer_id(referrer)
+        # 兜底链（分享归因未命中时逐级降级，仅 C 端留资启用）：
+        # 房源单承接线索（source_property_id 非空）→ 讲房人（L4→Project→ProjectSale）；
+        # 四模块通用 → 全局兜底负责人（system_configs 配置）；全部未命中为无归属
+        if apply_fallback and referrer_id is None and lead_data.source_property_id is not None:
+            referrer_id = resolve_property_agent_referrer(self.db, lead_data.source_property_id)
+        if apply_fallback and referrer_id is None:
+            referrer_id = resolve_global_fallback_referrer(self.db)
         # 使用 exclude_unset=True：未显式提供的字段不传入构造，
         # 这样 created_at 等字段为 None 时不会覆盖 ORM 列级 default
         db_lead = Lead(

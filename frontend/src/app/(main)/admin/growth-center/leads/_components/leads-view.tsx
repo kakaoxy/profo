@@ -6,6 +6,8 @@ import { useQueryStates, parseAsString, parseAsInteger } from "nuqs";
 import { useDebouncedCallback } from "use-debounce";
 import { Search, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import {
   Select,
   SelectContent,
@@ -26,11 +28,21 @@ import {
 import type { LeadEliminateReason } from "../../_lib/flow-constants";
 import { LeadsTable } from "./leads-table";
 import { LeadDetailSheet } from "./lead-detail-sheet";
+import { AssignEmployeeDialog } from "./assign-employee-dialog";
+import { FallbackEmployeeDialog } from "./fallback-employee-dialog";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { StatCardGrid, type StatItem } from "@/app/(main)/admin/_components/stat-card-grid";
 import { DesignPagination } from "../../_components/design-pagination";
-import { updateGrowthLeadStatusAction } from "../../_lib/growth-actions";
-import type { GrowthEmployee, GrowthLeadsKpi } from "../../_lib/growth-data";
+import {
+  assignGrowthLeadEmployeeAction,
+  setGrowthFallbackEmployeeAction,
+  updateGrowthLeadStatusAction,
+} from "../../_lib/growth-actions";
+import type {
+  GrowthEmployee,
+  GrowthFallbackEmployee,
+  GrowthLeadsKpi,
+} from "../../_lib/growth-data";
 
 type UnifiedLeadListItem = components["schemas"]["UnifiedLeadListItem"];
 
@@ -45,6 +57,8 @@ export interface LeadsViewProps {
   pageSize: number;
   /** 员工列表（归属员工筛选下拉数据源） */
   employees: GrowthEmployee[];
+  /** 全局兜底负责人配置（无归属留资的最终兜底归属人） */
+  fallbackEmployee: GrowthFallbackEmployee;
   /** KPI 概览（服务端获取：overview/kpi + source-breakdown total） */
   kpi: GrowthLeadsKpi;
   /** 生效开始日期（URL 为空时为默认近 30 天） */
@@ -124,6 +138,7 @@ export function LeadsView({
   page,
   pageSize,
   employees,
+  fallbackEmployee,
   kpi,
   effectiveStart,
   effectiveEnd,
@@ -222,6 +237,59 @@ export function LeadsView({
       toast.error("网络错误，请稍后重试");
     } finally {
       setFlowingId(null);
+    }
+  };
+
+  // 无归属线索兜底员工指派（四模块，仅归属为空的行有入口）：
+  // Server Action + router.refresh()，与状态流转同一交互模式
+  const [assigningLead, setAssigningLead] = React.useState<UnifiedLeadListItem | null>(null);
+  const [assignSubmitting, setAssignSubmitting] = React.useState(false);
+  const handleAssign = async (employeeId: string) => {
+    if (!assigningLead) return;
+    setAssignSubmitting(true);
+    try {
+      const result = await assignGrowthLeadEmployeeAction(
+        assigningLead.module,
+        assigningLead.id,
+        employeeId,
+      );
+      if (result.success) {
+        toast.success(`已指派给「${result.data.employee_name ?? result.data.employee_id}」`);
+        setAssigningLead(null);
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setAssignSubmitting(false);
+    }
+  };
+
+  // 全局兜底负责人设置（兜底链最后一环，仅影响后续新建留资）：
+  // Server Action + router.refresh()，与行内指派同一交互模式
+  const [fallbackOpen, setFallbackOpen] = React.useState(false);
+  const [fallbackSubmitting, setFallbackSubmitting] = React.useState(false);
+  const handleFallbackConfirm = async (employeeId: string | null) => {
+    setFallbackSubmitting(true);
+    try {
+      const result = await setGrowthFallbackEmployeeAction(employeeId);
+      if (result.success) {
+        toast.success(
+          result.data.employee_id
+            ? `全局兜底负责人已设置为「${result.data.employee_name ?? result.data.employee_id}」`
+            : "已清除全局兜底负责人",
+        );
+        setFallbackOpen(false);
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setFallbackSubmitting(false);
     }
   };
 
@@ -406,13 +474,27 @@ export function LeadsView({
               手机号已脱敏展示，完整号码仅归属员工可在详情内查看
             </div>
           </div>
-          <div className="text-[13px] text-graphite tabular-nums">已显示 {leads.length} 条</div>
+          <div className="flex items-center gap-4">
+            {/* 全局兜底负责人入口：显示当前配置，点击打开设置弹窗 */}
+            <HasPermission code={PERMISSION_CODES.RECRUIT_WRITE}>
+              <button
+                type="button"
+                onClick={() => setFallbackOpen(true)}
+                className="text-[13px] font-medium text-ink hover:opacity-60 transition-opacity whitespace-nowrap"
+                title="无归属留资的最终兜底归属人"
+              >
+                全局兜底：{fallbackEmployee.employeeName ?? "未设置"}
+              </button>
+            </HasPermission>
+            <div className="text-[13px] text-graphite tabular-nums">已显示 {leads.length} 条</div>
+          </div>
         </div>
 
         <LeadsTable
           leads={leads}
           onFlow={handleFlow}
           onDetail={handleDetail}
+          onAssign={(lead) => setAssigningLead(lead)}
           flowingId={flowingId}
         />
 
@@ -433,6 +515,25 @@ export function LeadsView({
 
       {/* 线索详情抽屉 */}
       <LeadDetailSheet lead={detailLead} onClose={handleCloseDetail} />
+
+      {/* 无归属线索兜底员工指派弹窗 */}
+      <AssignEmployeeDialog
+        leadPhoneMasked={assigningLead?.phone_masked ?? null}
+        employees={employees}
+        submitting={assignSubmitting}
+        onConfirm={handleAssign}
+        onClose={() => setAssigningLead(null)}
+      />
+
+      {/* 全局兜底负责人设置弹窗 */}
+      <FallbackEmployeeDialog
+        open={fallbackOpen}
+        fallbackEmployee={fallbackEmployee}
+        employees={employees}
+        submitting={fallbackSubmitting}
+        onConfirm={handleFallbackConfirm}
+        onClose={() => setFallbackOpen(false)}
+      />
     </div>
   );
 }

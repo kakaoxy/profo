@@ -171,6 +171,25 @@ export async function getGrowthLeadDetail(
   return data;
 }
 
+// ─── 全局兜底负责人 ────────────────────────────────────────────────────────────
+
+/** 全局兜底负责人配置（未设置/已清除时两字段均为 null） */
+export interface GrowthFallbackEmployee {
+  employeeId: string | null;
+  employeeName: string | null;
+}
+
+/** 获取全局兜底负责人（获客中心无归属留资的最终兜底归属人）。 */
+export const getGrowthFallbackEmployee = cache(async (): Promise<GrowthFallbackEmployee> => {
+  const client = await fetchClient();
+  const { data, error } = await client.GET("/api/v1/admin/growth-center/fallback-employee", {});
+  if (error || !data) {
+    logger.error("[GrowthCenter] 获取全局兜底负责人失败:", error);
+    throw new Error("获取全局兜底负责人失败");
+  }
+  return { employeeId: data.employee_id ?? null, employeeName: data.employee_name ?? null };
+});
+
 // ─── 员工 ──────────────────────────────────────────────────────────────────────
 
 /** 获取员工列表（用于归属员工筛选下拉，来源 GET /users/simple）。 */

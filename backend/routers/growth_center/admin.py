@@ -21,8 +21,12 @@ from schemas.growth_center import (
     EmployeeTopResponse,
     FunnelCompareResponse,
     FunnelResponse,
+    GrowthFallbackEmployeeResponse,
+    GrowthFallbackEmployeeUpdateRequest,
     GrowthModule,
     GrowthOverviewKpiResponse,
+    LeadAssignRequest,
+    LeadAssignResponse,
     LeadDetailResponse,
     LeadSource,
     MyCustomerStatusUpdateRequest,
@@ -238,6 +242,62 @@ async def update_lead_status(
         req=body,
     )
     return MyCustomerStatusUpdateResponse(**result)
+
+
+@router.put(
+    "/leads/{module}/{lead_id}/assign",
+    summary="管理端设置无归属线索兜底员工",
+    description="四模块通用：仅当前归属为空（无分享归因）的线索可指派，已归属线索 409 不可改派；"
+    "指派员工需存在、active 且具备后台身份（无效 422）；指派成功 best-effort 通知该员工",
+)
+async def assign_lead_employee(
+    module: GrowthModule,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    body: LeadAssignRequest,
+    db: DbSessionDep,
+    _current_user: RecruitWritePermDep,
+) -> LeadAssignResponse:
+    """设置无归属线索兜底员工（行级锁在 Service 层，放线程池避免阻塞事件循环）."""
+    result = await run_in_threadpool(
+        AdminLeadFlowService(db).assign_employee,
+        module=module,
+        lead_id=lead_id,
+        employee_id=body.employee_id,
+    )
+    return LeadAssignResponse(**result)
+
+
+@router.get(
+    "/fallback-employee",
+    summary="查询全局兜底负责人",
+    description="获客中心无归属留资的最终兜底归属人（未设置/已清除时两字段均为 null）",
+)
+def get_fallback_employee(
+    db: DbSessionDep,
+    _current_user: RecruitReadPermDep,
+) -> GrowthFallbackEmployeeResponse:
+    """查询全局兜底负责人."""
+    return GrowthFallbackEmployeeResponse(**AdminLeadFlowService(db).get_fallback_employee())
+
+
+@router.put(
+    "/fallback-employee",
+    summary="设置/清除全局兜底负责人",
+    description="兜底链最后一环：分享归因/讲房人均未命中时归属该员工，仅影响后续新建留资；"
+    "employee_id=null 清除设置；员工需存在、active 且具备后台身份（无效 422）",
+)
+async def set_fallback_employee(
+    body: GrowthFallbackEmployeeUpdateRequest,
+    db: DbSessionDep,
+    current_user: RecruitWritePermDep,
+) -> GrowthFallbackEmployeeResponse:
+    """设置/清除全局兜底负责人（校验在 Service 层，放线程池避免阻塞事件循环）."""
+    result = await run_in_threadpool(
+        AdminLeadFlowService(db).set_fallback_employee,
+        employee_id=body.employee_id,
+        operator_id=current_user.id,
+    )
+    return GrowthFallbackEmployeeResponse(**result)
 
 
 @router.get(

@@ -107,6 +107,8 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
 - add_project_booking_status_column: 为 project_bookings 表添加 status 列
   （统一 5 态 new/contacted/high_intent/converted/eliminated，
   NOT NULL DEFAULT 'new' 一步回填存量，幂等）
+- create_system_configs_table: 幂等创建系统配置 KV 表 system_configs
+  （key 唯一索引，value 可空表示未设置；承载获客中心全局兜底负责人等全局单值配置）
 
 """
 
@@ -163,6 +165,7 @@ from migrations._schema_columns import (
 from migrations._search_indexes import add_trgm_search_indexes
 from migrations._seeds import _PERMISSIONS_SEED, _ROLE_PERMISSIONS_SEED
 from migrations._seeds_subjects import _INITIAL_SUBJECTS
+from migrations._system_configs import create_system_configs_table
 from migrations._type_migrations import (
     migrate_all_datetime_columns_to_timestamptz,
     migrate_encrypted_columns_to_text,
@@ -305,6 +308,8 @@ def _run_all_migrations(engine: Engine) -> None:
         create_property_sheet_tables(engine)
         # 小程序「我的客户」：幂等创建跨模块跟进记录表 customer_follow_ups
         create_customer_follow_ups_table(engine)
+        # 系统配置 KV 表：幂等创建 system_configs（全局单值配置，如获客中心全局兜底负责人）
+        create_system_configs_table(engine)
         # O1：模糊搜索 pg_trgm GIN 索引（前导通配符 LIKE 全表扫描修复）
         add_trgm_search_indexes(engine)
         # 小程序评估工作台「已处理」参考组：leads(auditor_id, audit_time) 索引

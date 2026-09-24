@@ -24,7 +24,7 @@ from models.recruit import (
 from schemas.recruit import RecruitShareEventCreate, RecruitVisitCreate, RecruitVisitUpdate
 from services.system.exceptions import ResourceNotFoundError
 from services.system.wechat import WeChatAuthService
-from services.utils import resolve_valid_referrer
+from services.utils import resolve_global_fallback_referrer, resolve_valid_referrer
 from settings import settings
 from utils.crypto import hash_phone
 
@@ -131,8 +131,11 @@ class RecruitAttributionService:
             (lead, is_new)：首次留资返回 (新建线索, True)，重复返回 (已有线索, False)。
 
         """
-        # referrer 统一校验：无效（不存在/非 active/无后台身份）时置空，防止伪造归属
-        referrer = resolve_valid_referrer(self.db, referrer)
+        # referrer 统一校验：无效（不存在/非 active/无后台身份）时置空，防止伪造归属；
+        # 兜底链最后一环：分享归因未命中时归属全局兜底负责人（未设置则无归属）。
+        # 注意：全局兜底生效后首次留资即有归属，后续分享 referrer 不再触发
+        # _backfill_referrer 覆盖（与「首次留资写入后永不更新」语义一致）
+        referrer = resolve_valid_referrer(self.db, referrer) or resolve_global_fallback_referrer(self.db)
         phone_hash = hash_phone(phone)
         existing = self.db.query(RecruitLead).filter(RecruitLead.phone_hash == phone_hash).first()
         if existing is not None:
