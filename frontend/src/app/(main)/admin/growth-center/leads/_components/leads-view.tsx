@@ -518,6 +518,7 @@ export function LeadsView({
 
       {/* 无归属线索兜底员工指派弹窗 */}
       <AssignEmployeeDialog
+        open={assigningLead !== null}
         leadPhoneMasked={assigningLead?.phone_masked ?? null}
         employees={employees}
         submitting={assignSubmitting}

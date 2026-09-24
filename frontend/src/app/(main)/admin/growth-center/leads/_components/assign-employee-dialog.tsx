@@ -13,7 +13,9 @@ import {
 import type { GrowthEmployee } from "../../_lib/growth-data";
 
 interface AssignEmployeeDialogProps {
-  /** 弹窗打开（null 表示关闭，打开时携带目标线索客户脱敏号用于文案展示） */
+  /** 弹窗打开（与 leadPhoneMasked 解耦：估价线索无手机号时脱敏号本身为 null） */
+  open: boolean;
+  /** 目标线索客户脱敏号（估价线索无手机号为 null，仅用于文案展示） */
   leadPhoneMasked: string | null;
   /** 员工下拉数据源（与筛选栏同源） */
   employees: GrowthEmployee[];
@@ -31,6 +33,7 @@ interface AssignEmployeeDialogProps {
  * 已归属线索不进入本弹窗（操作入口仅对无归属行渲染）。
  */
 export function AssignEmployeeDialog({
+  open,
   leadPhoneMasked,
   employees,
   submitting,
@@ -41,25 +44,24 @@ export function AssignEmployeeDialog({
 
   // 每次打开重置选择
   React.useEffect(() => {
-    if (leadPhoneMasked !== null) {
+    if (open) {
       setEmployeeId("");
     }
-  }, [leadPhoneMasked]);
+  }, [open]);
 
-  if (leadPhoneMasked === null) return null;
+  if (!open) return null;
 
   return (
     <Dialog
       open
-      onOpenChange={(open) => {
-        if (!open) onClose();
+      onOpenChange={(o) => {
+        if (!o) onClose();
       }}
     >
       <DialogContent className="sm:max-w-sm">
         <DialogTitle className="text-base font-medium text-ink">设置归属员工</DialogTitle>
         <DialogDescription className="text-[13px] text-graphite">
-          客户 {leadPhoneMasked} 暂无归属员工（直接进入未分享归因），指派后该员工将在
-          「我的客户」中跟进并接收新线索通知
+          {`客户 ${leadPhoneMasked ?? "（无手机号）"} 暂无归属员工（直接进入未分享归因），指派后该员工将在「我的客户」中跟进并接收新线索通知`}
         </DialogDescription>
 
         <div className="flex flex-col gap-1.5">

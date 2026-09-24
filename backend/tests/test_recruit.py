@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 import db
 from main import app
-from models import Community, Role, User
+from models import Community, Role, SystemConfig, User
 from models.recruit import (
     RecruitCampaign,
     RecruitCampaignStatus,
@@ -33,6 +33,7 @@ from services.recruit import (
     RecruitFunnelService,
 )
 from services.system.exceptions import ResourceNotFoundError, ValidationError
+from services.utils.referrer import GROWTH_GLOBAL_FALLBACK_KEY
 from utils.auth import get_password_hash
 from utils.crypto import hash_phone
 
@@ -222,6 +223,59 @@ class TestAttribution:
         )
         assert is_new is False
         assert lead2.referrer_employee_id is None
+
+    def test_global_fallback_not_backfilled_into_existing_lead(self, db_session: Session):
+        """全局兜底负责人只作用于新建留资，不得改写存量无归属线索（回归）.
+
+        回归：``submit_lead`` 曾把分享归因与「全局兜底负责人」合并进同一变量，
+        导致已配置兜底后，存量无归属招募线索在重复留资时被 ``_backfill_referrer``
+        静默改归属（与 ``RecruitLead.referrer_employee_id``「首次留资写入，此后
+        永不更新」及 admin 端「仅影响后续新建留资，不改存量线索」契约相反）。
+        """
+        fallback_emp = _make_employee(db_session, "emp-fallback")
+        db_session.add(SystemConfig(key=GROWTH_GLOBAL_FALLBACK_KEY, value=fallback_emp.id))
+        # 存量无归属线索（历史数据：首次留资未带 referrer）
+        legacy_phone = "13800138006"
+        db_session.add(
+            RecruitLead(
+                phone=legacy_phone,
+                phone_hash=hash_phone(legacy_phone),
+                main_business_area="天河商圈",
+                source=RecruitLeadSource.CARD,
+                referrer_employee_id=None,
+            )
+        )
+        db_session.commit()
+
+        service = RecruitAttributionService(db_session)
+
+        # 重复留资（仍未带分享 referrer）→ 存量线索归属必须保持为空
+        _, is_new = service.submit_lead(
+            legacy_phone,
+            campaign_id=None,
+            main_business_area="天河商圈",
+            referrer=None,
+            source=RecruitLeadSource.CARD,
+            visit_id=None,
+            user_id="customer-user",
+        )
+        assert is_new is False
+        db_session.expire_all()
+        legacy = db_session.query(RecruitLead).filter(RecruitLead.phone_hash == hash_phone(legacy_phone)).one()
+        assert legacy.referrer_employee_id is None
+
+        # 新建留资（新手机号且无分享 referrer）→ 仍应命中全局兜底负责人
+        new_lead, is_new = service.submit_lead(
+            "13800138007",
+            campaign_id=None,
+            main_business_area="天河商圈",
+            referrer=None,
+            source=RecruitLeadSource.CARD,
+            visit_id=None,
+            user_id="customer-user",
+        )
+        assert is_new is True
+        assert new_lead.referrer_employee_id == fallback_emp.id
 
     def test_different_phones_create_separate_leads(self, db_session: Session):
         """不同手机号分别建立线索."""

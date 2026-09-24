@@ -131,20 +131,22 @@ class RecruitAttributionService:
             (lead, is_new)：首次留资返回 (新建线索, True)，重复返回 (已有线索, False)。
 
         """
-        # referrer 统一校验：无效（不存在/非 active/无后台身份）时置空，防止伪造归属；
-        # 兜底链最后一环：分享归因未命中时归属全局兜底负责人（未设置则无归属）。
-        # 注意：全局兜底生效后首次留资即有归属，后续分享 referrer 不再触发
-        # _backfill_referrer 覆盖（与「首次留资写入后永不更新」语义一致）
-        referrer = resolve_valid_referrer(self.db, referrer) or resolve_global_fallback_referrer(self.db)
+        # 分享归因统一校验：无效（不存在/非 active/无后台身份）时置空，防止伪造归属
+        share_referrer = resolve_valid_referrer(self.db, referrer)
         phone_hash = hash_phone(phone)
         existing = self.db.query(RecruitLead).filter(RecruitLead.phone_hash == phone_hash).first()
         if existing is not None:
-            self._backfill_referrer(existing, referrer)
+            # 存量线索回填只认真实分享归因：全局兜底负责人仅作用于后续新建留资，
+            # 若在此处套用兜底，存量无归属线索会在重复留资时被静默改归属，
+            # 污染员工「我的线索」与分享统计（与 admin 端「不改存量线索」语义一致）
+            self._backfill_referrer(existing, share_referrer)
             self._mark_visit_authed(visit_id, user_id=user_id)
             # visit 缺失/不归属时 _mark_visit_authed 不提交，此处显式提交保证归属补充落库
             self.db.commit()
             return existing, False
 
+        # 兜底链最后一环：分享归因未命中时归属全局兜底负责人（未设置则无归属）
+        new_referrer = share_referrer or resolve_global_fallback_referrer(self.db)
         lead = RecruitLead(
             id=str(uuid.uuid4()),
             phone=phone,
@@ -152,7 +154,7 @@ class RecruitAttributionService:
             main_business_area=main_business_area,
             campaign_id=campaign_id,
             source=source,
-            referrer_employee_id=referrer,
+            referrer_employee_id=new_referrer,
             status=RecruitLeadStatus.NEW,
         )
         self.db.add(lead)
@@ -165,7 +167,8 @@ class RecruitAttributionService:
             self.db.rollback()
             existing = self.db.query(RecruitLead).filter(RecruitLead.phone_hash == phone_hash).first()
             if existing is not None:
-                self._backfill_referrer(existing, referrer)
+                # 同上：回填仅认分享归因，不套用全局兜底（并发方新建的线索已自带兜底归属）
+                self._backfill_referrer(existing, share_referrer)
                 self._mark_visit_authed(visit_id, user_id=user_id)
                 # 同正常分支：显式提交保证归属补充落库（visit 缺失/不归属时 _mark_visit_authed 不提交）
                 self.db.commit()
