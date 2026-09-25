@@ -3,8 +3,20 @@
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+# 无时区输入统一按东八区解析（与 schemas/project/sales.py 同口径）：
+# 服务层以 utc_now()（tz-aware）比较 expires_at，naive 值与后者比较会抛 TypeError。
+_CST = ZoneInfo("Asia/Shanghai")
+
+
+def _attach_cst_if_naive(value: datetime | None) -> datetime | None:
+    """无时区输入按东八区解析（显式带时区的输入原样保留，None 原样返回）."""
+    if value is None or value.tzinfo is not None:
+        return value
+    return value.replace(tzinfo=_CST)
 
 
 class KeysPropertyItem(BaseModel):
@@ -45,6 +57,12 @@ class KeyShareCreateRequest(BaseModel):
     items: list[KeyShareCreateItem] = Field(min_length=1, max_length=50)
     expires_in_days: int | None = Field(None, ge=1, le=365, description="有效期天数（1/7/30/自定义）")
     expires_at: datetime | None = Field(None, description="自定义失效时间，与 expires_in_days 二选一")
+
+    @field_validator("expires_at", mode="after")
+    @classmethod
+    def _expires_at_cst(cls, v: datetime | None) -> datetime | None:
+        """无时区输入按东八区解析（显式带时区原样保留）."""
+        return _attach_cst_if_naive(v)
 
 
 class KeyShareCreatedResponse(BaseModel):
@@ -126,6 +144,12 @@ class KeyShareExtendRequest(BaseModel):
 
     expires_in_days: int | None = Field(None, ge=1, le=365, description="延长天数")
     expires_at: datetime | None = Field(None, description="自定义新失效时间，与 expires_in_days 二选一")
+
+    @field_validator("expires_at", mode="after")
+    @classmethod
+    def _expires_at_cst(cls, v: datetime | None) -> datetime | None:
+        """无时区输入按东八区解析（显式带时区原样保留）."""
+        return _attach_cst_if_naive(v)
 
 
 class KeyShareActionResponse(BaseModel):
