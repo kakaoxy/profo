@@ -17,10 +17,12 @@
     <view class="mcard form-card">
       <view class="mfield" wx:for="{{inputs}}" wx:key="id">
         <view class="mfield-label">第 {{index + 1}} 组</view>
+        <!-- 明文长度对齐后端 EncryptedString(50)（同 web 后台）：type=number/maxlength=8 会把
+             ≥9 位或含字母的门锁密码静默截断/拦掉，导致登记进库的密码与真实密码不一致 -->
         <input
           class="minput"
-          type="number"
-          maxlength="8"
+          type="text"
+          maxlength="50"
           value="{{item.value}}"
           placeholder="输入密码"
           placeholder-class="minput-ph"

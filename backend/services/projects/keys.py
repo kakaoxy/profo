@@ -1,9 +1,11 @@
 """后台钥匙管理 Service（Router 禁 ORM，权限过滤与留痕全部在此层）."""
 
+import logging
 import uuid
 from datetime import datetime
 
 from sqlalchemy import and_, func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models import KeyActorType, KeyAuditLog, KeyShare, KeyShareView, KeyStatus, ProjectKey, ProjectNormalKey, User
@@ -38,7 +40,9 @@ from services.projects.key_access import (
     parse_share_items,
     utc_now,
 )
-from services.system.exceptions import ResourceNotFoundError, ValidationError
+from services.system.exceptions import BusinessLogicError, ResourceNotFoundError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 class KeyService:
@@ -106,6 +110,10 @@ class KeyService:
 
     def _manager_key(self, project_id: uuid.UUID) -> ProjectKey | None:
         return self.db.query(ProjectKey).filter(ProjectKey.project_id == project_id).first()
+
+    def _locked_manager_key(self, project_id: uuid.UUID) -> ProjectKey | None:
+        """加行锁读取管理密码行（并发写入串行化；不存在返回 None）."""
+        return self.db.query(ProjectKey).filter(ProjectKey.project_id == project_id).with_for_update().first()
 
     def _normal_keys(self, project_id: uuid.UUID) -> list[ProjectNormalKey]:
         return (
@@ -201,18 +209,36 @@ class KeyService:
     # ==================== 管理密码 ====================
 
     def put_manager_key(self, project_id: uuid.UUID, user: User, data: ManagerKeyPutRequest) -> ManagerKeyResponse:
-        """管理密码录入/修改（一房一条，密文落库，留痕）."""
+        """管理密码录入/修改（一房一条，密文落库，留痕）.
+
+        并发策略（与 services/growth_center/admin_flow.py 同口径）：首次录入路径
+        「读不到行即插入」无行可锁，两个请求同时录入时会撞 ``project_id`` 唯一约束，
+        后插入者抛 IntegrityError（错误处理器映射为 409，用户看到保存失败）。
+        此处捕获后回滚并加锁重查，统一走更新分支（PUT 语义 last-write-wins）。
+        """
         ensure_key_access(self.db, user, project_id)
-        row = self._manager_key(project_id)
+        row = self._locked_manager_key(project_id)
+        action = "update"
         if row is None:
             row = ProjectKey(project_id=project_id, password_encrypted=data.password, created_by=str(user.id))
             self.db.add(row)
             action = "create"
-        else:
+            try:
+                self.db.flush()
+            except IntegrityError:
+                logger.info("管理密码并发首次录入，回退为更新已有行：project_id=%s", project_id)
+                self.db.rollback()
+                row = self._locked_manager_key(project_id)
+                if row is None:
+                    # 理论不可达：唯一约束冲突意味着并发事务已提交该行；显式报错而非静默丢弃
+                    msg = "管理密码保存失败，请重试"
+                    raise BusinessLogicError(msg) from None
+                action = "update"
+
+        if action == "update":
             row.password_encrypted = data.password
             row.updated_by = str(user.id)
-            action = "update"
-        self.db.flush()
+            self.db.flush()
         log_key_action(
             self.db,
             project_id=project_id,
