@@ -74,7 +74,7 @@
   color: var(--rust);
 }
 
-/* 已过期软提示条 */
+/* 已过期提示条 */
 .expire-bar {
   margin-top: 20rpx;
   padding: 16rpx 20rpx;

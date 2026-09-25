@@ -87,7 +87,7 @@ class KeyShareDetailItem(BaseModel):
     project_name: str
     address: str
     key_id: UUID
-    key_deleted: bool  # 密码组已删除 → 分享页显示「密码已失效」
+    key_deleted: bool  # 密码组已删除或已停用 → 分享页显示「密码已失效」
     viewed: bool
     last_viewed_at: datetime | None = None
     viewer_names: list[str] = []

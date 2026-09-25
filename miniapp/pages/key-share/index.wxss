@@ -73,7 +73,7 @@
   border: none;
 }
 
-/* ===== 软过期提示条（浅杏底，非阻断） ===== */
+/* ===== 过期提示条（浅杏底，过期后不可查看） ===== */
 .expired-banner {
   margin: 24rpx 40rpx 0;
   padding: 20rpx 28rpx;

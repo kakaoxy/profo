@@ -6,11 +6,11 @@
  *   （URL 编码形式，先解码再提取，风格同 landing 页 parseSceneCode）；两者皆无
  *   → 直接渲染失效占位态（不暴露细节），不发起请求
  * - 免登录加载：GET /public/key-shares/{token} → 三态渲染：
- *   active（D1，is_expired 软过期仅页顶提示条不阻断）/ revoked（D2 回收态）/
- *   404（「分享不存在或已失效」占位）；其余网络错误 → error 态可重试
+ *   active（D1，is_expired 仅页顶提示条；过期后全部条目「密码不可查看」，不提供查看入口）/
+ *   revoked（D2 回收态）/ 404（「分享不存在或已失效」占位）；其余网络错误 → error 态可重试
  * - 查看明文：未登录先 wechatLogin() 补登录；POST reveal（不 skipAuth，需带
  *   C 端令牌，调用即留痕）→ 就地显示明文；422 按 message 语义降级
- *   （含「已回收」→ 整页 D2 / 含「失效」→ 该行「密码已失效」chip）
+ *   （含「已回收」→ 整页 D2 / 含「过期」→ 整页过期不可查看 / 含「失效」→ 该行「密码已失效」chip）
  * - 不实现 onShareAppMessage：spec 规定经纪人不允许再转发该分享
  *
  * GET 不 skipAuth 的说明：请求层对 /public/* 自动优先注入 c_access_token，
@@ -38,8 +38,8 @@ interface KeyItemDisplay {
   keyId: string;
   address: string;
   projectName: string;
-  /** 右侧密码区状态：deleted（chip）/ revealed（明文）/ masked（掩码 + 查看）. */
-  state: "deleted" | "revealed" | "masked";
+  /** 右侧密码区状态：expired（分享已过期，不可查看）/ deleted（密码组已失效）/ revealed（明文）/ masked（掩码 + 查看）. */
+  state: "expired" | "deleted" | "revealed" | "masked";
   /** 服务端已记录查看过（掩码态查看入口：true=mlink 文字链，false=按钮）. */
   viewed: boolean;
   /** 明文密码（state=revealed 时渲染）. */
@@ -61,7 +61,7 @@ interface PageData {
   revokedDesc: string;
   /** 分享 token（重试与 reveal 复用）. */
   token: string;
-  /** 软过期标记：页顶提示条不阻断；false 时分享人卡显示「进行中」chip. */
+  /** 分享已过期（硬失效）：页顶提示条 + 全部条目不可查看（可见房源清单，需分享人延长或重新分享）. */
   isExpired: boolean;
   sharerName: string;
   /** 分享人头像占位首字. */
@@ -150,39 +150,27 @@ function buildRevokedDesc(revokedAt: string | null | undefined): string {
     : "分享人已手动回收该分享，请联系分享人重新获取";
 }
 
-/** 分享条目 → 展示结构：deleted→chip；viewed→mlink；未看→按钮（设计稿 D1 行态）. */
-function toItemDisplay(item: PublicKeyShareItem): KeyItemDisplay {
-  if (item.key_deleted) {
-    return {
-      keyId: item.key_id,
-      address: item.address,
-      projectName: item.project_name,
-      state: "deleted",
-      viewed: false,
-      password: "",
-      viewedAtText: "",
-    };
-  }
-  if (item.viewed) {
-    return {
-      keyId: item.key_id,
-      address: item.address,
-      projectName: item.project_name,
-      state: "masked",
-      viewed: true,
-      password: "",
-      viewedAtText: formatHHmm(item.last_viewed_at),
-    };
-  }
-  return {
+/** 分享条目 → 展示结构：过期→expired；deleted→chip；viewed→mlink；未看→按钮（设计稿 D1 行态）. */
+function toItemDisplay(item: PublicKeyShareItem, shareExpired: boolean): KeyItemDisplay {
+  const base = {
     keyId: item.key_id,
     address: item.address,
     projectName: item.project_name,
-    state: "masked",
     viewed: false,
     password: "",
     viewedAtText: "",
   };
+  if (shareExpired) {
+    // 过期优先于条目级状态：分享过期后一律不可查看（含此前已查看过的组）
+    return { ...base, state: "expired" };
+  }
+  if (item.key_deleted) {
+    return { ...base, state: "deleted" };
+  }
+  if (item.viewed) {
+    return { ...base, state: "masked", viewed: true, viewedAtText: formatHHmm(item.last_viewed_at) };
+  }
+  return { ...base, state: "masked" };
 }
 
 /** 从 HttpResponseError 提取后端 message（{code,message} 格式），缺失返回空串. */
@@ -245,7 +233,7 @@ Page<PageData, PageCustom>({
         sharerName: res.sharer_name,
         sharerInitial: (res.sharer_name || "分").slice(0, 1),
         subLine: buildSubLine(res.items_count, res.expires_at, res.is_expired),
-        items: (res.items ?? []).map(toItemDisplay),
+        items: (res.items ?? []).map((item) => toItemDisplay(item, res.is_expired)),
       });
     } catch (err) {
       if ((err as HttpResponseError).statusCode === 404) {
@@ -329,6 +317,7 @@ Page<PageData, PageCustom>({
    * reveal 失败处理：按后端 message 语义降级，返回需 toast 的文案（空串不 toast）.
    * - 404：分享不存在/已删除 → 整页占位态；
    * - message 含「已回收」→ 整页切 D2（此时无精确回收时间，用通用文案）；
+   * - message 含「过期」→ 分享已过期（页内停留期间刚过期）：切过期态，全部条目不可查看；
    * - message 含「失效」→ 密码组已删除/停用：该行降级「密码已失效」chip，分享状态不变；
    * - 其余（含 401 刷新失败）：toast 后端 message 或通用文案.
    */
@@ -341,6 +330,13 @@ Page<PageData, PageCustom>({
     if (message.includes("已回收")) {
       this.setData({ revoked: true, revokedDesc: buildRevokedDesc(null) });
       return "";
+    }
+    if (message.includes("过期")) {
+      this.setData({
+        isExpired: true,
+        items: this.data.items.map((item): KeyItemDisplay => ({ ...item, state: "expired" })),
+      });
+      return message;
     }
     if (message.includes("失效")) {
       const item = this.data.items[index];

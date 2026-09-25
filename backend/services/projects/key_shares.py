@@ -255,6 +255,8 @@ class KeyShareService:
         key_ids = {kid for _, kid in entries}
         projects = {p.id: p for p in self.db.query(Project).filter(Project.id.in_(project_ids)).all()}
         keys = {k.id: k for k in self.db.query(ProjectNormalKey).filter(ProjectNormalKey.id.in_(key_ids)).all()}
+        # 与经纪人端同口径：仅「有效」组可查看，已删除/已停用均视为失效
+        valid_key_ids = {kid for kid in key_ids if kid in keys and keys[kid].status == KeyStatus.ACTIVE}
         share_views = self._share_views([share.id]).get(share.id, [])
 
         items: list[KeyShareDetailItem] = []
@@ -272,7 +274,7 @@ class KeyShareService:
                     project_name=project.name if project else "",
                     address=project.address if project else "",
                     key_id=kid,
-                    key_deleted=kid not in keys,
+                    key_deleted=kid not in valid_key_ids,
                     viewed=bool(key_views),
                     last_viewed_at=last_viewed,
                     viewer_names=viewer_names,

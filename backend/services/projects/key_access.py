@@ -209,7 +209,7 @@ def generate_six_digit() -> str:
 
 
 def load_active_shares(db: Session) -> list[KeyShare]:
-    """进行中的分享列表（未回收且未软过期）."""
+    """进行中的分享列表（未回收且未过期）."""
     now = utc_now()
     shares = db.query(KeyShare).filter(KeyShare.status == KeyShareStatus.ACTIVE).all()
     return [s for s in shares if s.expires_at > now]

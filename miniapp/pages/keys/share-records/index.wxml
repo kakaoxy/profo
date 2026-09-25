@@ -57,8 +57,8 @@
         <view class="chip {{item.status === 'active' ? 'chip--cool' : 'chip--gray'}}">{{item.viewedText}}</view>
         <text class="mlink">详情 ›</text>
       </view>
-      <!-- 已过期软提示条（不阻断经纪人查看） -->
-      <view class="expire-bar" wx:if="{{item.status === 'expired'}}">已过有效期（软提示，不阻断经纪人查看）</view>
+      <!-- 已过期提示条：过期后经纪人不可查看（延长有效期可恢复） -->
+      <view class="expire-bar" wx:if="{{item.status === 'expired'}}">已过有效期（经纪人不可查看，延长有效期可恢复）</view>
     </view>
 
     <view wx:if="{{items.length === 0}}" class="list-empty">暂无该状态的分享记录</view>

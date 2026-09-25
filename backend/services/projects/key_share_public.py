@@ -14,6 +14,7 @@ from models import (
     KeyShare,
     KeyShareStatus,
     KeyShareView,
+    KeyStatus,
     Project,
     ProjectNormalKey,
     User,
@@ -39,7 +40,8 @@ class KeySharePublicService:
     def get_public_share(self, token: str, viewer: User | None) -> PublicKeyShareResponse:
         """免登录获取分享信息（掩码，不含任何明文/密文）.
 
-        回收 → 专用响应态（D2，无密码数据）；软过期仅标记不阻断；
+        回收 → 专用响应态（D2，无密码数据）；过期 → 仅返回掩码条目与 is_expired
+        （前端不再提供查看入口，明文取回由 reveal_public_key 阻断）；
         首次读取到已过期时惰性写 system 过期日志；已登录则记「打开分享页」首访。
         """
         share = self.db.query(KeyShare).filter(KeyShare.token == token).first()
@@ -68,6 +70,8 @@ class KeySharePublicService:
         key_ids = {kid for _, kid in entries}
         projects = {p.id: p for p in self.db.query(Project).filter(Project.id.in_(project_ids)).all()}
         keys = {k.id: k for k in self.db.query(ProjectNormalKey).filter(ProjectNormalKey.id.in_(key_ids)).all()}
+        # 经纪人可取回明文的密码组：仅「有效」状态（已删除无行 / 已停用 → 统一呈现「密码已失效」）
+        valid_key_ids = {kid for kid in key_ids if kid in keys and keys[kid].status == KeyStatus.ACTIVE}
 
         my_views: dict[uuid.UUID, KeyShareView] = {}
         if viewer is not None:
@@ -88,7 +92,7 @@ class KeySharePublicService:
                 project_name=projects[pid].name if pid in projects else "",
                 address=projects[pid].address if pid in projects else "",
                 key_id=kid,
-                key_deleted=kid not in keys,
+                key_deleted=kid not in valid_key_ids,
                 viewed=kid in my_views,
                 last_viewed_at=my_views[kid].viewed_at if kid in my_views else None,
             )
@@ -108,7 +112,8 @@ class KeySharePublicService:
     def reveal_public_key(self, token: str, key_id: uuid.UUID, viewer: User) -> PublicKeyShareRevealResponse:
         """经纪人查看明文：需 C 端登录；写 KeyShareView + 审计日志后返回明文.
 
-        分享已回收 → 拒绝；密码组已删除 → 「密码已失效」业务语义。
+        分享已回收 / 已过期 → 拒绝；密码组已删除/已停用 → 「密码已失效」业务语义。
+        即「回收 / 过期 / 删除 / 停用」四种失效态一律不可查看明文（过期后延长有效期可恢复）。
         """
         share = self.db.query(KeyShare).filter(KeyShare.token == token).first()
         if share is None:
@@ -117,6 +122,9 @@ class KeySharePublicService:
         if share.status == KeyShareStatus.REVOKED:
             msg = "分享已回收，请联系分享人"
             raise BusinessLogicError(msg)
+        if is_share_expired(share):
+            msg = "分享已过期，密码不可查看，请联系分享人重新获取"
+            raise BusinessLogicError(msg)
 
         # key_id 必须在分享条目中（防止借 token 探测任意密码组）
         entry_project = next((pid for pid, kid in parse_share_items(share) if kid == key_id), None)
@@ -124,7 +132,8 @@ class KeySharePublicService:
             msg = "该密码不在此分享中"
             raise ValidationError(msg)
         key = self.db.get(ProjectNormalKey, key_id)
-        if key is None or key.project_id != entry_project:
+        # 失效口径：密码组已删除（无行）或已停用（≠active）——员工停用后经纪人不得再取回明文
+        if key is None or key.project_id != entry_project or key.status != KeyStatus.ACTIVE:
             msg = "密码已失效，请联系分享人"
             raise BusinessLogicError(msg)
 

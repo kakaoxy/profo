@@ -81,7 +81,7 @@
     </view>
 
     <view style="flex: 1;"></view>
-    <view class="mnote">{{propCount}} 套房源 · 每套 1 组 · 默认 1 天：仅向经纪人提示「密码今日有效」，到期不阻断查看；可随时在分享记录中手动回收。</view>
+    <view class="mnote">{{propCount}} 套房源 · 每套 1 组 · 默认 1 天：到期后经纪人不可查看，可在分享记录中延长有效期或随时回收。</view>
     <view class="footer-bar">
       <view class="btn-dark {{creating ? 'btn-dark--disabled' : ''}}" bindtap="onCreate">{{creating ? '生成中…' : '生成分享'}}</view>
     </view>

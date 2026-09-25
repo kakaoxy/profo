@@ -85,7 +85,7 @@ function toItem(item: KeyShareDetailItem): DetailItem {
       ...base,
       statusLabel: "密码已失效",
       statusClass: "chip--warn",
-      subText: "该密码组已被删除，经纪人端将显示失效",
+      subText: "该密码组已被删除或已停用，经纪人端将显示失效",
       viewed: false,
     };
   }

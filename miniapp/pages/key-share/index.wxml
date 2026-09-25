@@ -31,8 +31,8 @@
 
   <!-- 正常态（D1） -->
   <block wx:else>
-    <!-- 软过期提示条：不阻断查看 -->
-    <view wx:if="{{isExpired}}" class="expired-banner">已过有效期，密码请以分享人最新确认为准</view>
+    <!-- 过期提示条：过期后密码一律不可查看（硬失效，延长有效期可恢复） -->
+    <view wx:if="{{isExpired}}" class="expired-banner">分享已过期，密码不可查看，请联系分享人重新获取</view>
 
     <!-- 分享人卡 -->
     <view class="sharer-card">
@@ -55,8 +55,11 @@
           <view class="key-project">{{item.projectName}}</view>
         </view>
         <view class="key-pw">
-          <!-- 密码组已失效：chip，无查看入口 -->
-          <view wx:if="{{item.state === 'deleted'}}" class="chip chip--mute">密码已失效，请联系分享人</view>
+          <!-- 分享已过期：chip，无查看入口 -->
+          <view wx:if="{{item.state === 'expired'}}" class="chip chip--mute">分享已过期 · 密码不可查看</view>
+
+          <!-- 密码组已失效（已删除/已停用）：chip，无查看入口 -->
+          <view wx:elif="{{item.state === 'deleted'}}" class="chip chip--mute">密码已失效，请联系分享人</view>
 
           <!-- 明文态（本会话已查看）：等宽大字 + rust 留痕角标 -->
           <block wx:elif="{{item.state === 'revealed'}}">

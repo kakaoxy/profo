@@ -121,7 +121,7 @@ export function remainingDays(expiresAt: string | null | undefined): number {
 }
 
 /**
- * 分享状态归一：revoked=已回收（硬失效）；is_expired=已过期（软提示）；
+ * 分享状态归一：revoked=已回收（硬失效）；is_expired=已过期（同样不可查看，延长有效期可恢复）；
  * 其余=active 进行中。与后端 status / is_expired 字段对齐.
  */
 export function shareStatusOf(status: string, isExpired: boolean): "active" | "expired" | "revoked" {

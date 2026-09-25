@@ -53,7 +53,8 @@ def get_public_key_share(
 ) -> PublicKeyShareResponse:
     """免登录获取分享信息（掩码列表 + 有效期状态 + 已查看角标）.
 
-    回收态返回专用 status=revoked（无密码数据）；已过期软标记不阻断。
+    回收态返回专用 status=revoked（无密码数据）；过期态返回掩码列表 + is_expired，
+    两种失效态均不可查看明文。
     """
     return service.get_public_share(token, current_user)
 
@@ -67,5 +68,8 @@ def reveal_public_key(
     service: KeySharePublicServiceDep,
     current_user: CurrentActiveUserDep,
 ) -> PublicKeyShareRevealResponse:
-    """查看明文（需 C 端登录；写 KeyShareView + 审计日志后返回明文）."""
+    """查看明文（需 C 端登录；写 KeyShareView + 审计日志后返回明文）.
+
+    回收 / 过期 / 密码组已删除 / 已停用 → 400 类业务错误「不可查看」，不写查看记录。
+    """
     return service.reveal_public_key(token, key_id, current_user)
