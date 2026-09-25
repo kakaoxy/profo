@@ -1,0 +1,89 @@
+<view class="page">
+  <!-- 未登录 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请重新登录后操作</view>
+    <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
+  </view>
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+  <!-- 空态 -->
+  <view class="state" wx:elif="{{state === 'empty'}}">
+    <view class="state__text">未选择房源，请返回重新选择</view>
+  </view>
+
+  <block wx:elif="{{state === 'items'}}">
+    <!-- 每套房源单选卡 -->
+    <view class="mcard prop-card" wx:for="{{props}}" wx:key="projectId" wx:for-index="cardIndex">
+      <view class="card-head">
+        <text class="card-name">{{item.name}}</text>
+        <text class="card-count">{{item.selectableCount}} 组可选</text>
+      </view>
+      <view class="row-list">
+        <!-- 有效组单选行 -->
+        <view
+          class="key-row {{rowItem.dimmed ? 'key-row--dim' : ''}}"
+          wx:for="{{item.rows}}"
+          wx:for-item="rowItem"
+          wx:for-index="rowIndex"
+          wx:key="keyId"
+          bindtap="onRowTap"
+          data-card-index="{{cardIndex}}"
+          data-row-index="{{rowIndex}}"
+        >
+          <view class="radio {{item.selectedId === rowItem.keyId ? 'radio--on' : 'radio--off'}}"></view>
+          <text class="key-seq">#{{rowItem.seq}}</text>
+          <text class="mask">••••••</text>
+          <view class="key-row-chips">
+            <view class="chip {{rowItem.chipClass}}">{{rowItem.chipText}}</view>
+            <view class="chip chip--gray" wx:if="{{rowItem.shareCount > 0}}">已分享 {{rowItem.shareCount}} 次</view>
+            <view class="chip chip--cool" wx:if="{{rowItem.isLastShared}}">上次分享</view>
+          </view>
+        </view>
+        <!-- 管理密码占位行（不展示、不可选） -->
+        <view class="key-row key-row--dim key-row--last">
+          <view class="radio radio--off"></view>
+          <text class="key-row-manager">管理密码</text>
+          <view class="chip chip--mute">不可分享</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 有效期 -->
+    <view class="mcard expire-card">
+      <view class="card-name">有效期</view>
+      <view class="expire-chips">
+        <view class="mode-chip {{expireChoice === 1 ? 'mode-chip--on' : ''}}" bindtap="onExpireChip" data-days="{{1}}">{{oneDayLabel}}</view>
+        <view class="mode-chip {{expireChoice === 7 ? 'mode-chip--on' : ''}}" bindtap="onExpireChip" data-days="{{7}}">7 天</view>
+        <view class="mode-chip {{expireChoice === 30 ? 'mode-chip--on' : ''}}" bindtap="onExpireChip" data-days="{{30}}">30 天</view>
+        <view class="mode-chip {{expireChoice === 'custom' ? 'mode-chip--on' : ''}}" bindtap="onExpireChip" data-days="custom">自定义</view>
+      </view>
+      <view class="custom-box" wx:if="{{expireChoice === 'custom'}}">
+        <input
+          class="custom-input"
+          type="number"
+          maxlength="3"
+          value="{{customDays}}"
+          placeholder="1–365"
+          placeholder-class="custom-ph"
+          bindinput="onCustomInput"
+        />
+        <text class="custom-unit">天</text>
+      </view>
+    </view>
+
+    <view style="flex: 1;"></view>
+    <view class="mnote">{{propCount}} 套房源 · 每套 1 组 · 默认 1 天：仅向经纪人提示「密码今日有效」，到期不阻断查看；可随时在分享记录中手动回收。</view>
+    <view class="footer-bar">
+      <view class="btn-dark {{creating ? 'btn-dark--disabled' : ''}}" bindtap="onCreate">{{creating ? '生成中…' : '生成分享'}}</view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,6 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "分享记录",
+  "backgroundColor": "#f7f7f8",
+  "enablePullDownRefresh": true
+}

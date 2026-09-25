@@ -41,6 +41,7 @@ const INTERNAL_ENTRIES = [
   { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
   { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装", route: "/pages/renovation/projects/index/index" },
   { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账", route: "/pages/ledger/projects/index/index" },
+  { key: "keys", title: "钥匙管理", sub: "管理密码 · 普通密码 · 分享", icon: "钥", route: "/pages/keys/list/index" },
 ];
 
 /** 分享获客入口（onMenuTap 按 action 分发：customers 进我的客户聚合页，switch-tab-* 为 tabBar 页 switchTab，recruit 走 onRecruitTap 拉活动跳转，property-sheet 进我的房源单页）. */

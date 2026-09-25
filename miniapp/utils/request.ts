@@ -16,6 +16,12 @@ import { getAccessToken, getCAccessToken, getCRefreshToken, getRefreshToken } fr
  */
 export interface RequestOptions {
   url: string;
+  /**
+   * 默认 GET。
+   * 不含 PATCH：wx.request 的官方类型未提供 PATCH（仅 OPTIONS/GET/HEAD/POST/PUT/DELETE/TRACE/CONNECT），
+   * 密码修改/停用（/keys/normal/{key_id}）等需 PATCH 语义的接口，后端统一提供了 POST 别名，
+   * 调用方一律用 POST，避免真机兼容性风险。
+   */
   method?: "GET" | "POST" | "PUT" | "DELETE";
   data?: object | string;
   header?: Record<string, string>;
@@ -69,6 +75,18 @@ export interface NetworkError {
 interface TokenRefreshResponse {
   access_token: string;
   refresh_token: string;
+}
+
+/**
+ * C 端令牌受众路径判定。
+ *
+ * 后端按路径推断期望 JWT 受众（aud）并严格校验：
+ * - /public/*：C 端公开业务接口；
+ * - /keys/*：钥匙管理员工端（后端已归入 aud=c）。
+ * 内部员工持 admin 令牌访问这两类路径时需改用 C 端令牌，401 时同样走 C 端刷新。
+ */
+function isCAudiencePath(url: string): boolean {
+  return url.startsWith("/public/") || url.startsWith("/keys/");
 }
 
 /**
@@ -208,8 +226,8 @@ export function refreshCAccessToken(): Promise<string | null> {
 
 /**
  * 封装 wx.request，返回 Promise<T>.
- * - 自动注入 Authorization（/public/* 优先用 c_access_token，其他用 access_token）；
- * - 401 时按接口受众自动刷新对应端令牌并重试一次（/public/* → C 端，其余 → 后台），
+ * - 自动注入 Authorization（/public/* 与 /keys/* 优先用 c_access_token，其他用 access_token）；
+ * - 401 时按接口受众自动刷新对应端令牌并重试一次（/public/* 与 /keys/* → C 端，其余 → 后台），
  *   避免 access_token 过期后频繁强制用户重新登录；
  * - 调用方显式传入 header.Authorization 时优先保留；
  * - HTTP 非 2xx reject { statusCode, body }；网络异常 reject { errMsg }.
@@ -228,10 +246,10 @@ export function request<T>(options: RequestOptions): Promise<T> {
 
   const requestHeader: Record<string, string> = { ...header };
   if (!skipAuth && !requestHeader.Authorization) {
-    // /public/* 路径优先用 C 端令牌（aud=c）：内部员工持 admin 令牌时需 C 端令牌
-    // 才能访问 /public/leads 等接口（后端按路径推断期望受众并严格校验 aud）。
+    // /public/* 与 /keys/* 路径优先用 C 端令牌（aud=c）：内部员工持 admin 令牌时需 C 端
+    // 令牌才能访问 /public/leads、/keys/properties 等接口（后端按路径推断期望受众并严格校验 aud）。
     let token = getAccessToken();
-    if (url.startsWith("/public/")) {
+    if (isCAudiencePath(url)) {
       const cToken = getCAccessToken();
       if (cToken) {
         token = cToken;
@@ -285,10 +303,10 @@ function doRequest<T>(
           return;
         }
         // 401 且未跳过鉴权且未重试过：access_token 可能过期，按接口受众刷新对应端令牌后重试一次。
-        // - /public/* → 刷新 C 端令牌（refreshCAccessToken）
+        // - /public/* 与 /keys/*（aud=c）→ 刷新 C 端令牌（refreshCAccessToken）
         // - 其余后台接口 → 刷新后台令牌（refreshAccessToken）
         if (statusCode === 401 && !skipAuth && !retried) {
-          const refresh = url.startsWith("/public/") ? refreshCAccessToken : refreshAccessToken;
+          const refresh = isCAudiencePath(url) ? refreshCAccessToken : refreshAccessToken;
           refresh().then((newToken) => {
             if (newToken) {
               requestHeader.Authorization = `Bearer ${newToken}`;

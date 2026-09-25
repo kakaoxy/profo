@@ -1,0 +1,75 @@
+<view class="page">
+  <!-- 未登录 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请重新登录后查看分享详情</view>
+    <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
+  </view>
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <block wx:elif="{{state === 'items'}}">
+    <!-- 头部：状态 + 时间 + 操作 -->
+    <view class="mcard head-card">
+      <view class="head-line1">
+        <text class="head-title">钥匙分享 · {{items.length}} 套房源</text>
+        <view class="chip {{statusClass}}">
+          <view wx:if="{{status === 'active'}}" class="cdot"></view>{{statusLabel}}
+        </view>
+      </view>
+      <view class="head-meta">分享于 {{createdText}} · 有效期至 {{expiresText}}</view>
+      <view class="head-acts" wx:if="{{canAct}}">
+        <text class="mlink mlink--ink" bindtap="onExtend">{{extending ? '延长中…' : '延长有效期'}}</text>
+        <text class="mlink" bindtap="onRevoke">{{revoking ? '回收中…' : '回收分享'}}</text>
+      </view>
+    </view>
+
+    <!-- 逐房源查看状态 -->
+    <view class="mcard items-card">
+      <view class="items-title">房源与密码 <text class="items-hint">已查看 {{viewedCount}} / {{items.length}}</text></view>
+      <view class="item-row" wx:for="{{items}}" wx:key="keyId">
+        <view class="item-main">
+          <view class="item-addr">{{item.address}}</view>
+          <view class="item-sub">{{item.subText}}</view>
+        </view>
+        <view class="chip {{item.statusClass}}">{{item.statusLabel}}</view>
+        <text
+          class="mlink item-entry"
+          wx:if="{{item.viewed}}"
+          bindtap="onViewingEntry"
+          data-project-id="{{item.projectId}}"
+          data-project-name="{{item.projectName}}"
+        >带看录入</text>
+      </view>
+    </view>
+
+    <!-- 查看记录时间线 -->
+    <view class="mcard tl-card" wx:if="{{timeline.length > 0}}">
+      <view class="items-title">查看记录</view>
+      <view class="tl">
+        <view class="tl-row" wx:for="{{timeline}}" wx:key="meta">
+          <view class="tl-dot"></view>
+          <view class="tl-main">
+            <view class="tl-title">{{item.title}}</view>
+            <view class="tl-meta">{{item.meta}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="mcard tl-card" wx:else>
+      <view class="items-title">查看记录</view>
+      <view class="tl-empty">暂无查看记录</view>
+    </view>
+
+    <view style="flex: 1;"></view>
+    <view class="mnote">回收后经纪人页立即失效并提示「分享已回收」；已产生的查看记录保留，仅分享人可见。已过有效期仅软提示，不阻断经纪人查看。</view>
+  </block>
+</view>

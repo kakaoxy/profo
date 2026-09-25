@@ -1,0 +1,165 @@
+/* 钥匙管理 · 房源列表（C2）· warm 风格，chip/mnote 等类为本页定义 */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  padding-bottom: 40rpx;
+}
+
+/* ===== 页头 ===== */
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 24rpx 44rpx 20rpx;
+}
+.list-count {
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.list-head-right {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.mlink {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--rust);
+}
+
+/* ===== 快速搜索 ===== */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 0 40rpx 24rpx;
+  padding: 0 28rpx;
+  height: 84rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 9999rpx;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+.search-icon {
+  font-size: 32rpx;
+  color: var(--dove);
+}
+.search-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  color: var(--ink);
+}
+.search-ph {
+  color: var(--dove);
+}
+.search-clear {
+  font-size: 26rpx;
+  color: var(--dove);
+  padding: 8rpx;
+}
+
+/* ===== chip（对齐设计稿 C2 三态徽章）===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.chip--active {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.chip--cool {
+  background: var(--sky-wash);
+  color: #2c4d7f;
+}
+.chip--gray {
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.chip--warn {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.cdot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+/* ===== 房源卡 ===== */
+.prop-card {
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  padding: 28rpx 28rpx 24rpx;
+  box-shadow: var(--shadow-sm);
+}
+.prop-addr {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.prop-meta {
+  font-size: 24rpx;
+  color: var(--graphite);
+  margin-top: 8rpx;
+}
+.prop-stats {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 20rpx;
+  flex-wrap: wrap;
+}
+
+/* ===== 权限说明（对齐设计稿 C2 mnote：fog 底圆角块）===== */
+.mnote {
+  margin: 8rpx 40rpx 0;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #6b6e76;
+  padding: 20rpx 24rpx;
+  background: #ffffff;
+  border: 2rpx solid #ece7de;
+  border-radius: 24rpx;
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 120rpx 40rpx;
+}
+.state__title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 20rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}

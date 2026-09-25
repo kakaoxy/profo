@@ -1,0 +1,55 @@
+<view class="page">
+  <!-- 未登录 / 令牌失效 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请重新登录后操作</view>
+    <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <block wx:elif="{{state === 'items'}}">
+    <view class="mnote mnote--warm"><text class="mnote-b">删除影响：</text>所选密码组将从列表移除且不可恢复，仅操作日志可追溯；请确认密码锁已同步清除。</view>
+
+    <!-- 房源 + 已选计数 -->
+    <view class="mcard prop-card">
+      <view class="prop-addr">{{name || '房源'}}</view>
+      <view class="prop-sub">已选 {{checkedCount}} 组 · 勾选要删除的密码</view>
+    </view>
+
+    <!-- 密码多选列表 -->
+    <view class="mcard pw-list">
+      <view
+        class="pwrow"
+        wx:for="{{rows}}"
+        wx:key="id"
+        bindtap="onToggle"
+        data-index="{{index}}"
+      >
+        <view class="check {{item.checked ? 'check--on' : ''}}"></view>
+        <text class="pw-mono mask {{item.status === 'disabled' ? 'mask--muted' : ''}}">{{item.mask}}</text>
+        <view class="chip {{item.statusClass}}"><view wx:if="{{item.status === 'active'}}" class="cdot"></view>{{item.statusText}}</view>
+        <view class="chip chip--cool" wx:if="{{item.shareActive}}">分享中</view>
+      </view>
+      <view wx:if="{{rows.length === 0}}" class="pw-empty">暂无密码组可删除</view>
+    </view>
+
+    <view style="flex: 1;"></view>
+
+    <view class="footer-bar">
+      <view class="btn-dark {{checkedCount === 0 || deleting ? 'btn-dark--disabled' : ''}}" bindtap="onDelete">
+        {{deleting ? '删除中…' : '删除（' + checkedCount + '）'}}
+      </view>
+    </view>
+  </block>
+</view>

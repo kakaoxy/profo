@@ -1,0 +1,170 @@
+/* 分享①选房源（C7）· warm 风格 */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  display: flex;
+  flex-direction: column;
+  /* 底部固定「下一步」按钮浮于内容之上，预留占位 */
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ===== 页头 ===== */
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 24rpx 44rpx 20rpx;
+}
+.head-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.head-sub {
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+
+/* ===== 房源多选卡 ===== */
+.prop-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 24rpx;
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  padding: 28rpx;
+  box-shadow: var(--shadow-sm);
+}
+.prop-card--off {
+  opacity: 0.55;
+}
+.prop-main {
+  flex: 1;
+  min-width: 0;
+}
+.prop-addr {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.prop-stats {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 16rpx;
+  flex-wrap: wrap;
+}
+
+/* ===== 自绘勾选圆 ===== */
+.check {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 3rpx solid var(--dove);
+  flex-shrink: 0;
+  position: relative;
+  margin-top: 4rpx;
+  box-sizing: border-box;
+}
+.check--on {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+.check--on::after {
+  content: "";
+  position: absolute;
+  left: 12rpx;
+  top: 5rpx;
+  width: 10rpx;
+  height: 18rpx;
+  border: solid #ffffff;
+  border-width: 0 3rpx 3rpx 0;
+  transform: rotate(45deg);
+}
+
+/* ===== chip ===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.chip--gray {
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.chip--warn {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+
+/* ===== mnote / 底部 ===== */
+.mnote {
+  margin: 8rpx 40rpx 0;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #6b6e76;
+  padding: 20rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 24rpx;
+}
+.footer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx 0 calc(20rpx + env(safe-area-inset-bottom));
+  background: var(--fog);
+}
+.btn-dark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 40rpx;
+  height: 92rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.btn-dark--disabled {
+  opacity: 0.35;
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 120rpx 40rpx;
+}
+.state__title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 20rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}

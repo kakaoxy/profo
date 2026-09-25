@@ -38,6 +38,18 @@ from .investment import (
     ReturnAdjustment,
 )
 
+# 钥匙管理模块
+from .key import (
+    KeyActorType,
+    KeyAuditLog,
+    KeyShare,
+    KeyShareStatus,
+    KeyShareView,
+    KeyStatus,
+    ProjectKey,
+    ProjectNormalKey,
+)
+
 # 线索管理模块
 from .lead import Lead, LeadFollowUp, LeadPriceHistory, ValuationShareEvent, ValuationVisit
 
@@ -141,6 +153,13 @@ __all__ = [
     "InvestmentLog",
     "Investor",
     "InvestorType",
+    "KeyActorType",
+    # 钥匙管理
+    "KeyAuditLog",
+    "KeyShare",
+    "KeyShareStatus",
+    "KeyShareView",
+    "KeyStatus",
     "L4MarketingMedia",
     # L4 市场营销
     "L4MarketingProject",
@@ -163,6 +182,9 @@ __all__ = [
     "ProjectEvaluation",
     "ProjectFollowUp",
     "ProjectInteraction",
+    # 钥匙管理
+    "ProjectKey",
+    "ProjectNormalKey",
     "ProjectOwner",
     "ProjectRenovation",
     "ProjectSale",

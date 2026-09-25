@@ -90,6 +90,8 @@ interface PageData extends DateTimePickerState {
 /** 页面自定义方法. */
 interface PageCustom {
   projectId: string;
+  /** 跳转携带 add=1 时为 true：applyProject 成功且可新增时自动弹框（一次性消费）. */
+  autoOpenAdd: boolean;
   getToken(): string;
   clearToken(): void;
   loadProject(): void;
@@ -130,6 +132,7 @@ function getListingDaysText(listingDate: string | null | undefined): string {
 
 Page<PageData, PageCustom>({
   projectId: "",
+  autoOpenAdd: false,
 
   data: {
     state: "loading",
@@ -168,6 +171,7 @@ Page<PageData, PageCustom>({
 
   onLoad(query) {
     this.projectId = (query.id as string) || "";
+    this.autoOpenAdd = query.add === "1";
     const name = (query.name as string) || "";
     this.setData({
       projectName: name ? decodeURIComponent(name) : "项目详情",
@@ -220,6 +224,11 @@ Page<PageData, PageCustom>({
     const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
 
     const canEditSales = project.sale?.can_edit_sales === true;
+    const canAdd = project.status === "selling" && canEditSales;
+    // add=1 跳转进入时自动弹出新增弹框：仅首次加载且可新增时触发，标记立即消费，
+    // 避免提交/删除记录后的静默 loadProject 再次弹框；canAdd=false 时仅正常进入页面.
+    const shouldAutoOpen = this.autoOpenAdd && canAdd;
+    this.autoOpenAdd = false;
     this.setData({
       state: "ready",
       projectName: project.address ?? project.community_name ?? "项目详情",
@@ -249,8 +258,11 @@ Page<PageData, PageCustom>({
         date: this.formatFull(r.record_date),
         notes: r.notes || "",
       })),
-      canAdd: project.status === "selling" && canEditSales,
+      canAdd,
     });
+    if (shouldAutoOpen) {
+      this.onAddTap();
+    }
   },
 
   loadProject() {

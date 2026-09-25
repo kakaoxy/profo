@@ -185,6 +185,12 @@ class RateLimits:
     PUSH_API = "1000/hour"
 
     # ==================== C端公开接口 ====================
+    # 钥匙分享：免登录 token 页读取高频（对齐 PUBLIC_LEAD_LIST 读取量级）；
+    # 明文揭示为隐私敏感动作，收敛频次防遍历
+    KEY_SHARE_PUBLIC = "60/minute"
+    KEY_SHARE_REVEAL = "30/minute"
+    # 后台/员工端钥匙明文揭示（管理密码 + 普通密码）
+    KEY_REVEAL = "30/minute"
     PUBLIC_PROFILE_UPDATE = "20/minute"
     PUBLIC_PROFILE_READ = "60/minute"
     PUBLIC_PHONE_UPDATE = "10/hour"

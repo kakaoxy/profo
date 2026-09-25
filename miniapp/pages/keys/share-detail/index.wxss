@@ -1,0 +1,244 @@
+/* 分享详情（C11）· warm 风格 */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 40rpx;
+  box-sizing: border-box;
+}
+
+/* ===== 通用卡 ===== */
+.mcard {
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+.head-card {
+  margin-top: 24rpx;
+  padding: 28rpx;
+}
+.head-line1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.head-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.head-meta {
+  font-size: 23rpx;
+  color: var(--graphite);
+  margin-top: 8rpx;
+}
+.head-acts {
+  display: flex;
+  align-items: center;
+  gap: 32rpx;
+  margin-top: 20rpx;
+}
+.mlink {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--rust);
+}
+.mlink--ink {
+  color: var(--ink);
+}
+
+/* ===== 逐房源列表 ===== */
+.items-card,
+.tl-card {
+  padding: 28rpx;
+}
+.items-title {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.items-hint {
+  font-size: 22rpx;
+  color: var(--dove);
+  font-weight: 400;
+  margin-left: 12rpx;
+}
+.item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 22rpx 0 22rpx;
+  border-bottom: 2rpx solid #ece7de;
+}
+.item-row:last-child {
+  border-bottom: none;
+  padding-bottom: 8rpx;
+}
+.items-card .item-row:first-of-type {
+  border-top: 2rpx solid #ece7de;
+  margin-top: 20rpx;
+  padding-top: 22rpx;
+}
+.item-main {
+  flex: 1;
+  min-width: 0;
+}
+.item-addr {
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.item-sub {
+  font-size: 22rpx;
+  color: var(--graphite);
+  margin-top: 4rpx;
+}
+.item-entry {
+  flex-shrink: 0;
+  font-size: 24rpx;
+}
+
+/* ===== 时间线 ===== */
+.tl {
+  margin-top: 20rpx;
+  padding: 0 4rpx;
+}
+.tl-row {
+  display: flex;
+  gap: 20rpx;
+  position: relative;
+  padding-bottom: 28rpx;
+}
+.tl-row:last-child {
+  padding-bottom: 8rpx;
+}
+.tl-row::before {
+  content: "";
+  position: absolute;
+  left: 9rpx;
+  top: 28rpx;
+  bottom: 0;
+  width: 2rpx;
+  background: #ece7de;
+}
+.tl-row:last-child::before {
+  display: none;
+}
+.tl-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background: var(--sky-wash);
+  border: 4rpx solid #2c4d7f;
+  flex-shrink: 0;
+  margin-top: 8rpx;
+  box-sizing: border-box;
+  z-index: 1;
+}
+.tl-main {
+  flex: 1;
+  min-width: 0;
+}
+.tl-title {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.tl-meta {
+  font-size: 23rpx;
+  color: var(--graphite);
+  margin-top: 4rpx;
+}
+.tl-empty {
+  padding: 32rpx 0 8rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+
+/* ===== chip ===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.chip--active {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.chip--gray {
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.chip--mute {
+  background: var(--fog);
+  color: var(--dove);
+}
+.chip--cool {
+  background: var(--sky-wash);
+  color: #2c4d7f;
+}
+.chip--warn {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.cdot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+/* ===== mnote ===== */
+.mnote {
+  margin: 8rpx 40rpx 0;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #6b6e76;
+  padding: 20rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 24rpx;
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 120rpx 40rpx;
+}
+.state__title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 20rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}

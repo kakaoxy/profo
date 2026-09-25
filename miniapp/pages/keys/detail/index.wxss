@@ -1,0 +1,345 @@
+/* 房源钥匙详情（C3）· warm 风格，chip/pwrow/mnote 等类为本页定义 */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  padding-bottom: 40rpx;
+}
+
+/* ===== 通用卡 ===== */
+.mcard {
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+.prop-card {
+  margin-top: 24rpx;
+  padding: 28rpx 28rpx;
+}
+.prop-addr {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.sec-card {
+  padding: 28rpx;
+}
+
+.sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.sec-title {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.sec-hint {
+  font-size: 22rpx;
+  color: var(--dove);
+  font-weight: 400;
+}
+.sec-actions {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  flex-shrink: 0;
+}
+
+/* ===== chip ===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.chip--active {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.chip--gray {
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.chip--warn {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.chip--mute {
+  background: var(--fog);
+  color: var(--dove);
+}
+.cdot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+/* ===== 文字链 ===== */
+.mlink {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--rust);
+}
+.mlink--ink {
+  color: var(--ink);
+}
+.mlink--danger {
+  color: var(--rust);
+}
+.mlink--disabled {
+  color: var(--dove);
+}
+
+/* ===== 管理密码 ===== */
+.manager-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding: 24rpx;
+  background: var(--fog);
+  border-radius: 24rpx;
+}
+.manager-box--input {
+  gap: 24rpx;
+}
+.manager-box-acts {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+.mask {
+  letter-spacing: 6rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.mask--lg {
+  font-size: 36rpx;
+}
+.mask--muted {
+  color: var(--dove);
+}
+.pw-reveal {
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 44rpx;
+  font-weight: 500;
+  letter-spacing: 10rpx;
+  color: var(--ink);
+}
+.reveal-mark {
+  font-size: 22rpx;
+  color: var(--rust);
+}
+.meta-line {
+  font-size: 23rpx;
+  color: var(--graphite);
+  margin-top: 20rpx;
+}
+
+/* ===== mnote ===== */
+.mnote {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #6b6e76;
+  padding: 20rpx 24rpx;
+  background: var(--fog);
+  border-radius: 24rpx;
+}
+.mnote b {
+  font-weight: 500;
+}
+
+/* ===== 普通密码行 ===== */
+.pw-list {
+  margin-top: 20rpx;
+  border-top: 2rpx solid #ece7de;
+}
+.pwrow {
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid #ece7de;
+}
+.pwrow:last-child {
+  border-bottom: none;
+}
+.pwrow-open {
+  background: var(--fog);
+  margin: 0 -28rpx;
+  padding: 24rpx 28rpx;
+  border-bottom: 2rpx solid #ece7de;
+}
+.pwrow-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+}
+.pwrow-main {
+  flex: 1;
+  min-width: 0;
+}
+.pwrow-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.pwrow-top .mask {
+  font-size: 30rpx;
+}
+.pwrow-sub {
+  font-size: 23rpx;
+  color: var(--graphite);
+  margin-top: 6rpx;
+}
+.pwrow-acts {
+  flex-shrink: 0;
+}
+.pwrow-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 32rpx;
+  margin-top: 14rpx;
+}
+.keys-empty {
+  padding: 40rpx 0 16rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+
+/* ===== 输入 ===== */
+.minput {
+  flex: 1;
+  min-width: 0;
+  height: 88rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid #ece7de;
+  background: var(--pure-white);
+  padding: 0 28rpx;
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 30rpx;
+  letter-spacing: 6rpx;
+  font-weight: 500;
+  color: var(--ink);
+  box-sizing: border-box;
+}
+.minput-ph {
+  color: var(--dove);
+  letter-spacing: 0;
+  font-family: -apple-system, sans-serif;
+  font-weight: 400;
+}
+
+/* ===== 底部固定主操作 ===== */
+.footer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx 40rpx calc(20rpx + env(safe-area-inset-bottom));
+  background: var(--fog);
+}
+.btn-dark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.btn-dark--disabled {
+  opacity: 0.35;
+}
+
+/* ===== 修改密码弹层 ===== */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 25, 28, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.modal-card {
+  width: 590rpx;
+  background: var(--pure-white);
+  border-radius: 40rpx;
+  padding: 40rpx 32rpx 32rpx;
+}
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.modal-input {
+  width: 100%;
+  margin-top: 28rpx;
+}
+.modal-btns {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 32rpx;
+}
+.modal-btn {
+  flex: 1;
+  height: 84rpx;
+}
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  color: var(--ash);
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 120rpx 40rpx;
+}
+.state__title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 20rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}

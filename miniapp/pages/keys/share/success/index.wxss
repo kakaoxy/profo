@@ -1,0 +1,161 @@
+/* 分享③成功（C9）· warm 风格 */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ===== 成功态 ===== */
+.success-circle {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--pure-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+}
+.success-title {
+  font-size: 36rpx;
+  font-weight: 500;
+  color: var(--ink);
+  margin-top: 28rpx;
+}
+.success-sub {
+  font-size: 25rpx;
+  color: var(--graphite);
+  margin-top: 12rpx;
+}
+
+/* ===== 分享卡预览 ===== */
+.mcard {
+  width: 100%;
+  margin: 40rpx 0 0;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+.share-card {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 32rpx 28rpx;
+}
+.share-icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 24rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  flex-shrink: 0;
+}
+.share-main {
+  flex: 1;
+  min-width: 0;
+}
+.share-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.share-sub {
+  font-size: 23rpx;
+  color: var(--graphite);
+  margin-top: 6rpx;
+}
+.share-meta {
+  font-size: 21rpx;
+  color: var(--dove);
+  margin-top: 6rpx;
+}
+
+/* ===== 分享房源明细 ===== */
+.props-card {
+  padding: 28rpx;
+}
+.props-title {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.props-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.props-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: var(--rust);
+  flex-shrink: 0;
+  margin-top: 14rpx;
+}
+.props-addr {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: var(--graphite);
+}
+
+/* ===== 提示 ===== */
+.mnote {
+  width: 100%;
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #6b6e76;
+  padding: 20rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 24rpx;
+  box-sizing: border-box;
+}
+
+/* ===== 底部按钮 ===== */
+.share-btn {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0;
+}
+.share-btn::after {
+  border: none;
+}
+.later-btn {
+  width: 100%;
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  border-radius: 9999rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  color: var(--ash);
+  font-size: 30rpx;
+  font-weight: 500;
+  box-sizing: border-box;
+}

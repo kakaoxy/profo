@@ -1,0 +1,294 @@
+/* 钥匙分享 · 经纪人访客页（设计稿 D1/D2，warm 风格对齐 pages/keys 模块） */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  padding-bottom: 40rpx;
+}
+
+/* ===== 状态盒（loading / 占位 / 网络错误 / 回收态 互斥渲染） ===== */
+.state-box {
+  min-height: 80vh;
+  padding: 0 96rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.state-text {
+  font-size: 30rpx;
+  color: var(--ink);
+}
+
+.state-title {
+  margin-top: 36rpx;
+  font-size: 34rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.state-sub {
+  margin-top: 16rpx;
+  font-size: 25rpx;
+  color: var(--graphite);
+  text-align: center;
+  line-height: 1.7;
+}
+
+.state-btn {
+  margin-top: 44rpx;
+}
+
+/* D2 锁形圆卡（SVG 锁以 emoji 代替，简单为主） */
+.lock-badge {
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: 50%;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52rpx;
+}
+
+/* ghost 按钮：白底暖描边（回收态联系分享人 / 错误态重试） */
+.btn-ghost {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  padding: 0 64rpx;
+  border-radius: 9999rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  color: var(--ash);
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 1;
+}
+.btn-ghost::after {
+  border: none;
+}
+
+/* ===== 软过期提示条（浅杏底，非阻断） ===== */
+.expired-banner {
+  margin: 24rpx 40rpx 0;
+  padding: 20rpx 28rpx;
+  border-radius: 24rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+/* ===== 分享人卡 ===== */
+.sharer-card {
+  margin: 24rpx 40rpx 0;
+  padding: 28rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+/* 圆形首字头像（apricot 底，占位首字） */
+.sharer-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  flex: none;
+  border-radius: 50%;
+  background: var(--apricot-wash);
+  color: var(--ink);
+  font-size: 30rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sharer-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.sharer-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.sharer-sub {
+  margin-top: 6rpx;
+  font-size: 23rpx;
+  color: var(--graphite);
+}
+
+/* ===== chip（对齐 keys 模块） ===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+  flex: none;
+}
+.chip--active {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.chip--mute {
+  background: var(--fog);
+  color: var(--dove);
+}
+.cdot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+/* ===== 房源密码列表卡 ===== */
+.key-card {
+  margin: 24rpx 40rpx 0;
+  padding: 12rpx 28rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+
+.key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 26rpx 0;
+  border-bottom: 2rpx solid #ece7de;
+}
+.key-row:last-child {
+  border-bottom: none;
+}
+
+.key-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.key-addr {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.key-project {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--graphite);
+}
+
+.key-pw {
+  flex: none;
+  max-width: 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+/* 掩码行：****** + 查看入口 */
+.pw-line {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.pw-mask {
+  font-size: 28rpx;
+  font-weight: 500;
+  letter-spacing: 6rpx;
+  color: var(--ink);
+}
+
+/* 已看过的查看入口：mlink 文字链；未看：fog 底 pill 按钮 */
+.mlink {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--rust);
+  padding: 4rpx 8rpx;
+}
+
+.view-btn {
+  padding: 12rpx 28rpx;
+  border-radius: 9999rpx;
+  background: var(--fog);
+  border: 2rpx solid #ece7de;
+  color: var(--ink);
+  font-size: 24rpx;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* 明文：等宽大字（对齐 keys 模块 pw-reveal） */
+.pw-reveal {
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 44rpx;
+  font-weight: 500;
+  letter-spacing: 10rpx;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.reveal-mark {
+  font-size: 21rpx;
+  color: var(--rust);
+}
+
+.pw-note {
+  font-size: 21rpx;
+  color: var(--graphite);
+}
+
+.list-empty {
+  padding: 60rpx 0;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+
+/* ===== 页脚常驻说明 ===== */
+.mnote {
+  margin: 24rpx 40rpx 0;
+  padding: 20rpx 24rpx;
+  border-radius: 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  color: #6b6e76;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+.more-btn {
+  margin: 24rpx 40rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  border-radius: 9999rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  color: var(--ink);
+  font-size: 28rpx;
+  font-weight: 500;
+}

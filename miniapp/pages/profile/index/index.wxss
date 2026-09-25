@@ -242,6 +242,19 @@
   font-size: 30rpx;
   font-weight: 500;
 }
+/* 「钥匙管理」新增小圆标（对齐设计稿 C1 tag-new：rust 底白字） */
+.tag-new {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 12rpx;
+  padding: 2rpx 14rpx;
+  border-radius: 9999rpx;
+  background: var(--rust);
+  color: var(--pure-white);
+  font-size: 20rpx;
+  font-weight: 600;
+  vertical-align: 4rpx;
+}
 .menu-sub {
   font-size: 24rpx;
   color: var(--graphite);

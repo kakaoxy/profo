@@ -1,0 +1,33 @@
+<view class="page">
+  <!-- 成功态 -->
+  <view class="success-circle">✓</view>
+  <view class="success-title">已生成分享</view>
+  <view class="success-sub" wx:if="{{expiresText}}">有效期至 {{expiresText}}</view>
+
+  <!-- 分享卡预览 -->
+  <view class="mcard share-card">
+    <view class="share-icon">钥</view>
+    <view class="share-main">
+      <view class="share-title">钥匙分享 · {{count}} 套房源</view>
+      <view class="share-sub">邀请你查看带看密码</view>
+      <view class="share-meta" wx:if="{{expiresText}}">有效期至 {{expiresText}}</view>
+    </view>
+  </view>
+
+  <!-- 分享房源明细（详细地址） -->
+  <view class="mcard props-card" wx:if="{{props.length > 0}}">
+    <view class="props-title">已分享的房源</view>
+    <view class="props-row" wx:for="{{props}}" wx:key="*this">
+      <view class="props-dot"></view>
+      <text class="props-addr">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="mnote">经纪人从微信会话点开分享卡进入小程序，仅可见所选房源与对应密码；管理密码不可见。点击「查看密码」将被记录。</view>
+
+  <view style="flex: 1;"></view>
+
+  <!-- 转发给经纪人：open-type=share 触发 onShareAppMessage -->
+  <button class="btn-dark share-btn" open-type="share">转发给经纪人</button>
+  <view class="btn-ghost later-btn" bindtap="onLater">稍后 · 查看分享记录</view>
+</view>

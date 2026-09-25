@@ -1,0 +1,96 @@
+<view class="page">
+  <!-- 操作提示 -->
+  <view class="mnote" wx:if="{{mode === 'generate'}}"><text class="mnote-b">操作提示：</text>系统生成 6 位随机数字并直接显示明文，请按序号在密码锁上逐组录入；标记后生效，标记前不可分享。</view>
+  <view class="mnote" wx:else><text class="mnote-b">操作提示：</text>先在密码锁上设置新密码，再将当前有效密码逐组录入；录入即生效并记录操作人。</view>
+
+  <!-- 房源卡 -->
+  <view class="mcard prop-card">
+    <view class="prop-addr">{{name || '房源'}}</view>
+    <view class="mode-chips">
+      <view class="mode-chip {{mode === 'generate' ? 'mode-chip--on' : ''}}" bindtap="switchMode" data-mode="generate">系统随机生成</view>
+      <view class="mode-chip {{mode === 'manual' ? 'mode-chip--on' : ''}}" bindtap="switchMode" data-mode="manual">锁上录入后登记</view>
+    </view>
+  </view>
+
+  <!-- 手动模式 -->
+  <block wx:if="{{mode === 'manual'}}">
+    <view class="mcard form-card">
+      <view class="mfield" wx:for="{{inputs}}" wx:key="id">
+        <view class="mfield-label">第 {{index + 1}} 组</view>
+        <input
+          class="minput"
+          type="number"
+          maxlength="8"
+          value="{{item.value}}"
+          placeholder="输入密码"
+          placeholder-class="minput-ph"
+          bindinput="onInput"
+          data-index="{{index}}"
+        />
+      </view>
+      <view class="minput minput--add" bindtap="onAddRow" wx:if="{{inputs.length < 20}}">＋ 再添加一组</view>
+    </view>
+    <view class="mcard date-card">
+      <picker mode="date" value="{{effectiveDate}}" bindchange="onDateChange">
+        <view class="date-row">
+          <text class="date-label">生效时间</text>
+          <text class="date-value">{{effectiveDate}}（{{dateChanged ? '所选日期' : '今日'}}）<text class="date-caret">▾</text></text>
+        </view>
+      </picker>
+    </view>
+    <view style="flex: 1;"></view>
+    <view class="footer-bar">
+      <view class="btn-dark {{saving || filledCount === 0 ? 'btn-dark--disabled' : ''}}" bindtap="onManualSave">{{saving ? '保存中…' : '保存 ' + filledCount + ' 组'}}</view>
+    </view>
+  </block>
+
+  <!-- 系统生成模式 -->
+  <block wx:else>
+    <view class="mcard gen-card">
+      <view class="mode-chips">
+        <view
+          wx:for="{{countChips}}"
+          wx:key="*this"
+          class="mode-chip {{genCount === item ? 'mode-chip--on' : ''}}"
+          bindtap="onCountChip"
+          data-count="{{item}}"
+        >{{item}} 组</view>
+        <text class="mlink" style="margin-left: auto;" wx:if="{{pendingCount > 0}}" bindtap="onRegenerate">换一批</text>
+      </view>
+    </view>
+
+    <!-- 生成结果 -->
+    <view class="mcard gen-list" wx:if="{{genItems.length > 0}}">
+      <view
+        class="gen-row"
+        wx:for="{{genItems}}"
+        wx:key="id"
+        bindlongpress="onRowDelete"
+        data-index="{{index}}"
+      >
+        <text class="gen-seq">第 {{item.seq}} 组</text>
+        <text class="pw-mono">{{item.confirmed ? '••••••' : item.password}}</text>
+        <view class="chip {{item.confirmed ? 'chip--active' : 'chip--gray'}}">{{item.confirmed ? '有效' : '待录入'}}</view>
+        <text wx:if="{{!item.confirmed}}" class="mlink mlink--ink" bindtap="onRowConfirm" data-index="{{index}}">标记已录入</text>
+        <text wx:else class="mlink mlink--disabled">已录入</text>
+      </view>
+    </view>
+    <view class="mcard gen-empty" wx:elif="{{!genBusy}}">
+      <view class="gen-empty-text">尚未生成密码组</view>
+      <view class="btn-dark gen-empty-btn" bindtap="onGenerate">生成 {{genCount}} 组</view>
+    </view>
+    <view class="mcard gen-empty" wx:else>
+      <view class="gen-empty-text">生成中…</view>
+    </view>
+
+    <view style="flex: 1;"></view>
+    <view class="mnote">某组未上锁可单组长按「删除」；标记后密码组生效并记操作人。</view>
+    <view class="footer-bar">
+      <view class="btn-dark {{pendingCount === 0 || genBusy ? 'btn-dark--disabled' : ''}}" bindtap="onMarkConfirmed">
+        {{genBusy ? '处理中…' : '标记为已录入（' + pendingCount + ' 组）'}}
+      </view>
+    </view>
+  </block>
+
+  <view style="height: 60rpx;"></view>
+</view>

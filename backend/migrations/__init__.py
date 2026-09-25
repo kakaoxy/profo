@@ -109,6 +109,12 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
   NOT NULL DEFAULT 'new' 一步回填存量，幂等）
 - create_system_configs_table: 幂等创建系统配置 KV 表 system_configs
   （key 唯一索引，value 可空表示未设置；承载获客中心全局兜底负责人等全局单值配置）
+- create_key_tables: 幂等创建钥匙管理 5 张表
+  （project_keys/project_normal_keys/key_shares/key_share_views/key_audit_logs）与索引
+- add_key_audit_share_id_index: 为 key_audit_logs 建 ``detail->>'share_id'`` 表达式索引
+  （分享详情时间线/房源日志合并分享级事件的反查条件，PG 专属）
+- add_normal_key_seq_column: 为 project_normal_keys 表添加 seq 列并回填存量序号
+  （房源内稳定序号，按 created_at 顺序编号，删除/新增其他组不影响已有编号）
 
 """
 
@@ -136,6 +142,8 @@ from migrations._finance import (
 # 重新导出供外部模块（conftest.py 等）使用 —— 以下导入必须放在迁移子模块导入之前，
 # 以避免出现循环导入：子模块（如 _finance）会反向 from migrations import _column_exists。
 from migrations._helpers import _MIGRATION_ADVISORY_LOCK_KEY, _column_exists
+from migrations._keys import add_key_audit_share_id_index, create_key_tables
+from migrations._keys_seq import add_normal_key_seq_column
 from migrations._permission_system import (
     add_permission_foreign_indexes,
     add_reports_indexes,
@@ -310,6 +318,13 @@ def _run_all_migrations(engine: Engine) -> None:
         create_customer_follow_ups_table(engine)
         # 系统配置 KV 表：幂等创建 system_configs（全局单值配置，如获客中心全局兜底负责人）
         create_system_configs_table(engine)
+        # 钥匙管理：幂等创建 5 张新表
+        # （project_keys/project_normal_keys/key_shares/key_share_views/key_audit_logs）
+        create_key_tables(engine)
+        # 钥匙管理：key_audit_logs 的 detail->>'share_id' 表达式索引（分享级日志反查）
+        add_key_audit_share_id_index(engine)
+        # 钥匙管理：project_normal_keys 补加 seq 列并回填存量序号（房源内稳定序号）
+        add_normal_key_seq_column(engine)
         # O1：模糊搜索 pg_trgm GIN 索引（前导通配符 LIKE 全表扫描修复）
         add_trgm_search_indexes(engine)
         # 小程序评估工作台「已处理」参考组：leads(auditor_id, audit_time) 索引

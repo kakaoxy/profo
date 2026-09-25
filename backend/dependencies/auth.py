@@ -39,10 +39,13 @@ def _infer_audience_from_path(path: str) -> str:
     """根据请求路径推断期望的 Token 受众.
 
     /api/v1/public/* -> C 端 (aud=c)
-    其他 -> 后台 (aud=admin)
+    /api/v1/keys/*   -> C 端 (aud=c，小程序员工端钥匙分享，走 C 端令牌体系)
+    其他             -> 后台 (aud=admin)
 
     """
     if path.startswith(f"{settings.api_prefix}/v1/public"):
+        return AUDIENCE_C
+    if path.startswith(f"{settings.api_prefix}/v1/keys"):
         return AUDIENCE_C
     return AUDIENCE_ADMIN
 

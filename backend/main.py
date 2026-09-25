@@ -33,6 +33,7 @@ from routers.common import files_router, push_router, upload_router
 from routers.finance import ledger_router, subjects_router
 from routers.growth_center import growth_center_router
 from routers.investment import investment_router
+from routers.keys import keys_shares_router
 from routers.leads import leads_router
 from routers.market import communities_router, community_images_router, properties_router
 from routers.marketing import import_router as marketing_import_router
@@ -45,6 +46,7 @@ from routers.public import (
     public_communities_router,
     public_customers_router,
     public_files_router,
+    public_key_shares_router,
     public_leads_router,
     public_projects_router,
     public_property_sheets_router,
@@ -302,6 +304,7 @@ app.include_router(communities_router, prefix=API_V1_PREFIX)
 app.include_router(community_images_router, prefix=API_V1_PREFIX)
 app.include_router(leads_router, prefix=API_V1_PREFIX)
 app.include_router(core_router, prefix=API_V1_PREFIX)
+app.include_router(keys_shares_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_projects_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_import_router, prefix=API_V1_PREFIX)
 app.include_router(investment_router, prefix=API_V1_PREFIX)
@@ -324,6 +327,7 @@ app.include_router(public_bookings_router, prefix=API_V1_PREFIX)
 app.include_router(public_leads_router, prefix=API_V1_PREFIX)
 app.include_router(public_valuations_router, prefix=API_V1_PREFIX)
 app.include_router(public_files_router, prefix=API_V1_PREFIX)
+app.include_router(public_key_shares_router, prefix=API_V1_PREFIX)
 app.include_router(public_communities_router, prefix=API_V1_PREFIX)
 app.include_router(public_recruit_router, prefix=API_V1_PREFIX)
 app.include_router(public_customers_router, prefix=API_V1_PREFIX)

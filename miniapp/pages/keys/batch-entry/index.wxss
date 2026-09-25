@@ -1,0 +1,235 @@
+/* 批量录入 · 双模式（C4/C5）· warm 风格 */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ===== 通用卡 ===== */
+.mcard {
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+.prop-card {
+  margin-top: 24rpx;
+  padding: 28rpx;
+}
+.prop-addr {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+/* ===== mnote ===== */
+.mnote {
+  margin: 24rpx 40rpx 0;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #6b6e76;
+  padding: 20rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 24rpx;
+}
+.mnote-b {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* ===== 模式 / 组数 chip ===== */
+.mode-chips {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.mode-chip {
+  padding: 16rpx 28rpx;
+  border-radius: 9999rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.mode-chip--on {
+  background: var(--ink);
+  color: var(--pure-white);
+}
+.mlink {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--rust);
+}
+.mlink--ink {
+  color: var(--ink);
+}
+.mlink--disabled {
+  color: var(--dove);
+}
+
+/* ===== 手动模式表单 ===== */
+.form-card {
+  padding: 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.mfield {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+.mfield-label {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--graphite);
+}
+.minput {
+  height: 88rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid #ece7de;
+  background: var(--pure-white);
+  display: flex;
+  align-items: center;
+  padding: 0 28rpx;
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 30rpx;
+  letter-spacing: 6rpx;
+  font-weight: 500;
+  color: var(--ink);
+  box-sizing: border-box;
+}
+.minput-ph {
+  color: var(--dove);
+  letter-spacing: 0;
+  font-family: -apple-system, sans-serif;
+  font-weight: 400;
+}
+.minput--add {
+  border-style: dashed;
+  color: var(--graphite);
+  justify-content: center;
+  font-family: -apple-system, sans-serif;
+  letter-spacing: 0;
+  font-weight: 500;
+  font-size: 28rpx;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* ===== 生效日期 ===== */
+.date-card {
+  padding: 28rpx;
+}
+.date-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.date-label {
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+.date-value {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.date-caret {
+  color: var(--dove);
+  margin-left: 12rpx;
+}
+
+/* ===== 生成模式 ===== */
+.gen-card {
+  padding: 28rpx;
+}
+.gen-list {
+  padding: 8rpx 28rpx;
+}
+.gen-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid #ece7de;
+}
+.gen-row:last-child {
+  border-bottom: none;
+}
+.gen-seq {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--graphite);
+  white-space: nowrap;
+}
+.pw-mono {
+  flex: 1;
+  min-width: 0;
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 28rpx;
+  letter-spacing: 4rpx;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.gen-empty {
+  padding: 48rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28rpx;
+}
+.gen-empty-text {
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+.gen-empty-btn {
+  width: 100%;
+}
+
+/* ===== chip（待录入灰标）===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.chip--gray {
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.chip--active {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+
+/* ===== 底部按钮 ===== */
+.footer-bar {
+  margin-top: 16rpx;
+}
+.btn-dark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 40rpx;
+  height: 92rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.btn-dark--disabled {
+  opacity: 0.35;
+}

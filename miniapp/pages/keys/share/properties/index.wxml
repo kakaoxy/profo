@@ -1,0 +1,52 @@
+<view class="page">
+  <!-- 未登录 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请使用微信登录后分享</view>
+    <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
+  </view>
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+  <!-- 空态 -->
+  <view class="state" wx:elif="{{state === 'empty'}}">
+    <view class="state__title">暂无可分享的房源</view>
+    <view class="state__text">房源需先录入普通密码后才能分享</view>
+  </view>
+
+  <block wx:elif="{{state === 'items'}}">
+    <view class="list-head">
+      <text class="head-title">选择要分享的房源</text>
+      <text class="head-sub">已选 {{selectedCount}} 套</text>
+    </view>
+
+    <view
+      class="prop-card {{item.selectable ? '' : 'prop-card--off'}}"
+      wx:for="{{items}}"
+      wx:key="projectId"
+      bindtap="onToggle"
+      data-index="{{index}}"
+    >
+      <view class="check {{item.checked ? 'check--on' : ''}}"></view>
+      <view class="prop-main">
+        <view class="prop-addr">{{item.address}}</view>
+        <view class="prop-stats">
+          <view class="chip chip--gray">普通 {{item.activeCount}} 组可选</view>
+          <view class="chip chip--warn" wx:if="{{!item.selectable}}">无可分享的普通密码</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="mnote">每套房源一次只分享一组普通密码；管理密码不参与分享。</view>
+    <view class="footer-bar">
+      <view class="btn-dark {{selectedCount === 0 ? 'btn-dark--disabled' : ''}}" bindtap="onNext">下一步 · 选择密码（{{selectedCount}}）</view>
+    </view>
+  </block>
+</view>

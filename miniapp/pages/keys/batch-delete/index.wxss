@@ -1,0 +1,196 @@
+/* 批量删除（C6）· warm 风格 */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ===== 通用卡 ===== */
+.mcard {
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+.prop-card {
+  margin-top: 24rpx;
+  padding: 28rpx;
+}
+.prop-addr {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.prop-sub {
+  font-size: 23rpx;
+  color: var(--graphite);
+  margin-top: 6rpx;
+}
+
+/* ===== mnote ===== */
+.mnote {
+  margin: 24rpx 40rpx 0;
+  font-size: 24rpx;
+  line-height: 1.7;
+  padding: 20rpx 24rpx;
+  border-radius: 24rpx;
+  background: var(--fog);
+  color: #6b6e76;
+}
+.mnote--warm {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.mnote-b {
+  font-weight: 500;
+}
+
+/* ===== 多选密码行 ===== */
+.pw-list {
+  padding: 8rpx 28rpx;
+}
+.pwrow {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid #ece7de;
+}
+.pwrow:last-child {
+  border-bottom: none;
+}
+.pw-empty {
+  padding: 40rpx 0;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+.pw-mono {
+  flex: 1;
+  min-width: 0;
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 28rpx;
+  letter-spacing: 4rpx;
+  font-weight: 500;
+}
+.mask {
+  color: var(--ink);
+}
+.mask--muted {
+  color: var(--dove);
+}
+
+/* ===== 自绘勾选圆 ===== */
+.check {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 3rpx solid var(--dove);
+  flex-shrink: 0;
+  position: relative;
+  box-sizing: border-box;
+}
+.check--on {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+.check--on::after {
+  content: "";
+  position: absolute;
+  left: 12rpx;
+  top: 5rpx;
+  width: 10rpx;
+  height: 18rpx;
+  border: solid #ffffff;
+  border-width: 0 3rpx 3rpx 0;
+  transform: rotate(45deg);
+}
+
+/* ===== chip ===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8rpx 18rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.chip--active {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.chip--gray {
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.chip--mute {
+  background: var(--fog);
+  color: var(--dove);
+}
+.chip--cool {
+  background: var(--sky-wash);
+  color: #2c4d7f;
+}
+.cdot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+/* ===== 底部删除条 ===== */
+.footer-bar {
+  margin-top: 16rpx;
+}
+.btn-dark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 40rpx;
+  height: 92rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.btn-dark--disabled {
+  opacity: 0.35;
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 120rpx 40rpx;
+}
+.state__title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 20rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}

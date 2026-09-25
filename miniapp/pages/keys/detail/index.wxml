@@ -1,0 +1,160 @@
+<view class="page">
+  <!-- 未登录 / 令牌失效 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请重新登录后查看房源钥匙</view>
+    <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <block wx:elif="{{state === 'items'}}">
+    <!-- 房源信息 -->
+    <view class="mcard prop-card">
+      <view class="prop-addr">{{name || '房源钥匙'}}</view>
+    </view>
+
+    <!-- 管理密码 -->
+    <view class="mcard sec-card">
+      <view class="sec-head">
+        <view class="sec-title">管理密码 <text class="sec-hint">每组仅一条</text></view>
+        <view class="chip {{manager.set ? 'chip--active' : 'chip--warn'}}">
+          <view wx:if="{{manager.set}}" class="cdot"></view>{{manager.set ? '已设置' : '未设置'}}
+        </view>
+      </view>
+
+      <!-- 已设置：掩码 / 明文 + 查看 / 修改 -->
+      <block wx:if="{{manager.set}}">
+        <view class="manager-box">
+          <text wx:if="{{manager.revealed}}" class="pw-reveal">{{manager.password}}</text>
+          <text wx:else class="mask mask--lg">{{manager.password || '••••••'}}</text>
+          <view class="manager-box-right">
+            <view class="manager-box-acts" wx:if="{{!manager.revealed}}">
+              <text class="mlink" bindtap="onManagerEdit">修改</text>
+              <text class="mlink mlink--ink" bindtap="onManagerReveal">查看</text>
+            </view>
+            <text wx:else class="reveal-mark">已于 {{manager.revealTime}} 记录查看 ✓</text>
+          </view>
+        </view>
+        <view class="meta-line">更新 {{manager.updatedAtText}}{{manager.updatedByName ? ' · ' + manager.updatedByName : ''}} · 修改与查看均记录日志</view>
+      </block>
+
+      <!-- 未设置：录入行 -->
+      <view wx:else class="manager-box manager-box--input">
+        <input
+          class="minput"
+          type="number"
+          maxlength="8"
+          placeholder="录入管理密码"
+          placeholder-class="minput-ph"
+          value="{{managerInput}}"
+          bindinput="onManagerInput"
+        />
+        <view class="mlink mlink--ink {{managerInput ? '' : 'mlink--disabled'}}" bindtap="onManagerSave">{{managerSaving ? '保存中…' : '保存'}}</view>
+      </view>
+
+      <view class="mnote">管理密码<b>默认不分享给经纪人</b>，分享选择中不展示、不可选。</view>
+    </view>
+
+    <!-- 普通密码 -->
+    <view class="mcard sec-card">
+      <view class="sec-head">
+        <view class="sec-title">普通密码 <view class="chip chip--gray">{{countsText}}</view></view>
+        <view class="sec-actions">
+          <text class="mlink" bindtap="onBatchDeleteTap">批量删除</text>
+          <text class="mlink mlink--ink" bindtap="onBatchEntry">批量录入</text>
+        </view>
+      </view>
+
+      <!-- 空态 -->
+      <view wx:if="{{keys.length === 0}}" class="keys-empty">暂无普通密码，点击「批量录入」添加</view>
+
+      <view wx:else class="pw-list">
+        <view
+          wx:for="{{keys}}"
+          wx:key="id"
+          class="{{item.revealed ? 'pwrow-open' : 'pwrow'}}"
+        >
+          <view class="pwrow-line">
+            <view class="pwrow-main">
+              <view class="pwrow-top">
+                <text wx:if="{{item.revealed}}" class="pw-reveal">{{item.password}}</text>
+                <text wx:else class="mask {{item.status === 'disabled' ? 'mask--muted' : ''}}">{{item.mask}}</text>
+                <view class="chip {{item.statusClass}}"><view wx:if="{{item.status === 'active'}}" class="cdot"></view>{{item.statusText}}</view>
+              </view>
+              <view class="pwrow-sub">{{item.subText}}</view>
+              <view wx:if="{{item.revealed}}" class="reveal-mark">已于 {{item.revealTime}} 记录查看 ✓</view>
+            </view>
+            <view class="pwrow-acts">
+              <text wx:if="{{item.canReveal && !item.revealed}}" class="mlink mlink--ink" bindtap="onRowReveal" data-index="{{index}}">查看</text>
+            </view>
+          </view>
+          <view class="pwrow-tools">
+            <text wx:if="{{item.canConfirm}}" class="mlink mlink--ink" bindtap="onRowConfirm" data-index="{{index}}">标记已录入</text>
+            <text wx:if="{{item.canEdit}}" class="mlink" bindtap="onRowEdit" data-index="{{index}}">修改</text>
+            <text wx:if="{{item.canDisable}}" class="mlink" bindtap="onRowDisable" data-index="{{index}}">停用</text>
+            <text wx:if="{{item.canDelete}}" class="mlink mlink--danger" bindtap="onRowDelete" data-index="{{index}}">删除</text>
+            <text wx:if="{{item.status === 'disabled'}}" class="mlink mlink--disabled">仅可查看</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view style="height: 200rpx;"></view>
+
+    <!-- 底部固定主操作 -->
+    <view class="footer-bar">
+      <view class="btn-dark" bindtap="onShareTap">分享给经纪人</view>
+    </view>
+
+    <!-- 修改密码弹层 -->
+    <view class="modal-mask" wx:if="{{editing.show}}" bindtap="onEditCancel">
+      <view class="modal-card" catchtap="noop">
+        <view class="modal-title">修改密码</view>
+        <input
+          class="minput modal-input"
+          type="number"
+          maxlength="8"
+          placeholder="输入新密码"
+          placeholder-class="minput-ph"
+          value="{{editing.value}}"
+          bindinput="onEditInput"
+        />
+        <view class="modal-btns">
+          <view class="btn-ghost modal-btn" bindtap="onEditCancel">取消</view>
+          <view class="btn-dark modal-btn {{editing.value ? '' : 'btn-dark--disabled'}}" bindtap="onEditSave">{{saving ? '保存中…' : '保存'}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 修改管理密码弹层 -->
+    <view class="modal-mask" wx:if="{{managerEditing.show}}" bindtap="onManagerEditCancel">
+      <view class="modal-card" catchtap="noop">
+        <view class="modal-title">修改管理密码</view>
+        <input
+          class="minput modal-input"
+          type="number"
+          maxlength="8"
+          placeholder="输入新的管理密码"
+          placeholder-class="minput-ph"
+          value="{{managerEditing.value}}"
+          bindinput="onManagerEditInput"
+        />
+        <view class="modal-btns">
+          <view class="btn-ghost modal-btn" bindtap="onManagerEditCancel">取消</view>
+          <view class="btn-dark modal-btn {{managerEditing.value ? '' : 'btn-dark--disabled'}}" bindtap="onManagerEditSave">{{managerEditSaving ? '保存中…' : '保存'}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

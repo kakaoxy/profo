@@ -1,0 +1,98 @@
+<view class="page">
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <view class="state-text">加载中…</view>
+  </view>
+
+  <!-- 占位态：token 缺失 / 无效（404），统一 D2 风格，不暴露细节差异 -->
+  <view wx:elif="{{notFound}}" class="state-box">
+    <view class="lock-badge">🔒</view>
+    <view class="state-title">{{notFoundTitle}}</view>
+    <view class="state-sub">该分享内容无法查看，请联系分享人重新获取</view>
+  </view>
+
+  <!-- 网络错误态（可重试） -->
+  <view wx:elif="{{error}}" class="state-box">
+    <view class="state-text">加载失败，请检查网络</view>
+    <button class="btn-ghost state-btn" bindtap="onRetry">重试</button>
+  </view>
+
+  <!-- 回收态（D2）：锁形圆卡 + 标题 + 说明 + 联系分享人 -->
+  <view wx:elif="{{revoked}}" class="state-box">
+    <view class="lock-badge">🔒</view>
+    <view class="state-title">分享已回收</view>
+    <view class="state-sub">{{revokedDesc}}</view>
+    <button
+      class="btn-ghost state-btn"
+      open-type="contact"
+      binderror="onContactError"
+    >联系分享人</button>
+  </view>
+
+  <!-- 正常态（D1） -->
+  <block wx:else>
+    <!-- 软过期提示条：不阻断查看 -->
+    <view wx:if="{{isExpired}}" class="expired-banner">已过有效期，密码请以分享人最新确认为准</view>
+
+    <!-- 分享人卡 -->
+    <view class="sharer-card">
+      <view class="sharer-avatar">{{sharerInitial}}</view>
+      <view class="sharer-main">
+        <view class="sharer-title">{{sharerName}} 邀请你查看带看密码</view>
+        <view class="sharer-sub">{{subLine}}</view>
+      </view>
+      <view wx:if="{{!isExpired}}" class="chip chip--active">
+        <view class="cdot"></view>
+        <text>进行中</text>
+      </view>
+    </view>
+
+    <!-- 房源密码列表：左地址（+小区副行）右密码区 -->
+    <view class="key-card">
+      <view wx:for="{{items}}" wx:key="keyId" class="key-row">
+        <view class="key-info">
+          <view class="key-addr">{{item.address}}</view>
+          <view class="key-project">{{item.projectName}}</view>
+        </view>
+        <view class="key-pw">
+          <!-- 密码组已失效：chip，无查看入口 -->
+          <view wx:if="{{item.state === 'deleted'}}" class="chip chip--mute">密码已失效，请联系分享人</view>
+
+          <!-- 明文态（本会话已查看）：等宽大字 + rust 留痕角标 -->
+          <block wx:elif="{{item.state === 'revealed'}}">
+            <view class="pw-reveal">{{item.password}}</view>
+            <view class="reveal-mark">已于 {{item.viewedAtText}} 记录 ✓</view>
+            <view class="pw-note">已为你显示明文 · 查看已记录</view>
+          </block>
+
+          <!-- 掩码态：****** + 查看（已看过=mlink 文字链，未看=按钮） -->
+          <block wx:else>
+            <view class="pw-line">
+              <text class="pw-mask">******</text>
+              <text
+                wx:if="{{item.viewed}}"
+                class="mlink"
+                data-key-id="{{item.keyId}}"
+                data-index="{{index}}"
+                bindtap="onRevealTap"
+              >查看</text>
+              <view
+                wx:else
+                class="view-btn"
+                data-key-id="{{item.keyId}}"
+                data-index="{{index}}"
+                bindtap="onRevealTap"
+              >查看</view>
+            </view>
+            <view wx:if="{{item.viewedAtText}}" class="pw-note">已于 {{item.viewedAtText}} 记录</view>
+          </block>
+        </view>
+      </view>
+      <view wx:if="{{items.length === 0}}" class="list-empty">暂无可展示的密码</view>
+    </view>
+
+    <!-- 页脚常驻说明 + 查看更多房源 -->
+    <view class="mnote">仅展示分享人选择的普通密码；管理密码不可见。每次查看明文都会记录</view>
+    <view class="more-btn" bindtap="onMoreProjects">查看更多房源</view>
+  </block>
+</view>

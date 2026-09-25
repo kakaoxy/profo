@@ -21,7 +21,8 @@
     "pages/property-sheet/landing/index",
     "pages/customers/mine/index",
     "pages/customers/detail/index",
-    "pages/customers/rules/index"
+    "pages/customers/rules/index",
+    "pages/key-share/index"
   ],
   "subPackages": [
     {
@@ -51,12 +52,26 @@
     {
       "root": "pages/community-analysis",
       "pages": ["index/index"]
+    },
+    {
+      "root": "pages/keys",
+      "pages": [
+        "list/index",
+        "detail/index",
+        "batch-entry/index",
+        "batch-delete/index",
+        "share/properties/index",
+        "share/keys/index",
+        "share/success/index",
+        "share-records/index",
+        "share-detail/index"
+      ]
     }
   ],
   "preloadRule": {
     "pages/profile/index/index": {
       "network": "wifi",
-      "packages": ["pages/ledger", "pages/viewing", "pages/renovation", "pages/analysis", "pages/community-analysis"]
+      "packages": ["pages/ledger", "pages/viewing", "pages/renovation", "pages/analysis", "pages/community-analysis", "pages/keys"]
     }
   },
   "window": {

@@ -38,6 +38,7 @@ from utils.common import RateLimits, limiter
 from utils.csv_exporter import generate_csv_response
 
 from .documents import router as documents_router
+from .keys import router as keys_router
 from .renovation import router as renovation_router
 from .sales import router as sales_router
 
@@ -46,6 +47,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 router.include_router(documents_router, tags=["documents"])
 router.include_router(renovation_router, tags=["renovation"])
 router.include_router(sales_router, tags=["sales"])
+router.include_router(keys_router, tags=["project-keys"])
 
 
 @router.get("/contract-no/next")

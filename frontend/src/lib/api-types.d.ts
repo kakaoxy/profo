@@ -817,6 +817,278 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/keys/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Keys Summary
+         * @description 右栏钥匙管理卡三行概要（不显密文）.
+         */
+        get: operations["get_keys_summary_api_v1_projects__project_id__keys_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Keys Detail
+         * @description 房源钥匙详情（管理密码 + 普通密码列表 + 计数）.
+         */
+        get: operations["get_keys_detail_api_v1_projects__project_id__keys_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/manager": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Manager Key
+         * @description 管理密码录入/修改（密文落库 + 留痕）.
+         */
+        put: operations["put_manager_key_api_v1_projects__project_id__keys_manager_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/manager/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal Manager Key
+         * @description 查看管理密码明文（解密 + 留痕）.
+         */
+        post: operations["reveal_manager_key_api_v1_projects__project_id__keys_manager_reveal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/normal/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Normal Batch
+         * @description 普通密码手动批量录入（即录即生效，生效日期默认今日）.
+         */
+        post: operations["create_normal_batch_api_v1_projects__project_id__keys_normal_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/normal/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Normal
+         * @description 系统随机生成 6 位数字（生成即落库「待录入」并返回明文，供门锁逐组录入）.
+         */
+        post: operations["generate_normal_api_v1_projects__project_id__keys_normal_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/normal/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Normal
+         * @description 换一批：整批替换未标记（待录入）组为新生成组（返回明文）.
+         */
+        post: operations["regenerate_normal_api_v1_projects__project_id__keys_normal_regenerate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/normal/batch-confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Confirm Normal
+         * @description 批量标记已录入（生效时间=标记日）.
+         */
+        post: operations["batch_confirm_normal_api_v1_projects__project_id__keys_normal_batch_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/normal/batch-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Delete Normal
+         * @description 批量删除（返回分享引用提示数据；删除后分享页该组显示「密码已失效」）.
+         *
+         *     注意：字面路径必须声明在 POST /normal/{key_id} 参数路由之前，避免被遮蔽。
+         */
+        post: operations["batch_delete_normal_api_v1_projects__project_id__keys_normal_batch_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/normal/{key_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Normal
+         * @description 单组标记已录入.
+         */
+        post: operations["confirm_normal_api_v1_projects__project_id__keys_normal__key_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/normal/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Update Normal
+         * @description 普通密码修改/停用.
+         *
+         *     同时暴露 PATCH 与 POST：wx.request 对 PATCH 的真机兼容性存疑
+         *     （开发者工具可用），小程序端用 POST 别名保证可用性。
+         */
+        post: operations["update_normal_api_v1_projects__project_id__keys_normal__key_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Normal
+         * @description 普通密码修改/停用.
+         *
+         *     同时暴露 PATCH 与 POST：wx.request 对 PATCH 的真机兼容性存疑
+         *     （开发者工具可用），小程序端用 POST 别名保证可用性。
+         */
+        patch: operations["update_normal_api_v1_projects__project_id__keys_normal__key_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/normal/{key_id}/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal Normal Key
+         * @description 查看普通密码明文（解密 + 留痕）.
+         */
+        post: operations["reveal_normal_key_api_v1_projects__project_id__keys_normal__key_id__reveal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/keys/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Keys Logs
+         * @description 房源全量审计日志（倒序）.
+         */
+        get: operations["get_keys_logs_api_v1_projects__project_id__keys_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/contract-no/next": {
         parameters: {
             query?: never;
@@ -1071,6 +1343,110 @@ export interface paths {
         get: operations["get_project_report_api_v1_projects__project_id__report_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/keys/properties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Key Properties
+         * @description 我可操作的房源 + 钥匙徽章聚合（不显密文）.
+         */
+        get: operations["list_key_properties_api_v1_keys_properties_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/keys/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Shares
+         * @description 我的分享记录列表（含已查看 n/m 聚合）.
+         */
+        get: operations["list_shares_api_v1_keys_shares_get"];
+        put?: never;
+        /**
+         * Create Share
+         * @description 生成分享（默认有效期 1 天；仅可选「有效」普通密码组）.
+         */
+        post: operations["create_share_api_v1_keys_shares_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/keys/shares/{share_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Share Detail
+         * @description 分享详情（逐房源查看进度 + 查看记录时间线）.
+         */
+        get: operations["get_share_detail_api_v1_keys_shares__share_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/keys/shares/{share_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke Share
+         * @description 回收分享（硬失效）.
+         */
+        post: operations["revoke_share_api_v1_keys_shares__share_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/keys/shares/{share_id}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extend Share
+         * @description 延长分享有效期.
+         */
+        post: operations["extend_share_api_v1_keys_shares__share_id__extend_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3737,6 +4113,48 @@ export interface paths {
          * @description C端用户上传图片（如户型图），仅支持 jpg/jpeg/png
          */
         post: operations["upload_file_api_v1_public_files_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/key-shares/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Key Share
+         * @description 免登录获取分享信息（掩码列表 + 有效期状态 + 已查看角标）.
+         *
+         *     回收态返回专用 status=revoked（无密码数据）；已过期软标记不阻断。
+         */
+        get: operations["get_public_key_share_api_v1_public_key_shares__token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/key-shares/{token}/keys/{key_id}/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal Public Key
+         * @description 查看明文（需 C 端登录；写 KeyShareView + 审计日志后返回明文）.
+         */
+        post: operations["reveal_public_key_api_v1_public_key_shares__token__keys__key_id__reveal_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6492,6 +6910,56 @@ export interface components {
             conversion: number | null;
         };
         /**
+         * GeneratedNormalKeyItem
+         * @description 生成结果条目（生成即揭示明文：业务流程=生成后在门锁逐组录入；生成日志已留痕）.
+         */
+        GeneratedNormalKeyItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Seq
+             * @default 0
+             */
+            seq: number;
+            /** Status */
+            status: string;
+            /** Effective Date */
+            effective_date?: string | null;
+            /** Confirmed At */
+            confirmed_at?: string | null;
+            /** Disabled At */
+            disabled_at?: string | null;
+            /** Created By Name */
+            created_by_name?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Share Active
+             * @default false
+             */
+            share_active: boolean;
+            /**
+             * Share Count
+             * @default 0
+             */
+            share_count: number;
+            /** Last Shared At */
+            last_shared_at?: string | null;
+            /** Password */
+            password: string;
+        };
+        /**
          * GrowthFallbackEmployeeResponse
          * @description 获客中心全局兜底负责人查询响应（未设置时两字段均为 null）.
          */
@@ -7243,6 +7711,375 @@ export interface components {
              * @description 子投资人列表(整体替换)
              */
             sub_investors?: components["schemas"]["SubInvestorCreate"][] | null;
+        };
+        /**
+         * KeyLogItem
+         * @description 钥匙审计日志条目.
+         */
+        KeyLogItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Action */
+            action: string;
+            /** Actor Type */
+            actor_type: string;
+            /** Actor Id */
+            actor_id?: string | null;
+            /** Actor Name */
+            actor_name?: string | null;
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * KeyLogListResponse
+         * @description 房源全量审计日志列表（倒序）.
+         */
+        KeyLogListResponse: {
+            /** Items */
+            items: components["schemas"]["KeyLogItem"][];
+        };
+        /**
+         * KeyRevealResponse
+         * @description 明文揭示响应（仅查看动作返回，触发留痕）.
+         */
+        KeyRevealResponse: {
+            /** Password */
+            password: string;
+        };
+        /**
+         * KeyShareActionResponse
+         * @description 回收/延长等动作响应.
+         */
+        KeyShareActionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Revoked At */
+            revoked_at?: string | null;
+        };
+        /**
+         * KeyShareCreateItem
+         * @description 分享条目：一套房源 + 选中的一组有效普通密码.
+         */
+        KeyShareCreateItem: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /**
+             * Key Id
+             * Format: uuid
+             */
+            key_id: string;
+        };
+        /**
+         * KeyShareCreateRequest
+         * @description 生成分享请求（有效期默认 1 天）.
+         */
+        KeyShareCreateRequest: {
+            /** Items */
+            items: components["schemas"]["KeyShareCreateItem"][];
+            /**
+             * Expires In Days
+             * @description 有效期天数（1/7/30/自定义）
+             */
+            expires_in_days?: number | null;
+            /**
+             * Expires At
+             * @description 自定义失效时间，与 expires_in_days 二选一
+             */
+            expires_at?: string | null;
+        };
+        /**
+         * KeyShareCreatedResponse
+         * @description 生成分享成功响应.
+         */
+        KeyShareCreatedResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Token */
+            token: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /**
+         * KeyShareDetailItem
+         * @description 分享详情逐房源条目.
+         */
+        KeyShareDetailItem: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** Address */
+            address: string;
+            /**
+             * Key Id
+             * Format: uuid
+             */
+            key_id: string;
+            /** Key Deleted */
+            key_deleted: boolean;
+            /** Viewed */
+            viewed: boolean;
+            /** Last Viewed At */
+            last_viewed_at?: string | null;
+            /**
+             * Viewer Names
+             * @default []
+             */
+            viewer_names: string[];
+        };
+        /**
+         * KeyShareDetailResponse
+         * @description 分享详情（分享人视角）.
+         */
+        KeyShareDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Token */
+            token: string;
+            /** Status */
+            status: string;
+            /** Is Expired */
+            is_expired: boolean;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Revoked At */
+            revoked_at?: string | null;
+            /** Sharer Name */
+            sharer_name: string;
+            /** Items */
+            items: components["schemas"]["KeyShareDetailItem"][];
+            /** Timeline */
+            timeline: components["schemas"]["KeyShareTimelineItem"][];
+        };
+        /**
+         * KeyShareExtendRequest
+         * @description 延长有效期请求.
+         */
+        KeyShareExtendRequest: {
+            /**
+             * Expires In Days
+             * @description 延长天数
+             */
+            expires_in_days?: number | null;
+            /**
+             * Expires At
+             * @description 自定义新失效时间，与 expires_in_days 二选一
+             */
+            expires_at?: string | null;
+        };
+        /**
+         * KeyShareListItem
+         * @description 分享记录列表条目.
+         */
+        KeyShareListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Token */
+            token: string;
+            /** Status */
+            status: string;
+            /** Is Expired */
+            is_expired: boolean;
+            /** Items Count */
+            items_count: number;
+            /** Viewed Count */
+            viewed_count: number;
+            /** Viewer Names */
+            viewer_names: string[];
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Revoked At */
+            revoked_at?: string | null;
+        };
+        /**
+         * KeyShareListResponse
+         * @description 分享记录列表.
+         */
+        KeyShareListResponse: {
+            /** Items */
+            items: components["schemas"]["KeyShareListItem"][];
+        };
+        /**
+         * KeyShareTimelineItem
+         * @description 查看记录时间线条目.
+         */
+        KeyShareTimelineItem: {
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+            /** Action */
+            action: string;
+            /** Actor Type */
+            actor_type: string;
+            /** Actor Name */
+            actor_name?: string | null;
+            /** Project Name */
+            project_name?: string | null;
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * KeySummaryResponse
+         * @description 右栏钥匙管理卡三行概要（不显密文）.
+         */
+        KeySummaryResponse: {
+            manager_key: components["schemas"]["ManagerKeyResponse"];
+            /**
+             * Normal Active Count
+             * @default 0
+             */
+            normal_active_count: number;
+            /**
+             * Normal Pending Count
+             * @default 0
+             */
+            normal_pending_count: number;
+            /**
+             * Normal Disabled Count
+             * @default 0
+             */
+            normal_disabled_count: number;
+            /** Normal Updated At */
+            normal_updated_at?: string | null;
+            /** Normal Updated By Name */
+            normal_updated_by_name?: string | null;
+            /**
+             * Active Share Count
+             * @default 0
+             */
+            active_share_count: number;
+            /**
+             * Total View Count
+             * @default 0
+             */
+            total_view_count: number;
+        };
+        /**
+         * KeysDetailResponse
+         * @description 房源钥匙详情（管理密码 + 普通密码列表 + 计数）.
+         */
+        KeysDetailResponse: {
+            manager_key: components["schemas"]["ManagerKeyResponse"];
+            /** Normal Keys */
+            normal_keys: components["schemas"]["NormalKeyItem"][];
+            counts: components["schemas"]["NormalKeyCounts"];
+        };
+        /**
+         * KeysPropertiesResponse
+         * @description 我可操作的房源列表.
+         */
+        KeysPropertiesResponse: {
+            /** Items */
+            items: components["schemas"]["KeysPropertyItem"][];
+        };
+        /**
+         * KeysPropertyItem
+         * @description 我可操作的房源 + 钥匙徽章聚合（不显密文）.
+         */
+        KeysPropertyItem: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Name */
+            name: string;
+            /** Community Name */
+            community_name: string;
+            /** Address */
+            address: string;
+            /** Status */
+            status?: string | null;
+            /** Area */
+            area?: string | null;
+            /**
+             * Manager Key Set
+             * @default false
+             */
+            manager_key_set: boolean;
+            /**
+             * Normal Active Count
+             * @default 0
+             */
+            normal_active_count: number;
+            /**
+             * Normal Pending Count
+             * @default 0
+             */
+            normal_pending_count: number;
+            /**
+             * Normal Disabled Count
+             * @default 0
+             */
+            normal_disabled_count: number;
+            /**
+             * Active Share Count
+             * @default 0
+             */
+            active_share_count: number;
+            /**
+             * Total View Count
+             * @default 0
+             */
+            total_view_count: number;
         };
         /**
          * KpiCard
@@ -8780,6 +9617,29 @@ export interface components {
             message: string;
         };
         /**
+         * ManagerKeyPutRequest
+         * @description 管理密码录入/修改请求.
+         */
+        ManagerKeyPutRequest: {
+            /**
+             * Password
+             * @description 管理密码明文
+             */
+            password: string;
+        };
+        /**
+         * ManagerKeyResponse
+         * @description 管理密码概要（不显密文）.
+         */
+        ManagerKeyResponse: {
+            /** Set */
+            set: boolean;
+            /** Updated At */
+            updated_at?: string | null;
+            /** Updated By Name */
+            updated_by_name?: string | null;
+        };
+        /**
          * MarketSentimentResponse
          * @description 市场情绪响应.
          */
@@ -9265,6 +10125,152 @@ export interface components {
         NeighborhoodRadarResponse: {
             /** Items */
             items: components["schemas"]["NeighborhoodRadarItem"][];
+        };
+        /**
+         * NormalKeyBatchConfirmRequest
+         * @description 批量标记已录入请求.
+         */
+        NormalKeyBatchConfirmRequest: {
+            /** Ids */
+            ids: string[];
+        };
+        /**
+         * NormalKeyBatchCreateRequest
+         * @description 普通密码手动批量录入请求（路径一：即录即生效）.
+         */
+        NormalKeyBatchCreateRequest: {
+            /**
+             * Passwords
+             * @description 密码明文列表
+             */
+            passwords: string[];
+            /**
+             * Effective Date
+             * @description 生效日期，默认今日
+             */
+            effective_date?: string | null;
+        };
+        /**
+         * NormalKeyBatchDeleteResponse
+         * @description 批量删除响应（含分享引用提示数据）.
+         */
+        NormalKeyBatchDeleteResponse: {
+            /** Deleted Count */
+            deleted_count: number;
+            /** Deleted Ids */
+            deleted_ids: string[];
+            /** Share Referenced */
+            share_referenced: components["schemas"]["ShareReferencedItem"][];
+        };
+        /**
+         * NormalKeyCounts
+         * @description 普通密码组状态计数.
+         */
+        NormalKeyCounts: {
+            /**
+             * Active
+             * @default 0
+             */
+            active: number;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
+            /**
+             * Disabled
+             * @default 0
+             */
+            disabled: number;
+        };
+        /**
+         * NormalKeyGenerateRequest
+         * @description 系统随机生成请求（路径二：生成即待录入）.
+         */
+        NormalKeyGenerateRequest: {
+            /**
+             * Count
+             * @description 生成组数
+             */
+            count: number;
+        };
+        /**
+         * NormalKeyGenerateResponse
+         * @description 系统随机生成/换一批响应：本次生成的待录入组（含明文） + 最新钥匙详情.
+         */
+        NormalKeyGenerateResponse: {
+            /** Keys */
+            keys: components["schemas"]["GeneratedNormalKeyItem"][];
+            detail: components["schemas"]["KeysDetailResponse"];
+        };
+        /**
+         * NormalKeyItem
+         * @description 普通密码组条目（不显密文）.
+         */
+        NormalKeyItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Seq
+             * @default 0
+             */
+            seq: number;
+            /** Status */
+            status: string;
+            /** Effective Date */
+            effective_date?: string | null;
+            /** Confirmed At */
+            confirmed_at?: string | null;
+            /** Disabled At */
+            disabled_at?: string | null;
+            /** Created By Name */
+            created_by_name?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Share Active
+             * @default false
+             */
+            share_active: boolean;
+            /**
+             * Share Count
+             * @default 0
+             */
+            share_count: number;
+            /** Last Shared At */
+            last_shared_at?: string | null;
+        };
+        /**
+         * NormalKeyRegenerateRequest
+         * @description 换一批请求：替换未标记（待录入）组.
+         */
+        NormalKeyRegenerateRequest: {
+            /**
+             * Count
+             * @description 新组数，默认与被替换组数一致
+             */
+            count?: number | null;
+        };
+        /**
+         * NormalKeyUpdateRequest
+         * @description 普通密码修改/停用请求.
+         */
+        NormalKeyUpdateRequest: {
+            /** Password */
+            password?: string | null;
+            /** Status */
+            status?: "disabled" | null;
         };
         /**
          * OperationLogListResponse
@@ -11566,6 +12572,77 @@ export interface components {
              * @description 跟进时间
              */
             followed_at: string;
+        };
+        /**
+         * PublicKeyShareItem
+         * @description 分享页房源条目（掩码，不返回密文/明文）.
+         */
+        PublicKeyShareItem: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** Address */
+            address: string;
+            /**
+             * Key Id
+             * Format: uuid
+             */
+            key_id: string;
+            /** Key Deleted */
+            key_deleted: boolean;
+            /** Viewed */
+            viewed: boolean;
+            /** Last Viewed At */
+            last_viewed_at?: string | null;
+        };
+        /**
+         * PublicKeyShareResponse
+         * @description 免登录分享页响应.
+         *
+         *     status=revoked 时为回收态（D2），不返回任何密码条目；
+         *     is_expired 为软过期标记（不阻断查看，页顶提示条）。
+         */
+        PublicKeyShareResponse: {
+            /** Status */
+            status: string;
+            /** Is Expired */
+            is_expired: boolean;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Revoked At */
+            revoked_at?: string | null;
+            /** Sharer Name */
+            sharer_name: string;
+            /** Items Count */
+            items_count: number;
+            /** Viewed By Me Count */
+            viewed_by_me_count: number;
+            /** Items */
+            items: components["schemas"]["PublicKeyShareItem"][];
+        };
+        /**
+         * PublicKeyShareRevealResponse
+         * @description 经纪人查看明文响应（需 C 端登录，调用即留痕）.
+         */
+        PublicKeyShareRevealResponse: {
+            /**
+             * Key Id
+             * Format: uuid
+             */
+            key_id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** Password */
+            password: string;
         };
         /**
          * PublicLeadCountResponse
@@ -14181,6 +15258,19 @@ export interface components {
          */
         SettlementStatus: "unsettled" | "settled";
         /**
+         * ShareReferencedItem
+         * @description 引用被删密码组的进行中分享提示.
+         */
+        ShareReferencedItem: {
+            /**
+             * Share Id
+             * Format: uuid
+             */
+            share_id: string;
+            /** Token */
+            token: string;
+        };
+        /**
          * SigningMaterial
          * @description 签约材料附件.
          */
@@ -16742,6 +17832,494 @@ export interface operations {
             };
         };
     };
+    get_keys_summary_api_v1_projects__project_id__keys_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeySummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_keys_detail_api_v1_projects__project_id__keys_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_manager_key_api_v1_projects__project_id__keys_manager_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagerKeyPutRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_manager_key_api_v1_projects__project_id__keys_manager_reveal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyRevealResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_normal_batch_api_v1_projects__project_id__keys_normal_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NormalKeyBatchCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_normal_api_v1_projects__project_id__keys_normal_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NormalKeyGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NormalKeyGenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regenerate_normal_api_v1_projects__project_id__keys_normal_regenerate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NormalKeyRegenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NormalKeyGenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_confirm_normal_api_v1_projects__project_id__keys_normal_batch_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NormalKeyBatchConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_delete_normal_api_v1_projects__project_id__keys_normal_batch_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string[];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NormalKeyBatchDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_normal_api_v1_projects__project_id__keys_normal__key_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 密码组ID */
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_normal_api_v1_projects__project_id__keys_normal__key_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 密码组ID */
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NormalKeyUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_normal_api_v1_projects__project_id__keys_normal__key_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 密码组ID */
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NormalKeyUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_normal_key_api_v1_projects__project_id__keys_normal__key_id__reveal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 密码组ID */
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyRevealResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_keys_logs_api_v1_projects__project_id__keys_logs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyLogListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_next_contract_no_api_v1_projects_contract_no_next_get: {
         parameters: {
             query: {
@@ -17151,6 +18729,191 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_key_properties_api_v1_keys_properties_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysPropertiesResponse"];
+                };
+            };
+        };
+    };
+    list_shares_api_v1_keys_shares_get: {
+        parameters: {
+            query?: {
+                /** @description 状态过滤: active/expired/revoked */
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyShareListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_share_api_v1_keys_shares_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyShareCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyShareCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_share_detail_api_v1_keys_shares__share_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 分享ID */
+                share_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyShareDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_share_api_v1_keys_shares__share_id__revoke_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 分享ID */
+                share_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyShareActionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extend_share_api_v1_keys_shares__share_id__extend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 分享ID */
+                share_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyShareExtendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyShareActionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22321,6 +24084,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_key_share_api_v1_public_key_shares__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 分享令牌 */
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicKeyShareResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_public_key_api_v1_public_key_shares__token__keys__key_id__reveal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 分享令牌 */
+                token: string;
+                /** @description 密码组ID */
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicKeyShareRevealResponse"];
                 };
             };
             /** @description Validation Error */

@@ -1,0 +1,75 @@
+<view class="page">
+  <!-- 未登录 / 令牌失效（/keys 需 C 端令牌） -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请使用微信登录后查看钥匙管理</view>
+    <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <!-- 空态 -->
+  <view class="state" wx:elif="{{state === 'empty'}}">
+    <view class="state__title">暂无可操作的房源</view>
+    <view class="state__text">管理员可操作全部房源；项目负责人、对接负责人、渠道经理、讲房人、谈判人仅可操作其关联房源，无关人员不可见。</view>
+  </view>
+
+  <!-- 房源列表 -->
+  <block wx:elif="{{state === 'items'}}">
+    <view class="list-head">
+      <view class="list-count">共 {{total}} 套</view>
+      <view class="list-head-right">
+        <view class="chip chip--gray">相关人仅见关联房源</view>
+        <text class="mlink" bindtap="onShareRecords">分享记录</text>
+      </view>
+    </view>
+    <view class="search-box">
+      <view class="search-icon">⌕</view>
+      <input
+        class="search-input"
+        type="text"
+        value="{{searchKey}}"
+        placeholder="搜索小区 / 详细地址"
+        placeholder-class="search-ph"
+        confirm-type="search"
+        bindinput="onSearch"
+      />
+      <text class="search-clear" wx:if="{{searchKey}}" bindtap="onClearSearch">✕</text>
+    </view>
+    <view
+      class="prop-card"
+      wx:for="{{items}}"
+      wx:key="projectId"
+      bindtap="onItemTap"
+      data-project-id="{{item.projectId}}"
+      data-address="{{item.address}}"
+    >
+      <view class="prop-addr">{{item.address}}</view>
+      <view class="prop-meta" wx:if="{{item.metaText}}">{{item.metaText}}</view>
+      <view class="prop-stats">
+        <view class="chip {{item.managerOk ? 'chip--active' : 'chip--warn'}}">
+          <view wx:if="{{item.managerOk}}" class="cdot"></view>{{item.managerText}}
+        </view>
+        <view class="chip chip--gray">{{item.normalText}}</view>
+        <view class="chip chip--cool" wx:if="{{item.shareCount > 0}}">{{item.shareText}}</view>
+      </view>
+    </view>
+    <view wx:if="{{items.length === 0}}" class="state">
+      <view class="state__text">未找到匹配的房源</view>
+    </view>
+    <view class="mnote">权限说明：管理员可操作全部房源；项目负责人、对接负责人、渠道经理、讲房人、谈判人仅可操作其关联房源，无关人员不可见。所有查看与修改行为将记录日志。</view>
+  </block>
+
+  <!-- 底部留白 -->
+  <view style="height: 60rpx;"></view>
+</view>

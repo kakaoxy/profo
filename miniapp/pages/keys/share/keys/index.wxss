@@ -1,0 +1,237 @@
+/* 分享②选密码与有效期（C8）· warm 风格 */
+.page {
+  min-height: 100vh;
+  background: var(--fog);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ===== 通用卡 ===== */
+.mcard {
+  margin: 0 40rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+}
+.prop-card {
+  margin-top: 24rpx;
+  padding: 28rpx;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.card-name {
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.card-count {
+  font-size: 22rpx;
+  color: var(--graphite);
+  flex-shrink: 0;
+}
+
+/* ===== 密码单选行 ===== */
+.row-list {
+  margin-top: 20rpx;
+  border-top: 2rpx solid #ece7de;
+}
+.key-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 22rpx 0;
+  border-bottom: 2rpx solid #ece7de;
+}
+.key-row--last {
+  border-bottom: none;
+}
+.key-row--dim {
+  opacity: 0.5;
+}
+.key-seq {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--graphite);
+  flex-shrink: 0;
+  min-width: 48rpx;
+}
+.key-row .mask {
+  letter-spacing: 6rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.key-row-chips {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10rpx;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.key-row-manager {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+.radio {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  border: 3rpx solid var(--dove);
+  flex-shrink: 0;
+  position: relative;
+  box-sizing: border-box;
+}
+.radio--on {
+  border-color: var(--ink);
+}
+.radio--on::after {
+  content: "";
+  position: absolute;
+  inset: 6rpx;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.radio--off {
+  border-color: #f0f0f2;
+  background: var(--fog);
+}
+
+/* ===== chip ===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 20rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8rpx 16rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+}
+.chip--cool {
+  background: var(--sky-wash);
+  color: #2c4d7f;
+}
+.chip--gray {
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.chip--mute {
+  background: var(--fog);
+  color: var(--dove);
+}
+
+/* ===== 有效期 ===== */
+.expire-card {
+  padding: 28rpx;
+}
+.expire-chips {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 20rpx;
+  flex-wrap: wrap;
+}
+.mode-chip {
+  padding: 16rpx 28rpx;
+  border-radius: 9999rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  background: #eef0f3;
+  color: #6b6e76;
+}
+.mode-chip--on {
+  background: var(--ink);
+  color: var(--pure-white);
+}
+.custom-box {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.custom-input {
+  width: 200rpx;
+  height: 80rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid #ece7de;
+  background: var(--pure-white);
+  padding: 0 24rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+  box-sizing: border-box;
+}
+.custom-ph {
+  color: var(--dove);
+}
+.custom-unit {
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+
+/* ===== mnote / 底部 ===== */
+.mnote {
+  margin: 8rpx 40rpx 0;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #6b6e76;
+  padding: 20rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 24rpx;
+}
+.footer-bar {
+  margin-top: 24rpx;
+}
+.btn-dark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 40rpx;
+  height: 92rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.btn-dark--disabled {
+  opacity: 0.35;
+}
+
+/* ===== 状态分支 ===== */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 120rpx 40rpx;
+}
+.state__title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  text-align: center;
+}
+.state__btn {
+  margin-top: 20rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 500;
+}
