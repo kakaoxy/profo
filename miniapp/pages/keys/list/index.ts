@@ -22,6 +22,8 @@ interface DisplayItem {
   managerOk: boolean;
   managerText: string;
   normalText: string;
+  /** 是否有有效普通密码（无则分享前提醒去生成）. */
+  hasNormal: boolean;
   shareCount: number;
   shareText: string;
 }
@@ -46,6 +48,7 @@ interface PageCustom {
   onClearSearch(): void;
   onShareRecords(): void;
   onItemTap(e: WechatMiniprogram.BaseEvent): void;
+  onShareTap(e: WechatMiniprogram.BaseEvent): void;
   onRetry(): void;
   onGoLogin(): void;
 }
@@ -69,6 +72,7 @@ function toDisplay(item: KeysPropertyItem): DisplayItem {
     managerOk: item.manager_key_set,
     managerText: item.manager_key_set ? "管理密码已设" : "管理密码未设",
     normalText: normalParts.join(" · "),
+    hasNormal: item.normal_active_count > 0,
     shareCount: item.active_share_count,
     shareText: `分享中 ${item.active_share_count}`,
   };
@@ -157,6 +161,35 @@ Page<PageData, PageCustom>({
     const address = e.currentTarget.dataset.address as string;
     wx.navigateTo({
       url: `/pages/keys/detail/index?project_id=${encodeURIComponent(projectId)}&name=${encodeURIComponent(address)}`,
+    });
+  },
+
+  /**
+   * 卡片「分享」按钮（catchtap 阻断整卡冒泡）。
+   * 无有效普通密码时弹窗提醒，确认后直达批量录入页生成；否则带 project_id 进分享第一步页预选该房源.
+   */
+  onShareTap(e: WechatMiniprogram.BaseEvent) {
+    const projectId = e.currentTarget.dataset.projectId as string;
+    const address = e.currentTarget.dataset.address as string;
+    const hasNormal = e.currentTarget.dataset.hasNormal as boolean;
+    if (!hasNormal) {
+      wx.showModal({
+        title: "暂无可分享的密码",
+        content: `「${address}」还没有有效普通密码，请先生成密码再分享。`,
+        confirmText: "去生成",
+        cancelText: "取消",
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({
+              url: `/pages/keys/batch-entry/index?project_id=${encodeURIComponent(projectId)}&name=${encodeURIComponent(address)}`,
+            });
+          }
+        },
+      });
+      return;
+    }
+    wx.navigateTo({
+      url: `/pages/keys/share/properties/index?project_id=${encodeURIComponent(projectId)}`,
     });
   },
 

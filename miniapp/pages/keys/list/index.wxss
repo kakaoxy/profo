@@ -105,11 +105,34 @@
   padding: 28rpx 28rpx 24rpx;
   box-shadow: var(--shadow-sm);
 }
+.prop-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
 .prop-addr {
+  flex: 1;
+  min-width: 0;
   font-size: 30rpx;
   font-weight: 500;
   color: var(--ink);
   line-height: 1.45;
+}
+/* 分享按钮触控热区：视觉胶囊外扩点击范围（向上/下/左含卡片间距），负 margin 抵消占位避免挤压地址 */
+.prop-share-hit {
+  flex-shrink: 0;
+  padding: 10rpx 8rpx 10rpx 14rpx;
+  margin: -10rpx -8rpx -10rpx -14rpx;
+}
+/* 卡片右上「分享」胶囊按钮（对齐 chip--active：apricot-wash 底 + rust 字） */
+.prop-share-btn {
+  font-size: 26rpx;
+  font-weight: 500;
+  line-height: 1;
+  padding: 16rpx 30rpx;
+  border-radius: 9999rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
 }
 .prop-meta {
   font-size: 24rpx;

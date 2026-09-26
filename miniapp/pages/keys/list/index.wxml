@@ -54,7 +54,18 @@
       data-project-id="{{item.projectId}}"
       data-address="{{item.address}}"
     >
-      <view class="prop-addr">{{item.address}}</view>
+      <view class="prop-top">
+        <view class="prop-addr">{{item.address}}</view>
+        <view
+          class="prop-share-hit"
+          catchtap="onShareTap"
+          data-project-id="{{item.projectId}}"
+          data-address="{{item.address}}"
+          data-has-normal="{{item.hasNormal}}"
+        >
+          <view class="prop-share-btn">分享</view>
+        </view>
+      </view>
       <view class="prop-meta" wx:if="{{item.metaText}}">{{item.metaText}}</view>
       <view class="prop-stats">
         <view class="chip {{item.managerOk ? 'chip--active' : 'chip--warn'}}">

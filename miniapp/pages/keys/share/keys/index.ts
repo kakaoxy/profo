@@ -2,8 +2,9 @@
  * 分享给经纪人 · 第二步 · 选密码与有效期（设计稿 C8）.
  *
  * 对每个所选房源并行 GET /projects/{id}/keys（Promise.all），
- * 每套卡内 radio 单选「有效」组（默认第一组有效组；待录入/已停用置灰不可选，
- * 管理密码行仅占位说明、不可分享）。有效期 chip：1 天（默认）/7/30/自定义（1–365）。
+ * 每套卡内 radio 单选「有效」组（默认上次分享密码的下一条有效组，循环回绕、
+ * 跳过不可选行；待录入/已停用置灰不可选，管理密码行仅占位说明、不可分享）。
+ * 有效期 chip：1 天（默认）/7/30/自定义（1–365）。
  * 「生成分享」→ POST /keys/shares {items, expires_in_days} → 第三步成功页。
  *
  * 卡头地址来自 properties 页写入的 storage 快照（SHARE_PROPS_STORAGE_KEY，
@@ -44,6 +45,8 @@ interface PropCard {
   selectableCount: number;
   rows: PropKeyRow[];
   selectedId: string;
+  /** 自动默认选中行：上次分享密码的下一条可选行（无历史回退第一条可选）. */
+  defaultId: string;
 }
 
 type ExpireChoice = 1 | 7 | 30 | "custom";
@@ -85,9 +88,34 @@ function rowChip(row: PropKeyRow, selected: boolean, isDefault: boolean): { chip
   return { chipClass: "chip--gray", chipText: "有效" };
 }
 
+/**
+ * 计算本套自动默认选中的可选行：上次分享密码（lastSharedAt 最新者）的下一条
+ * 可选行（seq 序、循环回绕、跳过待录入/已停用）；无分享历史或该行已不在列表
+ * 时回退第一条可选行.
+ */
+function pickDefaultId(rows: PropKeyRow[]): string {
+  if (rows.every((r) => !r.selectable)) {
+    return "";
+  }
+  const withShared = rows.filter((r) => r.lastSharedAt);
+  const lastSharedId = withShared.length
+    ? withShared.reduce((a, b) => (b.lastSharedAt > a.lastSharedAt ? b : a)).keyId
+    : "";
+  const lastIdx = rows.findIndex((r) => r.keyId === lastSharedId);
+  if (lastIdx >= 0) {
+    for (let i = 1; i <= rows.length; i++) {
+      const r = rows[(lastIdx + i) % rows.length];
+      if (r.selectable) {
+        return r.keyId;
+      }
+    }
+  }
+  return rows.find((r) => r.selectable)?.keyId ?? "";
+}
+
 /** 重建每套卡的行 chip（默认选中 id 或用户选择变化后调用）. */
 function refreshChips(card: PropCard): PropCard {
-  const defaultId = card.rows.find((r) => r.status === "active")?.keyId ?? "";
+  const { defaultId } = card;
   return {
     ...card,
     rows: card.rows.map((r) => {
@@ -163,13 +191,14 @@ Page<PageData, PageCustom>({
         rows.forEach((r) => {
           r.isLastShared = r.keyId === lastSharedId;
         });
-        const firstActive = rows.find((r) => r.selectable);
+        const defaultId = pickDefaultId(rows);
         const card: PropCard = {
           projectId: id,
           name: nameMap.get(id) || "房源",
           selectableCount: rows.filter((r) => r.selectable).length,
           rows,
-          selectedId: firstActive?.keyId ?? "",
+          selectedId: defaultId,
+          defaultId,
         };
         return refreshChips(card);
       });
