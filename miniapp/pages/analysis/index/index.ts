@@ -142,6 +142,7 @@ interface PageCustom {
   onRetry(): void;
   onClearFilters(): void;
   onGoBack(): void;
+  onTapPropertyList(): void;
 }
 
 /** canvas 节点信息（fields 回调的 node/size 子集）. */
@@ -597,5 +598,13 @@ Page<PageData, PageCustom>({
 
   onGoBack() {
     wx.navigateBack();
+  },
+
+  /** 底部「查看房源明细」：以当前小区/商圈名预填关键词跳转房源查询页，无筛选则进完整列表. */
+  onTapPropertyList() {
+    const kw = this.data.communityName || this.data.businessCircle || "";
+    wx.navigateTo({
+      url: "/pages/properties/list/index" + (kw ? "?keyword=" + encodeURIComponent(kw) : ""),
+    });
   },
 });

@@ -360,5 +360,16 @@
     </block>
   </view>
 
+  <!-- 底部「查看房源明细」通栏按钮（页面加载成功后始终显示） -->
+  <view
+    wx:if="{{!loading && authState === 'ok' && !error}}"
+    class="property-entry"
+    hover-class="property-entry--active"
+    bindtap="onTapPropertyList"
+  >
+    <text>{{communityName ? '查看「' + communityName + '」小区房源明细' : businessCircle ? '查看「' + businessCircle + '」商圈房源明细' : '查看房源明细'}}</text>
+    <text class="property-entry__arrow">→</text>
+  </view>
+
   <view class="bottom-safe-area"></view>
 </view>

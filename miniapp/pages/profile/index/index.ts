@@ -36,12 +36,11 @@ const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 /** 内部入口（均带 route，onMenuTap 统一 navigateTo 跳转）. */
 const INTERNAL_ENTRIES = [
   { key: "evaluate", title: "评估工作台", sub: "待评估线索处理", icon: "评", route: "/pages/valuation/evaluate/index" },
-  { key: "properties", title: "房源查询", sub: "交易中心月度签约房源", icon: "房", route: "/pages/properties/list/index" },
-  { key: "analysis", title: "数据分析", sub: "商圈/小区市场行情", icon: "析", route: "/pages/analysis/index/index" },
-  { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
+  { key: "analysis", title: "房源分析", sub: "商圈/小区行情 · 签约房源明细", icon: "析", route: "/pages/analysis/index/index" },
   { key: "renovation", title: "装修记录", sub: "改造 / 施工进度", icon: "装", route: "/pages/renovation/projects/index/index" },
-  { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账", route: "/pages/ledger/projects/index/index" },
+  { key: "viewing", title: "带看记录", sub: "带看 / 谈价 / 面谈", icon: "带", route: "/pages/viewing/projects/index/index" },
   { key: "keys", title: "钥匙管理", sub: "管理密码 · 普通密码 · 分享", icon: "钥", route: "/pages/keys/list/index" },
+  { key: "ledger", title: "项目记账", sub: "收支 / 台账", icon: "账", route: "/pages/ledger/projects/index/index" },
 ];
 
 /** 分享获客入口（onMenuTap 按 action 分发：customers 进我的客户聚合页，switch-tab-* 为 tabBar 页 switchTab，recruit 走 onRecruitTap 拉活动跳转，property-sheet 进我的房源单页）. */

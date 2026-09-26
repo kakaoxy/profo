@@ -10,9 +10,9 @@
 type EnvVersion = "develop" | "trial" | "release";
 
 const ENV_BASE_URL: Record<EnvVersion, string> = {
-  // develop: "https://fangmengchina.com/api/v1",
+  develop: "https://fangmengchina.com/api/v1",
   // 本地联调时改为此行（注意提交前切回线上域名，测试基线依赖生产 origin）：
-  develop: "http://192.168.110.82:8000/api/v1",
+  // develop: "http://192.168.110.82:8000/api/v1",
   trial: "https://fangmengchina.com/api/v1",
   release: "https://fangmengchina.com/api/v1",
 };
