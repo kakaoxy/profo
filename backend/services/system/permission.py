@@ -213,6 +213,8 @@ class PermissionService:
 
         # 同步更新 Role.permissions JSON 字段（向后兼容）
         role.permissions = list(permission_codes) if permission_codes else None
+        # 标记权限集已被人工编辑：启动种子迁移不再回填该角色默认权限
+        role.permissions_customized = True
         db.commit()
 
         return list(permission_codes)

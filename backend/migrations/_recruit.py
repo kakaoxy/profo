@@ -66,9 +66,6 @@ def _ensure_qr_scene_indexes(engine: Engine) -> None:
     """
     from models.recruit import RecruitQRScene
 
-    # _index_exists 依赖 pg_indexes，仅 PostgreSQL 需要显式补建（SQLite 测试库随建表创建）
-    if engine.dialect.name != "postgresql":
-        return
     if "recruit_qr_scenes" not in _get_table_names(engine):
         return
 

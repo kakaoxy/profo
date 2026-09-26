@@ -49,10 +49,6 @@ def _ensure_property_sheet_indexes(engine: Engine, tables: list) -> None:
     ``create_all`` 仅在表不存在时随建表创建索引；表已存在的部署（如本地调试库）
     需显式补建。索引定义直接复用模型 ``__table_args__`` 声明，避免双份维护。
     """
-    # _index_exists 依赖 pg_indexes，仅 PostgreSQL 需要显式补建（SQLite 测试库随建表创建）
-    if engine.dialect.name != "postgresql":
-        return
-
     for table in tables:
         for idx in table.indexes:
             if _index_exists(engine, idx.name):

@@ -5,10 +5,8 @@
 
 数据库支持：本迁移体系（以及整个后端）仅支持 PostgreSQL（生产/开发/测试均使用）。
 索引检查（``_index_exists`` 依赖 ``pg_indexes``）、enum 同步（``ALTER TYPE ...
-ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力；非 PG 后端（如临时
-SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 DDL（索引/枚举/锁）
-被各子模块的 ``engine.dialect.name != "postgresql"`` 守卫跳过，不报错但也
-不会创建对应索引——请勿在非 PostgreSQL 数据库上运行本应用。
+ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup_migrations``
+入口显式拒绝非 PostgreSQL 引擎（Fail Loud）。
 
 本包按职责拆分为多个子模块，``run_startup_migrations`` 统一编排调用：
 - ``_helpers``：通用辅助函数（``_column_exists`` / ``_index_exists`` / ``_pg_quote_literal``）
@@ -71,7 +69,9 @@ SQLite）下，迁移只执行跨方言通用的 DDL（建列等），PG 专属 
 - rebuild_contract_no_index: 重建 idx_contract_no 为部分唯一索引（WHERE is_deleted=false），
   清理已删除项目的合同记录，允许合同编号在项目软删除后被复用
 - migrate_permission_system: 幂等创建权限系统三张表（permissions/role_permissions/operation_logs），
-  初始化系统权限点，为 4 个内置角色分配默认权限集
+  初始化系统权限点，为 4 个内置角色分配默认权限集；首次执行时为 roles 表补加
+  permissions_customized 列并按历史 assign_permissions 审计回填（标记人工编辑过权限集的角色），
+  种子回填跳过已标记角色，保证后台移除的权限不被重启静默加回
 - add_lead_eval_history_and_expected_price: 幂等创建 lead_eval_histories 表（评估历史）+ 索引
   idx_lead_eval_history_lead + 为 leads 表添加 expected_price 列（业主心理预期价）
 - add_lead_status_lost_to_competitor: 幂等收敛 PostgreSQL leadstatus enum 为大写
@@ -231,11 +231,15 @@ def run_startup_migrations(engine: Engine) -> None:
     解决：PostgreSQL session-level advisory lock 串行化。第一个 worker 获取锁后
     执行全部迁移，其余 worker 阻塞等待；锁释放后依次执行（迁移幂等，重复执行
     为快速 no-op：``_column_exists`` 检查 + Redis 完成标记跳过）。
-    非 PostgreSQL 后端（开发/测试 SQLite 等）直接执行，无并发问题。
+
+    Raises:
+        RuntimeError: 非 PostgreSQL 引擎（本项目仅支持 PostgreSQL，各子迁移中的
+            pg_indexes / advisory lock / trgm / JSONB / uuid 等均为 PG 专属能力）。
+
     """
     if engine.dialect.name != "postgresql":
-        _run_all_migrations(engine)
-        return
+        msg = f"启动迁移仅支持 PostgreSQL，当前引擎方言为 {engine.dialect.name!r}，拒绝执行。请检查 DATABASE_URL 配置。"
+        raise RuntimeError(msg)
 
     # 在独立连接上持有 session-level advisory lock，跨 worker 互斥
     # （迁移事务借用连接池中其他连接，锁仅用于互斥，不影响事务隔离）

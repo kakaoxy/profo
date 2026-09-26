@@ -37,9 +37,6 @@ def create_key_tables(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine, tables=tables, checkfirst=True)
 
     # 补建索引（处理表已存在但索引缺失的部署）
-    # _index_exists 依赖 pg_indexes，仅 PostgreSQL 需要显式补建（SQLite 测试库随建表创建）
-    if engine.dialect.name != "postgresql":
-        return
     for table in tables:
         for idx in table.indexes:
             if _index_exists(engine, idx.name):
@@ -55,11 +52,7 @@ def add_key_audit_share_id_index(engine: Engine) -> None:
     （KeyService.get_logs）均以 ``detail ->> 'share_id'`` 作为过滤条件；该条件无法命中
     project_id/action 等普通列索引，缺少表达式索引时每次都全表扫描 key_audit_logs
     （经纪人每次查看明文都会写一行 agent_view，表持续增长）。
-
-    SQLite 测试库数据量小且无法使用 PG 表达式索引，直接跳过。
     """
-    if engine.dialect.name != "postgresql":
-        return
     if _index_exists(engine, _KEY_AUDIT_SHARE_ID_INDEX):
         return
     logger.info("迁移：创建钥匙审计日志 share_id 表达式索引 %s", _KEY_AUDIT_SHARE_ID_INDEX)

@@ -10,8 +10,7 @@ PostgreSQL btree 索引无法命中，数据量增长后退化为顺序扫描。
 - 多列 GIN 支持任意列子集条件（含同一索引跨列 OR），按表合并建索引控制数量；
 - 索引表达式必须与查询侧 ``func.lower(col)`` 生成的 SQL 逐字一致才能命中；
 - roles.name 搜索（系统角色表，行数个位数）数据量可控，不建索引；
-- 幂等：``_index_exists`` 检查 + ``CREATE INDEX IF NOT EXISTS`` 双保险；
-  非 PostgreSQL 后端（临时 SQLite 测试）直接跳过。
+- 幂等：``_index_exists`` 检查 + ``CREATE INDEX IF NOT EXISTS`` 双保险。
 """
 
 import logging
@@ -72,12 +71,8 @@ def add_trgm_search_indexes(engine: Engine) -> None:
     """为模糊搜索列创建 pg_trgm GIN 索引（O1，幂等）.
 
     - 先安装 pg_trgm 扩展（IF NOT EXISTS 幂等）；
-    - 逐个经 ``_index_exists`` 检查后创建，多列 GIN 覆盖同表多个搜索列；
-    - 非 PostgreSQL 后端跳过。
+    - 逐个经 ``_index_exists`` 检查后创建，多列 GIN 覆盖同表多个搜索列。
     """
-    if engine.dialect.name != "postgresql":
-        return
-
     with engine.begin() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
 

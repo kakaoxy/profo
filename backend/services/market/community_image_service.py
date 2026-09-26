@@ -92,7 +92,7 @@ class CommunityImageService:
             ServiceException: 数据库操作失败
 
         """
-        # 应用层去重（SQLite 测试环境无部分唯一索引兜底）
+        # 应用层预检查：先于部分唯一索引给出友好报错，避免裸 IntegrityError
         existing = (
             db.query(CommunityImage)
             .filter(
@@ -252,7 +252,7 @@ class CommunityImageService:
             logger.debug("community_id 为空，跳过户型图归类: url=%s", url)
             return
 
-        # 1. 按 URL 去重（与 PostgreSQL 部分唯一索引双保险，SQLite 测试环境由此兜底）
+        # 1. 按 URL 去重（与部分唯一索引双保险：数据库约束兜底并发，应用层给出友好报错）
         existing_by_url = (
             db.query(CommunityImage)
             .filter(

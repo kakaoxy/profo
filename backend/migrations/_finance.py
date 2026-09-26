@@ -173,11 +173,7 @@ def migrate_finance_subjects_modes_to_jsonb(engine: Engine) -> None:
       （本项目 modes 仅使用 @> 包含查询，符合该索引策略）。
     - 幂等：通过 information_schema 判断 data_type，已是 jsonb 则跳过 ALTER；
       索引通过 _index_exists 检查跳过 CREATE。
-    - SQLite 测试后端不支持 JSONB/GIN jsonb_path_ops，直接跳过。
     """
-    if engine.dialect.name != "postgresql":
-        return
-
     inspector = inspect(engine)
     if "finance_subjects" not in inspector.get_table_names():
         return

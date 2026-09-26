@@ -110,9 +110,9 @@ class FinanceSubject(BaseModel):
         comment="成本层级1-7: ①取得成本/②直接改造成本/③交易费用/④资金成本/⑤现金流专属/⑥收入项/⑦配对项",
     )
     pnl: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, comment="是否进损益")
-    # P2-11: PostgreSQL 使用 JSONB（支持 @> 包含查询与 GIN 索引），SQLite 测试回退到 JSON
+    # P2-11: JSONB 支持 @> 包含查询与 GIN 索引
     modes: Mapped[list[str]] = mapped_column(
-        JSONB().with_variant(JSON, "sqlite"),
+        JSONB,
         nullable=False,
         comment="适用业务模式: ['agent']/['acquire']/两者",
     )

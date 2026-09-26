@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Index, String, Uuid
+from sqlalchemy import DateTime, Index, String, Uuid
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -39,7 +39,7 @@ class KeyShare(BaseModel):
     token: Mapped[str] = mapped_column(String(64), nullable=False, comment="分享令牌(secrets.token_urlsafe)")
     sharer_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="分享人ID(逻辑外键users.id)")
     items: Mapped[list] = mapped_column(
-        JSONB().with_variant(JSON, "sqlite"),
+        JSONB,
         nullable=False,
         comment="分享条目 [{project_id, key_id}]",
     )
@@ -100,7 +100,7 @@ class KeyAuditLog(BaseModel):
     actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="操作人ID")
     actor_name: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="操作人名称快照")
     detail: Mapped[dict | None] = mapped_column(
-        JSONB().with_variant(JSON, "sqlite"),
+        JSONB,
         nullable=True,
         comment="详情 JSON(对象/数量/分享token等)",
     )

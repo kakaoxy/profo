@@ -9,7 +9,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from migrations._helpers import _index_exists, _pg_quote_literal
+from migrations._helpers import _column_exists, _index_exists, _pg_quote_literal
 from migrations._seeds import _PERMISSIONS_SEED, _ROLE_PERMISSIONS_SEED
 
 logger = logging.getLogger(__name__)
@@ -77,6 +77,8 @@ def migrate_permission_system(engine: Engine) -> None:
     3. 为 4 个内置角色（admin/operator/user/customer）分配默认权限集
        （_ROLE_PERMISSIONS_SEED）：跳过已存在的 (role_id, permission_id) 关联，
        仅插入缺失关联，参考 _ROLE_PERMISSIONS_SEED 映射。
+       permissions_customized=TRUE 的角色（后台人工编辑过权限集）整体跳过，
+       人工编辑权威高于种子，避免重启后把管理员移除的权限静默加回。
 
     4. 关于现有 Role.permissions JSON 数据迁移：决策跳过。
        原因：旧权限码（view_data/edit_data/manage_users/manage_roles）与新权限码
@@ -125,6 +127,49 @@ def migrate_permission_system(engine: Engine) -> None:
             if added:
                 logger.info("迁移：同步 permissioncategory enum（共 %d 个值）", added)
 
+    # 1.2 幂等添加 roles.permissions_customized 列，并按历史审计回填已人工定制角色。
+    #     该标记用于阻止本迁移第 3 步的种子回填覆盖管理员在后台的人工修改
+    #     （修复前：移除的种子权限在后端重启后被静默插回，且不写审计日志）。
+    if not _column_exists(engine, "roles", "permissions_customized"):
+        logger.info("迁移：roles 添加 permissions_customized 列")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE roles ADD COLUMN permissions_customized BOOLEAN NOT NULL DEFAULT FALSE"))
+        # 历史回填：曾通过后台保存过角色权限的角色视为已人工定制，避免本修复上线后
+        # 首次重启对这类角色再发生最后一次种子回填。operation_logs 已在 step 1 create_all。
+        # 口径：action=assign_permissions，或 update 前后快照的 permission_codes 不一致
+        # （前端编辑弹窗整表提交 name/description/permission_codes，权限变更记录为 update）。
+        # 用 ORM 读取 JSON 快照并在 Python 比较，反序列化行为由列类型统一保证；
+        # 放在加列分支内保证仅执行一次。
+        from sqlalchemy.orm import Session
+
+        from models.system import OperationLog
+        from models.user import Role
+
+        customized_ids: set[str] = set()
+        with Session(engine) as session:
+            logs = (
+                session.query(OperationLog.resource_id, OperationLog.action, OperationLog.before, OperationLog.after)
+                .filter(OperationLog.resource_type == "role")
+                .all()
+            )
+            for resource_id, action, before, after in logs:
+                if not resource_id:
+                    continue
+                if action == "assign_permissions":
+                    customized_ids.add(resource_id)
+                    continue
+                before_codes = (before or {}).get("permission_codes")
+                after_codes = (after or {}).get("permission_codes")
+                if before_codes is not None and after_codes is not None and before_codes != after_codes:
+                    customized_ids.add(resource_id)
+            if customized_ids:
+                session.query(Role).filter(Role.id.in_(sorted(customized_ids))).update(
+                    {Role.permissions_customized: True}, synchronize_session=False
+                )
+                session.commit()
+        if customized_ids:
+            logger.info("迁移：按审计日志回填 %d 个已人工编辑权限的角色", len(customized_ids))
+
     # 2. 初始化系统权限点（幂等：跳过已存在的 code）
     with engine.begin() as conn:
         existing_codes = {row[0] for row in conn.execute(text("SELECT code FROM permissions")).fetchall()}
@@ -152,12 +197,13 @@ def migrate_permission_system(engine: Engine) -> None:
     if inserted:
         logger.info("迁移：初始化 %d 个系统权限点", inserted)
 
-    # 3. 为 4 个内置角色分配默认权限集（幂等：跳过已存在的关联）
+    # 3. 为 4 个内置角色分配默认权限集（幂等：跳过已存在的关联；
+    #    跳过 permissions_customized=TRUE 的角色——人工编辑权威高于种子，避免覆盖后台修改）
     with engine.begin() as conn:
-        # 3.1 查询内置角色 id（按 code）
-        role_stmt = text("SELECT id, code FROM roles WHERE code IN :codes").bindparams(
-            bindparam("codes", expanding=True)
-        )
+        # 3.1 查询内置角色 id（按 code，仅未人工定制的角色）
+        role_stmt = text(
+            "SELECT id, code FROM roles WHERE code IN :codes AND permissions_customized = FALSE"
+        ).bindparams(bindparam("codes", expanding=True))
         role_rows = conn.execute(role_stmt, {"codes": list(_ROLE_PERMISSIONS_SEED.keys())}).fetchall()
         role_id_by_code: dict[str, str] = {row[1]: row[0] for row in role_rows}
 
@@ -234,7 +280,8 @@ def migrate_project_business_permission(engine: Engine) -> None:
 
     覆盖场景：
     1. 插入 4 个新权限点（已存在的跳过）；
-    2. 为 admin/operator 分配新权限码（user/customer 不分配，由业务身份豁免）；
+    2. 为 admin/operator 分配新权限码（user/customer 不分配，由业务身份豁免；
+       permissions_customized=TRUE 的角色跳过，人工编辑权威高于种子）；
     3. 通过 _index_exists 检查后创建 ProjectInteraction.operator_id 索引
        （ix_project_interaction_operator_id）。
 
@@ -282,12 +329,13 @@ def migrate_project_business_permission(engine: Engine) -> None:
     if inserted:
         logger.info("迁移：插入 %d 个 project 业务身份权限点", inserted)
 
-    # 2. 为 admin/operator 分配新权限码（跳过已存在的关联）
+    # 2. 为 admin/operator 分配新权限码（跳过已存在的关联；
+    #    跳过 permissions_customized=TRUE 的角色，人工编辑权威高于种子）
     role_codes_to_update = ["admin", "operator"]
     with engine.begin() as conn:
-        role_stmt = text("SELECT id, code FROM roles WHERE code IN :codes").bindparams(
-            bindparam("codes", expanding=True)
-        )
+        role_stmt = text(
+            "SELECT id, code FROM roles WHERE code IN :codes AND permissions_customized = FALSE"
+        ).bindparams(bindparam("codes", expanding=True))
         role_rows = conn.execute(role_stmt, {"codes": role_codes_to_update}).fetchall()
         role_id_by_code: dict[str, str] = {row[1]: row[0] for row in role_rows}
 

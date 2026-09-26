@@ -13,6 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -61,6 +62,16 @@ class Role(BaseModel):
 
     # 权限配置
     permissions: Mapped[list | None] = mapped_column(JSON, nullable=True, comment="权限列表")
+    # 权限集是否已被人工编辑：TRUE 后启动种子迁移不再回填该角色的默认权限
+    # server_default 用 text("false") 无引号布尔关键字，与迁移 ALTER 的 DEFAULT FALSE
+    # 字面语义一致（字符串形式会渲染为 DEFAULT 'false' 字面量，含糊且易误导）
+    permissions_customized: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        server_default=text("false"),
+        comment="权限集是否已被人工编辑（TRUE 后种子迁移跳过回填）",
+    )
 
     # 状态
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否激活")

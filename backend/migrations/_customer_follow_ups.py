@@ -27,9 +27,6 @@ def create_customer_follow_ups_table(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine, tables=[table], checkfirst=True)
 
     # 补建索引（处理表已存在但索引缺失的部署）
-    # _index_exists 依赖 pg_indexes，仅 PostgreSQL 需要显式补建（SQLite 测试库随建表创建）
-    if engine.dialect.name != "postgresql":
-        return
     for idx in table.indexes:
         if _index_exists(engine, idx.name):
             continue

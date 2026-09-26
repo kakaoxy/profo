@@ -343,7 +343,6 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
     - PostgreSQL: ``ALTER COLUMN ... TYPE uuid USING <col>::uuid``（既有值均为
       ``str(uuid.uuid4())`` 生成的标准 UUID4 字符串，``::uuid`` 转换安全）
     - 幂等：通过 ``information_schema.columns.data_type`` 判断，已是 ``uuid`` 则跳过
-    - 非 PG 后端（开发/测试 SQLite 等）直接跳过（SQLite 无独立 uuid 类型）
     - 表名/列名来自可信模型元数据；DDL 不支持绑定参数故字符串拼接
 
     预检行为:
@@ -372,9 +371,6 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
         ``Mapped[str] = mapped_column(String(36), ...)`` 并移除本迁移函数的调用，
         否则下次启动会再次迁移为 uuid。
     """
-    if engine.dialect.name != "postgresql":
-        return
-
     import time
 
     from sqlalchemy import Uuid

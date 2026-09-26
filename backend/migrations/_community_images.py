@@ -5,8 +5,7 @@
 - 表/索引创建通过 SQLAlchemy Core API（``Base.metadata.create_all`` + ``checkfirst=True``）
   实现 ``CREATE TABLE IF NOT EXISTS`` 语义
 - 部分唯一索引 ``uq_community_image_url`` 仅约束 ``is_deleted=False`` 的记录，
-  允许同小区的已删除记录被重新插入。SQLite 不支持部分索引的 ``WHERE`` 子句
-  部分版本会忽略，故测试环境回退到应用层去重（``CommunityImageService`` 已实现）
+  允许同小区的已删除记录被重新插入
 """
 
 import logging
@@ -23,7 +22,7 @@ def create_community_images_table(engine: Engine) -> None:
     """幂等创建 ``community_images`` 表与索引.
 
     1. 通过模型 __table__ 元数据建表（CREATE TABLE IF NOT EXISTS 语义）
-    2. 幂等创建部分唯一索引 ``uq_community_image_url``（仅 PostgreSQL）：
+    2. 幂等创建部分唯一索引 ``uq_community_image_url``：
        ``UNIQUE (community_id, url) WHERE is_deleted = false``
     """
     from models import Base
@@ -32,9 +31,8 @@ def create_community_images_table(engine: Engine) -> None:
     # checkfirst=True 保证幂等；部分唯一索引 uq_community_image_url 由下方显式补建
     Base.metadata.create_all(bind=engine, tables=[CommunityImage.__table__], checkfirst=True)
 
-    # PostgreSQL 部分唯一索引：允许同小区已删除记录被重新插入
-    # SQLite 不支持 WHERE 子句的部分唯一索引，测试环境由 Service 层去重兜底
-    if engine.dialect.name == "postgresql" and not _index_exists(engine, "uq_community_image_url"):
+    # 部分唯一索引：允许同小区已删除记录被重新插入
+    if not _index_exists(engine, "uq_community_image_url"):
         logger.info("迁移：创建 uq_community_image_url 部分唯一索引")
         with engine.begin() as conn:
             conn.execute(
