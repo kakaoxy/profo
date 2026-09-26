@@ -102,9 +102,9 @@
     <view class="menu-list">
       <view class="menu-item" wx:for="{{internalEntries}}" wx:key="key" bindtap="onMenuTap" data-route="{{item.route}}">
         <view class="menu-left">
-          <view class="menu-icon {{item.key === 'keys' ? 'menu-icon-hot' : ''}}">{{item.icon}}</view>
+          <view class="menu-icon">{{item.icon}}</view>
           <view>
-            <view class="menu-item-title">{{item.title}}<text wx:if="{{item.key === 'keys'}}" class="tag-new">新增</text></view>
+            <view class="menu-item-title">{{item.title}}</view>
             <view class="menu-sub">{{item.sub}}</view>
           </view>
         </view>
@@ -123,7 +123,7 @@
     <view class="menu-list">
       <view class="menu-item" wx:for="{{shareEntries}}" wx:key="key" bindtap="onMenuTap" data-action="{{item.action}}">
         <view class="menu-left">
-          <view class="menu-icon {{item.key === 'my-customers' ? 'menu-icon-hot' : ''}}">{{item.icon}}</view>
+          <view class="menu-icon">{{item.icon}}</view>
           <view>
             <view class="menu-item-title">{{item.title}}</view>
             <view class="menu-sub">{{item.sub}}</view>

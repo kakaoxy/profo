@@ -29,5 +29,5 @@
 
   <!-- 转发给经纪人：open-type=share 触发 onShareAppMessage -->
   <button class="btn-dark share-btn" open-type="share">转发给经纪人</button>
-  <view class="btn-ghost later-btn" bindtap="onLater">稍后 · 查看分享记录</view>
+  <view class="btn-ghost later-btn" bindtap="onLater">查看分享记录</view>
 </view>
