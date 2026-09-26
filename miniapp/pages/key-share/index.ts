@@ -152,7 +152,7 @@ function buildRevokedDesc(revokedAt: string | null | undefined): string {
     : "分享人已手动回收该分享，请联系分享人重新获取";
 }
 
-/** 分享条目 → 注意事项行（按 project_id 去重；仅 1 条时省略地址标签）. */
+/** 分享条目 → 注意事项行（按 project_id 去重；仅 1 条时省略地址标签，多条时逐条标注归属地址）. */
 function buildNoteLines(items: PublicKeyShareItem[]): { addr: string; text: string }[] {
   const seen = new Set<string>();
   const lines: { addr: string; text: string }[] = [];
@@ -162,7 +162,10 @@ function buildNoteLines(items: PublicKeyShareItem[]): { addr: string; text: stri
       continue;
     }
     seen.add(item.project_id);
-    lines.push({ addr: lines.length > 0 ? item.address : "", text: note });
+    lines.push({ addr: item.address, text: note });
+  }
+  if (lines.length === 1) {
+    lines[0].addr = "";
   }
   return lines;
 }
