@@ -2,14 +2,17 @@ import { Badge } from "@/components/ui/badge";
 import { safeFormatDate } from "@/lib/formatters";
 
 import { KEY_LOG_ACTION_META, KEY_LOG_ACTOR_META, keyLogSummary } from "./constants";
-import type { KeyLogItem } from "./constants";
+import type { KeyLogItem, NormalKeyItem } from "./constants";
 
 interface LogsCardProps {
   logs: KeyLogItem[];
+  /** 当前普通密码组列表，用于把日志 detail.key_id 对照成「· #seq」 */
+  normalKeys: NormalKeyItem[];
 }
 
 /** 操作日志卡：时间线列表（时间 / 操作人 / 动作 Badge / 对象摘要），倒序由后端保证。 */
-export function LogsCard({ logs }: LogsCardProps) {
+export function LogsCard({ logs, normalKeys }: LogsCardProps) {
+  const keySeqById = new Map(normalKeys.map((k) => [k.id, k.seq]));
   return (
     <section className="rounded-cards bg-pure-white p-6 shadow-steep">
       <h3 className="text-base font-[500] text-ink">操作日志</h3>
@@ -26,7 +29,7 @@ export function LogsCard({ logs }: LogsCardProps) {
               label: log.actor_type,
               variant: "outline" as const,
             };
-            const summary = keyLogSummary(log);
+            const summary = keyLogSummary(log, keySeqById);
             return (
               <li
                 key={log.id}

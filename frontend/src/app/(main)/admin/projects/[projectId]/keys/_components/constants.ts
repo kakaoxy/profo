@@ -65,12 +65,22 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
 
 /**
  * 操作日志对象摘要：
+ * - detail.object → 「管理密码」/「普通密码」（普通密码尽量用 keySeqById 对照出「· #seq」，已删除降级）
  * - detail.count → 「×n」
  * - project 级分享事件（detail.share_id 存在且 action 为 share_*）→ token 前 8 位
  */
-export function keyLogSummary(log: KeyLogItem): string | null {
+export function keyLogSummary(log: KeyLogItem, keySeqById?: Map<string, number>): string | null {
   const detail = log.detail ?? {};
   const parts: string[] = [];
+
+  const object = detail["object"];
+  if (object === "manager") {
+    parts.push("管理密码");
+  } else if (object === "normal") {
+    const keyId = detail["key_id"];
+    const seq = typeof keyId === "string" ? keySeqById?.get(keyId) : undefined;
+    parts.push(seq !== undefined ? `普通密码 · #${seq}` : "普通密码");
+  }
 
   const count = detail["count"];
   if (typeof count === "number" && count > 0) {

@@ -57,7 +57,7 @@ export function KeysPageView({ projectId, detail: initialDetail, logs }: KeysPag
         onDetail={applyDetail}
         onRefresh={refreshDetail}
       />
-      <LogsCard logs={logs} />
+      <LogsCard logs={logs} normalKeys={detail.normal_keys} />
     </div>
   );
 }
