@@ -12,6 +12,7 @@ from dependencies.auth import CurrentInternalUserDep
 from dependencies.keys import KeyServiceDep
 from schemas.keys import (
     KeyLogListResponse,
+    KeyNoteUpdateRequest,
     KeyRevealResponse,
     KeysDetailResponse,
     KeySummaryResponse,
@@ -59,6 +60,17 @@ def put_manager_key(
     """管理密码录入/修改（密文落库 + 留痕）."""
     service.put_manager_key(project_id, current_user, data)
     return service.get_detail(project_id, current_user)
+
+
+@router.put("/{project_id}/keys/note")
+def put_key_note(
+    project_id: Annotated[UUID4, Path(description="项目ID")],
+    data: KeyNoteUpdateRequest,
+    service: KeyServiceDep,
+    current_user: CurrentInternalUserDep,
+) -> KeysDetailResponse:
+    """带看注意事项录入/修改（房源级，实时展示于经纪人分享页；空串清空）."""
+    return service.put_key_note(project_id, current_user, data)
 
 
 @router.post("/{project_id}/keys/manager/reveal")

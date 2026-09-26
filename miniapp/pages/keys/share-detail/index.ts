@@ -44,6 +44,8 @@ interface TimelineRow {
 interface PageData {
   state: "loading" | "error" | "needLogin" | "items";
   shareId: string;
+  /** 分享令牌（预览经纪人页跳转用）. */
+  token: string;
   status: "active" | "expired" | "revoked";
   statusLabel: string;
   statusClass: string;
@@ -63,6 +65,8 @@ interface PageCustom {
   applyDetail(data: KeyShareDetailResponse): void;
   onExtend(): void;
   onRevoke(): void;
+  /** 预览经纪人页：带 token 跳转经纪人访客分享页. */
+  onPreview(): void;
   onViewingEntry(e: WechatMiniprogram.BaseEvent): void;
   onRetry(): void;
   onGoLogin(): void;
@@ -121,6 +125,7 @@ Page<PageData, PageCustom>({
   data: {
     state: "loading",
     shareId: "",
+    token: "",
     status: "active",
     statusLabel: "进行中",
     statusClass: "chip--active",
@@ -182,12 +187,24 @@ Page<PageData, PageCustom>({
       status,
       statusLabel,
       statusClass,
+      token: data.token ?? "",
       createdText: formatDay(data.created_at),
       expiresText: formatDay(data.expires_at),
       canAct: status !== "revoked",
       items,
       viewedCount: items.filter((i) => i.statusLabel === "已查看").length,
       timeline,
+    });
+  },
+
+  /** 预览经纪人页：带 token 跳转经纪人访客分享页（所见即经纪人所见，含失效/过期态）. */
+  onPreview() {
+    const token = this.data.token;
+    if (!token) {
+      return;
+    }
+    wx.navigateTo({
+      url: `/pages/key-share/index?token=${encodeURIComponent(token)}`,
     });
   },
 

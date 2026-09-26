@@ -246,6 +246,36 @@
   font-weight: 400;
 }
 
+/* ===== 带看注意事项（与管理/普通密码卡同构：sec-card + mnote 风格内容块） ===== */
+.note-text {
+  margin-top: 20rpx;
+  padding: 20rpx 24rpx;
+  background: var(--fog);
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.note-text--empty {
+  color: var(--dove);
+}
+.mtextarea {
+  width: 100%;
+  min-height: 160rpx;
+  margin-top: 28rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid #ece7de;
+  background: var(--pure-white);
+  padding: 24rpx 28rpx;
+  font-family: -apple-system, sans-serif;
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
 /* ===== 底部固定主操作 ===== */
 .footer-bar {
   position: fixed;

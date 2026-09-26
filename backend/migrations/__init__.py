@@ -115,6 +115,8 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
   （分享详情时间线/房源日志合并分享级事件的反查条件，PG 专属）
 - add_normal_key_seq_column: 为 project_normal_keys 表添加 seq 列并回填存量序号
   （房源内稳定序号，按 created_at 顺序编号，删除/新增其他组不影响已有编号）
+- add_project_key_note_column: 为 projects 表添加 key_note 列
+  （带看注意事项，房源级，实时展示于经纪人钥匙分享页中部）
 
 """
 
@@ -142,7 +144,7 @@ from migrations._finance import (
 # 重新导出供外部模块（conftest.py 等）使用 —— 以下导入必须放在迁移子模块导入之前，
 # 以避免出现循环导入：子模块（如 _finance）会反向 from migrations import _column_exists。
 from migrations._helpers import _MIGRATION_ADVISORY_LOCK_KEY, _column_exists
-from migrations._keys import add_key_audit_share_id_index, create_key_tables
+from migrations._keys import add_key_audit_share_id_index, add_project_key_note_column, create_key_tables
 from migrations._keys_seq import add_normal_key_seq_column
 from migrations._permission_system import (
     add_permission_foreign_indexes,
@@ -329,6 +331,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_key_audit_share_id_index(engine)
         # 钥匙管理：project_normal_keys 补加 seq 列并回填存量序号（房源内稳定序号）
         add_normal_key_seq_column(engine)
+        # 钥匙管理：projects 补加 key_note 列（带看注意事项，房源级实时展示于经纪人分享页）
+        add_project_key_note_column(engine)
         # O1：模糊搜索 pg_trgm GIN 索引（前导通配符 LIKE 全表扫描修复）
         add_trgm_search_indexes(engine)
         # 小程序评估工作台「已处理」参考组：leads(auditor_id, audit_time) 索引

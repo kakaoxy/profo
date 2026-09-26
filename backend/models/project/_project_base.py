@@ -80,6 +80,13 @@ class Project(BaseModel):
         comment="资金账本结算说明",
     )
 
+    key_note: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        default=None,
+        comment="带看注意事项(房源级,实时展示于经纪人钥匙分享页中部)",
+    )
+
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     __table_args__ = (

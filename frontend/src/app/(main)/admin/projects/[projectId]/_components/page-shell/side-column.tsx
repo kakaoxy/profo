@@ -292,6 +292,8 @@ function KeyManagementCard({ projectId }: { projectId: string }) {
   const shareValue = summary
     ? `${summary.active_share_count} 个分享 · 累计查看 ${summary.total_view_count} 次`
     : placeholder;
+  // 备注单行截断展示，完整内容在钥匙管理页查看/编辑
+  const noteValue = summary ? (summary.key_note || "未设置") : placeholder;
 
   return (
     <SideCard title="钥匙管理">
@@ -304,6 +306,12 @@ function KeyManagementCard({ projectId }: { projectId: string }) {
         }
       />
       <KeySummaryRow label="分享中" value={shareValue} />
+      <KeySummaryRow
+        label="带看注意事项"
+        value={noteValue}
+        labelClassName="w-[92px]"
+        valueClassName="block truncate"
+      />
       {!restricted && (
         <Link
           href={`/admin/projects/${projectId}/keys`}
@@ -322,15 +330,28 @@ function KeySummaryRow({
   label,
   value,
   sub,
+  valueClassName,
+  labelClassName,
 }: {
   label: string;
   value: string;
   sub?: string | null;
+  /** 值区附加类（如备注行的单行截断） */
+  valueClassName?: string;
+  /** 标签宽度附加类（默认 76px，长标签行可放宽） */
+  labelClassName?: string;
 }) {
   return (
     <div className="flex items-center gap-3 border-b border-[#f0f0f2] py-[11px] text-sm last:border-b-0">
-      <span className="w-[76px] shrink-0 text-[13px] font-[430] text-graphite">{label}</span>
-      <span className="min-w-0 font-[450] text-ink">
+      <span
+        className={cn(
+          "shrink-0 text-[13px] font-[430] text-graphite",
+          labelClassName ?? "w-[76px]",
+        )}
+      >
+        {label}
+      </span>
+      <span className={cn("min-w-0 font-[450] text-ink", valueClassName)}>
         {value}
         {sub && <small className="block text-xs font-[430] text-graphite">{sub}</small>}
       </span>

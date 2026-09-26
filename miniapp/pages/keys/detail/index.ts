@@ -58,6 +58,11 @@ interface PageData {
   loaded: boolean;
   projectId: string;
   name: string;
+  /** 带看注意事项（房源级，实时展示于经纪人分享页中部）. */
+  keyNote: string;
+  /** 编辑注意事项弹层. */
+  noteEditing: { show: boolean; value: string };
+  noteSaving: boolean;
   manager: ManagerView;
   managerInput: string;
   managerSaving: boolean;
@@ -75,6 +80,11 @@ interface PageData {
 interface PageCustom {
   loadDetail(): Promise<void>;
   applyDetail(data: KeysDetailResponse): void;
+  /** 编辑注意事项弹层. */
+  onNoteEdit(): void;
+  onNoteEditInput(e: WechatMiniprogram.Input): void;
+  onNoteEditCancel(): void;
+  onNoteSave(): void;
   onManagerReveal(): void;
   onManagerInput(e: WechatMiniprogram.Input): void;
   onManagerSave(): void;
@@ -147,6 +157,9 @@ Page<PageData, PageCustom>({
     loaded: false,
     projectId: "",
     name: "",
+    keyNote: "",
+    noteEditing: { show: false, value: "" },
+    noteSaving: false,
     manager: { set: false, updatedAtText: "", updatedByName: "", revealed: false, password: "", revealTime: "" },
     managerInput: "",
     managerSaving: false,
@@ -216,8 +229,45 @@ Page<PageData, PageCustom>({
       counts,
       countsText: parts.join(" · "),
       keys: (data.normal_keys ?? []).map(toRow),
+      keyNote: data.key_note ?? "",
       editing: { show: false, id: "", value: "" },
     });
+  },
+
+  /** 编辑注意事项：打开弹层（预填当前备注）. */
+  onNoteEdit() {
+    this.setData({ noteEditing: { show: true, value: this.data.keyNote } });
+  },
+
+  onNoteEditInput(e: WechatMiniprogram.Input) {
+    this.setData({ "noteEditing.value": e.detail.value || "" });
+  },
+
+  onNoteEditCancel() {
+    this.setData({ noteEditing: { show: false, value: "" } });
+  },
+
+  /** 弹层保存：PUT /keys/note（空串=清空；响应返回最新详情就地应用）. */
+  onNoteSave() {
+    if (this.data.noteSaving) {
+      return;
+    }
+    this.setData({ noteSaving: true });
+    request<KeysDetailResponse>({
+      url: `/projects/${this.data.projectId}/keys/note`,
+      method: "PUT",
+      data: { note: this.data.noteEditing.value.trim() },
+    })
+      .then((res) => {
+        this.setData({ noteSaving: false, noteEditing: { show: false, value: "" } });
+        wx.showToast({ title: "注意事项已保存", icon: "success" });
+        this.applyDetail(res);
+      })
+      .catch((err: unknown) => {
+        this.setData({ noteSaving: false });
+        const msg = extractErrorMessage(err) || "保存失败，请重试";
+        wx.showToast({ title: msg, icon: "none" });
+      });
   },
 
   /** 管理密码查看明文（reveal 留痕）. */

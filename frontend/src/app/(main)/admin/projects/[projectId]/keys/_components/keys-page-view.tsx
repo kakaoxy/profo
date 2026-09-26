@@ -6,6 +6,7 @@ import { client } from "@/lib/api-client";
 import { extractApiData } from "@/lib/api-helpers";
 
 import { LogsCard } from "./logs-card";
+import { KeyNoteCard } from "./key-note-card";
 import { ManagerKeyCard } from "./manager-key-card";
 import { NormalKeysCard } from "./normal-keys-card";
 import type { KeyLogItem, KeysDetailResponse } from "./constants";
@@ -57,6 +58,7 @@ export function KeysPageView({ projectId, detail: initialDetail, logs }: KeysPag
         onDetail={applyDetail}
         onRefresh={refreshDetail}
       />
+      <KeyNoteCard projectId={projectId} keyNote={detail.key_note ?? null} onDetail={applyDetail} />
       <LogsCard logs={logs} normalKeys={detail.normal_keys} />
     </div>
   );

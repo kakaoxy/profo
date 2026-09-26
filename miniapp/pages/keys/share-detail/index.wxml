@@ -26,9 +26,12 @@
         </view>
       </view>
       <view class="head-meta">分享于 {{createdText}} · 有效期至 {{expiresText}}</view>
-      <view class="head-acts" wx:if="{{canAct}}">
-        <text class="mlink mlink--ink" bindtap="onExtend">{{extending ? '延长中…' : '延长有效期'}}</text>
-        <text class="mlink" bindtap="onRevoke">{{revoking ? '回收中…' : '回收分享'}}</text>
+      <view class="head-acts" wx:if="{{canAct || token}}">
+        <block wx:if="{{canAct}}">
+          <text class="mlink mlink--ink" bindtap="onExtend">{{extending ? '延长中…' : '延长有效期'}}</text>
+          <text class="mlink" bindtap="onRevoke">{{revoking ? '回收中…' : '回收分享'}}</text>
+        </block>
+        <text class="mlink" bindtap="onPreview">预览经纪人页</text>
       </view>
     </view>
 

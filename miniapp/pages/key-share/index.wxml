@@ -14,7 +14,7 @@
   <!-- 网络错误态（可重试） -->
   <view wx:elif="{{error}}" class="state-box">
     <view class="state-text">加载失败，请检查网络</view>
-    <button class="btn-ghost state-btn" bindtap="onRetry">重试</button>
+    <button class="btn-dark state-btn" bindtap="onRetry">重试</button>
   </view>
 
   <!-- 回收态（D2）：锁形圆卡 + 标题 + 说明 + 联系分享人 -->
@@ -23,7 +23,7 @@
     <view class="state-title">分享已回收</view>
     <view class="state-sub">{{revokedDesc}}</view>
     <button
-      class="btn-ghost state-btn"
+      class="btn-dark state-btn"
       open-type="contact"
       binderror="onContactError"
     >联系分享人</button>
@@ -44,6 +44,15 @@
       <view wx:if="{{!isExpired}}" class="chip chip--active">
         <view class="cdot"></view>
         <text>进行中</text>
+      </view>
+    </view>
+
+    <!-- 带看注意事项（房源级备注，实时读取）：白卡卡头标题 + 逐条杏色内层块 -->
+    <view class="notice-card" wx:if="{{noteLines.length > 0}}">
+      <view class="notice-title">带看注意事项</view>
+      <view class="notice-item" wx:for="{{noteLines}}" wx:key="index">
+        <view wx:if="{{item.addr}}" class="notice-addr">{{item.addr}}</view>
+        <view class="notice-text">{{item.text}}</view>
       </view>
     </view>
 

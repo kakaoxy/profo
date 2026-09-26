@@ -8,11 +8,21 @@ from sqlalchemy import and_, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from models import KeyActorType, KeyAuditLog, KeyShare, KeyShareView, KeyStatus, ProjectKey, ProjectNormalKey, User
+from models import (
+    KeyActorType,
+    KeyAuditLog,
+    KeyShare,
+    KeyShareView,
+    KeyStatus,
+    ProjectKey,
+    ProjectNormalKey,
+    User,
+)
 from schemas.keys import (
     GeneratedNormalKeyItem,
     KeyLogItem,
     KeyLogListResponse,
+    KeyNoteUpdateRequest,
     KeyRevealResponse,
     KeysDetailResponse,
     KeySummaryResponse,
@@ -151,7 +161,7 @@ class KeyService:
 
     def get_summary(self, project_id: uuid.UUID, user: User) -> KeySummaryResponse:
         """右栏钥匙管理卡三行概要（不显密文）."""
-        ensure_key_access(self.db, user, project_id)
+        project = ensure_key_access(self.db, user, project_id)
         manager = self._manager_response(project_id)
         keys = self._normal_keys(project_id)
         counts = self._normal_counts(keys)
@@ -171,11 +181,12 @@ class KeyService:
             normal_updated_by_name=latest_name,
             active_share_count=active_share_count,
             total_view_count=total_view_count,
+            key_note=project.key_note,
         )
 
     def get_detail(self, project_id: uuid.UUID, user: User) -> KeysDetailResponse:
         """房源钥匙详情（管理密码 + 普通密码列表 + 计数，不显密文）."""
-        ensure_key_access(self.db, user, project_id)
+        project = ensure_key_access(self.db, user, project_id)
         manager = self._manager_response(project_id)
         keys = self._normal_keys(project_id)
         refs, _ = self._active_share_refs({project_id})
@@ -204,6 +215,7 @@ class KeyService:
             manager_key=manager,
             normal_keys=items,
             counts=self._normal_counts(keys),
+            key_note=project.key_note if project else None,
         )
 
     # ==================== 管理密码 ====================
@@ -250,6 +262,21 @@ class KeyService:
         self.db.commit()
         self.db.refresh(row)
         return self._manager_response(project_id)
+
+    def put_key_note(self, project_id: uuid.UUID, user: User, data: KeyNoteUpdateRequest) -> KeysDetailResponse:
+        """带看注意事项录入/修改（房源级，实时展示于经纪人分享页；空串/纯空白清空）."""
+        project = ensure_key_access(self.db, user, project_id)
+        project.key_note = data.note.strip() or None
+        log_key_action(
+            self.db,
+            project_id=project_id,
+            action="update",
+            actor_type=KeyActorType.USER,
+            actor=user,
+            detail={"object": "note"},
+        )
+        self.db.commit()
+        return self.get_detail(project_id, user)
 
     def reveal_manager_key(self, project_id: uuid.UUID, user: User) -> KeyRevealResponse:
         """查看管理密码明文（解密 + 留痕）."""

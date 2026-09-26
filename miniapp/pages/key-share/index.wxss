@@ -1,8 +1,13 @@
-/* 钥匙分享 · 经纪人访客页（设计稿 D1/D2，warm 风格对齐 pages/keys 模块） */
+/* 钥匙分享 · 经纪人访客页（设计稿 D1/D2，严格对齐 DESIGN.md Steep 体系）
+   卡片：24px→48rpx 圆角 / 20-24px→40-48rpx 内边距 / 签名三层阴影（描边环+主投影+微投影）
+   分隔靠 surface tint 与圆角，不加重描边；次要动作用文字链，每屏至多一个实心按钮 */
 .page {
+  --card-shadow: rgba(4, 23, 43, 0.05) 0 0 0 2rpx, rgba(0, 0, 0, 0.1) 0 40rpx 50rpx -10rpx,
+    rgba(0, 0, 0, 0.1) 0 16rpx 20rpx -12rpx;
   min-height: 100vh;
   background: var(--fog);
-  padding-bottom: 40rpx;
+  padding-bottom: 48rpx;
+  letter-spacing: -0.009em;
 }
 
 /* ===== 状态盒（loading / 占位 / 网络错误 / 回收态 互斥渲染） ===== */
@@ -16,12 +21,13 @@
 }
 
 .state-text {
-  font-size: 30rpx;
+  font-size: 28rpx;
+  font-weight: 430;
   color: var(--ink);
 }
 
 .state-title {
-  margin-top: 36rpx;
+  margin-top: 32rpx;
   font-size: 34rpx;
   font-weight: 500;
   color: var(--ink);
@@ -29,12 +35,31 @@
 
 .state-sub {
   margin-top: 16rpx;
-  font-size: 25rpx;
+  font-size: 26rpx;
+  font-weight: 430;
   color: var(--graphite);
   text-align: center;
-  line-height: 1.7;
+  line-height: 1.5;
 }
 
+/* 实心主操作（DESIGN.md Filled Dark CTA：Ink 底白字 pill，每态唯一） */
+.btn-dark {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  padding: 0 64rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: var(--pure-white);
+  font-size: 28rpx;
+  font-weight: 450;
+  line-height: 1;
+}
+.btn-dark::after {
+  border: none;
+}
 .state-btn {
   margin-top: 44rpx;
 }
@@ -45,59 +70,38 @@
   height: 128rpx;
   border-radius: 50%;
   background: var(--pure-white);
-  border: 2rpx solid #ece7de;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--card-shadow);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 52rpx;
 }
 
-/* ghost 按钮：白底暖描边（回收态联系分享人 / 错误态重试） */
-.btn-ghost {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 92rpx;
-  padding: 0 64rpx;
-  border-radius: 9999rpx;
-  background: var(--pure-white);
-  border: 2rpx solid #ece7de;
-  color: var(--ash);
-  font-size: 30rpx;
-  font-weight: 500;
-  line-height: 1;
-}
-.btn-ghost::after {
-  border: none;
-}
-
-/* ===== 过期提示条（浅杏底，过期后不可查看） ===== */
+/* ===== 过期提示条（Warm Tint 提醒面，过期后不可查看） ===== */
 .expired-banner {
   margin: 24rpx 40rpx 0;
-  padding: 20rpx 28rpx;
+  padding: 24rpx 40rpx;
   border-radius: 24rpx;
   background: var(--apricot-wash);
   color: var(--rust);
   font-size: 24rpx;
-  line-height: 1.6;
+  font-weight: 450;
+  line-height: 1.5;
 }
 
-/* ===== 分享人卡 ===== */
+/* ===== 白卡（DESIGN.md Product Dashboard Card：白面 / 48rpx 圆角 / 签名阴影，无重描边） ===== */
 .sharer-card {
   margin: 24rpx 40rpx 0;
-  padding: 28rpx;
+  padding: 40rpx;
   background: var(--pure-white);
-  border: 2rpx solid #ece7de;
-  border-radius: 40rpx;
-  box-shadow: var(--shadow-sm);
+  border-radius: 48rpx;
+  box-shadow: var(--card-shadow);
   display: flex;
   align-items: center;
   gap: 24rpx;
 }
 
-/* 圆形首字头像（apricot 底，占位首字） */
+/* 圆形首字头像（Apricot Wash 底，占位首字，对齐 Avatar Badge） */
 .sharer-avatar {
   width: 80rpx;
   height: 80rpx;
@@ -125,12 +129,13 @@
 }
 
 .sharer-sub {
-  margin-top: 6rpx;
-  font-size: 23rpx;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  font-weight: 430;
   color: var(--graphite);
 }
 
-/* ===== chip（对齐 keys 模块） ===== */
+/* ===== chip（9999px tags） ===== */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -149,7 +154,7 @@
 }
 .chip--mute {
   background: var(--fog);
-  color: var(--dove);
+  color: var(--graphite);
 }
 .cdot {
   width: 10rpx;
@@ -159,14 +164,51 @@
   opacity: 0.75;
 }
 
+/* ===== 带看注意事项（AI Response Card 模式：白卡卡头标题 + Apricot 内层块承载内容） ===== */
+.notice-card {
+  margin: 24rpx 40rpx 0;
+  padding: 40rpx;
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  box-shadow: var(--card-shadow);
+}
+.notice-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 24rpx;
+}
+.notice-item {
+  padding: 24rpx 32rpx;
+  border-radius: 32rpx;
+  background: var(--apricot-wash);
+}
+.notice-item + .notice-item {
+  margin-top: 16rpx;
+}
+.notice-addr {
+  font-size: 24rpx;
+  font-weight: 450;
+  color: var(--rust);
+  opacity: 0.75;
+}
+.notice-text {
+  margin-top: 4rpx;
+  font-size: 28rpx;
+  font-weight: 430;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 /* ===== 房源密码列表卡 ===== */
 .key-card {
   margin: 24rpx 40rpx 0;
-  padding: 12rpx 28rpx;
+  padding: 16rpx 40rpx;
   background: var(--pure-white);
-  border: 2rpx solid #ece7de;
-  border-radius: 40rpx;
-  box-shadow: var(--shadow-sm);
+  border-radius: 48rpx;
+  box-shadow: var(--card-shadow);
 }
 
 .key-row {
@@ -174,8 +216,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 24rpx;
-  padding: 26rpx 0;
-  border-bottom: 2rpx solid #ece7de;
+  padding: 28rpx 0;
+  border-bottom: 2rpx solid var(--fog);
 }
 .key-row:last-child {
   border-bottom: none;
@@ -188,14 +230,15 @@
 
 .key-addr {
   font-size: 28rpx;
-  font-weight: 500;
+  font-weight: 480;
   color: var(--ink);
   line-height: 1.45;
 }
 
 .key-project {
-  margin-top: 4rpx;
-  font-size: 22rpx;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  font-weight: 430;
   color: var(--graphite);
 }
 
@@ -217,15 +260,15 @@
 
 .pw-mask {
   font-size: 28rpx;
-  font-weight: 500;
+  font-weight: 480;
   letter-spacing: 6rpx;
   color: var(--ink);
 }
 
-/* 已看过的查看入口：mlink 文字链；未看：fog 底 pill 按钮 */
+/* Rust 强调文字链（已看过 = 文字链；未看 = Fog 底 pill 按钮） */
 .mlink {
   font-size: 26rpx;
-  font-weight: 500;
+  font-weight: 450;
   color: var(--rust);
   padding: 4rpx 8rpx;
 }
@@ -233,11 +276,10 @@
 .view-btn {
   padding: 12rpx 28rpx;
   border-radius: 9999rpx;
-  background: var(--fog);
-  border: 2rpx solid #ece7de;
-  color: var(--ink);
+  background: var(--apricot-wash);
+  color: var(--rust);
   font-size: 24rpx;
-  font-weight: 500;
+  font-weight: 450;
   line-height: 1;
 }
 
@@ -252,12 +294,14 @@
 }
 
 .reveal-mark {
-  font-size: 21rpx;
+  font-size: 22rpx;
+  font-weight: 450;
   color: var(--rust);
 }
 
 .pw-note {
-  font-size: 21rpx;
+  font-size: 22rpx;
+  font-weight: 430;
   color: var(--graphite);
 }
 
@@ -265,30 +309,31 @@
   padding: 60rpx 0;
   text-align: center;
   font-size: 26rpx;
+  font-weight: 430;
   color: var(--graphite);
 }
 
-/* ===== 页脚常驻说明 ===== */
+/* ===== 页脚常驻说明（辅助卡：白面 / 48rpx 圆角，Graphite 辅助文字） ===== */
 .mnote {
   margin: 24rpx 40rpx 0;
-  padding: 20rpx 24rpx;
-  border-radius: 24rpx;
+  padding: 28rpx 40rpx;
+  border-radius: 48rpx;
   background: var(--pure-white);
-  border: 2rpx solid #ece7de;
-  color: #6b6e76;
+  box-shadow: var(--card-shadow);
+  color: var(--graphite);
   font-size: 24rpx;
-  line-height: 1.7;
+  font-weight: 430;
+  line-height: 1.5;
 }
+
+/* 次要动作 = 文字链（DESIGN.md：不用 ghost 按钮承载次要操作） */
 .more-btn {
   margin: 24rpx 40rpx 0;
+  padding: 24rpx 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 88rpx;
-  border-radius: 9999rpx;
-  background: var(--pure-white);
-  border: 2rpx solid #ece7de;
   color: var(--ink);
   font-size: 28rpx;
-  font-weight: 500;
+  font-weight: 450;
 }

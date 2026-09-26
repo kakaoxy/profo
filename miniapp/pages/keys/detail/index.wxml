@@ -24,6 +24,15 @@
       <view class="prop-addr">{{name || '房源钥匙'}}</view>
     </view>
 
+    <!-- 带看注意事项（房源级，实时展示于经纪人分享页中部） -->
+    <view class="mcard sec-card">
+      <view class="sec-head">
+        <view class="sec-title">带看注意事项</view>
+        <text class="mlink mlink--ink" bindtap="onNoteEdit">编辑</text>
+      </view>
+      <view class="note-text {{keyNote ? '' : 'note-text--empty'}}">{{keyNote || '未设置；编辑后将在经纪人分享页中部展示'}}</view>
+    </view>
+
     <!-- 管理密码 -->
     <view class="mcard sec-card">
       <view class="sec-head">
@@ -153,6 +162,26 @@
         <view class="modal-btns">
           <view class="btn-ghost modal-btn" bindtap="onManagerEditCancel">取消</view>
           <view class="btn-dark modal-btn {{managerEditing.value ? '' : 'btn-dark--disabled'}}" bindtap="onManagerEditSave">{{managerEditSaving ? '保存中…' : '保存'}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 编辑带看注意事项弹层 -->
+    <view class="modal-mask" wx:if="{{noteEditing.show}}" bindtap="onNoteEditCancel">
+      <view class="modal-card" catchtap="noop">
+        <view class="modal-title">编辑注意事项</view>
+        <textarea
+          class="mtextarea"
+          maxlength="200"
+          auto-height
+          placeholder="如：门锁位置、进门注意事项等，将在经纪人分享页中部展示"
+          placeholder-class="minput-ph"
+          value="{{noteEditing.value}}"
+          bindinput="onNoteEditInput"
+        />
+        <view class="modal-btns">
+          <view class="btn-ghost modal-btn" bindtap="onNoteEditCancel">取消</view>
+          <view class="btn-dark modal-btn" bindtap="onNoteSave">{{noteSaving ? '保存中…' : '保存'}}</view>
         </view>
       </view>
     </view>

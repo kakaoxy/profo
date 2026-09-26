@@ -877,6 +877,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/keys/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Key Note
+         * @description 带看注意事项录入/修改（房源级，实时展示于经纪人分享页；空串清空）.
+         */
+        put: operations["put_key_note_api_v1_projects__project_id__keys_note_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/keys/manager/reveal": {
         parameters: {
             query?: never;
@@ -4130,7 +4150,8 @@ export interface paths {
          * Get Public Key Share
          * @description 免登录获取分享信息（掩码列表 + 有效期状态 + 已查看角标）.
          *
-         *     回收态返回专用 status=revoked（无密码数据）；已过期软标记不阻断。
+         *     回收态返回专用 status=revoked（无密码数据）；过期态返回掩码列表 + is_expired，
+         *     两种失效态均不可查看明文。
          */
         get: operations["get_public_key_share_api_v1_public_key_shares__token__get"];
         put?: never;
@@ -4153,6 +4174,8 @@ export interface paths {
         /**
          * Reveal Public Key
          * @description 查看明文（需 C 端登录；写 KeyShareView + 审计日志后返回明文）.
+         *
+         *     回收 / 过期 / 密码组已删除 / 已停用 → 400 类业务错误「不可查看」，不写查看记录。
          */
         post: operations["reveal_public_key_api_v1_public_key_shares__token__keys__key_id__reveal_post"];
         delete?: never;
@@ -7749,6 +7772,18 @@ export interface components {
             items: components["schemas"]["KeyLogItem"][];
         };
         /**
+         * KeyNoteUpdateRequest
+         * @description 带看注意事项录入/修改请求（空串表示清空）.
+         */
+        KeyNoteUpdateRequest: {
+            /**
+             * Note
+             * @description 注意事项内容，≤200 字
+             * @default
+             */
+            note: string;
+        };
+        /**
          * KeyRevealResponse
          * @description 明文揭示响应（仅查看动作返回，触发留痕）.
          */
@@ -8011,6 +8046,8 @@ export interface components {
              * @default 0
              */
             total_view_count: number;
+            /** Key Note */
+            key_note?: string | null;
         };
         /**
          * KeysDetailResponse
@@ -8021,6 +8058,8 @@ export interface components {
             /** Normal Keys */
             normal_keys: components["schemas"]["NormalKeyItem"][];
             counts: components["schemas"]["NormalKeyCounts"];
+            /** Key Note */
+            key_note?: string | null;
         };
         /**
          * KeysPropertiesResponse
@@ -12594,6 +12633,8 @@ export interface components {
             key_id: string;
             /** Key Deleted */
             key_deleted: boolean;
+            /** Key Note */
+            key_note?: string | null;
             /** Viewed */
             viewed: boolean;
             /** Last Viewed At */
@@ -12604,7 +12645,8 @@ export interface components {
          * @description 免登录分享页响应.
          *
          *     status=revoked 时为回收态（D2），不返回任何密码条目；
-         *     is_expired 为软过期标记（不阻断查看，页顶提示条）。
+         *     is_expired 为派生的过期标记——过期后密码一律不可查看（reveal 拒绝），
+         *     仅延长有效期可恢复；页内条目仍返回掩码列表供查看涉及房源。
          */
         PublicKeyShareResponse: {
             /** Status */
@@ -17909,6 +17951,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ManagerKeyPutRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_key_note_api_v1_projects__project_id__keys_note_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyNoteUpdateRequest"];
             };
         };
         responses: {

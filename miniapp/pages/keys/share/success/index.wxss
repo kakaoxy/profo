@@ -126,6 +126,10 @@
 }
 
 /* ===== 底部按钮 ===== */
+/* 全宽普通块容器：button 的 width:100% 以普通块为基准解析，与 view 按钮严格同宽 */
+.acts {
+  width: 100%;
+}
 .share-btn {
   width: 100%;
   margin: 0;
@@ -140,6 +144,7 @@
   font-weight: 500;
   line-height: 1;
   padding: 0;
+  box-sizing: border-box;
 }
 .share-btn::after {
   border: none;

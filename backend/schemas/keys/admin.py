@@ -56,6 +56,7 @@ class KeysDetailResponse(BaseModel):
     manager_key: ManagerKeyResponse
     normal_keys: list[NormalKeyItem]
     counts: NormalKeyCounts
+    key_note: str | None = None  # 带看注意事项(房源级,实时展示于经纪人分享页)
 
 
 class NormalKeyGenerateResponse(BaseModel):
@@ -76,12 +77,19 @@ class KeySummaryResponse(BaseModel):
     normal_updated_by_name: str | None = None
     active_share_count: int = 0
     total_view_count: int = 0
+    key_note: str | None = None  # 带看注意事项(admin 右栏钥匙管理卡展示行)
 
 
 class ManagerKeyPutRequest(BaseModel):
     """管理密码录入/修改请求."""
 
     password: str = Field(min_length=1, max_length=50, description="管理密码明文")
+
+
+class KeyNoteUpdateRequest(BaseModel):
+    """带看注意事项录入/修改请求（空串表示清空）."""
+
+    note: str = Field(default="", max_length=200, description="注意事项内容，≤200 字")
 
 
 class KeyRevealResponse(BaseModel):

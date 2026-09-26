@@ -93,6 +93,7 @@ class KeySharePublicService:
                 address=projects[pid].address if pid in projects else "",
                 key_id=kid,
                 key_deleted=kid not in valid_key_ids,
+                key_note=projects[pid].key_note if pid in projects else None,
                 viewed=kid in my_views,
                 last_viewed_at=my_views[kid].viewed_at if kid in my_views else None,
             )

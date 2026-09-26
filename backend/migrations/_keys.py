@@ -4,7 +4,8 @@
 key_audit_logs 表与索引：通过 ``Base.metadata.create_all`` + ``checkfirst=True``
 实现 ``CREATE TABLE IF NOT EXISTS`` 语义；表已存在但索引缺失的部署用
 ``_index_exists`` 幂等补建（PostgreSQL）。
-另含 key_audit_logs 的 ``detail->>'share_id'`` 表达式索引（分享级日志反查，PG 专属）。
+另含 key_audit_logs 的 ``detail->>'share_id'`` 表达式索引（分享级日志反查，PG 专属）、
+projects.key_note 列新增（带看注意事项）。
 """
 
 import logging
@@ -12,7 +13,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from ._helpers import _index_exists
+from ._helpers import _column_exists, _index_exists
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,17 @@ def create_key_tables(engine: Engine) -> None:
                 continue
             logger.info("迁移：补建钥匙管理索引 %s", idx.name)
             idx.create(engine, checkfirst=True)
+
+
+def add_project_key_note_column(engine: Engine) -> None:
+    """为 projects 表添加 key_note 列（带看注意事项，幂等）.
+
+    房源级备注：员工在钥匙详情页/钥匙管理页编辑，实时展示于经纪人钥匙分享页中部。
+    """
+    if not _column_exists(engine, "projects", "key_note"):
+        logger.info("迁移：为 projects 表添加 key_note 列")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE projects ADD COLUMN key_note VARCHAR(200)"))
 
 
 def add_key_audit_share_id_index(engine: Engine) -> None:

@@ -16,6 +16,7 @@ class PublicKeyShareItem(BaseModel):
     address: str
     key_id: UUID
     key_deleted: bool  # 密码组已删除或已停用 → 前端显示「密码已失效，请联系分享人」
+    key_note: str | None = None  # 该房源的带看注意事项(实时读取，前端聚合展示于分享页中部)
     viewed: bool  # 当前登录经纪人是否已查看过明文
     last_viewed_at: datetime | None = None
 

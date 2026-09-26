@@ -69,6 +69,8 @@ interface PageData {
   /** 分享人卡副行：N 套房源 · 有效期至 M.DD（剩 N 天）. */
   subLine: string;
   items: KeyItemDisplay[];
+  /** 带看注意事项行（按房源去重聚合，单条省略地址标签）. */
+  noteLines: { addr: string; text: string }[];
   /** reveal 进行中（防并发：重复调用会重复留痕）. */
   revealing: boolean;
 }
@@ -150,6 +152,21 @@ function buildRevokedDesc(revokedAt: string | null | undefined): string {
     : "分享人已手动回收该分享，请联系分享人重新获取";
 }
 
+/** 分享条目 → 注意事项行（按 project_id 去重；仅 1 条时省略地址标签）. */
+function buildNoteLines(items: PublicKeyShareItem[]): { addr: string; text: string }[] {
+  const seen = new Set<string>();
+  const lines: { addr: string; text: string }[] = [];
+  for (const item of items) {
+    const note = (item.key_note ?? "").trim();
+    if (!note || seen.has(item.project_id)) {
+      continue;
+    }
+    seen.add(item.project_id);
+    lines.push({ addr: lines.length > 0 ? item.address : "", text: note });
+  }
+  return lines;
+}
+
 /** 分享条目 → 展示结构：过期→expired；deleted→chip；viewed→mlink；未看→按钮（设计稿 D1 行态）. */
 function toItemDisplay(item: PublicKeyShareItem, shareExpired: boolean): KeyItemDisplay {
   const base = {
@@ -193,6 +210,7 @@ Page<PageData, PageCustom>({
     sharerInitial: "",
     subLine: "",
     items: [],
+    noteLines: [],
     revealing: false,
   },
 
@@ -214,7 +232,7 @@ Page<PageData, PageCustom>({
 
   /** 免登录加载分享信息：revoked → D2；active → D1；404 → 占位；其余网络错误可重试. */
   async loadShare(token: string) {
-    this.setData({ loading: true, error: false, notFound: false, revoked: false });
+    this.setData({ loading: true, error: false, notFound: false, revoked: false, noteLines: [] });
     try {
       const res = await request<PublicKeyShareResponse>({
         url: `/public/key-shares/${encodeURIComponent(token)}`,
@@ -234,6 +252,7 @@ Page<PageData, PageCustom>({
         sharerInitial: (res.sharer_name || "分").slice(0, 1),
         subLine: buildSubLine(res.items_count, res.expires_at, res.is_expired),
         items: (res.items ?? []).map((item) => toItemDisplay(item, res.is_expired)),
+        noteLines: buildNoteLines(res.items ?? []),
       });
     } catch (err) {
       if ((err as HttpResponseError).statusCode === 404) {
