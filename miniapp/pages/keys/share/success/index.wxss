@@ -103,12 +103,23 @@
   flex-shrink: 0;
   margin-top: 14rpx;
 }
-.props-addr {
+/* 地址 + 注意事项纵向容器（原 props-addr 的 flex:1/min-width:0 上移至此） */
+.props-main {
   flex: 1;
   min-width: 0;
+}
+.props-addr {
   font-size: 26rpx;
   line-height: 1.5;
   color: var(--graphite);
+}
+/* 带看注意事项次行（仅该套设置了 key_note 时渲染） */
+.props-note {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: var(--dove);
 }
 
 /* ===== 提示 ===== */

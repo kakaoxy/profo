@@ -55,7 +55,9 @@ class KeyShareCreateRequest(BaseModel):
     """生成分享请求（有效期默认 1 天）."""
 
     items: list[KeyShareCreateItem] = Field(min_length=1, max_length=50)
-    expires_in_days: int | None = Field(None, ge=1, le=365, description="有效期天数（1/7/30/自定义）")
+    expires_in_days: int | None = Field(
+        None, ge=1, le=365, description="有效期天数（自然日口径：当日为第 1 天，第 N 天 24 点失效）"
+    )
     expires_at: datetime | None = Field(None, description="自定义失效时间，与 expires_in_days 二选一")
 
     @field_validator("expires_at", mode="after")
@@ -104,6 +106,7 @@ class KeyShareDetailItem(BaseModel):
     project_id: UUID
     project_name: str
     address: str
+    key_note: str | None = None  # 该房源的带看注意事项（与经纪人端 PublicKeyShareItem 同口径）
     key_id: UUID
     key_deleted: bool  # 密码组已删除或已停用 → 分享页显示「密码已失效」
     viewed: bool

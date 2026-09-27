@@ -4,15 +4,16 @@
  * 对每个所选房源并行 GET /projects/{id}/keys（Promise.all），
  * 每套卡内 radio 单选「有效」组（默认上次分享密码的下一条有效组，循环回绕、
  * 跳过不可选行；待录入/已停用置灰不可选，管理密码行仅占位说明、不可分享）。
- * 有效期 chip：1 天（默认）/7/30/自定义（1–365）。
  * 「生成分享」→ POST /keys/shares {items, expires_in_days} → 第三步成功页。
  *
  * 卡头地址来自 properties 页写入的 storage 快照（SHARE_PROPS_STORAGE_KEY，
  * 以本页 query 的 ids 为选择真源，快照仅用于展示；读取后清除避免残留）。
+ * 有效期 chip：当天（默认，当日 24 点即 23:59:59 失效）/7/30 天/自定义（1–365），
+ * 均为自然日口径（当日为第 1 天，后端到期于第 N 个自然日 23:59:59）。
  */
 import { request } from "../../../../utils/request";
 import {
-  expireDotFromNow,
+  expireDotOfDay,
   extractErrorMessage,
   NORMAL_KEY_STATUS_TEXT,
   SHARE_PROPS_STORAGE_KEY,
@@ -55,7 +56,7 @@ interface PageData {
   state: "loading" | "error" | "needLogin" | "empty" | "items";
   props: PropCard[];
   propCount: number;
-  /** 1 天 chip 文案（含到期日，如「1 天 · 至 09.25」）. */
+  /** 默认 chip 文案（自然日口径，如「当天 · 至 09.27」，09.27 为今日）. */
   oneDayLabel: string;
   expireChoice: ExpireChoice;
   customDays: string;
@@ -130,7 +131,7 @@ Page<PageData, PageCustom>({
     state: "loading",
     props: [],
     propCount: 0,
-    oneDayLabel: `1 天 · 至 ${expireDotFromNow(DEFAULT_EXPIRE_DAYS)}`,
+    oneDayLabel: `当天 · 至 ${expireDotOfDay(DEFAULT_EXPIRE_DAYS)}`,
     expireChoice: DEFAULT_EXPIRE_DAYS,
     customDays: "",
     creating: false,

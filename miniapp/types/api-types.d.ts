@@ -7836,7 +7836,7 @@ export interface components {
             items: components["schemas"]["KeyShareCreateItem"][];
             /**
              * Expires In Days
-             * @description 有效期天数（1/7/30/自定义）
+             * @description 有效期天数（自然日口径：当日为第 1 天，第 N 天 24 点失效）
              */
             expires_in_days?: number | null;
             /**
@@ -7877,6 +7877,8 @@ export interface components {
             project_name: string;
             /** Address */
             address: string;
+            /** Key Note */
+            key_note?: string | null;
             /**
              * Key Id
              * Format: uuid

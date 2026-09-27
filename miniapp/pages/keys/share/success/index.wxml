@@ -4,12 +4,12 @@
   <view class="success-title">已生成分享</view>
   <view class="success-sub" wx:if="{{expiresText}}">有效期至 {{expiresText}}</view>
 
-  <!-- 分享卡预览 -->
+  <!-- 分享卡预览（与真实微信转发卡内容一致） -->
   <view class="mcard share-card">
     <view class="share-icon">钥</view>
     <view class="share-main">
-      <view class="share-title">钥匙分享 · {{count}} 套房源</view>
-      <view class="share-sub">邀请你查看带看密码</view>
+      <view class="share-title">{{cardTitle}}</view>
+      <view class="share-sub">{{cardSub}}</view>
       <view class="share-meta" wx:if="{{expiresText}}">有效期至 {{expiresText}}</view>
     </view>
   </view>
@@ -17,9 +17,12 @@
   <!-- 分享房源明细（详细地址） -->
   <view class="mcard props-card" wx:if="{{props.length > 0}}">
     <view class="props-title">已分享的房源</view>
-    <view class="props-row" wx:for="{{props}}" wx:key="*this">
+    <view class="props-row" wx:for="{{props}}" wx:key="projectId">
       <view class="props-dot"></view>
-      <text class="props-addr">{{item}}</text>
+      <view class="props-main">
+        <text class="props-addr">{{item.address}}</text>
+        <text class="props-note" wx:if="{{item.keyNote}}">注意：{{item.keyNote}}</text>
+      </view>
     </view>
   </view>
 

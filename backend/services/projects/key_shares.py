@@ -7,7 +7,8 @@
 
 import secrets
 import uuid
-from datetime import timedelta
+from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
@@ -44,12 +45,16 @@ from services.projects.key_access import (
     list_accessible_projects,
     load_active_shares,
     load_existing_normal_key_ids,
+    local_today,
     log_key_action,
     parse_share_items,
     user_names_map,
     utc_now,
 )
 from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError, ValidationError
+
+# 自然日口径「第 N 天 24 点」的东八区时区
+_CST = ZoneInfo("Asia/Shanghai")
 
 
 class KeyShareService:
@@ -178,7 +183,13 @@ class KeyShareService:
                 raise ValidationError(msg)
             expires_at = data.expires_at
         else:
-            expires_at = now + timedelta(days=data.expires_in_days or 1)
+            # 自然日口径：当日为第 1 天，第 N 个自然日 24 点失效
+            # （取 23:59:59 而非次日 00:00，保证「有效期至 MM.DD」展示为当天而非次日）
+            days = data.expires_in_days or 1
+            expires_at = (
+                datetime.combine(local_today() + timedelta(days=days), time.min, tzinfo=_CST)
+                - timedelta(seconds=1)
+            )
 
         # token 唯一（碰撞重试，secrets.token_urlsafe 熵足够，仅防御性兜底）
         token = secrets.token_urlsafe(32)
@@ -273,6 +284,7 @@ class KeyShareService:
                     project_id=pid,
                     project_name=project.name if project else "",
                     address=project.address if project else "",
+                    key_note=project.key_note if project else None,
                     key_id=kid,
                     key_deleted=kid not in valid_key_ids,
                     viewed=bool(key_views),

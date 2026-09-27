@@ -8,19 +8,25 @@
    → 500「服务器内部错误，请稍后重试」。仓库既有口径（``schemas/project/sales.py``）
    为「无时区输入按东八区解析，显式带时区原样保留」，本模块应同口径。
 
-2. ``POST /api/v1/projects/{id}/keys/normal/batch`` 的 ``passwords`` 未限制单条明文长度，
+2. ``POST /api/v1/projects/{id}/keys/normal/batch`` 的 ``passwords`` 未限制单条明文长度,
    而 ORM 字段为 ``EncryptedString(50)``：超长明文在绑定期抛 ``ValueError``
    → 500「数据库错误」。同模块的单条录入（``ManagerKeyPutRequest``）与修改
    （``NormalKeyUpdateRequest``）均已限制 50，批量路径应一致。
 
+3. ``POST /api/v1/keys/shares`` 的 ``expires_in_days`` 为自然日口径：
+   当日为第 1 天，第 N 个自然日 23:59:59（东八区）失效——默认「1 天」即分享当日 24 点，
+   而非创建后 24 小时。
+
 覆盖：naive 创建/延长按东八区解析；显式偏移原样保留（不二次偏移）；
-naive 过去时间给业务错误而非 500；批量录入 51 字符 422、50 字符边界通过。
+naive 过去时间给业务错误而非 500；批量录入 51 字符 422、50 字符边界通过；
+expires_in_days=1/7 分别到期于当日/第 7 个自然日 23:59:59。
 """
 
 import uuid
 from collections.abc import Generator
-from datetime import datetime, timezone
+from datetime import datetime, time, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
@@ -203,6 +209,39 @@ class TestKeyShareExpiresAtTz:
         )
         assert resp.status_code == 400, resp.text
         assert "失效时间必须晚于当前时间" in resp.json()["message"]
+
+
+def _expected_end_of_calendar_day(days: int) -> datetime:
+    """自然日口径期望失效时刻：第 days 个自然日 23:59:59（东八区）."""
+    return datetime.combine(
+        local_today() + timedelta(days=days - 1), time(23, 59, 59), tzinfo=ZoneInfo("Asia/Shanghai")
+    )
+
+
+class TestKeyShareExpiresInDaysCalendarSemantics:
+    """expires_in_days 自然日口径：当日为第 1 天，第 N 个自然日 23:59:59 失效."""
+
+    def test_one_day_expires_end_of_today(self, key_input_env: dict[str, Any]) -> None:
+        """expires_in_days=1 → 北京今日 23:59:59（分享当日 24 点，而非创建后 24 小时）."""
+        resp = _create_share(
+            key_input_env["employee_client"],
+            key_input_env["project_id"],
+            key_input_env["key_id"],
+            expires_in_days=1,
+        )
+        assert resp.status_code == 200, resp.text
+        assert _parse_ts(resp.json()["expires_at"]) == _expected_end_of_calendar_day(1)
+
+    def test_seven_days_expires_end_of_seventh_calendar_day(self, key_input_env: dict[str, Any]) -> None:
+        """expires_in_days=7 → 第 7 个自然日（今日+6 天）23:59:59，覆盖 7 个自然日."""
+        resp = _create_share(
+            key_input_env["employee_client"],
+            key_input_env["project_id"],
+            key_input_env["key_id"],
+            expires_in_days=7,
+        )
+        assert resp.status_code == 200, resp.text
+        assert _parse_ts(resp.json()["expires_at"]) == _expected_end_of_calendar_day(7)
 
 
 class TestNormalKeyPasswordLengthGuard:

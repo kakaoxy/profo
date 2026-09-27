@@ -99,9 +99,12 @@ export function todayBeijingDot(): string {
   return todayBeijing().replace(/-/g, ".");
 }
 
-/** 自今日起 N 天后的 MM.DD（东八区，用于有效期 chip「1 天 · 至 09.25」文案）. */
-export function expireDotFromNow(days: number): string {
-  const d = new Date(Date.now() + 8 * 3600 * 1000 + days * 24 * 3600 * 1000);
+/**
+ * 有效期 chip「至 MM.DD」文案（自然日口径）：第 N 个自然日的 MM.DD（东八区）。
+ * 当日为第 1 天：N=1 即今日（后端到期于当日 23:59:59），N=7 为今日+6 天.
+ */
+export function expireDotOfDay(days: number): string {
+  const d = new Date(Date.now() + 8 * 3600 * 1000 + (days - 1) * 24 * 3600 * 1000);
   return `${pad2(d.getUTCMonth() + 1)}.${pad2(d.getUTCDate())}`;
 }
 
