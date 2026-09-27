@@ -416,6 +416,26 @@ describe("评估工作台触底加载分派", () => {
     ctx.onReachBottom();
     expect(pendingReqs()).toHaveLength(before + 1);
   });
+
+  it("返回保量刷新在途时下拉刷新：_refreshing 不残留，触底仍可分派", async () => {
+    const ctx = createPageHarness(seedBothPaginated());
+
+    // 返回触发保量刷新（双请求在途）→ 下拉 reset 使其失效（epoch 更替）
+    ctx.onShow();
+    expect(pendingReqs()).toHaveLength(2);
+    const refreshing = ctx.onPullDownRefresh();
+    expect(pendingReqs()).toHaveLength(4);
+
+    resolveReset([pendingItem("b")], 1, [handledItem("h1", "visited", 300)], 2);
+    await refreshing;
+
+    // 失效的保量刷新 finally 因代际失配跳过 _refreshing 释放：须由 reset 接管代释放，
+    // 残留会永久拦截 onReachBottom（双段均无法翻页）
+    expect(ctx._refreshing).toBe(false);
+    ctx.onReachBottom();
+    expect(pendingReqs()).toHaveLength(5);
+    expect(pendingReqs()[4].opts.url).toBe("/public/leads/handled-assessment");
+  });
 });
 
 describe("评估工作台已处理卡跳转", () => {

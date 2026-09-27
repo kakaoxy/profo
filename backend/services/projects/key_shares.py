@@ -186,9 +186,8 @@ class KeyShareService:
             # 自然日口径：当日为第 1 天，第 N 个自然日 24 点失效
             # （取 23:59:59 而非次日 00:00，保证「有效期至 MM.DD」展示为当天而非次日）
             days = data.expires_in_days or 1
-            expires_at = (
-                datetime.combine(local_today() + timedelta(days=days), time.min, tzinfo=_CST)
-                - timedelta(seconds=1)
+            expires_at = datetime.combine(local_today() + timedelta(days=days), time.min, tzinfo=_CST) - timedelta(
+                seconds=1
             )
 
         # token 唯一（碰撞重试，secrets.token_urlsafe 熵足够，仅防御性兜底）

@@ -239,6 +239,31 @@ describe("我的评估列表 epoch 竞态守卫", () => {
     expect(ctx.data.loadingMore).toBe(false);
   });
 
+  it("返回保量刷新在途时下拉刷新：_refreshing 不残留，触底仍可分派", async () => {
+    const ctx = createPageHarness({
+      items: [{ id: "a" }],
+      page: 1,
+      total: 3,
+      noMore: false,
+    });
+
+    // 返回触发保量刷新（在途）→ 下拉 reset 使其失效（epoch 更替）
+    ctx.onShow();
+    expect(pendingReqs()).toHaveLength(1);
+    const refreshing = ctx.onPullDownRefresh();
+    expect(pendingReqs()).toHaveLength(2);
+
+    pendingReqs()[1].resolve(listResponse([leadItem("b")], 3));
+    await refreshing;
+
+    // 失效的保量刷新 finally 因代际失配跳过 _refreshing 释放：须由 reset 接管代释放，
+    // 残留会永久拦截 onReachBottom（双段均无法翻页）
+    expect(ctx._refreshing).toBe(false);
+    ctx.onReachBottom();
+    expect(pendingReqs()).toHaveLength(3);
+    expect(Number(pendingReqs()[2].opts.data.page)).toBe(2);
+  });
+
   it("当前代翻页失败仍正常回滚页码并提示（守卫不误伤）", async () => {
     const ctx = createPageHarness({
       items: [{ id: "a" }],

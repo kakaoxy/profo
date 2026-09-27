@@ -224,6 +224,15 @@ Page<PageData, PageCustom>({
     this._refreshing = true;
     this._epoch += 1;
     const myEpoch = this._epoch;
+    // epoch 更替使在途的加载/翻页请求整体失效（其 finally 因代际失配跳过标记释放
+    // 与页码回滚），接管代须在此主动释放：残留 loadingMore 会永久拦截
+    // onReachBottom，残留 loading 会卡骨架屏；触底已预递增的 page 在刷新
+    // 失败时残留 +1，下次翻页将跳页
+    this.setData({
+      loading: false,
+      loadingMore: false,
+      page: Math.max(1, Math.ceil(this.data.items.length / PAGE_SIZE)),
+    });
     // 按已加载数折算页数（ceil），比 data.page 更贴近实际行数（noMore 后两者一致）
     const pages = Math.max(1, Math.ceil(this.data.items.length / PAGE_SIZE));
     try {
@@ -326,6 +335,9 @@ Page<PageData, PageCustom>({
     if (reset) {
       // epoch 守卫：onShow 静默刷新/下拉刷新/重试使旧代在途请求失效（竞态丢弃）
       this._epoch += 1;
+      // 返回保量刷新（refreshKeepingDepth）在途时被本代失效：其 finally 因代际
+      // 失配跳过 _refreshing 释放，须由接管代释放，否则触底被永久拦截
+      this._refreshing = false;
     }
     const myEpoch = this._epoch;
     if (reset) {
