@@ -123,7 +123,7 @@ export function LedgerView({ data, total }: LedgerViewProps) {
               placeholder="搜索项目编号 / 小区 / 地址"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="h-11 rounded-inputs border-dove bg-white pr-10 pl-10 text-sm shadow-none placeholder:text-dove focus-visible:border-rust focus-visible:ring-rust/25"
+              className="h-11 rounded-inputs border-none bg-white pr-10 pl-10 text-sm shadow-steep-sm placeholder:text-dove focus-visible:ring-ink/20"
             />
             {searchInput ? (
               <button
@@ -143,7 +143,7 @@ export function LedgerView({ data, total }: LedgerViewProps) {
             套用 tab 角色会向读屏软件承诺并不存在的交互模型。
           */}
           <div
-            className="flex w-fit rounded-cards bg-fog p-1"
+            className="flex w-fit rounded-full bg-pure-white p-1 shadow-steep-sm"
             role="group"
             aria-label="项目状态筛选"
           >
@@ -155,8 +155,8 @@ export function LedgerView({ data, total }: LedgerViewProps) {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setQuery({ project_status: opt.value, page: 1 })}
-                  className={`rounded-[10px] px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
-                    active ? "bg-ink text-white" : "text-graphite hover:text-ink"
+                  className={`rounded-full px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
+                    active ? "bg-ink text-white" : "text-ash hover:text-ink"
                   }`}
                 >
                   {opt.label}

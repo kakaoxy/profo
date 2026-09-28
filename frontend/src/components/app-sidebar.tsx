@@ -62,22 +62,22 @@ const MenuButton = React.forwardRef<
       tooltip={state === "collapsed" && !hasSubmenu ? item.title : undefined}
       isActive={isActive}
       className={`
-        rounded-lg px-3 py-2.5 transition-all duration-200
+        rounded-xl px-3 py-2 text-[14.5px] font-[450] transition-colors duration-150
         ${
           isActive
-            ? "bg-muted text-foreground font-medium shadow-sm"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-pure-white text-ink font-medium shadow-steep-sm"
+            : "text-ink hover:bg-ink/5"
         }
       `}
       {...props}
     >
       <Icon
-        className={`h-5 w-5 ${isActive ? "text-foreground" : "text-muted-foreground"}`}
-        strokeWidth={isActive ? 2 : 1.5}
+        className={`h-[18px] w-[18px] ${isActive ? "text-ink" : "text-graphite"}`}
+        strokeWidth={1.7}
       />
       <span className="text-sm tracking-tight">{item.title}</span>
       {state === "expanded" && hasSubmenu && (
-        <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+        <ChevronRight className="ml-auto h-4 w-4 text-dove transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
       )}
     </SidebarMenuButton>
   );
@@ -146,23 +146,23 @@ export function AppSidebar({ user }: { user: User | null }) {
     .filter((item) => !item.items || item.items.length > 0);
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0 bg-card/80 backdrop-blur-xl">
-      {/* Apple-style Header */}
-      <SidebarHeader className="border-b border-border">
+    <Sidebar collapsible="icon" className="border-r-0 bg-fog">
+      {/* Steep Header：Ink 方块 Logo + 无描边 */}
+      <SidebarHeader>
         <div
           className={`flex items-center py-3 ${state === "collapsed" ? "justify-center px-0" : "px-3"}`}
         >
           {state === "expanded" ? (
             <div className="flex items-center gap-2.5 transition-all">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-sm">
+              <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-ink text-[15px] font-semibold text-white">
                 P
               </div>
-              <span className="truncate font-semibold text-[15px] text-foreground tracking-tight">
+              <span className="truncate text-[16px] font-medium text-ink tracking-tight">
                 Profo
               </span>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-sm">
+            <div className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-ink text-[15px] font-semibold text-white">
               P
             </div>
           )}
@@ -172,15 +172,19 @@ export function AppSidebar({ user }: { user: User | null }) {
       <SidebarContent className="px-2 py-3">
         <SidebarGroup>
           <SidebarMenu className="gap-1">
-            {visibleNav.map((item) => {
+            {visibleNav.map((item, idx) => {
               const hasSubmenu = item.items && item.items.length > 0;
               const isActive =
                 pathname === item.url || item.items?.some((sub) => pathname.startsWith(sub.url));
 
+              // 分组导航标签：section 与前一项不同时输出组名（折叠态隐藏）
+              const prevSection = idx > 0 ? visibleNav[idx - 1].section : undefined;
+              const showGroupLabel = !!item.section && item.section !== prevSection;
+
               if (state === "collapsed") {
                 if (hasSubmenu) {
                   const hasDirectUrl = item.url && item.url !== "#";
-                  return (
+                  const node = (
                     <SidebarMenuItem key={item.title}>
                       <HoverCard openDelay={100} closeDelay={200}>
                         <HoverCardTrigger asChild>
@@ -207,7 +211,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                         <HoverCardContent
                           side="right"
                           align="start"
-                          className="min-w-52 p-1.5 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-xl z-50"
+                          className="min-w-52 p-1.5 bg-pure-white rounded-cards shadow-steep z-50"
                         >
                           <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                             {item.title}
@@ -218,11 +222,11 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 key={sub.title}
                                 href={sub.url}
                                 className={`
-                                  block px-3 py-2.5 text-sm rounded-lg transition-all duration-150
+                                  block px-3 py-2.5 text-[13.5px] rounded-[10px] transition-colors duration-150
                                   ${
                                     pathname === sub.url
-                                      ? "bg-muted font-medium text-foreground"
-                                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                      ? "font-medium text-rust"
+                                      : "text-ash hover:text-ink"
                                   }
                                 `}
                               >
@@ -234,9 +238,11 @@ export function AppSidebar({ user }: { user: User | null }) {
                       </HoverCard>
                     </SidebarMenuItem>
                   );
+
+                  return <React.Fragment key={item.title}>{node}</React.Fragment>;
                 }
 
-                return (
+                const node = (
                   <SidebarMenuItem key={item.title}>
                     <MenuButton
                       item={item}
@@ -246,14 +252,17 @@ export function AppSidebar({ user }: { user: User | null }) {
                     />
                   </SidebarMenuItem>
                 );
+
+                return <React.Fragment key={item.title}>{node}</React.Fragment>;
               }
 
+              let node: React.ReactNode;
               if (hasSubmenu) {
                 const hasDirectUrl = item.url && item.url !== "#";
 
                 // 有直接跳转 URL：hover 弹出 + 点击跳转
                 if (hasDirectUrl) {
-                  return (
+                  node = (
                     <SidebarMenuItem key={item.title}>
                       <HoverCard openDelay={150} closeDelay={250}>
                         <HoverCardTrigger asChild>
@@ -270,7 +279,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                           side="right"
                           align="start"
                           sideOffset={8}
-                          className="min-w-52 p-1.5 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-xl z-100"
+                          className="min-w-52 p-1.5 bg-pure-white rounded-cards shadow-steep z-100"
                         >
                           <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                             {item.title}
@@ -281,11 +290,11 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 key={sub.title}
                                 href={sub.url}
                                 className={`
-                                  block px-3 py-2.5 text-sm rounded-lg transition-all duration-150
+                                  block px-3 py-2.5 text-[13.5px] rounded-[10px] transition-colors duration-150
                                   ${
                                     pathname === sub.url
-                                      ? "bg-muted font-medium text-foreground"
-                                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                      ? "font-medium text-rust"
+                                      : "text-ash hover:text-ink"
                                   }
                                 `}
                               >
@@ -297,16 +306,15 @@ export function AppSidebar({ user }: { user: User | null }) {
                       </HoverCard>
                     </SidebarMenuItem>
                   );
-                }
-
-                // 无直接跳转 URL：保持 Collapsible 展开/折叠
-                return (
-                  <Collapsible
-                    key={item.title}
-                    asChild
-                    defaultOpen={isActive}
-                    className="group/collapsible"
-                  >
+                } else {
+                  // 无直接跳转 URL：保持 Collapsible 展开/折叠
+                  node = (
+                    <Collapsible
+                      key={item.title}
+                      asChild
+                      defaultOpen={isActive}
+                      className="group/collapsible"
+                    >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <MenuButton
@@ -317,18 +325,18 @@ export function AppSidebar({ user }: { user: User | null }) {
                         />
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub className="ml-5 mt-1 border-l border-border pl-3 space-y-1">
+                        <SidebarMenuSub className="ml-5 mt-1 border-l border-dove/30 pl-3 space-y-1">
                           {item.items!.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
                                 asChild
                                 isActive={pathname === subItem.url}
                                 className={`
-                                  rounded-md px-3 py-2 text-sm transition-all duration-150
+                                  rounded-[10px] px-3 py-1.5 text-[13.5px] transition-colors duration-150
                                   ${
                                     pathname === subItem.url
-                                      ? "bg-muted text-foreground font-medium"
-                                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                      ? "text-rust font-medium"
+                                      : "text-ash hover:text-ink"
                                   }
                                 `}
                               >
@@ -342,33 +350,48 @@ export function AppSidebar({ user }: { user: User | null }) {
                       </CollapsibleContent>
                     </SidebarMenuItem>
                   </Collapsible>
+                  );
+                }
+              } else {
+                node = (
+                  <SidebarMenuItem key={item.title}>
+                    <MenuButton
+                      item={item}
+                      isActive={isActive}
+                      state={state}
+                      hasSubmenu={hasSubmenu}
+                    />
+                  </SidebarMenuItem>
                 );
               }
 
               return (
-                <SidebarMenuItem key={item.title}>
-                  <MenuButton
-                    item={item}
-                    isActive={isActive}
-                    state={state}
-                    hasSubmenu={hasSubmenu}
-                  />
-                </SidebarMenuItem>
+                <React.Fragment key={item.title}>
+                  {showGroupLabel ? (
+                    <div
+                      aria-hidden="true"
+                      className="px-3 pb-1 pt-4 text-xs font-medium tracking-[0.06em] text-graphite group-data-[collapsible=icon]:hidden"
+                    >
+                      {item.section}
+                    </div>
+                  ) : null}
+                  {node}
+                </React.Fragment>
               );
             })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Apple-style Footer */}
+      {/* Steep Footer：发丝线分隔 + 折叠按钮 + 用户区 */}
       <SidebarFooter
-        className={`border-t border-border ${state === "collapsed" ? "px-0 py-2" : "p-2"}`}
+        className={`border-t border-dove/25 ${state === "collapsed" ? "px-0 py-2" : "p-2"}`}
       >
         {/* 折叠/展开按钮 */}
         <div
-          className={`pb-2 mb-2 border-b border-border flex ${state === "collapsed" ? "justify-center" : "justify-end"}`}
+          className={`pb-2 mb-2 border-b border-dove/25 flex ${state === "collapsed" ? "justify-center" : "justify-end"}`}
         >
-          <SidebarTrigger className="text-muted-foreground hover:text-foreground h-8 w-8 rounded-lg hover:bg-muted transition-colors" />
+          <SidebarTrigger className="text-graphite hover:text-ink h-8 w-8 rounded-xl hover:bg-ink/5 transition-colors" />
         </div>
         {/* 用户头像 */}
         <div className={state === "collapsed" ? "flex justify-center" : ""}>
@@ -376,11 +399,11 @@ export function AppSidebar({ user }: { user: User | null }) {
             <DropdownMenuTrigger asChild>
               <button
                 suppressHydrationWarning
-                className={`flex items-center rounded-xl py-2 hover:bg-muted transition-all duration-200 ${state === "collapsed" ? "justify-center w-8 h-8 mx-auto" : "w-full px-3 gap-3"}`}
+                className={`flex items-center rounded-xl py-2 hover:bg-ink/5 transition-all duration-200 ${state === "collapsed" ? "justify-center w-8 h-8 mx-auto" : "w-full px-3 gap-3"}`}
               >
-                <Avatar className="h-8 w-8 rounded-full ring-2 ring-border shrink-0">
+                <Avatar className="h-8 w-8 rounded-full shrink-0">
                   <AvatarImage src={user?.avatar || ""} alt={user?.username} />
-                  <AvatarFallback className="rounded-full bg-linear-to-br from-muted to-muted/80 text-foreground text-xs font-medium">
+                  <AvatarFallback className="rounded-full bg-sky-wash text-ink text-xs font-medium">
                     {user?.username?.slice(0, 2).toUpperCase() || "AD"}
                   </AvatarFallback>
                 </Avatar>
@@ -400,7 +423,7 @@ export function AppSidebar({ user }: { user: User | null }) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="min-w-52 rounded-xl bg-card/95 backdrop-blur-xl border border-border shadow-xl p-1"
+              className="min-w-52 rounded-xl bg-pure-white shadow-steep p-1"
               side={isMobile ? "bottom" : "right"}
               align="end"
               sideOffset={8}

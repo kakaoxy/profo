@@ -575,6 +575,7 @@ class ProjectCoreService:
             "renovating": 0,
             "selling": 0,
             "sold": 0,
+            "ended": 0,
         }
 
         for status, count in stats:

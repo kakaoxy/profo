@@ -13,16 +13,20 @@ export interface PageHeaderProps {
 /**
  * 后台页面统一页头。
  *
- * 主标题固定为 `<h1 className="font-display text-3xl text-ink">`（Signifier / 30px / Ink），
- * 副标题为 `<p className="mt-1.5 text-[15px] text-graphite">`。
+ * 主标题固定为 `<h1 className="font-display text-[34px] sm:text-[44px] text-ink">`
+ * （Signifier，桌面 44px / 移动 34px / Ink，对齐 DESIGN.md「Signifier 不低于 40px」与
+ * docs/design/admin-workspace-hifi.html 决策 05），
+ * 副标题为 `<p className="mt-2.5 text-[15px] text-graphite">`。
  * 所有页面主标题必须使用本组件，禁止页面私有字号（16/20/24/26/40px）与 h2 主标题。
  * Server Component 可渲染，无浏览器 API / hooks 依赖。
  */
 export function PageHeader({ title, description, className }: PageHeaderProps) {
   return (
     <header className={cn("flex flex-col gap-1", className)}>
-      <h1 className="font-display text-3xl text-ink">{title}</h1>
-      {description ? <p className="mt-1.5 text-[15px] text-graphite">{description}</p> : null}
+      <h1 className="font-display text-[34px] leading-[1.1] tracking-[-0.015em] text-ink sm:text-[44px]">
+        {title}
+      </h1>
+      {description ? <p className="mt-2.5 text-[15px] text-graphite">{description}</p> : null}
     </header>
   );
 }

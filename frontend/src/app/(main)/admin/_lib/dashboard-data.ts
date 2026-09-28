@@ -95,11 +95,13 @@ function validateProjectStats(data: unknown): ProjectStatsResponse | null {
 
   const record = data as Record<string, unknown>;
 
-  // 检查必需的数字字段（注意：API 返回的 ProjectStatsResponse 不包含 total 字段）
+  // 检查必需的数字字段（注意：API 返回的 ProjectStatsResponse 不包含 total 字段；
+  // ended 为可选新增字段，缺失时回退 0）
   const signing = record.signing;
   const renovating = record.renovating;
   const selling = record.selling;
   const sold = record.sold;
+  const ended = typeof record.ended === "number" ? record.ended : 0;
 
   if (
     typeof signing !== "number" ||
@@ -111,7 +113,7 @@ function validateProjectStats(data: unknown): ProjectStatsResponse | null {
   }
 
   // 构造验证后的对象，无需类型断言
-  return { signing, renovating, selling, sold };
+  return { signing, renovating, selling, sold, ended };
 }
 
 export function getStatusText(status: LeadStatus): string {

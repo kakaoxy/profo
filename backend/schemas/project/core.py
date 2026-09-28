@@ -311,6 +311,8 @@ class ProjectStatsResponse(BaseModel):
     renovating: int
     selling: int
     sold: int
+    # 已下架数量；带默认值保证旧消费方（如 dashboard validateProjectStats 手工构造 4 字段）兼容
+    ended: int = 0
     model_config = ConfigDict(from_attributes=True)
 
 

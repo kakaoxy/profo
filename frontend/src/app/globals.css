@@ -145,7 +145,9 @@
   --shadow-steep:
     rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px,
     rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
-  --shadow-steep-sm: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 8px 10px -6px;
+  --shadow-steep-sm:
+    rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 10px 20px -8px,
+    rgba(0, 0, 0, 0.05) 0px 3px 6px -4px;
 
   /* C-side tokens remapped to Steep palette */
   --color-c-trust-blue: #17191c; /* Ink — primary action & text */
@@ -168,7 +170,8 @@
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: #005daa;
+  /* Steep 主色：Ink（原 #005daa 蓝，见 docs/design/admin-workspace-hifi.html 决策 02） */
+  --primary: #17191c;
   --primary-foreground: oklch(0.984 0.003 247.858);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
@@ -218,16 +221,16 @@
   --status-rejected: #94a3b8;
   --status-ended: #78716c;
 
-  /* Chart Colors - Light Mode */
+  /* Chart Colors - Light Mode（Steep 图表纪律：彩色声音仅 Rust 主线 + #4a90e2 蓝，金额仍红正绿负） */
   --chart-positive: #ef4444;
   --chart-negative: #10b981;
-  --chart-grid: #e2e8f0;
-  --chart-grid-subtle: #f1f5f9;
-  --chart-label: #64748b;
-  --chart-line-primary: #6366f1;
-  --chart-line-secondary: #10b981;
-  --chart-bar-bg: #e2e8f0;
-  --chart-cursor: #e2e8f0;
+  --chart-grid: #e7e9ec;
+  --chart-grid-subtle: #eef0f3;
+  --chart-label: #777b86;
+  --chart-line-primary: #5d2a1a;
+  --chart-line-secondary: #4a90e2;
+  --chart-bar-bg: #4a90e2;
+  --chart-cursor: #e7e9ec;
   --chart-white: #ffffff;
 
   /* Progress Gradient Colors */
@@ -293,15 +296,15 @@
   --status-rejected: #64748b;
   --status-ended: #a8a29e;
 
-  /* Chart Colors - Dark Mode */
+  /* Chart Colors - Dark Mode（对应亮色 Rust/蓝的提亮变体） */
   --chart-positive: #f87171;
   --chart-negative: #34d399;
   --chart-grid: #334155;
   --chart-grid-subtle: #1e293b;
-  --chart-label: #94a3b8;
-  --chart-line-primary: #818cf8;
-  --chart-line-secondary: #34d399;
-  --chart-bar-bg: #334155;
+  --chart-label: #a3a6af;
+  --chart-line-primary: #c98d76;
+  --chart-line-secondary: #6aa9e8;
+  --chart-bar-bg: #6aa9e8;
   --chart-cursor: #334155;
   --chart-white: #1e293b;
 

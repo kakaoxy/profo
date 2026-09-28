@@ -162,7 +162,7 @@ export function LeadsView({
   return (
     <div className="min-h-screen bg-fog">
       <PageContainer className="flex flex-col gap-8">
-        <PageHeader title="线索管理" description="管理和跟进房源线索，从初筛到签约的全流程追踪。" />
+        <PageHeader title="线索中心" description="初筛评估 → 上门实勘 → 商务谈判 → 签约收房。" />
 
         <LeadsStats stats={stats} />
 
@@ -178,6 +178,8 @@ export function LeadsView({
             creatorId={creatorId}
             creatorName={creatorName}
             onClearCreatorId={clearCreatorId}
+            stats={stats}
+            total={total}
           />
 
           {viewMode === "table" ? (

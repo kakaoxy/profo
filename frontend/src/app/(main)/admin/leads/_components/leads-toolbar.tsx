@@ -12,6 +12,7 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { LeadTabValue, LeadStatus } from "../types";
 import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
+import type { LeadStats } from "./leads-stats";
 
 const VALID_TAB_VALUES: LeadTabValue[] = ["all", ...Object.values(LeadStatus)];
 /** 顶部状态 Tab：lost_to_competitor 归属到「已放弃」（rejected）Tab，不单列 */
@@ -19,9 +20,9 @@ const TAB_STATUSES = Object.values(LeadStatus).filter(
   (status) => status !== LeadStatus.LOST_TO_COMPETITOR,
 );
 
-/** 状态 Tab 统一 Steep 激活态（与 projects 页一致：ink 实底 + 白字） */
+/** Steep Tab 胶囊：白底容器 + Ink 激活（与 projects 页一致），.cnt 计数徽标随激活态换色 */
 const TAB_TRIGGER_CLASS =
-  "text-xs px-3 text-graphite hover:text-ink data-[state=active]:bg-ink data-[state=active]:text-white";
+  "rounded-full text-[13px] px-3.5 text-ash hover:text-ink data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:[&_.cnt]:text-white/65";
 
 function isValidTabValue(value: string): value is LeadTabValue {
   return VALID_TAB_VALUES.includes(value as LeadTabValue);
@@ -38,6 +39,10 @@ interface LeadsToolbarProps {
   creatorId?: string;
   creatorName?: string;
   onClearCreatorId: () => void;
+  /** 各状态计数（LeadsStats 同源数据），用于 Tab 计数徽标 */
+  stats?: LeadStats;
+  /** 全部线索数（列表 total），用于「全部」Tab 计数 */
+  total?: number;
 }
 
 export function LeadsToolbar({
@@ -51,8 +56,26 @@ export function LeadsToolbar({
   creatorId,
   creatorName,
   onClearCreatorId,
+  stats,
+  total,
 }: LeadsToolbarProps) {
   const creatorLabel = creatorName ? `创建人: ${creatorName}` : `创建人: #${creatorId}`;
+
+  // Tab 计数：已放弃 = rejected + lost_to_competitor（与 LeadsStats 口径一致）
+  const rejectedCount = (stats?.rejected || 0) + (stats?.lost_to_competitor || 0);
+  const tabCounts: Record<string, number | undefined> = {
+    all: total,
+    [LeadStatus.PENDING_ASSESSMENT]: stats?.pending_assessment,
+    [LeadStatus.PENDING_VISIT]: stats?.pending_visit,
+    [LeadStatus.VISITED]: stats?.visited,
+    [LeadStatus.SIGNED]: stats?.signed,
+    [LeadStatus.REJECTED]: rejectedCount,
+  };
+
+  const renderTabCount = (value?: number) =>
+    value === undefined ? null : (
+      <span className="cnt ml-1 text-[12px] text-dove tabular-nums">{value}</span>
+    );
 
   return (
     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
@@ -70,13 +93,15 @@ export function LeadsToolbar({
           }}
           className="w-full sm:w-auto"
         >
-          <TabsList className="h-auto bg-fog p-1 rounded-cards border-none flex-wrap min-h-10">
+          <TabsList className="h-auto min-h-10 flex-wrap rounded-full border-none bg-pure-white p-1 shadow-steep-sm">
             <TabsTrigger value="all" className={TAB_TRIGGER_CLASS}>
               全部
+              {renderTabCount(tabCounts.all)}
             </TabsTrigger>
             {TAB_STATUSES.map((status) => (
               <TabsTrigger key={status} value={status} className={TAB_TRIGGER_CLASS}>
                 {LEAD_STATUS_META[status].label}
+                {renderTabCount(tabCounts[status])}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -104,13 +129,11 @@ export function LeadsToolbar({
       {/* Right: Actions */}
       <div className="flex w-full lg:w-auto gap-3 items-center">
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 bg-fog p-1 rounded-cards">
+        <div className="flex items-center gap-1 rounded-xl bg-pure-white p-[3px] shadow-steep-sm">
           <button
             className={cn(
-              "flex items-center justify-center px-3 py-1.5 rounded-inputs text-xs font-medium transition-all cursor-pointer",
-              viewMode === "table"
-                ? "bg-pure-white shadow-steep-sm text-ink"
-                : "text-graphite hover:text-ink",
+              "flex items-center justify-center px-3 py-1.5 rounded-[9px] text-xs font-medium transition-colors cursor-pointer",
+              viewMode === "table" ? "bg-fog text-ink" : "text-graphite hover:text-ink",
             )}
             onClick={() => onViewModeChange("table")}
           >
@@ -119,10 +142,8 @@ export function LeadsToolbar({
           </button>
           <button
             className={cn(
-              "flex items-center justify-center px-3 py-1.5 rounded-inputs text-xs font-medium transition-all cursor-pointer",
-              viewMode === "grid"
-                ? "bg-pure-white shadow-steep-sm text-ink"
-                : "text-graphite hover:text-ink",
+              "flex items-center justify-center px-3 py-1.5 rounded-[9px] text-xs font-medium transition-colors cursor-pointer",
+              viewMode === "grid" ? "bg-fog text-ink" : "text-graphite hover:text-ink",
             )}
             onClick={() => onViewModeChange("grid")}
           >
@@ -131,14 +152,15 @@ export function LeadsToolbar({
           </button>
         </div>
 
-        <Button
-          variant="outline"
-          className="flex-1 lg:flex-none rounded-full border border-dove bg-pure-white text-ink hover:bg-fog"
+        {/* 次级动作 = text link（设计稿决策 04） */}
+        <button
+          type="button"
           onClick={() => toast.success("正在生成报表...")}
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-[450] text-ink transition-colors hover:text-rust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:flex-none"
         >
-          <Download className="mr-2 h-4 w-4" />
+          <Download className="h-4 w-4" />
           导出
-        </Button>
+        </button>
 
         <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
           <Button

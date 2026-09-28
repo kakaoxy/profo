@@ -172,6 +172,7 @@ export default function TrendChartRenderer({
           dataKey="volume"
           name="成交套数"
           fill={colors.barBg}
+          fillOpacity={0.55}
           radius={[4, 4, 0, 0]}
           maxBarSize={48}
         />

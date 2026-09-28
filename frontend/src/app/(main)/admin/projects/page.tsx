@@ -167,7 +167,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 
         <ProjectStats stats={stats} />
 
-        <ProjectView data={projectData} total={total} />
+        <ProjectView data={projectData} total={total} counts={stats} />
 
         <div className="mt-2 relative z-50">
           <ProjectPagination total={total} />

@@ -107,6 +107,8 @@ export function KpiCards({ data, variant = "market", mainLayout }: KpiCardsProps
     return {
       label: cfg.label,
       value: cfg.format(card.value),
+      // 设计稿决策 04/05：报表屏唯一暖卡 = 成交均价
+      warm: cfg.key === "avg_price_wan",
       trend: {
         text: <QoqIndicator card={card} />,
         tone: qoqTone(direction),

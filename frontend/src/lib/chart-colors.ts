@@ -26,13 +26,13 @@ export function getDefaultChartColors(): ChartColors {
   return {
     positive: "#ef4444",
     negative: "#10b981",
-    grid: "#e2e8f0",
-    gridSubtle: "#f1f5f9",
-    label: "#64748b",
-    linePrimary: "#6366f1",
-    lineSecondary: "#10b981",
-    barBg: "#e2e8f0",
-    cursor: "#e2e8f0",
+    grid: "#e7e9ec",
+    gridSubtle: "#eef0f3",
+    label: "#777b86",
+    linePrimary: "#5d2a1a",
+    lineSecondary: "#4a90e2",
+    barBg: "#4a90e2",
+    cursor: "#e7e9ec",
     white: "#ffffff",
   };
 }
@@ -51,13 +51,13 @@ export function getChartColors(): ChartColors {
   return {
     positive: style.getPropertyValue("--chart-positive").trim() || "#ef4444",
     negative: style.getPropertyValue("--chart-negative").trim() || "#10b981",
-    grid: style.getPropertyValue("--chart-grid").trim() || "#e2e8f0",
-    gridSubtle: style.getPropertyValue("--chart-grid-subtle").trim() || "#f1f5f9",
-    label: style.getPropertyValue("--chart-label").trim() || "#64748b",
-    linePrimary: style.getPropertyValue("--chart-line-primary").trim() || "#6366f1",
-    lineSecondary: style.getPropertyValue("--chart-line-secondary").trim() || "#10b981",
-    barBg: style.getPropertyValue("--chart-bar-bg").trim() || "#e2e8f0",
-    cursor: style.getPropertyValue("--chart-cursor").trim() || "#e2e8f0",
+    grid: style.getPropertyValue("--chart-grid").trim() || "#e7e9ec",
+    gridSubtle: style.getPropertyValue("--chart-grid-subtle").trim() || "#eef0f3",
+    label: style.getPropertyValue("--chart-label").trim() || "#777b86",
+    linePrimary: style.getPropertyValue("--chart-line-primary").trim() || "#5d2a1a",
+    lineSecondary: style.getPropertyValue("--chart-line-secondary").trim() || "#4a90e2",
+    barBg: style.getPropertyValue("--chart-bar-bg").trim() || "#4a90e2",
+    cursor: style.getPropertyValue("--chart-cursor").trim() || "#e7e9ec",
     white: style.getPropertyValue("--chart-white").trim() || "#ffffff",
   };
 }

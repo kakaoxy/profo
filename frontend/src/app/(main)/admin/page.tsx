@@ -38,19 +38,19 @@ function MonitorSectionSkeleton() {
   return (
     <section className="mb-8 overflow-hidden">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-[22px] font-medium text-ink">重点监控项目</h2>
+        <h2 className="text-[21px] font-medium text-ink tracking-[-0.01em]">重点监控项目</h2>
         <div className="flex gap-2">
           <button
             disabled
             aria-label="筛选功能开发中"
-            className="p-2 rounded-inputs bg-white border border-dove/40 text-graphite cursor-not-allowed opacity-60"
+            className="p-2 rounded-xl bg-white shadow-steep-sm text-graphite cursor-not-allowed opacity-60"
           >
             <Filter className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             disabled
             aria-label="排序功能开发中"
-            className="p-2 rounded-inputs bg-white border border-dove/40 text-graphite cursor-not-allowed opacity-60"
+            className="p-2 rounded-xl bg-white shadow-steep-sm text-graphite cursor-not-allowed opacity-60"
           >
             <SortAsc className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -60,10 +60,11 @@ function MonitorSectionSkeleton() {
         <ProjectCardListSkeleton />
         {/* 添加项目卡片占位 */}
         <div className="w-full sm:w-70 sm:shrink-0 bg-fog rounded-cards border-2 border-dashed border-dove/40 flex flex-col items-center justify-center p-6 text-center min-h-100">
-          <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-graphite mb-5">
-            <Plus className="w-8 h-8" aria-hidden="true" />
+          <div className="w-14 h-14 rounded-full bg-white shadow-steep-sm flex items-center justify-center text-graphite mb-4 transition-colors">
+            <Plus className="w-6 h-6" aria-hidden="true" />
           </div>
-          <p className="text-lg font-bold text-graphite">添加新项目</p>
+          <p className="text-base font-medium text-ink">添加新项目</p>
+          <p className="text-xs text-graphite mt-1.5 max-w-35">快速录入房源或新建开发项目</p>
         </div>
       </div>
     </section>
@@ -75,13 +76,13 @@ function MonitorSection() {
   return (
     <section className="mb-8 overflow-hidden" aria-labelledby="monitor-section-title">
       <div className="flex items-center justify-between mb-6">
-        <h2 id="monitor-section-title" className="text-[22px] font-medium text-ink">
+        <h2 id="monitor-section-title" className="text-[21px] font-medium text-ink tracking-[-0.01em]">
           重点监控项目
         </h2>
         <div className="flex gap-2">
           <button
             disabled
-            className="p-2 rounded-inputs bg-white border border-dove/40 text-graphite cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="p-2 rounded-xl bg-white shadow-steep-sm text-graphite cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="筛选功能开发中"
             aria-label="筛选功能开发中"
           >
@@ -89,7 +90,7 @@ function MonitorSection() {
           </button>
           <button
             disabled
-            className="p-2 rounded-inputs bg-white border border-dove/40 text-graphite cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="p-2 rounded-xl bg-white shadow-steep-sm text-graphite cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="排序功能开发中"
             aria-label="排序功能开发中"
           >
@@ -106,13 +107,13 @@ function MonitorSection() {
         <CreateProjectDialog
           trigger={
             <div className="w-full sm:w-70 sm:shrink-0 bg-fog rounded-cards border-2 border-dashed border-dove/40 flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-white hover:border-dove transition-[background-color,border-color] min-h-100">
-              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-graphite mb-5 group-hover:bg-ink group-hover:text-white transition-colors">
-                <Plus className="w-8 h-8" aria-hidden="true" />
+              <div className="w-14 h-14 rounded-full bg-white shadow-steep-sm flex items-center justify-center text-graphite mb-4 transition-colors group-hover:bg-ink group-hover:text-white">
+                <Plus className="w-6 h-6" aria-hidden="true" />
               </div>
-              <p className="text-lg font-bold text-graphite group-hover:text-ink transition-colors">
+              <p className="text-base font-medium text-ink group-hover:text-ink transition-colors">
                 添加新项目
               </p>
-              <p className="text-xs text-graphite mt-2 max-w-35">快速录入房源或新建开发项目</p>
+              <p className="text-xs text-graphite mt-1.5 max-w-35">快速录入房源或新建开发项目</p>
             </div>
           }
         />

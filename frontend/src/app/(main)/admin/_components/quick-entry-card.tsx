@@ -107,7 +107,7 @@ export function RenovationRow(project: ProjectResponse): ReactNode {
       </div>
       <Badge
         variant="secondary"
-        className="h-5 rounded-md border border-status-renovating/20 bg-status-renovating/10 px-2 py-0 text-[10px] text-status-renovating"
+        className="h-5 rounded-full border-none px-2 py-0 text-[10px] font-[450] bg-apricot-wash text-rust"
       >
         {stageLabel}
       </Badge>
@@ -134,18 +134,12 @@ export function SellingRow(project: ProjectResponse): ReactNode {
         <p className="truncate text-sm font-semibold text-ink">{communityName}</p>
         <p className="text-[10px] text-graphite">{listingText}</p>
       </div>
-      <div className="flex items-center gap-1 text-[10px] text-graphite shrink-0 ml-auto">
-        <span className="rounded bg-status-selling/10 px-1.5 py-0.5 text-status-selling tabular-nums">
-          带看{stats.viewing}
-        </span>
+      <div className="flex items-center gap-1 text-[10px] text-ash shrink-0 ml-auto tabular-nums">
+        <span className="rounded-full bg-fog px-1.5 py-0.5">带看{stats.viewing}</span>
         <span aria-hidden="true">·</span>
-        <span className="rounded bg-status-selling/10 px-1.5 py-0.5 text-status-selling tabular-nums">
-          出价{stats.offer}
-        </span>
+        <span className="rounded-full bg-fog px-1.5 py-0.5">出价{stats.offer}</span>
         <span aria-hidden="true">·</span>
-        <span className="rounded bg-status-selling/10 px-1.5 py-0.5 text-status-selling tabular-nums">
-          面谈{stats.negotiation}
-        </span>
+        <span className="rounded-full bg-fog px-1.5 py-0.5">面谈{stats.negotiation}</span>
       </div>
     </div>
   );

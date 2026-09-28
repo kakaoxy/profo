@@ -43,7 +43,7 @@ export function QuickEntrySection({ renovationProjects, sellingProjects }: Quick
           projects={renovationProjects}
           emptyText="暂无装修中项目"
           viewAllHref="/admin/projects?status=renovating"
-          accentClass="text-status-renovating"
+          accentClass="text-graphite"
           routeSuffix="/renovation"
           renderRow={RenovationRow}
           showViewAll={showViewAll}
@@ -56,7 +56,7 @@ export function QuickEntrySection({ renovationProjects, sellingProjects }: Quick
           projects={sellingProjects}
           emptyText="暂无在售项目"
           viewAllHref="/admin/projects?status=selling"
-          accentClass="text-status-selling"
+          accentClass="text-graphite"
           routeSuffix="/selling"
           renderRow={SellingRow}
           showViewAll={showViewAll}

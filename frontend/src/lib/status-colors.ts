@@ -112,26 +112,32 @@ export const DEFAULT_STATUS = "signing";
 /** 默认状态样式 */
 export const defaultStatusClass = "bg-muted text-muted-foreground";
 
+/**
+ * 单色洗底药丸体系（Steep，docs/design/admin-workspace-hifi.html 决策 03/04）：
+ * Sky=签约/待看房、Apricot=装修/待评估、Ink 填充=在售/已签约、Fog=已售/已放弃、
+ * 白底描边=已看房（见 getStatusStyleConfig leadStatusMap）。
+ * 实底场景（按钮/步骤条）与徽章场景共用同一 bg+text 对，保证全后台色彩收敛。
+ */
 const STATUS_CLASS_MAP: Record<StatusType, string> = {
-  pending: "bg-status-pending text-white hover:opacity-90",
-  visit: "bg-status-visit text-white hover:opacity-90",
-  signing: "bg-status-signing text-white hover:opacity-90",
-  renovating: "bg-status-renovating text-white hover:opacity-90",
-  selling: "bg-status-selling text-white hover:opacity-90",
-  sold: "bg-status-sold text-white hover:opacity-90",
-  rejected: "bg-status-rejected text-white hover:opacity-90",
-  ended: "bg-status-ended text-white hover:opacity-90",
+  pending: "bg-apricot-wash text-rust",
+  visit: "bg-sky-wash text-ink",
+  signing: "bg-sky-wash text-ink",
+  renovating: "bg-apricot-wash text-rust",
+  selling: "bg-ink text-white",
+  sold: "bg-fog text-ash",
+  rejected: "bg-fog text-graphite",
+  ended: "bg-fog text-dove",
 };
 
 const STATUS_BADGE_CLASS_MAP: Record<StatusType, string> = {
-  pending: "bg-status-pending/10 text-status-pending border-status-pending/20",
-  visit: "bg-status-visit/10 text-status-visit border-status-visit/20",
-  signing: "bg-status-signing/10 text-status-signing border-status-signing/20",
-  renovating: "bg-status-renovating/10 text-status-renovating border-status-renovating/20",
-  selling: "bg-status-selling/10 text-status-selling border-status-selling/20",
-  sold: "bg-status-sold/10 text-status-sold border-status-sold/20",
-  rejected: "bg-status-rejected/10 text-status-rejected border-status-rejected/20",
-  ended: "bg-status-ended/10 text-status-ended border-status-ended/20",
+  pending: "bg-apricot-wash text-rust",
+  visit: "bg-sky-wash text-ink",
+  signing: "bg-sky-wash text-ink",
+  renovating: "bg-apricot-wash text-rust",
+  selling: "bg-ink text-white",
+  sold: "bg-fog text-ash",
+  rejected: "bg-fog text-graphite",
+  ended: "bg-fog text-dove",
 };
 
 /**
@@ -202,14 +208,18 @@ export function getLeadStatusClassName(status: LeadStatus): string {
 }
 
 /**
- * 获取线索状态的 Badge 样式（浅色背景）
+ * 获取线索状态的 Badge 样式（单色洗底药丸）
  * 用于表格、列表等展示场景
  */
 export function getLeadStatusBadgeClass(status: LeadStatus | string): string {
+  // 设计稿决策 03：已看房 = 白底描边药丸（不落在通用 StatusType 映射内）
+  if (status === "visited") {
+    return "bg-pure-white text-ink shadow-[inset_0_0_0_1px_var(--color-dove)]";
+  }
+
   const stringStatusMap: Record<string, StatusType> = {
     pending_assessment: "pending",
     pending_visit: "visit",
-    visited: "selling",
     signed: "signing",
     rejected: "rejected",
   };
@@ -275,7 +285,8 @@ export function getStatusStyleConfig(status: string): { label: string; className
     },
     visited: {
       label: "已看房",
-      className: STATUS_BADGE_CLASS_MAP.selling,
+      // 设计稿决策 03：已看房 = 白底描边药丸（区别于 Ink 填充的已签约/在售）
+      className: "bg-pure-white text-ink shadow-[inset_0_0_0_1px_var(--color-dove)]",
     },
     signed: {
       label: "已签约",

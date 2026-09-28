@@ -7,78 +7,78 @@ interface LeadsFunnelCardProps {
   funnelData: FunnelData;
 }
 
+/**
+ * 工作台「线索漏斗」卡（Steep，设计稿决策 09）：
+ * 横向胶囊漏斗条，色彩阶梯 Ink → #4a90e2 蓝 → Apricot → Rust；
+ * 底部为整屏唯一 Ink 填充主按钮「新增线索」。
+ */
 export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
-  const { total, evaluating, rejected, visiting, signed } = funnelData;
+  const { total, evaluating, visiting, signed } = funnelData;
 
   const stages = [
-    { key: "total", label: "线索", value: total, color: "bg-primary" },
-    { key: "evaluating", label: "评估", value: evaluating, color: "bg-primary/80" },
-    { key: "rejected", label: "放弃", value: rejected, color: "bg-red-400" },
-    { key: "visiting", label: "看房", value: visiting, color: "bg-primary/60" },
-    { key: "signed", label: "签约", value: signed, color: "bg-primary/40" },
+    { key: "total", label: "总线索", value: total, color: "var(--color-ink)" },
+    { key: "evaluating", label: "进入评估", value: evaluating, color: "#4a90e2" },
+    { key: "visiting", label: "实地看房", value: visiting, color: "var(--color-apricot-wash)", border: "#f2d0ba" },
+    { key: "signed", label: "签约", value: signed, color: "var(--color-rust)" },
   ];
 
-  const maxValue = Math.max(...stages.map((s) => s.value), 1);
-
   const getPercent = (value: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
-
   const conversionRate = formatConversionRate(total, signed);
 
   return (
     <div
-      className="col-span-12 lg:col-span-6 bg-white rounded-cards shadow-steep p-5 h-auto flex flex-col min-w-0"
+      className="col-span-12 lg:col-span-4 bg-white rounded-cards shadow-steep-sm px-6 py-[22px] flex flex-col min-w-0"
       role="region"
       aria-label="线索漏斗转化"
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-graphite font-black uppercase tracking-widest">线索漏斗</span>
-        <Link
-          href="/admin/leads/new"
-          className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          新增
-        </Link>
+      <div className="flex items-center justify-between">
+        <span className="text-[15px] font-medium text-ink">线索漏斗</span>
+        <span className="text-[12.5px] text-graphite">本月</span>
       </div>
 
       <div
-        className="flex-1 flex items-stretch gap-1 min-w-0"
+        className="flex-1 flex flex-col justify-center gap-[11px] mt-[18px] mb-[14px] min-w-0"
         role="list"
         aria-label="各阶段线索数量"
       >
-        {stages.map((stage) => {
-          const widthPercent = (stage.value / maxValue) * 100;
-          // 所有阶段都保证最小宽度,避免标签被挤压截断
-          const minWidth = Math.max(widthPercent, 10);
-
-          return (
-            <div
-              key={stage.key}
-              role="listitem"
-              className={`h-14 ${stage.color} rounded-md flex flex-col items-center justify-center text-white relative min-w-0 px-1`}
-              style={{ flexGrow: minWidth, flexBasis: 0 }}
-              title={`${stage.label}: ${stage.value} (${getPercent(stage.value)}%)`}
-              aria-label={`${stage.label}: ${stage.value} 个, 占比 ${getPercent(stage.value)}%`}
-            >
-              <span className="text-[10px] font-bold opacity-90 text-center leading-tight truncate max-w-full">
-                {stage.label}
-              </span>
-              <span className="text-sm font-black tabular-nums">{stage.value}</span>
-            </div>
-          );
-        })}
+        {stages.map((stage) => (
+          <div key={stage.key} className="flex items-center gap-3 min-w-0" role="listitem">
+            <span className="w-[58px] shrink-0 text-right text-[12.5px] text-graphite">
+              {stage.label}
+            </span>
+            <span className="flex-1 h-2.5 rounded-full bg-fog overflow-hidden min-w-0">
+              <span
+                className="block h-full rounded-full"
+                style={{
+                  width: `${getPercent(stage.value)}%`,
+                  minWidth: stage.value > 0 ? "8px" : 0,
+                  background: stage.color,
+                  boxShadow: stage.border ? `inset 0 0 0 1px ${stage.border}` : undefined,
+                }}
+              />
+            </span>
+            <span className="w-[34px] shrink-0 text-[13.5px] font-[480] tabular-nums text-ink">
+              {stage.value}
+            </span>
+          </div>
+        ))}
       </div>
 
-      <div className="flex justify-between items-center mt-2 pt-2 border-t border-fog">
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-graphite">
-            总线索: <span className="font-bold text-ink tabular-nums">{total}</span>
+      <div className="flex items-center justify-between gap-2 pt-2">
+        <span className="text-[13px] text-graphite min-w-0">
+          总线索 <b className="font-[480] text-ink tabular-nums">{total}</b>
+          <span className="mx-[7px] text-dove" aria-hidden="true">
+            ·
           </span>
-          <span className="text-xs text-graphite hidden sm:inline">
-            签约: <span className="font-bold text-primary tabular-nums">{signed}</span>
-          </span>
-        </div>
-        <span className="text-xs font-bold text-ink">转化率: {conversionRate}</span>
+          转化率 <b className="font-[480] text-ink tabular-nums">{conversionRate}</b>
+        </span>
+        <Link
+          href="/admin/leads/new"
+          className="inline-flex shrink-0 items-center gap-[6px] rounded-full bg-ink px-4 py-[7px] text-[13px] font-[450] text-white shadow-[0_6px_16px_-6px_rgba(23,25,28,0.4)] transition-transform hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          新增线索
+        </Link>
       </div>
     </div>
   );
