@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin 工作台 · Steep 重构高保真设计稿</title>
+<!--
+  ============================================================
+  Admin 工作台 · 按 /DESIGN.md(Steep)重构的高保真可交互设计稿
+  ============================================================
+  覆盖范围(核心六屏,桌面端):
+    · 全局骨架 —— Fog 侧边栏(240px/无描边/白底激活)+ 分组导航 + 折叠
+    · 工作台   /admin
+    · 项目管理 /admin/projects
+    · 线索中心 /admin/leads
+    · 资金账本 /admin/ledger
+    · 数据报表 /admin/reports/market
+    其余导航项为占位屏(标注未含于本次迭代)。
+
+  本次重构的关键决策(相对现状):
+    1. 侧边栏:旧 Apple 毛玻璃半透明 → Steep Fog #f7f7f8 实底、
+       无描边、激活项白底 12px 圆角 + 微阴影;Logo 方块改 Ink。
+    2. 主色:#005daa 蓝 → Ink #17191c;Rust #5d2a1a 为唯一暖强调。
+    3. 状态徽章:统一「单色洗底药丸」体系
+       (Sky=待看房/签约项目、Apricot=装修/待评估、Ink 填充=在售/已签约、
+        Fog=已售/已放弃、白底描边=已看房)。
+    4. 每屏最多一张 Apricot 暖卡 + 一个 Ink 填充按钮(次级动作为 text link)。
+    5. 页头 h1 用 Signifier(Source Serif 4)44px —— 修正现状 30px
+       低于 DESIGN.md「Signifier 不低于 40px」的问题。
+    6. 金额:万元单位、tabular-nums、红正绿负(中国习惯)。
+    7. 图表只有两个彩色声音:Rust 暖 + #4a90e2 蓝,其余为 Ink 无彩色。
+    8. 三层签名阴影(--shadow-steep / --shadow-steep-sm)。
+
+  技术形态:单文件自包含 HTML + React 18(CDN,Babel 内联转译)。
+  字体:Inter(Sohne 替代)+ Source Serif 4(Signifier 替代),
+  与 frontend/src/app/layout.tsx 实际落地方案一致。
+  ⚠️ 设计稿交付物,有意单文件不拆分。数据为贴近业务的演示数据。
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;430;450;480;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  /* ============ 1. Steep tokens(对齐 /DESIGN.md 与 globals.css) ============ */
+  :root {
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky: #d3e3fc;
+    --blue: #4a90e2;
+    --pos: #ef4444;   /* 金额:红=流入/正向 */
+    --neg: #10b981;   /* 金额:绿=流出/负向 */
+    --font-display: "Source Serif 4", "Songti SC", "Noto Serif SC", serif;
+    --font-ui: "Inter", -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+    --r-card: 24px; --r-img: 12px; --r-input: 16px; --r-pill: 9999px;
+    --shadow-steep: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.1) 0 20px 25px -5px, rgba(0,0,0,.1) 0 8px 10px -6px;
+    --shadow-steep-sm: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 10px 20px -8px, rgba(0,0,0,.05) 0 3px 6px -4px;
+    --sidebar-w: 240px;
+    --sidebar-w-c: 76px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    font-family: var(--font-ui);
+    font-size: 15px; color: var(--ink);
+    letter-spacing: -0.009em;
+    background: var(--fog);
+    min-width: 1180px;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; letter-spacing: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ============ 2. 全局骨架 ============ */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w);
+    background: var(--fog); display: flex; flex-direction: column;
+    padding: 20px 14px 16px; z-index: 40;
+    transition: width .28s cubic-bezier(.4,0,.2,1);
+    overflow: hidden; white-space: nowrap;
+  }
+  .app.collapsed .sidebar { width: var(--sidebar-w-c); }
+  .app.collapsed .main { margin-left: var(--sidebar-w-c); }
+  .main { flex: 1; margin-left: var(--sidebar-w); transition: margin-left .28s cubic-bezier(.4,0,.2,1); min-width: 0; }
+  .side-logo { display: flex; align-items: center; gap: 10px; padding: 4px 10px 18px; }
+  .side-logo .mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--ink);
+    color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 0;
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .side-logo .word { font-size: 16px; font-weight: 500; }
+  .side-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; margin: 0 -6px; padding: 0 6px; }
+  .side-scroll::-webkit-scrollbar { width: 4px; }
+  .side-scroll::-webkit-scrollbar-thumb { background: rgba(163,166,175,.35); border-radius: 4px; }
+  .nav-group-label {
+    font-size: 12px; font-weight: 500; color: var(--graphite);
+    letter-spacing: .06em; padding: 16px 12px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 14.5px; font-weight: 450;
+    color: var(--ink); transition: background .15s; position: relative;
+  }
+  .nav-item:hover { background: rgba(23,25,28,.05); }
+  .nav-item.active { background: var(--pwhite); box-shadow: var(--shadow-steep-sm); }
+  .nav-item .ic { color: var(--graphite); display: flex; flex: none; }
+  .nav-item.active .ic { color: var(--ink); }
+  .nav-item .chev { margin-left: auto; color: var(--dove); transition: transform .2s; display: flex; }
+  .nav-item.open .chev { transform: rotate(90deg); }
+  .nav-children { overflow: hidden; max-height: 0; transition: max-height .25s ease; }
+  .nav-children.open { max-height: 200px; }
+  .nav-child {
+    display: flex; align-items: center; padding: 6px 12px 6px 41px;
+    font-size: 13.5px; font-weight: 430; color: var(--ash); border-radius: 10px;
+    transition: color .15s;
+  }
+  .nav-child:hover { color: var(--ink); }
+  .nav-child.active { color: var(--rust); font-weight: 500; }
+  .side-foot { padding-top: 12px; border-top: 1px solid rgba(163,166,175,.25); margin-top: 10px; }
+  .side-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; width: 100%; }
+  .side-user:hover { background: rgba(23,25,28,.05); }
+  .side-user .info { text-align: left; line-height: 1.25; }
+  .side-user .info .n { font-size: 13.5px; font-weight: 500; }
+  .side-user .info .r { font-size: 11.5px; color: var(--graphite); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: var(--r-pill); flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--ink);
+  }
+  .av-1 { background: #d9ead3; } .av-2 { background: var(--sky); } .av-3 { background: var(--apricot); }
+  .av-4 { background: #e8e2f4; } .av-5 { background: #f0ece1; } .av-6 { background: #dbe6e9; }
+  .collapse-btn {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 450;
+    color: var(--graphite); transition: background .15s, color .15s;
+  }
+  .collapse-btn:hover { background: rgba(23,25,28,.05); color: var(--ink); }
+
+  /* 折叠态:仅图标 */
+  .app.collapsed .side-logo { padding-left: 6px; }
+  .app.collapsed .side-logo .word,
+  .app.collapsed .nav-group-label,
+  .app.collapsed .nav-item .lbl,
+  .app.collapsed .nav-item .chev,
+  .app.collapsed .nav-children,
+  .app.collapsed .side-user .info,
+  .app.collapsed .collapse-btn .lbl { display: none; }
+  .app.collapsed .nav-item { justify-content: center; padding: 10px 0; }
+  .app.collapsed .side-user { justify-content: center; }
+  .app.collapsed .collapse-btn { justify-content: center; }
+
+  /* ============ 3. 页面通用 ============ */
+  .page { max-width: 1480px; margin: 0 auto; padding: 34px 44px 72px; animation: pageIn .38s ease both; }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 30px; }
+  .page-head h1 {
+    font-family: var(--font-display); font-weight: 400; font-size: 44px;
+    line-height: 1.1; letter-spacing: -0.015em; color: var(--ink);
+  }
+  .page-head .desc { margin-top: 10px; font-size: 15px; color: var(--graphite); }
+  .page-head .aside { font-size: 13px; color: var(--graphite); padding-bottom: 8px; }
+  .sec-title { font-size: 21px; font-weight: 500; color: var(--ink); letter-spacing: -0.01em; }
+  .sec-head { display: flex; align-items: center; justify-content: space-between; margin: 34px 0 18px; }
+  .sec-link { font-size: 14px; font-weight: 450; color: var(--ink); display: inline-flex; align-items: center; gap: 4px; }
+  .sec-link:hover { color: var(--rust); }
+
+  /* 卡片 */
+  .card {
+    background: var(--pwhite); border-radius: var(--r-card);
+    box-shadow: var(--shadow-steep-sm);
+    padding: 22px 24px;
+  }
+  .card-warm { background: var(--apricot); box-shadow: none; }
+  .card-sky  { background: var(--sky); box-shadow: none; }
+  .card-title { font-size: 15px; font-weight: 500; color: var(--ink); }
+
+  /* ============ 4. 统计卡 ============ */
+  .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+  .stat-grid.c4 { grid-template-columns: repeat(4, 1fr); }
+  .stat-card { background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 20px 22px 18px; }
+  .stat-card.warm { background: var(--apricot); box-shadow: none; }
+  .stat-label { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--graphite); }
+  .stat-dot { width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--ink); flex: none; }
+  .stat-dot.d-rust { background: var(--rust); } .stat-dot.d-apricot { background: var(--apricot); }
+  .stat-dot.d-sky { background: #9dbef2; } .stat-dot.d-dove { background: var(--dove); }
+  .stat-card.warm .stat-dot { background: var(--rust); }
+  .stat-value { font-size: 30px; font-weight: 480; color: var(--ink); margin-top: 12px; line-height: 1; }
+  .stat-value .unit { font-size: 14px; font-weight: 430; color: var(--graphite); margin-left: 4px; letter-spacing: 0; }
+  .stat-card.warm .stat-value { color: var(--rust); }
+  .stat-sub { margin-top: 10px; font-size: 12.5px; color: var(--graphite); display: flex; align-items: center; gap: 5px; }
+
+  /* ============ 5. 工具栏 / 按钮 / 输入 ============ */
+  .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 22px 0 18px; }
+  .tabs { display: flex; gap: 4px; background: var(--pwhite); border-radius: var(--r-pill); padding: 4px; box-shadow: var(--shadow-steep-sm); }
+  .tab {
+    padding: 6px 14px; border-radius: var(--r-pill); font-size: 13.5px; font-weight: 450;
+    color: var(--ash); transition: all .15s; display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { background: var(--ink); color: #fff; }
+  .tab .cnt { font-size: 12px; color: var(--dove); font-weight: 430; }
+  .tab.active .cnt { color: rgba(255,255,255,.65); }
+  .select {
+    display: flex; align-items: center; gap: 7px; background: var(--pwhite);
+    border-radius: var(--r-input); box-shadow: var(--shadow-steep-sm);
+    padding: 8px 14px; font-size: 13.5px; font-weight: 450; color: var(--ash);
+  }
+  .select:hover { color: var(--ink); }
+  .select .ic { color: var(--graphite); display: flex; }
+  .search {
+    display: flex; align-items: center; gap: 8px; background: var(--pwhite);
+    border-radius: var(--r-input); box-shadow: var(--shadow-steep-sm);
+    padding: 8px 14px; width: 260px; color: var(--dove); font-size: 13.5px;
+  }
+  .search input { border: none; outline: none; font: inherit; color: var(--ink); width: 100%; background: none; }
+  .search input::placeholder { color: var(--dove); }
+  .btn-fill {
+    background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    padding: 9px 20px; font-size: 14px; font-weight: 450;
+    display: inline-flex; align-items: center; gap: 7px; transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 6px 16px -6px rgba(23,25,28,.4);
+  }
+  .btn-fill:hover { transform: translateY(-1px); box-shadow: 0 10px 20px -8px rgba(23,25,28,.5); }
+  .btn-text {
+    font-size: 14px; font-weight: 450; color: var(--ink);
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 6px;
+  }
+  .btn-text:hover { color: var(--rust); }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 12px; background: var(--pwhite);
+    box-shadow: var(--shadow-steep-sm); color: var(--graphite);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: color .15s;
+  }
+  .icon-btn:hover { color: var(--ink); }
+  .icon-btn:disabled { opacity: .55; cursor: not-allowed; }
+  .spacer { flex: 1; }
+  .view-toggle { display: flex; gap: 2px; background: var(--pwhite); border-radius: 12px; padding: 3px; box-shadow: var(--shadow-steep-sm); }
+  .view-toggle button { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: var(--graphite); }
+  .view-toggle button.on { background: var(--fog); color: var(--ink); }
+
+  /* ============ 6. 表格 ============ */
+  .tbl-card { padding: 6px 8px; overflow: hidden; }
+  table.tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    text-align: left; font-size: 12.5px; font-weight: 500; color: var(--graphite);
+    letter-spacing: .02em; padding: 14px 14px 10px; border-bottom: 1px solid rgba(163,166,175,.35);
+    white-space: nowrap;
+  }
+  .tbl td {
+    font-size: 14px; color: var(--ink); padding: 13px 14px;
+    border-bottom: 1px solid rgba(163,166,175,.18); white-space: nowrap; vertical-align: middle;
+  }
+  .tbl tbody tr { transition: background .12s; }
+  .tbl tbody tr:hover { background: var(--fog); }
+  .tbl tbody tr:last-child td { border-bottom: none; }
+  .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tbl th.num { text-align: right; }
+  .td-sub { font-size: 12px; color: var(--graphite); margin-top: 2px; font-weight: 430; }
+  .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: .86em; letter-spacing: 0; }
+  .cell-main { font-weight: 480; font-size: 14px; }
+  .money-pos { color: var(--pos); font-variant-numeric: tabular-nums; }
+  .money-neg { color: var(--neg); font-variant-numeric: tabular-nums; }
+  .op-link { font-size: 13px; font-weight: 450; color: var(--ash); margin-right: 12px; }
+  .op-link:hover { color: var(--ink); }
+  .tbl-foot { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; font-size: 13px; color: var(--graphite); }
+  .pager { display: flex; gap: 6px; }
+  .pager button {
+    min-width: 30px; height: 30px; padding: 0 8px; border-radius: 9px; font-size: 13px;
+    color: var(--ash); font-weight: 450;
+  }
+  .pager button:hover { background: var(--fog); color: var(--ink); }
+  .pager button.on { background: var(--ink); color: #fff; }
+  .person {
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .person .avatar { width: 24px; height: 24px; font-size: 11px; }
+  .person .nm { font-size: 13px; font-weight: 450; color: var(--ash); }
+
+  /* ============ 7. 徽章(单色洗底药丸) ============ */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-pill);
+    font-size: 12.5px; font-weight: 450; padding: 3.5px 11px; line-height: 1.35;
+  }
+  .b-sky     { background: var(--sky); color: var(--ink); }
+  .b-apricot { background: var(--apricot); color: var(--rust); }
+  .b-ink     { background: var(--ink); color: #fff; }
+  .b-fog     { background: var(--fog); color: var(--graphite); }
+  .b-fogrust { background: var(--fog); color: var(--rust); }
+  .b-outline { background: var(--pwhite); color: var(--ink); box-shadow: inset 0 0 0 1px var(--dove); }
+  .b-ghost   { background: rgba(23,25,28,.045); color: var(--graphite); font-size: 11.5px; padding: 2px 8px; }
+  .b-rust    { background: var(--rust); color: #fff; }
+  .dot { width: 5px; height: 5px; border-radius: var(--r-pill); background: currentColor; opacity: .75; }
+
+  /* ============ 8. 工作台专属 ============ */
+  .dash-top { display: grid; grid-template-columns: 5fr 4fr 3fr; gap: 18px; }
+  .ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; margin-top: 18px; }
+  .ov-item .k { font-size: 12.5px; color: var(--graphite); }
+  .ov-item .v { font-size: 26px; font-weight: 480; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .ov-item .v .unit { font-size: 12px; color: var(--graphite); font-weight: 430; margin-left: 3px; }
+  .funnel-rows { display: flex; flex-direction: column; gap: 11px; margin-top: 18px; }
+  .f-row { display: flex; align-items: center; gap: 12px; }
+  .f-row .fl { width: 58px; font-size: 12.5px; color: var(--graphite); flex: none; text-align: right; }
+  .f-bar { height: 10px; border-radius: var(--r-pill); flex: 1; background: var(--fog); overflow: hidden; }
+  .f-bar i { display: block; height: 100%; border-radius: var(--r-pill); }
+  .f-row .fv { width: 34px; font-size: 13.5px; font-weight: 480; font-variant-numeric: tabular-nums; }
+  .alert-num { font-family: var(--font-display); font-size: 52px; line-height: 1; color: var(--rust); margin-top: 16px; }
+  .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .q-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .q-row:last-child { border-bottom: none; }
+  .q-row .nm { font-size: 14px; font-weight: 450; }
+  .q-row .meta { font-size: 12px; color: var(--graphite); margin-top: 2px; }
+  .monitor-row { display: flex; gap: 18px; overflow-x: auto; padding: 4px 2px 14px; }
+  .monitor-row::-webkit-scrollbar { height: 6px; }
+  .monitor-row::-webkit-scrollbar-thumb { background: rgba(163,166,175,.4); border-radius: 6px; }
+  .m-card {
+    width: 296px; flex: none; background: var(--pwhite); border-radius: var(--r-card);
+    box-shadow: var(--shadow-steep); padding: 20px 22px;
+    display: flex; flex-direction: column; transition: transform .2s;
+  }
+  .m-card:hover { transform: translateY(-3px); }
+  .m-no { display: flex; align-items: center; justify-content: space-between; }
+  .m-no .no { font-size: 12px; color: var(--graphite); font-weight: 450; }
+  .m-name { font-size: 18px; font-weight: 500; margin-top: 12px; letter-spacing: -0.01em; }
+  .m-addr { font-size: 12.5px; color: var(--graphite); margin-top: 4px; }
+  .m-div { border-top: 1px dashed rgba(163,166,175,.45); margin: 16px 0 14px; }
+  .m-sec { font-size: 11.5px; font-weight: 500; color: var(--graphite); letter-spacing: .05em; margin-bottom: 9px; }
+  .m-feed { font-size: 13px; color: var(--ash); line-height: 1.55; }
+  .m-feed .t { color: var(--dove); font-size: 12px; margin-right: 6px; }
+  .mkt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .mkt .k { font-size: 11.5px; color: var(--graphite); }
+  .mkt .v { font-size: 14.5px; font-weight: 480; margin-top: 3px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 5px; }
+  .add-card {
+    width: 296px; flex: none; border-radius: var(--r-card); background: var(--fog);
+    border: 2px dashed rgba(163,166,175,.5); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 0; color: var(--graphite);
+    transition: all .2s; text-align: center; padding: 24px;
+  }
+  .add-card:hover { background: var(--pwhite); border-color: var(--dove); color: var(--ink); }
+  .add-card .cir {
+    width: 52px; height: 52px; border-radius: var(--r-pill); background: var(--pwhite);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+    transition: all .2s; box-shadow: var(--shadow-steep-sm);
+  }
+  .add-card:hover .cir { background: var(--ink); color: #fff; }
+  .add-card .t1 { font-size: 16px; font-weight: 500; color: var(--ink); }
+  .add-card .t2 { font-size: 12.5px; color: var(--graphite); margin-top: 6px; line-height: 1.5; }
+
+  /* ============ 9. 图表 ============ */
+  .chart-legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--graphite); }
+  .chart-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: -1px; }
+  .hbar-row { display: flex; align-items: center; gap: 12px; }
+  .hbar-row .hl { width: 66px; font-size: 13px; color: var(--ash); flex: none; text-align: right; }
+  .hbar-row .hb { flex: 1; height: 22px; background: var(--fog); border-radius: 7px; overflow: hidden; }
+  .hbar-row .hb i { display: block; height: 100%; background: var(--ink); border-radius: 7px; }
+  .hbar-row .hv { width: 44px; font-size: 13px; font-weight: 480; font-variant-numeric: tabular-nums; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .axis-t { font-size: 11px; fill: var(--dove); letter-spacing: 0; }
+
+  /* ============ 10. 报表筛选条 ============ */
+  .filter-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 22px; }
+  .f-group { display: flex; align-items: center; gap: 8px; }
+  .f-label { font-size: 12.5px; color: var(--graphite); flex: none; }
+  .pill-group { display: flex; gap: 3px; background: var(--fog); border-radius: var(--r-pill); padding: 3px; }
+  .pill-group button { padding: 4.5px 12px; border-radius: var(--r-pill); font-size: 12.5px; font-weight: 450; color: var(--ash); }
+  .pill-group button.on { background: var(--pwhite); color: var(--ink); box-shadow: 0 1px 4px rgba(23,25,28,.1); }
+
+  /* ============ 11. 占位屏 / 注释面板 / Toast ============ */
+  .placeholder { text-align: center; padding: 110px 0 80px; }
+  .placeholder .pic {
+    width: 64px; height: 64px; border-radius: 20px; background: var(--pwhite);
+    box-shadow: var(--shadow-steep-sm); margin: 0 auto 24px;
+    display: flex; align-items: center; justify-content: center; color: var(--graphite);
+  }
+  .placeholder h2 { font-family: var(--font-display); font-size: 34px; font-weight: 400; }
+  .placeholder p { color: var(--graphite); font-size: 15px; margin-top: 12px; }
+  .ph-links { display: flex; gap: 10px; justify-content: center; margin-top: 28px; flex-wrap: wrap; }
+  .ph-chip {
+    background: var(--pwhite); border-radius: var(--r-pill); box-shadow: var(--shadow-steep-sm);
+    padding: 8px 18px; font-size: 13.5px; font-weight: 450;
+  }
+  .ph-chip:hover { color: var(--rust); }
+  .notes-fab {
+    position: fixed; right: 26px; bottom: 26px; z-index: 60;
+    width: 44px; height: 44px; border-radius: var(--r-pill); background: var(--ink); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500; box-shadow: 0 10px 24px -8px rgba(23,25,28,.5);
+  }
+  .notes-panel {
+    position: fixed; right: 26px; bottom: 82px; z-index: 60; width: 380px;
+    background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep);
+    padding: 24px 26px; max-height: 66vh; overflow-y: auto;
+  }
+  .notes-panel h3 { font-family: var(--font-display); font-size: 22px; font-weight: 400; margin-bottom: 6px; }
+  .notes-panel .sub { font-size: 12.5px; color: var(--graphite); margin-bottom: 16px; }
+  .note-item { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid rgba(163,166,175,.2); font-size: 13px; color: var(--ash); line-height: 1.6; }
+  .note-item .no { color: var(--rust); font-weight: 500; flex: none; font-variant-numeric: tabular-nums; }
+  .toast {
+    position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%); z-index: 80;
+    background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    padding: 10px 22px; font-size: 13.5px; font-weight: 450;
+    box-shadow: 0 12px 28px -8px rgba(23,25,28,.5); animation: toastIn .25s ease both;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+/* ================================================================
+   图标(lucide 风格,1.7px 描边)
+   ================================================================ */
+const ICONS = {
+  dashboard: <><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></>,
+  building: <><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></>,
+  phone: <><polyline points="16 2 16 8 22 8"/><line x1="23" x2="17" y1="1" y2="7"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></>,
+  kanban: <><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/></>,
+  smartphone: <><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></>,
+  megaphone: <><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></>,
+  chart: <><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></>,
+  wallet: <><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></>,
+  coins: <><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></>,
+  book: <><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></>,
+  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+  scroll: <><path d="M17 12.5H15"/><path d="M17 8.5H15"/><path d="M7 12.5H9"/><path d="M7 8.5H9"/><path d="M15 2v4"/><path d="M7 2v4"/><path d="M19 4v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></>,
+  settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>,
+  chevDown: <path d="m6 9 6 6 6-6"/>,
+  chevRight: <path d="m9 18 6-6-6-6"/>,
+  search: <><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>,
+  plus: <><path d="M5 12h14"/><path d="M12 5v14"/></>,
+  filter: <><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>,
+  sortAsc: <><line x1="3" x2="15" y1="5" y2="5"/><line x1="3" x2="11" y1="12" y2="12"/><line x1="3" x2="7" y1="19" y2="19"/><path d="M19 5v14"/><path d="m16 16 3 3 3-3"/></>,
+  panelLeft: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></>,
+  logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>,
+  trendUp: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>,
+  trendDown: <><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></>,
+  arrowRight: <><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>,
+  eye: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></>,
+  pencil: <><path d="M17 3a2.828 2.828 0 1 1 4 4L7 21l-4 1 1-4L17 3z"/></>,
+  download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>,
+  check: <><path d="M20 6 9 17l-5-5"/></>,
+  table: <><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></>,
+  grid: <><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></>,
+  upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>,
+  clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+  x: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
+  mapPin: <><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></>,
+  key: <><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></>,
+};
+function Icon({ n, size = 17, sw = 1.7, style, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={style} className={className} aria-hidden="true">
+      {ICONS[n]}
+    </svg>
+  );
+}
+
+/* ================================================================
+   演示数据(贴近业务口径:杭州 · 房屋美化转售)
+   ================================================================ */
+const PROJ_STATUS = {
+  signing:    { label: "签约",   badge: "b-sky" },
+  renovating: { label: "装修中", badge: "b-apricot" },
+  selling:    { label: "在售",   badge: "b-ink" },
+  sold:       { label: "已售",   badge: "b-fog" },
+  ended:      { label: "已下架", badge: "b-fog" },
+};
+const LEAD_STATUS = {
+  pending:   { label: "待评估",     badge: "b-apricot" },
+  visit:     { label: "待看房",     badge: "b-sky" },
+  visited:   { label: "已看房",     badge: "b-outline" },
+  signed:    { label: "已签约",     badge: "b-ink" },
+  rejected:  { label: "已放弃",     badge: "b-fog" },
+  lost:      { label: "他司已成交", badge: "b-fogrust" },
+};
+const PEOPLE = ["陈明远", "林晓芸", "王思齐", "赵一鸣", "周文瑾", "吴 倩"];
+
+const PROJECTS = [
+  { no: "PF-2026-0192", name: "朝晖六区",   addr: "拱墅区·朝晖 42幢",  layout: "2室1厅", area: 62.4,  district: "拱墅·朝晖",  status: "selling",    form: "代理美化", sign: 268, sold: null,    days: 42, owner: 0, flow: 32.4,  list: 315 },
+  { no: "PF-2026-0189", name: "翠苑一区",   addr: "西湖区·翠苑 18幢",  layout: "2室1厅", area: 78.3,  district: "西湖·翠苑",  status: "renovating", form: "收购美化", sign: 295, sold: null,    days: 18, owner: 1, flow: -41.2, stage: "水电" },
+  { no: "PF-2026-0188", name: "采荷东区",   addr: "上城区·采荷 6幢",   layout: "1室1厅", area: 55.0,  district: "上城·采荷",  status: "selling",    form: "代理美化", sign: 232, sold: null,    days: 55, owner: 2, flow: 18.6,  list: 268 },
+  { no: "PF-2026-0186", name: "古荡新村",   addr: "西湖区·古荡 9幢",   layout: "2室1厅", area: 89.6,  district: "西湖·古荡",  status: "sold",       form: "收购美化", sign: 336, sold: 398,    days: 67, owner: 3, flow: 52.8 },
+  { no: "PF-2026-0185", name: "大关东三苑", addr: "拱墅区·大关 3幢",   layout: "3室1厅", area: 96.2,  district: "拱墅·大关",  status: "signing",    form: "代理美化", sign: 352, sold: null,    days: 3,  owner: 4, flow: -3.5 },
+  { no: "PF-2026-0183", name: "景芳东区",   addr: "上城区·景芳 21幢",  layout: "2室1厅", area: 68.5,  district: "上城·景芳",  status: "renovating", form: "代理美化", sign: 287, sold: null,    days: 26, owner: 5, flow: -35.9, stage: "木瓦" },
+  { no: "PF-2026-0180", name: "三里亭苑",   addr: "上城区·三里亭 8幢", layout: "2室2厅", area: 83.9,  district: "上城·三里亭", status: "selling",   form: "收购美化", sign: 305, sold: null,    days: 61, owner: 0, flow: 26.3,  list: 356 },
+  { no: "PF-2026-0177", name: "濮家新村",   addr: "上城区·濮家 12幢",  layout: "1室1厅", area: 59.8,  district: "上城·濮家",  status: "sold",       form: "代理美化", sign: 243, sold: 279,    days: 88, owner: 1, flow: 30.1 },
+  { no: "PF-2026-0175", name: "德胜东村",   addr: "拱墅区·德胜 5幢",   layout: "3室2厅", area: 102.7, district: "拱墅·德胜",  status: "selling",    form: "收购美化", sign: 381, sold: null,    days: 37, owner: 2, flow: 12.7,  list: 439 },
+  { no: "PF-2026-0172", name: "大浒东苑",   addr: "拱墅区·东新 15幢",  layout: "2室1厅", area: 74.1,  district: "拱墅·东新",  status: "renovating", form: "代理美化", sign: 298, sold: null,    days: 12, owner: 3, flow: -28.4, stage: "油漆" },
+];
+const MONITOR = [
+  { p: PROJECTS[0], feed: "装修验收完成,挂牌上架 315 万", mkt: { onSale: 14, avg: "3.9", vol30: 6, trend: 1, sp: [3,5,4,6,5,7,6,8] } },
+  { p: PROJECTS[1], feed: "装修进入水电阶段,预计 10 月中完工", mkt: { onSale: 9, avg: "4.1", vol30: 3, trend: 1, sp: [2,3,3,4,3,5,4,5] } },
+  { p: PROJECTS[2], feed: "带看 4 组,收到意向出价 252 万", mkt: { onSale: 11, avg: "4.3", vol30: 4, trend: -1, sp: [5,4,6,5,4,4,3,4] } },
+  { p: PROJECTS[3], feed: "已成交 398 万,进入结算流程", mkt: { onSale: 8, avg: "4.7", vol30: 5, trend: 1, sp: [3,4,4,5,6,5,6,7] } },
+  { p: PROJECTS[6], feed: "挂牌 356 万,渠道同步带看中", mkt: { onSale: 13, avg: "4.4", vol30: 7, trend: -1, sp: [6,7,6,5,5,6,4,5] } },
+];
+const LEADS = [
+  { id: "8f3a21c0", name: "朝晖七区",   layout: "2室1厅", area: 65,  floor: "18/26层", district: "拱墅", biz: "朝晖",   total: 275, unit: "4.23", eval: null,  status: "pending",  creator: 0, time: "09-28 14:32" },
+  { id: "b7e94d12", name: "翠苑三区",   layout: "1室1厅", area: 48,  floor: "6/7层",   district: "西湖", biz: "翠苑",   total: 195, unit: "4.06", eval: null,  status: "pending",  creator: 1, time: "09-28 11:20" },
+  { id: "c2f08a55", name: "采荷红菱",   layout: "2室1厅", area: 72,  floor: "12/18层", district: "上城", biz: "采荷",   total: 310, unit: "4.31", eval: 288,   status: "visit",    creator: 2, time: "09-27 18:05" },
+  { id: "d91b3e77", name: "古荡文华",   layout: "3室1厅", area: 105, floor: "9/16层",  district: "西湖", biz: "古荡",   total: 480, unit: "4.57", eval: 445,   status: "visit",    creator: 3, time: "09-27 15:48" },
+  { id: "e5a7c933", name: "大关南五苑", layout: "2室1厅", area: 68,  floor: "22/33层", district: "拱墅", biz: "大关",   total: 289, unit: "4.25", eval: 265,   status: "visited",  creator: 4, time: "09-26 17:12" },
+  { id: "a08d4f1b", name: "景芳四区",   layout: "1室1厅", area: 42,  floor: "3/6层",   district: "上城", biz: "景芳",   total: 168, unit: "4.00", eval: 155,   status: "visited",  creator: 5, time: "09-26 10:33" },
+  { id: "f3c62b8e", name: "三里亭竹苑", layout: "2室2厅", area: 88,  floor: "15/24层", district: "上城", biz: "三里亭", total: 385, unit: "4.38", eval: 352,   status: "signed",   creator: 0, time: "09-25 16:47" },
+  { id: "9b4e70da", name: "濮家东村",   layout: "2室1厅", area: 75,  floor: "8/17层",  district: "上城", biz: "濮家",   total: 298, unit: "3.97", eval: 270,   status: "rejected", creator: 1, time: "09-24 14:20" },
+  { id: "6c1f88a2", name: "德胜路沿街", layout: "3室2厅", area: 118, floor: "5/11层",  district: "拱墅", biz: "德胜",   total: 520, unit: "4.41", eval: 490,   status: "lost",     creator: 2, time: "09-22 09:58" },
+];
+const LEDGER = [
+  { no: "PF-2026-0192", name: "朝晖六区",   addr: "拱墅区·朝晖 42幢", status: "selling",    income: 352.6, expense: 320.2, roi: "10.1%", records: 24, investors: 3 },
+  { no: "PF-2026-0189", name: "翠苑一区",   addr: "西湖区·翠苑 18幢", status: "renovating", income: 0,     expense: 41.2,  roi: "—",    records: 12, investors: 0 },
+  { no: "PF-2026-0188", name: "采荷东区",   addr: "上城区·采荷 6幢",  status: "selling",    income: 46.6,  expense: 28.0,  roi: "6.3%",  records: 18, investors: 2 },
+  { no: "PF-2026-0186", name: "古荡新村",   addr: "西湖区·古荡 9幢",  status: "sold",       income: 461.5, expense: 408.7, roi: "12.9%", records: 36, investors: 4 },
+  { no: "PF-2026-0185", name: "大关东三苑", addr: "拱墅区·大关 3幢",  status: "signing",    income: 0,     expense: 3.5,   roi: "—",    records: 3,  investors: 0 },
+  { no: "PF-2026-0183", name: "景芳东区",   addr: "上城区·景芳 21幢", status: "renovating", income: 0,     expense: 35.9,  roi: "—",    records: 11, investors: 0 },
+  { no: "PF-2026-0180", name: "三里亭苑",   addr: "上城区·三里亭 8幢", status: "selling",    income: 331.3, expense: 305.0, roi: "8.6%",  records: 21, investors: 2 },
+  { no: "PF-2026-0177", name: "濮家新村",   addr: "上城区·濮家 12幢", status: "sold",       income: 309.1, expense: 279.0, roi: "10.8%", records: 29, investors: 0 },
+  { no: "PF-2026-0175", name: "德胜东村",   addr: "拱墅区·德胜 5幢",  status: "selling",    income: 393.7, expense: 381.0, roi: "3.3%",  records: 17, investors: 5 },
+  { no: "PF-2026-0172", name: "大浒东苑",   addr: "拱墅区·东新 15幢", status: "renovating", income: 0,     expense: 28.4,  roi: "—",    records: 9,  investors: 0 },
+];
+const TREND = {
+  labels: ["25-10","25-11","25-12","26-01","26-02","26-03","26-04","26-05","26-06","26-07","26-08","26-09"],
+  volume: [88, 76, 92, 105, 98, 112, 87, 121, 128, 110, 117, 112],
+  price:  [412, 415, 419, 418, 424, 428, 431, 429, 435, 438, 441, 443],
+};
+const PRICE_DIST = [
+  { label: "<200", v: 86 }, { label: "200-250", v: 214 }, { label: "250-300", v: 328 },
+  { label: "300-350", v: 265 }, { label: "350-400", v: 178 }, { label: "400-500", v: 122 }, { label: "≥500", v: 53 },
+];
+const LAYOUT_DIST = [
+  { label: "1室", v: 286 }, { label: "2室", v: 572 }, { label: "3室", v: 331 }, { label: "4室+", v: 57 },
+];
+const FLOOR_DIST = [
+  { label: "低层 1-6", v: 312 }, { label: "中层 7-14", v: 486 }, { label: "中高 15-24", v: 298 }, { label: "高层 25+", v: 150 },
+];
+const DISTRICTS = [
+  { name: "朝晖",   vol: 168, avg: 302, unit: "4.12", onSale: 142, absorb: "8.5",  pq: 1.2,  vq: -3.4 },
+  { name: "翠苑",   vol: 152, avg: 296, unit: "4.05", onSale: 128, absorb: "8.2",  pq: 0.8,  vq: 5.2 },
+  { name: "采荷",   vol: 141, avg: 335, unit: "4.58", onSale: 96,  absorb: "6.8",  pq: 2.1,  vq: 8.9 },
+  { name: "古荡",   vol: 128, avg: 402, unit: "4.71", onSale: 88,  absorb: "6.9",  pq: -0.4, vq: 1.7 },
+  { name: "大关",   vol: 117, avg: 318, unit: "4.24", onSale: 105, absorb: "9.0",  pq: 0.6,  vq: -2.1 },
+  { name: "景芳",   vol: 109, avg: 289, unit: "3.98", onSale: 121, absorb: "11.1", pq: -1.3, vq: -4.8 },
+  { name: "三里亭", vol: 96,  avg: 356, unit: "4.36", onSale: 84,  absorb: "8.8",  pq: 1.7,  vq: 6.3 },
+  { name: "德胜",   vol: 89,  avg: 371, unit: "4.42", onSale: 76,  absorb: "8.5",  pq: 0.9,  vq: 2.6 },
+  { name: "其他",   vol: 246, avg: 388, unit: "4.30", onSale: 300, absorb: "12.2", pq: 0.3,  vq: 1.1 },
+];
+
+/* ================================================================
+   通用小组件
+   ================================================================ */
+function toast(msg) {
+  window.dispatchEvent(new CustomEvent("d-toast", { detail: msg }));
+}
+function Badge({ cls, children }) {
+  return <span className={"badge " + cls}>{children}</span>;
+}
+function Money({ v, cls }) {
+  return <span className={v >= 0 ? "money-pos" : "money-neg"}>{v >= 0 ? "+" : ""}{v.toFixed(1)}</span>;
+}
+function Avatar({ i, size }) {
+  const cls = "av-" + ((i % 6) + 1);
+  return <span className={"avatar " + cls} style={size ? { width: size, height: size } : null}>{PEOPLE[i].slice(0, 1)}</span>;
+}
+function PageHeader({ title, desc, aside }) {
+  return (
+    <header className="page-head">
+      <div>
+        <h1>{title}</h1>
+        {desc ? <p className="desc">{desc}</p> : null}
+      </div>
+      {aside ? <div className="aside">{aside}</div> : null}
+    </header>
+  );
+}
+function Pagination({ total, unit }) {
+  return (
+    <div className="tbl-foot">
+      <span>共 {total} 条{unit || ""}</span>
+      <div className="pager">
+        <button>‹</button>
+        <button className="on">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>…</button>
+        <button>›</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---- 图表:迷你趋势 ---- */
+function Spark({ data, up, w = 64, h = 22 }) {
+  const max = Math.max(...data), min = Math.min(...data);
+  const pts = data.map((d, i) => `${(i / (data.length - 1)) * w},${h - 2 - ((d - min) / (max - min || 1)) * (h - 6)}`).join(" ");
+  const c = up ? "var(--pos)" : "var(--neg)";
+  return (
+    <svg width={w} height={h} style={{ flex: "none" }}>
+      <polyline points={pts} fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+/* ---- 图表:柱线组合(报表趋势) ---- */
+function ComboChart() {
+  const W = 980, H = 250, L = 34, R = 44, T = 18, B = 30;
+  const iw = W - L - R, ih = H - T - B;
+  const vmax = 140, pmax = 460, pmin = 400;
+  const n = TREND.volume.length;
+  const step = iw / n;
+  const bars = TREND.volume.map((v, i) => {
+    const h = (v / vmax) * ih;
+    return <rect key={i} x={L + i * step + step * 0.28} y={T + ih - h} width={step * 0.44} height={h} rx="4" fill="#4a90e2" opacity="0.55" />;
+  });
+  const pts = TREND.price.map((p, i) => [L + i * step + step * 0.5, T + ih * (1 - (p - pmin) / (pmax - pmin))]);
+  const line = pts.map(p => p.join(",")).join(" ");
+  const grid = [0, 0.5, 1].map(t => (
+    <g key={t}>
+      <line x1={L} x2={W - R} y1={T + ih * t} y2={T + ih * t} stroke="var(--dove)" strokeOpacity="0.3" strokeDasharray={t === 1 ? "0" : "3 4"} />
+    </g>
+  ));
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img">
+      {grid}
+      {bars}
+      <polyline points={line} fill="none" stroke="var(--rust)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="3" fill="#fff" stroke="var(--rust)" strokeWidth="1.8" />)}
+      {TREND.labels.map((l, i) => (
+        <text key={l} className="axis-t" x={L + i * step + step * 0.5} y={H - 8} textAnchor="middle">{l}</text>
+      ))}
+      <text className="axis-t" x={L - 6} y={T + 4} textAnchor="end">140</text>
+      <text className="axis-t" x={L - 6} y={T + ih + 4} textAnchor="end">0</text>
+      <text className="axis-t" x={W - R + 8} y={T + 4}>460万</text>
+      <text className="axis-t" x={W - R + 8} y={T + ih + 4}>400万</text>
+    </svg>
+  );
+}
+/* ---- 图表:柱状(价格分布,Rust) ---- */
+function BarChart() {
+  const W = 460, H = 210, L = 10, B = 26, T = 12;
+  const iw = W - L * 2, ih = H - T - B;
+  const max = Math.max(...PRICE_DIST.map(d => d.v));
+  const step = iw / PRICE_DIST.length;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}>
+      {PRICE_DIST.map((d, i) => {
+        const h = (d.v / max) * ih;
+        return (
+          <g key={d.label}>
+            <rect x={L + i * step + step * 0.18} y={T + ih - h} width={step * 0.64} height={h} rx="5" fill="var(--rust)" opacity={0.28 + 0.72 * (d.v / max)} />
+            <text className="axis-t" x={L + i * step + step * 0.5} y={H - 8} textAnchor="middle">{d.label}</text>
+            <text className="axis-t" x={L + i * step + step * 0.5} y={T + ih - h - 7} textAnchor="middle" fill="var(--ash)">{d.v}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+/* ---- 横向条(户型 / 楼层分布) ---- */
+function HBars({ data }) {
+  const max = Math.max(...data.map(d => d.v));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+      {data.map(d => (
+        <div className="hbar-row" key={d.label}>
+          <span className="hl">{d.label}</span>
+          <span className="hb"><i style={{ width: (d.v / max) * 100 + "%" }} /></span>
+          <span className="hv">{d.v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ================================================================
+   侧边栏
+   ================================================================ */
+const NAV = [
+  { id: "dashboard", label: "工作台", icon: "dashboard" },
+  { section: "业务", items: [
+    { id: "properties", label: "房源管理", icon: "building", children: ["房源列表", "小区图库", "批量上传", "数据治理"] },
+    { id: "leads", label: "线索中心", icon: "phone" },
+    { id: "projects", label: "项目管理", icon: "kanban" },
+    { id: "marketing", label: "房源营销", icon: "smartphone" },
+  ]},
+  { section: "增长", items: [
+    { id: "growth", label: "获客中心", icon: "megaphone", children: ["获客总览", "线索管理", "漏斗看板", "活动配置"] },
+    { id: "reports", label: "数据报表", icon: "chart" },
+  ]},
+  { section: "财务", items: [
+    { id: "ledger", label: "资金账本", icon: "wallet" },
+    { id: "investments", label: "跟投管理", icon: "coins" },
+    { id: "subjects", label: "科目管理", icon: "book" },
+  ]},
+  { section: "系统", items: [
+    { id: "users", label: "用户管理", icon: "users" },
+    { id: "audit", label: "审计日志", icon: "scroll" },
+    { id: "settings", label: "设置", icon: "settings" },
+  ]},
+];
+const PAGE_TITLES = {
+  properties: "房源管理", marketing: "房源营销", growth: "获客中心",
+  investments: "跟投管理", subjects: "科目管理", users: "用户管理",
+  audit: "审计日志", settings: "设置",
+};
+
+function Sidebar({ page, go, collapsed, setCollapsed, open, toggleOpen }) {
+  const renderItem = (item) => {
+    const active = page === item.id;
+    const hasKids = !!item.children;
+    const isOpen = open[item.id];
+    return (
+      <div key={item.id}>
+        <button
+          className={"nav-item" + (active ? " active" : "") + (isOpen ? " open" : "")}
+          onClick={() => (hasKids ? (toggleOpen(item.id), go(item.id)) : go(item.id))}
+          title={collapsed ? item.label : null}
+        >
+          <span className="ic"><Icon n={item.icon} /></span>
+          <span className="lbl">{item.label}</span>
+          {hasKids && !collapsed ? <span className="chev"><Icon n="chevRight" size={14} /></span> : null}
+        </button>
+        {hasKids ? (
+          <div className={"nav-children" + (isOpen && !collapsed ? " open" : "")}>
+            {item.children.map((c) => (
+              <button key={c} className={"nav-child" + (active && c === item.children[0] ? " active" : "")}
+                onClick={() => go(item.id)}>{c}</button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+  return (
+    <aside className="sidebar">
+      <div className="side-logo">
+        <span className="mark">P</span>
+        <span className="word">Profo</span>
+      </div>
+      <div className="side-scroll">
+        {NAV.map((g, i) =>
+          g.section ? (
+            <div key={g.section}>
+              <div className="nav-group-label">{g.section}</div>
+              {g.items.map(renderItem)}
+            </div>
+          ) : (
+            <div key={g.id} style={{ marginTop: i === 1 ? 6 : 0 }}>{renderItem(g)}</div>
+          )
+        )}
+      </div>
+      <div className="side-foot">
+        <button className="side-user" onClick={() => toast("设计稿演示:账号 陈明远 · 管理员")}>
+          <Avatar i={0} />
+          <span className="info">
+            <div className="n">陈明远</div>
+            <div className="r">管理员</div>
+          </span>
+        </button>
+        <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)}>
+          <Icon n="panelLeft" size={16} />
+          <span className="lbl">{collapsed ? "展开菜单" : "收起菜单"}</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/* ================================================================
+   Screen 1 · 工作台
+   ================================================================ */
+function ScreenDashboard({ go }) {
+  const funnel = [
+    { label: "总线索", v: 128, pct: 100, color: "var(--ink)" },
+    { label: "进入评估", v: 45, pct: 35, color: "#4a90e2" },
+    { label: "实地看房", v: 18, pct: 14, color: "var(--apricot)", border: "#f2d0ba" },
+    { label: "签约", v: 9, pct: 7, color: "var(--rust)" },
+  ];
+  const quick = {
+    reno: [
+      { name: "翠苑一区", stage: "水电", no: "PF-2026-0189" },
+      { name: "景芳东区", stage: "木瓦", no: "PF-2026-0183" },
+      { name: "大浒东苑", stage: "油漆", no: "PF-2026-0172" },
+      { name: "朝晖五区", stage: "设计", no: "PF-2026-0170" },
+      { name: "三墩北苑", stage: "拆除", no: "PF-2026-0168" },
+    ],
+    sale: [
+      { name: "朝晖六区", stage: "挂牌 315 万", no: "PF-2026-0192" },
+      { name: "采荷东区", stage: "挂牌 268 万", no: "PF-2026-0188" },
+      { name: "三里亭苑", stage: "挂牌 356 万", no: "PF-2026-0180" },
+      { name: "德胜东村", stage: "挂牌 439 万", no: "PF-2026-0175" },
+      { name: "凤起高层", stage: "挂牌 512 万", no: "PF-2026-0166" },
+    ],
+  };
+  return (
+    <div className="page" data-screen-label="工作台">
+      <PageHeader
+        title="工作台"
+        desc="欢迎回来,这是您今日的数据概览"
+        aside={<span>2026年9月28日 周一 · 杭州</span>}
+      />
+
+      {/* 顶部三卡 */}
+      <div className="dash-top">
+        <section className="card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className="card-title">项目总览</span>
+            <button className="sec-link" onClick={() => go("projects")}>详情 <Icon n="arrowRight" size={13} /></button>
+          </div>
+          <div className="ov-grid">
+            <div className="ov-item"><div className="k">已签约</div><div className="v">12</div></div>
+            <div className="ov-item"><div className="k">装修中</div><div className="v">8</div></div>
+            <div className="ov-item"><div className="k">在售中</div><div className="v">15</div></div>
+            <div className="ov-item"><div className="k">已成交</div><div className="v">23</div></div>
+          </div>
+        </section>
+
+        <section className="card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className="card-title">线索漏斗</span>
+            <span style={{ fontSize: "12.5px", color: "var(--graphite)" }}>本月</span>
+          </div>
+          <div className="funnel-rows">
+            {funnel.map((f) => (
+              <div className="f-row" key={f.label}>
+                <span className="fl">{f.label}</span>
+                <span className="f-bar"><i style={{ width: f.pct + "%", background: f.color, boxShadow: f.border ? "inset 0 0 0 1px " + f.border : null }} /></span>
+                <span className="fv">{f.v}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
+            <span style={{ fontSize: "13px", color: "var(--graphite)" }}>
+              总线索 <b className="tnum" style={{ color: "var(--ink)", fontWeight: 480 }}>128</b>
+              <span style={{ margin: "0 7px", color: "var(--dove)" }}>·</span>
+              转化率 <b className="tnum" style={{ color: "var(--ink)", fontWeight: 480 }}>7.0%</b>
+            </span>
+            <button className="btn-fill" style={{ padding: "7px 16px", fontSize: "13px" }} onClick={() => toast("设计稿演示:打开「新增线索」表单")}>
+              <Icon n="plus" size={14} /> 新增线索
+            </button>
+          </div>
+        </section>
+
+        <section className="card card-warm">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className="card-title" style={{ color: "var(--rust)" }}>待评估事项</span>
+            <Badge cls="b-rust">评估预警</Badge>
+          </div>
+          <div className="alert-num tnum">18</div>
+          <p style={{ fontSize: "13px", color: "var(--rust)", opacity: 0.75, marginTop: 12, lineHeight: 1.55 }}>
+            有 18 条线索等待初筛评估,其中 6 条已超 48 小时
+          </p>
+          <button className="btn-text" style={{ color: "var(--rust)", marginTop: 10, padding: 0 }} onClick={() => go("leads")}>
+            去处理 <Icon n="arrowRight" size={13} />
+          </button>
+        </section>
+      </div>
+
+      {/* 快捷入口 */}
+      <div className="sec-head">
+        <h2 className="sec-title">快捷入口</h2>
+      </div>
+      <div className="quick-grid">
+        {[
+          { title: "装修进度上传", sub: "装修中项目 · 8", icon: "upload", rows: quick.reno, act: "上传" },
+          { title: "销售记录录入", sub: "在售项目 · 15", icon: "pencil", rows: quick.sale, act: "录入" },
+        ].map((q) => (
+          <section className="card" key={q.title}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+              <span style={{ color: "var(--graphite)", display: "flex" }}><Icon n={q.icon} size={16} /></span>
+              <span className="card-title">{q.title}</span>
+              <span style={{ fontSize: "12.5px", color: "var(--graphite)", marginLeft: "auto" }}>{q.sub}</span>
+            </div>
+            {q.rows.map((r) => (
+              <div className="q-row" key={r.no}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="nm">{r.name} <span className="mono" style={{ color: "var(--dove)", fontSize: 11, marginLeft: 6 }}>#{r.no.slice(3)}</span></div>
+                  <div className="meta">{q.act === "上传" ? "当前阶段" : "当前挂牌"} · {r.stage}</div>
+                </div>
+                <button className="btn-text" style={{ fontSize: 13 }} onClick={() => toast(`设计稿演示:跳转 ${r.name} 的${q.title}`)}>{q.act}</button>
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+
+      {/* 重点监控项目 */}
+      <div className="sec-head">
+        <h2 className="sec-title">重点监控项目</h2>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="icon-btn" disabled title="筛选功能开发中"><Icon n="filter" size={15} /></button>
+          <button className="icon-btn" disabled title="排序功能开发中"><Icon n="sortAsc" size={15} /></button>
+        </div>
+      </div>
+      <div className="monitor-row">
+        {MONITOR.map(({ p, feed, mkt }) => {
+          const st = PROJ_STATUS[p.status];
+          return (
+            <article className="m-card" key={p.no}>
+              <div className="m-no">
+                <span className="no mono">#{p.no.slice(3)}</span>
+                <Badge cls={st.badge}>{st.label}</Badge>
+              </div>
+              <h3 className="m-name">{p.name}</h3>
+              <p className="m-addr">{p.district} · {p.layout} · {p.area}㎡{p.list ? " · 挂牌 " + p.list + " 万" : ""}</p>
+              <div className="m-div" />
+              <div className="m-sec">项目动态</div>
+              <p className="m-feed"><span className="t">3天前</span>{feed}</p>
+              <div style={{ height: 14 }} />
+              <div className="m-sec">市场数据 <span style={{ color: "var(--dove)", letterSpacing: 0 }}>· 竞品小区</span></div>
+              <div className="mkt-grid">
+                <div className="mkt"><div className="k">竞品在售</div><div className="v">{mkt.onSale} 套</div></div>
+                <div className="mkt"><div className="k">成交均价</div><div className="v">{mkt.avg} 万/㎡</div></div>
+                <div className="mkt"><div className="k">30日成交</div><div className="v">{mkt.vol30} 套</div></div>
+                <div className="mkt"><div className="k">30日趋势</div>
+                  <div className="v" style={{ color: mkt.trend > 0 ? "var(--pos)" : "var(--neg)" }}>
+                    <Icon n={mkt.trend > 0 ? "trendUp" : "trendDown"} size={14} /> <Spark data={mkt.sp} up={mkt.trend > 0} />
+                  </div>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+        <button className="add-card" onClick={() => toast("设计稿演示:打开「新建项目」弹窗")}>
+          <span className="cir"><Icon n="plus" size={22} /></span>
+          <span className="t1">添加新项目</span>
+          <span className="t2">快速录入房源或新建开发项目</span>
+        </button>
+      </div>
+
+      {/* 近期线索跟进 */}
+      <div className="sec-head">
+        <h2 className="sec-title">近期线索跟进</h2>
+        <button className="sec-link" onClick={() => go("leads")}>查看全部 <Icon n="arrowRight" size={13} /></button>
+      </div>
+      <div className="card tbl-card">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>小区</th><th>户型 · 面积</th><th>区域</th>
+              <th className="num">总价(万)</th><th className="num">评估价(万)</th>
+              <th>状态</th><th>录入人</th><th>更新时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            {LEADS.slice(0, 6).map((l) => {
+              const st = LEAD_STATUS[l.status];
+              return (
+                <tr key={l.id}>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <Avatar i={l.creator} size={26} />
+                      <div>
+                        <div className="cell-main">{l.name}</div>
+                        <div className="td-sub mono">{l.id}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{l.layout} · {l.area}㎡<div className="td-sub">{l.floor}</div></td>
+                  <td style={{ color: "var(--ash)" }}>{l.district} · {l.biz}</td>
+                  <td className="num" style={{ fontWeight: 480 }}>{l.total}</td>
+                  <td className="num" style={{ color: l.eval ? "var(--ink)" : "var(--dove)" }}>{l.eval ?? "—"}</td>
+                  <td><Badge cls={st.badge}>{st.label}</Badge></td>
+                  <td><span className="person"><Avatar i={l.creator} /><span className="nm">{PEOPLE[l.creator]}</span></span></td>
+                  <td style={{ color: "var(--graphite)", fontSize: 13 }}><Icon n="clock" size={12} style={{ verticalAlign: -1.5, marginRight: 5, color: "var(--dove)" }} />{l.time}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 2 · 项目管理
+   ================================================================ */
+function ScreenProjects() {
+  const [tab, setTab] = useState("all");
+  const tabs = [
+    { id: "all", label: "全部", cnt: 58 },
+    { id: "signing", label: "签约", cnt: 12 },
+    { id: "renovating", label: "装修", cnt: 8 },
+    { id: "selling", label: "在售", cnt: 15 },
+    { id: "sold", label: "已售", cnt: 23 },
+  ];
+  const rows = tab === "all" ? PROJECTS : PROJECTS.filter((p) => p.status === tab);
+  return (
+    <div className="page" data-screen-label="项目管理">
+      <PageHeader title="项目管理" desc="全生命周期管理您的房源资产,从签约到售出的每一分钱。" />
+
+      <div className="stat-grid c4">
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-sky" />已签约</div><div className="stat-value">12</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-apricot" />装修中</div><div className="stat-value">8</div></div>
+        <div className="stat-card warm"><div className="stat-label"><span className="stat-dot" />在售中</div><div className="stat-value">15</div><div className="stat-sub">挂牌中位数 340 万</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-dove" />已售</div><div className="stat-value">23</div><div className="stat-sub">平均用时 71 天</div></div>
+      </div>
+
+      <div className="toolbar">
+        <div className="tabs">
+          {tabs.map((t) => (
+            <button key={t.id} className={"tab" + (tab === t.id ? " active" : "")} onClick={() => setTab(t.id)}>
+              {t.label}<span className="cnt tnum">{t.cnt}</span>
+            </button>
+          ))}
+        </div>
+        <button className="select"><Icon n="chevDown" size={13} className="ic" />全部业务形式</button>
+        <label className="search">
+          <Icon n="search" size={14} />
+          <input placeholder="搜索小区名称 / 合同编号" />
+        </label>
+        <span className="spacer" />
+        <button className="btn-text" onClick={() => toast("设计稿演示:导出项目列表")}><Icon n="download" size={15} />导出</button>
+        <button className="btn-fill" onClick={() => toast("设计稿演示:打开「新建项目」弹窗")}><Icon n="plus" size={15} />新建项目</button>
+      </div>
+
+      <div className="card tbl-card">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>项目</th><th>小区</th><th>状态</th>
+              <th className="num">签约价(万)</th><th className="num">成交价(万)</th>
+              <th className="num">用时(天)</th><th>负责人</th><th className="num">净现金流(万)</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => {
+              const st = PROJ_STATUS[p.status];
+              return (
+                <tr key={p.no}>
+                  <td>
+                    <div className="cell-main">{p.name}</div>
+                    <div className="td-sub mono">#{p.no}</div>
+                  </td>
+                  <td>{p.district}<div className="td-sub">{p.layout} · {p.area}㎡</div></td>
+                  <td>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-start" }}>
+                      <Badge cls={st.badge}>{st.label}</Badge>
+                      <span className="badge b-ghost">{p.form}</span>
+                    </div>
+                  </td>
+                  <td className="num" style={{ fontWeight: 480 }}>{p.sign}</td>
+                  <td className="num" style={{ color: p.sold ? "var(--ink)" : "var(--dove)" }}>{p.sold ?? "—"}</td>
+                  <td className="num tnum" style={{ color: "var(--ash)" }}>{p.days}</td>
+                  <td><span className="person"><Avatar i={p.owner} /><span className="nm">{PEOPLE[p.owner]}</span></span></td>
+                  <td className="num"><Money v={p.flow} /></td>
+                  <td>
+                    <button className="op-link" onClick={() => toast("设计稿演示:打开项目详情侧栏")}>查看</button>
+                    <button className="op-link" onClick={() => toast("设计稿演示:编辑项目")}>编辑</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <Pagination total={58} />
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 3 · 线索中心
+   ================================================================ */
+function ScreenLeads() {
+  const [tab, setTab] = useState("all");
+  const [view, setView] = useState("table");
+  const tabs = [
+    { id: "all", label: "全部", cnt: 106 },
+    { id: "pending", label: "待评估", cnt: 18 },
+    { id: "visit", label: "待看房", cnt: 12 },
+    { id: "visited", label: "已看房", cnt: 25 },
+    { id: "signed", label: "已签约", cnt: 9 },
+    { id: "rejected", label: "已放弃", cnt: 42 },
+  ];
+  const rows = tab === "all" ? LEADS : LEADS.filter((l) => l.status === tab || (tab === "rejected" && l.status === "lost"));
+  return (
+    <div className="page" data-screen-label="线索中心">
+      <PageHeader title="线索中心" desc="初筛评估 → 上门实勘 → 商务谈判 → 签约收房" aside={<span>今日新增 6 条</span>} />
+
+      <div className="stat-grid">
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-apricot" />待评估</div><div className="stat-value">18</div><div className="stat-sub">6 条超 48 小时</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-sky" />待看房</div><div className="stat-value">12</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-dove" />已看房</div><div className="stat-value">25</div></div>
+        <div className="stat-card warm"><div className="stat-label"><span className="stat-dot" />已签约</div><div className="stat-value">9</div><div className="stat-sub">本月 +3</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-dove" />已放弃</div><div className="stat-value">42</div></div>
+      </div>
+
+      <div className="toolbar">
+        <div className="tabs">
+          {tabs.map((t) => (
+            <button key={t.id} className={"tab" + (tab === t.id ? " active" : "")} onClick={() => setTab(t.id)}>
+              {t.label}<span className="cnt tnum">{t.cnt}</span>
+            </button>
+          ))}
+        </div>
+        <button className="select"><Icon n="mapPin" size={13} className="ic" />全部区县</button>
+        <button className="select"><Icon n="chevDown" size={13} className="ic" />创建人</button>
+        <label className="search">
+          <Icon n="search" size={14} />
+          <input placeholder="搜索小区 / 区域" />
+        </label>
+        <span className="spacer" />
+        <div className="view-toggle">
+          <button className={view === "table" ? "on" : ""} title="表格视图" onClick={() => setView("table")}><Icon n="table" size={15} /></button>
+          <button className={view === "grid" ? "on" : ""} title="卡片视图" onClick={() => setView("grid")}><Icon n="grid" size={15} /></button>
+        </div>
+        <button className="btn-fill" onClick={() => toast("设计稿演示:打开「新增线索」表单")}><Icon n="plus" size={15} />新增线索</button>
+      </div>
+
+      {view === "table" ? (
+        <div className="card tbl-card">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>小区 / 房源</th><th>区域</th><th>户型 · 面积</th>
+                <th className="num">总价(万)</th><th className="num">单价(万/㎡)</th>
+                <th className="num">评估价(万)</th><th>状态</th><th>录入人</th><th>更新时间</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((l) => {
+                const st = LEAD_STATUS[l.status];
+                return (
+                  <tr key={l.id}>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <Avatar i={l.creator} size={26} />
+                        <div>
+                          <div className="cell-main">{l.name}</div>
+                          <div className="td-sub mono">{l.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ color: "var(--ash)" }}>{l.district} · {l.biz}</td>
+                    <td>{l.layout} · {l.area}㎡<div className="td-sub">{l.floor}</div></td>
+                    <td className="num" style={{ fontWeight: 480 }}>{l.total}</td>
+                    <td className="num tnum" style={{ color: "var(--ash)" }}>{l.unit}</td>
+                    <td className="num" style={{ color: l.eval ? "var(--ink)" : "var(--dove)" }}>{l.eval ?? "—"}</td>
+                    <td><Badge cls={st.badge}>{st.label}</Badge></td>
+                    <td><span className="person"><Avatar i={l.creator} /><span className="nm">{PEOPLE[l.creator]}</span></span></td>
+                    <td style={{ color: "var(--graphite)", fontSize: 13 }}>{l.time}</td>
+                    <td>
+                      <button className="op-link" onClick={() => toast("设计稿演示:打开线索详情")}>查看</button>
+                      <button className="op-link" onClick={() => toast("设计稿演示:编辑线索")}>编辑</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <Pagination total={106} />
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
+          {rows.map((l) => {
+            const st = LEAD_STATUS[l.status];
+            return (
+              <div className="card" key={l.id} style={{ padding: 14 }}>
+                <div style={{ height: 108, borderRadius: "var(--r-img)", background: "var(--fog)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--dove)" }}>
+                  <Icon n="building" size={26} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 13 }}>
+                  <span style={{ fontSize: 15, fontWeight: 500 }}>{l.name}</span>
+                  <Badge cls={st.badge}>{st.label}</Badge>
+                </div>
+                <div style={{ fontSize: 12.5, color: "var(--graphite)", marginTop: 5 }}>{l.layout} · {l.area}㎡ · {l.floor}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(163,166,175,.2)" }}>
+                  <span className="tnum" style={{ fontSize: 17, fontWeight: 480 }}>{l.total}<span style={{ fontSize: 12, color: "var(--graphite)", fontWeight: 430 }}> 万</span></span>
+                  <span className="tnum" style={{ fontSize: 12.5, color: "var(--graphite)" }}>{l.unit} 万/㎡</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 4 · 资金账本
+   ================================================================ */
+function ScreenLedger() {
+  const [tab, setTab] = useState("all");
+  const tabs = [
+    { id: "all", label: "全部", cnt: 58 },
+    { id: "signing", label: "已签约", cnt: 12 },
+    { id: "renovating", label: "装修中", cnt: 8 },
+    { id: "selling", label: "在售", cnt: 15 },
+    { id: "sold", label: "已售", cnt: 23 },
+  ];
+  const rows = tab === "all" ? LEDGER : LEDGER.filter((r) => r.status === tab);
+  return (
+    <div className="page" data-screen-label="资金账本">
+      <PageHeader title="资金账本" desc="管理和追踪所有项目的资金流水,按项目聚合查看收支与 ROI。" aside={<span>数据截至 09-28 12:00</span>} />
+
+      <div className="stat-grid">
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot" />项目总数</div><div className="stat-value">58<span className="unit">个</span></div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-rust" />总收入</div><div className="stat-value money-pos" style={{ color: "var(--pos)" }}>+12,860<span className="unit">万</span></div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-sky" />总支出</div><div className="stat-value" style={{ color: "var(--neg)" }}>-9,420<span className="unit">万</span></div></div>
+        <div className="stat-card warm"><div className="stat-label"><span className="stat-dot" />净现金流</div><div className="stat-value">+3,440<span className="unit">万</span></div><div className="stat-sub">整体 ROI 36.5%</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-dove" />流水记录</div><div className="stat-value">1,286<span className="unit">条</span></div></div>
+      </div>
+
+      <div className="toolbar">
+        <label className="search" style={{ width: 300 }}>
+          <Icon n="search" size={14} />
+          <input placeholder="搜索项目编号 / 小区 / 地址" />
+        </label>
+        <div className="tabs">
+          {tabs.map((t) => (
+            <button key={t.id} className={"tab" + (tab === t.id ? " active" : "")} onClick={() => setTab(t.id)}>
+              {t.label}<span className="cnt tnum">{t.cnt}</span>
+            </button>
+          ))}
+        </div>
+        <span className="spacer" />
+        <button className="btn-fill" onClick={() => toast("设计稿演示:导出 Excel 台账")}><Icon n="download" size={15} />导出 Excel</button>
+      </div>
+
+      <div className="card tbl-card">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>项目编号</th><th>小区 / 地址</th><th>状态</th>
+              <th className="num">总收入(万)</th><th className="num">总支出(万)</th>
+              <th className="num">净现金流(万)</th><th className="num">ROI</th>
+              <th className="num">记录</th><th>跟投</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const st = PROJ_STATUS[r.status];
+              const net = +(r.income - r.expense).toFixed(1);
+              return (
+                <tr key={r.no}>
+                  <td className="mono" style={{ color: "var(--ash)", fontSize: 12.5 }}>#{r.no}</td>
+                  <td>
+                    <div className="cell-main">{r.name}</div>
+                    <div className="td-sub">{r.addr}</div>
+                  </td>
+                  <td><Badge cls={st.badge}>{st.label}</Badge></td>
+                  <td className="num"><span className="money-pos">{r.income ? "+" + r.income.toFixed(1) : "0.0"}</span></td>
+                  <td className="num"><span className="money-neg">{r.expense ? "-" + r.expense.toFixed(1) : "0.0"}</span></td>
+                  <td className="num" style={{ fontWeight: 480 }}><Money v={net} /></td>
+                  <td className="num tnum" style={{ color: r.roi === "—" ? "var(--dove)" : "var(--ink)" }}>{r.roi}</td>
+                  <td className="num tnum" style={{ color: "var(--ash)" }}>{r.records}</td>
+                  <td>
+                    {r.investors ? (
+                      <span className="person" title="跟投投资人">
+                        <span style={{ color: "var(--rust)", display: "flex" }}><Icon n="key" size={14} /></span>
+                        <span className="nm" style={{ color: "var(--rust)" }}>{r.investors} 人</span>
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--dove)", fontSize: 13 }}>—</span>
+                    )}
+                  </td>
+                  <td><button className="op-link" onClick={() => toast("设计稿演示:打开台账明细页")}>查看</button></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <Pagination total={58} />
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 5 · 数据报表(商圈分析)
+   ================================================================ */
+function ScreenReports() {
+  const [range, setRange] = useState("12m");
+  const [src, setSrc] = useState("beike");
+  const [picked, setPicked] = useState(["朝晖", "采荷"]);
+  const togglePick = (name) =>
+    setPicked((p) => (p.includes(name) ? p.filter((x) => x !== name) : [...p, name]));
+  const ranges = [["4w", "4周"], ["8w", "8周"], ["6m", "6月"], ["12m", "12月"], ["24m", "24月"]];
+  const srcs = [["beike", "贝壳"], ["lianjia", "我爱我家"]];
+  return (
+    <div className="page" data-screen-label="数据报表">
+      <PageHeader title="数据报表" desc="商圈维度的市场成交与在售数据,辅助定价与去化决策。" aside={<span>数据截至 2026-09-27</span>} />
+
+      {/* 筛选条 */}
+      <div className="card filter-bar">
+        <div className="f-group">
+          <span className="f-label">时间范围</span>
+          <div className="pill-group">
+            {ranges.map(([id, l]) => (
+              <button key={id} className={range === id ? "on" : ""} onClick={() => setRange(id)}>{l}</button>
+            ))}
+          </div>
+        </div>
+        <div className="f-group">
+          <span className="f-label">数据源</span>
+          <div className="pill-group">
+            {srcs.map(([id, l]) => (
+              <button key={id} className={src === id ? "on" : ""} onClick={() => setSrc(id)}>{l}</button>
+            ))}
+          </div>
+        </div>
+        <div className="f-group">
+          <span className="f-label">商圈</span>
+          <button className="select" style={{ padding: "6px 12px" }} onClick={() => toast("设计稿演示:多选商圈")}>
+            朝晖、翠苑 等 3 个 <Icon n="chevDown" size={13} className="ic" />
+          </button>
+        </div>
+        <label className="search" style={{ width: 200 }}>
+          <Icon n="search" size={14} />
+          <input placeholder="搜索小区" />
+        </label>
+        <span className="spacer" />
+        <button className="btn-fill" onClick={() => toast(`设计稿演示:生成 ${picked.length} 个商圈对比`)}>
+          对比 ({picked.length})
+        </button>
+      </div>
+
+      {/* KPI */}
+      <div className="stat-grid c4" style={{ marginTop: 18 }}>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot" />成交量</div><div className="stat-value">1,246<span className="unit">套 · 近12月</span></div></div>
+        <div className="stat-card warm"><div className="stat-label"><span className="stat-dot" />成交均价</div><div className="stat-value">428<span className="unit">万</span></div><div className="stat-sub">环比 +0.7%</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-rust" />成交单价</div><div className="stat-value">4.86<span className="unit">万/㎡</span></div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-sky" />在售套数</div><div className="stat-value">1,240<span className="unit">套</span></div><div className="stat-sub">去化 11.9 个月</div></div>
+      </div>
+
+      {/* 趋势 */}
+      <div className="sec-head">
+        <h2 className="sec-title">成交量与成交均价走势</h2>
+        <div className="chart-legend">
+          <span><i style={{ background: "#4a90e2", opacity: 0.55 }} />成交量(套)</span>
+          <span><i style={{ background: "var(--rust)" }} />成交均价(万)</span>
+        </div>
+      </div>
+      <div className="card"><ComboChart /></div>
+
+      {/* 分布 */}
+      <div className="grid-2" style={{ marginTop: 18 }}>
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 14 }}>成交价格分布 <span style={{ fontSize: 12.5, color: "var(--graphite)", fontWeight: 430 }}>· 总价(万)</span></div>
+          <BarChart />
+        </div>
+        <div className="grid-2" style={{ gap: 18, gridTemplateColumns: "1fr" }}>
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 16 }}>户型分布</div>
+            <HBars data={LAYOUT_DIST} />
+          </div>
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 16 }}>楼层分布</div>
+            <HBars data={FLOOR_DIST} />
+          </div>
+        </div>
+      </div>
+
+      {/* 商圈表 */}
+      <div className="sec-head">
+        <h2 className="sec-title">商圈数据</h2>
+        <span style={{ fontSize: 13, color: "var(--graphite)" }}>勾选商圈加入对比</span>
+      </div>
+      <div className="card tbl-card">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th style={{ width: 40 }}></th>
+              <th>商圈</th><th className="num">成交量(套)</th><th className="num">均价(万)</th>
+              <th className="num">单价(万/㎡)</th><th className="num">在售(套)</th>
+              <th className="num">去化月数</th><th className="num">价格环比</th><th className="num">成交量环比</th>
+            </tr>
+          </thead>
+          <tbody>
+            {DISTRICTS.map((d) => {
+              const on = picked.includes(d.name);
+              return (
+                <tr key={d.name}>
+                  <td>
+                    <button
+                      onClick={() => togglePick(d.name)}
+                      style={{
+                        width: 18, height: 18, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
+                        background: on ? "var(--ink)" : "var(--pwhite)", color: "#fff",
+                        boxShadow: "inset 0 0 0 1.5px " + (on ? "var(--ink)" : "var(--dove)"),
+                      }}
+                    >
+                      {on ? <Icon n="check" size={12} sw={2.4} /> : null}
+                    </button>
+                  </td>
+                  <td className="cell-main">{d.name}</td>
+                  <td className="num" style={{ fontWeight: 480 }}>{d.vol}</td>
+                  <td className="num tnum">{d.avg}</td>
+                  <td className="num tnum" style={{ color: "var(--ash)" }}>{d.unit}</td>
+                  <td className="num tnum" style={{ color: "var(--ash)" }}>{d.onSale}</td>
+                  <td className="num tnum" style={{ color: "var(--ash)" }}>{d.absorb}</td>
+                  <td className="num">
+                    <span style={{ color: d.pq >= 0 ? "var(--pos)" : "var(--neg)", fontWeight: 450 }}>
+                      {d.pq >= 0 ? "▲" : "▼"} {Math.abs(d.pq).toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="num">
+                    <span style={{ color: d.vq >= 0 ? "var(--pos)" : "var(--neg)", fontWeight: 450 }}>
+                      {d.vq >= 0 ? "▲" : "▼"} {Math.abs(d.vq).toFixed(1)}%
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   占位屏
+   ================================================================ */
+function ScreenPlaceholder({ id, go }) {
+  const t = PAGE_TITLES[id] || "页面";
+  return (
+    <div className="page" data-screen-label={t + "(占位)"}>
+      <div className="placeholder">
+        <div className="pic"><Icon n="kanban" size={26} /></div>
+        <h2>{t}</h2>
+        <p>该模块未包含在本次设计稿迭代范围</p>
+        <div className="ph-links">
+          {[["dashboard", "工作台"], ["projects", "项目管理"], ["leads", "线索中心"], ["ledger", "资金账本"], ["reports", "数据报表"]].map(([pid, pl]) => (
+            <button className="ph-chip" key={pid} onClick={() => go(pid)}>{pl} →</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   设计说明面板
+   ================================================================ */
+const NOTES = [
+  ["01", "侧边栏改为 Steep 规范:Fog 实底、240px、无描边;激活项白底 12px 圆角 + 微阴影,替代旧毛玻璃 + bg-muted。"],
+  ["02", "主色统一为 Ink #17191c,替代旧 #005daa 蓝;Rust #5d2a1a 仅作暖强调(预警、评估预警标签、趋势线)。"],
+  ["03", "页头 h1 升为 Signifier(Source Serif 4)44px —— 修正现状 30px 低于规范下限(40px)的问题;副标题 15px Graphite。"],
+  ["04", "状态徽章收敛为「单色洗底药丸」:Sky=签约/待看房、Apricot=装修/待评估、Ink 填充=在售/已签约、Fog=已售/已放弃、白底描边=已看房。"],
+  ["05", "每屏最多一张 Apricot 暖卡(工作台=待评估预警、项目=在售、线索=已签约、账本=净现金流、报表=成交均价)、最多一个 Ink 填充按钮,次级动作一律 text link。"],
+  ["06", "金额规范:万元单位、tabular-nums、红正绿负(中国习惯);亏损项目净现金流绿色显示。"],
+  ["07", "图表色彩纪律:只有 Rust 暖与 #4a90e2 蓝两个彩色声音(趋势组合图、价格分布 Rust 柱),分布横条用 Ink。"],
+  ["08", "卡片 24px 圆角 + 三层签名阴影;输入 16px、按钮/徽章全胶囊;表格行 hover Fog、发丝线分隔。"],
+  ["09", "漏斗条使用 Ink → 蓝 → Apricot → Rust 阶梯,呼应「色彩作标点」的原则;预警卡大数字用 Signifier 52px Rust。"],
+  ["10", "信息架构微调:Dashboard 三卡比例 5:4:3;快捷入口/监控项目/线索表保留;科目管理等其余模块为占位屏。"],
+];
+function NotesPanel({ open, setOpen }) {
+  const [show, setShow] = useState(false);
+  return (
+    <React.Fragment>
+      <button className="notes-fab" onClick={() => setShow(!show)} title="设计说明">{show ? "✕" : "注"}</button>
+      {show ? (
+        <div className="notes-panel">
+          <h3>设计说明</h3>
+          <p className="sub">Admin 工作台 · Steep 重构 · 相对现状的 10 个关键决策</p>
+          {NOTES.map(([no, txt]) => (
+            <div className="note-item" key={no}><span className="no">{no}</span><span>{txt}</span></div>
+          ))}
+        </div>
+      ) : null}
+    </React.Fragment>
+  );
+}
+
+/* ================================================================
+   App
+   ================================================================ */
+function App() {
+  const [page, setPage] = useState("dashboard");
+  const [collapsed, setCollapsed] = useState(false);
+  const [open, setOpen] = useState({});
+  const [toastMsg, setToastMsg] = useState(null);
+  const timer = useRef(null);
+
+  useEffect(() => {
+    const h = (e) => {
+      setToastMsg(e.detail);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setToastMsg(null), 2200);
+    };
+    window.addEventListener("d-toast", h);
+    return () => window.removeEventListener("d-toast", h);
+  }, []);
+
+  const go = (p) => setPage(p);
+  const toggleOpen = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
+
+  const screens = {
+    dashboard: <ScreenDashboard go={go} />,
+    projects: <ScreenProjects />,
+    leads: <ScreenLeads />,
+    ledger: <ScreenLedger />,
+    reports: <ScreenReports />,
+  };
+
+  return (
+    <div className={"app" + (collapsed ? " collapsed" : "")}>
+      <Sidebar page={page} go={go} collapsed={collapsed} setCollapsed={setCollapsed} open={open} toggleOpen={toggleOpen} />
+      <main className="main">
+        {screens[page] || <ScreenPlaceholder id={page} go={go} />}
+      </main>
+      <NotesPanel />
+      {toastMsg ? <div className="toast">{toastMsg}</div> : null}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
