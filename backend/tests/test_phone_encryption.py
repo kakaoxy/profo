@@ -243,19 +243,25 @@ class TestPhoneMigration:
 
     @pytest.fixture
     def migration_engine(self, test_engine: Engine) -> Engine:
-        """复用会话级 PG 引擎，每个测试前后清理 users 和 roles 表.
+        """复用会话级 PG 引擎，每个测试前后清理 users/roles/permissions 表.
 
         迁移函数使用独立 connection，无法依赖 SAVEPOINT 隔离，
         因此通过 TRUNCATE 保证测试间数据隔离。
         _insert_raw_user 会插入占位 role 到 roles 表，需一并清理。
+        run_startup_migrations 中的 migrate_permission_system 会向 permissions
+        提交种子行、后续迁移会改写其 risk_level 等列——不清理会让后续测试
+        （如 test_role_system_e2e 的「ORM 默认值」断言）读到被迁移改写过的脏数据。
+        CASCADE 连带清掉引用 permissions/roles 的 role_permissions。
         """
         with test_engine.begin() as conn:
             conn.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE"))
             conn.execute(text("TRUNCATE TABLE roles RESTART IDENTITY CASCADE"))
+            conn.execute(text("TRUNCATE TABLE permissions RESTART IDENTITY CASCADE"))
         yield test_engine
         with test_engine.begin() as conn:
             conn.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE"))
             conn.execute(text("TRUNCATE TABLE roles RESTART IDENTITY CASCADE"))
+            conn.execute(text("TRUNCATE TABLE permissions RESTART IDENTITY CASCADE"))
 
     def _insert_raw_user(
         self,
