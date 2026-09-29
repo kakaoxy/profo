@@ -57,6 +57,82 @@ def _user_snapshot(user: User) -> dict[str, Any]:
     }
 
 
+def _role_code_of(db: Session, role_id: str) -> str | None:
+    """查询角色 code；角色已被物理删除时返回 None."""
+    return db.query(Role.code).filter(Role.id == role_id).scalar()
+
+
+def _log_role_change_audit(
+    db: Session,
+    *,
+    user_id: str,
+    old_main_role_id: str,
+    new_main_role_id: str,
+    old_additional_role_ids: set[str] | None,
+    operator_id: str | None,
+    request: Request | None,
+) -> None:
+    """角色变更专用审计：逐笔记录 assign_role / remove_role 事件.
+
+    主角色变更 → remove_role(旧) + assign_role(新)；附加角色全量替换的前后差集
+    → 每笔绑定/解绑各记一条。after 仅含 role_code；常规 update 日志保留完整快照。
+    写入失败由 OperationLogService 内部捕获，不阻塞主流程。
+    """
+    if old_main_role_id != new_main_role_id:
+        old_code = _role_code_of(db, old_main_role_id)
+        if old_code:
+            operation_log_service.log_action(
+                db,
+                user_id=operator_id,
+                action="remove_role",
+                resource_type="user",
+                resource_id=user_id,
+                after={"role_code": old_code},
+                request=request,
+            )
+        new_code = _role_code_of(db, new_main_role_id)
+        if new_code:
+            operation_log_service.log_action(
+                db,
+                user_id=operator_id,
+                action="assign_role",
+                resource_type="user",
+                resource_id=user_id,
+                after={"role_code": new_code},
+                request=request,
+            )
+
+    if old_additional_role_ids is None:
+        return
+    new_additional_ids = {
+        role_id for (role_id,) in db.query(UserRole.role_id).filter(UserRole.user_id == user_id).all()
+    }
+    for role_id in sorted(old_additional_role_ids - new_additional_ids):
+        code = _role_code_of(db, role_id)
+        if code:
+            operation_log_service.log_action(
+                db,
+                user_id=operator_id,
+                action="remove_role",
+                resource_type="user",
+                resource_id=user_id,
+                after={"role_code": code},
+                request=request,
+            )
+    for role_id in sorted(new_additional_ids - old_additional_role_ids):
+        code = _role_code_of(db, role_id)
+        if code:
+            operation_log_service.log_action(
+                db,
+                user_id=operator_id,
+                action="assign_role",
+                resource_type="user",
+                resource_id=user_id,
+                after={"role_code": code},
+                request=request,
+            )
+
+
 class UserService:
     """用户核心服务（后台管理 CRUD）."""
 
@@ -405,7 +481,12 @@ class UserService:
 
         # 处理附加角色（全量替换）
         # None=不修改；[]=清空；非空=校验后替换
+        # 替换前记录旧附加角色集合，供角色变更专用审计计算差集
+        old_additional_role_ids: set[str] | None = None
         if additional_role_ids is not None:
+            old_additional_role_ids = {
+                role_id for (role_id,) in db.query(UserRole.role_id).filter(UserRole.user_id == user_id).all()
+            }
             db.query(UserRole).filter(UserRole.user_id == user_id).delete(synchronize_session=False)
             if additional_role_ids:
                 user_roles_to_add = self._build_additional_user_roles(db, user, additional_role_ids)
@@ -436,6 +517,16 @@ class UserService:
             resource_id=user_id,
             before=before_snapshot,
             after=_user_snapshot(user),
+            request=request,
+        )
+        # 角色变更专用审计：主角色变更与附加角色增删逐笔记录（常规 update 日志保留）
+        _log_role_change_audit(
+            db,
+            user_id=user_id,
+            old_main_role_id=str(before_snapshot["role_id"]),
+            new_main_role_id=str(user.role_id),
+            old_additional_role_ids=old_additional_role_ids,
+            operator_id=operator_id,
             request=request,
         )
         # 补齐 leads_count 与 wechat_bound，保持与 get_user_by_id 响应一致

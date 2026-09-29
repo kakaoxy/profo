@@ -192,10 +192,18 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">启用状态</FormLabel>
-                    <FormDescription>禁用后该角色的用户将无法登录或操作</FormDescription>
+                    <FormDescription>
+                      {isEdit && role?.is_system
+                        ? "系统内置角色不可停用"
+                        : "禁用后该角色的用户将无法登录或操作"}
+                    </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isEdit && !!role?.is_system}
+                    />
                   </FormControl>
                 </FormItem>
               )}
@@ -338,6 +346,8 @@ interface PermissionItemProps {
 }
 
 function PermissionItem({ permission, checked, onCheckedChange }: PermissionItemProps) {
+  // 风险分级徽标：仅 L4（高风险）/ L5（系统安全）展示醒目高危标识，L0-L3 不展示
+  const isHighRisk = permission.risk_level === "L4" || permission.risk_level === "L5";
   return (
     <label className="flex cursor-pointer flex-row items-start gap-3 rounded-md px-2 py-1.5 hover:bg-accent">
       <Checkbox checked={checked} onCheckedChange={onCheckedChange} className="mt-0.5" />
@@ -347,6 +357,11 @@ function PermissionItem({ permission, checked, onCheckedChange }: PermissionItem
           {permission.is_system && (
             <Badge variant="secondary" className="text-xs font-normal">
               系统
+            </Badge>
+          )}
+          {isHighRisk && (
+            <Badge variant="destructive" className="text-xs font-normal">
+              高风险
             </Badge>
           )}
         </div>

@@ -186,6 +186,15 @@ class RoleService:
             msg = "角色不存在"
             raise ResourceNotFoundError(msg)
 
+        # 系统角色防护：禁止修改 code、禁止停用（name/description/permission_codes 编辑保留）
+        if role.is_system:
+            if role_data.code is not None and role_data.code != role.code:
+                msg = "系统角色不可修改角色代码"
+                raise ConflictError(msg)
+            if role_data.is_active is False:
+                msg = "系统角色不可停用"
+                raise ConflictError(msg)
+
         # 审计快照：在更新前记录（含 permission_codes）
         before_permission_codes = permission_service.get_role_permission_codes(db, role_id)
         before_snapshot = _role_snapshot(role, before_permission_codes)
@@ -286,6 +295,11 @@ class RoleService:
         if not role:
             msg = "角色不存在"
             raise ResourceNotFoundError(msg)
+
+        # 系统角色防护：内置角色不可删除
+        if role.is_system:
+            msg = "系统角色不可删除"
+            raise ConflictError(msg)
 
         # 使用 exists 查询避免加载全量用户
         has_users = db.query(User.id).filter(User.role_id == role_id).limit(1).first() is not None

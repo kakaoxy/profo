@@ -42,6 +42,10 @@ class PermissionResponse(PermissionBase):
 
     id: UUID4 = Field(description="权限ID")
     is_system: bool = Field(description="是否系统内置权限点")
+    # 风险等级元数据：由迁移种子管理，PermissionCreate/Update 不接收该字段（API 创建默认 L1）
+    risk_level: str = Field(
+        description="风险等级：L0 读取/L1 普通写入/L2 数据管理/L3 审批/L4 高风险/L5 系统安全",
+    )
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")
 

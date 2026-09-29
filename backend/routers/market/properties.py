@@ -7,7 +7,7 @@ import logging
 from datetime import datetime as dt
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import StreamingResponse
 
 from dependencies.auth import (
@@ -29,6 +29,7 @@ from services.market import (
     get_property_service,
 )
 from services.system.exceptions import ResourceNotFoundError
+from services.system.operation_log import operation_log_service
 from utils.csv_exporter import generate_csv_response
 from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyExportParams
@@ -120,8 +121,9 @@ def get_properties(
 
 @router.get("/export")
 def export_properties(
+    request: Request,
     db: DbSessionDep,
-    _current_user: PropertyReadPermDep,
+    current_user: PropertyReadPermDep,
     service: PropertyServiceDep,
     status: Annotated[str | None, Query(max_length=100, description="房源状态: 在售 | 成交")] = None,
     community_name: Annotated[str | None, Query(max_length=100, description="小区名称（模糊搜索）")] = None,
@@ -174,6 +176,16 @@ def export_properties(
         params=export_params,
     )
 
+    # 导出包含房源敏感数据，Router 层记录敏感数据访问审计
+    # （与项目导出/业主银行卡端点模式一致，无快照；写入失败不阻塞主流程）
+    operation_log_service.log_action(
+        db,
+        user_id=str(current_user.id),
+        action="sensitive_data_access",
+        resource_type="property",
+        resource_id=None,
+        request=request,
+    )
     return _generate_csv_response(properties)
 
 

@@ -33,6 +33,7 @@ from services.system.exceptions import (
     BusinessLogicError,
     PermissionDeniedError,
 )
+from services.system.operation_log import operation_log_service
 from settings import settings
 from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C
 from utils.common import RateLimits, limiter
@@ -121,12 +122,30 @@ def login_for_access_token(
             username=form_data.username,
             reason=type(e).__name__,
         )
+        # DB 审计：认证失败事件（user_id 未知记 None，after 含提交的用户名与失败原因）
+        operation_log_service.log_action(
+            db,
+            user_id=None,
+            action="login_failure",
+            resource_type="auth",
+            after={"username": form_data.username, "reason": type(e).__name__},
+            request=request,
+        )
         raise
     log_auth_event(
         "login_success",
         user_id=user.id,
         client_ip=client_ip,
         user_agent=user_agent,
+    )
+    # DB 审计：认证成功事件
+    operation_log_service.log_action(
+        db,
+        user_id=str(user.id),
+        action="login_success",
+        resource_type="auth",
+        resource_id=str(user.id),
+        request=request,
     )
 
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
@@ -174,12 +193,30 @@ def login(
             username=login_data.username,
             reason=type(e).__name__,
         )
+        # DB 审计：认证失败事件（user_id 未知记 None，after 含提交的用户名与失败原因）
+        operation_log_service.log_action(
+            db,
+            user_id=None,
+            action="login_failure",
+            resource_type="auth",
+            after={"username": login_data.username, "reason": type(e).__name__},
+            request=request,
+        )
         raise
     log_auth_event(
         "login_success",
         user_id=user.id,
         client_ip=client_ip,
         user_agent=user_agent,
+    )
+    # DB 审计：认证成功事件
+    operation_log_service.log_action(
+        db,
+        user_id=str(user.id),
+        action="login_success",
+        resource_type="auth",
+        resource_id=str(user.id),
+        request=request,
     )
 
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
@@ -274,6 +311,15 @@ def logout(
         user_id=current_user.id,
         client_ip=client_ip,
         user_agent=user_agent,
+    )
+    # DB 审计：后台登出事件
+    operation_log_service.log_action(
+        db,
+        user_id=str(current_user.id),
+        action="logout",
+        resource_type="auth",
+        resource_id=str(current_user.id),
+        request=request,
     )
     return LogoutResponse(message="退出登录成功")
 
@@ -383,22 +429,53 @@ async def wechat_app_login(
     Async for HTTP, run_in_threadpool for DB
     速率限制：5次/分钟.
     """
-    auth_data = await WeChatAuthService.fetch_wechat_miniapp_session(login_data.code)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    try:
+        auth_data = await WeChatAuthService.fetch_wechat_miniapp_session(login_data.code)
 
-    openid = auth_data.get("openid")
-    session_key = auth_data.get("session_key")
-    unionid = auth_data.get("unionid")
+        openid = auth_data.get("openid")
+        session_key = auth_data.get("session_key")
+        unionid = auth_data.get("unionid")
 
-    if not openid:
-        msg = "微信登录失败，未获取到用户标识"
-        raise AuthenticationError(msg)
+        if not openid:
+            msg = "微信登录失败，未获取到用户标识"
+            raise AuthenticationError(msg)
 
-    user = await run_in_threadpool(
-        WeChatAuthService.login_or_register_wechat_user,
-        db=db,
-        openid=openid,
-        unionid=unionid,
-        session_key=session_key,
+        user = await run_in_threadpool(
+            WeChatAuthService.login_or_register_wechat_user,
+            db=db,
+            openid=openid,
+            unionid=unionid,
+            session_key=session_key,
+        )
+    except Exception as e:
+        # DB 审计：C 端微信登录失败（after 含失败原因异常类名）
+        await run_in_threadpool(
+            operation_log_service.log_action,
+            db,
+            user_id=None,
+            action="login_failure",
+            resource_type="auth",
+            after={"reason": type(e).__name__},
+            request=request,
+        )
+        raise
+    log_auth_event(
+        "login_success",
+        user_id=user.id,
+        client_ip=client_ip,
+        user_agent=user_agent,
+    )
+    # DB 审计：C 端微信登录成功事件
+    await run_in_threadpool(
+        operation_log_service.log_action,
+        db,
+        user_id=str(user.id),
+        action="login_success",
+        resource_type="auth",
+        resource_id=str(user.id),
+        request=request,
     )
 
     return await run_in_threadpool(_create_miniapp_tokens, db, user)

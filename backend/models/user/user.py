@@ -75,6 +75,16 @@ class Role(BaseModel):
 
     # 状态
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否激活")
+    # 是否系统内置角色：TRUE 时禁止删除、修改 code、停用；name/description/permission_codes 编辑保留
+    is_system: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        # server_default 用 text("false") 无引号布尔关键字，与迁移 ALTER 的 DEFAULT FALSE
+        # 字面语义一致（字符串形式会渲染为 DEFAULT 'false' 字面量，含糊且易误导）
+        server_default=text("false"),
+        comment="是否系统内置角色（禁止删除/改code/停用）",
+    )
 
     # 关联关系（逻辑外键，级联由Service处理）
     users = relationship("User", back_populates="role", primaryjoin="foreign(User.role_id) == Role.id")

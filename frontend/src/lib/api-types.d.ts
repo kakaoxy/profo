@@ -10952,6 +10952,11 @@ export interface components {
              */
             is_system: boolean;
             /**
+             * Risk Level
+             * @description 风险等级：L0 读取/L1 普通写入/L2 数据管理/L3 审批/L4 高风险/L5 系统安全
+             */
+            risk_level: string;
+            /**
              * Created At
              * Format: date-time
              * @description 创建时间
@@ -15085,6 +15090,11 @@ export interface components {
              * @description 角色ID
              */
             id: string;
+            /**
+             * Is System
+             * @description 是否系统内置角色（禁止删除/改code/停用）
+             */
+            is_system: boolean;
             /**
              * Is Active
              * @description 是否激活

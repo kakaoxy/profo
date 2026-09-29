@@ -201,6 +201,8 @@ class RoleResponse(BaseRole):
     """角色响应模型."""
 
     id: str = Field(description="角色ID")
+    # 系统内置角色标识：前端据此禁用删除/停用/改code入口（后端服务层同步拦截）
+    is_system: bool = Field(description="是否系统内置角色（禁止删除/改code/停用）")
     is_active: bool = Field(description="是否激活")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")

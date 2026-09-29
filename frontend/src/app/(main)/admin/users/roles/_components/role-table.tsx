@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { HasPermission } from "@/components/has-permission";
-import { PERMISSION_CODES, ROLE_CODES } from "@/lib/auth/permissions";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { deleteRoleAction } from "../../actions/index";
 import type { RoleResponse } from "../../actions/index";
@@ -136,7 +136,7 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
                           onClick={() => setDeletingId(role.id)}
-                          disabled={role.code === ROLE_CODES.ADMIN} // 禁止删除管理员角色
+                          disabled={role.is_system} // 系统内置角色后端禁止删除（admin/operator/user/customer）
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           删除

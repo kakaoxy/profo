@@ -36,6 +36,12 @@ const ACTION_OPTIONS = [
   { value: "delete", label: "删除" },
   { value: "sensitive_data_access", label: "敏感数据访问" },
   { value: "assign_permissions", label: "分配权限" },
+  { value: "assign_role", label: "分配角色" },
+  { value: "remove_role", label: "移除角色" },
+  { value: "login_success", label: "登录成功" },
+  { value: "login_failure", label: "登录失败" },
+  { value: "logout", label: "退出登录" },
+  { value: "revoke", label: "撤销" },
 ] as const;
 
 const RESOURCE_TYPE_OPTIONS = [

@@ -26,6 +26,7 @@ from services.system.exceptions import (
     BusinessLogicError,
     PermissionDeniedError,
 )
+from services.system.operation_log import operation_log_service
 from utils.auth import AUDIENCE_C
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
@@ -294,5 +295,14 @@ def logout(
         user_id=current_user.id,
         client_ip=client_ip,
         user_agent=user_agent,
+    )
+    # DB 审计：C 端登出事件
+    operation_log_service.log_action(
+        db,
+        user_id=str(current_user.id),
+        action="logout",
+        resource_type="auth",
+        resource_id=str(current_user.id),
+        request=request,
     )
     return PublicLogoutResponse(message="退出登录成功")

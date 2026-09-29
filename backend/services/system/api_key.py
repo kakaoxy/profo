@@ -17,6 +17,7 @@ from settings import settings
 from utils.security_logger import log_auth_event
 
 from .exceptions import AuthenticationError, ResourceNotFoundError, ServiceException
+from .operation_log import operation_log_service
 
 _API_KEY_GEN_FAILED = "API Key生成失败，请稍后重试"
 _API_KEY_REVOKE_FAILED = "API Key撤销失败，请稍后重试"
@@ -116,6 +117,15 @@ class ApiKeyService:
                 logger.exception("API Key生成失败")
             raise ServiceException(_API_KEY_GEN_FAILED) from e
         else:
+            # DB 审计：API Key 创建成功（写入失败由 log_action 内部捕获，不阻塞主流程）
+            operation_log_service.log_action(
+                db,
+                user_id=user_id,
+                action="create",
+                resource_type="api_key",
+                resource_id=str(api_key.id),
+                after={"key_prefix": prefix},
+            )
             return key_string, api_key
 
     @staticmethod
@@ -170,6 +180,15 @@ class ApiKeyService:
 
             api_key.revoke()
             db.commit()
+            # DB 审计：API Key 撤销成功（写入失败由 log_action 内部捕获，不阻塞主流程）
+            operation_log_service.log_action(
+                db,
+                user_id=user_id,
+                action="revoke",
+                resource_type="api_key",
+                resource_id=str(api_key.id),
+                after={"key_prefix": api_key.key_prefix},
+            )
         except SQLAlchemyError as e:
             db.rollback()
             if settings.debug:

@@ -62,6 +62,15 @@ class Permission(BaseModel):
         nullable=False,
         comment="是否系统内置权限点（不可删除）",
     )
+    # 风险分级元数据（等级由迁移种子统一管理，API 创建/更新不接收该字段）：
+    # L0 读取 / L1 普通写入 / L2 数据管理 / L3 审批 / L4 高风险 / L5 系统安全
+    risk_level: Mapped[str] = mapped_column(
+        String(8),
+        default="L1",
+        nullable=False,
+        server_default="L1",
+        comment="风险等级: L0 读取/L1 普通写入/L2 数据管理/L3 审批/L4 高风险/L5 系统安全",
+    )
     description: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="权限描述")
 
     def __repr__(self) -> str:

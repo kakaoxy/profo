@@ -117,6 +117,10 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
   （房源内稳定序号，按 created_at 顺序编号，删除/新增其他组不影响已有编号）
 - add_project_key_note_column: 为 projects 表添加 key_note 列
   （带看注意事项，房源级，实时展示于经纪人钥匙分享页中部）
+- add_role_is_system_column: 为 roles 表添加 is_system 列并回填
+  admin/operator/user/customer 四内置角色为 TRUE（系统角色禁止删除/改code/停用）
+- add_permission_risk_level_column: 为 permissions 表添加 risk_level 列并按种子映射回填
+  风险等级（L0 读取/L1 普通写入/L2 数据管理/L3 审批/L4 高风险/L5 系统安全）
 
 """
 
@@ -163,6 +167,7 @@ from migrations._recruit import (
     ensure_campaign_status_created_index,
     ensure_visit_referrer_index,
 )
+from migrations._role_system import add_permission_risk_level_column, add_role_is_system_column
 from migrations._schema_columns import (
     add_contact_person_id_column,
     add_lead_referrer_column,
@@ -297,6 +302,9 @@ def _run_all_migrations(engine: Engine) -> None:
         rebuild_contract_no_index(engine)
         migrate_permission_system(engine)
         migrate_project_business_permission(engine)
+        # 权限治理硬化：roles.is_system 内置角色保护 + permissions.risk_level 风险分级回填
+        add_role_is_system_column(engine)
+        add_permission_risk_level_column(engine)
         add_permission_foreign_indexes(engine)
         add_reports_indexes(engine)
         add_lead_eval_history_and_expected_price(engine)

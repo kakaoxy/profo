@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Session
 
-from constants.role_codes import RoleCode
 from models.common import CashFlowType, ProjectStatus
 from utils.mask import mask_bank_card
 
@@ -403,7 +402,7 @@ class ProjectResponseBuilder:
 
         校验顺序：
         1. current_user 为 None → False（列表页无用户上下文）
-        2. admin 角色 → True
+        2. 持 project:write 权限码（admin/operator/自定义授权角色）→ True
         3. 持 project:renovation:upload_photo 权限码（operator）→ True
         4. user 角色为对接负责人（contact_person_id == current_user.id）→ True
         5. 其他 → False
@@ -413,7 +412,9 @@ class ProjectResponseBuilder:
         # lazy import 规避 dependencies.auth → services → services.projects.internal.builder 循环依赖
         from dependencies.auth import has_permission
 
-        if current_user.role and current_user.role.code == RoleCode.ADMIN.value:
+        # 与后端 API require_project_business_permission 的放行口径同构：
+        # 持 project:write 权限码（admin/operator/自定义授权角色）→ 放行
+        if has_permission(current_user, "project:write", self.db):
             return True
         if has_permission(current_user, "project:renovation:upload_photo", self.db):
             return True
@@ -430,7 +431,7 @@ class ProjectResponseBuilder:
 
         校验顺序：
         1. current_user 为 None → False（列表页无用户上下文）
-        2. admin 角色 → True
+        2. 持 project:write 权限码（admin/operator/自定义授权角色）→ True
         3. 持 project:sales:add_record 权限码（operator）→ True
         4. user 角色为销售团队成员（3 角色字段任一匹配）→ True
         5. 其他 → False
@@ -440,7 +441,9 @@ class ProjectResponseBuilder:
         # lazy import 规避 dependencies.auth → services → services.projects.internal.builder 循环依赖
         from dependencies.auth import has_permission
 
-        if current_user.role and current_user.role.code == RoleCode.ADMIN.value:
+        # 与后端 API require_project_business_permission 的放行口径同构：
+        # 持 project:write 权限码（admin/operator/自定义授权角色）→ 放行
+        if has_permission(current_user, "project:write", self.db):
             return True
         if has_permission(current_user, "project:sales:add_record", self.db):
             return True
