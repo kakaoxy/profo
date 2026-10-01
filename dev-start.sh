@@ -132,6 +132,22 @@ fi
 
 CMD="${1:-up}"
 
+# Docker 守护进程预检：未启动时给出明确提示
+# 否则 compose 会报底层 socket 错误（dial unix ...: connect: no such file or directory），
+# 且 start_db 在 || 上下文中 set -e 失效，会误打印"✅ 已启动"
+check_docker() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "❌ 未找到 docker 命令，请先安装 Docker Desktop 或 OrbStack"
+    return 1
+  fi
+  if ! docker info >/dev/null 2>&1; then
+    echo "❌ Docker 守护进程未运行"
+    echo "   请先启动 Docker Desktop / OrbStack，待其就绪后重新执行本脚本"
+    return 1
+  fi
+  return 0
+}
+
 # 端口预检：检查 8000/3000 是否被占用，占用则列出 PID 并退出
 check_port() {
   local port="$1"
@@ -186,11 +202,17 @@ cleanup_orphan_port() {
 }
 
 start_db() {
+  check_docker || return 1
   echo "启动 PostgreSQL 与 Redis (Docker)..."
   # 预检 Docker 服务端口：清理孤儿容器，避免端口冲突导致首次启动失败
   cleanup_orphan_port 5432 "db" || return 1
   cleanup_orphan_port 6379 "redis" || return 1
-  $DEV_COMPOSE up -d db redis
+  # 显式判断 compose 退出码：start_db 被 || 调用时 set -e 失效，
+  # 失败若不拦截会误打印下方的"✅ 已启动"
+  if ! $DEV_COMPOSE up -d db redis; then
+    echo "❌ 数据库/Redis 容器启动失败，请查看上方错误信息"
+    return 1
+  fi
   echo "✅ 数据库已启动: postgresql+psycopg://${POSTGRES_USER}:***@127.0.0.1:5432/${POSTGRES_DB}"
   echo "✅ Redis 已启动: redis://***@127.0.0.1:6379/0"
 }
@@ -233,20 +255,24 @@ case "$CMD" in
     echo "      或直接执行: ./dev-start.sh  (一键启动全部，自动注入环境变量)"
     ;;
   stop)
+    check_docker || exit 1
     echo "停止数据库与 Redis 容器..."
     $DEV_COMPOSE stop db redis
     echo "✅ 已停止（本地前后端进程请用 Ctrl+C 终止）"
     ;;
   status|ps)
+    check_docker || exit 1
     $DEV_COMPOSE ps
     echo ""
     echo "本地进程端口占用:"
     lsof -i:8000 -i:3000 2>/dev/null | grep LISTEN || echo "  8000/3000 端口空闲"
     ;;
   logs)
+    check_docker || exit 1
     $DEV_COMPOSE logs -f db
     ;;
   down)
+    check_docker || exit 1
     echo "停止并删除容器（保留数据卷）..."
     $DEV_COMPOSE down
     echo "✅ 容器已删除，pgdata volume 保留"
