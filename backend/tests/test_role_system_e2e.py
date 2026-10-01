@@ -20,19 +20,21 @@ conftest 的 admin_client fixture 签发的 token 缺少 aud claim 会被受众�
 
 from typing import Any
 
+import db
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-import db
 from migrations._role_system import _PERMISSION_RISK_LEVELS, _SYSTEM_ROLE_CODES
 from models.system import OperationLog
 
 # 测试用账号密码（与 conftest.py 的种子数据一致）
 _ADMIN_PASSWORD = "Admin123!"
 
-_SYSTEM_ROLE_BACKFILL_SQL = "UPDATE roles SET is_system = TRUE WHERE code = ANY(:codes) AND is_system <> TRUE"
+_SYSTEM_ROLE_BACKFILL_SQL = (
+    "UPDATE roles SET is_system = TRUE WHERE code = ANY(:codes) AND is_system <> TRUE"
+)
 
 
 @pytest.fixture
