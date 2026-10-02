@@ -6,6 +6,7 @@
 """
 
 import json
+from datetime import datetime
 from typing import Any, get_args
 
 from sqlalchemy.exc import IntegrityError
@@ -81,12 +82,25 @@ def _user_display_name(db: Session, user_id: str | None) -> str | None:
 
 def _row_to_response(db: Session, row: SystemConfig | None) -> TodoBoardRulesResponse:
     """system_configs 行 → 响应（value 解析失败按缺行处理，updated_* 置 null）."""
-    updated_at = row.updated_at if row is not None else None
-    updated_by_name = _user_display_name(db, row.updated_by_id if row is not None else None)
+    raw: Any = None
+    updated_at: datetime | None = None
+    updated_by_id: str | None = None
+    if row is not None:
+        updated_at = row.updated_at
+        updated_by_id = row.updated_by_id
+        if row.value:
+            try:
+                raw = json.loads(row.value)
+            except (TypeError, ValueError):
+                # 损坏 JSON 视同缺行（spec K5：读取路径永远可用，容忍手工改库脏数据），
+                # 回退代码默认且不展示过期元信息；与 load_rules 的解析防护同口径
+                raw = None
+                updated_at = None
+                updated_by_id = None
     return TodoBoardRulesResponse(
-        **_merge_with_defaults(json.loads(row.value) if row is not None and row.value else None),
+        **_merge_with_defaults(raw),
         updated_at=updated_at,
-        updated_by_name=updated_by_name,
+        updated_by_name=_user_display_name(db, updated_by_id),
         defaults=TodoBoardRulesData(**_data_to_dict(TodoBoardRules.defaults())),
     )
 

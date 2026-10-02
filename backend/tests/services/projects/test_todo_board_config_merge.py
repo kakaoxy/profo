@@ -8,7 +8,11 @@
 import pytest
 
 from schemas.project import TodoBoardRulesData
-from services.projects.todo_board_config import _data_to_dict, _merge_with_defaults
+from services.projects.todo_board_config import (
+    _data_to_dict,
+    _merge_with_defaults,
+    _row_to_response,
+)
 from services.projects.todo_board_rules import TodoBoardRules
 
 
@@ -133,3 +137,61 @@ def test_non_dict_raw_falls_back_to_defaults(raw_value, expect):
     """Raw 非 dict 类型一律整体回退默认."""
     merged = _merge_with_defaults(raw_value)
     assert merged == _data_to_dict(TodoBoardRules.defaults())
+
+
+# ── _row_to_response：value 损坏时读取路径永不 500（spec K5 回归） ────────
+
+
+class _FakeRow:
+    """模拟 system_configs 行（避免为纯函数测试建 DB fixture）。"""
+
+    def __init__(self, value: str | None) -> None:
+        self.value = value
+        self.updated_at = None
+        self.updated_by_id = None
+
+
+@pytest.fixture(autouse=True)
+def _stub_user_display_name(monkeypatch: pytest.MonkeyPatch):
+    """隔离 _user_display_name 的 users 表查询（本组用例不验证审计字段解析）。"""
+    monkeypatch.setattr("services.projects.todo_board_config._user_display_name", lambda db, user_id: None)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        '{"milestone_days": {"设计": 7',  # 手工改库截断的 JSON
+        "not-json",  # 非 JSON 文本
+        "null",  # JSON null（字面量合法但无配置内容）
+    ],
+)
+def test_row_to_response_corrupt_value_falls_back_to_defaults(value: str):
+    """row.value 解析失败视同缺行：回退默认且 updated_* 置 null，GET/PUT 均 200.
+
+    回归背景：_row_to_response 曾对损坏 JSON 直接抛 JSONDecodeError →
+    GET /todo-board/config 500，且 PUT 响应同路径导致管理页永久无法经 API 自愈。
+    """
+    resp = _row_to_response(None, _FakeRow(value))
+    assert resp.delivery_total_days == TodoBoardRules.defaults().delivery_total_days
+    assert resp.basic_info_fields == TodoBoardRules.defaults().basic_info_fields
+    assert resp.updated_at is None
+    assert resp.updated_by_name is None
+    TodoBoardRulesData(**_data_to_dict(TodoBoardRules.defaults()))  # 响应可通过 Schema 校验
+
+
+def test_row_to_response_none_row_returns_defaults():
+    """缺行 → 全默认 + updated_* 为 null（原有行为回归）。"""
+    resp = _row_to_response(None, None)
+    assert resp.milestone_p0_overdue_days == TodoBoardRules.defaults().milestone_p0_overdue_days
+    assert resp.updated_at is None
+    assert resp.updated_by_name is None
+
+
+def test_row_to_response_valid_value_round_trips():
+    """合法 value 正常解析（非损坏路径不被本次修复误伤）。"""
+    import json
+
+    raw = _data_to_dict(TodoBoardRules.defaults())
+    raw["delivery_total_days"] = 90
+    resp = _row_to_response(None, _FakeRow(json.dumps(raw, ensure_ascii=False)))
+    assert resp.delivery_total_days == 90
