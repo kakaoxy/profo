@@ -6,17 +6,29 @@
 """
 
 import json
-from typing import Any
+from typing import Any, get_args
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models import SystemConfig, User
 from schemas.project import TodoBoardRulesData, TodoBoardRulesResponse, TodoBoardRulesUpdateRequest
-from services.projects.todo_board_rules import TodoBoardRules
+from services.projects.todo_board_rules import FieldLevel, TodoBoardRules
 
 # system_configs 配置键（value = JSON 全量）
 TODO_BOARD_RULES_CONFIG_KEY = "todo_board_rules"
+
+# R2 字段三态合法值（dict 字符串位置仅接受这些，垃圾 str 会令 GET 响应 Schema 校验失败）
+_FIELD_LEVELS = frozenset(get_args(FieldLevel))
+
+
+def _merge_dict_value(default_v: Any, raw_v: Any) -> Any:
+    """收敛字典单键值：按默认值类型校验并收敛用户值，不合法回退该键默认."""
+    if isinstance(default_v, int) and isinstance(raw_v, (int, float)) and not isinstance(raw_v, bool):
+        return int(raw_v)
+    if isinstance(default_v, str) and isinstance(raw_v, str) and raw_v in _FIELD_LEVELS:
+        return raw_v
+    return default_v
 
 
 def _data_to_dict(rules: TodoBoardRules) -> dict[str, Any]:
@@ -39,8 +51,9 @@ def _data_to_dict(rules: TodoBoardRules) -> dict[str, Any]:
 def _merge_with_defaults(raw: Any) -> dict[str, Any]:
     """原始 JSON 值逐字段并入默认值（类型不符/缺键的字段回退默认）.
 
-    数值字段容忍 JSON float（90.0 → 90，小数截断）；bool 虽为 int 子类但不作数值；
-    dict 字段内的数值同样收敛为 int。
+    标量数值字段：非 bool 数值采纳（90.0 → 90，小数截断），bool/其他类型回退默认。
+    dict 字段：键集对齐 Schema 契约——缺键回填该键默认、未知键丢弃（PUT 禁止未知键，
+    保留会令 GET 响应校验 500）；值经 _merge_dict_value 按默认值类型逐键收敛。
     """
     default_dict = _data_to_dict(TodoBoardRules.defaults())
     if not isinstance(raw, dict):
@@ -50,10 +63,7 @@ def _merge_with_defaults(raw: Any) -> dict[str, Any]:
         value = raw.get(name)
         if isinstance(default, dict):
             if isinstance(value, dict):
-                merged[name] = {
-                    k: int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else default.get(k, v)
-                    for k, v in value.items()
-                }
+                merged[name] = {k: _merge_dict_value(default[k], value.get(k)) for k in default}
         elif isinstance(value, bool):
             continue
         elif isinstance(value, (int, float)):
