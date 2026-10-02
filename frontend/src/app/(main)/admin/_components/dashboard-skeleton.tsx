@@ -62,6 +62,21 @@ export function AlertCardSkeleton() {
   );
 }
 
+export function TodoBoardSummaryCardSkeleton() {
+  return (
+    <div className="col-span-12 motion-safe:animate-pulse">
+      <div className="h-[64px] bg-white rounded-[18px] p-5 flex items-center justify-between">
+        <div className="flex gap-6">
+          <div className="h-4 w-16 bg-fog rounded" />
+          <div className="h-4 w-16 bg-fog rounded" />
+          <div className="h-4 w-16 bg-fog rounded" />
+        </div>
+        <div className="h-4 w-14 bg-fog rounded" />
+      </div>
+    </div>
+  );
+}
+
 export function ProjectCardSkeleton() {
   return (
     <div className="w-full sm:w-[280px] sm:shrink-0 bg-white rounded-cards overflow-hidden motion-safe:animate-pulse">

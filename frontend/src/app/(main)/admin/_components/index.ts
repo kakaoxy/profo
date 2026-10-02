@@ -12,6 +12,7 @@ export { ProjectCardList } from "./project-card-list";
 export { ProjectOverviewCard } from "./project-overview-card";
 export { LeadsFunnelCard } from "./leads-funnel-card";
 export { AlertCard } from "./alert-card";
+export { TodoBoardSummaryCard } from "./todo-board-summary-card";
 export { DashboardLeadsTable } from "./dashboard-leads-table";
 export { QuickEntrySection } from "./quick-entry-section";
 
@@ -21,6 +22,7 @@ export {
   ProjectOverviewCardSkeleton,
   LeadsFunnelCardSkeleton,
   AlertCardSkeleton,
+  TodoBoardSummaryCardSkeleton,
   ProjectCardListSkeleton,
   DashboardLeadsTableSkeleton,
   QuickEntrySkeleton,
@@ -35,4 +37,5 @@ export {
   DashboardProjectsWrapper,
   DashboardLeadsWrapper,
   DashboardQuickEntryWrapper,
+  DashboardTodoBoardWrapper,
 } from "./dashboard-data-wrapper";

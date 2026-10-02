@@ -4,6 +4,7 @@ import {
   ProjectOverviewCardSkeleton,
   LeadsFunnelCardSkeleton,
   AlertCardSkeleton,
+  TodoBoardSummaryCardSkeleton,
   ProjectCardListSkeleton,
   DashboardLeadsTableSkeleton,
   QuickEntrySkeleton,
@@ -11,6 +12,7 @@ import {
   DashboardOverviewWrapper,
   DashboardFunnelWrapper,
   DashboardAlertWrapper,
+  DashboardTodoBoardWrapper,
   DashboardProjectsWrapper,
   DashboardLeadsWrapper,
   DashboardQuickEntryWrapper,
@@ -155,6 +157,11 @@ export default function DashboardPage() {
           <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
             <Suspense fallback={<AlertCardSkeleton />}>
               <DashboardAlertWrapper />
+            </Suspense>
+          </HasPermission>
+          <HasPermission code={PERMISSION_CODES.PROJECT_READ}>
+            <Suspense fallback={<TodoBoardSummaryCardSkeleton />}>
+              <DashboardTodoBoardWrapper />
             </Suspense>
           </HasPermission>
         </div>

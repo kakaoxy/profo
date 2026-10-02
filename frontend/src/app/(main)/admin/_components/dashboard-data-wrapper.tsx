@@ -4,7 +4,10 @@
  * 使用 React.cache 确保同一次请求中数据只获取一次
  */
 
-import { getDashboardData } from "../_lib/dashboard-data";
+import { fetchClient } from "@/lib/api-server";
+import { isRedirectError } from "@/lib/auth/server/session";
+import { logger } from "@/lib/logger";
+import type { components } from "@/lib/api-types";
 import {
   ProjectCardList,
   ProjectOverviewCard,
@@ -12,7 +15,11 @@ import {
   AlertCard,
   DashboardLeadsTable,
   QuickEntrySection,
+  TodoBoardSummaryCard,
 } from "./";
+import { getDashboardData } from "../_lib/dashboard-data";
+
+type TodoBoardSummary = components["schemas"]["TodoBoardSummary"];
 
 export async function DashboardErrorWrapper() {
   const { errors } = await getDashboardData();
@@ -82,4 +89,26 @@ export async function DashboardQuickEntryWrapper() {
   return (
     <QuickEntrySection renovationProjects={renovationProjects} sellingProjects={sellingProjects} />
   );
+}
+
+/**
+ * 项目待办统计条：独立取数、独立降级（不进 getDashboardData 的全局错误横幅）。
+ * 无 project:read 的用户该端点 403，属预期场景 —— 静默隐藏卡片仅记日志。
+ */
+export async function DashboardTodoBoardWrapper() {
+  const client = await fetchClient();
+
+  let summary: TodoBoardSummary | null = null;
+  try {
+    const { data } = await client.GET("/api/v1/projects/todo-board", {});
+    summary = data?.summary ?? null;
+  } catch (e) {
+    // 401 场景 fetchClient 抛 NEXT_REDIRECT，必须放行否则刷新重定向链断裂
+    if (isRedirectError(e)) throw e;
+    logger.error("[Dashboard] 项目待办统计获取失败:", e);
+  }
+
+  // 取数失败 / 无 project:read 权限（403）/ 空响应：静默隐藏，不进全局错误横幅
+  if (!summary) return null;
+  return <TodoBoardSummaryCard summary={summary} />;
 }
