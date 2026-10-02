@@ -1217,6 +1217,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/todo-board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project Todo Board
+         * @description 项目待办看板：规则引擎实时计算签约+装修阶段项目待办.
+         *
+         *     只读快照不落库；无查询参数，全量返回（数据量小），筛选由前端完成。
+         *     使用 ProjectReadPermDep 基于权限码校验（与项目列表一致）.
+         */
+        get: operations["get_project_todo_board_api_v1_projects_todo_board_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/todo-board/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project Todo Board Config
+         * @description 项目待办看板规则阈值配置读取.
+         *
+         *     全员可见（阈值口径对齐设计稿）；缺行时回退代码内默认值。
+         */
+        get: operations["get_project_todo_board_config_api_v1_projects_todo_board_config_get"];
+        /**
+         * Update Project Todo Board Config
+         * @description 项目待办看板规则阈值配置保存.
+         *
+         *     仅管理员（CurrentAdminUserDep，非 admin 403）；全量提交，
+         *     天数 1~999、字段三态 core/minor/off 由 Pydantic 校验。
+         */
+        put: operations["update_project_todo_board_config_api_v1_projects_todo_board_config_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/my-responsible": {
         parameters: {
             query?: never;
@@ -10952,6 +11004,11 @@ export interface components {
              */
             is_system: boolean;
             /**
+             * Risk Level
+             * @description 风险等级：L0 读取/L1 普通写入/L2 数据管理/L3 审批/L4 高风险/L5 系统安全
+             */
+            risk_level: string;
+            /**
              * Created At
              * Format: date-time
              * @description 创建时间
@@ -11561,6 +11618,11 @@ export interface components {
             selling: number;
             /** Sold */
             sold: number;
+            /**
+             * Ended
+             * @default 0
+             */
+            ended: number;
         };
         /**
          * ProjectStatus
@@ -11584,6 +11646,24 @@ export interface components {
              * @description 挂牌价(万元)
              */
             list_price?: number | string | null;
+        };
+        /**
+         * ProjectTodoBoardResponse
+         * @description 项目待办看板聚合响应.
+         */
+        ProjectTodoBoardResponse: {
+            /**
+             * Generated At
+             * Format: date-time
+             * @description 规则快照服务端时间
+             */
+            generated_at: string;
+            summary: components["schemas"]["TodoBoardSummary"];
+            /**
+             * Projects
+             * @description 项目卡片（已按 P0 多→P1 多→滞后深排序）
+             */
+            projects: components["schemas"]["TodoProjectCard"][];
         };
         /**
          * ProjectUpdate
@@ -15081,6 +15161,11 @@ export interface components {
              */
             id: string;
             /**
+             * Is System
+             * @description 是否系统内置角色（禁止删除/改code/停用）
+             */
+            is_system: boolean;
+            /**
              * Is Active
              * @description 是否激活
              */
@@ -15464,6 +15549,375 @@ export interface components {
              * @description 停留毫秒（deep_view 事件）
              */
             stayed_ms?: number | null;
+        };
+        /**
+         * TodoBoardRulesData
+         * @description 规则阈值配置主体（GET 响应与 PUT 请求共用结构；PUT 全量提交）.
+         */
+        TodoBoardRulesData: {
+            /**
+             * Milestone Days
+             * @description R8 工序里程碑：{工序: 交房后 N 天内须完成}
+             */
+            milestone_days: {
+                [key: string]: number;
+            };
+            /**
+             * Milestone P0 Overdue Days
+             * @description R8 里程碑逾期超 N 天 P1→P0
+             */
+            milestone_p0_overdue_days: number;
+            /**
+             * Basic Info Grace Days
+             * @description R2：签约后 N 天仍缺基础信息才提示
+             */
+            basic_info_grace_days: number;
+            /**
+             * Basic Info Fields
+             * @description R2 字段集：{字段: core|minor|off}
+             */
+            basic_info_fields: {
+                [key: string]: "core" | "minor" | "off";
+            };
+            /**
+             * Company Grace Days
+             * @description R6：进入装修后未安排施工方宽限天数
+             */
+            company_grace_days: number;
+            /**
+             * Start Grace Days
+             * @description R7：进入装修后未实际开工宽限天数
+             */
+            start_grace_days: number;
+            /**
+             * Archive Overdue Days
+             * @description R4：签署后超 N 天未归档升 P1
+             */
+            archive_overdue_days: number;
+            /**
+             * Commission Near Days
+             * @description R10：委托期结束前 N 天进入临近窗口
+             */
+            commission_near_days: number;
+            /**
+             * Delivery Total Days
+             * @description 详情页 KPI 交付倒计时：交房日 + N 天 = 交付截止
+             */
+            delivery_total_days: number;
+            /**
+             * Delivery Near Days
+             * @description 交付倒计时剩余 ≤ N 天橙色提示
+             */
+            delivery_near_days: number;
+            /**
+             * Delivery Urgent Days
+             * @description 交付倒计时剩余 < N 天红色脉冲（判断优先于橙色）
+             */
+            delivery_urgent_days: number;
+        };
+        /**
+         * TodoBoardRulesResponse
+         * @description GET /todo-board/config 响应：当前生效值 + 元信息 + 出厂默认值.
+         */
+        TodoBoardRulesResponse: {
+            /**
+             * Milestone Days
+             * @description R8 工序里程碑：{工序: 交房后 N 天内须完成}
+             */
+            milestone_days: {
+                [key: string]: number;
+            };
+            /**
+             * Milestone P0 Overdue Days
+             * @description R8 里程碑逾期超 N 天 P1→P0
+             */
+            milestone_p0_overdue_days: number;
+            /**
+             * Basic Info Grace Days
+             * @description R2：签约后 N 天仍缺基础信息才提示
+             */
+            basic_info_grace_days: number;
+            /**
+             * Basic Info Fields
+             * @description R2 字段集：{字段: core|minor|off}
+             */
+            basic_info_fields: {
+                [key: string]: "core" | "minor" | "off";
+            };
+            /**
+             * Company Grace Days
+             * @description R6：进入装修后未安排施工方宽限天数
+             */
+            company_grace_days: number;
+            /**
+             * Start Grace Days
+             * @description R7：进入装修后未实际开工宽限天数
+             */
+            start_grace_days: number;
+            /**
+             * Archive Overdue Days
+             * @description R4：签署后超 N 天未归档升 P1
+             */
+            archive_overdue_days: number;
+            /**
+             * Commission Near Days
+             * @description R10：委托期结束前 N 天进入临近窗口
+             */
+            commission_near_days: number;
+            /**
+             * Delivery Total Days
+             * @description 详情页 KPI 交付倒计时：交房日 + N 天 = 交付截止
+             */
+            delivery_total_days: number;
+            /**
+             * Delivery Near Days
+             * @description 交付倒计时剩余 ≤ N 天橙色提示
+             */
+            delivery_near_days: number;
+            /**
+             * Delivery Urgent Days
+             * @description 交付倒计时剩余 < N 天红色脉冲（判断优先于橙色）
+             */
+            delivery_urgent_days: number;
+            /**
+             * Updated At
+             * @description 最后保存时间；从未保存（缺行回退默认）为 null
+             */
+            updated_at?: string | null;
+            /**
+             * Updated By Name
+             * @description 最后修改人姓名；从未保存为 null
+             */
+            updated_by_name?: string | null;
+            /** @description 代码内出厂默认值（供前端「恢复默认」，避免前后端镜像漂移） */
+            defaults: components["schemas"]["TodoBoardRulesData"];
+        };
+        /**
+         * TodoBoardRulesUpdateRequest
+         * @description PUT /todo-board/config 请求体：全量提交.
+         */
+        TodoBoardRulesUpdateRequest: {
+            /**
+             * Milestone Days
+             * @description R8 工序里程碑：{工序: 交房后 N 天内须完成}
+             */
+            milestone_days: {
+                [key: string]: number;
+            };
+            /**
+             * Milestone P0 Overdue Days
+             * @description R8 里程碑逾期超 N 天 P1→P0
+             */
+            milestone_p0_overdue_days: number;
+            /**
+             * Basic Info Grace Days
+             * @description R2：签约后 N 天仍缺基础信息才提示
+             */
+            basic_info_grace_days: number;
+            /**
+             * Basic Info Fields
+             * @description R2 字段集：{字段: core|minor|off}
+             */
+            basic_info_fields: {
+                [key: string]: "core" | "minor" | "off";
+            };
+            /**
+             * Company Grace Days
+             * @description R6：进入装修后未安排施工方宽限天数
+             */
+            company_grace_days: number;
+            /**
+             * Start Grace Days
+             * @description R7：进入装修后未实际开工宽限天数
+             */
+            start_grace_days: number;
+            /**
+             * Archive Overdue Days
+             * @description R4：签署后超 N 天未归档升 P1
+             */
+            archive_overdue_days: number;
+            /**
+             * Commission Near Days
+             * @description R10：委托期结束前 N 天进入临近窗口
+             */
+            commission_near_days: number;
+            /**
+             * Delivery Total Days
+             * @description 详情页 KPI 交付倒计时：交房日 + N 天 = 交付截止
+             */
+            delivery_total_days: number;
+            /**
+             * Delivery Near Days
+             * @description 交付倒计时剩余 ≤ N 天橙色提示
+             */
+            delivery_near_days: number;
+            /**
+             * Delivery Urgent Days
+             * @description 交付倒计时剩余 < N 天红色脉冲（判断优先于橙色）
+             */
+            delivery_urgent_days: number;
+        };
+        /**
+         * TodoBoardSummary
+         * @description 看板统计（全量口径，不随前端筛选变化）.
+         */
+        TodoBoardSummary: {
+            /**
+             * Project Count
+             * @description 有待办的项目数
+             */
+            project_count: number;
+            /**
+             * Todo Count
+             * @description 待办总条数（截断前）
+             */
+            todo_count: number;
+            /**
+             * P0 Count
+             * @description P0 待办总条数
+             */
+            p0_count: number;
+            /**
+             * Max Overdue Days
+             * @description 最深逾期天数；无逾期类待办时 null
+             */
+            max_overdue_days?: number | null;
+        };
+        /**
+         * TodoItemOut
+         * @description 单条待办.
+         */
+        TodoItemOut: {
+            /**
+             * Rule Code
+             * @description 规则编号 R1~R10，稳定契约（业务界面不展示）
+             */
+            rule_code: string;
+            /**
+             * Priority
+             * @description 优先级：p0 阻塞/逾期，p1 重要滞后，p2 易遗忘项
+             * @enum {string}
+             */
+            priority: "p0" | "p1" | "p2";
+            /**
+             * Title
+             * @description 待办名称
+             */
+            title: string;
+            /**
+             * Hint
+             * @description 卡片灰色短语（单行上下文）
+             */
+            hint?: string | null;
+            /**
+             * Items
+             * @description 弹窗缺失明细（前端不拼文案）
+             */
+            items?: string[];
+            /**
+             * Days Label
+             * @description 右侧天数徽标文案，如「逾期 12 天」「剩 21 天」
+             */
+            days_label?: string | null;
+            /**
+             * Days Hot
+             * @description 天数是否 Rust 强调（逾期/超期/停滞/已超）
+             * @default false
+             */
+            days_hot: boolean;
+            /**
+             * Overdue Days
+             * @description 逾期/滞后天数数值口径；临近类为 null
+             */
+            overdue_days?: number | null;
+            /**
+             * Anchor
+             * @description 详情页分区锚点代码
+             * @enum {string}
+             */
+            anchor: "overview" | "documents" | "renovation_contract" | "renovation_progress";
+        };
+        /**
+         * TodoManagerBrief
+         * @description 项目负责人简要信息.
+         */
+        TodoManagerBrief: {
+            /**
+             * Id
+             * @description 用户ID
+             */
+            id: string;
+            /**
+             * Name
+             * @description 姓名（nickname，缺省回退 username）
+             */
+            name?: string | null;
+        };
+        /**
+         * TodoProjectCard
+         * @description 单项目待办卡片.
+         */
+        TodoProjectCard: {
+            /**
+             * Project Id
+             * Format: uuid
+             * @description 项目ID
+             */
+            project_id: string;
+            /**
+             * Community Name
+             * @description 小区名称（含门牌识别靠 community_name+contract_no）
+             */
+            community_name: string;
+            /**
+             * Contract No
+             * @description 合同编号
+             */
+            contract_no?: string | null;
+            /**
+             * Status
+             * @description 项目阶段
+             * @enum {string}
+             */
+            status: "signing" | "renovating";
+            /**
+             * Renovation Stage
+             * @description 装修当前工序（中文枚举）；签约阶段为 null
+             */
+            renovation_stage?: string | null;
+            /**
+             * Renovation Company
+             * @description 合作装修公司（施工方）；未填写为 null
+             */
+            renovation_company?: string | null;
+            /**
+             * Business Form
+             * @description 业务形式；null 时卡片显示「业务形式未设置」并命中 R3a
+             */
+            business_form?: ("agent" | "wholesale") | null;
+            /** @description 项目负责人 */
+            manager?: components["schemas"]["TodoManagerBrief"] | null;
+            /**
+             * Todo Count
+             * @description 规则命中总条数（截断前）
+             */
+            todo_count: number;
+            /**
+             * P0 Count
+             * @description P0 条数（≥1 时前端显示计数徽章）
+             */
+            p0_count: number;
+            /**
+             * Todos
+             * @description 待办列表（已排序，≤6 条）
+             */
+            todos: components["schemas"]["TodoItemOut"][];
+            /**
+             * Todo Overflow
+             * @description 被折叠条数（超出每卡上限）
+             * @default 0
+             */
+            todo_overflow: number;
         };
         /**
          * TokenResponse
@@ -18559,6 +19013,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectStatsResponse"];
+                };
+            };
+        };
+    };
+    get_project_todo_board_api_v1_projects_todo_board_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTodoBoardResponse"];
+                };
+            };
+        };
+    };
+    get_project_todo_board_config_api_v1_projects_todo_board_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodoBoardRulesResponse"];
+                };
+            };
+        };
+    };
+    update_project_todo_board_config_api_v1_projects_todo_board_config_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TodoBoardRulesUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodoBoardRulesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

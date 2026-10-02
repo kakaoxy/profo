@@ -1,6 +1,7 @@
 // gen-api 前置校验脚本：确认 :8000 是本项目后端且 schema 完整后再生成类型，
 // 防止后端未运行/其他服务占用端口/后端为过期构建时静默产出错误或过期的 api-types.d.ts
 import { execSync } from "node:child_process";
+import { existsSync } from "node:fs";
 
 const OPENAPI_URL = "http://127.0.0.1:8000/openapi.json";
 // 与 backend/settings.py 的 app_name 保持一致
@@ -27,3 +28,8 @@ try {
 }
 
 execSync(`openapi-typescript ${OPENAPI_URL} -o src/lib/api-types.d.ts`, { stdio: "inherit" });
+
+// miniapp 共用同一份 openapi 类型，存在该目录时同步生成，防止两份文件漂移
+if (existsSync("../miniapp/types")) {
+  execSync(`openapi-typescript ${OPENAPI_URL} -o ../miniapp/types/api-types.d.ts`, { stdio: "inherit" });
+}
