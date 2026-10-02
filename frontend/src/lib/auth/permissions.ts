@@ -125,6 +125,9 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   { prefix: "/admin/audit-logs", permission: PERMISSION_CODES.OPERATION_LOG_READ },
   // 设置（API Key 等）→ 需 api_key:manage 权限
   { prefix: "/admin/settings", permission: PERMISSION_CODES.API_KEY_MANAGE },
+  // 项目待办看板 → 需 project:read 权限；必须排在 /admin/projects（exact）之前，
+  // 否则该路径不命中任何条目成为无守卫路径（/admin/projects 为精确匹配不放行子路径）
+  { prefix: "/admin/projects/todo-board", permission: PERMISSION_CODES.PROJECT_READ },
   // 项目管理列表页 → 需 project:read 权限；详情页 /admin/projects/{id} 放行，
   // 由后端 ProjectReadOrBusinessPermDep（业务身份双通道）校验——普通用户被指派
   // 为项目业务负责人后可进入自己负责的项目详情，不被角色权限覆盖

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -114,6 +114,22 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
   // 页面级团队数据：用户列表 + 装修合同（右侧副列角色 ID 解析 / 对接负责人展示共用；
   // 装修合同拉取自 RenovationView 上提至此，签约阶段也能展示对接负责人）
   const { usersById, renovationMeta: pageRenovationMeta } = useTeamMembers(project?.id);
+
+  // 外部入口（项目待办看板等）通过 /admin/projects/{id}#project-section-* 直达分区：
+  // 分区元素在客户端数据渲染后才存在，浏览器原生 hash 滚动在 hydrate 前发生会失效，
+  // 故 project 就绪后补一次滚动（只读 hash 不清理，保持可分享；目标分区不存在时静默跳过）
+  const hashScrolledRef = useRef(false);
+  useEffect(() => {
+    if (!project || hashScrolledRef.current) return;
+    hashScrolledRef.current = true;
+    const hash = window.location.hash;
+    if (!hash.startsWith("#project-section-")) return;
+    requestAnimationFrame(() => {
+      document
+        .getElementById(hash.slice(1))
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [project]);
 
   const handleUpdateAttachments = useCallback(
     async (attachments: SigningMaterial[]) => {

@@ -5,11 +5,19 @@ import { useState, useEffect } from "react";
 import { useCurrentDate } from "@/hooks/use-current-date";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { client } from "@/lib/api-client";
 import { Project } from "../../../../types";
 import { RENOVATION_STAGES } from "../../constants";
 import { differenceInDays, addDays, format, parseISO, isValid } from "date-fns";
 // 从 client.ts 导入客户端可用的 Server Action
 import { getRenovationPhotosAction } from "../../../../actions/client";
+
+/** 交付倒计时默认阈值（配置读取失败/未保存时回退；= 后端 TodoBoardRules.defaults） */
+const DELIVERY_DEFAULTS: { total: number; near: number; urgent: number } = {
+  total: 65,
+  near: 30,
+  urgent: 10,
+};
 
 /** 装修合同摘要（getRenovationContractAction 提炼，供 KPI 与页面副列共用） */
 export interface RenovationContractMeta {
@@ -41,18 +49,39 @@ export function RenovationKPIs({ project, contractMeta }: RenovationKPIsProps) {
   // [新增] 用于存储照片总数的状态
   const [photoCount, setPhotoCount] = useState(0);
   const today = useCurrentDate();
+  // 交付倒计时阈值（待办看板「规则配置」弹窗维护；挂载时拉取，失败回退默认）
+  const [delivery, setDelivery] = useState(DELIVERY_DEFAULTS);
 
   // 1. 计算倒计时逻辑
   const handoverDate = project.planned_handover_date
     ? new Date(project.planned_handover_date)
     : new Date();
 
-  const deadlineDate = addDays(handoverDate, 65);
+  const deadlineDate = addDays(handoverDate, delivery.total);
   const daysLeft = today ? differenceInDays(deadlineDate, today) : 0;
 
   let daysColor = "text-success";
-  if (daysLeft < 10) daysColor = "text-error animate-pulse";
-  else if (daysLeft <= 30) daysColor = "text-status-renovating";
+  if (daysLeft < delivery.urgent) daysColor = "text-error animate-pulse";
+  else if (daysLeft <= delivery.near) daysColor = "text-status-renovating";
+
+  useEffect(() => {
+    let cancelled = false;
+    client
+      .GET("/api/v1/projects/todo-board/config")
+      .then(({ data }) => {
+        if (!cancelled && data) {
+          setDelivery({
+            total: data.delivery_total_days,
+            near: data.delivery_near_days,
+            urgent: data.delivery_urgent_days,
+          });
+        }
+      })
+      .catch((error: unknown) => logger.error("读取交付倒计时阈值失败", error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 2. 计算索引用于传参 (与 RenovationTimeline 同步逻辑)
   const currentIndex = (() => {
@@ -120,7 +149,7 @@ export function RenovationKPIs({ project, contractMeta }: RenovationKPIsProps) {
 
   return (
     <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-      {/* 卡片 1: 交付倒计时 — 天数类 · 冷底（<10 天红色脉冲 · ≤30 天橙色） */}
+      {/* 卡片 1: 交付倒计时 — 天数类 · 冷底（阈值由「规则配置」维护：<urgent 天红色脉冲 · ≤near 天橙色） */}
       <div className="flex h-full flex-col justify-between rounded-cards bg-sky-wash p-5 shadow-steep">
         <span className="text-[13px] font-[450] text-ink/55">交付倒计时</span>
         <div>
@@ -128,7 +157,9 @@ export function RenovationKPIs({ project, contractMeta }: RenovationKPIsProps) {
             <span className={cn(valueClass, daysColor)}>{daysLeft}</span>
             <span className="text-sm font-[430] text-graphite">天</span>
           </div>
-          <div className={cn(deltaClass, "text-ink/55")}>≤30 天橙色 · &lt;10 天红色脉冲</div>
+          <div className={cn(deltaClass, "text-ink/55")}>
+            ≤{delivery.near} 天橙色 · &lt;{delivery.urgent} 天红色脉冲
+          </div>
         </div>
       </div>
 

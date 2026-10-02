@@ -134,7 +134,12 @@ export function AppSidebar({ user }: { user: User | null }) {
     if (shouldCollapse && !isMobile) {
       setOpen(false);
     }
-  }, [pathname, setOpen, isMobile]);
+    // 注意：依赖里不能加 setOpen。SidebarProvider 中 setOpen 的 useCallback 依赖
+    // open，每次展开/折叠都会生成新引用；一旦加入依赖，本 effect 会在用户点击
+    // 展开按钮后立即重新执行，把侧边栏重新折叠回去，表现为"折叠/展开按钮失效"
+    // （仅 autoCollapsePaths 命中的子页面，/admin 不受影响）。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, isMobile]);
 
   // 按权限/角色过滤一级菜单与子菜单
   const visibleNav = navMain

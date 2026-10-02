@@ -29,7 +29,10 @@ from schemas.project import (
     ProjectResponse,
     ProjectStatsResponse,
     ProjectStatusUpdate,
+    ProjectTodoBoardResponse,
     ProjectUpdate,
+    TodoBoardRulesResponse,
+    TodoBoardRulesUpdateRequest,
 )
 from schemas.response import PaginatedResponse
 from services.system.exceptions import ResourceNotFoundError, ValidationError
@@ -180,6 +183,45 @@ def get_project_stats(
     使用 ProjectReadPermDep 基于权限码校验（dashboard 统计卡片需 project:read）.
     """
     return service.get_project_stats()
+
+
+@router.get("/todo-board")
+def get_project_todo_board(
+    service: ProjectServiceDep,
+    _current_user: ProjectReadPermDep,
+) -> ProjectTodoBoardResponse:
+    """项目待办看板：规则引擎实时计算签约+装修阶段项目待办.
+
+    只读快照不落库；无查询参数，全量返回（数据量小），筛选由前端完成。
+    使用 ProjectReadPermDep 基于权限码校验（与项目列表一致）.
+    """
+    return service.get_todo_board()
+
+
+@router.get("/todo-board/config")
+def get_project_todo_board_config(
+    service: ProjectServiceDep,
+    _current_user: ProjectReadPermDep,
+) -> TodoBoardRulesResponse:
+    """项目待办看板规则阈值配置读取.
+
+    全员可见（阈值口径对齐设计稿）；缺行时回退代码内默认值。
+    """
+    return service.get_todo_board_config()
+
+
+@router.put("/todo-board/config")
+def update_project_todo_board_config(
+    req: TodoBoardRulesUpdateRequest,
+    service: ProjectServiceDep,
+    current_user: CurrentAdminUserDep,
+) -> TodoBoardRulesResponse:
+    """项目待办看板规则阈值配置保存.
+
+    仅管理员（CurrentAdminUserDep，非 admin 403）；全量提交，
+    天数 1~999、字段三态 core/minor/off 由 Pydantic 校验。
+    """
+    return service.update_todo_board_config(req, operator_id=str(current_user.id))
 
 
 @router.get("/my-responsible")

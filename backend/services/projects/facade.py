@@ -21,7 +21,15 @@ from sqlalchemy.orm import Session
 # 导入模型和 Schema 类型
 from models import ProjectInteraction, ProjectRenovation, RenovationPhoto, User
 from models.common import BusinessForm, RenovationStage
-from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
+from schemas.project import (
+    ProjectCreate,
+    ProjectResponse,
+    ProjectStatusUpdate,
+    ProjectTodoBoardResponse,
+    ProjectUpdate,
+    TodoBoardRulesResponse,
+    TodoBoardRulesUpdateRequest,
+)
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
 from schemas.project.sales import (
     ProjectCompleteRequest,
@@ -31,10 +39,12 @@ from schemas.project.sales import (
 from settings import settings
 
 # 导入拆分后的子服务
+from . import todo_board_config
 from .core import ProjectCoreService
 from .finance import FinanceService
 from .renovation import RenovationService
 from .sales import SalesService
+from .todo_board import TodoBoardService
 
 
 class ProjectService:
@@ -61,6 +71,21 @@ class ProjectService:
         self._renovation_service = RenovationService(db)
         self._sales_service = SalesService(db)
         self._finance_service = FinanceService(db)
+        self._todo_board_service = TodoBoardService(db)
+
+    # ========== TodoBoardService 方法委托 ==========
+
+    def get_todo_board(self) -> ProjectTodoBoardResponse:
+        """项目待办看板：规则引擎实时计算签约+装修阶段项目待办（不落库）."""
+        return self._todo_board_service.get_board()
+
+    def get_todo_board_config(self) -> TodoBoardRulesResponse:
+        """待办规则阈值配置读取（缺行回退代码默认）."""
+        return todo_board_config.get_rules_config(self.db)
+
+    def update_todo_board_config(self, req: TodoBoardRulesUpdateRequest, operator_id: str) -> TodoBoardRulesResponse:
+        """待办规则阈值配置保存（仅管理员，Router 层已校验角色）."""
+        return todo_board_config.save_rules_config(self.db, req, operator_id)
 
     # ========== ProjectCoreService 方法委托 ==========
 
