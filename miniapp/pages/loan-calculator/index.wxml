@@ -1,0 +1,281 @@
+<view class="page">
+  <!-- 非法进入态：price 缺失/非法（直入或分享丢参） -->
+  <view wx:if="{{invalid}}" class="state-box">
+    <view class="state-title">未获取到房源总价</view>
+    <view class="state-sub">请从房源详情页进入贷款计算器</view>
+  </view>
+
+  <block wx:else>
+    <!-- 房源摘要（含砍价入口） -->
+    <view class="house-card">
+      <view class="house-lt">
+        <view class="house-t">{{title}}</view>
+        <view class="house-s" wx:if="{{area}}">{{area}}㎡</view>
+      </view>
+      <view class="house-pr">
+        <view class="house-pv">
+          <text wx:if="{{isCut}}" class="house-was">¥{{wasPrice}}万</text>
+          <view class="house-v">¥{{showPrice}}<text class="house-u">万</text></view>
+        </view>
+        <view class="house-pk">
+          <text class="house-k">{{priceLabel}}</text>
+          <view class="bargain-btn" bindtap="onBargainTap">砍价</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 结果卡（ink 深色） -->
+    <view class="result-card">
+      <view class="result-head">
+        <text class="result-mode">{{rModeText}}</text>
+        <text class="rate-chip">执行利率 {{rRate}}</text>
+      </view>
+      <view class="result-big">¥{{rMonth}}<text class="result-u">/月</text></view>
+      <view wx:if="{{prinVisible}}" class="prin-note">末月 <text class="prin-b">¥{{rLast}}</text> · 每月递减约 <text class="prin-b">¥{{rDec}}</text></view>
+      <view class="result-stats">
+        <view class="r-stat">
+          <view class="r-k">贷款总额</view>
+          <view class="r-v">{{rLoan}}<text class="r-u">万</text></view>
+        </view>
+        <view class="r-stat r-stat--click" bindtap="onOpenSchedule">
+          <view class="r-k">支付利息</view>
+          <view class="r-v">{{rInterest}}<text class="r-u">元</text></view>
+          <view class="r-hint">每期本金/利息明细 ›</view>
+        </view>
+        <view class="r-stat">
+          <view class="r-k">首付款</view>
+          <view class="r-v">{{rDown}}<text class="r-u">万</text></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 贷款方式 -->
+    <view class="tabs">
+      <view class="tab {{tabComm ? 'tab--on' : ''}}" data-mode="comm" bindtap="onModeTap">商贷</view>
+      <view class="tab {{tabFund ? 'tab--on' : ''}}" data-mode="fund" bindtap="onModeTap">公积金</view>
+      <view class="tab {{tabCombo ? 'tab--on' : ''}}" data-mode="combo" bindtap="onModeTap">组合贷</view>
+    </view>
+
+    <!-- 首付比例 -->
+    <view class="card">
+      <view class="card-hd">
+        <text class="card-t">首付比例</text>
+        <text class="card-v"><text class="card-b">{{cpPct}}</text> · 首付 <text class="card-b">{{cpAmt}}</text></text>
+      </view>
+      <slider
+        class="down-slider"
+        min="{{cpMin}}"
+        max="{{cpMax}}"
+        step="1"
+        value="{{downPct}}"
+        activeColor="#17191c"
+        backgroundColor="#dcdde1"
+        block-size="22"
+        bindchanging="onSliderChanging"
+        bindchange="onSliderChange"
+      />
+      <view class="scale-row">
+        <text>{{cpMin}}%</text>
+        <text>{{cpMax}}%</text>
+      </view>
+      <view class="chips-row">
+        <view
+          wx:for="{{downChips}}"
+          wx:key="*this"
+          class="chip-btn {{downPct === item ? 'chip-btn--on' : ''}}"
+          data-v="{{item}}"
+          bindtap="onChipTap"
+        >{{item}}%</view>
+        <view class="chip-btn" bindtap="onCustomDownTap">自定义</view>
+      </view>
+      <view class="card-note">{{cpNote}}</view>
+    </view>
+
+    <!-- 贷款年限 -->
+    <view class="card">
+      <view class="card-hd">
+        <text class="card-t">贷款年限</text>
+        <text class="card-v"><text class="card-b">{{cyVal}}</text> · <text class="card-b">{{cyN}}</text> 期</text>
+      </view>
+      <view class="seg">
+        <view
+          wx:for="{{yearsList}}"
+          wx:key="v"
+          class="seg-btn {{years === item.v ? 'seg-btn--on' : ''}}"
+          data-v="{{item.v}}"
+          bindtap="onYearTap"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <!-- 还款方式 -->
+    <view class="card">
+      <view class="card-hd">
+        <text class="card-t">还款方式</text>
+        <text class="card-v">总利息 <text class="card-b">{{mTotal}}</text></text>
+      </view>
+      <view class="seg">
+        <view class="seg-btn {{segAxi ? 'seg-btn--on' : ''}}" data-v="axi" bindtap="onMethodTap">等额本息</view>
+        <view class="seg-btn {{segPrin ? 'seg-btn--on' : ''}}" data-v="prin" bindtap="onMethodTap">等额本金</view>
+      </view>
+      <view class="card-note">{{mDesc}}</view>
+    </view>
+
+    <!-- 利率参数：纯商贷 -->
+    <view wx:if="{{showComm}}" class="card">
+      <view class="card-hd">
+        <text class="card-t">商贷利率</text>
+        <text class="pill pill--apricot">{{commExec}}</text>
+      </view>
+      <view class="step-row">
+        <view class="step-k">LPR 基准<text class="step-sub">5 年期以上，随市场报价调整</text></view>
+        <view class="stepper">
+          <view class="step-btn" data-t="lpr" data-d="-1" bindtap="onStepTap">−</view>
+          <view class="step-v">{{lprText}}<text class="step-u">%</text></view>
+          <view class="step-btn" data-t="lpr" data-d="1" bindtap="onStepTap">+</view>
+        </view>
+      </view>
+      <view class="step-row">
+        <view class="step-k">加点<text class="step-sub">当前政策：首套 −45bp</text></view>
+        <view class="stepper">
+          <view class="step-btn" data-t="bp" data-d="-1" bindtap="onStepTap">−</view>
+          <view class="step-v">{{bpText}}<text class="step-u">bp</text></view>
+          <view class="step-btn" data-t="bp" data-d="1" bindtap="onStepTap">+</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 利率参数：纯公积金 -->
+    <view wx:if="{{showFund}}" class="card">
+      <view class="card-hd">
+        <text class="card-t">公积金利率</text>
+        <text class="pill pill--mint">固定 2.60%</text>
+      </view>
+      <view class="step-row">
+        <view class="step-k">首套 5 年期以上<text class="step-sub">利率随政策统一调整，本期不开放编辑</text></view>
+        <text class="pill pill--mint pill--lg">2.60%</text>
+      </view>
+    </view>
+
+    <!-- 利率参数：组合贷 -->
+    <view wx:if="{{showCombo}}" class="card">
+      <view class="card-hd">
+        <text class="card-t">组合参数</text>
+        <text class="pill pill--apricot">商贷 {{commExec}}</text>
+        <text class="pill pill--mint">公积金 2.60%</text>
+      </view>
+      <view class="step-row">
+        <view class="step-k">公积金贷款额<text class="step-sub">默认 100 万，不超贷款总额；实际受当地额度上限约束</text></view>
+        <view class="stepper">
+          <view class="step-btn" data-t="fundAmt" data-d="-1" bindtap="onStepTap">−</view>
+          <view class="step-v">{{fundAmtText}}<text class="step-u">万</text></view>
+          <view class="step-btn" data-t="fundAmt" data-d="1" bindtap="onStepTap">+</view>
+        </view>
+      </view>
+      <view class="step-row">
+        <view class="step-k">LPR 基准<text class="step-sub">商贷部分适用</text></view>
+        <view class="stepper">
+          <view class="step-btn" data-t="lpr" data-d="-1" bindtap="onStepTap">−</view>
+          <view class="step-v">{{lprText}}<text class="step-u">%</text></view>
+          <view class="step-btn" data-t="lpr" data-d="1" bindtap="onStepTap">+</view>
+        </view>
+      </view>
+      <view class="step-row">
+        <view class="step-k">加点<text class="step-sub">商贷部分适用</text></view>
+        <view class="stepper">
+          <view class="step-btn" data-t="bp" data-d="-1" bindtap="onStepTap">−</view>
+          <view class="step-v">{{bpText}}<text class="step-u">bp</text></view>
+          <view class="step-btn" data-t="bp" data-d="1" bindtap="onStepTap">+</view>
+        </view>
+      </view>
+    </view>
+
+    <button class="reset-btn" bindtap="onReset">恢复默认口径（首套 · 30年 · LPR−45bp）</button>
+
+    <!-- 底部行动按钮：贷款专家咨询 + 了解购房流程（spec K11） -->
+    <view class="cta-row">
+      <button class="cta-btn cta-btn--ghost" bindtap="onCallTap">
+        <text class="cta-ic">☎</text>贷款专家咨询
+      </button>
+      <button class="cta-btn cta-btn--pri" bindtap="onSimulatorTap">
+        <text class="cta-ic">→</text>了解购房流程
+      </button>
+    </view>
+
+    <!-- 底部留白 -->
+    <view style="height: 48rpx;"></view>
+
+    <!-- 还款计划明细弹窗（点击「支付利息」打开） -->
+    <view wx:if="{{scheduleVisible}}" class="sched-mask" bindtap="onNothingTap">
+      <view class="sched-modal" catchtap="stopPropagation">
+        <view class="sched-hd">
+          <text class="sched-t">还款计划明细</text>
+          <view class="sched-x" bindtap="onCloseSchedule">✕</view>
+        </view>
+        <view class="sched-sub">{{scheduleSub}}</view>
+        <view class="sched-thead">
+          <text class="sch-no">期次</text>
+          <text class="sch-num">月供</text>
+          <text class="sch-num">本金</text>
+          <text class="sch-num">利息</text>
+          <text class="sch-num">剩余本金</text>
+        </view>
+        <scroll-view class="sched-body" scroll-y catchtouchmove="stopPropagation">
+          <view wx:for="{{scheduleRows}}" wx:key="no" class="sched-row">
+            <text class="sch-no sch-gray">{{item.no}}</text>
+            <text class="sch-num">{{item.pay}}</text>
+            <text class="sch-num">{{item.pri}}</text>
+            <text class="sch-num sch-gray">{{item.int}}</text>
+            <text class="sch-num sch-gray">{{item.bal}}</text>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <!-- 砍价弹层（点击摘要条「砍价」打开，spec K10） -->
+    <view wx:if="{{bargainVisible}}" class="sched-mask" bindtap="onNothingTap">
+      <view class="bargain-modal" catchtap="stopPropagation">
+        <view class="bm-t">砍个价</view>
+        <view class="bm-d">输入您的期望总价，首付与月供将按新价格重新计算</view>
+        <view class="bm-input">
+          <text class="bm-yen">¥</text>
+          <input
+            class="bm-field"
+            type="digit"
+            value="{{bargainInput}}"
+            placeholder="{{bargainPlaceholder}}"
+            bindinput="onBargainInput"
+          />
+          <text class="bm-unit">万</text>
+        </view>
+        <view class="bm-actions">
+          <view wx:if="{{isCut}}" class="bm-reset" bindtap="onBargainReset">恢复原价</view>
+          <view class="bm-ok" bindtap="onBargainOk">确认</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 自定义首付弹层（点击快捷档「自定义」打开，手填首付金额，spec K12） -->
+    <view wx:if="{{customDownVisible}}" class="sched-mask" bindtap="onCustomDownClose">
+      <view class="bargain-modal" catchtap="stopPropagation">
+        <view class="bm-t">自定义首付</view>
+        <view class="bm-d">输入首付金额，首付比例与月供将同步重算</view>
+        <view class="bm-input">
+          <text class="bm-yen">¥</text>
+          <input
+            class="bm-field"
+            type="digit"
+            value="{{customDownInput}}"
+            placeholder="{{customDownPlaceholder}}"
+            bindinput="onCustomDownInput"
+          />
+          <text class="bm-unit">万</text>
+        </view>
+        <view class="bm-hint">{{customDownHint}}</view>
+        <view class="bm-actions">
+          <view class="bm-ok" bindtap="onCustomDownOk">确认</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

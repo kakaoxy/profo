@@ -108,6 +108,28 @@
         </view>
       </view>
 
+      <!-- 贷款参考卡（默认口径静态展示，整卡可点跳转计算器页） -->
+      <view wx:if="{{loanCard}}" class="loan-card" hover-class="loan-card--hover" hover-stay-time="100" bindtap="onLoanCardTap">
+        <view class="loan-head">
+          <view class="loan-ic">¥</view>
+          <view class="loan-ct">贷款参考</view>
+          <view class="loan-link">查看详情<view class="loan-chev"></view></view>
+        </view>
+        <view class="loan-nums">
+          <view class="loan-num">
+            <view class="loan-k">首付（{{loanCard.downPctText}}%）</view>
+            <view class="loan-v">¥{{loanCard.downText}}<text class="loan-u">万</text></view>
+          </view>
+          <view class="loan-sep"></view>
+          <view class="loan-num">
+            <view class="loan-k">月供（等额本息）</view>
+            <view class="loan-v">¥{{loanCard.monthText}}<text class="loan-u">/月</text></view>
+          </view>
+        </view>
+        <view class="loan-sum"><text class="loan-sum-b">首套</text> · {{loanCard.sumText}} · 年利率 <text class="loan-sum-b">{{loanCard.rateText}}</text></view>
+        <view class="loan-tip">以等额本息估算，实际以银行审批为准</view>
+      </view>
+
       <!-- 改造过程 -->
       <view wx:if="{{hasRenovationPhotos}}" class="detail-section">
         <view class="section-title">改造过程</view>

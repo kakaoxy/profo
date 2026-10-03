@@ -159,6 +159,121 @@
   font-weight: 500;
 }
 
+/* 贷款参考卡（语言对齐 info-item：fog 底 · 32rpx 圆角；¥ 图标复用 clue-ic 的 apricot 词汇） */
+.loan-card {
+  margin: -24rpx 0 48rpx;
+  padding: 32rpx;
+  background: var(--fog);
+  border-radius: 32rpx;
+  cursor: pointer;
+}
+
+.loan-card--hover {
+  opacity: 0.85;
+}
+
+.loan-head {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.loan-ic {
+  flex-shrink: 0;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 20rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loan-ct {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.loan-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 25rpx;
+  font-weight: 500;
+  color: var(--graphite);
+}
+
+.loan-chev {
+  flex-shrink: 0;
+  width: 14rpx;
+  height: 14rpx;
+  border-right: 4rpx solid var(--dove);
+  border-top: 4rpx solid var(--dove);
+  transform: rotate(45deg);
+}
+
+.loan-nums {
+  display: flex;
+  align-items: stretch;
+  gap: 36rpx;
+  margin: 28rpx 0 24rpx;
+  padding: 0 4rpx;
+}
+
+.loan-num {
+  flex: 1;
+  min-width: 0;
+}
+
+.loan-k {
+  font-size: 24rpx;
+  color: var(--graphite);
+  margin-bottom: 6rpx;
+}
+
+.loan-v {
+  font-size: 46rpx;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.loan-u {
+  font-size: 25rpx;
+  font-weight: 500;
+  color: var(--graphite);
+  margin-left: 6rpx;
+}
+
+.loan-sep {
+  width: 2rpx;
+  background: var(--dove);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.loan-sum {
+  font-size: 25rpx;
+  color: var(--graphite);
+}
+
+.loan-sum-b {
+  color: var(--rust);
+  font-weight: 500;
+}
+
+.loan-tip {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: var(--dove);
+}
+
 .detail-section {
   margin-bottom: 48rpx;
 }

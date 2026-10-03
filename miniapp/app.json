@@ -4,6 +4,7 @@
     "pages/login/index/index",
     "pages/login/password/index",
     "pages/projects/detail/index",
+    "pages/loan-calculator/index",
     "pages/bookings/mine/index",
     "pages/valuation/submit/index",
     "pages/valuation/list/index",

@@ -1,4 +1,5 @@
 import type { components } from "../../../types/api-types";
+import { calcLoan, fmtBp, fmtWan1, fmtYuanInt, LOAN_DEFAULTS, MODE_NAME } from "../../../utils/loan-calc";
 import { request } from "../../../utils/request";
 import type { HttpResponseError } from "../../../utils/request";
 import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
@@ -76,9 +77,22 @@ function buildPropertySharePath(id: number, referrer: string): string {
   return referrer ? `${base}&referrer=${encodeURIComponent(referrer)}` : base;
 }
 
+/** 贷款参考卡展示数据：默认口径下的首付/月供/口径摘要（金额与文案同源派生，总价缺失时为 null）. */
+type LoanCardView = {
+  downPctText: string;
+  downText: string;
+  monthText: string;
+  /** 摘要中段：方式 · 年限 · LPR 与加点. */
+  sumText: string;
+  /** 执行利率（强调色展示）. */
+  rateText: string;
+};
+
 interface PageData {
   id: number | null;
   detail: PublicProjectDetail | null;
+  /** 贷款参考卡（默认口径计算；total_price 缺失/≤0 时整卡隐藏）. */
+  loanCard: LoanCardView | null;
   contact: PublicConsultantContact | null;
   stages: DisplayStage[];
   gallery: GalleryItem[];
@@ -131,6 +145,8 @@ type Custom = {
   reportVisit(id: number, referrer: string, source: string): void;
   reportShareEvent(id: number, shareType: "card" | "timeline"): void;
   onRetry(): void;
+  /** 贷款参考卡点击：跳转贷款计算器页（携带总价/面积/标题）. */
+  onLoanCardTap(): void;
   /** 员工区块「我的客户」入口：进入我的客户页（分享线索归属列表）. */
   onMineTap(): void;
   onShareTimeline(): void;
@@ -236,10 +252,32 @@ function buildStages(
   });
 }
 
+/**
+ * 按默认口径（LOAN_DEFAULTS，见 utils/loan-calc.ts）计算贷款参考卡展示数据.
+ * 摘要行文案（年限/利率/加点）同源派生，避免硬编码与常量漂移失配.
+ * 总价缺失/≤0 返回 null（整卡隐藏，spec K1）.
+ */
+function buildLoanCard(totalPrice: number | null | undefined): LoanCardView | null {
+  if (!totalPrice || totalPrice <= 0) {
+    return null;
+  }
+  const r = calcLoan(totalPrice, LOAN_DEFAULTS);
+  return {
+    downPctText: String(LOAN_DEFAULTS.downPct),
+    downText: fmtWan1(r.downWan),
+    monthText: fmtYuanInt(r.first),
+    /** 摘要中段：方式 · 年限 · LPR 与加点（静态标签「首套」「年利率」留在 wxml）. */
+    sumText: `${MODE_NAME[LOAN_DEFAULTS.mode]} · ${LOAN_DEFAULTS.years}年 · LPR ${LOAN_DEFAULTS.lpr.toFixed(2)}%${fmtBp(LOAN_DEFAULTS.bp)}bp`,
+    /** 执行利率（rust 强调，与金额同源派生）. */
+    rateText: r.commRate.toFixed(2) + "%",
+  };
+}
+
 Page<PageData, Custom>({
   data: {
     id: null,
     detail: null,
+    loanCard: null,
     contact: null,
     stages: [],
     gallery: [],
@@ -373,6 +411,8 @@ Page<PageData, Custom>({
         contactAvatarUrl: resolveAssetUrl(contact.avatar),
         contactFallbackChar: (contact.nickname || "顾问").slice(0, 1),
         contactRoleText: contact.is_referrer ? "分享人" : "房源顾问",
+        // 贷款参考卡：默认口径（首套·纯商贷·15%·30年·LPR−45bp）纯前端计算；总价缺失整卡隐藏
+        loanCard: buildLoanCard(resolvedDetail.total_price),
       });
     } catch (err) {
       this.setData({ loading: false });
@@ -617,6 +657,20 @@ Page<PageData, Custom>({
       return;
     }
     this.loadDetail(id);
+  },
+  /** 贷款参考卡整卡可点 → 跳转计算器页（携带总价/面积/标题/顾问电话，spec K8+K11）. */
+  onLoanCardTap(): void {
+    const detail = this.data.detail;
+    if (!detail || !(detail.total_price > 0)) {
+      return;
+    }
+    const area = detail.area > 0 ? `&area=${detail.area}` : "";
+    const title = detail.title ? `&title=${encodeURIComponent(detail.title)}` : "";
+    // 分享人/顾问电话（referrer 命中时后端返回分享人真实手机号），供计算器页「贷款专家咨询」拨打
+    const phone = this.data.contact?.phone ? `&phone=${encodeURIComponent(this.data.contact.phone)}` : "";
+    wx.navigateTo({
+      url: `/pages/loan-calculator/index?price=${detail.total_price}${area}${title}${phone}`,
+    });
   },
   /** 员工区块「我的客户」入口：进入我的客户页（分享线索归属列表）. */
   onMineTap(): void {
