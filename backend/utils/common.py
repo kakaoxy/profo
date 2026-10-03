@@ -197,7 +197,12 @@ class RateLimits:
     PUBLIC_PHONE_CREATE = "10/hour"
     PUBLIC_PHONE_WECHAT = "10/hour"
     PUBLIC_USER_MERGE = "10/hour"
-    PUBLIC_PROJECT_LIST = "60/minute"
+    # C端房源公开读（列表/成交案例/详情/顾问联系方式/平台统计共用）。
+    # 网络性能审查 P0-2：60/minute 误伤真实浏览（正常刷 10 分钟即触顶，
+    # 基站级/公司共享出口 IP 下多用户互相顶掉，触发后整窗 429）。
+    # 300/minute = 单用户 5 req/s 持续整分钟，高于真实浏览上限；
+    # 防爬与防刷由写接口严格限流 + 读取无敏感数据（脱敏手机号）承担
+    PUBLIC_PROJECT_LIST = "300/minute"
     PUBLIC_LEAD_CREATE = "10/hour"
     PUBLIC_LEAD_LIST = "60/minute"
     # 「我的分享统计」：估价/房源/房源单/招募四链路共用的登录态读取端点，
@@ -207,7 +212,8 @@ class RateLimits:
     PUBLIC_BOOKING_CREATE = "10/hour"
     PUBLIC_BOOKING_LIST = "60/minute"
     PUBLIC_FILE_UPLOAD = "300/hour"
-    PUBLIC_COMMUNITY_SEARCH = "60/minute"
+    # 小区搜索：搜索框防抖后每次击键触发（debounce ~300ms），60/min 偏紧
+    PUBLIC_COMMUNITY_SEARCH = "300/minute"
     PUBLIC_COMMUNITY_ANALYSIS = "60/minute"
     PUBLIC_REGISTER = "10/hour"
     PUBLIC_LOGOUT = "60/minute"

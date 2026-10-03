@@ -243,6 +243,10 @@ def get_project_detail(
 
     media_list = svc.get_project_media(marketing_project_id)
 
+    # 注（网络性能审查 P1-2 核验）：media 不可裁剪只回 marketing ——
+    # C端 RenovationTimeline 消费 renovation 分类的媒体，小程序端还消费 description；
+    # description 恒为 None 是后端管理端预留字段，C端 schema 兼容保留
+
     media_items = [
         PublicMediaItem(
             id=m.id,

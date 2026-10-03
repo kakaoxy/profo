@@ -43,6 +43,9 @@ export default function ProjectDetailPage() {
     publicFetcher,
   );
 
+  // ⚠️ 不要合并进详情接口的 data.consultant：两者职责不同（网络性能审查 P1-1 核验）。
+  // /consultant 返回真实手机号（供 tel: 拨打/复制微信号）+ 可选 referrer 分享归因；
+  // 详情内嵌 consultant 是脱敏手机号（用于展示，详情页未消费），二者不可互相替代
   const { data: consultant } = useSWR<ConsultantInfo>(
     id ? `/api/v1/public/projects/${id}/consultant` : null,
     publicFetcher,

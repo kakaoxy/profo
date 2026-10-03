@@ -12,6 +12,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from redis.exceptions import RedisError
@@ -19,6 +20,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from db import engine, init_db
 from error_handlers import (
@@ -149,6 +151,32 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     logger.info("Application is shutting down...")
 
 
+class GZipExemptPrefixMiddleware:
+    """带路径豁免的 gzip 压缩中间件（C端网络性能审查 P0-1）.
+
+    GZipMiddleware 会压缩所有 > minimum_size 的响应，包括 StaticFiles 对
+    大文件的 206 Partial Content；压缩后的字节流与 Content-Range 头不一致，
+    会破坏客户端 Range 请求（视频拖动进度条/断点续传）的语义。
+    因此对 /static（历史遗留上传文件的兜底路径，生产新媒体直连 OSS）
+    豁免压缩：宁可多耗带宽，不冒 Range 语义损坏的风险。
+
+    compresslevel=6 而非默认 9：服务器仅 2 核，6 与 9 压缩率差 <3% 但
+    CPU 开销约省一半，对 JSON 响应足够；minimum_size=1024 避免压小响应
+    反而增大（stats ~55B、consultant ~104B）。
+    """
+
+    def __init__(self, app: ASGIApp, exempt_prefixes: tuple[str, ...] = ("/static",)) -> None:
+        self.exempt_prefixes = exempt_prefixes
+        self._raw_app = app
+        self._gzip_app = GZipMiddleware(app, minimum_size=1024, compresslevel=6)
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope.get("path", "").startswith(self.exempt_prefixes):
+            await self._raw_app(scope, receive, send)
+            return
+        await self._gzip_app(scope, receive, send)
+
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
@@ -225,6 +253,8 @@ app.add_middleware(
 )
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
+# API JSON 响应 gzip 压缩（C端网络性能审查 P0-1）：/static 豁免见类注释
+app.add_middleware(GZipExemptPrefixMiddleware)
 
 
 @app.middleware("http")
