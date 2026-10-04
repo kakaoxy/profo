@@ -7,6 +7,7 @@ from .auth import router as auth_router
 from .operation_logs import router as operation_logs_router
 from .permissions import router as permissions_router
 from .roles import router as roles_router
+from .subscribe_templates import router as subscribe_templates_router
 from .users import router as users_router
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     "operation_logs_router",
     "permissions_router",
     "roles_router",
+    "subscribe_templates_router",
     "users_router",
 ]

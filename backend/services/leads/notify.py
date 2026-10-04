@@ -14,8 +14,8 @@ from sqlalchemy.orm import Session
 
 from models import User
 from models.lead import Lead
+from services.system import subscribe_templates
 from services.system.wechat import WeChatAuthService
-from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def notify_eval_price_changed(
 
     """
     try:
-        template_id = settings.wechat_valuation_price_template_id
+        template_id = subscribe_templates.resolve_template_id(db, "valuation_price")
         if not template_id:
             logger.info("订阅消息模板未配置，跳过授权价通知：lead_id=%s", lead.id)
             return

@@ -62,6 +62,7 @@ from routers.system import (
     operation_logs_router,
     permissions_router,
     roles_router,
+    subscribe_templates_router,
     users_router,
 )
 from services.system.exceptions import ServiceException
@@ -345,6 +346,7 @@ app.include_router(users_router, prefix=API_V1_PREFIX)
 app.include_router(roles_router, prefix=API_V1_PREFIX)
 app.include_router(permissions_router, prefix=API_V1_PREFIX)
 app.include_router(operation_logs_router, prefix=API_V1_PREFIX)
+app.include_router(subscribe_templates_router, prefix=API_V1_PREFIX)
 app.include_router(upload_router, prefix=API_V1_PREFIX)
 app.include_router(push_router, prefix=API_V1_PREFIX)
 app.include_router(files_router, prefix=API_V1_PREFIX)

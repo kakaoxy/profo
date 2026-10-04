@@ -38,9 +38,9 @@ from services.recruit import (
     RecruitLeadService,
     RecruitQRCodeService,
 )
+from services.system import subscribe_templates
 from services.system.exceptions import ValidationError
 from services.system.wechat import WeChatAuthService
-from settings import settings
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
 
@@ -74,8 +74,8 @@ def get_campaign(
     service = RecruitCampaignService(db)
     campaign = service.get_enabled(campaign_id)
     response = RecruitCampaignDetailResponse.model_validate(campaign)
-    # 订阅消息模板 ID 从 settings 透出（未配置为 None），供 C 端发起订阅授权
-    response.subscribe_template_id = settings.wechat_recruit_lead_template_id or None
+    # 订阅消息模板 ID 解析后透出（DB 优先，回退 env；未配置为 None），供 C 端发起订阅授权
+    response.subscribe_template_id = subscribe_templates.resolve_template_id(db, "recruit_lead") or None
     return response
 
 

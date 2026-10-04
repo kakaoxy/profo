@@ -28,7 +28,7 @@ from schemas.growth_center import (
 )
 from services.growth_center.my_customers import MyCustomerService
 from services.growth_center.my_customers_flow import MyCustomerFlowService
-from settings import settings
+from services.system import subscribe_templates
 from utils.common import RateLimits, limiter
 
 logger = logging.getLogger(__name__)
@@ -109,9 +109,10 @@ def get_my_customers_share_stats(
 def get_my_customers_subscribe_template(
     request: Request,
     current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
 ) -> MyCustomerSubscribeTemplateResponse:
     """订阅模板配置查询."""
-    template_id = settings.wechat_customer_lead_template_id or None
+    template_id = subscribe_templates.resolve_template_id(db, "customer_lead") or None
     return MyCustomerSubscribeTemplateResponse(template_id=template_id)
 
 

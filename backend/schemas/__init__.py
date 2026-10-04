@@ -124,6 +124,14 @@ from .property import (
 # 1. 分页响应模型
 from .response import ErrorResponse, PaginatedResponse
 
+# 11. 订阅消息模板配置
+from .subscribe_template import (
+    SubscribeTemplateSource,
+    SubscribeTemplatesResponse,
+    SubscribeTemplatesUpdateRequest,
+    SubscribeTemplateValue,
+)
+
 # 5. Upload (上传导入)
 from .upload import (
     ImportResult,
@@ -242,6 +250,10 @@ __all__ = [
     "SalesRecordCreate",
     "SalesRecordResponse",
     "SalesRolesUpdate",
+    "SubscribeTemplateSource",
+    "SubscribeTemplateValue",
+    "SubscribeTemplatesResponse",
+    "SubscribeTemplatesUpdateRequest",
     "TokenResponse",
     "TrendData",
     "TrendResponse",

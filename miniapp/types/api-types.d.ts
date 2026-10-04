@@ -2893,6 +2893,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/subscribe-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Subscribe Templates
+         * @description 读取三个订阅消息模板的 DB 配置值、env 兜底值与生效状态.
+         */
+        get: operations["get_subscribe_templates_api_v1_subscribe_templates_get"];
+        /**
+         * Update Subscribe Templates
+         * @description 全量保存三个模板 ID（strip 后落库，留空 = 清除 DB 值回退 env）.
+         */
+        put: operations["update_subscribe_templates_api_v1_subscribe_templates_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/upload/csv": {
         parameters: {
             query?: never;
@@ -15510,6 +15534,67 @@ export interface components {
          */
         SubjectStage: "signing" | "renovation" | "holding" | "listing" | "sold";
         /**
+         * SubscribeTemplateValue
+         * @description 单个模板 ID 的配置与生效状态.
+         */
+        SubscribeTemplateValue: {
+            /**
+             * Db Value
+             * @default
+             */
+            db_value: string;
+            /**
+             * Env Value
+             * @default
+             */
+            env_value: string;
+            /**
+             * Effective Value
+             * @default
+             */
+            effective_value: string;
+            /**
+             * Source
+             * @default none
+             * @enum {string}
+             */
+            source: "db" | "env" | "none";
+        };
+        /**
+         * SubscribeTemplatesResponse
+         * @description 订阅消息模板配置读取响应.
+         */
+        SubscribeTemplatesResponse: {
+            recruit_lead: components["schemas"]["SubscribeTemplateValue"];
+            valuation_price: components["schemas"]["SubscribeTemplateValue"];
+            customer_lead: components["schemas"]["SubscribeTemplateValue"];
+            /** Updated At */
+            updated_at?: string | null;
+            /** Updated By Name */
+            updated_by_name?: string | null;
+        };
+        /**
+         * SubscribeTemplatesUpdateRequest
+         * @description 订阅消息模板配置保存请求（全量提交，留空 = 清除 DB 值回退 env）.
+         */
+        SubscribeTemplatesUpdateRequest: {
+            /**
+             * Recruit Lead
+             * @default
+             */
+            recruit_lead: string;
+            /**
+             * Valuation Price
+             * @default
+             */
+            valuation_price: string;
+            /**
+             * Customer Lead
+             * @default
+             */
+            customer_lead: string;
+        };
+        /**
          * TimelineEvent
          * @description 归因链路时间线事件.
          */
@@ -22383,6 +22468,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OperationLogListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_subscribe_templates_api_v1_subscribe_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscribeTemplatesResponse"];
+                };
+            };
+        };
+    };
+    update_subscribe_templates_api_v1_subscribe_templates_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeTemplatesUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscribeTemplatesResponse"];
                 };
             };
             /** @description Validation Error */

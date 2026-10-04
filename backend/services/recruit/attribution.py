@@ -22,10 +22,10 @@ from models.recruit import (
     RecruitVisit,
 )
 from schemas.recruit import RecruitShareEventCreate, RecruitVisitCreate, RecruitVisitUpdate
+from services.system import subscribe_templates
 from services.system.exceptions import ResourceNotFoundError
 from services.system.wechat import WeChatAuthService
 from services.utils import resolve_global_fallback_referrer, resolve_valid_referrer
-from settings import settings
 from utils.crypto import hash_phone
 
 logger = logging.getLogger(__name__)
@@ -285,7 +285,7 @@ class RecruitAttributionService:
         通知内容仅含手机号后四位，不透传完整手机号明文。
         """
         try:
-            template_id = settings.wechat_recruit_lead_template_id
+            template_id = subscribe_templates.resolve_template_id(self.db, "recruit_lead")
             if not template_id:
                 logger.info("订阅消息模板未配置，跳过新线索通知：lead_id=%s", lead.id)
                 return

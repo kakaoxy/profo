@@ -18,8 +18,8 @@ from sqlalchemy.orm import Session
 from models import User
 from schemas.growth_center import GrowthModule, UnifiedLeadStatus
 from services.growth_center.flow_matrix import UNIFIED_STATUS_LABELS
+from services.system import subscribe_templates
 from services.system.wechat import WeChatAuthService
-from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ def _send_customer_notify(db: Session, lead_id: int | str, referrer_user_id: str
 
     """
     try:
-        template_id = settings.wechat_customer_lead_template_id
+        template_id = subscribe_templates.resolve_template_id(db, "customer_lead")
         if not template_id:
             logger.debug("订阅消息模板未配置，跳过我的客户通知：lead_id=%s", lead_id)
             return

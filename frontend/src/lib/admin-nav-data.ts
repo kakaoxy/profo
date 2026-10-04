@@ -201,6 +201,11 @@ export const navMain: NavItem[] = [
         roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
         permission: PERMISSION_CODES.API_KEY_MANAGE,
       },
+      {
+        title: "订阅消息模板",
+        url: "/admin/settings/subscribe-templates",
+        roles: [ROLE_CODES.ADMIN],
+      },
     ],
   },
 ];
