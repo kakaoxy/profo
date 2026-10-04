@@ -6,6 +6,7 @@
 """
 
 import json
+import math
 from datetime import datetime
 from typing import Any, get_args
 
@@ -14,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from models import SystemConfig, User
 from schemas.project import TodoBoardRulesData, TodoBoardRulesResponse, TodoBoardRulesUpdateRequest
+from schemas.project.todo_board import MAX_RULE_DAYS
 from services.projects.todo_board_rules import FieldLevel, TodoBoardRules
 
 # system_configs 配置键（value = JSON 全量）
@@ -23,9 +25,25 @@ TODO_BOARD_RULES_CONFIG_KEY = "todo_board_rules"
 _FIELD_LEVELS = frozenset(get_args(FieldLevel))
 
 
+def _is_valid_rule_days(value: Any) -> bool:
+    """数值阈值合法性：非 bool 的有限数值且落在 1~MAX_RULE_DAYS.
+
+    与 PUT Schema ge/le 同区间。手工改库可能写入 0/负数/超大值/NaN/Infinity，
+    越界值若放行会令 GET 响应 TodoBoardRulesResponse 校验 500（NaN 更是 int()
+    直接抛 ValueError），且 PUT 响应走同路径无法经 API 自愈（spec K5：
+    读取路径永远可用）——故与 JSON 损坏同口径，一律回退默认。
+    """
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and 1 <= value <= MAX_RULE_DAYS
+    )
+
+
 def _merge_dict_value(default_v: Any, raw_v: Any) -> Any:
     """收敛字典单键值：按默认值类型校验并收敛用户值，不合法回退该键默认."""
-    if isinstance(default_v, int) and isinstance(raw_v, (int, float)) and not isinstance(raw_v, bool):
+    if isinstance(default_v, int) and _is_valid_rule_days(raw_v):
         return int(raw_v)
     if isinstance(default_v, str) and isinstance(raw_v, str) and raw_v in _FIELD_LEVELS:
         return raw_v
@@ -52,7 +70,8 @@ def _data_to_dict(rules: TodoBoardRules) -> dict[str, Any]:
 def _merge_with_defaults(raw: Any) -> dict[str, Any]:
     """原始 JSON 值逐字段并入默认值（类型不符/缺键的字段回退默认）.
 
-    标量数值字段：非 bool 数值采纳（90.0 → 90，小数截断），bool/其他类型回退默认。
+    标量数值字段：非 bool 有限数值且在 1~999 区间内采纳（90.0 → 90，小数截断），
+    bool/越界/NaN/其他类型回退默认。
     dict 字段：键集对齐 Schema 契约——缺键回填该键默认、未知键丢弃（PUT 禁止未知键，
     保留会令 GET 响应校验 500）；值经 _merge_dict_value 按默认值类型逐键收敛。
     """
@@ -67,7 +86,7 @@ def _merge_with_defaults(raw: Any) -> dict[str, Any]:
                 merged[name] = {k: _merge_dict_value(default[k], value.get(k)) for k in default}
         elif isinstance(value, bool):
             continue
-        elif isinstance(value, (int, float)):
+        elif _is_valid_rule_days(value):
             merged[name] = int(value)
     return merged
 

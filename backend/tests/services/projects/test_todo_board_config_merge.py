@@ -125,6 +125,54 @@ def test_missing_key_keeps_default_per_field():
     assert merged["start_grace_days"] == 20
 
 
+# ── 数值区间收敛：越界/非有限值回退默认（手工改库脏数据防御，回归 GET 500） ──
+
+
+@pytest.mark.parametrize(
+    ("overrides", "field"),
+    [
+        ({"archive_overdue_days": 0}, "archive_overdue_days"),  # 下界外
+        ({"archive_overdue_days": -30}, "archive_overdue_days"),  # 负数
+        ({"archive_overdue_days": 100000}, "archive_overdue_days"),  # 上界外
+        ({"milestone_days": {"设计": 0, "拆除": -5}}, "milestone_days"),  # dict 内越界
+        ({"milestone_days": {"设计": 100000}}, "milestone_days"),
+    ],
+)
+def test_out_of_range_days_fall_back_to_default(overrides, field):
+    """数值阈值越界（区间同 PUT Schema ge=1/le=999）回退该字段默认，响应可过 Schema 校验.
+
+    回归背景：_merge_with_defaults 曾只做类型收敛不做值域收敛，手工改库写入越界值后
+    GET /todo-board/config 响应 Schema 校验 500（与 JSON 损坏同族，但值域路径未防）。
+    """
+    merged = _merge_with_defaults(_full_raw(**overrides))
+    if field == "milestone_days":
+        assert merged[field] == TodoBoardRules.defaults().milestone_days
+    else:
+        assert merged[field] == TodoBoardRules.defaults().__getattribute__(field)
+    TodoBoardRulesData(**merged)  # 响应可通过 Schema 校验
+
+
+def test_non_finite_numbers_fall_back_to_default():
+    """NaN/Infinity：NaN 会使 int() 抛 ValueError（GET 500），必须与越界同口径回退默认."""
+    merged = _merge_with_defaults(
+        _full_raw(delivery_total_days=float("nan"), archive_overdue_days=float("inf")),
+    )
+    defaults = TodoBoardRules.defaults()
+    assert merged["delivery_total_days"] == defaults.delivery_total_days
+    assert merged["archive_overdue_days"] == defaults.archive_overdue_days
+    TodoBoardRulesData(**merged)
+
+
+def test_boundary_values_accepted():
+    """边界值 1 / 999 / float 小数（区间内）正常采纳，不误伤合法配置."""
+    merged = _merge_with_defaults(
+        _full_raw(archive_overdue_days=1, delivery_total_days=999, start_grace_days=12.0),
+    )
+    assert merged["archive_overdue_days"] == 1
+    assert merged["delivery_total_days"] == 999
+    assert merged["start_grace_days"] == 12
+
+
 @pytest.mark.parametrize(
     ("raw_value", "expect"),
     [
