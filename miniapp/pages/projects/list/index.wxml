@@ -141,8 +141,22 @@
     </view>
   </view>
 
-  <!-- 计数行 -->
-  <view class="count-row">共 {{total}} 套房源</view>
+  <!-- 计数行：房源计数 + 订阅提醒入口（subscribe_enabled=false 时整体隐藏） -->
+  <view class="count-row">
+    <text>共 {{total}} 套房源</text>
+    <view
+      wx:if="{{subscribeEnabled}}"
+      class="notify-btn {{subscribeState === 'on' ? 'notify-btn--on' : ''}}"
+      hover-class="notify-btn--hover"
+      bindtap="onNotifyTap"
+    >
+      <view class="notify-btn__ico"></view>
+      <text wx:if="{{subscribeState === 'on'}}">已订阅 · 可收 {{subscribeQuota}} 条</text>
+      <text wx:elif="{{subscribeState === 'expired'}}">续订提醒</text>
+      <text wx:else>订阅提醒</text>
+      <view wx:if="{{subscribeState === 'expired'}}" class="notify-btn__dot"></view>
+    </view>
+  </view>
 
   <!-- 错误态 -->
   <view class="state" wx:if="{{error}}">
@@ -172,6 +186,8 @@
           lazy-load
         />
         <view class="list-badge {{item.badgeClass}}" wx:if="{{item.badgeText}}">{{item.badgeText}}</view>
+        <!-- 新上黑标：右上角叠加（发布 ≤ 7 天） -->
+        <view class="list-badge--new" wx:if="{{item.isNew}}">新上</view>
       </view>
       <view class="list-content">
         <view class="list-header">
@@ -194,6 +210,11 @@
             <text class="list-price__unit">万</text>
           </view>
         </view>
+        <!-- 调价行：最近一次调价 ≤ 7 天才渲染（降价绿 chip / 涨价灰 chip） -->
+        <view class="list-change" wx:if="{{item.changeText}}">
+          <view class="list-change__chip {{item.changeClass}}">{{item.changeText}}</view>
+          <text class="list-change__meta">{{item.changeMeta}}</text>
+        </view>
       </view>
     </view>
 
@@ -211,4 +232,35 @@
 
   <!-- 底部留白避让 tabBar -->
   <view class="tabbar-safe-area"></view>
+
+  <!-- 订阅弹层（半屏 Sheet）：mask 点击关闭 -->
+  <view class="sheet-mask {{sheetVisible ? 'sheet-mask--show' : ''}}" bindtap="onSubscribeClose"></view>
+  <view class="subscribe-sheet {{sheetVisible ? 'subscribe-sheet--show' : ''}}" catchtap="noop">
+    <view class="subscribe-sheet__grab"></view>
+    <view class="subscribe-sheet__title">房源动态提醒</view>
+    <view class="subscribe-sheet__sub">新房源上架、价格调整时，第一时间通过微信服务通知告诉你。</view>
+    <view class="subscribe-opt">
+      <view class="subscribe-opt__ico subscribe-opt__ico--new">
+        <view class="subscribe-opt__glyph subscribe-opt__glyph--home"></view>
+      </view>
+      <view class="subscribe-opt__txt">
+        <view class="subscribe-opt__t">上新提醒</view>
+        <view class="subscribe-opt__d">新房源上架发布时通知我</view>
+      </view>
+      <view class="subscribe-opt__quota {{sheetNewQuota > 0 ? '' : 'subscribe-opt__quota--zero'}}">可收 {{sheetNewQuota}} 条</view>
+    </view>
+    <view class="subscribe-opt">
+      <view class="subscribe-opt__ico subscribe-opt__ico--price">
+        <view class="subscribe-opt__glyph subscribe-opt__glyph--trend"></view>
+      </view>
+      <view class="subscribe-opt__txt">
+        <view class="subscribe-opt__t">调价提醒</view>
+        <view class="subscribe-opt__d">在售房源价格变动时通知我</view>
+      </view>
+      <view class="subscribe-opt__quota {{sheetPriceQuota > 0 ? '' : 'subscribe-opt__quota--zero'}}">可收 {{sheetPriceQuota}} 条</view>
+    </view>
+    <view class="subscribe-sheet__fine">微信一次性订阅：每次「允许」可收 1 条，可反复开启累计额度</view>
+    <button class="subscribe-sheet__btn" hover-class="subscribe-sheet__btn--hover" bindtap="onSubscribeConfirm">开启提醒</button>
+    <button class="subscribe-sheet__ghost" hover-class="subscribe-sheet__ghost--hover" bindtap="onSubscribeClose">暂不</button>
+  </view>
 </view>

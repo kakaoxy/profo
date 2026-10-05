@@ -3,6 +3,13 @@ import { request } from "../../../utils/request";
 import { resolveImageUrl } from "../../../utils/url";
 import { consumeProjectListPendingTab } from "../../../utils/project-list-tab";
 import { animateServedCount, clearServedCountTimer, loadServedCount } from "../../../utils/served-count";
+import {
+  fetchMarketingSubscribeTemplates,
+  fetchMarketingSubscriptionStatus,
+  requestMarketingSubscribe,
+  type MarketingSubscribeTemplates,
+  type MarketingSubscriptionStatus,
+} from "../../../utils/marketing-notify";
 
 /** 在售房源列表项. */
 type OnSaleItem = components["schemas"]["PublicProjectListItem"];
@@ -24,6 +31,12 @@ interface DisplayItem {
   tags?: string[];
   badgeText: string;
   badgeClass: string;
+  /** 新上黑标（发布 ≤ 7 天，依后端 is_new_listing） */
+  isNew: boolean;
+  /** 调价行（最近一次调价 ≤ 7 天，依后端 latest_price_change） */
+  changeText: string;
+  changeClass: string;
+  changeMeta: string;
 }
 
 /** 每页数量. */
@@ -113,6 +126,16 @@ interface PageData {
   servedCountDisplay: string;
   servedCountLoading: boolean;
   servedCountVisible: boolean;
+  // 订阅提醒（模板均未配置时入口整体隐藏）
+  subscribeEnabled: boolean;
+  /** 空串=未订阅；"on"=已订阅有额度；"expired"=额度耗尽待续订 */
+  subscribeState: "" | "on" | "expired";
+  /** 两频道剩余额度合计（列表页按钮角标展示） */
+  subscribeQuota: number;
+  // 订阅弹层
+  sheetVisible: boolean;
+  sheetNewQuota: number;
+  sheetPriceQuota: number;
 }
 
 /** 页面自定义方法. */
@@ -139,8 +162,22 @@ interface PageCustom {
   animateServedCount(target: number): void;
   clearServedCountTimer(): void;
   servedCountTimer: ReturnType<typeof setInterval> | null;
+  /** 拉取订阅功能开关与额度状态（onLoad/onShow 刷新） */
+  loadSubscribeState(): void;
+  /** 计数行铃铛 tap：打开订阅弹层 */
+  onNotifyTap(): void;
+  /** 弹层「开启提醒」：tap 手势内同步发起 requestSubscribeMessage */
+  onSubscribeConfirm(): void;
+  /** 弹层关闭 */
+  onSubscribeClose(): void;
+  /** 弹层内容区阻止冒泡空实现（catchtap 绑定） */
+  noop(): void;
+  /** 授权结果应用：toast 已由 notify 工具弹出，这里刷新额度状态 */
+  applySubscribeResult(quotas: MarketingSubscriptionStatus | null): void;
   /** 请求时代戳：每次 reset 加载（切 tab/搜索/筛选）+1，用于丢弃晚到的旧代翻页响应（竞态守卫） */
   _epoch: number;
+  /** 订阅模板 ID 对（内存态，不进 data） */
+  _subscribeTemplates: MarketingSubscribeTemplates | null;
 }
 
 /** 根据 key 查 RangeOption label. */
@@ -179,18 +216,31 @@ Page<PageData, PageCustom>({
     servedCountDisplay: "0",
     servedCountLoading: false,
     servedCountVisible: true,
+    // 订阅提醒：默认关闭（模板未配置/未拉取到时入口隐藏）
+    subscribeEnabled: false,
+    subscribeState: "",
+    subscribeQuota: 0,
+    sheetVisible: false,
+    sheetNewQuota: 0,
+    sheetPriceQuota: 0,
   },
   servedCountTimer: null,
   _epoch: 0,
+  _subscribeTemplates: null,
   onLoad() {
     this.loadList(true);
     this.loadServedCount();
+    this.loadSubscribeState();
   },
   onShow() {
     // 消费其它 tabBar 页（服务页等）写入的待切换 tab
     const pending = consumeProjectListPendingTab();
     if (pending === "sold") {
       this.switchToTab("sold");
+    }
+    // 推送消耗额度发生在服务端：每次回前台刷新额度状态
+    if (this.data.subscribeEnabled) {
+      this.loadSubscribeState();
     }
   },
   onUnload() {
@@ -246,6 +296,10 @@ Page<PageData, PageCustom>({
         tags: [],
         badgeText: "过往案例",
         badgeClass: "badge-fog",
+        isNew: false,
+        changeText: "",
+        changeClass: "",
+        changeMeta: "",
       };
     }
     // on_sale / renovating / all 共用描述格式
@@ -273,6 +327,23 @@ Page<PageData, PageCustom>({
         badgeClass = "badge-fog";
       }
     }
+    // 调价行（后端 7 天窗口内才下发）：降价营销文案（绿 chip），涨价中性文案（灰 chip）
+    let changeText = "";
+    let changeClass = "";
+    let changeMeta = "";
+    const change = onSale.latest_price_change;
+    if (change) {
+      const diff = change.new_price - change.old_price;
+      if (change.direction === "down") {
+        changeText = `↓ 直降 ${Math.abs(Math.round(diff))} 万`;
+        changeClass = "change-down";
+      } else {
+        changeText = "↑ 价格已更新";
+        changeClass = "change-up";
+      }
+      const changedDate = change.changed_at.slice(5, 10).replace("-", "/");
+      changeMeta = `原价 ${change.old_price} 万 · ${changedDate} 调整`;
+    }
     return {
       id: onSale.id,
       title: onSale.title,
@@ -284,6 +355,10 @@ Page<PageData, PageCustom>({
       tags: onSale.tags,
       badgeText,
       badgeClass,
+      isNew: !!onSale.is_new_listing,
+      changeText,
+      changeClass,
+      changeMeta,
     };
   },
   /** 把当前筛选值转换为后端 query 参数. */
@@ -537,5 +612,82 @@ Page<PageData, PageCustom>({
   },
   clearServedCountTimer() {
     return clearServedCountTimer(this);
+  },
+  /**
+   * 拉取订阅开关与额度状态.
+   * 模板均未配置（subscribe_enabled=false）时入口整体隐藏；
+   * 拉到额度后同步弹层展示值（弹层下次打开时已最新）。
+   */
+  async loadSubscribeState() {
+    const templates = await fetchMarketingSubscribeTemplates();
+    this._subscribeTemplates = templates;
+    if (!templates) {
+      this.setData({ subscribeEnabled: false, subscribeState: "", subscribeQuota: 0 });
+      return;
+    }
+    // 免登录入口也展示（点击「开启提醒」时若未登录，report 请求自身失败静默，
+    // 与 C 端静默注册模式一致）；未登录时 status 请求失败 → 额度展示 0
+    const status = await fetchMarketingSubscriptionStatus();
+    const newQuota = status?.newListingQuota ?? 0;
+    const priceQuota = status?.priceChangeQuota ?? 0;
+    const total = newQuota + priceQuota;
+    this.setData({
+      subscribeEnabled: true,
+      subscribeState: total > 0 ? "on" : "expired",
+      subscribeQuota: total,
+      sheetNewQuota: newQuota,
+      sheetPriceQuota: priceQuota,
+    });
+  },
+  /** 计数行铃铛 tap：打开订阅弹层（同步展示当前额度）. */
+  onNotifyTap() {
+    if (!this.data.subscribeEnabled) {
+      return;
+    }
+    // 打开前先刷新额度（推送消耗后进页面能看到最新值）
+    this.loadSubscribeState();
+    this.setData({ sheetVisible: true });
+  },
+  /**
+   * 弹层「开启提醒」tap：在回调内同步发起 requestSubscribeMessage.
+   * ⚠️ 不可包 async/await 之后再调（requestSubscribeMessage 手势同步限制）。
+   */
+  onSubscribeConfirm() {
+    const templates = this._subscribeTemplates;
+    if (!templates) {
+      return;
+    }
+    requestMarketingSubscribe(templates, (_status, quotas) => {
+      if (quotas) {
+        const total = quotas.newListingQuota + quotas.priceChangeQuota;
+        this.setData({
+          sheetNewQuota: quotas.newListingQuota,
+          sheetPriceQuota: quotas.priceChangeQuota,
+          subscribeState: total > 0 ? "on" : "expired",
+          subscribeQuota: total,
+        });
+      }
+      // 授权面板拉起时先收起弹层（微信面板为全屏，叠层无意义；toast 由工具统一弹）
+      this.setData({ sheetVisible: false });
+    });
+  },
+  /** 弹层关闭（点遮罩/「暂不」）. */
+  onSubscribeClose() {
+    this.setData({ sheetVisible: false });
+  },
+  /** 弹层内容区空实现（catchtap 阻止冒泡到遮罩关闭）. */
+  noop() {
+    // 故意留空
+  },
+  /** 授权结果应用（保留接口位：当前状态刷新已内联在 onSubscribeConfirm）. */
+  applySubscribeResult(quotas: MarketingSubscriptionStatus | null) {
+    if (!quotas) {
+      return;
+    }
+    const total = quotas.newListingQuota + quotas.priceChangeQuota;
+    this.setData({
+      subscribeState: total > 0 ? "on" : "expired",
+      subscribeQuota: total,
+    });
   },
 });
