@@ -5,7 +5,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, Request, status
 from fastapi.concurrency import run_in_threadpool
 
 from dependencies.auth import (
@@ -123,22 +123,22 @@ def list_marketing_projects(
     summary="创建独立营销项目",
 )
 @limiter.limit(RateLimits.MARKETING_CREATE)
-async def create_marketing_project(
+def create_marketing_project(
     request: Request,
+    background_tasks: BackgroundTasks,
     data: L4MarketingProjectCreate,
     service: _ProjectServiceDep,
-    db: DbSessionDep,
     current_user: L4MarketingWritePermDep,
 ) -> L4MarketingProjectResponse:
     """创建独立营销项目.
 
     速率限制：100次/小时.
-    创建即发布视为上新：路由层线程池触发上新订阅消息通知
-    （notify 内部吞掉一切异常仅记日志，绝不影响创建结果）。
+    创建即发布视为上新：响应返回后由后台任务触发上新订阅消息通知
+    （notify 入口自建会话并吞掉一切异常仅记日志，绝不影响创建结果）。
     """
-    project, is_new_listing = await run_in_threadpool(service.create_project, data)
+    project, is_new_listing = service.create_project(data)
     if is_new_listing:
-        await run_in_threadpool(notify_projects_published, db, project)
+        background_tasks.add_task(notify_projects_published, project.id)
     return project
 
 
@@ -149,6 +149,7 @@ async def create_marketing_project(
 def get_marketing_project(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: _ProjectServiceDep,
+    db: DbSessionDep,
     _current_user: L4MarketingReadPermDep,
 ) -> L4MarketingProjectResponse:
     """获取营销项目详情."""
@@ -156,7 +157,12 @@ def get_marketing_project(
     if not item:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
-    return item
+    resp = L4MarketingProjectResponse.model_validate(item)
+    # 调价摘要 + 通知统计与列表同口径聚合（详情 Sheet 订阅通知区块数据源）
+    latest_change, notify_summary = aggregate_notify_fields(db, [item])[item.id]
+    resp.latest_price_change = L4MarketingPriceChangeSummary(**latest_change) if latest_change else None
+    resp.notify_summary = L4MarketingNotifySummary(**notify_summary)
+    return resp
 
 
 @router.put(
@@ -166,25 +172,27 @@ def get_marketing_project(
 @limiter.limit(RateLimits.MARKETING_UPDATE)
 async def update_marketing_project(
     request: Request,
+    background_tasks: BackgroundTasks,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
     service: _ProjectServiceDep,
-    db: DbSessionDep,
     current_user: L4MarketingWritePermDep,
 ) -> L4MarketingProjectResponse:
     """更新营销项目.
 
     速率限制：100次/小时.
-    已发布房源调价时由路由层线程池触发调价订阅消息通知
-    （notify 内部吞掉一切异常仅记日志，绝不影响更新结果）。
+    首次发布（上新）/ 已发布房源调价时由后台任务触发订阅消息通知
+    （notify 入口自建会话并吞掉一切异常仅记日志，绝不影响更新结果）。
     """
     result = await run_in_threadpool(service.update_project, project_id, data)
     if not result:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
-    item, price_signal = result
-    if price_signal is not None:
-        await run_in_threadpool(notify_project_price_changed, db, item, price_signal)
+    item, change_signal = result
+    if change_signal.is_new_listing:
+        background_tasks.add_task(notify_projects_published, item.id)
+    if change_signal.price_signal is not None:
+        background_tasks.add_task(notify_project_price_changed, item.id, change_signal.price_signal)
     return item
 
 

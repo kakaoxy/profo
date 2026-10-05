@@ -17,7 +17,7 @@ from schemas.l4_marketing import (
     L4MarketingProjectSummary,
     L4MarketingProjectUpdate,
 )
-from services.marketing.notify import PriceSignal
+from services.marketing.notify import PriceSignal, ProjectChangeSignal
 
 
 class MarketingProjectService:
@@ -260,19 +260,21 @@ class MarketingProjectService:
         self,
         project_id: int,
         data: L4MarketingProjectUpdate,
-    ) -> tuple[L4MarketingProject, PriceSignal | None] | None:
+    ) -> tuple[L4MarketingProject, ProjectChangeSignal] | None:
         """更新营销项目.
 
-        同步检出两类变更信号供路由层触发订阅消息通知（通知本身不阻塞本事务）：
-        - 首次发布（草稿 → 发布且 published_at 为空）：写入 published_at
-        - 已发布房源 total_price 变更：写 l4_marketing_price_changes 调价历史
+        同步检出两类变更信号供路由层后台触发订阅消息通知（通知本身不阻塞本事务）：
+        - 首次发布（草稿 → 发布且 published_at 为空）：写入 published_at，
+          信号 is_new_listing=True（上新）
+        - 已发布房源 total_price 变更：写 l4_marketing_price_changes 调价历史，
+          信号 price_signal（调价）
 
         Args:
             project_id: 营销项目ID
             data: 更新数据
 
         Returns:
-            (更新后的营销项目, 调价信号或None)；项目不存在返回 None
+            (更新后的营销项目, 变更信号)；项目不存在返回 None
 
         """
         db_obj = self.get_project(project_id)
@@ -312,13 +314,15 @@ class MarketingProjectService:
                 if field == "stage_completed_dates":
                     flag_modified(db_obj, "stage_completed_dates")
 
-        # 首次发布：published_at 仅首次写入（防重复「上新」）
+        # 首次发布：published_at 仅首次写入（防重复「上新」），并产出上新信号
+        is_new_listing = False
         if (
             old_publish_status == PublishStatus.DRAFT
             and db_obj.publish_status == PublishStatus.PUBLISHED
             and db_obj.published_at is None
         ):
             db_obj.published_at = datetime.now(timezone.utc)
+            is_new_listing = True
 
         # 已发布房源调价：写调价历史并返回信号（同值变更不触发）
         price_signal: PriceSignal | None = None
@@ -343,7 +347,7 @@ class MarketingProjectService:
 
         self.db.commit()
         self.db.refresh(db_obj)
-        return db_obj, price_signal
+        return db_obj, ProjectChangeSignal(is_new_listing=is_new_listing, price_signal=price_signal)
 
     def delete_project(self, project_id: int) -> bool:
         """逻辑删除营销项目.

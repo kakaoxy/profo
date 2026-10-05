@@ -474,7 +474,7 @@ class WeChatAuthService:
             raise ValidationError(msg)
 
     @staticmethod
-    def send_subscribe_message(openid: str, template_id: str, data: dict, page: str | None = None) -> None:
+    def send_subscribe_message(openid: str, template_id: str, data: dict, page: str | None = None) -> int:
         """发送小程序订阅消息 (Sync - 供 run_in_threadpool 调用).
 
         调用 cgi-bin/message/subscribe/send 接口，需先获取小程序全局 access_token。
@@ -486,10 +486,15 @@ class WeChatAuthService:
             data: 模板内容，格式为 ``{"字段名": {"value": "xxx"}}``
             page: 点击消息跳转的小程序页面路径（含 query，可选）
 
+        Returns:
+            微信接口 errcode：0 = 受理成功；43101/40003 为预期业务态
+            （用户未订阅/openid 无效，warning 留痕后返回原码不抛异常）。
+            调用方必须区分 0 与非 0 判定是否真正送达（如按送达扣减订阅额度）；
+            忽略返回值则保持旧语义（仅区分「抛异常/不抛异常」）。
+
         Raises:
-            ValidationError: 微信接口返回错误（细节仅记日志，不回传用户）；
-                43101（用户未订阅/拒收）与 40003（openid 无效）属预期业务态，
-                仅 warning 留痕后正常返回，不抛出
+            ValidationError: 微信接口返回错误（细节仅记日志，不回传用户）或
+                网络/HTTP 状态错误
 
         """
         access_token = WeChatAuthService.fetch_wechat_miniapp_access_token()
@@ -521,9 +526,11 @@ class WeChatAuthService:
             if errcode in (43101, 40003):
                 # 43101=用户未订阅/拒收（一次性订阅额度未授权或已用尽），
                 # 40003=openid 无效（如员工已解绑）：均属预期业务态，重试亦无意义，
-                # warning 留痕后正常返回，避免调用方按异常处理产生 ERROR 噪音
+                # warning 留痕后返回原码（不抛异常，避免 ERROR 噪音）；
+                # 送达与否由调用方按返回码判定（如订阅额度是否扣减）
                 logger.warning("订阅消息未送达（预期业务态）：errcode=%s, errmsg=%s", errcode, errmsg)
-                return
+                return int(errcode)
             logger.error("发送订阅消息失败：errcode=%s, errmsg=%s", errcode, errmsg)
             msg = "订阅消息发送失败"
             raise ValidationError(msg)
+        return 0
