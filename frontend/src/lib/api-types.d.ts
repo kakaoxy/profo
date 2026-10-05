@@ -1543,6 +1543,8 @@ export interface paths {
          * @description 创建独立营销项目.
          *
          *     速率限制：100次/小时.
+         *     创建即发布视为上新：路由层线程池触发上新订阅消息通知
+         *     （notify 内部吞掉一切异常仅记日志，绝不影响创建结果）。
          */
         post: operations["create_marketing_project_api_v1_admin_marketing_projects_post"];
         delete?: never;
@@ -1568,6 +1570,8 @@ export interface paths {
          * @description 更新营销项目.
          *
          *     速率限制：100次/小时.
+         *     已发布房源调价时由路由层线程池触发调价订阅消息通知
+         *     （notify 内部吞掉一切异常仅记日志，绝不影响更新结果）。
          */
         put: operations["update_marketing_project_api_v1_admin_marketing_projects__project_id__put"];
         post?: never;
@@ -3637,6 +3641,66 @@ export interface paths {
         get: operations["get_platform_stats_api_v1_public_stats_platform_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/marketing/subscribe-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取房源订阅提醒模板 ID
+         * @description 免登录下发房源上新/调价提醒的订阅消息模板 ID；两个模板均未配置时 subscribe_enabled=false
+         */
+        get: operations["get_subscribe_template_api_v1_public_marketing_subscribe_template_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/marketing/subscriptions/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取我的订阅额度状态
+         * @description 当前 C 端用户的上新/调价提醒剩余额度与最近订阅时间，需登录
+         */
+        get: operations["get_subscription_status_api_v1_public_marketing_subscriptions_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/marketing/subscriptions/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报订阅授权结果
+         * @description 小程序 requestSubscribeMessage 结果上报；仅 accept 计入对应频道额度（额度累计），需登录
+         */
+        post: operations["report_subscription_api_v1_public_marketing_subscriptions_report_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8538,6 +8602,51 @@ export interface components {
             thumbnail_url?: string | null;
         };
         /**
+         * L4MarketingNotifySummary
+         * @description 营销项目通知统计（admin 通知列 + 详情 Sheet，仅 success 口径）.
+         */
+        L4MarketingNotifySummary: {
+            /**
+             * New Listing Count
+             * @description 上新通知成功送达人数
+             * @default 0
+             */
+            new_listing_count: number;
+            /**
+             * Price Change Count
+             * @description 调价通知成功送达人数
+             * @default 0
+             */
+            price_change_count: number;
+        };
+        /**
+         * L4MarketingPriceChangeSummary
+         * @description 营销项目调价摘要（admin 列表总价副行，窗口期 7 天）.
+         */
+        L4MarketingPriceChangeSummary: {
+            /**
+             * Old Price
+             * @description 调价前总价(万元)
+             */
+            old_price: number;
+            /**
+             * New Price
+             * @description 调价后总价(万元)
+             */
+            new_price: number;
+            /**
+             * Direction
+             * @description 调价方向: down/up
+             */
+            direction: string;
+            /**
+             * Changed At
+             * Format: date-time
+             * @description 调价时间
+             */
+            changed_at: string;
+        };
+        /**
          * L4MarketingProjectCreate
          * @description 创建营销项目请求.
          */
@@ -8755,6 +8864,15 @@ export interface components {
              * @description 封面缩略图URL
              */
             cover_thumbnail_url?: string | null;
+            /**
+             * Published At
+             * @description 首次发布时间(仅首次发布写入)
+             */
+            published_at?: string | null;
+            /** @description 最近一次调价摘要(≤7天，服务层聚合填充) */
+            latest_price_change?: components["schemas"]["L4MarketingPriceChangeSummary"] | null;
+            /** @description 订阅通知送达统计（服务层聚合填充） */
+            notify_summary?: components["schemas"]["L4MarketingNotifySummary"] | null;
         };
         /**
          * L4MarketingProjectSummary
@@ -13244,6 +13362,79 @@ export interface components {
             message: string;
         };
         /**
+         * PublicMarketingSubscribeReportRequest
+         * @description 订阅授权结果上报请求（仅 accept 计入额度）.
+         */
+        PublicMarketingSubscribeReportRequest: {
+            /**
+             * Results
+             * @description 授权结果列表
+             */
+            results: components["schemas"]["SubscribeReportItem"][];
+        };
+        /**
+         * PublicMarketingSubscribeReportResponse
+         * @description 订阅授权结果上报响应（返回累计后的额度）.
+         */
+        PublicMarketingSubscribeReportResponse: {
+            /**
+             * New Listing Quota
+             * @description 上新提醒剩余额度
+             * @default 0
+             */
+            new_listing_quota: number;
+            /**
+             * Price Change Quota
+             * @description 调价提醒剩余额度
+             * @default 0
+             */
+            price_change_quota: number;
+        };
+        /**
+         * PublicMarketingSubscribeTemplateResponse
+         * @description 订阅模板下发响应（免登录，未配置时 enabled=false）.
+         */
+        PublicMarketingSubscribeTemplateResponse: {
+            /**
+             * Subscribe Enabled
+             * @description 订阅功能是否开启（任一模板已配置）
+             */
+            subscribe_enabled: boolean;
+            /**
+             * New Listing Template Id
+             * @description 上新提醒模板ID（未配置为 null）
+             */
+            new_listing_template_id?: string | null;
+            /**
+             * Price Change Template Id
+             * @description 调价提醒模板ID（未配置为 null）
+             */
+            price_change_template_id?: string | null;
+        };
+        /**
+         * PublicMarketingSubscriptionStatusResponse
+         * @description 订阅额度状态响应（当前登录用户）.
+         */
+        PublicMarketingSubscriptionStatusResponse: {
+            /**
+             * New Listing Quota
+             * @description 上新提醒剩余额度
+             * @default 0
+             */
+            new_listing_quota: number;
+            /**
+             * Price Change Quota
+             * @description 调价提醒剩余额度
+             * @default 0
+             */
+            price_change_quota: number;
+            /**
+             * Last Subscribed At
+             * @description 最近一次订阅授权时间
+             */
+            last_subscribed_at?: string | null;
+        };
+        /**
          * PublicMediaItem
          * @description C端媒体项.
          */
@@ -13606,6 +13797,14 @@ export interface components {
              * @description 装修风格
              */
             decoration_style?: string | null;
+            /**
+             * Is New Listing
+             * @description 是否新上房源(首次发布≤7天)
+             * @default false
+             */
+            is_new_listing: boolean;
+            /** @description 最近一次调价摘要(≤7天)，无则为 null */
+            latest_price_change?: components["schemas"]["PublicProjectPriceChange"] | null;
         };
         /**
          * PublicProjectListResponse
@@ -13632,6 +13831,33 @@ export interface components {
              * @description 每页数量
              */
             page_size: number;
+        };
+        /**
+         * PublicProjectPriceChange
+         * @description C端列表项调价摘要（降价/涨价徽标数据源，窗口期 7 天）.
+         */
+        PublicProjectPriceChange: {
+            /**
+             * Old Price
+             * @description 调价前总价(万元)
+             */
+            old_price: number;
+            /**
+             * New Price
+             * @description 调价后总价(万元)
+             */
+            new_price: number;
+            /**
+             * Direction
+             * @description 调价方向: down/up
+             */
+            direction: string;
+            /**
+             * Changed At
+             * Format: date-time
+             * @description 调价时间
+             */
+            changed_at: string;
         };
         /**
          * PublicRefreshTokenRequest
@@ -15534,6 +15760,22 @@ export interface components {
          */
         SubjectStage: "signing" | "renovation" | "holding" | "listing" | "sold";
         /**
+         * SubscribeReportItem
+         * @description 单条订阅授权结果（对齐 wx.requestSubscribeMessage 返回项）.
+         */
+        SubscribeReportItem: {
+            /**
+             * Template Id
+             * @description 模板ID
+             */
+            template_id: string;
+            /**
+             * Status
+             * @description 授权结果: accept/reject/ban/filter
+             */
+            status: string;
+        };
+        /**
          * SubscribeTemplateValue
          * @description 单个模板 ID 的配置与生效状态.
          */
@@ -15568,6 +15810,8 @@ export interface components {
             recruit_lead: components["schemas"]["SubscribeTemplateValue"];
             valuation_price: components["schemas"]["SubscribeTemplateValue"];
             customer_lead: components["schemas"]["SubscribeTemplateValue"];
+            project_new: components["schemas"]["SubscribeTemplateValue"];
+            project_price_change: components["schemas"]["SubscribeTemplateValue"];
             /** Updated At */
             updated_at?: string | null;
             /** Updated By Name */
@@ -15593,6 +15837,16 @@ export interface components {
              * @default
              */
             customer_lead: string;
+            /**
+             * Project New
+             * @default
+             */
+            project_new: string;
+            /**
+             * Project Price Change
+             * @default
+             */
+            project_price_change: string;
         };
         /**
          * TimelineEvent
@@ -23800,6 +24054,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPlatformStats"];
+                };
+            };
+        };
+    };
+    get_subscribe_template_api_v1_public_marketing_subscribe_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicMarketingSubscribeTemplateResponse"];
+                };
+            };
+        };
+    };
+    get_subscription_status_api_v1_public_marketing_subscriptions_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicMarketingSubscriptionStatusResponse"];
+                };
+            };
+        };
+    };
+    report_subscription_api_v1_public_marketing_subscriptions_report_post: {
+        parameters: {
+            query?: {
+                /** @description 本次授权的模板 ID 映射提示（new=上新模板ID,price=调价模板ID） */
+                template_ids?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicMarketingSubscribeReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicMarketingSubscribeReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

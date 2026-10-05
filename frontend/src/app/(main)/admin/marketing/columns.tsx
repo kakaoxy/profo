@@ -144,16 +144,25 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
     header: () => (
       <div className="hidden sm:block text-right pr-4 text-graphite font-medium">总价</div>
     ),
-    cell: ({ row }) => (
-      <div className="hidden sm:block text-right pr-4">
-        <div className="font-medium text-ink tabular-nums">
-          {formatPrice(row.original.total_price)}
+    cell: ({ row }) => {
+      const change = row.original.latest_price_change;
+      return (
+        <div className="hidden sm:block text-right pr-4">
+          <div className="font-medium text-ink tabular-nums">
+            {formatPrice(row.original.total_price)}
+          </div>
+          <div className="text-xs text-graphite tabular-nums">
+            {formatUnitPrice(row.original.unit_price)}
+          </div>
+          {/* 最近一次调价副行（7 天窗口内，服务端聚合下发） */}
+          {change && (
+            <div className={`text-xs tabular-nums ${change.direction === "down" ? "text-success" : "text-graphite"}`}>
+              原 {formatPrice(change.old_price)} · {safeFormatDate(change.changed_at, "MM/dd")} {change.direction === "down" ? "↓" : "↑"}
+            </div>
+          )}
         </div>
-        <div className="text-xs text-graphite tabular-nums">
-          {formatUnitPrice(row.original.unit_price)}
-        </div>
-      </div>
-    ),
+      );
+    },
   },
 
   {
@@ -209,6 +218,36 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
         <span className="hidden xl:block text-sm text-graphite">
           {safeFormatDate(date, "yyyy/MM/dd HH:mm")}
         </span>
+      );
+    },
+  },
+
+  {
+    id: "notify",
+    header: () => <div className="hidden xl:block text-graphite font-medium">通知</div>,
+    cell: ({ row }) => {
+      const summary = row.original.notify_summary;
+      const isPublished = row.original.publish_status === "发布";
+      return (
+        <div className="hidden xl:flex items-center gap-1.5">
+          {!isPublished || !summary || (summary.new_listing_count === 0 && summary.price_change_count === 0) ? (
+            <span className="text-dove">—</span>
+          ) : (
+            <>
+              <span title="订阅通知送达人数">🔔</span>
+              {summary.new_listing_count > 0 && (
+                <span className="rounded-full bg-apricot-wash px-2 py-0.5 text-[11px] font-medium text-rust tabular-nums">
+                  上新 {summary.new_listing_count}
+                </span>
+              )}
+              {summary.price_change_count > 0 && (
+                <span className="rounded-full bg-success-container px-2 py-0.5 text-[11px] font-medium text-success tabular-nums">
+                  调价 {summary.price_change_count}
+                </span>
+              )}
+            </>
+          )}
+        </div>
       );
     },
   },

@@ -11,6 +11,7 @@ import { getL4MarketingProjectAction, getL4MarketingMediaAction } from "../actio
 import { MarketingDetailHeader } from "./detail/marketing-detail-header";
 import { MarketingInfoSection } from "./detail/marketing-info-section";
 import { BasicConfigSection } from "./detail/basic-config-section";
+import { NotifySection } from "./detail/notify-section";
 import { PhotosSection } from "./detail/photos-section";
 
 interface MarketingDetailSheetProps {
@@ -155,7 +156,10 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
               {/* 2. 房源状态 + 管理配置 */}
               <BasicConfigSection project={project} />
 
-              {/* 3. 媒体资源 */}
+              {/* 3. 订阅通知推送（送达统计 + 最近调价摘要） */}
+              <NotifySection project={project} />
+
+              {/* 4. 媒体资源 */}
               <PhotosSection project={project} photos={photos} />
             </div>
           )}

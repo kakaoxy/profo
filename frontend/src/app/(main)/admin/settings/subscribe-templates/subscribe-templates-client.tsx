@@ -10,11 +10,13 @@ import { client } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 /** 单个模板 key 的请求体字段名（openapi-typescript 已内联 source 联合类型，本地取值） */
-type TemplateKey = "recruit_lead" | "valuation_price" | "customer_lead";
+type TemplateKey = "recruit_lead" | "valuation_price" | "customer_lead" | "project_new" | "project_price_change";
 type SubscribeTemplatesResponse = {
   recruit_lead: TemplateValue;
   valuation_price: TemplateValue;
   customer_lead: TemplateValue;
+  project_new: TemplateValue;
+  project_price_change: TemplateValue;
   updated_at?: string | null;
   updated_by_name?: string | null;
 };
@@ -41,6 +43,16 @@ const TEMPLATE_ROWS: { key: TemplateKey; name: string; desc: string }[] = [
     key: "customer_lead",
     name: "我的客户新线索提醒",
     desc: "客户留资时微信提醒归属员工",
+  },
+  {
+    key: "project_new",
+    name: "房源上新提醒",
+    desc: "客户在房源列表页授权，新房源发布时微信服务通知提醒",
+  },
+  {
+    key: "project_price_change",
+    name: "房源调价提醒",
+    desc: "客户在房源列表页授权，已发布房源调价时微信服务通知提醒",
   },
 ];
 
@@ -78,6 +90,8 @@ export function SubscribeTemplatesClient() {
     recruit_lead: "",
     valuation_price: "",
     customer_lead: "",
+    project_new: "",
+    project_price_change: "",
   });
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -89,6 +103,8 @@ export function SubscribeTemplatesClient() {
       recruit_lead: data.recruit_lead.db_value,
       valuation_price: data.valuation_price.db_value,
       customer_lead: data.customer_lead.db_value,
+      project_new: data.project_new.db_value,
+      project_price_change: data.project_price_change.db_value,
     });
     setDirty(false);
   }, []);
