@@ -7,6 +7,7 @@ from .customers import router as public_customers_router
 from .files import router as public_files_router
 from .key_shares import router as public_key_shares_router
 from .leads import router as public_leads_router
+from .marketing import router as public_marketing_router
 from .projects import router as public_projects_router
 from .property_sheets import router as public_property_sheets_router
 from .users import router as public_users_router
@@ -20,6 +21,7 @@ __all__ = [
     "public_files_router",
     "public_key_shares_router",
     "public_leads_router",
+    "public_marketing_router",
     "public_projects_router",
     "public_property_sheets_router",
     "public_users_router",

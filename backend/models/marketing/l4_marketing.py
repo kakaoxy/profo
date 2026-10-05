@@ -36,6 +36,21 @@ class PublishStatus(str, Enum):
     PUBLISHED = "发布"
 
 
+class NotifyType(str, Enum):
+    """订阅通知类型枚举（l4_marketing_notify_logs.notify_type 取值）."""
+
+    NEW_LISTING = "new_listing"  # 房源上新
+    PRICE_CHANGE = "price_change"  # 房源调价
+
+
+class SendStatus(str, Enum):
+    """订阅消息发送状态枚举（l4_marketing_notify_logs.send_status 取值）."""
+
+    SUCCESS = "success"  # 微信接口受理成功
+    FAILED = "failed"  # 微信接口报错（非预期业务态）
+    SKIPPED = "skipped"  # 跳过（额度不足/模板未配置/openid 缺失等）
+
+
 class MarketingProjectStatus(str, Enum):
     """营销项目状态枚举."""
 
@@ -119,6 +134,13 @@ class L4MarketingProject(BaseModel):
     )
 
     # 软引用关联
+    # 首次发布时间：仅首次 publish_status → 发布 时写入（防重复「上新」），
+    # 上新通知上架时间 + C 端 is_new_listing 徽标的唯一事实源
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="首次发布时间(仅首次发布写入，用于上新判定)",
+    )
     project_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid,
         nullable=True,
@@ -432,3 +454,86 @@ class ProjectShareEvent(BaseModel):
         Index("idx_project_share_events_employee", "employee_id"),
         Index("idx_project_share_events_created_at", "created_at"),
     )
+
+
+class L4MarketingSubscription(BaseModel):
+    """房源动态订阅额度账本.
+
+    微信一次性订阅模型：用户每次在订阅弹层「允许」后额度 +1（accept 上报），
+    推送成功后对应频道额度 -1（with_for_update 扣减）；额度 0 后静默停止推送。
+    频道型公共通知：不筛预约/浏览关系，所有剩余额度 > 0 的订阅行均在推送范围。
+    """
+
+    __tablename__ = "l4_marketing_subscriptions"
+
+    # 主键 - 整数类型，自增（覆盖基类 Uuid 主键，对齐本文件既有表惯例）
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="订阅记录ID")
+
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="订阅用户ID(逻辑外键User)")
+    # 订阅授权时快照的微信 openid（发送免回查；用户主账号合并后仍按快照发送）
+    openid: Mapped[str] = mapped_column(String(64), nullable=False, comment="微信openid(授权时快照)")
+    # 两频道剩余额度（一次性订阅：每次「允许」可收 1 条）
+    new_listing_quota: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="上新提醒剩余额度")
+    price_change_quota: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="调价提醒剩余额度")
+    last_subscribed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="最近一次订阅授权时间",
+    )
+
+    __table_args__ = (
+        # 一人一行（upsert 语义由 Service 层保证）
+        UniqueConstraint("user_id", name="uq_l4_marketing_subscriptions_user"),
+        Index("idx_l4_marketing_subs_new_quota", "new_listing_quota"),
+        Index("idx_l4_marketing_subs_price_quota", "price_change_quota"),
+    )
+
+
+class L4MarketingNotifyLog(BaseModel):
+    """订阅消息发送留痕.
+
+    每次 notify_* 逐用户发送后写入一条：admin 统计数据源 + P1 日志页数据源 + 排障。
+    """
+
+    __tablename__ = "l4_marketing_notify_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="通知日志ID")
+
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="接收用户ID(逻辑外键User)")
+    marketing_project_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="房源ID(逻辑外键)")
+    notify_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        comment="通知类型: new_listing/price_change",
+    )
+    template_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="使用的模板ID")
+    send_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        comment="发送状态: success/failed/skipped",
+    )
+    error_msg: Mapped[str | None] = mapped_column(Text, nullable=True, comment="失败/跳过原因(发送异常时留痕)")
+
+    __table_args__ = (
+        Index("idx_l4_marketing_notify_logs_project", "marketing_project_id", "notify_type"),
+        Index("idx_l4_marketing_notify_logs_user", "user_id"),
+    )
+
+
+class L4MarketingPriceChange(BaseModel):
+    """房源调价历史.
+
+    已发布房源 total_price 变更时由 Service 写入一条：
+    C 端降价/涨价徽标（latest_price_change）+ admin 调价历史时间线数据源。
+    """
+
+    __tablename__ = "l4_marketing_price_changes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="调价记录ID")
+
+    marketing_project_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="房源ID(逻辑外键)")
+    old_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, comment="调价前总价(万元)")
+    new_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, comment="调价后总价(万元)")
+    direction: Mapped[str] = mapped_column(String(10), nullable=False, comment="调价方向: down/up")
+
+    __table_args__ = (Index("idx_l4_marketing_price_changes_project", "marketing_project_id", "created_at"),)

@@ -3,10 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>小程序 · 房源上新/调价订阅通知 高保真设计稿 v1.0</title>
+<title>小程序 · 房源上新/调价订阅通知 高保真设计稿 v1.1</title>
 <!--
-  小程序 · 房源上新 × 调价 订阅通知 高保真设计稿 v1.0（2026-10-04）
+  小程序 · 房源上新 × 调价 订阅通知 高保真设计稿 v1.1（2026-10-04）
   ─────────────────────────────────────────────────────────────────────
+  v1.1 变更（经前后端现状勘察后修订）：
+    ① 迭代顺序重排：P0 后端闭环 → P1 admin 前端 → P2 小程序（先实现前后端调价上新功能，
+       再优化小程序）；E2E 验证清单按阶段分组
+    ② 模板配置修正：实际采用 services/system/subscribe_templates.py（system_configs DB
+       单键 JSON 优先 + env 回退），admin 设置页已有配置 UI（TEMPLATE_KEYS 现有 3 key），
+       新增 project_new / project_price_change 两个 key 需同时扩展服务与设置页
+    ③ 触发链路修正：对齐 leads/notify · recruit attribution 先例，Service 保持纯同步，
+       路由层（create/update 改 async def）await run_in_threadpool 触发通知
   视觉真源：miniapp/app.wxss + miniapp/pages/projects/list/index.wxss（Steep 令牌 + 暖色编辑风格）
   页面真源：miniapp/pages/pages/projects/list/index（首页 · tabBar「房源」）
   需求真源：pages/projects/list/index 缺少「上新 / 调价」订阅通知能力，前后端均不支持；
@@ -18,18 +26,21 @@
     ④ 稿面：小程序列表页 + 订阅弹层 + 微信服务通知消息卡 + admin 营销页通知展示
   技术底座（已存在，零新增框架）：
     · backend/services/system/wechat.py · send_subscribe_message（43101/40003 静默降级）
-    · settings.wechat_*_template_id 模板配置模式（空 = 功能关闭，入口隐藏）
+    · backend/services/system/subscribe_templates.py 模板配置服务（DB 优先 + env 回退）
+      + admin 设置页 /admin/settings/subscribe-templates（v1.0 误写为纯 env 模式，已修正）
     · miniapp/utils/valuation-notify.ts 一次性订阅授权模式（tap 手势内同步 requestSubscribeMessage）
-    · backend/services/leads/notify.py 通知服务模式（run_in_threadpool · 异常仅日志）
+    · backend/services/leads/notify.py 通知服务模式（路由层 run_in_threadpool · 异常仅日志）
   交付范围：
     SEC 01        需求与口径（全链路流程 + 关键口径表）
     ARTBOARD 01   小程序列表页 390 ×2（订阅入口落位 · 未订阅态 / 徽标增强态 · 可交互）
     ARTBOARD 02   订阅弹层 + 授权结果态（半屏 Sheet · 可交互）
     ARTBOARD 03   微信服务通知消息卡（上新 + 调价两条）
     ARTBOARD 04   admin 营销页（桌面：通知列 + 详情 Sheet 订阅通知区块）
-    SEC 06        完整迭代方案（数据层 / API 契约 / 触发链路 / 代码落点 / 分期 / E2E / 待确认）
+    SEC 06        完整迭代方案（三阶段：P0 后端 → P1 admin → P2 小程序；数据层 / API 契约 /
+                  触发链路 / 代码落点 / E2E / 待确认）
   实现备忘：模板字段键名（thing/amount/time）以微信公众平台最终申请结果为准，
-    代码中以 settings 常量映射；「新上」「调价」徽标窗口期均 7 天。
+    模板 ID 配置走 subscribe_templates 服务（admin 设置页 / env 均可）；
+    「新上」「调价」徽标窗口期均 7 天。
 -->
 <style>
   :root {
@@ -407,8 +418,9 @@
   <div class="kicker">PROFO MINIAPP · SUBSCRIPTION NOTIFY · 房源频道订阅</div>
   <h1>房源上新 × 调价<br /><em>订阅通知</em> · 前后端 + 小程序迭代方案</h1>
   <div class="head-meta">
-    <span>版本 <b>v1.0</b></span>
+    <span>版本 <b>v1.1</b></span>
     <span>2026-10-04</span>
+    <span>实施顺序：P0 后端 → P1 admin 前端 → P2 小程序</span>
     <span>覆盖：backend · admin 前端 · miniapp</span>
     <span>通知通道：微信小程序一次性订阅消息（复用现有基建）</span>
   </div>
@@ -451,19 +463,19 @@
     <div class="req-card">
       <div class="no">R6 · 功能开关</div>
       <div class="t">模板未配置 = 功能关闭</div>
-      <div class="d">对齐 valuation 模式：两个模板 ID 均走 <code>settings</code> env 配置，空 = 下发 <code>subscribe_enabled:false</code>，小程序入口整体隐藏，零风险灰度。</div>
+      <div class="d">对齐 valuation 模式：两个模板 key 走 <code>subscribe_templates</code> 配置服务（system_configs DB 优先 + env 回退，admin 设置页可改），均空 = 下发 <code>subscribe_enabled:false</code>，小程序入口整体隐藏，零风险灰度。</div>
     </div>
   </div>
 
-  <div class="artlabel">FLOW <em>·</em> 全链路（一次调价从操作到送达）</div>
+  <div class="artlabel">FLOW <em>·</em> 全链路（一次调价从操作到送达 · 路由层触发，对齐 leads/notify 先例）</div>
   <div class="flow">
-    <div class="flow-box">admin 调价<small>PUT /admin/marketing/projects/{id}</small></div>
+    <div class="flow-box">admin 调价<small>PUT /admin/marketing/projects/{id}（改 async def）</small></div>
     <div class="flow-arrow">→</div>
     <div class="flow-box">Service 检测<small>total_price 变更 · 已发布态</small></div>
     <div class="flow-arrow">→</div>
     <div class="flow-box">写调价记录<small>l4_marketing_price_changes</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box hot">run_in_threadpool 推送<small>筛选额度 &gt; 0 的订阅行 → 扣额度 → subscribe/send</small></div>
+    <div class="flow-box hot">路由层 await run_in_threadpool 推送<small>筛选额度 &gt; 0 的订阅行 → 扣额度 → subscribe/send</small></div>
     <div class="flow-arrow">→</div>
     <div class="flow-box">微信服务通知<small>点击直达房源详情页</small></div>
   </div>
@@ -488,7 +500,7 @@
     <tr>
       <td>触发点</td>
       <td>① 创建即发布 ② 草稿 → 发布 ③ 已发布房源 total_price 变更</td>
-      <td class="num">均在 MarketingProjectService.create/update 内检测<span class="sub">published_at 仅首次发布写入，防重复「上新」</span></td>
+      <td class="num">Service 保持纯同步并返回变更信号（老总价/发布态），由路由层 await run_in_threadpool(notify_…)<span class="sub">对齐 leads/notify.py · recruit/attribution.py 先例：通知在路由层线程池发起</span></td>
     </tr>
     <tr>
       <td>消息回跳</td>
@@ -504,6 +516,11 @@
       <td>失败策略</td>
       <td>通知链路任何异常仅记日志，绝不影响主流程</td>
       <td class="num">对齐 leads/notify.py · recruit/attribution.py 既有模式</td>
+    </tr>
+    <tr>
+      <td>模板配置</td>
+      <td>system_configs 单键 JSON 优先 + env 回退，admin 设置页可改</td>
+      <td class="num">复用 subscribe_templates 服务，TEMPLATE_KEYS 新增 project_new / project_price_change 两个 key<span class="sub">v1.0 误写为纯 env 模式，已按真实实现修正</span></td>
     </tr>
   </table>
 </section>
@@ -813,7 +830,7 @@
 <section class="sec" id="sec-wxmsg" data-screen-label="04 微信服务通知消息卡">
   <div class="kicker">SEC 04 · ARTBOARD 03</div>
   <h2>微信「服务通知」消息卡</h2>
-  <p class="lede">两条模板的最终落点：微信服务通知会话。字段键名（thing/amount/time）以公众平台申请结果为准，代码中以 settings 常量映射，超长字段截断 20 字符（对齐 leads/notify.py 的 thing 上限处理）。</p>
+  <p class="lede">两条模板的最终落点：微信服务通知会话。字段键名（thing/amount/time）以公众平台申请结果为准，配置键为 <code>project_new</code> / <code>project_price_change</code>（subscribe_templates 服务解析），超长字段截断 20 字符（对齐 leads/notify.py 的 thing 上限处理）。</p>
 
   <div class="art-row" style="margin-top: 26px;">
     <div>
@@ -837,7 +854,7 @@
         </div>
         <div class="wx-foot">点击消息卡直达 pages/projects/detail/index?id=207</div>
       </div>
-      <p class="cap-note">发送侧：<code>notify_projects_published</code> · 模板 <code>wechat_project_new_template_id</code> · amount 字段仅纯数字（万元在卡片语境自明，对齐 amount2 先例）。</p>
+      <p class="cap-note">发送侧：<code>notify_projects_published</code> · 模板 key <code>project_new</code> · amount 字段仅纯数字（万元在卡片语境自明，对齐 amount2 先例）。</p>
     </div>
 
     <div>
@@ -861,7 +878,7 @@
         </div>
         <div class="wx-foot">涨价文案中性：「总价已更新」，不暴露幅度引导焦虑</div>
       </div>
-      <p class="cap-note">发送侧：<code>notify_project_price_changed</code> · 模板 <code>wechat_project_price_template_id</code> · 调价说明 ≤ 20 字（thing 上限）：降价「总价下调 N 万」/ 涨价「总价已更新」。</p>
+      <p class="cap-note">发送侧：<code>notify_project_price_changed</code> · 模板 key <code>project_price_change</code> · 调价说明 ≤ 20 字（thing 上限）：降价「总价下调 N 万」/ 涨价「总价已更新」。</p>
     </div>
   </div>
 </section>
@@ -972,22 +989,49 @@
 <!-- ═══════════════ SEC 06 · 完整迭代方案 ═══════════════ -->
 <section class="sec" id="sec-plan" data-screen-label="06 完整迭代方案">
   <div class="kicker">SEC 06 · IMPLEMENTATION PLAN</div>
-  <h2>完整迭代方案</h2>
-  <p class="lede">三端改动一览：后端（配置 + 3 表 + 通知服务 + 触发点 + 3 个 C 端端点）、admin 前端（列表通知列 + 详情 Sheet 区块）、小程序（订阅工具 + 入口 + 弹层 + 徽标）。零新增框架，全部复用既有模式。</p>
+  <h2>完整迭代方案 · 三阶段实施顺序</h2>
+  <p class="lede">实施顺序经确认调整为：<b>P0 后端闭环 → P1 admin 前端 → P2 小程序</b>——先落地数据层、API 契约与触发链路，再补 admin 可视化，最后优化小程序端 UI。每阶段独立可验证（后端可 curl 验证、admin 可浏览器验证、小程序真机验证），零新增框架，全部复用既有模式。</p>
 
   <div class="phase-row">
     <div class="phase-card">
-      <div class="pk">PHASE P0 · 本次落地（MVP）</div>
-      <div class="pt">订阅闭环：授权 → 存储 → 触发 → 送达 → 展示</div>
+      <div class="pk">PHASE P0 · 后端闭环（先行）</div>
+      <div class="pt">订阅链路后端：授权 → 存储 → 触发 → 送达 → 留痕</div>
       <ul>
-        <li><b>后端</b>：2 个模板 ID 配置 · 3 张新表幂等迁移 · notify.py 通知服务 · create/update 触发点 · 3 个 C 端端点</li>
-        <li><b>admin</b>：列表通知列 + 总价调价副行 · 详情 Sheet「订阅通知推送」区块</li>
-        <li><b>小程序</b>：utils/marketing-notify.ts · 计数行铃铛入口 · 订阅弹层 · 新上/调价徽标</li>
+        <li><b>配置</b>：subscribe_templates 新增 project_new / project_price_change 两个 key（服务 + admin 设置页选项）</li>
+        <li><b>数据层</b>：3 张新表幂等迁移 + L4MarketingProject.published_at 加列</li>
+        <li><b>通知服务</b>：services/marketing/notify.py（额度查询/扣减/发送/留痕）</li>
+        <li><b>触发点</b>：Service 返回变更信号 + 路由层 run_in_threadpool 触发</li>
+        <li><b>API</b>：C 端 3 个端点 + /public/projects 响应增强（is_new_listing · latest_price_change）</li>
+        <li><b>验收</b>：curl 验证端点 + 后台配置模板 ID 后触发真实推送</li>
       </ul>
     </div>
     <div class="phase-card">
-      <div class="pk">PHASE P1 · 后续可选</div>
-      <div class="pt">精细化运营（不阻塞 P0）</div>
+      <div class="pk">PHASE P1 · admin 前端（次之）</div>
+      <div class="pt">通知结果可视化：列表通知列 + 详情 Sheet 区块</div>
+      <ul>
+        <li>启动后端 → <code>pnpm gen-api</code> 同步类型（同时产出 frontend 与 miniapp 两份）</li>
+        <li>columns.tsx：总价列调价副行（原价+方向+日期）；「通知」列（xl 断点，铃铛+计数 chip）</li>
+        <li>marketing-detail-sheet.tsx：「订阅通知推送」区块（统计卡 + 调价历史时间线）</li>
+        <li>subscribe-templates 设置页新增两行模板配置（随 P0 服务扩展一并交付亦可）</li>
+        <li><b>验收</b>：浏览器验证调价后列表副行 / Sheet 统计与调价历史正确</li>
+      </ul>
+    </div>
+    <div class="phase-card">
+      <div class="pk">PHASE P2 · 小程序（最后，UI 优化）</div>
+      <div class="pt">C 端入口与徽标：订阅工具 + 入口 + 弹层 + 徽标</div>
+      <ul>
+        <li>utils/marketing-notify.ts（仿 valuation-notify.ts）：模板获取 / tap 内同步授权 / 结果上报</li>
+        <li>计数行铃铛入口 + 半屏订阅弹层 + 列表底部/空态引导</li>
+        <li>toDisplay 徽标映射扩展：新上黑标 + 降价/涨价 chip（依 P0 增强的响应字段）</li>
+        <li>额度状态刷新：onShow 拉取 status，推送消耗后按钮转「续订提醒」</li>
+        <li><b>验收</b>：真机验证订阅弹层授权 → 服务通知送达 → 点击回跳详情页</li>
+      </ul>
+    </div>
+  </div>
+  <div class="phase-row">
+    <div class="phase-card">
+      <div class="pk">PHASE P3 · 后续可选</div>
+      <div class="pt">精细化运营（不阻塞 P0-P2）</div>
       <ul>
         <li>通知发送日志独立页（admin：按项目/类型/状态筛选，失败原因可见）</li>
         <li>关注小区定向订阅（按 community_id 收窄推送范围）</li>
@@ -1057,68 +1101,89 @@
     </tr>
   </table>
 
-  <div class="artlabel">TRIGGER <em>·</em> 后端触发链路（services/marketing/notify.py 新建，对齐 leads/notify.py 模式）</div>
-  <div class="code-block"><span class="cm"># 触发点接入 MarketingProjectService（全程 try/except · run_in_threadpool · 异常仅日志）</span>
+  <div class="artlabel">TRIGGER <em>·</em> 后端触发链路（services/marketing/notify.py 新建，对齐 leads/notify.py · recruit/attribution.py 模式：Service 纯同步，路由层线程池发起通知）</div>
+  <div class="code-block"><span class="cm"># MarketingProjectService（纯同步，不变更事务边界）返回变更信号</span>
 
-create_project(db, data):
-  project = <span class="kw">...创建落库...</span>
-  <span class="kw">if</span> data.publish_status == 发布:                       <span class="cm"># 创建即发布 = 上新</span>
+create_project(db, data) -&gt; tuple[L4MarketingProject, bool]:
+  project = <span class="kw">...创建落库（含媒体）...</span>
+  is_new_listing = data.publish_status == 发布            <span class="cm"># 创建即发布 = 上新</span>
+  <span class="kw">if</span> is_new_listing <span class="kw">and not</span> project.published_at:
       project.published_at = now()
-      run_in_threadpool(notify_projects_published, db, project)   <span class="cm"># ← 新线程池调用</span>
+      <span class="kw">return</span> project, True
 
-update_project(db, project_id, data):
-  old = <span class="kw">...变更前快照（total_price / publish_status）...</span>
+update_project(db, project_id, data) -&gt; tuple[L4MarketingProject, PriceSignal|None]:
+  old = <span class="kw">...变更前快照（total_price / publish_status / published_at）...</span>
   project = <span class="kw">...更新落库...</span>
+  price_signal = <span class="kw">None</span>
   <span class="kw">if</span> old.publish_status == 草稿 <span class="kw">and</span> project.publish_status == 发布 <span class="kw">and not</span> project.published_at:
       project.published_at = now()                        <span class="cm"># 首次发布才置值，防重复上新</span>
-      run_in_threadpool(notify_projects_published, db, project)
   <span class="kw">if</span> project.publish_status == 发布 <span class="kw">and</span> data.total_price <span class="kw">is not None</span> <span class="kw">and</span> data.total_price != old.total_price:
       insert(l4_marketing_price_changes, old=old.total_price, new=data.total_price, direction=down|up)
-      run_in_threadpool(notify_project_price_changed, db, project, old.total_price, data.total_price)
+      price_signal = PriceSignal(old=old.total_price, new=data.total_price)
+
+<span class="cm"># 路由层（routers/marketing/projects.py，对齐 recruit/public.py 先例：async def + await）</span>
+
+<span class="kw">async def</span> create_marketing_project(...):
+  project, is_new_listing = <span class="kw">await</span> run_in_threadpool(service.create_project, data)
+  <span class="kw">if</span> is_new_listing:
+      <span class="kw">await</span> run_in_threadpool(notify_projects_published, db, project)   <span class="cm"># 异常内部吞掉仅日志</span>
+  <span class="kw">return</span> project
+
+<span class="kw">async def</span> update_marketing_project(...):
+  project, price_signal = <span class="kw">await</span> run_in_threadpool(service.update_project, project_id, data)
+  <span class="kw">if</span> price_signal <span class="kw">is not None</span>:
+      <span class="kw">await</span> run_in_threadpool(notify_project_price_changed, db, project, price_signal)
+  <span class="kw">return</span> project
 
 <span class="cm"># notify_* 内部：模板未配置→跳过 · 查额度&gt;0订阅行（limit 500/批）· 逐个 send_subscribe_message</span>
 <span class="cm">#   → 成功后 with_for_update 扣减对应 quota 并写 notify_logs · 失败仅 logger.exception</span></div>
 
-  <div class="artlabel">CODE MAP <em>·</em> 代码落点（真实路径）</div>
+  <div class="artlabel">CODE MAP <em>·</em> 代码落点（真实路径 · 按实施阶段分组）</div>
   <table class="spec-table">
-    <tr><th>端</th><th>文件</th><th>动作</th></tr>
-    <tr><td rowspan="6">backend</td><td class="num">settings.py</td><td>新增 <code>wechat_project_new_template_id</code> / <code>wechat_project_price_template_id</code>（env 可配，空=关闭）</td></tr>
+    <tr><th>阶段</th><th>文件</th><th>动作</th></tr>
+    <tr><td rowspan="8">P0<br />后端</td><td class="num">services/system/subscribe_templates.py</td><td>TEMPLATE_KEYS 新增 <code>project_new</code> / <code>project_price_change</code>（DB 优先 + env 回退，设置页同步扩两行）</td></tr>
     <tr><td class="num">models/marketing/l4_marketing.py</td><td>L4MarketingProject 加 published_at；新建 Subscription / NotifyLog / PriceChange 模型</td></tr>
-    <tr><td class="num">migrations/__init__.py</td><td>幂等迁移：3 张新表 + published_at 加列（_table_exists/_column_exists 守卫，timezone=True）</td></tr>
-    <tr><td class="num">services/marketing/notify.py</td><td><b>新建</b>：notify_projects_published / notify_project_price_changed / 额度扣减 / 上报计数</td></tr>
-    <tr><td class="num">services/marketing/project.py · public.py</td><td>project.py 触发点接入（见上）；public.py 列表聚合 is_new_listing / latest_price_change + 订阅三端点 service</td></tr>
+    <tr><td class="num">migrations/__init__.py（新建迁移子模块）</td><td>幂等迁移：3 张新表 + published_at 加列（_table_exists/_column_exists 守卫，timezone=True）</td></tr>
+    <tr><td class="num">services/marketing/notify.py</td><td><b>新建</b>：notify_projects_published / notify_project_price_changed / 额度查询与 with_for_update 扣减 / 上报计数 / notify_logs 留痕</td></tr>
+    <tr><td class="num">services/marketing/project.py</td><td>create/update 返回变更信号（is_new_listing / PriceSignal）；published_at 首次发布写入；调价写 price_changes 表</td></tr>
+    <tr><td class="num">services/marketing/public.py · routers/marketing/projects.py</td><td>public.py 列表聚合 is_new_listing / latest_price_change；<b>路由层 create/update 改 async def</b>，await run_in_threadpool(notify_…)</td></tr>
     <tr><td class="num">routers/public/marketing.py · schemas/marketing/</td><td><b>新建</b> subscribe-template / subscriptions/status / report 端点与 Pydantic Schema（对齐 routers/public/valuations.py 结构）</td></tr>
-    <tr><td rowspan="2">admin 前端</td><td class="num">admin/marketing/columns.tsx</td><td>总价列调价副行（原价+方向+日期）；新增「通知」列（xl 断点，铃铛+计数 chip）</td></tr>
+    <tr><td class="num">main.py</td><td>注册 public marketing 路由（include_router + API_V1_PREFIX）</td></tr>
+    <tr><td rowspan="3">P1<br />admin</td><td class="num">admin/marketing/columns.tsx</td><td>总价列调价副行（原价+方向+日期）；新增「通知」列（xl 断点，铃铛+计数 chip）</td></tr>
     <tr><td class="num">admin/marketing/marketing-detail-sheet.tsx · types.ts</td><td>新增「订阅通知推送」区块（统计卡 + 调价历史时间线）；L4MarketingProject 类型扩展（pnpm gen-api 同步）</td></tr>
-    <tr><td rowspan="4">miniapp</td><td class="num">utils/marketing-notify.ts</td><td><b>新建</b>（仿 valuation-notify.ts）：fetchMarketingSubscribeTemplate / requestMarketingSubscribe（tap 内同步）/ reportSubscribeResult</td></tr>
+    <tr><td class="num">admin/settings/subscribe-templates/subscribe-templates-client.tsx</td><td>TEMPLATE_ROWS 新增两行（房源上新 / 房源调价模板）</td></tr>
+    <tr><td rowspan="4">P2<br />小程序</td><td class="num">utils/marketing-notify.ts</td><td><b>新建</b>（仿 valuation-notify.ts）：fetchMarketingSubscribeTemplate / requestMarketingSubscribe（tap 内同步）/ reportSubscribeResult</td></tr>
     <tr><td class="num">pages/projects/list/index.wxml · wxss</td><td>计数行铃铛按钮 + 半屏订阅弹层 + 列表底部/空态引导 + 新上/调价徽标结构</td></tr>
     <tr><td class="num">pages/projects/list/index.ts</td><td>订阅状态 data（quota·enabled）· onNotifyTap 手势同步授权 · 上报与刷新 · toDisplay 徽标映射</td></tr>
-    <tr><td class="num">types/api-types.d.ts</td><td>openapi 类型同步（后端启动后 gen-api）</td></tr>
+    <tr><td class="num">types/api-types.d.ts</td><td>openapi 类型同步（P0 完成后随 pnpm gen-api 一并产出，无需单独执行）</td></tr>
   </table>
 
-  <div class="artlabel">E2E <em>·</em> 验证清单（收尾统一执行，Chrome headless + CDP 直驱）</div>
+  <div class="artlabel">E2E <em>·</em> 验证清单（按阶段收尾执行；后端 curl / admin 浏览器 / 小程序真机；Chrome headless + CDP 直驱）</div>
   <table class="spec-table">
-    <tr><th>#</th><th>场景</th><th>断言</th></tr>
-    <tr><td class="num">1</td><td>模板未配置（env 空）</td><td>subscribe-template 返回 enabled:false → 列表页入口隐藏，无布局残留</td></tr>
-    <tr><td class="num">2</td><td>首次订阅</td><td>tap 铃铛 → 弹层 → requestSubscribeMessage 同步发起 → accept → report 上报 → status 额度 +1 → 按钮转「已订阅」</td></tr>
-    <tr><td class="num">3</td><td>admin 新建即发布</td><td>notify_logs 出现 new_listing 记录 · published_at 写入 · C 端卡片右上「新上」徽标</td></tr>
-    <tr><td class="num">4</td><td>admin 调价 460→455</td><td>price_changes 写入 direction:down · C 端「↓ 直降 5 万」chip · admin 总价副行 + Sheet 调价历史</td></tr>
-    <tr><td class="num">5</td><td>额度闭环</td><td>推送成功 quota−1；quota=0 后不再发送（notify_logs skipped）；列表按钮「续订提醒」</td></tr>
-    <tr><td class="num">6</td><td>消息回跳</td><td>消息 page 参数 pages/projects/detail/index?id={id} 可正确直达详情</td></tr>
-    <tr><td class="num">7</td><td>失败隔离</td><td>notify 抛异常时 create/update 主流程返回值不受影响（日志有 exception 记录）</td></tr>
+    <tr><th>阶段</th><th>#</th><th>场景</th><th>断言</th></tr>
+    <tr><td class="num" rowspan="4">P0 后端</td><td class="num">1</td><td>模板未配置（DB + env 均空）</td><td>subscribe-template 返回 enabled:false；创建/调价后 notify_logs 无记录</td></tr>
+    <tr><td class="num">2</td><td>curl 订阅上报</td><td>report 上报 accept → status 额度 +1；upsert 订阅行并快照 openid</td></tr>
+    <tr><td class="num">3</td><td>curl 创建即发布 / 调价</td><td>notify_logs 出现 new_listing / price_change 记录 · published_at 写入 · price_changes 写入 direction</td></tr>
+    <tr><td class="num">4</td><td>失败隔离</td><td>notify 抛异常时 create/update 主流程返回值不受影响（日志有 exception 记录）</td></tr>
+    <tr><td class="num" rowspan="2">P1 admin</td><td class="num">5</td><td>admin 调价可视化</td><td>列表总价副行（原价+方向+日期）· Sheet 统计卡计数与调价历史时间线正确</td></tr>
+    <tr><td class="num">6</td><td>模板配置页</td><td>设置页可见两行新模板配置，保存后 system_configs 生效（DB 优先）</td></tr>
+    <tr><td class="num" rowspan="4">P2 小程序</td><td class="num">7</td><td>功能开关</td><td>enabled:false 时列表页入口隐藏，无布局残留</td></tr>
+    <tr><td class="num">8</td><td>首次订阅</td><td>tap 铃铛 → 弹层 → requestSubscribeMessage 同步发起 → accept → report 上报 → 额度刷新 → 按钮转「已订阅」</td></tr>
+    <tr><td class="num">9</td><td>C 端徽标 + 额度闭环</td><td>「新上」黑标与降价 chip 展示；推送成功 quota−1；quota=0 后不再发送（skipped）；按钮转「续订提醒」</td></tr>
+    <tr><td class="num">10</td><td>消息回跳</td><td>消息 page 参数 pages/projects/detail/index?id={id} 可正确直达详情</td></tr>
   </table>
 
   <div class="artlabel">OPEN <em>·</em> 待确认项</div>
   <table class="spec-table">
     <tr><th>项</th><th>现状 / 建议</th></tr>
-    <tr><td>模板申请</td><td>两个模板需在微信公众平台「订阅消息」申请，字段键名（thing/amount/time 编号）以审批结果为准；代码以 settings 常量映射，可无痛适配</td></tr>
+    <tr><td>模板申请</td><td>两个模板需在微信公众平台「订阅消息」申请，字段键名（thing/amount/time 编号）以审批结果为准；配置在 admin 设置页或 env 中填入（subscribe_templates 服务 DB 优先 + env 回退），代码中按 key 解析，可无痛适配</td></tr>
     <tr><td>同房源短时重复调价</td><td>当前每次调价都推（额度天然限流）；若运营反馈打扰，P1 可加「同项目 24h 内合并为最后一条」防抖，需入口径表</td></tr>
     <tr><td>单次推送上限</td><td>建议 500 条/批（订阅用户规模可控，单批足够）；超出截断并记 skipped 日志，P1 做补发</td></tr>
     <tr><td>「新上」定义边界</td><td>已售房源重新改回在售不触发上新（published_at 已存在）；是否需要「重新上架」语义待运营确认</td></tr>
   </table>
 </section>
 
-<div class="foot">PROFO · docs/2026-10-04-上新调价订阅通知-高保真设计稿.html · v1.0 · 2026-10-04</div>
+<div class="foot">PROFO · docs/2026-10-04-上新调价订阅通知-高保真设计稿.html · v1.1 · 2026-10-04 · 实施顺序：P0 后端 → P1 admin → P2 小程序</div>
 
 <script>
   function openSheet() {

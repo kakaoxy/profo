@@ -5,13 +5,18 @@
 
 from .l4_marketing import (
     L4MarketingMedia,
+    L4MarketingNotifyLog,
+    L4MarketingPriceChange,
     L4MarketingProject,
+    L4MarketingSubscription,
     MarketingProjectStatus,
+    NotifyType,
     PhotoCategory,
     ProjectBooking,
     ProjectShareEvent,
     ProjectVisit,
     PublishStatus,
+    SendStatus,
 )
 from .property_sheet import (
     PropertyShareSheet,
@@ -22,8 +27,12 @@ from .property_sheet import (
 
 __all__ = [
     "L4MarketingMedia",
+    "L4MarketingNotifyLog",
+    "L4MarketingPriceChange",
     "L4MarketingProject",
+    "L4MarketingSubscription",
     "MarketingProjectStatus",
+    "NotifyType",
     "PhotoCategory",
     "ProjectBooking",
     "ProjectShareEvent",
@@ -33,4 +42,5 @@ __all__ = [
     "PropertySheetShareEvent",
     "PropertySheetVisit",
     "PublishStatus",
+    "SendStatus",
 ]

@@ -186,6 +186,15 @@ class PublicPhoneResponse(BaseModel):
     phone: str = Field(description="手机号(脱敏)")
 
 
+class PublicProjectPriceChange(BaseModel):
+    """C端列表项调价摘要（降价/涨价徽标数据源，窗口期 7 天）."""
+
+    old_price: float = Field(description="调价前总价(万元)")
+    new_price: float = Field(description="调价后总价(万元)")
+    direction: str = Field(description="调价方向: down/up")
+    changed_at: datetime = Field(description="调价时间")
+
+
 class PublicProjectListItem(BaseModel):
     """C端项目列表项."""
 
@@ -203,6 +212,12 @@ class PublicProjectListItem(BaseModel):
     tags: list[str] = Field(default_factory=list, description="标签列表")
     project_status: MarketingProjectStatus = Field(description="项目状态")
     decoration_style: str | None = Field(None, description="装修风格")
+    # 上新/调价徽标（仅迁移后的新发布行为计上新；窗口期 7 天内才返回）
+    is_new_listing: bool = Field(default=False, description="是否新上房源(首次发布≤7天)")
+    latest_price_change: "PublicProjectPriceChange | None" = Field(
+        None,
+        description="最近一次调价摘要(≤7天)，无则为 null",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -699,6 +714,7 @@ __all__ = [
     "PublicProjectFilter",
     "PublicProjectListItem",
     "PublicProjectListResponse",
+    "PublicProjectPriceChange",
     "PublicRefreshTokenRequest",
     "PublicRegisterRequest",
     "PublicRegisterResponse",

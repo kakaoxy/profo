@@ -56,13 +56,18 @@ from .lead import Lead, LeadFollowUp, LeadPriceHistory, ValuationShareEvent, Val
 # L4 市场营销模块
 from .marketing import (
     L4MarketingMedia,
+    L4MarketingNotifyLog,
+    L4MarketingPriceChange,
     L4MarketingProject,
+    L4MarketingSubscription,
     MarketingProjectStatus,
+    NotifyType,
     PhotoCategory,
     ProjectBooking,
     ProjectShareEvent,
     ProjectVisit,
     PublishStatus,
+    SendStatus,
 )
 
 # 项目管理模块
@@ -162,7 +167,10 @@ __all__ = [
     "KeyStatus",
     "L4MarketingMedia",
     # L4 市场营销
+    "L4MarketingNotifyLog",
+    "L4MarketingPriceChange",
     "L4MarketingProject",
+    "L4MarketingSubscription",
     # 线索
     "Lead",
     "LeadFollowUp",
@@ -170,6 +178,7 @@ __all__ = [
     "LeadStatus",
     "MarketingProjectStatus",
     "MediaType",
+    "NotifyType",
     "OperationLog",
     "Permission",
     "PermissionCategory",
@@ -202,6 +211,7 @@ __all__ = [
     # 区域伙伴招募计划
     "RecruitCampaign",
     "RecruitCampaignStatus",
+    "SendStatus",
     "RecruitLead",
     "RecruitLeadSource",
     "RecruitLeadStatus",

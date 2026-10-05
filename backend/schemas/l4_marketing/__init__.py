@@ -25,6 +25,8 @@ from .media import (
     MediaSortOrderUpdate,
 )
 from .project import (
+    L4MarketingNotifySummary,
+    L4MarketingPriceChangeSummary,
     L4MarketingProjectBase,
     L4MarketingProjectCreate,
     L4MarketingProjectResponse,
@@ -37,6 +39,15 @@ from .query import (
     L4MarketingProjectSummary,
     L4RefreshResponse,
     L4SyncResponse,
+)
+from .subscription import (
+    PublicMarketingLatestPriceChange,
+    PublicMarketingNotifySummary,
+    PublicMarketingSubscribeReportRequest,
+    PublicMarketingSubscribeReportResponse,
+    PublicMarketingSubscribeTemplateResponse,
+    PublicMarketingSubscriptionStatusResponse,
+    SubscribeReportItem,
 )
 
 __all__ = [
@@ -53,6 +64,8 @@ __all__ = [
     "L4MarketingMediaResponse",
     "L4MarketingMediaUpdate",
     # Project
+    "L4MarketingNotifySummary",
+    "L4MarketingPriceChangeSummary",
     "L4MarketingProjectBase",
     "L4MarketingProjectCreate",
     "L4MarketingProjectListResponse",
@@ -67,6 +80,14 @@ __all__ = [
     "MarketingProjectStatus",
     "MediaSortOrderUpdate",
     "PhotoCategory",
+    # 订阅通知
+    "PublicMarketingLatestPriceChange",
+    "PublicMarketingNotifySummary",
+    "PublicMarketingSubscribeReportRequest",
+    "PublicMarketingSubscribeReportResponse",
+    "PublicMarketingSubscribeTemplateResponse",
+    "PublicMarketingSubscriptionStatusResponse",
     # Enums
     "PublishStatus",
+    "SubscribeReportItem",
 ]

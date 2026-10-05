@@ -26,7 +26,13 @@ SUBSCRIBE_TEMPLATES_CONFIG_KEY = "wechat_subscribe_templates"
 
 # 支持的模板 key；settings env 字段名为 f"wechat_{key}_template_id"，
 # 非合法 key 一律回退 env 空串（读取路径永远可用）
-TEMPLATE_KEYS = ("recruit_lead", "valuation_price", "customer_lead")
+TEMPLATE_KEYS = (
+    "recruit_lead",
+    "valuation_price",
+    "customer_lead",
+    "project_new",
+    "project_price_change",
+)
 
 
 def _env_value(key: str) -> str:

@@ -150,6 +150,10 @@ from migrations._finance import (
 from migrations._helpers import _MIGRATION_ADVISORY_LOCK_KEY, _column_exists
 from migrations._keys import add_key_audit_share_id_index, add_project_key_note_column, create_key_tables
 from migrations._keys_seq import add_normal_key_seq_column
+from migrations._marketing_notify import (
+    add_published_at_to_l4_marketing_projects,
+    create_marketing_subscription_tables,
+)
 from migrations._permission_system import (
     add_permission_foreign_indexes,
     add_reports_indexes,
@@ -345,6 +349,11 @@ def _run_all_migrations(engine: Engine) -> None:
         add_trgm_search_indexes(engine)
         # 小程序评估工作台「已处理」参考组：leads(auditor_id, audit_time) 索引
         add_lead_auditor_index(engine)
+        # 房源上新/调价订阅通知：幂等创建 3 张新表
+        # （l4_marketing_subscriptions/l4_marketing_notify_logs/l4_marketing_price_changes）
+        create_marketing_subscription_tables(engine)
+        # 房源上新/调价订阅通知：l4_marketing_projects 补加 published_at 列（首次发布时间）
+        add_published_at_to_l4_marketing_projects(engine)
         # 分享统计 lead_count：leads(referrer_id) 索引
         add_lead_referrer_index(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过

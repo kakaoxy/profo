@@ -3,6 +3,8 @@
 职责: 处理C端公开项目相关的数据库查询.
 """
 
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import Integer, and_, case, cast, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session
@@ -10,6 +12,7 @@ from sqlalchemy.orm import Query, Session
 from models import (
     Community,
     L4MarketingMedia,
+    L4MarketingPriceChange,
     L4MarketingProject,
     ProjectBooking,
     ProjectShareEvent,
@@ -41,8 +44,71 @@ from utils.query_params import validate_sort_field
 class PublicProjectService:
     """C端公开项目服务."""
 
+    # 上新/调价徽标窗口期（天）：published_at / 最近调价在此窗口内才下发徽标字段
+    BADGE_WINDOW_DAYS = 7
+
     def __init__(self, db: Session) -> None:
         self.db = db
+
+    def resolve_listing_badges(
+        self,
+        items: list[L4MarketingProject],
+    ) -> dict[int, tuple[bool, dict | None]]:
+        """批量解析列表项上新/调价徽标（避免 N+1，两次 in_ 批量查询）.
+
+        上新：published_at 在窗口期内（存量已发布行 published_at 为 NULL，不判上新）；
+        调价：l4_marketing_price_changes 中最近一条在窗口期内才下发，无则 None。
+
+        Returns:
+            {item.id: (is_new_listing, latest_price_change_dict_or_None)}
+            latest_price_change_dict = {old_price, new_price, direction, changed_at}
+
+        """
+        result: dict[int, tuple[bool, dict | None]] = {item.id: (False, None) for item in items}
+        if not result:
+            return result
+
+        window_start = datetime.now(timezone.utc) - timedelta(days=self.BADGE_WINDOW_DAYS)
+
+        # 上新：published_at ≥ 窗口起点（NULL 一律 False）
+        for item in items:
+            if item.published_at is not None:
+                published_at = item.published_at
+                # 无时区信息时按 UTC 补齐（列定义 timezone=True，防御性处理）
+                if published_at.tzinfo is None:
+                    published_at = published_at.replace(tzinfo=timezone.utc)
+                if published_at >= window_start:
+                    result[item.id] = (True, None)
+
+        # 调价：窗口期内每项目最近一条（按 created_at 倒序取首条）
+        # 简化实现：窗口期 7 天内调价记录量极小，in_ 查询 + Python 侧分组取每项目最近一条
+        change_rows = (
+            self.db.query(L4MarketingPriceChange)
+            .filter(
+                L4MarketingPriceChange.marketing_project_id.in_(list(result)),
+                L4MarketingPriceChange.created_at >= window_start,
+            )
+            .order_by(desc(L4MarketingPriceChange.created_at))
+            .all()
+        )
+        latest_by_project: dict[int, L4MarketingPriceChange] = {}
+        for row in change_rows:
+            if row.marketing_project_id not in latest_by_project:
+                latest_by_project[row.marketing_project_id] = row
+
+        for project_id, change in latest_by_project.items():
+            is_new, _ = result[project_id]
+            result[project_id] = (
+                is_new,
+                {
+                    "old_price": float(change.old_price),
+                    "new_price": float(change.new_price),
+                    "direction": change.direction,
+                    "changed_at": change.created_at,
+                },
+            )
+
+        return result
 
     def resolve_cover_images_batch(self, items: list[L4MarketingProject]) -> dict[int, tuple[str | None, str | None]]:
         """批量解析项目封面图片和缩略图 URL.

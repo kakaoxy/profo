@@ -20,6 +20,7 @@ from schemas.public import (
     PublicProjectFilter,
     PublicProjectListItem,
     PublicProjectListResponse,
+    PublicProjectPriceChange,
     PublicRenovationStage,
     PublicShareEventRequest,
     PublicShareStatsResponse,
@@ -68,9 +69,11 @@ def get_projects(
     )
 
     cover_map = svc.resolve_cover_images_batch(items)
+    badge_map = svc.resolve_listing_badges(items)
     result_items = []
     for item in items:
         cover_image, cover_thumbnail_url = cover_map[item.id]
+        is_new_listing, latest_change = badge_map[item.id]
         result_items.append(
             PublicProjectListItem(
                 id=item.id,
@@ -87,6 +90,8 @@ def get_projects(
                 tags=item.tags or [],
                 project_status=item.project_status,
                 decoration_style=item.decoration_style,
+                is_new_listing=is_new_listing,
+                latest_price_change=(PublicProjectPriceChange(**latest_change) if latest_change else None),
             ),
         )
 

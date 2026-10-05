@@ -3,17 +3,21 @@
 职责: 营销项目管理.
 """
 
+from datetime import datetime, timezone
+from decimal import Decimal
+
 from sqlalchemy import and_, case, desc
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from models import L4MarketingMedia, L4MarketingProject
+from models import L4MarketingMedia, L4MarketingPriceChange, L4MarketingProject
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from schemas.l4_marketing import (
     L4MarketingProjectCreate,
     L4MarketingProjectSummary,
     L4MarketingProjectUpdate,
 )
+from services.marketing.notify import PriceSignal
 
 
 class MarketingProjectService:
@@ -206,22 +210,28 @@ class MarketingProjectService:
     def create_project(
         self,
         data: L4MarketingProjectCreate,
-    ) -> L4MarketingProject:
+    ) -> tuple[L4MarketingProject, bool]:
         """创建独立营销项目.
 
         项目和媒体文件在同一个事务中创建，确保数据一致性。
+        创建即发布视为「上新」：首次写入 published_at，并返回 is_new_listing=True
+        供路由层触发上新订阅消息通知（通知本身不阻塞本事务）。
 
         Args:
             data: 创建数据，可包含媒体文件列表
 
         Returns:
-            创建的营销项目
+            (创建的营销项目, is_new_listing)：is_new_listing=True 表示本次创建即发布（上新）
 
         """
         media_files = data.media_files
 
         project_data = data.model_dump(exclude={"media_files"})
         db_obj = L4MarketingProject(**project_data)
+        # 创建即发布 = 上新：published_at 仅首次发布写入（防重复「上新」的事实源）
+        is_new_listing = db_obj.publish_status == PublishStatus.PUBLISHED
+        if is_new_listing and db_obj.published_at is None:
+            db_obj.published_at = datetime.now(timezone.utc)
         self.db.add(db_obj)
 
         # 先 flush 获取项目ID，再创建媒体记录
@@ -244,21 +254,25 @@ class MarketingProjectService:
 
         self.db.commit()
         self.db.refresh(db_obj)
-        return db_obj
+        return db_obj, is_new_listing
 
     def update_project(
         self,
         project_id: int,
         data: L4MarketingProjectUpdate,
-    ) -> L4MarketingProject | None:
+    ) -> tuple[L4MarketingProject, PriceSignal | None] | None:
         """更新营销项目.
+
+        同步检出两类变更信号供路由层触发订阅消息通知（通知本身不阻塞本事务）：
+        - 首次发布（草稿 → 发布且 published_at 为空）：写入 published_at
+        - 已发布房源 total_price 变更：写 l4_marketing_price_changes 调价历史
 
         Args:
             project_id: 营销项目ID
             data: 更新数据
 
         Returns:
-            更新后的营销项目或None
+            (更新后的营销项目, 调价信号或None)；项目不存在返回 None
 
         """
         db_obj = self.get_project(project_id)
@@ -287,6 +301,10 @@ class MarketingProjectService:
         }
         # unit_price 由 area 和 total_price 自动计算，不允许直接修改
 
+        # 变更前快照（用于调价检测与首次发布判定）
+        old_total_price: Decimal | None = db_obj.total_price
+        old_publish_status = db_obj.publish_status
+
         for field, value in update_data.items():
             if field in allowed_fields:
                 setattr(db_obj, field, value)
@@ -294,9 +312,38 @@ class MarketingProjectService:
                 if field == "stage_completed_dates":
                     flag_modified(db_obj, "stage_completed_dates")
 
+        # 首次发布：published_at 仅首次写入（防重复「上新」）
+        if (
+            old_publish_status == PublishStatus.DRAFT
+            and db_obj.publish_status == PublishStatus.PUBLISHED
+            and db_obj.published_at is None
+        ):
+            db_obj.published_at = datetime.now(timezone.utc)
+
+        # 已发布房源调价：写调价历史并返回信号（同值变更不触发）
+        price_signal: PriceSignal | None = None
+        if (
+            db_obj.publish_status == PublishStatus.PUBLISHED
+            and old_total_price is not None
+            and db_obj.total_price != old_total_price
+        ):
+            direction = "down" if db_obj.total_price < old_total_price else "up"
+            self.db.add(
+                L4MarketingPriceChange(
+                    marketing_project_id=db_obj.id,
+                    old_price=old_total_price,
+                    new_price=db_obj.total_price,
+                    direction=direction,
+                ),
+            )
+            price_signal = PriceSignal(
+                old_price=float(old_total_price),
+                new_price=float(db_obj.total_price),
+            )
+
         self.db.commit()
         self.db.refresh(db_obj)
-        return db_obj
+        return db_obj, price_signal
 
     def delete_project(self, project_id: int) -> bool:
         """逻辑删除营销项目.

@@ -6,6 +6,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
+from fastapi.concurrency import run_in_threadpool
 
 from dependencies.auth import (
     DbSessionDep,
@@ -19,6 +20,8 @@ from schemas.l4_marketing import (
     L4MarketingMediaListResponse,
     L4MarketingMediaResponse,
     L4MarketingMediaUpdate,
+    L4MarketingNotifySummary,
+    L4MarketingPriceChangeSummary,
     L4MarketingProjectCreate,
     L4MarketingProjectListResponse,
     L4MarketingProjectResponse,
@@ -32,6 +35,8 @@ from services.marketing import (
 from services.marketing import (
     MarketingProjectService as L4MarketingProjectService,
 )
+from services.marketing.aggregate import aggregate_notify_fields
+from services.marketing.notify import notify_project_price_changed, notify_projects_published
 from services.marketing.public import PublicProjectService
 from services.system.exceptions import ResourceNotFoundError
 from utils.common import RateLimits, limiter
@@ -90,12 +95,17 @@ def list_marketing_projects(
 
     # 复用C端封面规则（营销照片首张图片，跳过视频），保证列表标题图与C端一致
     cover_map = PublicProjectService(db).resolve_cover_images_batch(items)
+    # 调价摘要 + 通知统计批量聚合（admin 通知列 / 总价副行 / 详情 Sheet 数据源）
+    notify_map = aggregate_notify_fields(db, items)
     result_items = []
     for item in items:
         resp = L4MarketingProjectResponse.model_validate(item)
         cover_image, cover_thumbnail_url = cover_map[item.id]
         resp.cover_image = cover_image
         resp.cover_thumbnail_url = cover_thumbnail_url
+        latest_change, notify_summary = notify_map[item.id]
+        resp.latest_price_change = L4MarketingPriceChangeSummary(**latest_change) if latest_change else None
+        resp.notify_summary = L4MarketingNotifySummary(**notify_summary)
         result_items.append(resp)
 
     return L4MarketingProjectListResponse(
@@ -113,17 +123,23 @@ def list_marketing_projects(
     summary="创建独立营销项目",
 )
 @limiter.limit(RateLimits.MARKETING_CREATE)
-def create_marketing_project(
+async def create_marketing_project(
     request: Request,
     data: L4MarketingProjectCreate,
     service: _ProjectServiceDep,
+    db: DbSessionDep,
     current_user: L4MarketingWritePermDep,
 ) -> L4MarketingProjectResponse:
     """创建独立营销项目.
 
     速率限制：100次/小时.
+    创建即发布视为上新：路由层线程池触发上新订阅消息通知
+    （notify 内部吞掉一切异常仅记日志，绝不影响创建结果）。
     """
-    return service.create_project(data)
+    project, is_new_listing = await run_in_threadpool(service.create_project, data)
+    if is_new_listing:
+        await run_in_threadpool(notify_projects_published, db, project)
+    return project
 
 
 @router.get(
@@ -148,21 +164,27 @@ def get_marketing_project(
     summary="更新营销项目",
 )
 @limiter.limit(RateLimits.MARKETING_UPDATE)
-def update_marketing_project(
+async def update_marketing_project(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
     service: _ProjectServiceDep,
+    db: DbSessionDep,
     current_user: L4MarketingWritePermDep,
 ) -> L4MarketingProjectResponse:
     """更新营销项目.
 
     速率限制：100次/小时.
+    已发布房源调价时由路由层线程池触发调价订阅消息通知
+    （notify 内部吞掉一切异常仅记日志，绝不影响更新结果）。
     """
-    item = service.update_project(project_id, data)
-    if not item:
+    result = await run_in_threadpool(service.update_project, project_id, data)
+    if not result:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
+    item, price_signal = result
+    if price_signal is not None:
+        await run_in_threadpool(notify_project_price_changed, db, item, price_signal)
     return item
 
 

@@ -12,6 +12,22 @@ from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from .media import L4MarketingMediaCreate, L4MarketingMediaResponse
 
 
+class L4MarketingPriceChangeSummary(BaseModel):
+    """营销项目调价摘要（admin 列表总价副行，窗口期 7 天）."""
+
+    old_price: float = Field(description="调价前总价(万元)")
+    new_price: float = Field(description="调价后总价(万元)")
+    direction: str = Field(description="调价方向: down/up")
+    changed_at: datetime = Field(description="调价时间")
+
+
+class L4MarketingNotifySummary(BaseModel):
+    """营销项目通知统计（admin 通知列 + 详情 Sheet，仅 success 口径）."""
+
+    new_listing_count: int = Field(default=0, description="上新通知成功送达人数")
+    price_change_count: int = Field(default=0, description="调价通知成功送达人数")
+
+
 class L4MarketingProjectBase(BaseModel):
     """营销项目基础模型."""
 
@@ -175,6 +191,21 @@ class L4MarketingProjectResponse(BaseModel):
     # 封面（列表接口按营销照片规则计算填充，非数据库字段）
     cover_image: str | None = Field(None, description="封面图URL（营销照片首张图片，跳过视频）")
     cover_thumbnail_url: str | None = Field(None, description="封面缩略图URL")
+
+    # 首次发布时间（上新判定事实源；存量已发布行为 NULL）
+    published_at: datetime | None = Field(None, description="首次发布时间(仅首次发布写入)")
+
+    # 调价摘要（admin 列表总价副行；窗口期 7 天内才返回，无则为 null）
+    latest_price_change: L4MarketingPriceChangeSummary | None = Field(
+        None,
+        description="最近一次调价摘要(≤7天，服务层聚合填充)",
+    )
+
+    # 通知统计（admin 列表通知列 + 详情 Sheet；服务层聚合填充，仅 success 口径）
+    notify_summary: L4MarketingNotifySummary | None = Field(
+        None,
+        description="订阅通知送达统计（服务层聚合填充）",
+    )
 
     @field_validator("images", "tags", mode="before")
     @classmethod

@@ -28,6 +28,9 @@ class SubscribeTemplatesResponse(BaseModel):
     recruit_lead: SubscribeTemplateValue
     valuation_price: SubscribeTemplateValue
     customer_lead: SubscribeTemplateValue
+    # 房源频道订阅（上新/调价）：C 端房源列表页订阅提醒 + 营销管理通知链路
+    project_new: SubscribeTemplateValue
+    project_price_change: SubscribeTemplateValue
     updated_at: datetime | None = None  # 行级审计（三键同行）
     updated_by_name: str | None = None
 
@@ -38,3 +41,6 @@ class SubscribeTemplatesUpdateRequest(BaseModel):
     recruit_lead: str = Field("", max_length=128)
     valuation_price: str = Field("", max_length=128)
     customer_lead: str = Field("", max_length=128)
+    # 房源频道订阅（上新/调价）：C 端房源列表页订阅提醒 + 营销管理通知链路
+    project_new: str = Field("", max_length=128)
+    project_price_change: str = Field("", max_length=128)

@@ -1,0 +1,80 @@
+"""C端公开房源订阅通知路由.
+
+房源频道订阅（上新/调价）：模板下发（免登录）+ 额度状态查询 + 授权结果上报。
+对齐 routers/public/valuations.py 的 subscribe-template 先例与
+routers/public/projects.py 的路由风格。
+"""
+
+from typing import Annotated
+
+from fastapi import APIRouter, Query, Request
+
+from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
+from schemas.l4_marketing import (
+    PublicMarketingSubscribeReportRequest,
+    PublicMarketingSubscribeReportResponse,
+    PublicMarketingSubscribeTemplateResponse,
+    PublicMarketingSubscriptionStatusResponse,
+)
+from services.marketing.subscription import MarketingSubscriptionService
+from services.system import subscribe_templates
+from utils.common import RateLimits, limiter
+
+router = APIRouter(prefix="/public/marketing", tags=["public-marketing"])
+
+
+@router.get(
+    "/subscribe-template",
+    summary="获取房源订阅提醒模板 ID",
+    description="免登录下发房源上新/调价提醒的订阅消息模板 ID；两个模板均未配置时 subscribe_enabled=false",
+)
+@limiter.limit(RateLimits.VALUATION_SUBSCRIBE_TEMPLATE)
+def get_subscribe_template(request: Request, db: DbSessionDep) -> PublicMarketingSubscribeTemplateResponse:
+    """下发房源订阅提醒模板 ID（未配置返回 null，前端隐藏订阅入口）."""
+    new_listing_id = subscribe_templates.resolve_template_id(db, "project_new")
+    price_change_id = subscribe_templates.resolve_template_id(db, "project_price_change")
+    return PublicMarketingSubscribeTemplateResponse(
+        subscribe_enabled=bool(new_listing_id or price_change_id),
+        new_listing_template_id=new_listing_id or None,
+        price_change_template_id=price_change_id or None,
+    )
+
+
+@router.get(
+    "/subscriptions/status",
+    summary="获取我的订阅额度状态",
+    description="当前 C 端用户的上新/调价提醒剩余额度与最近订阅时间，需登录",
+)
+@limiter.limit(RateLimits.VALUATION_SUBSCRIBE_TEMPLATE)
+def get_subscription_status(
+    request: Request,
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> PublicMarketingSubscriptionStatusResponse:
+    """查询当前用户订阅额度状态."""
+    status = MarketingSubscriptionService(db).get_status(str(current_user.id))
+    return PublicMarketingSubscriptionStatusResponse(**status)
+
+
+@router.post(
+    "/subscriptions/report",
+    summary="上报订阅授权结果",
+    description="小程序 requestSubscribeMessage 结果上报；仅 accept 计入对应频道额度（额度累计），需登录",
+)
+@limiter.limit(RateLimits.VALUATION_SUBSCRIBE_TEMPLATE)
+def report_subscription(
+    request: Request,
+    body: PublicMarketingSubscribeReportRequest,
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+    template_ids: Annotated[
+        str | None,
+        Query(max_length=200, description="本次授权的模板 ID 映射提示（new=上新模板ID,price=调价模板ID）"),
+    ] = None,
+) -> PublicMarketingSubscribeReportResponse:
+    """上报订阅授权结果（accept 累计额度，其余状态仅留痕不计数）."""
+    quotas = MarketingSubscriptionService(db).report_result(
+        user_id=str(current_user.id),
+        results=[(item.template_id, item.status) for item in body.results],
+    )
+    return PublicMarketingSubscribeReportResponse(**quotas)

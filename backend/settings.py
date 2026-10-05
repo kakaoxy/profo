@@ -188,6 +188,10 @@ class Settings(BaseSettings):
     # 「我的客户」新线索订阅消息模板 ID。二期：新留资/状态变更推送归属员工，
     # 当前仅用于小程序端订阅授权（未配置时小程序隐藏订阅提醒条）
     wechat_customer_lead_template_id: str = ""
+    # 房源上新订阅消息模板 ID（C 端房源列表页订阅提醒，env 兜底；DB 配置优先，空 = 功能关闭）
+    wechat_project_new_template_id: str = ""
+    # 房源调价订阅消息模板 ID（C 端房源列表页订阅提醒，env 兜底；DB 配置优先，空 = 功能关闭）
+    wechat_project_price_change_template_id: str = ""
 
     @model_validator(mode="after")
     def validate_oss_config(self) -> "Settings":
