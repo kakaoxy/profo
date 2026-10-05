@@ -28,6 +28,26 @@ class L4MarketingNotifySummary(BaseModel):
     price_change_count: int = Field(default=0, description="调价通知成功送达人数")
 
 
+class L4MarketingPriceChangeTimelineItem(BaseModel):
+    """调价历史时间线条目（admin 详情抽屉时间线数据源，含分次送达统计）."""
+
+    id: int = Field(description="调价记录ID")
+    old_price: float = Field(description="调价前总价(万元)")
+    new_price: float = Field(description="调价后总价(万元)")
+    direction: str = Field(description="调价方向: down/up")
+    changed_at: datetime = Field(description="调价时间")
+    notify_success: int = Field(default=0, description="本次调价送达成功人数")
+    notify_skipped: int = Field(default=0, description="本次调价跳过人数(未真正送达，不扣额度)")
+    notify_failed: int = Field(default=0, description="本次调价发送失败人数")
+
+
+class L4MarketingPriceChangeTimelineResponse(BaseModel):
+    """调价历史时间线响应（按调价时间倒序）."""
+
+    items: list[L4MarketingPriceChangeTimelineItem] = Field(description="时间线条目(倒序)")
+    total: int = Field(ge=0, description="调价记录总数")
+
+
 class L4MarketingProjectBase(BaseModel):
     """营销项目基础模型."""
 
@@ -194,6 +214,12 @@ class L4MarketingProjectResponse(BaseModel):
 
     # 首次发布时间（上新判定事实源；存量已发布行为 NULL）
     published_at: datetime | None = Field(None, description="首次发布时间(仅首次发布写入)")
+
+    # 新上徽标（列表接口按 published_at 窗口计算填充，与 C 端徽标同口径；非数据库字段）
+    is_new_listing: bool = Field(
+        default=False,
+        description="是否新上房源(首次发布≤7天，服务层聚合填充)",
+    )
 
     # 调价摘要（admin 列表总价副行；窗口期 7 天内才返回，无则为 null）
     latest_price_change: L4MarketingPriceChangeSummary | None = Field(

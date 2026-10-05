@@ -27,6 +27,8 @@ from .media import (
 from .project import (
     L4MarketingNotifySummary,
     L4MarketingPriceChangeSummary,
+    L4MarketingPriceChangeTimelineItem,
+    L4MarketingPriceChangeTimelineResponse,
     L4MarketingProjectBase,
     L4MarketingProjectCreate,
     L4MarketingProjectResponse,
@@ -41,8 +43,10 @@ from .query import (
     L4SyncResponse,
 )
 from .subscription import (
+    L4MarketingSubscriptionStatsResponse,
     PublicMarketingLatestPriceChange,
     PublicMarketingNotifySummary,
+    PublicMarketingProjectSubscriptionStatusResponse,
     PublicMarketingSubscribeReportRequest,
     PublicMarketingSubscribeReportResponse,
     PublicMarketingSubscribeTemplateResponse,
@@ -66,6 +70,8 @@ __all__ = [
     # Project
     "L4MarketingNotifySummary",
     "L4MarketingPriceChangeSummary",
+    "L4MarketingPriceChangeTimelineItem",
+    "L4MarketingPriceChangeTimelineResponse",
     "L4MarketingProjectBase",
     "L4MarketingProjectCreate",
     "L4MarketingProjectListResponse",
@@ -74,6 +80,7 @@ __all__ = [
     "L4MarketingProjectResponse",
     "L4MarketingProjectSummary",
     "L4MarketingProjectUpdate",
+    "L4MarketingSubscriptionStatsResponse",
     "L4MediaType",
     "L4RefreshResponse",
     "L4SyncResponse",
@@ -83,6 +90,7 @@ __all__ = [
     # 订阅通知
     "PublicMarketingLatestPriceChange",
     "PublicMarketingNotifySummary",
+    "PublicMarketingProjectSubscriptionStatusResponse",
     "PublicMarketingSubscribeReportRequest",
     "PublicMarketingSubscribeReportResponse",
     "PublicMarketingSubscribeTemplateResponse",

@@ -26,6 +26,8 @@ interface UseMiniProjectFormProps {
   mediaFiles?: MediaFile[];
   hasPhotoChanges?: boolean;
   defaultConsultantId?: string;
+  /** 保存成功后的去向回调（详情抽屉 embedded 模式传此回调，替代跳转列表；不传则跳转 /admin/marketing） */
+  onSuccess?: () => void;
 }
 
 export function useMiniProjectForm({
@@ -35,6 +37,7 @@ export function useMiniProjectForm({
   mediaFiles,
   hasPhotoChanges,
   defaultConsultantId,
+  onSuccess,
 }: UseMiniProjectFormProps) {
   const router = useRouter();
 
@@ -63,7 +66,11 @@ export function useMiniProjectForm({
         const result = await actions.createL4MarketingProject(createBody);
         if (result.success && result.data?.id) {
           toast.success("项目创建成功");
-          router.push("/admin/marketing");
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push("/admin/marketing");
+          }
           return;
         }
         toast.error(result.success ? "创建失败：返回数据不完整" : result.error || "创建失败");
@@ -94,14 +101,22 @@ export function useMiniProjectForm({
         const result = await actions.updateL4MarketingProject(project.id, patch);
         if (result.success) {
           toast.success("项目更新成功");
-          router.push("/admin/marketing");
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push("/admin/marketing");
+          }
           return;
         }
         toast.error(result.error || "更新失败");
       } else if (hasPhotoChanges) {
         // 只有照片变更时，照片已经通过独立API保存，直接提示成功
         toast.success("照片已保存");
-        router.push("/admin/marketing");
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/admin/marketing");
+        }
       }
     } catch {
       toast.error(mode === "create" ? "创建失败" : "更新失败");

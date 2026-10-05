@@ -4,6 +4,10 @@ import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/admin/ma
 export interface MarketingDetailHeaderProps {
   project: L4MarketingProject;
   onClose: () => void;
+  /** 抽屉当前态：view（查看）/ edit（编辑，头部隐藏编辑入口） */
+  mode?: "view" | "edit";
+  /** 切换到编辑态（view 态点「编辑房源」） */
+  onStartEdit?: () => void;
 }
 
 // 营销信息区域组件属性

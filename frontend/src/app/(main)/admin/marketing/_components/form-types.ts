@@ -8,7 +8,6 @@ import type {
 import type { ActionResult } from "@/app/(main)/admin/marketing/actions/projects";
 
 export type MiniProjectFormMode = "create" | "edit" | "view";
-
 export interface MiniProjectFormActions {
   createL4MarketingProject: (
     body: L4MarketingProjectCreate,
@@ -27,33 +26,20 @@ export interface MiniProjectFormProps {
   defaultConsultantId?: string;
 }
 
-export interface ViewModeProps {
-  project?: L4MarketingProject;
-  photos: L4MarketingMedia[];
-}
-
 export interface EditModeProps {
   mode: "create" | "edit";
   project?: L4MarketingProject;
   photos: L4MarketingMedia[];
   actions: MiniProjectFormActions;
   defaultConsultantId?: string;
-}
-
-export interface MarketingInfoViewProps {
-  project?: L4MarketingProject;
-}
-
-export interface PhysicalInfoViewProps {
-  project?: L4MarketingProject;
-}
-
-export interface BasicConfigViewProps {
-  project?: L4MarketingProject;
-}
-
-export interface PhotoGalleryProps {
-  photos: L4MarketingMedia[];
+  /** 详情抽屉嵌入模式：不渲染 fixed 底栏，保存/取消改由宿主回调（sticky 于 Sheet 滚动容器） */
+  embedded?: boolean;
+  /** embedded 模式保存成功回调（替代跳转列表） */
+  onSaved?: () => void;
+  /** embedded 模式取消回调（替代跳转列表） */
+  onCancelEdit?: () => void;
+  /** dirty 状态变化上报（详情抽屉据此拦截未保存关闭） */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

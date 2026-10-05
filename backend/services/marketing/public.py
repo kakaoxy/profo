@@ -40,12 +40,14 @@ from utils.formatters import escape_like, mask_phone
 from utils.image_processing import derive_thumbnail_url
 from utils.query_params import validate_sort_field
 
+from .constants import BADGE_WINDOW_DAYS
+
 
 class PublicProjectService:
     """C端公开项目服务."""
 
-    # 上新/调价徽标窗口期（天）：published_at / 最近调价在此窗口内才下发徽标字段
-    BADGE_WINDOW_DAYS = 7
+    # 上新/调价徽标窗口期（天）：别名保留（C 端已有类属性引用），唯一事实源见 constants.py
+    BADGE_WINDOW_DAYS = BADGE_WINDOW_DAYS
 
     def __init__(self, db: Session) -> None:
         self.db = db

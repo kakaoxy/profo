@@ -8,9 +8,11 @@ routers/public/projects.py 的路由风格。
 from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
+from fastapi import Path as PathParam
 
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from schemas.l4_marketing import (
+    PublicMarketingProjectSubscriptionStatusResponse,
     PublicMarketingSubscribeReportRequest,
     PublicMarketingSubscribeReportResponse,
     PublicMarketingSubscribeTemplateResponse,
@@ -78,3 +80,46 @@ def report_subscription(
         results=[(item.template_id, item.status) for item in body.results],
     )
     return PublicMarketingSubscribeReportResponse(**quotas)
+
+
+@router.get(
+    "/projects/{project_id}/subscription",
+    summary="查询房源级订阅状态",
+    description="当前用户对指定房源的调价提醒订阅状态（额度/最近订阅时间），需登录；未登录 401（前端静默）",
+)
+@limiter.limit(RateLimits.VALUATION_SUBSCRIBE_TEMPLATE)
+def get_project_subscription_status(
+    request: Request,
+    project_id: Annotated[int, PathParam(ge=1, description="房源ID")],
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> PublicMarketingProjectSubscriptionStatusResponse:
+    """查询当前用户对指定房源的订阅状态."""
+    status = MarketingSubscriptionService(db).get_project_status(
+        user_id=str(current_user.id),
+        marketing_project_id=project_id,
+    )
+    return PublicMarketingProjectSubscriptionStatusResponse(**status)
+
+
+@router.post(
+    "/projects/{project_id}/subscription/report",
+    summary="上报房源级订阅授权结果",
+    description="小程序 requestSubscribeMessage 结果上报（房源级调价提醒，涨降都推）；"
+    "仅 accept 计入房源级额度 +1，需登录。模板 ID 映射复用 project_price_change 配置；房源不存在时 404",
+)
+@limiter.limit(RateLimits.VALUATION_SUBSCRIBE_TEMPLATE)
+def report_project_subscription(
+    request: Request,
+    project_id: Annotated[int, PathParam(ge=1, description="房源ID")],
+    body: PublicMarketingSubscribeReportRequest,
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> PublicMarketingProjectSubscriptionStatusResponse:
+    """上报房源级订阅授权结果（accept 累计房源级额度，其余状态仅留痕不计数）."""
+    status = MarketingSubscriptionService(db).report_project_result(
+        user_id=str(current_user.id),
+        marketing_project_id=project_id,
+        results=[(item.template_id, item.status) for item in body.results],
+    )
+    return PublicMarketingProjectSubscriptionStatusResponse(**status)

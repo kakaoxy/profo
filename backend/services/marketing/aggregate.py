@@ -11,9 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models import L4MarketingNotifyLog, L4MarketingPriceChange, L4MarketingProject
-
-# 与 PublicProjectService.BADGE_WINDOW_DAYS 保持一致的展示窗口
-_BADGE_WINDOW_DAYS = 7
+from services.marketing.constants import BADGE_WINDOW_DAYS
 
 
 def aggregate_notify_fields(
@@ -33,7 +31,7 @@ def aggregate_notify_fields(
     if not result:
         return result
 
-    window_start = datetime.now(timezone.utc) - timedelta(days=_BADGE_WINDOW_DAYS)
+    window_start = datetime.now(timezone.utc) - timedelta(days=BADGE_WINDOW_DAYS)
     ids = list(result)
 
     # 窗口期内最近一条调价（记录量小，Python 侧分组取首条）

@@ -59,6 +59,7 @@ from .marketing import (
     L4MarketingNotifyLog,
     L4MarketingPriceChange,
     L4MarketingProject,
+    L4MarketingProjectSubscription,
     L4MarketingSubscription,
     MarketingProjectStatus,
     NotifyType,
@@ -170,6 +171,7 @@ __all__ = [
     "L4MarketingNotifyLog",
     "L4MarketingPriceChange",
     "L4MarketingProject",
+    "L4MarketingProjectSubscription",
     "L4MarketingSubscription",
     # 线索
     "Lead",

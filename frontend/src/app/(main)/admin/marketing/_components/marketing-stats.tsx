@@ -1,5 +1,16 @@
-import { FileText, Globe, Eye, CheckCircle } from "lucide-react";
+import { FileText, Globe, Eye, CheckCircle, Bell, Zap } from "lucide-react";
 import { StatCardGrid, type StatItem } from "@/app/(main)/admin/_components/stat-card-grid";
+
+/** 订阅漏斗全局统计（GET /admin/marketing/subscription-stats 响应子集）. */
+interface SubscriptionStats {
+  new_listing_subscribers?: number;
+  price_change_subscribers?: number;
+  total_subscribers?: number;
+  total_new_quota?: number;
+  total_price_quota?: number;
+  project_level_subscribers?: number;
+  project_level_watches?: number;
+}
 
 interface MarketingStatsProps {
   stats: {
@@ -10,10 +21,12 @@ interface MarketingStatsProps {
     sold?: number;
     in_progress?: number;
   };
+  /** 订阅统计（P1-1；拉取失败时为 null，订阅两张卡隐藏不阻断项目卡） */
+  subStats?: SubscriptionStats | null;
 }
 
 /** 营销项目统计卡（走共享 StatCardGrid，Steep 体系）。 */
-export function MarketingStats({ stats }: MarketingStatsProps) {
+export function MarketingStats({ stats, subStats }: MarketingStatsProps) {
   const items: StatItem[] = [
     {
       label: "全部项目",
@@ -44,5 +57,24 @@ export function MarketingStats({ stats }: MarketingStatsProps) {
     },
   ];
 
-  return <StatCardGrid items={items} />;
+  // P1-1 订阅漏斗两卡：订阅用户（任一频道订阅过总人数）+ 可触达·新上（上新频道剩余额度>0）
+  if (subStats) {
+    items.push(
+      {
+        label: "订阅用户",
+        value: subStats.total_subscribers ?? 0,
+        icon: <Bell className="h-4 w-4" />,
+        dotColor: "bg-ink",
+      },
+      {
+        label: "可触达·新上",
+        value: subStats.new_listing_subscribers ?? 0,
+        icon: <Zap className="h-4 w-4" />,
+        dotColor: "bg-rust",
+        valueClassName: "text-rust",
+      },
+    );
+  }
+
+  return <StatCardGrid items={items} columns={subStats ? 5 : 4} />;
 }

@@ -89,9 +89,17 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
             </div>
           )}
           <div className="flex flex-col min-w-0">
-            <span className="font-medium text-ink text-sm truncate max-w-[200px] md:max-w-xs">
-              {project.title || "未命名项目"}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium text-ink text-sm truncate max-w-[200px] md:max-w-xs">
+                {project.title || "未命名项目"}
+              </span>
+              {/* 新上黑标（与 C 端 badge-fog 语义对齐）：首次发布 ≤ 7 天（服务端 is_new_listing 下发） */}
+              {project.is_new_listing === true && (
+                <span className="shrink-0 rounded-md bg-ink px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  新上
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[11px] text-graphite font-mono tracking-tight">
                 ID: {project.id}

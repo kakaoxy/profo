@@ -1543,10 +1543,50 @@ export interface paths {
          * @description 创建独立营销项目.
          *
          *     速率限制：100次/小时.
-         *     创建即发布视为上新：路由层线程池触发上新订阅消息通知
-         *     （notify 内部吞掉一切异常仅记日志，绝不影响创建结果）。
+         *     创建即发布视为上新：响应返回后由后台任务触发上新订阅消息通知
+         *     （notify 入口自建会话并吞掉一切异常仅记日志，绝不影响创建结果）。
          */
         post: operations["create_marketing_project_api_v1_admin_marketing_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketing/projects/{project_id}/price-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取调价历史时间线
+         * @description 获取营销项目调价历史时间线（倒序，含分次 notify success/skipped/failed 计数）.
+         */
+        get: operations["list_price_change_timeline_api_v1_admin_marketing_projects__project_id__price_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketing/subscription-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取全局订阅统计
+         * @description 获取订阅漏斗全局统计（Router 禁 SQL，聚合全部在 Service）.
+         */
+        get: operations["get_subscription_stats_api_v1_admin_marketing_subscription_stats_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1570,8 +1610,8 @@ export interface paths {
          * @description 更新营销项目.
          *
          *     速率限制：100次/小时.
-         *     已发布房源调价时由路由层线程池触发调价订阅消息通知
-         *     （notify 内部吞掉一切异常仅记日志，绝不影响更新结果）。
+         *     首次发布（上新）/ 已发布房源调价时由后台任务触发订阅消息通知
+         *     （notify 入口自建会话并吞掉一切异常仅记日志，绝不影响更新结果）。
          */
         put: operations["update_marketing_project_api_v1_admin_marketing_projects__project_id__put"];
         post?: never;
@@ -3701,6 +3741,46 @@ export interface paths {
          * @description 小程序 requestSubscribeMessage 结果上报；仅 accept 计入对应频道额度（额度累计），需登录
          */
         post: operations["report_subscription_api_v1_public_marketing_subscriptions_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/marketing/projects/{project_id}/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询房源级订阅状态
+         * @description 当前用户对指定房源的调价提醒订阅状态（额度/最近订阅时间），需登录；未登录 401（前端静默）
+         */
+        get: operations["get_project_subscription_status_api_v1_public_marketing_projects__project_id__subscription_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/marketing/projects/{project_id}/subscription/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报房源级订阅授权结果
+         * @description 小程序 requestSubscribeMessage 结果上报（房源级调价提醒，涨降都推）；仅 accept 计入房源级额度 +1，需登录。模板 ID 映射复用 project_price_change 配置；房源不存在时 404
+         */
+        post: operations["report_project_subscription_api_v1_public_marketing_projects__project_id__subscription_report_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8647,6 +8727,72 @@ export interface components {
             changed_at: string;
         };
         /**
+         * L4MarketingPriceChangeTimelineItem
+         * @description 调价历史时间线条目（admin 详情抽屉时间线数据源，含分次送达统计）.
+         */
+        L4MarketingPriceChangeTimelineItem: {
+            /**
+             * Id
+             * @description 调价记录ID
+             */
+            id: number;
+            /**
+             * Old Price
+             * @description 调价前总价(万元)
+             */
+            old_price: number;
+            /**
+             * New Price
+             * @description 调价后总价(万元)
+             */
+            new_price: number;
+            /**
+             * Direction
+             * @description 调价方向: down/up
+             */
+            direction: string;
+            /**
+             * Changed At
+             * Format: date-time
+             * @description 调价时间
+             */
+            changed_at: string;
+            /**
+             * Notify Success
+             * @description 本次调价送达成功人数
+             * @default 0
+             */
+            notify_success: number;
+            /**
+             * Notify Skipped
+             * @description 本次调价跳过人数(未真正送达，不扣额度)
+             * @default 0
+             */
+            notify_skipped: number;
+            /**
+             * Notify Failed
+             * @description 本次调价发送失败人数
+             * @default 0
+             */
+            notify_failed: number;
+        };
+        /**
+         * L4MarketingPriceChangeTimelineResponse
+         * @description 调价历史时间线响应（按调价时间倒序）.
+         */
+        L4MarketingPriceChangeTimelineResponse: {
+            /**
+             * Items
+             * @description 时间线条目(倒序)
+             */
+            items: components["schemas"]["L4MarketingPriceChangeTimelineItem"][];
+            /**
+             * Total
+             * @description 调价记录总数
+             */
+            total: number;
+        };
+        /**
          * L4MarketingProjectCreate
          * @description 创建营销项目请求.
          */
@@ -8869,6 +9015,12 @@ export interface components {
              * @description 首次发布时间(仅首次发布写入)
              */
             published_at?: string | null;
+            /**
+             * Is New Listing
+             * @description 是否新上房源(首次发布≤7天，服务层聚合填充)
+             * @default false
+             */
+            is_new_listing: boolean;
             /** @description 最近一次调价摘要(≤7天，服务层聚合填充) */
             latest_price_change?: components["schemas"]["L4MarketingPriceChangeSummary"] | null;
             /** @description 订阅通知送达统计（服务层聚合填充） */
@@ -8978,6 +9130,51 @@ export interface components {
              * @description 关联顾问ID(软引用)
              */
             consultant_id?: string | null;
+        };
+        /**
+         * L4MarketingSubscriptionStatsResponse
+         * @description 订阅漏斗全局统计（admin 端点 GET /admin/marketing/subscription-stats）.
+         *
+         *     P2-1（房源级订阅）落地后同方法扩展 project_level_subscribers / project_level_watches。
+         */
+        L4MarketingSubscriptionStatsResponse: {
+            /**
+             * New Listing Subscribers
+             * @description 上新频道剩余额度>0人数（可触达）
+             */
+            new_listing_subscribers: number;
+            /**
+             * Price Change Subscribers
+             * @description 调价频道剩余额度>0人数（可触达）
+             */
+            price_change_subscribers: number;
+            /**
+             * Total Subscribers
+             * @description 任一频道订阅过的人数（总行数）
+             */
+            total_subscribers: number;
+            /**
+             * Total New Quota
+             * @description 上新频道额度池总量
+             */
+            total_new_quota: number;
+            /**
+             * Total Price Quota
+             * @description 调价频道额度池总量
+             */
+            total_price_quota: number;
+            /**
+             * Project Level Subscribers
+             * @description 房源级订阅人数（去重 user_id；P2-1 落地后启用）
+             * @default 0
+             */
+            project_level_subscribers: number;
+            /**
+             * Project Level Watches
+             * @description 房源级订阅关系总数（P2-1 落地后启用）
+             * @default 0
+             */
+            project_level_watches: number;
         };
         /**
          * L4MediaType
@@ -13360,6 +13557,28 @@ export interface components {
              * @description 提示信息
              */
             message: string;
+        };
+        /**
+         * PublicMarketingProjectSubscriptionStatusResponse
+         * @description 房源级订阅状态响应（当前登录用户 × 指定房源）.
+         */
+        PublicMarketingProjectSubscriptionStatusResponse: {
+            /**
+             * Subscribed
+             * @description 是否已订阅（存在订阅行）
+             */
+            subscribed: boolean;
+            /**
+             * Price Change Quota
+             * @description 房源级调价提醒剩余额度
+             * @default 0
+             */
+            price_change_quota: number;
+            /**
+             * Last Subscribed At
+             * @description 最近一次订阅授权时间
+             */
+            last_subscribed_at?: string | null;
         };
         /**
          * PublicMarketingSubscribeReportRequest
@@ -19884,6 +20103,10 @@ export interface operations {
                 consultant_id?: string | null;
                 /** @description 小区ID */
                 community_id?: string | null;
+                /** @description 仅新上房源(首次发布≤7天) */
+                is_new_listing?: boolean | null;
+                /** @description 仅近期调价房源(≤7天) */
+                has_price_change?: boolean | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -19944,6 +20167,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_price_change_timeline_api_v1_admin_marketing_projects__project_id__price_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["L4MarketingPriceChangeTimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_subscription_stats_api_v1_admin_marketing_subscription_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["L4MarketingSubscriptionStatsResponse"];
                 };
             };
         };
@@ -24121,6 +24396,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicMarketingSubscribeReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_subscription_status_api_v1_public_marketing_projects__project_id__subscription_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源ID */
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicMarketingProjectSubscriptionStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_project_subscription_api_v1_public_marketing_projects__project_id__subscription_report_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源ID */
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicMarketingSubscribeReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicMarketingProjectSubscriptionStatusResponse"];
                 };
             };
             /** @description Validation Error */

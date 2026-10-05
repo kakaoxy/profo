@@ -6,7 +6,7 @@
 import type { components } from "../../../types/api-types";
 import { request, refreshCAccessToken } from "../../../utils/request";
 import type { HttpResponseError } from "../../../utils/request";
-import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
+import {getAccessToken, getCAccessToken, getUserIdFromAccessToken, hasValidAdminToken } from "../../../utils/token";
 import { BASE_URL } from "../../../utils/config";
 import { resolveAssetUrl } from "../../../utils/url";
 import { formatThousands } from "../../../utils/format";
@@ -228,7 +228,7 @@ Page<PageData, PageCustom>({
     }
     // 内部员工（admin 令牌存在）：识别身份后展示分享横幅 + 启用分享菜单；
     // 识别失败静默降级（非员工不显示横幅，不影响表单）
-    if (getAccessToken()) {
+    if (hasValidAdminToken()) {
       this.loadEmployee();
     }
   },
@@ -254,7 +254,7 @@ Page<PageData, PageCustom>({
     // 员工识别补强：tab 页从登录页返回（onLoad 不重跑）时，若已有 admin 令牌
     // 且尚未识别员工，再次尝试识别以展示分享横幅；识别成功置 isEmployee=true
     // 后不再重复请求，失败（令牌失效等）静默降级
-    if (getAccessToken() && !this.data.isEmployee) {
+    if (hasValidAdminToken() && !this.data.isEmployee) {
       this.loadEmployee();
     }
   },

@@ -30,6 +30,7 @@ from models import (
     L4MarketingNotifyLog,
     L4MarketingPriceChange,
     L4MarketingProject,
+    L4MarketingProjectSubscription,
     L4MarketingSubscription,
     SendStatus,
 )
@@ -53,7 +54,8 @@ _MAX_BATCH = 500
 _NEW_FIELD_COMMUNITY = "thing1"  # 小区名称（thing ≤20 字符）
 _NEW_FIELD_HOUSE = "thing9"  # 户型（thing ≤20 字符）
 _NEW_FIELD_PRICE = "amount11"  # 总价（amount：纯数字，禁带「万」等符号）
-# 调价模板（标题「房源降价提醒」，编号 6496）：thing1 小区 / phrase7 居室 / thing4 面积 / amount8 最新价
+# 调价模板（微信平台标题「房源降价提醒」，编号 6496；涨降都推，产品口径「调价提醒」）：
+# thing1 小区 / phrase7 居室 / thing4 面积 / amount8 最新价
 _PRICE_FIELD_COMMUNITY = "thing1"  # 小区名称（thing ≤20 字符）
 _PRICE_FIELD_LAYOUT = "phrase7"  # 居室（phrase ≤5 个汉字，禁数字/字母/符号）
 _PRICE_FIELD_AREA = "thing4"  # 面积（thing ≤20 字符）
@@ -110,10 +112,31 @@ def _layout_phrase(layout: str | None) -> str:
 
 
 class PriceSignal(TypedDict):
-    """已发布房源调价信号（update_project 检出，路由层据此触发通知）."""
+    """已发布房源调价信号（update_project 检出，路由层据此触发通知）.
+
+    price_change_id：l4_marketing_price_changes 落库 flush 后回填的主键，
+    调价通知留痕透传（notify_logs 按 price_change_id 反查/分组）；
+    防御性兼容路径（信号缺失回退重算）拿不到记录时为 None。
+    """
 
     old_price: float
     new_price: float
+    price_change_id: int | None
+
+
+@dataclass(slots=True)
+class Recipient:
+    """推送收件人（P2-1 频道级 ∪ 房源级）.
+
+    channel：订阅来源轨（"channel"=频道级账本行 / "project"=房源级订阅行），
+    双授权去重后优先保留房源级（语义更精确），扣减按 channel 路由到对应表额度列。
+    """
+
+    openid: str
+    user_id: str
+    channel: str
+    # 订阅行主键（频道级 l4_marketing_subscriptions.id / 房源级 l4_marketing_project_subscriptions.id）
+    sub_id: int
 
 
 @dataclass(slots=True)
@@ -138,8 +161,15 @@ def _log_send(
     template_id: str,
     status: str,
     error_msg: str | None = None,
+    price_change_id: int | None = None,
+    sub_source: str | None = None,
 ) -> None:
-    """写发送留痕（内部已包在调用方的 try/except 中，自身异常直接抛给外层记日志）."""
+    """写发送留痕（内部已包在调用方的 try/except 中，自身异常直接抛给外层记日志）.
+
+    price_change_id：调价通知透传对应调价记录 ID（上新通知传 None），
+    P1-2 时间线按其分组统计分次送达数。
+    sub_source：订阅来源轨（channel/project，P2-1；上新通知传 None）。
+    """
     db.add(
         L4MarketingNotifyLog(
             user_id=user_id,
@@ -148,6 +178,8 @@ def _log_send(
             template_id=template_id,
             send_status=status,
             error_msg=error_msg[:200] if error_msg else None,
+            price_change_id=price_change_id,
+            sub_source=sub_source,
         ),
     )
     db.commit()
@@ -169,6 +201,68 @@ def _fetch_subscribers(
     """查询指定频道剩余额度 > 0 的订阅行（单批上限截断）."""
     stmt = select(L4MarketingSubscription).where(quota_column > 0).limit(_MAX_BATCH)
     return list(db.scalars(stmt))
+
+
+def _fetch_price_change_recipients(db: Session, project_id: int) -> list[Recipient]:
+    """调价推送收件人：频道级账本行 ∪ 房源级订阅行，按 user_id 去重优先房源级.
+
+    - 频道级：l4_marketing_subscriptions.price_change_quota > 0（不筛预约/浏览关系）
+    - 房源级：l4_marketing_project_subscriptions 中该项目 + price_change_quota > 0
+    - 去重：同一 user_id 只保留一条，优先房源级（语义更精确）；
+      微信 43101（未授权）天然幂等兑底
+    - 总量 ≤ 频道全量 + 房源级增量，_MAX_BATCH 截断策略不变（合并后截断）
+
+    """
+    channel_rows = (
+        db.query(L4MarketingSubscription).filter(L4MarketingSubscription.price_change_quota > 0).limit(_MAX_BATCH).all()
+    )
+    project_rows = (
+        db.query(L4MarketingProjectSubscription)
+        .filter(
+            L4MarketingProjectSubscription.marketing_project_id == project_id,
+            L4MarketingProjectSubscription.price_change_quota > 0,
+        )
+        .limit(_MAX_BATCH)
+        .all()
+    )
+
+    recipients: dict[str, Recipient] = {}
+    # 先填频道级（同 user_id 被房源级覆盖）
+    for row in channel_rows:
+        recipients[row.user_id] = Recipient(
+            openid=row.openid,
+            user_id=row.user_id,
+            channel="channel",
+            sub_id=row.id,
+        )
+    # 房源级优先（覆盖同 user_id 的频道级）
+    for row in project_rows:
+        recipients[row.user_id] = Recipient(
+            openid=row.openid,
+            user_id=row.user_id,
+            channel="project",
+            sub_id=row.id,
+        )
+    return list(recipients.values())
+
+
+def _decrement_project_quota(db: Session, subscription_id: int) -> bool:
+    """原子扣减房源级订阅额度（``quota = quota - 1 WHERE quota > 0``，防并发双扣）.
+
+    Returns:
+        True 表示扣减成功；False 表示额度已为 0（并发下被其他推送扣完）
+
+    """
+    updated = db.execute(
+        update(L4MarketingProjectSubscription)
+        .where(
+            L4MarketingProjectSubscription.id == subscription_id,
+            L4MarketingProjectSubscription.price_change_quota > 0,
+        )
+        .values(price_change_quota=L4MarketingProjectSubscription.price_change_quota - 1)
+    )
+    db.commit()
+    return (updated.rowcount or 0) > 0
 
 
 def _decrement_quota(
@@ -329,11 +423,6 @@ def _notify_project_price_changed(
         logger.info("订阅消息模板未配置，跳过调价通知：project_id=%s", project.id)
         return
 
-    subscribers = _fetch_subscribers(db, L4MarketingSubscription.price_change_quota)
-    if not subscribers:
-        logger.info("无可用订阅用户，跳过调价通知：project_id=%s", project.id)
-        return
-
     if price_signal is None:
         # 信号缺失兜底：回退调价历史最近一条（记录由 Service 层先落库）
         change = (
@@ -343,10 +432,21 @@ def _notify_project_price_changed(
             .first()
         )
         price_signal = (
-            PriceSignal(old_price=float(change.old_price), new_price=float(change.new_price))
+            PriceSignal(
+                old_price=float(change.old_price),
+                new_price=float(change.new_price),
+                price_change_id=change.id,
+            )
             if change
-            else PriceSignal(old_price=float(project.total_price), new_price=float(project.total_price))
+            else PriceSignal(
+                old_price=float(project.total_price),
+                new_price=float(project.total_price),
+                price_change_id=None,
+            )
         )
+
+    # 本次推送对应的调价记录（留痕透传，时间线按其分组）
+    price_change_id = price_signal.get("price_change_id")
 
     new_price = Decimal(str(price_signal["new_price"]))
 
@@ -361,13 +461,19 @@ def _notify_project_price_changed(
     }
     page = _NOTIFY_PAGE_PATH.format(id=project.id)
 
-    for sub in subscribers:
-        user_id = sub.user_id
-        openid = sub.openid
+    # 收件人：频道级账本行 ∪ 房源级订阅行（按 user_id 去重优先房源级，P2-1）
+    recipients = _fetch_price_change_recipients(db, project.id)
+    if not recipients:
+        logger.info("无可用订阅用户，跳过调价通知：project_id=%s", project.id)
+        return
+
+    for recipient in recipients:
+        user_id = recipient.user_id
+        openid = recipient.openid
         try:
             errcode = WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
         except Exception as exc:
-            # 发送失败：留痕 failed，不扣额度（用户未消费）
+            # 发送失败：留痕 failed（sub_source 区分来源），不扣额度（用户未消费）
             logger.exception("调价订阅消息发送失败：project_id=%s, openid=%s", project.id, openid)
             _safe_log(
                 db,
@@ -377,6 +483,8 @@ def _notify_project_price_changed(
                 template_id=template_id,
                 status=SendStatus.FAILED.value,
                 error_msg=str(exc),
+                price_change_id=price_change_id,
+                sub_source=recipient.channel,
             )
             continue
         if errcode != 0:
@@ -389,10 +497,16 @@ def _notify_project_price_changed(
                 template_id=template_id,
                 status=SendStatus.SKIPPED.value,
                 error_msg=f"errcode={errcode}",
+                price_change_id=price_change_id,
+                sub_source=recipient.channel,
             )
             continue
-        # 送达成功：原子扣减额度（quota>0 条件更新，防并发双扣）+ success 留痕
-        if _decrement_quota(db, sub.id, L4MarketingSubscription.price_change_quota):
+        # 送达成功：按 channel 路由原子扣减对应账本额度（quota>0 条件更新，防并发双扣）+ success 留痕
+        if recipient.channel == "project":
+            decremented = _decrement_project_quota(db, recipient.sub_id)
+        else:
+            decremented = _decrement_quota(db, recipient.sub_id, L4MarketingSubscription.price_change_quota)
+        if decremented:
             _safe_log(
                 db,
                 user_id=user_id,
@@ -400,6 +514,8 @@ def _notify_project_price_changed(
                 notify_type="price_change",
                 template_id=template_id,
                 status=SendStatus.SUCCESS.value,
+                price_change_id=price_change_id,
+                sub_source=recipient.channel,
             )
         else:
             logger.warning(

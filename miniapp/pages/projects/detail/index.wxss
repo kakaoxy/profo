@@ -116,11 +116,52 @@
   margin-bottom: 44rpx;
 }
 
+.detail-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+
 .detail-price {
   font-size: 64rpx;
   font-weight: 500;
   color: var(--ink);
-  margin-bottom: 8rpx;
+}
+
+/* 调价提醒按钮（房源级订阅四态）：未订阅实心深色 / 已订阅反白 */
+.price-alert-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 10rpx 24rpx;
+  margin: 0;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #ffffff;
+  background: var(--ink, #1a1a1a);
+  border: 1rpx solid var(--ink, #1a1a1a);
+}
+
+.price-alert-btn--on {
+  color: var(--ink, #1a1a1a);
+  background: transparent;
+  border: 1rpx solid rgba(0, 0, 0, 0.18);
+}
+
+.price-alert-btn--hover {
+  opacity: 0.82;
+}
+
+.price-alert-ic {
+  font-size: 22rpx;
+}
+
+.price-alert-btn::after {
+  border: none;
 }
 
 .detail-title {

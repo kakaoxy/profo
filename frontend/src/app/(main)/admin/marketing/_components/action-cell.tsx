@@ -31,7 +31,7 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
         </Button>
       </Link>
 
-      <Link href={`/admin/marketing/${project.id}/edit`} onClick={handleClick}>
+      <Link href={`/admin/marketing/${project.id}`} onClick={handleClick}>
         <Button
           variant="ghost"
           size="sm"

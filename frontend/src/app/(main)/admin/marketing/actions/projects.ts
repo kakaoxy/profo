@@ -268,6 +268,98 @@ export async function updateL4MarketingProjectAction(
 }
 
 /**
+ * 调价（P0-2 内联调价）：仅传 total_price 一个字段，复用后端局部更新语义
+ * （PUT exclude_unset，同值不触发调价记录/通知由后端保证）。
+ */
+export async function updateL4MarketingProjectPriceAction(
+  id: number,
+  totalPrice: number,
+): Promise<ActionResult<L4MarketingProject>> {
+  const idParsed = projectIdSchema.safeParse(id);
+  if (!idParsed.success) {
+    return { success: false, error: idParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const priceParsed = z.number().positive("总价必须大于0").safeParse(totalPrice);
+  if (!priceParsed.success) {
+    return { success: false, error: priceParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.L4_MARKETING_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
+  }
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.PUT("/api/v1/admin/marketing/projects/{project_id}", {
+      params: { path: { project_id: id } },
+      body: { total_price: totalPrice },
+    });
+
+    if (error) {
+      logger.error("Failed to update L4 marketing project price:", error);
+      const { message } = parseApiError(error);
+      return {
+        success: false,
+        error: message,
+      };
+    }
+
+    revalidateTag(`marketing-project-${id}`, { expire: 0 });
+    revalidateTag("marketing-projects", { expire: 0 });
+    return { success: true, data: data! };
+  } catch (e) {
+    logger.error("调价异常:", e);
+    return { success: false, error: parseNetworkError(e) };
+  }
+}
+
+/**
+ * 获取调价历史时间线（P1-2：倒序，含分次 notify success/skipped/failed 计数）
+ */
+export async function getL4MarketingPriceChangesAction(id: number): Promise<
+  ActionResult<{
+    items: {
+      id: number;
+      old_price: number;
+      new_price: number;
+      direction: string;
+      changed_at: string;
+      notify_success: number;
+      notify_skipped: number;
+      notify_failed: number;
+    }[];
+    total: number;
+  }>
+> {
+  const idParsed = projectIdSchema.safeParse(id);
+  if (!idParsed.success) {
+    return { success: false, error: idParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/marketing/projects/{project_id}/price-changes",
+      {
+        params: { path: { project_id: id } },
+      },
+    );
+
+    if (error) {
+      logger.error("Failed to fetch L4 marketing price changes:", error);
+      const { message } = parseApiError(error);
+      return {
+        success: false,
+        error: message,
+      };
+    }
+
+    return { success: true, data: data! };
+  } catch (e) {
+    logger.error("获取调价历史异常:", e);
+    return { success: false, error: parseNetworkError(e) };
+  }
+}
+
+/**
  * 删除营销项目
  */
 export async function deleteL4MarketingProjectAction(id: number): Promise<ActionResult<void>> {

@@ -3,20 +3,22 @@
 职责: 营销项目管理.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import and_, case, desc
+from sqlalchemy import and_, case, desc, func
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from models import L4MarketingMedia, L4MarketingPriceChange, L4MarketingProject
+from models import L4MarketingMedia, L4MarketingNotifyLog, L4MarketingPriceChange, L4MarketingProject
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from schemas.l4_marketing import (
+    L4MarketingPriceChangeTimelineItem,
     L4MarketingProjectCreate,
     L4MarketingProjectSummary,
     L4MarketingProjectUpdate,
 )
+from services.marketing.constants import BADGE_WINDOW_DAYS
 from services.marketing.notify import PriceSignal, ProjectChangeSignal
 
 
@@ -38,6 +40,8 @@ class MarketingProjectService:
         project_status: MarketingProjectStatus | None = None,
         consultant_id: str | None = None,
         community_id: str | None = None,
+        is_new_listing: bool | None = None,
+        has_price_change: bool | None = None,
     ) -> Query:
         """构建基础查询 - 抽离复用的筛选逻辑.
 
@@ -46,6 +50,10 @@ class MarketingProjectService:
             project_status: 项目状态筛选
             consultant_id: 顾问ID筛选
             community_id: 小区ID筛选
+            is_new_listing: 仅新上房源（首次发布 ≤ BADGE_WINDOW_DAYS 天；
+                published_at NULL 一律排除，存量行不误判）
+            has_price_change: 仅近期调价房源（≤ BADGE_WINDOW_DAYS 天内有调价记录，
+                EXISTS 走 (marketing_project_id, created_at) 索引）
 
         Returns:
             基础查询对象
@@ -67,6 +75,26 @@ class MarketingProjectService:
         if community_id is not None:
             query = query.filter(L4MarketingProject.community_id == community_id)
 
+        # 新上/近期调价筛选窗口与 C 端徽标同源（constants.BADGE_WINDOW_DAYS）
+        if is_new_listing is True:
+            window_start = datetime.now(timezone.utc) - timedelta(days=BADGE_WINDOW_DAYS)
+            query = query.filter(
+                L4MarketingProject.published_at.isnot(None),
+                L4MarketingProject.published_at >= window_start,
+            )
+
+        if has_price_change is True:
+            window_start = datetime.now(timezone.utc) - timedelta(days=BADGE_WINDOW_DAYS)
+            recent_change = (
+                self.db.query(L4MarketingPriceChange.id)
+                .filter(
+                    L4MarketingPriceChange.marketing_project_id == L4MarketingProject.id,
+                    L4MarketingPriceChange.created_at >= window_start,
+                )
+                .exists()
+            )
+            query = query.filter(recent_change)
+
         return query
 
     def get_projects(
@@ -77,6 +105,8 @@ class MarketingProjectService:
         project_status: MarketingProjectStatus | None = None,
         consultant_id: str | None = None,
         community_id: str | None = None,
+        is_new_listing: bool | None = None,
+        has_price_change: bool | None = None,
     ) -> tuple[list[L4MarketingProject], int]:
         """获取营销项目列表.
 
@@ -87,6 +117,8 @@ class MarketingProjectService:
             project_status: 项目状态筛选
             consultant_id: 顾问ID筛选
             community_id: 小区ID筛选
+            is_new_listing: 仅新上房源（首次发布 ≤ 7 天）
+            has_price_change: 仅近期调价房源（≤ 7 天内有调价记录）
 
         Returns:
             (项目列表, 总记录数)
@@ -97,6 +129,8 @@ class MarketingProjectService:
             project_status=project_status,
             consultant_id=consultant_id,
             community_id=community_id,
+            is_new_listing=is_new_listing,
+            has_price_change=has_price_change,
         )
 
         total: int = query.count()
@@ -127,6 +161,8 @@ class MarketingProjectService:
         project_status: MarketingProjectStatus | None = None,
         consultant_id: str | None = None,
         community_id: str | None = None,
+        is_new_listing: bool | None = None,
+        has_price_change: bool | None = None,
     ) -> L4MarketingProjectSummary:
         """获取营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响.
 
@@ -135,6 +171,8 @@ class MarketingProjectService:
             project_status: 项目状态筛选
             consultant_id: 顾问ID筛选
             community_id: 小区ID筛选
+            is_new_listing: 仅新上房源（首次发布 ≤ 7 天）
+            has_price_change: 仅近期调价房源（≤ 7 天内有调价记录）
 
         Returns:
             摘要统计对象
@@ -145,6 +183,8 @@ class MarketingProjectService:
             project_status=project_status,
             consultant_id=consultant_id,
             community_id=community_id,
+            is_new_listing=is_new_listing,
+            has_price_change=has_price_change,
         )
 
         total: int = query.count()
@@ -185,6 +225,66 @@ class MarketingProjectService:
             sold=sold,
             in_progress=in_progress,
         )
+
+    def get_price_change_timeline(
+        self,
+        project_id: int,
+    ) -> tuple[list[L4MarketingPriceChangeTimelineItem], int]:
+        """获取房源调价历史时间线（倒序，含分次送达统计）.
+
+        两次查询无 N+1：price_changes 按时间倒序 + notify_logs 按
+        price_change_id in_ 分组 count（send_status 三态分别计数，
+        skipped/failed 与 success 独立，旧留痕 price_change_id 为 NULL 天然不参与）。
+
+        Args:
+            project_id: 营销项目ID
+
+        Returns:
+            (时间线条目列表(倒序), 调价记录总数)
+
+        """
+        changes: list[L4MarketingPriceChange] = (
+            self.db.query(L4MarketingPriceChange)
+            .filter(L4MarketingPriceChange.marketing_project_id == project_id)
+            .order_by(desc(L4MarketingPriceChange.created_at))
+            .all()
+        )
+        if not changes:
+            return [], 0
+
+        change_ids = [change.id for change in changes]
+        rows = (
+            self.db.query(
+                L4MarketingNotifyLog.price_change_id,
+                L4MarketingNotifyLog.send_status,
+                func.count(L4MarketingNotifyLog.id),
+            )
+            .filter(
+                L4MarketingNotifyLog.notify_type == "price_change",
+                L4MarketingNotifyLog.price_change_id.in_(change_ids),
+            )
+            .group_by(L4MarketingNotifyLog.price_change_id, L4MarketingNotifyLog.send_status)
+            .all()
+        )
+        # {(price_change_id): {status: count}} —— send_status 三态分别计数
+        count_map: dict[int, dict[str, int]] = {}
+        for price_change_id, send_status, cnt in rows:
+            count_map.setdefault(price_change_id, {})[send_status] = int(cnt)
+
+        items = [
+            L4MarketingPriceChangeTimelineItem(
+                id=change.id,
+                old_price=float(change.old_price),
+                new_price=float(change.new_price),
+                direction=change.direction,
+                changed_at=change.created_at,
+                notify_success=count_map.get(change.id, {}).get("success", 0),
+                notify_skipped=count_map.get(change.id, {}).get("skipped", 0),
+                notify_failed=count_map.get(change.id, {}).get("failed", 0),
+            )
+            for change in changes
+        ]
+        return items, len(items)
 
     def get_project(self, project_id: int) -> L4MarketingProject | None:
         """获取单个营销项目详情.
@@ -332,17 +432,19 @@ class MarketingProjectService:
             and db_obj.total_price != old_total_price
         ):
             direction = "down" if db_obj.total_price < old_total_price else "up"
-            self.db.add(
-                L4MarketingPriceChange(
-                    marketing_project_id=db_obj.id,
-                    old_price=old_total_price,
-                    new_price=db_obj.total_price,
-                    direction=direction,
-                ),
+            change = L4MarketingPriceChange(
+                marketing_project_id=db_obj.id,
+                old_price=old_total_price,
+                new_price=db_obj.total_price,
+                direction=direction,
             )
+            self.db.add(change)
+            # flush 拿到调价记录主键（通知留痕透传，时间线按其分组）
+            self.db.flush()
             price_signal = PriceSignal(
                 old_price=float(old_total_price),
                 new_price=float(db_obj.total_price),
+                price_change_id=change.id,
             )
 
         self.db.commit()

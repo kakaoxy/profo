@@ -18,6 +18,8 @@ type SubscribeTemplateResponse =
   components["schemas"]["PublicMarketingSubscribeTemplateResponse"];
 type SubscriptionStatusResponse =
   components["schemas"]["PublicMarketingSubscriptionStatusResponse"];
+type ProjectSubscriptionStatusResponse =
+  components["schemas"]["PublicMarketingProjectSubscriptionStatusResponse"];
 type SubscribeReportResponse = components["schemas"]["PublicMarketingSubscribeReportResponse"];
 
 /** 订阅模板 ID 对（任一为 null 表示该频道不可订阅）. */
@@ -107,6 +109,121 @@ async function reportSubscribeResult(
   }
 }
 
+/**
+ * 查询当前用户对指定房源的订阅状态（需登录；未登录/失败返回 null）.
+ */
+export async function fetchProjectSubscriptionStatus(
+  projectId: number,
+): Promise<ProjectSubscriptionStatus | null> {
+  // 未登录：status 接口需 C 端登录态，直接不发请求（避免 401 噪音）
+  if (!getCAccessToken()) {
+    return null;
+  }
+  try {
+    const res = await request<ProjectSubscriptionStatusResponse>({
+      url: `/public/marketing/projects/${projectId}/subscription`,
+    });
+    return {
+      subscribed: res.subscribed,
+      priceChangeQuota: res.price_change_quota,
+      lastSubscribedAt: res.last_subscribed_at || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** 上报房源级授权结果（内部；未登录或失败均静默返回 null，调用方据 onResult 引导登录）. */
+async function reportProjectSubscribeResult(
+  projectId: number,
+  results: { templateId: string; status: MarketingSubscribeStatus }[],
+): Promise<ProjectSubscriptionStatus | null> {
+  // 未登录：report 接口需 C 端登录态，直接不发请求（避免 401 噪音），
+  // 由调用方 onResult(status="accept", quotas=null) 分支引导登录后补报
+  if (!getCAccessToken()) {
+    return null;
+  }
+  try {
+    const res = await request<ProjectSubscriptionStatusResponse>({
+      url: `/public/marketing/projects/${projectId}/subscription/report`,
+      method: "POST",
+      data: {
+        results: results.map((r) => ({ template_id: r.templateId, status: r.status })),
+      },
+    });
+    return {
+      subscribed: res.subscribed,
+      priceChangeQuota: res.price_change_quota,
+      lastSubscribedAt: null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** 房源级订阅状态（查询/上报共用）. */
+export interface ProjectSubscriptionStatus {
+  subscribed: boolean;
+  priceChangeQuota: number;
+  lastSubscribedAt: string | null;
+}
+
+/**
+ * 发起「调价提醒」（房源级）订阅消息授权.
+ * ⚠️ 必须在用户 tap 手势回调内同步调用（不可包 async/await 之后再调），
+ * 对齐 requestMarketingSubscribe 约束.
+ *
+ * 仅请求调价模板（房源级调价订阅与频道级共用同一模板配置，涨降都推）；
+ * accept 结果上报 /public/marketing/projects/{id}/subscription/report，
+ * 房源级额度 +1（与频道级账本相互独立）。
+ *
+ * @param projectId 房源 ID
+ * @param templateId 调价模板 ID（subscribe_enabled=false 时不调用本函数）
+ * @param onResult 授权流程结束回调（带最新房源级额度状态，上报失败时为 null）
+ */
+export function requestProjectPriceSubscribe(
+  projectId: number,
+  templateId: string,
+  onResult?: (status: MarketingSubscribeStatus, quota: ProjectSubscriptionStatus | null) => void,
+): void {
+  wx.requestSubscribeMessage({
+    tmplIds: [templateId],
+    success: (res) => {
+      const status = (res[templateId] as MarketingSubscribeStatus | undefined) ?? "filter";
+      const results: { templateId: string; status: MarketingSubscribeStatus }[] = [];
+      if (status === "accept" || status === "ban") {
+        results.push({ templateId, status });
+      }
+
+      const finish = (quota: ProjectSubscriptionStatus | null) => {
+        if (status === "accept") {
+          wx.showToast({ title: "已开启，该房源调价时提醒你", icon: "none" });
+        } else if (status === "ban") {
+          wx.showModal({
+            title: "无法开启提醒",
+            content: "您此前选择了总是拒收订阅消息，请在设置中开启「订阅消息」后重试",
+            confirmText: "去设置",
+            success: (modalRes) => {
+              if (modalRes.confirm) {
+                wx.openSetting({});
+              }
+            },
+          });
+        }
+        onResult?.(status, quota);
+      };
+
+      if (results.length > 0) {
+        reportProjectSubscribeResult(projectId, results).then(finish);
+      } else {
+        finish(null);
+      }
+    },
+    fail: () => {
+      onResult?.("error", null);
+    },
+  });
+}
 /**
  * 发起「房源动态提醒」订阅消息授权.
  * ⚠️ 必须在用户 tap 手势回调内同步调用（不可包 async/await 之后再调），

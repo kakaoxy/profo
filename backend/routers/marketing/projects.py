@@ -22,10 +22,12 @@ from schemas.l4_marketing import (
     L4MarketingMediaUpdate,
     L4MarketingNotifySummary,
     L4MarketingPriceChangeSummary,
+    L4MarketingPriceChangeTimelineResponse,
     L4MarketingProjectCreate,
     L4MarketingProjectListResponse,
     L4MarketingProjectResponse,
     L4MarketingProjectUpdate,
+    L4MarketingSubscriptionStatsResponse,
     L4SyncResponse,
     MediaSortOrderUpdate,
 )
@@ -38,6 +40,7 @@ from services.marketing import (
 from services.marketing.aggregate import aggregate_notify_fields
 from services.marketing.notify import notify_project_price_changed, notify_projects_published
 from services.marketing.public import PublicProjectService
+from services.marketing.subscription import MarketingSubscriptionService
 from services.system.exceptions import ResourceNotFoundError
 from utils.common import RateLimits, limiter
 
@@ -74,6 +77,8 @@ def list_marketing_projects(
     project_status: Annotated[MarketingProjectStatus | None, Query(description="项目状态: 在途/在售/已售")] = None,
     consultant_id: Annotated[str | None, Query(max_length=100, description="顾问ID")] = None,
     community_id: Annotated[str | None, Query(max_length=100, description="小区ID")] = None,
+    is_new_listing: Annotated[bool | None, Query(description="仅新上房源(首次发布≤7天)")] = None,
+    has_price_change: Annotated[bool | None, Query(description="仅近期调价房源(≤7天)")] = None,
 ) -> L4MarketingProjectListResponse:
     """获取营销项目列表 - 统一分页格式，包含摘要统计."""
     summary = service.get_projects_summary(
@@ -81,6 +86,8 @@ def list_marketing_projects(
         project_status=project_status,
         consultant_id=consultant_id,
         community_id=community_id,
+        is_new_listing=is_new_listing,
+        has_price_change=has_price_change,
     )
 
     skip = (pagination.page - 1) * pagination.page_size
@@ -91,10 +98,14 @@ def list_marketing_projects(
         project_status=project_status,
         consultant_id=consultant_id,
         community_id=community_id,
+        is_new_listing=is_new_listing,
+        has_price_change=has_price_change,
     )
 
     # 复用C端封面规则（营销照片首张图片，跳过视频），保证列表标题图与C端一致
     cover_map = PublicProjectService(db).resolve_cover_images_batch(items)
+    # 新上徽标（与 C 端 is_new_listing 同口径：published_at ≤ BADGE_WINDOW_DAYS）
+    badge_map = PublicProjectService(db).resolve_listing_badges(items)
     # 调价摘要 + 通知统计批量聚合（admin 通知列 / 总价副行 / 详情 Sheet 数据源）
     notify_map = aggregate_notify_fields(db, items)
     result_items = []
@@ -103,6 +114,7 @@ def list_marketing_projects(
         cover_image, cover_thumbnail_url = cover_map[item.id]
         resp.cover_image = cover_image
         resp.cover_thumbnail_url = cover_thumbnail_url
+        resp.is_new_listing = badge_map[item.id][0]
         latest_change, notify_summary = notify_map[item.id]
         resp.latest_price_change = L4MarketingPriceChangeSummary(**latest_change) if latest_change else None
         resp.notify_summary = L4MarketingNotifySummary(**notify_summary)
@@ -115,6 +127,32 @@ def list_marketing_projects(
         page_size=pagination.page_size,
         summary=summary,
     )
+
+
+@router.get(
+    "/projects/{project_id}/price-changes",
+    summary="获取调价历史时间线",
+)
+def list_price_change_timeline(
+    project_id: Annotated[int, Path(ge=1, description="项目ID")],
+    service: _ProjectServiceDep,
+    _current_user: L4MarketingReadPermDep,
+) -> L4MarketingPriceChangeTimelineResponse:
+    """获取营销项目调价历史时间线（倒序，含分次 notify success/skipped/failed 计数）."""
+    items, total = service.get_price_change_timeline(project_id)
+    return L4MarketingPriceChangeTimelineResponse(items=items, total=total)
+
+
+@router.get(
+    "/subscription-stats",
+    summary="获取全局订阅统计",
+)
+def get_subscription_stats(
+    db: DbSessionDep,
+    _current_user: L4MarketingReadPermDep,
+) -> L4MarketingSubscriptionStatsResponse:
+    """获取订阅漏斗全局统计（Router 禁 SQL，聚合全部在 Service）."""
+    return MarketingSubscriptionService(db).get_global_stats()
 
 
 @router.post(

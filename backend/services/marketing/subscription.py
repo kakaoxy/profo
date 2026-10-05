@@ -4,16 +4,28 @@
 - get_status：查询当前用户两频道剩余额度
 - report_result：小程序 requestSubscribeMessage 结果上报，仅 accept 计入额度
   （模板 ID → 频道映射经 subscribe_templates 解析，用户不存在的模板 ID 静默忽略）
+- get_project_status / report_project_result：房源级订阅（l4_marketing_project_subscriptions）
+  状态查询与 accept 上报（一人一房源一行，upsert 复用 _upsert_row 模式）
+- get_global_stats：订阅漏斗全局统计（admin 端点数据源，Router 禁 SQL 全部在此聚合）
 - 每人一行 upsert（uq 唯一约束 + 冲突回退重查，对齐 subscribe_templates 服务同口径）
 """
 
 import logging
+from datetime import datetime, timezone
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from models import L4MarketingSubscription, User
+from models import (
+    L4MarketingProject,
+    L4MarketingProjectSubscription,
+    L4MarketingSubscription,
+    User,
+)
+from schemas.l4_marketing import L4MarketingSubscriptionStatsResponse
 from services.system import subscribe_templates
+from services.system.exceptions import ResourceNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +80,58 @@ class MarketingSubscriptionService:
                 raise RuntimeError(msg) from None
         return row
 
+    def get_global_stats(self) -> L4MarketingSubscriptionStatsResponse:
+        """订阅漏斗全局统计（admin 端点数据源，Router 禁 SQL，聚合全部在此）.
+
+        单表聚合（订阅表行数 = C 端用户量级，count/sum 无性能风险）：
+        - new_listing_subscribers / price_change_subscribers：对应频道剩余额度 >0
+          人数（可触达）
+        - total_subscribers：任一频道订阅过的人数（总行数）
+        - total_new_quota / total_price_quota：两频道额度池总量
+        - project_level_subscribers：房源级订阅人数（去重 user_id，P2-1）
+        - project_level_watches：房源级订阅关系总数（P2-1）
+
+        Returns:
+            全局统计响应模型
+
+        """
+        new_listing_subscribers = (
+            self.db.query(L4MarketingSubscription).filter(L4MarketingSubscription.new_listing_quota > 0).count()
+        )
+        price_change_subscribers = (
+            self.db.query(L4MarketingSubscription).filter(L4MarketingSubscription.price_change_quota > 0).count()
+        )
+        total_subscribers = self.db.query(func.count(L4MarketingSubscription.id)).scalar() or 0
+        total_new_quota = (
+            self.db.query(func.coalesce(func.sum(L4MarketingSubscription.new_listing_quota), 0)).scalar() or 0
+        )
+        total_price_quota = (
+            self.db.query(func.coalesce(func.sum(L4MarketingSubscription.price_change_quota), 0)).scalar() or 0
+        )
+
+        # 房源级订阅统计（P2-1；表未建时降级 0，不阻断频道级统计）
+        project_level_subscribers = 0
+        project_level_watches = 0
+        try:
+            project_level_subscribers = (
+                self.db.query(func.count(func.distinct(L4MarketingProjectSubscription.user_id))).scalar() or 0
+            )
+            project_level_watches = self.db.query(func.count(L4MarketingProjectSubscription.id)).scalar() or 0
+        except Exception:
+            # 表尚未迁移时 SQLAlchemy 抛 ProgrammingError：降级 0，不阻断频道级统计
+            self.db.rollback()
+            logger.warning("房源级订阅表不可用，统计降级为 0（P2-1 未迁移）")
+
+        return L4MarketingSubscriptionStatsResponse(
+            new_listing_subscribers=int(new_listing_subscribers),
+            price_change_subscribers=int(price_change_subscribers),
+            total_subscribers=int(total_subscribers),
+            total_new_quota=int(total_new_quota),
+            total_price_quota=int(total_price_quota),
+            project_level_subscribers=int(project_level_subscribers),
+            project_level_watches=int(project_level_watches),
+        )
+
     def report_result(
         self,
         user_id: str,
@@ -108,8 +172,6 @@ class MarketingSubscriptionService:
 
         row = self._upsert_row(user_id, openid)
 
-        from datetime import datetime, timezone
-
         changed = False
         for template_id, result_status in results:
             channel = channel_by_template.get(template_id)
@@ -133,4 +195,151 @@ class MarketingSubscriptionService:
         return {
             "new_listing_quota": row.new_listing_quota,
             "price_change_quota": row.price_change_quota,
+        }
+
+    # ==================================================================
+    # 房源级订阅（P2-1「只盯这一套」）：与频道级账本相互独立
+    # ==================================================================
+
+    def _get_project_row(
+        self,
+        user_id: str,
+        marketing_project_id: int,
+    ) -> L4MarketingProjectSubscription | None:
+        """查询用户对某房源的订阅行（无则 None）."""
+        return (
+            self.db.query(L4MarketingProjectSubscription)
+            .filter(
+                L4MarketingProjectSubscription.user_id == user_id,
+                L4MarketingProjectSubscription.marketing_project_id == marketing_project_id,
+            )
+            .first()
+        )
+
+    def get_project_status(self, user_id: str, marketing_project_id: int) -> dict[str, object]:
+        """查询当前用户对指定房源的订阅状态.
+
+        Args:
+            user_id: 当前登录 C 端用户 ID
+            marketing_project_id: 房源 ID
+
+        Returns:
+            {subscribed, price_change_quota, last_subscribed_at}
+
+        """
+        row = self._get_project_row(user_id, marketing_project_id)
+        if row is None:
+            return {
+                "subscribed": False,
+                "price_change_quota": 0,
+                "last_subscribed_at": None,
+            }
+        return {
+            "subscribed": True,
+            "price_change_quota": row.price_change_quota,
+            "last_subscribed_at": row.last_subscribed_at,
+        }
+
+    def _upsert_project_row(
+        self,
+        user_id: str,
+        marketing_project_id: int,
+        openid: str,
+    ) -> L4MarketingProjectSubscription:
+        """获取或创建房源级订阅行（并发首次创建回退重查，对齐 _upsert_row 模式）.
+
+        并发场景下唯一约束冲突（uq_l4_project_subs_user_project）时 rollback
+        后重查，复用并发事务已提交的行。
+        """
+        row = self._get_project_row(user_id, marketing_project_id)
+        if row is not None:
+            return row
+        row = L4MarketingProjectSubscription(
+            user_id=user_id,
+            marketing_project_id=marketing_project_id,
+            openid=openid,
+        )
+        self.db.add(row)
+        try:
+            self.db.flush()
+        except IntegrityError:
+            self.db.rollback()
+            row = self._get_project_row(user_id, marketing_project_id)
+            if row is None:
+                msg = "房源级订阅记录写入失败"
+                raise RuntimeError(msg) from None
+        return row
+
+    def report_project_result(
+        self,
+        user_id: str,
+        marketing_project_id: int,
+        results: list[tuple[str, str]],
+    ) -> dict[str, object]:
+        """上报房源级订阅授权结果（accept 累计房源级额度 +1）.
+
+        模板 ID 映射复用 project_price_change 配置（与频道级调价模板同一模板）；
+        用户上报了不属于本功能的模板 ID 时静默忽略；房源不存在/已删除时 404。
+
+        Args:
+            user_id: 当前登录 C 端用户 ID
+            marketing_project_id: 房源 ID
+            results: [(template_id, status), ...]（requestSubscribeMessage 结果项）
+
+        Returns:
+            {subscribed, price_change_quota, last_subscribed_at}
+
+        Raises:
+            ResourceNotFoundError: 房源不存在或已删除
+
+        """
+        project = (
+            self.db.query(L4MarketingProject)
+            .filter(
+                L4MarketingProject.id == marketing_project_id,
+                L4MarketingProject.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if project is None:
+            msg = "房源不存在"
+            raise ResourceNotFoundError(msg)
+
+        user = self.db.query(User).filter(User.id == user_id).first()
+        openid = (user.wechat_openid if user else None) or ""
+        if not openid:
+            # 无 openid 无法接收订阅消息：额度无意义，直接返回当前状态（通常未订阅）
+            logger.warning(
+                "房源级订阅上报用户无 openid，忽略：user_id=%s, project_id=%s",
+                user_id,
+                marketing_project_id,
+            )
+            return self.get_project_status(user_id, marketing_project_id)
+
+        row = self._upsert_project_row(user_id, marketing_project_id, openid)
+
+        price_id = subscribe_templates.resolve_template_id(self.db, "project_price_change")
+        changed = False
+        for template_id, result_status in results:
+            if template_id != price_id:
+                logger.info(
+                    "房源级订阅上报模板 ID 与当前配置不符，忽略：template_id=%s",
+                    template_id,
+                )
+                continue
+            if result_status != _QUOTA_INC_STATUS:
+                continue
+            row.price_change_quota += 1
+            changed = True
+
+        if changed:
+            row.last_subscribed_at = datetime.now(timezone.utc)
+            row.openid = openid  # openid 快照刷新（换号绑定后保持最新）
+            self.db.commit()
+            self.db.refresh(row)
+
+        return {
+            "subscribed": True,
+            "price_change_quota": row.price_change_quota,
+            "last_subscribed_at": row.last_subscribed_at,
         }

@@ -164,3 +164,33 @@ export function getUserIdFromAccessToken(): string {
   const sub = data.sub;
   return typeof sub === "string" ? sub : "";
 }
+
+/**
+ * 判断 storage 中的后台令牌是否有效（aud=admin 且 exp 未过期）.
+ *
+ * 用途：员工身份识别（/auth/me）等 admin 端请求的前置预判——令牌明显无效
+ * （无令牌/aud 非 admin/exp 已过）时直接跳过请求，避免必现 401 噪音
+ * （401 会触发刷新链路，刷新失败时控制台打印红色报错，虽业务静默但干扰调试）。
+ * 仅做本地预判不替代服务端校验：令牌被后端吊销等场景仍会 401，由
+ * request.ts 的自动刷新链路兜底。
+ */
+export function hasValidAdminToken(): boolean {
+  const token = getAccessToken();
+  if (!token) {
+    return false;
+  }
+  if (getTokenAud(token) !== "admin") {
+    return false;
+  }
+  const data = parseTokenPayload(token);
+  if (!data) {
+    return false;
+  }
+  const exp = data.exp;
+  // 无 exp 声明时不预判过期（交由服务端校验）
+  if (typeof exp !== "number") {
+    return true;
+  }
+  // 提前 30s 视为过期（容忍时钟偏差与请求耗时）
+  return exp * 1000 > Date.now() + 30_000;
+}

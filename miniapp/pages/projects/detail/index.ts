@@ -2,9 +2,20 @@ import type { components } from "../../../types/api-types";
 import { calcLoan, fmtBp, fmtWan1, fmtYuanInt, LOAN_DEFAULTS, MODE_NAME } from "../../../utils/loan-calc";
 import { request } from "../../../utils/request";
 import type { HttpResponseError } from "../../../utils/request";
-import { getAccessToken, getCAccessToken, getUserIdFromAccessToken } from "../../../utils/token";
+import {
+  getAccessToken,
+  getCAccessToken,
+  getUserIdFromAccessToken,
+  hasValidAdminToken,
+} from "../../../utils/token";
 import { resolveAssetUrl, resolveImageUrl } from "../../../utils/url";
 import { fetchEmployeeId } from "../../../utils/valuation-share";
+import {
+  fetchMarketingSubscribeTemplates,
+  fetchProjectSubscriptionStatus,
+  requestProjectPriceSubscribe,
+  type MarketingSubscribeTemplates,
+} from "../../../utils/marketing-notify";
 import { getVisitorId } from "../../../utils/visitor";
 
 type PublicProjectDetail = components["schemas"]["PublicProjectDetail"];
@@ -118,6 +129,12 @@ interface PageData {
   bookingSubmitting: boolean;
   /** 页内手机号授权弹层是否展示（未绑手机号预约时引导）. */
   phoneAuthVisible: boolean;
+  /** 调价提醒（房源级订阅，涨降都推）开关：subscribe_enabled=false 时按钮整体隐藏. */
+  priceAlertEnabled: boolean;
+  /** 房源级订阅状态：quota>0 已订阅有额度（反白可续订）/ 0 未订阅. */
+  priceAlertQuota: number;
+  /** 房源级已订阅（存在订阅行，展示「已提醒」态）. */
+  priceAlertSubscribed: boolean;
 }
 
 type Custom = {
@@ -151,8 +168,18 @@ type Custom = {
   onMineTap(): void;
   onShareTimeline(): void;
   onShow(): void;
+  /** 拉取调价提醒模板配置（subscribe_enabled=false 时按钮整体隐藏）. */
+  loadPriceAlertTemplate(): Promise<void>;
+  /** 刷新房源级订阅状态（需登录；未登录静默保持未订阅态）. */
+  refreshPriceAlertState(): Promise<void>;
+  /** 调价提醒按钮 tap（未订阅可订/已订阅可续订/未登录先授权后引导）. */
+  onPriceAlertTap(): void;
   /** 登录返回后续约预约流标记（实例字段，无需渲染）. */
   pendingBook: boolean;
+  /** 登录返回后补报房源级订阅授权标记（实例字段，无需渲染）. */
+  pendingProjectSubscribe: boolean;
+  /** 房源级调价模板 ID（subscribe_enabled=false 时为 null，按钮隐藏）. */
+  priceAlertTemplateId: string | null;
 };
 
 /** 判断是否为 HTTP 非 2xx 错误. */
@@ -294,8 +321,13 @@ Page<PageData, Custom>({
     booked: false,
     bookingSubmitting: false,
     phoneAuthVisible: false,
+    priceAlertEnabled: false,
+    priceAlertQuota: 0,
+    priceAlertSubscribed: false,
   },
   pendingBook: false,
+  pendingProjectSubscribe: false,
+  priceAlertTemplateId: null,
   onLoad(options) {
     const rawOptions = options as Record<string, string | undefined>;
     const rawId = rawOptions.id;
@@ -324,10 +356,14 @@ Page<PageData, Custom>({
     if (getCAccessToken()) {
       this.loadBookedState(id);
     }
-    // 内部员工（admin 令牌存在）：识别身份后分享携带 referrer（分享人归属）
-    if (getAccessToken()) {
+    // 内部员工（admin 令牌有效）：识别身份后分享携带 referrer（分享人归属）。
+    // hasValidAdminToken 预判（aud=admin 且 exp 未过）：过期令牌直接跳过 /auth/me，
+    // 避免进入详情页必现 401 报错（令牌过期时刷新失败会清 storage，下次进入不再触发）
+    if (hasValidAdminToken()) {
       this.loadEmployee();
     }
+    // 调价提醒：拉取订阅模板配置（未配置 → 按钮整体隐藏）
+    this.loadPriceAlertTemplate();
   },
   onShow() {
     // 登录页返回重试：onBookTap 时未登录跳登录（pendingBook 置位），
@@ -336,6 +372,83 @@ Page<PageData, Custom>({
       this.pendingBook = false;
       this.proceedBooking(this.data.id);
     }
+    // 登录返回（from=subscribe-project）：清标记即可，下方统一刷新房源级订阅状态
+    this.pendingProjectSubscribe = false;
+    // 每次回页面刷新订阅额度（登录补报生效/推送消耗额度后回详情页可见最新额度）
+    this.refreshPriceAlertState();
+  },
+
+  /**
+   * 拉取订阅模板配置（调价提醒入口开关）.
+   * 模板未配置（subscribe_enabled=false）时按钮整体隐藏；
+   * 配置了调价模板即展示入口（房源级调价订阅与频道级共用同一模板，涨降都推）。
+   */
+  async loadPriceAlertTemplate(): Promise<void> {
+    const templates: MarketingSubscribeTemplates | null = await fetchMarketingSubscribeTemplates();
+    if (!templates || !templates.priceChangeTemplateId) {
+      this.priceAlertTemplateId = null;
+      this.setData({ priceAlertEnabled: false });
+      return;
+    }
+    this.priceAlertTemplateId = templates.priceChangeTemplateId;
+    this.setData({ priceAlertEnabled: true });
+    // 订阅状态刷新由 onLoad 后的 onShow 统一执行，此处不重复请求
+  },
+
+  /** 刷新房源级订阅状态（需登录；未登录静默保持未订阅态）. */
+  async refreshPriceAlertState(): Promise<void> {
+    const id = this.data.id;
+    if (!this.data.priceAlertEnabled || id === null) {
+      return;
+    }
+    const status = await fetchProjectSubscriptionStatus(id);
+    if (status === null) {
+      // 未登录/网络失败：保持未订阅态（静默）
+      this.setData({ priceAlertQuota: 0, priceAlertSubscribed: false });
+      return;
+    }
+    this.setData({
+      priceAlertQuota: status.priceChangeQuota,
+      priceAlertSubscribed: status.subscribed,
+    });
+  },
+
+  /**
+   * 调价提醒按钮 tap（四态入口）.
+   * ⚠️ requestSubscribeMessage 必须在 tap 手势回调内同步发起（不可 await 后再调）：
+   * - 未订阅 → 拉起授权面板 → accept 上报房源级额度 +1
+   * - 已订阅有额度（反白态）→ 点击可续订 +N（同样拉起授权面板）
+   * - 未登录 → 仍同步拉起授权面板，accept 后弹「登录后生效」引导
+   *   （from=subscribe-project，返回后 onShow 刷新订阅状态）
+   */
+  onPriceAlertTap(): void {
+    const id = this.data.id;
+    const templateId = this.priceAlertTemplateId;
+    if (id === null || !templateId) {
+      return;
+    }
+    const notLoggedIn = !getCAccessToken();
+    requestProjectPriceSubscribe(id, templateId, (status) => {
+      if (notLoggedIn && status === "accept") {
+        // 授权 accept 但未登录无法上报：引导登录（返回后 onShow 刷新订阅状态补报生效）
+        this.pendingProjectSubscribe = true;
+        wx.showModal({
+          title: "登录后生效",
+          content: "调价提醒需要登录后才能生效，是否立即登录？",
+          confirmText: "去登录",
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({ url: "/pages/login/index/index?from=subscribe-project" });
+            }
+          },
+        });
+        return;
+      }
+      // 已登录：上报成功后刷新按钮额度态；reject/ban/error 不改本地态
+      if (!notLoggedIn && status === "accept") {
+        this.refreshPriceAlertState();
+      }
+    });
   },
   async loadDetail(id: number): Promise<void> {
     this.setData({

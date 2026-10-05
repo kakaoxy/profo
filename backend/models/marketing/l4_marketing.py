@@ -512,11 +512,85 @@ class L4MarketingNotifyLog(BaseModel):
         nullable=False,
         comment="发送状态: success/failed/skipped",
     )
+    # 关联本次推送对应的调价记录（new_listing 类型恒 NULL；逻辑外键不建物理 FK）
+    price_change_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="关联调价记录ID(逻辑外键l4_marketing_price_changes，new_listing类型恒NULL)",
+    )
+    # 订阅来源（channel=频道级账本 / project=房源级订阅），为房源级订阅预留；频道级通知恒写 NULL
+    sub_source: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="订阅来源: channel(频道级)/project(房源级)，NULL为存量行",
+    )
     error_msg: Mapped[str | None] = mapped_column(Text, nullable=True, comment="失败/跳过原因(发送异常时留痕)")
 
     __table_args__ = (
         Index("idx_l4_marketing_notify_logs_project", "marketing_project_id", "notify_type"),
         Index("idx_l4_marketing_notify_logs_user", "user_id"),
+    )
+
+
+class L4MarketingProjectSubscription(BaseModel):
+    """房源级调价订阅（「只盯这一套」，P2-1）.
+
+    与频道级账本（l4_marketing_subscriptions）相互独立：用户在房源详情页
+    授权「调价提醒」后房源级额度 +1（accept 上报），该房源推送成功 -1
+    （原子条件更新）；skipped/failed 不扣。推送范围为频道级 ∪ 房源级
+    （按 user_id 去重优先房源级，同一用户同一房源只发一条、只扣一处额度）。
+    """
+
+    __tablename__ = "l4_marketing_project_subscriptions"
+
+    # 主键 - 整数类型，自增（对齐本文件既有表惯例，覆盖基类 Uuid 主键）
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="房源级订阅ID")
+
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="订阅用户ID(逻辑外键User)")
+    marketing_project_id: Mapped[int] = mapped_column(
+        Integer, nullable=False, comment="房源ID(逻辑外键l4_marketing_projects)"
+    )
+    # 授权时快照的微信 openid（发送免回查，与频道级账本同构）
+    openid: Mapped[str] = mapped_column(String(64), nullable=False, comment="微信openid(授权时快照)")
+    # 房源级一次性订阅额度（accept 上报 +1，推送成功 -1）
+    price_change_quota: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+        comment="调价提醒剩余额度(房源级一次性订阅)",
+    )
+    # 最近一次授权订阅时间（与频道级账本同构；首次上报 accept 时写入）
+    last_subscribed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="最近一次订阅授权时间",
+    )
+
+    # 时间戳（覆盖基类，使用数据库默认值）
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        comment="更新时间",
+    )
+
+    __table_args__ = (
+        # 一人一房源一行（upsert 语义由 Service 层保证）
+        UniqueConstraint(
+            "user_id",
+            "marketing_project_id",
+            name="uq_l4_project_subs_user_project",
+        ),
+        # 推送查询索引：按房源取剩余额度 >0 的订阅行
+        Index("idx_l4_project_subs_project", "marketing_project_id", "price_change_quota"),
     )
 
 

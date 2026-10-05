@@ -67,7 +67,21 @@
     <view class="detail-body">
       <!-- 标题区 -->
       <view class="detail-head">
-        <view class="detail-price">¥ {{detail.total_price}} 万</view>
+        <view class="detail-price-row">
+          <view class="detail-price">¥ {{detail.total_price}} 万</view>
+          <!-- 调价提醒（房源级订阅，涨降都推）：subscribe_enabled=false 整体隐藏；已订阅反白可续订 -->
+          <button
+            wx:if="{{priceAlertEnabled}}"
+            class="price-alert-btn {{priceAlertSubscribed && priceAlertQuota > 0 ? 'price-alert-btn--on' : ''}}"
+            hover-class="price-alert-btn--hover"
+            hover-stay-time="100"
+            bindtap="onPriceAlertTap"
+          >
+            <text class="price-alert-ic">🔔</text>
+            <text wx:if="{{priceAlertSubscribed && priceAlertQuota > 0}}">已开启 · 可收{{priceAlertQuota}}条</text>
+            <text wx:else>调价提醒</text>
+          </button>
+        </view>
         <view class="detail-title">{{detail.title}}</view>
         <view wx:if="{{detail.tags && detail.tags.length}}" class="detail-chips">
           <text

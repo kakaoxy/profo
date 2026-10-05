@@ -50,7 +50,7 @@ function ErrorState({ message, statusCode }: { message: string; statusCode?: num
 // 统计数据骨架屏
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="rounded-cards bg-white px-6 py-5 shadow-steep">
           <Skeleton className="h-4 w-16 mb-2" />
@@ -111,20 +111,33 @@ async function ProjectsDataFetcher({
   const projectStatus = getSearchParam(searchParams?.project_status, "") || undefined;
   const consultantId = getSearchParam(searchParams?.consultant_id, "") || undefined;
   const communityId = getSearchParam(searchParams?.community_id, "") || undefined;
+  // 新上/近期调价筛选 pill（badge_filter=new/price，映射后端两个 bool 参数）
+  const badgeFilter = getSearchParam(searchParams?.badge_filter, "");
+  const isNewListing = badgeFilter === "new" ? true : undefined;
+  const hasPriceChange = badgeFilter === "price" ? true : undefined;
 
+  // 无依赖的异步请求并行发起（消除请求瀑布）：列表与订阅统计相互独立
   const client = await fetchClient();
-  const { data, error } = await client.GET("/api/v1/admin/marketing/projects", {
-    params: {
-      query: {
-        page,
-        page_size: size,
-        publish_status: publishStatus as L4MarketingProjectsQuery["publish_status"],
-        project_status: projectStatus as L4MarketingProjectsQuery["project_status"],
-        consultant_id: consultantId,
-        community_id: communityId,
-      } satisfies L4MarketingProjectsQuery,
-    },
-  });
+  const [projectsRes, subStatsRes] = await Promise.all([
+    client.GET("/api/v1/admin/marketing/projects", {
+      params: {
+        query: {
+          page,
+          page_size: size,
+          publish_status: publishStatus as L4MarketingProjectsQuery["publish_status"],
+          project_status: projectStatus as L4MarketingProjectsQuery["project_status"],
+          consultant_id: consultantId,
+          community_id: communityId,
+          is_new_listing: isNewListing,
+          has_price_change: hasPriceChange,
+        } satisfies L4MarketingProjectsQuery,
+      },
+    }),
+    // P1-1：订阅漏斗全局统计（统计卡「订阅用户」「可触达·新上」数据源）
+    client.GET("/api/v1/admin/marketing/subscription-stats"),
+  ]);
+  const { data, error } = projectsRes;
+  const subStats = subStatsRes.data ?? null;
 
   if (error || !data) {
     const statusCode = getErrorStatusCode(error);
@@ -151,7 +164,7 @@ async function ProjectsDataFetcher({
 
   return (
     <>
-      <MarketingStats stats={stats} />
+      <MarketingStats stats={stats} subStats={subStats} />
       <MarketingView data={items} total={total} />
       <div className="relative z-50">
         <MarketingPagination total={total} />

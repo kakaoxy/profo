@@ -10,7 +10,6 @@ import { DataTable } from "@/components/ui/data-table";
 import { SearchBar, ListView } from "@/components/common";
 import { columns } from "../columns";
 import { L4MarketingProject } from "@/app/(main)/admin/marketing/types";
-import { MarketingDetailSheet } from "./marketing-detail-sheet";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
@@ -34,6 +33,13 @@ const PROJECT_STATUS_TABS = [
   { value: "在途", label: "在途" },
   { value: "在售", label: "在售" },
   { value: "已售", label: "已售" },
+] as const;
+
+// 新上/近期调价筛选 pill：value 直接对应后端 is_new_listing/has_price_change 参数
+const BADGE_FILTER_TABS = [
+  { value: "all", label: "全部" },
+  { value: "new", label: "新上" },
+  { value: "price", label: "近期调价" },
 ] as const;
 
 // 户型 Tab：value 用于客户端过滤
@@ -76,20 +82,19 @@ export function MarketingView({ data, total }: MarketingViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 从 URL 读取初始状态（两组 Tab 独立）
+  // 从 URL 读取初始状态（各组 Tab 独立）
   const initialPublishTab = searchParams.get("publish_status") || "all";
   const initialProjectStatusTab = searchParams.get("project_status") || "all";
   const initialLayout = searchParams.get("layout") || "all";
+  const initialBadgeFilter = searchParams.get("badge_filter") || "all";
   const initialSearch = searchParams.get("search") || "";
 
   const [publishTab, setPublishTab] = useState(initialPublishTab);
   const [projectStatusTab, setProjectStatusTab] = useState(initialProjectStatusTab);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [layoutFilter, setLayoutFilter] = useState(initialLayout);
+  const [badgeFilter, setBadgeFilter] = useState(initialBadgeFilter);
   const [, startTransition] = useTransition();
-
-  const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // 客户端过滤（仅用于户型和搜索，状态过滤已移至服务端）
   const layoutFilterFn = useMemo(() => createLayoutFilter(layoutFilter), [layoutFilter]);
@@ -152,10 +157,23 @@ export function MarketingView({ data, total }: MarketingViewProps) {
     setSearchQuery(value);
   }, []);
 
-  const handleRowClick = useCallback((row: L4MarketingProject) => {
-    setSelectedProject(row);
-    setIsSheetOpen(true);
-  }, []);
+  /** 行点击：跳转独立详情页（详情/编辑合并为单一详情页，页面化承载） */
+  const handleRowClick = useCallback(
+    (row: L4MarketingProject) => {
+      router.push(`/admin/marketing/${row.id}`);
+    },
+    [router],
+  );
+
+  const handleBadgeFilterChange = useCallback(
+    (value: string) => {
+      setBadgeFilter(value);
+      updateUrlParams({
+        badge_filter: value === "all" ? undefined : value,
+      });
+    },
+    [updateUrlParams],
+  );
 
   return (
     <>
@@ -220,6 +238,25 @@ export function MarketingView({ data, total }: MarketingViewProps) {
                 ))}
               </TabsList>
             </Tabs>
+
+            {/* 新上/近期调价筛选 pill（单选，服务端筛选 is_new_listing/has_price_change） */}
+            <Tabs
+              value={badgeFilter}
+              onValueChange={handleBadgeFilterChange}
+              className="w-full sm:w-auto"
+            >
+              <TabsList className="h-10 bg-fog p-1 rounded-cards">
+                {BADGE_FILTER_TABS.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="text-xs px-3 data-[state=active]:bg-ink data-[state=active]:text-white"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </>
         }
         actions={
@@ -258,13 +295,6 @@ export function MarketingView({ data, total }: MarketingViewProps) {
           </div>
         </div>
       </ListView>
-
-      <MarketingDetailSheet
-        key={selectedProject?.id}
-        project={selectedProject}
-        isOpen={isSheetOpen}
-        onClose={() => setIsSheetOpen(false)}
-      />
     </>
   );
 }

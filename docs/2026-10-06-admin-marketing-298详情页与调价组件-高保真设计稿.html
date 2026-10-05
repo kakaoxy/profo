@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>admin/marketing/298 详情页重构 × 调价独立组件 高保真设计稿 v1.0</title>
+<!--
+  admin/marketing/298（营销房源详情页）重构 × 调价独立组件 高保真设计稿 v1.0（2026-10-06）
+  ─────────────────────────────────────────────────────────────────────
+  现状勘察（设计动因）：
+    · 详情页 /admin/marketing/[id] 为单列堆叠四区块：房源信息 → 房源状态+管理配置 →
+      订阅与调价（NotifySection）→ 媒体资源；页面重心（价格）沉在第三屏
+    · 调价功能没有独立组件：调价入口按钮、内联表单、实时差价 chip、调价历史时间线、
+      送达统计全部内嵌在 detail/notify-section.tsx 一张卡里，职责混杂（约 330 行）
+    · 列表页 ActionCell 只有「预览 / 编辑 / 删除」，高频调价必须先进入详情页第三屏
+    · 价格状态分散：总价在房源信息卡、调价历史在订阅卡、通知列在表格，无一处聚合
+
+  本稿决策（经用户确认的四口径）：
+    ① 形态：调价拆为独立可复用组件 <PriceChangeCard>（浏览 / 表单 / 成功三态自包含），
+       详情页重构为「左主右辅」双栏——价格与调价升入右栏第一卡
+    ② 入口：详情页右栏主入口 + 列表页操作列行内快捷入口（轻弹层），共用同一交互语言
+    ③ 稿面：Artboard A 详情页全页（可交互） + Artboard B 组件状态全景 +
+       Artboard C 列表页行内调价（可交互）+ 状态机 / 口径 / 实现落点
+    ④ 交互深度：轻交互（原生 JS，点击切换 / 差价实时联动 / 弹层 / toast）
+
+  视觉真源：/DESIGN.md（Steep Style Reference）+ frontend/src/app/globals.css
+  代码真源：admin/marketing/{page,columns}.tsx · _components/{marketing-view,action-cell}.tsx
+            _components/detail/{marketing-detail-page,notify-section,marketing-info-section}.tsx
+  数据口径：L4MarketingProjectResponse（notify_summary / latest_price_change）+
+            GET /price-changes 时间线（old_price/new_price/direction/changed_at/notify_*）
+  货币语义：降价 = success 绿（用户得利视角，与现有 columns.tsx 一致，不采用红涨绿跌）
+  ⚠️ 本文件为设计稿交付物，要求单个自包含 HTML，故不拆分模块（有意超过 500 行）。
+-->
+<style>
+  /* ────────────────────────────────────────────────
+     Steep 设计 token（对齐 /DESIGN.md 与 globals.css）
+     ──────────────────────────────────────────────── */
+  :root {
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-line: #f2d0ba;
+    --sky: #d3e3fc;
+    --line: #e6e8ec;
+    --success: #059669;
+    --success-container: #ecfdf5;
+    --error: #ef4444;
+    --shadow-steep: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.1) 0 20px 25px -5px, rgba(0,0,0,.1) 0 8px 10px -6px;
+    --shadow-steep-sm: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 10px 20px -8px, rgba(0,0,0,.05) 0 3px 6px -4px;
+    --shadow-pop: 0 12px 40px -8px rgba(23,25,28,.22), 0 0 0 1px rgba(4,23,43,.05);
+    --serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --sans: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--fog);
+    font-family: var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.009em;
+    padding-bottom: 140px;
+    font-feature-settings: "tnum";
+  }
+
+  /* ── 文档骨架 ─────────────────────────────── */
+  .sec { max-width: 1280px; margin: 88px auto 0; padding: 0 32px; }
+  .sec h2 {
+    font-family: var(--serif); font-weight: 400; font-size: 34px;
+    line-height: 1.2; letter-spacing: -0.015em; margin-top: 10px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--graphite);
+  }
+  .lede { font-size: 15px; font-weight: 430; color: var(--ash); line-height: 1.75; margin-top: 12px; max-width: 920px; }
+  .lede b { font-weight: 480; color: var(--ink); }
+  .lede code, .cap-note code, td code, .li-note code {
+    font-family: var(--mono); font-size: 11.5px; color: var(--rust);
+    background: var(--apricot); padding: 1px 6px; border-radius: 6px;
+  }
+  .artlabel {
+    font-family: var(--mono); font-size: 12px; color: var(--graphite);
+    letter-spacing: .08em; margin: 34px 0 10px;
+  }
+  .artlabel em { font-style: normal; color: var(--dove); }
+  .cap-note { font-size: 12.5px; color: var(--graphite); margin-top: 14px; line-height: 1.7; max-width: 900px; }
+  .cap-note b { color: var(--ink); font-weight: 480; }
+
+  /* ── 页头 ─────────────────────────────── */
+  .doc-head { max-width: 1280px; margin: 72px auto 0; padding: 0 32px; }
+  .doc-head h1 {
+    font-family: var(--serif); font-weight: 400; font-size: 46px;
+    line-height: 1.15; letter-spacing: -0.02em; margin-top: 14px;
+  }
+  .doc-head h1 em { font-style: normal; color: var(--rust); }
+  .head-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .head-meta span {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    color: var(--graphite); background: var(--pwhite); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 14px;
+  }
+
+  /* ── 问题卡（SEC 01） ─────────────────────── */
+  .prob-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 28px; }
+  .prob-card {
+    background: var(--pwhite); border-radius: 20px; padding: 20px;
+    box-shadow: var(--shadow-steep-sm);
+  }
+  .prob-card .no { font-family: var(--mono); font-size: 11px; color: var(--dove); letter-spacing: .1em; }
+  .prob-card h4 { font-size: 14px; font-weight: 480; margin: 10px 0 8px; color: var(--ink); }
+  .prob-card p { font-size: 12.5px; line-height: 1.7; color: var(--graphite); }
+  .prob-card p b { color: var(--ash); font-weight: 480; }
+  .fix-strip {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-top: 18px; background: var(--pwhite); border-radius: 16px;
+    padding: 14px 20px; box-shadow: var(--shadow-steep-sm);
+    font-size: 13px; color: var(--ash);
+  }
+  .fix-strip .tag {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+    color: var(--rust); background: var(--apricot); border-radius: 999px; padding: 4px 12px;
+  }
+  .fix-strip b { color: var(--ink); font-weight: 480; }
+
+  /* ── 组件架构图（SEC 02） ─────────────────────── */
+  .arch { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 0; margin-top: 28px; align-items: stretch; }
+  .arch-col { display: flex; flex-direction: column; gap: 12px; }
+  .arch-head {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--graphite);
+    padding: 2px 4px;
+  }
+  .arch-card { background: var(--pwhite); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow-steep-sm); }
+  .arch-card.dim { opacity: .78; }
+  .arch-card .t { font-size: 13px; font-weight: 480; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+  .arch-card .d { font-size: 11.5px; color: var(--graphite); line-height: 1.65; margin-top: 5px; }
+  .arch-card .d code { font-size: 10.5px; }
+  .arch-card.hot { background: var(--apricot); box-shadow: none; }
+  .arch-card.hot .t { color: var(--rust); }
+  .arch-card.hot .d { color: #8a5638; }
+  .arch-mid { display: flex; align-items: center; justify-content: center; color: var(--dove); font-size: 18px; }
+  .pillrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .pill {
+    font-family: var(--mono); font-size: 10.5px; color: var(--ash);
+    background: var(--fog); border-radius: 999px; padding: 3px 10px; letter-spacing: .02em;
+  }
+  .pill.hot { background: var(--apricot); color: var(--rust); }
+
+  /* ════════════════════════════════════════════
+     Artboard A — 桌面框（admin 外壳 1:1）
+     ════════════════════════════════════════════ */
+  .desk-wrap { display: flex; justify-content: center; }
+  .desk {
+    width: 1280px; max-width: 100%; background: var(--fog);
+    border-radius: 18px; box-shadow: var(--shadow-steep); overflow: hidden;
+    display: flex; text-align: left; position: relative;
+  }
+  .desk .sidebar {
+    width: 216px; flex-shrink: 0; background: var(--pwhite);
+    padding: 18px 12px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .desk .side-logo { display: flex; align-items: center; gap: 8px; padding: 4px 10px 16px; }
+  .desk .side-logo .mark {
+    width: 26px; height: 26px; border-radius: 8px; background: var(--ink);
+    color: var(--pwhite); font-family: var(--serif); font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .desk .side-logo .name { font-size: 13.5px; font-weight: 480; color: var(--ink); }
+  .desk .side-sec {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em;
+    color: var(--dove); text-transform: uppercase; padding: 12px 10px 6px;
+  }
+  .desk .nav-item {
+    display: flex; align-items: center; gap: 9px; padding: 7px 10px;
+    border-radius: 10px; font-size: 13px; font-weight: 430; color: var(--ash);
+  }
+  .desk .nav-item .ic { width: 15px; height: 15px; border: 1.5px solid var(--slate); border-radius: 4.5px; flex-shrink: 0; }
+  .desk .nav-item.active { background: var(--fog); color: var(--ink); font-weight: 480; }
+  .desk .nav-item.active .ic { background: var(--rust); border-color: var(--rust); }
+  .desk .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  /* 顶栏 + 面包屑 */
+  .desk .topbar {
+    height: 56px; background: var(--pwhite); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+    flex-shrink: 0;
+  }
+  .desk .crumb { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--graphite); }
+  .desk .crumb .sep { color: var(--dove); }
+  .desk .crumb .cur { color: var(--ink); font-weight: 480; }
+  .desk .crumb .idchip { font-family: var(--mono); font-size: 10.5px; color: var(--graphite); background: var(--fog); border-radius: 6px; padding: 2px 7px; }
+  .top-actions { display: flex; align-items: center; gap: 8px; }
+
+  /* Steep 按钮语言 */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 999px;
+    font-family: var(--sans); font-size: 12.5px; font-weight: 450; letter-spacing: -.009em;
+    padding: 7px 16px; border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-ink { background: var(--ink); color: var(--pwhite); }
+  .btn-ink:hover { background: #2b2e33; }
+  .btn-ink:disabled { background: var(--dove); cursor: not-allowed; }
+  .btn-line { background: var(--pwhite); color: var(--ink); border-color: var(--dove); }
+  .btn-line:hover { background: var(--fog); }
+  .btn-txt { background: transparent; color: var(--ink); padding: 7px 10px; }
+  .btn-txt:hover { background: var(--fog); }
+  .btn .ico { width: 13px; height: 13px; display: inline-block; }
+
+  /* 详情双栏布局 */
+  .detail-body { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 348px; gap: 18px; padding: 20px 24px 26px; align-items: start; }
+  .col-l { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .col-r { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 0; }
+
+  .card { background: var(--pwhite); border-radius: 20px; padding: 20px; box-shadow: var(--shadow-steep-sm); }
+  .card-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .card-h .t { font-size: 13px; font-weight: 480; color: var(--ink); display: flex; align-items: center; gap: 7px; }
+  .card-h .t .ic { width: 13px; height: 13px; border: 1.5px solid var(--slate); border-radius: 4px; }
+
+  /* 徽章 */
+  .bdg { display: inline-flex; align-items: center; border-radius: 999px; font-size: 11px; font-weight: 480; padding: 3px 11px; }
+  .bdg-ink { background: var(--ink); color: var(--pwhite); }
+  .bdg-rust { background: var(--rust); color: var(--pwhite); }
+  .bdg-fog { background: var(--fog); color: var(--ash); }
+  .bdg-dove { background: rgba(163,166,175,.2); color: var(--graphite); }
+  .bdg-apr { background: var(--apricot); color: var(--rust); }
+  .bdg-ok { background: var(--success-container); color: var(--success); }
+
+  /* 房源信息卡 */
+  .info-grid { display: grid; grid-template-columns: 236px minmax(0,1fr); gap: 20px; }
+  .ph-img {
+    width: 100%; aspect-ratio: 4/3; border-radius: 12px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #f6e7d8 0%, #ecd9c4 55%, #e3ccb2 100%);
+  }
+  .ph-img .cap {
+    position: absolute; left: 8px; bottom: 8px; background: rgba(23,25,28,.55);
+    color: #fff; font-size: 10px; border-radius: 999px; padding: 3px 9px; letter-spacing: .04em;
+  }
+  .ph-img .hint {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; color: rgba(93,42,26,.4);
+  }
+  .info-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; align-content: start; }
+  .irow { display: flex; align-items: baseline; justify-content: space-between; padding: 7.5px 0; border-bottom: 1px solid #f1f2f4; }
+  .irow:nth-last-child(-n+2) { border-bottom: 0; }
+  .irow .k { font-size: 11.5px; color: var(--graphite); flex-shrink: 0; }
+  .irow .v { font-size: 12.5px; font-weight: 480; color: var(--ink); text-align: right; }
+  .irow .v.rust { color: var(--rust); }
+  .tagrow { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .tag { font-size: 10.5px; color: var(--ash); background: var(--fog); border-radius: 999px; padding: 2.5px 9px; }
+
+  /* 管理配置卡 */
+  .cfg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .cfg .k { font-size: 11px; color: var(--graphite); margin-bottom: 4px; }
+  .cfg .v { font-size: 13px; font-weight: 480; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+  .cfg .ava {
+    width: 20px; height: 20px; border-radius: 999px; background: var(--apricot);
+    color: var(--rust); font-size: 9.5px; font-weight: 500;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* ════════════════════════════════════════════
+     PriceChangeCard 调价卡（浏览 / 表单 / 成功三态）
+     ════════════════════════════════════════════ */
+  .pcard .hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .pcard .hd .t { font-size: 12px; font-weight: 480; color: var(--ink); display: flex; align-items: center; gap: 6px; letter-spacing: .02em; }
+  .pcard .state-chip {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--graphite);
+    border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; display: none;
+  }
+  .pcard .kicker { font-size: 11px; color: var(--graphite); letter-spacing: .04em; }
+  .pcard .price-big {
+    font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1.1;
+    letter-spacing: -0.015em; color: var(--ink); margin-top: 6px;
+  }
+  .pcard .price-big .unit { font-family: var(--sans); font-size: 14px; font-weight: 430; color: var(--graphite); margin-left: 4px; }
+  .pcard .unit-line { font-size: 11.5px; color: var(--graphite); margin-top: 4px; }
+  .pcard .last-strip {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    background: var(--fog); border-radius: 12px; padding: 8px 12px; margin-top: 12px;
+  }
+  .pcard .last-strip .l { font-size: 11px; color: var(--graphite); }
+  .pcard .last-strip .l b { color: var(--ash); font-weight: 480; }
+  .pcard .last-strip .r { font-size: 11.5px; font-weight: 480; color: var(--success); white-space: nowrap; }
+  .pcard .acts { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+
+  /* 表单态 */
+  .pcard .f-cur { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; }
+  .pcard .f-cur .k { font-size: 11.5px; color: var(--graphite); }
+  .pcard .f-cur .v { font-size: 14px; font-weight: 480; color: var(--ink); }
+  .f-field { margin-top: 10px; }
+  .f-field label { font-size: 11.5px; color: var(--graphite); display: block; margin-bottom: 6px; }
+  .f-inputwrap {
+    display: flex; align-items: center; gap: 6px; background: var(--fog);
+    border: 1px solid var(--line); border-radius: 16px; padding: 10px 14px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .f-inputwrap:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23,25,28,.06); background: var(--pwhite); }
+  .f-inputwrap input {
+    border: 0; outline: 0; background: transparent; font-family: var(--sans);
+    font-size: 22px; font-weight: 480; color: var(--ink); text-align: right; flex: 1; min-width: 0;
+    font-feature-settings: "tnum"; -moz-appearance: textfield; appearance: textfield;
+  }
+  .f-inputwrap input::-webkit-outer-spin-button,
+  .f-inputwrap input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .f-inputwrap .wan { font-size: 12px; color: var(--graphite); }
+  .f-unit { font-size: 10.5px; color: var(--dove); margin-top: 6px; }
+  .diff-row { display: flex; justify-content: flex-end; margin-top: 12px; min-height: 24px; }
+  .diff {
+    border-radius: 999px; padding: 4px 13px; font-size: 11.5px; font-weight: 480;
+    font-feature-settings: "tnum"; transition: all .15s;
+  }
+  .diff.same { background: var(--fog); color: var(--ash); }
+  .diff.down { background: var(--success-container); color: var(--success); }
+  .diff.up { background: var(--fog); color: var(--graphite); }
+  .diff.idle { background: var(--fog); color: var(--dove); }
+  .f-note {
+    display: flex; gap: 7px; margin-top: 12px; font-size: 10.5px; color: var(--graphite);
+    background: var(--apricot); border-radius: 10px; padding: 8px 11px; line-height: 1.55;
+  }
+  .f-note .dot { width: 5px; height: 5px; border-radius: 999px; background: var(--rust); margin-top: 5px; flex-shrink: 0; }
+  .f-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+  /* 成功态 */
+  .ok-wrap { text-align: center; padding: 6px 0 2px; }
+  .ok-ic {
+    width: 40px; height: 40px; border-radius: 999px; background: var(--success-container);
+    color: var(--success); font-size: 18px; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px;
+  }
+  .ok-price { font-family: var(--serif); font-size: 26px; letter-spacing: -.01em; color: var(--ink); }
+  .ok-price .arrow { font-family: var(--sans); font-size: 15px; color: var(--dove); margin: 0 6px; }
+  .ok-price .new { color: var(--success); }
+  .ok-sub { font-size: 11px; color: var(--graphite); margin-top: 8px; line-height: 1.6; }
+  .ok-acts { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+
+  /* 调价历史时间线 */
+  .tl { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .tl-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .tl-h .t { font-size: 11px; color: var(--graphite); letter-spacing: .04em; }
+  .tl-h .n { font-family: var(--mono); font-size: 10px; color: var(--dove); }
+  .tl-item { position: relative; padding: 0 0 14px 18px; }
+  .tl-item::before {
+    content: ""; position: absolute; left: 4px; top: 5px; width: 7px; height: 7px;
+    border-radius: 999px; background: var(--pwhite); border: 2px solid var(--success);
+  }
+  .tl-item.up::before { border-color: var(--slate); }
+  .tl-item::after {
+    content: ""; position: absolute; left: 8px; top: 16px; bottom: 1px; width: 1px; background: var(--line);
+  }
+  .tl-item:last-child { padding-bottom: 2px; }
+  .tl-item:last-child::after { display: none; }
+  .tl-row1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .tl-prices { font-size: 12.5px; font-weight: 480; color: var(--ink); font-feature-settings: "tnum"; }
+  .tl-prices .dir { font-size: 10.5px; font-weight: 480; margin-left: 6px; }
+  .tl-prices .dir.down { color: var(--success); }
+  .tl-prices .dir.up { color: var(--graphite); }
+  .tl-date { font-family: var(--mono); font-size: 10px; color: var(--dove); white-space: nowrap; }
+  .tl-row2 { font-size: 10.5px; color: var(--graphite); margin-top: 3px; font-feature-settings: "tnum"; }
+  .tl-row2 .err { color: var(--error); }
+
+  /* 推送统计卡 */
+  .push-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .push-tile { border-radius: 14px; padding: 12px 14px; }
+  .push-tile.warm { background: var(--apricot); }
+  .push-tile.cool { background: var(--fog); }
+  .push-tile .k { font-size: 10.5px; color: var(--graphite); }
+  .push-tile .n { font-size: 22px; font-weight: 480; color: var(--ink); margin-top: 3px; font-feature-settings: "tnum"; }
+  .push-tile .n .u { font-size: 10.5px; font-weight: 430; color: var(--graphite); margin-left: 3px; }
+  .push-note { font-size: 10px; color: var(--dove); margin-top: 10px; line-height: 1.6; }
+
+  /* 状态切换（pcard 三态由 data-mode 驱动） */
+  .pcard [data-pane] { display: none; }
+  .pcard[data-mode="browse"] [data-pane="browse"] { display: block; }
+  .pcard[data-mode="form"] [data-pane="form"] { display: block; }
+  .pcard[data-mode="success"] [data-pane="success"] { display: block; }
+  .pcard[data-mode="form"] .state-chip,
+  .pcard[data-mode="success"] .state-chip { display: inline-block; }
+  .pcard[data-mode="success"] .state-chip { color: var(--success); border-color: var(--success); opacity: .55; }
+
+  /* toast */
+  .desk .toast {
+    position: absolute; left: 50%; bottom: 26px; transform: translate(-50%, 12px);
+    background: var(--ink); color: var(--pwhite); border-radius: 999px;
+    padding: 9px 20px; font-size: 12px; font-weight: 430; opacity: 0;
+    transition: opacity .25s, transform .25s; pointer-events: none; z-index: 40;
+    box-shadow: var(--shadow-pop); white-space: nowrap;
+  }
+  .desk .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ════════════════════════════════════════════
+     Artboard B — 组件状态全景
+     ════════════════════════════════════════════ */
+  .ab-wrap { display: flex; flex-direction: column; gap: 20px; }
+  .ab-shell { background: var(--pwhite); border-radius: 18px; box-shadow: var(--shadow-steep-sm); padding: 18px; }
+  .ab-tabs { display: inline-flex; background: var(--fog); border-radius: 999px; padding: 3px; gap: 2px; margin-bottom: 16px; }
+  .ab-tabs button {
+    border: 0; background: transparent; font-family: var(--mono); font-size: 11px;
+    letter-spacing: .06em; color: var(--graphite); border-radius: 999px; padding: 6px 16px; cursor: pointer;
+  }
+  .ab-tabs button.on { background: var(--ink); color: var(--pwhite); }
+  .ab-body { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .ab-pane { display: none; }
+  .ab-pane.on { display: block; }
+  .ab-pane .pane-cap { font-size: 11px; color: var(--graphite); line-height: 1.6; margin-top: 12px; max-width: 560px; }
+  .ab-pane .pane-cap b { color: var(--ink); font-weight: 480; }
+  .edge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .edge-card { background: var(--pwhite); border-radius: 16px; padding: 16px; box-shadow: var(--shadow-steep-sm); }
+  .edge-card .cap { font-size: 11px; color: var(--graphite); line-height: 1.65; margin-top: 12px; }
+  .edge-card .cap b { color: var(--ink); font-weight: 480; }
+
+  /* ════════════════════════════════════════════
+     Artboard C — 列表页行内调价
+     ════════════════════════════════════════════ */
+  .list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .lt-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .searchbox {
+    display: flex; align-items: center; gap: 7px; background: var(--pwhite);
+    border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; width: 220px;
+    font-size: 12px; color: var(--dove);
+  }
+  .ltabs { display: flex; background: var(--pwhite); border-radius: 999px; padding: 3px; gap: 2px; box-shadow: var(--shadow-steep-sm); }
+  .ltabs span { font-size: 11px; color: var(--graphite); border-radius: 999px; padding: 5px 13px; }
+  .ltabs span.on { background: var(--ink); color: var(--pwhite); }
+  .list-card { background: var(--pwhite); border-radius: 20px; box-shadow: var(--shadow-steep); overflow: visible; position: relative; }
+  table.mkt { width: 100%; border-collapse: collapse; font-feature-settings: "tnum"; }
+  table.mkt th {
+    font-size: 11px; font-weight: 480; color: var(--graphite); text-align: left;
+    padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  table.mkt th.r, table.mkt td.r { text-align: right; }
+  table.mkt td { padding: 13px 14px; border-bottom: 1px solid #f1f2f4; font-size: 12.5px; color: var(--ink); vertical-align: middle; }
+  table.mkt tr:last-child td { border-bottom: 0; }
+  table.mkt tr.demo-row { background: rgba(251,225,209,.28); }
+  .cell-proj { display: flex; align-items: center; gap: 11px; min-width: 230px; }
+  .cell-proj .thumb { width: 46px; height: 34px; border-radius: 8px; flex-shrink: 0; background: linear-gradient(135deg,#f6e7d8,#e3ccb2); }
+  .cell-proj .tt { font-size: 12.5px; font-weight: 480; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+  .cell-proj .sub { font-size: 10.5px; color: var(--graphite); margin-top: 2px; display: flex; gap: 8px; align-items: center; }
+  .cell-proj .idm { font-family: var(--mono); font-size: 9.5px; }
+  .newbdg { background: var(--ink); color: var(--pwhite); font-size: 9px; border-radius: 5px; padding: 1.5px 5px; font-weight: 480; }
+  .cell-price .p1 { font-size: 12.5px; font-weight: 480; }
+  .cell-price .p2 { font-size: 10.5px; color: var(--graphite); margin-top: 1px; }
+  .cell-price .p3 { font-size: 10.5px; color: var(--success); margin-top: 1px; }
+  .cell-acts { display: flex; align-items: center; justify-content: flex-end; gap: 2px; position: relative; }
+  .abtn {
+    display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent;
+    font-family: var(--sans); font-size: 11px; color: var(--graphite); border-radius: 999px;
+    padding: 5px 9px; cursor: pointer; white-space: nowrap;
+  }
+  .abtn:hover { background: var(--fog); color: var(--ink); }
+  .abtn.hot { color: var(--rust); font-weight: 480; }
+  .abtn.hot:hover { background: var(--apricot); }
+  .abtn .ic { width: 12px; height: 12px; border: 1.5px solid currentColor; border-radius: 3.5px; display: inline-block; }
+  .abtn .ic.eye { border-radius: 999px; }
+  .abtn .ic.price { transform: rotate(45deg) scale(.9); border-radius: 2px; }
+  .cell-notify { display: flex; gap: 5px; }
+  .npill { border-radius: 999px; font-size: 10px; font-weight: 480; padding: 2.5px 9px; }
+  .npill.a { background: var(--apricot); color: var(--rust); }
+  .npill.g { background: var(--success-container); color: var(--success); }
+  .dash { color: var(--dove); }
+
+  /* 行内调价弹层 */
+  .pop-mask { position: absolute; inset: 0; z-index: 30; display: none; }
+  .list-card.pop-open .pop-mask { display: block; }
+  .pop {
+    position: absolute; z-index: 31; width: 284px; background: var(--pwhite);
+    border-radius: 20px; box-shadow: var(--shadow-pop); padding: 16px;
+    display: none; top: -172px;
+  }
+  .list-card.pop-open .pop { display: block; }
+  .pop::after {
+    content: ""; position: absolute; bottom: -6px; left: var(--pop-arrow, 70%);
+    width: 12px; height: 12px; background: var(--pwhite); transform: rotate(45deg);
+    box-shadow: 3px 3px 6px rgba(23,25,28,.05);
+  }
+  .pop .ph { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .pop .ph .t { font-size: 12px; font-weight: 480; color: var(--ink); }
+  .pop .ph .x { border: 0; background: transparent; color: var(--dove); font-size: 14px; cursor: pointer; line-height: 1; padding: 2px; }
+  .pop .cur { font-size: 10.5px; color: var(--graphite); }
+  .pop .cur b { color: var(--ink); font-weight: 480; font-size: 12px; }
+  .pop .f-inputwrap { padding: 8px 12px; margin-top: 8px; }
+  .pop .f-inputwrap input { font-size: 16px; }
+  .pop .diff-row { margin-top: 8px; }
+  .pop .f-acts { border-top: 0; padding-top: 10px; margin-top: 6px; }
+  .btn-sm { padding: 6px 14px; font-size: 11.5px; }
+
+  /* toast（列表框内右下） */
+  .list-toast {
+    position: absolute; right: 22px; bottom: 22px; background: var(--ink); color: var(--pwhite);
+    border-radius: 999px; padding: 9px 20px; font-size: 12px; opacity: 0;
+    transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 40;
+    box-shadow: var(--shadow-pop);
+  }
+  .list-toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── 状态机 / 口径表（SEC 06） ─────────────── */
+  .sm-flow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+  .sm-node {
+    background: var(--pwhite); border-radius: 14px; padding: 12px 18px;
+    box-shadow: var(--shadow-steep-sm); text-align: center;
+  }
+  .sm-node .n { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--rust); }
+  .sm-node .t { font-size: 13px; font-weight: 480; margin-top: 3px; }
+  .sm-node .d { font-size: 10.5px; color: var(--graphite); margin-top: 3px; max-width: 170px; line-height: 1.55; }
+  .sm-arrow { color: var(--dove); font-size: 16px; }
+  .sm-branches { display: flex; flex-direction: column; gap: 6px; }
+  table.spec { width: 100%; border-collapse: collapse; margin-top: 24px; background: var(--pwhite); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-steep-sm); }
+  table.spec th {
+    text-align: left; font-size: 11px; font-weight: 480; color: var(--graphite);
+    letter-spacing: .04em; padding: 11px 16px; background: var(--fog);
+  }
+  table.spec td { font-size: 12px; color: var(--ash); padding: 11px 16px; border-top: 1px solid #f1f2f4; line-height: 1.65; vertical-align: top; }
+  table.spec td b { color: var(--ink); font-weight: 480; }
+  table.spec td code { font-size: 10.5px; }
+
+  /* ── 实现落点（SEC 07） ─────────────────────── */
+  .impl-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-top: 24px; }
+  .impl-card { background: var(--pwhite); border-radius: 16px; padding: 18px 20px; box-shadow: var(--shadow-steep-sm); }
+  .impl-card h4 { font-size: 13px; font-weight: 480; color: var(--ink); margin-bottom: 10px; }
+  .impl-card ol { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .impl-card li { font-size: 12px; color: var(--ash); line-height: 1.65; padding-left: 20px; position: relative; }
+  .impl-card li::before {
+    content: counter(li, decimal-leading-zero); counter-increment: li;
+    position: absolute; left: 0; top: 1px; font-family: var(--mono); font-size: 10px; color: var(--dove);
+  }
+  .impl-card ol { counter-reset: li; }
+  .impl-card li b { color: var(--ink); font-weight: 480; }
+  .e2e-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 24px; }
+  .e2e-item { display: flex; gap: 9px; font-size: 12px; color: var(--ash); line-height: 1.6; align-items: flex-start; }
+  .e2e-item .ck { width: 13px; height: 13px; border: 1.5px solid var(--dove); border-radius: 4px; flex-shrink: 0; margin-top: 3px; }
+  .e2e-item b { color: var(--ink); font-weight: 480; }
+
+  footer.doc-foot { max-width: 1280px; margin: 90px auto 0; padding: 0 32px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer.doc-foot span { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; color: var(--dove); }
+
+  @media (max-width: 1080px) {
+    .detail-body { grid-template-columns: 1fr; }
+    .col-r { position: static; }
+    .prob-grid { grid-template-columns: 1fr 1fr; }
+    .arch { grid-template-columns: 1fr; }
+    .arch-mid { transform: rotate(90deg); padding: 8px 0; }
+    .impl-grid, .ab-body, .e2e-grid { grid-template-columns: 1fr; }
+    .edge-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ 页头 ═══════════════ -->
+<header class="doc-head">
+  <div class="kicker">Steep · admin/marketing · High-Fidelity Redesign</div>
+  <h1>营销详情页重构 ×<br /><em>调价独立组件</em></h1>
+  <div class="head-meta">
+    <span>v1.0 · 2026-10-06</span>
+    <span>目标页 /admin/marketing/298（详情页路由 [id] 样例）</span>
+    <span>视觉真源 /DESIGN.md + globals.css</span>
+    <span>代码真源 notify-section.tsx / action-cell.tsx / marketing-detail-page.tsx</span>
+    <span>轻交互 · 可点击</span>
+  </div>
+  <p class="lede">
+    调价是「房源营销」模块<b>最高频的写操作</b>，但当前它没有独立组件——入口按钮、内联表单、差价
+    chip、历史时间线、送达统计全部混在 <code>detail/notify-section.tsx</code> 一张卡里，且沉在详情页第三屏；
+    列表页操作列也只有「预览 / 编辑 / 删除」。本稿将调价拆为独立可复用的
+    <code>&lt;PriceChangeCard&gt;</code>（浏览 / 表单 / 成功三态自包含），详情页重构为
+    <b>左主右辅双栏</b>——价格与调价升入右栏第一卡，并为列表页补上<b>行内快捷调价入口</b>。
+  </p>
+</header>
+
+<!-- ═══════════════ SEC 01 现状问题 ═══════════════ -->
+<section class="sec">
+  <div class="kicker">Sec 01 · 现状问题</div>
+  <h2>为什么调价需要被独立出来</h2>
+  <div class="prob-grid">
+    <div class="prob-card">
+      <div class="no">P-01</div>
+      <h4>职责混杂</h4>
+      <p>推送订阅语义（<b>被动展示</b>）与调价操作语义（<b>主动写操作</b>）同卡；内联表单展开时把送达统计与历史时间线一起挤下屏。</p>
+    </div>
+    <div class="prob-card">
+      <div class="no">P-02</div>
+      <h4>页面重心错位</h4>
+      <p>单列堆叠布局下，<b>总价与调价</b>——详情页最高频动作——位于第三屏；房源信息卡的「总价」行与调价入口相距两屏，价格状态无处聚合。</p>
+    </div>
+    <div class="prob-card">
+      <div class="no">P-03</div>
+      <h4>列表页无调价入口</h4>
+      <p>ActionCell 仅预览 / 编辑 / 删除；运营盯「近期调价」筛选后的清单批量改价时，<b>每套都要进详情页翻到第三屏</b>。</p>
+    </div>
+    <div class="prob-card">
+      <div class="no">P-04</div>
+      <h4>结果反馈断裂</h4>
+      <p>调价成功后 toast 文案不承诺送达人数，推送异步执行；但成功态缺少<b>「推送已排队」的明确转达</b>，运营只能去历史里核对送达统计。</p>
+    </div>
+  </div>
+  <div class="fix-strip">
+    <span class="tag">重设计原则</span>
+    <span><b>一_PRICE</b> 价格升为右栏第一卡，浏览 / 表单 / 成功三态同位切换，页面重心即操作重心 ·</span>
+    <span><b>二_REUSE</b> 组件自包含（数据入 props、动作出回调），列表行内弹层与详情卡共用同一交互语言 ·</span>
+    <span><b>三_FEEDBACK</b> 成功态显式转达「订阅推送已排队」，送达结果回历史时间线核对</span>
+  </div>
+</section>
+
+<!-- ═══════════════ SEC 02 组件架构 ═══════════════ -->
+<section class="sec">
+  <div class="kicker">Sec 02 · 组件架构</div>
+  <h2>从一张卡到三个组件</h2>
+  <div class="arch">
+    <div class="arch-col">
+      <div class="arch-head">BEFORE · 现状 detail/notify-section.tsx</div>
+      <div class="arch-card dim">
+        <div class="t">NotifySection（订阅与调价）≈330 行</div>
+        <div class="d">送达统计 StatCard ×2 ＋ 内联调价表单 ＋ 差价 chip ＋ 调价历史时间线 ＋ 空态引导，五种职责同卡渲染</div>
+        <div class="pillrow">
+          <span class="pill">StatCard 上新通知</span>
+          <span class="pill">StatCard 调价通知</span>
+          <span class="pill">调价按钮</span>
+          <span class="pill">内联表单</span>
+          <span class="pill">差价 chip</span>
+          <span class="pill">时间线</span>
+        </div>
+      </div>
+      <div class="arch-card dim">
+        <div class="t">ActionCell（列表操作列）</div>
+        <div class="d">预览 / 编辑 / 删除 —— 无调价入口</div>
+      </div>
+      <div class="arch-card dim">
+        <div class="t">详情页单列堆叠 ×4 卡</div>
+        <div class="d">房源信息 → 状态+配置 → 订阅与调价 → 媒体资源；调价在第三屏</div>
+      </div>
+    </div>
+    <div class="arch-mid">→</div>
+    <div class="arch-col">
+      <div class="arch-head">AFTER · 重构后（本稿）</div>
+      <div class="arch-card hot">
+        <div class="t">① PriceChangeCard · 新独立组件</div>
+        <div class="d">浏览态（当前价 + 最近一次调价条 + 历史时间线）/ 表单态（输入 + 实时差价 + 单价折算）/ 成功态（推送已排队）——三态自包含；数据入 props（project、timeline），动作出回调（onPriceSubmit）</div>
+        <div class="pillrow">
+          <span class="pill hot">落点 _components/price-change-card.tsx</span>
+          <span class="pill hot">复用：详情右栏 · 列表行内弹层</span>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="t">② PushStatCard（推送统计）</div>
+        <div class="d">从 NotifySection 拆出的纯展示卡：notify_summary 上新 / 调价送达人数，读 L4MarketingProjectResponse 聚合字段，无额外请求</div>
+      </div>
+      <div class="arch-card">
+        <div class="t">③ NotifySection（瘦身后保留）</div>
+        <div class="d">仅剩推送说明与草稿引导；若产品侧确认无独立价值，可并入 PushStatCard 后删除原文件</div>
+      </div>
+      <div class="arch-card">
+        <div class="t">④ ActionCell + PricePopover（列表行内调价）</div>
+        <div class="d">操作列新增「调价」快捷项（已发布 + 有写权限时渲染），轻弹层内嵌 PriceChangeCard 表单态；成功后行内总价 / 调价副行即时更新</div>
+        <div class="pillrow">
+          <span class="pill hot">新增列表态入口，服务端筛选 badge_filter=price 既有链路不变</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ ARTBOARD A 详情页全页 ═══════════════ -->
+<section class="sec">
+  <div class="kicker">Artboard A · 详情页全页（可交互）</div>
+  <h2>/admin/marketing/298 重构态</h2>
+  <p class="lede">
+    双栏布局：<b>左主</b>（房源信息 → 管理配置）承载浏览语义；<b>右辅 sticky</b>（价格与调价 → 推送统计）
+    承载高频操作语义。<b>试一下：点击右栏「调价」→ 输入新总价（差价 chip 与单价折算实时联动）→ 确认调价。</b>
+    原页面单列堆叠的「媒体资源」区块在左栏之下顺延，此处省略不再重复示意。
+  </p>
+  <div class="desk-wrap" style="margin-top: 26px;">
+    <div class="desk" id="deskA" data-screen-label="A · /admin/marketing/298 详情页重构态（双栏）">
+      <!-- 侧边栏（admin 外壳示意） -->
+      <aside class="sidebar">
+        <div class="side-logo"><div class="mark">S</div><div class="name">Steep 工作台</div></div>
+        <div class="nav-item"><span class="ic"></span>工作台</div>
+        <div class="side-sec">业务</div>
+        <div class="nav-item"><span class="ic"></span>房源管理</div>
+        <div class="nav-item"><span class="ic"></span>线索中心</div>
+        <div class="nav-item"><span class="ic"></span>项目管理</div>
+        <div class="nav-item"><span class="ic"></span>项目待办</div>
+        <div class="nav-item active"><span class="ic"></span>房源营销</div>
+        <div class="side-sec">增长</div>
+        <div class="nav-item"><span class="ic"></span>获客中心</div>
+        <div class="nav-item"><span class="ic"></span>数据报表</div>
+        <div class="side-sec">系统</div>
+        <div class="nav-item"><span class="ic"></span>设置</div>
+      </aside>
+
+      <div class="main">
+        <!-- 顶栏：返回 + 面包屑 + 操作 -->
+        <div class="topbar">
+          <div class="crumb">
+            <span class="btn btn-txt btn-sm" style="padding:4px 8px;">←</span>
+            <span>房源营销</span><span class="sep">/</span>
+            <span class="cur">朝阳公园南里 · 南北通透两居</span>
+            <span class="idchip">ID:298</span>
+            <span class="bdg bdg-ok" id="aHeaderChip" style="display:none;">已调价</span>
+          </div>
+          <div class="top-actions">
+            <button class="btn btn-line btn-sm"><span class="ico" style="border:1.5px solid currentColor;border-radius:3px;"></span>编辑房源</button>
+            <button class="btn btn-line btn-sm"><span class="ico" style="border:1.5px solid currentColor;border-radius:999px;"></span>预览</button>
+            <button class="btn btn-txt btn-sm" title="删除">⋯</button>
+          </div>
+        </div>
+
+        <!-- 双栏内容 -->
+        <div class="detail-body">
+          <!-- 左主栏 -->
+          <div class="col-l">
+            <!-- 房源信息 -->
+            <div class="card">
+              <div class="card-h">
+                <div class="t"><span class="ic"></span>房源信息</div>
+                <div style="display:flex;gap:6px;">
+                  <span class="bdg bdg-ink">在售</span>
+                  <span class="bdg bdg-rust">发布</span>
+                </div>
+              </div>
+              <div class="info-grid">
+                <div class="ph-img">
+                  <div class="hint">MARKETING COVER · 4:3</div>
+                  <div class="cap">营销主图</div>
+                </div>
+                <div class="info-rows">
+                  <div class="irow"><span class="k">户型</span><span class="v">两室一厅</span></div>
+                  <div class="irow"><span class="k">建筑面积</span><span class="v">76.5 ㎡</span></div>
+                  <div class="irow"><span class="k">楼层</span><span class="v">中楼层 / 18层</span></div>
+                  <div class="irow"><span class="k">朝向</span><span class="v">南北</span></div>
+                  <div class="irow"><span class="k">装修风格</span><span class="v">现代简约</span></div>
+                  <div class="irow"><span class="k">创建时间</span><span class="v">2026/08/12</span></div>
+                  <div class="irow" style="grid-column:1/-1;border-bottom:0;">
+                    <span class="k">标签</span>
+                    <span class="tagrow"><span class="tag">满五年唯一</span><span class="tag">采光好</span><span class="tag">地铁500米</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 管理配置 -->
+            <div class="card">
+              <div class="card-h"><div class="t"><span class="ic"></span>管理配置</div></div>
+              <div class="cfg-grid">
+                <div class="cfg"><div class="k">关联顾问</div><div class="v"><span class="ava">陈</span>陈晓</div></div>
+                <div class="cfg"><div class="k">排序权重</div><div class="v">10</div></div>
+                <div class="cfg"><div class="k">关联 L3 项目</div><div class="v">1024</div></div>
+                <div class="cfg"><div class="k">最后更新</div><div class="v">10-05 16:42</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右辅栏：价格与调价（PriceChangeCard） + 推送统计 -->
+          <div class="col-r">
+            <!-- ═══ PriceChangeCard ═══ -->
+            <div class="card pcard" id="aPcard" data-mode="browse">
+              <div class="hd">
+                <div class="t">价格与调价</div>
+                <span class="state-chip" id="aStateChip">FORM</span>
+              </div>
+
+              <!-- 浏览态 -->
+              <div data-pane="browse">
+                <div class="kicker">当前总价</div>
+                <div class="price-big">428<span class="unit">万</span></div>
+                <div class="unit-line">折合单价约 55,948 元/㎡</div>
+                <div class="last-strip">
+                  <span class="l">最近一次 <b>09-28</b> · 435.00 → 428.00</span>
+                  <span class="r">↓ 直降 7.00 万</span>
+                </div>
+                <div class="acts">
+                  <button class="btn btn-ink btn-sm" id="aBtnPrice">调价</button>
+                  <button class="btn btn-txt btn-sm" id="aBtnTl" style="color:var(--graphite);">调价历史 (3)</button>
+                </div>
+                <!-- 时间线（点击「调价历史」展开；成功后自动插入新条目） -->
+                <div class="tl" id="aTl" style="display:none;">
+                  <div class="tl-h"><span class="t">调价历史</span><span class="n" id="aTlCount">共 3 次</span></div>
+                  <div id="aTlList">
+                    <div class="tl-item">
+                      <div class="tl-row1"><span class="tl-prices">435.00 → 428.00 万<span class="dir down">降价</span></span><span class="tl-date">09-28 14:32</span></div>
+                      <div class="tl-row2">送达 32 人 · 跳过 2</div>
+                    </div>
+                    <div class="tl-item">
+                      <div class="tl-row1"><span class="tl-prices">442.00 → 435.00 万<span class="dir down">降价</span></span><span class="tl-date">09-12 10:05</span></div>
+                      <div class="tl-row2">送达 29 人</div>
+                    </div>
+                    <div class="tl-item">
+                      <div class="tl-row1"><span class="tl-prices">448.00 → 442.00 万<span class="dir down">降价</span></span><span class="tl-date">08-25 18:47</span></div>
+                      <div class="tl-row2">送达 26 人</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 表单态 -->
+              <div data-pane="form">
+                <div class="f-cur"><span class="k">当前总价</span><span class="v">428.00 万</span></div>
+                <div class="f-field">
+                  <label for="aNewPrice">新总价</label>
+                  <div class="f-inputwrap">
+                    <input id="aNewPrice" type="number" step="0.01" min="0" placeholder="428.00" />
+                    <span class="wan">万</span>
+                  </div>
+                  <div class="f-unit" id="aUnitHint">按 76.5 ㎡ 折合单价将同步更新</div>
+                </div>
+                <div class="diff-row"><span class="diff idle" id="aDiff">输入新总价</span></div>
+                <div class="f-note"><span class="dot"></span><span>确认后订阅用户将收到微信服务通知（推送由后台异步执行，送达结果稍后回历史核对）</span></div>
+                <div class="f-acts">
+                  <button class="btn btn-line btn-sm" id="aBtnCancel">取消</button>
+                  <button class="btn btn-ink btn-sm" id="aBtnConfirm" disabled>确认调价</button>
+                </div>
+              </div>
+
+              <!-- 成功态 -->
+              <div data-pane="success">
+                <div class="ok-wrap">
+                  <div class="ok-ic">✓</div>
+                  <div class="ok-price">428.00<span class="arrow">→</span><span class="new" id="aOkPrice">421.00 万</span></div>
+                  <div class="ok-sub">订阅推送已排队 · 送达结果稍后回「调价历史」核对<br />列表行总价与「近期调价」徽标将同步刷新</div>
+                  <div class="ok-acts">
+                    <button class="btn btn-txt btn-sm" id="aBtnViewTl" style="color:var(--graphite);">查看推送统计</button>
+                    <button class="btn btn-ink btn-sm" id="aBtnDone">完成</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 推送统计（从 NotifySection 拆出） -->
+            <div class="card">
+              <div class="card-h">
+                <div class="t">推送统计</div>
+                <span class="bdg bdg-fog" style="font-size:10px;">notify_summary</span>
+              </div>
+              <div class="push-grid">
+                <div class="push-tile warm"><div class="k">上新通知累计送达</div><div class="n">64<span class="u">位用户</span></div></div>
+                <div class="push-tile cool"><div class="k">调价通知累计送达</div><div class="n" id="aPushCount">18<span class="u">位用户</span></div></div>
+              </div>
+              <div class="push-note">授权订阅用户在额度有效期内收到微信服务通知；分次送达明细见调价历史。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="toast" id="aToast">调价成功，订阅推送已排队</div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note">
+    <b>布局要点</b>：右栏 348px sticky，随滚动常驻——运营核对照片/配置时调价入口不离开视线；左栏宽度自适应，
+    1024px 以下折叠回单列（右栏顺延到房源信息之后）。媒体资源区块（照片分组拖拽排序）在左栏之下顺延，本次不改。
+    <code>data-screen-label</code> 已标注画板，便于评审引用。
+  </p>
+</section>
+
+<!-- ═══════════════ ARTBOARD B 组件状态全景 ═══════════════ -->
+<section class="sec">
+  <div class="kicker">Artboard B · 组件状态全景</div>
+  <h2>PriceChangeCard 三态 + 边界态</h2>
+  <div class="ab-wrap" style="margin-top: 24px;">
+    <div class="ab-shell" data-screen-label="B · PriceChangeCard 三态切换">
+      <div class="ab-tabs" id="bTabs">
+        <button class="on" data-btab="browse">01 浏览态</button>
+        <button data-btab="form">02 表单态</button>
+        <button data-btab="success">03 成功态</button>
+      </div>
+      <div class="ab-body">
+        <!-- 01 浏览态 -->
+        <div class="ab-pane on" data-bpane="browse">
+          <div class="card pcard" data-mode="browse" style="box-shadow:var(--shadow-steep);">
+            <div class="hd"><div class="t">价格与调价</div></div>
+            <div data-pane="browse">
+              <div class="kicker">当前总价</div>
+              <div class="price-big">428<span class="unit">万</span></div>
+              <div class="unit-line">折合单价约 55,948 元/㎡</div>
+              <div class="last-strip">
+                <span class="l">最近一次 <b>09-28</b> · 435.00 → 428.00</span>
+                <span class="r">↓ 直降 7.00 万</span>
+              </div>
+              <div class="acts">
+                <button class="btn btn-ink btn-sm">调价</button>
+                <button class="btn btn-txt btn-sm" style="color:var(--graphite);">调价历史 (3)</button>
+              </div>
+              <div class="tl">
+                <div class="tl-h"><span class="t">调价历史</span><span class="n">共 3 次</span></div>
+                <div class="tl-item">
+                  <div class="tl-row1"><span class="tl-prices">435.00 → 428.00 万<span class="dir down">降价</span></span><span class="tl-date">09-28 14:32</span></div>
+                  <div class="tl-row2">送达 32 人 · 跳过 2</div>
+                </div>
+                <div class="tl-item">
+                  <div class="tl-row1"><span class="tl-prices">442.00 → 435.00 万<span class="dir down">降价</span></span><span class="tl-date">09-12 10:05</span></div>
+                  <div class="tl-row2">送达 29 人</div>
+                </div>
+                <div class="tl-item">
+                  <div class="tl-row1"><span class="tl-prices">448.00 → 442.00 万<span class="dir down">降价</span></span><span class="tl-date">08-25 18:47</span></div>
+                  <div class="tl-row2">送达 26 人</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="pane-cap"><b>浏览态（默认）</b>：当前价（Signifier 大数字）＋ 单价折算 ＋ 最近一次调价条（latest_price_change，7 天窗口服务端下发）
+            ＋ 历史时间线（GET /price-changes 懒加载，倒序，含分次送达 success/skipped/failed）。「调价」为卡片内唯一 filled 主按钮。</p>
+        </div>
+
+        <!-- 02 表单态 -->
+        <div class="ab-pane" data-bpane="form">
+          <div class="card pcard" id="bPcardForm" data-mode="form" style="box-shadow:var(--shadow-steep);">
+            <div class="hd"><div class="t">价格与调价</div><span class="state-chip">FORM</span></div>
+            <div data-pane="form">
+              <div class="f-cur"><span class="k">当前总价</span><span class="v">428.00 万</span></div>
+              <div class="f-field">
+                <label for="bNewPrice">新总价</label>
+                <div class="f-inputwrap">
+                  <input id="bNewPrice" type="number" step="0.01" min="0" placeholder="428.00" />
+                  <span class="wan">万</span>
+                </div>
+                <div class="f-unit" id="bUnitHint">按 76.5 ㎡ 折合单价将同步更新</div>
+              </div>
+              <div class="diff-row"><span class="diff idle" id="bDiff">输入新总价</span></div>
+              <div class="f-note"><span class="dot"></span><span>确认后订阅用户将收到微信服务通知（推送由后台异步执行，送达结果稍后回历史核对）</span></div>
+              <div class="f-acts">
+                <button class="btn btn-line btn-sm">取消</button>
+                <button class="btn btn-ink btn-sm" id="bBtnConfirm" disabled>确认调价</button>
+              </div>
+            </div>
+          </div>
+          <p class="pane-cap"><b>表单态（卡内切换，不弹窗不跳页）</b>：实时差价 chip —— 降价 success 绿 / 上调 Graphite 灰 /
+            同值「价格未变化」禁用提交（沿用 zod：<code>total_price &gt; 0</code>）；单价折算随输入实时更新。
+            <b>试输入 421.00 或 436.50。</b></p>
+        </div>
+
+        <!-- 03 成功态 -->
+        <div class="ab-pane" data-bpane="success">
+          <div class="card pcard" data-mode="success" style="box-shadow:var(--shadow-steep);">
+            <div class="hd"><div class="t">价格与调价</div><span class="state-chip">SUCCESS</span></div>
+            <div data-pane="success">
+              <div class="ok-wrap">
+                <div class="ok-ic">✓</div>
+                <div class="ok-price">428.00<span class="arrow">→</span><span class="new">421.00 万</span></div>
+                <div class="ok-sub">订阅推送已排队 · 送达结果稍后回「调价历史」核对<br />列表行总价与「近期调价」徽标将同步刷新</div>
+                <div class="ok-acts">
+                  <button class="btn btn-txt btn-sm" style="color:var(--graphite);">查看推送统计</button>
+                  <button class="btn btn-ink btn-sm">完成</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="pane-cap"><b>成功态</b>：显式转达「<b>推送已排队</b>」——修复 P-04 反馈断裂；不承诺具体送达人数
+            （PUT 响应拿不到，notify_success/skipped/failed 由后台任务写回时间线）。toast 同步提示，「完成」回浏览态，
+            router.refresh 刷新列表行总价 / 调价副行 / 近期调价徽标。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 边界态三卡 -->
+    <div class="edge-grid" data-screen-label="B-2 · 权限与空态边界">
+      <div class="edge-card">
+        <div class="card pcard" data-mode="browse" style="box-shadow:none;padding:0;">
+          <div class="hd"><div class="t">价格与调价</div></div>
+          <div data-pane="browse">
+            <div class="kicker">当前总价</div>
+            <div class="price-big" style="font-size:32px;">268<span class="unit">万</span></div>
+            <div class="unit-line">折合单价约 59,556 元/㎡</div>
+            <div class="acts" style="margin-top:12px;">
+              <span style="font-size:11px;color:var(--dove);">草稿房源发布后开放调价</span>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><b>① 草稿 · 无入口</b>：未发布无推送对象，调价按钮隐藏（showPricingEntry = isPublished &amp;&amp; canWrite）；整卡降级为只读价格展示。</div>
+      </div>
+      <div class="edge-card">
+        <div class="card pcard" data-mode="browse" style="box-shadow:none;padding:0;">
+          <div class="hd"><div class="t">价格与调价</div></div>
+          <div data-pane="browse">
+            <div class="kicker">当前总价</div>
+            <div class="price-big" style="font-size:32px;">505<span class="unit">万</span></div>
+            <div class="unit-line">折合单价约 56,742 元/㎡</div>
+            <div class="acts" style="margin-top:12px;">
+              <span style="font-size:11px;color:var(--dove);">仅查看权限，如需调价请联系管理员</span>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><b>② 已发布 · 无写权限</b>：缺 <code>L4_MARKETING_WRITE</code>（L4 只读角色），不渲染调价按钮；其余只读信息完整可见。</div>
+      </div>
+      <div class="edge-card">
+        <div class="card pcard" data-mode="browse" style="box-shadow:none;padding:0;">
+          <div class="hd"><div class="t">价格与调价</div></div>
+          <div data-pane="browse">
+            <div class="kicker">当前总价</div>
+            <div class="price-big" style="font-size:32px;">625<span class="unit">万</span></div>
+            <div class="unit-line">折合单价约 57,870 元/㎡</div>
+            <div class="acts" style="margin-top:12px;"><button class="btn btn-ink btn-sm">调价</button></div>
+            <div class="tl">
+              <div class="tl-h"><span class="t">调价历史</span><span class="n">共 0 次</span></div>
+              <div style="font-size:11px;color:var(--dove);line-height:1.6;">暂无调价记录。点击「调价」更新总价后，订阅用户将收到微信推送。</div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><b>③ 零记录空态</b>：时间线懒加载后为空 → 引导文案占位；历史请求失败 toast 提示且不打断调价表单。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ ARTBOARD C 列表页行内调价 ═══════════════ -->
+<section class="sec">
+  <div class="kicker">Artboard C · 列表页行内调价（可交互）</div>
+  <h2>高频改价不必进详情页</h2>
+  <p class="lede">
+    ActionCell 新增「调价」快捷项（<b>已发布 + L4 写权限</b>才渲染），点击在行上方弹出轻弹层——
+    内嵌 PriceChangeCard 表单态，差价 chip 联动逻辑与详情页完全一致。
+    <b>试一下：点击 298 行的「调价」→ 输入 421 → 确认调价</b>（行总价、调价副行即时更新，Esc 或点空白处关闭）。
+  </p>
+  <div class="desk-wrap" style="margin-top: 26px;">
+    <div class="desk" style="display:block;" id="deskC" data-screen-label="C · 列表页行内调价弹层">
+      <div class="main" style="padding:22px 24px 64px;">
+        <!-- 工具栏 -->
+        <div class="list-toolbar">
+          <div class="lt-left">
+            <div class="searchbox"><span>⌕</span>搜索房源名称...</div>
+            <div class="ltabs"><span class="on">全部布局</span><span>两居</span><span>三居</span></div>
+            <div class="ltabs"><span class="on">全部</span><span>发布</span><span>草稿</span></div>
+          </div>
+          <div class="lt-left">
+            <div class="ltabs"><span class="on">全部</span><span>新上</span><span id="cPricePill" style="color:var(--rust);font-weight:480;">近期调价</span></div>
+            <button class="btn btn-ink btn-sm">＋ 新建房源</button>
+          </div>
+        </div>
+
+        <!-- 列表卡 -->
+        <div class="list-card" id="cListCard">
+          <div class="pop-mask" id="cMask"></div>
+          <!-- 行内弹层（嵌 PriceChangeCard 表单态） -->
+          <div class="pop" id="cPop">
+            <div class="ph"><span class="t">调价 · 朝阳公园南里</span><button class="x" id="cPopClose">✕</button></div>
+            <div class="cur">当前总价 <b>428.00 万</b> · 76.5 ㎡</div>
+            <div class="f-inputwrap">
+              <input id="cNewPrice" type="number" step="0.01" min="0" placeholder="428.00" />
+              <span class="wan">万</span>
+            </div>
+            <div class="diff-row"><span class="diff idle" id="cDiff">输入新总价</span></div>
+            <div class="f-acts">
+              <button class="btn btn-line btn-sm" id="cBtnCancel">取消</button>
+              <button class="btn btn-ink btn-sm" id="cBtnConfirm" disabled>确认调价</button>
+            </div>
+          </div>
+
+          <table class="mkt">
+            <thead>
+              <tr>
+                <th>房源信息</th>
+                <th>户型</th>
+                <th class="r">总价</th>
+                <th>项目状态</th>
+                <th>通知</th>
+                <th class="r" style="padding-right:18px;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="cell-proj"><div class="thumb"></div><div><div class="tt">五棵松雅居 · 精装三居</div><div class="sub"><span class="idm">ID:281</span><span>五棵松雅居</span></div></div></div></td>
+                                <td>三居 · 108㎡</td>
+                <td class="r"><div class="cell-price"><div class="p1">625万</div><div class="p2">57,870 元/㎡</div></div></td>
+                <td><span class="bdg bdg-fog">在途</span></td>
+                <td><span class="dash">—</span></td>
+                <td class="r"><div class="cell-acts"><button class="abtn"><span class="ic eye"></span>预览</button><button class="abtn"><span class="ic"></span>编辑</button><button class="abtn">删</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="cell-proj"><div class="thumb"></div><div><div class="tt">望京西园四区 · 东南两居</div><div class="sub"><span class="idm">ID:292</span><span>望京西园</span></div></div></div></td>
+                                <td>两居 · 89㎡</td>
+                <td class="r"><div class="cell-price"><div class="p1">505万</div><div class="p2">56,742 元/㎡</div></div></td>
+                <td><span class="bdg bdg-ink">在售</span></td>
+                <td><div class="cell-notify"><span class="npill g">调价 12</span></div></td>
+                <td class="r"><div class="cell-acts"><button class="abtn"><span class="ic eye"></span>预览</button><button class="abtn"><span class="ic"></span>编辑</button><button class="abtn">删</button></div></td>
+              </tr>
+              <tr class="demo-row" id="cRow298">
+                <td><div class="cell-proj"><div class="thumb"></div><div><div class="tt">朝阳公园南里 · 南北通透两居</div><div class="sub"><span class="idm">ID:298</span><span>朝阳公园南里</span></div></div></div></td>
+                                <td>两居 · 76.5㎡</td>
+                <td class="r"><div class="cell-price" id="cCellPrice"><div class="p1" id="cP1">428万</div><div class="p2" id="cP2">55,948 元/㎡</div><div class="p3" id="cP3">原 435 · 09/28 直降</div></div></td>
+                <td><span class="bdg bdg-ink">在售</span></td>
+                <td><div class="cell-notify"><span class="npill a">上新 64</span><span class="npill g" id="cNotifyPrice">调价 18</span></div></td>
+                <td class="r"><div class="cell-acts">
+                  <button class="abtn"><span class="ic eye"></span>预览</button>
+                  <button class="abtn"><span class="ic"></span>编辑</button>
+                  <button class="abtn hot" id="cBtnPrice"><span class="ic price"></span>调价</button>
+                  <button class="abtn">删</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td><div class="cell-proj"><div class="thumb"></div><div><div class="tt">甜水园东里 · 北向一居</div><div class="sub"><span class="idm">ID:305</span><span>甜水园东里</span></div></div></div></td>
+                                <td>一居 · 45㎡</td>
+                <td class="r"><div class="cell-price"><div class="p1">268万</div><div class="p2">59,556 元/㎡</div></div></td>
+                <td><span class="bdg bdg-fog">在途</span></td>
+                <td><span class="dash">—</span></td>
+                <td class="r"><div class="cell-acts"><button class="abtn"><span class="ic eye"></span>预览</button><button class="abtn"><span class="ic"></span>编辑</button><button class="abtn">删</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="cell-proj"><div class="thumb"></div><div><div class="tt">双井桥东 · 复式 Loft</div><div class="sub"><span class="idm">ID:307</span><span>双井桥东</span><span class="newbdg">新上</span></div></div></div></td>
+                                <td>其他 · 132㎡</td>
+                <td class="r"><div class="cell-price"><div class="p1">980万</div><div class="p2">74,242 元/㎡</div></div></td>
+                <td><span class="bdg bdg-dove">已售</span></td>
+                <td><span class="dash">—</span></td>
+                <td class="r"><div class="cell-acts"><button class="abtn"><span class="ic eye"></span>预览</button><button class="abtn"><span class="ic"></span>编辑</button><button class="abtn">删</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="list-toast" id="cToast">428 → 421 万已生效，订阅推送已排队</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note">
+    <b>弹层规则</b>：锚定触发行上方（--pop-arrow 对准操作列），宽度 284px；点击遮罩 / Esc / ✕ 关闭；
+    「已售」「草稿」行与无写权限角色不渲染「调价」项。成功后关弹层 → toast → 行内三处即时更新
+    （总价 / 调价副行 / 通知列计数），「近期调价」pill 高亮提示可筛选——服务端
+    <code>badge_filter=price</code> 链路既有，无需新增后端。
+  </p>
+</section>
+
+<!-- ═══════════════ SEC 06 状态机与口径 ═══════════════ -->
+<section class="sec">
+  <div class="kicker">Sec 06 · 状态机与口径</div>
+  <h2>三态状态机与既有链路口径</h2>
+  <div class="sm-flow" data-screen-label="S · PriceChangeCard 状态机">
+    <div class="sm-node"><div class="n">BROWSE</div><div class="t">浏览态</div><div class="d">当前价 + 最近调价条 + 历史（懒加载）</div></div>
+    <div class="sm-arrow">⇄</div>
+    <div class="sm-node"><div class="n">FORM</div><div class="t">表单态</div><div class="d">卡内切换；差价 chip 实时联动；同值禁用</div></div>
+    <div class="sm-arrow">→</div>
+    <div class="sm-node"><div class="n">SUCCESS</div><div class="t">成功态</div><div class="d">推送已排队；完成 → 回浏览态 + router.refresh</div></div>
+    <div class="sm-branches" style="margin-left:8px;">
+      <div style="font-size:11px;color:var(--graphite);">↳ 提交失败：停留表单态 · toast.error（校验/网络两类）</div>
+      <div style="font-size:11px;color:var(--graphite);">↳ 取消 / Esc：reset 回浏览态，输入不保留</div>
+    </div>
+  </div>
+  <table class="spec">
+    <tr><th style="width:190px;">口径 / 边界</th><th>约定（与现有实现严格对齐）</th></tr>
+    <tr><td><b>入口可见性</b></td><td><code>showPricingEntry = publish_status === "发布" && hasPermission(L4_MARKETING_WRITE)</code>，详情卡与列表「调价」项共用同一判定；「已售」行不展示快捷入口（改价语义已终结）。</td></tr>
+    <tr><td><b>提交契约</b></td><td>复用既有 <code>updateL4MarketingProjectPriceAction(id, total_price)</code>（PUT exclude_unset 局部更新）；后端保证同值不产生调价记录 / 不触发通知——前端同值禁用只是体验层双保险。</td></tr>
+    <tr><td><b>成功反馈</b></td><td>toast + 成功态文案只承诺「<b>推送已排队</b>」，不写具体人数；送达结果（notify_success / skipped / failed）由后台任务写回时间线分次展示。</td></tr>
+    <tr><td><b>金额方向</b></td><td>降价 = <code>--color-success</code> 绿（用户得利视角，与 columns.tsx 调价副行一致）；涨价 = Graphite 灰中性；不引入红涨绿跌。</td></tr>
+    <tr><td><b>单价折算</b></td><td>表单态实时显示 <code>new_total_price × 10000 ÷ area</code> 折算单价（仅 area 已知时）；列表副行单价由服务端 unit_price 下发，前端不自行改写。</td></tr>
+    <tr><td><b>时间线口径</b></td><td>GET /price-changes 倒序全量（含分次送达计数）；详情卡懒加载（首次展开或进入表单态时拉取），列表弹层不拉时间线。</td></tr>
+    <tr><td><b>列表行刷新</b></td><td>详情页成功 → <code>router.refresh()</code> + onRefresh；列表弹层成功 → 关弹层 + toast + router.refresh（revalidateTag 已在 action 内）。</td></tr>
+    <tr><td><b>键盘 / 焦点</b></td><td>进入表单态自动 focus 新总价输入；Esc 逐层退出（弹层 → 表单态）；确认按钮同值 / 空值 / ≤0 / 提交中禁用。</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════ SEC 07 实现落点 ═══════════════ -->
+<section class="sec">
+  <div class="kicker">Sec 07 · 实现落点与验证</div>
+  <h2>组件化拆分落点（Router→Service 不动，纯前端重构）</h2>
+  <div class="impl-grid">
+    <div class="impl-card">
+      <h4>新增 / 改造文件（frontend）</h4>
+      <ol>
+        <li><b>新增 <code>admin/marketing/_components/price-change-card.tsx</code></b> —— 独立组件：props 收 <code>project / timeline / variant("card" | "popover") / canWrite</code>，onPriceSubmit 回调上抛；三态内部 useState，zod schema 从 notify-section 平移。</li>
+        <li><b>瘦身 <code>detail/notify-section.tsx</code></b> —— 移除调价表单 / 差价 chip / 时间线，仅保留推送说明；若并入 PushStatCard 则整文件删除并更新 <code>detail/index.ts</code> 导出。</li>
+        <li><b>新增 <code>_components/push-stat-card.tsx</code></b>（或并入 PriceChangeCard 旁挂）—— notify_summary 两格统计纯展示。</li>
+        <li><b>改 <code>marketing-detail-page.tsx</code></b> —— view 态内容区改双栏 grid（左：MarketingInfoSection + BasicConfigSection + PhotosSection；右：PriceChangeCard + PushStatCard，sticky）。</li>
+        <li><b>改 <code>action-cell.tsx</code></b> —— 插入「调价」项（已发布 + canWrite + 非已售），挂 PricePopover（内嵌 PriceChangeCard variant="popover"）。</li>
+        <li><b>类型</b> —— 无 API 变更，不触发 <code>pnpm gen-api</code>；timeline 类型从 actions/projects.ts 导出复用，避免重复声明。</li>
+      </ol>
+    </div>
+    <div class="impl-card">
+      <h4>明确不做（防 scope 蔓延）</h4>
+      <ol>
+        <li>不新增后端接口 / 迁移：复用 PUT 局部更新与 GET /price-changes 既有契约。</li>
+        <li>不改列表页筛选：badge_filter=new/price 服务端链路不动，仅 pill 高亮引导。</li>
+        <li>不做批量调价：单房调价是既有语义；批量属新需求需单独立项。</li>
+        <li>edit 态（EditMode 整页表单）不显示调价入口——调价只作用于 view 态，由父级保证（现状逻辑保留）。</li>
+        <li>小程序端展示不在本稿范围（C 端消息卡见 2026-10-04 订阅通知稿）。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="e2e-grid">
+    <div class="e2e-item"><span class="ck"></span><span><b>E2E-1</b> 发布房源 → 详情页右栏调价 428→421 → 成功态文案含「推送已排队」→ 列表行总价 421 / 副行「原 428」出现 / badge_filter=price 可筛出该行。</span></div>
+    <div class="e2e-item"><span class="ck"></span><span><b>E2E-2</b> 列表行内弹层调价成功 → 弹层关闭 + toast + 行内即时更新；刷新后数据与服务端一致。</span></div>
+    <div class="e2e-item"><span class="ck"></span><span><b>E2E-3</b> 同值 428 提交 → 按钮禁用；绕过前端直发 PUT → 无新调价记录（后端 exclude_unset 语义回归）。</span></div>
+    <div class="e2e-item"><span class="ck"></span><span><b>E2E-4</b> 草稿房源 / L4 只读角色 → 详情卡与列表均无调价入口；整卡只读降级。</span></div>
+    <div class="e2e-item"><span class="ck"></span><span><b>E2E-5</b> 调价历史空 / 有记录两种态渲染正确；送达 skipped / failed 分次计数展示无误。</span></div>
+    <div class="e2e-item"><span class="ck"></span><span><b>E2E-6</b> 1024px 窗口双栏折叠单列；右栏 sticky 行为正常；Esc 逐层退出不误关页面。</span></div>
+  </div>
+</section>
+
+<footer class="doc-foot">
+  <span>STEEP · ADMIN/MARKETING/298 REDESIGN · PRICE-CHANGE AS A COMPONENT</span>
+  <span>V1.0 · 2026-10-06 · 单文件自包含交付物（有意超 500 行）</span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── 通用：调价表单差价联动 ─────────────────────── */
+  var CUR = 428;          // 当前总价（万）
+  var AREA = 76.5;        // 建筑面积（㎡）
+  function fmt2(n) { return n.toFixed(2); }
+  function fmtUnit(wan) {
+    if (!isFinite(wan) || wan <= 0) return null;
+    return Math.round((wan * 10000) / AREA).toLocaleString("en-US");
+  }
+  /* 绑定输入框 → 差价 chip + 确认按钮 + 单价折算提示 */
+  function bindPriceInput(input, diffEl, confirmBtn, unitHintEl) {
+    function update() {
+      var v = parseFloat(input.value);
+      if (!isFinite(v) || v <= 0) {
+        diffEl.className = "diff idle";
+        diffEl.textContent = input.value === "" ? "输入新总价" : "总价必须大于 0";
+        if (confirmBtn) confirmBtn.disabled = true;
+        if (unitHintEl) unitHintEl.textContent = "按 76.5 ㎡ 折合单价将同步更新";
+        return;
+      }
+      var d = v - CUR;
+      if (d === 0) {
+        diffEl.className = "diff same";
+        diffEl.textContent = "价格未变化";
+        if (confirmBtn) confirmBtn.disabled = true;
+      } else if (d < 0) {
+        diffEl.className = "diff down";
+        diffEl.textContent = "↓ 直降 " + fmt2(-d) + " 万";
+        if (confirmBtn) confirmBtn.disabled = false;
+      } else {
+        diffEl.className = "diff up";
+        diffEl.textContent = "↑ 上调 " + fmt2(d) + " 万";
+        if (confirmBtn) confirmBtn.disabled = false;
+      }
+      if (unitHintEl) {
+        var u = fmtUnit(v);
+        unitHintEl.textContent = u ? ("按 76.5 ㎡ 折合单价约 " + u + " 元/㎡") : "按 76.5 ㎡ 折合单价将同步更新";
+      }
+    }
+    input.addEventListener("input", update);
+    update();
+  }
+  function toast(el, text) {
+    el.textContent = text;
+    el.classList.add("show");
+    clearTimeout(el._t);
+    el._t = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+
+  /* ── Artboard A：详情页 PriceChangeCard 三态 ────── */
+  var aCard = document.getElementById("aPcard");
+  var aInput = document.getElementById("aNewPrice");
+  var aConfirm = document.getElementById("aBtnConfirm");
+  var aStateChip = document.getElementById("aStateChip");
+  var aHeaderChip = document.getElementById("aHeaderChip");
+  var aOkPrice = document.getElementById("aOkPrice");
+  var aTlList = document.getElementById("aTlList");
+  var aTlCount = document.getElementById("aTlCount");
+  var aPushCount = document.getElementById("aPushCount");
+  var aPriceBig = aCard.querySelector(".price-big");
+  var tlOpen = false;
+  var tlCount = 3;
+
+  function aSetMode(mode) {
+    aCard.setAttribute("data-mode", mode);
+    aStateChip.textContent = mode.toUpperCase();
+    if (mode === "form") setTimeout(function () { aInput.focus(); }, 30);
+  }
+  document.getElementById("aBtnPrice").addEventListener("click", function () {
+    aInput.value = "";
+    aSetMode("form");
+  });
+  document.getElementById("aBtnCancel").addEventListener("click", function () { aSetMode("browse"); aInput.value = ""; });
+  document.getElementById("aBtnTl").addEventListener("click", function () {
+    tlOpen = !tlOpen;
+    document.getElementById("aTl").style.display = tlOpen ? "block" : "none";
+  });
+  document.getElementById("aBtnViewTl").addEventListener("click", function () {
+    tlOpen = true;
+    document.getElementById("aTl").style.display = "block";
+    aSetMode("browse");
+  });
+  document.getElementById("aBtnDone").addEventListener("click", function () { aSetMode("browse"); });
+
+  bindPriceInput(aInput, document.getElementById("aDiff"), aConfirm, document.getElementById("aUnitHint"));
+  aConfirm.addEventListener("click", function () {
+    var v = parseFloat(aInput.value);
+    if (!isFinite(v) || v <= 0 || v === CUR) return;
+    var down = v < CUR;
+    aOkPrice.textContent = fmt2(v) + " 万";
+    aSetMode("success");
+    aHeaderChip.style.display = "inline-flex";
+    // 时间线插入新条目（倒序头部）
+    var item = document.createElement("div");
+    item.className = "tl-item" + (down ? "" : " up");
+    item.innerHTML =
+      '<div class="tl-row1"><span class="tl-prices">' + fmt2(CUR) + " → " + fmt2(v) + " 万" +
+      '<span class="dir ' + (down ? "down" : "up") + '">' + (down ? "降价" : "涨价") + "</span></span>" +
+      '<span class="tl-date">刚刚</span></div>' +
+      '<div class="tl-row2">推送已排队 · 送达统计稍后更新</div>';
+    aTlList.insertBefore(item, aTlList.firstChild);
+    tlCount += 1;
+    aTlCount.textContent = "共 " + tlCount + " 次";
+    document.querySelector("#aBtnTl").textContent = "调价历史 (" + tlCount + ")";
+    // 浏览态数据同步
+    aPriceBig.innerHTML = fmt2(v).replace(/\.00$/, "") + '<span class="unit">万</span>';
+    aCard.querySelector(".unit-line").textContent = "折合单价约 " + fmtUnit(v) + " 元/㎡";
+    aCard.querySelector(".last-strip").innerHTML =
+      '<span class="l">最近一次 <b>刚刚</b> · ' + fmt2(CUR) + " → " + fmt2(v) + "</span>" +
+      '<span class="r" style="' + (down ? "" : "color:var(--graphite);") + '">' + (down ? "↓ 直降 " + fmt2(CUR - v) : "↑ 上调 " + fmt2(v - CUR)) + " 万</span>";
+    if (down) aPushCount.innerHTML = (parseInt(aPushCount.textContent, 10) + 1) + '<span class="u">位用户</span>';
+    CUR = v;
+    toast(document.getElementById("aToast"), "调价成功，订阅推送已排队");
+  });
+
+  /* ── Artboard B：三态 tabs + 表单联动 ──────────── */
+  var bTabs = document.getElementById("bTabs");
+  var bPanes = document.querySelectorAll("[data-bpane]");
+  bTabs.addEventListener("click", function (e) {
+    var btn = e.target.closest("button");
+    if (!btn) return;
+    bTabs.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === btn); });
+    bPanes.forEach(function (p) { p.classList.toggle("on", p.getAttribute("data-bpane") === btn.getAttribute("data-btab")); });
+  });
+  bindPriceInput(document.getElementById("bNewPrice"), document.getElementById("bDiff"), document.getElementById("bBtnConfirm"), document.getElementById("bUnitHint"));
+  document.getElementById("bBtnConfirm").addEventListener("click", function () {
+    bTabs.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-btab") === "success"); });
+    bPanes.forEach(function (p) { p.classList.toggle("on", p.getAttribute("data-bpane") === "success"); });
+  });
+
+  /* ── Artboard C：列表行内弹层 ─────────────────── */
+  var cCard = document.getElementById("cListCard");
+  var cPop = document.getElementById("cPop");
+  var cMask = document.getElementById("cMask");
+  var cInput = document.getElementById("cNewPrice");
+  var cConfirm = document.getElementById("cBtnConfirm");
+  var cToastEl = document.getElementById("cToast");
+  var cArrow = document.querySelector("#cRow298 .cell-acts");
+
+  function cOpen() {
+    // 箭头对准操作列「调价」按钮
+    var cardRect = cCard.getBoundingClientRect();
+    var btnRect = cArrow.getBoundingClientRect();
+    var ratio = Math.min(92, Math.max(8, ((btnRect.left + btnRect.width / 2) - cardRect.left) / cardRect.width * 100));
+    cPop.style.setProperty("--pop-arrow", ratio + "%");
+    cCard.classList.add("pop-open");
+    cInput.value = "";
+    setTimeout(function () { cInput.focus(); }, 30);
+  }
+  function cClose() { cCard.classList.remove("pop-open"); }
+  document.getElementById("cBtnPrice").addEventListener("click", cOpen);
+  document.getElementById("cPopClose").addEventListener("click", cClose);
+  document.getElementById("cBtnCancel").addEventListener("click", cClose);
+  cMask.addEventListener("click", cClose);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") cClose();
+  });
+  bindPriceInput(cInput, document.getElementById("cDiff"), cConfirm, null);
+  cConfirm.addEventListener("click", function () {
+    var v = parseFloat(cInput.value);
+    if (!isFinite(v) || v <= 0 || v === CUR) return;
+    cClose();
+    document.getElementById("cP1").textContent = (Math.round(v * 10) / 10).toLocaleString("en-US") + "万";
+    document.getElementById("cP2").textContent = fmtUnit(v) + " 元/㎡";
+    document.getElementById("cP3").textContent = "原 " + fmt2(CUR) + " · 刚刚 直降";
+    document.getElementById("cNotifyPrice").textContent = "调价 " + (parseInt(document.getElementById("cNotifyPrice").textContent.replace(/\D/g, ""), 10) + 1);
+    toast(cToastEl, fmt2(CUR) + " → " + fmt2(v) + " 万已生效，订阅推送已排队");
+    CUR = v;
+  });
+})();
+</script>
+</body>
+</html>

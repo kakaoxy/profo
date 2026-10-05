@@ -151,7 +151,9 @@ from migrations._helpers import _MIGRATION_ADVISORY_LOCK_KEY, _column_exists
 from migrations._keys import add_key_audit_share_id_index, add_project_key_note_column, create_key_tables
 from migrations._keys_seq import add_normal_key_seq_column
 from migrations._marketing_notify import (
+    add_price_change_id_to_notify_logs,
     add_published_at_to_l4_marketing_projects,
+    create_marketing_project_subscription_table,
     create_marketing_subscription_tables,
 )
 from migrations._permission_system import (
@@ -354,6 +356,11 @@ def _run_all_migrations(engine: Engine) -> None:
         create_marketing_subscription_tables(engine)
         # 房源上新/调价订阅通知：l4_marketing_projects 补加 published_at 列（首次发布时间）
         add_published_at_to_l4_marketing_projects(engine)
+        # 调价历史时间线：l4_marketing_notify_logs 补加 price_change_id / sub_source 两列
+        # （price_change_id 关联分次推送的调价记录；sub_source 为房源级订阅预留）
+        add_price_change_id_to_notify_logs(engine)
+        # 房源级调价订阅（P2-1）：幂等创建 l4_marketing_project_subscriptions
+        create_marketing_project_subscription_table(engine)
         # 分享统计 lead_count：leads(referrer_id) 索引
         add_lead_referrer_index(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过

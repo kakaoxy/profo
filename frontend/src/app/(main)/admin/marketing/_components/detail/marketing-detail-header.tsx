@@ -5,12 +5,19 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil, Eye, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import type { MarketingDetailHeaderProps } from "./types";
+import { usePermission } from "@/hooks/use-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 // 使用 memo 避免不必要的重渲染
 export const MarketingDetailHeader = memo(function MarketingDetailHeader({
   project,
   onClose,
+  mode = "view",
+  onStartEdit,
 }: MarketingDetailHeaderProps) {
+  const { hasPermission } = usePermission();
+  const canWrite = hasPermission(PERMISSION_CODES.L4_MARKETING_WRITE);
+
   return (
     <div className="px-6 py-4 border-b border-dove/40 bg-white sticky top-0 z-10">
       <div className="flex items-center justify-between gap-4">
@@ -31,40 +38,42 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
           </div>
         </div>
 
-        {/* 右侧：操作按钮 */}
+        {/* 右侧：操作按钮（view 态：编辑房源/预览；edit 态：提示，保存/取消在表单 sticky 底栏） */}
         <div className="flex items-center gap-2">
-          <Link
-            href={`/admin/marketing/${project.id}/edit`}
-            onClick={() => {
-              onClose();
-            }}
-          >
+          {mode === "view" && canWrite ? (
             <Button
               variant="outline"
               size="sm"
               className="h-8 bg-white text-ink border-dove hover:bg-fog"
+              onClick={() => onStartEdit?.()}
             >
               <Pencil className="mr-1.5 h-3.5 w-3.5" />
               编辑房源
             </Button>
-          </Link>
+          ) : null}
 
-          <Link
-            href={`/projects/${project.id}`}
-            target="_blank"
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 bg-white text-ink border-dove hover:bg-fog"
+          {mode === "view" && (
+            <Link
+              href={`/projects/${project.id}`}
+              target="_blank"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
             >
-              <Eye className="mr-1.5 h-3.5 w-3.5" />
-              预览
-            </Button>
-          </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 bg-white text-ink border-dove hover:bg-fog"
+              >
+                <Eye className="mr-1.5 h-3.5 w-3.5" />
+                预览
+              </Button>
+            </Link>
+          )}
+
+          {mode === "edit" && (
+            <span className="text-xs text-graphite">编辑中 · 保存/取消在底部</span>
+          )}
 
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreVertical className="h-4 w-4" />

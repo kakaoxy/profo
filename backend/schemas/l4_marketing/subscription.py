@@ -46,6 +46,14 @@ class PublicMarketingSubscribeReportResponse(BaseModel):
     price_change_quota: int = Field(default=0, description="调价提醒剩余额度")
 
 
+class PublicMarketingProjectSubscriptionStatusResponse(BaseModel):
+    """房源级订阅状态响应（当前登录用户 × 指定房源）."""
+
+    subscribed: bool = Field(description="是否已订阅（存在订阅行）")
+    price_change_quota: int = Field(default=0, ge=0, description="房源级调价提醒剩余额度")
+    last_subscribed_at: datetime | None = Field(default=None, description="最近一次订阅授权时间")
+
+
 class PublicMarketingLatestPriceChange(BaseModel):
     """C 端列表项调价摘要（降价/涨价徽标数据源）."""
 
@@ -60,3 +68,32 @@ class PublicMarketingNotifySummary(BaseModel):
 
     new_listing_count: int = Field(default=0, description="上新通知成功送达人数")
     price_change_count: int = Field(default=0, description="调价通知成功送达人数")
+
+
+class L4MarketingSubscriptionStatsResponse(BaseModel):
+    """订阅漏斗全局统计（admin 端点 GET /admin/marketing/subscription-stats）.
+
+    P2-1（房源级订阅）落地后同方法扩展 project_level_subscribers / project_level_watches。
+    """
+
+    new_listing_subscribers: int = Field(
+        ge=0,
+        description="上新频道剩余额度>0人数（可触达）",
+    )
+    price_change_subscribers: int = Field(
+        ge=0,
+        description="调价频道剩余额度>0人数（可触达）",
+    )
+    total_subscribers: int = Field(ge=0, description="任一频道订阅过的人数（总行数）")
+    total_new_quota: int = Field(ge=0, description="上新频道额度池总量")
+    total_price_quota: int = Field(ge=0, description="调价频道额度池总量")
+    project_level_subscribers: int = Field(
+        default=0,
+        ge=0,
+        description="房源级订阅人数（去重 user_id；P2-1 落地后启用）",
+    )
+    project_level_watches: int = Field(
+        default=0,
+        ge=0,
+        description="房源级订阅关系总数（P2-1 落地后启用）",
+    )
