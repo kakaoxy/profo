@@ -211,7 +211,6 @@ __all__ = [
     # 区域伙伴招募计划
     "RecruitCampaign",
     "RecruitCampaignStatus",
-    "SendStatus",
     "RecruitLead",
     "RecruitLeadSource",
     "RecruitLeadStatus",
@@ -224,6 +223,7 @@ __all__ = [
     "RenovationStage",
     "ReturnAdjustment",
     "Role",
+    "SendStatus",
     "SettlementStatus",
     "SubjectLevel",
     "SubjectStage",
