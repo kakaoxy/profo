@@ -7,9 +7,11 @@
  * - 模板 ID 由后端配置经 /public/marketing/subscribe-template 下发（均未配置 = 功能关闭）
  * - 授权必须在用户 tap 手势回调内同步发起（wx.requestSubscribeMessage 限制）
  * - 授权 accept 结果上报 /public/marketing/subscriptions/report，按模板累计额度
+ *   （需 C 端登录态；未登录时上报 401 失败静默返回 null，由调用方引导登录后补报）
  */
 
 import type { components } from "../types/api-types";
+import { getCAccessToken } from "./token";
 import { request } from "./request";
 
 type SubscribeTemplateResponse =
@@ -60,6 +62,10 @@ export async function fetchMarketingSubscribeTemplates(): Promise<MarketingSubsc
  * 查询当前用户订阅额度状态（需登录；未登录/失败返回 null）.
  */
 export async function fetchMarketingSubscriptionStatus(): Promise<MarketingSubscriptionStatus | null> {
+  // 未登录：status 接口需 C 端登录态，直接不发请求（避免 401 噪音）
+  if (!getCAccessToken()) {
+    return null;
+  }
   try {
     const res = await request<SubscriptionStatusResponse>({
       url: "/public/marketing/subscriptions/status",
@@ -74,10 +80,15 @@ export async function fetchMarketingSubscriptionStatus(): Promise<MarketingSubsc
   }
 }
 
-/** 上报授权结果（内部；失败静默，仅日志留痕）. */
+/** 上报授权结果（内部；未登录或失败均静默返回 null，调用方据 onResult 引导登录）. */
 async function reportSubscribeResult(
   results: { templateId: string; status: MarketingSubscribeStatus }[],
 ): Promise<MarketingSubscriptionStatus | null> {
+  // 未登录：report 接口需 C 端登录态，直接不发请求（避免 401 噪音），
+  // 由调用方 onResult(status="accept", quotas=null) 分支引导登录后补报
+  if (!getCAccessToken()) {
+    return null;
+  }
   try {
     const res = await request<SubscribeReportResponse>({
       url: "/public/marketing/subscriptions/report",

@@ -1,6 +1,7 @@
 import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
 import { resolveImageUrl } from "../../../utils/url";
+import { getCAccessToken } from "../../../utils/token";
 import { consumeProjectListPendingTab } from "../../../utils/project-list-tab";
 import { animateServedCount, clearServedCountTimer, loadServedCount } from "../../../utils/served-count";
 import {
@@ -170,6 +171,8 @@ interface PageCustom {
   onSubscribeConfirm(): void;
   /** 弹层关闭 */
   onSubscribeClose(): void;
+  /** 登录返回后补报：重开弹层由用户再点「开启提醒」上报（需重新授权，避免旧结果过期） */
+  resumeSubscribeAfterLogin(): void;
   /** 弹层内容区阻止冒泡空实现（catchtap 绑定） */
   noop(): void;
   /** 授权结果应用：toast 已由 notify 工具弹出，这里刷新额度状态 */
@@ -178,6 +181,8 @@ interface PageCustom {
   _epoch: number;
   /** 订阅模板 ID 对（内存态，不进 data） */
   _subscribeTemplates: MarketingSubscribeTemplates | null;
+  /** 未登录时 accept 后待补报的模板对（登录返回后补报） */
+  _pendingSubscribeReport: MarketingSubscribeTemplates | null;
 }
 
 /** 根据 key 查 RangeOption label. */
@@ -227,6 +232,7 @@ Page<PageData, PageCustom>({
   servedCountTimer: null,
   _epoch: 0,
   _subscribeTemplates: null,
+  _pendingSubscribeReport: null,
   onLoad() {
     this.loadList(true);
     this.loadServedCount();
@@ -242,6 +248,8 @@ Page<PageData, PageCustom>({
     if (this.data.subscribeEnabled) {
       this.loadSubscribeState();
     }
+    // 登录返回（from=subscribe）：重开弹层补报订阅授权
+    this.resumeSubscribeAfterLogin();
   },
   onUnload() {
     this.clearServedCountTimer();
@@ -625,8 +633,8 @@ Page<PageData, PageCustom>({
       this.setData({ subscribeEnabled: false, subscribeState: "", subscribeQuota: 0 });
       return;
     }
-    // 免登录入口也展示（点击「开启提醒」时若未登录，report 请求自身失败静默，
-    // 与 C 端静默注册模式一致）；未登录时 status 请求失败 → 额度展示 0
+    // 免登录入口也展示；未登录（无 c_access_token）时额度展示 0，
+    // 点「开启提醒」授权成功后再补登录+补报（onSubscribeConfirm 内处理）
     const status = await fetchMarketingSubscriptionStatus();
     const newQuota = status?.newListingQuota ?? 0;
     const priceQuota = status?.priceChangeQuota ?? 0;
@@ -657,7 +665,12 @@ Page<PageData, PageCustom>({
     if (!templates) {
       return;
     }
-    requestMarketingSubscribe(templates, (_status, quotas) => {
+    // 未登录：不能先跳登录（会丢失 requestSubscribeMessage 手势同步窗口），
+    // 仍同步拉起授权面板；授权 accept 后登录态缺失会导致上报 401，
+    // 由 requestMarketingSubscribe 回调引导登录（from=subscribe）+ 登录返回后重开弹层补报
+    const notLoggedIn = !getCAccessToken();
+    requestMarketingSubscribe(templates, (status, quotas) => {
+      // 已登录且上报成功：额度刷新 + 收起弹层
       if (quotas) {
         const total = quotas.newListingQuota + quotas.priceChangeQuota;
         this.setData({
@@ -666,14 +679,44 @@ Page<PageData, PageCustom>({
           subscribeState: total > 0 ? "on" : "expired",
           subscribeQuota: total,
         });
+        this.setData({ sheetVisible: false });
+        return;
       }
-      // 授权面板拉起时先收起弹层（微信面板为全屏，叠层无意义；toast 由工具统一弹）
+      // 未登录 + accept：授权结果已弹出但无法上报（未登录），先本地置为已订阅态，
+      // 引导登录（登录成功返回后 onShow 重开弹层补报）；其余状态收起弹层即可
+      if (notLoggedIn && status === "accept") {
+        this.setData({ subscribeState: "on", sheetVisible: false });
+        this._pendingSubscribeReport = templates;
+        wx.showModal({
+          title: "登录后生效",
+          content: "订阅提醒需要登录后才能生效，是否立即登录？",
+          confirmText: "去登录",
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({ url: "/pages/login/index/index?from=subscribe" });
+            }
+          },
+        });
+        return;
+      }
+      // 已登录但上报失败（网络异常等）：收起弹层，onShow 会重新拉额度
       this.setData({ sheetVisible: false });
     });
   },
   /** 弹层关闭（点遮罩/「暂不」）. */
   onSubscribeClose() {
     this.setData({ sheetVisible: false });
+  },
+  /** 登录返回后补报：重开弹层由用户再点「开启提醒」上报（需重新授权，避免旧结果过期） */
+  resumeSubscribeAfterLogin() {
+    if (!this._pendingSubscribeReport) {
+      return;
+    }
+    this._pendingSubscribeReport = null;
+    if (this.data.subscribeEnabled) {
+      this.loadSubscribeState();
+      this.setData({ sheetVisible: true });
+    }
   },
   /** 弹层内容区空实现（catchtap 阻止冒泡到遮罩关闭）. */
   noop() {

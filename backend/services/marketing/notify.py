@@ -19,10 +19,8 @@ services/recruit/attribution.py 通知模式）。
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal
 from typing import TypedDict
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import InstrumentedAttribute, Session
@@ -51,18 +49,64 @@ _NOTIFY_PAGE_PATH = "pages/projects/detail/index?id={id}"
 _MAX_BATCH = 500
 
 # 模板字段键名（需与微信公众平台申请的模板字段一一对应；调整申请后在此改映射即可）
+# 上新模板（标题「关注小区新上房源通知」，编号 208）：thing1 小区 / thing9 户型 / amount11 总价
 _NEW_FIELD_COMMUNITY = "thing1"  # 小区名称（thing ≤20 字符）
-_NEW_FIELD_HOUSE = "thing2"  # 房源信息（thing ≤20 字符）
-_NEW_FIELD_PRICE = "amount1"  # 总价（amount：纯数字，禁带「万」等符号）
-_NEW_FIELD_TIME = "time3"  # 上架时间（time）
+_NEW_FIELD_HOUSE = "thing9"  # 户型（thing ≤20 字符）
+_NEW_FIELD_PRICE = "amount11"  # 总价（amount：纯数字，禁带「万」等符号）
+# 调价模板（标题「房源降价提醒」，编号 6496）：thing1 小区 / phrase7 居室 / thing4 面积 / amount8 最新价
 _PRICE_FIELD_COMMUNITY = "thing1"  # 小区名称（thing ≤20 字符）
-_PRICE_FIELD_DESC = "thing2"  # 调价说明（thing ≤20 字符）
-_PRICE_FIELD_PRICE = "amount1"  # 现总价（amount：纯数字）
-_PRICE_FIELD_TIME = "time3"  # 调价时间（time）
+_PRICE_FIELD_LAYOUT = "phrase7"  # 居室（phrase ≤5 个汉字，禁数字/字母/符号）
+_PRICE_FIELD_AREA = "thing4"  # 面积（thing ≤20 字符）
+_PRICE_FIELD_PRICE = "amount8"  # 最新总价（amount：纯数字）
 # thing 类型字段长度上限（微信 thing.DATA 规则：20 字符内，超长触发 47003）
 _THING_MAX_LEN = 20
+# phrase 类型字段长度上限（微信 phrase.DATA 规则：5 个汉字内）
+_PHRASE_MAX_LEN = 5
 
-_CST = ZoneInfo("Asia/Shanghai")
+
+def _layout_phrase(layout: str | None) -> str:
+    """户型转 phrase 居室（≤5 个汉字，禁数字/字母/符号，超限触发 47003）.
+
+    「3室2厅1卫」→「三室二厅」；「两室一厅」→「二室一厅」；「2室」→「二室」；
+    无法解析出居室、数字 ≥10（无法用单个汉字表达）或超 5 字回退「户型更新」。
+    """
+    digits = "零一二三四五六七八九"
+    cn_map = {
+        "零": 0,
+        "一": 1,
+        "二": 2,
+        "两": 2,
+        "三": 3,
+        "四": 4,
+        "五": 5,
+        "六": 6,
+        "七": 7,
+        "八": 8,
+        "九": 9,
+        "十": 10,
+    }
+    parts: dict[str, int | None] = {}
+    pending: int | None = None
+    for ch in layout or "":
+        if ch.isdigit():
+            pending = (pending or 0) * 10 + int(ch)
+        elif ch in cn_map and pending is None:
+            pending = cn_map[ch]
+        elif ch in ("室", "房", "厅") and ("厅" if ch == "厅" else "室") not in parts:
+            parts["厅" if ch == "厅" else "室"] = pending
+            pending = None
+
+    max_single_digit = 9
+
+    def cn(n: int | None) -> str | None:
+        return digits[n] if n is not None and 0 <= n <= max_single_digit else None
+
+    rooms = cn(parts.get("室"))
+    halls = cn(parts.get("厅"))
+    if rooms is None:
+        return "户型更新"
+    phrase = f"{rooms}室{halls}厅" if halls else f"{rooms}室"
+    return phrase if len(phrase) <= _PHRASE_MAX_LEN else "户型更新"
 
 
 class PriceSignal(TypedDict):
@@ -80,16 +124,9 @@ class ProjectChangeSignal:
     price_signal: PriceSignal | None = None
 
 
-def _now_cst_text() -> str:
-    """当前北京时间文本（time 类型，格式对齐微信示例「2019年10月1日 15:01」）."""
-    now = datetime.now(_CST)
-    return f"{now.year}年{now.month}月{now.day}日 {now.hour:02d}:{now.minute:02d}"
-
-
 def _house_summary(project: L4MarketingProject) -> str:
-    """房源信息摘要（thing ≤20 字符）."""
-    text = f"{project.layout} · {project.orientation}"
-    return text[:_THING_MAX_LEN]
+    """户型信息（thing ≤20 字符，上新模板 thing9）."""
+    return (project.layout or "")[:_THING_MAX_LEN]
 
 
 def _log_send(
@@ -192,22 +229,12 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
         logger.info("无可用订阅用户，跳过上新通知：project_id=%s", project.id)
         return
 
-    # 上架时间优先取 published_at（缺失回退 created_at），转北京时间文本
-    published_at = project.published_at or project.created_at
-    if published_at.tzinfo is not None:
-        published_at = published_at.astimezone(_CST)
-    time_text = (
-        f"{published_at.year}年{published_at.month}月{published_at.day}日 "
-        f"{published_at.hour:02d}:{published_at.minute:02d}"
-    )
-
     data = {
-        # 小区/房源信息截断 20 字符（thing 类型上限）；
-        # 总价(amount1) 为 amount 类型，仅传纯数字（单位万在消息卡片语境中自明）
+        # 小区/户型截断 20 字符（thing 类型上限）；
+        # 总价(amount11) 为 amount 类型，仅传纯数字（单位万在消息卡片语境中自明）
         _NEW_FIELD_COMMUNITY: {"value": (project.community_name or "新上房源")[:_THING_MAX_LEN]},
         _NEW_FIELD_HOUSE: {"value": _house_summary(project)},
         _NEW_FIELD_PRICE: {"value": f"{float(project.total_price):.1f}"},
-        _NEW_FIELD_TIME: {"value": time_text},
     }
     page = _NOTIFY_PAGE_PATH.format(id=project.id)
 
@@ -321,18 +348,16 @@ def _notify_project_price_changed(
             else PriceSignal(old_price=float(project.total_price), new_price=float(project.total_price))
         )
 
-    old_price = Decimal(str(price_signal["old_price"]))
     new_price = Decimal(str(price_signal["new_price"]))
-    diff = new_price - old_price
-    # 涨降都推：降价「总价下调 N 万」（营销点），涨价「总价已更新」（中性文案，
-    # 不暴露幅度引导焦虑）；说明截断 20 字符（thing 类型上限）
-    desc = f"总价下调 {abs(float(diff)):.0f} 万" if diff < 0 else "总价已更新"
 
     data = {
+        # 小区/居室/面积截断 20 字符（thing 类型上限）；居室为 phrase 类型，
+        # 仅允许 ≤5 个汉字（由 layout 转换，超出回退「户型更新」）；
+        # 最新价(amount8) 为 amount 类型，仅传纯数字（单位万在消息卡片语境中自明）
         _PRICE_FIELD_COMMUNITY: {"value": (project.community_name or "关注房源")[:_THING_MAX_LEN]},
-        _PRICE_FIELD_DESC: {"value": desc[:_THING_MAX_LEN]},
+        _PRICE_FIELD_LAYOUT: {"value": _layout_phrase(project.layout)},
+        _PRICE_FIELD_AREA: {"value": f"{float(project.area):.2f}㎡"[:_THING_MAX_LEN]},
         _PRICE_FIELD_PRICE: {"value": f"{float(new_price):.1f}"},
-        _PRICE_FIELD_TIME: {"value": _now_cst_text()},
     }
     page = _NOTIFY_PAGE_PATH.format(id=project.id)
 

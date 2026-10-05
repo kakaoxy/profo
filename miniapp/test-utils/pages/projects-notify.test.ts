@@ -5,8 +5,10 @@
  * - 额度耗尽 → expired 态
  * - onSubscribeConfirm 在 tap 回调内同步发起 requestSubscribeMessage，
  *   accept 上报后额度刷新
+ * - 未登录：status/report 不发请求（免 401）；accept 后引导登录，
+ *   登录返回 onShow 补报（重开弹层）
  */
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createPageHarness,
   createRequestMock,
@@ -41,7 +43,17 @@ beforeAll(async () => {
 beforeEach(() => {
   resetTestStubs();
   subscribeMock.mockClear();
+  // 默认模拟已登录（既有用例依赖 status/report 正常发出的行为）；
+  // 未登录专项用例在各自用例内覆盖
+  mockLoggedIn("tok");
 });
+
+/** 模拟登录态：token 为 null 时模拟未登录（getCAccessToken 返回空串）. */
+function mockLoggedIn(token: string | null) {
+  (globalThis as unknown as { wx: Record<string, unknown> }).wx.getStorageSync = vi.fn(
+    (key: string) => (key === "c_access_token" && token ? token : null),
+  );
+}
 
 type AnyRecord = Record<string, any>;
 
@@ -139,6 +151,80 @@ describe("房源列表订阅提醒流", () => {
       expect.objectContaining({ title: "无法开启提醒", confirmText: "去设置" }),
     );
     expect(ctx.data.sheetVisible).toBe(false);
+  });
+});
+
+
+describe("未登录订阅流（401 修复）", () => {
+  afterEach(() => {
+    // 清理登录态桩（下一用例 beforeEach 会重设）
+    (globalThis as unknown as { wx: Record<string, unknown> }).wx.getStorageSync = wxStubs.getStorageSync;
+  });
+
+  it("未登录：status 不发请求（免 401），额度展示 0", async () => {
+    mockLoggedIn(null);
+    const ctx = createPageHarness();
+    ctx.onLoad();
+    await Promise.resolve();
+    nextResolve("/public/marketing/subscribe-template", { subscribe_enabled: true, new_listing_template_id: "T1", price_change_template_id: "T2" });
+    await flush();
+    expect(ctx.data.subscribeEnabled).toBe(true);
+    // 未登录不发 status 请求：pending 队列中不存在 subscriptions/status
+    expect(pendingReqs().some((r) => r.opts.url.includes("subscriptions/status"))).toBe(false);
+    expect(ctx.data.subscribeState).toBe("expired");
+    expect(ctx.data.subscribeQuota).toBe(0);
+  });
+
+  it("未登录 accept：不发 report（免 401），引导登录并记录待补报", async () => {
+    mockLoggedIn(null);
+    const showModal = vi.fn();
+    (globalThis as unknown as { wx: Record<string, unknown> }).wx.showModal = showModal;
+    const ctx = createPageHarness({ subscribeEnabled: true, sheetVisible: true });
+    ctx._subscribeTemplates = { newListingTemplateId: "T1", priceChangeTemplateId: "T2" };
+
+    ctx.onSubscribeConfirm();
+    subscribeMock.mock.calls[0][0].success({ T1: "accept", T2: "reject" });
+
+    await flush();
+    // 未登录不发 report 请求
+    expect(pendingReqs().some((r) => r.opts.url.includes("subscriptions/report"))).toBe(false);
+    // 本地置为已订阅态 + 引导登录
+    expect(ctx.data.subscribeState).toBe("on");
+    expect(ctx.data.sheetVisible).toBe(false);
+    expect(showModal).toHaveBeenCalledWith(expect.objectContaining({ confirmText: "去登录" }));
+    expect(ctx._pendingSubscribeReport).toEqual({ newListingTemplateId: "T1", priceChangeTemplateId: "T2" });
+  });
+
+  it("登录返回 onShow：补报待处理订阅 → 重开弹层", async () => {
+    mockLoggedIn("tok-after-login");
+    const ctx = createPageHarness({ subscribeEnabled: true });
+    ctx._pendingSubscribeReport = { newListingTemplateId: "T1", priceChangeTemplateId: "T2" };
+
+    ctx.onShow();
+    // 待补报消费置空 + 重开弹层 + 拉取额度
+    expect(ctx._pendingSubscribeReport).toBe(null);
+    expect(ctx.data.sheetVisible).toBe(true);
+    await Promise.resolve();
+    nextResolve("/public/marketing/subscribe-template", { subscribe_enabled: true, new_listing_template_id: "T1", price_change_template_id: "T2" });
+    await flush();
+    // 已登录：status 正常发出
+    expect(pendingReqs().some((r) => r.opts.url.includes("subscriptions/status"))).toBe(true);
+  });
+
+  it("已登录 accept：report 正常发出并按响应刷新额度", async () => {
+    mockLoggedIn("tok");
+    const ctx = createPageHarness({ subscribeEnabled: true, sheetVisible: true });
+    ctx._subscribeTemplates = { newListingTemplateId: "T1", priceChangeTemplateId: null };
+
+    ctx.onSubscribeConfirm();
+    subscribeMock.mock.calls[0][0].success({ T1: "accept" });
+    await Promise.resolve();
+    nextResolve("/public/marketing/subscriptions/report", { new_listing_quota: 1, price_change_quota: 0 });
+    await flush();
+
+    expect(wxStubs.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "已开启提醒", icon: "success" }));
+    expect(ctx.data.subscribeState).toBe("on");
+    expect(ctx.data.subscribeQuota).toBe(1);
   });
 });
 
