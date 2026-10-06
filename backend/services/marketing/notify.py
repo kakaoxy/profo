@@ -33,6 +33,7 @@ from models import (
     L4MarketingProjectSubscription,
     L4MarketingSubscription,
     SendStatus,
+    User,
 )
 from services.system import subscribe_templates
 from services.system.wechat import WeChatAuthService
@@ -194,19 +195,47 @@ def _safe_log(db: Session, **kwargs: object) -> None:
         logger.exception("通知留痕写入失败：project_id=%s", kwargs.get("project_id"))
 
 
+def _resolve_indirect_openid(db: Session, user_id: str) -> str:
+    """间接绑定 openid 回退解析（推送侕空快照行用）.
+
+    主账号无直接绑定时反查 merged_to_user_id 指向该用户、仍持有 openid 的
+    已合并临时账号（status='merged'，对齐 leads/recruit 通知与订阅快照解析口径）。
+    """
+    carrier = (
+        db.query(User)
+        .filter(
+            User.merged_to_user_id == user_id,
+            User.status == "merged",
+            User.wechat_openid.isnot(None),
+        )
+        .first()
+    )
+    return carrier.wechat_openid if carrier else ""
+
+
 def _fetch_subscribers(
     db: Session,
     quota_column: InstrumentedAttribute[int],
 ) -> list[L4MarketingSubscription]:
-    """查询指定频道剩余额度 > 0 且 openid 非空的订阅行（单批上限截断）.
+    """查询指定频道剩余额度 > 0 的订阅行（单批上限截断，含间接绑定回退）.
 
-    openid 非空过滤：管理员密码登录订阅时无 openid（额度已照常累计），
-    空快照无法投递，过滤避免无效发送；用户日后微信登录补齐后自然纳入。
+    openid 为空的行（内部员工密码登录订阅，微信经合并间接绑定）在查询后
+    回退解析：能解析到 openid 则回填快照（同步更新行，后续推送免重查），
+    仍为空则丢弃（无法投递）。用户日后微信登录/绑定后自然纳入。
     """
-    stmt = (
-        select(L4MarketingSubscription).where(quota_column > 0, L4MarketingSubscription.openid != "").limit(_MAX_BATCH)
-    )
-    return list(db.scalars(stmt))
+    stmt = select(L4MarketingSubscription).where(quota_column > 0).limit(_MAX_BATCH)
+    rows = list(db.scalars(stmt))
+    resolved: list[L4MarketingSubscription] = []
+    for row in rows:
+        if not row.openid:
+            openid = _resolve_indirect_openid(db, row.user_id)
+            if not openid:
+                continue
+            row.openid = openid
+            db.commit()  # 回填快照（单行小事务，推送前置一次性成本）
+            db.refresh(row)
+        resolved.append(row)
+    return resolved
 
 
 def _fetch_price_change_recipients(db: Session, project_id: int) -> list[Recipient]:
@@ -220,25 +249,42 @@ def _fetch_price_change_recipients(db: Session, project_id: int) -> list[Recipie
 
     """
     channel_rows = (
-        db.query(L4MarketingSubscription)
-        .filter(
-            L4MarketingSubscription.price_change_quota > 0,
-            # openid 非空过滤（无 openid 的订阅行无法投递，见 _fetch_subscribers）
-            L4MarketingSubscription.openid != "",
-        )
-        .limit(_MAX_BATCH)
-        .all()
+        db.query(L4MarketingSubscription).filter(L4MarketingSubscription.price_change_quota > 0).limit(_MAX_BATCH).all()
     )
     project_rows = (
         db.query(L4MarketingProjectSubscription)
         .filter(
             L4MarketingProjectSubscription.marketing_project_id == project_id,
             L4MarketingProjectSubscription.price_change_quota > 0,
-            L4MarketingProjectSubscription.openid != "",
         )
         .limit(_MAX_BATCH)
         .all()
     )
+
+    # 空快照行间接绑定回退：能解析到 openid 则回填快照，仍为空则丢弃（无法投递）
+    resolved_channel: list[L4MarketingSubscription] = []
+    for row in channel_rows:
+        if not row.openid:
+            openid = _resolve_indirect_openid(db, row.user_id)
+            if not openid:
+                continue
+            row.openid = openid
+            db.commit()
+            db.refresh(row)
+        resolved_channel.append(row)
+    channel_rows = resolved_channel
+
+    resolved_project: list[L4MarketingProjectSubscription] = []
+    for row in project_rows:
+        if not row.openid:
+            openid = _resolve_indirect_openid(db, row.user_id)
+            if not openid:
+                continue
+            row.openid = openid
+            db.commit()
+            db.refresh(row)
+        resolved_project.append(row)
+    project_rows = resolved_project
 
     recipients: dict[str, Recipient] = {}
     # 先填频道级（同 user_id 被房源级覆盖）

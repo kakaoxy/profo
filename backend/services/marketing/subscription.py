@@ -33,6 +33,37 @@ logger = logging.getLogger(__name__)
 _QUOTA_INC_STATUS = "accept"
 
 
+def _resolve_user_openid(db: Session, user: User | None) -> str:
+    """解析用户可通知的微信 openid（订阅行快照用）.
+
+    直接绑定（user.wechat_openid 非空）优先；主账号无直接绑定时反查
+    merged_to_user_id 指向该用户、仍持有 openid 的已合并临时账号
+    （status='merged'，间接绑定，对齐 leads/recruit 通知的 openid 解析口径）。
+
+    内部员工经「微信临时账号 → 合并到主账号」绑定后 openid 保留在临时账号上，
+    主账号 wechat_openid 为空是预期状态（merge_accounts 设计如此，转移会阻断
+    主账号密码登录）。间接绑定返回首个 carrier 的 openid（订阅行仅存单个快照）。
+
+    Returns:
+        可投递 openid；无任何绑定时返回空串（额度仍累计，推送侧跳过该行）
+
+    """
+    if user is None:
+        return ""
+    if user.wechat_openid:
+        return user.wechat_openid
+    carrier = (
+        db.query(User)
+        .filter(
+            User.merged_to_user_id == user.id,
+            User.status == "merged",
+            User.wechat_openid.isnot(None),
+        )
+        .first()
+    )
+    return carrier.wechat_openid if carrier else ""
+
+
 class MarketingSubscriptionService:
     """房源订阅通知服务."""
 
@@ -160,9 +191,10 @@ class MarketingSubscriptionService:
             channel_by_template[price_id] = "price_change"
 
         user = self.db.query(User).filter(User.id == user_id).first()
-        openid = (user.wechat_openid if user else None) or ""
-        # 不按 openid 过滤（管理员密码登录无 openid 也允许订阅）：额度照常累计，
-        # openid 快照留空；用户日后微信登录/绑定后补齐，推送侧空 openid 行被过滤
+        # openid 快照解析：直接绑定优先，间接绑定回退已合并临时账号（内部员工
+        # 微信绑定经合并后 openid 保留在临时账号，主账号为空是预期状态）；
+        # 仍解析不到时留空（额度照常累计，推送侧跳过该行）
+        openid = _resolve_user_openid(self.db, user)
 
         row = self._upsert_row(user_id, openid)
 
@@ -301,9 +333,9 @@ class MarketingSubscriptionService:
             raise ResourceNotFoundError(msg)
 
         user = self.db.query(User).filter(User.id == user_id).first()
-        openid = (user.wechat_openid if user else None) or ""
-        # 不按 openid 过滤（管理员密码登录无 openid 也允许订阅）：额度照常累计，
-        # openid 快照留空；用户日后微信登录/绑定后补齐，推送侧空 openid 行被过滤
+        # openid 快照解析：直接绑定优先，间接绑定回退已合并临时账号（同 report_result 口径）；
+        # 仍解析不到时留空（额度照常累计，推送侧跳过该行）
+        openid = _resolve_user_openid(self.db, user)
 
         row = self._upsert_project_row(user_id, marketing_project_id, openid)
 
