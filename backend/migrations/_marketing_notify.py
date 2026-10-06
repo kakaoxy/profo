@@ -16,7 +16,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from migrations._helpers import _column_exists
+from migrations._helpers import _column_exists, _index_exists
 
 logger = logging.getLogger(__name__)
 
@@ -137,3 +137,22 @@ def add_price_change_id_to_notify_logs(engine: Engine) -> None:
                 ),
             )
             logger.info("l4_marketing_notify_logs.sub_source 列已创建")
+
+
+def add_price_change_id_index_to_notify_logs(engine: Engine) -> None:
+    """l4_marketing_notify_logs 幂等补加 price_change_id 索引.
+
+    P1-2 调价历史时间线按 price_change_id in_ 分组统计分次送达数；无索引时
+    该查询随留痕表增长退化为全表扫。旧库表已存在时 create_all 不会补索引，
+    单独幂等补建（_index_exists 守卫）。
+    """
+    if _index_exists(engine, "idx_l4_marketing_notify_logs_price_change"):
+        return
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE INDEX idx_l4_marketing_notify_logs_price_change ON l4_marketing_notify_logs (price_change_id)"
+            ),
+        )
+    logger.info("l4_marketing_notify_logs.price_change_id 索引已创建")

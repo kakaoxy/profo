@@ -13,7 +13,7 @@
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import func
+from sqlalchemy import func, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -62,6 +62,23 @@ def _resolve_user_openid(db: Session, user: User | None) -> str:
         .first()
     )
     return carrier.wechat_openid if carrier else ""
+
+
+def _dedup_results(results: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """按 template_id 去重（保留首次出现）.
+
+    wx.requestSubscribeMessage 单次回调同一模板 ID 只返回一项，正常上报天然无
+    重复；恶意/异常客户端在同一次请求中重复携带同一模板 ID 时按一次授权计，
+    防止单请求多次累加额度（对齐一次性订阅语义：一次「允许」= 1 条额度）。
+    """
+    seen: set[str] = set()
+    deduped: list[tuple[str, str]] = []
+    for item in results:
+        if item[0] in seen:
+            continue
+        seen.add(item[0])
+        deduped.append(item)
+    return deduped
 
 
 class MarketingSubscriptionService:
@@ -171,7 +188,9 @@ class MarketingSubscriptionService:
         """上报订阅授权结果（accept 累计对应频道额度）.
 
         模板 ID → 频道映射实时经 subscribe_templates 解析（模板更换后旧上报
-        自动失效）；用户上报了不属于本功能的模板 ID 时静默忽略。
+        自动失效）；用户上报了不属于本功能的模板 ID 时静默忽略；同一模板 ID
+        多次携带按一次授权计（_dedup_results 去重，防单请求刷额度）。
+        额度累计为原子 UPDATE（quota = quota + N），防同用户并发上报丢失更新。
 
         Args:
             user_id: 当前登录 C 端用户 ID
@@ -198,8 +217,10 @@ class MarketingSubscriptionService:
 
         row = self._upsert_row(user_id, openid)
 
-        changed = False
-        for template_id, result_status in results:
+        # 单模板一次授权最多计 1（去重后 accept 项逐频道计数）
+        new_inc = 0
+        price_inc = 0
+        for template_id, result_status in _dedup_results(results):
             channel = channel_by_template.get(template_id)
             if channel is None:
                 logger.info("订阅上报模板 ID 与当前配置不符，忽略：template_id=%s", template_id)
@@ -207,15 +228,23 @@ class MarketingSubscriptionService:
             if result_status != _QUOTA_INC_STATUS:
                 continue
             if channel == "new_listing":
-                row.new_listing_quota += 1
+                new_inc += 1
             else:
-                row.price_change_quota += 1
-            changed = True
+                price_inc += 1
 
-        if changed:
-            row.last_subscribed_at = datetime.now(timezone.utc)
+        if new_inc or price_inc:
+            # 原子累计（quota = quota + N WHERE user_id），防同用户并发上报丢失更新；
+            # openid 快照刷新（换号绑定后保持最新；空值不覆盖已有快照）
+            values: dict[str, object] = {"last_subscribed_at": datetime.now(timezone.utc)}
             if openid:
-                row.openid = openid  # openid 快照刷新（换号绑定后保持最新；空值不覆盖已有快照）
+                values["openid"] = openid
+            if new_inc:
+                values["new_listing_quota"] = L4MarketingSubscription.new_listing_quota + new_inc
+            if price_inc:
+                values["price_change_quota"] = L4MarketingSubscription.price_change_quota + price_inc
+            self.db.execute(
+                update(L4MarketingSubscription).where(L4MarketingSubscription.user_id == user_id).values(**values)
+            )
             self.db.commit()
             self.db.refresh(row)
 
@@ -306,7 +335,9 @@ class MarketingSubscriptionService:
         """上报房源级订阅授权结果（accept 累计房源级额度 +1）.
 
         模板 ID 映射复用 project_price_change 配置（与频道级调价模板同一模板）；
-        用户上报了不属于本功能的模板 ID 时静默忽略；房源不存在/已删除时 404。
+        用户上报了不属于本功能的模板 ID 时静默忽略；同一模板 ID 多次携带按
+        一次授权计（_dedup_results 去重）；额度累计为原子 UPDATE，房源不存在/
+        已删除时 404。
 
         Args:
             user_id: 当前登录 C 端用户 ID
@@ -340,8 +371,9 @@ class MarketingSubscriptionService:
         row = self._upsert_project_row(user_id, marketing_project_id, openid)
 
         price_id = subscribe_templates.resolve_template_id(self.db, "project_price_change")
-        changed = False
-        for template_id, result_status in results:
+        # 单模板一次授权最多计 1（去重后 accept 项计数）
+        price_inc = 0
+        for template_id, result_status in _dedup_results(results):
             if template_id != price_id:
                 logger.info(
                     "房源级订阅上报模板 ID 与当前配置不符，忽略：template_id=%s",
@@ -350,13 +382,25 @@ class MarketingSubscriptionService:
                 continue
             if result_status != _QUOTA_INC_STATUS:
                 continue
-            row.price_change_quota += 1
-            changed = True
+            price_inc += 1
 
-        if changed:
-            row.last_subscribed_at = datetime.now(timezone.utc)
+        if price_inc:
+            # 原子累计（quota = quota + N WHERE user+project），防同用户并发上报丢失更新；
+            # openid 快照刷新（换号绑定后保持最新；空值不覆盖已有快照）
+            values: dict[str, object] = {
+                "price_change_quota": L4MarketingProjectSubscription.price_change_quota + price_inc,
+                "last_subscribed_at": datetime.now(timezone.utc),
+            }
             if openid:
-                row.openid = openid  # openid 快照刷新（换号绑定后保持最新；空值不覆盖已有快照）
+                values["openid"] = openid
+            self.db.execute(
+                update(L4MarketingProjectSubscription)
+                .where(
+                    L4MarketingProjectSubscription.user_id == user_id,
+                    L4MarketingProjectSubscription.marketing_project_id == marketing_project_id,
+                )
+                .values(**values)
+            )
             self.db.commit()
             self.db.refresh(row)
 

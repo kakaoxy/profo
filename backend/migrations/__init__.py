@@ -148,10 +148,11 @@ from migrations._finance import (
 
 # 重新导出供外部模块（conftest.py 等）使用 —— 以下导入必须放在迁移子模块导入之前，
 # 以避免出现循环导入：子模块（如 _finance）会反向 from migrations import _column_exists。
-from migrations._helpers import _MIGRATION_ADVISORY_LOCK_KEY, _column_exists
+from migrations._helpers import _MIGRATION_ADVISORY_LOCK_KEY, _column_exists, _index_exists
 from migrations._keys import add_key_audit_share_id_index, add_project_key_note_column, create_key_tables
 from migrations._keys_seq import add_normal_key_seq_column
 from migrations._marketing_notify import (
+    add_price_change_id_index_to_notify_logs,
     add_price_change_id_to_notify_logs,
     add_published_at_to_l4_marketing_projects,
     create_marketing_project_subscription_table,
@@ -229,6 +230,7 @@ __all__ = [
     "_PERMISSIONS_SEED",
     "_ROLE_PERMISSIONS_SEED",
     "_column_exists",
+    "_index_exists",
     "run_startup_migrations",
 ]
 
@@ -360,6 +362,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # 调价历史时间线：l4_marketing_notify_logs 补加 price_change_id / sub_source 两列
         # （price_change_id 关联分次推送的调价记录；sub_source 为房源级订阅预留）
         add_price_change_id_to_notify_logs(engine)
+        # 调价历史时间线计数查询索引：notify_logs(price_change_id)（幂等补建）
+        add_price_change_id_index_to_notify_logs(engine)
         # 房源级调价订阅（P2-1）：幂等创建 l4_marketing_project_subscriptions
         create_marketing_project_subscription_table(engine)
         # 分享统计 lead_count：leads(referrer_id) 索引

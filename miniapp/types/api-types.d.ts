@@ -24413,10 +24413,7 @@ export interface operations {
     };
     report_subscription_api_v1_public_marketing_subscriptions_report_post: {
         parameters: {
-            query?: {
-                /** @description 本次授权的模板 ID 映射提示（new=上新模板ID,price=调价模板ID） */
-                template_ids?: string | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;

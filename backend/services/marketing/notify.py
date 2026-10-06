@@ -196,7 +196,7 @@ def _safe_log(db: Session, **kwargs: object) -> None:
 
 
 def _resolve_indirect_openid(db: Session, user_id: str) -> str:
-    """间接绑定 openid 回退解析（推送侕空快照行用）.
+    """间接绑定 openid 回退解析（推送侧空快照行用）.
 
     主账号无直接绑定时反查 merged_to_user_id 指向该用户、仍持有 openid 的
     已合并临时账号（status='merged'，对齐 leads/recruit 通知与订阅快照解析口径）。
@@ -213,6 +213,61 @@ def _resolve_indirect_openid(db: Session, user_id: str) -> str:
     return carrier.wechat_openid if carrier else ""
 
 
+def _backfill_empty_openids(db: Session, rows: list) -> list:
+    """批量回填空 openid 快照行的间接绑定 openid（推送前置一次性成本）.
+
+    单次 in_ 查询解析全部空快照行的 merged 临时账号 openid（每用户取首个
+    carrier，与单行 _resolve_indirect_openid 口径一致），单次提交回填；
+    仍解析不到 openid 的行丢弃（无法投递）。
+
+    Args:
+        db: 数据库会话
+        rows: 订阅行列表（L4MarketingSubscription / L4MarketingProjectSubscription，
+            均含 user_id/openid 属性）
+
+    Returns:
+        openid 可用的行列表（已回填快照的行同步更新到库）
+
+    """
+    empty_rows = [row for row in rows if not row.openid]
+    if not empty_rows:
+        return rows
+
+    user_ids = [row.user_id for row in empty_rows]
+    carriers = (
+        db.query(User)
+        .filter(
+            User.merged_to_user_id.in_(user_ids),
+            User.status == "merged",
+            User.wechat_openid.isnot(None),
+        )
+        .all()
+    )
+    # 每用户取首个 carrier（保持单行解析「首个 carrier」口径）
+    openid_by_user: dict[str, str] = {}
+    for carrier in carriers:
+        openid_by_user.setdefault(carrier.merged_to_user_id or "", carrier.wechat_openid or "")
+
+    resolved: list = []
+    changed = False
+    dropped = 0
+    for row in rows:
+        if not row.openid:
+            openid = openid_by_user.get(row.user_id, "")
+            if not openid:
+                dropped += 1
+                continue
+            row.openid = openid
+            changed = True
+        resolved.append(row)
+    if changed:
+        # 单次批量提交（替代逐行 commit，避免空快照行多时的推送前置开销）
+        db.commit()
+    if dropped:
+        logger.info("推送收件人空 openid 回填后仍无法投递，丢弃 %d 行", dropped)
+    return resolved
+
+
 def _fetch_subscribers(
     db: Session,
     quota_column: InstrumentedAttribute[int],
@@ -225,17 +280,8 @@ def _fetch_subscribers(
     """
     stmt = select(L4MarketingSubscription).where(quota_column > 0).limit(_MAX_BATCH)
     rows = list(db.scalars(stmt))
-    resolved: list[L4MarketingSubscription] = []
-    for row in rows:
-        if not row.openid:
-            openid = _resolve_indirect_openid(db, row.user_id)
-            if not openid:
-                continue
-            row.openid = openid
-            db.commit()  # 回填快照（单行小事务，推送前置一次性成本）
-            db.refresh(row)
-        resolved.append(row)
-    return resolved
+    # 空快照行批量回填间接绑定 openid（单次 in_ 查询 + 单次提交），仍为空则丢弃
+    return _backfill_empty_openids(db, rows)
 
 
 def _fetch_price_change_recipients(db: Session, project_id: int) -> list[Recipient]:
@@ -244,7 +290,7 @@ def _fetch_price_change_recipients(db: Session, project_id: int) -> list[Recipie
     - 频道级：l4_marketing_subscriptions.price_change_quota > 0（不筛预约/浏览关系）
     - 房源级：l4_marketing_project_subscriptions 中该项目 + price_change_quota > 0
     - 去重：同一 user_id 只保留一条，优先房源级（语义更精确）；
-      微信 43101（未授权）天然幂等兑底
+      微信 43101（未授权）天然幂等兜底
     - 总量 ≤ 频道全量 + 房源级增量，_MAX_BATCH 截断策略不变（合并后截断）
 
     """
@@ -261,30 +307,9 @@ def _fetch_price_change_recipients(db: Session, project_id: int) -> list[Recipie
         .all()
     )
 
-    # 空快照行间接绑定回退：能解析到 openid 则回填快照，仍为空则丢弃（无法投递）
-    resolved_channel: list[L4MarketingSubscription] = []
-    for row in channel_rows:
-        if not row.openid:
-            openid = _resolve_indirect_openid(db, row.user_id)
-            if not openid:
-                continue
-            row.openid = openid
-            db.commit()
-            db.refresh(row)
-        resolved_channel.append(row)
-    channel_rows = resolved_channel
-
-    resolved_project: list[L4MarketingProjectSubscription] = []
-    for row in project_rows:
-        if not row.openid:
-            openid = _resolve_indirect_openid(db, row.user_id)
-            if not openid:
-                continue
-            row.openid = openid
-            db.commit()
-            db.refresh(row)
-        resolved_project.append(row)
-    project_rows = resolved_project
+    # 空快照行批量回填间接绑定 openid（单次 in_ 查询 + 单次提交），仍为空则丢弃
+    channel_rows = _backfill_empty_openids(db, channel_rows)
+    project_rows = _backfill_empty_openids(db, project_rows)
 
     recipients: dict[str, Recipient] = {}
     # 先填频道级（同 user_id 被房源级覆盖）

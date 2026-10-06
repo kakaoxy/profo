@@ -310,7 +310,8 @@ export function requestMarketingSubscribe(
   templates: MarketingSubscribeTemplates,
   onResult?: (status: MarketingSubscribeStatus, quotas: MarketingSubscriptionStatus | null) => void,
 ): void {
-  const tmplIds = [templates.newListingTemplateId, templates.priceChangeTemplateId].filter(
+  // 去重后拉起（同一次授权同一模板只请求一次，与后端 _dedup_results 口径对齐）
+  const tmplIds = [...new Set([templates.newListingTemplateId, templates.priceChangeTemplateId])].filter(
     (id): id is string => !!id,
   );
   if (tmplIds.length === 0) {

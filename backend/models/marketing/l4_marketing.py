@@ -528,6 +528,8 @@ class L4MarketingNotifyLog(BaseModel):
 
     __table_args__ = (
         Index("idx_l4_marketing_notify_logs_project", "marketing_project_id", "notify_type"),
+        # P1-2 调价历史时间线：按 price_change_id 分组统计分次送达数
+        Index("idx_l4_marketing_notify_logs_price_change", "price_change_id"),
         Index("idx_l4_marketing_notify_logs_user", "user_id"),
     )
 

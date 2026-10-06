@@ -7,7 +7,7 @@ routers/public/projects.py 的路由风格。
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Request
 from fastapi import Path as PathParam
 
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
@@ -69,10 +69,6 @@ def report_subscription(
     body: PublicMarketingSubscribeReportRequest,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,
-    template_ids: Annotated[
-        str | None,
-        Query(max_length=200, description="本次授权的模板 ID 映射提示（new=上新模板ID,price=调价模板ID）"),
-    ] = None,
 ) -> PublicMarketingSubscribeReportResponse:
     """上报订阅授权结果（accept 累计额度，其余状态仅留痕不计数）."""
     quotas = MarketingSubscriptionService(db).report_result(
