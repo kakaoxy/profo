@@ -130,6 +130,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 # 子模块迁移函数
+from migrations._clear_wechat_session_key import clear_wechat_session_key
 from migrations._community_images import create_community_images_table
 from migrations._customer_follow_ups import create_customer_follow_ups_table
 from migrations._finance import (
@@ -363,6 +364,8 @@ def _run_all_migrations(engine: Engine) -> None:
         create_marketing_project_subscription_table(engine)
         # 分享统计 lead_count：leads(referrer_id) 索引
         add_lead_referrer_index(engine)
+        # 微信 session_key 停止收集：一次性清空存量（列保留一版过渡，见 _clear_wechat_session_key）
+        clear_wechat_session_key(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

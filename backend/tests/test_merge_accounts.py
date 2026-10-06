@@ -447,7 +447,6 @@ class TestConcurrentWechatCreateConflict:
             db=db,
             openid="race_openid_1",
             unionid=None,
-            session_key="race_sk",
         )
 
         # 不抛异常，回滚后复用已存在用户
@@ -485,15 +484,11 @@ class TestMergeRegressionWechatLoginRedirect:
             db=session,
             openid="wx_openid_regress_2",
             unionid=None,
-            session_key="new_session_key",
         )
 
         # 应重定向到目标主账号
         assert resolved.id == target_user.id
         assert resolved.status == "active"
-        # session_key 应写入目标账号
-        session.refresh(resolved)
-        assert resolved.wechat_session_key == "new_session_key"
 
     def test_wechat_login_degrades_gracefully_when_target_missing(self, seeded_db: dict[str, Any]) -> None:
         """目标账号缺失（数据异常）时，微信登录降级返回已合并账号而非崩溃.
@@ -522,12 +517,10 @@ class TestMergeRegressionWechatLoginRedirect:
             db=session,
             openid="wx_openid_regress_3",
             unionid=None,
-            session_key="fresh_key",
         )
 
         # 不应崩溃，返回已合并的临时账号（降级处理）
         assert resolved.id == temp_user.id
-        assert resolved.wechat_session_key == "fresh_key"
 
 
 # ==================== schema 校验 ====================

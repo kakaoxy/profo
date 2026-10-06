@@ -206,22 +206,19 @@ class WeChatAuthService:
     def _resolve_merged_target(
         db: Session,
         user: User,
-        *,
-        session_key: str | None,
     ) -> User | None:
         """若 user 已合并（status='merged'），跟随 merged_to_user_id 返回目标主账号.
 
         merge_accounts 不转移 wechat_openid 到目标账号（保留在临时账号上供登录重定向），
-        微信登录命中已合并的临时账号时通过本方法解析到目标账号，更新其 session_key
-        与 last_login_at 后返回。目标账号缺失（数据异常）时返回 None，调用方按新用户处理。
+        微信登录命中已合并的临时账号时通过本方法解析到目标账号，更新其 last_login_at
+        后返回。目标账号缺失（数据异常）时返回 None，调用方按新用户处理。
 
         Args:
             db: 数据库会话
             user: 通过 openid/unionid 查到的用户（可能已合并）
-            session_key: 本次微信登录的 session_key，写入目标账号
 
         Returns:
-            目标主账号（已更新 session_key/last_login_at）；非合并用户或目标缺失返回 None
+            目标主账号（已更新 last_login_at）；非合并用户或目标缺失返回 None
 
         """
         if user.status != "merged" or not user.merged_to_user_id:
@@ -230,8 +227,6 @@ class WeChatAuthService:
         if target is None:
             logger.warning("合并用户 %s 的目标账号 %s 不存在", user.id, user.merged_to_user_id)
             return None
-        if session_key:
-            target.wechat_session_key = session_key
         target.last_login_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(target)
@@ -243,13 +238,15 @@ class WeChatAuthService:
         openid: str,
         unionid: str | None,
         user_info: dict[str, object] | None = None,
-        session_key: str | None = None,
     ) -> User:
         """处理微信用户登录/注册 (Sync - Blocking DB).
 
         微信用户统一归入 C 端 customer 角色体系，禁止分配后台角色。
         新用户创建为临时账号（is_temporary=True），绑定主账号后合并。
-        若 openid 未命中但 unionid 命中已有用户，复用该用户（更新其 openid 与 session_key）。
+        若 openid 未命中但 unionid 命中已有用户，复用该用户（更新其 openid）。
+
+        session_key 已停止收集（隐私最小化）：手机号绑定走 getPhoneNumber 新式
+        动态令牌方案，无需 session_key 解密，登录链路不再写入 wechat_session_key。
 
         已合并的临时账号（status='merged'）通过 merged_to_user_id 重定向到目标主账号：
         merge_accounts 不转移 wechat_openid 到目标账号（避免目标账号被 authenticate_user
@@ -260,7 +257,7 @@ class WeChatAuthService:
 
         # 已合并的临时账号（openid 命中）→ 重定向到目标主账号
         if user:
-            target = WeChatAuthService._resolve_merged_target(db, user, session_key=session_key)
+            target = WeChatAuthService._resolve_merged_target(db, user)
             if target:
                 return target
 
@@ -271,17 +268,15 @@ class WeChatAuthService:
                 # 已合并的临时账号（unionid 命中）→ 更新 openid 供后续查询，然后重定向
                 if user.status == "merged" and user.merged_to_user_id:
                     user.wechat_openid = openid
-                    target = WeChatAuthService._resolve_merged_target(db, user, session_key=session_key)
+                    target = WeChatAuthService._resolve_merged_target(db, user)
                     if target:
                         return target
                     # 目标账号缺失（数据异常）→ 不创建新用户（openid 已被合并账号占用，
                     # 创建会触发唯一约束冲突），fall through 到下方「更新现有用户」分支，
-                    # 更新 session_key/last_login_at 后返回已合并账号（降级处理，不崩溃）
+                    # 更新 last_login_at 后返回已合并账号（降级处理，不崩溃）
                 else:
-                    # 复用已有用户，更新 openid 与 session_key（unionid 已一致无需更新）
+                    # 复用已有用户，更新 openid（unionid 已一致无需更新）
                     user.wechat_openid = openid
-                    if session_key:
-                        user.wechat_session_key = session_key
                     if user_info:
                         user.nickname = user_info.get("nickname", user.nickname)
                         user.avatar = user_info.get("headimgurl", user.avatar)
@@ -307,7 +302,6 @@ class WeChatAuthService:
                 avatar=avatar,
                 wechat_openid=openid,
                 wechat_unionid=unionid,
-                wechat_session_key=session_key,
                 role_id=role.id,
                 status="active",
                 is_temporary=True,
@@ -333,8 +327,6 @@ class WeChatAuthService:
                 user.avatar = user_info.get("headimgurl", user.avatar)
             if unionid:
                 user.wechat_unionid = unionid
-            if session_key:
-                user.wechat_session_key = session_key
 
             user.last_login_at = datetime.now(timezone.utc)
             db.commit()

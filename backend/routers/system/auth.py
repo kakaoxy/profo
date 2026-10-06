@@ -434,8 +434,9 @@ async def wechat_app_login(
     try:
         auth_data = await WeChatAuthService.fetch_wechat_miniapp_session(login_data.code)
 
+        # session_key 已停止收集（隐私最小化）：手机号绑定走 phonenumber.getPhoneNumber
+        # 新式动态令牌方案，无需 session_key 解密；仅取 openid/unionid 建立身份
         openid = auth_data.get("openid")
-        session_key = auth_data.get("session_key")
         unionid = auth_data.get("unionid")
 
         if not openid:
@@ -447,7 +448,6 @@ async def wechat_app_login(
             db=db,
             openid=openid,
             unionid=unionid,
-            session_key=session_key,
         )
     except Exception as e:
         # DB 审计：C 端微信登录失败（after 含失败原因异常类名）

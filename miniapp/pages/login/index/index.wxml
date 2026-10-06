@@ -11,13 +11,30 @@
     <button class="btn-primary wechat-btn" disabled="{{loading}}" bindtap="onWechatLogin">手机号快捷登录</button>
     <button class="btn-secondary password-btn" bindtap="onPasswordLogin">账号密码登录</button>
 
-    <!-- 协议勾选区 -->
-    <view class="agreement" bindtap="onToggleAgree">
-      <checkbox checked="{{agreed}}" color="#17191c" />
-      <text class="agreement-text">我已阅读并同意 </text>
-      <navigator class="agreement-link" url="/pages/agreement/user/index/index">《用户协议》</navigator>
-      <text class="agreement-text">和</text>
-      <navigator class="agreement-link" url="/pages/agreement/privacy/index/index">《隐私政策》</navigator>
+    <!-- 协议勾选区（needPrivacyAuth=true 时 checkbox 由 agreePrivacyAuthorization
+         按钮承载，勾选即同步微信侧隐私授权；两个协议链接留在 button 外避免嵌套） -->
+    <view class="agreement">
+      <block wx:if="{{needPrivacyAuth}}">
+        <button
+          class="agree-check-btn"
+          open-type="agreePrivacyAuthorization"
+          bindagreeprivacyauthorization="onAgreePrivacy"
+          bindtap="onToggleAgree"
+        >
+          <checkbox checked="{{agreed}}" color="#17191c" />
+        </button>
+        <text class="agreement-text">我已阅读并同意 </text>
+        <navigator class="agreement-link" url="/pages/agreement/user/index/index">《用户协议》</navigator>
+        <text class="agreement-text">和</text>
+        <navigator class="agreement-link" url="/pages/agreement/privacy/index/index">《隐私政策》</navigator>
+      </block>
+      <block wx:else>
+        <checkbox checked="{{true}}" disabled color="#17191c" />
+        <text class="agreement-text">我已阅读并同意 </text>
+        <navigator class="agreement-link" url="/pages/agreement/user/index/index">《用户协议》</navigator>
+        <text class="agreement-text">和</text>
+        <navigator class="agreement-link" url="/pages/agreement/privacy/index/index">《隐私政策》</navigator>
+      </block>
     </view>
   </view>
 </view>

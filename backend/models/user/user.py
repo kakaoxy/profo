@@ -126,7 +126,13 @@ class User(BaseModel):
     # 微信相关信息
     wechat_openid: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, comment="微信OpenID")
     wechat_unionid: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, comment="微信UnionID")
-    wechat_session_key: Mapped[str | None] = mapped_column(EncryptedString(500), nullable=True, comment="微信会话密钥")
+    # 已停止收集：登录链路不再写入；手机号绑定走 getPhoneNumber 新式 code 方案，无需
+    # session_key 解密。列保留一版过渡后移除（迁移 _clear_wechat_session_key 清空存量）
+    wechat_session_key: Mapped[str | None] = mapped_column(
+        EncryptedString(500),
+        nullable=True,
+        comment="微信会话密钥（已停止收集，待下版本移除）",
+    )
 
     # 临时账号与合并（微信登录新用户首次创建为临时账号，绑定主账号后合并）
     is_temporary: Mapped[bool] = mapped_column(

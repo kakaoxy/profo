@@ -64,14 +64,31 @@ export function setPhonePrompted(value: boolean): void {
 }
 
 /**
- * 清空 C 端用户状态标识（c_user_temporary 与 c_phone_prompted）.
+ * 读取 c_protocol_agreed 标识（用户是否已在本机同意过《用户协议》与《隐私政策》）.
  *
- * 登出或账号合并成功后调用，避免残留的临时账号标识影响后续登录态判断.
+ * 用途：App.onLaunch 静默续登的前置条件——wx.login 本身无弹窗、非隐私接口，
+ * 但 openid 收集仍需用户知情。仅在用户已显式同意过协议（登录页勾选后）才允许
+ * 静默续登收集 openid；从未同意过的用户冷启动不发任何登录请求.
+ */
+export function getProtocolAgreed(): boolean {
+  return wx.getStorageSync("c_protocol_agreed") === "true";
+}
+
+/** 写入 c_protocol_agreed 标识. */
+export function setProtocolAgreed(value: boolean): void {
+  wx.setStorageSync("c_protocol_agreed", value ? "true" : "false");
+}
+
+/**
+ * 清空 C 端用户状态标识（c_user_temporary / c_phone_prompted / c_protocol_agreed）.
+ *
+ * 登出或账号合并成功后调用，避免残留的状态标识影响后续登录态判断.
  * 注意：仅清空状态标识，不清空令牌（令牌清空由登出流程单独处理）.
  */
 export function clearCUserState(): void {
   wx.removeStorageSync("c_user_temporary");
   wx.removeStorageSync("c_phone_prompted");
+  wx.removeStorageSync("c_protocol_agreed");
 }
 
 /**

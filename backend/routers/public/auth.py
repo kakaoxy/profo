@@ -26,6 +26,7 @@ from services.system.exceptions import (
     BusinessLogicError,
     PermissionDeniedError,
 )
+from services.system.identity import is_internal_user
 from services.system.operation_log import operation_log_service
 from utils.auth import AUDIENCE_C
 from utils.common import RateLimits, limiter
@@ -72,6 +73,7 @@ def _build_user_info(
         status=user.status,
         created_at=user.created_at,
         permissions=permissions if permissions is not None else [],
+        is_internal=is_internal_user(user),
     )
 
 

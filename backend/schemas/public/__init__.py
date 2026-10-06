@@ -80,6 +80,12 @@ class PublicUserInfo(BaseModel):
         default_factory=list,
         description="用户有效权限代码列表（主角色+附加角色权限并集）",
     )
+    # 显式内部员工标识（主角色/附加角色含非 customer 角色），替代前端
+    # permissions 差集推断；默认 False 保持 register/login 响应向后兼容
+    is_internal: bool = Field(
+        default=False,
+        description="是否内部员工（主/附加角色含非 customer 角色）",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -28,7 +28,6 @@ def _make_wechat_temp_user(
     avatar: str | None = None,
     wechat_openid: str | None = None,
     wechat_unionid: str | None = None,
-    wechat_session_key: str | None = None,
     is_temporary: bool = True,
     role_code: str = "customer",
 ) -> User:
@@ -45,7 +44,6 @@ def _make_wechat_temp_user(
         is_temporary=is_temporary,
         wechat_openid=wechat_openid,
         wechat_unionid=wechat_unionid,
-        wechat_session_key=wechat_session_key,
     )
     session.add(user)
     session.commit()
@@ -67,7 +65,6 @@ class TestUpdateWechatProfileService:
             user_id="wx-temp-1",
             username="temp_wx_abc12345_def",
             wechat_openid="wx_openid_1",
-            wechat_session_key="session_key_1",
         )
 
         svc = UserWechatService()
@@ -82,7 +79,6 @@ class TestUpdateWechatProfileService:
         assert updated.avatar == "/static/uploads/avatar1.jpg"
         assert updated.username == "张三"
         assert updated.wechat_openid == "wx_openid_1"
-        assert updated.wechat_session_key == "session_key_1"
         assert updated.is_temporary is True
 
     def test_username_conflict_auto_suffix(self, seeded_db: dict[str, Any]) -> None:
@@ -129,7 +125,6 @@ class TestUpdateWechatProfileService:
             username="temp_wx_ghi11111_aaa",
             wechat_openid="wx_openid_3",
             wechat_unionid="wx_unionid_3",
-            wechat_session_key="session_key_3",
             is_temporary=True,
         )
 
@@ -143,7 +138,6 @@ class TestUpdateWechatProfileService:
 
         assert updated.wechat_openid == "wx_openid_3"
         assert updated.wechat_unionid == "wx_unionid_3"
-        assert updated.wechat_session_key == "session_key_3"
         assert updated.is_temporary is True
         assert updated.status == "active"
 

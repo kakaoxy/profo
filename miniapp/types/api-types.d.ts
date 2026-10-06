@@ -14390,6 +14390,12 @@ export interface components {
              * @description 用户有效权限代码列表（主角色+附加角色权限并集）
              */
             permissions?: string[];
+            /**
+             * Is Internal
+             * @description 是否内部员工（主/附加角色含非 customer 角色）
+             * @default false
+             */
+            is_internal: boolean;
         };
         /**
          * PublicUserProfileResponse
@@ -14437,6 +14443,12 @@ export interface components {
              * @description 用户有效权限代码列表（主角色+附加角色权限并集）
              */
             permissions?: string[];
+            /**
+             * Is Internal
+             * @description 是否内部员工（主/附加角色含非 customer 角色）
+             * @default false
+             */
+            is_internal: boolean;
             /**
              * Updated At
              * Format: date-time

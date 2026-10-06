@@ -29,6 +29,7 @@ from services.system.exceptions import (
     PhoneTakenByMainAccountError,
     TargetHasWechatError,
 )
+from services.system.identity import is_internal_user
 from services.system.user import user_profile_service, user_wechat_service
 from utils.auth import AUDIENCE_C
 from utils.common import RateLimits, limiter
@@ -47,6 +48,7 @@ def _build_public_user_info(user: User) -> PublicUserInfo:
         avatar=user.avatar,
         status=user.status,
         created_at=user.created_at,
+        is_internal=is_internal_user(user),
     )
 
 
@@ -73,6 +75,7 @@ def update_profile(
         avatar=updated_user.avatar,
         status=updated_user.status,
         created_at=updated_user.created_at,
+        is_internal=is_internal_user(updated_user),
         updated_at=updated_user.updated_at,
     )
 
@@ -112,6 +115,7 @@ def update_wechat_profile(
         avatar=updated_user.avatar,
         status=updated_user.status,
         created_at=updated_user.created_at,
+        is_internal=is_internal_user(updated_user),
         updated_at=updated_user.updated_at,
     )
 

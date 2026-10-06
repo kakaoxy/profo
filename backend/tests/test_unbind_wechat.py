@@ -171,7 +171,7 @@ class TestUnbindWechatDirectBinding:
     """unbind_wechat 解绑直接绑定."""
 
     def test_clears_wechat_fields_and_revokes_tokens(self, seeded_db: dict[str, Any]) -> None:
-        """解绑直接绑定：清空 wechat_*、token_version 递增、RefreshToken 撤销."""
+        """解绑直接绑定：清空 wechat_*（含残留 session_key，登录已停写）、token_version 递增、RefreshToken 撤销."""
         session = seeded_db["session"]
         admin = seeded_db["users"]["admin"]
         user = _make_user(

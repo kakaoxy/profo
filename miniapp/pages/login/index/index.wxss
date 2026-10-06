@@ -84,3 +84,20 @@ page {
   color: var(--ink);
   font-weight: 500;
 }
+/* agreePrivacyAuthorization 按钮样式重置：仅承载 checkbox 与微信侧授权同步，
+   视觉上与原 checkbox 一致（透明内联，清除 button 默认边框/内边距/伪元素边框） */
+.agree-check-btn {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  line-height: inherit;
+  font-size: inherit;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+.agree-check-btn::after {
+  border: none;
+}

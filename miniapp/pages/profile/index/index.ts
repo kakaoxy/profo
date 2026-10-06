@@ -27,9 +27,10 @@ type RecruitCampaignResponse = components["schemas"]["RecruitCampaignResponse"];
 /**
  * customer 角色基础权限：仅含这些权限视为普通用户；permissions 含其他业务权限 → 内部员工.
  *
- * 判定依据：C 端 /me 返回的 permissions 为主角色 + 附加角色权限并集。内部员工为
+ * 旧行为：C 端 /me 返回的 permissions 为主角色 + 附加角色权限并集，内部员工为
  * 「后台角色 + customer 附加角色」的多角色用户，其并集必然包含后台业务权限，
- * 故任何超出 customer 基础权限的代码即视为内部身份（⚠️ TODO 待后端下发显式身份字段）.
+ * 故任何超出 customer 基础权限的代码即视为内部身份。
+ * 现行为：后端已下发显式 is_internal 字段，此差集判定仅作旧后端响应兼容兑底。
  */
 const CUSTOMER_BASE_PERMISSIONS = ["valuation:write", "lead:submit"];
 
@@ -73,6 +74,36 @@ interface ShareEntry {
   action: ShareEntryAction;
 }
 
+/**
+ * 单次 /me 拉取结果.
+ * - ok：成功并已渲染；
+ * - auth_failed：服务端判定身份失效（401 刷新后仍失败 / 403），应清令牌；
+ * - unreachable：网络异常 / 5xx 等临时故障，保留登录态.
+ */
+type LoadOutcome = "ok" | "auth_failed" | "unreachable";
+
+/** 从请求异常中归类结果：401/403 为身份失效，其余（NetworkError 无 statusCode、5xx 等）视为不可达. */
+function classifyLoadError(err: unknown): LoadOutcome {
+  const statusCode = (err as HttpResponseError | undefined)?.statusCode;
+  if (statusCode === 401 || statusCode === 403) {
+    return "auth_failed";
+  }
+  return "unreachable";
+}
+
+/**
+ * 拉取失败时的兜底展示：保留登录态与现有数据，仅在原本就未登录时提示网络异常.
+ *
+ * 401 自动刷新重试由 utils/request.ts 处理，走到这里的 401 已是刷新失败（该清令牌，
+ * 由调用方按 auth_failed 处理）；网络抖动/5xx 等临时故障不清令牌，避免用户被迫重新登录.
+ */
+function handleUnreachable(page: { data: { loggedIn: boolean }; setData(next: object): void }): void {
+  page.setData({ loading: false });
+  if (!page.data.loggedIn) {
+    wx.showToast({ title: "网络异常，请稍后重试", icon: "none" });
+  }
+}
+
 interface PageData {
   loading: boolean;
   loggedIn: boolean;
@@ -111,8 +142,8 @@ interface PageCustom {
   loadUser(): void;
   resetToGuest(): void;
   clearTokensAndReset(): void;
-  loadPublicUser(authHeader: { Authorization: string }): Promise<boolean>;
-  loadAdminUser(authHeader: { Authorization: string }): Promise<boolean>;
+  loadPublicUser(authHeader: { Authorization: string }): Promise<LoadOutcome>;
+  loadAdminUser(authHeader: { Authorization: string }): Promise<LoadOutcome>;
   applyPublicUser(user: PublicUserInfo): void;
   applyAdminUser(user: UserResponse): void;
   /** 拉取评估工作台待办角标：403/失败静默隐藏（内部用户专属）. */
@@ -288,7 +319,8 @@ Page<PageData, PageCustom>({
   },
 
   applyPublicUser(user: PublicUserInfo) {
-    const isInternal = isInternalUser(user.permissions ?? []);
+    // 优先消费后端显式 is_internal；旧后端响应无该字段时回退 permissions 差集判定
+    const isInternal = user.is_internal ?? isInternalUser(user.permissions ?? []);
     const nickname = user.nickname || user.username;
     const phone = user.phone || "";
     this.setData({
@@ -364,53 +396,71 @@ Page<PageData, PageCustom>({
     // 依据 JWT aud 直接命中对应 /me：避免对内部令牌发 /public/auth/me 产生 401 噪音；
     // aud 无法解析时回退原双通道判定兜底
     if (aud === "c") {
-      const ok = await this.loadPublicUser(authHeader);
-      if (!ok) {
+      const outcome = await this.loadPublicUser(authHeader);
+      if (outcome === "auth_failed") {
         this.clearTokensAndReset();
+        return;
+      }
+      if (outcome === "unreachable") {
+        handleUnreachable(this);
       }
       return;
     }
     if (aud === "admin") {
-      const ok = await this.loadAdminUser(authHeader);
-      if (!ok) {
+      const outcome = await this.loadAdminUser(authHeader);
+      if (outcome === "auth_failed") {
         this.clearTokensAndReset();
+        return;
+      }
+      if (outcome === "unreachable") {
+        handleUnreachable(this);
       }
       return;
     }
     // aud 未知（异常令牌）→ 沿用双通道兜底
-    let ok = await this.loadPublicUser(authHeader);
-    if (!ok) {
-      ok = await this.loadAdminUser(authHeader);
+    let outcome = await this.loadPublicUser(authHeader);
+    if (outcome === "unreachable") {
+      // 第一通道网络异常：不再叠加第二通道请求（同一网络环境下大概率同样失败），
+      // 保留登录态直接提示，避免双通道超时叠加拉长等待
+      handleUnreachable(this);
+      return;
     }
-    if (!ok) {
-      // ⚠️ TODO access_token 过期时未接 refresh_token 自动续期；当前靠重新微信登录
+    if (outcome !== "ok") {
+      outcome = await this.loadAdminUser(authHeader);
+    }
+    // 双通道均为身份失效（auth_failed）才清令牌；unreachable 不清（上一分支已处理第二通道的 unreachable）
+    if (outcome === "auth_failed") {
       this.clearTokensAndReset();
+      return;
+    }
+    if (outcome === "unreachable") {
+      handleUnreachable(this);
     }
   },
 
-  async loadPublicUser(authHeader: { Authorization: string }): Promise<boolean> {
+  async loadPublicUser(authHeader: { Authorization: string }): Promise<LoadOutcome> {
     try {
       const pub = await request<PublicUserInfo>({
         url: "/public/auth/me",
         header: authHeader,
       });
       this.applyPublicUser(pub);
-      return true;
-    } catch {
-      return false;
+      return "ok";
+    } catch (err) {
+      return classifyLoadError(err);
     }
   },
 
-  async loadAdminUser(authHeader: { Authorization: string }): Promise<boolean> {
+  async loadAdminUser(authHeader: { Authorization: string }): Promise<LoadOutcome> {
     try {
       const admin = await request<UserResponse>({
         url: "/auth/me",
         header: authHeader,
       });
       this.applyAdminUser(admin);
-      return true;
-    } catch {
-      return false;
+      return "ok";
+    } catch (err) {
+      return classifyLoadError(err);
     }
   },
 
