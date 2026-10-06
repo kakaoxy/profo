@@ -22,7 +22,7 @@ interface PricePopoverProps {
  * - 内嵌 PriceChangeCard variant="popover"（恒为表单态，不拉时间线）
  * - Radix 自动定位（side="top" 对齐行上方，空间不足自动翻转），不手写箭头定位
  * - 关闭规则：点外部 / Esc / ✕（Radix 原生）+ 成功/取消（受控）
- * - 成功链路：组件内 toast → 关闭弹层 → router.refresh（行总价/调价副行/通知计数同步）
+ * - 成功链路：组件内 toast → 关闭弹层 → router.refresh（行总价/调价副行/订阅计数同步）
  */
 export const PricePopover = memo(function PricePopover({
   project,

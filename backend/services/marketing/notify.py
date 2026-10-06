@@ -198,8 +198,14 @@ def _fetch_subscribers(
     db: Session,
     quota_column: InstrumentedAttribute[int],
 ) -> list[L4MarketingSubscription]:
-    """查询指定频道剩余额度 > 0 的订阅行（单批上限截断）."""
-    stmt = select(L4MarketingSubscription).where(quota_column > 0).limit(_MAX_BATCH)
+    """查询指定频道剩余额度 > 0 且 openid 非空的订阅行（单批上限截断）.
+
+    openid 非空过滤：管理员密码登录订阅时无 openid（额度已照常累计），
+    空快照无法投递，过滤避免无效发送；用户日后微信登录补齐后自然纳入。
+    """
+    stmt = (
+        select(L4MarketingSubscription).where(quota_column > 0, L4MarketingSubscription.openid != "").limit(_MAX_BATCH)
+    )
     return list(db.scalars(stmt))
 
 
@@ -214,13 +220,21 @@ def _fetch_price_change_recipients(db: Session, project_id: int) -> list[Recipie
 
     """
     channel_rows = (
-        db.query(L4MarketingSubscription).filter(L4MarketingSubscription.price_change_quota > 0).limit(_MAX_BATCH).all()
+        db.query(L4MarketingSubscription)
+        .filter(
+            L4MarketingSubscription.price_change_quota > 0,
+            # openid 非空过滤（无 openid 的订阅行无法投递，见 _fetch_subscribers）
+            L4MarketingSubscription.openid != "",
+        )
+        .limit(_MAX_BATCH)
+        .all()
     )
     project_rows = (
         db.query(L4MarketingProjectSubscription)
         .filter(
             L4MarketingProjectSubscription.marketing_project_id == project_id,
             L4MarketingProjectSubscription.price_change_quota > 0,
+            L4MarketingProjectSubscription.openid != "",
         )
         .limit(_MAX_BATCH)
         .all()

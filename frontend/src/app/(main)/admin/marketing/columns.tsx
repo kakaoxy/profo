@@ -231,29 +231,24 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   },
 
   {
-    id: "notify",
-    header: () => <div className="hidden xl:block text-graphite font-medium">通知</div>,
+    id: "subscribe",
+    header: () => <div className="hidden xl:block text-graphite font-medium">订阅</div>,
     cell: ({ row }) => {
       const summary = row.original.notify_summary;
       const isPublished = row.original.publish_status === "发布";
+      // 订阅列：房源级调价提醒订阅人数（累计口径，取消提醒不清除）
+      const subscriberCount = summary?.subscriber_count ?? 0;
       return (
         <div className="hidden xl:flex items-center gap-1.5">
-          {!isPublished || !summary || (summary.new_listing_count === 0 && summary.price_change_count === 0) ? (
+          {!isPublished || subscriberCount === 0 ? (
             <span className="text-dove">—</span>
           ) : (
-            <>
-              <span title="订阅通知送达人数">🔔</span>
-              {summary.new_listing_count > 0 && (
-                <span className="rounded-full bg-apricot-wash px-2 py-0.5 text-[11px] font-medium text-rust tabular-nums">
-                  上新 {summary.new_listing_count}
-                </span>
-              )}
-              {summary.price_change_count > 0 && (
-                <span className="rounded-full bg-success-container px-2 py-0.5 text-[11px] font-medium text-success tabular-nums">
-                  调价 {summary.price_change_count}
-                </span>
-              )}
-            </>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full bg-apricot-wash px-2 py-0.5 text-[11px] font-medium text-rust tabular-nums"
+              title="订阅该房源调价提醒的用户数"
+            >
+              🔔 {subscriberCount} 人
+            </span>
           )}
         </div>
       );

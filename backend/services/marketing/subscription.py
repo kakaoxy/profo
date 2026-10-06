@@ -161,14 +161,8 @@ class MarketingSubscriptionService:
 
         user = self.db.query(User).filter(User.id == user_id).first()
         openid = (user.wechat_openid if user else None) or ""
-        if not openid:
-            # 无 openid 无法接收订阅消息：额度无意义，直接返回当前额度（通常全 0）
-            logger.warning("订阅上报用户无 openid，忽略：user_id=%s", user_id)
-            status = self.get_status(user_id)
-            return {
-                "new_listing_quota": int(status["new_listing_quota"]),
-                "price_change_quota": int(status["price_change_quota"]),
-            }
+        # 不按 openid 过滤（管理员密码登录无 openid 也允许订阅）：额度照常累计，
+        # openid 快照留空；用户日后微信登录/绑定后补齐，推送侧空 openid 行被过滤
 
         row = self._upsert_row(user_id, openid)
 
@@ -188,7 +182,8 @@ class MarketingSubscriptionService:
 
         if changed:
             row.last_subscribed_at = datetime.now(timezone.utc)
-            row.openid = openid  # openid 快照刷新（换号绑定后保持最新）
+            if openid:
+                row.openid = openid  # openid 快照刷新（换号绑定后保持最新；空值不覆盖已有快照）
             self.db.commit()
             self.db.refresh(row)
 
@@ -307,14 +302,8 @@ class MarketingSubscriptionService:
 
         user = self.db.query(User).filter(User.id == user_id).first()
         openid = (user.wechat_openid if user else None) or ""
-        if not openid:
-            # 无 openid 无法接收订阅消息：额度无意义，直接返回当前状态（通常未订阅）
-            logger.warning(
-                "房源级订阅上报用户无 openid，忽略：user_id=%s, project_id=%s",
-                user_id,
-                marketing_project_id,
-            )
-            return self.get_project_status(user_id, marketing_project_id)
+        # 不按 openid 过滤（管理员密码登录无 openid 也允许订阅）：额度照常累计，
+        # openid 快照留空；用户日后微信登录/绑定后补齐，推送侧空 openid 行被过滤
 
         row = self._upsert_project_row(user_id, marketing_project_id, openid)
 
@@ -334,7 +323,8 @@ class MarketingSubscriptionService:
 
         if changed:
             row.last_subscribed_at = datetime.now(timezone.utc)
-            row.openid = openid  # openid 快照刷新（换号绑定后保持最新）
+            if openid:
+                row.openid = openid  # openid 快照刷新（换号绑定后保持最新；空值不覆盖已有快照）
             self.db.commit()
             self.db.refresh(row)
 
@@ -343,3 +333,41 @@ class MarketingSubscriptionService:
             "price_change_quota": row.price_change_quota,
             "last_subscribed_at": row.last_subscribed_at,
         }
+
+    def cancel_project_subscription(self, user_id: str, marketing_project_id: int) -> dict[str, object]:
+        """取消房源级调价提醒（清零剩余额度，保留订阅行）.
+
+        一次性订阅额度已被微信授权锁定，取消无法退回微信侧：本地清零剩余额度
+        （后续调价不再推送），保留订阅行以维持 admin 订阅人数累计口径与续订复用。
+        幂等：未订阅时返回未订阅状态而非 404（重复点击取消不报错）。
+        房源不存在/已删除时 404。
+
+        Args:
+            user_id: 当前登录 C 端用户 ID
+            marketing_project_id: 房源 ID
+
+        Returns:
+            {subscribed, price_change_quota, last_subscribed_at}
+
+        Raises:
+            ResourceNotFoundError: 房源不存在或已删除
+
+        """
+        project = (
+            self.db.query(L4MarketingProject)
+            .filter(
+                L4MarketingProject.id == marketing_project_id,
+                L4MarketingProject.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if project is None:
+            msg = "房源不存在"
+            raise ResourceNotFoundError(msg)
+
+        row = self._get_project_row(user_id, marketing_project_id)
+        if row is not None and row.price_change_quota > 0:
+            row.price_change_quota = 0
+            self.db.commit()
+            self.db.refresh(row)
+        return self.get_project_status(user_id, marketing_project_id)

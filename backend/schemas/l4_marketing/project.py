@@ -22,10 +22,14 @@ class L4MarketingPriceChangeSummary(BaseModel):
 
 
 class L4MarketingNotifySummary(BaseModel):
-    """营销项目通知统计（admin 通知列 + 详情 Sheet，仅 success 口径）."""
+    """营销项目通知统计（admin 订阅列 + 详情 Sheet，仅 success 口径）."""
 
     new_listing_count: int = Field(default=0, description="上新通知成功送达人数")
     price_change_count: int = Field(default=0, description="调价通知成功送达人数")
+    subscriber_count: int = Field(
+        default=0,
+        description="房源级订阅人数（订阅过该房源调价提醒的用户数，累计口径，取消提醒不清除）",
+    )
 
 
 class L4MarketingPriceChangeTimelineItem(BaseModel):

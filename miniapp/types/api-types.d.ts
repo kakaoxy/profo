@@ -3787,6 +3787,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/marketing/projects/{project_id}/subscription/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 取消房源级调价提醒
+         * @description 清零该用户对此房源的调价提醒剩余额度（后续调价不再推送），保留订阅行；需登录；幂等（未订阅时返回未订阅状态），房源不存在时 404
+         */
+        post: operations["cancel_project_subscription_api_v1_public_marketing_projects__project_id__subscription_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/property-sheets": {
         parameters: {
             query?: never;
@@ -8683,7 +8703,7 @@ export interface components {
         };
         /**
          * L4MarketingNotifySummary
-         * @description 营销项目通知统计（admin 通知列 + 详情 Sheet，仅 success 口径）.
+         * @description 营销项目通知统计（admin 订阅列 + 详情 Sheet，仅 success 口径）.
          */
         L4MarketingNotifySummary: {
             /**
@@ -8698,6 +8718,12 @@ export interface components {
              * @default 0
              */
             price_change_count: number;
+            /**
+             * Subscriber Count
+             * @description 房源级订阅人数（订阅过该房源调价提醒的用户数，累计口径，取消提醒不清除）
+             * @default 0
+             */
+            subscriber_count: number;
         };
         /**
          * L4MarketingPriceChangeSummary
@@ -24456,6 +24482,38 @@ export interface operations {
                 "application/json": components["schemas"]["PublicMarketingSubscribeReportRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicMarketingProjectSubscriptionStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_project_subscription_api_v1_public_marketing_projects__project_id__subscription_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源ID */
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

@@ -130,12 +130,15 @@
   color: var(--ink);
 }
 
-/* 调价提醒按钮（房源级订阅四态）：未订阅实心深色 / 已订阅反白 */
+/* 调价提醒按钮（房源级订阅两态）：未订阅实心深色 / 已订阅反白；两态定宽居中，切换不跳宽 */
 .price-alert-btn {
+  width: 272rpx;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6rpx;
-  padding: 10rpx 24rpx;
+  padding: 10rpx 0;
   margin: 0;
   border-radius: 999rpx;
   font-size: 24rpx;
@@ -144,6 +147,7 @@
   color: #ffffff;
   background: var(--ink, #1a1a1a);
   border: 1rpx solid var(--ink, #1a1a1a);
+  white-space: nowrap;
 }
 
 .price-alert-btn--on {

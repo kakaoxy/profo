@@ -11,6 +11,7 @@ import {
 import { resolveAssetUrl, resolveImageUrl } from "../../../utils/url";
 import { fetchEmployeeId } from "../../../utils/valuation-share";
 import {
+  cancelProjectPriceSubscribe,
   fetchMarketingSubscribeTemplates,
   fetchProjectSubscriptionStatus,
   requestProjectPriceSubscribe,
@@ -172,8 +173,10 @@ type Custom = {
   loadPriceAlertTemplate(): Promise<void>;
   /** 刷新房源级订阅状态（需登录；未登录静默保持未订阅态）. */
   refreshPriceAlertState(): Promise<void>;
-  /** 调价提醒按钮 tap（未订阅可订/已订阅可续订/未登录先授权后引导）. */
+  /** 调价提醒按钮 tap：未订阅拉起授权面板；已订阅反白态点击即取消（确认后清零）. */
   onPriceAlertTap(): void;
+  /** 取消调价提醒：确认后清零剩余额度并回未订阅态（幂等）. */
+  cancelPriceAlert(id: number): Promise<void>;
   /** 登录返回后续约预约流标记（实例字段，无需渲染）. */
   pendingBook: boolean;
   /** 登录返回后补报房源级订阅授权标记（实例字段，无需渲染）. */
@@ -414,17 +417,26 @@ Page<PageData, Custom>({
   },
 
   /**
-   * 调价提醒按钮 tap（四态入口）.
+   * 调价提醒按钮 tap（二态入口，同按钮复用）.
    * ⚠️ requestSubscribeMessage 必须在 tap 手势回调内同步发起（不可 await 后再调）：
    * - 未订阅 → 拉起授权面板 → accept 上报房源级额度 +1
-   * - 已订阅有额度（反白态）→ 点击可续订 +N（同样拉起授权面板）
    * - 未登录 → 仍同步拉起授权面板，accept 后弹「登录后生效」引导
    *   （from=subscribe-project，返回后 onShow 刷新订阅状态）
+   * - 已订阅有额度（反白态）→ 点击即取消：确认后清零剩余额度回未订阅态
+   *   （取消不经微信，纯后端额度清零，无手势同步限制）
    */
   onPriceAlertTap(): void {
     const id = this.data.id;
     const templateId = this.priceAlertTemplateId;
-    if (id === null || !templateId) {
+    if (id === null) {
+      return;
+    }
+    // 已订阅反白态：点击即取消提醒
+    if (this.data.priceAlertSubscribed && this.data.priceAlertQuota > 0) {
+      this.cancelPriceAlert(id);
+      return;
+    }
+    if (!templateId) {
       return;
     }
     const notLoggedIn = !getCAccessToken();
@@ -449,6 +461,29 @@ Page<PageData, Custom>({
         this.refreshPriceAlertState();
       }
     });
+  },
+  /**
+   * 取消调价提醒：确认后清零剩余额度并回未订阅态.
+   * 一次性订阅额度已被微信授权锁定，取消仅清零本地剩余额度（后续调价不再
+   * 推送，已发出的消息不受影响）；幂等，重复点击不报错。
+   */
+  async cancelPriceAlert(id: number): Promise<void> {
+    const confirmed = await new Promise<boolean>((resolve) => {
+      wx.showModal({
+        title: "取消调价提醒",
+        content: "取消后将不再收到该房源的调价提醒，剩余提醒额度同时清零，是否继续？",
+        confirmText: "取消提醒",
+        cancelText: "暂不",
+        success: (res) => resolve(!!res.confirm),
+        fail: () => resolve(false),
+      });
+    });
+    if (!confirmed) {
+      return;
+    }
+    await cancelProjectPriceSubscribe(id);
+    // 无论上报成功与否均刷新：失败时以服务端真实状态为准（对齐静默降级口径）
+    this.refreshPriceAlertState();
   },
   async loadDetail(id: number): Promise<void> {
     this.setData({

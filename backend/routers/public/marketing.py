@@ -123,3 +123,24 @@ def report_project_subscription(
         results=[(item.template_id, item.status) for item in body.results],
     )
     return PublicMarketingProjectSubscriptionStatusResponse(**status)
+
+
+@router.post(
+    "/projects/{project_id}/subscription/cancel",
+    summary="取消房源级调价提醒",
+    description="清零该用户对此房源的调价提醒剩余额度（后续调价不再推送），保留订阅行；"
+    "需登录；幂等（未订阅时返回未订阅状态），房源不存在时 404",
+)
+@limiter.limit(RateLimits.VALUATION_SUBSCRIBE_TEMPLATE)
+def cancel_project_subscription(
+    request: Request,
+    project_id: Annotated[int, PathParam(ge=1, description="房源ID")],
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> PublicMarketingProjectSubscriptionStatusResponse:
+    """取消房源级调价提醒（清零剩余额度，保留订阅行）."""
+    status = MarketingSubscriptionService(db).cancel_project_subscription(
+        user_id=str(current_user.id),
+        marketing_project_id=project_id,
+    )
+    return PublicMarketingProjectSubscriptionStatusResponse(**status)

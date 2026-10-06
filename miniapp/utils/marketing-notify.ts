@@ -110,6 +110,33 @@ async function reportSubscribeResult(
 }
 
 /**
+ * 取消房源级调价提醒（上报后端清零剩余额度，保留订阅行）.
+ * 未登录静默返回 null；其余失败同样静默，调用方以返回 null 触发状态刷新
+ * 对齐服务端真实状态。
+ */
+export async function cancelProjectPriceSubscribe(
+  projectId: number,
+): Promise<ProjectSubscriptionStatus | null> {
+  // 未登录：cancel 接口需 C 端登录态，直接不发请求（避免 401 噪音）
+  if (!getCAccessToken()) {
+    return null;
+  }
+  try {
+    const res = await request<ProjectSubscriptionStatusResponse>({
+      url: `/public/marketing/projects/${projectId}/subscription/cancel`,
+      method: "POST",
+    });
+    return {
+      subscribed: res.subscribed,
+      priceChangeQuota: res.price_change_quota,
+      lastSubscribedAt: res.last_subscribed_at || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 查询当前用户对指定房源的订阅状态（需登录；未登录/失败返回 null）.
  */
 export async function fetchProjectSubscriptionStatus(
@@ -169,6 +196,39 @@ export interface ProjectSubscriptionStatus {
 }
 
 /**
+ * 规范化处理拒绝态（reject）：区分「单次拒绝」与「总是拒绝」（勾选过「总是保持以上选择」）.
+ * 单次拒绝：轻提示下次仍可订阅；总是拒绝：订阅面板不再弹出，弹窗引导去设置开启后可再订。
+ * 查询失败（部分基础库/场景不下发）按单次拒绝降级轻提示，不再静默吞掉用户拒绝。
+ */
+function handleRejectStatus(templateId: string): void {
+  wx.getSetting({
+    withSubscriptions: true,
+    success: (res) => {
+      const itemStatus = res.subscriptionsSetting?.itemSettings?.[templateId];
+      if (itemStatus === "reject") {
+        // 总是拒绝：弹窗引导去设置页开启「订阅消息」
+        wx.showModal({
+          title: "无法开启提醒",
+          content: "您已选择总是拒收订阅消息，请在设置中开启「订阅消息」后再试",
+          confirmText: "去设置",
+          success: (modalRes) => {
+            if (modalRes.confirm) {
+              wx.openSetting({});
+            }
+          },
+        });
+        return;
+      }
+      // 单次拒绝（或查询不到记录）：轻提示，下次仍可订阅
+      wx.showToast({ title: "已取消，下次可再开启", icon: "none" });
+    },
+    fail: () => {
+      wx.showToast({ title: "已取消，下次可再开启", icon: "none" });
+    },
+  });
+}
+
+/**
  * 发起「调价提醒」（房源级）订阅消息授权.
  * ⚠️ 必须在用户 tap 手势回调内同步调用（不可包 async/await 之后再调），
  * 对齐 requestMarketingSubscribe 约束.
@@ -176,6 +236,12 @@ export interface ProjectSubscriptionStatus {
  * 仅请求调价模板（房源级调价订阅与频道级共用同一模板配置，涨降都推）；
  * accept 结果上报 /public/marketing/projects/{id}/subscription/report，
  * 房源级额度 +1（与频道级账本相互独立）。
+ *
+ * 结果反馈（对齐 requestMarketingSubscribe 规范）：
+ * - accept：toast 正向确认「已开启，该房源调价时提醒你」
+ * - reject：getSetting(withSubscriptions) 区分单次拒绝（轻提示）与总是拒绝（引导去设置）
+ * - ban：用户曾勾选「总是拒绝」后被后台封禁，弹窗引导去设置页开启「订阅消息」
+ * - filter/error：静默
  *
  * @param projectId 房源 ID
  * @param templateId 调价模板 ID（subscribe_enabled=false 时不调用本函数）
@@ -198,6 +264,9 @@ export function requestProjectPriceSubscribe(
       const finish = (quota: ProjectSubscriptionStatus | null) => {
         if (status === "accept") {
           wx.showToast({ title: "已开启，该房源调价时提醒你", icon: "none" });
+        } else if (status === "reject") {
+          // 拒绝态规范化处理：区分单次拒绝与总是拒绝（对齐微信 getSetting 订阅状态规范）
+          handleRejectStatus(templateId);
         } else if (status === "ban") {
           wx.showModal({
             title: "无法开启提醒",

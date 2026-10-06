@@ -69,7 +69,7 @@
       <view class="detail-head">
         <view class="detail-price-row">
           <view class="detail-price">¥ {{detail.total_price}} 万</view>
-          <!-- 调价提醒（房源级订阅，涨降都推）：subscribe_enabled=false 整体隐藏；已订阅反白可续订 -->
+          <!-- 调价提醒（房源级订阅，涨降都推）：subscribe_enabled=false 整体隐藏；已订阅反白态点击即取消 -->
           <button
             wx:if="{{priceAlertEnabled}}"
             class="price-alert-btn {{priceAlertSubscribed && priceAlertQuota > 0 ? 'price-alert-btn--on' : ''}}"
