@@ -137,11 +137,15 @@
 }
 
 /* ===== 底部按钮 ===== */
-/* 全宽普通块容器：button 的 width:100% 以普通块为基准解析，与 view 按钮严格同宽 */
+/* 全宽普通块容器：两个按钮均以 .acts 宽度为基准对齐 */
 .acts {
   width: 100%;
 }
-.share-btn {
+/* 宽度失效根因：app.json 启用 "style": "v2" 后，框架注入
+   button:not([size='mini']) { width: 184px; margin-left/right: auto; }（选择器权重 0-1-1），
+   高于单类 .share-btn（0-1-0），导致 width:100% 被覆盖、按钮固定 184px 与下方 view 不同宽。
+   此处用 .acts 后代选择器（权重 0-2-0）压过框架默认样式，width:100% 才能生效。 */
+.acts button.share-btn {
   width: 100%;
   margin: 0;
   display: flex;

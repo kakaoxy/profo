@@ -30,7 +30,7 @@
 
   <view style="flex: 1;"></view>
 
-  <!-- 底部操作：全宽普通块容器，保证原生 button 与 view 按钮同宽（button 作为弹性子项时 width:100% 会被内容宽替代） -->
+  <!-- 底部操作：全宽普通块容器，button 与 view 以 .acts 宽度为基准对齐（宽度失效根因见 wxss .acts button.share-btn 注释） -->
   <view class="acts">
     <!-- 转发给经纪人：open-type=share 触发 onShareAppMessage -->
     <button class="btn-dark share-btn" open-type="share">转发给经纪人</button>

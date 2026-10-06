@@ -326,14 +326,24 @@
   line-height: 1.5;
 }
 
-/* 次要动作 = 文字链（DESIGN.md：不用 ghost 按钮承载次要操作） */
+/* 查看更多房源：杏色底 rust 字强调 pill（用户要求一眼可见，且页面无实心 CTA，不与 DESIGN.md 冲突）。
+   密码过期时整页无可用查看入口，该按钮是唯一推荐去向（isExpired 时前置 rust 圆点标记，呼应 expired-banner 的 warm 提醒面） */
 .more-btn {
   margin: 24rpx 40rpx 0;
   padding: 24rpx 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--ink);
+  gap: 12rpx;
+  border-radius: 9999rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
   font-size: 28rpx;
-  font-weight: 450;
+  font-weight: 500;
+}
+.more-btn-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: var(--rust);
 }

@@ -103,8 +103,11 @@
       <view wx:if="{{items.length === 0}}" class="list-empty">暂无可展示的密码</view>
     </view>
 
-    <!-- 页脚常驻说明 + 查看更多房源 -->
+    <!-- 页脚常驻说明 + 查看更多房源（杏色强调 pill；过期时加点标记进一步突出，见 wxss more-btn 注释） -->
     <view class="mnote">仅展示分享人选择的普通密码；管理密码不可见。每次查看明文都会记录</view>
-    <view class="more-btn" bindtap="onMoreProjects">查看更多房源</view>
+    <view class="more-btn" bindtap="onMoreProjects">
+      <view wx:if="{{isExpired}}" class="more-btn-dot"></view>
+      <text>查看更多房源</text>
+    </view>
   </block>
 </view>
