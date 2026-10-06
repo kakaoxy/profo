@@ -53,3 +53,7 @@ yarn.lock
 
 # OpenAPI generated files (generated from backend)
 openapi.json
+
+# playwright e2e 产物（用例源码在 e2e/ 纳入版本控制）
+/test-results/
+/playwright-report/

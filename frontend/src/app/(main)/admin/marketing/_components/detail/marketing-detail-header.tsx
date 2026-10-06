@@ -19,8 +19,8 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
   const canWrite = hasPermission(PERMISSION_CODES.L4_MARKETING_WRITE);
 
   return (
-    <div className="px-6 py-4 border-b border-dove/40 bg-white sticky top-0 z-10">
-      <div className="flex items-center justify-between gap-4">
+    <div className="sticky top-0 z-10 border-b border-dove/40 bg-white">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
         {/* 左侧：返回按钮和标题 */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 -ml-2 h-8 w-8">

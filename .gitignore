@@ -35,9 +35,10 @@ coverage.xml
 *.cover
 *.py.cover
 .hypothesis/
-e2e/
+# E2E 产物目录（用例源码在 frontend/e2e/ 纳入版本控制，产物由 frontend/.gitignore 管理）
 test-results/
 playwright-report/
+frontend/playwright/.cache/
 
 # 数据库迁移
 alembic/

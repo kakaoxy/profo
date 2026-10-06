@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 // Next.js 16 默认阻止非 localhost 源的 dev 资源/HMR（vercel/next.js#91507），
 // 否则手机经局域网 IP 访问时页面无法水合、客户端交互失效、表单退化为原生提交。
 // 用 env 覆盖以便 DHCP 变化时无需改代码；多个以英文逗号分隔。
-const allowedDevOrigins = (process.env.ALLOWED_DEV_ORIGINS || "192.168.110.104")
+const allowedDevOrigins = (process.env.ALLOWED_DEV_ORIGINS || "192.168.110.104,127.0.0.1,localhost")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);

@@ -14,7 +14,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
 
 import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/admin/marketing/types";
 import {
@@ -23,12 +22,12 @@ import {
   createL4MarketingProjectAction,
   updateL4MarketingProjectAction,
 } from "../actions";
-import { Button } from "@/components/ui/button";
 
 import { MarketingDetailHeader } from "./detail/marketing-detail-header";
 import { MarketingInfoSection } from "./detail/marketing-info-section";
 import { BasicConfigSection } from "./detail/basic-config-section";
-import { NotifySection } from "./detail/notify-section";
+import { PriceChangeCard } from "./price-change-card";
+import { PushStatCard } from "./push-stat-card";
 import { PhotosSection } from "./detail/photos-section";
 import { EditMode } from "./project-form/EditMode";
 
@@ -53,6 +52,9 @@ const detailFormActions = {
  * - 编辑中 isDirty 时离开（返回列表/切回 view）弹「未保存的修改将丢失」确认
  *
  * 保存成功链路：toast（表单 hook 内）→ mode 切回 view → 重拉详情 → router.refresh 刷新列表数据。
+ *
+ * 调价成功链路：PriceChangeCard 内部已用 PUT 响应渲染新价 → 宿主 handlePriceChanged
+ * （reloadDetail 换入新 project，刷新左栏信息卡总价与推送统计）→ router.refresh（刷新列表 RSC 缓存）。
  */
 export const MarketingDetailPage = memo(function MarketingDetailPage({
   initialProject,
@@ -70,29 +72,39 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
   const isFetchingRef = useRef(false);
 
   /** 重拉详情（编辑保存后回 view 态刷新数据；页面级低频操作，无需请求去重缓存） */
-  const reloadDetail = useCallback(async (projectId: number) => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    setIsRefreshing(true);
-    try {
-      const [projectRes, photosRes] = await Promise.all([
-        getL4MarketingProjectAction(projectId),
-        getL4MarketingMediaAction(projectId, 1, 100),
-      ]);
-      if (projectRes.success && projectRes.data) {
-        setProject(projectRes.data as L4MarketingProject);
+  /**
+   * 重拉详情（编辑保存后回 view 态刷新数据；页面级低频操作，无需请求去重缓存）.
+   *
+   * @param projectId 项目 ID
+   * @param opts.silent 静默模式：不置 isRefreshing（不卸载内容树）。调价成功后用——
+   *   若触发全屏 spinner 会卸载 PriceChangeCard，其三态内部 state（成功态）丢失。
+   */
+  const reloadDetail = useCallback(
+    async (projectId: number, opts?: { silent?: boolean }) => {
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+      if (!opts?.silent) setIsRefreshing(true);
+      try {
+        const [projectRes, photosRes] = await Promise.all([
+          getL4MarketingProjectAction(projectId),
+          getL4MarketingMediaAction(projectId, 1, 100),
+        ]);
+        if (projectRes.success && projectRes.data) {
+          setProject(projectRes.data as L4MarketingProject);
+        }
+        if (photosRes.success && photosRes.data) {
+          setPhotos((photosRes.data.items as L4MarketingMedia[]) || []);
+        }
+      } catch (error) {
+        logger.error("Failed to reload detail data:", error);
+        toast.error("刷新详情数据失败");
+      } finally {
+        isFetchingRef.current = false;
+        if (!opts?.silent) setIsRefreshing(false);
       }
-      if (photosRes.success && photosRes.data) {
-        setPhotos((photosRes.data.items as L4MarketingMedia[]) || []);
-      }
-    } catch (error) {
-      logger.error("Failed to reload detail data:", error);
-      toast.error("刷新详情数据失败");
-    } finally {
-      isFetchingRef.current = false;
-      setIsRefreshing(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   /** 返回列表（dirty 时先确认） */
   const handleBack = useCallback(() => {
@@ -129,6 +141,12 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
     setMode("edit");
   }, []);
 
+  /** 调价成功：静默 reloadDetail 换入新 project（左栏信息卡/推送统计同步）+ router.refresh（列表 RSC 缓存）。不触发全屏 spinner（避免卸载调价卡丢失成功态） */
+  const handlePriceChanged = useCallback(async () => {
+    await reloadDetail(project.id, { silent: true });
+    router.refresh();
+  }, [project.id, reloadDetail, router]);
+
   const handleDirtyChange = useCallback((dirty: boolean) => {
     setIsFormDirty(dirty);
   }, []);
@@ -154,37 +172,14 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
 
   return (
     <div className="min-h-screen bg-fog">
-      {/* 顶部导航条：返回 + 标题 + 操作（edit 态隐藏编辑入口，保存/取消在表单 sticky 底栏） */}
-      <div className="sticky top-0 z-20 border-b border-dove/40 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleBack}
-              className="-ml-2 h-8 w-8 shrink-0"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-lg leading-tight text-ink">
-                {project.title || "未命名项目"}
-              </h1>
-              {project.community_name ? (
-                <span className="text-xs text-graphite">· {project.community_name}</span>
-              ) : null}
-              <span className="text-xs text-graphite">(ID:{project.id})</span>
-            </div>
-          </div>
-
-          <MarketingDetailHeader
-            project={project}
-            onClose={handleBack}
-            mode={mode}
-            onStartEdit={handleStartEdit}
-          />
-        </div>
-      </div>
+      {/* 顶部导航条：返回 + 标题 + 操作，唯一由 MarketingDetailHeader 渲染
+          （edit 态隐藏编辑入口，保存/取消在表单 sticky 底栏） */}
+      <MarketingDetailHeader
+        project={project}
+        onClose={handleBack}
+        mode={mode}
+        onStartEdit={handleStartEdit}
+      />
 
       {/* Content */}
       <div className="mx-auto max-w-7xl px-6 py-6">
@@ -204,18 +199,29 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
             onDirtyChange={handleDirtyChange}
           />
         ) : (
-          <div className="space-y-6">
-            {/* 1. 房源信息 - 左右布局（主图+信息） */}
-            <MarketingInfoSection project={project} photos={photos} />
+          /* view 态：左主（浏览语义）+ 右辅（高频操作语义）；<1024px 折叠单列，右栏内容顺延 */
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_348px]">
+            {/* 左主栏 */}
+            <div className="min-w-0 space-y-6">
+              {/* 1. 房源信息 - 左右布局（主图+信息） */}
+              <MarketingInfoSection project={project} photos={photos} />
 
-            {/* 2. 房源状态 + 管理配置 */}
-            <BasicConfigSection project={project} />
+              {/* 2. 房源状态 + 管理配置 */}
+              <BasicConfigSection project={project} />
 
-            {/* 3. 订阅与调价（送达统计 + 内联调价表单 + 调价历史时间线） */}
-            <NotifySection project={project} onRefresh={() => router.refresh()} />
+              {/* 3. 媒体资源 */}
+              <PhotosSection project={project} photos={photos} />
+            </div>
 
-            {/* 4. 媒体资源 */}
-            <PhotosSection project={project} photos={photos} />
+            {/* 右辅栏：sticky 常驻（top-20 避开顶栏）——价格与调价 + 推送统计 */}
+            <div className="space-y-5 lg:sticky lg:top-20">
+              <PriceChangeCard
+                variant="card"
+                project={project}
+                onPriceSuccess={() => void handlePriceChanged()}
+              />
+              <PushStatCard project={project} />
+            </div>
           </div>
         )}
       </div>
