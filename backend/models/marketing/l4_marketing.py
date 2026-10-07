@@ -1,6 +1,12 @@
 """L4 市场营销层模型.
 
 对应 mini_projects 小程序项目管理.
+
+⚠️ 本文件超 500 行不拆分理由（AGENTS §1，M14）：订阅/通知域 4 张表
+（订阅账本、留痕、调价历史、房源级订阅）与项目/媒体等既有模型同属一个
+bounded context，外键关系与枚举（SendStatus 等）集中一处便于对照；拆分后
+跨文件 import 链变长且现有 from models.marketing.l4_marketing import X 的
+引用面需全部跟进，收益不抵成本，故沿用既有单文件惯例。
 """
 
 import uuid
@@ -471,7 +477,9 @@ class L4MarketingSubscription(BaseModel):
 
     user_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="订阅用户ID(逻辑外键User)")
     # 订阅授权时快照的微信 openid（发送免回查；用户主账号合并后仍按快照发送）
-    openid: Mapped[str] = mapped_column(String(64), nullable=False, comment="微信openid(授权时快照)")
+    # M11：列宽与来源 users.wechat_openid（String(100)）对齐，防超长 openid（unionid 体系/
+    # 历史异常数据）上报时触发 PG value too long → 500。宽度迁移见 migrations/_marketing_notify
+    openid: Mapped[str] = mapped_column(String(100), nullable=False, comment="微信openid(授权时快照)")
     # 两频道剩余额度（一次性订阅：每次「允许」可收 1 条）
     new_listing_quota: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="上新提醒剩余额度")
     price_change_quota: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="调价提醒剩余额度")
@@ -553,7 +561,9 @@ class L4MarketingProjectSubscription(BaseModel):
         Integer, nullable=False, comment="房源ID(逻辑外键l4_marketing_projects)"
     )
     # 授权时快照的微信 openid（发送免回查，与频道级账本同构）
-    openid: Mapped[str] = mapped_column(String(64), nullable=False, comment="微信openid(授权时快照)")
+    # M11：列宽与来源 users.wechat_openid（String(100)）对齐，防超长 openid（unionid 体系/
+    # 历史异常数据）上报时触发 PG value too long → 500。宽度迁移见 migrations/_marketing_notify
+    openid: Mapped[str] = mapped_column(String(100), nullable=False, comment="微信openid(授权时快照)")
     # 房源级一次性订阅额度（accept 上报 +1，推送成功 -1）
     price_change_quota: Mapped[int] = mapped_column(
         Integer,

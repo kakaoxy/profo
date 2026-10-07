@@ -6,7 +6,12 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { TodoItemData, TodoProjectCardData } from "../_lib/todo-board-config";
-import { ANCHOR_LABEL, ANCHOR_SECTION_ID, PRIORITY_CHIP_CLASS, PRIORITY_DOT_CLASS } from "../_lib/todo-board-config";
+import {
+  ANCHOR_LABEL,
+  ANCHOR_SECTION_ID,
+  PRIORITY_CHIP_CLASS,
+  PRIORITY_DOT_CLASS,
+} from "../_lib/todo-board-config";
 
 interface TodoDetailBodyProps {
   card: TodoProjectCardData;
@@ -60,7 +65,9 @@ export function TodoDetailBody({ card, item, onClose }: TodoDetailBodyProps) {
         <span className="ml-1">· {card.contract_no ?? "—"}</span>
       </div>
       <div className="flex min-h-0 flex-col gap-[7px] border-t border-[#f0f0f2] px-4 pt-1 pb-3.5">
-        <div className="mt-2.5 text-[11px] font-[500] tracking-[0.06em] text-graphite">缺失明细</div>
+        <div className="mt-2.5 text-[11px] font-[500] tracking-[0.06em] text-graphite">
+          缺失明细
+        </div>
         {(item.items ?? []).map((text, i) => (
           <div key={i} className="flex gap-2 text-[12.5px] leading-[1.55] font-[430] text-ash">
             <span className="font-[500] text-dove">·</span>

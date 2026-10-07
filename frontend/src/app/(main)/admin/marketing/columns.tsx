@@ -164,8 +164,11 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
           </div>
           {/* 最近一次调价副行（7 天窗口内，服务端聚合下发） */}
           {change && (
-            <div className={`text-xs tabular-nums ${change.direction === "down" ? "text-success" : "text-graphite"}`}>
-              原 {formatPrice(change.old_price)} · {safeFormatDate(change.changed_at, "MM/dd")} {change.direction === "down" ? "↓" : "↑"}
+            <div
+              className={`text-xs tabular-nums ${change.direction === "down" ? "text-success" : "text-graphite"}`}
+            >
+              原 {formatPrice(change.old_price)} · {safeFormatDate(change.changed_at, "MM/dd")}{" "}
+              {change.direction === "down" ? "↓" : "↑"}
             </div>
           )}
         </div>

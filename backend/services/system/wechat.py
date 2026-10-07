@@ -36,6 +36,11 @@ _CODE_TTL_SECONDS = 60
 # 小程序全局 access_token 缓存 TTL：微信默认 7200s 过期，留出余量（-300s）避免用到过期 token
 _MINIAPP_TOKEN_CACHE_TTL = 6900
 
+# 微信上游 HTTP 显式超时（M3）：不收紧则用 httpx 默认 5.0s，通知推送逐收件人串行时
+# 上游抖动会线性放大后台任务占用时长（最坏 订阅数 × 5s，跑在 anyio 线程池内，
+# 拖累其他 run_in_threadpool 请求）。读 3s / 连接 2s 压缩最坏占用；写/池超时取默认。
+_WECHAT_HTTP_TIMEOUT = httpx.Timeout(timeout=5.0, read=3.0, connect=2.0)
+
 # 微信凭据类参数脱敏：httpx 的 HTTPStatusError 消息带**完整请求 URL（含 query）**，
 # 直接 str(exc) 即把 appid/secret/access_token 明文暴露到日志、留痕表乃至 HTTP 响应体。
 # 正则本体与日志出口过滤器见 utils.security_logger（root handler 挂载见 main.py）。
@@ -173,7 +178,7 @@ class WeChatAuthService:
             "code": code,
             "grant_type": "authorization_code",
         }
-        async with httpx.AsyncClient(trust_env=False) as client:
+        async with httpx.AsyncClient(trust_env=False, timeout=_WECHAT_HTTP_TIMEOUT) as client:
             response = await client.get(settings.wechat_token_url, params=params)
             data = response.json()
 
@@ -190,7 +195,7 @@ class WeChatAuthService:
             "openid": openid,
             "lang": "zh_CN",
         }
-        async with httpx.AsyncClient(trust_env=False) as client:
+        async with httpx.AsyncClient(trust_env=False, timeout=_WECHAT_HTTP_TIMEOUT) as client:
             try:
                 response = await client.get(settings.wechat_userinfo_url, params=params)
                 data = response.json()
@@ -216,7 +221,7 @@ class WeChatAuthService:
             "js_code": code,
             "grant_type": "authorization_code",
         }
-        async with httpx.AsyncClient(trust_env=False) as client:
+        async with httpx.AsyncClient(trust_env=False, timeout=_WECHAT_HTTP_TIMEOUT) as client:
             try:
                 response = await client.get(settings.wechat_jscode2session_url, params=params)
                 response.raise_for_status()
@@ -402,7 +407,7 @@ class WeChatAuthService:
             "appid": settings.wechat_appid,
             "secret": settings.wechat_secret,
         }
-        with httpx.Client(trust_env=False) as client:
+        with httpx.Client(trust_env=False, timeout=_WECHAT_HTTP_TIMEOUT) as client:
             try:
                 response = client.get(settings.wechat_miniapp_token_url, params=params)
                 response.raise_for_status()
@@ -451,7 +456,7 @@ class WeChatAuthService:
         access_token = WeChatAuthService.fetch_wechat_miniapp_access_token()
         params = {"access_token": access_token}
         payload = {"code": code}
-        with httpx.Client(trust_env=False) as client:
+        with httpx.Client(trust_env=False, timeout=_WECHAT_HTTP_TIMEOUT) as client:
             try:
                 response = client.post(settings.wechat_phone_url, params=params, json=payload)
                 response.raise_for_status()
@@ -498,7 +503,7 @@ class WeChatAuthService:
         }
         if page:
             payload["page"] = page
-        with httpx.Client(trust_env=False) as client:
+        with httpx.Client(trust_env=False, timeout=_WECHAT_HTTP_TIMEOUT) as client:
             try:
                 response = client.post(settings.wechat_miniapp_qrcode_url, params=params, json=payload)
                 response.raise_for_status()
@@ -553,7 +558,7 @@ class WeChatAuthService:
         }
         if page:
             payload["page"] = page
-        with httpx.Client(trust_env=False) as client:
+        with httpx.Client(trust_env=False, timeout=_WECHAT_HTTP_TIMEOUT) as client:
             try:
                 response = client.post(settings.wechat_subscribe_send_url, params=params, json=payload)
                 response.raise_for_status()

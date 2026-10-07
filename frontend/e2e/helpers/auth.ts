@@ -44,9 +44,7 @@ async function getAdminTokens(): Promise<AdminTokens> {
       headers: { "Content-Type": "application/json" },
     });
     if (!res.ok()) {
-      throw new Error(
-        `E2E 登录失败: HTTP ${res.status()} ${await res.text()}`.slice(0, 300),
-      );
+      throw new Error(`E2E 登录失败: HTTP ${res.status()} ${await res.text()}`.slice(0, 300));
     }
     const body = (await res.json()) as {
       access_token: string;

@@ -79,32 +79,29 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
    * @param opts.silent 静默模式：不置 isRefreshing（不卸载内容树）。调价成功后用——
    *   若触发全屏 spinner 会卸载 PriceChangeCard，其三态内部 state（成功态）丢失。
    */
-  const reloadDetail = useCallback(
-    async (projectId: number, opts?: { silent?: boolean }) => {
-      if (isFetchingRef.current) return;
-      isFetchingRef.current = true;
-      if (!opts?.silent) setIsRefreshing(true);
-      try {
-        const [projectRes, photosRes] = await Promise.all([
-          getL4MarketingProjectAction(projectId),
-          getL4MarketingMediaAction(projectId, 1, 100),
-        ]);
-        if (projectRes.success && projectRes.data) {
-          setProject(projectRes.data as L4MarketingProject);
-        }
-        if (photosRes.success && photosRes.data) {
-          setPhotos((photosRes.data.items as L4MarketingMedia[]) || []);
-        }
-      } catch (error) {
-        logger.error("Failed to reload detail data:", error);
-        toast.error("刷新详情数据失败");
-      } finally {
-        isFetchingRef.current = false;
-        if (!opts?.silent) setIsRefreshing(false);
+  const reloadDetail = useCallback(async (projectId: number, opts?: { silent?: boolean }) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    if (!opts?.silent) setIsRefreshing(true);
+    try {
+      const [projectRes, photosRes] = await Promise.all([
+        getL4MarketingProjectAction(projectId),
+        getL4MarketingMediaAction(projectId, 1, 100),
+      ]);
+      if (projectRes.success && projectRes.data) {
+        setProject(projectRes.data as L4MarketingProject);
       }
-    },
-    [],
-  );
+      if (photosRes.success && photosRes.data) {
+        setPhotos((photosRes.data.items as L4MarketingMedia[]) || []);
+      }
+    } catch (error) {
+      logger.error("Failed to reload detail data:", error);
+      toast.error("刷新详情数据失败");
+    } finally {
+      isFetchingRef.current = false;
+      if (!opts?.silent) setIsRefreshing(false);
+    }
+  }, []);
 
   /** 返回列表（dirty 时先确认） */
   const handleBack = useCallback(() => {

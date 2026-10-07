@@ -78,7 +78,10 @@ function MonitorSection() {
   return (
     <section className="mb-8 overflow-hidden" aria-labelledby="monitor-section-title">
       <div className="flex items-center justify-between mb-6">
-        <h2 id="monitor-section-title" className="text-[21px] font-medium text-ink tracking-[-0.01em]">
+        <h2
+          id="monitor-section-title"
+          className="text-[21px] font-medium text-ink tracking-[-0.01em]"
+        >
           重点监控项目
         </h2>
         <div className="flex gap-2">

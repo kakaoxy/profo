@@ -293,7 +293,7 @@ function KeyManagementCard({ projectId }: { projectId: string }) {
     ? `${summary.active_share_count} 个分享 · 累计查看 ${summary.total_view_count} 次`
     : placeholder;
   // 备注单行截断展示，完整内容在钥匙管理页查看/编辑
-  const noteValue = summary ? (summary.key_note || "未设置") : placeholder;
+  const noteValue = summary ? summary.key_note || "未设置" : placeholder;
 
   return (
     <SideCard title="钥匙管理">

@@ -49,14 +49,13 @@ export function ProjectView({ data, total, counts }: ProjectViewProps) {
 
   // 「全部」Tab 计数用五状态求和（stats 为全量口径）；total 随 URL 状态过滤变化，
   // 仅在 stats 缺失（降级路径）时兜底
-  const allCount =
-    counts
-      ? (counts.signing ?? 0) +
-        (counts.renovating ?? 0) +
-        (counts.selling ?? 0) +
-        (counts.sold ?? 0) +
-        (counts.ended ?? 0)
-      : total;
+  const allCount = counts
+    ? (counts.signing ?? 0) +
+      (counts.renovating ?? 0) +
+      (counts.selling ?? 0) +
+      (counts.sold ?? 0) +
+      (counts.ended ?? 0)
+    : total;
 
   // 1. status / business_form 通过 URL 同步由服务端筛选；searchQuery 仅作用于当前页数据
   const [{ status: activeTab, business_form: businessForm }, setQuery] = useQueryStates(

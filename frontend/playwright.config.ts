@@ -14,7 +14,11 @@ const { loadEnvConfig } = require(
   loadEnvConfig: (
     dir: string,
     env: string,
-    silent: { info: (msg: string) => void; error: (msg: string) => void; warn: (msg: string) => void },
+    silent: {
+      info: (msg: string) => void;
+      error: (msg: string) => void;
+      warn: (msg: string) => void;
+    },
   ) => void;
 };
 loadEnvConfig(__dirname, process.env.NODE_ENV ?? "development", {

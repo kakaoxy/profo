@@ -181,7 +181,7 @@ export async function GET(request: Request) {
     }
     // 瞬时失败：保留 cookie，返回 503 提示页（不重定向回 next，避免 401→refresh 死循环）
     return new NextResponse(
-      "<!doctype html><html lang=\"zh-CN\"><meta charset=\"utf-8\"><title>服务暂时不可用</title><body style=\"font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0\"><p>服务暂时不可用，请稍后刷新重试</p></body></html>",
+      '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>服务暂时不可用</title><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><p>服务暂时不可用，请稍后刷新重试</p></body></html>',
       { status: 503, headers: { "content-type": "text/html; charset=utf-8", "retry-after": "5" } },
     );
   }

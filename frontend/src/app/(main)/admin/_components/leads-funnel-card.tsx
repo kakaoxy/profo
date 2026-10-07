@@ -18,7 +18,13 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
   const stages = [
     { key: "total", label: "总线索", value: total, color: "var(--color-ink)" },
     { key: "evaluating", label: "进入评估", value: evaluating, color: "#4a90e2" },
-    { key: "visiting", label: "实地看房", value: visiting, color: "var(--color-apricot-wash)", border: "#f2d0ba" },
+    {
+      key: "visiting",
+      label: "实地看房",
+      value: visiting,
+      color: "var(--color-apricot-wash)",
+      border: "#f2d0ba",
+    },
     { key: "signed", label: "签约", value: signed, color: "var(--color-rust)" },
   ];
 

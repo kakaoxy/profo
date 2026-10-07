@@ -157,6 +157,7 @@ from migrations._marketing_notify import (
     add_published_at_to_l4_marketing_projects,
     create_marketing_project_subscription_table,
     create_marketing_subscription_tables,
+    widen_subscription_openid_columns,
 )
 from migrations._permission_system import (
     add_permission_foreign_indexes,
@@ -366,6 +367,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_price_change_id_index_to_notify_logs(engine)
         # 房源级调价订阅（P2-1）：幂等创建 l4_marketing_project_subscriptions
         create_marketing_project_subscription_table(engine)
+        # 订阅快照 openid 列宽 64→100 对齐来源列（M11，幂等放宽）
+        widen_subscription_openid_columns(engine)
         # 分享统计 lead_count：leads(referrer_id) 索引
         add_lead_referrer_index(engine)
         # 微信 session_key 停止收集：一次性清空存量（列保留一版过渡，见 _clear_wechat_session_key）

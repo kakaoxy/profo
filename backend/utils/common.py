@@ -78,6 +78,18 @@ def _get_client_ip(request: Request) -> str:
     return client_host
 
 
+def _get_login_user_identifier(request: Request) -> str:
+    """限流键：登录用户 ID（M8），降级回退客户端 IP.
+
+    上报/状态类需登录端点按用户计数：NAT 共享出口 IP 的多用户互不挤占额度。
+    用户身份由认证依赖写入的 ``request.state.user_id`` 提供（见 dependencies.auth
+    挂载点）；无登录态（依赖未执行/未挂载）时回退 IP，保证免登录端点复用本
+    函数时不失效。
+    """
+    user_id = getattr(request.state, "user_id", None)
+    return str(user_id) if user_id else _get_client_ip(request)
+
+
 limiter = Limiter(
     key_func=_get_client_ip,
     # 默认限流：仅作用于未显式配置 limit 的端点（主要为 GET 查询/列表/详情）。
@@ -237,6 +249,11 @@ class RateLimits:
     VALUATION_SHARE = "60/minute"
     # 订阅模板 ID 下发：纯内存配置读取，每次估价页 onLoad 触发一次，防恶意刷接口
     VALUATION_SUBSCRIBE_TEMPLATE = "60/minute"
+    # 订阅上报/状态类（M8）：需登录 C 端接口，按登录用户计数而非客户端 IP ——
+    # 公司/校园 NAT 共享出口 IP 时按 IP 计数会互相挤占 60/min 额度误伤正常用户。
+    # 量级：单用户订阅手势触发（一次 requestSubscribeMessage ≤ 一对模板上报）+ 状态轮询，
+    # 120/min 对单用户宽松、对单账号滥用仍收敛。
+    MARKETING_SUBSCRIBE_USER = "120/minute"
 
     # ==================== 房源单（多房源分享）C 端接口 ====================
     # 量级对齐 RECRUIT_*/PROJECT_* 同类端点：qr 解析与访问埋点免登录高频，

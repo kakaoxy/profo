@@ -2,12 +2,7 @@
 
 import * as React from "react";
 import { Loader2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { LeadEliminateReason } from "../../_lib/flow-constants";
@@ -55,9 +50,7 @@ export function FlowConfirmDialog({
   if (!mode) return null;
 
   const isEliminate = mode === "eliminate";
-  const canSubmit = isEliminate
-    ? !reasonRequired || reason !== null
-    : remark.trim().length > 0;
+  const canSubmit = isEliminate ? !reasonRequired || reason !== null : remark.trim().length > 0;
 
   return (
     <Dialog
@@ -112,11 +105,7 @@ export function FlowConfirmDialog({
           />
           {!canSubmit && (
             <p className="text-[12.5px] text-rust">
-              {isEliminate
-                ? reasonRequired
-                  ? "请先选择淘汰原因"
-                  : null
-                : "请填写备注后再提交"}
+              {isEliminate ? (reasonRequired ? "请先选择淘汰原因" : null) : "请填写备注后再提交"}
             </p>
           )}
         </div>

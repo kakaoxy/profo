@@ -123,10 +123,7 @@ export async function getPriceChangeCount(
 }
 
 /** 删除房源（清理；幂等——已删除返回 404 视为成功）. */
-export async function deleteProject(
-  ctx: APIRequestContext,
-  projectId: number,
-): Promise<void> {
+export async function deleteProject(ctx: APIRequestContext, projectId: number): Promise<void> {
   const res = await ctx.delete(`/api/v1/admin/marketing/projects/${projectId}`);
   if (!res.ok() && res.status() !== 404) {
     throw new Error(`E2E 清理删除失败(id=${projectId}): HTTP ${res.status()}`);

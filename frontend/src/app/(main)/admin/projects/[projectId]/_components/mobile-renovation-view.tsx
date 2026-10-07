@@ -165,8 +165,7 @@ function MobileStageCard({
   const renderPhotoMedia = (photo: RenovationPhoto, sizes: string) => {
     const url = getThumbnailUrl(photo.thumbnail_url, photo.url);
     const isVideo = photo.media_type === "video";
-    const hasThumb =
-      !isVideo || (photo.thumbnail_url && isValidUrl(photo.thumbnail_url));
+    const hasThumb = !isVideo || (photo.thumbnail_url && isValidUrl(photo.thumbnail_url));
 
     if (isValidUrl(url) && hasThumb) {
       return (

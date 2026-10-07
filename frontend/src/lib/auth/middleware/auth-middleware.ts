@@ -214,8 +214,7 @@ export function createAuthMiddleware(config?: ResolvedAuthConfig) {
       // 会话确定性失效（无 refresh_token / 本地已过期 / 后端明确拒绝）才清
       // cookie；瞬时刷新失败保留 cookie，让后续请求（含 Server Component
       // 401 → refresh 路由兜底）仍可恢复会话。
-      const sessionDead =
-        !refreshToken || !isTokenValid(refreshToken) || refreshRejected;
+      const sessionDead = !refreshToken || !isTokenValid(refreshToken) || refreshRejected;
       debugLog("Middleware: redirecting", {
         pathname,
         destination: url.pathname,

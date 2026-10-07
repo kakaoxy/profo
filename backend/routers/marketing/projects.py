@@ -14,7 +14,7 @@ from dependencies.auth import (
     L4MarketingWritePermDep,
 )
 from dependencies.common import PaginationDep
-from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
+from models.marketing.l4_marketing import L4MarketingProject, MarketingProjectStatus, PublishStatus
 from schemas.l4_marketing import (
     L4MarketingMediaCreate,
     L4MarketingMediaListResponse,
@@ -55,6 +55,23 @@ def get_project_service(db: DbSessionDep) -> L4MarketingProjectService:
     return L4MarketingProjectService(db)
 
 
+def _aggregate_response(db: DbSessionDep, item: L4MarketingProject) -> L4MarketingProjectResponse:
+    """单项目响应体回填聚合字段（M5）.
+
+    GET 详情与 PUT/POST 响应共用：latest_price_change / notify_summary /
+    is_new_listing 三项均为服务端聚合字段（非 DB 列），裸 model_validate 恒为
+    null/false。与列表接口同口径回填，保证 PUT/POST 响应可直接消费。
+    """
+    resp = L4MarketingProjectResponse.model_validate(item)
+    latest_change, notify_summary = aggregate_notify_fields(db, [item])[item.id]
+    resp.latest_price_change = L4MarketingPriceChangeSummary(**latest_change) if latest_change else None
+    resp.notify_summary = L4MarketingNotifySummary(**notify_summary)
+    # 新上徽标与 C 端同口径（published_at ≤ 窗口期）
+    badge_map = PublicProjectService(db).resolve_listing_badges([item])
+    resp.is_new_listing = badge_map[item.id][0]
+    return resp
+
+
 def get_media_service(db: DbSessionDep) -> L4MarketingMediaService:
     """创建营销媒体服务实例."""
     return L4MarketingMediaService(db)
@@ -77,8 +94,14 @@ def list_marketing_projects(
     project_status: Annotated[MarketingProjectStatus | None, Query(description="项目状态: 在途/在售/已售")] = None,
     consultant_id: Annotated[str | None, Query(max_length=100, description="顾问ID")] = None,
     community_id: Annotated[str | None, Query(max_length=100, description="小区ID")] = None,
-    is_new_listing: Annotated[bool | None, Query(description="仅新上房源(首次发布≤7天)")] = None,
-    has_price_change: Annotated[bool | None, Query(description="仅近期调价房源(≤7天)")] = None,
+    is_new_listing: Annotated[
+        bool | None,
+        Query(description="新上筛选：true=仅新上(首次发布≤7天)，false=仅非新上，不传=不过滤"),
+    ] = None,
+    has_price_change: Annotated[
+        bool | None,
+        Query(description="调价筛选：true=仅近期调价(≤7天)，false=仅无近期调价，不传=不过滤"),
+    ] = None,
 ) -> L4MarketingProjectListResponse:
     """获取营销项目列表 - 统一分页格式，包含摘要统计."""
     summary = service.get_projects_summary(
@@ -166,6 +189,7 @@ def create_marketing_project(
     background_tasks: BackgroundTasks,
     data: L4MarketingProjectCreate,
     service: _ProjectServiceDep,
+    db: DbSessionDep,
     current_user: L4MarketingWritePermDep,
 ) -> L4MarketingProjectResponse:
     """创建独立营销项目.
@@ -177,7 +201,8 @@ def create_marketing_project(
     project, is_new_listing = service.create_project(data)
     if is_new_listing:
         background_tasks.add_task(notify_projects_published, project.id)
-    return project
+    # M5：POST 响应同样回填聚合字段，与 GET 同口径
+    return _aggregate_response(db, project)
 
 
 @router.get(
@@ -195,12 +220,8 @@ def get_marketing_project(
     if not item:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
-    resp = L4MarketingProjectResponse.model_validate(item)
     # 调价摘要 + 通知统计与列表同口径聚合（详情 Sheet 订阅通知区块数据源）
-    latest_change, notify_summary = aggregate_notify_fields(db, [item])[item.id]
-    resp.latest_price_change = L4MarketingPriceChangeSummary(**latest_change) if latest_change else None
-    resp.notify_summary = L4MarketingNotifySummary(**notify_summary)
-    return resp
+    return _aggregate_response(db, item)
 
 
 @router.put(
@@ -214,6 +235,7 @@ async def update_marketing_project(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
     service: _ProjectServiceDep,
+    db: DbSessionDep,
     current_user: L4MarketingWritePermDep,
 ) -> L4MarketingProjectResponse:
     """更新营销项目.
@@ -231,7 +253,8 @@ async def update_marketing_project(
         background_tasks.add_task(notify_projects_published, item.id)
     if change_signal.price_signal is not None:
         background_tasks.add_task(notify_project_price_changed, item.id, change_signal.price_signal)
-    return item
+    # M5：PUT 响应同样回填聚合字段，与 GET 同口径（前端可直接消费 latest_price_change）
+    return _aggregate_response(db, item)
 
 
 @router.delete(

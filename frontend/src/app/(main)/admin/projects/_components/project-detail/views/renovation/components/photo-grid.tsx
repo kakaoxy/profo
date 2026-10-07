@@ -98,9 +98,7 @@ const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }
             )}
           </div>
         )}
-        {!imageLoaded && showImage && (
-          <div className="absolute inset-0 animate-pulse bg-muted" />
-        )}
+        {!imageLoaded && showImage && <div className="absolute inset-0 animate-pulse bg-muted" />}
 
         {/* Hover Mask */}
         <DialogTrigger asChild>

@@ -95,10 +95,7 @@ export const LeadDrawer: React.FC<Props> = ({
           onToggleFullscreen={() => setIsMonitorFullscreen((v) => !v)}
         />
 
-        <div
-          key={lead.id}
-          className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-fog"
-        >
+        <div key={lead.id} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-fog">
           {activeTab === "info" ? (
             <InfoTab
               lead={lead}

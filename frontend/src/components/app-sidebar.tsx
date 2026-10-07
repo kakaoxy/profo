@@ -320,23 +320,23 @@ export function AppSidebar({ user }: { user: User | null }) {
                       defaultOpen={isActive}
                       className="group/collapsible"
                     >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <MenuButton
-                          item={item}
-                          isActive={isActive}
-                          state={state}
-                          hasSubmenu={hasSubmenu}
-                        />
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub className="ml-5 mt-1 border-l border-dove/30 pl-3 space-y-1">
-                          {item.items!.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={pathname === subItem.url}
-                                className={`
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <MenuButton
+                            item={item}
+                            isActive={isActive}
+                            state={state}
+                            hasSubmenu={hasSubmenu}
+                          />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub className="ml-5 mt-1 border-l border-dove/30 pl-3 space-y-1">
+                            {item.items!.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={pathname === subItem.url}
+                                  className={`
                                   rounded-[10px] px-3 py-1.5 text-[13.5px] transition-colors duration-150
                                   ${
                                     pathname === subItem.url
@@ -344,17 +344,17 @@ export function AppSidebar({ user }: { user: User | null }) {
                                       : "text-ash hover:text-ink"
                                   }
                                 `}
-                              >
-                                <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
+                                >
+                                  <Link href={subItem.url}>
+                                    <span>{subItem.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
                   );
                 }
               } else {

@@ -6,7 +6,7 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import and_, case, desc, func
+from sqlalchemy import and_, case, desc, func, not_
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -76,14 +76,18 @@ class MarketingProjectService:
             query = query.filter(L4MarketingProject.community_id == community_id)
 
         # 新上/近期调价筛选窗口与 C 端徽标同源（constants.BADGE_WINDOW_DAYS）
-        if is_new_listing is True:
+        # M6：bool 参数为三态语义 —— true 正向筛选（仅新上/仅近期调价），
+        # false 反向筛选（仅非新上/无近期调价），None 不筛选。false 不再与
+        # None 等价，避免客户端期望「排除」却拿到全量的静默错语义。
+        if is_new_listing is not None:
             window_start = datetime.now(timezone.utc) - timedelta(days=BADGE_WINDOW_DAYS)
-            query = query.filter(
+            in_window = (
                 L4MarketingProject.published_at.isnot(None),
                 L4MarketingProject.published_at >= window_start,
             )
+            query = query.filter(*in_window) if is_new_listing else query.filter(not_(and_(*in_window)))
 
-        if has_price_change is True:
+        if has_price_change is not None:
             window_start = datetime.now(timezone.utc) - timedelta(days=BADGE_WINDOW_DAYS)
             recent_change = (
                 self.db.query(L4MarketingPriceChange.id)
@@ -93,7 +97,7 @@ class MarketingProjectService:
                 )
                 .exists()
             )
-            query = query.filter(recent_change)
+            query = query.filter(recent_change) if has_price_change else query.filter(~recent_change)
 
         return query
 
@@ -117,8 +121,8 @@ class MarketingProjectService:
             project_status: 项目状态筛选
             consultant_id: 顾问ID筛选
             community_id: 小区ID筛选
-            is_new_listing: 仅新上房源（首次发布 ≤ 7 天）
-            has_price_change: 仅近期调价房源（≤ 7 天内有调价记录）
+            is_new_listing: 新上筛选三态：true=仅新上（首次发布 ≤ 7 天），false=仅非新上，不传=不过滤
+            has_price_change: 调价筛选三态：true=仅近期调价（≤ 7 天内有调价记录），false=仅无近期调价，不传=不过滤
 
         Returns:
             (项目列表, 总记录数)
@@ -171,8 +175,8 @@ class MarketingProjectService:
             project_status: 项目状态筛选
             consultant_id: 顾问ID筛选
             community_id: 小区ID筛选
-            is_new_listing: 仅新上房源（首次发布 ≤ 7 天）
-            has_price_change: 仅近期调价房源（≤ 7 天内有调价记录）
+            is_new_listing: 新上筛选三态：true=仅新上（首次发布 ≤ 7 天），false=仅非新上，不传=不过滤
+            has_price_change: 调价筛选三态：true=仅近期调价（≤ 7 天内有调价记录），false=仅无近期调价，不传=不过滤
 
         Returns:
             摘要统计对象

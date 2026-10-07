@@ -13,7 +13,7 @@
 
 import logging
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
 from migrations._helpers import _column_exists, _index_exists
@@ -185,3 +185,37 @@ def add_price_change_id_index_to_notify_logs(engine: Engine) -> None:
             ),
         )
     logger.info("l4_marketing_notify_logs.price_change_id 索引已创建")
+
+
+def widen_subscription_openid_columns(engine: Engine) -> None:
+    """订阅快照 openid 列宽 64→100，与来源 users.wechat_openid 对齐（M11，幂等）.
+
+    - l4_marketing_subscriptions.openid
+    - l4_marketing_project_subscriptions.openid
+
+    openid 为授权时快照，来源列允许 100 字符；快照列宽 64 时超长值上报写入
+    会触发 PG "value too long" → 500（订阅失败）。仅放宽（64 → 100）不收窄，
+    存量数据无需改写；通过 information_schema 查实际列宽守卫幂等
+    （已是 ≥100 则跳过；新库由 create_all 直接建为 100，本迁移空跑）。
+    """
+    if engine.dialect.name != "postgresql":
+        return
+
+    # 目标列宽：与 models/user/user.py users.wechat_openid = String(100) 对齐
+    _openid_target_width = 100
+    inspector = inspect(engine)
+    tables = ("l4_marketing_subscriptions", "l4_marketing_project_subscriptions")
+    for table in tables:
+        if table not in inspector.get_table_names():
+            continue  # 新库未建表：create_all 会直接按模型建 100，无需迁移
+        col = next((c for c in inspector.get_columns(table) if c["name"] == "openid"), None)
+        if col is None:
+            continue
+        width = getattr(col.get("type"), "length", None)
+        if width is not None and width >= _openid_target_width:
+            continue
+        with engine.begin() as conn:
+            conn.execute(
+                text(f"ALTER TABLE {table} ALTER COLUMN openid TYPE VARCHAR({_openid_target_width})"),
+            )
+            logger.info("%s.openid 列宽已放宽为 VARCHAR(%s)（原 VARCHAR(%s)）", table, _openid_target_width, width)

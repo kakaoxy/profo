@@ -24,10 +24,7 @@ interface PricePopoverProps {
  * - 关闭规则：点外部 / Esc / ✕（Radix 原生）+ 成功/取消（受控）
  * - 成功链路：组件内 toast → 关闭弹层 → router.refresh（行总价/调价副行/订阅计数同步）
  */
-export const PricePopover = memo(function PricePopover({
-  project,
-  trigger,
-}: PricePopoverProps) {
+export const PricePopover = memo(function PricePopover({ project, trigger }: PricePopoverProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 

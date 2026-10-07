@@ -19,34 +19,28 @@ import {
 } from "../actions/projects";
 import type { L4MarketingProject } from "@/app/(main)/admin/marketing/types";
 
+// ⚠️ 本文件超 500 行不拆分理由（AGENTS §1，M14）：调价卡为三态机（浏览/编辑/成功）+
+// 时间线 + 差价纯函数的紧密内聚体，纯函数层与组件层互为依据（resolveDiffState 直接
+// 驱动提交禁用与 chip 渲染），拆分会把状态机切开导致 props 传递链膨胀；且详情卡与
+// 列表弹层两种宿主复用同一实现，保持单文件便于同口径修改。
+
 /** 调价历史时间线条目（复用 OpenAPI 生成类型，禁止本地重复声明）. */
-type PriceChangeTimelineItem =
-  components["schemas"]["L4MarketingPriceChangeTimelineItem"];
+type PriceChangeTimelineItem = components["schemas"]["L4MarketingPriceChangeTimelineItem"];
 
 // ============================================================================
 // 纯函数与口径（浏览态降级文案、差价五态、单价折算均在此层，组件仅做渲染）
 // ============================================================================
 
 /** 入口可见性判定：已发布 + 有写权限 + 非已售（详情卡与列表弹层共用，spec D-1 裁定）. */
-export function showPricingEntry(
-  project: L4MarketingProject,
-  canWrite: boolean,
-): boolean {
-  return (
-    project.publish_status === "发布" &&
-    canWrite &&
-    project.project_status !== "已售"
-  );
+export function showPricingEntry(project: L4MarketingProject, canWrite: boolean): boolean {
+  return project.publish_status === "发布" && canWrite && project.project_status !== "已售";
 }
 
 /** 差价 chip 状态：idle/invalid/same/down/up 五态，禁止用布尔拼凑. */
 export type DiffState = "idle" | "invalid" | "same" | "down" | "up";
 
 /** 由输入值推导差价状态（空=idle，≤0=invalid，其余按与当前价比较）. */
-export function resolveDiffState(
-  input: number | undefined,
-  current: number,
-): DiffState {
+export function resolveDiffState(input: number | undefined, current: number): DiffState {
   if (input === undefined || Number.isNaN(input)) return "idle";
   if (input <= 0) return "invalid";
   if (input === current) return "same";
@@ -131,13 +125,9 @@ export const PriceChangeCard = memo(function PriceChangeCard({
   }, [project]);
 
   // 三态状态机（popover 恒为 form：宿主弹层只承载表单语义）
-  const [mode, setMode] = useState<"browse" | "form" | "success">(
-    isPopover ? "form" : "browse",
-  );
+  const [mode, setMode] = useState<"browse" | "form" | "success">(isPopover ? "form" : "browse");
   const [submitting, setSubmitting] = useState(false);
-  const [successInfo, setSuccessInfo] = useState<{ old: number; new: number } | null>(
-    null,
-  );
+  const [successInfo, setSuccessInfo] = useState<{ old: number; new: number } | null>(null);
 
   const currentPrice = toNum(displayProject.total_price);
   const areaSqm = toNum(displayProject.area);
@@ -173,7 +163,8 @@ export const PriceChangeCard = memo(function PriceChangeCard({
   });
   const newPrice = form.watch("total_price");
   const diffState = resolveDiffState(newPrice, currentPrice);
-  const confirmDisabled = submitting || diffState === "idle" || diffState === "invalid" || diffState === "same";
+  const confirmDisabled =
+    submitting || diffState === "idle" || diffState === "invalid" || diffState === "same";
 
   /** 进入表单态（card）：清空上次输入，自动 focus 由 FormControl autoFocus 承担 */
   const openPricing = useCallback(() => {
@@ -208,15 +199,12 @@ export const PriceChangeCard = memo(function PriceChangeCard({
     if (submitting) return;
     setSubmitting(true);
     try {
-      const res = await updateL4MarketingProjectPriceAction(
-        displayProject.id,
-        values.total_price,
-      );
+      const res = await updateL4MarketingProjectPriceAction(displayProject.id, values.total_price);
       if (!res.success) {
         toast.error(res.error || "调价失败");
         return;
       }
-      // 成功：新价以 PUT 响应渲染（total_price/unit_price/latest_price_change 均在响应中）
+      // 成功：总价/单价取自 PUT 响应（后端已回填聚合字段，latest_price_change 也为最新一条）
       const oldPrice = currentPrice;
       setDisplayProject(res.data);
       setSuccessInfo({ old: oldPrice, new: values.total_price });
@@ -287,9 +275,7 @@ export const PriceChangeCard = memo(function PriceChangeCard({
       <form onSubmit={(e) => void submitPrice(e)}>
         <div className="flex items-center justify-between text-sm">
           <span className="text-graphite">当前总价</span>
-          <span className="font-medium text-ink tabular-nums">
-            {currentPrice.toFixed(2)} 万
-          </span>
+          <span className="font-medium text-ink tabular-nums">{currentPrice.toFixed(2)} 万</span>
         </div>
 
         <FormField

@@ -33,14 +33,20 @@ export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) 
           <Eye className="w-4 h-4 text-graphite" aria-hidden="true" />
           <span className="text-[13px] text-graphite">带看总量</span>
         </div>
-        <span className="text-[13.5px] font-[480] tabular-nums text-ink">{formatCount(viewTotal)} 次</span>
+        <span className="text-[13.5px] font-[480] tabular-nums text-ink">
+          {formatCount(viewTotal)} 次
+        </span>
       </div>
       <div className="flex justify-between items-center">
         <div className="text-xs text-graphite ml-6">本周/上周</div>
         <div
           className={`text-xs font-[480] tabular-nums ${
             /* 红涨绿负（中国习惯） */
-            viewTrendIsFlat ? "text-graphite" : viewTrendIsUp ? "text-money-positive" : "text-money-negative"
+            viewTrendIsFlat
+              ? "text-graphite"
+              : viewTrendIsUp
+                ? "text-money-positive"
+                : "text-money-negative"
           }`}
         >
           {formatCount(currentWeekViews)} / {formatCount(lastWeekViews)}
@@ -57,7 +63,9 @@ export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) 
           <Wallet className="w-4 h-4 text-graphite" aria-hidden="true" />
           <span className="text-[13px] text-graphite">收到出价</span>
         </div>
-        <span className="text-[13.5px] font-[480] tabular-nums text-ink">{formatCount(offerCount)} 个</span>
+        <span className="text-[13.5px] font-[480] tabular-nums text-ink">
+          {formatCount(offerCount)} 个
+        </span>
       </div>
 
       <div className="bg-fog p-2 rounded-inputs space-y-1 h-12 flex flex-col justify-center">

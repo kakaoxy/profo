@@ -5,7 +5,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { TodoItemData, TodoProjectCardData } from "../_lib/todo-board-config";
-import { ANCHOR_SECTION_ID, P0_COUNT_CHIP_CLASS, PRIORITY_DOT_CLASS, STAGE_CHIP_CLASS } from "../_lib/todo-board-config";
+import {
+  ANCHOR_SECTION_ID,
+  P0_COUNT_CHIP_CLASS,
+  PRIORITY_DOT_CLASS,
+  STAGE_CHIP_CLASS,
+} from "../_lib/todo-board-config";
 import { TodoDetailBody } from "./todo-detail-popup";
 
 interface TodoProjectCardProps {
@@ -72,10 +77,10 @@ export function TodoProjectCard({ card, openKey, onOpenTodo, onClearTodo }: Todo
           </div>
         </div>
         <div className="flex shrink-0 gap-[5px] pt-px">
-          <span className={STAGE_CHIP_CLASS[card.status]}>{card.status === "signing" ? "签约" : "装修"}</span>
-          {card.p0_count > 0 && (
-            <span className={P0_COUNT_CHIP_CLASS}>P0 × {card.p0_count}</span>
-          )}
+          <span className={STAGE_CHIP_CLASS[card.status]}>
+            {card.status === "signing" ? "签约" : "装修"}
+          </span>
+          {card.p0_count > 0 && <span className={P0_COUNT_CHIP_CLASS}>P0 × {card.p0_count}</span>}
         </div>
       </div>
 

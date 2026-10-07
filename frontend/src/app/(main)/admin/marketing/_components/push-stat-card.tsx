@@ -9,15 +9,7 @@ interface PushStatCardProps {
 }
 
 /** 统计格（纯展示）. */
-function StatTile({
-  label,
-  count,
-  tone,
-}: {
-  label: string;
-  count: number;
-  tone: "warm" | "cool";
-}) {
+function StatTile({ label, count, tone }: { label: string; count: number; tone: "warm" | "cool" }) {
   return (
     <div
       className={`rounded-lg border border-dove/40 p-4 ${
@@ -52,25 +44,16 @@ export const PushStatCard = memo(function PushStatCard({ project }: PushStatCard
       <h3 className="mb-3 text-xs font-medium text-ink">推送统计</h3>
       {isPublished && summary ? (
         <div className="grid grid-cols-2 gap-4">
-          <StatTile
-            label="上新通知累计送达"
-            count={summary.new_listing_count}
-            tone="warm"
-          />
-          <StatTile
-            label="调价通知累计送达"
-            count={summary.price_change_count}
-            tone="cool"
-          />
+          <StatTile label="上新通知累计送达" count={summary.new_listing_count} tone="warm" />
+          <StatTile label="调价通知累计送达" count={summary.price_change_count} tone="cool" />
         </div>
       ) : (
-        <div className="text-sm text-muted-foreground">
-          草稿房源发布后开始推送订阅通知
-        </div>
+        <div className="text-sm text-muted-foreground">草稿房源发布后开始推送订阅通知</div>
       )}
       <p className="mt-3 text-[10px] leading-relaxed text-dove">
         授权订阅用户在额度有效期内收到微信服务通知；分次送达明细见调价历史。
-        {!hasSummaryData && !isPublished &&
+        {!hasSummaryData &&
+          !isPublished &&
           "订阅用户授权后，房源上新/调价将自动推送微信服务通知；送达人数在此累计。"}
       </p>
     </div>

@@ -139,7 +139,10 @@ export const adminAuth = Auth({
       });
 
       if (!response.ok) {
-        throw new ApiStatusError(await extractApiError(response, "Token 刷新失败"), response.status);
+        throw new ApiStatusError(
+          await extractApiError(response, "Token 刷新失败"),
+          response.status,
+        );
       }
 
       const data: AdminTokenResponse = await response.json();

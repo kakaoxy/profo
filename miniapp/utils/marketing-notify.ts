@@ -82,6 +82,14 @@ export async function fetchMarketingSubscriptionStatus(): Promise<MarketingSubsc
   }
 }
 
+/** 上报失败时给可感知提示（M8）：429=限流（区别于未登录），其余保持静默由调用方降级. */
+function toastIfRateLimited(err: unknown): void {
+  const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+  if (statusCode === 429) {
+    wx.showToast({ title: "操作过于频繁，请稍后再试", icon: "none" });
+  }
+}
+
 /** 上报授权结果（内部；未登录或失败均静默返回 null，调用方据 onResult 引导登录）. */
 async function reportSubscribeResult(
   results: { templateId: string; status: MarketingSubscribeStatus }[],
@@ -104,7 +112,8 @@ async function reportSubscribeResult(
       priceChangeQuota: res.price_change_quota,
       lastSubscribedAt: null,
     };
-  } catch {
+  } catch (err) {
+    toastIfRateLimited(err);
     return null;
   }
 }
@@ -183,7 +192,8 @@ async function reportProjectSubscribeResult(
       priceChangeQuota: res.price_change_quota,
       lastSubscribedAt: null,
     };
-  } catch {
+  } catch (err) {
+    toastIfRateLimited(err);
     return null;
   }
 }

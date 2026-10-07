@@ -10,7 +10,8 @@ import { client } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 /** 单个模板 key 的请求体字段名（openapi-typescript 已内联 source 联合类型，本地取值） */
-type TemplateKey = "recruit_lead" | "valuation_price" | "customer_lead" | "project_new" | "project_price_change";
+type TemplateKey =
+  "recruit_lead" | "valuation_price" | "customer_lead" | "project_new" | "project_price_change";
 type SubscribeTemplatesResponse = {
   recruit_lead: TemplateValue;
   valuation_price: TemplateValue;
@@ -149,7 +150,9 @@ export function SubscribeTemplatesClient() {
     setSaving(true);
     setSavingState("idle");
     try {
-      const { data, error, response } = await client.PUT("/api/v1/subscribe-templates", { body: values });
+      const { data, error, response } = await client.PUT("/api/v1/subscribe-templates", {
+        body: values,
+      });
       if (response?.status === 403) {
         setForbidden(true);
         toast.error("仅管理员可保存订阅消息模板配置");
@@ -232,7 +235,8 @@ export function SubscribeTemplatesClient() {
         </div>
 
         <p className="mt-5 border-t border-[#f0f0f2] pt-4 text-[13px] leading-[1.7] text-graphite">
-          生效优先级：数据库配置 &gt; 环境变量兜底；留空保存 = 清除数据库配置（回退环境变量，均空则关闭该提醒功能）。
+          生效优先级：数据库配置 &gt; 环境变量兜底；留空保存 =
+          清除数据库配置（回退环境变量，均空则关闭该提醒功能）。
           {saved.updated_at && (
             <>
               <br />

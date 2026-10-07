@@ -5,7 +5,8 @@
  * - 内部员工：工号 + 密码 → POST /public/users/merge（type=internal）
  *   成功后后端签发主账号令牌（access_token/refresh_token，内部员工另返回
  *   c_access_token/c_refresh_token），前端写入 4 个令牌 storage key、清空
- *   c_user_temporary 与 c_phone_prompted 标识，navigateBack 回 profile 页.
+ *   c_user_temporary 与 c_phone_prompted 标识（保留 c_protocol_agreed，合并非撤回同意），
+ *   navigateBack 回 profile 页.
  * - 外部用户：手机号 + 短信验证码 → ⚠️ 后端 SMS 分支未实现（HTTP 400 + code 40002
  *   SMS_VERIFICATION_NOT_IMPLEMENTED），Tab 中显示「即将上线」提示，表单可见但
  *   提交按钮置灰 + 点击 bindPhone 直接 toast 引导走工号登录，避免用户填完才报错.
@@ -126,8 +127,10 @@ Page<PageData, PageCustom>({
         this.setData({ loading: false });
         this.applyMergeTokens(res);
         // 清空 c_user_temporary 与 c_phone_prompted 标识（setCTemporary(false) 在此之前冗余，
-        // 因 clearCUserState 直接删除 key，读取时按 false 处理）
-        clearCUserState();
+        // 因 clearCUserState 直接删除 key，读取时按 false 处理）。
+        // 保留 c_protocol_agreed（O3）：合并后用户仍处登录态，并非撤回同意；
+        // 清掉会导致后续令牌过期时冷启动静默续登失效，需重新手动勾选登录。
+        clearCUserState(true);
         wx.showToast({ title: "绑定成功", icon: "success" });
         setTimeout(() => wx.navigateBack(), 1500);
       })

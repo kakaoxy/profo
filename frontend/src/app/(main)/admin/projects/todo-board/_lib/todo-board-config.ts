@@ -45,13 +45,37 @@ export const MILESTONE_ROWS: { stage: string; desc: string }[] = [
 
 /** 分组二 · 宽限与提醒窗口（每行一句话口径） */
 export const GRACE_ROWS: { key: RuleDaysKey; name: string; desc: string }[] = [
-  { key: "basic_info_grace_days", name: "基础信息缺失", desc: "签约后 N 天仍缺基础信息即提示（核心缺 → P1）" },
-  { key: "company_grace_days", name: "未安排施工方", desc: "进入装修后 N 天仍未填施工方即提示（P0）" },
-  { key: "start_grace_days", name: "未实际开工", desc: "进入装修后 N 天仍无开工记录；合同进场日已过 → P0" },
-  { key: "milestone_p0_overdue_days", name: "里程碑逾期升 P0", desc: "工序里程碑逾期超过 N 天，由 P1 升 P0" },
+  {
+    key: "basic_info_grace_days",
+    name: "基础信息缺失",
+    desc: "签约后 N 天仍缺基础信息即提示（核心缺 → P1）",
+  },
+  {
+    key: "company_grace_days",
+    name: "未安排施工方",
+    desc: "进入装修后 N 天仍未填施工方即提示（P0）",
+  },
+  {
+    key: "start_grace_days",
+    name: "未实际开工",
+    desc: "进入装修后 N 天仍无开工记录；合同进场日已过 → P0",
+  },
+  {
+    key: "milestone_p0_overdue_days",
+    name: "里程碑逾期升 P0",
+    desc: "工序里程碑逾期超过 N 天，由 P1 升 P0",
+  },
   { key: "archive_overdue_days", name: "已签署未归档", desc: "签署后 N 天仍未归档，由 P2 升 P1" },
-  { key: "commission_near_days", name: "委托期临近", desc: "委托期结束前 N 天进入「临近」提示（P1）" },
-  { key: "delivery_total_days", name: "交付周期", desc: "详情页交付倒计时 = 约定交房日 + N 天（截止）" },
+  {
+    key: "commission_near_days",
+    name: "委托期临近",
+    desc: "委托期结束前 N 天进入「临近」提示（P1）",
+  },
+  {
+    key: "delivery_total_days",
+    name: "交付周期",
+    desc: "详情页交付倒计时 = 约定交房日 + N 天（截止）",
+  },
   { key: "delivery_near_days", name: "交付临近", desc: "交付倒计时剩余 ≤ N 天橙色提示" },
   { key: "delivery_urgent_days", name: "交付紧急", desc: "剩余 < N 天红色脉冲（判断优先于橙色）" },
 ];
@@ -94,7 +118,8 @@ export const ANCHOR_LABEL: Record<TodoAnchor, string> = {
 };
 
 /** 徽章公共底座（设计稿 .chip：11px / 480 / 胶囊） */
-const CHIP_BASE = "inline-flex items-center rounded-full px-[9px] py-1 text-[11px] leading-none font-[480] whitespace-nowrap";
+const CHIP_BASE =
+  "inline-flex items-center rounded-full px-[9px] py-1 text-[11px] leading-none font-[480] whitespace-nowrap";
 
 /** 阶段徽章（对齐 columns.tsx STEEP_STATUS_BADGE_CLASS） */
 export const STAGE_CHIP_CLASS: Record<TodoProjectCardData["status"], string> = {

@@ -19,6 +19,12 @@ import {
 } from "../../../utils/marketing-notify";
 import { getVisitorId } from "../../../utils/visitor";
 
+// ⚠️ 本文件超 500 行不拆分理由（AGENTS §1，M14）：房源详情页承载看房主流程
+// （预约/联系/分享/装修进度）+ 调价提醒订阅（price-alert）双职责，数据加载互相
+// 依赖（订阅弹层需详情数据中的房源 ID 与登录态），拆出子组件需跨页面传递
+// Page 实例方法（小程序无状态提升），成本高于收益；调价提醒的可复用逻辑已
+// 下沉 utils/marketing-notify.ts，页面内仅剩编排代码。
+
 type PublicProjectDetail = components["schemas"]["PublicProjectDetail"];
 type PublicMediaItem = components["schemas"]["PublicMediaItem"];
 type PublicRenovationStage = components["schemas"]["PublicRenovationStage"];

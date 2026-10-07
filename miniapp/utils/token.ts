@@ -80,15 +80,23 @@ export function setProtocolAgreed(value: boolean): void {
 }
 
 /**
- * 清空 C 端用户状态标识（c_user_temporary / c_phone_prompted / c_protocol_agreed）.
+ * 清空 C 端用户状态标识（c_user_temporary / c_phone_prompted，可选含 c_protocol_agreed）.
  *
- * 登出或账号合并成功后调用，避免残留的状态标识影响后续登录态判断.
+ * 调用场景二分（O3 语义澄清）：
+ * - 显式登出（keepProtocolAgreed=false，默认）：用户主动撤回会话与本机知情同意，
+ *   连同 c_protocol_agreed 一起清除，否则冷启动静默续登会把刚登出的用户重新登回。
+ * - 账号合并成功（keepProtocolAgreed=true）：合并后用户仍处登录态（applyMergeTokens
+ *   已写入新令牌），并非「撤回同意」；保留 c_protocol_agreed 以免后续令牌过期时
+ *   静默续登因缺同意标记失效，用户被迫重新手动勾选登录。
+ *
  * 注意：仅清空状态标识，不清空令牌（令牌清空由登出流程单独处理）.
  */
-export function clearCUserState(): void {
+export function clearCUserState(keepProtocolAgreed = false): void {
   wx.removeStorageSync("c_user_temporary");
   wx.removeStorageSync("c_phone_prompted");
-  wx.removeStorageSync("c_protocol_agreed");
+  if (!keepProtocolAgreed) {
+    wx.removeStorageSync("c_protocol_agreed");
+  }
 }
 
 /**

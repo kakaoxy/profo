@@ -9,8 +9,8 @@
     "lint": "eslint src --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "gen-api": "node scripts/gen-api.mjs",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,md,json}\" \"*.{ts,mjs,json}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md,json}\" \"*.{ts,mjs,json}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md,json}\" \"e2e/**/*.{ts,tsx}\" \"*.{ts,mjs,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md,json}\" \"e2e/**/*.{ts,tsx}\" \"*.{ts,mjs,json}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

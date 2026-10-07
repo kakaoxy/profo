@@ -88,11 +88,26 @@ describe("c_user_temporary / c_phone_prompted 标识", () => {
   it("clearCUserState 仅清理状态标识，不动令牌", () => {
     storage.set("c_user_temporary", "true");
     storage.set("c_phone_prompted", "true");
+    storage.set("c_protocol_agreed", "true");
     storage.set("access_token", "keep");
     clearCUserState();
     expect(storage.get("c_user_temporary")).toBeUndefined();
     expect(storage.get("c_phone_prompted")).toBeUndefined();
     expect(storage.get("access_token")).toBe("keep");
+  });
+
+  it("clearCUserState 默认清除 c_protocol_agreed（显式登出=撤回同意）", () => {
+    storage.set("c_protocol_agreed", "true");
+    clearCUserState();
+    expect(storage.get("c_protocol_agreed")).toBeUndefined();
+  });
+
+  it("clearCUserState(true) 保留 c_protocol_agreed（账号合并非撤回同意，O3）", () => {
+    storage.set("c_user_temporary", "true");
+    storage.set("c_protocol_agreed", "true");
+    clearCUserState(true);
+    expect(storage.get("c_user_temporary")).toBeUndefined();
+    expect(storage.get("c_protocol_agreed")).toBe("true");
   });
 });
 

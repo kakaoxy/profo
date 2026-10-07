@@ -138,6 +138,12 @@ async def get_current_user(
     # 优先从Header获取JWT token
     token = token_from_header
 
+    def _authed(user: User) -> User:
+        # 限流键挂载点（M8）：登录态维度限流（_get_login_user_identifier）读取；
+        # 认证成功即写入，失败不写（回退 IP 键）
+        request.state.user_id = user.id
+        return user
+
     # 按目标系统选择对应 cookie，避免交叉误认
     if expected_audience == AUDIENCE_C:
         cookie_token = request.cookies.get("c_access_token")
@@ -148,11 +154,13 @@ async def get_current_user(
         if cookie_token is not None:
             try:
                 # 按目标系统校验受众
-                return await run_in_threadpool(
-                    AuthService.authenticate_by_token,
-                    db,
-                    cookie_token,
-                    expected_audience,
+                return _authed(
+                    await run_in_threadpool(
+                        AuthService.authenticate_by_token,
+                        db,
+                        cookie_token,
+                        expected_audience,
+                    )
                 )
             except AuthenticationError:
                 msg = "无法验证凭据"
@@ -160,11 +168,13 @@ async def get_current_user(
     else:
         # Header token — 校验受众，避免C端Token用于后台或反之
         try:
-            return await run_in_threadpool(
-                AuthService.authenticate_by_token,
-                db,
-                token,
-                expected_audience,
+            return _authed(
+                await run_in_threadpool(
+                    AuthService.authenticate_by_token,
+                    db,
+                    token,
+                    expected_audience,
+                )
             )
         except AuthenticationError:
             msg = "无法验证凭据"
@@ -173,7 +183,7 @@ async def get_current_user(
     # 如果没有JWT token，尝试从X-API-Key Header获取API Key
     api_key = request.headers.get("X-API-Key")
     if api_key:
-        return await _authenticate_by_api_key(db, api_key)
+        return _authed(await _authenticate_by_api_key(db, api_key))
 
     # 没有任何认证信息
     msg = "无法验证凭据"

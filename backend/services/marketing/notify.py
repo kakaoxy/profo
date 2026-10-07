@@ -23,6 +23,8 @@ openid 间接绑定回填、原子扣减与留痕（_log_send/_safe_log）全套
 """
 
 import logging
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import TypedDict
@@ -55,6 +57,12 @@ _NOTIFY_PAGE_PATH = "pages/projects/detail/index?id={id}"
 # 单页拉取上限（仅限定一次加载的订阅行数，**不限定推送总量**：推送按 keyset 分页覆盖
 # 全部额度 >0 的订阅行，超出部分不再静默丢弃，见 _fetch_quota_rows_page）
 _MAX_BATCH = 500
+
+# 推送受控并发度（M3）：send_subscribe_message 为同步 httpx 往返（读超时已收紧到 3s），
+# 逐收件人串行会让后台任务最坏占用 订阅数×3s 的 anyio 线程 token。分批并发在
+# 独立短生命周期线程池内执行，不占 starlette 线程池 token；留痕/扣减仍在主线程串行
+# commit（同一 Session 非线程安全，不能跨线程），只把纯 I/O 的微信往返并行化。
+_SEND_MAX_WORKERS = 8
 
 # 模板字段键名（需与微信公众平台申请的模板字段一一对应；调整申请后在此改映射即可）
 # 上新模板（标题「关注小区新上房源通知」，编号 208）：thing1 小区 / thing9 户型 / amount11 总价
@@ -155,7 +163,13 @@ class ProjectChangeSignal:
 
 
 def _house_summary(project: L4MarketingProject) -> str:
-    """户型信息（thing ≤20 字符，上新模板 thing9）."""
+    """户型信息（thing ≤20 字符，上新模板 thing9）.
+
+    ⚠️ 命名口径说明：本函数返回原始 ``layout``（如「3室2厅1卫」，thing 类型，
+    数字/字母允许）；调价模板的 ``phrase7`` 则经 ``_layout_phrase`` 转为居室
+    短语（如「三室二厅」，≤5 个纯汉字）。同一物理属性在两条链路因微信模板
+    字段类型（thing vs phrase）而口径不同，改名需成对同步两处常量映射。
+    """
     return (project.layout or "")[:_THING_MAX_LEN]
 
 
@@ -165,6 +179,34 @@ def _openid_tag(openid: str) -> str:
     取前 8 字符作定位指纹：同一用户多条日志可关联，且不可反推出完整 openid。
     """
     return f"{openid[:8]}***" if openid else "<empty>"
+
+
+def _dispatch_send(
+    jobs: list[tuple[int, str]],
+    send: Callable[[int, str], int],
+) -> dict[int, int | Exception]:
+    """受控并发执行微信发送（M3），返回 job 索引 → 结果（errcode 或异常实例）.
+
+    Args:
+        jobs: (循环内序号, openid) 列表；序号仅用于结果对位，不透传微信。
+        send: 双参回调 (序号, openid) → errcode；异常由本函数捕获后作为结果值返回，
+            不会向外抛出。
+
+    独立短生命周期线程池：不占 starlette/anyio 线程池 token，避免长时间推送
+    阻塞其他 run_in_threadpool 请求；with 块结束即释放。
+
+    """
+    results: dict[int, int | Exception] = {}
+    if not jobs:
+        return results
+    with ThreadPoolExecutor(max_workers=min(_SEND_MAX_WORKERS, len(jobs))) as pool:
+        futures = {idx: pool.submit(send, idx, openid) for idx, openid in jobs}
+        for idx, future in futures.items():
+            try:
+                results[idx] = future.result()
+            except Exception as exc:  # 发送异常按失败留痕，绝不断开整批
+                results[idx] = exc
+    return results
 
 
 def _log_send(
@@ -537,19 +579,33 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
     pid = project.id
     page = _NOTIFY_PAGE_PATH.format(id=pid)
 
-    for sub in subscribers:
-        # 先取快照（同上：扣减/留痕的 commit 会过期 ORM 对象，避免循环中重载 sub）
+    # 受控并发发送（M3）：微信往返并行化，留痕/扣减仍在主线程串行 commit。
+    # 单批全量提交而非每收件人 commit：send 阶段无 DB 操作，批量落库等价且更快。
+    jobs = list(enumerate(subscribers))
+
+    def _send_one(_idx: int, openid: str) -> int:
+        return WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
+
+    send_results = _dispatch_send([(idx, sub.openid) for idx, sub in jobs], _send_one)
+
+    for idx, sub in jobs:
+        # 先取快照（扣减/留痕的 commit 会过期 ORM 对象，避免循环中重载 sub）
         user_id = sub.user_id
         openid = sub.openid
         sub_id = sub.id
-        try:
-            errcode = WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
-        except Exception as exc:
+        result = send_results[idx]
+        if isinstance(result, Exception):
+            exc = result
             # 发送失败：留痕 failed，不扣额度（用户未消费）
             # 日志不带 openid 原值（个人标识，改前缀摘要定位）；上游异常已收口为
             # 固定文案，且含凭据的 traceback（包括 __cause__ 链）由日志出口过滤器
             # 统一脱敏（见 main.py），因此这里可安全用 logger.exception。
-            logger.exception("上新订阅消息发送失败：project_id=%s, openid=%s", pid, _openid_tag(openid))
+            logger.exception(
+                "上新订阅消息发送失败：project_id=%s, openid=%s",
+                pid,
+                _openid_tag(openid),
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )
             _safe_log(
                 db,
                 user_id=user_id,
@@ -560,6 +616,7 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
                 error_msg=str(exc),
             )
             continue
+        errcode = result
         if errcode != 0:
             # 43101/40003 等预期业务态：未真正送达，留痕 skipped，不扣额度（授权保留）
             _safe_log(
@@ -598,9 +655,10 @@ def notify_project_price_changed(
     """调价订阅消息通知（后台任务入口，自建会话并吞掉一切异常）.
 
     在已发布房源 total_price 变更成功后由路由层 BackgroundTasks 触发
-    （price_changes 记录由 Service 层先落库）；涨降都推：降价「总价下调 N 万」
-    营销文案，涨价「总价已更新」中性文案。任何异常仅 logger 记录，
-    绝不影响调价结果。
+    （price_changes 记录由 Service 层先落库）；涨降都推，data 仅按微信模板
+    字段（thing1/phrase7/thing4/amount8）结构化下发——卡片文案（如「总价下调
+    N 万」）由微信公众平台模板自行渲染，后端不拼接任何句子。任何异常仅
+    logger 记录，绝不影响调价结果。
 
     Args:
         project_id: 调价后的项目 ID（total_price 已更新）
@@ -681,18 +739,31 @@ def _notify_project_price_changed(
     # 项目字段一次性快照（原因同上新通知：循环内逐行 commit 会过期 ORM 对象而逐行重载）
     pid = project.id
 
-    for recipient in recipients:
+    # 受控并发发送（M3）：同上新通知，微信往返并行化，留痕/扣减仍在主线程串行 commit
+    jobs = list(enumerate(recipients))
+
+    def _send_one(_idx: int, openid: str) -> int:
+        return WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
+
+    send_results = _dispatch_send([(idx, r.openid) for idx, r in jobs], _send_one)
+
+    for idx, recipient in jobs:
         user_id = recipient.user_id
         openid = recipient.openid
         sub_id = recipient.sub_id
         channel = recipient.channel
-        try:
-            errcode = WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
-        except Exception as exc:
+        result = send_results[idx]
+        if isinstance(result, Exception):
+            exc = result
             # 发送失败：留痕 failed（sub_source 区分来源），不扣额度（用户未消费）
             # 日志不带 openid 原值；上游异常已收口为固定文案，traceback（含 __cause__ 链）
             # 由日志出口过滤器统一脱敏，因此可安全用 logger.exception。
-            logger.exception("调价订阅消息发送失败：project_id=%s, openid=%s", pid, _openid_tag(openid))
+            logger.exception(
+                "调价订阅消息发送失败：project_id=%s, openid=%s",
+                pid,
+                _openid_tag(openid),
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )
             _safe_log(
                 db,
                 user_id=user_id,
@@ -705,6 +776,7 @@ def _notify_project_price_changed(
                 sub_source=channel,
             )
             continue
+        errcode = result
         if errcode != 0:
             # 43101/40003 等预期业务态：未真正送达，留痕 skipped，不扣额度（授权保留）
             _safe_log(

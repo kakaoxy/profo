@@ -49,12 +49,30 @@ async function searchRow(page: import("@playwright/test").Page, title: string) {
   return page.locator("tr", { hasText: title }).first();
 }
 
+/**
+ * 创建「发布+改价」同次 PUT 的测试房源（T4/H4 场景）.
+ *
+ * 走与前端整表保存完全同构的 API 请求：草稿房源 PUT 同时携带
+ * publish_status="发布" + 新 total_price（dirty 字段合并 patch），
+ * 覆盖 createPublishedProject 两步路径走不到的 H4 分支。
+ */
+async function createDraftThenPublishWithPrice(
+  ctx: APIRequestContext,
+  projectId: number,
+  publishPrice: number,
+): Promise<void> {
+  const res = await ctx.put(`/api/v1/admin/marketing/projects/${projectId}`, {
+    data: { publish_status: "发布", total_price: publishPrice },
+  });
+  if (!res.ok()) {
+    throw new Error(`E2E 发布+改价失败(id=${projectId}): HTTP ${res.status()} ${await res.text()}`);
+  }
+}
+
 test.describe.configure({ mode: "serial" });
 
 // ── E2E-1 详情页调价全链路 ────────────────────────────────────────────────
-test("E2E-1 详情页调价：三态流转 + 成功态承诺推送已排队 + 列表行同步", async ({
-  page,
-}) => {
+test("E2E-1 详情页调价：三态流转 + 成功态承诺推送已排队 + 列表行同步", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(detailUrl(published.id));
 
@@ -128,7 +146,10 @@ test("E2E-2 列表行内调价：弹层提交成功后关闭 + toast + 行内更
 
   // 行内总价更新（router.refresh 后）
   await expect(
-    row.locator("td").filter({ hasText: /^¥415万$/ }).or(row.getByText("¥415万")),
+    row
+      .locator("td")
+      .filter({ hasText: /^¥415万$/ })
+      .or(row.getByText("¥415万")),
   ).toBeVisible();
 
   // 刷新后与服务端一致
@@ -186,6 +207,56 @@ test("E2E-4 草稿房源：详情卡与列表均无调价入口，整卡只读�
   await page.goto(listUrl);
   const draftRow = await searchRow(page, draft.title);
   await expect(draftRow.getByTestId(`price-entry-${draft.id}`)).toHaveCount(0);
+});
+
+// ── E2E-7 同次发布+改价（H4/T4 场景）：UI 整表保存路径不产生伪调价 ───────
+test("E2E-7 草稿编辑态同时改价并发布：首价即基准，无伪调价历史", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  // API 造草稿，走与前端整表保存同构的 PUT（发布 + 改价同次提交）
+  const h4 = await createDraftProject(api.ctx, "h4");
+  try {
+    await createDraftThenPublishWithPrice(api.ctx, h4.id, 428);
+
+    // 后端断言：同次发布+改价不产生调价记录（首价即基准，H4 修复语义）
+    expect(await getPriceChangeCount(api.ctx, h4.id)).toBe(0);
+
+    // 后端断言：PUT 响应聚合字段回填（M5）——latest_price_change 为 null
+    const detail = await api.ctx.get(`/api/v1/admin/marketing/projects/${h4.id}`);
+    const body = (await detail.json()) as { latest_price_change: unknown; is_new_listing: boolean };
+    expect(body.latest_price_change).toBeNull();
+
+    // UI 断言：详情页价格卡显示发布价 428，无「原 XXX」调价副行
+    await page.goto(detailUrl(h4.id));
+    const priceCard = page.locator("div.bg-white.rounded-cards", {
+      has: page.getByRole("heading", { name: "价格与调价" }),
+    });
+    await expect(priceCard.getByText("428万", { exact: true })).toBeVisible();
+    await expect(priceCard.getByText(/原 ¥\d+万/)).toHaveCount(0);
+    await expect(priceCard.getByText(/调价历史/)).toBeVisible();
+  } finally {
+    await deleteProject(api.ctx, h4.id);
+  }
+});
+
+// ── E2E-8 发布后真实调价对照组：H4 修复不误伤常规调价 ──────────────────
+test("E2E-8 已发布房源调价：时间线正常产生一条记录", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  const ctrl = await createPublishedProject(api.ctx, "ctrl", { price: 300 });
+  try {
+    await changePrice(api.ctx, ctrl.id, 295);
+    expect(await getPriceChangeCount(api.ctx, ctrl.id)).toBe(1);
+
+    await page.goto(detailUrl(ctrl.id));
+    const priceCard = page.locator("div.bg-white.rounded-cards", {
+      has: page.getByRole("heading", { name: "价格与调价" }),
+    });
+    await priceCard.getByRole("button", { name: "调价历史" }).click();
+    await expect(priceCard.getByText(/→ 295\.00 万/).first()).toBeVisible();
+  } finally {
+    await deleteProject(api.ctx, ctrl.id);
+  }
 });
 
 // ── E2E-5 调价历史时间线两态 ──────────────────────────────────────────────

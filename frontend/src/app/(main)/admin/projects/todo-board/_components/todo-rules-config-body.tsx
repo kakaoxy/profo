@@ -4,7 +4,12 @@ import { useState } from "react";
 import { ChevronDown, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TodoBoardRulesData, TodoFieldLevel } from "../_lib/todo-board-config";
-import { GRACE_ROWS, MILESTONE_ROWS, R2_FIELD_ORDER, clampRuleDays } from "../_lib/todo-board-config";
+import {
+  GRACE_ROWS,
+  MILESTONE_ROWS,
+  R2_FIELD_ORDER,
+  clampRuleDays,
+} from "../_lib/todo-board-config";
 
 interface TodoRulesConfigBodyProps {
   /** 已保存的当前生效值（脏状态对比基准） */
@@ -42,7 +47,12 @@ function Stepper({
   };
   const step = (delta: number) => onChange(clampRuleDays(value + delta));
   return (
-    <span className={cn("inline-flex shrink-0 items-center gap-px rounded-full bg-fog p-0.5", disabled && "pointer-events-none opacity-40")}>
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-px rounded-full bg-fog p-0.5",
+        disabled && "pointer-events-none opacity-40",
+      )}
+    >
       <button
         type="button"
         aria-label={`减 1 天（${label}）`}
@@ -92,7 +102,12 @@ function FieldSegment({
     { level: "off", label: "忽略" },
   ];
   return (
-    <span className={cn("inline-flex shrink-0 rounded-full bg-fog p-0.5", disabled && "pointer-events-none opacity-40")}>
+    <span
+      className={cn(
+        "inline-flex shrink-0 rounded-full bg-fog p-0.5",
+        disabled && "pointer-events-none opacity-40",
+      )}
+    >
       {options.map(({ level, label }) => (
         <button
           key={level}
@@ -140,7 +155,10 @@ export function TodoRulesConfigBody({
     onDirtyChange(true);
   };
   const setField = (name: string, level: TodoFieldLevel) => {
-    setValues((prev) => ({ ...prev, basic_info_fields: { ...prev.basic_info_fields, [name]: level } }));
+    setValues((prev) => ({
+      ...prev,
+      basic_info_fields: { ...prev.basic_info_fields, [name]: level },
+    }));
     onDirtyChange(true);
   };
   const resetToDefaults = () => {
@@ -185,11 +203,15 @@ export function TodoRulesConfigBody({
       <div className="min-h-0 flex-1 overflow-y-auto px-[18px] pb-1.5">
         {/* 分组一 · 装修工序里程碑 */}
         <div className="pt-0.5">
-          <div className="py-3 pb-0.5 text-[11px] font-[500] tracking-[0.06em] text-graphite">装修工序里程碑</div>
+          <div className="py-3 pb-0.5 text-[11px] font-[500] tracking-[0.06em] text-graphite">
+            装修工序里程碑
+          </div>
           {MILESTONE_ROWS.map(({ stage, desc }) => (
             <div key={stage} className="flex items-center gap-2.5 py-1.5">
               <span className="shrink-0 text-[13px] font-[480] text-ink">{stage}</span>
-              <span className="min-w-0 flex-1 truncate text-[11.5px] font-[430] text-dove">{desc}</span>
+              <span className="min-w-0 flex-1 truncate text-[11.5px] font-[430] text-dove">
+                {desc}
+              </span>
               <Stepper
                 label={stage}
                 value={values.milestone_days[stage]}
@@ -206,11 +228,15 @@ export function TodoRulesConfigBody({
 
         {/* 分组二 · 宽限与提醒窗口 */}
         <div className="mt-3 border-t border-[#f0f0f2] pt-0.5">
-          <div className="py-3 pb-0.5 text-[11px] font-[500] tracking-[0.06em] text-graphite">宽限与提醒窗口</div>
+          <div className="py-3 pb-0.5 text-[11px] font-[500] tracking-[0.06em] text-graphite">
+            宽限与提醒窗口
+          </div>
           {GRACE_ROWS.map(({ key, name, desc }) => (
             <div key={key} className="flex items-center gap-2.5 py-1.5">
               <span className="shrink-0 text-[13px] font-[480] text-ink">{name}</span>
-              <span className="min-w-0 flex-1 truncate text-[11.5px] font-[430] text-dove">{desc}</span>
+              <span className="min-w-0 flex-1 truncate text-[11.5px] font-[430] text-dove">
+                {desc}
+              </span>
               <Stepper
                 label={name}
                 value={values[key]}
@@ -220,7 +246,8 @@ export function TodoRulesConfigBody({
             </div>
           ))}
           <p className="py-1 pb-2 text-[11px] leading-[1.65] font-[430] text-dove">
-            「进入装修后」取状态流转日志最新 renovating 时间；各窗口口径与现有规则一致，仅阈值开放；「基础信息缺失」为本轮新增宽限（现网缺即提示）。
+            「进入装修后」取状态流转日志最新 renovating
+            时间；各窗口口径与现有规则一致，仅阈值开放；「基础信息缺失」为本轮新增宽限（现网缺即提示）。
           </p>
         </div>
 
@@ -236,7 +263,10 @@ export function TodoRulesConfigBody({
             </span>
             <span className="shrink-0 text-[11px] font-[430] text-dove">{fieldSummary}</span>
             <ChevronDown
-              className={cn("h-3.5 w-3.5 shrink-0 text-graphite transition-transform duration-200", fieldsOpen && "rotate-180")}
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-graphite transition-transform duration-200",
+                fieldsOpen && "rotate-180",
+              )}
             />
           </button>
           {fieldsOpen && (

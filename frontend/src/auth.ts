@@ -174,7 +174,10 @@ export const auth = Auth({
       });
 
       if (!response.ok) {
-        throw new ApiStatusError(await extractApiError(response, "Token 刷新失败"), response.status);
+        throw new ApiStatusError(
+          await extractApiError(response, "Token 刷新失败"),
+          response.status,
+        );
       }
 
       const data: TokenResponse = await response.json();

@@ -20,7 +20,14 @@ describe("pickCommunityFields", () => {
     total_properties: 42,
     is_active: true,
     created_at: "2025-01-15T08:30:00Z",
-    aliases: [{ id: "al-1", alias_name: "黄浦花园（别名）", data_source: "manual", created_at: "2025-01-16T08:30:00Z" }],
+    aliases: [
+      {
+        id: "al-1",
+        alias_name: "黄浦花园（别名）",
+        data_source: "manual",
+        created_at: "2025-01-16T08:30:00Z",
+      },
+    ],
   };
 
   it("保留 id 字段", () => {
@@ -78,7 +85,16 @@ describe("pickCommunityFields", () => {
   it("结果对象仅含 8 个字段", () => {
     const result = pickCommunityFields(fullCommunity) as Record<string, unknown>;
     expect(Object.keys(result).sort()).toEqual(
-      ["id", "name", "district", "business_circle", "total_properties", "is_active", "created_at", "aliases"].sort(),
+      [
+        "id",
+        "name",
+        "district",
+        "business_circle",
+        "total_properties",
+        "is_active",
+        "created_at",
+        "aliases",
+      ].sort(),
     );
   });
 

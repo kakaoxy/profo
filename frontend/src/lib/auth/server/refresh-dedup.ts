@@ -24,8 +24,10 @@
 const globalRegistry = globalThis as unknown as {
   __authServerRefreshPromises?: Map<string, Promise<unknown>>;
 };
-const refreshPromises: Map<string, Promise<unknown>> =
-  (globalRegistry.__authServerRefreshPromises ??= new Map());
+const refreshPromises: Map<
+  string,
+  Promise<unknown>
+> = (globalRegistry.__authServerRefreshPromises ??= new Map());
 
 const CACHE_WINDOW_MS = 2000;
 

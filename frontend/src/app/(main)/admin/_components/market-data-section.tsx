@@ -87,7 +87,9 @@ export function MarketDataSection({
         </div>
         <div className="space-y-0.5 text-right min-w-0">
           <p className="text-[11.5px] text-graphite">成交均价</p>
-          <p className="text-[14.5px] font-[480] tabular-nums text-ink">{isLoading ? "-" : avgPriceWan}</p>
+          <p className="text-[14.5px] font-[480] tabular-nums text-ink">
+            {isLoading ? "-" : avgPriceWan}
+          </p>
         </div>
         <div className="space-y-0.5 min-w-0">
           <p className="text-[11.5px] text-graphite">30日成交</p>

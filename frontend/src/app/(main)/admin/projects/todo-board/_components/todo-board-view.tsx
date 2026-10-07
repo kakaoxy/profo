@@ -12,7 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/common/empty-state";
-import type { TodoBoardResponse, TodoItemData, TodoProjectCardData } from "../_lib/todo-board-config";
+import type {
+  TodoBoardResponse,
+  TodoItemData,
+  TodoProjectCardData,
+} from "../_lib/todo-board-config";
 import { TodoProjectCard } from "./todo-project-card";
 import { TodoDetailSheet } from "./todo-detail-popup";
 
@@ -119,7 +123,9 @@ export function TodoBoardView({ data }: TodoBoardViewProps) {
             <span className="text-[21px] font-[480] tracking-[-0.02em] tabular-nums text-ink">
               {maxOverdue ?? "—"}
               {maxOverdue != null && (
-                <small className="ml-0.5 text-xs font-[450] tracking-normal text-graphite">天</small>
+                <small className="ml-0.5 text-xs font-[450] tracking-normal text-graphite">
+                  天
+                </small>
               )}
             </span>
           </div>
@@ -186,7 +192,9 @@ export function TodoBoardView({ data }: TodoBoardViewProps) {
             <TodoProjectCard
               key={card.project_id}
               card={card}
-              openKey={activeTodo ? `${activeTodo.card.project_id}:${activeTodo.item.rule_code}` : null}
+              openKey={
+                activeTodo ? `${activeTodo.card.project_id}:${activeTodo.item.rule_code}` : null
+              }
               onOpenTodo={(c, item) => setActiveTodo({ card: c, item })}
               onClearTodo={() => setActiveTodo(null)}
             />

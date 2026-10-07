@@ -12,6 +12,11 @@ import {
   type MarketingSubscriptionStatus,
 } from "../../../utils/marketing-notify";
 
+// ⚠️ 本文件超 500 行不拆分理由（AGENTS §1，M14）：在售/已成交双 tab 列表 + 订阅弹层
+// 与徽标逻辑共用同一份列表数据源与滚动容器，页面级 setData 互相关联（拆分需引入
+// 组件间通信），小程序页面无状态提升机制；订阅相关可复用逻辑已下沉
+// utils/marketing-notify.ts，页面内仅剩编排代码。
+
 /** 在售房源列表项. */
 type OnSaleItem = components["schemas"]["PublicProjectListItem"];
 /** 已成交房源列表项. */
