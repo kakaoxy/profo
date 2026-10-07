@@ -78,13 +78,14 @@ def _get_client_ip(request: Request) -> str:
     return client_host
 
 
-def _get_login_user_identifier(request: Request) -> str:
+def get_login_user_identifier(request: Request) -> str:
     """限流键：登录用户 ID（M8），降级回退客户端 IP.
 
     上报/状态类需登录端点按用户计数：NAT 共享出口 IP 的多用户互不挤占额度。
-    用户身份由认证依赖写入的 ``request.state.user_id`` 提供（见 dependencies.auth
-    挂载点）；无登录态（依赖未执行/未挂载）时回退 IP，保证免登录端点复用本
-    函数时不失效。
+    用户身份由认证依赖写入的 ``request.state.user_id`` 提供（写入见 dependencies.auth
+    的 ``_authed`` 挂载点，消费见本函数）——slowapi 装饰器须显式传
+    ``key_func=get_login_user_identifier`` 才会生效，缺省回退 Limiter 的 IP 键。
+    无登录态（依赖未执行/未挂载）时回退 IP，保证免登录端点复用本函数时不失效。
     """
     user_id = getattr(request.state, "user_id", None)
     return str(user_id) if user_id else _get_client_ip(request)

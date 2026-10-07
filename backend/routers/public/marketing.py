@@ -20,12 +20,14 @@ from schemas.l4_marketing import (
 )
 from services.marketing.subscription import MarketingSubscriptionService
 from services.system import subscribe_templates
-from utils.common import RateLimits, limiter
+from utils.common import RateLimits, get_login_user_identifier, limiter
 
 router = APIRouter(prefix="/public/marketing", tags=["public-marketing"])
 
 # 限流口径（M8）：subscribe-template 免登录（IP 维度防刷）；其余 5 个需登录端点
-# 按登录用户计数（_get_login_user_identifier），避免 NAT 共享出口 IP 互相挤占额度。
+# 按登录用户计数（key_func=get_login_user_identifier，用户身份来自认证依赖写入的
+# request.state.user_id），避免 NAT 共享出口 IP 互相挤占额度。
+# ⚠️ key_func 必须显式传参：slowapi 装饰器缺省时回退 Limiter 的 IP 键（不生效）。
 # 撞限流时 slowapi 抛 RateLimitExceeded → 429，miniapp 侧 catch 中对 statusCode=429
 # 给可感知提示（区别于未登录静默）。
 
@@ -52,7 +54,7 @@ def get_subscribe_template(request: Request, db: DbSessionDep) -> PublicMarketin
     summary="获取我的订阅额度状态",
     description="当前 C 端用户的上新/调价提醒剩余额度与最近订阅时间，需登录",
 )
-@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER)
+@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER, key_func=get_login_user_identifier)
 def get_subscription_status(
     request: Request,
     current_user: CurrentCustomerUserDep,
@@ -68,7 +70,7 @@ def get_subscription_status(
     summary="上报订阅授权结果",
     description="小程序 requestSubscribeMessage 结果上报；仅 accept 计入对应频道额度（额度累计），需登录",
 )
-@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER)
+@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER, key_func=get_login_user_identifier)
 def report_subscription(
     request: Request,
     body: PublicMarketingSubscribeReportRequest,
@@ -88,7 +90,7 @@ def report_subscription(
     summary="查询房源级订阅状态",
     description="当前用户对指定房源的调价提醒订阅状态（额度/最近订阅时间），需登录；未登录 401（前端静默）",
 )
-@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER)
+@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER, key_func=get_login_user_identifier)
 def get_project_subscription_status(
     request: Request,
     project_id: Annotated[int, PathParam(ge=1, description="房源ID")],
@@ -109,7 +111,7 @@ def get_project_subscription_status(
     description="小程序 requestSubscribeMessage 结果上报（房源级调价提醒，涨降都推）；"
     "仅 accept 计入房源级额度 +1，需登录。模板 ID 映射复用 project_price_change 配置；房源不存在时 404",
 )
-@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER)
+@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER, key_func=get_login_user_identifier)
 def report_project_subscription(
     request: Request,
     project_id: Annotated[int, PathParam(ge=1, description="房源ID")],
@@ -132,7 +134,7 @@ def report_project_subscription(
     description="清零该用户对此房源的调价提醒剩余额度（后续调价不再推送），保留订阅行；"
     "需登录；幂等（未订阅时返回未订阅状态），房源不存在时 404",
 )
-@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER)
+@limiter.limit(RateLimits.MARKETING_SUBSCRIBE_USER, key_func=get_login_user_identifier)
 def cancel_project_subscription(
     request: Request,
     project_id: Annotated[int, PathParam(ge=1, description="房源ID")],

@@ -139,8 +139,9 @@ async def get_current_user(
     token = token_from_header
 
     def _authed(user: User) -> User:
-        # 限流键挂载点（M8）：登录态维度限流（_get_login_user_identifier）读取；
-        # 认证成功即写入，失败不写（回退 IP 键）
+        # 限流键挂载点（M8）：登录态维度限流（utils.common.get_login_user_identifier）
+        # 经各需登录端点的 key_func 读取（消费方见 routers/public/marketing.py 5 个
+        # 订阅端点）；认证成功即写入，失败不写（回退 IP 键）
         request.state.user_id = user.id
         return user
 
