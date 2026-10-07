@@ -13,6 +13,7 @@ import { pad2 } from "../../../../utils/format";
 import { createProjectListPage } from "../../utils/project-list-page";
 import type { BaseDisplayItem, ProjectListState } from "../../utils/project-list-page";
 import { parseSalesRecords } from "../../utils/sales-records";
+import { cycleStart, isInCycle } from "../../utils/sales-cycle";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type RecordType = components["schemas"]["RecordType"];
@@ -28,6 +29,12 @@ interface DisplayItem extends BaseDisplayItem {
   viewingCount: number;
   offerCount: number;
   negotiationCount: number;
+  /** 本周期（周二 00:00 起）新增带看数，角标显示为 +N（含 +0） */
+  viewingDelta: number;
+  /** 本周期新增出价数 */
+  offerDelta: number;
+  /** 本周期新增面谈数 */
+  negotiationDelta: number;
 }
 
 /** 页面 data. */
@@ -52,11 +59,19 @@ interface PageCustom {
   onGoLogin(): void;
 }
 
-/** 按记录类型统计项目销售记录数. */
-function countByType(project: ProjectResponse, type: RecordType): number {
-  return parseSalesRecords(project.sales_records).filter(
-    (r) => r.record_type === type,
-  ).length;
+/**
+ * 按记录类型统计项目销售记录数.
+ * @param sinceMs 可选起始毫秒时间戳：只统计 record_date ≥ sinceMs 的记录（周期新增角标用），
+ *                缺省统计全量（与卡片主计数同源）。非法 record_date（Date.parse → NaN）
+ *                恒不满足 ≥ 比较，天然不计入。
+ */
+function countByType(project: ProjectResponse, type: RecordType, sinceMs?: number): number {
+  return parseSalesRecords(project.sales_records).filter((r) => {
+    if (r.record_type !== type) {
+      return false;
+    }
+    return sinceMs === undefined || isInCycle(Date.parse(r.record_date), sinceMs);
+  }).length;
 }
 
 /** 最高出价（万元数值）与对应 record_date；无有效出价返回 null. */
@@ -98,6 +113,8 @@ Page<PageData, PageCustom>(
     detailRoute: "/pages/viewing/detail/index/index",
     toDisplay(project) {
       const top = topOfferOf(project);
+      // 周期起点（本周二 00:00；周一为上周二）取一次，同屏卡片口径一致
+      const cycleStartMs = cycleStart().getTime();
       return {
         id: project.id,
         name: project.address ?? project.community_name ?? "未命名项目",
@@ -107,6 +124,9 @@ Page<PageData, PageCustom>(
         viewingCount: countByType(project, "viewing"),
         offerCount: countByType(project, "offer"),
         negotiationCount: countByType(project, "negotiation"),
+        viewingDelta: countByType(project, "viewing", cycleStartMs),
+        offerDelta: countByType(project, "offer", cycleStartMs),
+        negotiationDelta: countByType(project, "negotiation", cycleStartMs),
       };
     },
   }),

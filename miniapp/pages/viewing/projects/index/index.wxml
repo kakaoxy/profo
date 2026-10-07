@@ -53,14 +53,17 @@
         <view class="count-item">
           <view class="count-num">{{item.viewingCount}}</view>
           <view class="count-label">带看</view>
+          <text class="count-delta">+{{item.viewingDelta}}</text>
         </view>
         <view class="count-item">
           <view class="count-num">{{item.offerCount}}</view>
           <view class="count-label">出价</view>
+          <text class="count-delta">+{{item.offerDelta}}</text>
         </view>
         <view class="count-item">
           <view class="count-num">{{item.negotiationCount}}</view>
           <view class="count-label">面谈</view>
+          <text class="count-delta">+{{item.negotiationDelta}}</text>
         </view>
         <view class="chevron">›</view>
       </view>

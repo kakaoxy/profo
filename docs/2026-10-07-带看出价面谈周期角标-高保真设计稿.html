@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>小程序 · 带看/出价/面谈 周期新增角标 高保真设计稿 v1.0</title>
+<!--
+  小程序 · 「我负责的项目」列表页 周期新增角标 高保真设计稿 v1.0（2026-10-07）
+  ─────────────────────────────────────────────────────────────────────
+  需求真源：pages/viewing/projects/index/index 的「带看/出价/面谈」三项计数，
+    右上角增加周期新增角标（如 +3），数值 = 新周期内新增的记录数；
+    周期为自然周的「周二 → 下周一」（周一打开时显示上周二至今的累计新增）。
+  参考稿：用户提供的外部竞品截图（label 旁跟橙色 +N 小字，如「带看 +5」）。
+  视觉真源：miniapp/app.wxss + miniapp/pages/viewing/projects/index/index.wxss
+    （Steep 令牌 · warm 风格，强调色 --rust 与「最高出价」一致）
+  页面真源：miniapp/pages/viewing/projects/index/index（「带看记录」内部入口落地页）
+  已确认口径（AskUserQuestion 四问）：
+    ① 粒度：三个计数（带看/出价/面谈）各自带角标
+    ② 样式：参考稿方向 —— 标签旁内联 +N 彩色小字（非悬浮圆点气泡）
+    ③ 文案：只显示 +N，不带周期说明文字
+    ④ 零值：+0 也显示（对齐参考稿「咨询 +0」）
+  交付范围：
+    SEC 01        需求与口径（口径表 + 周期规则演示 · 可交互）
+    ARTBOARD 01   小程序列表页 390 × 844（角标落位 · 三种数值状态）
+    ARTBOARD 02   计数行组件放大标注（现有 → 新增角标 before/after）
+    SEC 03        实现说明（纯前端可算 · 代码落点 · 边界 · E2E 验证点）
+  实现备忘：project.sales_records 全量下发，前端按 record_date 过滤即可，
+    零后端改动、零新增 API；角标颜色用 --rust（与「最高出价」强调色同源）。
+-->
+<style>
+  :root {
+    --ink: #17191c;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --fog: #f7f7f8;
+    --white: #ffffff;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --line: #e6e8ec;
+    --card-border: #ece7de;
+    --shadow-sm: 0 2px 10px rgba(23, 25, 28, 0.06);
+    --shadow-phone: 0 24px 48px -12px rgba(23, 25, 28, 0.2), 0 0 0 1px rgba(23, 25, 28, 0.06);
+    --serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --sans: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--fog);
+    font-family: var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.009em;
+    padding-bottom: 120px;
+    font-feature-settings: "tnum";
+  }
+  .sec { max-width: 1280px; margin: 88px auto 0; padding: 0 32px; }
+  .sec h2 {
+    font-family: var(--serif);
+    font-weight: 400; font-size: 34px; line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin-top: 10px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite);
+  }
+  .lede { font-size: 15px; font-weight: 430; color: var(--ash); line-height: 1.75; margin-top: 12px; max-width: 900px; }
+  .lede b { font-weight: 480; color: var(--ink); }
+  .lede code, .cap-note code, td code {
+    font-family: var(--mono); font-size: 11.5px; color: var(--rust);
+    background: var(--apricot); padding: 1px 6px; border-radius: 6px;
+  }
+  td code { font-size: 11px; }
+  .artlabel {
+    font-family: var(--mono); font-size: 12px; color: var(--graphite);
+    letter-spacing: 0.08em; margin: 30px 0 10px;
+  }
+  .artlabel em { font-style: normal; color: var(--dove); }
+  .cap-note { font-size: 12.5px; color: var(--graphite); margin-top: 14px; line-height: 1.7; max-width: 880px; }
+  .cap-note b { color: var(--ink); font-weight: 480; }
+
+  /* ── 页头 ─────────────────────────────── */
+  .doc-head { max-width: 1280px; margin: 72px auto 0; padding: 0 32px; }
+  .doc-head h1 {
+    font-family: var(--serif); font-weight: 400; font-size: 46px; line-height: 1.15;
+    letter-spacing: -0.02em; margin-top: 14px;
+  }
+  .doc-head h1 em { font-style: normal; color: var(--rust); }
+  .head-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .head-meta span {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--graphite); background: var(--white); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 14px;
+  }
+  .head-meta span b { color: var(--rust); font-weight: 600; }
+
+  /* ── 需求卡 ─────────────────────────────── */
+  .req-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .req-grid { grid-template-columns: repeat(2, 1fr); } }
+  .req-card { background: var(--white); border-radius: 16px; padding: 18px 18px 16px; box-shadow: var(--shadow-sm); }
+  .req-card .no { font-family: var(--mono); font-size: 10.5px; color: var(--dove); letter-spacing: 0.12em; margin-bottom: 8px; }
+  .req-card .t { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .req-card .d { font-size: 12.5px; color: var(--ash); line-height: 1.65; }
+  .req-card .d b { font-weight: 600; color: var(--rust); }
+
+  /* ── 口径表 ─────────────────────────────── */
+  .spec-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    background: var(--white); border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow-sm); margin-top: 22px; font-size: 13px;
+  }
+  .spec-table th {
+    text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--graphite); background: var(--fog);
+    padding: 10px 16px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  .spec-table td { padding: 12px 16px; border-bottom: 1px solid #f0f0f2; vertical-align: top; color: var(--ash); line-height: 1.6; }
+  .spec-table tr:last-child td { border-bottom: 0; }
+  .spec-table td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+  .spec-table td .sub { display: block; font-size: 11.5px; color: var(--graphite); margin-top: 3px; }
+
+  /* ── 周期演示（可交互） ─────────────────────────────── */
+  .cycle-demo {
+    background: var(--white); border-radius: 16px; box-shadow: var(--shadow-sm);
+    padding: 22px; margin-top: 22px;
+  }
+  .cycle-week { display: flex; gap: 8px; }
+  .cycle-day {
+    flex: 1; text-align: center; border-radius: 12px; padding: 12px 0 10px;
+    background: var(--fog); border: 1px solid transparent; cursor: pointer;
+    transition: all .18s ease; user-select: none;
+  }
+  .cycle-day .dw { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--graphite); }
+  .cycle-day .dd { font-size: 15px; font-weight: 600; margin-top: 4px; color: var(--ink); }
+  .cycle-day .tag { font-size: 10px; color: var(--dove); margin-top: 3px; min-height: 14px; }
+  .cycle-day.in-win { background: var(--apricot); border-color: var(--rust); }
+  .cycle-day.in-win .tag { color: var(--rust); font-weight: 600; }
+  .cycle-day.is-today .dd { color: var(--rust); }
+  .cycle-day.start .tag::after { content: "周期起点"; }
+  .cycle-day.in-win.start .tag::after { content: "周期起点"; }
+  .cycle-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .cycle-meta .desc { font-size: 13px; color: var(--ash); line-height: 1.6; }
+  .cycle-meta .desc b { color: var(--rust); font-weight: 600; }
+  .weekday-picker { display: flex; gap: 6px; }
+  .weekday-picker button {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    border: 1px solid var(--line); background: var(--white); color: var(--graphite);
+    border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .15s ease;
+  }
+  .weekday-picker button:hover { border-color: var(--dove); color: var(--ink); }
+  .weekday-picker button.on { background: var(--ink); border-color: var(--ink); color: var(--white); }
+
+  /* ── Artboard 舞台 ─────────────────────────────── */
+  .board-row { display: flex; flex-wrap: wrap; gap: 48px; margin-top: 22px; align-items: flex-start; }
+
+  /* iPhone 框 */
+  .phone {
+    width: 390px; height: 844px; flex-shrink: 0;
+    background: var(--fog); border-radius: 54px;
+    box-shadow: var(--shadow-phone);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .phone .notch {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 118px; height: 34px; background: var(--ink); border-radius: 20px; z-index: 5;
+  }
+  .statusbar {
+    height: 54px; flex-shrink: 0; display: flex; align-items: flex-end;
+    justify-content: space-between; padding: 0 30px 6px;
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .statusbar .icons { display: flex; gap: 5px; align-items: center; }
+  .statusbar .sig { display: inline-flex; gap: 2px; align-items: flex-end; }
+  .statusbar .sig i { width: 3px; background: var(--ink); border-radius: 1px; display: block; }
+  .navbar {
+    height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 500; color: var(--ink);
+    border-bottom: 1px solid rgba(23, 25, 28, 0.05);
+  }
+  .phone .screen { flex: 1; overflow: hidden; }
+  .homebar {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; border-radius: 3px; background: rgba(23, 25, 28, 0.28); z-index: 5;
+  }
+
+  /* 页面内容（rpx→px @390：1rpx ≈ 0.52px，取整近似） */
+  .mini-page { padding: 12px 0 0; font-family: var(--sans); }
+  .m-list-title {
+    font-size: 12px; font-weight: 500; letter-spacing: 0.04em; color: var(--graphite);
+    margin: 16px 25px 8px;
+  }
+  .m-card {
+    margin: 0 21px 13px; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 21px;
+    padding: 17px 17px 15px; box-shadow: var(--shadow-sm);
+  }
+  .m-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .m-card-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; color: var(--ink); }
+  .m-offer-info { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .m-offer-max { font-size: 12px; font-weight: 500; color: var(--graphite); white-space: nowrap; }
+  .m-offer-max.on { color: var(--rust); }
+  .m-offer-time { font-size: 11px; color: var(--dove); white-space: nowrap; }
+  .m-card-counts {
+    margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--card-border);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .m-count-item { flex: 1; display: flex; align-items: baseline; gap: 4px; }
+  .m-count-num { font-size: 17px; font-weight: 600; color: var(--ink); }
+  .m-count-label { font-size: 12px; color: var(--graphite); }
+  .m-count-delta {
+    font-size: 11px; font-weight: 600; color: var(--rust);
+    margin-left: 2px; letter-spacing: 0; font-feature-settings: "tnum";
+  }
+  .m-chevron { font-size: 20px; line-height: 1; color: var(--dove); margin-left: 4px; }
+
+  /* ── 组件放大标注 ─────────────────────────────── */
+  .zoom-wrap { flex: 1; min-width: 380px; display: flex; flex-direction: column; gap: 18px; }
+  .zoom-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 20px; }
+  .zoom-card .zt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--dove); margin-bottom: 14px; }
+  .zoom-row { display: flex; align-items: center; gap: 14px; }
+  .zoom-badge {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    border-radius: 999px; padding: 3px 10px; flex-shrink: 0;
+  }
+  .zoom-badge.before { background: var(--fog); color: var(--graphite); }
+  .zoom-badge.after { background: var(--apricot); color: var(--rust); font-weight: 600; }
+  .zoom-counts {
+    flex: 1; border-top: 1px solid var(--card-border);
+    display: flex; align-items: center; gap: 4px; padding-top: 12px; margin-top: -4px;
+  }
+  .zoom-card.arrow { text-align: center; color: var(--dove); font-size: 16px; padding: 4px 0; }
+  .anno-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px; margin-top: 16px; }
+  .anno-item { font-size: 12px; color: var(--ash); line-height: 1.6; display: flex; gap: 8px; }
+  .anno-item .k {
+    font-family: var(--mono); font-size: 10px; color: var(--rust); background: var(--apricot);
+    border-radius: 6px; padding: 2px 7px; height: fit-content; white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ── 实现说明表 ─────────────────────────────── */
+  .impl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .impl-grid { grid-template-columns: 1fr; } }
+  .impl-card { background: var(--white); border-radius: 16px; padding: 18px; box-shadow: var(--shadow-sm); }
+  .impl-card .t { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .impl-card pre {
+    font-family: var(--mono); font-size: 11px; line-height: 1.75;
+    background: var(--fog); border-radius: 10px; padding: 14px 16px;
+    color: var(--ash); overflow-x: auto;
+  }
+  .impl-card pre b { color: var(--rust); font-weight: 600; }
+  .impl-card ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .impl-card li { font-size: 12.5px; color: var(--ash); line-height: 1.65; padding-left: 16px; position: relative; }
+  .impl-card li::before { content: "·"; position: absolute; left: 4px; color: var(--dove); font-weight: 700; }
+  .impl-card li b { color: var(--ink); font-weight: 600; }
+  .impl-card li code, .impl-card .path { font-family: var(--mono); font-size: 11px; }
+  .impl-card .path { color: var(--rust); background: var(--apricot); padding: 1px 6px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+  <!-- ═══════════ 页头 ═══════════ -->
+  <header class="doc-head" data-screen-label="页头">
+    <div class="kicker">Profo Miniapp · Design Spec</div>
+    <h1>带看 / 出价 / 面谈<br /><em>周期新增角标</em></h1>
+    <div class="head-meta">
+      <span>页面真源 · <b>pages/viewing/projects/index</b></span>
+      <span>视觉真源 · <b>app.wxss warm 令牌</b></span>
+      <span>日期 · <b>2026-10-07</b></span>
+      <span>版本 · <b>v1.0</b></span>
+      <span>改动量 · <b>纯前端 · 零后端</b></span>
+    </div>
+  </header>
+
+  <!-- ═══════════ SEC 01 需求与口径 ═══════════ -->
+  <section class="sec" data-screen-label="SEC 01 需求与口径">
+    <div class="kicker">SEC 01</div>
+    <h2>需求与口径</h2>
+    <p class="lede">
+      「我负责的项目」列表页每张卡片底部的 <b>带看 / 出价 / 面谈</b> 三项计数，各自增加一个
+      <b>周期新增角标（+N）</b>，让管理者一眼看出「这个周期里哪些项目有新进展」。样式参考用户提供的竞品截图：
+      标签旁内联彩色 <code>+N</code> 小字（如「带看 <b style="color:var(--rust)">+5</b>」），不使用悬浮圆点气泡。
+    </p>
+
+    <div class="req-grid">
+      <div class="req-card">
+        <div class="no">口径 ①</div>
+        <div class="t">粒度 · 三计数各自角标</div>
+        <div class="d">带看、出价、面谈<b>三个数字各自</b>统计本周期新增量，互不合并；某一项本周期无新增则显示 <b>+0</b>。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ②</div>
+        <div class="t">样式 · 标签旁内联 +N</div>
+        <div class="d">对齐参考稿：计数标签右侧内联 <b>+N</b> 彩色小字；颜色用 <b>--rust</b>（与卡片右上角「最高出价」强调色同源），风格与当前页面保持一致。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ③</div>
+        <div class="t">文案 · 只显示 +N</div>
+        <div class="d">不带「本周新增」等说明文字，保持计数行紧凑；周期规则通过本设计稿与团队文档对齐，<b>不进 UI</b>。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ④</div>
+        <div class="t">零值 · +0 也显示</div>
+        <div class="d">对齐参考稿「咨询 +0」：<b>+0 同样渲染</b>，让用户明确知道本周期暂无新增，而非样式缺失。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ⑤</div>
+        <div class="t">周期 · 周二 → 下周一</div>
+        <div class="d">以自然周<b>周二 00:00</b> 为起点、<b>下周一 24:00</b> 为终点；周一打开时展示的是<b>上周二至今</b>的累计新增（详见下方可交互演示）。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ⑥</div>
+        <div class="t">数据源 · 纯前端可算</div>
+        <div class="d">列表接口已全量下发 <code>project.sales_records</code>（含 <code>record_type</code> / <code>record_date</code>），前端按周期过滤即可，<b>零后端改动、零新增 API</b>。</div>
+      </div>
+    </div>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th>口径项</th><th>定义</th><th>备注</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>角标数值</td>
+          <td>
+            count(item, type) = sales_records 中 record_type === type 且 record_date ∈ [周期起点, 今天] 的记录数
+            <span class="sub">带看 = viewing · 出价 = offer · 面谈 = negotiation</span>
+          </td>
+          <td>与卡片主计数同源（parseSalesRecords 解析），非法 price 过滤逻辑不影响计数</td>
+        </tr>
+        <tr>
+          <td>周期起点</td>
+          <td>
+            offset = (dayFromMonday + 6) % 7 天前；dayFromMonday：周一=0 … 周日=6
+            <span class="sub">周二 → 0 天前（今天）· 周一 → 6 天前（上周二）</span>
+          </td>
+          <td>等价于「周二为一周之首」的自然周；跨年（如 12-30 周二 → 01-05 周一）由 Date 比较天然支持</td>
+        </tr>
+        <tr>
+          <td>角标样式</td>
+          <td>
+            <code>font-size: 22rpx</code> · <code>font-weight: 600</code> · <code>color: var(--rust)</code>
+            <span class="sub">位于计数标签右侧 baseline 对齐，margin-left: 4rpx</span>
+          </td>
+          <td>+0 与 +N 同色同样式（口径④）；如嫌 +0 视觉偏重，可降级为 var(--dove)，见 ARTBOARD 02 备注</td>
+        </tr>
+        <tr>
+          <td>显示条件</td>
+          <td>三项计数恒显示角标（含 +0）</td>
+          <td>不需要「新周期首次打开」等状态记忆，打开即算、无本地存储</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 周期演示（可交互） -->
+    <div class="cycle-demo" data-screen-label="周期规则演示">
+      <div class="zoom-card" style="box-shadow:none;padding:0;">
+        <div class="zt">CYCLE DEMO · 点击右上按钮切换「今天是周几」，观察周期窗口（高亮 = 计入新增）</div>
+        <div class="cycle-week" id="cycleWeek"><!-- JS 渲染 7 天 --></div>
+        <div class="cycle-meta">
+          <div class="weekday-picker" id="weekdayPicker"><!-- JS 渲染按钮 --></div>
+          <div class="desc" id="cycleDesc"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ARTBOARD 01 列表页 ═══════════ -->
+  <section class="sec" data-screen-label="ARTBOARD 01 列表页">
+    <div class="kicker">ARTBOARD 01</div>
+    <h2>小程序列表页 · 390 × 844</h2>
+    <p class="lede">三种典型状态同屏：卡片① 三项均有新增（<b>周二 ~ 周日</b> 打开的常见态）；卡片② 全 <b>+0</b>（口径④）；卡片③ 两位数 <b>+12</b> 与「暂无出价」共存。</p>
+
+    <div class="artlabel">iPhone 390 × 844 <em>· 角标落位</em></div>
+    <div class="board-row">
+      <div class="phone" data-screen-label="列表页 · 周期新增角标">
+        <div class="notch"></div>
+        <div class="statusbar">
+          <span>9:41</span>
+          <span class="icons">
+            <span class="sig"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span>
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><path d="M8.5 9.5 L10.7 7.3 A3.1 3.1 0 0 0 6.3 7.3 Z" fill="#17191c"/><path d="M4.2 5.2 A6.1 6.1 0 0 1 12.8 5.2" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.8 2.8 A9.5 9.5 0 0 1 15.2 2.8" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" opacity="0.4" fill="none"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#17191c"/><path d="M23 4 v4 a2 2 0 0 0 0 -4" fill="#17191c" opacity="0.4"/></svg>
+          </span>
+        </div>
+        <div class="navbar">我负责的项目</div>
+        <div class="screen">
+          <div class="mini-page">
+            <div class="m-list-title">带看记录 · 我负责的项目</div>
+
+            <!-- 卡片① 三项均有新增 -->
+            <div class="m-card">
+              <div class="m-card-header">
+                <div class="m-card-name">金杨七街坊</div>
+                <div class="m-offer-info">
+                  <div class="m-offer-max on">最高出价：485万</div>
+                  <div class="m-offer-time">出价时间：2026-10-05</div>
+                </div>
+              </div>
+              <div class="m-card-counts">
+                <div class="m-count-item">
+                  <div class="m-count-num">12</div>
+                  <div class="m-count-label">带看</div>
+                  <div class="m-count-delta">+3</div>
+                </div>
+                <div class="m-count-item">
+                  <div class="m-count-num">5</div>
+                  <div class="m-count-label">出价</div>
+                  <div class="m-count-delta">+2</div>
+                </div>
+                <div class="m-count-item">
+                  <div class="m-count-num">2</div>
+                  <div class="m-count-label">面谈</div>
+                  <div class="m-count-delta">+1</div>
+                </div>
+                <div class="m-chevron">›</div>
+              </div>
+            </div>
+
+            <!-- 卡片② 全 +0 -->
+            <div class="m-card">
+              <div class="m-card-header">
+                <div class="m-card-name">保德路241弄</div>
+                <div class="m-offer-info">
+                  <div class="m-offer-max on">最高出价：392万</div>
+                  <div class="m-offer-time">出价时间：2026-09-28</div>
+                </div>
+              </div>
+              <div class="m-card-counts">
+                <div class="m-count-item">
+                  <div class="m-count-num">8</div>
+                  <div class="m-count-label">带看</div>
+                  <div class="m-count-delta">+0</div>
+                </div>
+                <div class="m-count-item">
+                  <div class="m-count-num">3</div>
+                  <div class="m-count-label">出价</div>
+                  <div class="m-count-delta">+0</div>
+                </div>
+                <div class="m-count-item">
+                  <div class="m-count-num">1</div>
+                  <div class="m-count-label">面谈</div>
+                  <div class="m-count-delta">+0</div>
+                </div>
+                <div class="m-chevron">›</div>
+              </div>
+            </div>
+
+            <!-- 卡片③ 两位数 + 暂无出价 -->
+            <div class="m-card">
+              <div class="m-card-header">
+                <div class="m-card-name">大华颐和华城（一期）</div>
+                <div class="m-offer-info">
+                  <div class="m-offer-max">最高出价：暂无</div>
+                </div>
+              </div>
+              <div class="m-card-counts">
+                <div class="m-count-item">
+                  <div class="m-count-num">21</div>
+                  <div class="m-count-label">带看</div>
+                  <div class="m-count-delta">+12</div>
+                </div>
+                <div class="m-count-item">
+                  <div class="m-count-num">9</div>
+                  <div class="m-count-label">出价</div>
+                  <div class="m-count-delta">+4</div>
+                </div>
+                <div class="m-count-item">
+                  <div class="m-count-num">5</div>
+                  <div class="m-count-label">面谈</div>
+                  <div class="m-count-delta">+2</div>
+                </div>
+                <div class="m-chevron">›</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+
+      <!-- 组件放大标注 -->
+      <div class="zoom-wrap" data-screen-label="计数行组件放大标注">
+        <div class="zoom-card">
+          <div class="zt">BEFORE · 现有计数行</div>
+          <div class="zoom-row">
+            <span class="zoom-badge before">现有</span>
+            <div class="zoom-counts">
+              <div class="m-count-item"><div class="m-count-num">12</div><div class="m-count-label">带看</div></div>
+              <div class="m-count-item"><div class="m-count-num">5</div><div class="m-count-label">出价</div></div>
+              <div class="m-count-item"><div class="m-count-num">2</div><div class="m-count-label">面谈</div></div>
+              <div class="m-chevron">›</div>
+            </div>
+          </div>
+        </div>
+        <div class="zoom-card arrow">↓ 增加周期新增角标</div>
+        <div class="zoom-card">
+          <div class="zt">AFTER · 计数行 + 周期新增角标</div>
+          <div class="zoom-row">
+            <span class="zoom-badge after">新增</span>
+            <div class="zoom-counts">
+              <div class="m-count-item"><div class="m-count-num">12</div><div class="m-count-label">带看</div><div class="m-count-delta">+3</div></div>
+              <div class="m-count-item"><div class="m-count-num">5</div><div class="m-count-label">出价</div><div class="m-count-delta">+2</div></div>
+              <div class="m-count-item"><div class="m-count-num">2</div><div class="m-count-label">面谈</div><div class="m-count-delta">+1</div></div>
+              <div class="m-chevron">›</div>
+            </div>
+          </div>
+          <div class="anno-grid">
+            <div class="anno-item"><span class="k">字号</span><span>22rpx（小于标签 24rpx，保持「附属信息」层级）</span></div>
+            <div class="anno-item"><span class="k">字重</span><span>600，与计数主数字同重，保证 +N 在灰色标签旁可读</span></div>
+            <div class="anno-item"><span class="k">颜色</span><span>var(--rust) #5d2a1a —— 与「最高出价」强调色同源，不引入新色</span></div>
+            <div class="anno-item"><span class="k">对齐</span><span>baseline 对齐标签文字，margin-left: 4rpx；等宽数字 font-feature "tnum"</span></div>
+            <div class="anno-item"><span class="k">零值</span><span>+0 同色渲染（口径④）；若评审嫌噪，备选方案：+0 用 var(--dove) 弱化</span></div>
+            <div class="anno-item"><span class="k">不换行</span><span>white-space: nowrap；长项目名压缩的是左侧 flex:1 区域，计数行不受挤压</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="cap-note">
+      参考稿映射：竞品截图为「标签上、数字下」的两行结构（浏览 <b>99+</b> / 关注 <b>+5</b> / 咨询 <b>+0</b> / 带看 <b>+5</b>）；
+      本页现有结构是「数字左、标签右」的单行 baseline 结构，按「风格与当前保持一致」原则保留现有结构，
+      仅把参考稿的 <b>标签旁内联 +N 彩色小字</b> 这一核心样式移植到标签右侧。竞品「99+」封顶写法本页不需要（单项目单周期新增量级很小）。
+    </p>
+  </section>
+
+  <!-- ═══════════ SEC 03 实现说明 ═══════════ -->
+  <section class="sec" data-screen-label="SEC 03 实现说明">
+    <div class="kicker">SEC 03</div>
+    <h2>实现说明</h2>
+    <p class="lede">
+      列表接口 <code>GET /projects/my-responsible</code> 已全量下发 <code>sales_records</code>，
+      角标是<b>纯前端派生值</b>：复用 <code>parseSalesRecords</code> 的一次解析，在 <code>toDisplay</code> 里顺带统计周期增量即可。
+    </p>
+
+    <div class="impl-grid">
+      <div class="impl-card">
+        <div class="t">周期起点计算（utils 或页面内联）</div>
+        <pre>
+/** 当前周期起点（周二 00:00）· 周一返回上周二 */
+function cycleStart(now = new Date()): Date {
+  const dayFromMonday = (now.getDay() + 6) % 7; // 一0…日6
+  const offset = <b>(dayFromMonday + 6) % 7</b>;   // 一6 二0 三1…
+  const d = new Date(now.getFullYear(), now.getMonth(),
+                     now.getDate() - offset);
+  return d; // 周二 00:00 本地时区
+}
+
+/** 记录是否落入当前周期 */
+const inCycle = (r) =&gt;
+  <b>Date.parse(r.record_date) &gt;= cycleStart().getTime()</b>;
+        </pre>
+      </div>
+      <div class="impl-card">
+        <div class="t">代码落点（三处，均为现有文件小改）</div>
+        <ul>
+          <li><span class="path">index.ts</span> · <code>toDisplay()</code> 增加 <code>viewingDelta / offerDelta / negotiationDelta</code> 三字段；<code>countByType</code> 加可选起始时间参数复用</li>
+          <li><span class="path">index.wxml</span> · 三个 <code>count-label</code> 后各加一行 <code>&lt;text class="count-delta"&gt;+{{item.viewingDelta}}&lt;/text&gt;</code></li>
+          <li><span class="path">index.wxss</span> · 新增 <code>.count-delta</code>（22rpx / 600 / var(--rust) / margin-left 4rpx / nowrap）</li>
+          <li><b>不需要</b>：后端改动、gen-api、新增页面、本地存储（打开即算）</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">边界情况</div>
+        <ul>
+          <li><b>record_date 解析失败</b>（NaN）→ 不计入周期新增（Date.parse 返回 NaN 比较恒 false，天然安全）</li>
+          <li><b>跨年周期</b>（如 2025-12-30 周二 → 2026-01-05 周一）→ Date 毫秒比较天然支持，无特殊处理</li>
+          <li><b>同日多条记录</b> → 全部计入（与主计数口径一致）</li>
+          <li><b>未来日期</b>（误录入）→ record_date &gt; 今天仍会计入「≥周期起点」，与主计数宽松口径一致，可接受</li>
+          <li><b>列表分页 append</b> → 每条 item 的 delta 在 toDisplay 内独立计算，append/replace 模式均无状态残留</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">E2E 验证点</div>
+        <ul>
+          <li>构造 sales_records：周期内 1 条 viewing、周期外（上周一）1 条 offer → 角标应为 <b>+1 / +0 / +0</b></li>
+          <li>周一（或 mock 系统时间）打开 → 上周二记录计入、上周一记录不计入（<b>周期边界双向验证</b>）</li>
+          <li>周二打开 → 当天新记录计入，昨天（周一）不计入</li>
+          <li>三项全 0 新增 → 三个 <b>+0</b> 均渲染，样式与 +N 一致</li>
+          <li>两位数（+12）→ 不换行、不挤压 chevron（390 宽 + 长项目名下截图验证）</li>
+          <li>列表触底加载 append 后 → 旧卡片角标数值不变</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+<script>
+  /* ── 周期演示：周二 → 下周一 滑动窗口 ── */
+  (function () {
+    var DW = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+    var week = document.getElementById("cycleWeek");
+    var picker = document.getElementById("weekdayPicker");
+    var desc = document.getElementById("cycleDesc");
+    var days = []; // 0=周一 … 6=周日（示意同一自然周，起点为周二）
+    for (var i = 0; i < 7; i++) {
+      var d = document.createElement("div");
+      d.className = "cycle-day";
+      d.innerHTML = '<div class="dw">' + DW[i] + '</div><div class="dd">D' + (i + 1) + '</div><div class="tag"></div>';
+      week.appendChild(d);
+      days.push(d);
+      var b = document.createElement("button");
+      b.textContent = DW[i];
+      b.dataset.idx = i;
+      picker.appendChild(b);
+    }
+    days[1].classList.add("start"); // 周二 = 周期起点
+    function render(todayIdx) {
+      // 窗口 = [周期起点(周二=idx1), todayIdx]；todayIdx=0（周一）→ 上周二起，示意跨周：全部计入
+      var btns = picker.querySelectorAll("button");
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].className = i === todayIdx ? "on" : "";
+      }
+      for (var i = 0; i < 7; i++) { days[i].classList.remove("in-win", "is-today"); }
+      if (todayIdx === 0) {
+        // 周一：显示上周二 → 今天（上周二至今全部 7 天都算）
+        for (var i = 0; i < 7; i++) { days[i].classList.add("in-win"); }
+        days[6].classList.add("is-today");
+        days[6].querySelector(".tag").textContent = "今天";
+        days[1].querySelector(".tag").textContent = "上周二";
+        desc.innerHTML = "今天是<b>周一</b> —— 当前周期为「上周二 → 本周一」，角标显示<b>上周二至今</b>累计新增（含上周二~上周日 + 今天）。";
+      } else {
+        for (var i = 1; i <= todayIdx; i++) { days[i].classList.add("in-win"); }
+        days[todayIdx].classList.add("is-today");
+        days[todayIdx].querySelector(".tag").textContent = "今天";
+        days[1].querySelector(".tag").textContent = "周期起点";
+        desc.innerHTML = "今天是<b>" + DW[todayIdx] + "</b> —— 周期从本周二（或更早）起算，角标统计<b>周期起点 → 今天</b>的新增，共 " + (todayIdx - 1 + 1) + " 天窗口。";
+      }
+      if (todayIdx === 1) {
+        desc.innerHTML = "今天是<b>周二</b> —— <b>新周期第一天</b>，窗口只有今天：角标只显示今天一天的新增，全部从零开始累计。";
+      }
+    }
+    picker.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t.tagName === "BUTTON") { render(Number(t.dataset.idx)); }
+    });
+    render(3); // 默认周四
+  })();
+</script>
+</body>
+</html>

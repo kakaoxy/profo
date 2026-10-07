@@ -82,6 +82,16 @@
   font-size: 24rpx;
   color: var(--graphite);
 }
+/* 周期新增角标：标签右侧内联 +N 小字（22rpx/600/--rust，与「最高出价」强调色同源）.
+   +0 与 +N 同色同样式恒渲染；nowrap + tnum 保证两位数不换行、数字等宽不跳动。 */
+.count-delta {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--rust);
+  margin-left: 4rpx;
+  white-space: nowrap;
+  font-feature-settings: "tnum";
+}
 .chevron {
   font-size: 40rpx;
   line-height: 1;
