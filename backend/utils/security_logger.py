@@ -1,11 +1,13 @@
 """安全日志工具模块.
 
 提供请求体数据脱敏功能，防止敏感信息泄露到日志中.
-另提供认证事件结构化日志入口 ``log_auth_event``.
+另提供认证事件结构化日志入口 ``log_auth_event``，以及日志出口的
+上游 URL 凭据拦截（``WechatCredentialScrubFilter`` / ``redact_url_credentials``）.
 """
 
 import json
 import logging
+import re
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,77 @@ SENSITIVE_FIELDS = {
 }
 
 _SHORT_VALUE_THRESHOLD = 6
+
+# ==================== 上游 URL 凭据脱敏（日志出口拦截）====================
+# httpx 的 ``HTTP Request: GET <完整 URL>`` 属 INFO 级日志，**成功路径也会输出**；
+# 而微信凭据接口将 secret / access_token / js_code 放在 query 里，因此每次调用都会
+# 把这些凭据写进标准输出（容器日志 / journald 可直接 grep）。
+# 异常消息（HTTPStatusError）同样包含完整 URL。仅靠各调用点手工脱敏盖不住这个面
+# （任何第三方 logger、未来新增 httpx 调用都可能重现），因此在日志出口统一拦截。
+_URL_CREDENTIAL_KEYS = (
+    "secret",
+    "appsecret",
+    "access_token",
+    "authorizer_access_token",
+    "component_access_token",
+    "js_code",
+)
+_URL_CREDENTIAL_RE = re.compile(
+    r"(" + "|".join(_URL_CREDENTIAL_KEYS) + r")=[^&\s]*",
+    re.IGNORECASE,
+)
+
+
+def redact_url_credentials(message: str) -> str:
+    """脱敏文本中 URL query 形式的凭据参数值（保留参数名以便定位）.
+
+    Args:
+        message: 任意文本（异常消息、日志行、待入库的 error_msg 等）
+
+    Returns:
+        凭据参数值替换为 ``***`` 后的文本；appid / 域名 / 路径等非凭据信息保留以便排障
+
+    """
+    return _URL_CREDENTIAL_RE.sub(r"\1=***", message)
+
+
+# 仅用于渲染异常堆栈文本（不拼格式头尾），供出口过滤器脱敏后写回 record.exc_text
+_EXCEPTION_FORMATTER = logging.Formatter()
+
+
+class WechatCredentialScrubFilter(logging.Filter):
+    """日志出口凭据拦截过滤器（需挂在 **root handler** 上）.
+
+    ⚠️ 必须挂在 handler 而非 logger：``logging.Logger.handle`` 只执行
+    **当前 logger** 自身的 filter，httpx 等第三方 logger 的记录沿 manager 传播到
+    root handler 时不会经过仅挂在其他 logger 上的 filter。
+
+    两个注入面都拦：
+    1. 日志消息本体 —— httpx 在 INFO 级打 ``HTTP Request: GET <完整 URL>``（**成功路径也会打**），
+       而微信凭据接口把 secret / access_token / js_code 放在 query；另外任何把
+       ``traceback.format_exc()`` 当消息参数传入的调用（如 general_exception_handler）同理。
+    2. ``exc_info`` 堆栈 —— ``logger.exception(...)`` 会格式化原始异常，而 httpx 的
+       HTTPStatusError ``__str__`` 就是含凭据的完整 URL。预先渲染并脱敏到 ``exc_text``，
+       ``Formatter.format`` 见 ``exc_text`` 已缓存就不再重跑 ``formatException``，直接用脱敏文本。
+       这样既保住排查用的堆栈（不必退化成 logger.error 丢 traceback），又不依赖每个调用点自觉。
+
+    命中才改写；未命中仅走快路正则检查，对绝大多数日志零影响。
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        # 1) 消息本体（getMessage() 已将 args 全部完成）
+        message = record.getMessage()
+        if _URL_CREDENTIAL_RE.search(message):
+            record.msg = redact_url_credentials(message)
+            record.args = ()
+        # 2) 异常堆栈（写入 exc_text 缓存，阻断 Formatter 重跑 formatException）
+        if record.exc_info and record.exc_text is None:
+            text = _EXCEPTION_FORMATTER.formatException(record.exc_info)
+            if _URL_CREDENTIAL_RE.search(text):
+                record.exc_text = redact_url_credentials(text)
+        return True
+
+
 _LARGE_BODY_THRESHOLD = 100
 
 

@@ -22,12 +22,15 @@ export interface CreatedProject {
   initialPrice: number;
 }
 
-const COMMUNITY_ID = process.env.E2E_COMMUNITY_ID ?? "00000000-0000-0000-0000-000000000000";
+// 可选指定造数用小区 UUID（.env.example 承诺的覆盖项）；未提供时留空，
+// 由 ensureCommunity 自动取库中第一个可用小区。
+// 旧实现写了个从不引用的占位 UUID 常量 → E2E_COMMUNITY_ID 根根本不生效。
+const COMMUNITY_ID = (process.env.E2E_COMMUNITY_ID ?? "").trim();
 
 /**
  * 创建并发布一个营销房源.
  *
- * 注意：community_id 需为库中真实小区 UUID（默认取 E2E_COMMUNITY_ID，
+ * 注意：community_id 需为库中真实小区 UUID（优先取 E2E_COMMUNITY_ID，
  * 未提供时在 ensureCommunity 中自动取第一个可用小区）。
  */
 export async function createPublishedProject(
@@ -132,9 +135,14 @@ export async function deleteProject(
 
 let cachedCommunityId: string | null = null;
 
-/** 取第一个可用小区 UUID（进程内缓存）. */
+/** 取造数用小区 UUID：优先 E2E_COMMUNITY_ID，否则取库中第一个（进程内缓存）. */
 async function ensureCommunity(ctx: APIRequestContext): Promise<string> {
   if (cachedCommunityId) return cachedCommunityId;
+  // 环境变量显指定 → 直接使用（不查库，也不被库中无小区的环境影响）
+  if (COMMUNITY_ID) {
+    cachedCommunityId = COMMUNITY_ID;
+    return cachedCommunityId;
+  }
   const res = await ctx.get("/api/v1/admin/communities?page=1&page_size=1");
   if (!res.ok()) {
     throw new Error(`E2E 查询小区失败: HTTP ${res.status()}`);

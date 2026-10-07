@@ -425,9 +425,16 @@ class MarketingProjectService:
             is_new_listing = True
 
         # 已发布房源调价：写调价历史并返回信号（同值变更不触发）
+        # ⚠️ 首次发布同次改价（is_new_listing）必须排除：本方法在字段已 setattr 后判定，
+        # 此时 old_publish_status=草稿 且 total_price 已变为新值，两个分支会**同时成立**，
+        # 导致：① 从未对外公开过的草稿价被当作「调价前价格」写入 l4_marketing_price_changes；
+        # ② C 端列表同时命中「新上」与「↑ 价格已更新/↓ 直降 N 万」徽标（对比幽灵价，营销误导）；
+        # ③ 同一房源被同时排入上新与调价两个后台通知任务 → 订阅用户收到两条推送。
+        # 首次发布以「上新」为单一口径，同次价格调整归入上新语境，不产生调价历史与调价通知。
         price_signal: PriceSignal | None = None
         if (
-            db_obj.publish_status == PublishStatus.PUBLISHED
+            not is_new_listing
+            and db_obj.publish_status == PublishStatus.PUBLISHED
             and old_total_price is not None
             and db_obj.total_price != old_total_price
         ):

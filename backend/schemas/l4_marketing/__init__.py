@@ -44,7 +44,6 @@ from .query import (
 )
 from .subscription import (
     L4MarketingSubscriptionStatsResponse,
-    PublicMarketingLatestPriceChange,
     PublicMarketingNotifySummary,
     PublicMarketingProjectSubscriptionStatusResponse,
     PublicMarketingSubscribeReportRequest,
@@ -88,7 +87,6 @@ __all__ = [
     "MediaSortOrderUpdate",
     "PhotoCategory",
     # 订阅通知
-    "PublicMarketingLatestPriceChange",
     "PublicMarketingNotifySummary",
     "PublicMarketingProjectSubscriptionStatusResponse",
     "PublicMarketingSubscribeReportRequest",

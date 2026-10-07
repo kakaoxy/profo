@@ -386,10 +386,12 @@ class MarketingSubscriptionService:
 
         if price_inc:
             # 原子累计（quota = quota + N WHERE user+project），防同用户并发上报丢失更新；
-            # openid 快照刷新（换号绑定后保持最新；空值不覆盖已有快照）
+            # openid 快照刷新（换号绑定后保持最新；空值不覆盖已有快照）；
+            # cancelled_at 置 NULL：accept 续订即撤销先前的显式取消（恢复接收该房源推送）
             values: dict[str, object] = {
                 "price_change_quota": L4MarketingProjectSubscription.price_change_quota + price_inc,
                 "last_subscribed_at": datetime.now(timezone.utc),
+                "cancelled_at": None,
             }
             if openid:
                 values["openid"] = openid
@@ -411,11 +413,16 @@ class MarketingSubscriptionService:
         }
 
     def cancel_project_subscription(self, user_id: str, marketing_project_id: int) -> dict[str, object]:
-        """取消房源级调价提醒（清零剩余额度，保留订阅行）.
+        """取消房源级调价提醒（清零剩余额度 + 标记显式取消，保留订阅行）.
 
-        一次性订阅额度已被微信授权锁定，取消无法退回微信侧：本地清零剩余额度
-        （后续调价不再推送），保留订阅行以维持 admin 订阅人数累计口径与续订复用。
-        幂等：未订阅时返回未订阅状态而非 404（重复点击取消不报错）。
+        一次性订阅额度已被微信授权锁定，取消无法退回微信侧：本地清零剩余额度，
+        并写入 cancelled_at 作为「显式取消」事实源——调价推送收件人会从频道级订阅中
+        排除该用户（仅清额度不够：频道级调价额度 >0 时该用户仍会被推进收件人，
+        导致 C 端「取消后不再收到该房源提醒」的承诺失效）。
+        保留订阅行以维持 admin 订阅人数累计口径与续订复用；频道级额度不受影响
+        （其他房源 / 上新仍可推）。用户后续 accept 续订时 cancelled_at 置回 NULL。
+        幂等：未订阅时返回未订阅状态而非 404（重复点击取消不报错），且不新建行
+        （避免为从未订阅过该房源的用户污染订阅统计）。
         房源不存在/已删除时 404。
 
         Args:
@@ -442,8 +449,20 @@ class MarketingSubscriptionService:
             raise ResourceNotFoundError(msg)
 
         row = self._get_project_row(user_id, marketing_project_id)
-        if row is not None and row.price_change_quota > 0:
-            row.price_change_quota = 0
+        if row is not None and (row.price_change_quota > 0 or row.cancelled_at is None):
+            # 原子条件更新（而非读-改-写 ORM 属性）：避免与并发 accept 上报互踩造成丢失更新
+            # （先读 quota=1 后写 0 会静默吞掉期间累加的额度）；一次 UPDATE 同时清零额度与写取消标记
+            self.db.execute(
+                update(L4MarketingProjectSubscription)
+                .where(
+                    L4MarketingProjectSubscription.user_id == user_id,
+                    L4MarketingProjectSubscription.marketing_project_id == marketing_project_id,
+                )
+                .values(price_change_quota=0, cancelled_at=datetime.now(timezone.utc))
+            )
             self.db.commit()
+            # refresh 使 ORM 行与 DB 同步：当前 sessionmaker 默认 expire_on_commit=True 时
+            # commit 已令 row 过期、后续查询自然拿到新值，但显式 refresh 保证该正确性
+            # 不依赖会话配置（对齐上方 accept 路径 commit 后 refresh 的写法）
             self.db.refresh(row)
         return self.get_project_status(user_id, marketing_project_id)

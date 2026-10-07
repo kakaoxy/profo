@@ -133,6 +133,13 @@ interface PageData {
   subscribeState: "" | "on" | "expired";
   /** 两频道剩余额度合计（列表页按钮角标展示） */
   subscribeQuota: number;
+  /**
+   * 未登录 accept 后待登录生效标记（与 subscribeState 正交）。
+   * 未登录时服务端无额度可查，若仅置 state="on" 会渲染出「已订阅 · 可收 0 条」
+   * 的自相矛盾文案（按钮反白像已生效、额度却是 0），因此单独标记并改用
+   * 「已授权 · 登录后生效」文案，不虚假宣称可收条数。
+   */
+  subscribePendingLogin: boolean;
   // 订阅弹层
   sheetVisible: boolean;
   sheetNewQuota: number;
@@ -225,6 +232,7 @@ Page<PageData, PageCustom>({
     subscribeEnabled: false,
     subscribeState: "",
     subscribeQuota: 0,
+    subscribePendingLogin: false,
     sheetVisible: false,
     sheetNewQuota: 0,
     sheetPriceQuota: 0,
@@ -341,9 +349,14 @@ Page<PageData, PageCustom>({
     let changeMeta = "";
     const change = onSale.latest_price_change;
     if (change) {
-      const diff = change.new_price - change.old_price;
+      // 差价文案：后端价为 Numeric(12,2)，最小真实差价是 0.01 万。按 0.01 万**四舍五入**
+      // 去尾零（不能用 floor：246.00→245.99 的二进制浮点差为 0.00999…，floor 会归 0
+      // 而吞掉一笔真实降价）；仅当差价确实不足半分钱时回退中性文案，
+      // 避免出现旧实现 Math.round(diff) 把 0.5 万显示成「直降 0 万」的假象。
+      const diff = Math.abs(change.new_price - change.old_price);
+      const diffWan = Math.round(diff * 100) / 100;
       if (change.direction === "down") {
-        changeText = `↓ 直降 ${Math.abs(Math.round(diff))} 万`;
+        changeText = diffWan > 0 ? `↓ 直降 ${diffWan} 万` : "↓ 价格已下调";
         changeClass = "change-down";
       } else {
         changeText = "↑ 价格已更新";
@@ -636,13 +649,28 @@ Page<PageData, PageCustom>({
     // 免登录入口也展示；未登录（无 c_access_token）时额度展示 0，
     // 点「开启提醒」授权成功后再补登录+补报（onSubscribeConfirm 内处理）
     const status = await fetchMarketingSubscriptionStatus();
-    const newQuota = status?.newListingQuota ?? 0;
-    const priceQuota = status?.priceChangeQuota ?? 0;
+    if (status === null) {
+      // 未登录/查询失败：服务端额度不可知，同时清除「待登录生效」本地标记，
+      // 避免停留在「已授权但未上报」的过期提示
+      this.setData({
+        subscribeEnabled: true,
+        subscribeState: "expired",
+        subscribeQuota: 0,
+        subscribePendingLogin: false,
+        sheetNewQuota: 0,
+        sheetPriceQuota: 0,
+      });
+      return;
+    }
+    const newQuota = status.newListingQuota;
+    const priceQuota = status.priceChangeQuota;
     const total = newQuota + priceQuota;
     this.setData({
       subscribeEnabled: true,
       subscribeState: total > 0 ? "on" : "expired",
       subscribeQuota: total,
+      // 服务端已能查到额度：登录补报已生效（或本来就已上报过），清除待登录标记
+      subscribePendingLogin: false,
       sheetNewQuota: newQuota,
       sheetPriceQuota: priceQuota,
     });
@@ -682,10 +710,16 @@ Page<PageData, PageCustom>({
         this.setData({ sheetVisible: false });
         return;
       }
-      // 未登录 + accept：授权结果已弹出但无法上报（未登录），先本地置为已订阅态，
-      // 引导登录（登录成功返回后 onShow 重开弹层补报）；其余状态收起弹层即可
+      // 未登录 + accept：授权结果已弹出但无法上报（未登录），不能谎称「可收 N 条」：
+      // 服务端此时无任何额度（额度仅在 report 后才累计），所以下方状态刷新（onShow /
+      // loadSubscribeState）会把额度拉回 0。改用 pendingLogin 标记走「已授权 · 登录后生效」
+      // 文案，不虚报可收条数；引导登录（登录成功返回后 onShow 重开弹层补报）。
       if (notLoggedIn && status === "accept") {
-        this.setData({ subscribeState: "on", sheetVisible: false });
+        this.setData({
+          subscribeState: "on",
+          subscribePendingLogin: true,
+          sheetVisible: false,
+        });
         this._pendingSubscribeReport = templates;
         wx.showModal({
           title: "登录后生效",

@@ -14,6 +14,7 @@ import {
   getPhonePrompted,
   setCTemporary,
   setPhonePrompted,
+  clearCUserState,
 } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 
@@ -315,6 +316,8 @@ Page<PageData, PageCustom>({
     wx.removeStorageSync("refresh_token");
     wx.removeStorageSync("c_access_token");
     wx.removeStorageSync("c_refresh_token");
+    // 被动失效（401/403 刷新后仍失败）：只清令牌，**保留 c_protocol_agreed**——
+    // 用户未主动撤回同意，冷启动静默续登（App.onLaunch）仍应可用。
     this.resetToGuest();
   },
 
@@ -492,6 +495,11 @@ Page<PageData, PageCustom>({
     wx.removeStorageSync("refresh_token");
     wx.removeStorageSync("c_access_token");
     wx.removeStorageSync("c_refresh_token");
+    // 显式登出 = 用户主动撤回会话与本机知情同意：必须清 c_protocol_agreed 等状态标识。
+    // 否则 App.onLaunch 的静默续登（!c_access_token && c_protocol_agreed 即 wx.login）
+    // 会在下次冷启动把刚登出的用户重新登回来：登出在共享/借用设备上失效，
+    // 且 openid 在用户已撤回同意后仍被静默采集（与本次停收 session_key 的最小必要口径矛盾）。
+    clearCUserState();
     this.resetToGuest();
     this.setData({ loggingOut: false });
     wx.showToast({ title: "已退出登录", icon: "none" });

@@ -208,8 +208,17 @@ Page<PageData, PageCustom>({
         wx.setStorageSync("c_refresh_token", res.refresh_token);
       }
       wx.showToast({ title: "登录成功", icon: "success" });
-      if (this.data.from === "valuation" || this.data.from === "recruit" || this.data.from === "booking") {
-        // 由估价提交页/招募页/房源详情页（想看房）拦截而来：本页经 login/index 中转进入，
+      // 回跳来源白名单：须与 pages/login/index/index.ts 的同名白名单保持一致（中转链
+      // 两层各自判定）；缺任一项都会使该来源登录成功被规约为 switchTab 到 profile，
+      // 用户从订阅/预约拦截链回跳时上下文丢失
+      if (
+        this.data.from === "valuation" ||
+        this.data.from === "recruit" ||
+        this.data.from === "booking" ||
+        this.data.from === "subscribe" ||
+        this.data.from === "subscribe-project"
+      ) {
+        // 由估价提交页/招募页/房源详情页（想看房、调价提醒）拦截而来：本页经 login/index 中转进入，
         // 导航栈为「来源页→login/index→本页」，需回退两层直达来源页，其页面实例仍在
         // 导航栈中，已填写的表单数据/预约上下文完整保留；栈深异常不足时按一层回退兜底
         setTimeout(() => {

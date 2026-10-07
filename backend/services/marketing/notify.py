@@ -15,6 +15,11 @@ services/recruit/attribution.py 通知模式）。
   留痕 skipped（用户额度授权保留，可继续接收后续推送）；
 - 额度扣减为原子条件更新（``quota = quota - 1 WHERE quota > 0``），
   防止并发推送对同一订阅行双扣。
+
+⚠️ 本模块超 500 行不拆分理由（AGENTS §1）：上新与调价两条通知共用收件人分页拉取、
+openid 间接绑定回填、原子扣减与留痕（_log_send/_safe_log）全套底层函数；
+拆成两文件会把这组私有函数降为跨模块公开 API 或造成重复，故保持单文件按
+「底层工具 → 收件人 → 扣减 → 上新 → 调价」分区组织。
 """
 
 import logging
@@ -36,7 +41,7 @@ from models import (
     User,
 )
 from services.system import subscribe_templates
-from services.system.wechat import WeChatAuthService
+from services.system.wechat import WeChatAuthService, redact_wechat_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +52,8 @@ _TEMPLATE_KEY_PRICE_CHANGE = "project_price_change"
 # 点击消息跳转页（房源详情页，携带 marketing_project_id）
 _NOTIFY_PAGE_PATH = "pages/projects/detail/index?id={id}"
 
-# 单批推送上限（订阅用户规模可控，单批足够；超出截断并记 skipped，P1 做补发）
+# 单页拉取上限（仅限定一次加载的订阅行数，**不限定推送总量**：推送按 keyset 分页覆盖
+# 全部额度 >0 的订阅行，超出部分不再静默丢弃，见 _fetch_quota_rows_page）
 _MAX_BATCH = 500
 
 # 模板字段键名（需与微信公众平台申请的模板字段一一对应；调整申请后在此改映射即可）
@@ -153,6 +159,14 @@ def _house_summary(project: L4MarketingProject) -> str:
     return (project.layout or "")[:_THING_MAX_LEN]
 
 
+def _openid_tag(openid: str) -> str:
+    """日志用 openid 摘要（openid 属个人标识，不原值入日志）.
+
+    取前 8 字符作定位指纹：同一用户多条日志可关联，且不可反推出完整 openid。
+    """
+    return f"{openid[:8]}***" if openid else "<empty>"
+
+
 def _log_send(
     db: Session,
     *,
@@ -178,7 +192,9 @@ def _log_send(
             notify_type=notify_type,
             template_id=template_id,
             send_status=status,
-            error_msg=error_msg[:200] if error_msg else None,
+            # 上游异常消息可能含完整微信请求 URL（带 secret / access_token）：
+            # 入库前必过脱敏，否则留痕表变成凭据落盘面（截断 200 不能保证避开凭据）
+            error_msg=redact_wechat_credentials(error_msg)[:200] if error_msg else None,
             price_change_id=price_change_id,
             sub_source=sub_source,
         ),
@@ -268,66 +284,160 @@ def _backfill_empty_openids(db: Session, rows: list) -> list:
     return resolved
 
 
+def _fetch_quota_rows_page(
+    db: Session,
+    quota_column: InstrumentedAttribute[int],
+    *,
+    after_id: int | None = None,
+) -> tuple[list[L4MarketingSubscription], int | None, bool]:
+    """按主键 keyset 取一页额度 > 0 的频道订阅行（**未经 openid 回填/丢弃**）.
+
+    用 keyset（``id > after_id ORDER BY id``）而非 offset：推送过程中同表额度会被
+    本任务逐行扣减（quota 变 0 后不再命中条件），offset 分页会漏行/重行；
+    keyset 以主键为标尺，不依赖未命中行的存在，因此不漏不重。
+
+    ⚠️ 必须返回原始行（而非 _backfill_empty_openids 后的行）：回填会丢弃部分行，
+    若用丢弃后的行数/最大主键做游标与终止判定，会重复取同一区间或提前 break 而漏推。
+
+    Returns:
+        (本页原始订阅行, 本页最右主键（无行为 None）, 是否可能还有下一页)
+
+    """
+    stmt = select(L4MarketingSubscription).where(quota_column > 0)
+    if after_id is not None:
+        stmt = stmt.where(L4MarketingSubscription.id > after_id)
+    rows = list(db.scalars(stmt.order_by(L4MarketingSubscription.id).limit(_MAX_BATCH)))
+    if not rows:
+        return [], None, False
+    # 取满一页 → 可能还有下一页；未满一页 → 已到底
+    return rows, rows[-1].id, len(rows) == _MAX_BATCH
+
+
 def _fetch_subscribers(
     db: Session,
     quota_column: InstrumentedAttribute[int],
 ) -> list[L4MarketingSubscription]:
-    """查询指定频道剩余额度 > 0 的订阅行（单批上限截断，含间接绑定回退）.
+    """查询指定频道剩余额度 > 0 的全部订阅行（keyset 分页全量覆盖，含间接绑定回退）.
 
     openid 为空的行（内部员工密码登录订阅，微信经合并间接绑定）在查询后
     回退解析：能解析到 openid 则回填快照（同步更新行，后续推送免重查），
     仍为空则丢弃（无法投递）。用户日后微信登录/绑定后自然纳入。
+
+    H5 修复：不再受单批上限截断。按主键 keyset 逐页取完全部命中行；
+    游标推进用原始页最右主键、终止判定用原始页是否取满（openid 回填会丢弃
+    部分行，若用丢弃后的行数/主键做游标会重复取同一区间或提前结束而漏推）。
     """
-    stmt = select(L4MarketingSubscription).where(quota_column > 0).limit(_MAX_BATCH)
-    rows = list(db.scalars(stmt))
-    # 空快照行批量回填间接绑定 openid（单次 in_ 查询 + 单次提交），仍为空则丢弃
-    return _backfill_empty_openids(db, rows)
+    collected: list[L4MarketingSubscription] = []
+    cursor: int | None = None
+    while True:
+        page, last_id, has_more = _fetch_quota_rows_page(db, quota_column, after_id=cursor)
+        if not page:
+            break
+        # 逐页回填（单次 in_ 查询 + 单次提交），丢弃无法投递的行
+        collected.extend(_backfill_empty_openids(db, page))
+        cursor = last_id
+        if not has_more:
+            break
+    return collected
+
+
+def _fetch_project_sub_rows_page(
+    db: Session,
+    project_id: int,
+    *,
+    after_id: int | None = None,
+) -> tuple[list[L4MarketingProjectSubscription], bool]:
+    """按主键 keyset 取一页该房源额度 > 0 的房源级订阅行（未经 openid 回填）.
+
+    Returns:
+        (本页原始行, 是否可能还有下一页)
+
+    """
+    stmt = select(L4MarketingProjectSubscription).where(
+        L4MarketingProjectSubscription.marketing_project_id == project_id,
+        L4MarketingProjectSubscription.price_change_quota > 0,
+    )
+    if after_id is not None:
+        stmt = stmt.where(L4MarketingProjectSubscription.id > after_id)
+    rows = list(db.scalars(stmt.order_by(L4MarketingProjectSubscription.id).limit(_MAX_BATCH)))
+    if not rows:
+        return [], False
+    return rows, len(rows) == _MAX_BATCH
+
+
+def _fetch_cancelled_user_ids(db: Session, project_id: int) -> set[str]:
+    """取对该房源显式取消过提醒的用户集（cancelled_at 非空）.
+
+    「服务端尊重取消」的唯一事实源：不能用「房源级额度=0」判定——一次性额度在
+    推送送达后同样归 0，那部分用户并未取消，排除会误伤。
+    """
+    rows = db.execute(
+        select(L4MarketingProjectSubscription.user_id).where(
+            L4MarketingProjectSubscription.marketing_project_id == project_id,
+            L4MarketingProjectSubscription.cancelled_at.isnot(None),
+        )
+    ).all()
+    return {row[0] for row in rows}
 
 
 def _fetch_price_change_recipients(db: Session, project_id: int) -> list[Recipient]:
-    """调价推送收件人：频道级账本行 ∪ 房源级订阅行，按 user_id 去重优先房源级.
+    """调价推送收件人：(频道级账本行 − 已取消该房源的用户) ∪ 房源级订阅行，按 user_id 去重优先房源级.
 
     - 频道级：l4_marketing_subscriptions.price_change_quota > 0（不筛预约/浏览关系）
     - 房源级：l4_marketing_project_subscriptions 中该项目 + price_change_quota > 0
+    - 取消优先（H2 修复）：该房源 cancelled_at 非空的用户从**两轨同时排除**——
+      仅清房源级额度不够，频道级调价额度 >0 时仍会被推进收件人，
+      导致 C 端「取消后将不再收到该房源的调价提醒」承诺失效。
+      排除仅针对本房源：该用户的频道额度保留，其他房源上新/调价仍可推。
+      用户后续 accept 续订时 cancelled_at 置 NULL，即自动恢复接收。
     - 去重：同一 user_id 只保留一条，优先房源级（语义更精确）；
       微信 43101（未授权）天然幂等兜底
-    - 总量 ≤ 频道全量 + 房源级增量，_MAX_BATCH 截断策略不变（合并后截断）
+    - 全量覆盖（H5 修复）：两轨各自 keyset 分页取完，不另加总量截断
 
     """
-    channel_rows = (
-        db.query(L4MarketingSubscription).filter(L4MarketingSubscription.price_change_quota > 0).limit(_MAX_BATCH).all()
-    )
-    project_rows = (
-        db.query(L4MarketingProjectSubscription)
-        .filter(
-            L4MarketingProjectSubscription.marketing_project_id == project_id,
-            L4MarketingProjectSubscription.price_change_quota > 0,
-        )
-        .limit(_MAX_BATCH)
-        .all()
-    )
-
-    # 空快照行批量回填间接绑定 openid（单次 in_ 查询 + 单次提交），仍为空则丢弃
-    channel_rows = _backfill_empty_openids(db, channel_rows)
-    project_rows = _backfill_empty_openids(db, project_rows)
+    cancelled_user_ids = _fetch_cancelled_user_ids(db, project_id)
 
     recipients: dict[str, Recipient] = {}
-    # 先填频道级（同 user_id 被房源级覆盖）
-    for row in channel_rows:
-        recipients[row.user_id] = Recipient(
-            openid=row.openid,
-            user_id=row.user_id,
-            channel="channel",
-            sub_id=row.id,
+
+    # 频道级：分页取完（先按页回填 openid，再排除已取消该房源的用户）
+    cursor: int | None = None
+    while True:
+        page, last_id, has_more = _fetch_quota_rows_page(
+            db, L4MarketingSubscription.price_change_quota, after_id=cursor
         )
+        for row in _backfill_empty_openids(db, page):
+            if row.user_id in cancelled_user_ids:
+                continue
+            recipients[row.user_id] = Recipient(
+                openid=row.openid,
+                user_id=row.user_id,
+                channel="channel",
+                sub_id=row.id,
+            )
+        cursor = last_id
+        if not has_more:
+            break
+
     # 房源级优先（覆盖同 user_id 的频道级）
-    for row in project_rows:
-        recipients[row.user_id] = Recipient(
-            openid=row.openid,
-            user_id=row.user_id,
-            channel="project",
-            sub_id=row.id,
-        )
+    project_cursor: int | None = None
+    while True:
+        page, has_more = _fetch_project_sub_rows_page(db, project_id, after_id=project_cursor)
+        if not page:
+            break
+        project_last_id = page[-1].id
+        for row in _backfill_empty_openids(db, page):
+            if row.user_id in cancelled_user_ids:
+                continue
+            recipients[row.user_id] = Recipient(
+                openid=row.openid,
+                user_id=row.user_id,
+                channel="project",
+                sub_id=row.id,
+            )
+        project_cursor = project_last_id
+        if not has_more:
+            break
+
     return list(recipients.values())
 
 
@@ -385,6 +495,12 @@ def notify_projects_published(project_id: int) -> None:
     """
     try:
         with SessionLocal() as db:
+            # M2 修复：后台推送专用会话关闭 commit 后属性过期。循环内逐行扣减与留痕都 commit，
+            # 默认 expire_on_commit=True 会使会话内全部对象过期，下一行读 sub.user_id /
+            # project.id 就触发一条重载 SELECT（实测逐收件人 N+1）。本任务不依赖
+            # “重读取最新值”的 ORM 读（额度走原子条件 UPDATE），因此无脏读风险。
+            # 在此设置而非主体：本处会话由 SessionLocal() 新建（专用、不共享），无副作用。
+            db.expire_on_commit = False
             _notify_projects_published(db, project_id)
     except Exception:
         logger.exception("上新订阅消息通知失败：project_id=%s", project_id)
@@ -415,21 +531,29 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
         _NEW_FIELD_HOUSE: {"value": _house_summary(project)},
         _NEW_FIELD_PRICE: {"value": f"{float(project.total_price):.1f}"},
     }
-    page = _NOTIFY_PAGE_PATH.format(id=project.id)
+    # 项目字段一次性快照：循环内每行扣减/留痕都 commit，而 sessionmaker 未改
+    # expire_on_commit（默认 True）→ commit 后会话内全部对象过期，循环中再访问
+    # project.id 会逐收件人触发一条 SELECT 重载（N+1）。本函数后续不再读 project。
+    pid = project.id
+    page = _NOTIFY_PAGE_PATH.format(id=pid)
 
     for sub in subscribers:
-        # 先取快照（扣减 commit 会过期 ORM 对象，避免过期重载）
+        # 先取快照（同上：扣减/留痕的 commit 会过期 ORM 对象，避免循环中重载 sub）
         user_id = sub.user_id
         openid = sub.openid
+        sub_id = sub.id
         try:
             errcode = WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
         except Exception as exc:
             # 发送失败：留痕 failed，不扣额度（用户未消费）
-            logger.exception("上新订阅消息发送失败：project_id=%s, openid=%s", project.id, openid)
+            # 日志不带 openid 原值（个人标识，改前缀摘要定位）；上游异常已收口为
+            # 固定文案，且含凭据的 traceback（包括 __cause__ 链）由日志出口过滤器
+            # 统一脱敏（见 main.py），因此这里可安全用 logger.exception。
+            logger.exception("上新订阅消息发送失败：project_id=%s, openid=%s", pid, _openid_tag(openid))
             _safe_log(
                 db,
                 user_id=user_id,
-                project_id=project.id,
+                project_id=pid,
                 notify_type="new_listing",
                 template_id=template_id,
                 status=SendStatus.FAILED.value,
@@ -441,7 +565,7 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
             _safe_log(
                 db,
                 user_id=user_id,
-                project_id=project.id,
+                project_id=pid,
                 notify_type="new_listing",
                 template_id=template_id,
                 status=SendStatus.SKIPPED.value,
@@ -449,11 +573,11 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
             )
             continue
         # 送达成功：原子扣减额度（quota>0 条件更新，防并发双扣）+ success 留痕
-        if _decrement_quota(db, sub.id, L4MarketingSubscription.new_listing_quota):
+        if _decrement_quota(db, sub_id, L4MarketingSubscription.new_listing_quota):
             _safe_log(
                 db,
                 user_id=user_id,
-                project_id=project.id,
+                project_id=pid,
                 notify_type="new_listing",
                 template_id=template_id,
                 status=SendStatus.SUCCESS.value,
@@ -462,7 +586,7 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
             # 消息已发出但额度被并发推送扣完（一次性订阅超额消费），仅记日志
             logger.warning(
                 "上新通知送达但额度并发扣减失败（quota 已为 0）：project_id=%s, user_id=%s",
-                project.id,
+                pid,
                 user_id,
             )
 
@@ -486,6 +610,8 @@ def notify_project_price_changed(
     """
     try:
         with SessionLocal() as db:
+            # M2 修复：同上新通知，专用会话关闭 commit 后过期，避免逐收件人重载 SELECT（N+1）
+            db.expire_on_commit = False
             _notify_project_price_changed(db, project_id, price_signal)
     except Exception:
         logger.exception("调价订阅消息通知失败：project_id=%s", project_id)
@@ -546,30 +672,37 @@ def _notify_project_price_changed(
     }
     page = _NOTIFY_PAGE_PATH.format(id=project.id)
 
-    # 收件人：频道级账本行 ∪ 房源级订阅行（按 user_id 去重优先房源级，P2-1）
+    # 收件人：(频道级 − 已取消该房源) ∪ 房源级（按 user_id 去重优先房源级，P2-1 + H2）
     recipients = _fetch_price_change_recipients(db, project.id)
     if not recipients:
         logger.info("无可用订阅用户，跳过调价通知：project_id=%s", project.id)
         return
 
+    # 项目字段一次性快照（原因同上新通知：循环内逐行 commit 会过期 ORM 对象而逐行重载）
+    pid = project.id
+
     for recipient in recipients:
         user_id = recipient.user_id
         openid = recipient.openid
+        sub_id = recipient.sub_id
+        channel = recipient.channel
         try:
             errcode = WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
         except Exception as exc:
             # 发送失败：留痕 failed（sub_source 区分来源），不扣额度（用户未消费）
-            logger.exception("调价订阅消息发送失败：project_id=%s, openid=%s", project.id, openid)
+            # 日志不带 openid 原值；上游异常已收口为固定文案，traceback（含 __cause__ 链）
+            # 由日志出口过滤器统一脱敏，因此可安全用 logger.exception。
+            logger.exception("调价订阅消息发送失败：project_id=%s, openid=%s", pid, _openid_tag(openid))
             _safe_log(
                 db,
                 user_id=user_id,
-                project_id=project.id,
+                project_id=pid,
                 notify_type="price_change",
                 template_id=template_id,
                 status=SendStatus.FAILED.value,
                 error_msg=str(exc),
                 price_change_id=price_change_id,
-                sub_source=recipient.channel,
+                sub_source=channel,
             )
             continue
         if errcode != 0:
@@ -577,34 +710,34 @@ def _notify_project_price_changed(
             _safe_log(
                 db,
                 user_id=user_id,
-                project_id=project.id,
+                project_id=pid,
                 notify_type="price_change",
                 template_id=template_id,
                 status=SendStatus.SKIPPED.value,
                 error_msg=f"errcode={errcode}",
                 price_change_id=price_change_id,
-                sub_source=recipient.channel,
+                sub_source=channel,
             )
             continue
         # 送达成功：按 channel 路由原子扣减对应账本额度（quota>0 条件更新，防并发双扣）+ success 留痕
-        if recipient.channel == "project":
-            decremented = _decrement_project_quota(db, recipient.sub_id)
+        if channel == "project":
+            decremented = _decrement_project_quota(db, sub_id)
         else:
-            decremented = _decrement_quota(db, recipient.sub_id, L4MarketingSubscription.price_change_quota)
+            decremented = _decrement_quota(db, sub_id, L4MarketingSubscription.price_change_quota)
         if decremented:
             _safe_log(
                 db,
                 user_id=user_id,
-                project_id=project.id,
+                project_id=pid,
                 notify_type="price_change",
                 template_id=template_id,
                 status=SendStatus.SUCCESS.value,
                 price_change_id=price_change_id,
-                sub_source=recipient.channel,
+                sub_source=channel,
             )
         else:
             logger.warning(
                 "调价通知送达但额度并发扣减失败（quota 已为 0）：project_id=%s, user_id=%s",
-                project.id,
+                pid,
                 user_id,
             )

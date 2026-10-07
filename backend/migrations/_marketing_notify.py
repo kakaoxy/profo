@@ -55,8 +55,9 @@ def create_marketing_project_subscription_table(engine: Engine) -> None:
         tables=[L4MarketingProjectSubscription.__table__],
         checkfirst=True,
     )
-    # 表已存在（旧库）时 create_all 不会补列：单独幂等补加 last_subscribed_at
+    # 表已存在（旧库）时 create_all 不会补列：单独幂等补加 last_subscribed_at / cancelled_at
     add_last_subscribed_at_to_project_subscriptions(engine)
+    add_cancelled_at_to_project_subscriptions(engine)
 
 
 def add_last_subscribed_at_to_project_subscriptions(engine: Engine) -> None:
@@ -76,6 +77,34 @@ def add_last_subscribed_at_to_project_subscriptions(engine: Engine) -> None:
             ),
         )
     logger.info("l4_marketing_project_subscriptions.last_subscribed_at 列已创建")
+
+
+def add_cancelled_at_to_project_subscriptions(engine: Engine) -> None:
+    """l4_marketing_project_subscriptions 幂等补加 cancelled_at 列（取消提醒语义修复）.
+
+    背景：原实现只清零房源级额度，而调价收件人 = 频道级 ∪ 房源级，导致已取消
+    的用户只要持有频道额度仍会收到该房源推送（与 C 端「取消后不再收到」文案矛盾）。
+    本列作为「显式取消」的唯一事实源：非空 = 该用户已关闭该房源提醒，推送时从频道级
+    中排除（不能用「额度=0」判定：一次性额度送达后同样归 0，会误伤未取消的用户）。
+
+    存量行保持 NULL：迁移前无取消行为可回溯，等同于「未取消」，不改变现有推送范围。
+    """
+    if _column_exists(engine, "l4_marketing_project_subscriptions", "cancelled_at"):
+        return
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE l4_marketing_project_subscriptions ADD COLUMN cancelled_at TIMESTAMP WITH TIME ZONE NULL"
+            ),
+        )
+        conn.execute(
+            text(
+                "COMMENT ON COLUMN l4_marketing_project_subscriptions.cancelled_at IS "
+                "'显式取消提醒时间(非空=已取消;accept 续订时置 NULL)'"
+            ),
+        )
+    logger.info("l4_marketing_project_subscriptions.cancelled_at 列已创建")
 
 
 def add_published_at_to_l4_marketing_projects(engine: Engine) -> None:

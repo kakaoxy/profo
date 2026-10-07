@@ -70,6 +70,7 @@ from services.system.exceptions import ServiceException
 from settings import settings
 from utils.common import limiter
 from utils.redis_client import get_redis_client
+from utils.security_logger import WechatCredentialScrubFilter
 
 # L1 修复：请求 ID 上下文变量，用于跨 worker 日志关联
 request_id_var: ContextVar[str] = ContextVar("request_id", default="")
@@ -105,8 +106,13 @@ logging.basicConfig(
     ],
 )
 # 为 root handler 添加请求 ID 过滤器（filter 在 format 前执行，确保 request_id 属性已注入）
+# 同时挂载凭据拦截过滤器：httpx 在 INFO 级打**完整请求 URL**（成功路径也打），
+# 微信凭据接口将 secret / access_token 放在 query 里，不拦截则每次调用都落盘凭据。
+# 必须挂在 handler 而非 logger：第三方 logger（httpx）的记录沿 manager 传播到 root
+# handler 时，不会经过仅挂在其他 logger 上的 filter。
 for _handler in logging.root.handlers:
     _handler.addFilter(RequestIDFilter())
+    _handler.addFilter(WechatCredentialScrubFilter())
 
 logger = logging.getLogger(__name__)
 

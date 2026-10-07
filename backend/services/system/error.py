@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 
 from db import engine
 from models.system import FailedRecord
+from utils.security_logger import redact_url_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,11 @@ def save_failed_record(
         bool: 是否保存成功
 
     """
+    # 入库前统一脱敏：调用方会传 str(exc)，而 httpx HTTPStatusError 的消息包含完整
+    # 请求 URL（微信接口将 secret / access_token 放在 query）。日志出口有过滤器拦截，
+    # 但本表属持久化存储、不经日志管线，因此在此单独收口。
+    error_message = redact_url_credentials(error_message)
+
     db = None
     try:
         db = ErrorSessionLocal()

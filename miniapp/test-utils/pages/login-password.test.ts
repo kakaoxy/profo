@@ -2,8 +2,12 @@
  * 账号密码登录页（login/password）测试.
  *
  * 覆盖缺陷修复行为：本页经 login/index 中转进入（导航栈「来源页→login/index→本页」），
- * from=valuation/recruit/booking 登录成功后须回退两层直达来源页（navigateBack delta=2），
- * 而非仅回退一层滞留登录页；栈深异常时按一层回退兜底。
+ * from=valuation/recruit/booking/subscribe/subscribe-project 登录成功后须回退两层直达
+ * 来源页（navigateBack delta=2），而非仅回退一层滞留 login/index；栈深异常时按一层回退兜底。
+ *
+ * ⚠️ 后两项来自本迭代修复：订阅提醒（列表页 subscribe / 详情页 subscribe-project）的
+ * from 会经 login/index 原样透传到本页；旧白名单只认前三项，走密码登录的订阅用户
+ * 登录成功会被规约为 switchTab 到「我的」tab，回不到原页，补报/状态刷新落空。
  */
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPageHarness, createRequestMock, pendingReqs, resetTestStubs, wxStubs } from "../test-harness";
@@ -75,6 +79,23 @@ describe("登录成功回跳链路", () => {
 
     expect(wxStubs.navigateBack).toHaveBeenCalledWith({ delta: 2 });
   }, 10_000);
+
+  // 本迭代修复：订阅提醒两个来源须与列表页/详情页跳登录带的 from 值一致
+  it.each(["subscribe", "subscribe-project"])(
+    "from=%s（订阅提醒拦截链）登录成功回退两层，不 switchTab 到 profile",
+    async (from) => {
+      const ctx = createPageHarness({});
+      const promise = submitWith(ctx, from);
+
+      findReq("/auth/token").resolve({ access_token: "c-token", refresh_token: "c-refresh" });
+      await promise;
+      await new Promise((r) => setTimeout(r, 450));
+
+      expect(wxStubs.navigateBack).toHaveBeenCalledWith({ delta: 2 });
+      expect(wxStubs.switchTab).not.toHaveBeenCalled();
+    },
+    10_000,
+  );
 
   it("栈深异常不足三层时按一层回退兜底", async () => {
     pageStackDepth = 2;

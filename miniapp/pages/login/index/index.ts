@@ -88,11 +88,15 @@ Page<PageData, PageCustom>({
         this.setData({ loading: false });
         if (res.success) {
           // 登录成功
+          // 回跳来源白名单：估价/招募/房源预约/列表订阅/详情页调价订阅（后两者经
+          // from=subscribe | subscribe-project 进入）；新增来源须同步
+          // pages/login/password/index.ts 的同名白名单（中转链两层各自判定）
           if (
             this.data.from === "valuation" ||
             this.data.from === "recruit" ||
             this.data.from === "booking" ||
-            this.data.from === "subscribe"
+            this.data.from === "subscribe" ||
+            this.data.from === "subscribe-project"
           ) {
             // 从估价/招募/房源预约/订阅提醒进入登录：navigateBack 返回来源页，保留上下文；
             // 分享卡片直接进入登录页时页面栈为空，navigateBack 失败则回退到「我的」tab

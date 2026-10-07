@@ -25,6 +25,7 @@ from models import Role, User
 from settings import settings
 from utils.auth import get_password_hash
 from utils.redis_client import get_redis_client
+from utils.security_logger import redact_url_credentials
 
 from .exceptions import AuthenticationError, ResourceNotFoundError, ValidationError
 
@@ -34,6 +35,28 @@ _STATE_TTL_SECONDS = 600  # 10 分钟
 _CODE_TTL_SECONDS = 60
 # 小程序全局 access_token 缓存 TTL：微信默认 7200s 过期，留出余量（-300s）避免用到过期 token
 _MINIAPP_TOKEN_CACHE_TTL = 6900
+
+# 微信凭据类参数脱敏：httpx 的 HTTPStatusError 消息带**完整请求 URL（含 query）**，
+# 直接 str(exc) 即把 appid/secret/access_token 明文暴露到日志、留痕表乃至 HTTP 响应体。
+# 正则本体与日志出口过滤器见 utils.security_logger（root handler 挂载见 main.py）。
+
+
+def redact_wechat_credentials(message: str) -> str:
+    """脱敏微信上游异常消息中的凭据类 query 参数（写入日志/留痕表/回传客户端前必过）.
+
+    httpx 的 HTTPStatusError 形如
+    ``Server error '500 ...' for url '.../cgi-bin/token?grant_type=...&appid=...&secret=...'``，
+    其中 secret / access_token 属服务端凭据，严禁写入日志、通知留痕表或回传客户端。
+
+    Args:
+        message: 原始异常消息（或含 URL 的任意文本）
+
+    Returns:
+        凭据参数值替换为 ``***`` 后的消息；appid/域名/路径等非凭据信息保留以便排障
+
+    """
+    return redact_url_credentials(message)
+
 
 # Redis key 前缀，避免与其他模块的 key 冲突
 _STATE_KEY_PREFIX = "wechat:state:"
@@ -168,8 +191,16 @@ class WeChatAuthService:
             "lang": "zh_CN",
         }
         async with httpx.AsyncClient(trust_env=False) as client:
-            response = await client.get(settings.wechat_userinfo_url, params=params)
-            data = response.json()
+            try:
+                response = await client.get(settings.wechat_userinfo_url, params=params)
+                data = response.json()
+            except (httpx.HTTPError, ValueError) as e:
+                # 本接口 URL 携带 access_token（服务端凭据）：无 raise_for_status 但网络/解析
+                # 异常仍会冒泡到 general_exception_handler（str(exc) 入失败记录表 + traceback 入日志）。
+                # 在此收口为固定文案，保证任何下游都拿不到凭据。
+                logger.exception("获取微信用户信息请求异常")
+                msg = "微信服务暂不可用，请稍后重试"
+                raise ValidationError(msg) from e
 
         if data.get("errcode", 0) != 0:
             msg = f"获取微信用户信息失败: {data.get('errmsg')}"
@@ -191,10 +222,14 @@ class WeChatAuthService:
                 response.raise_for_status()
                 data = response.json()
             except httpx.HTTPError as e:
-                msg = f"微信登录请求失败: {e}"
+                # 微信登录 URL 携带 secret + js_code，HTTPStatusError 消息含完整 URL。
+                # AuthenticationError.message 会经 service_exception_handler **原样回传客户端**，
+                # 因此此处必须显式脱敏（日志出口的过滤器只管日志，管不到响应体）。
+                # 堆栈已由出口过滤器脱敏，保留 from e 以便排障。
+                msg = f"微信登录请求失败: {redact_wechat_credentials(str(e))}"
                 raise AuthenticationError(msg) from e
             except (ValueError, KeyError) as e:
-                msg = f"微信登录响应解析失败: {e}"
+                msg = f"微信登录响应解析失败: {redact_wechat_credentials(str(e))}"
                 raise AuthenticationError(msg) from e
 
         if "errcode" in data and data["errcode"] != 0:
@@ -368,9 +403,18 @@ class WeChatAuthService:
             "secret": settings.wechat_secret,
         }
         with httpx.Client(trust_env=False) as client:
-            response = client.get(settings.wechat_miniapp_token_url, params=params)
-            response.raise_for_status()
-            data = response.json()
+            try:
+                response = client.get(settings.wechat_miniapp_token_url, params=params)
+                response.raise_for_status()
+                data = response.json()
+            except (httpx.HTTPError, ValueError) as e:
+                # 本接口 URL 携带 secret（服务端凭据），httpx HTTPStatusError 的消息与
+                # traceback 均含完整 URL。堆栈已在日志出口统一脱敏（main.py 挂
+                # WechatCredentialScrubFilter），因此保留 logger.exception 与 __cause__ 以便排障；
+                # 对用户抛固定文案 —— 下游 str(exc)（通知留痕表 / 失败记录 / HTTP 响应体）拿不到凭据。
+                logger.exception("获取小程序 access_token 请求异常")
+                msg = "微信服务暂不可用，请稍后重试"
+                raise ValidationError(msg) from e
 
         if "access_token" not in data:
             # errmsg 含上游 API 细节（如 appid 错误、IP 白名单缺失），不能直接回传给用户；
@@ -408,9 +452,17 @@ class WeChatAuthService:
         params = {"access_token": access_token}
         payload = {"code": code}
         with httpx.Client(trust_env=False) as client:
-            response = client.post(settings.wechat_phone_url, params=params, json=payload)
-            response.raise_for_status()
-            data = response.json()
+            try:
+                response = client.post(settings.wechat_phone_url, params=params, json=payload)
+                response.raise_for_status()
+                data = response.json()
+            except (httpx.HTTPError, ValueError) as e:
+                # 本接口 URL 携带 access_token（同样属服务端凭据）：HTTPStatusError 消息含完整 URL，
+                # 不包裹则冒泡到 general_exception_handler 的 traceback dump 里落日志。
+                # 堆栈经日志出口统一脱敏，因此保留 logger.exception；对用户抛固定文案。
+                logger.exception("获取微信手机号请求异常")
+                msg = "微信服务暂不可用，请稍后重试"
+                raise ValidationError(msg) from e
 
         if data.get("errcode", 0) != 0:
             # errmsg 含上游 API 细节（如 code 已使用、appsecret 错误），不能直接回传给用户；
@@ -457,7 +509,9 @@ class WeChatAuthService:
                 data = response.json()
             except (httpx.HTTPError, ValueError) as e:
                 # 网络/HTTP 状态错误（httpx.HTTPError）与非 JSON 响应体（json.JSONDecodeError 属 ValueError）
-                # 统一转为业务校验错误，避免以通用 500 冒泡
+                # 统一转为业务校验错误，避免以通用 500 冒泡。
+                # 本接口 URL 携带 access_token（服务端凭据）：堆栈由日志出口统一脱敏，
+                # 因此保留 logger.exception；对用户抛固定文案（str(exc) 不含凭据）。
                 logger.exception("生成小程序码请求异常")
                 msg = "小程序码生成失败，请检查微信配置"
                 raise ValidationError(msg) from e
@@ -506,7 +560,10 @@ class WeChatAuthService:
                 result: dict[str, object] = response.json()
             except (httpx.HTTPError, ValueError) as e:
                 # 网络/HTTP 状态错误与非 JSON 响应体统一转为业务校验错误，
-                # 避免以通用 500 冒泡（与 fetch_miniapp_unlimited_qrcode 一致）
+                # 避免以通用 500 冒泡（与 fetch_miniapp_unlimited_qrcode 一致）。
+                # 本接口 URL 携带 access_token（服务端凭据）：堆栈由日志出口统一脱敏
+                # （见 main.py），因此保留 logger.exception；对用户抛固定文案，调用方
+                # str(exc) 与 traceback dump 均拿不到凭据。
                 logger.exception("发送订阅消息请求异常")
                 msg = "订阅消息发送失败"
                 raise ValidationError(msg) from e

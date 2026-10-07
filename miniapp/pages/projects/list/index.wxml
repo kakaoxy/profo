@@ -151,7 +151,8 @@
       bindtap="onNotifyTap"
     >
       <view class="notify-btn__ico"></view>
-      <text wx:if="{{subscribeState === 'on'}}">已订阅 · 可收 {{subscribeQuota}} 条</text>
+      <text wx:if="{{subscribePendingLogin}}">已授权 · 登录后生效</text>
+      <text wx:elif="{{subscribeState === 'on'}}">已订阅 · 可收 {{subscribeQuota}} 条</text>
       <text wx:elif="{{subscribeState === 'expired'}}">续订提醒</text>
       <text wx:else>订阅提醒</text>
       <view wx:if="{{subscribeState === 'expired'}}" class="notify-btn__dot"></view>

@@ -54,15 +54,6 @@ class PublicMarketingProjectSubscriptionStatusResponse(BaseModel):
     last_subscribed_at: datetime | None = Field(default=None, description="最近一次订阅授权时间")
 
 
-class PublicMarketingLatestPriceChange(BaseModel):
-    """C 端列表项调价摘要（降价/涨价徽标数据源）."""
-
-    old_price: float = Field(description="调价前总价(万元)")
-    new_price: float = Field(description="调价后总价(万元)")
-    direction: str = Field(description="调价方向: down/up")
-    changed_at: datetime = Field(description="调价时间")
-
-
 class PublicMarketingNotifySummary(BaseModel):
     """admin 营销列表通知统计（详情 Sheet 数据源）."""
 

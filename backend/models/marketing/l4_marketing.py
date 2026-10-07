@@ -568,6 +568,15 @@ class L4MarketingProjectSubscription(BaseModel):
         nullable=True,
         comment="最近一次订阅授权时间",
     )
+    # 显式取消时间（「服务端尊重取消」的唯一事实源）：非空 = 用户已关闭该房源调价提醒，
+    # 调价推送收件人需从频道级中排除该用户（频道额度保留，其他房源仍可推）。
+    # ⚠️ 不可用「额度=0」代替判定：一次性额度推送送达后同样归 0，会误伤未取消的用户。
+    # 取消时写入；用户再次 accept 上报续订时置回 NULL。
+    cancelled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="显式取消提醒时间(非空=已取消;accept 续订时置 NULL)",
+    )
 
     # 时间戳（覆盖基类，使用数据库默认值）
     created_at: Mapped[datetime] = mapped_column(

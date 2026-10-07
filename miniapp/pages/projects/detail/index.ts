@@ -395,7 +395,9 @@ Page<PageData, Custom>({
     }
     this.priceAlertTemplateId = templates.priceChangeTemplateId;
     this.setData({ priceAlertEnabled: true });
-    // 订阅状态刷新由 onLoad 后的 onShow 统一执行，此处不重复请求
+    // 模板异步返回时 onShow 的首次 refreshPriceAlertState 已因 priceAlertEnabled=false
+    // 提前 return（冷启动首次进入不回显「已开启」），因此在开关置为可用后立即补一次状态刷新
+    await this.refreshPriceAlertState();
   },
 
   /** 刷新房源级订阅状态（需登录；未登录静默保持未订阅态）. */
