@@ -12,10 +12,12 @@
  * 均为自然日口径（当日为第 1 天，后端到期于第 N 个自然日 23:59:59）。
  */
 import { request } from "../../../../utils/request";
+import { getCAccessToken } from "../../../../utils/token";
 import {
   expireDotOfDay,
   extractErrorMessage,
   NORMAL_KEY_STATUS_TEXT,
+  RECENT_SHARED_KEY_PREFIX,
   SHARE_PROPS_STORAGE_KEY,
 } from "../../utils/keys";
 import type { KeysDetailResponse } from "../../utils/keys";
@@ -273,6 +275,14 @@ Page<PageData, PageCustom>({
     })
       .then((res) => {
         this.setData({ creating: false });
+        // 记录本次分享涉及的房源，钥匙列表将其置顶（与后端口径一致）
+        const token = getCAccessToken();
+        if (token) {
+          wx.setStorageSync(
+            `${RECENT_SHARED_KEY_PREFIX}:${token}`,
+            props.map((p) => p.projectId),
+          );
+        }
         wx.redirectTo({
           url: `/pages/keys/share/success/index?token=${encodeURIComponent(res.token)}&id=${encodeURIComponent(res.id)}&count=${items.length}&expires_at=${encodeURIComponent(res.expires_at)}`,
         });

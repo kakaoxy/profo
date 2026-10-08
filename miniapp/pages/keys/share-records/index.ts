@@ -3,7 +3,8 @@
  *
  * GET /keys/shares（C 端令牌）一次拉全，状态过滤（全部/进行中/已过期/已回收）
  * 在前端本地完成——顶栏 chip 直接显示各状态计数，切换不重复请求。
- * 卡片展示：创建时间、房源数、有效期（剩 N 天/已过期）、查看进度、查看人。
+ * 卡片标题为分享涉及房源的小区名（多套用「/」拼接，超长截断，空回退「N 套房源」）。
+ * 其余展示：创建时间、有效期（剩 N 天/已过期）、查看进度、查看人。
  * 已过期卡片带提示条（过期后经纪人不可查看，延长有效期可恢复），已回收显示「已回收」chip。
  * enablePullDownRefresh 下拉重拉。
  */
@@ -11,6 +12,7 @@ import { request } from "../../../utils/request";
 import {
   formatStamp,
   remainingDays,
+  shareCardTitle,
   shareStatusOf,
 } from "../utils/keys";
 import type { KeyShareListItem, KeyShareListResponse } from "../utils/keys";
@@ -130,7 +132,7 @@ Page<PageData, PageCustom>({
       statusLabel: view.label,
       statusClass: view.statusClass,
       createdText: formatStamp(item.created_at),
-      itemsText: `${item.items_count} 套房源`,
+      itemsText: shareCardTitle(item.community_names ?? [], item.items_count),
       expireText,
       viewedText: `已查看 ${item.viewed_count} / ${item.items_count}`,
       viewersText: (item.viewer_names ?? []).filter(Boolean).join("、"),

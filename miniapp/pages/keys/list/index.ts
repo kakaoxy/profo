@@ -3,11 +3,17 @@
  *
  * 数据 GET /keys/properties（/keys/* 走 C 端令牌，request.ts 自动选择），
  * 后端按当前用户身份过滤（管理员=全量，相关人=仅关联房源）。
+ * 排序：默认状态/创建时间序；当前用户最近一次分享过的房源置顶（各人只看到自己的置顶，
+ * 后端同口径，storage 记录双保险防 SWR 缓存回序）。
  * 状态机（loading/error/needLogin/empty/items）与 SWR 缓存参照 viewing 列表范本；
  * 无分页（后端一次返回全部关联房源），点击卡片进房源钥匙详情页。
  */
 import { request, getCacheData } from "../../../utils/request";
-import { PROJECT_STATUS_TEXT } from "../utils/keys";
+import {
+  PROJECT_STATUS_TEXT,
+  RECENT_SHARED_KEY_PREFIX,
+  stablePartition,
+} from "../utils/keys";
 import type { KeysPropertyItem, KeysPropertiesResponse } from "../utils/keys";
 import { getCAccessToken } from "../../../utils/token";
 
@@ -44,6 +50,8 @@ interface PageCustom {
   loadList(): Promise<void>;
   /** 用关键字过滤 allItems 并渲染（searchKey 为空渲染全量）. */
   applyFilter(): void;
+  /** 读取本地缓存的置顶房源 ID 集（无则空集）. */
+  loadRecentShared(): Set<string>;
   onSearch(e: WechatMiniprogram.Input): void;
   onClearSearch(): void;
   onShareRecords(): void;
@@ -92,6 +100,16 @@ Page<PageData, PageCustom>({
     void this.loadList();
   },
 
+  /** 置顶房源 ID 集从 storage 读取（分享成功页/分享记录页写入，后端口径一致）. */
+  loadRecentShared(): Set<string> {
+    const token = getCAccessToken();
+    if (!token) {
+      return new Set();
+    }
+    const raw = wx.getStorageSync(`${RECENT_SHARED_KEY_PREFIX}:${token}`);
+    return Array.isArray(raw) ? new Set(raw as string[]) : new Set();
+  },
+
   async loadList() {
     const token = getCAccessToken();
     if (!token) {
@@ -106,7 +124,11 @@ Page<PageData, PageCustom>({
         state: cached.items.length > 0 ? "items" : "empty",
         total: cached.items.length,
       });
-      this.allItems = cached.items.map(toDisplay);
+      this.allItems = stablePartition(
+        cached.items.map(toDisplay),
+        this.loadRecentShared(),
+        (item) => item.projectId,
+      );
       this.applyFilter();
     } else {
       this.setData({ state: "loading", items: [], total: 0 });
@@ -120,7 +142,11 @@ Page<PageData, PageCustom>({
         state: data.items.length > 0 ? "items" : "empty",
         total: data.items.length,
       });
-      this.allItems = data.items.map(toDisplay);
+      this.allItems = stablePartition(
+        data.items.map(toDisplay),
+        this.loadRecentShared(),
+        (item) => item.projectId,
+      );
       this.applyFilter();
     } catch (err) {
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;

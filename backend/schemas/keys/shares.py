@@ -84,6 +84,7 @@ class KeyShareListItem(BaseModel):
     token: str
     status: str  # active | revoked
     is_expired: bool  # 派生态：active && expires_at < now
+    community_names: list[str]  # 分享条目涉及房源的小区名（与条目顺序一致，脏条目跳过）
     items_count: int
     viewed_count: int  # 已查看条目数 n
     viewer_names: list[str]

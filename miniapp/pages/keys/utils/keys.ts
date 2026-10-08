@@ -35,6 +35,12 @@ export type NormalKeyBatchDeleteResponse = components["schemas"]["NormalKeyBatch
  */
 export const SHARE_PROPS_STORAGE_KEY = "keys_share_props";
 
+/**
+ * 置顶排序 storage key 前缀（share/keys 分享成功时按令牌写入 → keys/list 读取置顶排序）。
+ * 与后端 list_my_properties 的「最近一次分享置顶」口径一致，双保险防 SWR 缓存回序.
+ */
+export const RECENT_SHARED_KEY_PREFIX = "keys_recent_shared_projects";
+
 /** 普通密码组状态 → 中文文案. */
 export const NORMAL_KEY_STATUS_TEXT: Record<string, string> = {
   active: "有效",
@@ -135,6 +141,37 @@ export function shareStatusOf(status: string, isExpired: boolean): "active" | "e
     return "expired";
   }
   return "active";
+}
+
+/**
+ * 分享记录卡标题：小区名用「/」拼接；全部为空回退「N 套房源」。
+ * 超出 maxLen 时保留能容纳的前几个小区名，并以「…」收尾.
+ */
+export function shareCardTitle(names: string[], itemsCount: number, maxLen = 12): string {
+  const cleaned = names.map((n) => n.trim()).filter(Boolean);
+  if (cleaned.length === 0) {
+    return `${itemsCount} 套房源`;
+  }
+  const parts: string[] = [];
+  let len = 0;
+  for (const name of cleaned) {
+    const extra = (parts.length > 0 ? 1 : 0) + name.length;
+    if (parts.length > 0 && len + extra > maxLen) {
+      break;
+    }
+    parts.push(name);
+    len += extra;
+  }
+  const joined = parts.join("/");
+  const overflow = parts.length < cleaned.length || joined.length > maxLen;
+  return overflow ? `${joined.slice(0, maxLen)}…` : joined;
+}
+
+/** 按置顶 ID 集稳定排序：置顶项在前（保持原相对顺序），其余在后（保持原相对顺序）. */
+export function stablePartition<T>(list: T[], topIds: Set<string>, keyOf: (item: T) => string): T[] {
+  const top = list.filter((item) => topIds.has(keyOf(item)));
+  const rest = list.filter((item) => !topIds.has(keyOf(item)));
+  return [...top, ...rest];
 }
 
 /** 查看记录动作 → 中文文案. */

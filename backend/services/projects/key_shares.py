@@ -90,8 +90,17 @@ class KeyShareService:
     # ==================== 员工端：房源聚合 ====================
 
     def list_my_properties(self, user: User) -> KeysPropertiesResponse:
-        """我可操作的房源 + 钥匙徽章聚合（不显密文）."""
+        """我可操作的房源 + 钥匙徽章聚合（不显密文）.
+
+        排序：SQL 状态/创建时间序基础上，将当前用户最近一次分享涉及的房源提到最前
+        （分享条目按用户隔离，各人只看到自己上次分享过的）；其余房源保持原序.
+        """
         projects = list_accessible_projects(self.db, user)
+        recent_project_ids = self._latest_shared_project_ids(user)
+        if recent_project_ids:
+            projects = [p for p in projects if p.id in recent_project_ids] + [
+                p for p in projects if p.id not in recent_project_ids
+            ]
         project_ids = {p.id for p in projects}
         if not project_ids:
             return KeysPropertiesResponse(items=[])
@@ -134,6 +143,21 @@ class KeyShareService:
             for p in projects
         ]
         return KeysPropertiesResponse(items=items)
+
+    def _latest_shared_project_ids(self, user: User) -> set[uuid.UUID]:
+        """当前用户最近一次分享涉及的房源 ID 集（无分享返回空集）.
+
+        仅取进行中的分享（回收/过期不参与置顶）；解析失败条目跳过.
+        """
+        latest = (
+            self.db.query(KeyShare)
+            .filter(KeyShare.sharer_id == str(user.id), KeyShare.status == KeyShareStatus.ACTIVE)
+            .order_by(KeyShare.created_at.desc())
+            .first()
+        )
+        if latest is None:
+            return set()
+        return {pid for pid, _ in parse_share_items(latest)}
 
     def _share_refs_and_counts(
         self, project_ids: set[uuid.UUID]
@@ -225,6 +249,14 @@ class KeyShareService:
         shares = query.order_by(KeyShare.created_at.desc()).all()
         views = self._share_views([s.id for s in shares])
 
+        # 分享条目存 JSONB（project_id），批量查小区名避免 N+1
+        project_ids = {pid for share in shares for pid, _ in parse_share_items(share)}
+        community_map = (
+            {p.id: p.community_name for p in self.db.query(Project).filter(Project.id.in_(project_ids)).all()}
+            if project_ids
+            else {}
+        )
+
         items: list[KeyShareListItem] = []
         for share in shares:
             expired = is_share_expired(share)
@@ -245,6 +277,7 @@ class KeyShareService:
                     token=share.token,
                     status=share.status.value,
                     is_expired=expired,
+                    community_names=[community_map.get(pid, "") for pid, _ in entries],
                     items_count=len(entries),
                     viewed_count=len({kid for kid in viewed_key_ids if kid in {k for _, k in entries}}),
                     viewer_names=viewer_names,
