@@ -10,6 +10,8 @@ interface SubscriptionStats {
   total_price_quota?: number;
   project_level_subscribers?: number;
   project_level_watches?: number;
+  /** 失同步订阅人数：本地额度>0 但最近一次推送被微信 43101 拒收（需重新订阅） */
+  out_of_sync_subscribers?: number;
 }
 
 interface MarketingStatsProps {
@@ -59,12 +61,19 @@ export function MarketingStats({ stats, subStats }: MarketingStatsProps) {
 
   // P1-1 订阅漏斗两卡：订阅用户（任一频道订阅过总人数）+ 可触达·新上（上新频道剩余额度>0）
   if (subStats) {
+    const outOfSync = subStats.out_of_sync_subscribers ?? 0;
     items.push(
       {
         label: "订阅用户",
         value: subStats.total_subscribers ?? 0,
         icon: <Bell className="h-4 w-4" />,
         dotColor: "bg-ink",
+        // 失同步提醒（43101 对账 · 仅标记提醒）：本地额度未消费但微信侧拒收，
+        // 需引导用户在小程序内重新订阅（排查报告 2026-10-09 §5.2-3）
+        trend:
+          outOfSync > 0
+            ? { text: `失同步 ${outOfSync} 人 · 需重新订阅`, tone: "down" }
+            : undefined,
       },
       {
         label: "可触达·新上",

@@ -525,7 +525,12 @@ class WeChatAuthService:
             raise ValidationError(msg)
 
     @staticmethod
-    def send_subscribe_message(openid: str, template_id: str, data: dict, page: str | None = None) -> int:
+    def send_subscribe_message(
+        openid: str,
+        template_id: str,
+        data: dict,
+        page: str | None = None,
+    ) -> tuple[int, str | None]:
         """发送小程序订阅消息 (Sync - 供 run_in_threadpool 调用).
 
         调用 cgi-bin/message/subscribe/send 接口，需先获取小程序全局 access_token。
@@ -538,10 +543,12 @@ class WeChatAuthService:
             page: 点击消息跳转的小程序页面路径（含 query，可选）
 
         Returns:
-            微信接口 errcode：0 = 受理成功；43101/40003 为预期业务态
-            （用户未订阅/openid 无效，warning 留痕后返回原码不抛异常）。
-            调用方必须区分 0 与非 0 判定是否真正送达（如按送达扣减订阅额度）；
-            忽略返回值则保持旧语义（仅区分「抛异常/不抛异常」）。
+            ``(errcode, errmsg)`` 元组：errcode=0 受理成功（errmsg 恒 None）；
+            43101/40003 预期业务态返回非 0 原码与微信 errmsg（含 rid，留痕排障用）。
+            errmsg 来自微信响应体，不含请求 URL 凭据；入库前仍需调用方脱敏+截断。
+            调用方必须区分 errcode 0 与非 0 判定是否真正送达（如按送达扣减订阅额度）；
+            只关心成败的调用方可忽略返回值（recruit/leads/customer_notify 现状）。
+            errmsg 随返回值传递而非共享快照：并发发送互不串档（2026-10-09 评审修复）。
 
         Raises:
             ValidationError: 微信接口返回错误（细节仅记日志，不回传用户）或
@@ -577,14 +584,15 @@ class WeChatAuthService:
             # 仅服务端日志记录，对用户返回通用错误消息
             errcode = result.get("errcode")
             errmsg = result.get("errmsg")
+            # errmsg 随返回值透出（营销通知留痕用）；其他调用方忽略返回值不受影响
             if errcode in (43101, 40003):
                 # 43101=用户未订阅/拒收（一次性订阅额度未授权或已用尽），
                 # 40003=openid 无效（如员工已解绑）：均属预期业务态，重试亦无意义，
                 # warning 留痕后返回原码（不抛异常，避免 ERROR 噪音）；
                 # 送达与否由调用方按返回码判定（如订阅额度是否扣减）
                 logger.warning("订阅消息未送达（预期业务态）：errcode=%s, errmsg=%s", errcode, errmsg)
-                return int(errcode)
+                return int(errcode), str(errmsg) if errmsg else None
             logger.error("发送订阅消息失败：errcode=%s, errmsg=%s", errcode, errmsg)
             msg = "订阅消息发送失败"
             raise ValidationError(msg)
-        return 0
+        return 0, None

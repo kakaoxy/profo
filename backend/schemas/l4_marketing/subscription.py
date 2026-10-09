@@ -88,3 +88,9 @@ class L4MarketingSubscriptionStatsResponse(BaseModel):
         ge=0,
         description="房源级订阅关系总数（P2-1 落地后启用）",
     )
+    out_of_sync_subscribers: int = Field(
+        default=0,
+        ge=0,
+        description="失同步订阅人数：任一频道本地额度>0 但最近一次推送被微信 43101 拒收"
+        "（如「总是拒收」/关闭订阅消息总开关/开发者工具模拟授权），需重新订阅后消除",
+    )

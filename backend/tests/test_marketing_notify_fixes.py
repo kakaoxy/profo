@@ -212,9 +212,9 @@ def send_mock(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
     """替换微信订阅消息发送（errcode=0 = 受理成功）并记录调用参数."""
     calls: list[dict[str, Any]] = []
 
-    def fake_send(openid: str, template_id: str, data: dict, page: str | None = None) -> int:
+    def fake_send(openid: str, template_id: str, data: dict, page: str | None = None) -> tuple[int, str | None]:
         calls.append({"openid": openid, "template_id": template_id, "data": data, "page": page})
-        return 0
+        return 0, None
 
     monkeypatch.setattr(notify_mod.WeChatAuthService, "send_subscribe_message", staticmethod(fake_send))
     return calls
@@ -668,7 +668,7 @@ def test_notify_skipped_does_not_decrement(
     monkeypatch.setattr(
         notify_mod.WeChatAuthService,
         "send_subscribe_message",
-        staticmethod(lambda *a, **kw: 43101),
+        staticmethod(lambda *a, **kw: (43101, None)),
     )
     project = _make_project(session, project_id=9602)
     sub = _make_channel_sub(session, user_id="skip-user", openid="op-skip", new_quota=3)
@@ -785,7 +785,7 @@ def test_m7_openid_not_logged_in_full(
 
     _net_error = "网络异常"
 
-    def boom(*a: Any, **kw: Any) -> int:
+    def boom(*a: Any, **kw: Any) -> tuple[int, str | None]:
         raise RuntimeError(_net_error)
 
     monkeypatch.setattr(notify_mod.WeChatAuthService, "send_subscribe_message", staticmethod(boom))
@@ -933,9 +933,9 @@ class _BorrowedSessionCtx:
 def _make_recorder(sink: list[str]):
     """构造记录 openid 并恒返回 errcode=0（受理成功）的假 send_subscribe_message."""
 
-    def _send(openid: str, *args: Any, **kwargs: Any) -> int:
+    def _send(openid: str, *args: Any, **kwargs: Any) -> tuple[int, str | None]:
         sink.append(openid)
-        return 0
+        return 0, None
 
     return _send
 
@@ -1021,3 +1021,186 @@ def test_m2_notify_wrapper_removes_per_recipient_selects(
     assert fixed_delta <= 2, f"入口路径仍有 N+1：+4 收件人导致 +{fixed_delta} 条 SELECT"
     assert before_delta >= 4, f"对照组未体现 N+1（+4 收件人仅 +{before_delta} 条）——测量失效，无法证明修复有效"
     assert before_delta > fixed_delta, "修复后斜率必须低于修复前"
+
+
+# =========================================================================
+# 43101 失同步排障增强（2026-10-09 泗塘五村排查报告 §5）：errmsg 留痕 + 出入口日志 + 失同步统计
+# =========================================================================
+
+
+def test_notify_skipped_errmsg_land_in_notify_log(
+    seeded_db: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """43101 skipped 留痕 error_msg 透传微信 errmsg（含 rid），排障一手证据入库.
+
+    mock 发送器返回 (errcode, errmsg) 元组（对齐真实发送器签名，2026-10-09
+    评审修复：errmsg 随返回值传递，非共享快照）。
+    """
+    session: Session = seeded_db["session"]
+    _seed_template_env(monkeypatch)
+    monkeypatch.setattr(
+        notify_mod.WeChatAuthService,
+        "send_subscribe_message",
+        staticmethod(lambda *a, **kw: (43101, "user refuse to accept the msg rid: rid-test-0001")),
+    )
+    project = _make_project(session, project_id=9604)
+    _make_channel_sub(session, user_id="errmsg-user", openid="op-errmsg", new_quota=2)
+
+    _notify_projects_published(session, project.id)
+
+    log = session.query(L4MarketingNotifyLog).one()
+    assert log.send_status == SendStatus.SKIPPED.value
+    assert "errcode=43101" in log.error_msg
+    assert "rid-test-0001" in log.error_msg
+
+
+def test_notify_skipped_errmsg_no_cross_recipient_mixing(
+    seeded_db: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """多收件人并发发送时 errmsg 按收件人对位，不串档（竞态回归）.
+
+    旧行为（模块级共享快照）：主线程读快照 → 多收件人 skipped 留痕拿到同一条
+    最后写入者的 errmsg。新行为：errmsg 随 send 返回值按收件人对位。
+    """
+    session: Session = seeded_db["session"]
+    _seed_template_env(monkeypatch)
+
+    def fake_send_per_openid(
+        openid: str,
+        template_id: str,
+        data: dict,
+        page: str | None = None,
+    ) -> tuple[int, str | None]:
+        # 每个 openid 独立的 errmsg（含 openid 尾椎以区分串档）
+        return 43101, f"user refuse rid: for-{openid[-4:]}"
+
+    monkeypatch.setattr(
+        notify_mod.WeChatAuthService,
+        "send_subscribe_message",
+        staticmethod(fake_send_per_openid),
+    )
+    project = _make_project(session, project_id=9607)
+    users = [(f"mix-{i}", f"op-mix-{i:04d}") for i in range(6)]
+    for uid, oid in users:
+        _make_channel_sub(session, user_id=uid, openid=oid, new_quota=1)
+
+    _notify_projects_published(session, project.id)
+
+    logs = session.query(L4MarketingNotifyLog).all()
+    assert len(logs) == 6
+    errmsg_by_user = {log.user_id: log.error_msg for log in logs}
+    for uid, oid in users:
+        # 每条留痕的 errmsg 必须是该收件人自己的（未被他收件人覆盖）
+        assert errmsg_by_user[uid] == f"errcode=43101 user refuse rid: for-{oid[-4:]}", uid
+
+
+def test_notify_skipped_errmsg_fallback_without_snapshot(
+    seeded_db: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """发送器返回 errmsg 为 None 时留痕回退纯 errcode 文案（元组解包兼容）."""
+    session: Session = seeded_db["session"]
+    _seed_template_env(monkeypatch)
+    monkeypatch.setattr(
+        notify_mod.WeChatAuthService,
+        "send_subscribe_message",
+        staticmethod(lambda *a, **kw: (43101, None)),
+    )
+    project = _make_project(session, project_id=9605)
+    _make_channel_sub(session, user_id="fallback-user", openid="op-fallback", new_quota=2)
+
+    _notify_projects_published(session, project.id)
+
+    log = session.query(L4MarketingNotifyLog).one()
+    assert log.error_msg == "errcode=43101"
+
+
+def test_notify_task_logs_start_and_summary(
+    seeded_db: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """上新通知出入口日志成对出现（排障基准：范围/配置来源/结果汇总）."""
+    session: Session = seeded_db["session"]
+    _seed_template_env(monkeypatch)
+    monkeypatch.setattr(
+        notify_mod.WeChatAuthService,
+        "send_subscribe_message",
+        staticmethod(lambda *a, **kw: (0, None)),
+    )
+    project = _make_project(session, project_id=9606)
+    _make_channel_sub(session, user_id="log-user", openid="op-log", new_quota=1)
+
+    with caplog.at_level(logging.INFO, logger="services.marketing.notify"):
+        _notify_projects_published(session, project.id)
+
+    messages = [r.getMessage() for r in caplog.records]
+    assert any("上新通知开始推送" in m and "收件人=1人" in m for m in messages)
+    assert any("上新通知推送完成" in m and "成功=1" in m for m in messages)
+
+
+def test_stats_out_of_sync_counts_latest_43101_with_quota(
+    seeded_db: dict[str, Any],
+) -> None:
+    """失同步统计：最近留痕 43101+有额度 计入；success 后消除；额度 0 不计."""
+    session: Session = seeded_db["session"]
+    base = datetime.now(timezone.utc)
+
+    # A：最新留痕 43101 skipped 且有额度 → 失同步
+    _make_channel_sub(session, user_id="oos-a", openid="op-a", new_quota=2)
+    session.add(
+        L4MarketingNotifyLog(
+            user_id="oos-a",
+            marketing_project_id=1,
+            notify_type="new_listing",
+            template_id=_NEW_TMPL,
+            send_status=SendStatus.SKIPPED.value,
+            error_msg="errcode=43101 user refuse to accept the msg rid: r-a",
+            created_at=base,
+        ),
+    )
+    # B：先 43101 后成功（最新一条 success）→ 不计
+    _make_channel_sub(session, user_id="oos-b", openid="op-b", price_quota=1)
+    session.add(
+        L4MarketingNotifyLog(
+            user_id="oos-b",
+            marketing_project_id=1,
+            notify_type="price_change",
+            template_id=_PRICE_TMPL,
+            send_status=SendStatus.SKIPPED.value,
+            error_msg="errcode=43101",
+            created_at=base,
+        ),
+    )
+    session.add(
+        L4MarketingNotifyLog(
+            user_id="oos-b",
+            marketing_project_id=1,
+            notify_type="price_change",
+            template_id=_PRICE_TMPL,
+            send_status=SendStatus.SUCCESS.value,
+            created_at=base.replace(minute=base.minute + 1),
+        ),
+    )
+    # C：最新留痕 43101 但本地额度已归零（额度被消费/无额度）→ 不计
+    _make_channel_sub(session, user_id="oos-c", openid="op-c", new_quota=0)
+    session.add(
+        L4MarketingNotifyLog(
+            user_id="oos-c",
+            marketing_project_id=1,
+            notify_type="new_listing",
+            template_id=_NEW_TMPL,
+            send_status=SendStatus.SKIPPED.value,
+            error_msg="errcode=43101",
+            created_at=base,
+        ),
+    )
+    # D：从未有过留痕的用户（新订阅未经历推送）→ 不计
+    _make_channel_sub(session, user_id="oos-d", openid="op-d", new_quota=5)
+    session.flush()
+
+    stats = MarketingSubscriptionService(session).get_global_stats()
+
+    assert stats.out_of_sync_subscribers == 1, "仅 A（最新留痕 43101+有额度）应计入"

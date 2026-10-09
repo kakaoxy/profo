@@ -9203,6 +9203,12 @@ export interface components {
              * @default 0
              */
             project_level_watches: number;
+            /**
+             * Out Of Sync Subscribers
+             * @description 失同步订阅人数：任一频道本地额度>0 但最近一次推送被微信 43101 拒收（如「总是拒收」/关闭订阅消息总开关/开发者工具模拟授权），需重新订阅后消除
+             * @default 0
+             */
+            out_of_sync_subscribers: number;
         };
         /**
          * L4MediaType

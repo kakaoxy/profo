@@ -13,14 +13,16 @@
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import func, update
+from sqlalchemy import func, or_, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models import (
+    L4MarketingNotifyLog,
     L4MarketingProject,
     L4MarketingProjectSubscription,
     L4MarketingSubscription,
+    SendStatus,
     User,
 )
 from schemas.l4_marketing import L4MarketingSubscriptionStatsResponse
@@ -170,6 +172,41 @@ class MarketingSubscriptionService:
             self.db.rollback()
             logger.warning("房源级订阅表不可用，统计降级为 0（P2-1 未迁移）")
 
+        # 失同步订阅人数（43101 对账 · 仅标记提醒）：本地额度>0 但最近一次推送被微信拒收。
+        # 判定口径：留痕取每人 user_id 分组内 created_at 最新一条；该行 send_status=skipped
+        # 且 error_msg 以 errcode=43101 开头，且其任一频道本地额度>0（本地认为可推但微信侧
+        # 拒收）。其余状态（success/failed）或无留痕均不视为失同步；重新 accept 上报不会
+        # 主动清零（下一次真实推送成功后自然消除）。
+        out_of_sync_subscribers = 0
+        try:
+            latest_log = self.db.query(
+                L4MarketingNotifyLog.user_id,
+                L4MarketingNotifyLog.send_status,
+                L4MarketingNotifyLog.error_msg,
+                func.row_number()
+                .over(partition_by=L4MarketingNotifyLog.user_id, order_by=L4MarketingNotifyLog.created_at.desc())
+                .label("rn"),
+            ).subquery()
+            stale_rows = (
+                self.db.query(latest_log.c.user_id)
+                .filter(
+                    latest_log.c.rn == 1,
+                    latest_log.c.send_status == SendStatus.SKIPPED.value,
+                    latest_log.c.error_msg.like("errcode=43101%"),
+                    L4MarketingSubscription.user_id == latest_log.c.user_id,
+                    or_(
+                        L4MarketingSubscription.new_listing_quota > 0,
+                        L4MarketingSubscription.price_change_quota > 0,
+                    ),
+                )
+                .all()
+            )
+            out_of_sync_subscribers = len(stale_rows)
+        except Exception:
+            # 留痕表不可用时统计降级 0，不阻断频道级统计
+            self.db.rollback()
+            logger.warning("失同步订阅统计降级为 0（留痕表不可用）")
+
         return L4MarketingSubscriptionStatsResponse(
             new_listing_subscribers=int(new_listing_subscribers),
             price_change_subscribers=int(price_change_subscribers),
@@ -178,6 +215,7 @@ class MarketingSubscriptionService:
             total_price_quota=int(total_price_quota),
             project_level_subscribers=int(project_level_subscribers),
             project_level_watches=int(project_level_watches),
+            out_of_sync_subscribers=int(out_of_sync_subscribers),
         )
 
     def report_result(
