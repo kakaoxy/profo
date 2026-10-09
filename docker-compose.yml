@@ -124,6 +124,13 @@ services:
       SERVER_API_URL: http://backend:8000
     restart: unless-stopped
     mem_limit: 256m
+    # 日志轮转（同 backend，43101 排查报告 2026-10-09 §5.4 同类问题一次修完）：
+    # 50MB×5 文件滚动覆盖，避免吃满磁盘
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
 
 volumes:
   pgdata:

@@ -27,7 +27,7 @@
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
@@ -1181,7 +1181,9 @@ def test_stats_out_of_sync_counts_latest_43101_with_quota(
             notify_type="price_change",
             template_id=_PRICE_TMPL,
             send_status=SendStatus.SUCCESS.value,
-            created_at=base.replace(minute=base.minute + 1),
+            # +1 分钟须用 timedelta 进位（datetime.replace 不进位：UTC xx:59 运行时
+            # replace(minute=60) 抛 ValueError，每日一次的 flaky）
+            created_at=base + timedelta(minutes=1),
         ),
     )
     # C：最新留痕 43101 但本地额度已归零（额度被消费/无额度）→ 不计
