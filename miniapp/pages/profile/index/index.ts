@@ -366,6 +366,9 @@ Page<PageData, PageCustom>({
       roleLabel: "内部员工 · 已认证",
       phoneDisplay: phone ? maskPhone(phone) : "—",
       hasPhone: !!phone,
+      // 钥匙管理入口按后端 keys_accessible 过滤（admin 恒 true；operator/user
+      // 按相关人匹配，无关员工不渲染入口而非进列表页报错）；其余入口不受影响
+      internalEntries: INTERNAL_ENTRIES.filter((entry) => entry.key !== "keys" || user.keys_accessible !== false),
     });
     // 内部员工同样感知评估待办（接口要求 C 端令牌，admin-only 令牌 403 时静默隐藏）
     this.loadEvaluateBadge();

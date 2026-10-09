@@ -5,6 +5,12 @@
     <view class="state__text">请重新登录后查看分享详情</view>
     <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
   </view>
+  <!-- 无权限（403：非分享者且非管理员） -->
+  <view class="state" wx:elif="{{state === 'forbidden'}}">
+    <view class="state__title">无权限</view>
+    <view class="state__text">暂无钥匙管理权限，请联系管理员</view>
+    <view class="state__btn" bindtap="onGoLogin">返回</view>
+  </view>
   <!-- 加载失败 -->
   <view class="state" wx:elif="{{state === 'error'}}">
     <view class="state__title">加载失败</view>

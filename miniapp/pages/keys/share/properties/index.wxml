@@ -5,6 +5,12 @@
     <view class="state__text">请使用微信登录后分享</view>
     <view class="state__btn" bindtap="onGoLogin">返回重新登录</view>
   </view>
+  <!-- 无权限（403：无后台身份） -->
+  <view class="state" wx:elif="{{state === 'forbidden'}}">
+    <view class="state__title">无权限</view>
+    <view class="state__text">暂无钥匙管理权限，请联系管理员</view>
+    <view class="state__btn" bindtap="onGoLogin">返回</view>
+  </view>
   <!-- 加载失败 -->
   <view class="state" wx:elif="{{state === 'error'}}">
     <view class="state__title">加载失败</view>

@@ -160,6 +160,41 @@ def list_accessible_projects(db: Session, user: User) -> list[Project]:
     )
 
 
+def user_has_key_access(db: Session, user: User) -> bool:
+    """入口可见性判定：admin 恒 true；operator/user 按相关人五字段 exists.
+
+    与 list_accessible_projects 同口径：命中任一相关人字段（房源负责人 /
+    装修对接人 / 销售渠道经理·业务员·谈判人）即视为可访问钥匙管理。
+    供 /auth/me 下发 keys_accessible，小程序据此控制入口显隐。
+    """
+    if is_admin_user(user):
+        return True
+    uid = str(user.id)
+    manager_hit = db.query(Project.id).filter(Project.is_deleted.is_(False), Project.project_manager_id == uid).first()
+    if manager_hit is not None:
+        return True
+    renovation_hit = (
+        db.query(ProjectRenovation.id)
+        .filter(ProjectRenovation.is_deleted.is_(False), ProjectRenovation.contact_person_id == uid)
+        .first()
+    )
+    if renovation_hit is not None:
+        return True
+    sale_hit = (
+        db.query(ProjectSale.id)
+        .filter(
+            ProjectSale.is_deleted.is_(False),
+            or_(
+                ProjectSale.channel_manager_id == uid,
+                ProjectSale.property_agent_id == uid,
+                ProjectSale.negotiator_id == uid,
+            ),
+        )
+        .first()
+    )
+    return sale_hit is not None
+
+
 def log_key_action(
     db: Session,
     *,

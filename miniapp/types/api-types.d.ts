@@ -16948,6 +16948,12 @@ export interface components {
              */
             leads_count: number;
             /**
+             * Keys Accessible
+             * @description 是否可访问钥匙管理（admin 恒 true；operator/user 按相关人匹配）
+             * @default true
+             */
+            keys_accessible: boolean;
+            /**
              * Wechat Bound
              * @description 是否已绑定微信（含直接绑定与经合并临时账号的间接绑定）
              * @default false

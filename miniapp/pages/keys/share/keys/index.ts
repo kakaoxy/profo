@@ -55,7 +55,7 @@ interface PropCard {
 type ExpireChoice = 1 | 7 | 30 | "custom";
 
 interface PageData {
-  state: "loading" | "error" | "needLogin" | "empty" | "items";
+  state: "loading" | "error" | "needLogin" | "forbidden" | "empty" | "items";
   props: PropCard[];
   propCount: number;
   /** 默认 chip 文案（自然日口径，如「当天 · 至 09.27」，09.27 为今日）. */
@@ -214,6 +214,9 @@ Page<PageData, PageCustom>({
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       if (statusCode === 401) {
         this.setData({ state: "needLogin" });
+      } else if (statusCode === 403) {
+        // 403：非该房源相关人（ensure_key_access），语义区别于网络异常
+        this.setData({ state: "forbidden" });
       } else {
         this.setData({ state: "error" });
       }

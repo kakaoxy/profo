@@ -24,7 +24,7 @@ interface DeleteRow {
 interface PageData {
   projectId: string;
   name: string;
-  state: "loading" | "error" | "needLogin" | "items";
+  state: "loading" | "error" | "needLogin" | "forbidden" | "items";
   rows: DeleteRow[];
   checkedCount: number;
   checkedShareCount: number;
@@ -94,6 +94,9 @@ Page<PageData, PageCustom>({
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       if (statusCode === 401) {
         this.setData({ state: "needLogin" });
+      } else if (statusCode === 403) {
+        // 403：非该房源相关人（ensure_key_access），语义区别于网络异常
+        this.setData({ state: "forbidden" });
       } else {
         this.setData({ state: "error" });
       }

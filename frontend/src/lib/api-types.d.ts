@@ -8203,6 +8203,8 @@ export interface components {
             status: string;
             /** Is Expired */
             is_expired: boolean;
+            /** Community Names */
+            community_names: string[];
             /** Items Count */
             items_count: number;
             /** Viewed Count */
@@ -16946,6 +16948,12 @@ export interface components {
              */
             leads_count: number;
             /**
+             * Keys Accessible
+             * @description 是否可访问钥匙管理（admin 恒 true；operator/user 按相关人匹配）
+             * @default true
+             */
+            keys_accessible: boolean;
+            /**
              * Wechat Bound
              * @description 是否已绑定微信（含直接绑定与经合并临时账号的间接绑定）
              * @default false
@@ -20141,9 +20149,9 @@ export interface operations {
                 consultant_id?: string | null;
                 /** @description 小区ID */
                 community_id?: string | null;
-                /** @description 仅新上房源(首次发布≤7天) */
+                /** @description 新上筛选：true=仅新上(首次发布≤7天)，false=仅非新上，不传=不过滤 */
                 is_new_listing?: boolean | null;
-                /** @description 仅近期调价房源(≤7天) */
+                /** @description 调价筛选：true=仅近期调价(≤7天)，false=仅无近期调价，不传=不过滤 */
                 has_price_change?: boolean | null;
                 /** @description 页码 */
                 page?: number;

@@ -42,7 +42,7 @@ interface TimelineRow {
 }
 
 interface PageData {
-  state: "loading" | "error" | "needLogin" | "items";
+  state: "loading" | "error" | "needLogin" | "forbidden" | "items";
   shareId: string;
   /** 分享令牌（预览经纪人页跳转用）. */
   token: string;
@@ -161,6 +161,9 @@ Page<PageData, PageCustom>({
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       if (statusCode === 401) {
         this.setData({ state: "needLogin" });
+      } else if (statusCode === 403) {
+        // 403：非分享者且非管理员，语义区别于网络异常，明确展示无权限
+        this.setData({ state: "forbidden" });
       } else {
         this.setData({ state: "error" });
       }

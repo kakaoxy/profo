@@ -27,6 +27,7 @@ from schemas.user import (
     WechatAuthUrlResponse,
     WechatLoginRequest,
 )
+from services.projects.key_access import user_has_key_access
 from services.system import ApiKeyService, AuthService, WeChatAuthService, permission_service
 from services.system.exceptions import (
     AuthenticationError,
@@ -497,6 +498,9 @@ def get_current_user_info(
     perm_codes = permission_service.get_user_permission_codes(db, current_user)
     response = UserResponse.model_validate(current_user)
     response.permissions = sorted(perm_codes)
+    # 钥匙管理入口可见性（admin 恒 true；operator/user 按相关人五字段匹配），
+    # 消费方：小程序 profile 页过滤「钥匙管理」入口
+    response.keys_accessible = user_has_key_access(db, current_user)
     return response
 
 

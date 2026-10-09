@@ -43,7 +43,7 @@ interface RecordItem {
 }
 
 interface PageData {
-  state: "loading" | "error" | "needLogin" | "empty" | "items";
+  state: "loading" | "error" | "needLogin" | "forbidden" | "empty" | "items";
   filters: { key: StatusFilter; label: string; count: number }[];
   activeFilter: StatusFilter;
   /** 全量记录（本地过滤的数据源）. */
@@ -108,6 +108,9 @@ Page<PageData, PageCustom>({
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       if (statusCode === 401) {
         this.setData({ state: "needLogin", items: [], allItems: [] });
+      } else if (statusCode === 403) {
+        // 403：无后台身份，语义区别于网络异常，明确展示无权限
+        this.setData({ state: "forbidden", items: [], allItems: [] });
       } else {
         this.setData({ state: "error", items: [] });
       }

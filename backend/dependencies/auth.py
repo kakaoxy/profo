@@ -295,6 +295,60 @@ def _c_side_internal_checker(user: CurrentCustomerUserDep) -> User:
 CurrentCInternalUserDep = Annotated[User, Depends(_c_side_internal_checker)]
 
 
+def _c_side_employee_checker(user: CurrentCustomerUserDep) -> User:
+    """C 端令牌用户 + 后台身份复核（admin/operator/user 任一）.
+
+    钥匙员工侧端点专用：产品口径（2026-10-09）「钥匙管理对所有有权限的人开放，
+    不限于管理员」，路由层仅要求具备后台身份，细粒度过滤（admin 全量 /
+    相关人五字段匹配）在 Service 层（key_access.ensure_key_access /
+    list_accessible_projects）完成。
+
+    Args:
+        user: C 端认证通过的用户
+
+    Returns:
+        User: 具备后台身份的当前用户
+
+    Raises:
+        PermissionDeniedError: 403 Forbidden - 无后台身份（纯 C 端用户）
+
+    """
+    if not AuthService.has_backend_identity(user):
+        msg = "仅后台员工可访问钥匙管理"
+        raise PermissionDeniedError(msg)
+    return user
+
+
+# C 端令牌 + 后台身份复核依赖类型（小程序钥匙员工侧端点 /keys/*）
+CurrentCEmployeeUserDep = Annotated[User, Depends(_c_side_employee_checker)]
+
+
+def _backend_identity_checker(user: CurrentActiveUserDep) -> User:
+    """后台令牌用户 + 后台身份复核（admin/operator/user 任一）.
+
+    /projects/{id}/keys* 端点专用：产品口径与 /keys/* 一致，路由层仅要求
+    后台身份，细粒度过滤交 Service 层 ensure_key_access（无关人员 403）。
+
+    Args:
+        user: 后台认证通过的用户
+
+    Returns:
+        User: 具备后台身份的当前用户
+
+    Raises:
+        PermissionDeniedError: 403 Forbidden - 无后台身份
+
+    """
+    if not AuthService.has_backend_identity(user):
+        msg = "仅后台员工可访问该接口"
+        raise PermissionDeniedError(msg)
+    return user
+
+
+# 后台令牌 + 后台身份复核依赖类型（/projects/{id}/keys* 放宽用）
+CurrentBackendIdentityUserDep = Annotated[User, Depends(_backend_identity_checker)]
+
+
 # ==================== 权限校验（基于权限码） ====================
 
 
@@ -655,6 +709,8 @@ __all__ = [
     "ApiKeyManagePermDep",
     "CurrentActiveUserDep",
     "CurrentAdminUserDep",
+    "CurrentBackendIdentityUserDep",
+    "CurrentCEmployeeUserDep",
     "CurrentCInternalUserDep",
     "CurrentCustomerUserDep",
     "CurrentInternalUserDep",

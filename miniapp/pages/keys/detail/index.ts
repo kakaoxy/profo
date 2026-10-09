@@ -50,7 +50,7 @@ interface ManagerView {
   revealTime: string;
 }
 
-type PageState = "loading" | "error" | "needLogin" | "items";
+type PageState = "loading" | "error" | "needLogin" | "forbidden" | "items";
 
 interface PageData {
   state: PageState;
@@ -202,6 +202,9 @@ Page<PageData, PageCustom>({
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
       if (statusCode === 401) {
         this.setData({ state: "needLogin" });
+      } else if (statusCode === 403) {
+        // 403：非该房源相关人（ensure_key_access），语义区别于网络异常
+        this.setData({ state: "forbidden" });
       } else if (this.data.loaded) {
         // 已有旧数据时静默失败，不打断浏览
         wx.showToast({ title: "刷新失败，请重试", icon: "none" });

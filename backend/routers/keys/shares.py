@@ -1,7 +1,8 @@
 """小程序员工端钥匙分享路由（/keys…，aud=c）.
 
-C 端令牌认证（CurrentCInternalUserDep 复核 admin/operator）；
-权限过滤（ensure_key_access）与留痕在 Service 层。
+C 端令牌认证（CurrentCEmployeeUserDep 复核后台身份：admin/operator/user 任一）；
+产品口径（2026-10-09）：钥匙管理对所有有权限的人开放，细粒度权限过滤
+（admin 全量 / 相关人五字段匹配）与留痕在 Service 层（ensure_key_access）。
 """
 
 from typing import Annotated
@@ -9,7 +10,7 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query
 from pydantic import UUID4
 
-from dependencies.auth import CurrentCInternalUserDep
+from dependencies.auth import CurrentCEmployeeUserDep
 from dependencies.keys import KeyShareServiceDep
 from schemas.keys import (
     KeyShareActionResponse,
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/keys", tags=["keys"])
 
 @router.get("/properties")
 def list_key_properties(
-    current_user: CurrentCInternalUserDep,
+    current_user: CurrentCEmployeeUserDep,
     service: KeyShareServiceDep,
 ) -> KeysPropertiesResponse:
     """我可操作的房源 + 钥匙徽章聚合（不显密文）."""
@@ -36,7 +37,7 @@ def list_key_properties(
 @router.post("/shares")
 def create_share(
     data: KeyShareCreateRequest,
-    current_user: CurrentCInternalUserDep,
+    current_user: CurrentCEmployeeUserDep,
     service: KeyShareServiceDep,
 ) -> KeyShareCreatedResponse:
     """生成分享（默认有效期 1 天；仅可选「有效」普通密码组）."""
@@ -45,7 +46,7 @@ def create_share(
 
 @router.get("/shares")
 def list_shares(
-    current_user: CurrentCInternalUserDep,
+    current_user: CurrentCEmployeeUserDep,
     service: KeyShareServiceDep,
     status: Annotated[str | None, Query(description="状态过滤: active/expired/revoked")] = None,
 ) -> KeyShareListResponse:
@@ -56,7 +57,7 @@ def list_shares(
 @router.get("/shares/{share_id}")
 def get_share_detail(
     share_id: Annotated[UUID4, Path(description="分享ID")],
-    current_user: CurrentCInternalUserDep,
+    current_user: CurrentCEmployeeUserDep,
     service: KeyShareServiceDep,
 ) -> KeyShareDetailResponse:
     """分享详情（逐房源查看进度 + 查看记录时间线）."""
@@ -66,7 +67,7 @@ def get_share_detail(
 @router.post("/shares/{share_id}/revoke")
 def revoke_share(
     share_id: Annotated[UUID4, Path(description="分享ID")],
-    current_user: CurrentCInternalUserDep,
+    current_user: CurrentCEmployeeUserDep,
     service: KeyShareServiceDep,
 ) -> KeyShareActionResponse:
     """回收分享（硬失效）."""
@@ -77,7 +78,7 @@ def revoke_share(
 def extend_share(
     share_id: Annotated[UUID4, Path(description="分享ID")],
     data: KeyShareExtendRequest,
-    current_user: CurrentCInternalUserDep,
+    current_user: CurrentCEmployeeUserDep,
     service: KeyShareServiceDep,
 ) -> KeyShareActionResponse:
     """延长分享有效期."""

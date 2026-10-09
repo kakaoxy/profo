@@ -246,6 +246,13 @@ class UserResponse(BaseUser):
     )
     # 用户作为 Lead.creator_id 提交的线索总数，由 user_service 聚合填充
     leads_count: int = Field(default=0, description="用户作为 Lead.creator_id 提交的线索总数")
+    # 是否可访问钥匙管理（admin 恒 true；operator/user 按相关人五字段匹配），
+    # 非 ORM User 字段，仅 /auth/me 由 key_access.user_has_key_access 填充，
+    # 其他构造点默认 True 兼容（消费方：小程序 profile 页入口显隐）
+    keys_accessible: bool = Field(
+        default=True,
+        description="是否可访问钥匙管理（admin 恒 true；operator/user 按相关人匹配）",
+    )
     # 是否已绑定微信（含直接绑定与经合并临时账号的间接绑定），由 user_service._attach_wechat_bound 填充
     wechat_bound: bool = Field(
         default=False,

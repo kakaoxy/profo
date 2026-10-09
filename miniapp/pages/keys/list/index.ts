@@ -34,7 +34,7 @@ interface DisplayItem {
   shareText: string;
 }
 
-type PageState = "loading" | "error" | "needLogin" | "empty" | "items";
+type PageState = "loading" | "error" | "needLogin" | "forbidden" | "empty" | "items";
 
 interface PageData {
   state: PageState;
@@ -153,6 +153,9 @@ Page<PageData, PageCustom>({
       if (statusCode === 401) {
         // /keys/* 需 C 端令牌；仅切登录态，不清令牌（避免误伤仍有效的 admin 令牌）
         this.setData({ state: "needLogin", items: [] });
+      } else if (statusCode === 403) {
+        // 403：无后台身份，语义区别于网络异常，明确展示无权限
+        this.setData({ state: "forbidden", items: [] });
       } else if (!cached) {
         // 有缓存时静默失败（保留缓存数据不打断浏览）
         this.setData({ state: "error", items: [] });
