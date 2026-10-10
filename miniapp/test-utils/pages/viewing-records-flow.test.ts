@@ -49,6 +49,7 @@ function flowItem(overrides: Record<string, unknown> = {}): Record<string, unkno
     record_type: "viewing",
     record_date: "2026-10-09T10:00:00+08:00",
     price: null,
+    customer_name: "客户甲",
     related_agent: null,
     operator_name: "唐",
     project_id: "p1",
@@ -109,6 +110,40 @@ describe("明细页取数与展示映射", () => {
     expect(items[0].typeLabel).toBe("出价");
     expect(items[1].text).toBe("乐之 为 泗塘三村61号401 添加一条带看记录");
     expect(items[1].priceText).toBe("");
+  });
+
+  it("人员行映射：带看人/机构 · 出价人 · 面谈对象（customer_name 直出，对齐详情页 label）", async () => {
+    const ctx = newPage();
+    void ctx.onShow();
+    pendingReqs()[0].resolve(
+      flowResp([
+        flowItem({ record_type: "viewing", customer_name: "链家看房客" }),
+        flowItem({ id: "r2", record_type: "offer", customer_name: "张女士", price: 460 }),
+        flowItem({ id: "r3", record_type: "negotiation", customer_name: "李先生" }),
+      ]),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    const items = ctx.data.items as AnyRecord[];
+    expect(items[0].personLabel).toBe("带看人/机构");
+    expect(items[0].personText).toBe("链家看房客");
+    expect(items[1].personLabel).toBe("出价人");
+    expect(items[1].personText).toBe("张女士");
+    expect(items[2].personLabel).toBe("面谈对象");
+    expect(items[2].personText).toBe("李先生");
+  });
+
+  it("customer_name 缺失/空白 → personText 空串，wxml 整行省略（wx:if）", async () => {
+    const ctx = newPage();
+    void ctx.onShow();
+    pendingReqs()[0].resolve(
+      flowResp([flowItem({ customer_name: null }), flowItem({ id: "r2", customer_name: "   " })]),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    const items = ctx.data.items as AnyRecord[];
+    expect(items[0].personText).toBe("");
+    expect(items[1].personText).toBe("");
   });
 
   it("操作人缺失兜底「—」；非法/非正价不出金额行", async () => {
@@ -277,9 +312,11 @@ describe("渲染接线（wxml/wxss 静态校验）", () => {
   const wxml = recordsWxml;
   const wxss = recordsWxss;
 
-  it("wxml：类型 chips 绑定 onFilterTap、列表绑定 items、出价金额行条件渲染", () => {
+  it("wxml：类型 chips 绑定 onFilterTap、列表绑定 items、人员行/金额行条件渲染", () => {
     expect(wxml).toContain('bindtap="onFilterTap"');
     expect(wxml).toContain('wx:for="{{items}}"');
+    expect(wxml).toContain('wx:if="{{item.personText}}"');
+    expect(wxml).toContain("{{item.personLabel}}：{{item.personText}}");
     expect(wxml).toContain('wx:if="{{item.priceText}}"');
     expect(wxml).toContain("{{item.text}}");
     expect(wxml).toContain("{{item.dateText}}");
@@ -295,12 +332,13 @@ describe("渲染接线（wxml/wxss 静态校验）", () => {
     expect(wxml).toContain("重试");
   });
 
-  it("wxss：类型 chip 三色板（sky/apricot/gray）与金额行 rust 强调", () => {
+  it("wxss：类型 chip 三色板（sky/apricot/gray）、人员行与金额行样式齐备", () => {
     expect(wxss).toContain(".rec-chip--viewing {");
     expect(wxss).toContain("var(--sky-wash)");
     expect(wxss).toContain(".rec-chip--offer {");
     expect(wxss).toContain("var(--apricot-wash)");
     expect(wxss).toContain(".rec-chip--nego {");
+    expect(wxss).toContain(".rec-person {");
     expect(wxss).toContain(".rec-price {");
     expect(wxss).toContain("var(--rust)");
   });

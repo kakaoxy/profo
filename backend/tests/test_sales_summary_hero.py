@@ -268,7 +268,7 @@ class TestSalesRecordFlow:
         assert len(same_day) >= 2
 
     def test_flow_project_name_and_operator(self, summary_env: dict[str, Any]) -> None:
-        """project_name 直出（address 兜底）、operator_name 为操作人昵称."""
+        """project_name 直出（address 兜底）、operator_name 为操作人昵称、customer_name 直出（带看人/出价人）."""
         resp = summary_env["admin_client"].get("/api/v1/projects/sales-records?page=1&page_size=20")
         items = resp.json()["items"]
         names = {i["project_name"] for i in items}
@@ -277,6 +277,8 @@ class TestSalesRecordFlow:
         emp_item = next(i for i in items if i["operator_name"] == "销售汇总相关人员工")
         assert emp_item["record_type"] == "viewing"
         assert emp_item["project_name"] == "汇总路 1 号 101"
+        # customer_name 直出（fixture 统一填「客户甲」）：带看人/出价人/面谈对象真源 interaction_target
+        assert all(i["customer_name"] == "客户甲" for i in items)
 
     def test_flow_type_filter(self, summary_env: dict[str, Any]) -> None:
         """record_type 过滤：仅返回该类型."""

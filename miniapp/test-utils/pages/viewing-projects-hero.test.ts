@@ -11,7 +11,7 @@
  * - 徽标口径：+0 与 +N 同文案格式恒渲染；≥100 显示 +99+（deltaText 纯函数）
  * - 渲染接线（wxml/wxss）：kpi-hero 三列绑定 summary 字段、ⓘ 弹层节点、
  *   卡底「带看记录」链接绑定 onSalesRecords；wxss .kpi-delta 使用 --rust
- * - onSalesRecords 跳转 /pages/viewing/records/index
+ * - onSalesRecords 跳转 /pages/viewing/records/index/index（与 app.json 注册页完全一致，含末段 /index）
  *
  * 页面加载走 createPageHarness 模板；request mock 队列按序 resolve。
  */
@@ -19,6 +19,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 // wxml/wxss 以 ?raw 静态内联（声明见 test-utils/types/vite-raw.d.ts）
 import viewingProjectsWxml from "../../pages/viewing/projects/index/index.wxml?raw";
 import viewingProjectsWxss from "../../pages/viewing/projects/index/index.wxss?raw";
+import appJsonRaw from "../../app.json?raw";
 import {
   createPageHarness,
   createRequestMock,
@@ -138,10 +139,21 @@ describe("ⓘ 弹层与卡底链接", () => {
     expect(ctx.data.summaryPopOpen).toBe(false);
   });
 
-  it("onSalesRecords 跳转 /pages/viewing/records/index", () => {
+  it("onSalesRecords 跳转 /pages/viewing/records/index/index（路径与 app.json 注册页一致）", () => {
     const ctx = boot();
     ctx.onSalesRecords();
-    expect(wxStubs.navigateTo).toHaveBeenCalledWith({ url: "/pages/viewing/records/index" });
+    expect(wxStubs.navigateTo).toHaveBeenCalledWith({ url: "/pages/viewing/records/index/index" });
+  });
+
+  it("防回归：app.json viewing 分包注册页包含 records/index/index，与 onSalesRecords 路径同源校验", () => {
+    const appJson = JSON.parse(appJsonRaw) as {
+      subpackages?: { root: string; pages: string[] }[];
+      subPackages?: { root: string; pages: string[] }[];
+    };
+    const pkgs = appJson.subpackages ?? appJson.subPackages ?? [];
+    const viewing = pkgs.find((p) => p.root === "pages/viewing");
+    expect(viewing, "app.json 应存在 pages/viewing 分包").toBeTruthy();
+    expect(viewing!.pages).toContain("records/index/index");
   });
 
   it("summary 成功后弹层态复位（重进页面不残留展开态）", async () => {

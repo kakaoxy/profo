@@ -80,6 +80,14 @@
   margin-top: 14rpx;
   overflow-wrap: break-word;
 }
+/* 人员行：带看人/机构 · 出价人 · 面谈对象（Graphite 400，弱于正文强调操作人） */
+.rec-person {
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+  margin-top: 8rpx;
+  overflow-wrap: break-word;
+}
 /* 出价记录追加金额行：Rust 600；带看/面谈无金额行 */
 .rec-price {
   font-size: 26rpx;

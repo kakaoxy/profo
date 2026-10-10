@@ -15930,7 +15930,9 @@ export interface components {
          *
          *     展示字段后端拼好直出（operator_name/project_name/date/price_text），
          *     前端不做项目信息二次请求；渠道（related_agent）真源字段缺失恒为 None，
-         *     前端按「渠道缺失整体省略括注」渲染。
+         *     前端按「渠道缺失整体省略括注」渲染。customer_name 真源为
+         *     ProjectInteraction.interaction_target（即新增记录表单的「带看人/机构」
+         *     「出价人」「面谈对象」，详情页同字段同数据），缺失时前端省略人员行。
          */
         SalesRecordFlowItem: {
             /**
@@ -15946,6 +15948,11 @@ export interface components {
             record_date: string;
             /** Price */
             price?: string | null;
+            /**
+             * Customer Name
+             * @description 带看人/出价人/面谈对象（interaction_target），缺失时前端省略人员行
+             */
+            customer_name?: string | null;
             /**
              * Related Agent
              * @description 渠道（真源字段暂缺，恒为 None，预留）

@@ -20,6 +20,13 @@ type RecordType = components["schemas"]["RecordType"];
 /** 类型筛选值（"all" 仅前端语义，请求时不传 record_type）. */
 type TypeFilter = "all" | RecordType;
 
+/** 人员行 label（按类型，对齐详情页 PERSON_LABEL：带看人/机构、出价人、面谈对象）. */
+const TYPE_PERSON_LABEL: Record<RecordType, string> = {
+  viewing: "带看人/机构",
+  offer: "出价人",
+  negotiation: "面谈对象",
+};
+
 /** 类型筛选 chip 定义（顺序即顶栏顺序）. */
 const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
   { key: "all", label: "全部" },
@@ -45,7 +52,7 @@ const TYPE_CHIP_CLASS: Record<RecordType, string> = {
 /** 每页条数（后端上限 100）. */
 const PAGE_SIZE = 20;
 
-/** 明细行展示结构（一句话正文/金额行/日期在 TS 侧拼好，wxml 只做渲染）. */
+/** 明细行展示结构（一句话正文/人员行/金额行/日期在 TS 侧拼好，wxml 只做渲染）. */
 interface RecordItem {
   id: string;
   typeLabel: string;
@@ -54,6 +61,10 @@ interface RecordItem {
   dateText: string;
   /** 正文：{操作人} 为 {项目名} 添加一条{类型}记录（人名缺失兜底「—」）. */
   text: string;
+  /** 人员行 label（带看人/机构、出价人、面谈对象，对齐详情页）. */
+  personLabel: string;
+  /** 人员行值（带看人/出价人/面谈对象，customer_name）；缺失时空串→wxml 整行省略. */
+  personText: string;
   /** 出价金额行「出价金额：N万」；仅有效价出价记录有值，带看/面谈恒空. */
   priceText: string;
 }
@@ -194,7 +205,7 @@ Page<PageData, PageCustom>({
     this.setData(patch);
   },
 
-  /** SalesRecordFlowItem → 明细行展示结构（一句话正文后端拼好前缀字段，此处拼展示文案）. */
+  /** SalesRecordFlowItem → 明细行展示结构（人员行对齐详情页 label；customer_name 缺失整行省略）. */
   toItem(r: SalesRecordFlowItem): RecordItem {
     const operator = r.operator_name || "—";
     const typeLabel = TYPE_LABEL[r.record_type] ?? r.record_type;
@@ -204,6 +215,8 @@ Page<PageData, PageCustom>({
       chipClass: TYPE_CHIP_CLASS[r.record_type] ?? "rec-chip--nego",
       dateText: formatDay(r.record_date),
       text: `${operator} 为 ${r.project_name} 添加一条${typeLabel}记录`,
+      personLabel: TYPE_PERSON_LABEL[r.record_type] ?? "带看人/机构",
+      personText: (r.customer_name ?? "").trim(),
       priceText: r.record_type === "offer" ? priceTextOf(r.price) : "",
     };
   },

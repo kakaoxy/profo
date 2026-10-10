@@ -188,6 +188,9 @@ class SalesSummaryService:
                 # related_agent 真源字段暂缺（ProjectInteraction 无渠道列），恒为 None，
                 # 前端按「渠道缺失整体省略括注」渲染（设计稿 ROW ANATOMY 兜底口径）
                 related_agent=None,
+                # customer_name 真源 = interaction_target（新增记录表单填写的
+                # 带看人/机构、出价人、面谈对象，与详情页 customer_name 同一数据）
+                customer_name=r.interaction_target,
                 operator_name=(r.operator.nickname or r.operator.username) if r.operator else None,
                 project_id=r.project_id,
                 project_name=names.get(r.project_id, _UNNAMED),

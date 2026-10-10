@@ -138,13 +138,18 @@ class SalesRecordFlowItem(BaseModel):
 
     展示字段后端拼好直出（operator_name/project_name/date/price_text），
     前端不做项目信息二次请求；渠道（related_agent）真源字段缺失恒为 None，
-    前端按「渠道缺失整体省略括注」渲染。
+    前端按「渠道缺失整体省略括注」渲染。customer_name 真源为
+    ProjectInteraction.interaction_target（即新增记录表单的「带看人/机构」
+    「出价人」「面谈对象」，详情页同字段同数据），缺失时前端省略人员行。
     """
 
     id: UUID4
     record_type: RecordType
     record_date: datetime
     price: Decimal | None = None
+    customer_name: str | None = Field(
+        None, description="带看人/出价人/面谈对象（interaction_target），缺失时前端省略人员行"
+    )
     related_agent: str | None = Field(None, description="渠道（真源字段暂缺，恒为 None，预留）")
     operator_name: str | None = Field(None, description="操作人展示名（昵称/用户名），缺失时前端兜底「—」")
     project_id: UUID4

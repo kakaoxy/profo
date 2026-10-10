@@ -222,9 +222,9 @@ Page<PageData, PageCustom>({
     this.setData({ summaryPopOpen: !this.data.summaryPopOpen });
   },
 
-  /** 卡底「带看记录」链接 → 时间降序明细页（ARTBOARD 03）. */
+  /** 卡底「带看记录」链接 → 时间降序明细页（ARTBOARD 03；路径必须与 app.json 注册页 records/index/index 完全一致，缺末段 /index 会 page not found）. */
   onSalesRecords() {
-    wx.navigateTo({ url: "/pages/viewing/records/index" });
+    wx.navigateTo({ url: "/pages/viewing/records/index/index" });
   },
 });
 

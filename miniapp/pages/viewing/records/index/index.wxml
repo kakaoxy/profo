@@ -49,6 +49,8 @@
         <view class="rec-date">{{item.dateText}}</view>
       </view>
       <view class="rec-text">{{item.text}}</view>
+      <!-- 人员行：带看人/机构 · 出价人 · 面谈对象（对齐详情页 label；缺失整行省略） -->
+      <view class="rec-person" wx:if="{{item.personText}}">{{item.personLabel}}：{{item.personText}}</view>
       <view class="rec-price" wx:if="{{item.priceText}}">{{item.priceText}}</view>
     </view>
 
