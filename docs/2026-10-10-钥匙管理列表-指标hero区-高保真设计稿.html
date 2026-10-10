@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>小程序 · 钥匙管理列表页 指标 Hero 区 高保真设计稿 v1.0</title>
+<!--
+  小程序 · 钥匙管理列表页 指标 Hero 区 高保真设计稿 v1.0（2026-10-10）
+  ─────────────────────────────────────────────────────────────────────
+  需求真源：miniapp/pages/keys/list/index 页首新增指标 hero 区，
+    呈现三指标：有钥匙的房源数 / 房源钥匙分享数 / 钥匙被查看次数，
+    并各带「新周期（每周二 00:00 → 下周一 24:00）内新增量」徽标（+N，+0 同样橙色）。
+  参考稿：用户提供的外部竞品截图（label 行灰色小字 + 橙色 +N 徽标，下方大数字）。
+  视觉真源：DESIGN.md（Steep Style Reference）+ miniapp/app.wxss warm 令牌
+    （白卡 24px 级圆角 / Graphite 标签 / Ink 大数字 / Rust 强调 · +0 与 +N 同色）。
+  交互口径（AskUserQuestion 三问已确认）：
+    ① 按 DESIGN.md 规范出一版方案（不做多方案对比）
+    ② 增量为 0 时徽标同样橙色（对齐参考稿「咨询 +0」）
+    ③ 周期说明放 hero 卡右上角 ⓘ 图标，点击弹出标注信息（不占常驻版面）
+  交付范围：
+    SEC 01        需求与口径（指标定义表 + 周期规则可交互演示）
+    ARTBOARD 01   小程序列表页 390 × 844（hero 落位 · 默认态，ⓘ 可点击）
+    ARTBOARD 02   小程序列表页 390 × 844（ⓘ 弹层打开态）
+    ARTBOARD 03   hero 组件放大标注（结构 · 间距 · 字级规格）
+    SEC 03        实现说明（建议端点 · 代码落点 · 待确认口径 · E2E 验证点）
+  v1.1（2026-10-10 用户反馈）：
+    hero 卡底一行改为「左：相关人仅见关联房源（自 list-head 移入）· 右：分享记录链接」，
+    原脚注「较上一周期 · 每周二 00:00 重置」删除；list-head 只留「共 N 套」计数。
+  v1.2（2026-10-10 用户反馈）：
+    指标名改 UI 短名「房源 / 分享 / 查看」，全称与口径收进 ⓘ 弹层解释。
+-->
+<style>
+  :root {
+    --ink: #17191c;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --fog: #f7f7f8;
+    --white: #ffffff;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky-wash: #d3e3fc;
+    --line: #e6e8ec;
+    --card-border: #ece7de;
+    --shadow-sm: 0 2px 10px rgba(23, 25, 28, 0.06);
+    --shadow-pop: 0 6px 24px -4px rgba(23, 25, 28, 0.18), 0 0 0 1px rgba(23, 25, 28, 0.05);
+    --shadow-phone: 0 24px 48px -12px rgba(23, 25, 28, 0.2), 0 0 0 1px rgba(23, 25, 28, 0.06);
+    --serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --sans: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--fog);
+    font-family: var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.009em;
+    padding-bottom: 120px;
+    font-feature-settings: "tnum";
+  }
+  .sec { max-width: 1280px; margin: 88px auto 0; padding: 0 32px; }
+  .sec h2 {
+    font-family: var(--serif);
+    font-weight: 400; font-size: 34px; line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin-top: 10px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite);
+  }
+  .lede { font-size: 15px; font-weight: 430; color: var(--ash); line-height: 1.75; margin-top: 12px; max-width: 900px; }
+  .lede b { font-weight: 480; color: var(--ink); }
+  .lede code, .cap-note code, td code {
+    font-family: var(--mono); font-size: 11.5px; color: var(--rust);
+    background: var(--apricot); padding: 1px 6px; border-radius: 6px;
+  }
+  td code { font-size: 11px; }
+  .artlabel {
+    font-family: var(--mono); font-size: 12px; color: var(--graphite);
+    letter-spacing: 0.08em; margin: 30px 0 10px;
+  }
+  .artlabel em { font-style: normal; color: var(--dove); }
+  .cap-note { font-size: 12.5px; color: var(--graphite); margin-top: 14px; line-height: 1.7; max-width: 880px; }
+  .cap-note b { color: var(--ink); font-weight: 480; }
+
+  /* ── 页头 ─────────────────────────────── */
+  .doc-head { max-width: 1280px; margin: 72px auto 0; padding: 0 32px; }
+  .doc-head h1 {
+    font-family: var(--serif); font-weight: 400; font-size: 46px; line-height: 1.15;
+    letter-spacing: -0.02em; margin-top: 14px;
+  }
+  .doc-head h1 em { font-style: normal; color: var(--rust); }
+  .head-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .head-meta span {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--graphite); background: var(--white); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 14px;
+  }
+  .head-meta span b { color: var(--rust); font-weight: 600; }
+
+  /* ── 需求卡 ─────────────────────────────── */
+  .req-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .req-grid { grid-template-columns: repeat(2, 1fr); } }
+  .req-card { background: var(--white); border-radius: 16px; padding: 18px 18px 16px; box-shadow: var(--shadow-sm); }
+  .req-card .no { font-family: var(--mono); font-size: 10.5px; color: var(--dove); letter-spacing: 0.12em; margin-bottom: 8px; }
+  .req-card .t { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .req-card .d { font-size: 12.5px; color: var(--ash); line-height: 1.65; }
+  .req-card .d b { font-weight: 600; color: var(--rust); }
+
+  /* ── 口径表 ─────────────────────────────── */
+  .spec-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    background: var(--white); border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow-sm); margin-top: 22px; font-size: 13px;
+  }
+  .spec-table th {
+    text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--graphite); background: var(--fog);
+    padding: 10px 16px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  .spec-table td { padding: 12px 16px; border-bottom: 1px solid #f0f0f2; vertical-align: top; color: var(--ash); line-height: 1.6; }
+  .spec-table tr:last-child td { border-bottom: 0; }
+  .spec-table td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+  .spec-table td .sub { display: block; font-size: 11.5px; color: var(--graphite); margin-top: 3px; }
+
+  /* ── 周期演示（可交互） ─────────────────────────────── */
+  .cycle-demo {
+    background: var(--white); border-radius: 16px; box-shadow: var(--shadow-sm);
+    padding: 22px; margin-top: 22px;
+  }
+  .cycle-week { display: flex; gap: 8px; }
+  .cycle-day {
+    flex: 1; text-align: center; border-radius: 12px; padding: 12px 0 10px;
+    background: var(--fog); border: 1px solid transparent; cursor: pointer;
+    transition: all .18s ease; user-select: none;
+  }
+  .cycle-day .dw { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--graphite); }
+  .cycle-day .dd { font-size: 15px; font-weight: 600; margin-top: 4px; color: var(--ink); }
+  .cycle-day .tag { font-size: 10px; color: var(--dove); margin-top: 3px; min-height: 14px; }
+  .cycle-day.in-win { background: var(--apricot); border-color: var(--rust); }
+  .cycle-day.in-win .tag { color: var(--rust); font-weight: 600; }
+  .cycle-day.is-today .dd { color: var(--rust); }
+  .cycle-day.start .tag::after { content: "周期起点"; }
+  .cycle-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .cycle-meta .desc { font-size: 13px; color: var(--ash); line-height: 1.6; }
+  .cycle-meta .desc b { color: var(--rust); font-weight: 600; }
+  .weekday-picker { display: flex; gap: 6px; }
+  .weekday-picker button {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    border: 1px solid var(--line); background: var(--white); color: var(--graphite);
+    border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .15s ease;
+  }
+  .weekday-picker button:hover { border-color: var(--dove); color: var(--ink); }
+  .weekday-picker button.on { background: var(--ink); border-color: var(--ink); color: var(--white); }
+
+  /* ── Artboard 舞台 ─────────────────────────────── */
+  .board-row { display: flex; flex-wrap: wrap; gap: 48px; margin-top: 22px; align-items: flex-start; }
+
+  /* iPhone 框 */
+  .phone {
+    width: 390px; height: 844px; flex-shrink: 0;
+    background: var(--fog); border-radius: 54px;
+    box-shadow: var(--shadow-phone);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .phone .notch {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 118px; height: 34px; background: var(--ink); border-radius: 20px; z-index: 5;
+  }
+  .statusbar {
+    height: 54px; flex-shrink: 0; display: flex; align-items: flex-end;
+    justify-content: space-between; padding: 0 30px 6px;
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .statusbar .icons { display: flex; gap: 5px; align-items: center; }
+  .statusbar .sig { display: inline-flex; gap: 2px; align-items: flex-end; }
+  .statusbar .sig i { width: 3px; background: var(--ink); border-radius: 1px; display: block; }
+  .navbar {
+    height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 500; color: var(--ink);
+    border-bottom: 1px solid rgba(23, 25, 28, 0.05);
+  }
+  .phone .screen { flex: 1; overflow: hidden; }
+  .homebar {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; border-radius: 3px; background: rgba(23, 25, 28, 0.28); z-index: 5;
+  }
+
+  /* 页面内容（rpx→px @390：1rpx ≈ 0.52px，取整近似） */
+  .mini-page { padding: 12px 0 0; font-family: var(--sans); }
+
+  /* ── NEW · 指标 Hero 区（对应新增 .kpi-hero） ── */
+  .kpi-hero {
+    position: relative;
+    margin: 0 21px 16px; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 21px;
+    padding: 16px 18px 15px; box-shadow: var(--shadow-sm);
+  }
+  .kpi-info {
+    position: absolute; top: 12px; right: 12px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--fog); color: var(--graphite);
+    font-size: 12px; font-weight: 600; line-height: 20px; text-align: center;
+    cursor: pointer; user-select: none; z-index: 3;
+    transition: background .15s ease, color .15s ease;
+  }
+  .kpi-info:active { background: var(--apricot); color: var(--rust); }
+  .kpi-info.open { background: var(--ink); color: var(--white); }
+  .kpi-pop {
+    position: absolute; top: 38px; right: 8px; z-index: 4;
+    width: 232px; background: var(--white);
+    border-radius: 14px; box-shadow: var(--shadow-pop);
+    padding: 12px 14px 11px;
+    opacity: 0; transform: translateY(-4px); pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease;
+  }
+  .kpi-pop.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .kpi-pop::before {
+    content: ""; position: absolute; top: -5px; right: 16px;
+    width: 10px; height: 10px; background: var(--white);
+    transform: rotate(45deg); border-radius: 2px;
+    box-shadow: -1px -1px 1px rgba(23, 25, 28, 0.04);
+  }
+  .kpi-pop .p-t { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .kpi-pop .p-d { font-size: 11px; color: var(--ash); line-height: 1.65; margin-top: 5px; }
+  .kpi-pop .p-d b { color: var(--rust); font-weight: 600; }
+  .kpi-pop .p-range {
+    margin-top: 8px; padding: 6px 9px; border-radius: 9px;
+    background: var(--fog);
+    font-family: var(--mono); font-size: 10px; color: var(--graphite); letter-spacing: 0.02em;
+  }
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+  .kpi-cell { min-width: 0; }
+  .kpi-label-line { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .kpi-label {
+    font-size: 11px; font-weight: 430; color: var(--graphite);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .kpi-delta {
+    flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--rust);
+    letter-spacing: 0; font-feature-settings: "tnum";
+  }
+  .kpi-num {
+    margin-top: 3px; font-size: 27px; font-weight: 480; color: var(--ink);
+    line-height: 1.15; letter-spacing: -0.02em; font-feature-settings: "tnum";
+  }
+  .kpi-foot {
+    margin-top: 11px; padding-top: 9px; border-top: 1px solid #f2f0ec;
+    font-size: 10px; color: var(--dove);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .kpi-foot .flink { font-size: 11px; font-weight: 500; color: var(--rust); }
+
+  /* ── 既有列表内容（keys/list 复刻） ── */
+  .m-list-head { display: flex; align-items: center; justify-content: space-between; margin: 12px 23px 10px; }
+  .m-list-count { font-size: 12px; color: var(--graphite); }
+  .m-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 500; line-height: 1; padding: 4px 9px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .m-chip--gray { background: #eef0f3; color: #6b6e76; }
+  .m-chip--active { background: var(--apricot); color: var(--rust); }
+  .m-chip--cool { background: var(--sky-wash); color: #2c4d7f; }
+  .m-chip .cdot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .75; }
+  .m-search {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 21px 12px; padding: 0 15px; height: 44px;
+    background: var(--white); border: 1px solid var(--card-border); border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+  }
+  .m-search .ico { font-size: 16px; color: var(--dove); }
+  .m-search .ph { flex: 1; font-size: 14px; color: var(--dove); }
+  .m-prop {
+    margin: 0 21px 12px; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 21px;
+    padding: 15px 15px 13px; box-shadow: var(--shadow-sm);
+  }
+  .m-prop-top { display: flex; align-items: flex-start; gap: 8px; }
+  .m-prop-addr { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; color: var(--ink); line-height: 1.45; }
+  .m-prop-share-btn {
+    flex-shrink: 0; font-size: 13px; font-weight: 500; line-height: 1;
+    padding: 8px 16px; border-radius: 999px; background: var(--apricot); color: var(--rust);
+  }
+  .m-prop-meta { font-size: 12px; color: var(--graphite); margin-top: 4px; }
+  .m-prop-stats { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .m-note {
+    margin: 4px 21px 0; font-size: 12px; line-height: 1.7; color: #6b6e76;
+    padding: 11px 13px; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 13px;
+  }
+
+  /* ── 组件放大标注 ─────────────────────────────── */
+  .zoom-wrap { flex: 1; min-width: 380px; display: flex; flex-direction: column; gap: 18px; }
+  .zoom-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 20px; }
+  .zoom-card .zt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--dove); margin-bottom: 14px; }
+  .anno-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px; margin-top: 16px; }
+  .anno-item { font-size: 12px; color: var(--ash); line-height: 1.6; display: flex; gap: 8px; }
+  .anno-item .k {
+    font-family: var(--mono); font-size: 10px; color: var(--rust); background: var(--apricot);
+    border-radius: 6px; padding: 2px 7px; height: fit-content; white-space: nowrap; flex-shrink: 0;
+  }
+  /* 放大版 hero（1.4×） */
+  .zoom-hero {
+    position: relative; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 24px;
+    padding: 24px 26px 22px; box-shadow: var(--shadow-sm);
+  }
+  .zoom-hero .kpi-info { top: 16px; right: 16px; width: 26px; height: 26px; line-height: 26px; font-size: 15px; }
+  .zoom-hero .kpi-row { gap: 12px; margin-top: 10px; }
+  .zoom-hero .kpi-label { font-size: 15px; }
+  .zoom-hero .kpi-delta { font-size: 15px; }
+  .zoom-hero .kpi-num { font-size: 38px; margin-top: 5px; }
+  .zoom-hero .kpi-foot { font-size: 13px; margin-top: 16px; padding-top: 13px; }
+  .measure-note {
+    margin-top: 14px; font-family: var(--mono); font-size: 11px;
+    color: var(--graphite); line-height: 1.9;
+  }
+  .measure-note b { color: var(--rust); font-weight: 600; }
+
+  /* ── 实现说明 ─────────────────────────────── */
+  .impl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .impl-grid { grid-template-columns: 1fr; } }
+  .impl-card { background: var(--white); border-radius: 16px; padding: 18px; box-shadow: var(--shadow-sm); }
+  .impl-card .t { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .impl-card pre {
+    font-family: var(--mono); font-size: 11px; line-height: 1.75;
+    background: var(--fog); border-radius: 10px; padding: 14px 16px;
+    color: var(--ash); overflow-x: auto;
+  }
+  .impl-card pre b { color: var(--rust); font-weight: 600; }
+  .impl-card ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .impl-card li { font-size: 12.5px; color: var(--ash); line-height: 1.65; padding-left: 16px; position: relative; }
+  .impl-card li::before { content: "·"; position: absolute; left: 4px; color: var(--dove); font-weight: 700; }
+  .impl-card li b { color: var(--ink); font-weight: 600; }
+  .impl-card li code, .impl-card .path { font-family: var(--mono); font-size: 11px; }
+  .impl-card .path { color: var(--rust); background: var(--apricot); padding: 1px 6px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+  <!-- ═══════════ 页头 ═══════════ -->
+  <header class="doc-head" data-screen-label="页头">
+    <div class="kicker">Profo Miniapp · Design Spec</div>
+    <h1>钥匙管理列表页<br /><em>指标 Hero 区</em></h1>
+    <div class="head-meta">
+      <span>页面真源 · <b>pages/keys/list/index</b></span>
+      <span>视觉真源 · <b>DESIGN.md Steep 令牌</b></span>
+      <span>日期 · <b>2026-10-10</b></span>
+      <span>版本 · <b>v1.0</b></span>
+      <span>周期 · <b>每周二 00:00 → 下周一 24:00</b></span>
+    </div>
+  </header>
+
+  <!-- ═══════════ SEC 01 需求与口径 ═══════════ -->
+  <section class="sec" data-screen-label="SEC 01 需求与口径">
+    <div class="kicker">SEC 01</div>
+    <h2>需求与口径</h2>
+    <p class="lede">
+      钥匙管理列表页（<code>pages/keys/list/index</code>）页首新增<b>指标 Hero 区</b>：一张白卡内并排三列指标——
+      <b>房源 / 分享 / 查看</b>（UI 用短名，全称与口径见下表），每列为「灰色小标签 + 橙色 <code>+N</code> 增量徽标」在上、大数字在下（对齐参考稿）。
+      增量 = <b>新周期（每周二 00:00 → 下周一 24:00）内新增量</b>；周期规则说明收进卡片右上角 <b>ⓘ</b>，点击弹出标注浮层。
+    </p>
+
+    <div class="req-grid">
+      <div class="req-card">
+        <div class="no">口径 ①</div>
+        <div class="t">粒度 · 三指标并排</div>
+        <div class="d">有钥匙房源数、钥匙分享数、被查看次数<b>三个指标各自</b>统计总量与本周期新增量，互不合并；缺省值显示 <b>0</b>。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ②</div>
+        <div class="t">样式 · label 行在上 · 大数字在下</div>
+        <div class="d">对齐参考稿：灰 label 与 <code>+N</code> 同行，下方大数字；<b>+0 与 +N 同为 Rust 橙</b>，明确「本周期暂无新增」而非样式缺失。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ③</div>
+        <div class="t">周期说明 · 右上角 ⓘ 弹层</div>
+        <div class="d">hero 卡右上角 <b>ⓘ</b> 图标，点击弹出标注浮层：周期规则 + 当前周期起止日期；点击浮层外任意区域收起，<b>不占常驻版面</b>。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ④</div>
+        <div class="t">周期 · 周二 → 下周一</div>
+        <div class="d">以自然周<b>周二 00:00</b> 为起点、<b>下周一 24:00</b> 为终点；周一打开时展示的是<b>上周二至今</b>的累计新增（详见下方可交互演示）。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ⑤</div>
+        <div class="t">数据源 · 需后端聚合</div>
+        <div class="d">三指标总量与增量均需跨房源聚合（查看次数在 <code>key_audit_logs</code>），建议新增 <code>GET /keys/summary</code> 只读端点，<b>⚠️ 端点与部分口径待后端确认</b>。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ⑥</div>
+        <div class="t">权限 · 与列表同范围</div>
+        <div class="d">hero 统计范围 = 当前用户可见房源（admin 全量 / 相关人仅关联房源），与 <code>/keys/properties</code> <b>同一权限口径</b>，不泄露无关数据。</div>
+      </div>
+    </div>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th>指标</th><th>总量定义（建议口径）</th><th>周期新增量（+N）</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>房源 <span class="sub">UI 短名</span></td>
+          <td>
+            「有钥匙的房源数」：可见房源中「至少有 1 个有效密码」的房源数
+            <span class="sub">普通密码 normal_active_count &gt; 0，或管理密码 manager_key_set = true，与列表页「管理密码已设 / 普通 N 有效」chip 同源</span>
+          </td>
+          <td>本周期内<b>首次</b>录入有效密码的房源数 <span class="sub">按房源最早 confirmed_at（或生成时间）落在本周期计 1 次，重复生成不重复计</span></td>
+        </tr>
+        <tr>
+          <td>分享 <span class="sub">UI 短名</span></td>
+          <td>
+            「房源钥匙分享数」：可见房源累计创建的钥匙分享总数
+            <span class="sub">含已过期 / 已撤销（share 创建即计）；如需只看「分享中」可切 active 口径，见 SEC 03 待确认①</span>
+          </td>
+          <td>本周期内新建的分享数 <span class="sub">按 key_shares.created_at ∈ [周期起点, 现在] 计</span></td>
+        </tr>
+        <tr>
+          <td>查看 <span class="sub">UI 短名</span></td>
+          <td>
+            「钥匙被查看次数」：分享密码被查看的累计次数
+            <span class="sub">按 key_audit_logs 的 reveal / agent_view 动作计，与分享记录页「查看明细」同审计口径</span>
+          </td>
+          <td>本周期内新增的查看次数 <span class="sub">按 audit 发生时间过滤；同一访客重复查看按次累计（待确认②）</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 周期演示（可交互） -->
+    <div class="cycle-demo" data-screen-label="周期规则演示">
+      <div class="zoom-card" style="box-shadow:none;padding:0;">
+        <div class="zt">CYCLE DEMO · 点击右上按钮切换「今天是周几」，观察周期窗口（高亮 = 计入新增）</div>
+        <div class="cycle-week" id="cycleWeek"><!-- JS 渲染 7 天 --></div>
+        <div class="cycle-meta">
+          <div class="weekday-picker" id="weekdayPicker"><!-- JS 渲染按钮 --></div>
+          <div class="desc" id="cycleDesc"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ARTBOARD 01 / 02 小程序页 ═══════════ -->
+  <section class="sec" data-screen-label="ARTBOARD 01/02 小程序列表页">
+    <div class="kicker">ARTBOARD 01 / 02</div>
+    <h2>小程序列表页 · 390 × 844</h2>
+    <p class="lede">
+      左：hero 落位的默认态（<b>ⓘ 可点击体验弹层交互</b>）；右：ⓘ 弹层打开态。hero 位于导航栏与「共 N 套」之间；
+      原 list-head 的<b>「相关人仅见关联房源」chip 移入 hero 卡底左侧、「分享记录」链接移入卡底右侧</b>，list-head 只留计数。
+      演示数据：11 套可见房源中 9 套有钥匙；本周新建分享 5 条、新增查看 12 次。
+    </p>
+
+    <div class="artlabel">iPhone 390 × 844 <em>· ARTBOARD 01 默认态（交互稿）</em></div>
+    <div class="board-row">
+
+      <!-- ══ Phone 1 · 默认态 ══ -->
+      <div class="phone" data-screen-label="钥匙管理列表 · hero 默认态">
+        <div class="notch"></div>
+        <div class="statusbar">
+          <span>9:41</span>
+          <span class="icons">
+            <span class="sig"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span>
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><path d="M8.5 9.5 L10.7 7.3 A3.1 3.1 0 0 0 6.3 7.3 Z" fill="#17191c"/><path d="M4.2 5.2 A6.1 6.1 0 0 1 12.8 5.2" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.8 2.8 A9.5 9.5 0 0 1 15.2 2.8" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" opacity="0.4" fill="none"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#17191c"/><path d="M23 4 v4 a2 2 0 0 0 0 -4" fill="#17191c" opacity="0.4"/></svg>
+          </span>
+        </div>
+        <div class="navbar">钥匙管理</div>
+        <div class="screen">
+          <div class="mini-page">
+
+            <!-- ★ NEW · 指标 Hero 区 -->
+            <div class="kpi-hero" data-screen-label="指标 Hero 区">
+              <div class="kpi-info" id="heroInfo" title="周期说明">i</div>
+              <div class="kpi-pop" id="heroPop">
+                <div class="p-t">指标与统计周期说明</div>
+                <div class="p-d"><b>房源</b>＝有钥匙的房源数 · <b>分享</b>＝钥匙分享数 · <b>查看</b>＝密码被查看次数。增量 <b>+N</b> 为本周期内新增量，每周二 00:00 重置。</div>
+                <div class="p-range">当前周期 10-06 周二 ~ 10-12 周一 · 剩 2 天</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">房源</div>
+                    <div class="kpi-delta">+2</div>
+                  </div>
+                  <div class="kpi-num">9</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">分享</div>
+                    <div class="kpi-delta">+5</div>
+                  </div>
+                  <div class="kpi-num">15</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">查看</div>
+                    <div class="kpi-delta">+12</div>
+                  </div>
+                  <div class="kpi-num">36</div>
+                </div>
+              </div>
+              <div class="kpi-foot">
+                <span>相关人仅见关联房源</span>
+                <span class="flink">分享记录</span>
+              </div>
+            </div>
+
+            <!-- 既有 list-head -->
+            <div class="m-list-head">
+              <div class="m-list-count">共 11 套</div>
+            </div>
+
+            <!-- 搜索框 -->
+            <div class="m-search">
+              <span class="ico">⌕</span>
+              <span class="ph">搜索小区 / 详细地址</span>
+            </div>
+
+            <!-- 房源卡① 三 chip 齐全 -->
+            <div class="m-prop">
+              <div class="m-prop-top">
+                <div class="m-prop-addr">泗塘三村61号401</div>
+                <div class="m-prop-share-btn">分享</div>
+              </div>
+              <div class="m-prop-meta">在售 · 56 ㎡</div>
+              <div class="m-prop-stats">
+                <span class="m-chip m-chip--active"><span class="cdot"></span>管理密码已设</span>
+                <span class="m-chip m-chip--gray">普通 2 有效</span>
+                <span class="m-chip m-chip--cool">分享中 3</span>
+              </div>
+            </div>
+
+            <!-- 房源卡② -->
+            <div class="m-prop">
+              <div class="m-prop-top">
+                <div class="m-prop-addr">保德路241弄32号201</div>
+                <div class="m-prop-share-btn">分享</div>
+              </div>
+              <div class="m-prop-meta">在售 · 48 ㎡</div>
+              <div class="m-prop-stats">
+                <span class="m-chip m-chip--active"><span class="cdot"></span>管理密码已设</span>
+                <span class="m-chip m-chip--gray">普通 1 有效</span>
+              </div>
+            </div>
+
+            <!-- 房源卡③ -->
+            <div class="m-prop">
+              <div class="m-prop-top">
+                <div class="m-prop-addr">金杨七街坊18号502</div>
+                <div class="m-prop-share-btn">分享</div>
+              </div>
+              <div class="m-prop-meta">已售 · 72 ㎡</div>
+              <div class="m-prop-stats">
+                <span class="m-chip m-chip--active"><span class="cdot"></span>管理密码已设</span>
+                <span class="m-chip m-chip--gray">普通 2 有效 · 1 待录入</span>
+              </div>
+            </div>
+
+            <div class="m-note">权限说明：管理员可操作全部房源；项目负责人、对接负责人、渠道经理、讲房人、谈判人仅可操作其关联房源，无关人员不可见。所有查看与修改行为将记录日志。</div>
+
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+
+      <!-- ══ Phone 2 · ⓘ 弹层打开态 ══ -->
+      <div class="phone" data-screen-label="钥匙管理列表 · hero 弹层打开态">
+        <div class="notch"></div>
+        <div class="statusbar">
+          <span>9:41</span>
+          <span class="icons">
+            <span class="sig"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span>
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><path d="M8.5 9.5 L10.7 7.3 A3.1 3.1 0 0 0 6.3 7.3 Z" fill="#17191c"/><path d="M4.2 5.2 A6.1 6.1 0 0 1 12.8 5.2" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.8 2.8 A9.5 9.5 0 0 1 15.2 2.8" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" opacity="0.4" fill="none"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#17191c"/><path d="M23 4 v4 a2 2 0 0 0 0 -4" fill="#17191c" opacity="0.4"/></svg>
+          </span>
+        </div>
+        <div class="navbar">钥匙管理</div>
+        <div class="screen">
+          <div class="mini-page">
+
+            <!-- Hero · 弹层打开 -->
+            <div class="kpi-hero">
+              <div class="kpi-info open">i</div>
+              <div class="kpi-pop show">
+                <div class="p-t">指标与统计周期说明</div>
+                <div class="p-d"><b>房源</b>＝有钥匙的房源数 · <b>分享</b>＝钥匙分享数 · <b>查看</b>＝密码被查看次数。增量 <b>+N</b> 为本周期内新增量，每周二 00:00 重置。</div>
+                <div class="p-range">当前周期 10-06 周二 ~ 10-12 周一 · 剩 2 天</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">房源</div>
+                    <div class="kpi-delta">+2</div>
+                  </div>
+                  <div class="kpi-num">9</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">分享</div>
+                    <div class="kpi-delta">+5</div>
+                  </div>
+                  <div class="kpi-num">15</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">查看</div>
+                    <div class="kpi-delta">+12</div>
+                  </div>
+                  <div class="kpi-num">36</div>
+                </div>
+              </div>
+              <div class="kpi-foot">
+                <span>相关人仅见关联房源</span>
+                <span class="flink">分享记录</span>
+              </div>
+            </div>
+
+            <div class="m-list-head">
+              <div class="m-list-count">共 11 套</div>
+            </div>
+
+            <div class="m-search">
+              <span class="ico">⌕</span>
+              <span class="ph">搜索小区 / 详细地址</span>
+            </div>
+
+            <div class="m-prop">
+              <div class="m-prop-top">
+                <div class="m-prop-addr">泗塘三村61号401</div>
+                <div class="m-prop-share-btn">分享</div>
+              </div>
+              <div class="m-prop-meta">在售 · 56 ㎡</div>
+              <div class="m-prop-stats">
+                <span class="m-chip m-chip--active"><span class="cdot"></span>管理密码已设</span>
+                <span class="m-chip m-chip--gray">普通 2 有效</span>
+                <span class="m-chip m-chip--cool">分享中 3</span>
+              </div>
+            </div>
+
+            <div class="m-prop">
+              <div class="m-prop-top">
+                <div class="m-prop-addr">保德路241弄32号201</div>
+                <div class="m-prop-share-btn">分享</div>
+              </div>
+              <div class="m-prop-meta">在售 · 48 ㎡</div>
+              <div class="m-prop-stats">
+                <span class="m-chip m-chip--active"><span class="cdot"></span>管理密码已设</span>
+                <span class="m-chip m-chip--gray">普通 1 有效</span>
+              </div>
+            </div>
+
+            <div class="m-note">权限说明：管理员可操作全部房源；项目负责人、对接负责人、渠道经理、讲房人、谈判人仅可操作其关联房源，无关人员不可见。所有查看与修改行为将记录日志。</div>
+
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+
+      <!-- 组件放大标注 -->
+      <div class="zoom-wrap" data-screen-label="hero 组件放大标注">
+        <div class="zoom-card">
+          <div class="zt">COMPONENT ZOOM · 指标 Hero 区结构（1.4×）</div>
+          <div class="zoom-hero">
+            <div class="kpi-info">i</div>
+            <div class="kpi-row">
+              <div class="kpi-cell">
+                <div class="kpi-label-line">
+                  <div class="kpi-label">房源</div>
+                  <div class="kpi-delta">+2</div>
+                </div>
+                <div class="kpi-num">9</div>
+              </div>
+              <div class="kpi-cell">
+                <div class="kpi-label-line">
+                  <div class="kpi-label">分享</div>
+                  <div class="kpi-delta">+5</div>
+                </div>
+                <div class="kpi-num">15</div>
+              </div>
+              <div class="kpi-cell">
+                <div class="kpi-label-line">
+                  <div class="kpi-label">查看</div>
+                  <div class="kpi-delta">+12</div>
+                </div>
+                <div class="kpi-num">36</div>
+              </div>
+            </div>
+            <div class="kpi-foot">
+              <span>相关人仅见关联房源</span>
+              <span class="flink">分享记录</span>
+            </div>
+          </div>
+          <div class="anno-grid">
+            <div class="anno-item"><span class="k">A</span>标签行：UI 短名「房源 / 分享 / 查看」22rpx Graphite + 增量徽标 <b>+N</b> 22rpx/600 Rust，baseline 对齐，超长省略号截断</div>
+            <div class="anno-item"><span class="k">B</span>大数字：40rpx Sohne 480 Ink，tnum 等宽数字，letter-spacing −0.02em</div>
+            <div class="anno-item"><span class="k">C</span>ⓘ 图标：40rpx 圆形 fog 底，打开态反色 Ink 底白字；浮层宽 440rpx 白底 14px 圆角 + 投影</div>
+            <div class="anno-item"><span class="k">D</span>卡底一行：左「相关人仅见关联房源」19rpx Dove（自 list-head 移入）· 右「分享记录」Rust 文字链接（点击进分享记录页）</div>
+          </div>
+          <div class="measure-note">
+            卡片：margin <b>40rpx</b> · radius <b>40rpx</b> · padding <b>30/34rpx</b> · 三列 grid gap <b>16rpx</b><br />
+            徽标颜色：<b>+0 与 +N 同 Rust</b>（口径②）；⚠️ 列宽不足时（label+徽标溢出）整行省略号，不换行不缩徽标
+          </div>
+        </div>
+        <div class="zoom-card">
+          <div class="zt">STATES · 徽标状态一览</div>
+          <table class="spec-table" style="margin-top:0;">
+            <thead><tr><th>状态</th><th>渲染</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>正增量</td><td><b style="color:var(--rust)">+5</b></td><td>Rust 600，恒显示</td></tr>
+              <tr><td>零增量</td><td><b style="color:var(--rust)">+0</b></td><td>与 +N 同色同字号（口径②，对齐参考稿「咨询 +0」）</td></tr>
+              <tr><td>两位数以上</td><td><b style="color:var(--rust)">+12</b> / <b style="color:var(--rust)">+99+</b></td><td>≥100 显示 +99+，防止三列挤压</td></tr>
+              <tr><td>接口失败</td><td><span style="color:var(--dove)">hero 整卡隐藏</span></td><td>独立取数独立降级，不阻塞列表加载</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <p class="cap-note">
+      注：手机稿内房源卡 / 搜索框 / 权限说明均为 <b>pages/keys/list/index 现有内容复刻</b>，本次改动为导航栏下新增 hero 卡，
+      并将「相关人仅见关联房源」与「分享记录」自 list-head 移入 hero 卡底；演示数字（9 / 15 / 36、+2 / +5 / +12）为示意值。
+    </p>
+  </section>
+
+  <!-- ═══════════ SEC 03 实现说明 ═══════════ -->
+  <section class="sec" data-screen-label="SEC 03 实现说明">
+    <div class="kicker">SEC 03</div>
+    <h2>实现说明</h2>
+    <p class="lede">
+      hero 三指标均需跨房源聚合 + 周期过滤，<b>无法纯前端从 /keys/properties 现有字段推出</b>（被查看次数在审计日志里），
+      建议后端新增只读聚合端点，前端一次取数渲染。
+    </p>
+
+    <div class="impl-grid">
+      <div class="impl-card">
+        <div class="t">建议端点 · GET /keys/summary（⚠️ 待确认）</div>
+        <pre>{
+  "properties_with_keys": 9,      <b>// 有钥匙房源数</b>
+  "shares_total": 15,             <b>// 钥匙分享累计</b>
+  "views_total": 36,              <b>// 被查看累计</b>
+  "period_new": {
+    "properties_with_keys": 2,    <b>// 周期内新录入房源</b>
+    "shares_total": 5,            <b>// 周期内新建分享</b>
+    "views_total": 12             <b>// 周期内查看次数</b>
+  },
+  "period": { "start": "2026-10-06", "end": "2026-10-12" }
+}</pre>
+        <ul style="margin-top:12px;">
+          <li>权限与 <code>/keys/properties</code> <b>同口径</b>（复用 CurrentCEmployeeUserDep + key_access 过滤），仅统计当前用户可见房源</li>
+          <li>Router 不写查询 → <b>Service 聚合</b>（services/projects/key_access.py 同层新增 summary 组装）；周期计算复用周二起点公式</li>
+          <li>只读端点零落库；查看次数走 key_audit_logs 现有审计记录，不新增埋点</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">前端落点 · 纯展示改动</div>
+        <ul>
+          <li>wxml：<span class="path">pages/keys/list/index.wxml</span> list-head 之前插 <code>&lt;view class="kpi-hero"&gt;</code> 三列 + ⓘ 弹层</li>
+          <li>wxss：新增 .kpi-hero 组样式（令牌复用 --rust / --graphite / --fog，不引入新色值）</li>
+          <li>ts：loadList 并行 <code>request("/keys/summary")</code>；summary 失败<b>静默隐藏 hero</b>，不进列表 error 态</li>
+          <li>ⓘ 弹层：tap 切换 show 类；周期起止文案由后端 period 字段拼装，前端不做周期推算</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">⚠️ 待确认口径</div>
+        <ul>
+          <li><b>① 分享数口径</b>：累计创建（含过期/撤销）还是「分享中」active 数？设计稿按<b>累计创建</b>绘制</li>
+          <li><b>② 查看次数口径</b>：同一访客重复查看按次累计（本稿口径），还是按去重访客数？</li>
+          <li><b>③「有钥匙」定义</b>：普通密码有效或管理密码已设，二者满足其一即计（本稿口径）</li>
+          <li><b>④ 缓存策略</b>：/keys/properties 走 SWR 缓存，summary 是否同缓存 key 策略（回列表页即时刷新增量）？</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">E2E 验证点（落地时）</div>
+        <ul>
+          <li>admin 打开钥匙管理：hero 三列数值与 DB 聚合一致（psql 对账）</li>
+          <li>普通相关人（如 zhiwuping1）：hero 数值 = 其关联房源聚合，<b>不泄露无关房源</b></li>
+          <li>周期边界：跨周二 00:00 后增量归零、总量不变；周一打开显示上周二起累计</li>
+          <li>ⓘ 点击开/收、点外部收起；summary 接口 500 时 hero 隐藏且列表正常</li>
+          <li>+0 徽标橙色渲染（可构造无新增的小号测试周期）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+<script>
+  /* ── 周期规则演示（周二 → 下周一） ── */
+  (function () {
+    var week = document.getElementById("cycleWeek");
+    var picker = document.getElementById("weekdayPicker");
+    var desc = document.getElementById("cycleDesc");
+    var names = ["一", "二", "三", "四", "五", "六", "日"];
+    var dates = ["10-05", "10-06", "10-07", "10-08", "10-09", "10-10", "10-11"];
+    var today = 5; // 默认 10-10 周六
+
+    function render() {
+      var html = "";
+      for (var i = 0; i < 7; i++) {
+        // 周期窗口：周二(idx1) 起、下周一(idx0) 止 → 本行窗口为 [周二, 今天]
+        var inWin = (i >= 1 && i <= today);
+        var cls = "cycle-day" + (inWin ? " in-win" : "") + (i === today ? " is-today" : "") + (i === 1 ? " start" : "");
+        html += '<div class="' + cls + '"><div class="dw">' + names[i] + '</div><div class="dd">' + dates[i] + '</div><div class="tag">' + (i === today ? "今天" : "&nbsp;") + "</div></div>";
+      }
+      week.innerHTML = html;
+      var buttons = "";
+      for (var j = 0; j < 7; j++) {
+        buttons += '<button class="' + (j === today ? "on" : "") + '" data-i="' + j + '">周' + names[j] + "</button>";
+      }
+      picker.innerHTML = buttons;
+      picker.querySelectorAll("button").forEach(function (b) {
+        b.addEventListener("click", function () { today = Number(b.dataset.i); render(); });
+      });
+      desc.innerHTML = today >= 1
+        ? '今天是<b>周' + names[today] + "</b> → 增量窗口 = <b>本周二(" + dates[1] + ") ~ 今天(" + dates[today] + ')</b>，共 ' + (today - 1 + 1) + " 天的新增量"
+        : "今天是<b>周一</b> → 增量窗口 = <b>上周二 ~ 今天</b>（上周二 00:00 起累计，明天 00:00 重置归零）";
+    }
+    render();
+  })();
+
+  /* ── Phone 1 · ⓘ 弹层交互（点击开/收，点击外部收起） ── */
+  (function () {
+    var info = document.getElementById("heroInfo");
+    var pop = document.getElementById("heroPop");
+    if (!info || !pop) return;
+    function setOpen(open) {
+      pop.classList.toggle("show", open);
+      info.classList.toggle("open", open);
+    }
+    info.addEventListener("click", function (e) {
+      e.stopPropagation();
+      setOpen(!pop.classList.contains("show"));
+    });
+    document.addEventListener("click", function (e) {
+      if (pop.classList.contains("show") && !pop.contains(e.target)) setOpen(false);
+    });
+  })();
+</script>
+</body>
+</html>
