@@ -1441,6 +1441,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/keys/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Keys Summary
+         * @description 指标 hero 区三指标聚合（总量 + 周二周期新增，设计稿 docs/2026-10-10）.
+         *
+         *     字面路径 /summary 必须声明在 /shares/{share_id} 之前，避免被参数路由遮蔽。
+         */
+        get: operations["get_keys_summary_api_v1_keys_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/keys/shares": {
         parameters: {
             query?: never;
@@ -8363,6 +8385,64 @@ export interface components {
              * @default 0
              */
             total_view_count: number;
+        };
+        /**
+         * KeysSummaryPeriod
+         * @description 当前「周二周期」窗口（东八区日期，供 ⓘ 弹层展示）.
+         */
+        KeysSummaryPeriod: {
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Text */
+            text: string;
+        };
+        /**
+         * KeysSummaryResponse
+         * @description 钥匙管理指标 hero 区聚合（列表页页首三指标 + 周期新增）.
+         *
+         *     统计范围 = 当前用户可见房源（admin 全量 / 相关人仅关联房源，与
+         *     /keys/properties 同权限口径）；「有钥匙」= 管理密码已设或 ≥1 组有效普通密码。
+         */
+        KeysSummaryResponse: {
+            /**
+             * Properties With Keys
+             * @default 0
+             */
+            properties_with_keys: number;
+            /**
+             * Shares Total
+             * @default 0
+             */
+            shares_total: number;
+            /**
+             * Views Total
+             * @default 0
+             */
+            views_total: number;
+            /**
+             * Period New Properties
+             * @default 0
+             */
+            period_new_properties: number;
+            /**
+             * Period New Shares
+             * @default 0
+             */
+            period_new_shares: number;
+            /**
+             * Period New Views
+             * @default 0
+             */
+            period_new_views: number;
+            period: components["schemas"]["KeysSummaryPeriod"];
         };
         /**
          * KpiCard
@@ -19975,6 +20055,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KeysPropertiesResponse"];
+                };
+            };
+        };
+    };
+    get_keys_summary_api_v1_keys_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeysSummaryResponse"];
                 };
             };
         };

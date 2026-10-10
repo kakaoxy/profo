@@ -1,6 +1,6 @@
 """小程序员工端钥匙分享 Schema."""
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -42,6 +42,30 @@ class KeysPropertiesResponse(BaseModel):
     """我可操作的房源列表."""
 
     items: list[KeysPropertyItem]
+
+
+class KeysSummaryPeriod(BaseModel):
+    """当前「周二周期」窗口（东八区日期，供 ⓘ 弹层展示）."""
+
+    start: date  # 窗口起点日期（周二）
+    end: date  # 窗口终点日期（下周一，含当日 24:00）
+    text: str  # 展示文案「MM-DD 周X ~ MM-DD 周X · 剩 N 天」
+
+
+class KeysSummaryResponse(BaseModel):
+    """钥匙管理指标 hero 区聚合（列表页页首三指标 + 周期新增）.
+
+    统计范围 = 当前用户可见房源（admin 全量 / 相关人仅关联房源，与
+    /keys/properties 同权限口径）；「有钥匙」= 管理密码已设或 ≥1 组有效普通密码。
+    """
+
+    properties_with_keys: int = 0  # 有钥匙的房源数（总量）
+    shares_total: int = 0  # 钥匙分享累计创建数（含过期/已回收）
+    views_total: int = 0  # 钥匙被查看累计次数（按查看记录条数）
+    period_new_properties: int = 0  # 本周期内首次录入有效密码的房源数
+    period_new_shares: int = 0  # 本周期内新建的分享数
+    period_new_views: int = 0  # 本周期内新增的查看次数
+    period: KeysSummaryPeriod
 
 
 class KeyShareCreateItem(BaseModel):

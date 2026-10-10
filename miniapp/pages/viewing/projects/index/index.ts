@@ -13,7 +13,7 @@ import { pad2 } from "../../../../utils/format";
 import { createProjectListPage } from "../../utils/project-list-page";
 import type { BaseDisplayItem, ProjectListState } from "../../utils/project-list-page";
 import { parseSalesRecords } from "../../utils/sales-records";
-import { cycleStart, isInCycle } from "../../utils/sales-cycle";
+import { cycleStart, isInCycle } from "../../../../utils/cycle-period";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type RecordType = components["schemas"]["RecordType"];

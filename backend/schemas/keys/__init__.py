@@ -39,6 +39,8 @@ from .shares import (
     KeyShareTimelineItem,
     KeysPropertiesResponse,
     KeysPropertyItem,
+    KeysSummaryPeriod,
+    KeysSummaryResponse,
 )
 
 __all__ = [
@@ -61,6 +63,8 @@ __all__ = [
     "KeysDetailResponse",
     "KeysPropertiesResponse",
     "KeysPropertyItem",
+    "KeysSummaryPeriod",
+    "KeysSummaryResponse",
     "ManagerKeyPutRequest",
     "ManagerKeyResponse",
     "NormalKeyBatchConfirmRequest",

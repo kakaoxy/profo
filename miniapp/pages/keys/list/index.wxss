@@ -16,13 +16,143 @@
   font-size: 24rpx;
   color: var(--graphite);
 }
-.list-head-right {
+
+/* ===== 指标 Hero 区（设计稿 docs/2026-10-10 · 三指标 + 周期新增 +N） ===== */
+.kpi-hero {
+  position: relative;
+  margin: 24rpx 40rpx 0;
+  background: var(--pure-white);
+  border: 2rpx solid #ece7de;
+  border-radius: 40rpx;
+  padding: 30rpx 34rpx 28rpx;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+/* 透明蒙层：弹层打开时铺满全屏，点击浮层外任意区域收起（catchtap 阻断穿透） */
+.kpi-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+}
+/* 右上角 ⓘ：点击弹出周期说明，不占常驻版面（40rpx 热区 + 20rpx 视觉圆） */
+.kpi-info {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: var(--fog);
+  color: var(--graphite);
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 40rpx;
+  text-align: center;
+  z-index: 3;
+}
+.kpi-info--open {
+  background: var(--ink);
+  color: var(--pure-white);
+}
+.kpi-pop {
+  position: absolute;
+  top: 72rpx;
+  right: 16rpx;
+  z-index: 4;
+  width: 440rpx;
+  background: var(--pure-white);
+  border-radius: 28rpx;
+  box-shadow: 0 12rpx 48rpx -8rpx rgba(23, 25, 28, 0.18), 0 0 0 2rpx rgba(23, 25, 28, 0.05);
+  padding: 24rpx 28rpx 22rpx;
+}
+/* 弹层小箭头（旋转 45° 方块） */
+.kpi-pop::before {
+  content: "";
+  position: absolute;
+  top: -10rpx;
+  right: 32rpx;
+  width: 20rpx;
+  height: 20rpx;
+  background: var(--pure-white);
+  transform: rotate(45deg);
+  border-radius: 4rpx;
+}
+.kpi-pop__title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.kpi-pop__desc {
+  font-size: 22rpx;
+  color: var(--ash);
+  line-height: 1.65;
+  margin-top: 10rpx;
+}
+.kpi-pop__em {
+  color: var(--rust);
+  font-weight: 600;
+}
+.kpi-pop__range {
+  margin-top: 16rpx;
+  padding: 12rpx 18rpx;
+  border-radius: 18rpx;
+  background: var(--fog);
+  font-size: 20rpx;
+  color: var(--graphite);
+  letter-spacing: 0.02em;
+}
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+.kpi-cell {
+  min-width: 0;
+}
+.kpi-label-line {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 8rpx;
+  min-width: 0;
 }
-.mlink {
-  font-size: 26rpx;
+.kpi-label {
+  font-size: 22rpx;
+  color: var(--graphite);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 增量徽标：+0 与 +N 同 Rust 橙（对齐参考稿「咨询 +0」） */
+.kpi-delta {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--rust);
+}
+.kpi-num {
+  margin-top: 6rpx;
+  font-size: 52rpx;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.kpi-foot {
+  margin-top: 22rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid #f2f0ec;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.kpi-foot__note {
+  font-size: 20rpx;
+  color: var(--dove);
+}
+.kpi-foot__link {
+  font-size: 24rpx;
   font-weight: 500;
   color: var(--rust);
 }

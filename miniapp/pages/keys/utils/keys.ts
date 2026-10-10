@@ -13,6 +13,7 @@ import type { HttpResponseError } from "../../../utils/request";
 
 export type KeysPropertiesResponse = components["schemas"]["KeysPropertiesResponse"];
 export type KeysPropertyItem = components["schemas"]["KeysPropertyItem"];
+export type KeysSummaryResponse = components["schemas"]["KeysSummaryResponse"];
 export type KeysDetailResponse = components["schemas"]["KeysDetailResponse"];
 export type ManagerKeyResponse = components["schemas"]["ManagerKeyResponse"];
 export type NormalKeyItem = components["schemas"]["NormalKeyItem"];

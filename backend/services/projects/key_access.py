@@ -10,7 +10,7 @@
 
 import secrets
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import case, or_
@@ -231,6 +231,44 @@ def utc_now() -> datetime:
 
 
 _TZ_SHANGHAI = ZoneInfo("Asia/Shanghai")
+
+# 「周二周期」星期文案（weekday()：周一=0 … 周日=6）
+_WEEKDAY_TEXT = ("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+
+
+def cycle_period(now: datetime | None = None) -> tuple[datetime, datetime]:
+    """当前「周二周期」窗口 [start, end)（东八区语义，返回 tz-aware UTC）.
+
+    周期 = 自然周周二 00:00 → 下周一 24:00（等价于以周二为一周之首的自然周）；
+    周一打开时窗口为上周二 00:00 → 本周一 24:00（详见设计稿 docs/2026-10-10
+    钥匙管理列表-指标hero区 口径④）。与小程序带看管理角标的共享纯函数
+    miniapp/utils/cycle-period.ts（cycleStart）同口径，两端各自维护。
+
+    end 为开区间上界（= 下一个周二 00:00），SQL 过滤用 >= start AND < end；
+    跨年由日期运算天然支持。仅该函数与 format_period_text 涉及周期推算，
+    其余代码一律通过本函数取窗口，避免口径散落。
+    """
+    ref = now.astimezone(_TZ_SHANGHAI) if now is not None else datetime.now(_TZ_SHANGHAI)
+    offset = (ref.weekday() + 6) % 7  # 一→6 二→0 三→1 … 日→5（周二为一周之首）
+    start = (ref - timedelta(days=offset)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return start.astimezone(timezone.utc), (start + timedelta(days=7)).astimezone(timezone.utc)
+
+
+def format_period_text(start: datetime, end: datetime, now: datetime | None = None) -> str:
+    """周期展示文案「MM-DD 周X ~ MM-DD 周X · 剩 N 天」（东八区，供小程序 ⓘ 弹层直出）.
+
+    start/end 为 cycle_period 返回的窗口边界；终点展示为窗口最后一天（周一，即
+    end - 1 天）；剩余天数按自然日差计（终点日 - 今日），周期最后一天显示「剩 0 天」。
+    """
+    s = start.astimezone(_TZ_SHANGHAI)
+    last_day = (end - timedelta(days=1)).astimezone(_TZ_SHANGHAI)
+    today = now.astimezone(_TZ_SHANGHAI).date() if now is not None else datetime.now(_TZ_SHANGHAI).date()
+    days_left = max((last_day.date() - today).days, 0)
+    return (
+        f"{s.month:02d}-{s.day:02d} {_WEEKDAY_TEXT[s.weekday()]} "
+        f"~ {last_day.month:02d}-{last_day.day:02d} {_WEEKDAY_TEXT[last_day.weekday()]} "
+        f"· 剩 {days_left} 天"
+    )
 
 
 def local_today() -> date:

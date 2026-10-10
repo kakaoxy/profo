@@ -69,10 +69,12 @@ function propertiesResponse(items: PropInput[]): Record<string, unknown> {
 async function loadList(items: PropInput[]): Promise<Record<string, any>> {
   const ctx = createPageHarness();
   ctx.onShow();
+  // onShow 并发发出 properties + summary 两请求（后者 hero 用，本文件只关心列表）
   const reqs = pendingReqs();
-  expect(reqs).toHaveLength(1);
-  expect(reqs[0].opts.url).toBe("/keys/properties");
-  reqs[0].resolve(propertiesResponse(items));
+  expect(reqs).toHaveLength(2);
+  const props = reqs.find((r) => r.opts.url === "/keys/properties");
+  expect(props).toBeDefined();
+  props!.resolve(propertiesResponse(items));
   await flush();
   return ctx;
 }

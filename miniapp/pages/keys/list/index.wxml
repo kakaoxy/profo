@@ -33,12 +33,48 @@
 
   <!-- 房源列表 -->
   <block wx:elif="{{state === 'items'}}">
+    <!-- 指标 Hero 区（设计稿 docs/2026-10-10：三指标 + 周期新增 +N · +0 同橙；summary 失败整卡隐藏） -->
+    <view class="kpi-hero" wx:if="{{summary}}">
+      <view class="kpi-mask" wx:if="{{summaryPopOpen}}" catchtap="onToggleSummaryPop"></view>
+      <view class="kpi-info {{summaryPopOpen ? 'kpi-info--open' : ''}}" catchtap="onToggleSummaryPop">i</view>
+      <view class="kpi-pop {{summaryPopOpen ? 'kpi-pop--show' : ''}}" wx:if="{{summaryPopOpen}}">
+        <view class="kpi-pop__title">指标与统计周期说明</view>
+        <view class="kpi-pop__desc">
+          <text class="kpi-pop__em">房源</text>＝有钥匙的房源数 · <text class="kpi-pop__em">分享</text>＝钥匙分享数 ·
+          <text class="kpi-pop__em">查看</text>＝密码被查看次数。增量 +N 为本周期内新增量，每周二 00:00 重置。
+        </view>
+        <view class="kpi-pop__range">{{summary.periodText}}</view>
+      </view>
+      <view class="kpi-row">
+        <view class="kpi-cell">
+          <view class="kpi-label-line">
+            <text class="kpi-label">房源</text>
+            <text class="kpi-delta">{{summary.deltaText}}</text>
+          </view>
+          <view class="kpi-num">{{summary.propertiesWithKeys}}</view>
+        </view>
+        <view class="kpi-cell">
+          <view class="kpi-label-line">
+            <text class="kpi-label">分享</text>
+            <text class="kpi-delta">{{summary.sharesDeltaText}}</text>
+          </view>
+          <view class="kpi-num">{{summary.sharesTotal}}</view>
+        </view>
+        <view class="kpi-cell">
+          <view class="kpi-label-line">
+            <text class="kpi-label">查看</text>
+            <text class="kpi-delta">{{summary.viewsDeltaText}}</text>
+          </view>
+          <view class="kpi-num">{{summary.viewsTotal}}</view>
+        </view>
+      </view>
+      <view class="kpi-foot">
+        <text class="kpi-foot__note">相关人仅见关联房源</text>
+        <text class="kpi-foot__link" catchtap="onShareRecords">分享记录</text>
+      </view>
+    </view>
     <view class="list-head">
       <view class="list-count">共 {{total}} 套</view>
-      <view class="list-head-right">
-        <view class="chip chip--gray">相关人仅见关联房源</view>
-        <text class="mlink" bindtap="onShareRecords">分享记录</text>
-      </view>
     </view>
     <view class="search-box">
       <view class="search-icon">⌕</view>

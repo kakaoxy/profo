@@ -14,11 +14,17 @@ import {
   RECENT_SHARED_KEY_PREFIX,
   stablePartition,
 } from "../utils/keys";
-import type { KeysPropertyItem, KeysPropertiesResponse } from "../utils/keys";
+import type {
+  KeysPropertyItem,
+  KeysPropertiesResponse,
+  KeysSummaryResponse,
+} from "../utils/keys";
 import { getCAccessToken } from "../../../utils/token";
 
 /** SWR 缓存 key（按 C 端令牌隔离，避免换号后渲染他人数据）. */
 const CACHE_KEY_PREFIX = "keys_properties";
+/** hero 指标聚合 SWR 缓存 key（独立于列表，失败不阻塞列表加载）. */
+const SUMMARY_CACHE_KEY_PREFIX = "keys_summary";
 
 /** 列表项展示结构（chip 文案在 TS 侧拼好，wxml 只做渲染）. */
 interface DisplayItem {
@@ -42,12 +48,33 @@ interface PageData {
   total: number;
   /** 搜索关键字（按小区/详细地址子串过滤，本地即时）. */
   searchKey: string;
+  /** 指标 hero 渲染模型；summary 加载失败时为 null（整卡隐藏）. */
+  summary: SummaryDisplay | null;
+  /** ⓘ 周期说明弹层是否展开. */
+  summaryPopOpen: boolean;
+}
+
+/** /keys/summary → hero 渲染模型（徽标文案/剩余量在 TS 侧拼好，wxml 只做渲染）. */
+interface SummaryDisplay {
+  propertiesWithKeys: number;
+  sharesTotal: number;
+  viewsTotal: number;
+  /** 房源周期增量徽标文案（+N，含 +0；≥100 显示 +99+）. */
+  deltaText: string;
+  sharesDeltaText: string;
+  viewsDeltaText: string;
+  /** 周期窗口文案（后端直出，前端不做周期推算）. */
+  periodText: string;
 }
 
 interface PageCustom {
   /** 全量列表（搜索过滤的数据源，loadList 刷新时重建）. */
   allItems: DisplayItem[];
   loadList(): Promise<void>;
+  /** 指标 hero 取数（独立降级：失败静默隐藏整卡，不阻塞列表）. */
+  loadSummary(): Promise<void>;
+  /** ⓘ 周期说明弹层开/收. */
+  onToggleSummaryPop(): void;
   /** 用关键字过滤 allItems 并渲染（searchKey 为空渲染全量）. */
   applyFilter(): void;
   /** 读取本地缓存的置顶房源 ID 集（无则空集）. */
@@ -86,6 +113,24 @@ function toDisplay(item: KeysPropertyItem): DisplayItem {
   };
 }
 
+/** 增量徽标文案：恒显示 +N（+0 同橙）；≥100 显示 +99+ 防三列挤压（设计稿 STATES 表）. */
+function deltaText(n: number): string {
+  return `+${n >= 100 ? "99+" : n}`;
+}
+
+/** KeysSummaryResponse → hero 渲染模型. */
+function toSummaryDisplay(data: KeysSummaryResponse): SummaryDisplay {
+  return {
+    propertiesWithKeys: data.properties_with_keys,
+    sharesTotal: data.shares_total,
+    viewsTotal: data.views_total,
+    deltaText: deltaText(data.period_new_properties),
+    sharesDeltaText: deltaText(data.period_new_shares),
+    viewsDeltaText: deltaText(data.period_new_views),
+    periodText: data.period.text,
+  };
+}
+
 Page<PageData, PageCustom>({
   allItems: [],
   data: {
@@ -93,11 +138,47 @@ Page<PageData, PageCustom>({
     items: [],
     total: 0,
     searchKey: "",
+    summary: null,
+    summaryPopOpen: false,
   },
 
   onShow() {
     // 每次进入/返回刷新（详情页增删密码后回列表需同步徽章）
     void this.loadList();
+    void this.loadSummary();
+  },
+
+  /**
+   * 指标 hero 取数：独立于列表请求，失败静默隐藏整卡（不进列表 error 态）.
+   * SWR 同策略：缓存先渲染再静默刷新，避免每次进入闪空.
+   */
+  async loadSummary() {
+    const token = getCAccessToken();
+    if (!token) {
+      return;
+    }
+    const cacheKey = `${SUMMARY_CACHE_KEY_PREFIX}:${token}`;
+    const cached = getCacheData<KeysSummaryResponse>(cacheKey);
+    if (cached) {
+      this.setData({ summary: toSummaryDisplay(cached) });
+    }
+    try {
+      const data = await request<KeysSummaryResponse>({
+        url: "/keys/summary",
+        cacheKey,
+      });
+      this.setData({ summary: toSummaryDisplay(data), summaryPopOpen: false });
+    } catch {
+      // ⚠️ 设计稿降级口径：summary 失败 hero 整卡隐藏；无缓存时不再保留旧数据
+      if (!cached) {
+        this.setData({ summary: null, summaryPopOpen: false });
+      }
+    }
+  },
+
+  /** ⓘ 弹层开/收（catchtap 阻断冒泡；点外部收起由蒙层外点击经 catchtap 链路自然覆盖）. */
+  onToggleSummaryPop() {
+    this.setData({ summaryPopOpen: !this.data.summaryPopOpen });
   },
 
   /** 置顶房源 ID 集从 storage 读取（分享成功页/分享记录页写入，后端口径一致）. */

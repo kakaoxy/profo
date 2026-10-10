@@ -11,7 +11,7 @@ from fastapi import APIRouter, Path, Query
 from pydantic import UUID4
 
 from dependencies.auth import CurrentCEmployeeUserDep
-from dependencies.keys import KeyShareServiceDep
+from dependencies.keys import KeyShareServiceDep, KeySummaryServiceDep
 from schemas.keys import (
     KeyShareActionResponse,
     KeyShareCreatedResponse,
@@ -20,6 +20,7 @@ from schemas.keys import (
     KeyShareExtendRequest,
     KeyShareListResponse,
     KeysPropertiesResponse,
+    KeysSummaryResponse,
 )
 
 router = APIRouter(prefix="/keys", tags=["keys"])
@@ -32,6 +33,18 @@ def list_key_properties(
 ) -> KeysPropertiesResponse:
     """我可操作的房源 + 钥匙徽章聚合（不显密文）."""
     return service.list_my_properties(current_user)
+
+
+@router.get("/summary")
+def get_keys_summary(
+    current_user: CurrentCEmployeeUserDep,
+    service: KeySummaryServiceDep,
+) -> KeysSummaryResponse:
+    """指标 hero 区三指标聚合（总量 + 周二周期新增，设计稿 docs/2026-10-10）.
+
+    字面路径 /summary 必须声明在 /shares/{share_id} 之前，避免被参数路由遮蔽。
+    """
+    return service.get_summary(current_user)
 
 
 @router.post("/shares")

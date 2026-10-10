@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from db import get_db
 from services.projects.key_share_public import KeySharePublicService
 from services.projects.key_shares import KeyShareService
+from services.projects.key_summary import KeySummaryService
 from services.projects.keys import KeyService
 
 
@@ -26,6 +27,12 @@ def get_key_share_public_service(db: Annotated[Session, Depends(get_db)]) -> Key
     return KeySharePublicService(db)
 
 
+def get_key_summary_service(db: Annotated[Session, Depends(get_db)]) -> KeySummaryService:
+    """指标 hero 区聚合服务（/keys/summary 只读）."""
+    return KeySummaryService(db)
+
+
 KeyServiceDep = Annotated[KeyService, Depends(get_key_service)]
 KeyShareServiceDep = Annotated[KeyShareService, Depends(get_key_share_service)]
 KeySharePublicServiceDep = Annotated[KeySharePublicService, Depends(get_key_share_public_service)]
+KeySummaryServiceDep = Annotated[KeySummaryService, Depends(get_key_summary_service)]
