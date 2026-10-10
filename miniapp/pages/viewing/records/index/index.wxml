@@ -1,0 +1,62 @@
+<view class="page">
+  <!-- 未登录 / 令牌失效 -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录已失效</view>
+    <view class="state__text">请重新登录后查看带看记录</view>
+    <view class="state__btn" bindtap="onGoBack">返回重新登录</view>
+  </view>
+
+  <!-- 无权限查看（403：非业务身份亦无 project:read） -->
+  <view class="state" wx:elif="{{state === 'noPermission'}}">
+    <view class="state__title">无权限查看</view>
+    <view class="state__text">当前账号无权查看销售记录</view>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <!-- 空态 -->
+  <view class="state" wx:elif="{{state === 'empty'}}">
+    <view class="state__text">暂无销售记录</view>
+  </view>
+
+  <!-- 明细流 -->
+  <block wx:elif="{{state === 'items'}}">
+    <!-- 类型筛选 chips（兼图例；切类型服务端过滤重拉） -->
+    <view class="filter-bar">
+      <view
+        class="fchip {{activeFilter === item.key ? 'fchip--on' : ''}}"
+        wx:for="{{filters}}"
+        wx:key="key"
+        bindtap="onFilterTap"
+        data-key="{{item.key}}"
+      >{{item.label}}</view>
+    </view>
+
+    <!-- 记录行（时间降序；出价行附金额行；渠道括注整体省略——真源字段暂缺） -->
+    <view class="rec-card" wx:for="{{items}}" wx:key="id">
+      <view class="rec-top">
+        <view class="rec-chip {{item.chipClass}}">{{item.typeLabel}}</view>
+        <view class="rec-date">{{item.dateText}}</view>
+      </view>
+      <view class="rec-text">{{item.text}}</view>
+      <view class="rec-price" wx:if="{{item.priceText}}">{{item.priceText}}</view>
+    </view>
+
+    <!-- 触底加载 / 没有更多 -->
+    <view class="list-footer" wx:if="{{loadingMore}}">加载中...</view>
+    <view class="list-footer" wx:elif="{{!hasMore && items.length > 0}}">没有更多了</view>
+  </block>
+
+  <!-- 底部留白 -->
+  <view style="height: 120rpx;"></view>
+</view>

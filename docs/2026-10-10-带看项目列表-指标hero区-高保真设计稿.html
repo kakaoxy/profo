@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>小程序 · 带看项目列表页 指标 Hero 区 高保真设计稿 v1.0</title>
+<!--
+  小程序 · 带看项目列表页（我负责的项目） 指标 Hero 区 高保真设计稿 v1.0（2026-10-10）
+  ─────────────────────────────────────────────────────────────────────
+  需求真源：miniapp/pages/viewing/projects/index/index 页首新增指标 hero 区，
+    参照钥匙管理列表 hero（docs/2026-10-10-钥匙管理列表-指标hero区-高保真设计稿.html），
+    呈现三指标：带看 / 出价 / 面谈 汇总数据，各带「新周期（每周二 00:00 → 下周一 24:00）
+    内新增量」徽标（+N，+0 同样橙色）。
+  参考稿：钥匙管理列表 hero（同款式复用，仅换指标与卡底）。
+  视觉真源：DESIGN.md（Steep Style Reference）+ miniapp/app.wxss warm 令牌
+    （白卡 24px 级圆角 / Graphite 标签 / Ink 大数字 / Rust 强调 · +0 与 +N 同色）。
+  交互口径（AskUserQuestion 两问已确认）：
+    ① 汇总取数：新增后端聚合端点（主通道 GET /projects 分页 20 条/页，前端聚合已加载项不完整）
+    ② hero 卡底：左「统计范围与下方列表一致」· 右「带看记录」链接 → 新增带看记录明细页
+       （按时间降序呈现全部明细，例：2026-10-09，唐为金杨七街坊添加一条带看记录（链家））
+  交付范围：
+    SEC 01        需求与口径（指标定义表 + 周期规则可交互演示）
+    ARTBOARD 01   小程序列表页 390 × 844（hero 落位 · 默认态，ⓘ 可点击）
+    ARTBOARD 02   小程序列表页 390 × 844（ⓘ 弹层打开态）
+    ARTBOARD 03   带看记录明细页 390 × 844（卡底「带看记录」链接落地页，时间降序明细流）
+    组件标注       hero 组件放大（结构 · 间距 · 字级规格）+ 徽标状态表
+    SEC 03        实现说明（建议端点 · 代码落点 · 待确认口径 · E2E 验证点）
+  与钥匙版差异：
+    ① 指标换为 带看/出价/面谈（与项目卡 card-counts 三计数同源同短名）
+    ② 卡底右侧链接为「带看记录」（新增明细页），钥匙版为「分享记录」
+    ③ 数据源不同：钥匙汇总需查审计日志；本页三指标可由 sales_records 聚合，但主通道
+       分页（20 条/页）导致前端无法聚合全量 → 仍需后端聚合端点（口径①）
+-->
+<style>
+  :root {
+    --ink: #17191c;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --fog: #f7f7f8;
+    --white: #ffffff;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky-wash: #d3e3fc;
+    --line: #e6e8ec;
+    --card-border: #ece7de;
+    --shadow-sm: 0 2px 10px rgba(23, 25, 28, 0.06);
+    --shadow-pop: 0 6px 24px -4px rgba(23, 25, 28, 0.18), 0 0 0 1px rgba(23, 25, 28, 0.05);
+    --shadow-phone: 0 24px 48px -12px rgba(23, 25, 28, 0.2), 0 0 0 1px rgba(23, 25, 28, 0.06);
+    --serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --sans: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--fog);
+    font-family: var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.009em;
+    padding-bottom: 120px;
+    font-feature-settings: "tnum";
+  }
+  .sec { max-width: 1280px; margin: 88px auto 0; padding: 0 32px; }
+  .sec h2 {
+    font-family: var(--serif);
+    font-weight: 400; font-size: 34px; line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin-top: 10px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite);
+  }
+  .lede { font-size: 15px; font-weight: 430; color: var(--ash); line-height: 1.75; margin-top: 12px; max-width: 900px; }
+  .lede b { font-weight: 480; color: var(--ink); }
+  .lede code, .cap-note code, td code {
+    font-family: var(--mono); font-size: 11.5px; color: var(--rust);
+    background: var(--apricot); padding: 1px 6px; border-radius: 6px;
+  }
+  td code { font-size: 11px; }
+  .artlabel {
+    font-family: var(--mono); font-size: 12px; color: var(--graphite);
+    letter-spacing: 0.08em; margin: 30px 0 10px;
+  }
+  .artlabel em { font-style: normal; color: var(--dove); }
+  .cap-note { font-size: 12.5px; color: var(--graphite); margin-top: 14px; line-height: 1.7; max-width: 880px; }
+  .cap-note b { color: var(--ink); font-weight: 480; }
+
+  /* ── 页头 ─────────────────────────────── */
+  .doc-head { max-width: 1280px; margin: 72px auto 0; padding: 0 32px; }
+  .doc-head h1 {
+    font-family: var(--serif); font-weight: 400; font-size: 46px; line-height: 1.15;
+    letter-spacing: -0.02em; margin-top: 14px;
+  }
+  .doc-head h1 em { font-style: normal; color: var(--rust); }
+  .head-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .head-meta span {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--graphite); background: var(--white); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 14px;
+  }
+  .head-meta span b { color: var(--rust); font-weight: 600; }
+
+  /* ── 需求卡 ─────────────────────────────── */
+  .req-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .req-grid { grid-template-columns: repeat(2, 1fr); } }
+  .req-card { background: var(--white); border-radius: 16px; padding: 18px 18px 16px; box-shadow: var(--shadow-sm); }
+  .req-card .no { font-family: var(--mono); font-size: 10.5px; color: var(--dove); letter-spacing: 0.12em; margin-bottom: 8px; }
+  .req-card .t { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .req-card .d { font-size: 12.5px; color: var(--ash); line-height: 1.65; }
+  .req-card .d b { font-weight: 600; color: var(--rust); }
+
+  /* ── 口径表 ─────────────────────────────── */
+  .spec-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    background: var(--white); border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow-sm); margin-top: 22px; font-size: 13px;
+  }
+  .spec-table th {
+    text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--graphite); background: var(--fog);
+    padding: 10px 16px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  .spec-table td { padding: 12px 16px; border-bottom: 1px solid #f0f0f2; vertical-align: top; color: var(--ash); line-height: 1.6; }
+  .spec-table tr:last-child td { border-bottom: 0; }
+  .spec-table td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+  .spec-table td .sub { display: block; font-size: 11.5px; color: var(--graphite); margin-top: 3px; }
+
+  /* ── 周期演示（可交互） ─────────────────────────────── */
+  .cycle-demo {
+    background: var(--white); border-radius: 16px; box-shadow: var(--shadow-sm);
+    padding: 22px; margin-top: 22px;
+  }
+  .cycle-week { display: flex; gap: 8px; }
+  .cycle-day {
+    flex: 1; text-align: center; border-radius: 12px; padding: 12px 0 10px;
+    background: var(--fog); border: 1px solid transparent; cursor: pointer;
+    transition: all .18s ease; user-select: none;
+  }
+  .cycle-day .dw { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--graphite); }
+  .cycle-day .dd { font-size: 15px; font-weight: 600; margin-top: 4px; color: var(--ink); }
+  .cycle-day .tag { font-size: 10px; color: var(--dove); margin-top: 3px; min-height: 14px; }
+  .cycle-day.in-win { background: var(--apricot); border-color: var(--rust); }
+  .cycle-day.in-win .tag { color: var(--rust); font-weight: 600; }
+  .cycle-day.is-today .dd { color: var(--rust); }
+  .cycle-day.start .tag::after { content: "周期起点"; }
+  .cycle-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .cycle-meta .desc { font-size: 13px; color: var(--ash); line-height: 1.6; }
+  .cycle-meta .desc b { color: var(--rust); font-weight: 600; }
+  .weekday-picker { display: flex; gap: 6px; }
+  .weekday-picker button {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    border: 1px solid var(--line); background: var(--white); color: var(--graphite);
+    border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .15s ease;
+  }
+  .weekday-picker button:hover { border-color: var(--dove); color: var(--ink); }
+  .weekday-picker button.on { background: var(--ink); border-color: var(--ink); color: var(--white); }
+
+  /* ── Artboard 舞台 ─────────────────────────────── */
+  .board-row { display: flex; flex-wrap: wrap; gap: 48px; margin-top: 22px; align-items: flex-start; }
+
+  /* iPhone 框 */
+  .phone {
+    width: 390px; height: 844px; flex-shrink: 0;
+    background: var(--fog); border-radius: 54px;
+    box-shadow: var(--shadow-phone);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .phone .notch {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 118px; height: 34px; background: var(--ink); border-radius: 20px; z-index: 5;
+  }
+  .statusbar {
+    height: 54px; flex-shrink: 0; display: flex; align-items: flex-end;
+    justify-content: space-between; padding: 0 30px 6px;
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .statusbar .icons { display: flex; gap: 5px; align-items: center; }
+  .statusbar .sig { display: inline-flex; gap: 2px; align-items: flex-end; }
+  .statusbar .sig i { width: 3px; background: var(--ink); border-radius: 1px; display: block; }
+  .navbar {
+    height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 500; color: var(--ink);
+    border-bottom: 1px solid rgba(23, 25, 28, 0.05);
+  }
+  .phone .screen { flex: 1; overflow-y: auto; }
+  .phone .screen::-webkit-scrollbar { display: none; }
+  .homebar {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; border-radius: 3px; background: rgba(23, 25, 28, 0.28); z-index: 5;
+  }
+
+  /* 页面内容（rpx→px @390：1rpx ≈ 0.52px，取整近似） */
+  .mini-page { padding: 12px 0 0; font-family: var(--sans); }
+
+  /* ── NEW · 指标 Hero 区（对应新增 .kpi-hero） ── */
+  .kpi-hero {
+    position: relative;
+    margin: 0 21px 14px; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 21px;
+    padding: 16px 18px 15px; box-shadow: var(--shadow-sm);
+  }
+  .kpi-info {
+    position: absolute; top: 12px; right: 12px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--fog); color: var(--graphite);
+    font-size: 12px; font-weight: 600; line-height: 20px; text-align: center;
+    cursor: pointer; user-select: none; z-index: 3;
+    transition: background .15s ease, color .15s ease;
+  }
+  .kpi-info:active { background: var(--apricot); color: var(--rust); }
+  .kpi-info.open { background: var(--ink); color: var(--white); }
+  .kpi-pop {
+    position: absolute; top: 38px; right: 8px; z-index: 4;
+    width: 236px; background: var(--white);
+    border-radius: 14px; box-shadow: var(--shadow-pop);
+    padding: 12px 14px 11px;
+    opacity: 0; transform: translateY(-4px); pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease;
+  }
+  .kpi-pop.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .kpi-pop::before {
+    content: ""; position: absolute; top: -5px; right: 16px;
+    width: 10px; height: 10px; background: var(--white);
+    transform: rotate(45deg); border-radius: 2px;
+    box-shadow: -1px -1px 1px rgba(23, 25, 28, 0.04);
+  }
+  .kpi-pop .p-t { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .kpi-pop .p-d { font-size: 11px; color: var(--ash); line-height: 1.65; margin-top: 5px; }
+  .kpi-pop .p-d b { color: var(--rust); font-weight: 600; }
+  .kpi-pop .p-range {
+    margin-top: 8px; padding: 6px 9px; border-radius: 9px;
+    background: var(--fog);
+    font-family: var(--mono); font-size: 10px; color: var(--graphite); letter-spacing: 0.02em;
+  }
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+  .kpi-cell { min-width: 0; }
+  .kpi-label-line { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .kpi-label {
+    font-size: 11px; font-weight: 430; color: var(--graphite);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .kpi-delta {
+    flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--rust);
+    letter-spacing: 0; font-feature-settings: "tnum";
+  }
+  .kpi-num {
+    margin-top: 3px; font-size: 27px; font-weight: 480; color: var(--ink);
+    line-height: 1.15; letter-spacing: -0.02em; font-feature-settings: "tnum";
+  }
+  .kpi-foot {
+    margin-top: 11px; padding-top: 9px; border-top: 1px solid #f2f0ec;
+    font-size: 10px; color: var(--dove);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .kpi-foot .flink { font-size: 11px; font-weight: 500; color: var(--rust); cursor: pointer; }
+
+  /* ── 既有列表内容（viewing/projects 复刻） ── */
+  .m-list-title {
+    font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
+    color: var(--graphite); margin: 4px 25px 10px;
+  }
+  .m-card {
+    margin: 0 21px 12px; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 21px;
+    padding: 17px 17px 15px; box-shadow: var(--shadow-sm);
+  }
+  .m-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .m-card-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; color: var(--ink); line-height: 1.45; overflow-wrap: break-word; }
+  .m-offer-info { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .m-offer-info .max { font-size: 12px; font-weight: 500; color: var(--graphite); white-space: nowrap; }
+  .m-offer-info .max.on { color: var(--rust); }
+  .m-offer-info .time { font-size: 11px; color: var(--dove); white-space: nowrap; }
+  .m-card-counts {
+    margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--card-border);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .m-count-item { flex: 1; display: flex; align-items: baseline; gap: 4px; }
+  .m-count-num { font-size: 18px; font-weight: 600; color: var(--ink); font-feature-settings: "tnum"; }
+  .m-count-label { font-size: 12px; color: var(--graphite); }
+  .m-count-delta {
+    font-size: 11px; font-weight: 600; color: var(--rust);
+    margin-left: 2px; white-space: nowrap; font-feature-settings: "tnum";
+  }
+  .m-chev { font-size: 20px; line-height: 1; color: var(--dove); margin-left: 4px; }
+  .m-list-footer { padding: 12px 0 4px; text-align: center; font-size: 12px; color: var(--graphite); }
+
+  /* ── ARTBOARD 03 · 带看记录明细页 ── */
+  .m-filter-row { display: flex; gap: 6px; margin: 2px 21px 12px; flex-wrap: wrap; }
+  .m-fchip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 500; line-height: 1;
+    padding: 6px 11px; border-radius: 999px;
+    background: var(--white); border: 1px solid var(--line); color: var(--graphite);
+  }
+  .m-fchip.on { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .m-fchip .n { font-family: var(--mono); font-size: 10px; opacity: .75; }
+  .m-rec {
+    margin: 0 21px 10px; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 17px;
+    padding: 13px 15px 12px; box-shadow: var(--shadow-sm);
+  }
+  .m-rec-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .m-rchip {
+    display: inline-flex; align-items: center;
+    font-size: 10.5px; font-weight: 600; line-height: 1;
+    padding: 4px 8px; border-radius: 999px;
+  }
+  .m-rchip--viewing { background: var(--sky-wash); color: #2c4d7f; }
+  .m-rchip--offer { background: var(--apricot); color: var(--rust); }
+  .m-rchip--nego { background: #eef0f3; color: #6b6e76; }
+  .m-rec-date { font-family: var(--mono); font-size: 10.5px; color: var(--dove); letter-spacing: 0.02em; }
+  .m-rec-text { font-size: 13px; color: var(--ash); line-height: 1.6; margin-top: 8px; }
+  .m-rec-text b { color: var(--ink); font-weight: 500; }
+  .m-rec-text .chan { color: var(--graphite); }
+  .m-rec-price { font-size: 13px; font-weight: 600; color: var(--rust); margin-top: 4px; font-feature-settings: "tnum"; }
+
+  /* ── 组件放大标注 ─────────────────────────────── */
+  .zoom-wrap { flex: 1; min-width: 380px; display: flex; flex-direction: column; gap: 18px; }
+  .zoom-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 20px; }
+  .zoom-card .zt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--dove); margin-bottom: 14px; }
+  .anno-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px; margin-top: 16px; }
+  .anno-item { font-size: 12px; color: var(--ash); line-height: 1.6; display: flex; gap: 8px; }
+  .anno-item .k {
+    font-family: var(--mono); font-size: 10px; color: var(--rust); background: var(--apricot);
+    border-radius: 6px; padding: 2px 7px; height: fit-content; white-space: nowrap; flex-shrink: 0;
+  }
+  /* 放大版 hero（1.4×） */
+  .zoom-hero {
+    position: relative; background: var(--white);
+    border: 1px solid var(--card-border); border-radius: 24px;
+    padding: 24px 26px 22px; box-shadow: var(--shadow-sm);
+  }
+  .zoom-hero .kpi-info { top: 16px; right: 16px; width: 26px; height: 26px; line-height: 26px; font-size: 15px; }
+  .zoom-hero .kpi-row { gap: 12px; margin-top: 10px; }
+  .zoom-hero .kpi-label { font-size: 15px; }
+  .zoom-hero .kpi-delta { font-size: 15px; }
+  .zoom-hero .kpi-num { font-size: 38px; margin-top: 5px; }
+  .zoom-hero .kpi-foot { font-size: 13px; margin-top: 16px; padding-top: 13px; }
+  .measure-note {
+    margin-top: 14px; font-family: var(--mono); font-size: 11px;
+    color: var(--graphite); line-height: 1.9;
+  }
+  .measure-note b { color: var(--rust); font-weight: 600; }
+
+  /* ── 实现说明 ─────────────────────────────── */
+  .impl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .impl-grid { grid-template-columns: 1fr; } }
+  .impl-card { background: var(--white); border-radius: 16px; padding: 18px; box-shadow: var(--shadow-sm); }
+  .impl-card .t { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .impl-card pre {
+    font-family: var(--mono); font-size: 11px; line-height: 1.75;
+    background: var(--fog); border-radius: 10px; padding: 14px 16px;
+    color: var(--ash); overflow-x: auto;
+  }
+  .impl-card pre b { color: var(--rust); font-weight: 600; }
+  .impl-card ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .impl-card li { font-size: 12.5px; color: var(--ash); line-height: 1.65; padding-left: 16px; position: relative; }
+  .impl-card li::before { content: "·"; position: absolute; left: 4px; color: var(--dove); font-weight: 700; }
+  .impl-card li b { color: var(--ink); font-weight: 600; }
+  .impl-card li code, .impl-card .path { font-family: var(--mono); font-size: 11px; }
+  .impl-card .path { color: var(--rust); background: var(--apricot); padding: 1px 6px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+  <!-- ═══════════ 页头 ═══════════ -->
+  <header class="doc-head" data-screen-label="页头">
+    <div class="kicker">Profo Miniapp · Design Spec</div>
+    <h1>带看项目列表页<br /><em>指标 Hero 区</em></h1>
+    <div class="head-meta">
+      <span>页面真源 · <b>pages/viewing/projects/index/index</b></span>
+      <span>参考稿 · <b>钥匙管理列表 hero（同日）</b></span>
+      <span>视觉真源 · <b>DESIGN.md Steep 令牌</b></span>
+      <span>日期 · <b>2026-10-10</b></span>
+      <span>版本 · <b>v1.0</b></span>
+      <span>周期 · <b>每周二 00:00 → 下周一 24:00</b></span>
+    </div>
+  </header>
+
+  <!-- ═══════════ SEC 01 需求与口径 ═══════════ -->
+  <section class="sec" data-screen-label="SEC 01 需求与口径">
+    <div class="kicker">SEC 01</div>
+    <h2>需求与口径</h2>
+    <p class="lede">
+      带看项目列表页（<code>pages/viewing/projects/index/index</code>，导航栏「我负责的项目」）页首新增<b>指标 Hero 区</b>，
+      样式与交互完全对齐钥匙管理列表 hero：一张白卡内并排三列指标——<b>带看 / 出价 / 面谈</b>
+      （与项目卡 <code>card-counts</code> 三计数同源同短名），每列为「灰色小标签 + 橙色 <code>+N</code> 增量徽标」在上、大数字在下。
+      增量 = <b>新周期（每周二 00:00 → 下周一 24:00）内新增量</b>；周期规则说明收进卡片右上角 <b>ⓘ</b>，点击弹出标注浮层。
+      hero 卡底右侧新增<b>「带看记录」</b>链接，落地到新增的<b>时间降序明细页</b>（ARTBOARD 03）。
+    </p>
+
+    <div class="req-grid">
+      <div class="req-card">
+        <div class="no">口径 ①</div>
+        <div class="t">粒度 · 三指标并排</div>
+        <div class="d">带看、出价、面谈<b>三个指标各自</b>统计总量与本周期新增量，互不合并；缺省值显示 <b>0</b>。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ②</div>
+        <div class="t">样式 · label 行在上 · 大数字在下</div>
+        <div class="d">对齐钥匙版：灰 label 与 <code>+N</code> 同行，下方大数字；<b>+0 与 +N 同为 Rust 橙</b>，明确「本周期暂无新增」而非样式缺失。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ③</div>
+        <div class="t">周期说明 · 右上角 ⓘ 弹层</div>
+        <div class="d">hero 卡右上角 <b>ⓘ</b> 图标，点击弹出标注浮层：周期规则 + 当前周期起止日期；点击浮层外任意区域收起，<b>不占常驻版面</b>。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ④</div>
+        <div class="t">周期 · 周二 → 下周一</div>
+        <div class="d">复用 <code>utils/cycle-period</code> 周二起点规则（与项目卡 +N 角标<b>同一周期口径</b>）；周一打开时展示的是<b>上周二至今</b>的累计新增（详见下方可交互演示）。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ⑤</div>
+        <div class="t">数据源 · 需后端聚合（已确认）</div>
+        <div class="d">主通道 <code>GET /projects</code> 分页 20 条/页，前端聚合已加载项<b>数字不完整</b>；新增聚合端点按<b>全量可见项目</b>统计总量与增量（见 SEC 03）。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ⑥</div>
+        <div class="t">权限 · 与列表同范围</div>
+        <div class="d">主通道（admin/operator，project:read）＝全部在售项目；回退通道 <code>my-responsible</code>＝业务身份负责项目。聚合端点<b>按调用方实际可见范围</b>统计，与列表口径一致。</div>
+      </div>
+      <div class="req-card">
+        <div class="no">口径 ⑦</div>
+        <div class="t">卡底 · 左范围说明 · 右链接（已确认）</div>
+        <div class="d">卡底一行：左「<b>统计范围与下方列表一致</b>」灰说明；右「<b>带看记录</b>」Rust 链接 → 时间降序明细页，呈现全部记录明细。</div>
+      </div>
+    </div>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th>指标</th><th>总量定义（建议口径）</th><th>周期新增量（+N）</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>带看 <span class="sub">record_type = viewing</span></td>
+          <td>
+            可见在售项目的销售记录中 <code>viewing</code> 类型总条数
+            <span class="sub">与项目卡「带看」计数同源（countByType 不过滤字段）；admin 全量 / 相关人仅负责项目</span>
+          </td>
+          <td>本周期内新增的带看记录数 <span class="sub">按 record_date ∈ [周期起点, 现在] 计，与卡片周期角标同一 cycleStart 口径</span></td>
+        </tr>
+        <tr>
+          <td>出价 <span class="sub">record_type = offer</span></td>
+          <td>
+            可见在售项目的销售记录中 <code>offer</code> 类型总条数
+            <span class="sub">⚠️ 未填/非正价格的出价是否计入待确认①；卡片计数现不过滤，本稿与卡片同源不过滤</span>
+          </td>
+          <td>本周期内新增的出价记录数 <span class="sub">同上按 record_date 过滤</span></td>
+        </tr>
+        <tr>
+          <td>面谈 <span class="sub">record_type = negotiation</span></td>
+          <td>
+            可见在售项目的销售记录中 <code>negotiation</code> 类型总条数
+            <span class="sub">与项目卡「面谈」计数同源</span>
+          </td>
+          <td>本周期内新增的面谈记录数 <span class="sub">同上按 record_date 过滤</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 周期演示（可交互） -->
+    <div class="cycle-demo" data-screen-label="周期规则演示">
+      <div class="zoom-card" style="box-shadow:none;padding:0;">
+        <div class="zt">CYCLE DEMO · 点击右上按钮切换「今天是周几」，观察周期窗口（高亮 = 计入新增）</div>
+        <div class="cycle-week" id="cycleWeek"><!-- JS 渲染 7 天 --></div>
+        <div class="cycle-meta">
+          <div class="weekday-picker" id="weekdayPicker"><!-- JS 渲染按钮 --></div>
+          <div class="desc" id="cycleDesc"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ARTBOARD 01 / 02 小程序页 ═══════════ -->
+  <section class="sec" data-screen-label="ARTBOARD 01/02 小程序列表页">
+    <div class="kicker">ARTBOARD 01 / 02</div>
+    <h2>小程序列表页 · 390 × 844</h2>
+    <p class="lede">
+      左：hero 落位的默认态（<b>ⓘ 可点击体验弹层交互</b>）；右：ⓘ 弹层打开态。hero 位于导航栏与
+      「带看记录 · 我负责的项目」标题之间，<b>列表内容零改动</b>。
+      演示数据：全量在售项目聚合 带看 24 / 出价 9 / 面谈 6；本周新增 带看 +5、出价 +2、面谈 +1。
+    </p>
+
+    <div class="artlabel">iPhone 390 × 844 <em>· ARTBOARD 01 默认态（交互稿）</em></div>
+    <div class="board-row">
+
+      <!-- ══ Phone 1 · 默认态 ══ -->
+      <div class="phone" data-screen-label="带看项目列表 · hero 默认态">
+        <div class="notch"></div>
+        <div class="statusbar">
+          <span>9:41</span>
+          <span class="icons">
+            <span class="sig"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span>
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><path d="M8.5 9.5 L10.7 7.3 A3.1 3.1 0 0 0 6.3 7.3 Z" fill="#17191c"/><path d="M4.2 5.2 A6.1 6.1 0 0 1 12.8 5.2" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.8 2.8 A9.5 9.5 0 0 1 15.2 2.8" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" opacity="0.4" fill="none"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#17191c"/><path d="M23 4 v4 a2 2 0 0 0 0 -4" fill="#17191c" opacity="0.4"/></svg>
+          </span>
+        </div>
+        <div class="navbar">我负责的项目</div>
+        <div class="screen">
+          <div class="mini-page">
+
+            <!-- ★ NEW · 指标 Hero 区 -->
+            <div class="kpi-hero" data-screen-label="指标 Hero 区">
+              <div class="kpi-info" id="heroInfo" title="周期说明">i</div>
+              <div class="kpi-pop" id="heroPop">
+                <div class="p-t">指标与统计周期说明</div>
+                <div class="p-d"><b>带看</b>＝带看记录数 · <b>出价</b>＝出价记录数 · <b>面谈</b>＝面谈记录数。增量 <b>+N</b> 为本周期内新增量，每周二 00:00 重置。</div>
+                <div class="p-range">当前周期 10-06 周二 ~ 10-12 周一 · 剩 2 天</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">带看</div>
+                    <div class="kpi-delta">+5</div>
+                  </div>
+                  <div class="kpi-num">24</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">出价</div>
+                    <div class="kpi-delta">+2</div>
+                  </div>
+                  <div class="kpi-num">9</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">面谈</div>
+                    <div class="kpi-delta">+1</div>
+                  </div>
+                  <div class="kpi-num">6</div>
+                </div>
+              </div>
+              <div class="kpi-foot">
+                <span>统计范围与下方列表一致</span>
+                <span class="flink">带看记录</span>
+              </div>
+            </div>
+
+            <!-- 既有 list-title -->
+            <div class="m-list-title">带看记录 · 我负责的项目</div>
+
+            <!-- 项目卡① -->
+            <div class="m-card">
+              <div class="m-card-header">
+                <div class="m-card-name">金杨七街坊18号502</div>
+                <div class="m-offer-info">
+                  <div class="max on">最高出价：460万</div>
+                  <div class="time">出价时间：2026-10-09</div>
+                </div>
+              </div>
+              <div class="m-card-counts">
+                <div class="m-count-item"><div class="m-count-num">8</div><div class="m-count-label">带看</div><div class="m-count-delta">+2</div></div>
+                <div class="m-count-item"><div class="m-count-num">3</div><div class="m-count-label">出价</div><div class="m-count-delta">+1</div></div>
+                <div class="m-count-item"><div class="m-count-num">2</div><div class="m-count-label">面谈</div><div class="m-count-delta">+0</div></div>
+                <div class="m-chev">›</div>
+              </div>
+            </div>
+
+            <!-- 项目卡② -->
+            <div class="m-card">
+              <div class="m-card-header">
+                <div class="m-card-name">保德路241弄32号201</div>
+                <div class="m-offer-info">
+                  <div class="max on">最高出价：285万</div>
+                  <div class="time">出价时间：2026-10-07</div>
+                </div>
+              </div>
+              <div class="m-card-counts">
+                <div class="m-count-item"><div class="m-count-num">5</div><div class="m-count-label">带看</div><div class="m-count-delta">+1</div></div>
+                <div class="m-count-item"><div class="m-count-num">2</div><div class="m-count-label">出价</div><div class="m-count-delta">+0</div></div>
+                <div class="m-count-item"><div class="m-count-num">1</div><div class="m-count-label">面谈</div><div class="m-count-delta">+0</div></div>
+                <div class="m-chev">›</div>
+              </div>
+            </div>
+
+            <!-- 项目卡③ 无有效出价 -->
+            <div class="m-card">
+              <div class="m-card-header">
+                <div class="m-card-name">泗塘三村61号401</div>
+                <div class="m-offer-info">
+                  <div class="max">最高出价：暂无</div>
+                </div>
+              </div>
+              <div class="m-card-counts">
+                <div class="m-count-item"><div class="m-count-num">4</div><div class="m-count-label">带看</div><div class="m-count-delta">+1</div></div>
+                <div class="m-count-item"><div class="m-count-num">1</div><div class="m-count-label">出价</div><div class="m-count-delta">+0</div></div>
+                <div class="m-count-item"><div class="m-count-num">0</div><div class="m-count-label">面谈</div><div class="m-count-delta">+0</div></div>
+                <div class="m-chev">›</div>
+              </div>
+            </div>
+
+            <div class="m-list-footer">没有更多了</div>
+
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+
+      <!-- ══ Phone 2 · ⓘ 弹层打开态 ══ -->
+      <div class="phone" data-screen-label="带看项目列表 · hero 弹层打开态">
+        <div class="notch"></div>
+        <div class="statusbar">
+          <span>9:41</span>
+          <span class="icons">
+            <span class="sig"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span>
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><path d="M8.5 9.5 L10.7 7.3 A3.1 3.1 0 0 0 6.3 7.3 Z" fill="#17191c"/><path d="M4.2 5.2 A6.1 6.1 0 0 1 12.8 5.2" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.8 2.8 A9.5 9.5 0 0 1 15.2 2.8" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" opacity="0.4" fill="none"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#17191c"/><path d="M23 4 v4 a2 2 0 0 0 0 -4" fill="#17191c" opacity="0.4"/></svg>
+          </span>
+        </div>
+        <div class="navbar">我负责的项目</div>
+        <div class="screen">
+          <div class="mini-page">
+
+            <!-- Hero · 弹层打开 -->
+            <div class="kpi-hero">
+              <div class="kpi-info open">i</div>
+              <div class="kpi-pop show">
+                <div class="p-t">指标与统计周期说明</div>
+                <div class="p-d"><b>带看</b>＝带看记录数 · <b>出价</b>＝出价记录数 · <b>面谈</b>＝面谈记录数。增量 <b>+N</b> 为本周期内新增量，每周二 00:00 重置。</div>
+                <div class="p-range">当前周期 10-06 周二 ~ 10-12 周一 · 剩 2 天</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">带看</div>
+                    <div class="kpi-delta">+5</div>
+                  </div>
+                  <div class="kpi-num">24</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">出价</div>
+                    <div class="kpi-delta">+2</div>
+                  </div>
+                  <div class="kpi-num">9</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-label-line">
+                    <div class="kpi-label">面谈</div>
+                    <div class="kpi-delta">+1</div>
+                  </div>
+                  <div class="kpi-num">6</div>
+                </div>
+              </div>
+              <div class="kpi-foot">
+                <span>统计范围与下方列表一致</span>
+                <span class="flink">带看记录</span>
+              </div>
+            </div>
+
+            <div class="m-list-title">带看记录 · 我负责的项目</div>
+
+            <div class="m-card">
+              <div class="m-card-header">
+                <div class="m-card-name">金杨七街坊18号502</div>
+                <div class="m-offer-info">
+                  <div class="max on">最高出价：460万</div>
+                  <div class="time">出价时间：2026-10-09</div>
+                </div>
+              </div>
+              <div class="m-card-counts">
+                <div class="m-count-item"><div class="m-count-num">8</div><div class="m-count-label">带看</div><div class="m-count-delta">+2</div></div>
+                <div class="m-count-item"><div class="m-count-num">3</div><div class="m-count-label">出价</div><div class="m-count-delta">+1</div></div>
+                <div class="m-count-item"><div class="m-count-num">2</div><div class="m-count-label">面谈</div><div class="m-count-delta">+0</div></div>
+                <div class="m-chev">›</div>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-card-header">
+                <div class="m-card-name">保德路241弄32号201</div>
+                <div class="m-offer-info">
+                  <div class="max on">最高出价：285万</div>
+                  <div class="time">出价时间：2026-10-07</div>
+                </div>
+              </div>
+              <div class="m-card-counts">
+                <div class="m-count-item"><div class="m-count-num">5</div><div class="m-count-label">带看</div><div class="m-count-delta">+1</div></div>
+                <div class="m-count-item"><div class="m-count-num">2</div><div class="m-count-label">出价</div><div class="m-count-delta">+0</div></div>
+                <div class="m-count-item"><div class="m-count-num">1</div><div class="m-count-label">面谈</div><div class="m-count-delta">+0</div></div>
+                <div class="m-chev">›</div>
+              </div>
+            </div>
+
+            <div class="m-list-footer">没有更多了</div>
+
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+
+      <!-- 组件放大标注 -->
+      <div class="zoom-wrap" data-screen-label="hero 组件放大标注">
+        <div class="zoom-card">
+          <div class="zt">COMPONENT ZOOM · 指标 Hero 区结构（1.4×）</div>
+          <div class="zoom-hero">
+            <div class="kpi-info">i</div>
+            <div class="kpi-row">
+              <div class="kpi-cell">
+                <div class="kpi-label-line">
+                  <div class="kpi-label">带看</div>
+                  <div class="kpi-delta">+5</div>
+                </div>
+                <div class="kpi-num">24</div>
+              </div>
+              <div class="kpi-cell">
+                <div class="kpi-label-line">
+                  <div class="kpi-label">出价</div>
+                  <div class="kpi-delta">+2</div>
+                </div>
+                <div class="kpi-num">9</div>
+              </div>
+              <div class="kpi-cell">
+                <div class="kpi-label-line">
+                  <div class="kpi-label">面谈</div>
+                  <div class="kpi-delta">+1</div>
+                </div>
+                <div class="kpi-num">6</div>
+              </div>
+            </div>
+            <div class="kpi-foot">
+              <span>统计范围与下方列表一致</span>
+              <span class="flink">带看记录</span>
+            </div>
+          </div>
+          <div class="anno-grid">
+            <div class="anno-item"><span class="k">A</span>标签行：UI 短名「带看 / 出价 / 面谈」22rpx Graphite + 增量徽标 <b>+N</b> 22rpx/600 Rust，baseline 对齐，超长省略号截断</div>
+            <div class="anno-item"><span class="k">B</span>大数字：40rpx Sohne 480 Ink，tnum 等宽数字，letter-spacing −0.02em</div>
+            <div class="anno-item"><span class="k">C</span>ⓘ 图标：40rpx 圆形 fog 底，打开态反色 Ink 底白字；浮层宽 440rpx 白底 14px 圆角 + 投影</div>
+            <div class="anno-item"><span class="k">D</span>卡底一行：左「统计范围与下方列表一致」19rpx Dove · 右「带看记录」Rust 文字链接（点击进 ARTBOARD 03 明细页）</div>
+          </div>
+          <div class="measure-note">
+            卡片：margin <b>40rpx</b> · radius <b>40rpx</b> · padding <b>30/34rpx</b> · 三列 grid gap <b>16rpx</b><br />
+            落位：navbar 之下 · list-title（带看记录 · 我负责的项目）之上，列表内容零改动<br />
+            徽标颜色：<b>+0 与 +N 同 Rust</b>（口径②）；⚠️ 列宽不足时（label+徽标溢出）整行省略号，不换行不缩徽标
+          </div>
+        </div>
+        <div class="zoom-card">
+          <div class="zt">STATES · 徽标状态一览</div>
+          <table class="spec-table" style="margin-top:0;">
+            <thead><tr><th>状态</th><th>渲染</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>正增量</td><td><b style="color:var(--rust)">+5</b></td><td>Rust 600，恒显示</td></tr>
+              <tr><td>零增量</td><td><b style="color:var(--rust)">+0</b></td><td>与 +N 同色同字号（口径②，对齐钥匙版）</td></tr>
+              <tr><td>两位数以上</td><td><b style="color:var(--rust)">+12</b> / <b style="color:var(--rust)">+99+</b></td><td>≥100 显示 +99+，防止三列挤压</td></tr>
+              <tr><td>接口失败</td><td><span style="color:var(--dove)">hero 整卡隐藏</span></td><td>独立取数独立降级，不阻塞列表加载</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <p class="cap-note">
+      注：手机稿内项目卡（最高出价 / 出价时间 / 三计数 + 周期角标）均为 <b>pages/viewing/projects/index/index 现有内容复刻</b>，
+      本次改动为导航栏下新增 hero 卡 + 卡底「带看记录」链接；演示数字（24 / 9 / 6、+5 / +2 / +1）为示意值，
+      与项目卡计数不要求逐项可加（演示卡仅示意 3 个项目）。
+    </p>
+  </section>
+
+  <!-- ═══════════ ARTBOARD 03 带看记录明细页 ═══════════ -->
+  <section class="sec" data-screen-label="ARTBOARD 03 带看记录明细页">
+    <div class="kicker">ARTBOARD 03</div>
+    <h2>带看记录明细页 · 390 × 844</h2>
+    <p class="lede">
+      hero 卡底「带看记录」链接的落地页（新增页面，建议路由 <code>pages/viewing/records/index</code>）：
+      按时间降序呈现当前用户可见范围的<b>全部销售记录明细</b>，每条一句话——
+      「<b>{操作人}</b> 为 <b>{项目名}</b> 添加一条{带看 / 出价 / 面谈}记录<b>（{渠道}）</b>」，出价记录附金额行。
+      顶部类型筛选 chips（全部 / 带看 / 出价 / 面谈）兼作图例，<b>⚠️ 是否保留待确认②</b>（可裁剪为纯列表）。
+    </p>
+
+    <div class="artlabel">iPhone 390 × 844 <em>· ARTBOARD 03 明细流（交互稿：类型筛选可点击）</em></div>
+    <div class="board-row">
+
+      <!-- ══ Phone 3 · 明细页 ══ -->
+      <div class="phone" data-screen-label="带看记录明细页">
+        <div class="notch"></div>
+        <div class="statusbar">
+          <span>9:41</span>
+          <span class="icons">
+            <span class="sig"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span>
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><path d="M8.5 9.5 L10.7 7.3 A3.1 3.1 0 0 0 6.3 7.3 Z" fill="#17191c"/><path d="M4.2 5.2 A6.1 6.1 0 0 1 12.8 5.2" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.8 2.8 A9.5 9.5 0 0 1 15.2 2.8" stroke="#17191c" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#17191c" opacity="0.4" fill="none"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#17191c"/><path d="M23 4 v4 a2 2 0 0 0 0 -4" fill="#17191c" opacity="0.4"/></svg>
+          </span>
+        </div>
+        <div class="navbar">带看记录</div>
+        <div class="screen">
+          <div class="mini-page">
+
+            <!-- 类型筛选 chips（兼图例；⚠️ 待确认② 可裁剪） -->
+            <div class="m-filter-row" data-screen-label="类型筛选">
+              <span class="m-fchip on" data-type="all">全部 <span class="n">39</span></span>
+              <span class="m-fchip" data-type="viewing">带看 <span class="n">24</span></span>
+              <span class="m-fchip" data-type="offer">出价 <span class="n">9</span></span>
+              <span class="m-fchip" data-type="negotiation">面谈 <span class="n">6</span></span>
+            </div>
+
+            <!-- 记录行（静态 mock 数据，时间降序；带看 24 / 出价 9 / 面谈 6 = 全部 39，与 chips 及 hero 指标一致；JS 仅做类型筛选） -->
+            <div id="recordList">
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-10-09</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>金杨七街坊18号502</b> 添加一条出价记录<span class="chan">（链家）</span></div>
+                <div class="m-rec-price">出价金额：460万</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-09</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-09</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>泗塘三村61号401</b> 添加一条带看记录<span class="chan">（安居客）</span></div>
+              </div>
+              <div class="m-rec" data-type="negotiation">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--nego">面谈</span><span class="m-rec-date">2026-10-09</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>泗塘五村106号401</b> 添加一条面谈记录<span class="chan">（我爱我家）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-08</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>保德路241弄32号201</b> 添加一条带看记录<span class="chan">（中原）</span></div>
+              </div>
+              <div class="m-rec" data-type="negotiation">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--nego">面谈</span><span class="m-rec-date">2026-10-08</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>金杨七街坊18号502</b> 添加一条面谈记录</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-08</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-08</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>泗塘三村61号401</b> 添加一条带看记录</div>
+              </div>
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-10-07</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>保德路241弄32号201</b> 添加一条出价记录<span class="chan">（中原）</span></div>
+                <div class="m-rec-price">出价金额：285万</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-07</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>泗塘三村61号401</b> 添加一条带看记录</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-07</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>泗塘五村106号401</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-07</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（中原）</span></div>
+              </div>
+              <div class="m-rec" data-type="negotiation">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--nego">面谈</span><span class="m-rec-date">2026-10-06</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>金杨七街坊18号502</b> 添加一条面谈记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-06</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>泗塘三村61号401</b> 添加一条带看记录<span class="chan">（安居客）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-06</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>保德路241弄32号201</b> 添加一条带看记录</div>
+              </div>
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-10-06</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>泗塘五村106号401</b> 添加一条出价记录<span class="chan">（我爱我家）</span></div>
+                <div class="m-rec-price">出价金额：312万</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-05</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（中原）</span></div>
+              </div>
+              <div class="m-rec" data-type="negotiation">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--nego">面谈</span><span class="m-rec-date">2026-10-05</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>泗塘三村61号401</b> 添加一条面谈记录</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-05</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>保德路241弄32号201</b> 添加一条带看记录<span class="chan">（我爱我家）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-05</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-04</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-04</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>泗塘五村106号401</b> 添加一条带看记录</div>
+              </div>
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-10-04</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>金杨七街坊18号502</b> 添加一条出价记录<span class="chan">（中原）</span></div>
+                <div class="m-rec-price">出价金额：450万</div>
+              </div>
+              <div class="m-rec" data-type="negotiation">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--nego">面谈</span><span class="m-rec-date">2026-10-04</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>保德路241弄32号201</b> 添加一条面谈记录</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-03</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>泗塘三村61号401</b> 添加一条带看记录<span class="chan">（安居客）</span></div>
+              </div>
+              <div class="m-rec" data-type="negotiation">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--nego">面谈</span><span class="m-rec-date">2026-10-03</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>保德路241弄32号201</b> 添加一条面谈记录<span class="chan">（中原）</span></div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-03</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>泗塘五村106号401</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-10-03</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>金杨七街坊18号502</b> 添加一条出价记录<span class="chan">（安居客）</span></div>
+                <div class="m-rec-price">出价金额：265万</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-02</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>泗塘五村106号401</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-10-02</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>保德路241弄32号201</b> 添加一条出价记录<span class="chan">（中原）</span></div>
+                <div class="m-rec-price">出价金额：292万</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-02</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>泗塘三村61号401</b> 添加一条带看记录</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-10-01</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-10-01</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>保德路241弄32号201</b> 添加一条出价记录<span class="chan">（中原）</span></div>
+                <div class="m-rec-price">出价金额：272万</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-09-30</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（安居客）</span></div>
+              </div>
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-09-30</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>泗塘五村106号401</b> 添加一条出价记录<span class="chan">（我爱我家）</span></div>
+                <div class="m-rec-price">出价金额：268万</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-09-29</span></div>
+                <div class="m-rec-text"><b>何一</b> 为 <b>泗塘三村61号401</b> 添加一条带看记录</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-09-29</span></div>
+                <div class="m-rec-text"><b>唐</b> 为 <b>金杨七街坊18号502</b> 添加一条带看记录<span class="chan">（链家）</span></div>
+              </div>
+              <div class="m-rec" data-type="offer">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--offer">出价</span><span class="m-rec-date">2026-09-28</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>保德路241弄32号201</b> 添加一条出价记录<span class="chan">（中原）</span></div>
+                <div class="m-rec-price">出价金额：280万</div>
+              </div>
+              <div class="m-rec" data-type="viewing">
+                <div class="m-rec-top"><span class="m-rchip m-rchip--viewing">带看</span><span class="m-rec-date">2026-09-28</span></div>
+                <div class="m-rec-text"><b>乐之</b> 为 <b>泗塘三村61号401</b> 添加一条带看记录<span class="chan">（安居客）</span></div>
+              </div>
+            </div>
+
+            <div class="m-list-footer">没有更多了</div>
+
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+
+      <!-- 明细行规格标注 -->
+      <div class="zoom-wrap" data-screen-label="明细行规格标注">
+        <div class="zoom-card">
+          <div class="zt">ROW ANATOMY · 明细行结构</div>
+          <div class="m-rec" style="margin:0;">
+            <div class="m-rec-top">
+              <span class="m-rchip m-rchip--offer">出价</span>
+              <span class="m-rec-date">2026-10-09</span>
+            </div>
+            <div class="m-rec-text"><b>唐</b> 为 <b>金杨七街坊18号502</b> 添加一条出价记录<span class="chan">（链家）</span></div>
+            <div class="m-rec-price">出价金额：460万</div>
+          </div>
+          <div class="anno-grid">
+            <div class="anno-item"><span class="k">A</span>类型 chip：带看＝Sky 蓝 / 出价＝Apricot 橙 / 面谈＝Gray（复用既有 chip 色板，无新色）</div>
+            <div class="anno-item"><span class="k">B</span>日期：右上角 mono 20rpx Dove，与卡片「出价时间」同为 YYYY-MM-DD</div>
+            <div class="anno-item"><span class="k">C</span>正文一句话：<b>{操作人}</b> 为 <b>{项目名}</b> 添加一条{类型}记录（{渠道}）；人名/项目名 Ink 强调，渠道 Graphite 括注</div>
+            <div class="anno-item"><span class="k">D</span>出价记录追加金额行：Rust 600「出价金额：N万」；带看/面谈无金额行</div>
+          </div>
+          <div class="measure-note">
+            行卡片：margin <b>40rpx</b> · radius <b>32rpx</b> · padding <b>26/30rpx</b><br />
+            排序：<b>record_date 降序</b>，同日按 created_at 降序；触底分页加载<br />
+            渠道缺失时括注整体省略；操作人缺失兜底「—」（对齐详情页 formatDay 兜底「—」口径）
+          </div>
+        </div>
+        <div class="zoom-card">
+          <div class="zt">STATES · 明细页状态</div>
+          <table class="spec-table" style="margin-top:0;">
+            <thead><tr><th>状态</th><th>渲染</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>空态</td><td>「暂无销售记录」</td><td>可见范围内无任何记录</td></tr>
+              <tr><td>筛选空态</td><td>「暂无{类型}记录」</td><td>切到某类型无数据时</td></tr>
+              <tr><td>加载失败</td><td>「加载失败 · 重试」</td><td>对齐列表页 error 态样式</td></tr>
+              <tr><td>登录失效</td><td>「登录已失效」</td><td>401 清令牌，对齐列表页 needLogin 态</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <p class="cap-note">
+      注：明细数据 = 销售记录（sales_records）的 <b>record_type / record_date / price / related_agent</b> +
+      项目名（address ?? community_name）+ 操作人（<b>operator.name</b>，⚠️ 字段映射待确认②）；
+      示例「2026-10-09，唐为金杨七街坊添加一条带看记录（链家）」为用户口述的目标形态。
+    </p>
+  </section>
+
+  <!-- ═══════════ SEC 03 实现说明 ═══════════ -->
+  <section class="sec" data-screen-label="SEC 03 实现说明">
+    <div class="kicker">SEC 03</div>
+    <h2>实现说明</h2>
+    <p class="lede">
+      hero 三指标需<b>全量可见项目</b>聚合 + 周期过滤：主通道分页（20 条/页）导致前端聚合已加载项数字不完整，
+      新增后端聚合端点一次取数；明细页同理需要跨项目时间降序的记录流端点。
+    </p>
+
+    <div class="impl-grid">
+      <div class="impl-card">
+        <div class="t">建议端点 · GET /projects/sales-summary?status=selling（⚠️ 待确认）</div>
+        <pre>{
+  "viewing_total": 24,            <b>// 带看记录总数</b>
+  "offer_total": 9,               <b>// 出价记录总数</b>
+  "negotiation_total": 6,         <b>// 面谈记录总数</b>
+  "period_new": {
+    "viewing": 5,                 <b>// 周期内新增带看</b>
+    "offer": 2,                   <b>// 周期内新增出价</b>
+    "negotiation": 1              <b>// 周期内新增面谈</b>
+  },
+  "period": { "start": "2026-10-06", "end": "2026-10-12" }
+}</pre>
+        <ul style="margin-top:12px;">
+          <li>权限<b>与列表双通道同口径</b>：持 <code>project:read</code>（admin/operator）聚合全部在售项目；403 场景按 <code>my-responsible</code> 业务身份口径聚合负责项目</li>
+          <li>Router 不写查询 → <b>Service 聚合</b>；周期计算与前端 <code>utils/cycle-period</code> 周二起点公式一致（建议后端为唯一真源，period 直出起止日期）</li>
+          <li>只读端点零落库；数据源 = projects JOIN sales_records，<code>status=selling</code> 与页面过滤一致</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">明细页端点 · GET /projects/sales-records（⚠️ 待确认）</div>
+        <pre>{
+  "items": [
+    {
+      "record_type": "offer",
+      "record_date": "2026-10-09",
+      "price": "460",
+      "related_agent": "链家",
+      "operator": { "name": "唐" },
+      "project_name": "金杨七街坊18号502"
+    }
+  ],
+  "total": 39, "page": 1, "page_size": 20
+}</pre>
+        <ul style="margin-top:12px;">
+          <li>按 <b>record_date 降序、同日 created_at 降序</b>分页；筛选用 <code>?record_type=viewing|offer|negotiation</code></li>
+          <li>权限与 summary <b>完全同口径</b>（同一 Service 过滤函数复用），不泄露无关项目记录</li>
+          <li>project_name 后端拼好直出（address 兜底 community_name），前端不做项目信息二次请求</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">前端落点 · 纯展示改动</div>
+        <ul>
+          <li>wxml：<span class="path">pages/viewing/projects/index/index.wxml</span> list-title 之前插 <code>&lt;view class="kpi-hero"&gt;</code> 三列 + ⓘ 弹层</li>
+          <li>wxss：新增 .kpi-hero 组样式（<b>整段从 pages/keys/list/index.wxss 平移</b>，令牌复用 --rust / --graphite / --fog，不引入新色值）</li>
+          <li>ts：<span class="path">index.ts</span> toDisplay 后并行 <code>request("/projects/sales-summary")</code>；summary 失败<b>静默隐藏 hero</b>，不进列表 error 态</li>
+          <li>ⓘ 弹层：tap 切换 summaryPopOpen（照抄 keys/list 状态机）；周期起止文案由后端 period 拼装，前端不做周期推算</li>
+          <li>「带看记录」链接：<code>wx.navigateTo /pages/viewing/records/index</code>（新页面，状态机照抄列表页 loading/error/needLogin/noPermission/empty/items）</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">⚠️ 待确认口径</div>
+        <ul>
+          <li><b>① 出价总量口径</b>：未填/非正价格的出价记录是否计入？现卡片计数不过滤（countByType），本稿<b>与卡片同源不过滤</b>；如过滤需同步改卡片口径</li>
+          <li><b>② 明细页字段映射</b>：操作人取 <code>operator.name</code>（UserBriefResponse）；「（链家）」渠道取 <code>related_agent</code>——需确认真源字段；类型筛选 chips 是否保留</li>
+          <li><b>③ 明细页导航栏标题</b>：本稿用「带看记录」，与列表 list-title 前缀一致；备选「销售记录」</li>
+          <li><b>④ hero 缓存策略</b>：是否与列表共用 SWR 缓存 key（回列表页即时刷新增量）</li>
+        </ul>
+      </div>
+      <div class="impl-card">
+        <div class="t">E2E 验证点（落地时）</div>
+        <ul>
+          <li>admin 打开「我负责的项目」：hero 三列数值与 DB 聚合一致（psql 对账）</li>
+          <li>业务身份（仅 my-responsible 通道）：hero 数值 = 其负责项目聚合，<b>不泄露无关项目</b></li>
+          <li>周期边界：跨周二 00:00 后增量归零、总量不变；与项目卡 +N 角标同周期口径一致</li>
+          <li>ⓘ 点击开/收、点外部收起；summary 接口 500 时 hero 隐藏且列表正常</li>
+          <li>「带看记录」跳转明细页：时间降序、类型筛选正确、出价行带金额、401/403 状态机</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+<script>
+  /* ── 周期规则演示（周二 → 下周一） ── */
+  (function () {
+    var week = document.getElementById("cycleWeek");
+    var picker = document.getElementById("weekdayPicker");
+    var desc = document.getElementById("cycleDesc");
+    var names = ["一", "二", "三", "四", "五", "六", "日"];
+    var dates = ["10-05", "10-06", "10-07", "10-08", "10-09", "10-10", "10-11"];
+    var today = 5; // 默认 10-10 周六
+
+    function render() {
+      var html = "";
+      for (var i = 0; i < 7; i++) {
+        // 周期窗口：周二(idx1) 起、下周一(idx0) 止 → 本行窗口为 [周二, 今天]
+        var inWin = (i >= 1 && i <= today);
+        var cls = "cycle-day" + (inWin ? " in-win" : "") + (i === today ? " is-today" : "") + (i === 1 ? " start" : "");
+        html += '<div class="' + cls + '"><div class="dw">' + names[i] + '</div><div class="dd">' + dates[i] + '</div><div class="tag">' + (i === today ? "今天" : "&nbsp;") + "</div></div>";
+      }
+      week.innerHTML = html;
+      var buttons = "";
+      for (var j = 0; j < 7; j++) {
+        buttons += '<button class="' + (j === today ? "on" : "") + '" data-i="' + j + '">周' + names[j] + "</button>";
+      }
+      picker.innerHTML = buttons;
+      picker.querySelectorAll("button").forEach(function (b) {
+        b.addEventListener("click", function () { today = Number(b.dataset.i); render(); });
+      });
+      desc.innerHTML = today >= 1
+        ? '今天是<b>周' + names[today] + "</b> → 增量窗口 = <b>本周二(" + dates[1] + ") ~ 今天(" + dates[today] + ')</b>，共 ' + (today - 1 + 1) + " 天的新增量"
+        : "今天是<b>周一</b> → 增量窗口 = <b>上周二 ~ 今天</b>（上周二 00:00 起累计，明天 00:00 重置归零）";
+    }
+    render();
+  })();
+
+  /* ── Phone 1 · ⓘ 弹层交互（点击开/收，点击外部收起） ── */
+  (function () {
+    var info = document.getElementById("heroInfo");
+    var pop = document.getElementById("heroPop");
+    if (!info || !pop) return;
+    function setOpen(open) {
+      pop.classList.toggle("show", open);
+      info.classList.toggle("open", open);
+    }
+    info.addEventListener("click", function (e) {
+      e.stopPropagation();
+      setOpen(!pop.classList.contains("show"));
+    });
+    document.addEventListener("click", function (e) {
+      if (pop.classList.contains("show") && !pop.contains(e.target)) setOpen(false);
+    });
+  })();
+
+  /* ── Phone 3 · 明细页：类型筛选（明细行为静态 mock 数据，按 data-type 显隐） ── */
+  (function () {
+    var listEl = document.getElementById("recordList");
+    if (!listEl) return;
+    var activeType = "all";
+    var rows = Array.prototype.slice.call(listEl.querySelectorAll(".m-rec"));
+
+    function render() {
+      rows.forEach(function (row) {
+        row.style.display = (activeType === "all" || row.dataset.type === activeType) ? "" : "none";
+      });
+    }
+
+    document.querySelectorAll(".m-fchip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        document.querySelectorAll(".m-fchip").forEach(function (c) { c.classList.remove("on"); });
+        chip.classList.add("on");
+        activeType = chip.dataset.type;
+        render();
+      });
+    });
+    render();
+  })();
+</script>
+</body>
+</html>

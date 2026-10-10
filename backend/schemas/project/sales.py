@@ -8,7 +8,7 @@
 5. 互动记录 (InteractionCreate, InteractionUpdate, InteractionResponse).
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -102,6 +102,62 @@ class SalesRecordListResponse(BaseModel):
 
     items: list[SalesRecordResponse]
     total: int
+
+
+class SalesSummaryPeriod(BaseModel):
+    """当前「周二周期」窗口（东八区日期，供小程序 hero ⓘ 弹层直出）.
+
+    与 keys.KeysSummaryPeriod 同构：周期推算收敛在后端（服务层复用
+    key_access.cycle_period），前端不做周期推算。
+    """
+
+    start: date  # 窗口起点日期（周二）
+    end: date  # 窗口终点日期（下周一，含当日 24:00）
+    text: str  # 展示文案「MM-DD 周X ~ MM-DD 周X · 剩 N 天」
+
+
+class SalesSummaryResponse(BaseModel):
+    """销售指标 hero 区聚合（带看项目列表页页首三指标 + 周期新增）.
+
+    统计范围 = 当前用户可见在售项目（主通道持 project:read 为全部在售项目，
+    回退业务身份为负责项目，与列表双通道口径一致，见
+    SalesSummaryService.resolve_scope）；只读不落库。
+    """
+
+    viewing_total: int = 0  # 带看记录总数
+    offer_total: int = 0  # 出价记录总数
+    negotiation_total: int = 0  # 面谈记录总数
+    period_new_viewing: int = 0  # 本周期内新增带看记录数
+    period_new_offer: int = 0  # 本周期内新增出价记录数
+    period_new_negotiation: int = 0  # 本周期内新增面谈记录数
+    period: SalesSummaryPeriod
+
+
+class SalesRecordFlowItem(BaseModel):
+    """跨项目销售记录明细流条目（带看记录明细页）.
+
+    展示字段后端拼好直出（operator_name/project_name/date/price_text），
+    前端不做项目信息二次请求；渠道（related_agent）真源字段缺失恒为 None，
+    前端按「渠道缺失整体省略括注」渲染。
+    """
+
+    id: UUID4
+    record_type: RecordType
+    record_date: datetime
+    price: Decimal | None = None
+    related_agent: str | None = Field(None, description="渠道（真源字段暂缺，恒为 None，预留）")
+    operator_name: str | None = Field(None, description="操作人展示名（昵称/用户名），缺失时前端兜底「—」")
+    project_id: UUID4
+    project_name: str = Field(description="项目展示名（address 兜底 community_name 兜底「未命名项目」）")
+
+
+class SalesRecordFlowResponse(BaseModel):
+    """跨项目销售记录明细流响应（record_date 降序、同日 created_at 降序，分页）."""
+
+    items: list[SalesRecordFlowItem]
+    total: int
+    page: int
+    page_size: int
 
 
 class ProjectCompleteRequest(BaseModel):

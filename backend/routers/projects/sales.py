@@ -6,21 +6,56 @@ from fastapi import APIRouter, Path, Query, Request
 from pydantic import UUID4
 
 from dependencies.auth import (
+    CurrentActiveUserDep,
     ProjectReadOrBusinessPermDep,
     ProjectSalesAddRecordPermDep,
     ProjectSalesManageTeamPermDep,
 )
-from dependencies.projects import ProjectServiceDep
+from dependencies.projects import ProjectServiceDep, SalesSummaryServiceDep
 from schemas.project import (
     ProjectResponse,
     SalesRecordCreate,
+    SalesRecordFlowResponse,
     SalesRecordResponse,
     SalesRolesUpdate,
+    SalesSummaryResponse,
 )
 from schemas.project.sales import SalesRecordListResponse
 from utils.common import RateLimits, limiter
 
 router = APIRouter()
+
+
+@router.get("/sales-summary")
+def get_sales_summary(
+    current_user: CurrentActiveUserDep,
+    service: SalesSummaryServiceDep,
+) -> SalesSummaryResponse:
+    """销售指标 hero 区聚合（带看项目列表页页首三指标 + 周二周期新增）.
+
+    仅需登录态：范围收敛在 Service 层（resolve_scope）——持 project:read
+    聚合全部在售项目，否则按业务身份负责项目聚合，与列表双通道可见范围一致；
+    无关人员得全零，不泄露无关项目数据（对齐 /keys/summary 口径）。
+    """
+    return service.get_summary(current_user)
+
+
+@router.get("/sales-records")
+def get_sales_record_flow(
+    current_user: CurrentActiveUserDep,
+    service: SalesSummaryServiceDep,
+    page: Annotated[int, Query(ge=1, description="页码，从1开始")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100, description="每页条数")] = 20,
+    record_type: Annotated[
+        str | None,
+        Query(max_length=20, description="记录类型筛选: viewing/offer/negotiation"),
+    ] = None,
+) -> SalesRecordFlowResponse:
+    """跨项目销售记录明细流（带看记录明细页，record_date 降序、同日 created_at 降序）.
+
+    可见范围与 /sales-summary 完全同口径（同一 resolve_scope），不泄露无关项目记录。
+    """
+    return service.get_record_flow(current_user, page=page, page_size=page_size, record_type=record_type)
 
 
 @router.put("/{project_id}/selling/roles")

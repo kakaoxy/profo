@@ -690,6 +690,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/sales-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sales Summary
+         * @description 销售指标 hero 区聚合（带看项目列表页页首三指标 + 周二周期新增）.
+         *
+         *     仅需登录态：范围收敛在 Service 层（resolve_scope）——持 project:read
+         *     聚合全部在售项目，否则按业务身份负责项目聚合，与列表双通道可见范围一致；
+         *     无关人员得全零，不泄露无关项目数据（对齐 /keys/summary 口径）。
+         */
+        get: operations["get_sales_summary_api_v1_projects_sales_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/sales-records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sales Record Flow
+         * @description 跨项目销售记录明细流（带看记录明细页，record_date 降序、同日 created_at 降序）.
+         *
+         *     可见范围与 /sales-summary 完全同口径（同一 resolve_scope），不泄露无关项目记录。
+         */
+        get: operations["get_sales_record_flow_api_v1_projects_sales_records_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/selling/roles": {
         parameters: {
             query?: never;
@@ -15879,6 +15925,63 @@ export interface components {
             related_agent?: string | null;
         };
         /**
+         * SalesRecordFlowItem
+         * @description 跨项目销售记录明细流条目（带看记录明细页）.
+         *
+         *     展示字段后端拼好直出（operator_name/project_name/date/price_text），
+         *     前端不做项目信息二次请求；渠道（related_agent）真源字段缺失恒为 None，
+         *     前端按「渠道缺失整体省略括注」渲染。
+         */
+        SalesRecordFlowItem: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            record_type: components["schemas"]["RecordType"];
+            /**
+             * Record Date
+             * Format: date-time
+             */
+            record_date: string;
+            /** Price */
+            price?: string | null;
+            /**
+             * Related Agent
+             * @description 渠道（真源字段暂缺，恒为 None，预留）
+             */
+            related_agent?: string | null;
+            /**
+             * Operator Name
+             * @description 操作人展示名（昵称/用户名），缺失时前端兜底「—」
+             */
+            operator_name?: string | null;
+            /**
+             * Project Id
+             * Format: uuid4
+             */
+            project_id: string;
+            /**
+             * Project Name
+             * @description 项目展示名（address 兜底 community_name 兜底「未命名项目」）
+             */
+            project_name: string;
+        };
+        /**
+         * SalesRecordFlowResponse
+         * @description 跨项目销售记录明细流响应（record_date 降序、同日 created_at 降序，分页）.
+         */
+        SalesRecordFlowResponse: {
+            /** Items */
+            items: components["schemas"]["SalesRecordFlowItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
          * SalesRecordListResponse
          * @description 销售记录列表响应.
          */
@@ -15957,6 +16060,68 @@ export interface components {
              * @description 谈判人用户ID(联卖谈判人)
              */
             negotiator_id?: string | null;
+        };
+        /**
+         * SalesSummaryPeriod
+         * @description 当前「周二周期」窗口（东八区日期，供小程序 hero ⓘ 弹层直出）.
+         *
+         *     与 keys.KeysSummaryPeriod 同构：周期推算收敛在后端（服务层复用
+         *     key_access.cycle_period），前端不做周期推算。
+         */
+        SalesSummaryPeriod: {
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Text */
+            text: string;
+        };
+        /**
+         * SalesSummaryResponse
+         * @description 销售指标 hero 区聚合（带看项目列表页页首三指标 + 周期新增）.
+         *
+         *     统计范围 = 当前用户可见在售项目（主通道持 project:read 为全部在售项目，
+         *     回退业务身份为负责项目，与列表双通道口径一致，见
+         *     SalesSummaryService.resolve_scope）；只读不落库。
+         */
+        SalesSummaryResponse: {
+            /**
+             * Viewing Total
+             * @default 0
+             */
+            viewing_total: number;
+            /**
+             * Offer Total
+             * @default 0
+             */
+            offer_total: number;
+            /**
+             * Negotiation Total
+             * @default 0
+             */
+            negotiation_total: number;
+            /**
+             * Period New Viewing
+             * @default 0
+             */
+            period_new_viewing: number;
+            /**
+             * Period New Offer
+             * @default 0
+             */
+            period_new_offer: number;
+            /**
+             * Period New Negotiation
+             * @default 0
+             */
+            period_new_negotiation: number;
+            period: components["schemas"]["SalesSummaryPeriod"];
         };
         /**
          * SettlementChangeRequest
@@ -18796,6 +18961,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RenovationContractResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sales_summary_api_v1_projects_sales_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesSummaryResponse"];
+                };
+            };
+        };
+    };
+    get_sales_record_flow_api_v1_projects_sales_records_get: {
+        parameters: {
+            query?: {
+                /** @description 页码，从1开始 */
+                page?: number;
+                /** @description 每页条数 */
+                page_size?: number;
+                /** @description 记录类型筛选: viewing/offer/negotiation */
+                record_type?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesRecordFlowResponse"];
                 };
             };
             /** @description Validation Error */

@@ -31,6 +31,46 @@
 
   <!-- 项目列表 -->
   <block wx:elif="{{state === 'items'}}">
+    <!-- 指标 Hero 区（设计稿 docs/2026-10-10：三指标 + 周期新增 +N · +0 同橙；summary 失败整卡隐藏） -->
+    <view class="kpi-hero" wx:if="{{summary}}">
+      <view class="kpi-mask" wx:if="{{summaryPopOpen}}" catchtap="onToggleSummaryPop"></view>
+      <view class="kpi-info {{summaryPopOpen ? 'kpi-info--open' : ''}}" catchtap="onToggleSummaryPop">i</view>
+      <view class="kpi-pop {{summaryPopOpen ? 'kpi-pop--show' : ''}}" wx:if="{{summaryPopOpen}}">
+        <view class="kpi-pop__title">指标与统计周期说明</view>
+        <view class="kpi-pop__desc">
+          <text class="kpi-pop__em">带看</text>＝带看记录数 · <text class="kpi-pop__em">出价</text>＝出价记录数 ·
+          <text class="kpi-pop__em">面谈</text>＝面谈记录数。增量 +N 为本周期内新增量，每周二 00:00 重置。
+        </view>
+        <view class="kpi-pop__range">当前周期 {{summary.periodText}}</view>
+      </view>
+      <view class="kpi-row">
+        <view class="kpi-cell">
+          <view class="kpi-label-line">
+            <text class="kpi-label">带看</text>
+            <text class="kpi-delta">{{summary.viewingDeltaText}}</text>
+          </view>
+          <view class="kpi-num">{{summary.viewingCount}}</view>
+        </view>
+        <view class="kpi-cell">
+          <view class="kpi-label-line">
+            <text class="kpi-label">出价</text>
+            <text class="kpi-delta">{{summary.offerDeltaText}}</text>
+          </view>
+          <view class="kpi-num">{{summary.offerCount}}</view>
+        </view>
+        <view class="kpi-cell">
+          <view class="kpi-label-line">
+            <text class="kpi-label">面谈</text>
+            <text class="kpi-delta">{{summary.negotiationDeltaText}}</text>
+          </view>
+          <view class="kpi-num">{{summary.negotiationCount}}</view>
+        </view>
+      </view>
+      <view class="kpi-foot">
+        <text class="kpi-foot__note">统计范围与下方列表一致</text>
+        <text class="kpi-foot__link" catchtap="onSalesRecords">带看记录</text>
+      </view>
+    </view>
     <view class="list-title">带看记录 · 我负责的项目</view>
     <view
       class="project-card"
