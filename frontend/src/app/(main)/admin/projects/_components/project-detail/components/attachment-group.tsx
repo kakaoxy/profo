@@ -13,8 +13,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2, Download, Eye, FileSpreadsheet, FileImage, FileText, File } from "lucide-react";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { FILE_ICON_COLORS, type AttachmentGroupConfig } from "../constants";
 import type { AttachmentInfo, AttachmentHandlers } from "../types";
+import { getFileUrl } from "../utils";
 import { formatFileSize } from "@/lib/formatters";
 
 interface AttachmentGroupProps {
@@ -114,12 +116,36 @@ function AttachmentItem({ attachment, handlers }: AttachmentItemProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-dashed border-[#ececef] py-[9px] text-sm last:border-b-0">
-      {/* 文件名（文件类型小图标 + 截断） */}
+      {/* 文件名（文件类型小图标 + 截断；图片类悬停即预览缩略图，点击放大） */}
       <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
         <FileIcon fileType={attachment.fileType} className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate font-[430] text-ink" title={attachment.filename}>
-          {attachment.filename}
-        </span>
+        {attachment.fileType === "image" ? (
+          <HoverCard openDelay={200} closeDelay={100}>
+            <HoverCardTrigger asChild>
+              <button
+                type="button"
+                onClick={() => onPreview(attachment.url, attachment.fileType)}
+                className="min-w-0 cursor-zoom-in truncate text-left font-[430] text-ink hover:underline hover:underline-offset-4"
+                title={attachment.filename}
+              >
+                {attachment.filename}
+              </button>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-auto p-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={getFileUrl(attachment.url)}
+                alt={attachment.filename}
+                loading="lazy"
+                className="max-h-56 max-w-[280px] rounded-md object-contain"
+              />
+            </HoverCardContent>
+          </HoverCard>
+        ) : (
+          <span className="truncate font-[430] text-ink" title={attachment.filename}>
+            {attachment.filename}
+          </span>
+        )}
       </span>
 
       {/* 大小 */}
@@ -129,9 +155,9 @@ function AttachmentItem({ attachment, handlers }: AttachmentItemProps) {
         </span>
       ) : null}
 
-      {/* 操作 */}
+      {/* 操作（图片类悬停即可预览，预览按钮仅保留给 PDF；下载/删除不变） */}
       <span className="flex shrink-0 gap-0.5">
-        {(attachment.fileType === "image" || attachment.fileType === "pdf") && (
+        {attachment.fileType === "pdf" && (
           <IconBtn title="预览" onClick={() => onPreview(attachment.url, attachment.fileType)}>
             <Eye className="h-[14.5px] w-[14.5px]" />
           </IconBtn>
