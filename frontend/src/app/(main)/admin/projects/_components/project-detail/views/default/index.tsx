@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { FileUploader as CommonFileUploader, compressImage } from "@/components/common/upload";
@@ -66,6 +66,11 @@ export function DefaultView({
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadTargetDoc, setUploadTargetDoc] = useState<DocumentResponse | null>(null);
 
+  // 上传分类固化 ref（bug 修复）：分类在打开弹窗时固化，不随 uploadTargetDoc 清空而丢失。
+  // 原实现第一个文件上传完成后立即 setIsUploadOpen(false) + setUploadTargetDoc(null)，
+  // 同批后续完成的文件读到 null，分类退化为 other（实证：每批仅首张分类正确，其余落其他文件）。
+  const uploadCategoryRef = useRef<string>("other");
+
   // 当未提供 hook 管理的 onUploadAttachment 时，回退到直接拼接
   // （不维护 override，存在 stale 风险，仅用于兼容无 hook 场景）
   const handleUploadAttachment = (attachment: AttachmentInfo) => {
@@ -89,6 +94,8 @@ export function DefaultView({
     onUploadAttachment ?? (onUpdateAttachments ? handleUploadAttachment : undefined);
 
   const openUploadDialog = (doc: DocumentResponse | null) => {
+    // 分类在打开时固化，后续每个文件完成时都从 ref 读取，不受弹窗状态变化影响
+    uploadCategoryRef.current = doc?.category ?? "other";
     setUploadTargetDoc(doc);
     setIsUploadOpen(true);
   };
@@ -99,13 +106,13 @@ export function DefaultView({
     const attachment: AttachmentInfo = {
       filename: file.name,
       url: response.url,
-      category: uploadTargetDoc?.category ?? "other",
+      category: uploadCategoryRef.current,
       fileType: fileType || "other",
       size: response.size || 0,
     };
     uploadHandler?.(attachment);
-    setIsUploadOpen(false);
-    setUploadTargetDoc(null);
+    // 不在此处关闭弹窗/清空 target：多文件上传时后续文件仍需继承同一分类，
+    // 弹窗由用户手动关闭（onOpenChange 统一重置 target）
   };
 
   return (

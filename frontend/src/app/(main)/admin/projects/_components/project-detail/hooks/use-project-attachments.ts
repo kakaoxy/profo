@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useCallback, useState } from "react";
+import { useEffect, useMemo, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { AttachmentInfo, AttachmentHandlers } from "../types";
+import type { AttachmentInfo, AttachmentHandlers, AttachmentSaveOptions } from "../types";
 import { mapLegacyAttachmentCategory } from "../constants";
 
 interface UseProjectAttachmentsOptions {
   signingMaterials: unknown;
-  onUpdateAttachments?: (attachments: AttachmentInfo[]) => void;
+  onUpdateAttachments?: (
+    attachments: AttachmentInfo[],
+    options?: AttachmentSaveOptions,
+  ) => void | Promise<void>;
 }
 
 export function useProjectAttachments({
@@ -71,6 +74,62 @@ export function useProjectAttachments({
     setOverride(null);
   }
 
+  // 当前附件列表的镜像 ref：串行队列任务从这里读取最新值。
+  // 直接在任务里读 attachments 闭包会拿到任务创建时的旧值（正是本次 bug 的根因），
+  // 而 setOverride 更新函数必须为纯函数（StrictMode 会双调用），不能在里面发请求。
+  const currentRef = useRef<AttachmentInfo[]>([]);
+  currentRef.current = override ?? baseAttachments;
+
+  // 附件写操作串行队列（bug 修复）：多文件上传时每个文件完成后都会调用 onUpload，
+  // 若并发执行，各回调闭包中的 attachments 均为旧值，后完成的 PUT 会整体
+  // 覆写 signing_materials，导致先上传的附件丢失（日志实证：连发 7 个 PUT
+  // 后 7 张图只落库 4 张）。队列化后写操作串行执行且始终基于最新列表；
+  // 任务内 await 保存动作（server action），保证服务端按提交顺序落库，
+  // 旧快照不会反超。删除走同一队列并携带显式删除信号（后端按 url 移除，
+  // 避免旧快照覆写复活已删项）；组件卸载后待执行任务静默丢弃（仅内存态）。
+  const mutationQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      mutationQueueRef.current = Promise.resolve();
+    };
+  }, []);
+
+  const enqueueMutation = useCallback(
+    (
+      mutate: (current: AttachmentInfo[]) => {
+        next: AttachmentInfo[];
+        options?: AttachmentSaveOptions;
+      },
+    ) => {
+      const run = async () => {
+        // 卸载后不再触发保存请求
+        if (!aliveRef.current) return;
+        const { next, options } = mutate(currentRef.current);
+        currentRef.current = next;
+        setOverride(next);
+        await onUpdateAttachments?.(
+          next.map((a) => ({
+            filename: a.filename,
+            url: a.url,
+            category: a.category,
+            fileType: a.fileType,
+            size: a.size || 0,
+          })),
+          options,
+        );
+      };
+      const task = mutationQueueRef.current.then(run, run);
+      // 任务失败不阻塞后续任务，但控制台保留错误便于排查
+      mutationQueueRef.current = task.catch((err: unknown) => {
+        console.error("[useProjectAttachments] 附件保存失败:", err);
+      });
+    },
+    [onUpdateAttachments],
+  );
+
   const attachments = override ?? baseAttachments;
 
   const createHandlers = useCallback(
@@ -90,22 +149,15 @@ export function useProjectAttachments({
       },
       onDelete: onUpdateAttachments
         ? (url) => {
-            const newAttachments = attachments.filter((att) => att.url !== url);
-            setOverride(newAttachments);
-            onUpdateAttachments(
-              newAttachments.map((att) => ({
-                filename: att.filename,
-                url: att.url,
-                category: att.category,
-                fileType: att.fileType,
-                size: att.size || 0,
-              })),
-            );
+            enqueueMutation((current) => ({
+              next: current.filter((att) => att.url !== url),
+              options: { removedUrls: [url] },
+            }));
             toast.success("附件已删除");
           }
         : undefined,
     }),
-    [attachments, onUpdateAttachments],
+    [enqueueMutation, onUpdateAttachments],
   );
 
   const onUpload = useCallback(
@@ -114,19 +166,9 @@ export function useProjectAttachments({
         toast.error("当前无法保存附件");
         return;
       }
-      const newAttachments = [...attachments, attachment];
-      setOverride(newAttachments);
-      onUpdateAttachments(
-        newAttachments.map((a) => ({
-          filename: a.filename,
-          url: a.url,
-          category: a.category,
-          fileType: a.fileType,
-          size: a.size || 0,
-        })),
-      );
+      enqueueMutation((current) => ({ next: [...current, attachment] }));
     },
-    [attachments, onUpdateAttachments],
+    [enqueueMutation, onUpdateAttachments],
   );
 
   return { attachments, createHandlers, onUpload };

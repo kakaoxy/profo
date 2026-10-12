@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>楼盘字典 · admin 端交互原型设计稿 v1.9</title>
+<!--
+  楼盘字典 · admin 端 交互原型设计稿 v1.9（2026-10-12）
+  权威需求文档：docs/To-Do/2026-10-12-楼盘字典-需求规格说明书.md（FR/BR/NFR/AC 编号化，冲突时以它为准）
+  ─────────────────────────────────────────────────────────────────────
+  数据真源：docs/To-Do/楼盘字典-上海/（2017-06-20 ~ 2017-08-21 共 37 个批次目录，
+    19,657 个 GBK 编码 txt，分号分隔；解析统计见 SEC 01）
+  项目现状：
+    · communities 表已存在（name 唯一 / district / business_circle / 别名合并），
+      但无 经纬度 / 环线 / 物业类型 / 年代 / 开发商；models/property/community.py
+    · projects 通过 community_id + community_name + address（门牌部分）软引用小区，
+      「泗塘三村61号401」= community_name + address，无结构化楼栋/户室
+      （models/project/_project_base.py:18-21）
+    · 无 Building / 户室模型；无地图组件
+  交互口径（AskUserQuestion 三问已确认）：
+    ① 画面范围：字典总览+小区详情 / 数据导入流程 / 项目关联选择器（不含地图视图）
+    ② 迭代方案并入本稿（SEC 01 数据解读 / SEC 02 模型与分期 / SEC 03 实现说明 / SEC 04 需求规格浓缩版）
+    ③ 视觉遵循项目 DESIGN.md（Steep Style Reference）
+  交付范围：
+    SEC 01        数据源解读（文件格式逐行注解 + 数据画像 + 脏数据清单）
+    SEC 02        数据模型与分期落地（表设计 / 关系图 / 审核池链路 / P0-P2 计划）
+    PROTOTYPE     交互原型（v1.2：五页全流程，假数据驱动，见下方「修订记录」）
+    SEC 03        实现说明（端点建议 / 代码落点 / 待确认口径 / E2E 验证点）
+  修订记录：
+    v1.9（2026-10-12，流程评审收口 · SRS 同步升 v1.8）：
+      外部评审报告 12 项问题逐条验证（成立 7 / 部分成立 3 / 不采纳 2），SRS v1.7 → v1.8，本稿同步——
+      ① create 回填闭环（i1/i2）：新增 bd_pending_references 引用账本（uq(biz_type,biz_id,field)），
+        审核通过后创建来源同步回填、其余引用异步幂等分批回填（BR-13 事务边界拆分）
+      ② 并发唯一（i5/i12）：pending partial unique uq_pending_open(kind,parent_id,normalized_name)，
+        同名提交幂等复用追加引用；resolve 行锁，并发重复审核 409（新增 FR-19）
+      ③ reject 按来源分流（i3/i8）：录入端当场改选；机器/C 端落 dict_status=rejected 转运营待办，
+        经 FR-12 人工补绑转正（BR-27，§6.2 增 rejected 态）
+      ④ pending 父子层级（i7）：parent_kind/parent_id + 拓扑审核（BR-28）
+      ⑤ properties 纳入绑定（i11）：FR-12 扩为四类（properties 仅小区级）
+      ⑥ admin/导入撞同名 open pending → 自动转正（i10，BR-26）；pending 读路径收敛读服务单点（i6，NFR-05）
+      ⑦ 不采纳：C 端入池（维持 v1.5 拍板，仅补治理闭环说明）、outbox/saga（同库单体过度设计）
+      规格扩容：FR×18→19 / BR×25→28 / AC 增 AC-P5（评审收口 6 项）/ 追溯矩阵增 v1.8 九条（共 35 条）
+    v1.8（2026-10-12，最终需求对齐 · SRS 同步升 v1.7）：
+      用户最终对齐四项口径（AskUserQuestion 确认），SRS v1.6 → v1.7，本稿 SEC 03/04 与 NOTES 同步——
+      ① 机器链路进审核池（FR-16/BR-20 重写，推翻 v1.5 自动建小区口径）：POST /push 与 /upload/csv
+        小区一致直接引用、楼栋/户室空置；不一致不自动建小区，产生 pending 条目进审核池，
+        推送/导入照常成功；properties.community_id 放宽可空 + 补 community_name 冗余列
+      ② 线索四级选填（FR-18 重写）：员工录线索接四级选择器，小区必选、楼栋/户室选填落库
+        （leads 补 building_id/room_id/dict_status）；C 端免登录仍自由文本（FR-17 不变）
+      ③ 营销落库楼栋/户室（FR-13 扩展）：营销新增走四级选择器，
+        l4_marketing_projects 补 building_id/room_id/dict_status（选到则落库，未选空置）
+      ④ 三类统一绑定（FR-12 扩展 / BR-25）：存量项目/线索/营销统一提供字典绑定（dictionary-link），
+        绑定不强制、未绑定零影响；bd_pending_entries.project_id 泛化为 source_type+source_id；
+        communities.source 值域废止 import（统一经审核转正）
+      规格扩容：BR×23→25 / AC 增 AC-P4（线索/营销四级落库+三类绑定+机器链路进池，5 项）/ 追溯矩阵增 v1.7 四条
+    v1.7（2026-10-12，界面文案重写 · 仅 UI，规格不动）：
+      按《Don't Make Me Think》/《写给大家看的设计书》重写五页原型全部界面文案
+      （用户确认：保留「楼盘字典」品牌、仅改产品界面，SEC 01~04 规格术语与 SRS v1.6 一律不动）——
+      ① 菜单：字典总览→小区库 · 数据导入→导入数据 · 审核池→待审核
+      ② 动作：关联字典→绑定地址 · 修正关联→改绑定 · 解除关联→解绑 · 修正画像→编辑资料 ·
+        通过新增→确认新增 · 合并现有→用已有的 · 提交审核结果→提交结果 · 确认关联→确认绑定 ·
+        关联到项目→绑定项目
+      ③ 标签/状态：存量项目→历史项目 · 已转正→已入库 · 未分层→楼层待定 ·
+        已关联→已绑/已绑定 · 演示→样例
+      ④ 描述类：清除 admin/pending/区间笛卡尔展开/幂等/COPY 装载/锚点 BD-09/画像/对账/转正/
+        阻塞/非标 等术语，改为 ≤20 字日常说法；空态与引导语同步
+      功能与交互逻辑零改动；「操作提示·规格标注」（NOTES）属文档注释，保持原样
+    v1.6（2026-10-12，未审核条目全系统可见）：
+      用户反馈：新增的楼栋/楼层/户室审核通过前，系统展示中也需带「未审核」标签（AskUserQuestion 确认：全系统可见）——
+      ① 展示层叠加（FR-10/BR-23）：bd_pending_entries(status=pending) 以「未审核」标签 + 虚线/置灰样式
+        叠加显示于字典详情抽屉、四级选择器与来源项目详情；字典表仍不写行（展示查询时 join，不做缓存）
+      ② 楼层集合扩展（FR-04）：可见楼层 = 名义层数 ∪ 实际户室楼层 ∪ pending 户室楼层（待审新楼层带标签出现）
+      ③ 户室网格（FR-05）：pending 户室带标签；仅来源项目回显选中，其他业务表单置灰不可选（hover 提示审核中）
+      ④ 生命周期：转正 → 摘标签并入正常展示；驳回/合并 → 从展示层移除（随 §6.1 终态）
+      规格扩容：BR×22→23 / AC 增 AC-P3（未审核条目展示 6 项）/ 追溯矩阵增 v1.6 一条（共 22 条）
+    v1.5（2026-10-12，全业务面覆盖缺口收口）：
+      深度排查现有代码中全部「小区创建 / 地址录入」路径后收口四类缺口（AskUserQuestion 三问已确认，均采纳推荐项）——
+      ① 房源链路并行口径（FR-16/BR-20）：POST /push（X-API-Key 外部推送）与 POST /upload/csv（CSV 房源导入）
+        自动按名称/别名建 communities 的现有逻辑维持现状、不拦截不进审核池，打 source=import 标记；
+        楼栋/户室仍由字典 txt 导入补齐，两链路互不阻塞
+      ② C 端免登录线索（FR-17/BR-21）：估价/卖房线索搜不到小区仍自由文本提交，不校验字典不产生 pending；
+        字典化延迟到线索转项目时走选择器
+      ③ 编辑与线索端（FR-13 扩展 / FR-18 / BR-22）：PUT /projects/{id} 改小区/地址同新建口径走选择器；
+        员工录线索与线索页改小区接字典联想，搜不到可提交新小区进审核池
+      ④ 覆盖确认（无需改造）：营销模块 community_id 已必填、keys 纯 project_id 外键随项目走
+      规格扩容：FR×15→18 / BR×19→22 / AC 增 AC-P2（全业务面边界场景 6 项）/ 追溯矩阵增 v1.5 四条
+    v1.2（2026-10-12，用户反馈）：
+      ① 坐标系确认：BD-09（百度）——替换全文 GCJ-02 表述；坐标原样落库，
+        Phase 2 接百度地图零转换，接高德/腾讯需 BD-09→GCJ-02 转换（SEC 02 决策表）
+      ② 设计稿升级为可交互原型：六个静态画板合并为五页全流程交互演示
+        （字典总览+详情抽屉 / 数据导入 / 审核池 / 新建项目四级选择器 / 存量数据绑定），
+        假数据驱动：筛选/搜索/抽屉/楼栋-楼层-户室级联/admin 补录/导入进度/
+        审核三动作（合并·新增·驳回）/关联与解除关联 全部可点击，
+        「新建项目添加新楼栋/户室」与「审核池流转」真实联动
+      ③ 楼层新增口径澄清（同日）：楼层无独立实体、随该层首个户室自动生成，无「单独新增楼层」——
+        字典端补录户室时填写新楼层号即隐式建层；录入端楼层栏新增「＋添加新楼层」入口
+        （= 提交该层首个户室，进审核池）；空层（架空层/设备层）不入字典
+    v1.3（2026-10-12，用户九点反馈）：
+      ① 新增小区全链路：新建项目页与字典后台均可新增小区；录入端新增 → 进审核池
+        （不阻塞项目创建，项目名称显示「未审核」标签，审核通过后自动转正）；
+        字典端新增 → admin 即时生效
+      ② 字典后台批量新增：楼栋/楼层/户室支持区间语法（29-55 号楼 · 7-12 层 · 01-08 室），
+        笛卡尔展开 + uq 跳过已有 + 单次上限
+      ③ 别名/小区合并：复用现有 admin/properties/governance 治理（merge-communities 已有端点），
+        字典模块不做合并 UI 与相似度合并推荐
+      ④ 楼层「未分层」确认：非标户室 floor=NULL 归「未分层」组置底
+      ⑤ 审核权限：默认 admin，支持配置（system_configs: building_dict_reviewer_roles）
+      ⑥ 合并推荐不做：歧义交人工在 governance 处理
+      ⑦ pending 超时不做复杂处理（列表按提交时间排序）
+      ⑧ keys 模块逻辑跟项目走：项目关联字典即随动，不做钥匙侧独立改造
+      ⑨ 全模块统一入口：线索/项目/营销等新增一律走楼盘字典选择器；
+        存量数据手动「关联字典」，关联确认后数据层以字典数据为准（原手填地址转备注）
+    v1.4（2026-10-12，规格化梳理）：
+      全部历史反馈按标准产品设计术语结构化为 编号化需求规格——
+      FR-01~15 功能需求 / BR-01~19 边界条件 / NFR-01~07 非功能需求 / §6 状态机 / §10 验收标准 / §11 需求追溯矩阵；
+      完整版见独立文档《2026-10-12-楼盘字典-需求规格说明书.md》（开发/测试权威依据），
+      本稿 SEC 04 为其浓缩版，五个原型页均附「规格标注」回链 FR 编号
+    v1.1（2026-10-12，用户四点反馈）：
+      ① 层级扩展为 小区-楼栋-楼层-户室：楼层为 bd_rooms 可空解析字段（0401→4层），
+         非标户室归「未分层」组，不建独立楼层表（呈现层分组）
+      ② admin 字典端支持添加楼栋/户室（直接生效留审计）
+      ③ 现有项目通过「关联字典」动作更新信息，不直接编辑地址
+      ④ 录入端可添加新楼栋/户室 → 进入审核池：合并现有 / 通过新增 / 驳回；
+         驳回由审核人员当场手动为项目选择正确楼栋/户室
+-->
+<style>
+  :root {
+    --ink: #17191c;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --fog: #f7f7f8;
+    --white: #ffffff;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky: #d3e3fc;
+    --line: #e6e8ec;
+    --shadow-sm: 0 2px 10px rgba(23, 25, 28, 0.06);
+    --shadow-pop: 0 6px 24px -4px rgba(23, 25, 28, 0.18), 0 0 0 1px rgba(23, 25, 28, 0.05);
+    --shadow-win: 0 24px 48px -12px rgba(23, 25, 28, 0.2), 0 0 0 1px rgba(23, 25, 28, 0.06);
+    --serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --sans: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--fog);
+    font-family: var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.009em;
+    padding-bottom: 120px;
+    font-feature-settings: "tnum";
+  }
+  .sec { max-width: 1320px; margin: 88px auto 0; padding: 0 32px; }
+  .sec h2 {
+    font-family: var(--serif);
+    font-weight: 400; font-size: 34px; line-height: 1.2;
+    letter-spacing: -0.015em; margin-top: 10px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite);
+  }
+  .lede { font-size: 15px; font-weight: 430; color: var(--ash); line-height: 1.75; margin-top: 12px; max-width: 980px; }
+  .lede b { font-weight: 480; color: var(--ink); }
+  .lede code, .cap-note code, td code {
+    font-family: var(--mono); font-size: 11.5px; color: var(--rust);
+    background: var(--apricot); padding: 1px 6px; border-radius: 6px;
+  }
+  td code { font-size: 11px; }
+  .artlabel {
+    font-family: var(--mono); font-size: 12px; color: var(--graphite);
+    letter-spacing: 0.08em; margin: 34px 0 10px;
+  }
+  .artlabel em { font-style: normal; color: var(--dove); }
+  .cap-note { font-size: 12.5px; color: var(--graphite); margin-top: 14px; line-height: 1.7; max-width: 980px; }
+  .cap-note b { color: var(--ink); font-weight: 480; }
+
+  /* ── 页头 ─────────────────────────────── */
+  .doc-head { max-width: 1320px; margin: 72px auto 0; padding: 0 32px; }
+  .doc-head h1 {
+    font-family: var(--serif); font-weight: 400; font-size: 46px; line-height: 1.15;
+    letter-spacing: -0.02em; margin-top: 14px;
+  }
+  .doc-head h1 em { font-style: normal; color: var(--rust); }
+  .head-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .head-meta span {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--graphite); background: var(--white); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 14px;
+  }
+  .head-meta span b { color: var(--rust); font-weight: 600; }
+
+  /* ── 需求卡 ─────────────────────────────── */
+  .req-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .req-grid { grid-template-columns: repeat(2, 1fr); } }
+  .req-card { background: var(--white); border-radius: 16px; padding: 18px 18px 16px; box-shadow: var(--shadow-sm); }
+  .req-card .no { font-family: var(--mono); font-size: 10.5px; color: var(--dove); letter-spacing: 0.12em; margin-bottom: 8px; }
+  .req-card .t { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .req-card .d { font-size: 12.5px; color: var(--ash); line-height: 1.65; }
+  .req-card .d b { font-weight: 600; color: var(--rust); }
+
+  /* ── 表格 ─────────────────────────────── */
+  .spec-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    background: var(--white); border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow-sm); margin-top: 22px; font-size: 13px;
+  }
+  .spec-table th {
+    text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--graphite); background: var(--fog);
+    padding: 10px 16px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  .spec-table td { padding: 12px 16px; border-bottom: 1px solid #f0f0f2; vertical-align: top; color: var(--ash); line-height: 1.6; }
+  .spec-table tr:last-child td { border-bottom: 0; }
+  .spec-table td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+  .spec-table td .sub { display: block; font-size: 11.5px; color: var(--graphite); margin-top: 3px; }
+
+  /* ── 数据画像 ─────────────────────────────── */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card { background: var(--white); border-radius: 24px; padding: 22px 20px 18px; box-shadow: var(--shadow-sm); }
+  .stat-card.warm { background: var(--apricot); }
+  .stat-card.cool { background: var(--sky); }
+  .stat-card .lb { font-size: 13px; color: var(--graphite); font-weight: 450; }
+  .stat-card.warm .lb { color: var(--rust); }
+  .stat-card .num { font-family: var(--serif); font-size: 38px; font-weight: 400; letter-spacing: -0.015em; margin-top: 8px; }
+  .stat-card .sub { font-size: 11.5px; color: var(--graphite); margin-top: 6px; line-height: 1.55; }
+
+  /* ── 格式注解块 ─────────────────────────────── */
+  .fmt-wrap { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; margin-top: 22px; align-items: start; }
+  @media (max-width: 1080px) { .fmt-wrap { grid-template-columns: 1fr; } }
+  .fmt-file { background: #1e2023; color: #d9dbe0; border-radius: 16px; padding: 20px 22px; font-family: var(--mono); font-size: 12px; line-height: 2.05; overflow-x: auto; box-shadow: var(--shadow-sm); }
+  .fmt-file .fn { color: #8b8e96; font-size: 10.5px; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .fmt-file .cm { color: #7c8087; }
+  .fmt-file .c1 { color: #f2c49b; }  /* 户室行 */
+  .fmt-file .c2 { color: #a8c8f0; }  /* 属性行 */
+  .fmt-file .an { color: #6b6f77; font-size: 10.5px; }
+  .fmt-notes { display: flex; flex-direction: column; gap: 10px; }
+  .fmt-note { background: var(--white); border-radius: 14px; padding: 13px 16px; box-shadow: var(--shadow-sm); font-size: 12.5px; color: var(--ash); line-height: 1.65; }
+  .fmt-note b { color: var(--ink); font-weight: 500; }
+  .fmt-note .tag { display: inline-block; font-family: var(--mono); font-size: 10px; color: var(--rust); background: var(--apricot); border-radius: 6px; padding: 1px 7px; margin-right: 6px; vertical-align: 1px; }
+
+  /* ── 模型关系图 ─────────────────────────────── */
+  .model-map { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; margin-top: 22px; align-items: stretch; }
+  .model-node { background: var(--white); border-radius: 16px; padding: 16px; box-shadow: var(--shadow-sm); position: relative; }
+  .model-node .mn-t { font-size: 13px; font-weight: 600; font-family: var(--mono); }
+  .model-node .mn-tag { display: inline-block; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; border-radius: 6px; padding: 1px 7px; margin-bottom: 8px; }
+  .model-node .mn-tag.new { color: var(--rust); background: var(--apricot); }
+  .model-node .mn-tag.ext { color: #2c4a76; background: var(--sky); }
+  .model-node .mn-tag.keep { color: var(--graphite); background: var(--fog); }
+  .model-node ul { list-style: none; margin-top: 4px; }
+  .model-node li { font-family: var(--mono); font-size: 10.5px; color: var(--ash); line-height: 1.9; }
+  .model-node li em { font-style: normal; color: var(--dove); }
+  .model-arrow { display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 15px; color: var(--dove); }
+  .model-arrow span { writing-mode: vertical-rl; font-size: 10px; letter-spacing: 0.08em; margin-left: 4px; color: var(--graphite); }
+  .model-flow { display: flex; align-items: stretch; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .flow-node { flex: 1; min-width: 200px; background: var(--white); border-radius: 14px; padding: 13px 16px; box-shadow: var(--shadow-sm); }
+  .flow-node.warm { background: var(--apricot); }
+  .flow-node .fn-t { font-size: 12.5px; font-weight: 600; font-family: var(--mono); }
+  .flow-node .fn-d { font-size: 11.5px; color: var(--ash); line-height: 1.6; margin-top: 4px; }
+  .flow-node.warm .fn-d { color: var(--rust); }
+  .flow-node .fn-d b { font-weight: 600; }
+  .flow-arrow { display: flex; align-items: center; font-family: var(--mono); font-size: 16px; color: var(--dove); }
+
+  /* ── 分期计划 ─────────────────────────────── */
+  .phase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .phase-grid { grid-template-columns: 1fr; } }
+  .phase-card { background: var(--white); border-radius: 24px; padding: 20px; box-shadow: var(--shadow-sm); }
+  .phase-card .ph-no { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--dove); }
+  .phase-card .ph-t { font-size: 16px; font-weight: 600; margin: 6px 0 8px; }
+  .phase-card ul { list-style: none; }
+  .phase-card li { font-size: 12.5px; color: var(--ash); line-height: 1.8; padding-left: 14px; position: relative; }
+  .phase-card li::before { content: ""; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--dove); }
+  .phase-card li.hot::before { background: var(--rust); }
+  .phase-card .ph-scope { display: inline-block; margin-top: 12px; font-family: var(--mono); font-size: 10.5px; color: var(--rust); background: var(--apricot); border-radius: 999px; padding: 4px 12px; }
+
+  /* ── 桌面 Artboard（浏览器窗） ─────────────────────────────── */
+  .win {
+    width: 1256px; max-width: 100%;
+    background: var(--fog); border-radius: 18px;
+    box-shadow: var(--shadow-win);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+    margin-top: 12px;
+  }
+  .win-chrome {
+    height: 44px; flex-shrink: 0; background: #ffffff;
+    display: flex; align-items: center; gap: 14px; padding: 0 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .win-chrome .dots { display: flex; gap: 7px; }
+  .win-chrome .dots i { width: 11px; height: 11px; border-radius: 50%; background: #e3e4e8; display: block; }
+  .win-chrome .url {
+    flex: 1; max-width: 420px; margin: 0 auto;
+    background: var(--fog); border-radius: 999px; padding: 5px 16px;
+    font-family: var(--mono); font-size: 11px; color: var(--graphite); text-align: center;
+  }
+  .win-body { display: flex; flex: 1; min-height: 0; }
+
+  /* 侧边栏 */
+  .sb { width: 208px; flex-shrink: 0; background: var(--fog); padding: 18px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .sb .logo { font-family: var(--serif); font-size: 17px; letter-spacing: 0.01em; padding: 2px 12px 16px; }
+  .sb .grp { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dove); padding: 12px 12px 6px; }
+  .sb .it { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 450; color: var(--ash); border-radius: 10px; padding: 8px 12px; }
+  .sb .it svg { width: 15px; height: 15px; stroke: var(--graphite); flex-shrink: 0; }
+  .sb .it.on { background: var(--white); color: var(--ink); font-weight: 500; box-shadow: var(--shadow-sm); }
+  .sb .it.on svg { stroke: var(--rust); }
+  .sb .spacer { flex: 1; }
+
+  /* 主内容 */
+  .main { flex: 1; min-width: 0; background: var(--white); border-left: 1px solid var(--line); padding: 26px 30px 30px; position: relative; }
+  .pg-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .pg-head h3 { font-family: var(--serif); font-weight: 400; font-size: 30px; letter-spacing: -0.015em; }
+  .pg-head .desc { font-size: 12.5px; color: var(--graphite); margin-top: 6px; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--ink); color: var(--white);
+    font-size: 13px; font-weight: 450; border-radius: 999px; padding: 9px 20px;
+    white-space: nowrap;
+  }
+  .btn-ghost { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 450; color: var(--ink); border-radius: 999px; padding: 9px 14px; }
+  .btn-line { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 450; color: var(--ash); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; background: var(--white); }
+
+  /* KPI hero（对齐工作台 Steep 决策：唯一 Apricot 暖卡 + Signifier 大数字） */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+  .kpi { background: var(--fog); border-radius: 20px; padding: 16px 18px 14px; }
+  .kpi.warm { background: var(--apricot); }
+  .kpi .k-lb { font-size: 12px; color: var(--graphite); font-weight: 450; }
+  .kpi.warm .k-lb { color: var(--rust); }
+  .kpi .k-num { font-family: var(--serif); font-size: 30px; margin-top: 4px; letter-spacing: -0.01em; }
+  .kpi .k-sub { font-size: 10.5px; color: var(--graphite); margin-top: 4px; }
+
+  /* 筛选栏 */
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; align-items: center; }
+  .sel {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+    font-size: 12.5px; color: var(--ash); padding: 7px 14px; white-space: nowrap;
+  }
+  .sel b { font-weight: 450; color: var(--ink); }
+  .sel i { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--dove); }
+  .sel.on { border-color: var(--rust); color: var(--rust); background: var(--apricot); }
+  .sel.on b { color: var(--rust); }
+  .search-pill {
+    flex: 1; min-width: 180px; max-width: 300px; margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--fog); border-radius: 999px; padding: 8px 16px;
+    font-size: 12.5px; color: var(--dove);
+  }
+  .search-pill svg { width: 13px; height: 13px; stroke: var(--graphite); }
+
+  /* 小区表格 */
+  .tbl { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 16px; font-size: 12.5px; }
+  .tbl th {
+    text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--graphite); padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  .tbl td { padding: 11px 12px; border-bottom: 1px solid #f2f3f5; color: var(--ash); vertical-align: middle; }
+  .tbl tbody tr { cursor: pointer; transition: background .12s ease; }
+  .tbl tbody tr:hover { background: var(--fog); }
+  .tbl tbody tr.sel-row { background: var(--apricot); }
+  .tbl td .cname { color: var(--ink); font-weight: 500; }
+  .tbl td .csub { display: block; font-size: 10.5px; color: var(--graphite); margin-top: 2px; }
+  .chip { display: inline-block; font-size: 10.5px; border-radius: 999px; padding: 2px 10px; background: var(--fog); color: var(--graphite); white-space: nowrap; }
+  .chip.warm { background: var(--apricot); color: var(--rust); }
+  .chip.cool { background: var(--sky); color: #2c4a76; }
+  .num-cell { font-family: var(--mono); font-size: 12px; color: var(--ink); }
+  .pager { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 11.5px; color: var(--graphite); }
+  .pager .pages { display: flex; gap: 5px; }
+  .pager .pages span { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-family: var(--mono); font-size: 11px; color: var(--ash); }
+  .pager .pages span.on { background: var(--ink); color: var(--white); }
+
+  /* 详情抽屉（ARTBOARD 02） */
+  .dim { position: absolute; inset: 0; background: rgba(23, 25, 28, 0.32); border-radius: 0; }
+  .drawer {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 560px;
+    background: var(--white); border-radius: 0; box-shadow: -12px 0 40px rgba(23, 25, 28, 0.14);
+    display: flex; flex-direction: column; z-index: 3;
+  }
+  .dw-head { padding: 22px 24px 16px; border-bottom: 1px solid var(--line); }
+  .dw-head .trow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .dw-head h4 { font-family: var(--serif); font-weight: 400; font-size: 26px; letter-spacing: -0.01em; }
+  .dw-head .chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .x-btn { width: 30px; height: 30px; border-radius: 999px; background: var(--fog); display: flex; align-items: center; justify-content: center; color: var(--graphite); font-size: 13px; flex-shrink: 0; }
+  .dw-body { flex: 1; overflow-y: auto; padding: 18px 24px 24px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .info-cell { background: var(--fog); border-radius: 14px; padding: 11px 14px; }
+  .info-cell .il { font-size: 10.5px; color: var(--graphite); }
+  .info-cell .iv { font-size: 13px; color: var(--ink); font-weight: 480; margin-top: 3px; line-height: 1.5; }
+  .sec-t { display: flex; align-items: baseline; justify-content: space-between; margin: 20px 0 10px; }
+  .sec-t .st { font-size: 14px; font-weight: 600; }
+  .sec-t .st-n { font-family: var(--mono); font-size: 11px; color: var(--graphite); }
+  .bld-search { display: flex; align-items: center; gap: 8px; background: var(--fog); border-radius: 999px; padding: 7px 14px; font-size: 12px; color: var(--dove); margin-bottom: 10px; }
+  .bld-list { display: flex; flex-direction: column; gap: 6px; }
+  .bld-item { border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; cursor: pointer; transition: all .15s ease; }
+  .bld-item:hover { border-color: var(--dove); }
+  .bld-item.open { border-color: var(--rust); background: #fffaf6; }
+  .bld-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+  .bld-row .bno { font-family: var(--mono); font-weight: 600; color: var(--ink); min-width: 64px; }
+  .bld-row .bmeta { font-size: 11px; color: var(--graphite); }
+  .bld-row .bflag { margin-left: auto; display: flex; gap: 6px; }
+  .room-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+  .room {
+    font-family: var(--mono); font-size: 10px; text-align: center;
+    background: var(--fog); color: var(--ash); border-radius: 7px; padding: 5px 0; cursor: pointer;
+    transition: all .12s ease; user-select: none;
+  }
+  .room:hover { background: var(--sky); color: var(--ink); }
+  .room.on { background: var(--ink); color: var(--white); }
+  .floor-sect { margin-top: 8px; }
+  .floor-sect:first-of-type { margin-top: 0; }
+  .f-h { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--graphite); margin-bottom: 5px; cursor: pointer; }
+  .f-h .f-n { font-family: var(--mono); color: var(--ink); }
+  .f-h em { font-style: normal; font-weight: 400; color: var(--dove); }
+  .f-h .f-tri { font-size: 9px; color: var(--dove); }
+  .f-h.closed .f-tri::before { content: "▸"; }
+  .f-h.open .f-tri::before { content: "▾"; }
+  .add-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 11.5px; color: var(--rust); cursor: pointer; user-select: none; }
+  .add-row .plus { width: 18px; height: 18px; border-radius: 50%; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .add-mini { font-family: var(--mono); font-size: 10px; color: var(--rust); cursor: pointer; user-select: none; white-space: nowrap; }
+  .add-mini:hover { text-decoration: underline; }
+  .act-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .act-card { border: 1.5px solid var(--line); border-radius: 14px; padding: 13px 15px; cursor: pointer; transition: all .15s ease; }
+  .act-card:hover { border-color: var(--dove); }
+  .act-card.on { border-color: var(--rust); background: #fffaf6; }
+  .act-card .ac-t { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+  .act-card .ac-t .radio { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--dove); flex-shrink: 0; position: relative; }
+  .act-card.on .ac-t .radio { border-color: var(--rust); }
+  .act-card.on .ac-t .radio::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--rust); }
+  .act-card .ac-d { font-size: 11.5px; color: var(--ash); line-height: 1.65; margin-top: 5px; padding-left: 23px; }
+  .act-card .ac-d b { color: var(--rust); font-weight: 500; }
+  .act-card .ac-body { display: none; margin-top: 9px; padding-left: 23px; }
+  .act-card.on .ac-body { display: block; }
+  .audit-strip { display: flex; align-items: center; gap: 9px; background: var(--fog); border: 1px dashed var(--dove); border-radius: 12px; padding: 9px 13px; margin-top: 10px; font-size: 11px; color: var(--graphite); line-height: 1.55; }
+  .audit-strip b { color: var(--rust); font-weight: 500; }
+  .audit-strip .ic { width: 20px; height: 20px; border-radius: 7px; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+  /* ── 交互原型（v1.2） ─────────────────────────────── */
+  .proto-bar { display: flex; gap: 8px; margin-top: 20px; align-items: center; flex-wrap: wrap; }
+  .pbtn { font-size: 12.5px; border: 1px solid var(--line); background: var(--white); color: var(--ash); border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: all .15s ease; letter-spacing: -0.009em; }
+  .pbtn:hover { border-color: var(--dove); color: var(--ink); }
+  .pbtn.on { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .pbtn.ghost { border-style: dashed; color: var(--graphite); }
+  .pbadge { font-family: var(--mono); font-size: 10px; background: var(--apricot); color: var(--rust); border-radius: 999px; padding: 1px 7px; }
+  .pbtn.on .pbadge { background: var(--rust); color: var(--white); }
+  .pgselect {
+    appearance: none; -webkit-appearance: none;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--white);
+    font-size: 12.5px; color: var(--ash); padding: 7px 28px 7px 14px; cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='%23a3a6af' fill='none' stroke-width='1.5'/></svg>");
+    background-repeat: no-repeat; background-position: right 12px center;
+  }
+  .pgselect:focus { outline: none; border-color: var(--ink); }
+  .inline-form { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ash); background: #fffaf6; border: 1px solid #f2d0ba; border-radius: 12px; padding: 8px 12px; flex-wrap: wrap; }
+  .mini-input { border: 1px solid var(--line); border-radius: 9px; padding: 5px 9px; font-size: 12px; font-family: var(--mono); width: 110px; color: var(--ink); }
+  .mini-input:focus { outline: none; border-color: var(--ink); }
+  .mini-btn { font-size: 11px; border-radius: 999px; padding: 5px 12px; border: 1px solid var(--line); background: var(--white); cursor: pointer; color: var(--ash); }
+  .mini-btn.pri { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .pmodal-wrap { position: absolute; inset: 0; background: rgba(23, 25, 28, 0.32); z-index: 4; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; border-radius: 0 0 18px 18px; }
+  .pmodal { background: var(--white); border-radius: 20px; box-shadow: var(--shadow-pop); padding: 20px 22px; width: 520px; max-width: calc(100% - 48px); margin-top: 26px; margin-bottom: 26px; }
+  .dw-foot { border-top: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .dw-foot .hint { font-size: 11.5px; color: var(--graphite); line-height: 1.55; }
+  .dw-foot .hint b { color: var(--rust); font-weight: 500; }
+
+  /* 导入流程（ARTBOARD 03） */
+  .stepper { display: flex; flex-direction: column; gap: 0; margin-top: 18px; }
+  .step { display: flex; gap: 12px; position: relative; padding-bottom: 22px; cursor: pointer; }
+  .step::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 2px; width: 2px; background: var(--line); border-radius: 2px; }
+  .step:last-child { padding-bottom: 0; }
+  .step:last-child::before { display: none; }
+  .step .dot {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: var(--fog); color: var(--graphite);
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; z-index: 1;
+    border: 2px solid var(--line);
+  }
+  .step.done .dot { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .step.now .dot { background: var(--white); border-color: var(--rust); color: var(--rust); }
+  .step .s-t { font-size: 13px; font-weight: 500; color: var(--graphite); padding-top: 5px; }
+  .step.done .s-t, .step.now .s-t { color: var(--ink); }
+  .step .s-d { font-size: 11px; color: var(--dove); margin-top: 2px; }
+  .dropzone { border: 1.5px dashed var(--dove); border-radius: 20px; padding: 22px; text-align: center; color: var(--graphite); font-size: 12.5px; background: var(--fog); }
+  .file-chip { display: flex; align-items: center; gap: 10px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 11px 14px; margin-top: 12px; }
+  .file-chip .ic { width: 34px; height: 34px; border-radius: 10px; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 9.5px; font-weight: 600; flex-shrink: 0; }
+  .file-chip .fc-n { font-size: 12.5px; font-weight: 500; color: var(--ink); }
+  .file-chip .fc-m { font-size: 10.5px; color: var(--graphite); margin-top: 2px; }
+  .parse-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+  .ps { background: var(--fog); border-radius: 12px; padding: 10px 12px; }
+  .ps .v { font-family: var(--serif); font-size: 19px; }
+  .ps .l { font-size: 10px; color: var(--graphite); margin-top: 2px; }
+  .warn-list { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .warn-item { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ash); background: #fffaf6; border: 1px solid #f2d0ba; border-radius: 10px; padding: 7px 12px; }
+  .warn-item .wn { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--rust); }
+  .task-tbl { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 12px; font-size: 11.5px; }
+  .task-tbl th { text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: var(--graphite); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .task-tbl td { padding: 9px 10px; border-bottom: 1px solid #f2f3f5; color: var(--ash); }
+  .prog { width: 90px; height: 5px; background: var(--fog); border-radius: 999px; overflow: hidden; display: inline-block; vertical-align: 2px; margin-right: 8px; }
+  .prog i { display: block; height: 100%; background: var(--rust); border-radius: 999px; }
+
+  /* 项目关联选择器（ARTBOARD 04） */
+  .form-label { font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .form-label .req { color: var(--rust); }
+  .form-label .opt { font-size: 10px; color: var(--dove); font-weight: 400; }
+  .fake-input { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 13px; color: var(--ash); }
+  .fake-input.focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23,25,28,0.06); }
+  .casc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .casc-box { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .casc-box .cb-h { padding: 8px 12px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; color: var(--graphite); background: var(--fog); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+  .casc-box .cb-h em { font-style: normal; color: var(--dove); font-weight: 400; }
+  .casc-list { max-height: 150px; overflow-y: auto; }
+  .casc-item { padding: 8px 12px; font-size: 12px; color: var(--ash); display: flex; align-items: center; justify-content: space-between; cursor: pointer; border-bottom: 1px solid #f5f6f7; }
+  .casc-item:last-child { border-bottom: 0; }
+  .casc-item:hover { background: var(--fog); }
+  .casc-item.on { background: var(--apricot); color: var(--rust); font-weight: 500; }
+  .casc-item .mono { font-family: var(--mono); font-size: 10.5px; color: var(--graphite); }
+  .casc-item.on .mono { color: var(--rust); }
+  .room-pick { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; padding: 12px; }
+  .addr-preview { display: flex; align-items: center; gap: 10px; background: var(--apricot); border-radius: 12px; padding: 10px 14px; margin-top: 12px; }
+  .addr-preview .ap-l { font-size: 10.5px; color: var(--rust); white-space: nowrap; }
+  .addr-preview .ap-v { font-size: 13px; color: var(--rust); font-weight: 600; }
+  .addr-preview .ap-hint { margin-left: auto; font-size: 10px; color: var(--rust); opacity: .75; }
+  .compat-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 11.5px; color: var(--graphite); }
+  .switch { width: 32px; height: 18px; border-radius: 999px; background: var(--dove); position: relative; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--white); }
+  .switch.on { background: var(--ink); }
+  .switch.on::after { left: 16px; }
+
+  /* 实现说明 & 交互提示 */
+  .impl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; }
+  @media (max-width: 980px) { .impl-grid { grid-template-columns: 1fr; } }
+  .impl-card { background: var(--white); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-sm); }
+  .impl-card h5 { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .impl-card ol, .impl-card ul { list-style: none; counter-reset: none; }
+  .impl-card li { font-size: 12.5px; color: var(--ash); line-height: 1.8; padding-left: 18px; position: relative; }
+  .impl-card ol li { counter-increment: oi; }
+  .impl-card ol li::before { content: counter(oi); position: absolute; left: 0; top: 1px; font-family: var(--mono); font-size: 10px; color: var(--rust); background: var(--apricot); border-radius: 5px; padding: 0 5px; }
+  .impl-card ul li::before { content: ""; position: absolute; left: 2px; top: 10px; width: 5px; height: 5px; border-radius: 50%; background: var(--dove); }
+  .impl-card li b { color: var(--ink); font-weight: 500; }
+  .impl-card li code { font-size: 10.5px; }
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: var(--white); font-size: 12.5px;
+    border-radius: 999px; padding: 10px 22px; box-shadow: var(--shadow-pop);
+    transition: transform .3s ease; z-index: 99; pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 页头 ═══════════ -->
+<header class="doc-head">
+  <div class="kicker">Profo · Admin · Building Dictionary</div>
+  <h1>楼盘字典<br /><em>从 2 万小区原始数据，到结构化的四级字典</em></h1>
+  <div class="head-meta">
+    <span>版本 <b>v1.9</b></span>
+    <span>日期 <b>2026-10-12</b></span>
+    <span>端 <b>admin 桌面</b></span>
+    <span>视觉 <b>DESIGN.md · Steep</b></span>
+    <span>数据源 <b>上海楼盘字典 2017-06 ~ 2017-08 · 19,657 txt</b></span>
+    <span>层级 <b>小区-楼栋-楼层-户室</b></span>
+    <span>坐标 <b>BD-09（百度）</b></span>
+    <span>形态 <b>可交互原型 · 五页全流程</b></span>
+    <span>需求规格 <b>SRS v1.6 · FR×18 / BR×23 / NFR×7</b></span>
+  </div>
+  <div class="req-grid" style="margin-top: 26px;">
+    <div class="req-card">
+      <div class="no">01 · 背景</div>
+      <div class="t">为什么现在做</div>
+      <div class="d">项目地址一直是 <b>小区名 + 手填门牌</b>（community_name + address），无结构化楼栋/户室，无法支撑按楼栋估价、同小区比价与钥匙定位。现已获得上海全域楼盘字典原始数据，具备落地条件。</div>
+    </div>
+    <div class="req-card">
+      <div class="no">02 · 数据规模</div>
+      <div class="t">四级字典体量</div>
+      <div class="d">约 <b>1.97 万小区 / 52.7 万楼栋 / 733 万户室</b>记录（户室号前两位解析为楼层）；97% 小区带经纬度锚点。数据为 2017 年快照，需以「基础字典 + 运营修正」的口径使用。</div>
+    </div>
+    <div class="req-card">
+      <div class="no">03 · 本稿范围</div>
+      <div class="t">可交互原型 + 编号化需求规格</div>
+      <div class="d">五个页面真实联动 + <b>SEC 04 需求规格浓缩版</b>（FR-01~18 / BR-01~23 / NFR-01~07 / 状态机 / 验收标准）；权威完整版见《<b>2026-10-12-楼盘字典-需求规格说明书.md</b>》（含需求追溯矩阵，v1.0~v1.6 共 22 条反馈全部映射，未审核楼栋/楼层/户室全系统可见带标签）。地图视图不在本期（坐标 BD-09 已就位）。</div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ SEC 01 数据源解读 ═══════════ -->
+<section class="sec" id="sec01">
+  <div class="kicker">Section 01 · Raw Data</div>
+  <h2>数据源解读：一个 txt = 一个小区</h2>
+  <p class="lede">
+    37 个批次目录（<code>20170620-300</code> … <code>20170821-36</code>，目录名 = 日期 + 当日文件数）按天增量投递，
+    共 <b>19,657 个 GBK 编码 txt</b>，文件名即小区名，分号分隔、字段间夹空行与单独「<code>;</code>」行。解析统计与脏数据清单如下。
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="lb">唯一小区</div>
+      <div class="num">19,655</div>
+      <div class="sub">19,657 个文件，跨批次重名 2 例（通华大楼 / 柳博小区）→ 导入须按名 upsert 幂等</div>
+    </div>
+    <div class="stat-card">
+      <div class="lb">楼栋</div>
+      <div class="num">526,670</div>
+      <div class="sub">楼栋号形态多样：01 / 100 / 201乙 / 惠园路2000弄01 / 单栋，<b>保留原始串</b>不强行结构化</div>
+    </div>
+    <div class="stat-card warm">
+      <div class="lb">户室记录</div>
+      <div class="num">733.2万</div>
+      <div class="sub">每栋首户行带经纬度（BD-09 · 百度坐标系），覆盖率约 97%；小区首行坐标可作小区锚点</div>
+    </div>
+    <div class="stat-card cool">
+      <div class="lb">区域板块</div>
+      <div class="num">区+板块连写</div>
+      <div class="sub">如「宝山淞宝」「浦东三林」→ 拆为 district + business_circle，正好对齐 communities 现有字段</div>
+    </div>
+  </div>
+
+  <div class="fmt-wrap">
+    <div class="fmt-file">
+      <div class="fn">宝山三村.txt · GBK · 分号分隔 · 示意（行1起）</div>
+      <div><span class="c1">宝山三村;01;0201;121.504998;31.398697;</span><span class="an"> ← 行1=首个户室：楼盘名;楼栋;室号;经度;纬度</span></div>
+      <div><span class="c2">住宅-公寓、住宅-新里</span><span class="an"> ← 物业类型-物业类别，顿号多值</span></div>
+      <div><span class="cm">;</span></div>
+      <div><span class="c2">1994~2011年</span><span class="an"> ← 建成年代：单年或区间</span></div>
+      <div><span class="cm">;</span></div>
+      <div><span class="c2">上海宝山新寓物业管理有限公司、新寓物业</span><span class="an"> ← 物业公司（「暂无信息」占位）</span></div>
+      <div><span class="cm">;</span></div>
+      <div><span class="c2">宝钢集团有限公司</span><span class="an"> ← 开发商</span></div>
+      <div><span class="cm">;</span></div>
+      <div><span class="c2">;宝山淞宝;宝山三村（永乐路422号）;</span><span class="an"> ← 区域板块;地址（多弄逗号分隔）</span></div>
+      <div><span class="c2">外环外</span><span class="an"> ← 环线位置</span></div>
+      <div><span class="cm">;</span></div>
+      <div><span class="c1">宝山三村;01;0202;</span><span class="an"> ← 其余户室：楼盘名;楼栋;室号[;经度;纬度;]</span></div>
+      <div><span class="c1">宝山三村;01;0301;</span></div>
+      <div><span class="c1">宝山三村;02;0201;121.504796;31.398596;</span><span class="an"> ← 每栋首户带坐标</span></div>
+      <div><span class="c1">宝山三村;02;0202;</span></div>
+      <div class="cm" style="margin-top:8px;">…共 2194 行（≈199 栋 · 2194 户室）</div>
+    </div>
+    <div class="fmt-notes">
+      <div class="fmt-note"><span class="tag">类型分布</span>住宅-公寓 <b>17,961</b> · 新里 <b>2,870</b> · 别墅 <b>1,135</b> · 商业类 <b>798</b> · 写字楼 <b>582</b> · 洋房 <b>393</b> · 老公寓 <b>163</b> · 厂房 <b>19</b>（一小区可多值）</div>
+      <div class="fmt-note"><span class="tag">环线覆盖</span>内环内 <b>5,778</b> · 外环外 <b>7,557</b> · 其余 <b>6,320</b> 环线为空 → 空值允许，后续运营补齐</div>
+      <div class="fmt-note"><span class="tag">同名变体</span>分期/业态以中文括号后缀区分：布鲁斯小镇<b>（别墅）</b>/ <b>（公寓）</b>、毕加索小镇（一期）（公寓）→ 文件名即小区名，不合并</div>
+      <div class="fmt-note"><span class="tag">脏数据</span>年代含 1800~2301 等脏值；室号有 <b>0233-1</b> / 1-2楼 等非标形态；个别首行无坐标（536 例）→ 解析端宽容 + 异常行留档</div>
+      <div class="fmt-note"><span class="tag">时效口径</span>2017 年快照：新建小区、拆并楼栋可能过期 → 定位为<b>基础字典</b>，admin 允许编辑修正，projects 关联时以人工确认为准</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SEC 02 数据模型与分期 ═══════════ -->
+<section class="sec" id="sec02">
+  <div class="kicker">Section 02 · Data Model &amp; Phasing</div>
+  <h2>数据模型与分期落地</h2>
+  <p class="lede">
+    复用现有 <code>communities</code>（name 唯一 / district / business_circle / 别名合并均已就绪），<b>补经纬度与画像字段</b>；
+    新增 <code>bd_buildings</code> / <code>bd_rooms</code> 两级，<b>楼层为 bd_rooms 的可空解析字段</b>（0401→4 层，非标户室归「未分层」组，不建独立楼层表）；
+    录入端提交的新楼栋/户室进入 <code>bd_pending_entries</code> 审核池；projects 以可空逻辑外键挂接楼栋+户室，手填地址全兼容。
+  </p>
+
+  <div class="model-map">
+    <div class="model-node">
+      <span class="mn-tag ext">EXTEND</span>
+      <div class="mn-t">communities</div>
+      <ul>
+        <li>+ lng, lat <em>小区锚点</em></li>
+        <li>+ ring <em>环线</em></li>
+        <li>+ property_types <em>text[]</em></li>
+        <li>+ era_from, era_to</li>
+        <li>+ developer, property_mgmt</li>
+        <li>+ address, source</li>
+        <li><em>已有：district / business_circle / alias</em></li>
+      </ul>
+    </div>
+    <div class="model-arrow">⟶<span>1 : N</span></div>
+    <div class="model-node">
+      <span class="mn-tag new">NEW</span>
+      <div class="mn-t">bd_buildings</div>
+      <ul>
+        <li>id bigserial</li>
+        <li>community_id <em>逻辑外键</em></li>
+        <li>building_no <em>原始串</em></li>
+        <li>lng, lat <em>首户坐标</em></li>
+        <li>room_count <em>冗余计数</em></li>
+        <li><em>uq(community_id, building_no)</em></li>
+      </ul>
+    </div>
+    <div class="model-arrow">⟶<span>1 : N</span></div>
+    <div class="model-node">
+      <span class="mn-tag new">NEW</span>
+      <div class="mn-t">bd_rooms</div>
+      <ul>
+        <li>id bigserial</li>
+        <li>building_id <em>逻辑外键</em></li>
+        <li>room_no <em>原始串</em></li>
+        <li>+ floor <em>可空 · 0401→4层</em></li>
+        <li><em>非标户室 floor=NULL</em></li>
+        <li><em>uq(building_id, room_no)</em></li>
+        <li><em>~733 万行 · COPY 批量装载</em></li>
+      </ul>
+    </div>
+    <div class="model-node">
+      <span class="mn-tag ext">EXTEND</span>
+      <div class="mn-t">projects</div>
+      <ul>
+        <li>+ building_id <em>可空</em></li>
+        <li>+ room_id <em>可空</em></li>
+        <li>+ dict_status <em>linked / manual / pending</em></li>
+        <li><em>保留 community_id / community_name / address，手填地址全兼容</em></li>
+        <li><em>存量项目经「关联字典」动作更新（原型页 05）</em></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="model-flow">
+    <div class="flow-node"><div class="fn-t">录入端提交</div><div class="fn-d">新建/编辑项目时添加新楼栋或户室（原型页 04）</div></div>
+    <div class="flow-arrow">⟶</div>
+    <div class="flow-node warm"><div class="fn-t">bd_pending_entries <span class="mn-tag new" style="margin:0 0 0 4px;">NEW</span></div><div class="fn-d">审核池：community_id + 提交内容（楼栋/楼层/户室）+ submitted_by / project_id + status</div></div>
+    <div class="flow-arrow">⟶</div>
+    <div class="flow-node"><div class="fn-t">审核动作</div><div class="fn-d"><b>合并现有</b>（指向已有楼栋/户室）· <b>通过新增</b>（写入字典）· <b>驳回</b>（审核人员当场手动为项目选择楼栋/户室）</div></div>
+    <div class="flow-arrow">⟶</div>
+    <div class="flow-node"><div class="fn-t">回填</div><div class="fn-d">bd_buildings / bd_rooms 落库 + projects.building_id / room_id 关联生效</div></div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>关注点</th><th>决策</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>小区去重<span class="sub">同名跨批次</span></td><td>按 name upsert</td><td>通华大楼 / 柳博小区各出现 2 次；复用 CommunityAlias 机制吸收「小区名（别墅）/（公寓）」类变体的合并判断（默认不合并，人工在 admin 端处理）</td></tr>
+      <tr><td>楼栋/户室解析</td><td>保留原始串</td><td>楼栋号「201乙」「惠园路2000弄01」不做数字抽取；<b>楼层为呈现层字段</b>：户室号前两位数字解析为 floor（0401→4 层），非标户室（0233-1 等）floor=NULL 归「未分层」组，落库存原值</td></tr>
+      <tr><td>楼层层级</td><td>随户室自动生成</td><td><b>不建 bd_floors 表、无「单独新增楼层」</b>：某层随该层首个户室创建而出现（floor 可空解析自户室号）；字典端补录户室时填写新楼层号即隐式建层（即时生效）；录入端提供「＋添加新楼层」快捷入口 = 提交该层首个户室（进审核池）；空层（架空层/设备层）不入字典，仅在楼栋维度记录总层数展示</td></tr>
+      <tr><td>字典端补录</td><td>admin 直接生效</td><td>字典端添加小区/楼栋/户室（原型页 01）为可信操作，即时写入并留审计；<b>支持批量区间语法</b>：楼栋「29-55」、楼层「7-12」、户室「01-08」笛卡尔展开，uq 跳过已有，单次上限 60 栋 / 200 户；与录入端提交（进审核池）分开</td></tr>
+      <tr><td>审核池</td><td>bd_pending_entries</td><td>kind = <b>community / building / room</b>（含来源单据与提交人，v1.8 来源泛化：项目/线索/营销/房源；<b>v1.9 增 bd_pending_references 引用账本 + uq_pending_open 同名唯一 + parent 父子层级</b>），审核动作三选一：合并现有 / 通过新增 / 驳回；<b>驳回按来源分流（BR-27）：录入端当场改选、机器/C 端落 rejected 转运营待办</b>；pending 终态 = merged / created / rejected；<b>小区新增不阻塞业务创建</b>——单据先落库，小区审核通过后自动回填转正，转正前单据名称显示「未审核」标签</td></tr>
+      <tr><td>审核权限</td><td>默认 admin · 可配置</td><td>审核池处理人默认 admin，通过 system_configs 键 <code>building_dict_reviewer_roles</code> 配置可处理角色；字典端补录/小区新增限 admin</td></tr>
+      <tr><td>全模块统一入口</td><td>新增一律走字典</td><td>线索/项目/营销等各模块新增时的地址录入统一复用楼盘字典四级选择器（小区→楼栋→楼层→户室，含新增小区/楼栋/楼层/户室入口；<b>线索/营销小区必选、楼栋/户室选填落库，v1.8</b>）；<b>存量数据</b>（项目/线索/营销/房源四类，v1.9）支持手动「关联字典」（原型页 05），关联确认后<b>数据层以字典数据为准</b>（building_id / room_id / community 关联生效，项目原手填地址转备注保留、其余 community_name 冗余不改写；绑定不强制、未绑定零影响）</td></tr>
+      <tr><td>别名 / 小区合并</td><td>复用 governance</td><td>「（别墅）/（公寓）」等变体默认独立小区；合并走现有 <code>admin/properties/governance</code> 治理（merge-communities 端点已存在），字典模块不重复建设合并 UI，<b>不做相似度合并推荐</b></td></tr>
+      <tr><td>keys 模块</td><td>跟项目走</td><td>钥匙随项目关联字典自动获得结构化楼栋/户室定位，<b>不做钥匙侧独立改造</b>；未关联字典的存量项目钥匙维持现状（地址字符串）</td></tr>
+      <tr><td>坐标系</td><td>BD-09 原样落库</td><td>用户确认原始数据为百度 BD-09 坐标：导入/补录一律不转换、不改写；展示层标注「BD-09」；Phase 2 地图选百度地图零转换，跨服务商转换收敛在 services/geo.py 单点</td></tr>
+      <tr><td>733 万行装载</td><td>异步任务 + COPY</td><td>解析 GBK → 临时 CSV → PostgreSQL COPY，逐小区事务；失败行写异常明细文件（对齐 PropertyImportTask 的 failed-file 机制）</td></tr>
+      <tr><td>迁移方式</td><td>migrations/__init__.py</td><td>幂等脚本（_column_exists / _table_exists 检查），建表 + communities 补列 + projects 补列，PostgreSQL 兼容</td></tr>
+      <tr><td>查询性能</td><td>索引策略</td><td>bd_rooms uq(building_id, room_no) 覆盖详情页；小区列表走 communities（1.97 万行无压力）；楼栋列表按 community_id 索引</td></tr>
+    </tbody>
+  </table>
+
+  <div class="phase-grid">
+    <div class="phase-card">
+      <div class="ph-no">PHASE 0 · 基础</div>
+      <div class="ph-t">数据导入 + 字典浏览</div>
+      <ul>
+        <li class="hot">导入流程：上传 → 解析校验 → 异步装载 → 报告（原型页 02）</li>
+        <li class="hot">communities 补列 + bd_buildings / bd_rooms 建表</li>
+        <li class="hot">字典总览页 + 小区详情抽屉（原型页 01，含 admin 新增小区 / 批量区间补录）</li>
+        <li>admin 可编辑小区画像字段（环线 / 类型 / 年代人工修正）</li>
+      </ul>
+      <div class="ph-scope">价值：结构化数据资产就位</div>
+    </div>
+    <div class="phase-card">
+      <div class="ph-no">PHASE 1 · 接线</div>
+      <div class="ph-t">选择器接入全模块 + 审核池</div>
+      <ul>
+        <li class="hot">四级选择器封装共享组件，<b>线索/项目/营销等新增表单统一接入</b>（原型页 04）</li>
+        <li class="hot">录入端新增小区/楼栋/楼层/户室 → bd_pending_entries 审核池（小区新增不阻塞项目创建，名称带「未审核」标签）</li>
+        <li>projects + community 关联转正 / building_id / room_id / dict_status，地址自动拼装、可手改</li>
+        <li>存量数据手动「关联字典」批量补齐（原型页 05），关联后数据层以字典为准</li>
+        <li>详情页回显字典信息（环线 / 年代 / 锚点坐标）；keys 随项目关联自动获得结构化定位</li>
+      </ul>
+      <div class="ph-scope">价值：录项目零手打、地址可校验、字典可持续生长</div>
+    </div>
+    <div class="phase-card">
+      <div class="ph-no">PHASE 2 · 延伸</div>
+      <div class="t"></div>
+      <div class="ph-t" style="margin-top:10px;">地图视图与智能联动</div>
+      <ul>
+        <li>小区/楼栋坐标落库后的地图选点视图（新增地图组件）</li>
+        <li>同小区/同楼栋项目聚合比价</li>
+        <li>估价 / 线索录入复用同一选择器组件</li>
+        <li>C 端搜索按板块/环线联动</li>
+      </ul>
+      <div class="ph-scope">价值：空间维度数据能力</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 交互原型 ═══════════ -->
+<section class="sec" id="proto">
+  <div class="kicker">Interactive Prototype · v1.9</div>
+  <h2>交互原型：五页全流程</h2>
+  <p class="lede">
+    假数据驱动的可点击原型，覆盖完整业务流：<b>字典总览与详情抽屉</b>（楼栋 → 楼层 → 户室级联 + admin 补录）、<b>数据导入</b>（四步 + 进度模拟）、<b>审核池</b>（合并现有 / 通过新增 / 驳回+手动改选）、<b>新建项目四级选择器</b>（录入端添加自动进入审核池）、<b>存量数据绑定</b>（项目/线索/营销三类，v1.8）。坐标口径：<b>BD-09（百度）</b>，锚点坐标原样落库展示。
+  </p>
+  <div class="proto-bar" id="protoBar">
+    <button class="pbtn on" data-nav="dict">01 · 小区库</button>
+    <button class="pbtn" data-nav="import">02 · 导入数据</button>
+    <button class="pbtn" data-nav="review">03 · 待审核 <span class="pbadge" id="protoReviewBadge">3</span></button>
+    <button class="pbtn" data-nav="create">04 · 新建项目</button>
+    <button class="pbtn" data-nav="project">05 · 项目详情</button>
+    <span style="flex:1;"></span>
+    <button class="pbtn ghost" id="protoReset">重置演示</button>
+  </div>
+
+  <div class="win" style="margin-top:12px;">
+    <div class="win-chrome">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url" id="protoUrl">localhost:3000/admin/building-dictionary</div>
+      <div style="width:44px;"></div>
+    </div>
+    <div class="win-body">
+      <aside class="sb" id="protoSb"></aside>
+      <main class="main" id="protoMain"></main>
+    </div>
+  </div>
+
+  <p class="cap-note" id="protoNote"><b>操作提示：</b>① 总览页点击行 → 详情抽屉（楼栋/楼层/户室级联，<b>补录支持区间批量</b>：29-55 号楼 · 7-12 层 × 01-08 室；页头「＋新增小区」admin 即时生效）；② 新建项目页搜索无结果时「＋新增小区」进审核池——<b>项目照常创建，名称带「未审核」标签，转正后自动摘除</b>；「＋添加新楼层/新户室」同理；③ 审核池支持小区/楼栋/户室三类条目，三选一提交后队列与 KPI 实时更新；④ 项目详情「关联字典」确认后数据层以字典为准。楼层随该层首个户室自动生成；别名/小区合并走 governance；坐标 BD-09。</p>
+</section>
+
+<!-- ═══════════ SEC 04 需求规格说明书（浓缩版） ═══════════ -->
+<section class="sec" id="sec04">
+  <div class="kicker">Section 04 · Requirement Specification</div>
+  <h2>需求规格说明书（浓缩版）</h2>
+  <p class="lede">
+    全部历史反馈已按标准产品设计术语结构化为编号化规格：<b>FR 功能需求 ×19 · BR 边界条件 ×28 · NFR 非功能需求 ×7</b>，另含状态机（§6）、验收标准（§10，P0/P1/P2/P3/P4/P5）与需求追溯矩阵（§11）。v1.8 最终对齐：机器链路进审核池 / 线索·营销四级选填落库 / 三类统一绑定；<b>v1.9 流程评审收口：create 引用回填闭环（FR-19）/ 并发唯一 / reject 按来源分流 / properties 纳入四类绑定</b>。
+    <b>权威完整版见 <code>docs/To-Do/2026-10-12-楼盘字典-需求规格说明书.md</code></b>（开发/测试依据，与本稿冲突时以它为准）；本节为浓缩速查。
+  </p>
+
+  <table class="spec-table">
+    <thead><tr><th style="width:90px;">编号</th><th>功能需求</th><th>要点</th></tr></thead>
+    <tbody>
+      <tr><td>FR-01</td><td>字典总览页</td><td>KPI hero（唯一 Apricot 暖卡）；筛选：区/板块/环线/类型/年代/关联状态；关键词匹配 小区名/地址/别名；分页 20/页；行 → 详情抽屉；页头动作：新增小区 / 审核池（徽标）/ 导入数据</td></tr>
+      <tr><td>FR-02</td><td>小区详情抽屉</td><td>560px 右滑；画像（地址/锚点 BD-09/物业/开发商/计数/关联数）；修正画像 = 环线/类型/年代（PATCH communities）</td></tr>
+      <tr><td>FR-03</td><td>楼栋列表</td><td>楼栋号搜索；自然序分页 20/页；非标楼栋号原样（201乙）；层数×户数 / admin 补录标记 / 坐标有无 / 已关联计数</td></tr>
+      <tr><td>FR-04</td><td>楼层分组（呈现层）</td><td>floor = 户室号前两位解析；NULL 归「未分层」置底；可见楼层 = 名义层数 ∪ 实际户室楼层 ∪ <b>pending 户室楼层（v1.6 待审新楼层带「未审核」标签出现）</b>；可折叠；空层不入字典</td></tr>
+      <tr><td>FR-05</td><td>户室网格</td><td>单选高亮；底部回显选中与 BD-09 坐标；门牌映射 0401→401（非标不参与，BR-12）；<b>pending 户室带「未审核」标签（BR-23）：仅来源单据回显选中，其他表单置灰不可选</b></td></tr>
+      <tr><td>FR-06</td><td>admin 补录</td><td>楼栋/楼层/户室新增，即时生效 + 审计；<b>区间批量</b>（29-55 / 7-12 / 01-08）笛卡尔展开；上限 60 栋/200 户；返回 {added, skipped}；新楼层号 = 隐式建层</td></tr>
+      <tr><td>FR-07</td><td>admin 新增小区</td><td>名称/区域/板块必填，环线/锚点/地址可空；重名拦截（BR-01）；<b>撞同名 open pending → 自动转正该条目（BR-26，v1.9）</b>；成功即时生效进联想</td></tr>
+      <tr><td>FR-08</td><td>数据导入</td><td>四步流程；GBK/UTF-8 自动识别；异常清单（年代置空/非标留串/地址缺失/无锚点）；异步 COPY + 逐小区事务；对账报告 + 失败明细 csv 留档 90 天；任务历史</td></tr>
+      <tr><td>FR-09</td><td>四级选择器（共享组件）</td><td>dict-address-picker：小区联想（含别名）→楼栋→楼层→户室；门牌自动拼装可手改；兼容模式（dict_status=manual）</td></tr>
+      <tr><td>FR-10</td><td>录入端新增</td><td>小区：搜索无结果入口 → 审核池，<b>不阻塞业务创建，项目名称「未审核」标签</b>，级联锁定待转正；楼栋/楼层/户室同理入池；<b>pending 条目全系统可见带标签（v1.6，BR-23）</b></td></tr>
+      <tr><td>FR-11</td><td>审核池（v1.9 收口）</td><td>kind = community/building/room；三选一：<b>create = 字典落库 + 来源单据同步回填 + 引用异步幂等回填（BR-13）</b>/ merge 改指 / <b>reject 按来源分流（BR-27）：录入端当场改选，机器/C 端落 rejected 转运营待办</b>；<b>resolve 行锁，并发重复审核 409（FR-19）</b>；通知提交人</td></tr>
+      <tr><td>FR-12</td><td>存量数据绑定（v1.9 四类统一）</td><td><b>项目 / 线索 / 营销 / 房源（properties，仅小区级）</b>统一提供字典关联卡：关联/修正/解除；<b>确认后数据层以字典为准</b>（项目 address 转备注，其余 community_name 冗余不改写）；绑定不强制、未绑定零影响；未关联筛选；keys 随项目走</td></tr>
+      <tr><td>FR-13</td><td>全模块统一入口（新建+编辑）</td><td>线索/项目/营销新增表单统一复用选择器；<b>项目编辑改小区/地址同口径</b>（兼容模式保底）；<b>落库口径（v1.8）：项目细化到户室；线索/营销小区必选、楼栋/户室选填</b>（选到则落库，未选空置）；载荷 building_id/room_id 或 new_* 载荷（入池）</td></tr>
+      <tr><td>FR-14</td><td>governance 联动</td><td>变体默认独立小区；字典不做合并 UI 与相似度推荐；合并走现有 admin/properties/governance</td></tr>
+      <tr><td>FR-15</td><td>权限与配置</td><td>读=项目读权限；写/补录/新增小区/导入=admin；审核处理人默认 admin，<code>building_dict_reviewer_roles</code> 可配置</td></tr>
+      <tr><td>FR-16</td><td>房源链路口径（v1.8 重写）</td><td><b>POST /push（X-API-Key）与 CSV 房源导入：小区一致直接引用、楼栋/户室空置；不一致不自动建小区，产生 pending 条目进审核池，推送/导入照常成功</b>；转正前房源带「未审核」标签；楼栋/户室由字典 txt 导入或人工绑定补齐；重名/变体走 BR-01 + governance</td></tr>
+      <tr><td>FR-17</td><td>C 端免登录线索（v1.5）</td><td>估价/卖房线索搜不到小区仍<b>自由文本提交</b>，不校验字典、不产生 pending；字典化延迟到线索转项目时走选择器或后台绑定；<b>治理闭环（v1.9）：线索入 FR-12 绑定与「未关联」筛选，可批量人工补绑，非治理盲区</b></td></tr>
+      <tr><td>FR-18</td><td>线索端字典对接（v1.8 扩展）</td><td>员工录线索与线索页改小区接<b>四级选择器</b>：小区必选（含别名联想）、<b>楼栋/楼层/户室选填</b>（选到则 building_id/room_id 落库，未选空置）；搜不到可提交新小区/楼栋/户室进审核池（线索照常创建，口径同 FR-10）；C 端免登录不在此列</td></tr>
+      <tr><td>FR-19</td><td>pending 引用与并发唯一（v1.9 新增）</td><td><b>引用账本 bd_pending_references（uq(biz_type,biz_id,field)）</b>：同一 pending 多单据引用，同名提交幂等复用追加引用；<b>partial unique uq_pending_open WHERE status=pending</b>；<b>parent_kind/parent_id 父子层级 + 拓扑审核（BR-28）</b>；resolve 行锁防并发重复审核（409）</td></tr>
+    </tbody>
+  </table>
+
+  <table class="spec-table" style="margin-top:14px;">
+    <thead><tr><th style="width:90px;">编号</th><th>边界条件</th><th style="width:110px;">编号</th><th>边界条件</th></tr></thead>
+    <tbody>
+      <tr><td>BR-01</td><td>重名小区：导入 upsert 幂等；新增拦截 → 选择/governance</td><td>BR-11</td><td>小区审核中：级联锁定 + 项目可提交（未审核标签）</td></tr>
+      <tr><td>BR-02</td><td>非标户室：留原串 / floor=NULL / 不参与拼装</td><td>BR-12</td><td>非标户室选中：门牌回退手填提示</td></tr>
+      <tr><td>BR-03</td><td>非标楼栋号：保留原始串</td><td>BR-13</td><td><b>事务边界（v1.9 修订）</b>：核心事务 = 终态+字典落库+来源回填；引用批量回填走异步幂等任务（分批/可重试/失败留待办），不引入 outbox</td></tr>
+      <tr><td>BR-04</td><td>环线缺失：允许空，显示「—」，可人工补</td><td>BR-14</td><td>楼层已存在再新增 → 拦截引导直接选择</td></tr>
+      <tr><td>BR-05</td><td>年代脏值（1800/2301）：导入置空</td><td>BR-15</td><td>空层（架空层/设备层）不入字典</td></tr>
+      <tr><td>BR-06</td><td>无锚点小区（536 个）：允许，坐标留空</td><td>BR-16</td><td>导入重跑幂等，计数不变</td></tr>
+      <tr><td>BR-07</td><td>区间上限 60 栋 / 200 户，超限拦截</td><td>BR-17</td><td>已处理条目不可重复审核（前后端双校验）</td></tr>
+      <tr><td>BR-08</td><td>区间全已存在：{added:0, skipped:N} 提示</td><td>BR-18</td><td>坐标 BD-09 原样落库；跨服务商转换收敛 services/geo.py</td></tr>
+      <tr><td>BR-09</td><td>uq 冲突：批量跳过 / 单场景拦截</td><td>BR-19</td><td>关联不改 address 原值；并存以 room_id 为准</td></tr>
+      <tr><td>BR-10</td><td>merge/reject 必选目标，未选拦截（不预选）</td><td>BR-20</td><td>房源链路（/push、/upload/csv）小区不一致<b>不自动建小区，产生 pending 进审核池</b>，推送/导入照常成功；一致直接引用、楼栋/户室空置（FR-16，v1.8）</td></tr>
+      <tr><td>BR-21</td><td>C 端免登录线索自由文本小区，不校验字典不产生 pending；转项目时再入字典（FR-17）</td><td>BR-22</td><td>项目编辑改小区/地址与新建同口径走选择器（兼容模式保底），禁止绕过字典改写（FR-13）</td></tr>
+      <tr><td>BR-23</td><td><b>pending 楼栋/楼层/户室全系统可见带标签</b>（v1.6）：展示层叠加 pending 数据（虚线/置灰+「未审核」），字典表不写行；仅来源单据回显选中，他表置灰不可选；转正摘标签，驳回/合并即移除</td><td style="color:var(--dove);">—</td><td style="color:var(--dove);">完整定义见 SRS §5</td></tr>
+      <tr><td>BR-24</td><td><b>线索/营销/机器链路房源的 pending 展示同 BR-23</b>（v1.8）：带「未审核」标签全系统可见，仅来源单据回显选中；转正摘标签，驳回/合并按 BR-10 改指</td><td>BR-25</td><td><b>存量四类绑定同项目口径</b>（v1.9，FR-12，含 properties 仅小区级）：绑定后关联字段+dict_status 生效，community_name 冗余不改写；绑定不强制、未绑定零影响</td></tr>
+      <tr><td>BR-26</td><td><b>同名并发唯一（v1.9）</b>：uq_pending_open 全局唯一、同名提交幂等复用追加引用；resolve 加锁；admin/导入撞 open pending → 自动转正留审计</td><td>BR-27</td><td><b>reject 按来源分流（v1.9）</b>：录入端当场改选 → linked；机器/C 端 → dict_status=rejected 保留原文，转运营待办经 FR-12 人工补绑转 linked</td></tr>
+      <tr><td>BR-28</td><td><b>pending 父子层级（v1.9）</b>：楼栋/户室 pending 挂父级（字典实表或父 pending）；父级未转正子级不可单独转正；merge 父级子级引用级联改指</td><td style="color:var(--dove);">—</td><td style="color:var(--dove);">完整定义见 SRS §5</td></tr>
+    </tbody>
+  </table>
+
+  <div class="fmt-wrap" style="grid-template-columns: 1fr 1fr;">
+    <div class="fmt-file">
+      <div class="fn">§6.1 审核条目状态机 · bd_pending_entries.status</div>
+      <div>pending ──通过新增(create)──▶ <span class="c2">created</span>   <span class="an">写入字典 + 来源同步回填 + 引用异步回填</span></div>
+      <div>pending ──合并现有(merge)──▶ <span class="c2">merged</span>    <span class="an">改指现有目标，字典无新增</span></div>
+      <div>pending ──驳回(reject)─────▶ <span class="c2">rejected</span>  <span class="an">录入端当场改选改指；机器/C 端转运营待办</span></div>
+      <div class="cm">终态不可逆；resolve 行锁，并发重复审核 409（FR-19）；merge/reject 必须携带目标 id（录入端，BR-10/27）</div>
+      <div class="fn" style="margin-top:12px;">§6.2 业务单据字典关联 · dict_status（v1.9 增 rejected：projects / leads / l4_marketing_projects / properties）</div>
+      <div>manual ──关联/转正──▶ <span class="c2">linked</span>　manual/linked ──提交新增──▶ <span class="c2">pending</span></div>
+      <div>pending ──created/merge/reject(改选)──▶ <span class="c2">linked</span>（标签摘除）　pending ──reject(机器/C 端)──▶ <span class="c2">rejected</span></div>
+      <div>rejected ──人工绑定(FR-12)──▶ <span class="c2">linked</span>　linked ──解除──▶ manual　<b>标签一律由状态计算，禁止拼名称</b></div>
+    </div>
+    <div class="fmt-notes">
+      <div class="fmt-note"><span class="tag">NFR 摘要</span><b>NFR-01</b> 性能（COPY 装载 / uq 覆盖查询 / 分页）· <b>NFR-02</b> 幂等+对账+留档 90 天 · <b>NFR-03</b> admin 写操作+审计+权限配置 · <b>NFR-04</b> GBK/分号容错 · <b>NFR-05</b> geo 单点 / 共享组件 / <b>pending 读路径收敛读服务单点（v1.9）</b>/ 幂等迁移 / gen-api · <b>NFR-06</b> Steep 视觉 + toast 反馈 · <b>NFR-07</b> 基础字典口径</div>
+      <div class="fmt-note"><span class="tag">验收</span>AC-P0（导入+浏览，7 项）/ AC-P1（选择器+审核池+关联，10 项）/ AC-P2（全业务面边界，v1.5 定版·v1.8 修订 · 6 项）/ AC-P3（未审核条目展示，v1.6 · 6 项）/ AC-P4（线索/营销四级落库+三类绑定+机器链路进池，v1.8 · 5 项）/ <b>AC-P5（评审收口：回填闭环/引用模型/并发唯一/reject 分流，v1.9 · 6 项）</b>见 SRS §10——与本稿五个原型页的 E2E 验证点一一对应</div>
+      <div class="fmt-note"><span class="tag">追溯</span>v1.0~v1.9 全部 35 条历史反馈 → FR/BR 映射见 SRS §11 需求追溯矩阵（v1.9：流程评审 12 项逐条验证收口，成立 7 / 部分 3 / 不采纳 2）；遗留待确认仅 3 项（Q-01 快照增量源 / Q-02 新增小区必填面 / Q-03 批量上限）</div>
+      <div class="fmt-note"><span class="tag">标注</span>五个原型页左下「操作提示」均附<b>规格标注</b>（FR/BR 回链）；开发实现时以 FR 编号提交代码落点，测试以 AC 编号建用例</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SEC 03 实现说明 ═══════════ -->
+<section class="sec" id="sec03">
+  <div class="kicker">Section 03 · Implementation Notes</div>
+  <h2>实现说明</h2>
+
+  <table class="spec-table">
+    <thead><tr><th>端点（建议）</th><th>方法</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>/admin/building-dictionary/import</code></td><td>POST</td><td>上传 zip/txt，创建异步导入任务（复用 PropertyImportTask 模式 + 失败明细文件）</td></tr>
+      <tr><td><code>/admin/building-dictionary/import/tasks</code></td><td>GET</td><td>任务历史（分页）：状态 / 进度 / 对账计数 / 失败明细 URL</td></tr>
+      <tr><td><code>/admin/building-dictionary/communities</code></td><td>GET / POST</td><td>GET = 总览列表（区/板块/环线/类型/年代/关键词筛选 + 分页 + 楼栋/户室/关联计数）；<b>POST = admin 直接新增小区</b>（name/district/business_circle 必填，ring/锚点可空，即时生效留审计）</td></tr>
+      <tr><td><code>/admin/building-dictionary/buildings</code> · <code>/buildings/{id}/rooms</code></td><td>POST</td><td><b>admin 补录，支持批量区间</b>：请求体带区间语法（<code>building_no: "29-55"</code>、<code>floor: "7-12"</code>、<code>room_no: "01-08"</code>），服务端笛卡尔展开、uq 跳过已有、上限 60 栋 / 200 户，返回 {added, skipped}</td></tr>
+      <tr><td><code>/admin/building-dictionary/review</code></td><td>GET</td><td>审核池列表（状态/小区筛选 + KPI 计数，按提交时间排序）；处理人 = 默认 admin，可经 <code>building_dict_reviewer_roles</code> 配置</td></tr>
+      <tr><td><code>/admin/building-dictionary/review/{id}/resolve</code></td><td>POST</td><td><code>action=merge|create|reject</code>（kind=community/building/room）；<b>pending 行加锁，并发重复审核 409（FR-19）</b>；核心事务 = 终态 + 字典落库（create）+ 来源单据同步回填，引用批量回填走异步幂等任务（BR-13）；<b>reject 按来源分流（BR-27）</b>；merge/reject 必带目标 id（录入端）</td></tr>
+      <tr><td><code>/admin/building-dictionary/review/pending-backfill</code></td><td>POST</td><td><b>v1.9</b>：引用批量回填任务重试入口（异步幂等任务失败后的运营重跑，BR-13）</td></tr>
+      <tr><td><code>/admin/projects/{id}/dictionary-link</code></td><td>PUT / DELETE</td><td>存量项目「关联字典 / 修正关联 / 解除关联」：写 community_id / building_id / room_id / dict_status，<b>关联确认后数据层以字典数据为准</b>（原手填地址转备注），不动 address 原值</td></tr>
+      <tr><td><code>/admin/leads/{id}/dictionary-link</code> · <code>/admin/marketing/projects/{id}/dictionary-link</code> · <code>/admin/properties/{id}/dictionary-link</code></td><td>PUT / DELETE</td><td><b>v1.8/v1.9（FR-12/BR-25）</b>：存量线索 / 营销房源 / <b>机器链路房源（仅小区级）</b>与项目同口径绑定/修正/解绑；绑定不强制、community_name 冗余不改写</td></tr>
+      <tr><td>各模块新增表单（线索/项目/营销）</td><td>—</td><td>地址区统一替换为字典四级选择器（共享组件）；提交载荷含 building_id / room_id 或 <code>new_community</code> / <code>new_building</code> / <code>new_room</code> 载荷（进审核池，业务单据照常创建）；<b>v1.8：线索/营销小区必选、楼栋/户室选填落库（leads / l4_marketing_projects 补 building_id/room_id/dict_status）</b></td></tr>
+      <tr><td><code>/admin/projects/create</code> 表单联动</td><td>—</td><td>小区联想复用 <code>GET /admin/communities</code>；提交时带 building_id / room_id（Create schema 扩展可空字段）</td></tr>
+      <tr><td><code>/projects/{id}</code></td><td>PUT</td><td><b>v1.5</b>：编辑改小区/地址与新建同口径走选择器（FR-13/BR-22）；兼容模式提交 dict_status=manual；不再支持纯自由文本改写小区名</td></tr>
+      <tr><td><code>/leads</code>（员工端）</td><td>POST / PUT</td><td><b>v1.8（FR-18）</b>：地址区接四级选择器——小区必选（含别名联想）、楼栋/楼层/户室选填（选到则 building_id/room_id 落库）；搜不到可提交新小区/楼栋/户室进审核池（线索照常创建）</td></tr>
+      <tr><td><code>/push</code> · <code>/upload/csv</code></td><td>POST</td><td><b>v1.8 重写（FR-16/BR-20）</b>：小区一致 → community_id 直接引用、楼栋/户室空置；不一致 → <b>不自动建小区，产生 pending 条目进审核池</b>，推送/导入照常成功；转正前房源列表带「未审核」标签（properties.community_id 放宽可空 + 补 community_name 冗余列）</td></tr>
+      <tr><td><code>/public/leads</code></td><td>POST</td><td><b>v1.5 不变更</b>（FR-17/BR-21）：C 端免登录估价线索自由文本小区名照旧，不校验字典、不产生 pending</td></tr>
+    </tbody>
+  </table>
+
+  <div class="impl-grid">
+    <div class="impl-card">
+      <h5>代码落点</h5>
+      <ol>
+        <li><b>模型</b>：<code>models/property/community.py</code> 补列；新增 <code>models/property/building_dict.py</code>（bd_buildings / bd_rooms / <b>bd_pending_entries（kind: community/building/room）</b>），<code>models/__init__.py</code> 导出</li>
+        <li><b>迁移</b>：<code>migrations/__init__.py</code> 追加幂等脚本（_table_exists / _column_exists 检查）</li>
+        <li><b>服务</b>：<code>services/property/building_dict.py</code>（解析、COPY 装载、对账、楼层解析、<b>区间语法展开</b>）+ <code>services/property/building_review.py</code>（审核动作编排：pending 终态 + 字典落库 + <b>来源单据关联转正（v1.8 泛化：项目/线索/营销/房源，含未审核标签摘除）</b>+ 通知，Service 层事务）+ <code>services/property/import_task.py</code> 复用</li>
+        <li><b>权限配置</b>：审核处理人走 <code>system_configs</code> 键 <code>building_dict_reviewer_roles</code>（缺省 ['admin']），复用待办看板规则配置的单键读写模式</li>
+        <li><b>路由</b>：<code>routers/admin/building_dict.py</code>（CurrentAdminUserDep 写操作 / 项目读权限读操作）</li>
+        <li><b>前端</b>：<code>admin/building-dictionary/</code>（page + detail-drawer + import + review 审核池页）+ <code>admin/projects/_components/create-project/</code> 地址区改造 + 项目详情「字典关联」卡；<b>选择器封装为共享组件</b>（<code>_components/dict-address-picker/</code>），线索/营销等模块新增表单复用；类型走 <code>pnpm gen-api</code></li>
+        <li><b>v1.5 增量</b>：项目编辑表单（updater 链路）接入选择器；<code>admin/leads/</code> 录入与改小区接联想 + 新增小区入池；<code>/push</code> 与 <code>/public/leads</code> 零改动回归验证</li>
+        <li><b>v1.6 增量</b>：字典详情 / 选择器 / 楼层分组的查询链路 join <code>bd_pending_entries(status=pending)</code> 叠加展示（虚线+「未审核」标签，不做缓存）；pending 户室仅来源单据回显可选，其他表单置灰；审核 resolve 事务后展示层标签随终态自动消失（无需额外清理）</li>
+        <li><b>v1.8 增量（最终对齐）</b>：<code>services/market/importer.py</code> 的 find_or_create_community 改造——小区不一致<b>不再自动建</b>，写 pending 条目（bd_pending_entries.source_type=property）+ properties.community_id 置空（迁移放宽 NOT NULL）+ 补 community_name 冗余列，communities.source 值域废止 import；<code>leads</code> / <code>l4_marketing_projects</code> 补 building_id/room_id/dict_status 三列，录入表单接四级选择器（楼栋/户室选填）；线索/营销详情新增「字典关联」卡 + <code>/admin/leads/{id}/dictionary-link</code>、<code>/admin/marketing/projects/{id}/dictionary-link</code> 两端点</li>
+        <li><b>v1.9 增量（评审收口）</b>：新增 <code>bd_pending_references</code> 模型 + <code>uq_pending_open</code> partial unique 迁移；提交链路改「命中同名 open pending → 追加引用」（幂等复用）；resolve 服务加行锁 + 状态机一次性校验（409）；create 拆「核心事务（终态+落库+来源回填）+ 引用异步幂等回填任务（分批/重试/失败待办）+ <code>pending-backfill</code> 重试端点」；reject 按 source_type 分流（机器/C 端落 rejected + 运营待办）；admin 新增/补录/导入写入前扫同名 open pending 自动转正；字典读服务单点收敛 pending 叠加；properties 绑定端点 + 「绑定地址」卡；前端标签全部由 dict_status 计算</li>
+        <li><b>GBK 解析</b>：后端 Python 侧处理（<code>errors="replace"</code> + 分号拆分 + 「;」行过滤），异常行写 csv</li>
+      </ol>
+    </div>
+    <div class="impl-card">
+      <h5>待确认口径（v1.3 已收口大半）</h5>
+      <ul>
+        <li><b>数据时效</b>：2017 快照，是否需要补抓增量源（新小区/拆并），还是纯人工修正 + 审核池生长？</li>
+        <li><b>小区新增的必填面</b>：录入端新增小区时 区域/板块/环线 是否必填（建议 区+板块必填、环线可空），锚点坐标是否要求必填？</li>
+        <li><b>批量上限</b>：区间展开单次 60 栋 / 200 户的上限是否合适？</li>
+      </ul>
+      <p style="font-size:11.5px; color:var(--graphite); line-height:1.7; margin-top:10px;">
+        已收口：坐标系 <b>BD-09</b> 原样落库 · 别名/合并 → governance · 未分层 → 确认 · 审核权限 → 默认 admin 可配置 · 合并推荐 → 不做 · pending 超时 → 不做 · keys → 跟项目走 · 全模块新增统一走字典、存量手动关联 · <b>v1.5</b>：C 端线索 → 维持自由文本 · 项目编辑与员工录线索 → 统一走字典 · <b>v1.6</b>：待审楼栋/楼层/户室 → 全系统可见带「未审核」标签（展示层叠加，转正摘除）· <b>v1.8 最终对齐</b>：外部推送/CSV 导入小区不一致 → 进审核池（推翻 v1.5 自动建小区口径，推送/导入照常成功）· 员工录线索 → 小区必选、楼栋/户室选填落库 · 营销 → 楼栋/户室选填落库 · 存量绑定 → 项目/线索/营销三类统一（不强制、未绑定零影响）· <b>v1.9 评审收口</b>：create 回填 → 引用账本 + 来源同步/引用异步幂等 · 同名提交 → pending 唯一 + 幂等复用 · reject → 按来源分流（机器/C 端落 rejected 转运营待办）· properties → 纳入四类绑定 · C 端入池 → 不采纳（维持拍板，补治理闭环说明）· outbox/saga → 不采纳（同库单体）。
+      </p>
+    </div>
+  </div>
+
+  <div class="impl-grid">
+    <div class="impl-card">
+      <h5>E2E 验证点（P0 导入）</h5>
+      <ol>
+        <li>上传样本包（10 个小区）→ 解析报告计数与预扫描一致</li>
+        <li>导入完成 → 对账：小区 10 / 楼栋 N / 户室 M 全一致</li>
+        <li>重跑同包 → 计数不变（幂等），无重复行</li>
+        <li>脏数据包 → 异常行落 failed csv 且不入库</li>
+        <li>总览页筛选（区/环线/类型）+ 详情抽屉楼栋→楼层→户室展开正确</li>
+        <li><b>批量补录</b>：「29-55」号楼、「7-12」层 ×「01-08」室 → 展开计数正确、uq 跳过已有、超上限被拦截</li>
+        <li>admin 新增小区 → 即时生效并出现在总览列表与联想结果</li>
+      </ol>
+    </div>
+    <div class="impl-card">
+      <h5>E2E 验证点（P1 选择器 + 审核池）</h5>
+      <ol>
+        <li>新建项目：搜「宝山三村」→ 选 61 栋 4 层 0401 → 预览「61号401」</li>
+        <li>提交后 projects.building_id / room_id / dict_status=linked 正确落库</li>
+        <li>录入端新增小区（如「泗塘六村」）→ 审核池 kind=community；<b>项目照常创建成功且名称带「未审核」标签</b></li>
+        <li>小区条目「通过新增」→ communities 落库 + 项目关联自动转正（标签摘除）+ 提交人通知</li>
+        <li>录入端添加新户室 0403 → pending 落库、项目 dict_status=pending、字典无新数据</li>
+        <li>审核「通过新增」→ bd_rooms 新增 0403 + 项目自动关联 + 提交人通知</li>
+        <li>审核「合并现有」→ 不新增字典行，项目指向所选现有户室</li>
+        <li>审核「驳回」→ 必须选目标户室才能提交；项目立即关联所选户室，pending=rejected</li>
+        <li>存量项目「关联字典」→ building_id/room_id 落库且 address 不变；钥匙、待办看板回归无影响</li>
+        <li>兼容模式开 → 手填地址提交成功（building/room 为空，dict_status=manual）</li>
+        <li>非标户室（0233-1）选择 → 门牌回退手填提示；「未分层」组置底展示</li>
+      </ol>
+    </div>
+    <div class="impl-card">
+      <h5>E2E 验证点（P2 全业务面边界 · v1.5 定版 / v1.8 修订）</h5>
+      <ol>
+        <li>外部推送 <code>POST /push</code> 携带字典中不存在的小区名 → <b>推送照常成功、communities 不自动建行</b>，产生 kind=community pending 条目；房源记录 community_id 置空、列表带「未审核」标签；审核「通过新增」→ communities 落库 + 房源 community_id 回填转正摘标签（AC-P4-5）</li>
+        <li>外部推送/CSV 导入携带字典已有小区 → community_id 直接引用，楼栋/户室空置，无 pending 条目</li>
+        <li>C 端免登录估价线索搜不到小区 → 关键词自由文本提交成功，无 pending 条目</li>
+        <li>编辑项目改小区 → 强制选择器（兼容模式可手填，dict_status 随 §6.2 流转）；纯自由文本改小区名被拦截</li>
+        <li>员工录线索搜不到小区 → 新小区进审核池，线索照常创建；「通过新增」后 community_id 关联生效、标签摘除</li>
+        <li>营销模块（community_id 必填）经字典联想选择无回归；L3 导入反查行为不变；钥匙回归无影响</li>
+      </ol>
+    </div>
+    <div class="impl-card">
+      <h5>E2E 验证点（P4 线索/营销四级 + 三类绑定 · v1.8）</h5>
+      <ol>
+        <li>员工录线索选到户室 → leads.building_id/room_id 落库、dict_status=linked；仅选小区 → 楼栋/户室空置，线索照常创建</li>
+        <li>员工录线索提交新楼栋/户室 → pending 落库、线索带「未审核」标签；「通过新增」→ bd_* 落库 + 线索关联转正</li>
+        <li>营销房源新增走四级选择器 → l4_marketing_projects.building_id/room_id 落库；小区搜不到 → 新小区进审核池，营销单据照常创建（BR-24）</li>
+        <li>存量线索/营销绑定 → 关联字段 + dict_status 生效、community_name 不改写；解绑 → dict_status=manual、关联字段清空（BR-25）</li>
+        <li>审核池「来源单据」列正确显示 项目/线索/营销/房源 四类来源（source_type 泛化）</li>
+      </ol>
+    </div>
+    <div class="impl-card">
+      <h5>E2E 验证点（P5 评审收口 · v1.9）</h5>
+      <ol>
+        <li>两员工同时提交同名新小区 → 仅一条 pending（uq_pending_open），第二单据追加引用；「通过新增」→ 两单据同时回填转正摘标签</li>
+        <li>机器链路 3 条房源 + 员工 1 条线索引用同一 pending → create 后来源同步回填、引用异步幂等分批回填；任务重跑不产生重复写</li>
+        <li>机器链路 pending 被 reject → 单据 dict_status=rejected、原文保留、入运营待办；FR-12 人工绑定后转 linked</li>
+        <li>并发重复 resolve 同一 pending → 仅一次成功，另一次 409</li>
+        <li>admin 新增小区撞同名 open pending → pending 自动转正（审计 + 通知），无重复小区</li>
+        <li>楼栋 pending 父小区未转正时不可单独转正（拓扑序）；父小区 merge → 子级引用级联改指</li>
+      </ol>
+    </div>
+    <div class="impl-card">
+      <h5>E2E 验证点（P3 未审核条目展示 · v1.6）</h5>
+      <ol>
+        <li>录入端提交新户室 0403 → 来源项目详情与选择器级联立即回显（「未审核」标签 + 虚线/置灰）</li>
+        <li>其他用户打开同楼层分组 / 选择器 → pending 户室可见带标签但置灰不可选（hover 提示「审核中，通过后可选」）</li>
+        <li>待审新楼层（首户 0701 待审）→ 楼层组带「未审核」样式出现（FR-04 并集口径）</li>
+        <li>审核通过（create）→ 字典落库、标签摘除，所有用户正常可选</li>
+        <li>驳回/合并 → pending 条目从所有展示层消失，来源项目按 BR-10 改指目标</li>
+        <li>字典对账三计数不受 pending 展示影响（以 bd_* 实表为准）</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════ 楼盘字典交互原型（v1.2） ═══════════
+   假数据驱动 · 无依赖 · 事件委托
+   坐标口径：BD-09（百度），原样展示/落库 */
+(function () {
+  'use strict';
+  /* ── 假数据 ─────────────────────────────── */
+  var COMMUNITIES = [
+    { id: 1, name: '宝山三村', addr: '宝山三村（永乐路422号）', district: '宝山', circle: '淞宝', ring: '外环外', types: '住宅-公寓 · 新里', era: '1994~2011', bld: 199, rooms: 2194, linked: 4, lng: 121.504998, lat: 31.398697, mgmt: '上海宝山新寓物业管理有限公司', dev: '宝钢集团有限公司' },
+    { id: 2, name: '奥林匹克花园', addr: '涞亭北路99弄 · 涞寅路106弄', district: '松江', circle: '九亭', ring: '外环外', types: '住宅-公寓', era: '1999~2010', bld: 412, rooms: 5336, linked: 2, lng: 121.336100, lat: 31.153358, mgmt: '上海奥林匹克物业管理有限公司', dev: '上海奥林匹克置业投资有限公司' },
+    { id: 3, name: '毕加索小镇（一期）（公寓）', addr: '春泉路45弄', district: '浦东', circle: '唐镇', ring: '外环外', types: '住宅-公寓', era: '2010', bld: 86, rooms: 1204, linked: 1, lng: 121.653256, lat: 31.220904, mgmt: '上海东郊皇庭物业管理有限公司', dev: '暂无信息' },
+    { id: 4, name: '布鲁斯小镇（公寓）', addr: '靖海南路666弄 · 迎薰路1079弄', district: '浦东', circle: '惠南', ring: '外环外', types: '住宅-公寓 · 别墅', era: '2010~2013', bld: 142, rooms: 1688, linked: 0, lng: 121.773744, lat: 31.038414, mgmt: '上海欣周物业管理有限公司', dev: '绿城集团' },
+    { id: 5, name: '爱博二村', addr: '申滨路1051弄', district: '闵行', circle: '华漕', ring: '外环外', types: '住宅-公寓', era: '2009', bld: 58, rooms: 1036, linked: 3, lng: 121.313523, lat: 31.216892, mgmt: '安必盛物业', dev: '上海银丽华房地产有限公司' },
+    { id: 6, name: '高兴花园', addr: '莘朱路863弄 · 莘朱路879弄', district: '闵行', circle: '春申', ring: '外环外', types: '住宅-公寓', era: '1996~2000', bld: 96, rooms: 1842, linked: 6, lng: 121.382210, lat: 31.114500, mgmt: '暂无信息', dev: '暂无信息' },
+    { id: 7, name: '三林安居苑', addr: '三林路1662弄5-173号', district: '浦东', circle: '三林', ring: '外环外', types: '住宅-公寓', era: '1995~1998', bld: 64, rooms: 1410, linked: 0, lng: 121.521000, lat: 31.169400, mgmt: '暂无信息', dev: '暂无信息' },
+    { id: 8, name: '紫晶南园', addr: '广南路666弄', district: '闵行', circle: '吴泾', ring: '', types: '住宅-公寓', era: '2008', bld: 47, rooms: 926, linked: 1, lng: 121.442100, lat: 31.060200, mgmt: '暂无信息', dev: '暂无信息' },
+    { id: 9, name: '月浦八村', addr: '月浦八村', district: '宝山', circle: '月浦', ring: '外环外', types: '住宅-公寓', era: '1990~1995', bld: 72, rooms: 1355, linked: 0, lng: 121.476500, lat: 31.411800, mgmt: '暂无信息', dev: '暂无信息' },
+    { id: 10, name: '新舒苑', addr: '唐港路1059弄 · 丽正路1059弄', district: '浦东', circle: '书院镇', ring: '', types: '住宅-公寓', era: '2013', bld: 31, rooms: 604, linked: 0, lng: 121.718200, lat: 30.945100, mgmt: '暂无信息', dev: '暂无信息' }
+  ];
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  // 楼栋假数据（懒生成）：展示前 10 个楼栋号 + 宝山三村特例（122甲 · 运营补录）
+  function buildingsOf(c) {
+    if (c._b) return c._b;
+    var nos = ['01', '02', '03', '33', '61', '62', '88', '100', '141', '201乙'];
+    if (c.id === 1) nos.push('122甲');
+    c._b = nos.map(function (no) {
+      return { no: no, floors: no === '201乙' ? 4 : 6, per: 2, hasCoord: no !== '201乙' && no !== '122甲', extra: no === '122甲' ? '运营补录' : '', rooms: null };
+    });
+    return c._b;
+  }
+  function roomsOf(c, b) {
+    if (b.rooms) return b.rooms;
+    var arr = [];
+    for (var f = 1; f <= b.floors; f++) {
+      arr.push({ no: pad2(f) + '01' }); arr.push({ no: pad2(f) + '02' });
+    }
+    if (b.no === '33') arr.push({ no: '0233-1' }); // 非标户室 → 未分层
+    b.rooms = arr;
+    return arr;
+  }
+  function floorOf(roomNo) { if (!roomNo) return null; var m = roomNo.match(/^(\d{2})/); return m ? parseInt(m[1], 10) : null; }
+  function gateOf(roomNo) { var m = roomNo.match(/^(\d{2})(\d{2})$/); return m ? parseInt(m[1], 10) + m[2] : null; }
+  function commById(id) { return COMMUNITIES.filter(function (c) { return c.id === Number(id); })[0]; }
+  // 区间语法展开：「29-55」→ ['29'..'55']（前导零保留两位）、「7-12」→ [7..12]（数字）、「122乙」→ 原样
+  function expandSeq(raw, numeric) {
+    raw = String(raw == null ? '' : raw).trim();
+    if (!raw) return null;
+    var m = raw.match(/^(\d+)\s*[-~]\s*(\d+)$/);
+    if (m) {
+      var a = parseInt(m[1], 10), b2 = parseInt(m[2], 10), t;
+      if (b2 < a) { t = a; a = b2; b2 = t; }
+      if (b2 - a + 1 > 60) return null;
+      var out = [];
+      for (var i = a; i <= b2; i++) out.push((m[1].length === 2 && i < 100) ? pad2(i) : String(i));
+      return out;
+    }
+    return [numeric ? pad2(parseInt(raw.replace(/\D/g, ''), 10)) : raw];
+  }
+
+  var REVIEW_SEED = [
+    { id: 1, time: '10-12 14:22', by: '王乐之', projectName: '泗塘五村106号401（张先生）', commName: '泗塘五村', content: '新户室 · 106 栋 0101', kind: 'room', status: 'pending', mine: false },
+    { id: 2, time: '10-12 11:05', by: 'heyi', projectName: '金杨七街坊77号202（李女士）', commName: '金杨七街坊', content: '新户室 · 77 栋 0203', kind: 'room', status: 'pending', mine: false },
+    { id: 3, time: '10-12 09:40', by: '我（演示）', projectName: '宝山三村 61号403（周先生）', commName: '宝山三村', content: '新户室 · 61 栋 0403', kind: 'room', status: 'pending', mine: false, commId: 1, bldNo: '61', roomNo: '0403' },
+    { id: 4, time: '10-11 17:48', by: '乐之', projectName: '宝山三村122甲301（吴先生）', commName: '宝山三村', content: '新楼栋 · 122甲', kind: 'bld', status: 'created', mine: false },
+    { id: 5, time: '10-11 15:31', by: 'zhuping', projectName: '月浦八村35号101（陈先生）', commName: '月浦八村', content: '新户室 · 35 栋 0101', kind: 'room', status: 'merged', mine: false },
+    { id: 6, time: '10-11 09:12', by: 'kakaoxy', projectName: '紫晶南园12号502（刘女士）', commName: '紫晶南园', content: '新户室 · 12 栋 0903', kind: 'room', status: 'rejected', mine: false }
+  ];
+
+  var COMMUNITIES_SEED = null;
+  function snapshotCommunities() {
+    COMMUNITIES_SEED = JSON.parse(JSON.stringify(COMMUNITIES.map(function (c) { var o = Object.assign({}, c); delete o._b; return o; })));
+  }
+  snapshotCommunities();
+  function restoreCommunities() {
+    COMMUNITIES.length = 0;
+    COMMUNITIES_SEED.forEach(function (o) { COMMUNITIES.push(Object.assign({}, o, { _b: null })); });
+  }
+
+  var S = null;
+  function initState() {
+    restoreCommunities();
+    S = {
+      page: 'dict',
+      review: REVIEW_SEED.map(function (r) { return Object.assign({}, r); }),
+      mine: [],
+      dictF: { district: '', ring: '', type: '', q: '' },
+      drawer: { commId: null, bldQ: '', openBld: null, openFloor: null, picked: null, addingBld: false, addingRoomFor: null },
+      dictNew: null,
+      sel: { commId: null, q: '', bld: null, floor: null, room: null, compat: false, manual: '', commForm: false, commPending: null, cf: { name: '', district: '', circle: '', ring: '', addr: '' } },
+      link: { open: false, commId: 1, bld: '61', floor: 4, room: '0401' },
+      project: { title: '宝山三村 61号401（唐女士）', status: 'manual', bld: null, room: null, gate: null },
+      act: { openId: null, act: 'merge', bld: null, floor: null, room: null },
+      import: { step: 2, prog: 0, timer: null, uploaded: false },
+      reviewOpenId: null
+    };
+  }
+  initState();
+
+  /* ── 工具 ─────────────────────────────── */
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function pendingCount() { return S.review.filter(function (r) { return r.status === 'pending'; }).length; }
+  function chip(txt, cls) { return '<span class="chip ' + (cls || '') + '">' + esc(txt) + '</span>'; }
+
+  var ICONS = {
+    grid: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+    dict: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 21h18"/><path d="M6 21V10"/><path d="M12 21V4"/><path d="M18 21v-8"/></svg>',
+    upload: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>',
+    audit: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 12l2 2 4-5"/><circle cx="12" cy="12" r="9"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 9v6M9 12h6"/></svg>',
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+  };
+  var NAV = [
+    { page: 'dict', label: '小区库', icon: 'dict' },
+    { page: 'import', label: '导入数据', icon: 'upload' },
+    { page: 'review', label: '待审核', icon: 'audit' },
+    { page: 'create', label: '新建项目', icon: 'plus' },
+    { page: 'project', label: '项目详情', icon: 'home' }
+  ];
+  var URLS = { dict: 'localhost:3000/admin/building-dictionary', import: 'localhost:3000/admin/building-dictionary/import', review: 'localhost:3000/admin/building-dictionary/review', create: 'localhost:3000/admin/projects/create', project: 'localhost:3000/admin/projects/1024' };
+
+  var mainEl, sbEl;
+
+  /* ── 侧边栏 ─────────────────────────────── */
+  function renderSb() {
+    var h = '<div class="logo">ProFo</div><div class="grp">楼盘字典 · 样例</div>';
+    NAV.forEach(function (n) {
+      var badge = n.page === 'review' && pendingCount() > 0
+        ? ' <span class="pbadge" style="margin-left:auto;">' + pendingCount() + '</span>' : '';
+      h += '<div class="it ' + (S.page === n.page ? 'on' : '') + '" data-act="nav" data-page="' + n.page + '" style="cursor:pointer;">' + ICONS[n.icon] + esc(n.label) + badge + '</div>';
+    });
+    h += '<div class="spacer"></div>';
+    sbEl.innerHTML = h;
+  }
+
+  /* ── 页面：字典总览 ─────────────────────────────── */
+  function pageDict() {
+    var F = S.dictF;
+    var list = COMMUNITIES.filter(function (c) {
+      if (F.district && c.district !== F.district) return false;
+      if (F.ring && c.ring !== F.ring) return false;
+      if (F.type && c.types.indexOf(F.type) < 0) return false;
+      if (F.q && c.name.indexOf(F.q) < 0 && c.addr.indexOf(F.q) < 0) return false;
+      return true;
+    });
+    var rows = list.map(function (c) {
+      return '<tr data-act="open-comm" data-id="' + c.id + '" style="cursor:pointer;">'
+        + '<td><span class="cname">' + esc(c.name) + '</span><span class="csub">' + esc(c.addr) + '</span></td>'
+        + '<td>' + esc(c.district) + ' · ' + esc(c.circle) + '</td>'
+        + '<td>' + (c.ring ? chip(c.ring, 'warm') : '<span class="chip">—</span>') + '</td>'
+        + '<td>' + esc(c.types) + '</td><td>' + esc(c.era) + '</td>'
+        + '<td class="num-cell" style="text-align:right;">' + c.bld + '</td>'
+        + '<td class="num-cell" style="text-align:right;">' + c.rooms.toLocaleString() + '</td>'
+        + '<td class="num-cell" style="text-align:right;">' + c.linked + '</td>'
+        + '<td style="color:var(--dove);">›</td></tr>';
+    }).join('');
+    var totalB = COMMUNITIES.reduce(function (s, c) { return s + c.bld; }, 0);
+    var totalR = COMMUNITIES.reduce(function (s, c) { return s + c.rooms; }, 0);
+    var linked = COMMUNITIES.reduce(function (s, c) { return s + c.linked; }, 0);
+
+    var h = '<div class="pg-head"><div><h3>楼盘字典</h3>'
+      + '<div class="desc">上海 1.97 万个小区，逐级看楼栋和户室 · 点击行看详情</div></div>'
+      + '<div style="display:flex; gap:10px;">'
+      + '<button class="btn-line" data-act="new-comm">＋ 新增小区</button>'
+      + '<button class="btn-line" data-act="nav" data-page="review">待审核 <span class="pbadge">' + pendingCount() + '</span></button>'
+      + '<button class="btn-primary" data-act="nav" data-page="import">导入数据</button></div></div>'
+      + '<div class="kpi-row">'
+      + '<div class="kpi warm"><div class="k-lb">小区</div><div class="k-num">' + COMMUNITIES.length + '</div><div class="k-sub">全量 19,655 · 覆盖 16 区</div></div>'
+      + '<div class="kpi"><div class="k-lb">楼栋</div><div class="k-num">' + totalB.toLocaleString() + '</div><div class="k-sub">全量 526,670 · 97% 带坐标</div></div>'
+      + '<div class="kpi"><div class="k-lb">户室</div><div class="k-num">' + totalR.toLocaleString() + '</div><div class="k-sub">全量 7,332,314</div></div>'
+      + '<div class="kpi"><div class="k-lb">已绑项目</div><div class="k-num">' + linked + '</div><div class="k-sub">已选到具体户室的项目</div></div></div>'
+      + '<div class="filter-bar">'
+      + '<select class="pgselect" data-filter="district"><option value="">区域：全部</option><option>宝山</option><option>松江</option><option>浦东</option><option>闵行</option></select>'
+      + '<select class="pgselect" data-filter="ring"><option value="">环线：全部</option><option>内环内</option><option>外环外</option></select>'
+      + '<select class="pgselect" data-filter="type"><option value="">类型：全部</option><option>住宅-公寓</option><option>新里</option><option>别墅</option></select>'
+      + '<div class="search-pill">' + ICONS.search + '<input id="dictQ" placeholder="搜小区名或地址" style="border:0; outline:0; background:transparent; font-size:12.5px; width:100%; color:var(--ink);" value="' + esc(F.q) + '" /></div>'
+      + '</div>'
+      + '<table class="tbl"><thead><tr><th>小区</th><th>区域 / 板块</th><th>环线</th><th>物业类型</th><th>建成年代</th>'
+      + '<th style="text-align:right;">楼栋</th><th style="text-align:right;">户室</th><th style="text-align:right;">已绑项目</th><th></th></tr></thead>'
+      + '<tbody>' + (rows || '<tr><td colspan="9" style="text-align:center; color:var(--dove); padding:24px;">没找到相关小区</td></tr>') + '</tbody></table>'
+      + '<div class="pager"><span>样例 ' + list.length + ' / ' + COMMUNITIES.length + ' 个小区</span><div class="pages"><span>‹</span><span class="on">1</span><span>›</span></div></div>';
+    if (S.drawer.commId) h += renderDrawer();
+    if (S.dictNew) h += commFormHtml('dict');
+    return h;
+  }
+
+  /* 新增小区表单（scope: dict=admin 即时生效 / create=进审核池） */
+  function commFormHtml(scope) {
+    var F = scope === 'dict' ? S.dictNew : S.sel.cf;
+    function inp(id, ph, val, req) {
+      return '<div class="fake-input"><input id="' + id + '" placeholder="' + esc(ph) + '" value="' + esc(val || '') + '" style="border:0; outline:0; width:100%; font-size:13px; color:var(--ink); background:transparent;" /></div>';
+    }
+    return '<div class="pmodal-wrap"><div class="pmodal" style="width:460px;">'
+      + '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;"><div>'
+      + '<div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; color:var(--dove);">' + (scope === 'dict' ? '后台添加，立即生效' : '提交后需审核，项目照常创建') + '</div>'
+      + '<div style="font-size:16px; font-weight:600; margin-top:4px;">新增小区</div></div>'
+      + '<div class="x-btn" data-act="close-comm-form">×</div></div>'
+      + '<div class="form-label" style="margin-top:14px;">小区名 <span class="req">*</span></div>' + inp('cfName', '如 泗塘六村', F.name)
+      + '<div class="casc" style="grid-template-columns:1fr 1fr; margin-top:10px;">'
+      + '<div><div class="form-label">区域 <span class="req">*</span></div>' + inp('cfDistrict', '宝山', F.district) + '</div>'
+      + '<div><div class="form-label">板块 <span class="req">*</span></div>' + inp('cfCircle', '淞宝', F.circle) + '</div></div>'
+      + '<div class="casc" style="grid-template-columns:1fr 1fr; margin-top:10px;">'
+      + '<div><div class="form-label">环线（可空）</div><select class="pgselect" id="cfRing" style="width:100%;">'
+      + [''].concat(['内环内', '外环外']).map(function (r) { return '<option value="' + r + '"' + (F.ring === r ? ' selected' : '') + '>' + (r || '不设置') + '</option>'; }).join('')
+      + '</select></div>'
+      + '<div><div class="form-label">地图坐标（可不填）</div>' + inp('cfCoord', '121.x, 31.y', F.coord) + '</div></div>'
+      + '<div class="form-label" style="margin-top:10px;">地址（可空）</div>' + inp('cfAddr', '如 永乐路500弄', F.addr)
+      + '<div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end; border-top:1px solid var(--line); padding-top:14px;">'
+      + '<button class="btn-line" data-act="close-comm-form">取消</button>'
+      + '<button class="btn-primary" data-act="save-comm" data-scope="' + scope + '">' + (scope === 'dict' ? '立即创建' : '提交审核') + '</button></div></div></div>';
+  }
+
+  function renderDrawer() {
+    var c = commById(S.drawer.commId);
+    var D = S.drawer;
+    var bs = buildingsOf(c).filter(function (b) { return !D.bldQ || b.no.indexOf(D.bldQ) >= 0; });
+    var bldHtml = bs.map(function (b) {
+      var open = D.openBld === b.no;
+      var linkedN = c.id === 1 && (b.no === '61' || b.no === '88') ? 1 : 0;
+      var rooms = open ? roomsOf(c, b) : [];
+      var floors = {};
+      rooms.forEach(function (r) { var f = floorOf(r.no); (floors[f == null ? 'u' : f] = floors[f == null ? 'u' : f] || []).push(r.no); });
+      var keys = Object.keys(floors).sort(function (a, b2) { return (a === 'u' ? 99 : +a) - (b2 === 'u' ? 99 : +b2); });
+      var body = '';
+      if (open) {
+        body = keys.map(function (k) {
+          var isU = k === 'u';
+          var fo = isU ? null : +k;
+          var open2 = isU || D.openFloor === fo;
+          var cells = floors[k].map(function (rn) {
+            var on = D.picked && D.picked.bld === b.no && D.picked.room === rn;
+            return '<div class="room ' + (on ? 'on' : '') + '" data-act="pick-room" data-bld="' + esc(b.no) + '" data-room="' + esc(rn) + '">' + esc(rn) + '</div>';
+          }).join('');
+          var grid = open2 ? '<div class="room-grid">' + cells + '</div>' : '';
+          return '<div class="floor-sect"><div class="f-h ' + (open2 ? 'open' : 'closed') + '" data-act="toggle-floor" data-bld="' + esc(b.no) + '" data-floor="' + (isU ? 'u' : fo) + '">'
+            + '<span class="f-tri"></span><span class="f-n">' + (isU ? '楼层待定' : fo + ' 层') + '</span><em>' + floors[k].length + ' 户</em></div>' + grid + '</div>';
+        }).join('');
+        body += '<div class="add-row" data-act="add-room-form" data-bld="' + esc(b.no) + '"><span class="plus">+</span>添加户室，可一次加一批</div>'
+          + (D.addingRoomFor === b.no
+            ? '<div class="inline-form" style="margin-top:8px;">楼层 <input class="mini-input" id="arFloor" value="4" style="width:70px;" title="支持区间，如 7-12；填新楼层号即自动创建该层" /> 户室 <input class="mini-input" id="arRoom" placeholder="01-08" style="width:80px;" title="支持区间，如 01-08" />'
+              + ' <span style="font-size:10px; color:var(--graphite);">填 7-12 可一次加多层；新楼层号会自动建层</span><button class="mini-btn pri" data-act="add-room-ok" data-bld="' + esc(b.no) + '">添加</button><button class="mini-btn" data-act="add-room-cancel">取消</button></div>'
+            : '');
+      }
+      return '<div class="bld-item ' + (open ? 'open' : '') + '">'
+        + '<div class="bld-row" data-act="toggle-bld" data-no="' + esc(b.no) + '" style="cursor:pointer;">'
+        + '<span class="bno">' + esc(b.no) + '</span><span class="bmeta">' + b.floors + ' 层 · ' + b.floors * b.per + (b.no === '33' ? '+1' : '') + ' 户' + (b.extra ? ' · ' + esc(b.extra) : '') + '</span>'
+        + '<span class="bflag">' + (linkedN ? chip('已绑 ' + linkedN, 'warm') : '') + (b.hasCoord ? chip('有坐标') : chip('无坐标')) + '</span></div>'
+        + body + '</div>';
+    }).join('');
+
+    var picked = D.picked;
+    return '<div class="dim"></div><div class="drawer">'
+      + '<div class="dw-head"><div class="trow"><div><h4>' + esc(c.name) + '</h4><div class="chips">'
+      + (c.ring ? chip(c.ring, 'warm') : '') + chip(c.district + ' · ' + c.circle) + chip(c.types) + chip(c.era)
+      + '</div></div><div class="x-btn" data-act="close-drawer">×</div></div></div>'
+      + '<div class="dw-body"><div class="info-grid">'
+      + '<div class="info-cell"><div class="il">地址</div><div class="iv">' + esc(c.addr) + '</div></div>'
+      + '<div class="info-cell"><div class="il">位置坐标</div><div class="iv" style="font-family:var(--mono); font-size:12px;">' + c.lng + ', ' + c.lat + '</div></div>'
+      + '<div class="info-cell"><div class="il">物业公司</div><div class="iv">' + esc(c.mgmt) + '</div></div>'
+      + '<div class="info-cell"><div class="il">开发商</div><div class="iv">' + esc(c.dev) + '</div></div>'
+      + '<div class="info-cell"><div class="il">楼栋 / 户室</div><div class="iv">' + c.bld + ' 栋 · ' + c.rooms.toLocaleString() + ' 户</div></div>'
+      + '<div class="info-cell"><div class="il">已绑项目</div><div class="iv">' + c.linked + ' 个</div></div></div>'
+      + '<div class="sec-t"><div class="st">楼栋列表</div><div class="st-n">' + c.bld + ' 栋（样例 10 栋） · <span class="add-mini" data-act="add-bld-form">+ 添加楼栋</span></div></div>'
+      + '<div class="bld-search">' + ICONS.search + '<input id="bldQ" placeholder="搜楼栋号，如 201乙" style="border:0; outline:0; background:transparent; font-size:12px; width:100%; color:var(--ink);" value="' + esc(D.bldQ) + '" /></div>'
+      + (D.addingBld ? '<div class="inline-form" style="margin-bottom:8px;">楼栋号 <input class="mini-input" id="abNo" placeholder="如 122乙 或 29-55" style="width:150px;" /> <span style="font-size:10px; color:var(--graphite);">填 29-55 可一次加多栋</span><button class="mini-btn pri" data-act="add-bld-ok">添加</button><button class="mini-btn" data-act="add-bld-cancel">取消</button></div>' : '')
+      + '<div class="bld-list">' + (bldHtml || '<div style="font-size:12px; color:var(--dove); padding:12px 4px;">没找到该楼栋</div>') + '</div></div>'
+      + '<div class="dw-foot"><div class="hint">'
+      + (picked ? '已选 <b>' + esc(picked.bld) + ' 栋 ' + esc(picked.room) + '</b> · 位置坐标 ' + (c.lng + 0.002).toFixed(6) + ', ' + (c.lat + 0.001).toFixed(6)
+        : '点楼栋展开，再选楼层和户室；0401 自动算 401')
+      + '<br /><b>提示</b>：点「绑定项目」把这户绑到项目</div>'
+      + '<div style="display:flex; gap:8px;"><button class="btn-line" data-act="edit-profile">编辑资料</button>'
+      + '<button class="btn-primary" data-act="link-project"' + (picked ? '' : ' disabled style="opacity:.4;"') + '>绑定项目</button></div></div></div>';
+  }
+
+  /* ── 页面：数据导入 ─────────────────────────────── */
+  function pageImport() {
+    var st = S.import;
+    var steps = [
+      { n: 1, t: '上传文件', d: '楼盘字典-上海.zip · 19,657 个 txt · 1.2 GB' },
+      { n: 2, t: '检查数据', d: '先检查一遍，列出问题行' },
+      { n: 3, t: '后台导入', d: '后台慢慢导，关掉页面也不停' },
+      { n: 4, t: '核对结果', d: '核对三类数量，失败的能下载' }
+    ];
+    var stepper = steps.map(function (s2) {
+      var cls = s2.n < st.step ? 'done' : (s2.n === st.step ? 'now' : '');
+      return '<div class="step ' + cls + '" data-act="imp-step" data-step="' + s2.n + '"><div class="dot">' + (s2.n < st.step ? '✓' : s2.n) + '</div>'
+        + '<div><div class="s-t">' + s2.t + '</div><div class="s-d">' + s2.d + '</div></div></div>';
+    }).join('');
+
+    var body = '';
+    if (st.step === 2) {
+      body = '<div class="dropzone" data-act="imp-upload">' + (st.uploaded ? '已载入：点击可重新选择' : '拖文件到这里，或 <span style="color:var(--rust); font-weight:500;">点击选择</span>（单个 ≤ 2 GB）') + '</div>'
+        + (st.uploaded ? '<div class="file-chip"><div class="ic">ZIP</div><div><div class="fc-n">楼盘字典-上海.zip</div><div class="fc-m">19,657 个 txt · 1.2 GB · 解析完成用时 4 分 12 秒</div></div><span class="chip warm" style="margin-left:auto;">可导入</span></div>'
+          + '<div class="parse-stats"><div class="ps"><div class="v">19,655</div><div class="l">小区（重名 2 已合并）</div></div><div class="ps"><div class="v">526,670</div><div class="l">楼栋</div></div><div class="ps"><div class="v">7,332,314</div><div class="l">户室行</div></div><div class="ps"><div class="v" style="color:var(--rust);">12,483</div><div class="l">问题行（自动跳过）</div></div></div>'
+          + '<div class="warn-list"><div class="warn-item">⚠ 年代异常（如 1800 / 2301）<span class="wn">1,204 行 · 已置空</span></div>'
+          + '<div class="warn-item">⚠ 户室号不规整（「0233-1」「1-2楼」等）<span class="wn">3,877 行 · 按原文保存</span></div>'
+          + '<div class="warn-item">⚠ 地址缺失或仅小区名<span class="wn">512 行</span></div>'
+          + '<div class="warn-item">⚠ 小区无坐标<span class="wn">536 个小区</span></div>'
+          + '<div class="warn-item">⚠ 坐标系统一为 BD-09（百度），原样落库<span class="wn">全量</span></div></div>'
+          + '<div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;"><button class="btn-line" data-act="toast" data-msg="已取消本次导入（演示）">取消</button><button class="btn-primary" data-act="imp-start">开始导入</button></div>'
+          : '<p style="font-size:12px; color:var(--graphite); margin-top:12px; line-height:1.7;">样例：点击上方虚线框即完成上传 → 自动检查数据。</p>');
+    } else if (st.step === 3) {
+      body = '<div class="impl-card" style="margin-top:0;"><h5>导入任务 <span style="font-family:var(--mono); font-size:11px; color:var(--graphite); font-weight:400;">#bdict-20261012-01</span></h5>'
+        + '<div class="parse-stats" style="margin-top:4px;"><div class="ps"><div class="v">' + st.prog + '%</div><div class="l">总进度</div></div>'
+        + '<div class="ps"><div class="v">' + Math.round(19655 * st.prog / 100).toLocaleString() + '</div><div class="l">小区已导入</div></div>'
+        + '<div class="ps"><div class="v">' + (7332314 * st.prog / 100 / 10000).toFixed(1) + '万</div><div class="l">户室已导入</div></div>'
+        + '<div class="ps"><div class="v">0</div><div class="l">失败文件</div></div></div>'
+        + '<div class="prog" style="width:100%; height:8px; margin-top:14px;"><i style="width:' + st.prog + '%;"></i></div>'
+        + '<p style="font-size:12px; color:var(--graphite); line-height:1.7; margin-top:12px;">后台导入中，关掉页面也不停；完成后自动进入核对。</p></div>';
+    } else if (st.step === 4) {
+      body = '<div class="impl-card" style="margin-top:0;"><h5>核对结果</h5>'
+        + '<div class="parse-stats" style="margin-top:4px;"><div class="ps"><div class="v" style="color:var(--rust);">19,655</div><div class="l">小区数量对上了</div></div>'
+        + '<div class="ps"><div class="v">526,670</div><div class="l">楼栋数量对上了</div></div>'
+        + '<div class="ps"><div class="v">7,319,831</div><div class="l">户室入库</div></div>'
+        + '<div class="ps"><div class="v">12,483</div><div class="l">问题跳过</div></div></div>'
+        + '<p style="font-size:12px; color:var(--graphite); line-height:1.7; margin-top:12px;">数量全部对上，可以开始用了；失败明细和原文件保留 90 天。</p>'
+        + '<div style="display:flex; justify-content:flex-end; margin-top:12px;"><button class="btn-primary" data-act="nav" data-page="dict">去小区库</button></div></div>';
+    }
+    return '<div class="pg-head"><div><h3>导入楼盘字典数据</h3><div class="desc">支持 zip 或单个 txt，同名小区自动更新</div></div>'
+      + '<button class="btn-line" data-act="nav" data-page="dict">返回</button></div>'
+      + '<div style="display:grid; grid-template-columns: 300px 1fr; gap: 28px; margin-top: 22px; align-items: start;"><div class="stepper">' + stepper + '</div><div>' + body + '</div></div>'
+      + '<div class="sec-t" style="margin-top: 30px;"><div class="st">导入任务历史</div><div class="st-n">对齐 PropertyImportTask 模式</div></div>'
+      + '<table class="task-tbl"><thead><tr><th>任务 ID</th><th>操作人</th><th>创建时间</th><th>状态</th><th>进度</th><th style="text-align:right;">小区</th><th style="text-align:right;">户室</th><th>失败清单</th></tr></thead><tbody>'
+      + '<tr><td style="font-family:var(--mono);">bdict-20261012-01</td><td>admin</td><td>2026-10-12 11:02</td><td><span class="chip ' + (st.step === 4 ? 'cool' : 'warm') + '">' + (st.step === 4 ? '已完成' : '执行中') + '</span></td><td><span class="prog"><i style="width:' + (st.step === 4 ? 100 : st.prog) + '%;"></i></span>' + (st.step === 4 ? 100 : st.prog) + '%</td><td style="text-align:right;">' + (st.step === 4 ? '19,655' : Math.round(19655 * st.prog / 100).toLocaleString()) + '</td><td style="text-align:right;">' + (st.step === 4 ? '7,319,831' : (7332314 * st.prog / 100).toLocaleString()) + '</td><td style="color:var(--graphite);">—</td></tr>'
+      + '<tr><td style="font-family:var(--mono);">bdict-20261011-01</td><td>heyi</td><td>2026-10-11 09:15</td><td><span class="chip">部分失败</span></td><td><span class="prog"><i style="width:100%;"></i></span>100%</td><td style="text-align:right;">3,998</td><td style="text-align:right;">1,331,006</td><td><span style="color:var(--rust); text-decoration:underline; cursor:pointer;" data-act="toast" data-msg="下载 failed_rooms_00.csv（演示）">failed_rooms_00.csv</span></td></tr>'
+      + '</tbody></table>';
+  }
+
+  /* ── 页面：审核池 ─────────────────────────────── */
+  function pageReview() {
+    var pend = pendingCount();
+    var done = S.review.length - pend;
+    var merged = S.review.filter(function (r) { return r.status === 'merged'; }).length;
+    var rejected = S.review.filter(function (r) { return r.status === 'rejected'; }).length;
+    var rows = S.review.map(function (r) {
+      var st2 = { pending: ['待审核', 'warm'], created: ['已新增', 'cool'], merged: ['已合并', ''], rejected: ['已驳回', 'rw'] }[r.status];
+      var cls = st2[1] === 'rw' ? 'background:#f2e3e0; color:var(--rust);' : '';
+      return '<tr data-act="open-review" data-id="' + r.id + '" style="cursor:pointer;"><td>' + r.time + '</td><td>' + esc(r.by) + '</td>'
+        + '<td>' + esc(r.projectName) + '</td><td>' + esc(r.commName) + '</td>'
+        + '<td style="font-family:var(--mono);">' + esc(r.content) + '</td>'
+        + '<td><span class="chip ' + (st2[1] === 'rw' ? '' : st2[1]) + '" style="' + cls + '">' + st2[0] + '</span></td>'
+        + '<td style="color:var(--dove);">›</td></tr>';
+    }).join('');
+    var h = '<div class="pg-head"><div><h3>待审核</h3><div class="desc">同事提交的新小区/楼栋/户室，在这里审核</div></div>'
+      + '<button class="btn-line" data-act="nav" data-page="dict">返回</button></div>'
+      + '<div class="kpi-row"><div class="kpi warm"><div class="k-lb">待审核</div><div class="k-num">' + pend + '</div><div class="k-sub">点击行开始审核</div></div>'
+      + '<div class="kpi"><div class="k-lb">已处理</div><div class="k-num">' + done + '</div><div class="k-sub">含样例数据</div></div>'
+      + '<div class="kpi"><div class="k-lb">已并到已有</div><div class="k-num">' + merged + '</div><div class="k-sub">都指向了已有数据</div></div>'
+      + '<div class="kpi"><div class="k-lb">已驳回</div><div class="k-num">' + rejected + '</div><div class="k-sub">都已改选地址</div></div></div>'
+      + '<table class="task-tbl" style="font-size:12px; margin-top:18px;"><thead><tr><th>提交时间</th><th>提交人</th><th>来源单据</th><th>小区</th><th>提交内容</th><th>状态</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+    if (S.reviewOpenId) h += renderReviewModal();
+    return h;
+  }
+
+  function selOptions(arr, cur) {
+    return arr.map(function (v) { return '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(v) + '</option>'; }).join('');
+  }
+  function floorRooms(c, bldNo, floor) {
+    var b = buildingsOf(c).filter(function (x) { return x.no === bldNo; })[0];
+    if (!b) return [];
+    return roomsOf(c, b).filter(function (r) { return floorOf(r.no) === floor; }).map(function (r) { return r.no; });
+  }
+  function renderReviewModal() {
+    var e = S.review.filter(function (r) { return r.id === S.reviewOpenId; })[0];
+    if (!e) return '';
+    var A = S.act;
+    var modalHead = '<div class="pmodal-wrap"><div class="pmodal">'
+      + '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;"><div>'
+      + '<div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; color:var(--dove);">REVIEW · #PE-' + e.id + '</div>'
+      + '<div style="font-size:16px; font-weight:600; margin-top:4px;">' + esc(e.commName) + ' · ' + esc(e.content) + '</div></div>'
+      + '<div class="x-btn" data-act="close-review">×</div></div>'
+      + '<div class="info-grid" style="grid-template-columns:1fr 1fr 1fr; margin-top:14px;">'
+      + '<div class="info-cell"><div class="il">提交人</div><div class="iv">' + esc(e.by) + '</div></div>'
+      + '<div class="info-cell"><div class="il">来源单据</div><div class="iv" style="font-size:11.5px;">' + esc(e.projectName) + '</div></div>'
+      + '<div class="info-cell"><div class="il">提交时间</div><div class="iv" style="font-size:11.5px;">' + e.time + '</div></div></div>';
+    var modalFoot = '<div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end; border-top:1px solid var(--line); padding-top:14px;">'
+      + '<button class="btn-line" data-act="close-review">取消</button>'
+      + '<button class="btn-primary" data-act="resolve">提交结果</button></div></div></div>';
+    if (e.kind === 'community') {
+      if (A.act === 'merge' && !A.comm) A.comm = COMMUNITIES[0].name;
+      var commOpts = (A.act !== 'create' && !A.comm ? [{ v: '', t: '— 请选择现有小区（必选）' }] : []).concat(
+        COMMUNITIES.map(function (x) { return { v: x.name, t: x.name + '（' + x.district + '·' + x.circle + '）' }; })
+      );
+      var cardsC = [
+        { k: 'create', t: '确认新增', d: '是新小区：通过后正式入库，<b>项目自动改绑（「未审核」标签摘除）</b>。', tag: '' },
+        { k: 'merge', t: '用已有的', d: '其实是已有小区：项目改绑到它，<b>不新增小区</b>。', tag: '' },
+        { k: 'reject', t: '驳回', d: '内容有误：不通过，<b>当场给项目选一个正确小区</b>。', tag: '' }
+      ].map(function (cd) {
+        return '<div class="act-card ' + (A.act === cd.k ? 'on' : '') + '" data-act="pick-act" data-k="' + cd.k + '">'
+          + '<div class="ac-t"><span class="radio"></span>' + cd.t + '</div><div class="ac-d">' + cd.d + '</div>'
+          + (A.act === cd.k && cd.k !== 'create'
+            ? '<div class="ac-body"><div class="casc" style="grid-template-columns:1fr;"><div class="casc-box"><div class="cb-h">选已有小区' + (cd.k === 'reject' ? ' <em>必选</em>' : ' <em>并到哪个</em>') + '</div><div class="casc-list"><select class="pgselect" data-sel="comm" style="margin:8px; width:calc(100% - 16px);">'
+              + commOpts.map(function (o) { return '<option value="' + esc(o.v) + '"' + (A.comm === o.v ? ' selected' : '') + '>' + esc(o.t) + '</option>'; }).join('')
+              + '</select></div></div></div></div>' : '')
+          + '</div>';
+      }).join('');
+      return modalHead + '<div class="act-list">' + cardsC + '</div>' + modalFoot;
+    }
+    var c = commById(e.commId) || COMMUNITIES[0];
+    var bldNos = buildingsOf(c).map(function (b) { return b.no; });
+    if (!A.bld) { A.bld = e.bldNo || bldNos[0]; A.floor = (e.kind === 'room' && floorOf(e.roomNo)) || 4; var fr = floorRooms(c, A.bld, A.floor); A.room = fr[0] || null; }
+    var floors = []; for (var i = 1; i <= 6; i++) floors.push(i);
+    var needPick = A.act !== 'create';
+    var roomArr = floorRooms(c, A.bld, A.floor);
+    var roomOpts = (A.act === 'reject' && !A.room ? [{ v: '', t: '— 请选择户室（必选）' }] : []).concat(
+      roomArr.map(function (rn) { return { v: rn, t: rn }; })
+    );
+    var cascade = '<div class="casc" style="grid-template-columns: 1fr 0.8fr 1fr;">'
+      + '<div class="casc-box"><div class="cb-h">楼栋 <em>' + (A.act === 'reject' ? '手动选择' : '默认 ' + esc(A.bld)) + '</em></div><div class="casc-list">'
+      + '<select class="pgselect" data-sel="bld" style="margin:8px; width:calc(100% - 16px);">' + selOptions(bldNos, A.bld) + '</select></div></div>'
+      + '<div class="casc-box"><div class="cb-h">楼层</div><div class="casc-list"><select class="pgselect" data-sel="floor" style="margin:8px; width:calc(100% - 16px);">' + selOptions(floors, A.floor) + '</select></div></div>'
+      + '<div class="casc-box"><div class="cb-h">户室' + (A.act === 'reject' ? ' <em>必选</em>' : '') + '</div><div class="casc-list"><select class="pgselect" data-sel="room" style="margin:8px; width:calc(100% - 16px);">'
+      + roomOpts.map(function (o) { return '<option value="' + esc(o.v) + '"' + (String(A.room) === String(o.v) ? ' selected' : '') + '>' + esc(o.t) + '</option>'; }).join('')
+      + '</select></div></div></div>';
+    var cards = [
+      { k: 'merge', t: '用已有的', d: '已有这栋/这户：项目改绑过去，不加新数据。', tag: '推荐' },
+      { k: 'create', t: '确认新增', d: '确属新增：通过后入库，项目自动绑上；标记「人工补录」。', tag: '' },
+      { k: 'reject', t: '驳回', d: '内容有误：不通过，<b>当场给项目选对楼栋和户室</b>再提交。', tag: '' }
+    ].map(function (cd) {
+      return '<div class="act-card ' + (A.act === cd.k ? 'on' : '') + '" data-act="pick-act" data-k="' + cd.k + '">'
+        + '<div class="ac-t"><span class="radio"></span>' + cd.t + (cd.tag ? '<span class="chip warm" style="margin-left:auto; font-size:9.5px;">' + cd.tag + '</span>' : '') + '</div>'
+        + '<div class="ac-d">' + cd.d + '</div>' + (A.act === cd.k && needPick ? '<div class="ac-body">' + cascade + '</div>' : '') + '</div>';
+    }).join('');
+    return '<div class="pmodal-wrap"><div class="pmodal">'
+      + '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;"><div>'
+      + '<div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; color:var(--dove);">REVIEW · #PE-' + e.id + '</div>'
+      + '<div style="font-size:16px; font-weight:600; margin-top:4px;">' + esc(e.commName) + ' · ' + esc(e.content) + '</div></div>'
+      + '<div class="x-btn" data-act="close-review">×</div></div>'
+      + '<div class="info-grid" style="grid-template-columns:1fr 1fr 1fr; margin-top:14px;">'
+      + '<div class="info-cell"><div class="il">提交人</div><div class="iv">' + esc(e.by) + '</div></div>'
+      + '<div class="info-cell"><div class="il">来源单据</div><div class="iv" style="font-size:11.5px;">' + esc(e.projectName) + '</div></div>'
+      + '<div class="info-cell"><div class="il">提交时间</div><div class="iv" style="font-size:11.5px;">' + e.time + '</div></div></div>'
+      + '<div class="act-list">' + cards + '</div>'
+      + '<div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end; border-top:1px solid var(--line); padding-top:14px;">'
+      + '<button class="btn-line" data-act="close-review">取消</button>'
+      + '<button class="btn-primary" data-act="resolve">提交结果</button></div></div></div>';
+  }
+
+  /* ── 页面：新建项目 ─────────────────────────────── */
+  function pageCreate() {
+    var T = S.sel;
+    var c = T.commId ? commById(T.commId) : null;
+      var drop = '';
+      if (T.commForm) {
+        drop = '';
+      } else if (T.q) {
+        var hits = COMMUNITIES.filter(function (x) { return x.name.indexOf(T.q) >= 0 || x.addr.indexOf(T.q) >= 0; }).slice(0, 5);
+        drop = '<div style="border:1px solid var(--ink); border-radius:12px; margin-top:6px; overflow:hidden; box-shadow: var(--shadow-pop);">'
+          + hits.map(function (x) {
+            return '<div class="casc-item' + (T.commId === x.id ? ' on' : '') + '" data-act="pick-comm" data-id="' + x.id + '"><span>' + esc(x.name) + '</span><span class="mono">' + x.bld + ' 栋 · ' + esc(x.district + x.circle) + '</span></div>';
+          }).join('')
+          + '<div class="casc-item" data-act="new-comm-form" style="color:var(--rust);"><span>＋新建小区「' + esc(T.q) + '」（需审核，项目照常建）</span></div></div>';
+      }
+    var bldList = '';
+    if (c) {
+      bldList = buildingsOf(c).map(function (b) {
+        return '<div class="casc-item' + (T.bld === b.no ? ' on' : '') + '" data-act="pick-bld" data-no="' + esc(b.no) + '"><span style="font-family:var(--mono);">' + esc(b.no) + '</span><span class="mono">' + b.floors * b.per + ' 户 · ' + b.floors + ' 层</span></div>';
+      }).join('')
+        + '<div class="casc-item" data-act="add-bld2" style="color:var(--rust); justify-content:center;"><span style="font-size:11.5px;">＋新建楼栋（需审核）</span></div>';
+    }
+    var floorList = '';
+    var roomGrid = '';
+    if (c && T.bld) {
+      var b = buildingsOf(c).filter(function (x) { return x.no === T.bld; })[0];
+      var flSet = {};
+      for (var i = 1; i <= b.floors; i++) flSet[i] = 1;
+      roomsOf(c, b).forEach(function (r) { var f = floorOf(r.no); if (f) flSet[f] = 1; }); // 名义层数 ∪ 实际户室楼层（审核新增的层自动出现）
+      var fl = Object.keys(flSet).map(Number).sort(function (a, b2) { return a - b2; });
+      floorList = fl.map(function (f) {
+        return '<div class="casc-item' + (T.floor === f ? ' on' : '') + '" data-act="pick-floor" data-f="' + f + '"><span style="font-family:var(--mono);">' + f + ' 层</span><span class="mono">' + b.per + ' 户</span></div>';
+      }).join('')
+        + '<div class="casc-item" data-act="add-floor2" style="color:var(--rust); justify-content:center;"><span style="font-size:11.5px;">＋新建楼层（填这层第一户，需审核）</span></div>';
+      if (T.floor) {
+        var cells = floorRooms(c, T.bld, T.floor).map(function (rn) {
+          return '<div class="room ' + (T.room === rn ? 'on' : '') + '" data-act="pick-room2" data-room="' + esc(rn) + '">' + esc(rn) + '</div>';
+        }).join('');
+        roomGrid = '<div class="room-pick" style="padding:12px;">' + cells
+          + '<div class="casc-item" data-act="add-room2" style="color:var(--rust); justify-content:center; grid-column:1 / -1; border-top:1px dashed var(--line); border-radius:8px;"><span style="font-size:11.5px;">＋新建户室（需审核）</span></div></div>';
+      }
+    }
+    var gate = null;
+    if (T.room) gate = gateOf(T.room);
+    var pendingComm = T.commPending;
+    var addr = T.compat
+      ? (T.manual || '（手填门牌…）')
+      : pendingComm
+        ? pendingComm.cf.name + '（小区审核中，稍后可选）'
+        : (c && T.bld && T.room ? c.name + ' ' + T.bld + '号' + (gate || '【户室号不规整 ' + T.room + ' · 请手填】') : '—');
+    var lockCasc = !!pendingComm;
+    var mine = S.mine.length ? '<div style="margin-top:12px; display:flex; flex-direction:column; gap:6px;">' + S.mine.map(function (e) {
+      var st2 = { pending: ['待审核', 'warm'], created: ['已新增', 'cool'], merged: ['已并到已有', ''], rejected: ['已驳回 · 请改选', 'rw'] }[e.status];
+      var cls = st2[1] === 'rw' ? 'background:#f2e3e0; color:var(--rust);' : '';
+      return '<div class="audit-strip" style="margin-top:0;"><span class="ic">' + (e.status === 'pending' ? '审' : '✓') + '</span><span>我的提交：' + esc(e.content) + ' · 来源 ' + esc(e.projectName) + '</span><span class="chip ' + (st2[1] === 'rw' ? '' : st2[1]) + '" style="margin-left:auto;' + cls + '">' + st2[0] + '</span></div>';
+    }).join('') + '</div>' : '';
+
+    return '<div class="pg-head"><div><h3>新建项目</h3><div class="desc">按 小区 → 楼栋 → 楼层 → 户室 选地址</div></div>'
+      + '<button class="btn-line" data-act="nav" data-page="dict">返回</button></div>'
+      + '<div style="position:relative; z-index:2; margin-top:22px; max-width:680px; background:var(--white); border:1px solid var(--line); border-radius:20px; box-shadow: var(--shadow-sm); padding:22px 24px;">'
+      + '<div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;"><div style="font-size:15px; font-weight:600;">房屋地址</div>'
+      + '<div style="font-family:var(--mono); font-size:10px; color:var(--dove);">四级选择 · 百度坐标</div></div>'
+      + '<div class="form-label">小区 <span class="req">*</span><span class="opt">搜小区名或地址；没有可新建（需审核）</span></div>'
+      + (T.commPending
+        ? '<div class="fake-input" style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--ink); font-weight:500;">' + esc(T.commPending.cf.name) + '</span><span style="display:flex; gap:6px; flex-shrink:0;">'
+          + chip('未审核', 'warm')
+          + chip(T.commPending.status === 'created' ? '已入库' : (T.commPending.status === 'rejected' ? '已驳回 · 请改选' : (T.commPending.status === 'merged' ? '已并到已有' : '')))
+          + '</span></div>'
+        : '<div class="fake-input ' + (c ? '' : 'focus') + '" style="display:flex; justify-content:space-between; align-items:center;">'
+          + '<input id="commQ" placeholder="搜索小区…" value="' + esc(T.q || (c ? c.name : '')) + '" style="border:0; outline:0; font-size:13px; width:100%; color:var(--ink); background:transparent;" />'
+          + (c ? '<span style="display:flex; gap:6px; flex-shrink:0;">' + (c.ring ? chip(c.ring, 'warm') : '') + chip(c.district + ' · ' + c.circle) + '</span>' : '')
+          + '</div>' + drop)
+      + '<div class="casc" style="grid-template-columns: 1fr 0.8fr 1.4fr; margin-top:14px;">'
+      + '<div class="casc-box"><div class="cb-h">楼栋 <em>' + (lockCasc ? '审核中' : (c ? c.bld + ' 栋（样例 10）' : '先选小区')) + '</em></div><div class="casc-list">'
+      + (lockCasc ? '<div style="padding:14px; font-size:11.5px; color:var(--rust);">小区通过后才能选；项目可先建，名字会标「未审核」</div>' : (bldList || '<div style="padding:14px; font-size:11.5px; color:var(--dove);">← 先选小区</div>'))
+      + '</div></div>'
+      + '<div class="casc-box"><div class="cb-h">楼层</div><div class="casc-list">'
+      + (lockCasc ? '<div style="padding:14px; font-size:11.5px; color:var(--dove);">小区通过后开放</div>' : (floorList || '<div style="padding:14px; font-size:11.5px; color:var(--dove);">← 选择楼栋</div>'))
+      + '</div></div>'
+      + '<div class="casc-box"><div class="cb-h">户室 ' + (T.bld && T.floor && !lockCasc ? '<em>' + esc(T.bld) + ' 栋 · ' + T.floor + ' 层</em>' : '') + '</div>'
+      + (lockCasc ? '<div style="padding:14px; font-size:11.5px; color:var(--dove);">小区通过后开放</div>' : (roomGrid || '<div style="padding:14px; font-size:11.5px; color:var(--dove);">← 选择楼层</div>'))
+      + '</div></div>'
+      + '<div class="addr-preview"><span class="ap-l">自动门牌</span><span class="ap-v">' + esc(addr) + '</span><span class="ap-hint">系统自动拼好，可手改</span></div>'
+      + '<div class="audit-strip"><span class="ic">审</span><span>新加的楼栋/户室<b>先审核再入库</b>；通过前标「未审核」。</span></div>'
+      + mine
+      + '<div class="compat-row"><div class="switch ' + (T.compat ? 'on' : '') + '" id="compatSwitch" data-act="toggle-compat" style="cursor:pointer;"></div><span>手动填写：不用选择器，直接填地址（小区可不选）</span></div>'
+      + (T.compat ? '<div class="form-label" style="margin-top:10px;">手填地址</div><div class="fake-input"><input id="manualAddr" placeholder="如：泗塘三村61号401" value="' + esc(T.manual) + '" style="border:0; outline:0; width:100%; font-size:13px; color:var(--ink); background:transparent;" /></div>' : '')
+      + '<div style="display:flex; justify-content:flex-end; margin-top:16px;"><button class="btn-primary" data-act="create-submit">提交项目</button></div>'
+      + '</div>'
+      + (T.commForm ? commFormHtml('create') : '');
+  }
+
+  /* ── 页面：项目详情（存量关联） ─────────────────────────────── */
+  function pageProject() {
+    var P = S.project;
+    var linked = P.status === 'linked';
+    var stChip = linked ? '<span class="chip cool">已绑到户</span>' : '<span class="chip" style="background:var(--apricot); color:var(--rust);">未绑 · 手填地址</span>';
+    var h = '<div class="pg-head"><div><h3>' + esc(P.title) + '</h3><div class="desc">在售 · 渠道经理 王乐之 · 创建于 2026-09-18</div></div>'
+      + '<span class="chip" style="font-size:11px; padding:5px 14px;">历史项目</span></div>'
+      + '<div style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 22px; align-items: start;">'
+      + '<div style="background:var(--fog); border-radius: 20px; padding: 20px;"><div style="display:flex; align-items:center; justify-content:space-between;"><div style="font-size:15px; font-weight:600;">地址绑定</div>' + stChip + '</div>'
+      + '<div class="info-grid" style="margin-top:14px;">'
+      + '<div class="info-cell" style="background:var(--white);"><div class="il">小区</div><div class="iv">宝山三村</div></div>'
+      + '<div class="info-cell" style="background:var(--white);"><div class="il">手填门牌</div><div class="iv">61号401</div></div>'
+      + '<div class="info-cell" style="background:var(--white);"><div class="il">楼栋</div><div class="iv">' + (P.bld ? esc(P.bld) : '未绑定') + '</div></div>'
+      + '<div class="info-cell" style="background:var(--white);"><div class="il">户室</div><div class="iv">' + (P.room ? esc(P.room) + '（4 层）' : '未绑定') + '</div></div></div>'
+      + '<div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">'
+      + '<button class="btn-line" data-act="unlink"' + (linked ? '' : ' disabled style="opacity:.4;"') + '>解绑</button>'
+      + '<button class="btn-primary" data-act="open-link">' + (linked ? '改绑定' : '绑定地址') + '</button></div>'
+      + '<p style="font-size:11.5px; color:var(--graphite); line-height:1.7; margin-top:12px;">绑定只更新地址数据，<b>原门牌文字转为备注保留</b>。字典里没有这户？去新建项目页添加（需审核）。</p></div>'
+      + '<div style="background:var(--white); border:1px solid var(--line); border-radius: 20px; padding: 20px;"><div style="font-size:15px; font-weight:600;">绑定进度</div>'
+      + '<div class="parse-stats" style="margin-top:14px;"><div class="ps"><div class="v">231</div><div class="l">已绑定</div></div><div class="ps"><div class="v">1,842</div><div class="l">未绑定</div></div>'
+      + '<div class="ps"><div class="v" style="color:var(--rust);">' + pendingCount() + '</div><div class="l">待审核</div></div><div class="ps"><div class="v">11%</div><div class="l">完成度</div></div></div>'
+      + '<ul style="list-style:none; margin-top:14px;"><li style="font-size:12px; color:var(--ash); line-height:1.8; padding-left:14px; position:relative;"><span style="position:absolute; left:0; top:9px; width:5px; height:5px; border-radius:50%; background:var(--dove);"></span>列表可筛「未绑定」，逐条补齐</li>'
+      + '<li style="font-size:12px; color:var(--ash); line-height:1.8; padding-left:14px; position:relative;"><span style="position:absolute; left:0; top:9px; width:5px; height:5px; border-radius:50%; background:var(--dove);"></span>小区名对得上的自动填好，人只补楼栋和户室</li>'
+      + '<li style="font-size:12px; color:var(--ash); line-height:1.8; padding-left:14px; position:relative;"><span style="position:absolute; left:0; top:9px; width:5px; height:5px; border-radius:50%; background:var(--dove);"></span>绑定后显示环线、年代和位置坐标</li></ul></div></div>';
+    if (S.link.open) h += renderLinkModal();
+    return h;
+  }
+
+  function renderLinkModal() {
+    var L = S.link;
+    var c = commById(L.commId) || COMMUNITIES[0];
+    var bs = buildingsOf(c);
+    if (!L.bld) { L.bld = bs[0].no; }
+    var b = bs.filter(function (x) { return x.no === L.bld; })[0];
+    if (!L.floor) L.floor = 4;
+    var flSet = {};
+    if (b) {
+      for (var i = 1; i <= b.floors; i++) flSet[i] = 1;
+      roomsOf(c, b).forEach(function (r) { var f = floorOf(r.no); if (f) flSet[f] = 1; });
+    }
+    var fl = Object.keys(flSet).map(Number).sort(function (a, b2) { return a - b2; });
+    var rooms = floorRooms(c, L.bld, L.floor);
+    if (!L.room || rooms.indexOf(L.room) < 0) L.room = rooms[0] || null;
+    var bldOpts = bs.map(function (x) { return '<div class="casc-item ' + (L.bld === x.no ? 'on' : '') + '" data-act="link-bld" data-no="' + esc(x.no) + '"><span style="font-family:var(--mono);">' + esc(x.no) + '</span><span class="mono">' + x.floors * x.per + ' 户</span></div>'; }).join('');
+    var flOpts = fl.map(function (f) { return '<div class="casc-item ' + (L.floor === f ? 'on' : '') + '" data-act="link-floor" data-f="' + f + '"><span style="font-family:var(--mono);">' + f + ' 层</span></div>'; }).join('');
+    var rmOpts = rooms.map(function (rn) { return '<div class="room ' + (L.room === rn ? 'on' : '') + '" data-act="link-room" data-room="' + esc(rn) + '">' + esc(rn) + '</div>'; }).join('');
+    return '<div class="pmodal-wrap"><div class="pmodal" style="width:480px;">'
+      + '<div style="display:flex; align-items:flex-start; justify-content:space-between;"><div><div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; color:var(--dove);">绑定地址</div>'
+      + '<div style="font-size:16px; font-weight:600; margin-top:4px;">给「' + esc(S.project.title) + '」选楼栋和户室</div></div>'
+      + '<div class="x-btn" data-act="close-link">×</div></div>'
+      + '<div class="casc" style="grid-template-columns:1fr 0.7fr 1fr; margin-top:16px;">'
+      + '<div class="casc-box"><div class="cb-h">楼栋 <em>' + c.bld + ' 栋（样例 10）</em></div><div class="casc-list">' + bldOpts + '</div></div>'
+      + '<div class="casc-box"><div class="cb-h">楼层</div><div class="casc-list">' + flOpts + '</div></div>'
+      + '<div class="casc-box"><div class="cb-h">户室</div><div class="room-pick" style="padding:12px;">' + rmOpts + '</div></div></div>'
+      + '<div class="audit-strip" style="margin-top:12px;"><span class="ic">i</span><span>将绑到：<b>' + esc(c.name) + ' ' + esc(L.bld) + '号' + (gateOf(L.room) || esc(L.room)) + '</b></span></div>'
+      + '<div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end; border-top:1px solid var(--line); padding-top:14px;">'
+      + '<button class="btn-line" data-act="close-link">取消</button>'
+      + '<button class="btn-primary" data-act="link-confirm"' + (L.room ? '' : ' disabled style="opacity:.4;"') + '>确认绑定</button></div></div></div>';
+  }
+
+  /* ── 渲染入口 ─────────────────────────────── */
+  var NOTES = {
+    dict: '<b>操作提示：</b>点击表格行 → 详情抽屉；抽屉内楼栋展开 → 楼层折叠 → 户室选中；「+ 添加楼栋 / 户室」为 admin 补录，<b>支持区间批量</b>（29-55 号楼 · 7-12 层 × 01-08 室）；页头「＋新增小区」即时生效。别名/小区合并不在此处理（走 governance）。坐标 BD-09。待审楼栋/楼层/户室在此<b>带「未审核」标签虚线展示</b>（BR-23）。<br /><b>规格标注：</b>FR-01 · FR-02 · FR-03 · FR-04 · FR-05 · FR-06 · FR-07 · FR-10 ｜ BR-01 · BR-02 · BR-03 · BR-04 · BR-06 · BR-07 · BR-08 · BR-09 · BR-14 · BR-18 · BR-23 ｜ NFR-01 · NFR-06',
+    import: '<b>操作提示：</b>点击虚线框模拟上传 → 自动解析校验 →「开始导入」→ 进度实时推进 → 完成核对；步骤条可点击回看。本页为<b>字典 txt 导入</b>（含楼栋/户室结构）；外部推送与 CSV 房源导入为另一条链路：小区一致直接引用，<b>不一致进审核池、推送/导入照常成功（v1.8 FR-16）</b>。<br /><b>规格标注：</b>FR-08 · FR-16 ｜ BR-05 · BR-16 · BR-18 · BR-20 ｜ NFR-01 · NFR-02 · NFR-04',
+    review: '<b>操作提示：</b>点击队列行 → 审核弹层（小区/楼栋/户室三类条目）；动作卡单选，「合并现有 / 驳回」需选目标，「通过新增」直接提交；小区「通过新增」后来源单据自动转正（「未审核」标签摘除）。处理人默认 admin、可配置。<b>来源单据含 项目/线索/营销/机器链路房源 四类（v1.8 source_type 泛化）</b>；审核通过后展示层 pending 标签同步摘除（BR-23/24）。<br /><b>规格标注：</b>FR-10 · FR-11 · FR-15 · FR-16 · FR-18 ｜ BR-10 · BR-11 · BR-13 · BR-17 · BR-23 · BR-24 ｜ §6.1 状态机',
+    create: '<b>操作提示：</b>搜索并选择小区 → 楼栋 → 楼层 → 户室；搜索无结果时「＋新增小区」进审核池——<b>业务单据照常创建，名称带「未审核」标签，小区转正后自动摘除</b>；「＋添加新楼层/新户室」同理进审核池，<b>pending 条目全系统可见带「未审核」标签（他表置灰不可选，BR-23）</b>；兼容模式可切换手填。项目<b>编辑</b>改小区/地址同口径（BR-22）。<b>线索/营销新增表单复用本选择器：小区必选、楼栋/户室选填落库（v1.8 FR-13/FR-18）</b>。<br /><b>规格标注：</b>FR-09 · FR-10 · FR-13 · FR-18 ｜ BR-02 · BR-11 · BR-12 · BR-14 · BR-22 · BR-23 ｜ §6.2 状态机',
+    project: '<b>操作提示：</b>「关联字典」打开四级选择器（复用新建项目组件）→ 确认后状态翻转为已关联（数据层以字典为准，原手填地址转备注）；「解除关联」可重置。来源单据详情中 pending 楼栋/楼层/户室<b>带「未审核」标签回显</b>（BR-23）；<b>存量线索/营销同口径绑定（v1.8 FR-12/BR-25，绑定不强制、未绑定零影响）</b>；C 端免登录线索维持自由文本，转项目时经本选择器入字典（FR-17）。<br /><b>规格标注：</b>FR-12 · FR-13 · FR-17 ｜ BR-19 · BR-21 · BR-22 · BR-23 · BR-25 ｜ §6.2 状态机（keys 随项目关联走，无独立改造）'
+  };
+  function render() {
+    renderSb();
+    document.getElementById('protoUrl').textContent = URLS[S.page];
+    document.getElementById('protoReviewBadge').textContent = pendingCount();
+    document.querySelectorAll('#protoBar [data-nav]').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-nav') === S.page);
+    });
+    mainEl.innerHTML = { dict: pageDict, import: pageImport, review: pageReview, create: pageCreate, project: pageProject }[S.page]();
+    document.getElementById('protoNote').innerHTML = NOTES[S.page];
+  }
+
+  /* ── 动作 ─────────────────────────────── */
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._tm); t._tm = setTimeout(function () { t.classList.remove('show'); }, 2400);
+  }
+  function stopImport() { if (S.import.timer) { clearInterval(S.import.timer); S.import.timer = null; } }
+
+  function onClick(e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    var act = el.getAttribute('data-act');
+    var D = S.drawer, T = S.sel;
+    if (el.hasAttribute('disabled')) return;
+    switch (act) {
+      case 'nav': S.page = el.getAttribute('data-page'); S.reviewOpenId = null; render(); break;
+      /* 字典总览 */
+      case 'open-comm': D.commId = Number(el.getAttribute('data-id')); D.openBld = null; D.openFloor = null; D.picked = null; D.bldQ = ''; D.addingBld = false; D.addingRoomFor = null; render(); break;
+      case 'close-drawer': D.commId = null; render(); break;
+      case 'toggle-bld': { var no = el.getAttribute('data-no'); if (D.openBld === no) { D.openBld = null; D.openFloor = null; } else { D.openBld = no; D.openFloor = null; } render(); break; }
+      case 'toggle-floor': { var f = el.getAttribute('data-floor'); D.openFloor = f === 'u' ? null : Number(f); render(); break; }
+      case 'pick-room': { var b3 = el.getAttribute('data-bld'); var r3 = el.getAttribute('data-room'); D.picked = (D.picked && D.picked.bld === b3 && D.picked.room === r3) ? null : { bld: b3, room: r3 }; render(); break; }
+      case 'add-bld-form': D.addingBld = !D.addingBld; D.addingRoomFor = null; render(); break;
+      case 'add-bld-ok': {
+        var c4 = commById(D.commId); var no4 = (document.getElementById('abNo') || {}).value;
+        var nos4 = expandSeq(no4, false);
+        if (!nos4) { toast('请填写楼栋号（支持区间如 29-55，单次 ≤ 60）'); break; }
+        var added4 = 0, skip4 = 0, first4 = null;
+        nos4.forEach(function (n) {
+          if (buildingsOf(c4).some(function (b) { return b.no === n; })) { skip4++; return; }
+          buildingsOf(c4).push({ no: n, floors: 6, per: 2, hasCoord: false, extra: 'admin 补录', rooms: null });
+          added4++; if (!first4) first4 = n;
+        });
+        if (!added4) { toast('楼栋已全部存在（uq 约束，跳过 ' + skip4 + '）'); break; }
+        D.addingBld = false; D.openBld = first4;
+        toast('已添加 ' + added4 + ' 栋 → bd_buildings（admin 即时生效 · 留审计）' + (skip4 ? '，跳过已有 ' + skip4 : '') + (nos4.length > 1 ? ' · 区间 ' + nos4[0] + '-' + nos4[nos4.length - 1] : '')); render(); break;
+      }
+      case 'add-bld-cancel': D.addingBld = false; render(); break;
+      case 'add-room-form': D.addingRoomFor = D.addingRoomFor === el.getAttribute('data-bld') ? null : el.getAttribute('data-bld'); render(); break;
+      case 'add-room-ok': {
+        var c5 = commById(D.commId); var no5 = el.getAttribute('data-bld');
+        var fl5 = expandSeq((document.getElementById('arFloor') || {}).value, false);
+        var tl5 = expandSeq((document.getElementById('arRoom') || {}).value, true);
+        if (!fl5 || !tl5) { toast('请填写楼层与户号（支持区间如 7-12 层 / 01-08 室）'); break; }
+        if (fl5.length * tl5.length > 200) { toast('展开 ' + (fl5.length * tl5.length) + ' 户超出单次上限 200'); break; }
+        var b5 = buildingsOf(c5).filter(function (x) { return x.no === no5; })[0];
+        var added5 = 0, skip5 = 0, last5 = null;
+        fl5.forEach(function (f) {
+          var fInt = typeof f === 'string' ? parseInt(f, 10) : f;
+          tl5.forEach(function (tail) {
+            var rn = pad2(fInt) + tail;
+            if (roomsOf(c5, b5).some(function (r) { return r.no === rn; })) { skip5++; return; }
+            roomsOf(c5, b5).push({ no: rn });
+            added5++; last5 = rn;
+          });
+        });
+        if (!added5) { toast('户室已全部存在（uq 约束，跳过 ' + skip5 + '）'); break; }
+        b5.rooms.sort(function (a, b2) { return a.no < b2.no ? -1 : 1; });
+        D.addingRoomFor = null; D.openFloor = floorOf(last5); D.picked = { bld: no5, room: last5 };
+        toast('已添加 ' + added5 + ' 户 → bd_rooms（admin 即时生效 · 留审计）' + (skip5 ? '，跳过已有 ' + skip5 : '') + ' · ' + fl5[0] + '-' + fl5[fl5.length - 1] + ' 层 × ' + tl5[0] + '-' + tl5[tl5.length - 1] + ' 室'); render(); break;
+      }
+      case 'add-room-cancel': D.addingRoomFor = null; render(); break;
+      case 'edit-profile': toast('画像进入编辑态：环线 / 类型 / 年代 人工修正（PATCH communities）'); break;
+      case 'link-project': {
+        var p = D.picked;
+        if (!p) { toast('请先选择户室'); break; }
+        var c6 = commById(D.commId);
+        toast('演示：写入 projects.building_id / room_id →「' + c6.name + ' ' + p.bld + '号' + (gateOf(p.room) || p.room) + '」· 详情请看 05 页'); break;
+      }
+      /* 导入 */
+      case 'imp-upload': if (S.import.step === 2) { S.import.uploaded = true; render(); } break;
+      case 'imp-step': S.import.step = Number(el.getAttribute('data-step')); stopImport(); render(); break;
+      case 'imp-start': {
+        if (S.import.step !== 2) break;
+        if (!S.import.uploaded) { toast('请先上传数据包'); break; }
+        S.import.step = 3; S.import.prog = 0; render();
+        S.import.timer = setInterval(function () {
+          S.import.prog = Math.min(100, S.import.prog + 6 + Math.floor(Math.random() * 9));
+          if (S.import.prog >= 100) { stopImport(); setTimeout(function () { S.import.step = 4; toast('导入完成，对账一致（演示）'); render(); }, 400); }
+          render();
+        }, 320);
+        break;
+      }
+      /* 审核池 */
+      case 'open-review': {
+        var id7 = Number(el.getAttribute('data-id'));
+        var e7 = S.review.filter(function (r) { return r.id === id7; })[0];
+        if (e7.status !== 'pending') { toast('该条目已处理（' + e7.status + '），仅演示待审核流转'); break; }
+        S.reviewOpenId = id7; S.act = { openId: id7, act: 'merge', bld: null, floor: null, room: null }; render(); break;
+      }
+      case 'close-review': S.reviewOpenId = null; render(); break;
+      case 'pick-act': {
+        var k8 = el.getAttribute('data-k');
+        S.act.act = k8;
+        if (k8 === 'create' || k8 === 'reject') { S.act.room = null; S.act.comm = null; }
+        if (k8 === 'create') { S.act.bld = null; S.act.floor = null; }
+        render(); break;
+      }
+      case 'resolve': {
+        var e9 = S.review.filter(function (r) { return r.id === S.reviewOpenId; })[0];
+        var A = S.act;
+        if (e9.kind === 'community') {
+          if (A.act !== 'create' && !A.comm) { toast('合并/驳回必须选择目标小区'); break; }
+          e9.status = A.act === 'create' ? 'created' : (A.act === 'merge' ? 'merged' : 'rejected');
+          if (A.act === 'create' && e9.cf) {
+            COMMUNITIES.push({ id: Date.now(), name: e9.cf.name, addr: e9.cf.addr || e9.cf.name, district: e9.cf.district, circle: e9.cf.circle, ring: e9.cf.ring, types: '住宅-公寓', era: '—', bld: 0, rooms: 0, linked: 1, lng: 0, lat: 0, mgmt: '暂无信息', dev: '暂无信息', _b: [] });
+          }
+          S.reviewOpenId = null;
+          toast(A.act === 'create'
+            ? '小区「' + e9.cf.name + '」已写入 communities · 来源单据自动转正（「未审核」标签摘除）· 提交人已通知'
+            : '小区条目' + (A.act === 'merge' ? '合并指向现有小区「' + A.comm + '」，来源单据改指该小区（小区档案合并请到 governance）' : '已驳回，来源单据改选现有小区「' + A.comm + '」') + ' · 提交人已通知');
+          render(); break;
+        }
+        if (A.act !== 'create' && !A.room) { toast('合并/驳回必须选择目标楼栋/楼层/户室'); break; }
+        e9.status = A.act === 'create' ? 'created' : (A.act === 'merge' ? 'merged' : 'rejected');
+        if (A.act === 'create' && e9.commId && e9.bldNo && e9.roomNo) {
+          var c10 = commById(e9.commId);
+          var b10 = buildingsOf(c10).filter(function (x) { return x.no === e9.bldNo; })[0];
+          if (b10 && !roomsOf(c10, b10).some(function (r) { return r.no === e9.roomNo; })) { roomsOf(c10, b10).push({ no: e9.roomNo }); b10.rooms.sort(function (a, b2) { return a.no < b2.no ? -1 : 1; }); }
+        }
+        S.reviewOpenId = null;
+        toast('审核完成：' + e9.commName + ' ' + e9.content + ' → ' + ({ created: '已新增', merged: '已合并至 ' + (A.bld || '') + ' 栋 ' + (A.room || ''), rejected: '已驳回，项目改选 ' + (A.bld || '') + ' 栋 ' + (A.room || '') }[A.act]) + ' · 提交人已通知');
+        render(); break;
+      }
+      /* 新建项目 */
+      case 'pick-comm': T.commId = Number(el.getAttribute('data-id')); T.q = ''; T.bld = null; T.floor = null; T.room = null; T.commPending = null; T.commForm = false; render(); break;
+      case 'new-comm': S.dictNew = { name: '', district: '', circle: '', ring: '', addr: '', coord: '' }; render(); break;
+      case 'new-comm-form': S.sel.commForm = true; S.sel.cf = { name: S.sel.q, district: '', circle: '', ring: '', addr: '' }; render(); break;
+      case 'close-comm-form': S.dictNew = null; S.sel.commForm = false; render(); break;
+      case 'save-comm': {
+        var scope16 = el.getAttribute('data-scope');
+        var F16 = {
+          name: ((document.getElementById('cfName') || {}).value || '').trim(),
+          district: ((document.getElementById('cfDistrict') || {}).value || '').trim(),
+          circle: ((document.getElementById('cfCircle') || {}).value || '').trim(),
+          ring: (document.getElementById('cfRing') || {}).value || '',
+          addr: ((document.getElementById('cfAddr') || {}).value || '').trim(),
+          coord: ((document.getElementById('cfCoord') || {}).value || '').trim()
+        };
+        if (!F16.name || !F16.district || !F16.circle) { toast('小区名 / 区域 / 板块为必填'); break; }
+        if (COMMUNITIES.some(function (x) { return x.name === F16.name; })) { toast('已存在同名小区「' + F16.name + '」→ 请直接选择；变体合并走 admin/properties/governance'); break; }
+        if (scope16 === 'dict') {
+          var coord = F16.coord.split(',').map(function (s) { return parseFloat(s.trim()); });
+          COMMUNITIES.push({ id: Date.now(), name: F16.name, addr: F16.addr || F16.name, district: F16.district, circle: F16.circle, ring: F16.ring, types: '住宅-公寓', era: '—', bld: 0, rooms: 0, linked: 0, lng: isNaN(coord[0]) ? 0 : coord[0], lat: isNaN(coord[1]) ? 0 : coord[1], mgmt: '暂无信息', dev: '暂无信息', _b: [] });
+          S.dictNew = null;
+          toast('小区「' + F16.name + '」已创建 → communities（admin 即时生效 · 留审计）'); render(); break;
+        }
+        var entry16 = { id: Date.now(), time: '刚刚', by: '我（演示）', projectName: '宝山三村新委托（周先生）', commName: F16.name, content: '新小区 · ' + F16.name + '（' + F16.district + '·' + F16.circle + '）', kind: 'community', status: 'pending', mine: true, cf: F16 };
+        S.review.unshift(entry16); S.mine.unshift(entry16);
+        S.sel.commPending = entry16; S.sel.commForm = false; S.sel.q = '';
+        toast('小区「' + F16.name + '」已提交审核池 → 项目可继续创建，名称将带「未审核」标签'); render(); break;
+      }
+      case 'pick-bld': T.bld = el.getAttribute('data-no'); T.floor = null; T.room = null; render(); break;
+      case 'pick-floor': T.floor = Number(el.getAttribute('data-f')); T.room = null; render(); break;
+      case 'pick-room2': T.room = T.room === el.getAttribute('data-room') ? null : el.getAttribute('data-room'); render(); break;
+      case 'toggle-compat': T.compat = !T.compat; render(); break;
+      case 'add-bld2': {
+        var c11 = commById(T.commId);
+        var no11 = window.prompt('新楼栋号（如 122乙）——提交后进入审核池：');
+        if (!no11) break;
+        no11 = no11.trim();
+        if (!no11) break;
+        if (buildingsOf(c11).some(function (b) { return b.no === no11; })) { toast('楼栋「' + no11 + '」已存在 → 建议直接选择（合并现有）'); break; }
+        var entry = { id: Date.now(), time: '刚刚', by: '我（演示）', projectName: '宝山三村新委托（周先生）', commName: c11.name, commId: c11.id, content: '新楼栋 · ' + no11, kind: 'bld', status: 'pending', mine: true };
+        S.review.unshift(entry); S.mine.unshift(entry);
+        T.bld = null; T.floor = null; T.room = null;
+        toast('已提交「新楼栋 ' + no11 + '」→ 审核池（侧边栏 03 可审核）'); render(); break;
+      }
+      case 'add-floor2': {
+        var c15 = commById(T.commId);
+        if (!T.bld) { toast('请先选择楼栋'); break; }
+        var b15 = buildingsOf(c15).filter(function (x) { return x.no === T.bld; })[0];
+        var exist = {};
+        roomsOf(c15, b15).forEach(function (r) { var f = floorOf(r.no); if (f) exist[f] = 1; });
+        for (var fi = 1; fi <= b15.floors; fi++) exist[fi] = 1;
+        var f15 = parseInt(window.prompt('新楼层号（如 7）——楼层随该层首个户室自动生成，提交后进入审核池：'), 10);
+        if (!f15 || f15 < 1) break;
+        if (exist[f15]) { toast(f15 + ' 层已存在 → 请直接选择该层后添加户室'); break; }
+        var tail15 = window.prompt('该层首个户室号尾号（两位，如 01）→ 户室 ' + pad2(f15) + '□□：');
+        if (!tail15) break;
+        tail15 = tail15.replace(/\D/g, '');
+        if (tail15.length !== 2) { toast('请输入两位数字'); break; }
+        var rn15 = pad2(f15) + tail15;
+        var entry15 = { id: Date.now(), time: '刚刚', by: '我（演示）', projectName: '宝山三村新委托（周先生）', commName: c15.name, commId: c15.id, content: '新户室 · ' + T.bld + ' 栋 ' + rn15 + '（新楼层 ' + f15 + '）', kind: 'room', status: 'pending', mine: true, bldNo: T.bld, roomNo: rn15 };
+        S.review.unshift(entry15); S.mine.unshift(entry15);
+        T.floor = null; T.room = null;
+        toast('已提交「' + T.bld + ' 栋 ' + f15 + ' 层（户室 ' + rn15 + '）」→ 审核池；审核通过后该层自动出现'); render(); break;
+      }
+      case 'add-room2': {
+        var c12 = commById(T.commId);
+        if (!T.bld || !T.floor) { toast('请先选择楼栋与楼层'); break; }
+        var tail12 = window.prompt('新户室号尾号（两位，如 03）→ 户室 ' + pad2(T.floor) + '□□，提交后进入审核池：');
+        if (!tail12) break;
+        tail12 = tail12.replace(/\D/g, '');
+        if (tail12.length !== 2) { toast('请输入两位数字'); break; }
+        var rn12 = pad2(T.floor) + tail12;
+        var b12 = buildingsOf(c12).filter(function (x) { return x.no === T.bld; })[0];
+        if (roomsOf(c12, b12).some(function (r) { return r.no === rn12; })) { toast('户室「' + rn12 + '」已存在 → 建议直接选择（合并现有）'); break; }
+        var entry12 = { id: Date.now(), time: '刚刚', by: '我（演示）', projectName: '宝山三村新委托（周先生）', commName: c12.name, commId: c12.id, content: '新户室 · ' + T.bld + ' 栋 ' + rn12, kind: 'room', status: 'pending', mine: true, bldNo: T.bld, roomNo: rn12 };
+        S.review.unshift(entry12); S.mine.unshift(entry12);
+        T.room = null;
+        toast('已提交「新户室 ' + T.bld + ' 栋 ' + rn12 + '」→ 审核池（侧边栏 03 可审核）'); render(); break;
+      }
+      case 'create-submit': {
+        if (S.sel.compat) {
+          toast('已提交（兼容模式）：手填地址「' + (S.sel.manual || '（空）') + '」· dict_status = manual'); break;
+        }
+        if (T.commPending) {
+          toast('项目已提交：小区「' + T.commPending.cf.name + '」待审核，项目名称将显示「未审核」标签（审核通过后自动转正）'); break;
+        }
+        var c13 = commById(T.commId);
+        if (!c13) { toast('请先选择小区'); break; }
+        if (!T.room) { toast('请选择户室；或开启兼容模式手填'); break; }
+        toast('项目已提交：「' + c13.name + ' ' + T.bld + '号' + (gateOf(T.room) || T.room) + '」· building_id / room_id 已写入'); break;
+      }
+      /* 项目详情 */
+      case 'open-link': S.link.open = true; render(); break;
+      case 'close-link': S.link.open = false; render(); break;
+      case 'link-bld': S.link.bld = el.getAttribute('data-no'); S.link.floor = null; S.link.room = null; render(); break;
+      case 'link-floor': S.link.floor = Number(el.getAttribute('data-f')); S.link.room = null; render(); break;
+      case 'link-room': S.link.room = el.getAttribute('data-room'); render(); break;
+      case 'link-confirm': {
+        var c14 = commById(S.link.commId);
+        S.project.status = 'linked'; S.project.bld = S.link.bld; S.project.room = S.link.room;
+        S.link.open = false;
+        var cc = COMMUNITIES.filter(function (x) { return x.id === 1; })[0];
+        cc.linked += 1;
+        toast('关联成功 →「' + c14.name + ' ' + S.link.bld + '号' + (gateOf(S.link.room) || S.link.room) + '」· dict_status = linked（address 未改动）'); render(); break;
+      }
+      case 'unlink': S.project.status = 'manual'; S.project.bld = null; S.project.room = null; COMMUNITIES[0].linked = Math.max(0, COMMUNITIES[0].linked - 1); toast('已解除关联 → dict_status = manual'); render(); break;
+      default: toast(el.getAttribute('data-msg') || '演示动作'); 
+    }
+  }
+
+  function onInput(e) {
+    var t = e.target;
+    if (t.id === 'dictQ') { S.dictF.q = t.value; var sc = mainEl.querySelector('table'); render(); var q2 = document.getElementById('dictQ'); if (q2) { q2.focus(); q2.setSelectionRange(q2.value.length, q2.value.length); } }
+    if (t.id === 'bldQ') { S.drawer.bldQ = t.value; render(); var q3 = document.getElementById('bldQ'); if (q3) { q3.focus(); q3.setSelectionRange(q3.value.length, q3.value.length); } }
+    if (t.id === 'commQ') { S.sel.q = t.value; if (t.value === '') S.sel.commId = null; render(); var q4 = document.getElementById('commQ'); if (q4) { q4.focus(); q4.setSelectionRange(q4.value.length, q4.value.length); } }
+    if (t.id === 'manualAddr') { S.sel.manual = t.value; render(); var q5 = document.getElementById('manualAddr'); if (q5) { q5.focus(); q5.setSelectionRange(q5.value.length, q5.value.length); } }
+  }
+  function onChange(e) {
+    var t = e.target;
+    if (t.getAttribute && t.getAttribute('data-filter')) { S.dictF[t.getAttribute('data-filter')] = t.value; render(); }
+    if (t.getAttribute && t.getAttribute('data-sel')) {
+      var k = t.getAttribute('data-sel');
+      if (k === 'comm') { S.act.comm = t.value; render(); }
+      else {
+        S.act[k] = k === 'floor' ? Number(t.value) : t.value;
+        if (k !== 'room') S.act.room = null;
+        render();
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    mainEl = document.getElementById('protoMain');
+    sbEl = document.getElementById('protoSb');
+    mainEl.addEventListener('click', onClick);
+    mainEl.addEventListener('input', onInput);
+    mainEl.addEventListener('change', onChange);
+    document.querySelectorAll('#protoBar [data-nav]').forEach(function (b) {
+      b.addEventListener('click', function () { S.page = b.getAttribute('data-nav'); S.reviewOpenId = null; render(); });
+    });
+    document.getElementById('protoReset').addEventListener('click', function () { stopImport(); initState(); render(); toast('演示已重置'); });
+    render();
+  });
+})();
+</script>
+
+</body>
+</html>

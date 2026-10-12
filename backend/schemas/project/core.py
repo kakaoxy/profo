@@ -176,6 +176,11 @@ class ProjectUpdate(BaseModel):
         validation_alias=AliasChoices("other_agreements", "otherAgreements"),
     )
     signing_materials: list[SigningMaterial] | None = Field(None)
+    signing_materials_removed_urls: list[str] | None = Field(
+        None,
+        description="本次更新中需从附件库删除的附件 URL 列表（并发合并防护：删除为显式操作，"
+        "不传时 signing_materials 走并集合并，已删除项不会因旧快照覆写而复活）",
+    )
 
     owner_name: str | None = Field(None, max_length=100)
     owner_phone: str | None = Field(None, max_length=20)

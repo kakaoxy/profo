@@ -85,6 +85,9 @@ const createProjectSchema = z.object({
   planned_handover_date: z.string().nullable().optional(),
   other_agreements: z.string().nullable().optional(),
   signing_materials: z.array(signingMaterialSchema).nullable().optional(),
+  // 并发合并防护：显式删除信号（与后端 ProjectUpdate.signing_materials_removed_urls 对齐；
+  // safeParse 仅作门禁，通过后仍转发原始 data，此字段仅约束形态）
+  signing_materials_removed_urls: z.array(z.string().min(1)).nullable().optional(),
   owner_name: z.string().nullable().optional(),
   owner_phone: z.string().nullable().optional(),
   owner_id_card: z.string().nullable().optional(),

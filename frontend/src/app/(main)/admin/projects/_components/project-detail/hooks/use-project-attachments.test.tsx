@@ -159,6 +159,83 @@ describe("useProjectAttachments", () => {
     });
   });
 
+  describe("多文件并发上传不丢失（regression: 918dc6dc bug）", () => {
+    it("同步连发 onUpload（模拟多文件上传回调）时，后一次保存基于最新列表而非旧闭包", async () => {
+      const onUpdateAttachments = vi.fn();
+      const { result } = renderHook(
+        ({ signingMaterials }) => useProjectAttachments({ signingMaterials, onUpdateAttachments }),
+        { initialProps: { signingMaterials: [A] } },
+      );
+
+      const D = makeAtt("https://ex.com/d.pdf", "d.pdf");
+      const E = makeAtt("https://ex.com/e.pdf", "e.pdf");
+
+      // 不逐个 await：模拟 FileUploader 多文件上传完成回调的同步连发。
+      // 修复前：两次回调闭包中 attachments 均为 [A]，后一次 PUT 覆写为 [A, E]，D 丢失。
+      await act(async () => {
+        result.current.onUpload(D);
+        result.current.onUpload(E);
+      });
+
+      expect(onUpdateAttachments).toHaveBeenCalledTimes(2);
+      expect(lastCallUrls(onUpdateAttachments)).toEqual([A.url, D.url, E.url]);
+    });
+
+    it("保存动作 pending 时后续任务排队，保存按提交顺序携带最新列表", async () => {
+      let resolveSave: () => void = () => {};
+      const onUpdateAttachments = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSave = resolve;
+          }),
+      );
+      const { result } = renderHook(
+        ({ signingMaterials }) => useProjectAttachments({ signingMaterials, onUpdateAttachments }),
+        { initialProps: { signingMaterials: [A] } },
+      );
+
+      const D = makeAtt("https://ex.com/d.pdf", "d.pdf");
+      const E = makeAtt("https://ex.com/e.pdf", "e.pdf");
+
+      await act(async () => {
+        result.current.onUpload(D);
+      });
+      expect(onUpdateAttachments).toHaveBeenCalledTimes(1);
+
+      // 第一次保存未 resolve，第二个任务必须排队等待（服务端按提交顺序落库）
+      await act(async () => {
+        result.current.onUpload(E);
+      });
+      expect(onUpdateAttachments).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        resolveSave();
+      });
+      expect(onUpdateAttachments).toHaveBeenCalledTimes(2);
+      expect(lastCallUrls(onUpdateAttachments)).toEqual([A.url, D.url, E.url]);
+    });
+  });
+
+  describe("删除携带显式删除信号（并发合并防护）", () => {
+    it("onDelete 调用 onUpdateAttachments 时附带 removedUrls", async () => {
+      const onUpdateAttachments = vi.fn();
+      const { result } = renderHook(
+        ({ signingMaterials }) => useProjectAttachments({ signingMaterials, onUpdateAttachments }),
+        { initialProps: { signingMaterials: [A, B] } },
+      );
+
+      await act(async () => {
+        const onDelete = result.current.createHandlers(() => {}).onDelete;
+        onDelete?.(A.url);
+      });
+
+      expect(onUpdateAttachments).toHaveBeenCalledWith(
+        [expect.objectContaining({ url: B.url })],
+        { removedUrls: [A.url] },
+      );
+    });
+  });
+
   describe("无 onUpdateAttachments 时", () => {
     it("onDelete 为 undefined", () => {
       const { result } = renderHook(() => useProjectAttachments({ signingMaterials: [A] }));

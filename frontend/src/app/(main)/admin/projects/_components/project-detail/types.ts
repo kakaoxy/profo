@@ -6,13 +6,24 @@ export type AttachmentInfo = components["schemas"]["SigningMaterial"];
 export type SigningMaterial = components["schemas"]["SigningMaterial"];
 
 /**
+ * 附件保存选项（并发合并防护）
+ */
+export interface AttachmentSaveOptions {
+  /** 本次保存中用户显式删除的附件 URL 列表；后端据此从附件库移除（合并语义下删除必须显式声明） */
+  removedUrls?: string[];
+}
+
+/**
  * ProjectDetailSheet 组件属性
  */
 export interface ProjectDetailSheetProps {
   project: Project | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdateAttachments?: (attachments: SigningMaterial[]) => void;
+  onUpdateAttachments?: (
+    attachments: SigningMaterial[],
+    options?: AttachmentSaveOptions,
+  ) => void | Promise<void>;
 }
 
 /**

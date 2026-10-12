@@ -22,6 +22,7 @@ import { Project } from "../../types";
 import { updateProjectAction, deleteProjectAction } from "../../actions/core";
 import { useProjectDetail } from "../../_components/project-detail/hooks/use-project-detail";
 import { useProjectAttachments } from "../../_components/project-detail/hooks/use-project-attachments";
+import type { AttachmentSaveOptions } from "../../_components/project-detail/types";
 import { RenovationView } from "../../_components/project-detail/views/renovation";
 import { DefaultView } from "../../_components/project-detail/views/default";
 import { SellingView } from "../../_components/project-detail/views/selling";
@@ -132,12 +133,14 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
   }, [project]);
 
   const handleUpdateAttachments = useCallback(
-    async (attachments: SigningMaterial[]) => {
+    async (attachments: SigningMaterial[], options?: AttachmentSaveOptions) => {
       if (!project) return;
       const result = await updateProjectAction(project.id, {
         signing_materials: attachments.length
           ? attachments.map((a) => ({ ...a, size: a.size ?? 0 }))
           : null,
+        // 并发合并防护：显式删除信号（后端按 url 移除，避免旧快照覆写复活已删项）
+        ...(options?.removedUrls?.length ? { signing_materials_removed_urls: options.removedUrls } : {}),
       });
       if (!result.success) {
         toast.error(result.message || "附件保存失败");
@@ -163,8 +166,8 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
   }, [refreshProjectData]);
 
   const handleUpdateAttachmentsWithRefresh = useCallback(
-    async (updatedAttachments: SigningMaterial[]) => {
-      await handleUpdateAttachments(updatedAttachments);
+    async (updatedAttachments: SigningMaterial[], options?: AttachmentSaveOptions) => {
+      await handleUpdateAttachments(updatedAttachments, options);
       await refreshFullWithSkeleton();
     },
     [handleUpdateAttachments, refreshFullWithSkeleton],

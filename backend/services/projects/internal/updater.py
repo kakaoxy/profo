@@ -189,6 +189,7 @@ class ProjectUpdater:
             "planned_handover_date",
             "other_agreements",
             "signing_materials",
+            "signing_materials_removed_urls",
         ]
 
         contract_updates = {k: update_dict.pop(k) for k in list(contract_fields) if k in update_dict}
@@ -199,25 +200,40 @@ class ProjectUpdater:
         if "planned_handover_date" in contract_updates:
             contract_updates["planned_handover_date"] = parse_date_string(contract_updates["planned_handover_date"])
 
-        # Convert signing_materials Pydantic models to dicts for JSON serialization
-        if contract_updates.get("signing_materials"):
-            materials = contract_updates["signing_materials"]
-            if isinstance(materials, list):
-                contract_updates["signing_materials"] = [
-                    m.model_dump() if hasattr(m, "model_dump") else m for m in materials
-                ]
-
         if not contract_updates:
             return
 
+        # 行锁：并发 PUT 时串行化对同一项目合同的读-改-写，避免双读旧值互相覆盖
+        # （READ COMMITTED 下不加锁时两个事务可能读到同一旧基底，合并仍会丢数据）
         contract = (
             self.db.query(ProjectContract)
             .filter(
                 ProjectContract.project_id == project_id,
                 ProjectContract.is_deleted.is_(False),
             )
+            .with_for_update()
             .first()
         )
+
+        # signing_materials 并发合并防护（bug 修复）：前端附件保存为“读-改-写全量 PUT”，
+        # 多文件上传/多处编辑并发时，后完成的 PUT 用旧快照整体覆写，会丢失其他
+        # 并发写入的附件（实证：连发 7 个 PUT 后 7 张图只落库 4 张）。改为基于库中
+        # 现值读-改-写合并：incoming 同 url 原位覆盖（支持修改分类/元数据）、
+        # 新 url 追加；signing_materials_removed_urls 为显式删除信号（删除不走
+        # 全量覆写语义，否则旧快照覆写会复活已删除项）。空列表 / 两者均不传时
+        # 保持原语义（显式清空 / 不修改）。
+        raw_materials = contract_updates.get("signing_materials")
+        raw_removed = contract_updates.pop("signing_materials_removed_urls", None)
+        if isinstance(raw_materials, list) and raw_materials:
+            incoming = [m.model_dump() if hasattr(m, "model_dump") else m for m in raw_materials]
+            existing = contract.signing_materials if contract else None
+            removed_urls = [str(u) for u in raw_removed if u] if isinstance(raw_removed, list) else []
+            contract_updates["signing_materials"] = self._merge_signing_materials(existing, incoming, removed_urls)
+        elif isinstance(raw_removed, list) and raw_removed:
+            # 仅传删除列表：从库中现值移除指定 URL
+            existing = contract.signing_materials if contract else None
+            removed_urls = [str(u) for u in raw_removed if u]
+            contract_updates["signing_materials"] = self._merge_signing_materials(existing, [], removed_urls)
 
         if contract:
             for field, value in contract_updates.items():
@@ -232,6 +248,59 @@ class ProjectUpdater:
                 **contract_updates,
             )
             self.db.add(contract)
+
+    @staticmethod
+    def _merge_signing_materials(
+        existing: Any,
+        incoming: list[Any],
+        removed_urls: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """将 incoming 附件列表合并进库中现值，返回合并结果（纯函数）.
+
+        以库中现值为基底：incoming 中同 url 条目原位覆盖（保留库中顺序，
+        支持修改分类等元数据），新 url 追加到尾部；库中历史重复 url 收敛为
+        首条；removed_urls 中的 url 强制移除（显式删除信号）。历史纯 URL
+        字符串格式兼容为结构化条目。
+        """
+        removed_set = {str(u) for u in removed_urls or []}
+        existing_items: list[dict[str, Any]] = []
+        if isinstance(existing, list):
+            for item in existing:
+                if isinstance(item, dict):
+                    existing_items.append(dict(item))
+                elif isinstance(item, str):
+                    existing_items.append(
+                        {
+                            "filename": item.rsplit("/", 1)[-1] or "unknown",
+                            "url": item,
+                            "category": "other",
+                            "fileType": "other",
+                            "size": 0,
+                        }
+                    )
+
+        incoming_by_url: dict[str, dict[str, Any]] = {}
+        for item in incoming:
+            if isinstance(item, dict) and item.get("url"):
+                url = str(item["url"])
+                if url not in removed_set:
+                    incoming_by_url[url] = dict(item)
+
+        merged: list[dict[str, Any]] = []
+        seen_urls: set[str] = set()
+        for item in existing_items:
+            url = str(item.get("url", ""))
+            if url in removed_set:
+                continue
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+            merged.append({**item, **incoming_by_url[url]} if url in incoming_by_url else item)
+        for url, item in incoming_by_url.items():
+            if url not in seen_urls:
+                seen_urls.add(url)
+                merged.append(item)
+        return merged
 
     def _update_owner_fields(
         self,
