@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { useState } from "react";
 import { useFormContext, Controller, useWatch } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DictAddressPicker, type DictAddressValue } from "@/components/dict-address-picker";
 import type { FormValues } from "../form-schema";
 
 // 导入拆分的子组件
@@ -57,6 +59,8 @@ interface BasicInfoSectionProps {
 }
 
 function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
+  // 楼盘字典四级地址（M4）
+  const [dictValue, setDictValue] = useState<DictAddressValue | null>(null);
   return (
     <section className="bg-card rounded-3xl shadow-steep-sm p-6">
       <h3 className="flex items-center gap-2 mb-6">
@@ -86,6 +90,18 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
                 <FormMessage />
               </FormItem>
             )}
+          />
+          {/* 楼盘字典四级地址（M4：楼栋/户室选填落库） */}
+          <DictAddressPicker
+            value={dictValue}
+            onChange={(next) => {
+              setDictValue(next);
+              setValue("building_id", next.buildingId ?? null);
+              setValue("room_id", next.roomId ?? null);
+              setValue("dict_status", next.dictStatus ?? null);
+              setValue("new_community", next.newCommunity ?? null);
+            }}
+            sourceBizType="marketing"
           />
           <FormField
             control={control}

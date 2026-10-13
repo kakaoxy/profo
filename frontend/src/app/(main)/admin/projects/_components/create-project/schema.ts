@@ -69,6 +69,13 @@ export const formSchema = z
     community_id: z.string().optional(),
     community_name: z.string().min(1, "小区名称不能为空").max(200),
     address: z.string().min(1, "物业地址不能为空").max(500),
+    // ===== 楼盘字典四级地址（FR-13 / Task 14）=====
+    building_id: z.number().nullable().optional(),
+    room_id: z.number().nullable().optional(),
+    dict_status: z.enum(["linked", "manual", "pending", "rejected"]).nullable().optional(),
+    new_community: z.record(z.string(), z.unknown()).nullable().optional(),
+    new_building: z.record(z.string(), z.unknown()).nullable().optional(),
+    new_room: z.record(z.string(), z.unknown()).nullable().optional(),
     area: optionalNumber,
     project_manager_id: z.string().optional(),
 

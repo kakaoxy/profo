@@ -76,7 +76,9 @@ class PropertyImporter:
 
     def _process_import_transaction(self, data: PropertyIngestionModel, db: Session, user_id: str = "") -> ImportResult:
         """处理核心导入逻辑（不包含事务提交，由调用方管理事务）."""
-        community_id = self.find_or_create_community(data, db)
+        # M1（FR-16）：小区未命中不自动建 → pending + community_id 置空 + 原文冗余
+        source_biz_id = f"{data.data_source}:{data.source_property_id}"
+        community_id = self.find_or_create_community(data, db, source_biz_id=source_biz_id)
 
         existing_property = self._get_existing_property(data, db)
 
@@ -102,18 +104,26 @@ class PropertyImporter:
         city_id: int | None = None,
         district: str | None = None,
         business_circle: str | None = None,
-    ) -> str:
-        """查找或创建小区.
+        source_biz_id: str | None = None,
+    ) -> str | None:
+        """查找小区；不一致不再自动建，产生 kind=community pending 进审核池（FR-16/BR-20/M1）.
+
+        口径（v1.7 定稿）：
+        - 命中（名称/别名）→ 直接引用 community_id，楼栋/户室空置；
+        - 未命中 → **不自动建小区**：产生 pending（source_type=property）+
+          写引用账本（field=community_id），返回 None（调用方置空 community_id、
+          community_name 冗余存原文，推送/导入照常成功不拦截）。
 
         Args:
             data: PropertyIngestionModel 对象或小区名称字符串（向后兼容）
             db: 数据库会话
-            city_id: 城市ID（可选，用于向后兼容）
-            district: 行政区（可选，用于向后兼容）
-            business_circle: 商圈（可选，用于向后兼容）
+            city_id: 城市ID（可选，向后兼容）
+            district: 行政区（可选，向后兼容）
+            business_circle: 商圈（可选，向后兼容）
+            source_biz_id: 房源业务标识（data_source:source_property_id，供引用账本）
 
         Returns:
-            小区ID
+            命中的小区 ID；未命中返回 None（pending 已产生，调用方照常创建房源）
 
         """
         # 处理向后兼容：支持直接传入小区名称字符串
@@ -130,8 +140,67 @@ class PropertyImporter:
             self._update_community_info_if_needed(community, data, db)
             return community.id
 
-        # 2. 创建新小区
-        return self._create_community(name, data, db)
+        # 2. 不自动建小区（M1 BREAKING）：产生 pending 进审核池，推送/导入照常成功
+        self._create_community_pending(name, db, source_biz_id=source_biz_id)
+        return None
+
+    def _create_community_pending(self, name: str, db: Session, *, source_biz_id: str | None = None) -> int:
+        """为字典外小区名产生 pending 条目（kind=community，source_type=property）.
+
+        幂等复用：命中同名 open pending 时仅追加引用记录（uq_pending_open 防并发重复）。
+
+        Returns:
+            pending 条目 ID
+
+        """
+        from models import BdEntryKind, BdEntryStatus, BdPendingEntry, BdPendingReference, BdReferenceStatus
+        from utils.building_dict import normalize_community_name
+
+        normalized = normalize_community_name(name)
+        entry = (
+            db.query(BdPendingEntry)
+            .filter(
+                BdPendingEntry.kind == BdEntryKind.COMMUNITY,
+                BdPendingEntry.status == BdEntryStatus.PENDING,
+                BdPendingEntry.normalized_name == normalized,
+            )
+            .first()
+        )
+        if not entry:
+            entry = BdPendingEntry(
+                kind=BdEntryKind.COMMUNITY,
+                name=name,
+                normalized_name=normalized,
+                source_type="property",
+                source_id=source_biz_id,
+                status=BdEntryStatus.PENDING,
+            )
+            db.add(entry)
+            db.flush()
+            logger.info("机器链路小区待审: %s (pending=%s)", name, entry.id)
+
+        # 引用账本（幂等：同一房源仅一条 open 引用）
+        if source_biz_id:
+            exists = (
+                db.query(BdPendingReference)
+                .filter(
+                    BdPendingReference.biz_type == "property",
+                    BdPendingReference.biz_id == source_biz_id,
+                    BdPendingReference.field == "community_id",
+                )
+                .first()
+            )
+            if not exists:
+                db.add(
+                    BdPendingReference(
+                        pending_id=entry.id,
+                        biz_type="property",
+                        biz_id=source_biz_id,
+                        field="community_id",
+                        status=BdReferenceStatus.OPEN,
+                    )
+                )
+        return entry.id
 
     def _find_community_by_name_or_alias(self, name: str, db: Session) -> Community | None:
         """通过名称或别名查找小区对象."""
@@ -185,7 +254,11 @@ class PropertyImporter:
             db.flush()
 
     def _create_community(self, name: str, data: PropertyIngestionModel | _CommunityData, db: Session) -> str:
-        """创建新的小区记录."""
+        """创建新的小区记录.
+
+        .. deprecated:: M1（FR-16/BR-20）机器链路小区不一致已改为产生 pending 进审核池，
+            本方法保留仅为向后兼容（历史调用方均已迁移），source=import 值域废止。
+        """
         new_community = Community(
             name=name,
             city_id=data.city_id,
@@ -215,20 +288,20 @@ class PropertyImporter:
         self,
         existing: PropertyCurrent,
         data: PropertyIngestionModel,
-        community_id: str,
+        community_id: str | None,
         db: Session,
         user_id: str,
     ) -> None:
         """处理更新逻辑：快照 + 更新当前表."""
         change_type = self._determine_change_type(existing, data)
         self._create_history_snapshot(existing, change_type, db)
-        self._map_data_to_property(existing, data, community_id, user_id)
+        self._map_data_to_property(existing, data, community_id, db, user_id)
         self._save_property_media(data, db, community_id)
 
     def _handle_creation(
         self,
         data: PropertyIngestionModel,
-        community_id: str,
+        community_id: str | None,
         db: Session,
         user_id: str,
     ) -> PropertyCurrent:
@@ -239,7 +312,7 @@ class PropertyImporter:
             created_at=datetime.now(timezone.utc),
             is_active=True,
         )
-        self._map_data_to_property(new_property, data, community_id, user_id)
+        self._map_data_to_property(new_property, data, community_id, db, user_id)
         db.add(new_property)
         db.flush()  # 确保获取ID，方便后续日志或返回
         self._save_property_media(data, db, community_id)
@@ -249,16 +322,19 @@ class PropertyImporter:
         self,
         prop: PropertyCurrent,
         data: PropertyIngestionModel,
-        community_id: str,
+        community_id: str | None,
+        db: Session,  # noqa: ARG002 保持签名统一（pending 创建已在 find_or_create 中完成）
         user_id: str,
     ) -> None:
-        """统一的数据映射方法.
+        """统一的数据映射方法（M1：community_id 可空 + community_name 原文冗余）.
 
         同时用于 Create 和 Update，消除代码重复.
         """
         floor_info = self.floor_parser.parse_floor(data.floor_original)
 
         prop.community_id = community_id
+        prop.community_name = data.community_name.strip() if not community_id else None
+        prop.dict_status = "pending" if not community_id else "linked"
         prop.status = PropertyStatus(data.status.value)
         prop.property_type = data.property_type
         prop.rooms = data.rooms

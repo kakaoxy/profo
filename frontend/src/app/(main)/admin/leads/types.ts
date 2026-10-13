@@ -42,6 +42,13 @@ export interface Lead {
   id: string;
   communityName: string;
   communityId?: string; // 关联小区ID
+  // ===== 楼盘字典四级地址（M3 / FR-18）=====
+  buildingId?: number | null;
+  roomId?: number | null;
+  dictStatus?: "linked" | "manual" | "pending" | "rejected" | null;
+  newCommunity?: { name: string } | null;
+  newBuilding?: { name: string } | null;
+  newRoom?: { name: string } | null;
   layout: string; // e.g., "2室1厅"
   orientation: string; // e.g., "南"
   floorInfo: string; // e.g., "18/24层"

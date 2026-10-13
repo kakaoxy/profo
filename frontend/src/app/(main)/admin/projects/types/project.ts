@@ -129,6 +129,10 @@ export interface Project {
   name: string;
   community_id?: string;
   community_name?: string;
+  // 楼盘字典关联（R9 / FR-12）
+  building_id?: number | null;
+  room_id?: number | null;
+  dict_status?: string | null;
   status: string;
 
   // 业务形式: agent(代理美化) / wholesale(收购美化) / null

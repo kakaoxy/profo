@@ -81,6 +81,9 @@ def get_properties(
     max_area: Annotated[float | None, Query(ge=0, description="最大面积（㎡）")] = None,
     rooms: Annotated[str | None, Query(max_length=500, description="室数量，逗号分隔，例如: 1,2,3")] = None,
     rooms_gte: Annotated[int | None, Query(ge=0, description="最少室数量，例如: 5 表示5室以上")] = None,
+    dict_status: Annotated[
+        str | None, Query(max_length=20, description="字典关联状态: unlinked | linked | pending | rejected")
+    ] = None,
     sort_by: Annotated[str, Query(description="排序字段")] = "updated_at",
     sort_order: Annotated[str, Query(description="排序方向: asc | desc")] = "desc",
 ) -> PaginatedPropertyResponse:
@@ -112,6 +115,7 @@ def get_properties(
         max_area=max_area,
         rooms=rooms_list,
         rooms_gte=rooms_gte,
+        dict_status=dict_status,
         sort_by=sort_by,
         sort_order=sort_order,
         page=pagination.page,

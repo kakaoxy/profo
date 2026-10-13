@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     DateTime,
     Index,
@@ -34,8 +35,28 @@ class PropertyCurrent(Base):
     data_source: Mapped[str] = mapped_column(String(50), nullable=False, comment="数据来源(链家/贝壳等)")
     source_property_id: Mapped[str] = mapped_column(String(100), nullable=False, comment="来源平台的房源ID")
 
-    # 关联小区
-    community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="小区ID")
+    # 关联小区（v1.9 BREAKING：由 NOT NULL 放宽为可空 —— 机器链路小区待审时置空，
+    # community_name 冗余存原文；转正后回填 community_id）
+    community_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, comment="小区ID(机器链路 pending 期间可空)"
+    )
+    # 小区名原文冗余（v1.9：机器链路 pending 期间存小区名原文，转正后仍以 community_id 为准）
+    community_name: Mapped[str | None] = mapped_column(
+        String(200), nullable=True, comment="小区名原文冗余(pending 期间必存)"
+    )
+    # ===== 楼盘字典关联（SRS §8 / R1，v1.9；机器链路无楼栋户室数据，仅小区级）=====
+    building_id: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, comment="字典楼栋ID(机器链路空置，可人工绑定)"
+    )
+    room_id: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, comment="字典户室ID(机器链路空置，可人工绑定)"
+    )
+    # 字典关联状态机（§6.2）：manual/linked/pending/rejected
+    dict_status: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="字典关联状态: linked/manual/pending/rejected(未关联为 manual)",
+    )
 
     # 核心字段
     status: Mapped[PropertyStatus] = mapped_column(SQLEnum(PropertyStatus), nullable=False, comment="状态")

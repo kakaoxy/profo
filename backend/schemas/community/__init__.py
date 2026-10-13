@@ -70,6 +70,21 @@ class CommunityMergeResponse(BaseModel):
     message: str
 
 
+class CommunityUnmergeRequest(BaseModel):
+    """解除合并请求（FR-14，v1.9）."""
+
+    merged_id: str = Field(description="被并入（已归档）的小区ID")
+    primary_id: str = Field(description="主小区ID")
+
+    @model_validator(mode="after")
+    def validate_ids(self) -> Self:
+        """验证 ID 不相同。"""
+        if self.merged_id == self.primary_id:
+            msg = "merged_id 不能与 primary_id 相同"
+            raise ValueError(msg)
+        return self
+
+
 class DictionaryResponse(BaseModel):
     """字典响应模型."""
 
@@ -118,6 +133,7 @@ __all__ = [
     "CommunityMergeResponse",
     "CommunityResponse",
     "CommunitySearchResponse",
+    "CommunityUnmergeRequest",
     "CommunityUpdateRequest",
     "DictionaryResponse",
 ]

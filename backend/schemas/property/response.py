@@ -98,8 +98,11 @@ class PropertyResponse(BaseModel):
     source_property_id: str
     status: str
 
-    community_id: str
+    community_id: str | None = None
     community_name: str
+    dict_status: str | None = None
+    building_id: int | None = None
+    room_id: int | None = None
     district: str | None = None
     business_circle: str | None = None
 
@@ -140,10 +143,22 @@ class PropertyResponse(BaseModel):
     def from_orm_with_calculations(
         cls,
         property_obj: "PropertyCurrent",
-        community: "Community",
+        community: "Community | None",
         preloaded_media: list | None = None,
     ) -> "PropertyResponse":
-        """从ORM对象创建响应模型，包含计算字段."""
+        """从ORM对象创建响应模型，包含计算字段.
+
+        community 为 None 时（房源未关联字典小区），小区名取房源自身字段，
+        行政区/商圈置空。
+        """
+        if community is None:
+            community_name = property_obj.community_name or ""
+            district = None
+            business_circle = None
+        else:
+            community_name = community.name
+            district = community.district
+            business_circle = community.business_circle
         if property_obj.status.value == "在售":
             total_price = property_obj.listed_price_wan or 0
         else:
@@ -170,9 +185,12 @@ class PropertyResponse(BaseModel):
             source_property_id=property_obj.source_property_id,
             status=_compute_display_status(property_obj),
             community_id=property_obj.community_id,
-            community_name=community.name,
-            district=community.district,
-            business_circle=community.business_circle,
+            community_name=community_name,
+            dict_status=getattr(property_obj, "dict_status", None),
+            building_id=getattr(property_obj, "building_id", None),
+            room_id=getattr(property_obj, "room_id", None),
+            district=district,
+            business_circle=business_circle,
             rooms=property_obj.rooms,
             halls=property_obj.halls,
             baths=property_obj.baths,
@@ -206,8 +224,11 @@ class PropertyDetailResponse(BaseModel):
     source_property_id: str
     status: str
 
-    community_id: str
+    community_id: str | None = None
     community_name: str
+    dict_status: str | None = None
+    building_id: int | None = None
+    room_id: int | None = None
     district: str | None = None
     business_circle: str | None = None
 
@@ -270,9 +291,21 @@ class PropertyDetailResponse(BaseModel):
     def from_orm_with_calculations(
         cls,
         property_obj: "PropertyCurrent",
-        community: "Community",
+        community: "Community | None",
     ) -> "PropertyDetailResponse":
-        """从ORM对象创建详情响应模型，包含计算字段."""
+        """从ORM对象创建详情响应模型，包含计算字段.
+
+        community 为 None 时（房源未关联字典小区），小区名取房源自身字段，
+        行政区/商圈置空。
+        """
+        if community is None:
+            community_name = property_obj.community_name or ""
+            district = None
+            business_circle = None
+        else:
+            community_name = community.name
+            district = community.district
+            business_circle = community.business_circle
         total_price = (
             property_obj.listed_price_wan or 0
             if property_obj.status.value == "在售"
@@ -310,9 +343,12 @@ class PropertyDetailResponse(BaseModel):
             source_property_id=property_obj.source_property_id,
             status=_compute_display_status(property_obj),
             community_id=property_obj.community_id,
-            community_name=community.name,
-            district=community.district,
-            business_circle=community.business_circle,
+            community_name=community_name,
+            dict_status=getattr(property_obj, "dict_status", None),
+            building_id=getattr(property_obj, "building_id", None),
+            room_id=getattr(property_obj, "room_id", None),
+            district=district,
+            business_circle=business_circle,
             rooms=property_obj.rooms,
             halls=property_obj.halls,
             baths=property_obj.baths,

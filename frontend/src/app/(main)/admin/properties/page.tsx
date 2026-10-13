@@ -34,6 +34,7 @@ export default async function PropertiesPage(props: PageProps) {
         // 如果是空字符串，转为 undefined，这样 openapi-fetch 就不会发送这个参数
         community_name: query.q || undefined,
         status: query.status || undefined,
+        dict_status: query.dict_status || undefined,
         rooms: query.rooms || undefined,
         rooms_gte: query.rooms_gte || undefined,
         floor_levels: query.floor_levels || undefined,

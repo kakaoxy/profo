@@ -224,6 +224,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/communities/unmerge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unmerge Community
+         * @description 解除合并（FR-14，v1.9 新增）.
+         *
+         *     恢复归档小区（is_active 置回）、清 merged_into_id、移除并入时吸纳的别名，
+         *     单事务 + 审计；被并小区数据因软归档保留，可无损拆回。
+         *
+         *     权限：property:governance（与合并同口径）。速率限制：20次/小时。
+         */
+        post: operations["unmerge_community_api_v1_admin_communities_unmerge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/communities/{community_id}": {
         parameters: {
             query?: never;
@@ -296,6 +321,436 @@ export interface paths {
          * @description 更新户型图描述/排序（PATCH 语义）.
          */
         patch: operations["update_community_image_api_v1_admin_community_images__image_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Dict Import Task
+         * @description 上传 zip/txt 创建字典导入任务（异步装载，四步：上传→解析→装载→对账）.
+         *
+         *     权限：admin。速率限制：复用 CSV_IMPORT（30次/小时）。
+         */
+        post: operations["create_dict_import_task_api_v1_admin_building_dictionary_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/import/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Dict Import Tasks
+         * @description 导入任务历史（状态/进度/对账/失败明细）.
+         */
+        get: operations["list_dict_import_tasks_api_v1_admin_building_dictionary_import_tasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/import/{filename}/failed-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Dict Import Failed Csv
+         * @description 下载失败明细 csv（归档 90 天）.
+         */
+        get: operations["download_dict_import_failed_csv_api_v1_admin_building_dictionary_import__filename__failed_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/kpi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dict Kpi
+         * @description 字典 KPI hero.
+         */
+        get: operations["get_dict_kpi_api_v1_admin_building_dictionary_kpi_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/communities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query Dict Communities
+         * @description 字典总览（筛选 + 关键词 + 分页 20/页 + 首图缩略列）.
+         */
+        get: operations["query_dict_communities_api_v1_admin_building_dictionary_communities_get"];
+        put?: never;
+        /**
+         * Create Dict Community
+         * @description Admin 新增小区（重名拦截 + 撞同名 open pending 自动转正 + 审计/通知）.
+         */
+        post: operations["create_dict_community_api_v1_admin_building_dictionary_communities_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/communities/{community_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dict Community Detail
+         * @description 小区详情画像（FR-02 上半部）.
+         */
+        get: operations["get_dict_community_detail_api_v1_admin_building_dictionary_communities__community_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Dict Community
+         * @description 修正画像（环线/类型/年代/开发商/物业/地址/锚点，admin + 审计）.
+         */
+        patch: operations["patch_dict_community_api_v1_admin_building_dictionary_communities__community_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/communities/{community_id}/buildings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Dict Buildings
+         * @description 楼栋列表（自然序 20/页，pending 楼栋叠加）.
+         */
+        get: operations["list_dict_buildings_api_v1_admin_building_dictionary_communities__community_id__buildings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/buildings/{building_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dict Building Detail
+         * @description 楼栋详情（户室网格 + pending 叠加；非标户室门牌回退原串）.
+         */
+        get: operations["get_dict_building_detail_api_v1_admin_building_dictionary_buildings__building_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/buildings/{building_id}/floors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dict Floor Groups
+         * @description 楼层分组（名义 ∪ 实际 ∪ pending，未分层置底）.
+         */
+        get: operations["get_dict_floor_groups_api_v1_admin_building_dictionary_buildings__building_id__floors_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/buildings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Dict Buildings
+         * @description Admin 补录楼栋（区间语法笛卡尔展开，≤60 栋，uq 跳过，审计）.
+         */
+        post: operations["create_dict_buildings_api_v1_admin_building_dictionary_buildings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/buildings/{building_id}/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Dict Rooms
+         * @description Admin 补录户室（楼层区间×户号区间，≤200 户，uq 跳过，审计）.
+         */
+        post: operations["create_dict_rooms_api_v1_admin_building_dictionary_buildings__building_id__rooms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Review Queue
+         * @description 审核池队列（时间排序/状态/小区筛选/KPI）+ 权限校验.
+         */
+        get: operations["get_review_queue_api_v1_admin_building_dictionary_review_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/review/reviewer-roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Reviewer Roles Config
+         * @description 读取审核处理人角色配置（FR-15，缺省 ['admin']）.
+         */
+        get: operations["get_reviewer_roles_config_api_v1_admin_building_dictionary_review_reviewer_roles_get"];
+        /**
+         * Update Reviewer Roles Config
+         * @description 保存审核处理人角色配置（admin，全量替换 + 审计）.
+         */
+        put: operations["update_reviewer_roles_config_api_v1_admin_building_dictionary_review_reviewer_roles_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/review/{entry_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Review Entry
+         * @description 审核三动作（create/merge/reject）：行锁 + 状态机校验（并发 409）.
+         */
+        post: operations["resolve_review_entry_api_v1_admin_building_dictionary_review__entry_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/review/pending-backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Pending Backfill
+         * @description 引用批量回填任务重试入口（BR-13：异步幂等任务失败后的运营重跑）.
+         */
+        post: operations["retry_pending_backfill_api_v1_admin_building_dictionary_review_pending_backfill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Pending Entry
+         * @description 录入端提交新增进审核池（不阻塞业务创建；同名 open pending 幂等复用）.
+         */
+        post: operations["submit_pending_entry_api_v1_admin_building_dictionary_pending_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/projects/{project_id}/dictionary-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Link Project
+         * @description 存量项目绑定字典（building_id/room_id 落库且 address 不变）.
+         */
+        put: operations["link_project_api_v1_admin_projects__project_id__dictionary_link_put"];
+        post?: never;
+        /**
+         * Unlink Project
+         * @description 存量项目解除字典关联.
+         */
+        delete: operations["unlink_project_api_v1_admin_projects__project_id__dictionary_link_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/leads/{lead_id}/dictionary-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Link Lead
+         * @description 存量线索绑定字典.
+         */
+        put: operations["link_lead_api_v1_admin_leads__lead_id__dictionary_link_put"];
+        post?: never;
+        /**
+         * Unlink Lead
+         * @description 存量线索解除字典关联.
+         */
+        delete: operations["unlink_lead_api_v1_admin_leads__lead_id__dictionary_link_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketing/projects/{project_id}/dictionary-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Link Marketing
+         * @description 存量营销房源绑定字典.
+         */
+        put: operations["link_marketing_api_v1_admin_marketing_projects__project_id__dictionary_link_put"];
+        post?: never;
+        /**
+         * Unlink Marketing
+         * @description 存量营销房源解除字典关联.
+         */
+        delete: operations["unlink_marketing_api_v1_admin_marketing_projects__project_id__dictionary_link_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/properties/{property_id}/dictionary-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Link Property
+         * @description 存量机器链路房源绑定字典（仅小区级）.
+         */
+        put: operations["link_property_api_v1_admin_properties__property_id__dictionary_link_put"];
+        post?: never;
+        /**
+         * Unlink Property
+         * @description 存量机器链路房源解除字典关联.
+         */
+        delete: operations["unlink_property_api_v1_admin_properties__property_id__dictionary_link_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/leads": {
@@ -5703,6 +6158,683 @@ export interface components {
              */
             expires_at?: string | null;
         };
+        /**
+         * BdBatchCreateResult
+         * @description 批量补录结果（FR-06：uq 跳过返回 added/skipped）.
+         */
+        BdBatchCreateResult: {
+            /** Added */
+            added: number;
+            /** Skipped */
+            skipped: number;
+        };
+        /**
+         * BdBuildingCreateRequest
+         * @description 新增楼栋请求（支持区间语法 `29-55`，≤60 栋）.
+         */
+        BdBuildingCreateRequest: {
+            /**
+             * Community Id
+             * @description 小区ID
+             */
+            community_id: string;
+            /**
+             * Building No
+             * @description 楼栋号（单值如 `122乙` 或区间如 `29-55`）
+             */
+            building_no: string;
+        };
+        /**
+         * BdBuildingDetail
+         * @description 楼栋详情（含楼层分组，R3/FR-04）.
+         */
+        BdBuildingDetail: {
+            /** Id */
+            id: number;
+            /** Community Id */
+            community_id: string;
+            /** Building No */
+            building_no: string;
+            /** Lng */
+            lng?: number | null;
+            /** Lat */
+            lat?: number | null;
+            /**
+             * Room Count
+             * @default 0
+             */
+            room_count: number;
+            /**
+             * Linked Project Count
+             * @default 0
+             */
+            linked_project_count: number;
+            /**
+             * Pending
+             * @default false
+             */
+            pending: boolean;
+            /** Pending Id */
+            pending_id?: number | null;
+            /** Rooms */
+            rooms?: components["schemas"]["BdRoomItem"][];
+        };
+        /**
+         * BdBuildingListItem
+         * @description 楼栋列表行（FR-03）.
+         */
+        BdBuildingListItem: {
+            /** Id */
+            id: number;
+            /** Community Id */
+            community_id: string;
+            /** Building No */
+            building_no: string;
+            /** Lng */
+            lng?: number | null;
+            /** Lat */
+            lat?: number | null;
+            /**
+             * Room Count
+             * @default 0
+             */
+            room_count: number;
+            /**
+             * Floor Count
+             * @default 0
+             */
+            floor_count: number;
+            /**
+             * Linked Project Count
+             * @default 0
+             */
+            linked_project_count: number;
+            /**
+             * Pending
+             * @default false
+             */
+            pending: boolean;
+            /** Pending Id */
+            pending_id?: number | null;
+        };
+        /**
+         * BdBuildingListResponse
+         * @description 楼栋列表响应.
+         */
+        BdBuildingListResponse: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["BdBuildingListItem"][];
+        };
+        /**
+         * BdCommunityCreateRequest
+         * @description admin 新增小区请求（FR-07：名/区/板块必填，重名拦截）.
+         */
+        BdCommunityCreateRequest: {
+            /**
+             * Name
+             * @description 小区名
+             */
+            name: string;
+            /**
+             * District
+             * @description 行政区(必填)
+             */
+            district: string;
+            /**
+             * Business Circle
+             * @description 板块(必填)
+             */
+            business_circle: string;
+            /**
+             * Ring
+             * @description 环线(可空)
+             */
+            ring?: string | null;
+            /**
+             * Address
+             * @description 地址(可空)
+             */
+            address?: string | null;
+            /**
+             * Lng
+             * @description 经度(BD-09，可空)
+             */
+            lng?: number | null;
+            /**
+             * Lat
+             * @description 纬度(BD-09，可空)
+             */
+            lat?: number | null;
+        };
+        /**
+         * BdCommunityDetailResponse
+         * @description 小区详情抽屉（FR-02）.
+         */
+        BdCommunityDetailResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** District */
+            district?: string | null;
+            /** Business Circle */
+            business_circle?: string | null;
+            /** Ring */
+            ring?: string | null;
+            /** Property Types */
+            property_types?: string[];
+            /** Era From */
+            era_from?: number | null;
+            /** Era To */
+            era_to?: number | null;
+            /** Developer */
+            developer?: string | null;
+            /** Property Mgmt */
+            property_mgmt?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Lng */
+            lng?: number | null;
+            /** Lat */
+            lat?: number | null;
+            /**
+             * Building Count
+             * @default 0
+             */
+            building_count: number;
+            /**
+             * Room Count
+             * @default 0
+             */
+            room_count: number;
+            /**
+             * Linked Project Count
+             * @default 0
+             */
+            linked_project_count: number;
+            /** First Image Url */
+            first_image_url?: string | null;
+            /** Merged Into Id */
+            merged_into_id?: string | null;
+            /** Merged Children */
+            merged_children?: components["schemas"]["BdMergedChildItem"][];
+        };
+        /**
+         * BdCommunityListItem
+         * @description 字典总览小区行.
+         */
+        BdCommunityListItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** District */
+            district?: string | null;
+            /** Business Circle */
+            business_circle?: string | null;
+            /** Ring */
+            ring?: string | null;
+            /** Property Types */
+            property_types?: string[];
+            /** Era From */
+            era_from?: number | null;
+            /** Era To */
+            era_to?: number | null;
+            /** Address */
+            address?: string | null;
+            /**
+             * Building Count
+             * @default 0
+             */
+            building_count: number;
+            /**
+             * Room Count
+             * @default 0
+             */
+            room_count: number;
+            /**
+             * Linked Project Count
+             * @default 0
+             */
+            linked_project_count: number;
+            /** First Image Url */
+            first_image_url?: string | null;
+            /** Merged Into Id */
+            merged_into_id?: string | null;
+        };
+        /**
+         * BdCommunityListResponse
+         * @description 字典总览响应.
+         */
+        BdCommunityListResponse: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["BdCommunityListItem"][];
+        };
+        /**
+         * BdCommunityPatchRequest
+         * @description 修正画像请求（PATCH 语义，admin）.
+         */
+        BdCommunityPatchRequest: {
+            /**
+             * Ring
+             * @description 环线
+             */
+            ring?: string | null;
+            /**
+             * Property Types
+             * @description 物业类型列表
+             */
+            property_types?: string[] | null;
+            /**
+             * Era From
+             * @description 建成年代起
+             */
+            era_from?: number | null;
+            /**
+             * Era To
+             * @description 建成年代止
+             */
+            era_to?: number | null;
+            /**
+             * Developer
+             * @description 开发商
+             */
+            developer?: string | null;
+            /**
+             * Property Mgmt
+             * @description 物业公司
+             */
+            property_mgmt?: string | null;
+            /**
+             * Address
+             * @description 地址
+             */
+            address?: string | null;
+            /**
+             * Lng
+             * @description 经度(BD-09)
+             */
+            lng?: number | null;
+            /**
+             * Lat
+             * @description 纬度(BD-09)
+             */
+            lat?: number | null;
+        };
+        /**
+         * BdFloorGroup
+         * @description 楼层分组（呈现层，FR-04：名义 ∪ 实际 ∪ pending，未分层置底）.
+         */
+        BdFloorGroup: {
+            /** Floor */
+            floor?: number | null;
+            /**
+             * Room Count
+             * @default 0
+             */
+            room_count: number;
+            /**
+             * Has Pending
+             * @default false
+             */
+            has_pending: boolean;
+        };
+        /**
+         * BdImportTaskCreateResponse
+         * @description 创建导入任务响应.
+         */
+        BdImportTaskCreateResponse: {
+            /** Task Id */
+            task_id: string;
+            /** Status */
+            status: string;
+            /** Message */
+            message: string;
+        };
+        /**
+         * BdImportTaskListResponse
+         * @description 字典导入任务历史响应.
+         */
+        BdImportTaskListResponse: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["BdImportTaskResponse"][];
+        };
+        /**
+         * BdImportTaskResponse
+         * @description 字典导入任务响应.
+         */
+        BdImportTaskResponse: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /** Status */
+            status: string;
+            /** Filename */
+            filename: string;
+            /** File Size */
+            file_size?: number | null;
+            /** Total Communities */
+            total_communities: number;
+            /** Total Buildings */
+            total_buildings: number;
+            /** Total Rooms */
+            total_rooms: number;
+            /** Warnings Count */
+            warnings_count: number;
+            /** Processed Communities */
+            processed_communities: number;
+            /** Progress Percent */
+            progress_percent: number;
+            /** Communities Loaded */
+            communities_loaded: number;
+            /** Buildings Loaded */
+            buildings_loaded: number;
+            /** Rooms Loaded */
+            rooms_loaded: number;
+            /** Failed File Url */
+            failed_file_url?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Processing Duration */
+            processing_duration?: number | null;
+        };
+        /**
+         * BdKpiResponse
+         * @description 字典 KPI hero.
+         */
+        BdKpiResponse: {
+            /** Community Count */
+            community_count: number;
+            /** Building Count */
+            building_count: number;
+            /** Room Count */
+            room_count: number;
+            /** Linked Project Count */
+            linked_project_count: number;
+            /** Pending Count */
+            pending_count: number;
+        };
+        /**
+         * BdMergedChildItem
+         * @description 已并入主档的被并小区行（FR-14 v2.0 抽屉合并信息区块：呈现 + 单条解除合并）.
+         */
+        BdMergedChildItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Address */
+            address?: string | null;
+            /** District */
+            district?: string | null;
+            /**
+             * Building Count
+             * @default 0
+             */
+            building_count: number;
+            /**
+             * Room Count
+             * @default 0
+             */
+            room_count: number;
+            /**
+             * Linked Project Count
+             * @default 0
+             */
+            linked_project_count: number;
+        };
+        /**
+         * BdPendingSubmitRequest
+         * @description 录入端新增提交载荷（FR-13/FR-18）.
+         *
+         *     业务单据创建时携带：new_community（小区快照）或
+         *     parent 目标 + new_building/new_room（楼栋/户室）。
+         */
+        BdPendingSubmitRequest: {
+            /**
+             * Kind
+             * @description 提交类型
+             */
+            kind: string;
+            /**
+             * Name
+             * @description 提交内容名称(小区名/楼栋号/户室号)
+             */
+            name: string;
+            /**
+             * Community Payload
+             * @description 小区表单快照 {district,business_circle,...}
+             */
+            community_payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** Parent Kind */
+            parent_kind?: string | null;
+            /**
+             * Parent Id
+             * @description 父级ID
+             */
+            parent_id?: string | null;
+            /** Source Type */
+            source_type?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+        };
+        /**
+         * BdPendingSubmitResponse
+         * @description 录入端提交响应（幂等复用时 created=false）.
+         */
+        BdPendingSubmitResponse: {
+            /** Pending Id */
+            pending_id: number;
+            /**
+             * Created
+             * @default true
+             */
+            created: boolean;
+            /**
+             * Reused
+             * @default false
+             */
+            reused: boolean;
+        };
+        /**
+         * BdReviewKpi
+         * @description 审核池 KPI（FR-11）.
+         */
+        BdReviewKpi: {
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
+            /**
+             * Processed
+             * @default 0
+             */
+            processed: number;
+            /**
+             * Merged Total
+             * @default 0
+             */
+            merged_total: number;
+            /**
+             * Rejected Total
+             * @default 0
+             */
+            rejected_total: number;
+        };
+        /**
+         * BdReviewListItem
+         * @description 审核池条目行.
+         */
+        BdReviewListItem: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Community Id */
+            community_id?: string | null;
+            /** Community Name */
+            community_name?: string | null;
+            /** Parent Kind */
+            parent_kind?: string | null;
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source Type */
+            source_type?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /** Submitted By */
+            submitted_by?: string | null;
+            /** Submitter Name */
+            submitter_name?: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Reference Count
+             * @default 0
+             */
+            reference_count: number;
+        };
+        /**
+         * BdReviewListResponse
+         * @description 审核池列表响应.
+         */
+        BdReviewListResponse: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["BdReviewListItem"][];
+            kpi: components["schemas"]["BdReviewKpi"];
+        };
+        /**
+         * BdReviewResolveRequest
+         * @description 审核 resolve 请求（三选一动作）.
+         *
+         *     create：通过新增；merge：合并现有（target_id 必填）；reject：驳回
+         *     （录入端来源必须带 target_id 当场改选，机器链路/C 端免）。
+         */
+        BdReviewResolveRequest: {
+            /**
+             * Action
+             * @description 审核动作
+             */
+            action: string;
+            /**
+             * Target Id
+             * @description 目标ID(merge 必填；reject 录入端来源必填)
+             */
+            target_id?: string | null;
+        };
+        /**
+         * BdReviewResolveResponse
+         * @description 审核 resolve 响应.
+         */
+        BdReviewResolveResponse: {
+            /** Success */
+            success: boolean;
+            /** Message */
+            message: string;
+            /**
+             * Backfill Enqueued
+             * @default 0
+             */
+            backfill_enqueued: number;
+        };
+        /**
+         * BdReviewerRolesRequest
+         * @description 审核处理人角色配置保存请求（全量替换）.
+         */
+        BdReviewerRolesRequest: {
+            /** Roles */
+            roles: string[];
+        };
+        /**
+         * BdReviewerRolesResponse
+         * @description 审核处理人角色配置响应.
+         */
+        BdReviewerRolesResponse: {
+            /** Roles */
+            roles: string[];
+        };
+        /**
+         * BdRoomCreateRequest
+         * @description 新增户室请求（楼层区间×户号区间笛卡尔展开，≤200 户）.
+         */
+        BdRoomCreateRequest: {
+            /**
+             * Building Id
+             * @description 楼栋ID
+             */
+            building_id: number;
+            /**
+             * Floor
+             * @description 楼层（单值如 `4` 或区间如 `7-12`）
+             */
+            floor: string;
+            /**
+             * Room Suffix
+             * @description 户号尾号（单值如 `03` 或区间如 `01-08`）
+             */
+            room_suffix: string;
+        };
+        /**
+         * BdRoomItem
+         * @description 户室项.
+         */
+        BdRoomItem: {
+            /** Id */
+            id: number;
+            /** Room No */
+            room_no: string;
+            /** Floor */
+            floor?: number | null;
+            /**
+             * Pending
+             * @default false
+             */
+            pending: boolean;
+            /** Pending Id */
+            pending_id?: number | null;
+            /** Plate No */
+            plate_no: string;
+        };
+        /** Body_create_dict_import_task_api_v1_admin_building_dictionary_import_post */
+        Body_create_dict_import_task_api_v1_admin_building_dictionary_import_post: {
+            /**
+             * File
+             * @description zip 包或 txt 文件(≤2GB，GBK/UTF-8 自动识别)
+             */
+            file: string;
+        };
         /** Body_create_import_task_api_v1_upload_csv_post */
         Body_create_import_task_api_v1_upload_csv_post: {
             /**
@@ -6342,6 +7474,22 @@ export interface components {
             business_circle?: string | null;
         };
         /**
+         * CommunityUnmergeRequest
+         * @description 解除合并请求（FR-14，v1.9）.
+         */
+        CommunityUnmergeRequest: {
+            /**
+             * Merged Id
+             * @description 被并入（已归档）的小区ID
+             */
+            merged_id: string;
+            /**
+             * Primary Id
+             * @description 主小区ID
+             */
+            primary_id: string;
+        };
+        /**
          * CommunityUpdateRequest
          * @description 更新小区请求.
          *
@@ -6546,6 +7694,39 @@ export interface components {
              * @description 跟进内容（1-500 字符）
              */
             content: string;
+        };
+        /**
+         * DictionaryLinkRequest
+         * @description 存量绑定请求（项目/线索/营销/房源四类统一）.
+         */
+        DictionaryLinkRequest: {
+            /**
+             * Community Id
+             * @description 字典小区ID
+             */
+            community_id: string;
+            /**
+             * Building Id
+             * @description 字典楼栋ID(房源类不支持)
+             */
+            building_id?: number | null;
+            /**
+             * Room Id
+             * @description 字典户室ID(房源类不支持)
+             */
+            room_id?: number | null;
+        };
+        /**
+         * DictionaryLinkResponse
+         * @description 存量绑定响应.
+         */
+        DictionaryLinkResponse: {
+            /** Success */
+            success: boolean;
+            /** Dict Status */
+            dict_status: string;
+            /** Message */
+            message: string;
         };
         /**
          * DictionaryResponse
@@ -9040,6 +10221,28 @@ export interface components {
              */
             consultant_id?: string | null;
             /**
+             * Building Id
+             * @description 字典楼栋ID(选填)
+             */
+            building_id?: number | null;
+            /**
+             * Room Id
+             * @description 字典户室ID(选填)
+             */
+            room_id?: number | null;
+            /**
+             * Dict Status
+             * @description 字典关联状态
+             */
+            dict_status?: string | null;
+            /**
+             * New Community
+             * @description 新增小区载荷(进审核池 BR-24)
+             */
+            new_community?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Media Files
              * @description 媒体文件列表(创建时可上传)
              */
@@ -9275,6 +10478,28 @@ export interface components {
             /** @description 项目状态: 在途/在售/已售 */
             project_status?: components["schemas"]["MarketingProjectStatus"] | null;
             /**
+             * Building Id
+             * @description 字典楼栋ID(选填)
+             */
+            building_id?: number | null;
+            /**
+             * Room Id
+             * @description 字典户室ID(选填)
+             */
+            room_id?: number | null;
+            /**
+             * Dict Status
+             * @description 字典关联状态
+             */
+            dict_status?: string | null;
+            /**
+             * New Community
+             * @description 新增小区载荷(进审核池 BR-24)
+             */
+            new_community?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Project Id
              * @description 关联L3项目ID(软引用)
              */
@@ -9468,12 +10693,33 @@ export interface components {
             remarks?: string | null;
             /** Source Property Id */
             source_property_id?: number | null;
+            /** Building Id */
+            building_id?: number | null;
+            /** Room Id */
+            room_id?: number | null;
+            /**
+             * Dict Status
+             * @description 字典关联状态
+             */
+            dict_status?: string | null;
             /** @default pending_assessment */
             status: components["schemas"]["LeadStatus"] | null;
             /** Images */
             images?: string[];
             /** Created At */
             created_at?: string | null;
+            /** New Community */
+            new_community?: {
+                [key: string]: unknown;
+            } | null;
+            /** New Building */
+            new_building?: {
+                [key: string]: unknown;
+            } | null;
+            /** New Room */
+            new_room?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * LeadDetailResponse
@@ -9738,6 +10984,15 @@ export interface components {
             remarks?: string | null;
             /** Source Property Id */
             source_property_id?: number | null;
+            /** Building Id */
+            building_id?: number | null;
+            /** Room Id */
+            room_id?: number | null;
+            /**
+             * Dict Status
+             * @description 字典关联状态
+             */
+            dict_status?: string | null;
             /** Id */
             id: string;
             status: components["schemas"]["LeadStatus"];
@@ -9843,6 +11098,24 @@ export interface components {
             unit_price?: number | null;
             /** Expected Price */
             expected_price?: number | null;
+            /** Building Id */
+            building_id?: number | null;
+            /** Room Id */
+            room_id?: number | null;
+            /** Dict Status */
+            dict_status?: string | null;
+            /** New Community */
+            new_community?: {
+                [key: string]: unknown;
+            } | null;
+            /** New Building */
+            new_building?: {
+                [key: string]: unknown;
+            } | null;
+            /** New Room */
+            new_room?: {
+                [key: string]: unknown;
+            } | null;
             status?: components["schemas"]["LeadStatus"] | null;
             /** Audit Reason */
             audit_reason?: string | null;
@@ -11687,6 +12960,42 @@ export interface components {
              */
             address: string;
             /**
+             * Building Id
+             * @description 字典楼栋ID(选择器选到则落库)
+             */
+            building_id?: number | null;
+            /**
+             * Room Id
+             * @description 字典户室ID(选择器选到则落库)
+             */
+            room_id?: number | null;
+            /**
+             * Dict Status
+             * @description 字典关联状态(选择器选字典数据=linked；兼容模式手填=manual；提交新增=pending)
+             */
+            dict_status?: string | null;
+            /**
+             * New Community
+             * @description 新增小区载荷(进审核池)
+             */
+            new_community?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Building
+             * @description 新增楼栋载荷(进审核池)
+             */
+            new_building?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Room
+             * @description 新增户室载荷(进审核池)
+             */
+            new_room?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Area
              * @description 产证面积(m²)
              */
@@ -11927,6 +13236,21 @@ export interface components {
             community_name?: string | null;
             /** Address */
             address?: string | null;
+            /**
+             * Building Id
+             * @description 字典楼栋ID
+             */
+            building_id?: number | null;
+            /**
+             * Room Id
+             * @description 字典户室ID
+             */
+            room_id?: number | null;
+            /**
+             * Dict Status
+             * @description 字典关联状态: linked/manual/pending/rejected
+             */
+            dict_status?: string | null;
             /** Area */
             area?: string | null;
             /** Layout */
@@ -12178,6 +13502,42 @@ export interface components {
             community_name?: string | null;
             /** Address */
             address?: string | null;
+            /**
+             * Building Id
+             * @description 字典楼栋ID
+             */
+            building_id?: number | null;
+            /**
+             * Room Id
+             * @description 字典户室ID
+             */
+            room_id?: number | null;
+            /**
+             * Dict Status
+             * @description 字典关联状态
+             */
+            dict_status?: string | null;
+            /**
+             * New Community
+             * @description 新增小区载荷(进审核池)
+             */
+            new_community?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Building
+             * @description 新增楼栋载荷(进审核池)
+             */
+            new_building?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Room
+             * @description 新增户室载荷(进审核池)
+             */
+            new_room?: {
+                [key: string]: unknown;
+            } | null;
             /** Area */
             area?: number | string | null;
             /** Layout */
@@ -12239,6 +13599,11 @@ export interface components {
             other_agreements?: string | null;
             /** Signing Materials */
             signing_materials?: components["schemas"]["SigningMaterial"][] | null;
+            /**
+             * Signing Materials Removed Urls
+             * @description 本次更新中需从附件库删除的附件 URL 列表（并发合并防护：删除为显式操作，不传时 signing_materials 走并集合并，已删除项不会因旧快照覆写而复活）
+             */
+            signing_materials_removed_urls?: string[] | null;
             /** Owner Name */
             owner_name?: string | null;
             /** Owner Phone */
@@ -12296,9 +13661,15 @@ export interface components {
             /** Status */
             status: string;
             /** Community Id */
-            community_id: string;
+            community_id?: string | null;
             /** Community Name */
             community_name: string;
+            /** Dict Status */
+            dict_status?: string | null;
+            /** Building Id */
+            building_id?: number | null;
+            /** Room Id */
+            room_id?: number | null;
             /** District */
             district?: string | null;
             /** Business Circle */
@@ -12542,9 +13913,15 @@ export interface components {
             /** Status */
             status: string;
             /** Community Id */
-            community_id: string;
+            community_id?: string | null;
             /** Community Name */
             community_name: string;
+            /** Dict Status */
+            dict_status?: string | null;
+            /** Building Id */
+            building_id?: number | null;
+            /** Room Id */
+            room_id?: number | null;
             /** District */
             district?: string | null;
             /** Business Circle */
@@ -17515,6 +18892,8 @@ export interface operations {
                 rooms?: string | null;
                 /** @description 最少室数量，例如: 5 表示5室以上 */
                 rooms_gte?: number | null;
+                /** @description 字典关联状态: unlinked | linked | pending | rejected */
+                dict_status?: string | null;
                 /** @description 排序字段 */
                 sort_by?: string;
                 /** @description 排序方向: asc | desc */
@@ -17823,6 +19202,39 @@ export interface operations {
             };
         };
     };
+    unmerge_community_api_v1_admin_communities_unmerge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityUnmergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityMergeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_community_api_v1_admin_communities__community_id__patch: {
         parameters: {
             query?: never;
@@ -17988,6 +19400,899 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunityImageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_dict_import_task_api_v1_admin_building_dictionary_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_dict_import_task_api_v1_admin_building_dictionary_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdImportTaskCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_dict_import_tasks_api_v1_admin_building_dictionary_import_tasks_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdImportTaskListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_dict_import_failed_csv_api_v1_admin_building_dictionary_import__filename__failed_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 失败明细文件名 */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dict_kpi_api_v1_admin_building_dictionary_kpi_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdKpiResponse"];
+                };
+            };
+        };
+    };
+    query_dict_communities_api_v1_admin_building_dictionary_communities_get: {
+        parameters: {
+            query?: {
+                /** @description 关键词(名/地址/别名) */
+                keyword?: string | null;
+                district?: string | null;
+                business_circle?: string | null;
+                ring?: string | null;
+                property_type?: string | null;
+                era_from?: number | null;
+                era_to?: number | null;
+                /** @description 有无项目关联 */
+                has_project_link?: boolean | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdCommunityListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_dict_community_api_v1_admin_building_dictionary_communities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdCommunityCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdCommunityDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dict_community_detail_api_v1_admin_building_dictionary_communities__community_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdCommunityDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_dict_community_api_v1_admin_building_dictionary_communities__community_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdCommunityPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdCommunityDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_dict_buildings_api_v1_admin_building_dictionary_communities__community_id__buildings_get: {
+        parameters: {
+            query?: {
+                /** @description 楼栋号搜索 */
+                keyword?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdBuildingListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dict_building_detail_api_v1_admin_building_dictionary_buildings__building_id__get: {
+        parameters: {
+            query?: {
+                /** @description 来源单据类型(回显选中用) */
+                source_biz_type?: string | null;
+                /** @description 来源单据ID */
+                source_biz_id?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdBuildingDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dict_floor_groups_api_v1_admin_building_dictionary_buildings__building_id__floors_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdFloorGroup"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_dict_buildings_api_v1_admin_building_dictionary_buildings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdBuildingCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdBatchCreateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_dict_rooms_api_v1_admin_building_dictionary_buildings__building_id__rooms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdRoomCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdBatchCreateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_review_queue_api_v1_admin_building_dictionary_review_get: {
+        parameters: {
+            query?: {
+                /** @description 状态筛选 */
+                status?: string | null;
+                /** @description 小区筛选 */
+                community_id?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdReviewListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reviewer_roles_config_api_v1_admin_building_dictionary_review_reviewer_roles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdReviewerRolesResponse"];
+                };
+            };
+        };
+    };
+    update_reviewer_roles_config_api_v1_admin_building_dictionary_review_reviewer_roles_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdReviewerRolesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdReviewerRolesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_review_entry_api_v1_admin_building_dictionary_review__entry_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 审核池条目ID */
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdReviewResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdReviewResolveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_pending_backfill_api_v1_admin_building_dictionary_review_pending_backfill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdReviewResolveResponse"];
+                };
+            };
+        };
+    };
+    submit_pending_entry_api_v1_admin_building_dictionary_pending_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdPendingSubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdPendingSubmitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_project_api_v1_admin_projects__project_id__dictionary_link_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DictionaryLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_project_api_v1_admin_projects__project_id__dictionary_link_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_lead_api_v1_admin_leads__lead_id__dictionary_link_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DictionaryLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_lead_api_v1_admin_leads__lead_id__dictionary_link_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_marketing_api_v1_admin_marketing_projects__project_id__dictionary_link_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 营销项目ID */
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DictionaryLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_marketing_api_v1_admin_marketing_projects__project_id__dictionary_link_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 营销项目ID */
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_property_api_v1_admin_properties__property_id__dictionary_link_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源标识(data_source:source_property_id) */
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DictionaryLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_property_api_v1_admin_properties__property_id__dictionary_link_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 房源标识(data_source:source_property_id) */
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLinkResponse"];
                 };
             };
             /** @description Validation Error */

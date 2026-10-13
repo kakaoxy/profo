@@ -39,6 +39,7 @@ class PropertyQueryService:
         max_area: float | None = None,
         rooms: list[int] | None = None,
         rooms_gte: int | None = None,
+        dict_status: str | None = None,
         sort_by: str = "updated_at",
         sort_order: str = "desc",
         page: int = 1,
@@ -62,6 +63,7 @@ class PropertyQueryService:
             max_area: 最大面积（㎡）
             rooms: 室数量列表
             rooms_gte: 最少室数量（用于"5室以上"）
+            dict_status: 字典关联状态（unlinked/linked/pending/rejected）
             sort_by: 排序字段
             sort_order: 排序方向 ("asc" | "desc")
             page: 页码
@@ -75,7 +77,7 @@ class PropertyQueryService:
         # 构建基础查询 - 使用 selectinload 优化关联查询
         query = (
             db.query(PropertyCurrent, Community)
-            .join(
+            .outerjoin(
                 Community,
                 PropertyCurrent.community_id == Community.id,
             )
@@ -104,6 +106,7 @@ class PropertyQueryService:
             max_area=max_area,
             rooms=rooms,
             rooms_gte=rooms_gte,
+            dict_status=dict_status,
         )
 
         # 优化：使用子查询获取总数（避免在大数据集上使用 count()）
@@ -159,7 +162,7 @@ class PropertyQueryService:
         # 构建基础查询
         query = (
             db.query(PropertyCurrent, Community)
-            .join(
+            .outerjoin(
                 Community,
                 PropertyCurrent.community_id == Community.id,
             )

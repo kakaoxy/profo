@@ -42,6 +42,7 @@ from routers.marketing import import_router as marketing_import_router
 from routers.marketing import projects_router as marketing_projects_router
 from routers.monitor import monitor_router
 from routers.projects import core_router
+from routers.property import building_dict_router, dictionary_link_router
 from routers.public import (
     public_auth_router,
     public_bookings_router,
@@ -340,6 +341,8 @@ API_V1_PREFIX = f"{settings.api_prefix}/v1"
 app.include_router(properties_router, prefix=API_V1_PREFIX)
 app.include_router(communities_router, prefix=API_V1_PREFIX)
 app.include_router(community_images_router, prefix=API_V1_PREFIX)
+app.include_router(building_dict_router, prefix=API_V1_PREFIX)
+app.include_router(dictionary_link_router, prefix=API_V1_PREFIX)
 app.include_router(leads_router, prefix=API_V1_PREFIX)
 app.include_router(core_router, prefix=API_V1_PREFIX)
 app.include_router(keys_shares_router, prefix=API_V1_PREFIX)

@@ -97,6 +97,10 @@ class ProjectResponseBuilder:
             "community_id": project.community_id,
             "community_name": project.community_name,
             "address": project.address,
+            # 楼盘字典关联（R9 / FR-12）
+            "building_id": project.building_id,
+            "room_id": project.room_id,
+            "dict_status": project.dict_status,
             "area": project.area or None,
             "layout": project.layout,
             "orientation": project.orientation,

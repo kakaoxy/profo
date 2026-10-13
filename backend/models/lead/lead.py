@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
     DateTime,
     Index,
@@ -31,6 +32,24 @@ class Lead(Base):
     community_name: Mapped[str] = mapped_column(String(200), nullable=False, comment="小区名称")
     community_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="关联小区ID(软引用)")
     is_hot: Mapped[int] = mapped_column(Integer, default=0, comment="是否热门/关注(0/1)")
+
+    # ===== 楼盘字典关联（SRS §8 / R1，v1.9）=====
+    building_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        nullable=True,
+        comment="字典楼栋ID(bd_buildings，选填可空)",
+    )
+    room_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        nullable=True,
+        comment="字典户室ID(bd_rooms，选填可空)",
+    )
+    # 字典关联状态机（§6.2）：manual/linked/pending/rejected
+    dict_status: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="字典关联状态: linked/manual/pending/rejected(未关联为 manual)",
+    )
 
     # Property Physical Attributes
     layout: Mapped[str | None] = mapped_column(String(50), comment="户型(e.g. 2室1厅)")

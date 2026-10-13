@@ -12,6 +12,11 @@ export const publishStatusSchema = z.enum(["草稿", "发布"]);
 export const formSchema = z.object({
   // 小区信息
   community_id: z.string().min(1, "请选择小区").max(36),
+  // 楼盘字典四级地址（M4：选到则落库，未选空置）
+  building_id: z.number().nullable().optional(),
+  room_id: z.number().nullable().optional(),
+  dict_status: z.enum(["linked", "manual", "pending", "rejected"]).nullable().optional(),
+  new_community: z.record(z.string(), z.unknown()).nullable().optional(),
   community_name: z.string().trim().max(200).nullable().optional(),
 
   // 户型信息
@@ -148,6 +153,10 @@ export function formValuesToCreateRequest(
     publish_status: values.publish_status,
     project_status: values.project_status,
     consultant_id: values.consultant_id,
+    building_id: values.building_id ?? null,
+    room_id: values.room_id ?? null,
+    dict_status: values.dict_status ?? null,
+    new_community: values.new_community ?? null,
   };
 
   // 改造阶段完成时间
@@ -192,6 +201,10 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.project_status !== undefined) result.project_status = values.project_status;
   if (values.consultant_id !== undefined) result.consultant_id = values.consultant_id;
   if (values.project_id !== undefined) result.project_id = values.project_id;
+  if (values.building_id !== undefined) result.building_id = values.building_id ?? null;
+  if (values.room_id !== undefined) result.room_id = values.room_id ?? null;
+  if (values.dict_status !== undefined) result.dict_status = values.dict_status ?? null;
+  if (values.new_community !== undefined) result.new_community = values.new_community ?? null;
 
   // 如果总价或面积发生变化，重新计算单价（万元/㎡）
   // 与后端计算逻辑保持一致：unit_price = total_price / area

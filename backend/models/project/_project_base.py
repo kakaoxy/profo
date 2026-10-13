@@ -3,7 +3,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, Index, Numeric, String
+from sqlalchemy import BigInteger, Boolean, Date, Index, Numeric, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,6 +19,16 @@ class Project(BaseModel):
     community_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="小区ID")
     community_name: Mapped[str] = mapped_column(String(200), nullable=False, comment="小区名称")
     address: Mapped[str] = mapped_column(String(500), nullable=False, comment="物业地址")
+
+    # ===== 楼盘字典关联（SRS §8 / R1，v1.9）=====
+    building_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, comment="字典楼栋ID(bd_buildings，可空)")
+    room_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, comment="字典户室ID(bd_rooms，可空)")
+    # 字典关联状态机（§6.2）：manual/linked/pending/rejected
+    dict_status: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="字典关联状态: linked/manual/pending/rejected(未关联为 manual)",
+    )
 
     project_manager_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="项目负责人ID")
 

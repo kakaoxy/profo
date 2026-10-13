@@ -3,6 +3,7 @@ import { Lead, LeadStatus } from "../types";
 import { Button } from "@/components/ui/button";
 import { X, Ruler, MapPin, Images } from "lucide-react";
 import { CommunitySelect } from "@/components/common/community-select";
+import { DictAddressPicker, type DictAddressValue } from "@/components/dict-address-picker";
 import { LayoutInputs } from "@/components/common/layout-inputs";
 import { FloorInput } from "@/components/common";
 import { ImageUpload } from "./add-lead-parts/image-upload";
@@ -47,6 +48,8 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
     businessArea: "",
     remarks: "",
   });
+  // 楼盘字典四级地址（M3 / Task 15）
+  const [dictValue, setDictValue] = useState<DictAddressValue | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -114,6 +117,12 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
 
     onAdd({
       communityId: formData.communityId || undefined,
+      buildingId: dictValue?.buildingId ?? undefined,
+      roomId: dictValue?.roomId ?? undefined,
+      dictStatus: dictValue?.dictStatus ?? undefined,
+      newCommunity: dictValue?.newCommunity ?? null,
+      newBuilding: dictValue?.newBuilding ?? null,
+      newRoom: dictValue?.newRoom ?? null,
       communityName: formData.communityName,
       layout: formData.layout,
       orientation: formData.orientation,
@@ -179,6 +188,18 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                 }
               />
             </div>
+
+            {/* 楼盘字典四级地址（M3：小区必选、楼栋/户室选填） */}
+            <DictAddressPicker
+              value={dictValue}
+              onChange={(next) => {
+                setDictValue(next);
+                if (next.communityName) {
+                  setFormData((prev) => ({ ...prev, communityName: next.communityName }));
+                }
+              }}
+              sourceBizType="lead"
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">

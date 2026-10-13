@@ -35,7 +35,9 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    // baseURL 必须与 e2e/helpers/auth.ts 的 FRONT_BASE 同源（默认 127.0.0.1）：
+    // 登录态 cookie 按 FRONT_HOST 域注入，baseURL 用 localhost 会导致 cookie 不随请求发送，全部用例未登录。
+    baseURL: process.env.E2E_FRONT_BASE ?? "http://127.0.0.1:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

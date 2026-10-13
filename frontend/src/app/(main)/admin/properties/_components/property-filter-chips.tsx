@@ -46,6 +46,32 @@ const StatusChips = memo(function StatusChips() {
   );
 });
 
+// 字典状态 Chip 组（单选）
+const DictStatusChips = memo(function DictStatusChips() {
+  const [dictStatus, setDictStatus] = useQueryState("dict_status", { defaultValue: "", shallow: false });
+  const options = [
+    { value: "", label: "全部" },
+    { value: "unlinked", label: "未关联" },
+    { value: "pending", label: "待审核" },
+    { value: "rejected", label: "已驳回" },
+    { value: "linked", label: "已关联" },
+  ];
+  return (
+    <div className="flex gap-1.5 shrink-0">
+      {options.map((opt) => (
+        <Badge
+          key={opt.value}
+          variant={dictStatus === opt.value ? "default" : "outline"}
+          className="cursor-pointer h-7 px-2.5 text-xs"
+          onClick={() => setDictStatus(opt.value || null)}
+        >
+          {opt.label}
+        </Badge>
+      ))}
+    </div>
+  );
+});
+
 // 户型 Chip 组（多选，5+ 走 rooms_gte）
 const LayoutChips = memo(function LayoutChips() {
   const [rooms, setRooms] = useQueryState("rooms", { defaultValue: "", shallow: false });
@@ -176,6 +202,7 @@ export function PropertyFilterChips() {
   return (
     <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-2 md:hidden items-center">
       <StatusChips />
+      <DictStatusChips />
       <LayoutChips />
       <FloorChips />
       <CommunitySearchChip />

@@ -50,11 +50,7 @@ class PropertyService:
             msg = "房源不存在"
             raise ResourceNotFoundError(msg)
 
-        if not property_obj.community:
-            msg = "关联小区不存在"
-            raise ResourceNotFoundError(msg)
-
-        detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, property_obj.community)
+        detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, property_obj.community or None)
 
         detail.picture_links = [
             clean_url(media.url)

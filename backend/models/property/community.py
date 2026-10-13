@@ -15,9 +15,13 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import Base
+
+# PostgreSQL text[] 列型（communities.property_types）
+TEXTARRAY = ARRAY(String)
 
 
 class Community(Base):
@@ -33,6 +37,37 @@ class Community(Base):
     avg_price_wan: Mapped[float | None] = mapped_column(Float, nullable=True, comment="小区均价(万)")
     total_properties: Mapped[int] = mapped_column(Integer, default=0, comment="房源总数")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否激活(软删除)")
+
+    # ===== 楼盘字典画像扩展（SRS §8 / R1，v1.9）=====
+    # BD-09 小区锚点坐标（原样落库不转换，BR-18）
+    lng: Mapped[float | None] = mapped_column(Float, nullable=True, comment="经度(BD-09，原样落库)")
+    lat: Mapped[float | None] = mapped_column(Float, nullable=True, comment="纬度(BD-09，原样落库)")
+    # 环线：内环内/中环内/外环内/外环外，允许为空（BR-04 展示「—」）
+    ring: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="环线(内环内/中环内/外环内/外环外，可空)"
+    )
+    # 物业类型数组（如 {住宅-公寓,住宅-新里}）
+    property_types: Mapped[list | None] = mapped_column(
+        TEXTARRAY,
+        nullable=True,
+        comment="物业类型列表(text[])，如 {住宅-公寓,住宅-新里}",
+    )
+    # 建成年代区间（脏值导入时置空，BR-05）
+    era_from: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="建成年代起(如 1980)")
+    era_to: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="建成年代止(如 2010)")
+    developer: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="开发商")
+    property_mgmt: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="物业公司")
+    # 小区地址（含区域板块前缀，如「青浦盈浦;万寿新村」中的地址部分）
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True, comment="小区地址(可空)")
+    # 数据来源：admin 后台补录 / review 审核转正（import 值域已废止，BR-20/SRS §8）
+    source: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, comment="数据来源(admin/review)，import 值域废止"
+    )
+    # 被并入主档的主小区 ID（v1.9 合并信息区块与解除合并依据；可空逻辑自指）
+    merged_into_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, comment="被并入的主小区ID(可空逻辑自指)"
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -67,6 +102,10 @@ class Community(Base):
         Index("idx_community_price_avg", "avg_price_wan"),
         # 活跃状态查询索引
         Index("idx_community_active", "is_active"),
+        # 楼盘字典：合并信息区块查询（被并入主档的小区清单）
+        Index("idx_community_merged_into", "merged_into_id"),
+        # 楼盘字典：总览筛选（区+环线）
+        Index("idx_community_dict_filter", "district", "ring"),
     )
 
     def __repr__(self) -> str:

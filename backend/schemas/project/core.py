@@ -60,6 +60,18 @@ class ProjectCreate(BaseModel):
     community_id: str | None = Field(None, max_length=36, description="小区ID")
     community_name: str = Field(max_length=200, description="小区名称")
     address: str = Field(max_length=500, description="物业地址")
+    # ===== 楼盘字典四级地址（FR-13 / R8，v1.9）=====
+    building_id: int | None = Field(None, description="字典楼栋ID(选择器选到则落库)")
+    room_id: int | None = Field(None, description="字典户室ID(选择器选到则落库)")
+    dict_status: str | None = Field(
+        None,
+        pattern="^(linked|manual|pending|rejected)$",
+        description="字典关联状态(选择器选字典数据=linked；兼容模式手填=manual；提交新增=pending)",
+    )
+    # 录入端新增小区/楼栋/户室载荷（进审核池，业务单据照常创建 FR-10）
+    new_community: dict | None = Field(None, description="新增小区载荷(进审核池)")
+    new_building: dict | None = Field(None, description="新增楼栋载荷(进审核池)")
+    new_room: dict | None = Field(None, description="新增户室载荷(进审核池)")
     area: Decimal | None = Field(None, description="产证面积(m²)")
     layout: str | None = Field(None, max_length=50, description="户型")
     orientation: str | None = Field(None, max_length=50, description="朝向")
@@ -109,6 +121,17 @@ class ProjectUpdate(BaseModel):
     community_id: str | None = Field(None, max_length=36, description="小区ID")
     community_name: str | None = Field(None, max_length=200)
     address: str | None = Field(None, max_length=500)
+    # ===== 楼盘字典四级地址（M2/BR-22：编辑与新建同口径走选择器，兼容模式保底）=====
+    building_id: int | None = Field(None, description="字典楼栋ID")
+    room_id: int | None = Field(None, description="字典户室ID")
+    dict_status: str | None = Field(
+        None,
+        pattern="^(linked|manual|pending|rejected)$",
+        description="字典关联状态",
+    )
+    new_community: dict | None = Field(None, description="新增小区载荷(进审核池)")
+    new_building: dict | None = Field(None, description="新增楼栋载荷(进审核池)")
+    new_room: dict | None = Field(None, description="新增户室载荷(进审核池)")
     area: Decimal | None = Field(None)
     layout: str | None = Field(None, max_length=50)
     orientation: str | None = Field(None, max_length=50)
@@ -223,6 +246,10 @@ class ProjectResponse(BaseModel):
     community_id: str | None = Field(None, description="小区ID")
     community_name: str | None = None
     address: str | None = None
+    # ===== 楼盘字典关联（R9 / FR-12，v1.9）=====
+    building_id: int | None = Field(None, description="字典楼栋ID")
+    room_id: int | None = Field(None, description="字典户室ID")
+    dict_status: str | None = Field(None, description="字典关联状态: linked/manual/pending/rejected")
     area: Decimal | None = None
     layout: str | None = None
     orientation: str | None = None

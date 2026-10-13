@@ -11,6 +11,7 @@ export const searchParamsParsers = {
   page_size: parseAsInteger.withDefault(50),
   q: parseAsString.withDefault(""), // 小区名搜索
   status: parseAsString.withDefault(""), // 状态
+  dict_status: parseAsString.withDefault(""), // 字典关联状态（unlinked/linked/pending/rejected）
   rooms: parseAsString.withDefault(""), // 户型 (逗号分隔)
   rooms_gte: parseAsInteger, // 最少室数量 (5+ 等)
   floor_levels: parseAsString.withDefault(""), // 楼层

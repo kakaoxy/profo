@@ -87,11 +87,15 @@ class ProjectCreator:
         now: datetime,
     ) -> Project:
         """创建项目基础记录."""
+        dict_fields = self._resolve_dict_fields(project_data)
         project = Project(
             id=project_id,
             community_id=project_data.community_id,
             community_name=project_data.community_name,
             address=project_data.address,
+            building_id=dict_fields.get("building_id"),
+            room_id=dict_fields.get("room_id"),
+            dict_status=dict_fields.get("dict_status"),
             area=project_data.area,
             layout=project_data.layout,
             orientation=project_data.orientation,
@@ -111,6 +115,23 @@ class ProjectCreator:
         project.name = project.generate_name()
         self.db.add(project)
         return project
+
+    @staticmethod
+    def _resolve_dict_fields(project_data: ProjectCreate) -> dict:
+        """解析字典关联字段（FR-13/R8）.
+
+        - 选到字典数据（building_id/room_id 有值）→ linked；
+        - 提交新增载荷（new_*）→ pending（审核池服务已由 Router 层前置处理，
+          pending_id 由前端回填或提交时同步返回）；
+        - 兼容模式手填 → manual。
+        """
+        if project_data.building_id or project_data.room_id:
+            return {"building_id": project_data.building_id, "room_id": project_data.room_id, "dict_status": "linked"}
+        if project_data.new_community or project_data.new_building or project_data.new_room:
+            return {"building_id": None, "room_id": None, "dict_status": "pending"}
+        if project_data.community_id:
+            return {"building_id": None, "room_id": None, "dict_status": "linked"}
+        return {"building_id": None, "room_id": None, "dict_status": "manual"}
 
     def _create_contract_record(
         self,

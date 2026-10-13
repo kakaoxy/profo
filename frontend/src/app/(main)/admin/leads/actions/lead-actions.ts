@@ -26,6 +26,12 @@ function toCreatePayload(data: Omit<Lead, "id" | "createdAt">): LeadCreatePayloa
     images: data.images || [],
   };
   if (data.communityId !== undefined) payload.community_id = data.communityId;
+  if (data.buildingId !== undefined) payload.building_id = data.buildingId;
+  if (data.roomId !== undefined) payload.room_id = data.roomId;
+  if (data.dictStatus !== undefined) payload.dict_status = data.dictStatus;
+  if (data.newCommunity !== undefined) payload.new_community = data.newCommunity;
+  if (data.newBuilding !== undefined) payload.new_building = data.newBuilding;
+  if (data.newRoom !== undefined) payload.new_room = data.newRoom;
   if (data.layout !== undefined) payload.layout = data.layout;
   if (data.orientation !== undefined) payload.orientation = data.orientation;
   if (data.floorInfo !== undefined) payload.floor_info = data.floorInfo;
@@ -44,6 +50,12 @@ function toUpdatePayload(data: Partial<Lead>): LeadUpdatePayload {
   const payload: LeadUpdatePayload = {};
   if (data.communityName !== undefined) payload.community_name = data.communityName;
   if (data.communityId !== undefined) payload.community_id = data.communityId;
+  if (data.buildingId !== undefined) payload.building_id = data.buildingId;
+  if (data.roomId !== undefined) payload.room_id = data.roomId;
+  if (data.dictStatus !== undefined) payload.dict_status = data.dictStatus;
+  if (data.newCommunity !== undefined) payload.new_community = data.newCommunity;
+  if (data.newBuilding !== undefined) payload.new_building = data.newBuilding;
+  if (data.newRoom !== undefined) payload.new_room = data.newRoom;
   if (data.layout !== undefined) payload.layout = data.layout;
   if (data.orientation !== undefined) payload.orientation = data.orientation;
   if (data.floorInfo !== undefined) payload.floor_info = data.floorInfo;

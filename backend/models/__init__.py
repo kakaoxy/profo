@@ -91,6 +91,14 @@ from .project import (
 
 # 房源信息模块
 from .property import (
+    BdBuilding,
+    BdEntryKind,
+    BdEntryStatus,
+    BdImportTask,
+    BdPendingEntry,
+    BdPendingReference,
+    BdReferenceStatus,
+    BdRoom,
     Community,
     CommunityAlias,
     CommunityCompetitor,
@@ -134,6 +142,14 @@ __all__ = [
     # 基础
     "Base",
     "BaseModel",
+    "BdBuilding",
+    "BdEntryKind",
+    "BdEntryStatus",
+    "BdImportTask",
+    "BdPendingEntry",
+    "BdPendingReference",
+    "BdReferenceStatus",
+    "BdRoom",
     "BusinessForm",
     "CashFlowCategory",
     "CashFlowType",

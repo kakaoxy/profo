@@ -42,6 +42,10 @@ const l4ProjectCreateSchema = z.object({
   stage_completed_dates: z.record(z.string(), z.string()).nullable().optional(),
   publish_status: z.enum(["草稿", "发布"]),
   project_status: z.enum(["在途", "在售", "已售"]),
+  building_id: z.number().nullable().optional(),
+  room_id: z.number().nullable().optional(),
+  dict_status: z.enum(["linked", "manual", "pending", "rejected"]).nullable().optional(),
+  new_community: z.record(z.string(), z.unknown()).nullable().optional(),
   project_id: z.string().uuid().nullable().optional(),
   consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
 });
@@ -87,6 +91,10 @@ const l4ProjectUpdateSchema = z.object({
   stage_completed_dates: z.record(z.string(), z.string()).nullable().optional(),
   publish_status: z.enum(["草稿", "发布"]).nullable().optional(),
   project_status: z.enum(["在途", "在售", "已售"]).nullable().optional(),
+  building_id: z.number().nullable().optional(),
+  room_id: z.number().nullable().optional(),
+  dict_status: z.enum(["linked", "manual", "pending", "rejected"]).nullable().optional(),
+  new_community: z.record(z.string(), z.unknown()).nullable().optional(),
   project_id: z.string().uuid().nullable().optional(),
   consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
 });

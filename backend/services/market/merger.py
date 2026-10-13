@@ -48,7 +48,7 @@ class CommunityMerger:
 
             self._process_aliases(primary_community, merge_communities, db)
             self._migrate_properties(primary_id, merge_ids, db)
-            self._archive_communities(merge_communities)
+            self._archive_communities(primary_community, merge_communities)
             self._refresh_primary_stats(primary_community, db)
 
             db.commit()
@@ -76,6 +76,75 @@ class CommunityMerger:
             error_msg = "系统内部错误，请联系管理员"
             logger.critical("合并发生未预期错误: %s", e, exc_info=True)
             return MergeResult(success=False, affected_properties=0, message=error_msg)
+
+    def unmerge_community(self, merged_id: str, primary_id: str, db: Session) -> MergeResult:
+        """解除合并（FR-14，v1.9）：恢复归档/清指针/撤销吸纳别名，单事务.
+
+        被并小区数据因软归档保留（aliases 已删除标记、property 无需拆回 ——
+        房源已在合并时改指主档；恢复独立后新数据自然分开）。
+        """
+        try:
+            # 行锁防并发（与 merge 同口径）
+            merged = (
+                db.query(Community)
+                .filter(Community.id == merged_id, Community.merged_into_id == primary_id)
+                .with_for_update()
+                .first()
+            )
+            primary = db.query(Community).filter(Community.id == primary_id).with_for_update().first()
+            if not merged or not primary:
+                msg = "被并小区不存在或不属于该主档"
+                raise ValueError(msg)
+
+            affected_count = (
+                db.query(PropertyCurrent)
+                .filter(PropertyCurrent.community_id == merged_id, PropertyCurrent.is_active.is_(True))
+                .count()
+            )
+
+            # 1. 恢复归档小区 + 清指针
+            merged.is_active = True
+            merged.merged_into_id = None
+            merged.updated_at = datetime.now(timezone.utc)
+
+            # 2. 撤销并入时吸纳的别名（merge_operation 来源，指向主档且名为被并小区名）
+            absorbed_alias = (
+                db.query(CommunityAlias)
+                .filter(
+                    CommunityAlias.community_id == primary_id,
+                    CommunityAlias.alias_name == merged.name,
+                    CommunityAlias.data_source == self.ALIAS_SOURCE_MERGE,
+                    CommunityAlias.is_deleted.is_(False),
+                )
+                .first()
+            )
+            if absorbed_alias:
+                absorbed_alias.is_deleted = True
+
+            # 3. 被并小区原别名恢复：合并时被删除标记的同名记录不可精确追溯，
+            #    保守不动（解绑核心诉求是小区恢复独立，别名可重新维护）
+
+            # 4. 主档计数刷新
+            self._refresh_primary_stats(primary, db)
+            db.commit()
+
+            success_msg = (
+                f"已解除合并：'{merged.name}' 恢复独立小区"
+                f"（原关联房源 {affected_count} 套留在主档，如需拆回请人工迁移）"
+            )
+            logger.info(success_msg)
+            return MergeResult(success=True, affected_properties=affected_count, message=success_msg)
+        except ValueError:
+            db.rollback()
+            raise
+        except SQLAlchemyError:
+            db.rollback()
+            logger.exception("解除合并数据库失败")
+            return MergeResult(success=False, affected_properties=0, message="数据库操作失败，请稍后重试")
+        except Exception:
+            db.rollback()
+            logger.exception("解除合并未预期错误")
+            return MergeResult(success=False, affected_properties=0, message="系统内部错误")
 
     def _validate_communities(self, primary_id: int, merge_ids: list[int], db: Session) -> Community:
         """验证主小区和待合并小区是否存在且有效.
@@ -197,11 +266,15 @@ class CommunityMerger:
             synchronize_session=False,
         )
 
-    def _archive_communities(self, communities: list[Community]) -> None:
-        """软删除被合并的小区."""
+    def _archive_communities(self, primary: Community, communities: list[Community]) -> None:
+        """软删除被合并的小区.
+
+        v1.9：同时写入 merged_into_id（字典合并信息区块与解除合并依据，SRS §8）。
+        """
         now = datetime.now(timezone.utc)
         for c in communities:
             c.is_active = False
+            c.merged_into_id = primary.id
             c.updated_at = now
 
     def _refresh_primary_stats(self, primary: Community, db: Session) -> None:

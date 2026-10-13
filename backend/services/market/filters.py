@@ -33,6 +33,7 @@ def apply_filters(
     max_area: float | None = None,
     rooms: list[int] | None = None,
     rooms_gte: int | None = None,
+    dict_status: str | None = None,
 ) -> Query:
     """应用筛选条件到查询对象.
 
@@ -52,6 +53,7 @@ def apply_filters(
         max_area: 最大面积
         rooms: 室数量列表
         rooms_gte: 最少室数量
+        dict_status: 字典关联状态（unlinked/linked/pending/rejected）
 
     Returns:
         Query: 应用筛选后的查询对象
@@ -78,6 +80,20 @@ def apply_filters(
         else:
             logger.warning("未知状态筛选值: %s，有效值为: %s", status, valid_statuses)
 
+    # 字典关联状态筛选：unlinked=未关联（含手动创建），其余等值匹配
+    if dict_status:
+        if dict_status == "unlinked":
+            query = query.filter(
+                or_(
+                    PropertyCurrent.dict_status.is_(None),
+                    PropertyCurrent.dict_status == "manual",
+                )
+            )
+        elif dict_status in ("linked", "pending", "rejected"):
+            query = query.filter(PropertyCurrent.dict_status == dict_status)
+        else:
+            logger.warning("未知字典关联状态筛选值: %s，有效值为: unlinked/linked/pending/rejected", dict_status)
+
     # 关键词搜索：同时模糊匹配小区名与商圈
     if keyword:
         kw = f"%{escape_like(keyword)}%"
@@ -85,6 +101,7 @@ def apply_filters(
             or_(
                 Community.name.like(kw, escape="\\"),
                 Community.business_circle.like(kw, escape="\\"),
+                PropertyCurrent.community_name.like(kw, escape="\\"),
             ),
         )
 

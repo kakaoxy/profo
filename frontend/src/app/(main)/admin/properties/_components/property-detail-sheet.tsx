@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Home, Calendar, Tag, Layers, LucideIcon } from "lucide-react";
 import { getProjectStatusBadgeClass } from "@/lib/status-colors";
 import { isValidUrl } from "@/lib/validators";
+import { DictLinkCard } from "@/components/custom/dict-link-card";
 
 type PropertyDetail = components["schemas"]["PropertyDetailResponse"];
 
@@ -55,7 +56,7 @@ export function PropertyDetailSheet() {
   // 3. SWR 接管数据获取：自动去重、自动取消旧请求、消除 race condition
   // 规则: client-swr-dedup / rerender-derived-state-no-effect
   // 关闭重试与聚焦重验以保持原有"失败即停止"语义，避免行为变化
-  const { data, error, isLoading } = useSWR<PropertyDetail>(
+  const { data, error, isLoading, mutate } = useSWR<PropertyDetail>(
     id === null ? null : ["property-detail", id],
     () => getPropertyDetailAction(id as number),
     {
@@ -120,6 +121,16 @@ export function PropertyDetailSheet() {
 
             {data && !isLoading && (
               <>
+                {/* 字典绑定（缺陷 F：机器链路房源绑定小区） */}
+                <DictLinkCard
+                  bizType="property"
+                  bizId={`${data.data_source}:${data.source_property_id}`}
+                  communityId={data.community_id ?? null}
+                  communityName={data.community_name ?? ""}
+                  dictStatus={data.dict_status ?? null}
+                  onChanged={() => void mutate()}
+                />
+
                 {/* 1. 核心价格与面积 */}
                 <div className="grid grid-cols-3 gap-4 rounded-inputs bg-fog p-4">
                   <div className="text-center border-r">

@@ -19,6 +19,10 @@ const leadStatusEnum = z.nativeEnum(LeadStatus);
 export const createLeadSchema = z.object({
   communityName: z.string().min(1, "小区名称不能为空").max(200),
   communityId: z.string().min(1).optional(),
+  // 楼盘字典四级地址（M3：小区必选、楼栋/户室选填落库）
+  buildingId: z.number().nullable().optional(),
+  roomId: z.number().nullable().optional(),
+  dictStatus: z.enum(["linked", "manual", "pending", "rejected"]).nullable().optional(),
   layout: z.string().min(1, "户型不能为空").max(50),
   orientation: z.string().min(1, "朝向不能为空").max(20),
   floorInfo: z.string().min(1, "楼层信息不能为空").max(50),

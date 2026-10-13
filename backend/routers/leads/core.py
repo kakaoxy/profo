@@ -107,7 +107,7 @@ def get_leads(
     )
 
 
-@router.post("")
+@router.post("", status_code=201)
 @limiter.limit(RateLimits.LEAD_UPDATE)
 def create_lead(
     request: Request,

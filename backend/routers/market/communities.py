@@ -21,6 +21,7 @@ from schemas.community import (
     CommunityMergeRequest,
     CommunityMergeResponse,
     CommunityResponse,
+    CommunityUnmergeRequest,
     CommunityUpdateRequest,
     DictionaryResponse,
 )
@@ -123,6 +124,18 @@ def merge_communities(
         if not result.success:
             raise ValueError(result.message)
 
+        from services.system.operation_log import operation_log_service
+
+        operation_log_service.log_action(
+            db,
+            user_id=str(_current_user.id),
+            action="community_merge",
+            resource_type="community",
+            resource_id=str(merge_request.primary_id),
+            after={"merge_ids": merge_request.merge_ids},
+            request=request,
+        )
+
         logger.info("小区合并成功: %s", result.message)
         return CommunityMergeResponse(
             success=True,
@@ -136,6 +149,63 @@ def merge_communities(
     except Exception:
         logger.exception("小区合并发生未知错误")
         msg = "合并操作失败，请联系管理员"
+        raise ServiceException(msg) from None
+
+
+@router.post("/communities/unmerge")
+@limiter.limit(RateLimits.COMMUNITY_MERGE)
+def unmerge_community(
+    request: Request,
+    unmerge_request: "CommunityUnmergeRequest",
+    db: DbSessionDep,
+    _current_user: PropertyGovernancePermDep,
+) -> CommunityMergeResponse:
+    """解除合并（FR-14，v1.9 新增）.
+
+    恢复归档小区（is_active 置回）、清 merged_into_id、移除并入时吸纳的别名，
+    单事务 + 审计；被并小区数据因软归档保留，可无损拆回。
+
+    权限：property:governance（与合并同口径）。速率限制：20次/小时。
+    """
+    logger.info(
+        "收到解除合并请求: merged_id=%s, primary_id=%s",
+        unmerge_request.merged_id,
+        unmerge_request.primary_id,
+    )
+
+    merger = CommunityMerger()
+    try:
+        result = merger.unmerge_community(
+            merged_id=unmerge_request.merged_id,
+            primary_id=unmerge_request.primary_id,
+            db=db,
+        )
+        if not result.success:
+            raise ValueError(result.message)
+
+        from services.system.operation_log import operation_log_service
+
+        operation_log_service.log_action(
+            db,
+            user_id=str(_current_user.id),
+            action="community_unmerge",
+            resource_type="community",
+            resource_id=str(unmerge_request.primary_id),
+            after={"merged_id": unmerge_request.merged_id},
+            request=request,
+        )
+
+        return CommunityMergeResponse(
+            success=True,
+            affected_properties=result.affected_properties,
+            message=result.message,
+        )
+    except ValueError as e:
+        logger.warning("解除合并业务验证失败: %s", e)
+        raise ValidationError(str(e)) from e
+    except Exception:
+        logger.exception("解除合并发生未知错误")
+        msg = "解除合并操作失败，请联系管理员"
         raise ServiceException(msg) from None
 
 

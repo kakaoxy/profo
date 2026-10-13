@@ -23,6 +23,34 @@
 """
 
 # 4. Community (小区)
+from .building_dict import (
+    BdBatchCreateResult,
+    BdBuildingCreateRequest,
+    BdBuildingDetail,
+    BdBuildingListResponse,
+    BdCommunityCreateRequest,
+    BdCommunityDetailResponse,
+    BdCommunityListResponse,
+    BdCommunityPatchRequest,
+    BdFloorGroup,
+    BdImportTaskCreateResponse,
+    BdImportTaskListResponse,
+    BdImportTaskResponse,
+    BdKpiResponse,
+    BdPendingSubmitRequest,
+    BdPendingSubmitResponse,
+    BdReviewKpi,
+    BdReviewListItem,
+    BdReviewListResponse,
+    BdReviewResolveRequest,
+    BdReviewResolveResponse,
+    BdRoomCreateRequest,
+    BdRoomItem,
+    DictionaryLinkRequest,
+    DictionaryLinkResponse,
+)
+
+# 4. Community (小区)
 from .community import (
     CommunityListResponse,
     CommunityMergeRequest,
@@ -162,6 +190,28 @@ __all__ = [
     "AIStrategyRequest",
     "AIStrategyResponse",
     "AddCompetitorRequest",
+    "BdBatchCreateResult",
+    "BdBuildingCreateRequest",
+    "BdBuildingDetail",
+    "BdBuildingListResponse",
+    "BdCommunityCreateRequest",
+    "BdCommunityDetailResponse",
+    "BdCommunityListResponse",
+    "BdCommunityPatchRequest",
+    "BdFloorGroup",
+    "BdImportTaskCreateResponse",
+    "BdImportTaskListResponse",
+    "BdImportTaskResponse",
+    "BdKpiResponse",
+    "BdPendingSubmitRequest",
+    "BdPendingSubmitResponse",
+    "BdReviewKpi",
+    "BdReviewListItem",
+    "BdReviewListResponse",
+    "BdReviewResolveRequest",
+    "BdReviewResolveResponse",
+    "BdRoomCreateRequest",
+    "BdRoomItem",
     "CashFlowRecordCreate",
     "CashFlowRecordResponse",
     "CashFlowResponse",
@@ -173,20 +223,18 @@ __all__ = [
     "CommunityListResponse",
     "CommunityMergeRequest",
     "CommunityMergeResponse",
-    # Community
     "CommunityResponse",
     "CommunitySearchResponse",
     "CompetitorResponse",
-    # Common
+    "DictionaryLinkRequest",
+    "DictionaryLinkResponse",
     "ErrorResponse",
     "FloorInfo",
-    # Monitor
     "FloorStats",
     "ImportResult",
     "ImportTaskCreateResponse",
     "ImportTaskStatusResponse",
     "ImportableMediaResponse",
-    # Enums
     "L3ProjectBriefResponse",
     "L3ProjectImportResponse",
     "L3ProjectListResponse",
@@ -205,7 +253,6 @@ __all__ = [
     "L4MediaType",
     "L4RefreshResponse",
     "L4SyncResponse",
-    # Lead
     "LeadCreate",
     "LeadListItem",
     "LeadResponse",
@@ -218,12 +265,10 @@ __all__ = [
     "PaginatedLeadListResponse",
     "PaginatedLeadResponse",
     "PaginatedPropertyResponse",
-    # Response Models
     "PaginatedResponse",
     "PasswordChange",
     "PhotoCategory",
     "ProjectCompleteRequest",
-    # Project
     "ProjectCreate",
     "ProjectListResponse",
     "ProjectReportResponse",
@@ -232,10 +277,8 @@ __all__ = [
     "ProjectStatusUpdate",
     "ProjectUpdate",
     "PropertyDetailResponse",
-    # Property
     "PropertyIngestionModel",
     "PropertyResponse",
-    # L4 Marketing
     "PublishStatus",
     "PushResult",
     "RefreshTokenRequest",
@@ -257,9 +300,7 @@ __all__ = [
     "TokenResponse",
     "TrendData",
     "TrendResponse",
-    # Upload
     "UploadResult",
-    # User
     "UserCreate",
     "UserListResponse",
     "UserResponse",

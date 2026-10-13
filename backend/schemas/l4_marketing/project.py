@@ -98,6 +98,16 @@ class L4MarketingProjectBase(BaseModel):
         description="关联顾问ID(软引用User表)，UUID字符串",
     )
 
+    # ===== 楼盘字典四级地址（M4 / FR-13：选到则落库，未选空置）=====
+    building_id: int | None = Field(None, description="字典楼栋ID(选填)")
+    room_id: int | None = Field(None, description="字典户室ID(选填)")
+    dict_status: str | None = Field(
+        None,
+        pattern="^(linked|manual|pending|rejected)$",
+        description="字典关联状态",
+    )
+    new_community: dict | None = Field(None, description="新增小区载荷(进审核池 BR-24)")
+
 
 class L4MarketingProjectCreate(L4MarketingProjectBase):
     """创建营销项目请求."""
@@ -135,6 +145,12 @@ class L4MarketingProjectUpdate(BaseModel):
     # 状态
     publish_status: PublishStatus | None = Field(default=None, description="发布状态: 草稿/发布")
     project_status: MarketingProjectStatus | None = Field(default=None, description="项目状态: 在途/在售/已售")
+
+    # 楼盘字典四级地址（M4）
+    building_id: int | None = Field(None, description="字典楼栋ID(选填)")
+    room_id: int | None = Field(None, description="字典户室ID(选填)")
+    dict_status: str | None = Field(None, pattern="^(linked|manual|pending|rejected)$", description="字典关联状态")
+    new_community: dict | None = Field(None, description="新增小区载荷(进审核池 BR-24)")
 
     # 关联
     project_id: UUID4 | None = Field(default=None, description="关联L3项目ID(软引用)")

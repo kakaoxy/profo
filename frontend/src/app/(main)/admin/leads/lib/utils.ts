@@ -8,6 +8,10 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     id: backendLead.id,
     communityName: backendLead.community_name,
     communityId: backendLead.community_id ?? undefined,
+    // 楼盘字典四级地址（M3 / FR-18）
+    buildingId: backendLead.building_id ?? null,
+    roomId: backendLead.room_id ?? null,
+    dictStatus: (backendLead.dict_status as Lead["dictStatus"]) ?? null,
     layout: backendLead.layout ?? "",
     orientation: backendLead.orientation ?? "",
     floorInfo: backendLead.floor_info ?? "",

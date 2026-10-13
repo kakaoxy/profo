@@ -16,6 +16,7 @@ from enum import Enum
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
     DateTime,
     Index,
@@ -96,6 +97,24 @@ class L4MarketingProject(BaseModel):
 
     # 小区名称 - 冗余存储，避免跨层级JOIN查询
     community_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="小区名称(冗余存储)")
+
+    # ===== 楼盘字典关联（SRS §8 / R1，v1.9）=====
+    building_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        nullable=True,
+        comment="字典楼栋ID(bd_buildings，选填可空)",
+    )
+    room_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        nullable=True,
+        comment="字典户室ID(bd_rooms，选填可空)",
+    )
+    # 字典关联状态机（§6.2）：manual/linked/pending/rejected
+    dict_status: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="字典关联状态: linked/manual/pending/rejected(未关联为 manual)",
+    )
 
     # 户型信息
     layout: Mapped[str] = mapped_column(String(100), nullable=False, comment="户型，如：三室两厅")

@@ -121,6 +121,11 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
   admin/operator/user/customer 四内置角色为 TRUE（系统角色禁止删除/改code/停用）
 - add_permission_risk_level_column: 为 permissions 表添加 risk_level 列并按种子映射回填
   风险等级（L0 读取/L1 普通写入/L2 数据管理/L3 审批/L4 高风险/L5 系统安全）
+- run_building_dictionary_migrations: 楼盘字典迁移（SRS v1.9）：建 bd_buildings/bd_rooms/
+  bd_pending_entries/bd_pending_references 4 表（含 uq_pending_open partial unique）、
+  communities 补 11 列画像/锚点/source/merged_into_id、projects/leads/l4_marketing_projects
+  补 building_id/room_id/dict_status 三列、property_current.community_id 放宽可空（BREAKING）
+  + 补 community_name 冗余列
 
 """
 
@@ -128,6 +133,8 @@ import logging
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
+
+from migrations._building_dictionary import run_building_dictionary_migrations
 
 # 子模块迁移函数
 from migrations._clear_wechat_session_key import clear_wechat_session_key
@@ -375,6 +382,10 @@ def _run_all_migrations(engine: Engine) -> None:
         clear_wechat_session_key(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
+        # 楼盘字典（SRS v1.9 / R1）：建 bd_* 4 表 + communities 补 11 列
+        # + projects/leads/l4_marketing_projects 补字典三列
+        # + property_current.community_id 放宽可空 + community_name 冗余列
+        run_building_dictionary_migrations(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

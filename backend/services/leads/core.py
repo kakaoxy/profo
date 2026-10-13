@@ -16,6 +16,7 @@ from constants.role_codes import INTERNAL_ROLE_CODES
 from models import User
 from models.common import FollowUpMethod, LeadStatus
 from models.lead import Lead, LeadEvalHistory, LeadFollowUp
+from schemas.building_dict import BdPendingSubmitRequest
 from schemas.growth_center import GrowthModule
 from schemas.lead import LeadAssessmentAuthorizeRequest, LeadCreate, LeadUpdate
 from services.growth_center.customer_notify import (
@@ -24,6 +25,7 @@ from services.growth_center.customer_notify import (
     unified_status_label,
 )
 from services.growth_center.normalize import map_valuation_status
+from services.property.dict_submit_service import get_dict_submit_service
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError
 from services.utils import resolve_global_fallback_referrer, resolve_property_agent_referrer, resolve_valid_referrer
 from settings import settings
@@ -100,8 +102,13 @@ class LeadService:
             referrer_id = resolve_global_fallback_referrer(self.db)
         # 使用 exclude_unset=True：未显式提供的字段不传入构造，
         # 这样 created_at 等字段为 None 时不会覆盖 ORM 列级 default
+        lead_payload = lead_data.model_dump(exclude_unset=True)
+        # 录入端新增载荷（new_*）非 Lead 列：进审核池（M3/FR-10），单据 dict_status=pending
+        new_community = lead_payload.pop("new_community", None) or None
+        new_building = lead_payload.pop("new_building", None) or None
+        new_room = lead_payload.pop("new_room", None) or None
         db_lead = Lead(
-            **lead_data.model_dump(exclude_unset=True),
+            **lead_payload,
             id=uuid.uuid4(),
             creator_id=creator_id,
             referrer_id=referrer_id,
@@ -110,6 +117,19 @@ class LeadService:
         if db_lead.unit_price is None:
             db_lead.unit_price = compute_unit_price(db_lead.total_price, db_lead.area)
         self.db.add(db_lead)
+
+        # 单据落库后、同事务 commit 前：用真实单据 id 补录 pending 引用
+        # （submit 内部自行提交 pending；业务单据创建失败时 pending 引用仍保留，
+        # 由审核池侧可见，不影响业务一致性——复核 P2 备注）
+        if new_community or new_building or new_room:
+            self._submit_dict_pendings(
+                new_community=new_community,
+                new_building=new_building,
+                new_room=new_room,
+                biz_type="lead",
+                biz_id=str(db_lead.id),
+                community_id=db_lead.community_id,
+            )
 
         # 如果有总价，自动记录初始价格历史
         self.price_service.create_initial_record(
@@ -135,6 +155,89 @@ class LeadService:
                 db_lead.community_name or "",
             )
         return db_lead
+
+    def _submit_dict_pendings(
+        self,
+        *,
+        new_community: dict | None,
+        new_building: dict | None,
+        new_room: dict | None,
+        biz_type: str,
+        biz_id: str,
+        community_id: str | None,
+        building_id: int | None = None,
+    ) -> None:
+        """补录录入端新增字典 pending 引用（community → building → room 逐步解析父级）.
+
+        单据落库后、同事务 commit 前调用：以真实单据 id 作为 source_id 提交审核池，
+        submit 异常直接向上抛（外层回滚整单），不吞错。
+
+        Args:
+            new_community: 小区快照载荷（可为空）
+            new_building: 楼栋载荷（可为空）
+            new_room: 户室载荷（可为空）
+            biz_type: 引用来源类型（lead）
+            biz_id: 引用来源单据 ID
+            community_id: 单据关联的字典实表小区 ID（可为空）
+            building_id: 单据关联的字典实表楼栋 ID（room 挂实表父级用，可为空）
+
+        """
+        svc = get_dict_submit_service()
+        community_pending_id: int | None = None
+        building_pending_id: int | None = None
+
+        if new_community:
+            community_pending_id = svc.submit(
+                self.db,
+                BdPendingSubmitRequest(
+                    kind="community",
+                    name=str(new_community.get("name") or "").strip(),
+                    community_payload=new_community,
+                    source_type=biz_type,
+                    source_id=biz_id,
+                ),
+                submitted_by=None,
+            ).pending_id
+
+        if new_building:
+            if community_id:
+                building_parent_kind, building_parent_id = "community", str(community_id)
+            elif community_pending_id is not None:
+                building_parent_kind, building_parent_id = "pending_community", str(community_pending_id)
+            else:
+                building_parent_kind, building_parent_id = None, None
+            building_pending_id = svc.submit(
+                self.db,
+                BdPendingSubmitRequest(
+                    kind="building",
+                    name=str(new_building.get("name") or new_building.get("building_no") or "").strip(),
+                    parent_kind=building_parent_kind,
+                    parent_id=building_parent_id,
+                    source_type=biz_type,
+                    source_id=biz_id,
+                ),
+                submitted_by=None,
+            ).pending_id
+
+        if new_room:
+            if building_id is not None:
+                room_parent_kind, room_parent_id = "building", str(building_id)
+            elif building_pending_id is not None:
+                room_parent_kind, room_parent_id = "pending_building", str(building_pending_id)
+            else:
+                room_parent_kind, room_parent_id = None, None
+            svc.submit(
+                self.db,
+                BdPendingSubmitRequest(
+                    kind="room",
+                    name=str(new_room.get("name") or new_room.get("room_no") or "").strip(),
+                    parent_kind=room_parent_kind,
+                    parent_id=room_parent_id,
+                    source_type=biz_type,
+                    source_id=biz_id,
+                ),
+                submitted_by=None,
+            )
 
     def _resolve_referrer_id(self, referrer: str | None) -> str | None:
         """解析分享归属员工ID：存在、active 且具备后台身份才生效，否则静默忽略.
@@ -247,6 +350,11 @@ class LeadService:
         """
         lead = self.get_lead_or_404(lead_id)
         update_dict = update_data.model_dump(exclude_unset=True)
+        # 录入端新增载荷（new_*）非 Lead 列：提交审核池后弹出（M3/FR-10，
+        # pending 关联由 dict_status=pending + 引用账本承载，单据照常更新）
+        new_community = update_dict.pop("new_community", None) or None
+        new_building = update_dict.pop("new_building", None) or None
+        new_room = update_dict.pop("new_room", None) or None
 
         # 价格更新时记录历史
         new_price = update_dict.get("total_price")
@@ -278,6 +386,18 @@ class LeadService:
 
         lead.updated_at = datetime.now(timezone.utc)
         self.db.add(lead)
+
+        # 更新落库后、commit 前：补录 pending 引用（community_id 优先取本次更新值）
+        if new_community or new_building or new_room:
+            self._submit_dict_pendings(
+                new_community=new_community,
+                new_building=new_building,
+                new_room=new_room,
+                biz_type="lead",
+                biz_id=str(lead.id),
+                community_id=update_dict.get("community_id") or lead.community_id,
+            )
+
         self.db.commit()
         self.db.refresh(lead)
         if creator is not None and not lead.creator:

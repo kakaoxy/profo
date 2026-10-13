@@ -110,6 +110,15 @@ class LeadBase(BaseModel):
 
     source_property_id: int | None = None
 
+    # ===== 楼盘字典四级地址（M3/FR-18：小区必选、楼栋/户室选填落库）=====
+    building_id: int | None = None
+    room_id: int | None = None
+    dict_status: str | None = Field(
+        None,
+        pattern="^(linked|manual|pending|rejected)$",
+        description="字典关联状态",
+    )
+
 
 class LeadCreate(LeadBase):
     """创建线索请求."""
@@ -118,6 +127,10 @@ class LeadCreate(LeadBase):
     images: list[str] = Field(default_factory=list)
     # 允许导入场景显式指定创建时间；未提供时由 DB 默认值填充当前时间
     created_at: datetime | None = None
+    # 录入端新增小区/楼栋/户室载荷（进审核池 FR-10；业务单据照常创建）
+    new_community: dict | None = None
+    new_building: dict | None = None
+    new_room: dict | None = None
 
 
 class LeadUpdate(BaseModel):
@@ -133,6 +146,14 @@ class LeadUpdate(BaseModel):
     total_price: float | None = None
     unit_price: float | None = None
     expected_price: float | None = Field(None, gt=0)
+
+    # 楼盘字典四级地址（M3）
+    building_id: int | None = None
+    room_id: int | None = None
+    dict_status: str | None = Field(None, pattern="^(linked|manual|pending|rejected)$")
+    new_community: dict | None = None
+    new_building: dict | None = None
+    new_room: dict | None = None
 
     status: LeadStatus | None = None
     audit_reason: str | None = None

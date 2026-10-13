@@ -32,6 +32,7 @@ function toggleSelection(
 export function PropertyFiltersCore() {
   // 核心修复：添加 shallow: false，强制触发服务端组件重新渲染(发起请求)
   const [status, setStatus] = useQueryState("status", { defaultValue: "", shallow: false });
+  const [dictStatus, setDictStatus] = useQueryState("dict_status", { defaultValue: "", shallow: false });
   const [q, setQ] = useQueryState("q", { defaultValue: "", throttleMs: 500, shallow: false });
   const [rooms, setRooms] = useQueryState("rooms", { defaultValue: "", shallow: false });
   const [floors, setFloors] = useQueryState("floor_levels", { defaultValue: "", shallow: false });
@@ -59,6 +60,30 @@ export function PropertyFiltersCore() {
               onClick={() => setStatus(s || null)}
             >
               {s || "全部"}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* 1.1 字典状态 */}
+      <div className="space-y-2">
+        <Label className="text-xs font-medium text-graphite">字典状态</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { value: "", label: "全部" },
+            { value: "unlinked", label: "未关联" },
+            { value: "pending", label: "待审核" },
+            { value: "rejected", label: "已驳回" },
+            { value: "linked", label: "已关联" },
+          ].map((s) => (
+            <Button
+              key={s.value}
+              variant={dictStatus === s.value ? "default" : "outline"}
+              size="sm"
+              className="h-8 text-xs px-2"
+              onClick={() => setDictStatus(s.value || null)}
+            >
+              {s.label}
             </Button>
           ))}
         </div>

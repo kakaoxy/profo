@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS, BUSINESS_FORM_OPTIONS } from "../schema";
 import { CommunitySelect } from "@/components/common/community-select";
+import { DictAddressPicker, type DictAddressValue } from "@/components/dict-address-picker";
 import { getSalesUsersSimpleAction, getCurrentUserAction } from "../../../actions/sales";
 import { FloorInput } from "@/components/common";
 import { toast } from "sonner";
@@ -74,6 +75,8 @@ export function BasicInfoTab({ form }: TabProps) {
 
   // 区分是来自小区的 district（只读）还是用户手输（可编辑）
   const [communityDistrict, setCommunityDistrict] = useState<string | undefined>(undefined);
+  // 楼盘字典选择器状态（FR-13 / Task 14）
+  const [dictValue, setDictValue] = useState<DictAddressValue | null>(null);
   const [communityBusinessCircle, setCommunityBusinessCircle] = useState<string | undefined>(
     undefined,
   );
@@ -111,6 +114,42 @@ export function BasicInfoTab({ form }: TabProps) {
 
   return (
     <div className="space-y-5">
+      {/* 楼盘字典四级地址选择器（FR-13 / Task 14：统一入口，兼容模式手填保底） */}
+      <FormField
+        control={control}
+        name="dict_status"
+        render={({ field }) => (
+          <FormItem>
+            <FormControl>
+              <DictAddressPicker
+                value={dictValue}
+                onChange={(next) => {
+                  setDictValue(next);
+                  // 同步表单标量字段（选择器明细以 dict_* 载荷承载）
+                  form.setValue("community_name", next.communityName || form.getValues("community_name"));
+                  form.setValue("community_id", next.communityId ?? undefined);
+                  form.setValue("address", next.address || form.getValues("address"));
+                  form.setValue("building_id", next.buildingId ?? null);
+                  form.setValue("room_id", next.roomId ?? null);
+                  form.setValue(
+                    "dict_status",
+                    next.dictStatus === "pending" ? "pending" : (next.dictStatus ?? "manual"),
+                  );
+                  form.setValue("new_community", next.newCommunity ?? null);
+                  form.setValue("new_building", next.newBuilding ?? null);
+                  form.setValue("new_room", next.newRoom ?? null);
+                  if (next.communityName) {
+                    field.onChange(next.dictStatus ?? "manual");
+                  }
+                }}
+                sourceBizType="project"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* 第一行：小区 / 行政区 / 商圈（行政区与商圈较窄，小区占更大比例） */}
       <div className="grid grid-cols-[2fr_1fr_1fr] gap-4">
         {/* 小区名称 - 使用小区选择组件 */}
