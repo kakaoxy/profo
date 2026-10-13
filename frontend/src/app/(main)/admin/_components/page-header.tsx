@@ -7,6 +7,8 @@ export interface PageHeaderProps {
   title: ReactNode;
   /** 可选副标题说明；无说明文案的页面不传 */
   description?: ReactNode;
+  /** 可选右侧动作区（与标题同行右对齐，如页级按钮组）；不传则保持纯标题布局 */
+  actions?: ReactNode;
   className?: string;
 }
 
@@ -20,13 +22,21 @@ export interface PageHeaderProps {
  * 所有页面主标题必须使用本组件，禁止页面私有字号（16/20/24/26/40px）与 h2 主标题。
  * Server Component 可渲染，无浏览器 API / hooks 依赖。
  */
-export function PageHeader({ title, description, className }: PageHeaderProps) {
+export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   return (
-    <header className={cn("flex flex-col gap-1", className)}>
-      <h1 className="font-display text-[34px] leading-[1.1] tracking-[-0.015em] text-ink sm:text-[44px]">
-        {title}
-      </h1>
-      {description ? <p className="mt-2.5 text-[15px] text-graphite">{description}</p> : null}
+    <header
+      className={cn(
+        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+        className,
+      )}
+    >
+      <div>
+        <h1 className="font-display text-[34px] leading-[1.1] tracking-[-0.015em] text-ink sm:text-[44px]">
+          {title}
+        </h1>
+        {description ? <p className="mt-2.5 text-[15px] text-graphite">{description}</p> : null}
+      </div>
+      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2.5">{actions}</div> : null}
     </header>
   );
 }

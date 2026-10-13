@@ -5,7 +5,7 @@
  *
  * 复用现有端点零改动：GET/POST /admin/communities/{id}/images ·
  * PATCH/DELETE /admin/community-images/{id}；上传 / 悬停改描述 / 调排序 / 软删；
- * 无图占位兜底（总览首图列点击直达本区块）。
+ * 无图占位兜底。
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,17 +20,14 @@ import type { BdCommunityImageItem } from "./types";
 
 interface CommunityImagesSectionProps {
   communityId: string;
-  /** 外部请求滚动/聚焦到本区块（总览首图点击直达） */
-  scrollTo?: boolean;
 }
 
-export function CommunityImagesSection({ communityId, scrollTo }: CommunityImagesSectionProps) {
+export function CommunityImagesSection({ communityId }: CommunityImagesSectionProps) {
   const [images, setImages] = useState<BdCommunityImageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDesc, setEditDesc] = useState("");
-  const sectionRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -52,12 +49,6 @@ export function CommunityImagesSection({ communityId, scrollTo }: CommunityImage
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    if (scrollTo && sectionRef.current) {
-      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [scrollTo]);
 
   const handleUpload = useCallback(
     async (file: File) => {
@@ -146,51 +137,35 @@ export function CommunityImagesSection({ communityId, scrollTo }: CommunityImage
   );
 
   return (
-    <div ref={sectionRef} className="scroll-mt-4">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-[15px] font-medium text-ink">
-          户型图库 <span className="text-[13px] text-graphite">({images.length})</span>
+    <div>
+      {/* 设计稿 sec-t：左标题 + mono 计数 / 右侧 mono 说明 */}
+      <div className="mb-2.5 flex items-baseline justify-between">
+        <h3 className="text-[14px] font-semibold text-ink">
+          户型图库 <span className="font-mono text-[11px] font-normal text-graphite">({images.length})</span>
         </h3>
-        <button
-          type="button"
-          className="flex items-center gap-1 text-[12px] text-rust hover:underline"
-          disabled={uploading}
-          onClick={() => fileRef.current?.click()}
-        >
-          {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
-          上传图片
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void handleUpload(f);
-            e.target.value = "";
-          }}
-        />
+        <span className="font-mono text-[11px] text-graphite">小区图片库 · 复用现有图片端点（FR-20）</span>
       </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleUpload(f);
+          e.target.value = "";
+        }}
+      />
       {loading ? (
         <div className="flex justify-center py-6">
           <Loader2 className="size-5 animate-spin text-graphite" />
         </div>
-      ) : images.length === 0 ? (
-        <button
-          type="button"
-          className="flex aspect-[4/3] w-full flex-col items-center justify-center rounded-xl border-[1.5px] border-dashed border-dove text-[13px] text-dove hover:border-ash hover:text-graphite"
-          onClick={() => fileRef.current?.click()}
-        >
-          <Plus className="mb-1 size-5" />
-          上传户型图
-        </button>
       ) : (
         <div className="grid grid-cols-4 gap-2">
           {images.map((img, idx) => (
             <div
               key={img.id}
-              className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-dove/40 bg-fog"
+              className="group relative aspect-[4/3] overflow-hidden rounded-[10px] border border-dove/40 bg-fog"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -263,9 +238,19 @@ export function CommunityImagesSection({ communityId, scrollTo }: CommunityImage
               </div>
             </div>
           ))}
+          {/* 设计稿：网格内 4:3 虚线「＋ 上传」卡（空态时即唯一卡片） */}
+          <button
+            type="button"
+            disabled={uploading}
+            className="flex aspect-[4/3] flex-col items-center justify-center gap-0.5 rounded-[10px] border-[1.5px] border-dashed border-dove text-[12px] text-dove hover:border-ash hover:text-graphite disabled:opacity-60"
+            onClick={() => fileRef.current?.click()}
+          >
+            {uploading ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            上传
+          </button>
         </div>
       )}
-      <p className="mt-1 text-[10.5px] text-dove">悬停单图可改描述 / 调排序 / 删除</p>
+      <p className="mt-1.5 text-[10.5px] text-dove">悬停单图可改描述 / 调排序 / 删除</p>
     </div>
   );
 }

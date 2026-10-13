@@ -5,6 +5,7 @@ import {
   PageHeader,
 } from "@/app/(main)/admin/_components";
 import { BdOverviewClient } from "./_components/overview-client";
+import { BdOverviewHeaderActions } from "./_components/overview-header-actions";
 import type { BdKpiResponse, BdCommunityListResponse } from "./_components/types";
 
 export const dynamic = "force-dynamic";
@@ -25,9 +26,9 @@ interface BuildingDictionaryPageProps {
 /**
  * 楼盘字典总览页（FR-01 / Task 5）.
  *
- * KPI hero（Apricot 暖卡唯一）+ 筛选栏 + 小区表格（含首图缩略列）+ 20 条/页；
- * 行点击打开详情抽屉（_components/community-drawer）；页头动作：
- * ＋新增小区 / 审核池（徽标计数）/ 导入数据。
+ * KPI hero（Apricot 暖卡唯一）+ 筛选栏 + 小区表格 + 20 条/页；
+ * 行点击打开详情抽屉（_components/community-drawer）；页头动作
+ * （overview-header-actions）：＋新增小区 / 审核池（徽标计数）/ 导入数据。
  */
 export default async function BuildingDictionaryPage(props: BuildingDictionaryPageProps) {
   const searchParams = await props.searchParams;
@@ -88,6 +89,7 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
       <PageHeader
         title="楼盘字典"
         description="上海 1.97 万个小区，逐级看楼栋和户室 · 点击行看详情"
+        actions={<BdOverviewHeaderActions pendingCount={kpi.pending_count} />}
       />
       <BdOverviewClient
         kpi={kpi}

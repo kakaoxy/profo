@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Loader2, Pencil, Search, X } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -38,8 +38,6 @@ interface CommunityDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMerged?: () => void;
-  /** 总览首图列点击直达：打开后滚动/聚焦到户型图库区块 */
-  focusImages?: boolean;
 }
 
 export function CommunityDrawer({
@@ -48,7 +46,6 @@ export function CommunityDrawer({
   open,
   onOpenChange,
   onMerged,
-  focusImages,
 }: CommunityDrawerProps) {
   const { hasPermission } = usePermission();
   const canGovern = hasPermission(PERMISSION_CODES.PROPERTY_GOVERNANCE);
@@ -173,13 +170,20 @@ export function CommunityDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-[560px] flex-col gap-0 overflow-hidden sm:w-[560px]">
+      <SheetContent
+        side="right"
+        className="flex w-[560px] flex-col gap-0 overflow-hidden sm:w-[560px] [&>[data-slot=sheet-close]]:top-5 [&>[data-slot=sheet-close]]:right-5 [&>[data-slot=sheet-close]]:flex [&>[data-slot=sheet-close]]:size-[30px] [&>[data-slot=sheet-close]]:items-center [&>[data-slot=sheet-close]]:justify-center [&>[data-slot=sheet-close]]:rounded-full [&>[data-slot=sheet-close]]:bg-fog [&>[data-slot=sheet-close]]:text-graphite [&>[data-slot=sheet-close]]:opacity-100"
+      >
         <SheetHeader className="pb-2">
           <SheetTitle className="flex items-center justify-between pr-8">
-            <span className="font-display text-[22px]">{detail?.name ?? communityName}</span>
+            <span className="font-display text-[26px] leading-tight tracking-[-0.01em]">{detail?.name ?? communityName}</span>
             <span className="flex items-center gap-2">
               {canGovern ? (
-                <Button variant="outline" size="sm" onClick={() => setMergeOpen(true)}>
+                <Button
+                  size="sm"
+                  className="h-7 rounded-full bg-ink px-3 text-[11px] text-white hover:bg-ink/90"
+                  onClick={() => setMergeOpen(true)}
+                >
                   合并
                 </Button>
               ) : null}
@@ -286,7 +290,7 @@ export function CommunityDrawer({
               </section>
 
               {/* 户型图库（FR-20 v2.0：抽屉内唯一图片管理界面） */}
-              <CommunityImagesSection communityId={detail.id} scrollTo={focusImages} />
+              <CommunityImagesSection communityId={detail.id} />
 
               {/* 合并信息区块（FR-14 v2.0；文案对齐设计稿 v1.7：去术语化） */}
               {detail.merged_into_id ? (
@@ -340,32 +344,33 @@ export function CommunityDrawer({
                 </section>
               ) : null}
 
-              {/* 楼栋列表（设计稿：标题 + 「+ 添加楼栋」在同侧，通栏雾底搜索药丸） */}
+              {/* 楼栋列表（设计稿 sec-t：左标题 / 右 mono 计数 + rust 添加入口） */}
               <section>
                 <div className="mb-2.5 flex items-baseline justify-between">
-                  <h3 className="text-[14px] font-semibold text-ink">
-                    楼栋列表 <span className="font-mono text-[11px] font-normal text-graphite">{buildingTotal} 栋</span>
+                  <h3 className="text-[14px] font-semibold text-ink">楼栋列表</h3>
+                  <p className="font-mono text-[11px] text-graphite">
+                    {buildingTotal} 栋{" "}
                     {!addingBld ? (
                       <button
                         type="button"
-                        className="ml-2 font-mono text-[10px] font-normal text-rust hover:underline"
+                        className="font-mono text-[10px] text-rust hover:underline"
                         onClick={() => {
                           setAddingBld(true);
                           setAddingRoomFor(null);
                         }}
                       >
-                        + 添加楼栋
+                        · + 添加楼栋
                       </button>
                     ) : null}
-                  </h3>
+                  </p>
                 </div>
                 <div className="relative mb-2.5">
-                  <Search className="absolute left-4 top-2 size-3.5 text-dove" />
+                  <Search className="absolute left-3.5 top-2 size-3.5 text-dove" />
                   <Input
                     value={buildingKeyword}
                     onChange={(e) => setBuildingKeyword(e.target.value)}
                     placeholder="搜楼栋号，如 201乙"
-                    className="h-9 rounded-full border-transparent bg-fog pl-10 text-[12px] focus-visible:border-ink"
+                    className="h-8 rounded-full border-transparent bg-fog pl-9 text-[12px] focus-visible:border-ink"
                   />
                 </div>
                 {addingBld ? (
@@ -384,7 +389,7 @@ export function CommunityDrawer({
                     <div
                       key={b.pending ? `p-${b.pending_id}` : `b-${b.id}`}
                       className={cn(
-                        "rounded-2xl border border-dove/40",
+                        "rounded-[14px] border border-dove/40",
                         b.pending ? "border-dashed" : "hover:border-dove",
                         expandedBuilding === b.id && !b.pending && "border-rust bg-[#fffaf6]",
                       )}
@@ -520,11 +525,9 @@ export function CommunityDrawer({
                       });
                     }}
                   >
-                    <X className="mr-1 size-3.5" />
                     取消
                   </Button>
                   <Button size="sm" className="rounded-full bg-ink text-white" onClick={handlePatch}>
-                    <Check className="mr-1 size-3.5" />
                     保存
                   </Button>
                 </>
@@ -539,7 +542,6 @@ export function CommunityDrawer({
                       toast("画像进入编辑态：环线 / 类型 / 年代 人工修正");
                     }}
                   >
-                    <Pencil className="mr-1 size-3.5" />
                     编辑资料
                   </Button>
                   <Button
