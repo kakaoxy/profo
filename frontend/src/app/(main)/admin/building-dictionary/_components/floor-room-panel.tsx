@@ -162,18 +162,22 @@ export function FloorRoomPanel({ buildingId, onPick, onAddRoom, addRoomSlot }: F
           );
         })}
       </div>
-      {onAddRoom ? (
+      {onAddRoom || addRoomSlot ? (
         <div className="px-3 pt-2">
-          <button
-            type="button"
-            className="flex items-center gap-1.5 text-[11.5px] text-rust hover:underline"
-            onClick={onAddRoom}
-          >
-            <span className="flex size-4.5 items-center justify-center rounded-full bg-apricot-wash text-[12px] font-semibold text-rust">
-              +
-            </span>
-            添加户室，可一次加一批
-          </button>
+          {onAddRoom ? (
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-[11.5px] text-rust hover:underline"
+              onClick={onAddRoom}
+            >
+              <span className="flex size-4.5 items-center justify-center rounded-full bg-apricot-wash text-[12px] font-semibold text-rust">
+                +
+              </span>
+              添加户室，可一次加一批
+            </button>
+          ) : null}
+          {/* 插槽与按钮分开渲染：点击后父级将 onAddRoom 置 undefined 并传入表单插槽，
+              若把插槽包在 onAddRoom 条件内会导致表单永不出现（点击无反应） */}
           {addRoomSlot}
         </div>
       ) : null}

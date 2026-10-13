@@ -203,6 +203,16 @@ test.describe("楼盘字典迭代修复 E2E（对齐设计稿 v2.0）", () => {
       await expect(page.getByText(/添加户室，可一次加一批/).first()).toBeVisible({ timeout: 10000 });
     }
 
+    // admin 补录户室（FR-06）：点击入口 → 行内区间表单出现（回归：点击无反应缺陷）
+    const addRoomBtn = page.getByText("添加户室，可一次加一批").first();
+    if (await addRoomBtn.isVisible()) {
+      await addRoomBtn.click();
+      await expect(page.getByPlaceholder("4 或 7-12")).toBeVisible({ timeout: 5000 });
+      await expect(page.getByPlaceholder("01-08")).toBeVisible();
+      await page.getByRole("button", { name: "取消" }).last().click();
+      await expect(page.getByPlaceholder("4 或 7-12")).toBeHidden();
+    }
+
     // 合并按钮（governance 权限）→ 打开合并弹层（搜索-勾选-合并）
     await page.getByRole("button", { name: "合并", exact: true }).click();
     const mergeDialog = page.getByRole("dialog", { name: /合并到/ });
