@@ -61,7 +61,16 @@ export function CommunityDrawer({
   const [buildingSearch, setBuildingSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [patchForm, setPatchForm] = useState({ ring: "", eraFrom: "", eraTo: "" });
+  const [patchForm, setPatchForm] = useState({
+    ring: "",
+    eraFrom: "",
+    eraTo: "",
+    address: "",
+    lng: "",
+    lat: "",
+    propertyMgmt: "",
+    developer: "",
+  });
   const [mergeOpen, setMergeOpen] = useState(false);
   const [expandedBuilding, setExpandedBuilding] = useState<number | null>(null);
   const [addingBld, setAddingBld] = useState(false);
@@ -84,6 +93,11 @@ export function CommunityDrawer({
           ring: d.ring ?? "",
           eraFrom: String(d.era_from ?? ""),
           eraTo: String(d.era_to ?? ""),
+          address: d.address ?? "",
+          lng: d.lng != null ? String(d.lng) : "",
+          lat: d.lat != null ? String(d.lat) : "",
+          propertyMgmt: d.property_mgmt ?? "",
+          developer: d.developer ?? "",
         });
       }
     } finally {
@@ -137,6 +151,25 @@ export function CommunityDrawer({
     if (patchForm.ring !== (detail?.ring ?? "")) body.ring = patchForm.ring || null;
     if (patchForm.eraFrom !== String(detail?.era_from ?? "")) body.era_from = patchForm.eraFrom ? Number(patchForm.eraFrom) : null;
     if (patchForm.eraTo !== String(detail?.era_to ?? "")) body.era_to = patchForm.eraTo ? Number(patchForm.eraTo) : null;
+    if (patchForm.address !== (detail?.address ?? "")) body.address = patchForm.address || null;
+    const lngTrim = patchForm.lng.trim();
+    if (lngTrim !== (detail?.lng != null ? String(detail.lng) : "")) {
+      if (lngTrim && Number.isNaN(Number(lngTrim))) {
+        toast.error("经度格式不正确");
+        return;
+      }
+      body.lng = lngTrim ? Number(lngTrim) : null;
+    }
+    const latTrim = patchForm.lat.trim();
+    if (latTrim !== (detail?.lat != null ? String(detail.lat) : "")) {
+      if (latTrim && Number.isNaN(Number(latTrim))) {
+        toast.error("纬度格式不正确");
+        return;
+      }
+      body.lat = latTrim ? Number(latTrim) : null;
+    }
+    if (patchForm.propertyMgmt !== (detail?.property_mgmt ?? "")) body.property_mgmt = patchForm.propertyMgmt || null;
+    if (patchForm.developer !== (detail?.developer ?? "")) body.developer = patchForm.developer || null;
     if (Object.keys(body).length === 0) {
       setEditing(false);
       return;
@@ -174,11 +207,76 @@ export function CommunityDrawer({
 
   const mergedChildren = detail?.merged_children ?? [];
 
+  /** 删除楼栋（含其下全部户室；业务引用/待审子级由后端拦截） */
+  const handleDeleteBuilding = useCallback(
+    async (b: BdBuildingListItem) => {
+      if (!window.confirm(`确认删除楼栋「${b.building_no}」及其下 ${b.room_count} 户？删除后不可恢复。`)) return;
+      const { error } = await client.DELETE("/api/v1/admin/building-dictionary/buildings/{building_id}", {
+        params: { path: { building_id: b.id } },
+      });
+      if (error) {
+        toast.error("删除失败：楼栋被业务单据引用或存在待审户室时会拦截");
+        return;
+      }
+      toast.success(`已删除楼栋「${b.building_no}」及其下户室（留审计）`);
+      setExpandedBuilding(null);
+      void loadDetail();
+      void loadBuildings();
+      onUpdated?.();
+    },
+    [loadDetail, loadBuildings, onUpdated],
+  );
+
+  /** 删除楼层 = 批量删除该层全部户室（楼层随户室派生，删空即消失） */
+  const handleDeleteFloor = useCallback(
+    async (buildingId: number, floor: number | null, floorLabel: string) => {
+      if (floor == null) {
+        toast.error("「楼层待定」分组请逐户删除");
+        return;
+      }
+      if (!window.confirm(`确认删除${floorLabel}的全部户室？删除后不可恢复。`)) return;
+      const { error } = await client.DELETE("/api/v1/admin/building-dictionary/buildings/{building_id}/floors/{floor}", {
+        params: { path: { building_id: buildingId, floor } },
+      });
+      if (error) {
+        toast.error("删除失败：该层户室被业务单据引用时会拦截");
+        return;
+      }
+      toast.success(`已删除${floorLabel}全部户室（留审计）`);
+      setRoomRefreshTick((t) => t + 1);
+      void loadDetail();
+      void loadBuildings();
+      onUpdated?.();
+    },
+    [loadDetail, loadBuildings, onUpdated],
+  );
+
+  /** 删除单个户室（业务引用由后端拦截） */
+  const handleDeleteRoom = useCallback(
+    async (buildingId: number, roomId: number, roomNo: string) => {
+      if (!window.confirm(`确认删除户室「${roomNo}」？删除后不可恢复。`)) return;
+      const { error } = await client.DELETE("/api/v1/admin/building-dictionary/buildings/{building_id}/rooms/{room_id}", {
+        params: { path: { building_id: buildingId, room_id: roomId } },
+      });
+      if (error) {
+        toast.error("删除失败：户室被业务单据引用时会拦截");
+        return;
+      }
+      toast.success(`已删除户室「${roomNo}」（留审计）`);
+      setPicked(null);
+      setRoomRefreshTick((t) => t + 1);
+      void loadDetail();
+      void loadBuildings();
+      onUpdated?.();
+    },
+    [loadDetail, loadBuildings, onUpdated],
+  );
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-[560px] flex-col gap-0 overflow-hidden sm:w-[560px] [&>[data-slot=sheet-close]]:top-5 [&>[data-slot=sheet-close]]:right-5 [&>[data-slot=sheet-close]]:flex [&>[data-slot=sheet-close]]:size-[30px] [&>[data-slot=sheet-close]]:items-center [&>[data-slot=sheet-close]]:justify-center [&>[data-slot=sheet-close]]:rounded-full [&>[data-slot=sheet-close]]:bg-fog [&>[data-slot=sheet-close]]:text-graphite [&>[data-slot=sheet-close]]:opacity-100"
+        className="flex w-[560px] flex-col gap-0 overflow-hidden sm:w-[560px] sm:max-w-[560px] [&>[data-slot=sheet-close]]:top-5 [&>[data-slot=sheet-close]]:right-5 [&>[data-slot=sheet-close]]:flex [&>[data-slot=sheet-close]]:size-[30px] [&>[data-slot=sheet-close]]:items-center [&>[data-slot=sheet-close]]:justify-center [&>[data-slot=sheet-close]]:rounded-full [&>[data-slot=sheet-close]]:bg-fog [&>[data-slot=sheet-close]]:text-graphite [&>[data-slot=sheet-close]]:opacity-100"
       >
         <SheetHeader className="pb-2">
           <SheetTitle className="flex items-center justify-between pr-8">
@@ -227,60 +325,68 @@ export function CommunityDrawer({
         ) : detail ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <div className="flex flex-col gap-5 px-6 pb-6">
-              {/* 画像区（设计稿 info-grid：雾底双列 6 格） */}
+              {/* 画像区（设计稿 info-grid：雾底双列 6 格；编辑态 4 格转输入 + 环线/年代补位格） */}
               <section className="grid grid-cols-2 gap-2.5">
                 <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
                   <p className="text-[10.5px] text-graphite">地址</p>
-                  <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.address || "—"}</p>
-                </div>
-                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
-                  <p className="text-[10.5px] text-graphite">位置坐标（BD-09）</p>
-                  <p className="mt-0.5 font-mono text-[12px] font-medium leading-relaxed text-ink">
-                    {detail.lng != null && detail.lat != null ? `${detail.lng.toFixed(6)}, ${detail.lat.toFixed(6)}` : "—"}
-                  </p>
-                </div>
-                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
-                  <p className="text-[10.5px] text-graphite">物业公司</p>
-                  <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.property_mgmt || "—"}</p>
-                </div>
-                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
-                  <p className="text-[10.5px] text-graphite">开发商</p>
-                  <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.developer || "—"}</p>
-                </div>
-                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
-                  <p className="text-[10.5px] text-graphite">环线</p>
                   {editing ? (
                     <Input
-                      className="mt-1 h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
-                      value={patchForm.ring}
-                      onChange={(e) => setPatchForm((f) => ({ ...f, ring: e.target.value }))}
-                      placeholder="如 外环外"
+                      className="mt-1 h-7 rounded-[9px] border-line bg-white text-[12px]"
+                      value={patchForm.address}
+                      onChange={(e) => setPatchForm((f) => ({ ...f, address: e.target.value }))}
+                      placeholder="小区地址"
                     />
                   ) : (
-                    <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.ring || "—"}</p>
+                    <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.address || "—"}</p>
                   )}
                 </div>
                 <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
-                  <p className="text-[10.5px] text-graphite">建成年代</p>
+                  <p className="text-[10.5px] text-graphite">位置坐标（BD-09）</p>
                   {editing ? (
                     <div className="mt-1 flex gap-1">
                       <Input
                         className="h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
-                        value={patchForm.eraFrom}
-                        onChange={(e) => setPatchForm((f) => ({ ...f, eraFrom: e.target.value }))}
-                        placeholder="起"
+                        value={patchForm.lng}
+                        onChange={(e) => setPatchForm((f) => ({ ...f, lng: e.target.value }))}
+                        placeholder="经度"
                       />
                       <Input
                         className="h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
-                        value={patchForm.eraTo}
-                        onChange={(e) => setPatchForm((f) => ({ ...f, eraTo: e.target.value }))}
-                        placeholder="止"
+                        value={patchForm.lat}
+                        onChange={(e) => setPatchForm((f) => ({ ...f, lat: e.target.value }))}
+                        placeholder="纬度"
                       />
                     </div>
                   ) : (
-                    <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink tabular-nums">
-                      {detail.era_from ? `${detail.era_from}${detail.era_to ? `~${detail.era_to}` : ""}` : "—"}
+                    <p className="mt-0.5 font-mono text-[12px] font-medium leading-relaxed text-ink">
+                      {detail.lng != null && detail.lat != null ? `${detail.lng.toFixed(6)}, ${detail.lat.toFixed(6)}` : "—"}
                     </p>
+                  )}
+                </div>
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">物业公司</p>
+                  {editing ? (
+                    <Input
+                      className="mt-1 h-7 rounded-[9px] border-line bg-white text-[12px]"
+                      value={patchForm.propertyMgmt}
+                      onChange={(e) => setPatchForm((f) => ({ ...f, propertyMgmt: e.target.value }))}
+                      placeholder="物业公司"
+                    />
+                  ) : (
+                    <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.property_mgmt || "—"}</p>
+                  )}
+                </div>
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">开发商</p>
+                  {editing ? (
+                    <Input
+                      className="mt-1 h-7 rounded-[9px] border-line bg-white text-[12px]"
+                      value={patchForm.developer}
+                      onChange={(e) => setPatchForm((f) => ({ ...f, developer: e.target.value }))}
+                      placeholder="开发商"
+                    />
+                  ) : (
+                    <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.developer || "—"}</p>
                   )}
                 </div>
                 <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
@@ -293,6 +399,37 @@ export function CommunityDrawer({
                   <p className="text-[10.5px] text-graphite">已绑项目</p>
                   <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink tabular-nums">{detail.linked_project_count} 个</p>
                 </div>
+                {/* 编辑态补位格：环线/建成年代在设计稿展示态只出现在头部 chips */}
+                {editing ? (
+                  <>
+                    <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                      <p className="text-[10.5px] text-graphite">环线</p>
+                      <Input
+                        className="mt-1 h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
+                        value={patchForm.ring}
+                        onChange={(e) => setPatchForm((f) => ({ ...f, ring: e.target.value }))}
+                        placeholder="如 外环外"
+                      />
+                    </div>
+                    <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                      <p className="text-[10.5px] text-graphite">建成年代</p>
+                      <div className="mt-1 flex gap-1">
+                        <Input
+                          className="h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
+                          value={patchForm.eraFrom}
+                          onChange={(e) => setPatchForm((f) => ({ ...f, eraFrom: e.target.value }))}
+                          placeholder="起"
+                        />
+                        <Input
+                          className="h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
+                          value={patchForm.eraTo}
+                          onChange={(e) => setPatchForm((f) => ({ ...f, eraTo: e.target.value }))}
+                          placeholder="止"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
               </section>
 
               {/* 户型图库（FR-20 v2.0：抽屉内唯一图片管理界面） */}
@@ -426,6 +563,17 @@ export function CommunityDrawer({
                       </button>
                       {expandedBuilding === b.id && !b.pending ? (
                         <div className="px-3.5 pb-3">
+                          {canGovern ? (
+                            <div className="flex justify-end pb-1.5">
+                              <button
+                                type="button"
+                                className="text-[10.5px] text-rust hover:underline"
+                                onClick={() => void handleDeleteBuilding(b)}
+                              >
+                                删除楼栋
+                              </button>
+                            </div>
+                          ) : null}
                           <FloorRoomPanel
                             buildingId={b.id}
                             refreshSignal={roomRefreshTick}
@@ -437,6 +585,12 @@ export function CommunityDrawer({
                                 lng: b.lng,
                                 lat: b.lat,
                               })
+                            }
+                            onDeleteRoom={canGovern ? (roomId, roomNo) => void handleDeleteRoom(b.id, roomId, roomNo) : undefined}
+                            onDeleteFloor={
+                              canGovern
+                                ? (floor, floorLabel) => void handleDeleteFloor(b.id, floor, floorLabel)
+                                : undefined
                             }
                             onAddRoom={
                               addingRoomFor === b.id
@@ -533,6 +687,11 @@ export function CommunityDrawer({
                         ring: detail?.ring ?? "",
                         eraFrom: String(detail?.era_from ?? ""),
                         eraTo: String(detail?.era_to ?? ""),
+                        address: detail?.address ?? "",
+                        lng: detail?.lng != null ? String(detail.lng) : "",
+                        lat: detail?.lat != null ? String(detail.lat) : "",
+                        propertyMgmt: detail?.property_mgmt ?? "",
+                        developer: detail?.developer ?? "",
                       });
                     }}
                   >
@@ -550,7 +709,7 @@ export function CommunityDrawer({
                     className="rounded-full"
                     onClick={() => {
                       setEditing(true);
-                      toast("画像进入编辑态：环线 / 类型 / 年代 人工修正");
+                      toast("画像进入编辑态：地址 / 坐标 / 物业 / 开发商 / 环线 / 年代 人工修正");
                     }}
                   >
                     编辑资料

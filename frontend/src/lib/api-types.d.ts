@@ -487,7 +487,11 @@ export interface paths {
         get: operations["get_dict_building_detail_api_v1_admin_building_dictionary_buildings__building_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Dict Building
+         * @description Admin 删除楼栋（含其下全部户室；业务引用/待审子级拦截，审计）.
+         */
+        delete: operations["delete_dict_building_api_v1_admin_building_dictionary_buildings__building_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -548,6 +552,46 @@ export interface paths {
          */
         post: operations["create_dict_rooms_api_v1_admin_building_dictionary_buildings__building_id__rooms_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/buildings/{building_id}/floors/{floor}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Dict Floor
+         * @description Admin 删除楼层（= 批量删除该层全部户室；业务引用拦截，审计）.
+         */
+        delete: operations["delete_dict_floor_api_v1_admin_building_dictionary_buildings__building_id__floors__floor__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/buildings/{building_id}/rooms/{room_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Dict Room
+         * @description Admin 删除单个户室（业务引用拦截，审计）.
+         */
+        delete: operations["delete_dict_room_api_v1_admin_building_dictionary_buildings__building_id__rooms__room_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6464,6 +6508,14 @@ export interface components {
              * @description 纬度(BD-09)
              */
             lat?: number | null;
+        };
+        /**
+         * BdDeleteResult
+         * @description 删除结果（admin：楼栋删除 deleted=1；楼层/批量删除 deleted=户室数）.
+         */
+        BdDeleteResult: {
+            /** Deleted */
+            deleted: number;
         };
         /**
          * BdFloorGroup
@@ -19753,6 +19805,38 @@ export interface operations {
             };
         };
     };
+    delete_dict_building_api_v1_admin_building_dictionary_buildings__building_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdDeleteResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_dict_floor_groups_api_v1_admin_building_dictionary_buildings__building_id__floors_get: {
         parameters: {
             query?: never;
@@ -19841,6 +19925,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BdBatchCreateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_dict_floor_api_v1_admin_building_dictionary_buildings__building_id__floors__floor__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+                /** @description 楼层号 */
+                floor: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdDeleteResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_dict_room_api_v1_admin_building_dictionary_buildings__building_id__rooms__room_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+                /** @description 户室ID */
+                room_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdDeleteResult"];
                 };
             };
             /** @description Validation Error */
@@ -20373,7 +20525,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

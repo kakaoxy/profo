@@ -226,6 +226,12 @@ class BdBatchCreateResult(BaseModel):
     skipped: int
 
 
+class BdDeleteResult(BaseModel):
+    """删除结果（admin：楼栋删除 deleted=1；楼层/批量删除 deleted=户室数）."""
+
+    deleted: int
+
+
 class BdCommunityCreateRequest(BaseModel):
     """admin 新增小区请求（FR-07：名/区/板块必填，重名拦截）."""
 

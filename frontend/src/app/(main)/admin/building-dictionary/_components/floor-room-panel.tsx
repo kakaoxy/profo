@@ -29,6 +29,10 @@ interface FloorRoomPanelProps {
   onAddRoom?: () => void;
   /** admin 补录户室行内表单插槽（由父级受控渲染） */
   addRoomSlot?: React.ReactNode;
+  /** 删除楼层（= 删该层全部户室；undefined = 不显示入口） */
+  onDeleteFloor?: (floor: number | null, floorLabel: string) => void;
+  /** 删除单个户室（undefined = 不显示入口） */
+  onDeleteRoom?: (roomId: number, roomNo: string) => void;
 }
 
 interface FloorGroup {
@@ -46,10 +50,10 @@ interface RoomItem {
   plate_no: string;
 }
 
-export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoom, addRoomSlot }: FloorRoomPanelProps) {
+export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoom, addRoomSlot, onDeleteFloor, onDeleteRoom }: FloorRoomPanelProps) {
   const [floors, setFloors] = useState<FloorGroup[]>([]);
   const [detail, setDetail] = useState<BdBuildingDetail | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<{ no: string; plate: string } | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<{ id: number; no: string; plate: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [openFloors, setOpenFloors] = useState<Set<number | null>>(new Set());
 
@@ -108,26 +112,38 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
           const floorRooms = byFloor.get(f.floor) ?? [];
           return (
             <div key={f.floor ?? "none"} className="floor-sect">
-              <button
-                type="button"
-                className="flex items-center gap-1.5 text-[11px] font-semibold text-graphite"
-                onClick={() => {
-                  const next = new Set(openFloors);
-                  if (isOpen) {
-                    next.delete(f.floor);
-                  } else {
-                    next.add(f.floor);
-                  }
-                  setOpenFloors(next);
-                }}
-              >
-                <span className="text-[9px] text-dove">{isOpen ? "▾" : "▸"}</span>
-                <span className={cn("font-mono text-[11px] font-semibold", f.floor == null ? "text-graphite" : "text-ink")}>
-                  {f.floor == null ? "楼层待定" : `${f.floor} 层`}
-                </span>
-                <em className="not-italic text-dove">{f.room_count} 户</em>
-                {f.has_pending ? <Badge variant="outline" className="h-4 px-1 text-[10px]">未审核</Badge> : null}
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 text-[11px] font-semibold text-graphite"
+                  onClick={() => {
+                    const next = new Set(openFloors);
+                    if (isOpen) {
+                      next.delete(f.floor);
+                    } else {
+                      next.add(f.floor);
+                    }
+                    setOpenFloors(next);
+                  }}
+                >
+                  <span className="text-[9px] text-dove">{isOpen ? "▾" : "▸"}</span>
+                  <span className={cn("font-mono text-[11px] font-semibold", f.floor == null ? "text-graphite" : "text-ink")}>
+                    {f.floor == null ? "楼层待定" : `${f.floor} 层`}
+                  </span>
+                  <em className="not-italic text-dove">{f.room_count} 户</em>
+                  {f.has_pending ? <Badge variant="outline" className="h-4 px-1 text-[10px]">未审核</Badge> : null}
+                </button>
+                {/* 「删除本层」= 批量删除该层全部户室（楼层待定分组无楼层号，仅支持逐户删除） */}
+                {onDeleteFloor && f.floor != null ? (
+                  <button
+                    type="button"
+                    className="ml-auto text-[10px] text-dove transition-colors hover:text-rust"
+                    onClick={() => onDeleteFloor(f.floor, `${f.floor} 层`)}
+                  >
+                    删除本层
+                  </button>
+                ) : null}
+              </div>
               {isOpen ? (
                 <div className="mt-2 grid grid-cols-8 gap-1 border-t border-dashed border-dove/40 pt-2">
                   {floorRooms.map((r) => {
@@ -144,7 +160,7 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
                           r.pending && "border border-dashed bg-transparent text-dove opacity-60 hover:bg-transparent",
                         )}
                         onClick={() => {
-                          setSelectedRoom({ no: r.room_no, plate: r.plate_no });
+                          setSelectedRoom({ id: r.id, no: r.room_no, plate: r.plate_no });
                           onPick?.({ roomNo: r.room_no, plate: r.plate_no });
                         }}
                       >
@@ -153,6 +169,18 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
                       </button>
                     );
                   })}
+                </div>
+              ) : null}
+              {/* 选中户室后的删除入口（admin；业务引用由后端拦截） */}
+              {isOpen && selectedRoom && onDeleteRoom && floorRooms.some((r) => !r.pending && r.room_no === selectedRoom.no) ? (
+                <div className="mt-1.5">
+                  <button
+                    type="button"
+                    className="text-[10.5px] text-rust hover:underline"
+                    onClick={() => onDeleteRoom(selectedRoom.id, selectedRoom.no)}
+                  >
+                    删除所选户室 {selectedRoom.no}
+                  </button>
                 </div>
               ) : null}
             </div>

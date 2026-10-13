@@ -14,13 +14,25 @@ from fastapi import Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from models import BdBuilding, BdEntryKind, BdEntryStatus, BdPendingEntry, BdRoom, Community
+from models import (
+    BdBuilding,
+    BdEntryKind,
+    BdEntryStatus,
+    BdPendingEntry,
+    BdRoom,
+    Community,
+    L4MarketingProject,
+    Lead,
+    Project,
+    PropertyCurrent,
+)
 from schemas.building_dict import (
     BdBatchCreateResult,
     BdBuildingCreateRequest,
     BdCommunityCreateRequest,
     BdCommunityDetailResponse,
     BdCommunityPatchRequest,
+    BdDeleteResult,
     BdRoomCreateRequest,
 )
 from services.property.dict_read_service import BuildingDictReadService
@@ -320,6 +332,166 @@ class DictWriteService:
             request=request,
         )
         return BdBatchCreateResult(added=added, skipped=len(candidates) - added)
+
+    # ---------- FR-06 删除（admin，引用拦截 + 审计） ----------
+
+    _BIZ_MODELS = (Project, Lead, L4MarketingProject, PropertyCurrent)
+
+    def _biz_reference_count(
+        self,
+        db: Session,
+        *,
+        field: str,
+        values: list,
+    ) -> int:
+        """统计业务单据（项目/线索/营销/房源）对楼栋/户室的引用数."""
+        if not values:
+            return 0
+        total = 0
+        for model in self._BIZ_MODELS:
+            total += db.query(model).filter(getattr(model, field).in_(values)).count()
+        return total
+
+    def delete_building(
+        self,
+        db: Session,
+        building_id: int,
+        *,
+        operator_id: str,
+        request: Request | None = None,
+    ) -> BdDeleteResult:
+        """删除楼栋（含其下全部户室）。
+
+        拦截：被任一业务单据引用（building_id），或审核池存在该楼栋下的
+        open pending 子级（BR-28 父子拓扑：删父级会悬挂待审子级）。
+        """
+        building = db.get(BdBuilding, building_id)
+        if not building:
+            msg = "楼栋不存在"
+            raise ResourceNotFoundError(msg)
+
+        ref_counts = {
+            model.__name__: db.query(model).filter(model.building_id == building_id).count()
+            for model in self._BIZ_MODELS
+        }
+        total_refs = sum(ref_counts.values())
+        if total_refs:
+            detail = "、".join(f"{name} {cnt}" for name, cnt in ref_counts.items() if cnt)
+            msg = f"楼栋已被 {total_refs} 张业务单据引用（{detail}），请先解除关联后再删除"
+            raise ConflictError(msg)
+        pending_children = (
+            db.query(BdPendingEntry)
+            .filter(
+                BdPendingEntry.kind == BdEntryKind.ROOM,
+                BdPendingEntry.status == BdEntryStatus.PENDING,
+                BdPendingEntry.parent_kind == BdEntryKind.BUILDING,
+                BdPendingEntry.parent_id == building_id,
+            )
+            .count()
+        )
+        if pending_children:
+            msg = f"审核池中存在该楼栋下的 {pending_children} 条待审户室，请先处理审核条目再删除"
+            raise ConflictError(msg)
+
+        rooms_deleted = db.query(BdRoom).filter(BdRoom.building_id == building_id).delete(synchronize_session=False)
+        before = {"building_no": building.building_no, "rooms_deleted": rooms_deleted}
+        # 批量删除而非 session.delete：rooms relationship 无级联配置，
+        # session.delete 会尝试对已删除的房间行发 FK 置空 UPDATE → StaleDataError
+        db.query(BdBuilding).filter(BdBuilding.id == building_id).delete(synchronize_session=False)
+        db.commit()
+        self._audit(
+            db,
+            user_id=operator_id,
+            action="bd_building_delete",
+            resource_id=str(building_id),
+            before=before,
+            request=request,
+        )
+        return BdDeleteResult(deleted=1)
+
+    def delete_floor(
+        self,
+        db: Session,
+        building_id: int,
+        floor: int,
+        *,
+        operator_id: str,
+        request: Request | None = None,
+    ) -> BdDeleteResult:
+        """删除楼层 = 批量删除该层全部户室（楼层为呈现层概念，随户室派生）."""
+        building = db.get(BdBuilding, building_id)
+        if not building:
+            msg = "楼栋不存在"
+            raise ResourceNotFoundError(msg)
+        rooms = db.query(BdRoom).filter(BdRoom.building_id == building_id, BdRoom.floor == floor).all()
+        if not rooms:
+            msg = "该楼层没有户室"
+            raise ResourceNotFoundError(msg)
+
+        room_ids = [r.id for r in rooms]
+        ref_counts = {
+            model.__name__: db.query(model).filter(model.room_id.in_(room_ids)).count() for model in self._BIZ_MODELS
+        }
+        total_refs = sum(ref_counts.values())
+        if total_refs:
+            detail = "、".join(f"{name} {cnt}" for name, cnt in ref_counts.items() if cnt)
+            msg = f"该楼层有 {total_refs} 户已被业务单据引用（{detail}），请先解除关联后再删除"
+            raise ConflictError(msg)
+
+        deleted = (
+            db.query(BdRoom)
+            .filter(BdRoom.building_id == building_id, BdRoom.floor == floor)
+            .delete(synchronize_session=False)
+        )
+        building.room_count = db.query(BdRoom).filter(BdRoom.building_id == building_id).count()
+        building.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        self._audit(
+            db,
+            user_id=operator_id,
+            action="bd_floor_delete",
+            resource_id=str(building_id),
+            before={"floor": floor, "rooms_deleted": deleted},
+            request=request,
+        )
+        return BdDeleteResult(deleted=deleted)
+
+    def delete_room(
+        self,
+        db: Session,
+        building_id: int,
+        room_id: int,
+        *,
+        operator_id: str,
+        request: Request | None = None,
+    ) -> BdDeleteResult:
+        """删除单个户室（被业务单据引用时拦截）."""
+        room = db.get(BdRoom, room_id)
+        if not room or room.building_id != building_id:
+            msg = "户室不存在"
+            raise ResourceNotFoundError(msg)
+
+        total_refs = self._biz_reference_count(db, field="room_id", values=[room_id])
+        if total_refs:
+            msg = f"该户室已被 {total_refs} 张业务单据引用，请先解除关联后再删除"
+            raise ConflictError(msg)
+
+        building = db.get(BdBuilding, building_id)
+        before = {"room_no": room.room_no, "floor": room.floor}
+        db.delete(room)
+        if building:
+            building.room_count = db.query(BdRoom).filter(BdRoom.building_id == building_id).count()
+            building.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        self._audit(
+            db,
+            user_id=operator_id,
+            action="bd_room_delete",
+            resource_id=str(room_id),
+            before=before,
+            request=request,
+        )
+        return BdDeleteResult(deleted=1)
 
     # ---------- FR-07 新增小区 ----------
 

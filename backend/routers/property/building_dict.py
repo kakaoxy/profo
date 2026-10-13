@@ -26,6 +26,7 @@ from schemas.building_dict import (
     BdCommunityDetailResponse,
     BdCommunityListResponse,
     BdCommunityPatchRequest,
+    BdDeleteResult,
     BdFloorGroup,
     BdImportTaskCreateResponse,
     BdImportTaskListResponse,
@@ -287,6 +288,47 @@ def create_dict_community(
     """Admin 新增小区（重名拦截 + 撞同名 open pending 自动转正 + 审计/通知）."""
     write_service = get_dict_write_service()
     return write_service.create_community(db, body, operator_id=str(current_user.id), request=request)
+
+
+@router.delete("/buildings/{building_id}")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def delete_dict_building(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    building_id: Annotated[int, PathParam(description="楼栋ID")],
+) -> BdDeleteResult:
+    """Admin 删除楼栋（含其下全部户室；业务引用/待审子级拦截，审计）."""
+    write_service = get_dict_write_service()
+    return write_service.delete_building(db, building_id, operator_id=str(current_user.id), request=request)
+
+
+@router.delete("/buildings/{building_id}/floors/{floor}")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def delete_dict_floor(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    building_id: Annotated[int, PathParam(description="楼栋ID")],
+    floor: Annotated[int, PathParam(description="楼层号")],
+) -> BdDeleteResult:
+    """Admin 删除楼层（= 批量删除该层全部户室；业务引用拦截，审计）."""
+    write_service = get_dict_write_service()
+    return write_service.delete_floor(db, building_id, floor, operator_id=str(current_user.id), request=request)
+
+
+@router.delete("/buildings/{building_id}/rooms/{room_id}")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def delete_dict_room(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    building_id: Annotated[int, PathParam(description="楼栋ID")],
+    room_id: Annotated[int, PathParam(description="户室ID")],
+) -> BdDeleteResult:
+    """Admin 删除单个户室（业务引用拦截，审计）."""
+    write_service = get_dict_write_service()
+    return write_service.delete_room(db, building_id, room_id, operator_id=str(current_user.id), request=request)
 
 
 # ==================== 审核池（FR-11 / R7 / Task 12） ====================
