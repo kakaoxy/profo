@@ -327,7 +327,7 @@ export function BdOverviewClient({
             setSelected(null);
           }
         }}
-        onMerged={() => router.refresh()}
+        onUpdated={() => router.refresh()}
       />
     </div>
   );

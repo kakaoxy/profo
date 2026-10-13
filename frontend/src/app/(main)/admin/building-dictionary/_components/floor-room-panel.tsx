@@ -21,6 +21,8 @@ import type { BdBuildingDetail } from "./types";
 
 interface FloorRoomPanelProps {
   buildingId: number;
+  /** 变化时重载楼层/户室数据（父级户室补录成功后 +1），保留展开与选中状态 */
+  refreshSignal?: number;
   /** 户室选中上报（抽屉底部回显「已选 X 栋 Y」） */
   onPick?: (room: { roomNo: string; plate: string }) => void;
   /** 「+ 添加户室」入口回调（undefined = 不显示入口） */
@@ -44,7 +46,7 @@ interface RoomItem {
   plate_no: string;
 }
 
-export function FloorRoomPanel({ buildingId, onPick, onAddRoom, addRoomSlot }: FloorRoomPanelProps) {
+export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoom, addRoomSlot }: FloorRoomPanelProps) {
   const [floors, setFloors] = useState<FloorGroup[]>([]);
   const [detail, setDetail] = useState<BdBuildingDetail | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<{ no: string; plate: string } | null>(null);
@@ -80,7 +82,7 @@ export function FloorRoomPanel({ buildingId, onPick, onAddRoom, addRoomSlot }: F
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, refreshSignal]);
 
   if (loading) {
     return (

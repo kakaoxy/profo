@@ -10,6 +10,8 @@
  *   - 主档视角：merged_children 逐条呈现（地址/楼栋/户室/已绑）+ 单条解除合并；
  * 楼栋列表（搜索/20 分页/pending 虚线叠加/已绑项目徽标）→ 展开楼层分组 → 户室网格
  * （单选 + BD-09 坐标回显 + 门牌映射）+ admin 区间补录楼栋/户室（FR-06）；
+ * 任一写操作成功后回调 onUpdated（父级 router.refresh 同步列表页），户室补录
+ * 另触发 FloorRoomPanel refreshSignal 重载网格；
  * 底部操作条：编辑资料（画像编辑态）+ 绑定项目（选中户室后可点）。
  */
 
@@ -37,7 +39,8 @@ interface CommunityDrawerProps {
   communityName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onMerged?: () => void;
+  /** 任一写操作（画像修正/合并/解除合并/补录楼栋户室）成功后回调，父级触发 router.refresh() */
+  onUpdated?: () => void;
 }
 
 export function CommunityDrawer({
@@ -45,7 +48,7 @@ export function CommunityDrawer({
   communityName,
   open,
   onOpenChange,
-  onMerged,
+  onUpdated,
 }: CommunityDrawerProps) {
   const { hasPermission } = usePermission();
   const canGovern = hasPermission(PERMISSION_CODES.PROPERTY_GOVERNANCE);
@@ -64,6 +67,8 @@ export function CommunityDrawer({
   const [addingBld, setAddingBld] = useState(false);
   const [addingRoomFor, setAddingRoomFor] = useState<number | null>(null);
   const [picked, setPicked] = useState<{ buildingNo: string; roomNo: string; plate: string; lng: number | null; lat: number | null } | null>(null);
+  /** 户室补录成功后 +1，触发展开的 FloorRoomPanel 重载楼层/户室网格 */
+  const [roomRefreshTick, setRoomRefreshTick] = useState(0);
 
   const loadDetail = useCallback(async () => {
     if (!communityId) return;
@@ -147,7 +152,8 @@ export function CommunityDrawer({
     toast.success("画像已更新（admin + 审计）");
     setEditing(false);
     void loadDetail();
-  }, [communityId, detail, patchForm, loadDetail]);
+    onUpdated?.();
+  }, [communityId, detail, patchForm, loadDetail, onUpdated]);
 
   /** 主档视角解除合并：恢复被并小区为独立（POST /admin/communities/unmerge） */
   const handleUnmergeChild = useCallback(
@@ -161,9 +167,9 @@ export function CommunityDrawer({
       }
       toast.success(`已解除合并：「${childName}」拆回独立小区 · 数据无损`);
       void loadDetail();
-      onMerged?.();
+      onUpdated?.();
     },
-    [communityId, loadDetail, onMerged],
+    [communityId, loadDetail, onUpdated],
   );
 
   const mergedChildren = detail?.merged_children ?? [];
@@ -313,7 +319,7 @@ export function CommunityDrawer({
                       }
                       toast.success("已解除合并，小区恢复独立");
                       void loadDetail();
-                      onMerged?.();
+                      onUpdated?.();
                     }}
                   >
                     解除合并
@@ -380,6 +386,7 @@ export function CommunityDrawer({
                       setAddingBld(false);
                       void loadDetail();
                       void loadBuildings();
+                      onUpdated?.();
                     }}
                     onCancel={() => setAddingBld(false)}
                   />
@@ -421,6 +428,7 @@ export function CommunityDrawer({
                         <div className="px-3.5 pb-3">
                           <FloorRoomPanel
                             buildingId={b.id}
+                            refreshSignal={roomRefreshTick}
                             onPick={(room) =>
                               setPicked({
                                 buildingNo: b.building_no,
@@ -446,6 +454,9 @@ export function CommunityDrawer({
                                     void loadDetail();
                                     void loadBuildings();
                                     setExpandedBuilding(b.id);
+                                    // 触发展开面板重载，新楼层/户室即时可见
+                                    setRoomRefreshTick((t) => t + 1);
+                                    onUpdated?.();
                                   }}
                                   onCancel={() => setAddingRoomFor(null)}
                                 />
@@ -569,7 +580,7 @@ export function CommunityDrawer({
           primaryName={detail.name}
           onMerged={() => {
             onOpenChange(false);
-            onMerged?.();
+            onUpdated?.();
           }}
         />
       ) : null}
