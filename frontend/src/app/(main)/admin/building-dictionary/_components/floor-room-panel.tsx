@@ -99,21 +99,16 @@ export function FloorRoomPanel({ buildingId, onPick, onAddRoom, addRoomSlot }: F
   }
 
   return (
-    <div className="border-t border-dashed border-dove/40 bg-fog/40 py-3">
-      {selectedRoom ? (
-        <p className="mb-2 rounded-lg bg-apricot-wash/60 px-3 py-1.5 text-[13px] text-rust">
-          选中：{selectedRoom.no}（门牌 {selectedRoom.plate}）
-        </p>
-      ) : null}
-      <div className="flex flex-col gap-1.5">
+    <div className="border-t border-dashed border-dove/40 pt-2.5">
+      <div className="flex flex-col gap-2">
         {floors.map((f) => {
           const isOpen = openFloors.has(f.floor);
           const floorRooms = byFloor.get(f.floor) ?? [];
           return (
-            <div key={f.floor ?? "none"} className="rounded-xl border border-dove/40 bg-white">
+            <div key={f.floor ?? "none"} className="floor-sect">
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-1.5 text-[13px]"
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-graphite"
                 onClick={() => {
                   const next = new Set(openFloors);
                   if (isOpen) {
@@ -124,16 +119,15 @@ export function FloorRoomPanel({ buildingId, onPick, onAddRoom, addRoomSlot }: F
                   setOpenFloors(next);
                 }}
               >
-                <span className="flex items-center gap-2">
-                  <span className={cn("font-medium", f.floor == null && "text-graphite")}>
-                    {f.floor == null ? "楼层待定" : `${f.floor} 层`}
-                  </span>
-                  {f.has_pending ? <Badge variant="outline" className="h-4 px-1 text-[10px]">未审核</Badge> : null}
+                <span className="text-[9px] text-dove">{isOpen ? "▾" : "▸"}</span>
+                <span className={cn("font-mono text-[11px] font-semibold", f.floor == null ? "text-graphite" : "text-ink")}>
+                  {f.floor == null ? "楼层待定" : `${f.floor} 层`}
                 </span>
-                <span className="text-graphite tabular-nums">{f.room_count} 户</span>
+                <em className="not-italic text-dove">{f.room_count} 户</em>
+                {f.has_pending ? <Badge variant="outline" className="h-4 px-1 text-[10px]">未审核</Badge> : null}
               </button>
               {isOpen ? (
-                <div className="grid grid-cols-8 gap-1 px-3 pb-2">
+                <div className="mt-2 grid grid-cols-8 gap-1 border-t border-dashed border-dove/40 pt-2">
                   {floorRooms.map((r) => {
                     const selected = selectedRoom?.no === r.room_no;
                     return (
@@ -143,16 +137,17 @@ export function FloorRoomPanel({ buildingId, onPick, onAddRoom, addRoomSlot }: F
                         disabled={r.pending}
                         title={r.pending ? "审核中，通过后可选" : undefined}
                         className={cn(
-                          "rounded border px-1 py-0.5 text-[11px] tabular-nums",
-                          selected ? "border-ink bg-ink text-white" : "border-dove/50 hover:border-ash",
-                          r.pending && "border-dashed text-dove opacity-60",
+                          "rounded-[7px] px-1 py-1 font-mono text-[10px] transition-colors",
+                          selected ? "bg-ink text-white" : "bg-fog text-ash hover:bg-[var(--sky,#e8f0f8)] hover:text-ink",
+                          r.pending && "border border-dashed bg-transparent text-dove opacity-60 hover:bg-transparent",
                         )}
                         onClick={() => {
                           setSelectedRoom({ no: r.room_no, plate: r.plate_no });
                           onPick?.({ roomNo: r.room_no, plate: r.plate_no });
                         }}
                       >
-                        {r.plate_no}
+                        {/* 设计稿：网格展示原始户室号（如 0401），门牌映射只在底部回显 */}
+                        {r.room_no}
                       </button>
                     );
                   })}
@@ -163,11 +158,11 @@ export function FloorRoomPanel({ buildingId, onPick, onAddRoom, addRoomSlot }: F
         })}
       </div>
       {onAddRoom || addRoomSlot ? (
-        <div className="px-3 pt-2">
+        <div className="pt-2.5">
           {onAddRoom ? (
             <button
               type="button"
-              className="flex items-center gap-1.5 text-[11.5px] text-rust hover:underline"
+              className="flex items-center gap-1.5 text-[11.5px] text-rust"
               onClick={onAddRoom}
             >
               <span className="flex size-4.5 items-center justify-center rounded-full bg-apricot-wash text-[12px] font-semibold text-rust">

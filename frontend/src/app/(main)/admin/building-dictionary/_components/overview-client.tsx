@@ -35,6 +35,7 @@ import { Pagination } from "@/components/common/pagination";
 import { CommunityDrawer } from "./community-drawer";
 import { CreateCommunityDialog } from "./create-community-dialog";
 import type { BdCommunityListItem, BdKpiResponse } from "./types";
+import { cn } from "@/lib/utils";
 
 interface BdOverviewClientProps {
   kpi: BdKpiResponse;
@@ -149,23 +150,23 @@ export function BdOverviewClient({
   }, []);
 
   const kpis = [
-    { label: "小区", value: kpi.community_count, sub: "全量 19,655 · 覆盖 16 区" },
-    { label: "楼栋", value: kpi.building_count, sub: "结构化楼栋 · 约 97% 带坐标" },
-    { label: "户室", value: kpi.room_count, sub: "全量 733 万 · 前两位解析楼层" },
-    { label: "已绑项目", value: kpi.linked_project_count, sub: "已选到具体户室的项目" },
+    { label: "小区", value: kpi.community_count, sub: "全量 19,655 · 覆盖 16 区", warm: true },
+    { label: "楼栋", value: kpi.building_count, sub: "全量 526,670 · 97% 带坐标", warm: false },
+    { label: "户室", value: kpi.room_count, sub: "全量 7,332,314", warm: false },
+    { label: "已绑项目", value: kpi.linked_project_count, sub: "已选到具体户室的项目", warm: false },
   ];
 
   return (
     <div className="flex flex-col gap-5">
-      {/* KPI hero（Apricot 暖卡唯一，DESIGN.md） */}
+      {/* KPI hero（设计稿：唯一 Apricot 暖卡 + 灰底卡） */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k) => (
-          <div key={k.label} className="rounded-3xl bg-apricot-wash/60 px-5 py-4">
-            <p className="text-[13px] text-rust">{k.label}</p>
-            <p className="mt-1 font-display text-[28px] leading-none text-ink tabular-nums">
+          <div key={k.label} className={cn("rounded-[20px] px-4 py-3.5", k.warm ? "bg-apricot-wash" : "bg-fog")}>
+            <p className={cn("text-[12px]", k.warm ? "text-rust" : "text-graphite")}>{k.label}</p>
+            <p className="mt-1 font-display text-[30px] leading-none tracking-[-0.01em] text-ink tabular-nums">
               {k.value.toLocaleString()}
             </p>
-            <p className="mt-1 text-[10.5px] text-rust/70">{k.sub}</p>
+            <p className="mt-1 text-[10.5px] text-graphite">{k.sub}</p>
           </div>
         ))}
       </div>
@@ -231,18 +232,6 @@ export function BdOverviewClient({
               <SelectItem value="false">无关联</SelectItem>
             </SelectContent>
           </Select>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2 size-3.5 text-dove" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") applyFilter({ keyword: search });
-              }}
-              placeholder="搜小区名或地址"
-              className="h-8 w-56 rounded-full pl-8 text-[12.5px]"
-            />
-          </div>
           {keyword || district || ring || propertyType || eraFrom !== undefined || eraTo !== undefined || hasProjectLink !== undefined ? (
             <Button
               variant="ghost"
@@ -256,19 +245,33 @@ export function BdOverviewClient({
               清除筛选
             </Button>
           ) : null}
+          {/* 设计稿 search-pill：雾底圆角药丸，靠右占剩余宽度 */}
+          <div className="relative ml-auto w-full min-w-[180px] max-w-[300px]">
+            <Search className="absolute left-4 top-2 size-3.5 text-graphite" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applyFilter({ keyword: search });
+              }}
+              placeholder="搜小区名或地址"
+              className="h-9 rounded-full border-transparent bg-fog pl-10 text-[12.5px] focus-visible:border-ink"
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => router.push("/admin/building-dictionary/review")}>
+        <div className="flex items-center gap-2.5">
+          {/* 设计稿页头动作顺序：＋新增小区 → 待审核（徽标）→ 导入数据 */}
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1 size-4" />
+            新增小区
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push("/admin/building-dictionary/review")}>
             待审核
             {kpi.pending_count > 0 ? (
               <Badge className="ml-1 h-5 bg-rust px-1.5 text-white">{kpi.pending_count}</Badge>
             ) : null}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-1 size-4" />
-            新增小区
-          </Button>
-          <Button size="sm" className="bg-ink text-white" onClick={() => router.push("/admin/building-dictionary/import")}>
+          <Button size="sm" className="rounded-full bg-ink text-white" onClick={() => router.push("/admin/building-dictionary/import")}>
             <FileUp className="mr-1 size-4" />
             导入数据
           </Button>
@@ -339,12 +342,12 @@ export function BdOverviewClient({
                 <TableCell className="text-[13px] text-graphite">
                   {c.property_types.length ? c.property_types.join("、") : "—"}
                 </TableCell>
-                <TableCell className="text-[13px] tabular-nums">
+                <TableCell className="text-[13px] tabular-nums text-graphite">
                   {c.era_from ? `${c.era_from}${c.era_to ? `~${c.era_to}` : ""}` : "—"}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{c.building_count}</TableCell>
-                <TableCell className="text-right tabular-nums">{c.room_count.toLocaleString()}</TableCell>
-                <TableCell className="text-right tabular-nums">{c.linked_project_count}</TableCell>
+                <TableCell className="text-right font-mono text-[12px] text-ink tabular-nums">{c.building_count}</TableCell>
+                <TableCell className="text-right font-mono text-[12px] text-ink tabular-nums">{c.room_count.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-[12px] text-ink tabular-nums">{c.linked_project_count}</TableCell>
                 <TableCell className="text-dove">›</TableCell>
               </TableRow>
             ))}

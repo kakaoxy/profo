@@ -87,7 +87,7 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
     <PageContainer>
       <PageHeader
         title="楼盘字典"
-        description="小区 → 楼栋 → 楼层 → 户室 四级结构化字典 · 上海全域 2017 快照 + 审核池生长"
+        description="上海 1.97 万个小区，逐级看楼栋和户室 · 点击行看详情"
       />
       <BdOverviewClient
         kpi={kpi}

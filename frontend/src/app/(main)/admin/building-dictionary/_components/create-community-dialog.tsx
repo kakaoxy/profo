@@ -74,56 +74,56 @@ export function CreateCommunityDialog({ open, onOpenChange, onCreated }: CreateC
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
+          <div className="font-mono text-[10px] tracking-[0.1em] text-dove">后台添加，立即生效</div>
           <DialogTitle>新增小区</DialogTitle>
           <DialogDescription>
-            小区名/区/板块必填；环线/锚点坐标（BD-09）/地址可空。创建后即时生效进总览与联想。
+            小区名/区/板块必填；环线/坐标/地址可不填。创建后即时生效进总览与联想。
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <Label>小区名 *</Label>
-            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <Label>小区名 <span className="text-rust">*</span></Label>
+            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="如 泗塘六村" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <Label>区 *</Label>
-              <Input value={form.district} onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))} placeholder="如 浦东" />
+              <Label>区域 <span className="text-rust">*</span></Label>
+              <Input value={form.district} onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))} placeholder="如 宝山" />
             </div>
             <div className="flex flex-col gap-1">
-              <Label>板块 *</Label>
+              <Label>板块 <span className="text-rust">*</span></Label>
               <Input
                 value={form.businessCircle}
                 onChange={(e) => setForm((f) => ({ ...f, businessCircle: e.target.value }))}
-                placeholder="如 北蔡"
+                placeholder="如 淞宝"
               />
             </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <Label>环线</Label>
-            <Input value={form.ring} onChange={(e) => setForm((f) => ({ ...f, ring: e.target.value }))} placeholder="如 外环外（可空）" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label>地址</Label>
-            <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="可空" />
-          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <Label>经度（BD-09）</Label>
-              <Input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="可空" />
+              <Label>环线（可空）</Label>
+              <Input value={form.ring} onChange={(e) => setForm((f) => ({ ...f, ring: e.target.value }))} placeholder="如 外环外" />
             </div>
             <div className="flex flex-col gap-1">
-              <Label>纬度（BD-09）</Label>
-              <Input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="可空" />
+              <Label>地图坐标（可不填）</Label>
+              <div className="grid grid-cols-2 gap-1.5">
+                <Input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="121.xx" className="font-mono text-[12px]" />
+                <Input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="31.xx" className="font-mono text-[12px]" />
+              </div>
             </div>
           </div>
+          <div className="flex flex-col gap-1">
+            <Label>地址（可空）</Label>
+            <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="如 永乐路500弄" />
+          </div>
         </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex justify-end gap-2 border-t border-dove/40 pt-3">
+          <Button variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button className="bg-ink text-white" disabled={submitting} onClick={handleSubmit}>
+          <Button className="rounded-full bg-ink text-white" disabled={submitting} onClick={handleSubmit}>
             {submitting ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
-            创建
+            立即创建
           </Button>
         </div>
       </DialogContent>

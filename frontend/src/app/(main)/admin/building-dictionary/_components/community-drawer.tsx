@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Loader2, MapPin, Pencil, X } from "lucide-react";
+import { Check, Loader2, Pencil, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -190,15 +190,22 @@ export function CommunityDrawer({
               {detail.ring ? (
                 <span className="rounded-full bg-apricot-wash px-2.5 py-0.5 text-[10.5px] text-rust">{detail.ring}</span>
               ) : null}
-              <span className="rounded-full bg-fog px-2.5 py-0.5 text-[10.5px] text-graphite">
-                {[detail.district, detail.business_circle].filter(Boolean).join(" · ") || "—"}
-              </span>
-              <span className="rounded-full bg-fog px-2.5 py-0.5 text-[10.5px] text-graphite">
-                {detail.property_types.length ? detail.property_types.join(" · ") : "—"}
-              </span>
-              <span className="rounded-full bg-fog px-2.5 py-0.5 text-[10.5px] text-graphite tabular-nums">
-                {detail.era_from ? `${detail.era_from}${detail.era_to ? `~${detail.era_to}` : ""}` : "—"}
-              </span>
+              {/* 设计稿：无值不占位（不渲染「—」空 chip） */}
+              {detail.district || detail.business_circle ? (
+                <span className="rounded-full bg-fog px-2.5 py-0.5 text-[10.5px] text-graphite">
+                  {[detail.district, detail.business_circle].filter(Boolean).join(" · ")}
+                </span>
+              ) : null}
+              {detail.property_types.length ? (
+                <span className="rounded-full bg-fog px-2.5 py-0.5 text-[10.5px] text-graphite">
+                  {detail.property_types.join(" · ")}
+                </span>
+              ) : null}
+              {detail.era_from ? (
+                <span className="rounded-full bg-fog px-2.5 py-0.5 text-[10.5px] text-graphite tabular-nums">
+                  {detail.era_from}{detail.era_to ? `~${detail.era_to}` : ""}
+                </span>
+              ) : null}
             </div>
           ) : null}
         </SheetHeader>
@@ -209,100 +216,84 @@ export function CommunityDrawer({
           </div>
         ) : detail ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div className="flex flex-col gap-5 px-4 pb-6">
-              {/* 画像区（FR-02） */}
-              <section className="rounded-2xl border border-dove/40 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-[15px] font-medium text-ink">画像</h3>
+            <div className="flex flex-col gap-5 px-6 pb-6">
+              {/* 画像区（设计稿 info-grid：雾底双列 6 格） */}
+              <section className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">地址</p>
+                  <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.address || "—"}</p>
+                </div>
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">位置坐标（BD-09）</p>
+                  <p className="mt-0.5 font-mono text-[12px] font-medium leading-relaxed text-ink">
+                    {detail.lng != null && detail.lat != null ? `${detail.lng.toFixed(6)}, ${detail.lat.toFixed(6)}` : "—"}
+                  </p>
+                </div>
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">物业公司</p>
+                  <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.property_mgmt || "—"}</p>
+                </div>
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">开发商</p>
+                  <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.developer || "—"}</p>
+                </div>
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">环线</p>
                   {editing ? (
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-                        <X className="size-4" />
-                      </Button>
-                      <Button size="sm" className="bg-ink text-white" onClick={handlePatch}>
-                        <Check className="size-4" />
-                        保存
-                      </Button>
-                    </div>
+                    <Input
+                      className="mt-1 h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
+                      value={patchForm.ring}
+                      onChange={(e) => setPatchForm((f) => ({ ...f, ring: e.target.value }))}
+                      placeholder="如 外环外"
+                    />
                   ) : (
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
-                      <Pencil className="size-3.5" />
-                      编辑资料
-                    </Button>
+                    <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink">{detail.ring || "—"}</p>
                   )}
                 </div>
-                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
-                  <div>
-                    <dt className="text-graphite">地址</dt>
-                    <dd className="text-ink">{detail.address || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-graphite">环线</dt>
-                    {editing ? (
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">建成年代</p>
+                  {editing ? (
+                    <div className="mt-1 flex gap-1">
                       <Input
-                        className="mt-0.5 h-7"
-                        value={patchForm.ring}
-                        onChange={(e) => setPatchForm((f) => ({ ...f, ring: e.target.value }))}
+                        className="h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
+                        value={patchForm.eraFrom}
+                        onChange={(e) => setPatchForm((f) => ({ ...f, eraFrom: e.target.value }))}
+                        placeholder="起"
                       />
-                    ) : (
-                      <dd className="text-ink">{detail.ring || "—"}</dd>
-                    )}
-                  </div>
-                  <div>
-                    <dt className="text-graphite">位置坐标（BD-09）</dt>
-                    <dd className="flex items-center gap-1 font-mono text-[12px] text-ink">
-                      <MapPin className="size-3" />
-                      {detail.lng != null && detail.lat != null ? `${detail.lng.toFixed(6)}, ${detail.lat.toFixed(6)}` : "—"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-graphite">建成年代</dt>
-                    {editing ? (
-                      <div className="mt-0.5 flex gap-1">
-                        <Input
-                          className="h-7"
-                          value={patchForm.eraFrom}
-                          onChange={(e) => setPatchForm((f) => ({ ...f, eraFrom: e.target.value }))}
-                          placeholder="起"
-                        />
-                        <Input
-                          className="h-7"
-                          value={patchForm.eraTo}
-                          onChange={(e) => setPatchForm((f) => ({ ...f, eraTo: e.target.value }))}
-                          placeholder="止"
-                        />
-                      </div>
-                    ) : (
-                      <dd className="text-ink tabular-nums">
-                        {detail.era_from ? `${detail.era_from}${detail.era_to ? `~${detail.era_to}` : ""}` : "—"}
-                      </dd>
-                    )}
-                  </div>
-                  <div>
-                    <dt className="text-graphite">物业公司</dt>
-                    <dd className="text-ink">{detail.property_mgmt || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-graphite">开发商</dt>
-                    <dd className="text-ink">{detail.developer || "—"}</dd>
-                  </div>
-                </dl>
-                <div className="mt-3 flex gap-4 border-t border-dove/30 pt-3 text-[13px] text-graphite">
-                  <span>楼栋 {detail.building_count}</span>
-                  <span>户室 {detail.room_count.toLocaleString()}</span>
-                  <span>已绑项目 {detail.linked_project_count}</span>
+                      <Input
+                        className="h-7 rounded-[9px] border-line bg-white font-mono text-[12px]"
+                        value={patchForm.eraTo}
+                        onChange={(e) => setPatchForm((f) => ({ ...f, eraTo: e.target.value }))}
+                        placeholder="止"
+                      />
+                    </div>
+                  ) : (
+                    <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink tabular-nums">
+                      {detail.era_from ? `${detail.era_from}${detail.era_to ? `~${detail.era_to}` : ""}` : "—"}
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">楼栋 / 户室</p>
+                  <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink tabular-nums">
+                    {detail.building_count} 栋 · {detail.room_count.toLocaleString()} 户
+                  </p>
+                </div>
+                <div className="rounded-[14px] bg-fog px-3.5 py-2.5">
+                  <p className="text-[10.5px] text-graphite">已绑项目</p>
+                  <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink tabular-nums">{detail.linked_project_count} 个</p>
                 </div>
               </section>
 
               {/* 户型图库（FR-20 v2.0：抽屉内唯一图片管理界面） */}
               <CommunityImagesSection communityId={detail.id} scrollTo={focusImages} />
 
-              {/* 合并信息区块（FR-14 v2.0 修订二） */}
+              {/* 合并信息区块（FR-14 v2.0；文案对齐设计稿 v1.7：去术语化） */}
               {detail.merged_into_id ? (
                 <section className="rounded-2xl border border-rust/30 bg-apricot-wash/40 p-4">
                   <h3 className="text-[15px] font-medium text-ink">合并信息</h3>
-                  <p className="mt-1 text-[13px] text-graphite">
-                    本小区已并入主档（merged_into_id={detail.merged_into_id}）。解除后恢复独立、清指针、撤销吸纳别名。
+                  <p className="mt-1 text-[13px] leading-relaxed text-graphite">
+                    本小区已并入主档。解除后恢复为独立小区，数据无损拆回。
                   </p>
                   <Button
                     variant="outline"
@@ -328,7 +319,7 @@ export function CommunityDrawer({
               {mergedChildren.length > 0 ? (
                 <section className="rounded-2xl border border-dove/40 p-4">
                   <h3 className="text-[15px] font-medium text-ink">
-                    合并信息 <span className="text-[13px] text-graphite">已并入 {mergedChildren.length} 个小区 · 支持解除</span>
+                    合并信息 <span className="text-[13px] font-normal text-graphite">已并入 {mergedChildren.length} 个小区 · 支持解除</span>
                   </h3>
                   <div className="mt-2 flex flex-col gap-2">
                     {mergedChildren.map((m) => (
@@ -349,15 +340,15 @@ export function CommunityDrawer({
                 </section>
               ) : null}
 
-              {/* 楼栋列表（FR-03/04/05/06） */}
+              {/* 楼栋列表（设计稿：标题 + 「+ 添加楼栋」在同侧，通栏雾底搜索药丸） */}
               <section>
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-[15px] font-medium text-ink">
-                    楼栋列表 <span className="text-[13px] text-graphite">({buildingTotal})</span>
+                <div className="mb-2.5 flex items-baseline justify-between">
+                  <h3 className="text-[14px] font-semibold text-ink">
+                    楼栋列表 <span className="font-mono text-[11px] font-normal text-graphite">{buildingTotal} 栋</span>
                     {!addingBld ? (
                       <button
                         type="button"
-                        className="ml-2 font-mono text-[10px] text-rust hover:underline"
+                        className="ml-2 font-mono text-[10px] font-normal text-rust hover:underline"
                         onClick={() => {
                           setAddingBld(true);
                           setAddingRoomFor(null);
@@ -367,11 +358,14 @@ export function CommunityDrawer({
                       </button>
                     ) : null}
                   </h3>
+                </div>
+                <div className="relative mb-2.5">
+                  <Search className="absolute left-4 top-2 size-3.5 text-dove" />
                   <Input
                     value={buildingKeyword}
                     onChange={(e) => setBuildingKeyword(e.target.value)}
                     placeholder="搜楼栋号，如 201乙"
-                    className="h-8 w-36"
+                    className="h-9 rounded-full border-transparent bg-fog pl-10 text-[12px] focus-visible:border-ink"
                   />
                 </div>
                 {addingBld ? (
@@ -493,16 +487,16 @@ export function CommunityDrawer({
           </div>
         ) : null}
 
-        {/* 底部操作条（设计稿 dw-foot：选中回显 + 编辑资料/绑定项目） */}
-        <SheetFooter className="border-t border-dove/40 px-4 py-3">
+        {/* 底部操作条（设计稿 dw-foot：选中回显 + 编辑资料 + 绑定项目） */}
+        <SheetFooter className="border-t border-dove/40 px-6 py-3.5">
           <div className="flex w-full items-center justify-between gap-3">
             <p className="min-w-0 flex-1 text-[11.5px] leading-relaxed text-graphite">
               {picked ? (
                 <>
-                  已选 <b className="text-rust">{picked.buildingNo} 栋 {picked.plate}</b>
+                  已选 <b className="font-medium text-rust">{picked.buildingNo} 栋 {picked.roomNo}</b>
                   {picked.lng != null && picked.lat != null ? (
                     <span className="ml-1 font-mono">
-                      · {picked.lng.toFixed(6)}, {picked.lat.toFixed(6)}
+                      · 位置坐标 {picked.lng.toFixed(6)}, {picked.lat.toFixed(6)}
                     </span>
                   ) : null}
                 </>
@@ -511,16 +505,55 @@ export function CommunityDrawer({
               )}
             </p>
             <div className="flex shrink-0 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEditing(true);
-                  toast("画像进入编辑态：环线 / 年代 人工修正（PATCH communities）");
-                }}
-              >
-                编辑资料
-              </Button>
+              {editing ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => {
+                      setEditing(false);
+                      setPatchForm({
+                        ring: detail?.ring ?? "",
+                        eraFrom: String(detail?.era_from ?? ""),
+                        eraTo: String(detail?.era_to ?? ""),
+                      });
+                    }}
+                  >
+                    <X className="mr-1 size-3.5" />
+                    取消
+                  </Button>
+                  <Button size="sm" className="rounded-full bg-ink text-white" onClick={handlePatch}>
+                    <Check className="mr-1 size-3.5" />
+                    保存
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => {
+                      setEditing(true);
+                      toast("画像进入编辑态：环线 / 类型 / 年代 人工修正");
+                    }}
+                  >
+                    <Pencil className="mr-1 size-3.5" />
+                    编辑资料
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="rounded-full bg-ink text-white"
+                    disabled={!picked}
+                    onClick={() => {
+                      toast(`已选 ${picked?.buildingNo} 栋 ${picked?.plate}，请在项目表单中确认绑定`);
+                    }}
+                  >
+                    绑定项目
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </SheetFooter>

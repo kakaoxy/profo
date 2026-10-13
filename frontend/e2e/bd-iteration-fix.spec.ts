@@ -159,8 +159,10 @@ test.describe("楼盘字典迭代修复 E2E（对齐设计稿 v2.0）", () => {
     await page.goto("/admin/building-dictionary");
     await expect(page.getByText("首图")).toBeVisible({ timeout: 30000 });
 
-    // KPI hero（Apricot 暖卡）
+    // KPI hero（设计稿：唯一 Apricot 暖卡 + 三张灰底卡）
     await expect(page.getByText("已绑项目").first()).toBeVisible();
+    const warmCards = page.locator(".bg-apricot-wash.rounded-\\[20px\\]");
+    await expect(warmCards).toHaveCount(1);
 
     // 筛选栏：区域/环线/类型下拉（新增交互）
     await expect(page.getByRole("combobox").filter({ hasText: "区域：全部" })).toBeVisible();
@@ -220,8 +222,9 @@ test.describe("楼盘字典迭代修复 E2E（对齐设计稿 v2.0）", () => {
     await mergeDialog.getByRole("button", { name: "取消" }).click();
     await expect(page.getByRole("dialog", { name: /合并到/ })).toBeHidden({ timeout: 10000 });
 
-    // 底部操作条：编辑资料（dw-foot）
-    await expect(page.getByRole("button", { name: /编辑资料/ }).nth(1)).toBeVisible();
+    // 底部操作条（设计稿 dw-foot）：编辑资料 + 绑定项目（选中户室前置灰）
+    await expect(page.getByRole("button", { name: /编辑资料/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "绑定项目" })).toBeDisabled();
   });
 
   test("导入页：四步 stepper + 任务历史表头", async ({ page }) => {
