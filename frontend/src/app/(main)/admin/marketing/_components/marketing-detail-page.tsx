@@ -213,8 +213,8 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
                 bizId={String(project.id)}
                 communityId={project.community_id ?? null}
                 communityName={project.community_name ?? ""}
-                // 后端已下发 dict_status，类型生成滞后，用可选访问兜底
-                dictStatus={(project as L4MarketingProject & { dict_status?: string | null }).dict_status ?? null}
+                // H1 修复：后端响应模型已补 dict_status/building_id/room_id，类型经 gen-api 同步
+                dictStatus={project.dict_status ?? null}
                 onChanged={() => void reloadDetail(project.id, { silent: true })}
               />
 

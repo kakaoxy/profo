@@ -33,6 +33,9 @@ logger = logging.getLogger(__name__)
 
 # 单包大小上限（FR-08：≤ 2GB）
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
+# M3 修复：zip 解压后总大小上限（zip bomb 防护），正常上海全域原始包远小于此
+MAX_UNCOMPRESSED_TOTAL = 4 * 1024 * 1024 * 1024
+_ZIP_BOMB_MSG = "zip 包解压后总大小超限（4GB），疑似异常包"
 
 # 失败明细/原始包归档天数（NFR-02）
 ARCHIVE_DAYS = 90
@@ -298,13 +301,17 @@ class DictImportProcessor:
             self._mark_failed(db, task.id, "文件不存在")
             return
 
-        # 解包：zip → 逐 txt；单 txt 直接处理
+        # 解包：zip → 逐 txt；单 txt 直接处理。
+        # M3 修复：限制解压后总大小（zip bomb 防护）——原实现无上限，
+        # 恶意压缩包可膨胀至磁盘/内存耗尽。
         txt_entries: list[tuple[str, bytes]] = []
         if file_path.suffix.lower() == ".zip":
             with zipfile.ZipFile(file_path) as zf:
                 for info in zf.infolist():
                     if info.is_dir() or not info.filename.lower().endswith(".txt"):
                         continue
+                    if sum(s for _, s in txt_entries) + info.file_size > MAX_UNCOMPRESSED_TOTAL:
+                        raise ValueError(_ZIP_BOMB_MSG) from None
                     txt_entries.append((Path(info.filename).name, zf.read(info)))
         else:
             txt_entries.append((file_path.name, file_path.read_bytes()))

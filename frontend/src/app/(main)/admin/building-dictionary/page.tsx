@@ -6,7 +6,6 @@ import {
 } from "@/app/(main)/admin/_components";
 import { BdOverviewClient } from "./_components/overview-client";
 import { BdOverviewHeaderActions } from "./_components/overview-header-actions";
-import type { BdKpiResponse, BdCommunityListResponse } from "./_components/types";
 
 export const dynamic = "force-dynamic";
 
@@ -81,8 +80,9 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
     );
   }
 
-  const kpi = kpiResult.data as BdKpiResponse;
-  const list = listResult.data as unknown as BdCommunityListResponse;
+  // M4 修复：直接消费生成类型（fetchClient 泛型已绑定 OpenAPI schema），不再强转
+  const kpi = kpiResult.data;
+  const list = listResult.data;
 
   return (
     <PageContainer>

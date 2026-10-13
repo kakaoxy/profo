@@ -693,6 +693,8 @@ export interface paths {
         /**
          * Submit Pending Entry
          * @description 录入端提交新增进审核池（不阻塞业务创建；同名 open pending 幂等复用）.
+         *
+         *     M3 修复：补速率限制（原端点无限流，只读账号可刷不同名 pending 垃圾条目）。
          */
         post: operations["submit_pending_entry_api_v1_admin_building_dictionary_pending_post"];
         delete?: never;
@@ -10295,6 +10297,20 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
+             * New Building
+             * @description 新增楼栋载荷(进审核池 FR-10)
+             */
+            new_building?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Room
+             * @description 新增户室载荷(进审核池 FR-10)
+             */
+            new_room?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Media Files
              * @description 媒体文件列表(创建时可上传)
              */
@@ -10392,6 +10408,12 @@ export interface components {
             project_id?: string | null;
             /** Consultant Id */
             consultant_id?: string | null;
+            /** Building Id */
+            building_id?: number | null;
+            /** Room Id */
+            room_id?: number | null;
+            /** Dict Status */
+            dict_status?: string | null;
             /**
              * Is Deleted
              * @default false
@@ -10549,6 +10571,20 @@ export interface components {
              * @description 新增小区载荷(进审核池 BR-24)
              */
             new_community?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Building
+             * @description 新增楼栋载荷(进审核池 FR-10)
+             */
+            new_building?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Room
+             * @description 新增户室载荷(进审核池 FR-10)
+             */
+            new_room?: {
                 [key: string]: unknown;
             } | null;
             /**

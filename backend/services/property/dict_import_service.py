@@ -22,6 +22,12 @@ from settings import settings
 logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = Path.cwd() / settings.import_upload_dir
+_OVERSIZE_MSG = "文件超过 2GB 上限"
+
+
+def _oversize_error() -> FileProcessingError:
+    """构造超限错误（统一文案，供预检与流式写盘两处使用）."""
+    return FileProcessingError(_OVERSIZE_MSG)
 
 
 def _ensure_upload_dir() -> None:
@@ -52,16 +58,28 @@ class BdImportTaskService:
             msg = "只支持 zip 包或 txt 文件"
             raise FileProcessingError(msg)
 
-        _ensure_upload_dir()
-        data = await file.read()
-        if len(data) > MAX_UPLOAD_BYTES:
-            msg = "文件超过 2GB 上限"
-            raise FileProcessingError(msg)
+        # M3 修复：先按 Content-Length 预检（避免 2GB 文件全量读入内存后才报错 OOM）
+        declared = file.size
+        if declared is not None and declared > MAX_UPLOAD_BYTES:
+            raise _oversize_error() from None
 
+        _ensure_upload_dir()
+        # M3 修复：分块流式写盘（原 await file.read() 全量读内存，2GB 上限下可 OOM）
         task_id = str(uuid.uuid4())
         suffix = ".zip" if filename.lower().endswith(".zip") else ".txt"
         stored_path = UPLOAD_DIR / f"bd_{task_id}{suffix}"
-        stored_path.write_bytes(data)
+        file_size = 0
+        try:
+            with stored_path.open("wb") as out:
+                while chunk := await file.read(1 << 20):  # 1MB 分块
+                    file_size += len(chunk)
+                    if file_size > MAX_UPLOAD_BYTES:
+                        stored_path.unlink(missing_ok=True)
+                        raise _oversize_error() from None
+                    out.write(chunk)
+        except FileProcessingError:
+            stored_path.unlink(missing_ok=True)
+            raise
 
         task = BdImportTask(
             id=task_id,
@@ -69,12 +87,12 @@ class BdImportTaskService:
             status=ImportTaskStatus.PENDING,
             filename=filename,
             file_path=str(stored_path),
-            file_size=len(data),
+            file_size=file_size,
         )
         db.add(task)
         db.commit()
         db.refresh(task)
-        logger.info("字典导入任务已创建: %s (%s, %d bytes)", task_id, filename, len(data))
+        logger.info("字典导入任务已创建: %s (%s, %d bytes)", task_id, filename, file_size)
         return task
 
     def start_task(self, task_id: str) -> None:

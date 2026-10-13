@@ -2,6 +2,9 @@
 
 /**
  * 四级地址选择器（共享组件 dict-address-picker，FR-09 / R6，设计稿 ARTBOARD 04）.
+ * [不拆分理由] 四级级联（小区→楼栋→楼层→户室）共享同一份 v 状态与互斥清空逻辑，
+ * 且被 project/lead/marketing/property 四类表单复用；拆分需跨文件传递 9 个
+ * 联动状态，单文件承载是复杂度最低的形态。
  *
  * 级联：小区联想（复用 GET /admin/communities 含别名）→ 楼栋 → 楼层 → 户室；
  * - 楼层列 = 名义 ∪ 实际 ∪ pending（未分层置底，FR-04）；

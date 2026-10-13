@@ -1,5 +1,8 @@
 """审核池服务（R7 / FR-11/19 / BR-10/13/26/27/28，Task 12/13）.
 
+[不拆分理由] resolve 三动作共享行锁、状态机与回填/审计协作方法（回填已拆至
+building_review_backfill），再拆会割裂同一事务边界内的一致性审查。
+
 resolve 三动作（状态机 §6.1，终态不可逆）：
 - **create**：核心事务（BR-13）= pending 行锁 + 终态 + 字典落库（communities/bd_*）
   + 创建来源单据同步回填；其余引用单据经异步幂等任务分批回填（事务提交后）；
@@ -75,7 +78,18 @@ def get_reviewer_roles(db: Session) -> list[str]:
 
 
 def set_reviewer_roles(db: Session, roles: list[str], updated_by: str | None = None) -> None:
-    """保存审核处理人角色配置（全量 upsert）."""
+    """保存审核处理人角色配置（全量 upsert）.
+
+    M7 修复：校验角色 code 存在性，未知 code 返回 400 ——
+    原实现直接落库，配错后全系统无人可审核且无提示。
+    """
+    from models import Role
+
+    existing_codes = {code for (code,) in db.query(Role.code).all()}
+    unknown = [r for r in roles if r not in existing_codes]
+    if unknown:
+        msg = f"角色不存在: {', '.join(unknown)}，请从系统角色中选择"
+        raise ValidationError(msg)
     cfg = db.query(SystemConfig).filter(SystemConfig.key == REVIEWER_ROLES_CONFIG_KEY).first()
     payload = json.dumps(roles, ensure_ascii=False)
     if cfg:

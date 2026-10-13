@@ -423,12 +423,17 @@ def retry_pending_backfill(
 
 
 @router.post("/pending", status_code=201)
+@limiter.limit(RateLimits.COMMUNITY_CREATE)
 def submit_pending_entry(
+    request: Request,
     db: DbSessionDep,
     current_user: PropertyReadPermDep,
     body: BdPendingSubmitRequest,
 ) -> BdPendingSubmitResponse:
-    """录入端提交新增进审核池（不阻塞业务创建；同名 open pending 幂等复用）."""
+    """录入端提交新增进审核池（不阻塞业务创建；同名 open pending 幂等复用）.
+
+    M3 修复：补速率限制（原端点无限流，只读账号可刷不同名 pending 垃圾条目）。
+    """
     submit_service = get_dict_submit_service()
     return submit_service.submit(
         db,

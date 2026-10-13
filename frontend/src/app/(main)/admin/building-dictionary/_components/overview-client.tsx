@@ -32,12 +32,12 @@ import {
 import { Pagination } from "@/components/common/pagination";
 
 import { CommunityDrawer } from "./community-drawer";
-import type { BdCommunityListItem, BdKpiResponse } from "./types";
+import type { BdCommunityListItem, BdCommunityListResponse, BdKpiResponse } from "./types";
 import { cn } from "@/lib/utils";
 
 interface BdOverviewClientProps {
   kpi: BdKpiResponse;
-  list: { total: number; items: BdCommunityListItem[] };
+  list: BdCommunityListResponse;
   keyword: string;
   district: string;
   ring: string;
@@ -270,7 +270,10 @@ export function BdOverviewClient({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {list.items.map((c) => (
+          {list.items.map((raw) => {
+            // 派生类型收敛：schema 层 property_types 可选（PG text[] 历史数据可能为 null）
+            const c: BdCommunityListItem = { ...raw, property_types: raw.property_types ?? [] };
+            return (
             <TableRow key={c.id} className="cursor-pointer hover:bg-fog" onClick={() => openRow(c)}>
               <TableCell>
                 <p className="font-medium text-ink">{c.name}</p>
@@ -287,7 +290,7 @@ export function BdOverviewClient({
                 )}
               </TableCell>
               <TableCell className="text-[12.5px] text-ash">
-                {c.property_types.length ? c.property_types.join("、") : "—"}
+                {(c.property_types ?? []).length ? (c.property_types ?? []).join("、") : "—"}
               </TableCell>
               <TableCell className="text-[12.5px] tabular-nums text-ash">
                 {c.era_from ? `${c.era_from}${c.era_to ? `~${c.era_to}` : ""}` : "—"}
@@ -297,7 +300,8 @@ export function BdOverviewClient({
               <TableCell className="text-right font-mono text-[12px] text-ink tabular-nums">{c.linked_project_count}</TableCell>
               <TableCell className="text-dove">›</TableCell>
             </TableRow>
-          ))}
+            );
+          })}
           {list.items.length === 0 ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={9} className="py-12 text-center text-graphite">

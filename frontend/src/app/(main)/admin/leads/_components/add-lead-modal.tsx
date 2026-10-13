@@ -177,15 +177,32 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
               <CommunitySelect
                 value={formData.communityName}
                 label="房源名称"
-                onChange={(community) =>
+                onChange={(community) => {
+                  const communityChanged = formData.communityId !== community.id;
                   setFormData((prev) => ({
                     ...prev,
                     communityId: community.id,
                     communityName: community.name,
                     district: community.district || prev.district,
                     businessArea: community.businessCircle || prev.businessArea,
-                  }))
-                }
+                  }));
+                  // M1 修复：小区切换后重置字典选择（旧楼栋/户室可能属上一小区）
+                  if (communityChanged) {
+                    setDictValue({
+                      communityId: community.id || null,
+                      communityName: community.name || "",
+                      buildingId: null,
+                      buildingNo: "",
+                      roomId: null,
+                      roomNo: "",
+                      address: community.name || "",
+                      dictStatus: null,
+                      newCommunity: null,
+                      newBuilding: null,
+                      newRoom: null,
+                    });
+                  }
+                }}
               />
             </div>
 

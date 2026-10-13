@@ -1,5 +1,8 @@
 """楼盘字典读服务（R3 / R10 单点收敛）.
 
+[不拆分理由] 总览/详情/楼栋/户室四组读模型共享 pending 叠加（R10 单点）与
+关联计数口径（dict_status ∈ linked/pending），拆分会造成口径漂移；读路径无状态。
+
 **pending 叠加读路径单点（NFR-05/BR-23）**：所有需要展示 pending 楼栋/楼层/户室的
 查询（总览、详情抽屉、四级选择器、单据详情）一律经本服务，禁止业务代码各自
 union 正式表与 pending 表。「未审核」标记 = 查询时实时 join
@@ -193,18 +196,25 @@ class BuildingDictReadService:
         if era_to is not None:
             query = query.filter((Community.era_from.is_(None)) | (Community.era_from <= era_to))
 
-        total = query.count()
+        # 已关联项目筛选（has_project_link）：SQL 半连接在分页前过滤（M2 修复：
+        # 原实现在分页后内存过滤，total = len(当前页)，跨页翻页与计数均失真）。
+        # 口径与 KPI linked_project_count 一致：community_id 非空 + dict_status ∈ (linked,pending)
+        if has_project_link is True or has_project_link is False:
+            linked_subq = (
+                db.query(Project.community_id)
+                .filter(
+                    Project.community_id.isnot(None),
+                    Project.dict_status.in_(("linked", "pending")),
+                    Project.is_deleted.is_(False),
+                )
+                .subquery()
+            )
+            query = query.filter(Community.id.in_(linked_subq) if has_project_link else ~Community.id.in_(linked_subq))
 
-        # 已关联项目筛选（has_project_link）
+        total = query.count()
         community_rows = query.order_by(Community.name).offset((page - 1) * page_size).limit(page_size).all()
         community_ids = [c.id for c in community_rows]
         linked_counts = _community_linked_project_counts(db, community_ids)
-        if has_project_link is True:
-            community_rows = [c for c in community_rows if linked_counts.get(c.id, 0) > 0]
-            total = len(community_rows)
-        elif has_project_link is False:
-            community_rows = [c for c in community_rows if linked_counts.get(c.id, 0) == 0]
-            total = len(community_rows)
 
         first_images = _community_first_image(db, [c.id for c in community_rows])
         building_counts = (

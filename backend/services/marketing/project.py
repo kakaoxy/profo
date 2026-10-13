@@ -21,6 +21,7 @@ from schemas.l4_marketing import (
 )
 from services.marketing.constants import BADGE_WINDOW_DAYS
 from services.marketing.notify import PriceSignal, ProjectChangeSignal
+from services.property.dict_ownership import validate_dict_ownership
 from services.property.dict_submit_service import get_dict_submit_service
 
 
@@ -32,11 +33,13 @@ def _submit_marketing_dict_pendings(
     new_room: dict | None,
     biz_id: str,
     community_id: str | None,
+    building_id: int | None = None,
+    commit: bool = False,
 ) -> None:
     """补录营销单据的录入端新增字典 pending 引用（community → building → room）.
 
     单据落库后调用：以真实单据 id 作为 source_id 提交审核池，
-    submit 异常直接向上抛（外层回滚整单），不吞错。
+    submit 异常直接向上抛（外层回滚整单），不吞錯。
 
     Args:
         db: 数据库会话
@@ -45,6 +48,9 @@ def _submit_marketing_dict_pendings(
         new_room: 户室载荷（可为空）
         biz_id: 营销单据 ID
         community_id: 单据关联的字典实表小区 ID（可为空）
+        building_id: 单据关联的字典实表楼栋 ID（room 挂实表父级用，可为空）
+        commit: 传 False（默认）—— pending 与营销单据同事务，由外层统一 commit；
+            H4 修复：内部 commit 会把未完成的业务单据提前落库，失败时产生半提交
 
     """
     svc = get_dict_submit_service()
@@ -62,6 +68,7 @@ def _submit_marketing_dict_pendings(
                 source_id=biz_id,
             ),
             submitted_by=None,
+            commit=commit,
         ).pending_id
 
     if new_building:
@@ -82,10 +89,13 @@ def _submit_marketing_dict_pendings(
                 source_id=biz_id,
             ),
             submitted_by=None,
+            commit=commit,
         ).pending_id
 
     if new_room:
-        if building_pending_id is not None:
+        if building_id is not None:
+            room_parent_kind, room_parent_id = "building", str(building_id)
+        elif building_pending_id is not None:
             room_parent_kind, room_parent_id = "pending_building", str(building_pending_id)
         else:
             room_parent_kind, room_parent_id = None, None
@@ -100,6 +110,7 @@ def _submit_marketing_dict_pendings(
                 source_id=biz_id,
             ),
             submitted_by=None,
+            commit=commit,
         )
 
 
@@ -416,7 +427,22 @@ class MarketingProjectService:
         new_community = project_data.pop("new_community", None) or None
         new_building = project_data.pop("new_building", None) or None
         new_room = project_data.pop("new_room", None) or None
+        # dict_status 由服务端推导（M5 修复：不信任客户端自报，与项目链路口径对齐）
+        project_data.pop("dict_status", None)
+        if new_community or new_building or new_room:
+            project_data["dict_status"] = "pending"
+        elif project_data.get("building_id") or project_data.get("room_id"):
+            project_data["dict_status"] = "linked"
+        else:
+            project_data["dict_status"] = "manual"
         db_obj = L4MarketingProject(**project_data)
+        # 字典归属校验（M1 修复：楼栋/户室必须属于单据小区，防脏关联）
+        validate_dict_ownership(
+            self.db,
+            community_id=project_data.get("community_id"),
+            building_id=project_data.get("building_id"),
+            room_id=project_data.get("room_id"),
+        )
         # 创建即发布 = 上新：published_at 仅首次发布写入（防重复「上新」的事实源）
         is_new_listing = db_obj.publish_status == PublishStatus.PUBLISHED
         if is_new_listing and db_obj.published_at is None:
@@ -435,6 +461,7 @@ class MarketingProjectService:
                 new_room=new_room,
                 biz_id=str(db_obj.id),
                 community_id=project_data.get("community_id"),
+                building_id=db_obj.building_id,
             )
 
         if media_files:
@@ -489,6 +516,10 @@ class MarketingProjectService:
         allowed_fields = {
             "community_id",
             "community_name",
+            # 楼盘字典四级地址（H2 修复：编辑与新建同口径，缺漏会静默丢字段）
+            "building_id",
+            "room_id",
+            "dict_status",
             "layout",
             "orientation",
             "floor_info",
@@ -517,6 +548,14 @@ class MarketingProjectService:
                 # JSON 字段需 flag_modified 确保 SQLAlchemy 检测到变更（含空 dict/None）
                 if field == "stage_completed_dates":
                     flag_modified(db_obj, "stage_completed_dates")
+
+        # 字典归属校验（M1 修复：update 白名单已放行三列，需防脏关联）
+        validate_dict_ownership(
+            self.db,
+            community_id=update_data.get("community_id") or db_obj.community_id,
+            building_id=db_obj.building_id,
+            room_id=db_obj.room_id,
+        )
 
         # 首次发布：published_at 仅首次写入（防重复「上新」），并产出上新信号
         is_new_listing = False
@@ -567,6 +606,7 @@ class MarketingProjectService:
                 new_room=new_room,
                 biz_id=str(db_obj.id),
                 community_id=update_data.get("community_id") or db_obj.community_id,
+                building_id=db_obj.building_id,
             )
 
         self.db.commit()

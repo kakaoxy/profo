@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { client } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
-import type { BdBuildingDetail } from "./types";
+import type { BdBuildingDetail, BdRoomItem } from "./types";
 
 interface FloorRoomPanelProps {
   buildingId: number;
@@ -41,14 +41,8 @@ interface FloorGroup {
   has_pending: boolean;
 }
 
-interface RoomItem {
-  id: number;
-  room_no: string;
-  floor: number | null;
-  pending: boolean;
-  pending_id: number | null;
-  plate_no: string;
-}
+// M4 修复：复用生成类型派生（与后端 BdRoomItem schema 对齐）
+type RoomItem = BdRoomItem;
 
 export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoom, addRoomSlot, onDeleteFloor, onDeleteRoom }: FloorRoomPanelProps) {
   const [floors, setFloors] = useState<FloorGroup[]>([]);
@@ -99,9 +93,12 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
   const rooms = detail?.rooms ?? [];
   const byFloor = new Map<number | null, RoomItem[]>();
   for (const r of rooms) {
-    const list = byFloor.get(r.floor) ?? [];
-    list.push(r);
-    byFloor.set(r.floor, list);
+    // 派生类型中 floor/pending_id 可选（schema 层 Optional），消费侧收敛为必有
+    const floor = r.floor ?? null;
+    const item: RoomItem = { ...r, floor, pending_id: r.pending_id ?? null };
+    const list = byFloor.get(floor) ?? [];
+    list.push(item);
+    byFloor.set(floor, list);
   }
 
   return (

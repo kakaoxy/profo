@@ -21,6 +21,7 @@ from models import Project, ProjectContract, ProjectRenovation
 from models.common import BusinessForm, ProjectStatus
 from schemas.building_dict import BdPendingSubmitRequest
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
+from services.property.dict_ownership import validate_dict_ownership
 from services.property.dict_submit_service import get_dict_submit_service
 from services.system.operation_log import operation_log_service
 from settings import settings
@@ -116,6 +117,7 @@ def _submit_project_dict_pendings(
                 source_id=biz_id,
             ),
             submitted_by=None,
+            commit=False,
         ).pending_id
 
     if new_building:
@@ -136,6 +138,7 @@ def _submit_project_dict_pendings(
                 source_id=biz_id,
             ),
             submitted_by=None,
+            commit=False,
         ).pending_id
 
     if new_room:
@@ -156,6 +159,7 @@ def _submit_project_dict_pendings(
                 source_id=biz_id,
             ),
             submitted_by=None,
+            commit=False,
         )
 
 
@@ -539,6 +543,13 @@ class ProjectCoreService:
         new_community = update_dict.pop("new_community", None) or None
         new_building = update_dict.pop("new_building", None) or None
         new_room = update_dict.pop("new_room", None) or None
+        # 字典归属校验（M1 修复：update 携带 building_id/room_id 时必须属于单据小区）
+        validate_dict_ownership(
+            self.db,
+            community_id=update_dict.get("community_id") or project.community_id,
+            building_id=update_dict.get("building_id", project.building_id),
+            room_id=update_dict.get("room_id", project.room_id),
+        )
         # 变更前快照（updater.update 会 commit 并 expire 属性，before 需在更新前构造）
         before_snapshot = _project_snapshot(project)
         project = self.updater.update(project, update_dict)

@@ -107,6 +107,8 @@ class L4MarketingProjectBase(BaseModel):
         description="字典关联状态",
     )
     new_community: dict | None = Field(None, description="新增小区载荷(进审核池 BR-24)")
+    new_building: dict | None = Field(None, description="新增楼栋载荷(进审核池 FR-10)")
+    new_room: dict | None = Field(None, description="新增户室载荷(进审核池 FR-10)")
 
 
 class L4MarketingProjectCreate(L4MarketingProjectBase):
@@ -151,6 +153,8 @@ class L4MarketingProjectUpdate(BaseModel):
     room_id: int | None = Field(None, description="字典户室ID(选填)")
     dict_status: str | None = Field(None, pattern="^(linked|manual|pending|rejected)$", description="字典关联状态")
     new_community: dict | None = Field(None, description="新增小区载荷(进审核池 BR-24)")
+    new_building: dict | None = Field(None, description="新增楼栋载荷(进审核池 FR-10)")
+    new_room: dict | None = Field(None, description="新增户室载荷(进审核池 FR-10)")
 
     # 关联
     project_id: UUID4 | None = Field(default=None, description="关联L3项目ID(软引用)")
@@ -219,6 +223,11 @@ class L4MarketingProjectResponse(BaseModel):
     # 关联
     project_id: UUID4 | None = None
     consultant_id: str | None = None
+
+    # ===== 楼盘字典关联（R1，v1.9）=====
+    building_id: int | None = None
+    room_id: int | None = None
+    dict_status: str | None = None
 
     # 系统字段
     is_deleted: bool = False

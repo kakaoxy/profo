@@ -39,6 +39,7 @@ class DictSubmitService:
         body: BdPendingSubmitRequest,
         *,
         submitted_by: str | None = None,
+        commit: bool = True,
     ) -> BdPendingSubmitResponse:
         """提交新增进审核池（幂等复用同名 open pending）.
 
@@ -46,6 +47,10 @@ class DictSubmitService:
             db: 数据库会话
             body: 提交载荷（kind/name/parent/source）
             submitted_by: 提交人用户 ID
+            commit: 是否内部 commit；业务单据创建/更新链路（leads/marketing）
+                必须传 False —— pending 需与业务单据同事务提交，否则内部 commit
+                会把尚未完成的业务单据一并提前落库，后续步骤失败时产生半提交
+                （如缺价格历史的重复线索）。独立端点 /pending 使用默认 True。
 
         Returns:
             BdPendingSubmitResponse（reused=True 表示复用既有 pending）
@@ -104,7 +109,7 @@ class DictSubmitService:
         )
         if existing:
             reference_added = self._append_reference(db, existing.id, body)
-            db.commit()
+            self._finish(db, commit)
             logger.info(
                 "复用 pending %s (kind=%s name=%s 追加引用=%s)",
                 existing.id,
@@ -129,11 +134,13 @@ class DictSubmitService:
             status=BdEntryStatus.PENDING,
         )
         db.add(entry)
+        # 并发同名：uq_pending_open 拦截 → 回退复用路径（FR-19 幂等）。
+        # 用 SAVEPOINT 隔离本条插入：冲突时仅回滚到 savepoint，
+        # commit=False 时不会连带回滚外层业务单据写入（H4 修复配套）。
         try:
-            db.flush()
+            with db.begin_nested():
+                db.flush()
         except IntegrityError:
-            # 并发同名：uq_pending_open 拦截 → 回退复用路径（FR-19 幂等）
-            db.rollback()
             existing = (
                 db.query(BdPendingEntry)
                 .filter(
@@ -148,12 +155,18 @@ class DictSubmitService:
                 msg = "并发提交冲突，请重试"
                 raise ValidationError(msg) from None
             self._append_reference(db, existing.id, body)
-            db.commit()
+            self._finish(db, commit)
             return BdPendingSubmitResponse(pending_id=existing.id, created=False, reused=True)
 
         self._append_reference(db, entry.id, body)
-        db.commit()
+        self._finish(db, commit)
         return BdPendingSubmitResponse(pending_id=entry.id, created=True, reused=False)
+
+    @staticmethod
+    def _finish(db: Session, commit: bool) -> None:
+        """按调用方语义收尾：独立链路 commit，业务单据链路交给外层统一提交."""
+        if commit:
+            db.commit()
 
     def _resolve_parent(
         self,

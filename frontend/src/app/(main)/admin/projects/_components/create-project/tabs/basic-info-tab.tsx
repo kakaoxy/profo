@@ -163,6 +163,7 @@ export function BasicInfoTab({ form }: TabProps) {
                 <CommunitySelect
                   value={field.value}
                   onChange={(community) => {
+                    const communityChanged = form.getValues("community_id") !== community.id;
                     field.onChange(community.name);
                     form.setValue("community_id", community.id || undefined);
                     form.setValue("district", community.district || "");
@@ -174,6 +175,28 @@ export function BasicInfoTab({ form }: TabProps) {
                       community.businessCircle || "",
                     );
                     setCommunityBusinessCircle(community.businessCircle);
+                    // M1 修复：小区切换后重置字典选择（旧楼栋/户室可能属上一小区）
+                    if (communityChanged) {
+                      setDictValue({
+                        communityId: community.id || null,
+                        communityName: community.name || "",
+                        buildingId: null,
+                        buildingNo: "",
+                        roomId: null,
+                        roomNo: "",
+                        address: community.name || "",
+                        dictStatus: null,
+                        newCommunity: null,
+                        newBuilding: null,
+                        newRoom: null,
+                      });
+                      form.setValue("building_id", null);
+                      form.setValue("room_id", null);
+                      form.setValue("dict_status", null);
+                      form.setValue("new_community", null);
+                      form.setValue("new_building", null);
+                      form.setValue("new_room", null);
+                    }
                   }}
                 />
               </FormControl>

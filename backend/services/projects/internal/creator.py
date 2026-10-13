@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from models import Project, ProjectContract, ProjectOwner
 from models.common import ProjectStatus
 from schemas.project import ProjectCreate
+from services.property.dict_ownership import validate_dict_ownership
 from services.utils import parse_date_string
 
 from . import documents, owners
@@ -88,6 +89,13 @@ class ProjectCreator:
     ) -> Project:
         """创建项目基础记录."""
         dict_fields = self._resolve_dict_fields(project_data)
+        # 字典归属校验（M1 修复：楼栋/户室必须属于单据小区，防脏关联）
+        validate_dict_ownership(
+            self.db,
+            community_id=project_data.community_id,
+            building_id=project_data.building_id,
+            room_id=project_data.room_id,
+        )
         project = Project(
             id=project_id,
             community_id=project_data.community_id,

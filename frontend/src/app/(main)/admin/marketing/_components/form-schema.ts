@@ -17,6 +17,9 @@ export const formSchema = z.object({
   room_id: z.number().nullable().optional(),
   dict_status: z.enum(["linked", "manual", "pending", "rejected"]).nullable().optional(),
   new_community: z.record(z.string(), z.unknown()).nullable().optional(),
+  // H3 修复：透传新增楼栋/户室载荷（进审核池，与 leads/project 链路对齐）
+  new_building: z.record(z.string(), z.unknown()).nullable().optional(),
+  new_room: z.record(z.string(), z.unknown()).nullable().optional(),
   community_name: z.string().trim().max(200).nullable().optional(),
 
   // 户型信息
@@ -157,6 +160,8 @@ export function formValuesToCreateRequest(
     room_id: values.room_id ?? null,
     dict_status: values.dict_status ?? null,
     new_community: values.new_community ?? null,
+    new_building: values.new_building ?? null,
+    new_room: values.new_room ?? null,
   };
 
   // 改造阶段完成时间
@@ -205,6 +210,8 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.room_id !== undefined) result.room_id = values.room_id ?? null;
   if (values.dict_status !== undefined) result.dict_status = values.dict_status ?? null;
   if (values.new_community !== undefined) result.new_community = values.new_community ?? null;
+  if (values.new_building !== undefined) result.new_building = values.new_building ?? null;
+  if (values.new_room !== undefined) result.new_room = values.new_room ?? null;
 
   // 如果总价或面积发生变化，重新计算单价（万元/㎡）
   // 与后端计算逻辑保持一致：unit_price = total_price / area

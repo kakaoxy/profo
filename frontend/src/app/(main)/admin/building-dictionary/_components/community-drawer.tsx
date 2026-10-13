@@ -2,6 +2,9 @@
 
 /**
  * 小区详情抽屉（FR-02~07/14/20，对齐设计稿 v2.0 ARTBOARD 02，560px）.
+ * [不拆分理由] 抽屉内画像是「小区→楼栋→户室」同一钻取动线的连续上下文，
+ * 区块间共享 detail/buildings/expandedBuilding 等十余项状态；强行拆分会把
+ * 状态提升到宿主形成 prop drilling，反而增加维护成本。
  *
  * 画像区（地址/锚点 BD-09/物业/开发商/计数 + 修正画像编辑态 PATCH）；
  * 户型图库区块（FR-20，复用现有 images 端点，上传/改描述/调排序/软删）；
@@ -582,8 +585,8 @@ export function CommunityDrawer({
                                 buildingNo: b.building_no,
                                 roomNo: room.roomNo,
                                 plate: room.plate,
-                                lng: b.lng,
-                                lat: b.lat,
+                                lng: b.lng ?? null,
+                                lat: b.lat ?? null,
                               })
                             }
                             onDeleteRoom={canGovern ? (roomId, roomNo) => void handleDeleteRoom(b.id, roomId, roomNo) : undefined}

@@ -25,6 +25,7 @@ from services.growth_center.customer_notify import (
     unified_status_label,
 )
 from services.growth_center.normalize import map_valuation_status
+from services.property.dict_ownership import validate_dict_ownership
 from services.property.dict_submit_service import get_dict_submit_service
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError
 from services.utils import resolve_global_fallback_referrer, resolve_property_agent_referrer, resolve_valid_referrer
@@ -107,11 +108,28 @@ class LeadService:
         new_community = lead_payload.pop("new_community", None) or None
         new_building = lead_payload.pop("new_building", None) or None
         new_room = lead_payload.pop("new_room", None) or None
+        # dict_status 由服务端推导（M5 修复：不信任客户端自报，与项目链路口径对齐）：
+        # 选到字典楼栋/户室 → linked；提交新增载荷 → pending；兼容手填 → manual
+        lead_payload.pop("dict_status", None)
+        if new_community or new_building or new_room:
+            dict_status = "pending"
+        elif lead_payload.get("building_id") or lead_payload.get("room_id"):
+            dict_status = "linked"
+        else:
+            dict_status = "manual"
+        # 字典归属校验（M1 修复：楼栋/户室必须属于单据小区，防脏关联）
+        validate_dict_ownership(
+            self.db,
+            community_id=lead_payload.get("community_id"),
+            building_id=lead_payload.get("building_id"),
+            room_id=lead_payload.get("room_id"),
+        )
         db_lead = Lead(
             **lead_payload,
             id=uuid.uuid4(),
             creator_id=creator_id,
             referrer_id=referrer_id,
+            dict_status=dict_status,
         )
         # 单价未显式提供时按 总价/面积 自动计算（C 端 /public/leads 不传单价）
         if db_lead.unit_price is None:
@@ -119,8 +137,8 @@ class LeadService:
         self.db.add(db_lead)
 
         # 单据落库后、同事务 commit 前：用真实单据 id 补录 pending 引用
-        # （submit 内部自行提交 pending；业务单据创建失败时 pending 引用仍保留，
-        # 由审核池侧可见，不影响业务一致性——复核 P2 备注）
+        # （commit=False：pending 与线索同事务，由下方 db.commit() 统一提交；
+        # 业务单据创建失败时 pending 一起回滚，不产生半提交 —— H4 修复）
         if new_community or new_building or new_room:
             self._submit_dict_pendings(
                 new_community=new_community,
@@ -170,7 +188,8 @@ class LeadService:
         """补录录入端新增字典 pending 引用（community → building → room 逐步解析父级）.
 
         单据落库后、同事务 commit 前调用：以真实单据 id 作为 source_id 提交审核池，
-        submit 异常直接向上抛（外层回滚整单），不吞错。
+        submit（commit=False）异常直接向上抛（外层回滚整单），不吞错；
+        pending 由外层统一 commit（H4 修复：禁止 submit 内部提前提交业务单据）。
 
         Args:
             new_community: 小区快照载荷（可为空）
@@ -197,6 +216,7 @@ class LeadService:
                     source_id=biz_id,
                 ),
                 submitted_by=None,
+                commit=False,
             ).pending_id
 
         if new_building:
@@ -217,6 +237,7 @@ class LeadService:
                     source_id=biz_id,
                 ),
                 submitted_by=None,
+                commit=False,
             ).pending_id
 
         if new_room:
@@ -237,6 +258,7 @@ class LeadService:
                     source_id=biz_id,
                 ),
                 submitted_by=None,
+                commit=False,
             )
 
     def _resolve_referrer_id(self, referrer: str | None) -> str | None:
