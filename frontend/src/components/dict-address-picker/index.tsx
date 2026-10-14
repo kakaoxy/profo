@@ -406,7 +406,7 @@ export function DictAddressPicker({
       if (!raw || !raw.trim()) return;
       const roomNo = raw.trim();
       if (floorOfRoom(roomNo) == null) {
-        toast.error("户室号需以两位楼层号开头（如 0403 = 4 层 03 户）");
+        toast.error("户室号需为3位或4位纯数字，且楼层位>0（如202=2层、0403=4层）");
         return;
       }
       const { data, error } = await client.POST("/api/v1/admin/building-dictionary/pending", {
@@ -444,7 +444,7 @@ export function DictAddressPicker({
     const roomNo = raw.trim();
     const f = floorOfRoom(roomNo);
     if (f == null) {
-      toast.error("户室号需以两位楼层号开头（如 0403 = 4 层 03 户）");
+      toast.error("户室号需为3位或4位纯数字，且楼层位>0（如202=2层、0403=4层）");
       return;
     }
     if (rooms.some((r) => r.room_no === roomNo)) {
