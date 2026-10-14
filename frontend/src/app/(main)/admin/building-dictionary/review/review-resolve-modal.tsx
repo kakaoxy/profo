@@ -92,7 +92,7 @@ export function ReviewResolveModal({
     if (!needTarget) return null;
     if (isCommunityKind) return target.community?.name ?? null;
     if (!target.building) return null;
-    if (!isRoomKind) return `${item.community_name ?? ""} ${target.building.building_no} 栋`;
+    if (!isRoomKind) return `${item.community_name ?? ""} ${target.building.building_no}号`;
     return target.room
       ? `${item.community_name ?? ""} ${target.building.building_no}号${target.room.plate_no}`
       : null;

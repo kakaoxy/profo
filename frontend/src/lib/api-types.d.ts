@@ -443,7 +443,11 @@ export interface paths {
         get: operations["get_dict_community_detail_api_v1_admin_building_dictionary_communities__community_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Dict Community
+         * @description 删除小区（未使用直接删，含楼栋/户室/别名/图片；被业务单据引用时 409 阻止）.
+         */
+        delete: operations["delete_dict_community_api_v1_admin_building_dictionary_communities__community_id__delete"];
         options?: never;
         head?: never;
         /**
@@ -19716,6 +19720,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BdCommunityDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_dict_community_api_v1_admin_building_dictionary_communities__community_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdDeleteResult"];
                 };
             };
             /** @description Validation Error */

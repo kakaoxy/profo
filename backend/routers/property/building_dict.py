@@ -192,6 +192,19 @@ def patch_dict_community(
     return write_service.patch_community(db, community_id, body, operator_id=str(current_user.id), request=request)
 
 
+@router.delete("/communities/{community_id}")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def delete_dict_community(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    community_id: Annotated[str, PathParam(description="小区ID")],
+) -> BdDeleteResult:
+    """删除小区（未使用直接删，含楼栋/户室/别名/图片；被业务单据引用时 409 阻止）."""
+    write_service = get_dict_write_service()
+    return write_service.delete_community(db, community_id, operator_id=str(current_user.id), request=request)
+
+
 # ==================== 楼栋与户室（FR-03/04/05） ====================
 
 

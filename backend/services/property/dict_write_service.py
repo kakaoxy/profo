@@ -25,6 +25,8 @@ from models import (
     BdPendingEntry,
     BdRoom,
     Community,
+    CommunityAlias,
+    CommunityImage,
     L4MarketingProject,
     Lead,
     Project,
@@ -648,6 +650,105 @@ class DictWriteService:
             msg = "小区详情查询失败"
             raise ResourceNotFoundError(msg)
         return detail
+
+    # ---------- 小区删除（admin：未使用直接删 / 被使用 409 阻止） ----------
+
+    def delete_community(
+        self,
+        db: Session,
+        community_id: str,
+        *,
+        operator_id: str,
+        request: Request | None = None,
+    ) -> BdDeleteResult:
+        """删除小区（含其下全部楼栋/户室与别名/图片）。
+
+        拦截（任一命中即 409，不删除）：
+        - 被业务单据引用（小区级 community_id，或其下楼栋 building_id / 户室 room_id）；
+        - 审核池存在该小区下的 open 待审楼栋（BR-28 父子拓扑：删父级会悬挂待审子级）；
+        - 存在并入本小区的归档小区（merged_into_id 指向本小区）。
+        """
+        community = db.query(Community).filter(Community.id == community_id).first()
+        if not community:
+            msg = "小区不存在"
+            raise ResourceNotFoundError(msg)
+
+        buildings = db.query(BdBuilding).filter(BdBuilding.community_id == community_id).all()
+        building_ids = [b.id for b in buildings]
+        room_ids = (
+            [r.id for r in db.query(BdRoom.id).filter(BdRoom.building_id.in_(building_ids)).all()]
+            if building_ids
+            else []
+        )
+
+        # 1. 小区级业务引用
+        community_ref_counts = {
+            model.__name__: db.query(model).filter(model.community_id == community_id).count()
+            for model in self._BIZ_MODELS
+        }
+        community_refs = sum(community_ref_counts.values())
+        if community_refs:
+            detail = "、".join(f"{name} {cnt}" for name, cnt in community_ref_counts.items() if cnt)
+            msg = f"小区已被 {community_refs} 张业务单据引用（{detail}），请先解除关联后再删除"
+            raise ConflictError(msg)
+
+        # 2. 楼栋/户室级业务引用（整树删除前必须确认无深度引用）
+        building_refs = self._biz_reference_count(db, field="building_id", values=building_ids)
+        room_refs = self._biz_reference_count(db, field="room_id", values=room_ids)
+        if building_refs or room_refs:
+            msg = (
+                f"小区下有被业务单据引用的楼栋/户室（楼栋 {building_refs} 处、户室 {room_refs} 处），"
+                "请先解除关联后再删除"
+            )
+            raise ConflictError(msg)
+
+        # 3. 审核池 open 待审子级（楼栋 pending 挂 community_id）
+        pending_children = (
+            db.query(BdPendingEntry)
+            .filter(
+                BdPendingEntry.kind == BdEntryKind.BUILDING,
+                BdPendingEntry.status == BdEntryStatus.PENDING,
+                BdPendingEntry.community_id == community_id,
+            )
+            .count()
+        )
+        if pending_children:
+            msg = f"审核池中存在该小区下的 {pending_children} 条待审楼栋，请先处理审核条目再删除"
+            raise ConflictError(msg)
+
+        # 4. 合并治理引用
+        merged_count = (
+            db.query(Community).filter(Community.merged_into_id == community_id, Community.id != community_id).count()
+        )
+        if merged_count:
+            msg = f"存在 {merged_count} 个并入本小区的归档小区，请先解除合并后再删除"
+            raise ConflictError(msg)
+
+        before = {
+            "name": community.name,
+            "buildings": len(building_ids),
+            "rooms": len(room_ids),
+        }
+        # 批量删除而非 session.delete：relationship 无级联配置，
+        # session.delete 会对子表行发 FK 置空 UPDATE → StaleDataError（同 delete_building）
+        db.query(CommunityImage).filter(CommunityImage.community_id == community_id).delete(synchronize_session=False)
+        db.query(CommunityAlias).filter(CommunityAlias.community_id == community_id).delete(synchronize_session=False)
+        if room_ids:
+            db.query(BdRoom).filter(BdRoom.id.in_(room_ids)).delete(synchronize_session=False)
+        if building_ids:
+            db.query(BdBuilding).filter(BdBuilding.id.in_(building_ids)).delete(synchronize_session=False)
+        db.query(Community).filter(Community.id == community_id).delete(synchronize_session=False)
+        db.commit()
+
+        self._audit(
+            db,
+            user_id=operator_id,
+            action="bd_community_delete",
+            resource_id=community_id,
+            before=before,
+            request=request,
+        )
+        return BdDeleteResult(deleted=1)
 
 
 _service: DictWriteService | None = None

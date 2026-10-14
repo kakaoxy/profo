@@ -96,6 +96,9 @@ function buildPlate(communityName: string, buildingNo: string, plateNo: string):
   return parts.join(" ");
 }
 
+/** 楼栋列分页大小（大社区只渲染当页 + 滚动加载更多，防卡顿） */
+const BUILDING_PAGE_SIZE = 50;
+
 /** 户室号前两位解析楼层（0401→4；非两位数字开头为 null） */
 function floorOfRoom(roomNo: string): number | null {
   const m = roomNo.match(/^(\d{2})/);
@@ -117,6 +120,10 @@ export function DictAddressPicker({
   const [communityOptions, setCommunityOptions] = useState<CommunityOption[]>([]);
   const [searching, setSearching] = useState(false);
   const [buildings, setBuildings] = useState<BuildingOption[]>([]);
+  const [buildingKeyword, setBuildingKeyword] = useState("");
+  const [buildingPage, setBuildingPage] = useState(1);
+  const [buildingTotal, setBuildingTotal] = useState(0);
+  const [loadingMoreBuildings, setLoadingMoreBuildings] = useState(false);
   const [floors, setFloors] = useState<FloorGroup[]>([]);
   const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [selectedFloor, setSelectedFloor] = useState<number | null | "all">(null);
@@ -124,6 +131,7 @@ export function DictAddressPicker({
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [manualAddress, setManualAddress] = useState(value?.address ?? "");
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const buildingSearchRef = useRef<NodeJS.Timeout | null>(null);
 
   const v: DictAddressValue = useMemo(
     () =>
@@ -173,13 +181,20 @@ export function DictAddressPicker({
     };
   }, [keyword, communityOpen]);
 
-  /** 选中小区后加载楼栋 */
+  /** 楼栋列表：服务端 keyword 搜索 + 分页懒加载（大社区只渲染当页，防卡顿） */
   const loadBuildings = useCallback(
-    async (communityId: string) => {
-      setLoadingBuildings(true);
-      setBuildings([]);
-      setRooms([]);
-      setFloors([]);
+    async (
+      communityId: string,
+      opts?: { keyword?: string; page?: number; append?: boolean },
+    ) => {
+      const kw = opts?.keyword ?? "";
+      const pg = opts?.page ?? 1;
+      const append = opts?.append ?? false;
+      if (append) {
+        setLoadingMoreBuildings(true);
+      } else {
+        setLoadingBuildings(true);
+      }
       try {
         const { data, error } = await client.GET(
           "/api/v1/admin/building-dictionary/communities/{community_id}/buildings",
@@ -187,29 +202,61 @@ export function DictAddressPicker({
             params: {
               path: { community_id: communityId },
               query: {
-                page: 1,
-                page_size: 100,
-                ...(sourceBizType && sourceBizId ? { source_biz_type: sourceBizType, source_biz_id: sourceBizId } : {}),
+                page: pg,
+                page_size: BUILDING_PAGE_SIZE,
+                keyword: kw || undefined,
+                ...(sourceBizType && sourceBizId
+                  ? { source_biz_type: sourceBizType, source_biz_id: sourceBizId }
+                  : {}),
               },
             },
           },
         );
         if (!error && data) {
-          setBuildings(
-            data.items.map((b) => ({
-              id: b.id,
-              building_no: b.building_no,
-              pending: b.pending,
-              pending_id: b.pending_id ?? null,
-            })),
-          );
+          const items = data.items.map((b) => ({
+            id: b.id,
+            building_no: b.building_no,
+            pending: b.pending,
+            pending_id: b.pending_id ?? null,
+          }));
+          setBuildings((prev) => (append ? [...prev, ...items] : items));
+          setBuildingTotal(data.total);
+          setBuildingPage(pg);
         }
       } finally {
-        setLoadingBuildings(false);
+        if (append) {
+          setLoadingMoreBuildings(false);
+        } else {
+          setLoadingBuildings(false);
+        }
       }
     },
     [sourceBizType, sourceBizId],
   );
+
+  /** 楼栋搜索防抖 + 小区切换首载（统一走 effect，避免双请求） */
+  useEffect(() => {
+    const cid = v.communityId;
+    if (!cid) return;
+    if (buildingSearchRef.current) clearTimeout(buildingSearchRef.current);
+    buildingSearchRef.current = setTimeout(() => {
+      void loadBuildings(cid, { keyword: buildingKeyword, page: 1 });
+    }, 300);
+    return () => {
+      if (buildingSearchRef.current) clearTimeout(buildingSearchRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [v.communityId, buildingKeyword]);
+
+  /** 楼栋「加载更多」 */
+  const loadMoreBuildings = useCallback(() => {
+    if (!v.communityId) return;
+    void loadBuildings(v.communityId, {
+      keyword: buildingKeyword,
+      page: buildingPage + 1,
+      append: true,
+    });
+  }, [v.communityId, buildingKeyword, buildingPage, loadBuildings]);
 
   /** 选中楼栋后加载楼层分组 + 户室 */
   const loadRooms = useCallback(
@@ -319,8 +366,8 @@ export function DictAddressPicker({
     }
     toast.success(`已提交「新楼栋 ${buildingNo}」→ 审核池；通过前带「未审核」标签展示`);
     emit({ newBuilding: { name: buildingNo }, buildingId: null, buildingNo: "", roomId: null, roomNo: "" });
-    void loadBuildings(v.communityId);
-  }, [v.communityId, buildings, sourceBizType, sourceBizId, emit, loadBuildings]);
+    void loadBuildings(v.communityId, { keyword: buildingKeyword, page: 1 });
+  }, [v.communityId, buildings, buildingKeyword, sourceBizType, sourceBizId, emit, loadBuildings]);
 
   /** 提交新增户室进审核池（新楼层 = 提交该层首个户室，隐式建层） */
   const handleCreateRoom = useCallback(async () => {
@@ -355,7 +402,7 @@ export function DictAddressPicker({
       toast.error("提交新户室失败");
       return;
     }
-    toast.success(`已提交「新户室 ${v.buildingNo} 栋 ${roomNo}」→ 审核池；通过后该层自动出现`);
+    toast.success(`已提交「新户室 ${v.buildingNo}号 ${roomNo}」→ 审核池；通过后该层自动出现`);
     emit({ newRoom: { name: roomNo }, roomId: null, roomNo: "" });
     void loadRooms(v.buildingId);
   }, [v.communityId, v.buildingId, v.buildingNo, selectedFloor, rooms, sourceBizType, sourceBizId, emit, loadRooms]);
@@ -493,7 +540,10 @@ export function DictAddressPicker({
                         });
                         setSelectedFloor(null);
                         setCommunityOpen(false);
-                        void loadBuildings(c.id);
+                        // 楼栋列表由 effect 统一加载（小区切换重置搜索词后自动首载）
+                        setBuildingKeyword("");
+                        setRooms([]);
+                        setFloors([]);
                       }}
                     >
                       <span>{c.name}</span>
@@ -525,187 +575,253 @@ export function DictAddressPicker({
             ) : null}
           </div>
 
-          {/* 二级：楼栋（含新建入口） */}
+          {/* 二~四级：楼栋 / 楼层 / 户室 三栏级联（选填下钻，参考设计稿 casc 三栏式） */}
           {v.communityId ? (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <Label>楼栋（选填） {selectedBuilding ? <span className="text-[10px] font-normal text-dove">{buildings.length} 栋</span> : null}</Label>
-                <button
-                  type="button"
-                  className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
-                  disabled={disabled}
-                  onClick={() => void handleCreateBuilding()}
-                >
-                  <Plus className="size-3" />
-                  新建楼栋（需审核）
-                </button>
-              </div>
-              <div className="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
-                {loadingBuildings ? (
-                  <Loader2 className="size-4 animate-spin text-graphite" />
-                ) : (
-                  buildings.map((b) => {
-                    const selected = v.buildingId === b.id;
-                    return (
-                      <button
-                        key={b.pending ? `pending-${b.pending_id}` : `b-${b.id}`}
-                        type="button"
-                        disabled={b.pending && v.dictStatus !== "pending"}
-                        title={b.pending ? "审核中，通过后可选" : undefined}
-                        className={cn(
-                          "rounded-md border px-2.5 py-1 text-[13px] transition-colors",
-                          selected
-                            ? "border-ink bg-ink text-white"
-                            : "border-dove/50 text-ink hover:border-ash",
-                          b.pending && !selected && "border-dashed text-dove opacity-70",
-                        )}
-                        onClick={() => {
-                          emit({
-                            buildingId: b.id,
-                            buildingNo: b.building_no,
-                            roomId: null,
-                            roomNo: "",
-                            address: buildPlate(v.communityName, b.building_no, ""),
-                            dictStatus: "linked",
-                          });
-                          setSelectedFloor(null);
-                          void loadRooms(b.id);
-                        }}
-                      >
-                        {b.building_no}栋
-                        {b.pending ? <Badge className="ml-1 h-4 px-1 text-[10px]" variant="outline">未审核</Badge> : null}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          ) : null}
-
-          {/* 三级：楼层（名义 ∪ 实际 ∪ pending，未分层置底） */}
-          {v.buildingId && floors.length > 0 ? (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <Label>楼层（选填）</Label>
-                <button
-                  type="button"
-                  className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
-                  disabled={disabled}
-                  onClick={() => void handleCreateRoom()}
-                >
-                  <Plus className="size-3" />
-                  新建楼层（填这层第一户，需审核）
-                </button>
-              </div>
-              <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto">
-                {floors.map((f) => {
-                  const selected = selectedFloor === f.floor;
-                  return (
-                    <button
-                      key={f.floor ?? "none"}
-                      type="button"
-                      className={cn(
-                        "rounded-md border px-2.5 py-1 text-[12px] tabular-nums transition-colors",
-                        selected ? "border-ink bg-ink text-white" : "border-dove/50 text-ink hover:border-ash",
-                      )}
-                      onClick={() => setSelectedFloor(selected ? null : f.floor)}
-                    >
-                      {f.floor == null ? "楼层待定" : `${f.floor} 层`}
-                      <span className="ml-1 text-[10px] opacity-60">{f.room_count}户</span>
-                      {f.has_pending ? <Badge className="ml-1 h-4 px-1 text-[9px]" variant="outline">未审核</Badge> : null}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-
-          {/* 四级：户室网格（含新建入口） */}
-          {v.buildingId && selectedBuilding ? (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <Label>
-                  户室（选填）
-                  {v.buildingNo ? (
-                    <span className="ml-1 text-[10px] font-normal text-dove">
-                      {v.buildingNo} 栋{selectedFloor != null && selectedFloor !== "all" ? ` · ${selectedFloor} 层` : ""}
-                    </span>
-                  ) : null}
-                </Label>
-                {floors.length === 0 ? (
+            <div className="grid grid-cols-[1fr_0.8fr_1.4fr] gap-2">
+              {/* 栏一：楼栋（搜索 + 分页懒加载 + 新建入口） */}
+              <div className="flex min-w-0 flex-col rounded-lg border border-dove/40 bg-white">
+                <div className="flex items-center justify-between border-b border-dove/30 px-2 py-1.5">
+                  <span className="text-[11.5px] font-medium text-ink">
+                    楼栋 <span className="font-normal text-dove">选填</span>
+                    {buildingTotal > 0 ? (
+                      <span className="ml-1 text-[10px] font-normal text-dove tabular-nums">{buildingTotal}</span>
+                    ) : null}
+                  </span>
                   <button
                     type="button"
-                    className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
+                    className="flex items-center gap-0.5 text-[10.5px] text-rust hover:underline"
                     disabled={disabled}
-                    onClick={() => void handleCreateRoom()}
+                    onClick={() => void handleCreateBuilding()}
                   >
                     <Plus className="size-3" />
-                    新建户室（需审核）
+                    新建
                   </button>
-                ) : null}
+                </div>
+                <div className="border-b border-dove/20 px-2 py-1">
+                  <input
+                    value={buildingKeyword}
+                    onChange={(e) => setBuildingKeyword(e.target.value)}
+                    placeholder="搜楼栋号…"
+                    disabled={disabled}
+                    className="h-6 w-full rounded-md bg-fog px-2 text-[11.5px] text-ink outline-none placeholder:text-dove"
+                  />
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-1" style={{ maxHeight: 176 }}>
+                  {!loadingBuildings && buildings.length === 0 ? (
+                    <p className="px-2 py-3 text-[11px] text-dove">
+                      {buildingKeyword ? "没找到该楼栋，可新建（需审核）" : "← 暂无楼栋，可新建（需审核）"}
+                    </p>
+                  ) : null}
+                  {loadingBuildings ? (
+                    <div className="flex justify-center py-3">
+                      <Loader2 className="size-4 animate-spin text-graphite" />
+                    </div>
+                  ) : null}
+                  {!loadingBuildings &&
+                    buildings.map((b) => {
+                      const selected = v.buildingId === b.id;
+                      return (
+                        <button
+                          key={b.pending ? `pending-${b.pending_id}` : `b-${b.id}`}
+                          type="button"
+                          disabled={b.pending && v.dictStatus !== "pending"}
+                          title={b.pending ? "审核中，通过后可选" : undefined}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12px] transition-colors",
+                            selected ? "bg-ink text-white" : "text-ink hover:bg-fog",
+                            b.pending && !selected && "border-dashed text-dove opacity-70",
+                          )}
+                          onClick={() => {
+                            emit({
+                              buildingId: b.id,
+                              buildingNo: b.building_no,
+                              roomId: null,
+                              roomNo: "",
+                              address: buildPlate(v.communityName, b.building_no, ""),
+                              dictStatus: "linked",
+                            });
+                            setSelectedFloor(null);
+                            void loadRooms(b.id);
+                          }}
+                        >
+                          <span className="tabular-nums">{b.building_no}号</span>
+                          {b.pending ? (
+                            <Badge className="h-4 px-1 text-[9px]" variant="outline">
+                              未审核
+                            </Badge>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  {!loadingBuildings && buildings.length < buildingTotal ? (
+                    <button
+                      type="button"
+                      className="mt-1 w-full rounded-md border border-dashed border-dove py-1 text-[10.5px] text-graphite hover:border-ash"
+                      disabled={loadingMoreBuildings}
+                      onClick={loadMoreBuildings}
+                    >
+                      {loadingMoreBuildings ? "加载中…" : `加载更多（${buildings.length}/${buildingTotal}）`}
+                    </button>
+                  ) : null}
+                </div>
               </div>
-              <div className="grid max-h-40 grid-cols-6 gap-1.5 overflow-y-auto">
-                {loadingRooms ? (
-                  <Loader2 className="size-4 animate-spin text-graphite" />
-                ) : (
-                  visibleRooms.map((r) => {
-                    const selected = v.roomId === r.id && v.roomNo === r.room_no;
-                    const lockable = r.pending && !selected;
-                    return (
-                      <button
-                        key={r.pending ? `pr-${r.pending_id}` : `r-${r.id}`}
-                        type="button"
-                        disabled={lockable}
-                        title={r.pending ? "审核中，通过后可选" : undefined}
-                        className={cn(
-                          "rounded-md border px-1 py-1 text-[12px] tabular-nums transition-colors",
-                          selected ? "border-ink bg-ink text-white" : "border-dove/50 text-ink hover:border-ash",
-                          lockable && "border-dashed text-dove opacity-60",
-                        )}
-                        onClick={() => {
-                          if (r.plate_no === r.room_no && !/^\d{4}$/.test(r.room_no)) {
-                            toast.info("非标户室号，门牌需手动填写");
-                          }
-                          emit({
-                            roomId: r.id || null,
-                            roomNo: r.room_no,
-                            address: buildPlate(v.communityName, v.buildingNo, r.plate_no),
-                            dictStatus: "linked",
-                          });
-                        }}
-                      >
-                        {r.plate_no}
-                        {r.pending ? <Badge className="ml-0.5 h-3 px-0.5 text-[8px]" variant="outline">审</Badge> : null}
-                      </button>
-                    );
-                  })
-                )}
-                {visibleRooms.length === 0 && !loadingRooms ? (
-                  <button
-                    type="button"
-                    className="col-span-6 rounded-md border border-dashed border-dove py-1.5 text-[11.5px] text-rust hover:border-ash"
-                    onClick={() => void handleCreateRoom()}
-                  >
-                    <Plus className="mr-0.5 inline size-3" />
-                    本层暂无户室 · 新建户室（需审核）
-                  </button>
-                ) : null}
+
+              {/* 栏二：楼层（名义 ∪ 实际 ∪ pending，未分层置底） */}
+              <div className="flex min-w-0 flex-col rounded-lg border border-dove/40 bg-white">
+                <div className="flex items-center justify-between border-b border-dove/30 px-2 py-1.5">
+                  <span className="text-[11.5px] font-medium text-ink">
+                    楼层 <span className="font-normal text-dove">选填</span>
+                  </span>
+                  {v.buildingId ? (
+                    <button
+                      type="button"
+                      className="flex items-center gap-0.5 text-[10.5px] text-rust hover:underline"
+                      disabled={disabled}
+                      onClick={() => void handleCreateRoom()}
+                    >
+                      <Plus className="size-3" />
+                      新建
+                    </button>
+                  ) : null}
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-1" style={{ maxHeight: 176 }}>
+                  {!v.buildingId ? (
+                    <p className="px-2 py-3 text-[11px] text-dove">← 选择楼栋</p>
+                  ) : loadingRooms ? (
+                    <div className="flex justify-center py-3">
+                      <Loader2 className="size-4 animate-spin text-graphite" />
+                    </div>
+                  ) : floors.length === 0 ? (
+                    <p className="px-2 py-3 text-[11px] text-dove">暂无楼层，可新建（需审核）</p>
+                  ) : (
+                    floors.map((f) => {
+                      const selected = selectedFloor === f.floor;
+                      return (
+                        <button
+                          key={f.floor ?? "none"}
+                          type="button"
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12px] transition-colors",
+                            selected ? "bg-ink text-white" : "text-ink hover:bg-fog",
+                          )}
+                          onClick={() => setSelectedFloor(selected ? null : f.floor)}
+                        >
+                          <span className="tabular-nums">{f.floor == null ? "楼层待定" : `${f.floor} 层`}</span>
+                          <span className="flex items-center gap-1">
+                            <span className={cn("text-[10px]", selected ? "opacity-70" : "text-dove")}>
+                              {f.room_count}户
+                            </span>
+                            {f.has_pending ? (
+                              <Badge className="h-4 px-1 text-[9px]" variant="outline">
+                                未审核
+                              </Badge>
+                            ) : null}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-              {/* 门牌预览可手改（FR-09） */}
-              <div className="mt-1 flex flex-col gap-1.5">
-                <Label>
-                  <span className="rounded-md bg-apricot-wash px-1.5 py-0.5 text-[10px] text-rust">自动门牌</span>
-                  <span className="ml-1 text-[10px] font-normal text-dove">系统自动拼好，可手改</span>
-                </Label>
-                <Input
-                  value={v.address}
-                  onChange={(e) => emit({ address: e.target.value })}
-                  placeholder="选楼栋/户室后自动拼装"
-                  disabled={disabled}
-                />
+
+              {/* 栏三：户室网格（含新建入口） */}
+              <div className="flex min-w-0 flex-col rounded-lg border border-dove/40 bg-white">
+                <div className="flex items-center justify-between border-b border-dove/30 px-2 py-1.5">
+                  <span className="text-[11.5px] font-medium text-ink">
+                    户室 <span className="font-normal text-dove">选填</span>
+                    {v.buildingNo ? (
+                      <span className="ml-1 text-[10px] font-normal text-dove tabular-nums">
+                        {v.buildingNo}号
+                        {selectedFloor != null && selectedFloor !== "all" ? ` · ${selectedFloor}层` : ""}
+                      </span>
+                    ) : null}
+                  </span>
+                  {v.buildingId && floors.length === 0 ? (
+                    <button
+                      type="button"
+                      className="flex items-center gap-0.5 text-[10.5px] text-rust hover:underline"
+                      disabled={disabled}
+                      onClick={() => void handleCreateRoom()}
+                    >
+                      <Plus className="size-3" />
+                      新建
+                    </button>
+                  ) : null}
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-1" style={{ maxHeight: 176 }}>
+                  {!v.buildingId || !selectedBuilding ? (
+                    <p className="px-2 py-3 text-[11px] text-dove">← 选择楼层</p>
+                  ) : loadingRooms ? (
+                    <div className="flex justify-center py-3">
+                      <Loader2 className="size-4 animate-spin text-graphite" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-1">
+                      {visibleRooms.map((r) => {
+                        const selected = v.roomId === r.id && v.roomNo === r.room_no;
+                        const lockable = r.pending && !selected;
+                        return (
+                          <button
+                            key={r.pending ? `pr-${r.pending_id}` : `r-${r.id}`}
+                            type="button"
+                            disabled={lockable}
+                            title={r.pending ? "审核中，通过后可选" : undefined}
+                            className={cn(
+                              "rounded-md border px-1 py-1 text-[11px] tabular-nums transition-colors",
+                              selected ? "border-ink bg-ink text-white" : "border-dove/50 text-ink hover:border-ash",
+                              lockable && "border-dashed text-dove opacity-60",
+                            )}
+                            onClick={() => {
+                              if (r.plate_no === r.room_no && !/^\d{4}$/.test(r.room_no)) {
+                                toast.info("非标户室号，门牌需手动填写");
+                              }
+                              emit({
+                                roomId: r.id || null,
+                                roomNo: r.room_no,
+                                address: buildPlate(v.communityName, v.buildingNo, r.plate_no),
+                                dictStatus: "linked",
+                              });
+                            }}
+                          >
+                            {r.plate_no}
+                            {r.pending ? (
+                              <Badge className="ml-0.5 h-3 px-0.5 text-[8px]" variant="outline">
+                                审
+                              </Badge>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                      {visibleRooms.length === 0 && !loadingRooms ? (
+                        <button
+                          type="button"
+                          className="col-span-4 rounded-md border border-dashed border-dove py-1.5 text-[10.5px] text-rust hover:border-ash"
+                          onClick={() => void handleCreateRoom()}
+                        >
+                          <Plus className="mr-0.5 inline size-3" />
+                          本层暂无户室 · 新建（需审核）
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ) : null}
+
+          {/* 门牌预览可手改（FR-09） */}
+          <div className="flex flex-col gap-1.5">
+            <Label>
+              <span className="rounded-md bg-apricot-wash px-1.5 py-0.5 text-[10px] text-rust">自动门牌</span>
+              <span className="ml-1 text-[10px] font-normal text-dove">系统自动拼好，可手改</span>
+            </Label>
+            <Input
+              value={v.address}
+              onChange={(e) => emit({ address: e.target.value })}
+              placeholder="选楼栋/户室后自动拼装"
+              disabled={disabled}
+            />
+          </div>
         </>
       )}
     </div>

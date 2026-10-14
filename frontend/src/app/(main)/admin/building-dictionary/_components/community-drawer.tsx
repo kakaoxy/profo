@@ -210,6 +210,29 @@ export function CommunityDrawer({
 
   const mergedChildren = detail?.merged_children ?? [];
 
+  /** 删除小区（未使用直接删；被业务单据引用/存在待审楼栋/被并入时由后端 409 拦截） */
+  const handleDeleteCommunity = useCallback(async () => {
+    if (!communityId || !detail) return;
+    if (
+      !window.confirm(
+        `确认删除小区「${detail.name}」？其下 ${detail.building_count} 栋楼栋及全部户室/别名/图片将一并删除，删除后不可恢复。`,
+      )
+    ) {
+      return;
+    }
+    const { error } = await client.DELETE("/api/v1/admin/building-dictionary/communities/{community_id}", {
+      params: { path: { community_id: communityId } },
+    });
+    if (error) {
+      const msg = (error as { message?: string }).message ?? "小区被业务单据引用或存在待审条目时会拦截";
+      toast.error(`删除失败：${msg}`);
+      return;
+    }
+    toast.success(`已删除小区「${detail.name}」（留审计）`);
+    onOpenChange(false);
+    onUpdated?.();
+  }, [communityId, detail, onOpenChange, onUpdated]);
+
   /** 删除楼栋（含其下全部户室；业务引用/待审子级由后端拦截） */
   const handleDeleteBuilding = useCallback(
     async (b: BdBuildingListItem) => {
@@ -294,6 +317,14 @@ export function CommunityDrawer({
                   合并
                 </Button>
               ) : null}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 rounded-full border-error/40 px-3 text-[11px] text-error hover:bg-error/5"
+                onClick={() => void handleDeleteCommunity()}
+              >
+                删除
+              </Button>
             </span>
           </SheetTitle>
           {detail ? (
@@ -666,7 +697,7 @@ export function CommunityDrawer({
             <p className="min-w-0 flex-1 text-[11.5px] leading-relaxed text-graphite">
               {picked ? (
                 <>
-                  已选 <b className="font-medium text-rust">{picked.buildingNo} 栋 {picked.roomNo}</b>
+                  已选 <b className="font-medium text-rust">{picked.buildingNo}号 {picked.roomNo}</b>
                   {picked.lng != null && picked.lat != null ? (
                     <span className="ml-1 font-mono">
                       · 位置坐标 {picked.lng.toFixed(6)}, {picked.lat.toFixed(6)}
@@ -722,7 +753,7 @@ export function CommunityDrawer({
                     className="rounded-full bg-ink text-white"
                     disabled={!picked}
                     onClick={() => {
-                      toast(`已选 ${picked?.buildingNo} 栋 ${picked?.plate}，请在项目表单中确认绑定`);
+                      toast(`已选 ${picked?.buildingNo}号 ${picked?.plate}，请在项目表单中确认绑定`);
                     }}
                   >
                     绑定项目
