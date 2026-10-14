@@ -26,6 +26,7 @@ interface ImportTask {
   total_buildings: number;
   total_rooms: number;
   warnings_count: number;
+  processed_communities: number;
   communities_loaded: number;
   buildings_loaded: number;
   rooms_loaded: number;
@@ -49,6 +50,16 @@ function stepOf(t: ImportTask | null): number {
   if (t.status === "completed") return 4;
   if (t.status === "failed" || t.status === "cancelled") return 2;
   return 3;
+}
+
+/**
+ * 重复包幂等重跑判定：已完成且确实处理了小区，但三类计数全为 0，
+ * 说明包内数据已全部存在（upsert / ON CONFLICT 全部跳过），非导入异常。
+ */
+function isIdempotentRerun(t: ImportTask): boolean {
+  return (
+    t.status === "completed" && t.processed_communities > 0 && t.communities_loaded + t.buildings_loaded + t.rooms_loaded === 0
+  );
 }
 
 const STEPS = [
@@ -259,6 +270,10 @@ export function ImportClient() {
               </div>
               {activeTask.error_message ? (
                 <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{activeTask.error_message}</p>
+              ) : isIdempotentRerun(activeTask) ? (
+                <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[13px] text-amber-700">
+                  检测到重复导入：包内 {activeTask.processed_communities.toLocaleString()} 个小区已全部存在，本次无新增数据（同包重跑不会重复入库），小区库无需更新。
+                </p>
               ) : (
                 <p className="mt-3 text-[12px] leading-relaxed text-graphite">
                   数量全部对上，可以开始用了；失败明细和原文件保留 90 天。
@@ -331,6 +346,7 @@ export function ImportClient() {
                     >
                       {STATUS_LABEL[t.status] ?? t.status}
                     </span>
+                    {isIdempotentRerun(t) ? <span className="ml-2 text-[10.5px] text-graphite">重复包，无新增</span> : null}
                   </td>
                   <td className="px-4 py-2 tabular-nums">
                     <span className="mr-2 inline-block h-1.5 w-20 overflow-hidden rounded-full bg-fog align-middle">
