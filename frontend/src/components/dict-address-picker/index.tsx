@@ -235,18 +235,17 @@ export function DictAddressPicker({
   );
 
   /** 楼栋搜索防抖 + 小区切换首载（统一走 effect，避免双请求） */
+  const activeCommunityId = v.communityId;
   useEffect(() => {
-    const cid = v.communityId;
-    if (!cid) return;
+    if (!activeCommunityId) return;
     if (buildingSearchRef.current) clearTimeout(buildingSearchRef.current);
     buildingSearchRef.current = setTimeout(() => {
-      void loadBuildings(cid, { keyword: buildingKeyword, page: 1 });
+      void loadBuildings(activeCommunityId, { keyword: buildingKeyword, page: 1 });
     }, 300);
     return () => {
       if (buildingSearchRef.current) clearTimeout(buildingSearchRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [v.communityId, buildingKeyword]);
+  }, [activeCommunityId, buildingKeyword, loadBuildings]);
 
   /** 楼栋「加载更多」 */
   const loadMoreBuildings = useCallback(() => {
