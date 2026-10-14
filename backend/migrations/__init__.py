@@ -128,6 +128,8 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
   + 补 community_name 冗余列
 - backfill_bd_room_floor: 按扩展后的户室号解析规则（新增 3 位号 202→2 层）回填
   bd_rooms.floor IS NULL 的可解析存量户室（幂等），修复「楼层待定」分类漏归层
+- widen_community_address_column: communities.address 列宽 300→500（批量导入
+  多地址拼接串超长，实测最长 388，幂等放宽）
 
 """
 
@@ -136,6 +138,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from migrations._bd_community_address_widen import widen_community_address_column
 from migrations._bd_room_floor_backfill import backfill_bd_room_floor
 from migrations._building_dictionary import run_building_dictionary_migrations
 
@@ -389,6 +392,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # + projects/leads/l4_marketing_projects 补字典三列
         # + property_current.community_id 放宽可空 + community_name 冗余列
         run_building_dictionary_migrations(engine)
+        # 楼盘字典：communities.address 列宽 300→500（批量导入多地址串超长，幂等放宽）
+        widen_community_address_column(engine)
         # 楼盘字典：存量未分层户室按新解析规则回填楼层（3 位号 202→2 层，幂等）
         backfill_bd_room_floor(engine)
     except Exception:

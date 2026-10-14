@@ -58,7 +58,7 @@ class Community(Base):
     developer: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="开发商")
     property_mgmt: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="物业公司")
     # 小区地址（含区域板块前缀，如「青浦盈浦;万寿新村」中的地址部分）
-    address: Mapped[str | None] = mapped_column(String(300), nullable=True, comment="小区地址(可空)")
+    address: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="小区地址(可空)")
     # 数据来源：admin 后台补录 / review 审核转正（import 值域已废止，BR-20/SRS §8）
     source: Mapped[str | None] = mapped_column(
         String(20), nullable=True, comment="数据来源(admin/review)，import 值域废止"

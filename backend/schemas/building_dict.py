@@ -196,7 +196,7 @@ class BdCommunityPatchRequest(BaseModel):
     era_to: int | None = Field(None, ge=1900, le=2100, description="建成年代止")
     developer: str | None = Field(None, max_length=200, description="开发商")
     property_mgmt: str | None = Field(None, max_length=200, description="物业公司")
-    address: str | None = Field(None, max_length=300, description="地址")
+    address: str | None = Field(None, max_length=500, description="地址")
     lng: float | None = Field(None, description="经度(BD-09)")
     lat: float | None = Field(None, description="纬度(BD-09)")
 
@@ -239,7 +239,7 @@ class BdCommunityCreateRequest(BaseModel):
     district: str = Field(min_length=1, max_length=100, description="行政区(必填)")
     business_circle: str = Field(min_length=1, max_length=100, description="板块(必填)")
     ring: str | None = Field(None, max_length=50, description="环线(可空)")
-    address: str | None = Field(None, max_length=300, description="地址(可空)")
+    address: str | None = Field(None, max_length=500, description="地址(可空)")
     lng: float | None = Field(None, description="经度(BD-09，可空)")
     lat: float | None = Field(None, description="纬度(BD-09，可空)")
 

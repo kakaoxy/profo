@@ -41,6 +41,22 @@ _ZIP_BOMB_MSG = "zip 包解压后总大小超限（4GB），疑似异常包"
 ARCHIVE_DAYS = 90
 
 
+def _decode_zip_name(info: zipfile.ZipInfo) -> str:
+    """解码 zip 条目文件名.
+
+    Python zipfile 对未打 UTF-8 标志（flag bit 0x800）的条目按 cp437 解码，
+    macOS/Windows 中文环境压缩的非 ASCII 文件名会变成乱码，需还原原始字节
+    后按 UTF-8/GBK 重解码。
+    """
+    if info.flag_bits & 0x800:
+        return info.filename
+    raw = info.filename.encode("cp437")
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("gbk", errors="replace")
+
+
 class DictImportStats:
     """导入对账三计数."""
 
@@ -305,14 +321,19 @@ class DictImportProcessor:
         # M3 修复：限制解压后总大小（zip bomb 防护）——原实现无上限，
         # 恶意压缩包可膨胀至磁盘/内存耗尽。
         txt_entries: list[tuple[str, bytes]] = []
+        uncompressed_total = 0
         if file_path.suffix.lower() == ".zip":
             with zipfile.ZipFile(file_path) as zf:
                 for info in zf.infolist():
                     if info.is_dir() or not info.filename.lower().endswith(".txt"):
                         continue
-                    if sum(s for _, s in txt_entries) + info.file_size > MAX_UNCOMPRESSED_TOTAL:
+                    # 跳过 macOS 压缩产物：__MACOSX 目录与 ._ AppleDouble 文件
+                    if info.filename.startswith("__MACOSX/") or Path(info.filename).name.startswith("._"):
+                        continue
+                    uncompressed_total += info.file_size
+                    if uncompressed_total > MAX_UNCOMPRESSED_TOTAL:
                         raise ValueError(_ZIP_BOMB_MSG) from None
-                    txt_entries.append((Path(info.filename).name, zf.read(info)))
+                    txt_entries.append((Path(_decode_zip_name(info)).name, zf.read(info)))
         else:
             # 小区名取自「原始上传文件名」的扩展名前部分；
             # 上传落盘时文件已被重命名为 bd_{task_id}.txt，不能直接用存盘名

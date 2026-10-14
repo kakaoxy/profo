@@ -31,7 +31,7 @@ _COMMUNITY_COLUMNS: list[tuple[str, str, str]] = [
     ("era_to", "INTEGER", "建成年代止"),
     ("developer", "VARCHAR(200)", "开发商"),
     ("property_mgmt", "VARCHAR(200)", "物业公司"),
-    ("address", "VARCHAR(300)", "小区地址(可空)"),
+    ("address", "VARCHAR(500)", "小区地址(可空)"),
     ("source", "VARCHAR(20)", "数据来源(admin/review)，import 值域废止"),
     ("merged_into_id", "VARCHAR(36)", "被并入的主小区ID(可空逻辑自指)"),
 ]
