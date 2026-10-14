@@ -1,8 +1,9 @@
 """线索核心 CRUD 路由."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Path, Query, Request
+from sqlalchemy.orm import Session
 
 from dependencies.auth import (
     DbSessionDep,
@@ -25,6 +26,8 @@ from schemas.lead import (
 )
 from services.leads import LeadService
 from services.market.community_image_service import CommunityImageService
+from services.property.dict_read_service import BuildingDictReadService
+from services.property.doc_dict_resolver import DocDictKey
 from services.system.exceptions import ResourceNotFoundError
 from utils.common import RateLimits, limiter
 
@@ -33,14 +36,49 @@ router = APIRouter()
 _MAX_IMAGE_LENGTH = 500
 
 
-def _lead_to_list_item(lead: Lead) -> LeadListItem:
-    """将 Lead ORM 对象转换为 LeadListItem."""
+def _dict_names_update(lead: Lead, names: dict) -> dict:
+    """字典解析名称 → LeadListItem/LeadResponse 补充字段（单条）."""
+    n = names.get(str(lead.id))
+    if n is None:
+        return {}
+    return {"building_no": n.building_no, "room_no": n.room_no, "floor": n.floor}
+
+
+def _lead_dict_key(lead: Lead) -> DocDictKey:
+    """Lead ORM → 解析键."""
+    return DocDictKey(
+        doc_id=str(lead.id),
+        community_id=lead.community_id,
+        building_id=lead.building_id,
+        room_id=lead.room_id,
+        dict_status=lead.dict_status,
+        source_type="lead",
+    )
+
+
+def _lead_to_list_item(lead: Lead, names: dict[str, Any] | None = None, db: Session | None = None) -> LeadListItem:
+    """将 Lead ORM 对象转换为 LeadListItem.
+
+    Args:
+        lead: Lead ORM 实例
+        names: 字典解析名称映射（doc_id → DocDictNames）；列表路径由调用方批量传入避免 N+1
+        db: 数据库会话；names 为 None 时单条现场解析用（非列表路径）
+
+    """
     safe_images = [img for img in (lead.images or []) if isinstance(img, str) and len(img) < _MAX_IMAGE_LENGTH]
+
+    if names is None and db is not None:
+        names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead)])
+    dict_fields = _dict_names_update(lead, names or {})
 
     return LeadListItem(
         id=lead.id,
         community_name=lead.community_name,
         community_id=lead.community_id,
+        building_id=lead.building_id,
+        room_id=lead.room_id,
+        dict_status=lead.dict_status,
+        **dict_fields,
         is_hot=lead.is_hot or 0,
         layout=lead.layout,
         orientation=lead.orientation,
@@ -97,7 +135,9 @@ def get_leads(
         floor=floor,
     )
 
-    items = [_lead_to_list_item(lead) for lead in result["items"]]
+    # 字典名称批量解析（单次两查询，无 N+1）
+    dict_names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead) for lead in result["items"]])
+    items = [_lead_to_list_item(lead, names=dict_names) for lead in result["items"]]
 
     return PaginatedLeadListResponse(
         items=items,
@@ -120,7 +160,16 @@ def create_lead(
     权限：lead:create（普通员工录入）或 lead:write（admin/operator 全权）。
     """
     service = LeadService(db)
-    return service.create_lead(lead_in, current_user.id, creator=current_user)
+    return _lead_response_with_names(db, service.create_lead(lead_in, current_user.id, creator=current_user))
+
+
+def _lead_response_with_names(db: Session, lead: Lead) -> LeadResponse:
+    """Lead ORM → LeadResponse（含字典解析名称，创建/更新响应同口径）."""
+    dict_names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead)])
+    resp = LeadResponse.model_validate(lead, from_attributes=True)
+    for field, value in _dict_names_update(lead, dict_names).items():
+        setattr(resp, field, value)
+    return resp
 
 
 @router.get("/stats")
@@ -139,9 +188,18 @@ def get_lead(
     _current_user: LeadReadPermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
 ) -> LeadResponse:
-    """获取单个线索详情."""
+    """获取单个线索详情.
+
+    字典解析名称（building_no/room_no/floor）随响应下发；LeadResponse 含
+    building_id/room_id/dict_status，手动补齐解析字段后返回。
+    """
     service = LeadService(db)
-    return service.get_lead_or_404(lead_id)
+    lead = service.get_lead_or_404(lead_id)
+    dict_names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead)])
+    resp = LeadResponse.model_validate(lead, from_attributes=True)
+    for field, value in _dict_names_update(lead, dict_names).items():
+        setattr(resp, field, value)
+    return resp
 
 
 @router.get("/{lead_id}/community-images")
@@ -187,7 +245,7 @@ def update_lead(
     速率限制：100次/小时.
     """
     service = LeadService(db)
-    return service.update_lead(lead_id, lead_in, current_user.id, creator=current_user)
+    return _lead_response_with_names(db, service.update_lead(lead_id, lead_in, current_user.id, creator=current_user))
 
 
 @router.delete("/{lead_id}", status_code=204)

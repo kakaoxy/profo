@@ -59,7 +59,41 @@ interface BasicInfoSectionProps {
 
 function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
   // 楼盘字典四级地址（M4）
-  const [dictValue, setDictValue] = useState<DictAddressValue | null>(null);
+  const { getValues } = useFormContext<FormValues>();
+  // 编辑态从已落库项目回显选择器初值（surface-dict-binding-info）；
+  // getValues 惰性取当前表单值（projectToFormValues 已补 dict 字段）
+  const [dictValue, setDictValue] = useState<DictAddressValue | null>(() => {
+    const v = getValues();
+    if (!v.community_id && !v.building_id && !v.room_id && !v.new_building) return null;
+    // rejected 在选择器语义里等同未选中态（picker 不接受 rejected），置 null
+    const pickerStatus = (s: string | null | undefined): DictAddressValue["dictStatus"] =>
+      s === "linked" || s === "pending" || s === "manual" ? s : null;
+    const nc = v.new_community;
+    const nb = v.new_building;
+    const nr = v.new_room;
+    return {
+      communityId: v.community_id || null,
+      communityName: v.community_name || "",
+      buildingId: v.building_id ?? null,
+      buildingNo: (v as { building_no?: string | null }).building_no ?? "",
+      roomId: v.room_id ?? null,
+      roomNo: (v as { room_no?: string | null }).room_no ?? "",
+      address: v.community_name || "",
+      dictStatus: pickerStatus(v.dict_status),
+      newCommunity:
+        nc && typeof nc === "object" && typeof (nc as { name?: unknown }).name === "string"
+          ? (nc as { name: string })
+          : null,
+      newBuilding:
+        nb && typeof nb === "object" && typeof (nb as { name?: unknown }).name === "string"
+          ? (nb as { name: string })
+          : null,
+      newRoom:
+        nr && typeof nr === "object" && typeof (nr as { name?: unknown }).name === "string"
+          ? (nr as { name: string })
+          : null,
+    };
+  });
   return (
     <section className="bg-card rounded-3xl shadow-steep-sm p-6">
       <h3 className="flex items-center gap-2 mb-6">
@@ -83,13 +117,16 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
                     onChange={(next) => {
                       setDictValue(next);
                       field.onChange(next.communityName || "");
-                      if (next.communityId) setValue("community_id", next.communityId);
-                      setValue("building_id", next.buildingId ?? null);
-                      setValue("room_id", next.roomId ?? null);
-                      setValue("dict_status", next.dictStatus ?? null);
-                      setValue("new_community", next.newCommunity ?? null);
-                      setValue("new_building", next.newBuilding ?? null);
-                      setValue("new_room", next.newRoom ?? null);
+                      // shouldDirty: true —— RHF setValue 默认不标 dirty，漏传会导致
+                      // 仅改楼栋/户室时 dirtyFields 为空，提交提示「没有需要保存的变更」
+                      const opts = { shouldDirty: true } as const;
+                      if (next.communityId) setValue("community_id", next.communityId, opts);
+                      setValue("building_id", next.buildingId ?? null, opts);
+                      setValue("room_id", next.roomId ?? null, opts);
+                      setValue("dict_status", next.dictStatus ?? null, opts);
+                      setValue("new_community", next.newCommunity ?? null, opts);
+                      setValue("new_building", next.newBuilding ?? null, opts);
+                      setValue("new_room", next.newRoom ?? null, opts);
                     }}
                     sourceBizType="marketing"
                   />

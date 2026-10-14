@@ -15,8 +15,6 @@ import type { Project } from "../../../types";
 import type { ViewMode } from "../../../_components/project-detail/constants";
 import type { RenovationContractMeta } from "../../../_components/project-detail/views/renovation";
 
-import { AddressBindingCard } from "./address-binding-card";
-
 interface SideColumnProps {
   project: Project;
   /** 当前阶段视图（团队/关键日期/快捷入口/备注按阶段动态渲染） */
@@ -171,17 +169,6 @@ export function SideColumn({ project, viewMode, renovationMeta, usersById }: Sid
 
   return (
     <>
-      {/* 地址绑定卡（FR-12 / 设计稿 ARTBOARD 05：绑定字典楼栋/户室） */}
-      <AddressBindingCard
-        projectId={project.id}
-        communityId={project.community_id ?? null}
-        communityName={project.community_name ?? null}
-        address={project.address ?? null}
-        buildingId={project.building_id ?? null}
-        roomId={project.room_id ?? null}
-        dictStatus={project.dict_status ?? null}
-      />
-
       <KeyManagementCard projectId={project.id} />
 
       {viewMode !== "ended" && (

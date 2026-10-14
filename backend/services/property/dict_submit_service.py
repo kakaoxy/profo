@@ -168,6 +168,18 @@ class DictSubmitService:
         if commit:
             db.commit()
 
+    def _get_open_pending(self, db: Session, parent_id: str) -> BdPendingEntry | None:
+        """按 ID 查 open pending 条目（非数字 ID 安全返回 None，不抛 ValueError → 500）."""
+        try:
+            pid = int(parent_id)
+        except (TypeError, ValueError):
+            return None
+        return (
+            db.query(BdPendingEntry)
+            .filter(BdPendingEntry.id == pid, BdPendingEntry.status == BdEntryStatus.PENDING)
+            .first()
+        )
+
     def _resolve_parent(
         self,
         db: Session,
@@ -193,7 +205,10 @@ class DictSubmitService:
             return BdEntryKind.COMMUNITY, 0, community.id
 
         if parent_kind == "building":
-            building = db.get(BdBuilding, int(parent_id))
+            try:
+                building = db.get(BdBuilding, int(parent_id))
+            except (TypeError, ValueError):
+                building = None
             if not building:
                 msg = "父级楼栋不存在"
                 raise ResourceNotFoundError(msg)
@@ -201,22 +216,14 @@ class DictSubmitService:
 
         if parent_kind == "pending_community":
             # 父级小区本身待审：pending 挂 pending 条目（拓扑审核 BR-28）
-            parent_entry = (
-                db.query(BdPendingEntry)
-                .filter(BdPendingEntry.id == int(parent_id), BdPendingEntry.status == BdEntryStatus.PENDING)
-                .first()
-            )
+            parent_entry = self._get_open_pending(db, parent_id)
             if not parent_entry:
                 msg = "父级小区待审条目不存在或已处理"
                 raise ResourceNotFoundError(msg)
             return BdEntryKind.COMMUNITY, parent_entry.id, None
 
         if parent_kind == "pending_building":
-            parent_entry = (
-                db.query(BdPendingEntry)
-                .filter(BdPendingEntry.id == int(parent_id), BdPendingEntry.status == BdEntryStatus.PENDING)
-                .first()
-            )
+            parent_entry = self._get_open_pending(db, parent_id)
             if not parent_entry:
                 msg = "父级楼栋待审条目不存在或已处理"
                 raise ResourceNotFoundError(msg)

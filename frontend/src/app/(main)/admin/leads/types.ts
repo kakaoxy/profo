@@ -46,6 +46,9 @@ export interface Lead {
   buildingId?: number | null;
   roomId?: number | null;
   dictStatus?: "linked" | "manual" | "pending" | "rejected" | null;
+  // 字典解析名称（surface-dict-binding-info；pending 时为待审名称）
+  buildingNo?: string | null;
+  roomNo?: string | null;
   newCommunity?: { name: string } | null;
   newBuilding?: { name: string } | null;
   newRoom?: { name: string } | null;

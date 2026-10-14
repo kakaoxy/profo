@@ -379,11 +379,10 @@ class ProjectCoreService:
             contract_sort=contract_sort,
         )
 
+        # 批量构建（builder 内部单次批量解析字典名称，无 N+1）
         items = [
-            ProjectResponse.model_validate(
-                self.response_builder.build(p, slim=True, include_interactions=include_interactions),
-            )
-            for p in result["items"]
+            ProjectResponse.model_validate(r)
+            for r in self.response_builder.build(result["items"], slim=True, include_interactions=include_interactions)
         ]
 
         return {
@@ -506,11 +505,10 @@ class ProjectCoreService:
 
         """
         projects = self.query_service.get_by_business_identity(user_id)
+        # 批量构建（builder 内部单次批量解析字典名称，无 N+1）
         return [
-            ProjectResponse.model_validate(
-                self.response_builder.build(p, slim=True, current_user=current_user),
-            )
-            for p in projects
+            ProjectResponse.model_validate(r)
+            for r in self.response_builder.build(projects, slim=True, current_user=current_user)
         ]
 
     def update_project(

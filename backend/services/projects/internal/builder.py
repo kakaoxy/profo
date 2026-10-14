@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy.orm import Session
 
 from models.common import CashFlowType, ProjectStatus
+from services.property.dict_read_service import BuildingDictReadService
+from services.property.doc_dict_resolver import DocDictKey
 from utils.mask import mask_bank_card
 
 if TYPE_CHECKING:
@@ -43,18 +45,22 @@ class ProjectResponseBuilder:
 
     def build(
         self,
-        project: "Project",
+        projects: "Project | list[Project]",
         *,
         slim: bool = False,
         include_interactions: bool = False,
         current_user: "User | None" = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """构建项目响应数据.
 
-        将项目模型及其关联数据组合成完整的响应字典.
+        将项目模型及其关联数据组合成完整的响应字典。
+
+        支持单条与批量两种入参：传 list 时先批量解析字典地址名称（单次两查询，
+        无 N+1），再逐条构建并返回列表；单条入参行为不变。列表页（slim=True）
+        与详情页共用本方法，字典名称解析均在此接入。
 
         Args:
-            project: Project模型实例（调用方应预加载所需关联）
+            projects: Project模型实例或实例列表（调用方应预加载所需关联）
             slim: 是否使用精简模式（列表页使用，跳过互动/阶段日期等重量级查询；
                 财务统计始终构建，列表页需展示现金流）
             include_interactions: slim模式下是否仍构建互动记录(sales_records)，
@@ -63,31 +69,62 @@ class ProjectResponseBuilder:
                 业务身份标志；列表页（slim=True）可传 None，此时 can_edit_* 默认为 False
 
         Returns:
-            包含项目信息的字典
+            包含项目信息的字典（单条）或字典列表（批量）
 
         """
-        response = self._build_base_info(project)
-        response.update(self._build_contract_info(project))
-        response.update(self._build_owner_info(project))
-        response.update(self._build_owners_list(project))
-        response.update(self._build_sale_info(project, current_user=current_user))
-        response.update(self._build_finance_info(project))
-        # renovation 业务身份标志（can_edit_renovation / contact_person_id）始终构建：
-        # 工作台"我负责的项目"卡片用 slim=True，但用户点击卡片后详情抽屉的装修页
-        # 需要 can_edit_renovation 决定上传按钮显隐。project.renovation 已通过
-        # joinedload 预加载，无额外查询开销。
-        response.update(self._build_renovation_info(project, current_user=current_user))
+        is_batch = isinstance(projects, list)
+        project_list = projects if is_batch else [projects]
 
-        if not slim or include_interactions:
-            response.update(self._build_interactions(project))
+        # 字典地址名称批量解析（单点：BuildingDictReadService.resolve_doc_names）
+        dict_keys = [
+            DocDictKey(
+                doc_id=str(p.id),
+                community_id=p.community_id,
+                building_id=p.building_id,
+                room_id=p.room_id,
+                dict_status=p.dict_status,
+                source_type="project",
+            )
+            for p in project_list
+        ]
+        dict_names = BuildingDictReadService().resolve_doc_names(self.db, dict_keys)
 
-        # 阶段完成日期（装修进度）始终构建：列表页（slim=True）需展示"总体进度%"。
-        # project.renovation 已 joinedload 预加载，无额外查询开销。
-        response.update(self._build_stage_dates(project))
+        responses = []
+        for project in project_list:
+            response = self._build_base_info(project)
+            response.update(self._build_contract_info(project))
+            response.update(self._build_owner_info(project))
+            response.update(self._build_owners_list(project))
+            response.update(self._build_sale_info(project, current_user=current_user))
+            response.update(self._build_finance_info(project))
+            # renovation 业务身份标志（can_edit_renovation / contact_person_id）始终构建：
+            # 工作台"我负责的项目"卡片用 slim=True，但用户点击卡片后详情抽屉的装修页
+            # 需要 can_edit_renovation 决定上传按钮显隐。project.renovation 已通过
+            # joinedload 预加载，无额外查询开销。
+            response.update(self._build_renovation_info(project, current_user=current_user))
 
-        response.update(self._build_renovation_photos(project))
+            if not slim or include_interactions:
+                response.update(self._build_interactions(project))
 
-        return response
+            # 阶段完成日期（装修进度）始终构建：列表页（slim=True）需展示"总体进度%"。
+            # project.renovation 已 joinedload 预加载，无额外查询开销。
+            response.update(self._build_stage_dates(project))
+
+            response.update(self._build_renovation_photos(project))
+
+            # 字典解析名称（building_no/room_no/floor；未绑定为 None）
+            names = dict_names.get(str(project.id))
+            if names is not None:
+                response.update(
+                    {
+                        "building_no": names.building_no,
+                        "room_no": names.room_no,
+                        "floor": names.floor,
+                    }
+                )
+            responses.append(response)
+
+        return responses if is_batch else responses[0]
 
     def _build_base_info(self, project: "Project") -> dict[str, Any]:
         """构建项目基础信息."""

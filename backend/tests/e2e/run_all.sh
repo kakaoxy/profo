@@ -10,7 +10,7 @@ OUT="tests/e2e/artifacts/e2e-report-$(date +%Y%m%d-%H%M%S).txt"
   echo "命令: bash backend/tests/e2e/run_all.sh"
   echo ""
   FAIL=0
-  for t in tests/e2e/test_bd_import.py tests/e2e/test_bd_review_api.py tests/e2e/test_bd_form_chain.py tests/e2e/test_bd_machine_link.py tests/e2e/test_bd_dictionary_link.py tests/e2e/test_bd_unmerge.py tests/e2e/test_bd_c_side.py tests/e2e/test_bd_fix_regression.py; do
+  for t in tests/e2e/test_bd_import.py tests/e2e/test_bd_review_api.py tests/e2e/test_bd_form_chain.py tests/e2e/test_bd_machine_link.py tests/e2e/test_bd_dictionary_link.py tests/e2e/test_bd_unmerge.py tests/e2e/test_bd_c_side.py tests/e2e/test_bd_fix_regression.py tests/e2e/test_bd_surface_binding.py; do
     echo "════════════════════════════════════════"
     echo "▶ $t"
     "$BACKEND_DIR/.venv/bin/python" "$t" 2>&1

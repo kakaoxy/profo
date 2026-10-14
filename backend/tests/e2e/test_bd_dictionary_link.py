@@ -31,7 +31,18 @@ r = urllib.request.Request(
     method="POST",
 )
 r.add_header("Content-Type", "application/x-www-form-urlencoded")
-token = json.loads(urllib.request.urlopen(r).read())["access_token"]
+# 全量跑时前面脚本已消耗登录限流（5/minute），429 时等待重试
+for _attempt in range(12):
+    try:
+        token = json.loads(urllib.request.urlopen(r).read())["access_token"]
+        break
+    except urllib.error.HTTPError as e:
+        if e.code == 429 and _attempt < 11:
+            import time as _time
+
+            _time.sleep(15)
+            continue
+        raise
 
 # 前置：建一个字典小区
 s, comm = req(

@@ -18,7 +18,18 @@ import logging
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import BdBuilding, BdEntryStatus, BdPendingEntry, Community, CommunityAlias, CommunityImage, Project
+from models import (
+    BdBuilding,
+    BdEntryStatus,
+    BdPendingEntry,
+    BdPendingReference,
+    BdReferenceStatus,
+    BdRoom,
+    Community,
+    CommunityAlias,
+    CommunityImage,
+    Project,
+)
 from schemas.building_dict import (
     BdBuildingDetail,
     BdBuildingListItem,
@@ -30,6 +41,7 @@ from schemas.building_dict import (
     BdKpiResponse,
     BdRoomItem,
 )
+from services.property.doc_dict_resolver import DocDictKey, DocDictNames
 from utils.building_dict import format_plate_no, parse_room_floor
 from utils.formatters import escape_like
 
@@ -123,6 +135,93 @@ def _community_merged_children(db: Session, community_id: str) -> list[dict]:
 
 class BuildingDictReadService:
     """字典读服务（pending 叠加单点）."""
+
+    def resolve_doc_names(self, db: Session, keys: list[DocDictKey]) -> dict[str, DocDictNames]:
+        """按业务单据批量解析字典地址名称（surface-dict-binding-info 单点）.
+
+        三模块（项目/线索/营销）详情与列表响应的 ``building_no/room_no/floor``
+        解析收敛于此：
+
+        - 已绑定单据：批量查 ``bd_buildings/bd_rooms`` 实表（两次 IN 查询，无 N+1）；
+        - pending 且 ID 为空的单据：join ``bd_pending_references(open)`` →
+          ``bd_pending_entries(pending)`` 取待审楼栋/户室名（复用 pending 的单据
+          只落引用账本，entry.source_id 仅首提者，故必须经引用账本关联）；
+        - 未绑定 / manual / rejected：返回空名称（None），前端维持现有展示。
+
+        pending 户室楼层从户室号即时解析（与 R10 楼层呈现口径一致）。
+
+        Args:
+            db: 数据库会话
+            keys: 单据字典关联键列表（doc_id 需唯一）
+
+        Returns:
+            ``{doc_id: DocDictNames}``；未出现在结果中的 doc_id 视为全 None
+
+        """
+        if not keys:
+            return {}
+        result: dict[str, DocDictNames] = {k.doc_id: DocDictNames() for k in keys}
+
+        # 1. 已绑定楼栋批量解析
+        building_ids = {k.building_id for k in keys if k.building_id is not None}
+        building_nos: dict[int, str] = {}
+        if building_ids:
+            rows = db.query(BdBuilding.id, BdBuilding.building_no).filter(BdBuilding.id.in_(building_ids)).all()
+            building_nos = dict(rows)
+
+        # 2. 已绑定户室批量解析（floor 由 room_no 解析，无需额外列）
+        room_ids = {k.room_id for k in keys if k.room_id is not None}
+        room_infos: dict[int, tuple[str, int | None]] = {}
+        if room_ids:
+            rows = db.query(BdRoom.id, BdRoom.room_no, BdRoom.floor).filter(BdRoom.id.in_(room_ids)).all()
+            room_infos = {rid: (no, fl) for rid, no, fl in rows}
+
+        for k in keys:
+            building_no = building_nos.get(k.building_id) if k.building_id is not None else None
+            room_no: str | None = None
+            floor: int | None = None
+            if k.room_id is not None and k.room_id in room_infos:
+                room_no, floor = room_infos[k.room_id]
+            if building_no is not None or room_no is not None:
+                result[k.doc_id] = DocDictNames(building_no=building_no, room_no=room_no, floor=floor)
+
+        # 3. pending 单据待审名称叠加：仅处理解析结果为空且 dict_status=pending 的单据
+        pending_keys = [
+            k for k in keys if k.dict_status == "pending" and result[k.doc_id] == DocDictNames() and k.source_type
+        ]
+        if pending_keys:
+            # open 引用按 (biz_type, biz_id) 分组取 pending_id：field 区分楼栋/户室
+            ref_rows = (
+                db.query(
+                    BdPendingReference.biz_id,
+                    BdPendingReference.field,
+                    BdPendingEntry.name,
+                )
+                .join(BdPendingEntry, BdPendingEntry.id == BdPendingReference.pending_id)
+                .filter(
+                    BdPendingReference.biz_type.in_({k.source_type for k in pending_keys if k.source_type}),
+                    BdPendingReference.biz_id.in_([k.doc_id for k in pending_keys]),
+                    BdPendingReference.status == BdReferenceStatus.OPEN,
+                    BdPendingEntry.status == BdEntryStatus.PENDING,
+                    BdPendingReference.field.in_(("building_id", "room_id")),
+                )
+                .all()
+            )
+            pending_names: dict[tuple[str, str], dict[str, str]] = {}
+            for biz_id, field, name in ref_rows:
+                pending_names.setdefault(biz_id, {})[field] = name
+            for k in pending_keys:
+                names = pending_names.get(k.doc_id)
+                if not names:
+                    continue
+                building_no = names.get("building_id")
+                room_no = names.get("room_id")
+                result[k.doc_id] = DocDictNames(
+                    building_no=building_no,
+                    room_no=room_no,
+                    floor=parse_room_floor(room_no) if room_no else None,
+                )
+        return result
 
     def get_kpi(self, db: Session) -> BdKpiResponse:
         """字典 KPI hero（FR-01：小区/楼栋/户室/已关联项目 + 待审核数）."""

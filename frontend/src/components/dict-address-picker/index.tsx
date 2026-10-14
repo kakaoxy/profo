@@ -468,7 +468,7 @@ export function DictAddressPicker({
     toast.success(`已提交「新户室 ${v.buildingNo}号 ${roomNo}」→ 审核池；通过后该层自动出现`);
     emit({ newRoom: { name: roomNo }, roomId: null, roomNo: "" });
     void loadRooms(v.buildingId);
-  }, [v.communityId, v.buildingId, v.buildingNo, selectedFloor, rooms, selectedPendingBuilding, sourceBizType, sourceBizId, emit, loadRooms]);
+  }, [v.communityId, v.buildingId, v.buildingNo, v.communityName, selectedFloor, rooms, selectedPendingBuilding, sourceBizType, sourceBizId, emit, loadRooms]);
 
   /** 楼层过滤后的户室（选中楼层展示该层；否则全部） */
   const visibleRooms = useMemo(() => {

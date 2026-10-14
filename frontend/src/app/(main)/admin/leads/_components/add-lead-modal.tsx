@@ -86,6 +86,24 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         remarks: lead.remarks || "",
       });
       setImages(lead.images || []);
+      // 四级选择器初值回显（surface-dict-binding-info）：已绑楼栋/户室不在编辑时被静默清空
+      setDictValue(
+        lead.communityId || lead.buildingId || lead.roomId
+          ? {
+              communityId: lead.communityId || null,
+              communityName: lead.communityName || "",
+              buildingId: lead.buildingId ?? null,
+              buildingNo: lead.buildingNo ?? "",
+              roomId: lead.roomId ?? null,
+              roomNo: lead.roomNo ?? "",
+              address: lead.communityName || "",
+              dictStatus:
+                lead.dictStatus === "linked" || lead.dictStatus === "pending" || lead.dictStatus === "manual"
+                  ? lead.dictStatus
+                  : null,
+            }
+          : null,
+      );
     } else if (isOpen && !lead) {
       // Reset for add mode
       setFormData({
@@ -101,6 +119,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         remarks: "",
       });
       setImages([]);
+      setDictValue(null);
     }
   }, [isOpen, lead]);
 

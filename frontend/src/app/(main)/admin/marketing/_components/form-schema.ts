@@ -16,6 +16,10 @@ export const formSchema = z.object({
   building_id: z.number().nullable().optional(),
   room_id: z.number().nullable().optional(),
   dict_status: z.enum(["linked", "manual", "pending", "rejected"]).nullable().optional(),
+  // 字典解析名称（仅编辑态回显用，不提交）
+  building_no: z.string().nullable().optional(),
+  room_no: z.string().nullable().optional(),
+  floor: z.number().nullable().optional(),
   new_community: z.record(z.string(), z.unknown()).nullable().optional(),
   // H3 修复：透传新增楼栋/户室载荷（进审核池，与 leads/project 链路对齐）
   new_building: z.record(z.string(), z.unknown()).nullable().optional(),
@@ -239,6 +243,13 @@ export function projectToFormValues(project: object): FormValues {
   return {
     community_id: communityId,
     community_name: (p.community_name as string) || undefined,
+    // 楼盘字典四级地址（surface-dict-binding-info：编辑态回显已绑楼栋/户室）
+    building_id: (p.building_id as number | null) ?? null,
+    room_id: (p.room_id as number | null) ?? null,
+    dict_status: (p.dict_status as FormValues["dict_status"]) ?? null,
+    building_no: (p.building_no as string | null) ?? null,
+    room_no: (p.room_no as string | null) ?? null,
+    floor: (p.floor as number | null) ?? null,
     layout: (p.layout as string) || "",
     orientation: (p.orientation as string) || "",
     floor_info: (p.floor_info as string) || "",

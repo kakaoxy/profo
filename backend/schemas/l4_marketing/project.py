@@ -228,6 +228,10 @@ class L4MarketingProjectResponse(BaseModel):
     building_id: int | None = None
     room_id: int | None = None
     dict_status: str | None = None
+    # ===== 字典地址名称解析（surface-dict-binding-info；可空=未绑定）=====
+    building_no: str | None = Field(None, description="字典楼栋号解析名称(pending 时为待审名称)")
+    room_no: str | None = Field(None, description="字典户室号解析名称(pending 时为待审名称)")
+    floor: int | None = Field(None, description="字典户室楼层(由户室号解析)")
 
     # 系统字段
     is_deleted: bool = False

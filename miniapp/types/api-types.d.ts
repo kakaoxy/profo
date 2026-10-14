@@ -861,6 +861,9 @@ export interface paths {
         /**
          * Get Lead
          * @description 获取单个线索详情.
+         *
+         *     字典解析名称（building_no/room_no/floor）随响应下发；LeadResponse 含
+         *     building_id/room_id/dict_status，手动补齐解析字段后返回。
          */
         get: operations["get_lead_api_v1_leads__lead_id__get"];
         /**
@@ -10419,6 +10422,21 @@ export interface components {
             /** Dict Status */
             dict_status?: string | null;
             /**
+             * Building No
+             * @description 字典楼栋号解析名称(pending 时为待审名称)
+             */
+            building_no?: string | null;
+            /**
+             * Room No
+             * @description 字典户室号解析名称(pending 时为待审名称)
+             */
+            room_no?: string | null;
+            /**
+             * Floor
+             * @description 字典户室楼层(由户室号解析)
+             */
+            floor?: number | null;
+            /**
              * Is Deleted
              * @default false
              */
@@ -10979,6 +10997,18 @@ export interface components {
             community_name: string;
             /** Community Id */
             community_id?: string | null;
+            /** Building Id */
+            building_id?: number | null;
+            /** Room Id */
+            room_id?: number | null;
+            /** Dict Status */
+            dict_status?: string | null;
+            /** Building No */
+            building_no?: string | null;
+            /** Room No */
+            room_no?: string | null;
+            /** Floor */
+            floor?: number | null;
             /**
              * Is Hot
              * @default 0
@@ -11094,6 +11124,21 @@ export interface components {
             auditor_id?: string | null;
             /** Audit Time */
             audit_time?: string | null;
+            /**
+             * Building No
+             * @description 字典楼栋号解析名称(pending 时为待审名称)
+             */
+            building_no?: string | null;
+            /**
+             * Room No
+             * @description 字典户室号解析名称(pending 时为待审名称)
+             */
+            room_no?: string | null;
+            /**
+             * Floor
+             * @description 字典户室楼层(由户室号解析)
+             */
+            floor?: number | null;
             /** Images */
             images?: string[];
             /** Creator Id */
@@ -13343,6 +13388,21 @@ export interface components {
              * @description 字典关联状态: linked/manual/pending/rejected
              */
             dict_status?: string | null;
+            /**
+             * Building No
+             * @description 字典楼栋号解析名称(pending 时为待审名称)
+             */
+            building_no?: string | null;
+            /**
+             * Room No
+             * @description 字典户室号解析名称(pending 时为待审名称)
+             */
+            room_no?: string | null;
+            /**
+             * Floor
+             * @description 字典户室楼层(由户室号解析)
+             */
+            floor?: number | null;
             /** Area */
             area?: string | null;
             /** Layout */

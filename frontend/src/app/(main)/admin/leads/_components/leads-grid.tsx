@@ -124,9 +124,24 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
             <div className="p-4">
               {/* Title & Location */}
               <div className="mb-3">
-                <h3 className="font-medium text-ink text-base line-clamp-1">
-                  {lead.communityName}
-                </h3>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-medium text-ink text-base line-clamp-1">
+                    {lead.communityName}
+                  </h3>
+                  {lead.dictStatus === "pending" ? (
+                    <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                      未审核
+                    </span>
+                  ) : null}
+                </div>
+                {/* 字典地址行（surface-dict-binding-info）：楼栋/户室缺失静默省略 */}
+                {lead.buildingNo || lead.roomNo ? (
+                  <p className="text-xs text-ink mt-1">
+                    {[lead.buildingNo && `${lead.buildingNo}栋`, lead.roomNo && `${lead.roomNo}室`]
+                      .filter(Boolean)
+                      .join(" ")}
+                  </p>
+                ) : null}
                 <div className="flex items-center gap-1 text-xs text-graphite mt-1">
                   <MapPin className="h-3 w-3" />
                   <span className="line-clamp-1">

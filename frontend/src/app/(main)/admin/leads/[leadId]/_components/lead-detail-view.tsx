@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import { LEAD_STATUS_META } from "../../_lib/lead-status-meta";
 import { LeadImageGallery } from "./lead-image-gallery";
 import { LeadBasicInfo } from "./lead-basic-info";
-import { LeadAddressBindingCard } from "./lead-address-binding-card";
 import { LeadTrajectoryTimeline } from "./lead-trajectory-timeline";
 import { LeadImageLightbox } from "./lead-image-lightbox";
 import { LeadFollowUpForm } from "./lead-follow-up-form";
@@ -62,15 +61,6 @@ export function LeadDetailView({ lead, initialFollowUps }: LeadDetailViewProps) 
       <main className="max-w-2xl mx-auto w-full px-3 py-4 space-y-4">
         <LeadImageGallery images={safeImages} onImageClick={(i) => setLightboxIndex(i)} />
         <LeadBasicInfo lead={lead} />
-        {/* 地址绑定卡（FR-12/FR-18：存量线索绑定字典，与项目同口径） */}
-        <LeadAddressBindingCard
-          leadId={lead.id}
-          communityId={lead.communityId}
-          communityName={lead.communityName}
-          buildingId={lead.buildingId}
-          roomId={lead.roomId}
-          dictStatus={lead.dictStatus}
-        />
         <LeadTrajectoryTimeline lead={lead} followUps={followUps} />
         <LeadFollowUpForm leadId={lead.id} onFollowUpsChange={setFollowUps} />
       </main>

@@ -250,6 +250,10 @@ class ProjectResponse(BaseModel):
     building_id: int | None = Field(None, description="字典楼栋ID")
     room_id: int | None = Field(None, description="字典户室ID")
     dict_status: str | None = Field(None, description="字典关联状态: linked/manual/pending/rejected")
+    # ===== 字典地址名称解析（surface-dict-binding-info；可空=未绑定/pending 待审无名称）=====
+    building_no: str | None = Field(None, description="字典楼栋号解析名称(pending 时为待审名称)")
+    room_no: str | None = Field(None, description="字典户室号解析名称(pending 时为待审名称)")
+    floor: int | None = Field(None, description="字典户室楼层(由户室号解析)")
     area: Decimal | None = None
     layout: str | None = None
     orientation: str | None = None

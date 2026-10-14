@@ -73,6 +73,9 @@ export const formSchema = z
     building_id: z.number().nullable().optional(),
     room_id: z.number().nullable().optional(),
     dict_status: z.enum(["linked", "manual", "pending", "rejected"]).nullable().optional(),
+    // 解析名称（surface-dict-binding-info；仅编辑态回显用，不提交）
+    building_no: z.string().nullable().optional(),
+    room_no: z.string().nullable().optional(),
     new_community: z.record(z.string(), z.unknown()).nullable().optional(),
     new_building: z.record(z.string(), z.unknown()).nullable().optional(),
     new_room: z.record(z.string(), z.unknown()).nullable().optional(),

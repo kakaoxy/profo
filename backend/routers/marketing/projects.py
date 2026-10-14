@@ -41,6 +41,8 @@ from services.marketing.aggregate import aggregate_notify_fields
 from services.marketing.notify import notify_project_price_changed, notify_projects_published
 from services.marketing.public import PublicProjectService
 from services.marketing.subscription import MarketingSubscriptionService
+from services.property.dict_read_service import BuildingDictReadService
+from services.property.doc_dict_resolver import DocDictKey
 from services.system.exceptions import ResourceNotFoundError
 from utils.common import RateLimits, limiter
 
@@ -53,6 +55,27 @@ router = APIRouter(
 def get_project_service(db: DbSessionDep) -> L4MarketingProjectService:
     """创建营销项目服务实例."""
     return L4MarketingProjectService(db)
+
+
+def _marketing_dict_key(item: L4MarketingProject) -> DocDictKey:
+    """营销项目 ORM → 字典解析键（source_type=marketing）."""
+    return DocDictKey(
+        doc_id=str(item.id),
+        community_id=item.community_id,
+        building_id=item.building_id,
+        room_id=item.room_id,
+        dict_status=item.dict_status,
+        source_type="marketing",
+    )
+
+
+def _apply_dict_names(resp: L4MarketingProjectResponse, item: L4MarketingProject, names: dict) -> None:
+    """回填单条营销响应的字典解析名称（building_no/room_no/floor）."""
+    n = names.get(str(item.id))
+    if n is not None:
+        resp.building_no = n.building_no
+        resp.room_no = n.room_no
+        resp.floor = n.floor
 
 
 def _aggregate_response(db: DbSessionDep, item: L4MarketingProject) -> L4MarketingProjectResponse:
@@ -69,6 +92,9 @@ def _aggregate_response(db: DbSessionDep, item: L4MarketingProject) -> L4Marketi
     # 新上徽标与 C 端同口径（published_at ≤ 窗口期）
     badge_map = PublicProjectService(db).resolve_listing_badges([item])
     resp.is_new_listing = badge_map[item.id][0]
+    # 字典解析名称（详情/POST/PUT 响应同口径）
+    dict_names = BuildingDictReadService().resolve_doc_names(db, [_marketing_dict_key(item)])
+    _apply_dict_names(resp, item, dict_names)
     return resp
 
 
@@ -131,6 +157,8 @@ def list_marketing_projects(
     badge_map = PublicProjectService(db).resolve_listing_badges(items)
     # 调价摘要 + 通知统计批量聚合（admin 通知列 / 总价副行 / 详情 Sheet 数据源）
     notify_map = aggregate_notify_fields(db, items)
+    # 字典解析名称批量（单次两查询，无 N+1）
+    dict_names = BuildingDictReadService().resolve_doc_names(db, [_marketing_dict_key(item) for item in items])
     result_items = []
     for item in items:
         resp = L4MarketingProjectResponse.model_validate(item)
@@ -141,6 +169,7 @@ def list_marketing_projects(
         latest_change, notify_summary = notify_map[item.id]
         resp.latest_price_change = L4MarketingPriceChangeSummary(**latest_change) if latest_change else None
         resp.notify_summary = L4MarketingNotifySummary(**notify_summary)
+        _apply_dict_names(resp, item, dict_names)
         result_items.append(resp)
 
     return L4MarketingProjectListResponse(

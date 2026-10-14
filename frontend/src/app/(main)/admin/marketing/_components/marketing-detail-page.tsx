@@ -30,7 +30,6 @@ import { PriceChangeCard } from "./price-change-card";
 import { PushStatCard } from "./push-stat-card";
 import { PhotosSection } from "./detail/photos-section";
 import { EditMode } from "./project-form/EditMode";
-import { DictLinkCard } from "@/components/custom/dict-link-card";
 
 interface MarketingDetailPageProps {
   /** 服务端首屏数据（项目详情） */
@@ -206,17 +205,6 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
 
               {/* 2. 房源状态 + 管理配置 */}
               <BasicConfigSection project={project} />
-
-              {/* 字典绑定（缺陷 F：营销房源绑定小区） */}
-              <DictLinkCard
-                bizType="marketing"
-                bizId={String(project.id)}
-                communityId={project.community_id ?? null}
-                communityName={project.community_name ?? ""}
-                // H1 修复：后端响应模型已补 dict_status/building_id/room_id，类型经 gen-api 同步
-                dictStatus={project.dict_status ?? null}
-                onChanged={() => void reloadDetail(project.id, { silent: true })}
-              />
 
               {/* 3. 媒体资源 */}
               <PhotosSection project={project} photos={photos} />

@@ -89,6 +89,22 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
     );
   }, [project.tags]);
 
+  // 楼盘字典四级地址行（非强制：绑定过才显示；pending 时名称为待审内容）
+  const dictAddressRows = useMemo(() => {
+    const building = project.building_no
+      ? `${project.building_no}栋`
+      : project.building_id
+        ? `ID:${project.building_id}`
+        : null;
+    const room = project.room_no
+      ? `${project.room_no}室`
+      : project.room_id
+        ? `ID:${project.room_id}`
+        : null;
+    if (!building && !room) return null;
+    return { building, room };
+  }, [project.building_no, project.building_id, project.room_no, project.room_id]);
+
   return (
     <div className="bg-white rounded-cards shadow-steep-sm p-6">
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
@@ -133,6 +149,29 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
           <InfoRow label="朝向" value={project.orientation} />
 
           <Divider />
+
+          {/* 楼盘字典四级地址（surface-dict-binding-info）：非强制字段，
+              有录入才渲染行（InfoRow 空值自动隐藏）；pending 带「未审核」标记；
+              改绑在编辑表单的四级选择器完成 */}
+          {dictAddressRows && (
+            <>
+              <InfoRow
+                label="楼栋"
+                value={
+                  <span className="inline-flex items-center gap-1.5">
+                    {dictAddressRows.building}
+                    {project.dict_status === "pending" && (
+                      <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                        未审核
+                      </span>
+                    )}
+                  </span>
+                }
+              />
+              <InfoRow label="户室" value={dictAddressRows.room} />
+              <Divider />
+            </>
+          )}
 
           {/* 第三行：装修风格和标签 */}
           <InfoRow label="装修风格" value={project.decoration_style} />

@@ -133,6 +133,9 @@ export interface Project {
   building_id?: number | null;
   room_id?: number | null;
   dict_status?: string | null;
+  // 字典解析名称（surface-dict-binding-info；pending 时为待审名称）
+  building_no?: string | null;
+  room_no?: string | null;
   status: string;
 
   // 业务形式: agent(代理美化) / wholesale(收购美化) / null

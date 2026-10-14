@@ -42,10 +42,21 @@ def main() -> None:
         method="POST",
     )
     r.add_header("Content-Type", "application/x-www-form-urlencoded")
-    try:
-        token = json.loads(urllib.request.urlopen(r).read()).get("access_token")
-    except urllib.error.HTTPError:
-        token = None
+    # 全量跑时前面脚本已消耗登录限流（5/minute），429 时等待重试
+    token = None
+    for _attempt in range(12):
+        try:
+            token = json.loads(urllib.request.urlopen(r).read()).get("access_token")
+            break
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and _attempt < 11:
+                import time as _time
+
+                _time.sleep(15)
+                continue
+            # 非 429（如 401 账号不存在）时保持 token=None 走下方免登录分支
+            token = None
+            break
 
     if not token:
         print("SKIP: 无 C 端测试账号（e2e-c-user），请配置后重跑 —— C 端链路零改动为代码口径验证：")

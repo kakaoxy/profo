@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CommunitySelect } from "@/components/common/community-select";
+import { DictAddressPicker, type DictAddressValue } from "@/components/dict-address-picker";
 import { FloorInput } from "@/components/common";
 
 import { Project } from "../../../../../types";
@@ -76,7 +76,24 @@ export function InfoInlineEditor({ project, usersById, onCancel, onSaved }: Info
     resolver: getFormResolver(),
     defaultValues: getDefaultValues(project, true),
   });
-  const { control } = form;
+  const { control, getValues } = form;
+  // 四级选择器初值（surface-dict-binding-info）：从已落库项目惰性回显
+  const [dictValue, setDictValue] = useState<DictAddressValue | null>(() => {
+    const v = getValues();
+    if (!v.community_id && !v.building_id && !v.room_id) return null;
+    const pickerStatus = (s: string | null | undefined): DictAddressValue["dictStatus"] =>
+      s === "linked" || s === "pending" || s === "manual" ? s : null;
+    return {
+      communityId: v.community_id || null,
+      communityName: v.community_name || "",
+      buildingId: v.building_id ?? null,
+      buildingNo: v.building_no ?? "",
+      roomId: v.room_id ?? null,
+      roomNo: v.room_no ?? "",
+      address: v.address || "",
+      dictStatus: pickerStatus(v.dict_status),
+    };
+  });
   const { fields, append, remove } = useFieldArray({ control, name: "owners" });
   const [saving, setSaving] = useState(false);
 
@@ -182,19 +199,27 @@ export function InfoInlineEditor({ project, usersById, onCancel, onSaved }: Info
             render={({ field }) => (
               <FormItem className="space-y-1.5">
                 <FormControl>
-                  <CommunitySelect
-                    value={field.value}
-                    onChange={(community) => {
-                      field.onChange(community.name);
-                      form.setValue("community_id", community.id || undefined);
-                      form.setValue("district", community.district || "");
-                      form.setValue("original_community_district", community.district || "");
-                      form.setValue("business_circle", community.businessCircle || "");
-                      form.setValue(
-                        "original_community_business_circle",
-                        community.businessCircle || "",
-                      );
+                  <DictAddressPicker
+                    value={dictValue}
+                    onChange={(next) => {
+                      setDictValue(next);
+                      field.onChange(next.communityName || "");
+                      // shouldDirty: true —— RHF setValue 默认不标 dirty
+                      const opts = { shouldDirty: true } as const;
+                      form.setValue("community_id", next.communityId || undefined, opts);
+                      form.setValue("district", next.district || "", opts);
+                      form.setValue("original_community_district", next.district || "", opts);
+                      form.setValue("business_circle", next.businessCircle || "", opts);
+                      form.setValue("original_community_business_circle", next.businessCircle || "", opts);
+                      form.setValue("building_id", next.buildingId ?? null, opts);
+                      form.setValue("room_id", next.roomId ?? null, opts);
+                      form.setValue("dict_status", next.dictStatus ?? null, opts);
+                      form.setValue("new_community", next.newCommunity ?? null, opts);
+                      form.setValue("new_building", next.newBuilding ?? null, opts);
+                      form.setValue("new_room", next.newRoom ?? null, opts);
                     }}
+                    sourceBizType="project"
+                    sourceBizId={project.id}
                   />
                 </FormControl>
                 <FormMessage />

@@ -36,6 +36,19 @@ with engine.begin() as conn:
         )
     )
     conn.execute(text("DELETE FROM communities WHERE name IN ('__测试导入小区A__','__测试导入小区B__','测试小区丙')"))
+    # 前置清理真实样本名：上次运行中断残留会让幂等 upsert 计数归 0，
+    # 导致首次导入对账断言失败（测试自身隔离性缺陷，与业务代码无关）
+    conn.execute(
+        text(
+            "DELETE FROM bd_rooms WHERE building_id IN (SELECT id FROM bd_buildings WHERE community_id IN (SELECT id FROM communities WHERE name IN ('万寿新村（青浦）','月浦八村','高兴花园')))"
+        )
+    )
+    conn.execute(
+        text(
+            "DELETE FROM bd_buildings WHERE community_id IN (SELECT id FROM communities WHERE name IN ('万寿新村（青浦）','月浦八村','高兴花园'))"
+        )
+    )
+    conn.execute(text("DELETE FROM communities WHERE name IN ('万寿新村（青浦）','月浦八村','高兴花园')"))
 
 base = pathlib.Path("../docs/To-Do/楼盘字典-上海/20170620-300")
 samples = ["万寿新村（青浦）.txt", "月浦八村.txt", "高兴花园.txt"]

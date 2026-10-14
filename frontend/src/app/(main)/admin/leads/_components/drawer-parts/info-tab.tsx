@@ -42,7 +42,29 @@ interface ParamsSectionProps {
 }
 
 const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
-  const params: ParamCell[] = [
+  const pending = lead.dictStatus === "pending";
+  // 楼盘字典四级地址（surface-dict-binding-info）：非强制字段，
+  // 有录入才追加格子；pending 加「未审核」标记；名称缺失回退裸 ID
+  const dictCells: ParamCell[] = [];
+  if (lead.buildingNo || lead.buildingId) {
+    dictCells.push({
+      icon: Building,
+      label: "楼栋",
+      value: lead.buildingNo
+        ? `${lead.buildingNo}栋${pending ? "（未审核）" : ""}`
+        : `ID:${lead.buildingId}`,
+    });
+  }
+  if (lead.roomNo || lead.roomId) {
+    dictCells.push({
+      icon: Building,
+      label: "户室",
+      value: lead.roomNo
+        ? `${lead.roomNo}室${pending ? "（未审核）" : ""}`
+        : `ID:${lead.roomId}`,
+    });
+  }
+  const baseCells: ParamCell[] = [
     { icon: Ruler, label: "面积", value: `${lead.area}㎡` },
     { icon: Home, label: "户型", value: lead.layout },
     { icon: ArrowRightLeft, label: "朝向", value: lead.orientation },
@@ -52,6 +74,12 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
       label: "商圈",
       value: `${lead.district} · ${lead.businessArea}`,
     },
+  ];
+  // 楼栋/户室紧跟楼层之后（面积/户型/朝向/楼层/楼栋/户室/商圈…）
+  const params: ParamCell[] = [
+    ...baseCells.slice(0, 4),
+    ...dictCells,
+    ...baseCells.slice(4),
     { icon: User, label: "录入人", value: lead.referrerName || lead.creatorName },
     { icon: Clock, label: "建档时间", value: formatDateTime(lead.createdAt) },
     {

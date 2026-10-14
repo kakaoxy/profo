@@ -113,7 +113,20 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               <span className="text-[11px] text-graphite">
                 {project.community_name || "未知小区"}
               </span>
+              {project.dict_status === "pending" ? (
+                <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                  未审核
+                </span>
+              ) : null}
             </div>
+            {/* 字典地址行（surface-dict-binding-info）：楼栋/户室缺失静默省略 */}
+            {project.building_no || project.room_no ? (
+              <span className="text-[11px] text-graphite mt-0.5">
+                {[project.building_no && `${project.building_no}栋`, project.room_no && `${project.room_no}室`]
+                  .filter(Boolean)
+                  .join(" ")}
+              </span>
+            ) : null}
           </div>
         </div>
       );

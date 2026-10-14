@@ -73,11 +73,28 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "community_name",
     header: () => <div className="hidden lg:block text-graphite font-medium">小区</div>,
-    cell: ({ row }) => (
-      <span className="hidden lg:block text-sm text-ink font-medium truncate max-w-30">
-        {row.original.community_name || "-"}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const p = row.original;
+      const dictAddress = [p.building_no && `${p.building_no}栋`, p.room_no && `${p.room_no}室`]
+        .filter(Boolean)
+        .join(" ");
+      return (
+        <div className="hidden lg:block min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-ink font-medium truncate max-w-30">
+              {p.community_name || "-"}
+            </span>
+            {p.dict_status === "pending" ? (
+              <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                未审核
+              </span>
+            ) : null}
+          </div>
+          {/* 字典地址行（surface-dict-binding-info）：楼栋/户室缺失静默省略 */}
+          {dictAddress ? <div className="text-xs text-graphite truncate">{dictAddress}</div> : null}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "status",

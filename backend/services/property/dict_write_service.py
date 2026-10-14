@@ -702,8 +702,11 @@ class DictWriteService:
             )
             raise ConflictError(msg)
 
-        # 3. 审核池 open 待审子级（楼栋 pending 挂 community_id）
-        pending_children = (
+        # 3. 审核池 open 待审子级：
+        #    - 待审楼栋（kind=BUILDING）挂 community_id（BR-28 父子拓扑：删父级会悬挂待审子级）；
+        #    - 待审户室（kind=ROOM）挂实表楼栋 parent_id —— 楼栋将被整树删除，
+        #      若不同步拦截，转正时将报「父级楼栋不存在」且引用永不回填（数据悬挂）
+        pending_building_children = (
             db.query(BdPendingEntry)
             .filter(
                 BdPendingEntry.kind == BdEntryKind.BUILDING,
@@ -712,8 +715,19 @@ class DictWriteService:
             )
             .count()
         )
+        pending_room_children = (
+            db.query(BdPendingEntry)
+            .join(BdBuilding, (BdPendingEntry.parent_kind == "building") & (BdPendingEntry.parent_id == BdBuilding.id))
+            .filter(
+                BdPendingEntry.kind == BdEntryKind.ROOM,
+                BdPendingEntry.status == BdEntryStatus.PENDING,
+                BdBuilding.community_id == community_id,
+            )
+            .count()
+        )
+        pending_children = pending_building_children + pending_room_children
         if pending_children:
-            msg = f"审核池中存在该小区下的 {pending_children} 条待审楼栋，请先处理审核条目再删除"
+            msg = f"审核池中存在该小区下的 {pending_children} 条待审楼栋/户室，请先处理审核条目再删除"
             raise ConflictError(msg)
 
         # 4. 合并治理引用

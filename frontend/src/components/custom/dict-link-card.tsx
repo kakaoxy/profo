@@ -27,6 +27,11 @@ interface DictLinkCardProps {
   communityId: string | null;
   communityName: string;
   dictStatus: string | null;
+  /** 可选楼栋/户室四级展示（surface-dict-binding-info）：营销详情传入；房源侧（仅小区级）不传、渲染零变化 */
+  buildingId?: number | null;
+  roomId?: number | null;
+  buildingNo?: string | null;
+  roomNo?: string | null;
   /** 绑定/解绑成功后由宿主刷新详情（替代内部 router.refresh） */
   onChanged?: () => void;
 }
@@ -44,6 +49,10 @@ export function DictLinkCard({
   communityId,
   communityName,
   dictStatus,
+  buildingId,
+  roomId,
+  buildingNo,
+  roomNo,
   onChanged,
 }: DictLinkCardProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -128,11 +137,25 @@ export function DictLinkCard({
           <p className="mt-1 truncate text-[13px] font-medium text-foreground">
             {communityName || "-"}
           </p>
+          {/* 四级展示（surface-dict-binding-info）：楼栋/户室可选，传入才渲染；房源侧零变化 */}
+          {(buildingNo || buildingId) || (roomNo || roomId) ? (
+            <p className="mt-0.5 truncate text-[12px] text-graphite">
+              {buildingNo ?? (buildingId ? `ID:${buildingId}` : null) ?? ""}
+              {buildingNo && roomNo ? " / " : ""}
+              {roomNo ?? (roomId ? `ID:${roomId}` : null) ?? ""}
+            </p>
+          ) : null}
         </div>
         <Badge variant="outline" className={cn("shrink-0 font-medium", statusMeta.className)}>
           {statusMeta.label}
         </Badge>
       </div>
+
+      {dictStatus === "pending" && (buildingNo || roomNo) ? (
+        <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-[11px] text-amber-800">
+          新增楼栋/户室待审核，通过后显示字典名称（当前为待审内容）
+        </p>
+      ) : null}
 
       <div className="mt-3 flex justify-end gap-2">
         {bound ? (

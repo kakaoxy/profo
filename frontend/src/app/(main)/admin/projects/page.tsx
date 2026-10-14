@@ -40,6 +40,10 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     updated_at: item.updated_at,
     community_name: item.community_name ?? undefined,
     address: item.address ?? undefined,
+    // 字典解析名称（surface-dict-binding-info；pending 时为待审名称）
+    building_no: item.building_no ?? null,
+    room_no: item.room_no ?? null,
+    dict_status: (item.dict_status ?? null) as Project["dict_status"],
     area: toNumber(item.area),
     layout: item.layout ?? undefined,
     orientation: item.orientation ?? undefined,

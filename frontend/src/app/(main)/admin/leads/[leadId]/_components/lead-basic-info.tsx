@@ -11,6 +11,26 @@ interface InfoField {
 }
 
 export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
+  const pending = lead.dictStatus === "pending";
+  // 楼盘字典四级地址（surface-dict-binding-info）：非强制字段，有录入才追加；
+  // pending 加「未审核」标记；名称缺失回退裸 ID
+  const dictFields: InfoField[] = [];
+  if (lead.buildingNo || lead.buildingId) {
+    dictFields.push({
+      label: "楼栋",
+      value: lead.buildingNo
+        ? `${lead.buildingNo}栋${pending ? "（未审核）" : ""}`
+        : `ID:${lead.buildingId}`,
+    });
+  }
+  if (lead.roomNo || lead.roomId) {
+    dictFields.push({
+      label: "户室",
+      value: lead.roomNo
+        ? `${lead.roomNo}室${pending ? "（未审核）" : ""}`
+        : `ID:${lead.roomId}`,
+    });
+  }
   const fields: InfoField[] = [
     { label: "业主报价", value: formatPriceWan(lead.totalPrice) },
     {
@@ -24,6 +44,7 @@ export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
     { label: "面积", value: `${lead.area}㎡` },
     { label: "户型", value: lead.layout || "-" },
     { label: "楼层", value: lead.floorInfo || "-" },
+    ...dictFields,
     { label: "朝向", value: lead.orientation || "-" },
     {
       label: "区域",

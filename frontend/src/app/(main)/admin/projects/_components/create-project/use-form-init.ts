@@ -98,6 +98,13 @@ export function getDefaultValues(project?: Project, isEditMode: boolean = false)
     community_id: project?.community_id || undefined,
     community_name: project?.community_name || "",
     address: project?.address || "",
+    // 楼盘字典四级地址（surface-dict-binding-info）：编辑态回显已绑楼栋/户室，
+    // 防止 buildProjectUpdatePayload 的 ?? null 把已有绑定静默清空
+    building_id: project?.building_id ?? null,
+    room_id: project?.room_id ?? null,
+    dict_status: (project?.dict_status as FormValues["dict_status"]) ?? null,
+    building_no: project?.building_no ?? null,
+    room_no: project?.room_no ?? null,
     area: project?.area,
     project_manager_id: project?.project_manager?.id || undefined,
     business_form:

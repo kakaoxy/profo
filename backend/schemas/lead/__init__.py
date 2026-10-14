@@ -177,6 +177,12 @@ class LeadResponse(LeadBase):
     auditor_id: str | None = None
     audit_time: datetime | None = None
 
+    # ===== 字典地址名称解析（surface-dict-binding-info；仅响应侧，由 Router 经
+    # BuildingDictReadService.resolve_doc_names 解析后回填；可空=未绑定）=====
+    building_no: str | None = Field(None, description="字典楼栋号解析名称(pending 时为待审名称)")
+    room_no: str | None = Field(None, description="字典户室号解析名称(pending 时为待审名称)")
+    floor: int | None = Field(None, description="字典户室楼层(由户室号解析)")
+
     images: list[str] = Field(default_factory=list)
 
     creator_id: str | None = None
@@ -212,6 +218,13 @@ class LeadListItem(BaseModel):
     id: str
     community_name: str
     community_id: str | None = None
+    # ===== 楼盘字典四级地址 + 名称解析（surface-dict-binding-info）=====
+    building_id: int | None = None
+    room_id: int | None = None
+    dict_status: str | None = Field(None, pattern="^(linked|manual|pending|rejected)$")
+    building_no: str | None = None
+    room_no: str | None = None
+    floor: int | None = None
     is_hot: int = 0
     layout: str | None = None
     orientation: str | None = None

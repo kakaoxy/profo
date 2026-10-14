@@ -157,6 +157,33 @@ export function InfoTab({
             <InfoCell label="产证面积" value={project.area ? `${project.area} ㎡` : undefined} />
             <InfoCell label="户型" value={formatLayout(project.layout)} />
             <InfoCell label="朝向" value={project.orientation} />
+            {/* 楼盘字典四级地址（surface-dict-binding-info）：非强制字段，有录入才渲染；
+                pending 加「未审核」标记；名称缺失回退裸 ID（InfoCell 空值自动隐藏） */}
+            {(project.building_no || project.building_id) && (
+              <InfoCell
+                label="楼栋"
+                value={
+                  <span className="inline-flex items-center gap-2">
+                    {project.building_no
+                      ? `${project.building_no}栋`
+                      : `ID:${project.building_id}`}
+                    {project.dict_status === "pending" && (
+                      <span className="inline-flex items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                        未审核
+                      </span>
+                    )}
+                  </span>
+                }
+              />
+            )}
+            {(project.room_no || project.room_id) && (
+              <InfoCell
+                label="户室"
+                value={
+                  project.room_no ? `${project.room_no}室` : `ID:${project.room_id}`
+                }
+              />
+            )}
             <InfoCell
               label="详细地址"
               value={project.address}

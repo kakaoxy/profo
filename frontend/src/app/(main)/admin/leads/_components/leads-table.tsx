@@ -89,12 +89,28 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                     )}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-medium text-ink text-sm truncate max-w-[180px]">
-                      {lead.communityName}
-                    </span>
-                    <span className="text-xs text-graphite font-mono tracking-tight">
-                      ID: {lead.id.slice(0, 8)}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-ink text-sm truncate max-w-[180px]">
+                        {lead.communityName}
+                      </span>
+                      {lead.dictStatus === "pending" ? (
+                        <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                          未审核
+                        </span>
+                      ) : null}
+                    </div>
+                    {/* 字典地址行（surface-dict-binding-info）：楼栋/户室缺失静默省略 */}
+                    {lead.buildingNo || lead.roomNo ? (
+                      <span className="text-xs text-graphite truncate max-w-[180px]">
+                        {[lead.buildingNo && `${lead.buildingNo}栋`, lead.roomNo && `${lead.roomNo}室`]
+                          .filter(Boolean)
+                          .join(" ")}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-graphite font-mono tracking-tight">
+                        ID: {lead.id.slice(0, 8)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </td>
