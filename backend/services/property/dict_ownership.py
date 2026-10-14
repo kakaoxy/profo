@@ -30,7 +30,7 @@ def validate_dict_ownership(
 
     Raises:
         ValidationError: 楼栋不存在 / 楼栋不属于该小区 / 户室不存在 /
-            户室与楼栋不匹配
+            户室所属楼栋不存在 / 户室不属于该小区 / 户室与楼栋不匹配
 
     """
     if building_id is None and room_id is None:
@@ -51,6 +51,15 @@ def validate_dict_ownership(
         if not room:
             msg = "字典户室不存在"
             raise ValidationError(msg)
-        if building is not None and room.building_id != building.id:
+        if building is None:
+            # 单据只传 room_id：通过户室反查楼栋，再校验楼栋归属单据小区
+            building = db.get(BdBuilding, room.building_id)
+            if not building:
+                msg = "户室所属楼栋不存在"
+                raise ValidationError(msg)
+            if community_id and building.community_id != community_id:
+                msg = "字典户室不属于所选小区，请重新选择"
+                raise ValidationError(msg)
+        elif room.building_id != building.id:
             msg = "字典户室与所选楼栋不匹配"
             raise ValidationError(msg)
