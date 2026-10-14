@@ -27,7 +27,7 @@ from schemas.lead import (
 from services.leads import LeadService
 from services.market.community_image_service import CommunityImageService
 from services.property.dict_read_service import BuildingDictReadService
-from services.property.doc_dict_resolver import DocDictKey
+from services.property.doc_dict_resolver import DocDictKey, DocDictNames
 from services.system.exceptions import ResourceNotFoundError
 from utils.common import RateLimits, limiter
 
@@ -36,8 +36,14 @@ router = APIRouter()
 _MAX_IMAGE_LENGTH = 500
 
 
-def _dict_names_update(lead: Lead, names: dict) -> dict:
-    """字典解析名称 → LeadListItem/LeadResponse 补充字段（单条）."""
+def _dict_names_update(lead: Lead, names: dict[str, DocDictNames]) -> dict[str, Any]:
+    """字典解析名称 → LeadListItem/LeadResponse 补充字段（单条）.
+
+    Args:
+        lead: Lead ORM 实例（取 doc_id 作为解析键）
+        names: resolve_doc_names 返回的 doc_id 到 DocDictNames 映射，可为空 dict
+
+    """
     n = names.get(str(lead.id))
     if n is None:
         return {}
