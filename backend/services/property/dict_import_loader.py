@@ -314,7 +314,10 @@ class DictImportProcessor:
                         raise ValueError(_ZIP_BOMB_MSG) from None
                     txt_entries.append((Path(info.filename).name, zf.read(info)))
         else:
-            txt_entries.append((file_path.name, file_path.read_bytes()))
+            # 小区名取自「原始上传文件名」的扩展名前部分；
+            # 上传落盘时文件已被重命名为 bd_{task_id}.txt，不能直接用存盘名
+            original_name = Path(task.filename).name if task.filename else file_path.name
+            txt_entries.append((original_name, file_path.read_bytes()))
 
         total_communities = len(txt_entries)
         if total_communities == 0:
