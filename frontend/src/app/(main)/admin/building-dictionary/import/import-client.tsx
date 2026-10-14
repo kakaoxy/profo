@@ -56,7 +56,8 @@ function stepOf(t: ImportTask | null): number {
  * 重复包幂等重跑判定：已完成且确实处理了小区，但三类计数全为 0，
  * 说明包内数据已全部存在（upsert / ON CONFLICT 全部跳过），非导入异常。
  */
-function isIdempotentRerun(t: ImportTask): boolean {
+function isIdempotentRerun(t: ImportTask | null): boolean {
+  if (!t) return false;
   return (
     t.status === "completed" && t.processed_communities > 0 && t.communities_loaded + t.buildings_loaded + t.rooms_loaded === 0
   );
