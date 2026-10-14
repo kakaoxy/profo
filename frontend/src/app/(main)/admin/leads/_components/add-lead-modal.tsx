@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback } from "react";
 import { Lead, LeadStatus } from "../types";
 import { Button } from "@/components/ui/button";
 import { X, Ruler, MapPin, Images } from "lucide-react";
-import { CommunitySelect } from "@/components/common/community-select";
 import { DictAddressPicker, type DictAddressValue } from "@/components/dict-address-picker";
 import { LayoutInputs } from "@/components/common/layout-inputs";
 import { FloorInput } from "@/components/common";
@@ -173,50 +172,23 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
           <div className="space-y-6">
+            {/* 小区 - 唯一入口：DictAddressPicker（楼栋/户室选填下钻） */}
             <div data-testid="field-community-name">
-              <CommunitySelect
-                value={formData.communityName}
-                label="房源名称"
-                onChange={(community) => {
-                  const communityChanged = formData.communityId !== community.id;
+              <DictAddressPicker
+                value={dictValue}
+                onChange={(next) => {
+                  setDictValue(next);
                   setFormData((prev) => ({
                     ...prev,
-                    communityId: community.id,
-                    communityName: community.name,
-                    district: community.district || prev.district,
-                    businessArea: community.businessCircle || prev.businessArea,
+                    communityId: next.communityId || "",
+                    communityName: next.communityName || "",
+                    district: next.district || prev.district,
+                    businessArea: next.businessCircle || prev.businessArea,
                   }));
-                  // M1 修复：小区切换后重置字典选择（旧楼栋/户室可能属上一小区）
-                  if (communityChanged) {
-                    setDictValue({
-                      communityId: community.id || null,
-                      communityName: community.name || "",
-                      buildingId: null,
-                      buildingNo: "",
-                      roomId: null,
-                      roomNo: "",
-                      address: community.name || "",
-                      dictStatus: null,
-                      newCommunity: null,
-                      newBuilding: null,
-                      newRoom: null,
-                    });
-                  }
                 }}
+                sourceBizType="lead"
               />
             </div>
-
-            {/* 楼盘字典四级地址（M3：小区必选、楼栋/户室选填） */}
-            <DictAddressPicker
-              value={dictValue}
-              onChange={(next) => {
-                setDictValue(next);
-                if (next.communityName) {
-                  setFormData((prev) => ({ ...prev, communityName: next.communityName }));
-                }
-              }}
-              sourceBizType="lead"
-            />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">

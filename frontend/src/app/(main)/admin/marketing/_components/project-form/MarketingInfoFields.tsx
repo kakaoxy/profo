@@ -10,7 +10,6 @@ import type { FormValues } from "../form-schema";
 
 // 导入拆分的子组件
 import {
-  CommunitySelect,
   LayoutInputs,
   FloorInput,
   OrientationSelect,
@@ -72,57 +71,32 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
       <div className="space-y-6">
         {/* 第一行：小区名称和房源标题 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          {/* 楼盘字典四级地址（M4：楼栋/户室选填落库；H3：透传 new_* 进审核池），唯一小区入口 */}
           <FormField
             control={control}
             name="community_name"
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormControl>
-                  <CommunitySelect
-                    value={field.value || ""}
-                    variant="marketing"
-                    onChange={(community) => {
-                      field.onChange(community.name);
-                      if (community.id) setValue("community_id", community.id);
-                      // M1 修复：小区切换后重置字典选择（旧楼栋/户室可能属上一小区，
-                      // 仅靠后端拦截会以 400 报错收场，体验差且阻断保存）
-                      setDictValue((prev) =>
-                        prev && prev.communityId && prev.communityId !== community.id
-                          ? {
-                              communityId: community.id || null,
-                              communityName: community.name || "",
-                              buildingId: null,
-                              buildingNo: "",
-                              roomId: null,
-                              roomNo: "",
-                              address: community.name || "",
-                              dictStatus: null,
-                              newCommunity: null,
-                              newBuilding: null,
-                              newRoom: null,
-                            }
-                          : prev,
-                      );
+                  <DictAddressPicker
+                    value={dictValue}
+                    onChange={(next) => {
+                      setDictValue(next);
+                      field.onChange(next.communityName || "");
+                      if (next.communityId) setValue("community_id", next.communityId);
+                      setValue("building_id", next.buildingId ?? null);
+                      setValue("room_id", next.roomId ?? null);
+                      setValue("dict_status", next.dictStatus ?? null);
+                      setValue("new_community", next.newCommunity ?? null);
+                      setValue("new_building", next.newBuilding ?? null);
+                      setValue("new_room", next.newRoom ?? null);
                     }}
+                    sourceBizType="marketing"
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
-          />
-          {/* 楼盘字典四级地址（M4：楼栋/户室选填落库；H3：透传 new_* 进审核池） */}
-          <DictAddressPicker
-            value={dictValue}
-            onChange={(next) => {
-              setDictValue(next);
-              setValue("building_id", next.buildingId ?? null);
-              setValue("room_id", next.roomId ?? null);
-              setValue("dict_status", next.dictStatus ?? null);
-              setValue("new_community", next.newCommunity ?? null);
-              setValue("new_building", next.newBuilding ?? null);
-              setValue("new_room", next.newRoom ?? null);
-            }}
-            sourceBizType="marketing"
           />
           <FormField
             control={control}

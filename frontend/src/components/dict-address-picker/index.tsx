@@ -7,10 +7,11 @@
  * 联动状态，单文件承载是复杂度最低的形态。
  *
  * 级联：小区联想（复用 GET /admin/communities 含别名）→ 楼栋 → 楼层 → 户室；
+ * - 楼栋/楼层/户室为选填渐进级联，仅选小区即满足必填；
  * - 楼层列 = 名义 ∪ 实际 ∪ pending（未分层置底，FR-04）；
  * - 门牌自动拼装可手改（0401 → 401；非标户室回退手填提示 BR-12）；
  * - 「＋新建楼栋 / 新建楼层 / 新建户室」入口：提交进审核池（不阻塞表单，FR-10）；
- * - 兼容模式开关：跳过字典手填地址（dict_status=manual）；
+ * - 兼容模式：小区字段旁轻量入口切换手填地址（dict_status=manual）；
  * - pending 条目全系统可见带「未审核」标签（虚线/置灰），仅来源单据回显可选，
  *   其他表单置灰（hover「审核中，通过后可选」，BR-23）。
  */
@@ -24,7 +25,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { client } from "@/lib/api-client";
 
@@ -32,6 +32,9 @@ export interface DictAddressValue {
   /** 字典小区ID（兼容模式下可空） */
   communityId: string | null;
   communityName: string;
+  /** 小区行政区/商圈（选中字典小区时下发，供表单回填） */
+  district?: string | null;
+  businessCircle?: string | null;
   buildingId: number | null;
   buildingNo: string;
   roomId: number | null;
@@ -370,56 +373,78 @@ export function DictAddressPicker({
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      {/* 兼容模式开关 */}
-      <div className="flex items-center justify-between rounded-lg border border-dove/40 bg-fog px-3 py-2">
-        <div>
-          <p className="text-[14px] font-medium text-ink">字典选择</p>
-          <p className="text-[13px] text-graphite">关闭后可手动填写地址（小区可不选）</p>
-        </div>
-        <Switch
-          checked={!manualMode}
-          onCheckedChange={(checked) => {
-            setManualMode(!checked);
-            if (checked) {
-              emit({ dictStatus: null });
-            } else {
-              emit({
-                dictStatus: "manual",
-                communityId: null,
-                buildingId: null,
-                roomId: null,
-                newCommunity: null,
-                newBuilding: null,
-                newRoom: null,
-              });
-            }
-          }}
-          disabled={disabled}
-          aria-label="字典选择模式"
-        />
-      </div>
-
       {manualMode ? (
-        <div className="flex flex-col gap-1.5">
-          <Label>手填地址</Label>
-          <Input
-            value={manualAddress}
-            onChange={(e) => {
-              setManualAddress(e.target.value);
-              emit({ address: e.target.value, dictStatus: "manual" });
-            }}
-            placeholder="如：泗塘三村61号401"
-            disabled={disabled}
-          />
+        <div className="flex flex-col gap-3">
+          {/* 手填模式下小区名称仍需可填（表单 community_name 必填校验依赖） */}
+          <div className="flex flex-col gap-1.5">
+            <Label>
+              小区名称 <span className="text-rust">*</span>
+            </Label>
+            <Input
+              value={v.communityName}
+              onChange={(e) => emit({ communityName: e.target.value, dictStatus: "manual" })}
+              placeholder="手动输入小区名称"
+              disabled={disabled}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <Label>手填地址</Label>
+              <button
+                type="button"
+                className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
+                disabled={disabled}
+                onClick={() => {
+                  setManualMode(false);
+                  emit({ dictStatus: null });
+                }}
+              >
+                返回字典选择
+              </button>
+            </div>
+            <Input
+              value={manualAddress}
+              onChange={(e) => {
+                setManualAddress(e.target.value);
+                emit({ address: e.target.value, dictStatus: "manual" });
+              }}
+              placeholder="如：泗塘三村61号401"
+              disabled={disabled}
+            />
+          </div>
         </div>
       ) : (
         <>
           {/* 一级：小区联想 */}
           <div className="flex flex-col gap-1.5">
-            <Label>
-              小区 <span className="text-rust">*</span>
-              <span className="ml-1 text-[10px] font-normal text-dove">搜小区名或地址；没有可新建（需审核）</span>
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label>
+                小区 <span className="text-rust">*</span>
+                <span className="ml-1 text-[10px] font-normal text-dove">搜小区名或地址；没有可新建（需审核）</span>
+              </Label>
+              <button
+                type="button"
+                className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
+                disabled={disabled}
+                onClick={() => {
+                  setManualMode(true);
+                  setManualAddress(v.address);
+                  emit({
+                    dictStatus: "manual",
+                    communityId: null,
+                    buildingId: null,
+                    roomId: null,
+                    newCommunity: null,
+                    newBuilding: null,
+                    newRoom: null,
+                    district: null,
+                    businessCircle: null,
+                  });
+                }}
+              >
+                手动填写地址
+              </button>
+            </div>
             <Popover open={communityOpen} onOpenChange={setCommunityOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -456,12 +481,14 @@ export function DictAddressPicker({
                         emit({
                           communityId: c.id,
                           communityName: c.name,
+                          district: c.district ?? null,
+                          businessCircle: c.business_circle ?? null,
                           buildingId: null,
                           buildingNo: "",
                           roomId: null,
                           roomNo: "",
                           address: c.name,
-                          dictStatus: "linked",
+                          dictStatus: null,
                           newCommunity: null,
                         });
                         setSelectedFloor(null);
@@ -502,7 +529,7 @@ export function DictAddressPicker({
           {v.communityId ? (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <Label>楼栋 {selectedBuilding ? <span className="text-[10px] font-normal text-dove">{buildings.length} 栋</span> : null}</Label>
+                <Label>楼栋（选填） {selectedBuilding ? <span className="text-[10px] font-normal text-dove">{buildings.length} 栋</span> : null}</Label>
                 <button
                   type="button"
                   className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
@@ -559,7 +586,7 @@ export function DictAddressPicker({
           {v.buildingId && floors.length > 0 ? (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <Label>楼层</Label>
+                <Label>楼层（选填）</Label>
                 <button
                   type="button"
                   className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
@@ -598,7 +625,7 @@ export function DictAddressPicker({
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <Label>
-                  户室
+                  户室（选填）
                   {v.buildingNo ? (
                     <span className="ml-1 text-[10px] font-normal text-dove">
                       {v.buildingNo} 栋{selectedFloor != null && selectedFloor !== "all" ? ` · ${selectedFloor} 层` : ""}
