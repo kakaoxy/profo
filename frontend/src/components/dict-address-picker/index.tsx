@@ -11,9 +11,11 @@
  * - 楼层列 = 名义 ∪ 实际 ∪ pending（未分层置底，FR-04）；
  * - 门牌自动拼装可手改（0401 → 401；非标户室回退手填提示 BR-12）；
  * - 「＋新建楼栋 / 新建楼层 / 新建户室」入口：提交进审核池（不阻塞表单，FR-10）；
+ * - pending 条目全系统可见带「未审核」标签（虚线/置灰）；本流程新建的楼栋/户室
+ *   未审核也可选（选中回填 new_* 载荷，审核通过后自动关联，不阻塞录入流程），
+ *   待审楼栋下可继续新建户室（parent=pending_building，BR-28 审核拓扑）；
+ *   其他流程的 pending 保持置灰（hover「审核中，通过后可选」，BR-23）；
  * - 兼容模式：小区字段旁轻量入口切换手填地址（dict_status=manual）；
- * - pending 条目全系统可见带「未审核」标签（虚线/置灰），仅来源单据回显可选，
- *   其他表单置灰（hover「审核中，通过后可选」，BR-23）。
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -99,10 +101,23 @@ function buildPlate(communityName: string, buildingNo: string, plateNo: string):
 /** 楼栋列分页大小（大社区只渲染当页 + 滚动加载更多，防卡顿） */
 const BUILDING_PAGE_SIZE = 50;
 
-/** 户室号前两位解析楼层（0401→4；非两位数字开头为 null） */
+/** 户室号解析楼层（与后端 parse_room_floor 对齐：0401→4、202→2；非标为 null） */
 function floorOfRoom(roomNo: string): number | null {
-  const m = roomNo.match(/^(\d{2})/);
-  return m ? parseInt(m[1], 10) : null;
+  if (/^\d{4}$/.test(roomNo)) {
+    const f = parseInt(roomNo.slice(0, 2), 10);
+    return f > 0 ? f : null;
+  }
+  if (/^\d{3}$/.test(roomNo)) {
+    const f = parseInt(roomNo[0], 10);
+    return f > 0 ? f : null;
+  }
+  return null;
+}
+
+/** 门牌户号映射（与后端 format_plate_no 对齐：0401→401，非标/0 层原样返回） */
+function plateOfRoom(roomNo: string): string {
+  if (!/^\d{4}$/.test(roomNo) || parseInt(roomNo.slice(0, 2), 10) <= 0) return roomNo;
+  return String(Number(roomNo));
 }
 
 export function DictAddressPicker({
@@ -368,8 +383,57 @@ export function DictAddressPicker({
     void loadBuildings(v.communityId, { keyword: buildingKeyword, page: 1 });
   }, [v.communityId, buildings, buildingKeyword, sourceBizType, sourceBizId, emit, loadBuildings]);
 
-  /** 提交新增户室进审核池（新楼层 = 提交该层首个户室，隐式建层） */
+  /** 选中的待审楼栋（本流程新建：buildingId 为空、楼栋号命中楼栋列 pending 项） */
+  const selectedPendingBuilding = useMemo(
+    () =>
+      v.buildingId == null && v.buildingNo
+        ? (buildings.find((b) => b.pending && b.building_no === v.buildingNo) ?? null)
+        : null,
+    [buildings, v.buildingId, v.buildingNo],
+  );
+
+  /** 提交新增户室进审核池（新楼层 = 提交该层首个户室，隐式建层，楼层从户室号解析）.
+   *
+   * 待审楼栋下可继续新建：parent 挂 pending_building 条目（BR-28 审核拓扑），
+   * 创建即选中并回填 newRoom 载荷（待审楼栋无实表 id，户室列表不可拉取）。
+   */
   const handleCreateRoom = useCallback(async () => {
+    // 分支一：父级为待审楼栋条目
+    if (selectedPendingBuilding) {
+      const raw = window.prompt(
+        `新户室号（如 0403）——挂待审楼栋「${v.buildingNo}」下，提交后进入审核池：`,
+      );
+      if (!raw || !raw.trim()) return;
+      const roomNo = raw.trim();
+      if (floorOfRoom(roomNo) == null) {
+        toast.error("户室号需以两位楼层号开头（如 0403 = 4 层 03 户）");
+        return;
+      }
+      const { data, error } = await client.POST("/api/v1/admin/building-dictionary/pending", {
+        body: {
+          kind: "room",
+          name: roomNo,
+          parent_kind: "pending_building",
+          parent_id: String(selectedPendingBuilding.pending_id),
+          source_type: sourceBizType ?? null,
+          source_id: sourceBizId ?? null,
+        },
+      });
+      if (error || !data) {
+        toast.error("提交新户室失败");
+        return;
+      }
+      toast.success(`已提交「${v.buildingNo}号 ${roomNo}」→ 审核池（挂待审楼栋）`);
+      emit({
+        newRoom: { name: roomNo },
+        roomId: null,
+        roomNo,
+        address: buildPlate(v.communityName, v.buildingNo, plateOfRoom(roomNo)),
+        dictStatus: "pending",
+      });
+      return;
+    }
+    // 分支二：父级为实表楼栋
     if (!v.communityId || !v.buildingId) return;
     const raw = window.prompt(
       selectedFloor != null && selectedFloor !== "all"
@@ -404,12 +468,7 @@ export function DictAddressPicker({
     toast.success(`已提交「新户室 ${v.buildingNo}号 ${roomNo}」→ 审核池；通过后该层自动出现`);
     emit({ newRoom: { name: roomNo }, roomId: null, roomNo: "" });
     void loadRooms(v.buildingId);
-  }, [v.communityId, v.buildingId, v.buildingNo, selectedFloor, rooms, sourceBizType, sourceBizId, emit, loadRooms]);
-
-  const selectedBuilding = useMemo(
-    () => buildings.find((b) => b.id === v.buildingId),
-    [buildings, v.buildingId],
-  );
+  }, [v.communityId, v.buildingId, v.buildingNo, selectedFloor, rooms, selectedPendingBuilding, sourceBizType, sourceBizId, emit, loadRooms]);
 
   /** 楼层过滤后的户室（选中楼层展示该层；否则全部） */
   const visibleRooms = useMemo(() => {
@@ -566,7 +625,7 @@ export function DictAddressPicker({
                 </div>
               </PopoverContent>
             </Popover>
-            {v.dictStatus === "pending" ? (
+            {v.dictStatus === "pending" && !v.communityId ? (
               <p className="flex items-center gap-1 text-[13px] text-amber-700">
                 <AlertTriangle className="size-3.5" />
                 小区审核中，通过后开放楼栋/户室选择
@@ -618,19 +677,46 @@ export function DictAddressPicker({
                   ) : null}
                   {!loadingBuildings &&
                     buildings.map((b) => {
-                      const selected = v.buildingId === b.id;
+                      // 本流程新建的待审楼栋可选（不阻塞录入，FR-10）；其他流程 pending 置灰（BR-23）
+                      const flowCreated = b.pending && b.building_no === v.newBuilding?.name;
+                      const selected = b.pending
+                        ? v.buildingId == null && v.buildingNo === b.building_no
+                        : v.buildingId === b.id;
                       return (
                         <button
                           key={b.pending ? `pending-${b.pending_id}` : `b-${b.id}`}
                           type="button"
-                          disabled={b.pending && v.dictStatus !== "pending"}
-                          title={b.pending ? "审核中，通过后可选" : undefined}
+                          disabled={b.pending && !flowCreated}
+                          title={
+                            b.pending
+                              ? flowCreated
+                                ? "审核中，通过后自动关联"
+                                : "审核中，通过后可选"
+                              : undefined
+                          }
                           className={cn(
                             "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12px] transition-colors",
                             selected ? "bg-ink text-white" : "text-ink hover:bg-fog",
                             b.pending && !selected && "border-dashed text-dove opacity-70",
                           )}
                           onClick={() => {
+                            setSelectedFloor(null);
+                            if (b.pending) {
+                              // 待审楼栋无实表 id：buildingId 置空，回填 newBuilding 载荷
+                              emit({
+                                buildingId: null,
+                                buildingNo: b.building_no,
+                                roomId: null,
+                                roomNo: "",
+                                address: buildPlate(v.communityName, b.building_no, ""),
+                                dictStatus: "pending",
+                                newBuilding: { name: b.building_no },
+                                newRoom: null,
+                              });
+                              setRooms([]);
+                              setFloors([]);
+                              return;
+                            }
                             emit({
                               buildingId: b.id,
                               buildingNo: b.building_no,
@@ -638,8 +724,9 @@ export function DictAddressPicker({
                               roomNo: "",
                               address: buildPlate(v.communityName, b.building_no, ""),
                               dictStatus: "linked",
+                              newBuilding: null,
+                              newRoom: null,
                             });
-                            setSelectedFloor(null);
                             void loadRooms(b.id);
                           }}
                         >
@@ -671,7 +758,7 @@ export function DictAddressPicker({
                   <span className="text-[11.5px] font-medium text-ink">
                     楼层 <span className="font-normal text-dove">选填</span>
                   </span>
-                  {v.buildingId ? (
+                  {v.buildingId || selectedPendingBuilding ? (
                     <button
                       type="button"
                       className="flex items-center gap-0.5 text-[10.5px] text-rust hover:underline"
@@ -684,8 +771,10 @@ export function DictAddressPicker({
                   ) : null}
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto p-1" style={{ maxHeight: 176 }}>
-                  {!v.buildingId ? (
+                  {!v.buildingId && !selectedPendingBuilding ? (
                     <p className="px-2 py-3 text-[11px] text-dove">← 选择楼栋</p>
+                  ) : selectedPendingBuilding ? (
+                    <p className="px-2 py-3 text-[11px] text-dove">楼栋审核中，通过后展示楼层</p>
                   ) : loadingRooms ? (
                     <div className="flex justify-center py-3">
                       <Loader2 className="size-4 animate-spin text-graphite" />
@@ -735,7 +824,7 @@ export function DictAddressPicker({
                       </span>
                     ) : null}
                   </span>
-                  {v.buildingId && floors.length === 0 ? (
+                  {(v.buildingId ? floors.length === 0 : !!selectedPendingBuilding) ? (
                     <button
                       type="button"
                       className="flex items-center gap-0.5 text-[10.5px] text-rust hover:underline"
@@ -748,8 +837,21 @@ export function DictAddressPicker({
                   ) : null}
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto p-1" style={{ maxHeight: 176 }}>
-                  {!v.buildingId || !selectedBuilding ? (
-                    <p className="px-2 py-3 text-[11px] text-dove">← 选择楼层</p>
+                  {!v.buildingId && !selectedPendingBuilding ? (
+                    <p className="px-2 py-3 text-[11px] text-dove">← 选择楼栋</p>
+                  ) : selectedPendingBuilding ? (
+                    v.roomNo ? (
+                      <div className="grid grid-cols-4 gap-1">
+                        <span className="flex items-center justify-center rounded-md border border-dashed border-ink bg-ink px-1 py-1 text-[11px] tabular-nums text-white">
+                          {plateOfRoom(v.roomNo)}
+                          <Badge className="ml-0.5 h-3 border-white/50 px-0.5 text-[8px]" variant="outline">
+                            审
+                          </Badge>
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="px-2 py-3 text-[11px] text-dove">楼栋审核中 · 可新建户室（需审核）</p>
+                    )
                   ) : loadingRooms ? (
                     <div className="flex justify-center py-3">
                       <Loader2 className="size-4 animate-spin text-graphite" />
@@ -757,29 +859,51 @@ export function DictAddressPicker({
                   ) : (
                     <div className="grid grid-cols-4 gap-1">
                       {visibleRooms.map((r) => {
-                        const selected = v.roomId === r.id && v.roomNo === r.room_no;
-                        const lockable = r.pending && !selected;
+                        // 本流程新建的待审户室可选（不阻塞录入，FR-10）；其他流程 pending 置灰（BR-23）
+                        const flowCreated = r.pending && r.room_no === v.newRoom?.name;
+                        const selected = r.pending
+                          ? v.roomId == null && v.roomNo === r.room_no
+                          : v.roomId === r.id && v.roomNo === r.room_no;
+                        const lockable = r.pending && !flowCreated;
                         return (
                           <button
                             key={r.pending ? `pr-${r.pending_id}` : `r-${r.id}`}
                             type="button"
                             disabled={lockable}
-                            title={r.pending ? "审核中，通过后可选" : undefined}
+                            title={
+                              r.pending
+                                ? flowCreated
+                                  ? "审核中，通过后自动关联"
+                                  : "审核中，通过后可选"
+                                : undefined
+                            }
                             className={cn(
                               "rounded-md border px-1 py-1 text-[11px] tabular-nums transition-colors",
                               selected ? "border-ink bg-ink text-white" : "border-dove/50 text-ink hover:border-ash",
-                              lockable && "border-dashed text-dove opacity-60",
+                              r.pending && !selected && "border-dashed text-dove opacity-60",
                             )}
                             onClick={() => {
                               if (r.plate_no === r.room_no && !/^\d{4}$/.test(r.room_no)) {
                                 toast.info("非标户室号，门牌需手动填写");
                               }
-                              emit({
-                                roomId: r.id || null,
-                                roomNo: r.room_no,
-                                address: buildPlate(v.communityName, v.buildingNo, r.plate_no),
-                                dictStatus: "linked",
-                              });
+                              emit(
+                                r.pending
+                                  ? {
+                                      // 待审户室无实表 id：roomId 置空，回填 newRoom 载荷
+                                      roomId: null,
+                                      roomNo: r.room_no,
+                                      address: buildPlate(v.communityName, v.buildingNo, r.plate_no),
+                                      dictStatus: "linked",
+                                      newRoom: { name: r.room_no },
+                                    }
+                                  : {
+                                      roomId: r.id || null,
+                                      roomNo: r.room_no,
+                                      address: buildPlate(v.communityName, v.buildingNo, r.plate_no),
+                                      dictStatus: "linked",
+                                      newRoom: null,
+                                    },
+                              );
                             }}
                           >
                             {r.plate_no}

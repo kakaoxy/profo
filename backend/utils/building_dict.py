@@ -10,6 +10,8 @@ import re
 
 # 标准户室号：恰好 4 位数字（前两位楼层 + 后两位户号），如 0401/1001
 _STANDARD_ROOM_NO_RE = re.compile(r"^\d{4}$")
+# 3 位数字户室号（首位楼层 1-9 + 后两位户号），如 202 = 2 层 02 户
+_TRIPLE_DIGIT_ROOM_NO_RE = re.compile(r"^\d{3}$")
 
 # 全角 ASCII 区边界（全角转半角，FR-19 归一化）
 _FULLWIDTH_ASCII_START = 0xFF01
@@ -22,11 +24,13 @@ _FULLWIDTH_SPACE = "\u3000"
 def parse_room_floor(room_no: str | None) -> int | None:
     """解析户室号对应楼层（SRS FR-04 / BR-02）.
 
-    规则：
+    楼层不是地址的组成部分，一律从户室号派生（批量导入亦无楼层字段）：
+
     - 标准户室号（恰好 4 位数字）：floor = 前两位数字（``0401`` → 4、``1001`` → 10）
-    - 非标户室号（``0233-1``、``1-2楼`` 等含非数字或长度≠4）：floor = NULL，
+    - 3 位数字户室号：floor = 首位数字（``202`` → 2、``305`` → 3，即 1-9 层低层惯例）
+    - 非标户室号（``0233-1``、``1-2楼`` 等含非数字或长度≠3/4）：floor = NULL，
       归「未分层」组置底，不参与门牌自动拼装
-    - 前两位解析为 0（如 ``0001``）：视为无有效楼层 → NULL
+    - 楼层位解析为 0（如 ``0001``、``001``）：视为无有效楼层 → NULL
 
     Args:
         room_no: 户室号原始串
@@ -36,9 +40,12 @@ def parse_room_floor(room_no: str | None) -> int | None:
 
     """
     s = (room_no or "").strip()
-    if not _STANDARD_ROOM_NO_RE.fullmatch(s):
+    if _STANDARD_ROOM_NO_RE.fullmatch(s):
+        floor = int(s[:2])
+    elif _TRIPLE_DIGIT_ROOM_NO_RE.fullmatch(s):
+        floor = int(s[0])
+    else:
         return None
-    floor = int(s[:2])
     if floor <= 0:
         return None
     return floor

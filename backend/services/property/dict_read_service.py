@@ -30,7 +30,7 @@ from schemas.building_dict import (
     BdKpiResponse,
     BdRoomItem,
 )
-from utils.building_dict import format_plate_no
+from utils.building_dict import format_plate_no, parse_room_floor
 from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
@@ -463,12 +463,13 @@ class BuildingDictReadService:
             )
             for r in building.rooms
         ]
-        # pending 户室并入（id=0 表示字典无行）
+        # pending 户室并入（id=0 表示字典无行）；楼层从户室号解析（0403→4），
+        # 与 get_floor_groups 口径一致：未建层直接建户室时楼层即时可见
         room_items.extend(
             BdRoomItem(
                 id=0,
                 room_no=e.name,
-                floor=None,  # 楼层解析待转正后计算；pending 期归「未分层」或按 room_no 解析展示
+                floor=parse_room_floor(e.name),
                 pending=True,
                 pending_id=e.id,
                 plate_no=format_plate_no(e.name),
@@ -521,8 +522,6 @@ class BuildingDictReadService:
             )
             .all()
         )
-        from utils.building_dict import parse_room_floor
-
         for e in pending_rooms:
             floor = parse_room_floor(e.name)
             g = groups.get(floor)
