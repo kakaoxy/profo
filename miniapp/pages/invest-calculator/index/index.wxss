@@ -256,6 +256,12 @@
   display: flex;
   gap: 16rpx;
   margin-top: 28rpx;
+  /* 快捷片仅作快捷入口，总宽可超屏宽：横向滚动吸收溢出，禁止撑宽页面 */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.hchips::-webkit-scrollbar {
+  display: none;
 }
 .hchip {
   flex: none;

@@ -156,7 +156,7 @@ describe("输入联动", () => {
     expect(inst.data.holdChips.find((c: AnyRecord) => c.m === 60).on).toBe(true);
   });
 
-  it("滑杆 bindchanging/bindchange 同步 months 并重算（30 → 12 → 24）", () => {
+  it("滑杆 bindchange 同步 months 并重算（30 → 12 → 24；仅松手触发一次）", () => {
     const inst = createInstance();
     inst.onHoldInput({ detail: { value: 12 } });
     expect(inst.data.months).toBe(12);
@@ -165,6 +165,15 @@ describe("输入联动", () => {
     inst.onHoldInput({ detail: { value: 24 } });
     expect(inst.data.months).toBe(24);
     expect(inst.data.vatStateOk).toBe(true);
+  });
+
+  it("快捷片集合为 3/6/12/24/60 月（需求指定；84 月已移除）", () => {
+    const inst = createInstance();
+    expect(inst.data.holdChips.map((c: AnyRecord) => c.m)).toEqual([3, 6, 12, 24, 60]);
+    inst.onHoldChipTap({ currentTarget: { dataset: { m: 3 } } });
+    expect(inst.data.months).toBe(3);
+    expect(inst.data.hold.y).toBe("不满 1 年");
+    expect(inst.data.holdChips.find((c: AnyRecord) => c.m === 3).on).toBe(true);
   });
 
   it("分段控件：家庭第 2 套 + >140㎡ → 契税 2%；持有 12 月切 3.15% 城镇档", () => {
@@ -218,7 +227,7 @@ describe("重置与复制", () => {
     const inst = createInstance();
     inst.onBuyInput({ detail: { value: "800" } });
     inst.onSegFam({ currentTarget: { dataset: { v: "three" } } });
-    inst.onHoldChipTap({ currentTarget: { dataset: { m: 84 } } });
+    inst.onHoldChipTap({ currentTarget: { dataset: { m: 60 } } });
     inst.onSoleChange({ detail: { value: false } });
     inst.onReset();
     expect(inst.data.buy).toBe("600");

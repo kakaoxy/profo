@@ -19,10 +19,10 @@ export type PitMethod = "auto" | "r1" | "p20" | "fa";
 export type VatRate = "0.0318" | "0.0315";
 
 /** 持有时间快捷片（月）. */
-export const HOLD_CHIPS = [6, 12, 24, 36, 60, 84];
+export const HOLD_CHIPS = [3, 6, 12, 24, 60];
 
-/** 滑杆最大月数（HTML input#iHold max）. */
-export const HOLD_MAX = 240;
+/** 滑杆最大月数（需求指定 120；HTML 原版 240，此处为用户授权的偏差）. */
+export const HOLD_MAX = 120;
 
 /** 增值税税率文案（HTML 渲染用）. */
 export const PIT_NAMES: Record<string, string> = {

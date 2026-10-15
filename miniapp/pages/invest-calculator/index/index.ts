@@ -11,7 +11,7 @@
  * 拆分到多文件会切断「HTML 源 ↔ 实现」的逐段对照链路，违背本次「完全一致、禁止调整」的硬约束，故保持单文件。
  */
 import type { components } from "../../../types/api-types";
-import { calc, buildCopyText, fw, toNum, HOLD_MAX, TAX_POLICY_LABEL } from "../../../utils/invest-calc";
+import { calc, buildCopyText, fw, toNum, HOLD_CHIPS, HOLD_MAX, TAX_POLICY_LABEL } from "../../../utils/invest-calc";
 import type { CalcInput, CalcResult, FamKey, PitMethod, VatRate } from "../../../utils/invest-calc";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { request } from "../../../utils/request";
@@ -201,12 +201,11 @@ const SEG_PIT_DEFS: { v: PitMethod; label: string }[] = [
   { v: "fa", label: "法拍 3%" },
 ];
 const HOLD_CHIP_LABELS: Record<number, string> = {
+  3: "3 月",
   6: "6 月",
   12: "12 月",
   24: "24 月",
-  36: "36 月",
   60: "60 月",
-  84: "84 月",
 };
 
 /** 已选分段控件视图. */
@@ -258,7 +257,7 @@ function initialData(): Omit<InvestCalcView, keyof CalcResult> {
     holdPct: holdPctOf(30),
     hold: { m: "30", y: "2 年 6 个月" },
     holdTip: "拖动滑杆即可联动利息与增值税判定",
-    holdChips: [6, 12, 24, 36, 60, 84].map((m) => ({ m, label: HOLD_CHIP_LABELS[m], on: false })),
+    holdChips: HOLD_CHIPS.map((m) => ({ m, label: HOLD_CHIP_LABELS[m], on: false })),
     segFam: segOptions(SEG_FAM_DEFS, "sole"),
     segVat: segOptions(SEG_VAT_DEFS, "0.0318"),
     segPit: segOptions(SEG_PIT_DEFS, "auto"),

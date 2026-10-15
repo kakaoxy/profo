@@ -78,13 +78,12 @@
           <slider
             class="hold-range"
             min="0"
-            max="240"
+            max="120"
             step="1"
             value="{{months}}"
             activeColor="#5d2a1a"
             backgroundColor="rgba(23,25,28,.10)"
             block-size="22"
-            bindchanging="onHoldInput"
             bindchange="onHoldInput"
           />
           <view class="hchips">
