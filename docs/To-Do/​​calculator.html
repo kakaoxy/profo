@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>房产投资测算 · Steep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17191c; --white:#ffffff; --fog:#f7f7f8; --ash:#4c4c4c; --graphite:#777b86;
+  --dove:#a3a6af; --rust:#5d2a1a; --apricot:#fbe1d1; --sky:#d3e3fc;
+  --serif:'Noto Serif SC', Georgia, 'Songti SC', serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', sans-serif;
+  --shadow-card: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.10) 0 20px 25px -5px, rgba(0,0,0,.10) 0 8px 10px -6px;
+  --shadow-mini: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 8px 10px -6px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--sans);background:var(--fog);color:var(--ink);font-size:15px;line-height:1.5;letter-spacing:-.009em}
+.app{max-width:480px;margin:0 auto}
+.money{font-variant-numeric:tabular-nums}
+
+/* ── 顶栏 ─────────────────────────── */
+.topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(23,25,28,.06)}
+.topbar .in{max-width:480px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:500;font-size:15px}
+.brand i{width:9px;height:9px;border-radius:9999px;background:var(--rust);display:block}
+.reset{border:0;background:none;color:var(--graphite);font:450 13px var(--sans);cursor:pointer;padding:6px 0}
+
+/* ── 头图 ─────────────────────────── */
+.hero{background:var(--white);padding:32px 20px 24px;border-bottom:1px solid rgba(23,25,28,.04)}
+.eyebrow{font-size:12px;font-weight:500;color:var(--graphite);letter-spacing:.14em;margin-bottom:10px}
+.hero h1{font-family:var(--serif);font-weight:600;font-size:34px;line-height:1.15;letter-spacing:-.02em}
+.hero p{margin-top:10px;color:var(--ash);font-size:15px;line-height:1.6;max-width:34em}
+
+/* ── 主区 ─────────────────────────── */
+main{padding:20px 16px calc(150px + env(safe-area-inset-bottom))}
+.sec{margin:26px 4px 10px;display:flex;justify-content:space-between;align-items:baseline}
+.sec h2{font-size:13px;font-weight:500;color:var(--graphite);letter-spacing:.12em}
+.sec span{font-size:12px;color:var(--dove)}
+.card{background:var(--white);border-radius:24px;box-shadow:var(--shadow-card);padding:20px;animation:rise .5s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.card{animation:none}}
+
+/* ── 结果卡（暖调） ───────────────── */
+.result{background:var(--apricot)}
+.result .lbl{font-size:13px;font-weight:500;color:var(--rust);letter-spacing:.06em}
+.profit{font-family:var(--serif);font-weight:600;font-size:46px;line-height:1.08;letter-spacing:-.02em;margin-top:6px}
+.profit.neg{color:var(--rust)}
+.result .note{margin-top:6px;font-size:13px;color:#8a5a40}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chips .c{background:rgba(255,255,255,.75);border-radius:9999px;padding:6px 12px;font-size:12px;font-weight:500;color:var(--ink)}
+.chips .c b{font-weight:600}
+
+/* ── 表单 ─────────────────────────── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field label{display:block;font-size:13px;font-weight:450;color:var(--graphite);margin:0 2px 6px}
+.inwrap{display:flex;align-items:center;background:var(--white);border:1px solid rgba(23,25,28,.09);border-radius:16px;padding:11px 14px;transition:border-color .15s}
+.inwrap:focus-within{border-color:var(--ink)}
+.inwrap input{border:0;outline:0;background:transparent;width:100%;font:480 17px var(--sans);color:var(--ink);letter-spacing:-.009em}
+.unit{color:var(--dove);font-size:13px;margin-left:6px;flex:none}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+
+/* 持有时间 */
+.hold-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.hold-val{font-size:22px;font-weight:480}
+.hold-val small{font-size:13px;font-weight:450;color:var(--graphite);margin-left:8px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:9999px;background:rgba(23,25,28,.10);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:9999px;background:var(--white);border:1px solid rgba(23,25,28,.14);box-shadow:rgba(0,0,0,.12) 0 3px 8px;cursor:pointer}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:9999px;background:var(--white);border:1px solid rgba(23,25,28,.14);box-shadow:rgba(0,0,0,.12) 0 3px 8px;cursor:pointer}
+.hchips{display:flex;gap:8px;overflow-x:auto;margin-top:14px;scrollbar-width:none}
+.hchips::-webkit-scrollbar{display:none}
+.hchip{flex:none;border:0;background:var(--fog);color:var(--graphite);font:450 13px var(--sans);padding:8px 14px;border-radius:9999px;cursor:pointer;transition:.15s}
+.hchip.on{background:var(--apricot);color:var(--rust);font-weight:500}
+.hold-tip{margin-top:10px;font-size:12px;color:var(--graphite)}
+
+/* 分段控件 */
+.seg{display:flex;background:var(--fog);border-radius:9999px;padding:3px;gap:2px;margin-top:6px}
+.seg button{flex:1;border:0;background:transparent;color:var(--graphite);font:450 13px/1 var(--sans);padding:9px 4px;border-radius:9999px;cursor:pointer;white-space:nowrap;transition:.15s}
+.seg button.on{background:var(--white);color:var(--ink);font-weight:500;box-shadow:var(--shadow-mini)}
+
+/* 开关 */
+.switchrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 2px 0}
+.switchrow .t{font-size:14px;font-weight:450}
+.switchrow .t small{display:block;font-size:12px;color:var(--graphite);margin-top:2px}
+.switch{position:relative;width:46px;height:28px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch em{position:absolute;inset:0;background:rgba(23,25,28,.16);border-radius:9999px;transition:.2s}
+.switch em::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:9999px;background:#fff;box-shadow:rgba(0,0,0,.15) 0 2px 5px;transition:.2s}
+.switch input:checked+em{background:var(--rust)}
+.switch input:checked+em::after{transform:translateX(18px)}
+
+/* ── 税卡 ─────────────────────────── */
+.tax-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tax-name{font-size:15px;font-weight:500}
+.state{flex:none;font-size:12px;font-weight:500;padding:5px 10px;border-radius:9999px;display:inline-flex;align-items:center;gap:5px}
+.state svg{width:12px;height:12px}
+.state.warn{background:var(--apricot);color:var(--rust)}
+.state.ok{background:var(--sky);color:var(--ink)}
+.tax-amt{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px}
+.tax-amt b{font-size:22px;font-weight:480}
+.tax-amt i{font-style:normal;font-size:13px;color:var(--graphite)}
+.tax-cap{margin-top:4px;font-size:12px;color:var(--graphite);line-height:1.6}
+.lock{display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px dashed rgba(23,25,28,.10);font-size:12px;color:var(--graphite)}
+.lock svg{width:13px;height:13px;flex:none}
+.hintline{margin-top:8px;font-size:12px;color:var(--rust);background:rgba(251,225,209,.5);border-radius:12px;padding:8px 12px}
+.hintline.mut{color:var(--graphite);background:var(--fog)}
+
+/* ── 费用明细 ─────────────────────── */
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;font-size:14px}
+.row .k{color:var(--graphite)}
+.row .k small{color:var(--dove);font-size:12px;margin-left:4px}
+.row .v{font-weight:480}
+.grp{margin-top:8px;font-size:12px;font-weight:500;color:var(--dove);letter-spacing:.12em;padding-bottom:1px}
+.row.total{border-top:1px solid rgba(23,25,28,.08);margin-top:6px;padding-top:10px}
+.row.total .k{color:var(--ink);font-weight:500}
+.row.total .v{font-size:17px;font-weight:480}
+.f{font-size:11px;color:var(--dove);line-height:1.4;margin:-2px 0 3px;word-break:break-all;font-variant-numeric:tabular-nums}
+.foot-note{margin-top:8px;font-size:11px;color:var(--dove);line-height:1.5}
+
+/* ── 底部栏 ───────────────────────── */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(23,25,28,.06);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.dock .in{max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dock .k{font-size:12px;color:var(--graphite)}
+.dock .v{font-size:19px;font-weight:480;margin-top:1px}
+.cta{border:0;background:var(--ink);color:#fff;border-radius:9999px;padding:12px 22px;font:450 15px var(--sans);letter-spacing:-.009em;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:transform .12s}
+.cta:active{transform:scale(.96)}
+.cta svg{width:15px;height:15px}
+footer{padding:8px 20px 24px;text-align:center;font-size:12px;color:var(--dove);line-height:1.7}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar"><div class="in">
+    <div class="brand"><i></i>Steep · 房投测算</div>
+    <button class="reset" id="btnReset">重置</button>
+  </div></div>
+
+  <div class="hero">
+    <div class="eyebrow">SHANGHAI · 2026/2/25 税政</div>
+    <h1>一笔房账，<br>算得清清楚楚。</h1>
+    <p>输入买进与卖出价格，持有时间自动联动利息与增值税判定；契税、个税按家庭情况与面积自动套档。</p>
+  </div>
+
+  <main>
+    <!-- 结果 -->
+    <div class="card result">
+      <div class="lbl">预计净利润（万元）</div>
+      <div class="profit money" id="oProfit">0.00</div>
+      <div class="note" id="oNote">—</div>
+      <div class="chips">
+        <div class="c">初始投入 <b class="money" id="cInvest">0.00 万</b></div>
+        <div class="c">税费合计 <b class="money" id="cTax">0.00 万</b></div>
+        <div style="width:100%;display:flex;gap:8px">
+          <div class="c">利润率 <b id="cMargin">0.0%</b></div>
+          <div class="c">年化 <b id="cAnnual">0.0%</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 01 交易信息 -->
+    <div class="sec"><h2>01 · 交易信息</h2><span>实时测算</span></div>
+    <div class="card">
+      <div class="grid2">
+        <div class="field"><label>买进价</label>
+          <div class="inwrap"><input id="iBuy" type="number" inputmode="decimal" step="0.01" value="600"><span class="unit">万</span></div></div>
+        <div class="field"><label>卖出价</label>
+          <div class="inwrap"><input id="iSell" type="number" inputmode="decimal" step="0.01" value="750"><span class="unit">万</span></div></div>
+      </div>
+
+      <div class="field" style="margin-top:18px"><label>持有时间</label>
+        <div class="hold-top">
+          <div class="hold-val money"><span id="oHoldM">30</span> 个月<small id="oHoldY">2 年 6 个月</small></div>
+        </div>
+        <input id="iHold" type="range" min="0" max="240" step="1" value="30">
+        <div class="hchips" id="hchips">
+          <button class="hchip" data-m="6">6 月</button>
+          <button class="hchip" data-m="12">12 月</button>
+          <button class="hchip" data-m="24">24 月</button>
+          <button class="hchip" data-m="36">36 月</button>
+          <button class="hchip" data-m="60">60 月</button>
+          <button class="hchip" data-m="84">84 月</button>
+        </div>
+        <div class="hold-tip" id="oHoldTip">拖动滑杆即可联动利息与增值税判定</div>
+      </div>
+
+      <div class="grid2" style="margin-top:18px">
+        <div class="field"><label>建筑面积</label>
+          <div class="inwrap"><input id="iArea" type="number" inputmode="decimal" step="0.01" value="89"><span class="unit">㎡</span></div></div>
+        <div class="field"><label>家庭住房套数（契税档）</label>
+          <div class="seg" id="segFam">
+            <button class="on" data-v="sole">唯一</button>
+            <button data-v="second">第 2 套</button>
+            <button data-v="three">≥3 套</button>
+          </div></div>
+      </div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div class="field"><label>买入税务核定价 <small style="color:var(--dove)">选填</small></label>
+          <div class="inwrap"><input id="iBuyAssessed" type="number" inputmode="decimal" step="0.01" placeholder="默认同买进价"><span class="unit">万</span></div></div>
+        <div class="field"><label>卖出税务核定价 <small style="color:var(--dove)">选填</small></label>
+          <div class="inwrap"><input id="iSellAssessed" type="number" inputmode="decimal" step="0.01" placeholder="默认同卖出价"><span class="unit">万</span></div></div>
+      </div>
+    </div>
+
+    <!-- 02 资金与持有成本 -->
+    <div class="sec"><h2>02 · 资金与持有成本</h2><span>利息随持有时间联动</span></div>
+    <div class="card">
+      <div class="grid2">
+        <div class="field"><label>贷款金额 <small style="color:var(--dove)">默认买进价 80%</small></label>
+          <div class="inwrap"><input id="iLoan" type="number" inputmode="decimal" step="0.01" value="480"><span class="unit">万</span></div></div>
+        <div class="field"><label>贷款年化利率</label>
+          <div class="inwrap"><input id="iRate" type="number" inputmode="decimal" step="0.01" value="3.05"><span class="unit">%</span></div></div>
+      </div>
+      <div class="tax-amt" style="margin-top:16px"><b class="money" id="oInterest">0.00 万</b><i>预计利息支出</i></div>
+      <div class="tax-cap" id="oInterestCap">—</div>
+    </div>
+
+    <!-- 03 税费 -->
+    <div class="sec"><h2>03 · 税费明细</h2><span>上海税政 2026/2/25</span></div>
+
+    <!-- 增值税 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="tax-top">
+        <div class="tax-name">增值税及附加</div>
+        <div class="state warn" id="vatChip">不满 2 年 · 自动征收</div>
+      </div>
+      <div class="tax-amt"><b class="money" id="vatAmt">0.00 万</b><i id="vatRateTag">3.18%</i></div>
+      <div class="tax-cap" id="vatCap">—</div>
+      <div class="seg" id="segVat" style="margin-top:12px">
+        <button class="on" data-v="0.0318">3.18% 标准</button>
+        <button data-v="0.0315">3.15% 城镇</button>
+      </div>
+      <div class="hintline" id="vatHint">—</div>
+      <div class="lock">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        系统按持有时间自动判定，持有不满 2 年不可手动免除
+      </div>
+    </div>
+
+    <!-- 个税 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="tax-top">
+        <div class="tax-name">个人所得税</div>
+        <div class="state warn" id="pitChip">自动取低</div>
+      </div>
+      <div class="tax-amt"><b class="money" id="pitAmt">0.00 万</b><i>卖出环节</i></div>
+      <div class="tax-cap" id="pitCap">—</div>
+      <div class="seg" id="segPit" style="margin-top:12px">
+        <button class="on" data-v="auto">自动取低</button>
+        <button data-v="r1">全额 1%</button>
+        <button data-v="p20">差额 20%</button>
+        <button data-v="fa">法拍 3%</button>
+      </div>
+      <div class="switchrow">
+        <div class="t">家庭唯一住房<small>满 5 年（60 个月）且唯一 → 自动免征</small></div>
+        <label class="switch"><input type="checkbox" id="iSole" checked><em></em></label>
+      </div>
+      <div class="hintline" id="pitHint" style="margin-top:12px">—</div>
+    </div>
+
+    <!-- 契税 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="tax-top">
+        <div class="tax-name">契税</div>
+        <div class="state warn" id="deedChip">1.0%</div>
+      </div>
+      <div class="tax-amt"><b class="money" id="deedAmt">0.00 万</b><i>买入环节</i></div>
+      <div class="tax-cap" id="deedCap">—</div>
+      <div class="switchrow">
+        <div class="t">买入时上家持有不满 2 年<small>增值税由买方承担，并计入契税计税基础抵减</small></div>
+        <label class="switch"><input type="checkbox" id="iBuyUnder2"><em></em></label>
+      </div>
+    </div>
+
+    <!-- 04 其他费用 -->
+    <div class="sec"><h2>04 · 其他费用</h2><span>佣金率可调 · 默认 1%</span></div>
+    <div class="card">
+      <div class="grid2" style="grid-template-columns:repeat(3,1fr)">
+        <div class="field"><label>装修费</label>
+          <div class="inwrap"><input id="iReno" type="number" inputmode="decimal" step="0.01" value="0"><span class="unit">万</span></div></div>
+        <div class="field"><label>名额费</label>
+          <div class="inwrap"><input id="iQuota" type="number" inputmode="decimal" step="0.01" placeholder="0"><span class="unit">万</span></div></div>
+        <div class="field"><label>额外成本</label>
+          <div class="inwrap"><input id="iExtra" type="number" inputmode="decimal" step="0.01" value="0"><span class="unit">万</span></div></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div class="field"><label>买进佣金率</label>
+          <div class="inwrap"><input id="iBuyCommRate" type="number" inputmode="decimal" step="0.01" value="1"><span class="unit">%</span></div></div>
+        <div class="field"><label>卖出佣金率</label>
+          <div class="inwrap"><input id="iSellCommRate" type="number" inputmode="decimal" step="0.01" value="1"><span class="unit">%</span></div></div>
+      </div>
+      <div style="margin-top:6px">
+        <div class="row"><span class="k">买进佣金<small class="buyCommTag">1%</small></span><span class="v money" id="bBuyComm">0.00 万</span></div>
+        <div class="row"><span class="k">卖出佣金<small class="sellCommTag">1%</small></span><span class="v money" id="bSellComm">0.00 万</span></div>
+      </div>
+    </div>
+
+    <!-- 05 成本总览 -->
+    <div class="sec"><h2>05 · 成本总览</h2><span>万元</span></div>
+    <div class="card">
+      <div class="grp">买入环节</div>
+      <div class="row"><span class="k">契税</span><span class="v money" id="bDeed">0.00</span></div>
+      <div class="f" id="fDeed">—</div>
+      <div class="row" id="rBuyVat" style="display:none"><span class="k">买入增值税及附加</span><span class="v money" id="bBuyVat">0.00</span></div>
+      <div class="f" id="fBuyVat" style="display:none">—</div>
+      <div class="row"><span class="k">买进佣金<small class="buyCommTag">1%</small></span><span class="v money" id="bBuyComm2">0.00</span></div>
+      <div class="f" id="fBuyComm">—</div>
+      <div class="grid2" style="grid-template-columns:repeat(3,1fr);margin:2px 0">
+        <div class="row" style="padding:0"><span class="k">名额费</span><span class="v money" id="bQuota">0.00</span></div>
+        <div class="row" style="padding:0"><span class="k">装修费</span><span class="v money" id="bReno">0.00</span></div>
+        <div class="row" style="padding:0"><span class="k">额外成本</span><span class="v money" id="bExtra">0.00</span></div>
+      </div>
+
+      <div class="grp">持有环节</div>
+      <div class="row"><span class="k">贷款利息</span><span class="v money" id="bInterest">0.00</span></div>
+      <div class="f" id="fInterest">—</div>
+
+      <div class="grp">卖出环节</div>
+      <div class="row"><span class="k">增值税及附加</span><span class="v money" id="bVat">0.00</span></div>
+      <div class="f" id="fVat">—</div>
+      <div class="row"><span class="k">个人所得税</span><span class="v money" id="bPit">0.00</span></div>
+      <div class="f" id="fPit">—</div>
+      <div class="row"><span class="k">卖出佣金<small class="sellCommTag">1%</small></span><span class="v money" id="bSellComm2">0.00</span></div>
+      <div class="f" id="fSellComm">—</div>
+
+      <div class="row total"><span class="k">税费合计</span><span class="v money" id="tTax">0.00</span></div>
+      <div class="f" id="fTax">—</div>
+      <div class="row total"><span class="k">总成本（含利息）</span><span class="v money" id="tCost">0.00</span></div>
+      <div class="f" id="fCost">—</div>
+      <div class="foot-note">利润率按初始投入（买进价 − 贷款金额 + 装修费 + 买进佣金）计算；年化 = 利润率 ÷ 持有年数。</div>
+    </div>
+  </main>
+
+  <footer>税费规则依据《上海市住房税费政策一览（2026/2/25）》<br>本工具为估算参考，实际以税务核定为准</footer>
+</div>
+
+<div class="dock"><div class="in">
+  <div><div class="k">预计净利润</div><div class="v money" id="dockProfit">0.00 万</div></div>
+  <button class="cta" id="btnCopy">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+    <span id="copyTxt">复制结果</span>
+  </button>
+</div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const num=el=>{const v=parseFloat(el&&el.value);return isFinite(v)?v:0};
+const fw=v=>(isFinite(v)?v:0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const segV=sel=>document.querySelector(sel+' .on').dataset.v;
+
+/* —— 持有时间滑杆填充 —— */
+function fill(){const p=($('iHold').value/240*100).toFixed(1);
+  $('iHold').style.background=`linear-gradient(90deg, var(--rust) ${p}%, rgba(23,25,28,.10) ${p}%)`}
+
+/* —— 分段控件 —— */
+document.querySelectorAll('.seg').forEach(seg=>seg.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||b.classList.contains('on'))return;
+  seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); recalc();
+}));
+
+/* —— 持有时间：滑杆 / 数字 / 快捷片 三向同步 —— */
+$('iHold').addEventListener('input',()=>{$('iHoldNumSync');fill();recalc()});
+$('iHold').addEventListener('input',e=>{});
+function syncNumFromRange(){$('oHoldM').textContent=$('iHold').value}
+$('iHold').addEventListener('input',syncNumFromRange);
+document.querySelectorAll('.hchip').forEach(c=>c.addEventListener('click',()=>{
+  $('iHold').value=c.dataset.m; fill(); syncNumFromRange(); recalc();
+}));
+
+/* —— 贷款金额默认联动买进价 80%（手动修改后不再联动） —— */
+let loanAuto=true;
+$('iLoan').addEventListener('input',()=>loanAuto=false);
+$('iBuy').addEventListener('input',()=>{
+  if(loanAuto) $('iLoan').value=+(num($('iBuy'))*.8).toFixed(2);
+});
+
+/* —— 全部输入实时重算 —— */
+['iBuy','iSell','iArea','iLoan','iRate','iReno','iQuota','iExtra','iBuyAssessed','iSellAssessed','iBuyCommRate','iSellCommRate']
+  .forEach(id=>$(id).addEventListener('input',recalc));
+['iSole','iBuyUnder2'].forEach(id=>$(id).addEventListener('change',recalc));
+
+function recalc(){
+  const buy=num($('iBuy')), sell=num($('iSell'));
+  const months=parseInt($('iHold').value)||0;
+  const area=num($('iArea'));
+  const aBuy=num($('iBuyAssessed'))||buy, aSell=num($('iSellAssessed'))||sell;
+  const vr=parseFloat(segV('#segVat'));
+  const fam=segV('#segFam'), method=segV('#segPit');
+  const sole=$('iSole').checked, buyUnder2=$('iBuyUnder2').checked;
+  const loan=num($('iLoan')), rate=num($('iRate'))/100;
+  const reno=num($('iReno')), quota=num($('iQuota')), extra=num($('iExtra'));
+  const buyCommRate=num($('iBuyCommRate'))/100, sellCommRate=num($('iSellCommRate'))/100;
+
+  /* 增值税及附加：持有 <24 个月 → 强制征收；≥24 → 免征（自动，不可手动改） */
+  const sellVat = months<24 ? aSell/1.03*vr : 0;
+  const buyVat  = buyUnder2 ? aBuy /1.03*vr : 0;
+
+  /* 契税：唯一 1%/1.5% · 第2套 1%/2% · ≥3套或企业 3%（以 140㎡ 分档） */
+  const deedBase=aBuy-buyVat;
+  const deedRate= fam==='three' ? .03 : fam==='second' ? (area>140?.02:.01) : (area>140?.015:.01);
+  const deed=deedBase*deedRate;
+
+  /* 个税：满5年(60月)+唯一 → 免征；否则全额(核定1%)与差额(利润20%)两算取低，法拍按3% */
+  const full5=months>=60;
+  const exempt=full5&&sole;
+  const pitFull=(aSell-sellVat)*.01;                    // 全额：核定征收
+  const pitBase20=aSell-sellVat-aBuy-buyVat-reno;
+  const pitDiff=Math.max(0,pitBase20*.2);               // 差额：据实征收
+  const pitNames={r1:'全额 1%',p20:'差额 20%',fa:'法拍 3%'};
+  let pit=0, pitMode=exempt?'exempt':method, pitLabel='';
+  if(pitMode==='auto'){
+    pitLabel=pitDiff<pitFull?pitNames.p20:pitFull<pitDiff?pitNames.r1:'全额=差额';
+    pit=Math.min(pitFull,pitDiff);
+  }else{
+    pitLabel=pitNames[method];
+    pit= pitMode==='r1'?pitFull : pitMode==='p20'?pitDiff : (aSell-sellVat)*.03;
+  }
+
+  /* 利息：本金 × 年化 × 持有年数（简单利息估算） */
+  const interest=loan*rate*months/12;
+  const buyComm=buy*buyCommRate, sellComm=sell*sellCommRate;
+  const taxTotal=sellVat+buyVat+deed+pit;
+  const gross=sell-buy-reno-quota-extra-interest-buyComm-sellComm;
+  const net=gross-taxTotal;
+  const invest=buy-loan+reno+buyComm;
+  const margin=invest>0?net/invest*100:0;
+  const annual=months>0?margin/(months/12):0;
+  const costTotal=buy+taxTotal+buyComm+sellComm+quota+reno+extra+interest;
+
+  /* —— 渲染：持有 —— */
+  $('oHoldM').textContent=months;
+  const y=Math.floor(months/12), m=months%12;
+  $('oHoldY').textContent=months>=12?(m===0?`${y} 年整`:`${y} 年 ${m} 个月`):'不满 1 年';
+  document.querySelectorAll('.hchip').forEach(c=>c.classList.toggle('on',+c.dataset.m===months));
+  $('oHoldTip').textContent = months<24
+    ? `增值税：再持有 ${24-months} 个月满 2 年即自动免征`
+    : months<60 ? `个税：再持有 ${60-months} 个月满 5 年，且保持唯一可免征`
+    : '已满 5 年：唯一住房个税免征，增值税亦免征';
+
+  /* —— 渲染：增值税 —— */
+  const vatChip=$('vatChip');
+  if(months<24){
+    vatChip.className='state warn'; vatChip.textContent='不满 2 年 · 自动征收';
+    $('vatAmt').textContent=fw(sellVat)+' 万';
+    $('vatCap').textContent=`计税：核定 ${fw(aSell)} ÷ 1.03 × ${(vr*100).toFixed(2)}%（含附加）`;
+    $('vatHint').className='hintline';
+    $('vatHint').textContent=`持有 ${months} 个月，未满 2 年，须缴纳增值税及附加`;
+  }else{
+    vatChip.className='state ok';
+    vatChip.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>满 2 年 · 免征';
+    $('vatAmt').textContent='0.00 万';
+    $('vatCap').textContent='持有满 2 年，增值税及附加免征';
+    $('vatHint').className='hintline mut';
+    $('vatHint').textContent='已满 2 年，免征自动生效';
+  }
+
+  /* —— 渲染：个税 —— */
+  const pitChip=$('pitChip');
+  if(exempt){
+    pitChip.className='state ok';
+    pitChip.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>满五唯一 · 免征';
+    $('pitAmt').textContent='0.00 万';
+    $('pitCap').textContent=`持有 ${months} 个月（满 5 年）且家庭唯一，免征个人所得税`;
+  }else{
+    pitChip.className='state warn';
+    pitChip.textContent=(full5?'满五不唯一 · ':'')+(method==='auto'?`自动取低 · ${pitLabel}`:pitLabel);
+    $('pitAmt').textContent=fw(pit)+' 万';
+    if(method==='auto'){
+      const deduct=`原值 ${fw(aBuy)}${buyVat?` − 买入增值税 ${fw(buyVat)}`:''} − 装修 ${fw(reno)}`;
+      $('pitCap').textContent=`全额：(${fw(aSell)} − 增值税 ${fw(sellVat)}) × 1% = ${fw(pitFull)} 万 ｜ 差额：(${fw(aSell)} − 增值税 ${fw(sellVat)} − ${deduct}) × 20% = ${fw(pitDiff)} 万 → 取低按${pitLabel}计`+(pitBase20<=0?'，无增值按 0 计':'');
+    }
+    else if(method==='r1') $('pitCap').textContent=`计税：全额（核定）：(核定 ${fw(aSell)} − 增值税 ${fw(sellVat)}) × 1%`;
+    else if(method==='p20'){
+      $('pitCap').textContent=`计税：差额：(核定 ${fw(aSell)} − 增值税 ${fw(sellVat)} − 原值 ${fw(aBuy)}${buyVat?` − 买入增值税 ${fw(buyVat)}`:''} − 装修 ${fw(reno)}) × 20%`+(pitBase20<=0?'，现无增值按 0 计':'');
+    }
+    else $('pitCap').textContent=`计税：(核定 ${fw(aSell)} − 增值税 ${fw(sellVat)}) × 3%（法拍房）`;
+  }
+  $('pitHint').className= (!full5&&sole)?'hintline':'hintline mut';
+  $('pitHint').textContent= (!full5&&sole)?`距离满五唯一免征还差 ${60-months} 个月（保持家庭唯一）`:(exempt?'当前满足免征条件':'未满足免征条件（需满 5 年且唯一）');
+
+  /* —— 渲染：契税 —— */
+  const famTxt={sole:'家庭唯一住房',second:'家庭第 2 套住房',three:'家庭 ≥3 套 / 企业购房'}[fam];
+  $('deedChip').textContent=(deedRate*100).toFixed(1)+'%';
+  $('deedAmt').textContent=fw(deed)+' 万';
+  $('deedCap').textContent=`${famTxt}，按面积 ${area>140?'>140㎡':'≤140㎡'} 套档 · 计税：买入核定 ${fw(deedBase)}${buyVat?`（已扣买入增值税 ${fw(buyVat)}）`:''} × ${(deedRate*100).toFixed(1)}%`;
+
+  /* —— 渲染：利息 —— */
+  $('oInterest').textContent=fw(interest)+' 万';
+  $('oInterestCap').textContent=`${fw(loan)} 万 × 年化 ${(rate*100).toFixed(2)}% × ${(months/12).toFixed(1)} 年（简单利息估算）`;
+
+  /* —— 渲染：总览结算过程 —— */
+  const vrTxt=(vr*100).toFixed(2)+'%';
+  const bcTxt=num($('iBuyCommRate'))+'%', scTxt=num($('iSellCommRate'))+'%';
+  document.querySelectorAll('.buyCommTag').forEach(el=>el.textContent=bcTxt);
+  document.querySelectorAll('.sellCommTag').forEach(el=>el.textContent=scTxt);
+  $('fDeed').textContent=`买入核定 ${fw(deedBase)}${buyVat?`（已扣买入增值税 ${fw(buyVat)}）`:''} × ${(deedRate*100).toFixed(1)}% · ${famTxt} · ${area>140?'>140㎡':'≤140㎡'}`;
+  $('fBuyVat').textContent=`买入核定 ${fw(aBuy)} ÷ 1.03 × ${vrTxt}（含附加）`;
+  $('fBuyVat').style.display=buyVat>0?'block':'none';
+  $('fBuyComm').textContent=`买进价 ${fw(buy)} × ${bcTxt}`;
+  $('fInterest').textContent=`${fw(loan)} 万 × 年化 ${(rate*100).toFixed(2)}% × ${(months/12).toFixed(1)} 年`;
+  $('fVat').textContent=months<24?`卖出核定 ${fw(aSell)} ÷ 1.03 × ${vrTxt}（含附加）`:'持有满 2 年 · 免征';
+  const fullF=`全额：(${fw(aSell)} − 增值税 ${fw(sellVat)}) × 1% = ${fw(pitFull)} 万`;
+  const diffF=`差额：(${fw(aSell)} − 增值税 ${fw(sellVat)} − 原值 ${fw(aBuy)}${buyVat?` − 买入增值税 ${fw(buyVat)}`:''} − 装修 ${fw(reno)}) × 20% = ${fw(pitDiff)} 万`;
+  $('fPit').textContent= exempt?'满 5 年且家庭唯一 · 免征'
+    : pitMode==='r1'?fullF
+    : pitMode==='p20'?diffF
+    : pitMode==='fa'?`法拍：(${fw(aSell)} − 增值税 ${fw(sellVat)}) × 3% = ${fw(pit)} 万`
+    : (pitLabel===pitNames.p20?diffF:pitLabel===pitNames.r1?fullF:`${fullF} ｜ ${diffF}（两者相同）`);
+  $('fSellComm').textContent=`卖出价 ${fw(sell)} × ${scTxt}`;
+  $('fTax').textContent=`增值税 ${fw(sellVat)}${buyVat?` + 买入增值税 ${fw(buyVat)}`:''} + 契税 ${fw(deed)} + 个税 ${fw(pit)} = ${fw(taxTotal)} 万`;
+  $('fCost').textContent=`买进 ${fw(buy)} + 税费 ${fw(taxTotal)} + 佣金 ${fw(buyComm+sellComm)} + 名额 ${fw(quota)} + 装修 ${fw(reno)}${extra?` + 额外 ${fw(extra)}`:''} + 利息 ${fw(interest)} = ${fw(costTotal)} 万`;
+
+  /* —— 渲染：结果与总览 —— */
+  const p=$('oProfit');
+  p.textContent=(net<0?'−':'')+fw(Math.abs(net));
+  p.classList.toggle('neg',net<0);
+  $('oNote').textContent=`毛利 ${fw(gross)} 万（未扣税） · 利息 ${fw(interest)} 万`;
+  $('cInvest').textContent=fw(invest)+' 万';
+  $('cTax').textContent=fw(taxTotal)+' 万';
+  $('cMargin').textContent=margin.toFixed(1)+'%';
+  $('cAnnual').textContent=annual.toFixed(1)+'%';
+  $('dockProfit').textContent=(net<0?'−':'')+fw(Math.abs(net))+' 万';
+
+  $('bDeed').textContent=fw(deed);
+  $('rBuyVat').style.display=buyVat>0?'flex':'none';
+  $('bBuyVat').textContent=fw(buyVat);
+  $('bBuyComm').textContent=fw(buyComm)+' 万'; $('bBuyComm2').textContent=fw(buyComm);
+  $('bSellComm').textContent=fw(sellComm)+' 万'; $('bSellComm2').textContent=fw(sellComm);
+  $('bQuota').textContent=fw(quota); $('bReno').textContent=fw(reno); $('bExtra').textContent=fw(extra);
+  $('bInterest').textContent=fw(interest);
+  $('bVat').textContent=fw(sellVat); $('bPit').textContent=fw(pit);
+  $('tTax').textContent=fw(taxTotal); $('tCost').textContent=fw(costTotal);
+
+  window.__summary={
+    buy,sell,months,sellVat,buyVat,deed,pit,interest,buyComm,sellComm,reno,quota,extra,buyCommTxt:bcTxt,sellCommTxt:scTxt,
+    taxTotal,costTotal,net,invest,margin,annual,
+    vatState:months<24?`不满2年征收 ${(vr*100).toFixed(2)}%`:'满2年免征',
+    pitState:exempt?'满五唯一免征':(method==='auto'?`自动取低（${pitLabel}）`:pitLabel)
+  };
+}
+
+/* —— 复制结果 —— */
+$('btnCopy').addEventListener('click',async()=>{
+  const s=window.__summary||{};
+  const txt=[
+    '【房产投资测算 · 上海 2026/2/25 税政】',
+    `买进 ${fw(s.buy)} 万 → 卖出 ${fw(s.sell)} 万，持有 ${s.months} 个月`,
+    `增值税及附加：${fw(s.sellVat)} 万（${s.vatState}）`,
+    `个人所得税：${fw(s.pit)} 万（${s.pitState}）`,
+    `契税：${fw(s.deed)} 万 · 买入增值税：${fw(s.buyVat)} 万`,
+    `贷款利息：${fw(s.interest)} 万 · 装修 ${fw(s.reno)} 万 · 名额费 ${fw(s.quota)} 万${s.extra?` · 额外成本 ${fw(s.extra)} 万`:''}`,
+    `佣金（买 ${s.buyCommTxt} / 卖 ${s.sellCommTxt}）：${fw(s.buyComm+s.sellComm)} 万`,
+    `初始投入 ${fw(s.invest)} 万 · 税费合计 ${fw(s.taxTotal)} 万 · 总成本 ${fw(s.costTotal)} 万`,
+    `★ 预计净利润 ${fw(s.net)} 万（利润率 ${s.margin.toFixed(1)}%，年化 ${s.annual.toFixed(1)}%）`
+  ].join('\n');
+  try{await navigator.clipboard.writeText(txt)}
+  catch(e){const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
+  const b=$('copyTxt');b.textContent='已复制 ✓';setTimeout(()=>b.textContent='复制结果',1600);
+});
+
+/* —— 重置 —— */
+$('btnReset').addEventListener('click',()=>{
+  $('iBuy').value=600; $('iSell').value=750; $('iHold').value=30;
+  $('iArea').value=89; $('iRate').value=3.05;
+  $('iReno').value=0; $('iQuota').value=''; $('iExtra').value=0;
+  $('iLoan').value=480; loanAuto=true;
+  $('iBuyCommRate').value=1; $('iSellCommRate').value=1;
+  $('iBuyAssessed').value=''; $('iSellAssessed').value='';
+  $('iSole').checked=true; $('iBuyUnder2').checked=false;
+  [['#segFam','sole'],['#segVat','0.0318'],['#segPit','auto']].forEach(([sel,v])=>{
+    document.querySelectorAll(sel+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  });
+  fill(); recalc(); window.scrollTo({top:0,behavior:'smooth'});
+});
+
+fill(); recalc();
+</script>
+</body>
+</html>
