@@ -157,6 +157,8 @@ interface PageCustom {
   onValuationTap(): void;
   onBookingsTap(): void;
   onHouseSimulatorTap(): void;
+  /** 投资测算器：仅已完善手机号的用户可用（未登录/未绑定手机号均拦截）. */
+  onInvestCalculatorTap(): void;
   onRecruitTap(): void;
   onMenuTap(e: WechatMiniprogram.BaseEvent): void;
   onPhoneModalSkip(): void;
@@ -554,6 +556,28 @@ Page<PageData, PageCustom>({
       return;
     }
     wx.navigateTo({ url: "/pages/house-simulator/index/index" });
+  },
+
+  /**
+   * 投资测算器：仅完善过手机号码的用户可用.
+   * 未登录 → 跳登录页；已登录但未绑定手机号 → 提示并复用 onPhoneTap 引导完善手机号.
+   */
+  onInvestCalculatorTap() {
+    if (!this.data.loggedIn) {
+      this.onGoLogin();
+      return;
+    }
+    if (!this.data.hasPhone) {
+      if (!this.data.canEditPhone) {
+        // 内部员工（admin 身份）手机号在后台维护，C 端不可编辑
+        wx.showToast({ title: "手机号在后台维护，请完善后使用", icon: "none" });
+        return;
+      }
+      wx.showToast({ title: "请先完善手机号", icon: "none" });
+      this.onPhoneTap();
+      return;
+    }
+    wx.navigateTo({ url: "/pages/invest-calculator/index/index" });
   },
 
   /**

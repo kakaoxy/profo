@@ -1,0 +1,550 @@
+/*
+ * 投资测算器 · 样式（1:1 移植 docs/To-Do/​​calculator.html，rpx = px × 2 换算）.
+ * 色值/圆角/阴影/间距/字号与 HTML :root 及各选择器完全一致，禁止调整.
+ */
+
+/* ── 顶栏 ─────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1rpx solid rgba(23, 25, 28, 0.06);
+}
+.topbar .in {
+  height: 112rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40rpx;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  font-weight: 500;
+  font-size: 30rpx;
+}
+.brand-dot {
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 9999rpx;
+  background: var(--rust);
+}
+.reset {
+  color: var(--graphite);
+  font-size: 26rpx;
+  padding: 12rpx 0;
+}
+
+/* ── 头图 ─────────────────────────── */
+.hero {
+  background: var(--pure-white);
+  padding: 64rpx 40rpx 48rpx;
+  border-bottom: 1rpx solid rgba(23, 25, 28, 0.04);
+}
+.eyebrow {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--graphite);
+  letter-spacing: 0.14em;
+  margin-bottom: 20rpx;
+}
+.hero-h1 {
+  font-weight: 600;
+  font-size: 68rpx;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.hero-p {
+  margin-top: 20rpx;
+  color: var(--ash);
+  font-size: 30rpx;
+  line-height: 1.6;
+  max-width: 34em;
+}
+
+/* ── 主区 ─────────────────────────── */
+.main {
+  padding: 40rpx 32rpx 300rpx;
+}
+.sec {
+  margin: 52rpx 8rpx 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.sec-h2 {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--graphite);
+  letter-spacing: 0.12em;
+}
+.sec-span {
+  font-size: 24rpx;
+  color: var(--dove);
+}
+
+/* 卡片（含入场动画 rise，HTML 同名） */
+.card {
+  background: var(--pure-white);
+  border-radius: 48rpx;
+  box-shadow: 0 0 0 1rpx rgba(4, 23, 43, 0.05), 0 40rpx 50rpx -10rpx rgba(0, 0, 0, 0.1),
+    0 16rpx 20rpx -12rpx rgba(0, 0, 0, 0.1);
+  padding: 40rpx;
+  animation: rise 0.5s ease both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16rpx);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── 结果卡（暖调） ───────────────── */
+.result {
+  background: var(--apricot-wash);
+}
+.result .lbl {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--rust);
+  letter-spacing: 0.06em;
+}
+.profit {
+  font-weight: 600;
+  font-size: 92rpx;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin-top: 12rpx;
+}
+.profit.neg {
+  color: var(--rust);
+}
+.result .note {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #8a5a40;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+.chips .c {
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 9999rpx;
+  padding: 12rpx 24rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+.chips .b {
+  font-weight: 600;
+}
+.chips-row {
+  width: 100%;
+  display: flex;
+  gap: 16rpx;
+}
+
+/* ── 表单 ─────────────────────────── */
+.grid2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24rpx;
+}
+.grid2 .field {
+  /* HTML grid 1fr 1fr 两列（gap 12px=24rpx） */
+  width: calc((100% - 24rpx) / 2);
+  box-sizing: border-box;
+}
+.grid3 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24rpx;
+}
+.grid3 .field {
+  width: calc((100% - 48rpx) / 3);
+  box-sizing: border-box;
+}
+.mt12 { margin-top: 24rpx; }
+.mt16 { margin-top: 32rpx; }
+.mt18 { margin-top: 36rpx; }
+.mt6 { margin-top: 12rpx; }
+.mb14 { margin-bottom: 28rpx; }
+
+.field .label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 400;
+  color: var(--graphite);
+  margin: 0 4rpx 12rpx;
+}
+.label-opt {
+  color: var(--dove);
+  font-size: 24rpx;
+}
+.inwrap {
+  display: flex;
+  align-items: center;
+  background: var(--pure-white);
+  border: 1rpx solid rgba(23, 25, 28, 0.09);
+  border-radius: 32rpx;
+  padding: 22rpx 28rpx;
+  transition: border-color 0.15s;
+}
+.inwrap-focus {
+  border-color: var(--ink);
+}
+.inwrap .in {
+  border: 0;
+  background: transparent;
+  width: 100%;
+  height: 40rpx;
+  min-height: 40rpx;
+  font-size: 34rpx;
+  color: var(--ink);
+  letter-spacing: -0.009em;
+}
+.in-placeholder {
+  color: var(--dove);
+  font-size: 30rpx;
+}
+.unit {
+  color: var(--dove);
+  font-size: 26rpx;
+  margin-left: 12rpx;
+  flex: none;
+}
+
+/* 持有时间 */
+.hold-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+.hold-val {
+  font-size: 44rpx;
+  font-weight: 400;
+}
+.hold-unit {
+  font-size: 26rpx;
+  font-weight: 400;
+  color: var(--graphite);
+  margin-left: 16rpx;
+}
+.hold-y {
+  font-size: 26rpx;
+  font-weight: 400;
+  color: var(--graphite);
+  margin-left: 16rpx;
+}
+/* slider 定制：原生 slider 默认 margin 会导致与 HTML 视觉不一致，覆盖之 */
+.hold-range {
+  margin: 20rpx 0;
+  width: 100%;
+}
+.hchips {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+.hchip {
+  flex: none;
+  background: var(--fog);
+  color: var(--graphite);
+  font-size: 26rpx;
+  padding: 16rpx 28rpx;
+  border-radius: 9999rpx;
+  transition: 0.15s;
+}
+.hchip.on {
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-weight: 500;
+}
+.hold-tip {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+
+/* 分段控件 */
+.seg {
+  display: flex;
+  background: var(--fog);
+  border-radius: 9999rpx;
+  padding: 6rpx;
+  gap: 4rpx;
+  margin-top: 12rpx;
+}
+.seg-btn {
+  flex: 1;
+  color: var(--graphite);
+  font-size: 26rpx;
+  line-height: 1;
+  padding: 18rpx 8rpx;
+  border-radius: 9999rpx;
+  white-space: nowrap;
+  text-align: center;
+  transition: 0.15s;
+}
+.seg-btn.on {
+  background: var(--pure-white);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 0 0 1rpx rgba(4, 23, 43, 0.05), 0 16rpx 20rpx -12rpx rgba(0, 0, 0, 0.06);
+}
+
+/* 开关行 */
+.switchrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 24rpx 4rpx 0;
+}
+.switchrow .t {
+  font-size: 28rpx;
+  font-weight: 400;
+}
+.t-small {
+  display: block;
+  font-size: 24rpx;
+  color: var(--graphite);
+  margin-top: 4rpx;
+}
+
+/* ── 税卡 ─────────────────────────── */
+.tax-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20rpx;
+}
+.tax-name {
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.state {
+  flex: none;
+  font-size: 24rpx;
+  font-weight: 500;
+  padding: 10rpx 20rpx;
+  border-radius: 9999rpx;
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.state.warn {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+.state.ok {
+  background: var(--sky-wash);
+  color: var(--ink);
+}
+.state-check {
+  font-size: 24rpx;
+}
+.tax-amt {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 28rpx;
+}
+.tax-amt-b {
+  font-size: 44rpx;
+  font-weight: 400;
+}
+.tax-amt-i {
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+.tax-cap {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+.lock {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx dashed rgba(23, 25, 28, 0.1);
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.lock-icon {
+  font-size: 26rpx;
+}
+.hintline {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--rust);
+  background: rgba(251, 225, 209, 0.5);
+  border-radius: 24rpx;
+  padding: 16rpx 24rpx;
+}
+.hintline.mut {
+  color: var(--graphite);
+  background: var(--fog);
+}
+.mt12-hint {
+  margin-top: 24rpx;
+}
+
+/* ── 费用明细 ─────────────────────── */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8rpx 0;
+  font-size: 28rpx;
+}
+.row .k {
+  color: var(--graphite);
+}
+.k-small {
+  color: var(--dove);
+  font-size: 24rpx;
+  margin-left: 8rpx;
+}
+.row .v {
+  font-weight: 400;
+}
+.grp {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--dove);
+  letter-spacing: 0.12em;
+  padding-bottom: 2rpx;
+}
+.row.total {
+  border-top: 1rpx solid rgba(23, 25, 28, 0.08);
+  margin-top: 12rpx;
+  padding-top: 20rpx;
+}
+.row.total .k {
+  color: var(--ink);
+  font-weight: 500;
+}
+.row.total .v {
+  font-size: 34rpx;
+  font-weight: 400;
+}
+.f {
+  font-size: 22rpx;
+  color: var(--dove);
+  line-height: 1.4;
+  margin: -4rpx 0 6rpx;
+  word-break: break-all;
+}
+.foot-note {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: var(--dove);
+  line-height: 1.5;
+}
+/* 总览三列小行 */
+.ov3 {
+  margin: 4rpx 0;
+}
+.ov-row {
+  padding: 0;
+}
+
+/* ── 门禁卡（需求新增） ───────────── */
+.gate-card {
+  margin: 40rpx 32rpx 0;
+}
+.gate-title {
+  font-size: 32rpx;
+  font-weight: 500;
+}
+.gate-desc {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+.gate-btn {
+  margin-top: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.gate-btn:active {
+  transform: scale(0.98);
+}
+
+/* ── 底部栏 ───────────────────────── */
+.dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  border-top: 1rpx solid rgba(23, 25, 28, 0.06);
+  padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+}
+.dock .in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+.dock .k {
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.dock .v {
+  font-size: 38rpx;
+  font-weight: 400;
+  margin-top: 2rpx;
+}
+.cta {
+  background: var(--ink);
+  color: #fff;
+  border-radius: 9999rpx;
+  padding: 24rpx 44rpx;
+  font-size: 30rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  transition: transform 0.12s;
+}
+.cta:active {
+  transform: scale(0.96);
+}
+.cta-icon {
+  font-size: 30rpx;
+}
+
+/* ── 页脚 ─────────────────────────── */
+.page-footer {
+  padding: 16rpx 40rpx 48rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--dove);
+  line-height: 1.7;
+}

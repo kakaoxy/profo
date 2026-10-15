@@ -23,6 +23,10 @@ export const wxStubs = {
   setStorageSync: vi.fn(),
   getStorageSync: vi.fn(() => null),
   removeStorageSync: vi.fn(),
+  pageScrollTo: vi.fn(),
+  setClipboardData: vi.fn((opts: { data: string; success?: () => void }) => {
+    opts.success?.();
+  }),
 };
 
 (globalThis as unknown as { wx: typeof wxStubs }).wx = wxStubs;

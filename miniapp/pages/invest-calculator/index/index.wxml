@@ -1,0 +1,363 @@
+<!--
+  投资测算器 · 模板（1:1 移植 docs/To-Do/​​calculator.html，禁止调整布局/文案/交互）.
+  与 HTML 的对应关系：
+  - 顶栏 .topbar → 品牌 + 重置；
+  - hero / .card.result / 01-05 各卡 / .dock 一一对应；
+  - 门禁块（gate===false）为本次需求新增的访问控制（仅完善过手机号码的用户可用），其余无差异.
+-->
+<view class="app">
+
+  <!-- 顶栏（HTML .topbar：sticky 顶栏 + 品牌 + 重置） -->
+  <view class="topbar">
+    <view class="in">
+      <view class="brand"><view class="brand-dot"></view>Steep · 房投测算</view>
+      <view wx:if="{{gate}}" class="reset" bindtap="onReset">重置</view>
+    </view>
+  </view>
+
+  <!-- 头图（HTML .hero） -->
+  <view class="hero">
+    <view class="eyebrow">{{eyebrow}}</view>
+    <view class="hero-h1">一笔房账，</view>
+    <view class="hero-h1">算得清清楚楚。</view>
+    <view class="hero-p">输入买进与卖出价格，持有时间自动联动利息与增值税判定；契税、个税按家庭情况与面积自动套档。</view>
+  </view>
+
+  <!-- 门禁：仅完善过手机号码的用户可用（需求新增，非 HTML 内容） -->
+  <block wx:if="{{!gate}}">
+    <view class="card gate-card">
+      <view class="gate-title">{{loggedIn ? '完善手机号后可使用' : '登录并完善手机号后可使用'}}</view>
+      <view class="gate-desc">投资测算器仅对已绑定手机号的用户开放。{{loggedIn ? '请先在「我的」页完善手机号后使用。' : '请先登录并完善手机号后使用。'}}</view>
+      <view wx:if="{{!loggedIn}}" class="gate-btn" bindtap="onGoLogin">去登录</view>
+    </view>
+  </block>
+
+  <!-- 主区（HTML main；门禁通过后渲染） -->
+  <block wx:if="{{gate}}">
+    <view class="main">
+      <!-- 结果卡（HTML .card.result） -->
+      <view class="card result">
+        <view class="lbl">预计净利润（万元）</view>
+        <view class="profit {{profitNeg ? 'neg' : ''}}">{{profit}}</view>
+        <view class="note">{{note}}</view>
+        <view class="chips">
+          <view class="c">初始投入 <text class="b">{{chipInvest}}</text></view>
+          <view class="c">税费合计 <text class="b">{{chipTax}}</text></view>
+          <view class="chips-row">
+            <view class="c">利润率 <text class="b">{{chipMargin}}</text></view>
+            <view class="c">年化 <text class="b">{{chipAnnual}}</text></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 01 交易信息 -->
+      <view class="sec"><view class="sec-h2">01 · 交易信息</view><view class="sec-span">实时测算</view></view>
+      <view class="card">
+        <view class="grid2">
+          <view class="field">
+            <view class="label">买进价</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{buy}}" bindinput="onBuyInput" />
+              <text class="unit">万</text>
+            </view>
+          </view>
+          <view class="field">
+            <view class="label">卖出价</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{sell}}" bindinput="onSellInput" />
+              <text class="unit">万</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="field mt18">
+          <view class="label">持有时间</view>
+          <view class="hold-top">
+            <view class="hold-val"><text>{{hold.m}}</text><text class="hold-unit"> 个月</text><text class="hold-y">{{hold.y}}</text></view>
+          </view>
+          <slider
+            class="hold-range"
+            min="0"
+            max="240"
+            step="1"
+            value="{{months}}"
+            activeColor="#5d2a1a"
+            backgroundColor="rgba(23,25,28,.10)"
+            block-size="22"
+            bindchanging="onHoldInput"
+            bindchange="onHoldInput"
+          />
+          <view class="hchips">
+            <view
+              class="hchip {{item.on ? 'on' : ''}}"
+              wx:for="{{holdChips}}"
+              wx:key="m"
+              data-m="{{item.m}}"
+              bindtap="onHoldChipTap"
+            >{{item.label}}</view>
+          </view>
+          <view class="hold-tip">{{holdTip}}</view>
+        </view>
+
+        <view class="grid2 mt18">
+          <view class="field">
+            <view class="label">建筑面积</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{area}}" bindinput="onAreaInput" />
+              <text class="unit">㎡</text>
+            </view>
+          </view>
+          <view class="field">
+            <view class="label">家庭住房套数（契税档）</view>
+            <view class="seg">
+              <view
+                class="seg-btn {{item.on ? 'on' : ''}}"
+                wx:for="{{segFam}}"
+                wx:key="v"
+                data-v="{{item.v}}"
+                bindtap="onSegFam"
+              >{{item.label}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="grid2 mt12">
+          <view class="field">
+            <view class="label">买入税务核定价 <text class="label-opt">选填</text></view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{buyAssessed}}" placeholder="默认同买进价" placeholder-class="in-placeholder" bindinput="onBuyAssessedInput" />
+              <text class="unit">万</text>
+            </view>
+          </view>
+          <view class="field">
+            <view class="label">卖出税务核定价 <text class="label-opt">选填</text></view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{sellAssessed}}" placeholder="默认同卖出价" placeholder-class="in-placeholder" bindinput="onSellAssessedInput" />
+              <text class="unit">万</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 02 资金与持有成本 -->
+      <view class="sec"><view class="sec-h2">02 · 资金与持有成本</view><view class="sec-span">利息随持有时间联动</view></view>
+      <view class="card">
+        <view class="grid2">
+          <view class="field">
+            <view class="label">贷款金额 <text class="label-opt">默认买进价 80%</text></view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{loan}}" bindinput="onLoanInput" />
+              <text class="unit">万</text>
+            </view>
+          </view>
+          <view class="field">
+            <view class="label">贷款年化利率</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{rate}}" bindinput="onRateInput" />
+              <text class="unit">%</text>
+            </view>
+          </view>
+        </view>
+        <view class="tax-amt mt16">
+          <view class="tax-amt-b">{{interestText}}</view>
+          <text class="tax-amt-i">预计利息支出</text>
+        </view>
+        <view class="tax-cap">{{interestCap}}</view>
+      </view>
+
+      <!-- 03 税费 -->
+      <view class="sec"><view class="sec-h2">03 · 税费明细</view><view class="sec-span">上海税政 2026/2/25</view></view>
+
+      <!-- 增值税 -->
+      <view class="card mb14">
+        <view class="tax-top">
+          <view class="tax-name">增值税及附加</view>
+          <view class="state {{vatStateOk ? 'ok' : 'warn'}}">
+            <block wx:if="{{vatStateOk}}">
+              <text class="state-check">✓</text>满 2 年 · 免征
+            </block>
+            <block wx:else>不满 2 年 · 自动征收</block>
+          </view>
+        </view>
+        <view class="tax-amt">
+          <view class="tax-amt-b">{{vatAmt}}</view>
+          <text class="tax-amt-i">3.18%</text>
+        </view>
+        <view class="tax-cap">{{vatCap}}</view>
+        <view class="seg mt12">
+          <view
+            class="seg-btn {{item.on ? 'on' : ''}}"
+            wx:for="{{segVat}}"
+            wx:key="v"
+            data-v="{{item.v}}"
+            bindtap="onSegVat"
+          >{{item.label}}</view>
+        </view>
+        <view class="{{vatHintCls}}">{{vatHint}}</view>
+        <view class="lock">
+          <text class="lock-icon">🔒</text>
+          <text>系统按持有时间自动判定，持有不满 2 年不可手动免除</text>
+        </view>
+      </view>
+
+      <!-- 个税 -->
+      <view class="card mb14">
+        <view class="tax-top">
+          <view class="tax-name">个人所得税</view>
+          <view class="state {{pitStateOk ? 'ok' : 'warn'}}">
+            <block wx:if="{{pitStateOk}}">
+              <text class="state-check">✓</text>满五唯一 · 免征
+            </block>
+            <block wx:else>{{pitChip}}</block>
+          </view>
+        </view>
+        <view class="tax-amt">
+          <view class="tax-amt-b">{{pitAmt}}</view>
+          <text class="tax-amt-i">卖出环节</text>
+        </view>
+        <view class="tax-cap">{{pitCap}}</view>
+        <view class="seg mt12">
+          <view
+            class="seg-btn {{item.on ? 'on' : ''}}"
+            wx:for="{{segPit}}"
+            wx:key="v"
+            data-v="{{item.v}}"
+            bindtap="onSegPit"
+          >{{item.label}}</view>
+        </view>
+        <view class="switchrow">
+          <view class="t">
+            家庭唯一住房
+            <text class="t-small">满 5 年（60 个月）且唯一 → 自动免征</text>
+          </view>
+          <switch checked="{{sole}}" color="#5d2a1a" bindchange="onSoleChange" />
+        </view>
+        <view class="{{pitHintCls}} mt12">{{pitHint}}</view>
+      </view>
+
+      <!-- 契税 -->
+      <view class="card mb14">
+        <view class="tax-top">
+          <view class="tax-name">契税</view>
+          <view class="state warn">{{deedChip}}</view>
+        </view>
+        <view class="tax-amt">
+          <view class="tax-amt-b">{{deedAmt}}</view>
+          <text class="tax-amt-i">买入环节</text>
+        </view>
+        <view class="tax-cap">{{deedCap}}</view>
+        <view class="switchrow">
+          <view class="t">
+            买入时上家持有不满 2 年
+            <text class="t-small">增值税由买方承担，并计入契税计税基础抵减</text>
+          </view>
+          <switch checked="{{buyUnder2}}" color="#5d2a1a" bindchange="onBuyUnder2Change" />
+        </view>
+      </view>
+
+      <!-- 04 其他费用 -->
+      <view class="sec"><view class="sec-h2">04 · 其他费用</view><view class="sec-span">佣金率可调 · 默认 1%</view></view>
+      <view class="card">
+        <view class="grid3">
+          <view class="field">
+            <view class="label">装修费</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{reno}}" bindinput="onRenoInput" />
+              <text class="unit">万</text>
+            </view>
+          </view>
+          <view class="field">
+            <view class="label">名额费</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{quota}}" placeholder="0" placeholder-class="in-placeholder" bindinput="onQuotaInput" />
+              <text class="unit">万</text>
+            </view>
+          </view>
+          <view class="field">
+            <view class="label">额外成本</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{extra}}" bindinput="onExtraInput" />
+              <text class="unit">万</text>
+            </view>
+          </view>
+        </view>
+        <view class="grid2 mt12">
+          <view class="field">
+            <view class="label">买进佣金率</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{buyCommRate}}" bindinput="onBuyCommRateInput" />
+              <text class="unit">%</text>
+            </view>
+          </view>
+          <view class="field">
+            <view class="label">卖出佣金率</view>
+            <view class="inwrap">
+              <input class="in" type="digit" value="{{sellCommRate}}" bindinput="onSellCommRateInput" />
+              <text class="unit">%</text>
+            </view>
+          </view>
+        </view>
+        <view class="mt6">
+          <view class="row"><view class="k">买进佣金<text class="k-small">{{buyCommTag}}</text></view><view class="v">{{bBuyComm}}</view></view>
+          <view class="row"><view class="k">卖出佣金<text class="k-small">{{sellCommTag}}</text></view><view class="v">{{bSellComm}}</view></view>
+        </view>
+      </view>
+
+      <!-- 05 成本总览 -->
+      <view class="sec"><view class="sec-h2">05 · 成本总览</view><view class="sec-span">万元</view></view>
+      <view class="card">
+        <view class="grp">买入环节</view>
+        <view class="row"><view class="k">契税</view><view class="v">{{bDeed}}</view></view>
+        <view class="f">{{fDeed}}</view>
+        <block wx:if="{{showBuyVat}}">
+          <view class="row"><view class="k">买入增值税及附加</view><view class="v">{{bBuyVat}}</view></view>
+          <view class="f">{{fBuyVat}}</view>
+        </block>
+        <view class="row"><view class="k">买进佣金<text class="k-small">{{buyCommTag}}</text></view><view class="v">{{bBuyComm2}}</view></view>
+        <view class="f">{{fBuyComm}}</view>
+        <view class="grid3 ov3">
+          <view class="row ov-row"><view class="k">名额费</view><view class="v">{{bQuota}}</view></view>
+          <view class="row ov-row"><view class="k">装修费</view><view class="v">{{bReno}}</view></view>
+          <view class="row ov-row"><view class="k">额外成本</view><view class="v">{{bExtra}}</view></view>
+        </view>
+
+        <view class="grp">持有环节</view>
+        <view class="row"><view class="k">贷款利息</view><view class="v">{{bInterest}}</view></view>
+        <view class="f">{{fInterest}}</view>
+
+        <view class="grp">卖出环节</view>
+        <view class="row"><view class="k">增值税及附加</view><view class="v">{{bVat}}</view></view>
+        <view class="f">{{fVat}}</view>
+        <view class="row"><view class="k">个人所得税</view><view class="v">{{bPit}}</view></view>
+        <view class="f">{{fPit}}</view>
+        <view class="row"><view class="k">卖出佣金<text class="k-small">{{sellCommTag}}</text></view><view class="v">{{bSellComm2}}</view></view>
+        <view class="f">{{fSellComm}}</view>
+
+        <view class="row total"><view class="k k-strong">税费合计</view><view class="v v-lg">{{tTax}}</view></view>
+        <view class="f">{{fTax}}</view>
+        <view class="row total"><view class="k k-strong">总成本（含利息）</view><view class="v v-lg">{{tCost}}</view></view>
+        <view class="f">{{fCost}}</view>
+        <view class="foot-note">利润率按初始投入（买进价 − 贷款金额 + 装修费 + 买进佣金）计算；年化 = 利润率 ÷ 持有年数。</view>
+      </view>
+    </view>
+
+    <view class="page-footer">
+      <view>税费规则依据《上海市住房税费政策一览（2026/2/25）》</view>
+      <view>本工具为估算参考，实际以税务核定为准</view>
+    </view>
+  </block>
+</view>
+
+<!-- 底部栏（HTML .dock；门禁通过后渲染） -->
+<view wx:if="{{gate}}" class="dock">
+  <view class="in">
+    <view>
+      <view class="k">预计净利润</view>
+      <view class="v">{{dockProfit}}</view>
+    </view>
+    <view class="cta" bindtap="onCopy">
+      <text class="cta-icon">⧉</text>
+      <text>{{copyDone ? '已复制 ✓' : '复制结果'}}</text>
+    </view>
+  </view>
+</view>
