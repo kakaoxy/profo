@@ -59,6 +59,8 @@ export interface DictAddressPickerProps {
   sourceBizId?: string;
   /** 是否允许「新增小区」入口（项目/线索/营销表单 = true） */
   allowCreate?: boolean;
+  /** 是否允许「手动填写地址」兼容模式入口（默认 true；营销表单传 false，统一走字典选择） */
+  allowManual?: boolean;
   disabled?: boolean;
   className?: string;
 }
@@ -126,6 +128,7 @@ export function DictAddressPicker({
   sourceBizType,
   sourceBizId,
   allowCreate = true,
+  allowManual = true,
   disabled = false,
   className,
 }: DictAddressPickerProps) {
@@ -527,28 +530,30 @@ export function DictAddressPicker({
                 小区 <span className="text-rust">*</span>
                 <span className="ml-1 text-[10px] font-normal text-dove">搜小区名或地址；没有可新建（需审核）</span>
               </Label>
-              <button
-                type="button"
-                className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
-                disabled={disabled}
-                onClick={() => {
-                  setManualMode(true);
-                  setManualAddress(v.address);
-                  emit({
-                    dictStatus: "manual",
-                    communityId: null,
-                    buildingId: null,
-                    roomId: null,
-                    newCommunity: null,
-                    newBuilding: null,
-                    newRoom: null,
-                    district: null,
-                    businessCircle: null,
-                  });
-                }}
-              >
-                手动填写地址
-              </button>
+              {allowManual ? (
+                <button
+                  type="button"
+                  className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
+                  disabled={disabled}
+                  onClick={() => {
+                    setManualMode(true);
+                    setManualAddress(v.address);
+                    emit({
+                      dictStatus: "manual",
+                      communityId: null,
+                      buildingId: null,
+                      roomId: null,
+                      newCommunity: null,
+                      newBuilding: null,
+                      newRoom: null,
+                      district: null,
+                      businessCircle: null,
+                    });
+                  }}
+                >
+                  手动填写地址
+                </button>
+              ) : null}
             </div>
             <Popover open={communityOpen} onOpenChange={setCommunityOpen}>
               <PopoverTrigger asChild>

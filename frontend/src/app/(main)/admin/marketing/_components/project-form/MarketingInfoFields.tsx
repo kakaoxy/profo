@@ -129,6 +129,9 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
                       setValue("new_room", next.newRoom ?? null, opts);
                     }}
                     sourceBizType="marketing"
+                    // 营销表单统一走楼盘字典选择器，不提供手动填写地址入口；
+                    // 历史手动录入记录在编辑态仍可经「返回字典选择」迁移到字典模式
+                    allowManual={false}
                   />
                 </FormControl>
                 <FormMessage />
