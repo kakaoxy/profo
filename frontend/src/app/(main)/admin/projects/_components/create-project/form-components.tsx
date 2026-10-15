@@ -20,6 +20,8 @@ interface BaseFieldProps {
   placeholder?: string;
   description?: string;
   required?: boolean;
+  /** 透传到 FormItem 的 className（如 sm:col-span-2 控制栅格跨列） */
+  className?: string;
 }
 
 /* Steep-consistent input classes */
@@ -43,13 +45,14 @@ export function SimpleInputField({
   type = "text",
   step,
   required,
+  className,
 }: SimpleInputProps) {
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem>
+        <FormItem className={className}>
           <FormLabel className={description ? steepLabel : `${steepLabel} mb-2`}>
             {label}
             {required && <span className="text-error ml-0.5">*</span>}

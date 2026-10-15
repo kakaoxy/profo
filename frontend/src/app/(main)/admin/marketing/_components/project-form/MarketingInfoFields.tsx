@@ -103,41 +103,43 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
         </span>
       </h3>
       <div className="space-y-6">
-        {/* 第一行：小区名称和房源标题 */}
+        {/* 第一行：楼盘字典四级地址（M4：楼栋/户室选填落库；H3：透传 new_* 进审核池），唯一小区入口。
+            独占一行：选择器含楼栋/楼层/户室三栏级联，压缩在半宽列内会溢出破碎（房源标题移到第二行） */}
+        <FormField
+          control={control}
+          name="community_name"
+          render={({ field }) => (
+            <FormItem className="space-y-0">
+              <FormControl>
+                <DictAddressPicker
+                  value={dictValue}
+                  onChange={(next) => {
+                    setDictValue(next);
+                    field.onChange(next.communityName || "");
+                    // shouldDirty: true —— RHF setValue 默认不标 dirty，漏传会导致
+                    // 仅改楼栋/户室时 dirtyFields 为空，提交提示「没有需要保存的变更」
+                    const opts = { shouldDirty: true } as const;
+                    if (next.communityId) setValue("community_id", next.communityId, opts);
+                    setValue("building_id", next.buildingId ?? null, opts);
+                    setValue("room_id", next.roomId ?? null, opts);
+                    setValue("dict_status", next.dictStatus ?? null, opts);
+                    setValue("new_community", next.newCommunity ?? null, opts);
+                    setValue("new_building", next.newBuilding ?? null, opts);
+                    setValue("new_room", next.newRoom ?? null, opts);
+                  }}
+                  sourceBizType="marketing"
+                  // 营销表单统一走楼盘字典选择器，不提供手动填写地址入口；
+                  // 历史手动录入记录在编辑态仍可经「返回字典选择」迁移到字典模式
+                  allowManual={false}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 第二行：房源标题 + 顾问选择 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          {/* 楼盘字典四级地址（M4：楼栋/户室选填落库；H3：透传 new_* 进审核池），唯一小区入口 */}
-          <FormField
-            control={control}
-            name="community_name"
-            render={({ field }) => (
-              <FormItem className="space-y-0">
-                <FormControl>
-                  <DictAddressPicker
-                    value={dictValue}
-                    onChange={(next) => {
-                      setDictValue(next);
-                      field.onChange(next.communityName || "");
-                      // shouldDirty: true —— RHF setValue 默认不标 dirty，漏传会导致
-                      // 仅改楼栋/户室时 dirtyFields 为空，提交提示「没有需要保存的变更」
-                      const opts = { shouldDirty: true } as const;
-                      if (next.communityId) setValue("community_id", next.communityId, opts);
-                      setValue("building_id", next.buildingId ?? null, opts);
-                      setValue("room_id", next.roomId ?? null, opts);
-                      setValue("dict_status", next.dictStatus ?? null, opts);
-                      setValue("new_community", next.newCommunity ?? null, opts);
-                      setValue("new_building", next.newBuilding ?? null, opts);
-                      setValue("new_room", next.newRoom ?? null, opts);
-                    }}
-                    sourceBizType="marketing"
-                    // 营销表单统一走楼盘字典选择器，不提供手动填写地址入口；
-                    // 历史手动录入记录在编辑态仍可经「返回字典选择」迁移到字典模式
-                    allowManual={false}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           <FormField
             control={control}
             name="title"
@@ -159,10 +161,6 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
               </FormItem>
             )}
           />
-        </div>
-
-        {/* 第二行：顾问选择 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <FormField
             control={control}
             name="consultant_id"

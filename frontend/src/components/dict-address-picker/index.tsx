@@ -19,7 +19,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Building2, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Building2, ChevronRight, Loader2, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -201,10 +201,7 @@ export function DictAddressPicker({
 
   /** 楼栋列表：服务端 keyword 搜索 + 分页懒加载（大社区只渲染当页，防卡顿） */
   const loadBuildings = useCallback(
-    async (
-      communityId: string,
-      opts?: { keyword?: string; page?: number; append?: boolean },
-    ) => {
+    async (communityId: string, opts?: { keyword?: string; page?: number; append?: boolean }) => {
       const kw = opts?.keyword ?? "";
       const pg = opts?.page ?? 1;
       const append = opts?.append ?? false;
@@ -288,7 +285,10 @@ export function DictAddressPicker({
           client.GET("/api/v1/admin/building-dictionary/buildings/{building_id}", {
             params: {
               path: { building_id: buildingId },
-              query: sourceBizType && sourceBizId ? { source_biz_type: sourceBizType, source_biz_id: sourceBizId } : {},
+              query:
+                sourceBizType && sourceBizId
+                  ? { source_biz_type: sourceBizType, source_biz_id: sourceBizId }
+                  : {},
             },
           }),
         ]);
@@ -382,7 +382,13 @@ export function DictAddressPicker({
       return;
     }
     toast.success(`已提交「新楼栋 ${buildingNo}」→ 审核池；通过前带「未审核」标签展示`);
-    emit({ newBuilding: { name: buildingNo }, buildingId: null, buildingNo: "", roomId: null, roomNo: "" });
+    emit({
+      newBuilding: { name: buildingNo },
+      buildingId: null,
+      buildingNo: "",
+      roomId: null,
+      roomNo: "",
+    });
     void loadBuildings(v.communityId, { keyword: buildingKeyword, page: 1 });
   }, [v.communityId, buildings, buildingKeyword, sourceBizType, sourceBizId, emit, loadBuildings]);
 
@@ -471,7 +477,19 @@ export function DictAddressPicker({
     toast.success(`已提交「新户室 ${v.buildingNo}号 ${roomNo}」→ 审核池；通过后该层自动出现`);
     emit({ newRoom: { name: roomNo }, roomId: null, roomNo: "" });
     void loadRooms(v.buildingId);
-  }, [v.communityId, v.buildingId, v.buildingNo, v.communityName, selectedFloor, rooms, selectedPendingBuilding, sourceBizType, sourceBizId, emit, loadRooms]);
+  }, [
+    v.communityId,
+    v.buildingId,
+    v.buildingNo,
+    v.communityName,
+    selectedFloor,
+    rooms,
+    selectedPendingBuilding,
+    sourceBizType,
+    sourceBizId,
+    emit,
+    loadRooms,
+  ]);
 
   /** 楼层过滤后的户室（选中楼层展示该层；否则全部） */
   const visibleRooms = useMemo(() => {
@@ -482,10 +500,14 @@ export function DictAddressPicker({
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {manualMode ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4 rounded-cards border border-dove/40 bg-white p-4">
+          <p className="flex items-center gap-1.5 text-[12px] text-graphite">
+            <AlertTriangle className="size-3.5 text-rust" />
+            兼容模式：手动填写不经楼盘字典，行政区/商圈需自行填写
+          </p>
           {/* 手填模式下小区名称仍需可填（表单 community_name 必填校验依赖） */}
           <div className="flex flex-col gap-1.5">
-            <Label>
+            <Label className="text-xs font-medium uppercase tracking-wider text-graphite">
               小区名称 <span className="text-rust">*</span>
             </Label>
             <Input
@@ -493,14 +515,17 @@ export function DictAddressPicker({
               onChange={(e) => emit({ communityName: e.target.value, dictStatus: "manual" })}
               placeholder="手动输入小区名称"
               disabled={disabled}
+              className="h-10 rounded-inputs border-dove/50 bg-white text-sm font-medium text-ink focus-visible:ring-ink/10"
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <Label>手填地址</Label>
+              <Label className="text-xs font-medium uppercase tracking-wider text-graphite">
+                手填地址
+              </Label>
               <button
                 type="button"
-                className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
+                className="flex items-center gap-0.5 text-[12px] text-rust hover:underline"
                 disabled={disabled}
                 onClick={() => {
                   setManualMode(false);
@@ -518,74 +543,129 @@ export function DictAddressPicker({
               }}
               placeholder="如：泗塘三村61号401"
               disabled={disabled}
+              className="h-10 rounded-inputs border-dove/50 bg-white text-sm font-medium text-ink focus-visible:ring-ink/10"
             />
           </div>
         </div>
       ) : (
-        <>
+        <div className="@container flex flex-col gap-4 rounded-cards border border-dove/40 bg-white p-4">
+          {/* 选中进度指示：小区必选，楼栋/户室选填（选中后逐级点亮，与表单其余 Steep 字段风格一致） */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[13px]">
+              {(
+                [
+                  { label: v.communityName, active: !!v.communityName },
+                  { label: v.buildingNo ? `${v.buildingNo}号` : null, active: !!v.buildingNo },
+                  { label: v.roomNo ? plateOfRoom(v.roomNo) : null, active: !!v.roomNo },
+                ] as const
+              ).some((s) => s.label) ? (
+                <>
+                  {(
+                    [
+                      { label: v.communityName, active: true },
+                      { label: v.buildingNo ? `${v.buildingNo}号` : null, active: !!v.buildingNo },
+                      { label: v.roomNo ? plateOfRoom(v.roomNo) : null, active: !!v.roomNo },
+                    ] as const
+                  )
+                    .filter((s) => s.label)
+                    .map((s, i) => (
+                      <span key={i} className="flex min-w-0 items-center gap-1.5">
+                        {i > 0 ? <ChevronRight className="size-3 shrink-0 text-dove" /> : null}
+                        <span
+                          className={cn(
+                            "truncate font-medium",
+                            s.active ? "text-ink" : "text-graphite",
+                          )}
+                        >
+                          {s.label}
+                        </span>
+                      </span>
+                    ))}
+                  {v.dictStatus === "pending" ? (
+                    <Badge className="h-4 px-1 text-[9px]" variant="outline">
+                      未审核
+                    </Badge>
+                  ) : null}
+                </>
+              ) : (
+                <span className="text-[13px] text-dove">从楼盘字典选择地址</span>
+              )}
+            </div>
+            {allowManual ? (
+              <button
+                type="button"
+                className="shrink-0 text-[12px] text-rust hover:underline"
+                disabled={disabled}
+                onClick={() => {
+                  setManualMode(true);
+                  setManualAddress(v.address);
+                  emit({
+                    dictStatus: "manual",
+                    communityId: null,
+                    buildingId: null,
+                    roomId: null,
+                    newCommunity: null,
+                    newBuilding: null,
+                    newRoom: null,
+                    district: null,
+                    businessCircle: null,
+                  });
+                }}
+              >
+                手动填写地址
+              </button>
+            ) : null}
+          </div>
+
           {/* 一级：小区联想 */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label>
-                小区 <span className="text-rust">*</span>
-                <span className="ml-1 text-[10px] font-normal text-dove">搜小区名或地址；没有可新建（需审核）</span>
-              </Label>
-              {allowManual ? (
-                <button
-                  type="button"
-                  className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
-                  disabled={disabled}
-                  onClick={() => {
-                    setManualMode(true);
-                    setManualAddress(v.address);
-                    emit({
-                      dictStatus: "manual",
-                      communityId: null,
-                      buildingId: null,
-                      roomId: null,
-                      newCommunity: null,
-                      newBuilding: null,
-                      newRoom: null,
-                      district: null,
-                      businessCircle: null,
-                    });
-                  }}
-                >
-                  手动填写地址
-                </button>
-              ) : null}
-            </div>
             <Popover open={communityOpen} onOpenChange={setCommunityOpen}>
               <PopoverTrigger asChild>
                 <Button
+                  type="button"
                   variant="outline"
                   role="combobox"
                   disabled={disabled}
-                  className={cn("justify-between", !v.communityName && "text-dove")}
+                  className={cn(
+                    "h-11 justify-between rounded-inputs border-dove/50 bg-white px-4 text-sm font-medium shadow-none focus-visible:ring-ink/10",
+                    !v.communityName && "text-dove",
+                  )}
                 >
-                  <span className="truncate">
-                    {v.communityName || (v.dictStatus === "pending" ? `${v.communityName}（未审核）` : "搜索小区…")}
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Building2 className="size-4 shrink-0 text-graphite" />
+                    <span className="truncate font-normal">
+                      {v.communityName ||
+                        (v.dictStatus === "pending" ? `${v.communityName}（未审核）` : "搜索小区…")}
+                    </span>
                   </span>
-                  {searching ? <Loader2 className="size-4 animate-spin" /> : <Building2 className="size-4 opacity-50" />}
+                  {searching ? (
+                    <Loader2 className="size-4 shrink-0 animate-spin" />
+                  ) : (
+                    <Search className="size-4 shrink-0 text-graphite" />
+                  )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="start">
+              <PopoverContent
+                className="w-88 rounded-2xl border-dove/40 p-0 shadow-steep-sm"
+                align="start"
+              >
                 <div className="border-b border-dove/30 p-2">
                   <Input
                     autoFocus
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
                     placeholder="输入小区名/地址/别名搜索"
+                    className="h-10 rounded-xl border-dove/40 bg-fog text-sm font-medium focus-visible:ring-ink/10"
                   />
                 </div>
-                <div className="max-h-64 overflow-y-auto p-1">
+                <div className="max-h-64 overflow-y-auto p-1.5">
                   {communityOptions.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       className={cn(
-                        "flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-[14px] hover:bg-fog",
-                        v.communityId === c.id && "bg-fog",
+                        "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-fog",
+                        v.communityId === c.id && "bg-fog font-medium text-ink",
                       )}
                       onClick={() => {
                         emit({
@@ -610,22 +690,29 @@ export function DictAddressPicker({
                       }}
                     >
                       <span>{c.name}</span>
-                      {c.district ? <span className="text-[12px] text-graphite">{c.district}</span> : null}
+                      {c.district ? (
+                        <span className="text-[12px] text-graphite">{c.district}</span>
+                      ) : null}
                     </button>
                   ))}
                   {keyword.trim() && !searching && communityOptions.length === 0 ? (
                     allowCreate ? (
                       <button
                         type="button"
-                        className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-[14px] text-rust hover:bg-fog"
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium text-rust transition-colors hover:bg-fog"
                         onClick={handleCreateCommunity}
                       >
                         <Plus className="size-4" />
                         新增小区「{keyword.trim()}」（需审核，项目照常建）
                       </button>
                     ) : (
-                      <p className="px-2 py-3 text-center text-[13px] text-graphite">无匹配小区</p>
+                      <p className="px-2 py-4 text-center text-[13px] text-graphite">无匹配小区</p>
                     )
+                  ) : null}
+                  {!keyword.trim() && communityOptions.length === 0 ? (
+                    <p className="px-2 py-4 text-center text-[13px] text-dove">
+                      输入关键字搜索小区
+                    </p>
                   ) : null}
                 </div>
               </PopoverContent>
@@ -640,19 +727,21 @@ export function DictAddressPicker({
 
           {/* 二~四级：楼栋 / 楼层 / 户室 三栏级联（选填下钻，参考设计稿 casc 三栏式） */}
           {v.communityId ? (
-            <div className="grid grid-cols-[1fr_0.8fr_1.4fr] gap-2">
+            <div className="grid grid-cols-1 gap-2 @[560px]:grid-cols-[1.2fr_0.8fr_1.6fr]">
               {/* 栏一：楼栋（搜索 + 分页懒加载 + 新建入口） */}
-              <div className="flex min-w-0 flex-col rounded-lg border border-dove/40 bg-white">
-                <div className="flex items-center justify-between border-b border-dove/30 px-2 py-1.5">
-                  <span className="text-[11.5px] font-medium text-ink">
-                    楼栋 <span className="font-normal text-dove">选填</span>
+              <div className="flex min-w-0 flex-col rounded-2xl border border-dove/40 bg-fog/60">
+                <div className="flex items-center justify-between border-b border-dove/30 px-3 py-2">
+                  <span className="text-[12px] font-medium text-ink">
+                    楼栋 <span className="ml-0.5 text-[10px] font-normal text-dove">选填</span>
                     {buildingTotal > 0 ? (
-                      <span className="ml-1 text-[10px] font-normal text-dove tabular-nums">{buildingTotal}</span>
+                      <span className="ml-1 text-[10px] font-normal text-dove tabular-nums">
+                        {buildingTotal}
+                      </span>
                     ) : null}
                   </span>
                   <button
                     type="button"
-                    className="flex items-center gap-0.5 text-[10.5px] text-rust hover:underline"
+                    className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
                     disabled={disabled}
                     onClick={() => void handleCreateBuilding()}
                   >
@@ -660,19 +749,21 @@ export function DictAddressPicker({
                     新建
                   </button>
                 </div>
-                <div className="border-b border-dove/20 px-2 py-1">
+                <div className="border-b border-dove/20 px-2 py-1.5">
                   <input
                     value={buildingKeyword}
                     onChange={(e) => setBuildingKeyword(e.target.value)}
                     placeholder="搜楼栋号…"
                     disabled={disabled}
-                    className="h-6 w-full rounded-md bg-fog px-2 text-[11.5px] text-ink outline-none placeholder:text-dove"
+                    className="h-7 w-full rounded-lg bg-white px-2.5 text-[12px] text-ink shadow-none outline-none placeholder:text-dove"
                   />
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-1" style={{ maxHeight: 176 }}>
+                <div className="min-h-0 flex-1 overflow-y-auto p-1.5" style={{ maxHeight: 176 }}>
                   {!loadingBuildings && buildings.length === 0 ? (
-                    <p className="px-2 py-3 text-[11px] text-dove">
-                      {buildingKeyword ? "没找到该楼栋，可新建（需审核）" : "← 暂无楼栋，可新建（需审核）"}
+                    <p className="px-2 py-3 text-[11.5px] leading-relaxed text-dove">
+                      {buildingKeyword
+                        ? "没找到该楼栋，可新建（需审核）"
+                        : "暂无楼栋，可新建（需审核）"}
                     </p>
                   ) : null}
                   {loadingBuildings ? (
@@ -700,8 +791,8 @@ export function DictAddressPicker({
                               : undefined
                           }
                           className={cn(
-                            "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12px] transition-colors",
-                            selected ? "bg-ink text-white" : "text-ink hover:bg-fog",
+                            "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[12px] font-medium transition-colors",
+                            selected ? "bg-ink text-white" : "text-ink hover:bg-white",
                             b.pending && !selected && "border-dashed text-dove opacity-70",
                           )}
                           onClick={() => {
@@ -747,26 +838,28 @@ export function DictAddressPicker({
                   {!loadingBuildings && buildings.length < buildingTotal ? (
                     <button
                       type="button"
-                      className="mt-1 w-full rounded-md border border-dashed border-dove py-1 text-[10.5px] text-graphite hover:border-ash"
+                      className="mt-1 w-full rounded-lg border border-dashed border-dove py-1.5 text-[11px] text-graphite transition-colors hover:border-ash"
                       disabled={loadingMoreBuildings}
                       onClick={loadMoreBuildings}
                     >
-                      {loadingMoreBuildings ? "加载中…" : `加载更多（${buildings.length}/${buildingTotal}）`}
+                      {loadingMoreBuildings
+                        ? "加载中…"
+                        : `加载更多（${buildings.length}/${buildingTotal}）`}
                     </button>
                   ) : null}
                 </div>
               </div>
 
               {/* 栏二：楼层（名义 ∪ 实际 ∪ pending，未分层置底） */}
-              <div className="flex min-w-0 flex-col rounded-lg border border-dove/40 bg-white">
-                <div className="flex items-center justify-between border-b border-dove/30 px-2 py-1.5">
-                  <span className="text-[11.5px] font-medium text-ink">
-                    楼层 <span className="font-normal text-dove">选填</span>
+              <div className="flex min-w-0 flex-col rounded-2xl border border-dove/40 bg-fog/60">
+                <div className="flex items-center justify-between border-b border-dove/30 px-3 py-2">
+                  <span className="text-[12px] font-medium text-ink">
+                    楼层 <span className="ml-0.5 text-[10px] font-normal text-dove">选填</span>
                   </span>
                   {v.buildingId || selectedPendingBuilding ? (
                     <button
                       type="button"
-                      className="flex items-center gap-0.5 text-[10.5px] text-rust hover:underline"
+                      className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
                       disabled={disabled}
                       onClick={() => void handleCreateRoom()}
                     >
@@ -775,17 +868,17 @@ export function DictAddressPicker({
                     </button>
                   ) : null}
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-1" style={{ maxHeight: 176 }}>
+                <div className="min-h-0 flex-1 overflow-y-auto p-1.5" style={{ maxHeight: 176 }}>
                   {!v.buildingId && !selectedPendingBuilding ? (
-                    <p className="px-2 py-3 text-[11px] text-dove">← 选择楼栋</p>
+                    <p className="px-2 py-3 text-[11.5px] text-dove">← 选择楼栋</p>
                   ) : selectedPendingBuilding ? (
-                    <p className="px-2 py-3 text-[11px] text-dove">楼栋审核中，通过后展示楼层</p>
+                    <p className="px-2 py-3 text-[11.5px] text-dove">楼栋审核中，通过后展示楼层</p>
                   ) : loadingRooms ? (
                     <div className="flex justify-center py-3">
                       <Loader2 className="size-4 animate-spin text-graphite" />
                     </div>
                   ) : floors.length === 0 ? (
-                    <p className="px-2 py-3 text-[11px] text-dove">暂无楼层，可新建（需审核）</p>
+                    <p className="px-2 py-3 text-[11.5px] text-dove">暂无楼层，可新建（需审核）</p>
                   ) : (
                     floors.map((f) => {
                       const selected = selectedFloor === f.floor;
@@ -794,14 +887,21 @@ export function DictAddressPicker({
                           key={f.floor ?? "none"}
                           type="button"
                           className={cn(
-                            "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12px] transition-colors",
-                            selected ? "bg-ink text-white" : "text-ink hover:bg-fog",
+                            "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[12px] font-medium transition-colors",
+                            selected ? "bg-ink text-white" : "text-ink hover:bg-white",
                           )}
                           onClick={() => setSelectedFloor(selected ? null : f.floor)}
                         >
-                          <span className="tabular-nums">{f.floor == null ? "楼层待定" : `${f.floor} 层`}</span>
+                          <span className="tabular-nums">
+                            {f.floor == null ? "楼层待定" : `${f.floor} 层`}
+                          </span>
                           <span className="flex items-center gap-1">
-                            <span className={cn("text-[10px]", selected ? "opacity-70" : "text-dove")}>
+                            <span
+                              className={cn(
+                                "text-[10px] font-normal",
+                                selected ? "opacity-70" : "text-dove",
+                              )}
+                            >
                               {f.room_count}户
                             </span>
                             {f.has_pending ? (
@@ -818,21 +918,23 @@ export function DictAddressPicker({
               </div>
 
               {/* 栏三：户室网格（含新建入口） */}
-              <div className="flex min-w-0 flex-col rounded-lg border border-dove/40 bg-white">
-                <div className="flex items-center justify-between border-b border-dove/30 px-2 py-1.5">
-                  <span className="text-[11.5px] font-medium text-ink">
-                    户室 <span className="font-normal text-dove">选填</span>
+              <div className="flex min-w-0 flex-col rounded-2xl border border-dove/40 bg-fog/60">
+                <div className="flex items-center justify-between border-b border-dove/30 px-3 py-2">
+                  <span className="text-[12px] font-medium text-ink">
+                    户室 <span className="ml-0.5 text-[10px] font-normal text-dove">选填</span>
                     {v.buildingNo ? (
                       <span className="ml-1 text-[10px] font-normal text-dove tabular-nums">
                         {v.buildingNo}号
-                        {selectedFloor != null && selectedFloor !== "all" ? ` · ${selectedFloor}层` : ""}
+                        {selectedFloor != null && selectedFloor !== "all"
+                          ? ` · ${selectedFloor}层`
+                          : ""}
                       </span>
                     ) : null}
                   </span>
                   {(v.buildingId ? floors.length === 0 : !!selectedPendingBuilding) ? (
                     <button
                       type="button"
-                      className="flex items-center gap-0.5 text-[10.5px] text-rust hover:underline"
+                      className="flex items-center gap-0.5 text-[11px] text-rust hover:underline"
                       disabled={disabled}
                       onClick={() => void handleCreateRoom()}
                     >
@@ -841,21 +943,26 @@ export function DictAddressPicker({
                     </button>
                   ) : null}
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-1" style={{ maxHeight: 176 }}>
+                <div className="min-h-0 flex-1 overflow-y-auto p-1.5" style={{ maxHeight: 176 }}>
                   {!v.buildingId && !selectedPendingBuilding ? (
-                    <p className="px-2 py-3 text-[11px] text-dove">← 选择楼栋</p>
+                    <p className="px-2 py-3 text-[11.5px] text-dove">← 选择楼栋</p>
                   ) : selectedPendingBuilding ? (
                     v.roomNo ? (
                       <div className="grid grid-cols-4 gap-1">
-                        <span className="flex items-center justify-center rounded-md border border-dashed border-ink bg-ink px-1 py-1 text-[11px] tabular-nums text-white">
+                        <span className="flex items-center justify-center rounded-lg border border-dashed border-ink bg-ink px-1 py-1 text-[11px] font-medium tabular-nums text-white">
                           {plateOfRoom(v.roomNo)}
-                          <Badge className="ml-0.5 h-3 border-white/50 px-0.5 text-[8px]" variant="outline">
+                          <Badge
+                            className="ml-0.5 h-3 border-white/50 px-0.5 text-[8px]"
+                            variant="outline"
+                          >
                             审
                           </Badge>
                         </span>
                       </div>
                     ) : (
-                      <p className="px-2 py-3 text-[11px] text-dove">楼栋审核中 · 可新建户室（需审核）</p>
+                      <p className="px-2 py-3 text-[11.5px] text-dove">
+                        楼栋审核中 · 可新建户室（需审核）
+                      </p>
                     )
                   ) : loadingRooms ? (
                     <div className="flex justify-center py-3">
@@ -883,8 +990,10 @@ export function DictAddressPicker({
                                 : undefined
                             }
                             className={cn(
-                              "rounded-md border px-1 py-1 text-[11px] tabular-nums transition-colors",
-                              selected ? "border-ink bg-ink text-white" : "border-dove/50 text-ink hover:border-ash",
+                              "rounded-lg border px-1 py-1.5 text-[11px] font-medium tabular-nums transition-colors",
+                              selected
+                                ? "border-ink bg-ink text-white"
+                                : "border-dove/50 bg-white text-ink hover:border-ash",
                               r.pending && !selected && "border-dashed text-dove opacity-60",
                             )}
                             onClick={() => {
@@ -897,14 +1006,22 @@ export function DictAddressPicker({
                                       // 待审户室无实表 id：roomId 置空，回填 newRoom 载荷
                                       roomId: null,
                                       roomNo: r.room_no,
-                                      address: buildPlate(v.communityName, v.buildingNo, r.plate_no),
+                                      address: buildPlate(
+                                        v.communityName,
+                                        v.buildingNo,
+                                        r.plate_no,
+                                      ),
                                       dictStatus: "linked",
                                       newRoom: { name: r.room_no },
                                     }
                                   : {
                                       roomId: r.id || null,
                                       roomNo: r.room_no,
-                                      address: buildPlate(v.communityName, v.buildingNo, r.plate_no),
+                                      address: buildPlate(
+                                        v.communityName,
+                                        v.buildingNo,
+                                        r.plate_no,
+                                      ),
                                       dictStatus: "linked",
                                       newRoom: null,
                                     },
@@ -923,7 +1040,7 @@ export function DictAddressPicker({
                       {visibleRooms.length === 0 && !loadingRooms ? (
                         <button
                           type="button"
-                          className="col-span-4 rounded-md border border-dashed border-dove py-1.5 text-[10.5px] text-rust hover:border-ash"
+                          className="col-span-4 rounded-lg border border-dashed border-dove bg-white py-1.5 text-[11px] font-medium text-rust transition-colors hover:border-ash"
                           onClick={() => void handleCreateRoom()}
                         >
                           <Plus className="mr-0.5 inline size-3" />
@@ -939,18 +1056,23 @@ export function DictAddressPicker({
 
           {/* 门牌预览可手改（FR-09） */}
           <div className="flex flex-col gap-1.5">
-            <Label>
-              <span className="rounded-md bg-apricot-wash px-1.5 py-0.5 text-[10px] text-rust">自动门牌</span>
-              <span className="ml-1 text-[10px] font-normal text-dove">系统自动拼好，可手改</span>
+            <Label className="text-xs font-medium uppercase tracking-wider text-graphite">
+              <span className="rounded-md bg-apricot-wash px-1.5 py-0.5 text-[10px] normal-case text-rust">
+                自动门牌
+              </span>
+              <span className="ml-1 text-[10px] font-normal normal-case tracking-normal text-dove">
+                系统自动拼好，可手改
+              </span>
             </Label>
             <Input
               value={v.address}
               onChange={(e) => emit({ address: e.target.value })}
               placeholder="选楼栋/户室后自动拼装"
               disabled={disabled}
+              className="h-10 rounded-inputs border-dove/50 bg-white text-sm font-medium text-ink focus-visible:ring-ink/10"
             />
           </div>
-        </>
+        </div>
       )}
     </div>
   );

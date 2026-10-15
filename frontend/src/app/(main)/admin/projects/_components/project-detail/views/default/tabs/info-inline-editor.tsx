@@ -193,11 +193,13 @@ export function InfoInlineEditor({ project, usersById, onCancel, onSaved }: Info
         {/* --- 房源信息 --- */}
         <GroupTitle>房源信息</GroupTitle>
         <div className="grid grid-cols-1 gap-x-5 gap-y-4 py-3 sm:grid-cols-2">
+          {/* 楼盘字典四级地址：独占一行（三栏级联需要全宽），详细地址紧随其下（sm 起右列，
+              选中小区时门牌已自动拼装，两者上下相邻便于对照） */}
           <FormField
             control={control}
             name="community_name"
             render={({ field }) => (
-              <FormItem className="space-y-1.5">
+              <FormItem className="space-y-1.5 sm:col-span-2">
                 <FormControl>
                   <DictAddressPicker
                     value={dictValue}
@@ -210,7 +212,11 @@ export function InfoInlineEditor({ project, usersById, onCancel, onSaved }: Info
                       form.setValue("district", next.district || "", opts);
                       form.setValue("original_community_district", next.district || "", opts);
                       form.setValue("business_circle", next.businessCircle || "", opts);
-                      form.setValue("original_community_business_circle", next.businessCircle || "", opts);
+                      form.setValue(
+                        "original_community_business_circle",
+                        next.businessCircle || "",
+                        opts,
+                      );
                       form.setValue("building_id", next.buildingId ?? null, opts);
                       form.setValue("room_id", next.roomId ?? null, opts);
                       form.setValue("dict_status", next.dictStatus ?? null, opts);
@@ -226,7 +232,13 @@ export function InfoInlineEditor({ project, usersById, onCancel, onSaved }: Info
               </FormItem>
             )}
           />
-          <SimpleInputField control={control} name="address" label="详细地址" required />
+          <SimpleInputField
+            control={control}
+            name="address"
+            label="详细地址"
+            required
+            className="sm:col-span-2"
+          />
           <SimpleInputField
             control={control}
             name="area"

@@ -39,10 +39,18 @@ async function getAdminTokens(): Promise<AdminTokens> {
 
   const ctx = await playwrightRequest.newContext();
   try {
-    const res = await ctx.post(`${API_BASE}/api/v1/auth/login`, {
+    // 429 重试：多 worker 冷启动同时登录会撞后端 5次/分钟限流；最多重试 3 次（退避 20s/40s）
+    let res = await ctx.post(`${API_BASE}/api/v1/auth/login`, {
       data: { username, password },
       headers: { "Content-Type": "application/json" },
     });
+    for (let attempt = 0; res.status() === 429 && attempt < 3; attempt++) {
+      await new Promise((r) => setTimeout(r, 20000 * (attempt + 1)));
+      res = await ctx.post(`${API_BASE}/api/v1/auth/login`, {
+        data: { username, password },
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     if (!res.ok()) {
       throw new Error(`E2E 登录失败: HTTP ${res.status()} ${await res.text()}`.slice(0, 300));
     }

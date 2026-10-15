@@ -113,43 +113,44 @@ export function BasicInfoTab({ form }: TabProps) {
 
   return (
     <div className="space-y-5">
-      {/* 第一行：小区 / 行政区 / 商圈（行政区与商圈较窄，小区占更大比例） */}
-      <div className="grid grid-cols-[2fr_1fr_1fr] gap-4">
-        {/* 小区 - 唯一入口：DictAddressPicker（楼栋/户室选填下钻） */}
-        <FormField
-          control={control}
-          name="community_name"
-          render={({ field }) => (
-            <FormItem className="space-y-1.5">
-              <FormControl>
-                <DictAddressPicker
-                  value={dictValue}
-                  onChange={(next) => {
-                    setDictValue(next);
-                    field.onChange(next.communityName || "");
-                    form.setValue("community_id", next.communityId ?? undefined);
-                    form.setValue("district", next.district || "");
-                    form.setValue("original_community_district", next.district || "");
-                    setCommunityDistrict(next.district || undefined);
-                    form.setValue("business_circle", next.businessCircle || "");
-                    form.setValue("original_community_business_circle", next.businessCircle || "");
-                    setCommunityBusinessCircle(next.businessCircle || undefined);
-                    form.setValue("address", next.address || "");
-                    form.setValue("building_id", next.buildingId ?? null);
-                    form.setValue("room_id", next.roomId ?? null);
-                    form.setValue("dict_status", next.dictStatus ?? null);
-                    form.setValue("new_community", next.newCommunity ?? null);
-                    form.setValue("new_building", next.newBuilding ?? null);
-                    form.setValue("new_room", next.newRoom ?? null);
-                  }}
-                  sourceBizType="project"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      {/* 第一行：小区（DictAddressPicker 四级地址，独占一行；行政区/商圈由小区选中自动回填，
+          拆到第二行。原因：选择器含楼栋/楼层/户室三栏级联，压在 2fr 窄列里会溢出破碎） */}
+      <FormField
+        control={control}
+        name="community_name"
+        render={({ field }) => (
+          <FormItem className="space-y-1.5">
+            <FormControl>
+              <DictAddressPicker
+                value={dictValue}
+                onChange={(next) => {
+                  setDictValue(next);
+                  field.onChange(next.communityName || "");
+                  form.setValue("community_id", next.communityId ?? undefined);
+                  form.setValue("district", next.district || "");
+                  form.setValue("original_community_district", next.district || "");
+                  setCommunityDistrict(next.district || undefined);
+                  form.setValue("business_circle", next.businessCircle || "");
+                  form.setValue("original_community_business_circle", next.businessCircle || "");
+                  setCommunityBusinessCircle(next.businessCircle || undefined);
+                  form.setValue("address", next.address || "");
+                  form.setValue("building_id", next.buildingId ?? null);
+                  form.setValue("room_id", next.roomId ?? null);
+                  form.setValue("dict_status", next.dictStatus ?? null);
+                  form.setValue("new_community", next.newCommunity ?? null);
+                  form.setValue("new_building", next.newBuilding ?? null);
+                  form.setValue("new_room", next.newRoom ?? null);
+                }}
+                sourceBizType="project"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
+      {/* 第二行：行政区 / 商圈 / 详细地址（选中字典小区时只读回填，未选时可手输） */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* 行政区 */}
         <FormField
           control={control}
@@ -211,30 +212,30 @@ export function BasicInfoTab({ form }: TabProps) {
             );
           }}
         />
-      </div>
 
-      {/* 第二行：详细地址 - 独占一行（地址通常较长） */}
-      <FormField
-        control={control}
-        name="address"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
-              详细地址
-              <span className="text-error ml-0.5">*</span>
-            </FormLabel>
-            <FormControl>
-              <Input
-                placeholder="街道/楼栋/门牌号"
-                {...field}
-                value={field.value || ""}
-                className="rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+        {/* 详细地址 - 第三列（地址通常较长，lg 下占第三列，sm 下独占一行） */}
+        <FormField
+          control={control}
+          name="address"
+          render={({ field }) => (
+            <FormItem className="sm:col-span-2 lg:col-span-1">
+              <FormLabel className="text-[14px] font-medium text-ink tracking-tight">
+                详细地址
+                <span className="text-error ml-0.5">*</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="街道/楼栋/门牌号"
+                  {...field}
+                  value={field.value || ""}
+                  className="rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
 
       {/* 第三行：产证面积 + 户型 */}
       <div className="grid grid-cols-2 gap-4">
