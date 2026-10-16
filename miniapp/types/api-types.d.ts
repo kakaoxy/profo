@@ -336,7 +336,13 @@ export interface paths {
          * Create Dict Import Task
          * @description 上传 zip/txt 创建字典导入任务（异步装载，四步：上传→解析→装载→对账）.
          *
-         *     权限：admin。速率限制：复用 CSV_IMPORT（30次/小时）。
+         *     权限：admin。速率限制：复用 CSV_IMPORT（1000次/小时，utils.common.RateLimits）。
+         *     口径（承载力报告 L2-⑥）：生产 nginx client_max_body_size 100M 决定单包实际上限；
+         *     解压总量超 1GB 会在装载阶段被拒绝（与 backend 容器 512m 承载力对齐）。
+         *     大包请按 zip 内批次目录拆分后分批导入（幂等，重传不重复入库）。
+         *
+         *     Raises:
+         *         ConflictError: 已有进行中的导入任务（pending/processing）时 409。
          */
         post: operations["create_dict_import_task_api_v1_admin_building_dictionary_import_post"];
         delete?: never;
@@ -3556,7 +3562,7 @@ export interface paths {
          *     3. 启动后台任务处理导入
          *     4. 立即返回任务ID，前端可通过 /tasks/{task_id} 查询进度
          *
-         *     速率限制：30次/小时
+         *     速率限制：复用 CSV_IMPORT（1000次/小时，utils.common.RateLimits）
          */
         post: operations["create_import_task_api_v1_upload_csv_post"];
         delete?: never;
@@ -6892,7 +6898,7 @@ export interface components {
         Body_create_dict_import_task_api_v1_admin_building_dictionary_import_post: {
             /**
              * File
-             * @description zip 包或 txt 文件(≤2GB，GBK/UTF-8 自动识别)
+             * @description zip 包或 txt 文件（GBK/UTF-8 自动识别；网关单包 ≤100MB，解压总量 ≤1GB）
              */
             file: string;
         };

@@ -44,6 +44,9 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "已取消",
 };
 
+/** 后端「已有导入进行中」互斥提示原文（承载力报告 M5 修复）；比对用于区分性错误提示 */
+const CONFLICT_MESSAGE = "已有导入任务进行中，请等待完成后再上传";
+
 /** 任务状态 → stepper 当前步（1 上传 2 检查 3 导入 4 核对） */
 function stepOf(t: ImportTask | null): number {
   if (!t) return 1;
@@ -63,8 +66,11 @@ function isIdempotentRerun(t: ImportTask | null): boolean {
   );
 }
 
+/** 网关/接口层上限（与后端口径对齐）：nginx client_max_body_size 100M */
+const MAX_UPLOAD_MB = 100;
+
 const STEPS = [
-  { n: 1, t: "上传文件", d: "楼盘字典 zip 包或单个 txt（≤2GB）" },
+  { n: 1, t: "上传文件", d: `楼盘字典 zip 包或单个 txt（≤${MAX_UPLOAD_MB}MB）` },
   { n: 2, t: "检查数据", d: "解析统计与问题行清单" },
   { n: 3, t: "后台导入", d: "后台慢慢导，关掉页面也不停" },
   { n: 4, t: "核对结果", d: "核对三类数量，失败的能下载" },
@@ -110,6 +116,12 @@ export function ImportClient() {
 
   const handleUpload = useCallback(
     async (file: File) => {
+      // M6 修复（承载力报告 L2-③）：前端预检。不满足条件的文件直接拒绝，
+      // 避免运营误选超大文件走完整上传后才被后端/网关拒绝
+      if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        toast.error(`文件超过 ${MAX_UPLOAD_MB}MB 上限（网关限制），请按批次拆分后分批导入`);
+        return;
+      }
       setUploading(true);
       try {
         const { error } = await client.POST("/api/v1/admin/building-dictionary/import", {
@@ -124,7 +136,13 @@ export function ImportClient() {
           },
         });
         if (error) {
-          toast.error("上传失败：仅支持 zip/txt 且 ≤2GB");
+          const msg = (error as { message?: string } | null)?.message;
+          if (msg === CONFLICT_MESSAGE) {
+            // 后端已明确建任务被拒（互斥 409）：直接透传后端提示
+            toast.error(msg);
+            return;
+          }
+          toast.error("上传失败：仅支持 zip/txt；网关单包 ≤100MB，解压总量 ≤1GB");
           return;
         }
         toast.success("导入任务已创建并启动");
@@ -178,11 +196,12 @@ export function ImportClient() {
               <section
                 className={cn(
                   "flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-dove/60 py-12",
-                  uploading && "opacity-60",
+                  uploading && "pointer-events-none opacity-60",
                 )}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
+                  if (uploading) return; // M6：上传中禁止重复提交
                   const f = e.dataTransfer.files[0];
                   if (f) void handleUpload(f);
                 }}
@@ -193,17 +212,19 @@ export function ImportClient() {
                   <button
                     type="button"
                     className="font-medium text-rust underline"
+                    disabled={uploading}
                     onClick={() => fileRef.current?.click()}
                   >
                     点击选择
                   </button>
-                  （单个 ≤ 2 GB）
+                  （单个 ≤ {MAX_UPLOAD_MB} MB）
                 </p>
                 <input
                   ref={fileRef}
                   type="file"
                   accept=".zip,.txt"
                   className="hidden"
+                  disabled={uploading}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) void handleUpload(f);
@@ -212,7 +233,7 @@ export function ImportClient() {
                 />
                 <Button className="mt-3 bg-ink text-white" disabled={uploading} onClick={() => fileRef.current?.click()}>
                   {uploading ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
-                  选择文件上传（≤2GB）
+                  {uploading ? "上传中…" : `选择文件上传（≤${MAX_UPLOAD_MB}MB）`}
                 </Button>
                 <p className="mt-2 text-[12px] text-graphite">GBK/UTF-8 自动识别 · 逐小区事务 · 失败行 csv 留档 90 天</p>
               </section>

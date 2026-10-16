@@ -9,6 +9,8 @@
   （BR-16：同包重跑计数不变）；
 - 失败行写 csv 明细可下载，归档 90 天（bd_archive 目录，应用内启动 + 每日巡检清理）；
 - zip 包逐条目流式处理（任一时刻最多驻留单个 txt，OrbStack 排查报告 §4.2-1）。
+- 单包解压总量上限 1GB，与 backend 容器 512m 承载力对齐（承载力报告 v2 §4）。
+- 上传互斥：同一时刻仅允许一个 pending/processing 任务（承载力报告 M5/L2-②）。
 
 楼栋号/户室号保留原始串（BR-02/03）；楼层解析前两位（utils.building_dict.parse_room_floor）；
 坐标 BD-09 原样落库（BR-18）。
@@ -34,11 +36,21 @@ from utils.building_dict import parse_room_floor
 
 logger = logging.getLogger(__name__)
 
-# 单包大小上限（FR-08：≤ 2GB）
+# 单包大小上限。
+# 承载力报告 L2-⑥：SRS 的「≤2GB」与 nginx client_max_body_size 100M 机制矛盾，
+# 被否决 —— 可执行口径为网关 100M（应用层留 2GB 兼容带内直连/内网场景，
+# 超网关限额的包根本到不了这里）。前端预检与文案已同步为 100MB。
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
-# M3 修复：zip 解压后总大小上限（zip bomb 防护），正常上海全域原始包远小于此
-MAX_UNCOMPRESSED_TOTAL = 4 * 1024 * 1024 * 1024
-_ZIP_BOMB_MSG = "zip 包解压后总大小超限（4GB），疑似异常包"
+
+# M3 zip bomb 防护：zip 解压后总大小上限。
+# 承载力报告 v2（§4 阶段二）：防线必须与执行容器实际承载力对齐——
+# backend 容器 mem_limit=512m（docker-compose.yml），流式解压后内存峰值
+# = 单 txt 体积（最大 313KB）+ 解析行列表，若仅限总大小则单包 4GB 的
+# 宣告体积仍可冲垮容器（总大小限制仅防磁盘耗尽，不防内存）。
+# 对齐口径：nginx client_max_body_size 100M（profo.nginx.backup:69,124）
+# × 本数据集实测压缩率 6.8× ≈ 680MB，留余量取 1GB。
+MAX_UNCOMPRESSED_TOTAL = 1 * 1024 * 1024 * 1024
+_ZIP_BOMB_MSG = "zip 包解压后总大小超限（1GB，与 backend 容器 512m 承载力对齐），疑似异常包或超大包，请分批导入"
 
 # 失败明细/原始包归档天数（NFR-02）
 ARCHIVE_DAYS = 90

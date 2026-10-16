@@ -13,7 +13,7 @@ export default function ImportPage() {
     <PageContainer>
       <PageHeader
         title="导入数据"
-        description="上海全域楼盘字典原始包（zip/txt ≤2GB，GBK/UTF-8 自动识别）四步导入"
+        description="上海全域楼盘字典原始包（zip/txt，单包 ≤100MB，GBK/UTF-8 自动识别）四步导入"
       />
       <ImportClient />
     </PageContainer>

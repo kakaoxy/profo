@@ -69,11 +69,21 @@ async def create_dict_import_task(
     request: Request,
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
-    file: Annotated[UploadFile, File(description="zip 包或 txt 文件(≤2GB，GBK/UTF-8 自动识别)")],
+    file: Annotated[
+        UploadFile,
+        File(description="zip 包或 txt 文件（GBK/UTF-8 自动识别；网关单包 ≤100MB，解压总量 ≤1GB）"),
+    ],
 ) -> BdImportTaskCreateResponse:
     """上传 zip/txt 创建字典导入任务（异步装载，四步：上传→解析→装载→对账）.
 
-    权限：admin。速率限制：复用 CSV_IMPORT（30次/小时）。
+    权限：admin。速率限制：复用 CSV_IMPORT（1000次/小时，utils.common.RateLimits）。
+    口径（承载力报告 L2-⑥）：生产 nginx client_max_body_size 100M 决定单包实际上限；
+    解压总量超 1GB 会在装载阶段被拒绝（与 backend 容器 512m 承载力对齐）。
+    大包请按 zip 内批次目录拆分后分批导入（幂等，重传不重复入库）。
+
+    Raises:
+        ConflictError: 已有进行中的导入任务（pending/processing）时 409。
+
     """
     from services.property.dict_import_service import get_bd_import_task_service
 

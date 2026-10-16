@@ -1,8 +1,12 @@
 """楼盘字典导入任务服务（SRS FR-08 / Task 2.4 / 3.1）.
 
 复用 PropertyImportTask 任务模式：上传保存 → 建任务 → 后台线程装载 →
-任务历史查询。上传（zip/txt ≤2GB）暂存 ``temp/uploads``，失败明细/原始包
-归档 90 天由 ``temp/uploads/bd_archive`` 承担（部署侧定期清理）。
+任务历史查询。上传暂存 ``temp/uploads``，失败明细/原始包归档 90 天由
+``temp/uploads/bd_archive`` 承担（应用内启动 + 每日巡检清理）。
+
+口径（承载力报告 L2-⑥）：SRS 的「≤2GB」承诺已被 nginx 100M 网关限制否决，
+可执行口径为「单包压缩 ≤100MB、解压总量 ≤1GB」；大包按批次目录拆分分批导入
+（幂等，重传不重复入库）。
 """
 
 import logging
@@ -12,17 +16,23 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import UploadFile
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from models import BdImportTask, ImportTaskStatus
 from services.property.dict_import_loader import ARCHIVE_DAYS, MAX_UPLOAD_BYTES, DictImportProcessor
-from services.system.exceptions import FileProcessingError
+from services.system.exceptions import ConflictError, FileProcessingError
 from settings import settings
 
 logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = Path.cwd() / settings.import_upload_dir
 _OVERSIZE_MSG = "文件超过 2GB 上限"
+# M5 上传互斥提示（承载力报告 §5.1）
+_IN_PROGRESS_MSG = "已有导入任务进行中，请等待完成后再上传"
+# 多 worker 部署下 create_task 互斥检查用的事务级 advisory lock key
+# （固定 bigint；与其他迁移/业务锁取值隔离；事务结束自动释放）
+_IMPORT_ADVISORY_LOCK_KEY = 202610170001
 
 
 def _oversize_error() -> FileProcessingError:
@@ -51,12 +61,31 @@ class BdImportTaskService:
 
         Raises:
             FileProcessingError: 文件格式或大小不合法
+            ConflictError: 已有进行中的导入任务（pending/processing）
 
         """
         filename = file.filename or "unnamed"
         if not (filename.lower().endswith(".zip") or filename.lower().endswith(".txt")):
             msg = "只支持 zip 包或 txt 文件"
             raise FileProcessingError(msg)
+
+        # M5 修复（承载力报告 L2-②）：上传互斥。导入是 backend 容器内同进程
+        # 后台线程的重内存操作，两个任务并发 = 内存叠加（全量包实测可达数百 MB
+        # 级）→ 512m 容器限额下必超限。导入链路无进程内状态锁可用（多 worker），
+        # 以事务级 advisory lock（pg_try_advisory_xact_lock）从检查点持有到
+        # 任务行 commit 才释放（异常回滚自动释放），精确覆盖「检查→建任务」
+        # 全程竞态窗口：占用期间直接 409，占不到锁同样 409。
+        lock_row = db.execute(text("SELECT pg_try_advisory_xact_lock(:k)"), {"k": _IMPORT_ADVISORY_LOCK_KEY}).scalar()
+        if not lock_row:
+            raise ConflictError(_IN_PROGRESS_MSG) from None
+        active = (
+            db.query(BdImportTask)
+            .filter(BdImportTask.status.in_([ImportTaskStatus.PENDING, ImportTaskStatus.PROCESSING]))
+            .order_by(BdImportTask.created_at.desc())
+            .first()
+        )
+        if active:
+            raise ConflictError(_IN_PROGRESS_MSG) from None
 
         # M3 修复：先按 Content-Length 预检（避免 2GB 文件全量读入内存后才报错 OOM）
         declared = file.size

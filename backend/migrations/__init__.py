@@ -130,6 +130,8 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
   bd_rooms.floor IS NULL 的可解析存量户室（幂等），修复「楼层待定」分类漏归层
 - widen_community_address_column: communities.address 列宽 300→500（批量导入
   多地址拼接串超长，实测最长 388，幂等放宽）
+- recover_stale_bd_import_tasks: 服务重启中断遗留 processing 状态的楼盘字典
+  导入任务 → failed（附可重跑提示，幂等；承载力报告 M7/L2-④）
 
 """
 
@@ -139,6 +141,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from migrations._bd_community_address_widen import widen_community_address_column
+from migrations._bd_import_task_recovery import recover_stale_bd_import_tasks
 from migrations._bd_room_floor_backfill import backfill_bd_room_floor
 from migrations._building_dictionary import run_building_dictionary_migrations
 
@@ -396,6 +399,8 @@ def _run_all_migrations(engine: Engine) -> None:
         widen_community_address_column(engine)
         # 楼盘字典：存量未分层户室按新解析规则回填楼层（3 位号 202→2 层，幂等）
         backfill_bd_room_floor(engine)
+        # 楼盘字典导入：服务重启中断遗留 processing 任务 → failed（可重跑，幂等）
+        recover_stale_bd_import_tasks(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

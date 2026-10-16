@@ -32,6 +32,6 @@ def upload_file(
 ) -> FileUploadResponse:
     """C端用户上传图片文件.
 
-    速率限制：30次/小时（防止资源耗尽攻击）.
+    速率限制：复用 PUBLIC_FILE_UPLOAD（utils.common.RateLimits，防止资源耗尽攻击）.
     """
     return save_upload_file(file, request, allowed_ext=IMAGE_EXTENSIONS)

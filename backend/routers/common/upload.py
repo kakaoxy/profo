@@ -54,7 +54,7 @@ async def create_import_task(
     3. 启动后台任务处理导入
     4. 立即返回任务ID，前端可通过 /tasks/{task_id} 查询进度
 
-    速率限制：30次/小时
+    速率限制：复用 CSV_IMPORT（1000次/小时，utils.common.RateLimits）
     """
     if not file.filename.endswith(".csv"):
         msg = "只支持 CSV 文件格式"
