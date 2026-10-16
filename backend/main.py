@@ -3,6 +3,8 @@
 import logging
 import re
 import sys
+import threading
+import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -106,6 +108,20 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout),
     ],
 )
+
+# OrbStack 排查报告修复项 #3：日志落盘 backend/logs/app.log（工作目录 = backend/，
+# Docker 内为 /app/logs）。原实现仅 stdout，容器外 tail 不可得，任务失败时
+# 「详见服务日志」无日志可看，形成排查死胡同。Mode a 追加，进程退出不丢。
+# ⚠️ 未做轮转：开发/单机部署日志量小，避免引入额外轮转复杂度；
+# 若后续部署为多 worker 长跑，需换 RotatingFileHandler 并评估多进程并发写。
+_LOG_DIR = Path(__file__).resolve().parent / "logs"
+try:
+    _LOG_DIR.mkdir(exist_ok=True)
+    logging.root.handlers.append(logging.FileHandler(_LOG_DIR / "app.log", encoding="utf-8", mode="a"))
+except OSError:
+    # 目录不可写（如容器内非 root 只读场景）时降级仅 stdout，不阻断启动
+    logging.getLogger(__name__).warning("日志文件 %s 不可写，仅输出 stdout", _LOG_DIR, exc_info=True)
+
 # 为 root handler 添加请求 ID 过滤器（filter 在 format 前执行，确保 request_id 属性已注入）
 # 同时挂载凭据拦截过滤器：httpx 在 INFO 级打**完整请求 URL**（成功路径也打），
 # 微信凭据接口将 secret / access_token 放在 query 里，不拦截则每次调用都落盘凭据。
@@ -153,7 +169,31 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
         logger.exception("Redis 连接失败，应用无法启动")
         sys.exit(1)
 
+    # 楼盘字典导入归档清理（OrbStack 排查报告修复项 #2）：原 cleanup_expired_archives
+    # 无任何调用方且不清理原始上传包，启动时先同步执行一次
+    try:
+        from services.property.dict_import_service import get_bd_import_task_service
+
+        removed = get_bd_import_task_service().cleanup_expired_archives()
+        if removed:
+            logger.info("楼盘字典导入归档清理：已删除 %d 个超期文件", removed)
+    except Exception:
+        logger.exception("楼盘字典导入归档清理失败（不影响启动）")
+
     logger.info("Application started successfully: %s v%s", settings.app_name, settings.app_version)
+
+    # 每日巡检超期归档（90 天原始包/失败明细），独立守护线程随进程退出
+    def _bd_archive_daily_cleanup() -> None:
+        while True:
+            time.sleep(24 * 3600)
+            try:
+                removed = get_bd_import_task_service().cleanup_expired_archives()
+                if removed:
+                    logger.info("楼盘字典导入归档每日巡检：已删除 %d 个超期文件", removed)
+            except Exception:
+                logger.exception("楼盘字典导入归档每日巡检失败")
+
+    threading.Thread(target=_bd_archive_daily_cleanup, name="bd-archive-cleanup", daemon=True).start()
 
     yield
 

@@ -138,14 +138,34 @@ class BdImportTaskService:
 
     @staticmethod
     def cleanup_expired_archives() -> int:
-        """清理超期归档文件（90 天，NFR-02；可由运维定时触发）."""
+        """清理超期归档文件（90 天，NFR-02）.
+
+        范围：``temp/uploads`` 下的
+        - ``bd_archive/`` 失败明细 csv；
+        - ``bd_*.{zip,txt}`` 原始上传包（装载完成/失败后仍留在盘上，
+          报告 §4.2-2：原实现无任何调用方且不清理原始文件，任务堆积后
+          磁盘不可控且任务记录的 file_path 失效无法复核）。
+
+        由 lifespan 启动时与每日巡检后台任务调用（报告修复项 #2）。
+        """
         cutoff = datetime.now(timezone.utc) - timedelta(days=ARCHIVE_DAYS)
-        archive_dir = UPLOAD_DIR / "bd_archive"
-        if not archive_dir.exists():
-            return 0
         removed = 0
-        for f in archive_dir.iterdir():
-            if f.is_file() and datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc) < cutoff:
+        if not UPLOAD_DIR.exists():
+            return 0
+        # 1) 失败明细归档目录
+        archive_dir = UPLOAD_DIR / "bd_archive"
+        if archive_dir.exists():
+            for f in archive_dir.iterdir():
+                if f.is_file() and datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc) < cutoff:
+                    f.unlink(missing_ok=True)
+                    removed += 1
+        # 2) 原始上传包（bd_{uuid}.zip / bd_{uuid}.txt）
+        for f in UPLOAD_DIR.glob("bd_*"):
+            if (
+                f.is_file()
+                and f.suffix.lower() in (".zip", ".txt")
+                and datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc) < cutoff
+            ):
                 f.unlink(missing_ok=True)
                 removed += 1
         return removed

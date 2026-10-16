@@ -7,7 +7,8 @@
 - 逐小区事务：小区/楼栋/户室单小区一批，失败仅回滚当前小区；
 - 按 name / uq(community_id, building_no) / uq(building_id, room_no) upsert 幂等
   （BR-16：同包重跑计数不变）；
-- 失败行写 csv 明细可下载，归档 90 天（由部署侧清理策略承担）。
+- 失败行写 csv 明细可下载，归档 90 天（bd_archive 目录，应用内启动 + 每日巡检清理）；
+- zip 包逐条目流式处理（任一时刻最多驻留单个 txt，OrbStack 排查报告 §4.2-1）。
 
 楼栋号/户室号保留原始串（BR-02/03）；楼层解析前两位（utils.building_dict.parse_room_floor）；
 坐标 BD-09 原样落库（BR-18）。
@@ -16,8 +17,10 @@
 import csv
 import logging
 import tempfile
+import traceback
 import uuid
 import zipfile
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -285,6 +288,51 @@ class DictImportProcessor:
         """初始化处理器."""
         self.engine = engine
 
+    @staticmethod
+    def _is_txt_entry(info: zipfile.ZipInfo) -> bool:
+        """判定 zip 条目是否为待处理 txt（跳过目录与 macOS 压缩产物）."""
+        if info.is_dir() or not info.filename.lower().endswith(".txt"):
+            return False
+        # 跳过 macOS 压缩产物：__MACOSX 目录与 ._ AppleDouble 文件
+        return not (info.filename.startswith("__MACOSX/") or Path(info.filename).name.startswith("._"))
+
+    def _iter_txt_entries(self, file_path: Path, task: BdImportTask) -> tuple[Iterator[tuple[str, bytes]], int]:
+        """构造 txt 条目迭代器（报告 §4.2-1 流式修复）.
+
+        zip：先按中央目录扫描（只读元数据，不读数据）过滤 txt 条目并做
+        zip bomb 防护（声明解压总大小累加），返回逐条目惰性解压迭代器——
+        任一时刻最多驻留单个 txt，消除原实现全包 read() 驻留内存隐患。
+        单 txt：返回单元素迭代器，小区名取「原始上传文件名」（存盘名已被
+        重命名为 bd_{task_id}.txt，不能直接用）。
+
+        Returns:
+            (条目迭代器 (文件名, 全部字节)，总条目数)。总条目数来自中央
+            目录/单文件分支，不消耗迭代器。
+
+        Raises:
+            ValueError: 声明解压总大小超 MAX_UNCOMPRESSED_TOTAL（zip bomb 防护）。
+
+        """
+        if file_path.suffix.lower() != ".zip":
+            # 小区名取自「原始上传文件名」的扩展名前部分
+            original_name = Path(task.filename).name if task.filename else file_path.name
+            return iter([(original_name, file_path.read_bytes())]), 1
+
+        with zipfile.ZipFile(file_path) as zf:
+            infos = [info for info in zf.infolist() if self._is_txt_entry(info)]
+            uncompressed_total = sum(info.file_size for info in infos)
+            if uncompressed_total > MAX_UNCOMPRESSED_TOTAL:
+                raise ValueError(_ZIP_BOMB_MSG) from None
+        total = len(infos)
+        return self._iter_zip_txt(file_path, infos), total
+
+    @staticmethod
+    def _iter_zip_txt(file_path: Path, infos: list[zipfile.ZipInfo]) -> Iterator[tuple[str, bytes]]:
+        """逐条目惰性解压 zip 内 txt（每打开一次 ZipFile，读一个条目即释放）."""
+        with zipfile.ZipFile(file_path) as zf:
+            for info in infos:
+                yield Path(_decode_zip_name(info)).name, zf.read(info)
+
     def process_task(self, task_id: str) -> None:
         """处理导入任务主入口（独立线程）."""
         from db import SessionLocal
@@ -306,41 +354,36 @@ class DictImportProcessor:
         except Exception:
             logger.exception("字典导入任务失败: %s", task_id)
             db.rollback()
-            self._mark_failed(db, task_id, "装载失败，详见服务日志")
+            # 报告 §4.2-3：失败堆栈摘要写回 error_message，任务历史可直接定位根因
+            # （原实现仅写死一句话，backend/logs 缺失时形成排查死胡同）
+            stack_tail = traceback.format_exc()[-1500:]
+            self._mark_failed(db, task_id, f"装载失败（详见服务日志），堆栈摘要：\n{stack_tail}")
         finally:
             db.close()
 
     def _execute(self, task: BdImportTask, db: Session) -> None:
-        """执行装载：解包 → 逐小区解析 → COPY 装载 → 对账."""
+        """执行装载：解包 → 逐小区解析 → COPY 装载 → 对账.
+
+        报告 §4.2-1：zip 逐条目流式处理——先按中央目录扫描过滤 txt 条目
+        （仅累加声明大小做 zip bomb 防护，不读数据），再逐条目解压，
+        任一时刻最多驻留单个 txt，消除全包解压驻留内存隐患。
+        """
         file_path = Path(task.file_path)
         if not file_path.exists():
             self._mark_failed(db, task.id, "文件不存在")
             return
 
-        # 解包：zip → 逐 txt；单 txt 直接处理。
-        # M3 修复：限制解压后总大小（zip bomb 防护）——原实现无上限，
-        # 恶意压缩包可膨胀至磁盘/内存耗尽。
-        txt_entries: list[tuple[str, bytes]] = []
-        uncompressed_total = 0
-        if file_path.suffix.lower() == ".zip":
-            with zipfile.ZipFile(file_path) as zf:
-                for info in zf.infolist():
-                    if info.is_dir() or not info.filename.lower().endswith(".txt"):
-                        continue
-                    # 跳过 macOS 压缩产物：__MACOSX 目录与 ._ AppleDouble 文件
-                    if info.filename.startswith("__MACOSX/") or Path(info.filename).name.startswith("._"):
-                        continue
-                    uncompressed_total += info.file_size
-                    if uncompressed_total > MAX_UNCOMPRESSED_TOTAL:
-                        raise ValueError(_ZIP_BOMB_MSG) from None
-                    txt_entries.append((Path(_decode_zip_name(info)).name, zf.read(info)))
-        else:
-            # 小区名取自「原始上传文件名」的扩展名前部分；
-            # 上传落盘时文件已被重命名为 bd_{task_id}.txt，不能直接用存盘名
-            original_name = Path(task.filename).name if task.filename else file_path.name
-            txt_entries.append((original_name, file_path.read_bytes()))
+        try:
+            entries, total_communities = self._iter_txt_entries(file_path, task)
+        except ValueError as e:
+            # zip bomb 防护（M3）：声明解压总大小超限
+            self._mark_failed(db, task.id, str(e))
+            return
+        except zipfile.BadZipFile:
+            # 损坏/伪造后缀的包：确定性用户可修复错误，给明确提示而非裸堆栈
+            self._mark_failed(db, task.id, "zip 包损坏或不是有效的 zip 文件")
+            return
 
-        total_communities = len(txt_entries)
         if total_communities == 0:
             self._mark_failed(db, task.id, "包内无 txt 文件")
             return
@@ -348,7 +391,7 @@ class DictImportProcessor:
         stats = DictImportStats()
         failed_rows: list[dict[str, str]] = []
 
-        for idx, (filename, data) in enumerate(txt_entries, start=1):
+        for idx, (filename, data) in enumerate(entries, start=1):
             community_name = filename[:-4] if filename.lower().endswith(".txt") else filename
             try:
                 content = detect_encoding(data)

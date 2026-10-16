@@ -46,7 +46,14 @@ rm -f profo-backend.tar.gz profo-frontend.tar.gz
 
 # ---- 清理本地悬挂镜像 ----
 # 反复构建同标签镜像会产生 <none> 悬挂镜像，清理防止本地磁盘累积
+# （OrbStack 排查报告 §5：Images 13.32GB 中 ~12.6GB 为跨平台构建残留）
 echo ">> 清理本地悬挂镜像..."
 docker image prune -f
+
+# ---- 控制构建缓存上限 ----
+# OrbStack 排查报告 §6.5/§5：每次构建的 GB 级层缓存无限累积（曾达 13.76GB/149 条），
+# 持续把 OrbStack VM 内存顶在高位。保留最近 2GB 热缓存加速后续构建，超出部分回收。
+echo ">> 清理构建缓存（保留最近 2GB）..."
+docker builder prune -f --keep-storage 2gb
 
 echo "✅ 全流程部署完成！"
