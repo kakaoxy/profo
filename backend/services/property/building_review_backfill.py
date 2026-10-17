@@ -163,7 +163,33 @@ def mark_reference_rejected(db: Session, ref: BdPendingReference) -> bool:
 def run_pending_backfill(db: Session) -> int:
     """同步执行一轮 pending 引用回填（幂等：仅处理 open 引用，重跑不重复写）.
 
-    供异步线程与重试端点共用。返回本轮处理条数。
+    供异步线程与重试端点共用。
+
+    H3 修复（收敛口径）：原实现的主循环是
+
+    ```python
+    for ref in refs:
+        entry = db.get(BdPendingEntry, ref.pending_id)
+        if not entry or not entry.resolved_target_id:
+            continue  # ← 不置终态、不计数、不记日志
+        backfill_reference(...)
+    ```
+
+    即只要 pending 条目的 ``resolved_target_id`` 为空，其 open 引用就被**永久跳过**，
+    且跳过分支完全静默 —— 实测库内 26 条 open 引用中 25 条属于此类（条目 rejected
+    或 pending 且无 target），「重试回填」永远显示「处理 0 条」，脏引用既不可见也不
+    可清理（假成功），并长期占用 ``uq_bd_pending_ref_biz`` 唯一约束槽位。
+
+    现在按「有无回填对象」分流，两条路径都必须把引用推进到终态：
+    - 条目不存在 / 条目无 ``resolved_target_id``（含 pending、reject 无 target）→
+      无回填对象，按脏引用口径置 ``RESOLVED`` 并 ``logger.warning``（与
+      ``backfill_reference`` 内部对脏数据的处理一致）；
+    - 条目有 target → 正常回填（内部对非法 biz_id / 单据不存在同样收敛）。
+
+    Returns:
+        本次**实际回填**（真正写到业务单据字段）的条数；被关闭但无单据可改的条数
+        单独记 warning 日志，不计入返回值
+
     """
     refs = (
         db.query(BdPendingReference)
@@ -174,14 +200,28 @@ def run_pending_backfill(db: Session) -> int:
     if not refs:
         return 0
     processed = 0
+    skipped = 0
     for ref in refs:
         entry = db.get(BdPendingEntry, ref.pending_id)
         if not entry or not entry.resolved_target_id:
+            # 无回填对象：必须收口，否则引用永久滞留 open 且批次永不收敛（H3）
+            ref.status = BdReferenceStatus.RESOLVED
+            skipped += 1
+            logger.warning(
+                "引用无回填对象，已关闭: ref=%s pending=%s entry_status=%s biz=%s/%s",
+                ref.id,
+                ref.pending_id,
+                entry.status.value if entry and entry.status else None,
+                ref.biz_type,
+                ref.biz_id,
+            )
             continue
-        backfill_reference(db, ref, target_value=entry.resolved_target_id)
-        processed += 1
+        if backfill_reference(db, ref, target_value=entry.resolved_target_id):
+            processed += 1
+        else:
+            skipped += 1
     db.commit()
-    logger.info("pending 引用回填完成: %d 条", processed)
+    logger.info("pending 引用回填完成: 实际回填 %d 条，关闭无对象 %d 条", processed, skipped)
     return processed
 
 

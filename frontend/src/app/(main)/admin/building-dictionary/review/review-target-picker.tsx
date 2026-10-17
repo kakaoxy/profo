@@ -97,7 +97,14 @@ export function ReviewTargetPicker({
         params: { query: { keyword: kw, page: 1, page_size: 10 } },
       });
       if (data) {
-        setCommOptions(data.items as unknown as CommunityOption[]);
+        setCommOptions(
+          data.items.map((c): CommunityOption => ({
+            id: c.id,
+            name: c.name,
+            district: c.district ?? null,
+            address: c.address ?? null,
+          })),
+        );
         if (data.items.length === 0) toast.error("没找到匹配的小区，换个关键词试试");
       }
     } finally {
@@ -116,7 +123,11 @@ export function ReviewTargetPicker({
           { params: { path: { community_id: communityId }, query: { page: 1, page_size: 100 } } },
         );
         if (data) {
-          setBuildings((data.items as unknown as BuildingOption[]).filter((b) => !b.pending));
+          setBuildings(
+            data.items
+              .filter((b) => !b.pending)
+              .map((b): BuildingOption => ({ id: b.id, building_no: b.building_no })),
+          );
         }
       } finally {
         setLoadingBuildings(false);
@@ -135,7 +146,15 @@ export function ReviewTargetPicker({
           params: { path: { building_id: b.id } },
         });
         if (data) {
-          const list = ((data.rooms ?? []) as unknown as RoomOption[]).filter((r) => !r.pending);
+          // P3：楼栋详情户室分页（默认 200/页），改选只需楼层 + 首个户室，单页足够
+          const list = (data.rooms ?? [])
+            .filter((r) => !r.pending)
+            .map((r): RoomOption => ({
+              id: r.id,
+              room_no: r.room_no,
+              floor: r.floor ?? null,
+              plate_no: r.plate_no,
+            }));
           setRooms(list);
           if (floor !== undefined) {
             setSelectedFloor(floor);

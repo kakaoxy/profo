@@ -24,7 +24,10 @@ export type BdRoomItem = Omit<Schemas["BdRoomItem"], "floor" | "pending_id"> & {
   floor: number | null;
   pending_id: number | null;
 };
-export type BdBuildingDetail = Schemas["BdBuildingDetail"];
+/** 楼栋详情：户室分页（P3）——rooms 仅含本页实表户室 + 全部 pending 户室 */
+export type BdBuildingDetail = Omit<Schemas["BdBuildingDetail"], "rooms"> & {
+  rooms: BdRoomItem[];
+};
 export type BdReviewListItem = Schemas["BdReviewListItem"];
 export type BdReviewKpi = Schemas["BdReviewKpi"];
 export type BdImportTask = Schemas["BdImportTaskResponse"];

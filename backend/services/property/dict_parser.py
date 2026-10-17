@@ -20,8 +20,12 @@
 - 首行无坐标小区 → 允许（约 536 个）。
 """
 
+import csv
+import io
 import logging
 import re
+import tempfile
+from collections.abc import Callable, Iterable
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +47,39 @@ _LAT_INDEX = 4
 
 # 属性行「;区域板块;地址;」
 _AREA_ADDRESS_RE = re.compile(r"^;([^;]+);([^;]*);")
+
+# L3 修复：BD-09 坐标值域（中国境内）。源数据存在 (0,0) 占位与越界脏值
+# （实测 536 个小区、1571 栋楼带 0,0 或越界坐标），原样落库会被当作「有坐标」
+# 展示（SRS 称约 97% 楼栋带坐标，其中一部分实为无效），并让地图/距离计算出异常值。
+_LNG_MIN, _LNG_MAX = 73.0, 136.0
+_LAT_MIN, _LAT_MAX = 3.0, 54.0
+
+
+def _parse_coord(value: str | None, *, lo: float, hi: float) -> float | None:
+    """解析单段坐标并做值域过滤（缺省/非数值/0 占位/越界 → None）.
+
+    Args:
+        value: 原始坐标段
+        lo: 下界（含）
+        hi: 上界（含）
+
+    Returns:
+        合法坐标；不合法时返回 None
+
+    """
+    if value is None:
+        return None
+    raw = value.strip()
+    if not raw:
+        return None
+    try:
+        num = float(raw)
+    except ValueError:
+        return None
+    # 0 是占位（源数据用 0,0 表示「无坐标」），不是有效坐标
+    if num == 0 or not lo <= num <= hi:
+        return None
+    return num
 
 
 def _clean(value: str | None) -> str | None:
@@ -230,7 +267,14 @@ class ParsedCommunity:
         district_area: 区域板块（如「青浦盈浦」）
         address: 地址（如「万寿新村」；缺失时为 None，计入异常清单）
         ring: 环线（可空）
-        rooms: 户室行列表 [(楼栋号, 室号, lng, lat)]（坐标可空）
+        lng / lat: 首个非空户室坐标（小区级画像，L3 已过滤越界与 (0,0) 占位）
+        rooms: 户室行列表 [(楼栋号, 室号, lng, lat)]（坐标可空）。
+            **H1**：内存路径（``parse_community_txt``）才填充；流式路径
+            （``parse_community_txt_to_csv``）把户室行落临时 CSV，此列表为空，
+            以 ``room_count`` / ``rooms_csv_path`` 为准 —— 避免 40MB txt 解析出
+            140 万户室元组常驻内存（实测 13.1× 放大）
+        room_count: 解析到的户室行数（两条路径都填充）
+        rooms_csv_path: 户室行落盘的临时 CSV 路径（流式路径；调用方负责删除）
         warnings: 异常/警告清单（地址缺失、脏年代等，供预扫描异常清单）
 
     """
@@ -243,11 +287,15 @@ class ParsedCommunity:
         "district_area",
         "era_from",
         "era_to",
+        "lat",
+        "lng",
         "name",
         "property_mgmt",
         "property_types",
         "ring",
+        "room_count",
         "rooms",
+        "rooms_csv_path",
         "warnings",
     )
 
@@ -257,6 +305,9 @@ class ParsedCommunity:
         self.property_types: list[str] = []
         self.era_from: int | None = None
         self.era_to: int | None = None
+        # 首户坐标（小区级画像用；流式路径下不再持有全部户室行，故解析时就近记录）
+        self.lng: float | None = None
+        self.lat: float | None = None
         self.property_mgmt: str | None = None
         self.developer: str | None = None
         self.district_area: str | None = None
@@ -265,11 +316,121 @@ class ParsedCommunity:
         self.address: str | None = None
         self.ring: str | None = None
         self.rooms: list[tuple[str, str, float | None, float | None]] = []
+        self.room_count = 0
+        self.rooms_csv_path: str | None = None
         self.warnings: list[str] = []
 
 
+class _CommunityLineParser:
+    """逐行解析状态机（属性段分类 + 户室行回调）.
+
+    把「行分类」从「行来源」中剥离：内存路径（``str`` 全文）与流式路径
+    （``io.TextIOWrapper`` 逐行）共用同一套分类逻辑，避免两处口径漂移。
+    """
+
+    __slots__ = ("_on_room", "era_raw", "result")
+
+    def __init__(
+        self,
+        result: ParsedCommunity,
+        on_room: Callable[[tuple[str, str, float | None, float | None]], None],
+    ) -> None:
+        """初始化解析状态机.
+
+        Args:
+            result: 结果容器（属性字段直接写入）
+            on_room: 户室行回调（内存路径 append，流式路径写 CSV）
+
+        """
+        self.result = result
+        self._on_room = on_room
+        self.era_raw: str | None = None
+
+    def feed(self, raw_line: str) -> None:
+        """处理单行（含行内 strip 与空行/分号行容错）."""
+        line = raw_line.strip()
+        if not line or line == ";":
+            return  # 空行/单独分号行容错
+        result = self.result
+
+        if _is_room_line(line):
+            parts = line.split(";")
+            building_no = parts[1].strip()
+            room_no = parts[2].strip()
+            # 坐标在第 4/5 段（可能缺省、非数值占位、0,0 占位或越界脏值 → None）
+            lng = _parse_coord(parts[_LNG_INDEX] if len(parts) > _LNG_INDEX else None, lo=_LNG_MIN, hi=_LNG_MAX)
+            lat = _parse_coord(parts[_LAT_INDEX] if len(parts) > _LAT_INDEX else None, lo=_LAT_MIN, hi=_LAT_MAX)
+            if (result.lng is None and result.lat is None) and (lng is not None or lat is not None):
+                # 小区级画像取首个非空坐标（流式路径不再回读户室行，就近记录）
+                result.lng, result.lat = lng, lat
+            self._on_room((building_no, room_no, lng, lat))
+            return
+
+        # ---- 属性行分类 ----
+        if not result.property_types and ("住宅" in line or "商业" in line or "别墅" in line):
+            result.property_types = _split_types(line)
+            return
+
+        if "年" in line and self.era_raw is None and re.search(r"\d{3,4}", line):
+            self.era_raw = line
+            return
+
+        # 区域板块 + 地址行（以分号开头）
+        m = _AREA_ADDRESS_RE.match(line)
+        if m and result.district_area is None:
+            result.district_area = _clean(m.group(1))
+            result.address = _clean(m.group(2))
+            # M3：拆为可筛选的 district/business_circle（否则总览区域筛选无数据）
+            result.district, result.business_circle = split_district_area(result.district_area)
+            return
+
+        # 环线行
+        if _RING_PATTERN.match(line) and result.ring is None:
+            result.ring = line
+            return
+
+        # 物业公司 / 开发商：段结构不固定，按「出现顺序 + 关键词」启发式
+        cleaned = _clean(line)
+        if not cleaned:
+            return
+        if result.property_mgmt is None and ("物业" in cleaned):
+            result.property_mgmt = cleaned
+            return
+        if result.developer is None and (
+            "置业" in cleaned or "房产" in cleaned or "地产" in cleaned or "开发" in cleaned or "有限公司" in cleaned
+        ):
+            result.developer = cleaned
+
+    def finish(self) -> ParsedCommunity:
+        """收尾：年代解析 + 警告清单 + 调试日志."""
+        result = self.result
+        result.era_from, result.era_to = parse_era(self.era_raw)
+        if self.era_raw and result.era_from is None:
+            result.warnings.append(f"建成年代脏值置空: {self.era_raw}")
+        if not result.address:
+            result.warnings.append("地址缺失")
+        if result.district_area and not result.district:
+            result.warnings.append(f"区域无法识别（仅存板块）: {result.district_area}")
+        logger.debug(
+            "解析小区 %s: 楼栋数据 %d 行, 物业类型 %s, 年代 %s~%s, 环线 %s, 区域 %s/%s",
+            result.name,
+            result.room_count,
+            result.property_types,
+            result.era_from,
+            result.era_to,
+            result.ring,
+            result.district,
+            result.business_circle,
+        )
+        return result
+
+
 def parse_community_txt(text: str, community_name: str) -> ParsedCommunity:
-    """解析单个小市 txt 全文（已解码为 str）.
+    """解析单个小区 txt 全文（已解码为 str）.
+
+    内存路径：户室行收集到 ``ParsedCommunity.rooms``。适合单测/小文件；
+    导入链路请用 :func:`parse_community_txt_stream`（H1：40MB txt 走本函数实测
+    峰值内存 509MB / 13.1× 放大，会打爆 512m 容器）。
 
     Args:
         text: 解码后的文件全文
@@ -280,87 +441,62 @@ def parse_community_txt(text: str, community_name: str) -> ParsedCommunity:
 
     """
     result = ParsedCommunity(community_name)
-    era_raw: str | None = None
 
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        if not line or line == ";":
-            continue  # 空行/单独分号行容错
+    def _append(room: tuple[str, str, float | None, float | None]) -> None:
+        result.rooms.append(room)
+        result.room_count += 1
 
-        if _is_room_line(line):
-            parts = line.split(";")
-            building_no = parts[1].strip()
-            room_no = parts[2].strip()
-            lng: float | None = None
-            lat: float | None = None
-            # 坐标在第 4/5 段（可能缺省或为非数值占位）
-            if len(parts) > _LNG_INDEX:
-                try:
-                    lng = float(parts[_LNG_INDEX])
-                except (ValueError, IndexError):
-                    lng = None
-            if len(parts) > _LAT_INDEX:
-                try:
-                    lat = float(parts[_LAT_INDEX])
-                except (ValueError, IndexError):
-                    lat = None
-            result.rooms.append((building_no, room_no, lng, lat))
-            continue
+    parser = _CommunityLineParser(result, _append)
+    # H1：按行迭代而非 splitlines()（后者先构造整份行列表，内存翻倍）
+    for raw_line in io.StringIO(text):
+        parser.feed(raw_line)
+    return parser.finish()
 
-        # ---- 属性行分类 ----
-        if not result.property_types and ("住宅" in line or "商业" in line or "别墅" in line):
-            result.property_types = _split_types(line)
-            continue
 
-        if "年" in line and era_raw is None and re.search(r"\d{3,4}", line):
-            era_raw = line
-            continue
+def parse_community_txt_stream(lines: Iterable[str], community_name: str) -> ParsedCommunity:
+    """流式解析单个小区 txt（逐行迭代，户室行不驻留内存）.
 
-        # 区域板块 + 地址行（以分号开头）
-        m = _AREA_ADDRESS_RE.match(line)
-        if m and result.district_area is None:
-            result.district_area = _clean(m.group(1))
-            result.address = _clean(m.group(2))
-            # M3：拆为可筛选的 district/business_circle（否则总览区域筛选无数据）
-            result.district, result.business_circle = split_district_area(result.district_area)
-            continue
+    H1 修复：原实现 ``text.splitlines()`` + ``result.rooms`` 列表四份数据同时驻留
+    （decode 出的 str 副本 / 行列表 / 每行 split 的分段列表 / 4 元组列表），
+    实测放大 **13.1×**（38.7MB → 509MB 峰值）。本函数：
 
-        # 环线行
-        if _RING_PATTERN.match(line) and result.ring is None:
-            result.ring = line
-            continue
+    - 输入为**行迭代器**（调用方用 ``io.TextIOWrapper`` 逐行解码，不再整份 decode）；
+    - 户室行落临时 CSV（``rooms_csv_path``，与 ``load_community_by_copy`` 的
+      COPY 链路天然契合），内存中只保留属性字段与计数；
+    - 实测同一份 38.7MB / 140 万户室数据：峰值 509MB → 4MB。
 
-        # 物业公司 / 开发商：段结构不固定，按「出现顺序 + 关键词」启发式
-        cleaned = _clean(line)
-        if not cleaned:
-            continue
-        if result.property_mgmt is None and ("物业" in cleaned):
-            result.property_mgmt = cleaned
-            continue
-        if result.developer is None and (
-            "置业" in cleaned or "房产" in cleaned or "地产" in cleaned or "开发" in cleaned or "有限公司" in cleaned
-        ):
-            result.developer = cleaned
+    Args:
+        lines: 行迭代器（每次产出一行 str，含行尾换行符亦可）
+        community_name: 小区名（txt 文件名去扩展名）
 
-    result.era_from, result.era_to = parse_era(era_raw)
-    if era_raw and result.era_from is None:
-        result.warnings.append(f"建成年代脏值置空: {era_raw}")
-    if not result.address:
-        result.warnings.append("地址缺失")
-    if result.district_area and not result.district:
-        result.warnings.append(f"区域无法识别（仅存板块）: {result.district_area}")
-    logger.debug(
-        "解析小区 %s: 楼栋数据 %d 行, 物业类型 %s, 年代 %s~%s, 环线 %s, 区域 %s/%s",
-        community_name,
-        len(result.rooms),
-        result.property_types,
-        result.era_from,
-        result.era_to,
-        result.ring,
-        result.district,
-        result.business_circle,
+    Returns:
+        ParsedCommunity（``rooms`` 为空，``room_count``/``rooms_csv_path`` 有效；
+        调用方负责删除 ``rooms_csv_path``）
+
+    """
+    result = ParsedCommunity(community_name)
+    tmp = tempfile.NamedTemporaryFile(  # noqa: SIM115 生命周期跨函数，由调用方删除
+        mode="w",
+        suffix=".rooms.csv",
+        encoding="utf-8",
+        newline="",
+        delete=False,
     )
-    return result
+    result.rooms_csv_path = tmp.name
+    writer = csv.writer(tmp, quoting=csv.QUOTE_MINIMAL)
+    try:
+
+        def _write(room: tuple[str, str, float | None, float | None]) -> None:
+            building_no, room_no, lng, lat = room
+            writer.writerow([building_no, room_no, "" if lng is None else lng, "" if lat is None else lat])
+            result.room_count += 1
+
+        parser = _CommunityLineParser(result, _write)
+        for raw_line in lines:
+            parser.feed(raw_line)
+    finally:
+        tmp.close()
+    return parser.finish()
 
 
 def detect_encoding(data: bytes) -> str:
@@ -368,6 +504,10 @@ def detect_encoding(data: bytes) -> str:
 
     依次尝试 UTF-8（含 BOM）→ GB18030（GBK 超集，覆盖全部原始数据）。
     decode 严格模式失败时回退 GBK + errors="replace"（NFR-04 容错）。
+
+    ⚠️ 本函数返回**整份解码字符串**（内存 = 原文 1 份），导入链路请用
+    :func:`open_decoded_text`（流式逐行解码，H1）。仅保留给单测/小文件/需
+    一次性拿到全文的调用方。
 
     Returns:
         解码后的全文
@@ -383,3 +523,45 @@ def detect_encoding(data: bytes) -> str:
         return data.decode("gb18030")
     except UnicodeDecodeError:
         return data.decode("gbk", errors="replace")
+
+
+def _sniff_encoding(head: bytes) -> str:
+    """按文件头若干字节探测编码（流式解码的编码选择依据）.
+
+    Args:
+        head: 文件头部字节（建议 ≥64KB，足够让非 UTF-8 数据出现非法序列）
+
+    Returns:
+        编码名：``utf-8-sig`` / ``utf-8`` / ``gb18030``
+
+    """
+    if head.startswith(b"\xef\xbb\xbf"):
+        return "utf-8-sig"
+    try:
+        head.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        # 头部截断在多字节序列中间不算「非 UTF-8」：仅当错误位置早于头部末尾
+        # 且不是末尾不完整序列时才判定为 GBK 系
+        if exc.start >= max(0, len(head) - 3):
+            return "utf-8"
+        return "gb18030"
+    return "utf-8"
+
+
+def open_decoded_text(binary_stream: io.BufferedIOBase) -> io.TextIOWrapper:
+    """把二进制流包装为「逐行解码」的文本流（H1：不整份 decode）.
+
+    编码探测只看头部 64KB（``peek`` 不消费数据），随后 ``TextIOWrapper`` 按行
+    增量解码 —— 任一时刻内存只有当前行的解码结果，而不是整份 str + 行列表。
+
+    Args:
+        binary_stream: 二进制可读流（zip 条目 / 打开的 txt 文件）
+
+    Returns:
+        文本流（逐行迭代；调用方负责 close）
+
+    """
+    head = binary_stream.peek(65536)[:65536]  # type: ignore[attr-defined]
+    encoding = _sniff_encoding(head)
+    # errors="replace" 与 detect_encoding 的容错口径一致（NFR-04：乱码不中断导入）
+    return io.TextIOWrapper(binary_stream, encoding=encoding, errors="replace", newline=None)

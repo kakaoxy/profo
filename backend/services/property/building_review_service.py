@@ -64,6 +64,27 @@ DEFAULT_REVIEWER_ROLES = ["admin"]
 BACKFILL_BATCH_SIZE = 200
 
 
+def _parse_int_id(raw: str | int | None) -> int:
+    """把字典主键串安全解析为 int（L2：脏值 → 400 而非 500）.
+
+    Args:
+        raw: 待解析值（``resolved_target_id`` 为 String(64)，可能被历史/脚本写入
+            非数字串；``parent_id`` 为 BigInteger）
+
+    Returns:
+        解析后的整数主键
+
+    Raises:
+        ValidationError: 无法解析为整数（父级数据异常）
+
+    """
+    try:
+        return int(raw)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        msg = "父级数据异常，请联系管理员"
+        raise ValidationError(msg) from None
+
+
 def get_reviewer_roles(db: Session) -> list[str]:
     """读取审核处理人角色配置（缺省 ['admin']）."""
     cfg = db.query(SystemConfig).filter(SystemConfig.key == REVIEWER_ROLES_CONFIG_KEY).first()
@@ -212,6 +233,9 @@ class BuildingReviewService:
 
         待审楼栋已转正时，其 ``resolved_target_id`` 就是真实 ``bd_buildings.id``；
         未转正由 ``_check_topology`` 拦截，此处兜底报错。
+
+        L2 修复：``resolved_target_id`` 是 ``String(64)``，历史/脚本写入非数字串时
+        ``int()`` 会抛 ``ValueError`` → 500（而非 400）。统一转为明确的 400。
         """
         if not entry.parent_kind or not entry.parent_id:
             msg = "户室 pending 缺少父级楼栋"
@@ -225,14 +249,52 @@ class BuildingReviewService:
             if parent_entry.status != BdEntryStatus.CREATED or not parent_entry.resolved_target_id:
                 msg = "父级楼栋尚未转正，请先审核父级（BR-28）"
                 raise ValidationError(msg)
-            parent_building_id = int(parent_entry.resolved_target_id)
+            parent_building_id = _parse_int_id(parent_entry.resolved_target_id)
         else:
-            parent_building_id = int(entry.parent_id)
+            parent_building_id = _parse_int_id(entry.parent_id)
         parent_building = db.get(BdBuilding, parent_building_id)
         if not parent_building:
             msg = "父级楼栋不存在（父级未转正或已删除）"
             raise ValidationError(msg)
         return parent_building
+
+    def _rewire_child_buildings(self, db: Session, entry: BdPendingEntry, target_community_id: str) -> int:
+        """拓扑（BR-28）：小区转正/合并 → 挂在本 pending 下的子级楼栋条目回填归属小区.
+
+        H2 修复（父级=待审小区 → 待审楼栋链路的另一半）：录入端「新建小区 → 在该小区下
+        新建楼栋」落成的楼栋条目 ``community_id=NULL``（父级 pending 时无从得知实表 id）。
+        父级小区 create 后原实现只写 ``entry.resolved_target_id``，不回填子级楼栋的
+        ``community_id`` → 子级楼栋 create 命中 ``_create_building_from_pending`` 的
+        「楼栋 pending 缺少归属小区」守卫永久 400（死条目）。
+        这里与既有「楼栋转正改指子级户室」对称：回填 ``community_id`` / ``community_scope``
+        并保持 ``parent_is_pending``（父级条目 id 仍是真实父级，拓扑校验继续生效）。
+
+        Returns:
+            回填的子级楼栋条目数
+
+        """
+        children = (
+            db.query(BdPendingEntry)
+            .filter(
+                BdPendingEntry.kind == BdEntryKind.BUILDING,
+                BdPendingEntry.status == BdEntryStatus.PENDING,
+                BdPendingEntry.parent_is_pending.is_(True),
+                BdPendingEntry.parent_id == entry.id,
+            )
+            .all()
+        )
+        for child in children:
+            child.community_id = target_community_id
+            child.community_scope = target_community_id
+        if children:
+            db.flush()
+            logger.info(
+                "父级小区转正：%d 条待审楼栋回填归属小区 %s（pending=%s）",
+                len(children),
+                target_community_id,
+                entry.id,
+            )
+        return len(children)
 
     def _resolve_create(
         self,
@@ -259,6 +321,10 @@ class BuildingReviewService:
         entry.resolved_at = datetime.now(timezone.utc)
         db.flush()
 
+        # 拓扑（BR-28）：小区转正 → 子级待审楼栋回填归属小区（H2）
+        if entry.kind == BdEntryKind.COMMUNITY:
+            self._rewire_child_buildings(db, entry, entry.resolved_target_id)  # type: ignore[arg-type]
+
         # 拓扑（BR-28）：楼栋转正 → 挂在本 pending 下的子级户室 pending 改指实表楼栋
         if entry.kind == BdEntryKind.BUILDING:
             child_rooms = (
@@ -274,7 +340,8 @@ class BuildingReviewService:
             for child in child_rooms:
                 # H2：改写 parent_id 为实表楼栋 id，同时把父级语义切回实表，
                 # 否则转正时仍会去 pending 表找 bd_buildings.id（永久 400）
-                child.parent_id = int(entry.resolved_target_id)  # type: ignore[arg-type]
+                # L2：resolved_target_id 是 String，脏值统一转 400
+                child.parent_id = _parse_int_id(entry.resolved_target_id)
                 child.parent_is_pending = False
             db.flush()
 
@@ -362,6 +429,11 @@ class BuildingReviewService:
         entry.resolved_at = datetime.now(timezone.utc)
         db.flush()
 
+        # 拓扑（BR-28）：小区合并现有 → 子级待审楼栋同样回填归属小区（H2 对称修复；
+        # 否则「用已有的」路径下子级楼栋仍因 community_id 为空永久 400）
+        if entry.kind == BdEntryKind.COMMUNITY:
+            self._rewire_child_buildings(db, entry, target_value)
+
         # 拓扑（BR-28）：楼栋合并现有 → 子级户室 pending 改指目标实表楼栋
         if entry.kind == BdEntryKind.BUILDING:
             child_rooms = (
@@ -375,7 +447,8 @@ class BuildingReviewService:
                 .all()
             )
             for child in child_rooms:
-                child.parent_id = int(target_value)
+                # L2：target_value 是上面 int(target_id) 校验过的实表楼栋 id 串
+                child.parent_id = _parse_int_id(target_value)
                 child.parent_is_pending = False
             db.flush()
 
@@ -552,12 +625,28 @@ class BuildingReviewService:
         self,
         db: Session,
         *,
-        operator_id: str,  # noqa: ARG002 审计由 run_pending_backfill 内部记录
-        request: Request | None = None,  # noqa: ARG002
+        operator_id: str,
+        request: Request | None = None,
     ) -> BdReviewResolveResponse:
-        """引用批量回填任务重试入口（端点 FR-11/BR-13）。"""
+        """引用批量回填任务重试入口（端点 FR-11/BR-13）.
+
+        L5 修复：原实现注释写「审计由 run_pending_backfill 内部记录」，但该模块
+        全文没有任何审计调用 —— 运维点「重试回填」这个写操作不留审计痕迹（NFR-03）。
+        现在由本入口（写操作的发起方）记录审计：``bd_pending_backfill_retry``。
+        """
         count = run_pending_backfill(db)
-        return BdReviewResolveResponse(success=True, message=f"回填任务已执行，处理 {count} 条引用")
+        from services.system.operation_log import operation_log_service
+
+        operation_log_service.log_action(
+            db,
+            user_id=operator_id,
+            action="bd_pending_backfill_retry",
+            resource_type="building_dict_pending",
+            resource_id="pending_backfill",
+            after={"processed": count},
+            request=request,
+        )
+        return BdReviewResolveResponse(success=True, message=f"回填任务已执行，实际回填 {count} 条引用")
 
 
 # run_pending_backfill / _run_backfill_task 已拆分至 building_review_backfill 模块

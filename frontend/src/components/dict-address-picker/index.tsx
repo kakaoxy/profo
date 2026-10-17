@@ -285,15 +285,25 @@ export function DictAddressPicker({
           client.GET("/api/v1/admin/building-dictionary/buildings/{building_id}", {
             params: {
               path: { building_id: buildingId },
-              query:
-                sourceBizType && sourceBizId
+              // P3：户室分页（默认 200/页）；四级级联按楼层筛选，取上限 500 覆盖单栋绝大多数楼层
+              query: {
+                room_page: 1,
+                room_page_size: 500,
+                ...(sourceBizType && sourceBizId
                   ? { source_biz_type: sourceBizType, source_biz_id: sourceBizId }
-                  : {},
+                  : {}),
+              },
             },
           }),
         ]);
         if (!floorRes.error && floorRes.data) {
-          setFloors(floorRes.data as unknown as FloorGroup[]);
+          setFloors(
+            floorRes.data.map((g): FloorGroup => ({
+              floor: g.floor ?? null,
+              room_count: g.room_count,
+              has_pending: g.has_pending,
+            })),
+          );
         }
         if (!roomRes.error && roomRes.data) {
           setRooms(

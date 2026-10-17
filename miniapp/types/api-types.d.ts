@@ -464,7 +464,7 @@ export interface paths {
         };
         /**
          * Get Dict Community Detail
-         * @description 小区详情画像（FR-02 上半部）.
+         * @description 小区详情画像（FR-02 上半部；已合并归档的小区 404）.
          */
         get: operations["get_dict_community_detail_api_v1_admin_building_dictionary_communities__community_id__get"];
         put?: never;
@@ -512,7 +512,11 @@ export interface paths {
         };
         /**
          * Get Dict Building Detail
-         * @description 楼栋详情（户室网格 + pending 叠加；非标户室门牌回退原串）.
+         * @description 楼栋详情（户室网格分页 + pending 叠加；非标户室门牌回退原串）.
+         *
+         *     P3 修复：原接口一次返回楼栋全部户室且无上限（实测最大楼栋 928 户）。
+         *     现支持 ``room_page``/``room_page_size``（默认 200、上限 500），响应携带
+         *     ``room_total``/``room_has_more`` 供前端「加载更多」。
          */
         get: operations["get_dict_building_detail_api_v1_admin_building_dictionary_buildings__building_id__get"];
         put?: never;
@@ -637,6 +641,12 @@ export interface paths {
         /**
          * Get Review Queue
          * @description 审核池队列（时间排序/状态/小区筛选/KPI）+ 权限校验.
+         *
+         *     P2 修复：``status`` 原为自由字符串（``Query(max_length=20)``），service 直接
+         *     ``filter(status == status)``，SQLAlchemy 把它绑成 ``bdentrystatus`` 枚举 →
+         *     非法值在 PG 层抛 ``InvalidTextRepresentation`` 被全局处理器映射成 500
+         *     （``?status=bogus`` 稳定 500，任何脚本/手改 URL 都能刷）。改为枚举类型后由
+         *     FastAPI 在入口 422，且 OpenAPI 下发合法值域供前端消费。
          */
         get: operations["get_review_queue_api_v1_admin_building_dictionary_review_get"];
         put?: never;
@@ -6297,6 +6307,26 @@ export interface components {
             pending_id?: number | null;
             /** Rooms */
             rooms?: components["schemas"]["BdRoomItem"][];
+            /**
+             * Room Total
+             * @default 0
+             */
+            room_total: number;
+            /**
+             * Room Page
+             * @default 1
+             */
+            room_page: number;
+            /**
+             * Room Page Size
+             * @default 0
+             */
+            room_page_size: number;
+            /**
+             * Room Has More
+             * @default false
+             */
+            room_has_more: boolean;
         };
         /**
          * BdBuildingListItem
@@ -6378,12 +6408,12 @@ export interface components {
             address?: string | null;
             /**
              * Lng
-             * @description 经度(BD-09，可空)
+             * @description 经度(BD-09，中国境内 73~136，可空)
              */
             lng?: number | null;
             /**
              * Lat
-             * @description 纬度(BD-09，可空)
+             * @description 纬度(BD-09，中国境内 3~54，可空)
              */
             lat?: number | null;
         };
@@ -6535,12 +6565,12 @@ export interface components {
             address?: string | null;
             /**
              * Lng
-             * @description 经度(BD-09)
+             * @description 经度(BD-09，中国境内 73~136)
              */
             lng?: number | null;
             /**
              * Lat
-             * @description 纬度(BD-09)
+             * @description 纬度(BD-09，中国境内 3~54)
              */
             lat?: number | null;
         };
@@ -6552,6 +6582,12 @@ export interface components {
             /** Deleted */
             deleted: number;
         };
+        /**
+         * BdEntryStatus
+         * @description 审核池条目状态机（SRS §6.1，终态不可逆）.
+         * @enum {string}
+         */
+        BdEntryStatus: "pending" | "created" | "merged" | "rejected";
         /**
          * BdFilterOption
          * @description 字典筛选下拉选项（M3：区间/板块从库内值域动态下发，避免前后端值域漂移）.
@@ -19988,6 +20024,10 @@ export interface operations {
                 source_biz_type?: string | null;
                 /** @description 来源单据ID */
                 source_biz_id?: string | null;
+                /** @description 户室页码 */
+                room_page?: number;
+                /** @description 每页户室数（默认 200，上限 500） */
+                room_page_size?: number;
             };
             header?: never;
             path: {
@@ -20222,8 +20262,8 @@ export interface operations {
     get_review_queue_api_v1_admin_building_dictionary_review_get: {
         parameters: {
             query?: {
-                /** @description 状态筛选 */
-                status?: string | null;
+                /** @description 状态筛选（pending/created/merged/rejected；非法值 422） */
+                status?: components["schemas"]["BdEntryStatus"] | null;
                 /** @description 小区筛选 */
                 community_id?: string | null;
                 /** @description 页码 */

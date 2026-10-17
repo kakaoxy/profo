@@ -5,7 +5,7 @@ import logging
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import BdEntryStatus, BdPendingEntry, User
+from models import BdEntryStatus, BdPendingEntry, BdReferenceStatus, User
 from schemas.building_dict import BdReviewKpi, BdReviewListItem
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,9 @@ def list_review_queue(
             submitter_name=(users[e.submitted_by].nickname if e.submitted_by and e.submitted_by in users else None),
             status=e.status.value if e.status else "pending",
             created_at=e.created_at,
-            reference_count=len(e.references or []),
+            # H3：口径为「待回填」引用数（原 len(e.references) 含 resolved，运营看到的是
+            # 历史累计而非待处理量，与列名语义不符）
+            reference_count=sum(1 for r in e.references or [] if r.status == BdReferenceStatus.OPEN),
         )
         for e in entries
     ]

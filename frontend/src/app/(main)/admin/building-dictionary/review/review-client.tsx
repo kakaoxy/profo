@@ -73,7 +73,7 @@ export function ReviewClient({ initialData }: { initialData: ReviewData }) {
     const { data: d } = await client.GET("/api/v1/admin/building-dictionary/review", {
       params: { query: { page: 1, page_size: 20 } },
     });
-    if (d) setData(d as unknown as ReviewData);
+    if (d) setData({ total: d.total, items: d.items, kpi: d.kpi });
     router.refresh();
   }, [router]);
 
@@ -115,7 +115,7 @@ export function ReviewClient({ initialData }: { initialData: ReviewData }) {
               <TableHead>来源单据</TableHead>
               <TableHead>小区</TableHead>
               <TableHead>提交内容</TableHead>
-              <TableHead className="text-right">引用</TableHead>
+              <TableHead className="text-right">待回填</TableHead>
               <TableHead>状态</TableHead>
               <TableHead></TableHead>
             </TableRow>

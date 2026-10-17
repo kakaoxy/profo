@@ -49,6 +49,12 @@ from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
 
+# P3：楼栋详情户室分页口径（默认 200/页，上限 500）。
+# 实测库内最大楼栋 928 户、>500 户的楼栋 26 个、>300 户的 163 个；默认 200 覆盖
+# 绝大多数楼栋一页返回，超大楼栋由前端「加载更多」翻页。
+DEFAULT_ROOM_PAGE_SIZE = 200
+MAX_ROOM_PAGE_SIZE = 500
+
 
 def _community_first_image(db: Session, community_ids: list[str]) -> dict[str, str | None]:
     """批量取小区首图（sort_order 最小、未删除），无图为 None."""
@@ -398,8 +404,17 @@ class BuildingDictReadService:
         return BdCommunityListResponse(total=total, items=items)
 
     def get_community_detail(self, db: Session, community_id: str) -> BdCommunityDetailResponse | None:
-        """小区详情画像（FR-02 上半部）."""
-        community = db.query(Community).filter(Community.id == community_id).first()
+        """小区详情画像（FR-02 上半部）.
+
+        S2 修复：只返回未归档小区（``is_active=True``）。合并后的子档是软归档行，
+        总览页按 ``is_active`` 过滤本就不可见；原实现只按 id 查，导致运营可通过
+        历史链接打开一个「在总览里永远搜不到」的小区，误判为数据丢失。
+
+        Returns:
+            小区详情；小区不存在或已归档（已并入主档）时返回 None
+
+        """
+        community = db.query(Community).filter(Community.id == community_id, Community.is_active.is_(True)).first()
         if not community:
             return None
         building_count = (
@@ -500,6 +515,18 @@ class BuildingDictReadService:
         pending_items: dict[str, BdPendingEntry] = {e.name: e for e in pending_entries}
         # 同名 pending 与实表并存时（罕见），实表优先
         existing_nos = {b.building_no for b in buildings}
+        # P3：楼层数改为聚合查询（原实现遍历 b.rooms —— 依赖 lazy="selectin" 把每栋
+        # 楼栋的全部户室读进内存，只为算一个「有几种楼层」）
+        floor_counts: dict[int, int] = (
+            dict(
+                db.query(BdRoom.building_id, func.count(func.distinct(BdRoom.floor)))
+                .filter(BdRoom.building_id.in_(building_ids), BdRoom.floor.isnot(None))
+                .group_by(BdRoom.building_id)
+                .all()
+            )
+            if building_ids
+            else {}
+        )
         merged: list[BdBuildingListItem] = [
             BdBuildingListItem(
                 id=b.id,
@@ -508,7 +535,7 @@ class BuildingDictReadService:
                 lng=b.lng,
                 lat=b.lat,
                 room_count=b.room_count,
-                floor_count=len({r.floor for r in b.rooms if r.floor is not None}) if b.rooms else 0,
+                floor_count=int(floor_counts.get(b.id, 0)),
                 linked_project_count=int(linked_by_building.get(b.id, 0)),
                 pending=False,
                 pending_id=None,
@@ -542,27 +569,40 @@ class BuildingDictReadService:
         *,
         source_biz_type: str | None = None,
         source_biz_id: str | None = None,
+        room_page: int = 1,
+        room_page_size: int = DEFAULT_ROOM_PAGE_SIZE,
     ) -> BdBuildingDetail | None:
-        """楼栋详情：户室网格 + pending 叠加（FR-04/05，R10 单点）.
+        """楼栋详情：户室网格（分页）+ pending 叠加（FR-04/05，R10 单点）.
 
         pending 户室叠加（BR-23）：bd_pending_entries(kind=room, status=pending)
         挂本楼栋（parent_kind=building, parent_id=楼栋id）或挂待审父楼栋条目。
         仅来源单据（source_biz_* 命中引用记录）的调用方可将 pending 置为可选；
         其他调用方拿到 pending 标记自行置灰（hover「审核中，通过后可选」）。
 
+        P3 修复（无上限）：原实现由 ``building.rooms``（``lazy="selectin"``）全量
+        构造户室列表 —— 实测最大楼栋 928 户、响应体 87.9KB，接口无 ``page_size``
+        上限，前端户室网格也是一次全渲染。现在实表户室按 ``room_page``/
+        ``room_page_size`` 分页（默认 200、上限 500），pending 户室不分页（量级
+        个位数且必须全量呈现「审核中」标记）。``room_total`` 为实表总数。
+
         Args:
             db: 数据库会话
             building_id: 楼栋 ID
             source_biz_type: 调用方单据类型（可选，project/lead/marketing/property）
             source_biz_id: 调用方单据 ID（可选）
+            room_page: 户室页码（≥1）
+            room_page_size: 每页户室数（1~MAX_ROOM_PAGE_SIZE）
 
         Returns:
-            楼栋详情（含户室 pending 标记）；楼栋不存在返回 None
+            楼栋详情（含户室 pending 标记与分页元信息）；楼栋不存在返回 None
 
         """
         building = db.get(BdBuilding, building_id)
         if not building:
             return None
+
+        page = max(1, room_page)
+        page_size = min(max(1, room_page_size), MAX_ROOM_PAGE_SIZE)
 
         # 找挂本楼栋的 pending 户室 + 挂「待审父楼栋」的 pending 户室
         pending_rooms: list[BdPendingEntry] = []
@@ -601,6 +641,17 @@ class BuildingDictReadService:
                 "来源单据 %s/%s 可回显 pending 户室: %s", source_biz_type, source_biz_id, selectable_pending_ids
             )
 
+        # P3：实表户室分页（楼层升序、未分层置底、同层按户室号；SQL 侧排序避免
+        # 一次加载整栋户室后再在内存排序）
+        room_total = db.query(func.count(BdRoom.id)).filter(BdRoom.building_id == building_id).scalar() or 0
+        page_rooms = (
+            db.query(BdRoom)
+            .filter(BdRoom.building_id == building_id)
+            .order_by(BdRoom.floor.is_(None), BdRoom.floor.asc(), BdRoom.room_no.asc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
         room_items = [
             BdRoomItem(
                 id=r.id,
@@ -610,7 +661,7 @@ class BuildingDictReadService:
                 pending_id=None,
                 plate_no=format_plate_no(r.room_no),
             )
-            for r in building.rooms
+            for r in page_rooms
         ]
         # pending 户室并入（id=0 表示字典无行）；楼层从户室号解析（0403→4），
         # 与 get_floor_groups 口径一致：未建层直接建户室时楼层即时可见
@@ -625,7 +676,7 @@ class BuildingDictReadService:
             )
             for e in pending_rooms
         )
-        # 排序：楼层升序、未分层置底；同层按户室号
+        # 排序：楼层升序、未分层置底；同层按户室号（pending 并入后重新排序）
         room_items.sort(key=lambda r: (r.floor is None, r.floor or 0, r.room_no))
 
         return BdBuildingDetail(
@@ -639,6 +690,10 @@ class BuildingDictReadService:
             pending=False,
             pending_id=None,
             rooms=room_items,
+            room_total=int(room_total),
+            room_page=page,
+            room_page_size=page_size,
+            room_has_more=page * page_size < int(room_total),
         )
 
     def get_floor_groups(self, db: Session, building_id: int) -> list[BdFloorGroup]:

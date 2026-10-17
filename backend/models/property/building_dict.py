@@ -93,7 +93,10 @@ class BdBuilding(Base):
     rooms = relationship(
         "BdRoom",
         primaryjoin="BdBuilding.id == foreign(BdRoom.building_id)",
-        lazy="selectin",
+        # P3 修复：原为 lazy="selectin" —— 任何一次 BdBuilding 加载（楼栋列表 20 行、
+        # 详情、审核链路 db.get）都会顺带把该楼栋全部户室读进内存（实测最大楼栋 928 户）。
+        # 读路径已改为按需分页 / 聚合查询，不再依赖预加载，故回落默认惰性加载。
+        lazy="select",
     )
 
     __table_args__ = (

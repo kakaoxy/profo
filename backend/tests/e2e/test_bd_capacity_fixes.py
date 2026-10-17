@@ -6,7 +6,8 @@
         无进行中任务时正常创建 → 201；并发创建仅 1 个成功
   L2-④ 任务恢复（M7）：遗留 processing 任务被启动迁移标记 failed（可重跑文案）
   L2-⑥ 口径对齐（M2）：>1GB 解压总量的包装载阶段拒绝（zip bomb 防线对齐 512m）
-  审查补缺（2026-10-17）：包内单个声明 600MB 的 txt 被单条目防线（512MB）拒绝
+  审查补缺（2026-10-17）：包内单个声明 600MB 的 txt 被单条目防线拒绝
+  H1（2026-10-17 性能与安全专项审查）：单条目上限 512MB → 16MB（解析放大 13.1× 反算）
 
 命令: cd backend && .venv/bin/python tests/e2e/test_bd_capacity_fixes.py
 预期: 全部断言通过，输出 PASS 汇总；数据库/temp/uploads 无测试残留。
@@ -267,8 +268,8 @@ check("⑦ 声明解压总量 >1GB 的包被拒绝", ok7, f"status={t7.status.va
 s.close()
 
 # ⑦b 审查补缺防线：包内仅一个声明 600MB 的 txt（总量 <1GB 不触发总量防线，
-# 单条目防线 512MB 拦截）。声明体积仅元数据，真实数据段高压缩磁盘 KB 级，
-# 若防线失效 zf.read() 会真实读入 600MB（哨兵名由 ⑨ 兕底检出）
+# 单条目防线拦截）。声明体积仅元数据，真实数据段高压缩磁盘 KB 级，
+# 若防线失效会真实读入 600MB（哨兵名由 ⑨ 兑底检出）
 buf7b = io.BytesIO()
 with zipfile.ZipFile(buf7b, "w", zipfile.ZIP_DEFLATED) as zf:
     payload = ("测试大厦L2;01;0101;121.4;31.2;\n" * 8).encode("gbk")
@@ -291,7 +292,7 @@ processor.process_task(task7b_id)
 s = db.SessionLocal()
 t7b = s.get(BdImportTask, task7b_id)
 msg7b = t7b.error_message or ""
-ok7b = t7b.status == ImportTaskStatus.FAILED and "单个文件" in msg7b and "512MB" in msg7b
+ok7b = t7b.status == ImportTaskStatus.FAILED and "单个文件" in msg7b and "超限" in msg7b
 check(
     "⑦b 包内单个声明 600MB 的 txt 被单条目防线拒绝",
     ok7b,

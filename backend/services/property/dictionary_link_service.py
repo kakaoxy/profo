@@ -15,8 +15,9 @@ from datetime import datetime, timezone
 from fastapi import Request
 from sqlalchemy.orm import Session
 
-from models import BdBuilding, BdRoom, Community, L4MarketingProject, Lead, Project, PropertyCurrent
+from models import Community, L4MarketingProject, Lead, Project, PropertyCurrent
 from schemas.building_dict import DictionaryLinkRequest
+from services.property.dict_ownership import validate_dict_ownership
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -52,21 +53,22 @@ class DictionaryLinkService:
             msg = "字典小区不存在"
             raise ResourceNotFoundError(msg)
 
-        # 楼栋/户室校验（房源类仅小区级）
-        if body.building_id is not None:
-            building = db.get(BdBuilding, body.building_id)
-            if not building or building.community_id != body.community_id:
-                msg = "字典楼栋不存在或不属于该小区"
-                raise ValidationError(msg)
-        if body.room_id is not None:
-            room = db.get(BdRoom, body.room_id)
-            if not room:
-                msg = "字典户室不存在"
-                raise ResourceNotFoundError(msg)
-            room_building = db.get(BdBuilding, room.building_id)
-            if body.building_id is not None and room_building and room_building.id != body.building_id:
-                msg = "户室与楼栋不匹配"
-                raise ValidationError(msg)
+        # 楼栋/户室归属校验（S1 修复）：原实现只在「同时传了 building_id」时比对户室与
+        # 请求楼栋，从不比对「户室所属楼栋的小区」与 body.community_id —— 只传 room_id
+        # 即可把 A 小区的户室绑到 B 小区，落库后该单据在后续任何编辑时被
+        # validate_dict_ownership 永久 400（不可编辑的死单据）。
+        # 现统一复用主表单链路的 validate_dict_ownership（单一入口，避免两处口径漂移）：
+        # 楼栋/户室不存在、楼栋不属于该小区、户室不属于该小区、户室与楼栋不匹配均 400。
+        if biz_type == _BIZ_PROPERTY and (body.building_id is not None or body.room_id is not None):
+            # 契约约束：房源类（机器链路）仅小区级绑定，文档承诺在此变成代码约束
+            msg = "房源类仅支持小区级绑定，不支持楼栋/户室"
+            raise ValidationError(msg)
+        validate_dict_ownership(
+            db,
+            community_id=body.community_id,
+            building_id=body.building_id,
+            room_id=body.room_id,
+        )
 
         record = self._get_record(db, biz_type, biz_id)
         before = self._snapshot(record)

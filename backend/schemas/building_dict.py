@@ -132,6 +132,13 @@ class BdBuildingDetail(BaseModel):
     pending: bool = False
     pending_id: int | None = None
     rooms: list[BdRoomItem] = Field(default_factory=list)
+    # P3：户室分页元信息（原实现一次返回全部户室，实测最大楼栋 928 户、
+    # 响应体 87.9KB；接口无上限，超大楼栋/其他城市数据会线性膨胀）。
+    # rooms 仅含「本页实表户室 + 全部 pending 户室」，room_total 为实表户室总数。
+    room_total: int = 0
+    room_page: int = 1
+    room_page_size: int = 0
+    room_has_more: bool = False
 
 
 class BdBuildingListItem(BaseModel):
@@ -211,8 +218,10 @@ class BdCommunityPatchRequest(BaseModel):
     developer: str | None = Field(None, max_length=200, description="开发商")
     property_mgmt: str | None = Field(None, max_length=200, description="物业公司")
     address: str | None = Field(None, max_length=500, description="地址")
-    lng: float | None = Field(None, description="经度(BD-09)")
-    lat: float | None = Field(None, description="纬度(BD-09)")
+    # L3 修复：BD-09 值域校验。原实现无界，实测 PATCH {"lng":999.5,"lat":-888.1}
+    # 原样落库，会让后续地图/距离计算出现异常值。
+    lng: float | None = Field(None, ge=73, le=136, description="经度(BD-09，中国境内 73~136)")
+    lat: float | None = Field(None, ge=3, le=54, description="纬度(BD-09，中国境内 3~54)")
 
 
 # ==================== admin 补录（FR-06/07 / R4） ====================
@@ -254,8 +263,9 @@ class BdCommunityCreateRequest(BaseModel):
     business_circle: str = Field(min_length=1, max_length=100, description="板块(必填)")
     ring: str | None = Field(None, max_length=50, description="环线(可空)")
     address: str | None = Field(None, max_length=500, description="地址(可空)")
-    lng: float | None = Field(None, description="经度(BD-09，可空)")
-    lat: float | None = Field(None, description="纬度(BD-09，可空)")
+    # L3 修复：BD-09 值域校验（与 BdCommunityPatchRequest 同口径）
+    lng: float | None = Field(None, ge=73, le=136, description="经度(BD-09，中国境内 73~136，可空)")
+    lat: float | None = Field(None, ge=3, le=54, description="纬度(BD-09，中国境内 3~54，可空)")
 
 
 # ==================== 审核池（FR-11 / R7） ====================

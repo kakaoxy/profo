@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse
 
 from dependencies.auth import CurrentAdminUserDep, DbSessionDep, PropertyReadPermDep
 from dependencies.common import PaginationDep
+from models import BdEntryStatus
 from schemas.building_dict import (
     BdBatchCreateResult,
     BdBuildingCreateRequest,
@@ -47,7 +48,7 @@ from services.property.building_review_service import (
     get_reviewer_roles,
     set_reviewer_roles,
 )
-from services.property.dict_read_service import BuildingDictReadService
+from services.property.dict_read_service import DEFAULT_ROOM_PAGE_SIZE, MAX_ROOM_PAGE_SIZE, BuildingDictReadService
 from services.property.dict_submit_service import get_dict_submit_service
 from services.property.dict_write_service import get_dict_write_service
 from services.system.exceptions import FileProcessingError, ResourceNotFoundError
@@ -192,10 +193,10 @@ def get_dict_community_detail(
     service: ReadServiceDep,
     community_id: Annotated[str, PathParam(description="小区ID")],
 ) -> BdCommunityDetailResponse:
-    """小区详情画像（FR-02 上半部）."""
+    """小区详情画像（FR-02 上半部；已合并归档的小区 404）."""
     detail = service.get_community_detail(db, community_id)
     if not detail:
-        msg = "小区不存在"
+        msg = "小区不存在或已并入其他主档（已归档小区请在主档查看）"
         raise ResourceNotFoundError(msg)
     return detail
 
@@ -257,13 +258,25 @@ def get_dict_building_detail(
     building_id: Annotated[int, PathParam(description="楼栋ID")],
     source_biz_type: Annotated[str | None, Query(max_length=20, description="来源单据类型(回显选中用)")] = None,
     source_biz_id: Annotated[str | None, Query(max_length=64, description="来源单据ID")] = None,
+    room_page: Annotated[int, Query(ge=1, description="户室页码")] = 1,
+    room_page_size: Annotated[
+        int,
+        Query(ge=1, le=MAX_ROOM_PAGE_SIZE, description="每页户室数（默认 200，上限 500）"),
+    ] = DEFAULT_ROOM_PAGE_SIZE,
 ) -> BdBuildingDetail:
-    """楼栋详情（户室网格 + pending 叠加；非标户室门牌回退原串）."""
+    """楼栋详情（户室网格分页 + pending 叠加；非标户室门牌回退原串）.
+
+    P3 修复：原接口一次返回楼栋全部户室且无上限（实测最大楼栋 928 户）。
+    现支持 ``room_page``/``room_page_size``（默认 200、上限 500），响应携带
+    ``room_total``/``room_has_more`` 供前端「加载更多」。
+    """
     detail = service.get_building_detail(
         db,
         building_id,
         source_biz_type=source_biz_type,
         source_biz_id=source_biz_id,
+        room_page=room_page,
+        room_page_size=room_page_size,
     )
     if not detail:
         msg = "楼栋不存在"
@@ -374,10 +387,20 @@ def get_review_queue(
     db: DbSessionDep,
     current_user: PropertyReadPermDep,
     pagination: PaginationDep,
-    status: Annotated[str | None, Query(max_length=20, description="状态筛选")] = None,
+    status: Annotated[
+        BdEntryStatus | None,
+        Query(description="状态筛选（pending/created/merged/rejected；非法值 422）"),
+    ] = None,
     community_id: Annotated[str | None, Query(max_length=36, description="小区筛选")] = None,
 ) -> BdReviewListResponse:
-    """审核池队列（时间排序/状态/小区筛选/KPI）+ 权限校验."""
+    """审核池队列（时间排序/状态/小区筛选/KPI）+ 权限校验.
+
+    P2 修复：``status`` 原为自由字符串（``Query(max_length=20)``），service 直接
+    ``filter(status == status)``，SQLAlchemy 把它绑成 ``bdentrystatus`` 枚举 →
+    非法值在 PG 层抛 ``InvalidTextRepresentation`` 被全局处理器映射成 500
+    （``?status=bogus`` 稳定 500，任何脚本/手改 URL 都能刷）。改为枚举类型后由
+    FastAPI 在入口 422，且 OpenAPI 下发合法值域供前端消费。
+    """
     review_service = get_building_review_service()
     return review_service.list_queue(
         db,

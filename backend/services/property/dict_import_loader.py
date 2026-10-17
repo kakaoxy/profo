@@ -8,22 +8,29 @@
 - 按 name / uq(community_id, building_no) / uq(building_id, room_no) upsert 幂等
   （BR-16：同包重跑计数不变）；
 - 失败行写 csv 明细可下载，归档 90 天（bd_archive 目录，应用内启动 + 每日巡检清理）；
-- zip 包逐条目流式处理（任一时刻最多驻留单个 txt，OrbStack 排查报告 §4.2-1）。
-- 单包解压总量上限 1GB、单条目（单 txt）解压上限 512MB，与 backend 容器
-  512m 承载力对齐（承载力报告 v2 §4；单条目防线为 2026-10-17 审查补缺）。
+- zip 包逐条目流式处理（任一时刻最多驻留单个 txt，OrbStack 排查报告 §4.2-1）；
+- **H1 全链路流式（2026-10-17 性能与安全专项审查）**：条目以
+  ``io.TextIOWrapper`` 逐行解码、解析器把户室行直接落临时 CSV，不再
+  「整份 read → 整份 decode → splitlines → rooms 列表」四份数据同时驻留
+  （实测放大 13.1×：38.7MB → 509MB；改后 38.7MB → 4MB）。
+- 单包解压总量上限 1GB、单条目（单 txt）解压上限 16MB（H1：原 512MB 按
+  「原始字节 ×13.1」反算实际需 6.7GB，与 backend 容器 512m 承载力不符；
+  合法数据实测最大单 txt 约 313KB）。
+- 装载前内存闸门：进程 RSS 超 384MB 直接失败并提示拆分单文件（H1）。
 - 上传互斥：同一时刻仅允许一个 pending/processing 任务（承载力报告 M5/L2-②）。
 
 楼栋号/户室号保留原始串（BR-02/03）；楼层解析前两位（utils.building_dict.parse_room_floor）；
-坐标 BD-09 原样落库（BR-18）。
+坐标 BD-09 原样落库前做值域过滤（L3：越界 / (0,0) 占位置空）。
 """
 
 import csv
+import io
 import logging
 import tempfile
 import traceback
 import uuid
 import zipfile
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TypeAlias
@@ -33,7 +40,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from models import BdImportTask, ImportTaskStatus
-from services.property.dict_parser import detect_encoding, parse_community_txt
+from services.property.dict_parser import ParsedCommunity, open_decoded_text, parse_community_txt_stream
 from utils.building_dict import parse_room_floor
 
 logger = logging.getLogger(__name__)
@@ -57,12 +64,27 @@ _ZIP_BOMB_MSG = "zip 包解压后总大小超限（1GB，与 backend 容器 512m
 # zip bomb 防护第二道：单条目解压上限。
 # 审查补缺（2026-10-17）：MAX_UNCOMPRESSED_TOTAL 只约束包内全部条目的声明
 # 总量，恶意单条目（如声明 800MB 的 txt，包内仅此一个条目）可通过总量检查，
-# zf.read() 一次读入 + parse_community_txt 的 splitlines/rooms 列表约 3-4×
-# 膨胀后仍可冲垮 512m 容器。上限取总量防线的一半（512MB，数值与容器
-# mem_limit 对齐便于记忆）；单 txt 直传按落盘实际大小同口径拦截。合法数据
-# 不受影响：本数据集实测最大单 txt 约 313KB（承载力报告 §4）。
-MAX_SINGLE_ENTRY_BYTES = 512 * 1024 * 1024
-_SINGLE_ENTRY_LIMIT_MSG = "zip 内单个文件解压后超限（512MB），疑似异常包，请检查数据或分批导入"
+# zf.read() 一次读入后仍可冲垮 512m 容器。
+#
+# H1 修复（2026-10-17 性能与安全专项审查）：上限由 512MB 降到 16MB。
+# 原值按「原始字节数」与容器 mem_limit 对齐，但解析链路的**真实内存放大是
+# 13.1×**（tracemalloc 实测，见 dict_parser.parse_community_txt_stream 注释：
+# 19.4MB→254MB、38.7MB→509MB、105.1MB→1378MB 三档线性一致），即 512MB 条目
+# 需要约 6.7GB 常驻内存；即便按 nginx 100MB 网关上限，单条目 38MB 也需要
+# 约 509MB —— 已逼近 docker-compose.yml 的 backend mem_limit: 512m。
+# 现在解析改流式（峰值 ≈ 4MB，与文件大小无关，实测 38.7MB→4MB），防线仍保留
+# 作为「异常包/超大包」的早失败闸门：16MB 在 13.1× 旧口径下约 210MB，
+# 留一半余量；按流式口径 16MB 峰值仅约 4MB。合法数据不受影响：本数据集实测
+# 最大单 txt 约 313KB（承载力报告 §4）。
+MAX_SINGLE_ENTRY_BYTES = 16 * 1024 * 1024
+_SINGLE_ENTRY_LIMIT_MSG = "zip 内单个文件解压后超限（16MB），疑似异常包，请检查数据或分批导入"
+
+# H1 装载线程内存闸门：解析前预检进程 RSS，超阈值直接失败并提示拆分单文件。
+# 阈值取容器 mem_limit（docker-compose.yml: backend 512m）的 75% —— 留出
+# FastAPI/SQLAlchemy/其他请求的余量。非 Linux（开发机）无 cgroup 时按同一
+# 常量兜底判断（开发机内存远大于此，正常不会触发）。
+MEMORY_GATE_BYTES = 384 * 1024 * 1024
+_MEMORY_GATE_MSG = "服务内存不足（RSS 已超 384MB），请稍后重试或拆分单文件后分批导入"
 
 # 失败明细/原始包归档天数（NFR-02）
 ARCHIVE_DAYS = 90
@@ -84,6 +106,58 @@ def _decode_zip_name(info: zipfile.ZipInfo) -> str:
         return raw.decode("gbk", errors="replace")
 
 
+def _current_rss_bytes() -> int | None:
+    """读取当前进程 RSS（字节）；无法读取时返回 None.
+
+    优先 ``resource.getrusage``（标准库，Linux/macOS 均可用，macOS 返回字节、
+    Linux 返回 KB —— 按 ``sys.platform`` 区分），不引入 psutil 新依赖。
+
+    Returns:
+        当前进程常驻内存字节数；平台不支持时返回 None
+
+    """
+    try:
+        import resource
+        import sys
+
+        usage = resource.getrusage(resource.RUSAGE_SELF)
+        # macOS 的 ru_maxrss 单位是字节，Linux 是 KB
+        factor = 1 if sys.platform == "darwin" else 1024
+        return int(usage.ru_maxrss) * factor
+    except (ImportError, OSError, ValueError):  # pragma: no cover - 平台差异兜底
+        return None
+
+
+def _check_memory_gate() -> None:
+    """装载前内存闸门（H1）：RSS 超阈值直接失败并提示拆分单文件.
+
+    Raises:
+        ValueError: 进程 RSS 超过 ``MEMORY_GATE_BYTES``
+
+    """
+    rss = _current_rss_bytes()
+    if rss is not None and rss > MEMORY_GATE_BYTES:
+        logger.error("导入内存闸门触发：RSS=%.0fMB > 阈值 %.0fMB", rss / 2**20, MEMORY_GATE_BYTES / 2**20)
+        raise ValueError(_MEMORY_GATE_MSG) from None
+
+
+def _iter_lines(data: Iterable[str] | bytes) -> Iterable[str]:
+    """把条目内容规整为「行迭代器」（H1；兼容注入 bytes 的调用方/测试）.
+
+    Args:
+        data: 逐行文本流（正常路径）或 bytes（测试/兼容路径）
+
+    Returns:
+        行迭代器
+
+    """
+    if isinstance(data, bytes | bytearray):
+        from services.property.dict_parser import detect_encoding
+
+        return io.StringIO(detect_encoding(bytes(data)))
+    return data
+
+
 class _BadEntry:
     """损坏 zip 条目占位（L4：生成器内不 raise，交给调用方记失败明细）.
 
@@ -99,26 +173,64 @@ class _BadEntry:
         self.error = error
 
 
-# 单包入口产出项：正常条目为 (文件名, 原始字节)，解压失败的条目为 (文件名, _BadEntry)。
-# 用联合类型如实表达（而非 Iterator[tuple[str, bytes]] + type: ignore 遮盖），
-# 调用方必须显式 isinstance 收窄后才能当 bytes 使用。
-_ZipEntry: TypeAlias = tuple[str, bytes | _BadEntry]
+# 单包入口产出项：正常条目为 (文件名, 逐行解码的文本流)，解压/解码失败的条目为
+# (文件名, _BadEntry)。用联合类型如实表达（而非 Iterator[tuple[str, object]] +
+# type: ignore 遮盖），调用方必须显式 isinstance 收窄后才能当文本流使用。
+# H1：由 ``bytes``（整份解压进内存）改为 ``Iterable[str]`` 文本流（逐行解码）。
+_ZipEntry: TypeAlias = tuple[str, Iterable[str] | _BadEntry]
 
 
 class DictImportStats:
     """导入对账三计数."""
 
-    __slots__ = ("buildings", "communities", "rooms")
+    __slots__ = ("buildings", "communities", "rooms", "scanned_buildings")
 
     def __init__(self) -> None:
         """初始化计数."""
         self.communities = 0
         self.buildings = 0
         self.rooms = 0
+        # H1：预扫描口径（L3）的楼栋数 —— 流式解析后内存中不再持有 rooms 列表，
+        # 由装载侧在遍历户室行时统计，供 task.total_buildings 使用
+        self.scanned_buildings = 0
 
     def as_dict(self) -> dict[str, int]:
         """返回对账字典."""
         return {"communities": self.communities, "buildings": self.buildings, "rooms": self.rooms}
+
+
+# 户室行 CSV 列数：楼栋号, 室号, 经度, 纬度（空串表示 None）
+_ROOM_ROW_FIELDS = 4
+
+
+def _iter_room_rows(
+    rooms: list[tuple[str, str, float | None, float | None]],
+    rooms_csv_path: str | None,
+) -> Iterator[tuple[str, str, float | None, float | None]]:
+    """遍历户室行（内存列表或落盘 CSV 两种来源，H1）.
+
+    Args:
+        rooms: 内存中的户室行（小文件/单测路径；为空时改读 CSV）
+        rooms_csv_path: ``parse_community_txt_stream`` 落盘的户室行 CSV
+
+    Yields:
+        (楼栋号, 室号, lng, lat)
+
+    """
+    if rooms_csv_path:
+        with Path(rooms_csv_path).open(encoding="utf-8", newline="") as f:
+            for row in csv.reader(f):
+                if len(row) < _ROOM_ROW_FIELDS:  # 损坏行容错（理论上不会出现）
+                    continue
+                building_no, room_no, lng_raw, lat_raw = row[0], row[1], row[2], row[3]
+                yield (
+                    building_no,
+                    room_no,
+                    float(lng_raw) if lng_raw else None,
+                    float(lat_raw) if lat_raw else None,
+                )
+        return
+    yield from rooms
 
 
 def load_community_by_copy(
@@ -135,14 +247,15 @@ def load_community_by_copy(
     ring: str | None,
     lng: float | None,
     lat: float | None,
-    rooms: list[tuple[str, str, float | None, float | None]],
+    rooms: list[tuple[str, str, float | None, float | None]] | None = None,
+    rooms_csv_path: str | None = None,
     district: str | None = None,
     business_circle: str | None = None,
 ) -> DictImportStats:
     """单小区事务装载（幂等 upsert）.
 
     事务内：
-    1. communities 按 name upsert（跨批次重名小区按最新批次更新画像列，
+    1. communities 按 name upsert（跨批次重名小区按最新批次画像列更新，
        已有画像值不覆盖为空 —— 幂等且保留人工修正）；
     2. bd_buildings 按 uq(community_id, building_no) upsert；
     3. bd_rooms 临时 CSV → COPY 进 staging 表 → INSERT ... ON CONFLICT DO NOTHING
@@ -159,9 +272,11 @@ def load_community_by_copy(
         district_area: 源数据「区域板块」原文（仅作 Fallback 拆分依据，不单独存列）
         address: 小区地址
         ring: 环线
-        lng: 首户经度（BD-09）
-        lat: 首户纬度（BD-09）
-        rooms: 户室行 [(楼栋号, 室号, lng, lat)]
+        lng: 首户经度（BD-09；为 None 且走 CSV 路径时从 CSV 首个非空坐标取值）
+        lat: 首户纬度（BD-09；同上）
+        rooms: 户室行 [(楼栋号, 室号, lng, lat)]（内存路径）
+        rooms_csv_path: 户室行落盘 CSV（H1 流式路径；与 rooms 二选一，
+            CSV 列序为 楼栋号, 室号, 经度, 纬度，空串表示 None）
         district: 归一化行政区（带「区」后缀）；缺省时从 district_area 拆
         business_circle: 板块；缺省时从 district_area 拆
 
@@ -174,6 +289,7 @@ def load_community_by_copy(
         from services.property.dict_parser import split_district_area
 
         district, business_circle = split_district_area(district_area)
+    room_rows = rooms or []
     stats = DictImportStats()
     with engine.begin() as conn:
         # 1. communities upsert（source=import 废止 → 不写 source；画像列 COALESCE 保留已有值）
@@ -252,13 +368,20 @@ def load_community_by_copy(
             )
 
         # 2. 楼栋 upsert（首户坐标）
+        # H1：户室行可能是内存列表（单测/小文件）或落盘 CSV（导入链路），
+        # 这里单遍遍历收集楼栋集合与每栋首户坐标，不再依赖内存列表
         first_coords: dict[str, tuple[float | None, float | None]] = {}
-        for building_no, _room_no, r_lng, r_lat in rooms:
+        building_nos: list[str] = []
+        seen_buildings: set[str] = set()
+        for building_no, _room_no, r_lng, r_lat in _iter_room_rows(room_rows, rooms_csv_path):
+            if building_no not in seen_buildings:
+                seen_buildings.add(building_no)
+                building_nos.append(building_no)
             if building_no not in first_coords and (r_lng is not None or r_lat is not None):
                 first_coords[building_no] = (r_lng, r_lat)
+        stats.scanned_buildings = len(building_nos)
 
-        building_rows = sorted({b for b, _r, _lng, _lat in rooms})
-        for building_no in building_rows:
+        for building_no in sorted(building_nos):
             b_lng, b_lat = first_coords.get(building_no, (None, None))
             brow = conn.execute(
                 text(
@@ -285,7 +408,7 @@ def load_community_by_copy(
             building_id_map[str(bno)] = int(bid)
 
         # 3. 户室：临时 CSV → COPY staging → ON CONFLICT DO NOTHING
-        if rooms:
+        if building_id_map and (rooms_csv_path or room_rows):
             conn.execute(
                 text(
                     """
@@ -306,7 +429,7 @@ def load_community_by_copy(
             )
             try:
                 writer = csv.writer(tmp, quoting=csv.QUOTE_MINIMAL)
-                for building_no, room_no, _r_lng, _r_lat in rooms:
+                for building_no, room_no, _r_lng, _r_lat in _iter_room_rows(room_rows, rooms_csv_path):
                     bid = building_id_map.get(building_no)
                     if bid is None:
                         continue
@@ -370,7 +493,7 @@ class DictImportProcessor:
         return not (info.filename.startswith("__MACOSX/") or Path(info.filename).name.startswith("._"))
 
     def _iter_txt_entries(self, file_path: Path, task: BdImportTask) -> tuple[Iterator[_ZipEntry], int]:
-        """构造 txt 条目迭代器（报告 §4.2-1 流式修复）.
+        """构造 txt 条目迭代器（报告 §4.2-1 流式修复 + H1 流式解析）.
 
         zip：先按中央目录扫描（只读元数据，不读数据）过滤 txt 条目并做
         zip bomb 防护（声明解压总大小累加），返回逐条目惰性解压迭代器——
@@ -378,8 +501,14 @@ class DictImportProcessor:
         单 txt：返回单元素迭代器，小区名取「原始上传文件名」（存盘名已被
         重命名为 bd_{task_id}.txt，不能直接用）。
 
+        H1 修复：条目产出**文本流**（``io.TextIOWrapper`` 逐行解码）而非
+        ``bytes`` 全量——原实现 ``zf.read(info)`` + ``detect_encoding`` 整份 decode
+        后交 ``parse_community_txt``，实测 38.7MB 数据峰值 509MB（13.1×），
+        40MB 的合法 txt 即可打爆 512m 容器。现在解码与解析都是逐行流式，
+        峰值 ≈ 4MB 且与文件大小无关。
+
         Returns:
-            (条目迭代器 (文件名, 全部字节)，总条目数)。总条目数来自中央
+            (条目迭代器 (文件名, 文本流 | _BadEntry)，总条目数)。总条目数来自中央
             目录/单文件分支，不消耗迭代器。
 
         Raises:
@@ -388,12 +517,12 @@ class DictImportProcessor:
         """
         if file_path.suffix.lower() != ".zip":
             # 单 txt 直传：按落盘实际大小做单文件拦截（与 zip 条目同口径），
-            # 在 read_bytes() 读入内存前拒绝
+            # 在打开文件流前拒绝
             if file_path.stat().st_size > MAX_SINGLE_ENTRY_BYTES:
                 raise ValueError(_SINGLE_ENTRY_LIMIT_MSG) from None
             # 小区名取自「原始上传文件名」的扩展名前部分
             original_name = Path(task.filename).name if task.filename else file_path.name
-            return iter([(original_name, file_path.read_bytes())]), 1
+            return self._iter_single_txt(file_path, original_name), 1
 
         with zipfile.ZipFile(file_path) as zf:
             infos = [info for info in zf.infolist() if self._is_txt_entry(info)]
@@ -406,6 +535,21 @@ class DictImportProcessor:
                     raise ValueError(_SINGLE_ENTRY_LIMIT_MSG) from None
         total = len(infos)
         return self._iter_zip_txt(file_path, infos), total
+
+    @staticmethod
+    def _iter_single_txt(file_path: Path, original_name: str) -> Iterator[_ZipEntry]:
+        """单 txt 直传：打开文件流并按行解码（H1，不整份读入）."""
+        try:
+            with file_path.open("rb") as fh:
+                buffered = io.BufferedReader(fh) if not isinstance(fh, io.BufferedReader) else fh
+                text = open_decoded_text(buffered)
+                try:
+                    yield original_name, text
+                finally:
+                    text.close()
+        except Exception as exc:  # 单条目失败不得杀死生成器
+            logger.warning("txt 文件读取失败，记失败明细: %s (%s)", original_name, exc)
+            yield original_name, _BadEntry(exc)
 
     @staticmethod
     def _iter_zip_txt(file_path: Path, infos: list[zipfile.ZipInfo]) -> Iterator[_ZipEntry]:
@@ -426,20 +570,35 @@ class DictImportProcessor:
         导致生成器死亡、后续条目全部丢失。捕获基类后无论哪类读取失败都只影响
         当次条目，失败明细仍带回真实文件名与原因（运营可定位丢的是哪个小区）。
 
+        H1：条目内容以文本流形式产出（``open_decoded_text`` 逐行解码），
+        不再 ``zf.read()`` 整份进内存。
+
         Returns:
-            (文件名, 原始字节 | _BadEntry) 的惰性迭代器
+            (文件名, 文本流 | _BadEntry) 的惰性迭代器
 
         """
         with zipfile.ZipFile(file_path) as zf:
             for info in infos:
                 name = Path(_decode_zip_name(info)).name
                 try:
-                    data = zf.read(info)
+                    raw = zf.open(info)
                 except Exception as exc:  # 单条目失败不得杀死生成器
                     logger.warning("zip 条目解压失败，记失败明细后继续: %s (%s)", name, exc)
                     yield name, _BadEntry(exc)
                     continue
-                yield name, data
+                buffered = io.BufferedReader(raw)
+                try:
+                    text = open_decoded_text(buffered)
+                except Exception as exc:  # 编码探测失败同样只影响当条
+                    logger.warning("zip 条目解码失败，记失败明细后继续: %s (%s)", name, exc)
+                    buffered.close()
+                    yield name, _BadEntry(exc)
+                    continue
+                try:
+                    yield name, text
+                finally:
+                    # 关闭文本流会级联关闭底层 ZipExtFile
+                    text.close()
 
     def process_task(self, task_id: str) -> None:
         """处理导入任务主入口（独立线程）."""
@@ -512,6 +671,7 @@ class DictImportProcessor:
 
         for idx in range(1, total_communities + 1):
             community_name = ""
+            parsed: ParsedCommunity | None = None
             # L4 修复（单条目损坏不再整包 failed）：生成器的 next() 也必须在 try 内。
             # 注意 ``for .. in enumerate(entries)`` 的 next() 发生在循环体之前，
             # 解压异常会直接冒到 process_task → 整包 failed 且已装载小区无续跑入口；
@@ -522,9 +682,11 @@ class DictImportProcessor:
                 if isinstance(data, _BadEntry):
                     # L4：损坏条目不进入解析/装载，直接记失败明细（后续条目继续）
                     raise data.error
-                # isinstance 收窄后 data 为 bytes（_ZipEntry 联合类型）
-                content = detect_encoding(data)
-                parsed = parse_community_txt(content, community_name)
+                # H1：内存闸门（解析前预检进程 RSS，超阈值直接失败并提示拆分单文件）
+                _check_memory_gate()
+                # H1：isinstance 收窄后 data 为逐行文本流 —— 解析全程流式，
+                # 户室行落临时 CSV（parsed.rooms_csv_path），不进内存列表
+                parsed = parse_community_txt_stream(_iter_lines(data), community_name)
                 loaded = load_community_by_copy(
                     self.engine,
                     community_name=parsed.name,
@@ -538,16 +700,17 @@ class DictImportProcessor:
                     business_circle=parsed.business_circle,
                     address=parsed.address,
                     ring=parsed.ring,
-                    lng=next((r[2] for r in parsed.rooms if r[2] is not None), None),
-                    lat=next((r[3] for r in parsed.rooms if r[3] is not None), None),
-                    rooms=parsed.rooms,
+                    lng=parsed.lng,
+                    lat=parsed.lat,
+                    rooms=[],
+                    rooms_csv_path=parsed.rooms_csv_path,
                 )
                 stats.communities += loaded.communities
                 stats.buildings += loaded.buildings
                 stats.rooms += loaded.rooms
                 warnings_count += len(parsed.warnings)
-                scanned_buildings += len({b for b, _r, _lng, _lat in parsed.rooms})
-                scanned_rooms += len(parsed.rooms)
+                scanned_buildings += loaded.scanned_buildings
+                scanned_rooms += parsed.room_count
             except StopIteration:
                 # 迭代器提前耗尽（条目数与 total_communities 失配）：停止消费并
                 # 让收支逻辑据 processed_communities 如实记账，不再对剩余索引
@@ -562,6 +725,10 @@ class DictImportProcessor:
                 community_name = community_name or f"第 {idx} 个条目"
                 logger.exception("小区装载失败: %s", community_name)
                 failed_rows.append({"community": community_name, "error": str(e)[:500]})
+            finally:
+                # H1：户室行临时 CSV 用完即删（parse 成功/失败都清理）
+                if parsed is not None and parsed.rooms_csv_path:
+                    Path(parsed.rooms_csv_path).unlink(missing_ok=True)
 
             # 进度实时更新（NFR-01 可关闭页面，异步任务承担）
             task.processed_communities = idx

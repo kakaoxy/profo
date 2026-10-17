@@ -220,25 +220,18 @@ def _extend_buildings_origin(engine: Engine) -> None:
             )
 
 
-def _reconcile_room_count(engine: Engine) -> None:
-    """H4：一次性对账 bd_buildings.room_count（幂等：只更新不一致的行）."""
-    with engine.begin() as conn:
-        fixed = conn.execute(
-            text(
-                """
-                UPDATE bd_buildings b
-                   SET room_count = COALESCE(actual.cnt, 0)
-                  FROM (
-                      SELECT bd.id, (SELECT count(*) FROM bd_rooms r WHERE r.building_id = bd.id) AS cnt
-                        FROM bd_buildings bd
-                  ) actual
-                 WHERE b.id = actual.id
-                   AND b.room_count IS DISTINCT FROM COALESCE(actual.cnt, 0)
-                """
-            )
-        ).rowcount
-    if fixed:
-        logger.info("迁移：对账修正 %d 个楼栋的 room_count（H4 冗余计数漂移）", fixed)
+def _reconcile_room_count(engine: Engine) -> None:  # noqa: ARG001 签名保留供既有调用点；对账已迁至 20261018 迁移
+    """H4：一次性对账 bd_buildings.room_count（幂等：只更新不一致的行）.
+
+    P1 修复（性能与安全专项审查）：原实现是「每个楼栋一次相关子查询」
+    （``SELECT bd.id, (SELECT count(*) FROM bd_rooms r WHERE r.building_id = bd.id)
+    FROM bd_buildings bd``），53 万楼栋实测 ``loops=530894``、执行 1.2~1.5 秒，
+    且成本随楼栋数线性恶化（上海全域再翻倍即 3 秒）——每次后端启动都白付这笔钱
+    （``--reload`` 开发时每次改代码都触发一次迁移）。
+    对账逻辑已迁至 ``_bd_audit_20261018_fixes.reconcile_room_count``（聚合 JOIN 版，
+    实测同库 1211ms → 580ms），此处保留空实现仅为兼容既有调用点与迁移顺序。
+    """
+    logger.debug("迁移：room_count 对账已由 _bd_audit_20261018_fixes 接管（P1 聚合版），跳过旧实现")
 
 
 def _fix_import_task_created_at(engine: Engine) -> None:

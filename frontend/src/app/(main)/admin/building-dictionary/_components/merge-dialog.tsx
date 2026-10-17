@@ -52,7 +52,12 @@ export function MergeDialog({ open, onOpenChange, primaryId, primaryName, onMerg
         params: { query: { keyword: kw.trim(), page: 1, page_size: 20 } },
       });
       if (!error && data) {
-        setResults((data.items as unknown as BdCommunityListItem[]).filter((c) => c.id !== primaryId));
+        // 生成类型收敛：property_types 可选 → 收敛为必有数组
+        setResults(
+          data.items
+            .map((c): BdCommunityListItem => ({ ...c, property_types: c.property_types ?? [] }))
+            .filter((c) => c.id !== primaryId),
+        );
       }
     } finally {
       setSearching(false);

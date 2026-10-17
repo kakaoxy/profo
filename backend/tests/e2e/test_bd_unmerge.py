@@ -70,10 +70,17 @@ s, merged = req(
 print("1. merge:", s, merged)
 assert s == 200 and merged["success"]
 
-# merged_into_id 已写入
+# S2（性能与安全专项审查）：归档（已合并）小区的详情 GET 返回 404，
+# 避免运营通过历史链接打开一个「总览里永远搜不到」的小区；合并信息改从主档视角看
 s, detail = req("GET", f"/admin/building-dictionary/communities/{secondary['id']}", token=token)
-print("2. 被并小区 merged_into_id:", detail.get("merged_into_id"))
-assert detail["merged_into_id"] == primary["id"]
+print("2. 被并小区详情（S2：应 404）:", s, detail)
+assert s == 404, f"已合并小区详情应 404，实际 {s}: {detail}"
+
+# 主档视角能看到被并子档（merged_children）
+s, primary_detail = req("GET", f"/admin/building-dictionary/communities/{primary['id']}", token=token)
+child_ids = [c["id"] for c in (primary_detail.get("merged_children") or [])]
+print("2b. 主档 merged_children:", child_ids)
+assert secondary["id"] in child_ids, "主档应能看到已并入的子档"
 
 # unmerge 恢复（新增端点）
 s, un = req(

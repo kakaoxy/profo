@@ -88,7 +88,13 @@ export function ImportClient() {
       params: { query: { page: 1, page_size: 20 } },
     });
     if (data) {
-      const items = data.items as unknown as ImportTask[];
+      // 生成类型收敛：failed_file_url / error_message / completed_at 为 Optional
+      const items: ImportTask[] = data.items.map((t) => ({
+        ...t,
+        failed_file_url: t.failed_file_url ?? null,
+        error_message: t.error_message ?? null,
+        completed_at: t.completed_at ?? null,
+      }));
       setTasks(items);
       setActiveTaskId((prev) => {
         if (prev && items.some((t) => t.id === prev)) return prev;

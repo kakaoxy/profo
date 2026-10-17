@@ -37,9 +37,7 @@ export function CommunityImagesSection({ communityId }: CommunityImagesSectionPr
         params: { path: { community_id: communityId }, query: { page: 1, page_size: 50 } },
       });
       if (data) {
-        setImages(
-          (data.items as unknown as BdCommunityImageItem[]).filter((i) => !i.is_deleted),
-        );
+        setImages(data.items.filter((i) => !i.is_deleted));
       }
     } finally {
       setLoading(false);

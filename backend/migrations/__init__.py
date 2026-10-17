@@ -141,6 +141,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from migrations._bd_audit_20261017_fixes import run_bd_audit_20261017_fixes
+from migrations._bd_audit_20261018_fixes import run_bd_audit_20261018_fixes
 from migrations._bd_community_address_widen import widen_community_address_column
 from migrations._bd_import_task_recovery import recover_stale_bd_import_tasks
 from migrations._bd_room_floor_backfill import backfill_bd_room_floor
@@ -407,6 +408,10 @@ def _run_all_migrations(engine: Engine) -> None:
         # bd_buildings 补 origin_community_id、room_count 对账、导入任务时区校正、
         # communities.district 归一
         run_bd_audit_20261017_fixes(engine)
+        # 楼盘字典 2026-10-17 性能与安全专项审查（第二批，幂等）：
+        # room_count 对账改聚合 JOIN（P1）、待审楼栋归属小区回填（H2）、
+        # 无回填对象 open 引用收敛（H3）、越界/(0,0) 坐标置空（L3）
+        run_bd_audit_20261018_fixes(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

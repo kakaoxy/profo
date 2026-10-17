@@ -30,6 +30,10 @@ UPLOAD_DIR = Path.cwd() / settings.import_upload_dir
 _OVERSIZE_MSG = "文件超过 2GB 上限"
 # M5 上传互斥提示（承载力报告 §5.1）
 _IN_PROGRESS_MSG = "已有导入任务进行中，请等待完成后再上传"
+# P4 修复：BdImportTask.filename 为 String(255)，超长文件名原实现会写盘成功、
+# DB commit 失败（StringDataRightTruncation → 500）并留下无任务指向的孤儿文件。
+# 入口显式校验 → 422 明确提示（而不是 500「数据格式错误」）。
+_MAX_FILENAME_LEN = 255
 # 多 worker 部署下 create_task 互斥检查用的事务级 advisory lock key
 # （固定 bigint；与其他迁移/业务锁取值隔离；事务结束自动释放）
 _IMPORT_ADVISORY_LOCK_KEY = 202610170001
@@ -67,6 +71,10 @@ class BdImportTaskService:
         filename = file.filename or "unnamed"
         if not (filename.lower().endswith(".zip") or filename.lower().endswith(".txt")):
             msg = "只支持 zip 包或 txt 文件"
+            raise FileProcessingError(msg)
+        # P4：filename 列 String(255)，超长会在 db.commit 时抛 DB 异常（500）并留下孤儿文件
+        if len(filename) > _MAX_FILENAME_LEN:
+            msg = f"文件名过长（{len(filename)} 字符，上限 {_MAX_FILENAME_LEN}），请重命名后上传"
             raise FileProcessingError(msg)
 
         # M5 修复（承载力报告 L2-②）：上传互斥。导入是 backend 容器内同进程
@@ -119,7 +127,15 @@ class BdImportTaskService:
             file_size=file_size,
         )
         db.add(task)
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            # P4 修复：DB 写失败时清理已落盘文件（原实现只捕获 FileProcessingError，
+            # 其他 DB 异常会留下无任务行指向的孤儿文件，直到 90 天归档清理才回收）。
+            db.rollback()
+            stored_path.unlink(missing_ok=True)
+            logger.exception("字典导入任务落库失败，已清理临时文件: %s", stored_path)
+            raise
         db.refresh(task)
         logger.info("字典导入任务已创建: %s (%s, %d bytes)", task_id, filename, file_size)
         return task

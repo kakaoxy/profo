@@ -164,6 +164,56 @@ class DictWriteService:
 
     # ---------- FR-06 楼栋补录 ----------
 
+    def _retry_buildings_one_by_one(
+        self,
+        db: Session,
+        *,
+        community_id: str,
+        nos: list[str],
+        now: datetime,
+    ) -> tuple[int, dict[str, int]]:
+        """批量 commit 撞 uq 后逐条重试（BR-09：单条冲突跳过，不中断整批）.
+
+        L1 修复（两个维度）：
+        1. 原实现只捕获 ``IntegrityError`` —— 若逐条重试过程中抛出其他 DB 异常
+           （连接中断、超时、序列化失败），异常直接冒到路由 → 500，而此时前面
+           几条已 commit 成功，``_promote_matching_pendings`` 不会执行 → 楼栋已入库
+           但对应待审 pending 不转正、引用不回填（「字典有了、审核池还挂着」的漂移）。
+           现在每条用 SAVEPOINT（``begin_nested``）隔离，任何异常只回滚当条并记日志
+           后继续；已成功写入的 ``created_map`` 仍会被上层用于转正。
+        2. 原实现在 ``db.commit()`` 之后读 ``building.id`` —— Session 默认
+           ``expire_on_commit=True``，该访问会额外发 1 条 SELECT 回查（最坏 60 次
+           往返）。现在统一在 ``flush()`` 后立即取值（与主路径口径一致）。
+
+        Returns:
+            (added, created_map)
+
+        """
+        added = 0
+        created_map: dict[str, int] = {}
+        for no in nos:
+            try:
+                with db.begin_nested():
+                    building = BdBuilding(
+                        community_id=community_id,
+                        building_no=no,
+                        created_at=now,
+                        updated_at=now,
+                    )
+                    db.add(building)
+                    db.flush()
+                    # flush 后立即取主键（不等到 commit 后回查）
+                    created_map[no] = building.id
+                added += 1
+            except IntegrityError:  # noqa: PERF203 逐条隔离是本方法的目的（L1）
+                # uq 冲突：本条跳过（BR-09），SAVEPOINT 已回滚当条
+                logger.debug("补录楼栋跳过（uq 冲突）: community=%s no=%s", community_id, no)
+            except Exception:
+                # 非 uq 的 DB 异常：只回滚当条，保留已成功的写入（L1 第 1 点）
+                logger.exception("补录楼栋失败（跳过该条）: community=%s no=%s", community_id, no)
+        db.commit()
+        return added, created_map
+
     def create_buildings(
         self,
         db: Session,
@@ -205,23 +255,17 @@ class DictWriteService:
         except IntegrityError:
             # 并发下 uq 冲突（BR-09 批量场景跳过）：回退逐条容错
             db.rollback()
-            added = 0
-            created_map = {}
-            for no in nos:
-                if no in existing:
-                    continue
-                try:
-                    building = BdBuilding(
-                        community_id=body.community_id, building_no=no, created_at=now, updated_at=now
-                    )
-                    db.add(building)
-                    db.commit()
-                    created_map[no] = building.id
-                    added += 1
-                except IntegrityError:
-                    db.rollback()
+            added, created_map = self._retry_buildings_one_by_one(
+                db,
+                community_id=body.community_id,
+                nos=[n for n in nos if n not in existing],
+                now=now,
+            )
 
         # 撞同名 open pending 自动转正（BR-26）
+        # L1：放在 finally 语义位置（此处已无未捕获异常路径），确保重试分支的
+        # 部分成功也会转正；异常场景由下方 except 兜底后再转正，避免
+        # 「字典有了、审核池还挂着」的漂移。
         self._promote_matching_pendings(
             db,
             kind=BdEntryKind.BUILDING,
@@ -242,6 +286,49 @@ class DictWriteService:
         return BdBatchCreateResult(added=added, skipped=len(nos) - added)
 
     # ---------- FR-06 户室补录 ----------
+
+    def _retry_rooms_one_by_one(
+        self,
+        db: Session,
+        *,
+        building_id: int,
+        candidates: list[str],
+        now: datetime,
+    ) -> tuple[int, dict[str, int]]:
+        """批量 commit 撞 uq 后逐条重试（L1：SAVEPOINT 隔离 + flush 后取主键）.
+
+        与 ``_retry_buildings_one_by_one`` 同口径：
+        - 每条 ``begin_nested()`` 隔离，``IntegrityError`` 跳过当条，其他 DB 异常
+          只回滚当条并记日志（原实现只捕 ``IntegrityError``，其他异常会让已 commit
+          的部分成功丢失 ``_promote_matching_pendings`` 转正机会）；
+        - ``created_map`` 在 ``flush()`` 后立即取值，避免 ``expire_on_commit``
+          导致每条多一次 SELECT 回查（批量上限 200 户）。
+
+        Returns:
+            (added, created_map)
+
+        """
+        added = 0
+        created_map: dict[str, int] = {}
+        for room_no in candidates:
+            try:
+                with db.begin_nested():
+                    room = BdRoom(
+                        building_id=building_id,
+                        room_no=room_no,
+                        floor=parse_room_floor(room_no),
+                        created_at=now,
+                    )
+                    db.add(room)
+                    db.flush()
+                    created_map[room_no] = room.id
+                added += 1
+            except IntegrityError:  # noqa: PERF203 逐条隔离是本方法的目的（L1）
+                logger.debug("补录户室跳过（uq 冲突）: building=%s room_no=%s", building_id, room_no)
+            except Exception:
+                logger.exception("补录户室失败（跳过该条）: building=%s room_no=%s", building_id, room_no)
+        db.commit()
+        return added, created_map
 
     def create_rooms(
         self,
@@ -293,21 +380,12 @@ class DictWriteService:
             db.commit()
         except IntegrityError:
             db.rollback()
-            added = 0
-            created_map = {}
-            for room_no in candidates:
-                if room_no in existing:
-                    continue
-                try:
-                    room = BdRoom(
-                        building_id=building_id, room_no=room_no, floor=parse_room_floor(room_no), created_at=now
-                    )
-                    db.add(room)
-                    db.commit()
-                    created_map[room_no] = room.id
-                    added += 1
-                except IntegrityError:
-                    db.rollback()
+            added, created_map = self._retry_rooms_one_by_one(
+                db,
+                building_id=building_id,
+                candidates=[c for c in candidates if c not in existing],
+                now=now,
+            )
 
         # 撞同名 open pending 自动转正（BR-26）
         self._promote_matching_pendings(
@@ -589,11 +667,30 @@ class DictWriteService:
         operator_id: str,
         request: Request | None = None,
     ) -> BdCommunityDetailResponse:
-        """修正画像（PATCH 语义 + 审计）。"""
+        """修正画像（PATCH 语义 + 审计）.
+
+        S2 修复：已合并归档（``is_active=False``）的子档不可修正。原实现只按 id 查，
+        运营可对已并入主档的子档改画像 —— 修正值在主档视角不可见（详情从主档进），
+        形成「改了看不见」的静默脏数据，且解除合并回迁后子档携带被偷改的画像。
+        写入侧 409 并给出主档名与 ``merged_into_id``，引导去主档维护。
+
+        Raises:
+            ResourceNotFoundError: 小区不存在
+            ConflictError: 小区已并入主档（软归档），需在主档维护
+
+        """
         community = db.query(Community).filter(Community.id == community_id).first()
         if not community:
             msg = "小区不存在"
             raise ResourceNotFoundError(msg)
+        if not community.is_active:
+            merged_into_id = community.merged_into_id
+            parent = db.query(Community).filter(Community.id == merged_into_id).first() if merged_into_id else None
+            if parent:
+                msg = f"该小区已并入「{parent.name}」（merged_into_id={merged_into_id}），请在主档维护画像"
+            else:
+                msg = "该小区已归档（is_active=false），不可修改；如需维护请先解除合并"
+            raise ConflictError(msg)
 
         before = {
             "ring": community.ring,

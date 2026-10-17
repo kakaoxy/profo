@@ -17,6 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { client } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
+import type { components } from "@/lib/api-types";
+
+type Schemas = components["schemas"];
 import type { BdBuildingDetail, BdRoomItem } from "./types";
 
 interface FloorRoomPanelProps {
@@ -44,11 +47,39 @@ interface FloorGroup {
 // M4 修复：复用生成类型派生（与后端 BdRoomItem schema 对齐）
 type RoomItem = BdRoomItem;
 
-export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoom, addRoomSlot, onDeleteFloor, onDeleteRoom }: FloorRoomPanelProps) {
+/** 户室分页大小（P3：后端上限 500，默认 200；楼栋最多 928 户需翻页加载） */
+const ROOM_PAGE_SIZE = 200;
+
+/** 生成类型收敛：schema 层 rooms/floor/pending_id 可选，消费侧统一为必有 */
+function normalizeDetail(d: Schemas["BdBuildingDetail"]): BdBuildingDetail {
+  return {
+    ...d,
+    rooms: (d.rooms ?? []).map((r) => ({
+      ...r,
+      floor: r.floor ?? null,
+      pending_id: r.pending_id ?? null,
+    })),
+  };
+}
+
+export function FloorRoomPanel({
+  buildingId,
+  refreshSignal = 0,
+  onPick,
+  onAddRoom,
+  addRoomSlot,
+  onDeleteFloor,
+  onDeleteRoom,
+}: FloorRoomPanelProps) {
   const [floors, setFloors] = useState<FloorGroup[]>([]);
   const [detail, setDetail] = useState<BdBuildingDetail | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<{ id: number; no: string; plate: string } | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<{
+    id: number;
+    no: string;
+    plate: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [openFloors, setOpenFloors] = useState<Set<number | null>>(new Set());
 
   const load = useCallback(async () => {
@@ -59,11 +90,18 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
           params: { path: { building_id: buildingId } },
         }),
         client.GET("/api/v1/admin/building-dictionary/buildings/{building_id}", {
-          params: { path: { building_id: buildingId } },
+          params: {
+            path: { building_id: buildingId },
+            query: { room_page: 1, room_page_size: ROOM_PAGE_SIZE },
+          },
         }),
       ]);
       if (!floorRes.error && floorRes.data) {
-        const groups = floorRes.data as unknown as FloorGroup[];
+        const groups: FloorGroup[] = floorRes.data.map((g) => ({
+          floor: g.floor ?? null,
+          room_count: g.room_count,
+          has_pending: g.has_pending,
+        }));
         setFloors(groups);
         setOpenFloors((prev) => {
           if (prev.size > 0) return prev;
@@ -71,12 +109,49 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
         });
       }
       if (!detailRes.error && detailRes.data) {
-        setDetail(detailRes.data as unknown as BdBuildingDetail);
+        setDetail(normalizeDetail(detailRes.data));
       }
     } finally {
       setLoading(false);
     }
   }, [buildingId]);
+
+  /** P3：加载下一页户室并追加（超大楼栋 928 户不再一次性返回） */
+  const loadMoreRooms = useCallback(async () => {
+    if (!detail?.room_has_more || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const { data, error } = await client.GET(
+        "/api/v1/admin/building-dictionary/buildings/{building_id}",
+        {
+          params: {
+            path: { building_id: buildingId },
+            query: { room_page: (detail.room_page ?? 1) + 1, room_page_size: ROOM_PAGE_SIZE },
+          },
+        },
+      );
+      if (!error && data) {
+        const next = normalizeDetail(data);
+        setDetail((prev) =>
+          prev
+            ? {
+                ...next,
+                // 分页元信息取新页（room_page / room_has_more 前进）；
+                // rooms = 已加载的实表户室（上一页）+ 本页实表户室 + pending 户室。
+                // pending 户室后端每页都会附带（不分页），只能保留一份，否则重复渲染。
+                rooms: [
+                  ...prev.rooms.filter((r) => !r.pending),
+                  ...next.rooms.filter((r) => !r.pending),
+                  ...next.rooms.filter((r) => r.pending),
+                ],
+              }
+            : next,
+        );
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [buildingId, detail, loadingMore]);
 
   useEffect(() => {
     void load();
@@ -104,6 +179,20 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
   return (
     <div className="border-t border-dashed border-dove/40 pt-2.5">
       <div className="flex flex-col gap-2">
+        {detail && detail.room_has_more ? (
+          <p className="rounded-lg bg-fog px-2.5 py-1.5 text-[11px] text-graphite">
+            已显示 {rooms.filter((r) => !r.pending).length} / {detail.room_total}{" "}
+            户（按楼层分组展示）
+            <button
+              type="button"
+              className="ml-2 text-rust hover:underline disabled:opacity-50"
+              disabled={loadingMore}
+              onClick={() => void loadMoreRooms()}
+            >
+              {loadingMore ? "加载中…" : "加载更多户室"}
+            </button>
+          </p>
+        ) : null}
         {floors.map((f) => {
           const isOpen = openFloors.has(f.floor);
           const floorRooms = byFloor.get(f.floor) ?? [];
@@ -124,11 +213,20 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
                   }}
                 >
                   <span className="text-[9px] text-dove">{isOpen ? "▾" : "▸"}</span>
-                  <span className={cn("font-mono text-[11px] font-semibold", f.floor == null ? "text-graphite" : "text-ink")}>
+                  <span
+                    className={cn(
+                      "font-mono text-[11px] font-semibold",
+                      f.floor == null ? "text-graphite" : "text-ink",
+                    )}
+                  >
                     {f.floor == null ? "楼层待定" : `${f.floor} 层`}
                   </span>
                   <em className="not-italic text-dove">{f.room_count} 户</em>
-                  {f.has_pending ? <Badge variant="outline" className="h-4 px-1 text-[10px]">未审核</Badge> : null}
+                  {f.has_pending ? (
+                    <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                      未审核
+                    </Badge>
+                  ) : null}
                 </button>
                 {/* 「删除本层」= 批量删除该层全部户室（楼层待定分组无楼层号，仅支持逐户删除） */}
                 {onDeleteFloor && f.floor != null ? (
@@ -153,8 +251,11 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
                         title={r.pending ? "审核中，通过后可选" : undefined}
                         className={cn(
                           "rounded-[7px] px-1 py-1 font-mono text-[10px] transition-colors",
-                          selected ? "bg-ink text-white" : "bg-fog text-ash hover:bg-[var(--sky,#e8f0f8)] hover:text-ink",
-                          r.pending && "border border-dashed bg-transparent text-dove opacity-60 hover:bg-transparent",
+                          selected
+                            ? "bg-ink text-white"
+                            : "bg-fog text-ash hover:bg-[var(--sky,#e8f0f8)] hover:text-ink",
+                          r.pending &&
+                            "border border-dashed bg-transparent text-dove opacity-60 hover:bg-transparent",
                         )}
                         onClick={() => {
                           setSelectedRoom({ id: r.id, no: r.room_no, plate: r.plate_no });
@@ -169,7 +270,10 @@ export function FloorRoomPanel({ buildingId, refreshSignal = 0, onPick, onAddRoo
                 </div>
               ) : null}
               {/* 选中户室后的删除入口（admin；业务引用由后端拦截） */}
-              {isOpen && selectedRoom && onDeleteRoom && floorRooms.some((r) => !r.pending && r.room_no === selectedRoom.no) ? (
+              {isOpen &&
+              selectedRoom &&
+              onDeleteRoom &&
+              floorRooms.some((r) => !r.pending && r.room_no === selectedRoom.no) ? (
                 <div className="mt-1.5">
                   <button
                     type="button"

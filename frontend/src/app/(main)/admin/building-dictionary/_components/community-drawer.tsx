@@ -90,7 +90,8 @@ export function CommunityDrawer({
         params: { path: { community_id: communityId } },
       });
       if (!error && data) {
-        const d = data as unknown as BdCommunityDetail;
+        // 生成类型收敛：schema 层 property_types 可选（PG text[] 历史数据可能为 null）
+        const d: BdCommunityDetail = { ...data, property_types: data.property_types ?? [] };
         setDetail(d);
         setPatchForm({
           ring: d.ring ?? "",
@@ -122,7 +123,7 @@ export function CommunityDrawer({
         },
       );
       if (!error && data) {
-        setBuildings(data.items as unknown as BdBuildingListItem[]);
+        setBuildings(data.items);
         setBuildingTotal(data.total);
       }
     } finally {
