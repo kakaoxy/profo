@@ -54,15 +54,20 @@ _COORD_INVALID_SQL = (
 def reconcile_room_count(engine: Engine) -> None:
     """P1：一次性对账 bd_buildings.room_count（聚合 JOIN 版，幂等）.
 
-    单条 UPDATE 同时覆盖两个分支（``MATERIALIZED`` 保证聚合只算一次）：
+    两个分支由 ``vals``（每楼栋一行的正确值域）同时覆盖：
     1. 有户室楼栋：``room_count`` 与 ``count(*)`` 不一致 → 以实表行数为准；
     2. 无户室楼栋：``LEFT JOIN`` 无匹配 → ``COALESCE(..., 0)`` 归零。
        第 2 点必需：纯聚合 JOIN（``FROM (SELECT building_id, count(*) GROUP BY
        building_id)``）对无户室楼栋没有产出行会漏对账，旧实现靠「逐行相关子查询
-       返回 0」天然覆盖，新写法必须显式补。
+       返回 0」天然覆盖，新写法必须显式补（``vals`` 内 LEFT JOIN 保留全部楼栋行）。
+
+    注意：不能按审查报告字面建议写成 ``FROM bd_buildings b LEFT JOIN agg`` ——
+    PostgreSQL 禁止 UPDATE 目标别名在 FROM 中重复出现（``table name "b"
+    specified more than once``），故以派生表 ``vals`` 承载 LEFT JOIN 补零逻辑。
+    实测（530,909 楼栋 / 7,340,962 户室）：与旧冗余自连接版耗时相当（~0.66s），
+    收益为消除 ``b.id = k.id`` 语义误导性自连接，对账口径不变。
 
     ``WHERE b.room_count IS DISTINCT FROM ...`` 保证无漂移时零写入。
-    实测同库（530,894 楼栋 / 7,340,962 户室）：旧实现 1211ms → 本实现 540ms。
     """
     with engine.begin() as conn:
         fixed = conn.execute(
@@ -72,13 +77,17 @@ def reconcile_room_count(engine: Engine) -> None:
                     SELECT building_id, count(*) AS cnt
                       FROM bd_rooms
                      GROUP BY building_id
+                ),
+                vals AS MATERIALIZED (
+                    SELECT k.id AS building_id, COALESCE(a.cnt, 0) AS cnt
+                      FROM bd_buildings k
+                      LEFT JOIN agg a ON a.building_id = k.id
                 )
                 UPDATE bd_buildings b
-                   SET room_count = COALESCE(a.cnt, 0)
-                  FROM bd_buildings k
-                  LEFT JOIN agg a ON a.building_id = k.id
-                 WHERE b.id = k.id
-                   AND b.room_count IS DISTINCT FROM COALESCE(a.cnt, 0)
+                   SET room_count = v.cnt
+                  FROM vals v
+                 WHERE b.id = v.building_id
+                   AND b.room_count IS DISTINCT FROM v.cnt
                 """
             )
         ).rowcount

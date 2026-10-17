@@ -114,6 +114,7 @@ ignore = [
 "routers/reports/**/*.py" = ["FAST001", "FAST003"]
 # 迁移脚本: 循环变量转换、复杂度
 "scripts/*.py" = ["PLW2901"]
+"scripts/verify_*.py" = ["S101", "PLR2004", "PT018"]
 # 迁移脚本: 使用字符串构建 SQL（表名/列名为常量，无用户输入，无注入风险）
 "migrations/*.py" = ["S608"]
 # 统计聚合方法: try-except 在循环内（跳过坏文件）
