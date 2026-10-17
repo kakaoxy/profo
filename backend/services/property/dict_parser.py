@@ -55,6 +55,131 @@ def _clean(value: str | None) -> str | None:
     return v
 
 
+# 上海 16 区标准名（district 归一化基准，带「区」后缀，与存量主流值域一致）
+SHANGHAI_DISTRICTS: tuple[str, ...] = (
+    "黄浦区",
+    "徐汇区",
+    "长宁区",
+    "静安区",
+    "普陀区",
+    "虹口区",
+    "杨浦区",
+    "闵行区",
+    "宝山区",
+    "嘉定区",
+    "浦东新区",
+    "金山区",
+    "松江区",
+    "青浦区",
+    "奉贤区",
+    "崇明区",
+)
+
+# 「浦东」在源数据里与「浦东新区」同义；「浦东区」是另一条导入链路
+# （market/importer.py）落库的旧值域（生产库 1421 条），与官方标准名
+# 「浦东新区」并存 → 同一行政区被拆成两个筛选值域，一并归到标准名。
+# 闸北已于 2015 并入静安，但存量数据仍有该值，保留为独立值域。
+_DISTRICT_ALIASES: dict[str, str] = {
+    "浦东": "浦东新区",
+    "浦东区": "浦东新区",
+    "浦东新区": "浦东新区",
+    "闸北": "闸北区",
+    "闸北区": "闸北区",
+}
+
+# 源数据 district_area 形如「青浦盈浦」（区 + 板块直接拼接，无分隔符）。
+# 切分候选 = 全称（带「区」）+ 简称（去「区」后）+ 别名（浦东/闸北 等）；
+# 必须按长度倒序排列：
+# - 「浦东新区张江」需先命中「浦东新区」而非「浦东新」/「浦东」，否则余串会残留「区张江」；
+# - 「金山区石化」需先命中「金山区」而非「金山」，否则余串会残留「区石化」。
+_DISTRICT_PREFIXES: tuple[str, ...] = tuple(
+    sorted(
+        set(SHANGHAI_DISTRICTS) | {d.removesuffix("区") for d in SHANGHAI_DISTRICTS} | set(_DISTRICT_ALIASES),
+        key=len,
+        reverse=True,
+    )
+)
+
+
+def _normalize_district(prefix: str) -> str:
+    """区名前缀 → 标准区名（统一带「区」后缀，别名优先命中映射表）."""
+    if prefix in _DISTRICT_ALIASES:
+        return _DISTRICT_ALIASES[prefix]
+    if prefix in SHANGHAI_DISTRICTS:
+        return prefix
+    return f"{prefix}区"
+
+
+def normalize_district_value(raw: str | None) -> str | None:
+    """写入侧区县名归一（M3 写入链路配套）.
+
+    导入链路已由 ``split_district_area`` 归一，但 admin 新增小区 / 审核转正 /
+    communities 新建接口直接落 ``district``，导致「浦东」「浦东区」这类值域
+    又从 API 写入（实测 ``district`` 下拉里同时出现「浦东新区」与「浦东」）。
+
+    归一规则：别名映射 → 标准区名（带「区」）→ 兜底去/加「区」后匹配 16 区。
+    无法匹配的值（外地/脏值）原样返回，不丢数据。
+
+    Args:
+        raw: 原值（可空）
+
+    Returns:
+        归一后的区名；输入为空时返回 None
+
+    """
+    value = _clean(raw)
+    if not value:
+        return None
+    if value in _DISTRICT_ALIASES:
+        return _DISTRICT_ALIASES[value]
+    if value in SHANGHAI_DISTRICTS:
+        return value
+    # 「浦东区」→ 浦东新区：「去后缀再加后缀」逆向匹配标准名
+    for standard in SHANGHAI_DISTRICTS:
+        bare = standard.removesuffix("区")
+        if value in (bare, f"{bare}区"):
+            return standard
+    return value
+
+
+def split_district_area(raw: str | None) -> tuple[str | None, str | None]:
+    """把源数据「区域板块」拆成 (district, business_circle)（M3 修复）。
+
+    源数据属性行 ``;青浦盈浦;万寿新村;`` —— 区域与板块直接拼接，原实现只当展示字段
+    丢掉，导致导入的小区 79% 没有 district，总览页区域筛选报不出数据。
+
+    切分规则：在「全称 ∪ 简称 ∪ 别名」候选中取**最长**前缀命中，余串即板块。
+    别名必须参与前缀匹配而不是仅参与完整串相等判定，否则「浦东张江」「闸北彭浦」
+    这类「不带后缀的别名 + 板块」会整体落入板块字段、district 为 None。
+
+    示例::
+
+        「青浦盈浦」     → ("青浦区", "盈浦")
+        「浦东张江」     → ("浦东新区", "张江")
+        「浦东新区张江」 → ("浦东新区", "张江")
+        「金山区石化」   → ("金山区", "石化")
+        「黄浦区」      → ("黄浦区", None)
+
+    Args:
+        raw: 源数据「区域板块」原串（如「青浦盈浦」，可空）
+
+    Returns:
+        (district, business_circle)；district 统一带「区」后缀，无法识别时为 None
+        （此时整串归入 business_circle，保留原文不丢数据）
+
+    """
+    value = _clean(raw)
+    if not value:
+        return (None, None)
+    for prefix in _DISTRICT_PREFIXES:
+        if value.startswith(prefix):
+            district = _normalize_district(prefix)
+            # 余串可能以「区」残留开头（如命中简称但原名带「区」），防御性剥离
+            circle = value[len(prefix) :].strip(" -—·、,").removeprefix("区").strip(" -—·、,")
+            return (district, circle or None)
+    return (None, value)
+
+
 def _split_types(raw: str | None) -> list[str]:
     """物业类型串 → 列表（``住宅-公寓、商业类`` → [住宅-公寓, 商业类]）."""
     v = _clean(raw)
@@ -112,7 +237,9 @@ class ParsedCommunity:
 
     __slots__ = (
         "address",
+        "business_circle",
         "developer",
+        "district",
         "district_area",
         "era_from",
         "era_to",
@@ -133,6 +260,8 @@ class ParsedCommunity:
         self.property_mgmt: str | None = None
         self.developer: str | None = None
         self.district_area: str | None = None
+        self.district: str | None = None
+        self.business_circle: str | None = None
         self.address: str | None = None
         self.ring: str | None = None
         self.rooms: list[tuple[str, str, float | None, float | None]] = []
@@ -192,6 +321,8 @@ def parse_community_txt(text: str, community_name: str) -> ParsedCommunity:
         if m and result.district_area is None:
             result.district_area = _clean(m.group(1))
             result.address = _clean(m.group(2))
+            # M3：拆为可筛选的 district/business_circle（否则总览区域筛选无数据）
+            result.district, result.business_circle = split_district_area(result.district_area)
             continue
 
         # 环线行
@@ -216,14 +347,18 @@ def parse_community_txt(text: str, community_name: str) -> ParsedCommunity:
         result.warnings.append(f"建成年代脏值置空: {era_raw}")
     if not result.address:
         result.warnings.append("地址缺失")
+    if result.district_area and not result.district:
+        result.warnings.append(f"区域无法识别（仅存板块）: {result.district_area}")
     logger.debug(
-        "解析小区 %s: 楼栋数据 %d 行, 物业类型 %s, 年代 %s~%s, 环线 %s",
+        "解析小区 %s: 楼栋数据 %d 行, 物业类型 %s, 年代 %s~%s, 环线 %s, 区域 %s/%s",
         community_name,
         len(result.rooms),
         result.property_types,
         result.era_from,
         result.era_to,
         result.ring,
+        result.district,
+        result.business_circle,
     )
     return result
 

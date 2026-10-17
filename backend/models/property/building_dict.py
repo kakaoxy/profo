@@ -67,6 +67,11 @@ class BdBuilding(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="所属小区ID(逻辑外键)")
+    origin_community_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="合并前原归属小区ID(仅合并迁移过的楼栋有值，解除合并时据此可逆)",
+    )
     building_no: Mapped[str] = mapped_column(String(100), nullable=False, comment="楼栋号(原始串，如 01/100/201乙)")
     lng: Mapped[float | None] = mapped_column(Float, nullable=True, comment="首户经度(BD-09，可空)")
     lat: Mapped[float | None] = mapped_column(Float, nullable=True, comment="首户纬度(BD-09，可空)")
@@ -95,6 +100,7 @@ class BdBuilding(Base):
         # uq(community_id, building_no)：BR-09 唯一约束（批量跳过/单笔拦截依据）
         Index("uq_bd_building_no", "community_id", "building_no", unique=True),
         Index("idx_bd_building_community", "community_id"),
+        Index("idx_bd_building_origin_community", "origin_community_id"),
     )
 
     def __repr__(self) -> str:
@@ -141,9 +147,19 @@ class BdPendingEntry(Base):
     - source_type/source_id：创建来源冗余（v1.7 泛化：project/lead/marketing/property）
     - normalized_name + parent_kind + parent_id（v1.8 FR-19）：同名唯一 + 父子层级
       （parent_id 指向字典实表 id 或父级 pending 条目 id；community 的 parent_id 为 NULL）
+    - community_scope（H1 修复）：归属小区维度参与唯一性判定。building 条目在
+      parent_id=0（父级为实表小区）时丢失小区粒度，原唯一索引会让 A/B 两小区的同名
+      「8号楼」互相复用 → 跨小区脏关联。故 building/room 条目一律落归属小区；
+      community 条目（自身即小区）与「父级本身待审」的条目为 NULL
+    - parent_is_pending（H2 修复）：父级是否为审核池待审条目。原实现把
+      ``pending_building`` 与 ``building`` 都落成 parent_kind='building'，转正时无法
+      区分 parent_id=278 是 bd_buildings.id 还是 bd_pending_entries.id，导致
+      「待审楼栋下新建的户室」永久 400
     - resolved_target_id：merge/reject 时改指的现有目标 id
-    - partial unique ``uq_pending_open``：同 pending 状态下 (kind, parent_id, normalized_name)
-      全局唯一，杜绝并发重复提交（BR-26）
+    - partial unique ``uq_pending_open``：同 pending 状态下
+      (kind, COALESCE(community_scope,''), parent_is_pending, COALESCE(parent_id,0), normalized_name)
+      全局唯一，杜绝并发重复提交（BR-26）；parent_is_pending 参与索引是为了区分
+      「父级=实表楼栋 id」与「父级=pending 条目 id」两套 id 空间（id 可能数值相等）
 
     状态机（SRS §6.1）：pending → created/merged/rejected，终态不可逆。
     """
@@ -183,6 +199,17 @@ class BdPendingEntry(Base):
         BigInteger,
         nullable=True,
         comment="父级ID(字典实表 id 或父级 pending 条目 id)",
+    )
+    parent_is_pending: Mapped[bool] = mapped_column(
+        default=False,
+        server_default="false",
+        nullable=False,
+        comment="父级是否为审核池待审条目(parent_id 语义区分：false=实表 id，true=pending 条目 id)",
+    )
+    community_scope: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="唯一性判定用归属小区(合并/改名不影响；父级 pending 小区时为 NULL)",
     )
     # 创建来源冗余（v1.7 泛化）
     source_type: Mapped[str | None] = mapped_column(
@@ -225,11 +252,19 @@ class BdPendingEntry(Base):
 
     __table_args__ = (
         # 同名并发唯一（FR-19/BR-26）：仅约束 open（pending）行，终态行允许同名重新提交。
-        # community 条目 parent_id 为 NULL（SRS §8），而 PG 唯一索引将 NULL 视为 distinct，
-        # 会令 (community, NULL, name) 永不冲突 —— 故用 COALESCE(parent_id, 0) 表达式归一。
+        # 四个维度缺一不可：
+        # 1. kind：三类条目各自唯一；
+        # 2. community_scope：小区粒度（H1）—— building 条目 parent_id 恒为 0，
+        #    若不入索引则 A/B 两小区同名楼栋会互相复用；community 条目为 NULL，
+        #    PG 唯一索引将 NULL 视为 distinct，故 COALESCE 成空串归一；
+        # 3. parent_is_pending：区分 parent_id 的两套 id 空间（H2）—— 实表楼栋 id
+        #    与 pending 条目 id 可能数值相等，不区分会误判为同名重复；
+        # 4. COALESCE(parent_id,0)：顶层条目 parent_id 为 NULL，同样 COALESCE 归一。
         Index(
             "uq_pending_open",
             "kind",
+            func.coalesce(community_scope, ""),
+            "parent_is_pending",
             func.coalesce(parent_id, 0),
             "normalized_name",
             unique=True,
@@ -238,6 +273,7 @@ class BdPendingEntry(Base):
         Index("idx_bd_pending_status_created", "status", "created_at"),
         Index("idx_bd_pending_community", "community_id"),
         Index("idx_bd_pending_parent", "parent_kind", "parent_id"),
+        Index("idx_bd_pending_scope", "community_scope"),
     )
 
     def __repr__(self) -> str:

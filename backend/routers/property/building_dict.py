@@ -27,6 +27,7 @@ from schemas.building_dict import (
     BdCommunityListResponse,
     BdCommunityPatchRequest,
     BdDeleteResult,
+    BdFilterOptionsResponse,
     BdFloorGroup,
     BdImportTaskCreateResponse,
     BdImportTaskListResponse,
@@ -140,6 +141,17 @@ def download_dict_import_failed_csv(
 def get_dict_kpi(db: DbSessionDep, _current_user: PropertyReadPermDep, service: ReadServiceDep) -> BdKpiResponse:
     """字典 KPI hero."""
     return service.get_kpi(db)
+
+
+@router.get("/filter-options")
+def get_dict_filter_options(
+    db: DbSessionDep,
+    _current_user: PropertyReadPermDep,
+    service: ReadServiceDep,
+    district: Annotated[str | None, Query(max_length=100, description="限定板块所属区县")] = None,
+) -> BdFilterOptionsResponse:
+    """总览筛选下拉选项（M3：区域/板块动态值域，取代前端硬编码 16 区）."""
+    return service.get_filter_options(db, district=district)
 
 
 @router.get("/communities")

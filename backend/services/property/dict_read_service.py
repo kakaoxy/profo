@@ -37,6 +37,8 @@ from schemas.building_dict import (
     BdCommunityDetailResponse,
     BdCommunityListItem,
     BdCommunityListResponse,
+    BdFilterOption,
+    BdFilterOptionsResponse,
     BdFloorGroup,
     BdKpiResponse,
     BdRoomItem,
@@ -222,6 +224,43 @@ class BuildingDictReadService:
                     floor=parse_room_floor(room_no) if room_no else None,
                 )
         return result
+
+    def get_filter_options(self, db: Session, *, district: str | None = None) -> BdFilterOptionsResponse:
+        """总览筛选下拉选项（M3：区域/板块从库里 distinct 值拉取）.
+
+        原前端硬编码 16 个无「区」后缀名称，而库内主流值带后缀（浦东区 1421 条），
+        选「黄浦」只能命中 6 条、选「黄浦区」命中 19 条 —— 同一行政区被拆成两个值域。
+        选项改为后端聚合（只统计 is_active）并带计数，前端不再维护硬编码常量；
+        板块按已选区县联动，避免一次下发 205 个选项。
+
+        Args:
+            db: 数据库会话
+            district: 限定板块所属区县（可空：返回全量板块）
+
+        """
+        districts = (
+            db.query(Community.district, func.count(Community.id))
+            .filter(
+                Community.is_active.is_(True),
+                Community.district.isnot(None),
+                Community.district != "",
+            )
+            .group_by(Community.district)
+            .order_by(func.count(Community.id).desc())
+            .all()
+        )
+        circles_query = db.query(Community.business_circle, func.count(Community.id)).filter(
+            Community.is_active.is_(True),
+            Community.business_circle.isnot(None),
+            Community.business_circle != "",
+        )
+        if district:
+            circles_query = circles_query.filter(Community.district == district)
+        circles = circles_query.group_by(Community.business_circle).order_by(func.count(Community.id).desc()).all()
+        return BdFilterOptionsResponse(
+            districts=[BdFilterOption(value=v, count=int(c)) for v, c in districts],
+            business_circles=[BdFilterOption(value=v, count=int(c)) for v, c in circles],
+        )
 
     def get_kpi(self, db: Session) -> BdKpiResponse:
         """字典 KPI hero（FR-01：小区/楼栋/户室/已关联项目 + 待审核数）."""
@@ -409,6 +448,13 @@ class BuildingDictReadService:
 
         pending 楼栋叠加：bd_pending_entries(kind=building, status=pending,
         community_id=本小区) 以虚线行并入列表（BR-23），按楼栋号自然序混排。
+
+        M1 修复（分页/搜索口径）：
+        - pending 查询拼 ``keyword``（原实现无视关键词，搜「nothingmatch」仍返回待审楼栋，
+          导致「找不到可新建」引导语永不出现，用户重复提交同名 pending）；
+        - pending 行仅在 ``page == 1`` 叠加：它不计入 ``total``（真实楼栋计数），
+          若每页都叠就会跨页重复渲染同一楼栋。运营看待审数据的入口是审核池，
+          列表页只做「第 1 页顶部提醒」。
         """
         query = db.query(BdBuilding).filter(BdBuilding.community_id == community_id)
         if keyword:
@@ -417,15 +463,16 @@ class BuildingDictReadService:
         buildings = query.order_by(BdBuilding.id).offset((page - 1) * page_size).limit(page_size).all()
 
         # pending 楼栋叠加（R10 单点：pending join 只出现在本服务）
-        pending_entries = (
-            db.query(BdPendingEntry)
-            .filter(
+        pending_entries: list[BdPendingEntry] = []
+        if page == 1:
+            pending_query = db.query(BdPendingEntry).filter(
                 BdPendingEntry.kind == "building",
                 BdPendingEntry.status == BdEntryStatus.PENDING,
                 BdPendingEntry.community_id == community_id,
             )
-            .all()
-        )
+            if keyword:
+                pending_query = pending_query.filter(BdPendingEntry.name.like(f"%{escape_like(keyword)}%", escape="\\"))
+            pending_entries = pending_query.all()
 
         # 自然序合并：正式楼栋 + pending 楼栋按名称数字自然排序
         def _natural_key(no: str) -> tuple:
@@ -520,12 +567,15 @@ class BuildingDictReadService:
         # 找挂本楼栋的 pending 户室 + 挂「待审父楼栋」的 pending 户室
         pending_rooms: list[BdPendingEntry] = []
         # 本楼栋为实表：kind=room 且 parent_kind=building 且 parent_id=楼栋id
+        # （parent_is_pending=false：H2 后待审父级的户室 parent_id 指向 pending 条目 id，
+        #   与实表楼栋 id 可能数值相等，必须显式排除）
         pending_rooms = (
             db.query(BdPendingEntry)
             .filter(
                 BdPendingEntry.kind == "room",
                 BdPendingEntry.status == BdEntryStatus.PENDING,
                 BdPendingEntry.parent_kind == "building",
+                BdPendingEntry.parent_is_pending.is_(False),
                 BdPendingEntry.parent_id == building_id,
             )
             .all()
@@ -617,6 +667,7 @@ class BuildingDictReadService:
                 BdPendingEntry.kind == "room",
                 BdPendingEntry.status == BdEntryStatus.PENDING,
                 BdPendingEntry.parent_kind == "building",
+                BdPendingEntry.parent_is_pending.is_(False),
                 BdPendingEntry.parent_id == building_id,
             )
             .all()

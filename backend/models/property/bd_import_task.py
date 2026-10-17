@@ -5,7 +5,7 @@
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import BigInteger, DateTime, Float, Integer, String, Text
 from sqlalchemy import Enum as SQLEnum
@@ -62,7 +62,9 @@ class BdImportTask(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.now,
+        # L2 修复：全库统一 timezone-aware，原 datetime.now（naive）落到 timestamptz
+        # 会被当本地时区解释，导致 created_at 比 started_at 晚 8 小时
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
         comment="创建时间",
     )

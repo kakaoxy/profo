@@ -87,9 +87,26 @@ def _create_bd_tables(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine, tables=tables, checkfirst=True)
 
     # 补建索引（处理表已存在但索引缺失的部署）
+    # 守卫：索引引用的列可能由后置迁移补上（如 origin_community_id / community_scope），
+    # 先检查列存在再建，否则 CREATE INDEX 会报 UndefinedColumn 并中断整个启动迁移。
+    from migrations._helpers import _column_exists
+
     for table in tables:
         for idx in table.indexes:
             if _index_exists(engine, idx.name):
+                continue
+            index_columns = list(idx.columns)
+            missing = [
+                c.name
+                for c in index_columns
+                if isinstance(c.name, str) and not _column_exists(engine, table.name, c.name)
+            ]
+            if missing:
+                logger.info(
+                    "迁移：跳过索引 %s（列 %s 尚未创建，由后续幂等迁移补建）",
+                    idx.name,
+                    ", ".join(missing),
+                )
                 continue
             logger.info("迁移：补建楼盘字典索引 %s", idx.name)
             idx.create(engine, checkfirst=True)

@@ -140,6 +140,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from migrations._bd_audit_20261017_fixes import run_bd_audit_20261017_fixes
 from migrations._bd_community_address_widen import widen_community_address_column
 from migrations._bd_import_task_recovery import recover_stale_bd_import_tasks
 from migrations._bd_room_floor_backfill import backfill_bd_room_floor
@@ -401,6 +402,11 @@ def _run_all_migrations(engine: Engine) -> None:
         backfill_bd_room_floor(engine)
         # 楼盘字典导入：服务重启中断遗留 processing 任务 → failed（可重跑，幂等）
         recover_stale_bd_import_tasks(engine)
+        # 楼盘字典 2026-10-17 审查缺陷修复（H1/H2/H3/H4/M3/L2，幂等）：
+        # pending 条目补 community_scope/parent_is_pending + 重建 uq_pending_open、
+        # bd_buildings 补 origin_community_id、room_count 对账、导入任务时区校正、
+        # communities.district 归一
+        run_bd_audit_20261017_fixes(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

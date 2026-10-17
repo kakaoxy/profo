@@ -41,6 +41,7 @@ from schemas.building_dict import (
     BdDeleteResult,
     BdRoomCreateRequest,
 )
+from services.property.dict_parser import normalize_district_value
 from services.property.dict_read_service import BuildingDictReadService
 from services.system.exceptions import ConflictError, ResourceNotFoundError, ValidationError
 from utils.building_dict import normalize_community_name, parse_room_floor
@@ -531,7 +532,7 @@ class DictWriteService:
 
         community = Community(
             name=body.name.strip(),
-            district=body.district,
+            district=normalize_district_value(body.district),
             business_circle=body.business_circle,
             ring=body.ring,
             address=body.address,
@@ -666,7 +667,10 @@ class DictWriteService:
         拦截（任一命中即 409，不删除）：
         - 被业务单据引用（小区级 community_id，或其下楼栋 building_id / 户室 room_id）；
         - 审核池存在该小区下的 open 待审楼栋（BR-28 父子拓扑：删父级会悬挂待审子级）；
-        - 存在并入本小区的归档小区（merged_into_id 指向本小区）。
+        - 存在并入本小区的归档小区（merged_into_id 指向本小区）；
+        - H3：本小区自身是被并入的子档（``merged_into_id`` 非空）—— 原实现只拦
+          「我有被并子档」不拦「我是被并子档」，导致已并入别处的小区可直接删除，
+          其楼栋/户室整树物理消失且不可恢复（需先解除合并）。
         """
         community = db.query(Community).filter(Community.id == community_id).first()
         if not community:
@@ -731,6 +735,13 @@ class DictWriteService:
             raise ConflictError(msg)
 
         # 4. 合并治理引用
+        # 4a（H3）：本小区已被并入其他主档 → 必须先解除合并，否则连带删除整棵字典树
+        if community.merged_into_id:
+            parent = db.query(Community).filter(Community.id == community.merged_into_id).first()
+            parent_name = parent.name if parent else community.merged_into_id
+            msg = f"该小区已并入「{parent_name}」，请先解除合并后再删除（避免字典楼栋/户室被整树删除）"
+            raise ConflictError(msg)
+        # 4b：存在并入本小区的归档小区
         merged_count = (
             db.query(Community).filter(Community.merged_into_id == community_id, Community.id != community_id).count()
         )

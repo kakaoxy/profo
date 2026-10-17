@@ -35,24 +35,29 @@ import { CommunityDrawer } from "./community-drawer";
 import type { BdCommunityListItem, BdCommunityListResponse, BdKpiResponse } from "./types";
 import { cn } from "@/lib/utils";
 
+interface FilterOption {
+  value: string;
+  count: number;
+}
+
 interface BdOverviewClientProps {
   kpi: BdKpiResponse;
   list: BdCommunityListResponse;
   keyword: string;
   district: string;
+  businessCircle: string;
   ring: string;
   propertyType: string;
   eraFrom: number | undefined;
   eraTo: number | undefined;
   hasProjectLink: boolean | undefined;
+  /** 区域/板块选项由后端 distinct 值下发（M3：不再硬编码 16 区，避免值域漂移） */
+  districtOptions: FilterOption[];
+  businessCircleOptions: FilterOption[];
   page: number;
 }
 
 const RING_OPTIONS = ["内环内", "内环至中环", "中环至外环", "外环外"] as const;
-const DISTRICT_OPTIONS = [
-  "黄浦", "徐汇", "长宁", "静安", "普陀", "虹口", "杨浦", "闵行",
-  "宝山", "嘉定", "浦东", "金山", "松江", "青浦", "奉贤", "崇明",
-] as const;
 const TYPE_OPTIONS = ["住宅-公寓", "住宅-新里", "住宅-别墅", "住宅-洋房", "住宅-老公寓", "商业类", "写字楼"] as const;
 
 /** 建成年代筛选档位 → URL 参数（2000年前=era_to=1999；2020年后=era_from=2020） */
@@ -77,11 +82,14 @@ export function BdOverviewClient({
   list,
   keyword,
   district,
+  businessCircle,
   ring,
   propertyType,
   eraFrom,
   eraTo,
   hasProjectLink,
+  districtOptions,
+  businessCircleOptions,
   page,
 }: BdOverviewClientProps) {
   const router = useRouter();
@@ -93,6 +101,7 @@ export function BdOverviewClient({
     (next: {
       keyword?: string;
       district?: string;
+      businessCircle?: string;
       ring?: string;
       type?: string;
       era?: string;
@@ -101,6 +110,12 @@ export function BdOverviewClient({
       const params = new URLSearchParams();
       const kw = next.keyword !== undefined ? next.keyword : keyword;
       const dist = next.district !== undefined ? next.district : district;
+      // 切换区域时板块必须重置（板块归属区县，跨区组合必然零结果）
+      const bc = next.businessCircle !== undefined
+        ? next.businessCircle
+        : next.district !== undefined
+          ? ""
+          : businessCircle;
       const rg = next.ring !== undefined ? next.ring : ring;
       const tp = next.type !== undefined ? next.type : propertyType;
       const eraVal = next.era !== undefined ? next.era : eraValueOf(eraFrom, eraTo);
@@ -108,6 +123,7 @@ export function BdOverviewClient({
       const linkVal = next.projectLink !== undefined ? next.projectLink : currentLink;
       if (kw) params.set("keyword", kw);
       if (dist) params.set("district", dist);
+      if (bc) params.set("business_circle", bc);
       if (rg) params.set("ring", rg);
       if (tp) params.set("type", tp);
       if (eraVal !== "all") {
@@ -120,7 +136,7 @@ export function BdOverviewClient({
       if (linkVal !== "all") params.set("has_project_link", linkVal);
       router.push(`/admin/building-dictionary${params.size ? `?${params.toString()}` : ""}`);
     },
-    [keyword, district, ring, propertyType, eraFrom, eraTo, hasProjectLink, router],
+    [keyword, district, businessCircle, ring, propertyType, eraFrom, eraTo, hasProjectLink, router],
   );
 
   const gotoPage = useCallback(
@@ -128,6 +144,7 @@ export function BdOverviewClient({
       const params = new URLSearchParams();
       if (keyword) params.set("keyword", keyword);
       if (district) params.set("district", district);
+      if (businessCircle) params.set("business_circle", businessCircle);
       if (ring) params.set("ring", ring);
       if (propertyType) params.set("type", propertyType);
       if (eraFrom !== undefined) params.set("era_from", String(eraFrom));
@@ -136,7 +153,7 @@ export function BdOverviewClient({
       if (p > 1) params.set("page", String(p));
       router.push(`/admin/building-dictionary${params.size ? `?${params.toString()}` : ""}`);
     },
-    [keyword, district, ring, propertyType, eraFrom, eraTo, hasProjectLink, router],
+    [keyword, district, businessCircle, ring, propertyType, eraFrom, eraTo, hasProjectLink, router],
   );
 
   /** 行点击打开详情抽屉 */
@@ -174,8 +191,26 @@ export function BdOverviewClient({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">区域：全部</SelectItem>
-            {DISTRICT_OPTIONS.map((d) => (
-              <SelectItem key={d} value={d}>{d}</SelectItem>
+            {districtOptions.map((d) => (
+              <SelectItem key={d.value} value={d.value}>
+                {d.value}（{d.count}）
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={businessCircle}
+          onValueChange={(v) => applyFilter({ businessCircle: v === "all" ? "" : v })}
+        >
+          <SelectTrigger className="h-8 w-[130px] rounded-full text-[12.5px]">
+            <SelectValue placeholder="板块：全部" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">板块：全部</SelectItem>
+            {businessCircleOptions.map((b) => (
+              <SelectItem key={b.value} value={b.value}>
+                {b.value}（{b.count}）
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -226,7 +261,7 @@ export function BdOverviewClient({
             <SelectItem value="false">无关联</SelectItem>
           </SelectContent>
         </Select>
-        {keyword || district || ring || propertyType || eraFrom !== undefined || eraTo !== undefined || hasProjectLink !== undefined ? (
+        {keyword || district || businessCircle || ring || propertyType || eraFrom !== undefined || eraTo !== undefined || hasProjectLink !== undefined ? (
           <Button
             variant="ghost"
             size="sm"

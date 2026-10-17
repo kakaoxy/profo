@@ -12,7 +12,6 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from models import L4MarketingMedia, L4MarketingNotifyLog, L4MarketingPriceChange, L4MarketingProject
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
-from schemas.building_dict import BdPendingSubmitRequest
 from schemas.l4_marketing import (
     L4MarketingPriceChangeTimelineItem,
     L4MarketingProjectCreate,
@@ -22,7 +21,7 @@ from schemas.l4_marketing import (
 from services.marketing.constants import BADGE_WINDOW_DAYS
 from services.marketing.notify import PriceSignal, ProjectChangeSignal
 from services.property.dict_ownership import validate_dict_ownership
-from services.property.dict_submit_service import get_dict_submit_service
+from services.property.dict_submit_service import submit_dict_chain
 
 
 def _submit_marketing_dict_pendings(
@@ -34,12 +33,13 @@ def _submit_marketing_dict_pendings(
     biz_id: str,
     community_id: str | None,
     building_id: int | None = None,
+    submitted_by: str | None = None,
     commit: bool = False,
 ) -> None:
-    """补录营销单据的录入端新增字典 pending 引用（community → building → room）.
+    """补录营销单据的录入端新增字典 pending 引用（M6：委托 dict_submit_service 单点）.
 
     单据落库后调用：以真实单据 id 作为 source_id 提交审核池，
-    submit 异常直接向上抛（外层回滚整单），不吞錯。
+    submit 异常直接向上抛（外层回滚整单），不吞错。
 
     Args:
         db: 数据库会话
@@ -49,69 +49,23 @@ def _submit_marketing_dict_pendings(
         biz_id: 营销单据 ID
         community_id: 单据关联的字典实表小区 ID（可为空）
         building_id: 单据关联的字典实表楼栋 ID（room 挂实表父级用，可为空）
+        submitted_by: 提交人用户 ID（L1 修复：审核池「提交人」列与通知依据）
         commit: 传 False（默认）—— pending 与营销单据同事务，由外层统一 commit；
             H4 修复：内部 commit 会把未完成的业务单据提前落库，失败时产生半提交
 
     """
-    svc = get_dict_submit_service()
-    community_pending_id: int | None = None
-    building_pending_id: int | None = None
-
-    if new_community:
-        community_pending_id = svc.submit(
-            db,
-            BdPendingSubmitRequest(
-                kind="community",
-                name=str(new_community.get("name") or "").strip(),
-                community_payload=new_community,
-                source_type="marketing",
-                source_id=biz_id,
-            ),
-            submitted_by=None,
-            commit=commit,
-        ).pending_id
-
-    if new_building:
-        if community_id:
-            building_parent_kind, building_parent_id = "community", str(community_id)
-        elif community_pending_id is not None:
-            building_parent_kind, building_parent_id = "pending_community", str(community_pending_id)
-        else:
-            building_parent_kind, building_parent_id = None, None
-        building_pending_id = svc.submit(
-            db,
-            BdPendingSubmitRequest(
-                kind="building",
-                name=str(new_building.get("name") or new_building.get("building_no") or "").strip(),
-                parent_kind=building_parent_kind,
-                parent_id=building_parent_id,
-                source_type="marketing",
-                source_id=biz_id,
-            ),
-            submitted_by=None,
-            commit=commit,
-        ).pending_id
-
-    if new_room:
-        if building_id is not None:
-            room_parent_kind, room_parent_id = "building", str(building_id)
-        elif building_pending_id is not None:
-            room_parent_kind, room_parent_id = "pending_building", str(building_pending_id)
-        else:
-            room_parent_kind, room_parent_id = None, None
-        svc.submit(
-            db,
-            BdPendingSubmitRequest(
-                kind="room",
-                name=str(new_room.get("name") or new_room.get("room_no") or "").strip(),
-                parent_kind=room_parent_kind,
-                parent_id=room_parent_id,
-                source_type="marketing",
-                source_id=biz_id,
-            ),
-            submitted_by=None,
-            commit=commit,
-        )
+    submit_dict_chain(
+        db,
+        new_community=new_community,
+        new_building=new_building,
+        new_room=new_room,
+        biz_type="marketing",
+        biz_id=biz_id,
+        community_id=community_id,
+        building_id=building_id,
+        submitted_by=submitted_by,
+        commit=commit,
+    )
 
 
 class MarketingProjectService:
@@ -406,6 +360,8 @@ class MarketingProjectService:
     def create_project(
         self,
         data: L4MarketingProjectCreate,
+        *,
+        submitted_by: str | None = None,
     ) -> tuple[L4MarketingProject, bool]:
         """创建独立营销项目.
 
@@ -415,6 +371,7 @@ class MarketingProjectService:
 
         Args:
             data: 创建数据，可包含媒体文件列表
+            submitted_by: 操作人用户 ID（L1 修复：录入端新增 pending 的提交人，审核池可追溯）
 
         Returns:
             (创建的营销项目, is_new_listing)：is_new_listing=True 表示本次创建即发布（上新）
@@ -462,6 +419,7 @@ class MarketingProjectService:
                 biz_id=str(db_obj.id),
                 community_id=project_data.get("community_id"),
                 building_id=db_obj.building_id,
+                submitted_by=submitted_by,
             )
 
         if media_files:
@@ -487,6 +445,8 @@ class MarketingProjectService:
         self,
         project_id: int,
         data: L4MarketingProjectUpdate,
+        *,
+        submitted_by: str | None = None,
     ) -> tuple[L4MarketingProject, ProjectChangeSignal] | None:
         """更新营销项目.
 
@@ -499,6 +459,7 @@ class MarketingProjectService:
         Args:
             project_id: 营销项目ID
             data: 更新数据
+            submitted_by: 操作人用户 ID（L1 修复：录入端新增 pending 的提交人）
 
         Returns:
             (更新后的营销项目, 变更信号)；项目不存在返回 None
@@ -607,6 +568,7 @@ class MarketingProjectService:
                 biz_id=str(db_obj.id),
                 community_id=update_data.get("community_id") or db_obj.community_id,
                 building_id=db_obj.building_id,
+                submitted_by=submitted_by,
             )
 
         self.db.commit()

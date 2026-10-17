@@ -4,7 +4,7 @@
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Float, Index, Integer, String, Text
 from sqlalchemy import Enum as SQLEnum
@@ -57,7 +57,8 @@ class PropertyImportTask(Base):
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.now,
+        # 与全库口径统一 timezone-aware（naive datetime 落 timestamptz 会被当本地时区解释）
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
         comment="创建时间",
     )

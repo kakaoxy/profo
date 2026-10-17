@@ -26,6 +26,7 @@ import zipfile
 from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TypeAlias
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -83,6 +84,27 @@ def _decode_zip_name(info: zipfile.ZipInfo) -> str:
         return raw.decode("gbk", errors="replace")
 
 
+class _BadEntry:
+    """损坏 zip 条目占位（L4：生成器内不 raise，交给调用方记失败明细）.
+
+    作为 ``_ZipEntry`` 联合类型的一个分支参与 yield：生成器一旦 raise 就再也
+    无法产出后续条目，故损坏条目降级为携带原异常的值对象，由 ``_execute``
+    识别后记失败明细并继续下一个。
+    """
+
+    __slots__ = ("error",)
+
+    def __init__(self, error: Exception) -> None:
+        """保存原始异常供调用方上抛."""
+        self.error = error
+
+
+# 单包入口产出项：正常条目为 (文件名, 原始字节)，解压失败的条目为 (文件名, _BadEntry)。
+# 用联合类型如实表达（而非 Iterator[tuple[str, bytes]] + type: ignore 遮盖），
+# 调用方必须显式 isinstance 收窄后才能当 bytes 使用。
+_ZipEntry: TypeAlias = tuple[str, bytes | _BadEntry]
+
+
 class DictImportStats:
     """导入对账三计数."""
 
@@ -108,12 +130,14 @@ def load_community_by_copy(
     era_to: int | None,
     property_mgmt: str | None,
     developer: str | None,
-    district_area: str | None,  # noqa: ARG001 区域板块仅展示用，落库不单独存列
+    district_area: str | None,
     address: str | None,
     ring: str | None,
     lng: float | None,
     lat: float | None,
     rooms: list[tuple[str, str, float | None, float | None]],
+    district: str | None = None,
+    business_circle: str | None = None,
 ) -> DictImportStats:
     """单小区事务装载（幂等 upsert）.
 
@@ -124,10 +148,32 @@ def load_community_by_copy(
     3. bd_rooms 临时 CSV → COPY 进 staging 表 → INSERT ... ON CONFLICT DO NOTHING
        （uq(building_id, room_id) 冲突跳过，BR-16）。
 
+    Args:
+        engine: 数据库引擎（本小区独立事务）
+        community_name: 小区名（跨批次同名 upsert 键）
+        property_types: 物业类型列表
+        era_from: 建成年代起
+        era_to: 建成年代止
+        property_mgmt: 物业公司
+        developer: 开发商
+        district_area: 源数据「区域板块」原文（仅作 Fallback 拆分依据，不单独存列）
+        address: 小区地址
+        ring: 环线
+        lng: 首户经度（BD-09）
+        lat: 首户纬度（BD-09）
+        rooms: 户室行 [(楼栋号, 室号, lng, lat)]
+        district: 归一化行政区（带「区」后缀）；缺省时从 district_area 拆
+        business_circle: 板块；缺省时从 district_area 拆
+
     Returns:
         本次实际新增的对账计数（幂等重跑时全部为增量 0）
 
     """
+    # M3：区域/板块归一（前端筛选依赖这两列；原实现只解析不落库）
+    if district is None and business_circle is None:
+        from services.property.dict_parser import split_district_area
+
+        district, business_circle = split_district_area(district_area)
     stats = DictImportStats()
     with engine.begin() as conn:
         # 1. communities upsert（source=import 废止 → 不写 source；画像列 COALESCE 保留已有值）
@@ -136,12 +182,14 @@ def load_community_by_copy(
             text(
                 """
                 INSERT INTO communities
-                    (id, name, property_types, era_from, era_to, property_mgmt, developer,
+                    (id, name, district, business_circle, property_types, era_from, era_to, property_mgmt, developer,
                      address, ring, lng, lat, is_active, total_properties, created_at, updated_at)
                 VALUES
-                    (:id, :name, :property_types, :era_from, :era_to, :property_mgmt, :developer,
-                     :address, :ring, :lng, :lat, true, 0, now(), now())
+                    (:id, :name, :district, :business_circle, :property_types, :era_from, :era_to, :property_mgmt,
+                     :developer, :address, :ring, :lng, :lat, true, 0, now(), now())
                 ON CONFLICT (name) DO UPDATE SET
+                    district = COALESCE(communities.district, EXCLUDED.district),
+                    business_circle = COALESCE(communities.business_circle, EXCLUDED.business_circle),
                     property_types = COALESCE(communities.property_types, EXCLUDED.property_types),
                     era_from = COALESCE(communities.era_from, EXCLUDED.era_from),
                     era_to = COALESCE(communities.era_to, EXCLUDED.era_to),
@@ -158,6 +206,8 @@ def load_community_by_copy(
             {
                 "id": str(uuid.uuid4()),
                 "name": community_name,
+                "district": district,
+                "business_circle": business_circle,
                 "property_types": property_types or None,
                 "era_from": era_from,
                 "era_to": era_to,
@@ -319,7 +369,7 @@ class DictImportProcessor:
         # 跳过 macOS 压缩产物：__MACOSX 目录与 ._ AppleDouble 文件
         return not (info.filename.startswith("__MACOSX/") or Path(info.filename).name.startswith("._"))
 
-    def _iter_txt_entries(self, file_path: Path, task: BdImportTask) -> tuple[Iterator[tuple[str, bytes]], int]:
+    def _iter_txt_entries(self, file_path: Path, task: BdImportTask) -> tuple[Iterator[_ZipEntry], int]:
         """构造 txt 条目迭代器（报告 §4.2-1 流式修复）.
 
         zip：先按中央目录扫描（只读元数据，不读数据）过滤 txt 条目并做
@@ -358,11 +408,38 @@ class DictImportProcessor:
         return self._iter_zip_txt(file_path, infos), total
 
     @staticmethod
-    def _iter_zip_txt(file_path: Path, infos: list[zipfile.ZipInfo]) -> Iterator[tuple[str, bytes]]:
-        """逐条目惰性解压 zip 内 txt（每打开一次 ZipFile，读一个条目即释放）."""
+    def _iter_zip_txt(file_path: Path, infos: list[zipfile.ZipInfo]) -> Iterator[_ZipEntry]:
+        """逐条目惰性解压 zip 内 txt（每打开一次 ZipFile，读一个条目即释放）.
+
+        L4：单条目解压失败不得终止整个生成器 —— 生成器一旦被未捕获异常杀死就
+        永久死亡，后续 ``next()`` 全部变为 ``StopIteration``，合法小区被静默丢弃
+        （实测：包内 good1 / locked(加密) / good2 / good3，只有 good1 入库，
+        good2、good3 连同真实文件名一起消失，任务却显示 completed）。
+
+        因此损坏条目降级为 ``_BadEntry`` 值对象随元组 yield，由调用方
+        ``_execute`` 识别 isinstance 后记失败明细并继续下一个；两个分支产出的
+        元组结构完全一致（均为 ``(filename, data)``）。
+
+        异常范围取 ``Exception`` 而非枚举：原实现只捕 ``BadZipFile/OSError``，
+        漏掉了 ``RuntimeError`` —— 实测加密条目、不支持的压缩方法均由
+        ``zipfile.open`` 抛 ``RuntimeError``（"...is encrypted, password required"），
+        导致生成器死亡、后续条目全部丢失。捕获基类后无论哪类读取失败都只影响
+        当次条目，失败明细仍带回真实文件名与原因（运营可定位丢的是哪个小区）。
+
+        Returns:
+            (文件名, 原始字节 | _BadEntry) 的惰性迭代器
+
+        """
         with zipfile.ZipFile(file_path) as zf:
             for info in infos:
-                yield Path(_decode_zip_name(info)).name, zf.read(info)
+                name = Path(_decode_zip_name(info)).name
+                try:
+                    data = zf.read(info)
+                except Exception as exc:  # 单条目失败不得杀死生成器
+                    logger.warning("zip 条目解压失败，记失败明细后继续: %s (%s)", name, exc)
+                    yield name, _BadEntry(exc)
+                    continue
+                yield name, data
 
     def process_task(self, task_id: str) -> None:
         """处理导入任务主入口（独立线程）."""
@@ -419,12 +496,33 @@ class DictImportProcessor:
             self._mark_failed(db, task.id, "包内无 txt 文件")
             return
 
+        # L3 修复（预扫描口径）：task.total_communities 写入真实条目数；
+        # 楼栋/户室/异常条数需解析后才能得知，为避免 2000×N 行全量预扫描
+        # 造成导入耗时翻倍，按「装载时累计 + 末值回填」写入（首轮结束时即与
+        # 对账口径一致，前端「检查数据」不再恒为 0）。
+        warnings_count = 0
+        # 预扫描口径（L3）：装载时逐条累加包内楼栋/户室总数，与对账「已入库」分列
+        scanned_buildings = 0
+        scanned_rooms = 0
+        task.total_communities = total_communities
+        db.commit()
+
         stats = DictImportStats()
         failed_rows: list[dict[str, str]] = []
 
-        for idx, (filename, data) in enumerate(entries, start=1):
-            community_name = filename[:-4] if filename.lower().endswith(".txt") else filename
+        for idx in range(1, total_communities + 1):
+            community_name = ""
+            # L4 修复（单条目损坏不再整包 failed）：生成器的 next() 也必须在 try 内。
+            # 注意 ``for .. in enumerate(entries)`` 的 next() 发生在循环体之前，
+            # 解压异常会直接冒到 process_task → 整包 failed 且已装载小区无续跑入口；
+            # 因此这里显式 next() 并包进同一个 try，坏条目记失败明细后继续下一个。
             try:
+                filename, data = next(entries)
+                community_name = filename[:-4] if filename.lower().endswith(".txt") else filename
+                if isinstance(data, _BadEntry):
+                    # L4：损坏条目不进入解析/装载，直接记失败明细（后续条目继续）
+                    raise data.error
+                # isinstance 收窄后 data 为 bytes（_ZipEntry 联合类型）
                 content = detect_encoding(data)
                 parsed = parse_community_txt(content, community_name)
                 loaded = load_community_by_copy(
@@ -436,6 +534,8 @@ class DictImportProcessor:
                     property_mgmt=parsed.property_mgmt,
                     developer=parsed.developer,
                     district_area=parsed.district_area,
+                    district=parsed.district,
+                    business_circle=parsed.business_circle,
                     address=parsed.address,
                     ring=parsed.ring,
                     lng=next((r[2] for r in parsed.rooms if r[2] is not None), None),
@@ -445,7 +545,21 @@ class DictImportProcessor:
                 stats.communities += loaded.communities
                 stats.buildings += loaded.buildings
                 stats.rooms += loaded.rooms
+                warnings_count += len(parsed.warnings)
+                scanned_buildings += len({b for b, _r, _lng, _lat in parsed.rooms})
+                scanned_rooms += len(parsed.rooms)
+            except StopIteration:
+                # 迭代器提前耗尽（条目数与 total_communities 失配）：停止消费并
+                # 让收支逻辑据 processed_communities 如实记账，不再对剩余索引
+                # 反复抛 StopIteration 产生无文件名的「幽灵」失败行。
+                logger.warning(
+                    "导入条目不早于声明数：已消费 %d 个，声明 %d 个，提前结束",
+                    idx - 1,
+                    total_communities,
+                )
+                break
             except Exception as e:
+                community_name = community_name or f"第 {idx} 个条目"
                 logger.exception("小区装载失败: %s", community_name)
                 failed_rows.append({"community": community_name, "error": str(e)[:500]})
 
@@ -454,18 +568,25 @@ class DictImportProcessor:
             task.communities_loaded = stats.communities
             task.buildings_loaded = stats.buildings
             task.rooms_loaded = stats.rooms
+            task.warnings_count = warnings_count
+            task.total_buildings = scanned_buildings
+            task.total_rooms = scanned_rooms
             task.progress_percent = round(idx / total_communities * 100, 2)
             db.commit()
 
-        # 收尾
+        # 收尾（L4：部分小区失败仍算 completed + 失败明细，不再整包 failed）
         task.status = ImportTaskStatus.COMPLETED
         task.progress_percent = 100.0
+        task.warnings_count = warnings_count
         task.completed_at = datetime.now(timezone.utc)
         if task.started_at:
             task.processing_duration = (task.completed_at - task.started_at).total_seconds()
         if failed_rows:
             task.failed_file_url = self._write_failed_csv(task.id, failed_rows)
-            task.error_message = f"{len(failed_rows)} 个小区装载失败，详见失败明细"
+            task.error_message = (
+                f"{len(failed_rows)}/{total_communities} 个小区装载失败，详见失败明细；"
+                f"已成功的 {stats.communities} 个小区已入库（单包重跑幂等，不会重复入库）"
+            )
         db.commit()
 
         logger.info(

@@ -411,6 +411,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/building-dictionary/filter-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dict Filter Options
+         * @description 总览筛选下拉选项（M3：区域/板块动态值域，取代前端硬编码 16 区）.
+         */
+        get: operations["get_dict_filter_options_api_v1_admin_building_dictionary_filter_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/building-dictionary/communities": {
         parameters: {
             query?: never;
@@ -6531,6 +6551,29 @@ export interface components {
         BdDeleteResult: {
             /** Deleted */
             deleted: number;
+        };
+        /**
+         * BdFilterOption
+         * @description 字典筛选下拉选项（M3：区间/板块从库内值域动态下发，避免前后端值域漂移）.
+         */
+        BdFilterOption: {
+            /** Value */
+            value: string;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+        };
+        /**
+         * BdFilterOptionsResponse
+         * @description 字典筛选下拉选项集（FR-01 区域/板块筛选）.
+         */
+        BdFilterOptionsResponse: {
+            /** Districts */
+            districts?: components["schemas"]["BdFilterOption"][];
+            /** Business Circles */
+            business_circles?: components["schemas"]["BdFilterOption"][];
         };
         /**
          * BdFloorGroup
@@ -19686,6 +19729,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BdKpiResponse"];
+                };
+            };
+        };
+    };
+    get_dict_filter_options_api_v1_admin_building_dictionary_filter_options_get: {
+        parameters: {
+            query?: {
+                /** @description 限定板块所属区县 */
+                district?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdFilterOptionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

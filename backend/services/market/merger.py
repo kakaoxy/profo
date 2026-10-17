@@ -6,6 +6,7 @@
 import logging
 from datetime import datetime, timezone
 
+from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -48,13 +49,17 @@ class CommunityMerger:
 
             self._process_aliases(primary_community, merge_communities, db)
             self._migrate_properties(primary_id, merge_ids, db)
+            # H3：字典楼栋树跟随小区合并迁移（否则主档看不到被并小区楼栋，
+            # 且被并小区可被 delete_community 整树物理删掉）
+            dict_stats = self._migrate_dict_buildings(primary_id, merge_ids, db)
             self._archive_communities(primary_community, merge_communities)
             self._refresh_primary_stats(primary_community, db)
 
             db.commit()
 
             success_msg = (
-                f"成功合并 {len(merge_ids)} 个小区到 '{primary_community.name}'，共迁移 {affected_count} 套房源"
+                f"成功合并 {len(merge_ids)} 个小区到 '{primary_community.name}'，"
+                f"共迁移 {affected_count} 套房源、{dict_stats['buildings']} 个字典楼栋"
             )
             logger.info(success_msg)
             return MergeResult(success=True, affected_properties=affected_count, message=success_msg)
@@ -124,13 +129,17 @@ class CommunityMerger:
             # 3. 被并小区原别名恢复：合并时被删除标记的同名记录不可精确追溯，
             #    保守不动（解绑核心诉求是小区恢复独立，别名可重新维护）
 
+            # 3. 字典楼栋树回迁（H3）：合并时改指主档的楼栋按 origin_community_id 归位
+            restored_buildings = self._restore_dict_buildings(merged_id, primary_id, db)
+
             # 4. 主档计数刷新
             self._refresh_primary_stats(primary, db)
             db.commit()
 
             success_msg = (
                 f"已解除合并：'{merged.name}' 恢复独立小区"
-                f"（原关联房源 {affected_count} 套留在主档，如需拆回请人工迁移）"
+                f"（原关联房源 {affected_count} 套、字典楼栋 {restored_buildings} 个已归位；"
+                f"如需把房源拆回请人工迁移）"
             )
             logger.info(success_msg)
             return MergeResult(success=True, affected_properties=affected_count, message=success_msg)
@@ -265,6 +274,81 @@ class CommunityMerger:
             {PropertyCurrent.community_id: primary_id},
             synchronize_session=False,
         )
+
+    def _migrate_dict_buildings(self, primary_id: int, merge_ids: list[int], db: Session) -> dict[str, int]:
+        """字典楼栋树跟随合并迁移（H3 修复，与 _migrate_properties 同事务）.
+
+        - 主档须按楼栋号看得到被并小区的楼栋（总览/详情/FR-14 数据情况）；
+        - 不迁移的话，被并小区虽已 is_active=False，仍是 bd_buildings 的持有者，
+          且 delete_community 拦不住「本小区已被并入别处」→ 整树物理删除不可恢复。
+
+        uq(community_id, building_no) 冲突（主档已有同号楼栋）的楼栋不迁移，
+        保留在原小区（其归属在解除合并时自然还原），避免整笔事务失败。
+        origin_community_id 记录原归属，供 unmerge 可逆回迁。
+
+        Returns:
+            {"buildings": 迁移楼栋数, "rooms": 随之迁移的户室数}
+
+        """
+        from models import BdBuilding, BdRoom
+
+        # 一条 SQL 完成迁移（避免逐楼栋往返）：NOT EXISTS 同号冲突的那批留在原小区
+        result = db.execute(
+            text(
+                """
+                UPDATE bd_buildings b
+                   SET community_id = :primary_id,
+                       origin_community_id = b.community_id,
+                       updated_at = now()
+                 WHERE b.community_id = ANY(:merge_ids)
+                   AND NOT EXISTS (
+                       SELECT 1 FROM bd_buildings p
+                        WHERE p.community_id = :primary_id
+                          AND p.building_no = b.building_no
+                   )
+                """
+            ),
+            {"primary_id": str(primary_id), "merge_ids": [str(i) for i in merge_ids]},
+        )
+        moved = result.rowcount or 0
+        room_count = (
+            db.query(BdRoom)
+            .filter(
+                BdRoom.building_id.in_(
+                    db.query(BdBuilding.id).filter(
+                        BdBuilding.community_id == str(primary_id),
+                        BdBuilding.origin_community_id.in_([str(i) for i in merge_ids]),
+                    )
+                )
+            )
+            .count()
+        )
+        logger.info("小区合并：字典楼栋迁移 %d 个（户室 %d 个随之改归主档）", moved, room_count)
+        return {"buildings": moved, "rooms": room_count}
+
+    def _restore_dict_buildings(self, merged_id: str, primary_id: str, db: Session) -> int:
+        """解除合并：把合并时改指主档的字典楼栋按 origin_community_id 回迁原本小区.
+
+        只回迁带 origin_community_id == 本被并小区 的楼栋（merge 迁移才有标记），
+        手工改归主档的楼栋不回迁。
+        """
+        result = db.execute(
+            text(
+                """
+                UPDATE bd_buildings
+                   SET community_id = origin_community_id,
+                       origin_community_id = NULL,
+                       updated_at = now()
+                 WHERE community_id = :primary_id
+                   AND origin_community_id = :merged_id
+                """
+            ),
+            {"primary_id": str(primary_id), "merged_id": str(merged_id)},
+        )
+        restored = result.rowcount or 0
+        if restored:
+            logger.info("解除合并：字典楼栋回迁 %d 个到小区 %s", restored, merged_id)
+        return restored
 
     def _archive_communities(self, primary: Community, communities: list[Community]) -> None:
         """软删除被合并的小区.

@@ -72,6 +72,7 @@ class DictSubmitService:
         # 父级解析（BR-28：楼栋/户室 pending 必须挂父级）
         parent_kind: BdEntryKind | None = None
         parent_id: int | None = None
+        parent_is_pending = False
         community_id: str | None = None
 
         if kind == BdEntryKind.COMMUNITY:
@@ -81,12 +82,16 @@ class DictSubmitService:
             if not body.parent_kind or not body.parent_id:
                 msg = "楼栋 pending 必须挂父级小区"
                 raise ValidationError(msg)
-            parent_kind, parent_id, community_id = self._resolve_parent(db, body.parent_kind, body.parent_id)
+            parent_kind, parent_id, parent_is_pending, community_id = self._resolve_parent(
+                db, body.parent_kind, body.parent_id
+            )
         else:  # room
             if not body.parent_kind or not body.parent_id:
                 msg = "户室 pending 必须挂父级楼栋"
                 raise ValidationError(msg)
-            parent_kind, parent_id, community_id = self._resolve_parent(db, body.parent_kind, body.parent_id)
+            parent_kind, parent_id, parent_is_pending, community_id = self._resolve_parent(
+                db, body.parent_kind, body.parent_id
+            )
 
             # FR-10：录入端新增户室全部进审核池，提交侧不做字典查重（与 community kind 对称）：
             # - 同名 pending 幂等复用由 uq_pending_open 兑底（FR-19）；
@@ -95,17 +100,17 @@ class DictSubmitService:
             # 注：不能按「楼层已有户室」拦截（AC-P1-3/AC-P3-1 要求已有 0401 的 4 层
             # 仍可提交 0403 进审核池）；BR-14「重复添加新楼层」由前端入口控制。
 
+        # H1：唯一性判定的小区维度（community 条目自身即小区 / 父级本身待审时为 NULL）
+        community_scope = community_id if kind != BdEntryKind.COMMUNITY else None
+
         # 1. 命中同名 open pending → 幂等复用（FR-19）
-        existing = (
-            db.query(BdPendingEntry)
-            .filter(
-                BdPendingEntry.kind == kind,
-                BdPendingEntry.status == BdEntryStatus.PENDING,
-                # community 条目 parent_id 为 NULL；用 COALESCE 等价判定（与 uq_pending_open 对齐）
-                BdPendingEntry.normalized_name == normalized,
-                BdPendingEntry.parent_id.is_(None) if parent_id is None else BdPendingEntry.parent_id == parent_id,
-            )
-            .first()
+        existing = self._find_open_pending(
+            db,
+            kind=kind,
+            normalized=normalized,
+            parent_id=parent_id,
+            parent_is_pending=parent_is_pending,
+            community_scope=community_scope,
         )
         if existing:
             reference_added = self._append_reference(db, existing.id, body)
@@ -128,6 +133,8 @@ class DictSubmitService:
             payload=body.community_payload,
             parent_kind=parent_kind,
             parent_id=parent_id,
+            parent_is_pending=parent_is_pending,
+            community_scope=community_scope,
             source_type=body.source_type,
             source_id=body.source_id,
             submitted_by=submitted_by,
@@ -141,15 +148,13 @@ class DictSubmitService:
             with db.begin_nested():
                 db.flush()
         except IntegrityError:
-            existing = (
-                db.query(BdPendingEntry)
-                .filter(
-                    BdPendingEntry.kind == kind,
-                    BdPendingEntry.status == BdEntryStatus.PENDING,
-                    BdPendingEntry.normalized_name == normalized,
-                    BdPendingEntry.parent_id.is_(None) if parent_id is None else BdPendingEntry.parent_id == parent_id,
-                )
-                .first()
+            existing = self._find_open_pending(
+                db,
+                kind=kind,
+                normalized=normalized,
+                parent_id=parent_id,
+                parent_is_pending=parent_is_pending,
+                community_scope=community_scope,
             )
             if not existing:
                 msg = "并发提交冲突，请重试"
@@ -161,6 +166,38 @@ class DictSubmitService:
         self._append_reference(db, entry.id, body)
         self._finish(db, commit)
         return BdPendingSubmitResponse(pending_id=entry.id, created=True, reused=False)
+
+    @staticmethod
+    def _find_open_pending(
+        db: Session,
+        *,
+        kind: BdEntryKind,
+        normalized: str,
+        parent_id: int | None,
+        parent_is_pending: bool,
+        community_scope: str | None,
+    ) -> BdPendingEntry | None:
+        """查找同名 open pending（与 uq_pending_open 四维判定严格对齐）.
+
+        不能只看 parent_id：H1 下 A/B 两小区的同名楼栋 parent_id 都是 0，
+        必须叠加 community_scope；H2 下实表楼栋 id 与 pending 条目 id 可能数值相等，
+        必须叠加 parent_is_pending。
+        """
+        query = db.query(BdPendingEntry).filter(
+            BdPendingEntry.kind == kind,
+            BdPendingEntry.status == BdEntryStatus.PENDING,
+            BdPendingEntry.normalized_name == normalized,
+            BdPendingEntry.parent_is_pending.is_(parent_is_pending),
+        )
+        if community_scope is None:
+            query = query.filter(BdPendingEntry.community_scope.is_(None))
+        else:
+            query = query.filter(BdPendingEntry.community_scope == community_scope)
+        if parent_id is None:
+            query = query.filter(BdPendingEntry.parent_id.is_(None))
+        else:
+            query = query.filter(BdPendingEntry.parent_id == parent_id)
+        return query.first()
 
     @staticmethod
     def _finish(db: Session, commit: bool) -> None:
@@ -185,12 +222,16 @@ class DictSubmitService:
         db: Session,
         parent_kind: str,
         parent_id: str,
-    ) -> tuple[BdEntryKind, int, str | None]:
+    ) -> tuple[BdEntryKind, int, bool, str | None]:
         """解析父级（字典实表 id 或父级 pending 条目 id）.
 
         Returns:
-            (parent_kind, parent_id, community_id) —— community_id 为 pending 归属小区
-            （父级是小区时即小区 id；父级是楼栋/pending 时反查；父级 pending 小区时为 None）
+            (parent_kind, parent_id, parent_is_pending, community_id)
+            - parent_is_pending：H2 修复，显式区分 parent_id 指向实表还是 pending 条目
+              （原实现把 pending_building 落成 parent_kind='building'，转正时无法区分，
+              待审楼栋下的户室永久 400）；
+            - community_id：pending 归属小区（父级是小区时即小区 id；父级是楼栋/pending 时反查；
+              父级 pending 小区时为 None）
 
         """
         from models import BdBuilding
@@ -202,7 +243,7 @@ class DictSubmitService:
                 raise ResourceNotFoundError(msg)
             # 父级为实表小区：parent_id 无法存 UUID（BigInteger），存 0 表示「父级为实表小区」；
             # 归属小区写入第三元 community_id，submit() 落库到 entry.community_id。
-            return BdEntryKind.COMMUNITY, 0, community.id
+            return BdEntryKind.COMMUNITY, 0, False, community.id
 
         if parent_kind == "building":
             try:
@@ -212,7 +253,7 @@ class DictSubmitService:
             if not building:
                 msg = "父级楼栋不存在"
                 raise ResourceNotFoundError(msg)
-            return BdEntryKind.BUILDING, building.id, building.community_id
+            return BdEntryKind.BUILDING, building.id, False, building.community_id
 
         if parent_kind == "pending_community":
             # 父级小区本身待审：pending 挂 pending 条目（拓扑审核 BR-28）
@@ -220,14 +261,17 @@ class DictSubmitService:
             if not parent_entry:
                 msg = "父级小区待审条目不存在或已处理"
                 raise ResourceNotFoundError(msg)
-            return BdEntryKind.COMMUNITY, parent_entry.id, None
+            return BdEntryKind.COMMUNITY, parent_entry.id, True, None
 
         if parent_kind == "pending_building":
             parent_entry = self._get_open_pending(db, parent_id)
             if not parent_entry:
                 msg = "父级楼栋待审条目不存在或已处理"
                 raise ResourceNotFoundError(msg)
-            return BdEntryKind.BUILDING, parent_entry.id, parent_entry.community_id
+            if parent_entry.kind != BdEntryKind.BUILDING:
+                msg = "父级待审条目不是楼栋，请重新选择父级"
+                raise ValidationError(msg)
+            return BdEntryKind.BUILDING, parent_entry.id, True, parent_entry.community_id
 
         msg = f"parent_kind 非法: {parent_kind}"
         raise ValidationError(msg)
@@ -273,3 +317,99 @@ def get_dict_submit_service() -> DictSubmitService:
     if _service is None:
         _service = DictSubmitService()
     return _service
+
+
+def submit_dict_chain(
+    db: Session,
+    *,
+    new_community: dict | None,
+    new_building: dict | None,
+    new_room: dict | None,
+    biz_type: str,
+    biz_id: str,
+    community_id: str | None,
+    building_id: int | None = None,
+    submitted_by: str | None = None,
+    commit: bool = False,
+) -> None:
+    """补录录入端新增字典 pending 引用（community → building → room 三级链）.
+
+    M6 修复：原文该三级链在 leads/projects/marketing 三处各复制一份（各约 90 行），
+    已有可见分叉（projects 注释与 commit=False 实际语义相反），故收敛到本模块单点。
+
+    调用时机：业务单据已落库（有真实 id）、尚未 commit；submit 异常直接向上抛
+    由外层回滚整单（不吞错）。
+
+    Args:
+        db: 数据库会话
+        new_community: 小区快照载荷（可为空）
+        new_building: 楼栋载荷（可为空）
+        new_room: 户室载荷（可为空）
+        biz_type: 引用来源类型（project/lead/marketing）
+        biz_id: 引用来源单据 ID
+        community_id: 单据关联的字典实表小区 ID（可为空）
+        building_id: 单据关联的字典实表楼栋 ID（room 挂实表父级用，可为空）
+        submitted_by: 提交人用户 ID（L1：审核池「提交人」列与提交人通知依据）
+        commit: 传 False（默认）—— pending 与业务单据同事务，由外层统一 commit；
+            内部 commit 会把未完成的业务单据提前落库，失败时产生半提交
+
+    """
+    svc = get_dict_submit_service()
+    community_pending_id: int | None = None
+    building_pending_id: int | None = None
+
+    if new_community:
+        community_pending_id = svc.submit(
+            db,
+            BdPendingSubmitRequest(
+                kind="community",
+                name=str(new_community.get("name") or "").strip(),
+                community_payload=new_community,
+                source_type=biz_type,
+                source_id=biz_id,
+            ),
+            submitted_by=submitted_by,
+            commit=commit,
+        ).pending_id
+
+    if new_building:
+        if community_id:
+            building_parent_kind, building_parent_id = "community", str(community_id)
+        elif community_pending_id is not None:
+            building_parent_kind, building_parent_id = "pending_community", str(community_pending_id)
+        else:
+            building_parent_kind, building_parent_id = None, None
+        building_pending_id = svc.submit(
+            db,
+            BdPendingSubmitRequest(
+                kind="building",
+                name=str(new_building.get("name") or new_building.get("building_no") or "").strip(),
+                parent_kind=building_parent_kind,
+                parent_id=building_parent_id,
+                source_type=biz_type,
+                source_id=biz_id,
+            ),
+            submitted_by=submitted_by,
+            commit=commit,
+        ).pending_id
+
+    if new_room:
+        if building_id is not None:
+            room_parent_kind, room_parent_id = "building", str(building_id)
+        elif building_pending_id is not None:
+            room_parent_kind, room_parent_id = "pending_building", str(building_pending_id)
+        else:
+            room_parent_kind, room_parent_id = None, None
+        svc.submit(
+            db,
+            BdPendingSubmitRequest(
+                kind="room",
+                name=str(new_room.get("name") or new_room.get("room_no") or "").strip(),
+                parent_kind=room_parent_kind,
+                parent_id=room_parent_id,
+                source_type=biz_type,
+                source_id=biz_id,
+            ),
+            submitted_by=submitted_by,
+            commit=commit,
+        )

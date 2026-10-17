@@ -19,10 +19,9 @@ from sqlalchemy.orm import Session
 
 from models import Project, ProjectContract, ProjectRenovation
 from models.common import BusinessForm, ProjectStatus
-from schemas.building_dict import BdPendingSubmitRequest
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from services.property.dict_ownership import validate_dict_ownership
-from services.property.dict_submit_service import get_dict_submit_service
+from services.property.dict_submit_service import submit_dict_chain
 from services.system.operation_log import operation_log_service
 from settings import settings
 
@@ -85,12 +84,14 @@ def _submit_project_dict_pendings(
     biz_id: str,
     community_id: str | None,
     building_id: int | None = None,
+    submitted_by: str | None = None,
 ) -> None:
-    """补录项目单据的录入端新增字典 pending 引用（community → building → room）.
+    """补录项目单据的录入端新增字典 pending 引用（M6：委托 dict_submit_service 单点）.
 
-    单据落库后、同事务 commit 前调用：以真实单据 id 作为 source_id 提交审核池，
-    submit 内部自行提交 pending；业务单据创建失败时 pending 引用仍保留，
-    由审核池侧可见，不影响业务一致性——复核 P2 备注。
+    单据落库后、同事务 commit 前调用：以真实单据 id 作为 source_id 提交审核池。
+    注（M6 注释纠错）：原注释写「submit 内部自行提交 pending；业务单据创建失败时
+    pending 引用仍保留」，与代码 ``commit=False`` 的实际语义相反 —— pending 与
+    业务单据同事务，单据失败时 pending 一起回滚，不产生半提交。
 
     Args:
         db: 数据库会话
@@ -100,67 +101,21 @@ def _submit_project_dict_pendings(
         biz_id: 项目单据 ID
         community_id: 单据关联的字典实表小区 ID（可为空）
         building_id: 单据关联的字典实表楼栋 ID（room 挂实表父级用，可为空）
+        submitted_by: 提交人用户 ID（L1 修复：审核池「提交人」列与通知依据）
 
     """
-    svc = get_dict_submit_service()
-    community_pending_id: int | None = None
-    building_pending_id: int | None = None
-
-    if new_community:
-        community_pending_id = svc.submit(
-            db,
-            BdPendingSubmitRequest(
-                kind="community",
-                name=str(new_community.get("name") or "").strip(),
-                community_payload=new_community,
-                source_type="project",
-                source_id=biz_id,
-            ),
-            submitted_by=None,
-            commit=False,
-        ).pending_id
-
-    if new_building:
-        if community_id:
-            building_parent_kind, building_parent_id = "community", str(community_id)
-        elif community_pending_id is not None:
-            building_parent_kind, building_parent_id = "pending_community", str(community_pending_id)
-        else:
-            building_parent_kind, building_parent_id = None, None
-        building_pending_id = svc.submit(
-            db,
-            BdPendingSubmitRequest(
-                kind="building",
-                name=str(new_building.get("name") or new_building.get("building_no") or "").strip(),
-                parent_kind=building_parent_kind,
-                parent_id=building_parent_id,
-                source_type="project",
-                source_id=biz_id,
-            ),
-            submitted_by=None,
-            commit=False,
-        ).pending_id
-
-    if new_room:
-        if building_id is not None:
-            room_parent_kind, room_parent_id = "building", str(building_id)
-        elif building_pending_id is not None:
-            room_parent_kind, room_parent_id = "pending_building", str(building_pending_id)
-        else:
-            room_parent_kind, room_parent_id = None, None
-        svc.submit(
-            db,
-            BdPendingSubmitRequest(
-                kind="room",
-                name=str(new_room.get("name") or new_room.get("room_no") or "").strip(),
-                parent_kind=room_parent_kind,
-                parent_id=room_parent_id,
-                source_type="project",
-                source_id=biz_id,
-            ),
-            submitted_by=None,
-            commit=False,
-        )
+    submit_dict_chain(
+        db,
+        new_community=new_community,
+        new_building=new_building,
+        new_room=new_room,
+        biz_type="project",
+        biz_id=biz_id,
+        community_id=community_id,
+        building_id=building_id,
+        submitted_by=submitted_by,
+        commit=False,
+    )
 
 
 def _project_snapshot(project: Project) -> dict[str, Any]:
@@ -285,6 +240,7 @@ class ProjectCoreService:
                 biz_id=str(project.id),
                 community_id=project.community_id,
                 building_id=project.building_id,
+                submitted_by=operator_id,
             )
         # 重新查询以预加载 builder 所需的所有关联（create 已 commit，关联已 expire）
         project = self.query_service.get_by_id(project.id, include_all=False)
@@ -562,6 +518,7 @@ class ProjectCoreService:
                 biz_id=str(project_id),
                 community_id=project.community_id,
                 building_id=project.building_id,
+                submitted_by=operator_id,
             )
 
         # update 已 commit，重新查询以预加载 builder 所需关联

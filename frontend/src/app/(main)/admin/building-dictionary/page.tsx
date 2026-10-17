@@ -14,6 +14,7 @@ interface BuildingDictionaryPageProps {
     page?: string;
     keyword?: string;
     district?: string;
+    business_circle?: string;
     ring?: string;
     type?: string;
     era_from?: string;
@@ -34,6 +35,7 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
   const page = Number(searchParams.page) || 1;
   const keyword = searchParams.keyword || "";
   const district = searchParams.district || "";
+  const businessCircle = searchParams.business_circle || "";
   const ring = searchParams.ring || "";
   const propertyType = searchParams.type || "";
   const eraFrom = searchParams.era_from ? Number(searchParams.era_from) || undefined : undefined;
@@ -47,8 +49,8 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
 
   const client = await fetchClient();
 
-  // KPI 与列表无依赖，并行请求（消除瀑布）
-  const [kpiResult, listResult] = await Promise.all([
+  // KPI / 列表 / 筛选选项三者无依赖，并行请求（消除瀑布）
+  const [kpiResult, listResult, optionsResult] = await Promise.all([
     client.GET("/api/v1/admin/building-dictionary/kpi", {}),
     client.GET("/api/v1/admin/building-dictionary/communities", {
       params: {
@@ -57,6 +59,7 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
           page_size: 20,
           keyword: keyword || undefined,
           district: district || undefined,
+          business_circle: businessCircle || undefined,
           ring: ring || undefined,
           property_type: propertyType || undefined,
           era_from: eraFrom,
@@ -65,11 +68,26 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
         },
       },
     }),
+    client.GET("/api/v1/admin/building-dictionary/filter-options", {
+      params: { query: { district: district || undefined } },
+    }),
   ]);
 
-  if (kpiResult.error || !kpiResult.data || listResult.error || !listResult.data) {
+  if (
+    kpiResult.error ||
+    !kpiResult.data ||
+    listResult.error ||
+    !listResult.data ||
+    optionsResult.error ||
+    !optionsResult.data
+  ) {
     const status = listResult.response?.status;
-    logger.error("楼盘字典数据加载失败:", { status, kpiError: kpiResult.error, listError: listResult.error });
+    logger.error("楼盘字典数据加载失败:", {
+      status,
+      kpiError: kpiResult.error,
+      listError: listResult.error,
+      optionsError: optionsResult.error,
+    });
     return (
       <PageContainer>
         <PageHeader title="楼盘字典" description="小区 → 楼栋 → 楼层 → 户室 四级结构化字典" />
@@ -96,6 +114,9 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
         list={list}
         keyword={keyword}
         district={district}
+        businessCircle={businessCircle}
+        districtOptions={optionsResult.data.districts ?? []}
+        businessCircleOptions={optionsResult.data.business_circles ?? []}
         ring={ring}
         propertyType={propertyType}
         eraFrom={eraFrom}

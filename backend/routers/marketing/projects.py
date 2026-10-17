@@ -227,7 +227,7 @@ def create_marketing_project(
     创建即发布视为上新：响应返回后由后台任务触发上新订阅消息通知
     （notify 入口自建会话并吞掉一切异常仅记日志，绝不影响创建结果）。
     """
-    project, is_new_listing = service.create_project(data)
+    project, is_new_listing = service.create_project(data, submitted_by=str(current_user.id))
     if is_new_listing:
         background_tasks.add_task(notify_projects_published, project.id)
     # M5：POST 响应同样回填聚合字段，与 GET 同口径
@@ -273,7 +273,7 @@ async def update_marketing_project(
     首次发布（上新）/ 已发布房源调价时由后台任务触发订阅消息通知
     （notify 入口自建会话并吞掉一切异常仅记日志，绝不影响更新结果）。
     """
-    result = await run_in_threadpool(service.update_project, project_id, data)
+    result = await run_in_threadpool(service.update_project, project_id, data, submitted_by=str(current_user.id))
     if not result:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)

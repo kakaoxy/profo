@@ -50,6 +50,7 @@ from services.property.building_review_backfill import (
     schedule_async_backfill,
 )
 from services.property.building_review_queue import list_review_queue
+from services.property.dict_parser import normalize_district_value
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError, ValidationError
 from utils.building_dict import parse_room_floor
 
@@ -188,16 +189,50 @@ class BuildingReviewService:
         return self._resolve_reject(db, entry, body.target_id, operator, request)
 
     def _check_topology(self, db: Session, entry: BdPendingEntry) -> None:
-        """拓扑审核（BR-28）：父级 pending 未转正时子级不可单独转正."""
-        if entry.parent_kind == "community" and entry.parent_id:
-            parent = (
-                db.query(BdPendingEntry)
-                .filter(BdPendingEntry.id == entry.parent_id, BdPendingEntry.status == BdEntryStatus.PENDING)
-                .first()
-            )
-            if parent:
-                msg = f"父级小区「{parent.name}」尚未转正，请先审核父级（BR-28）"
+        """拓扑审核（BR-28）：父级 pending 未转正时子级不可单独转正.
+
+        判定依据是 ``parent_is_pending``（H2）：原实现只看
+        ``parent_kind == 'community'``，room 条的 ``parent_kind='building'`` 永远不校验，
+        且无法区分 parent_id 是实表楼栋还是待审楼栋。
+        """
+        if not entry.parent_is_pending or not entry.parent_id:
+            return
+        parent = (
+            db.query(BdPendingEntry)
+            .filter(BdPendingEntry.id == entry.parent_id, BdPendingEntry.status == BdEntryStatus.PENDING)
+            .first()
+        )
+        if parent:
+            label = "小区" if parent.kind == BdEntryKind.COMMUNITY else "楼栋"
+            msg = f"父级{label}「{parent.name}」尚未转正，请先审核父级（BR-28）"
+            raise ValidationError(msg)
+
+    def _resolve_room_parent(self, db: Session, entry: BdPendingEntry) -> BdBuilding:
+        """解析户室 pending 的父级楼栋（H2：区分实表 id 与待审条目 id）.
+
+        待审楼栋已转正时，其 ``resolved_target_id`` 就是真实 ``bd_buildings.id``；
+        未转正由 ``_check_topology`` 拦截，此处兜底报错。
+        """
+        if not entry.parent_kind or not entry.parent_id:
+            msg = "户室 pending 缺少父级楼栋"
+            raise ValidationError(msg)
+        parent_building_id: int | None
+        if entry.parent_is_pending:
+            parent_entry = db.get(BdPendingEntry, entry.parent_id)
+            if not parent_entry or parent_entry.kind != BdEntryKind.BUILDING:
+                msg = "父级待审楼栋条目不存在"
                 raise ValidationError(msg)
+            if parent_entry.status != BdEntryStatus.CREATED or not parent_entry.resolved_target_id:
+                msg = "父级楼栋尚未转正，请先审核父级（BR-28）"
+                raise ValidationError(msg)
+            parent_building_id = int(parent_entry.resolved_target_id)
+        else:
+            parent_building_id = int(entry.parent_id)
+        parent_building = db.get(BdBuilding, parent_building_id)
+        if not parent_building:
+            msg = "父级楼栋不存在（父级未转正或已删除）"
+            raise ValidationError(msg)
+        return parent_building
 
     def _resolve_create(
         self,
@@ -231,13 +266,16 @@ class BuildingReviewService:
                 .filter(
                     BdPendingEntry.kind == BdEntryKind.ROOM,
                     BdPendingEntry.status == BdEntryStatus.PENDING,
-                    BdPendingEntry.parent_kind == BdEntryKind.BUILDING,
+                    BdPendingEntry.parent_is_pending.is_(True),
                     BdPendingEntry.parent_id == entry.id,
                 )
                 .all()
             )
             for child in child_rooms:
+                # H2：改写 parent_id 为实表楼栋 id，同时把父级语义切回实表，
+                # 否则转正时仍会去 pending 表找 bd_buildings.id（永久 400）
                 child.parent_id = int(entry.resolved_target_id)  # type: ignore[arg-type]
+                child.parent_is_pending = False
             db.flush()
 
         # 引用回填：创建来源同步（核心事务内），其余异步幂等（BR-13）
@@ -274,7 +312,17 @@ class BuildingReviewService:
         operator: User,
         request: Request | None,
     ) -> BdReviewResolveResponse:
-        """合并现有：不新增字典行，引用单据改指现有目标（BR-10/13）."""
+        """合并现有：不新增字典行，引用单据改指现有目标（BR-10/13）.
+
+        M2 修复（两个维度）：
+        - 归属校验：目标楼栋/户室必须与 pending 条目的归属小区一致，否则来源单据会
+          落成「小区A / 实际属于B的楼栋」，后续编辑被 validate_dict_ownership 400，
+          形成无法编辑的死单据；
+        - 拓扑校验：merge 同样不允许跨过未转正的父级（原实现只有 create 调
+          ``_check_topology``）；父级待审时子级只能驳回或等父级先处理。
+        """
+        self._check_topology(db, entry)
+
         if entry.kind == BdEntryKind.COMMUNITY:
             target = db.query(Community).filter(Community.id == target_id, Community.is_active.is_(True)).first()
             if not target:
@@ -282,16 +330,30 @@ class BuildingReviewService:
                 raise ResourceNotFoundError(msg)
             target_value = target.id
         elif entry.kind == BdEntryKind.BUILDING:
-            target = db.get(BdBuilding, int(target_id))
+            try:
+                target = db.get(BdBuilding, int(target_id))
+            except (TypeError, ValueError):
+                target = None
             if not target:
                 msg = "目标楼栋不存在"
                 raise ResourceNotFoundError(msg)
+            if entry.community_id and target.community_id != entry.community_id:
+                msg = "目标楼栋不属于该待审楼栋的归属小区，请重新选择"
+                raise ValidationError(msg)
             target_value = str(target.id)
         else:
-            target = db.get(BdRoom, int(target_id))
+            try:
+                target = db.get(BdRoom, int(target_id))
+            except (TypeError, ValueError):
+                target = None
             if not target:
                 msg = "目标户室不存在"
                 raise ResourceNotFoundError(msg)
+            if entry.community_id:
+                target_building = db.get(BdBuilding, target.building_id)
+                if not target_building or target_building.community_id != entry.community_id:
+                    msg = "目标户室不属于该待审户室的归属小区，请重新选择"
+                    raise ValidationError(msg)
             target_value = str(target.id)
 
         entry.status = BdEntryStatus.MERGED
@@ -307,13 +369,14 @@ class BuildingReviewService:
                 .filter(
                     BdPendingEntry.kind == BdEntryKind.ROOM,
                     BdPendingEntry.status == BdEntryStatus.PENDING,
-                    BdPendingEntry.parent_kind == BdEntryKind.BUILDING,
+                    BdPendingEntry.parent_is_pending.is_(True),
                     BdPendingEntry.parent_id == entry.id,
                 )
                 .all()
             )
             for child in child_rooms:
                 child.parent_id = int(target_value)
+                child.parent_is_pending = False
             db.flush()
 
         # 全部引用改指目标
@@ -373,7 +436,7 @@ class BuildingReviewService:
         payload = entry.payload or {}
         community = Community(
             name=entry.name,
-            district=payload.get("district"),
+            district=normalize_district_value(payload.get("district")),
             business_circle=payload.get("business_circle"),
             ring=payload.get("ring"),
             address=payload.get("address"),
@@ -412,15 +475,7 @@ class BuildingReviewService:
 
     def _create_room_from_pending(self, db: Session, entry: BdPendingEntry) -> int:
         """Pending 户室 → bd_rooms 落库."""
-        if not entry.parent_kind or not entry.parent_id:
-            msg = "户室 pending 缺少父级楼栋"
-            raise ValidationError(msg)
-        # 父级可能是 pending 楼栋（同批转正 BR-28）：父级 pending 已在本事务先处理时已落库
-        parent_building = db.get(BdBuilding, entry.parent_id)
-        if not parent_building:
-            # 父级是 pending 楼栋且未转正 → 拓扑约束已拦截；此处兜底报错
-            msg = "父级楼栋不存在（父级未转正或已删除）"
-            raise ValidationError(msg)
+        parent_building = self._resolve_room_parent(db, entry)
         existing = (
             db.query(BdRoom).filter(BdRoom.building_id == parent_building.id, BdRoom.room_no == entry.name).first()
         )
@@ -434,7 +489,9 @@ class BuildingReviewService:
         )
         db.add(room)
         db.flush()
-        parent_building.room_count = db.query(BdRoom).filter(BdRoom.building_id == parent_building.id).count() + 1
+        # H4 修复：flush 后 count() 已包含本户，原实现再 +1 造成每次审核新增户室
+        # 冗余计数偏移 +1 且不可自愈；这里以实表行数为准（与 dict_write_service 口径一致）
+        parent_building.room_count = db.query(BdRoom).filter(BdRoom.building_id == parent_building.id).count()
         return room.id
 
     # ---------- 引用回填（BR-13，实现见 building_review_backfill 模块） ----------

@@ -9,6 +9,7 @@
 
 import logging
 import threading
+import uuid
 
 from sqlalchemy.orm import Session
 
@@ -40,6 +41,35 @@ def apply_backfill(
         record.room_id = int(target_value)
 
 
+def _is_valid_biz_id(ref: BdPendingReference) -> bool:
+    """校验引用 biz_id 格式（M5：写入/回填前先判别，避免脏 id 反复触发 PG 异常）.
+
+    合法格式：lead/project 为 UUID；marketing 为整数；property 为 ``data_source:source_property_id``
+    （两侧均非空）。审核脚本遗留的 ``__audit_*`` / 空串 / 非 UUID 串均判为脏。
+    """
+    biz_id = (ref.biz_id or "").strip()
+    if not biz_id:
+        return False
+    if ref.biz_type == "lead":
+        try:
+            uuid.UUID(biz_id)
+        except ValueError:
+            return False
+        return True
+    if ref.biz_type == "project":
+        try:
+            uuid.UUID(biz_id)
+        except ValueError:
+            return False
+        return True
+    if ref.biz_type == "marketing":
+        return biz_id.isdigit()
+    if ref.biz_type == "property":
+        ds, sep, spid = biz_id.partition(":")
+        return bool(sep and ds and spid)
+    return False
+
+
 def _find_biz_record(
     db: Session,
     ref: BdPendingReference,
@@ -61,37 +91,73 @@ def _find_biz_record(
     return None
 
 
-def backfill_reference(db: Session, ref: BdPendingReference, *, target_value: str) -> None:
+def backfill_reference(db: Session, ref: BdPendingReference, *, target_value: str) -> bool:
     """按引用记录回填单据关联字段并转 linked（幂等：重跑不重复写）.
 
-    单条引用用 SAVEPOINT（begin_nested）隔离：脏数据（如非法 biz_id 触发
-    PostgreSQL invalid input syntax）导致的失败只回滚本条，不毒化外层核心事务
-    （BR-13：失败留 open 待办由异步重试兑底，禁止半提交）。
+    单条引用用 SAVEPOINT（begin_nested）隔离：脏数据（非法 biz_id 触发 PostgreSQL
+    invalid input syntax）导致的失败只回滚本条，不毒化外层核心事务。
+
+    M5 修复（状态机收敛）：原实现失败分支只 logger.exception，``status`` 永不改变
+    → 脏引用永久滞留 open，``pending-backfill`` 每轮重复处理同一批脏数据且永远
+    「处理成功但零变化」。现在两类情况都落 resolved（保留日志可追溯）：
+    - biz_id 格式非法 / 单据已不存在 → 无回填对象，置 resolved 跳过；
+    - 回填 SQL 异常 → 同样置 resolved（否则批次永不收敛），并记录警告。
+
+    Returns:
+        True 表示本次确实回填了业务单据字段；False 表示引用被关闭但无单据可改
+
     """
+    if not _is_valid_biz_id(ref):
+        ref.status = BdReferenceStatus.RESOLVED
+        logger.warning("引用 biz_id 非法，已关闭（无单据可回填）: ref=%s biz=%s/%s", ref.id, ref.biz_type, ref.biz_id)
+        return False
     try:
         with db.begin_nested():
             record = _find_biz_record(db, ref)
-            if record:
-                apply_backfill(record, ref.field, target_value)
-                record.dict_status = "linked"  # type: ignore[attr-defined]
+            if not record:
+                ref.status = BdReferenceStatus.RESOLVED
+                logger.warning(
+                    "引用单据不存在（已删除？），引用已关闭: ref=%s biz=%s/%s",
+                    ref.id,
+                    ref.biz_type,
+                    ref.biz_id,
+                )
+                return False
+            apply_backfill(record, ref.field, target_value)
+            record.dict_status = "linked"  # type: ignore[attr-defined]
             ref.status = BdReferenceStatus.RESOLVED
     except Exception:
-        logger.exception("引用回填失败（留 open 待办）: ref=%s biz=%s/%s", ref.id, ref.biz_type, ref.biz_id)
+        # 异常已由 SAVEPOINT 回滚本条，引用仍需关闭以保证批次可推进（M5）
+        ref.status = BdReferenceStatus.RESOLVED
+        logger.exception("引用回填失败，已关闭引用待人工核对: ref=%s biz=%s/%s", ref.id, ref.biz_type, ref.biz_id)
+        return False
+    return True
 
 
-def mark_reference_rejected(db: Session, ref: BdPendingReference) -> None:
+def mark_reference_rejected(db: Session, ref: BdPendingReference) -> bool:
     """机器链路 reject：单据 dict_status=rejected（原文保留，BR-27）。
 
     同样 SAVEPOINT 隔离：非法 biz_id 等脏数据只回滚本条，不毒化 resolve 事务。
+    M5：与 backfill_reference 同口径——脏引用也要落 resolved，否则批次不收敛。
     """
+    if not _is_valid_biz_id(ref):
+        ref.status = BdReferenceStatus.RESOLVED
+        logger.warning("reject 标记：biz_id 非法，引用已关闭: ref=%s biz=%s/%s", ref.id, ref.biz_type, ref.biz_id)
+        return False
     try:
         with db.begin_nested():
             record = _find_biz_record(db, ref)
-            if record:
-                record.dict_status = "rejected"  # type: ignore[attr-defined]
+            if not record:
+                ref.status = BdReferenceStatus.RESOLVED
+                logger.warning("reject 标记：单据不存在，引用已关闭: ref=%s", ref.id)
+                return False
+            record.dict_status = "rejected"  # type: ignore[attr-defined]
             ref.status = BdReferenceStatus.RESOLVED
     except Exception:
-        logger.exception("reject 标记失败（留 open 待办）: ref=%s", ref.id)
+        ref.status = BdReferenceStatus.RESOLVED
+        logger.exception("reject 标记失败，已关闭引用待人工核对: ref=%s", ref.id)
+        return False
+    return True
 
 
 def run_pending_backfill(db: Session) -> int:

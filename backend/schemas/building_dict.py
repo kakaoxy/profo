@@ -81,6 +81,20 @@ class BdCommunityListResponse(BaseModel):
     items: list[BdCommunityListItem]
 
 
+class BdFilterOption(BaseModel):
+    """字典筛选下拉选项（M3：区间/板块从库内值域动态下发，避免前后端值域漂移）."""
+
+    value: str
+    count: int = 0
+
+
+class BdFilterOptionsResponse(BaseModel):
+    """字典筛选下拉选项集（FR-01 区域/板块筛选）."""
+
+    districts: list[BdFilterOption] = Field(default_factory=list)
+    business_circles: list[BdFilterOption] = Field(default_factory=list)
+
+
 class BdKpiResponse(BaseModel):
     """字典 KPI hero."""
 

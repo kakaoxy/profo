@@ -16,7 +16,6 @@ from constants.role_codes import INTERNAL_ROLE_CODES
 from models import User
 from models.common import FollowUpMethod, LeadStatus
 from models.lead import Lead, LeadEvalHistory, LeadFollowUp
-from schemas.building_dict import BdPendingSubmitRequest
 from schemas.growth_center import GrowthModule
 from schemas.lead import LeadAssessmentAuthorizeRequest, LeadCreate, LeadUpdate
 from services.growth_center.customer_notify import (
@@ -26,7 +25,7 @@ from services.growth_center.customer_notify import (
 )
 from services.growth_center.normalize import map_valuation_status
 from services.property.dict_ownership import validate_dict_ownership
-from services.property.dict_submit_service import get_dict_submit_service
+from services.property.dict_submit_service import submit_dict_chain
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError
 from services.utils import resolve_global_fallback_referrer, resolve_property_agent_referrer, resolve_valid_referrer
 from settings import settings
@@ -147,6 +146,7 @@ class LeadService:
                 biz_type="lead",
                 biz_id=str(db_lead.id),
                 community_id=db_lead.community_id,
+                submitted_by=creator_id,
             )
 
         # 如果有总价，自动记录初始价格历史
@@ -184,8 +184,9 @@ class LeadService:
         biz_id: str,
         community_id: str | None,
         building_id: int | None = None,
+        submitted_by: str | None = None,
     ) -> None:
-        """补录录入端新增字典 pending 引用（community → building → room 逐步解析父级）.
+        """补录录入端新增字典 pending 引用（M6：委托 dict_submit_service 单点）.
 
         单据落库后、同事务 commit 前调用：以真实单据 id 作为 source_id 提交审核池，
         submit（commit=False）异常直接向上抛（外层回滚整单），不吞错；
@@ -199,67 +200,21 @@ class LeadService:
             biz_id: 引用来源单据 ID
             community_id: 单据关联的字典实表小区 ID（可为空）
             building_id: 单据关联的字典实表楼栋 ID（room 挂实表父级用，可为空）
+            submitted_by: 提交人用户 ID（L1 修复：审核池「提交人」列与通知依据）
 
         """
-        svc = get_dict_submit_service()
-        community_pending_id: int | None = None
-        building_pending_id: int | None = None
-
-        if new_community:
-            community_pending_id = svc.submit(
-                self.db,
-                BdPendingSubmitRequest(
-                    kind="community",
-                    name=str(new_community.get("name") or "").strip(),
-                    community_payload=new_community,
-                    source_type=biz_type,
-                    source_id=biz_id,
-                ),
-                submitted_by=None,
-                commit=False,
-            ).pending_id
-
-        if new_building:
-            if community_id:
-                building_parent_kind, building_parent_id = "community", str(community_id)
-            elif community_pending_id is not None:
-                building_parent_kind, building_parent_id = "pending_community", str(community_pending_id)
-            else:
-                building_parent_kind, building_parent_id = None, None
-            building_pending_id = svc.submit(
-                self.db,
-                BdPendingSubmitRequest(
-                    kind="building",
-                    name=str(new_building.get("name") or new_building.get("building_no") or "").strip(),
-                    parent_kind=building_parent_kind,
-                    parent_id=building_parent_id,
-                    source_type=biz_type,
-                    source_id=biz_id,
-                ),
-                submitted_by=None,
-                commit=False,
-            ).pending_id
-
-        if new_room:
-            if building_id is not None:
-                room_parent_kind, room_parent_id = "building", str(building_id)
-            elif building_pending_id is not None:
-                room_parent_kind, room_parent_id = "pending_building", str(building_pending_id)
-            else:
-                room_parent_kind, room_parent_id = None, None
-            svc.submit(
-                self.db,
-                BdPendingSubmitRequest(
-                    kind="room",
-                    name=str(new_room.get("name") or new_room.get("room_no") or "").strip(),
-                    parent_kind=room_parent_kind,
-                    parent_id=room_parent_id,
-                    source_type=biz_type,
-                    source_id=biz_id,
-                ),
-                submitted_by=None,
-                commit=False,
-            )
+        submit_dict_chain(
+            self.db,
+            new_community=new_community,
+            new_building=new_building,
+            new_room=new_room,
+            biz_type=biz_type,
+            biz_id=biz_id,
+            community_id=community_id,
+            building_id=building_id,
+            submitted_by=submitted_by,
+            commit=False,
+        )
 
     def _resolve_referrer_id(self, referrer: str | None) -> str | None:
         """解析分享归属员工ID：存在、active 且具备后台身份才生效，否则静默忽略.
@@ -378,6 +333,21 @@ class LeadService:
         new_building = update_dict.pop("new_building", None) or None
         new_room = update_dict.pop("new_room", None) or None
 
+        # M4 修复：编辑链路口径与创建链路对齐 —— 楼栋/户室必须属于单据小区。
+        # 原实现直接 setattr，脏关联可从 PUT /leads/{id} 写入（创建有校验、编辑没有），
+        # 且后续编辑会被 validate_dict_ownership 400 拦住，形成无法编辑的死单据。
+        # community_id 被显式清空时，楼栋/户室一并归零（否则残留孤儿关联）。
+        next_community_id = update_dict.get("community_id") or lead.community_id
+        if not next_community_id:
+            update_dict.pop("building_id", None)
+            update_dict.pop("room_id", None)
+        validate_dict_ownership(
+            self.db,
+            community_id=next_community_id,
+            building_id=update_dict.get("building_id", lead.building_id),
+            room_id=update_dict.get("room_id", lead.room_id),
+        )
+
         # 价格更新时记录历史
         new_price = update_dict.get("total_price")
         if new_price is not None and new_price != float(lead.total_price or 0):
@@ -417,7 +387,9 @@ class LeadService:
                 new_room=new_room,
                 biz_type="lead",
                 biz_id=str(lead.id),
-                community_id=update_dict.get("community_id") or lead.community_id,
+                community_id=next_community_id,
+                building_id=update_dict.get("building_id", lead.building_id),
+                submitted_by=updater_id,
             )
 
         self.db.commit()

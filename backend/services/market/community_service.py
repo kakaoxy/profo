@@ -21,6 +21,7 @@ from schemas.community import (
     DictionaryResponse,
 )
 from schemas.public import PublicCommunitySearchItem
+from services.property.dict_parser import normalize_district_value
 from services.system.exceptions import ConflictError, ResourceNotFoundError, ServiceException, ValidationError
 from settings import settings
 from utils.formatters import escape_like
@@ -252,7 +253,7 @@ class CommunityQueryService:
         new_community = Community(
             id=uuid.uuid4(),
             name=body.name.strip(),
-            district=body.district,
+            district=normalize_district_value(body.district),
             business_circle=body.business_circle,
             city_id=None,
             avg_price_wan=None,
