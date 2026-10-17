@@ -6,6 +6,7 @@
         无进行中任务时正常创建 → 201；并发创建仅 1 个成功
   L2-④ 任务恢复（M7）：遗留 processing 任务被启动迁移标记 failed（可重跑文案）
   L2-⑥ 口径对齐（M2）：>1GB 解压总量的包装载阶段拒绝（zip bomb 防线对齐 512m）
+  审查补缺（2026-10-17）：包内单个声明 600MB 的 txt 被单条目防线（512MB）拒绝
 
 命令: cd backend && .venv/bin/python tests/e2e/test_bd_capacity_fixes.py
 预期: 全部断言通过，输出 PASS 汇总；数据库/temp/uploads 无测试残留。
@@ -37,7 +38,11 @@ import db
 from main import app
 from migrations import run_startup_migrations
 from models import BdImportTask, ImportTaskStatus
-from services.property.dict_import_loader import MAX_UNCOMPRESSED_TOTAL, DictImportProcessor
+from services.property.dict_import_loader import (
+    MAX_SINGLE_ENTRY_BYTES,
+    MAX_UNCOMPRESSED_TOTAL,
+    DictImportProcessor,
+)
 from services.property.dict_import_service import UPLOAD_DIR
 from utils.auth import AUDIENCE_ADMIN, create_access_token
 
@@ -260,6 +265,40 @@ msg7 = t7.error_message or ""
 ok7 = t7.status == ImportTaskStatus.FAILED and "超限" in msg7 and "1GB" in msg7
 check("⑦ 声明解压总量 >1GB 的包被拒绝", ok7, f"status={t7.status.value} msg={msg7[:80]!r}")
 s.close()
+
+# ⑦b 审查补缺防线：包内仅一个声明 600MB 的 txt（总量 <1GB 不触发总量防线，
+# 单条目防线 512MB 拦截）。声明体积仅元数据，真实数据段高压缩磁盘 KB 级，
+# 若防线失效 zf.read() 会真实读入 600MB（哨兵名由 ⑨ 兕底检出）
+buf7b = io.BytesIO()
+with zipfile.ZipFile(buf7b, "w", zipfile.ZIP_DEFLATED) as zf:
+    payload = ("测试大厦L2;01;0101;121.4;31.2;\n" * 8).encode("gbk")
+    zf.writestr(zipfile.ZipInfo("巨型单条目.txt"), payload * (600 * 1024 * 1024 // len(payload) + 1))
+zp7b = UPLOAD_DIR / f"bd_l2e2e_{os.getpid()}_single_entry_bomb.zip"
+zp7b.write_bytes(buf7b.getvalue())
+s = db.SessionLocal()
+task7b = BdImportTask(
+    user_id="l2-e2e-bomb-single",
+    status=ImportTaskStatus.PENDING,
+    filename="l2e2e-single-bomb.zip",
+    file_path=str(zp7b),
+    file_size=zp7b.stat().st_size,
+)
+s.add(task7b)
+s.commit()
+task7b_id = task7b.id
+s.close()
+processor.process_task(task7b_id)
+s = db.SessionLocal()
+t7b = s.get(BdImportTask, task7b_id)
+msg7b = t7b.error_message or ""
+ok7b = t7b.status == ImportTaskStatus.FAILED and "单个文件" in msg7b and "512MB" in msg7b
+check(
+    "⑦b 包内单个声明 600MB 的 txt 被单条目防线拒绝",
+    ok7b,
+    f"status={t7b.status.value} msg={msg7b[:80]!r} (声明 {600}MB > 上限 {MAX_SINGLE_ENTRY_BYTES // 1024 // 1024}MB)",
+)
+s.close()
+zp7b.unlink(missing_ok=True)
 
 # ⑧ 上海包正常口径自查：常数关系（网关 100M × 实测压缩率 6.8 ≈ 680MB < 1GB 上限）
 ok8 = MAX_UNCOMPRESSED_TOTAL > 100 * 1024 * 1024 * 6.8

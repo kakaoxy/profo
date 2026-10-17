@@ -9,7 +9,8 @@
   （BR-16：同包重跑计数不变）；
 - 失败行写 csv 明细可下载，归档 90 天（bd_archive 目录，应用内启动 + 每日巡检清理）；
 - zip 包逐条目流式处理（任一时刻最多驻留单个 txt，OrbStack 排查报告 §4.2-1）。
-- 单包解压总量上限 1GB，与 backend 容器 512m 承载力对齐（承载力报告 v2 §4）。
+- 单包解压总量上限 1GB、单条目（单 txt）解压上限 512MB，与 backend 容器
+  512m 承载力对齐（承载力报告 v2 §4；单条目防线为 2026-10-17 审查补缺）。
 - 上传互斥：同一时刻仅允许一个 pending/processing 任务（承载力报告 M5/L2-②）。
 
 楼栋号/户室号保留原始串（BR-02/03）；楼层解析前两位（utils.building_dict.parse_room_floor）；
@@ -51,6 +52,16 @@ MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
 # × 本数据集实测压缩率 6.8× ≈ 680MB，留余量取 1GB。
 MAX_UNCOMPRESSED_TOTAL = 1 * 1024 * 1024 * 1024
 _ZIP_BOMB_MSG = "zip 包解压后总大小超限（1GB，与 backend 容器 512m 承载力对齐），疑似异常包或超大包，请分批导入"
+
+# zip bomb 防护第二道：单条目解压上限。
+# 审查补缺（2026-10-17）：MAX_UNCOMPRESSED_TOTAL 只约束包内全部条目的声明
+# 总量，恶意单条目（如声明 800MB 的 txt，包内仅此一个条目）可通过总量检查，
+# zf.read() 一次读入 + parse_community_txt 的 splitlines/rooms 列表约 3-4×
+# 膨胀后仍可冲垮 512m 容器。上限取总量防线的一半（512MB，数值与容器
+# mem_limit 对齐便于记忆）；单 txt 直传按落盘实际大小同口径拦截。合法数据
+# 不受影响：本数据集实测最大单 txt 约 313KB（承载力报告 §4）。
+MAX_SINGLE_ENTRY_BYTES = 512 * 1024 * 1024
+_SINGLE_ENTRY_LIMIT_MSG = "zip 内单个文件解压后超限（512MB），疑似异常包，请检查数据或分批导入"
 
 # 失败明细/原始包归档天数（NFR-02）
 ARCHIVE_DAYS = 90
@@ -326,6 +337,10 @@ class DictImportProcessor:
 
         """
         if file_path.suffix.lower() != ".zip":
+            # 单 txt 直传：按落盘实际大小做单文件拦截（与 zip 条目同口径），
+            # 在 read_bytes() 读入内存前拒绝
+            if file_path.stat().st_size > MAX_SINGLE_ENTRY_BYTES:
+                raise ValueError(_SINGLE_ENTRY_LIMIT_MSG) from None
             # 小区名取自「原始上传文件名」的扩展名前部分
             original_name = Path(task.filename).name if task.filename else file_path.name
             return iter([(original_name, file_path.read_bytes())]), 1
@@ -335,6 +350,10 @@ class DictImportProcessor:
             uncompressed_total = sum(info.file_size for info in infos)
             if uncompressed_total > MAX_UNCOMPRESSED_TOTAL:
                 raise ValueError(_ZIP_BOMB_MSG) from None
+            # 单条目防线：总量检查拦不住「包内仅一个超大条目」的包
+            for info in infos:
+                if info.file_size > MAX_SINGLE_ENTRY_BYTES:
+                    raise ValueError(_SINGLE_ENTRY_LIMIT_MSG) from None
         total = len(infos)
         return self._iter_zip_txt(file_path, infos), total
 
