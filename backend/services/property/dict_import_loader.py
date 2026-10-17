@@ -575,8 +575,15 @@ class DictImportProcessor:
             db.commit()
 
         # 收尾（L4：部分小区失败仍算 completed + 失败明细，不再整包 failed）
+        # processed_communities 可能在循环内因 StopIteration 提前 break 而小于
+        # total_communities（条目数与声明数失配）；此时不得无条件写 100%，
+        # 否则「只处理 2/5 却显示 100%」把数据丢失伪装成成功。
+        # 口径：任务已完成（没东西可做了），但进度按真实消费比例记，
+        # 并在 error_message 里显式告警失配。
+        processed = task.processed_communities
+        truncated = processed < total_communities
         task.status = ImportTaskStatus.COMPLETED
-        task.progress_percent = 100.0
+        task.progress_percent = round(processed / total_communities * 100, 2) if total_communities else 100.0
         task.warnings_count = warnings_count
         task.completed_at = datetime.now(timezone.utc)
         if task.started_at:
@@ -587,6 +594,13 @@ class DictImportProcessor:
                 f"{len(failed_rows)}/{total_communities} 个小区装载失败，详见失败明细；"
                 f"已成功的 {stats.communities} 个小区已入库（单包重跑幂等，不会重复入库）"
             )
+        if truncated:
+            mismatch_msg = (
+                f"包内实际可处理条目数（{processed}）少于声明数（{total_communities}），"
+                f"任务已提前结束，请检查 zip 包完整性后重试"
+            )
+            task.error_message = f"{task.error_message}；{mismatch_msg}" if task.error_message else mismatch_msg
+            logger.warning("字典导入提前结束: %s (task=%s)", mismatch_msg, task.id)
         db.commit()
 
         logger.info(

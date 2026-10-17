@@ -697,6 +697,25 @@ check(
     f"error_message={ghost_rows[0][0] if ghost_rows else None}",
 )
 
+# L4-d：失配场景下完成态进度不能冒充 100%（收尾无条件写 100 会把
+# 「只处理 2/5」伪装成全部成功，是静默数据丢失）
+ghost_progress = exec_sql(
+    "SELECT progress_percent, processed_communities, total_communities FROM bd_import_tasks WHERE id = :i",
+    i=ghost_id,
+)
+if ghost_progress:
+    _prog, _proc_n, _total_n = ghost_progress[0]
+    check(
+        "L4 条目数少于声明数时进度按真实比例（不冒充 100%）",
+        float(_prog) < 100.0,
+        f"progress={_prog}% processed={_proc_n}/{_total_n}",
+    )
+    check(
+        "L4 条目数失配时 error_message 显式告警（不静默）",
+        "少于声明数" in (ghost_rows[0][0] or "") if ghost_rows else False,
+        f"{(ghost_rows[0][0] if ghost_rows else '')[:110]}",
+    )
+
 # ============================================================
 # 收尾
 # ============================================================
