@@ -39,6 +39,11 @@ interface RoomOption {
   pending?: boolean;
 }
 
+/** 户室分页大小（后端上限 500）；超大楼栋逐页取全（实测最大 928 户） */
+const ROOM_PAGE_SIZE = 500;
+/** 户室分页安全上限（10 页 ≈ 5000 户） */
+const ROOM_MAX_PAGES = 10;
+
 export interface TargetSelection {
   community: CommunityOption | null;
   building: BuildingOption | null;
@@ -142,25 +147,38 @@ export function ReviewTargetPicker({
       setSelectedFloor(null);
       setLoadingRooms(true);
       try {
-        const { data } = await client.GET("/api/v1/admin/building-dictionary/buildings/{building_id}", {
-          params: { path: { building_id: b.id } },
-        });
-        if (data) {
-          // P3：楼栋详情户室分页（默认 200/页），改选只需楼层 + 首个户室，单页足够
-          const list = (data.rooms ?? [])
-            .filter((r) => !r.pending)
-            .map((r): RoomOption => ({
-              id: r.id,
-              room_no: r.room_no,
-              floor: r.floor ?? null,
-              plate_no: r.plate_no,
-            }));
-          setRooms(list);
-          if (floor !== undefined) {
-            setSelectedFloor(floor);
-            const hit = list.find((r) => r.floor === floor) ?? list[0];
-            if (hit) onSelectionChange({ ...selection, building: b, room: hit });
-          }
+        // P3：楼栋详情户室已分页（默认 200/页）。本选择器要让审核员选到任意目标户室，
+        // 单页会使 200 户以上楼栋的高楼层户室无法选择（合并/改选只能选前 200 户），
+        // 故逐页取全（实测最大楼栋 928 户）。
+        const collected: RoomOption[] = [];
+        for (let page = 1; page <= ROOM_MAX_PAGES; page += 1) {
+          const { data } = await client.GET(
+            "/api/v1/admin/building-dictionary/buildings/{building_id}",
+            {
+              params: {
+                path: { building_id: b.id },
+                query: { room_page: page, room_page_size: ROOM_PAGE_SIZE },
+              },
+            },
+          );
+          if (!data) break;
+          collected.push(
+            ...(data.rooms ?? [])
+              .filter((r) => !r.pending)
+              .map((r): RoomOption => ({
+                id: r.id,
+                room_no: r.room_no,
+                floor: r.floor ?? null,
+                plate_no: r.plate_no,
+              })),
+          );
+          if (!data.room_has_more) break;
+        }
+        setRooms(collected);
+        if (floor !== undefined) {
+          setSelectedFloor(floor);
+          const hit = collected.find((r) => r.floor === floor) ?? collected[0];
+          if (hit) onSelectionChange({ ...selection, building: b, room: hit });
         }
       } finally {
         setLoadingRooms(false);
@@ -220,7 +238,12 @@ export function ReviewTargetPicker({
                 className="h-8 pl-8 text-[12.5px]"
               />
             </div>
-            <Button variant="outline" size="sm" disabled={searchingComm} onClick={() => void searchCommunities()}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={searchingComm}
+              onClick={() => void searchCommunities()}
+            >
               {searchingComm ? <Loader2 className="size-3.5 animate-spin" /> : null}
               搜索
             </Button>
@@ -251,7 +274,8 @@ export function ReviewTargetPicker({
           <p className="mb-2 text-[12px] font-medium text-ink">
             选已有{isRoomKind ? "户室" : "楼栋"}
             <span className="ml-2 text-[10.5px] font-normal text-dove">
-              小区固定为「{communityName ?? "—"}」{actionLabel === "reject" ? " · 必选（当场改选）" : ""}
+              小区固定为「{communityName ?? "—"}」
+              {actionLabel === "reject" ? " · 必选（当场改选）" : ""}
             </span>
           </p>
           {/* 楼栋 chips */}
@@ -274,7 +298,9 @@ export function ReviewTargetPicker({
                   {b.building_no}栋
                 </button>
               ))}
-              {buildings.length === 0 ? <span className="py-1 text-[11px] text-dove">本小区暂无实表楼栋</span> : null}
+              {buildings.length === 0 ? (
+                <span className="py-1 text-[11px] text-dove">本小区暂无实表楼栋</span>
+              ) : null}
             </div>
           )}
           {/* 楼层 chips（户室条目） */}
@@ -288,7 +314,9 @@ export function ReviewTargetPicker({
                     type="button"
                     className={cn(
                       "rounded-md border px-2 py-0.5 text-[11.5px] tabular-nums",
-                      selectedFloor === f.floor ? "border-ink bg-ink text-white" : "border-dove/50 text-ink hover:border-ash",
+                      selectedFloor === f.floor
+                        ? "border-ink bg-ink text-white"
+                        : "border-dove/50 text-ink hover:border-ash",
                     )}
                     onClick={() => setSelectedFloor(f.floor)}
                   >
@@ -323,7 +351,9 @@ export function ReviewTargetPicker({
                     </button>
                   ))}
                   {visibleRooms.length === 0 ? (
-                    <span className="col-span-8 py-1 text-[11px] text-dove">该楼栋暂无实表户室</span>
+                    <span className="col-span-8 py-1 text-[11px] text-dove">
+                      该楼栋暂无实表户室
+                    </span>
                   ) : null}
                 </div>
               )}

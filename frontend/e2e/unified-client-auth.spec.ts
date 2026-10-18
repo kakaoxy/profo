@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { test, expect, request as playwrightRequest } from "@playwright/test";
 import { loginPage, createApiContext, FRONTEND_BASE } from "./helpers/auth";
 
@@ -45,8 +47,10 @@ test.beforeAll(async () => {
   const username = `e2e_c_auth_${suffix}`;
   const ctx = await playwrightRequest.newContext();
   try {
+    // 密码每轮随机生成（账号用完即删）：避免任何真实/固定凭证入库（AGENTS §4）
+    const password = `E2e!${randomUUID()}`;
     const res = await ctx.post(`${API_BASE}/api/v1/public/auth/register`, {
-      data: { username, password: "E2ePass!2026", nickname: "E2E 客户端认证" },
+      data: { username, password, nickname: "E2E 客户端认证" },
     });
     if (!res.ok()) throw new Error(`C 端注册失败: HTTP ${res.status()} ${await res.text()}`);
     const body = (await res.json()) as {
@@ -71,6 +75,26 @@ test.afterAll(async () => {
   }
   await api?.dispose();
 });
+
+/** 注入 C 端会话 cookie（httpOnly，需与后端 cookie 名一致） */
+async function setCustomerCookies(page: import("@playwright/test").Page): Promise<void> {
+  await page.context().addCookies([
+    {
+      name: "c_access_token",
+      value: customer.accessToken,
+      domain: HOST,
+      path: "/",
+      httpOnly: true,
+    },
+    {
+      name: "c_refresh_token",
+      value: customer.refreshToken,
+      domain: HOST,
+      path: "/",
+      httpOnly: true,
+    },
+  ]);
+}
 
 test("admin 路由组：access token 失效 → 走 /api/auth/refresh 刷新并续传", async ({ page }) => {
   const authPosts = collectAuthPosts(page);
@@ -101,22 +125,7 @@ test("admin 路由组：access token 失效 → 走 /api/auth/refresh 刷新并�
 test("C 端路由组：access token 失效 → 走 /api/auth/c/refresh 刷新并续传", async ({ page }) => {
   const authPosts = collectAuthPosts(page);
 
-  await page.context().addCookies([
-    {
-      name: "c_access_token",
-      value: customer.accessToken,
-      domain: HOST,
-      path: "/",
-      httpOnly: true,
-    },
-    {
-      name: "c_refresh_token",
-      value: customer.refreshToken,
-      domain: HOST,
-      path: "/",
-      httpOnly: true,
-    },
-  ]);
+  await setCustomerCookies(page);
 
   await page.goto(`${FRONTEND_BASE}/my`);
   await expect(page).toHaveURL(/\/my$/);
@@ -144,4 +153,24 @@ test("C 端路由组：access token 失效 → 走 /api/auth/c/refresh 刷新并
 
   expect(authPosts.some((url) => url.includes("/api/auth/c/refresh"))).toBe(true);
   expect(authPosts.some((url) => url.includes("/api/auth/refresh"))).toBe(false);
+});
+
+test("C 端 Server Action：改昵称命中后端正确路径（回归：基地址尾斜杠致 //api/v1 404）", async ({
+  page,
+}) => {
+  await setCustomerCookies(page);
+  await page.goto(`${FRONTEND_BASE}/profile`);
+
+  const nicknameInput = page.locator('input[name="nickname"]');
+  await expect(nicknameInput).toBeVisible({ timeout: 15000 });
+
+  const nickname = `E2E昵称${Date.now().toString().slice(-6)}`;
+  await nicknameInput.fill(nickname);
+  // Server Action 在 Next 服务端用 cServerActionFetch 拼后端 URL：基地址带尾斜杠时
+  // 会请求 ``http://127.0.0.1:8000//api/v1/public/users/profile`` → FastAPI 404，
+  // 表单只显示「修改失败」；成功 toast 是「修改成功」（cLocale.profileAction.updateSuccess）。
+  await page.locator('form:has(input[name="nickname"]) button[type="submit"]').click();
+
+  await expect(page.getByText("修改成功")).toBeVisible({ timeout: 15000 });
+  await expect(nicknameInput).toHaveValue(nickname);
 });

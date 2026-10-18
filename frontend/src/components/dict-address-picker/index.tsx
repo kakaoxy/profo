@@ -103,6 +103,11 @@ function buildPlate(communityName: string, buildingNo: string, plateNo: string):
 /** 楼栋列分页大小（大社区只渲染当页 + 滚动加载更多，防卡顿） */
 const BUILDING_PAGE_SIZE = 50;
 
+/** 户室分页大小（后端上限 500）；小楼栋 1 次请求，超大楼栋逐页取全 */
+const ROOM_PAGE_SIZE = 500;
+/** 户室分页安全上限（实测最大楼栋 928 户，10 页 ≈ 5000 户足够） */
+const ROOM_MAX_PAGES = 10;
+
 /** 户室号解析楼层（与后端 parse_room_floor 对齐：0401→4、202→2；非标为 null） */
 function floorOfRoom(roomNo: string): number | null {
   if (/^\d{4}$/.test(roomNo)) {
@@ -278,23 +283,45 @@ export function DictAddressPicker({
       setLoadingRooms(true);
       setRooms([]);
       try {
-        const [floorRes, roomRes] = await Promise.all([
+        const [floorRes, allRooms] = await Promise.all([
           client.GET("/api/v1/admin/building-dictionary/buildings/{building_id}/floors", {
             params: { path: { building_id: buildingId } },
           }),
-          client.GET("/api/v1/admin/building-dictionary/buildings/{building_id}", {
-            params: {
-              path: { building_id: buildingId },
-              // P3：户室分页（默认 200/页）；四级级联按楼层筛选，取上限 500 覆盖单栋绝大多数楼层
-              query: {
-                room_page: 1,
-                room_page_size: 500,
-                ...(sourceBizType && sourceBizId
-                  ? { source_biz_type: sourceBizType, source_biz_id: sourceBizId }
-                  : {}),
-              },
-            },
-          }),
+          (async (): Promise<RoomOption[]> => {
+            // P3：楼栋详情户室已分页（单页上限 500）。级联选择器需要完整户室列表，
+            // 否则 500 户以上楼栋的部分楼层无法选房（静默缺失），故逐页取全。
+            const collected: RoomOption[] = [];
+            for (let page = 1; page <= ROOM_MAX_PAGES; page += 1) {
+              const { data, error } = await client.GET(
+                "/api/v1/admin/building-dictionary/buildings/{building_id}",
+                {
+                  params: {
+                    path: { building_id: buildingId },
+                    query: {
+                      room_page: page,
+                      room_page_size: ROOM_PAGE_SIZE,
+                      ...(sourceBizType && sourceBizId
+                        ? { source_biz_type: sourceBizType, source_biz_id: sourceBizId }
+                        : {}),
+                    },
+                  },
+                },
+              );
+              if (error || !data) break;
+              collected.push(
+                ...(data.rooms ?? []).map((r) => ({
+                  id: r.id,
+                  room_no: r.room_no,
+                  floor: r.floor ?? null,
+                  pending: r.pending,
+                  pending_id: r.pending_id ?? null,
+                  plate_no: r.plate_no,
+                })),
+              );
+              if (!data.room_has_more) break;
+            }
+            return collected;
+          })(),
         ]);
         if (!floorRes.error && floorRes.data) {
           setFloors(
@@ -305,18 +332,7 @@ export function DictAddressPicker({
             })),
           );
         }
-        if (!roomRes.error && roomRes.data) {
-          setRooms(
-            (roomRes.data.rooms ?? []).map((r) => ({
-              id: r.id,
-              room_no: r.room_no,
-              floor: r.floor ?? null,
-              pending: r.pending,
-              pending_id: r.pending_id ?? null,
-              plate_no: r.plate_no,
-            })),
-          );
-        }
+        setRooms(allRooms);
       } finally {
         setLoadingRooms(false);
       }

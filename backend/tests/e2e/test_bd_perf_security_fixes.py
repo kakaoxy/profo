@@ -6,8 +6,9 @@
       同小区合法绑定仍 200
   S2  已合并归档小区：详情 GET 404、画像 PATCH 409；主档视角可见 merged_children
   H2  「待审小区 → 待审楼栋」两级 create 全部成功（create 与 merge 两条父级路径）
-  H3  pending-backfill 收敛：无回填对象的 open 引用被关闭，连续两次均返回 0 条，
-      且库内 open 引用为 0；reference_count 口径为「待回填」
+  H3  pending-backfill 收敛：条目不存在/已终态无 target 的 open 引用被关闭，连续两次
+      均返回 0 条；**仍待审条目的 open 引用保留**（否则审核后单据关联静默丢失）；
+      reference_count 口径为「待回填」
   H1  单条目防线 16MB；流式解析峰值内存与文件大小无关（38.7MB 输入峰值 <100MB，
       旧链路实测 534MB）
   P1  room_count 对账 SQL 为聚合 JOIN（无逐行相关子查询），耗时显著低于旧实现
@@ -306,26 +307,48 @@ check(
 # H3：引用账本收敛
 # ============================================================
 print("\n=== H3 引用账本收敛 / reference_count 口径 ===")
-# 造一条「无回填对象」的 open 引用（条目 pending 且 resolved_target_id 为空）
-p_orphan = submit_pending(
-    {"kind": "community", "name": f"{PREFIX}H3孤儿引用__", "community_payload": {"district": "静安区"}}
+# 造一条真正「无回填对象」的 open 引用：pending_id 指向不存在的条目（历史脏数据，
+# 永远等不到 target，必须被回填任务收口）
+H3_ORPHAN_PID = 987_654_321
+H3_DEAD_BIZ = "00000000-0000-0000-0000-000000000001"  # 合法 UUID 格式但指向不存在项目
+H3_PENDING_BIZ = "00000000-0000-0000-0000-000000000002"  # 待审条目的引用（独立 biz 避免撞 uq_bd_pending_ref_biz）
+exec_sql(
+    "INSERT INTO bd_pending_references (pending_id, biz_type, biz_id, field, status, created_at) "
+    "VALUES (:pid, 'project', :biz, 'community_id', 'open', now())",
+    pid=H3_ORPHAN_PID,
+    biz=H3_DEAD_BIZ,
+)
+# 同时造一条「条目仍待审」的 open 引用：审核前不得被回填任务关闭
+# （提前关闭 → 审核通过时查不到 open 引用，单据关联静默丢失）
+p_pending = submit_pending(
+    {"kind": "community", "name": f"{PREFIX}H3待审引用__", "community_payload": {"district": "静安区"}}
 )
 exec_sql(
     "INSERT INTO bd_pending_references (pending_id, biz_type, biz_id, field, status, created_at) "
     "VALUES (:pid, 'project', :biz, 'community_id', 'open', now())",
-    pid=p_orphan,
-    biz="00000000-0000-0000-0000-0000000ps000".replace("ps", "00"),  # 合法 UUID 格式但指向不存在项目
+    pid=p_pending,
+    biz=H3_PENDING_BIZ,
 )
 open_before = int(exec_sql("SELECT count(*) FROM bd_pending_references WHERE status = 'open'")[0][0])
-check("H3 前置：库内存在无回填对象的 open 引用", open_before >= 1, f"open={open_before}")
+check("H3 前置：库内存在无回填对象与待审条目的 open 引用", open_before >= 2, f"open={open_before}")
 
 s, body1 = client.post(f"{API}/review/pending-backfill")
 s2, body2 = client.post(f"{API}/review/pending-backfill")
-open_after = int(exec_sql("SELECT count(*) FROM bd_pending_references WHERE status = 'open'")[0][0])
+orphan_status = exec_sql(
+    "SELECT status FROM bd_pending_references WHERE pending_id = :p",
+    p=H3_ORPHAN_PID,
+)[0][0]
+check("H3 无回填对象（条目不存在）的 open 引用被关闭", orphan_status == "resolved", f"status={orphan_status}")
+pending_open = int(
+    exec_sql(
+        "SELECT count(*) FROM bd_pending_references WHERE pending_id = :p AND status = 'open'",
+        p=p_pending,
+    )[0][0]
+)
 check(
-    "H3 回填后库内 open 引用收敛为 0",
-    open_after == 0,
-    f"before={open_before} after={open_after}",
+    "H3 待审条目的 open 引用保留（审核通过/驳回后才回填）",
+    pending_open == 1,
+    f"open={pending_open}",
 )
 check(
     "H3 连续两次 pending-backfill 均返回「实际回填 0 条」",
@@ -333,35 +356,30 @@ check(
     f"{body1['message']} / {body2['message']}",
 )
 
-# reference_count 口径 = open 数（不是历史累计）：造 1 open + 1 resolved，期望 1
+# reference_count 口径 = open 数（不是历史累计）：该条目保留 1 open + 补 1 resolved，期望 1
 exec_sql(
     "INSERT INTO bd_pending_references (pending_id, biz_type, biz_id, field, status, created_at) "
     "VALUES (:pid, 'lead', :biz, 'community_id', 'resolved', now())",
-    pid=p_orphan,
+    pid=p_pending,
     biz=f"{PREFIX}resolved-ref",
-)
-exec_sql(
-    "INSERT INTO bd_pending_references (pending_id, biz_type, biz_id, field, status, created_at) "
-    "VALUES (:pid, 'marketing', :biz, 'community_id', 'open', now())",
-    pid=p_orphan,
-    biz="9001",
 )
 cnt_open = int(
     exec_sql(
         "SELECT count(*) FROM bd_pending_references WHERE pending_id = :p AND status = 'open'",
-        p=p_orphan,
+        p=p_pending,
     )[0][0]
 )
-cnt_all = int(exec_sql("SELECT count(*) FROM bd_pending_references WHERE pending_id = :p", p=p_orphan)[0][0])
+cnt_all = int(exec_sql("SELECT count(*) FROM bd_pending_references WHERE pending_id = :p", p=p_pending)[0][0])
 s, queue = client.get(f"{API}/review?status=pending&page_size=100")
-item = next((i for i in queue["items"] if i["id"] == p_orphan), None) if s == 200 else None
+item = next((i for i in queue["items"] if i["id"] == p_pending), None) if s == 200 else None
 check(
-    "H3 reference_count 只计 open（该条目 1 open + 2 resolved → 展示 1 而非 3）",
-    item is not None and cnt_open == 1 and cnt_all == 3 and item["reference_count"] == cnt_open,
+    "H3 reference_count 只计 open（该条目 1 open + 1 resolved → 展示 1 而非 2）",
+    item is not None and cnt_open == 1 and cnt_all == 2 and item["reference_count"] == cnt_open,
     f"reference_count={item['reference_count'] if item else None} open={cnt_open} all={cnt_all}",
 )
-# 清理该条目的造数引用（避免影响收尾统计）
-exec_sql("DELETE FROM bd_pending_references WHERE pending_id = :p", p=p_orphan)
+# 清理造数引用（孤儿行 pending_id 不指向任何条目，不会被名称前缀清理覆盖）
+exec_sql("DELETE FROM bd_pending_references WHERE pending_id = :p", p=p_pending)
+exec_sql("DELETE FROM bd_pending_references WHERE pending_id = :p", p=H3_ORPHAN_PID)
 
 # ============================================================
 # L5：回填重试留审计

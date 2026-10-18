@@ -19,9 +19,12 @@
   → 回填子级楼栋的归属小区。
 
 - **H3**：清理「无回填对象」的 open 引用存量。``run_pending_backfill`` 已补兜底分支
-  （条目不存在 / 无 ``resolved_target_id`` → 置 ``resolved``），存量脏引用（实测
-  25 条，``biz_id`` 指向已不存在的项目）同样置 ``resolved``，避免永久占用
+  （条目不存在 / 已终态但无 ``resolved_target_id`` → 置 ``resolved``），存量脏引用
+  （实测 25 条，``biz_id`` 指向已不存在的项目）同样置 ``resolved``，避免永久占用
   ``uq_bd_pending_ref_biz`` 唯一约束槽位。
+  ⚠️ **``status='pending'`` 的条目不算无回填对象**：它们的引用要等审核通过/驳回后
+  由 resolve 链路回填，迁移若提前关闭会让在途审核静默丢失单据关联（不可逆数据
+  损坏），故 WHERE 显式排除 ``pending``。
 
 - **L3**：坐标值域清洗。``communities.lng/lat`` 与 ``bd_buildings.lng/lat`` 中
   BD-09 越界值（经度 ∉ [73,136]、纬度 ∉ [3,54]）与 ``(0,0)`` 占位置空——
@@ -130,8 +133,11 @@ def close_orphan_pending_references(engine: Engine) -> None:
     """H3：关闭「无回填对象」的 open 引用存量（幂等）.
 
     判定与 ``building_review_backfill.run_pending_backfill`` 的兜底分支一致：
-    条目不存在，或条目 ``resolved_target_id`` 为空（pending / reject 无 target）——
+    条目不存在，或条目已终态（created/merged/rejected）但 ``resolved_target_id`` 为空——
     这类引用永远等不到回填目标，必须置 ``resolved`` 否则批次永不收敛。
+
+    ⚠️ ``status='pending'`` 的条目**不关闭**：审核通过/驳回时会由 resolve 链路回填，
+    迁移提前关闭会让在途审核静默丢失单据关联（不可逆数据损坏）。
     """
     with engine.begin() as conn:
         closed = conn.execute(
@@ -143,7 +149,7 @@ def close_orphan_pending_references(engine: Engine) -> None:
                    AND NOT EXISTS (
                        SELECT 1 FROM bd_pending_entries e
                         WHERE e.id = r.pending_id
-                          AND e.resolved_target_id IS NOT NULL
+                          AND (e.resolved_target_id IS NOT NULL OR e.status = 'pending')
                    )
                 """
             )

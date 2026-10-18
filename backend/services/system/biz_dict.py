@@ -13,14 +13,14 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, get_args
 
 from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from constants.documents import DocumentTemplate, get_documents_for_business_form
+from constants.documents import DocumentCategory, DocumentTemplate, get_documents_for_business_form
 from models.common.base import BusinessForm
 from models.lead import ValuationVisit
 from models.marketing import ProjectVisit, PropertySheetVisit
@@ -71,6 +71,10 @@ _PUBLIC_CACHE_TTL_SECONDS = 60.0
 # 文档字典组编码（供文书模板读取复用）
 DOCUMENT_TEMPLATE_DICT = "document_template"
 LEAD_ATTR_CHANNEL_DICT = "lead_attr_channel"
+
+# 文书分类合法值域（与 model/前端分组同一契约）：字典行 category 为自由文本，
+# 非法值会让 ``documents-tab`` 的 ``d.category === cat.value`` 过滤不到该文书（前端不可见）
+_DOCUMENT_CATEGORY_VALUES: frozenset[str] = frozenset(get_args(DocumentCategory))
 
 
 @dataclass(frozen=True)
@@ -293,11 +297,16 @@ def create_item(
     if not code:
         msg = "条目编码不能为空"
         raise ValidationError(msg)
+    # Pydantic 的 min_length 只校验原串（全空格可通过），strip 后必须非空
+    label = req.label.strip()
+    if not label:
+        msg = "展示名不能为空"
+        raise ValidationError(msg)
 
     item = BizDictItem(
         dict_code=dict_code,
         code=code,
-        label=req.label.strip(),
+        label=label,
         business_form=req.business_form,
         category=req.category,
         sort_order=req.sort_order if req.sort_order is not None else _next_sort_order(db, dict_code),
@@ -372,7 +381,12 @@ def update_item(
         "remark": item.remark,
     }
     if req.label is not None:
-        item.label = req.label.strip()
+        # Pydantic 的 min_length 只校验原串（全空格可通过），strip 后必须非空
+        label = req.label.strip()
+        if not label:
+            msg = "展示名不能为空"
+            raise ValidationError(msg)
+        item.label = label
     if req.sort_order is not None:
         item.sort_order = req.sort_order
     if req.enabled is not None:
@@ -452,7 +466,9 @@ def get_document_templates(db: Session, business_form: BusinessForm | None) -> l
 
     templates: list[DocumentTemplate] = []
     for row in rows:
-        category = row.category or "other"
+        # 字典行 category 允许自由填写（旧接口/直改库），非法值统一归入 other，
+        # 避免前端按 6 类分组时过滤不到该文书（静默不可见）
+        category = row.category if row.category in _DOCUMENT_CATEGORY_VALUES else "other"
         templates.append(
             DocumentTemplate(
                 document_name=row.label,

@@ -106,22 +106,47 @@ def _decode_zip_name(info: zipfile.ZipInfo) -> str:
         return raw.decode("gbk", errors="replace")
 
 
-def _current_rss_bytes() -> int | None:
-    """读取当前进程 RSS（字节）；无法读取时返回 None.
+def _read_proc_vmrss(status_path: Path = Path("/proc/self/status")) -> int | None:
+    """从 procfs 读取**现时** RSS（字节）；文件不存在/无 VmRSS 时返回 None.
 
-    优先 ``resource.getrusage``（标准库，Linux/macOS 均可用，macOS 返回字节、
-    Linux 返回 KB —— 按 ``sys.platform`` 区分），不引入 psutil 新依赖。
+    Args:
+        status_path: procfs 状态文件路径（默认当前进程；可注入伪文件以验证解析）
+
+    Returns:
+        RSS 字节数或 None
+
+    """
+    try:
+        with status_path.open(encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) * 1024
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
+def _current_rss_bytes() -> int | None:
+    """读取当前进程 **现时** RSS（字节）；无法读取时返回 None.
+
+    优先读 Linux 的 ``/proc/self/status``（``VmRSS`` 是当前值）；读不到时回退
+    ``resource.getrusage`` —— 后者 ``ru_maxrss`` 是**峰值**（历史最高水位，永不下降），
+    只能作为非 Linux 开发机（macOS）的近似值，绝不可用于容器内存闸门判断
+    （一旦进程历史上曾冲高一次，后续导入会永久误判「内存不足」，而旧实现即如此）。
 
     Returns:
         当前进程常驻内存字节数；平台不支持时返回 None
 
     """
+    rss = _read_proc_vmrss()
+    if rss is not None:
+        return rss
     try:
         import resource
         import sys
 
         usage = resource.getrusage(resource.RUSAGE_SELF)
-        # macOS 的 ru_maxrss 单位是字节，Linux 是 KB
+        # macOS 的 ru_maxrss 单位是字节，Linux 是 KB（非 Linux 兜底分支）
         factor = 1 if sys.platform == "darwin" else 1024
         return int(usage.ru_maxrss) * factor
     except (ImportError, OSError, ValueError):  # pragma: no cover - 平台差异兜底

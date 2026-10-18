@@ -11,9 +11,11 @@ import logging
 import threading
 import uuid
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from models import (
+    BdEntryStatus,
     BdPendingEntry,
     BdPendingReference,
     BdReferenceStatus,
@@ -180,10 +182,14 @@ def run_pending_backfill(db: Session) -> int:
     或 pending 且无 target），「重试回填」永远显示「处理 0 条」，脏引用既不可见也不
     可清理（假成功），并长期占用 ``uq_bd_pending_ref_biz`` 唯一约束槽位。
 
-    现在按「有无回填对象」分流，两条路径都必须把引用推进到终态：
-    - 条目不存在 / 条目无 ``resolved_target_id``（含 pending、reject 无 target）→
-      无回填对象，按脏引用口径置 ``RESOLVED`` 并 ``logger.warning``（与
-      ``backfill_reference`` 内部对脏数据的处理一致）；
+    现在按「有无回填对象」分流：
+    - 条目不存在 / 条目已终态但无 ``resolved_target_id`` → 无回填对象，按脏引用口径
+      置 ``RESOLVED`` 并 ``logger.warning``（与 ``backfill_reference`` 内部对脏数据
+      的处理一致）；
+    - 条目仍 ``pending``（尚无 target）→ **不得关闭**：该引用要等审核通过/驳回后由
+      ``_resolve_create`` / ``_resolve_merge`` / ``_resolve_reject`` 回填，提前关闭会
+      让后续审核「查不到 open 引用」而静默丢失单据关联（数据不一致）。这类引用在
+      SQL 层直接排除，也不占用本批 200 条额度（避免长期 pending 阻塞后续引用收敛）；
     - 条目有 target → 正常回填（内部对非法 biz_id / 单据不存在同样收敛）。
 
     Returns:
@@ -193,7 +199,16 @@ def run_pending_backfill(db: Session) -> int:
     """
     refs = (
         db.query(BdPendingReference)
-        .filter(BdPendingReference.status == BdReferenceStatus.OPEN)
+        .outerjoin(BdPendingEntry, BdPendingEntry.id == BdPendingReference.pending_id)
+        .filter(
+            BdPendingReference.status == BdReferenceStatus.OPEN,
+            # 待审条目（尚无 target）留待审核终态处理，见 docstring 第 2 条
+            or_(
+                BdPendingEntry.id.is_(None),
+                BdPendingEntry.resolved_target_id.isnot(None),
+                BdPendingEntry.status != BdEntryStatus.PENDING,
+            ),
+        )
         .limit(BACKFILL_BATCH_SIZE)
         .all()
     )
@@ -204,7 +219,8 @@ def run_pending_backfill(db: Session) -> int:
     for ref in refs:
         entry = db.get(BdPendingEntry, ref.pending_id)
         if not entry or not entry.resolved_target_id:
-            # 无回填对象：必须收口，否则引用永久滞留 open 且批次永不收敛（H3）
+            # 无回填对象（条目缺失 / 终态无 target）：必须收口，否则引用永久滞留 open
+            # 且批次永不收敛（H3）。待审条目已被上面的 SQL 过滤，此处只会命中终态脏引用。
             ref.status = BdReferenceStatus.RESOLVED
             skipped += 1
             logger.warning(

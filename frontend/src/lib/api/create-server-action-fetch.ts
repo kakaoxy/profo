@@ -72,7 +72,7 @@ function normalizeHeaders(headers: HeadersInit | undefined): Record<string, stri
 /**
  * 创建「带 401 自动刷新重试」的服务端 fetch。
  *
- * @param options - Auth 配置 + 后端基地址
+ * @param options - Auth 配置 + 后端基地址（尾斜杠会被归一化）
  * @returns `(path, init) => Promise<Response>`：路径拼到 apiBase 后发请求，
  *   401 时刷新一次 cookie 并重试；刷新失败返回 401 响应由调用方提示「请登录」。
  */
@@ -80,9 +80,13 @@ export function createServerActionFetch(
   options: ServerActionFetchOptions,
 ): (path: string, init?: RequestInit) => Promise<Response> {
   const { config, apiBase } = options;
+  // 基地址去尾斜杠：调用方常用 ``getApiUrl("")``（返回 ``http://host/``），
+  // 直接拼接会生成 ``http://host//api/v1/...`` → FastAPI 路由匹配失败返回 404
+  // （Server Action 全部失败，且错误体是 {"detail":"Not Found"} 难以定位）。
+  const normalizedBase = apiBase.replace(/\/+$/, "");
 
   const makeRequest = (path: string, init: RequestInit, bearerToken: string | null) =>
-    fetch(`${apiBase}${path.startsWith("/") ? path : `/${path}`}`, {
+    fetch(`${normalizedBase}${path.startsWith("/") ? path : `/${path}`}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",
