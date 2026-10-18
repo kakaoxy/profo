@@ -200,6 +200,12 @@ export const navMain: NavItem[] = [
         url: "/admin/settings/subscribe-templates",
         roles: [ROLE_CODES.ADMIN],
       },
+      {
+        title: "业务字典",
+        url: "/admin/settings/dicts",
+        roles: [ROLE_CODES.ADMIN],
+        permission: PERMISSION_CODES.DICT_MANAGE,
+      },
     ],
   },
 ];

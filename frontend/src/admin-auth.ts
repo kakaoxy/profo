@@ -2,7 +2,7 @@ import { Auth } from "@/lib/auth";
 // 直接从 @/lib/auth/types 导入，避免经过 @/lib/auth 桶文件的循环依赖
 import { ApiStatusError } from "@/lib/auth/types";
 import { apiPaths, getApiUrl } from "@/lib/config";
-import { extractApiError, fetchWithTimeout } from "./auth";
+import { extractApiError, fetchWithTimeout } from "@/lib/api/tokens";
 
 // ─── SessionUser 扩展 ────────────────────────────────────────────────────────
 // 后端 /api/v1/auth/me 返回 UserResponse，包含 role (RoleResponse)。

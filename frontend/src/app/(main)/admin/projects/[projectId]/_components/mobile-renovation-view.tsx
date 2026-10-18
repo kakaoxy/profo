@@ -23,6 +23,7 @@ import type { components } from "@/lib/api-types";
 import { cn } from "@/lib/utils";
 import { isValidUrl } from "@/lib/validators";
 import { usePermission } from "@/hooks/use-permission";
+import { useRenovationStageLabel } from "@/hooks/use-dict";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,8 @@ interface MobileStageCardProps {
   stageFinishDate?: string | null;
   onToggle: () => void;
   onRefresh: () => void;
+  /** 阶段展示名解析（字典 renovation_stage_alias 优先，缺省回退常量 label） */
+  stageLabel: (stage: string, fallbackLabel?: string) => string;
 }
 
 function MobileStageCard({
@@ -78,6 +81,7 @@ function MobileStageCard({
   stageFinishDate,
   onToggle,
   onRefresh,
+  stageLabel,
 }: MobileStageCardProps) {
   const router = useRouter();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
@@ -114,7 +118,7 @@ function MobileStageCard({
       });
 
       if (res.success) {
-        toast.success(`完成 ${stage.label}`);
+        toast.success(`完成 ${stageLabel(stage.value, stage.label)}`);
         router.refresh();
         await onRefresh();
       } else {
@@ -375,7 +379,7 @@ function MobileStageCard({
             isCurrent ? "font-bold text-foreground" : "font-medium text-muted-foreground",
           )}
         >
-          {stage.label}
+          {stageLabel(stage.value, stage.label)}
         </span>
         {renderFinishDate()}
         {(photos.length > 0 || uploadQueue.length > 0) && !isExpanded && (
@@ -470,8 +474,11 @@ export function MobileRenovationView({ projectId, project }: MobileRenovationVie
 
   const communityName = project.community_name || project.name || "未知项目";
 
+  const { stageLabel } = useRenovationStageLabel();
   const currentStageLabel =
-    currentIndex < RENOVATION_STAGES.length ? RENOVATION_STAGES[currentIndex].label : "已完成";
+    currentIndex < RENOVATION_STAGES.length
+      ? stageLabel(RENOVATION_STAGES[currentIndex].value, RENOVATION_STAGES[currentIndex].label)
+      : "已完成";
 
   const progressValue = useMemo(() => {
     const stageDates = project.renovationStageDates ?? {};
@@ -543,6 +550,7 @@ export function MobileRenovationView({ projectId, project }: MobileRenovationVie
                 stageFinishDate={stageFinishDate}
                 onToggle={() => setExpandedStage((prev) => (prev === stage.key ? "" : stage.key))}
                 onRefresh={refreshPhotos}
+                stageLabel={stageLabel}
               />
             );
           })

@@ -3573,6 +3573,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/dicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 字典组概览
+         * @description 列出本期支持的字典组（含条目总数与启用数）.
+         */
+        get: operations["list_dict_groups_api_v1_admin_dicts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/dicts/{dict_code}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 字典条目列表
+         * @description 读取字典组内条目（默认含停用项，便于重新启用）.
+         */
+        get: operations["list_dict_items_api_v1_admin_dicts__dict_code__items_get"];
+        put?: never;
+        /**
+         * 新增字典条目
+         * @description 新增条目（组内 code 唯一，重复 → 409）.
+         */
+        post: operations["create_dict_item_api_v1_admin_dicts__dict_code__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/dicts/{dict_code}/unmanaged": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 未纳管的归因渠道值
+         * @description 字典外的存量渠道值（按出现次数降序），供一键转正.
+         */
+        get: operations["list_unmanaged_channels_api_v1_admin_dicts__dict_code__unmanaged_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/dicts/{dict_code}/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 修改字典条目
+         * @description 修改展示名/排序/启用状态/备注（code 不可改，避免破坏落库值引用）.
+         */
+        put: operations["update_dict_item_api_v1_admin_dicts__dict_code__items__item_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/dicts/{dict_code}/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 字典条目批量排序
+         * @description 按 item_ids 顺序重排 sort_order（步长 10）.
+         */
+        post: operations["reorder_dict_items_api_v1_admin_dicts__dict_code__reorder_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/upload/csv": {
         parameters: {
             query?: never;
@@ -4963,6 +5067,26 @@ export interface paths {
          * @description 当前员工的估价页分享次数 / 经我分享打开 PV/UV / 分享归因我的线索数（今日 + 累计），需登录
          */
         get: operations["get_my_share_stats_api_v1_public_valuations_my_share_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/dicts/{dict_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取业务字典（仅启用项）
+         * @description 免登录下发指定字典组的启用项（按 sort_order 升序）；未登记字典组返回 404
+         */
+        get: operations["get_public_dict_api_v1_public_dicts__dict_code__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6972,6 +7096,213 @@ export interface components {
             pending_id?: number | null;
             /** Plate No */
             plate_no: string;
+        };
+        /**
+         * BizDictGroupResponse
+         * @description 字典组概览（管理页左侧分组列表）.
+         */
+        BizDictGroupResponse: {
+            /**
+             * Dict Code
+             * @description 字典组编码
+             */
+            dict_code: string;
+            /**
+             * Name
+             * @description 字典组中文名
+             */
+            name: string;
+            /**
+             * Description
+             * @description 字典组用途说明
+             */
+            description: string;
+            /**
+             * Item Count
+             * @description 条目总数（含停用）
+             */
+            item_count: number;
+            /**
+             * Enabled Count
+             * @description 启用条目数
+             */
+            enabled_count: number;
+        };
+        /**
+         * BizDictItemCreate
+         * @description 新增字典条目请求.
+         */
+        BizDictItemCreate: {
+            /**
+             * Code
+             * @description 条目编码（组内唯一）
+             */
+            code: string;
+            /**
+             * Label
+             * @description 展示名
+             */
+            label: string;
+            /**
+             * Business Form
+             * @description 业务形式（仅文书模板）
+             */
+            business_form?: string | null;
+            /**
+             * Category
+             * @description 文书分类（仅文书模板）
+             */
+            category?: string | null;
+            /**
+             * Sort Order
+             * @description 排序值（缺省追加到末尾）
+             */
+            sort_order?: number | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+        };
+        /**
+         * BizDictItemResponse
+         * @description 字典条目响应（管理端，含停用项与预置标记）.
+         */
+        BizDictItemResponse: {
+            /**
+             * Id
+             * @description 条目ID
+             */
+            id: string;
+            /**
+             * Dict Code
+             * @description 字典组编码
+             */
+            dict_code: string;
+            /**
+             * Code
+             * @description 条目编码
+             */
+            code: string;
+            /**
+             * Label
+             * @description 展示名
+             */
+            label: string;
+            /**
+             * Business Form
+             * @description 业务形式（仅文书模板）
+             */
+            business_form: string | null;
+            /**
+             * Category
+             * @description 文书分类（仅文书模板）
+             */
+            category: string | null;
+            /**
+             * Sort Order
+             * @description 排序值
+             */
+            sort_order: number;
+            /**
+             * Enabled
+             * @description 启用标记
+             */
+            enabled: boolean;
+            /**
+             * Is Builtin
+             * @description 是否种子预置
+             */
+            is_builtin: boolean;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark: string | null;
+            /**
+             * Updated At
+             * @description 更新时间
+             */
+            updated_at?: string | null;
+        };
+        /**
+         * BizDictItemUpdate
+         * @description 修改字典条目请求（字段全部可选，仅更新传入项）.
+         */
+        BizDictItemUpdate: {
+            /**
+             * Label
+             * @description 展示名
+             */
+            label?: string | null;
+            /**
+             * Sort Order
+             * @description 排序值
+             */
+            sort_order?: number | null;
+            /**
+             * Enabled
+             * @description 启用标记（false=停用不删）
+             */
+            enabled?: boolean | null;
+            /**
+             * Business Form
+             * @description 业务形式（仅文书模板）
+             */
+            business_form?: string | null;
+            /**
+             * Category
+             * @description 文书分类（仅文书模板）
+             */
+            category?: string | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+        };
+        /**
+         * BizDictReorderRequest
+         * @description 批量排序请求（按 item_ids 顺序重排 sort_order）.
+         */
+        BizDictReorderRequest: {
+            /**
+             * Item Ids
+             * @description 条目ID列表（顺序即新排序）
+             */
+            item_ids: string[];
+        };
+        /**
+         * BizDictUnmanagedResponse
+         * @description 未纳管渠道值列表.
+         */
+        BizDictUnmanagedResponse: {
+            /**
+             * Dict Code
+             * @description 字典组编码
+             */
+            dict_code: string;
+            /**
+             * Items
+             * @description 字典外值（按出现次数降序）
+             */
+            items: components["schemas"]["BizDictUnmanagedValue"][];
+        };
+        /**
+         * BizDictUnmanagedValue
+         * @description 字典外的存量渠道值（宽松校验落库后未纳管的值）.
+         */
+        BizDictUnmanagedValue: {
+            /**
+             * Value
+             * @description 原始值
+             */
+            value: string;
+            /**
+             * Count
+             * @description 出现次数
+             */
+            count: number;
         };
         /** Body_create_dict_import_task_api_v1_admin_building_dictionary_import_post */
         Body_create_dict_import_task_api_v1_admin_building_dictionary_import_post: {
@@ -14766,6 +15097,43 @@ export interface components {
              * @description 预约时间
              */
             created_at: string;
+        };
+        /**
+         * PublicDictItemResponse
+         * @description 公开字典条目（仅启用项；C 端/小程序渲染用）.
+         */
+        PublicDictItemResponse: {
+            /**
+             * Code
+             * @description 条目编码（= 落库值）
+             */
+            code: string;
+            /**
+             * Label
+             * @description 展示名
+             */
+            label: string;
+            /**
+             * Sort Order
+             * @description 排序值
+             */
+            sort_order: number;
+        };
+        /**
+         * PublicDictListResponse
+         * @description 公开字典组响应.
+         */
+        PublicDictListResponse: {
+            /**
+             * Dict Code
+             * @description 字典组编码
+             */
+            dict_code: string;
+            /**
+             * Items
+             * @description 启用项（按 sort_order 升序）
+             */
+            items: components["schemas"]["PublicDictItemResponse"][];
         };
         /**
          * PublicFollowupCreate
@@ -26153,6 +26521,197 @@ export interface operations {
             };
         };
     };
+    list_dict_groups_api_v1_admin_dicts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BizDictGroupResponse"][];
+                };
+            };
+        };
+    };
+    list_dict_items_api_v1_admin_dicts__dict_code__items_get: {
+        parameters: {
+            query?: {
+                /** @description 是否包含已停用项(默认包含) */
+                include_disabled?: boolean;
+            };
+            header?: never;
+            path: {
+                dict_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BizDictItemResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_dict_item_api_v1_admin_dicts__dict_code__items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dict_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BizDictItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BizDictItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_unmanaged_channels_api_v1_admin_dicts__dict_code__unmanaged_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dict_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BizDictUnmanagedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_dict_item_api_v1_admin_dicts__dict_code__items__item_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dict_code: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BizDictItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BizDictItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reorder_dict_items_api_v1_admin_dicts__dict_code__reorder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dict_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BizDictReorderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BizDictItemResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_import_task_api_v1_upload_csv_post: {
         parameters: {
             query?: never;
@@ -28597,6 +29156,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicShareStatsResponse"];
+                };
+            };
+        };
+    };
+    get_public_dict_api_v1_public_dicts__dict_code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dict_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicDictListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

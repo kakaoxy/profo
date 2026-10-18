@@ -4,6 +4,7 @@
 """
 
 from .auth import router as auth_router
+from .dicts import router as dicts_router
 from .operation_logs import router as operation_logs_router
 from .permissions import router as permissions_router
 from .roles import router as roles_router
@@ -12,6 +13,7 @@ from .users import router as users_router
 
 __all__ = [
     "auth_router",
+    "dicts_router",
     "operation_logs_router",
     "permissions_router",
     "roles_router",

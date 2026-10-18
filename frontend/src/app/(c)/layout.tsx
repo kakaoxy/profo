@@ -5,6 +5,7 @@ import ClientShell from "@/components/c/layout/ClientShell";
 import { AuthProvider } from "@/lib/auth/client";
 import { auth } from "@/auth";
 import { cLocale } from "@/lib/i18n/c-locale";
+import { SessionIdentityBridge } from "@/components/session-identity-bridge";
 
 export const metadata: Metadata = {
   title: cLocale.meta.home.title,
@@ -35,6 +36,8 @@ export default async function CLayout({ children }: { children: React.ReactNode 
       initialSession={session ? { user: session.user } : null}
       hasOAuth={auth.config.providers.length > 0}
     >
+      {/* 会话身份登记（customer）：请求层 401 刷新/跳登录按 C 端语义执行 */}
+      <SessionIdentityBridge identity="customer" />
       <ClientShell>{children}</ClientShell>
     </AuthProvider>
   );

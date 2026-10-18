@@ -3,6 +3,7 @@
 import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useCurrentDate } from "@/hooks/use-current-date";
+import { useRenovationStageLabel } from "@/hooks/use-dict";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { client } from "@/lib/api-client";
@@ -95,8 +96,11 @@ export function RenovationKPIs({ project, contractMeta }: RenovationKPIsProps) {
     return idx === -1 ? 0 : idx;
   })();
 
+  const { stageLabel } = useRenovationStageLabel();
   const currentStageLabel =
-    currentIndex < RENOVATION_STAGES.length ? RENOVATION_STAGES[currentIndex].label : "已完成";
+    currentIndex < RENOVATION_STAGES.length
+      ? stageLabel(RENOVATION_STAGES[currentIndex].value, RENOVATION_STAGES[currentIndex].label)
+      : "已完成";
 
   // 当前阶段进度计数（设计稿「水电 3 / 6」；全完成后不展示计数）
   const stageIndexText =

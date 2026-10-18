@@ -4,6 +4,7 @@ from .auth import router as public_auth_router
 from .bookings import router as public_bookings_router
 from .communities import router as public_communities_router
 from .customers import router as public_customers_router
+from .dicts import router as public_dicts_router
 from .files import router as public_files_router
 from .key_shares import router as public_key_shares_router
 from .leads import router as public_leads_router
@@ -18,6 +19,7 @@ __all__ = [
     "public_bookings_router",
     "public_communities_router",
     "public_customers_router",
+    "public_dicts_router",
     "public_files_router",
     "public_key_shares_router",
     "public_leads_router",

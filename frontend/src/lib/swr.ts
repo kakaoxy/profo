@@ -1,10 +1,5 @@
-import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
-
-function getRefreshEndpoint(): string {
-  const isAdminRoute =
-    typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
-  return isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
-}
+import { refreshBrowserSession } from "@/lib/api/create-api-client";
+import { resolveAuthEndpoints } from "@/lib/api/session-identity";
 
 export class AuthError extends Error {
   constructor() {
@@ -23,7 +18,9 @@ export class ForbiddenError extends Error {
 export async function fetcher<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
   if (res.status === 401) {
-    const { success: refreshed, retryable } = await refreshTokensDedup(getRefreshEndpoint());
+    const { success: refreshed, retryable } = await refreshBrowserSession(
+      () => resolveAuthEndpoints().refreshEndpoint,
+    );
     if (refreshed) {
       const retryRes = await fetch(url, { credentials: "include" });
       if (retryRes.status === 401 || retryRes.status === 403) throw new AuthError();

@@ -157,6 +157,11 @@ class RateLimits:
     SUBJECT_WRITE = "100/hour"
     SUBJECT_DELETE = "20/hour"
 
+    # ==================== 业务字典模块 ====================
+    # 字典为运营配置表，写操作低频（配置类操作对齐 SUBJECT_WRITE 量级）
+    DICT_WRITE = "200/hour"
+    DICT_ADMIN_READ = "120/minute"
+
     # ==================== 营销管理模块 ====================
     MARKETING_CREATE = "1000/hour"
     MARKETING_UPDATE = "1000/hour"
@@ -266,3 +271,7 @@ class RateLimits:
     PROPERTY_SHEET_DETAIL = "60/minute"
     PROPERTY_SHEET_SHARE = "60/minute"
     PROPERTY_SHEET_QRCODE = "20/hour"
+
+    # ==================== 业务字典公开读 ====================
+    # C 端/小程序渲染下拉与展示名，进程内 60s 缓存；量级对齐 PUBLIC_PROJECT_LIST
+    PUBLIC_DICT = "300/minute"

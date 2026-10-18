@@ -492,6 +492,8 @@ RecruitWritePermDep = Annotated[User, Depends(require_permission("recruit:write"
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
 # api_key 模块（API Key 管理端点；使用侧仍受 INTERNAL_ROLE_CODES 机器接口角色限制）
 ApiKeyManagePermDep = Annotated[User, Depends(require_permission("api_key:manage"))]
+# dict 模块（业务字典管理，仅 admin 角色持有该权限点）
+DictManagePermDep = Annotated[User, Depends(require_permission("dict:manage"))]
 
 
 # ==================== 业务身份双通道校验 ====================

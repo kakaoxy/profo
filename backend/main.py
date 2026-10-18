@@ -50,6 +50,7 @@ from routers.public import (
     public_bookings_router,
     public_communities_router,
     public_customers_router,
+    public_dicts_router,
     public_files_router,
     public_key_shares_router,
     public_leads_router,
@@ -63,6 +64,7 @@ from routers.recruit import admin_recruit_router, public_recruit_router
 from routers.reports import reports_router
 from routers.system import (
     auth_router,
+    dicts_router,
     operation_logs_router,
     permissions_router,
     roles_router,
@@ -397,6 +399,7 @@ app.include_router(roles_router, prefix=API_V1_PREFIX)
 app.include_router(permissions_router, prefix=API_V1_PREFIX)
 app.include_router(operation_logs_router, prefix=API_V1_PREFIX)
 app.include_router(subscribe_templates_router, prefix=API_V1_PREFIX)
+app.include_router(dicts_router, prefix=API_V1_PREFIX)
 app.include_router(upload_router, prefix=API_V1_PREFIX)
 app.include_router(push_router, prefix=API_V1_PREFIX)
 app.include_router(files_router, prefix=API_V1_PREFIX)
@@ -409,6 +412,7 @@ app.include_router(public_property_sheets_router, prefix=API_V1_PREFIX)
 app.include_router(public_bookings_router, prefix=API_V1_PREFIX)
 app.include_router(public_leads_router, prefix=API_V1_PREFIX)
 app.include_router(public_valuations_router, prefix=API_V1_PREFIX)
+app.include_router(public_dicts_router, prefix=API_V1_PREFIX)
 app.include_router(public_files_router, prefix=API_V1_PREFIX)
 app.include_router(public_key_shares_router, prefix=API_V1_PREFIX)
 app.include_router(public_communities_router, prefix=API_V1_PREFIX)

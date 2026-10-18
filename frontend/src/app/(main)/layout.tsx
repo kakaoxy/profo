@@ -8,6 +8,7 @@ import { isRedirectError } from "@/lib/auth/server/session";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PermissionGuard } from "@/components/permission-guard";
 import { AdminMobileTabBar } from "@/components/admin-mobile-tab-bar";
+import { SessionIdentityBridge } from "@/components/session-identity-bridge";
 
 // 统一设置动态渲染：所有使用 cookies/headers 的子页面都需要
 export const dynamic = "force-dynamic";
@@ -95,6 +96,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     // overflow-clip 覆盖基类 overflow-hidden：hidden 会创建滚动容器，破坏后代
     // sticky（详情页副栏等）相对 viewport 吸附；clip 裁剪效果不变且不创建滚动容器
     <SidebarProvider defaultOpen={false} className="overflow-clip">
+      {/* 0. 会话身份登记（admin）：请求层 401 刷新/跳登录按此后台语义执行 */}
+      <SessionIdentityBridge identity="admin" />
       {/* 1. 侧边栏 */}
       <AppSidebar user={user} />
 

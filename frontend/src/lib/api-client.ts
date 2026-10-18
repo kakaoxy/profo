@@ -1,94 +1,19 @@
-import createClient, { type Middleware } from "openapi-fetch";
-import type { paths } from "./api-types";
-import { getClientApiUrl } from "./config";
-import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
-import { storeRequestBody, consumeRequestBody } from "@/lib/request-body-store";
-
-function getRefreshEndpoint(): string {
-  const isAdminRoute =
-    typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
-  return isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
-}
-
-const credentialsMiddleware: Middleware = {
-  async onRequest({ request }) {
-    const headers = new Headers(request.headers);
-    headers.set("X-Requested-With", "XMLHttpRequest");
-    return new Request(request, {
-      credentials: "include",
-      headers,
-      signal: request.signal,
-    });
-  },
-};
-
-const authMiddleware: Middleware = {
-  async onRequest({ request }) {
-    if (request.body) {
-      const cloned = request.clone();
-      const bodyText = await cloned.text();
-      storeRequestBody(request, bodyText);
-    }
-    return request;
-  },
-
-  async onResponse({ response, request }) {
-    if (response.status === 401) {
-      const url = response.url;
-
-      if (url.includes("/auth/refresh")) {
-        return response;
-      }
-
-      const { success: refreshed, retryable } = await refreshTokensDedup(getRefreshEndpoint());
-
-      if (refreshed) {
-        const storedBody = consumeRequestBody(request);
-
-        const init: RequestInit = {
-          credentials: "include",
-          signal: request.signal,
-        };
-        if (storedBody !== undefined) {
-          init.body = storedBody;
-        }
-
-        return await fetch(new Request(request, init));
-      }
-
-      // 瞬时失败（后端 5xx/网络抖动）：会话仍有效，不跳登录页，
-      // 返回原响应交由页面错误态展示可重试错误
-      if (retryable) {
-        return response;
-      }
-
-      if (typeof window !== "undefined") {
-        const isAdminRoute = window.location.pathname.startsWith("/admin");
-        const loginPath = isAdminRoute ? "/admin/login" : "/login";
-        if (!window.location.pathname.includes("/login")) {
-          // 会话过期需整页跳转登录页以重置前端状态；此处为 fetch 拦截器而非组件内路由，
-          // useRouter()/redirect() 均不适用，故整页跳转（规则不适用）。
-          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-          window.location.href = `${loginPath}?redirect=${encodeURIComponent(
-            window.location.pathname,
-          )}`;
-        }
-      }
-    }
-    return response;
-  },
-};
+import { resolveAuthEndpoints } from "@/lib/api/session-identity";
+import { createApiClient } from "@/lib/api/create-api-client";
 
 /**
- * 场景 A: 客户端组件 (Client Components) 使用
+ * 场景：客户端组件（Client Components）发起的 API 请求。
  *
- * [安全修复] 通过 credentialsMiddleware 确保所有请求携带 httpOnly Cookie
+ * 由工厂统一装配 credentials + 401 刷新/重试/跳登录，**不再靠 pathname 嗅探身份**：
+ * 刷新端点与登录页在 401 发生时读取当前路由组登记的身份
+ * （`(main)` = admin / `(c)` = customer，见 `lib/api/session-identity.ts`）。
+ *
+ * 这样任何组件（含 admin/C 共用组件）在哪个路由组渲染，就用该路由组的会话语义；
+ * 历史 `lib/api-c/client.ts`（`cClient`）已无调用方，随之删除（spec T2.5）。
+ *
+ * [安全修复] 通过 credentials 中间件确保所有请求携带 httpOnly Cookie。
  */
-export const client = createClient<paths>({
-  baseUrl: getClientApiUrl(""),
+export const client = createApiClient({
+  refreshEndpoint: () => resolveAuthEndpoints().refreshEndpoint,
+  loginPath: () => resolveAuthEndpoints().loginPath,
 });
-
-// 注册中间件：credentials 中间件必须先注册，确保所有请求携带 cookie
-client.use(credentialsMiddleware);
-// 注册认证中间件，处理 401 刷新
-client.use(authMiddleware);

@@ -33,6 +33,7 @@ from schemas.public.property_sheet import (
 )
 from services.growth_center.identity import internal_creator_exists
 from services.marketing.public import PublicProjectService
+from services.system import biz_dict
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 from services.system.wechat import WeChatAuthService
 from services.utils import aggregate_my_share_stats, resolve_valid_referrer
@@ -279,11 +280,13 @@ class PropertySheetService:
 
         """
         sheet = self._get_active_sheet(sheet_id)
+        # 归因渠道宽松校验（D5）：字典外值照常落库，仅标记未纳管供运营补录
+        channel = biz_dict.validate_channel(self.db, biz_dict.LEAD_ATTR_CHANNEL_DICT, data.source)
         visit = PropertySheetVisit(
             sheet_id=sheet.id,
             visitor_id=data.visitor_id,
             referrer_employee_id=resolve_valid_referrer(self.db, data.referrer),
-            source=data.source,
+            source=channel.code,
         )
         self.db.add(visit)
         self.db.commit()

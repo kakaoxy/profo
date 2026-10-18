@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from models import Lead, User, ValuationShareEvent, ValuationVisit
 from schemas.public import PublicShareEventRequest, PublicVisitEventRequest
 from services.growth_center.identity import internal_creator_exists
+from services.system import biz_dict
 from services.utils import aggregate_my_share_stats, resolve_valid_referrer
 
 
@@ -25,10 +26,12 @@ class ValuationShareTrackingService:
         referrer 经统一校验后落库：无效（不存在/非 active/无后台身份）时置空，
         防止伪造归属污染归因统计（与估价线索 referrer 口径一致）。
         """
+        # 归因渠道宽松校验（D5）：字典外值照常落库，仅标记未纳管供运营补录
+        channel = biz_dict.validate_channel(self.db, biz_dict.LEAD_ATTR_CHANNEL_DICT, data.source)
         visit = ValuationVisit(
             visitor_id=data.visitor_id,
             referrer_employee_id=resolve_valid_referrer(self.db, data.referrer),
-            source=data.source,
+            source=channel.code,
         )
         self.db.add(visit)
         self.db.commit()

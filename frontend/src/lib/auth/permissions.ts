@@ -80,6 +80,8 @@ export const PERMISSION_CODES = {
   OPERATION_LOG_READ: "operation_log:read",
   // API Key
   API_KEY_MANAGE: "api_key:manage",
+  // 业务字典（运营可配枚举字典，仅 admin）
+  DICT_MANAGE: "dict:manage",
   // C 端估价
   VALUATION_WRITE: "valuation:write",
 } as const;
@@ -123,6 +125,9 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   { prefix: "/admin/properties", permission: PERMISSION_CODES.PROPERTY_READ },
   // 审计日志 → 需 operation_log:read 权限
   { prefix: "/admin/audit-logs", permission: PERMISSION_CODES.OPERATION_LOG_READ },
+  // 业务字典配置 → 需 dict:manage 权限；必须排在 /admin/settings 之前
+  // （首个命中即返回，否则会被 /admin/settings 的 api_key:manage 影子掉）
+  { prefix: "/admin/settings/dicts", permission: PERMISSION_CODES.DICT_MANAGE },
   // 设置（API Key 等）→ 需 api_key:manage 权限
   { prefix: "/admin/settings", permission: PERMISSION_CODES.API_KEY_MANAGE },
   // 项目待办看板 → 需 project:read 权限；必须排在 /admin/projects（exact）之前，

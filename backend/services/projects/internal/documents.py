@@ -9,11 +9,11 @@ from datetime import datetime, timezone
 from fastapi import Request
 from sqlalchemy.orm import Session
 
-from constants.documents import get_documents_for_business_form
 from models.common import BusinessForm, DocumentSignoffStatus
 from models.project._project_base import Project
 from models.project._project_document import ProjectDocument
 from schemas.project.document import DocumentCreate, DocumentUpdate
+from services.system import biz_dict
 from services.system.exceptions import ResourceNotFoundError
 from services.system.operation_log import operation_log_service
 
@@ -282,7 +282,8 @@ def initialize_documents(
         msg = "business_form is None"
         raise ValueError(msg)
 
-    templates = get_documents_for_business_form(business_form)
+    # 文书模板：字典优先（运营可配），字典缺行/全部停用回退 constants/documents.py 常量
+    templates = biz_dict.get_document_templates(db, business_form)
     if not templates:
         return 0
 

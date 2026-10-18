@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HasPermission } from "@/components/has-permission";
+import { useDict } from "@/hooks/use-dict";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { safeFormatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -45,8 +46,13 @@ function formatStayed(ms: number): string {
   return `${s} 秒`;
 }
 
-/** 时间线事件描述（按事件标识区分，未发生返回 null 由外层渲染灰态文案） */
-function eventDesc(ev: TimelineEvent): string | null {
+/**
+ * 时间线事件描述（按事件标识区分，未发生返回 null 由外层渲染灰态文案）.
+ *
+ * visit 事件的 `source` 是自由文本归因渠道（估价/房源/房源单走 `lead_attr_channel`，
+ * 招募走枚举 `recruit_source`），交由业务字典解析展示名，字典外值原样展示。
+ */
+function eventDesc(ev: TimelineEvent, visitSourceLabel: (raw: string) => string): string | null {
   if (!ev.occurred) return null;
   switch (ev.event) {
     case "share":
@@ -54,7 +60,7 @@ function eventDesc(ev: TimelineEvent): string | null {
         ? (GROWTH_SOURCE_META[ev.share_type as LeadSource]?.label ?? ev.share_type)
         : null;
     case "visit":
-      return ev.source ?? null;
+      return ev.source ? visitSourceLabel(ev.source) : null;
     case "deep_view":
       return ev.stayed_ms != null ? `停留 ${formatStayed(ev.stayed_ms)}` : null;
     case "lead_submit":
@@ -139,6 +145,11 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
 
   // 旁路流转确认弹窗（淘汰 / 重新激活）
   const [confirmMode, setConfirmMode] = React.useState<FlowConfirmMode | null>(null);
+
+  // 归因渠道展示名：招募模块为枚举来源（recruit_source），其余为自由文本归因（lead_attr_channel）
+  const { labelOf: visitSourceLabel } = useDict(
+    detail?.module === "recruit" ? "recruit_source" : "lead_attr_channel",
+  );
 
   // 打开抽屉时按需拉取详情
   React.useEffect(() => {
@@ -315,7 +326,7 @@ export function LeadDetailSheet({ lead, onClose }: LeadDetailSheetProps) {
               <div>
                 {detail.timeline.map((ev, index) => {
                   const isLast = index === detail.timeline.length - 1;
-                  const desc = ev.occurred ? eventDesc(ev) : null;
+                  const desc = ev.occurred ? eventDesc(ev, visitSourceLabel) : null;
                   return (
                     <div
                       key={`${ev.event}-${index}`}

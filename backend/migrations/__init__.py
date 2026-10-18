@@ -132,6 +132,10 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
   多地址拼接串超长，实测最长 388，幂等放宽）
 - recover_stale_bd_import_tasks: 服务重启中断遗留 processing 状态的楼盘字典
   导入任务 → failed（附可重跑提示，幂等；承载力报告 M7/L2-④）
+- create_biz_dict_items_table: 幂等创建业务字典表 biz_dict_items（唯一索引
+  uq_biz_dict_items + idx_biz_dict_items_dict），初始化 4 组种子
+  （lead_attr_channel / recruit_source / document_template / renovation_stage_alias），
+  并写入 dict:manage 权限点且授予内置 admin 角色
 
 """
 
@@ -145,6 +149,7 @@ from migrations._bd_audit_20261018_fixes import run_bd_audit_20261018_fixes
 from migrations._bd_community_address_widen import widen_community_address_column
 from migrations._bd_import_task_recovery import recover_stale_bd_import_tasks
 from migrations._bd_room_floor_backfill import backfill_bd_room_floor
+from migrations._biz_dicts import create_biz_dict_items_table
 from migrations._building_dictionary import run_building_dictionary_migrations
 
 # 子模块迁移函数
@@ -412,6 +417,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # room_count 对账改聚合 JOIN（P1）、待审楼栋归属小区回填（H2）、
         # 无回填对象 open 引用收敛（H3）、越界/(0,0) 坐标置空（L3）
         run_bd_audit_20261018_fixes(engine)
+        # 业务字典（运营可配枚举字典）：幂等建表 + 4 组种子 + dict:manage 权限种子
+        create_biz_dict_items_table(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

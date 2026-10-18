@@ -5,6 +5,7 @@ import { MapPin, Pencil } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useCurrentDate } from "@/hooks/use-current-date";
+import { useRenovationStageLabel } from "@/hooks/use-dict";
 
 import { Project } from "../../../types";
 import {
@@ -44,13 +45,18 @@ const STATUS_PILL_CLASS: Record<string, string> = {
 };
 
 /** 状态 pill 文案：「装修阶段 · {子阶段}」等（renovation_stage 兼容中文值/key 两种存储） */
-function getStatusPillLabel(project: Project, stageKey: string): string {
+function getStatusPillLabel(
+  project: Project,
+  stageKey: string,
+  stageLabel: (stage: string, fallbackLabel?: string) => string,
+): string {
   switch (stageKey) {
     case "renovation": {
       const subStage = RENOVATION_STAGES.find(
         (s) => s.value === project.renovation_stage || s.key === project.renovation_stage,
       );
-      return subStage ? `装修阶段 · ${subStage.value}` : "装修阶段";
+      // 子阶段展示名走字典别名（renovation_stage_alias），字典缺失回退入库中文值
+      return subStage ? `装修阶段 · ${stageLabel(subStage.value, subStage.value)}` : "装修阶段";
     }
     case "selling":
       return "在售中";
@@ -182,11 +188,12 @@ export function HeroSection({
   onEditSalesInfo,
 }: HeroSectionProps) {
   const today = useCurrentDate();
+  const { stageLabel } = useRenovationStageLabel();
   const statusStage =
     STAGE_CONFIG.find((s) => (s.aliases as readonly string[]).includes(project.status)) ??
     STAGE_CONFIG[0];
   const pillClass = STATUS_PILL_CLASS[statusStage.key] ?? STATUS_PILL_CLASS.signing;
-  const pillLabel = getStatusPillLabel(project, statusStage.key);
+  const pillLabel = getStatusPillLabel(project, statusStage.key, stageLabel);
   const businessFormLabel = getBusinessFormLabel(project.business_form);
   const metaParts = buildMetaParts(project, statusStage.key, today);
 

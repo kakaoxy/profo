@@ -122,7 +122,15 @@ from .recruit import (
 )
 
 # 系统模块
-from .system import FailedRecord, OperationLog, PropertyImportTask, SystemConfig, WeChatOAuthState, WeChatTempCode
+from .system import (
+    BizDictItem,
+    FailedRecord,
+    OperationLog,
+    PropertyImportTask,
+    SystemConfig,
+    WeChatOAuthState,
+    WeChatTempCode,
+)
 
 # 用户权限模块
 from .user import (
@@ -150,6 +158,7 @@ __all__ = [
     "BdPendingReference",
     "BdReferenceStatus",
     "BdRoom",
+    "BizDictItem",
     "BusinessForm",
     "CashFlowCategory",
     "CashFlowType",

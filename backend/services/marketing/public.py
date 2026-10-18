@@ -27,6 +27,7 @@ from schemas.public import (
     PublicVisitEventRequest,
 )
 from services.growth_center.customer_notify import notify_new_customer_lead
+from services.system import biz_dict
 from services.system.exceptions import ConflictError, ResourceNotFoundError
 from services.utils import (
     aggregate_my_share_stats,
@@ -536,11 +537,13 @@ class PublicProjectService:
         if project is None:
             msg = "房源不存在或未发布"
             raise ResourceNotFoundError(msg)
+        # 归因渠道宽松校验（D5）：字典外值照常落库，仅标记未纳管供运营补录
+        channel = biz_dict.validate_channel(self.db, biz_dict.LEAD_ATTR_CHANNEL_DICT, data.source)
         visit = ProjectVisit(
             visitor_id=data.visitor_id,
             referrer_employee_id=resolve_valid_referrer(self.db, data.referrer),
             marketing_project_id=marketing_project_id,
-            source=data.source,
+            source=channel.code,
         )
         self.db.add(visit)
         self.db.commit()
