@@ -20,9 +20,9 @@ from sqlalchemy.orm import Session
 from models import Project, ProjectContract, ProjectRenovation
 from models.common import BusinessForm, ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
+from services.projects.archive import ensure_project_writable
 from services.property.dict_ownership import validate_dict_ownership
 from services.property.dict_submit_service import submit_dict_chain
-from services.system.exceptions import ValidationError
 from services.system.operation_log import operation_log_service
 from settings import settings
 
@@ -561,10 +561,9 @@ class ProjectCoreService:
 
         """
         project = self.query_service.get_by_id(project_id, include_all=False)
-        # 归档写锁：已归档项目不可删除（需先反归档，避免归档台账凭空消失）
-        if project.is_archived:
-            msg = "已归档项目不可删除，请先反归档"
-            raise ValidationError(msg)
+        # 归档写锁：已归档项目不可删除（需先反归档，避免归档台账凭空消失）。
+        # ensure_project_writable 会 refresh 重读 is_archived，关闭并发归档窗口。
+        ensure_project_writable(self.db, project, action="删除")
         # 删除前快照（软删除会改写 status/is_deleted）
         before_snapshot = _project_snapshot(project)
 

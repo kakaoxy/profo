@@ -13,7 +13,7 @@ from models.common import BusinessForm, DocumentSignoffStatus
 from models.project._project_base import Project
 from models.project._project_document import ProjectDocument
 from schemas.project.document import DocumentCreate, DocumentUpdate
-from services.projects.archive import assert_project_not_archived
+from services.projects.archive import assert_project_not_archived, ensure_project_writable
 from services.system import biz_dict
 from services.system.exceptions import ResourceNotFoundError
 from services.system.operation_log import operation_log_service
@@ -56,7 +56,7 @@ def assert_project_writable(db: Session, project_id: uuid.UUID) -> Project:
 
     """
     project = assert_project_exists(db, project_id)
-    assert_project_not_archived(project)
+    ensure_project_writable(db, project)
     return project
 
 
@@ -316,8 +316,12 @@ def initialize_documents(
         raise ValueError(msg)
 
     if project is None:
-        project = assert_project_exists(db, project_id)
-    assert_project_not_archived(project)
+        # 独立调用（HTTP 端点）：项目已落库，走统一写锁（refresh 重读 is_archived）
+        project = assert_project_writable(db, project_id)
+    else:
+        # 创建链路传入的 project 尚未 flush（会话 autoflush=False，refresh 会误报 404），
+        # 但新建项目 is_archived 必为默认 False，仅判对象值即可（等价语义，不查库）
+        assert_project_not_archived(project)
 
     # 文书模板：字典优先（运营可配），字典缺行/全部停用回退 constants/documents.py 常量
     templates = biz_dict.get_document_templates(db, business_form)

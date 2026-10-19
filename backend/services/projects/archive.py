@@ -28,6 +28,11 @@ logger = logging.getLogger(__name__)
 def assert_project_not_archived(project: Project) -> None:
     """归档写锁：已归档项目拒绝一切写操作（Fail Loud，不静默）.
 
+    仅检查入参对象的 ``is_archived``，**不重读数据库**。写路径应以
+    ``ensure_project_writable``（带 refresh）为入口；本函数保留给已持有
+    行锁 / 已 ``populate_existing()`` 重读的最新实例（如 ``state.update_status``
+    在 ``with_for_update()`` 之后调用）。
+
     Raises:
         ValidationError: 项目已归档（HTTP 400）
 
@@ -35,6 +40,34 @@ def assert_project_not_archived(project: Project) -> None:
     if project.is_archived:
         msg = "项目已归档，请先反归档后再操作"
         raise ValidationError(msg)
+
+
+def ensure_project_writable(db: Session, project: Project, *, action: str | None = None) -> None:
+    """归档写锁统一入口（TOCTOU 安全）：先重读最新 ``is_archived`` 再判锁.
+
+    为什么必须重读：``project`` 通常来自请求早期的 identity map / 关联加载，
+    SQLAlchemy **不会**自动刷新已有实例。若「本请求读到项目 → 并发请求提交归档
+    → 本请求继续写」，对象仍持陈旧 ``is_archived=False``，仅查对象属性会让
+    归档写锁被绕过（实测可改写 address / 字典绑定 / 文书 / 装修 / 销售 / 删除）。
+
+    实现选择 ``db.refresh`` 而非 `SELECT ... FOR UPDATE`：本项目 ``SessionLocal``
+    为 ``autoflush=False``，其余写路径不持行锁；refresh 会立即 SELECT 单列，
+    足以关闭「已提交归档」窗口，且不引入新的锁顺序/死锁风险。
+
+    Args:
+        db: SQLAlchemy 数据库会话（仅用于重读，不做提交）
+        project: 待写入的项目实例（会被刷新 ``is_archived``）
+        action: 动作说明（如「删除」），用于更具体的错误文案；None 用通用文案
+
+    Raises:
+        ValidationError: 项目已归档（HTTP 400）
+
+    """
+    db.refresh(project, ["is_archived"])
+    if project.is_archived and action:
+        msg = f"已归档项目不可{action}，请先反归档"
+        raise ValidationError(msg)
+    assert_project_not_archived(project)
 
 
 class ProjectArchiveService:

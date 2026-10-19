@@ -37,10 +37,10 @@ def check_project_not_archived(record: "Project | Lead | L4MarketingProject | Pr
     否则归档项目仍可经 ``PUT /admin/projects/{id}/dictionary-link`` 被改动，
     违背「归档后全量锁定写操作」（SPEC-project-archive §3.5）。
 
-    TOCTOU 防护：``record`` 来自请求早期的 identity map，SQLAlchemy 不会自动刷新，
-    并发事务提交归档后它仍可能持陈旧 ``is_archived=False``（实测可绕过写锁）。
-    因此判定前先用 ``db.refresh`` 从库里重读该列，与 ``ProjectUpdater.update`` /
-    ``ProjectStateManager.update_status`` 的「重新取最新值再判锁」同口径。
+    委托 ``services.projects.archive.ensure_project_writable``（单一权威入口），
+    由其在判定前 ``refresh`` 重读 ``is_archived``，关闭「并发归档已提交、本会话
+    对象陈旧」的 TOCTOU 窗口。函数名与 archive 模块的 ``assert_project_not_archived``
+    刻意不同名，避免被误认为自递归。
 
     Args:
         record: 四类单据之一（仅 Project 参与归档判定，其余类型放行）
@@ -50,13 +50,12 @@ def check_project_not_archived(record: "Project | Lead | L4MarketingProject | Pr
         ValidationError: 项目已归档（HTTP 400）
 
     """
-    # 别名导入：本地函数名与 archive.assert_project_not_archived 不同名，避免递归误读
-    from services.projects.archive import assert_project_not_archived as archive_write_lock
+    if not isinstance(record, Project):
+        return
 
-    if isinstance(record, Project):
-        # refresh 立即 SELECT，不受会话 autoflush=False 影响
-        db.refresh(record, ["is_archived"])
-        archive_write_lock(record)
+    from services.projects.archive import ensure_project_writable
+
+    ensure_project_writable(db, record)
 
 
 class DictionaryLinkService:

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
 from models.common import BusinessForm
 from schemas.project.owner import OwnerInlineUpdate
-from services.projects.archive import assert_project_not_archived
+from services.projects.archive import ensure_project_writable
 from services.utils import parse_date_string
 
 from . import documents, owners
@@ -55,12 +55,9 @@ class ProjectUpdater:
 
         """
         # 归档写锁：Fail Loud（不再像旧 sold 白名单那样静默丢弃字段）。
-        # TOCTOU 防护：并发事务可能在本次请求「读到项目 → 进入更新」之间提交归档，
-        # 此时入参对象仍持陈旧 is_archived=False（SQLAlchemy identity map 不自动刷新）。
-        # 这里在写入前重新从库里取最新值（refresh 会立即 SELECT，不受 autoflush=False 影响），
-        # 与 state.update_status 的「加锁后重读」同口径。
-        self.db.refresh(project, ["is_archived"])
-        assert_project_not_archived(project)
+        # ensure_project_writable 内部 refresh 重读最新 is_archived（TOCTOU 防护），
+        # 统一入口见 services/projects/archive.py。
+        ensure_project_writable(self.db, project)
 
         # 提前弹出 owners，避免作为普通字段更新到 project 表
         owners_payload = update_dict.pop("owners", None)

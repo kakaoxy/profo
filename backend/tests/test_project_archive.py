@@ -28,7 +28,7 @@ from models.common import BusinessForm, ProjectStatus
 from models.property.community import Community
 from models.system import OperationLog
 from schemas.building_dict import DictionaryLinkRequest
-from schemas.project import ProjectStatusUpdate, ProjectUpdate
+from schemas.project import ProjectCompleteRequest, ProjectStatusUpdate, ProjectUpdate
 from schemas.project.archive import ProjectArchiveRequest, ProjectUnarchiveRequest
 from schemas.project.document import DocumentCreate
 from schemas.project.renovation import RenovationUpdate
@@ -37,7 +37,7 @@ from services.projects.archive import ProjectArchiveService, assert_project_not_
 from services.projects.facade import ProjectService
 from services.projects.internal import documents as documents_service
 from services.property.dictionary_link_service import get_dictionary_link_service
-from services.system.exceptions import ValidationError
+from services.system.exceptions import ServiceException, ValidationError
 from utils.auth import AUDIENCE_ADMIN, create_access_token
 
 BASE = "/api/v1/projects"
@@ -794,3 +794,160 @@ def test_archive_persists_when_audit_log_commits_in_separate_session(
         assert archived_note is None
     finally:
         session.close()
+
+
+# --------------------------------------------------------------------------- #
+# 9. 并发归档窗口（TOCTOU）：全写路径矩阵
+# --------------------------------------------------------------------------- #
+def _race_archive_commit(db: Session, project: Project) -> None:
+    """模拟「另一事务已提交归档、本会话对象仍陈旧」的并发窗口.
+
+    先把项目读进 identity map（is_archived=False），再用原生 SQL 在库中置为 true
+    且**不 commit**：库连接已见 true，但 ORM 属性保持陈旧值——正是「归档提交发生在
+    本次请求读取之后」的复刻。写路径若只判断对象属性就会被绕过。
+
+    Args:
+        db: 测试会话
+        project: 目标项目（调用前须已在 identity map 中）
+
+    """
+    _ = db.query(Project).filter(Project.id == project.id).first()
+    db.execute(
+        text("UPDATE projects SET is_archived = true WHERE id = :pid"),
+        {"pid": project.id},
+    )
+    assert project.is_archived is False, "identity map 应保持陈旧值以复刻竞态"
+
+
+def test_all_write_paths_blocked_under_concurrent_archive(
+    db_session: Session,
+    seeded_db: dict[str, Any],
+) -> None:
+    """并发归档窗口内，全部项目写路径都必须 400（TOCTOU 写锁矩阵）.
+
+    回归背景：归档写锁最初只判断入参对象的 ``is_archived``，SQLAlchemy identity map
+    不会自动刷新，因此「读到项目 → 并发提交归档 → 继续写」时锁被绕过。实测可改写：
+    项目更新、删除、文书增改/初始化、装修进度/照片/合同、销售角色/记录/成交、
+    字典绑定/解绑。统一入口 ``ensure_project_writable``（refresh 重读）后全部拦截。
+
+    该用例是写路径覆盖矩阵的守卫：新增写路径若漏接归档锁，此处会明确报出路径名。
+    """
+    from schemas.project.renovation import RenovationContractUpdate
+
+    admin_user = seeded_db["users"]["admin"]
+    service = ProjectService(db_session)
+    cases: list[tuple[str, Any]] = []
+
+    def case(name: str, fn: Any, *, status: ProjectStatus = ProjectStatus.SOLD) -> None:
+        """登记一条写路径用例（每条独立造数，互不干扰）."""
+        cases.append((name, (fn, status)))
+
+    blocked: list[str] = []
+    leaked: list[str] = []
+
+    # --- 逐路径执行（每条 run 内部自行造数 + 复刻竞态 + 回滚） ---
+    def run(name: str, fn: Any, status: ProjectStatus) -> None:
+        project = _create_project(db_session, status=status)
+        _race_archive_commit(db_session, project)
+        try:
+            fn(project)
+        except (ValidationError, ServiceException):
+            blocked.append(name)
+        except Exception as exc:
+            # 状态门槛等其它业务异常也算「未被写入」，但不计入写锁验证
+            leaked.append(f"{name} -> {type(exc).__name__}: {exc}")
+        else:
+            leaked.append(f"{name} -> 200（写锁被绕过）")
+        finally:
+            db_session.rollback()
+
+    run(
+        "PUT 项目更新",
+        lambda p: service.update_project(p.id, ProjectUpdate(address="并发写入")),
+        ProjectStatus.SOLD,
+    )
+    run(
+        "PUT 状态流转",
+        lambda p: service.update_status(p.id, ProjectStatusUpdate(status=ProjectStatus.SOLD)),
+        ProjectStatus.SOLD,
+    )
+    run("DELETE 删除项目", lambda p: service.delete_project(p.id), ProjectStatus.SOLD)
+    run(
+        "文书 create",
+        lambda p: documents_service.create_document(db_session, p.id, DocumentCreate(document_name="并发新增")),
+        ProjectStatus.SOLD,
+    )
+    run(
+        "文书 initialize",
+        lambda p: documents_service.initialize_documents(db_session, p.id, BusinessForm.AGENT),
+        ProjectStatus.SOLD,
+    )
+    run(
+        "装修 阶段更新",
+        lambda p: service.update_renovation_stage(
+            p.id, RenovationUpdate(renovation_stage="水电"), current_user=admin_user
+        ),
+        ProjectStatus.SOLD,
+    )
+    run(
+        "装修 上传照片",
+        lambda p: service.add_renovation_photo(p.id, "拆除", "http://example.com/race.jpg"),
+        ProjectStatus.SOLD,
+    )
+    run(
+        "装修 合同更新",
+        lambda p: service.update_renovation_contract(p.id, RenovationContractUpdate(renovation_company="并发装修公司")),
+        ProjectStatus.SOLD,
+    )
+    run(
+        "销售 角色更新",
+        lambda p: service.update_sales_roles(p.id, SalesRolesUpdate(negotiator_id=None), current_user=admin_user),
+        ProjectStatus.SOLD,
+    )
+    run(
+        "销售 记录新增",
+        lambda p: service.create_sales_record(
+            p.id,
+            SalesRecordCreate(
+                record_type="viewing",
+                customer_name="并发客户",
+                record_date=datetime.now(timezone.utc),
+            ),
+            current_user=admin_user,
+        ),
+        ProjectStatus.SELLING,
+    )
+    run(
+        "销售 确认成交",
+        lambda p: service.complete_project(
+            p.id,
+            ProjectCompleteRequest(sold_price=100, sold_date="2026-11-25"),
+            current_user=admin_user,
+        ),
+        ProjectStatus.SELLING,
+    )
+
+    # 字典绑定/解绑（独立服务，字段落在 projects 表）
+    suffix = uuid.uuid4().hex[:8]
+    community = Community(id=str(uuid.uuid4()), name=f"并发字典小区-{suffix}")
+    db_session.add(community)
+    db_session.commit()
+    link_service = get_dictionary_link_service()
+    run(
+        "字典 绑定",
+        lambda p: link_service.link(
+            db_session,
+            biz_type="project",
+            biz_id=str(p.id),
+            body=DictionaryLinkRequest(community_id=community.id),
+        ),
+        ProjectStatus.SOLD,
+    )
+    run(
+        "字典 解绑",
+        lambda p: link_service.unlink(db_session, biz_type="project", biz_id=str(p.id)),
+        ProjectStatus.SOLD,
+    )
+
+    assert not leaked, f"以下写路径未被归档写锁拦截: {leaked}"
+    assert len(blocked) == 13, f"应覆盖 13 条写路径，实际 {len(blocked)}: {blocked}"

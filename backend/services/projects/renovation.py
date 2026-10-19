@@ -22,7 +22,7 @@ from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
 from services.system.operation_log import operation_log_service
 from utils.storage import extract_storage_key, get_storage_backend
 
-from .archive import assert_project_not_archived
+from .archive import ensure_project_writable
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +204,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
-        assert_project_not_archived(project)
+        ensure_project_writable(self.db, project)
 
         # 验证当前状态
         allowed_statuses = [
@@ -299,7 +299,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
-        assert_project_not_archived(project)
+        ensure_project_writable(self.db, project)
 
         allowed_statuses = [
             ProjectStatus.RENOVATING.value,
@@ -379,7 +379,7 @@ class RenovationService:
     def update_info(self, project_id: uuid.UUID, renovation_data: dict[str, Any]) -> ProjectRenovation:
         """更新装修信息."""
         project = self._get_project(project_id)
-        assert_project_not_archived(project)
+        ensure_project_writable(self.db, project)
 
         # 验证状态
         allowed_statuses = [
@@ -435,7 +435,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
-        assert_project_not_archived(project)
+        ensure_project_writable(self.db, project)
 
         allowed_statuses = [
             ProjectStatus.RENOVATING.value,
@@ -519,7 +519,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
-        assert_project_not_archived(project)
+        ensure_project_writable(self.db, project)
         photo = (
             self.db.query(RenovationPhoto)
             .filter(
@@ -576,7 +576,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
-        assert_project_not_archived(project)
+        ensure_project_writable(self.db, project)
 
         # 验证状态
         allowed_statuses = [
