@@ -103,8 +103,8 @@ const createProjectSchema = z.object({
 });
 
 // 更新项目 - 全部 optional（PATCH 语义），owners 改用 OwnerInlineUpdate
-// 注意：sold_price/sold_date 仅在 ProjectUpdate（而非 ProjectCreate）中存在，
-// 后端已售状态允许通过 _filter_allowed_fields 修改这两个字段，故在此独立声明。
+// 注意：sold_price/sold_date 仅在 ProjectUpdate（而非 ProjectCreate）中存在，故在此独立声明。
+// sold 状态字段白名单（_filter_allowed_fields）已在 SPEC-project-archive 移除，写锁收口到归档标记。
 const updateProjectSchema = createProjectSchema.partial().extend({
   owners: z.array(ownerInlineUpdateSchema).nullable().optional(),
   sold_price: nullableNumber.optional(),

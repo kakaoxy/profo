@@ -29,6 +29,27 @@ _BIZ_MARKETING = "marketing"
 _BIZ_PROPERTY = "property"
 
 
+def _assert_project_not_archived(record: "Project | Lead | L4MarketingProject | PropertyCurrent") -> None:
+    """项目归档写锁（四类统一入口里的项目分支）.
+
+    字典绑定/解绑会改写 ``projects`` 的 community_id / building_id / room_id /
+    dict_status，属于项目写操作，必须与 ``ProjectUpdater`` 等同口径被归档锁拦截；
+    否则归档项目仍可经 ``PUT /admin/projects/{id}/dictionary-link`` 被改动，
+    违背「归档后全量锁定写操作」（SPEC-project-archive §3.5）。
+
+    Args:
+        record: 四类单据之一（仅 Project 参与归档判定，其余类型放行）
+
+    Raises:
+        ValidationError: 项目已归档（HTTP 400）
+
+    """
+    from services.projects.archive import assert_project_not_archived
+
+    if isinstance(record, Project):
+        assert_project_not_archived(record)
+
+
 class DictionaryLinkService:
     """存量绑定服务（四类统一）."""
 
@@ -71,6 +92,7 @@ class DictionaryLinkService:
         )
 
         record = self._get_record(db, biz_type, biz_id)
+        _assert_project_not_archived(record)
         before = self._snapshot(record)
 
         self._apply_link(record, body)
@@ -106,6 +128,7 @@ class DictionaryLinkService:
     ) -> tuple[bool, str, str]:
         """解除关联（dict_status=manual，关联字段清空）."""
         record = self._get_record(db, biz_type, biz_id)
+        _assert_project_not_archived(record)
         before = self._snapshot(record)
         self._clear_link(record)
         record.dict_status = "manual"  # type: ignore[attr-defined]

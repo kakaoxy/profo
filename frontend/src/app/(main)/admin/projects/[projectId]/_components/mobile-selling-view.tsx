@@ -21,7 +21,6 @@ import { MobileRecordForm } from "./mobile-record-form";
 type ProjectResponse = components["schemas"]["ProjectResponse"] & {
   sale?: { can_edit_sales?: boolean } | null;
 };
-
 interface MobileSellingViewProps {
   projectId: string;
   project: ProjectResponse;
@@ -45,7 +44,10 @@ export function MobileSellingView({ projectId, project }: MobileSellingViewProps
     PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
     PERMISSION_CODES.PROJECT_WRITE,
   ]);
-  const canEditSales = canAddByPermission || project.sale?.can_edit_sales === true;
+  // 归档写锁（前端同口径）：归档后后端销售记录写接口统一 400，写入口同步收敛
+  const isArchived = project.is_archived === true;
+  const canEditSales =
+    !isArchived && (canAddByPermission || project.sale?.can_edit_sales === true);
 
   const records = useMemo(
     () => validateSalesRecords(project.sales_records),

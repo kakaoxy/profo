@@ -421,8 +421,12 @@ export function MobileRenovationView({ projectId, project }: MobileRenovationVie
     PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
     PERMISSION_CODES.PROJECT_WRITE,
   ]);
-  const canEditRenovation = canEditByPermission || project.renovation?.can_edit_renovation === true;
-  const canComplete = canCompleteByPermission || project.renovation?.can_edit_renovation === true;
+  // 归档写锁（前端同口径）：归档后后端装修写接口统一 400，写入口同步收敛
+  const isArchived = project.is_archived === true;
+  const canEditRenovation =
+    !isArchived && (canEditByPermission || project.renovation?.can_edit_renovation === true);
+  const canComplete =
+    !isArchived && (canCompleteByPermission || project.renovation?.can_edit_renovation === true);
 
   // 计算当前阶段索引（仅用于 UI 视觉区分，不再用于禁用操作）
   const currentIndex = useMemo(() => {

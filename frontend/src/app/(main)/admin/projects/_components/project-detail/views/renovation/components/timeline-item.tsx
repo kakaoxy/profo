@@ -95,8 +95,13 @@ export function TimelineItem({
     PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
     PERMISSION_CODES.PROJECT_WRITE,
   ]);
-  const canEditRenovation = canEditByPermission || project.renovation?.can_edit_renovation === true;
-  const canComplete = canCompleteByPermission || project.renovation?.can_edit_renovation === true;
+  // 归档写锁（前端同口径）：归档后后端装修写接口统一 400，
+  // 写入口（上传照片 / 完成阶段 / 修改完成日期）必须同步收敛，避免「可点但必失败」
+  const isArchived = project.is_archived === true;
+  const canEditRenovation =
+    !isArchived && (canEditByPermission || project.renovation?.can_edit_renovation === true);
+  const canComplete =
+    !isArchived && (canCompleteByPermission || project.renovation?.can_edit_renovation === true);
 
   // 修改/清空已完成阶段时间：与「标记阶段完成」同口径双通道
   // （complete_stage 子码 OR project:write OR 装修业务身份标志），与后端 PATCH 端点一致

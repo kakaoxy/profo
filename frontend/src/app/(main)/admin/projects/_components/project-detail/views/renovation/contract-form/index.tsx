@@ -29,6 +29,8 @@ import { CostSummarySection } from "./cost-summary";
 interface RenovationContractFormProps {
   projectId: string;
   area?: number;
+  /** 只读态（项目已归档）：隐藏卡头「编辑」入口，后端装修合同 PUT 也 400 */
+  readOnly?: boolean;
 }
 
 // 后端 Decimal 字段经 JSON 序列化为字符串，需显式转为 number
@@ -56,7 +58,7 @@ function deleteUnsavedUpload(url: string): void {
   });
 }
 
-export function RenovationContractForm({ projectId, area }: RenovationContractFormProps) {
+export function RenovationContractForm({ projectId, area, readOnly = false }: RenovationContractFormProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -282,6 +284,14 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
                 保存
               </Button>
             </>
+          ) : readOnly ? (
+            // 归档只读：不渲染「编辑」入口（后端 PUT /renovation/contract 也 400）
+            <span
+              className="inline-flex items-center text-[13.5px] font-[450] text-dove"
+              title="项目已归档，请先反归档后再编辑"
+            >
+              已归档 · 只读
+            </span>
           ) : (
             <button
               type="button"

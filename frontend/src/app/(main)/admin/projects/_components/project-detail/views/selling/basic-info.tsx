@@ -152,14 +152,17 @@ export function SellingBasicInfo({
             <span className="text-[13px] font-[430] text-graphite">实际竣工</span>
             <span className="flex flex-wrap items-center gap-2 text-[14.5px] font-[450] text-ink">
               {actualEndDate ? format(new Date(actualEndDate), "yyyy.MM.dd") : "-"}
-              <button
-                type="button"
-                onClick={() => handleDialogOpenChange(true)}
-                className="inline-flex items-center gap-1 text-[13px] text-graphite transition-colors hover:text-ink"
-              >
-                <Pencil className="size-3" />
-                编辑
-              </button>
+              {/* 归档写锁（前端同口径）：归档后装修阶段日期写接口统一 400，编辑入口隐藏 */}
+              {project.is_archived !== true && (
+                <button
+                  type="button"
+                  onClick={() => handleDialogOpenChange(true)}
+                  className="inline-flex items-center gap-1 text-[13px] text-graphite transition-colors hover:text-ink"
+                >
+                  <Pencil className="size-3" />
+                  编辑
+                </button>
+              )}
             </span>
           </div>
 

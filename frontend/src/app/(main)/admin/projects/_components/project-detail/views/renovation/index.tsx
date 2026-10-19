@@ -75,7 +75,11 @@ export function RenovationView({
 
       {/* 装修合同信息（锚点：分区导航「装修合同」） */}
       <section id={SECTION_IDS.contract} className="scroll-mt-28 md:scroll-mt-24">
-        <RenovationContractForm projectId={project.id} area={project.area} />
+        <RenovationContractForm
+          projectId={project.id}
+          area={project.area}
+          readOnly={project.is_archived === true}
+        />
       </section>
 
       {/* 装修进度时间线（锚点：分区导航「装修进度」） */}

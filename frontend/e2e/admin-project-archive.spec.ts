@@ -75,6 +75,7 @@ async function getProject(ctx: APIRequestContext, id: string) {
   const res = await ctx.get(`/api/v1/projects/${id}`);
   expect(res.ok(), `获取项目详情失败: ${res.status()}`).toBeTruthy();
   return (await res.json()) as {
+    community_id: string | null;
     contract_no: string | null;
     signing_materials: { filename: string; url: string }[] | null;
     owners: { owner_name: string | null }[];
@@ -213,6 +214,33 @@ test.describe("项目归档状态（sold 可写 → 归档锁定 → 反归档�
       const afterLocked = await getProject(ctx, soldProject.id);
       expect(afterLocked.contract_no).toBe(newContractNo);
 
+      // ---------- 3b. 归档锁覆盖字典绑定端点（回归：DictionaryLinkService 曾漏接） ----------
+      // 造一个字典小区作为绑定目标（先联小区级，不涉及楼栋/户室）
+      const communityRes = await ctx.post("/api/v1/admin/building-dictionary/communities", {
+        data: { name: `__E2E_ARCHIVE_DICT_${RUN_ID}__`, district: "虹口", business_circle: "E2E" },
+      });
+      expect(
+        communityRes.ok(),
+        `字典小区创建失败: ${communityRes.status()} ${await communityRes.text()}`,
+      ).toBeTruthy();
+      const dictCommunityId = ((await communityRes.json()) as { id: string }).id;
+
+      const linkRes = await ctx.put(`/api/v1/admin/projects/${soldProject.id}/dictionary-link`, {
+        data: { community_id: dictCommunityId },
+      });
+      expect(linkRes.status(), "归档项目字典绑定必须 400").toBe(400);
+      const linkBody = (await linkRes.json()) as { message?: string };
+      expect(linkBody.message ?? "").toContain("已归档");
+
+      const unlinkRes = await ctx.delete(
+        `/api/v1/admin/projects/${soldProject.id}/dictionary-link`,
+      );
+      expect(unlinkRes.status(), "归档项目解除字典绑定必须 400").toBe(400);
+      expect(((await unlinkRes.json()) as { message?: string }).message ?? "").toContain("已归档");
+
+      const afterDict = await getProject(ctx, soldProject.id);
+      expect(afterDict.community_id).toBeNull();
+
       // ---------- 4. 列表归档筛选（已归档出现 + 徽标 / 未归档消失） ----------
       await page.goto("/admin/projects");
       const archivedSelect = page.locator('[role="combobox"]').filter({ hasText: "全部归档状态" });
@@ -269,6 +297,13 @@ test.describe("项目归档状态（sold 可写 → 归档锁定 → 反归档�
       expect(unarchived.is_archived).toBe(false);
       expect(unarchived.archived_at).toBeNull();
       expect(unarchived.archived_note).toBeNull();
+
+      // 字典绑定端点同步恢复（证明 3b 的 400 来自归档锁，而非端点自身故障）
+      const relinkRes = await ctx.put(`/api/v1/admin/projects/${soldProject.id}/dictionary-link`, {
+        data: { community_id: dictCommunityId },
+      });
+      expect(relinkRes.status(), "反归档后字典绑定应恢复可用").toBe(200);
+      await ctx.delete(`/api/v1/admin/projects/${soldProject.id}/dictionary-link`);
 
       const writableRes = await ctx.put(`/api/v1/projects/${soldProject.id}`, {
         data: { address: "反归档后可写入的地址" },

@@ -25,7 +25,9 @@ from db import get_db
 from main import app
 from models import Project
 from models.common import BusinessForm, ProjectStatus
+from models.property.community import Community
 from models.system import OperationLog
+from schemas.building_dict import DictionaryLinkRequest
 from schemas.project import ProjectStatusUpdate, ProjectUpdate
 from schemas.project.archive import ProjectArchiveRequest, ProjectUnarchiveRequest
 from schemas.project.document import DocumentCreate
@@ -34,6 +36,7 @@ from schemas.project.sales import SalesRecordCreate, SalesRolesUpdate
 from services.projects.archive import ProjectArchiveService, assert_project_not_archived
 from services.projects.facade import ProjectService
 from services.projects.internal import documents as documents_service
+from services.property.dictionary_link_service import get_dictionary_link_service
 from services.system.exceptions import ValidationError
 from utils.auth import AUDIENCE_ADMIN, create_access_token
 
@@ -164,6 +167,39 @@ def test_archived_project_rejects_update(db_session: Session) -> None:
 
     db_session.refresh(project)
     assert project.address != "不应写入的地址"
+
+
+def test_update_rejects_stale_read_after_concurrent_archive(db_session: Session) -> None:
+    """TOCTOU：并发事务已提交归档、本会话 identity map 仍为未归档时，PUT 必须 400.
+
+    回归背景：``ProjectUpdater.update`` 旧实现只对入参 ``project.is_archived`` 做判断，
+    而 SQLAlchemy identity map 不会自动刷新——先读到项目、后被并发归档的请求仍
+    能通过校验并写入（实测可改 address），与 SPEC-project-archive G2「归档后全量
+    锁定写操作」冲突。现在写入前 ``refresh(project, ["is_archived"])`` 重读最新值。
+    """
+    project = _create_project(db_session, status=ProjectStatus.SOLD)
+    assert project.is_archived is False
+
+    # 用原生 SQL 提交归档后不 commit：DB 已看到 true，identity map 仍保留 False，
+    # 精确复刻「另一事务已提交归档、本事务对象陈旧」的窗口
+    db_session.execute(
+        text("UPDATE projects SET is_archived = true WHERE id = :pid"),
+        {"pid": project.id},
+    )
+    assert project.is_archived is False, "identity map 应保持陈旧值以复刻竞态"
+
+    with pytest.raises(ValidationError) as exc:
+        ProjectService(db_session).update_project(
+            project.id,
+            ProjectUpdate(address="并发归档后的写入"),
+        )
+    assert "项目已归档" in str(exc.value)
+
+    written = db_session.execute(
+        text("SELECT address FROM projects WHERE id = :pid"),
+        {"pid": project.id},
+    ).scalar()
+    assert written != "并发归档后的写入"
 
 
 def test_archived_project_rejects_status_transition(db_session: Session) -> None:
@@ -411,6 +447,53 @@ def test_assert_project_not_archived_helper(db_session: Session) -> None:
     db_session.commit()
     with pytest.raises(ValidationError):
         assert_project_not_archived(project)
+
+
+def test_archived_project_rejects_dictionary_link_write(db_session: Session) -> None:
+    """归档后字典绑定/解绑必须 400，且 projects 关联字段不被改写.
+
+    回归背景：``DictionaryLinkService.link/unlink`` 直接改写 projects 的
+    community_id / building_id / room_id / dict_status 并 commit，属项目写操作；
+    旧实现未接归档锁，归档项目仍可经
+    ``PUT|DELETE /api/v1/admin/projects/{id}/dictionary-link`` 改动字典关联。
+    """
+    suffix = uuid.uuid4().hex[:8]
+    community = Community(id=str(uuid.uuid4()), name=f"归档字典小区-{suffix}")
+    db_session.add(community)
+    project = _create_project(db_session, status=ProjectStatus.SOLD)
+    ProjectArchiveService(db_session).archive_project(
+        project.id,
+        ProjectArchiveRequest(archived_at=date(2026, 11, 25)),
+    )
+    db_session.refresh(project)
+    assert project.community_id is None
+
+    link_service = get_dictionary_link_service()
+    with pytest.raises(ValidationError) as exc:
+        link_service.link(
+            db_session,
+            biz_type="project",
+            biz_id=str(project.id),
+            body=DictionaryLinkRequest(community_id=community.id),
+        )
+    assert "项目已归档" in str(exc.value)
+
+    db_session.refresh(project)
+    assert project.community_id is None
+    assert project.dict_status is None
+
+    # 解绑方向同样被拦截（归档项目字典字段本不应被前期写入，此处构造脏值验证拦截）
+    project.community_id = community.id
+    project.dict_status = "linked"
+    db_session.commit()
+
+    with pytest.raises(ValidationError) as unlink_exc:
+        link_service.unlink(db_session, biz_type="project", biz_id=str(project.id))
+    assert "项目已归档" in str(unlink_exc.value)
+
+    db_session.refresh(project)
+    assert project.community_id == community.id
+    assert project.dict_status == "linked"
 
 
 # --------------------------------------------------------------------------- #

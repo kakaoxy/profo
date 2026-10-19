@@ -14,7 +14,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from migrations._helpers import _column_exists
+from migrations._helpers import _column_default, _column_exists
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,12 @@ def add_project_archive_columns(engine: Engine) -> None:
                 text("ALTER TABLE projects ADD COLUMN is_archived BOOLEAN NOT NULL DEFAULT false"),
             )
         logger.info("迁移：projects 表新增 is_archived 列")
+    elif _column_default(engine, "projects", "is_archived") is None:
+        # 自愈陈旧中间态（同 _user_security.add_user_temporary_fields 先例）：列已存在但缺
+        # DEFAULT 时，非 ORM 插入（原生 SQL / 其他服务）时 is_archived 会因 NOT NULL 无默认值失败。
+        logger.info("迁移：projects.is_archived 列已存在但缺 DEFAULT，补充 SET DEFAULT false")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE projects ALTER COLUMN is_archived SET DEFAULT false"))
 
     if not _column_exists(engine, "projects", "archived_at"):
         with engine.begin() as conn:

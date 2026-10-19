@@ -100,6 +100,10 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
     });
   }, [project]);
 
+  // 归档写锁（前端同口径）：归档后后端销售角色写接口（PUT /selling/roles）统一 400，
+  // 行内 Select 降为只读文本，避免「可改但必失败」
+  const isArchived = project.is_archived === true;
+
   // 获取用户显示名称
   const getUserDisplayName = useCallback(
     (userId: string | null): string => {
@@ -166,7 +170,8 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
             <div className="min-w-0 flex-1">
               {/* 姓名：有权限=行内 Select（选择后自动保存），无权限=只读文本 */}
               <HasPermission
-                code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
+                // 归档只读：撤除 manage_team 权限，走 fallback 纯文本分支（后端 PUT 也 400）
+                code={isArchived ? [] : PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
                 fallback={
                   <span
                     className={cn(

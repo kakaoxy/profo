@@ -54,7 +54,12 @@ class ProjectUpdater:
             更新后的项目模型实例
 
         """
-        # 归档写锁：Fail Loud（不再像旧 sold 白名单那样静默丢弃字段）
+        # 归档写锁：Fail Loud（不再像旧 sold 白名单那样静默丢弃字段）。
+        # TOCTOU 防护：并发事务可能在本次请求「读到项目 → 进入更新」之间提交归档，
+        # 此时入参对象仍持陈旧 is_archived=False（SQLAlchemy identity map 不自动刷新）。
+        # 这里在写入前重新从库里取最新值（refresh 会立即 SELECT，不受 autoflush=False 影响），
+        # 与 state.update_status 的「加锁后重读」同口径。
+        self.db.refresh(project, ["is_archived"])
         assert_project_not_archived(project)
 
         # 提前弹出 owners，避免作为普通字段更新到 project 表

@@ -288,19 +288,24 @@ export function DocumentsTab({
           <p className="text-lg">暂无文书</p>
           {hasBusinessForm ? (
             <div className="flex items-center justify-center gap-2">
-              <Button type="button" variant="outline" onClick={handleInitialize}>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                初始化默认清单
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                新增文书
-              </Button>
+              {/* 归档只读：初始化/新增均会写库（后端 400），入口一并不渲染 */}
+              {!readOnly && (
+                <>
+                  <Button type="button" variant="outline" onClick={handleInitialize}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    初始化默认清单
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsCreateOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    新增文书
+                  </Button>
+                </>
+              )}
             </div>
           ) : (
             <p className="text-sm">请先在基础信息设置业务形式</p>
           )}
-          {isCreateOpen && (
+          {isCreateOpen && !readOnly && (
             <div className="mx-auto max-w-md space-y-2 rounded-md border p-4 text-left">
               <DocumentCreateForm
                 name={newName}
