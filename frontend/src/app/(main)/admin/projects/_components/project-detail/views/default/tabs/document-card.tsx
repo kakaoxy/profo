@@ -27,6 +27,8 @@ interface DocumentCardProps {
   showUpload: boolean;
   /** 该文书所属分类下的现有附件数（attach-chip 计数） */
   attachmentCount: number;
+  /** 只读态（项目已归档）：状态 pill / 日期 / 上传 / 删除均不可操作 */
+  readOnly?: boolean;
   onStatusChange: (docId: string, newStatus: string) => void;
   onUpdateDraft: (docId: string, patch: Partial<DraftMap[string]>) => void;
   onDelete: (doc: DocumentResponse) => void;
@@ -42,6 +44,7 @@ export function DocumentCard({
   draft,
   showUpload,
   attachmentCount,
+  readOnly = false,
   onStatusChange,
   onUpdateDraft,
   onDelete,
@@ -70,30 +73,43 @@ export function DocumentCard({
         {doc.document_name}
       </span>
 
-      {/* 三个状态 pill 按钮（active 三态配色） */}
+      {/* 三个状态 pill（只读态渲染当前状态静态标签，不渲染可点击按钮） */}
       <div className="flex shrink-0 gap-1.5">
-        {STATUS_OPTIONS.map((opt) => {
-          const active = draft.signoff_status === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => onStatusChange(doc.id, opt.value)}
-              className={cn(
-                "inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border px-[11px] py-[4px] text-[13px] font-[450] transition-all",
-                active
-                  ? STATUS_ACTIVE_CLASS[opt.value]
-                  : "border-dove/50 bg-pure-white text-graphite hover:border-dove hover:bg-fog/50",
-              )}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
+        {readOnly ? (
+          <span
+            className={cn(
+              "inline-flex items-center whitespace-nowrap rounded-full border px-[11px] py-[4px] text-[13px] font-[450]",
+              STATUS_ACTIVE_CLASS[draft.signoff_status] ??
+                "border-dove/50 bg-pure-white text-graphite",
+            )}
+          >
+            {STATUS_OPTIONS.find((o) => o.value === draft.signoff_status)?.label ??
+              draft.signoff_status}
+          </span>
+        ) : (
+          STATUS_OPTIONS.map((opt) => {
+            const active = draft.signoff_status === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onStatusChange(doc.id, opt.value)}
+                className={cn(
+                  "inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border px-[11px] py-[4px] text-[13px] font-[450] transition-all",
+                  active
+                    ? STATUS_ACTIVE_CLASS[opt.value]
+                    : "border-dove/50 bg-pure-white text-graphite hover:border-dove hover:bg-fog/50",
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })
+        )}
       </div>
 
-      {/* 归档日期：archived 时显示 date input，签署态显示「待归档」提示，其余显示文本 */}
-      {isArchived ? (
+      {/* 归档日期：archived 时显示 date input，签署态显示「待归档」提示，其余显示文本（只读态均为纯文本） */}
+      {isArchived && !readOnly ? (
         <Input
           type="date"
           value={draft.archive_date}
@@ -102,7 +118,7 @@ export function DocumentCard({
         />
       ) : (
         <span className="shrink-0 text-[13px] font-[430] text-graphite">
-          {isSigned ? "待归档 · 选择归档日期" : doc.archive_date || "—"}
+          {draft.archive_date || (isSigned && !readOnly ? "待归档 · 选择归档日期" : "—")}
         </span>
       )}
 
@@ -118,15 +134,17 @@ export function DocumentCard({
         </button>
       )}
 
-      {/* 删除（原型 .icon-btn） */}
-      <button
-        type="button"
-        title="删除要件"
-        onClick={() => onDelete(doc)}
-        className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-lg text-graphite transition-all hover:bg-fog hover:text-ink"
-      >
-        <Trash2 className="h-[14.5px] w-[14.5px]" />
-      </button>
+      {/* 删除（原型 .icon-btn；只读态隐藏） */}
+      {!readOnly && (
+        <button
+          type="button"
+          title="删除要件"
+          onClick={() => onDelete(doc)}
+          className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-lg text-graphite transition-all hover:bg-fog hover:text-ink"
+        >
+          <Trash2 className="h-[14.5px] w-[14.5px]" />
+        </button>
+      )}
     </div>
   );
 }

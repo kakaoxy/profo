@@ -23,6 +23,7 @@ from schemas.project.sales import (
 from services.system.exceptions import BusinessLogicError, ResourceNotFoundError, ValidationError
 from services.system.operation_log import operation_log_service
 
+from .archive import assert_project_not_archived
 from .core import _project_snapshot
 from .internal import ProjectQueryService, ProjectResponseBuilder
 
@@ -94,6 +95,7 @@ class SalesService:
     ) -> ProjectResponse:
         """更新销售角色 (渠道、讲房、谈判)."""
         project = self._get_project(project_id)
+        assert_project_not_archived(project)
 
         # 获取或创建销售记录
         sale = (
@@ -170,6 +172,7 @@ class SalesService:
         权限校验由 Router 层 ProjectSalesAddRecordPermDep 注入。
         """
         project = self._get_project(project_id)
+        assert_project_not_archived(project)
 
         # 严格校验
         if project.status != ProjectStatus.SELLING.value:
@@ -255,7 +258,8 @@ class SalesService:
 
         权限校验由 Router 层 ProjectSalesAddRecordPermDep 注入。
         """
-        self._get_project(project_id)
+        project = self._get_project(project_id)
+        assert_project_not_archived(project)
         record = (
             self.db.query(ProjectInteraction)
             .filter(
@@ -299,6 +303,7 @@ class SalesService:
     ) -> ProjectResponse:
         """确认成交 (标记为已售)."""
         project = self._get_project(project_id)
+        assert_project_not_archived(project)
 
         # 允许从 在售 或 已售(修改信息) 状态操作
         if project.status not in [ProjectStatus.SELLING.value, ProjectStatus.SOLD.value]:

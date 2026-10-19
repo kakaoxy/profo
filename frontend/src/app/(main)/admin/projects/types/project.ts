@@ -235,4 +235,9 @@ export interface Project {
   sale?: ProjectSaleInfo | null;
   // 装修子模块权限标志（含 can_edit_renovation）
   renovation?: ProjectRenovationInfo | null;
+
+  // 归档状态（独立于 status 生命周期；true 时全部写入口锁定，需反归档）
+  is_archived?: boolean;
+  archived_at?: string | null; // YYYY-MM-DD
+  archived_note?: string | null;
 }

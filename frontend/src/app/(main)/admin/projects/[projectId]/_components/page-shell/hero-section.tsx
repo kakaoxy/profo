@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { MapPin, Pencil } from "lucide-react";
+import { Archive, MapPin, Pencil } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useCurrentDate } from "@/hooks/use-current-date";
@@ -196,6 +196,8 @@ export function HeroSection({
   const pillLabel = getStatusPillLabel(project, statusStage.key, stageLabel);
   const businessFormLabel = getBusinessFormLabel(project.business_form);
   const metaParts = buildMetaParts(project, statusStage.key, today);
+  // 归档态单一判据：归档后状态 pill 旁追加锁形 badge，隐藏「修改销售信息」写入口
+  const isArchived = project.is_archived === true;
 
   return (
     <section className="relative pb-[22px] pt-2">
@@ -231,6 +233,20 @@ export function HeroSection({
                   {businessFormLabel}
                 </span>
               )}
+              {/* 归档徽标（锁形 fog pill，与列表页「已归档」徽标一致） */}
+              {isArchived && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-fog px-[13px] py-[5px] text-[13px] font-[450] text-ash"
+                  title={
+                    project.archived_note
+                      ? `归档说明：${project.archived_note}`
+                      : "项目已归档，写操作需先反归档"
+                  }
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                  已归档
+                </span>
+              )}
             </div>
 
             {metaParts.length > 0 && (
@@ -245,8 +261,9 @@ export function HeroSection({
             )}
           </div>
 
-          {/* 已售态「修改销售信息」textlink（原型 .textlink，联动 EditSalesInfoDialog） */}
-          {onEditSalesInfo && (
+          {/* 已售态「修改销售信息」textlink（原型 .textlink，联动 EditSalesInfoDialog）；
+              已归档时隐藏（写入口收敛，需先反归档） */}
+          {onEditSalesInfo && !isArchived && (
             <div className="pb-1.5">
               <button
                 type="button"

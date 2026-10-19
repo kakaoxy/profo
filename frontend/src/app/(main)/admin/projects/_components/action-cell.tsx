@@ -3,7 +3,15 @@
 import { useCallback, useState } from "react";
 import { Row, TableMeta } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { LineChart, Wallet, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  LineChart,
+  Wallet,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Archive,
+  ArchiveRestore,
+} from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -24,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { Project } from "../types";
 import { deleteProjectAction } from "../actions/core";
+import { ArchiveDialog } from "./archive-dialog";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
@@ -40,6 +49,12 @@ interface ActionCellProps {
 export function ActionCell({ row, onEdit }: ActionCellProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [archiveMode, setArchiveMode] = useState<"archive" | "unarchive" | null>(null);
+
+  // 归档态单一判据：归档后隐藏删除入口（后端亦 400 兜底），仅保留反归档入口
+  const isArchived = row.original.is_archived === true;
+  // 仅已售 / 已下架可归档（与后端 ARCHIVABLE_STATUSES 对齐）
+  const canArchive = row.original.status === "sold" || row.original.status === "ended";
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -109,15 +124,31 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
                 编辑
               </DropdownMenuItem>
             </HasPermission>
-            <HasPermission code={PERMISSION_CODES.PROJECT_DELETE}>
-              <DropdownMenuItem
-                onSelect={() => setDeleteOpen(true)}
-                className="text-error focus:text-error"
-              >
-                <Trash2 className="h-3.5 w-3.5 mr-2" />
-                删除
-              </DropdownMenuItem>
+            <HasPermission code={PERMISSION_CODES.PROJECT_WRITE}>
+              {isArchived ? (
+                <DropdownMenuItem onSelect={() => setArchiveMode("unarchive")}>
+                  <ArchiveRestore className="h-3.5 w-3.5 mr-2" />
+                  反归档
+                </DropdownMenuItem>
+              ) : canArchive ? (
+                <DropdownMenuItem onSelect={() => setArchiveMode("archive")}>
+                  <Archive className="h-3.5 w-3.5 mr-2" />
+                  归档
+                </DropdownMenuItem>
+              ) : null}
             </HasPermission>
+            {/* 归档项目不可删除（需先反归档，后端亦 400） */}
+            {!isArchived && (
+              <HasPermission code={PERMISSION_CODES.PROJECT_DELETE}>
+                <DropdownMenuItem
+                  onSelect={() => setDeleteOpen(true)}
+                  className="text-error focus:text-error"
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  删除
+                </DropdownMenuItem>
+              </HasPermission>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -143,6 +174,14 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 归档 / 反归档弹窗（成功后在弹窗内 router.refresh 刷新列表） */}
+      <ArchiveDialog
+        open={archiveMode !== null}
+        onOpenChange={(open) => setArchiveMode(open ? archiveMode : null)}
+        projectId={row.original.id}
+        mode={archiveMode ?? "archive"}
+      />
     </>
   );
 }

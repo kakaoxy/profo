@@ -22,10 +22,12 @@ from sqlalchemy.orm import Session
 from models import ProjectInteraction, ProjectRenovation, RenovationPhoto, User
 from models.common import BusinessForm, RenovationStage
 from schemas.project import (
+    ProjectArchiveRequest,
     ProjectCreate,
     ProjectResponse,
     ProjectStatusUpdate,
     ProjectTodoBoardResponse,
+    ProjectUnarchiveRequest,
     ProjectUpdate,
     TodoBoardRulesResponse,
     TodoBoardRulesUpdateRequest,
@@ -40,6 +42,7 @@ from settings import settings
 
 # 导入拆分后的子服务
 from . import todo_board_config
+from .archive import ProjectArchiveService
 from .core import ProjectCoreService
 from .finance import FinanceService
 from .renovation import RenovationService
@@ -72,6 +75,7 @@ class ProjectService:
         self._sales_service = SalesService(db)
         self._finance_service = FinanceService(db)
         self._todo_board_service = TodoBoardService(db)
+        self._archive_service = ProjectArchiveService(db)
 
     # ========== TodoBoardService 方法委托 ==========
 
@@ -86,6 +90,30 @@ class ProjectService:
     def update_todo_board_config(self, req: TodoBoardRulesUpdateRequest, operator_id: str) -> TodoBoardRulesResponse:
         """待办规则阈值配置保存（仅管理员，Router 层已校验角色）."""
         return todo_board_config.save_rules_config(self.db, req, operator_id)
+
+    # ========== ProjectArchiveService 方法委托 ==========
+
+    def archive_project(
+        self,
+        project_id: uuid.UUID,
+        data: ProjectArchiveRequest,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> ProjectResponse:
+        """归档项目（sold/ended → 已归档，归档后全量锁定写操作）."""
+        return self._archive_service.archive_project(project_id, data, operator_id=operator_id, request=request)
+
+    def unarchive_project(
+        self,
+        project_id: uuid.UUID,
+        data: ProjectUnarchiveRequest,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> ProjectResponse:
+        """反归档项目（恢复可编辑，原因必填并写审计日志）."""
+        return self._archive_service.unarchive_project(project_id, data, operator_id=operator_id, request=request)
 
     # ========== ProjectCoreService 方法委托 ==========
 
@@ -121,6 +149,7 @@ class ProjectService:
         monitor_sort: bool = False,
         keyword: str | None = None,
         contract_sort: bool = False,
+        is_archived: bool | None = None,
     ) -> dict[str, Any]:
         """获取项目列表."""
         effective_page_size = page_size if page_size is not None else settings.default_page_size
@@ -134,6 +163,7 @@ class ProjectService:
             monitor_sort=monitor_sort,
             keyword=keyword,
             contract_sort=contract_sort,
+            is_archived=is_archived,
         )
 
     def update_project(

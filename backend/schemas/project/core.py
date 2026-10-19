@@ -21,6 +21,10 @@ class ProjectFilter(BaseModel):
     community_name: str | None = Field(None, description="小区名称筛选")
     business_form: BusinessForm | None = Field(None, description="业务形式筛选")
     keyword: str | None = Field(None, max_length=100, description="模糊搜索: 小区名称/合同编号")
+    is_archived: bool | None = Field(
+        None,
+        description="归档状态筛选: None=全部, false=仅未归档, true=仅已归档",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -322,6 +326,10 @@ class ProjectResponse(BaseModel):
     )
     finance_settled_date: date | None = Field(None, description="资金账本结算日期")
     finance_settled_note: str | None = Field(None, description="资金账本结算说明")
+
+    is_archived: bool = Field(default=False, description="项目归档标记（true 时全部写接口锁定）")
+    archived_at: date | None = Field(None, description="归档日期")
+    archived_note: str | None = Field(None, description="归档说明")
 
     # 业务身份标志（基于当前请求用户计算，用于前端按钮显隐判断）
     renovation: RenovationInfoResponse | None = Field(

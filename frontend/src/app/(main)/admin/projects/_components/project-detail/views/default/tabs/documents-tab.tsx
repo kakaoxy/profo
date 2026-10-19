@@ -46,6 +46,8 @@ interface DocumentsTabProps {
   attachments?: AttachmentInfo[];
   /** 打开上传弹窗（弹窗由 DefaultView 统一挂载，供附件库入口复用） */
   onOpenUpload: (doc: DocumentResponse) => void;
+  /** 只读态（项目已归档）：隐藏新增/保存/状态切换/上传/删除入口 */
+  readOnly?: boolean;
 }
 
 /** 6 类文书分组图标（对齐原型 .doc-group-head .ic） */
@@ -69,6 +71,7 @@ export function DocumentsTab({
   onUploadAttachment,
   attachments,
   onOpenUpload,
+  readOnly = false,
 }: DocumentsTabProps) {
   const [docs, setDocs] = useState<DocumentResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,32 +231,36 @@ export function DocumentsTab({
         <div>
           <h3 className="text-base font-medium text-ink">文书签收清单</h3>
           <p className="mt-0.5 text-[13px] font-[430] text-graphite">
-            6 类要件 · 归档后可挂附件 · 变更后批量保存
+            {readOnly
+              ? "6 类要件 · 项目已归档，文书清单为只读"
+              : "6 类要件 · 归档后可挂附件 · 变更后批量保存"}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-4">
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-[450] text-ink hover:underline hover:underline-offset-4"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            新增文书
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!hasDirty || saving}
-            className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-[450] text-ink hover:underline hover:underline-offset-4 disabled:cursor-default disabled:text-dove disabled:hover:no-underline"
-          >
-            {saving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
-            {saving ? "保存中..." : "保存"}
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="flex shrink-0 items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-[450] text-ink hover:underline hover:underline-offset-4"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              新增文书
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!hasDirty || saving}
+              className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-[450] text-ink hover:underline hover:underline-offset-4 disabled:cursor-default disabled:text-dove disabled:hover:no-underline"
+            >
+              {saving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Save className="h-3.5 w-3.5" />
+              )}
+              {saving ? "保存中..." : "保存"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 三态图例（原型 .doc-legend / .doc-state）：pill + 说明文字 */}
@@ -357,7 +364,9 @@ export function DocumentsTab({
                       const draft = drafts[doc.id];
                       if (!draft) return null;
                       const showUpload =
-                        draft.signoff_status === "archived" && Boolean(onUploadAttachment);
+                        !readOnly &&
+                        draft.signoff_status === "archived" &&
+                        Boolean(onUploadAttachment);
                       const attachmentCount =
                         attachments?.filter((a) => a.category === doc.category).length ?? 0;
                       return (
@@ -366,6 +375,7 @@ export function DocumentsTab({
                           doc={doc}
                           draft={draft}
                           showUpload={showUpload}
+                          readOnly={readOnly}
                           attachmentCount={attachmentCount}
                           onStatusChange={handleStatusChange}
                           onUpdateDraft={updateDraft}

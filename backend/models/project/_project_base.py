@@ -90,6 +90,28 @@ class Project(BaseModel):
         comment="资金账本结算说明",
     )
 
+    # ===== 归档标记（独立于 ProjectStatus 生命周期状态机）=====
+    # 归档后所有项目写接口 400（含更新/状态流转/文书/装修/销售/删除），需反归档恢复可写。
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+        comment="项目归档标记(归档后全量锁定写操作)",
+    )
+    archived_at: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+        default=None,
+        comment="归档日期(业务口径,弹窗必填)",
+    )
+    archived_note: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+        default=None,
+        comment="归档说明",
+    )
+
     key_note: Mapped[str | None] = mapped_column(
         String(200),
         nullable=True,

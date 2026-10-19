@@ -29,6 +29,7 @@ import { SellingView } from "../../_components/project-detail/views/selling";
 import type { ActivityTabKey } from "../../_components/project-detail/views/selling/activity-tabs";
 import { SoldView } from "../../_components/project-detail/views/sold";
 import { EndedView } from "../../_components/project-detail/views/ended";
+import { ArchiveDialog } from "../../_components/archive-dialog";
 import { HandoverDialog } from "../../_components/project-detail/views/default/handover-dialog";
 import { ListingDialog } from "../../_components/project-detail/views/renovation/listing-dialog";
 import { DealDialog } from "../../_components/project-detail/views/selling/deal-dialog";
@@ -79,6 +80,9 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
 
   // 已售态「修改销售信息」textlink → SoldView 内 EditSalesInfoDialog 受控开关
   const [soldEditOpen, setSoldEditOpen] = useState(false);
+
+  // 归档 / 反归档弹窗（null = 关闭；仅 sold/ended 项目可归档，已归档仅可反归档）
+  const [archiveMode, setArchiveMode] = useState<"archive" | "unarchive" | null>(null);
 
   // 全量刷新期间主列显示卡片级 skeleton（V4.1 加载规范；局部刷新不显示）
   const [isRefreshingFull, setIsRefreshingFull] = useState(false);
@@ -140,7 +144,9 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
           ? attachments.map((a) => ({ ...a, size: a.size ?? 0 }))
           : null,
         // 并发合并防护：显式删除信号（后端按 url 移除，避免旧快照覆写复活已删项）
-        ...(options?.removedUrls?.length ? { signing_materials_removed_urls: options.removedUrls } : {}),
+        ...(options?.removedUrls?.length
+          ? { signing_materials_removed_urls: options.removedUrls }
+          : {}),
       });
       if (!result.success) {
         toast.error(result.message || "附件保存失败");
@@ -279,6 +285,8 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
           onBack={handleClose}
           onEdit={handleEditClick}
           onDelete={() => setIsDeleteOpen(true)}
+          onArchive={() => setArchiveMode("archive")}
+          onUnarchive={() => setArchiveMode("unarchive")}
         />
         <HeroSection
           project={project}
@@ -434,6 +442,15 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
         open={stageDialog === "deal"}
         onOpenChange={closeStageDialog}
         onSuccess={handleDealSuccess}
+      />
+
+      {/* 归档 / 反归档弹窗（成功后在弹窗内 router.refresh，此处再局部刷新详情数据） */}
+      <ArchiveDialog
+        open={archiveMode !== null}
+        onOpenChange={(open) => setArchiveMode(open ? archiveMode : null)}
+        projectId={project.id}
+        mode={archiveMode ?? "archive"}
+        onSuccess={() => refreshProjectData(true)}
       />
 
       {/* 编辑已改为项目信息卡就地编辑（InfoTab），此处不再挂载编辑弹窗 */}

@@ -4,6 +4,9 @@
 """
 
 # 1. 导入 Core (基础 CRUD)
+# 1.1 归档状态（触发动作类 *Request）
+from .archive import ProjectArchiveRequest, ProjectUnarchiveRequest
+
 # 2. 导入规范化表 Schema
 from .contract import (
     ContractBase,
@@ -197,6 +200,8 @@ __all__ = [
     "OwnerListResponse",
     "OwnerResponse",
     "OwnerUpdate",
+    # Archive
+    "ProjectArchiveRequest",
     # Core
     "ProjectBase",
     "ProjectCompleteRequest",
@@ -209,6 +214,7 @@ __all__ = [
     "ProjectStatsResponse",
     "ProjectStatusUpdate",
     "ProjectTodoBoardResponse",
+    "ProjectUnarchiveRequest",
     "ProjectUpdate",
     "ReceivablePayableItem",
     "ReceivablePayableResponse",

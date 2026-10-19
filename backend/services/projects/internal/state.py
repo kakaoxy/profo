@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from models import Project
 from models.common import ProjectStatus
 from schemas.project import ProjectStatusUpdate
+from services.projects.archive import assert_project_not_archived
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 
 
@@ -111,6 +112,9 @@ class ProjectStateManager:
         if locked_project is None:
             msg = "项目不存在"
             raise ResourceNotFoundError(msg)
+
+        # 归档写锁（锁定后持最新值判断，防并发归档/反归档竞态）
+        assert_project_not_archived(locked_project)
 
         # 用锁定后的最新状态验证流转合法性（防止并发期间状态已变更）
         self.validate_transition(locked_project.status, new_status)

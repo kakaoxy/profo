@@ -119,6 +119,7 @@ class ProjectQueryService:
         monitor_sort: bool = False,
         keyword: str | None = None,
         contract_sort: bool = False,
+        is_archived: bool | None = None,
     ) -> list[Project]:
         """分页获取项目列表.
 
@@ -135,6 +136,7 @@ class ProjectQueryService:
                 + 创建时间升序，需在 LIMIT 前应用以保证返回优先级最高的项目
             keyword: 模糊搜索关键词（匹配小区名称 或 合同编号）
             contract_sort: 按合同编号降序（越新越前），供项目记账列表使用
+            is_archived: 归档筛选（None=全部，False=仅未归档，True=仅已归档）
 
         Returns:
             包含项目列表和分页信息的字典
@@ -145,6 +147,9 @@ class ProjectQueryService:
 
         if status:
             query = query.filter(Project.status == status)
+
+        if is_archived is not None:
+            query = query.filter(Project.is_archived.is_(is_archived))
 
         if community_name:
             query = query.filter(

@@ -13,6 +13,8 @@ import { requirePermission } from "@/lib/auth/server/require-permission";
 type ProjectCreate = components["schemas"]["ProjectCreate"];
 type ProjectUpdate = components["schemas"]["ProjectUpdate"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
+type ProjectArchiveRequest = components["schemas"]["ProjectArchiveRequest"];
+type ProjectUnarchiveRequest = components["schemas"]["ProjectUnarchiveRequest"];
 type GetProjectQuery =
   operations["get_project_api_v1_projects__project_id__get"]["parameters"]["query"];
 
@@ -115,6 +117,17 @@ const projectStatusSchema = z.enum(
   "项目状态不合法",
 );
 
+// 归档 - 对齐后端 ProjectArchiveRequest（归档日期必填 YYYY-MM-DD，说明选填≤500）
+const archiveProjectSchema = z.object({
+  archived_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "请选择有效的归档日期"),
+  archived_note: z.string().max(500, "归档说明不能超过 500 字").nullable().optional(),
+});
+
+// 反归档 - 对齐后端 ProjectUnarchiveRequest（原因必填≤500）
+const unarchiveProjectSchema = z.object({
+  reason: z.string().trim().min(1, "请填写反归档原因").max(500, "反归档原因不能超过 500 字"),
+});
+
 /**
  * 创建项目
  */
@@ -189,6 +202,82 @@ export async function updateProjectAction(id: string, data: ProjectUpdate) {
     return { success: true, message: "项目更新成功" };
   } catch (e) {
     logger.error("更新项目异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 归档项目 (sold/ended → 已归档)
+ *
+ * 归档后项目全部写接口 400，需反归档恢复可编辑。
+ */
+export async function archiveProjectAction(projectId: string, data: ProjectArchiveRequest) {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return { success: false, message: idParsed.error.issues[0]?.message || "输入校验失败" };
+  }
+  const parsed = archiveProjectSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.issues[0]?.message || "输入校验失败" };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+  try {
+    const client = await fetchClient();
+    const { error } = await client.POST("/api/v1/projects/{project_id}/archive", {
+      params: { path: { project_id: projectId } },
+      body: data,
+    });
+
+    if (error) {
+      const errorMsg = (error as { message?: string }).message || "归档失败";
+      return { success: false, message: errorMsg };
+    }
+
+    revalidatePath("/admin/projects");
+    revalidatePath(`/admin/projects/${projectId}`);
+    return { success: true, message: "项目已归档" };
+  } catch (e) {
+    logger.error("归档项目异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 反归档项目 (已归档 → 未归档，原因必填)
+ */
+export async function unarchiveProjectAction(projectId: string, data: ProjectUnarchiveRequest) {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return { success: false, message: idParsed.error.issues[0]?.message || "输入校验失败" };
+  }
+  const parsed = unarchiveProjectSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.issues[0]?.message || "输入校验失败" };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+  try {
+    const client = await fetchClient();
+    const { error } = await client.POST("/api/v1/projects/{project_id}/unarchive", {
+      params: { path: { project_id: projectId } },
+      body: data,
+    });
+
+    if (error) {
+      const errorMsg = (error as { message?: string }).message || "反归档失败";
+      return { success: false, message: errorMsg };
+    }
+
+    revalidatePath("/admin/projects");
+    revalidatePath(`/admin/projects/${projectId}`);
+    return { success: true, message: "已反归档，项目恢复可编辑" };
+  } catch (e) {
+    logger.error("反归档项目异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

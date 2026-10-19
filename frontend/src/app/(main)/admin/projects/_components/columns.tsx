@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
+import { Archive } from "lucide-react";
 import Link from "next/link";
 import { Project } from "../types";
 import { ActionCell, ProjectTableMeta } from "./action-cell";
@@ -48,12 +49,26 @@ export const columns: ColumnDef<Project>[] = [
     header: "项目名称 / 合同编号",
     cell: ({ row }) => {
       const status = row.original.status || DEFAULT_STATUS;
+      const isArchived = row.original.is_archived === true;
 
       return (
         <div className="flex flex-col py-1 min-w-35">
-          <span className="font-medium text-ink text-[15px] truncate max-w-50 md:max-w-xs">
-            {row.original.name}
-          </span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-medium text-ink text-[15px] truncate max-w-50 md:max-w-xs">
+              {row.original.name}
+            </span>
+            {/* 归档徽标（锁形 + fog 底，风格对齐既有状态徽章） */}
+            {isArchived && (
+              <Badge
+                variant="secondary"
+                className="shrink-0 inline-flex items-center gap-1 text-[10px] px-1.5 py-0 h-5 border-none rounded-full bg-fog text-ash"
+                title="已归档：项目写操作已锁定"
+              >
+                <Archive className="h-3 w-3" />
+                已归档
+              </Badge>
+            )}
+          </div>
 
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[11px] text-graphite font-mono tracking-tight">

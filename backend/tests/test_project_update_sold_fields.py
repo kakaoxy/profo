@@ -1,22 +1,30 @@
-"""测试已售状态下项目信息更新的字段白名单行为.
+"""已售（sold）项目字段可写性回归测试.
 
-回归背景：`_filter_allowed_fields` 白名单遗漏 `project_manager_id`，导致已售
-（sold）状态下通过 PUT /api/v1/projects/{id} 提交的项目负责人被静默丢弃——
-接口返回 200 但数据库不更新，前端保存后仍显示"未设置"。本测试锁定：
-1. 已售状态下 project_manager_id 必须可更新并持久化（修复项）
-2. 已售状态对合同等敏感字段的过滤语义保持不变（防回归）
+历史背景：``ProjectUpdater._filter_allowed_fields`` 白名单在 sold 状态下静默丢弃
+合同/业主列表等字段（接口仍返回 200），是「成交后无法修改信息、无法上传附件」的
+根因。SPEC-project-archive 已**移除该白名单**，写锁语义收口到独立归档标记
+（``Project.is_archived`` + ``assert_project_not_archived``）。
+
+本文件锁定新语义（与 test_project_archive.py 互补）：
+1. sold 状态下 project_manager_id / contract_no / owner_info / owners 列表全部可写；
+2. 归档后同样的写入被拒绝（400），不再静默丢字段；
+3. 文件名保留（避免引用断裂），正文语义已按白名单移除重写。
 """
 
 import uuid
+from datetime import date
 from typing import Any
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from models import Project
 from models.common import ProjectStatus
 from schemas.project import ProjectUpdate
+from schemas.project.archive import ProjectArchiveRequest
 from services.projects.facade import ProjectService
+from services.system.exceptions import ValidationError
 
 
 @pytest.fixture
@@ -46,12 +54,7 @@ def test_update_sold_project_manager_id_persists(
     sold_project: Project,
     admin_user_id: str,
 ) -> None:
-    """已售状态下更新 project_manager_id 必须持久化并回显.
-
-    修复前：_filter_allowed_fields 白名单无 project_manager_id，字段被静默
-    过滤，DB 保持 NULL，响应 project_manager 为 None（保存后界面仍显示
-    "没有项目负责人"）。
-    """
+    """已售状态下更新 project_manager_id 必须持久化并回显."""
     service = ProjectService(db_session)
     resp = service.update_project(
         sold_project.id,
@@ -66,51 +69,50 @@ def test_update_sold_project_manager_id_persists(
     assert sold_project.project_manager_id == admin_user_id
 
 
-def test_update_sold_project_contract_field_still_filtered(
+def test_update_sold_project_contract_field_persists(
     db_session: Session,
     sold_project: Project,
     admin_user_id: str,
 ) -> None:
-    """已售状态下合同等敏感字段的过滤语义保持不变（防回归）."""
+    """已售状态下合同字段（原白名单锁定项）必须持久化.
+
+    白名单移除后语义反转：contract_no / signing_price 不再被静默过滤，
+    成交后补录/校正合同信息按业务预期生效。
+    """
     service = ProjectService(db_session)
-    # contract_no 不在白名单内，应被静默过滤（不更新、不报错）
+    contract_no = f"SH{uuid.uuid4().hex[:8].upper()}-DL"
     resp = service.update_project(
         sold_project.id,
-        ProjectUpdate(contract_no="SHOULD-NOT-PERSIST", project_manager_id=admin_user_id),
+        ProjectUpdate(
+            contract_no=contract_no,
+            signing_price=123,
+            project_manager_id=admin_user_id,
+        ),
     )
 
-    # 负责人仍应更新（白名单新增字段生效）
+    # 负责人仍应更新
     assert resp.project_manager is not None
     assert resp.project_manager.id == admin_user_id
 
-    # 合同编号未被写入（白名单过滤语义保持；contract_no 存于 project_contracts 表）
-    from sqlalchemy import text
-
-    rows = db_session.execute(
-        text("SELECT contract_no FROM project_contracts WHERE project_id = :pid AND is_deleted = false"),
+    row = db_session.execute(
+        text("SELECT contract_no, signing_price FROM project_contracts WHERE project_id = :pid AND is_deleted = false"),
         {"pid": sold_project.id},
-    ).fetchall()
-    assert all(r[0] != "SHOULD-NOT-PERSIST" for r in rows)
+    ).fetchone()
+    assert row is not None
+    assert row[0] == contract_no
+    assert str(row[1]) == "123.00"
 
 
 def test_update_sold_project_top_level_owner_info_persists(
     db_session: Session,
     sold_project: Project,
 ) -> None:
-    """已售状态下顶层 owner_info（业主备注）必须写入 project_owners 表.
-
-    回归背景：白名单新增 owner_info 后，_update_owner_fields 的 owner_fields
-    未包含该字段，导致 update_dict 中的 owner_info 落入 _update_remaining_fields，
-    而 Project 主表无此列（owner_info 属于 project_owners），被 hasattr 静默丢弃——
-    接口返回 200 但备注未保存。
-    """
+    """已售状态下顶层 owner_info（业主备注）必须写入 project_owners 表."""
     service = ProjectService(db_session)
     service.update_project(
         sold_project.id,
         ProjectUpdate(owner_info="已售业主备注"),
     )
-
-    from sqlalchemy import text
 
     rows = db_session.execute(
         text("SELECT owner_info FROM project_owners WHERE project_id = :pid AND is_deleted = false"),
@@ -119,15 +121,14 @@ def test_update_sold_project_top_level_owner_info_persists(
     assert any(r[0] == "已售业主备注" for r in rows)
 
 
-def test_update_sold_project_owners_list_locked(
+def test_update_sold_project_owners_list_writable(
     db_session: Session,
     sold_project: Project,
 ) -> None:
-    """已售状态下 owners 列表结构（增删业主）必须被锁定.
+    """已售状态下 owners 列表（增删业主）可写.
 
-    回归背景：owners 在 _filter_allowed_fields 过滤前被 pop 出 update_dict，
-    白名单（声明锁定 owners 列表）对其不生效——客户端可直接 PUT 增删
-    已售项目的业主列表。修复后已售状态丢弃 owners_payload，不触发 sync_owners。
+    旧白名单语义直接丢弃 owners_payload；归档锁替代后，未归档的 sold 项目
+    业主列表同步正常生效（归档后才拒绝）。
     """
     service = ProjectService(db_session)
     service.update_project(
@@ -143,10 +144,31 @@ def test_update_sold_project_owners_list_locked(
         ),
     )
 
-    from sqlalchemy import text
-
     rows = db_session.execute(
         text("SELECT owner_name FROM project_owners WHERE project_id = :pid AND is_deleted = false"),
         {"pid": sold_project.id},
     ).fetchall()
-    assert all(r[0] != "新增业主" for r in rows)
+    assert any(r[0] == "新增业主" for r in rows)
+
+
+def test_update_archived_sold_project_rejected(
+    db_session: Session,
+    sold_project: Project,
+    admin_user_id: str,
+) -> None:
+    """归档后同样的写入被拒绝（400，Fail Loud 不再静默丢字段）."""
+    service = ProjectService(db_session)
+    service.archive_project(sold_project.id, ProjectArchiveRequest(archived_at=date(2026, 11, 25)))
+
+    with pytest.raises(ValidationError) as exc:
+        service.update_project(
+            sold_project.id,
+            ProjectUpdate(contract_no="SH-ARCHIVED", project_manager_id=admin_user_id),
+        )
+    assert "项目已归档" in str(exc.value)
+
+    rows = db_session.execute(
+        text("SELECT contract_no FROM project_contracts WHERE project_id = :pid AND is_deleted = false"),
+        {"pid": sold_project.id},
+    ).fetchall()
+    assert all(r[0] != "SH-ARCHIVED" for r in rows)

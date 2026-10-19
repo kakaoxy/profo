@@ -22,6 +22,8 @@ from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
 from services.system.operation_log import operation_log_service
 from utils.storage import extract_storage_key, get_storage_backend
 
+from .archive import assert_project_not_archived
+
 logger = logging.getLogger(__name__)
 
 # 允许更新的装修字段白名单（防止设置 id/is_deleted 等敏感字段）
@@ -202,6 +204,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
+        assert_project_not_archived(project)
 
         # 验证当前状态
         allowed_statuses = [
@@ -296,6 +299,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
+        assert_project_not_archived(project)
 
         allowed_statuses = [
             ProjectStatus.RENOVATING.value,
@@ -375,6 +379,7 @@ class RenovationService:
     def update_info(self, project_id: uuid.UUID, renovation_data: dict[str, Any]) -> ProjectRenovation:
         """更新装修信息."""
         project = self._get_project(project_id)
+        assert_project_not_archived(project)
 
         # 验证状态
         allowed_statuses = [
@@ -430,6 +435,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
+        assert_project_not_archived(project)
 
         allowed_statuses = [
             ProjectStatus.RENOVATING.value,
@@ -512,6 +518,8 @@ class RenovationService:
             request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
         """
+        project = self._get_project(project_id)
+        assert_project_not_archived(project)
         photo = (
             self.db.query(RenovationPhoto)
             .filter(
@@ -568,6 +576,7 @@ class RenovationService:
 
         """
         project = self._get_project(project_id)
+        assert_project_not_archived(project)
 
         # 验证状态
         allowed_statuses = [

@@ -190,6 +190,7 @@ from migrations._permission_system import (
     migrate_permission_system,
     migrate_project_business_permission,
 )
+from migrations._project_archive import add_project_archive_columns
 from migrations._project_booking_share import create_project_booking_and_share_tables
 from migrations._project_booking_status import add_project_booking_status_column
 from migrations._property_sheet import create_property_sheet_tables
@@ -318,6 +319,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_finance_record_receipt_urls_column(engine)
         add_cashflow_category_enum_values(engine)
         add_project_finance_settlement_columns(engine)
+        # 项目归档状态：projects 补加 is_archived / archived_at / archived_note 三列（独立归档标记）
+        add_project_archive_columns(engine)
         migrate_add_ended_status(engine)
         migrate_record_date_to_timestamptz(engine)
         migrate_project_date_columns_to_date(engine)

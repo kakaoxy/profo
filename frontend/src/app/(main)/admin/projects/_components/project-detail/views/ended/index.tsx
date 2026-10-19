@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Loader2, MapPin, Info, AlertTriangle } from "lucide-react";
+import { Trash2, Loader2, MapPin, Info, AlertTriangle, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,6 +30,8 @@ interface EndedViewProps {
 
 export function EndedView({ project, onClose, onDelete }: EndedViewProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  // 归档态单一判据：已归档项目不可删除（需先反归档，后端亦 400）
+  const isArchived = project.is_archived === true;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -79,6 +81,12 @@ export function EndedView({ project, onClose, onDelete }: EndedViewProps) {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground tracking-tight">{project.name}</h1>
               <Badge className={getProjectStatusClassName(project.status)}>已下架</Badge>
+              {isArchived && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-fog px-2.5 py-1 text-xs font-[450] text-ash">
+                  <Archive className="h-3.5 w-3.5" />
+                  已归档
+                </span>
+              )}
             </div>
             {project.community_name && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -126,15 +134,19 @@ export function EndedView({ project, onClose, onDelete }: EndedViewProps) {
             <InfoItem label="委托期限" value={commissionRange} className="sm:col-span-2" />
           </InfoSection>
 
-          {/* 危险操作卡：onDelete 未提供时降级为视图内删除确认（抽屉场景） */}
+          {/* 危险操作卡：onDelete 未提供时降级为视图内删除确认（抽屉场景）；已归档隐藏删除 */}
           <div className="rounded-cards border border-[#f0dcd2] bg-[#fdf9f6] p-6">
             <div className="mb-2 flex items-center gap-2 text-base font-[500] text-rust">
               <AlertTriangle className="h-4 w-4" />
               危险操作
             </div>
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-sm font-[430] text-ash">删除后项目进入回收状态，仅管理员可见。</p>
-              {onDelete ? (
+              <p className="text-sm font-[430] text-ash">
+                {isArchived
+                  ? "项目已归档，如需删除请先反归档。"
+                  : "删除后项目进入回收状态，仅管理员可见。"}
+              </p>
+              {isArchived ? null : onDelete ? (
                 deleteTriggerButton
               ) : (
                 <AlertDialog>

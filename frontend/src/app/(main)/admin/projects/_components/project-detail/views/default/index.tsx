@@ -63,6 +63,8 @@ export function DefaultView({
   usersById,
   editRequest,
 }: DefaultViewProps) {
+  // 归档态单一判据：已归档项目收敛全部写入口（编辑/上传/附件删除/文书增删改）
+  const isArchived = project.is_archived === true;
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadTargetDoc, setUploadTargetDoc] = useState<DocumentResponse | null>(null);
 
@@ -93,6 +95,11 @@ export function DefaultView({
   const uploadHandler =
     onUploadAttachment ?? (onUpdateAttachments ? handleUploadAttachment : undefined);
 
+  // 归档后附件仅可预览/下载：剔除删除处理器（后端 PUT 也 400，双保险）
+  const attachmentHandlers: AttachmentHandlers = isArchived
+    ? { ...handlers, onDelete: undefined }
+    : handlers;
+
   const openUploadDialog = (doc: DocumentResponse | null) => {
     // 分类在打开时固化，后续每个文件完成时都从 ref 读取，不受弹窗状态变化影响
     uploadCategoryRef.current = doc?.category ?? "other";
@@ -122,28 +129,29 @@ export function DefaultView({
       {/* 项目信息卡（InfoTab 自带卡容器；V4.3 就地编辑：onProjectSaved 传入时卡片内编辑） */}
       <InfoTab
         project={project}
-        onEdit={onEditProject}
-        inlineEditable={!!onProjectSaved}
+        onEdit={isArchived ? undefined : onEditProject}
+        inlineEditable={!!onProjectSaved && !isArchived}
         onInlineSaved={onProjectSaved}
         usersById={usersById}
         editRequest={editRequest}
       />
 
-      {/* 文书签收清单卡（分区导航「文书与附件」锚点） */}
+      {/* 文书签收清单卡（分区导航「文书与附件」锚点；已归档时只读） */}
       <section id={PROJECT_SECTION_IDS.documents} className="scroll-mt-28 md:scroll-mt-24">
         <DocumentsTab
           project={project}
-          onUploadAttachment={uploadHandler}
+          readOnly={isArchived}
+          onUploadAttachment={isArchived ? undefined : uploadHandler}
           attachments={attachments}
           onOpenUpload={openUploadDialog}
         />
       </section>
 
-      {/* 附件库卡 */}
+      {/* 附件库卡（已归档时隐藏「上传附件」入口） */}
       <AttachmentsTab
         attachments={attachments}
-        handlers={handlers}
-        onUpload={uploadHandler ? () => openUploadDialog(null) : undefined}
+        handlers={attachmentHandlers}
+        onUpload={!isArchived && uploadHandler ? () => openUploadDialog(null) : undefined}
       />
 
       {/* 文件上传弹窗（归档文书 / 附件库卡头共用）：分类继承自目标文书 */}

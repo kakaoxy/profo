@@ -1969,6 +1969,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive Project
+         * @description 归档项目（sold/ended → 已归档）.
+         *
+         *     归档后项目所有写接口（更新/状态流转/文书/装修/销售/删除）统一 400，需反归档恢复。
+         *     权限复用 project:write（不新增权限码）；速率限制同状态流转。
+         */
+        post: operations["archive_project_api_v1_projects__project_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unarchive Project
+         * @description 反归档项目（已归档 → 未归档，原因必填并写审计日志）.
+         *
+         *     反归档后项目恢复可编辑；速率限制同状态流转。
+         */
+        post: operations["unarchive_project_api_v1_projects__project_id__unarchive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/complete": {
         parameters: {
             query?: never;
@@ -13480,6 +13525,23 @@ export interface components {
             created_by_name?: string | null;
         };
         /**
+         * ProjectArchiveRequest
+         * @description 项目归档请求（sold/ended → 已归档）.
+         */
+        ProjectArchiveRequest: {
+            /**
+             * Archived At
+             * Format: date
+             * @description 归档日期（业务口径，弹窗必填，默认今天）
+             */
+            archived_at: string;
+            /**
+             * Archived Note
+             * @description 归档说明（选填）
+             */
+            archived_note?: string | null;
+        };
+        /**
          * ProjectCompleteRequest
          * @description 确认成交请求.
          */
@@ -13991,6 +14053,22 @@ export interface components {
              * @description 资金账本结算说明
              */
             finance_settled_note?: string | null;
+            /**
+             * Is Archived
+             * @description 项目归档标记（true 时全部写接口锁定）
+             * @default false
+             */
+            is_archived: boolean;
+            /**
+             * Archived At
+             * @description 归档日期
+             */
+            archived_at?: string | null;
+            /**
+             * Archived Note
+             * @description 归档说明
+             */
+            archived_note?: string | null;
             /** @description 装修业务身份标志（含 can_edit_renovation / contact_person_id） */
             renovation?: components["schemas"]["RenovationInfoResponse"] | null;
             /** @description 销售业务身份标志（含 can_edit_sales / 3 个销售团队字段） */
@@ -14055,6 +14133,17 @@ export interface components {
              * @description 项目卡片（已按 P0 多→P1 多→滞后深排序）
              */
             projects: components["schemas"]["TodoProjectCard"][];
+        };
+        /**
+         * ProjectUnarchiveRequest
+         * @description 项目反归档请求（已归档 → 未归档）.
+         */
+        ProjectUnarchiveRequest: {
+            /**
+             * Reason
+             * @description 反归档原因（必填）
+             */
+            reason: string;
         };
         /**
          * ProjectUpdate
@@ -22933,6 +23022,7 @@ export interface operations {
                 community_name?: string | null;
                 business_form?: components["schemas"]["BusinessForm"] | null;
                 keyword?: string | null;
+                is_archived?: boolean | null;
             };
             header?: never;
             path?: never;
@@ -23254,6 +23344,78 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ProjectStatusUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_project_api_v1_projects__project_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectArchiveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unarchive_project_api_v1_projects__project_id__unarchive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUnarchiveRequest"];
             };
         };
         responses: {

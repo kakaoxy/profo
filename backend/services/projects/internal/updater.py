@@ -1,6 +1,7 @@
 """项目更新服务模块.
 
 负责项目信息的更新，包括基础字段、合同信息、业主信息和销售信息。
+已售状态不再限制可改字段（白名单已移除），写锁收口到独立归档标记。
 """
 
 import uuid
@@ -8,8 +9,9 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
-from models.common import BusinessForm, ProjectStatus
+from models.common import BusinessForm
 from schemas.project.owner import OwnerInlineUpdate
+from services.projects.archive import assert_project_not_archived
 from services.utils import parse_date_string
 
 from . import documents, owners
@@ -22,7 +24,7 @@ class ProjectUpdater:
     """项目更新服务.
 
     支持更新项目基础字段、合同信息、业主信息和销售信息。
-    已售状态下只允许修改特定字段。
+    写锁：已归档项目拒绝更新（``assert_project_not_archived``）。
 
     Attributes:
         db: SQLAlchemy数据库会话
@@ -42,7 +44,7 @@ class ProjectUpdater:
         """更新项目信息.
 
         支持更新项目基础字段、合同信息、业主信息和销售信息。
-        已售状态下只允许修改特定字段。
+        已归档项目直接 400（归档前任意状态均可修改，sold 白名单已由归档锁替代）。
 
         Args:
             project: 项目模型实例
@@ -52,17 +54,14 @@ class ProjectUpdater:
             更新后的项目模型实例
 
         """
+        # 归档写锁：Fail Loud（不再像旧 sold 白名单那样静默丢弃字段）
+        assert_project_not_archived(project)
+
         # 提前弹出 owners，避免作为普通字段更新到 project 表
         owners_payload = update_dict.pop("owners", None)
 
         # 记录变更前业务形式，用于后续文书清单同步
         old_business_form = project.business_form
-
-        # 已售状态限制可修改字段（含业主列表结构：仅允许更新白名单内的业主
-        # 基本信息字段，禁止增删业主——与 _filter_allowed_fields 白名单语义一致）
-        if project.status == ProjectStatus.SOLD.value:
-            update_dict = self._filter_allowed_fields(update_dict)
-            owners_payload = None
 
         # 更新各模块数据
         self._update_project_fields(project, update_dict)
@@ -95,46 +94,6 @@ class ProjectUpdater:
         self.db.refresh(project)
 
         return project
-
-    def _filter_allowed_fields(self, update_dict: dict[str, Any]) -> dict[str, Any]:
-        """过滤已售状态下允许修改的字段.
-
-        白名单语义：已售状态锁定合同/交易关键字段（contract_no、signing_*、
-        cost_assumption_*、commission_*、owners 列表等），但项目基础信息
-        （含 project_manager_id 项目负责人）与业主基本信息仍可维护。
-        遗漏字段会被静默丢弃且接口仍返回 200，易造成"保存成功但数据未变"的假象。
-        """
-        allowed_fields = {
-            # 项目基础信息（与签约/装修/在售阶段一致，可维护）
-            "community_id",
-            "community_name",
-            "address",
-            "building_id",
-            "room_id",
-            "dict_status",
-            "area",
-            "orientation",
-            "layout",
-            "floor_info",
-            "electricity_account",
-            "water_account",
-            "gas_account",
-            "project_manager_id",
-            "renovation_stage",
-            "notes",
-            "tags",
-            # 业主基本信息
-            "owner_name",
-            "owner_phone",
-            "owner_id_card",
-            "owner_info",
-            # 销售/交易信息（已售项目需可校正）
-            "sold_price",
-            "sold_date",
-            "list_price",
-            "listing_date",
-        }
-        return {k: v for k, v in update_dict.items() if k in allowed_fields}
 
     def _update_project_fields(
         self,

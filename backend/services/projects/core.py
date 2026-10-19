@@ -22,6 +22,7 @@ from models.common import BusinessForm, ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from services.property.dict_ownership import validate_dict_ownership
 from services.property.dict_submit_service import submit_dict_chain
+from services.system.exceptions import ValidationError
 from services.system.operation_log import operation_log_service
 from settings import settings
 
@@ -302,6 +303,7 @@ class ProjectCoreService:
         monitor_sort: bool = False,
         keyword: str | None = None,
         contract_sort: bool = False,
+        is_archived: bool | None = None,
     ) -> dict[str, Any]:
         """获取项目列表.
 
@@ -317,6 +319,7 @@ class ProjectCoreService:
                 需在分页前应用
             keyword: 模糊搜索关键词（匹配小区名称 或 合同编号）
             contract_sort: 按合同编号降序（越新越前），供项目记账列表使用
+            is_archived: 归档筛选（None=全部，False=仅未归档，True=仅已归档）
 
         Returns:
             包含项目列表和分页信息的字典
@@ -333,6 +336,7 @@ class ProjectCoreService:
             monitor_sort=monitor_sort,
             keyword=keyword,
             contract_sort=contract_sort,
+            is_archived=is_archived,
         )
 
         # 批量构建（builder 内部单次批量解析字典名称，无 N+1）
@@ -557,6 +561,10 @@ class ProjectCoreService:
 
         """
         project = self.query_service.get_by_id(project_id, include_all=False)
+        # 归档写锁：已归档项目不可删除（需先反归档，避免归档台账凭空消失）
+        if project.is_archived:
+            msg = "已归档项目不可删除，请先反归档"
+            raise ValidationError(msg)
         # 删除前快照（软删除会改写 status/is_deleted）
         before_snapshot = _project_snapshot(project)
 

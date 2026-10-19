@@ -22,6 +22,7 @@ from dependencies.auth import (
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
 from schemas.project import (
+    ProjectArchiveRequest,
     ProjectCompleteRequest,
     ProjectCreate,
     ProjectFilter,
@@ -30,6 +31,7 @@ from schemas.project import (
     ProjectStatsResponse,
     ProjectStatusUpdate,
     ProjectTodoBoardResponse,
+    ProjectUnarchiveRequest,
     ProjectUpdate,
     TodoBoardRulesResponse,
     TodoBoardRulesUpdateRequest,
@@ -159,6 +161,7 @@ def get_projects(
         community_name=filters.community_name,
         business_form=filters.business_form,
         keyword=filters.keyword,
+        is_archived=filters.is_archived,
         page=pagination.page,
         page_size=pagination.page_size,
         include_interactions=include_interactions,
@@ -348,6 +351,49 @@ def update_project_status(
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
     return project
+
+
+@router.post("/{project_id}/archive")
+@limiter.limit(RateLimits.PROJECT_STATUS_UPDATE)
+def archive_project(
+    request: Request,
+    project_id: Annotated[UUID4, Path(description="项目ID")],
+    archive_data: ProjectArchiveRequest,
+    service: ProjectServiceDep,
+    current_user: ProjectWritePermDep,
+) -> ProjectResponse:
+    """归档项目（sold/ended → 已归档）.
+
+    归档后项目所有写接口（更新/状态流转/文书/装修/销售/删除）统一 400，需反归档恢复。
+    权限复用 project:write（不新增权限码）；速率限制同状态流转。
+    """
+    return service.archive_project(
+        project_id,
+        archive_data,
+        operator_id=str(current_user.id),
+        request=request,
+    )
+
+
+@router.post("/{project_id}/unarchive")
+@limiter.limit(RateLimits.PROJECT_STATUS_UPDATE)
+def unarchive_project(
+    request: Request,
+    project_id: Annotated[UUID4, Path(description="项目ID")],
+    unarchive_data: ProjectUnarchiveRequest,
+    service: ProjectServiceDep,
+    current_user: ProjectWritePermDep,
+) -> ProjectResponse:
+    """反归档项目（已归档 → 未归档，原因必填并写审计日志）.
+
+    反归档后项目恢复可编辑；速率限制同状态流转。
+    """
+    return service.unarchive_project(
+        project_id,
+        unarchive_data,
+        operator_id=str(current_user.id),
+        request=request,
+    )
 
 
 @router.post("/{project_id}/complete", status_code=status.HTTP_201_CREATED)

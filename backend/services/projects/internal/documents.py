@@ -13,6 +13,7 @@ from models.common import BusinessForm, DocumentSignoffStatus
 from models.project._project_base import Project
 from models.project._project_document import ProjectDocument
 from schemas.project.document import DocumentCreate, DocumentUpdate
+from services.projects.archive import assert_project_not_archived
 from services.system import biz_dict
 from services.system.exceptions import ResourceNotFoundError
 from services.system.operation_log import operation_log_service
@@ -36,6 +37,26 @@ def assert_project_exists(db: Session, project_id: uuid.UUID) -> Project:
     if project is None:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
+    return project
+
+
+def assert_project_writable(db: Session, project_id: uuid.UUID) -> Project:
+    """校验项目存在、未软删除且未归档（文书写操作入口统一门禁）.
+
+    Args:
+        db: SQLAlchemy 数据库会话
+        project_id: 项目ID
+
+    Returns:
+        项目模型实例
+
+    Raises:
+        ResourceNotFoundError: 项目不存在或已软删除
+        ValidationError: 项目已归档
+
+    """
+    project = assert_project_exists(db, project_id)
+    assert_project_not_archived(project)
     return project
 
 
@@ -92,7 +113,12 @@ def create_document(
     Returns:
         创建的文书模型实例
 
+    Raises:
+        ResourceNotFoundError: 项目不存在或已软删除
+        ValidationError: 项目已归档
+
     """
+    assert_project_writable(db, project_id)
     now = datetime.now(timezone.utc)
     if payload.display_order is not None:
         display_order = payload.display_order
@@ -162,6 +188,7 @@ def update_document(
         更新后的文书模型实例；不存在或跨项目返回 None
 
     """
+    assert_project_writable(db, project_id)
     doc = (
         db.query(ProjectDocument)
         .filter(
@@ -225,6 +252,7 @@ def delete_document(
         是否找到并删除
 
     """
+    assert_project_writable(db, project_id)
     doc = (
         db.query(ProjectDocument)
         .filter(
@@ -257,6 +285,7 @@ def initialize_documents(
     project_id: uuid.UUID,
     business_form: BusinessForm | None,
     *,
+    project: Project | None = None,
     operator_id: str | None = None,
     request: Request | None = None,
 ) -> int:
@@ -268,6 +297,8 @@ def initialize_documents(
         db: SQLAlchemy 数据库会话
         project_id: 项目ID
         business_form: 业务形式枚举
+        project: 已加载的项目实例（创建链路传入：项目尚未 flush，会话 autoflush=False，
+            重新查库会误报 404）
         operator_id: 操作者用户ID（用于审计日志，可选）
         request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
@@ -276,11 +307,17 @@ def initialize_documents(
 
     Raises:
         ValueError: business_form 为 None
+        ResourceNotFoundError: 项目不存在或已软删除
+        ValidationError: 项目已归档
 
     """
     if business_form is None:
         msg = "business_form is None"
         raise ValueError(msg)
+
+    if project is None:
+        project = assert_project_exists(db, project_id)
+    assert_project_not_archived(project)
 
     # 文书模板：字典优先（运营可配），字典缺行/全部停用回退 constants/documents.py 常量
     templates = biz_dict.get_document_templates(db, business_form)

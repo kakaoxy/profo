@@ -74,7 +74,13 @@ class ProjectCreator:
 
         # 5. 初始化文书签收清单（business_form 非 NULL 时）
         if project_data.business_form is not None:
-            documents.initialize_documents(self.db, project_id, project_data.business_form)
+            # 传入尚未 flush 的 project（会话 autoflush=False，服务层重新查库会误报 404）
+            documents.initialize_documents(
+                self.db,
+                project_id,
+                project_data.business_form,
+                project=project,
+            )
 
         self.db.commit()
         self.db.refresh(project)

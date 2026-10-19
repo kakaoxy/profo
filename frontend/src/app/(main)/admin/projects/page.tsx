@@ -18,6 +18,7 @@ interface PageProps {
     page_size?: string;
     community_name?: string;
     business_form?: string;
+    is_archived?: string;
   }>;
 }
 
@@ -85,6 +86,10 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     // 保留 signing_materials,避免 useProjectDetail 的 useEffect([initialProject])
     // 在父组件重渲染时用缺失该字段的 initialProject 覆盖 refresh 拉取的完整数据
     signing_materials: item.signing_materials ?? undefined,
+    // 归档状态（列表徽标 / 抽屉写入口收敛判据）
+    is_archived: item.is_archived ?? false,
+    archived_at: item.archived_at ?? null,
+    archived_note: item.archived_note ?? null,
   };
 }
 
@@ -112,6 +117,11 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
     (params.business_form === "agent" || params.business_form === "wholesale")
   ) {
     queryParams.business_form = params.business_form;
+  }
+
+  // 归档状态筛选（三态：无参数=全部，true=仅已归档，false=仅未归档）
+  if (params.is_archived === "true" || params.is_archived === "false") {
+    queryParams.is_archived = params.is_archived === "true";
   }
 
   const client = await fetchClient();

@@ -53,6 +53,9 @@ export function InfoTab({
 }: InfoTabProps) {
   const [isEditing, setIsEditing] = useState(false);
 
+  // 归档态单一判据：已归档项目不渲染卡头「编辑」入口（后端 PUT 也 400）
+  const isArchived = project.is_archived === true;
+
   // 外部触发编辑（顶栏「编辑」editRequest 递增 → 进入编辑态）
   useEffect(() => {
     if (inlineEditable && editRequest && editRequest > 0) {
@@ -108,7 +111,14 @@ export function InfoTab({
           <h3 className="text-base font-medium text-ink">项目信息</h3>
           <p className="mt-0.5 text-[13px] font-[430] text-graphite">房源、业主与合同要件</p>
         </div>
-        {isEditing && inlineEditable ? (
+        {isArchived ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5 text-sm font-[450] text-dove"
+            title="项目已归档，请先反归档后再编辑"
+          >
+            已归档 · 只读
+          </span>
+        ) : isEditing && inlineEditable ? (
           <span className="text-sm font-[450] text-rust">编辑中</span>
         ) : inlineEditable ? (
           // V4.3 就地编辑：先经页面层全量刷新（onEdit），再借 editRequest 进入编辑态
@@ -164,9 +174,7 @@ export function InfoTab({
                 label="楼栋"
                 value={
                   <span className="inline-flex items-center gap-2">
-                    {project.building_no
-                      ? `${project.building_no}栋`
-                      : `ID:${project.building_id}`}
+                    {project.building_no ? `${project.building_no}栋` : `ID:${project.building_id}`}
                     {project.dict_status === "pending" && (
                       <span className="inline-flex items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
                         未审核
@@ -179,9 +187,7 @@ export function InfoTab({
             {(project.room_no || project.room_id) && (
               <InfoCell
                 label="户室"
-                value={
-                  project.room_no ? `${project.room_no}室` : `ID:${project.room_id}`
-                }
+                value={project.room_no ? `${project.room_no}室` : `ID:${project.room_id}`}
               />
             )}
             <InfoCell

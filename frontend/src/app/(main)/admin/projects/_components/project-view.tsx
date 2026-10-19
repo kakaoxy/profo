@@ -57,12 +57,17 @@ export function ProjectView({ data, total, counts }: ProjectViewProps) {
       (counts.ended ?? 0)
     : total;
 
-  // 1. status / business_form 通过 URL 同步由服务端筛选；searchQuery 仅作用于当前页数据
-  const [{ status: activeTab, business_form: businessForm }, setQuery] = useQueryStates(
+  // 1. status / business_form / is_archived 通过 URL 同步由服务端筛选；searchQuery 仅作用于当前页数据
+  const [
+    { status: activeTab, business_form: businessForm, is_archived: archivedFilter },
+    setQuery,
+  ] = useQueryStates(
     {
       status: parseAsString.withDefault("all"),
       page: parseAsInteger.withDefault(1),
       business_form: parseAsString.withDefault("all"),
+      // 归档状态：all=全部 / false=未归档 / true=已归档（服务端 ProjectFilter.is_archived）
+      is_archived: parseAsString.withDefault("all"),
     },
     { shallow: false },
   );
@@ -142,6 +147,21 @@ export function ProjectView({ data, total, counts }: ProjectViewProps) {
               <SelectItem value="all">全部业务形式</SelectItem>
               <SelectItem value="agent">代理美化</SelectItem>
               <SelectItem value="wholesale">收购美化</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* 归档状态筛选（独立维度，叠加在状态 Tab 之上） */}
+          <Select
+            value={archivedFilter}
+            onValueChange={(val) => setQuery({ is_archived: val, page: 1 })}
+          >
+            <SelectTrigger className="h-10 w-30 border-none bg-white rounded-inputs shadow-steep-sm text-ink">
+              <SelectValue placeholder="归档状态" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部归档状态</SelectItem>
+              <SelectItem value="false">未归档</SelectItem>
+              <SelectItem value="true">已归档</SelectItem>
             </SelectContent>
           </Select>
         </div>
