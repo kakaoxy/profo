@@ -29,7 +29,7 @@ _BIZ_MARKETING = "marketing"
 _BIZ_PROPERTY = "property"
 
 
-def _assert_project_not_archived(record: "Project | Lead | L4MarketingProject | PropertyCurrent") -> None:
+def check_project_not_archived(record: "Project | Lead | L4MarketingProject | PropertyCurrent", db: Session) -> None:
     """项目归档写锁（四类统一入口里的项目分支）.
 
     字典绑定/解绑会改写 ``projects`` 的 community_id / building_id / room_id /
@@ -37,17 +37,26 @@ def _assert_project_not_archived(record: "Project | Lead | L4MarketingProject | 
     否则归档项目仍可经 ``PUT /admin/projects/{id}/dictionary-link`` 被改动，
     违背「归档后全量锁定写操作」（SPEC-project-archive §3.5）。
 
+    TOCTOU 防护：``record`` 来自请求早期的 identity map，SQLAlchemy 不会自动刷新，
+    并发事务提交归档后它仍可能持陈旧 ``is_archived=False``（实测可绕过写锁）。
+    因此判定前先用 ``db.refresh`` 从库里重读该列，与 ``ProjectUpdater.update`` /
+    ``ProjectStateManager.update_status`` 的「重新取最新值再判锁」同口径。
+
     Args:
         record: 四类单据之一（仅 Project 参与归档判定，其余类型放行）
+        db: SQLAlchemy 数据库会话（用于重读最新 is_archived）
 
     Raises:
         ValidationError: 项目已归档（HTTP 400）
 
     """
-    from services.projects.archive import assert_project_not_archived
+    # 别名导入：本地函数名与 archive.assert_project_not_archived 不同名，避免递归误读
+    from services.projects.archive import assert_project_not_archived as archive_write_lock
 
     if isinstance(record, Project):
-        assert_project_not_archived(record)
+        # refresh 立即 SELECT，不受会话 autoflush=False 影响
+        db.refresh(record, ["is_archived"])
+        archive_write_lock(record)
 
 
 class DictionaryLinkService:
@@ -92,7 +101,7 @@ class DictionaryLinkService:
         )
 
         record = self._get_record(db, biz_type, biz_id)
-        _assert_project_not_archived(record)
+        check_project_not_archived(record, db)
         before = self._snapshot(record)
 
         self._apply_link(record, body)
@@ -128,7 +137,7 @@ class DictionaryLinkService:
     ) -> tuple[bool, str, str]:
         """解除关联（dict_status=manual，关联字段清空）."""
         record = self._get_record(db, biz_type, biz_id)
-        _assert_project_not_archived(record)
+        check_project_not_archived(record, db)
         before = self._snapshot(record)
         self._clear_link(record)
         record.dict_status = "manual"  # type: ignore[attr-defined]

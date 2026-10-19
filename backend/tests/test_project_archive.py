@@ -496,6 +496,48 @@ def test_archived_project_rejects_dictionary_link_write(db_session: Session) -> 
     assert project.dict_status == "linked"
 
 
+def test_dictionary_link_rejects_stale_read_after_concurrent_archive(db_session: Session) -> None:
+    """TOCTOU：并发事务已提交归档、本会话 identity map 仍为未归档时，字典绑定必须 400.
+
+    回归背景：``check_project_not_archived`` 旧实现直接读入参对象的 ``is_archived``；
+    ``_get_record`` 命中的是请求早期已加载的 identity map 实例，SQLAlchemy 不会自动刷新，
+    并发归档提交后它仍为 ``False`` → 写锁被绕过（实测 community_id/dict_status 被改写）。
+    现在判定前 ``db.refresh(record, ["is_archived"])`` 重读最新值。
+    """
+    suffix = uuid.uuid4().hex[:8]
+    community = Community(id=str(uuid.uuid4()), name=f"并发字典小区-{suffix}")
+    db_session.add(community)
+    project = _create_project(db_session, status=ProjectStatus.SOLD)
+    db_session.commit()
+
+    # 先把项目读进 identity map（模拟请求早期读取），此时未归档
+    loaded = db_session.query(Project).filter(Project.id == project.id).first()
+    assert loaded.is_archived is False
+
+    # 模拟并发：另一事务已提交归档，但本会话对象陈旧（原生 SQL 不 commit 以保留陈旧值）
+    db_session.execute(
+        text("UPDATE projects SET is_archived = true WHERE id = :pid"),
+        {"pid": project.id},
+    )
+    assert loaded.is_archived is False, "identity map 应保持陈旧值以复刻竞态"
+
+    with pytest.raises(ValidationError) as exc:
+        get_dictionary_link_service().link(
+            db_session,
+            biz_type="project",
+            biz_id=str(project.id),
+            body=DictionaryLinkRequest(community_id=community.id),
+        )
+    assert "项目已归档" in str(exc.value)
+
+    row = db_session.execute(
+        text("SELECT community_id, dict_status FROM projects WHERE id = :pid"),
+        {"pid": project.id},
+    ).fetchone()
+    assert row[0] is None
+    assert row[1] is None
+
+
 # --------------------------------------------------------------------------- #
 # 7. 审计日志同事务写入（归档/反归档与日志原子提交）
 # --------------------------------------------------------------------------- #
