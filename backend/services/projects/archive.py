@@ -95,9 +95,9 @@ class ProjectArchiveService:
         project.archived_at = data.archived_at
         project.archived_note = data.archived_note
 
-        # 审计日志与归档变更同一事务提交：log_action 内部 commit 将项目变更与日志
-        # 一并原子落库；写入失败时其内部 rollback 连带回滚归档变更，此处 Fail Loud，
-        # 避免「已归档但审计日志缺失」的不可追溯状态
+        # 审计日志与归档变更同一事务提交：log_action 内部 commit 会 flush 本 Session
+        # 的脏对象，将项目变更与日志一并原子落库；写入失败时其内部 rollback 连带
+        # 回滚归档变更，此处 Fail Loud，避免「已归档但审计日志缺失」的不可追溯状态。
         log_entry = operation_log_service.log_action(
             self.db,
             user_id=operator_id,
@@ -114,6 +114,11 @@ class ProjectArchiveService:
         if log_entry is None:
             msg = "审计日志写入失败，归档操作未生效，请重试"
             raise ServiceException(msg)
+
+        # 显式提交业务变更，不依赖 log_action 的内部 commit 副作用：
+        # 当前实现下该次 commit 为空事务（变更已随日志提交），但若日后审计日志改为
+        # 独立 Session/事务，归档变更仍能落库（否则会静默丢失）。
+        self.db.commit()
 
         logger.info("项目 %s 已归档", project_id)
         return self._build_response(project_id)
@@ -167,6 +172,9 @@ class ProjectArchiveService:
         if log_entry is None:
             msg = "审计日志写入失败，反归档操作未生效，请重试"
             raise ServiceException(msg)
+
+        # 显式提交业务变更（同 archive_project：不依赖 log_action 内部 commit 的副作用）
+        self.db.commit()
 
         logger.info("项目 %s 已反归档", project_id)
         return self._build_response(project_id)

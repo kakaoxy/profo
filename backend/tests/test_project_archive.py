@@ -510,3 +510,162 @@ def test_unarchive_log_failure_rolls_back(db_session: Session, monkeypatch: pyte
     db_session.refresh(project)
     assert project.is_archived is True
     assert project.archived_at == date(2026, 11, 25)
+
+
+# --------------------------------------------------------------------------- #
+# 8. 持久化不依赖「日志旁路提交」：autoflush=False 会话下必须显式 commit
+# --------------------------------------------------------------------------- #
+def _production_like_session(db: Session) -> Session:
+    """构造与生产 ``SessionLocal(autoflush=False)`` 语义一致的会话.
+
+    测试夹具默认 ``autoflush=True``，会让任意查询顺带 flush 脏对象，
+    掩盖「从未 commit」的缺陷；此处显式关闭 autoflush 复刻生产行为，
+    共享同一连接与 SAVEPOINT 隔离（不破坏 conftest 的回滚清理）。
+
+    Args:
+        db: 测试主会话（仅用于取底层连接）
+
+    Returns:
+        生产语义会话（调用方负责 close）
+
+    """
+    return Session(
+        bind=db.get_bind(),
+        autoflush=False,
+        join_transaction_mode="create_savepoint",
+    )
+
+
+def _read_project_row_in_peer_session(db: Session, project_id: uuid.UUID) -> tuple[Any, Any, Any]:
+    """用独立 Session（独立 identity map / 工作单元）读取项目归档列.
+
+    独立 Session 只能看到**已 flush 到连接**的数据：若服务层仅修改 ORM 对象而从未
+    commit（例如误依赖某个旁路写库顺带提交），本读取会拿到库中旧值 → 用例失败。
+
+    Args:
+        db: 测试主会话（仅用于取底层连接）
+        project_id: 项目ID
+
+    Returns:
+        (is_archived, archived_at, archived_note) 三元组
+
+    """
+    peer = Session(bind=db.get_bind(), join_transaction_mode="create_savepoint")
+    try:
+        return peer.execute(
+            text("SELECT is_archived, archived_at, archived_note FROM projects WHERE id = :pid"),
+            {"pid": project_id},
+        ).fetchone()
+    finally:
+        peer.close()
+
+
+def test_archive_persists_outside_unit_of_work(db_session: Session) -> None:
+    """归档结果必须已入库（独立工作单元可见），而非停留在当前会话的脏对象."""
+    session = _production_like_session(db_session)
+    try:
+        project = _create_project(session, status=ProjectStatus.SOLD)
+
+        ProjectArchiveService(session).archive_project(
+            project.id,
+            ProjectArchiveRequest(archived_at=date(2026, 11, 25), archived_note="跨工作单元可见"),
+        )
+
+        is_archived, archived_at, archived_note = _read_project_row_in_peer_session(db_session, project.id)
+        assert is_archived is True, "归档变更未落库（缺少 commit）"
+        assert archived_at == date(2026, 11, 25)
+        assert archived_note == "跨工作单元可见"
+    finally:
+        session.close()
+
+
+def test_unarchive_persists_outside_unit_of_work(db_session: Session) -> None:
+    """反归档结果必须已入库（独立工作单元可见），归档字段清空同样持久化."""
+    session = _production_like_session(db_session)
+    try:
+        project = _create_project(session, status=ProjectStatus.SOLD)
+        service = ProjectArchiveService(session)
+        service.archive_project(
+            project.id,
+            ProjectArchiveRequest(archived_at=date(2026, 11, 25), archived_note="归档说明"),
+        )
+
+        service.unarchive_project(project.id, ProjectUnarchiveRequest(reason="需补录附件"))
+
+        is_archived, archived_at, archived_note = _read_project_row_in_peer_session(db_session, project.id)
+        assert is_archived is False, "反归档变更未落库（缺少 commit）"
+        assert archived_at is None
+        assert archived_note is None
+    finally:
+        session.close()
+
+
+def _log_action_in_separate_session(db: Session, **kwargs: Any) -> OperationLog:
+    """替身：审计日志用独立 Session 提交（不回带调用方会话的脏对象）.
+
+    模拟「日后把 log_action 改成独立会话/事务」的演进——此时主变更只能靠
+    归档服务自身的显式 commit 落库。
+
+    Args:
+        db: 调用方会话（仅用于取底层连接）
+        **kwargs: log_action 同名字段
+
+    Returns:
+        写入的审计日志行
+
+    """
+    peer = Session(bind=db.get_bind(), join_transaction_mode="create_savepoint")
+    try:
+        entry = OperationLog(
+            user_id=kwargs.get("user_id"),
+            action=kwargs["action"],
+            resource_type=kwargs["resource_type"],
+            resource_id=kwargs.get("resource_id"),
+            before=kwargs.get("before"),
+            after=kwargs.get("after"),
+        )
+        peer.add(entry)
+        peer.commit()
+        return entry
+    finally:
+        peer.close()
+
+
+def test_archive_persists_when_audit_log_commits_in_separate_session(
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """审计日志改走独立会话时，归档/反归档变更仍必须落库.
+
+    反证守卫：删掉 ``ProjectArchiveService`` 中的显式 ``self.db.commit()`` 后本用例
+    必然失败（主变更只留在会话脏对象里，独立工作单元读不到）。
+    """
+    from services.system import operation_log as operation_log_module
+
+    monkeypatch.setattr(
+        operation_log_module.operation_log_service,
+        "log_action",
+        _log_action_in_separate_session,
+    )
+
+    session = _production_like_session(db_session)
+    try:
+        project = _create_project(session, status=ProjectStatus.SOLD)
+        service = ProjectArchiveService(session)
+
+        service.archive_project(
+            project.id,
+            ProjectArchiveRequest(archived_at=date(2026, 11, 25), archived_note="独立会话日志"),
+        )
+        is_archived, archived_at, archived_note = _read_project_row_in_peer_session(db_session, project.id)
+        assert is_archived is True, "归档变更未落库：持久化依赖了 log_action 的内部 commit"
+        assert archived_at == date(2026, 11, 25)
+        assert archived_note == "独立会话日志"
+
+        service.unarchive_project(project.id, ProjectUnarchiveRequest(reason="独立会话日志-反归档"))
+        is_archived, archived_at, archived_note = _read_project_row_in_peer_session(db_session, project.id)
+        assert is_archived is False, "反归档变更未落库：持久化依赖了 log_action 的内部 commit"
+        assert archived_at is None
+        assert archived_note is None
+    finally:
+        session.close()
