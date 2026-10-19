@@ -7,7 +7,8 @@
 4. 必填字段缺失 422；
 5. 重复归档 / 未归档反归档 400；
 6. 列表归档筛选三态；
-7. sold 项目归档前合同字段 / 业主列表 / 签约材料可正常写入（白名单已移除）。
+7. sold 项目归档前合同字段 / 业主列表 / 签约材料可正常写入（白名单已移除）；
+8. 归档/反归档审计日志与主变更同事务写入，日志写入失败整体回滚并显式报错。
 """
 
 import uuid
@@ -24,6 +25,7 @@ from db import get_db
 from main import app
 from models import Project
 from models.common import BusinessForm, ProjectStatus
+from models.system import OperationLog
 from schemas.project import ProjectStatusUpdate, ProjectUpdate
 from schemas.project.archive import ProjectArchiveRequest, ProjectUnarchiveRequest
 from schemas.project.document import DocumentCreate
@@ -409,3 +411,102 @@ def test_assert_project_not_archived_helper(db_session: Session) -> None:
     db_session.commit()
     with pytest.raises(ValidationError):
         assert_project_not_archived(project)
+
+
+# --------------------------------------------------------------------------- #
+# 7. 审计日志同事务写入（归档/反归档与日志原子提交）
+# --------------------------------------------------------------------------- #
+def _query_project_logs(db: Session, project_id: uuid.UUID) -> list[OperationLog]:
+    """查询指定项目的归档/反归档审计日志."""
+    return (
+        db.query(OperationLog)
+        .filter(
+            OperationLog.resource_type == "project",
+            OperationLog.resource_id == str(project_id),
+            OperationLog.action == "update",
+        )
+        .all()
+    )
+
+
+def test_archive_writes_operation_log(db_session: Session) -> None:
+    """归档与审计日志同一事务：归档成功后 operation_logs 必有对应记录."""
+    project = _create_project(db_session, status=ProjectStatus.SOLD)
+    service = ProjectArchiveService(db_session)
+
+    service.archive_project(
+        project.id,
+        ProjectArchiveRequest(archived_at=date(2026, 11, 25), archived_note="归档说明"),
+    )
+
+    rows = _query_project_logs(db_session, project.id)
+    assert len(rows) == 1
+    assert rows[0].after["archived"] is True
+    assert rows[0].after["archived_note"] == "归档说明"
+
+
+def test_unarchive_writes_operation_log(db_session: Session) -> None:
+    """反归档与审计日志同一事务：反归档成功后 operation_logs 记录原因."""
+    project = _create_project(db_session, status=ProjectStatus.SOLD)
+    service = ProjectArchiveService(db_session)
+    service.archive_project(project.id, ProjectArchiveRequest(archived_at=date(2026, 11, 25)))
+
+    service.unarchive_project(project.id, ProjectUnarchiveRequest(reason="需补录附件"))
+
+    afters = [row.after for row in _query_project_logs(db_session, project.id)]
+    assert len(afters) == 2
+    assert any(a.get("archived") is True for a in afters)
+    assert any(a == {"archived": False, "reason": "需补录附件"} for a in afters)
+
+
+def test_archive_log_failure_rolls_back(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    """审计日志写入失败 → ServiceException 且归档变更一并回滚（同一事务）."""
+    from services.system import operation_log as operation_log_module
+    from services.system.exceptions import ServiceException
+
+    class _BrokenOperationLog:
+        """实例化即抛错的替身，模拟审计日志写入失败."""
+
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            msg = "模拟审计日志写入失败"
+            raise RuntimeError(msg)
+
+    monkeypatch.setattr(operation_log_module, "OperationLog", _BrokenOperationLog)
+
+    project = _create_project(db_session, status=ProjectStatus.SOLD)
+    service = ProjectArchiveService(db_session)
+
+    with pytest.raises(ServiceException) as exc:
+        service.archive_project(project.id, ProjectArchiveRequest(archived_at=date(2026, 11, 25)))
+    assert "审计日志写入失败" in str(exc.value)
+
+    db_session.refresh(project)
+    assert project.is_archived is False
+
+
+def test_unarchive_log_failure_rolls_back(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    """反归档审计日志写入失败 → ServiceException 且反归档变更一并回滚."""
+    project = _create_project(db_session, status=ProjectStatus.SOLD)
+    service = ProjectArchiveService(db_session)
+    # 先正常归档（日志写入正常），再模拟反归档时日志写入失败
+    service.archive_project(project.id, ProjectArchiveRequest(archived_at=date(2026, 11, 25)))
+
+    from services.system import operation_log as operation_log_module
+    from services.system.exceptions import ServiceException
+
+    class _BrokenOperationLog:
+        """实例化即抛错的替身，模拟审计日志写入失败."""
+
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            msg = "模拟审计日志写入失败"
+            raise RuntimeError(msg)
+
+    monkeypatch.setattr(operation_log_module, "OperationLog", _BrokenOperationLog)
+
+    with pytest.raises(ServiceException) as exc:
+        service.unarchive_project(project.id, ProjectUnarchiveRequest(reason="需补录附件"))
+    assert "审计日志写入失败" in str(exc.value)
+
+    db_session.refresh(project)
+    assert project.is_archived is True
+    assert project.archived_at == date(2026, 11, 25)

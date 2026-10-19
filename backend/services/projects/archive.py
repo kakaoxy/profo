@@ -18,7 +18,7 @@ from models import Project
 from models.common import ProjectStatus
 from schemas.project import ProjectResponse
 from schemas.project.archive import ProjectArchiveRequest, ProjectUnarchiveRequest
-from services.system.exceptions import ResourceNotFoundError, ValidationError
+from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 from services.system.operation_log import operation_log_service
 
 logger = logging.getLogger(__name__)
@@ -70,6 +70,7 @@ class ProjectArchiveService:
         Raises:
             ResourceNotFoundError: 项目不存在
             ValidationError: 状态不可归档 / 已归档
+            ServiceException: 审计日志写入失败（归档变更已一并回滚）
 
         """
         project = (
@@ -93,10 +94,11 @@ class ProjectArchiveService:
         project.is_archived = True
         project.archived_at = data.archived_at
         project.archived_note = data.archived_note
-        self.db.commit()
 
-        # 审计日志在主操作成功提交后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
-        operation_log_service.log_action(
+        # 审计日志与归档变更同一事务提交：log_action 内部 commit 将项目变更与日志
+        # 一并原子落库；写入失败时其内部 rollback 连带回滚归档变更，此处 Fail Loud，
+        # 避免「已归档但审计日志缺失」的不可追溯状态
+        log_entry = operation_log_service.log_action(
             self.db,
             user_id=operator_id,
             action="update",
@@ -109,6 +111,9 @@ class ProjectArchiveService:
             },
             request=request,
         )
+        if log_entry is None:
+            msg = "审计日志写入失败，归档操作未生效，请重试"
+            raise ServiceException(msg)
 
         logger.info("项目 %s 已归档", project_id)
         return self._build_response(project_id)
@@ -126,6 +131,7 @@ class ProjectArchiveService:
         Raises:
             ResourceNotFoundError: 项目不存在
             ValidationError: 项目未归档
+            ServiceException: 审计日志写入失败（反归档变更已一并回滚）
 
         """
         # 行锁串行化并发反归档：避免双请求同时通过 is_archived 检查
@@ -147,9 +153,9 @@ class ProjectArchiveService:
         project.is_archived = False
         project.archived_at = None
         project.archived_note = None
-        self.db.commit()
 
-        operation_log_service.log_action(
+        # 审计日志与反归档变更同一事务提交（同 archive_project，见该处注释）
+        log_entry = operation_log_service.log_action(
             self.db,
             user_id=operator_id,
             action="update",
@@ -158,6 +164,9 @@ class ProjectArchiveService:
             after={"archived": False, "reason": data.reason},
             request=request,
         )
+        if log_entry is None:
+            msg = "审计日志写入失败，反归档操作未生效，请重试"
+            raise ServiceException(msg)
 
         logger.info("项目 %s 已反归档", project_id)
         return self._build_response(project_id)
