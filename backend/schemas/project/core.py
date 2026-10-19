@@ -330,6 +330,10 @@ class ProjectResponse(BaseModel):
     is_archived: bool = Field(default=False, description="项目归档标记（true 时全部写接口锁定）")
     archived_at: date | None = Field(None, description="归档日期")
     archived_note: str | None = Field(None, description="归档说明")
+    can_archive: bool = Field(
+        default=False,
+        description="是否可归档（派生字段，status ∈ ARCHIVABLE_STATUSES，供前端归档入口显隐）",
+    )
 
     # 业务身份标志（基于当前请求用户计算，用于前端按钮显隐判断）
     renovation: RenovationInfoResponse | None = Field(

@@ -240,4 +240,6 @@ export interface Project {
   is_archived?: boolean;
   archived_at?: string | null; // YYYY-MM-DD
   archived_note?: string | null;
+  // 是否可归档（后端派生字段，status ∈ ARCHIVABLE_STATUSES；归档入口显隐单一判据）
+  can_archive?: boolean;
 }

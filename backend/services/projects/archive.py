@@ -15,16 +15,14 @@ from fastapi import Request
 from sqlalchemy.orm import Session
 
 from models import Project
-from models.common import ProjectStatus
 from schemas.project import ProjectResponse
 from schemas.project.archive import ProjectArchiveRequest, ProjectUnarchiveRequest
+from services.projects.archive_constants import ARCHIVABLE_STATUSES
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 from services.system.operation_log import operation_log_service
 
 logger = logging.getLogger(__name__)
-
-# 可归档的项目状态：已售 / 已下架（业务确认的收口口径）
-ARCHIVABLE_STATUSES = (ProjectStatus.SOLD.value, ProjectStatus.ENDED.value)
+# 可归档状态集合见 archive_constants.py（单一权威源，本模块仅消费）
 
 
 def assert_project_not_archived(project: Project) -> None:

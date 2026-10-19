@@ -90,6 +90,8 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     is_archived: item.is_archived ?? false,
     archived_at: item.archived_at ?? null,
     archived_note: item.archived_note ?? null,
+    // 可归档派生字段（ActionCell 归档入口显隐判据，单一权威源 ARCHIVABLE_STATUSES）
+    can_archive: item.can_archive ?? false,
   };
 }
 

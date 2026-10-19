@@ -14069,6 +14069,12 @@ export interface components {
              * @description 归档说明
              */
             archived_note?: string | null;
+            /**
+             * Can Archive
+             * @description 是否可归档（派生字段，status ∈ ARCHIVABLE_STATUSES，供前端归档入口显隐）
+             * @default false
+             */
+            can_archive: boolean;
             /** @description 装修业务身份标志（含 can_edit_renovation / contact_person_id） */
             renovation?: components["schemas"]["RenovationInfoResponse"] | null;
             /** @description 销售业务身份标志（含 can_edit_sales / 3 个销售团队字段） */

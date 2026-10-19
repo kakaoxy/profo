@@ -78,8 +78,8 @@ export function TopToolbar({
   const canManage = !isEnded && !isArchived;
   const endedDate = formatDotDate(project.updated_at);
   const archivedDate = formatArchivedDate(project.archived_at);
-  // 仅已售 / 已下架可归档（与后端 ARCHIVABLE_STATUSES 对齐）
-  const canArchive = (viewMode === "sold" || isEnded) && !isArchived;
+  // 仅已售 / 已下架可归档：消费后端派生字段 can_archive（权威源 ARCHIVABLE_STATUSES，前后端同源）
+  const canArchive = project.can_archive === true && !isArchived;
   // 已归档项目的唯一写入口 = 反归档
   const showUnarchive = isArchived;
 

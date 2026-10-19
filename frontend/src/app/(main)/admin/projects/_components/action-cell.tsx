@@ -53,8 +53,8 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
 
   // 归档态单一判据：归档后隐藏删除入口（后端亦 400 兜底），仅保留反归档入口
   const isArchived = row.original.is_archived === true;
-  // 仅已售 / 已下架可归档（与后端 ARCHIVABLE_STATUSES 对齐）
-  const canArchive = row.original.status === "sold" || row.original.status === "ended";
+  // 仅已售 / 已下架可归档：消费后端派生字段 can_archive（权威源 ARCHIVABLE_STATUSES，前后端同源）
+  const canArchive = row.original.can_archive === true;
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

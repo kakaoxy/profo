@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy.orm import Session
 
 from models.common import CashFlowType, ProjectStatus
+from services.projects.archive_constants import ARCHIVABLE_STATUSES
 from services.property.dict_read_service import BuildingDictReadService
 from services.property.doc_dict_resolver import DocDictKey
 from utils.mask import mask_bank_card
@@ -157,6 +158,8 @@ class ProjectResponseBuilder:
             "is_archived": bool(project.is_archived),
             "archived_at": project.archived_at,
             "archived_note": project.archived_note,
+            # 可归档派生标志（单一权威源 ARCHIVABLE_STATUSES，前端按钮显隐直接消费）
+            "can_archive": project.status in ARCHIVABLE_STATUSES,
             "renovation_stage": project.renovation_stage,
             "is_deleted": project.is_deleted,
             "created_at": project.created_at.isoformat() if project.created_at else None,
