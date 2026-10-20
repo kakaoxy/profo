@@ -377,27 +377,25 @@ def print_restore_hint(version: int) -> None:
     dump_arg = backup if is_placeholder else _container_backup_path(backup)
 
     print()
-    print("# ⚠️ 归档格式与客户端版本强绑定（实测）：")
-    print("#    pg_dump ≥17 产出的归档是 1.16 版，PG16 自带的 pg_restore 会直接拒绝：")
+    print("# ⚠️ 归档格式与客户端版本强绑定（实测 2026-10-20）：")
+    print("#    pg_dump ≥17 产出的归档是 1.16 版，PG16 自带的 pg_restore 连读都读不了：")
     print("#      pg_restore: error: unsupported version (1.16) in file header")
-    print("#    另外 client ≥17 会写 SET transaction_timeout，PG16 报 unrecognized parameter。")
+    print("#    且 client ≥17 产出的 SQL 带 `SET transaction_timeout`（PG17 新增 GUC），")
+    print("#    PG16 执行时报 unrecognized configuration parameter。")
     print("#    ⇒ 恢复必须用**产生该备份的同一大版本客户端**，且目标 server ≥ 该版本。")
+    cross_major = bool(backup_client) and _major_of(backup_client) > _major_of(server)
     if backup_client:
         print(f"#    本备份由 pg_dump {backup_client} 产出；当前 server 为 {server or '未知'}。")
-        if _major_of(backup_client) > _major_of(server):
-            print(
-                f"#    ⚠️ 客户端大版本({_major_of(backup_client)}) > server 大版本({_major_of(server)})："
-                "**PG16 无法直接恢复该备份**。",
-            )
-            print("#    可行路径（择一，均需人工判断）：")
-            print("#      a) 用 postgres:<client 大版本>-alpine 起临时库并挂同一备份卷，恢复到临时库后 dump 成 SQL，")
-            print("#         再用 psql 灌回 PG16（SET 语句会被忽略警告）；")
-            print("#      b) 直接用 deploy-server.sh 的 backup_*.sql.gz 全库回放（plain SQL，无归档格式问题）；")
-            print("#    —— 本迭代不提供自动化「跨大版本恢复」脚本（spec §18.2 边界）。")
+        if cross_major:
+            print_cross_major_restore(_major_of(backup_client), _major_of(server), dump_arg)
 
     print()
     print("# 1) 恢复到**临时库**（不覆盖生产，便于比对；D-01 口径）")
     print("#    以下是**本机实测可跑通**的两段式配方（2026-10-19，client 18.6 / server 16.15）：")
+    if cross_major:
+        print("#    ⚠️ 跨大版本时本配方的 pg_restore **退出码=1**（SET transaction_timeout 被 PG16 拒绝，")
+        print("#       但数据已灌入）——必须按第 2 步行数核对判定成败，不能只看退出码；")
+        print("#       要拿到 exit=0 的确定性配方，改用上方「可靠路径 1」的 SQL 转换法。")
     print("#    a. 先用同版本 client dump 一份 schema-only，恢复到临时库（建出空表）")
     print("#    b. 再灌本次的 data-only 备份（scope=table）——**不要加 --table 过滤**，")
     print("#       实测加 --table 会静默灌 0 行（archive 内的 schema 限定行为差异）")
@@ -433,6 +431,64 @@ def print_restore_hint(version: int) -> None:
     print(f"docker compose exec backend .venv/bin/python -m migrations.manage compensate {version} --dry-run")
     print()
     print(f"# 数据库：{url_db}")
+
+
+def print_cross_major_restore(client_major: int, server_major: int, dump_arg: str) -> None:
+    """打印「备份客户端大版本 > 目标 server 大版本」时的可执行恢复路径.
+
+    为什么单列一个函数：跨大版本不是「跑一下 pg_restore 就行」，而是**退出码不可信**。
+    本机实测（2026-10-20，client 18.6 归档 1.16 / server 16.15）：
+
+    - 目标 server 同版本的 ``pg_restore`` **直接拒绝**归档：
+      ``pg_restore: error: unsupported version (1.16) in file header``（连 TOC 都不读）；
+    - 换用高版本 ``pg_restore``（能读 1.16）恢复时，它会在开头执行
+      ``SET transaction_timeout = 0``（PG17 新增 GUC），PG16 报
+      ``unrecognized configuration parameter``，而 ``pg_restore`` 默认「继续并忽略错误」
+      → 数据实际已灌入，**退出码却是 1**。任何 ``set -e`` / ``&&`` 链条会误判为失败。
+
+    因此这里只给**退出码可信**的两条路径：SQL 转换法（推荐，实测 exit=0）与部署全库备份回放。
+
+    Args:
+        client_major: 备份产出端的 pg_dump 主版本。
+        server_major: 目标 server 主版本。
+        dump_arg: 容器内的备份文件路径。
+
+    """
+    print(
+        f"#    ⚠️ 客户端大版本({client_major}) > server 大版本({server_major})："
+        f"**PG{server_major} 自带的 pg_restore 无法直接恢复该备份**（归档格式高于其可读上限）。",
+    )
+    print("#")
+    print("#    可靠路径 1（推荐，实测 exit=0）：两端都转 plain SQL 并剔除高版本 GUC，再 psql 回放")
+    print("#      为什么必须自包含：data-only 归档里没有建表语句，临时库必须先建 schema（原先缺这一步，实测 exit=3）。")
+    print("#      为什么不能只看 pg_restore 退出码：它默认「出错继续」，会给出 exit=1 的假失败。")
+    print('docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend sh -c \\')
+    print('  "psql --host db --username \\"$POSTGRES_USER\\" -d postgres \\')
+    print('     -c \\"DROP DATABASE IF EXISTS restore_check;\\" \\')
+    print('     -c \\"CREATE DATABASE restore_check OWNER \\\\"$POSTGRES_USER\\\\";\\""')
+    print("#    a) 建 schema（用同一客户端的 plain 输出，避免归档格式问题）")
+    print('docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend sh -c \\')
+    print('  "pg_dump --schema-only --no-owner --host db --username \\"$POSTGRES_USER\\" \\')
+    print('     --dbname \\"$POSTGRES_DB\\" --file /tmp/schema.sql \\')
+    print("   && grep -v '^SET transaction_timeout' /tmp/schema.sql > /tmp/schema.clean.sql \\")
+    print('   && psql --host db --username \\"$POSTGRES_USER\\" -d restore_check \\')
+    print('        -v ON_ERROR_STOP=1 -q -f /tmp/schema.clean.sql"')
+    print("#    b) 灌本次备份的数据部分")
+    print('docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend sh -c \\')
+    print(f'  "pg_restore --no-owner --no-privileges -f /tmp/data.sql {dump_arg} \\')
+    print("   && grep -v '^SET transaction_timeout' /tmp/data.sql > /tmp/data.clean.sql \\")
+    print('   && psql --host db --username \\"$POSTGRES_USER\\" -d restore_check \\')
+    print('        -v ON_ERROR_STOP=1 -q -f /tmp/data.clean.sql"')
+    print("#    注：后端镜像的 postgresql-client 为 17.x（D-03），其 pg_restore 能读 1.16 归档；")
+    print(f"#        但目标 server 是 {server_major}，故必须经上面的 SQL 转换，不能直接 pg_restore。")
+    print("#")
+    print("#    可靠路径 2（数据应急）：回放部署脚本的全库备份 backup_*.sql.gz")
+    print("#      —— 它由 deploy-server.sh 在 db 容器内用**与 server 同版本**的 pg_dump 产出，")
+    print("#         无归档格式问题，实测其内容不含 transaction_timeout；用 psql -v ON_ERROR_STOP=1 回放。")
+    print("#         宿主备份已收紧为 root-only（600），需以 root 读取或先 scp 到临时位置。")
+    print("#")
+    print("#    ⚠️ 不要直接 backend pg_restore 本备份：实测 exit=1（数据已灌入，退出码却是失败）。")
+    print("#    —— 本迭代不提供自动化「跨大版本恢复」脚本（spec §18.2 边界）。")
 
 
 def print_recent_backups(limit: int = 5) -> None:

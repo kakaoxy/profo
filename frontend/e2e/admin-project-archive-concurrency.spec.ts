@@ -55,13 +55,19 @@ async function createSoldProject(ctx: APIRequestContext, salt: string): Promise<
       signing_price: 300,
     },
   });
-  expect(createRes.ok(), `创建项目失败: ${createRes.status()} ${await createRes.text()}`).toBeTruthy();
+  expect(
+    createRes.ok(),
+    `创建项目失败: ${createRes.status()} ${await createRes.text()}`,
+  ).toBeTruthy();
   const created = (await createRes.json()) as { id: string; name: string };
 
   const sellingRes = await ctx.put(`/api/v1/projects/${created.id}/status`, {
     data: { status: "selling", listing_date: TODAY, list_price: 480 },
   });
-  expect(sellingRes.ok(), `上架失败: ${sellingRes.status()} ${await sellingRes.text()}`).toBeTruthy();
+  expect(
+    sellingRes.ok(),
+    `上架失败: ${sellingRes.status()} ${await sellingRes.text()}`,
+  ).toBeTruthy();
 
   const soldRes = await ctx.post(`/api/v1/projects/${created.id}/complete`, {
     data: { sold_price: 500, sold_date: TODAY },
@@ -160,18 +166,16 @@ test.describe("项目归档写锁 · 并发竞态", () => {
         }),
       ];
       const postStatuses = (await Promise.all(postWrites)).map((r) => r.status());
-      expect(postStatuses, `归档后的写请求必须全部 400，实际 ${JSON.stringify(postStatuses)}`).toEqual(
-        [400, 400, 400, 400],
-      );
+      expect(
+        postStatuses,
+        `归档后的写请求必须全部 400，实际 ${JSON.stringify(postStatuses)}`,
+      ).toEqual([400, 400, 400, 400]);
 
       // 数据未被改写：地址仍是归档前的值，文书数/记录数未因并发写增长
       const detailRes = await ctx.get(`/api/v1/projects/${p.id}`);
       const detail = (await detailRes.json()) as { address: string; is_archived: boolean };
       expect(detail.is_archived).toBe(true);
-      expect(
-        detail.address,
-        "归档后 address 不应被任何并发写请求改写",
-      ).toBe("1 号楼 101");
+      expect(detail.address, "归档后 address 不应被任何并发写请求改写").toBe("1 号楼 101");
 
       // 文书写入核对：只允许「并发批次内归档提交前已完成（2xx）」的文书落库，
       // 落库数量必须与返回 2xx 的文书请求数**严格相等**（多一条即证明写锁被绕过）。
@@ -290,7 +294,9 @@ test.describe("项目归档写锁 · 并发竞态", () => {
 
       // 重复归档（已归档）同样 400，且不重复写审计
       expect(
-        (await ctx.post(`/api/v1/projects/${p.id}/archive`, { data: { archived_at: TODAY } })).status(),
+        (
+          await ctx.post(`/api/v1/projects/${p.id}/archive`, { data: { archived_at: TODAY } })
+        ).status(),
       ).toBe(400);
 
       const detail = (await (await ctx.get(`/api/v1/projects/${p.id}`)).json()) as {

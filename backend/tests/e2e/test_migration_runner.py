@@ -109,7 +109,11 @@ def main() -> int:
     ensure_version_tables(engine)
     state = load_state(engine)
     check("版本账本可读", f"applied={len(state.applied)} failed={len(state.failed)}", ok=True)
-    check("账本覆盖 82 项（注册表长度）", f"len(MIGRATIONS)={len(MIGRATIONS)}", ok=len(MIGRATIONS) == 82)
+    check(
+        "账本覆盖注册表全部版本",
+        f"len(MIGRATIONS)={len(MIGRATIONS)} applied={len(state.applied)}",
+        ok=len(state.applied) == len(MIGRATIONS),
+    )
 
     # ── ② 重复启动零 pending + 增量耗时可测 ─────────────────────────
     print("\n② 重复启动零 pending（A2 / G6）")
@@ -254,8 +258,11 @@ def main() -> int:
         check("CLI status --json 成功", cli.stderr.strip()[:200], ok=False)
     else:
         payload = json.loads(cli.stdout)
-        check("total == 82", f"total={payload['total']}", ok=payload["total"] == 82)
-        check("applied == 82", f"applied={payload['applied']}", ok=payload["applied"] == 82)
+        # 不得硬编码条目数：新增迁移（v83+）会让固定值断言假红（E2E 报错但实现正确）。
+        # 真实契约是「CLI 汇总与注册表一致」，故以 len(MIGRATIONS) 为唯一权威。
+        total = len(MIGRATIONS)
+        check("total == len(MIGRATIONS)", f"total={payload['total']}", ok=payload["total"] == total)
+        check("applied == len(MIGRATIONS)", f"applied={payload['applied']}", ok=payload["applied"] == total)
         check("failed == 0", f"failed={payload['failed']}", ok=payload["failed"] == 0)
         check("checksum_mismatch 为空", f"{payload['checksum_mismatch']}", ok=payload["checksum_mismatch"] == [])
         check("backups 概况含磁盘余量", f"{payload['backups']['free_mb']}MB", ok="free_mb" in payload["backups"])

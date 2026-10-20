@@ -472,6 +472,61 @@ def test_compensate_dry_run_has_no_side_effect(test_engine_ledger: Engine) -> No
     assert before == after
 
 
+def test_admin_commands_take_advisory_lock(test_engine_ledger: Engine) -> None:
+    """补偿类命令必须持同一 advisory lock（spec §9.4）。
+
+    回归背景：原实现只给 ``run_startup_migrations`` 接了 ``pg_advisory_lock``，
+    ``compensate`` / ``retry`` / ``rebaseline`` / ``baseline`` 均未持锁——而 spec §9.4
+    明确要求「补偿全程持有同一 advisory lock，防与启动迁移并发」。实测未持锁时
+    worker 启动迁移与 ``manage compensate`` 可同时改写同一张表（交错结果不可复现）。
+
+    本用例以「另一连接先占锁」复刻并发：命令必须在锁释放前阻塞，释放后才完成。
+    """
+    import threading
+    import time
+
+    from migrations._helpers import _MIGRATION_ADVISORY_LOCK_KEY
+
+    with test_engine_ledger.begin() as conn:
+        before = conn.execute(text("SELECT count(*) FROM users WHERE phone_hash IS NOT NULL")).scalar()
+
+    holder = test_engine_ledger.connect()
+    holder.execute(text("SELECT pg_advisory_lock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
+    holder.commit()
+
+    finished: list[float] = []
+
+    def _run_compensate() -> None:
+        compensate(
+            test_engine_ledger,
+            4,
+            dry_run=False,
+            yes=True,
+            force=False,
+            reason="锁竞争验证",
+            operator="pytest",
+        )
+        finished.append(time.monotonic())
+
+    thread = threading.Thread(target=_run_compensate, daemon=True)
+    thread.start()
+    thread.join(1.5)
+    blocked = thread.is_alive()
+
+    # 释放锁，命令应随即完成
+    holder.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
+    holder.commit()
+    holder.close()
+    thread.join(30)
+
+    assert blocked, "compensate 未持 advisory lock：锁被其他连接占用时未阻塞（spec §9.4 未实现）"
+    assert not thread.is_alive(), "释放锁后补偿未完成"
+    with test_engine_ledger.begin() as conn:
+        after = conn.execute(text("SELECT count(*) FROM users WHERE phone_hash IS NOT NULL")).scalar()
+    assert before is not None
+    assert after == 0, "补偿未实际执行（phone_hash 应被清空）"
+
+
 def test_compensate_irreversible_is_refused(test_engine_ledger: Engine) -> None:
     """不可逆版本（v74 清空 session_key / v3 加密）→ 拒绝并提示 restore-hint（A9）."""
     from migrations.compensations.base import CompensationNotSupportedError

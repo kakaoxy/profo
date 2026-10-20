@@ -197,13 +197,24 @@ docker compose exec backend .venv/bin/python -m migrations.manage retry <version
 
 ```bash
 mkdir -p backups/migrations
-sudo chown -R 1001:1001 backups      # 容器内 USER app = uid 1001
+# ⚠️ 只把 migrations/ 子树交给 uid 1001；不要 chown -R 整个 backups/
+sudo chown -R 1001:1001 backups/migrations   # 容器内 USER app = uid 1001
 chmod 700 backups/migrations
+chmod 711 backups                              # other 仅可穿越，不可列举
+sudo find backups -maxdepth 1 -name 'backup_*.sql.gz' -exec chmod 600 {} +
 ```
 
 > `deploy-server.sh` 已在启动容器前执行上述步骤（§2.1 准备迁移备份目录）。
 > 若目录是**手建**或由 docker 自动创建的，属主会是 root → `create_backup` 写入失败 →
 > `backup_failed` → 迁移中止 → 容器反复重启（compose `restart: unless-stopped`）。
+>
+> ⚠️ **禁止 `chown -R 1001:1001 backups`**：`backups/` 里还放着部署脚本产出的
+> **全库明文备份 `backup_*.sql.gz`**。整目录 chown 会把它改成 `1001:1001 644`，
+> 容器内进程（uid 1001）即可**改写/删除**唯一全库备份，而 `scripts/restore-backup.sh`
+> 拉回本地时不做 sha256 校验 → 灾难恢复的数据源可被篡改。正确边界：
+> `migrations/` 交 1001，`backups/` 本身与 `backup_*.sql.gz` 保持 root。
+> 回归验证：`sudo backend/.venv/bin/python backend/tests/e2e/test_deploy_server_backup_perms.py`
+> （16 项断言，含「旧写法会重新引入缺陷」的反向验证）。
 
 ### 3.5 需要立刻停止迁移（逃生阀）
 
@@ -302,27 +313,68 @@ docker compose exec backend .venv/bin/python -m migrations.manage restore-hint 5
 # 备份范围：table  表：leads
 # 备份文件：/app/backups/migrations/20261019-150959_v050_....dump
 
-# ⚠️ 归档格式与客户端版本强绑定（实测）：
-#    pg_dump ≥17 产出的归档是 1.16 版，PG16 自带的 pg_restore 会直接拒绝：
+# ⚠️ 归档格式与客户端版本强绑定（实测 2026-10-20）：
+#    pg_dump ≥17 产出的归档是 1.16 版，PG16 自带的 pg_restore 连读都读不了：
 #      pg_restore: error: unsupported version (1.16) in file header
-#    ⇒ 恢复必须用产生该备份的同一大版本客户端（即 backend 容器，不是 db 容器）
+#    且 client ≥17 产出的 SQL 带 `SET transaction_timeout`（PG17 新增 GUC），
+#    PG16 执行时报 unrecognized configuration parameter。
+#    ⇒ 恢复必须用产生该备份的同一大版本客户端，且目标 server ≥ 该版本。
+#    本备份由 pg_dump 18.6 产出；当前 server 为 16.15。
+#    ⚠️ 客户端大版本(18) > server 大版本(16)：**PG16 自带的 pg_restore 无法直接恢复该备份**。
 ```
 
-**实测验证记录**（可复现）：
+### 5.1 跨大版本：`pg_restore` 的退出码不可信（⚠️ 必读）
+
+生产组合是「backend 镜像 `postgresql-client` 17.x（D-03）+ server 16」，**永久不同大版本**，
+因此这条路径是常态而非例外。实测（2026-10-20，client 18.6 归档 1.16 / server 16.15）：
+
+| 做法 | 退出码 | 真实结果 |
+|------|:------:|---------|
+| 用 PG16 的 `pg_restore`（`docker compose exec db …`） | 1 | **一个字节都没灌**：`unsupported version (1.16)` |
+| 用 PG17 的 `pg_restore`（backend 容器）直连 PG16 | **1** | **数据已完整灌入**，只是 `SET transaction_timeout` 报错被「忽略继续」 |
+| 归档 → plain SQL → 剔除 `SET transaction_timeout` → `psql -v ON_ERROR_STOP=1` | **0** | 数据完整灌入（推荐） |
+
+即：直接 `backend pg_restore` 会给出**假失败**（`set -e` / `&&` 链会误判），
+而用错容器则给出**真失败但报错形式相同**——两条路都以 exit=1 结束，无法凭退出码区分。
+`restore-hint` 因此在跨大版本时输出「可靠路径 1」自包含配方（含先建 schema 这一步，
+否则 data-only 归档会因缺表 exit=3）：
+
+```bash
+# a) 建 schema（同一客户端的 plain 输出，避免归档格式问题；必须过滤 PG17 专有 GUC）
+docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend sh -c \
+  "pg_dump --schema-only --no-owner --host db --username \"$POSTGRES_USER\" \
+     --dbname \"$POSTGRES_DB\" --file /tmp/schema.sql \
+   && grep -v '^SET transaction_timeout' /tmp/schema.sql > /tmp/schema.clean.sql \
+   && psql --host db --username \"$POSTGRES_USER\" -d restore_check \
+        -v ON_ERROR_STOP=1 -q -f /tmp/schema.clean.sql"
+# b) 灌本次备份的数据部分
+docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend sh -c \
+  "pg_restore --no-owner --no-privileges -f /tmp/data.sql <账本中的备份路径> \
+   && grep -v '^SET transaction_timeout' /tmp/data.sql > /tmp/data.clean.sql \
+   && psql --host db --username \"$POSTGRES_USER\" -d restore_check \
+        -v ON_ERROR_STOP=1 -q -f /tmp/data.clean.sql"
+```
+
+**实测验证记录**（2026-10-20，可复现）：
 
 ```text
-$ restore_check 恢复结果
-restored_leads=977     # 从 v050 的 data-only 备份恢复
-prod_leads=977         # 与生产一致 ✓
+schema 链 exit=0
+data 链   exit=0
+restore_check.leads = 977      # 从 v050 的 data-only 备份恢复
+profo.leads          = 977      # 与源库一致 ✓
 ```
 
-> ⚠️ **两个实测坑（已在 `restore-hint` 输出里写明，勿自行简化）**：
-> 1. **不能用 db 容器恢复**：`pg_restore` 必须与 `pg_dump` 同大版本，否则直接
->    `unsupported version (1.16) in file header`。本迭代的备份由 backend 容器内的
->    `postgresql-client` 产出，因此恢复也在 backend 容器执行。
+> ⚠️ **三个实测坑（`restore-hint` 已写入，勿自行简化）**：
+> 1. **别用 db 容器恢复**：`pg_restore` 读不了 1.16 归档（`unsupported version`）。
 > 2. **`--data-only` 恢复时不要加 `--table` 过滤**：实测 `--table=public.leads`
 >    会**静默灌 0 行**（退出码 0、无报错），不加反而正常灌入全部表数据。
->    首次恢复务必按 `restore-hint` 输出的行数核对（步骤 2）确认非 0。
+> 3. **不能用 `pg_restore` 的退出码判定成败**：见上表，跨大版本时它会假失败。
+>    一律以「第 2 步行数核对」为准，或改用本节的 SQL 转换法拿 exit=0。
+>
+> **应急替代（路径 2）**：直接回放部署脚本的全库备份 `backup_*.sql.gz`。它由
+> `deploy-server.sh` 在 **db 容器内**用与 server 同版本的 `pg_dump` 产出，无归档格式问题；
+> 实测其内容不含 `transaction_timeout`，用 `psql -v ON_ERROR_STOP=1` 可稳定 exit=0。
+> 该备份现在是 **root-only（600）**，容器内读不到，需在宿主以 root 解压后再灌入。
 
 **生产补偿的双确认**（K13，`DEBUG=false` 时强制）：
 
@@ -434,11 +486,16 @@ cd backend && .venv/bin/pytest tests/test_migration_registry.py -q --no-cov
 3. **`pg_dump`/`pg_restore` 与 server 版本**（本机实测，已落地为代码校验）：
    - **导出**：`client major >= server major`（`backup.assert_client_compatible` 启动期校验，
      不满足直接 `BackupError` 中止迁移）；
-   - **恢复**：必须用**产出该备份的同一大版本客户端**。实测 client 18.6 产出的归档格式
-     1.16 无法被 PG16 的 `pg_restore` 读取；client 16 的归档可被 16/17/18 读取。
+   - **恢复**：必须用**产出该备份的同一大版本客户端**，且目标 server ≥ 该版本。
+     实测（2026-10-20）：client 18.6/17.11 产出的归档格式 **1.16**，
+     PG16 的 `pg_restore` 直接 `unsupported version (1.16) in file header`；
+     client 16.15 产出的归档 **1.15** 可被 16/17/18 读取并恢复（exit=0）。
    - 因此 `manage restore-hint` 会打印账本里的 `backup_client` 版本，并给出对应命令。
    - 生产镜像内 `postgresql-client` 固定为 Debian trixie 的 17.x（D-03），
-     与 server 16 组合下：导出正常、恢复需在 backend 容器执行（runbook §5 已写明）。
+     与 server 16 组合下：**导出正常、恢复需走 §5.1 的 SQL 转换法**（直接
+     `backend pg_restore` 会 exit=1 假失败）。
+   - ⚠️ 若要彻底消除跨大版本（改为同版本 client 16.x，需 PGDG 源），属 D-03 口径变更，
+     本期**未采用**；当前按 §5.1 的操作口径落地（已实测 exit=0）。
 4. **baseline 在 2 worker 下的最坏耗时**：本机单 worker 实测 58 秒（82 项 + **1 次**全库备份，v2 起）；
    2 worker 会因 advisory lock 串行化，耗时**不会**翻倍（第二个 worker 只做零 pending 检查）。
 5. **legacy 路径退出**：保留 1 个 release，删除前在本文件 §3.5 标注观察结论。

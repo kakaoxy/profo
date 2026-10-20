@@ -323,6 +323,33 @@ def test_prune_requires_both_days_and_count(backup_dir: Path) -> None:
     assert len(list_backups()) == 25
 
 
+def test_list_backups_excludes_stale_temp_files(backup_dir: Path) -> None:
+    """残留 ``.tmp-*.dump`` 不得被当作有效备份（否则 prune 会删真备份）。
+
+    回归背景：``create_backup`` 先写 ``.tmp-XXXX.dump`` 再 ``os.replace`` 原子改名；
+    进程被 kill -9 / OOM 终止时 ``_safe_unlink`` 不执行，临时文件会残留。原实现
+    ``glob("*.dump")`` 会把它列为备份，且因其 mtime 更新而进入 ``prune_backups`` 的
+    ``keep`` 集合（实质是「保留最新 1 份」被截断文件占用），真实备份可能被当作旧文件删除；
+    ``manage restore-hint`` 也会把它排在「最近备份」首位。
+    """
+    real = _make_backup_file(backup_dir, "20261020-100000_v004_populate_phone_hash.dump", age_days=40)
+    stale = backup_dir / ".tmp-8f2a1c.dump"
+    stale.write_bytes(b"PARTIAL")
+    # 临时文件 mtime 更新（模拟被 kill 后残留、随后无新备份）
+    os.utime(stale, (real.stat().st_mtime + 3600, real.stat().st_mtime + 3600))
+
+    names = [p.name for p in list_backups()]
+    assert names == [real.name], f"残留临时文件被当作备份：{names}"
+
+    # prune 必须以真实备份为「最新」：keep_count=1 时保留 real，且不得把临时文件算进份数
+    removed = prune_backups(keep_days=30, keep_count=1)
+    remaining = [p.name for p in list_backups()]
+    assert stale.exists(), "prune 不应处理临时文件（交由运维清理或下次 create_backup 覆盖）"
+    assert real.exists(), "真实备份被误删（临时文件占用了保留槽位）"
+    assert remaining == [real.name]
+    assert removed == 0, "唯一一份真实备份被删除"
+
+
 def test_prune_with_settings_swallows_errors(
     backup_dir: Path,
     monkeypatch: pytest.MonkeyPatch,

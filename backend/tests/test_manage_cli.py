@@ -411,3 +411,57 @@ def test_legacy_mode_warning_does_not_block(
 
     monkeypatch.setattr(settings, "migration_legacy_mode", False)
     assert main(["up"]) == EXIT_OK
+
+
+# ---------------------------------------------------------------------------
+# 跨大版本恢复指引（实测：pg_restore 退出码不可信）
+# ---------------------------------------------------------------------------
+
+
+def test_restore_hint_cross_major_gives_exit_zero_recipe(
+    applied_ledger: Engine,
+    cli_engine: Engine,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """账本 ``backup_client`` 高于 server → 必须给出**退出码可信**的配方.
+
+    回归背景（本机实测 2026-10-20，client 18.6 / server 16.15）：
+
+    - 目标 server 同版本 ``pg_restore`` 直接拒绝归档 ``1.16``（读都不读）；
+    - 换能读 1.16 的高版本 ``pg_restore`` 恢复，会执行 ``SET transaction_timeout``（PG17
+      新增 GUC），PG16 报错但 ``pg_restore`` **默认继续并忽略错误** → 数据已灌入、
+      **退出码却是 1**。旧指引只说「用高版本客户端恢复」，运维接进 ``set -e``/``&&``
+      就得到假失败，或反之直接 ``pg_restore`` 认为失败而重复灌数据。
+
+    期望：给出「归档 → plain SQL → 剔除 transaction_timeout → psql ON_ERROR_STOP=1」的
+    自包含配方（含先建 schema 这一步，否则 data-only 归档会因缺表 exit=3）。
+    """
+    with applied_ledger.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE schema_migrations SET backup_path = :p, backup_sha256 = :s, backup_client = :c "
+                "WHERE version = 50",
+            ),
+            {
+                "p": "/app/backups/migrations/20261020-000000_v050_backfill_lead_unit_price.dump",
+                "s": "0" * 64,
+                "c": "18.6",
+            },
+        )
+    try:
+        code = main(["restore-hint", "50"])
+        output = capsys.readouterr().out
+    finally:
+        _clear_ledger_backup(applied_ledger, 50)
+
+    assert code == EXIT_OK
+    assert "客户端大版本(18) > server 大版本(16)" in output
+    # 可信配方的三个必需要素
+    assert "ON_ERROR_STOP=1" in output, "psql 必须 ON_ERROR_STOP=1，否则 SQL 转换后会静默吞错"
+    assert "grep -v '^SET transaction_timeout'" in output, "必须剔除 PG17 新增 GUC"
+    assert "pg_dump --schema-only" in output, "data-only 归档不含建表语句，必须先建 schema"
+    # 必须显式警告「退出码不可信」，避免运维按退出码判定
+    assert "退出码=1" in output
+    # 命令本身不得含未替换占位符
+    command_lines = [line for line in output.splitlines() if line.startswith(("docker ", "  ", "#   ")) and "<" in line]
+    assert not command_lines, f"命令含未替换占位符：{command_lines}"

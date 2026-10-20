@@ -12,7 +12,7 @@ import contextlib
 import os
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 # 防御性 setdefault：.env 未配置 REDIS_URL 时兜底（与 JWT_SECRET_KEY 等一致）
 # 必须在 from settings import settings 之前执行，否则 Settings() 导入期即 sys.exit(1)
@@ -31,6 +31,9 @@ import db
 from models import Base, Permission, PermissionCategory, Role, User, role_permissions
 from settings import settings
 from utils.auth import create_access_token, get_password_hash
+
+if TYPE_CHECKING:
+    from migrations.schema_migrations import MigrationState
 
 _TEST_DB_NAME = "profo_test"
 
@@ -136,16 +139,23 @@ def _disable_rate_limiter() -> Generator[None, None, None]:
 def _prepare_migration_engine(engine: Engine) -> None:
     """让启动迁移在测试库上可行（迭代一 T1.8 基建）。
 
-    两件事：
+    三件事：
     1. **备份目录指向临时目录**：``MIGRATION_BACKUP_DIR`` 默认落在应用目录，
        测试不应污染；用 ``tmp`` 目录并在会话结束时清理。
     2. **把既有测试库登记为「已基线」**：测试库在版本化执行器上线前就已存在全部
        表与数据（``create_all`` 建的），空账本会被判定为「既有库未基线」而阻断。
-       登记语义与生产 ``manage baseline`` 一致：逐条写入 ``applied`` + 真实 checksum，
-       不执行迁移函数本身（表已由 ``create_all`` + 历史迁移建好）。
+       空账本场景逐条写入 ``applied`` + 真实 checksum，不执行迁移函数本身
+       （表已由 ``create_all`` 建好）。
+    3. **新增迁移必须真实执行**（回归修复）：账本非空时，任何「不在账本里的版本」
+       都是开发者新增的迁移。原实现只对它们 ``record_migration`` 而不执行迁移体，
+       于是 ``run_startup_migrations`` 看到 ``pending=0`` 永不执行 → 账本声称 applied
+       但数据库没有该列/表（实测：新增一条 ``ALTER TABLE projects ADD COLUMN`` 后
+       列始终不存在），后续依赖该列的用例报错且原因被账本掩盖。现改为对缺失版本
+       走 ``_apply_one``（真执行 + 真落库），并跳过 per-migration 备份（测试库无恢复
+       需求，否则 28 次单表 + 8 次全库 pg_dump 会拖垮每次测试会话）。
 
-       ``_MARKER`` 记录本次基线的注册表指纹：注册表新增迁移（长度变化）时自动重新
-       登记，避免「加了新迁移但测试库账本没跟上」导致的假绿。
+    ``notes`` 中的 ``_MARKER`` 记录本次基线的注册表指纹：注册表变化时重新进入
+    同步流程，使新增迁移在下一个测试会话即被真实执行。
     """
     import tempfile
     from pathlib import Path
@@ -163,10 +173,15 @@ def _prepare_migration_engine(engine: Engine) -> None:
     state = load_state(engine)
     if marker == _read_marker(engine):
         return
+
+    if not state.is_empty:
+        # 已有基线：只真执行「新增的」版本（幂等迁移），不重写既有行。
+        _apply_missing_migrations(engine, state)
+        _write_marker(engine, marker)
+        return
+
     now = utcnow()
     for migration in MIGRATIONS:
-        if migration.version in state.applied:
-            continue
         record_migration(
             engine,
             version=migration.version,
@@ -184,6 +199,23 @@ def _prepare_migration_engine(engine: Engine) -> None:
             notes=marker,
         )
     _write_marker(engine, marker)
+
+
+def _apply_missing_migrations(engine: Engine, state: "MigrationState") -> None:
+    """真执行账本中缺失的版本（幂等），并跳过 per-migration 备份。
+
+    Args:
+        engine: 测试库引擎。
+        state: 当前账本快照（含 applied 集合）。
+
+    """
+    from migrations.registry import MIGRATIONS
+    from migrations.runner import _apply_one
+
+    for migration in MIGRATIONS:
+        if migration.version in state.applied:
+            continue
+        _apply_one(engine, migration, backup_mode="covered")
 
 
 _MARKER_KEY = "profo_test:migration_baseline_marker"

@@ -41,6 +41,11 @@ _PG_DUMP_TIMEOUT = 1800
 _TS_FORMAT = "%Y%m%d-%H%M%S"
 # 备份文件后缀
 _SUFFIX = ".dump"
+# 临时文件前缀：``create_backup`` 先写 ``.tmp-*.dump`` 再原子改名。
+# 进程被 kill -9 / OOM 终止时（``_safe_unlink`` 只覆盖 Python 异常路径）会留下残留文件，
+# 必须从「备份列举」中排除，否则它会被 ``prune_backups`` 当成最新备份而把真实备份删掉，
+# 也会被 ``manage restore-hint`` 列在最近备份首位（运维据此恢复截断归档）。
+_TMP_PREFIX = ".tmp-"
 
 
 class BackupError(RuntimeError):
@@ -347,7 +352,7 @@ def create_backup(
     )
 
     # 先写临时文件（同目录，保证 os.replace 原子性）
-    tmp_fd, tmp_name = tempfile.mkstemp(prefix=".tmp-", suffix=_SUFFIX, dir=directory)
+    tmp_fd, tmp_name = tempfile.mkstemp(prefix=_TMP_PREFIX, suffix=_SUFFIX, dir=directory)
     os.close(tmp_fd)
     tmp_path = Path(tmp_name)
     env = {**os.environ, "PGPASSWORD": url.password or ""}
@@ -440,11 +445,15 @@ def _safe_unlink(path: Path) -> None:
 
 
 def list_backups() -> list[Path]:
-    """列出备份目录下的 ``*.dump``（按 mtime 倒序）."""
+    """列出备份目录下的**已完成**备份 ``*.dump``（按 mtime 倒序，排除 ``.tmp-*`` 残留）.
+
+    残留临时文件（进程被 kill 时产生）不是有效备份：它可能被截断，且 mtime 更新，
+    若参与列举会挤占 ``prune_backups`` 的「保留最新」槽位并污染 ``restore-hint`` 列表。
+    """
     directory = backup_dir()
     if not directory.exists():
         return []
-    files = [p for p in directory.glob(f"*{_SUFFIX}") if p.is_file()]
+    files = [p for p in directory.glob(f"*{_SUFFIX}") if p.is_file() and not p.name.startswith(_TMP_PREFIX)]
     return sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)
 
 

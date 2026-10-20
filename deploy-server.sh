@@ -113,15 +113,27 @@ mkdir -p "$PROJECT_DIR/uploads"
 chown -R 1001:1001 "$PROJECT_DIR/uploads"
 
 # 2.1 迁移备份目录（迭代一 T1.5）：compose 把 ./backups 挂到容器内 /app/backups，
-# 容器以 uid=1001 运行 → 宿主目录必须同属主，否则 create_backup 写入失败 →
+# 容器以 uid=1001 运行 → 写入的目标子目录必须同属主，否则 create_backup 失败 →
 # error=backup_failed → 迁移中止 → 启动阻断。
-# 目录缺失时 docker 会用 root 自动创建，因此必须在起容器前建好并 chown。
+# 注意：只有 ./backups/migrations 需要交给 1001；./backups 本身及其下 backup_*.sql.gz
+# 由 root 独享（见下方注释）。目录缺失时 docker 会用 root 自动创建，故必须提前建好。
 log_info "准备迁移备份目录..."
 mkdir -p "$BACKUP_DIR/migrations"
-# 历史 backup_*.sql.gz（deploy-server.sh 自身产物）保持不动，只把目录交给 uid 1001；
-# chown -R 会同时修正旧迁移备份的属主，避免 prune 时因权限失败。
-chown -R 1001:1001 "$BACKUP_DIR"
+# 只把容器要写的子树（migrations/）交给 uid 1001；父目录 $BACKUP_DIR 保持 root:root。
+# ⚠️ 不能用 `chown -R 1001:1001 "$BACKUP_DIR"`：那会连同 backup_*.sql.gz（本脚本产出的
+# 全库明文备份）一起改属主为 1001，实测容器内进程即可改写/删除唯一全库备份
+# （scripts/restore-backup.sh 会把它拉回本地且无 sha256 校验）。正确做法是只下放
+# 迁移备份子树，父目录与全库备份保持 root 独占。
+chown -R 1001:1001 "$BACKUP_DIR/migrations"
 chmod 700 "$BACKUP_DIR/migrations"
+# 父目录置 711：other 只有 x（可穿越到 migrations/ 子目录），没有 r（不可列举目录内容）。
+# 若保留 755，uid 1001 可以 ls 出 backup_*.sql.gz 的文件名与时间，从而推算部署历史；
+# 711 在不影响容器访问 migrations/ 的前提下堵掉这个信息泄露（实测：容器建删备份正常）。
+chmod 711 "$BACKUP_DIR"
+# 全库备份含全库明文（含用户手机号密文/密钥材料引用），收紧到 root-only（600）。
+if [ -d "$BACKUP_DIR" ]; then
+    find "$BACKUP_DIR" -maxdepth 1 -name 'backup_*.sql.gz' -type f -exec chmod 600 {} +
+fi
 
 # 3. 启动 redis 服务（backend depends_on redis，需先就绪）
 log_info "启动 redis 服务..."

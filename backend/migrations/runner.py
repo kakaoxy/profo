@@ -120,15 +120,7 @@ def run_startup_migrations(engine: Engine) -> MigrationSummary | None:
     started = perf_counter()
     ensure_backup_dir()
 
-    # 独立连接持有 session-level advisory lock（跨 worker 串行化，与旧实现一致）
-    with engine.connect() as lock_conn:
-        lock_conn.execute(text("SELECT pg_advisory_lock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
-        try:
-            logger.info("已获取迁移 advisory lock，开始执行启动迁移（版本化执行器）")
-            summary = _run_locked(engine)
-        finally:
-            lock_conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
-            logger.info("已释放迁移 advisory lock")
+    summary = _with_advisory_lock(engine, _run_locked, action="启动迁移（版本化执行器）")
 
     prune_with_settings()
     total_ms = int((perf_counter() - started) * 1000)
@@ -142,6 +134,36 @@ def run_startup_migrations(engine: Engine) -> MigrationSummary | None:
     )
     logger.info(final.as_log_line())
     return final
+
+
+def _with_advisory_lock(engine: Engine, action_fn: "Any", *, action: str) -> "Any":
+    """在独立连接上持有 session-level advisory lock 后执行 ``action_fn(engine)``.
+
+    为什么锁必须独立连接：迁移/补偿函数内部自行 ``commit``（K3 不包裹外层大事务），
+    业务连接来自池且可能换连接，锁只能挂在整条独立连接上才能跨提交存活。
+
+    为什么补偿类命令也要持锁（spec §9.4「并发：补偿全程持有同一 advisory lock，
+    防与启动迁移并发」）：否则 ``manage compensate`` / ``retry`` / ``baseline`` 与
+    worker 的启动迁移可同时改写同一张表，产生「补偿清空 A 列同时迁移回填 A 列」的
+    交错结果（实测 PG session-level lock 对第二个连接确实阻塞，此处只是未接入）。
+
+    Args:
+        engine: SQLAlchemy 引擎。
+        action_fn: 待执行的可调用对象（签名为 ``(engine)``）。
+        action: 日志中的动作名（便于多场景复用同一实现）。
+
+    Returns:
+        ``action_fn`` 的返回值。
+
+    """
+    with engine.connect() as lock_conn:
+        lock_conn.execute(text("SELECT pg_advisory_lock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
+        try:
+            logger.info("已获取迁移 advisory lock，开始%s", action)
+            return action_fn(engine)
+        finally:
+            lock_conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
+            logger.info("已释放迁移 advisory lock（%s）", action)
 
 
 def _run_locked(engine: Engine) -> MigrationSummary:
@@ -563,6 +585,30 @@ def baseline(
         msg = "baseline 必须显式确认：请加 --confirm（默认拒绝，防止误操作）"
         raise MigrationBlockedError(msg)
 
+    # 持锁：baseline 逐条执行迁移 + 写账本，必须与 worker 启动迁移/compensate 互斥
+    # （spec §9.4「补偿全程持有同一 advisory lock，防与启动迁移并发」）。
+    return _with_advisory_lock(
+        engine,
+        lambda eng: _baseline_locked(eng, dry_run=dry_run, auto=auto),
+        action="baseline 基线登记",
+    )
+
+
+def _baseline_locked(engine: Engine, *, dry_run: bool, auto: bool) -> list[int]:
+    """``baseline`` 的持锁主体（仅由 ``_with_advisory_lock`` 调用）.
+
+    Args:
+        engine: SQLAlchemy 引擎。
+        dry_run: 只打印计划，不写库、不备份。
+        auto: 由 ``MIGRATION_AUTO_BASELINE`` 触发。
+
+    Returns:
+        本次登记的版本号列表（dry-run 时为空）。
+
+    Raises:
+        MigrationBlockedError: 存在 failed 记录 / 前置检查失败。
+
+    """
     ensure_version_tables(engine)
     state = load_state(engine)
     if state.failed:
@@ -669,6 +715,27 @@ def retry(engine: Engine, version: int, *, reason: str | None) -> None:
         msg = f"v{version} 未在注册表中登记"
         raise MigrationBlockedError(msg)
 
+    # 持锁：重跑迁移会改写业务表，必须与启动迁移/补偿互斥（spec §9.4）。
+    _with_advisory_lock(
+        engine,
+        lambda eng: _retry_locked(eng, migration=migration, version=version, reason=reason),
+        action=f"retry v{version}",
+    )
+
+
+def _retry_locked(engine: Engine, *, migration: Migration, version: int, reason: str | None) -> None:
+    """``retry`` 的持锁主体（仅由 ``_with_advisory_lock`` 调用）.
+
+    Args:
+        engine: SQLAlchemy 引擎。
+        migration: 已登记的迁移项。
+        version: 迁移版本号。
+        reason: 审计原因。
+
+    Raises:
+        MigrationBlockedError: 该版本无 failed 记录。
+
+    """
     ensure_version_tables(engine)
     state = load_state(engine)
     if version not in state.failed:
@@ -746,8 +813,27 @@ def rebaseline(engine: Engine, version: int, *, reason: str) -> None:
         msg = f"v{version} 尚未 applied，无需 rebaseline"
         raise MigrationBlockedError(msg)
 
+    # 持锁：rebaseline 改写账本 checksum，必须与启动迁移的 checksum 校验互斥（spec §9.4）。
+    _with_advisory_lock(
+        engine,
+        lambda eng: _rebaseline_locked(eng, version=version, reason=reason, migration=migration),
+        action=f"rebaseline v{version}",
+    )
+
+
+def _rebaseline_locked(engine: Engine, *, version: int, reason: str, migration: Migration) -> None:
+    """``rebaseline`` 的持锁主体（仅由 ``_with_advisory_lock`` 调用）.
+
+    Args:
+        engine: SQLAlchemy 引擎。
+        version: 迁移版本号（已确认 applied）。
+        reason: 审计原因。
+        migration: 注册表登记项。
+
+    """
     from migrations.schema_migrations import update_checksum
 
+    state = load_state(engine)
     expected = state.applied[version].checksum
     actual = checksum_of(migration.fn)
     started = utcnow()
@@ -812,9 +898,7 @@ def compensate(
         MigrationBlockedError: 闸门拒绝（生产双确认 / 未 --yes）。
 
     """
-    from migrations.compensations.base import CompensationContext, CompensationTooLargeError
-    from migrations.compensations.guards import CompensationGuardError, check_row_budget
-    from migrations.compensations.registry import has_compensation, run_compensation
+    from migrations.compensations.registry import has_compensation
 
     migration = MIGRATION_BY_VERSION.get(version)
     if migration is None:
@@ -827,6 +911,53 @@ def compensate(
     gate_exit = _compensation_gate(version=version, dry_run=dry_run, yes=yes, reason=reason)
     if gate_exit is not None:
         return gate_exit
+
+    # 持锁：补偿会改写业务表，必须与启动迁移/其他管理命令互斥
+    # （spec §9.4「并发：补偿全程持有同一 advisory lock，防与启动迁移并发」）。
+    return _with_advisory_lock(
+        engine,
+        lambda eng: _compensate_locked(
+            eng,
+            version=version,
+            dry_run=dry_run,
+            force=force,
+            reason=reason,
+            operator=operator,
+        ),
+        action=f"compensate v{version}",
+    )
+
+
+def _compensate_locked(
+    engine: Engine,
+    *,
+    version: int,
+    dry_run: bool,
+    force: bool,
+    reason: str | None,
+    operator: str,
+) -> CompensationOutcome:
+    """``compensate`` 的持锁主体（仅由 ``_with_advisory_lock`` 调用）.
+
+    Args:
+        engine: SQLAlchemy 引擎。
+        version: 迁移版本号（已确认可补偿且通过闸门）。
+        dry_run: 只统计不执行 DML。
+        force: 跳过行数上限与空表守卫。
+        reason: 审计原因。
+        operator: 操作者标识。
+
+    Returns:
+        补偿结果（含退出码）。
+
+    Raises:
+        CompensationGuardError: 守卫拒绝（表非空）。
+        CompensationTooLargeError: 影响行数超限。
+
+    """
+    from migrations.compensations.base import CompensationContext, CompensationTooLargeError
+    from migrations.compensations.guards import CompensationGuardError, check_row_budget
+    from migrations.compensations.registry import run_compensation
 
     ctx = CompensationContext(
         version=version,

@@ -58,7 +58,11 @@ function deleteUnsavedUpload(url: string): void {
   });
 }
 
-export function RenovationContractForm({ projectId, area, readOnly = false }: RenovationContractFormProps) {
+export function RenovationContractForm({
+  projectId,
+  area,
+  readOnly = false,
+}: RenovationContractFormProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

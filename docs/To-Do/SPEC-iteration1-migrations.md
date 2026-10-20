@@ -837,11 +837,42 @@ docker-compose.yml                    # ./backups 挂载 + MIGRATION_* 透传
 2. **⚠️ C 级 25 项只给 runbook，不承诺「一键恢复」**：单表 `pg_restore` 需处理「恢复期间新增行」的合并语义，本期只提供「恢复到新库 + 手工比对」流程，不写自动化合并脚本。
 3. **⚠️ D 级 0 项是当前结论**：若后续把「上传 OSS 后删本地源文件」的带外脚本纳入启动迁移，该项必须重评为 D 并禁用自动执行。
 4. ~~`pg_dump` 与 PG16 server 的兼容性未在本机验证~~ → **已实测并落地为代码校验**（B9）：
-   本机 client 16.15 / 18.6、server 16.15。导出方向均已验证可用；**恢复方向发现真实缺陷**：
-   client 18.6 的归档（格式 1.16）无法被 PG16 的 `pg_restore` 读取。已通过
-   `backup_client` 审计字段 + `restore-hint` 的版本感知命令 + runbook §5 实测配方覆盖。
+   本机 client 16.15 / 17.11 / 18.6、server 16.15。导出方向均已验证可用；**恢复方向发现真实缺陷**：
+   client ≥17 的归档（格式 1.16）无法被 PG16 的 `pg_restore` 读取。
+   已通过 `backup_client` 审计字段 + `restore-hint` 的版本感知命令 + runbook §5.1 配方覆盖。
+
+   **2026-10-20 追补实测（三处口径修正，均已在 runbook/代码落地）**：
+   - **`pg_restore` 退出码不可信**：换用能读 1.16 的 client 17 直连 PG16 恢复，
+     实际会执行 `SET transaction_timeout`（PG17 新增 GUC）→ PG16 报错，但 `pg_restore`
+     默认「出错继续」→ **数据已完整灌入而退出码为 1**。原 runbook 的「已实测跑通」配方
+     退出码其实是 1，接进 `set -e`/`&&` 会被判失败。现 `restore-hint` 改为输出
+     「归档 → plain SQL → 剔除 `SET transaction_timeout` → `psql ON_ERROR_STOP=1`」
+     的自包含配方（**含先建 schema**：data-only 归档无建表语句，缺此步实测 exit=3），
+     实测 schema/data 两链均 exit=0、`restore_check.leads=977 == profo.leads=977`。
+   - **归档格式分界是 1.15/1.16**：client 16.15 产出 1.15（可被 16/17/18 读取并 exit=0），
+     client 17.11 与 18.6 均产出 1.16（PG16 的 `pg_restore` 直接拒绝）。
+   - **生产组合永久跨大版本**：镜像内 `postgresql-client` 为 Debian trixie 的 17.11（D-03），
+     server 是 16.15。**D-03 未变更**（改用 PGDG 源固定 client 16 属口径变更，本期不采用），
+     改为在操作口径上落地 §5.1 的 exit=0 配方。
    ⚠️ 仍**未覆盖**：跨大版本自动恢复脚本（需起临时 PG 容器，本期不做，spec §18.2 边界）。
-5. **baseline 最坏耗时已实测**（T1.10）：本机单 worker 82 项 + **1 次**57MB 全库备份 ≈ **58 秒**（v2 修正：旧实现逐条备份会多出 8 次整库 dump）；2 worker 因 advisory lock 串行化不会翻倍（第二个 worker 仅做零 pending 检查）。远小于 D-01 的 30–60 分钟窗口。
+5. **部署脚本备份目录属主边界**（2026-10-20 修复并实测）：`deploy-server.sh` 原用
+   `chown -R 1001:1001 "$BACKUP_DIR"` 准备迁移备份目录，会把同目录下**部署脚本自产的全库明文备份
+   `backup_*.sql.gz` 一并改成 `1001:1001 644`**——后端容器（uid 1001）进程即可改写/删除唯一全库备份，
+   而 `scripts/restore-backup.sh` 拉回本地时不做 sha256 校验。
+   修复后的边界（实测断言 16/16，工件 `backend/tests/e2e/artifacts/deploy-backup-perms-20261020-123607.txt`）：
+
+   | 路径 | 属主 | 权限 | 容器 uid 1001 |
+   |------|------|:----:|---------------|
+   | `backups/` | root | 711 | 可穿越、不可列举 |
+   | `backups/backup_*.sql.gz` | root | 600 | 不可读/写/删 |
+   | `backups/migrations/` | 1001 | 700 | 可建删（prune 依赖） |
+   | `backups/migrations/*.dump` | 1001 | 600 | 可读 |
+
+   回归用例 `backend/tests/e2e/test_deploy_server_backup_perms.py` 直接**从 deploy-server.sh 抽取
+   被测代码块**执行（避免抄件与脚本漂移），并含「换回旧写法可改写备份」的反向验证。
+   ⚠️ 该用例需 root（chown 到 1001 + `setpriv` 降权），非 root 环境以退出码 1 Fail Loud，不静默跳过。
+
+6. **baseline 最坏耗时已实测**（T1.10）：本机单 worker 82 项 + **1 次**57MB 全库备份 ≈ **58 秒**（v2 修正：旧实现逐条备份会多出 8 次整库 dump）；2 worker 因 advisory lock 串行化不会翻倍（第二个 worker 仅做零 pending 检查）。远小于 D-01 的 30–60 分钟窗口。
 
 ---
 

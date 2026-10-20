@@ -46,8 +46,7 @@ export function MobileSellingView({ projectId, project }: MobileSellingViewProps
   ]);
   // 归档写锁（前端同口径）：归档后后端销售记录写接口统一 400，写入口同步收敛
   const isArchived = project.is_archived === true;
-  const canEditSales =
-    !isArchived && (canAddByPermission || project.sale?.can_edit_sales === true);
+  const canEditSales = !isArchived && (canAddByPermission || project.sale?.can_edit_sales === true);
 
   const records = useMemo(
     () => validateSalesRecords(project.sales_records),

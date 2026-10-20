@@ -43,8 +43,7 @@ export function ActivityTabs({ project, onRefresh, onCountsChange, activeTab }: 
   ]);
   // 归档写锁（前端同口径）：归档后后端销售记录写接口统一 400，写入口同步收敛
   const isArchived = project.is_archived === true;
-  const canEditSales =
-    !isArchived && (canAddByPermission || project.sale?.can_edit_sales === true);
+  const canEditSales = !isArchived && (canAddByPermission || project.sale?.can_edit_sales === true);
 
   // 删除逻辑：直接删除（无 confirm），删除中禁用重复点击 + Loader 反馈
   const handleDelete = async (id: string) => {
