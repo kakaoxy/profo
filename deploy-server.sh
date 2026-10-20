@@ -131,8 +131,10 @@ chmod 700 "$BACKUP_DIR/migrations"
 # 711 在不影响容器访问 migrations/ 的前提下堵掉这个信息泄露（实测：容器建删备份正常）。
 chmod 711 "$BACKUP_DIR"
 # 全库备份含全库明文（含用户手机号密文/密钥材料引用），收紧到 root-only（600）。
+# 同时修正属主为 root：旧版本部署曾错误执行 `chown -R 1001:1001 "$BACKUP_DIR"`，
+# 遗留的 backup_*.sql.gz 若属主仍为 1001，即使 chmod 600 也仍可被容器内进程改写/删除。
 if [ -d "$BACKUP_DIR" ]; then
-    find "$BACKUP_DIR" -maxdepth 1 -name 'backup_*.sql.gz' -type f -exec chmod 600 {} +
+    find "$BACKUP_DIR" -maxdepth 1 -name 'backup_*.sql.gz' -type f -exec chown root:root {} + -exec chmod 600 {} +
 fi
 
 # 3. 启动 redis 服务（backend depends_on redis，需先就绪）
