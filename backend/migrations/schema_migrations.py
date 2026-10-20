@@ -14,6 +14,7 @@
 import logging
 import os
 import socket
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Literal
@@ -32,6 +33,8 @@ STATUS_FAILED = "failed"
 
 # 兜底提示：`_record` 落库失败时也不抛（否则掩盖迁移本身的异常）
 _RECORD_FALLBACK_HINT = "迁移记录写入失败（不影响迁移结果判定，但审计链缺失）"
+# 结构化告警标记（供日志巡检/告警规则抓取；启动日志的 ``audit_chain_broken`` 与之对应）
+_AUDIT_ALARM = "MIGRATION_LEDGER_WRITE_FAILED"
 
 
 def ensure_version_tables(engine: Engine) -> None:
@@ -193,10 +196,15 @@ def record_migration(
     error: str | None,
     notes: str | None = None,
     backup_client: str | None = None,
-) -> None:
+) -> bool:
     """写入/更新一条迁移记录（独立连接、独立事务，K3）.
 
     ``failed`` 行保留；``retry`` 成功时以同一 version 覆盖为 ``applied`` 并清空 ``error``。
+
+    落库失败**不抛异常**（否则会掩盖迁移本身的异常，K6 / §6.2 约束 2），但必须
+    **不静默**：同时写结构化 ERROR 日志与 stderr，并由调用方把
+    ``audit_chain_broken=True`` 打进启动摘要。否则「备份失败 → 写 failed」这条
+    阻断链在账本不可写时会静默失效（下次启动不再阻断）。
 
     Args:
         engine: SQLAlchemy 引擎。
@@ -214,6 +222,9 @@ def record_migration(
         backup_client: 产出备份的 pg_dump 版本（恢复端必须同大版本）。
         error: 失败堆栈（成功时为 None）。
         notes: 备注。
+
+    Returns:
+        是否成功落库（False 表示审计链缺失，调用方须在摘要中标记）。
 
     """
     try:
@@ -259,8 +270,18 @@ def record_migration(
                 },
             )
     except Exception:
-        # 落库失败绝不能掩盖真实迁移异常（K6 / §6.2 约束 2）
+        # 落库失败绝不能掩盖真实迁移异常（K6 / §6.2 约束 2），但也绝不能静默：
+        # 否则「备份失败 → 写 failed」的阻断链在账本不可写时会失效（下次启动不再阻断）。
         logger.exception("%s：version=%d name=%s status=%s", _RECORD_FALLBACK_HINT, version, name, status)
+        print(
+            f"[ALARM] {_AUDIT_ALARM} version={version} name={name} status={status} "
+            f"detail={_RECORD_FALLBACK_HINT}；该版本的『备份失败/执行失败 → failed 阻断』已失效，"
+            "请立即排查 schema_migrations 可写性与数据库连接。",
+            file=sys.stderr,
+            flush=True,
+        )
+        return False
+    return True
 
 
 def update_checksum(engine: Engine, *, version: int, checksum: str, note: str | None = None) -> None:

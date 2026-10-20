@@ -97,6 +97,45 @@ def test_pending_versions_execute_once(test_engine_ledger: Engine) -> None:
     assert len(load_state(test_engine_ledger).applied) == len(MIGRATIONS)
 
 
+def test_ledger_write_failure_is_loud_and_marks_summary(
+    test_engine_ledger: Engine,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """B3 回归：账本不可写时必须 Fail Loud（结构化告警 + 启动摘要标记），不得静默.
+
+    原实现只在 logger.exception 里记一笔，导致「备份失败 → 写 failed」这条阻断链
+    在账本不可写时静默失效（下次启动不再阻断）。本质：审计链缺失必须可被巡检发现。
+    """
+    from sqlalchemy import text as real_text
+
+    from migrations import schema_migrations as ledger_module
+
+    def _text_or_boom(sql: str, *args: Any, **kwargs: Any) -> Any:
+        """仅让账本 INSERT 失败（建表/查询保持真实，隔离被测路径）."""
+        if sql.lstrip().startswith("INSERT INTO schema_migrations"):
+            msg = "模拟 schema_migrations 不可写"
+            raise RuntimeError(msg)
+        return real_text(sql, *args, **kwargs)
+
+    # 只让账本写入失败（保留 record_migration 的 try/except 兜底逻辑）
+    monkeypatch.setattr(ledger_module, "text", _text_or_boom)
+
+    with test_engine_ledger.begin() as conn:
+        conn.execute(text("DELETE FROM schema_migrations WHERE version = :v"), {"v": 82})
+
+    summary = run_startup_migrations(test_engine_ledger)
+
+    captured = capsys.readouterr()
+    assert summary is not None, "落库失败不应把已成功的迁移变成异常"
+    assert summary.audit_chain_broken is True, "必须把审计链缺失标进结构化摘要"
+    assert "audit_chain_broken=true" in summary.as_log_line()
+    assert "MIGRATION_LEDGER_WRITE_FAILED" in captured.err, "必须打结构化告警到 stderr（巡检可抓）"
+    assert "version=82" in captured.err
+    # 原行已被删除且写入失败 → 账本里仍无 82（即下次启动不会阻断，必须靠告警发现）
+    assert 82 not in load_state(test_engine_ledger).applied
+
+
 # ---------------------------------------------------------------------------
 # checksum（K4/K5 / A5）
 # ---------------------------------------------------------------------------
@@ -333,14 +372,26 @@ def test_baseline_confirm_registers_all_with_audit(
 
     assert executed == [m.version for m in MIGRATIONS]
     assert calls[0] == "baseline", "baseline 必须先做一次全库备份（第一项）"
+    # B2 回归：一次 full 备份已覆盖整套 baseline，不得再逐条备份。
+    # 原实现实测触发 28 次 table + 8 次 full 全库 dump（v14/v21/v24/v30/v31/v76/v80/v81）。
+    assert calls == ["baseline"], f"baseline 只允许 1 次全库备份，实际调用：{calls}"
     with test_engine.connect() as conn:
         audit = conn.execute(
             text("SELECT action, result, affected_rows FROM migration_compensations WHERE action = 'baseline'"),
         ).first()
+        # 逐条备份被跳过，账本不应写成「已有备份」的假象（backup_scope 保持 none）
+        scopes = (
+            conn.execute(
+                text("SELECT DISTINCT backup_scope FROM schema_migrations WHERE backup_scope IS NOT NULL"),
+            )
+            .scalars()
+            .all()
+        )
     assert audit is not None
     assert audit[0] == "baseline"
     assert audit[1] == "success"
     assert audit[2] == len(MIGRATIONS)
+    assert set(scopes) <= {"none"}, f"baseline 逐条记录不应声称有 per-migration 备份：{scopes}"
     _reset_state(test_engine)
 
 

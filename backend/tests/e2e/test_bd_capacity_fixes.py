@@ -4,7 +4,8 @@
   L2-① 流式解压（前次已修）：多 txt 包逐条目装载（任一时刻最多驻留单个 txt）
   L2-② 上传互斥（M5）：pending/processing 任务存在时二次上传 → HTTP 409；
         无进行中任务时正常创建 → 201；并发创建仅 1 个成功
-  L2-④ 任务恢复（M7）：遗留 processing 任务被启动迁移标记 failed（可重跑文案）
+  L2-④ 任务恢复（M7）：遗留 processing 任务被恢复迁移标记 failed（可重跑文案；
+         版本化执行器下已 applied 的 v79 不会重跑，本用例显式调用迁移函数）
   L2-⑥ 口径对齐（M2）：>1GB 解压总量的包装载阶段拒绝（zip bomb 防线对齐 512m）
   审查补缺（2026-10-17）：包内单个声明 600MB 的 txt 被单条目防线拒绝
   H1（2026-10-17 性能与安全专项审查）：单条目上限 512MB → 16MB（解析放大 13.1× 反算）
@@ -37,7 +38,7 @@ from sqlalchemy import text
 
 import db
 from main import app
-from migrations import run_startup_migrations
+from migrations._bd_import_task_recovery import recover_stale_bd_import_tasks
 from models import BdImportTask, ImportTaskStatus
 from services.property.dict_import_loader import (
     MAX_SINGLE_ENTRY_BYTES,
@@ -192,7 +193,11 @@ s.close()
 # ---------- 装载层 ----------
 processor = DictImportProcessor(db.engine)
 
-# ⑤ L2-④ 任务恢复迁移：置遗留 processing 任务 → run_startup_migrations → failed
+# ⑤ L2-④ 任务恢复：置遗留 processing 任务 → 显式调用恢复迁移 → failed
+# ⚠️ 迭代一起 ``run_startup_migrations`` 改为**版本化执行器**：已 applied 的 v79
+# 在该库上永不重跑，因此这里必须像 test_phone_encryption.py 一样**显式调用迁移函数**，
+# 否则本项永远拿不到「遗留任务被标记 failed」的结果（假绿/假红）。
+# 启动路径仍然覆盖 v79（新库首次启动会执行它），两条路径互不替代。
 s = db.SessionLocal()
 stale = BdImportTask(
     user_id="l2-e2e-recover",
@@ -206,7 +211,7 @@ s.add(stale)
 s.commit()
 stale_id = stale.id
 s.close()
-run_startup_migrations(db.engine)
+recover_stale_bd_import_tasks(db.engine)
 s = db.SessionLocal()
 t = s.get(BdImportTask, stale_id)
 status5 = t.status.value if t else None

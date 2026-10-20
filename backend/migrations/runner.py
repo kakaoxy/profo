@@ -19,7 +19,7 @@ import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from time import perf_counter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -60,20 +60,29 @@ class MigrationBlockedError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class MigrationSummary:
-    """一次启动迁移的结构化摘要（结构化日志用，G2）."""
+    """一次启动迁移的结构化摘要（结构化日志用，G2）.
+
+    ``audit_chain_broken``：本次是否有版本账本写入失败（写失败即「审计链缺失」，
+    下轮启动无法靠 ``failed`` 行阻断）。
+    """
 
     applied: int
     pending: int
     failed: int
     executed: tuple[int, ...]
     duration_ms: int
+    audit_chain_broken: bool = False
 
     def as_log_line(self) -> str:
         """格式化为单行结构化摘要（G2 要求日志含 ``迁移状态：...``）."""
-        return (
+        line = (
             f"迁移状态：applied={self.applied} pending={self.pending} failed={self.failed} "
             f"executed_now={len(self.executed)} duration_ms={self.duration_ms}"
         )
+        if self.audit_chain_broken:
+            # Fail Loud：审计链缺失必须出现在启动摘要行里，否则只藏在 ERROR 堆栈中
+            line += " audit_chain_broken=true（本条审计链缺失，见上方 MIGRATION_LEDGER_WRITE_FAILED 告警）"
+        return line
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +138,7 @@ def run_startup_migrations(engine: Engine) -> MigrationSummary | None:
         failed=summary.failed,
         executed=summary.executed,
         duration_ms=total_ms,
+        audit_chain_broken=summary.audit_chain_broken,
     )
     logger.info(final.as_log_line())
     return final
@@ -158,17 +168,24 @@ def _run_locked(engine: Engine) -> MigrationSummary:
     )
 
     executed: list[int] = []
+    ledger = _LedgerWriteTracker()
     for migration in pending:
-        _apply_one(engine, migration)
+        _apply_one(engine, migration, ledger=ledger)
         executed.append(migration.version)
 
     state_after = load_state(engine)
+    if ledger.ledger_write_failed:
+        logger.error(
+            "版本账本写入失败 %d 次：本轮审计链缺失，下次启动将无法靠 failed 行阻断（MIGRATION_LEDGER_WRITE_FAILED）",
+            ledger.ledger_write_failed,
+        )
     return MigrationSummary(
         applied=len(state_after.applied),
         pending=len([m for m in MIGRATIONS if m.version not in state_after.applied]),
         failed=len(state_after.failed),
         executed=tuple(executed),
         duration_ms=0,
+        audit_chain_broken=bool(ledger.ledger_write_failed),
     )
 
 
@@ -361,12 +378,44 @@ def _baseline_block_message() -> str:
 # ---------------------------------------------------------------------------
 
 
-def _apply_one(engine: Engine, migration: Migration) -> None:
+class _LedgerWriteTracker:
+    """统计版本账本落库失败次数（K6 / B3：账本不可写时不得静默）."""
+
+    def __init__(self) -> None:
+        """初始化（计数只在启动期单线程内自增，无需加锁）."""
+        self.ledger_write_failed = 0
+
+    def record(self, **kwargs: Any) -> bool:
+        """代理 ``schema_migrations.record_migration``，并统计落库失败次数.
+
+        Args:
+            **kwargs: 透传给 ``record_migration`` 的全部参数。
+
+        Returns:
+            是否成功落库。
+
+        """
+        ok = record_migration(**kwargs)
+        if not ok:
+            self.ledger_write_failed += 1
+        return ok
+
+
+def _apply_one(
+    engine: Engine,
+    migration: Migration,
+    *,
+    backup_mode: Literal["per_migration", "covered"] = "per_migration",
+    ledger: _LedgerWriteTracker | None = None,
+) -> None:
     """执行单条迁移：备份 → 执行 → 落库；任一步失败写 failed 并抛出（K6/K11）.
 
     Args:
         engine: SQLAlchemy 引擎。
         migration: 注册表登记项。
+        backup_mode: ``per_migration`` 逐条备份（启动/retry/up 路径）；
+            ``covered`` 已由调用方（``baseline``）做过一次全库备份，跳过逐条备份。
+        ledger: 落库失败计数器（启动路径传入，用于把「审计链缺失」打进摘要）。
 
     Raises:
         Exception: 迁移函数或备份抛出的原始异常（保留堆栈，便于定位）。
@@ -376,52 +425,45 @@ def _apply_one(engine: Engine, migration: Migration) -> None:
     t0 = perf_counter()
     backup: BackupResult | None = None
     checksum = checksum_of(migration.fn)
+
+    def _write_ledger(status: Literal["applied", "failed"], duration_ms: int, error_text: str | None) -> None:
+        """写版本账本（启动路径走 tracker 统计失败，其余路径直写）."""
+        kwargs: dict[str, Any] = {
+            "engine": engine,
+            "version": migration.version,
+            "name": migration.name,
+            "checksum": checksum,
+            "kind": migration.kind,
+            "risk": migration.risk,
+            "status": status,
+            "started_at": started,
+            "duration_ms": duration_ms,
+            "backup_path": backup.path if backup else None,
+            "backup_sha256": backup.sha256 if backup else None,
+            "backup_scope": backup.scope if backup else None,
+            "backup_client": backup.client_version if backup else None,
+            "error": error_text,
+            "notes": None,
+        }
+        if ledger is not None:
+            ledger.record(**kwargs)
+        else:
+            record_migration(**kwargs)
+
     try:
-        backup = _maybe_backup(engine, migration)
+        backup = _maybe_backup(engine, migration, backup_mode=backup_mode)
         migration.fn(engine)
     except Exception as exc:
         duration_ms = int((perf_counter() - t0) * 1000)
         error_text = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()[-_ERROR_TAIL_CHARS:]}"
         if isinstance(exc, _BackupAbortedError):
             error_text = f"backup_failed: {exc.__cause__ or exc}"
-        record_migration(
-            engine,
-            version=migration.version,
-            name=migration.name,
-            checksum=checksum,
-            kind=migration.kind,
-            risk=migration.risk,
-            status=STATUS_FAILED,
-            started_at=started,
-            duration_ms=duration_ms,
-            backup_path=backup.path if backup else None,
-            backup_sha256=backup.sha256 if backup else None,
-            backup_scope=backup.scope if backup else None,
-            backup_client=backup.client_version if backup else None,
-            error=error_text,
-            notes=None,
-        )
+        _write_ledger(STATUS_FAILED, duration_ms, error_text)
         logger.exception("迁移 v%d %s 失败（%dms）", migration.version, migration.name, duration_ms)
         raise
 
     duration_ms = int((perf_counter() - t0) * 1000)
-    record_migration(
-        engine,
-        version=migration.version,
-        name=migration.name,
-        checksum=checksum,
-        kind=migration.kind,
-        risk=migration.risk,
-        status=STATUS_APPLIED,
-        started_at=started,
-        duration_ms=duration_ms,
-        backup_path=backup.path if backup else None,
-        backup_sha256=backup.sha256 if backup else None,
-        backup_scope=backup.scope if backup else None,
-        backup_client=backup.client_version if backup else None,
-        error=None,
-        notes=None,
-    )
+    _write_ledger(STATUS_APPLIED, duration_ms, None)
     logger.info(
         "迁移 v%03d %s 完成（%dms，backup=%s）",
         migration.version,
@@ -435,12 +477,18 @@ class _BackupAbortedError(RuntimeError):
     """备份失败导致迁移中止（K11，``error`` 前缀 ``backup_failed``）."""
 
 
-def _maybe_backup(engine: Engine, migration: Migration) -> BackupResult | None:
-    """按登记元数据执行备份；``backup=none`` 或全局 off 时跳过.
+def _maybe_backup(
+    engine: Engine,
+    migration: Migration,
+    *,
+    backup_mode: Literal["per_migration", "covered"] = "per_migration",
+) -> BackupResult | None:
+    """按登记元数据执行备份；``backup=none`` / 全局 off / 已被全库备份覆盖时跳过.
 
     Args:
         engine: SQLAlchemy 引擎。
         migration: 注册表登记项。
+        backup_mode: ``covered`` 表示调用方已做一次全库备份（baseline），不再逐条备份。
 
     Returns:
         备份结果；跳过时为 None。
@@ -450,6 +498,14 @@ def _maybe_backup(engine: Engine, migration: Migration) -> BackupResult | None:
 
     """
     if migration.backup == "none":
+        return None
+    if backup_mode == "covered":
+        logger.info(
+            "baseline 已做全库备份（scope=full），跳过 v%d %s 的 %s 逐条备份（K11 由全库备份覆盖）",
+            migration.version,
+            migration.name,
+            migration.backup,
+        )
         return None
     if settings.migration_backup_mode == "off":
         logger.warning(
@@ -484,6 +540,11 @@ def baseline(
     auto: bool = False,
 ) -> list[int]:
     """既有库基线登记：full 备份 → 逐条执行（幂等）→ 逐条写 applied（§7.2）.
+
+    备份策略：只做**一次** full 全库备份覆盖整套 baseline，逐条执行时跳过 per-migration
+    备份（``_apply_one(..., backup_mode="covered")``）。理由：既有库上逐条备份实测触发
+    28 次单表 + 8 次全库 dump（v14/v21/v24/v30/v31/v76/v80/v81 登记为 ``backup="full"``），
+    等于把整库重复 dump 9 遍，与「一次 full 备份覆盖整套 baseline」的注释相矛盾。
 
     Args:
         engine: SQLAlchemy 引擎。
@@ -523,8 +584,11 @@ def baseline(
     started = utcnow()
     t0 = perf_counter()
 
-    # 一次 full 备份覆盖整套 baseline（逐条备份在既有库上代价过高）
+    # 一次 full 备份覆盖整套 baseline。必须同时传入 backup_mode="covered"：
+    # 否则 _apply_one → _maybe_backup 仍会逐条备份（实测 28 次 table + 8 次 full
+    # 全库 dump，既有库上等于重复 dump 整库 9 遍）。
     backup_note = "无（MIGRATION_BACKUP_MODE=off，仅 DEBUG 允许）"
+    backup_mode: Literal["per_migration", "covered"] = "covered"
     if settings.migration_backup_mode == "off":
         logger.warning("MIGRATION_BACKUP_MODE=off：baseline 未做全库备份（仅 DEBUG 允许）")
     else:
@@ -536,7 +600,7 @@ def baseline(
     for migration in MIGRATIONS:
         if migration.version in state.applied:
             continue
-        _apply_one(engine, migration)
+        _apply_one(engine, migration, backup_mode=backup_mode)
         executed.append(migration.version)
 
     duration_ms = int((perf_counter() - t0) * 1000)

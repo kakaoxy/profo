@@ -72,6 +72,17 @@ docker compose exec backend .venv/bin/python -m migrations.manage up
 迁移状态：applied=82 pending=0 failed=0 executed_now=N duration_ms=...
 ```
 
+**审计链异常标志**（⚠️ 必须处理）：
+
+```
+[ALARM] MIGRATION_LEDGER_WRITE_FAILED version=<v> name=<name> status=<applied|failed> ...
+迁移状态：... audit_chain_broken=true（本条审计链缺失，见上方 MIGRATION_LEDGER_WRITE_FAILED 告警）
+```
+
+该告警表示**版本账本写不进去**：迁移可能已在库上成功，但账本没记住。此时
+「备份失败/执行失败 → 写 `failed` → 下次启动阻断」这条保护链**已失效**，必须立即排查
+`schema_migrations` 可写性与数据库连接（见 §3.4）；修复后重跑 `manage up` 补齐账本。
+
 健康检查：
 
 ```bash
@@ -190,6 +201,10 @@ sudo chown -R 1001:1001 backups      # 容器内 USER app = uid 1001
 chmod 700 backups/migrations
 ```
 
+> `deploy-server.sh` 已在启动容器前执行上述步骤（§2.1 准备迁移备份目录）。
+> 若目录是**手建**或由 docker 自动创建的，属主会是 root → `create_backup` 写入失败 →
+> `backup_failed` → 迁移中止 → 容器反复重启（compose `restart: unless-stopped`）。
+
 ### 3.5 需要立刻停止迁移（逃生阀）
 
 ```bash
@@ -226,7 +241,9 @@ docker compose exec -T db bash -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' |
 # ③ 实跑（自动做一次 full 备份，然后逐条幂等执行 + 登记）
 time docker compose exec backend .venv/bin/python -m migrations.manage baseline --confirm
 
-# 实测参考（本机 82 项，含 2 次 57MB 全库备份）：约 58 秒
+# 实测参考（本机 82 项 + 1 次全库备份）：约 58 秒
+# ⚠️ v2 起 baseline **只做 1 次**全库备份（逐条备份跳过，见 runner.baseline 注释）：
+#    此前实现会额外触发 28 次单表 + 8 次全库 dump（共 9 次整库 dump），既有库上极慢。
 # ④ 核对
 docker compose exec backend .venv/bin/python -m migrations.manage status | tail -3
 # 期望：迁移状态：applied=82 pending=0 failed=0 total=82
@@ -399,11 +416,13 @@ cd backend && .venv/bin/pytest tests/test_migration_registry.py -q --no-cov
 | 后端反复重启，日志含 `[FATAL] 迁移状态异常` | 存在 failed 记录 | `manage status` |
 | 日志含 `迁移源码校验和不匹配` | 已应用迁移的源码被改 | `manage verify` |
 | 日志含 `既有数据库...但迁移版本表为空` | 未基线 | `manage baseline --dry-run` |
+| 日志含 `MIGRATION_LEDGER_WRITE_FAILED` / `audit_chain_broken=true` | 版本账本不可写（阻断链失效） | §3.4 ①–③ + `manage status` |
 | `failed` 行 `error` 以 `backup_failed` 开头 | pg_dump 缺失/权限/磁盘 | `manage status` → §3.4 |
 | `manage` 命令报 `未找到 pg_dump` | 宿主无 PG 客户端 | `brew install libpq` + `MIGRATION_PG_DUMP_PATH` |
 | 启动耗时明显变长 | pending 较多 | `manage status --json \| jq '.pending'` |
 | 补偿提示需要 `--force` | 行数超限或表非空 | 先 `--dry-run` 核对行数 |
 | 补偿提示需要 `MIGRATION_PRODUCTION_CONFIRM` | 生产双确认 | §5 末段命令 |
+| `restore-hint` 报「账本中无该版本的备份文件」 | 未执行成功 / 备份已 prune | 按输出改用最近全库备份回放到临时库 |
 
 ---
 
@@ -420,6 +439,6 @@ cd backend && .venv/bin/pytest tests/test_migration_registry.py -q --no-cov
    - 因此 `manage restore-hint` 会打印账本里的 `backup_client` 版本，并给出对应命令。
    - 生产镜像内 `postgresql-client` 固定为 Debian trixie 的 17.x（D-03），
      与 server 16 组合下：导出正常、恢复需在 backend 容器执行（runbook §5 已写明）。
-4. **baseline 在 2 worker 下的最坏耗时**：本机单 worker 实测 58 秒（82 项 + 2 次全库备份）；
+4. **baseline 在 2 worker 下的最坏耗时**：本机单 worker 实测 58 秒（82 项 + **1 次**全库备份，v2 起）；
    2 worker 会因 advisory lock 串行化，耗时**不会**翻倍（第二个 worker 只做零 pending 检查）。
 5. **legacy 路径退出**：保留 1 个 release，删除前在本文件 §3.5 标注观察结论。

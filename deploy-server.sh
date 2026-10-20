@@ -112,6 +112,17 @@ log_info "准备 uploads 目录..."
 mkdir -p "$PROJECT_DIR/uploads"
 chown -R 1001:1001 "$PROJECT_DIR/uploads"
 
+# 2.1 迁移备份目录（迭代一 T1.5）：compose 把 ./backups 挂到容器内 /app/backups，
+# 容器以 uid=1001 运行 → 宿主目录必须同属主，否则 create_backup 写入失败 →
+# error=backup_failed → 迁移中止 → 启动阻断。
+# 目录缺失时 docker 会用 root 自动创建，因此必须在起容器前建好并 chown。
+log_info "准备迁移备份目录..."
+mkdir -p "$BACKUP_DIR/migrations"
+# 历史 backup_*.sql.gz（deploy-server.sh 自身产物）保持不动，只把目录交给 uid 1001；
+# chown -R 会同时修正旧迁移备份的属主，避免 prune 时因权限失败。
+chown -R 1001:1001 "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR/migrations"
+
 # 3. 启动 redis 服务（backend depends_on redis，需先就绪）
 log_info "启动 redis 服务..."
 docker compose up -d redis

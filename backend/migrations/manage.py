@@ -26,6 +26,7 @@ import argparse
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -363,6 +364,12 @@ def print_restore_hint(version: int) -> None:
     else:
         print("# ⚠️ 账本中无该版本的备份文件（迁移可能尚未执行成功，或备份被 prune）。")
         print("#   请改用最近一次全库备份：ls -lt /app/backups/migrations/*.dump | head")
+        # 下方命令需要具体文件路径；此处必须退出，否则 backup 为 None 会在
+        # startswith() 处抛 AttributeError（运维拿不到任何指引）。
+        print_recent_backups()
+        print_last_full_backup_restore(version, migration)
+        print(f"\n# 数据库：{url_db}")
+        return
 
     backup_client = row.backup_client if row and row.backup_client else ""
     server = _server_version(engine)
@@ -426,6 +433,75 @@ def print_restore_hint(version: int) -> None:
     print(f"docker compose exec backend .venv/bin/python -m migrations.manage compensate {version} --dry-run")
     print()
     print(f"# 数据库：{url_db}")
+
+
+def print_recent_backups(limit: int = 5) -> None:
+    """列出备份目录中最近的若干份备份（账本无该版本备份时的替代依据）.
+
+    目录不可读时给出可复制的排查命令，不抛异常（本函数是错误路径上的指引输出）。
+
+    Args:
+        limit: 最多列出份数。
+
+    """
+    directory = Path(settings.migration_backup_dir)
+    print(f"# 最近备份（{directory}）：")
+    try:
+        files = sorted(
+            (p for p in directory.iterdir() if p.is_file() and p.suffix == ".dump"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )[:limit]
+    except OSError as exc:
+        print(f"#   ⚠️ 备份目录不可读（{exc}）；请在宿主执行：ls -lt /app/backups/migrations | head")
+        return
+    if not files:
+        print("#   ⚠️ 目录下没有任何 .dump 备份；改用部署脚本的全库备份（见下方 3)）")
+        return
+    for item in files:
+        stamp = time.strftime("%Y-%m-%d %H:%M", time.localtime(item.stat().st_mtime))
+        print(f"#   {stamp}  {item.name}")
+
+
+def print_last_full_backup_restore(version: int, migration: Migration) -> None:
+    """打印「用最近一次全库备份整库回放」的具体命令（账本无该版本备份时的兜底路径）.
+
+    不猜测备份文件名与客户端版本：先要求操作者确认文件，再给同一容器内的回放命令。
+
+    Args:
+        version: 迁移版本号。
+        migration: 注册表登记项（用于列出涉及的表）。
+
+    """
+    print()
+    print("# 兜底路径：整库回放到**临时库**（不覆盖生产），与生产比对后手工合并")
+    print("#   1) 选定一份备份文件（上一段列表中的最新全库备份），并确认其 pg_dump 大版本：")
+    print("#        docker compose exec backend sh -c 'pg_restore --version'")
+    print("#   2) 起临时库并回放（<备份文件> 换成上一步选定的文件名，只替换这一处）：")
+    print('docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend psql \\')
+    print('  -h db -U "$POSTGRES_USER" -d postgres \\')
+    print('  -c "DROP DATABASE IF EXISTS restore_check;" \\')
+    print('  -c "CREATE DATABASE restore_check OWNER \\"$POSTGRES_USER\\";"')
+    print('docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend pg_restore \\')
+    print('  -h db -U "$POSTGRES_USER" -d restore_check --no-owner --no-privileges \\')
+    print("  /app/backups/migrations/<备份文件>")
+    print("#   3) 核对涉及表的行数（期望与生产一致）：")
+    for table in migration.backup_tables or ("<涉及的表>",):
+        print('docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend psql \\')
+        print(f'  -h db -U "$POSTGRES_USER" -d restore_check -tAc "SELECT count(*) FROM {table}"')
+        print('docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend psql \\')
+        print(f'  -h db -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM {table}"')
+    print("#   4) 回放完成后删除临时库，按差异手工合并（本期不提供自动合并脚本，spec §18.2 边界）：")
+    print('docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backend psql \\')
+    print('  -h db -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE IF EXISTS restore_check;"')
+    print("#   5) 核对版本账本与整体状态：")
+    print("docker compose exec backend .venv/bin/python -m migrations.manage status --json")
+    print("docker compose exec backend .venv/bin/python -m migrations.manage verify")
+    print(f"#   6) 该版本（v{version} {migration.name}）若需重新执行：")
+    print(
+        f"docker compose exec backend .venv/bin/python -m migrations.manage retry {version} "
+        f'--reason "账本无备份，按全库备份恢复"',
+    )
 
 
 def _major_of(version: str) -> int:

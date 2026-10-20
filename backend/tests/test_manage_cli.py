@@ -9,6 +9,7 @@ migrations.manage status --json | jq .total``）。
 
 import json
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -21,7 +22,7 @@ from migrations.manage import (
     EXIT_REFUSED,
     main,
 )
-from migrations.registry import MIGRATIONS
+from migrations.registry import MIGRATION_BY_VERSION, MIGRATIONS
 from settings import settings
 
 
@@ -293,9 +294,25 @@ def test_restore_hint_prints_copyable_commands(
     cli_engine: Engine,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """``restore-hint`` 输出的命令必须可直接复制（含 pg_restore / verify / status）."""
-    code = main(["restore-hint", "50"])
-    output = capsys.readouterr().out
+    """``restore-hint`` 输出的命令必须可直接复制（含 pg_restore / verify / status）.
+
+    本用例覆盖「账本**有**备份文件」的主路径；账本无备份的兵底路径见
+    ``test_restore_hint_without_ledger_backup_does_not_crash``。
+    """
+    with applied_ledger.begin() as conn:
+        conn.execute(
+            text("UPDATE schema_migrations SET backup_path = :p, backup_sha256 = :s WHERE version = 50"),
+            {"p": "/app/backups/migrations/20261019-000000_v050_backfill_lead_unit_price.dump", "s": "0" * 64},
+        )
+    try:
+        code = main(["restore-hint", "50"])
+        output = capsys.readouterr().out
+    finally:
+        with applied_ledger.begin() as conn:
+            conn.execute(
+                text("UPDATE schema_migrations SET backup_path = NULL, backup_sha256 = NULL WHERE version = 50"),
+            )
+
     assert code == EXIT_OK
     assert "pg_restore" in output
     assert "docker compose exec backend .venv/bin/python -m migrations.manage verify" in output
@@ -309,6 +326,68 @@ def test_restore_hint_prints_copyable_commands(
 def test_restore_hint_unknown_version(cli_engine: Engine, capsys: pytest.CaptureFixture[str]) -> None:
     """未知版本 → 退出码 1."""
     assert main(["restore-hint", "999"]) == EXIT_PROBLEM
+
+
+def _clear_ledger_backup(engine: Engine, version: int) -> None:
+    """把某版本的备份信息置空（模拟「账本无该版本备份」的真实场景：未执行成功或已 prune）."""
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE schema_migrations SET backup_path = NULL, backup_sha256 = NULL, "
+                "backup_scope = NULL, backup_client = NULL WHERE version = :v",
+            ),
+            {"v": version},
+        )
+
+
+def test_restore_hint_without_ledger_backup_does_not_crash(
+    applied_ledger: Engine,
+    cli_engine: Engine,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """B1 回归：账本无该版本备份（backup_path=NULL）+ backup!=none → 不崩且给出可执行指引.
+
+    原文在 ``backup.startswith(...)`` 处抛 ``AttributeError: 'NoneType' object has no
+    attribute 'startswith'``（触发路径：``manage compensate <C/D 版本>`` →
+    ``CompensationNotSupportedError`` → ``print_restore_hint()``），运维拿不到恢复指引。
+    """
+    monkeypatch.setattr(settings, "migration_backup_dir", str(tmp_path / "migrations"))
+    (tmp_path / "migrations").mkdir(parents=True)
+    # v3 为 C 级 backup=table；显式清空账本备份信息以构造缺陷触发前提
+    assert MIGRATION_BY_VERSION[3].backup != "none"
+    _clear_ledger_backup(applied_ledger, 3)
+
+    code = main(["restore-hint", "3"])
+    captured = capsys.readouterr()
+
+    assert code == EXIT_OK
+    assert "账本中无该版本的备份文件" in captured.out
+    assert "pg_restore" in captured.out, "必须给出整库回放的具体命令，而不是空指引"
+    assert "retry 3" in captured.out
+    assert "Traceback" not in captured.err, f"不得崩溃：{captured.err}"
+
+
+def test_compensate_irreversible_without_backup_does_not_crash(
+    applied_ledger: Engine,
+    cli_engine: Engine,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """B1 回归（真实触发路径）：C 级无补偿 + 账本无备份 → 退出码 2 + 指引，不抛异常."""
+    monkeypatch.setattr(settings, "migration_backup_dir", str(tmp_path / "migrations"))
+    (tmp_path / "migrations").mkdir(parents=True)
+    _clear_ledger_backup(applied_ledger, 3)
+
+    code = main(["compensate", "3", "--dry-run"])
+    captured = capsys.readouterr()
+
+    assert code == EXIT_REFUSED
+    assert "恢复指引" in captured.out
+    assert "retry 3" in captured.out
+    assert "Traceback" not in captured.err
 
 
 # ---------------------------------------------------------------------------

@@ -168,8 +168,12 @@ from migrations._finance import (
     rename_return_adjustment_columns,
 )
 
-# 重新导出供外部模块（conftest.py 等）使用 —— 以下导入必须放在迁移子模块导入之前，
+# 重新导出供外部模块（子迁移、conftest.py 等）使用 —— 以下导入必须放在迁移子模块导入之前，
 # 以避免出现循环导入：子模块（如 _finance）会反向 from migrations import _column_exists。
+#
+# ⚠️ 本模块**不再导出** `_MIGRATION_ADVISORY_LOCK_KEY`：advisory lock 已随编排逻辑
+# 上移到 `migrations/runner.py`，那里直接 `from migrations._helpers import ...`。
+# 外部（含测试）需要该常量时一律从 `migrations._helpers` 导入，不要在顶层重新导出。
 from migrations._helpers import _column_exists, _index_exists
 from migrations._keys import add_key_audit_share_id_index, add_project_key_note_column, create_key_tables
 from migrations._keys_seq import add_normal_key_seq_column

@@ -345,7 +345,9 @@ docker compose exec backend .venv/bin/python -m migrations.manage baseline --con
 ```
 
 1. 必须 `--confirm`（无此 flag → 退出码 2 + 提示）。
-2. 步骤：`full` 全库备份 → 逐条执行 82 项（幂等，多为 fast no-op）→ 逐条写 `applied` → 打 `migration_compensations(action='baseline')` 汇总记录。
+2. 步骤：`full` 全库备份**（仅 1 次，覆盖整套 baseline）** → 逐条执行 82 项（幂等，多为 fast no-op）→ 逐条写 `applied` → 打 `migration_compensations(action='baseline')` 汇总记录。
+   ⚠️ 逐条执行时**跳过 per-migration 备份**（`_apply_one(..., backup_mode="covered")`）：
+   否则 28 项 `backup=table` + 8 项 `backup=full` 会额外触发 9 次整库 dump。
 3. 中途失败：保留已完成记录，失败项写 `failed`，退出码 1。**可重复执行**（幂等续跑）。
 4. `--dry-run`：只打印「将执行 82 项 + 需要 full 备份 + 预估风险项清单」，不写库、不备份。
 
@@ -839,7 +841,7 @@ docker-compose.yml                    # ./backups 挂载 + MIGRATION_* 透传
    client 18.6 的归档（格式 1.16）无法被 PG16 的 `pg_restore` 读取。已通过
    `backup_client` 审计字段 + `restore-hint` 的版本感知命令 + runbook §5 实测配方覆盖。
    ⚠️ 仍**未覆盖**：跨大版本自动恢复脚本（需起临时 PG 容器，本期不做，spec §18.2 边界）。
-5. **baseline 最坏耗时已实测**（T1.10）：本机单 worker 82 项 + 2 次 57MB 全库备份 ≈ **58 秒**；2 worker 因 advisory lock 串行化不会翻倍（第二个 worker 仅做零 pending 检查）。远小于 D-01 的 30–60 分钟窗口。
+5. **baseline 最坏耗时已实测**（T1.10）：本机单 worker 82 项 + **1 次**57MB 全库备份 ≈ **58 秒**（v2 修正：旧实现逐条备份会多出 8 次整库 dump）；2 worker 因 advisory lock 串行化不会翻倍（第二个 worker 仅做零 pending 检查）。远小于 D-01 的 30–60 分钟窗口。
 
 ---
 
