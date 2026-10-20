@@ -69,6 +69,19 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       # 显式覆盖 .env 中的 REDIS_URL，注入密码保证与 redis 服务的 requirepass 一致
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      # ===== 启动迁移版本化（迭代一，见 docs/To-Do/SPEC-iteration1-migrations.md §17）=====
+      # 以下变量在 settings.py 均有代码默认值，这里显式写出便于运维覆盖与审计。
+      MIGRATION_BACKUP_DIR: /app/backups/migrations
+      MIGRATION_BACKUP_RETENTION_DAYS: ${MIGRATION_BACKUP_RETENTION_DAYS:-30}
+      MIGRATION_BACKUP_MAX_COUNT: ${MIGRATION_BACKUP_MAX_COUNT:-20}
+      MIGRATION_BACKUP_MODE: ${MIGRATION_BACKUP_MODE:-on}
+      MIGRATION_BACKUP_MIN_FREE_MB: ${MIGRATION_BACKUP_MIN_FREE_MB:-2048}
+      MIGRATION_AUTO_BASELINE: ${MIGRATION_AUTO_BASELINE:-false}
+      MIGRATION_LEGACY_MODE: ${MIGRATION_LEGACY_MODE:-false}
+      MIGRATION_ENV_NAME: ${MIGRATION_ENV_NAME:-production}
+      MIGRATION_PRODUCTION_CONFIRM: ${MIGRATION_PRODUCTION_CONFIRM:-}
+      MIGRATION_COMPENSATION_MAX_ROWS: ${MIGRATION_COMPENSATION_MAX_ROWS:-10000}
+      MIGRATION_OPERATOR: ${MIGRATION_OPERATOR:-}
     depends_on:
       db:
         condition: service_healthy
@@ -77,6 +90,9 @@ services:
     volumes:
       # bind mount 让 Docker 容器与本地 dev 模式共享同一份上传文件
       - ./uploads:/app/static/uploads
+      # 迁移备份（迭代一 T1.5）：容器内 /app/backups/migrations 落宿主 ./backups/migrations，
+      # 保证容器重建后备份不丢（恢复依据）。目录权限见 Dockerfile（0700）与 deploy-server.sh。
+      - ./backups:/app/backups
     ports:
       # 仅暴露到宿主 127.0.0.1，由宿主 nginx 反代，不直接暴露公网
       - "127.0.0.1:8000:8000"

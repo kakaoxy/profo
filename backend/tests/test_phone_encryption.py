@@ -385,8 +385,13 @@ class TestPhoneMigration:
             assert row[0] == hash_phone("13800138003")
 
     def test_full_migration_pipeline(self, migration_engine: Engine) -> None:
-        """完整迁移流程：先加密明文，再回填 phone_hash."""
-        from migrations import run_startup_migrations
+        """完整迁移流程：先加密明文，再回填 phone_hash.
+
+        ⚠️ 迭代一起 ``run_startup_migrations`` 改为**版本化执行器**：已 applied 的迁移
+        永不重跑（spec §6.3），因此这里显式按注册表顺序调用 pipeline 的两个函数，
+        验证的仍是「加密 → 回填」这条业务链路本身（与 executor 语义解耦）。
+        """
+        from migrations import encrypt_existing_phones, populate_phone_hash
 
         # 插入明文手机号且无 phone_hash（模拟最旧的存量数据）
         self._insert_raw_user(
@@ -397,8 +402,9 @@ class TestPhoneMigration:
             phone_hash_value=None,
         )
 
-        # 执行完整迁移
-        run_startup_migrations(migration_engine)
+        # 执行完整迁移（与注册表 v3 → v4 顺序一致）
+        encrypt_existing_phones(migration_engine)
+        populate_phone_hash(migration_engine)
 
         with migration_engine.begin() as conn:
             row = conn.execute(text("SELECT phone, phone_hash FROM users WHERE id = 'mig-5'")).fetchone()
@@ -412,8 +418,12 @@ class TestPhoneMigration:
             assert phone_hash_value == hash_phone("13800138004")
 
     def test_migration_idempotent(self, migration_engine: Engine) -> None:
-        """迁移脚本可重复执行（幂等）."""
-        from migrations import run_startup_migrations
+        """迁移脚本可重复执行（幂等）.
+
+        迭代一起版本化执行器不再重跑已 applied 迁移，故直接重复调用函数验证幂等性
+        （幂等保证仍是启动「中断后续跑 / retry」的基础，spec §6.3）。
+        """
+        from migrations import encrypt_existing_phones, populate_phone_hash
 
         encrypted_phone = encrypt("13800138005")
         self._insert_raw_user(
@@ -426,7 +436,8 @@ class TestPhoneMigration:
 
         # 多次执行迁移
         for _ in range(3):
-            run_startup_migrations(migration_engine)
+            encrypt_existing_phones(migration_engine)
+            populate_phone_hash(migration_engine)
 
         with migration_engine.begin() as conn:
             row = conn.execute(text("SELECT phone, phone_hash FROM users WHERE id = 'mig-6'")).fetchone()
@@ -435,7 +446,7 @@ class TestPhoneMigration:
 
     def test_migration_skips_null_phone(self, migration_engine: Engine) -> None:
         """迁移脚本跳过 phone 为 NULL 的用户."""
-        from migrations import run_startup_migrations
+        from migrations import encrypt_existing_phones, populate_phone_hash
 
         self._insert_raw_user(
             migration_engine,
@@ -445,7 +456,8 @@ class TestPhoneMigration:
             phone_hash_value=None,
         )
 
-        run_startup_migrations(migration_engine)
+        encrypt_existing_phones(migration_engine)
+        populate_phone_hash(migration_engine)
 
         with migration_engine.begin() as conn:
             row = conn.execute(text("SELECT phone, phone_hash FROM users WHERE id = 'mig-7'")).fetchone()

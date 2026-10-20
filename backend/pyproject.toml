@@ -117,6 +117,10 @@ ignore = [
 "scripts/verify_*.py" = ["S101", "PLR2004", "PT018"]
 # 迁移脚本: 使用字符串构建 SQL（表名/列名为常量，无用户输入，无注入风险）
 "migrations/*.py" = ["S608"]
+"migrations/**/*.py" = ["S608"]
+# 补偿脚本文件名按 spec §9.2 约定为 <version:03d>_<name>.py（数字开头是刻意约定，
+# 与 registry.Migration.compensation 字段一一对应），非合法模块名但可 importlib 导入
+"migrations/compensations/0*.py" = ["N999"]
 # 统计聚合方法: try-except 在循环内（跳过坏文件）
 "services/projects/finance/ledger.py" = ["PERF203"]
 # 文件解析器: 循环内 try-except 尝试多种编码/格式（解析逻辑必需）

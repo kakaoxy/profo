@@ -226,7 +226,7 @@ app_info = Gauge(
 | `state` | 3 | checked_out/checked_in/overflow |
 | `category` | ≤ 10 | 事件字典 category |
 | `channel` | 2 | in_app/wechat |
-| `migration` | 80 + 新增 | 一迁移一个 label，长期线性增长 → **> 200 时改用 `version` 区间化**（runbook 记录阈值） |
+| `migration` | 82 + 新增 | 一迁移一个 label，长期线性增长 → **> 200 时改用 `version` 区间化**（runbook 记录阈值） |
 
 ### 4.4 HTTP 中间件
 

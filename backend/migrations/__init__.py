@@ -141,7 +141,6 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
 
 import logging
 
-from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from migrations._bd_audit_20261017_fixes import run_bd_audit_20261017_fixes
@@ -171,7 +170,7 @@ from migrations._finance import (
 
 # 重新导出供外部模块（conftest.py 等）使用 —— 以下导入必须放在迁移子模块导入之前，
 # 以避免出现循环导入：子模块（如 _finance）会反向 from migrations import _column_exists。
-from migrations._helpers import _MIGRATION_ADVISORY_LOCK_KEY, _column_exists, _index_exists
+from migrations._helpers import _column_exists, _index_exists
 from migrations._keys import add_key_audit_share_id_index, add_project_key_note_column, create_key_tables
 from migrations._keys_seq import add_normal_key_seq_column
 from migrations._marketing_notify import (
@@ -261,41 +260,44 @@ __all__ = [
 
 
 def run_startup_migrations(engine: Engine) -> None:
-    """执行所有启动时迁移（幂等）.
+    """执行所有启动时迁移（幂等，版本化执行器）.
+
+    本函数为**兼容入口**：实际编排已移到 ``migrations/runner.py``（版本账本 /
+    备份 / 校验和 / 失败落库 / 阻断）。保留本函数名的原因：``main.py::lifespan``、
+    测试 ``conftest.py`` 与既有用例均按此名调用。
 
     多 worker 部署（``--workers 2``）下，每个 Uvicorn worker 独立跑 lifespan →
-    各自调用本函数。若不加互斥，两 worker 会并发执行 schema/数据迁移，导致：
-    1. 并发上传/改写 OSS（虽有 Redis 标记但存在 check-then-set 竞态）；
-    2. 非严格幂等的 schema 迁移竞态放大；
-    3. 启动时间翻倍，易触发部署健康检查超时。
+    各自调用本函数。若不互斥，两 worker 会并发执行 schema/数据迁移，导致并发
+    上传竞态、非严格幂等迁移竞争、启动时间翻倍。解决：PostgreSQL session-level
+    advisory lock 串行化（实现见 ``migrations/runner.py``）。
 
-    解决：PostgreSQL session-level advisory lock 串行化。第一个 worker 获取锁后
-    执行全部迁移，其余 worker 阻塞等待；锁释放后依次执行（迁移幂等，重复执行
-    为快速 no-op：``_column_exists`` 检查 + Redis 完成标记跳过）。
+    ``MIGRATION_LEGACY_MODE=true`` 时回退到本模块的旧硬编码路径
+    ``_run_all_migrations``（保留 1 个 release，退出条件见
+    ``docs/Base/migrations-runbook.md`` §6）。
 
     Raises:
         RuntimeError: 非 PostgreSQL 引擎（本项目仅支持 PostgreSQL，各子迁移中的
             pg_indexes / advisory lock / trgm / JSONB / uuid 等均为 PG 专属能力）。
+        migrations.runner.MigrationBlockedError: 门禁阻断（failed 记录 / 既有库
+            未基线 / checksum 漂移）。
 
     """
-    if engine.dialect.name != "postgresql":
-        msg = f"启动迁移仅支持 PostgreSQL，当前引擎方言为 {engine.dialect.name!r}，拒绝执行。请检查 DATABASE_URL 配置。"
-        raise RuntimeError(msg)
+    from migrations.runner import run_startup_migrations as _run_versioned
 
-    # 在独立连接上持有 session-level advisory lock，跨 worker 互斥
-    # （迁移事务借用连接池中其他连接，锁仅用于互斥，不影响事务隔离）
-    with engine.connect() as lock_conn:
-        lock_conn.execute(text("SELECT pg_advisory_lock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
-        try:
-            logger.info("已获取迁移 advisory lock，开始执行启动迁移")
-            _run_all_migrations(engine)
-        finally:
-            lock_conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
-            logger.info("已释放迁移 advisory lock")
+    _run_versioned(engine)
 
 
 def _run_all_migrations(engine: Engine) -> None:
-    """执行所有启动时迁移（幂等）."""
+    """旧执行路径（仅 ``MIGRATION_LEGACY_MODE=true`` 使用，保留 1 个 release）.
+
+    ⚠️ 本函数是「权威迁移顺序」的唯一副本来源之一：``migrations/registry.py`` 的
+    ``MIGRATIONS`` 必须与其逐项同序（由 ``tests/test_migration_registry.py::
+    test_registry_matches_legacy_order`` 用 AST 解析强制）。新增迁移时两处都要加，
+    且只允许追加在末尾（version 从 ``registry.NEXT_VERSION`` 起）。
+
+    退出条件（spec §12 / §15.2）：下一个 release 发布成功且观察期无异常后，删除
+    本函数、``MIGRATION_LEGACY_MODE`` 开关与顺序对齐测试。
+    """
     try:
         add_token_version_column(engine)
         add_phone_hash_column(engine)

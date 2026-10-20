@@ -76,13 +76,21 @@ def _get_test_database_url() -> str:
     return raw
 
 
+# 迁移版本账本：描述「schema 已到哪一版」，不是业务数据。
+# 清空它会让后续 run_startup_migrations 判定「既有库未基线」而阻断（迭代一 K7）。
+# 迭代一 spec §4 明确账本表的生命周期独立于业务表，故 TRUNCATE 时保留。
+_MIGRATION_LEDGER_TABLES = frozenset({"schema_migrations", "migration_compensations"})
+
+
 def _truncate_all_tables(engine: Engine) -> None:
-    """TRUNCATE 所有表（仅在测试会话启动时调用一次，确保干净起点）.
+    """TRUNCATE 所有业务表（仅在测试会话启动时调用一次，确保干净起点）.
 
     使用 CASCADE 处理外键依赖，按 schema 内所有表一次性 TRUNCATE。
+    **保留迁移版本账本**（``schema_migrations`` / ``migration_compensations``），
+    否则会话级启动迁移会因「既有库未基线」阻断。
     """
     inspector = inspect(engine)
-    table_names = inspector.get_table_names()
+    table_names = [name for name in inspector.get_table_names() if name not in _MIGRATION_LEDGER_TABLES]
     if not table_names:
         return
     # 一次性 TRUNCATE 所有表，CASCADE 处理外键；PG 支持
@@ -125,6 +133,82 @@ def _disable_rate_limiter() -> Generator[None, None, None]:
     limiter.enabled = True
 
 
+def _prepare_migration_engine(engine: Engine) -> None:
+    """让启动迁移在测试库上可行（迭代一 T1.8 基建）。
+
+    两件事：
+    1. **备份目录指向临时目录**：``MIGRATION_BACKUP_DIR`` 默认落在应用目录，
+       测试不应污染；用 ``tmp`` 目录并在会话结束时清理。
+    2. **把既有测试库登记为「已基线」**：测试库在版本化执行器上线前就已存在全部
+       表与数据（``create_all`` 建的），空账本会被判定为「既有库未基线」而阻断。
+       登记语义与生产 ``manage baseline`` 一致：逐条写入 ``applied`` + 真实 checksum，
+       不执行迁移函数本身（表已由 ``create_all`` + 历史迁移建好）。
+
+       ``_MARKER`` 记录本次基线的注册表指纹：注册表新增迁移（长度变化）时自动重新
+       登记，避免「加了新迁移但测试库账本没跟上」导致的假绿。
+    """
+    import tempfile
+    from pathlib import Path
+
+    backup_root = Path(tempfile.mkdtemp(prefix="profo-migration-backups-"))
+    os.environ["MIGRATION_BACKUP_DIR"] = str(backup_root)
+    settings.migration_backup_dir = str(backup_root)
+
+    from migrations.checksum import checksum_of
+    from migrations.registry import MIGRATIONS
+    from migrations.schema_migrations import ensure_version_tables, load_state, record_migration, utcnow
+
+    ensure_version_tables(engine)
+    marker = f"test-baseline-{len(MIGRATIONS)}-{checksum_of(MIGRATIONS[-1].fn)[:12]}"
+    state = load_state(engine)
+    if marker == _read_marker(engine):
+        return
+    now = utcnow()
+    for migration in MIGRATIONS:
+        if migration.version in state.applied:
+            continue
+        record_migration(
+            engine,
+            version=migration.version,
+            name=migration.name,
+            checksum=checksum_of(migration.fn),
+            kind=migration.kind,
+            risk=migration.risk,
+            status="applied",
+            started_at=now,
+            duration_ms=0,
+            backup_path=None,
+            backup_sha256=None,
+            backup_scope="none",
+            error=None,
+            notes=marker,
+        )
+    _write_marker(engine, marker)
+
+
+_MARKER_KEY = "profo_test:migration_baseline_marker"
+
+
+def _read_marker(engine: Engine) -> str | None:
+    """读取测试库基线指纹（存储在 ``notes`` 中，避免额外建表）."""
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT notes FROM schema_migrations ORDER BY version DESC LIMIT 1"),
+        ).first()
+    return row[0] if row else None
+
+
+def _write_marker(engine: Engine, marker: str) -> None:
+    """把基线指纹写到最后一行的 ``notes``（幂等）."""
+    from migrations.registry import MIGRATIONS
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE schema_migrations SET notes = :m WHERE version = :v"),
+            {"m": marker, "v": MIGRATIONS[-1].version},
+        )
+
+
 @pytest.fixture(scope="session")
 def test_engine() -> Generator[Engine, None, None]:
     """会话级 PG 引擎：建表 + 初始 TRUNCATE.
@@ -140,6 +224,8 @@ def test_engine() -> Generator[Engine, None, None]:
     Base.metadata.create_all(bind=engine)
 
     # 运行启动迁移，补齐 create_all 无法为已存在表添加的新列（幂等）
+    _prepare_migration_engine(engine)
+
     from migrations import run_startup_migrations
 
     run_startup_migrations(engine)

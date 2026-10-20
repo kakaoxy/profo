@@ -14,6 +14,9 @@ from pydantic_settings import BaseSettings
 
 _base_dir = Path(__file__).resolve().parent
 
+# 迁移备份磁盘余量下限的绝对底线（MB）；默认 2048，低于此值视为误配
+_MIGRATION_MIN_FREE_MB_FLOOR = 100
+
 
 class Settings(BaseSettings):
     """应用配置."""
@@ -81,6 +84,39 @@ class Settings(BaseSettings):
             except json.JSONDecodeError:
                 # 如果不是 JSON，尝试按逗号分割
                 return {i.strip() for i in v.split(",")}
+        return v
+
+    # ===== 启动迁移版本化（迭代一）=====
+    # 备份根目录：容器内 /app/backups/migrations（compose 挂 ./backups）
+    migration_backup_dir: str = str(_base_dir / "backups" / "migrations")
+    # 备份保留：天数与份数「同时满足」才删除，始终保留最新 1 份（总纲 D-02）
+    migration_backup_retention_days: int = 30
+    migration_backup_max_count: int = 20
+    # 备份总开关：off 仅 DEBUG=true 允许，生产拒绝启动（总纲 C6 / K11）
+    migration_backup_mode: str = "on"
+    # 备份前磁盘余量下限（MB）
+    migration_backup_min_free_mb: int = 2048
+    # 既有库空版本表时自动 baseline（仅 DEBUG=true 生效，防止生产误配，K7）
+    migration_auto_baseline: bool = False
+    # 回退旧硬编码执行器（保留 1 个 release，K8）
+    migration_legacy_mode: bool = False
+    # 生产补偿双确认口令（须等于 migration_env_name 才允许 DML，K13）
+    migration_production_confirm: str = ""
+    migration_env_name: str = "production"
+    # 补偿影响行数上限（超出需 --force）
+    migration_compensation_max_rows: int = 10000
+    # 审计 operator（空则用 os_user@hostname:pid）
+    migration_operator: str = ""
+    # pg_dump 可执行文件路径（空则 shutil.which("pg_dump")；缺失即 RuntimeError，K9）
+    migration_pg_dump_path: str = ""
+
+    @field_validator("migration_backup_mode")
+    @classmethod
+    def validate_migration_backup_mode(cls, v: str) -> str:
+        """校验备份模式取值，避免拼写错误静默关闭备份。"""
+        if v not in ("on", "off"):
+            msg = f"migration_backup_mode 必须为 'on' 或 'off'，实际收到: {v!r}"
+            raise ValueError(msg)
         return v
 
     # 存储后端配置（local=本地文件系统，oss=阿里云OSS）
@@ -208,6 +244,34 @@ class Settings(BaseSettings):
             if missing:
                 msg = f"storage_backend=oss 时以下配置必填: {', '.join(missing)}"
                 raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def validate_migration_production_guards(self) -> "Settings":
+        """生产环境（debug=false）拒绝危险的迁移配置（Fail Loud，总纲 C6）。
+
+        - ``MIGRATION_BACKUP_MODE=off`` → 迁移无备份可执行，生产禁止；
+        - ``MIGRATION_AUTO_BASELINE=true`` → 只允许开发/测试，生产忽略并告警（此处不拒绝启动，
+          由 runner 在运行时降级并打 WARNING，避免运维因一个开关无法启动）。
+        """
+        if not self.debug and self.migration_backup_mode == "off":
+            msg = (
+                "MIGRATION_BACKUP_MODE=off 仅允许在 DEBUG=true 下使用。生产环境必须开启备份："
+                "请设置 MIGRATION_BACKUP_MODE=on（失败即中止迁移）后重启。"
+            )
+            raise ValueError(msg)
+        if self.migration_backup_retention_days < 1:
+            msg = "MIGRATION_BACKUP_RETENTION_DAYS 必须 >= 1"
+            raise ValueError(msg)
+        if self.migration_backup_max_count < 1:
+            msg = "MIGRATION_BACKUP_MAX_COUNT 必须 >= 1"
+            raise ValueError(msg)
+        if self.migration_backup_min_free_mb < _MIGRATION_MIN_FREE_MB_FLOOR:
+            msg = "MIGRATION_BACKUP_MIN_FREE_MB 必须 >= 100（默认 2048）"
+            raise ValueError(msg)
+        if self.migration_compensation_max_rows < 1:
+            msg = "MIGRATION_COMPENSATION_MAX_ROWS 必须 >= 1"
+            raise ValueError(msg)
         return self
 
     @model_validator(mode="after")

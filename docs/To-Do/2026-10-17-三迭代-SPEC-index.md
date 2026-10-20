@@ -34,15 +34,19 @@
 
 | # | 计划稿说法 | 实测（核对方式） | 影响 | 处置 |
 |---|-----------|-----------------|------|------|
-| **B1** | 「77 个迁移函数」 | `_run_all_migrations` 实际调用 **80** 项（多出 `add_published_at_to_l4_marketing_projects`、`run_bd_audit_20261017_fixes`、`run_bd_audit_20261018_fixes`；计划稿的 grep 漏了含数字的函数名） | 版本映射表少 3 行；新迁移起点错位 | `version=1..80` 对应实测序列；**新增迁移从 81 开始** |
+| **B1** | 「77 个迁移函数」 | `_run_all_migrations` 实际调用 **80** 项（多出 `add_published_at_to_l4_marketing_projects`、`run_bd_audit_20261017_fixes`、`run_bd_audit_20261018_fixes`；计划稿的 grep 漏了含数字的函数名） | 版本映射表少 3 行；新迁移起点错位 | ~~`version=1..80`；新增迁移从 81 开始~~ → **已被 B8 修正为 82 / 83** |
 | **B2** | 备份需「backend 镜像安装 `postgresql-client`（+20MB）」 | 成立，但**部署链路已有全库备份**：`deploy-server.sh` 在重建容器前用 db 容器 `pg_dump \| gzip` 落盘（`BACKUP_DIR`，按份数轮转） | 迁移备份是**第二层**（可关联到版本、可回放单表），不是唯一防线 | 仍装 `postgresql-client`（`--no-install-recommends`），备份纳入 `schema_migrations.backup_path` 审计链 |
 | **B3** | `PATH_PERMISSION_MAP`「已按 prefix 长度降序排列」 | docstring 这样写，实测**顺序并非长度降序**（`/admin/settings` 在 `/admin/projects/todo-board` 之前）。实现是「首个命中即返回」 | 新条目若依赖自动排序放错位置 → 权限影子（guard 落在错误前缀） | 新条目**手工插入到更宽前缀之前**；迭代二顺带修正 docstring/补排序断言测试 |
-| **B4** | （未提）`_marketing_notify.create_marketing_project_subscription_table` 内部还调 `add_last_subscribed_at_*` / `add_cancelled_at_*` 两个子迁移 | 实测存在（wrapper 内调用，`_run_all_migrations` 只调 wrapper） | 注册表若按「函数」逐一定义，会重复登记子步骤 | 注册表粒度 = **`_run_all_migrations` 的顶层调用单元（80 个）**，子步骤不单列 |
+| **B4** | （未提）`_marketing_notify.create_marketing_project_subscription_table` 内部还调 `add_last_subscribed_at_*` / `add_cancelled_at_*` 两个子迁移 | 实测存在（wrapper 内调用，`_run_all_migrations` 只调 wrapper） | 注册表若按「函数」逐一定义，会重复登记子步骤 | 注册表粒度 = **`_run_all_migrations` 的顶层调用单元（B8 实测 82 个）**，子步骤不单列 |
 | **B5** | （未提）`Dockerfile` 只有 `CMD`，无 `ENTRYPOINT` | 实测 `backend/Dockerfile` 末尾仅 `CMD [".venv/bin/uvicorn", ...]` | 迭代三 multiprocess 目录清理**无法**靠 compose `command:` 覆盖实现 | 新增 `backend/docker-entrypoint.sh` + `ENTRYPOINT`（迭代三 T3.1a） |
 | **B6** | （未提）`request_id_var` 定义在 `main.py` | 实测全仓仅 `main.py` 3 处引用（L79/L100/L321-L327），无外部 import | 迭代三抽 `utils/observability.py` 改动面极小、无循环依赖风险 | 迭代三 T3.3 抽取，`main.py` 改为 import |
 | **B7** | （未提）`/projects/todo-board` **无 `scope` 参数**，`TodoBoardService._load_projects()` 全量加载 | 实测 `routers/projects/core.py:188` + `services/projects/todo_board.py:49` | 计划稿 T2.6 的 `todo-board?scope=mine` 不是「前端传参」而是**后端新增能力** | 迭代二 T2.6b 明确为后端改动（Router+Service），`services/projects/core.py:444 get_my_responsible_projects` 的过滤谓词抽公共函数复用 |
+| **B8** | （未提）实测 `_run_all_migrations` 顶层调用为 **82** 项，非 B1 的 80；且 v23 位置是 `add_project_archive_columns`（B1 统计时还未提交），`create_biz_dict_items_table` 在末尾 | `grep -c '^        [a-z_]*(engine)$'` + AST 解析 `backend/migrations/__init__.py::_run_all_migrations`；`python -c "from migrations.registry import MIGRATIONS; print(len(MIGRATIONS))"` → 82 | ① 迭代一 §11 表整体重排（v23=archive 列，v24=`migrate_add_ended_status`，后续顺延）；② `NEXT_VERSION` = **83**（非 81）；③ 迭代二原规划的种子迁移 81–85 顺延为 **83–87**（§2 表已更新）；④ MVP 补偿脚本版本号 v49→**v50**、v77→**v78** | 迭代一起 `version=1..82`；新增迁移从 **83** 起 |
+| **B9** | （未提）`pg_dump ≥17` 产出的归档格式为 **1.16**，PG16 自带的 `pg_restore` 直接拒绝；且 client ≥17 会写 `SET transaction_timeout`（PG16 报 unrecognized parameter）。另外 `--data-only` 恢复时加 `--table=` 过滤会**静默灌 0 行**（退出码 0、无报错） | 本机实测：`pg_dump 18.6` → `pg_restore 16.15` 报 `unsupported version (1.16) in file header`；`pg_dump 17.11` 同样；`--table=public.leads` 恢复 0 行、不加则 977 行 | 恢复不能只在 runbook 里写「用 psql 重放」——必须**同大版本客户端**，且避免 `--table` 过滤 | ① 备份时把 `pg_dump` 版本写入 `schema_migrations.backup_client`；② `restore-hint` 按 `backup_client` 与 server 版本输出命令并给出跨大版本告警；③ runbook §5 提供**实测跑通**的两段式配方（`restored_leads=977 == prod_leads=977`）；④ 备份前 `assert_client_compatible` 校验 client ≥ server |
+| **B10** | （未提）`str(sqlalchemy.engine.URL)` 会把密码渲染成 `***` | `make_url(db.engine.url.render_as_string(hide_password=False))` 与 `make_url(str(db.engine.url))` 对比：后者 `password` 长度 3（`***`），前者 24 | 备份模块若用 `str(engine.url)` 取密码，`PGPASSWORD` 会变成 `***`，pg_dump 认证失败 | 统一传 `URL` 对象（`build_dump_command(database_url: str \| URL)`），单测 `test_subprocess_run_not_called_with_password_in_argv` 断言 argv 无密码且 `PGPASSWORD` 正确 |
 
-> 以上 7 条纠偏均已复核到行号；实施时若发现第 8 条，**追加进本表再开工**，不得静默处理。
+
+> 以上 10 条纠偏均已复核到行号/实测命令；实施时若发现第 11 条，**追加进本表再开工**，不得静默处理。
 
 ---
 
@@ -53,7 +57,7 @@
 | module id | 职责 | 依赖 | 交付形态 |
 |---|---|---|---|
 | `iter1-migrations` | 迁移可追溯 / 可校验 / 可备份 / 可补偿 | —（仅依赖现有 PG + SQLAlchemy） | 后端 + CLI + compose/Dockerfile + runbook |
-| `iter2-notify-workbench` | 统一消息中心 + 角色化工作台 | `iter1-migrations`（新表必须登记版本 + 备份元数据） | 后端表/服务/API + 前端页面/组件 + 权限种子 |
+| `iter2-notify-workbench` | 统一消息中心 + 角色化工作台 | `iter1-migrations`（新表必须登记版本 + 备份元数据；**版本号从 83 起**，见 B8） | 后端表/服务/API + 前端页面/组件 + 权限种子 |
 | `iter3-observability` | Prometheus 指标 + 慢查询 + 告警 | `iter1-migrations`（迁移指标消费注册表）；`iter2-notify-workbench`（告警站内信，**弱依赖，可降级**） | 后端埋点 + 监控 compose + 告警规则 + runbook |
 
 **构建顺序**：`iter1` → `iter2`（后端表设计可与 iter1 后半并行，**上线不可并行**）→ `iter3`。
@@ -63,7 +67,7 @@
 | 阶段 | 后端 A（迁移/数据） | 后端 B（业务/接口） | 前端 | 运维 |
 |------|------------------|------------------|------|------|
 | W1–W2 | `backend/migrations/**`、`backend/db.py` | （空档，可预研 iter2 模型） | — | 备份目录/镜像 |
-| W3–W5 | `backend/migrations/**`（81–83）+ 模型 | `services/notification/**`、`routers/**` | `src/app/(main)/admin/notifications/**`、`workbench-widgets.ts` | — |
+| W3–W5 | `backend/migrations/**`（**83–87**，B8 顺延）+ 模型 | `services/notification/**`、`routers/**` | `src/app/(main)/admin/notifications/**`、`workbench-widgets.ts` | — |
 | W6–W7 | `backend/utils/metrics.py`、`middleware/**` | — | — | `deploy/observability/**`、nginx |
 
 ---
@@ -162,7 +166,7 @@
 
 | 里程碑 | 时点 | 判定条件（缺一不算达成） |
 |--------|------|------------------------|
-| **M1** | iter1 末（W2） | ① `manage status` 可读 80 条记录；② 既有库 baseline 完成；③ 1 个数据修复迁移「备份→补偿→验证」演练 ≤30 分钟并留工件；④ `MIGRATION_LEGACY_MODE` 可回退 |
+| **M1** | iter1 末（W2） | ① `manage status` 可读 **82** 条记录；② 既有库 baseline 完成；③ 1 个数据修复迁移「备份→补偿→验证」演练 ≤30 分钟并留工件；④ `MIGRATION_LEGACY_MODE` 可回退 |
 | **M2** | iter2 末（W5） | ① 员工侧 3 类事件（招募新线索、我的客户新线索、状态变更）站内信贯通；② 三角色默认布局生效且权限不扩张；③ Playwright 2 个 spec 通过；④ 4 条微信链路零回归 |
 | **M3** | iter3 末（W7） | ① `/metrics` 暴露 6 类指标；② 2 worker 计数不下折；③ 慢查询注入命中日志+计数；④ `promtool` 通过；⑤ 公网 `/metrics` 非 200 |
 | **缓冲** | W8 | 观察期、阈值调参、遗留问题收口、文档归档 |
@@ -311,7 +315,7 @@ recruit:write           valuation:write
 ```
 
 > 来源：`backend/migrations/_seeds.py::_PERMISSIONS_SEED`（实测 44 项）。**注意**：不存在 `key:*`、`report:*`、`subscribe_template:*` 权限码（计划稿的泛化列举不准确）；钥匙/报表模块按 `project:read`/`property:read` 等既有码鉴权。
-> 本轮新增：`workbench:manage`（iter2，v83 种子迁移）。
+> 本轮新增：`workbench:manage`（iter2，种子迁移；受 B8 顺延约束，实际版本号由迭代二按其任务拆解从 **83 起**分配）。
 
 ### C. 现有 4 条微信订阅链路（本轮零回归基线）
 

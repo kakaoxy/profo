@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>消息中心 + 角色工作台 · 高保真设计稿</title>
+<!--
+  ============================================================
+  迭代二 · 统一消息中心 + 角色化工作台 · 高保真设计稿
+  依据：docs/To-Do/SPEC-iteration2-notifications-workbench.md
+  视觉：严格遵循 /DESIGN.md（Steep），复用 docs/design/admin-workspace-hifi.html 的令牌与组件语言
+  ============================================================
+  覆盖 6 屏（桌面端 1440+）：
+    01 /admin                     角色化工作台（视角切换：admin 10 / operator 8 / user 3 个 widget）
+    02 侧边栏铃铛 + 消息抽屉       最近 10 条 + 分类 tabs + 全部已读 + 查看全部（桌面 Popover）
+    03 /admin/notifications       消息中心整页（筛选 / 分页 / 单条已读 / 全部已读）
+    04 /admin/notifications/preferences  分类 × 渠道偏好（system/security 锁定，微信模板缺失置灰）
+    05 /admin/settings/workbench  角色默认布局管理（workbench:manage，含预览与 403 态）
+    06 规范                        事件字典 12 条 + widget 注册表矩阵 + 组件状态
+
+  相对 SPEC 的设计口径补充（均已在稿内标注 ⚠️）：
+    a. 6 栏孤儿卡：registry 里 span=6 的卡若不成对，渲染时自动升为 12 栏，避免 12 栏栅格空洞。
+       （admin: growth+finance 成对、audit 升满宽；operator: growth 升满宽）
+    b. §4.7 表里 operator 可见 8 个，但同节「默认可见数 admin 10 / operator 7 / user 3」写 7。
+       本稿按表渲染 8 个，并在对照表高亮差异。
+    c. 消息抽屉不新增侧边栏菜单项（K10），消息中心仅通过铃铛 → 查看全部进入。
+
+  技术形态：单文件自包含 HTML + React 18（CDN，Babel 内联转译）。
+  字体：Inter（Sohne 替代）+ Source Serif 4（Signifier 替代），与 frontend 落地方案一致。
+  ⚠️ 设计稿交付物，有意单文件不拆分。数据为贴近业务的演示数据。
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;430;450;480;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  /* ============ 1. Steep tokens（对齐 /DESIGN.md 与 globals.css） ============ */
+  :root {
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky: #d3e3fc;
+    --blue: #4a90e2;
+    --pos: #ef4444;   /* 金额：红=流入/正向（中国习惯） */
+    --neg: #10b981;   /* 金额：绿=流出/负向 */
+    --font-display: "Source Serif 4", "Songti SC", "Noto Serif SC", serif;
+    --font-ui: "Inter", -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+    --r-card: 24px; --r-img: 12px; --r-input: 16px; --r-pill: 9999px;
+    --shadow-steep: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.1) 0 20px 25px -5px, rgba(0,0,0,.1) 0 8px 10px -6px;
+    --shadow-steep-sm: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 10px 20px -8px, rgba(0,0,0,.05) 0 3px 6px -4px;
+    --sidebar-w: 240px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    font-family: var(--font-ui);
+    font-size: 15px; color: var(--ink);
+    letter-spacing: -0.009em;
+    background: var(--fog);
+    min-width: 1180px;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; letter-spacing: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* ============ 2. 全局骨架 ============ */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w);
+    background: var(--fog); display: flex; flex-direction: column;
+    padding: 20px 14px 16px; z-index: 40;
+    overflow: hidden; white-space: nowrap;
+  }
+  .main { flex: 1; margin-left: var(--sidebar-w); min-width: 0; }
+  .side-logo { display: flex; align-items: center; gap: 10px; padding: 4px 10px 18px; }
+  .side-logo .mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--ink);
+    color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 0;
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .side-logo .word { font-size: 16px; font-weight: 500; }
+  .side-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; margin: 0 -6px; padding: 0 6px; }
+  .side-scroll::-webkit-scrollbar { width: 4px; }
+  .side-scroll::-webkit-scrollbar-thumb { background: rgba(163,166,175,.35); border-radius: 4px; }
+  .nav-group-label {
+    font-size: 12px; font-weight: 500; color: var(--graphite);
+    letter-spacing: .06em; padding: 16px 12px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 14.5px; font-weight: 450;
+    color: var(--ink); transition: background .15s; position: relative;
+  }
+  .nav-item:hover { background: rgba(23,25,28,.05); }
+  .nav-item.active { background: var(--pwhite); box-shadow: var(--shadow-steep-sm); }
+  .nav-item .ic { color: var(--graphite); display: flex; flex: none; }
+  .nav-item.active .ic { color: var(--ink); }
+  .nav-item .chev { margin-left: auto; color: var(--dove); display: flex; }
+  .side-foot { padding-top: 12px; border-top: 1px solid rgba(163,166,175,.25); margin-top: 10px; display: flex; flex-direction: column; gap: 2px; }
+  .side-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; width: 100%; }
+  .side-user:hover { background: rgba(23,25,28,.05); }
+  .side-user .info { text-align: left; line-height: 1.25; }
+  .side-user .info .n { font-size: 13.5px; font-weight: 500; }
+  .side-user .info .r { font-size: 11.5px; color: var(--graphite); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: var(--r-pill); flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--ink);
+  }
+  .av-1 { background: #d9ead3; } .av-2 { background: var(--sky); } .av-3 { background: var(--apricot); }
+  .av-4 { background: #e8e2f4; } .av-5 { background: #f0ece1; } .av-6 { background: #dbe6e9; }
+  .collapse-btn {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 450;
+    color: var(--graphite); transition: background .15s, color .15s;
+  }
+  .collapse-btn:hover { background: rgba(23,25,28,.05); color: var(--ink); }
+
+  /* 消息铃铛（SidebarFooter 内：折叠按钮之下、头像之上） */
+  .bell-btn {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 450;
+    color: var(--ash); transition: background .15s, color .15s; position: relative;
+  }
+  .bell-btn:hover { background: rgba(23,25,28,.05); color: var(--ink); }
+  .bell-btn.active { background: var(--pwhite); box-shadow: var(--shadow-steep-sm); color: var(--ink); }
+  .bell-btn .ic { color: var(--graphite); display: flex; flex: none; }
+  .bell-btn.active .ic { color: var(--ink); }
+  .bell-badge {
+    margin-left: auto; background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    min-width: 20px; height: 20px; padding: 0 6px; font-size: 11.5px; font-weight: 500;
+    display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
+  }
+  .bell-badge.zero { display: none; }
+
+  /* ============ 3. 页面通用 ============ */
+  .page { max-width: 1480px; margin: 0 auto; padding: 34px 44px 96px; animation: pageIn .34s ease both; }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+  .page-head h1 {
+    font-family: var(--font-display); font-weight: 400; font-size: 44px;
+    line-height: 1.1; letter-spacing: -0.015em; color: var(--ink);
+  }
+  .page-head .desc { margin-top: 10px; font-size: 15px; color: var(--graphite); max-width: 720px; }
+  .page-head .aside { display: flex; align-items: center; gap: 14px; padding-bottom: 6px; flex: none; }
+  .sec-title { font-size: 21px; font-weight: 500; color: var(--ink); letter-spacing: -0.01em; }
+  .sec-head { display: flex; align-items: center; justify-content: space-between; margin: 34px 0 16px; }
+  .sec-link { font-size: 14px; font-weight: 450; color: var(--ink); display: inline-flex; align-items: center; gap: 4px; }
+  .sec-link:hover { color: var(--rust); }
+  .card {
+    background: var(--pwhite); border-radius: var(--r-card);
+    box-shadow: var(--shadow-steep-sm); padding: 22px 24px;
+  }
+  .card-warm { background: var(--apricot); box-shadow: none; }
+  .card-sky  { background: var(--sky); box-shadow: none; }
+  .card-title { font-size: 15px; font-weight: 500; color: var(--ink); }
+  .cols { display: grid; gap: 18px; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* ============ 4. 工具栏 / 按钮 / 输入 ============ */
+  .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 22px 0 16px; }
+  .tabs { display: flex; gap: 4px; background: var(--pwhite); border-radius: var(--r-pill); padding: 4px; box-shadow: var(--shadow-steep-sm); }
+  .tab {
+    padding: 6px 14px; border-radius: var(--r-pill); font-size: 13.5px; font-weight: 450;
+    color: var(--ash); transition: all .15s; display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { background: var(--ink); color: #fff; }
+  .tab .cnt { font-size: 12px; color: var(--dove); font-weight: 430; font-variant-numeric: tabular-nums; }
+  .tab.active .cnt { color: rgba(255,255,255,.65); }
+  .select {
+    display: flex; align-items: center; gap: 7px; background: var(--pwhite);
+    border-radius: var(--r-input); box-shadow: var(--shadow-steep-sm);
+    padding: 8px 14px; font-size: 13.5px; font-weight: 450; color: var(--ash);
+  }
+  .select:hover { color: var(--ink); }
+  .select .ic { color: var(--graphite); display: flex; }
+  .btn-fill {
+    background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    padding: 9px 20px; font-size: 14px; font-weight: 450;
+    display: inline-flex; align-items: center; gap: 7px; transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 6px 16px -6px rgba(23,25,28,.4);
+  }
+  .btn-fill:hover { transform: translateY(-1px); box-shadow: 0 10px 20px -8px rgba(23,25,28,.5); }
+  .btn-fill.sm { padding: 7px 16px; font-size: 13px; }
+  .btn-text {
+    font-size: 14px; font-weight: 450; color: var(--ink);
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 6px;
+  }
+  .btn-text:hover { color: var(--rust); }
+  .btn-text.sm { font-size: 13px; padding: 4px 2px; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 10px; background: var(--pwhite);
+    box-shadow: var(--shadow-steep-sm); color: var(--graphite);
+    display: inline-flex; align-items: center; justify-content: center; transition: color .15s;
+  }
+  .icon-btn:hover { color: var(--ink); }
+  .icon-btn.plain { box-shadow: none; background: none; }
+  .icon-btn.plain:hover { background: var(--fog); }
+  .icon-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .spacer { flex: 1; }
+  .pill-group { display: flex; gap: 3px; background: var(--fog); border-radius: var(--r-pill); padding: 3px; }
+  .pill-group button { padding: 5px 13px; border-radius: var(--r-pill); font-size: 12.5px; font-weight: 450; color: var(--ash); }
+  .pill-group button:hover { color: var(--ink); }
+  .pill-group button.on { background: var(--pwhite); color: var(--ink); box-shadow: 0 1px 4px rgba(23,25,28,.1); }
+  .help { font-size: 12.5px; color: var(--graphite); }
+
+  /* 开关 */
+  .switch {
+    width: 40px; height: 23px; border-radius: var(--r-pill); background: rgba(163,166,175,.42);
+    position: relative; transition: background .18s; flex: none; display: inline-block;
+  }
+  .switch i {
+    position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: var(--r-pill);
+    background: #fff; box-shadow: 0 1px 3px rgba(23,25,28,.28); transition: transform .18s;
+  }
+  .switch.on { background: var(--ink); }
+  .switch.on i { transform: translateX(17px); }
+  .switch.dis { opacity: .42; cursor: not-allowed; }
+
+  /* ============ 5. 徽章（单色洗底药丸） ============ */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-pill);
+    font-size: 12.5px; font-weight: 450; padding: 3.5px 11px; line-height: 1.35;
+    white-space: nowrap; flex: none;
+  }
+  .b-sky     { background: var(--sky); color: var(--ink); }
+  .b-apricot { background: var(--apricot); color: var(--rust); }
+  .b-ink     { background: var(--ink); color: #fff; }
+  .b-fog     { background: var(--fog); color: var(--graphite); }
+  .b-fogrust { background: var(--fog); color: var(--rust); }
+  .b-outline { background: var(--pwhite); color: var(--ink); box-shadow: inset 0 0 0 1px var(--dove); }
+  .b-ghost   { background: rgba(23,25,28,.045); color: var(--graphite); font-size: 11.5px; padding: 2px 8px; }
+  .b-rust    { background: var(--rust); color: #fff; }
+  .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: .86em; letter-spacing: 0; }
+  .dot { width: 5px; height: 5px; border-radius: var(--r-pill); background: currentColor; opacity: .75; }
+
+  /* ============ 6. 工作台栅格 + widget ============ */
+  .wb-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+  .wb { grid-column: span 12; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .wb.sp3 { grid-column: span 3; }
+  .wb.sp6 { grid-column: span 6; }
+  .wg { background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 20px 22px; flex: 1; display: flex; flex-direction: column; }
+  .wg.warm { background: var(--apricot); box-shadow: none; }
+  .wg.warm .wg-title { color: var(--rust); }
+  .wg.warm .sec-link { color: var(--rust); }
+  .wg.warm .sec-link:hover { color: #3f1c11; }
+  .wg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 2px; }
+  .wg-title { font-size: 15px; font-weight: 500; color: var(--ink); display: flex; align-items: center; gap: 7px; }
+  .wg-sub { font-size: 12px; color: var(--graphite); font-weight: 430; }
+  .kpi-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; margin-top: 18px; }
+  .kpi-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 18px; }
+  .kpi-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
+  .wg-split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; margin-top: 18px; }
+  .wg-split .kpi-3, .wg-split .mini-list, .wg-split .spark { margin-top: 0; }
+  .wg-split.narrow-right { grid-template-columns: 3fr 2fr; }
+  .kpi .k { font-size: 12.5px; color: var(--graphite); display: flex; align-items: center; gap: 6px; }
+  .kpi .v.lg { font-size: 32px; }
+  .kpi .v { font-size: 26px; font-weight: 480; color: var(--ink); margin-top: 5px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .kpi .v .unit { font-size: 12px; font-weight: 430; color: var(--graphite); margin-left: 3px; letter-spacing: 0; }
+  .kpi .d { font-size: 11.5px; color: var(--graphite); margin-top: 7px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .funnel { display: flex; flex-direction: column; gap: 11px; margin-top: 16px; }
+  .f-row { display: flex; align-items: center; gap: 10px; }
+  .f-row .fl { width: 56px; font-size: 12.5px; color: var(--graphite); flex: none; text-align: right; }
+  .f-bar { height: 9px; border-radius: var(--r-pill); flex: 1; background: var(--fog); overflow: hidden; }
+  .f-bar i { display: block; height: 100%; border-radius: var(--r-pill); }
+  .f-row .fv { width: 30px; font-size: 13px; font-weight: 480; text-align: right; font-variant-numeric: tabular-nums; }
+  .alert-num { font-family: var(--font-display); font-size: 52px; line-height: 1; color: var(--rust); margin-top: 14px; }
+  .alert-note { font-size: 13px; color: var(--rust); opacity: .82; margin-top: 10px; line-height: 1.5; }
+  .todo-rows { display: flex; flex-direction: column; margin-top: 8px; }
+  .todo-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .todo-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .todo-row .nm { font-size: 13.5px; font-weight: 450; }
+  .todo-row .tk { font-size: 12.5px; color: var(--graphite); margin-top: 2px; }
+  .todo-row .due { margin-left: auto; flex: none; font-size: 11.5px; color: var(--graphite); text-align: right; padding-top: 2px; }
+  .todo-row .due.late { color: var(--rust); font-weight: 450; }
+  .spark { display: flex; align-items: flex-end; gap: 4px; height: 40px; margin-top: 16px; }
+  .spark i { flex: 1; background: var(--sky); border-radius: 4px 4px 2px 2px; display: block; }
+  .spark i.hot { background: var(--rust); }
+  .spark-x { display: flex; gap: 4px; margin-top: 7px; }
+  .spark-x span { flex: 1; text-align: center; font-size: 10.5px; color: var(--dove); }
+  .mini-list { display: flex; flex-direction: column; margin-top: 8px; }
+  .mini-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .mini-row:last-child { border-bottom: none; }
+  .mini-row .nm { font-size: 13.5px; font-weight: 450; display: block; }
+  .mini-row .meta { font-size: 11.5px; color: var(--graphite); margin-top: 2px; display: block; }
+  .mini-row .rt { margin-left: auto; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ash); }
+  .monitor-row { display: flex; gap: 16px; overflow-x: auto; padding: 14px 2px 4px; }
+  .monitor-row::-webkit-scrollbar { height: 6px; }
+  .monitor-row::-webkit-scrollbar-thumb { background: rgba(163,166,175,.4); border-radius: 6px; }
+  .m-card { width: 268px; flex: none; background: var(--fog); border-radius: 18px; padding: 16px 18px; }
+  .monitor-row.as-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; overflow: visible; }
+  .monitor-row.as-grid .m-card { width: auto; }
+  .m-card .m-no { display: flex; align-items: center; justify-content: space-between; }
+  .m-card .no { font-size: 11.5px; color: var(--graphite); }
+  .m-card .m-name { font-size: 16px; font-weight: 500; margin-top: 10px; letter-spacing: -0.01em; }
+  .m-card .m-addr { font-size: 12px; color: var(--graphite); margin-top: 3px; }
+  .m-card .m-div { border-top: 1px dashed rgba(163,166,175,.5); margin: 12px 0 10px; }
+  .m-card .m-feed { font-size: 12.5px; color: var(--ash); line-height: 1.55; }
+  .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; margin-top: 6px; }
+  .q-row { display: flex; align-items: center; gap: 11px; padding: 10px 2px; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .q-row .ic { width: 32px; height: 32px; border-radius: 10px; background: var(--fog); color: var(--ash); display: flex; align-items: center; justify-content: center; flex: none; }
+  .q-row:hover .ic { background: var(--ink); color: #fff; }
+  .q-row .nm { font-size: 13.5px; font-weight: 450; }
+  .q-row .meta { font-size: 11.5px; color: var(--graphite); margin-top: 2px; }
+  .q-row .go { margin-left: auto; color: var(--dove); display: flex; }
+  .cfg-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--graphite); }
+  .cfg-chip .d { width: 5px; height: 5px; border-radius: var(--r-pill); background: var(--dove); }
+
+  /* ============ 7. 消息行（抽屉 + 整页共用） ============ */
+  .n-list { display: flex; flex-direction: column; }
+  .n-row {
+    display: flex; gap: 13px; padding: 12px 16px; position: relative;
+    border-bottom: 1px solid rgba(163,166,175,.18); transition: background .12s; text-align: left; width: 100%;
+  }
+  .n-row:last-child { border-bottom: none; }
+  .n-row:hover { background: var(--fog); }
+  .n-ic {
+    width: 34px; height: 34px; border-radius: 11px; background: var(--fog); color: var(--graphite);
+    display: flex; align-items: center; justify-content: center; flex: none; margin-top: 1px;
+  }
+  .n-row.unread .n-ic { background: var(--pwhite); box-shadow: var(--shadow-steep-sm); color: var(--ink); }
+  .n-main { min-width: 0; flex: 1; }
+  .n-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 480; color: var(--ink); min-width: 0; }
+  .n-tt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .n-row.read .n-title { font-weight: 430; color: var(--ash); }
+  .n-body { display: block; font-size: 12.5px; color: var(--graphite); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .n-meta { flex: none; width: 92px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding-top: 1px; }
+  .n-time { font-size: 11.5px; color: var(--dove); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .udot { width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--ink); flex: none; }
+  .n-row.read .udot { opacity: 0; }
+  .n-row.urgent .n-title::before {
+    content: ""; width: 5px; height: 5px; border-radius: var(--r-pill); background: var(--rust); flex: none;
+  }
+  .n-extra { display: flex; align-items: center; gap: 6px; }
+  .n-deliv { font-size: 10.5px; color: var(--graphite); display: inline-flex; align-items: center; gap: 4px; }
+  .n-deliv .d { width: 5px; height: 5px; border-radius: var(--r-pill); background: var(--dove); }
+  .n-deliv.ok .d { background: var(--neg); }
+  .n-deliv.fail .d { background: var(--rust); }
+  .n-footlink { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 13px; font-size: 13px; font-weight: 450; color: var(--ink); border-top: 1px solid rgba(163,166,175,.18); width: 100%; }
+  .n-footlink:hover { background: var(--fog); color: var(--rust); }
+
+  /* 抽屉（桌面 Popover） */
+  .popover {
+    position: fixed; left: 250px; bottom: 96px; width: 468px; z-index: 70;
+    background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep);
+    overflow: hidden; animation: popIn .18s ease both;
+  }
+  @keyframes popIn { from { opacity: 0; transform: translateY(6px) scale(.99); } to { opacity: 1; transform: none; } }
+  .pop-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 10px; }
+  .pop-head .t { font-size: 17px; font-weight: 500; letter-spacing: -0.01em; display: flex; align-items: center; gap: 9px; }
+  .pop-tabs { display: flex; gap: 2px; padding: 0 14px 10px; }
+  .pop-tabs button { padding: 5px 11px; border-radius: var(--r-pill); font-size: 12.5px; font-weight: 450; color: var(--graphite); display: flex; align-items: center; gap: 5px; }
+  .pop-tabs button:hover { background: var(--fog); color: var(--ink); }
+  .pop-tabs button.on { background: var(--fog); color: var(--ink); font-weight: 480; }
+  .pop-tabs .cnt { font-size: 11px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .pop-body { max-height: min(624px, calc(100vh - 380px)); overflow-y: auto; border-top: 1px solid rgba(163,166,175,.18); position: relative; }
+  .pop-wrap { position: relative; }
+  .pop-wrap::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 34px; pointer-events: none;
+    background: linear-gradient(to top, var(--pwhite), rgba(255,255,255,0));
+  }
+  .pop-body::-webkit-scrollbar { width: 4px; }
+  .pop-body::-webkit-scrollbar-thumb { background: rgba(163,166,175,.35); border-radius: 4px; }
+  .pop-scrim { position: fixed; inset: 0; z-index: 60; background: rgba(23,25,28,.06); }
+
+  /* ============ 8. 偏好设置网格 ============ */
+  .pref-card { padding: 6px 8px; }
+  .pref-tbl { width: 100%; border-collapse: collapse; }
+  .pref-tbl th {
+    text-align: left; font-size: 12.5px; font-weight: 500; color: var(--graphite);
+    letter-spacing: .02em; padding: 14px 16px 10px; border-bottom: 1px solid rgba(163,166,175,.35);
+    white-space: nowrap;
+  }
+  .pref-tbl th.c { text-align: center; width: 132px; }
+  .pref-tbl td { padding: 14px 16px; border-bottom: 1px solid rgba(163,166,175,.18); vertical-align: middle; }
+  .pref-tbl tr:last-child td { border-bottom: none; }
+  .pref-tbl tr:hover td { background: rgba(247,247,248,.7); }
+  .pref-tbl .cat { font-size: 14px; font-weight: 480; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+  .pref-tbl .cat .ic { width: 28px; height: 28px; border-radius: 9px; background: var(--fog); color: var(--ash); display: flex; align-items: center; justify-content: center; flex: none; }
+  .pref-tbl .why { font-size: 12.5px; color: var(--graphite); margin-top: 3px; }
+  .pref-tbl td.c { text-align: center; }
+  .pref-tbl td.c .in { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+  .lock { color: var(--dove); display: inline-flex; }
+  .banner { display: flex; align-items: flex-start; gap: 12px; background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 16px 20px; margin-bottom: 18px; }
+  .banner .ic { width: 34px; height: 34px; border-radius: 11px; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; flex: none; }
+  .banner .t { font-size: 14px; font-weight: 480; }
+  .banner .d { font-size: 12.5px; color: var(--graphite); margin-top: 3px; line-height: 1.55; }
+  .banner.warn .ic { background: var(--apricot); color: var(--rust); }
+  .banner.ok .ic { background: var(--sky); color: var(--ink); }
+
+  /* ============ 9. 表格 ============ */
+  .tbl-card { padding: 6px 8px; overflow: hidden; }
+  table.tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    text-align: left; font-size: 12.5px; font-weight: 500; color: var(--graphite);
+    letter-spacing: .02em; padding: 14px 14px 10px; border-bottom: 1px solid rgba(163,166,175,.35);
+    white-space: nowrap;
+  }
+  .tbl td {
+    font-size: 13.5px; color: var(--ink); padding: 12px 14px;
+    border-bottom: 1px solid rgba(163,166,175,.18); vertical-align: middle;
+  }
+  .tbl tbody tr:hover { background: var(--fog); }
+  .tbl tbody tr:last-child td { border-bottom: none; }
+  .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tbl th.num { text-align: right; }
+  .cell-main { font-weight: 480; }
+  .td-sub { font-size: 11.5px; color: var(--graphite); margin-top: 2px; font-weight: 430; }
+  .money-pos { color: var(--pos); font-variant-numeric: tabular-nums; }
+  .money-neg { color: var(--neg); font-variant-numeric: tabular-nums; }
+  .tbl-foot { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; font-size: 13px; color: var(--graphite); }
+  .pager { display: flex; gap: 6px; }
+  .pager button { min-width: 30px; height: 30px; padding: 0 8px; border-radius: 9px; font-size: 13px; color: var(--ash); font-weight: 450; font-variant-numeric: tabular-nums; }
+  .pager button:hover { background: var(--fog); color: var(--ink); }
+  .pager button.on { background: var(--ink); color: #fff; }
+  .person { display: inline-flex; align-items: center; gap: 7px; }
+  .person .avatar { width: 24px; height: 24px; font-size: 11px; }
+  .person .nm { font-size: 13px; font-weight: 450; color: var(--ash); }
+
+  /* ============ 10. 工作台定制器 ============ */
+  .cz-panel {
+    position: fixed; right: 26px; top: 148px; width: 392px; z-index: 55;
+    background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep);
+    padding: 20px 18px 14px; max-height: calc(100vh - 190px); display: flex; flex-direction: column;
+  }
+  .cz-panel h3 { font-size: 15px; font-weight: 500; }
+  .cz-panel .sub { font-size: 12px; color: var(--graphite); margin-top: 5px; line-height: 1.5; }
+  .cz-list { margin: 12px -4px 0; overflow-y: auto; flex: 1; }
+  .cz-list::-webkit-scrollbar { width: 4px; }
+  .cz-list::-webkit-scrollbar-thumb { background: rgba(163,166,175,.35); border-radius: 4px; }
+  .cz-row { display: flex; align-items: center; gap: 7px; padding: 7px 2px; border-top: 1px solid rgba(163,166,175,.16); }
+  .cz-row:first-child { border-top: none; }
+  .cz-row.dim { opacity: .45; }
+  .cz-grip { color: var(--dove); display: flex; flex: none; cursor: grab; }
+  .cz-row .nm { font-size: 13px; font-weight: 450; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cz-row .sp { font-size: 10.5px; color: var(--dove); flex: none; }
+  .cz-mini { width: 22px; height: 22px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; color: var(--graphite); flex: none; }
+  .cz-mini:hover { background: var(--fog); color: var(--ink); }
+  .cz-mini:disabled { opacity: .3; cursor: not-allowed; }
+  .cz-foot { display: flex; align-items: center; gap: 10px; padding-top: 14px; margin-top: 8px; border-top: 1px solid rgba(163,166,175,.25); }
+
+  /* ============ 11. 布局管理（角色默认） ============ */
+  .lay-grid { display: grid; grid-template-columns: 1fr 372px; gap: 18px; align-items: start; }
+  .lay-row { display: flex; align-items: center; gap: 12px; padding: 11px 10px; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .lay-row:last-child { border-bottom: none; }
+  .lay-row.dim { opacity: .48; }
+  .lay-row .nm { font-size: 13.5px; font-weight: 450; }
+  .lay-row .meta { font-size: 11.5px; color: var(--graphite); margin-top: 2px; display: flex; align-items: center; gap: 7px; }
+  .lay-row .ord { width: 22px; font-size: 11.5px; color: var(--dove); font-variant-numeric: tabular-nums; flex: none; text-align: right; }
+  .lay-row .ctrls { display: flex; align-items: center; gap: 4px; flex: none; }
+  .preview { background: var(--fog); border-radius: 18px; padding: 14px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
+  .preview .pv { background: var(--pwhite); border-radius: 8px; padding: 8px 6px; font-size: 9.5px; color: var(--ash); text-align: center; box-shadow: 0 1px 3px rgba(23,25,28,.06); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .preview .pv.warm { background: var(--apricot); color: var(--rust); }
+  .preview .pv.off { background: transparent; box-shadow: inset 0 0 0 1px rgba(163,166,175,.35); color: var(--dove); }
+
+  /* ============ 12. 规范屏 ============ */
+  .spec-sec { margin-top: 34px; }
+  .spec-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .spec-h h2 { font-family: var(--font-display); font-size: 30px; font-weight: 400; letter-spacing: -0.01em; }
+  .spec-h .n { font-size: 12px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .state-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .state-cell { background: var(--pwhite); border-radius: 18px; box-shadow: var(--shadow-steep-sm); padding: 18px; }
+  .state-cell .cap { font-size: 11.5px; color: var(--graphite); margin-top: 14px; letter-spacing: .02em; }
+  .bell-demo { width: 40px; height: 40px; border-radius: 14px; background: var(--fog); display: flex; align-items: center; justify-content: center; color: var(--ink); position: relative; }
+  .bell-demo .bell-badge { position: absolute; top: -5px; right: -7px; margin: 0; min-width: 18px; height: 18px; font-size: 10.5px; }
+  .sk { background: rgba(163,166,175,.22); border-radius: 6px; height: 11px; }
+  .empty { text-align: center; padding: 44px 0 40px; }
+  .empty .pic { width: 52px; height: 52px; border-radius: 16px; background: var(--fog); color: var(--dove); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .empty .t { font-size: 14px; font-weight: 480; }
+  .empty .d { font-size: 12.5px; color: var(--graphite); margin-top: 6px; }
+  .forbidden { text-align: center; padding: 40px 0 36px; }
+
+  /* ============ 13. 设计稿控件（非产品 UI） ============ */
+  .role-switch { display: flex; align-items: center; gap: 9px; }
+  .role-switch .lbl { font-size: 11px; color: var(--dove); letter-spacing: .04em; }
+  .dv-chip { font-size: 10.5px; color: var(--graphite); background: var(--pwhite); border-radius: var(--r-pill); box-shadow: var(--shadow-steep-sm); padding: 3px 9px; letter-spacing: .03em; }
+  .scr-bar {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 90;
+    display: flex; align-items: center; gap: 2px; background: rgba(255,255,255,.94);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-radius: var(--r-pill); box-shadow: var(--shadow-steep); padding: 5px 6px;
+  }
+  .scr-bar .lbl { font-size: 10.5px; color: var(--dove); padding: 0 9px 0 8px; letter-spacing: .05em; white-space: nowrap; }
+  .scr-bar button { padding: 6px 12px; border-radius: var(--r-pill); font-size: 12.5px; font-weight: 450; color: var(--ash); white-space: nowrap; }
+  .scr-bar button:hover { background: var(--fog); color: var(--ink); }
+  .scr-bar button.on { background: var(--ink); color: #fff; }
+  .notes-fab {
+    position: fixed; right: 26px; bottom: 26px; z-index: 80;
+    width: 44px; height: 44px; border-radius: var(--r-pill); background: var(--ink); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500; box-shadow: 0 10px 24px -8px rgba(23,25,28,.5);
+  }
+  .notes-panel {
+    position: fixed; right: 26px; bottom: 82px; z-index: 80; width: 392px;
+    background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep);
+    padding: 24px 26px; max-height: 66vh; overflow-y: auto;
+  }
+  .notes-panel h3 { font-family: var(--font-display); font-size: 22px; font-weight: 400; margin-bottom: 6px; }
+  .notes-panel .sub { font-size: 12.5px; color: var(--graphite); margin-bottom: 16px; line-height: 1.5; }
+  .note-item { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid rgba(163,166,175,.2); font-size: 12.5px; color: var(--ash); line-height: 1.62; }
+  .note-item .no { color: var(--rust); font-weight: 500; flex: none; font-variant-numeric: tabular-nums; }
+  .note-item.warn .no { color: var(--rust); }
+  .toast {
+    position: fixed; left: 50%; bottom: 82px; transform: translateX(-50%); z-index: 100;
+    background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    padding: 10px 22px; font-size: 13.5px; font-weight: 450;
+    box-shadow: 0 12px 28px -8px rgba(23,25,28,.5); animation: toastIn .25s ease both;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useMemo } = React;
+
+/* ================================================================
+   图标（lucide 风格，1.7px 描边）
+   ================================================================ */
+const ICONS = {
+  dashboard: <><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></>,
+  building: <><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></>,
+  phone: <><polyline points="16 2 16 8 22 8"/><line x1="23" x2="17" y1="1" y2="7"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></>,
+  kanban: <><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/></>,
+  smartphone: <><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></>,
+  megaphone: <><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></>,
+  chart: <><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></>,
+  wallet: <><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></>,
+  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+  scroll: <><path d="M17 12.5H15"/><path d="M17 8.5H15"/><path d="M7 12.5H9"/><path d="M7 8.5H9"/><path d="M15 2v4"/><path d="M7 2v4"/><path d="M19 4v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></>,
+  settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>,
+  chevDown: <path d="m6 9 6 6 6-6"/>,
+  chevRight: <path d="m9 18 6-6-6-6"/>,
+  chevLeft: <path d="m15 18-6-6 6-6"/>,
+  chevUp: <path d="m18 15-6-6-6 6"/>,
+  search: <><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>,
+  plus: <><path d="M5 12h14"/><path d="M12 5v14"/></>,
+  filter: <><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>,
+  panelLeft: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></>,
+  logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>,
+  trendUp: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>,
+  trendDown: <><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></>,
+  arrowRight: <><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>,
+  eye: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></>,
+  check: <><path d="M20 6 9 17l-5-5"/></>,
+  checkAll: <><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></>,
+  clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+  x: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
+  mapPin: <><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></>,
+  key: <><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></>,
+  /* 新增 */
+  bell: <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>,
+  bellOff: <><path d="M8.7 3A6 6 0 0 1 18 8c0 2.5.4 4.4 1 5.9"/><path d="M17 17H3s3-2 3-9a6 6 0 0 1 .9-3.1"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></>,
+  user: <><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+  shield: <><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M9 12l2 2 4-4"/></>,
+  alert: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></>,
+  folder: <><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></>,
+  gripV: <><circle cx="9" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.2" fill="currentColor" stroke="none"/></>,
+  sliders: <><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></>,
+  lock: <><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+  mail: <><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></>,
+  reset: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>,
+  keyboard: <><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></>,
+  columns: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18"/></>,
+  list: <><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></>,
+};
+function Icon({ n, size = 17, sw = 1.7, style, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={style} className={className} aria-hidden="true">
+      {ICONS[n]}
+    </svg>
+  );
+}
+
+/* ================================================================
+   演示数据：人员 / 项目 / 线索 / 资金 / 审计
+   ================================================================ */
+const PEOPLE = ["陈明远", "林晓芸", "王思齐", "赵一鸣", "周文瑾", "吴 倩"];
+const PEOPLE_FULL = [
+  { name: "陈明远", role: "管理员", av: 0 },
+  { name: "林晓芸", role: "运营", av: 1 },
+  { name: "王思齐", role: "运营", av: 2 },
+  { name: "赵一鸣", role: "财务", av: 3 },
+  { name: "周文瑾", role: "业务员", av: 4 },
+  { name: "吴　倩", role: "业务员", av: 5 },
+];
+
+const PROJECTS = [
+  { no: "PF-2026-0192", name: "朝晖六区",   addr: "拱墅区·朝晖 42幢",  st: "selling",    days: 42, list: 315, flow: 32.4, owner: 0, feed: "装修验收完成，挂牌上架 315 万" },
+  { no: "PF-2026-0189", name: "翠苑一区",   addr: "西湖区·翠苑 18幢",  st: "renovating", days: 18, list: null, flow: -41.2, owner: 1, stage: "水电", feed: "装修进入水电阶段，预计 10 月中完工" },
+  { no: "PF-2026-0188", name: "采荷东区",   addr: "上城区·采荷 6幢",   st: "selling",    days: 55, list: 268, flow: 18.6, owner: 2, feed: "带看 4 组，收到意向出价 252 万" },
+  { no: "PF-2026-0185", name: "大关东三苑", addr: "拱墅区·大关 3幢",   st: "signing",    days: 3,  list: null, flow: -3.5, owner: 4, feed: "签约材料收集中，等待房东身份核验" },
+];
+
+/* ================================================================
+   SPEC §4.2 事件字典（12 条）
+   ================================================================ */
+const EVENTS = [
+  { n: 1,  kind: "ui",    type: "lead.assigned",            cat: "lead",      to: "被分配员工",   ch: "站内(+微信可选)", dk: "lead:{id}:assigned:{user_id}",             trivia: "MVP 新增埋点" },
+  { n: 2,  kind: "ui",    type: "lead.status_changed",      cat: "lead",      to: "线索归属员工", ch: "站内(+微信)",     dk: "lead:{id}:status:{status}",                trivia: "MVP 新增埋点" },
+  { n: 3,  kind: "ui",    type: "customer.new",             cat: "growth",    to: "分享归属员工", ch: "站内+微信",       dk: "customer:{module}:{id}:new:{user_id}",     trivia: "MVP 双写" },
+  { n: 4,  kind: "ui",    type: "customer.status_changed",  cat: "growth",    to: "归属员工",     ch: "站内+微信",       dk: "customer:{module}:{id}:status:{status}",   trivia: "MVP 双写" },
+  { n: 5,  kind: "ui",    type: "recruit.new_lead",         cat: "growth",    to: "推荐员工",     ch: "站内+微信",       dk: "recruit:{lead_id}:new:{user_id}",          trivia: "MVP 双写" },
+  { n: 6,  kind: "defer", type: "project.todo_due",         cat: "project",   to: "负责人/团队",  ch: "站内",            dk: "todo:{rule}:{project_id}:{date}:{user_id}", trivia: "本期不做定时化" },
+  { n: 7,  kind: "defer", type: "project.status_changed",   cat: "project",   to: "项目团队",     ch: "站内",            dk: "project:{id}:status:{status}",             trivia: "触发点延后（backlog）" },
+  { n: 8,  kind: "defer", type: "key.share_viewed",         cat: "key",       to: "分享人",       ch: "站内",            dk: "key-share:{share_id}:view:{view_id}",      trivia: "触发点延后（backlog）" },
+  { n: 9,  kind: "ui",    type: "system.alert",             cat: "security",  to: "admin",        ch: "站内(+微信可选)", dk: "alert:{fingerprint}",                      trivia: "迭代三消费" },
+  { n: 10, kind: "audit", type: "marketing.published",      cat: "marketing", to: "C 端订阅用户", ch: "仅微信（C 端审计）", dk: "marketing:{id}:published:{user_id}",    trivia: "只落 delivery_logs" },
+  { n: 11, kind: "audit", type: "marketing.price_changed",  cat: "marketing", to: "C 端订阅用户", ch: "仅微信（C 端审计）", dk: "marketing:{id}:price:{change_id}:{user_id}", trivia: "只落 delivery_logs" },
+  { n: 12, kind: "audit", type: "lead.eval_price_changed",  cat: "lead",      to: "线索提交人",   ch: "仅微信（C 端审计）", dk: "lead:{id}:eval:{eval_price}",          trivia: "只落 delivery_logs" },
+];
+
+/* ================================================================
+   SPEC §4.7 widget 注册表（12 个）
+   ================================================================ */
+const CAT_LABEL = {
+  lead: "线索", growth: "获客", project: "项目", key: "房源分享",
+  marketing: "营销", finance: "资金", system: "系统", security: "安全",
+};
+const CAT_ICON = {
+  lead: "phone", growth: "megaphone", project: "kanban", key: "key",
+  marketing: "smartphone", finance: "wallet", system: "settings", security: "shield",
+};
+
+const WIDGETS = {
+  project_overview:   { key: "project_overview",   label: "项目总览",     perm: "project:read",     span: 3,  roles: ["admin", "operator"], desc: "签约/装修/在售/已成交计数" },
+  leads_funnel:       { key: "leads_funnel",       label: "线索漏斗",     perm: "lead:read",        span: 3,  roles: ["admin", "operator"], desc: "总线索→评估→看房→签约" },
+  alert_card:         { key: "alert_card",         label: "待评估提醒",   perm: "lead:write",       span: 3,  roles: ["admin", "operator"], desc: "待评估线索数与最久等待" },
+  todo_board_summary: { key: "todo_board_summary", label: "项目待办",     perm: "project:read",     span: 3,  roles: ["admin", "operator"], desc: "逾期/今日/本周待办条数" },
+  growth_overview:    { key: "growth_overview",    label: "获客总览",     perm: "recruit:read",     span: 6,  roles: ["admin", "operator"], desc: "新增线索 14 日趋势 + 渠道分布" },
+  finance_summary:    { key: "finance_summary",    label: "资金概览",     perm: "ledger:read",      span: 6,  roles: ["admin"],             desc: "净现金流 / 在投 / 本月回款" },
+  audit_summary:      { key: "audit_summary",      label: "审计概览",     perm: "operation_log:read", span: 6, roles: ["admin"],            desc: "今日操作数与高风险操作" },
+  monitor_projects:   { key: "monitor_projects",   label: "重点监控项目", perm: "project:read",     span: 12, roles: ["admin", "operator"], desc: "横向项目卡（现状逻辑）" },
+  leads_table:        { key: "leads_table",        label: "最近线索",     perm: "lead:read",        span: 12, roles: ["admin", "operator"], desc: "最近 5 条线索表格" },
+  quick_entry:        { key: "quick_entry",        label: "快捷入口",     perm: "按子项过滤",       span: 12, roles: ["admin", "operator", "user"], desc: "常用操作入口，子项各自鉴权" },
+  my_projects:        { key: "my_projects",        label: "我负责的项目", perm: "登录 + 业务身份",   span: 12, roles: ["user"],              desc: "get_by_business_identity" },
+  my_todos:           { key: "my_todos",           label: "我的待办",     perm: "登录（all 需 project:read）", span: 12, roles: ["user"],         desc: "todo-board?scope=mine 🆕" },
+};
+
+/* SPEC §4.7 默认布局（order 间隔 10，span 由注册表决定） */
+const ROLE_LAYOUTS = {
+  admin: [
+    "project_overview", "leads_funnel", "alert_card", "todo_board_summary",
+    "growth_overview", "finance_summary", "audit_summary",
+    "monitor_projects", "leads_table", "quick_entry",
+  ],
+  operator: [
+    "project_overview", "leads_funnel", "alert_card", "todo_board_summary",
+    "growth_overview",
+    "monitor_projects", "leads_table", "quick_entry",
+  ],
+  user: ["quick_entry", "my_projects", "my_todos"],
+};
+const ROLE_META = {
+  admin:    { name: "管理员", who: "陈明远", av: 0, expect: 10 },
+  operator: { name: "运营",   who: "林晓芸", av: 1, expect: 8 },
+  user:     { name: "业务员", who: "周文瑾", av: 4, expect: 3 },
+};
+
+/* 12 栏栅格自动升格：span=6 的卡若落单则升满宽（⚠️ 设计稿补充口径 a） */
+function resolveSpans(keys) {
+  const out = [];
+  let pend6 = null;
+  keys.forEach((k) => {
+    const sp = WIDGETS[k].span;
+    if (sp === 6) {
+      if (pend6) { out.push({ key: pend6, span: 6, promoted: false }); out.push({ key: k, span: 6, promoted: false }); pend6 = null; }
+      else pend6 = k;
+    } else {
+      if (pend6) { out.push({ key: pend6, span: 12, promoted: true }); pend6 = null; }
+      out.push({ key: k, span: sp, promoted: false });
+    }
+  });
+  if (pend6) out.push({ key: pend6, span: 12, promoted: true });
+  return out;
+}
+
+/* ================================================================
+   消息数据（贴近业务：双写 3 入口 + 新埋点 + 系统告警）
+   ================================================================ */
+const NOW = new Date("2026-10-17T15:42:00");
+const MSGS = [
+  { id: "m01", cat: "growth",   type: "recruit.new_lead",        pri: "high",   unread: true,  t: "8 分钟前",
+    title: "新推荐线索：朝晖七区 2室1厅",
+    body: "小程序推荐人 周文瑾 · 总价 275 万 · 待确认归属",
+    action: "/admin/growth-center/leads", deliv: "ok",   delivTip: "微信已送达",
+    payload: { 模块: "招募", lead_id: "L-20261017-0831", 推荐人: "周文瑾" } },
+  { id: "m02", cat: "lead",     type: "lead.assigned",           pri: "normal", unread: true,  t: "24 分钟前",
+    title: "线索已分配给你：翠苑三区",
+    body: "由 陈明远 分配给 周文瑾 · 需 24 小时内首次联系",
+    action: "/admin/leads", deliv: null,
+    payload: { 线索: "翠苑三区", 分配人: "陈明远" } },
+  { id: "m03", cat: "growth",   type: "customer.status_changed", pri: "normal", unread: true,  t: "1 小时前",
+    title: "客户状态变更：采荷红菱 → 待看房",
+    body: "客户 沈女士 已确认看房时间 10-18 14:00",
+    action: "/admin/growth-center/leads", deliv: "ok",   delivTip: "微信已送达",
+    payload: { 客户: "采荷红菱", 原状态: "待评估", 新状态: "待看房" } },
+  { id: "m04", cat: "security", type: "system.alert",            pri: "urgent", unread: true,  t: "2 小时前",
+    title: "系统告警：夜间批量补偿任务连续失败",
+    body: "manage compensate 81 连续 3 次失败 · 已自动重试并停止",
+    action: "/admin/audit-logs", deliv: "fail", delivTip: "微信失败：TEMPLATE_MISSING",
+    payload: { 指纹: "migrate.compensate.81", 失败次数: "3" } },
+  { id: "m05", cat: "growth",   type: "customer.new",            pri: "normal", unread: false, t: "昨天 18:20",
+    title: "新客户线索：古荡文华 3室1厅",
+    body: "分享链接带来新客户 · 预算 480 万",
+    action: "/admin/growth-center/leads", deliv: "ok", delivTip: "微信已送达",
+    payload: { 模块: "获客中心", 客户: "古荡文华" } },
+  { id: "m06", cat: "lead",     type: "lead.status_changed",     pri: "normal", unread: false, t: "昨天 15:48",
+    title: "线索状态变更：大关南五苑 → 已看房",
+    body: "带看人 王思齐 · 客户反馈价格偏高",
+    action: "/admin/leads", deliv: "ok", delivTip: "微信已送达",
+    payload: { 线索: "大关南五苑", 新状态: "已看房" } },
+  { id: "m07", cat: "growth",   type: "recruit.new_lead",        pri: "normal", unread: false, t: "昨天 11:05",
+    title: "新推荐线索：景芳四区 1室1厅",
+    body: "小程序推荐人 吴倩 · 总价 168 万",
+    action: "/admin/growth-center/leads", deliv: "skip", delivTip: "微信跳过：模板未配置",
+    payload: { 模块: "招募", lead_id: "L-20261016-0612" } },
+  { id: "m08", cat: "security", type: "system.alert",            pri: "high",   unread: false, t: "10-15 22:10",
+    title: "系统告警：消息保留清理任务耗时异常",
+    body: "notification-cleanup 单次耗时 42s，超过阈值 30s",
+    action: "/admin/audit-logs", deliv: null,
+    payload: { 指纹: "notify.cleanup.slow" } },
+  { id: "m09", cat: "growth",   type: "customer.status_changed", pri: "low",    unread: false, t: "10-15 16:33",
+    title: "客户状态变更：三里亭竹苑 → 已签约",
+    body: "总价 385 万 · 已进入项目立项流程",
+    action: "/admin/growth-center/leads", deliv: "ok", delivTip: "微信已送达",
+    payload: { 客户: "三里亭竹苑", 新状态: "已签约" } },
+  { id: "m10", cat: "lead",     type: "lead.assigned",           pri: "normal", unread: false, t: "10-15 10:12",
+    title: "线索已分配给你：濮家东村",
+    body: "由 林晓芸 分配给 周文瑾",
+    action: "/admin/leads", deliv: null,
+    payload: { 线索: "濮家东村", 分配人: "林晓芸" } },
+  { id: "m11", cat: "growth",   type: "customer.new",            pri: "normal", unread: false, t: "10-14 17:40",
+    title: "新客户线索：德胜路沿街 3室2厅",
+    body: "分享链接带来新客户 · 预算 520 万",
+    action: "/admin/growth-center/leads", deliv: "fail", delivTip: "微信失败：用户未绑定 openid",
+    payload: { 模块: "获客中心", 客户: "德胜路沿街" } },
+  { id: "m12", cat: "lead",     type: "lead.status_changed",     pri: "low",    unread: false, t: "10-14 09:20",
+    title: "线索状态变更：三里亭竹苑 → 已签约",
+    body: "系统自动流转 · 触发合同起草",
+    action: "/admin/leads", deliv: null,
+    payload: { 线索: "三里亭竹苑", 新状态: "已签约" } },
+];
+
+/* 消息抽屉分类 tabs（SPEC §4.6：全部/线索/获客/项目/系统） */
+const DRAWER_TABS = [
+  { id: "all", label: "全部" },
+  { id: "lead", label: "线索" },
+  { id: "growth", label: "获客" },
+  { id: "project", label: "项目" },
+  { id: "security", label: "系统" },
+];
+
+/* 偏好设置：8 分类 × 2 渠道 */
+const PREF_ROWS = [
+  { cat: "lead",      label: "线索",     why: "线索分配、状态变更", locked: false },
+  { cat: "growth",    label: "获客",     why: "新客户线索、客户状态变更、招募推荐", locked: false },
+  { cat: "project",   label: "项目",     why: "项目状态流转、待办到期（本期未接触发点）", locked: false },
+  { cat: "key",       label: "房源分享", why: "分享链接被查看（本期未接触发点）", locked: false },
+  { cat: "marketing", label: "营销",     why: "C 端订阅通知，仅微信渠道，不产生站内信", locked: false, wechatOnly: true },
+  { cat: "finance",   label: "资金",     why: "资金流水与结算异常", locked: false },
+  { cat: "system",    label: "系统",     why: "站内信不可关闭（后端强制忽略关闭请求）", locked: true },
+  { cat: "security",  label: "安全",     why: "站内信不可关闭（后端强制忽略关闭请求）", locked: true },
+];
+
+/* 角色默认布局管理：可分配的 widget 清单（含权限与三角色意图） */
+const ROLE_CAPS = { admin: "全部 12 个 widget", operator: "无 finance_summary / audit_summary / my_*", user: "仅 quick_entry / my_projects / my_todos" };
+</script>
+<script type="text/babel" data-presets="react">
+/* ================================================================
+   通用小组件
+   ================================================================ */
+function toast(msg) {
+  window.dispatchEvent(new CustomEvent("d-toast", { detail: msg }));
+}
+function Badge({ cls, children }) {
+  return <span className={"badge " + cls}>{children}</span>;
+}
+function Avatar({ i, size }) {
+  const cls = "av-" + ((i % 6) + 1);
+  return (
+    <span className={"avatar " + cls} style={size ? { width: size, height: size } : null}>
+      {PEOPLE[i % 6].slice(0, 1)}
+    </span>
+  );
+}
+function PageHeader({ title, desc, aside }) {
+  return (
+    <header className="page-head">
+      <div>
+        <h1>{title}</h1>
+        {desc ? <p className="desc">{desc}</p> : null}
+      </div>
+      {aside ? <div className="aside">{aside}</div> : null}
+    </header>
+  );
+}
+function Switch({ on, dis, onChange, label }) {
+  return (
+    <span
+      role="switch"
+      aria-checked={on}
+      aria-disabled={dis || undefined}
+      aria-label={label}
+      className={"switch" + (on ? " on" : "") + (dis ? " dis" : "")}
+      onClick={() => { if (!dis && onChange) onChange(); }}
+    >
+      <i></i>
+    </span>
+  );
+}
+function Pagination({ total, unit, page = 1 }) {
+  return (
+    <div className="tbl-foot">
+      <span>共 {total} 条{unit || ""}</span>
+      <div className="pager">
+        <button aria-label="上一页">‹</button>
+        <button className="on">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>…</button>
+        <button aria-label="下一页">›</button>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   SPEC §4.7 导航（角色可见性沿用现有权限映射，本稿按 role 近似）
+   ================================================================ */
+const NAV = [
+  { kind: "item", id: "dashboard", label: "工作台", icon: "dashboard", roles: ["admin", "operator", "user"] },
+  { kind: "group", label: "业务", items: [
+    { id: "properties", label: "房源管理", icon: "building", roles: ["admin", "operator", "user"] },
+    { id: "leads", label: "线索中心", icon: "phone", roles: ["admin", "operator", "user"] },
+    { id: "projects", label: "项目管理", icon: "kanban", roles: ["admin", "operator", "user"] },
+    { id: "todo", label: "项目待办", icon: "list", roles: ["admin", "operator", "user"] },
+    { id: "marketing", label: "房源营销", icon: "smartphone", roles: ["admin", "operator"] },
+  ]},
+  { kind: "group", label: "增长", items: [
+    { id: "growth", label: "获客中心", icon: "megaphone", roles: ["admin", "operator"] },
+    { id: "reports", label: "数据报表", icon: "chart", roles: ["admin", "operator", "user"] },
+  ]},
+  { kind: "group", label: "财务", items: [
+    { id: "ledger", label: "财务管理", icon: "wallet", roles: ["admin"] },
+  ]},
+  { kind: "group", label: "系统", items: [
+    { id: "users", label: "用户管理", icon: "users", roles: ["admin"] },
+    { id: "audit", label: "审计日志", icon: "scroll", roles: ["admin"] },
+    { id: "settings", label: "设置", icon: "settings", roles: ["admin", "operator"] },
+  ]},
+];
+
+/* 消息可见性（⚠️ 演示简化：按角色过滤分类，真实实现按收件人 SQL 层过滤） */
+const ROLE_MSG_CATS = {
+  admin: ["lead", "growth", "project", "security", "key", "finance", "marketing", "system"],
+  operator: ["lead", "growth", "project"],
+  user: ["lead", "growth"],
+};
+function msgsFor(role) {
+  const cats = ROLE_MSG_CATS[role] || ROLE_MSG_CATS.admin;
+  return MSGS.filter((m) => cats.indexOf(m.cat) >= 0);
+}
+function unreadFor(role) {
+  return msgsFor(role).filter((m) => m.unread).length;
+}
+
+function Sidebar({ route, go, role, bellOpen, toggleBell, onNavigate }) {
+  const meta = ROLE_META[role];
+  const unread = unreadFor(role);
+  const renderItem = (it) => {
+    if (it.roles.indexOf(role) < 0) return null;
+    const active = route === it.id;
+    return (
+      <button key={it.id} className={"nav-item" + (active ? " active" : "")} onClick={() => onNavigate(it.id)}>
+        <span className="ic"><Icon n={it.icon} /></span>
+        <span className="lbl">{it.label}</span>
+      </button>
+    );
+  };
+  return (
+    <aside className="sidebar">
+      <div className="side-logo">
+        <span className="mark">P</span>
+        <span className="word">Profo</span>
+      </div>
+      <div className="side-scroll">
+        {NAV.map((g) => {
+          if (g.kind === "item") {
+            return <div key={g.id}>{renderItem(g)}</div>;
+          }
+          const visible = g.items.filter((it) => it.roles.indexOf(role) >= 0);
+          if (!visible.length) return null;
+          return (
+            <div key={g.label}>
+              <div className="nav-group-label">{g.label}</div>
+              {visible.map(renderItem)}
+            </div>
+          );
+        })}
+      </div>
+      <div className="side-foot">
+        {/* 消息铃铛：折叠按钮之下、用户头像之上（SPEC §4.6） */}
+        <button
+          className={"bell-btn" + (bellOpen ? " active" : "")}
+          onClick={toggleBell}
+          aria-label={"消息，未读 " + unread + " 条"}
+          aria-haspopup="dialog"
+        >
+          <span className="ic"><Icon n="bell" /></span>
+          <span className="lbl">消息</span>
+          <span className={"bell-badge" + (unread === 0 ? " zero" : "")} aria-live="polite">
+            {unread > 99 ? "99+" : unread}
+          </span>
+        </button>
+        <button className="collapse-btn" onClick={() => toast("设计稿演示：侧边栏折叠（折叠态铃铛只显示图标）")}>
+          <Icon n="panelLeft" size={16} />
+          <span className="lbl">收起菜单</span>
+        </button>
+        <button className="side-user" onClick={() => toast("设计稿演示：账号 " + meta.who + " · " + meta.name)}>
+          <Avatar i={meta.av} />
+          <span className="info">
+            <div className="n">{meta.who}</div>
+            <div className="r">{meta.name}</div>
+          </span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/* ================================================================
+   消息行（抽屉 + 整页共用）
+   ================================================================ */
+function DeliveryTag({ kind, tip }) {
+  if (!kind) return null;
+  const cls = kind === "ok" ? "ok" : kind === "fail" ? "fail" : "";
+  return (
+    <span className={"n-deliv " + cls} title={tip}>
+      <i className="d"></i>微信{kind === "ok" ? "已送达" : kind === "fail" ? "失败" : "跳过"}
+    </span>
+  );
+}
+function MsgRow({ m, onRead, compact }) {
+  const priBadge = m.pri === "urgent" ? <Badge cls="b-apricot">紧急</Badge>
+    : m.pri === "high" ? <Badge cls="b-outline">重要</Badge> : null;
+  return (
+    <button
+      className={"n-row" + (m.unread ? " unread" : " read") + (m.pri === "urgent" ? " urgent" : "")}
+      onClick={() => onRead && onRead(m)}
+      aria-label={(m.unread ? "未读，" : "") + m.title}
+    >
+      <span className="n-ic"><Icon n={CAT_ICON[m.cat]} size={16} /></span>
+      <span className="n-main">
+        <span className="n-title">
+          <span className="n-tt">{m.title}</span>
+          {priBadge}
+        </span>
+        <span className="n-body">{m.body}</span>
+      </span>
+      <span className="n-meta">
+        <span className="n-time">{m.t}</span>
+        <span className="n-extra">
+          {m.deliv ? <DeliveryTag kind={m.deliv} tip={m.delivTip} /> : null}
+          <span className="udot" aria-hidden="true"></span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/* ================================================================
+   Widget 渲染器（每个 widget 代表一个独立 Suspense 边界）
+   ================================================================ */
+const QUICK = {
+  admin: [
+    { nm: "新建项目", meta: "录入房源或开发项目", ic: "plus" },
+    { nm: "录入线索", meta: "评估价与归属分配", ic: "phone" },
+    { nm: "项目待办", meta: "逾期 3 · 今日 5", ic: "list" },
+    { nm: "资金流水", meta: "本月 128 笔", ic: "wallet" },
+    { nm: "获客活动", meta: "进行中 2 场", ic: "megaphone" },
+    { nm: "订阅模板", meta: "微信 6 个入口", ic: "mail" },
+  ],
+  operator: [
+    { nm: "录入线索", meta: "评估价与归属分配", ic: "phone" },
+    { nm: "项目待办", meta: "逾期 3 · 今日 5", ic: "list" },
+    { nm: "获客活动", meta: "进行中 2 场", ic: "megaphone" },
+    { nm: "房源上传", meta: "批量导入", ic: "plus" },
+  ],
+  user: [
+    { nm: "我的线索", meta: "待跟进 4 条", ic: "phone" },
+    { nm: "我的待办", meta: "今日 2 项", ic: "list" },
+    { nm: "分享房源", meta: "生成小程序卡片", ic: "smartphone" },
+    { nm: "我的客户", meta: "跟进中 6 位", ic: "user" },
+  ],
+};
+
+function WGHead({ title, sub, link, onLink, cfg }) {
+  return (
+    <div className="wg-head">
+      <span className="wg-title">
+        {title}
+        {sub ? <span className="wg-sub">{sub}</span> : null}
+      </span>
+      <span style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
+        {cfg ? <span className="cfg-chip"><i className="d"></i>{cfg}</span> : null}
+        {link ? <button className="sec-link" style={{ fontSize: 13 }} onClick={onLink}>{link} <Icon n="arrowRight" size={12} /></button> : null}
+      </span>
+    </div>
+  );
+}
+
+function Widget({ k, role, onCustomize, onGo }) {
+  const go = onGo || (() => {});
+  switch (k) {
+    /* ---- 1. 项目总览 span3 ---- */
+    case "project_overview":
+      return (
+        <div className="wg">
+          <WGHead title="项目总览" link="详情" onLink={() => go("projects")} />
+          <div className="kpi-2">
+            <div className="kpi"><div className="k">已签约</div><div className="v tnum">12</div></div>
+            <div className="kpi"><div className="k">装修中</div><div className="v tnum">8</div></div>
+            <div className="kpi"><div className="k">在售中</div><div className="v tnum">15</div></div>
+            <div className="kpi"><div className="k">已成交</div><div className="v tnum">23</div></div>
+          </div>
+        </div>
+      );
+    /* ---- 2. 线索漏斗 span3 ---- */
+    case "leads_funnel":
+      return (
+        <div className="wg">
+          <WGHead title="线索漏斗" sub="本月" link="线索" onLink={() => go("leads")} />
+          <div className="funnel">
+            {[
+              { l: "总线索", v: 128, p: 100, c: "var(--ink)" },
+              { l: "进入评估", v: 45, p: 35, c: "#4a90e2" },
+              { l: "实地看房", v: 18, p: 14, c: "var(--sky)" },
+              { l: "签约", v: 9, p: 7, c: "var(--rust)" },
+            ].map((f) => (
+              <div className="f-row" key={f.l}>
+                <span className="fl">{f.l}</span>
+                <span className="f-bar"><i style={{ width: f.p + "%", background: f.c }}></i></span>
+                <span className="fv tnum">{f.v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    /* ---- 3. 待评估提醒 span3（暖卡） ---- */
+    case "alert_card":
+      return (
+        <div className="wg warm">
+          <WGHead title="待评估提醒" link="去处理" onLink={() => go("leads")} />
+          <div className="alert-num tnum">7</div>
+          <div className="alert-note">最久等待 3 天 2 小时<br />涉及 2 位业务负责人</div>
+        </div>
+      );
+    /* ---- 4. 项目待办 span3 ---- */
+    case "todo_board_summary":
+      return (
+        <div className="wg">
+          <WGHead title="项目待办" link="看板" onLink={() => go("todo")} />
+          <div className="kpi-3">
+            <div className="kpi"><div className="k">逾期</div><div className="v tnum" style={{ color: "var(--rust)" }}>3</div></div>
+            <div className="kpi"><div className="k">今日</div><div className="v tnum">5</div></div>
+            <div className="kpi"><div className="k">本周</div><div className="v tnum">11</div></div>
+          </div>
+          <div className="todo-rows">
+            <div className="todo-row">
+              <span className="nm">翠苑一区 · 水电验收</span>
+              <span className="due late">逾期 1 天</span>
+            </div>
+          </div>
+        </div>
+      );
+    /* ---- 5. 获客总览 span6 ---- */
+    case "growth_overview":
+      return (
+        <div className="wg">
+          <WGHead title="获客总览" sub="近 14 日" link="获客中心" onLink={() => go("growth")} />
+          <div className="wg-split narrow-right" style={{ marginTop: 16 }}>
+            <div>
+              <div className="kpi-3" style={{ marginTop: 0 }}>
+                <div className="kpi"><div className="k">新增线索</div><div className="v tnum lg">342<span className="unit">条</span></div><div className="d" style={{ color: "var(--rust)" }}><Icon n="trendUp" size={11} sw={2} />+18.4%</div></div>
+                <div className="kpi"><div className="k">到访转化</div><div className="v tnum lg">18.4<span className="unit">%</span></div><div className="d"><Icon n="trendUp" size={11} sw={2} />+2.1pp</div></div>
+                <div className="kpi"><div className="k">分享带来</div><div className="v tnum lg">126<span className="unit">条</span></div><div className="d">占 36.8%</div></div>
+              </div>
+              <div className="spark" style={{ marginTop: 22, height: 74 }}>
+                {[14, 22, 18, 26, 21, 30, 24, 28, 34, 27, 31, 36, 29, 33].map((v, i) => (
+                  <i key={i} className={i >= 11 ? "hot" : ""} style={{ height: (v / 36) * 100 + "%" }}></i>
+                ))}
+              </div>
+              <div className="spark-x">
+                {["10-04", "10-07", "10-10", "10-13", "10-17"].map((d) => <span key={d}>{d}</span>)}
+              </div>
+            </div>
+            <div>
+              <div className="help" style={{ fontSize: 12, marginBottom: 10 }}>渠道来源</div>
+              {[
+                { nm: "小程序分享", n: 126, p: 37 },
+                { nm: "自然到访", n: 98, p: 29 },
+                { nm: "微信订阅", n: 74, p: 22 },
+                { nm: "其他渠道", n: 44, p: 13 },
+              ].map((c) => (
+                <div key={c.nm} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0" }}>
+                  <span style={{ width: 72, fontSize: 12.5, color: "var(--ash)", flex: "none" }}>{c.nm}</span>
+                  <span className="f-bar" style={{ height: 7 }}><i style={{ width: c.p * 2.4 + "%", background: c.nm === "小程序分享" ? "var(--rust)" : "var(--ink)", opacity: c.nm === "小程序分享" ? 1 : 0.28 }}></i></span>
+                  <span style={{ width: 32, fontSize: 12.5, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{c.n}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    /* ---- 6. 资金概览 span6 ---- */
+    case "finance_summary":
+      return (
+        <div className="wg">
+          <WGHead title="资金概览" sub="本月" link="资金账本" onLink={() => go("ledger")} />
+          <div className="kpi-3">
+            <div className="kpi"><div className="k">净现金流</div><div className="v tnum money-pos">+128.6<span className="unit">万</span></div><div className="d">本月累计</div></div>
+            <div className="kpi"><div className="k">在投金额</div><div className="v tnum">3,240<span className="unit">万</span></div><div className="d">共 12 个项目</div></div>
+            <div className="kpi"><div className="k">本月回款</div><div className="v tnum">86.4<span className="unit">万</span></div><div className="d">已到账 100%</div></div>
+          </div>
+          <div className="wg-split" style={{ marginTop: 20 }}>
+            <div>
+              <div className="help" style={{ fontSize: 12, marginBottom: 4 }}>项目损益（万元）</div>
+              <div className="mini-list">
+                <div className="mini-row">
+                  <span><span className="nm">古荡新村</span><span className="meta">已成交 · 398 万 · 已结算</span></span>
+                  <span className="rt money-pos">+52.8</span>
+                </div>
+                <div className="mini-row">
+                  <span><span className="nm">朝晖六区</span><span className="meta">在售 · 账面浮盈</span></span>
+                  <span className="rt money-pos">+32.4</span>
+                </div>
+                <div className="mini-row">
+                  <span><span className="nm">翠苑一区</span><span className="meta">装修中 · 已投入</span></span>
+                  <span className="rt money-neg">-41.2</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="help" style={{ fontSize: 12, marginBottom: 4 }}>本月现金流（万元）</div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 92 }}>
+                {[22, 14, 31, 9, 26, 18, 34, 12].map((v, i) => (
+                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
+                    <i style={{ display: "block", height: v * 2.4 + "%", borderRadius: "5px 5px 2px 2px", background: i === 6 ? "var(--rust)" : "var(--ink)", opacity: i === 6 ? 1 : 0.16 }}></i>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((w) => (
+                  <span key={w} style={{ flex: 1, textAlign: "center", fontSize: 10.5, color: "var(--dove)" }}>W{w}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    /* ---- 7. 审计概览 span6 ---- */
+    case "audit_summary":
+      return (
+        <div className="wg">
+          <WGHead title="审计概览" sub="今日" link="审计日志" onLink={() => go("audit")} />
+          <div className="kpi-3">
+            <div className="kpi"><div className="k">操作总数</div><div className="v tnum">1,284</div><div className="d">较昨日 +8.2%</div></div>
+            <div className="kpi"><div className="k">高风险</div><div className="v tnum" style={{ color: "var(--rust)" }}>3</div><div className="d">需人工复核</div></div>
+            <div className="kpi"><div className="k">登录失败</div><div className="v tnum">1</div><div className="d">同一 IP</div></div>
+          </div>
+          <div className="wg-split narrow-right" style={{ marginTop: 20 }}>
+            <div>
+              <div className="mini-list" style={{ marginTop: 0 }}>
+                <div className="mini-row">
+                  <span><span className="nm">批量导出线索</span><span className="meta">陈明远 · 10:24 · 导出 342 条</span></span>
+                  <Badge cls="b-apricot">高风险</Badge>
+                </div>
+                <div className="mini-row">
+                  <span><span className="nm">角色权限变更</span><span className="meta">陈明远 · 09:12 · operator 一组</span></span>
+                  <Badge cls="b-fog">常规</Badge>
+                </div>
+                <div className="mini-row">
+                  <span><span className="nm">登录失败</span><span className="meta">10.12.3.44 · 08:47 · 密码错误</span></span>
+                  <Badge cls="b-outline">待确认</Badge>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="help" style={{ fontSize: 12, marginBottom: 10 }}>今日操作分布</div>
+              {[
+                { nm: "查询", n: 912, p: 71 },
+                { nm: "新增", n: 231, p: 18 },
+                { nm: "修改", n: 118, p: 9 },
+                { nm: "删除/导出", n: 23, p: 2 },
+              ].map((c) => (
+                <div key={c.nm} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0" }}>
+                  <span style={{ width: 66, fontSize: 12.5, color: "var(--ash)", flex: "none" }}>{c.nm}</span>
+                  <span className="f-bar" style={{ height: 7 }}><i style={{ width: c.p * 1.36 + "%", background: c.nm === "删除/导出" ? "var(--rust)" : "var(--ink)", opacity: c.nm === "删除/导出" ? 1 : 0.22 }}></i></span>
+                  <span style={{ width: 38, fontSize: 12.5, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{c.n}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    /* ---- 8. 重点监控项目 span12 ---- */
+    case "monitor_projects":
+      return (
+        <div className="wg">
+          <WGHead title="重点监控项目" sub="4 个在跟" link="全部项目" onLink={() => go("projects")} />
+          <div className="monitor-row as-grid">
+            {PROJECTS.map((p) => (
+              <div className="m-card" key={p.no}>
+                <div className="m-no">
+                  <span className="no mono">{p.no}</span>
+                  <Badge cls={p.st === "selling" ? "b-ink" : p.st === "renovating" ? "b-apricot" : p.st === "signing" ? "b-sky" : "b-fog"}>
+                    {p.st === "selling" ? "在售" : p.st === "renovating" ? "装修中" : p.st === "signing" ? "签约" : "已售"}
+                  </Badge>
+                </div>
+                <div className="m-name">{p.name}</div>
+                <div className="m-addr">{p.addr} · 已跟进 {p.days} 天</div>
+                <div className="m-div"></div>
+                <div className="m-feed">{p.feed}</div>
+              </div>
+            ))}
+            <div className="m-card" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", boxShadow: "inset 0 0 0 2px rgba(163,166,175,.4)", color: "var(--graphite)", gap: 8, minHeight: 150 }}>
+              <Icon n="plus" size={16} /> 添加新项目
+            </div>
+          </div>
+        </div>
+      );
+    /* ---- 9. 最近线索 span12 ---- */
+    case "leads_table":
+      return (
+        <div className="wg" style={{ padding: "18px 20px 8px" }}>
+          <WGHead title="最近线索" link="全部线索" onLink={() => go("leads")} />
+          <div style={{ marginTop: 8 }}>
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>小区</th>
+                  <th>面积</th>
+                  <th className="num">总价（万）</th>
+                  <th>状态</th>
+                  <th>创建人</th>
+                  <th className="num">时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { nm: "朝晖七区", a: 65, tot: 275, st: "待评估", cls: "b-apricot", who: 0, t: "10-17 14:32" },
+                  { nm: "翠苑三区", a: 48, tot: 195, st: "待评估", cls: "b-apricot", who: 1, t: "10-17 11:20" },
+                  { nm: "采荷红菱", a: 72, tot: 310, st: "待看房", cls: "b-sky", who: 2, t: "10-17 09:05" },
+                  { nm: "古荡文华", a: 105, tot: 480, st: "待看房", cls: "b-sky", who: 3, t: "10-16 15:48" },
+                  { nm: "大关南五苑", a: 68, tot: 289, st: "已看房", cls: "b-outline", who: 4, t: "10-16 11:12" },
+                ].map((r) => (
+                  <tr key={r.nm}>
+                    <td className="cell-main">{r.nm}</td>
+                    <td>{r.a} ㎡</td>
+                    <td className="num">{r.tot}</td>
+                    <td><Badge cls={r.cls}>{r.st}</Badge></td>
+                    <td><span className="person"><Avatar i={r.who} /><span className="nm">{PEOPLE[r.who]}</span></span></td>
+                    <td className="num" style={{ color: "var(--graphite)", fontSize: 12.5 }}>{r.t}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    /* ---- 10. 快捷入口 span12 ---- */
+    case "quick_entry":
+      return (
+        <div className="wg">
+          <WGHead title="快捷入口" sub={role === "user" ? "按权限显示 4 项" : "按子项权限过滤"} cfg={"widget: quick_entry"} />
+          <div className="quick-grid" style={{ gridTemplateColumns: ROLE_WHOWIDE(role) }}>
+            {QUICK[role].map((q) => (
+              <button className="q-row" key={q.nm} onClick={() => toast("设计稿演示：进入「" + q.nm + "」")}>
+                <span className="ic"><Icon n={q.ic} size={16} /></span>
+                <span style={{ textAlign: "left" }}>
+                  <span className="nm" style={{ display: "block" }}>{q.nm}</span>
+                  <span className="meta" style={{ display: "block" }}>{q.meta}</span>
+                </span>
+                <span className="go"><Icon n="chevRight" size={14} /></span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    /* ---- 11. 我负责的项目 span12 ---- */
+    case "my_projects":
+      return (
+        <div className="wg">
+          <WGHead title="我负责的项目" sub="业务身份：周文瑾" link="全部" onLink={() => go("projects")} />
+          <div className="mini-list">
+            {[
+              { nm: "采荷东区", meta: "在售 · 挂牌 268 万 · 已跟进 55 天", rt: "+18.6" },
+              { nm: "大关南五苑", meta: "已看房 · 挂牌 289 万", rt: "-2.4" },
+              { nm: "三里亭竹苑", meta: "已签约 · 385 万", rt: "+31.2" },
+            ].map((r) => (
+              <div className="mini-row" key={r.nm}>
+                <span><span className="nm">{r.nm}</span><span className="meta">{r.meta}</span></span>
+                <span className={"rt " + (r.rt.charAt(0) === "-" ? "money-neg" : "money-pos")}>{r.rt}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    /* ---- 12. 我的待办 span12 ---- */
+    case "my_todos":
+      return (
+        <div className="wg">
+          <WGHead title="我的待办" sub="scope=mine" link="待办看板" onLink={() => go("todo")} />
+          <div className="todo-rows">
+            {[
+              { nm: "采荷东区 · 客户复看", tk: "客户 沈女士 · 14:00", due: "今天", late: false },
+              { nm: "大关南五苑 · 价格复核", tk: "房东要求下调 5 万", due: "今天", late: false },
+              { nm: "三里亭竹苑 · 合同签署", tk: "附件待补", due: "明天", late: false },
+              { nm: "翠苑三区 · 首次联系", tk: "分配于 10-17", due: "逾期 1 天", late: true },
+            ].map((r) => (
+              <div className="todo-row" key={r.nm}>
+                <span>
+                  <span className="nm" style={{ display: "block" }}>{r.nm}</span>
+                  <span className="tk" style={{ display: "block" }}>{r.tk}</span>
+                </span>
+                <span className={"due" + (r.late ? " late" : "")}>{r.due}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    default:
+      return null;
+  }
+}
+/* 快捷入口列宽：角色不同条目数不同 */
+function ROLE_WHOWIDE(role) {
+  return role === "user" ? "1fr 1fr" : "1fr 1fr";
+}
+</script>
+<script type="text/babel" data-presets="react">
+/* ================================================================
+   Screen 01 · 角色化工作台  /admin
+   ================================================================ */
+function RoleSwitch({ role, setRole }) {
+  return (
+    <div className="role-switch">
+      <span className="lbl">视角</span>
+      <div className="pill-group" style={{ background: "var(--pwhite)", boxShadow: "var(--shadow-steep-sm)" }}>
+        {["admin", "operator", "user"].map((r) => (
+          <button key={r} className={role === r ? "on" : ""} onClick={() => setRole(r)}>
+            {ROLE_META[r].name}
+          </button>
+        ))}
+      </div>
+      <span className="dv-chip">VIEW · {role}</span>
+    </div>
+  );
+}
+
+function Customizer({ layouts, setLayouts, role, onClose }) {
+  const list = layouts[role];
+  const move = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= list.length) return;
+    const next = list.slice();
+    const tmp = next[i];
+    next[i] = next[j];
+    next[j] = tmp;
+    setLayouts({ ...layouts, [role]: next });
+  };
+  const toggle = (i) => {
+    const next = list.slice();
+    next[i] = { key: next[i].key, enabled: !next[i].enabled };
+    setLayouts({ ...layouts, [role]: next });
+  };
+  return (
+    <aside className="cz-panel" role="dialog" aria-label="定制工作台">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+        <div>
+          <h3>定制工作台</h3>
+          <p className="sub">显示 / 隐藏 + 上下移动。栅格宽度由 widget 注册表决定，不随布局变化。</p>
+        </div>
+        <button className="icon-btn plain" onClick={onClose} aria-label="关闭"><Icon n="x" size={15} /></button>
+      </div>
+      <div className="cz-list">
+        {list.map((w, i) => (
+          <div className={"cz-row" + (w.enabled ? "" : " dim")} key={w.key}>
+            <span className="cz-grip"><Icon n="gripV" size={13} /></span>
+            <span className="nm">{WIDGETS[w.key].label}</span>
+            <span className="sp">{WIDGETS[w.key].span === 12 ? "满宽" : WIDGETS[w.key].span + " 栏"}</span>
+            <button className="cz-mini" onClick={() => move(i, -1)} disabled={i === 0} aria-label="上移"><Icon n="chevUp" size={13} /></button>
+            <button className="cz-mini" onClick={() => move(i, 1)} disabled={i === list.length - 1} aria-label="下移"><Icon n="chevDown" size={13} /></button>
+            <Switch on={w.enabled} onChange={() => toggle(i)} label={"显示 " + WIDGETS[w.key].label} />
+          </div>
+        ))}
+      </div>
+      <div className="cz-foot">
+        <button className="btn-text sm" onClick={() => { setLayouts({ ...layouts, [role]: ROLE_LAYOUTS[role].map((k) => ({ key: k, enabled: true })) }); toast("已恢复「" + ROLE_META[role].name + "」默认布局"); }}>
+          <Icon n="reset" size={13} /> 重置
+        </button>
+        <span className="spacer"></span>
+        <span className="help">来源：个人覆盖</span>
+        <button className="btn-fill sm" onClick={() => { toast("已保存到 user_preferences · workbench.layout"); onClose(); }}>保存布局</button>
+      </div>
+    </aside>
+  );
+}
+
+function WorkbenchScreen({ role, setRole, layouts, setLayouts, czOpen, setCzOpen, go, dimmed }) {
+  const list = layouts[role];
+  const enabledKeys = list.filter((w) => w.enabled).map((w) => w.key);
+  const resolved = resolveSpans(enabledKeys);
+  const total = list.length;
+  const canCustomize = role !== "user";
+  return (
+    <div className="page" data-screen-label="01 角色工作台">
+      <PageHeader
+        title="工作台"
+        desc={
+          role === "admin" ? "欢迎回来，这是您今日的数据概览"
+            : role === "operator" ? "运营视角：业务与获客数据，资金与审计不在默认布局内"
+            : "业务员视角：只看我负责的项目与待办"
+        }
+        aside={
+          <React.Fragment>
+            <RoleSwitch role={role} setRole={setRole} />
+          </React.Fragment>
+        }
+      />
+
+      <div className="toolbar" style={{ marginTop: 0 }}>
+        <span className="help">
+          当前生效 <b style={{ color: "var(--ink)", fontWeight: 480 }}>{resolved.length}</b> / {total} 个 widget · 来源
+          <Badge cls="b-fog" >{role === "admin" ? "user_preferences" : "role 默认"}</Badge>
+        </span>
+        <span className="spacer"></span>
+        {canCustomize ? (
+          <button className="select" onClick={() => setCzOpen(!czOpen)}>
+            <span className="ic"><Icon n="sliders" size={14} /></span> 定制
+          </button>
+        ) : (
+          <span className="help" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <Icon n="lock" size={12} /> 该视角无自定义入口
+          </span>
+        )}
+      </div>
+
+      <div className="wb-grid">
+        {resolved.map(({ key, span, promoted }) => (
+          <div className={"wb" + (span === 3 ? " sp3" : span === 6 ? " sp6" : "")} key={key}>
+            <Widget k={key} role={role} onGo={go} />
+            {promoted ? (
+              <div className="help" style={{ fontSize: 11, color: "var(--dove)", paddingLeft: 4 }}>
+                ⚠️ 注册表为 6 栏，本行落单 → 渲染时自动升为满宽（不改布局 JSON）
+              </div>
+            ) : null}
+          </div>
+        ))}
+        {resolved.length === 0 ? (
+          <div className="wb">
+            <div className="wg">
+              <div className="empty">
+                <div className="pic"><Icon n="dashboard" size={22} /></div>
+                <div className="t">所有卡片已隐藏</div>
+                <div className="d">点「定制」重新打开，或点「重置」恢复默认布局</div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 02 · 消息抽屉（桌面 Popover）
+   ================================================================ */
+function DrawerScreen({ role, setRole, layouts, setLayouts, go, onClose }) {
+  const [tab, setTab] = useState("all");
+  const all = msgsFor(role);
+  const rows = (tab === "all" ? all : all.filter((m) => m.cat === tab)).slice(0, 10);
+  const unread = all.filter((m) => m.unread).length;
+  return (
+    <div className="page" data-screen-label="02 消息抽屉" style={{ position: "relative" }}>
+      {/* 背后：工作台（真实页面） */}
+      <div style={{ opacity: 0.34, filter: "saturate(.9)", pointerEvents: "none" }}>
+        <WorkbenchScreen role={role} setRole={setRole} layouts={layouts} setLayouts={setLayouts}
+          czOpen={false} setCzOpen={() => {}} go={() => {}} />
+      </div>
+
+      {/* 抽屉 */}
+      <div className="popover" role="dialog" aria-label="消息" style={{ left: 250, top: 150, bottom: "auto" }}>
+        <div className="pop-head">
+          <span className="t">消息 {unread > 0 ? <span className="b-ghost" style={{ fontSize: 11.5 }}>{unread} 条未读</span> : null}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button className="btn-text sm" onClick={() => toast("已全部标记为已读（POST /notifications/read-all）")}>
+              <Icon n="checkAll" size={13} /> 全部已读
+            </button>
+            <button className="icon-btn plain" onClick={onClose} aria-label="关闭"><Icon n="x" size={15} /></button>
+          </span>
+        </div>
+        <div className="pop-tabs">
+          {DRAWER_TABS.map((t) => {
+            const n = t.id === "all" ? all.length : all.filter((m) => m.cat === t.id).length;
+            const u = t.id === "all" ? unread : all.filter((m) => m.cat === t.id && m.unread).length;
+            if (n === 0) return null;
+            return (
+              <button key={t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>
+                {t.label}<span className="cnt">{u > 0 ? u : n}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="pop-wrap">
+        <div className="pop-body">
+          <div className="n-list">
+            {rows.map((m) => <MsgRow key={m.id} m={m} onRead={() => toast("已读：" + m.title)} />)}
+          </div>
+          {rows.length === 0 ? (
+            <div className="empty">
+              <div className="pic"><Icon n="bellOff" size={20} /></div>
+              <div className="t">该分类暂无消息</div>
+            </div>
+          ) : null}
+        </div>
+        </div>
+        <button className="n-footlink" onClick={() => go("notifications")}>
+          查看全部消息 <Icon n="arrowRight" size={13} />
+        </button>
+      </div>
+
+      {/* 设计说明标注 */}
+      <aside style={{ position: "fixed", right: 26, top: 120, width: 288, zIndex: 72, background: "var(--pwhite)", borderRadius: "var(--r-card)", boxShadow: "var(--shadow-steep)", padding: "20px 22px" }}>
+        <div className="help" style={{ letterSpacing: ".06em", color: "var(--dove)", fontSize: 10.5, marginBottom: 10 }}>DRAWER · 关键口径</div>
+        {[
+          "位置：SidebarFooter 内、折叠按钮之下、头像之上；折叠态仅图标",
+          "角标取 unread-count.total，>99 显示 99+，0 隐藏",
+          "最近 10 条 + 分类 tabs（全部/线索/获客/项目/系统）",
+          "每行右侧给出微信投递状态（已送达/跳过/失败）",
+          "已读为乐观更新，失败 mutate() 回滚",
+          "「全部已读」支持 ?category= 收敛到当前 tab",
+          "SWR 30s 轮询 + 聚焦刷新（focusThrottle 30s）",
+          "aria-label=\"消息\" / aria-live=polite 角标 / role=dialog",
+        ].map((t, i) => (
+          <div className="note-item" key={i}><span className="no">{String(i + 1).padStart(2, "0")}</span><span>{t}</span></div>
+        ))}
+      </aside>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 03 · 消息中心  /admin/notifications
+   ================================================================ */
+function NotificationsScreen({ go }) {
+  const [tab, setTab] = useState("all");
+  const [read, setRead] = useState({});
+  const cats = [
+    { id: "all", label: "全部" },
+    { id: "lead", label: "线索" },
+    { id: "growth", label: "获客" },
+    { id: "project", label: "项目" },
+    { id: "security", label: "系统" },
+  ];
+  const all = MSGS.map((m) => (read[m.id] ? { ...m, unread: false } : m));
+  const unreadTotal = all.filter((m) => m.unread).length;
+  let rows = all;
+  if (tab === "unread") rows = all.filter((m) => m.unread);
+  else if (tab !== "all") rows = all.filter((m) => m.cat === tab);
+
+  return (
+    <div className="page" data-screen-label="03 消息中心">
+      <PageHeader
+        title="消息中心"
+        desc="所有通知的唯一事实源。微信为 best-effort 渠道，失败不影响站内信。"
+        aside={
+          <React.Fragment>
+            <button className="btn-text" onClick={() => go("preferences")}>
+              <Icon n="sliders" size={14} /> 偏好设置
+            </button>
+            <button className="btn-fill" onClick={() => toast("POST /notifications/read-all → affected: 4")}>
+              <Icon n="checkAll" size={14} /> 全部已读
+            </button>
+          </React.Fragment>
+        }
+      />
+
+      <div className="toolbar" style={{ marginTop: 0 }}>
+        <div className="tabs">
+          <button className={"tab" + (tab === "all" ? " active" : "")} onClick={() => setTab("all")}>
+            全部 <span className="cnt">{all.length}</span>
+          </button>
+          <button className={"tab" + (tab === "unread" ? " active" : "")} onClick={() => setTab("unread")}>
+            未读 <span className="cnt">{unreadTotal}</span>
+          </button>
+          {cats.slice(1).map((c) => {
+            const n = all.filter((m) => m.cat === c.id).length;
+            if (!n) return null;
+            return (
+              <button key={c.id} className={"tab" + (tab === c.id ? " active" : "")} onClick={() => setTab(c.id)}>
+                {c.label} <span className="cnt">{n}</span>
+              </button>
+            );
+          })}
+        </div>
+        <span className="spacer"></span>
+        <button className="select"><span className="ic"><Icon n="filter" size={13} /></span> 优先级：全部 <Icon n="chevDown" size={13} /></button>
+        <button className="select"><span className="ic"><Icon n="clock" size={13} /></span> 近 30 天 <Icon n="chevDown" size={13} /></button>
+      </div>
+
+      <div className="card" style={{ padding: "6px 8px", maxWidth: 1180 }}>
+        <div className="n-list">
+          {rows.map((m) => (
+            <MsgRow key={m.id} m={m} onRead={(x) => { setRead({ ...read, [x.id]: true }); toast("已读：POST /notifications/" + x.id + "/read"); }} />
+          ))}
+        </div>
+        {rows.length === 0 ? (
+          <div className="empty">
+            <div className="pic"><Icon n="bellOff" size={20} /></div>
+            <div className="t">暂无消息</div>
+            <div className="d">该筛选条件下没有通知</div>
+          </div>
+        ) : null}
+        <Pagination total={128} unit=" 条" />
+      </div>
+
+      <div className="cols cols-3" style={{ marginTop: 18, maxWidth: 1180 }}>
+        <div className="card" style={{ padding: "18px 20px" }}>
+          <div className="card-title">渠道纪律</div>
+          <div className="help" style={{ marginTop: 8, lineHeight: 1.7 }}>
+            站内信先落库再发微信；任何渠道失败都不得回滚业务、不得让 API 失败（K1）。
+          </div>
+        </div>
+        <div className="card" style={{ padding: "18px 20px" }}>
+          <div className="card-title">保留策略</div>
+          <div className="help" style={{ marginTop: 8, lineHeight: 1.7 }}>
+            已读且通知创建超 180 天的收件行每日清理；未读永久保留（K9）。
+          </div>
+        </div>
+        <div className="card" style={{ padding: "18px 20px" }}>
+          <div className="card-title">隔离与幂等</div>
+          <div className="help" style={{ marginTop: 8, lineHeight: 1.7 }}>
+            所有查询 SQL 层强制 user_id = 当前用户；他人通知一律 404，不用 403（K7）。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 04 · 消息偏好  /admin/notifications/preferences
+   ================================================================ */
+function PreferencesScreen({ go }) {
+  const [prefs, setPrefs] = useState(() => {
+    const o = {};
+    PREF_ROWS.forEach((r) => {
+      o[r.cat] = { in_app: true, wechat: r.wechatOnly ? true : r.cat === "project" ? false : true };
+    });
+    return o;
+  });
+  const [wechatOk, setWechatOk] = useState(true);
+  const toggle = (cat, ch) => {
+    const row = PREF_ROWS.find((r) => r.cat === cat);
+    if (row.locked && ch === "in_app") { toast("系统与安全通知不可关闭站内信（400）"); return; }
+    if (!wechatOk && ch === "wechat") return;
+    setPrefs({ ...prefs, [cat]: { ...prefs[cat], [ch]: !prefs[cat][ch] } });
+  };
+  return (
+    <div className="page" data-screen-label="04 消息偏好">
+      <PageHeader
+        title="消息偏好"
+        desc="按「分类 × 渠道」两级开关。默认全开，与现状行为保持一致（K5）。"
+        aside={
+          <React.Fragment>
+            <button className="btn-text" onClick={() => go("notifications")}><Icon n="chevLeft" size={13} /> 返回消息中心</button>
+            <button className="btn-fill" onClick={() => toast("PUT /notifications/preferences → 200")}>保存偏好</button>
+          </React.Fragment>
+        }
+      />
+
+      <div className="banner warn" style={{ maxWidth: 1180 }}>
+        <span className="ic"><Icon n="alert" size={17} /></span>
+        <span>
+          <span className="t">微信模板缺失：6 个订阅入口中 1 个未配置</span>
+          <span className="d" style={{ display: "block" }}>
+            「新客户线索」模板未配置（status=skipped / error_code=TEMPLATE_MISSING），对应微信开关已置灰且不可打开（K18）。
+            请先在 设置 → 订阅消息模板 补齐后再回来开启。
+          </span>
+        </span>
+        <span className="spacer"></span>
+        <button className="btn-text sm" style={{ whiteSpace: "nowrap", flex: "none" }} onClick={() => setWechatOk(!wechatOk)}>
+          {wechatOk ? "演示：模拟未绑定微信" : "演示：恢复已绑定"}
+        </button>
+      </div>
+
+      {!wechatOk ? (
+        <div className="banner" style={{ maxWidth: 1180 }}>
+          <span className="ic" style={{ background: "var(--fog)", color: "var(--graphite)" }}><Icon n="mail" size={17} /></span>
+          <span>
+            <span className="t">当前账号未绑定微信</span>
+            <span className="d" style={{ display: "block" }}>微信渠道整列不可用（wechat_available=false）。请先在小程序端完成绑定。</span>
+          </span>
+        </div>
+      ) : null}
+
+      <div className="card pref-card" style={{ maxWidth: 1180 }}>
+        <table className="pref-tbl">
+          <thead>
+            <tr>
+              <th>分类</th>
+              <th className="c">站内信</th>
+              <th className="c">微信</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PREF_ROWS.map((r) => (
+              <tr key={r.cat}>
+                <td>
+                  <div className="cat">
+                    <span className="ic"><Icon n={CAT_ICON[r.cat]} size={15} /></span>
+                    {r.label}
+                    {r.locked ? <Badge cls="b-fog">不可关闭</Badge> : null}
+                  </div>
+                  <div className="why">{r.why}</div>
+                </td>
+                <td className="c">
+                  <span className="in">
+                    {r.locked ? <span className="lock" title="后端强制忽略关闭请求"><Icon n="lock" size={13} /></span> : null}
+                    <Switch on={r.locked ? true : prefs[r.cat].in_app} dis={r.locked || r.wechatOnly}
+                      onChange={() => toggle(r.cat, "in_app")} label={r.label + " 站内信"} />
+                  </span>
+                </td>
+                <td className="c">
+                  <span className="in">
+                    <Switch on={prefs[r.cat].wechat} dis={!wechatOk || r.cat === "growth"}
+                      onChange={() => toggle(r.cat, "wechat")} label={r.label + " 微信"} />
+                    {r.cat === "growth" ? (
+                      <span className="lock" title="模板未配置（TEMPLATE_MISSING），不可打开"><Icon n="lock" size={12} /></span>
+                    ) : null}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="cols cols-2" style={{ marginTop: 18, maxWidth: 1180 }}>
+        <div className="card" style={{ padding: "18px 20px" }}>
+          <div className="card-title">关闭后会发生什么</div>
+          <div className="help" style={{ marginTop: 8, lineHeight: 1.72 }}>
+            关闭某分类的站内信后，事件仍会触发、微信仍按原逻辑发送，但<b style={{ fontWeight: 480, color: "var(--ink)" }}>不产生新的收件记录</b>；
+            已产生的历史消息不受影响。
+          </div>
+        </div>
+        <div className="card" style={{ padding: "18px 20px" }}>
+          <div className="card-title">C 端事件不在本页</div>
+          <div className="help" style={{ marginTop: 8, lineHeight: 1.72 }}>
+            营销发布、营销调价、评估价变更仅落投递审计日志，不建站内信，因此不出现在偏好设置中（K6）。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 05 · 角色默认布局管理  /admin/settings/workbench
+   ================================================================ */
+function AdminLayoutScreen() {
+  const [role, setRole] = useState("admin");
+  const [order, setOrder] = useState(ROLE_LAYOUTS.admin.slice());
+  const [enabled, setEnabled] = useState(() => {
+    const o = {};
+    Object.keys(WIDGETS).forEach((k) => { o[k] = ROLE_LAYOUTS.admin.indexOf(k) >= 0; });
+    return o;
+  });
+  const [denied, setDenied] = useState(false);
+  const isUserRole = role === "user";
+
+  const move = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= order.length) return;
+    const next = order.slice();
+    const t = next[i]; next[i] = next[j]; next[j] = t;
+    setOrder(next);
+  };
+  const toggle = (k) => setEnabled({ ...enabled, [k]: !enabled[k] });
+  const visibleForPreview = order.filter((k) => enabled[k]);
+  const preview = resolveSpans(visibleForPreview);
+
+  return (
+    <div className="page" data-screen-label="05 工作台布局管理">
+      <PageHeader
+        title="工作台布局管理"
+        desc="配置三种角色的默认工作台布局。个人覆盖优先于角色默认，但任何层级都不能授予权限（K11 / K15）。"
+        aside={
+          <React.Fragment>
+            <span className="role-switch">
+              <span className="lbl">预览角色</span>
+              <div className="pill-group" style={{ background: "var(--pwhite)", boxShadow: "var(--shadow-steep-sm)" }}>
+                {["admin", "operator", "user"].map((r) => (
+                  <button key={r} className={role === r ? "on" : ""} onClick={() => setRole(r)}>{ROLE_META[r].name}</button>
+                ))}
+              </div>
+            </span>
+            <button className="btn-fill" onClick={() => toast("PUT /admin/workbench/role-layouts → 已写入 operation_logs")}>
+              <Icon n="check" size={14} /> 保存为角色默认
+            </button>
+          </React.Fragment>
+        }
+      />
+
+      {denied ? <ForbiddenCard onBack={() => setDenied(false)} /> : null}
+      {!denied ? (
+        <React.Fragment>
+          <div className="lay-grid">
+            {/* 左：可分配 widget 列表 */}
+            <div className="card" style={{ padding: "8px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 8px 10px" }}>
+                <span className="card-title">{ROLE_META[role].name}默认布局</span>
+                <Badge cls="b-fog">{visibleForPreview.length} / {order.length}</Badge>
+                <span className="spacer"></span>
+                <span className="help">拖拽排序（本期只做上移/下移）</span>
+              </div>
+              {order.map((k, i) => {
+                const w = WIDGETS[k];
+                const on = enabled[k];
+                return (
+                  <div className={"lay-row" + (on ? "" : " dim")} key={k}>
+                    <span className="ord tnum">{String((i + 1) * 10).padStart(2, "0")}</span>
+                    <span className="cz-grip"><Icon n="gripV" size={13} /></span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span className="nm" style={{ display: "block" }}>{w.label}</span>
+                      <span className="meta">
+                        <Icon n="key" size={11} /> {w.perm}
+                        <span style={{ color: "var(--dove)" }}>·</span> {w.span === 12 ? "满宽" : w.span + " 栏"}
+                      </span>
+                    </span>
+                    <span className="ctrls">
+                      <button className="cz-mini" onClick={() => move(i, -1)} disabled={i === 0} aria-label="上移"><Icon n="chevUp" size={13} /></button>
+                      <button className="cz-mini" onClick={() => move(i, 1)} disabled={i === order.length - 1} aria-label="下移"><Icon n="chevDown" size={13} /></button>
+                      <Switch on={on} onChange={() => toggle(k)} label={"启用 " + w.label} />
+                    </span>
+                  </div>
+                );
+              })}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 8px 10px", borderTop: "1px solid rgba(163,166,175,.25)", marginTop: 6 }}>
+                <button className="btn-text sm" onClick={() => { setOrder(ROLE_LAYOUTS.admin.slice()); toast("已恢复 admin 默认布局"); }}>
+                  <Icon n="reset" size={13} /> 重置为默认
+                </button>
+                <span className="spacer"></span>
+                <button className="btn-text sm" onClick={() => setDenied(true)} style={{ color: "var(--graphite)" }}>
+                  演示：无 workbench:manage 访问
+                </button>
+              </div>
+            </div>
+
+            {/* 右：预览 + 规则 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div className="card" style={{ padding: "20px 20px 18px" }}>
+                <div className="wg-head" style={{ marginBottom: 14 }}>
+                  <span className="card-title">实时预览</span>
+                  <span className="help">12 栏栅格</span>
+                </div>
+                <div className="preview">
+                  {preview.map(({ key, span }) => (
+                    <div key={key} className={"pv" + (key === "alert_card" ? " warm" : "")} style={{ gridColumn: "span " + span }}>
+                      {WIDGETS[key].label}
+                    </div>
+                  ))}
+                  {preview.length === 0 ? (
+                    <div className="pv off" style={{ gridColumn: "span 12" }}>未启用任何卡片</div>
+                  ) : null}
+                </div>
+                <div className="help" style={{ marginTop: 12, lineHeight: 1.65 }}>
+                  {role === "user" ? "业务员默认只有 3 个 widget：快捷入口 + 我负责的项目 + 我的待办。" : null}
+                  {role === "operator" ? "获客总览在本角色落单，自动升为满宽；资金与审计对运营不可见。" : null}
+                  {role === "admin" ? "资金概览与获客总览成对；审计概览落单升满宽。" : null}
+                </div>
+              </div>
+
+              <div className="card" style={{ padding: "20px" }}>
+                <div className="card-title">布局来源优先级</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+                  {[
+                    { n: "1", t: "个人覆盖", d: "user_preferences · workbench.layout", on: false },
+                    { n: "2", t: "角色默认", d: "system_configs · workbench_role_layouts", on: true },
+                    { n: "3", t: "代码兜底", d: "WORKBENCH_ROLE_DEFAULTS", on: false },
+                  ].map((s) => (
+                    <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span className="badge" style={{ background: s.on ? "var(--ink)" : "var(--fog)", color: s.on ? "#fff" : "var(--graphite)", minWidth: 22, justifyContent: "center", padding: "2px 8px" }}>{s.n}</span>
+                      <span style={{ flex: 1 }}>
+                        <span style={{ fontSize: 13.5, fontWeight: 450, display: "block" }}>{s.t}</span>
+                        <span className="help mono" style={{ fontSize: 11.5 }}>{s.d}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="help" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(163,166,175,.22)", lineHeight: 1.7 }}>
+                  三级都必须过权限过滤；布局中出现无权限或未注册的 widget 时，后端剔除并 logger.warning，不报错（K15 / K16）。
+                </div>
+              </div>
+            </div>
+          </div>
+        </React.Fragment>
+      ) : null}
+    </div>
+  );
+}
+
+function ForbiddenCard({ onBack }) {
+  return (
+    <div className="card" style={{ maxWidth: 720, margin: "40px auto" }}>
+      <div className="forbidden">
+        <div className="empty" style={{ padding: 0 }}>
+          <div className="pic" style={{ background: "var(--apricot)", color: "var(--rust)" }}><Icon n="lock" size={22} /></div>
+          <div className="t">没有访问权限</div>
+          <div className="d">访问工作台布局管理需要 workbench:manage 权限（仅管理员）。<br />当前账号无此权限，后端返回 403。</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 22 }}>
+          <button className="btn-fill sm" onClick={onBack}>返回预览</button>
+          <button className="btn-text sm" onClick={() => toast("设计稿演示：路由守卫 hasPathPermission 命中 workbench:manage")}>查看权限映射</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+</script>
+<script type="text/babel" data-presets="react">
+/* ================================================================
+   Screen 06 · 规范：事件字典 / widget 矩阵 / 组件状态
+   ================================================================ */
+function SpecScreen() {
+  return (
+    <div className="page" data-screen-label="06 规范">
+      <PageHeader
+        title="规范"
+        desc="事件字典、widget 注册表、组件状态与设计稿相对 SPEC 的补充口径。"
+        aside={<span className="dv-chip">iter2-notify-workbench</span>}
+      />
+
+      {/* ---- 事件字典 ---- */}
+      <div className="spec-sec" style={{ marginTop: 0 }}>
+        <div className="spec-h"><h2>事件字典</h2><span className="n">12 / EVENT_SPECS</span></div>
+        <div className="card tbl-card">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th style={{ width: 34 }}>#</th>
+                <th>event type</th>
+                <th>category</th>
+                <th>收件人</th>
+                <th>渠道</th>
+                <th>dedupe_key</th>
+                <th>本期状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {EVENTS.map((e) => (
+                <tr key={e.n}>
+                  <td className="tnum" style={{ color: "var(--dove)" }}>{String(e.n).padStart(2, "0")}</td>
+                  <td className="mono cell-main">{e.type}</td>
+                  <td><Badge cls={e.kind === "ui" ? "b-sky" : "b-fog"}>{CAT_LABEL[e.cat]}</Badge></td>
+                  <td style={{ color: "var(--ash)" }}>{e.to}</td>
+                  <td style={{ color: "var(--graphite)", fontSize: 12.5 }}>{e.ch}</td>
+                  <td className="mono" style={{ color: "var(--graphite)", fontSize: 11.5 }}>{e.dk}</td>
+                  <td>
+                    {e.kind === "ui" ? <Badge cls="b-outline">MVP 有 UI</Badge>
+                      : e.kind === "audit" ? <Badge cls="b-fog">仅审计日志</Badge>
+                      : <Badge cls="b-apricot">⚠️ 触发点延后</Badge>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ---- widget 矩阵 ---- */}
+      <div className="spec-sec">
+        <div className="spec-h"><h2>Widget 注册表</h2><span className="n">12 / WORKBENCH_WIDGETS</span></div>
+        <div className="card tbl-card">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>key</th>
+                <th>label</th>
+                <th>权限</th>
+                <th className="num">span</th>
+                <th style={{ textAlign: "center", width: 68 }}>admin</th>
+                <th style={{ textAlign: "center", width: 86 }}>operator</th>
+                <th style={{ textAlign: "center", width: 62 }}>user</th>
+                <th>数据源</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.keys(WIDGETS).map((k) => {
+                const w = WIDGETS[k];
+                const cell = (on) => (
+                  <td style={{ textAlign: "center" }}>
+                    {on ? <span style={{ color: "var(--ink)", fontWeight: 500 }}>✓</span> : <span style={{ color: "var(--dove)" }}>—</span>}
+                  </td>
+                );
+                return (
+                  <tr key={k}>
+                    <td className="mono cell-main">{k}</td>
+                    <td>{w.label}</td>
+                    <td className="mono" style={{ color: "var(--graphite)", fontSize: 11.5 }}>{w.perm}</td>
+                    <td className="num">{w.span === 12 ? "12" : w.span}</td>
+                    {cell(w.roles.indexOf("admin") >= 0)}
+                    {cell(w.roles.indexOf("operator") >= 0)}
+                    {cell(w.roles.indexOf("user") >= 0)}
+                    <td style={{ color: "var(--graphite)", fontSize: 12 }}>{w.desc}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="tbl-foot" style={{ justifyContent: "flex-start", gap: 18 }}>
+            <span>默认可见数：admin <b style={{ color: "var(--rust)" }}>10</b> · operator <b style={{ color: "var(--rust)" }}>8</b> · user <b style={{ color: "var(--rust)" }}>3</b></span>
+            <span style={{ color: "var(--rust)" }}>⚠️ SPEC 同节文字写 operator 7，与上表 8 冲突，本稿按表渲染</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ---- 组件状态 ---- */}
+      <div className="spec-sec">
+        <div className="spec-h"><h2>组件状态</h2><span className="n">bell / row / skeleton / empty / forbidden</span></div>
+        <div className="state-grid">
+          {/* 1 角标 */}
+          <div className="state-cell">
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 22 }}>
+              <div className="bell-demo">
+                <Icon n="bell" size={18} />
+                <span className="bell-badge">8</span>
+              </div>
+              <div className="bell-demo">
+                <Icon n="bell" size={18} />
+                <span className="bell-badge">99+</span>
+              </div>
+              <div className="bell-demo">
+                <Icon n="bell" size={18} />
+                <span className="bell-badge zero">0</span>
+              </div>
+            </div>
+            <div className="cap">角标 8 / 99+ / 0（0 时不渲染）</div>
+          </div>
+          {/* 2 消息行 */}
+          <div className="state-cell" style={{ padding: "8px 10px" }}>
+            <div className="n-list">
+              <MsgRow m={{ ...MSGS[0], unread: true }} />
+              <MsgRow m={{ ...MSGS[4], unread: false }} />
+            </div>
+            <div className="cap" style={{ padding: "0 8px" }}>未读（实心底 + 圆点） / 已读（降权）</div>
+          </div>
+          {/* 3 Skeleton */}
+          <div className="state-cell">
+            <div className="wg" style={{ boxShadow: "none", background: "var(--fog)", padding: 16 }}>
+              <div className="sk" style={{ width: 84, height: 13 }}></div>
+              <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div className="sk" style={{ width: "60%", height: 9 }}></div>
+                  <div className="sk" style={{ width: "78%", height: 20, marginTop: 8 }}></div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="sk" style={{ width: "60%", height: 9 }}></div>
+                  <div className="sk" style={{ width: "66%", height: 20, marginTop: 8 }}></div>
+                </div>
+              </div>
+            </div>
+            <div className="cap">WidgetSkeleton · 每个 widget 独立 Suspense</div>
+          </div>
+          {/* 4 空态 */}
+          <div className="state-cell">
+            <div className="empty" style={{ padding: "18px 0 6px" }}>
+              <div className="pic"><Icon n="bellOff" size={20} /></div>
+              <div className="t">暂无消息</div>
+              <div className="d">有新的线索或告警时会出现在这里</div>
+            </div>
+            <div className="cap">空态（复用 ui/empty 语义，不新增视觉）</div>
+          </div>
+        </div>
+
+        <div className="state-grid" style={{ marginTop: 18 }}>
+          {/* 5 投递状态 */}
+          <div className="state-cell">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <span className="n-deliv ok"><i className="d"></i>微信已送达</span>
+              <span className="n-deliv"><i className="d"></i>微信跳过：模板未配置</span>
+              <span className="n-deliv fail"><i className="d"></i>微信失败：用户未绑定 openid</span>
+            </div>
+            <div className="cap">投递状态点：绿=送达 / 灰=跳过 / Rust=失败</div>
+          </div>
+          {/* 6 锁定开关 */}
+          <div className="state-cell">
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <span className="lock"><Icon n="lock" size={13} /></span>
+              <Switch on dis />
+              <Switch on={false} dis />
+              <Switch on />
+            </div>
+            <div className="cap">锁定（system/security） / 禁用（渠道不可用） / 正常</div>
+          </div>
+          {/* 7 toast */}
+          <div className="state-cell">
+            <span className="badge b-ink" style={{ padding: "9px 18px", fontSize: 13 }}>已保存到 user_preferences</span>
+            <div className="cap">操作反馈 Toast（in-page，非产品组件）</div>
+          </div>
+          {/* 8 403 */}
+          <div className="state-cell">
+            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+              <span style={{ width: 34, height: 34, borderRadius: 11, background: "var(--apricot)", color: "var(--rust)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                <Icon n="lock" size={16} />
+              </span>
+              <span>
+                <span style={{ fontSize: 13.5, fontWeight: 480, display: "block" }}>缺少 workbench:manage</span>
+                <span className="help">路由守卫 403 / 重定向</span>
+              </span>
+            </div>
+            <div className="cap">无权限态（B3：/admin/settings/workbench 必须在 /admin/settings 之前）</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ---- 补充口径 ---- */}
+      <div className="spec-sec">
+        <div className="spec-h"><h2>相对 SPEC 的补充与冲突</h2><span className="n">Fail Loud</span></div>
+        <div className="cols cols-2">
+          <div className="card" style={{ padding: "20px 22px" }}>
+            <div className="card-title" style={{ marginBottom: 12 }}>本稿新增的设计决策</div>
+            {[
+              "6 栏孤儿卡自动升满宽：admin 的 audit_summary、operator 的 growth_overview 落单时占 12 栏，避免栅格空洞（渲染期计算，不改布局 JSON 的 key/order/enabled）。",
+              "消息行右侧常驻微信投递状态点（绿/灰/Rust），把 K18 的 TEMPLATE_MISSING 从日志搬到用户可见处。",
+              "抽屉分类 tabs 只渲染有消息的分类，避免空 tab。",
+              "偏好页顶部横幅直接指出「6 个入口中 1 个模板缺失」，并把补模板的入口做成跳转。",
+              "工作台页面头部显示「当前生效 N / 总数 · 来源」，让 K11 的三级 fallback 对用户可见。",
+            ].map((t, i) => (
+              <div className="note-item" key={i}><span className="no">{String(i + 1).padStart(2, "0")}</span><span>{t}</span></div>
+            ))}
+          </div>
+          <div className="card" style={{ padding: "20px 22px" }}>
+            <div className="card-title" style={{ marginBottom: 12 }}>⚠️ 未覆盖 / 待确认</div>
+            {[
+              "operator 可见 widget：SPEC §4.7 表为 8 个，同节文字写「operator 7」。本稿按表 8 个渲染，需产品确认。",
+              "事件 #6/#7/#8 本期不接触发点，仅登记 EventSpec——因此 UI 上没有「项目状态变更」「待办到期」「分享被查看」的真实消息样例。",
+              "移动端未覆盖（本次仅桌面 1440+）：SPEC §12-4 的 header 铃铛落位与 Sheet 抽屉仍需 T2.8 确认。",
+              "消息中心未新增侧边栏菜单项（K10）：只能经铃铛 → 查看全部进入，可发现性依赖角标。",
+              "alert_card 仍沿用 lead:write（SPEC §12-2），若产品要求 operator 也能看需改权限口径。",
+              "audit_summary 数据源是 GET /api/v1/operation-logs，但跳转目标必须是 /admin/audit-logs（SPEC §12-3），实现时核对一次。",
+            ].map((t, i) => (
+              <div className="note-item warn" key={i}><span className="no">⚠️</span><span>{t}</span></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen bar（设计稿控件，非产品 UI）
+   ================================================================ */
+const SCREENS = [
+  { id: "dashboard", n: "01", label: "角色工作台" },
+  { id: "drawer", n: "02", label: "消息抽屉" },
+  { id: "notifications", n: "03", label: "消息中心" },
+  { id: "preferences", n: "04", label: "消息偏好" },
+  { id: "layout", n: "05", label: "工作台布局管理" },
+  { id: "spec", n: "06", label: "规范" },
+];
+
+/* ================================================================
+   设计说明面板
+   ================================================================ */
+const NOTES = [
+  ["01", "视觉严格遵循 /DESIGN.md：Fog 侧栏 240px 无描边、24px 圆角卡 + 三层签名阴影、Ink #17191c 唯一填充按钮、Rust 只作暖强调、状态一律单色洗底药丸。"],
+  ["02", "页头 h1 用 Signifier 44px（Source Serif 4），副标题 15px Graphite；正文 Sohne 替代 Inter，字距 -0.009em。"],
+  ["03", "铃铛落在 SidebarFooter 内、折叠按钮之下、头像之上；折叠态只留图标（本稿桌面展开态）。角标 Ink 实底，>99 显示 99+，0 时不渲染。"],
+  ["04", "工作台用 12 栏栅格，span 由注册表决定；每张卡独立 Suspense，禁止顶层串行 await（C9 / A11）。"],
+  ["05", "视角切换器是设计稿控件：admin 10 / operator 8 / user 3，切换即换布局并换侧边栏菜单可见性。"],
+  ["06", "定制器只做「显示/隐藏 + 上移下移 + 重置」，不做拖拽自由布局（Out of Scope），并显示来源=个人覆盖。"],
+  ["07", "消息中心与抽屉共用同一套消息行组件；未读=实心底+圆点，已读降权为 430 字重 + Ash 色。"],
+  ["08", "偏好页把 K5/K18 变成可见规则：system/security 加锁图标 + 不可关闭徽章；模板缺失的微信开关置灰并给补链。"],
+  ["09", "布局管理页含实时 12 栏预览与「来源优先级」说明，让 K11/K15/K16 对管理员可解释。"],
+  ["10", "规范屏把 12 条事件字典与 12 个 widget 矩阵摆成可核对表，并把本稿对 SPEC 的补充与冲突单列（Fail Loud）。"],
+];
+function NotesPanel() {
+  const [show, setShow] = useState(false);
+  return (
+    <React.Fragment>
+      <button className="notes-fab" onClick={() => setShow(!show)} title="设计说明">{show ? "✕" : "注"}</button>
+      {show ? (
+        <div className="notes-panel">
+          <h3>设计说明</h3>
+          <p className="sub">迭代二 · 统一消息中心 + 角色化工作台 · 相对 SPEC 的 10 个设计决策</p>
+          {NOTES.map(([no, txt]) => (
+            <div className="note-item" key={no}><span className="no">{no}</span><span>{txt}</span></div>
+          ))}
+        </div>
+      ) : null}
+    </React.Fragment>
+  );
+}
+
+/* ================================================================
+   App
+   ================================================================ */
+function App() {
+  const [route, setRoute] = useState("dashboard");
+  const [role, setRole] = useState("admin");
+  const [czOpen, setCzOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState(null);
+  const timer = useRef(null);
+
+  const [layouts, setLayouts] = useState(() => {
+    const o = {};
+    Object.keys(ROLE_LAYOUTS).forEach((r) => {
+      o[r] = ROLE_LAYOUTS[r].map((k) => ({ key: k, enabled: true }));
+    });
+    return o;
+  });
+
+  useEffect(() => {
+    const h = (e) => {
+      setToastMsg(e.detail);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setToastMsg(null), 2400);
+    };
+    window.addEventListener("d-toast", h);
+    return () => window.removeEventListener("d-toast", h);
+  }, []);
+
+  /* 侧边栏导航：仅本稿覆盖的路由可达，其余给说明 toast */
+  const onNavigate = (id) => {
+    if (id === "dashboard") { setRoute("dashboard"); return; }
+    if (id === "settings") {
+      if (role === "admin") setRoute("layout");
+      else toast("设计稿演示：运营账号无 workbench:manage");
+      return;
+    }
+    if (id === "audit" && role === "admin") { toast("设计稿演示：/admin/audit-logs 不在本次设计范围"); return; }
+    toast("设计稿演示：「" + (ROLE_META[role].name) + "」视角 · 该模块不在本次设计范围");
+  };
+
+  const toggleBell = () => setRoute(route === "drawer" ? "dashboard" : "drawer");
+
+  const screens = {
+    dashboard: (
+      <WorkbenchScreen
+        role={role} setRole={setRole} layouts={layouts} setLayouts={setLayouts}
+        czOpen={czOpen} setCzOpen={setCzOpen} go={onNavigate}
+      />
+    ),
+    drawer: (
+      <DrawerScreen
+        role={role} setRole={setRole} layouts={layouts} setLayouts={setLayouts}
+        go={() => setRoute("notifications")} onClose={() => setRoute("dashboard")}
+      />
+    ),
+    notifications: <NotificationsScreen go={(id) => setRoute(id === "preferences" ? "preferences" : "dashboard")} />,
+    preferences: <PreferencesScreen go={() => setRoute("notifications")} />,
+    layout: <AdminLayoutScreen />,
+    spec: <SpecScreen />,
+  };
+
+  return (
+    <div className="app">
+      <Sidebar
+        route={route === "drawer" ? "dashboard" : route === "layout" ? "settings" : route}
+        go={() => {}}
+        role={role}
+        bellOpen={route === "drawer"}
+        toggleBell={toggleBell}
+        onNavigate={onNavigate}
+      />
+      <main className="main">{screens[route] || screens.dashboard}</main>
+
+      {czOpen && route === "dashboard" ? (
+        <Customizer layouts={layouts} setLayouts={setLayouts} role={role} onClose={() => setCzOpen(false)} />
+      ) : null}
+
+      <NotesPanel />
+
+      <div className="scr-bar" role="navigation" aria-label="设计稿屏幕导航">
+        <span className="lbl">设计稿 · 6 屏</span>
+        {SCREENS.map((s) => (
+          <button key={s.id} className={route === s.id ? "on" : ""} onClick={() => { setRoute(s.id); setCzOpen(false); }}>
+            {s.n} {s.label}
+          </button>
+        ))}
+      </div>
+
+      {toastMsg ? <div className="toast">{toastMsg}</div> : null}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

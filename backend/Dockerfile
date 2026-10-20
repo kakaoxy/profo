@@ -26,6 +26,14 @@ FROM python:3.13-slim AS runner
 
 WORKDIR /app
 
+# 迁移前备份（迭代一 K9 / D-03）：启动迁移用 pg_dump 做「版本粒度 + 单表可恢复」备份。
+# 固定大版本：Debian trixie 自带 postgresql-client 17，可 dump PG16 server
+# （pg_dump 向后兼容：client 大版本 >= server 即可）。--no-install-recommends 控制体积（~+20MB）。
+# 复用同一层安装后立刻清理 apt 缓存，避免镜像膨胀。
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy the virtualenv and application source from the builder.
 COPY --from=builder /app /app
 
@@ -35,7 +43,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1
 
 # Create the uploads volume mount point (mounted at runtime via docker-compose).
-RUN mkdir -p /app/static/uploads
+# 同时创建迁移备份目录（compose 挂载 ./backups:/app/backups，见 MIGRATION_BACKUP_DIR）
+RUN mkdir -p /app/static/uploads /app/backups/migrations
 
 # Run as non-root user for security (prevents container escape via RCE from gaining root).
 RUN addgroup --system --gid 1001 app && adduser --system --uid 1001 app

@@ -3,8 +3,9 @@
 > **状态**：实施依据（S2）｜撰写 2026-10-17｜module id：`iter2-notify-workbench`
 > **上游**：`docs/To-Do/2026-10-17-三迭代-SPEC-index.md`（C1–C9、D-04/D-05/D-06）
 > **计划稿**：`docs/To-Do/2026-10-17-后续三迭代计划.md` §4
-> **强依赖**：迭代一（新表必须登记 `version=81+` 并带 backup/reversible/risk 元数据）
-> **纠偏**：总纲 §1 的 B3（`PATH_PERMISSION_MAP` 非自动排序）、B7（`todo-board` 无 `scope` 参数，需后端新增）
+> **强依赖**：迭代一（新表必须登记 `version=83+` 并带 backup/reversible/risk 元数据）
+> **纠偏**：总纲 §1 的 B3（`PATH_PERMISSION_MAP` 非自动排序）、B7（`todo-board` 无 `scope` 参数，
+> 需后端新增）、**B8（迭代一实测收尾于 v82，原规划的 v81/v82/v83 全部顺延为 v83/v84/v85）**
 
 ---
 
@@ -92,11 +93,11 @@
 
 ## 4. 设计
 
-### 4.1 数据模型（迁移 v81 / v82）
+### 4.1 数据模型（迁移 v83 / v84）
 
 > **DDL 必须与 ORM 逐列一致**（迭代一 `test_migration_model_parity` 强制）。下列 DDL 为 `notifications` 用 `BaseModel`（UUID + created_at + updated_at）、另两表用 `Base` + BIGSERIAL。
 
-#### v81 `create_notification_tables`（kind=schema, risk=A, backup=none, reversible=true）
+#### v83 `create_notification_tables`（kind=schema, risk=A, backup=none, reversible=true）
 
 ```sql
 CREATE TABLE IF NOT EXISTS notifications (
@@ -156,7 +157,7 @@ CREATE INDEX IF NOT EXISTS idx_notification_delivery_logs_created
 
 > **C 端事件**（K6）没有 `notifications` 行 → `notification_delivery_logs.notification_id` 允许指向「审计占位通知」存在吗？**不允许**破坏逻辑。C 端审计复用同一表但 `notification_id` 用 `uuid4()` 值 + `status` 记录，注释写明「C 端审计专用，无对应 notifications 行」。这是本表唯一逻辑外键例外，实现时必须写注释。
 
-#### v82 `create_user_preferences_table`（kind=schema, risk=A, backup=none, reversible=true）
+#### v84 `create_user_preferences_table`（kind=schema, risk=A, backup=none, reversible=true）
 
 ```sql
 CREATE TABLE IF NOT EXISTS user_preferences (
@@ -170,7 +171,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 );
 ```
 
-#### v83 `seed_workbench_manage_permission`（kind=seed, risk=B, backup=none, reversible=false）
+#### v85 `seed_workbench_manage_permission`（kind=seed, risk=B, backup=none, reversible=false）
 
 幂等插入权限点（`_PERMISSIONS_SEED` 追加 + 迁移内 `WHERE NOT EXISTS`）：
 
@@ -221,13 +222,13 @@ backend/services/notification/cleanup.py             # 保留策略清理
 backend/services/system/workbench_layout.py          # 角色默认 + 用户覆盖 + 权限过滤
 backend/routers/notification.py
 backend/routers/workbench.py
-backend/migrations/notification_tables.py            # v81/v82/v83 的实现（由 registry 登记）
+backend/migrations/notification_tables.py            # v83/v84/v85 的实现（由 registry 登记）
 ```
 
 **后端修改**
 
 ```
-backend/migrations/registry.py                        # 追加 v81/v82/v83
+backend/migrations/registry.py                        # 追加 v83/v84/v85（从 NEXT_VERSION 起）
 backend/migrations/_seeds.py                          # 追加 workbench:manage
 backend/models/__init__.py / models/user/__init__.py  # 导出
 backend/main.py                                       # 挂载 2 个 router + 清理守护线程
@@ -566,7 +567,7 @@ def notify_new_customer_lead(db: Session, *, module: str, lead_id: int | str, re
 
 | 任务 | 内容 | 估算 | 验证点 |
 |------|------|:----:|--------|
-| **T2.1** | 迁移 v81/v82/v83 + 4 模型 + 索引 + 权限种子 | 2d | parity 测试绿；`manage status` 见 83；连跑两次幂等 |
+| **T2.1** | 迁移 v83/v84/v85 + 4 模型 + 索引 + 权限种子 | 2d | parity 测试绿；`manage status` 见 85；连跑两次幂等 |
 | **T2.2** | `EventSpec` 12 条 + `resolve_recipients` + 偏好模块 | 2d | 单测：audience 空→ValueError；role/permission 解析去重 |
 | **T2.3** | `NotificationService.emit` + 去重 + 站内信 + delivery_logs | 2d | 单测：重复 dedupe 只 1 条；微信失败不影响站内信 |
 | **T2.4** | 6 个消息 API + schemas | 2d | 单测：跨用户 404；已读幂等；read-all 计数 |
@@ -698,7 +699,7 @@ cd backend && .venv/bin/python tests/e2e/test_wechat_notify_smoke.py
 
 ## 11. 交付物
 
-- 迁移 v81/v82/v83 + 4 模型 + 13 个后端新文件（§4.3）
+- 迁移 v83/v84/v85 + 4 模型 + 13 个后端新文件（§4.3）
 - 6 + 5 = 11 个 API 端点 + `todo-board?scope=mine`
 - 前端 13 个新文件 + `page.tsx` 重构 + `permissions.ts` 映射
 - 4 个后端单测 + 1 个 E2E + 1 个冒烟脚本 + 2 个 Playwright spec
