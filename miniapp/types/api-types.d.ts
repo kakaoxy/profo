@@ -483,6 +483,29 @@ export interface paths {
         patch: operations["patch_dict_community_api_v1_admin_building_dictionary_communities__community_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/building-dictionary/communities/{community_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename Dict Community
+         * @description 修正小区名（BR-29：全库唯一 409 + 旧名沉淀别名 + 审计）.
+         *
+         *     独立于画像 PATCH：改名需全库唯一校验与别名沉淀，且影响面（搜索命中）比画像大。
+         *     路径带 ``/rename`` 而非并入 PATCH，避免前端「编辑资料」整表单提交时误改名称。
+         */
+        patch: operations["rename_dict_community_api_v1_admin_building_dictionary_communities__community_id__rename_patch"];
+        trace?: never;
+    };
     "/api/v1/admin/building-dictionary/communities/{community_id}/buildings": {
         parameters: {
             query?: never;
@@ -528,7 +551,11 @@ export interface paths {
         delete: operations["delete_dict_building_api_v1_admin_building_dictionary_buildings__building_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Rename Dict Building
+         * @description 修正楼栋号（BR-29：uq 409 + 自动量词归一 + 撞同名待审自动转正 + 审计）.
+         */
+        patch: operations["rename_dict_building_api_v1_admin_building_dictionary_buildings__building_id__patch"];
         trace?: never;
     };
     "/api/v1/admin/building-dictionary/buildings/{building_id}/floors": {
@@ -628,7 +655,11 @@ export interface paths {
         delete: operations["delete_dict_room_api_v1_admin_building_dictionary_buildings__building_id__rooms__room_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Rename Dict Room
+         * @description 修正户室号（BR-29：uq 409 + 楼层重算 + 撞同名待审自动转正 + 审计）.
+         */
+        patch: operations["rename_dict_room_api_v1_admin_building_dictionary_buildings__building_id__rooms__room_id__patch"];
         trace?: never;
     };
     "/api/v1/admin/building-dictionary/review": {
@@ -6546,6 +6577,19 @@ export interface components {
             items: components["schemas"]["BdBuildingListItem"][];
         };
         /**
+         * BdBuildingRenameRequest
+         * @description 修正楼栋号请求（admin 即时生效 + 审计）.
+         *
+         *     楼栋号会做量词归一（尾部单个「号」剥离），提交「21号」与「21」等价。
+         */
+        BdBuildingRenameRequest: {
+            /**
+             * Building No
+             * @description 修正后的楼栋号（尾部单个「号」会被自动剥离，原样存储其余字符）
+             */
+            building_no: string;
+        };
+        /**
          * BdCommunityCreateRequest
          * @description admin 新增小区请求（FR-07：名/区/板块必填，重名拦截）.
          */
@@ -6742,6 +6786,17 @@ export interface components {
              * @description 纬度(BD-09，中国境内 3~54)
              */
             lat?: number | null;
+        };
+        /**
+         * BdCommunityRenameRequest
+         * @description 修正小区名请求（admin 即时生效 + 审计 + 旧名沉淀别名）.
+         */
+        BdCommunityRenameRequest: {
+            /**
+             * Name
+             * @description 修正后的小区名（全库唯一）
+             */
+            name: string;
         };
         /**
          * BdDeleteResult
@@ -6970,6 +7025,25 @@ export interface components {
             reused: boolean;
         };
         /**
+         * BdRenameResult
+         * @description 名称修正结果（楼栋/户室/小区通用）.
+         */
+        BdRenameResult: {
+            /** Success */
+            success: boolean;
+            /** Message */
+            message: string;
+            /** Old Name */
+            old_name: string;
+            /** New Name */
+            new_name: string;
+            /**
+             * Promoted Pending
+             * @default 0
+             */
+            promoted_pending: number;
+        };
+        /**
          * BdReviewKpi
          * @description 审核池 KPI（FR-11）.
          */
@@ -7068,6 +7142,16 @@ export interface components {
              * @description 目标ID(merge 必填；reject 录入端来源必填)
              */
             target_id?: string | null;
+            /**
+             * Name
+             * @description 修正后的提交内容名称（仅 create 生效，不传=沿用原文；楼栋号会自动剥离尾部单个「号」）
+             */
+            name?: string | null;
+            /**
+             * Target Kind
+             * @description 目标来源：dict=字典实表（默认）/ pending=审核池待审兄弟条目（仅 merge）
+             */
+            target_kind?: string | null;
         };
         /**
          * BdReviewResolveResponse
@@ -7083,6 +7167,16 @@ export interface components {
              * @default 0
              */
             backfill_enqueued: number;
+            /**
+             * Resolved Name
+             * @description 实际写入字典的名称（create 才有值）
+             */
+            resolved_name?: string | null;
+            /**
+             * Name Normalized From
+             * @description 归一前的输入原文（归一前后有差异才返回，供前端/脚本核对）
+             */
+            name_normalized_from?: string | null;
         };
         /**
          * BdReviewerRolesRequest
@@ -7141,6 +7235,17 @@ export interface components {
             pending_id?: number | null;
             /** Plate No */
             plate_no: string;
+        };
+        /**
+         * BdRoomRenameRequest
+         * @description 修正户室号请求（admin 即时生效 + 审计）.
+         */
+        BdRoomRenameRequest: {
+            /**
+             * Room No
+             * @description 修正后的户室号（如 0401 / 0233-1）
+             */
+            room_no: string;
         };
         /**
          * BizDictGroupResponse
@@ -20441,6 +20546,42 @@ export interface operations {
             };
         };
     };
+    rename_dict_community_api_v1_admin_building_dictionary_communities__community_id__rename_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdCommunityRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdRenameResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_dict_buildings_api_v1_admin_building_dictionary_communities__community_id__buildings_get: {
         parameters: {
             query?: {
@@ -20540,6 +20681,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BdDeleteResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_dict_building_api_v1_admin_building_dictionary_buildings__building_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdBuildingRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdRenameResult"];
                 };
             };
             /** @description Validation Error */
@@ -20709,6 +20886,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BdDeleteResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_dict_room_api_v1_admin_building_dictionary_buildings__building_id__rooms__room_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+                /** @description 户室ID */
+                room_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BdRoomRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdRenameResult"];
                 };
             };
             /** @description Validation Error */

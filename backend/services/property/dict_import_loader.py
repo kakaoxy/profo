@@ -41,7 +41,7 @@ from sqlalchemy.orm import Session
 
 from models import BdImportTask, ImportTaskStatus
 from services.property.dict_parser import ParsedCommunity, open_decoded_text, parse_community_txt_stream
-from utils.building_dict import parse_room_floor
+from utils.building_dict import normalize_building_no, parse_room_floor
 
 logger = logging.getLogger(__name__)
 
@@ -398,7 +398,11 @@ def load_community_by_copy(
         first_coords: dict[str, tuple[float | None, float | None]] = {}
         building_nos: list[str] = []
         seen_buildings: set[str] = set()
-        for building_no, _room_no, r_lng, r_lat in _iter_room_rows(room_rows, rooms_csv_path):
+        for raw_building_no, _room_no, r_lng, r_lat in _iter_room_rows(room_rows, rooms_csv_path):
+            # BR-29 量词归一：导入原文「21号」落库为「21」（展示层后缀感知补回）。
+            # 归一放在唯一的「原文 → 楼栋名」入口，下游 upsert 与户室挂接（
+            # building_id_map 按名索引）自动对齐，无需两处各自处理。
+            building_no = normalize_building_no(raw_building_no)
             if building_no not in seen_buildings:
                 seen_buildings.add(building_no)
                 building_nos.append(building_no)
@@ -454,8 +458,8 @@ def load_community_by_copy(
             )
             try:
                 writer = csv.writer(tmp, quoting=csv.QUOTE_MINIMAL)
-                for building_no, room_no, _r_lng, _r_lat in _iter_room_rows(room_rows, rooms_csv_path):
-                    bid = building_id_map.get(building_no)
+                for raw_building_no, room_no, _r_lng, _r_lat in _iter_room_rows(room_rows, rooms_csv_path):
+                    bid = building_id_map.get(normalize_building_no(raw_building_no))
                     if bid is None:
                         continue
                     writer.writerow([bid, room_no, parse_room_floor(room_no)])

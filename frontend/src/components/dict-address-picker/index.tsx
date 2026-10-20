@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { formatBuildingLabel, formatPlate } from "@/lib/dict-display";
 import { client } from "@/lib/api-client";
 
 export interface DictAddressValue {
@@ -94,10 +95,9 @@ interface FloorGroup {
   has_pending: boolean;
 }
 
-/** 生成门牌预览：小区名 + 楼栋号 + 户号映射（0401→401） */
+/** 生成门牌预览：小区名 + 楼栋展示（量词不重复，BR-29）+ 户号映射（0401→401） */
 function buildPlate(communityName: string, buildingNo: string, plateNo: string): string {
-  const parts = [communityName, buildingNo && `${buildingNo}号`, plateNo].filter(Boolean);
-  return parts.join(" ");
+  return formatPlate(communityName, buildingNo, plateNo);
 }
 
 /** 楼栋列分页大小（大社区只渲染当页 + 滚动加载更多，防卡顿） */
@@ -458,7 +458,7 @@ export function DictAddressPicker({
         toast.error("提交新户室失败");
         return;
       }
-      toast.success(`已提交「${v.buildingNo}号 ${roomNo}」→ 审核池（挂待审楼栋）`);
+      toast.success(`已提交「${formatBuildingLabel(v.buildingNo)} ${roomNo}」→ 审核池（挂待审楼栋）`);
       emit({
         newRoom: { name: roomNo },
         roomId: null,
@@ -500,7 +500,7 @@ export function DictAddressPicker({
       toast.error("提交新户室失败");
       return;
     }
-    toast.success(`已提交「新户室 ${v.buildingNo}号 ${roomNo}」→ 审核池；通过后该层自动出现`);
+    toast.success(`已提交「新户室 ${formatBuildingLabel(v.buildingNo)} ${roomNo}」→ 审核池；通过后该层自动出现`);
     emit({ newRoom: { name: roomNo }, roomId: null, roomNo: "" });
     void loadRooms(v.buildingId);
   }, [
@@ -581,7 +581,7 @@ export function DictAddressPicker({
               {(
                 [
                   { label: v.communityName, active: !!v.communityName },
-                  { label: v.buildingNo ? `${v.buildingNo}号` : null, active: !!v.buildingNo },
+                  { label: v.buildingNo ? formatBuildingLabel(v.buildingNo) : null, active: !!v.buildingNo },
                   { label: v.roomNo ? plateOfRoom(v.roomNo) : null, active: !!v.roomNo },
                 ] as const
               ).some((s) => s.label) ? (
@@ -589,7 +589,7 @@ export function DictAddressPicker({
                   {(
                     [
                       { label: v.communityName, active: true },
-                      { label: v.buildingNo ? `${v.buildingNo}号` : null, active: !!v.buildingNo },
+                      { label: v.buildingNo ? formatBuildingLabel(v.buildingNo) : null, active: !!v.buildingNo },
                       { label: v.roomNo ? plateOfRoom(v.roomNo) : null, active: !!v.roomNo },
                     ] as const
                   )
@@ -852,7 +852,7 @@ export function DictAddressPicker({
                             void loadRooms(b.id);
                           }}
                         >
-                          <span className="tabular-nums">{b.building_no}号</span>
+                          <span className="tabular-nums">{formatBuildingLabel(b.building_no)}</span>
                           {b.pending ? (
                             <Badge className="h-4 px-1 text-[9px]" variant="outline">
                               未审核
@@ -950,7 +950,7 @@ export function DictAddressPicker({
                     户室 <span className="ml-0.5 text-[10px] font-normal text-dove">选填</span>
                     {v.buildingNo ? (
                       <span className="ml-1 text-[10px] font-normal text-dove tabular-nums">
-                        {v.buildingNo}号
+                        {formatBuildingLabel(v.buildingNo)}
                         {selectedFloor != null && selectedFloor !== "all"
                           ? ` · ${selectedFloor}层`
                           : ""}

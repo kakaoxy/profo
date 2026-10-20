@@ -43,8 +43,9 @@ from schemas.building_dict import (
 )
 from services.property.dict_parser import normalize_district_value
 from services.property.dict_read_service import BuildingDictReadService
+from services.property.dict_rename_mixin import DictRenameMixin
 from services.system.exceptions import ConflictError, ResourceNotFoundError, ValidationError
-from utils.building_dict import normalize_community_name, parse_room_floor
+from utils.building_dict import normalize_building_no, normalize_community_name, parse_room_floor
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +83,15 @@ def expand_range(spec: str, *, pad_zero: bool = False) -> list[str]:
     return [str(i).zfill(width) if width else str(i) for i in range(lo, hi + 1)]
 
 
-class DictWriteService:
-    """字典写服务（admin 即时生效 + 审计）."""
+class DictWriteService(DictRenameMixin):
+    """字典写服务（admin 即时生效 + 审计）.
+
+    名称修正（BR-29）拆分在 ``dict_rename_mixin``：本文件已达千行量级，
+    按 AGENTS「>500 行必须拆分」把同质的楼栋/户室/小区改名独立成模块。
+    """
+
+    # 改名沉淀别名的数据来源标记（与 market/merger 的 merge_operation 并列）
+    RENAME_ALIAS_SOURCE = "rename_operation"
 
     def _promote_matching_pendings(
         self,
@@ -228,7 +236,10 @@ class DictWriteService:
             msg = "小区不存在"
             raise ResourceNotFoundError(msg)
 
-        nos = expand_range(body.building_no)
+        # BR-29 量词归一（尾部单个「号」剥离）：把运营输入「21号」落库为「21」，
+        # 展示层后缀感知会再补回「号」，避免拼成「21号号」。区间展开后可能归一成
+        # 重复值（如「21」+「21号」混填），先去重保序，否则整批会撞 uq 回退逐条重试。
+        nos = list(dict.fromkeys(normalize_building_no(no) for no in expand_range(body.building_no)))
         if len(nos) > MAX_BUILDINGS_PER_BATCH:
             msg = f"单次最多补录 {MAX_BUILDINGS_PER_BATCH} 栋，当前 {len(nos)} 栋"
             raise ValidationError(msg)
@@ -579,7 +590,6 @@ class DictWriteService:
         return BdDeleteResult(deleted=1)
 
     # ---------- FR-07 新增小区 ----------
-
     def create_community(
         self,
         db: Session,

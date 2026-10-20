@@ -30,6 +30,7 @@ import { usePermission } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { client } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { formatBuildingLabel } from "@/lib/dict-display";
 
 import { BuildingAddForm, RoomAddForm } from "./admin-add-forms";
 import { CommunityImagesSection } from "./community-images-section";
@@ -81,6 +82,13 @@ export function CommunityDrawer({
   const [picked, setPicked] = useState<{ buildingNo: string; roomNo: string; plate: string; lng: number | null; lat: number | null } | null>(null);
   /** 户室补录成功后 +1，触发展开的 FloorRoomPanel 重载楼层/户室网格 */
   const [roomRefreshTick, setRoomRefreshTick] = useState(0);
+  /** BR-29 楼栋内联改名（id + 正在编辑的值） */
+  const [renamingBuilding, setRenamingBuilding] = useState<{ id: number; value: string } | null>(null);
+  const [renamingBuildingBusy, setRenamingBuildingBusy] = useState(false);
+  /** BR-29 小区名内联改名 */
+  const [renamingCommunity, setRenamingCommunity] = useState(false);
+  const [communityNameDraft, setCommunityNameDraft] = useState("");
+  const [renamingCommunityBusy, setRenamingCommunityBusy] = useState(false);
 
   const loadDetail = useCallback(async () => {
     if (!communityId) return;
@@ -234,6 +242,69 @@ export function CommunityDrawer({
     onUpdated?.();
   }, [communityId, detail, onOpenChange, onUpdated]);
 
+  /** BR-29：楼栋号修正（uq 冲突由后端 409 拦截，前端透出原文） */
+  const handleRenameBuilding = useCallback(
+    async (b: BdBuildingListItem) => {
+      const next = renamingBuilding?.value.trim() ?? "";
+      if (!next) {
+        toast.error("楼栋号不能为空");
+        return;
+      }
+      setRenamingBuildingBusy(true);
+      try {
+        const { data, error } = await client.PATCH(
+          "/api/v1/admin/building-dictionary/buildings/{building_id}",
+          {
+            params: { path: { building_id: b.id } },
+            body: { building_no: next },
+          },
+        );
+        if (error || !data) {
+          toast.error((error as { message?: string }).message ?? "改名失败");
+          return;
+        }
+        toast.success(data.message);
+        setRenamingBuilding(null);
+        // 楼层/户室面板按楼栋 id 挂载，改名不影响；列表与画像计数需重载
+        await Promise.all([loadBuildings(), loadDetail()]);
+        onUpdated?.();
+      } finally {
+        setRenamingBuildingBusy(false);
+      }
+    },
+    [renamingBuilding, loadBuildings, loadDetail, onUpdated],
+  );
+
+  /** BR-29：小区名修正（旧名自动沉淀为别名，仍可搜索） */
+  const handleRenameCommunity = useCallback(async () => {
+    if (!communityId) return;
+    const next = communityNameDraft.trim();
+    if (!next) {
+      toast.error("小区名不能为空");
+      return;
+    }
+    setRenamingCommunityBusy(true);
+    try {
+      const { data, error } = await client.PATCH(
+        "/api/v1/admin/building-dictionary/communities/{community_id}/rename",
+        {
+          params: { path: { community_id: communityId } },
+          body: { name: next },
+        },
+      );
+      if (error || !data) {
+        toast.error((error as { message?: string }).message ?? "小区改名失败");
+        return;
+      }
+      toast.success(data.message);
+      setRenamingCommunity(false);
+      await loadDetail();
+      onUpdated?.();
+    } finally {
+      setRenamingCommunityBusy(false);
+    }
+  }, [communityId, communityNameDraft, loadDetail, onUpdated]);
+
   /** 删除楼栋（含其下全部户室；业务引用/待审子级由后端拦截） */
   const handleDeleteBuilding = useCallback(
     async (b: BdBuildingListItem) => {
@@ -278,6 +349,38 @@ export function CommunityDrawer({
     [loadDetail, loadBuildings, onUpdated],
   );
 
+  /** BR-29：户室号修正（楼层由后端重算；成功后必须重载网格，楼层分组可能变化） */
+  const handleRenameRoom = useCallback(
+    async (buildingId: number, roomId: number, roomNo: string) => {
+      const next = window.prompt(`修正户室号（当前 ${roomNo}）：`, roomNo);
+      if (next === null) return;
+      const trimmed = next.trim();
+      if (!trimmed) {
+        toast.error("户室号不能为空");
+        return;
+      }
+      const { data, error } = await client.PATCH(
+        "/api/v1/admin/building-dictionary/buildings/{building_id}/rooms/{room_id}",
+        {
+          params: { path: { building_id: buildingId, room_id: roomId } },
+          body: { room_no: trimmed },
+        },
+      );
+      if (error || !data) {
+        toast.error((error as { message?: string }).message ?? "户室改名失败");
+        return;
+      }
+      toast.success(data.message);
+      setPicked(null);
+      // 楼层号由后端从户室号重算，可能换层 → 必须重载网格而不是本地替换
+      setRoomRefreshTick((t) => t + 1);
+      void loadDetail();
+      void loadBuildings();
+      onUpdated?.();
+    },
+    [loadDetail, loadBuildings, onUpdated],
+  );
+
   /** 删除单个户室（业务引用由后端拦截） */
   const handleDeleteRoom = useCallback(
     async (buildingId: number, roomId: number, roomNo: string) => {
@@ -307,8 +410,57 @@ export function CommunityDrawer({
       >
         <SheetHeader className="pb-2">
           <SheetTitle className="flex items-center justify-between pr-8">
-            <span className="font-display text-[26px] leading-tight tracking-[-0.01em]">{detail?.name ?? communityName}</span>
-            <span className="flex items-center gap-2">
+            {renamingCommunity ? (
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                <Input
+                  autoFocus
+                  value={communityNameDraft}
+                  onChange={(e) => setCommunityNameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void handleRenameCommunity();
+                    if (e.key === "Escape") setRenamingCommunity(false);
+                  }}
+                  className="h-9 min-w-0 flex-1 rounded-[10px] text-[18px] font-semibold"
+                  placeholder="小区名"
+                />
+                <button
+                  type="button"
+                  className="shrink-0 rounded-full bg-ink px-3 py-1 text-[11px] text-white disabled:opacity-50"
+                  disabled={renamingCommunityBusy}
+                  onClick={() => void handleRenameCommunity()}
+                >
+                  {renamingCommunityBusy ? <Loader2 className="inline size-3 animate-spin" /> : null} 保存
+                </button>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-full border border-dove/60 px-3 py-1 text-[11px] text-graphite"
+                  onClick={() => setRenamingCommunity(false)}
+                >
+                  取消
+                </button>
+              </span>
+            ) : (
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate font-display text-[26px] leading-tight tracking-[-0.01em]">
+                  {detail?.name ?? communityName}
+                </span>
+                {detail && canGovern ? (
+                  /* BR-29：审核通过后纠错 —— 小区名可改（旧名自动沉淀为别名，仍可搜索） */
+                  <button
+                    type="button"
+                    title="修正小区名（旧名自动存为别名，仍可搜索）"
+                    className="shrink-0 rounded-full border border-dove/50 px-2 py-0.5 text-[10px] text-graphite hover:border-rust hover:text-rust"
+                    onClick={() => {
+                      setCommunityNameDraft(detail.name);
+                      setRenamingCommunity(true);
+                    }}
+                  >
+                    改名
+                  </button>
+                ) : null}
+              </span>
+            )}
+            <span className="flex shrink-0 items-center gap-2">
               {canGovern ? (
                 <Button
                   size="sm"
@@ -599,7 +751,19 @@ export function CommunityDrawer({
                       {expandedBuilding === b.id && !b.pending ? (
                         <div className="px-3.5 pb-3">
                           {canGovern ? (
-                            <div className="flex justify-end pb-1.5">
+                            <div className="flex items-center justify-end gap-3 pb-1.5">
+                              {renamingBuilding?.id === b.id ? null : (
+                                <button
+                                  type="button"
+                                  className="text-[10.5px] text-graphite hover:text-rust hover:underline"
+                                  onClick={() => {
+                                    setRenamingBuilding({ id: b.id, value: b.building_no });
+                                    setAddingRoomFor(null);
+                                  }}
+                                >
+                                  改名
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 className="text-[10.5px] text-rust hover:underline"
@@ -607,6 +771,44 @@ export function CommunityDrawer({
                               >
                                 删除楼栋
                               </button>
+                            </div>
+                          ) : null}
+                          {/* BR-29：审核通过后纠错 —— 楼栋号内联改名（尾部「号」自动归一） */}
+                          {renamingBuilding?.id === b.id ? (
+                            <div className="mb-1.5 flex flex-wrap items-center gap-2 rounded-xl border border-rust/30 bg-apricot-wash/50 px-3 py-2 text-[12px] text-graphite">
+                              <span>楼栋号</span>
+                              <Input
+                                autoFocus
+                                value={renamingBuilding.value}
+                                onChange={(e) =>
+                                  setRenamingBuilding({ id: b.id, value: e.target.value })
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") void handleRenameBuilding(b);
+                                  if (e.key === "Escape") setRenamingBuilding(null);
+                                }}
+                                className="h-7 w-36 font-mono text-[12px]"
+                                placeholder="如 21"
+                              />
+                              <button
+                                type="button"
+                                className="rounded-full bg-ink px-3 py-1 text-[11px] text-white disabled:opacity-50"
+                                disabled={renamingBuildingBusy}
+                                onClick={() => void handleRenameBuilding(b)}
+                              >
+                                {renamingBuildingBusy ? (
+                                  <Loader2 className="inline size-3 animate-spin" />
+                                ) : null}{" "}
+                                保存
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-full border border-dove/60 px-3 py-1 text-[11px] text-graphite"
+                                onClick={() => setRenamingBuilding(null)}
+                              >
+                                取消
+                              </button>
+                              <span className="text-[10px]">尾部「号」自动去除，展示仍为「号」</span>
                             </div>
                           ) : null}
                           <FloorRoomPanel
@@ -621,7 +823,12 @@ export function CommunityDrawer({
                                 lat: b.lat ?? null,
                               })
                             }
-                            onDeleteRoom={canGovern ? (roomId, roomNo) => void handleDeleteRoom(b.id, roomId, roomNo) : undefined}
+                            onDeleteRoom={
+                              canGovern ? (roomId, roomNo) => void handleDeleteRoom(b.id, roomId, roomNo) : undefined
+                            }
+                            onRenameRoom={
+                              canGovern ? (roomId, roomNo) => void handleRenameRoom(b.id, roomId, roomNo) : undefined
+                            }
                             onDeleteFloor={
                               canGovern
                                 ? (floor, floorLabel) => void handleDeleteFloor(b.id, floor, floorLabel)
@@ -698,7 +905,7 @@ export function CommunityDrawer({
             <p className="min-w-0 flex-1 text-[11.5px] leading-relaxed text-graphite">
               {picked ? (
                 <>
-                  已选 <b className="font-medium text-rust">{picked.buildingNo}号 {picked.roomNo}</b>
+                  已选 <b className="font-medium text-rust">{formatBuildingLabel(picked.buildingNo)} {picked.roomNo}</b>
                   {picked.lng != null && picked.lat != null ? (
                     <span className="ml-1 font-mono">
                       · 位置坐标 {picked.lng.toFixed(6)}, {picked.lat.toFixed(6)}
@@ -754,7 +961,7 @@ export function CommunityDrawer({
                     className="rounded-full bg-ink text-white"
                     disabled={!picked}
                     onClick={() => {
-                      toast(`已选 ${picked?.buildingNo}号 ${picked?.plate}，请在项目表单中确认绑定`);
+                      toast(`已选 ${formatBuildingLabel(picked?.buildingNo)} ${picked?.plate}，请在项目表单中确认绑定`);
                     }}
                   >
                     绑定项目

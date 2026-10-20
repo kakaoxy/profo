@@ -36,6 +36,8 @@ interface FloorRoomPanelProps {
   onDeleteFloor?: (floor: number | null, floorLabel: string) => void;
   /** 删除单个户室（undefined = 不显示入口） */
   onDeleteRoom?: (roomId: number, roomNo: string) => void;
+  /** BR-29：修正户室号（undefined = 不显示入口；成功后由父级触发重载，楼层可能变化） */
+  onRenameRoom?: (roomId: number, roomNo: string) => void;
 }
 
 interface FloorGroup {
@@ -70,6 +72,7 @@ export function FloorRoomPanel({
   addRoomSlot,
   onDeleteFloor,
   onDeleteRoom,
+  onRenameRoom,
 }: FloorRoomPanelProps) {
   const [floors, setFloors] = useState<FloorGroup[]>([]);
   const [detail, setDetail] = useState<BdBuildingDetail | null>(null);
@@ -269,19 +272,29 @@ export function FloorRoomPanel({
                   })}
                 </div>
               ) : null}
-              {/* 选中户室后的删除入口（admin；业务引用由后端拦截） */}
+              {/* 选中户室后的改名/删除入口（admin；业务引用/楼层归属由后端处理） */}
               {isOpen &&
               selectedRoom &&
-              onDeleteRoom &&
               floorRooms.some((r) => !r.pending && r.room_no === selectedRoom.no) ? (
-                <div className="mt-1.5">
-                  <button
-                    type="button"
-                    className="text-[10.5px] text-rust hover:underline"
-                    onClick={() => onDeleteRoom(selectedRoom.id, selectedRoom.no)}
-                  >
-                    删除所选户室 {selectedRoom.no}
-                  </button>
+                <div className="mt-1.5 flex items-center gap-3">
+                  {onRenameRoom ? (
+                    <button
+                      type="button"
+                      className="text-[10.5px] text-graphite hover:text-rust hover:underline"
+                      onClick={() => onRenameRoom(selectedRoom.id, selectedRoom.no)}
+                    >
+                      改名所选户室 {selectedRoom.no}
+                    </button>
+                  ) : null}
+                  {onDeleteRoom ? (
+                    <button
+                      type="button"
+                      className="text-[10.5px] text-rust hover:underline"
+                      onClick={() => onDeleteRoom(selectedRoom.id, selectedRoom.no)}
+                    >
+                      删除所选户室 {selectedRoom.no}
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>

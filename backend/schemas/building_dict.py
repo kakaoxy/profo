@@ -268,7 +268,43 @@ class BdCommunityCreateRequest(BaseModel):
     lat: float | None = Field(None, ge=3, le=54, description="纬度(BD-09，中国境内 3~54，可空)")
 
 
-# ==================== 审核池（FR-11 / R7） ====================
+# ==================== 名称修正（BR-29：审核后纠错） ====================
+
+
+class BdBuildingRenameRequest(BaseModel):
+    """修正楼栋号请求（admin 即时生效 + 审计）.
+
+    楼栋号会做量词归一（尾部单个「号」剥离），提交「21号」与「21」等价。
+    """
+
+    building_no: str = Field(
+        min_length=1,
+        max_length=100,
+        description="修正后的楼栋号（尾部单个「号」会被自动剥离，原样存储其余字符）",
+    )
+
+
+class BdRoomRenameRequest(BaseModel):
+    """修正户室号请求（admin 即时生效 + 审计）."""
+
+    room_no: str = Field(min_length=1, max_length=100, description="修正后的户室号（如 0401 / 0233-1）")
+
+
+class BdCommunityRenameRequest(BaseModel):
+    """修正小区名请求（admin 即时生效 + 审计 + 旧名沉淀别名）."""
+
+    name: str = Field(min_length=1, max_length=200, description="修正后的小区名（全库唯一）")
+
+
+class BdRenameResult(BaseModel):
+    """名称修正结果（楼栋/户室/小区通用）."""
+
+    success: bool
+    message: str
+    old_name: str
+    new_name: str
+    # 楼栋/户室改名撞同名 open pending 时，顺带转正的条数（BR-26 口径）
+    promoted_pending: int = 0
 
 
 class BdReviewListItem(BaseModel):
@@ -317,6 +353,19 @@ class BdReviewResolveRequest(BaseModel):
 
     action: str = Field(pattern="^(create|merge|reject)$", description="审核动作")
     target_id: str | None = Field(None, description="目标ID(merge 必填；reject 录入端来源必填)")
+    # BR-29：审核时可修正提交内容名称（仅 create 生效；merge/reject 传入忽略）
+    name: str | None = Field(
+        None,
+        min_length=1,
+        max_length=200,
+        description="修正后的提交内容名称（仅 create 生效，不传=沿用原文；楼栋号会自动剥离尾部单个「号」）",
+    )
+    # BR-29：merge 目标可指向审核池待审兄弟条目（顺手转正）
+    target_kind: str | None = Field(
+        None,
+        pattern="^(dict|pending)$",
+        description="目标来源：dict=字典实表（默认）/ pending=审核池待审兄弟条目（仅 merge）",
+    )
 
 
 class BdReviewResolveResponse(BaseModel):
@@ -325,6 +374,11 @@ class BdReviewResolveResponse(BaseModel):
     success: bool
     message: str
     backfill_enqueued: int = 0
+    # BR-29：实际落库名称（create 时回显修正结果，便于前端 toast 对照）
+    resolved_name: str | None = Field(None, description="实际写入字典的名称（create 才有值）")
+    name_normalized_from: str | None = Field(
+        None, description="归一前的输入原文（归一前后有差异才返回，供前端/脚本核对）"
+    )
 
 
 # ==================== pending 提交（FR-10 / Task 11） ====================

@@ -49,10 +49,10 @@ from services.property.building_review_backfill import (
     run_pending_backfill,
     schedule_async_backfill,
 )
+from services.property.building_review_create import BuildingDictCreateMixin
 from services.property.building_review_queue import list_review_queue
-from services.property.dict_parser import normalize_district_value
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError, ValidationError
-from utils.building_dict import parse_room_floor
+from utils.building_dict import normalize_building_no, normalize_community_name
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,35 @@ DEFAULT_REVIEWER_ROLES = ["admin"]
 
 # 引用回填批次大小（BR-13 分批）
 BACKFILL_BATCH_SIZE = 200
+
+
+def normalize_pending_display_name(raw: str, kind: BdEntryKind) -> str:
+    """审核修正名称归一（BR-29）.
+
+    只做两类改写（其它字符原文保留，不转全半角/不改大小写）:
+
+    - 空白折叠：首尾去空白 + 内部连续空白折成单空格（与运营输入习惯对齐）；
+    - 楼栋号量词归一：剥离尾部单个「号」（见 ``normalize_building_no``）。
+      小区名与户室号不做该剥离（小区名以「…号弄」结尾是**地址本身**，
+      户室号「401」与「401号」语义不同）。
+
+    Args:
+        raw: 审核员修改后的名称原文
+        kind: 条目类型（building 才做量词归一）
+
+    Returns:
+        归一后的名称（可能为空串，由调用方报 400）
+
+    """
+    collapsed = " ".join(raw.split())
+    if kind == BdEntryKind.BUILDING:
+        return normalize_building_no(collapsed)
+    return collapsed
+
+
+def _is_int_str(raw: str | None) -> bool:
+    """判定字符串是否为整数字串（target_id 可能为 UUID 或脏值）."""
+    return bool(raw) and str(raw).lstrip("-").isdigit()  # type: ignore[union-attr]
 
 
 def _parse_int_id(raw: str | int | None) -> int:
@@ -135,8 +164,8 @@ def _user_has_reviewer_role(user: User | None, roles: list[str]) -> bool:
     return bool(user_role_codes & set(roles))
 
 
-class BuildingReviewService:
-    """审核池服务."""
+class BuildingReviewService(BuildingDictCreateMixin):
+    """审核池服务（状态机 + 行锁 + 权限；落库细节见 building_review_create）。"""
 
     def list_queue(
         self,
@@ -197,12 +226,19 @@ class BuildingReviewService:
 
         action = body.action
         if action == "create":
-            return self._resolve_create(db, entry, operator, request)
+            return self._resolve_create(db, entry, operator, request, override_name=body.name)
         if action == "merge":
             if not body.target_id:
                 msg = "合并现有必须选择目标（BR-10）"
                 raise ValidationError(msg)
-            return self._resolve_merge(db, entry, body.target_id, operator, request)
+            return self._resolve_merge(
+                db,
+                entry,
+                body.target_id,
+                operator,
+                request,
+                target_kind=body.target_kind or "dict",
+            )
         # reject
         if entry.source_type in ("project", "lead", "marketing") and not body.target_id:
             msg = "录入端来源驳回必须当场改选目标（BR-27）"
@@ -302,23 +338,57 @@ class BuildingReviewService:
         entry: BdPendingEntry,
         operator: User,
         request: Request | None,
+        *,
+        override_name: str | None = None,
     ) -> BdReviewResolveResponse:
-        """通过新增：核心事务 = 终态 + 字典落库 + 创建来源同步回填（BR-13）."""
+        """通过新增：核心事务 = 终态 + 字典落库 + 创建来源同步回填（BR-13）.
+
+        BR-29 名称修正：``override_name``（审核员在前端改过的名称）优先于原文，
+        经 ``normalize_pending_display_name`` 归一后作为落库名，并与 ``entry.name``
+        回写保持一致（审核池历史列表与字典行不脱节）。
+
+        Args:
+            db: 数据库会话
+            entry: 待审条目（已由调用方加 FOR UPDATE）
+            operator: 审核处理人
+            request: 当前请求（审计留痕用，可空）
+            override_name: 修正后的名称（None=沿用 ``entry.name``）
+
+        """
         self._check_topology(db, entry)
 
+        original_name = entry.name
+        # BR-29 写入层统一收口：**无论审核员是否手改**，落库前都走一次归一。
+        # 提交原文可能已带「号」（「金杨路660弄21号」），若只在 override 分支归一，
+        # 不手改的条目会原样落库 → 展示层再补「号」拼成「21号号」（正是运营反馈的现象）。
+        base_name = override_name if override_name is not None else original_name
+        target_name = normalize_pending_display_name(base_name, entry.kind)
+        if not target_name:
+            msg = "修正后的名称不能为空"
+            raise ValidationError(msg)
+        # 自动归一的对照值：即「归一前的输入原文」，仅在有实际改写时返回（供前端
+        # 展示「将保存为 X」与 API 消费方核对，避免隐式改写）
+        normalized_from = base_name if base_name != target_name else None
+
         if entry.kind == BdEntryKind.COMMUNITY:
-            target_community_id = self._create_community_from_pending(db, entry)
+            target_community_id = self._create_community_from_pending(db, entry, name=target_name)
             entry.resolved_target_id = target_community_id
         elif entry.kind == BdEntryKind.BUILDING:
-            target_building_id = self._create_building_from_pending(db, entry)
+            target_building_id = self._create_building_from_pending(db, entry, name=target_name)
             entry.resolved_target_id = str(target_building_id)
         else:
-            target_room_id = self._create_room_from_pending(db, entry)
+            target_room_id = self._create_room_from_pending(db, entry, name=target_name)
             entry.resolved_target_id = str(target_room_id)
 
         entry.status = BdEntryStatus.CREATED
         entry.resolved_by = operator.id
         entry.resolved_at = datetime.now(timezone.utc)
+        # BR-29：名称修正回写 entry（列表展示/后续追溯与字典行恒等）。
+        # status 已先置终态，uq_pending_open 的 partial index（status='pending'）
+        # 不再命中本行，改 normalized_name 不会引发唯一冲突。
+        if target_name != original_name:
+            entry.name = target_name
+            entry.normalized_name = normalize_community_name(target_name)
         db.flush()
 
         # 拓扑（BR-28）：小区转正 → 子级待审楼栋回填归属小区（H2）
@@ -365,10 +435,15 @@ class BuildingReviewService:
         # 其余引用异步回填已同步完成（同库单体，分批任务用于重试兜底）
         if backfill_enqueued:
             self._schedule_async_backfill()
+        name_note = f"；名称已修正：{original_name} → {entry.name}" if entry.name != original_name else ""
         return BdReviewResolveResponse(
             success=True,
-            message=f"已通过新增并落库（kind={entry.kind.value}），{backfill_enqueued} 条引用已排入异步回填",
+            message=(
+                f"已通过新增并落库（kind={entry.kind.value}），{backfill_enqueued} 条引用已排入异步回填{name_note}"
+            ),
             backfill_enqueued=backfill_enqueued,
+            resolved_name=entry.name,
+            name_normalized_from=normalized_from,
         )
 
     def _resolve_merge(
@@ -378,6 +453,8 @@ class BuildingReviewService:
         target_id: str,
         operator: User,
         request: Request | None,
+        *,
+        target_kind: str = "dict",
     ) -> BdReviewResolveResponse:
         """合并现有：不新增字典行，引用单据改指现有目标（BR-10/13）.
 
@@ -387,20 +464,35 @@ class BuildingReviewService:
           形成无法编辑的死单据；
         - 拓扑校验：merge 同样不允许跨过未转正的父级（原实现只有 create 调
           ``_check_topology``）；父级待审时子级只能驳回或等父级先处理。
+
+        BR-29 扩展（``target_kind="pending"``）：目标可为**审核池待审兄弟**条目
+        （同 kind、同归属小区）——
+        1. 对**目标 pending 行也加 FOR UPDATE**，否则两名审核员同时合并到同一目标会
+           双双转正并插出两行字典行（uq 撞库 500）；
+        2. 先转正目标（落库 + 终态 + 其开放引用回填），再令本条目 MERGED 指向同一实表 id；
+        3. 目标条目与当前条目都记在当前审核员名下（一次操作解决两条待审），审计双记。
+
+        Args:
+            db: 数据库会话
+            entry: 待审条目（已由调用方加 FOR UPDATE）
+            target_id: 目标 id（实表主键串或 pending 条目 id 串）
+            operator: 审核处理人
+            request: 当前请求（审计留痕用，可空）
+            target_kind: ``dict``=字典实表目标（默认）/ ``pending``=待审兄弟条目
+
         """
         self._check_topology(db, entry)
 
-        if entry.kind == BdEntryKind.COMMUNITY:
+        if target_kind == "pending":
+            target_value = self._merge_into_pending_sibling(db, entry, target_id, operator)
+        elif entry.kind == BdEntryKind.COMMUNITY:
             target = db.query(Community).filter(Community.id == target_id, Community.is_active.is_(True)).first()
             if not target:
                 msg = "目标小区不存在或已归档"
                 raise ResourceNotFoundError(msg)
             target_value = target.id
         elif entry.kind == BdEntryKind.BUILDING:
-            try:
-                target = db.get(BdBuilding, int(target_id))
-            except (TypeError, ValueError):
-                target = None
+            target = db.get(BdBuilding, _parse_int_id(target_id)) if _is_int_str(target_id) else None
             if not target:
                 msg = "目标楼栋不存在"
                 raise ResourceNotFoundError(msg)
@@ -409,10 +501,7 @@ class BuildingReviewService:
                 raise ValidationError(msg)
             target_value = str(target.id)
         else:
-            try:
-                target = db.get(BdRoom, int(target_id))
-            except (TypeError, ValueError):
-                target = None
+            target = db.get(BdRoom, _parse_int_id(target_id)) if _is_int_str(target_id) else None
             if not target:
                 msg = "目标户室不存在"
                 raise ResourceNotFoundError(msg)
@@ -464,6 +553,119 @@ class BuildingReviewService:
         self._audit(db, operator, entry, "merge", request)
         return BdReviewResolveResponse(success=True, message=f"已合并现有目标 {target_value}，{len(refs)} 条引用已改指")
 
+    def _merge_into_pending_sibling(
+        self,
+        db: Session,
+        entry: BdPendingEntry,
+        target_id: str,
+        operator: User,
+    ) -> str:
+        """BR-29：合并到「待审兄弟条目」——顺手转正目标，返回其字典实表 id 串.
+
+        背景：录入端重复提交同一栋楼/同一户时，审核池会出现两条同 kind 的待审条目；
+        旧实现只允许合并到字典实表，而新小区/新楼栋下常常**一条实表都没有**（实测
+        2066/21732 个小区无楼栋），导致「用已有的」无目标可选、审核员无路可走。
+
+        事务与锁顺序（防并发双转正）：
+        1. 本条 entry 已由 ``resolve()`` 加 FOR UPDATE（先锁的）；
+        2. 这里再对**目标 pending 行**加 FOR UPDATE —— 两请求合并到同一目标时，
+           后者阻塞至前者提交，再读到 ``status != pending`` 后 409，不会双双转正；
+        3. 目标转正（落库）后本条才落 MERGED，两者 ``resolved_target_id`` 指向同一实表 id。
+
+        Args:
+            db: 数据库会话
+            entry: 本条待审条目（已加 FOR UPDATE）
+            target_id: 目标 pending 条目 id（字串）
+            operator: 审核处理人
+
+        Returns:
+            目标转正后写入的字典实表 id（str）
+
+        Raises:
+            ValidationError: target_id 非法 / kind 不一致 / 归属小区不一致
+            ResourceNotFoundError: 目标 pending 不存在
+            ConflictError: 目标已非 pending（并发已处理）
+
+        """
+        if not _is_int_str(target_id):
+            msg = "待审目标 ID 格式不正确"
+            raise ValidationError(msg)
+        target_entry = (
+            db.query(BdPendingEntry).filter(BdPendingEntry.id == _parse_int_id(target_id)).with_for_update().first()
+        )
+        if not target_entry:
+            msg = "待审目标条目不存在"
+            raise ResourceNotFoundError(msg)
+        if target_entry.id == entry.id:
+            msg = "不能把条目合并到自己"
+            raise ValidationError(msg)
+        if target_entry.status != BdEntryStatus.PENDING:
+            msg = f"待审目标已被处理（status={target_entry.status.value}），请刷新后重新选择"
+            raise ConflictError(msg)
+        if target_entry.kind != entry.kind:
+            msg = "待审目标的类型与本条目不一致（小区/楼栋/户室不可互相合并）"
+            raise ValidationError(msg)
+        # 归属小区一致（小区条目自身无 community_id，target 也应为 None）
+        if entry.kind != BdEntryKind.COMMUNITY and target_entry.community_id != entry.community_id:
+            msg = "待审目标不属于同一小区，请重新选择"
+            raise ValidationError(msg)
+
+        # 目标转正：复用 create 的落库方法（拓扑校验同样适用）
+        self._check_topology(db, target_entry)
+        if target_entry.kind == BdEntryKind.COMMUNITY:
+            promoted_target = self._create_community_from_pending(db, target_entry)
+        elif target_entry.kind == BdEntryKind.BUILDING:
+            promoted_target = str(self._create_building_from_pending(db, target_entry))
+        else:
+            promoted_target = str(self._create_room_from_pending(db, target_entry))
+
+        target_entry.status = BdEntryStatus.CREATED
+        target_entry.resolved_target_id = promoted_target
+        target_entry.resolved_by = operator.id
+        target_entry.resolved_at = datetime.now(timezone.utc)
+        db.flush()
+
+        # 目标转正后的拓扑搬运（与 _resolve_create 同口径）
+        if target_entry.kind == BdEntryKind.COMMUNITY:
+            self._rewire_child_buildings(db, target_entry, promoted_target)
+        if target_entry.kind == BdEntryKind.BUILDING:
+            child_rooms = (
+                db.query(BdPendingEntry)
+                .filter(
+                    BdPendingEntry.kind == BdEntryKind.ROOM,
+                    BdPendingEntry.status == BdEntryStatus.PENDING,
+                    BdPendingEntry.parent_is_pending.is_(True),
+                    BdPendingEntry.parent_id == target_entry.id,
+                )
+                .all()
+            )
+            for child in child_rooms:
+                child.parent_id = _parse_int_id(promoted_target)
+                child.parent_is_pending = False
+            db.flush()
+
+        # 目标的开放引用同步回填（否则目标转正后其引用会滞留 open，等异步任务兼底）
+        target_refs = (
+            db.query(BdPendingReference)
+            .filter(
+                BdPendingReference.pending_id == target_entry.id,
+                BdPendingReference.status == BdReferenceStatus.OPEN,
+            )
+            .all()
+        )
+        for ref in target_refs:
+            self._backfill_reference(db, ref, target_value=promoted_target)
+
+        logger.info(
+            "审核合并到待审兄弟：entry=%s → pending=%s（已转正为 %s）操作人=%s",
+            entry.id,
+            target_entry.id,
+            promoted_target,
+            operator.id,
+        )
+        self._audit(db, operator, target_entry, "create", None)
+        return promoted_target
+
     def _resolve_reject(
         self,
         db: Session,
@@ -497,75 +699,6 @@ class BuildingReviewService:
         db.commit()
         self._audit(db, operator, entry, "reject", request)
         return BdReviewResolveResponse(success=True, message=f"已驳回（{ref_count} 条引用按来源分流处理）")
-
-    # ---------- 字典落库（create 用） ----------
-
-    def _create_community_from_pending(self, db: Session, entry: BdPendingEntry) -> str:
-        """Pending 小区 → communities 落库（BR-26 防重：再查重名兜底）."""
-        existing = db.query(Community).filter(Community.name == entry.name).first()
-        if existing:
-            entry.resolved_target_id = existing.id
-            return existing.id
-        payload = entry.payload or {}
-        community = Community(
-            name=entry.name,
-            district=normalize_district_value(payload.get("district")),
-            business_circle=payload.get("business_circle"),
-            ring=payload.get("ring"),
-            address=payload.get("address"),
-            lng=payload.get("lng"),
-            lat=payload.get("lat"),
-            source="review",
-            is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
-        )
-        db.add(community)
-        db.flush()
-        return community.id
-
-    def _create_building_from_pending(self, db: Session, entry: BdPendingEntry) -> int:
-        """Pending 楼栋 → bd_buildings 落库（父级必已转正：拓扑校验在 resolve 入口）."""
-        if not entry.community_id:
-            msg = "楼栋 pending 缺少归属小区"
-            raise ValidationError(msg)
-        existing = (
-            db.query(BdBuilding)
-            .filter(BdBuilding.community_id == entry.community_id, BdBuilding.building_no == entry.name)
-            .first()
-        )
-        if existing:
-            return existing.id
-        building = BdBuilding(
-            community_id=entry.community_id,
-            building_no=entry.name,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
-        )
-        db.add(building)
-        db.flush()
-        return building.id
-
-    def _create_room_from_pending(self, db: Session, entry: BdPendingEntry) -> int:
-        """Pending 户室 → bd_rooms 落库."""
-        parent_building = self._resolve_room_parent(db, entry)
-        existing = (
-            db.query(BdRoom).filter(BdRoom.building_id == parent_building.id, BdRoom.room_no == entry.name).first()
-        )
-        if existing:
-            return existing.id
-        room = BdRoom(
-            building_id=parent_building.id,
-            room_no=entry.name,
-            floor=parse_room_floor(entry.name),
-            created_at=datetime.now(timezone.utc),
-        )
-        db.add(room)
-        db.flush()
-        # H4 修复：flush 后 count() 已包含本户，原实现再 +1 造成每次审核新增户室
-        # 冗余计数偏移 +1 且不可自愈；这里以实表行数为准（与 dict_write_service 口径一致）
-        parent_building.room_count = db.query(BdRoom).filter(BdRoom.building_id == parent_building.id).count()
-        return room.id
 
     # ---------- 引用回填（BR-13，实现见 building_review_backfill 模块） ----------
 

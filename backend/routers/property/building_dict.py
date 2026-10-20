@@ -23,10 +23,12 @@ from schemas.building_dict import (
     BdBuildingCreateRequest,
     BdBuildingDetail,
     BdBuildingListResponse,
+    BdBuildingRenameRequest,
     BdCommunityCreateRequest,
     BdCommunityDetailResponse,
     BdCommunityListResponse,
     BdCommunityPatchRequest,
+    BdCommunityRenameRequest,
     BdDeleteResult,
     BdFilterOptionsResponse,
     BdFloorGroup,
@@ -36,12 +38,14 @@ from schemas.building_dict import (
     BdKpiResponse,
     BdPendingSubmitRequest,
     BdPendingSubmitResponse,
+    BdRenameResult,
     BdReviewerRolesRequest,
     BdReviewerRolesResponse,
     BdReviewListResponse,
     BdReviewResolveRequest,
     BdReviewResolveResponse,
     BdRoomCreateRequest,
+    BdRoomRenameRequest,
 )
 from services.property.building_review_service import (
     get_building_review_service,
@@ -215,6 +219,24 @@ def patch_dict_community(
     return write_service.patch_community(db, community_id, body, operator_id=str(current_user.id), request=request)
 
 
+@router.patch("/communities/{community_id}/rename")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def rename_dict_community(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    community_id: Annotated[str, PathParam(description="小区ID")],
+    body: BdCommunityRenameRequest,
+) -> BdRenameResult:
+    """修正小区名（BR-29：全库唯一 409 + 旧名沉淀别名 + 审计）.
+
+    独立于画像 PATCH：改名需全库唯一校验与别名沉淀，且影响面（搜索命中）比画像大。
+    路径带 ``/rename`` 而非并入 PATCH，避免前端「编辑资料」整表单提交时误改名称。
+    """
+    write_service = get_dict_write_service()
+    return write_service.rename_community(db, community_id, body, operator_id=str(current_user.id), request=request)
+
+
 @router.delete("/communities/{community_id}")
 @limiter.limit(RateLimits.COMMUNITY_UPDATE)
 def delete_dict_community(
@@ -338,6 +360,20 @@ def create_dict_community(
     return write_service.create_community(db, body, operator_id=str(current_user.id), request=request)
 
 
+@router.patch("/buildings/{building_id}")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def rename_dict_building(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    building_id: Annotated[int, PathParam(description="楼栋ID")],
+    body: BdBuildingRenameRequest,
+) -> BdRenameResult:
+    """修正楼栋号（BR-29：uq 409 + 自动量词归一 + 撞同名待审自动转正 + 审计）."""
+    write_service = get_dict_write_service()
+    return write_service.rename_building(db, building_id, body, operator_id=str(current_user.id), request=request)
+
+
 @router.delete("/buildings/{building_id}")
 @limiter.limit(RateLimits.COMMUNITY_UPDATE)
 def delete_dict_building(
@@ -377,6 +413,21 @@ def delete_dict_room(
     """Admin 删除单个户室（业务引用拦截，审计）."""
     write_service = get_dict_write_service()
     return write_service.delete_room(db, building_id, room_id, operator_id=str(current_user.id), request=request)
+
+
+@router.patch("/buildings/{building_id}/rooms/{room_id}")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def rename_dict_room(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    building_id: Annotated[int, PathParam(description="楼栋ID")],
+    room_id: Annotated[int, PathParam(description="户室ID")],
+    body: BdRoomRenameRequest,
+) -> BdRenameResult:
+    """修正户室号（BR-29：uq 409 + 楼层重算 + 撞同名待审自动转正 + 审计）."""
+    write_service = get_dict_write_service()
+    return write_service.rename_room(db, building_id, room_id, body, operator_id=str(current_user.id), request=request)
 
 
 # ==================== 审核池（FR-11 / R7 / Task 12） ====================

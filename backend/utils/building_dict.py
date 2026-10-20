@@ -4,6 +4,8 @@
 - ``parse_room_floor``：户室号 → 楼层解析（BR-02）
 - ``normalize_community_name``：小区名归一化（FR-19 uq_pending_open 依据）
 - ``format_plate_no``：门牌自动拼装映射（0401 → 401，FR-09）
+- ``normalize_building_no``：楼栋号量词归一（BR-29：尾部单个「号」剥离）
+- ``has_building_suffix``：楼栋号是否已自带量词（展示层拼装用）
 """
 
 import re
@@ -19,6 +21,12 @@ _FULLWIDTH_ASCII_END = 0xFF5E
 _FULLWIDTH_OFFSET = 0xFEE0
 # 全角空格
 _FULLWIDTH_SPACE = "\u3000"
+
+# 楼栋号尾部量词（BR-29）：只认单个「号」。刻意不含「号楼/栋/幢/单元」——
+# 「2号楼」剥成「2」会让原文语义丢失，且展示层后缀感知已能正确呈现。
+_TRAILING_HAO_RE = re.compile(r"号$")
+# 展示层「已自带量词」判定（与前端 lib/dict-display.ts 的 hasBuildingSuffix 同源）
+_BUILDING_SUFFIX_RE = re.compile(r"(号|号楼|栋|幢|单元|弄)$")
 
 
 def parse_room_floor(room_no: str | None) -> int | None:
@@ -103,3 +111,49 @@ def format_plate_no(room_no: str | None) -> str:
     if not is_standard_room_no(s):
         return s
     return str(int(s))
+
+
+def has_building_suffix(building_no: str | None) -> bool:
+    """楼栋号是否已自带量词（BR-29，展示层拼装判定）.
+
+    前端 ``formatBuildingLabel`` 与本函数同口径：自带量词则原样展示、
+    否则补一个「号」。否则 ``2号楼`` 会被拼成 ``2号楼号``。
+
+    Args:
+        building_no: 楼栋号原始串
+
+    Returns:
+        True 表示已自带量词（号/号楼/栋/幢/单元/弄），无需再补「号」
+
+    """
+    s = (building_no or "").strip()
+    if not s:
+        return False
+    return bool(_BUILDING_SUFFIX_RE.search(s))
+
+
+def normalize_building_no(raw: str | None) -> str:
+    """楼栋号量词归一（BR-29）：剥离尾部**单个**「号」，并折叠空白.
+
+    运营高频反馈：录入「金杨路660弄21号」，而全系统展示层会再补一个「号」
+    （``buildPlate`` / 审核弹层 / 抽屉回显），结果拼成「金杨路660弄21号号」。
+    写入层统一收口：落库去「号」，展示层后缀感知补回，两边恒等。
+
+    **只剥单个「号」**，刻意不处理「号楼/栋/幢/单元/弄」——
+    ``2号楼`` 剥成 ``2`` 会丢失原文语义（该楼栋确实以「号楼」为量词），
+    且展示层 ``has_building_suffix`` 已能正确呈现，无需改写。
+
+    Args:
+        raw: 用户输入或导入原文的楼栋号
+
+    Returns:
+        归一后的楼栋号（去尾部空白与单个「号」）；剥完为空时**回退原文**，
+        避免 ``号`` 这类脏值被归一成空串导致 uq 撞空值
+
+    """
+    s = " ".join((raw or "").split())
+    if not s:
+        return ""
+    stripped = _TRAILING_HAO_RE.sub("", s).strip()
+    # 回退保护：纯「号」/ 剥完为空 → 保留原文（不给脏值造空串）
+    return stripped or s

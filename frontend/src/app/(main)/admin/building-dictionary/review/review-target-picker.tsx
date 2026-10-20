@@ -28,7 +28,9 @@ export interface CommunityOption {
 interface BuildingOption {
   id: number;
   building_no: string;
+  /** 待审楼栋（pending=true 时 id 恒为 0，真实条目 id 见 pending_id） */
   pending?: boolean;
+  pending_id?: number | null;
 }
 
 interface RoomOption {
@@ -37,7 +39,16 @@ interface RoomOption {
   floor: number | null;
   plate_no: string;
   pending?: boolean;
+  pending_id?: number | null;
 }
+
+/**
+ * 「用已有的」目标可用性（BR-29，由本组件上报给审核弹层）：
+ * - ``available``：本小区/本楼栋存在可合并目标（含待审兄弟条目）；
+ * - ``empty``：一条都没有 —— 审核弹层据此把默认动作降级为「确认新增」并摘掉推荐标；
+ * - ``unknown``：尚未加载完（保持设计稿默认 merge，但不显示推荐标）。
+ */
+export type MergeAvailability = "available" | "empty" | "unknown";
 
 /** 户室分页大小（后端上限 500）；超大楼栋逐页取全（实测最大 928 户） */
 const ROOM_PAGE_SIZE = 500;
@@ -62,6 +73,10 @@ interface ReviewTargetPickerProps {
   actionLabel: "merge" | "reject";
   selection: TargetSelection;
   onSelectionChange: (next: TargetSelection) => void;
+  /** 可选目标可用性上报（BR-29：驱动审核弹层的默认动作与推荐标） */
+  onAvailabilityChange?: (availability: MergeAvailability) => void;
+  /** 是否把待审兄弟条目也列为可合并目标（BR-29，仅 merge 生效） */
+  allowPendingTargets?: boolean;
 }
 
 export function ReviewTargetPicker({
@@ -73,6 +88,8 @@ export function ReviewTargetPicker({
   actionLabel,
   selection,
   onSelectionChange,
+  onAvailabilityChange,
+  allowPendingTargets = true,
 }: ReviewTargetPickerProps) {
   const isCommunityKind = kind === "community";
   const isRoomKind = kind === "room";
@@ -85,6 +102,15 @@ export function ReviewTargetPicker({
   // 楼栋/户室条目：小区固定级联
   const [buildings, setBuildings] = useState<BuildingOption[]>([]);
   const [loadingBuildings, setLoadingBuildings] = useState(false);
+  /**
+   * 楼栋列表是否**至少完成过一次加载**（BR-29 关键状态）.
+   *
+   * 不能用 ``buildings.length === 0`` 直接判「无目标」：初始态也是空数组，
+   * 会在数据到达前就上报 empty → 审核弹层把默认动作切成「确认新增」→
+   * ``needTarget`` 变 false 导致本组件被卸载 → 楼栋请求永不发出 →
+   * 死锁在「无目标」（实测被 bd-iteration-fix 回归用例抓到）。
+   */
+  const [buildingsLoaded, setBuildingsLoaded] = useState(false);
   const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
@@ -128,17 +154,77 @@ export function ReviewTargetPicker({
           { params: { path: { community_id: communityId }, query: { page: 1, page_size: 100 } } },
         );
         if (data) {
+          // BR-29：待审楼栋不再被过滤 —— 新小区/新楼栋下常常一条实表都没有
+          // （实测 2066/21732 个小区无楼栋），旧实现只列实表 → 无目标 → 提交按钮永久置灰。
           setBuildings(
-            data.items
-              .filter((b) => !b.pending)
-              .map((b): BuildingOption => ({ id: b.id, building_no: b.building_no })),
+            data.items.map((b): BuildingOption => ({
+              id: b.id,
+              building_no: b.building_no,
+              pending: b.pending === true,
+              pending_id: b.pending_id ?? null,
+            })),
           );
         }
       } finally {
         setLoadingBuildings(false);
+        // 无论成功失败都置位：失败时继续 unknown 会让弹层永远停在「待定」，
+        // 置位后可如实上报 empty 并给出「改用确认新增」的明确引导。
+        setBuildingsLoaded(true);
       }
     })();
   }, [isCommunityKind, communityId]);
+
+  /**
+   * BR-29：上报「用已有的」可用性（驱动审核弹层的默认动作/推荐标）.
+   *
+   * 判定口径：
+   * - 小区条目：全库搜索，恒 available（总能搜到目标，搜不到是操作问题不是无数据）；
+   * - 楼栋条目：所属小区楼栋数（含待审兄弟）> 0；
+   * - 户室条目：所属楼栋户室数（含待审兄弟）> 0 —— 仅在选中楼栋后才知道，
+   *   在户室加载完成后才上报；
+   * - 归属小区为空 / 父楼栋不存在：直接 empty（无路可走）。
+   */
+  useEffect(() => {
+    if (!onAvailabilityChange) return;
+    if (isCommunityKind) {
+      onAvailabilityChange("available");
+      return;
+    }
+    if (!communityId) {
+      onAvailabilityChange("empty");
+      return;
+    }
+    // 首次加载未完成前一律 unknown —— 空数组只代表「还不知道」，不代表「没有」
+    if (loadingBuildings || !buildingsLoaded) {
+      onAvailabilityChange("unknown");
+      return;
+    }
+    if (isRoomKind) {
+      // 户室条目要选到楼栋后才知有无户室；未选楼栋前先按楼栋可用性判定
+      if (!selection.building) {
+        onAvailabilityChange(buildings.length > 0 ? "unknown" : "empty");
+        return;
+      }
+      if (loadingRooms) {
+        onAvailabilityChange("unknown");
+        return;
+      }
+      onAvailabilityChange(rooms.length > 0 ? "available" : "empty");
+      return;
+    }
+    onAvailabilityChange(buildings.length > 0 ? "available" : "empty");
+  }, [
+    onAvailabilityChange,
+    isCommunityKind,
+    isRoomKind,
+    communityId,
+    loadingBuildings,
+    buildingsLoaded,
+    loadingRooms,
+    buildings.length,
+    rooms.length,
+    selection.building,
+  ]);
 
   /** 选楼栋 → 加载户室（prefillFloor 用于户室条目预填该层首户） */
   const pickBuilding = useCallback(
@@ -163,14 +249,15 @@ export function ReviewTargetPicker({
           );
           if (!data) break;
           collected.push(
-            ...(data.rooms ?? [])
-              .filter((r) => !r.pending)
-              .map((r): RoomOption => ({
-                id: r.id,
-                room_no: r.room_no,
-                floor: r.floor ?? null,
-                plate_no: r.plate_no,
-              })),
+            // BR-29：待审户室同样保留（待审户室的 id 为 0，真实条目 id 在 pending_id）
+            ...(data.rooms ?? []).map((r): RoomOption => ({
+              id: r.id,
+              room_no: r.room_no,
+              floor: r.floor ?? null,
+              plate_no: r.plate_no,
+              pending: r.pending === true,
+              pending_id: r.pending_id ?? null,
+            })),
           );
           if (!data.room_has_more) break;
         }
@@ -278,6 +365,16 @@ export function ReviewTargetPicker({
               {actionLabel === "reject" ? " · 必选（当场改选）" : ""}
             </span>
           </p>
+          {/*
+            BR-29：归属小区缺失（待审户室挂的父楼栋已被删除）时，级联无从加载。
+            实测本地 41 条待审户室中 30 条属于此类 —— 旧实现面板一片空白、连提示都没有。
+          */}
+          {!communityId ? (
+            <p className="mb-2 rounded-lg bg-[#fff5f5] px-3 py-2 text-[11.5px] leading-relaxed text-error">
+              该条目的归属小区已丢失（父楼栋可能已被删除），无法列出可合并目标。
+              请改用「确认新增」或「驳回」。
+            </p>
+          ) : null}
           {/* 楼栋 chips */}
           {loadingBuildings ? (
             <Loader2 className="size-4 animate-spin text-graphite" />
@@ -285,21 +382,35 @@ export function ReviewTargetPicker({
             <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
               {buildings.map((b) => (
                 <button
-                  key={b.id}
+                  key={b.pending ? `p-${b.pending_id}` : b.id}
                   type="button"
+                  disabled={b.pending === true && !allowPendingTargets}
+                  title={
+                    b.pending
+                      ? allowPendingTargets
+                        ? "待审楼栋：选它会把来源单据改指到它，并顺手把它转正"
+                        : "待审楼栋：仅合并时可作为目标"
+                      : undefined
+                  }
                   className={cn(
                     "rounded-md border px-2 py-1 font-mono text-[12px]",
-                    selection.building?.id === b.id
+                    selection.building?.id === b.id &&
+                      selection.building?.pending_id === b.pending_id
                       ? "border-ink bg-ink text-white"
                       : "border-dove/50 text-ink hover:border-ash",
+                    b.pending && "border-dashed text-graphite",
+                    b.pending === true && !allowPendingTargets && "cursor-not-allowed opacity-50",
                   )}
                   onClick={() => void pickBuilding(b)}
                 >
                   {b.building_no}栋
+                  {b.pending ? <span className="ml-1 text-[9.5px] opacity-70">待审</span> : null}
                 </button>
               ))}
               {buildings.length === 0 ? (
-                <span className="py-1 text-[11px] text-dove">本小区暂无实表楼栋</span>
+                <span className="py-1 text-[11px] text-dove">
+                  本小区暂无任何楼栋（含待审）—— 无可用合并目标，请改用「确认新增」
+                </span>
               ) : null}
             </div>
           )}
@@ -337,13 +448,23 @@ export function ReviewTargetPicker({
                 <div className="grid max-h-28 grid-cols-8 gap-1 overflow-y-auto">
                   {visibleRooms.map((r) => (
                     <button
-                      key={r.id}
+                      key={r.pending ? `p-${r.pending_id}` : r.id}
                       type="button"
+                      disabled={r.pending === true && !allowPendingTargets}
+                      title={
+                        r.pending
+                          ? allowPendingTargets
+                            ? "待审户室：选它会把来源单据改指到它，并顺手把它转正"
+                            : "待审户室：仅合并时可作为目标"
+                          : undefined
+                      }
                       className={cn(
                         "rounded border px-1 py-0.5 text-[11px] tabular-nums",
-                        selection.room?.id === r.id
+                        selection.room?.id === r.id && selection.room?.pending_id === r.pending_id
                           ? "border-ink bg-ink text-white"
                           : "border-dove/50 text-ink hover:border-ash",
+                        r.pending && "border-dashed text-graphite",
+                        r.pending === true && !allowPendingTargets && "cursor-not-allowed opacity-50",
                       )}
                       onClick={() => onSelectionChange({ ...selection, room: r })}
                     >
@@ -352,7 +473,7 @@ export function ReviewTargetPicker({
                   ))}
                   {visibleRooms.length === 0 ? (
                     <span className="col-span-8 py-1 text-[11px] text-dove">
-                      该楼栋暂无实表户室
+                      该楼栋暂无任何户室（含待审）—— 无可用合并目标
                     </span>
                   ) : null}
                 </div>
