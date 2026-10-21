@@ -1,0 +1,26 @@
+{
+  "created": {
+    "id": "150cfed0-b14f-4911-ba64-7648cc8a20ea",
+    "lead_id": "7e99de2d-ac25-49a2-ba26-96bcf978f17f",
+    "eval_price": 486,
+    "remark": "南北通透",
+    "condition_score": 4,
+    "expected_sale_days": 45,
+    "evaluator_id": "admin-user",
+    "evaluator_name": "唐",
+    "evaluator_phone": "199****2013",
+    "evaluated_at": "2026-10-21T09:08:31.591365Z"
+  },
+  "firstRow": {
+    "id": "150cfed0-b14f-4911-ba64-7648cc8a20ea",
+    "lead_id": "7e99de2d-ac25-49a2-ba26-96bcf978f17f",
+    "eval_price": 486,
+    "remark": "南北通透",
+    "condition_score": 4,
+    "expected_sale_days": 45,
+    "evaluator_id": "admin-user",
+    "evaluator_name": "唐",
+    "evaluator_phone": "199****2013",
+    "evaluated_at": "2026-10-21T09:08:31.591365Z"
+  }
+}

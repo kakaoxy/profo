@@ -29,6 +29,9 @@ from schemas.public import (
     PublicAcquiredLeadListResponse,
     PublicAcquiredLeadPhoneResponse,
     PublicAcquiredLeadStatsResponse,
+    PublicCustomerFollowupCreate,
+    PublicEvaluatorBrief,
+    PublicEvaluatorContact,
     PublicFollowupCreate,
     PublicFollowupItem,
     PublicLeadCountResponse,
@@ -40,6 +43,7 @@ from schemas.public import (
 )
 from services.leads.core import LeadService
 from services.leads.notify import notify_eval_price_changed
+from services.system.operation_log import operation_log_service
 from settings import settings
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
@@ -215,13 +219,17 @@ def get_my_leads(
     result = service.get_my_leads(user_id=current_user.id, page=pagination.page, page_size=pagination.page_size)
 
     # 时效数据源：按当前页线索批量聚合最近跟进（单次 GROUP BY，避免 N+1）
-    followup_stats = service.get_followup_stats([lead.id for lead in result["items"]])
+    lead_ids = [lead.id for lead in result["items"]]
+    followup_stats = service.get_followup_stats(lead_ids)
+    # 最新评估结论：单次窗口函数查询（与工作台已处理卡同口径）
+    eval_verdicts = service.query_service.get_latest_eval_verdicts(lead_ids)
 
     items = []
     for lead in result["items"]:
         status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
         status_display, status_color = _get_status_display(status_code)
         stats = followup_stats.get(lead.id, {})
+        verdict = eval_verdicts.get(lead.id, {})
         items.append(
             PublicLeadListItem(
                 id=lead.id,
@@ -231,6 +239,8 @@ def get_my_leads(
                 total_price=float(lead.total_price) if lead.total_price else None,
                 expected_price=_effective_expected_price(lead),
                 eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
+                condition_score=verdict.get("condition_score"),
+                expected_sale_days=verdict.get("expected_sale_days"),
                 district=lead.district,
                 floor_info=lead.floor_info,
                 orientation=lead.orientation,
@@ -420,11 +430,13 @@ def get_handled_assessment(
     )
 
     followup_stats = result["followup_stats"]
+    eval_verdicts = result["eval_verdicts"]
     items = []
     for lead in result["items"]:
         status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
         status_display, _ = _get_status_display(status_code)
         stats = followup_stats.get(lead.id, {})
+        verdict = eval_verdicts.get(lead.id, {})
         items.append(
             HandledItem(
                 id=lead.id,
@@ -443,6 +455,8 @@ def get_handled_assessment(
                 status=lead.status,
                 status_display=status_display,
                 eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
+                condition_score=verdict.get("condition_score"),
+                expected_sale_days=verdict.get("expected_sale_days"),
                 last_follow_up_at=stats.get("last_follow_up_at"),
                 follow_up_count=stats.get("follow_up_count", 0),
                 audit_time=lead.audit_time,
@@ -529,6 +543,8 @@ async def create_reevaluation(
         lead_id=lead_id,
         eval_price=body.eval_price,
         remark=body.remark,
+        condition_score=body.condition_score,
+        expected_sale_days=body.expected_sale_days,
     )
     # 调整评估价成功后触发客户订阅消息通知（复用 service 返回的已更新 lead，
     # 阻塞调用放线程池；通知内部捕获一切异常仅记日志，绝不影响调价结果）
@@ -610,6 +626,73 @@ async def create_lead_followup(
     )
 
 
+# 注意：以下两个端点的路径前缀必须声明在 `GET /{lead_id}` 之前，
+# 否则 `/{lead_id}` 会先匹配把 evaluator-contact 当成 lead_id
+# （FastAPI 按声明顺序匹配，不按字面量优先级）。
+
+
+@router.get(
+    "/{lead_id}/evaluator-contact",
+    summary="获取评估人联系方式",
+    description="返回最新一次评估的评估人真实手机号（仅线索创建人或内部员工）",
+)
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
+def get_evaluator_contact(
+    request: Request,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    current_user: CurrentCustomerUserDep,
+    service: LeadServiceDep,
+    db: DbSessionDep,
+) -> PublicEvaluatorContact:
+    """获取评估人真实手机号（供客户/员工直接拨打）."""
+    contact = service.get_evaluator_contact(lead_id=lead_id, user=current_user)
+    # 敏感数据访问审计（Router 层插桩，与 properties/projects/ledger 三处同模式；
+    # log_action 内部已兜底异常，不阻塞主流程）
+    operation_log_service.log_action(
+        db,
+        user_id=str(current_user.id),
+        action="sensitive_data_access",
+        resource_type="lead_evaluator_contact",
+        resource_id=lead_id,
+        request=request,
+    )
+    return contact
+
+
+@router.post(
+    "/{lead_id}/follow-ups",
+    status_code=status.HTTP_201_CREATED,
+    summary="客户侧登记跟进",
+    description="线索创建人或内部员工登记跟进（拨号留痕用）；不拒绝终态线索",
+)
+@limiter.limit(RateLimits.LEAD_UPDATE)
+async def create_customer_followup(
+    request: Request,
+    lead_id: Annotated[str, Path(description="线索ID")],
+    body: PublicCustomerFollowupCreate,
+    current_user: CurrentCustomerUserDep,
+    service: LeadServiceDep,
+) -> PublicFollowupItem:
+    """客户侧登记跟进（拨号留痕）.
+
+    与员工侧 `/my/acquired/{id}/follow-ups` 的差异：归属校验按「创建人或内部员工」，
+    且**不拒绝终态线索**（跟进记录是事实记录，见 LeadService.create_customer_followup）。
+    """
+    fu = await run_in_threadpool(
+        service.create_customer_followup,
+        user=current_user,
+        lead_id=lead_id,
+        method=body.method,
+        content=body.content,
+    )
+    return PublicFollowupItem(
+        id=fu.id,
+        method=fu.method.value if hasattr(fu.method, "value") else str(fu.method),
+        content=fu.content,
+        followed_at=fu.followed_at,
+    )
+
+
 @router.get(
     "/{lead_id}",
     summary="获取估价详情",
@@ -657,6 +740,17 @@ def get_lead_detail(
     status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
     status_display, status_color = _get_status_display(status_code)
 
+    # 最新评估结论：eval_histories 已由 service 按 evaluated_at 倒序返回，取 [0] 即可，
+    # 其 evaluator 已 joinedload（无需额外查询，**不要**再调 get_latest_eval_verdicts）
+    latest_eval = eval_histories[0] if eval_histories else None
+    evaluator_brief = None
+    if latest_eval is not None and latest_eval.evaluator is not None:
+        evaluator_brief = PublicEvaluatorBrief(
+            nickname=latest_eval.evaluator.nickname,
+            phone_masked=mask_phone(latest_eval.evaluator.phone) if latest_eval.evaluator.phone else None,
+            evaluated_at=latest_eval.evaluated_at,
+        )
+
     return PublicLeadDetail(
         id=lead.id,
         community_name=lead.community_name,
@@ -675,6 +769,9 @@ def get_lead_detail(
         images=lead.images or [],
         image_thumbnails=[t for t in (derive_thumbnail_url(u) for u in (lead.images or [])) if t] or None,
         follow_ups=timeline_items,
+        condition_score=latest_eval.condition_score if latest_eval is not None else None,
+        expected_sale_days=latest_eval.expected_sale_days if latest_eval is not None else None,
+        evaluator=evaluator_brief,
         # 内部员工能力位（能力位为 true ⟺ 提交新跟进端点会通过权限校验，不出现「入口显示但提交 403」）
         # 直接复用认证依赖已预加载角色的 current_user，避免详情请求多一次 User 查询
         can_follow_up=service.can_follow_up(current_user),

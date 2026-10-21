@@ -62,13 +62,19 @@ def _lead_dict_key(lead: Lead) -> DocDictKey:
     )
 
 
-def _lead_to_list_item(lead: Lead, names: dict[str, Any] | None = None, db: Session | None = None) -> LeadListItem:
+def _lead_to_list_item(
+    lead: Lead,
+    names: dict[str, Any] | None = None,
+    db: Session | None = None,
+    verdict: dict[str, Any] | None = None,
+) -> LeadListItem:
     """将 Lead ORM 对象转换为 LeadListItem.
 
     Args:
         lead: Lead ORM 实例
         names: 字典解析名称映射（doc_id → DocDictNames）；列表路径由调用方批量传入避免 N+1
         db: 数据库会话；names 为 None 时单条现场解析用（非列表路径）
+        verdict: 最新评估结论（condition_score / expected_sale_days）；列表路径由调用方批量传入
 
     """
     safe_images = [img for img in (lead.images or []) if isinstance(img, str) and len(img) < _MAX_IMAGE_LENGTH]
@@ -76,6 +82,7 @@ def _lead_to_list_item(lead: Lead, names: dict[str, Any] | None = None, db: Sess
     if names is None and db is not None:
         names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead)])
     dict_fields = _dict_names_update(lead, names or {})
+    verdict_fields = verdict or {}
 
     return LeadListItem(
         id=lead.id,
@@ -94,6 +101,8 @@ def _lead_to_list_item(lead: Lead, names: dict[str, Any] | None = None, db: Sess
         unit_price=float(lead.unit_price) if lead.unit_price else None,
         eval_price=float(lead.eval_price) if lead.eval_price is not None else None,
         expected_price=float(lead.expected_price) if lead.expected_price is not None else None,
+        condition_score=verdict_fields.get("condition_score"),
+        expected_sale_days=verdict_fields.get("expected_sale_days"),
         status=lead.status,
         audit_reason=lead.audit_reason,
         auditor_id=lead.auditor_id,
@@ -143,7 +152,9 @@ def get_leads(
 
     # 字典名称批量解析（单次两查询，无 N+1）
     dict_names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead) for lead in result["items"]])
-    items = [_lead_to_list_item(lead, names=dict_names) for lead in result["items"]]
+    # 最新评估结论批量解析（单次窗口函数查询，无 N+1）
+    verdicts = service.query_service.get_latest_eval_verdicts([lead.id for lead in result["items"]])
+    items = [_lead_to_list_item(lead, names=dict_names, verdict=verdicts.get(lead.id)) for lead in result["items"]]
 
     return PaginatedLeadListResponse(
         items=items,
@@ -169,12 +180,19 @@ def create_lead(
     return _lead_response_with_names(db, service.create_lead(lead_in, current_user.id, creator=current_user))
 
 
-def _lead_response_with_names(db: Session, lead: Lead) -> LeadResponse:
-    """Lead ORM → LeadResponse（含字典解析名称，创建/更新响应同口径）."""
+def _lead_response_with_names(db: Session, lead: Lead, service: LeadService | None = None) -> LeadResponse:
+    """Lead ORM → LeadResponse（含字典解析名称与最新评估结论，创建/更新/详情响应同口径）.
+
+    评估结论两字段不来自 Lead 列（Lead 无该列），必须显式取最新一条评估记录回填。
+    """
     dict_names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead)])
     resp = LeadResponse.model_validate(lead, from_attributes=True)
     for field, value in _dict_names_update(lead, dict_names).items():
         setattr(resp, field, value)
+    svc = service or LeadService(db)
+    verdict = svc.query_service.get_latest_eval_verdicts([lead.id]).get(lead.id, {})
+    resp.condition_score = verdict.get("condition_score")
+    resp.expected_sale_days = verdict.get("expected_sale_days")
     return resp
 
 
@@ -201,11 +219,7 @@ def get_lead(
     """
     service = LeadService(db)
     lead = service.get_lead_or_404(lead_id)
-    dict_names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead)])
-    resp = LeadResponse.model_validate(lead, from_attributes=True)
-    for field, value in _dict_names_update(lead, dict_names).items():
-        setattr(resp, field, value)
-    return resp
+    return _lead_response_with_names(db, lead, service=service)
 
 
 @router.get("/{lead_id}/community-images")

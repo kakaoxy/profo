@@ -7,6 +7,7 @@ import { Lead, LeadStatus, EvalHistory } from "../../types";
 import { createEvaluationAction } from "../../actions";
 import { safeFormatDate } from "@/lib/formatters";
 import { EvalHistoryList } from "./eval-history-list";
+import { SaleDaysInput, ScorePicker } from "./verdict-inputs";
 
 interface LeadAuditPanelProps {
   lead: Lead;
@@ -16,6 +17,8 @@ interface LeadAuditPanelProps {
 export const LeadAuditPanel: React.FC<LeadAuditPanelProps> = ({ lead, onAudit }) => {
   const [auditReason, setAuditReason] = useState("");
   const [evalPrice, setEvalPrice] = useState<number | "">("");
+  const [conditionScore, setConditionScore] = useState<number | null>(null);
+  const [expectedSaleDays, setExpectedSaleDays] = useState<number | null>(null);
   const [evalRefreshKey, setEvalRefreshKey] = useState<number>(0);
 
   const handleEvalAdjusted = () => {
@@ -41,7 +44,11 @@ export const LeadAuditPanel: React.FC<LeadAuditPanelProps> = ({ lead, onAudit })
             lead={lead}
             evalPrice={evalPrice}
             auditReason={auditReason}
+            conditionScore={conditionScore}
+            expectedSaleDays={expectedSaleDays}
             onEvalPriceChange={setEvalPrice}
+            onConditionScoreChange={setConditionScore}
+            onExpectedSaleDaysChange={setExpectedSaleDays}
             onAuditReasonChange={setAuditReason}
             onAudit={onAudit}
           />
@@ -87,7 +94,11 @@ interface PendingAssessmentPanelProps {
   lead: Lead;
   evalPrice: number | "";
   auditReason: string;
+  conditionScore: number | null;
+  expectedSaleDays: number | null;
   onEvalPriceChange: (value: number | "") => void;
+  onConditionScoreChange: (value: number | null) => void;
+  onExpectedSaleDaysChange: (value: number | null) => void;
   onAuditReasonChange: (value: string) => void;
   onAudit: LeadAuditPanelProps["onAudit"];
 }
@@ -96,24 +107,41 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
   lead,
   evalPrice,
   auditReason,
+  conditionScore,
+  expectedSaleDays,
   onEvalPriceChange,
+  onConditionScoreChange,
+  onExpectedSaleDaysChange,
   onAuditReasonChange,
   onAudit,
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // 三项齐全才允许提交：评估反馈必须是一份完整结论（好不好 / 多久 / 多少钱），
+  // 缺任一项会重现「只有价格、员工客户都没有感知」的旧问题
+  const missingField = !evalPrice
+    ? "评估价"
+    : conditionScore == null
+      ? "房源条件分"
+      : expectedSaleDays == null
+        ? "装修后可售周期"
+        : null;
+  const canSubmit = missingField === null;
+
   // 批准约看排期：先创建评估记录，成功后再流转状态
   const handleApprove = async () => {
     setError(null);
-    if (!evalPrice) {
-      setError("请输入评估价");
+    if (!canSubmit) {
+      setError(`请先填写${missingField}`);
       return;
     }
     setSubmitting(true);
     const result = await createEvaluationAction(
       lead.id,
       Number(evalPrice),
+      Number(conditionScore),
+      Number(expectedSaleDays),
       auditReason || undefined,
     );
     setSubmitting(false);
@@ -133,10 +161,38 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* ① 房源条件分（判断由粗到细：好不好 → 多久 → 多少钱） */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black text-graphite uppercase ml-1">
+          ① 房源条件分 <span className="text-rust">必填</span>
+        </label>
+        <ScorePicker
+          value={conditionScore}
+          onChange={onConditionScoreChange}
+          disabled={submitting}
+        />
+      </div>
+
+      {/* ② 装修后可售周期 */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black text-graphite uppercase ml-1">
+          ② 装修后可售周期 <span className="text-rust">必填</span>
+          <span className="ml-2 font-sans text-[10px] normal-case tracking-normal text-dove">
+            预计从收房完成到售出的天数
+          </span>
+        </label>
+        <SaleDaysInput
+          value={expectedSaleDays}
+          onChange={onExpectedSaleDaysChange}
+          disabled={submitting}
+        />
+      </div>
+
+      {/* ③ 评估价 + 评估意见 */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="text-[10px] font-black text-graphite uppercase ml-1">
-            拟收房评估价 (万)
+            ③ 拟收房评估价 (万) <span className="text-rust">必填</span>
           </label>
           <input
             type="number"
@@ -158,12 +214,20 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
           />
         </div>
       </div>
+
+      {/* 缺项提示（三者齐全才可提交） */}
+      {missingField && !error && (
+        <p className="rounded-inputs bg-fog px-3 py-2 text-[11px] text-graphite">
+          还需填写：<span className="font-medium text-rust">{missingField}</span>
+          ，三项齐全后可提交 —— 不允许产出「只有价格」的评估反馈。
+        </p>
+      )}
       {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
       <div className="grid grid-cols-2 gap-3">
         <Button
           className="h-12 rounded-full bg-ink text-white hover:bg-ink/90 font-bold"
           onClick={handleApprove}
-          disabled={submitting}
+          disabled={submitting || !canSubmit}
         >
           {submitting ? "提交中..." : "批准约看排期"}
         </Button>
@@ -193,20 +257,39 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
 }) => {
   const [showAdjustForm, setShowAdjustForm] = useState(false);
   const [newEvalPrice, setNewEvalPrice] = useState<number | "">("");
+  const [adjustScore, setAdjustScore] = useState<number | null>(null);
+  const [adjustDays, setAdjustDays] = useState<number | null>(null);
   const [adjustReason, setAdjustReason] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Q1 口径 (a)：调整评估价必须重填评分与可售周期。
+  // 调整往往正因为「楼层看错了」或「行情变了」，沿用旧评分会掩盖修正。
+  const adjustMissing = !newEvalPrice
+    ? "新评估价"
+    : adjustScore == null
+      ? "房源条件分"
+      : adjustDays == null
+        ? "装修后可售周期"
+        : null;
+
   const handleAdjustSubmit = async () => {
-    if (!newEvalPrice) return;
+    if (adjustMissing) {
+      setError(`请先填写${adjustMissing}`);
+      return;
+    }
     setError(null);
     const result = await createEvaluationAction(
       lead.id,
       Number(newEvalPrice),
+      Number(adjustScore),
+      Number(adjustDays),
       adjustReason || undefined,
     );
     if (result.success) {
       setShowAdjustForm(false);
       setNewEvalPrice("");
+      setAdjustScore(null);
+      setAdjustDays(null);
       setAdjustReason("");
       onEvalAdjusted?.(result.data);
     } else {
@@ -233,34 +316,52 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
         </Button>
       </div>
       {showAdjustForm && (
-        <div className="mt-3 grid grid-cols-2 gap-3 p-3 bg-fog rounded-inputs">
+        <div className="mt-3 space-y-3 p-3 bg-fog rounded-inputs">
           <div className="space-y-1.5">
-            <label className="text-xs text-graphite ml-1">新评估价 (万)</label>
-            <input
-              type="number"
-              className="w-full h-11 px-4 rounded-inputs border border-dove bg-pure-white text-sm font-bold text-ink tabular-nums outline-none focus:ring-2 focus:ring-ink/20 focus:border-ink/40"
-              placeholder="输入新评估价..."
-              value={newEvalPrice}
-              onChange={(e) => setNewEvalPrice(Number(e.target.value))}
-            />
+            <label className="text-xs font-black text-graphite uppercase ml-1">
+              房源条件分 <span className="text-rust">必填</span>
+            </label>
+            <ScorePicker value={adjustScore} onChange={setAdjustScore} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-graphite ml-1">调整说明</label>
-            <input
-              className="w-full h-11 px-4 rounded-inputs border border-dove bg-pure-white text-sm text-ink outline-none focus:ring-2 focus:ring-ink/20 focus:border-ink/40"
-              placeholder="如：市场行情变化、二次议价..."
-              value={adjustReason}
-              onChange={(e) => setAdjustReason(e.target.value)}
-            />
+            <label className="text-xs font-black text-graphite uppercase ml-1">
+              装修后可售周期 <span className="text-rust">必填</span>
+            </label>
+            <SaleDaysInput value={adjustDays} onChange={setAdjustDays} />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs text-graphite ml-1">新评估价 (万)</label>
+              <input
+                type="number"
+                className="w-full h-11 px-4 rounded-inputs border border-dove bg-pure-white text-sm font-bold text-ink tabular-nums outline-none focus:ring-2 focus:ring-ink/20 focus:border-ink/40"
+                placeholder="输入新评估价..."
+                value={newEvalPrice}
+                onChange={(e) => setNewEvalPrice(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-graphite ml-1">调整说明</label>
+              <input
+                className="w-full h-11 px-4 rounded-inputs border border-dove bg-pure-white text-sm text-ink outline-none focus:ring-2 focus:ring-ink/20 focus:border-ink/40"
+                placeholder="如：市场行情变化、二次议价..."
+                value={adjustReason}
+                onChange={(e) => setAdjustReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-[11px] leading-relaxed text-graphite">
+            调整将追加一条评估记录（不改线索状态）。评分与周期每次都要重填 ——
+            调整往往正因为「楼层看错了」或「行情变了」，沿用旧评分会掩盖修正。
+          </p>
           <Button
-            className="col-span-2 h-11 rounded-full bg-pure-white border border-dove text-ink hover:border-ink/60 hover:bg-fog/50 font-bold"
+            className="w-full h-11 rounded-full bg-ink text-white hover:bg-ink/90 font-bold"
             onClick={handleAdjustSubmit}
-            disabled={!newEvalPrice}
+            disabled={adjustMissing != null}
           >
-            保存调整
+            {adjustMissing ? `还需填写${adjustMissing}` : "保存调整"}
           </Button>
-          {error && <p className="col-span-2 text-xs text-red-500 mt-2">{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
       )}
     </div>

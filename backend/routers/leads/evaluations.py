@@ -42,5 +42,7 @@ def create_evaluation(
         lead_id=lead_id,
         eval_price=eval_in.eval_price,
         remark=eval_in.remark,
+        condition_score=eval_in.condition_score,
+        expected_sale_days=eval_in.expected_sale_days,
         evaluator_id=current_user.id,
     )

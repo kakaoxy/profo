@@ -548,7 +548,13 @@ class TestAuthorizeApprove:
 
         resp = eval_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5, "remark": "溢价可控"},
+            json={
+                "action": "approve",
+                "eval_price": 350.5,
+                "remark": "溢价可控",
+                "condition_score": 4,
+                "expected_sale_days": 45,
+            },
         )
         assert resp.status_code == 200
         body = resp.json()
@@ -673,7 +679,7 @@ class TestAuthorizeGuards:
 
         resp = c_end_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 100.0},
+            json={"action": "approve", "eval_price": 100.0, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 403
         body = resp.json()
@@ -691,7 +697,7 @@ class TestAuthorizeGuards:
 
         resp = eval_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 100.0},
+            json={"action": "approve", "eval_price": 100.0, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 409
         body = resp.json()
@@ -727,7 +733,7 @@ class TestAuthorizeGuards:
         for price in (-10, 0, 1.999):
             resp = eval_operator_client.post(
                 _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-                json={"action": "approve", "eval_price": price},
+                json={"action": "approve", "eval_price": price, "condition_score": 4, "expected_sale_days": 45},
             )
             assert resp.status_code == 422, f"eval_price={price} 应返回 422"
 
@@ -799,7 +805,12 @@ class TestLeadReevaluation:
 
         resp = eval_operator_client.post(
             _EVALUATIONS_URL_TPL.format(lead_id=lead.id),
-            json={"eval_price": 362.5, "remark": "看房后上调"},
+            json={
+                "eval_price": 362.5,
+                "remark": "看房后上调",
+                "condition_score": 5,
+                "expected_sale_days": 30,
+            },
         )
         assert resp.status_code == 201
         body = resp.json()
@@ -841,7 +852,7 @@ class TestLeadReevaluation:
 
         resp = eval_operator_client.post(
             _EVALUATIONS_URL_TPL.format(lead_id=lead.id),
-            json={"eval_price": 315.0},
+            json={"eval_price": 315.0, "condition_score": 3, "expected_sale_days": 60},
         )
         assert resp.status_code == 201
         body = resp.json()
@@ -869,7 +880,7 @@ class TestLeadReevaluation:
             session.commit()
             resp = eval_operator_client.post(
                 _EVALUATIONS_URL_TPL.format(lead_id=lead.id),
-                json={"eval_price": 100.0},
+                json={"eval_price": 100.0, "condition_score": 3, "expected_sale_days": 60},
             )
             assert resp.status_code == 409, f"status={st.value} 应返回 409"
             body = resp.json()
@@ -888,7 +899,7 @@ class TestLeadReevaluation:
 
         resp = c_end_client.post(
             _EVALUATIONS_URL_TPL.format(lead_id=lead.id),
-            json={"eval_price": 100.0},
+            json={"eval_price": 100.0, "condition_score": 3, "expected_sale_days": 60},
         )
         assert resp.status_code == 403
         assert resp.json()["code"] != 0
@@ -900,7 +911,7 @@ class TestLeadReevaluation:
         """线索不存在返回 404."""
         resp = eval_operator_client.post(
             _EVALUATIONS_URL_TPL.format(lead_id="nonexistent-id"),
-            json={"eval_price": 100.0},
+            json={"eval_price": 100.0, "condition_score": 3, "expected_sale_days": 60},
         )
         assert resp.status_code == 404
 
@@ -933,7 +944,7 @@ class TestLeadReevaluation:
 
         resp = eval_operator_client.post(
             _EVALUATIONS_URL_TPL.format(lead_id=lead.id),
-            json={"eval_price": 100.0, "remark": "x" * 501},
+            json={"eval_price": 100.0, "remark": "x" * 501, "condition_score": 3, "expected_sale_days": 60},
         )
         assert resp.status_code == 422
 
@@ -1267,7 +1278,8 @@ class TestAuthorizeLostFromActiveStates:
         session.commit()
 
         for action, payload in (
-            ("approve", {"action": "approve", "eval_price": 300.0}),
+            # approve 必须带齐三字段（Q1a），否则先被 422 拦下，測不到 409 状态守卫
+            ("approve", {"action": "approve", "eval_price": 300.0, "condition_score": 4, "expected_sale_days": 45}),
             ("reject", {"action": "reject"}),
         ):
             resp = eval_operator_client.post(_AUTHORIZE_URL_TPL.format(lead_id=lead.id), json=payload)

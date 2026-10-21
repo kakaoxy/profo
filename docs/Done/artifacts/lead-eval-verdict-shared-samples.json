@@ -1,0 +1,197 @@
+{
+  "generatedAt": "2026-10-21T08:29:32.581Z",
+  "note": "跨端硬一致性由 frontend/src/lib/lead-verdict.cross-package.test.ts 断言（import 两个真实实现逐字比对）。本文件为该测试同一批样本的可读投影。",
+  "verifiedBy": "frontend/src/lib/lead-verdict.cross-package.test.ts",
+  "daySamples": [
+    {
+      "input": "1",
+      "tier": "rush",
+      "say": "约 0 个月",
+      "summary": "1 天 · 约 0 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "7",
+      "tier": "rush",
+      "say": "约 0.2 个月",
+      "summary": "7 天 · 约 0.2 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "15",
+      "tier": "rush",
+      "say": "约 0.5 个月",
+      "summary": "15 天 · 约 0.5 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "28",
+      "tier": "rush",
+      "say": "约 0.9 个月",
+      "summary": "28 天 · 约 0.9 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "29",
+      "tier": "rush",
+      "say": "约 1 个月",
+      "summary": "29 天 · 约 1 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "30",
+      "tier": "rush",
+      "say": "约 1 个月",
+      "summary": "30 天 · 约 1 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "31",
+      "tier": "normal",
+      "say": "约 1 个月",
+      "summary": "31 天 · 约 1 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "45",
+      "tier": "normal",
+      "say": "约 1.5 个月",
+      "summary": "45 天 · 约 1.5 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "59",
+      "tier": "normal",
+      "say": "约 2 个月",
+      "summary": "59 天 · 约 2 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "60",
+      "tier": "normal",
+      "say": "约 2 个月",
+      "summary": "60 天 · 约 2 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "61",
+      "tier": "slowish",
+      "say": "约 2 个月",
+      "summary": "61 天 · 约 2 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "75",
+      "tier": "slowish",
+      "say": "约 2.5 个月",
+      "summary": "75 天 · 约 2.5 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "89",
+      "tier": "slowish",
+      "say": "约 3 个月",
+      "summary": "89 天 · 约 3 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "90",
+      "tier": "slowish",
+      "say": "约 3 个月",
+      "summary": "90 天 · 约 3 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "91",
+      "tier": "slow",
+      "say": "约 3 个月",
+      "summary": "91 天 · 约 3 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "110",
+      "tier": "slow",
+      "say": "约 3.7 个月",
+      "summary": "110 天 · 约 3.7 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "130",
+      "tier": "slow",
+      "say": "约 4.3 个月",
+      "summary": "130 天 · 约 4.3 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "180",
+      "tier": "slow",
+      "say": "约 6 个月",
+      "summary": "180 天 · 约 6 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "365",
+      "tier": "slow",
+      "say": "约 12.2 个月",
+      "summary": "365 天 · 约 12.2 月",
+      "identicalBothSides": true
+    },
+    {
+      "input": "null",
+      "tier": null,
+      "say": "",
+      "summary": "周期待补",
+      "identicalBothSides": true
+    },
+    {
+      "input": "0",
+      "tier": null,
+      "say": "",
+      "summary": "周期待补",
+      "identicalBothSides": true
+    },
+    {
+      "input": "-1",
+      "tier": null,
+      "say": "",
+      "summary": "周期待补",
+      "identicalBothSides": true
+    },
+    {
+      "input": "NaN",
+      "tier": null,
+      "say": "",
+      "summary": "周期待补",
+      "identicalBothSides": true
+    }
+  ],
+  "scoreSamples": [
+    {
+      "input": "1"
+    },
+    {
+      "input": "2"
+    },
+    {
+      "input": "3"
+    },
+    {
+      "input": "4"
+    },
+    {
+      "input": "5"
+    },
+    {
+      "input": "null"
+    },
+    {
+      "input": "0"
+    },
+    {
+      "input": "6"
+    },
+    {
+      "input": "3.5"
+    }
+  ]
+}

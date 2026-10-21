@@ -1,0 +1,21 @@
+{
+  "leadId": "66af4c6f-6725-4adf-a1cf-aa3fbaf8f32c",
+  "evaluator": "唐",
+  "realPhoneRedactedForArtifact": "199****2013",
+  "realPhoneFormatValid": true,
+  "realPhoneNotMasked": true,
+  "followupStatus": 201,
+  "followupId": "b026cd1e-50c4-4f13-98fb-c9906aad705c",
+  "followupMethod": "phone",
+  "detailFirstFollowup": {
+    "id": "b026cd1e-50c4-4f13-98fb-c9906aad705c",
+    "method": "phone",
+    "content": "客户致电评估人 唐",
+    "followed_at": "2026-10-21T09:10:16.999931Z"
+  },
+  "detailConditionScore": 4,
+  "detailExpectedSaleDays": 45,
+  "detailEvaluatorMasked": "199****2013",
+  "strangerStatus": 403,
+  "closedLoop": true
+}

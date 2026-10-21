@@ -134,7 +134,12 @@ class TestPublicLeadDetailEvalMerged:
         # 后台出评估价，写入意见摘要
         r = backend_client.post(
             f"/api/v1/leads/{lead.id}/evaluations",
-            json={"eval_price": 420.0, "remark": "溢价偏高，建议以评估价挂牌"},
+            json={
+                "eval_price": 420.0,
+                "remark": "溢价偏高，建议以评估价挂牌",
+                "condition_score": 4,
+                "expected_sale_days": 45,
+            },
         )
         assert r.status_code == 201
 

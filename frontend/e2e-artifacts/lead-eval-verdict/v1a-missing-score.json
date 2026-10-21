@@ -1,0 +1,7 @@
+{
+  "status": 422,
+  "body": {
+    "code": 422,
+    "message": "请求参数验证失败: 缺少必填参数: condition_score"
+  }
+}

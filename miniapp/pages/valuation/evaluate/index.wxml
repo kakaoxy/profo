@@ -136,6 +136,15 @@
             </view>
           </view>
         </view>
+        <view class="verdict">
+          <view class="vchip vchip--score {{item.hasScore ? '' : 'vchip--muted'}}">
+            <text class="vchip__stars" wx:if="{{item.hasScore}}">
+              <text class="vchip__s {{item.stars[0] ? 'vchip__s--on' : ''}}">★</text><text class="vchip__s {{item.stars[1] ? 'vchip__s--on' : ''}}">★</text><text class="vchip__s {{item.stars[2] ? 'vchip__s--on' : ''}}">★</text><text class="vchip__s {{item.stars[3] ? 'vchip__s--on' : ''}}">★</text><text class="vchip__s {{item.stars[4] ? 'vchip__s--on' : ''}}">★</text>
+            </text>
+            {{item.scoreText}}
+          </view>
+          <view class="vchip vchip--days {{item.daysTierClass ? 'vchip--' + item.daysTierClass : 'vchip--muted'}}">{{item.daysText}}</view>
+        </view>
         <view class="lcard__foot">
           <view class="lcard__meta">
             <view class="srcchip srcchip--{{item.sourceClass}}">{{item.sourceText}}</view>

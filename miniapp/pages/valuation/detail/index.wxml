@@ -76,6 +76,36 @@
           <view class="pending-dot"></view>
           <text class="pending-text">评估中，请耐心等待</text>
         </view>
+        <!-- 评估结论：一句话人话 + 双指标（存量记录无该事实则整区不渲染） -->
+        <block wx:if="{{hasEvalPrice && hasMetrics}}">
+          <view class="mconcl__say">{{verdictSentence}}</view>
+          <view class="mconcl__kpis">
+            <view class="mk">
+              <view class="mk__k">房源条件分</view>
+              <view class="mk__v {{hasScore ? '' : 'mk__v--mut'}}">
+                <block wx:if="{{hasScore}}">
+                  <text class="mk__num">{{scoreNum}}</text><text class="mk__u">/ 5</text>
+                </block>
+                <text class="mk__pend" wx:else>未评分</text>
+              </view>
+              <view class="mk__stars" wx:if="{{hasScore}}">
+                <text class="mk__s {{stars[0] ? 'mk__s--on' : ''}}">★</text><text class="mk__s {{stars[1] ? 'mk__s--on' : ''}}">★</text><text class="mk__s {{stars[2] ? 'mk__s--on' : ''}}">★</text><text class="mk__s {{stars[3] ? 'mk__s--on' : ''}}">★</text><text class="mk__s {{stars[4] ? 'mk__s--on' : ''}}">★</text>
+              </view>
+              <view class="mk__sub">{{hasScore ? scoreWord : '评估师将在复核时补齐'}}</view>
+            </view>
+            <view class="mk">
+              <view class="mk__k">装修后可售</view>
+              <view class="mk__v {{hasSaleDays ? '' : 'mk__v--mut'}}">
+                <block wx:if="{{hasSaleDays}}">
+                  <text class="mk__num">{{saleDaysValue}}</text><text class="mk__u">天</text>
+                </block>
+                <text class="mk__pend" wx:else>周期待补</text>
+              </view>
+              <view class="mk__sub">{{hasSaleDays ? saleMonthText : '评估师将在复核时补齐'}}</view>
+            </view>
+          </view>
+        </block>
+
         <view class="data-guide" wx:if="{{hasEvalPrice}}" bindtap="onTapCommunityAnalysis">
           <text class="data-guide__hint">该价格基于小区数据分析</text>
           <view class="data-guide__btn">
@@ -85,6 +115,22 @@
         </view>
       </view>
       <view class="hero__foot">提交于 {{created_at}}</view>
+    </view>
+
+    <!-- 1.5 评估人（让「对结论有疑问」有出口；无评估人则整卡不渲染） -->
+    <view class="card" wx:if="{{evaluatorName}}">
+      <view class="meval">
+        <view class="meval__av">{{evaluatorName[0]}}</view>
+        <view class="meval__main">
+          <view class="meval__nm">
+            {{evaluatorName}}
+            <text class="meval__hint" wx:if="{{canContactEvaluator}}">对评估结果有疑问？</text>
+          </view>
+          <view class="meval__sub">{{evaluatorPhoneMasked || '暂未登记手机号'}}</view>
+        </view>
+        <view class="meval__go" wx:if="{{canContactEvaluator}}" bindtap="onOpenCallPanel">拨打</view>
+      </view>
+      <view class="meval__note" wx:if="{{canContactEvaluator}}">可直接致电了解评估依据，通话将记入跟进记录。</view>
     </view>
 
     <!-- 2. 户型图（未提交户型图则不渲染本区块） -->
@@ -152,6 +198,32 @@
   <button class="abtn abtn--primary" bindtap="openFollowupPanel">更新跟进</button>
 </view>
 <view class="actionbar-placeholder" wx:if="{{canFollowup}}"></view>
+
+<!-- 联系评估人面板：真实号按需拉取（列表/详情只给脱敏号） -->
+<view class="mask" wx:if="{{showCallPanel}}" bindtap="onCloseCallPanel"></view>
+<view class="sheet" wx:if="{{showCallPanel}}">
+  <view class="sheet__grab"></view>
+  <view class="sheet__head">
+    <view class="sheet__title">联系评估人</view>
+    <view class="sheet__close" bindtap="onCloseCallPanel">×</view>
+  </view>
+  <view class="call-card">
+    <view class="call-card__av">{{evaluatorName[0]}}</view>
+    <view class="call-card__tx">
+      <view class="call-card__nm">{{evaluatorName}}</view>
+      <view class="call-card__sub">{{community_name}} · 出具评估结论</view>
+    </view>
+  </view>
+  <view class="call-num">
+    <text wx:if="{{callLoading}}">获取中…</text>
+    <text wx:else>{{callRealPhone}}</text>
+  </view>
+  <view class="call-opts">
+    <view class="call-opt" bindtap="onCopyEvaluatorPhone">复制号码</view>
+    <view class="call-opt call-opt--primary" bindtap="onCallEvaluator">拨打电话</view>
+  </view>
+  <view class="call-tip">拨出后将自动记一条跟进：「电话联系评估人」\n通话结束可在跟进记录里补充沟通结论</view>
+</view>
 
 <view class="mask" wx:if="{{panelMode}}" bindtap="closePanel"></view>
 

@@ -17,6 +17,41 @@
       <view class="hero__submitter" wx:if="{{submitterText}}">{{submitterText}}</view>
     </view>
 
+    <!-- 1.5 评估结论摘要（viewMode 且已出评估价）：评分 / 周期 / 价格 + 分享入口 -->
+    <view class="panel verdict-panel" wx:if="{{viewMode && canShareVerdict}}">
+      <view class="blk-h">
+        <view class="blk-h__main">评估结论</view>
+        <view class="blk-h__act" style="visibility:hidden">占位</view>
+      </view>
+      <view class="vp-body">
+        <view class="vp-price">
+          <text class="vp-price__cur">¥</text><text class="vp-price__num">{{evalPriceText}}</text><text class="vp-price__unit">万</text>
+        </view>
+        <view class="vp-metrics">
+          <view class="vp-metric">
+            <view class="vp-metric__k">房源条件分</view>
+            <view class="vp-metric__v">
+              <block wx:if="{{shareConditionScore}}">{{shareConditionScore}}<text class="vp-metric__u">/ 5</text></block>
+              <text class="vp-metric__pend" wx:else>未评分</text>
+            </view>
+            <view class="vp-metric__sub">{{shareConditionScore ? scoreWord : '—'}}</view>
+          </view>
+          <view class="vp-metric">
+            <view class="vp-metric__k">装修后可售</view>
+            <view class="vp-metric__v">
+              <block wx:if="{{shareExpectedSaleDays}}">{{shareExpectedSaleDays}}<text class="vp-metric__u">天</text></block>
+              <text class="vp-metric__pend" wx:else>周期待补</text>
+            </view>
+            <view class="vp-metric__sub">{{daySayText || '—'}}</view>
+          </view>
+        </view>
+      </view>
+      <button class="vp-share" open-type="share">
+        <text class="vp-share__tx">分享评估结果给客户</text>
+        <text class="vp-share__hint">客户点开即见完整评估详情</text>
+      </button>
+    </view>
+
     <!-- 2. KPI 双栏：业主报价 / 本次评估价（viewMode 展示授权结果） -->
     <view class="panel kpi">
       <view class="kpi__col">
@@ -133,7 +168,7 @@
     <!-- 7. 他司成交区块（虚线分隔；viewMode 隐藏） -->
     <view class="lost-strip" wx:if="{{!viewMode}}">
       <view class="lost-strip__tip">房源已被其他公司成交？标记后线索将关闭，不再进入约看流程，原因将留存审核轨迹。</view>
-      <button class="lost-strip__btn" data-mode="lost" bindtap="openPanel">标记为他司成交</button>
+      <button class="lost-strip__btn" data-mode="lost" bindtap="openPanel">标记他司成交</button>
     </view>
 
     <!-- 8. 元信息脚注 -->
@@ -141,13 +176,15 @@
   </block>
 </view>
 
-<!-- 底部操作栏（默认模式：三动作；viewMode 且可跟进：左「标记为他司成交」/ 右「更新跟进」） -->
+<!-- 底部操作栏（评估前：评估不符 / 给出评估价并批准；评估后可跟进：他司成交 / 更新跟进） -->
 <view class="actionbar" wx:if="{{!missing && !viewMode}}">
-  <button class="abtn abtn--reject" data-mode="reject" bindtap="openPanel">评估不符 · 放弃</button>
+  <button class="abtn abtn--reject" data-mode="reject" bindtap="openPanel">评估不符</button>
   <button class="abtn abtn--primary" data-mode="approve" bindtap="openPanel">给出评估价并批准</button>
 </view>
+<!-- 只读详情（viewMode）且可跟进：两动作（他司成交 / 更新跟进）
+     分享入口只保留在页面上方「评估结论」卡片内（vp-share），底部不再重复放一个。 -->
 <view class="actionbar" wx:if="{{!missing && viewMode && canFollowup}}">
-  <button class="abtn abtn--lost" data-mode="lost" bindtap="openPanel">标记为他司成交</button>
+  <button class="abtn abtn--lost" data-mode="lost" bindtap="openPanel">他司成交</button>
   <button class="abtn abtn--primary" bindtap="openFollowupPanel">更新跟进</button>
 </view>
 <!-- 操作栏占位 -->
@@ -164,7 +201,57 @@
     <view class="sheet__close" bindtap="closePanel">×</view>
   </view>
   <view class="fld">
-    <view class="fld__lb">拟收房评估价（万元）</view>
+    <view class="fld__lb">① 房源条件分<text class="fld__req">必填</text><text class="fld__hint" wx:if="{{scoreWord}}">{{score}} / 5 已选</text></view>
+    <view class="mscore">
+      <view
+        class="mscore__item {{score >= item.v ? 'mscore__item--on' : ''}}"
+        wx:for="{{scoreOptions}}"
+        wx:key="v"
+        data-v="{{item.v}}"
+        bindtap="onScoreTap"
+      >
+        <text class="mscore__n">{{item.v}}</text>
+        <text class="mscore__s">★</text>
+      </view>
+    </view>
+    <view class="mscore__word {{scoreWord ? 'mscore__word--on' : ''}}">{{scoreHint}}</view>
+  </view>
+
+  <view class="fld">
+    <view class="fld__lb">② 装修后可售周期<text class="fld__req">必填</text><text class="fld__hint">收房完成起算</text></view>
+    <view class="amount-wrap {{focusedField === 'days' ? 'amount-wrap--focus' : ''}}">
+      <text class="amount-cur">约</text>
+      <input
+        class="amount-inp"
+        type="number"
+        placeholder="0"
+        placeholder-class="amount-placeholder"
+        value="{{saleDays}}"
+        data-field="days"
+        bindfocus="onFocusField"
+        bindblur="onBlurField"
+        bindinput="onSaleDaysInput"
+      />
+      <text class="amount-unit">天</text>
+    </view>
+    <view class="quick-chips">
+      <view
+        class="qc {{saleDays == item.d ? 'qc--on' : ''}}"
+        wx:for="{{quickDays}}"
+        wx:key="d"
+        data-d="{{item.d}}"
+        bindtap="onQuickDayTap"
+      >{{item.label}}</view>
+    </view>
+    <view class="cycle-say" wx:if="{{dayTier}}">
+      展示为「预计 {{saleDays}} 天 · {{daySayText}}」· 档位
+      <text class="cycle-say__tier cycle-say__tier--{{dayTier}}">{{dayTierWord}}</text>
+    </view>
+    <view class="cycle-say cycle-say--mut" wx:else>填写后自动生成档位与「约 N 个月」文案</view>
+  </view>
+
+  <view class="fld">
+    <view class="fld__lb">③ 拟收房评估价（万元）<text class="fld__req">必填</text></view>
     <view class="amount-wrap {{focusedField === 'price' ? 'amount-wrap--focus' : ''}}">
       <text class="amount-cur">¥</text>
       <input
@@ -227,7 +314,57 @@
     <view class="warn-strip__tx">当前评估价 ¥{{evalPriceText}} 万。调整后将追加评估记录并更新当前价，线索状态保持不变。</view>
   </view>
   <view class="fld">
-    <view class="fld__lb">新评估价（万元）</view>
+    <view class="fld__lb">① 房源条件分<text class="fld__req">必填</text><text class="fld__hint" wx:if="{{scoreWord}}">{{score}} / 5 已选</text></view>
+    <view class="mscore">
+      <view
+        class="mscore__item {{score >= item.v ? 'mscore__item--on' : ''}}"
+        wx:for="{{scoreOptions}}"
+        wx:key="v"
+        data-v="{{item.v}}"
+        bindtap="onScoreTap"
+      >
+        <text class="mscore__n">{{item.v}}</text>
+        <text class="mscore__s">★</text>
+      </view>
+    </view>
+    <view class="mscore__word {{scoreWord ? 'mscore__word--on' : ''}}">{{scoreHint}}</view>
+  </view>
+
+  <view class="fld">
+    <view class="fld__lb">② 装修后可售周期<text class="fld__req">必填</text><text class="fld__hint">收房完成起算</text></view>
+    <view class="amount-wrap {{focusedField === 'days' ? 'amount-wrap--focus' : ''}}">
+      <text class="amount-cur">约</text>
+      <input
+        class="amount-inp"
+        type="number"
+        placeholder="0"
+        placeholder-class="amount-placeholder"
+        value="{{saleDays}}"
+        data-field="days"
+        bindfocus="onFocusField"
+        bindblur="onBlurField"
+        bindinput="onSaleDaysInput"
+      />
+      <text class="amount-unit">天</text>
+    </view>
+    <view class="quick-chips">
+      <view
+        class="qc {{saleDays == item.d ? 'qc--on' : ''}}"
+        wx:for="{{quickDays}}"
+        wx:key="d"
+        data-d="{{item.d}}"
+        bindtap="onQuickDayTap"
+      >{{item.label}}</view>
+    </view>
+    <view class="cycle-say" wx:if="{{dayTier}}">
+      展示为「预计 {{saleDays}} 天 · {{daySayText}}」· 档位
+      <text class="cycle-say__tier cycle-say__tier--{{dayTier}}">{{dayTierWord}}</text>
+    </view>
+    <view class="cycle-say cycle-say--mut" wx:else>填写后自动生成档位与「约 N 个月」文案</view>
+  </view>
+
+  <view class="fld">
+    <view class="fld__lb">新评估价（万元）<text class="fld__req">必填</text></view>
     <view class="amount-wrap {{focusedField === 'price' ? 'amount-wrap--focus' : ''}}">
       <text class="amount-cur">¥</text>
       <input

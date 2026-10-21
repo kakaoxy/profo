@@ -1,0 +1,3184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>评估反馈迭代 · 房源条件分 × 可售周期 × 联系评估人 高保真设计稿 v1.0</title>
+<!--
+  评估反馈迭代 高保真设计稿 v1.0（2026-10-21）
+  ─────────────────────────────────────────────────────────────────────
+  代码真源（逐层勘察结果）：
+    Model   backend/models/lead/lead.py:229  LeadEvalHistory
+            —— 仅有 eval_price / remark / evaluator_id / evaluated_at 四列
+    Schema  backend/schemas/lead/__init__.py:68  LeadEvalHistoryCreate（eval_price + remark）
+            backend/schemas/public/__init__.py:539  PublicLeadDetail（无评估人字段）
+    Service backend/services/leads/internal/evaluation.py  create_evaluation（同步 Lead.eval_price）
+    Router  backend/routers/leads/evaluations.py（admin）
+            backend/routers/public/leads.py:510 / 540（员工再次评估 / 评估历史）
+    admin   admin/leads/_components/drawer-parts/lead-audit-panel.tsx（PendingAssessmentPanel）
+            admin/leads/_components/drawer-parts/eval-history-list.tsx
+            admin/leads/_components/drawer-parts/kpi-row.tsx
+    miniapp pages/valuation/authorize/index（approve / adjust / reject / lost 四 sheet）
+            pages/valuation/evaluate/index（工作台待评估 + 已处理两段卡）
+            pages/valuation/detail/index（客户 & 员工共用详情）
+    C 端 Web frontend/src/components/c/lead/SystemEstimateCard.tsx（只有一个大数字）
+
+  迭代动因（本轮唯一动因）：
+    现有反馈只回一个「价格 + 备注」。员工看完不知道这套房子到底好不好、值不值得跟；
+    客户看完只有一个数字，没有参照系，也无法就这个数字找人问。两种角色都没有「明确感知」，
+    反馈链路到价格就断了，没有下一步动作。
+
+  本轮三项改动（用户已确认四口径，2026-10-21）：
+    ① 房源条件分：单一综合分 1–5（不拆户型/楼层两个维度）
+       —— 员工判断成本最低，客户一眼可读；配 5 档锚点文案保证跨人一致
+    ② 装修后预计可售：员工填天数，系统派生档位文案（≤30 / 31–60 / 61–90 / >90）
+       —— 数据保留连续值（可统计可排序），展示层翻译成人话
+    ③ 联系评估人：员工与客户都可见真实手机号，一键拨打并自动留痕
+       —— 复用项目既有 PublicConsultantContact 范式（真实号走独立端点、列表脱敏）
+
+  与「员工/客户对数据不敏感」这一动因的对应关系：
+    · 数字退位、结论前置：详情页首屏给一句人话结论（serif 引文），评分与周期作为佐证
+    · 不给裸数据：45 天旁边永远有「约 1.5 个月」；4 分旁边永远有「良好」
+    · 不新增独立页面：三处信息都长在既有卡片里，员工既有操作路径零改动
+
+  ⚠️ 本稿含 3 处「后端未落地」依赖，逐条在 SEC 02 表 3 标注，未做假设性美化。
+  ⚠️ 「快于小区平均 N 天」依赖小区级平均去化天数聚合，当前后端无此字段，
+     本稿按「有基线则显示、无基线则降级只显示档位」设计（SEC 02 表 3 第 4 行）。
+
+  交付范围（用户选定「全覆盖」）：
+    SEC 00  迭代动因 · 三处口径 · 评分锚点表
+    ART 01  admin 线索详情抽屉 · 评估结论录入表单（可交互评分 + 天数联动）
+    ART 02  admin 线索详情抽屉 · KPI 行 + 评估结论摘要 + 评估历史（含评估人联系）
+    ART 03  小程序 authorize · 授权 sheet / 授权后结论区 / 拨号面板（三台）
+    ART 04  小程序 evaluate · 工作台已处理列表卡 + 结论条规格
+    ART 05  小程序 valuation/detail · 客户侧完整形态 + 降级形态
+    ART 06  C 端 Web 估价详情 · SystemEstimateCard 迭代
+    SEC 01  数据契约与端点变更（表 4–6）
+    SEC 02  落地 SPEC（迁移 / 落点 / 依赖 / 验收 / 视觉规格）
+
+  视觉真源：DESIGN.md（Steep）+ frontend/src/app/globals.css + miniapp/app.wxss
+  配色纪律：chromatic 只用 Rust #5d2a1a / Apricot #fbe1d1 / Sky #d3e3fc，评分不引入
+            绿红语义色（避免「好评绿 / 差评红」的评审站审美）。
+  ⚠️ 本文件为单文件自包含交付物（要求离线双击可看），故不拆分模块，有意超过 500 行。
+-->
+<style>
+  /* ══════════════════════════════════════════════════
+     Steep 令牌（对齐 /DESIGN.md 与 globals.css）
+     ══════════════════════════════════════════════════ */
+  :root {
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-line: #f2d0ba;
+    --sky: #d3e3fc;
+    --line: #e6e8ec;
+    --hair: #f1f2f4;
+    --shadow-steep: 0 24px 48px -12px rgba(23, 25, 28, 0.18), 0 0 0 1px rgba(23, 25, 28, 0.05);
+    --shadow-steep-sm: 0 0 0 1px rgba(4, 23, 43, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.06),
+      0 8px 10px -6px rgba(0, 0, 0, 0.06);
+    --shadow-phone: 0 24px 60px rgba(23, 25, 28, 0.18);
+    --serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --sans: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body {
+    background: var(--fog);
+    font-family: var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.009em;
+    font-feature-settings: "tnum";
+    padding-bottom: 140px;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; }
+
+  /* ── 文档骨架 ─────────────────────────────── */
+  .doc-head { max-width: 1340px; margin: 64px auto 0; padding: 0 32px; }
+  .doc-head h1 {
+    font-family: var(--serif); font-weight: 400; font-size: 44px; line-height: 1.16;
+    letter-spacing: -0.02em; margin-top: 14px;
+  }
+  .doc-head h1 em { font-style: normal; color: var(--rust); }
+  .head-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .head-meta span {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em;
+    color: var(--graphite); background: var(--pwhite); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 12px;
+  }
+  .head-meta span.hot { background: var(--apricot); border-color: var(--apricot-line); color: var(--rust); }
+  .lede {
+    font-size: 15px; font-weight: 430; color: var(--ash); line-height: 1.78;
+    margin-top: 20px; max-width: 940px;
+  }
+  .lede b { font-weight: 520; color: var(--ink); }
+  .lede code {
+    font-family: var(--mono); font-size: 12px; color: var(--rust);
+    background: var(--apricot); padding: 1px 6px; border-radius: 6px;
+  }
+
+  .sec { max-width: 1340px; margin: 88px auto 0; padding: 0 32px; }
+  .sec h2 {
+    font-family: var(--serif); font-weight: 400; font-size: 32px; line-height: 1.2;
+    letter-spacing: -0.015em; margin-top: 8px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite);
+  }
+  .sec-lede { font-size: 14.5px; color: var(--ash); line-height: 1.75; margin-top: 12px; max-width: 900px; }
+  .sec-lede b { font-weight: 520; color: var(--ink); }
+  .sec-lede code, td code {
+    font-family: var(--mono); font-size: 11.5px; color: var(--rust);
+    background: var(--apricot); padding: 1px 6px; border-radius: 6px;
+  }
+  .sec + .sec { margin-top: 96px; }
+
+  /* ── 顶部跳转条 ───────────────────────────── */
+  .jump {
+    position: sticky; top: 0; z-index: 90; margin-top: 34px;
+    background: rgba(247, 247, 248, 0.88); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .jump__in {
+    max-width: 1340px; margin: 0 auto; padding: 10px 32px;
+    display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  }
+  .jump__in::-webkit-scrollbar { display: none; }
+  .jump a {
+    flex-shrink: 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--graphite); text-decoration: none; border: 1px solid var(--line);
+    background: var(--pwhite); border-radius: 999px; padding: 5px 12px;
+    transition: all 0.15s ease;
+  }
+  .jump a:hover { border-color: var(--slate); color: var(--ink); }
+  .jump a.on { background: var(--ink); border-color: var(--ink); color: var(--pwhite); }
+
+  /* ── 通用卡 / 表格 ────────────────────────── */
+  .panel {
+    background: var(--pwhite); border-radius: 20px; padding: 24px 26px;
+    box-shadow: var(--shadow-steep-sm); margin-top: 22px;
+    max-width: 100%; overflow-x: auto;
+  }
+  .panel h3 { font-size: 14px; font-weight: 520; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .panel .sub { font-size: 12.5px; color: var(--graphite); line-height: 1.7; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  th, td {
+    text-align: left; font-size: 12.5px; padding: 9px 10px; vertical-align: top;
+    border-bottom: 1px solid var(--hair); line-height: 1.6;
+  }
+  th {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--dove); font-weight: 500; border-bottom: 1px solid var(--line); padding-bottom: 7px;
+  }
+  td b { font-weight: 520; }
+  tr:last-child td { border-bottom: 0; }
+  .t-num { font-variant-numeric: tabular-nums; }
+  .t-mut { color: var(--graphite); }
+
+  /* 宽表在窄屏降级为可横向滚动的卡片（不撑破文档宽度） */
+  .panel table { display: block; overflow-x: auto; }
+  .panel table thead, .panel table tbody { display: table; width: 100%; min-width: 560px; }
+  @media (max-width: 760px) {
+    .panel { padding: 18px 16px; }
+    .doc-head, .sec, .jump__in { padding-left: 18px; padding-right: 18px; }
+    .doc-head { margin-top: 40px; }
+    .doc-head h1 { font-size: 30px; }
+    .sec h2 { font-size: 24px; }
+    .sec { margin: 64px auto 0; }
+  }
+
+  /* ── 图版标签 ─────────────────────────────── */
+  .artlabel {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+    color: var(--graphite); margin: 40px 0 12px; display: flex; align-items: center; gap: 10px;
+  }
+  .artlabel em { font-style: normal; color: var(--dove); }
+  .artlabel::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .cap-note {
+    font-size: 12.5px; color: var(--graphite); margin-top: 16px; line-height: 1.75; max-width: 940px;
+  }
+  .cap-note b { color: var(--ink); font-weight: 520; }
+  .cap-note code {
+    font-family: var(--mono); font-size: 11px; color: var(--rust);
+    background: var(--apricot); padding: 1px 5px; border-radius: 5px;
+  }
+  .figs { display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: flex-start; }
+  .fig { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .fig__label {
+    font-size: 12px; font-weight: 520; color: var(--ink); max-width: 420px; text-align: center; line-height: 1.5;
+  }
+  .fig__label span { display: block; font-size: 11px; font-weight: 400; color: var(--graphite); margin-top: 3px; }
+
+  /* ══════════════════════════════════════════════════
+     共用组件：房源条件分（admin 尺寸）
+     ══════════════════════════════════════════════════ */
+  .score-row { display: flex; align-items: center; gap: 6px; }
+  .score-star {
+    width: 34px; height: 34px; border-radius: 11px; border: 1px solid var(--line);
+    background: var(--pwhite); color: var(--dove); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; transition: all 0.14s ease; font-size: 15px;
+    padding: 0;
+  }
+  .score-star:hover { border-color: var(--slate); color: var(--ash); }
+  .score-star.on { background: var(--ink); border-color: var(--ink); color: var(--pwhite); }
+  .score-star.hover { background: var(--apricot); border-color: var(--apricot-line); color: var(--rust); }
+  .score-read { display: inline-flex; align-items: center; gap: 3px; }
+  .score-read .s { font-size: 12px; color: var(--dove); line-height: 1; }
+  .score-read .s.on { color: var(--rust); }
+  .score-word { font-size: 13px; font-weight: 520; color: var(--ink); margin-left: 2px; }
+  .score-word.mut { color: var(--dove); font-weight: 430; }
+
+  /* 评分锚点提示条 */
+  .anchor-bar {
+    display: flex; gap: 8px; margin-top: 10px; background: var(--fog);
+    border-radius: 12px; padding: 10px 12px; align-items: flex-start;
+  }
+  .anchor-bar .n {
+    width: 17px; height: 17px; border-radius: 6px; background: var(--pwhite);
+    border: 1px solid var(--line); color: var(--graphite); flex-shrink: 0;
+    font-family: var(--mono); font-size: 9.5px; display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .anchor-bar .tx { font-size: 11.5px; color: var(--graphite); line-height: 1.62; }
+  .anchor-bar .tx b { color: var(--ash); font-weight: 520; }
+
+  /* ══════════════════════════════════════════════════
+     admin 评估结论录入表单
+     ══════════════════════════════════════════════════ */
+  .form-blk { border-top: 1px dashed var(--line); padding-top: 16px; margin-top: 16px; }
+  .form-blk:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+  .form-lb {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--graphite); margin-bottom: 9px; display: flex; align-items: baseline; gap: 7px;
+  }
+  .form-lb .req { color: var(--rust); font-size: 10px; }
+  .form-lb .hint { font-family: var(--sans); font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--dove); margin-left: auto; }
+
+  .inp {
+    width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--pwhite); font-family: var(--sans);
+    font-size: 13px; color: var(--ink); outline: none; transition: all 0.15s ease;
+  }
+  .inp::placeholder { color: var(--dove); }
+  .inp:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23, 25, 28, 0.06); }
+  .inp-wrap {
+    display: flex; align-items: center; gap: 8px; border: 1px solid var(--line);
+    border-radius: 12px; padding: 0 14px; height: 46px; background: var(--pwhite);
+    transition: all 0.15s ease;
+  }
+  .inp-wrap:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23, 25, 28, 0.06); }
+  .inp-wrap .pre { font-family: var(--mono); font-size: 12px; color: var(--graphite); }
+  .inp-wrap input {
+    flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+    font-family: var(--sans); font-size: 22px; font-weight: 480; color: var(--ink);
+    font-feature-settings: "tnum"; -moz-appearance: textfield; appearance: textfield;
+  }
+  .inp-wrap input::-webkit-outer-spin-button,
+  .inp-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .inp-wrap .suf { font-family: var(--mono); font-size: 11px; color: var(--graphite); }
+
+  /* 天数命中档位（实时反馈） */
+  .cycle-out {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px; min-height: 26px;
+  }
+  .tier-chip {
+    border-radius: 999px; padding: 4px 12px; font-size: 11.5px; font-weight: 480;
+    background: var(--apricot); color: var(--rust); display: inline-flex; align-items: center; gap: 6px;
+  }
+  .tier-chip .dot { width: 5px; height: 5px; border-radius: 999px; background: var(--rust); }
+  .tier-chip.mut { background: var(--fog); color: var(--dove); }
+  .tier-chip.mut .dot { background: var(--dove); }
+  .cycle-say { font-size: 11.5px; color: var(--graphite); }
+
+  .num-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .num-grid { grid-template-columns: 1fr; } }
+
+  /* ══════════════════════════════════════════════════
+     admin 桌面框
+     ══════════════════════════════════════════════════ */
+  .desk-wrap { display: flex; justify-content: center; }
+  .desk {
+    width: 1280px; max-width: 100%; background: var(--fog); border-radius: 18px;
+    box-shadow: var(--shadow-steep); overflow: hidden; display: flex; text-align: left; position: relative;
+  }
+  .desk .sidebar {
+    width: 212px; flex-shrink: 0; background: var(--pwhite); padding: 18px 12px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .side-logo { display: flex; align-items: center; gap: 8px; padding: 4px 10px 16px; }
+  .side-logo .mark {
+    width: 26px; height: 26px; border-radius: 8px; background: var(--ink); color: var(--pwhite);
+    font-family: var(--serif); font-size: 15px; display: flex; align-items: center; justify-content: center;
+  }
+  .side-logo .name { font-size: 13.5px; font-weight: 480; }
+  .side-sec {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; color: var(--dove);
+    text-transform: uppercase; padding: 12px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 10px;
+    font-size: 13px; font-weight: 430; color: var(--ash);
+  }
+  .nav-item .ic { width: 15px; height: 15px; border: 1.5px solid var(--slate); border-radius: 4.5px; flex-shrink: 0; }
+  .nav-item.active { background: var(--fog); color: var(--ink); font-weight: 480; }
+  .nav-item.active .ic { background: var(--rust); border-color: var(--rust); }
+  .desk .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    height: 54px; background: var(--pwhite); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 22px; flex-shrink: 0;
+  }
+  .crumb { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--graphite); }
+  .crumb .sep { color: var(--dove); }
+  .crumb .cur { color: var(--ink); font-weight: 480; }
+  .crumb .idchip {
+    font-family: var(--mono); font-size: 10.5px; color: var(--graphite);
+    background: var(--fog); border-radius: 6px; padding: 2px 7px;
+  }
+  .desk-body { flex: 1; display: flex; padding: 0; overflow: hidden; min-height: 0; }
+
+  /* 抽屉（Sheet 右滑 720px，1:1 复刻 lead-drawer.tsx） */
+  .sheet-backdrop { flex: 1; background: rgba(23, 25, 28, 0.18); }
+  .drawer {
+    width: 720px; flex-shrink: 0; background: var(--pwhite); display: flex; flex-direction: column;
+    box-shadow: -20px 0 50px -18px rgba(23, 25, 28, 0.22); max-height: 900px;
+  }
+  .dhead { padding: 18px 24px 14px; border-bottom: 1px solid var(--line); }
+  .dhead__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .dhead__nm { font-size: 18px; font-weight: 520; letter-spacing: -0.01em; }
+  .dhead__meta { font-size: 12px; color: var(--graphite); margin-top: 5px; line-height: 1.6; }
+  .dhead__x {
+    width: 28px; height: 28px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--pwhite); color: var(--graphite); font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  /* 生命周期步进 */
+  .stepper { display: flex; align-items: center; gap: 0; padding: 14px 24px; border-bottom: 1px solid var(--line); }
+  .step { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+  .step__dot {
+    width: 20px; height: 20px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--pwhite); color: var(--dove); font-family: var(--mono); font-size: 9.5px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step__lb { font-size: 11.5px; color: var(--dove); }
+  .step.done .step__dot { background: var(--fog); border-color: var(--dove); color: var(--ash); }
+  .step.done .step__lb { color: var(--ash); }
+  .step.now .step__dot { background: var(--ink); border-color: var(--ink); color: var(--pwhite); }
+  .step.now .step__lb { color: var(--ink); font-weight: 520; }
+  .step__line { flex: 1; height: 1px; background: var(--line); margin: 0 10px; min-width: 12px; }
+  .step__line.done { background: var(--dove); }
+
+  .tabs { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid var(--line); }
+  .tab-item {
+    padding: 11px 2px; font-size: 12.5px; color: var(--graphite); border-bottom: 2px solid transparent;
+    margin-right: 18px;
+  }
+  .tab-item.on { color: var(--ink); font-weight: 520; border-bottom-color: var(--ink); }
+
+  .dbody { flex: 1; background: var(--fog); padding: 18px 24px 26px; overflow-y: auto; }
+  .dbody::-webkit-scrollbar { width: 0; }
+
+  /* admin 卡（对齐 rounded-cards / shadow-steep） */
+  .acard {
+    background: var(--pwhite); border-radius: 20px; box-shadow: var(--shadow-steep-sm);
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .acard__h {
+    background: var(--fog); border-bottom: 1px solid var(--line); padding: 9px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .acard__t {
+    display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 9.5px;
+    letter-spacing: 0.13em; text-transform: uppercase; color: var(--graphite);
+  }
+  .acard__t .ic { width: 12px; height: 12px; border: 1.5px solid var(--slate); border-radius: 3px; }
+  .acard__aside { font-size: 10.5px; color: var(--dove); }
+  .acard__b { padding: 18px; }
+
+  /* KPI 行 */
+  .kpirow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .kpi {
+    background: var(--pwhite); border-radius: 16px; padding: 13px 14px;
+    box-shadow: 0 0 0 1px rgba(4, 23, 43, 0.05), 0 4px 12px -4px rgba(0, 0, 0, 0.07);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .kpi__lb { font-size: 10.5px; color: var(--graphite); display: flex; align-items: center; gap: 5px; }
+  .kpi__lb .ic { width: 11px; height: 11px; border: 1.4px solid var(--slate); border-radius: 3px; }
+  .kpi__vl {
+    font-size: 21px; font-weight: 480; line-height: 1.2; color: var(--ink); font-variant-numeric: tabular-nums;
+    display: flex; align-items: baseline; gap: 2px;
+  }
+  .kpi__vl .u { font-size: 10.5px; font-weight: 430; color: var(--graphite); }
+  .kpi__meta { font-size: 10.5px; color: var(--graphite); line-height: 1.5; }
+  .kpi__meta.ok { color: var(--success-ok); }
+  .kpi--new { position: relative; }
+  .kpi--new::after {
+    content: "新增"; position: absolute; top: 9px; right: 9px;
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; color: var(--rust);
+    background: var(--apricot); border-radius: 999px; padding: 1px 6px;
+  }
+  .kpi__stars { display: flex; align-items: center; gap: 2px; margin-top: 1px; }
+  .kpi__stars .s { font-size: 11px; color: var(--dove); line-height: 1; }
+  .kpi__stars .s.on { color: var(--rust); }
+
+  /* 评估结论卡（复核态，浏览 360） */
+  .concl {
+    background: var(--apricot); border-radius: 16px; padding: 16px 18px;
+  }
+  .concl__cap {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(93, 42, 26, 0.62); display: flex; align-items: center; gap: 6px;
+  }
+  .concl__cap::before {
+    content: ""; width: 5px; height: 5px; border-radius: 2px; background: var(--rust);
+  }
+  .concl__say {
+    font-family: var(--serif); font-size: 19px; line-height: 1.45; color: var(--rust);
+    margin-top: 10px; letter-spacing: -0.01em;
+  }
+  .concl__nums { display: flex; gap: 26px; margin-top: 16px; align-items: flex-end; }
+  .cn { display: flex; flex-direction: column; gap: 3px; }
+  .cn__k { font-size: 10px; color: rgba(93, 42, 26, 0.6); letter-spacing: 0.04em; }
+  .cn__v {
+    font-size: 26px; font-weight: 480; color: var(--rust); line-height: 1;
+    font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 2px;
+  }
+  .cn__v .u { font-size: 11px; font-weight: 430; }
+  .cn__sub { font-size: 10.5px; color: rgba(93, 42, 26, 0.66); }
+  .cn--div { border-left: 1px solid rgba(93, 42, 26, 0.16); padding-left: 26px; }
+
+  /* 评估人联系条 */
+  .evaln {
+    display: flex; align-items: center; gap: 12px; background: var(--pwhite);
+    border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-top: 12px;
+  }
+  .evaln__av {
+    width: 34px; height: 34px; border-radius: 999px; background: var(--sky); color: #2a5ca0;
+    font-size: 13px; font-weight: 520; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .evaln__main { flex: 1; min-width: 0; }
+  .evaln__nm { font-size: 13px; font-weight: 520; display: flex; align-items: center; gap: 6px; }
+  .evaln__role { font-size: 10px; color: var(--graphite); font-weight: 430; }
+  .evaln__ph {
+    font-family: var(--mono); font-size: 12px; color: var(--ash); margin-top: 3px; letter-spacing: 0.04em;
+  }
+  .evaln__acts { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-mini {
+    height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--pwhite); color: var(--ash); font-size: 11px; font-family: var(--sans);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+    transition: all 0.14s ease;
+  }
+  .btn-mini:hover { border-color: var(--slate); color: var(--ink); }
+  .btn-mini.ink { background: var(--ink); border-color: var(--ink); color: var(--pwhite); }
+  .btn-mini.ink:hover { background: #2b2e33; color: var(--pwhite); }
+  .btn-mini.ph { color: var(--dove); cursor: default; }
+
+  /* 评估历史列表 */
+  .ehist { display: flex; flex-direction: column; gap: 8px; }
+  .erow {
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    transition: border-color 0.14s ease; background: var(--pwhite);
+  }
+  .erow:hover { border-color: rgba(23, 25, 28, 0.28); }
+  .erow__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .erow__price { font-size: 13.5px; font-weight: 520; font-variant-numeric: tabular-nums; }
+  .erow__stars { display: flex; gap: 1.5px; align-items: center; margin-left: 2px; }
+  .erow__stars .s { font-size: 10.5px; color: var(--apricot-line); line-height: 1; }
+  .erow__stars .s.on { color: var(--rust); }
+  .erow__days {
+    font-family: var(--mono); font-size: 10.5px; color: var(--rust); background: var(--apricot);
+    border-radius: 999px; padding: 2px 8px; letter-spacing: 0.02em;
+  }
+  .badge-cur {
+    font-size: 9.5px; font-weight: 520; background: var(--apricot); color: var(--rust);
+    border: 1px solid var(--apricot-line); border-radius: 999px; padding: 1.5px 8px;
+  }
+  .erow__rm { font-size: 11.5px; color: var(--graphite); margin-top: 6px; line-height: 1.6; }
+  .erow__foot {
+    display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 10.5px; color: var(--dove);
+  }
+  .erow__foot .sep { color: var(--hair); }
+  .erow.active { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23, 25, 28, 0.05); }
+
+  .note-strip {
+    display: flex; gap: 8px; background: var(--apricot); border-radius: 12px;
+    padding: 10px 13px; margin-top: 14px; font-size: 11px; color: var(--rust); line-height: 1.6;
+  }
+  .note-strip .dot { width: 4px; height: 4px; border-radius: 999px; background: var(--rust); margin-top: 6px; flex-shrink: 0; }
+  .note-strip b { font-weight: 520; }
+
+  /* toast */
+  .toast {
+    position: absolute; left: 50%; bottom: 26px; transform: translate(-50%, 12px);
+    background: var(--ink); color: var(--pwhite); font-size: 12px; border-radius: 999px;
+    padding: 9px 18px; opacity: 0; pointer-events: none; transition: all 0.22s ease;
+    white-space: nowrap; z-index: 70; box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.4);
+  }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ══════════════════════════════════════════════════
+     小程序手机框
+     ══════════════════════════════════════════════════ */
+  .phone {
+    width: 375px; background: var(--fog); border-radius: 40px; box-shadow: var(--shadow-phone);
+    overflow: hidden; border: 8px solid #1c1e26; position: relative; flex-shrink: 0;
+  }
+  .phone::before {
+    content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 22px; background: #1c1e26; border-radius: 12px; z-index: 60;
+  }
+  .statusbar {
+    height: 42px; background: var(--pwhite); display: flex; align-items: center;
+    justify-content: space-between; padding: 13px 22px 0;
+  }
+  .sb-time { font-size: 13px; font-weight: 600; letter-spacing: -0.1px; }
+  .sb-icons { display: flex; align-items: center; gap: 5px; }
+  .sb-icons i { display: block; background: var(--ink); border-radius: 1px; }
+  .nav-bar {
+    background: var(--pwhite); height: 44px; display: flex; align-items: center;
+    position: relative; border-bottom: 1px solid rgba(163, 166, 175, 0.28);
+  }
+  .nav-back { position: absolute; left: 12px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+  .nav-back::before {
+    content: ""; width: 9px; height: 9px; border-left: 1.6px solid var(--ink); border-bottom: 1.6px solid var(--ink);
+    transform: rotate(45deg); margin-left: 3px;
+  }
+  .nav-title { flex: 1; text-align: center; font-size: 16px; font-weight: 520; letter-spacing: -0.14px; }
+  .capsule {
+    position: absolute; right: 8px; width: 84px; height: 30px;
+    border: 1px solid rgba(23, 25, 28, 0.12); border-radius: 999px;
+    display: flex; align-items: center; background: rgba(255, 255, 255, 0.62);
+  }
+  .capsule-side { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .capsule-div { width: 1px; height: 17px; background: rgba(23, 25, 28, 0.1); }
+  .capsule-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink); box-shadow: 5px 0 0 var(--ink), -5px 0 0 var(--ink); }
+  .capsule-ring { width: 11px; height: 11px; border: 1.5px solid var(--ink); border-radius: 50%; }
+
+  .screen { background: var(--fog); padding: 12px 0 22px; position: relative; }
+  .screen--tall { min-height: 700px; }
+  .screen--fit { min-height: 0; }
+  .mfooter {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 4px; border-radius: 999px; background: rgba(23, 25, 28, 0.22);
+  }
+
+  /* ── 小程序白卡（24rpx≈12px，1:1 对齐 .panel / .card） ── */
+  .mp { background: var(--pwhite); border-radius: 16px; padding: 15px 16px; margin: 0 16px 11px; }
+  .mp.hero { margin-top: 2px; }
+  .mp-h {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px;
+  }
+  .mp-h__t { font-size: 14px; font-weight: 520; letter-spacing: -0.13px; }
+  .mp-h__sub { font-size: 11px; color: var(--graphite); }
+  .mp-h__act {
+    margin-left: auto; flex-shrink: 0; font-size: 11px; font-weight: 600; color: #2f5f96;
+    border: 1px solid rgba(47, 95, 150, 0.28); border-radius: 999px; padding: 3px 11px; background: var(--pwhite);
+  }
+
+  /* ── 结论卡（移动端，结论先行） ── */
+  .mconcl { background: var(--apricot); border-radius: 16px; padding: 16px 16px 15px; }
+  .mconcl__cap {
+    font-size: 10.5px; color: rgba(93, 42, 26, 0.62); display: flex; align-items: center; gap: 5px;
+    letter-spacing: 0.03em;
+  }
+  .mconcl__cap::before { content: ""; width: 4px; height: 4px; border-radius: 1.5px; background: var(--rust); }
+  .mconcl__price { display: flex; align-items: baseline; gap: 2px; margin-top: 8px; color: var(--ink); }
+  .mconcl__price .cur { font-size: 17px; color: var(--ash); }
+  .mconcl__price .num { font-size: 44px; font-weight: 520; line-height: 1; letter-spacing: -0.8px; }
+  .mconcl__price .unit { font-size: 13px; font-weight: 520; color: var(--rust); margin-left: 2px; }
+  .mconcl__say {
+    font-family: var(--serif); font-size: 13.5px; line-height: 1.62; color: var(--rust);
+    margin-top: 11px; padding-top: 11px; border-top: 1px solid rgba(93, 42, 26, 0.14);
+  }
+  .mconcl__kpis { display: flex; gap: 0; margin-top: 12px; }
+  .mk { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .mk + .mk { border-left: 1px solid rgba(93, 42, 26, 0.14); padding-left: 14px; }
+  .mk__k { font-size: 10px; color: rgba(93, 42, 26, 0.6); }
+  .mk__v {
+    font-size: 17px; font-weight: 520; color: var(--rust); font-variant-numeric: tabular-nums;
+    display: flex; align-items: baseline; gap: 2px; line-height: 1.15;
+  }
+  .mk__v .u { font-size: 10px; font-weight: 430; }
+  .mk__stars { display: flex; gap: 1.5px; margin-top: 1px; }
+  .mk__stars .s { font-size: 9.5px; color: rgba(93, 42, 26, 0.24); line-height: 1; }
+  .mk__stars .s.on { color: var(--rust); }
+  .mk__sub { font-size: 9.5px; color: rgba(93, 42, 26, 0.62); }
+
+  /* 参考基线行 */
+  .baseline {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin-top: 12px; padding-top: 11px; border-top: 1px solid rgba(93, 42, 26, 0.14);
+  }
+  .baseline__tx { font-size: 10.5px; color: rgba(93, 42, 26, 0.72); line-height: 1.5; }
+  .baseline__btn {
+    flex-shrink: 0; font-size: 10.5px; font-weight: 520; color: var(--rust);
+    background: rgba(255, 255, 255, 0.62); border-radius: 999px; padding: 4px 11px;
+    display: flex; align-items: center; gap: 3px;
+  }
+  .baseline__chev { width: 4px; height: 4px; border-top: 1.3px solid var(--rust); border-right: 1.3px solid var(--rust); transform: rotate(45deg); }
+
+  /* ── 评估人卡（移动端） ── */
+  .meval { display: flex; align-items: center; gap: 10px; }
+  .meval__av {
+    width: 38px; height: 38px; border-radius: 999px; background: var(--sky); color: #2a5ca0;
+    font-size: 14px; font-weight: 520; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .meval__main { flex: 1; min-width: 0; }
+  .meval__nm { font-size: 13.5px; font-weight: 520; display: flex; align-items: center; gap: 5px; }
+  .meval__role {
+    font-size: 9.5px; font-weight: 500; color: var(--rust); background: var(--apricot);
+    border-radius: 999px; padding: 1.5px 7px;
+  }
+  .meval__sub { font-size: 10.5px; color: var(--graphite); margin-top: 3px; display: flex; align-items: center; gap: 5px; }
+  .meval__sub .sep { color: var(--hair); }
+  .meval__go {
+    flex-shrink: 0; height: 30px; padding: 0 14px; border-radius: 999px; background: var(--ink);
+    color: var(--pwhite); font-size: 11.5px; font-weight: 520; display: flex; align-items: center;
+    gap: 4px; border: 0;
+  }
+  .meval__go.reveal { background: var(--pwhite); color: var(--ink); border: 1px solid var(--line); }
+  .meval__note {
+    margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--hair);
+    font-size: 10px; color: var(--dove); line-height: 1.6;
+  }
+
+  /* ── 手机端打分（点选） ── */
+  .mscore { display: flex; align-items: center; gap: 6px; }
+  .mscore__item {
+    flex: 1; height: 42px; border-radius: 11px; border: 1px solid var(--line);
+    background: var(--pwhite); display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1px; color: var(--dove); cursor: pointer;
+    transition: all 0.14s ease; padding: 0;
+  }
+  .mscore__item .n { font-size: 14px; font-weight: 520; font-variant-numeric: tabular-nums; }
+  .mscore__item .s { font-size: 8px; line-height: 1; }
+  .mscore__item.on { background: var(--ink); border-color: var(--ink); color: var(--pwhite); }
+  .mscore__item.on .s { color: rgba(255, 255, 255, 0.72); }
+  .mscore__item:hover:not(.on) { border-color: var(--slate); color: var(--ash); }
+  .mscore-word {
+    margin-top: 8px; font-size: 11.5px; color: var(--graphite); display: flex; align-items: center; gap: 6px;
+    min-height: 20px;
+  }
+  .mscore-word b { color: var(--rust); font-weight: 520; }
+
+  /* ── 手机端天数快捷档位 ── */
+  .quick-chips { display: flex; gap: 6px; margin-top: 8px; }
+  .qc {
+    flex: 1; height: 30px; border-radius: 999px; border: 1px solid var(--line); background: var(--pwhite);
+    font-size: 11px; color: var(--ash); cursor: pointer; font-family: var(--sans);
+    display: flex; align-items: center; justify-content: center; transition: all 0.14s ease;
+  }
+  .qc:hover { border-color: var(--slate); }
+  .qc.on { background: var(--apricot); border-color: var(--apricot-line); color: var(--rust); font-weight: 520; }
+
+  /* ── 半屏 sheet ── */
+  .mask-m {
+    position: absolute; inset: 0; background: rgba(23, 25, 28, 0.42); z-index: 40;
+  }
+  .m-sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 45;
+    background: var(--pwhite); border-radius: 20px 20px 0 0; padding: 10px 16px 18px;
+    box-shadow: 0 -18px 40px -12px rgba(23, 25, 28, 0.26);
+  }
+  .m-sheet__grab { width: 34px; height: 4px; border-radius: 999px; background: var(--line); margin: 0 auto 12px; }
+  .m-sheet__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .m-sheet__title { font-size: 15px; font-weight: 520; }
+  .m-sheet__x { width: 26px; height: 26px; border-radius: 999px; background: var(--fog); color: var(--graphite); font-size: 15px; display: flex; align-items: center; justify-content: center; }
+  .mfld { margin-bottom: 14px; }
+  .mfld__lb { font-size: 11.5px; color: var(--graphite); margin-bottom: 7px; display: flex; align-items: baseline; justify-content: space-between; }
+  .mfld__lb .hint { font-size: 10px; color: var(--dove); }
+  .m-amount {
+    display: flex; align-items: baseline; gap: 6px; border: 1px solid var(--line); border-radius: 13px;
+    padding: 10px 14px; background: var(--pwhite);
+  }
+  .m-amount .cur { font-size: 14px; color: var(--graphite); }
+  .m-amount .in { flex: 1; font-size: 30px; font-weight: 520; letter-spacing: -0.6px; font-variant-numeric: tabular-nums; }
+  .m-amount .in.mut { color: var(--dove); }
+  .m-amount .unit { font-size: 12px; color: var(--graphite); }
+  .m-diff {
+    margin-top: 8px; font-size: 11px; color: var(--graphite); min-height: 18px; line-height: 1.5;
+  }
+  .m-diff b { font-weight: 520; }
+  .m-diff .good { color: #2f5f96; }
+  .m-diff .warn { color: var(--rust); }
+  .m-ta {
+    width: 100%; border: 1px solid var(--line); border-radius: 13px; padding: 11px 13px;
+    font-family: var(--sans); font-size: 12.5px; color: var(--ash); line-height: 1.65; min-height: 68px;
+    background: var(--pwhite); resize: none;
+  }
+  .m-ta::placeholder { color: var(--dove); }
+  .m-count { text-align: right; font-size: 10px; color: var(--dove); margin-top: 5px; }
+  .m-acts { display: flex; gap: 9px; margin-top: 6px; }
+  .m-btn {
+    flex: 1; height: 46px; border-radius: 999px; border: 0; font-size: 14px; font-weight: 520;
+    font-family: var(--sans); cursor: pointer;
+  }
+  .m-btn--ink { background: var(--ink); color: var(--pwhite); }
+  .m-btn--line { background: var(--pwhite); color: var(--ink); border: 1px solid var(--line); }
+  .m-btn--dis { background: var(--line); color: var(--dove); }
+
+  .m-warn {
+    display: flex; gap: 8px; background: var(--apricot); border-radius: 11px; padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+  .m-warn .dot { width: 4px; height: 4px; border-radius: 999px; background: var(--rust); margin-top: 6px; flex-shrink: 0; }
+  .m-warn__tx { font-size: 10.5px; color: var(--rust); line-height: 1.62; }
+
+  /* 拨号面板（联系评估人） */
+  .call-card { display: flex; align-items: center; gap: 11px; padding: 4px 0 14px; }
+  .call-card__av {
+    width: 46px; height: 46px; border-radius: 999px; background: var(--sky); color: #2a5ca0;
+    font-size: 17px; font-weight: 520; display: flex; align-items: center; justify-content: center;
+  }
+  .call-card__nm { font-size: 15px; font-weight: 520; }
+  .call-card__sub { font-size: 11px; color: var(--graphite); margin-top: 3px; }
+  .call-num {
+    font-family: var(--mono); font-size: 24px; font-weight: 500; letter-spacing: 0.06em;
+    color: var(--ink); text-align: center; padding: 14px 0; background: var(--fog);
+    border-radius: 13px; margin-bottom: 12px;
+  }
+  .call-opts { display: flex; gap: 9px; }
+  .call-opt {
+    flex: 1; height: 46px; border-radius: 13px; border: 1px solid var(--line); background: var(--pwhite);
+    font-size: 13px; font-weight: 520; color: var(--ink); font-family: var(--sans); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .call-opt.primary { background: var(--ink); border-color: var(--ink); color: var(--pwhite); }
+  .call-tip { font-size: 10px; color: var(--dove); line-height: 1.6; margin-top: 11px; text-align: center; }
+
+  /* ── 列表卡（evaluate 工作台，1:1 对齐 .lcard） ── */
+  .evalmeta { display: flex; align-items: baseline; gap: 8px; padding: 4px 18px 10px; }
+  .evalmeta__big { font-size: 14px; font-weight: 700; }
+  .evalmeta__num { font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .evalmeta__today { font-size: 11px; font-weight: 600; color: var(--rust); background: rgba(93, 42, 26, 0.07); border-radius: 999px; padding: 3px 10px; }
+  .searchbox {
+    display: flex; align-items: center; gap: 8px; margin: 2px 16px 12px; height: 40px;
+    background: var(--pwhite); border-radius: 20px; border: 1px solid var(--line); padding: 0 15px;
+  }
+  .searchbox__ic { width: 14px; height: 14px; border: 2px solid var(--dove); border-radius: 50%; position: relative; flex-shrink: 0; }
+  .searchbox__ic::after { content: ""; position: absolute; width: 2px; height: 6px; background: var(--dove); transform: rotate(-45deg); right: -3px; bottom: -4px; }
+  .searchbox__ph { font-size: 12.5px; color: var(--dove); }
+  .ghead { display: flex; align-items: center; gap: 7px; margin: 12px 18px 8px; }
+  .ghead__gt { font-size: 13px; font-weight: 800; }
+  .ghead__gn {
+    min-width: 19px; height: 19px; padding: 0 7px; border-radius: 999px; background: #e7e9ee;
+    color: var(--ash); font-size: 10.5px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  }
+  .ghead__gs { margin-left: auto; font-size: 10px; color: var(--dove); }
+  .lcard {
+    background: var(--pwhite); border-radius: 14px; padding: 12px 14px; margin: 0 16px 10px;
+    box-shadow: 0 2px 10px rgba(23, 25, 28, 0.04);
+  }
+  .lcard__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .lcard__nm { font-size: 14.5px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stag { flex-shrink: 0; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+  .stag--green { color: #2f5f96; background: var(--sky); }
+  .stag--amber { color: var(--rust); background: rgba(93, 42, 26, 0.07); }
+  .lcard__mid { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .thumb { width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0; background: #eceef2; position: relative; overflow: hidden; }
+  .thumb::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(135deg, #f4efe9 0%, #e9e2d8 60%, #dfd5c8 100%);
+  }
+  .attrs { flex: 1; min-width: 0; }
+  .attrs__l1 { font-size: 12px; color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .attrs__l2 { font-size: 10.5px; color: var(--dove); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pricest { text-align: right; flex-shrink: 0; }
+  .pricest__lb { font-size: 9.5px; color: var(--dove); }
+  .pricest__vl { font-size: 16px; font-weight: 800; margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .pricest__u { font-size: 10.5px; font-weight: 600; color: var(--ash); margin-left: 1px; }
+  .pricest__vl--ok { color: #2f5f96; }
+  .lcard__foot {
+    display: flex; align-items: center; justify-content: space-between; margin-top: 10px;
+    padding-top: 9px; border-top: 1px solid var(--hair); gap: 8px;
+  }
+  .lcard__meta { display: flex; align-items: center; gap: 5px; min-width: 0; }
+  .srcchip { font-size: 9.5px; padding: 2px 7px; border-radius: 5px; font-weight: 500; flex-shrink: 0; }
+  .srcchip--share { color: #2f5f96; background: var(--sky); }
+  .srcchip--direct { color: var(--ash); background: #f2f3f5; }
+  .time { font-size: 10px; color: var(--dove); white-space: nowrap; }
+
+  /* 新增：结论徽标（评分 + 天数），落在 lcard__foot 右侧 */
+  .verdict { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .vchip {
+    height: 22px; padding: 0 8px; border-radius: 999px; display: inline-flex; align-items: center;
+    gap: 3px; font-size: 10px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .vchip--score { background: var(--apricot); color: var(--rust); }
+  .vchip--score .s { font-size: 8px; line-height: 1; }
+  .vchip--days { background: var(--fog); color: var(--ash); }
+  .vchip--days.rush { background: var(--rust); color: var(--pwhite); }
+  .vchip--days.slow { background: #eef0f3; color: var(--graphite); }
+
+  /* ── 详情页参数宫格 ── */
+  .pt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px 8px; }
+  .pt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .pt__lb { font-size: 10.5px; color: var(--dove); }
+  .pt__vl { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .spec-list { display: flex; flex-direction: column; }
+  .spec-row { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--hair); font-size: 12.5px; }
+  .spec-row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .spec-label { color: var(--graphite); flex-shrink: 0; }
+  .spec-value { color: var(--ink); font-weight: 480; text-align: right; }
+
+  /* 底部操作栏 */
+  .actionbar {
+    position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px); border-top: 1px solid var(--line); padding: 10px 16px 18px;
+    display: flex; gap: 9px; z-index: 20;
+  }
+  .abtn { flex: 1; height: 44px; border-radius: 999px; border: 0; font-size: 13.5px; font-weight: 520; font-family: var(--sans); cursor: pointer; }
+  .abtn--line { background: var(--pwhite); border: 1px solid var(--line); color: var(--ink); }
+  .abtn--ink { background: var(--ink); color: var(--pwhite); }
+
+  /* ── admin 侧插入位置指示 ── */
+  .insert-mark {
+    display: flex; align-items: center; gap: 8px; margin: 2px 0 10px;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--rust);
+  }
+  .insert-mark::before { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--apricot-line)); }
+  .insert-mark::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--apricot-line), transparent); }
+  .insert-mark .lb { background: var(--apricot); border-radius: 999px; padding: 2px 9px; }
+
+  @media (max-width: 1340px) {
+    .desk { width: 100%; }
+    .drawer { width: 660px; }
+  }
+  @media (max-width: 820px) {
+    .desk { border-radius: 14px; }
+    .desk .sidebar { display: none; }
+    .sheet-backdrop { display: none; }
+    .drawer { width: 100%; }
+    /* 步进器在窄屏可横向滚动，不撑破抽屉 */
+    .stepper { overflow-x: auto; scrollbar-width: none; }
+    .stepper::-webkit-scrollbar { display: none; }
+    .step__lb { white-space: nowrap; }
+    .figs { gap: 24px; }
+    .phone { transform: scale(0.88); transform-origin: top center; margin-bottom: -70px; }
+    .fig { max-width: 100%; }
+    .fig > div[style*="width:375px"] { transform: scale(0.88); transform-origin: top center; margin-bottom: -70px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ 文档头 ══════════════════ -->
+<div class="doc-head">
+  <div class="kicker">Steep · 评估反馈迭代 · High-Fidelity Design Spec</div>
+  <h1>让评估反馈变成<em>一句人话</em>，<br />和一个<em>能打出去的电话</em></h1>
+  <div class="head-meta">
+    <span>v1.0 · 2026-10-21</span>
+    <span class="hot">admin 5 处 · 小程序 3 页 · C 端 Web 1 处</span>
+    <span>房源条件分 1–5</span>
+    <span>装修后可售天数</span>
+    <span>联系评估人</span>
+    <span>5 项后端依赖 · 逐项标注降级</span>
+  </div>
+  <p class="lede">
+    当前评估反馈只回 <b>一个价格 + 一段备注</b>（<code>LeadEvalHistory</code> 四列：<code>eval_price /
+    remark / evaluator_id / evaluated_at</code>）。员工看完这条反馈，仍要自己判断「这套房子好不好、值不值得跟」；
+    客户看完只有一个数字，没有参照系，也没法就这个数字找人问一句 —— 反馈链路在价格处断掉了。
+    <br /><br />
+    本轮做三件事把链路接上：<b>① 房源条件分（单一综合分 1–5）</b>给「好不好」一个刻度；
+    <b>② 装修后可售天数</b>给「多久能出手」一个预期；<b>③ 联系评估人</b>给「有疑问找谁」一个出口。
+    三项都长在既有卡片里，不新增页面、不改员工现有操作路径。
+    <br /><br />
+    设计纪律：<b>数字退位、结论前置</b>。详情页首屏先给一句人话结论（serif 引文），评分与周期是它的佐证，
+    而不是反过来让人去读三个数字。任何裸数据旁边都必须有翻译 —— <code>45 天</code> 旁永远有
+    <code>约 1.5 个月</code>，<code>4 分</code> 旁永远有 <code>良好</code>。
+  </p>
+</div>
+
+<!-- ══════════════════ 跳转条 ══════════════════ -->
+<nav class="jump">
+  <div class="jump__in" id="jump">
+    <a href="#sec00" class="on">SEC 00 口径</a>
+    <a href="#art01">ART 01 admin 录入</a>
+    <a href="#art02">ART 02 admin 复核</a>
+    <a href="#art03">ART 03 授权 sheet</a>
+    <a href="#art04">ART 04 工作台列表</a>
+    <a href="#art05">ART 05 客户详情</a>
+    <a href="#art06">ART 06 C 端 Web</a>
+    <a href="#sec01">SEC 01 数据契约</a>
+    <a href="#sec02">SEC 02 落地 SPEC</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ SEC 00 ══════════════════ -->
+<section class="sec" id="sec00">
+  <div class="kicker">SEC 00 · 口径</div>
+  <h2>三项新增，各自的锚点与降级规则</h2>
+  <p class="sec-lede">
+    三项信息都必须是<b>员工能快速给、客户能一眼读</b>的。下面的锚点表决定了「4 分」在不同员工手里
+    是否指同一件事 —— 没有锚点的一致性，跨人评分就等于噪声。
+  </p>
+
+  <div class="panel">
+    <h3>表 1 · 房源条件分锚点（单一综合分，1–5）</h3>
+    <p class="sub">
+      分档只看两件员工一定掌握的事实：户型是否好卖、楼层是否有折价。
+      综合分 = 员工的整体判断，锚点只保证同一事实不出两种结论。
+    </p>
+    <table>
+      <thead>
+        <tr><th style="width:74px">分值</th><th style="width:86px">短标签</th><th style="width:300px">锚点（员工自我对照）</th><th>典型情况</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b class="t-num">5</b> <span class="t-mut">/ 5</span></td>
+          <td><b>优质</b></td>
+          <td>户型方正通透、当前楼层段在小区里最好卖，几乎无硬伤</td>
+          <td class="t-mut">南北通透三居 · 中高楼层 · 无遮挡</td>
+        </tr>
+        <tr>
+          <td><b class="t-num">4</b> <span class="t-mut">/ 5</span></td>
+          <td><b>良好</b></td>
+          <td>主流户型，楼层可接受，有 1 项需在带看时说清的短板</td>
+          <td class="t-mut">南向两居 · 中间楼层 · 采光一般</td>
+        </tr>
+        <tr>
+          <td><b class="t-num">3</b> <span class="t-mut">/ 5</span></td>
+          <td><b>一般</b></td>
+          <td>户型或楼层有一项明显折价，需要靠价格补</td>
+          <td class="t-mut">南北两居 · 顶楼 / 临街</td>
+        </tr>
+        <tr>
+          <td><b class="t-num">2</b> <span class="t-mut">/ 5</span></td>
+          <td><b>偏弱</b></td>
+          <td>户型与楼层同时偏弱，或存在硬伤需重装化解</td>
+          <td class="t-mut">朝北异形 · 低楼层 · 需重装</td>
+        </tr>
+        <tr>
+          <td><b class="t-num">1</b> <span class="t-mut">/ 5</span></td>
+          <td><b>难售</b></td>
+          <td>结构性难卖，通常伴随长周期或需要显著让价</td>
+          <td class="t-mut">暗厅暗卫 · 一层 · 产权复杂</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note-strip">
+      <div class="dot"></div>
+      <div>
+        <b>为什么合成一个分而不是拆户型 / 楼层：</b>拆分后员工要打两次分、客户要读两个数字再自己综合，
+        与「对数据不敏感」直接冲突。拆分的价值（可统计哪一项拖分）暂时让位于可读性 —— 若后续要做
+        批量分析，可用 <code>remark</code> 中的结构化标签补，不必改评分结构。
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>表 2 · 装修后可售天数：录入连续值，展示分档</h3>
+    <p class="sub">
+      员工只填一个天数（整数，1–365），系统派生出档位短句与「约 N 个月」的人话翻译。
+      存储保留连续值，是为了将来能算均值、能做「我的预估 vs 实际」对比。
+    </p>
+    <table>
+      <thead>
+        <tr><th style="width:110px">区间</th><th style="width:96px">档位词</th><th style="width:200px">展示文案</th><th>卡片形态</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="t-num">≤ 30 天</td><td><b>快</b></td>
+          <td>预计 <b>N</b> 天可售出 · 约 1 个月</td>
+          <td class="t-mut">深底 <code>vchip--days rush</code>（Rust 实底白字，全列表唯一强色块）</td>
+        </tr>
+        <tr>
+          <td class="t-num">31 – 60 天</td><td><b>正常</b></td>
+          <td>预计 <b>N</b> 天可售出 · 约 1.5 个月</td>
+          <td class="t-mut">Fog 底 Ash 字</td>
+        </tr>
+        <tr>
+          <td class="t-num">61 – 90 天</td><td><b>偏慢</b></td>
+          <td>预计 <b>N</b> 天可售出 · 约 3 个月</td>
+          <td class="t-mut">Fog 底 Ash 字</td>
+        </tr>
+        <tr>
+          <td class="t-num">&gt; 90 天</td><td><b>慢</b></td>
+          <td>预计 <b>N</b> 天可售出 · 约 N/30 个月</td>
+          <td class="t-mut">灰底 Graphite 字（<code>slow</code>，弱化但仍在）</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note-strip">
+      <div class="dot"></div>
+      <div>
+        <b>基线对比是可选增强，不是必答项：</b>「快于小区平均 N 天」需要小区级平均去化天数，
+        当前后端无此聚合（<code>services/reports/aggregations.py</code> 现有
+        <code>absorption_months</code> 是商圈级、按月、非单套）。设计为<b>有基线才显示、无基线只显示档位</b>，
+        不伪造对比。降级形态见 ART 05 右侧第二台手机。
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>表 3 · 联系评估人：可见性与留痕</h3>
+    <p class="sub">
+      复用项目既有的 <code>PublicConsultantContact</code> 范式（<code>routers/public/projects.py:333</code>）：
+      <b>列表 / 详情只给脱敏号，真实号走独立端点按需拉取</b>，且每次拉取落入审计与跟进记录。既不浪费也无隐蔽收集。
+    </p>
+    <table>
+      <thead>
+        <tr><th style="width:132px">角色</th><th style="width:150px">看到什么</th><th style="width:170px">动作</th><th>留痕</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>C 端客户</b><span class="t-mut">（线索创建人）</span></td>
+          <td>评估人昵称 + 角色 + 脱敏号 <code>138****6688</code></td>
+          <td>「拨打」按钮 → 拉真实号 → 面板内 <code>拨打电话</code> / <code>复制号码</code></td>
+          <td class="t-mut">写入 <code>lead_followups</code>：method=<code>phone</code>，content 形如「客户致电评估人 王建房」</td>
+        </tr>
+        <tr>
+          <td><b>内部员工</b><span class="t-mut">（admin / operator）</span></td>
+          <td>同上（admin 侧直接给真实号，减少一次点击）</td>
+          <td>小程序：拨号面板；Web：<code>tel:</code> 直呼</td>
+          <td class="t-mut">小程序同样写跟进；Web 侧写审计日志（<code>audit_logs</code>）</td>
+        </tr>
+        <tr>
+          <td><b>非归属员工</b><span class="t-mut">（无该线索权限）</span></td>
+          <td>不渲染评估人区块</td>
+          <td>—</td>
+          <td class="t-mut">端点返回 403</td>
+        </tr>
+        <tr>
+          <td><b>评估人本人号码为空</b></td>
+          <td>昵称 + 「暂未登记手机号」</td>
+          <td>降级为「登记跟进」按钮（不留死链）</td>
+          <td class="t-mut">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════ ART 01 ══════════════════ -->
+<section class="sec" id="art01">
+  <div class="kicker">ART 01 · admin / admin/leads/[leadId]</div>
+  <h2>评估录入：价格不再是唯一的必填项</h2>
+  <p class="sec-lede">
+    改造点全在既有的 <code>PendingAssessmentPanel</code>（<code>lead-audit-panel.tsx</code>）内部，
+    位置不变、字段顺序按「先说好不好 → 再说多久 → 最后说多少钱」重排。
+    <b>评分与天数为必填</b>，价格保持必填 —— 三项齐了才允许批准排期，
+    否则新口径下又会出现「只有价格的旧反馈」。
+  </p>
+
+  <div class="artlabel"><span>FIG 01</span><em>· 可直接交互：点星评分、输入天数看档位实时联动</em></div>
+
+  <div class="desk-wrap">
+    <div class="desk" data-screen-label="ART 01 · admin 线索详情抽屉 · 评估结论录入">
+      <!-- 侧边栏 -->
+      <aside class="sidebar">
+        <div class="side-logo"><div class="mark">S</div><div class="name">Steep Admin</div></div>
+        <div class="side-sec">作业</div>
+        <div class="nav-item"><span class="ic"></span>工作台</div>
+        <div class="nav-item active"><span class="ic"></span>线索管理</div>
+        <div class="nav-item"><span class="ic"></span>项目</div>
+        <div class="nav-item"><span class="ic"></span>房源</div>
+        <div class="side-sec">数据</div>
+        <div class="nav-item"><span class="ic"></span>报表</div>
+        <div class="nav-item"><span class="ic"></span>营销</div>
+        <div class="side-sec">系统</div>
+        <div class="nav-item"><span class="ic"></span>用户</div>
+        <div class="nav-item"><span class="ic"></span>审计日志</div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="crumb">
+            <span>线索管理</span><span class="sep">/</span>
+            <span class="cur">金杨七街坊 · 2室1厅</span>
+            <span class="idchip">ld_7f3a…c91</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-mini">导出</button>
+            <button class="btn-mini ink">新建线索</button>
+          </div>
+        </div>
+
+        <div class="desk-body">
+          <div class="sheet-backdrop"></div>
+
+          <!-- 抽屉 -->
+          <div class="drawer">
+            <div class="dhead">
+              <div class="dhead__top">
+                <div>
+                  <div class="dhead__nm">金杨七街坊 · 2室1厅</div>
+                  <div class="dhead__meta">
+                    浦东新区 · 金杨 · 88.5㎡ · 12/18层 · 南 &nbsp;|&nbsp;
+                    业主报价 ¥520 万 &nbsp;|&nbsp; 提交 2026-10-19 14:22
+                  </div>
+                </div>
+                <div class="dhead__x">×</div>
+              </div>
+            </div>
+
+            <div class="stepper">
+              <div class="step now"><span class="step__dot">1</span><span class="step__lb">待评估</span></div>
+              <div class="step__line"></div>
+              <div class="step"><span class="step__dot">2</span><span class="step__lb">待看房</span></div>
+              <div class="step__line"></div>
+              <div class="step"><span class="step__dot">3</span><span class="step__lb">已看房</span></div>
+              <div class="step__line"></div>
+              <div class="step"><span class="step__dot">4</span><span class="step__lb">已签约</span></div>
+            </div>
+
+            <div class="tabs">
+              <div class="tab-item on">信息与审核</div>
+              <div class="tab-item">监控看板</div>
+            </div>
+
+            <div class="dbody">
+              <!-- KPI 行（改造后：新增 房源条件分 / 可售周期） -->
+              <div class="insert-mark"><span class="lb">KPI 行由 4 格 → 6 格</span></div>
+              <div class="kpirow" style="grid-template-columns:repeat(3,1fr)">
+                <div class="kpi">
+                  <div class="kpi__lb"><span class="ic"></span>业主报价</div>
+                  <div class="kpi__vl">¥520<span class="u">万</span></div>
+                  <div class="kpi__meta">¥5.88 万/㎡</div>
+                </div>
+                <div class="kpi">
+                  <div class="kpi__lb"><span class="ic"></span>评估价</div>
+                  <div class="kpi__vl" style="color:var(--dove)">待评估</div>
+                  <div class="kpi__meta">尚未录入</div>
+                </div>
+                <div class="kpi">
+                  <div class="kpi__lb"><span class="ic"></span>面积 / 单价</div>
+                  <div class="kpi__vl">88.5<span class="u">㎡</span></div>
+                  <div class="kpi__meta">¥5.88 万/㎡</div>
+                </div>
+              </div>
+
+              <!-- 管理决策终端 -->
+              <div class="acard">
+                <div class="acard__h">
+                  <div class="acard__t"><span class="ic"></span>管理决策终端</div>
+                  <div class="acard__aside">pending_assessment</div>
+                </div>
+                <div class="acard__b">
+
+                  <!-- ① 房源条件分 -->
+                  <div class="form-blk">
+                    <div class="form-lb">
+                      ① 房源条件分<span class="req">必填</span>
+                      <span class="hint" id="a1-word">点击星星打分</span>
+                    </div>
+                    <div class="score-row" id="a1-stars">
+                      <button class="score-star" data-v="1" type="button">★</button>
+                      <button class="score-star" data-v="2" type="button">★</button>
+                      <button class="score-star" data-v="3" type="button">★</button>
+                      <button class="score-star" data-v="4" type="button">★</button>
+                      <button class="score-star" data-v="5" type="button">★</button>
+                      <span class="score-word mut" id="a1-say" style="margin-left:8px">未评分</span>
+                    </div>
+                    <div class="anchor-bar">
+                      <div class="n">i</div>
+                      <div class="tx" id="a1-anchor">
+                        打分锚点：<b>5 优质</b> 户型方正通透、楼层最好卖 ·
+                        <b>4 良好</b> 主流户型、1 项小短板 ·
+                        <b>3 一般</b> 户型或楼层有一项明显折价 ·
+                        <b>2 偏弱</b> 两项都弱或需重装 ·
+                        <b>1 难售</b> 结构性硬伤
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ② 装修后可售天数 -->
+                  <div class="form-blk">
+                    <div class="form-lb">
+                      ② 装修后可售周期<span class="req">必填</span>
+                      <span class="hint">预计从收房完成到售出的天数</span>
+                    </div>
+                    <div class="num-grid">
+                      <div class="inp-wrap">
+                        <span class="pre">约</span>
+                        <input type="number" id="a1-days" placeholder="0" min="1" max="365" />
+                        <span class="suf">天</span>
+                      </div>
+                      <div class="inp-wrap">
+                        <span class="pre">¥</span>
+                        <input type="number" placeholder="0" min="1" max="9999" />
+                        <span class="suf">万 · 评估价</span>
+                      </div>
+                    </div>
+                    <div class="cycle-out" id="a1-cycle">
+                      <span class="tier-chip mut"><span class="dot"></span>待填天数</span>
+                      <span class="cycle-say">填写后自动生成档位与「约 N 个月」文案</span>
+                    </div>
+                  </div>
+
+                  <!-- ③ 评估意见 -->
+                  <div class="form-blk">
+                    <div class="form-lb">
+                      ③ 评估意见
+                      <span class="hint">选填 · 会同时出现在客户端跟进时间线</span>
+                    </div>
+                    <input class="inp" placeholder="如：南北通透，12/18 层采光好；厨房偏小需在带看时说明" />
+                  </div>
+
+                  <!-- 动作 -->
+                  <div class="form-blk" style="display:flex;flex-direction:column;gap:10px">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                      <button class="btn-mini ink" style="height:44px;justify-content:center;font-size:13px" id="a1-approve">批准约看排期</button>
+                      <button class="btn-mini" style="height:44px;justify-content:center;font-size:13px">评估不符 · 放弃</button>
+                    </div>
+                    <div class="note-strip" style="margin-top:0">
+                      <div class="dot"></div>
+                      <div>
+                        <b>三项校验未齐时按钮禁用：</b>评分未选 / 天数为空 / 评估价为空，
+                        任一缺失则「批准约看排期」置灰并给出具体缺项提示 —— 不允许再产生「只有价格」的反馈。
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="toast" id="a1-toast"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap-note">
+    <b>交互口径：</b>点第 N 颗星即打 N 分，星星右侧文案同步切换为锚点表短标签（优质 / 良好 / 一般 / 偏弱 / 难售），
+    下方锚点条文字同步高亮当前档。天数输入后即时派生成档位 chip（≤30 天为「快」，用深底强色块）。
+    <br />
+    <b>顺序理由：</b>「好不好 → 多久 → 多少钱」对员工是判断由粗到细的自然顺序；对客户是读结论的自然顺序。
+    与现状（价格在第一位）相比，价格仍在同一屏，无额外滚动。
+    <br />
+    <b>价格输入框保留原有的实时差价能力：</b><code>amount-wrap</code> 的 <code>diffline</code>
+    （低于报价 / 高于报价 / 一致）与 <code>unit-live</code>（折合单价）逻辑不变，只是与天数并排。
+  </p>
+</section>
+
+<!-- ══════════════════ ART 02 ══════════════════ -->
+<section class="sec" id="art02">
+  <div class="kicker">ART 02 · admin 复核态</div>
+  <h2>评分与周期进入 KPI 行，评估人进历史卡</h2>
+  <p class="sec-lede">
+    已评估线索打开抽屉，员工最先看到的是 6 格 KPI（含新增两格）。评估历史每条从「价格一行」
+    变成「价格 + 星级 + 天数 + 意见」的一行完整结论，末条挂评估人与直达拨号 ——
+    需要复核时不必再翻到别的页面找是谁评的。
+  </p>
+
+  <div class="artlabel"><span>FIG 02</span><em>· 线索已评估（pending_visit）· 可交互：拨号面板 / 历史行切换</em></div>
+
+  <div class="desk-wrap">
+    <div class="desk" data-screen-label="ART 02 · admin 复核态 · KPI 六格 + 评估历史含评估人">
+      <aside class="sidebar">
+        <div class="side-logo"><div class="mark">S</div><div class="name">Steep Admin</div></div>
+        <div class="side-sec">作业</div>
+        <div class="nav-item"><span class="ic"></span>工作台</div>
+        <div class="nav-item active"><span class="ic"></span>线索管理</div>
+        <div class="nav-item"><span class="ic"></span>项目</div>
+        <div class="nav-item"><span class="ic"></span>房源</div>
+        <div class="side-sec">数据</div>
+        <div class="nav-item"><span class="ic"></span>报表</div>
+        <div class="nav-item"><span class="ic"></span>营销</div>
+        <div class="side-sec">系统</div>
+        <div class="nav-item"><span class="ic"></span>用户</div>
+        <div class="nav-item"><span class="ic"></span>审计日志</div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="crumb">
+            <span>线索管理</span><span class="sep">/</span>
+            <span class="cur">金杨七街坊 · 2室1厅</span>
+            <span class="idchip">ld_7f3a…c91</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-mini">导出</button>
+            <button class="btn-mini ink">新建线索</button>
+          </div>
+        </div>
+
+        <div class="desk-body">
+          <div class="sheet-backdrop"></div>
+
+          <div class="drawer">
+            <div class="dhead">
+              <div class="dhead__top">
+                <div>
+                  <div class="dhead__nm">金杨七街坊 · 2室1厅</div>
+                  <div class="dhead__meta">
+                    浦东新区 · 金杨 · 88.5㎡ · 12/18层 · 南 &nbsp;|&nbsp;
+                    业主报价 ¥520 万 &nbsp;|&nbsp; 王建房 已于 2026-10-20 10:05 评估
+                  </div>
+                </div>
+                <div class="dhead__x">×</div>
+              </div>
+            </div>
+
+            <div class="stepper">
+              <div class="step done"><span class="step__dot">1</span><span class="step__lb">待评估</span></div>
+              <div class="step__line done"></div>
+              <div class="step now"><span class="step__dot">2</span><span class="step__lb">待看房</span></div>
+              <div class="step__line"></div>
+              <div class="step"><span class="step__dot">3</span><span class="step__lb">已看房</span></div>
+              <div class="step__line"></div>
+              <div class="step"><span class="step__dot">4</span><span class="step__lb">已签约</span></div>
+            </div>
+
+            <div class="tabs">
+              <div class="tab-item on">信息与审核</div>
+              <div class="tab-item">监控看板</div>
+            </div>
+
+            <div class="dbody">
+              <!-- KPI 6 格 -->
+              <div class="insert-mark"><span class="lb">KPI 行 · 4 格 → 6 格（新增末两格）</span></div>
+              <div class="kpirow">
+                <div class="kpi">
+                  <div class="kpi__lb"><span class="ic"></span>业主报价</div>
+                  <div class="kpi__vl">¥520<span class="u">万</span></div>
+                  <div class="kpi__meta">¥5.88 万/㎡</div>
+                </div>
+                <div class="kpi">
+                  <div class="kpi__lb"><span class="ic"></span>评估价</div>
+                  <div class="kpi__vl">¥486<span class="u">万</span></div>
+                  <div class="kpi__meta" style="color:#2f5f96">−34 万 · −6.5%</div>
+                </div>
+                <div class="kpi">
+                  <div class="kpi__lb"><span class="ic"></span>面积 / 单价</div>
+                  <div class="kpi__vl">88.5<span class="u">㎡</span></div>
+                  <div class="kpi__meta">¥5.49 万/㎡</div>
+                </div>
+                <div class="kpi">
+                  <div class="kpi__lb"><span class="ic"></span>报价偏离</div>
+                  <div class="kpi__vl" style="color:#2f5f96">−6.5<span class="u">%</span></div>
+                  <div class="kpi__meta">低于报价 34 万</div>
+                </div>
+                <div class="kpi kpi--new">
+                  <div class="kpi__lb"><span class="ic"></span>房源条件分</div>
+                  <div class="kpi__vl">4<span class="u">/ 5</span></div>
+                  <div class="kpi__stars">
+                    <span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s">★</span>
+                  </div>
+                  <div class="kpi__meta">良好 · 主流户型</div>
+                </div>
+                <div class="kpi kpi--new">
+                  <div class="kpi__lb"><span class="ic"></span>可售周期</div>
+                  <div class="kpi__vl">45<span class="u">天</span></div>
+                  <div class="kpi__meta">正常 · 约 1.5 个月</div>
+                </div>
+              </div>
+
+              <!-- 评估结论摘要卡（新增，只在已评估态出现） -->
+              <div class="insert-mark"><span class="lb">新增 · 评估结论摘要（不替代历史卡，仅做结论前置）</span></div>
+              <div class="acard">
+                <div class="acard__b" style="padding:14px 16px">
+                  <div class="concl" style="background:var(--apricot)">
+                    <div class="concl__cap">评估结论 · 2026-10-20 10:05</div>
+                    <div class="concl__say">
+                      「户型方正、12/18 层采光好，属于小区主流好卖品；给到 486 万有约 34 万议价空间，
+                      装修后预计 45 天可出手。」
+                    </div>
+                    <div class="concl__nums">
+                      <div class="cn">
+                        <div class="cn__k">房源条件分</div>
+                        <div class="cn__v">4<span class="u">/ 5</span></div>
+                        <div class="cn__sub">良好</div>
+                      </div>
+                      <div class="cn cn--div">
+                        <div class="cn__k">装修后可售</div>
+                        <div class="cn__v">45<span class="u">天</span></div>
+                        <div class="cn__sub">约 1.5 个月 · 正常</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 评估人 -->
+                  <div class="evaln">
+                    <div class="evaln__av">王</div>
+                    <div class="evaln__main">
+                      <div class="evaln__nm">王建房 <span class="evaln__role">评估师</span></div>
+                      <div class="evaln__ph" id="a2-phone">138****6688</div>
+                    </div>
+                    <div class="evaln__acts">
+                      <button class="btn-mini" id="a2-copy">复制号码</button>
+                      <button class="btn-mini ink" id="a2-call">拨打电话</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 评估历史 -->
+              <div class="acard">
+                <div class="acard__h">
+                  <div class="acard__t"><span class="ic"></span>评估历史</div>
+                  <div class="acard__aside">2 条记录</div>
+                </div>
+                <div class="acard__b" style="padding:14px 16px">
+                  <div class="ehist">
+                    <div class="erow active">
+                      <div class="erow__top">
+                        <span class="erow__price">¥486 万</span>
+                        <span class="erow__stars">
+                          <span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s">★</span>
+                        </span>
+                        <span class="erow__days">45 天 · 约 1.5 个月</span>
+                        <span class="badge-cur">当前</span>
+                      </div>
+                      <div class="erow__rm">南北通透，12/18 层采光好；厨房偏小需在带看时说明。</div>
+                      <div class="erow__foot">
+                        <span>王建房</span><span class="sep">·</span>
+                        <span>2026-10-20 10:05</span><span class="sep">·</span>
+                        <span style="color:#2f5f96">已确认</span>
+                      </div>
+                    </div>
+                    <div class="erow">
+                      <div class="erow__top">
+                        <span class="erow__price">¥498 万</span>
+                        <span class="erow__stars">
+                          <span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s">★</span>
+                        </span>
+                        <span class="erow__days">60 天 · 约 2 个月</span>
+                      </div>
+                      <div class="erow__rm">首次评估，按小区近 3 月成交价上浮 2% 给出。</div>
+                      <div class="erow__foot">
+                        <span>王建房</span><span class="sep">·</span>
+                        <span>2026-10-19 16:40</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="note-strip">
+                    <div class="dot"></div>
+                    <div>
+                      <b>历史行改造口径：</b>星级与天数直接复用当前价的下标，不做「评分趋势」图表 ——
+                      员工关心的是最新一次结论，历史只需可追溯。天数变化用文字（<code>60 天 → 45 天</code>）
+                      而非图表，避免在抽屉里塞可视化。
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="toast" id="a2-toast"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap-note">
+    <b>KPI 行从 4 格变 6 格，宽度怎么分：</b>现有 <code>grid-cols-2 sm:grid-cols-4</code> 改为
+    <code>grid-cols-2 sm:grid-cols-3 xl:grid-cols-6</code>，每格 <code>p-4</code> 降到 <code>p-3</code>，
+    字号 24px→20px 保持 <code>tabular-nums</code> 对齐。720px 宽抽屉在 <code>sm</code> 下两行三列，
+    不出现横向滚动。
+    <br />
+    <b>「评估结论摘要」是新增卡而非替换：</b>它承担「结论前置」的职责（首屏一眼读懂），
+    历史卡保留完整可追溯性。若产品侧认为冗余，可只保留摘要卡 + 折叠历史（实现成本更低）。
+    <br />
+    <b>评估人放在摘要卡下方而不是历史行内：</b>客户要联系的是「给我评估的那个人」，
+    即最新一次的评估人；放历史行内会让「该打给谁」变成一道选择题。
+  </p>
+</section>
+
+<!-- ══════════════════ ART 03 ══════════════════ -->
+<section class="sec" id="art03">
+  <div class="kicker">ART 03 · miniapp / pages/valuation/authorize</div>
+  <h2>授权 sheet：员工一次填完三件事</h2>
+  <p class="sec-lede">
+    现有 <code>approve</code> sheet 只有「拟收房评估价 + 评估意见」。改造后在价格之上插入评分与天数，
+    并保持原有的实时差价提示与校验。星级用<b>点选块</b>而非滑杆 —— 单手上滑场景下滑杆误触率高于点选。
+  </p>
+
+  <div class="artlabel"><span>FIG 03</span><em>· 可交互：点选星级 / 点快捷档位 / 输入天数看联动</em></div>
+
+  <div class="figs">
+    <!-- 手机 1：授权 sheet 打开态 -->
+    <div class="fig">
+      <div class="fig__label">
+        授权 sheet 打开态
+        <span>price + score + days 同屏，无需内滚</span>
+      </div>
+      <div class="phone" data-screen-label="ART 03 · 小程序 authorize · 授权 sheet">
+        <div class="statusbar">
+          <div class="sb-time">9:41</div>
+          <div class="sb-icons"><i style="width:15px;height:9px"></i><i style="width:12px;height:9px"></i><i style="width:20px;height:9px"></i></div>
+        </div>
+        <div class="nav-bar">
+          <div class="nav-back"></div>
+          <div class="nav-title">评估授权</div>
+          <div class="capsule">
+            <div class="capsule-side"><div class="capsule-dot"></div></div>
+            <div class="capsule-div"></div>
+            <div class="capsule-side"><div class="capsule-ring"></div></div>
+          </div>
+        </div>
+
+        <div class="screen" style="min-height:512px;padding-bottom:0">
+          <!-- 背景内容（半屏被遮） -->
+          <div class="mp hero" style="opacity:.9">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div class="stag stag--amber">待评估</div>
+              <div style="font-size:10.5px;color:var(--dove)">ld_7f3a…c91</div>
+            </div>
+            <div style="font-size:19px;font-weight:800;margin-top:9px">金杨七街坊</div>
+            <div style="font-size:12px;color:var(--ash);margin-top:5px">浦东新区 · 金杨</div>
+            <div style="font-size:11.5px;color:var(--graphite);margin-top:3px">李女士 提交 · 客户分享</div>
+          </div>
+          <div class="mp" style="display:flex">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+              <div style="font-size:11px;color:var(--dove)">业主报价</div>
+              <div style="font-size:20px;font-weight:800;font-variant-numeric:tabular-nums">¥520<span style="font-size:11px">万</span></div>
+              <div style="font-size:10px;color:var(--dove)">¥5.88 万/㎡</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border-left:1px solid var(--hair)">
+              <div style="font-size:11px;color:var(--dove)">本次评估价</div>
+              <div style="font-size:13px;font-weight:600;color:var(--dove);padding:4px 0">待我给出</div>
+              <div style="font-size:10px;color:var(--dove);text-align:center;padding:0 6px">给出后实时比对差值</div>
+            </div>
+          </div>
+          <div class="mp" style="padding-bottom:8px">
+            <div class="pt-grid">
+              <div class="pt"><div class="pt__lb">面积</div><div class="pt__vl">88.5㎡</div></div>
+              <div class="pt"><div class="pt__lb">户型</div><div class="pt__vl">2室1厅</div></div>
+              <div class="pt"><div class="pt__lb">朝向</div><div class="pt__vl">南</div></div>
+              <div class="pt"><div class="pt__lb">楼层</div><div class="pt__vl">12/18层</div></div>
+              <div class="pt"><div class="pt__lb">楼栋</div><div class="pt__vl">7栋</div></div>
+              <div class="pt"><div class="pt__lb">户室</div><div class="pt__vl">1202室</div></div>
+            </div>
+          </div>
+
+          <!-- 遮罩 + sheet -->
+          <div class="mask-m"></div>
+          <div class="m-sheet" style="border-radius:20px 20px 0 0">
+            <div class="m-sheet__grab"></div>
+            <div class="m-sheet__head">
+              <div class="m-sheet__title">给出评估结论并批准</div>
+              <div class="m-sheet__x">×</div>
+            </div>
+
+            <!-- ① 评分 -->
+            <div class="mfld">
+              <div class="mfld__lb">
+                <span>① 房源条件分</span>
+                <span class="hint" id="a3-hint">点选 1–5 分</span>
+              </div>
+              <div class="mscore" id="a3-score">
+                <button class="mscore__item" data-v="1" type="button"><span class="n">1</span><span class="s">★</span></button>
+                <button class="mscore__item" data-v="2" type="button"><span class="n">2</span><span class="s">★</span></button>
+                <button class="mscore__item" data-v="3" type="button"><span class="n">3</span><span class="s">★</span></button>
+                <button class="mscore__item" data-v="4" type="button"><span class="n">4</span><span class="s">★</span></button>
+                <button class="mscore__item" data-v="5" type="button"><span class="n">5</span><span class="s">★</span></button>
+              </div>
+              <div class="mscore-word" id="a3-word">未评分 · 5 优质 / 4 良好 / 3 一般 / 2 偏弱 / 1 难售</div>
+            </div>
+
+            <!-- ② 天数 -->
+            <div class="mfld">
+              <div class="mfld__lb">
+                <span>② 装修后可售周期</span>
+                <span class="hint">收房完成起算</span>
+              </div>
+              <div class="m-amount" style="padding:8px 14px">
+                <span class="cur" style="font-size:12px">约</span>
+                <input class="in" id="a3-days" type="number" placeholder="0" style="font-size:26px;border:0;outline:0;background:transparent;font-family:var(--sans);font-weight:520;color:var(--ink);width:100%" />
+                <span class="unit">天</span>
+              </div>
+              <div class="quick-chips" id="a3-chips">
+                <button class="qc" data-d="20" type="button">30 天内</button>
+                <button class="qc" data-d="45" type="button">1–2 个月</button>
+                <button class="qc" data-d="75" type="button">2–3 个月</button>
+                <button class="qc" data-d="110" type="button">3 个月+</button>
+              </div>
+              <div class="m-diff" id="a3-cycle" style="min-height:20px;margin-top:6px">
+                <span style="color:var(--dove)">填写后自动生成展示文案</span>
+              </div>
+            </div>
+
+            <!-- ③ 价格 -->
+            <div class="mfld">
+              <div class="mfld__lb">
+                <span>③ 拟收房评估价</span>
+                <span class="hint">必填</span>
+              </div>
+              <div class="m-amount">
+                <span class="cur">¥</span>
+                <input class="in" id="a3-price" type="number" placeholder="0" style="font-size:28px;border:0;outline:0;background:transparent;font-family:var(--sans);font-weight:520;color:var(--ink);width:100%" />
+                <span class="unit">万</span>
+              </div>
+              <div class="m-diff" id="a3-diff">
+                与业主报价 <b>520</b> 万对比 · 输入后显示议价空间
+              </div>
+            </div>
+
+            <div class="m-acts">
+              <button class="m-btn m-btn--line" style="flex:0 0 96px">放弃</button>
+              <button class="m-btn m-btn--ink" id="a3-submit">确认授权</button>
+            </div>
+          </div>
+          <div class="mfooter"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 手机 2：授权后详情（员工视角） -->
+    <div class="fig">
+      <div class="fig__label">
+        授权成功后 · 员工详情结论区
+        <span>结论前置 + 评估人可拨号</span>
+      </div>
+      <div class="phone" data-screen-label="ART 03b · 小程序 authorize · 授权后结论区">
+        <div class="statusbar">
+          <div class="sb-time">9:43</div>
+          <div class="sb-icons"><i style="width:15px;height:9px"></i><i style="width:12px;height:9px"></i><i style="width:20px;height:9px"></i></div>
+        </div>
+        <div class="nav-bar">
+          <div class="nav-back"></div>
+          <div class="nav-title">评估详情</div>
+          <div class="capsule">
+            <div class="capsule-side"><div class="capsule-dot"></div></div>
+            <div class="capsule-div"></div>
+            <div class="capsule-side"><div class="capsule-ring"></div></div>
+          </div>
+        </div>
+
+        <div class="screen screen--tall" style="min-height:672px;padding-bottom:80px">
+          <div class="mp hero">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div class="stag stag--green">待看房</div>
+              <div style="font-size:10.5px;color:var(--dove)">ld_7f3a…c91</div>
+            </div>
+            <div style="font-size:19px;font-weight:800;margin-top:9px">金杨七街坊</div>
+            <div style="font-size:12px;color:var(--ash);margin-top:5px">浦东新区 · 金杨</div>
+            <div style="font-size:11.5px;color:var(--graphite);margin-top:3px">李女士 提交 · 客户分享</div>
+          </div>
+
+          <!-- 结论卡（新增：结论前置） -->
+          <div class="mp" style="padding:0;overflow:hidden">
+            <div class="mconcl" style="border-radius:16px">
+              <div class="mconcl__cap">评估结论 · 已授权</div>
+              <div class="mconcl__price">
+                <span class="cur">¥</span><span class="num">486</span><span class="unit">万</span>
+              </div>
+              <div style="font-size:10.5px;color:rgba(93,42,26,.66);margin-top:4px">折合 ¥5.49 万/㎡ · 较业主报价低 34 万</div>
+              <div class="mconcl__say">
+                户型方正、12/18 层采光好，属小区主流好卖品；装修后预计 45 天可出手。
+              </div>
+              <div class="mconcl__kpis">
+                <div class="mk">
+                  <div class="mk__k">房源条件分</div>
+                  <div class="mk__v">4<span class="u">/ 5</span></div>
+                  <div class="mk__stars">
+                    <span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s">★</span>
+                  </div>
+                  <div class="mk__sub">良好</div>
+                </div>
+                <div class="mk">
+                  <div class="mk__k">装修后可售</div>
+                  <div class="mk__v">45<span class="u">天</span></div>
+                  <div class="mk__stars" style="visibility:hidden"><span class="s">★</span></div>
+                  <div class="mk__sub">约 1.5 个月 · 正常</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 评估人卡 -->
+          <div class="mp">
+            <div class="mp-h">
+              <div class="mp-h__t">评估人</div>
+              <div class="mp-h__sub">有疑问可直接联系</div>
+            </div>
+            <div class="meval">
+              <div class="meval__av">王</div>
+              <div class="meval__main">
+                <div class="meval__nm">王建房 <span class="meval__role">评估师</span></div>
+                <div class="meval__sub">
+                  <span>138****6688</span>
+                  <span class="sep">·</span>
+                  <span>2026-10-20 评估</span>
+                </div>
+              </div>
+              <button class="meval__go" id="a3b-call">拨打</button>
+            </div>
+            <div class="meval__note">
+              通话将记入本线索的跟进记录，便于后续回溯沟通结论。
+            </div>
+          </div>
+
+          <!-- 参数宫格（保留原样） -->
+          <div class="mp">
+            <div class="pt-grid">
+              <div class="pt"><div class="pt__lb">面积</div><div class="pt__vl">88.5㎡</div></div>
+              <div class="pt"><div class="pt__lb">户型</div><div class="pt__vl">2室1厅</div></div>
+              <div class="pt"><div class="pt__lb">朝向</div><div class="pt__vl">南</div></div>
+              <div class="pt"><div class="pt__lb">楼层</div><div class="pt__vl">12/18层</div></div>
+              <div class="pt"><div class="pt__lb">业主报价</div><div class="pt__vl">¥520 万</div></div>
+              <div class="pt"><div class="pt__lb">最近跟进</div><div class="pt__vl">3 天前</div></div>
+            </div>
+          </div>
+
+          <div class="actionbar">
+            <button class="abtn abtn--line">标记他司成交</button>
+            <button class="abtn abtn--ink">更新跟进</button>
+          </div>
+          <div class="mfooter" style="bottom:22px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 手机 3：拨号面板 -->
+    <div class="fig">
+      <div class="fig__label">
+        拨号面板
+        <span>真实号按需拉取 · 拨号 / 复制 · 自动留痕</span>
+      </div>
+      <div class="phone" data-screen-label="ART 03c · 小程序 · 联系评估人拨号面板">
+        <div class="statusbar">
+          <div class="sb-time">9:43</div>
+          <div class="sb-icons"><i style="width:15px;height:9px"></i><i style="width:12px;height:9px"></i><i style="width:20px;height:9px"></i></div>
+        </div>
+        <div class="nav-bar">
+          <div class="nav-back"></div>
+          <div class="nav-title">评估详情</div>
+          <div class="capsule">
+            <div class="capsule-side"><div class="capsule-dot"></div></div>
+            <div class="capsule-div"></div>
+            <div class="capsule-side"><div class="capsule-ring"></div></div>
+          </div>
+        </div>
+
+        <div class="screen" style="min-height:672px;padding-bottom:0">
+          <div class="mp hero" style="opacity:.55">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div class="stag stag--green">待看房</div>
+              <div style="font-size:10.5px;color:var(--dove)">ld_7f3a…c91</div>
+            </div>
+            <div style="font-size:19px;font-weight:800;margin-top:9px">金杨七街坊</div>
+          </div>
+          <div class="mp" style="opacity:.5">
+            <div class="mconcl">
+              <div class="mconcl__cap">评估结论 · 已授权</div>
+              <div class="mconcl__price"><span class="cur">¥</span><span class="num">486</span><span class="unit">万</span></div>
+            </div>
+          </div>
+          <div class="mp" style="opacity:.5">
+            <div class="meval">
+              <div class="meval__av">王</div>
+              <div class="meval__main">
+                <div class="meval__nm">王建房</div>
+                <div class="meval__sub">138****6688</div>
+              </div>
+              <button class="meval__go">拨打</button>
+            </div>
+          </div>
+
+          <div class="mask-m"></div>
+          <div class="m-sheet">
+            <div class="m-sheet__grab"></div>
+            <div class="m-sheet__head">
+              <div class="m-sheet__title">联系评估人</div>
+              <div class="m-sheet__x">×</div>
+            </div>
+            <div class="call-card">
+              <div class="call-card__av">王</div>
+              <div>
+                <div class="call-card__nm">王建房 <span class="meval__role">评估师</span></div>
+                <div class="call-card__sub">金杨七街坊 · 2026-10-20 出具评估结论</div>
+              </div>
+            </div>
+            <div class="call-num">138 1234 6688</div>
+            <div class="call-opts">
+              <button class="call-opt">复制号码</button>
+              <button class="call-opt primary">拨打电话</button>
+            </div>
+            <div class="call-tip">
+              拨出后将自动记一条跟进：「电话联系评估人 王建房」<br />通话结束可在跟进记录里补充沟通结论
+            </div>
+          </div>
+          <div class="mfooter"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap-note">
+    <b>sheet 高度控制：</b>三段内容 + 快捷档位 + 动作按钮，在 iPhone SE（667 高）下需要 <b>1 次内滚约 60px</b>，
+    iPhone 13/14 一屏内完整呈现。若要求 SE 也零滚动，可将「快捷档位 chips」收进天数输入框的 tap 态弹层。
+    <br />
+    <b>快捷档位 chips 的意义：</b>员工常不想算「45 天是几个月」，直接点档位即写入代表值
+    （30 天内=20、1–2 月=45、2–3 月=75、3 月+=110）。点了仍可改数字 —— chips 是入口不是约束。
+    <br />
+    <b>拨号面板为什么多一步：</b>iOS 小程序 <code>wx.makePhoneCall</code> 会弹系统确认，
+    若把「查看完整号码」和「拨号」合成一个按钮，员工就看不到号码本身，无法口头转述或复制给他人。
+    面板同时给号码 + 两种动作，是项目既有范式（<code>pages/customers/detail</code> 的
+    <code>onViewPhone</code>）。
+  </p>
+</section>
+
+<!-- ══════════════════ ART 04 ══════════════════ -->
+<section class="sec" id="art04">
+  <div class="kicker">ART 04 · miniapp / pages/valuation/evaluate</div>
+  <h2>工作台列表：一张卡读完「好不好 · 多久 · 该不该跟」</h2>
+  <p class="sec-lede">
+    已处理卡现在只有价格和时效标签。加入评分与周期后，卡片会多一行结论条 ——
+    <b>不加高度上限，只加一行 20px 的结论</b>，保持一屏能看 3 张卡。
+    结论条用「星级 + 人话」而不是纯数字，扫视时不需要停下来换算。
+  </p>
+
+  <div class="artlabel"><span>FIG 04</span><em>· 已处理卡改造 + 待评估卡保持不变（尚未评分）</em></div>
+
+  <div class="figs">
+    <div class="fig">
+      <div class="fig__label">
+        改造后 · 工作台列表
+        <span>已处理卡多一行结论条</span>
+      </div>
+      <div class="phone" data-screen-label="ART 04 · 小程序 evaluate · 工作台列表">
+        <div class="statusbar">
+          <div class="sb-time">9:47</div>
+          <div class="sb-icons"><i style="width:15px;height:9px"></i><i style="width:12px;height:9px"></i><i style="width:20px;height:9px"></i></div>
+        </div>
+        <div class="nav-bar">
+          <div class="nav-back"></div>
+          <div class="nav-title">评估工作台</div>
+          <div class="capsule">
+            <div class="capsule-side"><div class="capsule-dot"></div></div>
+            <div class="capsule-div"></div>
+            <div class="capsule-side"><div class="capsule-ring"></div></div>
+          </div>
+        </div>
+
+        <div class="screen" style="min-height:672px">
+          <div class="evalmeta">
+            <div class="evalmeta__big">待评估 <span class="evalmeta__num">3</span> 套</div>
+            <div class="evalmeta__today">今日新增 2</div>
+          </div>
+
+          <div class="searchbox">
+            <div class="searchbox__ic"></div>
+            <div class="searchbox__ph">搜索小区名称</div>
+          </div>
+
+          <div class="ghead">
+            <div class="ghead__gt">待评估</div>
+            <div class="ghead__gn">3</div>
+            <div class="ghead__gs">需尽快给出评估价</div>
+          </div>
+
+          <!-- 待评估卡（不变） -->
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">碧云新天地</div>
+              <div class="stag stag--amber">待评估</div>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">2室2厅 · 96.0㎡ · 6/11层</div>
+                <div class="attrs__l2">南 · 浦东新区 金桥</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">业主报价</div>
+                <div class="pricest__vl">568<span class="pricest__u">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--share">客户分享</div>
+                <div class="time">2 小时前</div>
+              </div>
+              <div style="height:22px;padding:0 12px;border-radius:999px;background:var(--ink);color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;gap:2px">
+                去评估 ›
+              </div>
+            </div>
+          </div>
+
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">证大家园</div>
+              <div class="stag stag--amber">待评估</div>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">3室2厅 · 118.0㎡ · 3/18层</div>
+                <div class="attrs__l2">南北 · 浦东新区 金杨</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">业主报价</div>
+                <div class="pricest__vl">735<span class="pricest__u">万</span></div>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--direct">员工录入</div>
+                <div class="time">昨天</div>
+              </div>
+              <div style="height:22px;padding:0 12px;border-radius:999px;background:var(--ink);color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;gap:2px">
+                去评估 ›
+              </div>
+            </div>
+          </div>
+
+          <div class="ghead">
+            <div class="ghead__gt">已处理</div>
+            <div class="ghead__gn">12</div>
+            <div class="ghead__gs">由我经手</div>
+          </div>
+
+          <!-- 已处理卡（改造：多一行结论条） -->
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">金杨七街坊</div>
+              <div class="stag stag--green">待看房</div>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">2室1厅 · 88.5㎡ · 12/18层</div>
+                <div class="attrs__l2">南 · 浦东新区 金杨</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">评估价</div>
+                <div class="pricest__vl pricest__vl--ok">486<span class="pricest__u">万</span></div>
+              </div>
+            </div>
+            <!-- 新增结论条 -->
+            <div style="display:flex;align-items:center;gap:6px;margin-top:9px">
+              <div class="vchip vchip--score">
+                <span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span>4.0 良好
+              </div>
+              <div class="vchip vchip--days">45 天 · 约 1.5 月</div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--share">客户分享</div>
+                <div class="time">昨天 10:05</div>
+              </div>
+              <div style="height:22px;padding:0 11px;border-radius:999px;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px;background:var(--sky);color:#2f5f96">
+                <span style="width:5px;height:5px;border-radius:50%;background:#2f5f96"></span>跟进中
+              </div>
+            </div>
+          </div>
+
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">阳光小区</div>
+              <div class="stag stag--green">已看房</div>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">1室1厅 · 52.0㎡ · 1/6层</div>
+                <div class="attrs__l2">北 · 浦东新区 塘桥</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">评估价</div>
+                <div class="pricest__vl pricest__vl--ok">268<span class="pricest__u">万</span></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:9px">
+              <div class="vchip vchip--score">
+                <span class="s">★</span><span class="s">★</span>2.0 偏弱
+              </div>
+              <div class="vchip vchip--days rush">28 天 · 快</div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--direct">员工录入</div>
+                <div class="time">3 天前</div>
+              </div>
+              <div style="height:22px;padding:0 11px;border-radius:999px;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px;background:var(--apricot);color:var(--rust)">
+                <span style="width:5px;height:5px;border-radius:50%;background:var(--rust)"></span>即将过期
+              </div>
+            </div>
+          </div>
+
+          <div class="lcard">
+            <div class="lcard__top">
+              <div class="lcard__nm">梅园三街坊</div>
+              <div class="stag stag--green">已看房</div>
+            </div>
+            <div class="lcard__mid">
+              <div class="thumb"></div>
+              <div class="attrs">
+                <div class="attrs__l1">3室1厅 · 76.0㎡ · 5/6层</div>
+                <div class="attrs__l2">东南 · 浦东新区 梅园</div>
+              </div>
+              <div class="pricest">
+                <div class="pricest__lb">评估价</div>
+                <div class="pricest__vl pricest__vl--ok">612<span class="pricest__u">万</span></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:9px">
+              <div class="vchip vchip--score">
+                <span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span>5.0 优质
+              </div>
+              <div class="vchip vchip--days slow">130 天 · 约 4.3 月</div>
+            </div>
+            <div class="lcard__foot">
+              <div class="lcard__meta">
+                <div class="srcchip srcchip--share">客户分享</div>
+                <div class="time">5 天前</div>
+              </div>
+              <div style="height:22px;padding:0 11px;border-radius:999px;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px;background:var(--sky);color:#2f5f96">
+                <span style="width:5px;height:5px;border-radius:50%;background:#2f5f96"></span>跟进中
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align:center;font-size:10.5px;color:var(--dove);padding:6px 0 14px">
+            上拉加载更多 · 已处理共 12 条
+          </div>
+          <div class="mfooter"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fig">
+      <div class="fig__label">
+        卡片结论条 · 四种状态
+        <span>放大 1.6× · 一屏看清差异</span>
+      </div>
+      <div style="width:375px;background:var(--fog);border-radius:40px;border:8px solid #1c1e26;overflow:hidden;box-shadow:var(--shadow-phone)">
+        <div class="statusbar">
+          <div class="sb-time">9:50</div>
+          <div class="sb-icons"><i style="width:15px;height:9px"></i><i style="width:12px;height:9px"></i><i style="width:20px;height:9px"></i></div>
+        </div>
+        <div class="nav-bar">
+          <div class="nav-back"></div>
+          <div class="nav-title">结论条规格</div>
+          <div class="capsule">
+            <div class="capsule-side"><div class="capsule-dot"></div></div>
+            <div class="capsule-div"></div>
+            <div class="capsule-side"><div class="capsule-ring"></div></div>
+          </div>
+        </div>
+        <div class="screen" style="min-height:600px;padding:14px 0 20px">
+          <!-- 规格说明 -->
+          <div class="mp">
+            <div class="mp-h"><div class="mp-h__t">结论条位置</div></div>
+            <div style="font-size:11.5px;color:var(--ash);line-height:1.7">
+              位于 <span style="font-family:var(--mono);font-size:11px;color:var(--rust);background:var(--apricot);padding:1px 5px;border-radius:5px">.lcard__mid</span>
+              与
+              <span style="font-family:var(--mono);font-size:11px;color:var(--rust);background:var(--apricot);padding:1px 5px;border-radius:5px">.lcard__foot</span>
+              之间，左对齐，上间距 9px。<br />
+              只在已处理卡出现 —— 待评估线索还没有评分，不占位。
+            </div>
+          </div>
+
+          <!-- 四态 -->
+          <div class="mp">
+            <div class="mp-h"><div class="mp-h__t">评分 · 五档</div></div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px">
+              <div class="vchip vchip--score"><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span>5.0 优质</div>
+              <div class="vchip vchip--score"><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span>4.0 良好</div>
+              <div class="vchip vchip--score"><span class="s">★</span><span class="s">★</span><span class="s">★</span>3.0 一般</div>
+              <div class="vchip vchip--score"><span class="s">★</span><span class="s">★</span>2.0 偏弱</div>
+              <div class="vchip vchip--score"><span class="s">★</span>1.0 难售</div>
+            </div>
+            <div style="font-size:10.5px;color:var(--graphite);margin-top:11px;line-height:1.65">
+              实心星 = 得分，暗星 = 未得。星级只做强化，<b>文字档位才是主要信息</b> ——
+              颜色与图形都不可依赖时，文案仍可读。
+            </div>
+          </div>
+
+          <div class="mp">
+            <div class="mp-h"><div class="mp-h__t">周期 · 四档</div></div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px">
+              <div class="vchip vchip--days rush">28 天 · 快</div>
+              <div class="vchip vchip--days">45 天 · 约 1.5 月</div>
+              <div class="vchip vchip--days">78 天 · 约 2.6 月</div>
+              <div class="vchip vchip--days slow">130 天 · 约 4.3 月</div>
+            </div>
+            <div style="font-size:10.5px;color:var(--graphite);margin-top:11px;line-height:1.65">
+              <b>只有「快」用深底</b>（Rust 实底白字），其余三档刻意压低 ——
+              列表里如果每张卡都有强色块，等于都没有。慢周期用灰不起红，避免把正常判断渲染成警报。
+            </div>
+          </div>
+
+          <div class="mp">
+            <div class="mp-h"><div class="mp-h__t">缺数据降级</div></div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px">
+              <div class="vchip vchip--score" style="background:var(--fog);color:var(--graphite)">未评分</div>
+              <div class="vchip vchip--days" style="background:var(--fog);color:var(--dove)">周期待补</div>
+            </div>
+            <div style="font-size:10.5px;color:var(--graphite);margin-top:11px;line-height:1.65">
+              存量线索（历史 <code style="font-family:var(--mono);font-size:10px">LeadEvalHistory</code>
+              无新字段）显示为灰底「未评分 / 周期待补」，可点进详情由员工补录。
+              <b>不隐藏、不补造</b> —— 缺口本身是待办信息。
+            </div>
+          </div>
+          <div class="mfooter"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap-note">
+    <b>为什么结论条不放进 <code>.lcard__foot</code>：</b>foot 左侧是来源 chip + 时间，右侧是时效标签，
+    三组信息挤在一行会在 375px 下互相吃掉。<b>独立一行</b>是唯一能让星级和天数都获得足够
+    横向空间的做法，代价是卡片高 24px —— 一屏从 3.2 张降到 2.9 张，可接受。
+    <br />
+    <b>「快」为什么值得唯一的强色块：</b>快周期意味着资金周转效率，是评估员最需要主动争取的类型。
+    列表里出现深色块 = 优先跟这条，这个信号只有稀缺时才成立。
+  </p>
+</section>
+
+<!-- ══════════════════ ART 05 ══════════════════ -->
+<section class="sec" id="art05">
+  <div class="kicker">ART 05 · miniapp / pages/valuation/detail（客户 & 员工共用）</div>
+  <h2>客户侧：从「一个数字」到「一个结论 + 一个能问的人」</h2>
+  <p class="sec-lede">
+    客户打开估价详情，现状是一个 96rpx 的大数字加一句「该价格基于小区数据分析」。
+    迭代后首屏结构变成：<b>价格 → 一句人话结论 → 评分 / 周期两个佐证 → 评估人可联系</b>。
+    价格仍是视觉重心（客户最关心多少钱），但不再孤零零地悬着。
+  </p>
+
+  <div class="artlabel"><span>FIG 05</span><em>· 右侧手机为「无基线 / 存量数据」降级形态</em></div>
+
+  <div class="figs">
+    <!-- 客户详情 · 完整形态 -->
+    <div class="fig">
+      <div class="fig__label">
+        客户估价详情 · 有小区基线
+        <span>结论前置 + 基线对比 + 评估人</span>
+      </div>
+      <div class="phone" data-screen-label="ART 05 · 小程序 valuation/detail · 客户侧完整形态（有基线）">
+        <div class="statusbar">
+          <div class="sb-time">9:56</div>
+          <div class="sb-icons"><i style="width:15px;height:9px"></i><i style="width:12px;height:9px"></i><i style="width:20px;height:9px"></i></div>
+        </div>
+        <div class="nav-bar">
+          <div class="nav-back"></div>
+          <div class="nav-title">评估详情</div>
+          <div class="capsule">
+            <div class="capsule-side"><div class="capsule-dot"></div></div>
+            <div class="capsule-div"></div>
+            <div class="capsule-side"><div class="capsule-ring"></div></div>
+          </div>
+        </div>
+
+        <div class="screen" style="min-height:700px;padding-bottom:20px">
+          <!-- Hero 卡 -->
+          <div class="mp hero">
+            <div class="mp-h" style="margin-bottom:0">
+              <div style="font-size:17px;font-weight:520;letter-spacing:-.16px">金杨七街坊</div>
+              <div class="stag stag--green">已评估</div>
+            </div>
+            <div style="font-size:12px;color:var(--graphite);margin-top:6px">
+              2室1厅 · 88.5㎡ · 12/18层 · 南
+            </div>
+
+            <!-- 价格块 -->
+            <div class="mconcl" style="margin-top:12px">
+              <div class="mconcl__cap">评估价格</div>
+              <div class="mconcl__price">
+                <span class="cur">¥</span><span class="num">486</span><span class="unit">万</span>
+              </div>
+              <div style="font-size:10.5px;color:rgba(93,42,26,.66);margin-top:4px">
+                折合 ¥5.49 万/㎡
+              </div>
+
+              <div class="mconcl__say">
+                户型方正、12/18 层采光好，属小区主流好卖品；装修后预计 45 天可出手。
+              </div>
+
+              <div class="mconcl__kpis">
+                <div class="mk">
+                  <div class="mk__k">房源条件分</div>
+                  <div class="mk__v">4<span class="u">/ 5</span></div>
+                  <div class="mk__stars">
+                    <span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s on">★</span><span class="s">★</span>
+                  </div>
+                  <div class="mk__sub">良好</div>
+                </div>
+                <div class="mk">
+                  <div class="mk__k">装修后可售</div>
+                  <div class="mk__v">45<span class="u">天</span></div>
+                  <div class="mk__stars" style="visibility:hidden"><span class="s">★</span></div>
+                  <div class="mk__sub">约 1.5 个月</div>
+                </div>
+              </div>
+
+              <!-- 基线对比（可选增强） -->
+              <div class="baseline">
+                <div class="baseline__tx">
+                  本小区同户型平均 <b>57 天</b> 售出<br />
+                  您的房源预计<b>快 12 天</b>
+                </div>
+                <div class="baseline__btn">查看小区数据 <span class="baseline__chev"></span></div>
+              </div>
+            </div>
+
+            <div style="font-size:10.5px;color:var(--dove);margin-top:11px">提交于 2026-10-19 14:22</div>
+          </div>
+
+          <!-- 评估人卡 -->
+          <div class="mp">
+            <div class="meval">
+              <div class="meval__av">王</div>
+              <div class="meval__main">
+                <div class="meval__nm">王建房 <span class="meval__role">评估师</span></div>
+                <div class="meval__sub">
+                  <span>138****6688</span>
+                  <span class="sep">·</span>
+                  <span>对评估结果有疑问？</span>
+                </div>
+              </div>
+              <button class="meval__go reveal" id="a6-call">拨打</button>
+            </div>
+            <div class="meval__note">
+              可直接致电了解评估依据，通话将记入跟进记录。
+            </div>
+          </div>
+
+          <!-- 户型图 -->
+          <div class="mp">
+            <div class="mp-h">
+              <div class="mp-h__t">户型图</div>
+              <div class="mp-h__sub">2 张 · 点击预览</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+              <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#f4efe9,#e3d9cb)"></div>
+              <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#f0ebe4,#ddd3c4)"></div>
+            </div>
+          </div>
+
+          <!-- 房源信息 -->
+          <div class="mp">
+            <div class="mp-h"><div class="mp-h__t">房源信息</div></div>
+            <div class="spec-list">
+              <div class="spec-row"><span class="spec-label">小区</span><span class="spec-value">金杨七街坊</span></div>
+              <div class="spec-row"><span class="spec-label">户型</span><span class="spec-value">2室1厅</span></div>
+              <div class="spec-row"><span class="spec-label">面积</span><span class="spec-value">88.5㎡</span></div>
+              <div class="spec-row"><span class="spec-label">楼层/朝向</span><span class="spec-value">12/18层 · 南</span></div>
+              <div class="spec-row"><span class="spec-label">提交时间</span><span class="spec-value">2026-10-19 14:22</span></div>
+            </div>
+          </div>
+          <div class="mfooter"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 客户详情 · 降级形态 -->
+    <div class="fig">
+      <div class="fig__label">
+        无基线 / 存量数据降级
+        <span>基线行消失 · 缺字段显式标注</span>
+      </div>
+      <div class="phone" data-screen-label="ART 05b · 小程序 valuation/detail · 降级形态">
+        <div class="statusbar">
+          <div class="sb-time">9:58</div>
+          <div class="sb-icons"><i style="width:15px;height:9px"></i><i style="width:12px;height:9px"></i><i style="width:20px;height:9px"></i></div>
+        </div>
+        <div class="nav-bar">
+          <div class="nav-back"></div>
+          <div class="nav-title">评估详情</div>
+          <div class="capsule">
+            <div class="capsule-side"><div class="capsule-dot"></div></div>
+            <div class="capsule-div"></div>
+            <div class="capsule-side"><div class="capsule-ring"></div></div>
+          </div>
+        </div>
+
+        <div class="screen" style="min-height:700px;padding-bottom:20px">
+          <div class="mp hero">
+            <div class="mp-h" style="margin-bottom:0">
+              <div style="font-size:17px;font-weight:520;letter-spacing:-.16px">阳光小区</div>
+              <div class="stag stag--green">已评估</div>
+            </div>
+            <div style="font-size:12px;color:var(--graphite);margin-top:6px">
+              1室1厅 · 52.0㎡ · 1/6层 · 北
+            </div>
+
+            <div class="mconcl" style="margin-top:12px">
+              <div class="mconcl__cap">评估价格</div>
+              <div class="mconcl__price">
+                <span class="cur">¥</span><span class="num">268</span><span class="unit">万</span>
+              </div>
+              <div style="font-size:10.5px;color:rgba(93,42,26,.66);margin-top:4px">
+                折合 ¥5.15 万/㎡
+              </div>
+
+              <div class="mconcl__say">
+                低楼层朝北、采光偏弱，需靠价格取胜；装修后预计 28 天可出手。
+              </div>
+
+              <div class="mconcl__kpis">
+                <div class="mk">
+                  <div class="mk__k">房源条件分</div>
+                  <div class="mk__v">2<span class="u">/ 5</span></div>
+                  <div class="mk__stars">
+                    <span class="s on">★</span><span class="s on">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span>
+                  </div>
+                  <div class="mk__sub">偏弱</div>
+                </div>
+                <div class="mk">
+                  <div class="mk__k">装修后可售</div>
+                  <div class="mk__v">28<span class="u">天</span></div>
+                  <div class="mk__stars" style="visibility:hidden"><span class="s">★</span></div>
+                  <div class="mk__sub">约 1 个月</div>
+                </div>
+              </div>
+
+              <!-- 无基线：不渲染 baseline 行，直接留白结束 -->
+            </div>
+
+            <div style="font-size:10.5px;color:var(--dove);margin-top:11px">提交于 2026-10-18 09:10</div>
+          </div>
+
+          <!-- 存量数据降级：无评分无天数 -->
+          <div class="mp">
+            <div class="mp-h"><div class="mp-h__t">评估人</div></div>
+            <div class="meval">
+              <div class="meval__av">王</div>
+              <div class="meval__main">
+                <div class="meval__nm">王建房 <span class="meval__role">评估师</span></div>
+                <div class="meval__sub">暂未登记手机号</div>
+              </div>
+              <button class="meval__go reveal" style="color:var(--dove);border-color:var(--hair)">—</button>
+            </div>
+            <div class="meval__note">
+              该评估人尚未登记联系方式，可提交留言，由平台转达。
+            </div>
+          </div>
+
+          <div class="mp">
+            <div class="m-warn" style="margin-bottom:0">
+              <div class="dot"></div>
+              <div class="m-warn__tx">
+                此线索为早期评估（2026-08 之前），未包含房源条件分与可售周期。
+                评估师会在下次复核时补齐。
+              </div>
+            </div>
+          </div>
+          <div class="mfooter"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap-note">
+    <b>基线对比只在一处出现：</b>「本小区同户型平均 57 天 → 您快 12 天」紧贴周期数据下方，
+    而不在页面另起区块。客户读这句话的位置，就是他刚看完 45 天的位置。
+    <br />
+    <b>基线口径必须先定义清楚：</b>「同户型平均售出天数」目前无数据源。
+    可实现的最小口径是复用 <code>community-analysis</code> 已有的
+    <code>rooms_distribution</code> 均价差推算，但那不是天数 —— <b>这条依赖在 SEC 02 表 3 中标注为 P2 可选</b>，
+    未落地时整行不渲染，绝不显示「暂无对比数据」这种空壳文案。
+    <br />
+    <b>存量数据不静默隐藏：</b>老线索没有新字段时，客户会看到一条明确说明（多早之前、何时补齐），
+    而不是看到「4 分」这样的默认值 —— 默认值会让客户误以为被认真评估过。
+  </p>
+</section>
+
+<!-- ══════════════════ ART 06 / C 端 Web ══════════════════ -->
+<section class="sec" id="art06">
+  <div class="kicker">ART 06 · C 端 Web / (c)/leads/[id]</div>
+  <h2>SystemEstimateCard：从价格卡升级为结论卡</h2>
+  <p class="sec-lede">
+    现状 <code>SystemEstimateCard</code> 是 <code>bg-apricot-wash</code> 的卡片，内含一个 44px 的
+    <code>evalPrice</code> 数字和一句「价格基于小区数据分析」。改造后在同一张卡内补齐结论句、
+    评分、周期与评估人 —— <b>仍然是这一张卡</b>，不新增卡片，避免 C 端页面变长。
+  </p>
+
+  <div class="artlabel"><span>FIG 06</span><em>· 可交互：点「拨打电话」揭示真实号并写入跟进留痕</em></div>
+
+  <div class="desk-wrap">
+    <div class="desk" style="width:1180px" data-screen-label="ART 06 · C 端 Web 估价详情 · SystemEstimateCard 迭代">
+      <div class="main">
+        <!-- 浏览器 + C 端外壳 -->
+        <div style="background:var(--pwhite);border-bottom:1px solid var(--line);padding:0 22px;height:50px;display:flex;align-items:center;gap:18px">
+          <div style="display:flex;gap:6px">
+            <div style="width:10px;height:10px;border-radius:50%;background:#e6e8ec"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#e6e8ec"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#e6e8ec"></div>
+          </div>
+          <div style="font-family:var(--mono);font-size:10.5px;color:var(--dove);background:var(--fog);border-radius:999px;padding:4px 14px">
+            profo.com/leads/ld_7f3a…c91
+          </div>
+          <div style="margin-left:auto;display:flex;gap:16px;font-size:12px;color:var(--graphite)">
+            <span>首页</span><span>房源</span><span style="color:var(--ink);font-weight:520">我的估价</span><span>关于</span>
+          </div>
+        </div>
+
+        <div style="background:var(--fog);padding:28px 0 40px">
+          <div style="max-width:920px;margin:0 auto;padding:0 28px">
+            <div style="font-size:24px;font-weight:520;letter-spacing:-.23px;margin-bottom:22px">估价详情</div>
+
+            <!-- 房源信息卡（现状卡，保持） -->
+            <div style="background:var(--pwhite);border-radius:20px;padding:22px;box-shadow:var(--shadow-steep-sm);border:1px solid rgba(163,166,175,.3);margin-bottom:16px">
+              <div style="font-size:17px;font-weight:520;letter-spacing:-.16px">房源信息</div>
+              <div style="font-size:12.5px;color:var(--graphite);margin-top:3px;margin-bottom:14px">提交的房源基本信息</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 28px">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair);font-size:12.5px">
+                  <span style="color:var(--graphite)">小区</span><span style="font-weight:520">金杨七街坊</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair);font-size:12.5px">
+                  <span style="color:var(--graphite)">户型</span><span style="font-weight:520">2室1厅</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair);font-size:12.5px">
+                  <span style="color:var(--graphite)">面积</span><span style="font-weight:520">88.5㎡</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair);font-size:12.5px">
+                  <span style="color:var(--graphite)">楼层/朝向</span><span style="font-weight:520">12/18层 · 南</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ⭐ SystemEstimateCard 改造态 -->
+            <div class="insert-mark"><span class="lb">SystemEstimateCard · 改造态</span></div>
+            <div style="background:var(--apricot);border-radius:20px;padding:22px;border:1px solid var(--apricot)">
+              <!-- 头部 -->
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px">
+                <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.62);display:flex;align-items:center;justify-content:center;color:var(--rust);font-size:13px;font-weight:600">评</div>
+                <div style="font-size:14.5px;font-weight:520;letter-spacing:-.009em">评估结论</div>
+                <div style="margin-left:auto;font-size:11.5px;color:rgba(93,42,26,.6)">2026-10-20 10:05</div>
+              </div>
+
+              <!-- 内容块 -->
+              <div style="background:rgba(255,255,255,.62);border-radius:14px;padding:20px">
+                <div style="font-size:12.5px;color:rgba(93,42,26,.62);letter-spacing:.04em">评估价格</div>
+                <div style="display:flex;align-items:baseline;gap:3px;margin-top:4px">
+                  <span style="font-size:42px;font-weight:520;line-height:1.1;letter-spacing:-.66px;color:var(--ink)">486</span>
+                  <span style="font-size:14px;font-weight:520;color:var(--rust)">万</span>
+                  <span style="font-size:11.5px;color:var(--graphite);margin-left:8px">折合 ¥5.49 万/㎡</span>
+                </div>
+
+                <!-- 结论句 -->
+                <div style="font-family:var(--serif);font-size:16px;line-height:1.55;color:var(--rust);margin-top:16px;padding-top:16px;border-top:1px solid rgba(93,42,26,.14)">
+                  户型方正、12/18 层采光好，属小区主流好卖品；装修后预计 45 天可出手。
+                </div>
+
+                <!-- 双指标 -->
+                <div style="display:flex;gap:0;margin-top:18px">
+                  <div style="flex:1">
+                    <div style="font-size:11px;color:rgba(93,42,26,.6)">房源条件分</div>
+                    <div style="display:flex;align-items:baseline;gap:2px;margin-top:3px">
+                      <span style="font-size:26px;font-weight:520;color:var(--rust);line-height:1;font-variant-numeric:tabular-nums">4</span>
+                      <span style="font-size:11px;color:rgba(93,42,26,.7)">/ 5</span>
+                    </div>
+                    <div style="display:flex;gap:2px;margin-top:6px">
+                      <span style="font-size:12px;color:var(--rust);line-height:1">★</span>
+                      <span style="font-size:12px;color:var(--rust);line-height:1">★</span>
+                      <span style="font-size:12px;color:var(--rust);line-height:1">★</span>
+                      <span style="font-size:12px;color:var(--rust);line-height:1">★</span>
+                      <span style="font-size:12px;color:rgba(93,42,26,.24);line-height:1">★</span>
+                    </div>
+                    <div style="font-size:11.5px;color:rgba(93,42,26,.66);margin-top:4px">良好 · 主流户型</div>
+                  </div>
+                  <div style="flex:1;border-left:1px solid rgba(93,42,26,.14);padding-left:24px">
+                    <div style="font-size:11px;color:rgba(93,42,26,.6)">装修后可售</div>
+                    <div style="display:flex;align-items:baseline;gap:2px;margin-top:3px">
+                      <span style="font-size:26px;font-weight:520;color:var(--rust);line-height:1;font-variant-numeric:tabular-nums">45</span>
+                      <span style="font-size:11px;color:rgba(93,42,26,.7)">天</span>
+                    </div>
+                    <div style="font-size:11.5px;color:rgba(93,42,26,.66);margin-top:4px">约 1.5 个月</div>
+                  </div>
+                </div>
+
+                <!-- 基线 -->
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding-top:15px;border-top:1px solid rgba(93,42,26,.14)">
+                  <div style="font-size:11.5px;color:rgba(93,42,26,.72);line-height:1.55">
+                    本小区同户型平均 <b style="font-weight:520">57 天</b> 售出 · 您的房源预计<b style="font-weight:520">快 12 天</b>
+                  </div>
+                  <div style="flex-shrink:0;font-size:11px;font-weight:520;color:var(--rust);background:rgba(255,255,255,.62);border-radius:999px;padding:5px 13px">
+                    查看小区数据 ›
+                  </div>
+                </div>
+              </div>
+
+              <!-- 评估人 -->
+              <div style="display:flex;align-items:center;gap:11px;background:var(--pwhite);border-radius:14px;padding:14px 16px;margin-top:12px">
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--sky);color:#2a5ca0;font-size:13px;font-weight:520;display:flex;align-items:center;justify-content:center">王</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:520;display:flex;align-items:center;gap:6px">
+                    王建房
+                    <span style="font-size:10px;font-weight:430;color:var(--graphite)">评估师 · 对结论有疑问可直接联系</span>
+                  </div>
+                  <div style="font-family:var(--mono);font-size:12px;color:var(--ash);margin-top:3px;letter-spacing:.04em" id="a7-phone">138****6688</div>
+                </div>
+                <button class="btn-mini" style="height:32px;padding:0 14px" id="a7-copy">复制号码</button>
+                <button class="btn-mini ink" style="height:32px;padding:0 14px" id="a7-call">拨打电话</button>
+              </div>
+            </div>
+
+            <!-- 跟进记录（现状卡，保持） -->
+            <div style="background:var(--pwhite);border-radius:20px;padding:22px;box-shadow:var(--shadow-steep-sm);border:1px solid rgba(163,166,175,.3);margin-top:16px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+                <div style="font-size:17px;font-weight:520;letter-spacing:-.16px">跟进记录</div>
+                <div style="font-size:11.5px;color:var(--graphite)">共 2 条</div>
+              </div>
+              <div style="border-left:2px solid var(--hair);padding-left:14px;display:flex;flex-direction:column;gap:14px">
+                <div>
+                  <div style="font-size:11px;color:var(--graphite)">评估 · 2026-10-20 10:05</div>
+                  <div style="font-size:12.5px;color:var(--ash);margin-top:3px;line-height:1.6">评估价 486万 · 南北通透，12/18 层采光好</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:var(--graphite)">电话 · 2026-10-20 15:32</div>
+                  <div style="font-size:12.5px;color:var(--ash);margin-top:3px;line-height:1.6">客户致电评估人 王建房</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="toast" id="a7-toast"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap-note">
+    <b>只改一张卡：</b>C 端 <code>(c)/leads/[id]/page.tsx</code> 已经是
+    <code>LeadInfoCard → 户型图 → SystemEstimateCard → FollowUpList</code> 的堆叠结构，
+    本次只替换 <code>SystemEstimateCard</code> 的内部，页面结构零改动。
+    <br />
+    <b>为什么不拆成「结论卡 + 评估人卡」两张：</b>C 端 Web 已是一列长页，再加一张卡会把跟进记录推到第二屏。
+    评估人属于「对这条结论的补充」，语义上就该在结论卡内。
+    <br />
+    <b>桌面尺寸下的排版纪律：</b>结论句用 serif（与 <code>DESIGN.md</code> 的 Signifier 角色一致，
+    只在「品牌发声处」出现），评分与周期用 sans + tabular-nums。价格 42px 仍是全页最大字号，
+    结论句 16px serif 与它形成「数字 / 句子」的对照，而不是与之竞争。
+  </p>
+</section>
+
+<!-- ══════════════════ SEC 01 ══════════════════ -->
+<section class="sec" id="sec01">
+  <div class="kicker">SEC 01 · 数据契约</div>
+  <h2>新增两列、一个端点、四处响应字段</h2>
+  <p class="sec-lede">
+    改动面刻意压到最小：评估结论的两个新事实挂在 <code>LeadEvalHistory</code>（每次评估都是一份完整结论，
+    而不是挂在 <code>Lead</code> 上被覆盖）；联系人通过独立端点按需拉取，不进任何列表响应。
+  </p>
+
+  <div class="panel">
+    <h3>表 4 · 模型变更：<code>lead_eval_histories</code> 新增两列</h3>
+    <table>
+      <thead>
+        <tr><th style="width:170px">列</th><th style="width:150px">类型</th><th style="width:96px">可空</th><th>语义与取值</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>condition_score</code></td>
+          <td><code>SmallInteger</code></td>
+          <td>是 <span class="t-mut">（存量兼容）</span></td>
+          <td>房源条件分 1–5。DB 层加 <code>CHECK (condition_score BETWEEN 1 AND 5)</code>；
+              Pydantic 层 <code>Optional[int] = Field(None, ge=1, le=5)</code>。
+              <b>可空是为了存量记录</b>，新写入路径强制非空（由 Schema 层校验）。</td>
+        </tr>
+        <tr>
+          <td><code>expected_sale_days</code></td>
+          <td><code>SmallInteger</code></td>
+          <td>是 <span class="t-mut">（存量兼容）</span></td>
+          <td>装修后预计可售天数。DB 层加 <code>CHECK (expected_sale_days BETWEEN 1 AND 365)</code>；
+              Pydantic <code>Optional[int] = Field(None, ge=1, le=365)</code>。
+              档位词（快 / 正常 / 偏慢 / 慢）<b>不入库</b>，由前端纯函数派生 —— 档位阈值会调，不该改数据。</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note-strip">
+      <div class="dot"></div>
+      <div>
+        <b>为什么不加 <code>score_tier</code> / <code>cycle_tier</code> 冗余列：</b>
+        档位是展示层的阈值判断，写进库意味着阈值一改就要刷全表。
+        派生逻辑用一份共享纯函数（前端 <code>lib/lead-verdict.ts</code>、后端
+        <code>utils/lead_verdict.py</code>）保证两端一致。
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>表 5 · Pydantic 字段 diff</h3>
+    <table>
+      <thead>
+        <tr><th style="width:250px">Schema</th><th style="width:70px">动作</th><th>变更</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>LeadEvalHistoryCreate</code></td><td>改</td>
+          <td>新增 <code>condition_score: int = Field(ge=1, le=5)</code>（<b>必填</b>）、
+              <code>expected_sale_days: int = Field(ge=1, le=365)</code>（<b>必填</b>）。
+              保留 <code>eval_price</code> / <code>remark</code>。</td>
+        </tr>
+        <tr>
+          <td><code>LeadEvalHistoryResponse</code></td><td>改</td>
+          <td>新增 <code>condition_score: int | None</code>、<code>expected_sale_days: int | None</code>、
+              <code>evaluator_phone: str | None</code>（<b>脱敏</b>，复用 <code>utils.formatters.mask_phone</code>）。</td>
+        </tr>
+        <tr>
+          <td><code>PublicLeadDetail</code></td><td>改</td>
+          <td>新增 <code>condition_score</code> / <code>expected_sale_days</code> /
+              <code>evaluator: PublicEvaluatorBrief | None</code>
+              （<code>nickname</code> + <code>phone_masked</code> + <code>evaluated_at</code>）。
+              <b>真实号不进详情响应</b>。</td>
+        </tr>
+        <tr>
+          <td><code>PublicEvaluatorContact</code></td><td>新增</td>
+          <td><code>phone: str</code>（真实号）、<code>nickname: str</code>、
+              <code>lead_id: str</code>、<code>evaluation_id: str</code>。
+              与既有 <code>PublicConsultantContact</code> 同构。</td>
+        </tr>
+        <tr>
+          <td><code>HandledItem</code> / <code>PendingAssessmentQueueItem</code></td><td>改</td>
+          <td>各加 <code>condition_score</code> / <code>expected_sale_days</code>（可空）。
+              工作台卡片结论条直接取这两个字段，无需额外详情请求。</td>
+        </tr>
+        <tr>
+          <td><code>LeadListItem</code> / <code>LeadResponse</code></td><td>改</td>
+          <td>同上（admin 表格与抽屉共用）。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>表 6 · 端点清单</h3>
+    <table>
+      <thead>
+        <tr><th style="width:70px">方法</th><th style="width:330px">路径</th><th style="width:150px">权限</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/api/v1/leads/{lead_id}/evaluations</code></td>
+          <td>admin · <code>LEAD_WRITE</code></td>
+          <td>既有端点，body 加两个必填字段。<b>无破坏性变更</b>（旧客户端不传 → 422，需同步发版）。</td>
+        </tr>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/api/v1/public/leads/my/acquired/{lead_id}/evaluations</code></td>
+          <td>admin/operator（C 令牌）</td>
+          <td>既有小程序再次评估端点，body 同上。</td>
+        </tr>
+        <tr>
+          <td><code>GET</code></td>
+          <td><code>/api/v1/public/leads/{lead_id}/evaluator-contact</code></td>
+          <td>线索创建人 / admin / operator</td>
+          <td><b>新增</b>。返回最新一次评估的真实手机号。
+              归属校验复用 <code>services/leads/core.py:get_lead_detail</code> 的
+              <code>creator_id == user_id</code> 判定 + 内部角色放行。</td>
+        </tr>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/api/v1/public/leads/{lead_id}/follow-ups</code></td>
+          <td>线索创建人 / admin / operator</td>
+          <td><b>新增</b>。拨号留痕用：body <code>{method:"phone", content:"客户致电评估人 王建房"}</code>。
+              与员工侧 <code>/my/acquired/{id}/follow-ups</code> 区别在归属校验口径。</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note-strip">
+      <div class="dot"></div>
+      <div>
+        <b>留痕走独立请求而不是「拨号即自动写库」：</b>
+        <code>wx.makePhoneCall</code> 有系统确认弹层，用户可能取消；且网络失败时不能阻断拨号。
+        口径定为「<b>先拨号，再异步上报</b>」—— 拨号成功/失败都尝试上报，上报失败静默，
+        绝不因为记不上日志而让人打不出电话。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ SEC 02 ══════════════════ -->
+<section class="sec" id="sec02">
+  <div class="kicker">SEC 02 · 落地 SPEC</div>
+  <h2>迁移、落点、验收</h2>
+  <p class="sec-lede">
+    按项目约定，Schema 变更必须走 <code>backend/migrations/__init__.py</code> 启动迁移脚本且幂等；
+    前端类型必须 <code>pnpm gen-api</code> 生成；验证必须给出可重跑证据。
+  </p>
+
+  <div class="panel">
+    <h3>表 7 · 迁移脚本</h3>
+    <p class="sub">
+      新建 <code>backend/migrations/add_lead_eval_verdict_fields.py</code>，
+      参照既有 <code>add_lead_eval_history_and_expected_price.py</code> 的写法（<code>_column_exists</code> 幂等检查）：
+    </p>
+    <table>
+      <thead><tr><th style="width:210px">步骤</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1 · 幂等加列</td>
+          <td><code>_column_exists(engine, "lead_eval_histories", "condition_score")</code> → 不存在则
+              <code>ALTER TABLE ... ADD COLUMN condition_score SMALLINT</code>；<code>expected_sale_days</code> 同理。</td>
+        </tr>
+        <tr>
+          <td>2 · 加约束</td>
+          <td>同一 <code>engine.begin()</code> 内加 <code>CHECK</code> 约束（PowergreSQL 12+ 支持
+              <code>ADD CONSTRAINT ... CHECK ... NOT VALID</code> 再 <code>VALIDATE</code>，
+              避免大表长时间持锁；表格当前量级小，可直接 ADD）。</td>
+        </tr>
+        <tr>
+          <td>3 · 注册</td>
+          <td>在 <code>migrations/__init__.py</code> 的 import 区与执行序列末尾注册，紧跟
+              <code>add_lead_eval_history_and_expected_price</code> 之后。</td>
+        </tr>
+        <tr>
+          <td>4 · 回滚</td>
+          <td>在 <code>migrations/compensations/</code> 登记 <code>DROP COLUMN</code> 补偿（既有框架已支持）。</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note-strip">
+      <div class="dot"></div>
+      <div>
+        <b>不加 <code>NOT NULL</code> + 默认值：</b>存量 <code>LeadEvalHistory</code> 行没有真实评分，
+        用默认值填空会把「没评过」伪装成「评了 3 分」。可空 + 前端降级（ART 04 的灰底 chip）是唯一诚实做法。
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>表 8 · 代码落点（按文件）</h3>
+    <table>
+      <thead>
+        <tr><th style="width:300px">文件</th><th style="width:80px">类型</th><th>改动</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>backend/models/lead/lead.py</code></td><td>改</td>
+          <td><code>LeadEvalHistory</code> 加两列 + <code>__table_args__</code> 加 CheckConstraint。</td></tr>
+        <tr><td><code>backend/schemas/lead/__init__.py</code></td><td>改</td>
+          <td><code>LeadEvalHistoryCreate</code> / <code>Response</code> / <code>HandledItem</code> /
+              <code>PendingAssessmentQueueItem</code> / <code>LeadListItem</code> / <code>LeadResponse</code>。</td></tr>
+        <tr><td><code>backend/schemas/public/__init__.py</code></td><td>改</td>
+          <td><code>PublicLeadDetail</code> 加三字段；新增 <code>PublicEvaluatorBrief</code> /
+              <code>PublicEvaluatorContact</code>。</td></tr>
+        <tr><td><code>backend/services/leads/internal/evaluation.py</code></td><td>改</td>
+          <td><code>create_evaluation</code> 收两个新参数写入记录。再次评估（<code>core.py:702</code>）同步。</td></tr>
+        <tr><td><code>backend/services/leads/core.py</code></td><td>改</td>
+          <td>新增 <code>get_evaluator_contact(lead_id, user_id)</code>（含归属 + 内部角色校验）；
+              <code>get_lead_detail</code> 返回值补 <code>evaluator</code>。</td></tr>
+        <tr><td><code>backend/routers/leads/evaluations.py</code></td><td>改</td>
+          <td>透传两个新字段。</td></tr>
+        <tr><td><code>backend/routers/public/leads.py</code></td><td>改</td>
+          <td>新增 <code>GET /{lead_id}/evaluator-contact</code>、<code>POST /{lead_id}/follow-ups</code>；
+              详情响应补评估人 brief。</td></tr>
+        <tr><td><code>frontend/src/lib/lead-verdict.ts</code></td><td>新增</td>
+          <td>纯函数：<code>scoreLabel(1..5)</code>、<code>daysTier(days)</code>、
+              <code>daysSay(days)</code>（"约 1.5 个月"）。<b>单一事实源</b>，admin 与 C 端共用。</td></tr>
+        <tr><td><code>frontend/src/app/(main)/admin/leads/_components/drawer-parts/lead-audit-panel.tsx</code></td><td>改</td>
+          <td><code>PendingAssessmentPanel</code> 插入评分星组 + 天数输入；改 <code>createEvaluationAction</code> 调用签名。</td></tr>
+        <tr><td><code>frontend/src/app/(main)/admin/leads/_components/drawer-parts/eval-history-list.tsx</code></td><td>改</td>
+          <td>每条加星级与天数 chip；卡尾挂评估人（取最新一条）。</td></tr>
+        <tr><td><code>frontend/src/app/(main)/admin/leads/_components/drawer-parts/kpi-row.tsx</code></td><td>改</td>
+          <td>4 格 → 6 格（<code>sm:grid-cols-3 xl:grid-cols-6</code>），新增条件分与可售周期两卡。</td></tr>
+        <tr><td><code>frontend/src/app/(main)/admin/leads/actions/evaluation-actions.ts</code></td><td>改</td>
+          <td>Zod schema 加 <code>conditionScore: z.number().int().min(1).max(5)</code>、
+              <code>expectedSaleDays: z.number().int().min(1).max(365)</code>；
+              <code>mapEvalHistoryResponse</code> 补字段。</td></tr>
+        <tr><td><code>frontend/src/components/c/lead/SystemEstimateCard.tsx</code></td><td>改</td>
+          <td>props 由 <code>{evalPrice, createdAt}</code> 扩为
+              <code>{evalPrice, conditionScore, expectedSaleDays, evaluator, createdAt}</code>；
+              新增结论句 + 双指标 + 评估人条。</td></tr>
+        <tr><td><code>frontend/src/app/(c)/leads/[id]/page.tsx</code></td><td>改</td>
+          <td>透传新字段 + 新增 <code>onContactEvaluator</code>（拉真实号 → <code>tel:</code> → 上报跟进）。</td></tr>
+        <tr><td><code>miniapp/pages/valuation/authorize/index.{ts,wxml,wxss}</code></td><td>改</td>
+          <td>approve / adjust 两个 sheet 插入评分与天数；提交 body 补字段；新增 <code>call-evaluator</code> 面板。</td></tr>
+        <tr><td><code>miniapp/pages/valuation/evaluate/index.{ts,wxml,wxss}</code></td><td>改</td>
+          <td>已处理卡插结论条（<code>.lcard__verdict</code>）。</td></tr>
+        <tr><td><code>miniapp/pages/valuation/detail/index.{ts,wxml,wxss}</code></td><td>改</td>
+          <td>Hero 价格块后插结论句 + 双指标 + 基线行；新增评估人卡与拨号面板。</td></tr>
+        <tr><td><code>miniapp/utils/lead-verdict.ts</code></td><td>新增</td>
+          <td>与 <code>frontend/src/lib/lead-verdict.ts</code> 同源的镜像实现
+              （小程序无法 import 前端包，<b>两处必须同值</b>，见验收点 V5）。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>表 9 · 后端依赖状态（不假设已落地）</h3>
+    <table>
+      <thead>
+        <tr><th style="width:60px">优先级</th><th style="width:290px">依赖</th><th style="width:120px">当前状态</th><th>未落地时的降级</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>P0</b></td>
+          <td>两列 + Pydantic 字段</td>
+          <td class="t-mut">未实现</td>
+          <td>整份设计不可用（这是唯一硬依赖）。</td>
+        </tr>
+        <tr>
+          <td><b>P0</b></td>
+          <td><code>GET /public/leads/{id}/evaluator-contact</code></td>
+          <td class="t-mut">未实现</td>
+          <td>评估人卡只显示脱敏号，按钮降级为「登记跟进」（不留死链）。</td>
+        </tr>
+        <tr>
+          <td><b>P1</b></td>
+          <td><code>POST /public/leads/{id}/follow-ups</code>（客户侧）</td>
+          <td class="t-mut">未实现（员工侧已有）</td>
+          <td>拨号仍可用，留痕缺失 —— 需在验收中显式标注为已知缺口，不宣称闭环完成。</td>
+        </tr>
+        <tr>
+          <td><b>P2</b></td>
+          <td>小区同户型平均售出天数（基线对比）</td>
+          <td class="t-mut">无数据源</td>
+          <td>整行不渲染（ART 05 第二台手机形态），不显示空壳文案。</td>
+        </tr>
+        <tr>
+          <td><b>P2</b></td>
+          <td>评估人岗位 / 职称（"评估师"徽标）</td>
+          <td class="t-mut">当前 <code>User</code> 无 job title 字段</td>
+          <td>降级为角色码（admin / operator）的人话映射；或直接不显示徽标。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>表 10 · 验收点（E2E，可重跑）</h3>
+    <table>
+      <thead>
+        <tr><th style="width:56px">编号</th><th style="width:290px">场景</th><th>断言</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>V1</b></td>
+          <td>admin 录入：三项齐全才可提交</td>
+          <td>未选评分 / 天数空 / 价格空任一状态，按钮 <code>disabled</code>；
+              三项齐全后提交 → 201，评估历史首条含 <code>condition_score</code> + <code>expected_sale_days</code>。</td>
+        </tr>
+        <tr>
+          <td><b>V2</b></td>
+          <td>小程序员工授权同口径</td>
+          <td><code>POST /public/leads/my/acquired/{id}/authorize-assessment</code> body 含新字段；
+              授权后 <code>GET .../evaluations</code> 首条回读一致。</td>
+        </tr>
+        <tr>
+          <td><b>V3</b></td>
+          <td>工作台卡片结论条渲染</td>
+          <td><code>HandledItem</code> 有值时卡片出现两个 chip；为 <code>null</code> 时出现「未评分 / 周期待补」灰 chip（不是空白）。</td>
+        </tr>
+        <tr>
+          <td><b>V4</b></td>
+          <td>客户联系评估人闭环</td>
+          <td>点击「拨打」→ <code>GET .../evaluator-contact</code> 200 且 <code>phone</code> 匹配
+              <code>^1\d{10}$</code> → 上报 <code>POST .../follow-ups</code> 201 →
+              详情 <code>follow_ups</code> 首条 method 为 <code>phone</code> 且 content 含评估人昵称。</td>
+        </tr>
+        <tr>
+          <td><b>V5</b></td>
+          <td>两端派生函数一致</td>
+          <td>同一组输入（1..5 × [20,45,60,75,90,91,110,180]），
+              <code>frontend/src/lib/lead-verdict.ts</code> 与
+              <code>miniapp/utils/lead-verdict.ts</code> 输出逐字节相同（快照测试或共享 fixture JSON）。</td>
+        </tr>
+        <tr>
+          <td><b>V6</b></td>
+          <td>权限边界</td>
+          <td>非线索归属用户请求 <code>evaluator-contact</code> → 403；
+              未登录 → 401；admin 请求任意线索 → 200。</td>
+        </tr>
+        <tr>
+          <td><b>V7</b></td>
+          <td>迁移幂等</td>
+          <td>连续执行迁移两次，第二次日志无 <code>ALTER</code>，无报错；
+              列与约束存在性与预期一致。</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note-strip">
+      <div class="dot"></div>
+      <div>
+        <b>⚠️ 未覆盖（本稿未验证）：</b>
+        「评估人岗位徽标」依赖不存在的字段（表 9 P2 第 2 行）；
+        「基线对比」依赖不存在的聚合（表 9 P2 第 1 行）；
+        客户侧 <code>POST /public/leads/{id}/follow-ups</code> 尚未实现，因此
+        <b>V4 的「留痕」链路在当前后端上会失败</b> —— 落地时须先补该端点，否则闭环只完成「能打出去」，
+        未完成「记录下来」。
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>表 11 · 视觉与排版规格</h3>
+    <table>
+      <thead>
+        <tr><th style="width:200px">元素</th><th style="width:110px">尺寸 / 值</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>评分星（admin 点选）</td><td class="t-num">34 × 34 · 圆角 11</td>
+          <td>选中态 <code>bg-ink / text-white</code>；hover 态 <code>bg-apricot / text-rust</code>。
+              不可只用颜色区分 —— 选中时填充为实底，未选中为描边空心。</td></tr>
+        <tr><td>评分星（移动端点选块）</td><td class="t-num">高 42 · 圆角 11</td>
+          <td>数字 + 小星双层；等比 5 等分 flex，宽度自适应 375 屏（每块约 62px）。</td></tr>
+        <tr><td>星级（只读展示）</td><td class="t-num">12 / 10.5 / 9.5px</td>
+          <td>admin 12px · 卡片 10.5px · 手机卡片 9.5px。
+              实心 <code>--rust</code>，空心 <code>--apricot-line</code>（移动端叠加色）。</td></tr>
+        <tr><td>档位 chip 高度</td><td class="t-num">22 / 26 px</td>
+          <td>列表卡 22px，详情卡 26px。圆角 999px。字号不低于 10px（可读性下限）。</td></tr>
+        <tr><td>结论句（serif）</td><td class="t-num">16 / 13.5 px</td>
+          <td>Web 16px · 移动 13.5px，<code>line-height 1.55–1.62</code>。
+              CJK 用 Songti SC / Noto Serif SC 兜底，避免回落到 sans 后 serif 观感断裂。</td></tr>
+        <tr><td>结论句与数字的间距</td><td class="t-num">16 px + 1px 分隔线</td>
+          <td>结论句上方永远有一条 1px 分隔（<code>rgba(93,42,26,.14)</code>），
+              把「机器给的数字」与「人给的判断」在视觉上分层。</td></tr>
+        <tr><td>评估人按钮</td><td class="t-num">h 30–32 · 圆角 999</td>
+          <td>移动端初始态为<b>描边</b>（reveal），点击揭示号码后变实底 ink。
+              避免与页面主 CTA（找房 / 预约）抢视觉。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="cap-note" style="max-width:940px">
+    <b>下一轮建议（不在本稿范围）：</b>
+    <br />
+    ① 若「评分 + 天数」上线后要回答「评估准不准」，需要一条 ≤P2 的埋点：
+    线索 <code>signed</code> 时回写实际售出天数（项目侧已有 <code>days_on_market</code>，
+    在 <code>projects/[projectId]</code> hero 区已用），与 <code>expected_sale_days</code> 做差。
+    没有这条回写，「预计 45 天」永远不会被校准，两三年后仍是一句主观猜测。
+    <br />
+    ② 表 2 的档位阈值（30 / 60 / 90）来自本项目既有「带看时效」的分档语感，
+    <b>不是市场校准结果</b>。若后续能拿到真实成交周期分布，阈值应重算 —— 届时只需改
+    <code>lead-verdict.ts</code> 一处（两端镜像需同步，见 V5）。
+  </p>
+</section>
+
+<!-- ══════════════════ 页脚 ══════════════════ -->
+<div style="max-width:1340px;margin:96px auto 0;padding:0 32px">
+  <div style="border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--dove)">
+      评估反馈迭代 · 房源条件分 × 可售周期 × 联系评估人 · v1.0 · 2026-10-21
+    </div>
+    <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--dove)">
+      视觉真源 DESIGN.md / Steep · 代码真源 见 ART 头注
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   派生逻辑镜像（与建议的 lead-verdict.ts 同值）
+   仅用于本稿交互演示；落地实现见 SEC 02 表 8
+   ══════════════════════════════════════════════════ */
+var SCORE_WORDS = { 1: '难售', 2: '偏弱', 3: '一般', 4: '良好', 5: '优质' };
+var SCORE_ANCHORS = {
+  1: '结构性难卖：暗厅暗卫 / 一层 / 产权复杂',
+  2: '户型与楼层同时偏弱，或存在硬伤需重装化解',
+  3: '户型或楼层有一项明显折价，需靠价格补',
+  4: '主流户型、1 项小短板需在带看时说清',
+  5: '户型方正通透、当前楼层段在小区里最好卖'
+};
+
+function daysTier(d) {
+  if (d == null || isNaN(d) || d <= 0) return null;
+  if (d <= 30) return { key: 'rush', word: '快' };
+  if (d <= 60) return { key: 'normal', word: '正常' };
+  if (d <= 90) return { key: 'slowish', word: '偏慢' };
+  return { key: 'slow', word: '慢' };
+}
+function daysSay(d) {
+  if (d == null || isNaN(d) || d <= 0) return '';
+  var m = d / 30;
+  var r = Math.round(m * 10) / 10;
+  return '约 ' + (r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)) + ' 个月';
+}
+
+function toast(id, msg) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(function () { el.classList.remove('on'); }, 2000);
+}
+
+/* ── ART 01：admin 评分星 ───────────────────── */
+(function () {
+  var wrap = document.getElementById('a1-stars');
+  if (!wrap) return;
+  var btns = wrap.querySelectorAll('.score-star');
+  var say = document.getElementById('a1-say');
+  var hint = document.getElementById('a1-word');
+  var anchor = document.getElementById('a1-anchor');
+  var cur = 0;
+
+  function paint() {
+    btns.forEach(function (b, i) {
+      b.classList.toggle('on', i < cur);
+      b.classList.remove('hover');
+    });
+    if (!cur) {
+      say.textContent = '未评分';
+      say.classList.add('mut');
+      hint.textContent = '点击星星打分';
+      anchor.innerHTML = '打分锚点：<b>5 优质</b> 户型方正通透、楼层最好卖 · <b>4 良好</b> 主流户型、1 项小短板 · <b>3 一般</b> 户型或楼层有一项明显折价 · <b>2 偏弱</b> 两项都弱或需重装 · <b>1 难售</b> 结构性硬伤';
+    } else {
+      say.textContent = cur + ' 分 · ' + SCORE_WORDS[cur];
+      say.classList.remove('mut');
+      hint.textContent = cur + ' / 5 已选';
+      anchor.innerHTML = '<b>' + cur + ' 分 · ' + SCORE_WORDS[cur] + '</b> —— ' + SCORE_ANCHORS[cur];
+    }
+  }
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      cur = Number(b.dataset.v);
+      paint();
+    });
+    b.addEventListener('mouseenter', function () {
+      var n = Number(b.dataset.v);
+      btns.forEach(function (x, i) { x.classList.toggle('hover', i < n && i >= cur); });
+    });
+    b.addEventListener('mouseleave', function () {
+      btns.forEach(function (x) { x.classList.remove('hover'); });
+    });
+  });
+  paint();
+})();
+
+/* ── ART 01：天数 → 档位联动 ────────────────── */
+(function () {
+  var inp = document.getElementById('a1-days');
+  var out = document.getElementById('a1-cycle');
+  if (!inp || !out) return;
+  inp.addEventListener('input', function () {
+    var d = parseInt(inp.value, 10);
+    var t = daysTier(d);
+    if (!t) {
+      out.innerHTML = '<span class="tier-chip mut"><span class="dot"></span>待填天数</span>' +
+        '<span class="cycle-say">填写后自动生成档位与「约 N 个月」文案</span>';
+      return;
+    }
+    var cls = t.key === 'rush' ? 'tier-chip' : (t.key === 'slow' ? 'tier-chip mut' : 'tier-chip');
+    out.innerHTML = '<span class="' + cls + '"><span class="dot"></span>' + t.word + '</span>' +
+      '<span class="cycle-say">列表与详情将显示「预计 ' + d + ' 天 · ' + daysSay(d) + '」' +
+      (t.key === 'rush' ? ' · 深底强色块' : '') + '</span>';
+  });
+})();
+
+/* ── ART 02：admin 拨号 / 复制 ──────────────── */
+(function () {
+  var REAL = '13812346688';
+  var c = document.getElementById('a2-call');
+  var cp = document.getElementById('a2-copy');
+  if (c) c.addEventListener('click', function () {
+    toast('a2-toast', '调用 tel: ' + REAL + ' · 同时写入审计日志');
+  });
+  if (cp) cp.addEventListener('click', function () {
+    if (navigator.clipboard) navigator.clipboard.writeText(REAL);
+    toast('a2-toast', '已复制 ' + REAL);
+  });
+})();
+
+/* ── ART 03：小程序授权 sheet ───────────────── */
+(function () {
+  var wrap = document.getElementById('a3-score');
+  if (!wrap) return;
+  var btns = wrap.querySelectorAll('.mscore__item');
+  var word = document.getElementById('a3-word');
+  var hint = document.getElementById('a3-hint');
+  var cur = 0;
+  function paint() {
+    btns.forEach(function (b, i) { b.classList.toggle('on', i < cur); });
+    if (!cur) {
+      word.innerHTML = '未评分 · 5 优质 / 4 良好 / 3 一般 / 2 偏弱 / 1 难售';
+      hint.textContent = '点选 1–5 分';
+    } else {
+      word.innerHTML = '<b>' + cur + ' 分 · ' + SCORE_WORDS[cur] + '</b> · ' + SCORE_ANCHORS[cur];
+      hint.textContent = cur + ' / 5 已选';
+    }
+  }
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () { cur = Number(b.dataset.v); paint(); });
+  });
+  paint();
+})();
+
+/* ── ART 03：天数 + 快捷档位 ────────────────── */
+(function () {
+  var inp = document.getElementById('a3-days');
+  var chips = document.getElementById('a3-chips');
+  var out = document.getElementById('a3-cycle');
+  if (!inp || !out) return;
+
+  function render() {
+    var d = parseInt(inp.value, 10);
+    var t = daysTier(d);
+    if (!t) {
+      out.innerHTML = '<span style="color:var(--dove)">填写后自动生成展示文案</span>';
+    } else {
+      out.innerHTML = '展示为「预计 <b>' + d + ' 天 · ' + daysSay(d) + '</b>」· 档位 <b>' + t.word + '</b>';
+    }
+    chips.querySelectorAll('.qc').forEach(function (q) {
+      q.classList.toggle('on', Number(q.dataset.d) === d);
+    });
+  }
+  inp.addEventListener('input', render);
+  chips.querySelectorAll('.qc').forEach(function (q) {
+    q.addEventListener('click', function () {
+      inp.value = q.dataset.d;
+      render();
+    });
+  });
+  render();
+})();
+
+/* ── ART 03：价格差价联动 ──────────────────── */
+(function () {
+  var inp = document.getElementById('a3-price');
+  var out = document.getElementById('a3-diff');
+  if (!inp || !out) return;
+  inp.addEventListener('input', function () {
+    var p = parseFloat(inp.value);
+    if (!p || p <= 0) {
+      out.innerHTML = '与业主报价 <b>520</b> 万对比 · 输入后显示议价空间';
+      return;
+    }
+    var d = 520 - p;
+    if (Math.abs(d) < 0.01) {
+      out.innerHTML = '与业主报价一致，可按报价直接授权';
+    } else if (d > 0) {
+      out.innerHTML = '较业主报价低 <b class="good">' + d.toFixed(0) + '</b> 万 · 收房议价空间良好';
+    } else {
+      out.innerHTML = '高于业主报价 <b class="warn">' + Math.abs(d).toFixed(0) + '</b> 万 · 请补充评估依据';
+    }
+  });
+})();
+
+/* ── 小程序拨号面板（ART 03b / 05） ─────────── */
+(function () {
+  var ids = ['a3b-call', 'a6-call'];
+  ids.forEach(function (id) {
+    var b = document.getElementById(id);
+    if (b) b.addEventListener('click', function () {
+      b.textContent = b.textContent === '拨打' ? '138 1234 6688' : '拨打';
+    });
+  });
+})();
+
+/* ── ART 06：C 端拨号 / 复制 ───────────────── */
+(function () {
+  var REAL = '13812346688';
+  var c = document.getElementById('a7-call');
+  var cp = document.getElementById('a7-copy');
+  var ph = document.getElementById('a7-phone');
+  if (c) c.addEventListener('click', function () {
+    if (ph) ph.textContent = '138 1234 6688';
+    toast('a7-toast', '调用 tel: ' + REAL + ' · 已写入跟进记录「电话联系评估人 王建房」');
+  });
+  if (cp) cp.addEventListener('click', function () {
+    if (navigator.clipboard) navigator.clipboard.writeText(REAL);
+    toast('a7-toast', '已复制 ' + REAL);
+  });
+})();
+
+/* ── 跳转条高亮 ────────────────────────────── */
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('#jump a'));
+  var targets = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  function sync() {
+    var y = window.scrollY + 120;
+    var idx = 0;
+    targets.forEach(function (t, i) { if (t && t.offsetTop <= y) idx = i; });
+    links.forEach(function (a, i) { a.classList.toggle('on', i === idx); });
+  }
+  window.addEventListener('scroll', sync, { passive: true });
+  sync();
+})();
+</script>
+</body>
+</html>

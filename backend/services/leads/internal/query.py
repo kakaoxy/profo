@@ -10,7 +10,7 @@ from sqlalchemy import ColumnElement, Date, and_, case, cast, desc, func, or_, s
 from sqlalchemy.orm import Session, joinedload, noload, selectinload
 
 from models.common import LeadStatus
-from models.lead import Lead, LeadFollowUp
+from models.lead import Lead, LeadEvalHistory, LeadFollowUp
 from models.user import User
 from settings import settings
 from utils.formatters import escape_like
@@ -320,6 +320,59 @@ class LeadQueryService:
             .filter(Lead.id == lead_id, Lead.is_deleted.is_(False), self._acquired_filter(user_id))
             .first()
         )
+
+    def get_latest_eval_verdicts(self, lead_ids: list[str]) -> dict[str, dict[str, Any]]:
+        """批量取每条线索最新评估记录的条件分与可售周期（单次查询，避免 N+1）.
+
+        口径：每条线索取 `evaluated_at` 最新的一条；同刻并发写入时以 `id` 倒序作
+        确定性 tiebreaker（对齐 get_handled 的 tiebreaker 习惯）。
+
+        实现用 `row_number() over(partition_by=..., order_by=...)` 窗口函数
+        （仓库既有范式：services/marketing/subscription.py 的「取每人最新一条日志」），
+        不用 PostgreSQL 专属的 DISTINCT ON，保持 ORM 表达式一致。
+
+        Args:
+            lead_ids: 线索ID列表（空列表直接返回空字典，不发查询）
+
+        Returns:
+            dict[lead_id] -> {"condition_score": int|None, "expected_sale_days": int|None}；
+            无评估记录的线索不出现在结果中（调用方用 ``.get(id, {})`` 回退）
+
+        """
+        if not lead_ids:
+            return {}
+        latest = (
+            self.db.query(
+                LeadEvalHistory.lead_id,
+                LeadEvalHistory.condition_score,
+                LeadEvalHistory.expected_sale_days,
+                func.row_number()
+                .over(
+                    partition_by=LeadEvalHistory.lead_id,
+                    order_by=(desc(LeadEvalHistory.evaluated_at), desc(LeadEvalHistory.id)),
+                )
+                .label("rn"),
+            )
+            .filter(LeadEvalHistory.lead_id.in_(lead_ids))
+            .subquery()
+        )
+
+        rows = (
+            self.db.query(
+                latest.c.lead_id,
+                latest.c.condition_score,
+                latest.c.expected_sale_days,
+            )
+            .filter(latest.c.rn == 1)
+            .all()
+        )
+        return {
+            row.lead_id: {
+                "condition_score": row.condition_score,
+                "expected_sale_days": row.expected_sale_days,
+            }
+            for row in rows
+        }
 
     def get_followup_stats(self, lead_ids: list[str]) -> dict[str, dict[str, Any]]:
         """按线索ID批量聚合跟进统计（单次 GROUP BY，避免逐条查询 N+1）.

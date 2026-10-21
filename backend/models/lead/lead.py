@@ -8,10 +8,12 @@ from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     Index,
     Integer,
     Numeric,
+    SmallInteger,
     String,
     Text,
 )
@@ -19,6 +21,7 @@ from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import Base, FollowUpMethod, LeadStatus
+from utils.formatters import mask_phone
 
 
 class Lead(Base):
@@ -235,6 +238,19 @@ class LeadEvalHistory(Base):
     lead_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="线索ID")
     eval_price: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="评估价格(万)")
     remark: Mapped[str | None] = mapped_column(Text, comment="评估备注")
+    # 房源条件分（单一综合分）：可空以兼容存量记录（禁止用默认值伪造评估结论），
+    # 新写入路径由 LeadEvalHistoryCreate 的必填校验兜住
+    condition_score: Mapped[int | None] = mapped_column(
+        SmallInteger,
+        nullable=True,
+        comment="房源条件分 1-5（存量记录为空）",
+    )
+    # 装修后预计可售天数：保留连续值（可统计/可排序），展示层再派生成档位词 + 约N个月
+    expected_sale_days: Mapped[int | None] = mapped_column(
+        SmallInteger,
+        nullable=True,
+        comment="装修后预计可售天数 1-365（存量记录为空）",
+    )
     evaluator_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="评估人ID")
     evaluated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -255,9 +271,32 @@ class LeadEvalHistory(Base):
         primaryjoin="foreign(LeadEvalHistory.evaluator_id) == User.id",
     )
 
-    __table_args__ = (Index("idx_lead_eval_history_lead", "lead_id"),)
+    __table_args__ = (
+        Index("idx_lead_eval_history_lead", "lead_id"),
+        # CHECK 约束名与表达式必须与 migrations/add_lead_eval_verdict_fields.py 逐字一致：
+        # 全新库/测试库走 Base.metadata.create_all（由本处声明产生），既有库走迁移函数。
+        CheckConstraint(
+            "condition_score IS NULL OR (condition_score BETWEEN 1 AND 5)",
+            name="ck_lead_eval_condition_score",
+        ),
+        CheckConstraint(
+            "expected_sale_days IS NULL OR (expected_sale_days BETWEEN 1 AND 365)",
+            name="ck_lead_eval_expected_sale_days",
+        ),
+    )
 
     @property
     def evaluator_name(self) -> str | None:
         """获取评估人名称."""
         return self.evaluator.nickname if self.evaluator else None
+
+    @property
+    def evaluator_phone(self) -> str | None:
+        """获取评估人手机号（已脱敏）.
+
+        响应层专用：真实号不进任何列表/详情响应，客户要拨打时另走
+        `GET /public/leads/{lead_id}/evaluator-contact`。
+        未登记手机号时返回 None（前端降级为「暂未登记手机号」）。
+        """
+        phone = self.evaluator.phone if self.evaluator else None
+        return mask_phone(phone) if phone else None

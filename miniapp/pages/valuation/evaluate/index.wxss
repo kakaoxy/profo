@@ -440,3 +440,61 @@ page {
   color: var(--ink3);
   padding: 32rpx 0 8rpx;
 }
+
+/* ===== 评估反馈迭代：卡片结论条（房源条件分 + 可售周期） ===== */
+/* 独立一行置于 .lcard__mid 与 .lcard__foot 之间：foot 左侧来源 chip + 时间、
+   右侧时效标签，三组信息挤一行会在 375px 下互相吃掉。代价是卡片高 24rpx。 */
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 18rpx;
+  flex-wrap: wrap;
+}
+.vchip {
+  height: 44rpx;
+  padding: 0 16rpx;
+  border-radius: 9999rpx;
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.vchip--score {
+  background: #fbe1d1;
+  color: #5d2a1a;
+}
+.vchip--muted {
+  background: #f7f7f8;
+  color: #777b86;
+  font-weight: 500;
+}
+.vchip__stars {
+  display: inline-flex;
+  gap: 1rpx;
+}
+.vchip__s {
+  font-size: 16rpx;
+  line-height: 1;
+  color: rgba(93, 42, 26, 0.24);
+}
+.vchip__s--on {
+  color: #5d2a1a;
+}
+.vchip--days {
+  background: #f7f7f8;
+  color: #4c4c4c;
+}
+/* 只有「快」用深底强色块：列表里每张卡都有强色块 = 都没有 */
+.vchip--rush {
+  background: #5d2a1a;
+  color: #ffffff;
+}
+.vchip--slow {
+  background: #eef0f3;
+  color: #777b86;
+  font-weight: 500;
+}

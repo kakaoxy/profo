@@ -55,6 +55,8 @@ class TestLeadEvalServiceCreate:
             eval_price=350.5,
             remark="首次评估",
             evaluator_id="evaluator-1",
+            condition_score=4,
+            expected_sale_days=45,
         )
 
         assert rec.lead_id == lead.id
@@ -74,6 +76,8 @@ class TestLeadEvalServiceCreate:
                 eval_price=100.0,
                 remark=None,
                 evaluator_id="evaluator-1",
+                condition_score=3,
+                expected_sale_days=60,
             )
 
     def test_raises_not_found_for_soft_deleted_lead(self, db_session: Session) -> None:
@@ -88,6 +92,8 @@ class TestLeadEvalServiceCreate:
                 eval_price=200.0,
                 remark=None,
                 evaluator_id="evaluator-1",
+                condition_score=3,
+                expected_sale_days=60,
             )
 
     def test_multiple_evaluations_update_eval_price(self, db_session: Session) -> None:
@@ -96,8 +102,22 @@ class TestLeadEvalServiceCreate:
         db_session.commit()
 
         svc = LeadEvalService(db_session)
-        svc.create_evaluation(lead_id=lead.id, eval_price=300.0, remark=None, evaluator_id="e1")
-        svc.create_evaluation(lead_id=lead.id, eval_price=320.0, remark="调价", evaluator_id="e2")
+        svc.create_evaluation(
+            lead_id=lead.id,
+            eval_price=300.0,
+            remark=None,
+            evaluator_id="e1",
+            condition_score=4,
+            expected_sale_days=45,
+        )
+        svc.create_evaluation(
+            lead_id=lead.id,
+            eval_price=320.0,
+            remark="调价",
+            evaluator_id="e2",
+            condition_score=3,
+            expected_sale_days=60,
+        )
 
         db_session.refresh(lead)
         assert float(lead.eval_price) == 320.0  # type: ignore[arg-type]
@@ -162,7 +182,7 @@ class TestEvaluationEndpoints:
 
         resp = backend_client.post(
             f"/api/v1/leads/{lead.id}/evaluations",
-            json={"eval_price": 420.0, "remark": "端点测试"},
+            json={"eval_price": 420.0, "remark": "端点测试", "condition_score": 4, "expected_sale_days": 45},
         )
 
         assert resp.status_code == 201
@@ -177,7 +197,7 @@ class TestEvaluationEndpoints:
         """线索不存在时 POST 应返回 404."""
         resp = backend_client.post(
             "/api/v1/leads/nonexistent-id/evaluations",
-            json={"eval_price": 100.0},
+            json={"eval_price": 100.0, "condition_score": 3, "expected_sale_days": 60},
         )
         assert resp.status_code == 404
 
@@ -202,7 +222,7 @@ class TestEvaluationEndpoints:
         # 先创建一条评估记录
         backend_client.post(
             f"/api/v1/leads/{lead.id}/evaluations",
-            json={"eval_price": 500.0, "remark": "初始"},
+            json={"eval_price": 500.0, "remark": "初始", "condition_score": 5, "expected_sale_days": 30},
         )
 
         resp = backend_client.get(f"/api/v1/leads/{lead.id}/evaluations")

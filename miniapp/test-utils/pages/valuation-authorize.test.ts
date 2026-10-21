@@ -45,6 +45,18 @@ function handledItem(status: string, evalPrice: number | null) {
   };
 }
 
+
+/**
+ * 填齐「三项齐全」的评估结论（本迭代口径：评分 + 可售周期 + 价格缺一不可）。
+ *
+ * 评估反馈迭代后 canConfirm 由三项共同决定，旧用例只填价格已无法提交；
+ * 统一用本 helper 避免每个用例重复三行。
+ */
+function fillVerdict(ctx: AnyRecord, score = 4, days = 45): void {
+  ctx.onScoreTap({ currentTarget: { dataset: { v: score } } });
+  ctx.onSaleDaysInput({ detail: { value: String(days) } });
+}
+
 function evalHistory(id: string, evalPrice: number, evaluatedAt: string, remark: string | null) {
   return { id, lead_id: "h1", eval_price: evalPrice, remark, evaluator_id: "op", evaluated_at: evaluatedAt };
 }
@@ -228,6 +240,7 @@ describe("再次评估（adjust）提交链路", () => {
     expect(ctx.data.panelMode).toBe("adjust");
     expect(ctx.data.confirmText).toBe("确认调整");
 
+    fillVerdict(ctx);
     ctx.onPriceInput({ detail: { value: "362.5" } });
     expect(ctx.data.canConfirm).toBe(true);
     expect(ctx.data.confirmText).toBe("确认调整 ¥362.5 万");
@@ -236,7 +249,7 @@ describe("再次评估（adjust）提交链路", () => {
 
     ctx.submitAuthorize();
     const req = findReq("/public/leads/my/acquired/h1/evaluations", "POST");
-    expect(req.opts.data).toEqual({ eval_price: 362.5 });
+    expect(req.opts.data).toEqual({ eval_price: 362.5, condition_score: 4, expected_sale_days: 45 });
 
     req.resolve({ id: "e3", eval_price: 362.5 });
     await flush();
@@ -251,6 +264,7 @@ describe("再次评估（adjust）提交链路", () => {
     enterViewMode(ctx, handledItem("visited", 320));
 
     ctx.openAdjustPanel();
+    fillVerdict(ctx);
     ctx.onPriceInput({ detail: { value: "330" } });
     ctx.submitAuthorize();
     findReq("/public/leads/my/acquired/h1/evaluations", "POST").reject({
@@ -270,6 +284,7 @@ describe("再次评估（adjust）提交链路", () => {
     enterViewMode(ctx, handledItem("pending_visit", 350));
 
     ctx.openAdjustPanel();
+    fillVerdict(ctx);
     ctx.onPriceInput({ detail: { value: "360" } });
     ctx.submitAuthorize();
     findReq("/public/leads/my/acquired/h1/evaluations", "POST").reject({ statusCode: 403, body: {} });
@@ -313,6 +328,7 @@ describe("默认模式三动作与冲突文案", () => {
 
     ctx.openPanel({ currentTarget: { dataset: { mode: "approve" } } });
     expect(ctx.data.panelMode).toBe("approve");
+    fillVerdict(ctx);
     ctx.onPriceInput({ detail: { value: "350" } });
     ctx.submitAuthorize();
 
@@ -323,5 +339,132 @@ describe("默认模式三动作与冲突文案", () => {
 
     expect(ctx.data.showConflict).toBe(true);
     expect(ctx.data.conflictTitle).toBe("该线索已被完成评估");
+  });
+});
+describe("approve 成功后落地只读详情并可分享（需求：评估后留在本页 + 分享给客户）", () => {
+  /** 造一条待评估线索并切到 approve 面板、填齐三项 */
+  function prepareApprove(ctx: AnyRecord): void {
+    ctx.onLoad({ id: "p9" });
+    ctx.applyItem({
+      id: "p9",
+      community_name: "金杨七街坊",
+      district: "浦东新区",
+      layout: "2室1厅",
+      area: 88.5,
+      floor_info: "12/18层",
+      orientation: "南",
+      remarks: null,
+      expected_price: 520,
+      images: [],
+      source: "customer_share",
+      created_at: "2026-01-01T00:00:00Z",
+    });
+    ctx.openPanel({ currentTarget: { dataset: { mode: "approve" } } });
+    fillVerdict(ctx, 4, 45);
+    ctx.onPriceInput({ detail: { value: "486" } });
+    ctx.submitAuthorize();
+  }
+
+  it("approve 成功 → viewMode=true（不返回工作台）且 canShareVerdict=true", async () => {
+    const ctx = createPageHarness({});
+    prepareApprove(ctx);
+
+    const req = findReq("/public/leads/my/acquired/p9/authorize-assessment", "POST");
+    req.resolve({ id: "p9", status: "pending_visit", status_display: "待看房", eval_price: 486 });
+    await flush();
+    // enterViewModeAfterApprove 走 600ms 定时器
+    await new Promise((r) => setTimeout(r, 700));
+
+    expect(ctx.data.viewMode).toBe(true);
+    expect(ctx.data.panelMode).toBe("");
+    expect(ctx.data.canShareVerdict).toBe(true);
+    expect(ctx.data.evalPriceText).toBe("486");
+    expect(ctx.data.shareConditionScore).toBe(4);
+    expect(ctx.data.shareExpectedSaleDays).toBe(45);
+    // 关键：不能再 navigateBack（否则看不到结论、也没有分享入口）
+    expect(wxStubs.navigateBack).not.toHaveBeenCalled();
+  }, 10_000);
+
+  it("onShareAppMessage 落地 pages/valuation/detail 且标题含评估价与可售周期", async () => {
+    const ctx = createPageHarness({});
+    prepareApprove(ctx);
+    findReq("/public/leads/my/acquired/p9/authorize-assessment", "POST").resolve({
+      id: "p9",
+      status: "pending_visit",
+      status_display: "待看房",
+      eval_price: 486,
+    });
+    await flush();
+    await new Promise((r) => setTimeout(r, 700));
+
+    const share = ctx.onShareAppMessage();
+    expect(share.path).toBe("/pages/valuation/detail/index?id=p9");
+    expect(share.title).toContain("金杨七街坊");
+    expect(share.title).toContain("486");
+    expect(share.title).toContain("45");
+    expect(share.title).toContain("良好");
+  }, 10_000);
+
+  it("reject 成功仍返回工作台（无结论可看，不提供分享）", async () => {
+    const ctx = createPageHarness({});
+    ctx.onLoad({ id: "p8" });
+    ctx.applyItem({
+      id: "p8",
+      community_name: "待评估小区",
+      district: "朝阳区",
+      layout: "2室1厅",
+      area: 90,
+      floor_info: "高楼层/28层",
+      orientation: "南北",
+      remarks: null,
+      expected_price: 300,
+      images: [],
+      source: "customer_share",
+      created_at: "2026-01-01T00:00:00Z",
+    });
+    ctx.openPanel({ currentTarget: { dataset: { mode: "reject" } } });
+    ctx.submitAuthorize();
+    findReq("/public/leads/my/acquired/p8/authorize-assessment", "POST").resolve({
+      id: "p8",
+      status: "rejected",
+      status_display: "已放弃",
+      eval_price: null,
+    });
+    await flush();
+    await new Promise((r) => setTimeout(r, 700));
+
+    expect(ctx.data.viewMode).toBe(false);
+    expect(wxStubs.navigateBack).toHaveBeenCalled();
+  }, 10_000);
+
+  it("viewMode 终态（rejected/lost）不允许分享", () => {
+    const ctx = createPageHarness({});
+    ctx.onLoad({ id: "r1", mode: "view" });
+    ctx.applyHandledItem({
+      id: "r1",
+      community_name: "终态小区",
+      district: "朝阳区",
+      layout: "2室1厅",
+      area: 90,
+      floor_info: "1/6层",
+      orientation: "北",
+      remarks: null,
+      expected_price: 300,
+      images: [],
+      source: "employee_entry",
+      status: "rejected",
+      status_display: "已放弃",
+      eval_price: null,
+      condition_score: null,
+      expected_sale_days: null,
+      last_follow_up_at: null,
+      follow_up_count: 0,
+      audit_time: "2026-01-01T00:00:00Z",
+      submitter_nickname: null,
+      submitter_phone: null,
+    });
+
+    expect(ctx.data.canShareVerdict).toBe(false);
+    expect(ctx.data.canFollowup).toBe(false);
   });
 });

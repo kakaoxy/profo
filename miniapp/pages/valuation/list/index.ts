@@ -23,6 +23,7 @@ import {
   freshnessLevel,
   isFreshnessWindow,
 } from "../../../utils/valuation-freshness";
+import { daysSummary, daysTier, scoreLabel, scoreStars } from "../../../utils/lead-verdict";
 import { fetchValuationSubscribeTemplate, requestValuationPriceSubscribe } from "../../../utils/valuation-notify";
 
 type LeadItem = components["schemas"]["PublicLeadListItem"];
@@ -50,6 +51,19 @@ interface DisplayItem {
   freshText: string;
   /** 时效样式档（ok/soon/over）；空串不渲染. */
   freshClass: string;
+  // ===== 结论条（与评估工作台 evaluate 同源口径）=====
+  /** 是否有评分（false → 灰底「未评分」） */
+  hasScore: boolean;
+  /** 五颗星填充状态 */
+  stars: boolean[];
+  /** 评分徽标文案（`4.0 良好` / `未评分`） */
+  scoreText: string;
+  /** 周期徽标文案（`45 天 · 约 1.5 月` / `周期待补`） */
+  daysText: string;
+  /** 周期档位（rush/normal/slowish/slow；空串 → 无周期数据） */
+  daysTierClass: string;
+  /** 是否渲染结论条（未出评估价的线索不渲染，与 evaluate 待评估卡一致） */
+  showVerdict: boolean;
 }
 
 /** 页面 data. */
@@ -164,6 +178,9 @@ Page<PageData, PageCustom>({
     const fresh = isFreshnessWindow(item.status)
       ? freshnessLevel(item.last_follow_up_at || item.audit_time)
       : null;
+    // 结论条：仅在已出评估价时渲染（未出价 → 无结论可说，与工作台待评估卡一致）
+    const hasScore =
+      typeof item.condition_score === "number" && item.condition_score >= 1 && item.condition_score <= 5;
     return {
       id: item.id,
       name: item.community_name,
@@ -182,6 +199,12 @@ Page<PageData, PageCustom>({
       timeText: `${timeLabel.prefix} ${timeLabel.text}`,
       freshText: fresh ? FRESHNESS_LABELS[fresh] : "",
       freshClass: fresh ?? "",
+      hasScore: hasScore,
+      stars: scoreStars(hasScore ? item.condition_score : null),
+      scoreText: hasScore ? `${item.condition_score}.0 ${scoreLabel(item.condition_score)}` : "未评分",
+      daysText: daysSummary(item.expected_sale_days),
+      daysTierClass: daysTier(item.expected_sale_days) || "",
+      showVerdict: evaluated,
     };
   },
 

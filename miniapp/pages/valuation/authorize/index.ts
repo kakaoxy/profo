@@ -33,6 +33,7 @@ import type { components } from "../../../types/api-types";
 import { request } from "../../../utils/request";
 import { resolveImageUrl } from "../../../utils/url";
 import { formatDate } from "../../../utils/valuation-display";
+import { SCORE_ANCHORS, SCORE_LABELS, daysSay, daysTier, daysTierLabel } from "../../../utils/lead-verdict";
 
 type QueueItem = components["schemas"]["PendingAssessmentQueueItem"];
 type HandledItem = components["schemas"]["HandledItem"];
@@ -177,6 +178,24 @@ interface PageData {
   // 面板与表单
   panelMode: PanelMode;
   evalPrice: string;
+  /** 房源条件分（1-5，0 = 未选） */
+  score: number;
+  /** 评分短标签（已选时展示） */
+  scoreWord: string;
+  /** 评分锚点提示（已选时展示当前档位锚点，未选时展示速查） */
+  scoreHint: string;
+  /** 五档速查（渲染星块用） */
+  scoreOptions: { v: number; label: string }[];
+  /** 装修后可售天数（空串 = 未填） */
+  saleDays: string;
+  /** 天数档位 key（rush/normal/slowish/slow；空串 = 未填） */
+  dayTier: string;
+  /** 天数档位短词 */
+  dayTierWord: string;
+  /** 天数展示文案（约 N 个月） */
+  daySayText: string;
+  /** 快捷档位 chips（点选写入代表值） */
+  quickDays: { d: number; label: string }[];
   remark: string;
   remarkLen: number;
   diffType: DiffType;
@@ -189,6 +208,13 @@ interface PageData {
   confirmText: string;
   formError: string;
   submitting: boolean;
+  // 评估结论分享（viewMode）：授权完成后在工作台可直接转发评估结果卡片给客户
+  /** 最新评估的房源条件分（无则 null） */
+  shareConditionScore: number | null;
+  /** 最新评估的装修后可售天数（无则 null） */
+  shareExpectedSaleDays: number | null;
+  /** 是否可分享评估结果（有授权价且非终态 rejected/lost_to_competitor） */
+  canShareVerdict: boolean;
   // 跟进面板（followup）
   /** 跟进方式（phone/wechat/face/visit，默认电话）. */
   followupMethod: string;
@@ -220,6 +246,10 @@ interface PageCustom {
   onFocusField(e: WechatMiniprogram.BaseEvent): void;
   onBlurField(e: WechatMiniprogram.BaseEvent): void;
   onPriceInput(e: WechatMiniprogram.Input): void;
+  onScoreTap(e: WechatMiniprogram.BaseEvent): void;
+  onSaleDaysInput(e: WechatMiniprogram.Input): void;
+  onQuickDayTap(e: WechatMiniprogram.BaseEvent): void;
+  syncVerdictState(): void;
   onRemarkInput(e: WechatMiniprogram.Input): void;
   submitAuthorize(): void;
   doSubmit(action: SubmitAction): Promise<void>;
@@ -233,6 +263,10 @@ interface PageCustom {
   submitFollowup(): void;
   onConflictBack(): void;
   onBack(): void;
+  /** approve 成功后就地切只读详情（viewMode），不返回工作台 */
+  enterViewModeAfterApprove(): void;
+  /** 转发评估结果卡片给客户（open-type=share 触发；落地 pages/valuation/detail） */
+  onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent;
 }
 
 /** 评估价是否有效：>0、≤999 万、≤2 位小数（对齐设计稿交互校验）. */
@@ -325,6 +359,27 @@ Page<PageData, PageCustom>({
     pendingCommunityName: "",
     panelMode: "",
     evalPrice: "",
+    // 房源条件分与可售周期（评估反馈迭代：三项齐全才可提交）
+    score: 0,
+    scoreWord: "",
+    scoreHint: "",
+    scoreOptions: [
+      { v: 1, label: "难售" },
+      { v: 2, label: "偏弱" },
+      { v: 3, label: "一般" },
+      { v: 4, label: "良好" },
+      { v: 5, label: "优质" },
+    ],
+    saleDays: "",
+    dayTier: "",
+    dayTierWord: "",
+    daySayText: "",
+    quickDays: [
+      { d: 20, label: "30 天内" },
+      { d: 45, label: "1–2 个月" },
+      { d: 75, label: "2–3 个月" },
+      { d: 110, label: "3 个月+" },
+    ],
     remark: "",
     remarkLen: 0,
     diffType: "",
@@ -336,6 +391,9 @@ Page<PageData, PageCustom>({
     confirmText: "确认授权",
     formError: "",
     submitting: false,
+    shareConditionScore: null,
+    shareExpectedSaleDays: null,
+    canShareVerdict: false,
     followupMethod: "phone",
     followupContent: "",
     followupLen: 0,
@@ -401,10 +459,16 @@ Page<PageData, PageCustom>({
     const meta = VIEW_STATUS_META[item.status] ?? { text: item.status_display, cls: "gray" };
     // 已授权/已看房展示授权价，且支持再次评估与登记跟进（对齐 admin 口径）
     const approved = ADJUSTABLE_STATUSES.indexOf(item.status) >= 0;
+    // 分享闸门：有授权价且非终态（rejected/lost_to_competitor 不分享负面结论）
+    const terminal = item.status === "rejected" || item.status === "lost_to_competitor";
+    const hasVerdict = approved && item.eval_price != null;
     this.setData({
       missing: false,
       canAdjust: approved,
       canFollowup: approved,
+      shareConditionScore: item.condition_score ?? null,
+      shareExpectedSaleDays: item.expected_sale_days ?? null,
+      canShareVerdict: hasVerdict && !terminal,
       statusTagText: meta.text,
       statusTagClass: meta.cls,
       community_name: item.community_name,
@@ -544,6 +608,13 @@ Page<PageData, PageCustom>({
       remark: "",
       remarkLen: 0,
       evalPrice: "",
+      score: 0,
+      scoreWord: "",
+      scoreHint: "",
+      saleDays: "",
+      dayTier: "",
+      dayTierWord: "",
+      daySayText: "",
       diffType: "",
       diffValue: "",
       evalUnitText: "",
@@ -563,6 +634,13 @@ Page<PageData, PageCustom>({
       remark: "",
       remarkLen: 0,
       evalPrice: "",
+      score: 0,
+      scoreWord: "",
+      scoreHint: "",
+      saleDays: "",
+      dayTier: "",
+      dayTierWord: "",
+      daySayText: "",
       diffType: "",
       diffValue: "",
       evalUnitText: "",
@@ -645,9 +723,70 @@ Page<PageData, PageCustom>({
       diffValue,
       // 实时折算单价（元/㎡）：仅有效输入且面积可用时展示
       evalUnitText: valid ? unitPriceText(Number(value), this.data.area) : "",
-      canConfirm: valid,
-      confirmText: valid ? `${verb} ¥${value} 万` : verb,
       formError: "",
+    });
+    // 价格不再单独决定可提交：由 syncVerdictState 统一按「三项齐全」判定
+    this.syncVerdictState();
+    if (!valid) {
+      this.setData({ canConfirm: false, confirmText: verb });
+    }
+  },
+
+  /** 点选房源条件分（1-5 单一综合分，Q1 口径：评分必填）. */
+  onScoreTap(e: WechatMiniprogram.BaseEvent) {
+    const v = Number(e.currentTarget.dataset.v);
+    if (!v || v < 1 || v > 5) {
+      return;
+    }
+    this.setData({ score: v, formError: "" });
+    this.syncVerdictState();
+  },
+
+  /** 装修后可售天数输入（连续值，档位由纯函数派生，不入库）. */
+  onSaleDaysInput(e: WechatMiniprogram.Input) {
+    this.setData({ saleDays: (e.detail.value || "").trim(), formError: "" });
+    this.syncVerdictState();
+  },
+
+  /** 快捷档位 chips：直接写入代表值（点了仍可改数字 —— chips 是入口不是约束）. */
+  onQuickDayTap(e: WechatMiniprogram.BaseEvent) {
+    const d = Number(e.currentTarget.dataset.d);
+    if (!d) {
+      return;
+    }
+    this.setData({ saleDays: String(d), formError: "" });
+    this.syncVerdictState();
+  },
+
+  /**
+   * 同步评分/天数派生态与提交闸门.
+   *
+   * 提交闸门（approve/adjust）：评估价 + 评分 + 天数**三项齐全**才允许提交 ——
+   * 不允许再产出「只有价格」的评估反馈（这是本迭代的核心动因）。
+   */
+  syncVerdictState() {
+    const { score, saleDays, evalPrice } = this.data;
+    const days = saleDays === "" ? null : Number(saleDays);
+    const tier = daysTier(days);
+    const scoreWord = score >= 1 && score <= 5 ? SCORE_LABELS[score as 1 | 2 | 3 | 4 | 5] : "";
+    const scoreHint =
+      score >= 1 && score <= 5
+        ? `${score} 分 · ${scoreWord} —— ${SCORE_ANCHORS[score as 1 | 2 | 3 | 4 | 5]}`
+        : "1 难售 · 2 偏弱 · 3 一般 · 4 良好 · 5 优质";
+
+    const priceValid = isValidEvalPrice(evalPrice);
+    const verdictValid = score >= 1 && score <= 5 && days != null && days >= 1 && days <= 365;
+    const valid = priceValid && verdictValid;
+    const verb = this.confirmVerb();
+
+    this.setData({
+      scoreWord,
+      scoreHint,
+      dayTier: tier || "",
+      dayTierWord: tier ? daysTierLabel(days) || "" : "",
+      daySayText: days != null ? daysSay(days) : "",
+      canConfirm: valid,
+      confirmText: valid ? `${verb} ¥${evalPrice} 万` : verb,
     });
   },
 
@@ -673,6 +812,68 @@ Page<PageData, PageCustom>({
     void this.doSubmit(mode);
   },
 
+  /**
+   * approve 成功后就地切换为只读详情（viewMode），不返回工作台。
+   *
+   * 为什么用原地切换而非 redirectTo：本页持有 EventChannel 传入的全景数据，
+   * redirectTo 会丢弃且闪一下白屏；原地 setData 即可保留参数宫格、图片、备注等既有内容，
+   * 同时把底部操作栏换成「分享给客户」+「更新跟进」。
+   *
+   * 金额与结论取值：优先后端已返回的 eval_price；评分/周期来自刚才表单提交的值
+   * （approve 成功后本地就是最新真值，无需再发一次详情请求）。
+   */
+  enterViewModeAfterApprove() {
+    const meta = VIEW_STATUS_META.pending_visit ?? { text: "待看房", cls: "green" };
+    const price = Number(this.data.evalPrice);
+    this.setData({
+      panelMode: "",
+      viewMode: true,
+      canAdjust: true,
+      canFollowup: true,
+      statusTagText: meta.text,
+      statusTagClass: meta.cls,
+      hasEvalPrice: Number.isFinite(price) && price > 0,
+      evalPriceText: Number.isFinite(price) && price > 0 ? `${price}` : "",
+      shareConditionScore: this.data.score >= 1 ? this.data.score : null,
+      shareExpectedSaleDays: this.data.saleDays ? Number(this.data.saleDays) : null,
+      canShareVerdict: Number.isFinite(price) && price > 0,
+      auditTimeText: formatDate(new Date().toISOString(), true),
+    });
+    // 刷新双段历史（评估历史要有刚才那条）与跟进记录
+    void this.fetchEvalHistories();
+    void this.fetchFollowups();
+  },
+
+  /**
+   * 转发评估结果卡片给客户（open-type=share 触发）。
+   *
+   * 落地页 = pages/valuation/detail（需求指定）。该页仅线索创建人可打开：
+   * 后端 GET /public/leads/{id} 硬校验 creator_id == 当前用户，其他人 403「无权查看」。
+   * 因此分享的对象**只能是提交这条评估的客户本人**（员工互转会看到无权提示）。
+   *
+   * 标题只放客户关心的三件事：小区 + 评估价 + 可售周期，不放内部评分术语。
+   */
+  onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent {
+    const price = this.data.evalPriceText;
+    const score = this.data.shareConditionScore;
+    const days = this.data.shareExpectedSaleDays;
+    const parts: string[] = [];
+    if (price) {
+      parts.push(`评估价 ${price} 万`);
+    }
+    if (score != null && score >= 1 && score <= 5) {
+      parts.push(`房源条件${SCORE_LABELS[score as 1 | 2 | 3 | 4 | 5]}`);
+    }
+    if (days != null) {
+      parts.push(`装修后约 ${days} 天可售`);
+    }
+    const title = parts.length > 0 ? `${this.data.community_name} · ${parts.join(" · ")}` : `${this.data.community_name} 评估结果`;
+    return {
+      title,
+      path: `/pages/valuation/detail/index?id=${this.data.leadId}`,
+    };
+  },
+
   async doSubmit(action: SubmitAction) {
     this.setData({ submitting: true, formError: "" });
     try {
@@ -680,6 +881,8 @@ Page<PageData, PageCustom>({
         // 再次评估：追加评估历史 + 刷 eval_price，不改状态（语义对齐 admin「调整评估价」）
         const body: components["schemas"]["LeadEvalHistoryCreate"] = {
           eval_price: Number(this.data.evalPrice),
+          condition_score: this.data.score,
+          expected_sale_days: Number(this.data.saleDays),
           ...(this.data.remark ? { remark: this.data.remark } : {}),
         };
         await request<unknown>({
@@ -708,7 +911,13 @@ Page<PageData, PageCustom>({
       }
       const body: components["schemas"]["LeadAssessmentAuthorizeRequest"] = {
         action,
-        ...(action === "approve" ? { eval_price: Number(this.data.evalPrice) } : {}),
+        ...(action === "approve"
+          ? {
+              eval_price: Number(this.data.evalPrice),
+              condition_score: this.data.score,
+              expected_sale_days: Number(this.data.saleDays),
+            }
+          : {}),
         ...(this.data.remark ? { remark: this.data.remark } : {}),
       };
       await request<AuthorizeResponse>({
@@ -718,6 +927,14 @@ Page<PageData, PageCustom>({
       });
       const toastText = action === "approve" ? "已批准约看" : action === "reject" ? "已放弃该线索" : "已标记他司成交";
       wx.showToast({ title: toastText, icon: "success" });
+      // approve 成功后**不返回工作台**，原地切到只读详情（viewMode）：
+      // 1) 员工能立刻看到刚出具的评估结论（评分/周期/价格）；
+      // 2) 页面出现「分享给客户」按钮，把结论卡片发给客户 —— 需求要求的闭环出口。
+      // reject/lost 无结论可看，仍返回工作台。
+      if (action === "approve") {
+        setTimeout(() => this.enterViewModeAfterApprove(), 600);
+        return;
+      }
       setTimeout(() => wx.navigateBack(), 600);
     } catch (err) {
       const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;

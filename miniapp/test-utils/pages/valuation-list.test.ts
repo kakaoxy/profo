@@ -304,3 +304,70 @@ describe("我的评估列表 epoch 竞态守卫", () => {
     expect(wxStubs.stopPullDownRefresh).toHaveBeenCalled();
   });
 });
+
+describe("我的评估列表卡结论条（与评估工作台同口径）", () => {
+  it("已出评估价 + 有评分与周期 → 渲染结论条并带档位类", async () => {
+    const ctx = createPageHarness({});
+    ctx.onShow();
+    const item = {
+      ...leadItem("v1"),
+      eval_price: 486,
+      condition_score: 4,
+      expected_sale_days: 45,
+    };
+    pendingReqs()[0].resolve(listResponse([item], 1));
+    await flush();
+
+    const card = ctx.data.items[0] as AnyRecord;
+    expect(card.showVerdict).toBe(true);
+    expect(card.hasScore).toBe(true);
+    expect(card.scoreText).toBe("4.0 良好");
+    expect(card.daysText).toBe("45 天 · 约 1.5 月");
+    expect(card.daysTierClass).toBe("normal");
+    expect(card.stars).toEqual([true, true, true, true, false]);
+  });
+
+  it("快周期（≤30 天）用 rush 档位类（列表唯一强色块）", async () => {
+    const ctx = createPageHarness({});
+    ctx.onShow();
+    const item = { ...leadItem("v2"), eval_price: 268, condition_score: 2, expected_sale_days: 28 };
+    pendingReqs()[0].resolve(listResponse([item], 1));
+    await flush();
+
+    const card = ctx.data.items[0] as AnyRecord;
+    expect(card.daysTierClass).toBe("rush");
+    expect(card.scoreText).toBe("2.0 偏弱");
+  });
+
+  it("存量记录（无评分/无周期）→ 灰底降级文案，不伪造默认值", async () => {
+    const ctx = createPageHarness({});
+    ctx.onShow();
+    const item = {
+      ...leadItem("v3"),
+      eval_price: 300,
+      condition_score: null,
+      expected_sale_days: null,
+    };
+    pendingReqs()[0].resolve(listResponse([item], 1));
+    await flush();
+
+    const card = ctx.data.items[0] as AnyRecord;
+    expect(card.showVerdict).toBe(true); // 已出价 → 结论条在
+    expect(card.hasScore).toBe(false);
+    expect(card.scoreText).toBe("未评分"); // 不是 "0 分" 或默认 3 分
+    expect(card.daysText).toBe("周期待补");
+    expect(card.daysTierClass).toBe("");
+  });
+
+  it("未出评估价（待评估）→ 不渲染结论条（无结论可说）", async () => {
+    const ctx = createPageHarness({});
+    ctx.onShow();
+    const item = { ...leadItem("v4"), eval_price: null, condition_score: null, expected_sale_days: null };
+    pendingReqs()[0].resolve(listResponse([item], 1));
+    await flush();
+
+    const card = ctx.data.items[0] as AnyRecord;
+    expect(card.showVerdict).toBe(false);
+    expect(card.priceLabel).toBe("业主报价");
+  });
+});

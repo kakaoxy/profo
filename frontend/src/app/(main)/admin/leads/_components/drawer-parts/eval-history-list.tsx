@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { EvalHistory } from "../../types";
 import { getEvalHistoriesAction } from "../../actions";
 import { safeFormatDate } from "@/lib/formatters";
+import { ScoreBadges } from "./verdict-badges";
 
 interface EvalHistoryListProps {
   leadId: string;
@@ -61,19 +62,29 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
               className="flex items-start gap-3 p-3 rounded-inputs border border-dove hover:border-ink/40 transition-colors"
             >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className="text-sm font-bold text-ink">¥{h.evalPrice} 万</span>
+                  {/* 评分与周期：存量记录无该事实时显式降级为灰底「未评分 / 周期待补」 */}
+                  <ScoreBadges score={h.conditionScore} days={h.expectedSaleDays} />
                   {idx === 0 && (
-                    <Badge className="bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">
+                    <Badge className="bg-apricot-wash text-rust border-apricot-line hover:bg-apricot-wash">
                       当前
                     </Badge>
                   )}
                 </div>
                 <div className="text-xs text-graphite">{h.remark || "未填写调整说明"}</div>
-                <div className="text-xs text-ash mt-1 flex items-center gap-2">
+                <div className="text-xs text-ash mt-1 flex items-center gap-2 flex-wrap">
                   <span>
                     <User className="h-2.5 w-2.5 inline" /> {h.evaluatorName || "未知"}
                   </span>
+                  {idx === 0 && h.evaluatorPhone && (
+                    <>
+                      <span>·</span>
+                      <span className="font-mono text-[11px] tracking-tight">
+                        {h.evaluatorPhone}
+                      </span>
+                    </>
+                  )}
                   <span>·</span>
                   <span>{formatEvalDate(h.evaluatedAt)}</span>
                 </div>

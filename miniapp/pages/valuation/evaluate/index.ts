@@ -29,6 +29,7 @@ import {
   freshnessLevel,
   isFreshnessWindow,
 } from "../../../utils/valuation-freshness";
+import { daysSummary, daysTier, scoreLabel, scoreStars } from "../../../utils/lead-verdict";
 
 type QueueItem = components["schemas"]["PendingAssessmentQueueItem"];
 type HandledItem = components["schemas"]["HandledItem"];
@@ -86,6 +87,17 @@ interface HandledCard {
   freshText: string;
   /** 时效样式档（ok/soon/over）；空串不渲染. */
   freshClass: string;
+  // ===== 结论条（房源条件分 + 可售周期）=====
+  /** 是否有评分（false → 渲染灰底「未评分」） */
+  hasScore: boolean;
+  /** 五颗星填充状态 */
+  stars: boolean[];
+  /** 评分徽标文案（`4.0 良好` / `未评分`） */
+  scoreText: string;
+  /** 周期徽标文案（`45 天 · 约 1.5 月` / `周期待补`） */
+  daysText: string;
+  /** 周期档位（rush/normal/slowish/slow；空串 → 无周期数据，灰底弱化） */
+  daysTierClass: string;
 }
 
 /** 页面 data. */
@@ -238,6 +250,9 @@ Page<PageData, PageCustom>({
     const fresh = isFreshnessWindow(item.status)
       ? freshnessLevel(item.last_follow_up_at || item.audit_time)
       : null;
+    // 评分有效性：1-5 整数才视为有结论（存量记录为 undefined）
+    const hasScore =
+      typeof item.condition_score === "number" && item.condition_score >= 1 && item.condition_score <= 5;
     return {
       id: item.id,
       name: item.community_name,
@@ -255,6 +270,12 @@ Page<PageData, PageCustom>({
       sourceClass: src.cls,
       freshText: fresh ? FRESHNESS_LABELS[fresh] : "",
       freshClass: fresh ?? "",
+      // 结论条：存量记录（无评分/无周期）显式降级，不隐藏、不补默认值
+      hasScore: hasScore,
+      stars: scoreStars(hasScore ? item.condition_score : null),
+      scoreText: hasScore ? `${item.condition_score}.0 ${scoreLabel(item.condition_score)}` : "未评分",
+      daysText: daysSummary(item.expected_sale_days),
+      daysTierClass: daysTier(item.expected_sale_days) || "",
     };
   },
 

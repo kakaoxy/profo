@@ -152,7 +152,7 @@ class TestNotifySkipConditions:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5},
+            json={"action": "approve", "eval_price": 350.5, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 200
         send_mock.assert_not_called()
@@ -168,7 +168,7 @@ class TestNotifySkipConditions:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5},
+            json={"action": "approve", "eval_price": 350.5, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 200
         send_mock.assert_not_called()
@@ -185,7 +185,7 @@ class TestNotifySkipConditions:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5},
+            json={"action": "approve", "eval_price": 350.5, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 200
         send_mock.assert_not_called()
@@ -219,7 +219,7 @@ class TestNotifyOpenidResolution:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5},
+            json={"action": "approve", "eval_price": 350.5, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 200
         send_mock.assert_called_once()
@@ -253,7 +253,7 @@ class TestNotifyOpenidResolution:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5},
+            json={"action": "approve", "eval_price": 350.5, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 200
         assert send_mock.call_count == 2
@@ -280,7 +280,13 @@ class TestAuthorizeNotifyTrigger:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5, "remark": "溢价可控"},
+            json={
+                "action": "approve",
+                "eval_price": 350.5,
+                "remark": "溢价可控",
+                "condition_score": 4,
+                "expected_sale_days": 45,
+            },
         )
         assert resp.status_code == 200
         send_mock.assert_called_once()
@@ -306,7 +312,13 @@ class TestAuthorizeNotifyTrigger:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 200, "remark": "评" * 25},
+            json={
+                "action": "approve",
+                "eval_price": 200,
+                "remark": "评" * 25,
+                "condition_score": 4,
+                "expected_sale_days": 45,
+            },
         )
         assert resp.status_code == 200
         send_mock.assert_called_once()
@@ -375,7 +387,7 @@ class TestReevaluationNotifyTrigger:
 
         resp = notify_operator_client.post(
             _EVALUATIONS_URL_TPL.format(lead_id=lead.id),
-            json={"eval_price": 362.5, "remark": "看房后上调"},
+            json={"eval_price": 362.5, "remark": "看房后上调", "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 201
         send_mock.assert_called_once()
@@ -415,7 +427,7 @@ class TestNotifyResilience:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5},
+            json={"action": "approve", "eval_price": 350.5, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 200
         assert resp.json()["eval_price"] == 350.5
@@ -441,7 +453,7 @@ class TestNotifyResilience:
 
         resp = notify_operator_client.post(
             _EVALUATIONS_URL_TPL.format(lead_id=lead.id),
-            json={"eval_price": 362.5},
+            json={"eval_price": 362.5, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 201
         session.refresh(lead)
@@ -476,7 +488,7 @@ class TestNotifyResilience:
 
         resp = notify_operator_client.post(
             _AUTHORIZE_URL_TPL.format(lead_id=lead.id),
-            json={"action": "approve", "eval_price": 350.5},
+            json={"action": "approve", "eval_price": 350.5, "condition_score": 4, "expected_sale_days": 45},
         )
         assert resp.status_code == 200
         assert send_mock.call_count == 2

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import useSWR from "swr";
 import { LeadInfoCard } from "@/components/c/lead/LeadInfoCard";
-import { SystemEstimateCard } from "@/components/c/lead/SystemEstimateCard";
+import { SystemEstimateCard, notifyContactFailure } from "@/components/c/lead/SystemEstimateCard";
 import { FollowUpList } from "@/components/c/lead/FollowUpList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/c/shared/ErrorState";
@@ -73,6 +73,47 @@ export default function LeadDetailPage() {
       minute: "2-digit",
     }) ?? "-";
 
+  /**
+   * 联系评估人：拉真实号 → tel: → 上报留痕。
+   *
+   * 顺序刻意如此（SPEC K9）：**先拨号、后异步上报**。tel: 可能被系统拦下或用户取消，
+   * 上报失败也不能阻断拨号 —— 绝不因为记不上日志而让人打不出电话。
+   */
+  const handleContactEvaluator = async () => {
+    try {
+      const res = await fetch(`/api/v1/public/leads/${id}/evaluator-contact`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        notifyContactFailure();
+        return;
+      }
+      const contact = (await res.json()) as { phone: string; nickname: string };
+
+      // 拨号（Web 端用 tel: 协议；失败不抛错）
+      window.location.href = `tel:${contact.phone}`;
+
+      // 异步留痕：失败静默（不影响拨号结果）
+      void fetch(`/api/v1/public/leads/${id}/follow-ups`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          method: "phone",
+          content: `客户致电评估人 ${contact.nickname || ""}`.trim(),
+        }),
+      })
+        .then((r) => {
+          if (r.ok) mutate();
+        })
+        .catch(() => {
+          /* 留痕失败静默：拨号已发出，不打扰用户 */
+        });
+    } catch {
+      notifyContactFailure();
+    }
+  };
+
   return (
     <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-8 pb-24 md:pb-12">
       {/* Page heading */}
@@ -123,7 +164,14 @@ export default function LeadDetailPage() {
           </div>
         )}
 
-        <SystemEstimateCard evalPrice={data.eval_price ?? null} createdAt={formattedDate} />
+        <SystemEstimateCard
+          evalPrice={data.eval_price ?? null}
+          conditionScore={data.condition_score ?? null}
+          expectedSaleDays={data.expected_sale_days ?? null}
+          evaluator={data.evaluator ?? null}
+          createdAt={formattedDate}
+          onContactEvaluator={handleContactEvaluator}
+        />
 
         <FollowUpList followUps={data.follow_ups ?? []} />
       </div>

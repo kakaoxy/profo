@@ -5051,6 +5051,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/leads/{lead_id}/evaluator-contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取评估人联系方式
+         * @description 返回最新一次评估的评估人真实手机号（仅线索创建人或内部员工）
+         */
+        get: operations["get_evaluator_contact_api_v1_public_leads__lead_id__evaluator_contact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/{lead_id}/follow-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 客户侧登记跟进
+         * @description 线索创建人或内部员工登记跟进（拨号留痕用）；不拒绝终态线索
+         */
+        post: operations["create_customer_followup_api_v1_public_leads__lead_id__follow_ups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/leads/{lead_id}": {
         parameters: {
             query?: never;
@@ -9276,6 +9316,16 @@ export interface components {
              */
             eval_price?: number | null;
             /**
+             * Condition Score
+             * @description 最新一条评估的房源条件分 1-5，无评估为空
+             */
+            condition_score?: number | null;
+            /**
+             * Expected Sale Days
+             * @description 最新一条评估的装修后可售天数，无评估为空
+             */
+            expected_sale_days?: number | null;
+            /**
              * Last Follow Up At
              * @description 最近跟进时间（max(lead_followups.followed_at)，无跟进为空）
              */
@@ -11280,6 +11330,16 @@ export interface components {
              * @description 评估意见/原因，三动作均选填
              */
             remark?: string | null;
+            /**
+             * Condition Score
+             * @description 房源条件分 1-5，approve 必填
+             */
+            condition_score?: number | null;
+            /**
+             * Expected Sale Days
+             * @description 装修后预计可售天数，approve 必填
+             */
+            expected_sale_days?: number | null;
         };
         /**
          * LeadAssessmentAuthorizeResponse
@@ -11483,6 +11543,10 @@ export interface components {
         /**
          * LeadEvalHistoryCreate
          * @description 创建评估历史请求.
+         *
+         *     评分与天数为**必填**：评估反馈必须是一份完整结论（好不好 / 多久 / 多少钱），
+         *     否则会重现「只有价格、员工客户都没有感知」的旧问题。列在 DB 层仍可空，
+         *     可空仅为兼容存量记录（存量记录不经本 Schema 写入）。
          */
         LeadEvalHistoryCreate: {
             /**
@@ -11490,6 +11554,16 @@ export interface components {
              * @description 评估价格(万)
              */
             eval_price: number | string;
+            /**
+             * Condition Score
+             * @description 房源条件分 1-5（综合分）
+             */
+            condition_score: number;
+            /**
+             * Expected Sale Days
+             * @description 装修后预计可售天数
+             */
+            expected_sale_days: number;
             /**
              * Remark
              * @description 评估备注
@@ -11509,10 +11583,16 @@ export interface components {
             eval_price: number;
             /** Remark */
             remark: string | null;
+            /** Condition Score */
+            condition_score?: number | null;
+            /** Expected Sale Days */
+            expected_sale_days?: number | null;
             /** Evaluator Id */
             evaluator_id: string;
             /** Evaluator Name */
             evaluator_name?: string | null;
+            /** Evaluator Phone */
+            evaluator_phone?: string | null;
             /**
              * Evaluated At
              * Format: date-time
@@ -11596,6 +11676,16 @@ export interface components {
             eval_price?: number | null;
             /** Expected Price */
             expected_price?: number | null;
+            /**
+             * Condition Score
+             * @description 最新一条评估的房源条件分 1-5，无评估为空
+             */
+            condition_score?: number | null;
+            /**
+             * Expected Sale Days
+             * @description 最新一条评估的装修后可售天数，无评估为空
+             */
+            expected_sale_days?: number | null;
             status: components["schemas"]["LeadStatus"];
             /** Audit Reason */
             audit_reason?: string | null;
@@ -11690,6 +11780,16 @@ export interface components {
             auditor_id?: string | null;
             /** Audit Time */
             audit_time?: string | null;
+            /**
+             * Condition Score
+             * @description 最新一条评估的房源条件分 1-5
+             */
+            condition_score?: number | null;
+            /**
+             * Expected Sale Days
+             * @description 最新一条评估的装修后可售天数
+             */
+            expected_sale_days?: number | null;
             /**
              * Building No
              * @description 字典楼栋号解析名称(pending 时为待审名称)
@@ -13296,6 +13396,16 @@ export interface components {
              * @description 提交人手机号（已脱敏）
              */
             submitter_phone?: string | null;
+            /**
+             * Condition Score
+             * @description 房源条件分 1-5（待评估恒为空，字段保留统一前端渲染分支）
+             */
+            condition_score?: number | null;
+            /**
+             * Expected Sale Days
+             * @description 装修后可售天数（待评估恒为空）
+             */
+            expected_sale_days?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -15299,6 +15409,25 @@ export interface components {
             created_at: string;
         };
         /**
+         * PublicCustomerFollowupCreate
+         * @description C端客户侧跟进创建请求（POST /public/leads/{lead_id}/follow-ups，拨号留痕用）.
+         *
+         *     与员工侧 `PublicFollowupCreate` 字段一致，但权限口径不同：
+         *     - 员工侧：仅 admin/operator，且**终态线索 409**（见 LeadService.create_followup）；
+         *     - 客户侧：线索创建人 或 admin/operator，**不拒绝终态**（K11 —— 跟进记录是事实记录，
+         *       已关闭线索仍需记录为何关闭后再联系）。
+         *     独立命名是为了让两个端点在校验口径上不会被后来者「统一」掉。
+         */
+        PublicCustomerFollowupCreate: {
+            /** @description 跟进方式：phone/wechat/face/visit */
+            method: components["schemas"]["FollowUpMethod"];
+            /**
+             * Content
+             * @description 跟进内容（1-500 字）
+             */
+            content: string;
+        };
+        /**
          * PublicDictItemResponse
          * @description 公开字典条目（仅启用项；C 端/小程序渲染用）.
          */
@@ -15334,6 +15463,60 @@ export interface components {
              * @description 启用项（按 sort_order 升序）
              */
             items: components["schemas"]["PublicDictItemResponse"][];
+        };
+        /**
+         * PublicEvaluatorBrief
+         * @description C端评估人简要信息（详情页展示用）.
+         *
+         *     真实手机号**不进详情响应**（隐私面收敛），只给脱敏号；
+         *     客户点击拨打时再走 `GET /public/leads/{lead_id}/evaluator-contact` 按需拉取。
+         */
+        PublicEvaluatorBrief: {
+            /**
+             * Nickname
+             * @description 评估人昵称
+             */
+            nickname?: string | null;
+            /**
+             * Phone Masked
+             * @description 评估人手机号（已脱敏）；未登记为空
+             */
+            phone_masked?: string | null;
+            /**
+             * Evaluated At
+             * Format: date-time
+             * @description 本次评估时间
+             */
+            evaluated_at: string;
+        };
+        /**
+         * PublicEvaluatorContact
+         * @description C端评估人真实联系方式（拨号专用）.
+         *
+         *     与既有 `PublicConsultantContact`（房源顾问真实号）同构：
+         *     真实号只在独立端点按需返回，归属校验由 Service 完成。
+         */
+        PublicEvaluatorContact: {
+            /**
+             * Phone
+             * @description 评估人手机号（真实值，供直接拨打）
+             */
+            phone: string;
+            /**
+             * Nickname
+             * @description 评估人昵称
+             */
+            nickname: string;
+            /**
+             * Lead Id
+             * @description 线索ID
+             */
+            lead_id: string;
+            /**
+             * Evaluation Id
+             * @description 评估记录ID（本次联系方式对应的评估）
+             */
+            evaluation_id: string;
         };
         /**
          * PublicFollowupCreate
@@ -15618,6 +15801,18 @@ export interface components {
              */
             follow_ups?: components["schemas"]["PublicFollowupItem"][];
             /**
+             * Condition Score
+             * @description 房源条件分 1-5（最新一条评估）
+             */
+            condition_score?: number | null;
+            /**
+             * Expected Sale Days
+             * @description 装修后预计可售天数（最新一条评估）
+             */
+            expected_sale_days?: number | null;
+            /** @description 最新一条评估的评估人（无评估为空） */
+            evaluator?: components["schemas"]["PublicEvaluatorBrief"] | null;
+            /**
              * Can Follow Up
              * @description 是否可登记跟进（内部员工能力位）
              * @default false
@@ -15676,6 +15871,16 @@ export interface components {
              * @description 评估价格(万)，未出价为空
              */
             eval_price?: number | null;
+            /**
+             * Condition Score
+             * @description 房源条件分 1-5（最新一条评估）
+             */
+            condition_score?: number | null;
+            /**
+             * Expected Sale Days
+             * @description 装修后可售天数（最新一条评估）
+             */
+            expected_sale_days?: number | null;
             /**
              * District
              * @description 行政区
@@ -29382,6 +29587,74 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PublicFollowupCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicFollowupItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_evaluator_contact_api_v1_public_leads__lead_id__evaluator_contact_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicEvaluatorContact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_customer_followup_api_v1_public_leads__lead_id__follow_ups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicCustomerFollowupCreate"];
             };
         };
         responses: {

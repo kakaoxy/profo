@@ -180,6 +180,13 @@ DROP_SPECS: dict[int, DropSpec] = {
         indexes=("uq_biz_dict_items", "idx_biz_dict_items_dict"),
         notes="含 4 组业务字典种子（非空时拒绝 DROP）",
     ),
+    83: DropSpec(
+        columns=(
+            ("lead_eval_histories", "condition_score"),
+            ("lead_eval_histories", "expected_sale_days"),
+        ),
+        notes="CHECK 约束随列 DROP 自动消失（PG 行为），无需单独处理",
+    ),
 }
 
 

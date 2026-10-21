@@ -16,9 +16,11 @@ import {
   formatDate,
   sliceFollowups,
 } from "../../../utils/valuation-display";
+import { daysSay, daysTier, scoreLabel, scoreStars } from "../../../utils/lead-verdict";
 
 type LeadDetail = components["schemas"]["PublicLeadDetail"];
 type Followup = components["schemas"]["PublicFollowupItem"];
+type PublicEvaluatorContact = components["schemas"]["PublicEvaluatorContact"];
 
 /** 面板模式：空串表示全部关闭. */
 type PanelMode = "" | "followup";
@@ -68,6 +70,39 @@ interface PageData {
   hasEvalPrice: boolean;
   /** Hero 元信息行：户型 · 面积 · 楼层/朝向 · 业主预期价（空段跳过）. */
   hero_meta: string;
+  // ===== 评估结论（评分 / 可售周期 / 评估人）=====
+  /** 是否有评分（false → 「未评分」降级） */
+  hasScore: boolean;
+  /** 五颗星填充状态 */
+  stars: boolean[];
+  /** 评分短标签（良好 等） */
+  scoreWord: string;
+  /** 评分数字（1-5，模板里直接展示） */
+  scoreNum: number;
+  /** 是否有可售周期 */
+  hasSaleDays: boolean;
+  /** 可售天数文案（`45 天` / `周期待补`） */
+  saleDaysText: string;
+  /** 可售天数数字（模板里直接展示） */
+  saleDaysValue: number;
+  /** 「约 N 个月」人话翻译 */
+  saleMonthText: string;
+  /** 是否渲染双指标区（两者皆无则不渲染，避免空壳） */
+  hasMetrics: boolean;
+  /** 评估结论一句话（serif 引文） */
+  verdictSentence: string;
+  /** 评估人昵称 */
+  evaluatorName: string;
+  /** 评估人脱敏号 */
+  evaluatorPhoneMasked: string;
+  /** 是否可联系评估人（有评估人且有脱敏号） */
+  canContactEvaluator: boolean;
+  /** 拨号面板开关 */
+  showCallPanel: boolean;
+  /** 拨号面板内的真实号（打开面板时拉取） */
+  callRealPhone: string;
+  /** 正在拉取真实号 */
+  callLoading: boolean;
   // 跟进记录（全量缓存于 allFollowups，展示用 followups 切片）
   allFollowups: DisplayFollowup[];
   followups: DisplayFollowup[];
@@ -107,6 +142,14 @@ interface PageCustom {
   onGoLogin(): void;
   onBack(): void;
   onRetry(): void;
+  /** 打开联系评估人面板（拉取真实号 + 展示拨号/复制） */
+  onOpenCallPanel(): void;
+  /** 关闭拨号面板 */
+  onCloseCallPanel(): void;
+  /** 调起系统拨号并异步留痕 */
+  onCallEvaluator(): void;
+  /** 复制评估人号码 */
+  onCopyEvaluatorPhone(): void;
   /** 打开跟进半屏面板（区块头「＋ 登记」与底部「更新跟进」共用）. */
   openFollowupPanel(): void;
   closePanel(): void;
@@ -134,6 +177,22 @@ Page<PageData, PageCustom>({
     evalPrice: "",
     hasEvalPrice: false,
     hero_meta: "",
+    hasScore: false,
+    stars: [false, false, false, false, false],
+    scoreWord: "",
+    scoreNum: 0,
+    hasSaleDays: false,
+    saleDaysText: "周期待补",
+    saleDaysValue: 0,
+    saleMonthText: "",
+    hasMetrics: false,
+    verdictSentence: "",
+    evaluatorName: "",
+    evaluatorPhoneMasked: "",
+    canContactEvaluator: false,
+    showCallPanel: false,
+    callRealPhone: "",
+    callLoading: false,
     allFollowups: [],
     followups: [],
     followupPage: 1,
@@ -198,6 +257,10 @@ Page<PageData, PageCustom>({
     ]
       .filter(Boolean)
       .join(" · ");
+    // 评分 / 可售周期有效性：存量记录无该事实（undefined） → 降级
+    const hasScore =
+      typeof detail.condition_score === "number" && detail.condition_score >= 1 && detail.condition_score <= 5;
+    const hasSaleDays = typeof detail.expected_sale_days === "number" && detail.expected_sale_days > 0;
     this.setData({
       loading: false,
       community_name: detail.community_name,
@@ -217,6 +280,30 @@ Page<PageData, PageCustom>({
       evalPrice: detail.eval_price != null ? String(detail.eval_price) : "",
       hasEvalPrice: detail.eval_price != null,
       hero_meta: heroMeta,
+      // ===== 评估结论（评分 / 可售周期 / 评估人）=====
+      // 存量记录无该事实时显式降级；双指标皆无则整区不渲染（不留空壳）
+      hasScore: hasScore,
+      stars: scoreStars(hasScore ? detail.condition_score : null),
+      scoreWord: hasScore ? scoreLabel(detail.condition_score) || "" : "",
+      scoreNum: hasScore ? (detail.condition_score as number) : 0,
+      hasSaleDays: hasSaleDays,
+      saleDaysText: hasSaleDays ? `${detail.expected_sale_days} 天` : "周期待补",
+      saleDaysValue: hasSaleDays ? (detail.expected_sale_days as number) : 0,
+      saleMonthText: hasSaleDays ? daysSay(detail.expected_sale_days) : "",
+      hasMetrics: hasScore || hasSaleDays,
+      verdictSentence: (() => {
+        const parts: string[] = [];
+        if (hasScore) {
+          parts.push(`房源条件${scoreLabel(detail.condition_score)}`);
+        }
+        if (hasSaleDays) {
+          parts.push(`装修后预计 ${detail.expected_sale_days} 天可出手`);
+        }
+        return parts.length > 0 ? `${parts.join("，")}。` : "";
+      })(),
+      evaluatorName: detail.evaluator ? detail.evaluator.nickname || "" : "",
+      evaluatorPhoneMasked: detail.evaluator ? detail.evaluator.phone_masked || "" : "",
+      canContactEvaluator: Boolean(detail.evaluator && detail.evaluator.phone_masked),
       allFollowups,
       followups: sliceFollowups(allFollowups, 1, FOLLOWUP_PAGE_SIZE),
       followupPage: 1,
@@ -342,6 +429,77 @@ Page<PageData, PageCustom>({
   },
 
   /** 跟进半屏面板：跟进方式默认电话，内容清空. */
+  /**
+   * 打开联系评估人面板：拉取真实手机号后展示「拨打电话 / 复制号码」。
+   *
+   * 为什么多一步而不是直接拨号：wx.makePhoneCall 会弹系统确认；若把「查看完整号码」
+   * 与「拨号」合成一个按钮，用户看不到号码本身，也无法口头转述或复制给他人。
+   * 面板同时给号码 + 两种动作，是项目既有范式（pages/customers/detail 的 onViewPhone）。
+   */
+  async onOpenCallPanel() {
+    if (this.data.callLoading) {
+      return;
+    }
+    this.setData({ showCallPanel: true, callLoading: true, callRealPhone: "" });
+    try {
+      const contact = await request<PublicEvaluatorContact>({
+        url: `/public/leads/${this.data.leadId}/evaluator-contact`,
+      });
+      this.setData({ callRealPhone: contact.phone, callLoading: false });
+    } catch {
+      this.setData({ showCallPanel: false, callLoading: false });
+      wx.showToast({ title: "获取联系方式失败，请稍后重试", icon: "none" });
+    }
+  },
+
+  onCloseCallPanel() {
+    this.setData({ showCallPanel: false });
+  },
+
+  /**
+   * 调起系统拨号并**异步**留痕。
+   *
+   * 顺序刻意如此（SPEC K9）：先拨号、后上报。拨号可能被用户取消或系统拦下；
+   * 上报失败也不能阻断拨号 —— 绝不因为记不上日志而让人打不出电话。
+   */
+  onCallEvaluator() {
+    const phone = this.data.callRealPhone;
+    if (!phone) {
+      return;
+    }
+    const name = this.data.evaluatorName;
+    wx.makePhoneCall({
+      phoneNumber: phone,
+      complete: () => {
+        // 无论成功/取消都尝试留痕；失败静默
+        void request<unknown>({
+          url: `/public/leads/${this.data.leadId}/follow-ups`,
+          method: "POST",
+          data: {
+            method: "phone",
+            content: `客户致电评估人 ${name}`.trim(),
+          },
+        }).catch(() => {
+          /* 留痕失败静默：拨号已发出，不打扰用户 */
+        });
+        this.setData({ showCallPanel: false });
+      },
+    });
+  },
+
+  onCopyEvaluatorPhone() {
+    const phone = this.data.callRealPhone;
+    if (!phone) {
+      return;
+    }
+    wx.setClipboardData({
+      data: phone,
+      success: () => {
+        wx.showToast({ title: "已复制号码", icon: "success" });
+      },
+    });
+  },
+
   openFollowupPanel() {
     if (!this.data.canFollowup) {
       return;

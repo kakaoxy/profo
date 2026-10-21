@@ -66,9 +66,16 @@ class PriceHistoryResponse(PriceHistoryBase):
 # Lead Eval History Schemas
 # ----------------------
 class LeadEvalHistoryCreate(BaseModel):
-    """创建评估历史请求."""
+    """创建评估历史请求.
+
+    评分与天数为**必填**：评估反馈必须是一份完整结论（好不好 / 多久 / 多少钱），
+    否则会重现「只有价格、员工客户都没有感知」的旧问题。列在 DB 层仍可空，
+    可空仅为兼容存量记录（存量记录不经本 Schema 写入）。
+    """
 
     eval_price: Decimal = Field(gt=0, decimal_places=2, description="评估价格(万)")
+    condition_score: int = Field(ge=1, le=5, description="房源条件分 1-5（综合分）")
+    expected_sale_days: int = Field(ge=1, le=365, description="装修后预计可售天数")
     remark: str | None = Field(None, max_length=500, description="评估备注")
 
 
@@ -79,8 +86,13 @@ class LeadEvalHistoryResponse(BaseModel):
     lead_id: str
     eval_price: float
     remark: str | None
+    # 存量记录无该事实时为 None，前端以「未评分 / 周期待补」显式降级
+    condition_score: int | None = None
+    expected_sale_days: int | None = None
     evaluator_id: str
     evaluator_name: str | None = None
+    # 评估人手机号（脱敏）：真实号不进任何列表/详情响应，走独立端点按需拉取
+    evaluator_phone: str | None = None
     evaluated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -177,6 +189,10 @@ class LeadResponse(LeadBase):
     auditor_id: str | None = None
     audit_time: datetime | None = None
 
+    # ===== 最新评估结论（不从 Lead 列读：Lead 无这两列，由 Router 层取最新一条回填）=====
+    condition_score: int | None = Field(None, description="最新一条评估的房源条件分 1-5")
+    expected_sale_days: int | None = Field(None, description="最新一条评估的装修后可售天数")
+
     # ===== 字典地址名称解析（surface-dict-binding-info；仅响应侧，由 Router 经
     # BuildingDictReadService.resolve_doc_names 解析后回填；可空=未绑定）=====
     building_no: str | None = Field(None, description="字典楼栋号解析名称(pending 时为待审名称)")
@@ -234,6 +250,8 @@ class LeadListItem(BaseModel):
     unit_price: float | None = None
     eval_price: float | None = None
     expected_price: float | None = None
+    condition_score: int | None = Field(None, description="最新一条评估的房源条件分 1-5，无评估为空")
+    expected_sale_days: int | None = Field(None, description="最新一条评估的装修后可售天数，无评估为空")
     status: LeadStatus
     audit_reason: str | None = None
     auditor_id: str | None = None
@@ -321,6 +339,8 @@ class PendingAssessmentQueueItem(BaseModel):
     source: Literal["customer_share", "employee_entry"] = Field(description="来源：客户分享/员工录入")
     submitter_nickname: str | None = Field(None, description="提交人昵称（线索创建人）")
     submitter_phone: str | None = Field(None, description="提交人手机号（已脱敏）")
+    condition_score: int | None = Field(None, description="房源条件分 1-5（待评估恒为空，字段保留统一前端渲染分支）")
+    expected_sale_days: int | None = Field(None, description="装修后可售天数（待评估恒为空）")
     created_at: datetime = Field(description="创建时间")
 
 
@@ -348,6 +368,8 @@ class HandledItem(BaseModel):
     status: LeadStatus = Field(description="流转后状态")
     status_display: str = Field(description="状态显示名称")
     eval_price: float | None = Field(None, description="授权评估价(万)，reject/lost 为空")
+    condition_score: int | None = Field(None, description="最新一条评估的房源条件分 1-5，无评估为空")
+    expected_sale_days: int | None = Field(None, description="最新一条评估的装修后可售天数，无评估为空")
     last_follow_up_at: datetime | None = Field(
         None,
         description="最近跟进时间（max(lead_followups.followed_at)，无跟进为空）",
@@ -392,12 +414,27 @@ class LeadAssessmentAuthorizeRequest(BaseModel):
         description="评估价格(万)，approve 必填",
     )
     remark: str | None = Field(None, max_length=500, description="评估意见/原因，三动作均选填")
+    condition_score: int | None = Field(None, ge=1, le=5, description="房源条件分 1-5，approve 必填")
+    expected_sale_days: int | None = Field(None, ge=1, le=365, description="装修后预计可售天数，approve 必填")
 
     @model_validator(mode="after")
-    def _approve_requires_eval_price(self) -> "LeadAssessmentAuthorizeRequest":
-        """模型级校验：approve 必带 eval_price，reject/lost 无必填项（对齐 admin 选填语义）."""
-        if self.action == "approve" and self.eval_price is None:
-            msg = "approve 动作必须提供 eval_price"
+    def _approve_requires_full_verdict(self) -> "LeadAssessmentAuthorizeRequest":
+        """模型级校验：approve 必带 eval_price + condition_score + expected_sale_days.
+
+        reject/lost 不建评估记录，故三字段均无必填要求（对齐 admin 选填语义）。
+        approve 缺任一字段即拒：评估反馈必须是一份完整结论，不允许产出「只有价格」的记录。
+        """
+        if self.action != "approve":
+            return self
+        missing: list[str] = []
+        if self.eval_price is None:
+            missing.append("eval_price")
+        if self.condition_score is None:
+            missing.append("condition_score")
+        if self.expected_sale_days is None:
+            missing.append("expected_sale_days")
+        if missing:
+            msg = f"approve 动作必须提供 {'/'.join(missing)}"
             raise ValueError(msg)
         return self
 

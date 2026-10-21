@@ -64,6 +64,16 @@
           </view>
         </view>
       </view>
+      <!-- 结论条（与评估工作台 evaluate 同源）：仅已出评估价时渲染 -->
+      <view class="verdict" wx:if="{{item.showVerdict}}">
+        <view class="vchip vchip--score {{item.hasScore ? '' : 'vchip--muted'}}">
+          <text class="vchip__stars" wx:if="{{item.hasScore}}">
+            <text class="vchip__s {{item.stars[0] ? 'vchip__s--on' : ''}}">★</text><text class="vchip__s {{item.stars[1] ? 'vchip__s--on' : ''}}">★</text><text class="vchip__s {{item.stars[2] ? 'vchip__s--on' : ''}}">★</text><text class="vchip__s {{item.stars[3] ? 'vchip__s--on' : ''}}">★</text><text class="vchip__s {{item.stars[4] ? 'vchip__s--on' : ''}}">★</text>
+          </text>
+          {{item.scoreText}}
+        </view>
+        <view class="vchip vchip--days {{item.daysTierClass ? 'vchip--' + item.daysTierClass : 'vchip--muted'}}">{{item.daysText}}</view>
+      </view>
       <view class="lcard__foot">
         <view class="lcard__meta">
           <view class="time">{{item.timeText}}</view>

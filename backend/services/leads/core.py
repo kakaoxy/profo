@@ -10,6 +10,7 @@ from decimal import Decimal
 from typing import Any
 
 from redis.exceptions import RedisError
+from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
 
 from constants.role_codes import INTERNAL_ROLE_CODES
@@ -18,6 +19,7 @@ from models.common import FollowUpMethod, LeadStatus
 from models.lead import Lead, LeadEvalHistory, LeadFollowUp
 from schemas.growth_center import GrowthModule
 from schemas.lead import LeadAssessmentAuthorizeRequest, LeadCreate, LeadUpdate
+from schemas.public import PublicEvaluatorContact
 from services.growth_center.customer_notify import (
     notify_customer_status_changed,
     notify_new_customer_lead,
@@ -26,7 +28,12 @@ from services.growth_center.customer_notify import (
 from services.growth_center.normalize import map_valuation_status
 from services.property.dict_ownership import validate_dict_ownership
 from services.property.dict_submit_service import submit_dict_chain
-from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError
+from services.system.exceptions import (
+    BusinessLogicError,
+    ConflictError,
+    PermissionDeniedError,
+    ResourceNotFoundError,
+)
 from services.utils import resolve_global_fallback_referrer, resolve_property_agent_referrer, resolve_valid_referrer
 from settings import settings
 from utils.redis_client import get_redis_client
@@ -642,7 +649,10 @@ class LeadService:
         """
         result = self.query_service.get_handled(user_id=user_id, page=page, page_size=page_size, search=search)
         items: list[Lead] = result["items"]
-        result["followup_stats"] = self.query_service.get_followup_stats([item.id for item in items])
+        lead_ids = [item.id for item in items]
+        result["followup_stats"] = self.query_service.get_followup_stats(lead_ids)
+        # 最新评估结论（条件分/可售天数）：按当前页 items 批量一次查询，供卡片结论条展示
+        result["eval_verdicts"] = self.query_service.get_latest_eval_verdicts(lead_ids)
         return result
 
     def authorize_assessment(
@@ -704,6 +714,8 @@ class LeadService:
                 lead_id=lead.id,
                 eval_price=req.eval_price,
                 remark=req.remark,
+                condition_score=req.condition_score,
+                expected_sale_days=req.expected_sale_days,
                 evaluator_id=user_id,
             )
             self.db.add(rec)
@@ -730,6 +742,8 @@ class LeadService:
         lead_id: str,
         eval_price: Decimal,
         remark: str | None,
+        condition_score: int,
+        expected_sale_days: int,
     ) -> tuple[LeadEvalHistory, Lead]:
         """小程序员工侧再次评估：追加评估记录并更新评估价，不改状态.
 
@@ -737,11 +751,16 @@ class LeadService:
         仅允许 pending_visit/visited 线索，每次追加一条 LeadEvalHistory 并覆盖
         Lead.eval_price，不写 status/audit_time/auditor_id（保留首次授权轨迹）。
 
+        调整评估价**必须重填**评分与可售周期（Q1 口径 a）：调整往往正因为
+        「楼层看错了」或「行情变了」，沿用旧评分会掩盖修正。
+
         Args:
             user_id: 当前操作员工ID
             lead_id: 线索ID
             eval_price: 新评估价格(万)，由 Pydantic Decimal 字段直接解析，避免 float 精度损失
             remark: 调整意见（选填）
+            condition_score: 房源条件分 1-5（必填）
+            expected_sale_days: 装修后预计可售天数 1-365（必填）
 
         Returns:
             (创建的评估记录对象, 更新后的线索对象)；评估记录 eager-load evaluator，
@@ -771,6 +790,8 @@ class LeadService:
             lead_id=lead.id,
             eval_price=eval_price,
             remark=remark,
+            condition_score=condition_score,
+            expected_sale_days=expected_sale_days,
             evaluator_id=user_id,
         )
         self.db.add(rec)
@@ -914,6 +935,122 @@ class LeadService:
             if r.code:
                 role_codes.add(r.code)
         return bool(role_codes & INTERNAL_ROLE_CODES)
+
+    def _ensure_lead_visible_to(self, lead: Lead, user: User) -> None:
+        """校验当前用户可访问该线索的敏感信息（评估人联系方式 / 客户侧跟进）.
+
+        口径：线索创建人 或 内部员工（admin/operator）。
+        复用 `_has_internal_role`（直接读已预加载的 role/roles，**不**像
+        `_ensure_internal_operator` 那样再查一次 User）。
+
+        Args:
+            lead: 线索对象
+            user: 当前认证用户（需含已预加载的 role 与 roles）
+
+        Raises:
+            PermissionDeniedError: 既非创建人也非内部员工
+
+        """
+        if lead.creator_id == user.id:
+            return
+        if self._has_internal_role(user):
+            return
+        msg = "无权访问该线索"
+        raise PermissionDeniedError(msg)
+
+    def get_evaluator_contact(self, lead_id: str, user: User) -> PublicEvaluatorContact:
+        """获取评估人真实联系方式（拨号专用）.
+
+        取**最新一条**评估记录的评估人：客户要联系的是「给我评估的那个人」，
+        历史行各挂拨号入口会让「该打给谁」变成一道选择题。
+
+        真实号走独立端点按需拉取，不进任何列表/详情响应（隐私面收敛），
+        与既有 `PublicConsultantContact`（房源顾问真实号）同构。
+
+        Args:
+            lead_id: 线索ID
+            user: 当前认证用户
+
+        Returns:
+            评估人真实联系方式
+
+        Raises:
+            ResourceNotFoundError: 线索不存在/已软删除，或无任何评估记录
+            PermissionDeniedError: 既非创建人也非内部员工
+            BusinessLogicError: 评估人未登记手机号
+
+        """
+        lead = self.query_service.get_by_id(lead_id, load_creator=False)
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        self._ensure_lead_visible_to(lead, user)
+
+        rec = (
+            self.db.query(LeadEvalHistory)
+            .options(joinedload(LeadEvalHistory.evaluator))
+            .filter(LeadEvalHistory.lead_id == lead_id)
+            .order_by(desc(LeadEvalHistory.evaluated_at), desc(LeadEvalHistory.id))
+            .first()
+        )
+        if rec is None:
+            msg = "该线索尚无评估记录"
+            raise ResourceNotFoundError(msg)
+        evaluator = rec.evaluator
+        if evaluator is None or not evaluator.phone:
+            msg = "评估人未登记手机号"
+            raise BusinessLogicError(msg)
+
+        return PublicEvaluatorContact(
+            phone=evaluator.phone,
+            nickname=evaluator.nickname or "",
+            lead_id=lead_id,
+            evaluation_id=str(rec.id),
+        )
+
+    def create_customer_followup(
+        self,
+        user: User,
+        lead_id: str,
+        method: FollowUpMethod,
+        content: str,
+    ) -> LeadFollowUp:
+        """客户侧（或员工代为）登记跟进，供拨号留痕使用.
+
+        与员工侧 `create_followup` 的两处**刻意**差异（改前先读这段）：
+        1. 权限口径：线索创建人 或 admin/operator（而非仅内部员工）；
+        2. **不拒绝终态**（rejected / lost_to_competitor）：跟进记录是事实记录，
+           已关闭线索仍需记录「为何关闭之后再联系」这件事。
+
+        → 不要为了「统一口径」把员工侧的终态 409 守卫搬到这里。
+
+        Args:
+            user: 当前认证用户
+            lead_id: 线索ID
+            method: 跟进方式
+            content: 跟进内容（1-500 字，路由层 Pydantic 已校验并 trim）
+
+        Returns:
+            创建的跟进记录对象
+
+        Raises:
+            ResourceNotFoundError: 线索不存在或已软删除
+            PermissionDeniedError: 既非创建人也非内部员工
+
+        """
+        # 行级锁读取：锁持至 commit（create_follow_up 内部 commit），保证「校验归属 → 写入」
+        # 原子化，对齐 authorize_assessment / create_reevaluation 的并发防护模式
+        lead = self.query_service.get_by_id(lead_id, load_creator=False, for_update=True)
+        if lead is None:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+        self._ensure_lead_visible_to(lead, user)
+        return self.followup_service.create_follow_up(
+            lead_id=lead_id,
+            method=method,
+            content=content,
+            created_by_id=user.id,
+        )
 
     def can_follow_up(self, user: User) -> bool:
         """判定当前用户是否可登记跟进（PublicLeadDetail.can_follow_up 能力位）.

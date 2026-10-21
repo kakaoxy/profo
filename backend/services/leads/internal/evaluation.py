@@ -73,6 +73,8 @@ class LeadEvalService:
         eval_price: Decimal,
         remark: str | None,
         evaluator_id: str,
+        condition_score: int,
+        expected_sale_days: int,
     ) -> LeadEvalHistory:
         """创建评估记录，同步更新 Lead.eval_price 与 Lead.updated_at.
 
@@ -81,6 +83,8 @@ class LeadEvalService:
             eval_price: 评估价格(万)，由 Pydantic Decimal 字段直接解析，避免 float 精度损失
             remark: 评估备注
             evaluator_id: 评估人ID
+            condition_score: 房源条件分 1-5（必填，路由层已校验范围）
+            expected_sale_days: 装修后预计可售天数 1-365（必填）
 
         Returns:
             创建的评估记录对象
@@ -106,6 +110,8 @@ class LeadEvalService:
             lead_id=lead_id,
             eval_price=eval_price,
             remark=remark,
+            condition_score=condition_score,
+            expected_sale_days=expected_sale_days,
             evaluator_id=evaluator_id,
         )
         self.db.add(rec)

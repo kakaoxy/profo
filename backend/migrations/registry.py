@@ -120,6 +120,7 @@ from migrations._user_security import (
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_lead_auditor_index import add_lead_auditor_index
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
+from migrations.add_lead_eval_verdict_fields import add_lead_eval_verdict_fields
 from migrations.add_lead_referrer_index import add_lead_referrer_index
 from migrations.add_lead_status_lost_to_competitor import add_lead_status_lost_to_competitor
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
@@ -1030,6 +1031,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="业务字典表 + 4 组种子 + dict:manage 权限",
     ),
+    Migration(
+        version=83,
+        name="add_lead_eval_verdict_fields",
+        fn=add_lead_eval_verdict_fields,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="lead_eval_histories 增加 condition_score/expected_sale_days 两列与 CHECK 约束",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1044,5 +1055,5 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 MIGRATION_COUNT = len(MIGRATIONS)
 """登记总数（当前 82）。"""
 
-NEXT_VERSION = 83
+NEXT_VERSION = 84
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

@@ -74,6 +74,8 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
   种子回填跳过已标记角色，保证后台移除的权限不被重启静默加回
 - add_lead_eval_history_and_expected_price: 幂等创建 lead_eval_histories 表（评估历史）+ 索引
   idx_lead_eval_history_lead + 为 leads 表添加 expected_price 列（业主心理预期价）
+- add_lead_eval_verdict_fields: 为 lead_eval_histories 补加 condition_score / expected_sale_days
+  两列与两条 CHECK 约束（房源条件分 1-5 / 装修后可售天数 1-365，列可空以兼容存量记录）
 - add_lead_status_lost_to_competitor: 幂等收敛 PostgreSQL leadstatus enum 为大写
   'LOST_TO_COMPETITOR' 值（他司已成交终态；SQLEnum 未配 values_callable 以 .name
   大写为 DB 标签，小写历史脏数据经 RENAME VALUE 修正，API 层仍用小写 value）；
@@ -238,6 +240,7 @@ from migrations._user_security import (
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_lead_auditor_index import add_lead_auditor_index
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
+from migrations.add_lead_eval_verdict_fields import add_lead_eval_verdict_fields
 from migrations.add_lead_referrer_index import add_lead_referrer_index
 from migrations.add_lead_status_lost_to_competitor import add_lead_status_lost_to_competitor
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
@@ -428,6 +431,8 @@ def _run_all_migrations(engine: Engine) -> None:
         run_bd_audit_20261018_fixes(engine)
         # 业务字典（运营可配枚举字典）：幂等建表 + 4 组种子 + dict:manage 权限种子
         create_biz_dict_items_table(engine)
+        # 评估反馈迭代：lead_eval_histories 补加房源条件分/装修后可售天数两列与 CHECK 约束（幂等）
+        add_lead_eval_verdict_fields(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

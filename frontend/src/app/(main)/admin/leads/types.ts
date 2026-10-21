@@ -32,9 +32,15 @@ export interface EvalHistory {
   id: string;
   leadId: string;
   evalPrice: number;
+  /** 房源条件分 1-5（存量记录为 undefined，UI 渲染「未评分」） */
+  conditionScore?: number;
+  /** 装修后预计可售天数 1-365（存量记录为 undefined，UI 渲染「周期待补」） */
+  expectedSaleDays?: number;
   remark?: string;
   evaluatorId: string;
   evaluatorName?: string;
+  /** 评估人手机号（脱敏）；真实号不进列表，拨号走独立端点 */
+  evaluatorPhone?: string;
   evaluatedAt: string;
 }
 
@@ -61,6 +67,8 @@ export interface Lead {
 
   status: LeadStatus;
   evalPrice?: number; // Operator's evaluated price
+  conditionScore?: number | null; // 最新评估的房源条件分 1-5（无评估为 null）
+  expectedSaleDays?: number | null; // 最新评估的装修后可售天数（无评估为 null）
   expectedPrice?: number; // 业主心理预期价（万）
   evalHistories?: EvalHistory[]; // 评估历史（可选，详情接口返回）
   auditReason?: string;

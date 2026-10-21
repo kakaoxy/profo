@@ -429,6 +429,9 @@ class PublicLeadListItem(BaseModel):
     total_price: float | None = Field(None, description="当前授权总价(万)")
     expected_price: float | None = Field(None, description="业主心理预期价(万)")
     eval_price: float | None = Field(None, description="评估价格(万)，未出价为空")
+    # 最新评估结论（与 HandledItem 同口径；存量记录为空，前端显式降级）
+    condition_score: int | None = Field(None, description="房源条件分 1-5（最新一条评估）")
+    expected_sale_days: int | None = Field(None, description="装修后可售天数（最新一条评估）")
     district: str | None = Field(None, description="行政区")
     floor_info: str | None = Field(None, description="楼层信息")
     orientation: str | None = Field(None, description="朝向")
@@ -504,6 +507,30 @@ class PublicAcquiredLeadPhoneResponse(BaseModel):
     phone: str | None = Field(None, description="客户真实手机号（直接录入或非分享归因线索为 null）")
 
 
+class PublicCustomerFollowupCreate(BaseModel):
+    """C端客户侧跟进创建请求（POST /public/leads/{lead_id}/follow-ups，拨号留痕用）.
+
+    与员工侧 `PublicFollowupCreate` 字段一致，但权限口径不同：
+    - 员工侧：仅 admin/operator，且**终态线索 409**（见 LeadService.create_followup）；
+    - 客户侧：线索创建人 或 admin/operator，**不拒绝终态**（K11 —— 跟进记录是事实记录，
+      已关闭线索仍需记录为何关闭后再联系）。
+    独立命名是为了让两个端点在校验口径上不会被后来者「统一」掉。
+    """
+
+    method: FollowUpMethod = Field(description="跟进方式：phone/wechat/face/visit")
+    content: str = Field(min_length=1, max_length=500, description="跟进内容（1-500 字）")
+
+    @field_validator("content")
+    @classmethod
+    def _strip_and_reject_blank(cls, v: str) -> str:
+        """服务端兜底校验：去除首尾空白后拒绝纯空白内容."""
+        content = v.strip()
+        if not content:
+            msg = "跟进内容不能为空"
+            raise ValueError(msg)
+        return content
+
+
 class PublicFollowupItem(BaseModel):
     """C端跟进记录项."""
 
@@ -536,6 +563,31 @@ class PublicFollowupCreate(BaseModel):
         return content
 
 
+class PublicEvaluatorBrief(BaseModel):
+    """C端评估人简要信息（详情页展示用）.
+
+    真实手机号**不进详情响应**（隐私面收敛），只给脱敏号；
+    客户点击拨打时再走 `GET /public/leads/{lead_id}/evaluator-contact` 按需拉取。
+    """
+
+    nickname: str | None = Field(None, description="评估人昵称")
+    phone_masked: str | None = Field(None, description="评估人手机号（已脱敏）；未登记为空")
+    evaluated_at: datetime = Field(description="本次评估时间")
+
+
+class PublicEvaluatorContact(BaseModel):
+    """C端评估人真实联系方式（拨号专用）.
+
+    与既有 `PublicConsultantContact`（房源顾问真实号）同构：
+    真实号只在独立端点按需返回，归属校验由 Service 完成。
+    """
+
+    phone: str = Field(description="评估人手机号（真实值，供直接拨打）")
+    nickname: str = Field(description="评估人昵称")
+    lead_id: str = Field(description="线索ID")
+    evaluation_id: str = Field(description="评估记录ID（本次联系方式对应的评估）")
+
+
 class PublicLeadDetail(BaseModel):
     """C端线索详情."""
 
@@ -556,6 +608,10 @@ class PublicLeadDetail(BaseModel):
     images: list[str] = Field(default_factory=list, description="户型图URL列表")
     image_thumbnails: list[str] | None = Field(None, description="户型图缩略图URL列表")
     follow_ups: list[PublicFollowupItem] = Field(default_factory=list, description="跟进记录")
+    # 最新评估结论（存量记录无该事实时为 None，前端以「未评分 / 周期待补」显式降级）
+    condition_score: int | None = Field(None, description="房源条件分 1-5（最新一条评估）")
+    expected_sale_days: int | None = Field(None, description="装修后预计可售天数（最新一条评估）")
+    evaluator: PublicEvaluatorBrief | None = Field(None, description="最新一条评估的评估人（无评估为空）")
     can_follow_up: bool = Field(default=False, description="是否可登记跟进（内部员工能力位）")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")
@@ -698,6 +754,9 @@ __all__ = [
     "PublicConsultantContact",
     "PublicConsultantInfo",
     "PublicCustomerBookingItem",
+    "PublicCustomerFollowupCreate",
+    "PublicEvaluatorBrief",
+    "PublicEvaluatorContact",
     "PublicFollowupItem",
     "PublicLeadCountResponse",
     "PublicLeadCreate",

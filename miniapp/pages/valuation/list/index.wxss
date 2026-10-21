@@ -289,3 +289,61 @@ page {
   height: 2rpx;
   background: var(--line);
 }
+
+/* ===== 结论条（房源条件分 + 可售周期）=====
+   与评估工作台 evaluate 同源同口径：独立一行置于 lcard__mid 与 lcard__foot 之间，
+   避免与 foot 右侧时效标签抢位。仅已出评估价时渲染（wx:if showVerdict）。 */
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 18rpx;
+  flex-wrap: wrap;
+}
+.vchip {
+  height: 44rpx;
+  padding: 0 16rpx;
+  border-radius: 9999rpx;
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.vchip--score {
+  background: var(--apricot);
+  color: var(--rust);
+}
+.vchip--muted {
+  background: var(--fog);
+  color: var(--ink3);
+  font-weight: 500;
+}
+.vchip__stars {
+  display: inline-flex;
+  gap: 1rpx;
+}
+.vchip__s {
+  font-size: 16rpx;
+  line-height: 1;
+  color: rgba(93, 42, 26, 0.24);
+}
+.vchip__s--on {
+  color: var(--rust);
+}
+.vchip--days {
+  background: var(--fog);
+  color: var(--ink2);
+}
+/* 只有「快」用深底强色块：列表里每张卡都有强色块 = 都没有 */
+.vchip--rush {
+  background: var(--rust);
+  color: #ffffff;
+}
+.vchip--slow {
+  background: #eef0f3;
+  color: var(--ink3);
+  font-weight: 500;
+}

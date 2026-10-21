@@ -1,7 +1,9 @@
 import React from "react";
-import { Wallet, Target, Ruler, TrendingUp } from "lucide-react";
+import { Wallet, Target, Ruler, TrendingUp, Star, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead } from "../../types";
+import { Stars } from "./verdict-badges";
+import { SCORE_LABELS, daysSummary, daysTier, daysTierLabel } from "@/lib/lead-verdict";
 
 interface KpiRowProps {
   lead: Lead;
@@ -15,6 +17,8 @@ interface KpiCardProps {
   meta: React.ReactNode;
   metaClassName?: string;
   className?: string;
+  /** 右上角「新增」标记（本迭代新增的两格用） */
+  isNew?: boolean;
 }
 
 const KpiCard: React.FC<KpiCardProps> = ({
@@ -25,23 +29,35 @@ const KpiCard: React.FC<KpiCardProps> = ({
   meta,
   metaClassName,
   className,
+  isNew,
 }) => (
-  <div className={cn("bg-white rounded-cards shadow-steep-sm p-4 flex flex-col gap-1", className)}>
-    <span className="text-xs font-medium text-graphite flex items-center gap-1.5">
+  <div
+    className={cn(
+      "relative bg-white rounded-cards shadow-steep-sm p-3 flex flex-col gap-1",
+      className,
+    )}
+  >
+    {isNew && (
+      <span className="absolute right-2.5 top-2 rounded-full bg-apricot-wash px-1.5 py-px font-mono text-[8px] tracking-[0.1em] text-rust">
+        新增
+      </span>
+    )}
+    <span className="text-[11px] font-medium text-graphite flex items-center gap-1.5">
       <Icon className="h-3 w-3" />
       {label}
     </span>
-    <span
-      className={cn("text-2xl font-medium tabular-nums text-ink leading-tight", valueClassName)}
-    >
+    <span className={cn("text-xl font-medium tabular-nums text-ink leading-tight", valueClassName)}>
       {value}
     </span>
-    <span className={cn("text-xs font-medium text-graphite", metaClassName)}>{meta}</span>
+    <span className={cn("text-[11px] font-medium text-graphite", metaClassName)}>{meta}</span>
   </div>
 );
 
 export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
   const hasEval = lead.evalPrice != null;
+  const hasScore =
+    lead.conditionScore != null && lead.conditionScore >= 1 && lead.conditionScore <= 5;
+  const hasDays = lead.expectedSaleDays != null && lead.expectedSaleDays > 0;
   const deltaValue = hasEval ? lead.evalPrice! - lead.totalPrice : null;
   const deltaPctNum =
     hasEval && lead.totalPrice > 0 ? (lead.evalPrice! / lead.totalPrice - 1) * 100 : null;
@@ -79,7 +95,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
         : "text-graphite";
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
       {/* 卡片1：业主报价 */}
       <KpiCard
         icon={Wallet}
@@ -130,6 +146,58 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
         valueClassName={deviationValueClassName}
         value={hasEval && deltaPctStr != null ? `${deltaPctStr}%` : "--"}
         meta={deviationMeta}
+      />
+
+      {/* 卡片5：房源条件分（本迭代新增；无评估时显示「未评分」，不补默认值） */}
+      <KpiCard
+        icon={Star}
+        label="房源条件分"
+        isNew
+        value={
+          hasScore ? (
+            <>
+              {lead.conditionScore}
+              <span className="text-xs font-medium text-graphite ml-1">/ 5</span>
+            </>
+          ) : (
+            <span className="text-[15px] text-graphite">未评分</span>
+          )
+        }
+        valueClassName={hasScore ? undefined : "text-graphite"}
+        meta={
+          hasScore ? (
+            <span className="inline-flex flex-col gap-1">
+              <Stars score={lead.conditionScore} size="md" />
+              <span>{SCORE_LABELS[lead.conditionScore as 1 | 2 | 3 | 4 | 5]}</span>
+            </span>
+          ) : (
+            "完成评估后可打分"
+          )
+        }
+      />
+
+      {/* 卡片6：装修后可售周期（本迭代新增） */}
+      <KpiCard
+        icon={CalendarClock}
+        label="可售周期"
+        isNew
+        value={
+          hasDays ? (
+            <>
+              {lead.expectedSaleDays}
+              <span className="text-xs font-medium text-graphite ml-1">天</span>
+            </>
+          ) : (
+            <span className="text-[15px] text-graphite">周期待补</span>
+          )
+        }
+        valueClassName={hasDays ? undefined : "text-graphite"}
+        meta={
+          hasDays
+            ? `${daysTierLabel(lead.expectedSaleDays)} · ${daysSummary(lead.expectedSaleDays).split("· ")[1]}`
+            : "完成评估后可预估"
+        }
+        metaClassName={daysTier(lead.expectedSaleDays) === "rush" ? "text-rust" : undefined}
       />
     </div>
   );
