@@ -1,5 +1,5 @@
 {
-  "community_name": "E2E条件分小区-v3b-1792584277849",
+  "community_name": "E2E条件分小区-v3b-1792584566111",
   "community_id": null,
   "is_hot": 0,
   "layout": "2室1厅",
@@ -17,7 +17,7 @@
   "building_id": null,
   "room_id": null,
   "dict_status": "manual",
-  "id": "6fc30080-01b4-463c-8aea-f4e0f44b9e01",
+  "id": "8f60180b-d754-45a0-b3d4-621fa47a42d7",
   "status": "pending_assessment",
   "audit_reason": null,
   "auditor_id": null,
@@ -33,6 +33,6 @@
   "referrer_id": null,
   "referrer_name": null,
   "last_follow_up_at": null,
-  "created_at": "2026-10-21T12:04:37.856391Z",
-  "updated_at": "2026-10-21T12:04:37.856392Z"
+  "created_at": "2026-10-21T12:09:26.123896Z",
+  "updated_at": "2026-10-21T12:09:26.123897Z"
 }

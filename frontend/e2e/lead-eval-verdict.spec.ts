@@ -299,7 +299,8 @@ test.describe("V9 · 拨号留痕在页面导航后仍能送达（keepalive 回�
       await page.waitForTimeout(900);
       expect(received, "keepalive 缺失会导致导航后请求被中止，留痕静默丢失").toContain("/beacon");
     } finally {
-      server.close();
+      // 等待关闭完成，避免端口未释放导致后续测试绑定失败
+      await new Promise<void>((resolve) => server.close(() => resolve()));
     }
   });
 });
