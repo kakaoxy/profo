@@ -75,19 +75,19 @@ class Project(BaseModel):
         SQLEnum(SettlementStatus, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=SettlementStatus.UNSETTLED,
-        comment="资金账本结算状态",
+        comment="项目账本结算状态",
     )
     finance_settled_date: Mapped[date | None] = mapped_column(
         Date,
         nullable=True,
         default=None,
-        comment="资金账本结算日期",
+        comment="项目账本结算日期",
     )
     finance_settled_note: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
         default=None,
-        comment="资金账本结算说明",
+        comment="项目账本结算说明",
     )
 
     # ===== 归档标记（独立于 ProjectStatus 生命周期状态机）=====

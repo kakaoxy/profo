@@ -157,6 +157,15 @@ class RateLimits:
     SUBJECT_WRITE = "100/hour"
     SUBJECT_DELETE = "20/hour"
 
+    # ==================== 资金账户模块 ====================
+    # 解锁为安全敏感操作。注意：业务锁定（错 5 次锁 15 分钟）必须比限流更早触发，
+    # 否则 slowapi 的 429 会先返回且不带 Retry-After，前端无法展示锁定倒计时。
+    # 故此处放宽到 30/minute 作为暴破兜底，真正的失败策略在 Service 层（5 次/15 分钟）。
+    ACCOUNT_UNLOCK = "30/minute"
+    ACCOUNT_PASSWORD_SET = "5/hour"  # noqa: S105
+    # 账户/对账写操作低频（财务配置 + 留痕动作）
+    ACCOUNT_WRITE = "300/hour"
+
     # ==================== 业务字典模块 ====================
     # 字典为运营配置表，写操作低频（配置类操作对齐 SUBJECT_WRITE 量级）
     DICT_WRITE = "200/hour"

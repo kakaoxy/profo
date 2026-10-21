@@ -1,9 +1,9 @@
 """迁移注册表：``_run_all_migrations`` 顶层调用单元的版本化登记（迭代一 T1.2）。
 
 **权威口径**
-- ``version`` = ``1..82``，严格按 ``migrations/__init__.py::_run_all_migrations``
-  的**当前调用顺序**编号（实测 82 项，非计划稿的 77/80；见总纲 §1 B1/B8）。
-- 新增迁移**只能追加**在 ``MIGRATIONS`` 末尾，``version`` 从 ``NEXT_VERSION``（83）起
+- ``version`` = ``1..87``，严格按 ``migrations/__init__.py::_run_all_migrations``
+  的**当前调用顺序**编号（实测 87 项，非计划稿的 77/80；见总纲 §1 B1/B8）。
+- 新增迁移**只能追加**在 ``MIGRATIONS`` 末尾，``version`` 从 ``NEXT_VERSION``（88）起
   严格递增，禁止插入历史中间序号，禁止复用已删除版本号。
 - 粒度 = 一次顶层 ``fn(engine)`` 调用；wrapper 内部子步骤（如
   ``create_marketing_project_subscription_table`` 内的 ``add_last_subscribed_at_*``）
@@ -53,6 +53,12 @@ from migrations._finance import (
     create_investment_tables,
     migrate_finance_subjects_modes_to_jsonb,
     rename_return_adjustment_columns,
+)
+from migrations._fund_accounts import (
+    add_finance_record_account_column,
+    backfill_finance_record_operator,
+    close_orphan_finance_records,
+    create_fund_account_tables,
 )
 from migrations._keys import (
     add_key_audit_share_id_index,
@@ -1041,6 +1047,48 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="lead_eval_histories 增加 condition_score/expected_sale_days 两列与 CHECK 约束",
     ),
+    Migration(
+        version=84,
+        name="create_fund_account_tables",
+        fn=create_fund_account_tables,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="资金账户两张表（fund_accounts/fund_account_adjustments）+ 权限点种子",
+    ),
+    Migration(
+        version=85,
+        name="add_finance_record_account_column",
+        fn=add_finance_record_account_column,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="finance_records 增加 account_id 列与 (account_id, record_date) 索引",
+    ),
+    Migration(
+        version=86,
+        name="close_orphan_finance_records",
+        fn=close_orphan_finance_records,
+        kind="data",
+        risk="B",
+        backup="table",
+        reversible=False,
+        backup_tables=("finance_records",),
+        description="收敛所属项目已软删的孤儿流水（软删），修复「有记录但不能补挂」",
+    ),
+    Migration(
+        version=87,
+        name="backfill_finance_record_operator",
+        fn=backfill_finance_record_operator,
+        kind="data",
+        risk="B",
+        backup="table",
+        reversible=True,
+        backup_tables=("finance_records",),
+        description="从 operation_logs 回填流水记账人（仅可精确追溯部分，其余留空）",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1053,7 +1101,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 82）。"""
+"""登记总数（当前 87）。"""
 
-NEXT_VERSION = 84
+NEXT_VERSION = 88
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

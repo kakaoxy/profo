@@ -14,6 +14,7 @@ from schemas.project.finance import (
     LedgerRecordCreate,
     LedgerRecordUpdate,
 )
+from services.finance.fund_account import resolve_active_account
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 from services.system.operation_log import operation_log_service
 
@@ -51,6 +52,7 @@ def _record_audit_snapshot(record: FinanceRecord) -> dict[str, Any]:
         "counterparty_type": getattr(record.counterparty_type, "value", record.counterparty_type),
         "record_date": record.record_date.isoformat() if record.record_date else None,
         "remark": record.remark,
+        "account_id": str(record.account_id) if record.account_id else None,
     }
 
 
@@ -102,6 +104,46 @@ class _RecordMixin:
             msg = "流出/流入至少填一项且大于0"
             raise ValidationError(msg)
 
+    def _resolve_account(
+        self,
+        *,
+        account_id: uuid.UUID | None,
+        account_skipped: bool,
+        description: str | None,
+        flow_label: str,
+    ) -> tuple[uuid.UUID | None, str | None]:
+        """解析记账时要挂的资金账户.
+
+        - ``account_skipped=True`` → 明确「没走账户」（跟投/往来/代收代付），
+          要求备注写明原因（空白视为漏填），返回 None；
+        - 传了 ``account_id`` → 必须存在、未删除、在用（方向由调用方按 outflow/inflow 决定）；
+        - 两者都未给 → 兼容存量客户端，返回 None（不强制必填，见 SPEC R1）。
+
+        Args:
+            account_id: 请求传入的账户 ID
+            account_skipped: 是否显式标记「没走账户」
+            description: 备注（勾「没走账户」时必填）
+            flow_label: 方向标签（"付款账户"/"收款账户"），仅用于错误提示
+
+        Returns:
+            (账户 ID, 账户名称)；两者均为 None 表示未走账户
+
+        Raises:
+            ValidationError: 账户不存在/已停用，或勾「没走账户」但未写备注
+
+        """
+        if account_skipped:
+            if not (description and description.strip()):
+                msg = "标记「未走账户」时必须填写备注说明原因"
+                raise ValidationError(msg)
+            return None, None
+        if account_id is None:
+            return None, None
+        # resolve_active_account 内部校验存在 + 未删除 + 在用（停用账户不能记新账）
+        account = resolve_active_account(self.db, account_id)
+        logger.debug("记账挂账户: %s（%s）", account.name, flow_label)
+        return account.id, account.name
+
     def create_record(
         self,
         project_id: uuid.UUID,
@@ -151,6 +193,14 @@ class _RecordMixin:
         inflow = record_data.inflow if record_data.inflow is not None else Decimal(0)
         self._validate_outflow_inflow(outflow, inflow)
 
+        # 资金账户：流出=付款账户、流入=收款账户（与方向天然对上，互斥已在上方校验）
+        account_id, account_name = self._resolve_account(
+            account_id=record_data.account_id,
+            account_skipped=record_data.account_skipped,
+            description=record_data.description,
+            flow_label="付款账户" if outflow > 0 else "收款账户",
+        )
+
         # Task 5: 从新字段推导旧字段（兼容旧查询）
         flow_type = CashFlowType.INCOME if inflow > 0 else CashFlowType.EXPENSE
         amount = inflow if inflow > 0 else outflow
@@ -189,6 +239,10 @@ class _RecordMixin:
             inflow=inflow,
             payer=record_data.payer,
             payee=record_data.payee,
+            account_id=account_id,
+            # 记账人：此前漏写导致 operator_id 恒为 NULL，账户流水/项目账本
+            # 都显示不出「谁记的」（2026-10-21 缺陷修复）。
+            operator_id=operator_id,
             created_at=now,
             updated_at=now,
         )
@@ -212,6 +266,8 @@ class _RecordMixin:
                 "inflow": str(inflow),
                 "payer": record_data.payer,
                 "payee": record_data.payee,
+                "account_id": str(account_id) if account_id else None,
+                "account_name": account_name,
             },
             operator=operator_id,
         )
@@ -269,7 +325,7 @@ class _RecordMixin:
         *,
         request: Request | None = None,
     ) -> None:
-        """资金账本：按记录ID软删除流水（无需 project_id）.
+        """项目账本：按记录ID软删除流水（无需 project_id）.
 
         删除后触发财务数据同步计算.
         """
@@ -291,7 +347,7 @@ class _RecordMixin:
 
         project_id = record.project_id
 
-        # 编辑锁：已结算项目不可删除记录（与 delete_record 一致，防止资金账本路由绕过结算锁）
+        # 编辑锁：已结算项目不可删除记录（与 delete_record 一致，防止项目账本路由绕过结算锁）
         # 项目不存在或已软删除 -> 404，避免 `if project:` 在软删除场景跳过结算锁
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
@@ -350,7 +406,7 @@ class _RecordMixin:
         *,
         request: Request | None = None,
     ) -> FinanceRecord:
-        """资金账本：按记录ID更新流水（支持 Task 5 新字段 + 兼容字段 + 通用字段）.
+        """项目账本：按记录ID更新流水（支持 Task 5 新字段 + 兼容字段 + 通用字段）.
 
         - 新字段：subject_id/outflow/inflow/payer/payee
         - 兼容字段：type/category/amount/counterparty（由新字段推导回填，显式提供则校验一致性）
@@ -458,6 +514,20 @@ class _RecordMixin:
         # related_stage 兼容字段（model 无对应列，仅记录到日志）
         if payload.related_stage is not None:
             detail["related_stage"] = payload.related_stage
+
+        # 资金账户：仅当显式传 account_id / account_skipped 才改动归属
+        # （存量流水补挂/换挂走这条路径，不受「新建必须选账户」影响，见 SPEC R1）
+        if payload.account_skipped or payload.account_id is not None:
+            new_account_id, account_name = self._resolve_account(
+                account_id=payload.account_id,
+                account_skipped=bool(payload.account_skipped),
+                description=payload.description if payload.description is not None else record.remark,
+                flow_label="付款账户" if new_outflow > 0 else "收款账户",
+            )
+            if record.account_id != new_account_id:
+                record.account_id = new_account_id
+                detail["account_id"] = str(new_account_id) if new_account_id else None
+                detail["account_name"] = account_name
 
         # 通用字段：补充凭证（追加去重）/ 支付方类型 / 备注 / 日期
         if payload.receipt_urls is not None:

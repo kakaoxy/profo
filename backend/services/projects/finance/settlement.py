@@ -38,7 +38,7 @@ class _SettlementMixin:
             msg = "项目不存在"
             raise ResourceNotFoundError(msg)
         if project.finance_settlement_status == SettlementStatus.SETTLED:
-            msg = "该项目资金账本已结算，无需重复结算"
+            msg = "该项目项目账本已结算，无需重复结算"
             raise ValidationError(msg)
 
         project.finance_settlement_status = SettlementStatus.SETTLED
@@ -73,7 +73,7 @@ class _SettlementMixin:
             request=request,
         )
 
-        logger.info("项目 %s 资金账本已结算", project_id)
+        logger.info("项目 %s 项目账本已结算", project_id)
         return self._build_settlement_response(project)
 
     def unsettle_finance(
@@ -90,7 +90,7 @@ class _SettlementMixin:
             msg = "项目不存在"
             raise ResourceNotFoundError(msg)
         if project.finance_settlement_status != SettlementStatus.SETTLED:
-            msg = "该项目资金账本未结算，无需反结算"
+            msg = "该项目项目账本未结算，无需反结算"
             raise ValidationError(msg)
 
         project.finance_settlement_status = SettlementStatus.UNSETTLED
@@ -118,11 +118,11 @@ class _SettlementMixin:
             request=request,
         )
 
-        logger.info("项目 %s 资金账本已反结算", project_id)
+        logger.info("项目 %s 项目账本已反结算", project_id)
         return self._build_settlement_response(project)
 
     def list_logs(self, project_id: uuid.UUID) -> list[FinanceLogResponse]:
-        """获取项目资金账本操作日志（按 created_at 降序）.
+        """获取项目项目账本操作日志（按 created_at 降序）.
 
         联表 User 批量填充 operator_name（参考 InvestmentService._build_logs_response）。
         """

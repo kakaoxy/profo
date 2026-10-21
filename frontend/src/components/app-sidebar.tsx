@@ -121,6 +121,7 @@ export function AppSidebar({ user }: { user: User | null }) {
       "/admin/marketing",
       "/admin/investments",
       "/admin/ledger",
+      "/admin/accounts",
       "/admin/growth-center",
       "/admin/users",
       "/admin/audit-logs",
@@ -140,6 +141,17 @@ export function AppSidebar({ user }: { user: User | null }) {
     // （仅 autoCollapsePaths 命中的子页面，/admin 不受影响）。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, isMobile]);
+
+  /**
+   * 路径匹配（用于菜单高亮）：精确相等，或以 `target/` 开头。
+   *
+   * 为何不用裸 `startsWith`：`/admin/ledger` 会误命中 `/admin/ledger-xxx`；
+   * 需要「子路径点亮父级」时用 `matchesPath` 而非新增父子映射表。
+   */
+  const matchesPath = React.useCallback(
+    (target: string) => pathname === target || pathname.startsWith(`${target}/`),
+    [pathname],
+  );
 
   // 按权限/角色过滤一级菜单与子菜单
   const visibleNav = navMain
@@ -179,8 +191,12 @@ export function AppSidebar({ user }: { user: User | null }) {
           <SidebarMenu className="gap-1">
             {visibleNav.map((item, idx) => {
               const hasSubmenu = item.items && item.items.length > 0;
+              // 一级项高亮：命中自身 url、任一子项 url，或子项 url 的父级路由
+              // （如子项 /admin/accounts/flows 需同时点亮父级 /admin/accounts 的分组）。
+              // 用 `=== url || startsWith(url + "/")` 而非裸 startsWith，避免
+              // /admin/ledger-xxx 之类前缀误命中。
               const isActive =
-                pathname === item.url || item.items?.some((sub) => pathname.startsWith(sub.url));
+                matchesPath(item.url) || item.items?.some((sub) => matchesPath(sub.url));
 
               // 分组导航标签：section 与前一项不同时输出组名（折叠态隐藏）
               const prevSection = idx > 0 ? visibleNav[idx - 1].section : undefined;

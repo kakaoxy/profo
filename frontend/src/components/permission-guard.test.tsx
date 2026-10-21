@@ -78,7 +78,7 @@ const DENIED: GuardCase[] = [
   { pathname: "/admin/projects", permissions: [USER_READ], note: "列表页需 project:read" },
   { pathname: "/admin/leads", permissions: [], note: "线索中心需 lead:read" },
   { pathname: "/admin/leads/new", permissions: [USER_READ], note: "录入页需 lead:write" },
-  { pathname: "/admin/ledger", permissions: [], note: "资金账本需 ledger:read" },
+  { pathname: "/admin/ledger", permissions: [], note: "项目账本需 ledger:read" },
   { pathname: "/admin/marketing", permissions: [USER_READ], note: "市场营销需 l4_marketing:read" },
   { pathname: "/admin/investments", permissions: [], note: "跟投管理需 investment:read" },
 ];

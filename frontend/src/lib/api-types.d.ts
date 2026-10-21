@@ -2721,6 +2721,266 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/accounts/lock-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取资金账户模块锁状态
+         * @description 读取模块锁状态（未解锁也可调用，供锁屏渲染与倒计时）.
+         */
+        get: operations["get_lock_state_api_v1_admin_accounts_lock_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 解锁资金账户模块
+         * @description 校验模块密码并签发解锁令牌（5 次错误锁 15 分钟）.
+         */
+        post: operations["unlock_accounts_api_v1_admin_accounts_unlock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 锁定资金账户模块
+         * @description 手动锁定：删除当前解锁令牌（幂等）.
+         */
+        post: operations["lock_accounts_api_v1_admin_accounts_lock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/module-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 设置/重设资金账户模块密码
+         * @description 设置或重设模块密码（6 位数字；重设需原密码；仅 account:admin）.
+         */
+        post: operations["set_module_password_api_v1_admin_accounts_module_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取资金账户选项（供记账选账户，不含余额）
+         * @description 列出在用账户的 id/名称/类型/卡号（**不含任何金额**）.
+         *
+         *     设计意图：记账弹窗需要让用户选「哪张卡」，但不需要展示「卡里有多少钱」。
+         *     因此本端点**不要求模块解锁**，也从结构上不返回余额——余额只能通过解锁后的
+         *     ``GET /admin/accounts`` 获取。这样「未解锁也能正常记账」与「余额不泄露」同时成立。
+         */
+        get: operations["list_account_options_api_v1_admin_accounts_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取资金账户列表
+         * @description 查询账户列表（含由流水推导的余额与进出合计）.
+         */
+        get: operations["list_accounts_api_v1_admin_accounts_get"];
+        put?: never;
+        /**
+         * 新建资金账户
+         * @description 新建账户（名称在未删除账户中唯一）.
+         */
+        post: operations["create_account_api_v1_admin_accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取资金账户总览 KPI
+         * @description 总览：余额合计 / 本月进出 / 对账调整合计 / 未挂账户统计.
+         */
+        get: operations["get_accounts_summary_api_v1_admin_accounts_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/flows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取账户流水（可跨账户）
+         * @description 查询账户流水（跨账户，便于找「没记账户」的账并逐笔补挂）.
+         */
+        get: operations["list_account_flows_api_v1_admin_accounts_flows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取资金账户详情
+         * @description 账户详情（含推导余额与进出合计）.
+         */
+        get: operations["get_account_api_v1_admin_accounts__account_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * 删除资金账户
+         * @description 删除账户（有流水或对账记录时 409，提示改为停用）.
+         */
+        delete: operations["delete_account_api_v1_admin_accounts__account_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * 更新资金账户
+         * @description 更新账户信息；改期初余额会改变推导余额，响应回传新余额供前端提示.
+         */
+        patch: operations["update_account_api_v1_admin_accounts__account_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/{account_id}/flows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取单账户流水
+         * @description 查询指定账户的流水.
+         */
+        get: operations["list_single_account_flows_api_v1_admin_accounts__account_id__flows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/{account_id}/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取账户对账调整记录
+         * @description 查询账户的对账调整记录（按日期倒序）.
+         */
+        get: operations["list_adjustments_api_v1_admin_accounts__account_id__adjustments_get"];
+        put?: never;
+        /**
+         * 新增对账调整
+         * @description 对账调整（只加不改不删；差额为 0 时拒绝）.
+         */
+        post: operations["create_adjustment_api_v1_admin_accounts__account_id__adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/{account_id}/adjustments/{adjustment_id}/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 为核对调整补传凭证
+         * @description 补传核对调整的凭证（**仅追加 receipt_urls**，金额/原因/日期不可改）.
+         */
+        patch: operations["append_adjustment_receipts_api_v1_admin_accounts__account_id__adjustments__adjustment_id__receipts_patch"];
+        trace?: never;
+    };
     "/api/v1/admin/ledger": {
         parameters: {
             query?: never;
@@ -2729,14 +2989,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取资金账本项目列表
+         * 获取项目账本项目列表
          * @description 分页查询有流水记录的项目列表（含收入/支出/净现金流/ROI 聚合统计）.
          */
         get: operations["list_ledger_projects_api_v1_admin_ledger_get"];
         put?: never;
         /**
-         * 创建资金账本流水
-         * @description 创建资金账本流水记录（body 含 project_id）.
+         * 创建项目账本流水
+         * @description 创建项目账本流水记录（body 含 project_id）.
          *
          *     速率限制：100次/小时.
          */
@@ -2755,7 +3015,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取资金账本全局汇总
+         * 获取项目账本全局汇总
          * @description 全局汇总：有流水记录的项目数、总收入、总支出、净现金流、记录数.
          */
         get: operations["get_ledger_stats_api_v1_admin_ledger_stats_get"];
@@ -2775,8 +3035,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 导出资金账本 Excel
-         * @description 导出全量资金账本为 .xlsx（openpyxl）。文件名 资金账本_YYYYMMDD.xlsx.
+         * 导出项目账本 Excel
+         * @description 导出全量项目账本为 .xlsx（openpyxl）。文件名 项目账本_YYYYMMDD.xlsx.
          *
          *     速率限制：10次/小时.
          */
@@ -2797,8 +3057,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取项目资金账本详情
-         * @description 获取项目资金账本详情（含流水记录列表 + 汇总）.
+         * 获取项目项目账本详情
+         * @description 获取项目项目账本详情（含流水记录列表 + 汇总）.
          */
         get: operations["get_ledger_detail_api_v1_admin_ledger__project_id__get"];
         put?: never;
@@ -2817,8 +3077,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取项目资金账本统计
-         * @description 获取项目资金账本统计页面聚合数据.
+         * 获取项目项目账本统计
+         * @description 获取项目项目账本统计页面聚合数据.
          *
          *     按五层法 + 阶段现金流重算：five_layer / stage_flows / kpi / breakdown.
          */
@@ -2859,8 +3119,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取项目资金账本操作日志
-         * @description 获取指定项目的资金账本操作日志（按时间降序）.
+         * 获取项目项目账本操作日志
+         * @description 获取指定项目的项目账本操作日志（按时间降序）.
          */
         get: operations["list_project_logs_api_v1_admin_ledger__project_id__logs_get"];
         put?: never;
@@ -2879,7 +3139,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 导出项目资金账本为 zip
+         * 导出项目项目账本为 zip
          * @description 导出单项目流水为 zip（含流水 CSV + 票据图片）.
          *
          *     速率限制：10次/小时.
@@ -2903,8 +3163,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 结算项目资金账本
-         * @description 结算：锁定该项目资金账本，禁止新增/删除记录.
+         * 结算项目项目账本
+         * @description 结算：锁定该项目项目账本，禁止新增/删除记录.
          *
          *     速率限制：50次/小时.
          */
@@ -2925,8 +3185,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 反结算项目资金账本
-         * @description 反结算：解锁资金账本，恢复可编辑.
+         * 反结算项目项目账本
+         * @description 反结算：解锁项目账本，恢复可编辑.
          *
          *     速率限制：50次/小时.
          */
@@ -2948,8 +3208,8 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * 删除资金账本流水
-         * @description 软删除资金账本流水记录.
+         * 删除项目账本流水
+         * @description 软删除项目账本流水记录.
          *
          *     速率限制：20次/小时.
          */
@@ -2957,7 +3217,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * 更新资金账本流水（补充凭证/支付方类型）
+         * 更新项目账本流水（补充凭证/支付方类型）
          * @description 补充上传记账凭证或更新支付方类型.
          */
         patch: operations["update_ledger_record_api_v1_admin_ledger__record_id__patch"];
@@ -7701,6 +7961,11 @@ export interface components {
              */
             operator_id?: string | null;
             /**
+             * Operator Name
+             * @description 记账人名称(冗余,供直接展示)
+             */
+            operator_name?: string | null;
+            /**
              * Counterparty
              * @description 交易方
              */
@@ -7737,6 +8002,16 @@ export interface components {
              * @description 收款方
              */
             payee?: string | null;
+            /**
+             * Account Id
+             * @description 资金账户ID(NULL=未走账户)
+             */
+            account_id?: string | null;
+            /**
+             * Account Name
+             * @description 资金账户名称(冗余,便于直接展示)
+             */
+            account_name?: string | null;
             /** @description 科目信息(联表填充) */
             subject?: components["schemas"]["FinanceSubjectResponse"] | null;
             /**
@@ -8709,13 +8984,13 @@ export interface components {
         };
         /**
          * FinanceActionType
-         * @description 资金账本操作日志类型枚举.
+         * @description 项目账本操作日志类型枚举.
          * @enum {string}
          */
         FinanceActionType: "create" | "delete" | "settle" | "unsettle" | "update";
         /**
          * FinanceLogResponse
-         * @description 资金账本操作日志响应.
+         * @description 项目账本操作日志响应.
          *
          *     operator_id / operator_name 为冗余字段，由 Service 层联表 User 填充。
          */
@@ -8760,7 +9035,7 @@ export interface components {
         };
         /**
          * FinanceSettlementChangeRequest
-         * @description 资金账本结算请求（unsettled → settled）.
+         * @description 项目账本结算请求（unsettled → settled）.
          */
         FinanceSettlementChangeRequest: {
             /**
@@ -8777,7 +9052,7 @@ export interface components {
         };
         /**
          * FinanceSettlementResponse
-         * @description 资金账本结算状态响应.
+         * @description 项目账本结算状态响应.
          */
         FinanceSettlementResponse: {
             /** @description 结算状态 */
@@ -8918,7 +9193,7 @@ export interface components {
         };
         /**
          * FinanceUnsettleRequest
-         * @description 资金账本反结算请求（settled → unsettled）.
+         * @description 项目账本反结算请求（settled → unsettled）.
          */
         FinanceUnsettleRequest: {
             /**
@@ -8979,6 +9254,668 @@ export interface components {
             created_by_id: string;
             /** Created By Name */
             created_by_name?: string | null;
+        };
+        /**
+         * FundAccountCreate
+         * @description 新建资金账户请求.
+         */
+        FundAccountCreate: {
+            /**
+             * Name
+             * @description 账户名称(未删除时唯一)
+             */
+            name: string;
+            /** @description 账户类型 */
+            type: components["schemas"]["FundAccountType"];
+            /**
+             * Account No
+             * @description 卡号/账户号(掩码)
+             */
+            account_no?: string | null;
+            /**
+             * Holder
+             * @description 开户人或持有公司
+             */
+            holder?: string | null;
+            /**
+             * Opening Balance
+             * @description 期初余额(元)
+             * @default 0
+             */
+            opening_balance: number | string;
+            /**
+             * Opening Date
+             * Format: date
+             * @description 期初余额起算日期
+             */
+            opening_date: string;
+            /**
+             * @description 状态: active/off
+             * @default active
+             */
+            status: components["schemas"]["FundAccountStatus"];
+            /**
+             * Note
+             * @description 备注
+             */
+            note?: string | null;
+        };
+        /**
+         * FundAccountListResponse
+         * @description 资金账户列表响应.
+         */
+        FundAccountListResponse: {
+            /** Items */
+            items: components["schemas"]["FundAccountResponse"][];
+            /** Total */
+            total: number;
+            /**
+             * Total Balance
+             * @description 全部账户余额合计
+             */
+            total_balance?: number;
+        };
+        /**
+         * FundAccountLockStateResponse
+         * @description 模块锁状态响应（未解锁也可调用，供锁屏渲染）.
+         */
+        FundAccountLockStateResponse: {
+            /**
+             * Has Password
+             * @description 是否已设置模块密码
+             */
+            has_password: boolean;
+            /**
+             * Unlocked
+             * @description 当前令牌是否有效
+             */
+            unlocked: boolean;
+            /**
+             * Seconds Left
+             * @description 令牌剩余秒数
+             * @default 0
+             */
+            seconds_left: number;
+            /**
+             * Attempts Left
+             * @description 剩余尝试次数
+             * @default 0
+             */
+            attempts_left: number;
+            /**
+             * Retry After Seconds
+             * @description 锁定剩余秒数
+             */
+            retry_after_seconds?: number | null;
+        };
+        /**
+         * FundAccountOption
+         * @description 资金账户「选项」响应（供记账选账户，**不含任何余额/金额字段**）.
+         *
+         *     为什么单独一个模型：记账弹窗需要在**未解锁**资金账户模块时也能列出账户名，
+         *     但余额属于敏感信息，必须由解锁后的接口提供。用独立模型而不是把余额字段
+         *     置空，可以从类型层面保证「这个接口永远不会返回钱」。
+         */
+        FundAccountOption: {
+            /**
+             * Id
+             * @description 账户ID
+             */
+            id: string;
+            /**
+             * Name
+             * @description 账户名称
+             */
+            name: string;
+            /** @description 账户类型 */
+            type: components["schemas"]["FundAccountType"];
+            /**
+             * Account No
+             * @description 卡号/账户号
+             */
+            account_no?: string | null;
+            /** @description 状态 */
+            status: components["schemas"]["FundAccountStatus"];
+            /**
+             * Is Locked
+             * @description 当前会话是否未解锁该账户模块（true 时余额一律不下发）
+             * @default false
+             */
+            is_locked: boolean;
+        };
+        /**
+         * FundAccountOptionListResponse
+         * @description 资金账户选项列表响应.
+         */
+        FundAccountOptionListResponse: {
+            /** Items */
+            items: components["schemas"]["FundAccountOption"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * FundAccountPasswordSetRequest
+         * @description 设置/重设模块密码请求.
+         *
+         *     ``old_password`` 仅在「已设过密码」时必填；首次设置可为空。
+         */
+        FundAccountPasswordSetRequest: {
+            /**
+             * New Password
+             * @description 新密码(6 位数字)
+             */
+            new_password: string;
+            /**
+             * Old Password
+             * @description 原密码(重设时必填)
+             */
+            old_password?: string | null;
+        };
+        /**
+         * FundAccountResponse
+         * @description 资金账户响应（含由流水推导的余额与进出合计）.
+         *
+         *     余额口径：``opening_balance + inflow_total − outflow_total + adjust_total``，
+         *     **不落库**，每次按未删除流水现算。
+         */
+        FundAccountResponse: {
+            /**
+             * Id
+             * @description 账户ID
+             */
+            id: string;
+            /**
+             * Name
+             * @description 账户名称
+             */
+            name: string;
+            /** @description 账户类型 */
+            type: components["schemas"]["FundAccountType"];
+            /**
+             * Account No
+             * @description 卡号/账户号
+             */
+            account_no?: string | null;
+            /**
+             * Holder
+             * @description 开户人
+             */
+            holder?: string | null;
+            /**
+             * Opening Balance
+             * @description 期初余额(元)
+             */
+            opening_balance: number;
+            /**
+             * Opening Date
+             * Format: date
+             * @description 期初余额起算日期
+             */
+            opening_date: string;
+            /** @description 状态 */
+            status: components["schemas"]["FundAccountStatus"];
+            /**
+             * Note
+             * @description 备注
+             */
+            note?: string | null;
+            /**
+             * Balance
+             * @description 当前余额(推导值)
+             */
+            balance: number;
+            /**
+             * Inflow Total
+             * @description 累计流入
+             */
+            inflow_total?: number;
+            /**
+             * Outflow Total
+             * @description 累计流出
+             */
+            outflow_total?: number;
+            /**
+             * Adjust Total
+             * @description 累计对账调整
+             */
+            adjust_total?: number;
+            /**
+             * Flow Count
+             * @description 流水笔数
+             * @default 0
+             */
+            flow_count: number;
+            /**
+             * Last Flow Date
+             * @description 最后一笔流水日期
+             */
+            last_flow_date?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
+         * FundAccountStatus
+         * @description 资金账户状态枚举.
+         *
+         *     ON = 在用（记账时可选）；OFF = 停用（保留历史流水，不可再记新账）。
+         *     账户不做物理删除：有流水的账户只能停用，级联由 Service 层处理。
+         * @enum {string}
+         */
+        FundAccountStatus: "active" | "off";
+        /**
+         * FundAccountSummaryResponse
+         * @description 资金账户总览 KPI.
+         */
+        FundAccountSummaryResponse: {
+            /**
+             * Active Count
+             * @description 在用账户数
+             * @default 0
+             */
+            active_count: number;
+            /**
+             * Total Balance
+             * @description 在用账户余额合计
+             */
+            total_balance?: number;
+            /**
+             * Month Inflow
+             * @description 本月流入合计
+             */
+            month_inflow?: number;
+            /**
+             * Month Outflow
+             * @description 本月流出合计
+             */
+            month_outflow?: number;
+            /**
+             * Adjust Total
+             * @description 累计对账调整合计(带符号)
+             */
+            adjust_total?: number;
+            /**
+             * Last Adjust Date
+             * @description 最近一次对账调整日期
+             */
+            last_adjust_date?: string | null;
+            /**
+             * Untracked Count
+             * @description 未挂账户的流水笔数
+             * @default 0
+             */
+            untracked_count: number;
+            /**
+             * Untracked Amount
+             * @description 未挂账户流水金额合计
+             */
+            untracked_amount?: number;
+        };
+        /**
+         * FundAccountType
+         * @description 资金账户类型枚举.
+         * @enum {string}
+         */
+        FundAccountType: "bank" | "corp" | "wechat" | "alipay" | "cash";
+        /**
+         * FundAccountUnlockRequest
+         * @description 模块解锁请求.
+         */
+        FundAccountUnlockRequest: {
+            /**
+             * Password
+             * @description 6 位数字模块密码
+             */
+            password: string;
+        };
+        /**
+         * FundAccountUnlockResponse
+         * @description 模块解锁响应.
+         *
+         *     ``token`` 仅在成功时返回，前端存 sessionStorage 并以 ``X-Accounts-Unlock`` 头携带；
+         *     ``seconds_left`` 为令牌剩余有效期（滑动过期，每次受保护请求会重置）。
+         */
+        FundAccountUnlockResponse: {
+            /**
+             * Unlocked
+             * @description 是否已解锁
+             */
+            unlocked: boolean;
+            /**
+             * Token
+             * @description 解锁令牌(仅成功时返回)
+             */
+            token?: string | null;
+            /**
+             * Seconds Left
+             * @description 令牌剩余秒数
+             * @default 0
+             */
+            seconds_left: number;
+            /**
+             * Attempts Left
+             * @description 剩余尝试次数
+             * @default 0
+             */
+            attempts_left: number;
+            /**
+             * Retry After Seconds
+             * @description 锁定剩余秒数(仅锁定时返回)
+             */
+            retry_after_seconds?: number | null;
+        };
+        /**
+         * FundAccountUpdate
+         * @description 更新资金账户请求（所有字段可选，仅传需要改的）.
+         *
+         *     允许修改期初余额与起算日期：改后期初变动会直接改变推导余额，
+         *     响应体回传新 ``balance`` 供前端提示「改完变成 ¥X」。
+         */
+        FundAccountUpdate: {
+            /**
+             * Name
+             * @description 账户名称
+             */
+            name?: string | null;
+            /** @description 账户类型 */
+            type?: components["schemas"]["FundAccountType"] | null;
+            /**
+             * Account No
+             * @description 卡号/账户号
+             */
+            account_no?: string | null;
+            /**
+             * Holder
+             * @description 开户人
+             */
+            holder?: string | null;
+            /**
+             * Opening Balance
+             * @description 期初余额(元)
+             */
+            opening_balance?: number | string | null;
+            /**
+             * Opening Date
+             * @description 期初余额起算日期
+             */
+            opening_date?: string | null;
+            /** @description 状态: active/off */
+            status?: components["schemas"]["FundAccountStatus"] | null;
+            /**
+             * Note
+             * @description 备注
+             */
+            note?: string | null;
+        };
+        /**
+         * FundAdjustmentCreateRequest
+         * @description 对账调整请求（仅新增，无更新/删除接口）.
+         *
+         *     ``amount`` = 实际余额 − 系统余额，可正可负但**不能为 0**（0 表示对上了，无需留痕），
+         *     校验在 Service 层完成以便返回统一业务错误。
+         */
+        FundAdjustmentCreateRequest: {
+            /**
+             * Adjust Date
+             * Format: date
+             * @description 调整计入日期
+             */
+            adjust_date: string;
+            /**
+             * Actual Balance
+             * @description 对账后的实际余额(元)
+             */
+            actual_balance: number | string;
+            /**
+             * Reason
+             * @description 差额原因(必填)
+             */
+            reason: string;
+            /**
+             * Receipt Urls
+             * @description 对账凭证截图URL列表
+             */
+            receipt_urls?: string[] | null;
+        };
+        /**
+         * FundAdjustmentReceiptsRequest
+         * @description 补传核对调整凭证请求（**仅追加 receipt_urls**）.
+         *
+         *     设计约束：调整记录「只加不改不删」——金额/原因/日期一经写入不可变（会计留痕）。
+         *     唯一允许的后续修改是**补充凭证**（与「记一笔后补票据」同一性质，不改任何金额语义）。
+         *     因此本请求刻意只有一个字段：任何试图改金额/原因的字段都不会被接受。
+         */
+        FundAdjustmentReceiptsRequest: {
+            /**
+             * Receipt Urls
+             * @description 要追加的凭证URL列表
+             */
+            receipt_urls: string[];
+        };
+        /**
+         * FundAdjustmentResponse
+         * @description 对账调整记录响应.
+         */
+        FundAdjustmentResponse: {
+            /**
+             * Id
+             * @description 调整记录ID
+             */
+            id: string;
+            /**
+             * Account Id
+             * @description 账户ID
+             */
+            account_id: string;
+            /**
+             * Account Name
+             * @description 账户名称(冗余)
+             */
+            account_name?: string | null;
+            /**
+             * Adjust Date
+             * Format: date
+             * @description 调整计入日期
+             */
+            adjust_date: string;
+            /**
+             * Amount
+             * @description 差额(元,可正可负)
+             */
+            amount: number;
+            /**
+             * Reason
+             * @description 差额原因
+             */
+            reason: string;
+            /**
+             * Operator Id
+             * @description 操作人ID
+             */
+            operator_id: string;
+            /**
+             * Operator Name
+             * @description 操作人名称(冗余)
+             */
+            operator_name?: string | null;
+            /**
+             * Receipt Urls
+             * @description 对账凭证截图URL列表
+             */
+            receipt_urls?: string[];
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+        };
+        /**
+         * FundFlowItem
+         * @description 账户流水行（两种来源合并，见 ``source`` 字段）.
+         *
+         *     为什么合并：账户余额口径是「期初 + Σ流入 − Σ流出 **± Σ核对调整**」。若流水页只列
+         *     ``finance_records``，则「利息入账 / 银行卡年费」这类**与项目无关**的账户资金变动
+         *     完全不可见，且页面上的进出合计无论怎么加都推不出余额——流水页与余额公式对不上。
+         *
+         *     ``source`` 取值：
+         *     - ``record``：来自项目记账（``finance_records``），必有项目；
+         *     - ``adjustment``：来自余额核对（``fund_account_adjustments``），**无项目**，
+         *       带 ``reason``/已折算好的 ``inflow``/``outflow``。
+         */
+        FundFlowItem: {
+            /**
+             * Source
+             * @description 行来源: record=项目记账 / adjustment=余额核对调整
+             * @default record
+             * @enum {string}
+             */
+            source: "record" | "adjustment";
+            /**
+             * Record Id
+             * @description 流水ID（调整行为 fund_account_adjustments.id）
+             */
+            record_id: string;
+            /**
+             * Project Id
+             * @description 项目ID(NULL=非项目收支，或未走账户)
+             */
+            project_id?: string | null;
+            /**
+             * Project Name
+             * @description 项目名称
+             */
+            project_name?: string | null;
+            /**
+             * Project Code
+             * @description 项目编号
+             */
+            project_code?: string | null;
+            /**
+             * Subject Name
+             * @description 科目名称(调整行为空)
+             */
+            subject_name?: string | null;
+            /**
+             * Record Date
+             * Format: date
+             * @description 发生日期
+             */
+            record_date: string;
+            /**
+             * Outflow
+             * @description 流出金额
+             */
+            outflow?: number;
+            /**
+             * Inflow
+             * @description 流入金额
+             */
+            inflow?: number;
+            /**
+             * Payer
+             * @description 付款方
+             */
+            payer?: string | null;
+            /**
+             * Payee
+             * @description 收款方
+             */
+            payee?: string | null;
+            /**
+             * Account Id
+             * @description 资金账户ID(NULL=未走账户)
+             */
+            account_id?: string | null;
+            /**
+             * Account Name
+             * @description 资金账户名称(冗余)
+             */
+            account_name?: string | null;
+            /**
+             * Operator Name
+             * @description 记账人名称(冗余)
+             */
+            operator_name?: string | null;
+            /**
+             * Receipt Count
+             * @description 票据张数
+             * @default 0
+             */
+            receipt_count: number;
+            /**
+             * Receipt Urls
+             * @description 凭证URL列表(供前端缩略图预览与补传判断)
+             */
+            receipt_urls?: string[];
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+            /**
+             * Reason
+             * @description 调整原因(仅 source=adjustment)
+             */
+            reason?: string | null;
+            /**
+             * Adjust Amount
+             * @description 调整差额(带符号,仅 source=adjustment)，可直接用于核对余额公式
+             */
+            adjust_amount?: number | null;
+        };
+        /**
+         * FundFlowListResponse
+         * @description 账户流水列表响应（含筛选范围内进出合计与来源明细）.
+         */
+        FundFlowListResponse: {
+            /** Items */
+            items: components["schemas"]["FundFlowItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /**
+             * Total Inflow
+             * @description 筛选范围流入合计(项目记账流入 + 调整正数)
+             */
+            total_inflow?: number;
+            /**
+             * Total Outflow
+             * @description 筛选范围流出合计(项目记账流出 + 调整负数绝对值)
+             */
+            total_outflow?: number;
+            /**
+             * Record Inflow
+             * @description 其中：项目记账流入
+             */
+            record_inflow?: number;
+            /**
+             * Record Outflow
+             * @description 其中：项目记账流出
+             */
+            record_outflow?: number;
+            /**
+             * Adjustment Inflow
+             * @description 其中：核对调整(正)计入流入
+             */
+            adjustment_inflow?: number;
+            /**
+             * Adjustment Outflow
+             * @description 其中：核对调整(负)计入流出
+             */
+            adjustment_outflow?: number;
         };
         /**
          * FunnelCompareModuleRow
@@ -11937,7 +12874,7 @@ export interface components {
         };
         /**
          * LedgerListResponse
-         * @description 资金账本列表响应.
+         * @description 项目账本列表响应.
          */
         LedgerListResponse: {
             /** Items */
@@ -11951,7 +12888,7 @@ export interface components {
         };
         /**
          * LedgerProjectListItem
-         * @description 资金账本项目列表项（含聚合统计）.
+         * @description 项目账本项目列表项（含聚合统计）.
          */
         LedgerProjectListItem: {
             /**
@@ -11980,7 +12917,7 @@ export interface components {
         };
         /**
          * LedgerRecordCreate
-         * @description 资金账本创建流水请求（含 project_id，不通过 URL path 传递）.
+         * @description 项目账本创建流水请求（含 project_id，不通过 URL path 传递）.
          *
          *     新字段（主字段，Task 5）：
          *     - subject_id: 科目ID（必填，关联 finance_subjects.id）
@@ -12042,6 +12979,17 @@ export interface components {
              * @description 收款方
              */
             payee?: string | null;
+            /**
+             * Account Id
+             * @description 资金账户ID（流出=付款账户/流入=收款账户）；与 account_skipped 互斥
+             */
+            account_id?: string | null;
+            /**
+             * Account Skipped
+             * @description 显式标记「没走账户」(跟投/往来/代收代付)；为 true 时忽略 account_id，且 description 必填
+             * @default false
+             */
+            account_skipped: boolean;
             /** @description 兼容字段: 流水类型(由 inflow/outflow 推导) */
             type?: components["schemas"]["CashFlowType"] | null;
             /** @description 兼容字段: 费用类别(新字段体系下由 subject 替代) */
@@ -12064,7 +13012,7 @@ export interface components {
         };
         /**
          * LedgerRecordUpdate
-         * @description 资金账本流水更新请求（支持新字段与兼容字段的部分更新）.
+         * @description 项目账本流水更新请求（支持新字段与兼容字段的部分更新）.
          *
          *     - 新字段：subject_id/outflow/inflow/payer/payee
          *     - 兼容字段：type/category/amount/counterparty（由新字段推导回填）
@@ -12097,6 +13045,16 @@ export interface components {
              * @description 收款方
              */
             payee?: string | null;
+            /**
+             * Account Id
+             * @description 资金账户ID（补挂/换挂历史流水）
+             */
+            account_id?: string | null;
+            /**
+             * Account Skipped
+             * @description 显式标记「没走账户」；为 true 时清空 account_id，需 description 非空
+             */
+            account_skipped?: boolean | null;
             /** @description 兼容字段: 流水类型 */
             type?: components["schemas"]["CashFlowType"] | null;
             /** @description 兼容字段: 费用类别 */
@@ -12243,7 +13201,7 @@ export interface components {
         };
         /**
          * LedgerStatsResponse
-         * @description 资金账本全局汇总.
+         * @description 项目账本全局汇总.
          */
         LedgerStatsResponse: {
             /** Total Projects */
@@ -13975,7 +14933,7 @@ export interface components {
         };
         /**
          * ProjectLedgerStatisticsResponse
-         * @description 资金账本统计页面聚合响应(五层法 + 阶段现金流).
+         * @description 项目账本统计页面聚合响应(五层法 + 阶段现金流).
          */
         ProjectLedgerStatisticsResponse: {
             five_layer: components["schemas"]["LedgerStatisticsFiveLayer"];
@@ -14254,18 +15212,18 @@ export interface components {
             /** @description 项目负责人 */
             project_manager?: components["schemas"]["UserBrief"] | null;
             /**
-             * @description 资金账本结算状态
+             * @description 项目账本结算状态
              * @default unsettled
              */
             finance_settlement_status: components["schemas"]["SettlementStatus"];
             /**
              * Finance Settled Date
-             * @description 资金账本结算日期
+             * @description 项目账本结算日期
              */
             finance_settled_date?: string | null;
             /**
              * Finance Settled Note
-             * @description 资金账本结算说明
+             * @description 项目账本结算说明
              */
             finance_settled_note?: string | null;
             /**
@@ -25172,6 +26130,506 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvestmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lock_state_api_v1_admin_accounts_lock_state_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAccountLockStateResponse"];
+                };
+            };
+        };
+    };
+    unlock_accounts_api_v1_admin_accounts_unlock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundAccountUnlockRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAccountUnlockResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lock_accounts_api_v1_admin_accounts_lock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    set_module_password_api_v1_admin_accounts_module_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundAccountPasswordSetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_account_options_api_v1_admin_accounts_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAccountOptionListResponse"];
+                };
+            };
+        };
+    };
+    list_accounts_api_v1_admin_accounts_get: {
+        parameters: {
+            query?: {
+                /** @description 模糊搜索: 名称/卡号/开户人/备注 */
+                search?: string | null;
+                /** @description 账户类型 */
+                type?: components["schemas"]["FundAccountType"] | null;
+                /** @description 账户状态 */
+                status?: components["schemas"]["FundAccountStatus"] | null;
+                /** @description 排序: balance/last/name */
+                sort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAccountListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_account_api_v1_admin_accounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundAccountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAccountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_accounts_summary_api_v1_admin_accounts_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAccountSummaryResponse"];
+                };
+            };
+        };
+    };
+    list_account_flows_api_v1_admin_accounts_flows_get: {
+        parameters: {
+            query?: {
+                /** @description 账户ID；不传=全部账户 */
+                account_id?: string | null;
+                /** @description 只看未挂账户的流水 */
+                untracked_only?: boolean;
+                /** @description 方向: in/out */
+                direction?: string | null;
+                /** @description 模糊搜索: 项目/科目/对方 */
+                search?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundFlowListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_account_api_v1_admin_accounts__account_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 账户ID */
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAccountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_account_api_v1_admin_accounts__account_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 账户ID */
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_account_api_v1_admin_accounts__account_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 账户ID */
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundAccountUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAccountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_single_account_flows_api_v1_admin_accounts__account_id__flows_get: {
+        parameters: {
+            query?: {
+                /** @description 方向: in/out */
+                direction?: string | null;
+                /** @description 模糊搜索 */
+                search?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 账户ID */
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundFlowListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_adjustments_api_v1_admin_accounts__account_id__adjustments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 账户ID */
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAdjustmentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_adjustment_api_v1_admin_accounts__account_id__adjustments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 账户ID */
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundAdjustmentCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAdjustmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    append_adjustment_receipts_api_v1_admin_accounts__account_id__adjustments__adjustment_id__receipts_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 账户ID */
+                account_id: string;
+                /** @description 调整记录ID */
+                adjustment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundAdjustmentReceiptsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundAdjustmentResponse"];
                 };
             };
             /** @description Validation Error */

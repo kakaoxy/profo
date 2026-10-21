@@ -9,7 +9,7 @@ interface StatisticsHeroProps {
 }
 
 /**
- * 资金账本 Hero 区
+ * 项目账本 Hero 区
  * - 居中标题 + 副标题 + 流水笔数 chip
  * - 8 张 KPI 卡(2 行 × 4 列)
  * - Row1: 项目收入/毛利/净利/总支出进损益(Apricot Wash 渐变)
@@ -24,7 +24,7 @@ export function StatisticsHero({ kpi }: StatisticsHeroProps) {
     <div className="text-center">
       {/* 标题 */}
       <div className="mb-10 animate-in" style={{ animationDelay: "0.1s" }}>
-        <h1 className="font-display text-3xl mb-4 text-ink text-balance">项目资金账本</h1>
+        <h1 className="font-display text-3xl mb-4 text-ink text-balance">项目项目账本</h1>
         <p className="text-[15px] leading-[1.35] text-graphite">
           全周期资金追踪 · 数据从交易流水实时计算
         </p>

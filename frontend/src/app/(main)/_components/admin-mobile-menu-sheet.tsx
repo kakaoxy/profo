@@ -73,8 +73,11 @@ export function AdminMobileMenuSheet({ open, onOpenChange }: Props) {
           <div className="grid grid-cols-4 gap-3">
             {visibleItems.map((item) => {
               const Icon = item.icon;
+              // 与侧边栏同口径的高亮判定（子路径点亮父级，避免裸 startsWith 误命中）
+              const matchesPath = (target: string) =>
+                pathname === target || pathname.startsWith(`${target}/`);
               const isActive =
-                pathname === item.url || item.items?.some((sub) => pathname.startsWith(sub.url));
+                matchesPath(item.url) || item.items?.some((sub) => matchesPath(sub.url));
               const href = item.url === "#" && item.items ? item.items[0].url : item.url;
               return (
                 <Link

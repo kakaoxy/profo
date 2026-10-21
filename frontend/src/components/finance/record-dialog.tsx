@@ -24,9 +24,19 @@ import type { ImageItem } from "@/components/common/image-upload";
 // ⚠️ 应收应付模块暂停：恢复时取消下方注释
 // import { ReceivablePayableTable } from "@/components/finance/receivable-payable-table";
 import { SubjectSelectPanel } from "@/app/(main)/admin/ledger/_components/subject-select-panel";
+import { AccountPicker } from "@/components/finance/account-picker";
+import { fetchAccountOptions, fetchAccounts } from "@/app/(main)/admin/accounts/actions";
+import type { components } from "@/lib/api-types";
 
 import { createRecord } from "@/app/(main)/admin/ledger/actions";
 import { createRecordSchema } from "@/app/(main)/admin/ledger/_components/ledger-schema";
+
+type FundAccountOption = components["schemas"]["FundAccountOption"];
+/** 弹窗用的账户项：基础信息来自「无需解锁」的 options 接口，余额来自解锁后的 accounts */
+type PickerAccount = Pick<
+  FundAccountOption,
+  "id" | "name" | "type" | "account_no" | "status"
+> & { balance?: number | null };
 
 interface RecordDialogProps {
   projectId: string;
@@ -50,12 +60,17 @@ export function RecordDialog({
   // 表单状态（Task 8 重构：subject_id + outflow/inflow + payer/payee）
   const [subjectId, setSubjectId] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const [outflow, setOutflow] = useState("");
-  const [inflow, setInflow] = useState("");
+  // 方向二选一：out=花出去（流出）/ in=收进来（流入）。
+  // 不能用「两个金额框都填、靠互斥校验兜底」——界面本身就不该提供同时填写的可能。
+  const [direction, setDirection] = useState<"out" | "in">("out");
+  const [amount, setAmount] = useState("");
   const [payer, setPayer] = useState("");
   const [payee, setPayee] = useState("");
   const [receiptUrls, setReceiptUrls] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [accountSkipped, setAccountSkipped] = useState(false);
+  const [accounts, setAccounts] = useState<PickerAccount[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 用于强制重置 ImageUpload 内部状态（每次打开弹窗递增）
@@ -66,13 +81,49 @@ export function RecordDialog({
     if (isOpen) {
       setSubjectId("");
       setDate(new Date());
-      setOutflow("");
-      setInflow("");
+      setDirection("out");
+      setAmount("");
       setPayer("");
       setPayee("");
       setReceiptUrls([]);
       setNotes("");
+      setAccountId("");
+      setAccountSkipped(false);
       setErrors({});
+      // 两段式加载（关键设计）：
+      //   ① /admin/accounts/options —— 免解锁，只给 id/名称/类型/卡号（**无余额**），
+      //      保证「未解锁也能正常选账户记账」；
+      //   ② /admin/accounts —— 需解锁，成功时把余额合并进同一列表，
+      //      失败（403 未解锁）则静默保持无余额状态，**不提示报错**。
+      // 这样「默认显示所有账户」与「余额只在解锁后可见」同时成立。
+      const token = (() => {
+        try {
+          return window.sessionStorage.getItem("profo:fund-accounts:unlock-token");
+        } catch {
+          return null;
+        }
+      })();
+
+      void fetchAccountOptions().then((res) => {
+        if (!res.success) return;
+        setAccounts(res.data.items);
+
+        // 已解锁时补上余额（不阻塞选账户）
+        if (token) {
+          void fetchAccounts({ status: "active", sort: "balance" }, { token }).then((full) => {
+            if (!full.success) return;
+            const balanceById = new Map(
+              full.data.items.map((item) => [item.id, Number(item.balance)] as const),
+            );
+            setAccounts((prev) =>
+              prev.map((item) => ({
+                ...item,
+                balance: balanceById.get(item.id),
+              })),
+            );
+          });
+        }
+      });
       setUploadKey((k) => k + 1);
       // setShowReceivablePayable(false); // ⚠️ 应收应付模块暂停
     }
@@ -93,17 +144,31 @@ export function RecordDialog({
   //   return "expense";
   // }, [outflow, inflow]);
 
+  // 方向决定金额落到 outflow 还是 inflow：永远只有一个 > 0，
+  // 服务端互斥校验因此不可能被触发（前端从结构上就不提供同时填写的入口）。
+  const selectedAccountName = accountSkipped
+    ? null
+    : (accounts.find((item) => item.id === accountId)?.name ?? null);
+  const amountValue = Number(amount) || 0;
+  const out = direction === "out" ? amountValue : 0;
+  const infl = direction === "in" ? amountValue : 0;
+
   function validate(): boolean {
     const e: Record<string, string> = {};
     if (!date) e.date = "请选择日期";
     if (!subjectId) e.subjectId = "请选择科目分类";
 
-    const out = Number(outflow) || 0;
-    const infl = Number(inflow) || 0;
-    if (out <= 0 && infl <= 0) {
-      e.amount = "流出/流入至少填一项且大于0";
+    if (amountValue <= 0) {
+      e.amount = direction === "out" ? "请填写流出金额（大于 0）" : "请填写流入金额（大于 0）";
     }
-    // outflow/inflow 互斥校验复用 createRecordSchema.refine（见 ledger-schema.ts），避免重复
+    // 账户：必须选一个，或显式勾「没走账户」并写明原因
+    if (!accountSkipped && !accountId) {
+      e.account = `请选择${direction === "out" ? "付款账户" : "收款账户"}，或标记「没走账户」`;
+    }
+    if (accountSkipped && !notes.trim()) {
+      e.accountNote = "标记「未走账户」时请写明原因";
+    }
+    // 复用 createRecordSchema 做兜底（金额区间等），互斥 refine 不会再触发
     const parsed = createRecordSchema.safeParse({
       project_id: projectId,
       subject_id: subjectId,
@@ -114,12 +179,14 @@ export function RecordDialog({
       payee: payee.trim() || null,
       description: notes.trim() || null,
       receipt_urls: receiptUrls.length > 0 ? receiptUrls : null,
+      account_id: accountSkipped ? null : accountId || null,
+      account_skipped: accountSkipped,
     });
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
-        if (issue.path[0] === "outflow" && !e.amount) {
-          e.amount = issue.message;
-        }
+        const key = String(issue.path[0] ?? "");
+        if ((key === "outflow" || key === "inflow") && !e.amount) e.amount = issue.message;
+        else if (key === "account_id" && !e.account) e.account = issue.message;
       }
     }
     setErrors(e);
@@ -137,13 +204,15 @@ export function RecordDialog({
       const payload = {
         project_id: projectId,
         subject_id: subjectId,
-        outflow: Number(outflow) || 0,
-        inflow: Number(inflow) || 0,
+        outflow: out,
+        inflow: infl,
         payer: payer.trim() || null,
         payee: payee.trim() || null,
         date: format(date!, "yyyy-MM-dd"),
         description: notes.trim() || null,
         receipt_urls: receiptUrls.length > 0 ? receiptUrls : null,
+        account_id: accountSkipped ? null : accountId || null,
+        account_skipped: accountSkipped,
       };
 
       const res = await createRecord(payload);
@@ -164,7 +233,11 @@ export function RecordDialog({
 
   // 表单内容（单栏/双栏布局复用，避免字段 JSX 重复）
   const formContent = (
-    <div className="grid gap-5 py-2 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
+    /* 注意：这是可滚动容器（overflow-y-auto），浏览器会把它当作 BFC 裁切边界。
+       内部选项用的是 ring（绘制在元素**外侧** 1.5px），若容器左右 padding 不足，
+       描边会被裁掉一截（曾出现「花出去」选项左边框缺失）——所以左右都要留 px-1
+       以上余量，且不能用负边距抵消。 */
+    <div className="grid max-h-[70vh] gap-5 overflow-y-auto overscroll-contain px-1 py-2">
       {/* 1. 科目分类（必填，下拉面板，按业务模式自动过滤） */}
       <div className="grid gap-2">
         <Label className="text-xs text-muted-foreground">
@@ -179,74 +252,163 @@ export function RecordDialog({
         />
       </div>
 
-      {/* 2. 流出/流入双字段（互斥：一个 > 0 时另一个必须 = 0）
-          颜色规则（中国习惯）：流出绿色、流入红色 */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="grid gap-2">
-          <Label className="text-xs text-muted-foreground">
-            <span className="text-money-negative font-medium">流出金额</span> (元)
-          </Label>
-          <div className="flex items-stretch rounded-lg border border-border overflow-hidden bg-card focus-within:border-ink focus-within:ring-1 focus-within:ring-ink/20 transition-[border-color,box-shadow]">
-            <span className="flex items-center px-3 bg-fog text-graphite text-sm font-semibold border-r border-border">
-              ¥
-            </span>
-            <Input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              value={outflow}
-              onChange={(e) => setOutflow(e.target.value)}
-              autoComplete="off"
-              className="border-0 rounded-none focus-visible:ring-0 font-mono tabular-nums text-money-negative"
-            />
-          </div>
-        </div>
-        <div className="grid gap-2">
-          <Label className="text-xs text-muted-foreground">
-            <span className="text-money-positive font-medium">流入金额</span> (元)
-          </Label>
-          <div className="flex items-stretch rounded-lg border border-border overflow-hidden bg-card focus-within:border-ink focus-within:ring-1 focus-within:ring-ink/20 transition-[border-color,box-shadow]">
-            <span className="flex items-center px-3 bg-fog text-graphite text-sm font-semibold border-r border-border">
-              ¥
-            </span>
-            <Input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              value={inflow}
-              onChange={(e) => setInflow(e.target.value)}
-              autoComplete="off"
-              className="border-0 rounded-none focus-visible:ring-0 font-mono tabular-nums text-money-positive"
-            />
-          </div>
+      {/* 2. 方向（花出去 / 收进来）+ 金额：单一金额输入，
+          从结构上杜绝「一笔记录同时有流出和流入」 */}
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">钱往哪走</Label>
+        <div className="grid grid-cols-2 gap-2.5">
+          {(
+            [
+              {
+                value: "out" as const,
+                title: "花出去",
+                sub: "付给房东、施工、税务局",
+                tone: "text-money-negative",
+              },
+              {
+                value: "in" as const,
+                title: "收进来",
+                sub: "收到房款、定金、跟投",
+                tone: "text-money-positive",
+              },
+            ] as const
+          ).map((option) => {
+            const selected = direction === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  setDirection(option.value);
+                  // 方向变了，账户语义也变（付款户↔收款户），清空避免挂错
+                  setAccountId("");
+                  setErrors((prev) => ({ ...prev, account: "", amount: "" }));
+                }}
+                className={cn(
+                  "flex items-start gap-2.5 rounded-inputs px-3 py-2.5 text-left transition-colors",
+                  // 用 inset-ring（内描边）而非 ring：ring 画在元素外侧，会被可滚动
+                  // 祖先裁剪（曾出现「花出去」左边框缺失），inset-ring 永远绘制在内侧。
+                  selected
+                    ? "bg-fog inset-ring-[1.5px] inset-ring-ink"
+                    : "bg-fog/50 inset-ring-1 inset-ring-dove/25 hover:bg-fog",
+                )}
+                aria-pressed={selected}
+              >
+                <span
+                  className={cn(
+                    "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
+                    selected ? "bg-ink" : "ring-1 ring-dove/50",
+                  )}
+                  aria-hidden="true"
+                >
+                  {selected ? <i className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+                </span>
+                <span>
+                  <span className={cn("block text-[13.5px] font-medium", option.tone)}>
+                    {option.title}
+                  </span>
+                  <span className="block text-[11.5px] text-graphite">{option.sub}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
-      {errors.amount && <span className="text-[11px] text-destructive -mt-3">{errors.amount}</span>}
 
-      {/* 3. 付款方 / 收款方 */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="grid gap-2">
-          <Label className="text-xs text-muted-foreground">付款方</Label>
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">
+          <span className={direction === "out" ? "text-money-negative" : "text-money-positive"}>
+            {direction === "out" ? "流出金额" : "流入金额"}
+          </span>{" "}
+          (元) <span className="text-destructive">*</span>
+        </Label>
+        <div
+          className={cn(
+            "flex items-stretch overflow-hidden rounded-inputs bg-fog ring-1 transition-colors",
+            errors.amount
+              ? "inset-ring-[1.5px] inset-ring-destructive"
+              : "inset-ring-1 inset-ring-transparent focus-within:inset-ring-ink",
+          )}
+        >
+          <span className="flex items-center border-r border-dove/25 bg-fog px-3 text-[13px] font-semibold text-graphite">
+            ¥
+          </span>
           <Input
-            value={payer}
-            onChange={(e) => setPayer(e.target.value)}
-            placeholder="股东A / 公司 / 银行"
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              setErrors((prev) => ({ ...prev, amount: "" }));
+            }}
             autoComplete="off"
+            className={cn(
+              "rounded-none border-0 bg-transparent font-mono tabular-nums focus-visible:ring-0",
+              direction === "out" ? "text-money-negative" : "text-money-positive",
+            )}
           />
         </div>
-        <div className="grid gap-2">
-          <Label className="text-xs text-muted-foreground">收款方</Label>
-          <Input
-            value={payee}
-            onChange={(e) => setPayee(e.target.value)}
-            placeholder="房东 / 银行 / 装修队"
-            autoComplete="off"
-          />
-        </div>
+        {errors.amount ? (
+          <span className="text-[11px] text-destructive">{errors.amount}</span>
+        ) : (
+          <span className="text-[11px] text-graphite">
+            一笔只能记一个方向：要么花出去，要么收进来。
+          </span>
+        )}
+      </div>
+
+      {/* 3. 资金账户（新）：流出=付款账户 / 流入=收款账户 */}
+      <AccountPicker
+        accounts={accounts}
+        lockedHint={!accountSkipped && accounts.length === 0}
+        onGoUnlock={() => {
+          window.open("/admin/accounts", "_blank", "noopener,noreferrer");
+        }}
+        direction={direction}
+        value={accountId}
+        skipped={accountSkipped}
+        amount={amountValue}
+        onChange={(next) => {
+          setAccountId(next);
+          setErrors((prev) => ({ ...prev, account: "" }));
+        }}
+        onToggleSkipped={(next) => {
+          setAccountSkipped(next);
+          if (next) setAccountId("");
+          setErrors((prev) => ({ ...prev, account: "", accountNote: "" }));
+        }}
+        error={errors.account}
+        noteError={errors.accountNote}
+      />
+
+      {/* 4. 对方信息：按方向只展示相关的一方
+          - 花出去 → 付给谁（收款方 payee）
+          - 收进来 → 谁付的（付款方 payer）
+          账户块已确定的那一方（付款账户/收款账户）由账户自动带入，这里只填「对方」，
+          避免与账户名重复输入。 */}
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">
+          {direction === "out" ? "付给谁" : "谁付的"}
+          <span className="ml-1.5 font-normal text-dove">选填</span>
+        </Label>
+        <Input
+          value={direction === "out" ? payee : payer}
+          onChange={(e) =>
+            direction === "out" ? setPayee(e.target.value) : setPayer(e.target.value)
+          }
+          placeholder={
+            direction === "out" ? "房东 / 施工队 / 税务局" : "买家 / 跟投人 / 平台"
+          }
+          autoComplete="off"
+        />
+        <span className="text-[11px] text-graphite">
+          {direction === "out"
+            ? `付款方即所选账户（${selectedAccountName ?? "未选账户"}），这里填收款的一方。`
+            : `收款方即所选账户（${selectedAccountName ?? "未选账户"}），这里填付款的一方。`}
+        </span>
       </div>
 
       {/* 4. 发生日期 */}

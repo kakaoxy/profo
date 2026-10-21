@@ -54,13 +54,13 @@ _TRGM_SEARCH_INDEXES: list[tuple[str, str, tuple[str, ...]]] = [
         "investments",
         ("lower(project_code)", "lower(project_name)"),
     ),
-    # 项目搜索：小区名/地址（资金账本 ledger、项目列表、跟投跨表关联）
+    # 项目搜索：小区名/地址（项目账本 ledger、项目列表、跟投跨表关联）
     (
         "idx_projects_trgm_search",
         "projects",
         ("lower(community_name)", "lower(address)"),
     ),
-    # 合同号搜索（资金账本 ledger、项目列表）
+    # 合同号搜索（项目账本 ledger、项目列表）
     ("idx_project_contracts_trgm_search", "project_contracts", ("lower(contract_no)",)),
     # 用户搜索：昵称/用户名（services/system/user/core.py）
     ("idx_users_trgm_search", "users", ("lower(nickname)", "lower(username)")),

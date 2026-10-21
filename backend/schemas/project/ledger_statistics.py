@@ -1,4 +1,4 @@
-"""资金账本统计页面 Schema.
+"""项目账本统计页面 Schema.
 
 按五层法 + 阶段现金流重算，替代原 8 分组聚合。
 五层法(权责发生制): 收入层(⑥) → 毛利层(①②) → 净利层(③④)；
@@ -103,7 +103,7 @@ class LedgerStatisticsCalcBreakdown(BaseModel):
 
 
 class ProjectLedgerStatisticsResponse(BaseModel):
-    """资金账本统计页面聚合响应(五层法 + 阶段现金流)."""
+    """项目账本统计页面聚合响应(五层法 + 阶段现金流)."""
 
     five_layer: LedgerStatisticsFiveLayer
     stage_flows: list[LedgerStatisticsStageFlow]

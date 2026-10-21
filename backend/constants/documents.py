@@ -34,7 +34,7 @@ AGENT_DOCUMENTS: tuple[DocumentTemplate, ...] = (
     DocumentTemplate(document_name="签约合同", display_order=1, category="contract_agreement"),
     DocumentTemplate(document_name="装修合同", display_order=2, category="contract_agreement"),
     DocumentTemplate(document_name="合作房源确认函", display_order=3, category="contract_agreement"),
-    DocumentTemplate(document_name="门店跟投协议书", display_order=4, category="contract_agreement"),
+    DocumentTemplate(document_name="跟投协议书", display_order=4, category="contract_agreement"),
     DocumentTemplate(document_name="增值服务确认书", display_order=5, category="contract_agreement"),
     DocumentTemplate(document_name="产证", display_order=6, category="property_rights"),
     DocumentTemplate(document_name="产调", display_order=7, category="property_rights"),

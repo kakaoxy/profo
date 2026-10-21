@@ -1,6 +1,6 @@
 """财务相关迁移.
 
-包含跟投管理表、资金账本（finance_records）列变更、科目管理表、enum 同步、
+包含跟投管理表、项目账本（finance_records）列变更、科目管理表、enum 同步、
 项目结算列等迁移。均为幂等执行。
 """
 
@@ -74,7 +74,7 @@ def rename_return_adjustment_columns(engine: Engine) -> None:
 
 
 def add_finance_record_counterparty_columns(engine: Engine) -> None:
-    """为 finance_records 表添加 counterparty/receipt_url 列（资金账本，幂等）.
+    """为 finance_records 表添加 counterparty/receipt_url 列（项目账本，幂等）.
 
     - counterparty: 交易方（VARCHAR(100)）
     - receipt_url: 票据图片URL（VARCHAR(500)）
@@ -97,7 +97,7 @@ def add_finance_record_counterparty_columns(engine: Engine) -> None:
 
 
 def create_finance_record_logs_table(engine: Engine) -> None:
-    """幂等创建资金账本操作日志表 finance_record_logs.
+    """幂等创建项目账本操作日志表 finance_record_logs.
 
     使用 SQLAlchemy Core API 通过模型 __table__ 元数据创建，
     checkfirst=True 确保表/索引已存在时跳过，避免破坏已有数据。
@@ -209,7 +209,7 @@ def migrate_finance_subjects_modes_to_jsonb(engine: Engine) -> None:
 
 
 def add_finance_record_subject_columns(engine: Engine) -> None:
-    """为 finance_records 表添加科目/收支/收付款方 5 列并回填历史数据（资金账本，幂等）.
+    """为 finance_records 表添加科目/收支/收付款方 5 列并回填历史数据（项目账本，幂等）.
 
     新增列：
     - subject_id: 科目ID（VARCHAR(36)，逻辑外键→finance_subjects.id）
@@ -395,7 +395,7 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
 
 
 def add_project_finance_settlement_columns(engine: Engine) -> None:
-    """为 projects 表添加资金账本结算相关列 + 同步 financerecordactiontype enum.
+    """为 projects 表添加项目账本结算相关列 + 同步 financerecordactiontype enum.
 
     新增列：
     - finance_settlement_status: 结算状态（复用 settlementstatus enum 类型）

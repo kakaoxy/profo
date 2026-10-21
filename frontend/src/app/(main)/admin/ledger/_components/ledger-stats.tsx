@@ -10,7 +10,7 @@ interface LedgerStatsProps {
 }
 
 /**
- * 资金账本统计卡（Steep，走共享 StatCardGrid）
+ * 项目账本统计卡（Steep，走共享 StatCardGrid）
  *
  * - 白底卡片 + rounded-cards + shadow-steep，无边框
  * - 图标为单色描边（Graphite / Rust），替代原 emerald/amber/blue/purple 彩色图标圆

@@ -28,7 +28,7 @@ import { getProjectStatusBadgeClass, getStatusLabel, DEFAULT_STATUS } from "@/li
 interface CreateInvestmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** 预选项目ID（从资金账本跳转时传入） */
+  /** 预选项目ID（从项目账本跳转时传入） */
   prefillProjectId?: string;
 }
 
@@ -69,7 +69,7 @@ export function CreateInvestmentDialog({
     return () => clearTimeout(timer);
   }, [searchQuery, open, prefillProjectId]);
 
-  // 预选项目（从资金账本跳转时）
+  // 预选项目（从项目账本跳转时）
   React.useEffect(() => {
     if (!open || !prefillProjectId) return;
     let cancelled = false;

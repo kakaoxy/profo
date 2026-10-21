@@ -274,6 +274,31 @@ _PERMISSIONS_SEED: list[dict] = [
         "sort_order": 30,
         "description": "项目财务结算操作",
     },
+    # 资金账户模块（独立入口密码 + 权限两层）
+    {
+        "code": "account:read",
+        "name": "查看资金账户",
+        "module": "account",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看资金账户与账户流水（另需模块密码解锁）",
+    },
+    {
+        "code": "account:write",
+        "name": "编辑资金账户",
+        "module": "account",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新建/编辑账户、余额对账、补挂历史流水的账户",
+    },
+    {
+        "code": "account:admin",
+        "name": "设置账户密码",
+        "module": "account",
+        "category": "api",
+        "sort_order": 30,
+        "description": "设置/重设资金账户模块入口密码（仅 admin）",
+    },
     # 科目管理模块
     {
         "code": "subject:read",
@@ -401,6 +426,8 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "ledger:read",
         "ledger:write",
         "ledger:settle",
+        "account:read",
+        "account:write",
         "subject:read",
         "subject:write",
         "investment:read",

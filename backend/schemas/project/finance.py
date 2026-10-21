@@ -60,6 +60,7 @@ class CashFlowRecordResponse(BaseModel):
     record_date: datetime = Field(description="发生日期")  # 新字段名
     remark: str | None = Field(None, description="备注")  # 新字段名
     operator_id: str | None = Field(None, description="经办人ID")  # 新字段
+    operator_name: str | None = Field(None, description="记账人名称(冗余,供直接展示)")
     counterparty: str | None = Field(None, description="交易方")
     counterparty_type: CounterpartyType | None = Field(None, description="支付方类型")
     receipt_urls: list[str] = Field(default_factory=list, description="票据图片URL列表")
@@ -69,6 +70,9 @@ class CashFlowRecordResponse(BaseModel):
     inflow: Decimal = Field(default=Decimal(0), description="流入金额(元)")
     payer: str | None = Field(None, description="付款方")
     payee: str | None = Field(None, description="收款方")
+    account_id: UUID4 | None = Field(None, description="资金账户ID(NULL=未走账户)")
+    account_name: str | None = Field(None, description="资金账户名称(冗余,便于直接展示)")
+
     subject: "FinanceSubjectResponse | None" = Field(None, description="科目信息(联表填充)")
     created_at: datetime
     updated_at: datetime
@@ -228,11 +232,11 @@ class FinanceListResponse(BaseModel):
     total: int
 
 
-# ========== 资金账本 (Ledger) ==========
+# ========== 项目账本 (Ledger) ==========
 
 
 class LedgerRecordCreate(BaseModel):
-    """资金账本创建流水请求（含 project_id，不通过 URL path 传递）.
+    """项目账本创建流水请求（含 project_id，不通过 URL path 传递）.
 
     新字段（主字段，Task 5）：
     - subject_id: 科目ID（必填，关联 finance_subjects.id）
@@ -256,6 +260,16 @@ class LedgerRecordCreate(BaseModel):
     payer: str | None = Field(None, max_length=100, description="付款方")
     payee: str | None = Field(None, max_length=100, description="收款方")
 
+    # 资金账户（Task 8：与项目账本正交——项目看盈亏，账户看钱在哪）
+    account_id: UUID4 | None = Field(
+        None,
+        description="资金账户ID（流出=付款账户/流入=收款账户）；与 account_skipped 互斥",
+    )
+    account_skipped: bool = Field(
+        default=False,
+        description="显式标记「没走账户」(跟投/往来/代收代付)；为 true 时忽略 account_id，且 description 必填",
+    )
+
     # 兼容字段（旧客户端可选，新字段优先）
     type: CashFlowType | None = Field(None, description="兼容字段: 流水类型(由 inflow/outflow 推导)")
     category: CashFlowCategory | None = Field(None, description="兼容字段: 费用类别(新字段体系下由 subject 替代)")
@@ -267,7 +281,7 @@ class LedgerRecordCreate(BaseModel):
 
 
 class LedgerRecordUpdate(BaseModel):
-    """资金账本流水更新请求（支持新字段与兼容字段的部分更新）.
+    """项目账本流水更新请求（支持新字段与兼容字段的部分更新）.
 
     - 新字段：subject_id/outflow/inflow/payer/payee
     - 兼容字段：type/category/amount/counterparty（由新字段推导回填）
@@ -281,6 +295,13 @@ class LedgerRecordUpdate(BaseModel):
     inflow: Decimal | None = Field(None, ge=0, description="流入金额(元)")
     payer: str | None = Field(None, max_length=100, description="付款方")
     payee: str | None = Field(None, max_length=100, description="收款方")
+
+    # 资金账户（显式传 account_id 才会改动账户归属，用于存量流水补挂/换挂）
+    account_id: UUID4 | None = Field(None, description="资金账户ID（补挂/换挂历史流水）")
+    account_skipped: bool | None = Field(
+        None,
+        description="显式标记「没走账户」；为 true 时清空 account_id，需 description 非空",
+    )
 
     # 兼容字段
     type: CashFlowType | None = Field(None, description="兼容字段: 流水类型")
@@ -299,7 +320,7 @@ class LedgerRecordUpdate(BaseModel):
 
 
 class LedgerProjectListItem(BaseModel):
-    """资金账本项目列表项（含聚合统计）."""
+    """项目账本项目列表项（含聚合统计）."""
 
     project_id: UUID4
     project_code: str | None = None
@@ -320,7 +341,7 @@ class LedgerProjectListItem(BaseModel):
 
 
 class LedgerListResponse(BaseModel):
-    """资金账本列表响应."""
+    """项目账本列表响应."""
 
     items: list[LedgerProjectListItem]
     total: int
@@ -329,7 +350,7 @@ class LedgerListResponse(BaseModel):
 
 
 class LedgerStatsResponse(BaseModel):
-    """资金账本全局汇总."""
+    """项目账本全局汇总."""
 
     total_projects: int
     total_income: Decimal
@@ -348,7 +369,7 @@ class LedgerStatsResponse(BaseModel):
 
 
 class FinanceLogResponse(BaseModel):
-    """资金账本操作日志响应.
+    """项目账本操作日志响应.
 
     operator_id / operator_name 为冗余字段，由 Service 层联表 User 填充。
     """
@@ -371,7 +392,7 @@ class FinanceLogResponse(BaseModel):
 
 
 class FinanceSettlementChangeRequest(BaseModel):
-    """资金账本结算请求（unsettled → settled）."""
+    """项目账本结算请求（unsettled → settled）."""
 
     settled_date: date = Field(description="结算日期")
     settled_note: str | None = Field(None, max_length=500, description="结算说明")
@@ -380,7 +401,7 @@ class FinanceSettlementChangeRequest(BaseModel):
 
 
 class FinanceUnsettleRequest(BaseModel):
-    """资金账本反结算请求（settled → unsettled）."""
+    """项目账本反结算请求（settled → unsettled）."""
 
     reason: str = Field(min_length=1, max_length=500, description="反结算原因")
 
@@ -388,7 +409,7 @@ class FinanceUnsettleRequest(BaseModel):
 
 
 class FinanceSettlementResponse(BaseModel):
-    """资金账本结算状态响应."""
+    """项目账本结算状态响应."""
 
     finance_settlement_status: SettlementStatus = Field(description="结算状态")
     finance_settled_date: date | None = Field(None, description="结算日期")
@@ -397,7 +418,7 @@ class FinanceSettlementResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ========== 资金账本统计页面 ==========
+# ========== 项目账本统计页面 ==========
 # 统计页面 Schema 已拆分至 ledger_statistics.py（13 个模型），降低单文件行数。
 # 聚合入口 schemas/project/__init__.py 同时从 .finance 与 .ledger_statistics 导出。
 

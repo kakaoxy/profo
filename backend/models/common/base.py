@@ -221,7 +221,7 @@ class InvestmentActionType(str, enum.Enum):
 
 
 class FinanceActionType(str, enum.Enum):
-    """资金账本操作日志类型枚举."""
+    """项目账本操作日志类型枚举."""
 
     CREATE = "create"
     DELETE = "delete"
@@ -250,6 +250,27 @@ class SubjectStage(str, enum.Enum):
     HOLDING = "holding"  # 持有期
     LISTING = "listing"  # 在售
     SOLD = "sold"  # 已售
+
+
+class FundAccountType(str, enum.Enum):
+    """资金账户类型枚举."""
+
+    BANK = "bank"  # 银行卡
+    CORP = "corp"  # 对公账户
+    WECHAT = "wechat"  # 微信
+    ALIPAY = "alipay"  # 支付宝
+    CASH = "cash"  # 现金
+
+
+class FundAccountStatus(str, enum.Enum):
+    """资金账户状态枚举.
+
+    ON = 在用（记账时可选）；OFF = 停用（保留历史流水，不可再记新账）。
+    账户不做物理删除：有流水的账户只能停用，级联由 Service 层处理。
+    """
+
+    ACTIVE = "active"
+    OFF = "off"
 
 
 class BaseModel(Base):

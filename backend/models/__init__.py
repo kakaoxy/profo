@@ -13,6 +13,8 @@ from .common import (
     ChangeType,
     FinanceActionType,
     FollowUpMethod,
+    FundAccountStatus,
+    FundAccountType,
     ImportTaskStatus,
     InvestmentActionType,
     InvestorType,
@@ -26,6 +28,9 @@ from .common import (
     SubjectLevel,
     SubjectStage,
 )
+
+# 财务管理（资金账户）模块
+from .finance import FundAccount, FundAccountAdjustment
 
 # 获客中心（小程序「我的客户」跨模块聚合）模块
 from .growth_center import CustomerFollowUp
@@ -178,6 +183,10 @@ __all__ = [
     "FinanceRecordLog",
     "FinanceSubject",
     "FollowUpMethod",
+    "FundAccount",
+    "FundAccountAdjustment",
+    "FundAccountStatus",
+    "FundAccountType",
     "ImportTaskStatus",
     "Investment",
     "InvestmentActionType",

@@ -1,6 +1,6 @@
 "use client";
 
-import { Paperclip, Trash2 } from "lucide-react";
+import { CircleAlert, Paperclip, Trash2, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeFormatDate, formatCNY } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,24 @@ export function LedgerDetailTableRow({
         <span className="text-graphite truncate block" title={record.payee ?? ""}>
           {record.payee || "-"}
         </span>
+      </TableCell>
+      {/* 资金账户（新）：NULL = 显式「没走账户」 */}
+      <TableCell className="px-4 py-3">
+        {record.account_id ? (
+          <span className="flex items-center gap-1.5">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-fog text-graphite ring-1 ring-dove/25">
+              <Wallet className="h-3 w-3" aria-hidden="true" />
+            </span>
+            <span className="truncate text-[12.5px] text-ink" title={record.account_name ?? ""}>
+              {record.account_name || "—"}
+            </span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-md bg-apricot-wash/70 px-1.5 py-0.5 text-[11px] text-rust">
+            <CircleAlert className="h-2.5 w-2.5" aria-hidden="true" />
+            没走账户
+          </span>
+        )}
       </TableCell>
       {/* 流出（绿色，中国习惯） */}
       <TableCell className="px-4 py-3 text-right">

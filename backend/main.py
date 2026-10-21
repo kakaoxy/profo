@@ -34,7 +34,7 @@ from error_handlers import (
     validation_exception_handler,
 )
 from routers.common import files_router, push_router, upload_router
-from routers.finance import ledger_router, subjects_router
+from routers.finance import accounts_router, ledger_router, subjects_router
 from routers.growth_center import growth_center_router
 from routers.investment import investment_router
 from routers.keys import keys_shares_router
@@ -254,7 +254,8 @@ app = FastAPI(
         {"name": "marketing", "description": "L4 市场营销 - 营销房源管理"},
         {"name": "marketing-import", "description": "L4 市场营销 - 数据导入"},
         {"name": "investment", "description": "财务管理 - 跟投管理"},
-        {"name": "finance-ledger", "description": "财务管理 - 资金账本"},
+        {"name": "finance-accounts", "description": "财务管理 - 资金账户"},
+        {"name": "finance-ledger", "description": "财务管理 - 项目账本"},
         {"name": "finance-subjects", "description": "财务管理 - 科目管理"},
         {"name": "auth", "description": "认证授权 - 登录、令牌、API Key"},
         {"name": "users", "description": "用户管理"},
@@ -391,6 +392,7 @@ app.include_router(keys_shares_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_projects_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_import_router, prefix=API_V1_PREFIX)
 app.include_router(investment_router, prefix=API_V1_PREFIX)
+app.include_router(accounts_router, prefix=API_V1_PREFIX)
 app.include_router(ledger_router, prefix=API_V1_PREFIX)
 app.include_router(subjects_router, prefix=API_V1_PREFIX)
 app.include_router(auth_router, prefix=API_V1_PREFIX)

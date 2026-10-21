@@ -139,7 +139,19 @@ export const navMain: NavItem[] = [
     icon: Wallet,
     section: "财务",
     items: [
-      { title: "资金账本", url: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },
+      { title: "项目账本", url: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },
+      // 资金账户（账户总览/账户流水）归入财务管理组，不单列一级入口。
+      // 注：两个子项都需模块入口密码（account:read 只是第一层，真正的门在服务端解锁校验）。
+      {
+        title: "资金账户",
+        url: "/admin/accounts",
+        permission: PERMISSION_CODES.ACCOUNT_READ,
+      },
+      {
+        title: "账户流水",
+        url: "/admin/accounts/flows",
+        permission: PERMISSION_CODES.ACCOUNT_READ,
+      },
       {
         title: "跟投管理",
         url: "/admin/investments",

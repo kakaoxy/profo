@@ -92,6 +92,7 @@ export function LedgerView({ data, total }: LedgerViewProps) {
           `${today.getFullYear()}` +
           `${String(today.getMonth() + 1).padStart(2, "0")}` +
           `${String(today.getDate()).padStart(2, "0")}`;
+        // 文件名保留历史口径（资金账本_*）：可能有外部脚本按名匹配，页面文案已改「项目账本」，见 SPEC D1
         a.download = `资金账本_${ymd}.xlsx`;
         document.body.appendChild(a);
         a.click();

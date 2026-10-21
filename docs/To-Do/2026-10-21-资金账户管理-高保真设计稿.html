@@ -1,0 +1,3163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>资金账户管理 · 高保真可交互设计稿</title>
+<!--
+  ==========================================================================================
+  资金账户管理模块 · 高保真可交互设计稿（Steep 体系 / 后台 admin）
+  ==========================================================================================
+  项目：profo（Next.js + FastAPI + PostgreSQL，后台 admin 页面在 frontend/src/app/(main)/admin）
+  日期：2026-10-21 · 版本 v1 · 单一推荐方案 + 页内分支开关
+  视觉依据：/DESIGN.md（Steep Style Reference）+ frontend/src/app/globals.css 已落地 token
+
+  设计稿回答的四个业务问题（已与需求方确认口径）：
+    1. 现在的「资金账本」只记项目的账 → 改名为「项目账本」（路由 /admin/ledger 不动，只改文案）。
+    2. 新增「资金账户」模块：账户增删查改 + 余额由流水推导 + 对账调整记录。
+    3. 项目账本记一笔时，流出可选取款账户、流入可选取款账户（必填单选，可显式标记「未走账户」）。
+    4. 资金账户模块有独立入口密码（模块入口锁）：解锁后 30 分钟滑动过期 + 手动锁定。
+
+  代码事实依据（已核对，非猜测）：
+    · backend/models/project/_project_finance.py  FinanceRecord / FinanceRecordLog / FinanceSubject
+    · backend/routers/finance/ledger.py           /admin/ledger/*（LedgerReadPermDep / Write / Settle）
+    · backend/schemas/project/finance.py          LedgerRecordCreate（subject_id + outflow/inflow + payer/payee）
+    · frontend/src/components/finance/record-dialog.tsx   现有「记一笔」弹窗（本次在其上加账户字段）
+    · frontend/src/app/(main)/admin/ledger/**     项目账本列表页 / 明细页 / 统计页 / 科目管理
+    · frontend/src/lib/admin-nav-data.ts          侧边栏「财务管理 → 资金账本 / 跟投管理 / 科目管理」
+    · frontend/src/lib/auth/permissions.ts        PATH_PERMISSION_MAP：/admin/ledger → ledger:read
+    · backend/migrations/__init__.py + _finance.py 启动迁移（幂等）；finance_subjects 表先例可复用
+    · frontend/src/app/globals.css                --color-money-positive 红=流入 / --color-money-negative 绿=流出
+
+  交付形态：单文件自包含 HTML（React 18 CDN + Babel 内联转译），双击可开，也便于直接转发。
+  数据全部为贴近业务的演示数据，不连接真实接口。
+  ⚠️ 设计稿交付物，按要求单文件自包含，故不拆分模块（有意超过 500 行，见 AGENTS.md 例外条款）。
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;430;450;480;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  /* ==========================================================================
+     1 · Steep token（对齐 /DESIGN.md 与 frontend/src/app/globals.css）
+     ========================================================================== */
+  :root {
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-line: #f2d0ba;
+    --sky: #d3e3fc;
+    --blue: #4a90e2;
+    /* 金额语义（中国习惯，与 globals.css 一致）：红=流入/正向，绿=流出/负向 */
+    --pos: #ef4444;
+    --neg: #10b981;
+    --warn: #b98a2e;
+
+    --font-display: "Source Serif 4", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --font-ui: "Inter", -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --r-card: 24px;
+    --r-img: 12px;
+    --r-input: 16px;
+    --r-pill: 9999px;
+
+    --shadow-steep: rgba(4, 23, 43, .05) 0 0 0 1px, rgba(0, 0, 0, .1) 0 20px 25px -5px, rgba(0, 0, 0, .1) 0 8px 10px -6px;
+    --shadow-steep-sm: rgba(4, 23, 43, .05) 0 0 0 1px, rgba(0, 0, 0, .06) 0 10px 20px -8px, rgba(0, 0, 0, .05) 0 3px 6px -4px;
+    --shadow-pop: rgba(4, 23, 43, .06) 0 0 0 1px, rgba(0, 0, 0, .12) 0 28px 48px -12px, rgba(0, 0, 0, .08) 0 10px 16px -8px;
+
+    --hairline: rgba(163, 166, 175, .28);
+    --sidebar-w: 240px;
+    --sidebar-w-c: 76px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    letter-spacing: -0.009em;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--fog);
+    min-width: 1180px;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; letter-spacing: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+  input, textarea, select { font-family: inherit; letter-spacing: inherit; font-size: inherit; color: inherit; }
+  input:focus, textarea:focus, select:focus { outline: none; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .mono { font-family: var(--font-mono); }
+  ::selection { background: var(--apricot); color: var(--rust); }
+
+  /* ==========================================================================
+     2 · 应用骨架（Fog 侧边栏 240px + 主区）
+     ========================================================================== */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w);
+    background: var(--fog); display: flex; flex-direction: column;
+    padding: 20px 14px 16px; z-index: 40; overflow: hidden; white-space: nowrap;
+    transition: width .28s cubic-bezier(.4, 0, .2, 1);
+  }
+  .app.collapsed .sidebar { width: var(--sidebar-w-c); }
+  .app.collapsed .main { margin-left: var(--sidebar-w-c); }
+  .main { flex: 1; margin-left: var(--sidebar-w); transition: margin-left .28s cubic-bezier(.4, 0, .2, 1); min-width: 0; }
+
+  .side-logo { display: flex; align-items: center; gap: 10px; padding: 4px 10px 18px; }
+  .side-logo .mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: #fff;
+    font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .side-logo .word { font-size: 16px; font-weight: 500; }
+  .side-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; margin: 0 -6px; padding: 0 6px; }
+  .side-scroll::-webkit-scrollbar { width: 4px; }
+  .side-scroll::-webkit-scrollbar-thumb { background: rgba(163, 166, 175, .35); border-radius: 4px; }
+  .nav-group-label { font-size: 12px; font-weight: 500; color: var(--graphite); letter-spacing: .06em; padding: 16px 12px 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 14.5px; font-weight: 450;
+    color: var(--ink); transition: background .15s; text-align: left;
+  }
+  .nav-item:hover { background: rgba(23, 25, 28, .05); }
+  .nav-item.active { background: var(--pwhite); box-shadow: var(--shadow-steep-sm); }
+  .nav-item .ic { color: var(--graphite); display: flex; flex: none; }
+  .nav-item.active .ic { color: var(--ink); }
+  .nav-item .lbl { display: inline-flex; align-items: center; min-width: 0; }
+  .nav-item .chev { margin-left: auto; color: var(--dove); display: flex; transition: transform .2s; }
+  .nav-item.open .chev { transform: rotate(90deg); }
+  .nav-children { overflow: hidden; max-height: 0; transition: max-height .25s ease; }
+  .nav-children.open { max-height: 260px; }
+  .nav-child {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 6px 12px 6px 41px; font-size: 13.5px; font-weight: 430; color: var(--ash);
+    border-radius: 10px; transition: color .15s; width: 100%; text-align: left;
+  }
+  .nav-child:hover { color: var(--ink); }
+  .nav-child.active { color: var(--rust); font-weight: 500; }
+  .nav-child .badge-mini {
+    font-size: 10.5px; font-weight: 500; color: var(--rust); background: var(--apricot);
+    border-radius: var(--r-pill); padding: 1px 6px; letter-spacing: 0;
+  }
+  .nav-child .badge-mini.plain { color: var(--graphite); background: rgba(23, 25, 28, .05); }
+  .side-foot { padding-top: 12px; border-top: 1px solid var(--hairline); margin-top: 10px; }
+  .side-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; width: 100%; }
+  .side-user:hover { background: rgba(23, 25, 28, .05); }
+  .side-user .info { text-align: left; line-height: 1.25; }
+  .side-user .info .n { font-size: 13.5px; font-weight: 500; }
+  .side-user .info .r { font-size: 11.5px; color: var(--graphite); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: var(--r-pill); flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--ink);
+  }
+  .av-1 { background: #d9ead3; } .av-2 { background: var(--sky); } .av-3 { background: var(--apricot); }
+  .collapse-btn {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 450; color: var(--graphite);
+    transition: background .15s, color .15s;
+  }
+  .collapse-btn:hover { background: rgba(23, 25, 28, .05); color: var(--ink); }
+  .collapse-btn .dot-note { width: 6px; height: 6px; border-radius: 50%; background: var(--rust); margin-left: auto; flex: none; }
+  .app.collapsed .collapse-btn .dot-note { display: none; }
+  .app.collapsed .side-logo { padding-left: 6px; }
+  .app.collapsed .side-logo .word,
+  .app.collapsed .nav-group-label,
+  .app.collapsed .nav-item .lbl,
+  .app.collapsed .nav-item .chev,
+  .app.collapsed .nav-children,
+  .app.collapsed .side-user .info,
+  .app.collapsed .collapse-btn .lbl { display: none; }
+  .app.collapsed .nav-item { justify-content: center; padding: 10px 0; }
+  .app.collapsed .side-user, .app.collapsed .collapse-btn { justify-content: center; }
+
+  /* ==========================================================================
+     3 · 页面与页头
+     ========================================================================== */
+  .page { max-width: 1460px; margin: 0 auto; padding: 32px 44px 88px; animation: pageIn .34s ease; }
+  /* 注意：不使用 transform 做入场，避免 .page 成为 fixed 子元素（弹窗/抽屉）的包含块 */
+  @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+  .page-head h1 {
+    font-family: var(--font-display); font-weight: 400; font-size: 44px;
+    line-height: 1.1; letter-spacing: -0.015em; color: var(--ink);
+  }
+  .page-head .desc { margin-top: 10px; font-size: 15px; color: var(--graphite); max-width: 760px; }
+  .page-head .aside { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; padding-top: 6px; }
+  .h1-row { display: flex; align-items: center; gap: 12px; }
+  .sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin: 32px 0 14px; }
+  .sec-head.first { margin-top: 0; }
+  .sec-title { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
+  .sec-sub { font-size: 13px; color: var(--graphite); font-weight: 400; margin-top: 4px; }
+  .sec-link { font-size: 13.5px; font-weight: 450; color: var(--ink); display: inline-flex; align-items: center; gap: 5px; }
+  .sec-link:hover { color: var(--rust); }
+
+  /* ==========================================================================
+     4 · 卡片 / KPI
+     ========================================================================== */
+  .card { background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 22px 24px; }
+  .card.warm { background: var(--apricot); box-shadow: none; }
+  .card.sky { background: var(--sky); box-shadow: none; }
+  .card.flat { box-shadow: none; background: transparent; padding: 0; }
+  .card-title { font-size: 15px; font-weight: 500; }
+  .card-note { font-size: 12.5px; color: var(--graphite); font-weight: 400; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .stat-grid.c4 { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid.c3 { grid-template-columns: repeat(3, 1fr); }
+  .stat-card { background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 18px 20px 16px; }
+  .stat-card.warm { background: var(--apricot); box-shadow: none; }
+  .stat-card.sky { background: var(--sky); box-shadow: none; }
+  .stat-label { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--graphite); }
+  .stat-dot { width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--ink); flex: none; }
+  .stat-dot.d-rust { background: var(--rust); } .stat-dot.d-dove { background: var(--dove); }
+  .stat-dot.d-sky { background: #93b6ee; } .stat-dot.d-apricot { background: #e9a97e; }
+  .stat-value { font-size: 29px; font-weight: 480; margin-top: 12px; line-height: 1.05; letter-spacing: -0.02em; }
+  .stat-value .unit { font-size: 13.5px; font-weight: 430; color: var(--graphite); margin-left: 4px; letter-spacing: 0; }
+  .stat-card.warm .stat-label { color: rgba(93, 42, 26, .78); }
+  .stat-card.warm .stat-value { color: var(--rust); }
+  .stat-sub { margin-top: 9px; font-size: 12.5px; color: var(--graphite); display: flex; align-items: center; gap: 6px; }
+  .stat-card.warm .stat-sub { color: rgba(93, 42, 26, .7); }
+
+  /* ==========================================================================
+     5 · 按钮 / 输入 / 胶囊
+     ========================================================================== */
+  .btn-fill {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    padding: 9px 18px; font-size: 14px; font-weight: 450;
+    transition: background .15s, transform .1s; white-space: nowrap;
+  }
+  .btn-fill:hover { background: #2a2d33; }
+  .btn-fill:active { transform: scale(.985); }
+  .btn-fill:disabled { background: var(--dove); cursor: not-allowed; transform: none; }
+  .btn-line {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    background: var(--pwhite); color: var(--ink); border-radius: var(--r-pill);
+    padding: 8px 16px; font-size: 14px; font-weight: 450;
+    box-shadow: inset 0 0 0 1px var(--hairline); transition: background .15s, box-shadow .15s; white-space: nowrap;
+  }
+  .btn-line:hover { background: var(--fog); box-shadow: inset 0 0 0 1px var(--dove); }
+  .btn-line.danger { color: var(--rust); }
+  .btn-line.danger:hover { background: rgba(251, 225, 209, .5); }
+  .btn-text {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 450;
+    color: var(--ink); padding: 6px 4px; border-radius: 8px; transition: color .15s;
+  }
+  .btn-text:hover { color: var(--rust); }
+  .btn-text.muted { color: var(--graphite); }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: var(--r-pill); display: inline-flex;
+    align-items: center; justify-content: center; color: var(--graphite);
+    transition: background .15s, color .15s; flex: none;
+  }
+  .icon-btn:hover { background: rgba(23, 25, 28, .06); color: var(--ink); }
+  .icon-btn.rust:hover { color: var(--rust); background: rgba(251, 225, 209, .6); }
+
+  .search {
+    display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px;
+    background: var(--pwhite); border-radius: var(--r-pill);
+    box-shadow: inset 0 0 0 1px var(--hairline); color: var(--graphite);
+    transition: box-shadow .15s;
+  }
+  .search:focus-within { box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .search input { flex: 1; border: none; background: transparent; font-size: 13.5px; color: var(--ink); min-width: 0; }
+  .search input::placeholder { color: var(--dove); }
+
+  .select {
+    display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px;
+    background: var(--pwhite); border-radius: var(--r-pill); font-size: 13.5px; font-weight: 450;
+    box-shadow: inset 0 0 0 1px var(--hairline); color: var(--ink); transition: box-shadow .15s;
+  }
+  .select:hover { box-shadow: inset 0 0 0 1px var(--dove); }
+  .select .ic { color: var(--graphite); }
+
+  .seg {
+    display: inline-flex; background: rgba(23, 25, 28, .05); border-radius: var(--r-pill); padding: 3px; gap: 2px;
+  }
+  .seg button {
+    padding: 6px 14px; border-radius: var(--r-pill); font-size: 13px; font-weight: 450;
+    color: var(--graphite); transition: all .16s; white-space: nowrap;
+  }
+  .seg button:hover { color: var(--ink); }
+  .seg button.on { background: var(--pwhite); color: var(--ink); box-shadow: var(--shadow-steep-sm); }
+
+  .tabs { display: flex; align-items: center; gap: 26px; border-bottom: 1px solid var(--hairline); }
+  .tabs button {
+    position: relative; padding: 0 0 12px; font-size: 14.5px; font-weight: 450; color: var(--graphite);
+    transition: color .15s;
+  }
+  .tabs button:hover { color: var(--ink); }
+  .tabs button.on { color: var(--ink); }
+  .tabs button.on::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    background: var(--ink); border-radius: 2px;
+  }
+  .tabs .count { font-size: 11.5px; color: var(--dove); margin-left: 5px; font-variant-numeric: tabular-nums; }
+
+  /* 标签 / 徽章 */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px; flex: none;
+    font-size: 12px; font-weight: 450; padding: 3px 9px; border-radius: var(--r-pill); letter-spacing: 0;
+  }
+  .pill.solid { background: var(--ink); color: #fff; }
+  .pill.fog { background: var(--fog); color: var(--graphite); }
+  .pill.apricot { background: var(--apricot); color: var(--rust); }
+  .pill.sky { background: var(--sky); color: #2b5391; }
+  .pill.line { background: var(--pwhite); color: var(--graphite); box-shadow: inset 0 0 0 1px var(--hairline); }
+  .pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
+  .tag-weak {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--rust);
+    background: rgba(251, 225, 209, .72); border-radius: 8px; padding: 2px 7px; letter-spacing: 0;
+  }
+  .money-pos { color: var(--pos); }
+  .money-neg { color: var(--neg); }
+
+  /* ==========================================================================
+     6 · 表格
+     ========================================================================== */
+  .tbl-card { background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); overflow: hidden; }
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl thead th {
+    font-size: 12.5px; font-weight: 450; color: var(--graphite); text-align: left;
+    padding: 14px 16px; border-bottom: 1px solid var(--hairline); white-space: nowrap; letter-spacing: 0;
+  }
+  .tbl thead th.num { text-align: right; }
+  .tbl thead th.mid { text-align: center; }
+  .tbl tbody td {
+    padding: 14px 16px; font-size: 13.5px; border-bottom: 1px solid rgba(163, 166, 175, .16);
+    vertical-align: middle; color: var(--ash);
+  }
+  .tbl tbody tr:last-child td { border-bottom: none; }
+  .tbl tbody tr { transition: background .12s; }
+  .tbl tbody tr:hover { background: rgba(247, 247, 248, .85); }
+  .tbl tbody tr.clickable { cursor: pointer; }
+  .tbl tbody tr.legacy { background: rgba(251, 225, 209, .18); }
+  .tbl tbody tr.legacy:hover { background: rgba(251, 225, 209, .32); }
+  .tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tbl td.mid { text-align: center; }
+  .tbl .cell-main { font-size: 14px; font-weight: 480; color: var(--ink); }
+  .tbl .cell-sub { font-size: 12px; color: var(--graphite); margin-top: 3px; font-weight: 400; }
+  .tbl .row-actions { display: flex; align-items: center; gap: 2px; justify-content: flex-end; opacity: 0; transition: opacity .14s; }
+  .tbl tbody tr:hover .row-actions { opacity: 1; }
+  .tbl-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 20px; border-top: 1px solid var(--hairline); font-size: 13px; color: var(--graphite);
+  }
+  .pager { display: flex; align-items: center; gap: 6px; }
+  .pager button {
+    min-width: 30px; height: 30px; border-radius: 10px; font-size: 13px; color: var(--ash);
+    display: inline-flex; align-items: center; justify-content: center; padding: 0 8px;
+  }
+  .pager button:hover { background: var(--fog); color: var(--ink); }
+  .pager button.on { background: var(--ink); color: #fff; font-weight: 500; }
+
+  /* ==========================================================================
+     7 · 账户卡（网格视图）
+     ========================================================================== */
+  .acct-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .acct {
+    position: relative; background: var(--pwhite); border-radius: var(--r-card);
+    box-shadow: var(--shadow-steep-sm); padding: 20px 22px 18px; text-align: left;
+    transition: transform .16s cubic-bezier(.4, 0, .2, 1), box-shadow .16s;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .acct:hover { transform: translateY(-2px); box-shadow: var(--shadow-steep); }
+  .acct.off { background: rgba(255, 255, 255, .55); box-shadow: inset 0 0 0 1px var(--hairline); }
+  .acct.off .acct-name, .acct.off .acct-bal { color: var(--graphite); }
+  .acct-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .acct-ident { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .acct-glyph {
+    width: 38px; height: 38px; border-radius: 13px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--fog); color: var(--ink); box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+  .acct-glyph.bank { background: var(--sky); color: #24497f; box-shadow: none; }
+  .acct-glyph.wechat { background: #dcefdf; color: #1f6b3a; box-shadow: none; }
+  .acct-glyph.alipay { background: #dde8fb; color: #21549e; box-shadow: none; }
+  .acct-glyph.cash { background: var(--apricot); color: var(--rust); box-shadow: none; }
+  .acct-name { font-size: 15px; font-weight: 500; color: var(--ink); line-height: 1.3; }
+  .acct-no { font-size: 12px; color: var(--graphite); margin-top: 3px; font-family: var(--font-mono); letter-spacing: .01em; }
+  .acct-bal { font-size: 26px; font-weight: 480; letter-spacing: -0.02em; line-height: 1.1; }
+  .acct-bal .cur { font-size: 15px; font-weight: 430; color: var(--graphite); margin-right: 3px; }
+  .acct-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--graphite); }
+  .acct-flows { display: flex; align-items: center; gap: 14px; font-size: 12.5px; }
+  .acct-flows b { font-weight: 480; }
+  .acct-bar { height: 3px; border-radius: 3px; background: var(--fog); overflow: hidden; display: flex; }
+  .acct-bar i { height: 100%; display: block; }
+  .acct-flag {
+    display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--rust);
+    background: var(--apricot); border-radius: 10px; padding: 5px 9px; margin-top: 2px;
+  }
+
+  /* ==========================================================================
+     8 · 入口锁（模块密码）
+     ========================================================================== */
+  .lock-stage { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 24px 80px; }
+  .lock-card {
+    width: 440px; background: var(--pwhite); border-radius: 28px; box-shadow: var(--shadow-steep);
+    padding: 34px 36px 30px; position: relative; overflow: hidden;
+  }
+  .lock-card::before {
+    content: ""; position: absolute; inset: -60% -30% auto -30%; height: 220px;
+    background: radial-gradient(60% 60% at 50% 50%, rgba(251, 225, 209, .9), rgba(251, 225, 209, 0) 70%);
+    pointer-events: none;
+  }
+  .lock-glyph {
+    width: 46px; height: 46px; border-radius: 15px; background: var(--ink); color: #fff;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .lock-kicker { font-size: 12px; font-weight: 500; color: var(--graphite); letter-spacing: .08em; margin-top: 20px; text-transform: uppercase; }
+  .lock-title { font-family: var(--font-display); font-size: 34px; line-height: 1.14; letter-spacing: -0.02em; margin-top: 8px; font-weight: 400; }
+  .lock-desc { font-size: 13.5px; color: var(--graphite); margin-top: 10px; line-height: 1.65; }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field-label { font-size: 12.5px; font-weight: 450; color: var(--graphite); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .field-label .req { color: var(--rust); }
+  .field-hint { font-size: 11.5px; color: var(--dove); line-height: 1.5; }
+  .field-error { font-size: 11.5px; color: #b3261e; display: flex; align-items: center; gap: 4px; }
+  .input-wrap {
+    display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 14px;
+    background: var(--fog); border-radius: var(--r-input); transition: box-shadow .15s, background .15s;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+  .input-wrap:focus-within { background: var(--pwhite); box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .input-wrap.err { box-shadow: inset 0 0 0 1.5px #d96a63; background: #fff8f7; }
+  .input-wrap input { flex: 1; border: none; background: transparent; font-size: 14.5px; min-width: 0; }
+  .input-wrap input::placeholder { color: var(--dove); }
+  .lock-pw input { letter-spacing: .18em; font-variant-numeric: tabular-nums; }
+  .pw-toggle { font-size: 12px; color: var(--graphite); padding: 4px 6px; border-radius: 8px; flex: none; }
+  .pw-toggle:hover { color: var(--ink); background: rgba(23, 25, 28, .05); }
+  .lock-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+  .lock-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--graphite); }
+  .attempts { display: flex; align-items: center; gap: 5px; }
+  .attempts i { width: 6px; height: 6px; border-radius: 50%; background: var(--dove); display: block; }
+  .attempts i.used { background: #d96a63; }
+  .lock-foot { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--hairline); display: flex; flex-direction: column; gap: 8px; }
+  .lock-foot .ln { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--graphite); line-height: 1.6; }
+  .shake { animation: shake .32s cubic-bezier(.36, .07, .19, .97); }
+  @keyframes shake {
+    10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(3px); }
+    30%, 50%, 70% { transform: translateX(-5px); } 40%, 60% { transform: translateX(5px); }
+  }
+  .lock-timer { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .lock-timer .ic { color: var(--dove); }
+
+  /* ==========================================================================
+     9 · 抽屉 / 弹窗
+     ========================================================================== */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(23, 25, 28, .34); backdrop-filter: blur(2px);
+    z-index: 90; animation: fadeIn .18s ease both;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .drawer {
+    position: fixed; top: 12px; right: 12px; bottom: 12px; width: 500px; z-index: 95;
+    background: var(--pwhite); border-radius: 26px; box-shadow: var(--shadow-pop);
+    display: flex; flex-direction: column; overflow: hidden;
+    animation: drawerIn .26s cubic-bezier(.4, 0, .2, 1) both;
+  }
+  @keyframes drawerIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  .drawer-head { padding: 22px 24px 16px; border-bottom: 1px solid var(--hairline); }
+  .drawer-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px 24px; }
+  .drawer-foot { padding: 14px 24px; border-top: 1px solid var(--hairline); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+  .modal-wrap { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal {
+    width: 560px; max-height: calc(100vh - 64px); background: var(--pwhite); border-radius: 26px;
+    box-shadow: var(--shadow-pop); display: flex; flex-direction: column; overflow: hidden;
+    animation: modalIn .22s cubic-bezier(.4, 0, .2, 1) both; position: relative;
+  }
+  .modal.wide { width: 640px; }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: none; } }
+  .modal-head { padding: 22px 24px 14px; }
+  .modal-head h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.012em; }
+  .modal-head p { font-size: 12.5px; color: var(--graphite); margin-top: 6px; line-height: 1.6; }
+  .modal-body { padding: 6px 24px 20px; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 16px; }
+  .modal-foot { padding: 14px 24px 18px; border-top: 1px solid var(--hairline); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .modal-foot .right { display: flex; align-items: center; gap: 8px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+  /* 复选 / 单选 */
+  .check {
+    display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 14px;
+    background: var(--fog); cursor: pointer; transition: background .15s, box-shadow .15s; text-align: left; width: 100%;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+  .check:hover { background: #f2f2f4; }
+  .check.on { background: var(--pwhite); box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .check .box {
+    width: 18px; height: 18px; border-radius: 6px; flex: none; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    box-shadow: inset 0 0 0 1.5px var(--dove); background: var(--pwhite);
+  }
+  .check.on .box, .box.on { background: var(--ink); box-shadow: none; color: #fff; }
+  .check .box.round { border-radius: 50%; }
+  .check .t { display: block; font-size: 13.5px; font-weight: 450; color: var(--ink); }
+  .check .s { display: block; font-size: 12px; color: var(--graphite); margin-top: 2px; line-height: 1.5; }
+
+  /* 账户选择行 */
+  .acct-pick { display: flex; flex-direction: column; gap: 7px; }
+  .acct-pick-row {
+    display: flex; align-items: center; gap: 11px; padding: 11px 13px; border-radius: 14px;
+    background: var(--fog); width: 100%; text-align: left; transition: background .14s, box-shadow .14s;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+  .acct-pick-row:hover { background: #f1f1f3; }
+  .acct-pick-row.on { background: var(--pwhite); box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .acct-pick-row .glyph {
+    width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex: none;
+    background: var(--pwhite); color: var(--ink); box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+  .acct-pick-row.on .glyph { background: var(--apricot); box-shadow: none; color: var(--rust); }
+  .acct-pick-row .nm { font-size: 13.5px; font-weight: 450; color: var(--ink); }
+  .acct-pick-row .mt { font-size: 11.5px; color: var(--graphite); margin-top: 2px; font-family: var(--font-mono); }
+  .acct-pick-row .bal { margin-left: auto; font-size: 13px; font-weight: 480; font-variant-numeric: tabular-nums; }
+
+  /* 金额输入 */
+  .money-in {
+    display: flex; align-items: stretch; border-radius: var(--r-input); overflow: hidden;
+    background: var(--fog); box-shadow: inset 0 0 0 1px transparent; transition: box-shadow .15s, background .15s;
+  }
+  .money-in:focus-within { background: var(--pwhite); box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .money-in .cur { display: flex; align-items: center; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--graphite); }
+  .money-in input { flex: 1; height: 44px; border: none; background: transparent; font-size: 16px; font-variant-numeric: tabular-nums; padding-right: 12px; }
+  .money-in.out input { color: var(--neg); }
+  .money-in.in input { color: var(--pos); }
+
+  /* 详情 / 说明条 */
+  .banner {
+    display: flex; align-items: flex-start; gap: 10px; border-radius: var(--r-input);
+    padding: 13px 16px; font-size: 13px; line-height: 1.72;
+  }
+  .banner > div { flex: 1; min-width: 0; }
+  .banner b { margin: 0 1px; }
+  .banner.warm { background: rgba(251, 225, 209, .55); color: var(--rust); }
+  .banner.sky { background: rgba(211, 227, 252, .55); color: #2b5391; }
+  .banner.fog { background: var(--fog); color: var(--ash); }
+  .banner b { font-weight: 500; }
+  .banner .ic { flex: none; margin-top: 1px; }
+
+  .kv { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; font-size: 13.5px; }
+  .kv + .kv { border-top: 1px solid rgba(163, 166, 175, .16); }
+  .kv .k { color: var(--graphite); }
+  .kv .v { font-weight: 450; text-align: right; }
+  .ledger-math { background: var(--fog); border-radius: var(--r-input); padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; }
+  .ledger-math .row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--ash); }
+  .ledger-math .row b { font-weight: 480; font-variant-numeric: tabular-nums; }
+  .ledger-math .row.total { border-top: 1px dashed var(--dove); padding-top: 9px; color: var(--ink); font-weight: 500; }
+  .ledger-math .row.total b { font-size: 16px; }
+
+  /* 下拉（自绘，避免原生 select 破坏 Steep 观感） */
+  .dropdown { position: relative; }
+  .menu {
+    position: absolute; top: calc(100% + 6px); left: 0; min-width: 190px; z-index: 60;
+    background: var(--pwhite); border-radius: 16px; box-shadow: var(--shadow-pop); padding: 6px;
+    animation: modalIn .14s ease both;
+  }
+  .menu.right { left: auto; right: 0; }
+  .menu button {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+    padding: 8px 10px; border-radius: 10px; font-size: 13.5px; color: var(--ash); text-align: left;
+  }
+  .menu button:hover { background: var(--fog); color: var(--ink); }
+  .menu button.on { color: var(--ink); font-weight: 500; }
+  .menu .div { height: 1px; background: var(--hairline); margin: 5px 4px; }
+
+  /* 空态 */
+  .empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 54px 24px; gap: 8px; }
+  .empty .glyph { width: 44px; height: 44px; border-radius: 14px; background: var(--fog); color: var(--graphite); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+  .empty h4 { font-size: 15px; font-weight: 500; }
+  .empty p { font-size: 13px; color: var(--graphite); max-width: 360px; line-height: 1.65; }
+
+  /* ==========================================================================
+     10 · 设计说明面板 / Toast / 提示
+     ========================================================================== */
+  .notes-panel {
+    position: fixed; right: 26px; bottom: 22px; z-index: 120; width: 404px; max-height: 64vh; overflow-y: auto;
+    background: var(--pwhite); border-radius: 22px; box-shadow: var(--shadow-pop); padding: 20px 22px;
+    animation: modalIn .2s ease both;
+  }
+  .notes-panel h3 { font-size: 15px; font-weight: 500; }
+  .notes-panel .sub { font-size: 12px; color: var(--graphite); margin-top: 4px; margin-bottom: 14px; line-height: 1.6; }
+  .note-item { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid rgba(163, 166, 175, .18); font-size: 12.5px; line-height: 1.65; color: var(--ash); }
+  .note-item .no { font-size: 10.5px; font-weight: 500; color: var(--rust); background: var(--apricot); border-radius: 6px; padding: 1px 5px; height: 18px; flex: none; }
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 200;
+    background: var(--ink); color: #fff; font-size: 13.5px; padding: 10px 20px; border-radius: var(--r-pill);
+    box-shadow: var(--shadow-steep); animation: toastIn .22s ease both; max-width: 70vw;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  .toast.bad { background: #8f2a22; }
+
+  /* 附录（工程影响面） */
+  .doc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .doc-card { background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 20px 22px; }
+  .doc-card h3 { font-size: 14.5px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .doc-card h3 .idx { font-size: 10.5px; font-weight: 500; color: var(--rust); background: var(--apricot); border-radius: 6px; padding: 1px 6px; }
+  .doc-card ul { list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
+  .doc-card li { position: relative; font-size: 12.5px; line-height: 1.72; color: var(--ash); padding-left: 13px; }
+  .doc-card li::before { content: ""; position: absolute; left: 0; top: 8px; width: 4px; height: 4px; border-radius: 50%; background: var(--dove); }
+  .doc-card code {
+    font-family: var(--font-mono); font-size: 11.5px; background: var(--fog); border-radius: 5px;
+    padding: 1px 5px; color: var(--ink);
+  }
+  .doc-card .warn { color: var(--rust); }
+  .doc-note { font-size: 12px; color: var(--graphite); margin-top: 12px; line-height: 1.7; }
+  .doc-tbl { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .doc-tbl th { font-size: 11.5px; font-weight: 450; color: var(--graphite); text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--hairline); }
+  .doc-tbl td { font-size: 12px; padding: 8px; border-bottom: 1px solid rgba(163, 166, 175, .15); color: var(--ash); vertical-align: top; line-height: 1.6; }
+  .doc-tbl code { font-family: var(--font-mono); font-size: 11px; background: var(--fog); border-radius: 4px; padding: 1px 4px; color: var(--ink); }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .flow .n { font-size: 12px; background: var(--fog); border-radius: 9px; padding: 5px 10px; color: var(--ash); }
+  .flow .ar { color: var(--dove); font-size: 12px; }
+  .design-note {
+    margin-top: 14px; padding: 12px 15px; border-radius: 14px; background: var(--apricot);
+    font-size: 12.5px; line-height: 1.7; color: var(--rust);
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+/* ==========================================================================================
+   A · 图标（描边单色 1.75px，与 Steep hairline 语言一致）
+   ========================================================================================== */
+function Ic({ n, size = 16, sw = 1.75, className = "", style }) {
+  const P = {
+    search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.7-3.7" /></>,
+    plus: <path d="M5 12h14M12 5v14" />,
+    chevDown: <path d="m6 9 6 6 6-6" />,
+    chevRight: <path d="m9 18 6-6-6-6" />,
+    chevLeft: <path d="m15 18-6-6 6-6" />,
+    arrowLeft: <><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></>,
+    arrowRight: <><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></>,
+    lock: <><rect x="3" y="11" width="18" height="11" rx="2.5" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
+    unlock: <><rect x="3" y="11" width="18" height="11" rx="2.5" /><path d="M7 11V7a5 5 0 0 1 9.6-2" /></>,
+    key: <><circle cx="7.5" cy="15.5" r="4.5" /><path d="m10.7 12.3 9.1-9.1" /><path d="m17 4.5 2.5 2.5" /><path d="m14.5 7 2.5 2.5" /></>,
+    eye: <><path d="M2.5 12S5.5 5 12 5s9.5 7 9.5 7-3 7-9.5 7-9.5-7-9.5-7Z" /><circle cx="12" cy="12" r="3" /></>,
+    eyeOff: <><path d="M10.6 5.2A9.9 9.9 0 0 1 12 5c6.5 0 9.5 7 9.5 7a15 15 0 0 1-2.4 3.4" /><path d="M6.3 6.3A15 15 0 0 0 2.5 12S5.5 19 12 19a9.7 9.7 0 0 0 4.2-.9" /><path d="M3 3l18 18" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></>,
+    wallet: <><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v3" /><path d="M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3" /><path d="M21 10h-3a2 2 0 0 0 0 4h3" /></>,
+    landmark: <><path d="M3 22h18" /><path d="M6 18v-7M10 18v-7M14 18v-7M18 18v-7" /><path d="M12 2 3 7h18Z" /></>,
+    cash: <><rect x="2" y="6" width="20" height="12" rx="2.5" /><circle cx="12" cy="12" r="2.5" /><path d="M6 12h.01M18 12h.01" /></>,
+    chat: <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.8L3 21l1.9-4.2A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4Z" />,
+    qr: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><path d="M14 14h3v3h-3zM20 20h1M20 14v2" /></>,
+    receipt: <><path d="M5 3v18l2-1.2L9 21l2-1.2L13 21l2-1.2L17 21l2-1.2V3l-2 1.2L15 3l-2 1.2L11 3 9 4.2 7 3Z" /><path d="M9 8h6M9 12h6" /></>,
+    book: <><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22Z" /><path d="M4 17.5h16" /></>,
+    coins: <><circle cx="9" cy="9" r="5.5" /><path d="M15.5 3.6a5.5 5.5 0 0 1 0 10.3" /><path d="M19.5 8.8v6.7a4.5 4.5 0 0 1-4.5 4.5H9" /></>,
+    download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /><path d="M12 15V3" /></>,
+    filter: <path d="M3 5h18l-7 8v6l-4 2v-8Z" />,
+    pencil: <><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /><path d="M12 20h9" /></>,
+    trash: <><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M10 11v6M14 11v6" /></>,
+    archive: <><rect x="3" y="4" width="18" height="4" rx="1.5" /><path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></>,
+    power: <><path d="M18.4 6a9 9 0 1 1-12.8 0" /><path d="M12 2v8" /></>,
+    check: <path d="m20 6-11 11-5-5" />,
+    checkCircle: <><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1" /><path d="m9 11 3 3L22 4" /></>,
+    x: <path d="M18 6 6 18M6 6l12 12" />,
+    info: <><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" /></>,
+    alert: <><path d="M12 3 2.5 20h19Z" /><path d="M12 9v5M12 17h.01" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></>,
+    users: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 5.2a3.5 3.5 0 0 1 0 5.6" /><path d="M18 20a6.6 6.6 0 0 0-1.6-4.3" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.4-2.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.6a2 2 0 1 1 4 0A1.7 1.7 0 0 0 16.7 6l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4Z" /></>,
+    layout: <><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></>,
+    list: <><path d="M8 6h13M8 12h13M8 18h13" /><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" /></>,
+    trend: <><path d="m22 7-8.5 8.5-5-5L2 17" /><path d="M16 7h6v6" /></>,
+    scale: <><path d="M12 3v18" /><path d="M6 21h12" /><path d="m3 8 4-4 4 4" /><path d="m13 8 4-4 4 4" /><path d="M3 8a3 3 0 0 0 8 0" /><path d="M13 8a3 3 0 0 0 8 0" /></>,
+    link: <><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1" /><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1" /></>,
+    panelLeft: <><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M9 3v18" /></>,
+    building: <><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18" /><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path d="M10 6h4M10 10h4M10 14h4M10 18h4" /></>,
+    file: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h4" /></>,
+  };
+  return (
+    <svg className={"ic " + className} width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"
+      style={style} aria-hidden="true">{P[n] || null}</svg>
+  );
+}
+
+/* ==========================================================================================
+   B · 演示数据（贴近业务，全部为假数据）
+   账户余额口径 = 期初余额 + Σ(流入 - 流出) + Σ(对账调整)
+   ========================================================================================== */
+const ACCOUNT_TYPES = {
+  bank:    { label: "银行卡",  icon: "landmark", tone: "bank" },
+  corp:    { label: "对公账户", icon: "building", tone: "bank" },
+  wechat:  { label: "微信",    icon: "chat",     tone: "wechat" },
+  alipay:  { label: "支付宝",  icon: "qr",       tone: "alipay" },
+  cash:    { label: "现金",    icon: "cash",     tone: "cash" },
+};
+
+const INITIAL_ACCOUNTS = [
+  {
+    id: "acc-1", name: "工商银行 · 基本户", type: "corp", no: "6222 **** 4821",
+    holder: "杭州普房资产管理有限公司", opening: 1260000, openingDate: "2026-01-01",
+    status: "active", note: "公司主账户，项目收付款与税费统一走此户。",
+    flows: { in: 8342000, out: 6913400 }, adjust: -12000, lastDate: "2026-10-19", count: 148,
+  },
+  {
+    id: "acc-2", name: "招商银行 · 尾号 8830", type: "bank", no: "6225 **** 8830",
+    holder: "陈明远", opening: 268000, openingDate: "2026-02-15",
+    status: "active", note: "收购垫资与首付走这个户，个人卡但只用于项目。",
+    flows: { in: 1382000, out: 1304600 }, adjust: 0, lastDate: "2026-10-18", count: 63,
+  },
+  {
+    id: "acc-3", name: "微信 · 收款码", type: "wechat", no: "pf-****-0921",
+    holder: "普房资产", opening: 12600, openingDate: "2026-03-01",
+    status: "active", note: "定金、验房费等小额收款。",
+    flows: { in: 86400, out: 61300 }, adjust: 0, lastDate: "2026-10-20", count: 41,
+  },
+  {
+    id: "acc-4", name: "现金 · 备用金", type: "cash", no: "—",
+    holder: "陈明远（保管）", opening: 30000, openingDate: "2026-01-01",
+    status: "active", note: "零星人工、快递、门锁等无法走公账的小额支出。",
+    flows: { in: 52000, out: 71800 }, adjust: 800, lastDate: "2026-10-17", count: 27,
+  },
+  {
+    id: "acc-5", name: "支付宝 · 尾号 6672", type: "alipay", no: "2088 **** 6672",
+    holder: "陈明远", opening: 8000, openingDate: "2026-04-10",
+    status: "active", note: "线上平台服务费、押金支付。",
+    flows: { in: 22400, out: 19700 }, adjust: 0, lastDate: "2026-10-11", count: 9,
+  },
+  {
+    id: "acc-6", name: "建设银行 · 已销户", type: "bank", no: "6217 **** 2019",
+    holder: "杭州普房资产管理有限公司", opening: 0, openingDate: "2026-01-01",
+    status: "off", note: "2026-09-30 销户，历史流水保留，不可再记账。",
+    flows: { in: 402000, out: 402000 }, adjust: 0, lastDate: "2026-09-28", count: 22,
+  },
+];
+
+/* 对账调整记录（属于某个账户，会计入余额推导） */
+const INITIAL_ADJUSTS = [
+  { id: "adj-1", accountId: "acc-1", date: "2026-07-31", amount: -12000, reason: "银行手续费与电汇费对不齐，按对账单销差", operator: "陈明远", createdAt: "2026-07-31 18:22" },
+  { id: "adj-2", accountId: "acc-4", date: "2026-09-30", amount: 800, reason: "月末现金盘点多出 800，计入备用金", operator: "李慧", createdAt: "2026-09-30 19:05" },
+];
+
+/* 项目账本流水（重点：新增 accountId 字段；accountId 为 null 表示「未走账户」） */
+const INITIAL_RECORDS = [
+  { id: "r-101", project: "阳光里 3-2-1801", code: "XM-2026-0018", subject: "购房定金", stage: "签约", date: "2026-10-19", out: 50000, in: 0, payer: "工商银行 · 基本户", payee: "房东-王建华", accountId: "acc-1", by: "陈明远", voucher: 2 },
+  { id: "r-102", project: "阳光里 3-2-1801", code: "XM-2026-0018", subject: "购房首付", stage: "签约", date: "2026-10-18", out: 320000, in: 0, payer: "招商银行 · 尾号 8830", payee: "房东-王建华", accountId: "acc-2", by: "陈明远", voucher: 3 },
+  { id: "r-103", project: "碧云国际 9-1-1502", code: "XM-2026-0013", subject: "售房款", stage: "成交", date: "2026-10-17", out: 0, in: 2000000, payer: "买家-张伟", payee: "工商银行 · 基本户", accountId: "acc-1", by: "李慧", voucher: 4 },
+  { id: "r-104", project: "碧云国际 9-1-1502", code: "XM-2026-0013", subject: "交易税费(卖出)", stage: "成交", date: "2026-10-17", out: 86000, in: 0, payer: "招商银行 · 尾号 8830", payee: "税务局", accountId: "acc-2", by: "李慧", voucher: 1 },
+  { id: "r-105", project: "翠苑一区 7-1-502", code: "XM-2026-0021", subject: "水电改造", stage: "装修", date: "2026-10-16", out: 12400, in: 0, payer: "现金 · 备用金", payee: "施工-老周", accountId: "acc-4", by: "陈明远", voucher: 1 },
+  { id: "r-106", project: "翠苑一区 7-1-502", code: "XM-2026-0021", subject: "装修押金", stage: "装修", date: "2026-10-15", out: 5000, in: 0, payer: "微信 · 收款码", payee: "物业", accountId: "acc-3", by: "陈明远", voucher: 1 },
+  { id: "r-107", project: "景芳东区 2-3-901", code: "XM-2026-0009", subject: "跟投款", stage: "签约", date: "2026-10-14", out: 0, in: 260000, payer: "跟投-王总", payee: "—", accountId: null, by: "陈明远", voucher: 0 },
+  { id: "r-108", project: "景芳东区 2-3-901", code: "XM-2026-0009", subject: "平台服务费", stage: "挂牌", date: "2026-10-13", out: 3800, in: 0, payer: "支付宝 · 尾号 6672", payee: "安居客", accountId: "acc-5", by: "李慧", voucher: 1 },
+  { id: "r-109", project: "大浒东苑 5-2-1103", code: "XM-2026-0016", subject: "售房款", stage: "成交", date: "2026-10-12", out: 0, in: 1680000, payer: "买家-刘敏", payee: "工商银行 · 基本户", accountId: "acc-1", by: "李慧", voucher: 2 },
+  { id: "r-110", project: "大浒东苑 5-2-1103", code: "XM-2026-0016", subject: "月供利息", stage: "持有", date: "2026-10-10", out: 6840, in: 0, payer: "招商银行 · 尾号 8830", payee: "招商银行", accountId: "acc-2", by: "陈明远", voucher: 1 },
+  { id: "r-111", project: "三墩北苑 1-1-203", code: "XM-2026-0024", subject: "门锁更换", stage: "装修", date: "2026-10-09", out: 480, in: 0, payer: "现金 · 备用金", payee: "锁匠-小林", accountId: "acc-4", by: "陈明远", voucher: 0 },
+  { id: "r-112", project: "三墩北苑 1-1-203", code: "XM-2026-0024", subject: "购房尾款", stage: "签约", date: "2026-10-05", out: 480000, in: 0, payer: "建设银行 · 已销户", payee: "房东-赵强", accountId: "acc-6", by: "陈明远", voucher: 2 },
+  { id: "r-113", project: "朝晖六区 4-1-601", code: "XM-2026-0020", subject: "室内设计费", stage: "设计", date: "2026-10-03", out: 9800, in: 0, payer: "—", payee: "设计-小满工作室", accountId: null, by: "李慧", voucher: 1 },
+  { id: "r-114", project: "朝晖六区 4-1-601", code: "XM-2026-0020", subject: "验房费", stage: "签约", date: "2026-10-01", out: 0, in: 600, payer: "买家-陈先生", payee: "微信 · 收款码", accountId: "acc-3", by: "李慧", voucher: 1 },
+];
+
+const money = (v) => "¥" + Number(v || 0).toLocaleString("zh-CN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const wan = (v) => {
+  const n = Number(v || 0);
+  return (n / 10000).toLocaleString("zh-CN", { minimumFractionDigits: 0, maximumFractionDigits: n % 10000 === 0 ? 0 : 1 });
+};
+const signed = (v) => (Number(v) > 0 ? "+" : Number(v) < 0 ? "−" : "") + money(Math.abs(Number(v) || 0));
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+/* 账户余额推导：期初 + 流入 − 流出 + 调整 */
+function accountBalance(acc, adjusts) {
+  const adj = adjusts.filter((a) => a.accountId === acc.id).reduce((s, a) => s + a.amount, 0);
+  return acc.opening + acc.flows.in - acc.flows.out + adj;
+}
+function accountAdjustSum(acc, adjusts) {
+  return adjusts.filter((a) => a.accountId === acc.id).reduce((s, a) => s + a.amount, 0);
+}
+
+/* ==========================================================================================
+   C · 侧边栏（导航结构：财务管理组改名「项目账本」+ 新增「资金账户」）
+   ========================================================================================== */
+const NAV = [
+  { kind: "item", id: "dashboard", label: "工作台", icon: "layout" },
+  { section: "业务", items: [
+    { id: "properties", label: "房源管理", icon: "building" },
+    { id: "projects", label: "项目管理", icon: "list" },
+    { id: "leads", label: "线索中心", icon: "users" },
+  ]},
+  { section: "财务", items: [
+    { id: "ledger", label: "项目账本", icon: "wallet", children: [
+      { id: "ledger", label: "总览", tag: null },
+      { id: "subjects", label: "科目", tag: null },
+      { id: "investments", label: "跟投", tag: null },
+    ]},
+    { id: "accounts", label: "资金账户", icon: "landmark", badge: "锁", children: [
+      { id: "accounts", label: "账户总览", tag: "要密码" },
+      { id: "accounts-ledger", label: "账户流水", tag: "要密码" },
+    ]},
+  ]},
+  { section: "系统", items: [
+    { id: "users", label: "用户管理", icon: "users" },
+    { id: "audit", label: "操作记录", icon: "file" },
+    { id: "settings", label: "设置", icon: "settings" },
+  ]},
+];
+
+function Sidebar({ page, go, collapsed, setCollapsed, openGroups, toggleGroup, onToggleNotes }) {
+  const renderItem = (item) => {
+    const active = page === item.id || (item.children || []).some((c) => c.id === page);
+    const hasKids = !!item.children;
+    const isOpen = openGroups[item.id] !== false && hasKids;
+    return (
+      <div key={item.id}>
+        <button
+          className={"nav-item" + (active ? " active" : "") + (isOpen ? " open" : "")}
+          onClick={() => (hasKids ? (toggleGroup(item.id), go(item.id)) : go(item.id))}
+          title={collapsed ? item.label : null}
+        >
+          <span className="ic"><Ic n={item.icon} size={16} /></span>
+          <span className="lbl">
+            <span>{item.label}</span>
+            {item.badge ? (
+              <span className="pill apricot" style={{ fontSize: 10, padding: "1px 5px", marginLeft: 6 }}>{item.badge}</span>
+            ) : null}
+          </span>
+          {hasKids && !collapsed ? <span className="chev"><Ic n="chevRight" size={13} /></span> : null}
+        </button>
+        {hasKids ? (
+          <div className={"nav-children" + (isOpen && !collapsed ? " open" : "")}>
+            {item.children.map((c) => (
+              <button key={c.id} className={"nav-child" + (page === c.id ? " active" : "")} onClick={() => go(c.id)}>
+                <span>{c.label}</span>
+                {c.tag ? <span className={c.tag === "需密码" ? "badge-mini" : "badge-mini plain"}>{c.tag}</span> : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
+  return (
+    <aside className="sidebar">
+      <div className="side-logo">
+        <span className="mark">P</span>
+        <span className="word">Profo</span>
+      </div>
+      <div className="side-scroll">
+        {NAV.map((g, i) =>
+          g.section ? (
+            <div key={g.section}>
+              <div className="nav-group-label">{g.section}</div>
+              {g.items.map(renderItem)}
+            </div>
+          ) : (
+            <div key={g.id}>{renderItem(g)}</div>
+          )
+        )}
+      </div>
+      <div className="side-foot">
+        <button className="side-user" onClick={() => window.dispatchEvent(new CustomEvent("d-toast", { detail: "演示：陈明远 · 管理员" }))}>
+          <span className="avatar av-1">陈</span>
+          <span className="info">
+            <div className="n">陈明远</div>
+            <div className="r">管理员</div>
+          </span>
+        </button>
+        <button className="collapse-btn" onClick={onToggleNotes} title="设计说明" aria-label="设计说明">
+          <Ic n="info" size={16} />
+          <span className="lbl">设计说明</span>
+          <span className="dot-note"></span>
+        </button>
+        <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? "展开菜单" : "收起菜单"} aria-label={collapsed ? "展开菜单" : "收起菜单"}>
+          <Ic n="panelLeft" size={16} />
+          <span className="lbl">{collapsed ? "展开菜单" : "收起菜单"}</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/* ==========================================================================================
+   D · 通用小组件
+   ========================================================================================== */
+function Pill({ tone = "fog", children, dot, className = "" }) {
+  return <span className={"pill " + tone + " " + className}>{dot ? <i className="dot" /> : null}{children}</span>;
+}
+
+function Banner({ tone = "fog", icon = "info", children }) {
+  return (
+    <div className={"banner " + tone}>
+      <Ic n={icon} size={15} />
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function Dropdown({ label, value, options, onChange, width }) {
+  const [open, setOpen] = React.useState(false);
+  const cur = options.find((o) => o.value === value);
+  React.useEffect(() => {
+    if (!open) return;
+    const h = () => setOpen(false);
+    window.addEventListener("click", h);
+    return () => window.removeEventListener("click", h);
+  }, [open]);
+  return (
+    <div className="dropdown" onClick={(e) => e.stopPropagation()}>
+      <button className="select" style={width ? { minWidth: width } : null} onClick={() => setOpen(!open)}>
+        <span style={{ color: value === "all" || !value ? "var(--graphite)" : "var(--ink)" }}>{cur ? cur.label : label}</span>
+        <Ic n="chevDown" size={13} />
+      </button>
+      {open ? (
+        <div className="menu">
+          {options.map((o) => (
+            <button key={o.value} className={o.value === value ? "on" : ""}
+              onClick={() => { onChange(o.value); setOpen(false); }}>
+              <span>{o.label}</span>
+              {o.value === value ? <Ic n="check" size={13} /> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Seg({ value, onChange, options }) {
+  return (
+    <div className="seg">
+      {options.map((o) => (
+        <button key={o.value} className={value === o.value ? "on" : ""} onClick={() => onChange(o.value)}>{o.label}</button>
+      ))}
+    </div>
+  );
+}
+
+function AccountGlyph({ type, size = 38, radius }) {
+  const t = ACCOUNT_TYPES[type] || ACCOUNT_TYPES.bank;
+  const style = { width: size, height: size, borderRadius: radius || Math.round(size / 3.2) };
+  return <span className={"acct-glyph " + t.tone} style={style}><Ic n={t.icon} size={Math.round(size * 0.48)} /></span>;
+}
+
+/* ==========================================================================================
+   E · 入口锁（屏 0）
+   ========================================================================================== */
+function LockScreen({ onUnlock, reason, attemptsLeft, locked, onReset, hasPassword, onSetPassword, onForgot }) {
+  const [pw, setPw] = React.useState("");
+  const [show, setShow] = React.useState(false);
+  const [err, setErr] = React.useState("");
+  const [shake, setShake] = React.useState(false);
+  const DEMO_PW = "888888";
+
+  const submit = () => {
+    if (locked) return;
+    if (pw.length < 6) { setErr("请输入 6 位数字密码"); return; }
+    if (pw === DEMO_PW) { setErr(""); onUnlock(); return; }
+    setErr("密码不正确，还可尝试 " + Math.max(attemptsLeft - 1, 0) + " 次");
+    setShake(true);
+    setTimeout(() => setShake(false), 340);
+  };
+
+  return (
+    <div className="lock-stage">
+      <div className={"lock-card" + (shake ? " shake" : "")}>
+        <div className="lock-glyph"><Ic n={locked ? "lock" : "key"} size={22} /></div>
+        <div className="lock-kicker">财务 · 需密码</div>
+        <h1 className="lock-title">资金账户</h1>
+        <p className="lock-desc">
+          {locked
+            ? "密码输错太多次，请 15 分钟后再试。"
+            : reason === "expired"
+              ? "太久没操作，已自动上锁。"
+              : "这里有钱。输密码才能看。"}
+        </p>
+
+        {!hasPassword ? (
+          <>
+            <div style={{ marginTop: 20 }}>
+              <Banner tone="warm" icon="alert">
+                还没设密码。先设 6 位数字。
+              </Banner>
+            </div>
+            <div className="lock-actions">
+              <button className="btn-fill" style={{ width: "100%", padding: "12px 18px" }} onClick={onSetPassword}>
+                <Ic n="key" size={15} /> 去设密码
+              </button>
+            </div>
+            <div className="lock-foot">
+              <div className="ln"><Ic n="info" size={13} /><span>密码只存加密结果，谁都查不到明文。</span></div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="field" style={{ marginTop: 22 }}>
+              <div className="field-label">
+                <span>密码 <span className="req">*</span></span>
+                <span style={{ color: "var(--dove)", fontWeight: 400 }}>6 位数字</span>
+              </div>
+              <div className={"input-wrap lock-pw" + (err ? " err" : "")}>
+                <Ic n="lock" size={15} style={{ color: "var(--graphite)" }} />
+                <input
+                  type={show ? "text" : "password"}
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="••••••"
+                  value={pw}
+                  disabled={locked}
+                  onChange={(e) => { setPw(e.target.value.replace(/\D/g, "").slice(0, 6)); setErr(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+                  autoFocus
+                />
+                <button className="pw-toggle" onClick={() => setShow(!show)}>
+                  <Ic n={show ? "eyeOff" : "eye"} size={14} />
+                </button>
+              </div>
+              {err ? <div className="field-error"><Ic n="alert" size={12} />{err}</div> : null}
+            </div>
+
+            <div className="lock-actions">
+              <button className="btn-fill" style={{ width: "100%", padding: "12px 18px", opacity: locked ? .45 : 1 }}
+                onClick={submit} disabled={locked}>
+                <Ic n="unlock" size={15} /> 进去
+              </button>
+              <div className="lock-row">
+                <span className="attempts">
+                  剩余尝试
+                  {[0, 1, 2].map((i) => <i key={i} className={i >= attemptsLeft ? "used" : ""} />)}
+                </span>
+                <button className="btn-text muted" onClick={onForgot}>
+                  忘了？<Ic n="chevRight" size={12} />
+                </button>
+              </div>
+            </div>
+
+            <div className="lock-foot">
+              <div className="ln"><Ic n="clock" size={13} /><span>进去后 30 分钟没操作，自动上锁。</span></div>
+              <div className="ln"><Ic n="info" size={13} /><span>演示密码 <b style={{ color: "var(--rust)" }}>888888</b></span></div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ==========================================================================================
+   F · 设置模块密码 / 重置（弹窗复用）
+   ========================================================================================== */
+function PasswordSetupModal({ mode, onClose, onDone }) {
+  const [p1, setP1] = React.useState("");
+  const [p2, setP2] = React.useState("");
+  const [old, setOld] = React.useState("");
+  const [err, setErr] = React.useState({});
+  const isReset = mode === "reset";
+  const isChange = mode === "change";
+
+  const submit = () => {
+    const e = {};
+    if (isReset && old.length !== 6) e.old = "请输入当前模块密码";
+    if (p1.length !== 6) e.p1 = "密码需为 6 位数字";
+    if (p2 !== p1) e.p2 = "两次输入不一致";
+    if (isReset && p1 === old) e.p1 = "新密码不能与当前密码相同";
+    if (/^(\d)\1{5}$/.test(p1)) e.p1 = "不要使用 6 位相同数字";
+    setErr(e);
+    if (Object.keys(e).length) return;
+    onDone();
+  };
+
+  return (
+    <>
+      <div className="scrim" onClick={onClose}></div>
+      <div className="modal-wrap" style={{ pointerEvents: "none" }}>
+        <div className="modal" style={{ pointerEvents: "auto" }}>
+          <div className="modal-head">
+            <h3>{isReset ? "重设密码" : isChange ? "改密码" : "设密码"}</h3>
+            <p>
+              这个密码只管资金账户，和登录密码分开。同事共用一把。
+            </p>
+          </div>
+          <div className="modal-body">
+            {isReset || isChange ? (
+              <div className="field">
+                <div className="field-label"><span>原密码 <span className="req">*</span></span></div>
+                <div className={"input-wrap" + (err.old ? " err" : "")}>
+                  <Ic n="lock" size={15} style={{ color: "var(--graphite)" }} />
+                  <input type="password" inputMode="numeric" maxLength={6} placeholder="••••••"
+                    value={old} onChange={(e) => setOld(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+                </div>
+                {err.old ? <div className="field-error"><Ic n="alert" size={12} />{err.old}</div> : null}
+              </div>
+            ) : null}
+            <div className="grid-2">
+              <div className="field">
+                <div className="field-label"><span>新密码 <span className="req">*</span></span></div>
+                <div className={"input-wrap" + (err.p1 ? " err" : "")}>
+                  <input type="password" inputMode="numeric" maxLength={6} placeholder="6 位数字"
+                    value={p1} onChange={(e) => setP1(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+                </div>
+                {err.p1 ? <div className="field-error"><Ic n="alert" size={12} />{err.p1}</div> : null}
+              </div>
+              <div className="field">
+                <div className="field-label"><span>再输一遍 <span className="req">*</span></span></div>
+                <div className={"input-wrap" + (err.p2 ? " err" : "")}>
+                  <input type="password" inputMode="numeric" maxLength={6} placeholder="6 位数字"
+                    value={p2} onChange={(e) => setP2(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+                </div>
+                {err.p2 ? <div className="field-error"><Ic n="alert" size={12} />{err.p2}</div> : null}
+              </div>
+            </div>
+            <Banner tone="fog" icon="info">
+              输错 5 次锁 15 分钟。密码只管进门，能不能改还看权限。
+            </Banner>
+          </div>
+          <div className="modal-foot">
+            <span style={{ fontSize: 12, color: "var(--graphite)" }}>密码只存加密结果，查不到明文。</span>
+            <div className="right">
+              <button className="btn-line" onClick={onClose}>取消</button>
+              <button className="btn-fill" onClick={submit}>{isReset ? "重设" : "保存"}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ==========================================================================================
+   G · 屏 1 · 资金账户总览（列表）
+   ========================================================================================== */
+function ScreenAccounts({
+  accounts, adjusts, records, view, setView, go, onOpenAccount, onNew, onEdit, onToggle,
+  onRecon, onLock, lockLeft, onChangePassword,
+}) {
+  const [q, setQ] = React.useState("");
+  const [typeFilter, setTypeFilter] = React.useState("all");
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [sort, setSort] = React.useState("balance");
+  const [noteOpen, setNoteOpen] = React.useState(true);
+  const [menuFor, setMenuFor] = React.useState(null);
+
+  const total = accounts.filter((a) => a.status === "active").reduce((s, a) => s + accountBalance(a, adjusts), 0);
+  const untracked = records.filter((r) => !r.accountId);
+  const untrackedAmt = untracked.reduce((s, r) => s + (r.in || 0) + (r.out || 0), 0);
+  const lastRecon = "2026-09-30";
+
+  const filtered = accounts.filter((a) => {
+    if (typeFilter !== "all" && a.type !== typeFilter) return false;
+    if (statusFilter !== "all" && a.status !== statusFilter) return false;
+    if (q.trim()) {
+      const hay = (a.name + a.no + a.holder + a.note).toLowerCase();
+      if (!hay.includes(q.trim().toLowerCase())) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    if (sort === "balance") return accountBalance(b, adjusts) - accountBalance(a, adjusts);
+    if (sort === "name") return a.name.localeCompare(b.name, "zh");
+    if (sort === "last") return (b.lastDate || "").localeCompare(a.lastDate || "");
+    return 0;
+  });
+
+  const typeOptions = [{ value: "all", label: "全部类型" }].concat(
+    Object.entries(ACCOUNT_TYPES).map(([k, v]) => ({ value: k, label: v.label }))
+  );
+
+  const openMenu = (id) => (e) => { e.stopPropagation(); setMenuFor(menuFor === id ? null : id); };
+
+  return (
+    <div className="page" data-screen-label="01 资金账户总览">
+      <div className="page-head">
+        <div>
+          <div className="h1-row">
+            <h1>资金账户</h1>
+            <button className="pill line" style={{ cursor: "pointer" }} onClick={onChangePassword} title="改密码">
+              <Ic n="unlock" size={11} /> 剩余 <span className="tnum">{lockLeft}</span>
+              <Ic n="chevDown" size={11} style={{ marginLeft: 2, color: "var(--graphite)" }} />
+            </button>
+          </div>
+          <p className="desc">钱分别在哪个账户。</p>
+        </div>
+        <div className="aside">
+          <button className="btn-text muted" onClick={() => window.dispatchEvent(new CustomEvent("d-toast", { detail: "演示：导出余额表" }))}>
+            <Ic n="download" size={14} /> 导出
+          </button>
+          <button className="btn-line danger" onClick={onLock}><Ic n="lock" size={14} /> 锁定</button>
+          <button className="btn-fill" onClick={onNew}><Ic n="plus" size={15} /> 新建账户</button>
+        </div>
+      </div>
+
+      {noteOpen ? (
+        <div style={{ marginBottom: 18 }}>
+          <div className="banner warm" style={{ alignItems: "flex-start" }}>
+            <Ic n="info" size={15} />
+            <div style={{ flex: 1 }}>
+              <b>一笔账，两边都记。</b>项目看盈亏，账户看钱在哪。
+              {untracked.length ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: 10 }}>
+                  <span className="pill" style={{ background: "var(--pwhite)", color: "var(--rust)" }}>
+                    {untracked.length} 笔没记账户 · {money(untrackedAmt)}
+                  </span>
+                  <button className="btn-text" style={{ color: "var(--rust)", padding: 0 }} onClick={() => go("ledger")}>
+                    去补上 <Ic n="chevRight" size={12} />
+                  </button>
+                </span>
+              ) : null}
+            </div>
+            <button className="icon-btn" onClick={() => setNoteOpen(false)} aria-label="关闭提示"><Ic n="x" size={14} /></button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="stat-grid c4" style={{ marginBottom: 22 }}>
+        <div className="stat-card warm">
+          <div className="stat-label"><span className="stat-dot" />余额合计</div>
+          <div className="stat-value">¥{wan(total)}<span className="unit">万</span></div>
+          <div className="stat-sub"><Ic n="checkCircle" size={12} /> {accounts.filter((a) => a.status === "active").length} 个在用</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label"><span className="stat-dot" />本月净进账</div>
+          <div className="stat-value money-pos">+¥{wan(1469100)}<span className="unit">万</span></div>
+          <div className="stat-sub">进 {money(3740600)} · 出 {money(2271500)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label"><span className="stat-dot d-dove" />核对调过</div>
+          <div className="stat-value">{money(Math.abs(accounts.reduce((s, a) => s + accountAdjustSum(a, adjusts), 0)))}</div>
+          <div className="stat-sub">上次 {lastRecon} · <button className="btn-text" style={{ padding: 0, fontSize: 12.5 }} onClick={() => onRecon("any")}>去核对</button></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label"><span className="stat-dot d-apricot" />没记账户</div>
+          <div className="stat-value">{untracked.length}<span className="unit">笔</span></div>
+          <div className="stat-sub">合计 {money(untrackedAmt)} · 建议补上</div>
+        </div>
+      </div>
+
+      {/* 工具栏 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <label className="search" style={{ width: 260 }}>
+          <Ic n="search" size={14} />
+          <input placeholder="搜索账户名 / 卡号 / 开户人" value={q} onChange={(e) => setQ(e.target.value)} />
+          {q ? <button className="icon-btn" style={{ width: 20, height: 20 }} onClick={() => setQ("")}><Ic n="x" size={12} /></button> : null}
+        </label>
+        <Dropdown label="全部类型" value={typeFilter} options={typeOptions} onChange={setTypeFilter} />
+        <Dropdown label="全部状态" value={statusFilter} onChange={setStatusFilter} options={[
+          { value: "all", label: "全部状态" },
+          { value: "active", label: "启用中" },
+          { value: "off", label: "已停用" },
+        ]} />
+        <Dropdown label="排序" value={sort} onChange={setSort} width={0} options={[
+          { value: "balance", label: "钱多的先" },
+          { value: "last", label: "最近用过" },
+          { value: "name", label: "按名字" },
+        ]} />
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          <Seg value={view} onChange={setView} options={[
+            { value: "grid", label: "卡片" },
+            { value: "table", label: "表格" },
+          ]} />
+        </span>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="tbl-card">
+          <div className="empty">
+            <div className="glyph"><Ic n="landmark" size={20} /></div>
+            <h4>没找到账户</h4>
+            <p>换个词试试，或者新建一个。</p>
+            <button className="btn-line" style={{ marginTop: 10 }} onClick={() => { setQ(""); setTypeFilter("all"); setStatusFilter("all"); }}>看全部</button>
+          </div>
+        </div>
+      ) : view === "grid" ? (
+        <div className="acct-grid">
+          {filtered.map((a) => {
+            const bal = accountBalance(a, adjusts);
+            const adj = accountAdjustSum(a, adjusts);
+            const inRatio = a.flows.in / Math.max(a.flows.in + a.flows.out, 1) * 100;
+            return (
+              <div key={a.id} className={"acct" + (a.status === "off" ? " off" : "")} onClick={() => onOpenAccount(a.id)}
+                role="button" tabIndex={0}>
+                <div className="acct-top">
+                  <div className="acct-ident">
+                    <AccountGlyph type={a.type} />
+                    <div style={{ minWidth: 0 }}>
+                      <div className="acct-name">{a.name}</div>
+                      <div className="acct-no">{a.no}</div>
+                    </div>
+                  </div>
+                  <div className="dropdown" onClick={(e) => e.stopPropagation()}>
+                    <button className="icon-btn" onClick={openMenu(a.id)} aria-label="更多操作"><Ic n="chevDown" size={15} /></button>
+                    {menuFor === a.id ? (
+                      <div className="menu right">
+                        <button onClick={() => { setMenuFor(null); onEdit(a.id); }}><span>改信息</span><Ic n="pencil" size={13} /></button>
+                        <button onClick={() => { setMenuFor(null); onRecon(a.id); }}><span>核对余额</span><Ic n="scale" size={13} /></button>
+                        <button onClick={() => { setMenuFor(null); onOpenAccount(a.id); }}><span>看流水</span><Ic n="list" size={13} /></button>
+                        <div className="div"></div>
+                        <button onClick={() => { setMenuFor(null); onToggle(a.id); }}>
+                          <span>{a.status === "active" ? "停用" : "重新启用"}</span>
+                          <Ic n={a.status === "active" ? "power" : "checkCircle"} size={13} />
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11.5, color: "var(--graphite)", marginBottom: 4 }}>现在有</div>
+                  <div className="acct-bal tnum"><span className="cur">¥</span>{Number(bal).toLocaleString("zh-CN")}</div>
+                </div>
+
+                <div>
+                  <div className="acct-bar">
+                    <i style={{ width: inRatio + "%", background: "var(--pos)", opacity: .75 }}></i>
+                    <i style={{ width: (100 - inRatio) + "%", background: "var(--neg)", opacity: .55 }}></i>
+                  </div>
+                  <div className="acct-flows" style={{ marginTop: 8 }}>
+                    <span style={{ color: "var(--graphite)" }}>进 <b className="money-pos tnum">{wan(a.flows.in)}万</b></span>
+                    <span style={{ color: "var(--graphite)" }}>出 <b className="money-neg tnum">{wan(a.flows.out)}万</b></span>
+                    {Math.abs(adj) > 0 ? <span className="tag-weak">已核对 {signed(adj)}</span> : null}
+                  </div>
+                </div>
+
+                <div className="acct-meta">
+                  <span>{(ACCOUNT_TYPES[a.type] || {}).label} · 最后记账 {a.lastDate}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {a.status === "active"
+                      ? <Pill tone="fog" dot>启用</Pill>
+                      : <Pill tone="line">已停用</Pill>}
+                    <Ic n="chevRight" size={13} />
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          <button className="acct" style={{ alignItems: "center", justifyContent: "center", gap: 10, background: "transparent", boxShadow: "inset 0 0 0 1.5px var(--hairline)", minHeight: 190 }}
+            onClick={onNew}>
+            <span style={{ width: 40, height: 40, borderRadius: 14, background: "var(--pwhite)", boxShadow: "var(--shadow-steep-sm)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Ic n="plus" size={18} />
+            </span>
+            <span style={{ fontSize: 13.5, fontWeight: 450 }}>新建账户</span>
+            <span style={{ fontSize: 12, color: "var(--graphite)" }}>银行卡 / 微信 / 支付宝 / 现金</span>
+          </button>
+        </div>
+      ) : (
+        <div className="tbl-card">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th style={{ paddingLeft: 24 }}>账户</th>
+                <th>类型</th>
+                <th className="num">起始</th>
+                <th className="num">进账</th>
+                <th className="num">出账</th>
+                <th className="num">核对</th>
+                <th className="num">现在有</th>
+                <th className="mid">状态</th>
+                <th style={{ width: 96 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((a) => {
+                const bal = accountBalance(a, adjusts);
+                const adj = accountAdjustSum(a, adjusts);
+                return (
+                  <tr key={a.id} className="clickable" onClick={() => onOpenAccount(a.id)}>
+                    <td style={{ paddingLeft: 24 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                        <AccountGlyph type={a.type} size={32} />
+                        <div>
+                          <div className="cell-main">{a.name}</div>
+                          <div className="cell-sub mono">{a.no} · {a.holder}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{(ACCOUNT_TYPES[a.type] || {}).label}</td>
+                    <td className="num tnum">{money(a.opening)}</td>
+                    <td className="num tnum money-pos">{money(a.flows.in)}</td>
+                    <td className="num tnum money-neg">{money(a.flows.out)}</td>
+                    <td className="num tnum" style={{ color: adj ? "var(--rust)" : "var(--dove)" }}>{adj ? signed(adj) : "—"}</td>
+                    <td className="num tnum" style={{ fontWeight: 480, color: "var(--ink)" }}>{money(bal)}</td>
+                    <td className="mid">
+                      {a.status === "active" ? <Pill tone="fog" dot>启用</Pill> : <Pill tone="line">已停用</Pill>}
+                    </td>
+                    <td>
+                      <div className="row-actions">
+                        <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onEdit(a.id); }} title="编辑"><Ic n="pencil" size={14} /></button>
+                        <button className="icon-btn rust" onClick={(e) => { e.stopPropagation(); onRecon(a.id); }} title="对账"><Ic n="scale" size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="tbl-foot">
+            <span>共 {filtered.length} 个 · 合计 <b style={{ color: "var(--ink)", fontWeight: 500 }}>{money(filtered.reduce((s, a) => s + accountBalance(a, adjusts), 0))}</b></span>
+            <span>起始 + 进账 − 出账 ± 核对</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ==========================================================================================
+   H · 屏 2 · 账户详情（余额推导 + 账户流水 + 调整记录）
+   ========================================================================================== */
+function ScreenAccountDetail({ accountId, accounts, adjusts, records, onBack, onEdit, onRecon, onLock, go, lockLeft }) {
+  const a = accounts.find((x) => x.id === accountId) || accounts[0];
+  const [tab, setTab] = React.useState("flows");
+  const bal = accountBalance(a, adjusts);
+  const adjSum = accountAdjustSum(a, adjusts);
+  const myRecs = records.filter((r) => r.accountId === a.id);
+  const myAdjs = adjusts.filter((x) => x.accountId === a.id);
+
+  const tabs = [
+    { id: "flows", label: "流水", count: myRecs.length },
+    { id: "adjust", label: "核对记录", count: myAdjs.length },
+    { id: "info", label: "资料", count: null },
+  ];
+
+  return (
+    <div className="page" data-screen-label="02 账户详情">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <button className="btn-text muted" onClick={onBack}><Ic n="arrowLeft" size={14} /> 返回</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span className="lock-timer"><Ic n="clock" size={13} /> 还能看 <span className="tnum">{lockLeft}</span></span>
+          <button className="btn-line danger" onClick={onLock} style={{ padding: "7px 14px" }}><Ic n="lock" size={13} /> 锁定</button>
+        </div>
+      </div>
+
+      <div className="page-head" style={{ marginBottom: 22 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <AccountGlyph type={a.type} size={52} radius={17} />
+            <div>
+              <div className="h1-row" style={{ gap: 10 }}>
+                <h1 style={{ fontSize: 38 }}>{a.name}</h1>
+                {a.status === "active" ? <Pill tone="fog" dot>在用</Pill> : <Pill tone="line">已停用</Pill>}
+              </div>
+              <p className="desc" style={{ marginTop: 6 }}>
+                <span className="mono">{a.no}</span> · {a.holder} · {(ACCOUNT_TYPES[a.type] || {}).label}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="aside" style={{ paddingTop: 10 }}>
+          <button className="btn-line" onClick={() => onEdit(a.id)}><Ic n="pencil" size={14} /> 改信息</button>
+          <button className="btn-fill" onClick={() => onRecon(a.id)}><Ic n="scale" size={14} /> 核对余额</button>
+        </div>
+      </div>
+
+      <div className="stat-grid c4" style={{ marginBottom: 6 }}>
+        <div className="stat-card warm">
+          <div className="stat-label"><span className="stat-dot" />现在有</div>
+          <div className="stat-value">¥{Number(bal).toLocaleString("zh-CN")}</div>
+          <div className="stat-sub">系统算的</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label"><span className="stat-dot d-dove" />起始</div>
+          <div className="stat-value">{money(a.opening)}</div>
+          <div className="stat-sub">从 {a.openingDate} 算起</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label"><span className="stat-dot" />累计进 / 出</div>
+          <div className="stat-value" style={{ fontSize: 22 }}>
+            <span className="money-pos">{wan(a.flows.in)}</span>
+            <span style={{ color: "var(--dove)", margin: "0 6px" }}>/</span>
+            <span className="money-neg">{wan(a.flows.out)}</span>
+            <span className="unit">万</span>
+          </div>
+          <div className="stat-sub">{a.count} 笔 · 最后 {a.lastDate}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label"><span className="stat-dot d-apricot" />核对差额</div>
+          <div className="stat-value" style={{ color: adjSum ? "var(--rust)" : "var(--ink)" }}>{adjSum ? signed(adjSum) : "¥0"}</div>
+          <div className="stat-sub">{myAdjs.length} 次</div>
+        </div>
+      </div>
+
+      {/* 余额推导公式 */}
+      <div className="card" style={{ marginTop: 18, display: "flex", gap: 28, alignItems: "stretch", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 420px" }}>
+          <div className="card-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Ic n="scale" size={15} /> 钱怎么算出来的
+            <span className="card-note">对着银行 App 一笔笔核</span>
+          </div>
+          <div className="ledger-math" style={{ marginTop: 12 }}>
+            <div className="row"><span>起始余额（{a.openingDate}）</span><b>{money(a.opening)}</b></div>
+            <div className="row"><span>+ 进账（{a.count} 笔）</span><b className="money-pos">{money(a.flows.in)}</b></div>
+            <div className="row"><span>− 出账</span><b className="money-neg">{money(a.flows.out)}</b></div>
+            <div className="row"><span>± 核对调过（{myAdjs.length} 次）</span><b style={{ color: adjSum ? "var(--rust)" : "var(--ash)" }}>{adjSum ? signed(adjSum) : "¥0"}</b></div>
+            <div className="row total"><span>现在有</span><b>{money(bal)}</b></div>
+          </div>
+        </div>
+        <div style={{ flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 12, justifyContent: "center" }}>
+          <Banner tone="fog" icon="info">
+            余额不能改，只能核对。
+          </Banner>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn-line" style={{ flex: 1 }} onClick={() => onRecon(a.id)}><Ic n="scale" size={14} /> 核对余额</button>
+            <button className="btn-line" style={{ flex: 1 }} onClick={() => go("accounts-ledger")}><Ic n="list" size={14} /> 所有流水</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="tabs" style={{ marginTop: 26 }}>
+        {tabs.map((t) => (
+          <button key={t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>
+            {t.label}{t.count !== null ? <span className="count">{t.count}</span> : null}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        {tab === "flows" ? (
+          myRecs.length ? (
+            <div className="tbl-card">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th style={{ paddingLeft: 24, width: 108 }}>日期</th>
+                    <th>项目 / 科目</th>
+                    <th>对方</th>
+                    <th>谁记的</th>
+                    <th className="num">出账</th>
+                    <th className="num">进账</th>
+                    <th className="mid">凭证</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myRecs.map((r) => (
+                    <tr key={r.id}>
+                      <td className="tnum" style={{ paddingLeft: 24, color: "var(--graphite)" }}>{r.date}</td>
+                      <td>
+                        <div className="cell-main">{r.project}</div>
+                        <div className="cell-sub">{r.subject} · {r.code}</div>
+                      </td>
+                      <td>{r.out > 0 ? r.payee : r.payer}</td>
+                      <td>{r.by}</td>
+                      <td className="num tnum">{r.out > 0 ? <span className="money-neg">{money(r.out)}</span> : <span style={{ color: "var(--dove)" }}>—</span>}</td>
+                      <td className="num tnum">{r.in > 0 ? <span className="money-pos">{money(r.in)}</span> : <span style={{ color: "var(--dove)" }}>—</span>}</td>
+                      <td className="mid">
+                        {r.voucher ? <Pill tone="line"><Ic n="receipt" size={11} /> {r.voucher}</Pill> : <span className="tag-weak">缺凭证</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="tbl-foot">
+                <span>已停用账户的历史流水也会保留</span>
+                <button className="btn-text" onClick={() => go("accounts-ledger")}>看全部 <Ic n="chevRight" size={12} /></button>
+              </div>
+            </div>
+          ) : (
+            <div className="tbl-card"><div className="empty">
+              <div className="glyph"><Ic n="receipt" size={20} /></div>
+              <h4>还没有流水</h4>
+              <p>记一笔，选上这个账户就行。</p>
+              <button className="btn-line" style={{ marginTop: 10 }} onClick={() => go("ledger")}>去记一笔</button>
+            </div></div>
+          )
+        ) : tab === "adjust" ? (
+          myAdjs.length ? (
+            <div className="tbl-card">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th style={{ paddingLeft: 24, width: 110 }}>日期</th>
+                    <th className="num" style={{ width: 130 }}>调了多少</th>
+                    <th>原因</th>
+                    <th style={{ width: 110 }}>谁调的</th>
+                    <th style={{ width: 160 }}>什么时候</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myAdjs.map((x) => (
+                    <tr key={x.id}>
+                      <td className="tnum" style={{ paddingLeft: 24, color: "var(--graphite)" }}>{x.date}</td>
+                      <td className="num tnum" style={{ color: x.amount > 0 ? "var(--pos)" : "var(--rust)", fontWeight: 480 }}>{signed(x.amount)}</td>
+                      <td>{x.reason}</td>
+                      <td>{x.operator}</td>
+                      <td className="tnum" style={{ color: "var(--graphite)" }}>{x.createdAt}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="tbl-foot">
+                <span>只能加，不能改也不能删</span>
+                <button className="btn-text" onClick={() => onRecon(a.id)}><Ic n="plus" size={12} /> 再核对</button>
+              </div>
+            </div>
+          ) : (
+            <div className="tbl-card"><div className="empty">
+              <div className="glyph"><Ic n="scale" size={20} /></div>
+              <h4>还没核对过</h4>
+              <p>和卡里一致，就什么都不用做。</p>
+              <button className="btn-line" style={{ marginTop: 10 }} onClick={() => onRecon(a.id)}>核对一下</button>
+            </div></div>
+          )
+        ) : (
+          <div className="doc-grid">
+            <div className="doc-card">
+              <h3><span className="idx">账户</span>账户资料</h3>
+              <div style={{ marginTop: 6 }}>
+                <div className="kv"><span className="k">名字</span><span className="v">{a.name}</span></div>
+                <div className="kv"><span className="k">类型</span><span className="v">{(ACCOUNT_TYPES[a.type] || {}).label}</span></div>
+                <div className="kv"><span className="k">卡号</span><span className="v mono">{a.no}</span></div>
+                <div className="kv"><span className="k">谁的</span><span className="v">{a.holder}</span></div>
+                <div className="kv"><span className="k">起始余额</span><span className="v tnum">{money(a.opening)}（{a.openingDate}）</span></div>
+                <div className="kv"><span className="k">状态</span><span className="v">{a.status === "active" ? "在用" : "已停用"}</span></div>
+                <div className="kv"><span className="k">备注</span><span className="v" style={{ maxWidth: 320, color: "var(--graphite)", fontWeight: 400 }}>{a.note}</span></div>
+              </div>
+            </div>
+            <div className="doc-card">
+              <h3><span className="idx">记录</span>最近改动</h3>
+              <div style={{ marginTop: 6 }}>
+                <div className="kv"><span className="k">10-19 14:22 · 陈明远</span><span className="v" style={{ fontWeight: 400, color: "var(--graphite)" }}>记了购房定金 −¥50,000</span></div>
+                <div className="kv"><span className="k">09-30 19:05 · 李慧</span><span className="v" style={{ fontWeight: 400, color: "var(--graphite)" }}>核对调过 +¥800</span></div>
+                <div className="kv"><span className="k">09-12 10:31 · 陈明远</span><span className="v" style={{ fontWeight: 400, color: "var(--graphite)" }}>改了备注</span></div>
+                <div className="kv"><span className="k">01-01 09:00 · 系统</span><span className="v" style={{ fontWeight: 400, color: "var(--graphite)" }}>建好了</span></div>
+              </div>
+              <div className="design-note" style={{ marginTop: 14 }}>
+                记录写进已有的 <b>operation_logs</b> 表，不新建表。
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ==========================================================================================
+   I · 屏 3 · 新建 / 编辑账户（右侧抽屉）
+   ========================================================================================== */
+function AccountDrawer({ mode, account, accounts, records, adjusts, onClose, onSave }) {
+  const isEdit = mode === "edit";
+  const [name, setName] = React.useState(account ? account.name : "");
+  const [type, setType] = React.useState(account ? account.type : "bank");
+  const [no, setNo] = React.useState(account ? account.no : "");
+  const [holder, setHolder] = React.useState(account ? account.holder : "");
+  const [opening, setOpening] = React.useState(account ? String(account.opening) : "");
+  const [openingDate, setOpeningDate] = React.useState(account ? account.openingDate : todayISO());
+  const [status, setStatus] = React.useState(account ? account.status : "active");
+  const [note, setNote] = React.useState(account ? account.note : "");
+  const [err, setErr] = React.useState({});
+  const hasFlows = isEdit && records.some((r) => r.accountId === account.id);
+  const curBal = isEdit ? accountBalance(account, adjusts) : 0;
+  const openingDelta = isEdit ? (Number(opening) || 0) - account.opening : 0;
+
+  const submit = () => {
+    const e = {};
+    if (!name.trim()) e.name = "请填写账户名称";
+    if (!openingDate) e.openingDate = "请选择期初余额日期";
+    if (opening === "" || isNaN(Number(opening))) e.opening = "请填写期初余额（可为 0）";
+    if (no.trim() && no.length < 4) e.no = "卡号至少 4 位";
+    setErr(e);
+    if (Object.keys(e).length) return;
+    onSave({
+      id: account ? account.id : "acc-" + Date.now(),
+      name: name.trim(), type, no: no.trim() || "—", holder: holder.trim() || "—",
+      opening: Number(opening) || 0, openingDate, status, note: note.trim(),
+      flows: account ? account.flows : { in: 0, out: 0 },
+      adjust: account ? account.adjust : 0,
+      lastDate: account ? account.lastDate : "—",
+      count: account ? account.count : 0,
+    }, isEdit);
+  };
+
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div className="drawer" onClick={(e) => e.stopPropagation()}>
+        <div className="drawer-head">
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <h3 style={{ fontSize: 20, fontWeight: 500, letterSpacing: "-0.012em" }}>{isEdit ? "改账户" : "新建账户"}</h3>
+              <p style={{ fontSize: 12.5, color: "var(--graphite)", marginTop: 6, lineHeight: 1.6 }}>
+                只记人民币。存好就能记账用。
+              </p>
+            </div>
+            <button className="icon-btn" onClick={onClose}><Ic n="x" size={16} /></button>
+          </div>
+        </div>
+
+        <div className="drawer-body" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div className="field">
+            <div className="field-label"><span>起个名字 <span className="req">*</span></span><span style={{ color: "var(--dove)", fontWeight: 400 }}>{name.length}/24</span></div>
+            <div className={"input-wrap" + (err.name ? " err" : "")} style={{ height: 44 }}>
+              <input placeholder="如：工商银行 · 基本户" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} autoFocus />
+            </div>
+            {err.name ? <div className="field-error"><Ic n="alert" size={12} />{err.name}</div> : <div className="field-hint">银行 + 用途，好认就行。</div>}
+          </div>
+
+          <div className="field">
+            <div className="field-label"><span>什么账户 <span className="req">*</span></span></div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+              {Object.entries(ACCOUNT_TYPES).map(([k, v]) => (
+                <button key={k} className={"check" + (type === k ? " on" : "")} onClick={() => setType(k)}
+                  style={{ flexDirection: "column", alignItems: "center", gap: 7, padding: "12px 6px", textAlign: "center" }}>
+                  <AccountGlyph type={k} size={30} radius={10} />
+                  <span style={{ fontSize: 12.5, fontWeight: 450, color: type === k ? "var(--ink)" : "var(--ash)" }}>{v.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid-2">
+            <div className="field">
+              <div className="field-label"><span>卡号</span></div>
+              <div className={"input-wrap" + (err.no ? " err" : "")} style={{ height: 44 }}>
+                <input placeholder="6222 **** 4821" value={no} onChange={(e) => setNo(e.target.value)} />
+              </div>
+              {err.no ? <div className="field-error"><Ic n="alert" size={12} />{err.no}</div> : <div className="field-hint">填后四位就够。</div>}
+            </div>
+            <div className="field">
+              <div className="field-label"><span>谁的卡</span></div>
+              <div className="input-wrap" style={{ height: 44 }}>
+                <input placeholder="公司名 或 个人姓名" value={holder} onChange={(e) => setHolder(e.target.value)} />
+              </div>
+              <div className="field-hint">公司的就写公司。</div>
+            </div>
+          </div>
+
+          <div className="grid-2">
+            <div className="field">
+              <div className="field-label"><span>起始金额 <span className="req">*</span></span></div>
+              <div className={"money-in" + (err.opening ? " err" : "")} style={err.opening ? { boxShadow: "inset 0 0 0 1.5px #d96a63" } : null}>
+                <span className="cur">¥</span>
+                <input inputMode="decimal" placeholder="0.00" value={opening} onChange={(e) => setOpening(e.target.value.replace(/[^\d.-]/g, ""))} />
+              </div>
+              {err.opening ? <div className="field-error"><Ic n="alert" size={12} />{err.opening}</div> : <div className="field-hint">开始用它那天有多少。</div>}
+            </div>
+            <div className="field">
+              <div className="field-label"><span>从哪天算 <span className="req">*</span></span></div>
+              <div className={"input-wrap" + (err.openingDate ? " err" : "")} style={{ height: 44 }}>
+                <Ic n="clock" size={14} style={{ color: "var(--graphite)" }} />
+                <input type="date" value={openingDate} onChange={(e) => setOpeningDate(e.target.value)} />
+              </div>
+              {err.openingDate ? <div className="field-error"><Ic n="alert" size={12} />{err.openingDate}</div> : <div className="field-hint">之前的账不算。</div>}
+            </div>
+          </div>
+
+          {isEdit && openingDelta !== 0 ? (
+            <Banner tone="warm" icon="alert">
+              改完变成 <b>{money(curBal + openingDelta)}</b>。想和银行对上，请去核对。
+            </Banner>
+          ) : null}
+
+          <div className="field">
+            <div className="field-label"><span>状态</span></div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className={"check" + (status === "active" ? " on" : "")} style={{ flex: 1 }} onClick={() => setStatus("active")}>
+                <span className="box round">{status === "active" ? <Ic n="check" size={11} sw={2.6} /> : null}</span>
+                <span><span className="t">在用</span><span className="s">记账时能选到</span></span>
+              </button>
+              <button className={"check" + (status === "off" ? " on" : "")} style={{ flex: 1 }} onClick={() => setStatus("off")}>
+                <span className="box round">{status === "off" ? <Ic n="check" size={11} sw={2.6} /> : null}</span>
+                <span><span className="t">停用</span><span className="s">留着旧账，不再记新的</span></span>
+              </button>
+            </div>
+            {status === "off" && hasFlows ? (
+              <div className="field-hint" style={{ color: "var(--rust)" }}>
+                这有 {records.filter((r) => r.accountId === account.id).length} 笔旧账，停用不会丢。
+              </div>
+            ) : null}
+          </div>
+
+          <div className="field">
+            <div className="field-label"><span>备注</span><span style={{ color: "var(--dove)", fontWeight: 400 }}>{note.length}/120</span></div>
+            <textarea value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
+              placeholder="它一般用来干什么"
+              style={{ minHeight: 76, padding: "12px 14px", borderRadius: "var(--r-input)", background: "var(--fog)", border: "none", resize: "vertical", fontSize: 13.5, lineHeight: 1.65 }} />
+          </div>
+
+          {!isEdit ? (
+            <Banner tone="sky" icon="info">
+              存好后随便记一笔试试，能选到就通了。
+            </Banner>
+          ) : null}
+        </div>
+
+        <div className="drawer-foot">
+          <span style={{ fontSize: 12, color: "var(--graphite)" }}>
+            {isEdit ? "改动会留记录" : "建好即可记账"}
+          </span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn-line" onClick={onClose}>取消</button>
+            <button className="btn-fill" onClick={submit}>{isEdit ? "保存" : "建好"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ==========================================================================================
+   J · 对账调整弹窗
+   ========================================================================================== */
+function ReconModal({ accountId, accounts, adjusts, onClose, onDone }) {
+  const [pick, setPick] = React.useState(accountId || accounts[0].id);
+  const a = accounts.find((x) => x.id === pick) || accounts[0];
+  const sysBal = accountBalance(a, adjusts);
+  const [actual, setActual] = React.useState("");
+  const [date, setDate] = React.useState(todayISO());
+  const [reason, setReason] = React.useState("");
+  const [err, setErr] = React.useState({});
+
+  const diff = actual === "" ? null : (Number(actual) || 0) - sysBal;
+
+  const submit = () => {
+    const e = {};
+    if (actual === "" || isNaN(Number(actual))) e.actual = "请填写对账后的实际余额";
+    if (diff !== null && diff === 0) e.actual = "实际余额与系统一致，无需调整";
+    if (!reason.trim()) e.reason = "请写明差额原因（对账留痕的关键）";
+    if (!date) e.date = "请选择调整日期";
+    setErr(e);
+    if (Object.keys(e).length) return;
+    onDone({ accountId: pick, amount: diff, reason: reason.trim(), date });
+  };
+
+  return (
+    <>
+      <div className="scrim" onClick={onClose}></div>
+      <div className="modal-wrap" style={{ pointerEvents: "none" }}>
+        <div className="modal wide" style={{ pointerEvents: "auto" }} data-screen-label="03 余额对账">
+          <div className="modal-head">
+            <h3>核对余额</h3>
+            <p>把银行卡里的真实数字填进来，差多少系统自己算。</p>
+          </div>
+          <div className="modal-body">
+            <div className="field">
+              <div className="field-label"><span>哪个账户 <span className="req">*</span></span></div>
+              <Dropdown label="选择账户" value={pick} onChange={setPick} width="100%"
+                options={accounts.map((x) => ({ value: x.id, label: x.name + (x.status === "off" ? "（已停用）" : "") }))} />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="field">
+                <div className="field-label"><span>账上有的</span></div>
+                <div style={{ height: 46, display: "flex", alignItems: "center", padding: "0 14px", background: "var(--fog)", borderRadius: "var(--r-input)", fontSize: 16, fontWeight: 480, fontVariantNumeric: "tabular-nums" }}>
+                  {money(sysBal)}
+                </div>
+                <div className="field-hint">起始 + 进 − 出 ± 核对</div>
+              </div>
+              <div className="field">
+                <div className="field-label"><span>实际金额 <span className="req">*</span></span></div>
+                <div className={"money-in" + (err.actual ? " err" : "")} style={err.actual ? { boxShadow: "inset 0 0 0 1.5px #d96a63" } : null}>
+                  <span className="cur">¥</span>
+                  <input inputMode="decimal" placeholder="0.00" value={actual} onChange={(e) => setActual(e.target.value.replace(/[^\d.-]/g, ""))} />
+                </div>
+                {err.actual ? <div className="field-error"><Ic n="alert" size={12} />{err.actual}</div> : <div className="field-hint">看手机银行。</div>}
+              </div>
+            </div>
+
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: diff === null ? "var(--fog)" : diff === 0 ? "rgba(211,227,252,.5)" : "var(--apricot)",
+              borderRadius: 16, padding: "14px 16px",
+            }}>
+              <div>
+                <div style={{ fontSize: 12, color: diff === null ? "var(--graphite)" : "rgba(93,42,26,.72)" }}>差多少</div>
+                <div style={{ fontSize: 12, color: "var(--graphite)", marginTop: 3 }}>
+                  {diff === null ? "填了就自动算" : diff === 0 ? "对上了，不用调 ✓" : "会记一条调整"}
+                </div>
+              </div>
+              <div className="tnum" style={{
+                fontSize: 26, fontWeight: 480, letterSpacing: "-0.02em",
+                color: diff === null ? "var(--dove)" : diff === 0 ? "#2b5391" : "var(--rust)",
+              }}>
+                {diff === null ? "—" : diff === 0 ? "¥0" : signed(diff)}
+              </div>
+            </div>
+
+            <div className="grid-2">
+              <div className="field">
+                <div className="field-label"><span>哪天 <span className="req">*</span></span></div>
+                <div className={"input-wrap" + (err.date ? " err" : "")} style={{ height: 44 }}>
+                  <Ic n="clock" size={14} style={{ color: "var(--graphite)" }} />
+                  <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                </div>
+              </div>
+              <div className="field">
+                <div className="field-label"><span>凭证</span></div>
+                <button className="btn-line" style={{ height: 44, justifyContent: "flex-start", borderRadius: "var(--r-input)" }}
+                  onClick={() => window.dispatchEvent(new CustomEvent("d-toast", { detail: "演示：上传银行截图" }))}>
+                  <Ic n="plus" size={14} /> 传张截图 <span style={{ color: "var(--dove)", fontWeight: 400 }}>可不传</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="field">
+              <div className="field-label"><span>为什么差 <span className="req">*</span></span></div>
+              <textarea value={reason} onChange={(e) => setReason(e.target.value)}
+                placeholder="手续费没记 / 找零漏了 / 到账晚了一天"
+                style={{ minHeight: 72, padding: "12px 14px", borderRadius: "var(--r-input)", background: "var(--fog)", border: "none", resize: "vertical", fontSize: 13.5, lineHeight: 1.65 }} />
+              {err.reason ? <div className="field-error"><Ic n="alert" size={12} />{err.reason}</div> : <div className="field-hint">半年后自己还能看懂就行。</div>}
+            </div>
+
+            <Banner tone="fog" icon="info">
+              只改账户余额，不动项目盈亏。
+            </Banner>
+          </div>
+          <div className="modal-foot">
+            <span style={{ fontSize: 12, color: "var(--graphite)" }}>陈明远操作 · 会留记录</span>
+            <div className="right">
+              <button className="btn-line" onClick={onClose}>取消</button>
+              <button className="btn-fill" onClick={submit} disabled={diff === 0 || diff === null}>确认</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ==========================================================================================
+   K · 屏 4 · 全部账户流水（跨账户，便于找未挂账户的账）
+   ========================================================================================== */
+function ScreenAccountLedger({ accounts, records, adjusts, onLock, go, lockLeft, onPickAccount, onFixRecord }) {
+  const [acct, setAcct] = React.useState("all");
+  const [dir, setDir] = React.useState("all");
+  const [q, setQ] = React.useState("");
+  const [showUntracked, setShowUntracked] = React.useState(false);
+  const [fixTarget, setFixTarget] = React.useState(null);
+
+  const rows = records.filter((r) => {
+    if (acct === "none" && r.accountId) return false;
+    if (acct !== "all" && acct !== "none" && r.accountId !== acct) return false;
+    if (dir === "out" && !(r.out > 0)) return false;
+    if (dir === "in" && !(r.in > 0)) return false;
+    if (showUntracked && r.accountId) return false;
+    if (q.trim()) {
+      const hay = (r.project + r.subject + r.payer + r.payee + r.code).toLowerCase();
+      if (!hay.includes(q.trim().toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  const totalIn = rows.reduce((s, r) => s + r.in, 0);
+  const totalOut = rows.reduce((s, r) => s + r.out, 0);
+  const untrackedCount = records.filter((r) => !r.accountId).length;
+
+  return (
+    <div className="page" data-screen-label="04 账户流水">
+      <div className="page-head">
+        <div>
+          <h1>账户流水</h1>
+          <p className="desc">所有账户的进出账。</p>
+        </div>
+        <div className="aside">
+          <span className="lock-timer"><Ic n="clock" size={13} /> 还能看 <span className="tnum">{lockLeft}</span></span>
+          <button className="btn-line danger" onClick={onLock}><Ic n="lock" size={14} /> 锁定</button>
+          <button className="btn-fill" onClick={() => go("ledger")}><Ic n="plus" size={15} /> 记一笔</button>
+        </div>
+      </div>
+
+      {untrackedCount ? (
+        <div style={{ marginBottom: 16 }}>
+          <Banner tone="warm" icon="alert">
+            有 <b>{untrackedCount} 笔</b>没记账户，不算进任何余额。
+            <button className="btn-text" style={{ color: "var(--rust)", marginLeft: 8 }} onClick={() => { setShowUntracked(true); setAcct("none"); }}>
+              看看是哪几笔 →
+            </button>
+          </Banner>
+        </div>
+      ) : null}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <label className="search" style={{ width: 250 }}>
+          <Ic n="search" size={14} />
+          <input placeholder="搜索项目 / 科目 / 对方" value={q} onChange={(e) => setQ(e.target.value)} />
+        </label>
+        <Dropdown label="全部账户" value={acct} onChange={setAcct} options={
+          [{ value: "all", label: "全部账户" }, { value: "none", label: "没记账户" }].concat(
+            accounts.map((x) => ({ value: x.id, label: x.name }))
+          )
+        } />
+        <Seg value={dir} onChange={setDir} options={[
+          { value: "all", label: "全部" },
+          { value: "out", label: "只看出" },
+          { value: "in", label: "只看进" },
+        ]} />
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16, fontSize: 12.5, color: "var(--graphite)" }}>
+          <span>进 <b className="money-pos tnum" style={{ fontWeight: 480 }}>{money(totalIn)}</b></span>
+          <span>出 <b className="money-neg tnum" style={{ fontWeight: 480 }}>{money(totalOut)}</b></span>
+          <span>净 <b className="tnum" style={{ fontWeight: 480, color: "var(--ink)" }}>{signed(totalIn - totalOut)}</b></span>
+        </span>
+      </div>
+
+      <div className="tbl-card">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th style={{ paddingLeft: 24, width: 104 }}>日期</th>
+              <th>项目 / 科目</th>
+              <th style={{ width: 190 }}>账户</th>
+              <th className="num">出账</th>
+              <th className="num">进账</th>
+              <th style={{ width: 92 }}>谁记的</th>
+              <th className="mid" style={{ width: 96 }}>凭证</th>
+              <th style={{ width: 88 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const a = accounts.find((x) => x.id === r.accountId);
+              return (
+                <tr key={r.id} className={"clickable" + (!r.accountId ? " legacy" : "")}>
+                  <td className="tnum" style={{ paddingLeft: 24, color: "var(--graphite)" }}>{r.date}</td>
+                  <td>
+                    <div className="cell-main">{r.project}</div>
+                    <div className="cell-sub">{r.subject} · {r.code}</div>
+                  </td>
+                  <td>
+                    {a ? (
+                      <button className="btn-text" style={{ padding: 0, fontSize: 13 }} onClick={() => onPickAccount(a.id)}>
+                        <AccountGlyph type={a.type} size={22} radius={7} />
+                        <span style={{ marginLeft: 2 }}>{a.name}</span>
+                      </button>
+                    ) : (
+                      <Pill tone="apricot"><Ic n="alert" size={11} /> 没记账户</Pill>
+                    )}
+                  </td>
+                  <td className="num tnum">{r.out > 0 ? <span className="money-neg">{money(r.out)}</span> : <span style={{ color: "var(--dove)" }}>—</span>}</td>
+                  <td className="num tnum">{r.in > 0 ? <span className="money-pos">{money(r.in)}</span> : <span style={{ color: "var(--dove)" }}>—</span>}</td>
+                  <td>{r.by}</td>
+                  <td className="mid">
+                    {r.voucher ? <Pill tone="line"><Ic n="receipt" size={11} /> {r.voucher}</Pill> : <span className="tag-weak">缺凭证</span>}
+                  </td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="btn-text" style={{ fontSize: 12.5, padding: "2px 4px" }} onClick={() => setFixTarget(r)}>
+                        {r.accountId ? "换账户" : "补上"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {rows.length === 0 ? (
+          <div className="empty">
+            <div className="glyph"><Ic n="filter" size={20} /></div>
+            <h4>没找到流水</h4>
+            <p>换个账户，或清空关键词。</p>
+          </div>
+        ) : null}
+        <div className="tbl-foot">
+          <span>共 {rows.length} 笔 · 这是进出账，不是余额</span>
+          <span style={{ color: "var(--dove)" }}>数据来自记账记录</span>
+        </div>
+      </div>
+
+      {fixTarget ? (
+        <FixAccountModal record={fixTarget} accounts={accounts} adjusts={adjusts} onClose={() => setFixTarget(null)} onSave={(acctId) => { onFixRecord(fixTarget.id, acctId); setFixTarget(null); }} />
+      ) : null}
+    </div>
+  );
+}
+
+/* 补挂 / 改挂账户（历史流水） */
+function FixAccountModal({ record, accounts, adjusts, onClose, onSave }) {
+  const [pick, setPick] = React.useState(record.accountId || "");
+  const isOut = record.out > 0;
+  const active = accounts.filter((a) => a.status === "active");
+  return (
+    <>
+      <div className="scrim" onClick={onClose}></div>
+      <div className="modal-wrap" style={{ pointerEvents: "none" }}>
+        <div className="modal" style={{ pointerEvents: "auto" }}>
+          <div className="modal-head">
+            <h3>{record.accountId ? "换个账户" : "补上账户"}</h3>
+            <p>{record.date} · {record.project} · {record.subject} · <b>{money(isOut ? record.out : record.in)}</b></p>
+          </div>
+          <div className="modal-body">
+            <div className="field">
+              <div className="field-label"><span>{isOut ? "钱从哪个账户出" : "钱进哪个账户"} <span className="req">*</span></span></div>
+              <div className="acct-pick">
+                {active.map((a) => (
+                  <button key={a.id} className={"acct-pick-row" + (pick === a.id ? " on" : "")} onClick={() => setPick(a.id)}>
+                    <AccountGlyph type={a.type} size={30} radius={10} />
+                    <div>
+                      <div className="nm">{a.name}</div>
+                      <div className="mt">{a.no}</div>
+                    </div>
+                    <div className="bal">{money(accountBalance(a, adjusts))}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Banner tone="fog" icon="info">
+              补上后余额会跟着变，金额和日期不动。
+            </Banner>
+          </div>
+          <div className="modal-foot">
+            <span style={{ fontSize: 12, color: "var(--graphite)" }}>{record.by} 记的</span>
+            <div className="right">
+              <button className="btn-line" onClick={onClose}>取消</button>
+              <button className="btn-fill" onClick={() => onSave(pick)} disabled={!pick}>保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ==========================================================================================
+   L · 屏 5 · 项目账本（原「资金账本」改名）
+   ========================================================================================== */
+const PROJECTS = [
+  { id: "p1", code: "XM-2026-0018", name: "阳光里 3-2-1801", addr: "浦东新区张杨路 1288 弄", status: "在售", income: 0, expense: 370000, net: -370000, roi: null, count: 2, investor: false },
+  { id: "p2", code: "XM-2026-0013", name: "碧云国际 9-1-1502", addr: "浦东新区碧云路 300 弄", status: "已售", income: 2000000, expense: 86000, net: 1914000, roi: 33.31, count: 2, investor: true },
+  { id: "p3", code: "XM-2026-0021", name: "翠苑一区 7-1-502", addr: "西湖区翠苑路 18 号", status: "装修中", income: 0, expense: 17400, net: -17400, roi: null, count: 2, investor: false },
+  { id: "p4", code: "XM-2026-0009", name: "景芳东区 2-3-901", addr: "江干区景芳路 66 号", status: "已签约", income: 260000, expense: 3800, net: 256200, roi: null, count: 2, investor: true },
+  { id: "p5", code: "XM-2026-0016", name: "大浒东苑 5-2-1103", addr: "拱墅区大浒路 9 号", status: "已售", income: 1680000, expense: 6840, net: 1673160, roi: 28.4, count: 2, investor: false },
+  { id: "p6", code: "XM-2026-0024", name: "三墩北苑 1-1-203", addr: "西湖区三墩路 205 号", status: "装修中", income: 0, expense: 480480, net: -480480, roi: null, count: 2, investor: false },
+  { id: "p7", code: "XM-2026-0020", name: "朝晖六区 4-1-601", addr: "下城区朝晖路 12 号", status: "已签约", income: 600, expense: 9800, net: -9200, roi: null, count: 2, investor: false },
+];
+
+function ScreenProjectLedger({ records, accounts, go, onLock }) {
+  const [q, setQ] = React.useState("");
+  const [status, setStatus] = React.useState("all");
+  const [tab, setTab] = React.useState("all");
+
+  const rows = PROJECTS.filter((p) => {
+    if (status !== "all" && p.status !== status) return false;
+    if (q.trim() && !(p.name + p.code + p.addr).toLowerCase().includes(q.trim().toLowerCase())) return false;
+    return true;
+  });
+  const totalIn = PROJECTS.reduce((s, p) => s + p.income, 0);
+  const totalOut = PROJECTS.reduce((s, p) => s + p.expense, 0);
+  const untracked = records.filter((r) => !r.accountId).length;
+
+  return (
+    <div className="page" data-screen-label="05 项目账本">
+      <div className="page-head">
+        <div>
+          <div className="h1-row">
+            <h1>项目账本</h1>
+            <Pill tone="sky"><Ic n="info" size={11} /> 改过名</Pill>
+          </div>
+          <p className="desc">每套房赚了多少。</p>
+        </div>
+        <div className="aside">
+          <button className="btn-text muted" onClick={() => window.dispatchEvent(new CustomEvent("d-toast", { detail: "演示：导出表格" }))}>
+            <Ic n="download" size={14} /> 导出
+          </button>
+          <button className="btn-line" onClick={() => go("accounts")}><Ic n="landmark" size={14} /> 资金账户</button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Banner tone="sky" icon="info">
+          <b>改了名字：</b>原来叫「资金账本」，容易和「资金账户」混，现在叫<b>项目账本</b>。功能和数据都没变。
+        </Banner>
+      </div>
+
+      <div className="stat-grid" style={{ marginBottom: 22 }}>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot" />项目</div><div className="stat-value">28<span className="unit">个</span></div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot" />收进来</div><div className="stat-value money-pos">{wan(totalIn)}<span className="unit">万</span></div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot" />花出去</div><div className="stat-value money-neg">{wan(totalOut)}<span className="unit">万</span></div></div>
+        <div className="stat-card warm"><div className="stat-label"><span className="stat-dot" />净剩</div><div className="stat-value">{wan(totalIn - totalOut)}<span className="unit">万</span></div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-apricot" />没记账户</div><div className="stat-value">{untracked}<span className="unit">笔</span></div><div className="stat-sub">去资金账户补上</div></div>
+      </div>
+
+      <div className="tabs" style={{ marginBottom: 16 }}>
+        <button className={tab === "all" ? "on" : ""} onClick={() => setTab("all")}>全部<span className="count">{PROJECTS.length}</span></button>
+        <button className={tab === "investor" ? "on" : ""} onClick={() => setTab("investor")}>有人跟投<span className="count">2</span></button>
+        <button className={tab === "settled" ? "on" : ""} onClick={() => setTab("settled")}>已结账<span className="count">2</span></button>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+        <label className="search" style={{ width: 280 }}>
+          <Ic n="search" size={14} />
+          <input placeholder="搜索项目编号 / 小区 / 地址" value={q} onChange={(e) => setQ(e.target.value)} />
+        </label>
+        <Dropdown label="全部状态" value={status} onChange={setStatus} options={[
+          { value: "all", label: "全部状态" },
+          { value: "已签约", label: "已签约" },
+          { value: "装修中", label: "装修中" },
+          { value: "在售", label: "在售" },
+          { value: "已售", label: "已售" },
+        ]} />
+        <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--graphite)" }}>
+          点一行进去，右上角能记账
+        </span>
+      </div>
+
+      <div className="tbl-card">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th style={{ paddingLeft: 24, width: 130 }}>项目编号</th>
+              <th>小区 / 地址</th>
+              <th className="mid" style={{ width: 92 }}>进度</th>
+              <th className="num">收进来</th>
+              <th className="num">花出去</th>
+              <th className="num">净剩</th>
+              <th className="num">回报率</th>
+              <th className="mid" style={{ width: 84 }}>笔数</th>
+              <th style={{ width: 60 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => (
+              <tr key={p.id} className="clickable" onClick={() => go("project-detail")}>
+                <td className="mono" style={{ paddingLeft: 24, fontSize: 12.5, color: "var(--graphite)" }}>{p.code}</td>
+                <td>
+                  <div className="cell-main">{p.name}</div>
+                  <div className="cell-sub">{p.addr}</div>
+                </td>
+                <td className="mid">
+                  <Pill tone={p.status === "已售" ? "fog" : p.status === "在售" ? "solid" : p.status === "装修中" ? "apricot" : "sky"}>{p.status}</Pill>
+                </td>
+                <td className="num tnum">{p.income ? money(p.income) : <span style={{ color: "var(--dove)" }}>—</span>}</td>
+                <td className="num tnum">{p.expense ? money(p.expense) : <span style={{ color: "var(--dove)" }}>—</span>}</td>
+                <td className="num tnum" style={{ fontWeight: 480, color: p.net >= 0 ? "var(--pos)" : "var(--neg)" }}>{signed(p.net)}</td>
+                <td className="num tnum" style={{ color: "var(--graphite)" }}>{p.roi === null ? "—" : (p.roi > 0 ? "+" : "") + p.roi + "%"}</td>
+                <td className="mid tnum" style={{ color: "var(--graphite)" }}>{p.count}</td>
+                <td>
+                  <div className="row-actions"><button className="icon-btn" title="进去看"><Ic n="chevRight" size={15} /></button></div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="tbl-foot">
+          <span>共 {rows.length} 个项目</span>
+          <div className="pager">
+            <button><Ic n="chevLeft" size={13} /></button>
+            <button className="on">1</button><button>2</button><button>3</button>
+            <button><Ic n="chevRight" size={13} /></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ==========================================================================================
+   M · 屏 6 · 项目账本明细 +「记一笔」弹窗（账户联动的核心屏）
+   ========================================================================================== */
+function RecordDialog({ accounts, adjusts, defaultDir, onClose, onSubmit, businessForm }) {
+  const [dir, setDir] = React.useState(defaultDir || "out");       // out=流出 / in=流入
+  const [subject, setSubject] = React.useState("");
+  const [amount, setAmount] = React.useState("");
+  const [acctId, setAcctId] = React.useState("");
+  const [noAcct, setNoAcct] = React.useState(false);
+  const [payer, setPayer] = React.useState("");
+  const [payee, setPayee] = React.useState("");
+  const [date, setDate] = React.useState(todayISO());
+  const [note, setNote] = React.useState("");
+  const [err, setErr] = React.useState({});
+
+  const OUT_SUBJECTS = ["购房定金", "购房首付", "购房尾款", "交易税费(买入)", "水电改造", "木瓦工程", "月供利息", "平台服务费", "室内设计费"];
+  const IN_SUBJECTS = ["售房款", "定金收款", "验房费", "跟投款", "违约金收入"];
+  const subjects = dir === "out" ? OUT_SUBJECTS : IN_SUBJECTS;
+
+  const active = accounts.filter((a) => a.status === "active");
+  const chosen = accounts.find((a) => a.id === acctId);
+  const lastUsed = dir === "out" ? "acc-1" : "acc-1";
+
+  // 账户字段自动跟随方向：流出=付款账户，流入=收款账户
+  const acctLabel = dir === "out" ? "付款账户" : "收款账户";
+  const counterpartyLabel = dir === "out" ? "收款方" : "付款方";
+
+  const submit = () => {
+    const e = {};
+    if (!subject) e.subject = "请选择科目";
+    if (!amount || Number(amount) <= 0) e.amount = "请填写大于 0 的金额";
+    if (!noAcct && !acctId) e.acct = "请选择" + acctLabel + "，或标记「没走账户」";
+    if (!date) e.date = "请选择日期";
+    if (noAcct && !note.trim()) e.note = "标记「未走账户」时请写明原因";
+    setErr(e);
+    if (Object.keys(e).length) return;
+    onSubmit({ dir, subject, amount: Number(amount), accountId: noAcct ? null : acctId, date, note, payer, payee });
+  };
+
+  return (
+    <>
+      <div className="scrim" onClick={onClose}></div>
+      <div className="modal-wrap" style={{ pointerEvents: "none" }}>
+        <div className="modal wide" style={{ pointerEvents: "auto" }} data-screen-label="06 记一笔">
+          <div className="modal-head" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <h3>记一笔</h3>
+              <p>阳光里 3-2-1801 · XM-2026-0018</p>
+            </div>
+            <button className="icon-btn" onClick={onClose}><Ic n="x" size={16} /></button>
+          </div>
+
+          <div className="modal-body">
+            {/* 方向切换 */}
+            <div className="field">
+              <div className="field-label"><span>钱往哪走</span></div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <button className={"check" + (dir === "out" ? " on" : "")} onClick={() => { setDir("out"); setAcctId(""); }} style={{ alignItems: "center" }}>
+                  <span className="box round">{dir === "out" ? <Ic n="check" size={11} sw={2.6} /> : null}</span>
+                  <span><span className="t money-neg">花出去</span><span className="s">付给房东、施工、税务局</span></span>
+                </button>
+                <button className={"check" + (dir === "in" ? " on" : "")} onClick={() => { setDir("in"); setAcctId(""); }} style={{ alignItems: "center" }}>
+                  <span className="box round">{dir === "in" ? <Ic n="check" size={11} sw={2.6} /> : null}</span>
+                  <span><span className="t money-pos">收进来</span><span className="s">收到房款、定金、跟投</span></span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid-2">
+              <div className="field">
+                <div className="field-label"><span>科目 <span className="req">*</span></span></div>
+                <Dropdown label="选科目" value={subject} onChange={setSubject} width="100%"
+                  options={subjects.map((s) => ({ value: s, label: s }))} />
+                {err.subject ? <div className="field-error"><Ic n="alert" size={12} />{err.subject}</div> : null}
+              </div>
+              <div className="field">
+                <div className="field-label"><span>多少钱 <span className="req">*</span></span></div>
+                <div className={"money-in " + (dir === "out" ? "out" : "in")} style={err.amount ? { boxShadow: "inset 0 0 0 1.5px #d96a63" } : null}>
+                  <span className="cur">¥</span>
+                  <input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.-]/g, ""))} />
+                </div>
+                {err.amount ? <div className="field-error"><Ic n="alert" size={12} />{err.amount}</div> : null}
+              </div>
+            </div>
+
+            {/* ★ 账户选择：本次新增的核心字段 */}
+            <div className="field" style={{
+              padding: 14, borderRadius: 18, background: noAcct ? "rgba(251,225,209,.34)" : "var(--pwhite)",
+              boxShadow: noAcct ? "inset 0 0 0 1px rgba(93,42,26,.14)" : "inset 0 0 0 1px var(--hairline)",
+            }}>
+              <div className="field-label" style={{ marginBottom: 2 }}>
+                <span style={{ color: "var(--ink)", fontWeight: 480, fontSize: 13 }}>
+                  {acctLabel} <span className="req">*</span>
+                </span>
+                <button className="btn-text muted" style={{ fontSize: 11.5, padding: 0 }} onClick={() => window.dispatchEvent(new CustomEvent("d-toast", { detail: "演示：新开一页去建账户" }))}>
+                  <Ic n="plus" size={11} /> 新账户
+                </button>
+              </div>
+              <div className="field-hint" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 7 }}>
+                <span>{dir === "out" ? "钱从哪张卡出？" : "钱进哪张卡？"}</span>
+                <span className="pill apricot" style={{ fontSize: 10, padding: "1px 6px" }}>新加的</span>
+              </div>
+
+              {!noAcct ? (
+                <div className="acct-pick">
+                  {active.map((a) => (
+                    <button key={a.id} className={"acct-pick-row" + (acctId === a.id ? " on" : "")} onClick={() => { setAcctId(a.id); setErr({ ...err, acct: null }); }}>
+                      <AccountGlyph type={a.type} size={30} radius={10} />
+                      <div style={{ minWidth: 0 }}>
+                        <div className="nm">
+                          {a.name}
+                          {a.id === lastUsed ? <span className="pill fog" style={{ marginLeft: 7, fontSize: 10, padding: "0 6px" }}>常用</span> : null}
+                        </div>
+                        <div className="mt">{a.no} · {ACCOUNT_TYPES[a.type].label}</div>
+                      </div>
+                      <div className="bal">{money(accountBalance(a, adjusts))}</div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
+                  borderRadius: 14, background: "var(--pwhite)", boxShadow: "inset 0 0 0 1px rgba(93,42,26,.2)",
+                }}>
+                  <Ic n="alert" size={15} style={{ color: "var(--rust)" }} />
+                  <div style={{ fontSize: 12.5, color: "var(--rust)", lineHeight: 1.6 }}>
+                    这笔只记在项目上，<b>不算进任何账户</b>。
+                  </div>
+                </div>
+              )}
+
+              <button className="check" style={{ marginTop: 9, background: "transparent", boxShadow: "none", padding: "6px 2px" }}
+                onClick={() => { setNoAcct(!noAcct); setAcctId(""); }} aria-pressed={noAcct}>
+                <span className={"box" + (noAcct ? " on" : "")}>
+                  {noAcct ? <Ic n="check" size={11} sw={2.6} /> : null}
+                </span>
+                <span>
+                  <span className="t" style={{ fontSize: 13, color: noAcct ? "var(--rust)" : "var(--ink)", fontWeight: noAcct ? 500 : 450 }}>
+                    没走账户
+                  </span>
+                  <span className="s">跟投、往来、代收代付</span>
+                </span>
+              </button>
+
+              {err.acct ? <div className="field-error" style={{ marginTop: 6 }}><Ic n="alert" size={12} />{err.acct}</div> : null}
+              {err.note ? <div className="field-error" style={{ marginTop: 6 }}><Ic n="alert" size={12} />{err.note}</div> : null}
+
+              {chosen && Number(amount) > 0 ? (
+                <div style={{ marginTop: 9, display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--graphite)" }}>
+                  <Ic n="arrowRight" size={12} />
+                  记账后 {chosen.name} 余额 {money(accountBalance(chosen, adjusts))} →{" "}
+                  <b style={{ color: dir === "out" ? "var(--neg)" : "var(--pos)", fontWeight: 480 }}>
+                    {money(accountBalance(chosen, adjusts) + (dir === "out" ? -Number(amount) : Number(amount)))}
+                  </b>
+                </div>
+              ) : null}
+            </div>
+
+            {/* 付款方 / 收款方（对方信息，与账户区分） */}
+            <div className="grid-2">
+              <div className="field">
+                <div className="field-label">
+                  <span>{dir === "out" ? "付给谁" : "谁付的"}<span style={{ color: "var(--dove)", fontWeight: 400, marginLeft: 6 }}>选填</span></span>
+                </div>
+                <div className="input-wrap" style={{ height: 44 }}>
+                  <input placeholder={dir === "out" ? "房东、施工队、税务局" : "买家、跟投人、平台"}
+                    value={dir === "out" ? payee : payer}
+                    onChange={(e) => (dir === "out" ? setPayee(e.target.value) : setPayer(e.target.value))} />
+                </div>
+              </div>
+              <div className="field">
+                <div className="field-label"><span>哪天 <span className="req">*</span></span></div>
+                <div className={"input-wrap" + (err.date ? " err" : "")} style={{ height: 44 }}>
+                  <Ic n="clock" size={14} style={{ color: "var(--graphite)" }} />
+                  <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                </div>
+                {err.date ? <div className="field-error"><Ic n="alert" size={12} />{err.date}</div> : null}
+              </div>
+            </div>
+
+            <div className="grid-2">
+              <div className="field">
+                <div className="field-label"><span>票据</span><span style={{ color: "var(--dove)", fontWeight: 400 }}>最多 9 张</span></div>
+                <button className="btn-line" style={{ height: 44, justifyContent: "flex-start", borderRadius: "var(--r-input)" }}
+                  onClick={() => window.dispatchEvent(new CustomEvent("d-toast", { detail: "演示：传票据" }))}>
+                  <Ic n="receipt" size={14} /> 传票据 <span style={{ color: "var(--dove)", fontWeight: 400 }}>0/9</span>
+                </button>
+              </div>
+              <div className="field">
+                <div className="field-label"><span>备注</span></div>
+                <div className="input-wrap" style={{ height: 44 }}>
+                  <input placeholder="比如：首期款含中介费" value={note} onChange={(e) => setNote(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <Banner tone="sky" icon="info">
+              记完，项目账本和资金账户里都能看到。
+            </Banner>
+          </div>
+
+          <div className="modal-foot">
+            <span style={{ fontSize: 12, color: "var(--graphite)", display: "flex", alignItems: "center", gap: 5 }}>
+              <Ic n="lock" size={12} /> 会留记录
+            </span>
+            <div className="right">
+              <button className="btn-line" onClick={onClose}>取消</button>
+              <button className="btn-fill" onClick={submit}><Ic n="check" size={15} /> 记上</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ScreenProjectDetail({ records, accounts, adjusts, go, onLock, lockLeft }) {
+  const [open, setOpen] = React.useState(false);
+  const [dir, setDir] = React.useState("all");
+  const [q, setQ] = React.useState("");
+  const [localRecs, setLocalRecs] = React.useState(records.filter((r) => r.code === "XM-2026-0018"));
+
+  const rows = localRecs.filter((r) => {
+    if (dir === "out" && !(r.out > 0)) return false;
+    if (dir === "in" && !(r.in > 0)) return false;
+    if (q.trim() && !(r.subject + r.payer + r.payee).toLowerCase().includes(q.trim().toLowerCase())) return false;
+    return true;
+  });
+
+  const totalIn = localRecs.reduce((s, r) => s + r.in, 0);
+  const totalOut = localRecs.reduce((s, r) => s + r.out, 0);
+
+  const handleSubmit = (payload) => {
+    const account = accounts.find((a) => a.id === payload.accountId);
+    setLocalRecs([{
+      id: "r-" + Date.now(), project: "阳光里 3-2-1801", code: "XM-2026-0018",
+      subject: payload.subject, stage: "签约", date: payload.date,
+      out: payload.dir === "out" ? payload.amount : 0,
+      in: payload.dir === "in" ? payload.amount : 0,
+      payer: payload.dir === "out" ? (account ? account.name : "—") : (payload.payer || "—"),
+      payee: payload.dir === "out" ? (payload.payee || "—") : (account ? account.name : "—"),
+      accountId: payload.accountId, by: "陈明远", voucher: 0, note: payload.note,
+    }].concat(localRecs));
+    setOpen(false);
+    window.dispatchEvent(new CustomEvent("d-toast", {
+      detail: payload.accountId ? "记账成功 · 已同步到 " + account.name : "记账成功 · 未挂账户",
+    }));
+  };
+
+  return (
+    <div className="page" data-screen-label="07 项目账本明细">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <button className="btn-text muted" onClick={() => go("ledger")}><Ic n="arrowLeft" size={14} /> 返回</button>
+        <span className="lock-timer"><Ic n="clock" size={13} /> 还能看 <span className="tnum">{lockLeft}</span></span>
+      </div>
+
+      <div className="page-head" style={{ marginBottom: 22 }}>
+        <div>
+          <div className="h1-row" style={{ gap: 10 }}>
+            <h1 style={{ fontSize: 38 }}>阳光里 3-2-1801</h1>
+            <Pill tone="solid">在售</Pill>
+            <Pill tone="line">没结账</Pill>
+          </div>
+          <p className="desc">XM-2026-0018 · 浦东张杨路 1288 弄</p>
+        </div>
+        <div className="aside" style={{ paddingTop: 8 }}>
+          <button className="btn-text muted" onClick={() => window.dispatchEvent(new CustomEvent("d-toast", { detail: "演示：导出本项目" }))}>
+            <Ic n="download" size={14} /> 导出
+          </button>
+          <button className="btn-line" onClick={() => window.dispatchEvent(new CustomEvent("d-toast", { detail: "演示：结账要权限" }))}>结账</button>
+          <button className="btn-fill" onClick={() => setOpen(true)}><Ic n="plus" size={15} /> 记一笔</button>
+        </div>
+      </div>
+
+      <div className="stat-grid c4" style={{ marginBottom: 20 }}>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot" />收进来</div><div className="stat-value money-pos">{totalIn > 0 ? "¥" + wan(totalIn) + "万" : "¥0"}</div><div className="stat-sub">{localRecs.filter((r) => r.in > 0).length ? localRecs.filter((r) => r.in > 0).length + " 笔" : "还没收过"}</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot" />花出去</div><div className="stat-value money-neg">{totalOut > 0 ? "¥" + wan(totalOut) + "万" : "¥0"}</div><div className="stat-sub">{localRecs.filter((r) => r.out > 0).length ? localRecs.filter((r) => r.out > 0).length + " 笔" : "还没花过"}</div></div>
+        <div className="stat-card warm"><div className="stat-label"><span className="stat-dot" />净剩</div><div className="stat-value">{signed(totalIn - totalOut)}</div><div className="stat-sub">持有了 128 天</div></div>
+        <div className="stat-card"><div className="stat-label"><span className="stat-dot d-apricot" />记了账户</div>
+          <div className="stat-value">{localRecs.filter((r) => r.accountId).length}<span className="unit">/ {localRecs.length} 笔</span></div>
+          <div className="stat-sub">{localRecs.filter((r) => !r.accountId).length === 0 ? "都记全了" : "还有 " + localRecs.filter((r) => !r.accountId).length + " 笔没记"}</div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+        <label className="search" style={{ width: 240 }}>
+          <Ic n="search" size={14} />
+          <input placeholder="搜科目或对方" value={q} onChange={(e) => setQ(e.target.value)} />
+        </label>
+        <Seg value={dir} onChange={setDir} options={[
+          { value: "all", label: "全部" },
+          { value: "out", label: "花出去" },
+          { value: "in", label: "收进来" },
+        ]} />
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--graphite)" }}>
+          <Ic n="info" size={13} /> 「账户」列是新加的
+        </span>
+      </div>
+
+      <div className="tbl-card">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th style={{ paddingLeft: 24, width: 100 }}>日期</th>
+              <th>科目</th>
+              <th style={{ width: 176 }}>账户 <span style={{ color: "var(--rust)", fontSize: 10.5 }}>新</span></th>
+              <th>{dir === "out" ? "付给谁" : "谁付的"}</th>
+              <th className="num">出账</th>
+              <th className="num">进账</th>
+              <th className="mid" style={{ width: 92 }}>凭证</th>
+              <th style={{ width: 78 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const a = accounts.find((x) => x.id === r.accountId);
+              return (
+                <tr key={r.id}>
+                  <td className="tnum" style={{ paddingLeft: 24, color: "var(--graphite)" }}>{r.date}</td>
+                  <td>
+                    <div className="cell-main">{r.subject}</div>
+                    <div className="cell-sub">{r.by} 记的{r.note ? " · " + r.note : ""}</div>
+                  </td>
+                  <td>
+                    {a ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <AccountGlyph type={a.type} size={24} radius={8} />
+                        <span style={{ fontSize: 12.5 }}>{a.name}</span>
+                      </span>
+                    ) : <Pill tone="apricot"><Ic n="alert" size={11} /> 没走账户</Pill>}
+                  </td>
+                  <td>{r.out > 0 ? r.payee : r.payer}</td>
+                  <td className="num tnum">{r.out > 0 ? <span className="money-neg">{money(r.out)}</span> : <span style={{ color: "var(--dove)" }}>—</span>}</td>
+                  <td className="num tnum">{r.in > 0 ? <span className="money-pos">{money(r.in)}</span> : <span style={{ color: "var(--dove)" }}>—</span>}</td>
+                  <td className="mid">{r.voucher ? <Pill tone="line"><Ic n="receipt" size={11} /> {r.voucher}</Pill> : <span className="tag-weak">缺凭证</span>}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="icon-btn" title="编辑"><Ic n="pencil" size={14} /></button>
+                      <button className="icon-btn rust" title="删除"><Ic n="trash" size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="tbl-foot">
+          <span>共 {rows.length} 笔 · 净剩 {signed(totalIn - totalOut)}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Ic n="landmark" size={12} />
+            <button className="btn-text" style={{ padding: 0, fontSize: 12.5 }} onClick={() => go("accounts-ledger")}>去资金账户看这批流水</button>
+          </span>
+        </div>
+      </div>
+
+      {open ? <RecordDialog accounts={accounts} adjusts={adjusts} onClose={() => setOpen(false)} onSubmit={handleSubmit} /> : null}
+    </div>
+  );
+}
+
+/* ==========================================================================================
+   N · 屏 7 · 附录：实现影响面（改名波及面 / 数据模型 / 权限 / 迁移）
+   ========================================================================================== */
+function ScreenAppendix({ go }) {
+  const [tab, setTab] = React.useState("model");
+  const tabs = [
+    { id: "model", label: "数据" },
+    { id: "api", label: "接口" },
+    { id: "rename", label: "改名" },
+    { id: "risk", label: "待定" },
+  ];
+
+  return (
+    <div className="page" data-screen-label="08 附录 · 实现影响面">
+      <div className="page-head">
+        <div>
+          <h1>怎么落地</h1>
+          <p className="desc">给开发看：要改哪些地方。</p>
+        </div>
+        <div className="aside"><Pill tone="line"><Ic n="info" size={11} /> 照现有代码写的</Pill></div>
+      </div>
+
+      <div className="tabs" style={{ marginBottom: 18 }}>
+        {tabs.map((t) => (
+          <button key={t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab === "model" ? (
+        <div className="doc-grid">
+          <div className="doc-card">
+            <h3><span className="idx">新表</span>fund_accounts · 账户</h3>
+            <table className="doc-tbl">
+              <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>uuid PK</td><td>沿用 BaseModel</td></tr>
+                <tr><td><code>name</code></td><td>varchar(24)</td><td>名字，不能重名（删了能再用）</td></tr>
+                <tr><td><code>type</code></td><td>enum</td><td>bank / corp / wechat / alipay / cash</td></tr>
+                <tr><td><code>account_no</code></td><td>varchar(40)</td><td>卡号后四位</td></tr>
+                <tr><td><code>holder</code></td><td>varchar(50)</td><td>谁的卡</td></tr>
+                <tr><td><code>opening_balance</code></td><td>numeric(15,2)</td><td>起始有多少</td></tr>
+                <tr><td><code>opening_date</code></td><td>date</td><td>从哪天算起</td></tr>
+                <tr><td><code>status</code></td><td>enum</td><td>在用 / 停用（停用不删账）</td></tr>
+                <tr><td><code>note</code></td><td>varchar(120)</td><td>备注</td></tr>
+                <tr><td><code>is_deleted</code></td><td>bool</td><td>软删除（有账就变停用）</td></tr>
+              </tbody>
+            </table>
+            <p className="doc-note">余额<b>不存库</b>，每次现算：<code>opening_balance + Σinflow − Σoutflow + Σadjust</code>。这样不会出现「余额和流水对不上」的两份数。</p>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">新表</span>fund_account_adjustments · 核对调整</h3>
+            <table className="doc-tbl">
+              <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>uuid PK</td><td>—</td></tr>
+                <tr><td><code>account_id</code></td><td>uuid</td><td>逻辑外键 → fund_accounts.id</td></tr>
+                <tr><td><code>adjust_date</code></td><td>date</td><td>算在哪天</td></tr>
+                <tr><td><code>amount</code></td><td>numeric(15,2)</td><td>差额，可正可负</td></tr>
+                <tr><td><code>reason</code></td><td>text</td><td>必填</td></tr>
+                <tr><td><code>operator_id</code></td><td>varchar(36)</td><td>谁调的</td></tr>
+                <tr><td><code>receipt_urls</code></td><td>jsonb</td><td>截图，可不传</td></tr>
+              </tbody>
+            </table>
+            <p className="doc-note">只能加，<b>没有</b>改和删的接口。调错了就再调一笔冲回去。</p>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">改表</span>finance_records 加一列</h3>
+            <ul>
+              <li>加 <code>account_id</code> 一列 + 索引 <code>idx_finance_account_date</code>。</li>
+              <li>空值 = 「没走账户」，<b>不是</b>「忘填了」。所以老数据全是空，不用猜着补。</li>
+              <li>不加数据库外键，沿用现有做法。</li>
+              <li>删账户时：名下有账就拒绝删除，只能停用。</li>
+            </ul>
+            <div className="design-note">
+              和现有 <code>finance_records.subject_id</code> 一个套路，不用引入新写法。
+            </div>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">迁移</span>启动迁移（幂等）</h3>
+            <div className="flow">
+              <span className="n">migrations/_fund_accounts.py</span>
+              <span className="ar">→</span>
+              <span className="n">run_startup_migrations</span>
+              <span className="ar">→</span>
+              <span className="n">CREATE TABLE IF NOT EXISTS</span>
+            </div>
+            <ul>
+              <li>新建 <code>_fund_accounts.py</code>，照抄 <code>create_finance_subjects_table</code> 的写法。</li>
+              <li>加列先判断 <code>_column_exists</code>，重复启动不会报错。</li>
+              <li>账户<b>不预置</b>（真实账户只有你们知道），第一次进去自己建。</li>
+              <li>老数据留空，在账户流水页一笔笔补。</li>
+            </ul>
+          </div>
+        </div>
+      ) : tab === "api" ? (
+        <div className="doc-grid">
+          <div className="doc-card">
+            <h3><span className="idx">接口</span>账户增删改查</h3>
+            <table className="doc-tbl">
+              <thead><tr><th>方法 / 路径</th><th>权限</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><code>GET /admin/accounts</code></td><td>account:read + 已解锁</td><td>列表，带余额和进出合计</td></tr>
+                <tr><td><code>GET /admin/accounts/&#123;id&#125;</code></td><td>account:read</td><td>详情 + 余额怎么算的 + 最近流水</td></tr>
+                <tr><td><code>POST /admin/accounts</code></td><td>account:write</td><td>新建（名字不能重）</td></tr>
+                <tr><td><code>PATCH /admin/accounts/&#123;id&#125;</code></td><td>account:write</td><td>改信息；改起始要提示余额会变</td></tr>
+                <tr><td><code>DELETE /admin/accounts/&#123;id&#125;</code></td><td>account:write</td><td>有账就拒绝，提示改成停用</td></tr>
+                <tr><td><code>GET /admin/accounts/&#123;id&#125;/flows</code></td><td>account:read</td><td>这个账户的流水</td></tr>
+                <tr><td><code>POST /admin/accounts/&#123;id&#125;/adjustments</code></td><td>account:write</td><td>核对调整（只能加）</td></tr>
+                <tr><td><code>GET /admin/accounts/&#123;id&#125;/adjustments</code></td><td>account:read</td><td>核对记录列表</td></tr>
+              </tbody>
+            </table>
+            <p className="doc-note">响应格式照旧：成功直接返回模型，错误统一 <code>{"{"}"code":≠0,"message":"…"{"}"}</code> + 标准 HTTP 码。</p>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">密码</span>三个接口</h3>
+            <ul>
+              <li><code>POST /admin/accounts/unlock</code> — 传密码，对了发 30 分钟令牌，错了记一次。</li>
+              <li><code>POST /admin/accounts/module-password</code> — 首次设或重设（要 <code>account:admin</code>）。</li>
+              <li><code>POST /admin/accounts/lock</code> — 手动锁，令牌立刻作废。</li>
+            </ul>
+            <div className="design-note">
+              <b>⚠️ 为什么放后端：</b>只在浏览器里挡一层等于没挡——拿到登录态直接调接口就进去了。所以密码必须后端验，
+              前端只负责倒计时和观感。<br />
+              <b>⚠️ 没做：</b>每人一把密码。已经说好大家共用一把，以后要分人再加。
+            </div>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">权限</span>新增权限码</h3>
+            <table className="doc-tbl">
+              <thead><tr><th>权限码</th><th>含义</th><th>admin</th><th>operator</th></tr></thead>
+              <tbody>
+                <tr><td><code>account:read</code></td><td>看账户和流水（还要密码）</td><td>✓</td><td>✓</td></tr>
+                <tr><td><code>account:write</code></td><td>改账户、核对、补账户</td><td>✓</td><td>✓</td></tr>
+                <tr><td><code>account:admin</code></td><td>设密码、改密码</td><td>✓</td><td>—</td></tr>
+              </tbody>
+            </table>
+            <ul style={{ marginTop: 12 }}>
+              <li>加进 <code>_seeds.py::_PERMISSIONS_SEED</code>；被人手工改过权限的角色不要自动加回。</li>
+              <li>前端 <code>PATH_PERMISSION_MAP</code> 加一条，要排在 <code>/admin/ledger</code> 前面（长的先匹配）。</li>
+              <li><code>admin-nav-data.ts</code>：财务组加「资金账户」，标上要密码。</li>
+            </ul>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">联动</span>记账时的校验</h3>
+            <ul>
+              <li><code>LedgerRecordCreate</code> 加 <code>account_id</code> 和 <code>account_skipped</code> 两个字段。</li>
+              <li>方向要对上：出对付款户，进对收款户。</li>
+              <li>账户必须存在且在用。停用的不能记新账。</li>
+              <li>勾「没走账户」必须有备注，空白算漏填。</li>
+              <li>项目结账后不能加、不能删、不能换账户。</li>
+            </ul>
+          </div>
+        </div>
+      ) : tab === "rename" ? (
+        <div className="doc-grid">
+          <div className="doc-card">
+            <h3><span className="idx">改名</span>资金账本 → 项目账本</h3>
+            <ul>
+              <li><b>只改中文</b>，不动网址、表名、权限码——否则书签和小程序会失效。</li>
+              <li>前端 19 个文件（实测）：<code>admin-nav-data.ts</code>、<code>ledger/page.tsx</code>、<code>ledger-stats.tsx</code>、<code>ledger-view.tsx</code>、<code>ledger-schema.ts</code>、<code>ledger-detail-header.tsx</code>、<code>ledger-detail-table.tsx</code>、<code>settlement-dialog.tsx</code>、<code>statistics-hero.tsx</code>、<code>error.tsx</code>×2、<code>actions.ts</code>、<code>export-actions.ts</code>、<code>create-investment-dialog.tsx</code> 等。</li>
+              <li>后端：<code>routers/finance/ledger.py</code> 的说明文字和导出文件名（<code>资金账本_YYYYMMDD.xlsx</code> → <code>项目账本_YYYYMMDD.xlsx</code>）；<code>models/*</code>、<code>migrations/*</code> 只有注释。</li>
+              <li>小程序：<code>miniapp/pages/ledger/**</code> 的标题。</li>
+              <li>文档：README 等引用顺手改，旧设计稿<b>不动</b>（已是存档）。</li>
+            </ul>
+            <div className="design-note">
+              <b>⚠️ 待确认：</b>导出文件名一改，可能有人按名字写的脚本会断。外部有依赖就先通知，或文件名先别改。
+            </div>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">影响</span>要改的地方</h3>
+            <table className="doc-tbl">
+              <thead><tr><th>位置</th><th>动作</th><th>风险</th></tr></thead>
+              <tbody>
+                <tr><td>菜单、页头、返回链接</td><td>都改成「项目账本」</td><td>低</td></tr>
+                <tr><td>导出文件名和表头</td><td>改文字</td><td><b>中</b>（有人脚本按名字写的会断）</td></tr>
+                <tr><td>结账 / 撤销结账的提示</td><td>改文字</td><td>低</td></tr>
+                <tr><td>跟投里提到的「资金账本」</td><td>改文字</td><td>低</td></tr>
+                <tr><td>接口 <code>/admin/ledger</code></td><td><b>不动</b></td><td>—</td></tr>
+                <tr><td>表 <code>finance_records</code> / 权限 <code>ledger:*</code></td><td><b>不动</b></td><td>—</td></tr>
+                <tr><td>小程序页面标题</td><td>改文字</td><td>低（要重新发版）</td></tr>
+                <tr><td>操作记录的分类</td><td>保持 <code>project_finance</code></td><td>低（旧记录还能查）</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="doc-card" style={{ gridColumn: "1 / -1" }}>
+            <h3><span className="idx">验证</span>怎么验（写代码时必须补）</h3>
+            <ul>
+              <li>建账户 → 记一笔选它 → 三处数字一致（留截图）。</li>
+              <li>勾「没走账户」的账，不进任何余额，但项目账本里还在。</li>
+              <li>核对调过之后余额变了，项目账本汇总<b>不变</b>。</li>
+              <li>锁定后直接调接口，必须 401/403。</li>
+              <li>连错 5 次锁 15 分钟，密码对了也进不去。</li>
+              <li>连启两次后端，迁移不报错、不重复建列。</li>
+            </ul>
+          </div>
+        </div>
+      ) : (
+        <div className="doc-grid">
+          <div className="doc-card">
+            <h3><span className="idx">边界</span>系统能保证什么</h3>
+            <ul>
+              <li>系统只能保证自己算得对。余额和银行不会自动相等，除非每笔都录。</li>
+              <li>所以「核对」做成主动动作，不是偷偷改数。</li>
+              <li>「没记账户」是最大的漏洞，所以放首页。</li>
+            </ul>
+            <div className="design-note">
+              <b>⚠️ 未覆盖：</b>银行流水自动导入（网银/邮件解析）。这是彻底消灭手工记账的唯一路径，但涉及银行凭证与合规，建议单独立项。
+            </div>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">待定</span>3 件事要你定</h3>
+            <ul>
+              <li><b>1 · 余额能是负数吗？</b>垫资时很常见。现在不拦，只显示。要拦得加规则。</li>
+              <li><b>2 · 一张卡能给多个项目用吗？</b>现在可以，这也是账能对上的前提。</li>
+              <li><b>3 · 项目结账后还能换账户吗？</b>现在不能，和现有结账逻辑一致，要先撤销结账。</li>
+            </ul>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">没画</span>这稿没做的</h3>
+            <ul>
+              <li>小程序记账选账户（这次没要求）。</li>
+              <li>余额走势图（30 天）。数据有，但不急。</li>
+              <li>按人分配能看哪些账户。现在是密码 + 权限两层。</li>
+              <li>外币、子账户：说好不做。</li>
+            </ul>
+          </div>
+
+          <div className="doc-card">
+            <h3><span className="idx">顺序</span>建议的提交顺序</h3>
+            <div className="flow">
+              <span className="n">1 建表</span><span className="ar">→</span>
+              <span className="n">2 写接口</span><span className="ar">→</span>
+              <span className="n">3 同步类型</span><span className="ar">→</span>
+              <span className="n">4 账户页</span><span className="ar">→</span>
+              <span className="n">5 记账联动</span><span className="ar">→</span>
+              <span className="n">6 改名字</span><span className="ar">→</span>
+              <span className="n">7 验收</span>
+            </div>
+            <ul style={{ marginTop: 14 }}>
+              <li>第 5 步之前先别露账户字段，不然能选却存不进去。</li>
+              <li>改名放最后，一次改完，别让两个叫法并存。</li>
+              <li>每步跑 <code>tsc --noEmit</code> / <code>ruff check .</code>，接口改了跑 <code>pnpm gen-api</code>。</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+        <button className="btn-line" onClick={() => go("accounts")}><Ic n="arrowLeft" size={14} /> 回到资金账户</button>
+        <button className="btn-text muted" onClick={() => go("accounts")}>回到开头</button>
+      </div>
+    </div>
+  );
+}
+
+/* 占位屏（其它导航项） */
+function ScreenPlaceholder({ go }) {
+  return (
+    <div className="page" data-screen-label="占位">
+      <div className="card" style={{ padding: "80px 40px", textAlign: "center" }}>
+        <div style={{ width: 44, height: 44, borderRadius: 14, background: "var(--fog)", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--graphite)" }}>
+          <Ic n="file" size={20} />
+        </div>
+        <h2 style={{ fontSize: 19, fontWeight: 500 }}>这一页没画</h2>
+        <p style={{ fontSize: 13.5, color: "var(--graphite)", marginTop: 8 }}>本稿只画资金账户、项目账本和记账。</p>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 18, flexWrap: "wrap" }}>
+          <button className="btn-line" onClick={() => go("accounts")}>资金账户</button>
+          <button className="btn-line" onClick={() => go("accounts-ledger")}>账户流水</button>
+          <button className="btn-line" onClick={() => go("ledger")}>项目账本</button>
+          <button className="btn-line" onClick={() => go("project-detail")}>记一笔</button>
+          <button className="btn-line" onClick={() => go("appendix")}>怎么落地</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ==========================================================================================
+   O · 设计说明面板
+   ========================================================================================== */
+const NOTES = [
+  ["01", "「资金账本」改叫「项目账本」，只改中文，网址和表没动。「资金」留给新模块，名字不再打架。"],
+  ["02", "账户只填四样：名字、类型、起始金额、从哪天算。不做子账户、不做外币。"],
+  ["03", "余额是算出来的，不用填：起始 + 进 − 出 ± 核对。所以不会和流水对不上。"],
+  ["04", "核对时填卡里实际有多少，系统自己算差额。谁调的、为什么、什么时候，全留档。"],
+  ["05", "进来要单独密码：6 位数字，30 分钟没动自动锁，也能手动锁。输错 5 次锁 15 分钟。"],
+  ["06", "密码必须后端验。只在页面挡一层，拿到登录态直接调接口就绕过去了。"],
+  ["07", "账户必填：出去的选付款户，进来的选收款户。跟投可以勾「没走账户」，但要写原因。"],
+  ["08", "选账户标出「常用」，下面直接预告记完还剩多少，不用提交后才发现选错卡。"],
+  ["09", "两种看法：卡片看钱在哪，表格一排数字对着核，切换不跳页。"],
+  ["10", "「没记账户」放首页当指标 + 一键筛选。老数据一笔笔补，不猜着批量填。"],
+];
+
+function NotesPanel({ open, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="notes-panel">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+        <div>
+          <h3>设计说明</h3>
+          <p className="sub" style={{ marginBottom: 12 }}>10 条关键决定</p>
+        </div>
+        <button className="icon-btn" onClick={onClose} aria-label="关闭设计说明"><Ic n="x" size={14} /></button>
+      </div>
+      {NOTES.map(([no, txt]) => (
+        <div className="note-item" key={no}><span className="no">{no}</span><span>{txt}</span></div>
+      ))}
+    </div>
+  );
+}
+
+/* ==========================================================================================
+   P · App（状态编排 + 解锁倒计时 + 路由）
+   ========================================================================================== */
+function App() {
+  const [page, setPage] = React.useState("accounts");
+  const [collapsed, setCollapsed] = React.useState(false);
+  const [openGroups, setOpenGroups] = React.useState({});
+  const [toast, setToast] = React.useState(null);
+  const [toastBad, setToastBad] = React.useState(false);
+  const [notesOpen, setNotesOpen] = React.useState(false);
+  const toastTimer = React.useRef(null);
+
+  // 账户与流水状态
+  const [accounts, setAccounts] = React.useState(INITIAL_ACCOUNTS);
+  const [adjusts, setAdjusts] = React.useState(INITIAL_ADJUSTS);
+  const [records, setRecords] = React.useState(INITIAL_RECORDS);
+
+  // 视图开关
+  const [view, setView] = React.useState("grid");
+
+  // 弹层状态
+  const [drawer, setDrawer] = React.useState(null);         // { mode, id }
+  const [recon, setRecon] = React.useState(null);           // accountId | "any"
+  const [pwModal, setPwModal] = React.useState(null);       // "setup" | "reset" | "change"
+  const [detailId, setDetailId] = React.useState(null);
+
+  // 入口锁：解锁后 30 分钟滑动过期
+  const [unlocked, setUnlocked] = React.useState(true);      // 设计稿默认解锁，便于直接看主界面
+  const [hasPassword, setHasPassword] = React.useState(true);
+  const [lockReason, setLockReason] = React.useState("manual");
+  const [attemptsLeft, setAttemptsLeft] = React.useState(3);
+  const [hardLocked, setHardLocked] = React.useState(false);
+  const [left, setLeft] = React.useState(30 * 60);           // 秒
+
+  React.useEffect(() => {
+    if (!unlocked) return;
+    const t = setInterval(() => {
+      setLeft((s) => {
+        if (s <= 1) { setUnlocked(false); setLockReason("expired"); return 30 * 60; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [unlocked]);
+
+  const lockLeft = React.useMemo(() => {
+    const m = Math.floor(left / 60);
+    const s = left % 60;
+    return m + ":" + String(s).padStart(2, "0");
+  }, [left]);
+
+  // toast
+  React.useEffect(() => {
+    const h = (e) => {
+      setToast(e.detail);
+      setToastBad(!!e.bad);
+      clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToast(null), 2400);
+    };
+    window.addEventListener("d-toast", h);
+    return () => window.removeEventListener("d-toast", h);
+  }, []);
+
+  // 任意操作重置滑动画
+  const touch = React.useCallback(() => { if (unlocked) setLeft(30 * 60); }, [unlocked]);
+
+  // 未解锁时点击资金账户菜单：记住目标页，解锁后直接落到那一页（而不是强制回总览）
+  const [pendingPage, setPendingPage] = React.useState(null);
+  const go = (p) => {
+    const lockedTarget = p === "accounts" || p === "accounts-ledger" || p === "accounts-recon";
+    if (lockedTarget && !unlocked) { setPendingPage(p); setPage("accounts"); return; }
+    touch();
+    setPage(p);
+    setDetailId(null);
+  };
+
+  const onUnlock = () => {
+    setUnlocked(true);
+    setLeft(30 * 60);
+    setAttemptsLeft(3);
+    setHardLocked(false);
+    if (pendingPage) { setPage(pendingPage); setPendingPage(null); }
+    window.dispatchEvent(new CustomEvent("d-toast", { detail: "已进入 · 30 分钟没操作会自动锁" }));
+  };
+
+  const onLock = () => {
+    if (page === "accounts" || page === "accounts-ledger" || page === "accounts-recon") setPendingPage(page);
+    setUnlocked(false);
+    setLockReason("manual");
+    setPage("accounts");
+    setDetailId(null);
+    window.dispatchEvent(new CustomEvent("d-toast", { detail: "已锁定" }));
+  };
+
+  const saveAccount = (data, isEdit) => {
+    if (isEdit) {
+      setAccounts(accounts.map((a) => (a.id === data.id ? data : a)));
+      window.dispatchEvent(new CustomEvent("d-toast", { detail: "改好了" }));
+    } else {
+      setAccounts(accounts.concat([data]));
+      window.dispatchEvent(new CustomEvent("d-toast", { detail: "建好了 · 现在就能记账" }));
+    }
+    setDrawer(null);
+  };
+
+  const toggleAccount = (id) => {
+    setAccounts(accounts.map((a) => (a.id === id ? { ...a, status: a.status === "active" ? "off" : "active" } : a)));
+    const a = accounts.find((x) => x.id === id);
+    window.dispatchEvent(new CustomEvent("d-toast", { detail: (a && a.status === "active" ? "已停用：" : "已启用：") + (a ? a.name : "") }));
+  };
+
+  const submitRecon = (payload) => {
+    setAdjusts(adjusts.concat([{
+      id: "adj-" + Date.now(), accountId: payload.accountId, date: payload.date,
+      amount: payload.amount, reason: payload.reason, operator: "陈明远",
+      createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+    }]));
+    setRecon(null);
+    window.dispatchEvent(new CustomEvent("d-toast", { detail: "核对已记录 " + signed(payload.amount) }));
+  };
+
+  const fixRecord = (id, accountId) => {
+    setRecords(records.map((r) => (r.id === id ? { ...r, accountId } : r)));
+    const a = accounts.find((x) => x.id === accountId);
+    window.dispatchEvent(new CustomEvent("d-toast", { detail: "已挂到：" + (a ? a.name : "") }));
+  };
+
+  const isLockedPage = page === "accounts" || page === "accounts-ledger" || page === "accounts-recon";
+
+  let content;
+  if (isLockedPage && !unlocked) {
+    content = (
+      <LockScreen
+        onUnlock={onUnlock}
+        onReset={() => setPwModal("reset")}
+        onForgot={() => setPwModal("reset")}
+        onSetPassword={() => setPwModal("setup")}
+        reason={lockReason}
+        attemptsLeft={attemptsLeft}
+        locked={hardLocked}
+        hasPassword={hasPassword}
+      />
+    );
+  } else if (page === "accounts") {
+    content = (
+      <ScreenAccounts
+        accounts={accounts} adjusts={adjusts} records={records}
+        view={view} setView={setView} go={go}
+        onOpenAccount={(id) => { setDetailId(id); setPage("accounts-detail"); }}
+        onNew={() => setDrawer({ mode: "new" })}
+        onEdit={(id) => setDrawer({ mode: "edit", id })}
+        onToggle={toggleAccount}
+        onRecon={(id) => setRecon(id || "any")}
+        onLock={onLock}
+        lockLeft={lockLeft}
+        onChangePassword={() => setPwModal("change")}
+      />
+    );
+  } else if (page === "accounts-detail") {
+    content = (
+      <ScreenAccountDetail
+        accountId={detailId || accounts[0].id} accounts={accounts} adjusts={adjusts} records={records}
+        onBack={() => { setPage("accounts"); setDetailId(null); }}
+        onEdit={(id) => setDrawer({ mode: "edit", id })}
+        onRecon={(id) => setRecon(id)}
+        onLock={onLock} go={go} lockLeft={lockLeft}
+      />
+    );
+  } else if (page === "accounts-ledger" || page === "accounts-recon") {
+    content = (
+      <ScreenAccountLedger
+        accounts={accounts} records={records} adjusts={adjusts}
+        onLock={onLock} go={go} lockLeft={lockLeft}
+        onPickAccount={(id) => { setDetailId(id); setPage("accounts-detail"); }}
+        onFixRecord={fixRecord}
+      />
+    );
+  } else if (page === "ledger") {
+    content = <ScreenProjectLedger records={records} accounts={accounts} go={go} onLock={onLock} />;
+  } else if (page === "project-detail") {
+    content = (
+      <ScreenProjectDetail
+        records={records} accounts={accounts} adjusts={adjusts}
+        go={go} onLock={onLock} lockLeft={lockLeft}
+      />
+    );
+  } else if (page === "appendix") {
+    content = <ScreenAppendix go={go} />;
+  } else {
+    content = <ScreenPlaceholder go={go} />;
+  }
+
+  return (
+    <div className={"app" + (collapsed ? " collapsed" : "")} onMouseDown={touch} onKeyDown={touch}>
+      <Sidebar page={page} go={go} collapsed={collapsed} setCollapsed={setCollapsed}
+        openGroups={openGroups}
+        toggleGroup={(id) => setOpenGroups((o) => ({ ...o, [id]: o[id] === false }))}
+        onToggleNotes={() => setNotesOpen(!notesOpen)} />
+      <main className="main">{content}</main>
+
+      {drawer ? (
+        <AccountDrawer
+          mode={drawer.mode}
+          account={drawer.id ? accounts.find((a) => a.id === drawer.id) : null}
+          accounts={accounts} records={records} adjusts={adjusts}
+          onClose={() => setDrawer(null)}
+          onSave={saveAccount}
+        />
+      ) : null}
+
+      {recon ? (
+        <ReconModal
+          accountId={recon === "any" ? (detailId || accounts[0].id) : recon}
+          accounts={accounts} adjusts={adjusts}
+          onClose={() => setRecon(null)}
+          onDone={submitRecon}
+        />
+      ) : null}
+
+      {pwModal ? (
+        <PasswordSetupModal
+          mode={pwModal}
+          onClose={() => setPwModal(null)}
+          onDone={() => {
+            setHasPassword(true);
+            setPwModal(null);
+            onUnlock();
+            window.dispatchEvent(new CustomEvent("d-toast", { detail: "密码设好了" }));
+          }}
+        />
+      ) : null}
+
+      <NotesPanel open={notesOpen} onClose={() => setNotesOpen(false)} />
+      {toast ? <div className={"toast" + (toastBad ? " bad" : "")}>{toast}</div> : null}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

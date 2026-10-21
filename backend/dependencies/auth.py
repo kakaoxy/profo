@@ -475,6 +475,10 @@ LeadUploadPhotoPermDep = Annotated[User, Depends(require_any_permission(["proper
 LedgerReadPermDep = Annotated[User, Depends(require_permission("ledger:read"))]
 LedgerWritePermDep = Annotated[User, Depends(require_permission("ledger:write"))]
 LedgerSettlePermDep = Annotated[User, Depends(require_permission("ledger:settle"))]
+# account 模块（资金账户；另需模块入口密码解锁，见下方 AccountsUnlockedDep）
+AccountReadPermDep = Annotated[User, Depends(require_permission("account:read"))]
+AccountWritePermDep = Annotated[User, Depends(require_permission("account:write"))]
+AccountAdminPermDep = Annotated[User, Depends(require_permission("account:admin"))]
 # subject 模块（科目管理）
 SubjectReadPermDep = Annotated[User, Depends(require_permission("subject:read"))]
 SubjectWritePermDep = Annotated[User, Depends(require_permission("subject:write"))]
@@ -701,12 +705,55 @@ def require_project_read_or_business_permission(
     return permission_checker
 
 
+# ==================== 资金账户模块入口锁 ====================
+
+# 前端携带解锁令牌的请求头（值仅回传，不含用户信息）
+ACCOUNTS_UNLOCK_HEADER = "X-Accounts-Unlock"
+
+
+def require_accounts_unlock(
+    user: AccountReadPermDep,
+    db: DbSessionDep,
+    request: Request,
+) -> User:
+    """校验资金账户模块已解锁（令牌有效期 30 分钟滑动）.
+
+    为什么在依赖里做（而非只在页面挡一层）：拿到登录态即可直接调接口，
+    只在前端遮挡等于没锁。此处每次受保护请求都重新校验并滑动续期。
+
+    Raises:
+        AccountUnlockUnavailableError: Redis 不可用（503，不降级放行）
+        PermissionDeniedError: 未解锁或无有效令牌（403）
+
+    """
+    from services.finance.unlock import AccountUnlockService
+
+    token = request.headers.get(ACCOUNTS_UNLOCK_HEADER)
+    service = AccountUnlockService(db)
+    if not service.has_password():
+        # 尚未设置模块密码：视为未解锁，引导前端去设密码（不静默放行）
+        msg = "资金账户未解锁，请先设置模块密码"
+        raise PermissionDeniedError(msg)
+    unlocked, _seconds_left = service.check_token(str(user.id), token)
+    if not unlocked:
+        msg = "资金账户未解锁，请先输入模块密码"
+        raise PermissionDeniedError(msg)
+    return user
+
+
+AccountsUnlockedDep = Annotated[User, Depends(require_accounts_unlock)]
+
 # 项目读端点业务身份双通道依赖类型
 # 用于 GET /projects/{id}、GET /projects/{id}/renovation/photos 等读端点
 ProjectReadOrBusinessPermDep = Annotated[User, Depends(require_project_read_or_business_permission("project_id"))]
 
 
 __all__ = [
+    "ACCOUNTS_UNLOCK_HEADER",
+    "AccountAdminPermDep",
+    "AccountReadPermDep",
+    "AccountWritePermDep",
+    "AccountsUnlockedDep",
     "ApiKeyAuthDep",
     "ApiKeyManagePermDep",
     "CurrentActiveUserDep",
@@ -765,6 +812,7 @@ __all__ = [
     "get_current_active_user",
     "get_current_user",
     "has_permission",
+    "require_accounts_unlock",
     "require_api_key",
     "require_permission",
     "require_project_business_permission",

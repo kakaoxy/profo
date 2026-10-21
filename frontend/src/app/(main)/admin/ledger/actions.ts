@@ -37,7 +37,7 @@ export interface LedgerListParams {
 export type ActionResult<T> = { success: true; data: T } | { success: false; message: string };
 
 /**
- * 获取资金账本项目列表（Server Action，供客户端组件刷新使用）
+ * 获取项目账本项目列表（Server Action，供客户端组件刷新使用）
  */
 export async function fetchLedgerList(
   params: LedgerListParams = {},
@@ -60,7 +60,7 @@ export async function fetchLedgerList(
     });
 
     if (error) {
-      const msg = (error as { message?: string }).message || "获取资金账本列表失败";
+      const msg = (error as { message?: string }).message || "获取项目账本列表失败";
       return { success: false, message: msg };
     }
 
@@ -69,13 +69,13 @@ export async function fetchLedgerList(
       data: extractApiData<LedgerListResponse>(data),
     };
   } catch (e) {
-    logger.error("获取资金账本列表异常:", e);
+    logger.error("获取项目账本列表异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
 
 /**
- * 获取资金账本全局汇总（Server Action）
+ * 获取项目账本全局汇总（Server Action）
  */
 export async function fetchLedgerStats(): Promise<ActionResult<LedgerStatsResponse>> {
   try {
@@ -92,13 +92,13 @@ export async function fetchLedgerStats(): Promise<ActionResult<LedgerStatsRespon
       data: extractApiData<LedgerStatsResponse>(data),
     };
   } catch (e) {
-    logger.error("获取资金账本汇总异常:", e);
+    logger.error("获取项目账本汇总异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
 
 /**
- * 创建资金账本流水（成功后 revalidatePath 刷新列表）
+ * 创建项目账本流水（成功后 revalidatePath 刷新列表）
  */
 export async function createRecord(
   data: LedgerRecordCreate,
@@ -128,13 +128,13 @@ export async function createRecord(
       data: extractApiData<CashFlowRecordResponse>(resData),
     };
   } catch (e) {
-    logger.error("创建资金账本流水异常:", e);
+    logger.error("创建项目账本流水异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
 
 /**
- * 删除资金账本流水（软删除）
+ * 删除项目账本流水（软删除）
  *
  * @param recordId  流水记录ID
  * @param projectId 项目ID（传入时同时刷新详情页 `/admin/ledger/{projectId}`）
@@ -167,13 +167,13 @@ export async function deleteRecord(
     }
     return { success: true, data: null };
   } catch (e) {
-    logger.error("删除资金账本流水异常:", e);
+    logger.error("删除项目账本流水异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
 
 /**
- * 更新资金账本流水（补充凭证/支付方类型）
+ * 更新项目账本流水（补充凭证/支付方类型）
  *
  * @param recordId 流水记录ID
  * @param payload  更新载荷（receipt_urls 追加，counterparty_type 覆盖）
@@ -217,13 +217,13 @@ export async function updateRecordAction(
       data: extractApiData<CashFlowRecordResponse>(resData),
     };
   } catch (e) {
-    logger.error("更新资金账本流水异常:", e);
+    logger.error("更新项目账本流水异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
 
 /**
- * 获取项目资金账本操作日志（Server Action）
+ * 获取项目项目账本操作日志（Server Action）
  *
  * @param projectId 项目ID
  */
@@ -244,13 +244,13 @@ export async function fetchLogs(projectId: string): Promise<ActionResult<Finance
       data: extractApiData<FinanceLogResponse[]>(data) ?? [],
     };
   } catch (e) {
-    logger.error("获取资金账本操作日志异常:", e);
+    logger.error("获取项目账本操作日志异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
 
 /**
- * 获取项目资金账本统计数据（Server Action）
+ * 获取项目项目账本统计数据（Server Action）
  *
  * @param projectId 项目ID
  */
@@ -273,7 +273,7 @@ export async function fetchProjectStatistics(
       data: extractApiData<ProjectLedgerStatisticsResponse>(data),
     };
   } catch (e) {
-    logger.error("获取资金账本统计数据异常:", e);
+    logger.error("获取项目账本统计数据异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -309,7 +309,7 @@ export async function fetchReceivablePayable(
 }
 
 /**
- * 结算项目资金账本（unsettled → settled）
+ * 结算项目项目账本（unsettled → settled）
  *
  * @param projectId 项目ID
  * @param data      结算请求（日期 + 说明）
@@ -351,13 +351,13 @@ export async function settleProjectLedger(
       data: extractApiData<FinanceSettlementResponse>(resData),
     };
   } catch (e) {
-    logger.error("结算资金账本异常:", e);
+    logger.error("结算项目账本异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
 
 /**
- * 反结算项目资金账本（settled → unsettled）
+ * 反结算项目项目账本（settled → unsettled）
  *
  * @param projectId 项目ID
  * @param data      反结算请求（原因，必填）
@@ -399,7 +399,7 @@ export async function unsettleProjectLedger(
       data: extractApiData<FinanceSettlementResponse>(resData),
     };
   } catch (e) {
-    logger.error("反结算资金账本异常:", e);
+    logger.error("反结算项目账本异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

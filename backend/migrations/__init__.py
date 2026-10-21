@@ -15,7 +15,7 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
 - ``_seeds_subjects``：科目种子数据（``_INITIAL_SUBJECTS``）
 - ``_user_security``：users 表 token_version / phone_hash 列与手机号加密回填（H-002 / H-006）
 - ``_schema_columns``：l4_marketing_projects / renovation_photos / project_renovations 等表的列变更
-- ``_finance``：跟投管理表、资金账本、科目管理、enum 同步、项目结算列等迁移
+- ``_finance``：跟投管理表、项目账本、科目管理、enum 同步、项目结算列等迁移
 - ``_type_migrations``：timestamp → timestamptz、VARCHAR → date / text 等列类型合规性修复
 - ``_permission_system``：微信 OAuth 表、user_roles、权限系统三张表与索引
 - ``_search_indexes``：模糊搜索 pg_trgm GIN 索引（O1：前导通配符 LIKE 全表扫描）
@@ -35,8 +35,8 @@ ADD VALUE``）、advisory lock 等均为 PostgreSQL 专属能力，``run_startup
 - run_fix_image_urls: 将数据库中的绝对图片 URL 转为相对路径（图片处理链路加固）
 - create_investment_tables: 幂等创建跟投管理 4 张表（investments/investors/return_adjustments/investment_logs）
 - rename_return_adjustment_columns: 将 return_adjustments 表回报率字段重命名为分配比例字段（清空旧数据）
-- add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（资金账本）
-- create_finance_record_logs_table: 幂等创建资金账本操作日志表（finance_record_logs）
+- add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（项目账本）
+- create_finance_record_logs_table: 幂等创建项目账本操作日志表（finance_record_logs）
 - create_finance_subjects_table: 幂等创建科目管理表 finance_subjects 并初始化系统预置科目
   （替代 CashFlowCategory 硬编码枚举，支持用户自定义科目 CRUD）
 - migrate_finance_subjects_modes_to_jsonb: 将 finance_subjects.modes 列从 JSON 迁移为 JSONB，
@@ -168,6 +168,12 @@ from migrations._finance import (
     create_investment_tables,
     migrate_finance_subjects_modes_to_jsonb,
     rename_return_adjustment_columns,
+)
+from migrations._fund_accounts import (
+    add_finance_record_account_column,
+    backfill_finance_record_operator,
+    close_orphan_finance_records,
+    create_fund_account_tables,
 )
 
 # 重新导出供外部模块（子迁移、conftest.py 等）使用 —— 以下导入必须放在迁移子模块导入之前，
@@ -433,6 +439,14 @@ def _run_all_migrations(engine: Engine) -> None:
         create_biz_dict_items_table(engine)
         # 评估反馈迭代：lead_eval_histories 补加房源条件分/装修后可售天数两列与 CHECK 约束（幂等）
         add_lead_eval_verdict_fields(engine)
+        # 资金账户：幂等创建 fund_accounts / fund_account_adjustments 两张表 + 权限点种子
+        create_fund_account_tables(engine)
+        # 资金账户：finance_records 补加 account_id 列与 (account_id, record_date) 索引（幂等）
+        add_finance_record_account_column(engine)
+        # 资金账户：收敛历史孤儿流水（所属项目已软删、流水仍存活 → 一并软删，幂等）
+        close_orphan_finance_records(engine)
+        # 资金账户：从 operation_logs 回填流水记账人（仅可精确追溯部分，幂等）
+        backfill_finance_record_operator(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

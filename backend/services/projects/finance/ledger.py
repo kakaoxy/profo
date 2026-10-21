@@ -1,4 +1,4 @@
-"""资金账本列表/统计/导出."""
+"""项目账本列表/统计/导出."""
 
 import csv
 import io
@@ -125,9 +125,9 @@ def _fetch_receipt_bytes(url: str, upload_dir: Path) -> bytes | None:
 
 
 class _LedgerMixin:
-    """资金账本列表/统计/导出方法."""
+    """项目账本列表/统计/导出方法."""
 
-    # ==================== 资金账本 (Ledger) ====================
+    # ==================== 项目账本 (Ledger) ====================
 
     def list_projects_with_stats(
         self,
@@ -136,7 +136,7 @@ class _LedgerMixin:
         page: int,
         page_size: int,
     ) -> tuple[list[dict[str, Any]], int]:
-        """资金账本：分页查询有流水记录的项目及其聚合统计.
+        """项目账本：分页查询有流水记录的项目及其聚合统计.
 
         - JOIN Project + FinanceRecord，按 project_id 分组聚合
         - total_income / total_expense / net_cash_flow / record_count
@@ -229,9 +229,24 @@ class _LedgerMixin:
             )
         return items, total
 
+    def _alive_records_filter(self) -> list[Any]:
+        """有效流水过滤条件：流水与所属项目都必须未删除.
+
+        ⚠️ 2026-10-21 缺陷修复：删除项目早年只置 `projects.is_deleted`，未联动
+        流水，导致已删项目的流水仍被算进全局收支/笔数（列表页有过滤、汇总页没有，
+        两处口径不一致）。现在删除项目会联动软删流水（core.delete_project），
+        历史遗留的孤儿流水由迁移 v86 收敛；此处仍保留项目侧过滤作为兜底。
+        """
+        return [
+            FinanceRecord.is_deleted.is_(False),
+            FinanceRecord.project_id.in_(
+                self.db.query(Project.id).filter(Project.is_deleted.is_(False)).subquery().select()
+            ),
+        ]
+
     def get_overall_stats(self) -> dict[str, Any]:
-        """资金账本：全局汇总（有流水记录的项目数、总收入、总支出、净现金流、记录数）."""
-        base = self.db.query(FinanceRecord).filter(FinanceRecord.is_deleted.is_(False))
+        """项目账本：全局汇总（有流水记录的项目数、总收入、总支出、净现金流、记录数）."""
+        base = self.db.query(FinanceRecord).filter(*self._alive_records_filter())
 
         total_records: int = base.count()
 
@@ -250,7 +265,7 @@ class _LedgerMixin:
                     ),
                 ).label("total_expense"),
             )
-            .filter(FinanceRecord.is_deleted.is_(False))
+            .filter(*self._alive_records_filter())
             .first()
         )
 
@@ -260,7 +275,7 @@ class _LedgerMixin:
 
         total_projects = (
             self.db.query(func.count(func.distinct(FinanceRecord.project_id)))
-            .filter(FinanceRecord.is_deleted.is_(False))
+            .filter(*self._alive_records_filter())
             .scalar()
         ) or 0
 
@@ -277,7 +292,7 @@ class _LedgerMixin:
         search: str | None,
         project_status: str | None,
     ) -> list[dict[str, Any]]:
-        """资金账本：不分页全量查询项目统计（仅用于导出）.
+        """项目账本：不分页全量查询项目统计（仅用于导出）.
 
         与 list_projects_with_stats 共享查询逻辑但不分页，避免 page_size 硬编码截断。
         """
@@ -367,7 +382,7 @@ class _LedgerMixin:
         search: str | None,
         project_status: str | None,
     ) -> bytes:
-        """资金账本：导出全量项目列表为 .xlsx（openpyxl）.
+        """项目账本：导出全量项目列表为 .xlsx（openpyxl）.
 
         列：项目编号、小区、地址、项目状态、总收入、总支出、净现金流、ROI(%)、记录数
         """
@@ -380,7 +395,7 @@ class _LedgerMixin:
 
         wb = Workbook()
         ws = wb.active
-        ws.title = "资金账本"
+        ws.title = "项目账本"
         headers = [
             "项目编号",
             "小区",
@@ -425,7 +440,7 @@ class _LedgerMixin:
         return buffer.getvalue()
 
     def export_project_records_zip(self, project_id: uuid.UUID) -> tuple[str, bytes]:
-        """资金账本：导出单项目流水为 zip（含 CSV + 票据图片）.
+        """项目账本：导出单项目流水为 zip（含 CSV + 票据图片）.
 
         票据文件可能存储在本地（local 模式）或 OSS（oss 模式）：
         - local: URL 形如 /static/uploads/xxx.jpg → 从本地磁盘读取
@@ -433,6 +448,7 @@ class _LedgerMixin:
 
         Returns:
             (filename_stem, zip_bytes) - filename_stem 形如 "资金账本_XX001_20260707"
+                （文件名保持历史口径，见 SPEC D1）
 
         """
         records = self.get_records(project_id)

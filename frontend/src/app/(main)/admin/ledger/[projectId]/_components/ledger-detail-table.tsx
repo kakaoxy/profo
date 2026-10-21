@@ -47,7 +47,7 @@ interface LedgerDetailTableProps {
 }
 
 /**
- * 资金账本表格筛选状态 hook
+ * 项目账本表格筛选状态 hook
  * 用 useReducer 集中管理 filter/search/科目/凭证筛选状态
  */
 type LedgerFilterState = {
@@ -221,6 +221,7 @@ export function LedgerDetailTable({
       const a = document.createElement("a");
       a.href = url;
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      // 文件名保留历史口径（资金账本_*）：可能有外部脚本按名匹配，页面文案已改「项目账本」，见 SPEC D1
       a.download = `资金账本_${projectId.slice(0, 8)}_${today}.zip`;
       document.body.appendChild(a);
       a.click();
@@ -317,7 +318,7 @@ export function LedgerDetailTable({
       {isSettled && (
         <div className="flex items-center gap-2 rounded-inputs bg-apricot-wash px-4 py-2.5 text-sm text-rust">
           <Lock className="h-4 w-4 shrink-0" />
-          <span>该资金账本已结算，不可编辑。如需修改请先反结算。</span>
+          <span>该项目账本已结算，不可编辑。如需修改请先反结算。</span>
         </div>
       )}
 

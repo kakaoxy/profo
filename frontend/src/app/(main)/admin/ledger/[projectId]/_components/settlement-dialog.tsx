@@ -35,7 +35,7 @@ function todayISO(): string {
 }
 
 /**
- * 资金账本结算/反结算合并弹窗
+ * 项目账本结算/反结算合并弹窗
  *
  * - mode="settle"：日期（必填） + 说明（选填）
  * - mode="unsettle"：警示条 + 原因（必填）
@@ -92,11 +92,11 @@ export function SettlementDialog({ open, onOpenChange, projectId, mode }: Settle
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] grid-rows-[auto_auto_1fr_auto] gap-0 overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle>{isSettle ? "结算资金账本" : "反结算资金账本"}</DialogTitle>
+          <DialogTitle>{isSettle ? "结算项目账本" : "反结算项目账本"}</DialogTitle>
           <DialogDescription className="text-xs">
             {isSettle
-              ? "结算后资金账本将变为只读，如需修改请先反结算"
-              : "反结算后资金账本将恢复可编辑状态，此操作会写入操作日志"}
+              ? "结算后项目账本将变为只读，如需修改请先反结算"
+              : "反结算后项目账本将恢复可编辑状态，此操作会写入操作日志"}
           </DialogDescription>
         </DialogHeader>
 
@@ -121,7 +121,7 @@ export function SettlementDialog({ open, onOpenChange, projectId, mode }: Settle
             <div className="flex items-start gap-2 rounded-lg bg-apricot-wash border border-rust/30 px-4 py-3 text-sm text-rust">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>
-                反结算后资金账本将恢复可编辑状态，可继续新增/删除流水记录。此操作会写入操作日志。
+                反结算后项目账本将恢复可编辑状态，可继续新增/删除流水记录。此操作会写入操作日志。
               </span>
             </div>
           )}

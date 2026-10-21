@@ -322,10 +322,10 @@ class ProjectResponse(BaseModel):
 
     finance_settlement_status: SettlementStatus = Field(
         default=SettlementStatus.UNSETTLED,
-        description="资金账本结算状态",
+        description="项目账本结算状态",
     )
-    finance_settled_date: date | None = Field(None, description="资金账本结算日期")
-    finance_settled_note: str | None = Field(None, description="资金账本结算说明")
+    finance_settled_date: date | None = Field(None, description="项目账本结算日期")
+    finance_settled_note: str | None = Field(None, description="项目账本结算说明")
 
     is_archived: bool = Field(default=False, description="项目归档标记（true 时全部写接口锁定）")
     archived_at: date | None = Field(None, description="归档日期")

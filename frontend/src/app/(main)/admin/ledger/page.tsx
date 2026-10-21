@@ -1,5 +1,7 @@
 import { fetchClient } from "@/lib/api-server";
 import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
+import { Info, Landmark } from "lucide-react";
+import Link from "next/link";
 import { LedgerStats } from "./_components/ledger-stats";
 import { LedgerView } from "./_components/ledger-view";
 import { LedgerPagination } from "./_components/ledger-pagination";
@@ -63,9 +65,27 @@ export default async function LedgerPage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-fog">
       <PageContainer className="flex flex-col gap-8">
         <PageHeader
-          title="资金账本"
-          description="管理和追踪所有项目的资金流水，按项目聚合查看收支与 ROI。"
+          title="项目账本"
+          description="每套房赚了多少。项目看盈亏，账户看钱在哪。"
+          actions={
+            <Link
+              href="/admin/accounts"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[13.5px] text-ink ring-1 ring-dove/30 transition-colors hover:bg-fog"
+            >
+              <Landmark className="h-3.5 w-3.5" aria-hidden="true" />
+              资金账户
+            </Link>
+          }
         />
+
+        {/* 改名说明：只改中文，路由与权限码不动（SPEC §5 T20） */}
+        <div className="flex items-start gap-2 rounded-2xl bg-sky-wash px-4 py-3 text-[12.5px] leading-relaxed text-[#2b5391]">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            <b>改了名字：</b>原来叫「资金账本」，容易和「资金账户」混，现在叫
+            <b>项目账本</b>。功能和数据都没变。
+          </span>
+        </div>
 
         <LedgerStats stats={stats} />
 

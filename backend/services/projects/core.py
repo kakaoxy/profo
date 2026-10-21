@@ -17,7 +17,7 @@ from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Project, ProjectContract, ProjectRenovation
+from models import FinanceRecord, Project, ProjectContract, ProjectRenovation
 from models.common import BusinessForm, ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from services.projects.archive import ensure_project_writable
@@ -576,6 +576,22 @@ class ProjectCoreService:
         self.db.query(ProjectContract).filter(
             ProjectContract.project_id == project_id,
             ProjectContract.is_deleted.is_(False),
+        ).update(
+            {
+                "is_deleted": True,
+                "updated_at": now,
+            },
+            synchronize_session=False,
+        )
+
+        # 同步软删除该项目的账本流水（2026-10-21 缺陷修复）：
+        # 项目删除后流水若仍存活，会出现两个实际问题——
+        #   1. 账户流水页仍列出「已删项目」的账，点「补上账户」直接 404「项目不存在」；
+        #   2. 这些流水仍参与项目账本全局汇总（/admin/ledger/stats）的收支与笔数。
+        # 删除项目即意味着这笔账不再成立，故与项目同一事务软删，保留原始记录可追溯。
+        self.db.query(FinanceRecord).filter(
+            FinanceRecord.project_id == project_id,
+            FinanceRecord.is_deleted.is_(False),
         ).update(
             {
                 "is_deleted": True,

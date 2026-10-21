@@ -152,7 +152,7 @@ class _FinanceServiceBase:
     def _assert_finance_editable(self, project: Project) -> None:
         """编辑锁：已结算项目不可新增/删除流水记录."""
         if project.finance_settlement_status == SettlementStatus.SETTLED:
-            msg = "已结算资金账本不可编辑，请先反结算"
+            msg = "已结算项目账本不可编辑，请先反结算"
             raise ServiceException(msg, status_code=400)
 
     def _build_settlement_response(self, project: Project) -> FinanceSettlementResponse:

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * 资金账本 Zod 校验 schema，对齐后端 Pydantic 模型
+ * 项目账本 Zod 校验 schema，对齐后端 Pydantic 模型
  *
  * 参考：
  * - api-types.ts::LedgerRecordCreate / LedgerRecordUpdate
@@ -34,6 +34,11 @@ export const createRecordSchema = z
     payer: z.string().max(100).nullable().optional(),
     payee: z.string().max(100).nullable().optional(),
 
+    // 资金账户（与项目账本正交：项目看盈亏，账户看钱在哪）
+    // account_skipped=true 表示显式「没走账户」（跟投/往来/代收代付），此时 account_id 必须为空
+    account_id: z.string().nullable().optional(),
+    account_skipped: z.boolean().default(false),
+
     // 兼容字段（旧客户端可选，新字段优先；Service 层会用新字段回填这些旧字段）
     type: cashFlowTypeSchema.nullable().optional(),
     category: z.string().nullable().optional(),
@@ -44,12 +49,19 @@ export const createRecordSchema = z
   .refine((data) => !(data.outflow > 0 && data.inflow > 0), {
     message: "流出和流入不能同时大于0",
     path: ["outflow"],
+  })
+  .refine((data) => !(data.account_skipped && data.account_id), {
+    message: "标记「没走账户」时不能再指定账户",
+    path: ["account_id"],
   });
 
 // 参考 LedgerRecordUpdate (PATCH 语义，仅允许补充凭证和支付方类型)
 export const updateRecordSchema = z.object({
   receipt_urls: z.array(z.string()).nullable().optional(),
   counterparty_type: counterpartyTypeSchema.nullable().optional(),
+  // 资金账户补挂/换挂（传 null 表示清空归属 → 变为「没走账户」）
+  account_id: z.string().nullable().optional(),
+  account_skipped: z.boolean().nullable().optional(),
 });
 
 // 参考 FinanceSettlementChangeRequest

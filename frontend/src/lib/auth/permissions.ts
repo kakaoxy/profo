@@ -66,6 +66,10 @@ export const PERMISSION_CODES = {
   LEDGER_READ: "ledger:read",
   LEDGER_WRITE: "ledger:write",
   LEDGER_SETTLE: "ledger:settle",
+  // 资金账户（账户增删改查 + 余额对账；另需模块入口密码解锁）
+  ACCOUNT_READ: "account:read",
+  ACCOUNT_WRITE: "account:write",
+  ACCOUNT_ADMIN: "account:admin",
   // 投资管理
   INVESTMENT_READ: "investment:read",
   INVESTMENT_WRITE: "investment:write",
@@ -145,7 +149,9 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   { prefix: "/admin/growth-center", permission: PERMISSION_CODES.RECRUIT_READ },
   // 招募管理旧路径重定向页 → 权限对齐新获客中心，避免旧链接绕过客户端权限守卫
   { prefix: "/admin/recruit", permission: PERMISSION_CODES.RECRUIT_READ },
-  // 资金账本 → 需 ledger:read 权限
+  // 资金账户 → 需 account:read 权限（另需模块入口密码解锁，页面与服务端双重校验）
+  { prefix: "/admin/accounts", permission: PERMISSION_CODES.ACCOUNT_READ },
+  // 项目账本（原「资金账本」，仅改中文，路由不变）→ 需 ledger:read 权限
   { prefix: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },
   // 线索中心 → 需 lead:read 权限
   { prefix: "/admin/leads", permission: PERMISSION_CODES.LEAD_READ },

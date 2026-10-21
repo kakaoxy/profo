@@ -1,4 +1,4 @@
-"""资金账本统计页面聚合(五层法 + 阶段现金流重算).
+"""项目账本统计页面聚合(五层法 + 阶段现金流重算).
 
 按 finance_subjects.level 聚合五层法，按 finance_subjects.stage 聚合阶段现金流，
 计算 8 项 KPI。subject_id 为 NULL 的旧记录不计入五层法/阶段/breakdown，
@@ -44,10 +44,10 @@ _STAGE_LABELS: dict[str, str] = {
 
 
 class _StatisticsMixin:
-    """资金账本统计页面聚合方法."""
+    """项目账本统计页面聚合方法."""
 
     def get_statistics(self, project_id: uuid.UUID) -> ProjectLedgerStatisticsResponse:
-        """资金账本统计页面：按五层法 + 阶段现金流聚合.
+        """项目账本统计页面：按五层法 + 阶段现金流聚合.
 
         1. 获取项目业务模式，确定阶段列表(agent 4阶段 / acquire 5阶段)。
         2. JOIN finance_subjects 按科目聚合 inflow/outflow，再按 level 聚合五层、

@@ -1,4 +1,4 @@
-"""资金账本（财务管理）路由层.
+"""项目账本（财务管理）路由层.
 
 按 AGENTS.md 规范：
 - Router 禁 SQLAlchemy 查询，全部通过 FinanceService 编排
@@ -62,7 +62,7 @@ _FinanceServiceDep = Annotated[FinanceService, Depends(get_finance_service)]
 
 @router.get(
     "",
-    summary="获取资金账本项目列表",
+    summary="获取项目账本项目列表",
 )
 def list_ledger_projects(
     service: _FinanceServiceDep,
@@ -89,7 +89,7 @@ def list_ledger_projects(
 
 @router.get(
     "/stats",
-    summary="获取资金账本全局汇总",
+    summary="获取项目账本全局汇总",
 )
 def get_ledger_stats(
     service: _FinanceServiceDep,
@@ -101,7 +101,7 @@ def get_ledger_stats(
 
 @router.get(
     "/export",
-    summary="导出资金账本 Excel",
+    summary="导出项目账本 Excel",
 )
 @limiter.limit(RateLimits.INVESTMENT_EXPORT)
 def export_ledger(
@@ -112,7 +112,7 @@ def export_ledger(
     search: Annotated[str | None, Query(max_length=100, description="模糊搜索")] = None,
     project_status: Annotated[ProjectStatus | None, Query(description="项目状态筛选")] = None,
 ) -> StreamingResponse:
-    """导出全量资金账本为 .xlsx（openpyxl）。文件名 资金账本_YYYYMMDD.xlsx.
+    """导出全量项目账本为 .xlsx（openpyxl）。文件名 项目账本_YYYYMMDD.xlsx.
 
     速率限制：10次/小时.
     """
@@ -146,14 +146,14 @@ def export_ledger(
 
 @router.get(
     "/{project_id}",
-    summary="获取项目资金账本详情",
+    summary="获取项目项目账本详情",
 )
 def get_ledger_detail(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> CashFlowResponse:
-    """获取项目资金账本详情（含流水记录列表 + 汇总）."""
+    """获取项目项目账本详情（含流水记录列表 + 汇总）."""
     records = service.get_records(project_id)
     summary = service.get_summary(project_id)
     return CashFlowResponse(records=records, summary=summary)
@@ -161,14 +161,14 @@ def get_ledger_detail(
 
 @router.get(
     "/{project_id}/statistics",
-    summary="获取项目资金账本统计",
+    summary="获取项目项目账本统计",
 )
 def get_project_statistics(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> ProjectLedgerStatisticsResponse:
-    """获取项目资金账本统计页面聚合数据.
+    """获取项目项目账本统计页面聚合数据.
 
     按五层法 + 阶段现金流重算：five_layer / stage_flows / kpi / breakdown.
     """
@@ -190,20 +190,20 @@ def get_receivable_payable(
 
 @router.get(
     "/{project_id}/logs",
-    summary="获取项目资金账本操作日志",
+    summary="获取项目项目账本操作日志",
 )
 def list_project_logs(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> list[FinanceLogResponse]:
-    """获取指定项目的资金账本操作日志（按时间降序）."""
+    """获取指定项目的项目账本操作日志（按时间降序）."""
     return service.list_logs(project_id)
 
 
 @router.get(
     "/{project_id}/export",
-    summary="导出项目资金账本为 zip",
+    summary="导出项目项目账本为 zip",
 )
 @limiter.limit(RateLimits.INVESTMENT_EXPORT)
 def export_project_ledger(
@@ -243,7 +243,7 @@ def export_project_ledger(
 
 @router.post(
     "/{project_id}/settle",
-    summary="结算项目资金账本",
+    summary="结算项目项目账本",
 )
 @limiter.limit(RateLimits.INVESTMENT_SETTLE)
 def settle_project_finance(
@@ -253,7 +253,7 @@ def settle_project_finance(
     service: _FinanceServiceDep,
     current_user: LedgerSettlePermDep,
 ) -> FinanceSettlementResponse:
-    """结算：锁定该项目资金账本，禁止新增/删除记录.
+    """结算：锁定该项目项目账本，禁止新增/删除记录.
 
     速率限制：50次/小时.
     """
@@ -262,7 +262,7 @@ def settle_project_finance(
 
 @router.post(
     "/{project_id}/unsettle",
-    summary="反结算项目资金账本",
+    summary="反结算项目项目账本",
 )
 @limiter.limit(RateLimits.INVESTMENT_SETTLE)
 def unsettle_project_finance(
@@ -272,7 +272,7 @@ def unsettle_project_finance(
     service: _FinanceServiceDep,
     current_user: LedgerSettlePermDep,
 ) -> FinanceSettlementResponse:
-    """反结算：解锁资金账本，恢复可编辑.
+    """反结算：解锁项目账本，恢复可编辑.
 
     速率限制：50次/小时.
     """
@@ -285,7 +285,7 @@ def unsettle_project_finance(
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,
-    summary="创建资金账本流水",
+    summary="创建项目账本流水",
 )
 @limiter.limit(RateLimits.PROJECT_CREATE)
 def create_ledger_record(
@@ -294,7 +294,7 @@ def create_ledger_record(
     service: _FinanceServiceDep,
     _current_user: LedgerWritePermDep,
 ) -> CashFlowRecordResponse:
-    """创建资金账本流水记录（body 含 project_id）.
+    """创建项目账本流水记录（body 含 project_id）.
 
     速率限制：100次/小时.
     """
@@ -305,7 +305,7 @@ def create_ledger_record(
 @router.delete(
     "/{record_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="删除资金账本流水",
+    summary="删除项目账本流水",
 )
 @limiter.limit(RateLimits.CASHFLOW_DELETE)
 def delete_ledger_record(
@@ -314,7 +314,7 @@ def delete_ledger_record(
     service: _FinanceServiceDep,
     _current_user: LedgerWritePermDep,
 ) -> None:
-    """软删除资金账本流水记录.
+    """软删除项目账本流水记录.
 
     速率限制：20次/小时.
     """
@@ -323,7 +323,7 @@ def delete_ledger_record(
 
 @router.patch(
     "/{record_id}",
-    summary="更新资金账本流水（补充凭证/支付方类型）",
+    summary="更新项目账本流水（补充凭证/支付方类型）",
 )
 @limiter.limit(RateLimits.PROJECT_CREATE)
 def update_ledger_record(

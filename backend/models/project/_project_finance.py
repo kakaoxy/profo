@@ -10,6 +10,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import BaseModel, CashFlowCategory, CashFlowType, CounterpartyType, FinanceActionType
+from models.finance.fund_account import FundAccount
+from models.user.user import User
 
 
 class FinanceRecord(BaseModel):
@@ -44,6 +46,11 @@ class FinanceRecord(BaseModel):
     subject_id: Mapped[str | None] = mapped_column(
         String(36), nullable=True, comment="科目ID(逻辑外键→finance_subjects.id)"
     )
+    # 资金账户：逻辑外键 → fund_accounts.id。NULL = 显式「没走账户」（不是忘填），
+    # 因此存量数据全部为空且不做猜测性回填，由账户流水页逐笔补挂。
+    account_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, nullable=True, comment="资金账户ID(逻辑外键→fund_accounts.id, NULL=未走账户)"
+    )
     outflow: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=0, comment="流出金额(元)")
     inflow: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=0, comment="流入金额(元)")
     payer: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="付款方")
@@ -58,16 +65,55 @@ class FinanceRecord(BaseModel):
         foreign_keys="FinanceRecord.subject_id",
         lazy="joined",
     )
+    # lazy="selectin"：账户流水页已手动 outerjoin fund_accounts 取名，此处用 selectin
+    # 批量补 1 条 SQL 而非 joined 造成的重复 JOIN；只读视图（账户归属由 Service 写入）
+    # lazy="selectin"：与 account 同理，避免 N+1；只读视图
+    operator: Mapped[User | None] = relationship(
+        primaryjoin="foreign(FinanceRecord.operator_id) == User.id",
+        foreign_keys="FinanceRecord.operator_id",
+        lazy="selectin",
+        viewonly=True,
+    )
+    account: Mapped[FundAccount | None] = relationship(
+        primaryjoin="foreign(FinanceRecord.account_id) == FundAccount.id",
+        foreign_keys="FinanceRecord.account_id",
+        lazy="selectin",
+        viewonly=True,
+    )
+
+    @property
+    def operator_name(self) -> str | None:
+        """记账人显示名（昵称优先，回退用户名，供 CashFlowRecordResponse 直接取用）.
+
+        `operator_id` 是逻辑外键且历史上存在 NULL（修复前从不写入）：为 NULL 时返回
+        None，前端显示「—」，不做任何猜测性回填。
+        """
+        if not self.operator_id:
+            return None
+        operator = self.operator
+        if operator is None:
+            return None
+        return operator.nickname or operator.username
+
+    @property
+    def account_name(self) -> str | None:
+        """资金账户名称（供 CashFlowRecordResponse.account_name 直接取用）.
+
+        账户为逻辑外键，未挂账户的流水返回 None（前端显示「没走账户」）。
+        """
+        account = self.account
+        return account.name if account is not None else None
 
     __table_args__ = (
         Index("idx_finance_project_date", "project_id", "record_date"),
         Index("idx_finance_type_category", "type", "category"),
         Index("idx_finance_deleted", "is_deleted"),
+        Index("idx_finance_account_date", "account_id", "record_date"),
     )
 
 
 class FinanceRecordLog(BaseModel):
-    """资金账本操作日志表 - 每次写操作记录一条.
+    """项目账本操作日志表 - 每次写操作记录一条.
 
     detail 使用 JSON 列存储操作详情（category/amount/type/counterparty/date）。
     operator 为逻辑外键，关联 users.id，级联由 Service 层处理。
@@ -91,7 +137,7 @@ class FinanceRecordLog(BaseModel):
 
 
 class FinanceSubject(BaseModel):
-    """科目管理表 - 资金账本科目（系统预置 + 用户自定义）.
+    """科目管理表 - 项目账本科目（系统预置 + 用户自定义）.
 
     替代原 CashFlowCategory 硬编码枚举，支持用户自定义科目 CRUD。
     name 唯一约束确保科目名称不重复；system=True 为系统预置科目，不可删除。

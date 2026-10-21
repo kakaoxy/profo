@@ -9,7 +9,7 @@ export function LedgerDetailHeader({ projectId }: { projectId: string }) {
         className="text-sm font-medium text-graphite hover:text-ink transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rust focus-visible:ring-offset-2 rounded-sm"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        返回资金账本
+        返回项目账本
       </Link>
       <Link
         href={`/admin/ledger/${projectId}/statistics`}

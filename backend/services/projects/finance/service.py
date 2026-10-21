@@ -4,7 +4,7 @@
 - _FinanceServiceBase: 基础设施（db 会话、共享校验/缓存方法）
 - _RecordMixin: 现金流记录 CRUD
 - _SummaryMixin: 现金流汇总与财务报告
-- _LedgerMixin: 资金账本列表/统计/导出
+- _LedgerMixin: 项目账本列表/统计/导出
 - _StatisticsMixin: 统计页面聚合
 - _SettlementMixin: 结算/反结算/操作日志
 - _ReceivablePayableMixin: 应收应付参考表聚合
