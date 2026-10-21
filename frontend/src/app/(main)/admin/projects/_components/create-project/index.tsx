@@ -176,9 +176,15 @@ export function CreateProjectDialog({
                   </TabsList>
                 </div>
 
-                {/* Tabs 内容区域 */}
+                {/* Tabs 内容区域
+                    ⚠️ 内层容器必须 relative（建立包含块）：ScrollArea 根只有 `relative`，
+                    内容中 RadioGroupItem 等 sr-only 绝对定位元素若无更近的定位祖先，
+                    会以 ScrollArea 根为包含块，把根的 scrollHeight 撑大于 clientHeight，
+                    使根成为可滚动区域；点选朝向/业务形式时浏览器对聚焦元素的
+                    scroll-into-view 会滚动它（实为 Tabs 祖先链），tabbar 被顶出弹窗、
+                    内容整体位移。回归用例：e2e/admin-project-create-dialog-scroll.spec.ts */}
                 <ScrollArea className="flex-1 min-h-0">
-                  <div className="p-7">
+                  <div className="relative p-7">
                     <TabsContent value="basic" className="m-0">
                       <BasicInfoTab form={form} />
                     </TabsContent>
