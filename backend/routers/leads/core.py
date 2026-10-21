@@ -177,22 +177,41 @@ def create_lead(
     权限：lead:create（普通员工录入）或 lead:write（admin/operator 全权）。
     """
     service = LeadService(db)
-    return _lead_response_with_names(db, service.create_lead(lead_in, current_user.id, creator=current_user))
+    return _lead_response_with_names(
+        db,
+        service.create_lead(lead_in, current_user.id, creator=current_user),
+        with_verdict=False,
+    )
 
 
-def _lead_response_with_names(db: Session, lead: Lead, service: LeadService | None = None) -> LeadResponse:
+def _lead_response_with_names(
+    db: Session,
+    lead: Lead,
+    service: LeadService | None = None,
+    *,
+    with_verdict: bool = True,
+) -> LeadResponse:
     """Lead ORM → LeadResponse（含字典解析名称与最新评估结论，创建/更新/详情响应同口径）.
 
     评估结论两字段不来自 Lead 列（Lead 无该列），必须显式取最新一条评估记录回填。
+
+    Args:
+        db: 数据库会话
+        lead: 线索对象
+        service: 可复用的 Service 实例（避免重复构造）
+        with_verdict: 是否回填评估结论。**新建/刚更新的线索传 False**：
+            该线索当前不可能已有评估记录，查一次必然返回空（纯浪费一次 SELECT）。
+
     """
     dict_names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead)])
     resp = LeadResponse.model_validate(lead, from_attributes=True)
     for field, value in _dict_names_update(lead, dict_names).items():
         setattr(resp, field, value)
-    svc = service or LeadService(db)
-    verdict = svc.query_service.get_latest_eval_verdicts([lead.id]).get(lead.id, {})
-    resp.condition_score = verdict.get("condition_score")
-    resp.expected_sale_days = verdict.get("expected_sale_days")
+    if with_verdict:
+        svc = service or LeadService(db)
+        verdict = svc.query_service.get_latest_eval_verdicts([lead.id]).get(lead.id, {})
+        resp.condition_score = verdict.get("condition_score")
+        resp.expected_sale_days = verdict.get("expected_sale_days")
     return resp
 
 
@@ -265,7 +284,11 @@ def update_lead(
     速率限制：100次/小时.
     """
     service = LeadService(db)
-    return _lead_response_with_names(db, service.update_lead(lead_id, lead_in, current_user.id, creator=current_user))
+    return _lead_response_with_names(
+        db,
+        service.update_lead(lead_id, lead_in, current_user.id, creator=current_user),
+        with_verdict=False,
+    )
 
 
 @router.delete("/{lead_id}", status_code=204)

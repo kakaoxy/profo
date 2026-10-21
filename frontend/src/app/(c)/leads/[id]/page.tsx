@@ -81,34 +81,37 @@ export default function LeadDetailPage() {
    */
   const handleContactEvaluator = async () => {
     try {
-      const res = await fetch(`/api/v1/public/leads/${id}/evaluator-contact`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
+      // 用统一 fetcher（而非裸 fetch）：它会处理 401 → 静默续期 → 重试。
+      // 裸 fetch 在会话过期时直接失败，客户点「拨打电话」只得到一句"获取联系方式失败"，
+      // 与本项目「401 自动刷新链路不能断」的约束相违。
+      const contact = await fetcher<{ phone: string; nickname: string }>(
+        `/api/v1/public/leads/${id}/evaluator-contact`,
+      );
+      if (!contact?.phone) {
         notifyContactFailure();
         return;
       }
-      const contact = (await res.json()) as { phone: string; nickname: string };
+
+      // 异步留痕：失败静默（不影响拨号结果）
+      void (async () => {
+        try {
+          const res = await fetch(`/api/v1/public/leads/${id}/follow-ups`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              method: "phone",
+              content: `客户致电评估人 ${contact.nickname || ""}`.trim(),
+            }),
+          });
+          if (res.ok) mutate();
+        } catch {
+          /* 留痕失败静默：拨号已发出，不打扰用户 */
+        }
+      })();
 
       // 拨号（Web 端用 tel: 协议；失败不抛错）
       window.location.href = `tel:${contact.phone}`;
-
-      // 异步留痕：失败静默（不影响拨号结果）
-      void fetch(`/api/v1/public/leads/${id}/follow-ups`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          method: "phone",
-          content: `客户致电评估人 ${contact.nickname || ""}`.trim(),
-        }),
-      })
-        .then((r) => {
-          if (r.ok) mutate();
-        })
-        .catch(() => {
-          /* 留痕失败静默：拨号已发出，不打扰用户 */
-        });
     } catch {
       notifyContactFailure();
     }
