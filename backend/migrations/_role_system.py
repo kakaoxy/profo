@@ -29,6 +29,8 @@ _PERMISSION_RISK_LEVELS: dict[str, str] = {
     "project:read": "L0",
     "ledger:read": "L0",
     "subject:read": "L0",
+    # 资金账户（2026-10-22 补录）：balance 属敏感财务数据，读类定 L0 但受模块密码第二层保护
+    "account:read": "L0",
     "investment:read": "L0",
     "l4_marketing:read": "L0",
     "recruit:read": "L0",
@@ -46,6 +48,8 @@ _PERMISSION_RISK_LEVELS: dict[str, str] = {
     "property:write": "L2",
     "property:upload": "L2",
     "subject:write": "L2",
+    # 资金账户写操作（建/改/停用 + 余额对账）属数据管理
+    "account:write": "L2",
     "investment:write": "L2",
     "investment:copy": "L2",
     "l4_marketing:write": "L2",
@@ -63,6 +67,8 @@ _PERMISSION_RISK_LEVELS: dict[str, str] = {
     "user:reset_password": "L4",
     "user:unbind_wechat": "L4",
     "ledger:settle": "L4",
+    # 资金账户模块密码：可重设入口锁，最高风险
+    "account:admin": "L5",
     # L5 系统安全
     "role:create": "L5",
     "role:update": "L5",

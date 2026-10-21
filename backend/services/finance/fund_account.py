@@ -118,6 +118,29 @@ class FundAccountService:
             raise ResourceNotFoundError(msg)
         return account
 
+    def _alive_records_filter(self) -> list[Any]:
+        """有效流水过滤条件：流水与所属项目都必须未删除.
+
+        ⚠️ 2026-10-22 缺陷修复（口径不一致）：
+        余额聚合（``_flow_totals``）此前只过滤 ``FinanceRecord.is_deleted``，而
+        流水列表（``_unified_flow_query``）额外要求项目未删。两者对"孤儿流水"
+        （项目已软删、流水未删）判定不同，导致：
+          - 账户余额把孤儿流水算进去；
+          - 账户流水页却不显示它们。
+        实测复现：把一个已挂账户的流水所属项目置 ``is_deleted=true`` 后，
+        余额保持 105563.12 不变，而流水页合计从 344536.88 掉到 211536.88
+        （差 133000.00，正是被删项目的金额）——页面上的「进出」再也推不出余额。
+
+        现在两处统一走本方法（与 ``services/projects/finance/ledger.py``
+        的全局汇总同口径），保证「流水页进 − 出 ± 核对 = 账户余额」恒成立。
+        """
+        return [
+            FinanceRecord.is_deleted.is_(False),
+            FinanceRecord.project_id.in_(
+                self.db.query(Project.id).filter(Project.is_deleted.is_(False)).subquery().select(),
+            ),
+        ]
+
     def _flow_totals(self, account_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict[str, Any]]:
         """一条聚合 SQL 取多个账户的流入/流出/笔数/最后日期."""
         if not account_ids:
@@ -132,7 +155,7 @@ class FundAccountService:
             )
             .filter(
                 FinanceRecord.account_id.in_(account_ids),
-                FinanceRecord.is_deleted.is_(False),
+                *self._alive_records_filter(),
             )
             .group_by(FinanceRecord.account_id)
             .all()
@@ -306,18 +329,30 @@ class FundAccountService:
         *,
         request: Request | None = None,
     ) -> FundAccountResponse:
-        """更新账户信息（改期初会直接改变推导余额，响应回传新余额）."""
+        """更新账户信息（改期初会直接改变推导余额，响应回传新余额）.
+
+        ⚠️ 可清空字段（2026-10-22 缺陷修复）：``account_no`` / ``holder`` / ``note``
+        三类选填文本允许显式传 ``null`` 清空。此前用 ``if data.x is not None``
+        判断，无法区分「未传」与「传 null」，导致卡号写错、备注要清掉时永远改不掉
+        （实测：PATCH ``{"account_no": null}`` 后仍返回原值）。现在改用
+        ``model_fields_set`` 区分「显式传了该字段」（含 null）与「压根没传」。
+
+        其余字段（name/type/opening_balance/opening_date/status）保持「非空才改」，
+        因为这些是 NOT NULL 语义字段，接受 null 只会变成 500。
+        """
         account = self._get_account(account_id)
         before = _account_audit_snapshot(account)
+        sent = data.model_fields_set
 
         if data.name is not None and data.name.strip() != account.name:
             self._assert_name_available(data.name, exclude_id=account.id)
             account.name = data.name.strip()
         if data.type is not None:
             account.type = data.type
-        if data.account_no is not None:
+        # 可空文本字段：显式传 null 即清空（未传则保持不变）
+        if "account_no" in sent:
             account.account_no = data.account_no
-        if data.holder is not None:
+        if "holder" in sent:
             account.holder = data.holder
         if data.opening_balance is not None:
             account.opening_balance = data.opening_balance
@@ -325,7 +360,7 @@ class FundAccountService:
             account.opening_date = data.opening_date
         if data.status is not None:
             account.status = data.status
-        if data.note is not None:
+        if "note" in sent:
             account.note = data.note
 
         account.updated_at = datetime.now(timezone.utc)
@@ -393,9 +428,25 @@ class FundAccountService:
         logger.info("资金账户已删除: %s", account_id)
 
     def _assert_name_available(self, name: str, *, exclude_id: uuid.UUID | None = None) -> None:
-        """校验名称唯一（仅在未删除账户中比较）."""
+        """校验名称合法（非空白）且唯一（仅在未删除账户中比较）.
+
+        ⚠️ 2026-10-22 修复：Pydantic 的 ``min_length=1`` 拦不住纯空白（``"   "`` 长度 3），
+        而入库前又统一 ``.strip()``，结果是 ``name="   "`` 能建成一个**名为空字符串**的
+        账户（实测已复现），列表里显示为空白卡片、无法识别也无法删除重名。此处
+        以 strip 后的结果做非空校验，与入库值同口径。
+
+        Raises:
+            ValidationError: 名称 strip 后为空
+            ConflictError: 同名账户已存在
+
+        """
+        normalized = name.strip()
+        if not normalized:
+            msg = "账户名称不能为空"
+            raise ValidationError(msg)
+
         query = self.db.query(FundAccount.id).filter(
-            FundAccount.name == name.strip(),
+            FundAccount.name == normalized,
             FundAccount.is_deleted.is_(False),
         )
         if exclude_id is not None:
@@ -458,7 +509,7 @@ class FundAccountService:
                 func.coalesce(func.sum(FinanceRecord.outflow), 0),
             )
             .filter(
-                FinanceRecord.is_deleted.is_(False),
+                *self._alive_records_filter(),
                 FinanceRecord.account_id.is_not(None),
                 FinanceRecord.record_date >= month_start,
                 FinanceRecord.record_date < next_month,
@@ -476,7 +527,7 @@ class FundAccountService:
                 func.count(FinanceRecord.id),
                 func.coalesce(func.sum(FinanceRecord.inflow + FinanceRecord.outflow), 0),
             )
-            .filter(FinanceRecord.is_deleted.is_(False), FinanceRecord.account_id.is_(None))
+            .filter(*self._alive_records_filter(), FinanceRecord.account_id.is_(None))
             .one()
         )
 
@@ -675,9 +726,9 @@ class FundAccountService:
         删除项目只把 `projects.is_deleted` 置真，`finance_records` 保持未删，
         因此不过滤项目会让**已删项目的流水**照常出现在账户流水页，且点「补上」
         会命中 `update_record` 的「项目不存在」404——列表与操作的能力边界不一致。
-        口径：项目删了，它的流水在账户维度不可见也不可改（账户余额本就不该包含
-        已删项目的账）。真正的数据治理（删除项目时联动软删流水）见下方
-        `delete_project` 修复与迁移 v86（仅清理历史孤儿流水）。
+
+        注：本方法是 ``_unified_flow_query`` 的前身，目前已无外部调用（流水页
+        统一走 UNION 版本）。保留仅为存量调试脚本兼容，口径已对齐 ``_alive_records_filter``。
         """
         return (
             self.db.query(
@@ -693,10 +744,7 @@ class FundAccountService:
             .outerjoin(FinanceSubject, FinanceSubject.id == FinanceRecord.subject_id)
             .outerjoin(FundAccount, FundAccount.id == FinanceRecord.account_id)
             .outerjoin(User, User.id == FinanceRecord.operator_id)
-            .filter(
-                FinanceRecord.is_deleted.is_(False),
-                Project.is_deleted.is_(False),
-            )
+            .filter(*self._alive_records_filter())
         )
 
     def _unified_flow_query(

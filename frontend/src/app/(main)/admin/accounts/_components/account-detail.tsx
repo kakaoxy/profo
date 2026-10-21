@@ -47,9 +47,10 @@ import {
   StatusPill,
   type FundAccount,
 } from "../_components/account-card";
+import { UNLOCK_DENIED_CODE } from "../_components/account-schema";
 import { AccountDrawer } from "../_components/account-drawer";
 import { ReconDialog } from "../_components/recon-dialog";
-import { formatSeconds, useModuleLock } from "../_components/module-lock-context";
+import { formatSeconds, SLIDING_TTL_SECONDS, useModuleLock } from "../_components/module-lock-context";
 import { ReceiptCell, SupplementDialog } from "@/components/finance/receipt-cell";
 
 type FundAdjustment = components["schemas"]["FundAdjustmentResponse"];
@@ -59,7 +60,7 @@ type TabKey = "flows" | "adjustments" | "info";
 
 export function AccountDetail({ accountId }: { accountId: string }) {
   const router = useRouter();
-  const { token, secondsLeft, lock } = useModuleLock();
+  const { token, secondsLeft, lock, touch, invalidate } = useModuleLock();
 
   const [account, setAccount] = React.useState<FundAccount | null>(null);
   const [allAccounts, setAllAccounts] = React.useState<FundAccount[]>([]);
@@ -84,15 +85,22 @@ export function AccountDetail({ accountId }: { accountId: string }) {
     setLoading(false);
 
     if (!accountRes.success) {
+      // 403 = 服务端判定令牌失效（另一标签页锁定 / 过期 / 改过密码）→ 回到锁屏，不做跳转
+      if (accountRes.code === UNLOCK_DENIED_CODE) {
+        invalidate();
+        return;
+      }
       toast.error(accountRes.error);
       router.replace("/admin/accounts");
       return;
     }
+    // 请求成功 → 服务端已对本令牌滑动续期 30 分钟，本地倒计时同步重置
+    touch(SLIDING_TTL_SECONDS);
     setAccount(accountRes.data);
     if (listRes.success) setAllAccounts(listRes.data.items);
     if (flowsRes.success) setFlows(flowsRes.data.items);
     if (adjustRes.success) setAdjustments(adjustRes.data);
-  }, [accountId, token, router]);
+  }, [accountId, token, router, touch, invalidate]);
 
   React.useEffect(() => {
     void load();

@@ -84,7 +84,15 @@ class AccountLockedError(ServiceException):
 
 
 class AccountPasswordError(ServiceException):
-    """模块密码不正确（未达失败上限）——HTTP 401."""
+    """模块密码不正确（未达失败上限）——HTTP 400.
+
+    ⚠️ 为什么**不能**用 401（2026-10-22 缺陷修复）：
+    ``frontend/src/lib/api-server.ts::fetchWithAutoRefresh`` 把任何 401 都当成
+    「access_token 过期」，会自动刷新令牌并**重放同一个请求**。模块密码错误若返回
+    401，用户输错 1 次 → 服务端收到 2 次 POST /unlock → 失败计数 +2，
+    「剩余尝试」显示与实际不符，5 次上限在 3 次输入后就被触发（E2E 已复现）。
+    改用 400（业务参数错误）语义准确，且不会触发令牌刷新重放。
+    """
 
     def __init__(self, attempts_left: int) -> None:
         """初始化异常消息.
@@ -94,7 +102,7 @@ class AccountPasswordError(ServiceException):
 
         """
         self.attempts_left = attempts_left
-        super().__init__(f"密码不正确，还可尝试 {attempts_left} 次", status_code=401)
+        super().__init__(f"密码不正确，还可尝试 {attempts_left} 次", status_code=400)
 
 
 def _redis() -> Redis:

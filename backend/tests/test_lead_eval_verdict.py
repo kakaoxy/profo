@@ -709,15 +709,23 @@ class TestMigration:
             assert "expected_sale_days" in defs
 
     def test_registry_entry(self) -> None:
-        """注册表登记 version=83，NEXT_VERSION 递增到 84."""
+        """注册表登记 version=83（后续迁移可继续追加，不断言「它是最后一个」）.
+
+        ⚠️ 2026-10-22 修正：原断言 ``max(m.version) == 83`` / ``NEXT_VERSION == 84``
+        把「本条是最后一条迁移」写死了，任何后续新增迁移都会将其打破（本次资金账户
+        新增 v84–87 即触发）。注册表的不变量是「版本连续 + 本条元数据正确」
+        （由 test_migration_registry.py 统一守），故此处只断言本条自身语义。
+        """
         from migrations.registry import MIGRATION_BY_NAME, MIGRATIONS, NEXT_VERSION
 
         entry = MIGRATION_BY_NAME["add_lead_eval_verdict_fields"]
         assert entry.version == 83
         assert entry.risk == "A"
         assert entry.reversible is True
-        assert max(m.version for m in MIGRATIONS) == 83
-        assert NEXT_VERSION == 84
+        # 本条必须存在于注册表且版本号单调（后续迁移只能追加在其后）
+        latest = max(m.version for m in MIGRATIONS)
+        assert latest >= 83
+        assert latest + 1 == NEXT_VERSION
 
 
 # ---------------------------------------------------------------------------

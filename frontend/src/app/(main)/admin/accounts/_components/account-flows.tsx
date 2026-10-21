@@ -45,10 +45,11 @@ import {
   fetchAccountFlows,
   fetchAccounts,
 } from "../actions";
+import { UNLOCK_DENIED_CODE } from "../_components/account-schema";
 import { AccountGlyph, type FundAccount } from "../_components/account-card";
 import { FixAccountDialog } from "../_components/fix-account-dialog";
 import { ReceiptCell, SupplementDialog } from "@/components/finance/receipt-cell";
-import { formatSeconds, useModuleLock } from "../_components/module-lock-context";
+import { formatSeconds, SLIDING_TTL_SECONDS, useModuleLock } from "../_components/module-lock-context";
 
 type FundFlowItem = components["schemas"]["FundFlowItem"];
 
@@ -57,7 +58,7 @@ const PAGE_SIZE = 50;
 export function AccountFlowsView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { token, secondsLeft, lock } = useModuleLock();
+  const { token, secondsLeft, lock, touch, invalidate } = useModuleLock();
 
   const [accounts, setAccounts] = React.useState<FundAccount[]>([]);
   const [flows, setFlows] = React.useState<FundFlowItem[]>([]);
@@ -111,9 +112,13 @@ export function AccountFlowsView() {
     setLoading(false);
     if (listRes.success) setAccounts(listRes.data.items);
     if (!flowsRes.success) {
+      // 403 = 服务端判定令牌失效（另一标签页锁定 / 过期 / 改过密码）→ 立即回到锁屏
+      if (flowsRes.code === UNLOCK_DENIED_CODE) invalidate();
       toast.error(flowsRes.error);
       return;
     }
+    // 请求成功 → 服务端已对本令牌滑动续期 30 分钟，本地倒计时同步重置
+    touch(SLIDING_TTL_SECONDS);
     setFlows(flowsRes.data.items);
     setTotal(flowsRes.data.total);
     setTotals({
@@ -124,7 +129,7 @@ export function AccountFlowsView() {
       adjustmentInflow: Number(flowsRes.data.adjustment_inflow ?? 0),
       adjustmentOutflow: Number(flowsRes.data.adjustment_outflow ?? 0),
     });
-  }, [token, accountId, direction, search, page]);
+  }, [token, accountId, direction, search, page, touch, invalidate]);
 
   React.useEffect(() => {
     void load();

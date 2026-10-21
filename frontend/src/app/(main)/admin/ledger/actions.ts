@@ -223,7 +223,7 @@ export async function updateRecordAction(
 }
 
 /**
- * 获取项目项目账本操作日志（Server Action）
+ * 获取项目账本操作日志（Server Action）
  *
  * @param projectId 项目ID
  */
@@ -250,7 +250,7 @@ export async function fetchLogs(projectId: string): Promise<ActionResult<Finance
 }
 
 /**
- * 获取项目项目账本统计数据（Server Action）
+ * 获取项目账本统计数据（Server Action）
  *
  * @param projectId 项目ID
  */
@@ -309,7 +309,7 @@ export async function fetchReceivablePayable(
 }
 
 /**
- * 结算项目项目账本（unsettled → settled）
+ * 结算项目账本（unsettled → settled）
  *
  * @param projectId 项目ID
  * @param data      结算请求（日期 + 说明）
@@ -357,7 +357,7 @@ export async function settleProjectLedger(
 }
 
 /**
- * 反结算项目项目账本（settled → unsettled）
+ * 反结算项目账本（settled → unsettled）
  *
  * @param projectId 项目ID
  * @param data      反结算请求（原因，必填）

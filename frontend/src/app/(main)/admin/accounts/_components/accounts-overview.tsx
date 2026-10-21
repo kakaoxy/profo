@@ -50,16 +50,17 @@ import {
   NewAccountCard,
   type FundAccount,
 } from "./account-card";
+import { UNLOCK_DENIED_CODE } from "./account-schema";
 import { AccountDrawer } from "./account-drawer";
 import { PasswordDialog } from "./password-dialog";
 import { ReconDialog } from "./recon-dialog";
-import { formatSeconds, useModuleLock } from "./module-lock-context";
+import { formatSeconds, SLIDING_TTL_SECONDS, useModuleLock } from "./module-lock-context";
 
 type FundAccountSummary = components["schemas"]["FundAccountSummaryResponse"];
 
 export function AccountsOverview() {
   const router = useRouter();
-  const { token, secondsLeft, lock } = useModuleLock();
+  const { token, secondsLeft, lock, touch, invalidate } = useModuleLock();
 
   const [accounts, setAccounts] = React.useState<FundAccount[]>([]);
   const [summary, setSummary] = React.useState<FundAccountSummary | null>(null);
@@ -95,12 +96,16 @@ export function AccountsOverview() {
     ]);
     setLoading(false);
     if (!listRes.success) {
+      // 403 = 服务端判定令牌失效（另一标签页锁定 / 过期 / 改过密码）→ 立即回到锁屏
+      if (listRes.code === UNLOCK_DENIED_CODE) invalidate();
       toast.error(listRes.error);
       return;
     }
+    // 请求成功 → 服务端已对本令牌滑动续期 30 分钟，本地倒计时同步重置
+    touch(SLIDING_TTL_SECONDS);
     setAccounts(listRes.data.items);
     if (summaryRes.success) setSummary(summaryRes.data);
-  }, [token, search, typeFilter, statusFilter, sort]);
+  }, [token, search, typeFilter, statusFilter, sort, touch, invalidate]);
 
   React.useEffect(() => {
     void load();

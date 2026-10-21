@@ -10,6 +10,18 @@ import { z } from "zod";
 export const fundAccountTypeSchema = z.enum(["bank", "corp", "wechat", "alipay", "cash"]);
 export const fundAccountStatusSchema = z.enum(["active", "off"]);
 
+/**
+ * 服务端「模块未解锁」的错误码。
+ *
+ * 来源：`backend/dependencies/auth.py::require_accounts_unlock` 抛
+ * `PermissionDeniedError`（403），统一错误体 `{code:403,message}`。
+ *
+ * ⚠️ 为何放在本文件而不是 `../actions.ts`：actions.ts 是 `"use server"` 模块，
+ * 只能导出 async 函数（导出常量会直接让 Next.js 构建/开发态报
+ * "Only async functions are allowed to be exported in a \"use server\" file"）。
+ */
+export const UNLOCK_DENIED_CODE = "403";
+
 export const ACCOUNT_NAME_MAX = 24;
 export const ACCOUNT_NO_MAX = 40;
 export const ACCOUNT_HOLDER_MAX = 50;

@@ -49,6 +49,24 @@ function headersOf(token?: string | null): Record<string, string> {
   return token ? { [UNLOCK_HEADER]: token } : {};
 }
 
+/**
+ * 把 openapi-fetch 的错误体转成 ActionResult，并保留服务端 ``code``。
+ *
+ * 为何要带 code（2026-10-22 缺陷修复）：模块解锁令牌可能被**另一个标签页**锁定、
+ * 或服务端 30 分钟滑到过期、或被管理员重设密码后失效。这些情况下受保护请求统一
+ * 返回 403，但前端此前只弹一个 toast，锁屏守卫仍以为「已解锁」继续渲染旧数据，
+ * 直到用户手动点「锁定」。带上 code 后由调用方对 403 调 ``invalidate()``，
+ * 立即回到锁屏。
+ */
+function errorResult(
+  error: unknown,
+  fallback: string,
+): { success: false; error: string; code?: string } {
+  const raw = (error as { code?: unknown } | null)?.code;
+  const code = raw === undefined || raw === null ? undefined : String(raw);
+  return { success: false, error: extractErrorMessage(error, fallback), code };
+}
+
 // ─── 读取 ────────────────────────────────────────────────────────────────────
 
 export async function fetchAccounts(
@@ -61,7 +79,7 @@ export async function fetchAccounts(
       params: { query: params },
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "获取账户列表失败") };
+    if (error) return errorResult(error, "获取账户列表失败");
     return { success: true, data: extractApiData<FundAccountListResponse>(data) };
   } catch (e) {
     logger.error("获取资金账户列表异常:", e);
@@ -100,7 +118,7 @@ export async function fetchAccountsSummary(
     const { data, error } = await client.GET("/api/v1/admin/accounts/summary", {
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "获取账户总览失败") };
+    if (error) return errorResult(error, "获取账户总览失败");
     return { success: true, data: extractApiData<FundAccountSummaryResponse>(data) };
   } catch (e) {
     logger.error("获取资金账户总览异常:", e);
@@ -118,7 +136,7 @@ export async function fetchAccount(
       params: { path: { account_id: accountId } },
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "获取账户详情失败") };
+    if (error) return errorResult(error, "获取账户详情失败");
     return { success: true, data: extractApiData<FundAccountResponse>(data) };
   } catch (e) {
     logger.error("获取资金账户详情异常:", e);
@@ -136,7 +154,7 @@ export async function fetchAccountFlows(
       params: { query: params },
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "获取账户流水失败") };
+    if (error) return errorResult(error, "获取账户流水失败");
     return { success: true, data: extractApiData<FundFlowListResponse>(data) };
   } catch (e) {
     logger.error("获取账户流水异常:", e);
@@ -154,7 +172,7 @@ export async function fetchAccountAdjustments(
       params: { path: { account_id: accountId } },
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "获取对账记录失败") };
+    if (error) return errorResult(error, "获取对账记录失败");
     return { success: true, data: extractApiData<FundAdjustmentResponse[]>(data) ?? [] };
   } catch (e) {
     logger.error("获取对账记录异常:", e);

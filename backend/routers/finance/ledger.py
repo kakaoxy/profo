@@ -146,14 +146,14 @@ def export_ledger(
 
 @router.get(
     "/{project_id}",
-    summary="获取项目项目账本详情",
+    summary="获取项目账本详情",
 )
 def get_ledger_detail(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> CashFlowResponse:
-    """获取项目项目账本详情（含流水记录列表 + 汇总）."""
+    """获取项目账本详情（含流水记录列表 + 汇总）."""
     records = service.get_records(project_id)
     summary = service.get_summary(project_id)
     return CashFlowResponse(records=records, summary=summary)
@@ -161,14 +161,14 @@ def get_ledger_detail(
 
 @router.get(
     "/{project_id}/statistics",
-    summary="获取项目项目账本统计",
+    summary="获取项目账本统计",
 )
 def get_project_statistics(
     project_id: Annotated[UUID4, Path(description="项目ID")],
     service: _FinanceServiceDep,
     _current_user: LedgerReadPermDep,
 ) -> ProjectLedgerStatisticsResponse:
-    """获取项目项目账本统计页面聚合数据.
+    """获取项目账本统计页面聚合数据.
 
     按五层法 + 阶段现金流重算：five_layer / stage_flows / kpi / breakdown.
     """
@@ -190,7 +190,7 @@ def get_receivable_payable(
 
 @router.get(
     "/{project_id}/logs",
-    summary="获取项目项目账本操作日志",
+    summary="获取项目账本操作日志",
 )
 def list_project_logs(
     project_id: Annotated[UUID4, Path(description="项目ID")],
@@ -203,7 +203,7 @@ def list_project_logs(
 
 @router.get(
     "/{project_id}/export",
-    summary="导出项目项目账本为 zip",
+    summary="导出项目账本为 zip",
 )
 @limiter.limit(RateLimits.INVESTMENT_EXPORT)
 def export_project_ledger(
@@ -243,7 +243,7 @@ def export_project_ledger(
 
 @router.post(
     "/{project_id}/settle",
-    summary="结算项目项目账本",
+    summary="结算项目账本",
 )
 @limiter.limit(RateLimits.INVESTMENT_SETTLE)
 def settle_project_finance(
@@ -253,7 +253,7 @@ def settle_project_finance(
     service: _FinanceServiceDep,
     current_user: LedgerSettlePermDep,
 ) -> FinanceSettlementResponse:
-    """结算：锁定该项目项目账本，禁止新增/删除记录.
+    """结算：锁定该项目账本，禁止新增/删除记录.
 
     速率限制：50次/小时.
     """
@@ -262,7 +262,7 @@ def settle_project_finance(
 
 @router.post(
     "/{project_id}/unsettle",
-    summary="反结算项目项目账本",
+    summary="反结算项目账本",
 )
 @limiter.limit(RateLimits.INVESTMENT_SETTLE)
 def unsettle_project_finance(

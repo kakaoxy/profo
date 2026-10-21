@@ -24,7 +24,7 @@ export function StatisticsHero({ kpi }: StatisticsHeroProps) {
     <div className="text-center">
       {/* 标题 */}
       <div className="mb-10 animate-in" style={{ animationDelay: "0.1s" }}>
-        <h1 className="font-display text-3xl mb-4 text-ink text-balance">项目项目账本</h1>
+        <h1 className="font-display text-3xl mb-4 text-ink text-balance">项目账本</h1>
         <p className="text-[15px] leading-[1.35] text-graphite">
           全周期资金追踪 · 数据从交易流水实时计算
         </p>

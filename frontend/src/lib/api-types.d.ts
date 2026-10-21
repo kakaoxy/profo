@@ -3057,8 +3057,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取项目项目账本详情
-         * @description 获取项目项目账本详情（含流水记录列表 + 汇总）.
+         * 获取项目账本详情
+         * @description 获取项目账本详情（含流水记录列表 + 汇总）.
          */
         get: operations["get_ledger_detail_api_v1_admin_ledger__project_id__get"];
         put?: never;
@@ -3077,8 +3077,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取项目项目账本统计
-         * @description 获取项目项目账本统计页面聚合数据.
+         * 获取项目账本统计
+         * @description 获取项目账本统计页面聚合数据.
          *
          *     按五层法 + 阶段现金流重算：five_layer / stage_flows / kpi / breakdown.
          */
@@ -3119,7 +3119,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取项目项目账本操作日志
+         * 获取项目账本操作日志
          * @description 获取指定项目的项目账本操作日志（按时间降序）.
          */
         get: operations["list_project_logs_api_v1_admin_ledger__project_id__logs_get"];
@@ -3139,7 +3139,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 导出项目项目账本为 zip
+         * 导出项目账本为 zip
          * @description 导出单项目流水为 zip（含流水 CSV + 票据图片）.
          *
          *     速率限制：10次/小时.
@@ -3163,8 +3163,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 结算项目项目账本
-         * @description 结算：锁定该项目项目账本，禁止新增/删除记录.
+         * 结算项目账本
+         * @description 结算：锁定该项目账本，禁止新增/删除记录.
          *
          *     速率限制：50次/小时.
          */
@@ -3185,7 +3185,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 反结算项目项目账本
+         * 反结算项目账本
          * @description 反结算：解锁项目账本，恢复可编辑.
          *
          *     速率限制：50次/小时.

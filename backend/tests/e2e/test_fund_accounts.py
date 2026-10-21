@@ -301,6 +301,42 @@ UNLOCK_HEADERS = {_UNLOCK_HEADER: unlock_token}
 log("已解锁")
 
 # ─────────────────────────────────────────────────────────────
+# V13：密码错误必须返回 400 而非 401（回归 2026-10-22 缺陷）
+# ─────────────────────────────────────────────────────────────
+# 缺陷现象：AccountPasswordError 原用 status_code=401。前端 lib/api-server.ts
+# 的 fetchWithAutoRefresh 把**任何** 401 当 access_token 过期，自动刷新令牌后重放
+# 同一请求 → 用户输错 1 次服务端收到 2 次 POST → 失败计数 +2，5 次上限在 3 次
+# 输入后就被触发（实测已复现：计数 6）。修复后走 400，不再触发令牌重放。
+# 注：本组放在 V5 清理 Redis 之后，避免失败计数污染 V5 的「连错 5 次」断言。
+log("\nV13. 密码错误返回 400（不触发前端令牌重试）")
+status, payload, _ = req(
+    "POST",
+    "/admin/accounts/unlock",
+    {"password": "000111"},
+    token=token,
+)
+check("密码错误返回 400（非 401，避免前端重放双扣）", status, 400)
+check_true(
+    "400 响应仍带剩余尝试次数",
+    isinstance(payload, dict) and "还可尝试" in str(payload.get("message", "")),
+    str(payload)[:120],
+)
+# 清理 V13 产生的失败计数，不影响后续用例
+_v13_cleared = 0
+try:
+    import redis as _redis_mod
+
+    from settings import settings as _settings
+
+    _r = _redis_mod.Redis.from_url(_settings.redis_url)
+    for _k in list(_r.scan_iter("fund_accounts:fail:*")) + list(_r.scan_iter("fund_accounts:lock:*")):
+        _r.delete(_k)
+        _v13_cleared += 1
+except Exception as exc:
+    log(f"  ⚠️ V13 后清理失败计数异常: {exc}")
+log(f"  （已清理 {_v13_cleared} 个失败计数/锁键）")
+
+# ─────────────────────────────────────────────────────────────
 # V1：建账户 → 记一笔 → 三处数字一致
 # ─────────────────────────────────────────────────────────────
 log("\nV1. 建账户 → 记账 → 三处一致")
@@ -339,6 +375,49 @@ status, payload, _ = req(
     extra_headers=UNLOCK_HEADERS,
 )
 check("同名账户被拒", status, 409)
+
+# ── V14：PATCH 可清空选填字段（回归 2026-10-22 缺陷）──────────────────────
+# 缺陷现象：update_account 用 `if data.x is not None` 判断，无法区分「未传」与
+# 「传 null」，导致卡号写错、备注要清掉时永远改不掉（实测 PATCH null 后仍返回原值）。
+# 修复：改用 model_fields_set 区分，可空文本字段显式传 null 即清空。
+log("\nV14. PATCH 可清空 card_no/holder/note")
+status, patched, _ = req(
+    "PATCH",
+    f"/admin/accounts/{account_id}",
+    {"account_no": None, "holder": None, "note": None},
+    token=token,
+    extra_headers=UNLOCK_HEADERS,
+)
+check("PATCH 清空三个选填字段", status, 200)
+check_true(
+    "account_no/holder/note 已置空",
+    isinstance(patched, dict)
+    and patched.get("account_no") is None
+    and patched.get("holder") is None
+    and patched.get("note") is None,
+    str({k: patched.get(k) for k in ("account_no", "holder", "note")}) if isinstance(patched, dict) else "",
+)
+# 再把卡号写回去，供后续用例读取
+req(
+    "PATCH",
+    f"/admin/accounts/{account_id}",
+    {"account_no": "6222 **** 0001"},
+    token=token,
+    extra_headers=UNLOCK_HEADERS,
+)
+
+# ── V15：纯空白账户名称被拒（回归 2026-10-22 缺陷）────────────────────
+# 缺陷现象：Pydantic min_length=1 拦不住 "   "（长 3），入库前又 strip，结果是能建出
+# 名为空字符串的账户（实测已复现），列表里显示为空白卡片。
+log("\nV15. 纯空白账户名被拒")
+status, payload, _ = req(
+    "POST",
+    "/admin/accounts",
+    {"name": "   ", "type": "bank", "opening_balance": 0, "opening_date": "2026-01-01"},
+    token=token,
+    extra_headers=UNLOCK_HEADERS,
+)
+check("纯空白名称被拒（400）", status, 400)
 
 # 建项目
 status, project, _ = req(
@@ -850,6 +929,37 @@ status, stats_after_delete, _ = req("GET", "/admin/ledger/stats", token=token)
 log(
     f"  删除后全局汇总：records={stats_after_delete.get('total_records')} net={stats_after_delete.get('net_cash_flow')}"
 )
+
+# ─────────────────────────────────────────────────────────────
+# V16：余额公式与流水页合计恒等（回归 2026-10-22 口径不一致缺陷）
+# ─────────────────────────────────────────────────────────────
+# 缺陷现象：余额聚合（_flow_totals）只过滤 FinanceRecord.is_deleted，而流水列表
+# （_unified_flow_query）还要求 Project.is_deleted=false。对「项目已删、流水未删」
+# 的孤儿流水，余额把它算进去、流水页却不显示 → 页面上的「进 − 出 ± 核对」
+# 再也推不出余额（实测差 133000.00）。
+# 修复：余额聚合/本月进出/未挂账户统计统一走 _alive_records_filter()。
+# 断言口径：对每个在用账户，期初 + 流水页进 − 流水页出 + 调整合计 == 账户余额。
+log("\nV16. 余额公式与流水页合计恒等")
+status, accounts_now, _ = req("GET", "/admin/accounts", token=token, extra_headers=UNLOCK_HEADERS)
+check("取账户列表", status, 200)
+formula_problems: list[str] = []
+for _acc in (accounts_now or {}).get("items", []):
+    _aid = _acc["id"]
+    status, _flows, _ = req(
+        "GET",
+        f"/admin/accounts/flows?account_id={_aid}&page_size=200",
+        token=token,
+        extra_headers=UNLOCK_HEADERS,
+    )
+    if status != 200:
+        formula_problems.append(f"{_acc['name']}: 流水接口 {status}")
+        continue
+    # 流水页合计含调整（已折进 inflow/outflow），故直接与流水的 record/adjust 两部分对账
+    _lhs = money(_acc["opening_balance"]) + money(_flows["total_inflow"]) - money(_flows["total_outflow"])
+    _rhs = money(_acc["balance"])
+    if _lhs != _rhs:
+        formula_problems.append(f"{_acc['name']}: 期初+进−出={_lhs} != 余额={_rhs}")
+check("所有在用账户：期初 + 流水进 − 流水出 == 余额", formula_problems, [])
 
 # ─────────────────────────────────────────────────────────────
 # V7：改名 / 文案（前端源码断言，后端只在上面验导出表头）

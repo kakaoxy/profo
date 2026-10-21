@@ -47,6 +47,17 @@ interface ModuleLockContextValue extends ModuleLockState {
   touch: (secondsLeft: number) => void;
 }
 
+/**
+ * 解锁令牌滑动有效期（秒）——与后端 `services/finance/unlock.py::UNLOCK_TTL_SECONDS` 对齐。
+ *
+ * ⚠️ 为何客户端也要这个常量（2026-10-22 缺陷修复）：服务端 `require_accounts_unlock`
+ * 对**每个受保护请求**都会 ``EXPIRE`` 重置为 30 分钟（滑动过期），但本地倒计时此前
+ * 只会单向递减、从不续期——结果是用户连续操作 31 分钟仍会被前端判定过期并清掉令牌，
+ * 与「30 分钟**没操作**才锁」的口径直接矛盾（且 `touch` 定义了却无人调用）。
+ * 现在每个受保护请求成功后调 ``touch(SLIDING_TTL_SECONDS)`` 重置本地倒计时。
+ */
+export const SLIDING_TTL_SECONDS = 30 * 60;
+
 const ModuleLockContext = React.createContext<ModuleLockContextValue | null>(null);
 
 function readStoredToken(): string | null {

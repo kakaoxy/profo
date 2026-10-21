@@ -50,7 +50,7 @@ export async function exportLedger(
 }
 
 /**
- * 导出单项目项目账本为 zip（含流水 CSV + 票据图片，返回 ArrayBuffer）
+ * 导出单项目账本为 zip（含流水 CSV + 票据图片，返回 ArrayBuffer）
  *
  * 注：导出端点返回二进制流，openapi-fetch 不便处理 Blob，故保留裸 fetch。
  */
@@ -79,7 +79,7 @@ export async function exportProjectLedger(projectId: string): Promise<ActionResu
     const buffer = await res.arrayBuffer();
     return { success: true, data: buffer };
   } catch (e) {
-    logger.error("导出项目项目账本异常:", e);
+    logger.error("导出项目账本异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
