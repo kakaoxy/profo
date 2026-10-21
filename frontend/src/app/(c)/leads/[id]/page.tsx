@@ -99,6 +99,10 @@ export default function LeadDetailPage() {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
+            // keepalive 必需：下方 window.location.href 会触发文档导航（真机调起拨号盘），
+            // 导航后未声明 keepalive 的在途请求会被浏览器中止 —— 实测后端处理 >100ms 时
+            // 留痕全部丢失（服务端记录“连接已断”）；加 keepalive 后 1500ms 也能送达。
+            keepalive: true,
             body: JSON.stringify({
               method: "phone",
               content: `客户致电评估人 ${contact.nickname || ""}`.trim(),

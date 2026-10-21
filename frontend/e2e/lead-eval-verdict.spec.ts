@@ -93,7 +93,12 @@ test.describe("V1 · 三项齐全才可提交（API 契约层）", () => {
   test("V1d 三项齐全 → 201，历史首条回读两字段一致", async () => {
     const lead = await createPendingLead("v1d");
     const create = await api.ctx.post(`/api/v1/leads/${lead.id}/evaluations`, {
-      data: { eval_price: "486.00", condition_score: 4, expected_sale_days: 45, remark: "南北通透" },
+      data: {
+        eval_price: "486.00",
+        condition_score: 4,
+        expected_sale_days: 45,
+        remark: "南北通透",
+      },
     });
     expect(create.status()).toBe(201);
     const created = (await create.json()) as {
@@ -240,5 +245,61 @@ test.describe("V1(UI) · admin 抽屉表单闸门", () => {
     await expect(approveBtn).toBeDisabled();
 
     await page.screenshot({ path: join(ARTIFACT_DIR, "v1ui-admin-gate.png"), fullPage: false });
+  });
+});
+
+test.describe("V9 · 拨号留痕在页面导航后仍能送达（keepalive 回归）", () => {
+  /**
+   * 背景（实测发现的真实缺陷）：
+   * Web 端 `handleContactEvaluator` 是「发起留痕 fetch → 立刻 window.location.href = tel:」。
+   * 真机调起拨号盘会使文档导航，**未声明 keepalive 的在途请求会被浏览器中止**。
+   *
+   * 实测数据（本地 HTTP 服务，后端处理耗时递增）：
+   *   无 keepalive：  0ms 完成 | 100ms 连接已断 | 500ms 连接已断 | 1500ms 连接已断
+   *   有 keepalive：  0ms 完成 | 100ms 完成     | 500ms 完成     | 1500ms 完成
+   *
+   * 本用例用同一机制复现，断言 keepalive 生效 —— 防止后续重构把 keepalive 删掉后
+   * 留痕静默丢失（该失败无任何用户可见报错，只能靠这条测试兜住）。
+   */
+  test("导航后 POST 仍送达（keepalive: true）", async ({ page }) => {
+    const { createServer } = await import("node:http");
+    const received: string[] = [];
+    const server = createServer((req, res) => {
+      if (req.url?.startsWith("/beacon")) {
+        received.push(req.url);
+        req.resume();
+        // 模拟后端处理 400ms（超过无 keepalive 时的存活窗口）
+        req.on("end", () =>
+          setTimeout(() => {
+            if (!req.socket.destroyed) {
+              res.writeHead(201);
+              res.end("{}");
+            }
+          }, 400),
+        );
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end(
+        `<button id="go">go</button><script>
+          document.getElementById('go').onclick = () => {
+            // 与 handleContactEvaluator 同构：留痕 POST（带 keepalive）+ 立刻导航
+            fetch('/beacon', { method: 'POST', body: 'x', keepalive: true });
+            setTimeout(() => { location.href = '/next'; }, 20);
+          };
+        </script>`,
+      );
+    });
+
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const port = (server.address() as { port: number }).port;
+    try {
+      await page.goto(`http://127.0.0.1:${port}/`);
+      await page.click("#go");
+      await page.waitForTimeout(900);
+      expect(received, "keepalive 缺失会导致导航后请求被中止，留痕静默丢失").toContain("/beacon");
+    } finally {
+      server.close();
+    }
   });
 });
