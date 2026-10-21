@@ -155,9 +155,14 @@ test.describe("楼盘字典迭代修复 E2E（对齐设计稿 v2.0）", () => {
     await loginPage(page);
   });
 
-  test("总览页：KPI/筛选下拉/首图列/页头动作 + 区域筛选联动", async ({ page }) => {
+  test("总览页：KPI/筛选下拉/表头列/页头动作 + 区域筛选联动", async ({ page }) => {
     await page.goto("/admin/building-dictionary");
-    await expect(page.getByText("首图")).toBeVisible({ timeout: 30000 });
+    // 规格 v2.0（FR-01/FR-20）明确**删除总览首图缩略列**：图片只在抽屉「户型图库」区块。
+    // 原断言 getByText("首图") 已随规格变更失效（不是回归），改为断言真实表头列。
+    await expect(page.getByRole("columnheader", { name: /小区/ }).first()).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole("columnheader", { name: /已关联项目|已绑项目/ })).toBeVisible();
+    // 反向保证：首图列不应再出现（防止规格回退后无人发现）
+    await expect(page.getByRole("columnheader", { name: /首图/ })).toHaveCount(0);
 
     // KPI hero（设计稿：唯一 Apricot 暖卡 + 三张灰底卡）
     await expect(page.getByText("已绑项目").first()).toBeVisible();
@@ -330,25 +335,68 @@ test.describe("楼盘字典迭代修复 E2E（对齐设计稿 v2.0）", () => {
     }
   });
 
-  test("项目详情：地址绑定卡（绑定/改绑定/解绑）", async ({ page }) => {
+  /**
+   * 项目详情 · 地址字典绑定入口。
+   *
+   * 规格变更（FR-13 / commit 1d3a06b8）：项目详情的独立「地址绑定卡」已移除，
+   * 地址改由 **编辑内联态里的共享四级选择器 `DictAddressPicker`** 承载
+   * （`info-inline-editor.tsx` 中 `community_name` 字段）。原用例断言的
+   * 「地址绑定」标题 / 「绑定地址|改绑定」按钮 / 「字典选择」弹窗均已不存在。
+   *
+   * 现在按**当前真实链路**验证：进项目详情 → 触发内联编辑 → 选择器出现且可打开
+   * 小区联想（这才是字典绑定的实际入口）。
+   */
+  test("项目详情：内联编辑态的字典地址选择器（绑定入口）", async ({ page }) => {
     const { ctx, dispose } = await createApiContext();
     let projectId: string;
+    let communityName = "";
     try {
       const res = await ctx.get("/api/v1/projects?page=1&page_size=1");
       expect(res.ok()).toBeTruthy();
-      const body = (await res.json()) as { items: { id: string }[] };
+      const body = (await res.json()) as {
+        items: { id: string; community_name?: string }[];
+      };
       expect(body.items.length).toBeGreaterThan(0);
       projectId = body.items[0].id;
+      communityName = body.items[0].community_name ?? "";
     } finally {
       await dispose();
     }
+
     await page.goto(`/admin/projects/${projectId}`);
-    await expect(page.getByText("地址绑定")).toBeVisible({ timeout: 30000 });
-    // 状态徽标 + 绑定动作
-    await expect(page.getByRole("button", { name: /绑定地址|改绑定/ })).toBeVisible();
-    // 打开绑定弹窗（四级选择器）
-    await page.getByRole("button", { name: /绑定地址|改绑定/ }).click();
-    await expect(page.getByText("字典选择")).toBeVisible({ timeout: 15000 });
+    // 详情页基础信息渲染（小区名来自字典冗余字段）
+    if (communityName) {
+      await expect(page.getByText(communityName, { exact: false }).first()).toBeVisible({
+        timeout: 30000,
+      });
+    }
+
+    // 进入内联编辑：卡头「编辑」textlink（顶栏也有同名入口，取第一个即可）。
+    // ⚠️ 已归档项目按规格不渲染编辑入口（后端 PUT 也 400），此时显式 skip 而不是假通过。
+    const editEntry = page.getByRole("button", { name: /^编辑(资料)?$/ }).first();
+    if ((await editEntry.count()) === 0) {
+      test.skip(true, "首个项目为已归档态（规格不渲染编辑入口），字典选择器入口未覆盖");
+      return;
+    }
+    await expect(editEntry).toBeVisible({ timeout: 30000 });
+    await editEntry.click();
+
+    // 字典四级选择器出现（项目编辑统一走 DictAddressPicker，不再有独立绑定卡）。
+    // 小区触发按钮（PopoverTrigger）文案：已选小区→小区名；未选→「搜索小区…」。
+    // 编辑态下「手动填写地址」是兼容模式入口，它旁边那个带 Building2 图标的按钮即触发器。
+    // 「手动填写地址」是兼容模式入口；它所在选择器容器内的 **第 2 个按钮** 是小区触发器
+    // （第 1 个是「手动填写地址」本身，其后依次是楼栋/户室/新建入口）。
+    const manualToggle = page.getByRole("button", { name: "手动填写地址" });
+    await expect(manualToggle).toBeVisible({ timeout: 15000 });
+    const pickerBox = manualToggle.locator("xpath=ancestor::div[contains(@class,'rounded-cards')][1]");
+    const communityTrigger = pickerBox.locator("button").nth(1);
+    await expect(communityTrigger).toBeVisible({ timeout: 15000 });
+    // 断言触发器承载小区语义（已选小区名 或 未选时的「搜索小区…」），证明是字典选择器而非其它按钮
+    await expect(communityTrigger).toHaveText(/小区|搜索/);
+
+    // 打开小区联想（字典绑定的真实入口）→ 搜索面板出现
+    await communityTrigger.click();
+    await expect(page.getByPlaceholder("输入小区名/地址/别名搜索")).toBeVisible({ timeout: 15000 });
     await page.keyboard.press("Escape");
   });
 });
