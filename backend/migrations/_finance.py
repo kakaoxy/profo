@@ -160,8 +160,7 @@ def create_finance_subjects_table(engine: Engine) -> None:
 
     1. 幂等创建表（CREATE TABLE IF NOT EXISTS 语义，checkfirst=True）
     2. 幂等创建索引 idx_subject_stage（按 stage 查询）
-    3. 先按 id 将存量旧名科目原地改名（S25/S26），再幂等初始化系统预置科目
-       （INSERT ... ON CONFLICT (name) DO NOTHING）——改名必须先于种子，见 H-1。
+    3. 幂等初始化系统预置科目（INSERT ... ON CONFLICT (name) DO NOTHING）
 
     替代原 CashFlowCategory 硬编码枚举，支持用户自定义科目 CRUD。
     system=True 的记录为系统预置，is_deleted=False。
@@ -186,9 +185,6 @@ def create_finance_subjects_table(engine: Engine) -> None:
 
     inserted = 0
     with engine.begin() as conn:
-        # 3.1 先按 id 将存量旧名科目原地改名（H-1：避免种子新名与旧行主键 S25/S26 冲突）
-        _rename_investment_subjects_conn(conn)
-        # 3.2 再按 name 幂等插入种子
         for subj in _INITIAL_SUBJECTS:
             result = conn.execute(
                 text(
