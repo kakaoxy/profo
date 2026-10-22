@@ -32,7 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createAdjustment } from "../actions";
-import { adjustmentCreateSchema } from "./account-schema";
+import { adjustmentCreateSchema, isUnlockDenied } from "./account-schema";
+import { useModuleLock } from "./module-lock-context";
 import { type FundAccount } from "./account-card";
 
 interface ReconDialogProps {
@@ -53,6 +54,7 @@ export function ReconDialog({
   onOpenChange,
   onSaved,
 }: ReconDialogProps) {
+  const { invalidate } = useModuleLock();
   const [accountId, setAccountId] = React.useState("");
   const [actual, setActual] = React.useState("");
   const [date, setDate] = React.useState("");
@@ -100,6 +102,11 @@ export function ReconDialog({
     const res = await createAdjustment(account.id, parsed.data, token);
     setSubmitting(false);
     if (!res.success) {
+      // 令牌失效（403 未解锁）→ 回锁屏；权限不足/差额为 0 等业务错误留在弹窗提示
+      if (isUnlockDenied(res.code, res.error)) {
+        invalidate();
+        return;
+      }
       toast.error(res.error);
       setErrors({ actual_balance: res.error });
       return;

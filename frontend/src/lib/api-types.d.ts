@@ -9279,7 +9279,7 @@ export interface components {
             holder?: string | null;
             /**
              * Opening Balance
-             * @description 期初余额(元)
+             * @description 期初余额(元,最多 2 位小数)
              * @default 0
              */
             opening_balance: number | string;
@@ -9640,7 +9640,7 @@ export interface components {
             holder?: string | null;
             /**
              * Opening Balance
-             * @description 期初余额(元)
+             * @description 期初余额(元,最多 2 位小数)
              */
             opening_balance?: number | string | null;
             /**
@@ -9672,7 +9672,7 @@ export interface components {
             adjust_date: string;
             /**
              * Actual Balance
-             * @description 对账后的实际余额(元)
+             * @description 对账后的实际余额(元,最多 2 位小数)
              */
             actual_balance: number | string;
             /**

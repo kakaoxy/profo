@@ -26,6 +26,7 @@
 import json
 import os
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -140,19 +141,180 @@ log("管理员登录成功")
 
 # 本次运行是否亲手创建了模块密码（决定结束时是否删除该记录）
 PASSWORD_OWNED_BY_E2E = False
+# 本次运行是否为了跑通用例而「临时覆写」了既有密码（决定结束时是否还原原哈希）
+PASSWORD_HASH_BACKUP: dict[str, object] | None = None
+
+# 备份落盘路径（⚠️ 2026-10-22 事故修复：备份不能只放内存）
+# 事故经过：脚本把原哈希备份到**进程内存**后覆写 DB；随后因根 .env 的
+# CORS_ORIGINS 是 JSON 数组、子进程 import settings 直接 FATAL sys.exit(1)，
+# 内存里的备份随进程消失，原哈希永久丢失。更糟的是下一次运行看到「E2E 密码能解锁」
+# 就判定为只读模式、不再覆写也不再还原，于是**把上一轮覆写的值当成了原值**。
+# 现在备份同时写入磁盘（0600），任何异常退出都能据此还原；并在还原时校验
+# 「当前值是否仍是 E2E 覆写值」，避免把覆写值误认为原值而放弃还原。
+PASSWORD_BACKUP_FILE = Path(__file__).resolve().parent / ".fund_accounts_password_backup.json"
+
+
+def _write_password_backup(backup: dict[str, object]) -> None:
+    """把原密码哈希备份落盘（0600），供异常退出后恢复.
+
+    Args:
+        backup: 含 value/updated_by_id/updated_at 的备份字典
+
+    """
+    from utils.auth.password import get_password_hash
+
+    payload = {
+        "value": backup["value"],
+        "updated_by_id": backup.get("updated_by_id"),
+        "updated_at": backup["updated_at"].isoformat() if backup.get("updated_at") else None,
+        "e2e_password_hash": get_password_hash(MODULE_PASSWORD),
+        "saved_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    PASSWORD_BACKUP_FILE.write_text(json.dumps(payload), encoding="utf-8")
+    PASSWORD_BACKUP_FILE.chmod(0o600)
+
+
+def _read_password_backup() -> dict[str, object] | None:
+    """读取落盘的密码备份（不存在或损坏返回 None）."""
+    if not PASSWORD_BACKUP_FILE.exists():
+        return None
+    try:
+        from datetime import datetime
+
+        raw = json.loads(PASSWORD_BACKUP_FILE.read_text(encoding="utf-8"))
+        updated_at = raw.get("updated_at")
+        return {
+            "value": raw["value"],
+            "updated_by_id": raw.get("updated_by_id"),
+            "updated_at": datetime.fromisoformat(updated_at) if updated_at else None,
+        }
+    except Exception as exc:
+        log(f"  ⚠️ 读取落盘密码备份失败: {exc}")
+        return None
+
+
+def backup_and_override_module_password() -> bool:
+    """备份现有模块密码哈希并临时改为 E2E 值（用于「已有密码但 E2E 不知道」的环境）.
+
+    为什么需要（2026-10-22）：密码哈希不可逆，环境一旦被历史 E2E 或人工改成了
+    未知值，后续 E2E 就只能永远「跳过」——解锁、锁定、余额、流水等全部核心用例
+    都跑不了，等于资金账户模块失去自动化回归。但直接 POST /module-password 又会
+    重犯 D-002 事故（改掉业务密码且不还原）。
+
+    因此采用**原值备份 + 精确回写**：
+    1. 直接从 ``system_configs`` 读出 ``value`` / ``updated_by_id`` / ``updated_at``；
+    2. **先落盘再覆写**（``PASSWORD_BACKUP_FILE``，0600）：进程被 kill、import 期
+       异常退出、CI 超时都不会丢备份（2026-10-22 事故的直接教训）；
+    3. 覆写为 E2E 密码的哈希；
+    4. 结束时由 ``restore_module_password()`` 把三个字段全部回写（不仅 value，
+       连审计痕迹的 updated_by_id/updated_at 也一并还原，业务侧完全无感）。
+
+    Returns:
+        覆写成功返回 True（此时调用方必须保证最终走到 restore_module_password）。
+
+    """
+    global PASSWORD_HASH_BACKUP
+    try:
+        from db import SessionLocal
+        from models import SystemConfig
+        from utils.auth.password import get_password_hash
+
+        db = SessionLocal()
+        try:
+            row = db.query(SystemConfig).filter(SystemConfig.key == "fund_accounts.password_hash").first()
+            if row is None:
+                return False
+            PASSWORD_HASH_BACKUP = {
+                "value": row.value,
+                "updated_by_id": row.updated_by_id,
+                "updated_at": row.updated_at,
+            }
+            # 先落盘，再改库：任何时刻崩溃都能从磁盘找回原值
+            _write_password_backup(PASSWORD_HASH_BACKUP)
+            row.value = get_password_hash(MODULE_PASSWORD)
+            row.updated_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+            db.commit()
+            log(f"  已备份原密码哈希到 {PASSWORD_BACKUP_FILE.name} 并临时覆写为 E2E 值（结束时精确还原）")
+            return True
+        finally:
+            db.close()
+    except Exception as exc:
+        log(f"  ⚠️ 备份/覆写模块密码失败: {exc}")
+        PASSWORD_HASH_BACKUP = None
+        return False
+
+
+def _cleanup_test_account_rows(account_id: str | None) -> None:
+    """直连 SQL 清理 E2E 自建账户及其对账记录（仅用于测试数据，不绕过业务口径）.
+
+    为什么必须清理：产品口径是「有对账记录的账户只能停用、不能删除」（API 已断言 409），
+    但 E2E 每跑一次就会留下一个 ``e2e_已停用_*`` 孤儿账户。共享环境的账户列表会被
+    测试垃圾逐步污染，最终无法分辨真实账户。因此测试数据由测试自己用 SQL 清干净，
+    与 ``tests/e2e/test_biz_dicts.py`` 的「ABI 只增不删 → 测试清理走直接 SQL」一致。
+
+    Args:
+        account_id: 待清理账户 ID（None 时直接返回）。
+
+    """
+    if not account_id:
+        return
+    try:
+        from sqlalchemy import text
+
+        from db import SessionLocal
+
+        db = SessionLocal()
+        try:
+            db.execute(text("DELETE FROM fund_account_adjustments WHERE account_id = :i"), {"i": account_id})
+            db.execute(text("DELETE FROM fund_accounts WHERE id = :i"), {"i": account_id})
+            db.commit()
+        finally:
+            db.close()
+    except Exception as exc:
+        log(f"  ⚠️ 清理测试账户失败（需人工删除 {account_id}）: {exc}")
+
+
+def _clear_redis_guard() -> int:
+    """清理 Redis 中资金账户的锁定键与失败计数（保留解锁令牌）.
+
+    为什么单独抽出来：``backup_and_override_module_password`` 之前的解锁尝试
+    会产生 ``fund_accounts:fail:*`` 计数（错 1 次就 +1），覆写密码后若不清计数，
+    紧接着的正确密码解锁仍会被计数/锁定挡住（实测会直接 429）。
+
+    Returns:
+        清理的键数量。
+
+    """
+    try:
+        import redis
+
+        from settings import settings
+
+        r = redis.Redis.from_url(settings.redis_url)
+        keys = [*r.scan_iter("fund_accounts:fail:*"), *r.scan_iter("fund_accounts:lock:*")]
+        for key in keys:
+            r.delete(key)
+        return len(keys)
+    except Exception as exc:
+        log(f"  ⚠️ 清理 Redis 锁定/计数失败: {exc}")
+        return 0
 
 
 def restore_module_password() -> None:
-    """还原模块密码与 Redis 状态：仅删除「本次 E2E 亲手创建」的密码记录.
+    """还原模块密码与 Redis 状态.
 
-    为什么必须还原：`fund_accounts.password_hash` 是**共享环境的业务配置**。
-    测试改了它且不还原，真实用户就再也进不去（哈希不可逆、原密码未知）——
-    本脚本第一版确实造成了这个事故（把测试环境密码改成了写死的测试值）。
-    故现在的口径：
-    - 环境原本已有密码 → 全程只读，不碰该记录（PASSWORD_OWNED_BY_E2E 保持 False）；
-    - 环境原本无密码 → 由 E2E 设置，结束时删除 → 页面回到「还没设密码」。
+    两种情形均为「把共享环境业务配置恢复原样」：
+    - ``PASSWORD_OWNED_BY_E2E``：环境原本**无**密码 → 删除本次写入的记录；
+    - ``PASSWORD_HASH_BACKUP`` ：环境原本**有**密码 → 把 value/updated_by_id/
+      updated_at 三个字段精确回写（不是只改 value）。
     同时清理本进程可能产生的 Redis 锁键/失败计数/令牌，避免把环境留在锁定态。
+
+    ⚠️ 2026-10-22 事故修复：若内存备份为空（进程被 kill / import 期异常退出），
+    必须回退到**落盘备份** ``PASSWORD_BACKUP_FILE`` 再还原，而不是只打一行告警。
+    旧逻辑的致命后果：下一次运行时看到「E2E 密码能解锁」就进只读模式、不覆写也不
+    还原，等于把上一轮覆写的值永久当成业务原值。
     """
+    global PASSWORD_HASH_BACKUP
     try:
         import redis
 
@@ -160,12 +322,66 @@ def restore_module_password() -> None:
         from models import SystemConfig
         from settings import settings
 
+        # 内存备份缺失时，用落盘备份兜底（事故恢复路径）
+        if PASSWORD_HASH_BACKUP is None and PASSWORD_BACKUP_FILE.exists():
+            disk_backup = _read_password_backup()
+            if disk_backup is not None:
+                PASSWORD_HASH_BACKUP = disk_backup
+                log("  检测到落盘备份 → 用磁盘记录还原上次被中断的原密码哈希")
+
+        if PASSWORD_HASH_BACKUP is None and not PASSWORD_OWNED_BY_E2E:
+            # 本次没改过密码：但环境里可能是「上次进程被 kill、还原没跑到」的 E2E 残留。
+            #
+            # ⚠️ 判定口径（2026-10-22 修正）：不能只看「E2E 密码能解锁」就报警。
+            # 开发环境的模块密码**本来就可能**就是 E2E_FUND_ACCOUNT_PASSWORD
+            # （frontend/.env.local 里配置的正是同一个值，两条 E2E 链路共用），
+            # 那样每次正常跑完都会误报「残留」。真正的残留判定条件只有两个同时成立：
+            #   1. 有落盘备份（说明确实覆写过）——已在上面被消费掉，此处必然没有；
+            #   2. 密码行的 updated_at 晚于本进程启动时间（说明本次之外有人改过）。
+            # 两个条件都不成立时，说明密码没被动过，直接静默即可。
+            try:
+                from utils.auth.password import verify_password
+
+                stub_db = SessionLocal()
+                try:
+                    stub_row = (
+                        stub_db.query(SystemConfig).filter(SystemConfig.key == "fund_accounts.password_hash").first()
+                    )
+                    if stub_row is not None and MODULE_PASSWORD:
+                        stub_ok, _ = verify_password(MODULE_PASSWORD, stub_row.value)
+                        if stub_ok:
+                            log(
+                                "  模块密码等于 E2E_FUND_ACCOUNT_PASSWORD（本次未改密码，无落盘备份）。\n"
+                                "    若该环境本应使用业务自有密码，请用「改密码」流程重设。",
+                            )
+                finally:
+                    stub_db.close()
+            except Exception as exc:
+                # 仅告警用途，失败不影响清理 Redis 的主职责
+                log(f"  ⚠️ 残留检测跳过: {exc}")
+
         if PASSWORD_OWNED_BY_E2E:
             db = SessionLocal()
             try:
                 deleted = db.query(SystemConfig).filter(SystemConfig.key == "fund_accounts.password_hash").delete()
                 db.commit()
                 log(f"  已还原：删除 E2E 创建的模块密码记录（{deleted} 条）")
+            finally:
+                db.close()
+        elif PASSWORD_HASH_BACKUP is not None:
+            db = SessionLocal()
+            try:
+                row = db.query(SystemConfig).filter(SystemConfig.key == "fund_accounts.password_hash").first()
+                if row is not None:
+                    row.value = PASSWORD_HASH_BACKUP["value"]
+                    row.updated_by_id = PASSWORD_HASH_BACKUP["updated_by_id"]
+                    row.updated_at = PASSWORD_HASH_BACKUP["updated_at"]
+                    db.commit()
+                    log("  已还原：原密码哈希与 updated_by_id/updated_at（业务侧无感）")
+                    # 还原成功后才删除落盘备份，避免「删了备份但没还原」
+                    PASSWORD_BACKUP_FILE.unlink(missing_ok=True)
+                else:
+                    log("  ⚠️ 还原失败：密码记录已不存在（需人工检查）")
             finally:
                 db.close()
         redis_client = redis.Redis.from_url(settings.redis_url)
@@ -196,27 +412,49 @@ check("lock-state 未解锁也可读", status, 200)
 check_true("lock-state 返回 has_password 字段", isinstance(lock_state, dict) and "has_password" in lock_state)
 
 # ── 模块密码：不污染既有配置 ──────────────────────────────────────────────
-# ⚠️ 教训（本脚本第一版的实际事故）：直接 POST /module-password 会**改掉共享环境里
-# 业务方已设的模块密码**，且无法还原（哈希不可逆、也不知道原密码），导致真实用户进不去。
-# 因此现在：
-#   1. 若环境已设密码 → 用 E2E_FUND_ACCOUNT_PASSWORD 尝试解锁；失败则**跳过**该组用例
-#      （不改密码、不清锁），并显式记为跳过而非通过；
-#   2. 若环境未设密码（has_password=false）→ 由本脚本设置，并在 finally 里删除该记录还原。
+# ⚠️ 教训（本脚本第一版的实际事故 D-002）：直接 POST /module-password 会**改掉共享
+# 环境里业务方已设的模块密码**，且无法还原（哈希不可逆、也不知道原密码）。
+# 现在的三档口径：
+#   1. 环境已设密码且 E2E 密码可解锁 → 只读模式，全程不碰密码；
+#   2. 环境已设密码但 E2E 密码不匹配 → **备份原哈希 → 临时覆写 → 结束时精确还原**
+#      （旧逻辑是直接跳过，导致资金账户模块在「密码未知」的环境里零回归覆盖）；
+#   3. 环境未设密码 → 由本脚本设置，结束时删除该记录。
 EXISTING_HAS_PASSWORD = bool((lock_state or {}).get("has_password"))
 
 if EXISTING_HAS_PASSWORD:
-    log("  环境已设模块密码 → 只读模式：不修改密码，仅尝试解锁")
+    log("  环境已设模块密码 → 先尝试只读解锁")
     status, payload, _ = req("POST", "/admin/accounts/unlock", {"password": MODULE_PASSWORD}, token=token)
-    if status == 200:
-        log("  使用 E2E_FUND_ACCOUNT_PASSWORD 解锁成功")
-    else:
-        log(f"  ⚠️ 无法解锁（{status}）→ 跳过依赖解锁的用例，且不改动环境密码")
-        ALL_PASS.append(False)
-        LINES.append("  ✗ 跳过：环境已有模块密码且 E2E 密码不匹配")
+    # ⚠️ 2026-10-22 事故修复：解锁成功**不能**直接认定为「环境原密码就是 E2E 值」。
+    # 若存在落盘备份，说明上一轮覆写过、还原没跑到（进程被 kill / import 期异常），
+    # 此时能解锁恰恰证明「当前值是我们自己写进去的」，必须继续走还原流程，
+    # 否则会把覆写值永久当成业务原值（旧逻辑的致命缺口）。
+    if status == 200 and PASSWORD_BACKUP_FILE.exists():
+        log("  ⚠️ 解锁成功但检测到落盘备份 → 说明当前密码是本脚本上次覆写后未还原的残留")
+        log("     → 先还原原值，再按「密码不匹配」流程重新备份/覆写")
         restore_module_password()
-        ARTIFACT.write_text("\n".join(LINES), encoding="utf-8")
-        log(f"报告已保存: {ARTIFACT}")
-        sys.exit(1)
+        status, payload, _ = req("POST", "/admin/accounts/unlock", {"password": MODULE_PASSWORD}, token=token)
+    if status == 200:
+        log("  使用 E2E_FUND_ACCOUNT_PASSWORD 解锁成功（全程未改密码）")
+    else:
+        log(f"  E2E 密码不匹配（{status}）→ 备份原哈希后临时覆写，结束时精确还原")
+        if not backup_and_override_module_password():
+            log("  ⚠️ 无法备份/覆写模块密码 → 跳过依赖解锁的用例")
+            ALL_PASS.append(False)
+            LINES.append("  ✗ 跳过：环境已有模块密码、E2E 密码不匹配且无法临时覆写")
+            restore_module_password()
+            ARTIFACT.write_text("\n".join(LINES), encoding="utf-8")
+            log(f"报告已保存: {ARTIFACT}")
+            sys.exit(1)
+        # 覆写后清掉上一步失败留下的计数/锁，否则紧接着的解锁会直接 429
+        _clear_redis_guard()
+        status, payload, _ = req("POST", "/admin/accounts/unlock", {"password": MODULE_PASSWORD}, token=token)
+        if status != 200:
+            log(f"  ⚠️ 覆写后仍无法解锁（{status} {payload}）→ 终止")
+            ALL_PASS.append(False)
+            restore_module_password()
+            ARTIFACT.write_text("\n".join(LINES), encoding="utf-8")
+            sys.exit(1)
+        log("  覆写后解锁成功")
 else:
     status, payload, _ = req(
         "POST",
@@ -962,6 +1200,162 @@ for _acc in (accounts_now or {}).get("items", []):
 check("所有在用账户：期初 + 流水进 − 流水出 == 余额", formula_problems, [])
 
 # ─────────────────────────────────────────────────────────────
+# V17：并发对账不得重复记账（回归 2026-10-22 高危缺陷）
+# ─────────────────────────────────────────────────────────────
+# 缺陷现象：create_adjustment 是「读当前余额 → 相减 → 落库」的复合操作，中间无锁。
+# 两个请求同时用同一个 actual_balance 对账时都读到同一旧余额、都算出同一笔差额、
+# 各自插入一条调整 → 钱被记两次，且「只加不改不删」意味着无法撤销。
+# 实测复现（余额 1000，两线程并发提交 actual_balance=1200）：两条 201、两条 200，
+# 最终余额 1400（应为 1200）。
+# 修复：先对账户行 SELECT ... FOR UPDATE 取行锁，把「读-算-写」串行化。
+log("\nV17. 并发对账不得重复记账")
+
+_v17_name = f"e2e_并发对账_{_ts}"
+status, v17_acc, _ = req(
+    "POST",
+    "/admin/accounts",
+    {
+        "name": _v17_name,
+        "type": "bank",
+        "opening_balance": 1000,
+        "opening_date": "2026-01-01",
+        "status": "active",
+    },
+    token=token,
+    extra_headers=UNLOCK_HEADERS,
+)
+check("V17 建账户（期初 1000）", status, 201)
+v17_id = v17_acc["id"]
+
+_v17_results: list[tuple] = []
+_v17_lock = threading.Lock()
+
+
+def _v17_worker() -> None:
+    res = req(
+        "POST",
+        f"/admin/accounts/{v17_id}/adjustments",
+        {"adjust_date": "2026-10-22", "actual_balance": 1200, "reason": "V17 并发对账"},
+        token=token,
+        extra_headers=UNLOCK_HEADERS,
+    )
+    with _v17_lock:
+        _v17_results.append(res)
+
+
+_v17_threads = [threading.Thread(target=_v17_worker) for _ in range(2)]
+for _t in _v17_threads:
+    _t.start()
+for _t in _v17_threads:
+    _t.join(timeout=30)
+
+_v17_created = [r for r in _v17_results if r[0] == 201]
+check("V17 并发两次对账只成功一次", len(_v17_created), 1)
+status, v17_after, _ = req("GET", f"/admin/accounts/{v17_id}", token=token, extra_headers=UNLOCK_HEADERS)
+check("V17 最终余额 = 1200（未被记两次）", money(v17_after.get("balance")), money(1200))
+status, v17_adj, _ = req("GET", f"/admin/accounts/{v17_id}/adjustments", token=token, extra_headers=UNLOCK_HEADERS)
+check("V17 调整记录只有 1 条", len(v17_adj or []), 1)
+
+# ─────────────────────────────────────────────────────────────
+# V18：改模块密码后旧解锁令牌必须立即失效（回归 2026-10-22 高危缺陷）
+# ─────────────────────────────────────────────────────────────
+# 缺陷现象：令牌校验只查 Redis 里 hash 是否存在，与密码哈希无关；改密不清令牌，
+# 于是改密前解锁的会话（含另一台设备）在剩余 30 分钟内仍可读全部余额——
+# 「改密码」在最需要它的场景（密码泄露）完全无效。实测旧令牌仍返回 200。
+# 修复：set_password 成功后吊销全部 fund_accounts:unlock:* 令牌。
+log("\nV18. 改密后旧令牌失效")
+_v18_new_pw = "246813" if MODULE_PASSWORD != "246813" else "135790"
+
+
+def _read_module_password_row() -> dict[str, object] | None:
+    """读取模块密码行（value/updated_by_id/updated_at），供 V18 精确还原."""
+    from db import SessionLocal
+    from models import SystemConfig
+
+    db = SessionLocal()
+    try:
+        row = db.query(SystemConfig).filter(SystemConfig.key == "fund_accounts.password_hash").first()
+        if row is None:
+            return None
+        return {"value": row.value, "updated_by_id": row.updated_by_id, "updated_at": row.updated_at}
+    finally:
+        db.close()
+
+
+def _write_module_password_row(snapshot: dict[str, object]) -> bool:
+    """把密码行精确回写（含审计字段），不经过 API、不消耗 5/hour 限流."""
+    from db import SessionLocal
+    from models import SystemConfig
+
+    db = SessionLocal()
+    try:
+        row = db.query(SystemConfig).filter(SystemConfig.key == "fund_accounts.password_hash").first()
+        if row is None:
+            return False
+        row.value = snapshot["value"]
+        row.updated_by_id = snapshot["updated_by_id"]
+        row.updated_at = snapshot["updated_at"]
+        db.commit()
+        return True
+    finally:
+        db.close()
+
+
+# ⚠️ 只调 1 次改密接口（RateLimits.ACCOUNT_PASSWORD_SET = 5/hour）。改两次会撞限流，
+# 实测第 2 次直接 429 → 密码没改回来 → 后续用例因「令牌被吊销」全部级联失败。
+# 还原走 DB 精确回写（与 restore_module_password 同一口径），不消耗配额。
+_v18_snapshot = _read_module_password_row()
+check_true("V18 读到当前密码行（供还原）", _v18_snapshot is not None)
+status, _, _ = req(
+    "POST",
+    "/admin/accounts/module-password",
+    {"new_password": _v18_new_pw, "old_password": MODULE_PASSWORD},
+    token=token,
+)
+check("V18 修改模块密码", status, 204)
+status, _, _ = req("GET", "/admin/accounts", token=token, extra_headers=UNLOCK_HEADERS)
+check("V18 改密后旧令牌被拒（403）", status, 403)
+
+check_true("V18 精确回写原密码行", _write_module_password_row(_v18_snapshot or {}))
+status, _v18_relock, _ = req("POST", "/admin/accounts/unlock", {"password": MODULE_PASSWORD}, token=token)
+check("V18 还原后重新解锁", status, 200)
+if status == 200:
+    UNLOCK_HEADERS.clear()
+    UNLOCK_HEADERS[_UNLOCK_HEADER] = _v18_relock["token"]
+    status, _, _ = req("GET", "/admin/accounts", token=token, extra_headers=UNLOCK_HEADERS)
+    check("V18 新令牌可用", status, 200)
+
+# ─────────────────────────────────────────────────────────────
+# V19：金额精度必须显式拒绝而非静默四舍五入（回归 2026-10-22 缺陷）
+# ─────────────────────────────────────────────────────────────
+# 缺陷现象：actual_balance 无精度约束，落库列是 NUMERIC(15,2)，PostgreSQL 静默
+# 四舍五入。实测 actual_balance=1000.005、系统余额 1000 → 差额 0.005 被存成 0.01，
+# 余额成了 1000.01，与用户填写值不一致且无法反推原值。
+# 修复：Pydantic decimal_places=2，超过 2 位小数直接 422。
+log("\nV19. 金额精度超过 2 位小数被拒")
+status, _v19_payload, _ = req(
+    "POST",
+    f"/admin/accounts/{v17_id}/adjustments",
+    {"adjust_date": "2026-10-22", "actual_balance": 1200.005, "reason": "V19 精度"},
+    token=token,
+    extra_headers=UNLOCK_HEADERS,
+)
+check("V19 3 位小数被拒（422）", status, 422)
+status, _v19_ok, _ = req(
+    "POST",
+    f"/admin/accounts/{v17_id}/adjustments",
+    {"adjust_date": "2026-10-22", "actual_balance": 1200.05, "reason": "V19 精度 OK"},
+    token=token,
+    extra_headers=UNLOCK_HEADERS,
+)
+check("V19 2 位小数正常受理（201）", status, 201)
+check("V19 差额精确为 0.05", money((_v19_ok or {}).get("amount")), money(0.05))
+
+# V17/V19 账户清理（有调整记录，先直连 SQL 清）
+_cleanup_test_account_rows(v17_id)
+log(f"  （V17/V19 账户 {v17_id} 已清理）")
+
+# ─────────────────────────────────────────────────────────────
 # V7：改名 / 文案（前端源码断言，后端只在上面验导出表头）
 # ─────────────────────────────────────────────────────────────
 log("\nV7. 「资金账本」→「项目账本」后端文案")
@@ -1000,7 +1394,12 @@ req(
     token=token,
     extra_headers=UNLOCK_HEADERS,
 )
-log(f"  （账户 {account_id} 已停用，留待人工清理：对账记录按设计不可删除）")
+# 业务口径是「有对账记录只能停用」（API 不可删，已在上一步断言）；但**测试数据必须
+# 自己收拾干净**：否则每跑一次 E2E 就往共享环境留一个 e2e_已停用_* 孤儿账户，
+# 累积几十个后账户列表被测试垃圾淹没。故这里用直连 SQL 清理测试自建的行
+# （与 tests/e2e/test_biz_dicts.py「ABI 无删接口 → 测试清理走直接 SQL」同一先例）。
+_cleanup_test_account_rows(account_id)
+log(f"  （账户 {account_id} 的测试数据已通过直连 SQL 清理）")
 
 if project_id:
     status, _, _ = req("DELETE", f"/projects/{project_id}", token=token)

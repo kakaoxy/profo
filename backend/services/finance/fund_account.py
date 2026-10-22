@@ -288,6 +288,14 @@ class FundAccountService:
         Raises:
             ConflictError: 同名账户已存在
 
+        ⚠️ 名称唯一性的竞态（2026-10-22 说明）：``_assert_name_available`` 是
+        「先查再插」，两个并发请求都查不到同名时会同时插入——此时由部分唯一索引
+        ``uq_fund_accounts_name`` 兜底，第二个请求收到 409「账户名称已存在」
+        （``utils/error_formatters`` 已把该约束名翻译成与串行路径一致的中文提示）。
+        实测：3 个并发同名创建 → 1 个 201 + 2 个 409，库中只有 1 行。
+        之所以不用 FOR UPDATE 串行化：唯一索引已能保证正确性，而给「建账户」加锁
+        会引入不必要的争用；这里保留预检查只是为了给出更快的常见路径错误。
+
         """
         self._assert_name_available(data.name)
 
@@ -556,14 +564,38 @@ class FundAccountService:
 
         ``amount`` = 实际余额 − 系统余额；差额为 0 表示对上了，不写记录。
 
+        ⚠️ 并发保护（2026-10-22 高危缺陷修复）：
+        差额是「读当前余额 → 相减 → 落库」的复合操作，中间没有任何锁。两个请求
+        同时用同一个 ``actual_balance`` 对账时，**都**读到同一个旧余额、**都**算出
+        同一笔差额并各自插入一条调整，余额被记两次。
+        实测复现（账户余额 1000，两线程并发提交 actual_balance=1200）：
+        两条 201、两条 amount=200，最终余额 1400（应为 1200）——钱凭空多出 200，
+        且「只加不改不删」意味着这两条都无法通过接口撤销。
+
+        修复：先对账户行取 ``FOR UPDATE`` 行锁再读余额，把「读-算-写」串行化到
+        同一账户维度。锁粒度是单个账户（不是全表），不同账户仍可并发对账。
+
         Raises:
             ValidationError: 差额为 0
 
         """
-        account = self._get_account(account_id)
+        # 行锁必须先于读余额：锁住账户行后，后到的并发请求会在 commit 前阻塞，
+        # 从而读到前一笔调整已提交后的最新余额。
+        account = (
+            self.db.query(FundAccount)
+            .filter(FundAccount.id == account_id, FundAccount.is_deleted.is_(False))
+            .with_for_update()
+            .first()
+        )
+        if account is None:
+            msg = "资金账户不存在"
+            raise ResourceNotFoundError(msg)
         current = self._build_responses([account])[0].balance
         amount = data.actual_balance - current
         if amount == 0:
+            # 差额为 0 不是错误路径的数据写入，但仍要显式回滚以立刻释放 FOR UPDATE
+            # 行锁（依赖 get_db 的兜底回滚也能释放，但那是响应生成之后的事）。
+            self.db.rollback()
             msg = "实际余额与系统一致，无需调整"
             raise ValidationError(msg)
 

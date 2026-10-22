@@ -111,7 +111,16 @@ def format_request_validation_error(error: RequestValidationError) -> str:
 def _get_pgcode(exc: SQLAlchemyError) -> str | None:
     """从 SQLAlchemy 异常中提取 PostgreSQL sqlstate 代码.
 
-    读取 ``exc.orig.pgcode``（psycopg3 提供），不可用时返回 None。
+    ⚠️ psycopg3 的属性名是 ``sqlstate``，**不是** ``pgcode``（后者是 psycopg2 的
+    叫法）。此前只读 ``orig.pgcode``，在 psycopg3 上恒为 None，导致所有基于
+    sqlstate 的分支（23505 唯一冲突→409、23503 外键、23502 非空、42P01 缺表…）
+    全部失效，统一退化成「数据完整性错误」+ 400。
+
+    实测复现（2026-10-22）：并发同名建账户时，落库触发 ``uq_fund_accounts_name``
+    唯一索引，接口却返回 400「数据完整性错误」，而串行路径返回 409「账户名称已存在」
+    ——同一业务错误两种状态码，前端无法统一处理，用户看到的提示也不一致。
+
+    这里按 psycopg3 → psycopg2 → SQLAlchemy 通用 ``code`` 的顺序回退，两者都能取到。
 
     Args:
         exc: SQLAlchemy 异常
@@ -123,7 +132,15 @@ def _get_pgcode(exc: SQLAlchemyError) -> str | None:
     orig = getattr(exc, "orig", None)
     if orig is None:
         return None
-    return getattr(orig, "pgcode", None)
+    # psycopg3：sqlstate；psycopg2：pgcode。二者语义相同（5 位 SQLSTATE）。
+    for attr in ("sqlstate", "pgcode"):
+        value = getattr(orig, attr, None)
+        if value:
+            return str(value)
+    # 部分包装层（如 psycopg 的 diag 或 SQLAlchemy 的 DBAPIError.orig 链）只暴露 code
+    diag = getattr(orig, "diag", None)
+    code = getattr(diag, "sqlstate", None) if diag is not None else None
+    return str(code) if code else None
 
 
 def _get_pg_column_name(exc: SQLAlchemyError) -> str | None:
@@ -202,6 +219,11 @@ def _format_unique_violation_message(error_str: str) -> str:
         return "手机号已存在"
     if "users.wechat_openid" in error_str or "users.wechat_unionid" in error_str:
         return "微信账号已绑定"
+    # 资金账户：部分唯一索引 uq_fund_accounts_name（WHERE is_deleted = FALSE）。
+    # 并发建同名账户时唯一约束由数据库兜底（Service 层预检查存在 TOCTOU 窗口），
+    # 此处把约束名翻译成与串行路径一致的用户提示，避免前端出现两种文案。
+    if "uq_fund_accounts_name" in error_str:
+        return "账户名称已存在"
     return "数据重复，违反唯一性约束"
 
 

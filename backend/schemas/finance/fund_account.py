@@ -31,7 +31,7 @@ class FundAccountCreate(BaseModel):
     type: FundAccountType = Field(..., description="账户类型")
     account_no: str | None = Field(None, max_length=_ACCOUNT_NO_MAX, description="卡号/账户号(掩码)")
     holder: str | None = Field(None, max_length=_ACCOUNT_HOLDER_MAX, description="开户人或持有公司")
-    opening_balance: Decimal = Field(Decimal(0), ge=0, description="期初余额(元)")
+    opening_balance: Decimal = Field(Decimal(0), ge=0, decimal_places=2, description="期初余额(元,最多 2 位小数)")
     opening_date: date = Field(..., description="期初余额起算日期")
     status: FundAccountStatus = Field(FundAccountStatus.ACTIVE, description="状态: active/off")
     note: str | None = Field(None, max_length=_ACCOUNT_NOTE_MAX, description="备注")
@@ -50,7 +50,7 @@ class FundAccountUpdate(BaseModel):
     type: FundAccountType | None = Field(None, description="账户类型")
     account_no: str | None = Field(None, max_length=_ACCOUNT_NO_MAX, description="卡号/账户号")
     holder: str | None = Field(None, max_length=_ACCOUNT_HOLDER_MAX, description="开户人")
-    opening_balance: Decimal | None = Field(None, ge=0, description="期初余额(元)")
+    opening_balance: Decimal | None = Field(None, ge=0, decimal_places=2, description="期初余额(元,最多 2 位小数)")
     opening_date: date | None = Field(None, description="期初余额起算日期")
     status: FundAccountStatus | None = Field(None, description="状态: active/off")
     note: str | None = Field(None, max_length=_ACCOUNT_NOTE_MAX, description="备注")
@@ -180,7 +180,12 @@ class FundAdjustmentCreateRequest(BaseModel):
     """
 
     adjust_date: date = Field(..., description="调整计入日期")
-    actual_balance: Decimal = Field(..., description="对账后的实际余额(元)")
+    # ⚠️ decimal_places=2（2026-10-22 缺陷修复）：入参此前无精度约束，而落库列是
+    # NUMERIC(15,2)，PostgreSQL 会**静默四舍五入**。实测 actual_balance=1000.005、
+    # 系统余额 1000 时算出「差额 0.005」，落库被四舍五入为 0.01，账户余额成了
+    # 1000.01——用户填 1000.005、系统显示 1000.01，且差额列已无法反推原值。
+    # 现在超过 2 位小数直接 422 拒绝，把「元角分」这一精度边界显式告知调用方。
+    actual_balance: Decimal = Field(..., decimal_places=2, description="对账后的实际余额(元,最多 2 位小数)")
     reason: str = Field(..., min_length=1, max_length=500, description="差额原因(必填)")
     receipt_urls: list[str] | None = Field(None, description="对账凭证截图URL列表")
 

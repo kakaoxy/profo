@@ -144,6 +144,13 @@ docstring-code-format = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=. --cov-report=term-missing --cov-branch"
+# ``tests/e2e/`` 不是 pytest 用例集，而是**独立可执行脚本**（每个文件都在 import 期
+# 读环境变量、登录、写 artifact 并调 ``sys.exit(...)``，见 ``tests/e2e/run_all.sh``
+# 与各文件 docstring 的「用法: .venv/bin/python tests/e2e/xxx.py」）。
+# 它们命名为 ``test_*.py`` 会被 pytest 默认收集规则命中，import 期的 ``sys.exit()``
+# 会让收集直接 INTERNALERROR 崩掉（不是某个用例失败，而是**整轮测试无法开始**）。
+# 故在此显式排除，与项目「E2E 用脚本 + run_all.sh 跑」的实际约定一致。
+norecursedirs = ["tests/e2e"]
 
 [tool.coverage.run]
 omit = [

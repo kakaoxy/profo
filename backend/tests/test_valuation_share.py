@@ -175,10 +175,16 @@ class TestShareAttribution:
         assert lead.referrer_id is None
 
     def test_admin_lead_create_creator_is_employee(self, backend_client: TestClient, seeded_db: dict[str, Any]) -> None:
-        """Admin 后台 POST /leads 录入：creator=员工，referrer_id=None."""
+        """Admin 后台 POST /leads 录入：creator=员工，referrer_id=None.
+
+        ⚠️ 2026-10-22 修正断言：原断言 200，但端点自 8c5d69d3（2026-10-13
+        「楼盘字典功能全量上线」）起已声明 ``status_code=201``。本用例写于 2026-09-04，
+        端点变更时未同步，导致长期红点。同仓其他线索创建用例
+        （test_lead_eval_verdict / test_lead_pending_assessment）均断言 201，以此为准。
+        """
         session: Session = seeded_db["session"]
         resp = backend_client.post(_ADMIN_LEADS, json={"community_name": "后台录入小区", "floor_info": "1/6层"})
-        assert resp.status_code == 200, f"后台录入应返回 200，实际 {resp.status_code}: {resp.text}"
+        assert resp.status_code == 201, f"后台录入应返回 201 Created，实际 {resp.status_code}: {resp.text}"
         lead_id = resp.json()["id"]
 
         lead = session.query(Lead).filter(Lead.id == lead_id).first()

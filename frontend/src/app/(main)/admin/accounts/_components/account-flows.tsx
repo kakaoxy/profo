@@ -45,7 +45,7 @@ import {
   fetchAccountFlows,
   fetchAccounts,
 } from "../actions";
-import { UNLOCK_DENIED_CODE } from "../_components/account-schema";
+import { isUnlockDenied } from "../_components/account-schema";
 import { AccountGlyph, type FundAccount } from "../_components/account-card";
 import { FixAccountDialog } from "../_components/fix-account-dialog";
 import { ReceiptCell, SupplementDialog } from "@/components/finance/receipt-cell";
@@ -112,8 +112,8 @@ export function AccountFlowsView() {
     setLoading(false);
     if (listRes.success) setAccounts(listRes.data.items);
     if (!flowsRes.success) {
-      // 403 = 服务端判定令牌失效（另一标签页锁定 / 过期 / 改过密码）→ 立即回到锁屏
-      if (flowsRes.code === UNLOCK_DENIED_CODE) invalidate();
+      // 403「未解锁」= 令牌失效 → 立即回到锁屏；权限不足的 403 只提示不锁屏
+      if (isUnlockDenied(flowsRes.code, flowsRes.error)) invalidate();
       toast.error(flowsRes.error);
       return;
     }

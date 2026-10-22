@@ -99,7 +99,7 @@ export async function fetchAccountOptions(): Promise<
   try {
     const client = await fetchClient();
     const { data, error } = await client.GET("/api/v1/admin/accounts/options");
-    if (error) return { success: false, error: extractErrorMessage(error, "获取账户列表失败") };
+    if (error) return errorResult(error, "获取账户列表失败");
     return {
       success: true,
       data: extractApiData<components["schemas"]["FundAccountOptionListResponse"]>(data),
@@ -190,7 +190,7 @@ export async function fetchLockState(
     const { data, error } = await client.GET("/api/v1/admin/accounts/lock-state", {
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "获取锁状态失败") };
+    if (error) return errorResult(error, "获取锁状态失败");
     return { success: true, data: extractApiData<FundAccountLockStateResponse>(data) };
   } catch (e) {
     logger.error("获取资金账户锁状态异常:", e);
@@ -210,7 +210,7 @@ export async function unlockAccounts(
     const { data, error } = await client.POST("/api/v1/admin/accounts/unlock", {
       body: parsed.data,
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "解锁失败") };
+    if (error) return errorResult(error, "解锁失败");
     return { success: true, data: extractApiData<FundAccountUnlockResponse>(data) };
   } catch (e) {
     logger.error("资金账户解锁异常:", e);
@@ -224,7 +224,7 @@ export async function lockAccounts(token: string | null): Promise<ActionResult<n
     const { error } = await client.POST("/api/v1/admin/accounts/lock", {
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "锁定失败") };
+    if (error) return errorResult(error, "锁定失败");
     revalidatePath("/admin/accounts");
     return { success: true, data: null };
   } catch (e) {
@@ -249,7 +249,7 @@ export async function setModulePassword(
     const { error } = await client.POST("/api/v1/admin/accounts/module-password", {
       body: parsed.data,
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "设置密码失败") };
+    if (error) return errorResult(error, "设置密码失败");
     revalidatePath("/admin/accounts");
     return { success: true, data: null };
   } catch (e) {
@@ -274,7 +274,7 @@ export async function createAccount(
       body: parsed.data,
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "新建账户失败") };
+    if (error) return errorResult(error, "新建账户失败");
     revalidatePath("/admin/accounts");
     return { success: true, data: extractApiData<FundAccountResponse>(data) };
   } catch (e) {
@@ -299,7 +299,7 @@ export async function updateAccount(
       body: parsed.data,
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "保存账户失败") };
+    if (error) return errorResult(error, "保存账户失败");
     revalidatePath("/admin/accounts");
     revalidatePath(`/admin/accounts/${accountId}`);
     return { success: true, data: extractApiData<FundAccountResponse>(data) };
@@ -319,7 +319,7 @@ export async function deleteAccount(
       params: { path: { account_id: accountId } },
       headers: headersOf(token),
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "删除账户失败") };
+    if (error) return errorResult(error, "删除账户失败");
     revalidatePath("/admin/accounts");
     return { success: true, data: null };
   } catch (e) {
@@ -347,7 +347,7 @@ export async function createAdjustment(
         headers: headersOf(token),
       },
     );
-    if (error) return { success: false, error: extractErrorMessage(error, "对账失败") };
+    if (error) return errorResult(error, "对账失败");
     revalidatePath("/admin/accounts");
     revalidatePath(`/admin/accounts/${accountId}`);
     return { success: true, data: extractApiData<FundAdjustmentResponse>(data) };
@@ -382,7 +382,7 @@ export async function appendAdjustmentReceipts(
         headers: headersOf(token),
       },
     );
-    if (error) return { success: false, error: extractErrorMessage(error, "补传凭证失败") };
+    if (error) return errorResult(error, "补传凭证失败");
     revalidatePath("/admin/accounts");
     revalidatePath("/admin/accounts/flows");
     revalidatePath(`/admin/accounts/${accountId}`);
@@ -413,7 +413,7 @@ export async function appendRecordReceipts(
       params: { path: { record_id: recordId } },
       body: { receipt_urls: receiptUrls },
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "补传凭证失败") };
+    if (error) return errorResult(error, "补传凭证失败");
     revalidatePath("/admin/accounts");
     revalidatePath("/admin/accounts/flows");
     revalidatePath("/admin/ledger");
@@ -437,7 +437,7 @@ export async function fixRecordAccount(
       params: { path: { record_id: recordId } },
       body: { account_id: accountId, account_skipped: skipped },
     });
-    if (error) return { success: false, error: extractErrorMessage(error, "更改账户失败") };
+    if (error) return errorResult(error, "更改账户失败");
     revalidatePath("/admin/accounts");
     revalidatePath("/admin/accounts/flows");
     revalidatePath("/admin/ledger");

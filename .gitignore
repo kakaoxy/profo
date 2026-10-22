@@ -201,5 +201,7 @@ investment-management-design/
 # artifacts/ 含各次执行报告与一次性复现脚本，属运行产物不入库，L5 修复）
 # ==========================================
 backend/tests/e2e/artifacts/
+# 资金账户 E2E 的模块密码备份（含原密码哈希，绝不能入库）
+backend/tests/e2e/.fund_accounts_password_backup.json
 # 运行时落盘的上传/临时文件
 backend/temp/

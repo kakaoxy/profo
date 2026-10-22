@@ -47,7 +47,7 @@ import {
   StatusPill,
   type FundAccount,
 } from "../_components/account-card";
-import { UNLOCK_DENIED_CODE } from "../_components/account-schema";
+import { isUnlockDenied } from "../_components/account-schema";
 import { AccountDrawer } from "../_components/account-drawer";
 import { ReconDialog } from "../_components/recon-dialog";
 import { formatSeconds, SLIDING_TTL_SECONDS, useModuleLock } from "../_components/module-lock-context";
@@ -85,8 +85,9 @@ export function AccountDetail({ accountId }: { accountId: string }) {
     setLoading(false);
 
     if (!accountRes.success) {
-      // 403 = 服务端判定令牌失效（另一标签页锁定 / 过期 / 改过密码）→ 回到锁屏，不做跳转
-      if (accountRes.code === UNLOCK_DENIED_CODE) {
+      // 403「未解锁」= 令牌失效（另一标签页锁定 / 过期 / 改过密码）→ 回到锁屏，不做跳转。
+      // 注意不能只看 403：account:write 权限不足同样是 403，那种情况必须显示真实原因。
+      if (isUnlockDenied(accountRes.code, accountRes.error)) {
         invalidate();
         return;
       }

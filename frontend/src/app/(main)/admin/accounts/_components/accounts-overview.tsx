@@ -50,7 +50,7 @@ import {
   NewAccountCard,
   type FundAccount,
 } from "./account-card";
-import { UNLOCK_DENIED_CODE } from "./account-schema";
+import { isUnlockDenied } from "./account-schema";
 import { AccountDrawer } from "./account-drawer";
 import { PasswordDialog } from "./password-dialog";
 import { ReconDialog } from "./recon-dialog";
@@ -96,8 +96,8 @@ export function AccountsOverview() {
     ]);
     setLoading(false);
     if (!listRes.success) {
-      // 403 = 服务端判定令牌失效（另一标签页锁定 / 过期 / 改过密码）→ 立即回到锁屏
-      if (listRes.code === UNLOCK_DENIED_CODE) invalidate();
+      // 403「未解锁」= 令牌失效 → 立即回到锁屏；权限不足的 403 只提示不锁屏
+      if (isUnlockDenied(listRes.code, listRes.error)) invalidate();
       toast.error(listRes.error);
       return;
     }

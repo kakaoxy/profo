@@ -31,7 +31,9 @@ import {
   ACCOUNT_NO_MAX,
   ACCOUNT_NOTE_MAX,
   accountCreateSchema,
+  isUnlockDenied,
 } from "./account-schema";
+import { useModuleLock } from "./module-lock-context";
 import { ACCOUNT_TYPES, AccountGlyph, type FundAccount, type FundAccountType } from "./account-card";
 
 const TYPE_KEYS = Object.keys(ACCOUNT_TYPES) as FundAccountType[];
@@ -52,6 +54,7 @@ export function AccountDrawer({
   onOpenChange,
   onSaved,
 }: AccountDrawerProps) {
+  const { invalidate } = useModuleLock();
   const isEdit = Boolean(account);
   const [name, setName] = React.useState("");
   const [type, setType] = React.useState<FundAccountType>("bank");
@@ -114,6 +117,11 @@ export function AccountDrawer({
     setSubmitting(false);
 
     if (!res.success) {
+      // 令牌失效（403 未解锁）→ 回锁屏，否则用户会在一个「已失效」的抽屉里反复重试
+      if (isUnlockDenied(res.code, res.error)) {
+        invalidate();
+        return;
+      }
       toast.error(res.error);
       setErrors({ name: res.error });
       return;

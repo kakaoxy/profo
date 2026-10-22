@@ -194,7 +194,36 @@ class AccountUnlockService:
             row.value = new_hash
             row.updated_by_id = operator_id
         self.db.commit()
-        logger.info("资金账户模块密码已更新（operator=%s）", operator_id)
+
+        # ⚠️ 改密后必须吊销全部已签发令牌（2026-10-22 高危缺陷修复）：
+        # 令牌校验只查 Redis 里「这个 hash 是否存在」，与密码哈希无关；此前改密
+        # **不清令牌**，于是改密前解锁的会话（含另一台设备、另一个标签页）在剩余
+        # 30 分钟内仍可继续读取全部余额——「改密码」在最需要它的场景（密码泄露）
+        # 完全无效。实测：改密后用旧令牌请求 GET /admin/accounts 仍返回 200。
+        #
+        # 为什么必须按前缀扫描而不是只删当前用户的：令牌键含 user_id
+        # （fund_accounts:unlock:<user_id>:<hash>），而「改密」是全局动作（密码是
+        # 全模块共用的一份），任何用户持有的令牌都必须失效。
+        revoked = self._revoke_all_tokens()
+        logger.info("资金账户模块密码已更新（operator=%s，已吊销 %d 个解锁令牌）", operator_id, revoked)
+
+    def _revoke_all_tokens(self) -> int:
+        """吊销全部解锁令牌（改密后调用；返回删除数量）.
+
+        用 ``SCAN`` 而非 ``KEYS``：生产 Redis 上 ``KEYS`` 会阻塞事件循环。
+        """
+        redis = _redis()
+        pattern = f"{_KEY_PREFIX}:unlock:*"
+        deleted = 0
+        try:
+            for key in redis.scan_iter(match=pattern, count=100):
+                deleted += int(redis.delete(key))
+        except RedisError as exc:
+            # 改密本身已成功落库，令牌吊销失败不能回滚密码；但必须 Loud：
+            # 记 error 并向上抛 503，让调用方知道「密码已改但旧令牌可能仍有效」。
+            logger.exception("资金账户解锁：吊销令牌失败（密码已更新）")
+            raise AccountUnlockUnavailableError from exc
+        return deleted
 
     # ==================== 状态与解锁 ====================
 

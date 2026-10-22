@@ -725,6 +725,18 @@ def test_merge_into_pending_sibling_concurrent_only_one_wins() -> None:
     finally:
         cleanup = maker()
         try:
+            # ⚠️ 审计日志必须先清（2026-10-22 修复）：本用例用独立 sessionmaker() 连接
+            # 绕开了 conftest 的 SAVEPOINT 隔离，线程内 resolve() 写入的 operation_logs
+            # 是**真实提交**的。旧清理只删业务表、不删日志，残留记录会让后续
+            # test_operation_log.py 的 `total == 5` 断言变成 7（实测全套跑必红）。
+            cleanup.execute(
+                text(
+                    "DELETE FROM operation_logs "
+                    "WHERE (resource_type = 'bd_pending_entry' AND user_id = :uid) "
+                    "   OR user_id = :uid"
+                ),
+                {"uid": operator_id},
+            )
             cleanup.execute(
                 text("DELETE FROM bd_pending_references WHERE pending_id = ANY(:ids)"),
                 {"ids": created_ids},
@@ -735,6 +747,16 @@ def test_merge_into_pending_sibling_concurrent_only_one_wins() -> None:
             cleanup.execute(text("DELETE FROM users WHERE id = :uid"), {"uid": operator_id})
             if created_role_id is not None:
                 cleanup.execute(text("DELETE FROM roles WHERE id = :rid"), {"rid": created_role_id})
+            # 社区被删后，其下所有 bd_* 审计日志的 resource_id 也都失效，兜底清一遍
+            cleanup.execute(
+                text(
+                    "DELETE FROM operation_logs "
+                    "WHERE resource_id IN ("
+                    "  SELECT CAST(id AS text) FROM bd_pending_entries WHERE id = ANY(:ids)"
+                    ")"
+                ),
+                {"ids": created_ids},
+            )
             cleanup.commit()
         finally:
             cleanup.close()
