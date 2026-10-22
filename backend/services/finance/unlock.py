@@ -326,9 +326,14 @@ class AccountUnlockService:
         if not matched:
             redis = _redis()
             try:
-                used = redis.incr(_fail_key(user_id))
-                redis.expire(_fail_key(user_id), LOCK_SECONDS)
-                if int(used) >= MAX_ATTEMPTS:
+                # A-3：INCR 与 EXPIRE 包进 MULTI/EXEC 事务（pipeline(transaction=True)），
+                # 避免两命令之间进程被杀导致 fail 键无 TTL 永久驻留。
+                with redis.pipeline(transaction=True) as pipe:
+                    pipe.incr(_fail_key(user_id))
+                    pipe.expire(_fail_key(user_id), LOCK_SECONDS)
+                    results = pipe.execute()
+                used = int(results[0])
+                if used >= MAX_ATTEMPTS:
                     redis.set(_lock_key(user_id), 1, ex=LOCK_SECONDS)
                     redis.delete(_fail_key(user_id))
             except RedisError as exc:

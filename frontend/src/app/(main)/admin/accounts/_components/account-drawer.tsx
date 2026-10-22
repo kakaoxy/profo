@@ -12,7 +12,7 @@ import * as React from "react";
 import { AlertTriangle, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatCNY } from "@/lib/formatters";
+import { formatCNY, todayISO } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,7 +67,7 @@ export function AccountDrawer({
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [submitting, setSubmitting] = React.useState(false);
 
-  const today = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = React.useMemo(() => todayISO(), []);
 
   React.useEffect(() => {
     if (!open) return;

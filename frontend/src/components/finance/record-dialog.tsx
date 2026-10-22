@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { FUND_ACCOUNTS_UNLOCK_TOKEN_KEY } from "@/lib/constants";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,7 +99,7 @@ export function RecordDialog({
       // 这样「默认显示所有账户」与「余额只在解锁后可见」同时成立。
       const token = (() => {
         try {
-          return window.sessionStorage.getItem("profo:fund-accounts:unlock-token");
+          return window.sessionStorage.getItem(FUND_ACCOUNTS_UNLOCK_TOKEN_KEY);
         } catch {
           return null;
         }

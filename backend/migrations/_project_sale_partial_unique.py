@@ -77,7 +77,9 @@ def rebuild_project_sale_unique_index(engine: Engine) -> None:
     if partial_exists:
         return
     if not constraint_exists:
-        # 约束不存在且部分索引也不存在：仅补建部分唯一索引
+        # 约束不存在且部分索引也不存在：仅补建部分唯一索引。
+        # F-7：若同名索引已存在但 indexdef 不含 WHERE，CREATE ... IF NOT EXISTS 会被跳过，
+        # 迁移记 applied 却仍是非部分索引——建后校验 indexdef，不符则告警（不静默）。
         logger.info("迁移：project_sales 补建部分唯一索引 %s", _PARTIAL_INDEX_NAME)
         with engine.begin() as conn:
             conn.execute(
@@ -86,6 +88,7 @@ def rebuild_project_sale_unique_index(engine: Engine) -> None:
                     "ON project_sales (project_id) WHERE is_deleted = false"
                 ),
             )
+        _verify_partial_index(engine)
         return
 
     logger.info("迁移：重建 project_sales 唯一约束为部分唯一索引 %s", _PARTIAL_INDEX_NAME)
@@ -99,3 +102,51 @@ def rebuild_project_sale_unique_index(engine: Engine) -> None:
                 "ON project_sales (project_id) WHERE is_deleted = false"
             ),
         )
+    _verify_partial_index(engine)
+
+
+def _verify_partial_index(engine: Engine) -> None:
+    """建后校验部分唯一索引 indexdef 含 WHERE；不符则告警（F-7，避免静默非部分索引）."""
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT indexdef FROM pg_indexes WHERE indexname = :name LIMIT 1"),
+            {"name": _PARTIAL_INDEX_NAME},
+        ).first()
+    if row is None or "WHERE" not in (row[0] or "").upper():
+        logger.warning(
+            "迁移告警：%s 非预期的部分唯一索引（indexdef=%s），请人工核查 project_sales 唯一约束",
+            _PARTIAL_INDEX_NAME,
+            row[0] if row else "不存在",
+        )
+
+
+def cleanup_redundant_soft_deleted_sales(engine: Engine) -> None:
+    """清理「同 project_id 已有活跃行」的冗余软删 sale 行（幂等，H-3 追补迁移）.
+
+    v89 已做同样清理，但仅在 v89 首次执行时跑一次；此后若因存量形态/并发再次出现
+    「1 活跃 + N 软删」使 `Project.sale`(uselist=False) 命中多行，本迁移重复清理一次兜底。
+    条件与 v89 步骤 1 完全一致：仅删除「已有活跃行接管」的软删行，重复执行第二次命中 0 行。
+
+    Args:
+        engine: SQLAlchemy 引擎
+
+    """
+    inspector = inspect(engine)
+    if "project_sales" not in inspector.get_table_names():
+        return
+    if engine.dialect.name != "postgresql":
+        # 仅清理数据，非 PG 方言（如测试用 SQLite）无需按 PG 语法执行；数据形态由测试库自建
+        return
+    with engine.begin() as conn:
+        result = conn.execute(
+            text(
+                "DELETE FROM project_sales ps "
+                "WHERE ps.is_deleted = true "
+                "AND EXISTS ("
+                "  SELECT 1 FROM project_sales ps2 "
+                "  WHERE ps2.project_id = ps.project_id AND ps2.is_deleted = false"
+                ") "
+            ),
+        )
+        if result.rowcount:
+            logger.info("迁移：清理 %d 条被活跃行接管的冗余软删 sale 记录", result.rowcount)

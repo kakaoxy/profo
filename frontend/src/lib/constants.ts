@@ -13,3 +13,6 @@ export const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
 
 /** 单次最多上传文件数量 */
 export const MAX_UPLOAD_FILES = 100;
+
+/** 资金账户模块解锁令牌在 sessionStorage 中的键（单一来源，改 key 不会静默丢余额显示，F-4） */
+export const FUND_ACCOUNTS_UNLOCK_TOKEN_KEY = "profo:fund-accounts:unlock-token";

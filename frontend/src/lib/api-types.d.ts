@@ -3207,7 +3207,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
+        /**
+         * 更新项目账本流水（补充凭证/支付方类型，POST 别名供小程序端）
+         * @description 补充上传记账凭证或更新支付方类型.
+         */
+        post: operations["update_ledger_record_api_v1_admin_ledger__record_id__post"];
         /**
          * 删除项目账本流水
          * @description 软删除项目账本流水记录.
@@ -9164,7 +9168,9 @@ export interface components {
          * @description 更新科目请求.
          *
          *     所有字段可选；system/is_deleted 不可通过本接口更新（system 为系统预置标记，
-         *     is_deleted 由删除接口管理）。系统预置科目(system=True)的 name/level 不可修改。
+         *     is_deleted 由删除接口管理）。系统预置科目(system=True)的 level 不可修改；
+         *     name 允许修改（显示标签）。⚠️ pnl/stage/modes 当前对 system=True 也放开，
+         *     会直接影响损益统计口径，是否为产品有意待确认（C-2）。
          */
         FinanceSubjectUpdate: {
             /**
@@ -26964,6 +26970,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinanceSettlementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_ledger_record_api_v1_admin_ledger__record_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 流水记录ID */
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LedgerRecordUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowRecordResponse"];
                 };
             };
             /** @description Validation Error */

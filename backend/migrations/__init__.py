@@ -206,7 +206,10 @@ from migrations._permission_system import (
 from migrations._project_archive import add_project_archive_columns
 from migrations._project_booking_share import create_project_booking_and_share_tables
 from migrations._project_booking_status import add_project_booking_status_column
-from migrations._project_sale_partial_unique import rebuild_project_sale_unique_index
+from migrations._project_sale_partial_unique import (
+    cleanup_redundant_soft_deleted_sales,
+    rebuild_project_sale_unique_index,
+)
 from migrations._property_sheet import create_property_sheet_tables
 from migrations._recruit import (
     add_poster_bg_url_to_campaigns,
@@ -462,6 +465,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # v91：存量库系统预置科目改名（投资款收入/还本 → 项目投资款收入/还本），
         # 必须登记在 MIGRATIONS 末尾（v91）并与本路径调用顺序严格一致（test_registry_matches_legacy_order）
         rename_investment_subjects(engine)
+        # v92：H-3 追补——清理同 project_id 已有活跃行的冗余软删 sale 行（幂等）
+        cleanup_redundant_soft_deleted_sales(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

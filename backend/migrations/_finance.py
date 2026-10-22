@@ -8,7 +8,7 @@ import json
 import logging
 
 from sqlalchemy import inspect, text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
 
 from migrations._helpers import (
     _MIGRATION_BATCH_SIZE,
@@ -110,44 +110,49 @@ def create_finance_record_logs_table(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine, tables=[FinanceRecordLog.__table__], checkfirst=True)
 
 
-def rename_investment_subjects(engine: Engine) -> None:
-    """存量库系统预置科目改名（幂等）：投资款收入→项目投资款收入、投资款还本→项目投资款还本.
+_INVESTMENT_SUBJECT_RENAMES = (
+    ("S25", "投资款收入", "项目投资款收入"),
+    ("S26", "投资款还本", "项目投资款还本"),
+)
 
-    背景：两个科目名称与费用科目近似易混淆，统一加「项目」前缀。
-    种子 _INITIAL_SUBJECTS 按 name 幂等插入（ON CONFLICT (name) DO NOTHING），
-    若仅改种子不处理存量行，已有库上种子将以新 name 插入并与旧行 id（S25/S26）主键冲突。
-    故必须在 create_finance_subjects_table 之前执行本迁移，将存量行按 id 原地改名；
-    finance_records.subject_id 为逻辑外键引用科目 id，改名不影响历史流水关联。
+
+def _rename_investment_subjects_conn(conn: Connection) -> None:
+    """在同一事务连接内将存量旧名科目按 id 原地改名（幂等，供种子前置与 v91 复用）.
 
     幂等：WHERE 条件限定旧名称，改名后再次执行匹配 0 行即跳过；
     若已存在同名的用户自定义科目（name 唯一约束），跳过该行并告警，避免违反唯一约束。
     """
+    for subject_id, old_name, new_name in _INVESTMENT_SUBJECT_RENAMES:
+        result = conn.execute(
+            text(
+                "UPDATE finance_subjects SET name = :new_name, updated_at = NOW() "
+                "WHERE id = :subject_id AND name = :old_name "
+                "AND NOT EXISTS (SELECT 1 FROM finance_subjects WHERE name = :new_name)"
+            ),
+            {"subject_id": subject_id, "old_name": old_name, "new_name": new_name},
+        )
+        if result.rowcount:
+            logger.info("迁移：科目 %s 已由「%s」改名为「%s」", subject_id, old_name, new_name)
+        elif conn.execute(
+            text("SELECT 1 FROM finance_subjects WHERE id = :subject_id AND name = :old_name"),
+            {"subject_id": subject_id, "old_name": old_name},
+        ).first():
+            logger.warning("迁移跳过：已存在名为「%s」的科目，科目 %s 未能由「%s」改名", new_name, subject_id, old_name)
+
+
+def rename_investment_subjects(engine: Engine) -> None:
+    """存量库系统预置科目改名（幂等）：投资款收入→项目投资款收入、投资款还本→项目投资款还本.
+
+    背景：两个科目名称与费用科目近似易混淆，统一加「项目」前缀。
+    修复 H-1：真正的改名前置步骤已内聚到 create_finance_subjects_table（种子插入前按 id 原地改名），
+    因此既有库 baseline / LEGACY_MODE 路径下种子不会再与旧行主键冲突。
+    本迁移（v91）作为空操作兜底保留：对常规增量升级（v17 已 applied、仅有旧名行）执行改名。
+    finance_records.subject_id 为逻辑外键引用科目 id，改名不影响历史流水关联。
+    """
     if "finance_subjects" not in inspect(engine).get_table_names():
         return
-
-    renames = (
-        ("S25", "投资款收入", "项目投资款收入"),
-        ("S26", "投资款还本", "项目投资款还本"),
-    )
     with engine.begin() as conn:
-        for subject_id, old_name, new_name in renames:
-            result = conn.execute(
-                text(
-                    "UPDATE finance_subjects SET name = :new_name, updated_at = NOW() "
-                    "WHERE id = :subject_id AND name = :old_name "
-                    "AND NOT EXISTS (SELECT 1 FROM finance_subjects WHERE name = :new_name)"
-                ),
-                {"subject_id": subject_id, "old_name": old_name, "new_name": new_name},
-            )
-            if result.rowcount:
-                logger.info("迁移：科目 %s 已由「%s」改名为「%s」", subject_id, old_name, new_name)
-            elif conn.execute(
-                text("SELECT 1 FROM finance_subjects WHERE id = :subject_id AND name = :old_name"),
-                {"subject_id": subject_id, "old_name": old_name},
-            ).first():
-                logger.warning(
-                    "迁移跳过：已存在名为「%s」的科目，科目 %s 未能由「%s」改名", new_name, subject_id, old_name
-                )
+        _rename_investment_subjects_conn(conn)
 
 
 def create_finance_subjects_table(engine: Engine) -> None:
@@ -155,7 +160,8 @@ def create_finance_subjects_table(engine: Engine) -> None:
 
     1. 幂等创建表（CREATE TABLE IF NOT EXISTS 语义，checkfirst=True）
     2. 幂等创建索引 idx_subject_stage（按 stage 查询）
-    3. 幂等初始化系统预置科目（INSERT ... ON CONFLICT (name) DO NOTHING）
+    3. 先按 id 将存量旧名科目原地改名（S25/S26），再幂等初始化系统预置科目
+       （INSERT ... ON CONFLICT (name) DO NOTHING）——改名必须先于种子，见 H-1。
 
     替代原 CashFlowCategory 硬编码枚举，支持用户自定义科目 CRUD。
     system=True 的记录为系统预置，is_deleted=False。
@@ -180,6 +186,9 @@ def create_finance_subjects_table(engine: Engine) -> None:
 
     inserted = 0
     with engine.begin() as conn:
+        # 3.1 先按 id 将存量旧名科目原地改名（H-1：避免种子新名与旧行主键 S25/S26 冲突）
+        _rename_investment_subjects_conn(conn)
+        # 3.2 再按 name 幂等插入种子
         for subj in _INITIAL_SUBJECTS:
             result = conn.execute(
                 text(

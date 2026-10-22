@@ -14,7 +14,7 @@ from schemas.project.finance import (
     LedgerRecordCreate,
     LedgerRecordUpdate,
 )
-from services.finance.fund_account import resolve_active_account
+from services.finance.fund_account import lock_accounts_in_order, resolve_active_account
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 from services.system.operation_log import operation_log_service
 
@@ -111,6 +111,7 @@ class _RecordMixin:
         account_skipped: bool,
         description: str | None,
         flow_label: str,
+        for_update: bool = False,
     ) -> tuple[uuid.UUID | None, str | None]:
         """解析记账时要挂的资金账户.
 
@@ -124,6 +125,8 @@ class _RecordMixin:
             account_skipped: 是否显式标记「没走账户」
             description: 备注（勾「没走账户」时必填）
             flow_label: 方向标签（"付款账户"/"收款账户"），仅用于错误提示
+            for_update: 为 True 时对目标账户行取 ``FOR UPDATE`` 行锁（H-2：记账写路径
+                与对账调整路径串行化到同一账户行锁，避免并发错账）
 
         Returns:
             (账户 ID, 账户名称)；两者均为 None 表示未走账户
@@ -140,7 +143,7 @@ class _RecordMixin:
         if account_id is None:
             return None, None
         # resolve_active_account 内部校验存在 + 未删除 + 在用（停用账户不能记新账）
-        account = resolve_active_account(self.db, account_id)
+        account = resolve_active_account(self.db, account_id, for_update=for_update)
         logger.debug("记账挂账户: %s（%s）", account.name, flow_label)
         return account.id, account.name
 
@@ -194,11 +197,14 @@ class _RecordMixin:
         self._validate_outflow_inflow(outflow, inflow)
 
         # 资金账户：流出=付款账户、流入=收款账户（与方向天然对上，互斥已在上方校验）
+        # H-2：for_update=True 对目标账户行取 FOR UPDATE 行锁，与本账户的对账调整串行化，
+        # 避免「对账聚合读到旧余额→用户记账→对账 commit」导致差额算错。
         account_id, account_name = self._resolve_account(
             account_id=record_data.account_id,
             account_skipped=record_data.account_skipped,
             description=record_data.description,
             flow_label="付款账户" if outflow > 0 else "收款账户",
+            for_update=True,
         )
 
         # Task 5: 从新字段推导旧字段（兼容旧查询）
@@ -518,12 +524,18 @@ class _RecordMixin:
         # 资金账户：仅当显式传 account_id / account_skipped 才改动归属
         # （存量流水补挂/换挂走这条路径，不受「新建必须选账户」影响，见 SPEC R1）
         if payload.account_skipped or payload.account_id is not None:
+            # H-2：换挂可能涉及「旧账户余额减少 + 新账户余额增加」，需对两者都加行锁。
+            # 先解析并校验新账户，再按 id 升序对 {旧, 新} 取锁（排序防交叉换挂死锁）。
             new_account_id, account_name = self._resolve_account(
                 account_id=payload.account_id,
                 account_skipped=bool(payload.account_skipped),
                 description=payload.description if payload.description is not None else record.remark,
                 flow_label="付款账户" if new_outflow > 0 else "收款账户",
             )
+            lock_accounts_in_order(self.db, {record.account_id, new_account_id})
+            # 加锁后重新读取账户行状态（锁前的数据可能已被并发事务改变）
+            if new_account_id is not None:
+                resolve_active_account(self.db, new_account_id)
             if record.account_id != new_account_id:
                 record.account_id = new_account_id
                 detail["account_id"] = str(new_account_id) if new_account_id else None

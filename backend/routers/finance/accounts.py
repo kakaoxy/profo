@@ -226,7 +226,7 @@ def list_account_flows(
     status_code=status.HTTP_201_CREATED,
     summary="新建资金账户",
 )
-@limiter.limit(RateLimits.ACCOUNT_WRITE)
+@limiter.limit(RateLimits.ACCOUNT_WRITE, key_func=get_login_user_identifier)
 def create_account(
     request: Request,
     data: FundAccountCreate,
@@ -255,7 +255,7 @@ def get_account(
     "/{account_id}",
     summary="更新资金账户",
 )
-@limiter.limit(RateLimits.ACCOUNT_WRITE)
+@limiter.limit(RateLimits.ACCOUNT_WRITE, key_func=get_login_user_identifier)
 def update_account(
     request: Request,
     account_id: Annotated[UUID4, Path(description="账户ID")],
@@ -273,7 +273,7 @@ def update_account(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除资金账户",
 )
-@limiter.limit(RateLimits.ACCOUNT_WRITE)
+@limiter.limit(RateLimits.ACCOUNT_WRITE, key_func=get_login_user_identifier)
 def delete_account(
     request: Request,
     account_id: Annotated[UUID4, Path(description="账户ID")],
@@ -328,7 +328,7 @@ def list_adjustments(
     "/{account_id}/adjustments/{adjustment_id}/receipts",
     summary="为核对调整补传凭证",
 )
-@limiter.limit(RateLimits.ACCOUNT_WRITE)
+@limiter.limit(RateLimits.ACCOUNT_WRITE, key_func=get_login_user_identifier)
 def append_adjustment_receipts(
     request: Request,
     account_id: Annotated[UUID4, Path(description="账户ID")],
@@ -353,7 +353,7 @@ def append_adjustment_receipts(
     status_code=status.HTTP_201_CREATED,
     summary="新增对账调整",
 )
-@limiter.limit(RateLimits.ACCOUNT_WRITE)
+@limiter.limit(RateLimits.ACCOUNT_WRITE, key_func=get_login_user_identifier)
 def create_adjustment(
     request: Request,
     account_id: Annotated[UUID4, Path(description="账户ID")],

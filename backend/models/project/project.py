@@ -31,7 +31,9 @@ Project.sale = relationship(
     "ProjectSale",
     back_populates="project",
     uselist=False,
-    primaryjoin="Project.id == foreign(ProjectSale.project_id)",
+    # H-3：只关联活跃（未软删）销售行，消除 uselist=False 命中多行时的非确定性读取
+    # （软删行与新活跃行并存时，无此条件可能取到软删行导致销售信息整体丢失）。
+    primaryjoin="and_(Project.id == foreign(ProjectSale.project_id), ProjectSale.is_deleted == False)",
 )
 Project.follow_ups = relationship(
     "ProjectFollowUp",

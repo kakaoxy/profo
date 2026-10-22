@@ -14,8 +14,9 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { fetchLockState, lockAccounts, unlockAccounts } from "../actions";
+import { FUND_ACCOUNTS_UNLOCK_TOKEN_KEY } from "@/lib/constants";
 
-const TOKEN_STORAGE_KEY = "profo:fund-accounts:unlock-token";
+const TOKEN_STORAGE_KEY = FUND_ACCOUNTS_UNLOCK_TOKEN_KEY;
 
 export interface ModuleLockState {
   /** 是否已设置模块密码 */
@@ -141,9 +142,7 @@ export function ModuleLockProvider({ children }: { children: React.ReactNode }) 
       setState((prev) => {
         const next = (prev.retryAfterSeconds ?? 0) - 1;
         if (next <= 0) {
-          if (prev.unlocked || !prev.hasPassword) {
-            return { ...prev, retryAfterSeconds: null };
-          }
+          // 倒计时归零：清空 retryAfterSeconds（两个原分支相同，F-5 合并死 if）
           return { ...prev, retryAfterSeconds: null };
         }
         return { ...prev, retryAfterSeconds: next };

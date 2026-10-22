@@ -27,7 +27,7 @@ from utils.error_formatters import (
     format_database_error,
     format_request_validation_error,
 )
-from utils.security_logger import safe_log_request_body
+from utils.security_logger import is_sensitive_field, mask_value, safe_log_request_body
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,24 @@ def _sanitize_log_text(value: object) -> str:
     将回车、换行、制表符替换为空格，避免攻击者通过构造含 CRLF 的输入伪造日志条目。
     """
     return str(value).translate(_LOG_SANITIZE_TABLE)
+
+
+def _sanitize_pydantic_errors(errors: list[dict]) -> list[dict]:
+    """对 Pydantic 校验错误列表脱敏后再序列化（E-1）.
+
+    Pydantic v2 的 ``errors()`` 每条含 ``"input"`` 原文；当失败字段是敏感字段
+    （如 ``password``）时，直接日志会把明文密码写进 stdout/journald。
+    这里按 ``loc[-1]``（字段名）判断，命中敏感字段则把 ``input`` 置为掩码。
+    """
+    sanitized: list[dict] = []
+    for err in errors:
+        item = dict(err)
+        loc = item.get("loc") or ()
+        field = str(loc[-1]) if loc else ""
+        if item.get("input") is not None and is_sensitive_field(field):
+            item["input"] = mask_value(item["input"])
+        sanitized.append(item)
+    return sanitized
 
 
 # ==================== 公共函数 ====================
@@ -118,13 +136,13 @@ async def validation_exception_handler(
             "请求验证失败: %s, 请求体: %s, 原始错误: %s",
             _sanitize_log_text(error_message),
             json.dumps(safe_body, ensure_ascii=False),
-            _sanitize_log_text(json.dumps(exc.errors(), ensure_ascii=False, default=str)),
+            _sanitize_log_text(json.dumps(_sanitize_pydantic_errors(exc.errors()), ensure_ascii=False, default=str)),
         )
     else:
         logger.warning(
             "请求验证失败: %s, 原始错误: %s",
             _sanitize_log_text(error_message),
-            _sanitize_log_text(json.dumps(exc.errors(), ensure_ascii=False, default=str)),
+            _sanitize_log_text(json.dumps(_sanitize_pydantic_errors(exc.errors()), ensure_ascii=False, default=str)),
         )
 
     # 尝试保存失败记录（使用脱敏后的数据）

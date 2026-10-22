@@ -270,7 +270,9 @@ export function AccountPicker({
       ) : null}
 
       {/* 记账后余额预览 */}
-      {!skipped && selected && amount > 0 ? (
+      {/* 记账后余额预览（F-2：未解锁时 options 无 balance，需判 balance != null，
+          否则 Number(undefined)=NaN 显示「¥0.00」假余额） */}
+      {!skipped && selected && selected.balance != null && amount > 0 ? (
         <p className="mt-2 flex flex-wrap items-center gap-1 text-[11.5px] text-graphite">
           记账后 {selected.name} 余额 {formatCNY(Number(selected.balance))} →{" "}
           <b

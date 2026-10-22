@@ -191,3 +191,17 @@ export function formatConversionRate(total: number, signed: number): string {
   if (total <= 0 || signed <= 0) return "暂无";
   return `${dashboardDecimalFormatter.format((signed / total) * 100)}%`;
 }
+
+/**
+ * 返回今天 YYYY-MM-DD（本地时区）。
+ *
+ * ⚠️ 不要用 `new Date().toISOString().slice(0,10)`：那是 UTC 日，UTC+8 下
+ * 每天 00:00–07:59 会得到「昨天」，导致账目日期错一天（F-3）。
+ */
+export function todayISO(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}

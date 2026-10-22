@@ -38,7 +38,7 @@ class CashFlowRecordCreate(BaseModel):
 
     type: CashFlowType
     category: CashFlowCategory
-    amount: Decimal = Field(gt=0, description="金额(元)")
+    amount: Decimal = Field(gt=0, decimal_places=2, max_digits=15, description="金额(元)")
     date: datetime
     description: str | None = None
     related_stage: str | None = None
@@ -191,7 +191,7 @@ class FinanceBase(BaseModel):
 
     type: CashFlowType = Field(description="流水类型：income/expense")
     category: CashFlowCategory = Field(description="费用类别")
-    amount: Decimal = Field(gt=0, description="金额(元)")
+    amount: Decimal = Field(gt=0, decimal_places=2, max_digits=15, description="金额(元)")
     record_date: datetime = Field(description="发生日期")
     operator_id: str | None = Field(None, description="经办人ID")
     remark: str | None = Field(None, description="备注")
@@ -210,7 +210,7 @@ class FinanceUpdate(BaseModel):
 
     type: CashFlowType | None = None
     category: CashFlowCategory | None = None
-    amount: Decimal | None = None
+    amount: Decimal | None = Field(None, gt=0, decimal_places=2, max_digits=15, description="金额(元)")
     record_date: datetime | None = None
     operator_id: str | None = None
     remark: str | None = None
@@ -255,8 +255,8 @@ class LedgerRecordCreate(BaseModel):
 
     # 新字段（主字段）
     subject_id: str = Field(..., description="科目ID(必填，关联 finance_subjects.id)")
-    outflow: Decimal = Field(default=Decimal(0), ge=0, description="流出金额(元)")
-    inflow: Decimal = Field(default=Decimal(0), ge=0, description="流入金额(元)")
+    outflow: Decimal = Field(default=Decimal(0), ge=0, decimal_places=2, max_digits=15, description="流出金额(元)")
+    inflow: Decimal = Field(default=Decimal(0), ge=0, decimal_places=2, max_digits=15, description="流入金额(元)")
     payer: str | None = Field(None, max_length=100, description="付款方")
     payee: str | None = Field(None, max_length=100, description="收款方")
 
@@ -273,7 +273,9 @@ class LedgerRecordCreate(BaseModel):
     # 兼容字段（旧客户端可选，新字段优先）
     type: CashFlowType | None = Field(None, description="兼容字段: 流水类型(由 inflow/outflow 推导)")
     category: CashFlowCategory | None = Field(None, description="兼容字段: 费用类别(新字段体系下由 subject 替代)")
-    amount: Decimal | None = Field(None, description="兼容字段: 金额(由 outflow/inflow 推导)")
+    amount: Decimal | None = Field(
+        None, decimal_places=2, max_digits=15, description="兼容字段: 金额(由 outflow/inflow 推导)"
+    )
     related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
     counterparty: str | None = Field(None, max_length=100, description="兼容字段: 交易方(由 payer 推导)")
 
@@ -306,7 +308,7 @@ class LedgerRecordUpdate(BaseModel):
     # 兼容字段
     type: CashFlowType | None = Field(None, description="兼容字段: 流水类型")
     category: CashFlowCategory | None = Field(None, description="兼容字段: 费用类别")
-    amount: Decimal | None = Field(None, description="兼容字段: 金额")
+    amount: Decimal | None = Field(None, decimal_places=2, max_digits=15, description="兼容字段: 金额")
     counterparty: str | None = Field(None, max_length=100, description="兼容字段: 交易方")
     related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
 
@@ -481,7 +483,9 @@ class FinanceSubjectUpdate(BaseModel):
     """更新科目请求.
 
     所有字段可选；system/is_deleted 不可通过本接口更新（system 为系统预置标记，
-    is_deleted 由删除接口管理）。系统预置科目(system=True)的 name/level 不可修改。
+    is_deleted 由删除接口管理）。系统预置科目(system=True)的 level 不可修改；
+    name 允许修改（显示标签）。⚠️ pnl/stage/modes 当前对 system=True 也放开，
+    会直接影响损益统计口径，是否为产品有意待确认（C-2）。
     """
 
     name: str | None = Field(None, max_length=50, description="科目名称(唯一)")

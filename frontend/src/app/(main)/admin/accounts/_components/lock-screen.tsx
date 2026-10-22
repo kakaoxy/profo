@@ -33,6 +33,9 @@ function LockCard() {
 
   const handleSubmit = async () => {
     if (locked) return;
+    // A-4：Enter 键路径不受按钮 disabled 保护，首行拦截重复提交，避免连按并发解锁
+    // （密码错误时每次连击消耗 2 次尝试）。
+    if (submitting) return;
     if (password.length !== 6) {
       setError("请输入 6 位数字密码");
       return;

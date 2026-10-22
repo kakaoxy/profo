@@ -108,11 +108,19 @@ class FundAccountService:
 
     # ==================== 查询辅助 ====================
 
-    def _get_account(self, account_id: uuid.UUID | str) -> FundAccount:
-        """按 ID 取未删除账户，不存在抛 404."""
-        account = (
-            self.db.query(FundAccount).filter(FundAccount.id == account_id, FundAccount.is_deleted.is_(False)).first()
-        )
+    def _get_account(self, account_id: uuid.UUID | str, *, for_update: bool = False) -> FundAccount:
+        """按 ID 取未删除账户，不存在抛 404.
+
+        Args:
+            account_id: 账户 ID。
+            for_update: 为 True 时对账户行取 ``FOR UPDATE`` 行锁（用于删除前计数，
+                消除「计数→插入流水」的 TOCTOU，见 H-2）。
+
+        """
+        query = self.db.query(FundAccount).filter(FundAccount.id == account_id, FundAccount.is_deleted.is_(False))
+        if for_update:
+            query = query.with_for_update()
+        account = query.first()
         if account is None:
             msg = "资金账户不存在"
             raise ResourceNotFoundError(msg)
@@ -402,7 +410,7 @@ class FundAccountService:
             ConflictError: 账户已有流水或对账记录
 
         """
-        account = self._get_account(account_id)
+        account = self._get_account(account_id, for_update=True)
         flow_count = (
             self.db.query(func.count(FinanceRecord.id))
             .filter(FinanceRecord.account_id == account.id, FinanceRecord.is_deleted.is_(False))
@@ -599,11 +607,19 @@ class FundAccountService:
             msg = "实际余额与系统一致，无需调整"
             raise ValidationError(msg)
 
+        # V-2：reason 的 min_length=1 拦不住纯空白（"   "），strip 后为空需显式拒绝，
+        # 避免写入空原因留痕（与已修的「账户名纯空白」同口径）。
+        reason = (data.reason or "").strip()
+        if not reason:
+            self.db.rollback()
+            msg = "差额原因不能为空白"
+            raise ValidationError(msg)
+
         adjustment = FundAccountAdjustment(
             account_id=account.id,
             adjust_date=data.adjust_date,
             amount=amount,
-            reason=data.reason.strip(),
+            reason=reason,
             operator_id=operator_id,
             receipt_urls=data.receipt_urls,
         )
@@ -712,6 +728,9 @@ class FundAccountService:
         existing = adjustment.receipt_urls or []
         merged = list(dict.fromkeys([*existing, *receipt_urls]))
         before_count = len(existing)
+        # E-2：先校验账户存在（对已软删账户补凭证应 404 且不产生副作用），
+        # 再写入并 commit——避免「写入已生效但响应 404」的带副作用 404。
+        account = self._get_account(account_id)
         adjustment.receipt_urls = merged
         adjustment.updated_at = datetime.now(timezone.utc)
         self.db.commit()
@@ -734,7 +753,6 @@ class FundAccountService:
             len(merged),
         )
 
-        account = self._get_account(account_id)
         operator = self.db.query(User.nickname).filter(User.id == operator_id).scalar()
         return FundAdjustmentResponse(
             id=str(adjustment.id),
@@ -1019,14 +1037,23 @@ class FundAccountService:
         )
 
 
-def resolve_active_account(db: Session, account_id: uuid.UUID | None) -> FundAccount:
+def resolve_active_account(db: Session, account_id: uuid.UUID | None, *, for_update: bool = False) -> FundAccount:
     """校验记账时传入的账户：必须存在、未删除、在用.
+
+    Args:
+        db: 数据库会话。
+        account_id: 目标账户 ID。
+        for_update: 为 True 时对账户行取 ``FOR UPDATE`` 行锁（H-2：让「改某账户余额成分」
+            的记账写路径与对账调整路径串行化到同一账户行锁上，避免并发错账）。
 
     Raises:
         ValidationError: 账户不存在已删除或已停用
 
     """
-    account = db.query(FundAccount).filter(FundAccount.id == account_id, FundAccount.is_deleted.is_(False)).first()
+    query = db.query(FundAccount).filter(FundAccount.id == account_id, FundAccount.is_deleted.is_(False))
+    if for_update:
+        query = query.with_for_update()
+    account = query.first()
     if account is None:
         msg = "资金账户不存在或已删除"
         raise ValidationError(msg)
@@ -1034,3 +1061,21 @@ def resolve_active_account(db: Session, account_id: uuid.UUID | None) -> FundAcc
         msg = "账户已停用，不能用于新记账"
         raise ValidationError(msg)
     return account
+
+
+def lock_accounts_in_order(db: Session, account_ids: set[uuid.UUID | None]) -> None:
+    """按 id 升序对多个账户行取 ``FOR UPDATE`` 行锁（H-2 换挂新旧账户防死锁）.
+
+    排序后取锁可保证并发事务间锁获取顺序一致，避免交叉换挂时死锁。
+    跳过 None（未走账户/不涉及账户的流水）。
+
+    Args:
+        db: 数据库会话。
+        account_ids: 需要加锁的账户 ID 集合（可含 None）。
+
+    """
+    for account_id in sorted(aid for aid in account_ids if aid is not None):
+        db.query(FundAccount.id).filter(
+            FundAccount.id == account_id,
+            FundAccount.is_deleted.is_(False),
+        ).with_for_update().first()
