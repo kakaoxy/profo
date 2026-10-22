@@ -80,7 +80,14 @@
                 <image class="rec-tkt__thumb" src="{{item.ticketThumb}}" mode="aspectFill" lazy-load />
                 <text>票据 {{item.ticketCount}} 张</text>
               </view>
-              <view class="rec-flag-miss" wx:else>缺凭证</view>
+              <view
+                class="rec-flag-miss {{supplementingId === item.id ? 'rec-flag-miss--busy' : ''}}"
+                wx:else
+                data-id="{{item.id}}"
+                bindtap="onSupplementTap"
+              >
+                {{supplementingId === item.id ? '上传中…' : '缺凭证 +'}}
+              </view>
             </view>
           </view>
         </view>

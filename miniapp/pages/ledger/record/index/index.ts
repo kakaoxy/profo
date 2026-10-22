@@ -1,13 +1,18 @@
 /**
  * ③ 记一笔全屏表单页（②账目清单 → 本页）.
  *
- * 完整映射 LedgerRecordCreate 并 POST /admin/ledger 创建流水：
- * - 项目上下文头（query 传入，只读）；科目 via subject-picker 弹层；
- * - 流出(绿)/流入(红) 金额互斥校验；发生日期 date picker 默认今天；
+ * 对齐后台 RecordDialog（Task 8 重构后交互）：
+ * - 方向二选一（花出去 out / 收进来 in）：界面本身不提供「同时填流出和流入」的可能，
+ *   单一金额按方向落到 outflow 或 inflow，服务端互斥校验从结构上不可能触发；
+ * - 资金账户（新）：GET /admin/accounts/options 免解锁拉账户列表（仅 id/名称/类型/卡号，
+ *   无余额），流出=付款账户 / 流入=收款账户，方向切换时清空已选避免挂错；
+ *   必须选一个账户，或显式勾「没走账户」并写明备注原因（后端同样校验）；
+ * - 对方信息：按方向只展示相关的一方（out→付给谁 payee / in→谁付的 payer），
+ *   账户已确定的那一方由账户带入，避免重复输入；
+ * - 科目 via subject-picker 弹层（按业务模式过滤）；
  * - 票据九宫格：wx.chooseMedia → wx.uploadFile ${BASE_URL}/files/upload（admin 令牌，
- *   401 刷新重试一次，参照 profile uploadAvatar 模式）→ FileUploadResponse.url 记入列表；
- * - 提交：date 发送 YYYY-MM-DD，receipt_urls 为已上传 url 数组；成功 toast → navigateBack 回②刷新；
- *   失败保留表单数据并 toast。
+ *   401 刷新重试一次）→ FileUploadResponse.url 记入列表；
+ * - 提交：POST /admin/ledger，date 发送 YYYY-MM-DD；成功 toast → navigateBack 回②刷新。
  */
 import type { components } from "../../../../types/api-types";
 import { request, refreshAccessToken } from "../../../../utils/request";
@@ -17,10 +22,10 @@ import { BASE_URL } from "../../../../utils/config";
 import { pad2 } from "../../../../utils/format";
 
 type BusinessForm = components["schemas"]["BusinessForm"];
-type SubjectLevel = components["schemas"]["SubjectLevel"];
 type LedgerRecordCreate = components["schemas"]["LedgerRecordCreate"];
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
 type FileUploadResponse = components["schemas"]["FileUploadResponse"];
+type FundAccountOption = components["schemas"]["FundAccountOption"];
 
 /** 票据最多数量. */
 const MAX_RECEIPTS = 9;
@@ -41,6 +46,23 @@ interface ReceiptItem {
   uploading: boolean;
 }
 
+/** 账户展示项（选项接口不含余额，从类型上保证不显示假数字）. */
+interface AccountItem {
+  id: string;
+  name: string;
+  typeText: string;
+  accountNo: string;
+}
+
+/** 账户类型 → 展示中文（对齐后台 ACCOUNT_TYPES 语义）. */
+const ACCOUNT_TYPE_TEXT: Record<string, string> = {
+  bank: "银行",
+  alipay: "支付宝",
+  wechat: "微信",
+  cash: "现金",
+  other: "其他",
+};
+
 /** 页面 data. */
 interface PageData {
   projectId: string;
@@ -53,10 +75,17 @@ interface PageData {
   subjectId: string;
   subjectName: string;
   subjectLevel: string;
-  outflow: string;
-  inflow: string;
-  payer: string;
-  payee: string;
+  /** 方向二选一：out=花出去 / in=收进来. */
+  direction: "out" | "in";
+  amount: string;
+  /** 对方信息：out→payee（付给谁）/ in→payer（谁付的）. */
+  counterparty: string;
+  /** 资金账户. */
+  accounts: AccountItem[];
+  accountsLoading: boolean;
+  accountsLoadFailed: boolean;
+  accountId: string;
+  accountSkipped: boolean;
   date: string;
   remark: string;
   receipts: ReceiptItem[];
@@ -64,6 +93,7 @@ interface PageData {
   submitting: boolean;
   subjectError: string;
   amountError: string;
+  accountError: string;
   dateError: string;
   canAddReceipt: boolean;
 }
@@ -74,13 +104,15 @@ interface PageCustom {
   getToken(): string;
   clearToken(): void;
   todayStr(): string;
+  loadAccounts(): void;
   openPicker(): void;
   onSubjectSelect(e: WechatMiniprogram.CustomEvent): void;
   onSubjectClose(): void;
-  onOutflowInput(e: WechatMiniprogram.Input): void;
-  onInflowInput(e: WechatMiniprogram.Input): void;
-  onPayerInput(e: WechatMiniprogram.Input): void;
-  onPayeeInput(e: WechatMiniprogram.Input): void;
+  onDirectionTap(e: WechatMiniprogram.BaseEvent): void;
+  onAmountInput(e: WechatMiniprogram.Input): void;
+  onCounterpartyInput(e: WechatMiniprogram.Input): void;
+  onAccountTap(e: WechatMiniprogram.BaseEvent): void;
+  onToggleSkipped(): void;
   onDateChange(e: WechatMiniprogram.PickerChange): void;
   onRemarkInput(e: WechatMiniprogram.Input): void;
   onAddReceipt(): void;
@@ -119,10 +151,14 @@ Page<PageData, PageCustom>({
     subjectId: "",
     subjectName: "",
     subjectLevel: "",
-    outflow: "",
-    inflow: "",
-    payer: "",
-    payee: "",
+    direction: "out",
+    amount: "",
+    counterparty: "",
+    accounts: [],
+    accountsLoading: false,
+    accountsLoadFailed: false,
+    accountId: "",
+    accountSkipped: false,
     date: "",
     remark: "",
     receipts: [],
@@ -130,6 +166,7 @@ Page<PageData, PageCustom>({
     submitting: false,
     subjectError: "",
     amountError: "",
+    accountError: "",
     dateError: "",
     canAddReceipt: true,
   },
@@ -163,6 +200,42 @@ Page<PageData, PageCustom>({
       pickerMode: businessForm === "agent" ? "agent" : businessForm === "wholesale" ? "acquire" : "",
       date: this.todayStr(),
     });
+    this.loadAccounts();
+  },
+
+  /** 拉取资金账户选项（/admin/accounts/options 免解锁，无余额字段）. */
+  loadAccounts() {
+    const token = this.getToken();
+    if (!token) {
+      this.clearToken();
+      this.setData({ accountsLoadFailed: true });
+      return;
+    }
+    this.setData({ accountsLoading: true, accountsLoadFailed: false });
+    request<{ items: FundAccountOption[]; total: number }>({
+      url: `/admin/accounts/options`,
+      header: { Authorization: `Bearer ${token}` },
+    })
+      .then((data) => {
+        const accounts = (data.items ?? [])
+          .filter((item) => item.status === "active")
+          .map((item) => ({
+            id: item.id,
+            name: item.name ?? "",
+            typeText: ACCOUNT_TYPE_TEXT[item.type ?? ""] ?? "",
+            accountNo: item.account_no ?? "",
+          }));
+        this.setData({ accounts, accountsLoading: false });
+      })
+      .catch((err) => {
+        const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+        if (statusCode === 401) {
+          this.clearToken();
+          wx.showToast({ title: "登录已失效，请重新登录", icon: "none" });
+        }
+        // 失败不阻塞记账（可勾「没走账户」），但明确提示而非静默变空
+        this.setData({ accountsLoading: false, accountsLoadFailed: true });
+      });
   },
 
   openPicker() {
@@ -188,20 +261,45 @@ Page<PageData, PageCustom>({
     this.setData({ pickerVisible: false });
   },
 
-  onOutflowInput(e: WechatMiniprogram.Input) {
-    this.setData({ outflow: e.detail.value || "", amountError: "" });
+  /** 方向切换：清空账户选择（付款户↔收款户语义不同，混用会挂错）与对方信息. */
+  onDirectionTap(e: WechatMiniprogram.BaseEvent) {
+    const value = e.currentTarget.dataset.value as "out" | "in";
+    if (!value || value === this.data.direction) {
+      return;
+    }
+    this.setData({
+      direction: value,
+      accountId: "",
+      counterparty: "",
+      accountError: "",
+      amountError: "",
+    });
   },
 
-  onInflowInput(e: WechatMiniprogram.Input) {
-    this.setData({ inflow: e.detail.value || "", amountError: "" });
+  onAmountInput(e: WechatMiniprogram.Input) {
+    this.setData({ amount: e.detail.value || "", amountError: "" });
   },
 
-  onPayerInput(e: WechatMiniprogram.Input) {
-    this.setData({ payer: e.detail.value || "" });
+  onCounterpartyInput(e: WechatMiniprogram.Input) {
+    this.setData({ counterparty: e.detail.value || "" });
   },
 
-  onPayeeInput(e: WechatMiniprogram.Input) {
-    this.setData({ payee: e.detail.value || "" });
+  onAccountTap(e: WechatMiniprogram.BaseEvent) {
+    const id = e.currentTarget.dataset.id as string;
+    if (this.data.accountSkipped) {
+      return;
+    }
+    this.setData({ accountId: id === this.data.accountId ? id : id, accountError: "" });
+  },
+
+  /** 勾/取消「没走账户」：勾选时清空已选账户. */
+  onToggleSkipped() {
+    const next = !this.data.accountSkipped;
+    this.setData({
+      accountSkipped: next,
+      accountId: next ? "" : this.data.accountId,
+      accountError: "",
+    });
   },
 
   onDateChange(e: WechatMiniprogram.PickerChange) {
@@ -257,8 +355,8 @@ Page<PageData, PageCustom>({
     doUploadFile(localPath, token)
       .then((res) => {
         if (res.statusCode === 401) {
-          // 复用统一 refreshAccessToken（与 request.ts 同源，消除 token 刷新逻辑分叉）：
-          // 刷新成功用新令牌重试一次；刷新失败说明后台会话已失效，清令牌并提示登录失效
+          // 复用统一 refreshAccessToken（与 request.ts 同源）：
+          // 刷新成功用新令牌重试一次；刷新失败清令牌并提示登录失效
           return refreshAccessToken().then((newToken) => {
             if (newToken) {
               return doUploadFile(localPath, newToken);
@@ -311,18 +409,25 @@ Page<PageData, PageCustom>({
   },
 
   validate(): boolean {
-    const outflowNum = parseFloat(this.data.outflow || "0") || 0;
-    const inflowNum = parseFloat(this.data.inflow || "0") || 0;
+    const amountNum = parseFloat(this.data.amount || "0") || 0;
     const subjectError = this.data.subjectId ? "" : "请选择科目分类";
-    let amountError = "";
-    if (outflowNum <= 0 && inflowNum <= 0) {
-      amountError = "流入 / 流出至少填一项且大于 0";
-    } else if (outflowNum > 0 && inflowNum > 0) {
-      amountError = "流入 / 流出互斥：只能填一项";
+    const amountError =
+      amountNum <= 0
+        ? this.data.direction === "out"
+          ? "请填写流出金额（大于 0）"
+          : "请填写流入金额（大于 0）"
+        : "";
+    // 账户：必须选一个，或显式勾「没走账户」并写明原因（后端同样校验）
+    let accountError = "";
+    if (!this.data.accountSkipped && !this.data.accountId) {
+      accountError =
+        this.data.direction === "out"
+          ? "请选择付款账户，或标记「没走账户」"
+          : "请选择收款账户，或标记「没走账户」";
     }
     const dateError = this.data.date ? "" : "请选择发生日期";
-    const ok = !subjectError && !amountError && !dateError;
-    this.setData({ subjectError, amountError, dateError });
+    const ok = !subjectError && !amountError && !accountError && !dateError;
+    this.setData({ subjectError, amountError, accountError, dateError });
     return ok;
   },
 
@@ -339,14 +444,21 @@ Page<PageData, PageCustom>({
     if (!this.validate()) {
       return;
     }
+    // 勾「没走账户」必须写明原因（后端 Service 同样校验，前置拦截给即时反馈）
+    if (this.data.accountSkipped && !this.data.remark.trim()) {
+      wx.showToast({ title: "标记「没走账户」时请填写备注说明原因", icon: "none" });
+      return;
+    }
     const token = this.getToken();
     if (!token) {
       this.clearToken();
       wx.showToast({ title: "登录已失效", icon: "none" });
       return;
     }
-    const outflowNum = parseFloat(this.data.outflow || "0") || 0;
-    const inflowNum = parseFloat(this.data.inflow || "0") || 0;
+    const amountNum = parseFloat(this.data.amount || "0") || 0;
+    // 方向决定金额落到 outflow 还是 inflow：永远只有一个 > 0
+    const outflowNum = this.data.direction === "out" ? amountNum : 0;
+    const inflowNum = this.data.direction === "in" ? amountNum : 0;
     const receiptUrls = this.data.receipts
       .filter((r) => !!r.url)
       .map((r) => r.url);
@@ -357,13 +469,18 @@ Page<PageData, PageCustom>({
       date: this.data.date, // YYYY-MM-DD，Pydantic 解析为当日零点
       outflow: outflowNum,
       inflow: inflowNum,
+      account_id: this.data.accountSkipped ? null : this.data.accountId || null,
+      account_skipped: this.data.accountSkipped,
       receipt_urls: receiptUrls.length > 0 ? receiptUrls : undefined,
     };
-    if (this.data.payer.trim()) {
-      body.payer = this.data.payer.trim();
-    }
-    if (this.data.payee.trim()) {
-      body.payee = this.data.payee.trim();
+    // 对方信息：out→payee（付给谁）/ in→payer（谁付的），与后台一致
+    const counterparty = this.data.counterparty.trim();
+    if (counterparty) {
+      if (this.data.direction === "out") {
+        body.payee = counterparty;
+      } else {
+        body.payer = counterparty;
+      }
     }
     if (this.data.remark.trim()) {
       body.description = this.data.remark.trim();

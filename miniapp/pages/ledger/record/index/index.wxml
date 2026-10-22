@@ -28,41 +28,108 @@
       <view class="field-error" wx:if="{{subjectError}}">{{subjectError}}</view>
     </view>
 
-    <!-- 3. 金额 -->
+    <!-- 3. 方向（花出去 / 收进来）+ 单一金额 -->
     <view class="field">
-      <view class="amt-cols">
-        <view class="amt-col amt-col--out">
-          <view class="amt-tag">流出金额（元）</view>
-          <view class="amt-input">
-            <text class="cur">¥</text>
-            <input type="digit" placeholder="0.00" placeholder-class="amt-ph" value="{{outflow}}" bindinput="onOutflowInput" />
+      <view class="field-label">钱往哪走</view>
+      <view class="dir-cols">
+        <view
+          class="dir-card {{direction === 'out' ? 'dir-card--active dir-card--out' : ''}}"
+          data-value="out"
+          bindtap="onDirectionTap"
+        >
+          <view class="dir-dot {{direction === 'out' ? 'dir-dot--on' : ''}}">
+            <view class="dir-dot__inner" wx:if="{{direction === 'out'}}"></view>
+          </view>
+          <view class="dir-main">
+            <view class="dir-title dir-title--out">花出去</view>
+            <view class="dir-sub">付给房东、施工、税务局</view>
           </view>
         </view>
-        <view class="amt-col amt-col--in">
-          <view class="amt-tag">流入金额（元）</view>
-          <view class="amt-input">
-            <text class="cur">¥</text>
-            <input type="digit" placeholder="0.00" placeholder-class="amt-ph" value="{{inflow}}" bindinput="onInflowInput" />
+        <view
+          class="dir-card {{direction === 'in' ? 'dir-card--active dir-card--in' : ''}}"
+          data-value="in"
+          bindtap="onDirectionTap"
+        >
+          <view class="dir-dot {{direction === 'in' ? 'dir-dot--on' : ''}}">
+            <view class="dir-dot__inner" wx:if="{{direction === 'in'}}"></view>
+          </view>
+          <view class="dir-main">
+            <view class="dir-title dir-title--in">收进来</view>
+            <view class="dir-sub">收到房款、定金、跟投</view>
           </view>
         </view>
       </view>
-      <view class="field-hint" wx:if="{{!amountError}}">流入 / 流出互斥：一项 &gt; 0 时另一项须为 0，至少填一项</view>
+
+      <view class="amt-block">
+        <view class="amt-tag {{direction === 'out' ? 'amt-tag--out' : 'amt-tag--in'}}">
+          {{direction === 'out' ? '流出金额' : '流入金额'}}（元）<text class="req">*</text>
+        </view>
+        <view class="amt-input amt-input--{{direction}}">
+          <text class="cur">¥</text>
+          <input type="digit" placeholder="0.00" placeholder-class="amt-ph" value="{{amount}}" bindinput="onAmountInput" />
+        </view>
+      </view>
+      <view class="field-hint" wx:if="{{!amountError}}">一笔只能记一个方向：要么花出去，要么收进来。</view>
       <view class="field-error" wx:else>{{amountError}}</view>
     </view>
 
-    <!-- 4. 付款方 / 收款方 -->
-    <view class="form-row2">
-      <view class="field">
-        <view class="field-label">付款方</view>
-        <input class="mini-input" placeholder="股东A / 公司 / 银行" placeholder-class="mini-ph" value="{{payer}}" bindinput="onPayerInput" />
+    <!-- 4. 资金账户（流出=付款账户 / 流入=收款账户） -->
+    <view class="field">
+      <view class="field-label">
+        {{direction === 'out' ? '付款账户' : '收款账户'}}<text class="req">*</text>
+        <text class="label-sub">{{direction === 'out' ? '钱从哪张卡出？' : '钱进哪张卡？'}}</text>
       </view>
-      <view class="field">
-        <view class="field-label">收款方</view>
-        <input class="mini-input" placeholder="房东 / 银行 / 装修队" placeholder-class="mini-ph" value="{{payee}}" bindinput="onPayeeInput" />
+
+      <!-- 加载失败 / 无可用账户：明确提示，不静默变空 -->
+      <view class="acct-warn" wx:if="{{!accountSkipped && accountsLoadFailed}}">
+        <text>账户列表加载失败，</text>
+        <text class="acct-warn__retry" bindtap="loadAccounts">点击重试</text>
+        <text>，或标记「没走账户」。</text>
       </view>
+      <view class="acct-warn" wx:elif="{{!accountSkipped && !accountsLoading && accounts.length === 0}}">
+        <text>暂无在用账户，可标记「没走账户」并写明原因。</text>
+      </view>
+
+      <block wx:if="{{!accountSkipped}}">
+        <view
+          class="acct-item {{accountId === item.id ? 'acct-item--active' : ''}}"
+          wx:for="{{accounts}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onAccountTap"
+        >
+          <view class="acct-main">
+            <view class="acct-name">{{item.name}}</view>
+            <view class="acct-meta" wx:if="{{item.accountNo}}">{{item.typeText}} · {{item.accountNo}}</view>
+            <view class="acct-meta" wx:else>{{item.typeText}}</view>
+          </view>
+          <view class="acct-check {{accountId === item.id ? 'acct-check--on' : ''}}">✓</view>
+        </view>
+        <view class="acct-loading" wx:if="{{accountsLoading}}">账户加载中…</view>
+      </block>
+
+      <!-- 「没走账户」开关（跟投/往来/代收代付） -->
+      <view class="skip-row" bindtap="onToggleSkipped">
+        <view class="skip-box {{accountSkipped ? 'skip-box--on' : ''}}">✓</view>
+        <text class="skip-text">没走账户（跟投 / 往来 / 代收代付）</text>
+      </view>
+      <view class="field-hint" wx:if="{{accountSkipped}}">标记「没走账户」时必须在下方备注写明原因。</view>
+      <view class="field-error" wx:if="{{accountError}}">{{accountError}}</view>
     </view>
 
-    <!-- 5. 发生日期 -->
+    <!-- 5. 对方信息：按方向只展示相关的一方 -->
+    <view class="field">
+      <view class="field-label">{{direction === 'out' ? '付给谁' : '谁付的'}}<text class="label-sub">选填</text></view>
+      <input
+        class="mini-input"
+        placeholder="{{direction === 'out' ? '房东 / 施工队 / 税务局' : '买家 / 跟投人 / 平台'}}"
+        placeholder-class="mini-ph"
+        value="{{counterparty}}"
+        bindinput="onCounterpartyInput"
+      />
+    </view>
+
+    <!-- 6. 发生日期 -->
     <view class="field">
       <view class="field-label">发生日期<text class="req">*</text></view>
       <picker mode="date" value="{{date}}" bindchange="onDateChange">
@@ -74,7 +141,7 @@
       <view class="field-error" wx:if="{{dateError}}">{{dateError}}</view>
     </view>
 
-    <!-- 6. 票据上传 -->
+    <!-- 7. 票据上传 -->
     <view class="field">
       <view class="field-label">票据（最多 9 张）</view>
       <view class="tkt-grid">
@@ -91,12 +158,12 @@
       <view class="field-hint" wx:if="{{uploadingAll}}">正在上传票据…</view>
     </view>
 
-    <!-- 7. 备注 -->
+    <!-- 8. 备注 -->
     <view class="field">
-      <view class="field-label">备注说明</view>
+      <view class="field-label">备注说明{{accountSkipped ? '*' : ''}}</view>
       <textarea
         class="textarea"
-        placeholder="例如：支付首期款…"
+        placeholder="{{accountSkipped ? '请写明为什么没走账户（如：跟投款直接打给业主）…' : '例如：支付首期款…'}}"
         placeholder-class="textarea-ph"
         value="{{remark}}"
         bindinput="onRemarkInput"

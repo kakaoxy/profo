@@ -16,17 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { ImageUpload } from "@/components/common/image-upload";
-import type { ImageItem } from "@/components/common/image-upload";
 import { RecordDialog } from "@/components/finance/record-dialog";
+import { SupplementDialog } from "@/components/finance/receipt-cell";
 import { SettlementDialog } from "./settlement-dialog";
 import { LedgerDetailStats } from "./ledger-detail-stats";
 import { LedgerDetailTableFilter, type FilterTab } from "./ledger-detail-table-filter";
@@ -184,9 +175,7 @@ export function LedgerDetailTable({
   const [supplementTarget, setSupplementTarget] = React.useState<CashFlowRecordResponse | null>(
     null,
   );
-  const [supplementUrls, setSupplementUrls] = React.useState<string[]>([]);
   const [isSupplementing, setIsSupplementing] = React.useState(false);
-  const [supplementUploadKey, setSupplementUploadKey] = React.useState(0);
 
   const isSettled = settlementStatus === "settled";
 
@@ -237,25 +226,15 @@ export function LedgerDetailTable({
 
   const openSupplementDialog = (record: CashFlowRecordResponse) => {
     setSupplementTarget(record);
-    setSupplementUrls([]);
-    setSupplementUploadKey((k) => k + 1);
   };
 
-  const handleSupplementChange = React.useCallback((items: ImageItem[]) => {
-    const urls = items.filter((i) => i.status === "success" && i.url).map((i) => i.url as string);
-    setSupplementUrls(urls);
-  }, []);
-
-  const handleSupplementConfirm = async () => {
+  // 与账户流水页同一 SupplementDialog：只提交本次新上传的 URL，服务端增量追加
+  const handleSupplementConfirm = async (urls: string[]) => {
     if (!supplementTarget) return;
-    if (supplementUrls.length === 0) {
-      toast.error("请至少上传一张凭证图片");
-      return;
-    }
     setIsSupplementing(true);
     try {
       const res = await updateRecordAction(supplementTarget.id, {
-        receipt_urls: supplementUrls,
+        receipt_urls: urls,
       });
       if (res.success) {
         toast.success("凭证已补充");
@@ -414,57 +393,31 @@ export function LedgerDetailTable({
         mode={isSettled ? "unsettle" : "settle"}
       />
 
-      {/* 补充凭证弹窗 */}
-      <Dialog
+      {/* 补充凭证弹窗（与账户流水页 admin/accounts/flows 同一组件） */}
+      <SupplementDialog
         open={!!supplementTarget}
-        onOpenChange={(open) => {
-          if (!open && !isSupplementing) setSupplementTarget(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>补充凭证</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3 py-2 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
-            {supplementTarget && (
-              <p className="text-xs text-graphite">
-                记录：{supplementTarget.description || supplementTarget.remark || "-"} ·{" "}
-                {(Number(supplementTarget.outflow) || 0) > 0
+        submitting={isSupplementing}
+        context={
+          supplementTarget
+            ? `${supplementTarget.date ? supplementTarget.date.slice(0, 10) : "—"} · ${
+                supplementTarget.subject?.name ?? "—"
+              } · ${
+                (Number(supplementTarget.outflow) || 0) > 0
                   ? `−¥${Number(supplementTarget.outflow).toLocaleString("en-US", {
                       minimumFractionDigits: 2,
                     })}`
                   : `+¥${Number(supplementTarget.inflow).toLocaleString("en-US", {
                       minimumFractionDigits: 2,
-                    })}`}
-              </p>
-            )}
-            <ImageUpload
-              key={supplementUploadKey}
-              maxCount={9}
-              gridCols={3}
-              aspectRatio="aspect-video"
-              title="点击或拖拽图片上传凭证"
-              onChange={handleSupplementChange}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={handleSupplementConfirm}
-              disabled={isSupplementing || supplementUrls.length === 0}
-              className="w-full bg-ink text-pure-white hover:bg-ink/90 rounded-full"
-            >
-              {isSupplementing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  提交中…
-                </>
-              ) : (
-                "确认补充"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                    })}`
+              }`
+            : null
+        }
+        existingUrls={supplementTarget?.receipt_urls ?? []}
+        onOpenChange={(next) => {
+          if (!next && !isSupplementing) setSupplementTarget(null);
+        }}
+        onConfirm={handleSupplementConfirm}
+      />
     </div>
   );
 }

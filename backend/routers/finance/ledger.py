@@ -325,6 +325,12 @@ def delete_ledger_record(
     "/{record_id}",
     summary="更新项目账本流水（补充凭证/支付方类型）",
 )
+# 同时暴露 PATCH 与 POST：wx.request 对 PATCH 的真机兼容性存疑（开发者工具可用），
+# 小程序端补凭证用 POST 别名保证可用性（与 keys/normal/{key_id} 同模式）。
+@router.post(
+    "/{record_id}",
+    summary="更新项目账本流水（补充凭证/支付方类型，POST 别名供小程序端）",
+)
 @limiter.limit(RateLimits.PROJECT_CREATE)
 def update_ledger_record(
     request: Request,

@@ -4,8 +4,8 @@ import { CircleAlert, Paperclip, Trash2, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeFormatDate, formatCNY } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { ReceiptCell } from "@/components/finance/receipt-cell";
 import type { components } from "@/lib/api-types";
 import { toNumber } from "@/lib/number-utils";
 import { LayerPill } from "./layer-pill";
@@ -25,7 +25,6 @@ export function LedgerDetailTableRow({
   onDelete,
   onSupplementVoucher,
 }: LedgerDetailTableRowProps) {
-  const hasVoucher = !!(record.receipt_urls && record.receipt_urls.length > 0);
   const outflow = toNumber(record.outflow) ?? 0;
   const inflow = toNumber(record.inflow) ?? 0;
   const subject = record.subject;
@@ -102,47 +101,14 @@ export function LedgerDetailTableRow({
           <span className="text-graphite">—</span>
         )}
       </TableCell>
-      {/* 凭证 */}
+      {/* 凭证：与账户流水页（admin/accounts/flows）同一 ReceiptCell——
+          有凭证缩略图可预览、缺凭证标签可点击补传、已有凭证可继续追加 */}
       <TableCell className="px-4 py-3 text-center">
-        {hasVoucher ? (
-          <div className="flex items-center justify-center gap-1 flex-wrap">
-            {record.receipt_urls!.map((url, idx) => (
-              <HoverCard key={url + idx}>
-                <HoverCardTrigger asChild>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`查看票据 ${idx + 1}`}
-                    aria-label={`查看票据 ${idx + 1}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={url}
-                      alt={`票据 ${idx + 1}`}
-                      width={28}
-                      height={28}
-                      loading="lazy"
-                      className="size-7 rounded object-cover border border-dove"
-                    />
-                  </a>
-                </HoverCardTrigger>
-                <HoverCardContent className="p-1 w-auto">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt={`票据 ${idx + 1}`}
-                    className="rounded-lg border max-w-[320px] h-auto"
-                  />
-                </HoverCardContent>
-              </HoverCard>
-            ))}
-          </div>
-        ) : (
-          <span className="inline-flex items-center rounded-[10px] bg-apricot-wash px-2.5 py-1 text-[11px] font-medium text-rust">
-            缺凭证
-          </span>
-        )}
+        <ReceiptCell
+          urls={record.receipt_urls ?? []}
+          onSupplement={isSettled ? undefined : () => onSupplementVoucher(record)}
+          className="justify-center"
+        />
       </TableCell>
       {/* 摘要（移至凭证和操作之间） */}
       <TableCell className="px-4 py-3">

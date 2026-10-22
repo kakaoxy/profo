@@ -5,17 +5,22 @@
  * - p_load 解析 query 存项目上下文（id/name/community_name/business_form），
  *   onShow 请求 GET /admin/ledger/{id}，记账返回后自动刷新；
  * - 汇总卡（流入红/流出绿/净现金流正负着色/ROI 百分比/持有天数）+ 流水明细；
+ * - 「缺凭证」标签可点击：wx.chooseMedia 选图 → wx.uploadFile 上传 →
+ *   PATCH /admin/ledger/{record_id} { receipt_urls }（Service 端追加去重合并），
+ *   成功后刷新列表；401 刷新令牌重试一次；
  * - 401 清后台令牌切「登录已失效」；403 → 无权限态不清令牌；
  * - 底部固定「记一笔」/空态「记第一笔」跳③并携带同一组 query。
  */
 import type { components } from "../../../../types/api-types";
-import { request } from "../../../../utils/request";
+import { request, refreshAccessToken } from "../../../../utils/request";
 import { getAccessToken } from "../../../../utils/token";
 import { resolveAssetUrl } from "../../../../utils/url";
+import { BASE_URL } from "../../../../utils/config";
 import { pad2 } from "../../../../utils/format";
 
 type CashFlowResponse = components["schemas"]["CashFlowResponse"];
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
+type FileUploadResponse = components["schemas"]["FileUploadResponse"];
 type SubjectLevel = components["schemas"]["SubjectLevel"];
 type BusinessForm = components["schemas"]["BusinessForm"];
 
@@ -52,6 +57,15 @@ interface RecordItem {
   ticketUrls: string[];
 }
 
+/** 「缺凭证」补传单次最多张数. */
+const SUPPLEMENT_MAX = 9;
+
+/** wx.uploadFile 单次上传结果. */
+interface UploadResult {
+  statusCode: number;
+  data: string;
+}
+
 /** 页面 data. */
 interface PageData {
   state: PageState;
@@ -62,6 +76,8 @@ interface PageData {
   summary: SummaryDisplay | null;
   records: RecordItem[];
   recordCount: number;
+  /** 补凭证中（该行标签显示「上传中…」）. */
+  supplementingId: string;
 }
 
 /** 页面自定义方法. */
@@ -75,8 +91,25 @@ interface PageCustom {
   loadDetail(): void;
   onGoRecord(): void;
   onPreviewTicket(e: WechatMiniprogram.TouchEvent): void;
+  onSupplementTap(e: WechatMiniprogram.TouchEvent): void;
+  doSupplementUpload(filePath: string, token: string): Promise<UploadResult>;
+  supplementRecord(recordId: string, urls: string[]): void;
   onRetry(): void;
   onGoLogin(): void;
+}
+
+/** 上传文件到 ${BASE_URL}/files/upload（admin 令牌）. */
+function doUploadFile(filePath: string, token: string): Promise<UploadResult> {
+  return new Promise<UploadResult>((resolve, reject) => {
+    wx.uploadFile({
+      url: `${BASE_URL}/files/upload`,
+      filePath,
+      name: "file",
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => resolve({ statusCode: res.statusCode, data: res.data }),
+      fail: (err) => reject(err),
+    });
+  });
 }
 
 /** 金额展示：千位分隔 + 最多两位小数（小数位为 0 时不显示）. */
@@ -125,6 +158,7 @@ Page<PageData, PageCustom>({
     summary: null,
     records: [],
     recordCount: 0,
+    supplementingId: "",
   },
 
   getToken() {
@@ -304,6 +338,99 @@ Page<PageData, PageCustom>({
       current: record.ticketUrls[0],
       urls: record.ticketUrls,
     });
+  },
+
+  /** 点击「缺凭证」标签：选图后逐张上传，再 PATCH 补凭证. */
+  onSupplementTap(e: WechatMiniprogram.TouchEvent) {
+    const recordId = (e.currentTarget.dataset.id as string) || "";
+    if (!recordId || this.data.supplementingId) {
+      return;
+    }
+    const token = this.getToken();
+    if (!token) {
+      this.clearToken();
+      wx.showToast({ title: "登录已失效", icon: "none" });
+      return;
+    }
+    wx.chooseMedia({
+      count: SUPPLEMENT_MAX,
+      mediaType: ["image"],
+      sourceType: ["album", "camera"],
+      success: (res) => {
+        const paths = res.tempFiles.map((f) => f.tempFilePath).filter(Boolean);
+        if (paths.length === 0) {
+          return;
+        }
+        this.supplementRecord(recordId, paths);
+      },
+    });
+  },
+
+  /** 上传单张（401 刷新令牌重试一次，与记账页 uploadReceipt 同模式）. */
+  doSupplementUpload(filePath: string, token: string): Promise<UploadResult> {
+    return doUploadFile(filePath, token).then((res) => {
+      if (res.statusCode !== 401) {
+        return res;
+      }
+      return refreshAccessToken().then((newToken) => {
+        if (newToken) {
+          return doUploadFile(filePath, newToken);
+        }
+        this.clearToken();
+        wx.showToast({ title: "登录已失效，请重新登录", icon: "none" });
+        throw new Error("unauthorized");
+      });
+    });
+  },
+
+  /** 逐张上传 → PATCH /admin/ledger/{id} 追加凭证 → 刷新列表. */
+  supplementRecord(recordId: string, localPaths: string[]) {
+    const token = this.getToken();
+    if (!token) {
+      this.clearToken();
+      wx.showToast({ title: "登录已失效", icon: "none" });
+      return;
+    }
+    this.setData({ supplementingId: recordId });
+    Promise.all(localPaths.map((p) => this.doSupplementUpload(p, token)))
+      .then((results) => {
+        const urls: string[] = [];
+        for (const res of results) {
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            throw new Error(res.data);
+          }
+          const file = JSON.parse(res.data) as FileUploadResponse;
+          if (!file.url) {
+            throw new Error("upload response missing url");
+          }
+          urls.push(file.url);
+        }
+        if (urls.length === 0) {
+          throw new Error("no receipts");
+        }
+        return request<CashFlowRecordResponse>({
+          url: `/admin/ledger/${recordId}`,
+          // 后端同时暴露 PATCH 与 POST（POST 别名供小程序端，见 routers/finance/ledger.py）
+          method: "POST",
+          data: { receipt_urls: urls },
+          header: { Authorization: `Bearer ${token}` },
+        });
+      })
+      .then(() => {
+        wx.showToast({ title: "凭证已补充", icon: "success" });
+        this.setData({ supplementingId: "" });
+        this.loadDetail();
+      })
+      .catch((err) => {
+        const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+        if (statusCode === 401) {
+          this.clearToken();
+          wx.showToast({ title: "登录已失效，请重新登录", icon: "none" });
+        } else if ((err as Error)?.message !== "unauthorized") {
+          wx.showToast({ title: "补充凭证失败，请重试", icon: "none" });
+        }
+        this.setData({ supplementingId: "" });
+      });
   },
 
   onRetry() {
