@@ -97,7 +97,8 @@ class _SubjectMixin:
     def update_subject(self, subject_id: str, data: FinanceSubjectUpdate) -> FinanceSubjectResponse:
         """更新科目.
 
-        - 系统预置科目(system=True)的 name/level 不可修改
+        - 系统预置科目(system=True)的 level 不可修改；name 可修改（纯显示标签，
+          流水按 subject_id 引用，改名不影响数据关联，命名调整无需数据库迁移）
         - 校验 name 唯一性（如更新 name）
         """
         subject = (
@@ -112,14 +113,10 @@ class _SubjectMixin:
             msg = "科目不存在"
             raise ResourceNotFoundError(msg)
 
-        # 系统预置科目 name/level 不可修改
-        if subject.system:
-            if data.name is not None and data.name != subject.name:
-                msg = "系统预置科目的名称不可修改"
-                raise ValidationError(msg)
-            if data.level is not None and data.level != subject.level:
-                msg = "系统预置科目的层级不可修改"
-                raise ValidationError(msg)
+        # 系统预置科目 level 不可修改（业务语义字段；name 为显示标签允许修改）
+        if subject.system and data.level is not None and data.level != subject.level:
+            msg = "系统预置科目的层级不可修改"
+            raise ValidationError(msg)
 
         # 校验 name 唯一性（如更新 name）
         if data.name is not None and data.name != subject.name:

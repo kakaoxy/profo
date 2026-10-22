@@ -53,6 +53,7 @@ from migrations._finance import (
     create_finance_subjects_table,
     create_investment_tables,
     migrate_finance_subjects_modes_to_jsonb,
+    rename_investment_subjects,
     rename_return_adjustment_columns,
 )
 from migrations._fund_accounts import (
@@ -1125,6 +1126,17 @@ MIGRATIONS: tuple[Migration, ...] = (
         backup_tables=("leads", "finance_records"),
         description="分批回填 leads.unit_price/total_price、收敛 finance_records 孤儿流水与记账人",
     ),
+    Migration(
+        version=91,
+        name="rename_investment_subjects",
+        fn=rename_investment_subjects,
+        kind="data",
+        risk="B",
+        backup="table",
+        reversible=True,
+        backup_tables=("finance_subjects",),
+        description="系统预置科目改名：投资款收入/投资款还本 → 项目投资款收入/项目投资款还本（对齐业务规格命名）",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1137,7 +1149,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 90）。"""
+"""登记总数（当前 91）。"""
 
-NEXT_VERSION = 91
+NEXT_VERSION = 92
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

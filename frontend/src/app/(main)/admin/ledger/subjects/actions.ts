@@ -109,7 +109,7 @@ export async function createSubject(data: SubjectCreateInput): Promise<ActionRes
 }
 
 /**
- * 更新科目（系统预置科目的 name/level 不可修改，由后端强制）
+ * 更新科目（系统预置科目的 level 不可修改，name 可修改，由后端强制）
  *
  * @param id   科目ID
  * @param data 更新载荷（字段全可选）

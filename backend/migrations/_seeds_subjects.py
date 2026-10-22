@@ -234,7 +234,7 @@ _INITIAL_SUBJECTS: list[dict] = [
     },
     {
         "id": "S25",
-        "name": "投资款收入",
+        "name": "项目投资款收入",
         "level": "5",
         "pnl": False,
         "modes": ["agent", "acquire"],
@@ -243,7 +243,7 @@ _INITIAL_SUBJECTS: list[dict] = [
     },
     {
         "id": "S26",
-        "name": "投资款还本",
+        "name": "项目投资款还本",
         "level": "5",
         "pnl": False,
         "modes": ["agent", "acquire"],

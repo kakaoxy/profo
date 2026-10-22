@@ -58,7 +58,7 @@ interface SubjectEditDialogProps {
 /**
  * 科目编辑/新增弹窗
  *
- * - 系统预置科目(system=true)的名称与层级 disabled
+ * - 系统预置科目(system=true)的层级 disabled，名称可修改（纯显示标签）
  * - 业务阶段可选项随已选业务模式动态变化（模式阶段并集）
  * - 使用 shadcn/ui Dialog + Form + Select + Switch
  */
@@ -159,7 +159,7 @@ export function SubjectEditDialog({
           <DialogTitle>{isEdit ? "编辑科目" : "新增科目"}</DialogTitle>
           <DialogDescription className="text-xs">
             {isEdit
-              ? "系统预置科目的名称与层级不可修改"
+              ? "系统预置科目的层级不可修改，名称可修改"
               : "新增用户自定义科目，选择适用的业务模式与阶段"}
           </DialogDescription>
         </DialogHeader>
@@ -179,12 +179,10 @@ export function SubjectEditDialog({
                     <FormControl>
                       <Input
                         placeholder="如：购房定金"
-                        disabled={systemLocked}
                         {...field}
                         value={field.value ?? ""}
                       />
                     </FormControl>
-                    {systemLocked && <FormDescription>系统预置科目名称不可修改</FormDescription>}
                     <FormMessage />
                   </FormItem>
                 )}

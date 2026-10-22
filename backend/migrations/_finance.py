@@ -110,6 +110,46 @@ def create_finance_record_logs_table(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine, tables=[FinanceRecordLog.__table__], checkfirst=True)
 
 
+def rename_investment_subjects(engine: Engine) -> None:
+    """存量库系统预置科目改名（幂等）：投资款收入→项目投资款收入、投资款还本→项目投资款还本.
+
+    背景：两个科目名称与费用科目近似易混淆，统一加「项目」前缀。
+    种子 _INITIAL_SUBJECTS 按 name 幂等插入（ON CONFLICT (name) DO NOTHING），
+    若仅改种子不处理存量行，已有库上种子将以新 name 插入并与旧行 id（S25/S26）主键冲突。
+    故必须在 create_finance_subjects_table 之前执行本迁移，将存量行按 id 原地改名；
+    finance_records.subject_id 为逻辑外键引用科目 id，改名不影响历史流水关联。
+
+    幂等：WHERE 条件限定旧名称，改名后再次执行匹配 0 行即跳过；
+    若已存在同名的用户自定义科目（name 唯一约束），跳过该行并告警，避免违反唯一约束。
+    """
+    if "finance_subjects" not in inspect(engine).get_table_names():
+        return
+
+    renames = (
+        ("S25", "投资款收入", "项目投资款收入"),
+        ("S26", "投资款还本", "项目投资款还本"),
+    )
+    with engine.begin() as conn:
+        for subject_id, old_name, new_name in renames:
+            result = conn.execute(
+                text(
+                    "UPDATE finance_subjects SET name = :new_name, updated_at = NOW() "
+                    "WHERE id = :subject_id AND name = :old_name "
+                    "AND NOT EXISTS (SELECT 1 FROM finance_subjects WHERE name = :new_name)"
+                ),
+                {"subject_id": subject_id, "old_name": old_name, "new_name": new_name},
+            )
+            if result.rowcount:
+                logger.info("迁移：科目 %s 已由「%s」改名为「%s」", subject_id, old_name, new_name)
+            elif conn.execute(
+                text("SELECT 1 FROM finance_subjects WHERE id = :subject_id AND name = :old_name"),
+                {"subject_id": subject_id, "old_name": old_name},
+            ).first():
+                logger.warning(
+                    "迁移跳过：已存在名为「%s」的科目，科目 %s 未能由「%s」改名", new_name, subject_id, old_name
+                )
+
+
 def create_finance_subjects_table(engine: Engine) -> None:
     """幂等创建科目管理表 finance_subjects 并初始化系统预置科目.
 

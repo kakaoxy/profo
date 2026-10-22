@@ -168,6 +168,7 @@ from migrations._finance import (
     create_finance_subjects_table,
     create_investment_tables,
     migrate_finance_subjects_modes_to_jsonb,
+    rename_investment_subjects,
     rename_return_adjustment_columns,
 )
 from migrations._fund_accounts import (
@@ -458,6 +459,9 @@ def _run_all_migrations(engine: Engine) -> None:
         # M1–M3 补齐：leads 单价/总价、finance_records 孤儿流水与记账人
         # 按 _MIGRATION_BATCH_SIZE 分批回填（历史迁移保持不动，本迁移兜底漏网行，幂等）
         batched_backfill_leads_and_finance(engine)
+        # v91：存量库系统预置科目改名（投资款收入/还本 → 项目投资款收入/还本），
+        # 必须登记在 MIGRATIONS 末尾（v91）并与本路径调用顺序严格一致（test_registry_matches_legacy_order）
+        rename_investment_subjects(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
