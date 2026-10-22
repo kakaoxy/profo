@@ -162,7 +162,16 @@ class RateLimits:
     # 否则 slowapi 的 429 会先返回且不带 Retry-After，前端无法展示锁定倒计时。
     # 故此处放宽到 30/minute 作为暴破兜底，真正的失败策略在 Service 层（5 次/15 分钟）。
     ACCOUNT_UNLOCK = "30/minute"
-    ACCOUNT_PASSWORD_SET = "5/hour"  # noqa: S105
+    # ⚠️ 改密额度（2026-10-22 缺陷修复）：原为 5/hour，实测「正常改密码」就会撞上——
+    # 该端点每条请求都计数（含原密码输错、前端重复提交），且 slowapi 默认按客户端 IP
+    # 计数：本项目 admin 请求全部经 Next.js Server Action 同源转发，生产上是一整个办公室
+    # 共用 NAT 出口，于是**5 次/小时是所有人共享的额度**，一个人填错几次就把同事全挡住。
+    # 两处修正（见 routers/finance/accounts.py 的 key_func）：
+    #   1. 计数键改为 user_id（NAT 内各人独立）；
+    #   2. 额度提到 20/hour，覆盖「输错原密码重试 + 反复调整」的正常操作。
+    # 暴破防护仍然充分：6 位数字密码 1e6 组合，20 次/小时穷举需 5.7 万年；
+    # 且该端点本身要求 account:admin（L5 权限）。
+    ACCOUNT_PASSWORD_SET = "20/hour"  # noqa: S105
     # 账户/对账写操作低频（财务配置 + 留痕动作）
     ACCOUNT_WRITE = "300/hour"
 

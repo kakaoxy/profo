@@ -391,6 +391,21 @@ def restore_module_password() -> None:
             cleared += 1
         if cleared:
             log(f"  已清理 {cleared} 个 fund_accounts:* Redis 键（锁/失败计数/令牌）")
+
+        # ⚠️ 必须同时清限流桶（2026-10-22 缺陷修复）：
+        # slowapi 的计数键是 ``LIMITS:LIMITER/...``，不在 fund_accounts 命名空间下。
+        # 而 /unlock 与 /module-password 现在按 **user_id** 计数（NAT 内各人独立），
+        # 本脚本以 admin 身份运行 → 消耗的正是**真人管理员的额度**。不清的话，
+        # 连续跑几轮 E2E 就会让真实用户「正常改密码」被 429 挡住
+        # （实测已发生：5 轮 E2E 打满 5/hour 的旧额度）。
+        # 只清这两个端点，不动其它端点的限流计数。
+        limit_cleared = 0
+        for pattern in ("LIMITS:*module-password*", "LIMITS:*accounts/unlock*"):
+            for key in redis_client.scan_iter(pattern):
+                redis_client.delete(key)
+                limit_cleared += 1
+        if limit_cleared:
+            log(f"  已清理 {limit_cleared} 个限流桶（module-password / unlock，避免占用真人额度）")
     except Exception as exc:
         log(f"  ⚠️ 还原模块密码失败（需人工检查 fund_accounts.password_hash）: {exc}")
 

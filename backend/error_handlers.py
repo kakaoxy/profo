@@ -203,11 +203,56 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     )
 
 
+_GRANULARITY_LABELS: dict[str, str] = {
+    "second": "秒",
+    "minute": "分钟",
+    "hour": "小时",
+    "day": "天",
+    "month": "月",
+    "year": "年",
+}
+
+
+def _describe_rate_limit(exc: RateLimitExceeded) -> str:
+    """把 slowapi 的限流项翻译成用户能看懂的「额度 + 窗口」说明.
+
+    ⚠️ 为什么需要（2026-10-22 缺陷修复）：
+    原实现固定返回「请求过于频繁，请稍后重试」——用户既不知道额度是多少、
+    也不知道要等多久，只能反复点击（而每次点击并不会减少已用额度），
+    实测表现为「正常改密码被卡住且完全不知道为什么」。
+    这里从 ``exc.limit`` 读取 amount 与粒度（如 ``20/hour`` → 「每小时最多 20 次」），
+    让提示本身可行动；取不到时安静回退到通用文案（不因格式化失败影响 429 语义）。
+
+    Args:
+        exc: slowapi 抛出的限流异常
+
+    Returns:
+        形如「请求过于频繁（每小时 最多 20 次），请稍后再试」的提示
+
+    """
+    fallback = "请求过于频繁，请稍后重试"
+    limit = getattr(exc, "limit", None)
+    item = getattr(limit, "limit", None)
+    amount = getattr(item, "amount", None)
+    granularity = getattr(item, "GRANULARITY", None)
+    label = _GRANULARITY_LABELS.get(getattr(granularity, "name", ""), "")
+    if not amount or not label:
+        return fallback
+    return f"请求过于频繁（每{label}最多 {amount} 次），请稍后再试"
+
+
 async def rate_limit_handler(_request: Request, exc: RateLimitExceeded) -> JSONResponse:
     """处理速率限制异常.
 
     遵循 AGENTS.md §2：错误响应统一 {"code": <status>, "message": "..."}.
     兼容不同 slowapi 版本：retry_after 属性在部分版本不存在，使用 getattr 安全访问。
+
+    ⚠️ 已知限制（2026-10-22 核查）：本项目使用的 slowapi 版本里
+    ``RateLimitExceeded`` **只携带 limit、不携带 retry_after**，因此上面的
+    ``getattr(exc, "retry_after", None)`` 恒为空、响应从不带 ``Retry-After`` 头。
+    精确的剩余秒数需要读限流存储的 TTL（slowapi 未暴露公开 API），故此处改为
+    在 message 里给出「额度 + 窗口」这一可行动信息；业务锁定（AccountLockedError）
+    的 ``Retry-After`` 是由 Service 层显式写入的，不受此影响。
     """
     headers: dict[str, str] = {}
     retry_after = getattr(exc, "retry_after", None)
@@ -215,6 +260,6 @@ async def rate_limit_handler(_request: Request, exc: RateLimitExceeded) -> JSONR
         headers["Retry-After"] = str(retry_after)
     return create_error_response(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        message="请求过于频繁，请稍后重试",
+        message=_describe_rate_limit(exc),
         headers=headers,
     )

@@ -446,7 +446,14 @@ export function AccountsOverview() {
         open={pwdOpen}
         mode="change"
         onOpenChange={setPwdOpen}
-        onSuccess={() => void load()}
+        onSuccess={() => {
+          // 改密成功 → 直接回锁屏，**不要**再发一次业务请求（2026-10-22 修复）：
+          // 后端 set_password 会吊销全部解锁令牌（安全要求），此处若沿用旧令牌调
+          // load()，必然吃一个 403 —— 用户刚看到「密码设好了」，紧接着又弹
+          // 「资金账户未解锁」，观感像失败。既然令牌确定已失效，就地 invalidate
+          // 让守卫切到锁屏，并用新密码重新进入即可。
+          invalidate();
+        }}
       />
     </PageContainer>
   );

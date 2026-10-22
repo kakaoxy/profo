@@ -40,7 +40,7 @@ from schemas.finance import (
     FundFlowListResponse,
 )
 from services.finance import AccountUnlockService, FundAccountService
-from utils.common import RateLimits, limiter
+from utils.common import RateLimits, get_login_user_identifier, limiter
 
 router = APIRouter(
     prefix="/admin/accounts",
@@ -83,7 +83,14 @@ def get_lock_state(
     "/unlock",
     summary="解锁资金账户模块",
 )
-@limiter.limit(RateLimits.ACCOUNT_UNLOCK)
+# ⚠️ key_func 必须按用户而非 IP（2026-10-22 缺陷修复）：
+# slowapi 默认键是客户端 IP，而本项目的 admin 请求全部经 Next.js Server Action
+# 从同源转发到后端，生产上则是一整个办公室共享一个 NAT 出口 —— 于是**所有人共用一个
+# 计数桶**：任何一个同事（或一次自动化脚本）把额度用完，其他人全被 429 挡住。
+# 实测：E2E 连续跑 5 次就把 IP 桶打满，真实用户随即改不了密码。
+# get_login_user_identifier 是本项目既有的 M8 口径（NAT 多用户互不挤占），
+# 且解锁的业务锁定（错 5 次锁 15 分钟）本就是按 user_id 计数的，这里与之一致。
+@limiter.limit(RateLimits.ACCOUNT_UNLOCK, key_func=get_login_user_identifier)
 def unlock_accounts(
     request: Request,
     data: FundAccountUnlockRequest,
@@ -113,7 +120,8 @@ def lock_accounts(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="设置/重设资金账户模块密码",
 )
-@limiter.limit(RateLimits.ACCOUNT_PASSWORD_SET)
+# 同上：按用户计数，避免同事之间 / 自动化脚本与真人之间互相挤占改密码额度。
+@limiter.limit(RateLimits.ACCOUNT_PASSWORD_SET, key_func=get_login_user_identifier)
 def set_module_password(
     request: Request,
     data: FundAccountPasswordSetRequest,
